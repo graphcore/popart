@@ -1,0 +1,9 @@
+aka project checkpoint. 
+
+skills needed:
+-- pytorch training: how does it work exactly.
+
+1) load onnx graph
+
+2) build initial graph
+
