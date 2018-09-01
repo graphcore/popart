@@ -1,5 +1,18 @@
+include(GNUInstallDirs)
+
 # for more useful warnings
 include(EnableCompilerWarnings)
+
+# so that installed bins don't have link probs (copied from poplar)
+if (APPLE)
+  set(CMAKE_INSTALL_RPATH
+      "@loader_path/../${CMAKE_INSTALL_LIBDIR};@loader_path/../../tbb/lib"
+      CACHE STRING "Relative RPATH for OSX." FORCE)
+else(UNIX)
+  set(CMAKE_INSTALL_RPATH
+      "\$ORIGIN/../${CMAKE_INSTALL_LIBDIR};\$ORIGIN/../../tbb/lib" CACHE STRING
+      "Relative RPATH for Unix systems." FORCE)
+endif()
 
 add_definitions(-std=c++11)
 include_directories("include")
@@ -29,4 +42,9 @@ target_link_libraries(neuralnet
   ${BOOST_SYSTEM_LIB}
 )
 
+install(TARGETS neuralnet
+        EXPORT neuralnet
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        COMPONENT neuralnet
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 

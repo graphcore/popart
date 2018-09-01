@@ -3,7 +3,7 @@ aka project checkpoint.
 skills needed:
 -- pytorch training: how does it work exactly.
 
-1) load onnx graph
-
-2) build initial graph
-
+TODO: 
+01/09/2018
+-----------------------
+Tensor::consumers. How does this work for multiple consumers?

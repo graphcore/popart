@@ -1,1 +1,8 @@
 build
+*model.onnx
+pydriver
+*__pycache__*
+*__cache__*
+*output
+*.pb
+*.log

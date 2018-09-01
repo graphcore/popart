@@ -24,3 +24,4 @@ find_package(BoostFilesystem REQUIRED)
 find_package(CBLAS REQUIRED)
 
 add_subdirectory(neuralnet)
+add_subdirectory(driver)
