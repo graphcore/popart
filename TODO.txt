@@ -6,4 +6,10 @@ skills needed:
 TODO: 
 01/09/2018
 -----------------------
-Tensor::consumers. How does this work for multiple consumers?
+(DONE) Tensor::consumers. How does this work for multiple consumers?
+
+02/09/2018
+-----------------------
+start by documenting removeNullOp and all the functions it calls. 
+
+

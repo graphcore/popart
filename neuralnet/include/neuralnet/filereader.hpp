@@ -5,8 +5,8 @@
 #pragma clang diagnostic ignored "-Weverything"
 #include <onnx/onnx.pb.h>
 #pragma clang diagnostic pop // stop ignoring warnings
-#include <sstream>
 #include <neuralnet/names.hpp>
+#include <sstream>
 
 namespace neuralnet {
 namespace io {
@@ -29,7 +29,6 @@ onnx::ModelProto getModel(std::string filename);
 // load TensorProto
 onnx::TensorProto getTensor(std::string filename);
 
-
 // fns are of the form somethingorother_dd.suffix
 // for each fn in fns:
 //     1) extract dd
@@ -38,7 +37,7 @@ onnx::TensorProto getTensor(std::string filename);
 // these Tensors are returned in an OnnxTensors.
 // This function is useful for the test suites provided by ONNX
 OnnxTensors getAndMatchTensors(const std::vector<std::string> &fns,
-                                 const std::vector<std::string> &names);
+                               const std::vector<std::string> &names);
 
 // return all full path names of files which match toMatch in directory dir
 std::vector<std::string> getMatchFns(std::string dir, std::string toMatch);

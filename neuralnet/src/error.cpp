@@ -1,7 +1,4 @@
 
 #include <neuralnet/error.hpp>
 
-namespace poponnx {
-
-
-}
+namespace poponnx {}

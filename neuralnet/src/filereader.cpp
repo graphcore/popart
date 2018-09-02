@@ -3,11 +3,11 @@
 #include <boost/filesystem.hpp>
 #pragma clang diagnostic pop // stop ignoring warnings
 #include <fstream>
-#include <sstream>
-#include <vector>
 #include <neuralnet/error.hpp>
 #include <neuralnet/filereader.hpp>
 #include <neuralnet/names.hpp>
+#include <sstream>
+#include <vector>
 
 namespace neuralnet {
 namespace io {
@@ -109,7 +109,7 @@ onnx::TensorProto getTensor(std::string filename) {
 }
 
 OnnxTensors getAndMatchTensors(const std::vector<std::string> &fns,
-                                 const std::vector<std::string> &names) {
+                               const std::vector<std::string> &names) {
   namespace bf = boost::filesystem;
 
   OnnxTensors tensors;

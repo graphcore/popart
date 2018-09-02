@@ -3,14 +3,13 @@
 
 #include <neuralnet/graph.hpp>
 
-namespace neuralnet{
+namespace neuralnet {
 
-class PadOp: public Op{
+class PadOp : public Op {
 public:
   PadOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph)
       : Op(opId, node, pgraph) {}
-
 };
-}
+} // namespace neuralnet
 
 #endif

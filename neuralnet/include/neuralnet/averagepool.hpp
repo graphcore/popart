@@ -3,14 +3,13 @@
 
 #include <neuralnet/graph.hpp>
 
-namespace neuralnet{
+namespace neuralnet {
 
-class AveragePoolOp: public Op{
+class AveragePoolOp : public Op {
 public:
   AveragePoolOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph)
       : Op(opId, node, pgraph) {}
-
 };
-}
+} // namespace neuralnet
 
 #endif

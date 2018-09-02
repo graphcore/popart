@@ -1,7 +1,6 @@
 #ifndef GUARD_NEURALNET_NAMES_HPP
 #define GUARD_NEURALNET_NAMES_HPP
 
-
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"
 #include <onnx/onnx.pb.h>
@@ -9,9 +8,9 @@
 
 #include <string>
 
-namespace neuralnet{
+namespace neuralnet {
 
-using OpId = int;
+using OpId     = int;
 using TensorId = std::string;
 
 // The position at which a Tensor is consumed by an Op
@@ -26,7 +25,6 @@ using onnxAttPtr = decltype(&onnx::NodeProto().attribute(0));
 
 using OnnxTensors = std::map<TensorId, onnx::TensorProto>;
 
-}
+} // namespace neuralnet
 
 #endif
-

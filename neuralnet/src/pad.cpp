@@ -1,7 +1,7 @@
 #include <neuralnet/pad.hpp>
 #include <neuralnet/tensor.hpp>
 
-namespace neuralnet{
+namespace neuralnet {
 
 //  // if all pad values are zero, do nothing
 //  else if (opTypes.get(node.op_type()) == OpType::PAD &&
@@ -10,5 +10,4 @@ namespace neuralnet{
 //                       [](int64_t pad) { return pad == 0; })) {
 //    std::cout << "zero pad size, skipping" << std::endl;
 //  }
-
 }

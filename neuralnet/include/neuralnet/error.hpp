@@ -12,7 +12,6 @@ public:
   error(const std::string &what) : std::runtime_error(what) {}
 };
 
-
 } // namespace neuralnet
 
 #endif

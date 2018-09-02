@@ -8,14 +8,13 @@
 
 #include <neuralnet/graph.hpp>
 
-namespace neuralnet{
+namespace neuralnet {
 
-class ConvOp: public Op{
+class ConvOp : public Op {
 public:
   ConvOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph)
       : Op(opId, node, pgraph) {}
-
 };
-}
+} // namespace neuralnet
 
 #endif
