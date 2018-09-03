@@ -5,29 +5,20 @@
 #include <neuralnet/error.hpp>
 #include <neuralnet/graph.hpp>
 #include <neuralnet/tensor.hpp>
+#include <neuralnet/tensorinfo.hpp>
 #include <sstream>
 
 #include <neuralnet/averagepool.hpp>
 #include <neuralnet/conv.hpp>
+#include <neuralnet/logsoftmax.hpp>
 #include <neuralnet/relu.hpp>
+
 
 namespace neuralnet {
 
 Op::~Op()       = default;
 Graph::~Graph() = default;
 
-template <class T> void appendSequence(std::stringstream &ss, T t) {
-  int index = 0;
-  ss << '[';
-  for (auto &x : t) {
-    if (index != 0) {
-      ss << ' ';
-    }
-    ss << x;
-    ++index;
-  }
-  ss << ']';
-}
 
 void TensorIndexMap::insert(int index, Tensor *ptensor) {
   tensor_map[index] = ptensor;
@@ -139,14 +130,30 @@ VectorAndSet::VectorAndSet(std::vector<std::string> &&vals) : v_vals(vals) {
   }
 }
 
+
+void PreRunKnowledge::addInfo(TensorId id, const TensorInfo & info){
+  infos[id] = info;
+}
+
+const TensorInfo & PreRunKnowledge::getInfo(TensorId id){
+  return infos[id];
+}
+
+
+bool PreRunKnowledge::hasInfo(TensorId id){
+  return infos.find(id) != infos.end();
+}
+
+
 Graph::Graph(onnx::ModelProto &&inMod,
+             PreRunKnowledge &&perk,
              Recorder &&rec,
              // Schedule needed, if momentum the graph is different
              Schedule &&sched,
              // Weights tensors which are not to be updated
              std::vector<std::string> &&cTens)
-    : recorder(rec), schedule(sched), constTensorIds(std::move(cTens)),
-      onnxModel(inMod) {
+    : preRunKnowledge(perk), recorder(rec), schedule(sched),
+      constTensorIds(std::move(cTens)), onnxModel(inMod) {
 
   auto &onnxGraph = onnxModel.graph();
   auto &onnxNodes = onnxGraph.node();
@@ -170,11 +177,15 @@ Graph::Graph(onnx::ModelProto &&inMod,
     growFromNode(node);
   }
 
+  // this checks that there are no contradictions in the user input, NOT
+  // in the implementation of neuralnet. 
   validate();
 
   splitConvBias();
 
   removePadSizeZero();
+
+
 }
 
 // note : don't try too hard if tensors are logged,
@@ -323,26 +334,11 @@ void Attributes::append(std::stringstream &ss) {
 
 void Graph::growFromNode(const onnx::NodeProto &node) {
 
-  int nInputs = 0;
-  for (auto &id : node.input()) {
-    if (id != "") {
-      ++nInputs;
-    }
-  }
-
   auto atts = Attributes(node.attribute());
   if (opTypes.get(node.op_type()) == OpType::CONSTANT) {
     TensorId name = node.output(0);
     init[name]    = node.attribute(0).t();
     addInitTensor(name);
-  }
-
-  // handling this CONV as a special case, as it
-  // needs splitting into 2 (CONV and add bias)
-  // will still add, changed in optimise step.
-  // this first step builds exactly 1-1 with onnx graph
-  else if (opTypes.get(node.op_type()) == OpType::CONV && nInputs == 3) {
-    throw error("Conv with bias case not handled");
   }
 
   else {
@@ -378,10 +374,12 @@ void Graph::growFromNode(const onnx::NodeProto &node) {
 OpTypes::OpTypes() {
 
   opTypeMap = {{"AveragePool", OpType::AVERAGEPOOL},
-               {"Conv", OpType::CONV},
-               {"Relu", OpType::RELU},
                {"Constant", OpType::CONSTANT},
-               {"Pad", OpType::PAD}};
+               {"Conv", OpType::CONV},
+               {"LogSoftmax", OpType::LOGSOFTMAX},
+               {"Pad", OpType::PAD},
+               {"Relu", OpType::RELU}};
+
 }
 
 OpType OpTypes::get(std::string op_type) {
@@ -424,10 +422,13 @@ std::unique_ptr<Op> Graph::addOp(OpId opId, const onnx::NodeProto &node) {
   case OpType::CONV: {
     return pOp(new ConvOp(opId, node, this));
   }
-  case OpType::RELU: {
-    return pOp(new ReluOp(opId, node, this));
+  case OpType::LOGSOFTMAX: {
+    return pOp(new LogSoftmaxOp(opId, node, this));
   }
   case OpType::PAD: {
+    return pOp(new ReluOp(opId, node, this));
+  }
+  case OpType::RELU: {
     return pOp(new ReluOp(opId, node, this));
   }
   default: { throw error("No class for " + node.op_type()); }

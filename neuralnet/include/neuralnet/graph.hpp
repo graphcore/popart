@@ -8,6 +8,7 @@
 
 #include <map>
 #include <neuralnet/names.hpp>
+#include <neuralnet/tensorinfo.hpp>
 
 namespace neuralnet {
 
@@ -20,10 +21,31 @@ class Recorder {};
 // momentum, learning rates, etc.
 class Schedule {};
 
+
+// What is known about the graph before it is run. 
+// This knowledge can be compiled into the Graph, 
+// and for certain backends is even required, for example
+// Graphcore IPU requires all Stream Tensor shapes.
+class PreRunKnowledge {
+  public:
+  PreRunKnowledge() = default;
+  void addInfo(TensorId, const TensorInfo &);
+  const TensorInfo & getInfo(TensorId);
+  bool hasInfo(TensorId);
+
+  private:
+  std::map<TensorId, TensorInfo> infos;
+  // we will also have a map of actual tensors, these
+  // can be used sometimes to compile the graph (slice 
+  // indices for example)
+
+};
+
 enum class OpType {
   AVERAGEPOOL,
   CONSTANT,
   CONV,
+  LOGSOFTMAX,
   PAD,
   RELU,
 };
@@ -136,6 +158,7 @@ private:
 class Graph {
 public:
   Graph(onnx::ModelProto &&,
+        PreRunKnowledge &&,
         Recorder &&,
         // Schedule needed for Graph construction,
         // as if there is momentum the graph is different
@@ -155,6 +178,7 @@ public:
   void addActivationTensor(TensorId);
   Tensor *getTensor(TensorId);
   void append(std::stringstream &);
+  PreRunKnowledge preRunKnowledge;
   Recorder recorder;
   Schedule schedule;
   // Store the Tensors of type Const

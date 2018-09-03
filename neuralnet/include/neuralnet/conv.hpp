@@ -12,9 +12,9 @@ namespace neuralnet {
 
 class ConvOp : public Op {
 public:
-  ConvOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph)
-      : Op(opId, node, pgraph) {}
+  ConvOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph);
 };
+
 } // namespace neuralnet
 
 #endif

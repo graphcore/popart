@@ -31,6 +31,7 @@ class Basic(torch.nn.Module):
         self.conv2 = conv3x3(outChans, outChans)
         self.relu = torch.nn.functional.relu
         self.conv3 = conv3x3(outChans, outChans)
+        self.logsoftmax = torch.nn.LogSoftmax(dim =0 )
 
     def forward(self, x):
         x = self.conv1(x)
@@ -41,8 +42,17 @@ class Basic(torch.nn.Module):
         x = self.conv3(x)
         x = self.relu(x)
         window_size = (int(x.size()[2]), int(x.size()[3]))
-        print(window_size)
-        x = torch.nn.functional.avg_pool2d(x, kernel_size = window_size) #kernel_size=x.size()[2:], return_indices = False)
+        print(x.size())
+        x = torch.nn.functional.avg_pool2d(x, kernel_size = window_size)
+        print(x.size())
+        #x = x.reshape(int(x.size()[0]), int(x.size()[1]))
+        #print(x.size())
+        x = self.logsoftmax(x)
+        print(x.size())
+        print("\n")
+
+
+        #kernel_size=x.size()[2:], return_indices = False)
         return x
 
 

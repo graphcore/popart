@@ -12,4 +12,14 @@ TODO:
 -----------------------
 start by documenting removeNullOp and all the functions it calls. 
 
+03/09/2018
+-----------------------
+TensorInfo types:
+  * TensorInfo::nbytes(). 
+  * TensorInfo::append(),
+  * how will the tensors get and set data? templates?
+
+Rethink the step(int) function. 
+Think about backend abstraction.
+
 

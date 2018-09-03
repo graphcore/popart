@@ -21,7 +21,10 @@ int main(int argc, char **argv) {
   // here we just expand it to its canonical form (not strictly needed)
   std::string canLogDir = neuralnet::io::getCanonicalDirName(argv[1]);
 
+  // note : must be the same as in pydriver.py
   auto modelPath = neuralnet::io::appendDirFn(canLogDir, "model.onnx");
+  auto dummyTensorPath = neuralnet::io::appendDirFn(canLogDir, "input_0.pb");
+
   std::vector<std::string> constTensors{};
   neuralnet::Recorder recorder{};
   neuralnet::Schedule schedule{};
@@ -29,14 +32,28 @@ int main(int argc, char **argv) {
   std::cout << "modelPath = " << modelPath << std::endl;
   auto model = neuralnet::io::getModel(modelPath);
   std::cout << "model loaded" << std::endl;
+
+  onnx::TensorProto tensor = neuralnet::io::getTensor(dummyTensorPath);
+  std::cout << "tensor loaded" << std::endl;
+
+
+  neuralnet::TensorInfo inputInfo(tensor);
+  neuralnet::PreRunKnowledge preRunKnowledge{};
+  preRunKnowledge.addInfo(model.graph().input(0).name(), inputInfo);
+  std::stringstream ss;
+  inputInfo.append(ss);
+  std::cout << ss.str() << std::endl;
+  
+
   neuralnet::Graph graph(std::move(model),
+                         std::move(preRunKnowledge),
                          std::move(recorder),
                          std::move(schedule),
                          std::move(constTensors));
 
-  std::stringstream ss;
-  graph.append(ss);
-  std::cout << ss.str(); 
+  std::stringstream ss2;
+  graph.append(ss2);
+  std::cout << ss2.str(); 
   return 0;
 
 }

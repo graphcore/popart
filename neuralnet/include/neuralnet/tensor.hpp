@@ -3,6 +3,7 @@
 
 #include <map>
 #include <neuralnet/names.hpp>
+#include <neuralnet/tensorinfo.hpp>
 
 namespace neuralnet {
 
@@ -43,6 +44,7 @@ private:
   std::map<const Op *, int> consumers_m;
 };
 
+
 class Tensor {
 public:
   // note : producer (if there is one)
@@ -54,8 +56,9 @@ public:
   const std::string tensor_type;
   Consumers consumers;
   Op *producer;
-  std::vector<int64_t> shape;
+  TensorInfo info;
   void append(std::stringstream &ss);
+  const std::vector<int64_t> & shape();
 };
 } // namespace neuralnet
 

@@ -5,6 +5,7 @@ import torch.onnx
 import subprocess
 from IPython.core.debugger import Tracer
 
+
 class Driver:
     def __init__(self, dirname):
         self.dirname = dirname
@@ -12,7 +13,8 @@ class Driver:
         self.fnModel = os.path.join(dirname, "model.onnx")
         self.fnIn = os.path.join(dirname, 'input_0.pb')
         # the path to the executable pydriver, compiled from pydriver.cpp
-        self.pydriver_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pydriver")
+        self.pydriver_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "pydriver")
 
     def write_output(self, output):
         """
@@ -26,18 +28,17 @@ class Driver:
                 self.write_output(sub_output)
 
         elif isinstance(output, torch.Tensor):
-            fnOut = os.path.join(self.dirname, 'output_%d.pb'%(self.nOut,))
-            output_tensor = onnx.numpy_helper.from_array(output.detach().numpy())
+            fnOut = os.path.join(self.dirname, 'output_%d.pb' % (self.nOut, ))
+            output_tensor = onnx.numpy_helper.from_array(
+                output.detach().numpy())
             with open(fnOut, 'wb') as f:
-                print("Writing output to %s"%(fnOut,))
+                print("Writing output to %s" % (fnOut, ))
                 f.write(output_tensor.SerializeToString())
-
 
             self.nOut = self.nOut + 1
 
         else:
             raise RuntimeError("unknown type in write_output")
-
 
     def write(self, model, inputs):
         if len(inputs) != 1:
@@ -60,9 +61,5 @@ class Driver:
         self.nOut = 0
         self.write_output(dummy_output)
 
-
     def run(self):
         subprocess.call([self.pydriver_path, self.dirname])
-
-
-
