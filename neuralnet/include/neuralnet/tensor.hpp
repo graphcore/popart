@@ -44,6 +44,20 @@ private:
   std::map<const Op *, int> consumers_m;
 };
 
+class TensorTypeInfo {
+
+public:
+  TensorTypeInfo(TensorType, std::string);
+  TensorType type() const;
+  const std::string &type_s() const;
+
+private:
+  TensorType tensorType_;
+  std::string tensor_type_;
+};
+
+const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap();
+std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap();
 
 class Tensor {
 public:
@@ -52,13 +66,18 @@ public:
   Tensor(TensorId n, TensorType t, Graph *g);
   TensorId id;
   Graph *pgraph;
-  const TensorType type;
-  const std::string tensor_type;
+  // Activation, Variable, etc:
+  TensorType tensorType() const;
+  const std::string &tensor_type() const;
   Consumers consumers;
   Op *producer;
+  // shape and data type:
   TensorInfo info;
   void append(std::stringstream &ss);
-  const std::vector<int64_t> & shape();
+  const std::vector<int64_t> &shape();
+
+private:
+  const TensorTypeInfo *tensorTypeInfo;
 };
 } // namespace neuralnet
 

@@ -27,6 +27,8 @@ using OnnxTensors = std::map<TensorId, onnx::TensorProto>;
 
 using DataType = decltype(onnx::TensorProto().data_type());
 
+using TP = onnx::TensorProto;
+
 } // namespace neuralnet
 
 #endif

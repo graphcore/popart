@@ -62,7 +62,7 @@ if not os.path.exists(outputdir):
     os.mkdir(outputdir)
 
 driver = pydriver.Driver(outputdir)
-driver.write(Basic(20, 10), [Variable(1.0 * torch.randn(2, 20, 32, 32))])
+driver.write(Basic(20, 10), [Variable(torch.rand(2, 20, 32, 32))])
 driver.run()
 
 print("pydriver python script complete.")

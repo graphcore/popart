@@ -13,12 +13,10 @@
 #include <neuralnet/logsoftmax.hpp>
 #include <neuralnet/relu.hpp>
 
-
 namespace neuralnet {
 
 Op::~Op()       = default;
 Graph::~Graph() = default;
-
 
 void TensorIndexMap::insert(int index, Tensor *ptensor) {
   tensor_map[index] = ptensor;
@@ -77,25 +75,6 @@ Tensor *Graph::getTensor(TensorId tenId) {
   return found->second.get();
 }
 
-TensorTypes::TensorTypes() {
-  tensor_types_m = {{TensorType::Activation, "Activation"},
-                    {TensorType::Const, "Const"},
-                    {TensorType::Gradient, "Gradient"},
-                    {TensorType::Momentum, "Momentum"},
-                    {TensorType::Other, "Other"},
-                    {TensorType::Stream, "Stream"},
-                    {TensorType::Unknown, "Unknown"},
-                    {TensorType::Variable, "Variable"}};
-
-  if (tensor_types_m.size() != static_cast<uint64_t>(TensorType::N)) {
-    throw error("missing element in TensorTypes");
-  }
-}
-
-std::string TensorTypes::asString(TensorType type) {
-  return tensor_types_m[type];
-}
-
 // neuralnet streams and prints are "impolite" (will not add new line at end)
 
 void Op::append(std::stringstream &ss) {
@@ -112,7 +91,7 @@ void TensorIndexMap::append(std::stringstream &ss) {
       ss << ' ' << ' ';
     }
     ss << '@' << index_tensor.first << ':' << index_tensor.second->id << ':'
-       << index_tensor.second->tensor_type;
+       << index_tensor.second->tensor_type();
     ++index;
   }
   ss << ')';
@@ -130,20 +109,15 @@ VectorAndSet::VectorAndSet(std::vector<std::string> &&vals) : v_vals(vals) {
   }
 }
 
-
-void PreRunKnowledge::addInfo(TensorId id, const TensorInfo & info){
+void PreRunKnowledge::addInfo(TensorId id, const TensorInfo &info) {
   infos[id] = info;
 }
 
-const TensorInfo & PreRunKnowledge::getInfo(TensorId id){
-  return infos[id];
-}
+const TensorInfo &PreRunKnowledge::getInfo(TensorId id) { return infos[id]; }
 
-
-bool PreRunKnowledge::hasInfo(TensorId id){
+bool PreRunKnowledge::hasInfo(TensorId id) {
   return infos.find(id) != infos.end();
 }
-
 
 Graph::Graph(onnx::ModelProto &&inMod,
              PreRunKnowledge &&perk,
@@ -178,15 +152,17 @@ Graph::Graph(onnx::ModelProto &&inMod,
   }
 
   // this checks that there are no contradictions in the user input, NOT
-  // in the implementation of neuralnet. 
+  // in the implementation of neuralnet.
   validate();
 
   splitConvBias();
 
   removePadSizeZero();
 
-
+  inferTensorInfos();
 }
+
+void Graph::inferTensorInfos() { throw error("Todo : infer tensor infos"); }
 
 // note : don't try too hard if tensors are logged,
 // user is probably not concerned about performance
@@ -379,7 +355,6 @@ OpTypes::OpTypes() {
                {"LogSoftmax", OpType::LOGSOFTMAX},
                {"Pad", OpType::PAD},
                {"Relu", OpType::RELU}};
-
 }
 
 OpType OpTypes::get(std::string op_type) {

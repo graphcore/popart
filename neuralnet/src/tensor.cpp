@@ -29,8 +29,8 @@ void Consumers::extend(const std::map<const Op *, int> &m) {
 }
 
 Tensor::Tensor(TensorId n, TensorType t, Graph *g)
-    : id(n), pgraph(g), type(t), tensor_type(pgraph->tensorTypes.asString(t)),
-      producer(nullptr) {}
+    : id(n), pgraph(g), producer(nullptr),
+      tensorTypeInfo(&getTensorTypeInfoMap().at(t)) {}
 
 void Consumers::decrement(const Op *op) {
   auto found = consumers_m.find(op);
@@ -50,6 +50,40 @@ void Consumers::increment(const Op *op) {
   } else {
     ++(found->second);
   }
+}
+
+const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap() {
+  static std::map<TensorType, TensorTypeInfo> M = initTensorTypeInfoMap();
+  return M;
+}
+
+TensorType Tensor::tensorType() const { return tensorTypeInfo->type(); }
+
+const std::string &Tensor::tensor_type() const {
+  return tensorTypeInfo->type_s();
+}
+
+TensorType TensorTypeInfo::type() const { return tensorType_; }
+
+const std::string &TensorTypeInfo::type_s() const { return tensor_type_; }
+
+TensorTypeInfo::TensorTypeInfo(TensorType t_, std::string ts_)
+    : tensorType_(t_), tensor_type_(ts_) {}
+
+std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
+  std::map<TensorType, TensorTypeInfo> tensor_types_m = {
+      {TensorType::Activation, {TensorType::Activation, "Activation"}},
+      {TensorType::Const, {TensorType::Const, "Const"}},
+      {TensorType::Gradient, {TensorType::Gradient, "Gradient"}},
+      {TensorType::Momentum, {TensorType::Momentum, "Momentum"}},
+      {TensorType::Other, {TensorType::Other, "Other"}},
+      {TensorType::Stream, {TensorType::Stream, "Stream"}},
+      {TensorType::Unknown, {TensorType::Unknown, "Unknown"}},
+      {TensorType::Variable, {TensorType::Variable, "Variable"}}};
+  if (tensor_types_m.size() != static_cast<uint64_t>(TensorType::N)) {
+    throw error("missing element in TensorTypes");
+  }
+  return tensor_types_m;
 }
 
 } // namespace neuralnet

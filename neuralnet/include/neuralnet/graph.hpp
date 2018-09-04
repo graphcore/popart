@@ -21,24 +21,22 @@ class Recorder {};
 // momentum, learning rates, etc.
 class Schedule {};
 
-
-// What is known about the graph before it is run. 
-// This knowledge can be compiled into the Graph, 
+// What is known about the graph before it is run.
+// This knowledge can be compiled into the Graph,
 // and for certain backends is even required, for example
 // Graphcore IPU requires all Stream Tensor shapes.
 class PreRunKnowledge {
-  public:
+public:
   PreRunKnowledge() = default;
   void addInfo(TensorId, const TensorInfo &);
-  const TensorInfo & getInfo(TensorId);
+  const TensorInfo &getInfo(TensorId);
   bool hasInfo(TensorId);
 
-  private:
+private:
   std::map<TensorId, TensorInfo> infos;
   // we will also have a map of actual tensors, these
-  // can be used sometimes to compile the graph (slice 
+  // can be used sometimes to compile the graph (slice
   // indices for example)
-
 };
 
 enum class OpType {
@@ -137,14 +135,15 @@ private:
 };
 
 enum class TensorType;
-class TensorTypes {
-public:
-  TensorTypes();
-  std::string asString(TensorType);
 
-private:
-  std::map<TensorType, std::string> tensor_types_m;
-};
+// class TensorTypes {
+// public:
+//   TensorTypes();
+//   std::string asString(TensorType);
+//
+// private:
+//   std::map<TensorType, std::string> tensor_types_m;
+// };
 
 class OpTypes {
 public:
@@ -184,7 +183,8 @@ public:
   // Store the Tensors of type Const
   VectorAndSet constTensorIds;
   OpTypes opTypes;
-  TensorTypes tensorTypes;
+  // Activation, Gradient, Variable etc
+  // TensorTypes tensorTypes;
   ~Graph();
   // run logic checks on the graph
   void validate();
@@ -200,6 +200,7 @@ public:
   void removeNullOp(TensorId name, OpId opId);
   // return pointers to Ops of a certain type
   std::vector<Op *> opsOfType(OpType);
+  void inferTensorInfos();
 
 private:
   // create an Op from Node (if not Constant Node), wire it to
