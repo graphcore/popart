@@ -36,7 +36,7 @@ else()
                 -Wno-padded
                 -Wno-weak-vtables
                 # these require very clean coding with clean deps:
-                #  -Wno-sign-conversion
+                -Wno-sign-conversion
                 #  -Wno-shorten-64-to-32
                 # I like having a default in switch statement even 
                 # if all cases are covered. This is because if 
