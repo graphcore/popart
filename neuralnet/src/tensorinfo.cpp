@@ -7,18 +7,25 @@ namespace neuralnet {
 TensorInfo::TensorInfo(DataType t, const std::vector<int64_t> &s)
     : dataTypeInfo(&getDataTypeInfoMap().at(t)), shape_v(s) {}
 
-TensorInfo::TensorInfo(const onnx::TensorProto &t)
-    : dataTypeInfo(&getDataTypeInfoMap().at(t.data_type())) {
+TensorInfo::TensorInfo(const onnx::TensorProto &t) { set(t); }
+
+void TensorInfo::set(const onnx::TensorProto & t){
+  dataTypeInfo = &getDataTypeInfoMap().at(t.data_type());
   shape_v.reserve(static_cast<uint64_t>(t.dims_size()));
   for (auto &v : t.dims()) {
     shape_v.push_back(v);
   }
 }
 
+
 void TensorInfo::append(std::stringstream &ss) const {
   ss << "shape: ";
   appendSequence(ss, shape_v);
   ss << " type: " << dataTypeInfo->name();
+}
+
+bool TensorInfo::isSet() const{
+  return dataTypeInfo != nullptr;
 }
 
 const std::string &TensorInfo::data_type() const {

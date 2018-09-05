@@ -25,6 +25,8 @@ using onnxAttPtr = decltype(&onnx::NodeProto().attribute(0));
 
 using OnnxTensors = std::map<TensorId, onnx::TensorProto>;
 
+using OnnxTensorPtrs = std::map<TensorId, const onnx::TensorProto *>;
+
 using DataType = decltype(onnx::TensorProto().data_type());
 
 using TP = onnx::TensorProto;

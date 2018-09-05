@@ -34,6 +34,7 @@ class TensorInfo {
 public:
   TensorInfo(DataType, const std::vector<int64_t> &);
   TensorInfo(const onnx::TensorProto &);
+  void set(const onnx::TensorProto &);
   TensorInfo() = default;
   void set(DataType, const std::vector<int64_t> &);
   const std::vector<int64_t> &shape() const;
@@ -43,10 +44,11 @@ public:
   int64_t dim(int i) const;
   DataType dataType() const;
   const std::string & data_type() const;
-  void append(std::stringstream &ss) const;
+  void append(std::stringstream &) const;
+  bool isSet() const;
 
 private:
-  const DataTypeInfo *dataTypeInfo;
+  const DataTypeInfo *dataTypeInfo = nullptr;
   std::vector<int64_t> shape_v;
 };
 

@@ -4,7 +4,7 @@
 
 namespace neuralnet {
 
-int Consumers::n(const Op *op) const {
+int Consumers::n(Op *op) const {
   auto found = consumers_m.find(op);
   if (found == consumers_m.end()) {
     return 0;
@@ -13,11 +13,11 @@ int Consumers::n(const Op *op) const {
   }
 }
 
-const std::map<const Op *, int> &Consumers::getMap() const {
+const std::map<Op *, int> &Consumers::getMap() const {
   return consumers_m;
 }
 
-void Consumers::extend(const std::map<const Op *, int> &m) {
+void Consumers::extend(const std::map<Op *, int> &m) {
   for (auto &op_count : m) {
     auto found = consumers_m.find(op_count.first);
     if (found != consumers_m.end()) {
@@ -32,7 +32,7 @@ Tensor::Tensor(TensorId n, TensorType t, Graph *g)
     : id(n), pgraph(g), producer(nullptr),
       tensorTypeInfo(&getTensorTypeInfoMap().at(t)) {}
 
-void Consumers::decrement(const Op *op) {
+void Consumers::decrement(Op *op) {
   auto found = consumers_m.find(op);
   if (found == consumers_m.end()) {
     throw error("cannot decrement non-existant consumer");
@@ -43,13 +43,26 @@ void Consumers::decrement(const Op *op) {
   }
 }
 
-void Consumers::increment(const Op *op) {
+void Consumers::increment(Op *op) {
   auto found = consumers_m.find(op);
   if (found == consumers_m.end()) {
     consumers_m[op] = 1;
   } else {
     ++(found->second);
   }
+}
+
+std::vector<Op *> Consumers::getOps(){
+  std::vector<Op*> ops;
+  ops.reserve(consumers_m.size());
+  for (auto & x : consumers_m){
+    ops.push_back(x.first);
+  }
+  return ops;
+}
+
+const std::map<Tensor *, std::vector<int>> &TensorIndexMap::indicesMap() const {
+  return indices_map;
 }
 
 const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap() {

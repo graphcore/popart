@@ -28,20 +28,24 @@ class Consumers {
 public:
   // The number of times an Op consumes a Tensor,
   // returns a non-negative integer
-  int n(const Op *) const;
+  int n(Op *) const;
   // increment the number of times an Op consumes
-  void increment(const Op *);
+  void increment(Op *);
   // decrement the number of times an Op consumes
-  void decrement(const Op *);
+  void decrement(Op *);
   // increment the current counts with those in this map
-  void extend(const std::map<const Op *, int> &);
+  void extend(const std::map<Op *, int> &);
   // return the total number of consumptions, taking
   // into account Ops which consume multiple times
   int getTotal() const;
-  const std::map<const Op *, int> &getMap() const;
+  // the number of times each consumer uses the Tensor
+  const std::map<Op *, int> &getMap() const;
+  // the pointers to the consumers, no duplication for
+  // Ops which consume multiple times
+  std::vector<Op *> getOps();
 
 private:
-  std::map<const Op *, int> consumers_m;
+  std::map<Op *, int> consumers_m;
 };
 
 class TensorTypeInfo {
@@ -71,10 +75,8 @@ public:
   const std::string &tensor_type() const;
   Consumers consumers;
   Op *producer;
-  // shape and data type:
+  // shape and data type. Not to be used be inferShape of pgraph has run
   TensorInfo info;
-  void append(std::stringstream &ss);
-  const std::vector<int64_t> &shape();
 
 private:
   const TensorTypeInfo *tensorTypeInfo;

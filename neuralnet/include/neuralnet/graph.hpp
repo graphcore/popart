@@ -58,9 +58,11 @@ public:
   // must already be a Tensor at the index
   void reset(int, Tensor *);
   Tensor *tensor(int);
-  const std::vector<int> &indices(Tensor *);
-  void append(std::stringstream &);
-
+  const std::vector<int> &indices(Tensor *) const;
+  void append(std::stringstream &, std::string prefix) const;
+  // the number or indices (keys of tensor_map)
+  int n() const;
+  const std::map<Tensor *, std::vector<int>> & indicesMap() const;
 private:
   std::map<int, Tensor *> tensor_map;
   std::map<Tensor *, std::vector<int>> indices_map;
@@ -69,9 +71,9 @@ private:
 class Attributes {
 public:
   Attributes(decltype(onnx::NodeProto().attribute()) &);
-  const std::vector<std::string> &getNames();
-  onnxAttPtr at(std::string name);
-  void append(std::stringstream &ss);
+  const std::vector<std::string> &getNames() const;
+  onnxAttPtr at(std::string name) const;
+  void append(std::stringstream &ss) const;
 
 private:
   std::map<std::string, onnxAttPtr> att_map;
@@ -90,7 +92,7 @@ public:
   // and wire it to this Ops output
   void createAndConnectOutTensor(OutIndex, TensorId);
 
-  void append(std::stringstream &ss);
+  void append(std::stringstream &ss) const;
   virtual ~Op();
 
   // The consumed Tensors
@@ -114,36 +116,18 @@ public:
   Graph *pgraph;
 
   // was this Op created from an onnx node?
-  bool fromNode();
-  const Node *getNode();
+  bool fromNode() const;
+  const Node *getNode() const;
+
+  virtual void setOutputInfos() const;
 
 private:
-  void appendIO(std::stringstream &);
-  virtual void appendMore(std::stringstream &) {}
+  void appendIO(std::stringstream &) const;
+  virtual void appendMore(std::stringstream &)  const {}
   const Node *ptrNode;
 };
 
-class VectorAndSet {
-public:
-  VectorAndSet(std::vector<std::string> &&vals);
-  bool contains(std::string);
-  const std::vector<std::string> &v();
-
-private:
-  std::vector<std::string> v_vals;
-  std::set<std::string> m_vals;
-};
-
 enum class TensorType;
-
-// class TensorTypes {
-// public:
-//   TensorTypes();
-//   std::string asString(TensorType);
-//
-// private:
-//   std::map<TensorType, std::string> tensor_types_m;
-// };
 
 class OpTypes {
 public:
@@ -152,6 +136,44 @@ public:
 
 private:
   std::unordered_map<std::string, OpType> opTypeMap;
+};
+
+class VectorAndSet {
+public:
+  VectorAndSet(std::vector<std::string> &&vals);
+  bool contains(std::string) const;
+  const std::vector<std::string> &v() const;
+  ~VectorAndSet();
+
+private:
+  std::vector<std::string> v_vals;
+  std::set<std::string> m_vals;
+};
+
+class Tensors {
+public:
+  Tensors(std::vector<std::string> &&vals1, Graph *pg);
+  ~Tensors();
+  // Store the Tensors of type Const
+  const VectorAndSet constIds;
+  Tensor *get(TensorId);
+  void remove(TensorId);
+  bool contains(TensorId) const;
+  // create a Tensor, either of type Const or Variable
+  void addInit(TensorId, const onnx::TensorProto *);
+  // create a Tensor of type Stream
+  void addStream(TensorId);
+  // create a Tensor of type Activation
+  void addActivation(TensorId);
+  std::vector<TensorId> getInitIds() const;
+  std::vector<TensorId> getIds(TensorType) const;
+  std::vector<TensorId> getNoProducerIds() const;
+  const onnx::TensorProto * getOnnxInit(TensorId) const;
+
+private:
+  std::map<TensorId, std::unique_ptr<Tensor>> M;
+  OnnxTensorPtrs init;
+  Graph *pgraph;
 };
 
 class Graph {
@@ -169,19 +191,11 @@ public:
   onnx::ModelProto step(int n);
   // if the tensor is returned to user (Recorder).
   bool isLogged(TensorId);
-  // create a Tensor, either of type Const or Variable
-  void addInitTensor(TensorId);
-  // create a Tensor of type Stream
-  void addStreamTensor(TensorId);
-  // create a Tensor of type Activation
-  void addActivationTensor(TensorId);
-  Tensor *getTensor(TensorId);
   void append(std::stringstream &);
   PreRunKnowledge preRunKnowledge;
   Recorder recorder;
   Schedule schedule;
-  // Store the Tensors of type Const
-  VectorAndSet constTensorIds;
+  Tensors tensors;
   OpTypes opTypes;
   // Activation, Gradient, Variable etc
   // TensorTypes tensorTypes;
@@ -201,19 +215,18 @@ public:
   // return pointers to Ops of a certain type
   std::vector<Op *> opsOfType(OpType);
   void inferTensorInfos();
+  // this does not take into priority, simple topological sort
+  std::vector<Op *> getTopologicallySorted();
 
 private:
   // create an Op from Node (if not Constant Node), wire it to
   // correct input Tensors and create the activation output Tensors
   void growFromNode(const Node &);
+  const onnx::ModelProto onnxModel;
   // create an Op from a Node
   std::unique_ptr<Op> addOp(OpId, const Node &);
-
-  const onnx::ModelProto onnxModel;
-  std::map<TensorId, std::unique_ptr<Tensor>> tensors;
   std::map<OpId, std::unique_ptr<Op>> ops;
   OpId nOpsGenerated{0};
-  OnnxTensors init;
 };
 
 } // namespace neuralnet
