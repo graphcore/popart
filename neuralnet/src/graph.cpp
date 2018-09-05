@@ -19,7 +19,7 @@
 namespace neuralnet {
 
 
-void Op::setOutputInfos() const{
+void Op::inferInfo() {
   throw error("No setOutputInfos for " + op_type);
 }
 
@@ -278,13 +278,15 @@ void Graph::inferTensorInfos() {
 
   // this is wrong: TODO topological sort
   for (Op* op : getTopologicallySorted()){
-    op->setOutputInfos();
+    op->inferInfo();
   }
 }
 
 const onnx::TensorProto *Tensors::getOnnxInit(TensorId id) const {
   return init.at(id);
 }
+
+
 
 // note : don't try too hard if tensors are logged,
 // user is probably not concerned about performance
@@ -387,6 +389,36 @@ void Tensors::addStream(TensorId tenId) {
 const std::vector<std::string> &Attributes::getNames() const { return names; }
 
 onnxAttPtr Attributes::at(std::string name) const { return att_map.at(name); }
+
+
+template <>
+void Attributes::setIfPresent(int64_t & v, std::string s){
+  auto found = att_map.find(s);
+  if (found != att_map.end()){
+    v = found->second->i();
+  }
+}
+
+
+template <>
+void Attributes::setIfPresent(std::string & v, std::string s){
+  auto found = att_map.find(s);
+  if (found != att_map.end()){
+    v = found->second->s();
+  }
+}
+
+template <>
+void Attributes::setIfPresent(std::vector<int64_t> & vs, std::string s){
+  auto found = att_map.find(s);
+  if (found != att_map.end()){
+    vs.resize(0);
+    vs.reserve(found->second->ints_size());
+    for (auto & v : found->second->ints()){
+      vs.push_back(v);
+    }
+  }
+}
 
 Attributes::Attributes(decltype(onnx::NodeProto().attribute()) &attributes) {
   for (auto &attribute : attributes) {

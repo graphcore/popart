@@ -93,7 +93,7 @@ std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
       {TensorType::Stream, {TensorType::Stream, "Stream"}},
       {TensorType::Unknown, {TensorType::Unknown, "Unknown"}},
       {TensorType::Variable, {TensorType::Variable, "Variable"}}};
-  if (tensor_types_m.size() != static_cast<uint64_t>(TensorType::N)) {
+  if (tensor_types_m.size() != static_cast<int64_t>(TensorType::N)) {
     throw error("missing element in TensorTypes");
   }
   return tensor_types_m;

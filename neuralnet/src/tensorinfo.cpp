@@ -11,7 +11,7 @@ TensorInfo::TensorInfo(const onnx::TensorProto &t) { set(t); }
 
 void TensorInfo::set(const onnx::TensorProto & t){
   dataTypeInfo = &getDataTypeInfoMap().at(t.data_type());
-  shape_v.reserve(static_cast<uint64_t>(t.dims_size()));
+  shape_v.reserve(t.dims_size());
   for (auto &v : t.dims()) {
     shape_v.push_back(v);
   }
@@ -45,7 +45,7 @@ int64_t TensorInfo::nbytes() const {
   return nelms() * static_cast<int64_t>(dataTypeInfo->nbytes());
 }
 
-int64_t TensorInfo::dim(int i) const { return shape_v[static_cast<uint>(i)]; }
+int64_t TensorInfo::dim(int i) const { return shape_v[i]; }
 
 DataType TensorInfo::dataType() const { return dataTypeInfo->type(); }
 

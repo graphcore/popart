@@ -74,11 +74,23 @@ public:
   const std::vector<std::string> &getNames() const;
   onnxAttPtr at(std::string name) const;
   void append(std::stringstream &ss) const;
+  template <typename T>
+  void setIfPresent(T &, std::string s);
+
 
 private:
   std::map<std::string, onnxAttPtr> att_map;
   std::vector<std::string> names;
 };
+
+template <>
+void Attributes::setIfPresent(int64_t &, std::string s);
+
+template <>
+void Attributes::setIfPresent(std::vector<int64_t> &, std::string s);
+
+template <>
+void Attributes::setIfPresent(std::string &, std::string s);
 
 class Op {
 public:
@@ -119,7 +131,9 @@ public:
   bool fromNode() const;
   const Node *getNode() const;
 
-  virtual void setOutputInfos() const;
+  // set shape and type parameters and 
+  // MUST set output TensorInfos
+  virtual void inferInfo();
 
 private:
   void appendIO(std::stringstream &) const;
