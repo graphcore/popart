@@ -1,11 +1,8 @@
 #include <neuralnet/error.hpp>
-#include <neuralnet/tensor.hpp>
 #include <neuralnet/nll.hpp>
-
-
+#include <neuralnet/tensor.hpp>
 
 namespace neuralnet {
-
 
 onnx::OpSchema createNegLogLikeOpSchema() {
   auto schema = onnx::OpSchema();
@@ -37,11 +34,10 @@ std::string NegLogLikeLoss::op_type() const {
   return getNegLogLikeOpSchema().Name();
 }
 
-const onnx::OpSchema & getNegLogLikeOpSchema(){
+const onnx::OpSchema &getNegLogLikeOpSchema() {
   const static onnx::OpSchema schema = createNegLogLikeOpSchema();
   return schema;
 }
-
 
 NegLogLikeLoss::NegLogLikeLoss(const onnx::ModelProto &m, TensorId id1)
     : NegLogLikeLoss(getUniqueOutId(m), id1) {}
@@ -52,7 +48,7 @@ std::vector<TensorId> NegLogLikeLoss::getStreamTensorNames() const {
 
 NegLogLikeLoss::NegLogLikeLoss(TensorId id0, TensorId id1) : X(id0), Y(id1) {}
 
-NegLogLikeOp::NegLogLikeOp(const OpConstructorBundle & bundle): Op(bundle) {}
+NegLogLikeOp::NegLogLikeOp(const OpConstructorBundle &bundle) : Op(bundle) {}
 
 void NegLogLikeOp::setup() {
   // dX has same info as X
@@ -90,14 +86,14 @@ void NegLogLikeLoss::setInOut(std::vector<TensorId> &input,
     throw error("NegLogLike Schema does not have output 1 as Loss");
   }
 
-  input = {X, Y};
-  output = {getGradId(X, getOpId(), /*index=*/ 0), getLossId()};
+  input  = {X, Y};
+  output = {getGradId(X, getOpId(), /*index=*/0), getLossId()};
 }
 
 std::unique_ptr<Op> NegLogLikeLoss::getOp() const {
   OpConstructorBundle b(
       getOpId(), op_type(), getGraph(), {}, getNeuralNetDomain());
-  std::unique_ptr<Op> nllOp (new NegLogLikeOp(b));
+  std::unique_ptr<Op> nllOp(new NegLogLikeOp(b));
 
   return nllOp;
 }

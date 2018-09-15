@@ -10,7 +10,7 @@ namespace neuralnet {
 enum class TensorType {
   Activation = 0, // this includes Gradient tensors
   Const,
-//  Gradient,
+  //  Gradient,
   Momentum,
   Other,
   Stream,
@@ -77,7 +77,7 @@ public:
   // shape and data type. Not to be used be inferShape of pgraph has run
   TensorInfo info;
 
-  Op* getProducer();
+  Op *getProducer();
   void setProducer(Op *);
   bool hasProducer() const;
 

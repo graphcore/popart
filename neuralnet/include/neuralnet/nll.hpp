@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_NEGLOGLIKELIHOOD_AKA_NLL_HPP
 #define GUARD_NEURALNET_NEGLOGLIKELIHOOD_AKA_NLL_HPP
 
-#include  <neuralnet/graph.hpp>
+#include <neuralnet/graph.hpp>
 
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"
@@ -12,7 +12,7 @@
 namespace neuralnet {
 
 onnx::OpSchema createNegLogLikeOpSchema();
-const onnx::OpSchema & getNegLogLikeOpSchema();
+const onnx::OpSchema &getNegLogLikeOpSchema();
 
 class NegLogLikeOp : public Op {
 public:
@@ -20,10 +20,9 @@ public:
   virtual void setup() override final;
 };
 
-
 class NegLogLikeLoss : public Loss {
 public:
-  // takes in of a tensor to apply NLL to 
+  // takes in of a tensor to apply NLL to
   // (the pre-soft-max tensor)
   // and the label Tensor
   NegLogLikeLoss(TensorId X_, TensorId Y_);
@@ -35,7 +34,7 @@ public:
   virtual TensorId getLossId() const override final;
   virtual std::string op_type() const override final;
 
-  private:
+private:
   // The tensor on which the loss is applied,
   TensorId X;
   // The correct label,
@@ -43,7 +42,6 @@ public:
   virtual void setInOut(std::vector<TensorId> &,
                         std::vector<TensorId> &) const override final;
 };
-
 
 } // namespace neuralnet
 

@@ -6,27 +6,27 @@
 #include <onnx/onnx.pb.h>
 #pragma clang diagnostic pop // stop ignoring warnings
 
-#include <string>
 #include <ostream>
+#include <string>
 
 namespace neuralnet {
 
-//class TensorId{
+// class TensorId{
 //
-//public:
+// public:
 //  TensorId(std::string x):name(x) {}
 //  const std::string & str() const { return name;}
 //
-//private:
+// private:
 //    std::string name;
 //
 //};
 //
-//bool operator<(const TensorId & a, const TensorId & b){
+// bool operator<(const TensorId & a, const TensorId & b){
 //  return a.str() < b.str();
 //}
 //
-//std::ostream &operator<<(std::ostream &os, const TensorId &id) {
+// std::ostream &operator<<(std::ostream &os, const TensorId &id) {
 //  os << id.str();
 //  return os;
 //}
@@ -34,7 +34,7 @@ namespace neuralnet {
 
 using TensorId = std::string;
 
-using OpId     = int;
+using OpId = int;
 // using TensorId = std::string;
 
 // The position at which a Tensor is consumed by an Op

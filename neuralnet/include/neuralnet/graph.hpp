@@ -13,11 +13,9 @@
 
 namespace neuralnet {
 
-
 // if model's graph has single output, return its name,
 // otherwise throw an error
 TensorId getUniqueOutId(const onnx::ModelProto &m);
-
 
 class Tensor;
 class Graph;
@@ -32,27 +30,26 @@ std::string getNeuralNetDomain();
 
 class Loss {
 public:
-  Loss() = default;
+  Loss()          = default;
   virtual ~Loss() = default;
 
   // return the Op for this Loss, should only be
   // called after set has been called
   virtual std::unique_ptr<Op> getOp() const = 0;
-  // set opId and pgraph. This can't be done at construction 
+  // set opId and pgraph. This can't be done at construction
   // time as they are not know at that point.
-  // Also, set input and output (same format as a Node : "" 
+  // Also, set input and output (same format as a Node : ""
   // represents no in put at an index).
   void set(OpId, Graph *);
 
   // the names of all the tensors which will be streamed into the
   // Op this Loss generates. For NLL, it is the label tensor. For
   // MSE it is the target tensor. There may be several such streamed
-  // tensors. 
+  // tensors.
   virtual std::vector<TensorId> getStreamTensorNames() const = 0;
 
   // The name of the Loss Node
   virtual TensorId getLossId() const = 0;
-
 
   // The op_type string which the Op which this node
   // generates should have.
@@ -61,34 +58,32 @@ public:
   OpId getOpId() const;
   Graph *getGraph() const;
 
-  //const std::vector<TensorId> & getInput() const;
-  const TensorId & input(int i) const;
+  // const std::vector<TensorId> & getInput() const;
+  const TensorId &input(int i) const;
   int input_size() const;
-  //const std::vector<TensorId> & getOutput() const;
-  const TensorId & output(int i) const;
+  // const std::vector<TensorId> & getOutput() const;
+  const TensorId &output(int i) const;
   int output_size() const;
 
 private:
   // The OpId of the Op this Loss will generate
-  OpId opId {-1};
+  OpId opId{-1};
   // The Graph ofo the Op that this loss will generate
-  Graph * pgraph {nullptr};
+  Graph *pgraph{nullptr};
   std::vector<TensorId> input_;
   std::vector<TensorId> output_;
   virtual void setInOut(std::vector<TensorId> &,
                         std::vector<TensorId> &) const = 0;
 };
 
-// where tensor tenId is consumed by op opId at index index, 
+// where tensor tenId is consumed by op opId at index index,
 // what is the name of the gradient along this edge?
 TensorId getGradId(TensorId tenId, OpId opId, int index);
-
 
 // the name of the tensor of the total gradient (loss and regularizers)
 TensorId getGradId(TensorId tenId);
 
-
-// needs to be implemented. will manage things like 
+// needs to be implemented. will manage things like
 // weight decay loss etc.
 class Regularizer {};
 
@@ -106,10 +101,9 @@ public:
   void addInfo(TensorId, const TensorInfo &);
   const TensorInfo &getInfo(TensorId) const;
   bool hasInfo(TensorId) const;
-  const std::map<TensorId, TensorInfo> & getInfos() const;
-  
+  const std::map<TensorId, TensorInfo> &getInfos() const;
 
-  // return all unique TensorIds of tensors with any 
+  // return all unique TensorIds of tensors with any
   // information stored in this object, be it TensorInfo
   // or actual tensor.
   std::vector<TensorId> getAllTensorIds() const;
@@ -130,7 +124,6 @@ enum class OpType {
   PAD,
   RELU,
 };
-
 
 class TensorIndexMap {
 public:
@@ -172,19 +165,18 @@ void Attributes::setIfPresent(std::vector<int64_t> &, std::string s) const;
 
 template <> void Attributes::setIfPresent(std::string &, std::string s) const;
 
-class OpConstructorBundle{
-  public:
-    OpConstructorBundle(OpId,
-                        std::string op_type,
-                        Graph *,
-                        Attributes,
-                        std::string domain);
-    OpId id;
-    std::string op_type;
-    Graph * pgraph;
-    Attributes atts;
-    std::string domain;
-
+class OpConstructorBundle {
+public:
+  OpConstructorBundle(OpId,
+                      std::string op_type,
+                      Graph *,
+                      Attributes,
+                      std::string domain);
+  OpId id;
+  std::string op_type;
+  Graph *pgraph;
+  Attributes atts;
+  std::string domain;
 };
 
 class Op {
@@ -222,7 +214,7 @@ public:
   const std::string &op_type() const;
   const OpType opType;
 
-  const std::string & domain();
+  const std::string &domain();
   Graph *pgraph;
 
   // attributes from the Node, if it was created from one
@@ -304,18 +296,15 @@ private:
 
 class Graph {
 public:
-
-
-
-Graph(onnx::ModelProto &&,
-             PreRunKnowledge &&,
-             Recorder &&,
-             std::unique_ptr<Loss> &&,
-             std::vector<std::unique_ptr<Regularizer>> &&,
-             // Schedule needed, if momentum the graph is different
-             Schedule &&sched,
-             // Weights tensors which are not to be updated
-             std::vector<std::string> &&cTens);
+  Graph(onnx::ModelProto &&,
+        PreRunKnowledge &&,
+        Recorder &&,
+        std::unique_ptr<Loss> &&,
+        std::vector<std::unique_ptr<Regularizer>> &&,
+        // Schedule needed, if momentum the graph is different
+        Schedule &&sched,
+        // Weights tensors which are not to be updated
+        std::vector<std::string> &&cTens);
 
   // take training steps
   onnx::ModelProto step(int n);
@@ -351,46 +340,41 @@ Graph(onnx::ModelProto &&,
   void constructBackwards();
   OpId getAndIncrOpsCounter();
 
-
 private:
-
-  // confirm that the names of the Const tensors 
+  // confirm that the names of the Const tensors
   // from the user (constTensors) are in the onnx Model
-  // Can be run after the forward pass of Graph has been 
+  // Can be run after the forward pass of Graph has been
   // constructed
   void confirmConstIds() const;
 
-  // gradients are named automatically. To prevent them 
-  // getting names already taken by non-gradiet tensors, 
+  // gradients are named automatically. To prevent them
+  // getting names already taken by non-gradiet tensors,
   // we check that a reserved pattern is not present.
   void confirmNonGradId(TensorId tenId) const;
 
-  // cofirm that no tensors in input(), nodes() or preRunKnowlede() 
+  // cofirm that no tensors in input(), nodes() or preRunKnowlede()
   // use reserved naming conventions. A note on design: The decision
   // to NOT add an independent dimension to TensorId, used exclusively
   // by automatically named tensors, was that when printing TensorIds
-  // there would still be the possibility of conflict (i.e. projection 
-  // to single string might result in conflict). 
+  // there would still be the possibility of conflict (i.e. projection
+  // to single string might result in conflict).
   void confirmNoGradIds() const;
 
   // create an Op from Node (if not Constant Node), wire it to
   // correct input Tensors and create the activation output Tensors
-  Op * growFromNode(const Node &);
+  Op *growFromNode(const Node &);
 
-  // create an Op from loss, and wire it to the correct input Tensors, 
+  // create an Op from loss, and wire it to the correct input Tensors,
   // and create the activate output Tensor(s)
-  Op * growFromLoss();
+  Op *growFromLoss();
 
-
-  // called from growFromNode and growFromLoss. 
+  // called from growFromNode and growFromLoss.
   // T requires functions input(int) and input_size()
-  template <typename T>
-  void connectInputs(const T &, OpId opId);
+  template <typename T> void connectInputs(const T &, OpId opId);
   // T requires functions output(int) and output_size()
-  template <typename T>
-  void connectOutputs(const T &, OpId opId);
+  template <typename T> void connectOutputs(const T &, OpId opId);
 
-  // sets Node output and then calls growFromNode. 
+  // sets Node output and then calls growFromNode.
   // the reason output is set here is that is might
   // Op *setNodeOutNamesAndGrowFrom(Node &node);
 

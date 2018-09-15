@@ -23,7 +23,7 @@ private:
   std::vector<int64_t> getOutShape() const;
   virtual int64_t getNOutChans() const = 0;
   // set the public vector "spatial"
-  virtual void setSpatial()            = 0;
+  virtual void setSpatial() = 0;
   // anything else that a sub-class needs to do should go here:
   virtual void setup0() = 0;
 };

@@ -41,17 +41,14 @@ void Consumers::decrement(Op *op) {
   }
 }
 
-Op* Tensor::getProducer(){
-  if (!hasProducer()){
+Op *Tensor::getProducer() {
+  if (!hasProducer()) {
     throw error("No producer for tensor " + id + " to return");
   }
   return producer;
 }
 
-bool Tensor::hasProducer() const{
-  return producer != nullptr;
-}
-
+bool Tensor::hasProducer() const { return producer != nullptr; }
 
 void Consumers::increment(Op *op) {
   auto found = consumers_m.find(op);

@@ -1,10 +1,12 @@
 #include <neuralnet/error.hpp>
-#include <neuralnet/tensor.hpp>
 #include <neuralnet/receptive.hpp>
+#include <neuralnet/tensor.hpp>
 
 namespace neuralnet {
 
-HasReceptiveFieldOp::HasReceptiveFieldOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph)
+HasReceptiveFieldOp::HasReceptiveFieldOp(OpId opId,
+                                         const onnx::NodeProto &node,
+                                         Graph *pgraph)
     : Op(opId, node, pgraph) {}
 
 void HasReceptiveFieldOp::setup() {
