@@ -1,0 +1,42 @@
+On dags and topological sort
+----------------------------
+
+How to perform the topological sort so as to minimise the max liveness?
+
+Ideas so far:
+We have our original computational graph g, from which we can construct
+the meta-graph G. Example, let g be the diamond:
+a->b
+a->c
+b,c->d
+
+Then G is
+{a} -> {a,b}
+{a} -> {a,c}
+{a,b} -> {a,b,c}
+{a,c} -> {a,b,c}
+{a,b,c} -> {a,b,c,d}.
+
+Once we have G, simple dynamic programming will provide us with the path
+with minimum maximum value. 
+
+One concern is that G might be very large, exponential in the size of g.
+So while G is being constructed, certain paths should be pruned if they can
+be proven to not be on the min-max path. 
+
+Rule 1)
+If liveness(S) >= liveness(S + {a}), then only one path in G from S, namely
+S -> S + {a} and the only paths from S + {a}
+
+For all S, we keep track of the nodes which can be added, call it N(S)
+
+Rule 2)
+If liveness(S) < liveness(S + {a}), then only consider paths from S + {a} of 
+the form S + {a} -> S + {a,b} where b is in N(S + {a}) but not in N(S). 
+Basically this says, if the liveness increased by adding 'a', and the best
+path lies along S -> S + {a}, then it can't lie along S + {a} -> S + {a,c}
+where c is in N(S) as otherwise bla bla I'm right
+
+
+Might be relevant:
+http://i.stanford.edu/pub/cstr/reports/cs/tn/95/22/CS-TN-95-22.pdf

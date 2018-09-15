@@ -12,12 +12,12 @@
 
 namespace neuralnet {
 
-// FLOAT, FLOAT16, INT8 etc. 
+// FLOAT, FLOAT16, INT8 etc.
 class DataTypeInfo {
 public:
   DataTypeInfo(DataType type__, int nbytes__, std::string name__);
   DataType type() const;
-  // number of bytes of 1 element 
+  // number of bytes of 1 element
   const int &nbytes() const;
   const std::string &name() const;
 
@@ -43,7 +43,7 @@ public:
   int64_t nbytes() const;
   int64_t dim(int i) const;
   DataType dataType() const;
-  const std::string & data_type() const;
+  const std::string &data_type() const;
   void append(std::stringstream &) const;
   bool isSet() const;
 

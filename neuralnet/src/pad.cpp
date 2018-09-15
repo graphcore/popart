@@ -8,6 +8,6 @@ namespace neuralnet {
 //           std::all_of(std::begin(atts.at("pads")->ints()),
 //                       std::end(atts.at("pads")->ints()),
 //                       [](int64_t pad) { return pad == 0; })) {
-//    std::cout << "zero pad size, skipping" << std::endl;
+//     // //std::cout << "zero pad size, skipping" << std::endl;
 //  }
 }

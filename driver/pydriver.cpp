@@ -1,6 +1,7 @@
 #include <neuralnet/error.hpp>
 #include <neuralnet/filereader.hpp>
 #include <neuralnet/graph.hpp>
+#include <neuralnet/nll.hpp>
 #include <iostream>
 #include <sstream>
 
@@ -32,22 +33,30 @@ int main(int argc, char **argv) {
   std::cout << "modelPath = " << modelPath << std::endl;
   auto model = neuralnet::io::getModel(modelPath);
   std::cout << "model loaded" << std::endl;
-
   onnx::TensorProto tensor = neuralnet::io::getTensor(dummyTensorPath);
   std::cout << "tensor loaded" << std::endl;
 
-
-  neuralnet::TensorInfo inputInfo(tensor);
   neuralnet::PreRunKnowledge preRunKnowledge{};
-  preRunKnowledge.addInfo(model.graph().input(0).name(), inputInfo);
-  std::stringstream ss;
-  inputInfo.append(ss);
-  std::cout << ss.str() << std::endl;
-  
+  neuralnet::TensorInfo dataInputInfo(tensor);
+  preRunKnowledge.addInfo(model.graph().input(0).name(), dataInputInfo);
+
+
+  // the scalar label
+  int batch_size = dataInputInfo.dim(0);
+  neuralnet::TensorId labelTensorId = "label";
+  neuralnet::TensorInfo labelInputInfo(neuralnet::TP::INT32, {batch_size});
+  preRunKnowledge.addInfo(labelTensorId, labelInputInfo);
+
+  auto loss = std::unique_ptr<neuralnet::Loss>(
+      new neuralnet::NegLogLikeLoss(model, labelTensorId));
+
+  std::vector<std::unique_ptr<neuralnet::Regularizer>> regularizers;
 
   neuralnet::Graph graph(std::move(model),
                          std::move(preRunKnowledge),
                          std::move(recorder),
+                         std::move(loss),
+                         std::move(regularizers),
                          std::move(schedule),
                          std::move(constTensors));
 

@@ -1,31 +1,20 @@
 #ifndef GUARD_NEURALNET_CONV_HPP
 #define GUARD_NEURALNET_CONV_HPP
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
-#include <cblas.h>
-#pragma clang diagnostic pop // stop ignoring warnings
-
-#include <neuralnet/graph.hpp>
+#include <neuralnet/receptive.hpp>
 
 namespace neuralnet {
 
-class ConvOp : public Op {
+class ConvOp : public HasReceptiveFieldOp {
 public:
   ConvOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph);
-  virtual void inferInfo() override final;
+  int64_t nOutChans;
+  int64_t group;
 
 private:
-  Attributes atts; 
-
-  int nSpatialDims;
-  int64_t batchSize, nInChans, nOutChans;
-
-  std::vector<int64_t> dilations;
-  int64_t group;
-  std::vector<int64_t> pads;
-  std::vector<int64_t> strides;
-
+  virtual int64_t getNOutChans() const override final;
+  virtual void setup0() override final;
+  virtual void setSpatial() override final;
 };
 
 } // namespace neuralnet

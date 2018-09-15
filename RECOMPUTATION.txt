@@ -1,0 +1,10 @@
+On recomputation
+----------------
+
+I currently feel like constructing the recomputation graph should take
+as starting point the original training graph. 
+
+Must read:
+https://medium.com/tensorflow/fitting-larger-networks-into-memory-583e3c758ff9
+https://arxiv.org/pdf/1604.06174.pdf
+

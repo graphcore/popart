@@ -1,5 +1,6 @@
 #include <neuralnet/error.hpp>
 #include <neuralnet/tensorinfo.hpp>
+#include <neuralnet/util.hpp>
 #include <numeric>
 
 namespace neuralnet {
@@ -9,7 +10,7 @@ TensorInfo::TensorInfo(DataType t, const std::vector<int64_t> &s)
 
 TensorInfo::TensorInfo(const onnx::TensorProto &t) { set(t); }
 
-void TensorInfo::set(const onnx::TensorProto & t){
+void TensorInfo::set(const onnx::TensorProto &t) {
   dataTypeInfo = &getDataTypeInfoMap().at(t.data_type());
   shape_v.reserve(t.dims_size());
   for (auto &v : t.dims()) {
@@ -17,16 +18,12 @@ void TensorInfo::set(const onnx::TensorProto & t){
   }
 }
 
-
 void TensorInfo::append(std::stringstream &ss) const {
-  ss << "shape: ";
+  ss << padded(dataTypeInfo->name(), 8);
   appendSequence(ss, shape_v);
-  ss << " type: " << dataTypeInfo->name();
 }
 
-bool TensorInfo::isSet() const{
-  return dataTypeInfo != nullptr;
-}
+bool TensorInfo::isSet() const { return dataTypeInfo != nullptr; }
 
 const std::string &TensorInfo::data_type() const {
   return dataTypeInfo->name();

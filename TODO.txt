@@ -4,22 +4,38 @@ skills needed:
 -- pytorch training: how does it work exactly.
 
 TODO: 
-01/09/2018
------------------------
-(DONE) Tensor::consumers. How does this work for multiple consumers?
 
-02/09/2018
------------------------
-start by documenting removeNullOp and all the functions it calls. 
 
 03/09/2018
 -----------------------
 TensorInfo types:
-  * TensorInfo::nbytes(). 
-  * TensorInfo::append(),
   * how will the tensors get and set data? templates?
 
 Rethink the step(int) function. 
 Think about backend abstraction.
+
+
+06/09/2018
+-----------------------
+ consolidate inferInfo, write inferInfo for AveragePool, re-organise ConvOp
+ so that as much as possible is done in the constructor
+
+ AveragePoolOp setup is basically the same as for ConvOp, even dilation should
+ be kept (pytorch has it). Only ngroups which should go.
+
+
+09/09/2018
+-----------------------
+ Loss, streaming off, separate program run every n iterations. If 
+ a requested tensor has been optimised out, just say too bad to the 
+ user and move on
+
+10/09/2018
+-----------------------
+Loss should be speicific to NegLogLikelihood, means can use p (p-1) for gradients 
+directly
+
+Loss should take in values before probabilities, and output loss and gradients of
+these. General rule for loss nodes : return gradient of input
 
 

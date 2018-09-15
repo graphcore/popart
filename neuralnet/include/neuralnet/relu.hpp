@@ -7,10 +7,9 @@ namespace neuralnet {
 
 class ReluOp : public Op {
 public:
-  ReluOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph)
-      : Op(opId, node, pgraph) {}
+  ReluOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph);
 
-  virtual void inferInfo() override final;
+  virtual void setup() override final;
 };
 } // namespace neuralnet
 

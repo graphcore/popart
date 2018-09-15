@@ -31,23 +31,23 @@ class Basic(torch.nn.Module):
         self.conv2 = conv3x3(outChans, outChans)
         self.relu = torch.nn.functional.relu
         self.conv3 = conv3x3(outChans, outChans)
-        self.logsoftmax = torch.nn.LogSoftmax(dim =0 )
+        self.logsoftmax = torch.nn.LogSoftmax(dim=0)
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.relu(x)
         x = self.conv2(x)
         x = self.relu(x)
-        # interestingly if this is self.conv2
+        # interestingly if this is self.conv2,
+        # the weights are the same (shared)
         x = self.conv3(x)
         x = self.relu(x)
         window_size = (int(x.size()[2]), int(x.size()[3]))
         print(x.size())
         x = torch.nn.functional.avg_pool2d(x, kernel_size = window_size)
         print(x.size())
-        #x = x.reshape(int(x.size()[0]), int(x.size()[1]))
-        #print(x.size())
-        x = self.logsoftmax(x)
+        # Not including logsoftmax as it is in the loss we will add, so
+        # not using x = self.logsoftmax(x)
         print(x.size())
         print("\n")
 

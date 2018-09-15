@@ -13,9 +13,7 @@ int Consumers::n(Op *op) const {
   }
 }
 
-const std::map<Op *, int> &Consumers::getMap() const {
-  return consumers_m;
-}
+const std::map<Op *, int> &Consumers::getMap() const { return consumers_m; }
 
 void Consumers::extend(const std::map<Op *, int> &m) {
   for (auto &op_count : m) {
@@ -43,6 +41,18 @@ void Consumers::decrement(Op *op) {
   }
 }
 
+Op* Tensor::getProducer(){
+  if (!hasProducer()){
+    throw error("No producer for tensor " + id + " to return");
+  }
+  return producer;
+}
+
+bool Tensor::hasProducer() const{
+  return producer != nullptr;
+}
+
+
 void Consumers::increment(Op *op) {
   auto found = consumers_m.find(op);
   if (found == consumers_m.end()) {
@@ -52,10 +62,10 @@ void Consumers::increment(Op *op) {
   }
 }
 
-std::vector<Op *> Consumers::getOps(){
-  std::vector<Op*> ops;
+std::vector<Op *> Consumers::getOps() {
+  std::vector<Op *> ops;
   ops.reserve(consumers_m.size());
-  for (auto & x : consumers_m){
+  for (auto &x : consumers_m) {
     ops.push_back(x.first);
   }
   return ops;
@@ -87,7 +97,7 @@ std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
   std::map<TensorType, TensorTypeInfo> tensor_types_m = {
       {TensorType::Activation, {TensorType::Activation, "Activation"}},
       {TensorType::Const, {TensorType::Const, "Const"}},
-      {TensorType::Gradient, {TensorType::Gradient, "Gradient"}},
+      //{TensorType::Gradient, {TensorType::Gradient, "Gradient"}},
       {TensorType::Momentum, {TensorType::Momentum, "Momentum"}},
       {TensorType::Other, {TensorType::Other, "Other"}},
       {TensorType::Stream, {TensorType::Stream, "Stream"}},
