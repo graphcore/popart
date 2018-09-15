@@ -3,7 +3,6 @@
 
 #include  <neuralnet/graph.hpp>
 
-
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"
 // Used for defining onnx Nodes
@@ -12,16 +11,12 @@
 
 namespace neuralnet {
 
-// if model's graph has single output, return its name,
-// otherwise throw an error
-TensorId getUniqueOutId(const onnx::ModelProto &m);
-
 onnx::OpSchema createNegLogLikeOpSchema();
 const onnx::OpSchema & getNegLogLikeOpSchema();
 
 class NegLogLikeOp : public Op {
 public:
-  NegLogLikeOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph);
+  NegLogLikeOp(const OpConstructorBundle &);
   virtual void setup() override final;
 };
 
@@ -35,15 +30,18 @@ public:
   // determine X from the onnx model
   NegLogLikeLoss(const onnx::ModelProto &, TensorId Y_);
   virtual ~NegLogLikeLoss() override = default;
-  virtual std::vector<std::unique_ptr<Node>> getNodes() const override final;
+  virtual std::unique_ptr<Op> getOp() const override final;
   virtual std::vector<TensorId> getStreamTensorNames() const override final;
-  static TensorId getLossId();
+  virtual TensorId getLossId() const override final;
+  virtual std::string op_type() const override final;
 
   private:
   // The tensor on which the loss is applied,
   TensorId X;
   // The correct label,
   TensorId Y;
+  virtual void setInOut(std::vector<TensorId> &,
+                        std::vector<TensorId> &) const override final;
 };
 
 

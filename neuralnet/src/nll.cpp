@@ -6,6 +6,7 @@
 
 namespace neuralnet {
 
+
 onnx::OpSchema createNegLogLikeOpSchema() {
   auto schema = onnx::OpSchema();
   // This is the first version of this opset
@@ -32,20 +33,15 @@ onnx::OpSchema createNegLogLikeOpSchema() {
   return schema;
 }
 
+std::string NegLogLikeLoss::op_type() const {
+  return getNegLogLikeOpSchema().Name();
+}
+
 const onnx::OpSchema & getNegLogLikeOpSchema(){
   const static onnx::OpSchema schema = createNegLogLikeOpSchema();
   return schema;
 }
 
-
-TensorId getUniqueOutId(const onnx::ModelProto &m) {
-  auto nOuts = m.graph().output_size();
-  if (nOuts != 1) {
-    throw error("cannot create NegLogLikeLoss from onnx Graph with " +
-                std::to_string(nOuts) + " outputs");
-  }
-  return m.graph().output(0).name();
-}
 
 NegLogLikeLoss::NegLogLikeLoss(const onnx::ModelProto &m, TensorId id1)
     : NegLogLikeLoss(getUniqueOutId(m), id1) {}
@@ -54,14 +50,9 @@ std::vector<TensorId> NegLogLikeLoss::getStreamTensorNames() const {
   return {Y};
 }
 
-NegLogLikeLoss::NegLogLikeLoss(TensorId id0, TensorId id1)
-    : X(id0), Y(id1) {
-}
+NegLogLikeLoss::NegLogLikeLoss(TensorId id0, TensorId id1) : X(id0), Y(id1) {}
 
-NegLogLikeOp::NegLogLikeOp(OpId opId,
-                           const onnx::NodeProto &node,
-                           Graph *pgraph)
-    : Op(opId, node, pgraph) {}
+NegLogLikeOp::NegLogLikeOp(const OpConstructorBundle & bundle): Op(bundle) {}
 
 void NegLogLikeOp::setup() {
   // dX has same info as X
@@ -70,48 +61,45 @@ void NegLogLikeOp::setup() {
   output.tensor(1)->info = {TP::FLOAT, {input.tensor(0)->info.dim(0)}};
 }
 
-TensorId NegLogLikeLoss::getLossId() { return "NLLloss"; }
+TensorId NegLogLikeLoss::getLossId() const { return "NLLloss"; }
 
-std::vector<std::unique_ptr<Node>> NegLogLikeLoss::getNodes() const {
-  std::unique_ptr<Node> NLLnode (new Node);
-  auto && schema = getNegLogLikeOpSchema();
+void NegLogLikeLoss::setInOut(std::vector<TensorId> &input,
+                              std::vector<TensorId> &output) const {
+
+  auto &&schema = getNegLogLikeOpSchema();
 
   // inputs are the
   //     index 0 : the tensor to have soft max is applied to qne
   //     index 1 : the correct class
   //     we confirm the above, checking the schema has not changed
-  if (!(schema.inputs().at(0).GetName() == "X")){
+  if (!(schema.inputs().at(0).GetName() == "X")) {
     throw error("NegLogLike Schema does not have input 0 as X");
   }
-  if (!(schema.inputs().at(1).GetName() == "Y")){
+  if (!(schema.inputs().at(1).GetName() == "Y")) {
     throw error("NegLogLike Schema does not have input 1 as Y");
   }
-  NLLnode->add_input(X);
-  NLLnode->add_input(Y);
 
   // outputs are
   //     index 0 : the gradient of input 0 w.r.t. the loss
   //     index 1 : the loss
   //     we just cofirm the above
-  if (!(schema.outputs().at(0).GetName() == "dX")){
+  if (!(schema.outputs().at(0).GetName() == "dX")) {
     throw error("NegLogLike Schema does not have output 0 as dX");
   }
-  if (!(schema.outputs().at(1).GetName() == "Loss")){
+  if (!(schema.outputs().at(1).GetName() == "Loss")) {
     throw error("NegLogLike Schema does not have output 1 as Loss");
   }
-  NLLnode->add_output(getGradId(X));
-  NLLnode->add_output(getLossId());
-  
-  NLLnode->set_op_type("NegLogLike");
-  NLLnode->set_domain("gnilwen.semaj");
 
-  // NLLnode has no name
-  // NLLnode has no attributes
-  // NLLnode has no doc_string
-  
-  std::vector<std::unique_ptr<Node>> nodes;
-  nodes.emplace_back(std::move(NLLnode));
-  return nodes;
+  input = {X, Y};
+  output = {getGradId(X, getOpId(), /*index=*/ 0), getLossId()};
+}
+
+std::unique_ptr<Op> NegLogLikeLoss::getOp() const {
+  OpConstructorBundle b(
+      getOpId(), op_type(), getGraph(), {}, getNeuralNetDomain());
+  std::unique_ptr<Op> nllOp (new NegLogLikeOp(b));
+
+  return nllOp;
 }
 
 } // namespace neuralnet

@@ -14,24 +14,69 @@
 namespace neuralnet {
 
 
+// if model's graph has single output, return its name,
+// otherwise throw an error
+TensorId getUniqueOutId(const onnx::ModelProto &m);
+
+
 class Tensor;
 class Graph;
+class Op;
 
 // Tensors to log every iteration
 // Also, frequency at which to return all weights
 // TODO(jn) ask David Norman how tensorflow does this.
 class Recorder {};
 
+std::string getNeuralNetDomain();
+
 class Loss {
 public:
   Loss() = default;
   virtual ~Loss() = default;
 
-  // return onnx::NodeProto(s) representing this loss
-  virtual std::vector<std::unique_ptr<Node>> getNodes() const = 0;
+  // return the Op for this Loss, should only be
+  // called after set has been called
+  virtual std::unique_ptr<Op> getOp() const = 0;
+  // set opId and pgraph. This can't be done at construction 
+  // time as they are not know at that point.
+  // Also, set input and output (same format as a Node : "" 
+  // represents no in put at an index).
+  void set(OpId, Graph *);
+
+  // the names of all the tensors which will be streamed into the
+  // Op this Loss generates. For NLL, it is the label tensor. For
+  // MSE it is the target tensor. There may be several such streamed
+  // tensors. 
   virtual std::vector<TensorId> getStreamTensorNames() const = 0;
 
+  // The name of the Loss Node
+  virtual TensorId getLossId() const = 0;
+
+
+  // The op_type string which the Op which this node
+  // generates should have.
+  virtual std::string op_type() const = 0;
+
+  OpId getOpId() const;
+  Graph *getGraph() const;
+
+  //const std::vector<TensorId> & getInput() const;
+  const TensorId & input(int i) const;
+  int input_size() const;
+  //const std::vector<TensorId> & getOutput() const;
+  const TensorId & output(int i) const;
+  int output_size() const;
+
 private:
+  // The OpId of the Op this Loss will generate
+  OpId opId {-1};
+  // The Graph ofo the Op that this loss will generate
+  Graph * pgraph {nullptr};
+  std::vector<TensorId> input_;
+  std::vector<TensorId> output_;
+  virtual void setInOut(std::vector<TensorId> &,
+                        std::vector<TensorId> &) const = 0;
 };
 
 // where tensor tenId is consumed by op opId at index index, 
@@ -127,9 +172,26 @@ void Attributes::setIfPresent(std::vector<int64_t> &, std::string s) const;
 
 template <> void Attributes::setIfPresent(std::string &, std::string s) const;
 
+class OpConstructorBundle{
+  public:
+    OpConstructorBundle(OpId,
+                        std::string op_type,
+                        Graph *,
+                        Attributes,
+                        std::string domain);
+    OpId id;
+    std::string op_type;
+    Graph * pgraph;
+    Attributes atts;
+    std::string domain;
+
+};
+
 class Op {
 public:
   Op(OpId, const Node &, Graph *);
+  Op(const OpConstructorBundle &);
+
   // Op(OpId, OpType, std::string domain, Graph *);
 
   // wire an tensor to input. updates input, and
@@ -163,16 +225,7 @@ public:
   const std::string & domain();
   Graph *pgraph;
 
-  // Design choice : ALL Ops are created from an Node 
-  // which is guaranteed to stay in scope as long 
-  // as the Op is in scope.
-  const Node *getNode() const;
-
-  // attributes from the Node. Note that there
-  // is some duplication between the attributes in 
-  // in this Attributes, and those in the Node, but
-  // the ones in this Attributes are stored for more efficient
-  // access.
+  // attributes from the Node, if it was created from one
   const Attributes nAtts;
 
   // set shape and type parameters,
@@ -185,9 +238,12 @@ private:
   void appendIO(std::stringstream &) const;
   virtual void appendMore(std::stringstream &) const {}
 
-  // if constructed from an onnx node:
-  const Node *ptrNode;
   const std::string *const p_op_type;
+  std::string op_domain;
+
+  // design decision : see-sawing between storing a pointer
+  // to the Node from which the Op derives (if it does derive
+  // from a Node) between deciding not to.
 };
 
 enum class TensorType;
@@ -248,6 +304,7 @@ private:
 
 class Graph {
 public:
+
 
 
 Graph(onnx::ModelProto &&,
@@ -320,6 +377,18 @@ private:
   // correct input Tensors and create the activation output Tensors
   Op * growFromNode(const Node &);
 
+  // create an Op from loss, and wire it to the correct input Tensors, 
+  // and create the activate output Tensor(s)
+  Op * growFromLoss();
+
+
+  // called from growFromNode and growFromLoss. 
+  // T requires functions input(int) and input_size()
+  template <typename T>
+  void connectInputs(const T &, OpId opId);
+  // T requires functions output(int) and output_size()
+  template <typename T>
+  void connectOutputs(const T &, OpId opId);
 
   // sets Node output and then calls growFromNode. 
   // the reason output is set here is that is might

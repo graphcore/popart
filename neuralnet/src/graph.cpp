@@ -20,6 +20,11 @@
 
 namespace neuralnet {
 
+
+std::string getNeuralNetDomain() {
+  return "gnilwen.semaj";
+}
+
 OpTypes initOpTypes() { return OpTypes(); }
 
 const OpTypes &getOpTypes() {
@@ -29,6 +34,33 @@ const OpTypes &getOpTypes() {
 
 void Op::setup() { throw error("No setup() for " + op_type()); }
 
+OpId Loss::getOpId() const {
+  if (opId < 0) {
+    throw error("opId of Loss not yet set");
+  }
+  return opId;
+}
+
+void Loss::set(OpId opId_, Graph * pgraph_){
+  opId = opId_;
+  pgraph = pgraph_;
+  setInOut(input_, output_);
+}
+
+// const std::vector<TensorId> &Loss::getInput() const { return input_; }
+// const std::vector<TensorId> &Loss::getOutput() const { return output_; }
+
+int Loss::input_size() const { return static_cast<int>(input_.size()); }
+const TensorId &Loss::input(int i) const { return input_.at(i); }
+int Loss::output_size() const { return static_cast<int>(output_.size()); }
+const TensorId &Loss::output(int i) const { return output_.at(i); }
+
+Graph *Loss::getGraph() const {
+  if (pgraph == nullptr) {
+    throw error("pgraph of Loss not yet set");
+  }
+  return pgraph;
+}
 
 // Essentially Kahn's alogorithm (1962), see
 // https://en.wikipedia.org/wiki/Topological_sorting
@@ -574,6 +606,14 @@ void Tensors::remove(TensorId id) { M.erase(id); }
 bool Tensors::contains(TensorId id) const { return M.find(id) != M.end(); }
 
 
+TensorId getUniqueOutId(const onnx::ModelProto &m) {
+  auto nOuts = m.graph().output_size();
+  if (nOuts != 1) {
+    throw error("cannot create NegLogLikeLoss from onnx Graph with " +
+                std::to_string(nOuts) + " outputs");
+  }
+  return m.graph().output(0).name();
+}
 
 OpId Graph::getAndIncrOpsCounter() {
   OpId nOps0 = opsCounter;
@@ -581,26 +621,28 @@ OpId Graph::getAndIncrOpsCounter() {
   return nOps0;
 }
 
-void Graph::constructBackwards() {
-  // add the Node(s) from the loss.
-  // this scope is used to prevent the next developer here
-  // from using lossNodes, which has had its Nodes moved out
-  Op *lossOp{nullptr};
-  {
-    OpId opId = getAndIncrOpsCounter();
-    loss.setOutNames(opId);
-    auto lossNode = loss->getNode();
-  }
-}
 
 Node Op::getGradientPartner() const {
   throw error("no getGradientPartner for " + op_type());
 }
 
+Op *Graph::growFromLoss() {
+  OpId opId = getAndIncrOpsCounter();
+  loss->set(opId, this);
+  ops[opId] = loss->getOp();
+  connectInputs(*loss, opId);
+  connectOutputs(*loss, opId);
+  return ops[opId].get();
+}
+
+void Graph::constructBackwards() {
+  growFromLoss();
+  //throw error("in construct backwards");
+}
 
 Op *Graph::growFromNode(const Node &node) {
 
-  // auto atts = Attributes(node.attribute());
+  // special case of CONSTANT Node, no Op is created
   if (getOpTypes().get(node.op_type()) == OpType::CONSTANT) {
     TensorId name = node.output(0);
     tensors.addInit(name, &node.attribute(0).t());
@@ -610,9 +652,15 @@ Op *Graph::growFromNode(const Node &node) {
 
   OpId opId = getAndIncrOpsCounter();
   ops[opId] = addOp(opId, node);
+  connectInputs(node, opId);
+  connectOutputs(node, opId);
+  return ops[opId].get();
+}
 
-  for (int inIndex = 0; inIndex < node.input_size(); ++inIndex) {
-    auto &inName = node.input(inIndex);
+template <typename T>
+void Graph::connectInputs(const T & inContainer, OpId opId){
+  for (int inIndex = 0; inIndex < inContainer.input_size(); ++inIndex) {
+    auto &inName = inContainer.input(inIndex);
     if (inName == "") {
       // no input at this position
     } else {
@@ -623,9 +671,12 @@ Op *Graph::growFromNode(const Node &node) {
       }
     }
   }
+}
 
-  for (int outIndex = 0; outIndex < node.output_size(); ++outIndex) {
-    auto &outName = node.output(outIndex);
+template <typename T>
+void Graph::connectOutputs(const T & outContainer, OpId opId){
+  for (int outIndex = 0; outIndex < outContainer.output_size(); ++outIndex) {
+    auto &outName = outContainer.output(outIndex);
     if (outName == "") {
       // no output at this position
     } else {
@@ -635,8 +686,6 @@ Op *Graph::growFromNode(const Node &node) {
       ops[opId]->createAndConnectOutTensor(outIndex, outName);
     }
   }
-
-  return ops[opId].get();
 }
 
 OpTypes::OpTypes() {
@@ -666,14 +715,6 @@ const std::string &OpTypes::get(OpType opType) const {
   return strings_.at(opType);
 }
 
-// bool Op::fromNode() const { return ptrNode != nullptr; }
-
-const Node *Op::getNode() const {
-  if (ptrNode!=nullptr) {
-    throw error("Node pointer is nullptr");
-  }
-  return ptrNode;
-}
 
 void Graph::append(std::stringstream &ss) {
   ss << "-- Graph --\n";
@@ -683,22 +724,45 @@ void Graph::append(std::stringstream &ss) {
 }
 
 const std::string & Op::domain(){
-  return ptrNode->domain();
+  return op_domain;
 }
 
 const std::string &Op::op_type() const { return *p_op_type; }
 
+OpConstructorBundle::OpConstructorBundle(OpId opId_,
+                                         std::string op_type_,
+                                         Graph *pgraph_,
+                                         Attributes atts_,
+                                         std::string domain_)
+    : id(opId_), op_type(op_type_), pgraph(pgraph_), atts(atts_),
+      domain(domain_) {}
+
+Op::Op(const OpConstructorBundle &b)
+  : id(b.id),
+      // opType (from string op_type)
+      opType(getOpTypes().get(b.op_type)),
+      // the Graph
+      pgraph(b.pgraph),
+      // the Attributes
+      nAtts(b.atts),
+      // opType
+      p_op_type(&getOpTypes().get(opType)),
+      // domain
+      op_domain(b.domain) {}
+
 Op::Op(OpId id_, const Node &node, Graph *pg)
     : id(id_),
       // We set opType, looked up in a map from the string node.op_type()
-      opType(getOpTypes().get(node.op_type())), //domain(node.domain()),
-      pgraph(pg), nAtts(node.attribute()), ptrNode(&node),
+      opType(getOpTypes().get(node.op_type())),
+      // pointer to the graph containing this node
+      pgraph(pg),
+      // neuralnet::Attributes constructed from contained of onnx::Attribute s
+      nAtts(node.attribute()),
       // We set the pointer to the string version of opType, in another map
-      p_op_type(&getOpTypes().get(opType)) {}
+      p_op_type(&getOpTypes().get(opType)),
+      // And finally we strip off the domain of the Node
+      op_domain(node.domain()) {}
 
-//Op::Op(OpId id_, OpType opType_, std::string domain_, Graph *pg)
-//    : id(id_), opType(opType_), domain(domain_), pgraph(pg),
-//      p_op_type(&getOpTypes().get(opType)) {}
 
 std::unique_ptr<Op> Graph::addOp(OpId opId, const Node &node) {
   using pOp = std::unique_ptr<Op>;
@@ -716,7 +780,8 @@ std::unique_ptr<Op> Graph::addOp(OpId opId, const Node &node) {
     return pOp(new LogSoftmaxOp(opId, node, this));
   }
   case OpType::NEGLOGLIKE: {
-    return pOp(new NegLogLikeOp(opId, node, this));
+    throw error("cannot construct NegLogLike from a Node");
+    // return pOp(new NegLogLikeOp(opId, node, this));
   }
   case OpType::PAD: {
     return pOp(new PadOp(opId, node, this));
