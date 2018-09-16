@@ -5,7 +5,7 @@
 
 namespace neuralnet {
 
-class HasReceptiveFieldOp : public Op {
+class HasReceptiveFieldOp : public NonGradOp {
 public:
   HasReceptiveFieldOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph);
   virtual void setup() override final;

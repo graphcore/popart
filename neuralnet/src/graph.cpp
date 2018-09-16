@@ -33,6 +33,17 @@ private:
   const T &inputs;
 };
 
+//const std::map<int, Tensor *> & NonGradOp::getNonGradInputTensorMap() const {
+//  return input.tensorMap();
+//}
+//
+//
+//const std::map<int, Tensor *> & GradOp::getNonGradInputTensorMap() const {
+//  return nonGradOp->input.tensorMap();
+//}
+
+
+
 // Passes calls to .size() and .at(int) to output_size() and output(int)
 // so that standard containers can be used in Graph::connectOutputs.
 template <typename T> class OutputWrapper {
@@ -59,8 +70,8 @@ std::vector<TensorId> TensorIndexMap::getSerialised() const {
   return serialised;
 }
 
-std::unique_ptr<Op> Op::getGradientOp(OpId,
-                                      const std::map<int, Tensor *> &) const {
+std::unique_ptr<Op> NonGradOp::getGradOp(OpId) const{
+                                     // const std::map<int, Tensor *> &) const {
 
   throw error("Cannot get grodient for " + op_type());
 }
@@ -127,7 +138,7 @@ std::vector<Op *> Graph::getTopologicallySorted() {
   // total number of input indices
   std::map<Op *, int> awaiting;
   for (auto &id_op : ops) {
-    awaiting[id_op.second.get()] = id_op.second->input.n();
+    awaiting[id_op.second.get()] = id_op.second->edgesIn();
   }
 
   // processing a tensor involves
@@ -235,7 +246,7 @@ const std::vector<int> &TensorIndexMap::indices(Tensor *ptensor) const {
   return indices_map.at(ptensor);
 }
 
-void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
+void NonGradOp::connectInTensor(InIndex inIndex, TensorId tenId) {
   Tensor *ptensor = pgraph->tensors.get(tenId);
   input.insert(inIndex, ptensor);
   ptensor->consumers.increment(this);
@@ -283,11 +294,15 @@ void TensorIndexMap::append(std::stringstream &ss, std::string prefix) const {
   }
 }
 
+void NonGradOp::appendInput(std::stringstream & ss, std::string prefix) const {
+  input.append(ss, prefix);
+}
+
 void Op::appendIO(std::stringstream &ss) const {
   static std::string tab = "    ";
   ss << '\n' << "Op " << id << " of type " << op_type() << '\n';
   ss << tab << "inputs" << '\n';
-  input.append(ss, tab + tab);
+  appendInput(ss, tab + tab);
   ss << '\n' << tab << "outputs" << '\n';
   output.append(ss, tab + tab);
 }
@@ -435,7 +450,8 @@ const onnx::TensorProto *Tensors::getOnnxInit(TensorId id) const {
 // user is probably not concerned about performance
 
 void Graph::removePadSizeZero() {
-  for (auto &op : opsOfType(OpType::PAD)) {
+  for (auto &op0 : opsOfType(OpType::PAD)) {
+    auto op = dynamic_cast<NonGradOp*> (op0);
     if (!isLogged(op->input.tensor(0)->id)) {
       removeNullOp(op->input.tensor(0)->id, op->id);
     }
@@ -677,20 +693,18 @@ OpId Graph::getAndIncrOpsCounter() {
   return nOps0;
 }
 
-Node Op::getGradientPartner() const {
-  throw error("no getGradientPartner for " + op_type());
-}
 
-Op *Graph::growFromLoss() {
+NonGradOp *Graph::growFromLoss() {
   OpId opId = getAndIncrOpsCounter();
   loss->set(opId, this);
   ops[opId] = loss->getOp();
   connectInputs(*loss, opId);
   connectOutputs(*loss, opId);
-  return ops[opId].get();
+  return dynamic_cast<NonGradOp *> (ops[opId].get());
 }
 
-Op *Graph::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
+NonGradOp *Graph::growGradSumOp(Tensor *target,
+                                const std::vector<Tensor *> &toSum) {
   OpId opId = getAndIncrOpsCounter();
   ops[opId] = std::unique_ptr<Op>(
       new SumOp({opId, "Sum", this, {}, getNeuralNetDomain()}));
@@ -705,28 +719,45 @@ Op *Graph::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   connectOutputs(OutputWrapper<decltype(outputs)>(outputs), opId);
 
   tensors.addNonGradient(outputs[0], target);
-  return ops[opId].get();
+  return dynamic_cast<NonGradOp*> (ops[opId].get());
 }
 
-Op *Graph::growGradOp(Op *forwardOp,
+GradOp *Graph::growGradOp(NonGradOp *forwardOp,
                       const std::map<int, Tensor *> &gradientsIn) {
   OpId opId = getAndIncrOpsCounter();
-  ops[opId] = forwardOp->getGradientOp(opId, gradientsIn);
+  ops[opId] = forwardOp->getGradOp(opId);
 
-  connectInputs(
-      InputWrapper<std::vector<TensorId>>(ops[opId]->input.getSerialised()),
-      opId);
 
-  connectOutputs(
-      OutputWrapper<std::vector<TensorId>>(ops[opId]->output.getSerialised()),
-      opId);
+
+  // current feeling about dealing with inputs to gradient Ops.
+  // Don't duplicate the input and output of non-grad op into input
+  // of Grad Op. Because 
+  // 1) inefficient.
+  // 2) if done in the same dimensions (ie concat the inputs), how to
+  //    handle variadic input size? (ie SumOp).
+  //
+  // Currently, I'm thinking the TensorIndexMap input for the grad op
+  // will just be gradientsIn, with the input and output of the non-grad
+  // op being implicit inputs to the grad op. Note: will need to go down 
+  // connectInputs and see what needs to be manually, I think non-grad-op
+  // input and output tensors need to have consumers incremented for 1.
+
+
+  throw error("need to make the connections");
+//  connectInputs(
+//      InputWrapper<std::vector<TensorId>>(ops[opId]->input.getSerialised()),
+//      opId);
+//
+//  connectOutputs(
+//      OutputWrapper<std::vector<TensorId>>(ops[opId]->output.getSerialised()),
+//      opId);
 
   for (auto &index_tensor : ops[opId]->output.tensorMap()) {
     tensors.addNonGradient(index_tensor.second->id,
                            forwardOp->input.tensor(index_tensor.first));
   }
 
-  return ops[opId].get();
+  return static_cast<GradOp*> (ops[opId].get());
 }
 
 void Tensors::addNonGradient(TensorId id, Tensor *t) { non_gradients_[id] = t; }
@@ -734,7 +765,7 @@ void Tensors::addNonGradient(TensorId id, Tensor *t) { non_gradients_[id] = t; }
 void Graph::constructBackwards() {
   // Add the Op which takes in Activations and Streams and
   // outputs the Loss and gradients of Activations
-  Op *lossOp = growFromLoss();
+  NonGradOp *lossOp = growFromLoss();
 
   // now for the fun to start
 
@@ -760,8 +791,8 @@ void Graph::constructBackwards() {
   // keep track of the gradients flowing back into a node, in partNodeFlows
   // when all required such gradients are present, move to compNodeFlows,
   // from where a new gradient need will be created
-  std::map<Op *, std::map<int, Tensor *>> partNodeFlows;
-  std::map<Op *, std::map<int, Tensor *>> compNodeFlows;
+  std::map<NonGradOp *, std::map<int, Tensor *>> partNodeFlows;
+  std::map<NonGradOp *, std::map<int, Tensor *>> compNodeFlows;
 
   // add to partSumFlows, returning true/false depending on
   // whether all required flows have been obtained
@@ -777,7 +808,7 @@ void Graph::constructBackwards() {
 
   // add to partNodeFlows, returning true/false depending on
   // whether all required flows are ready
-  auto addNodeFlow = [&partNodeFlows](Op *key, Tensor *sum, int index) {
+  auto addNodeFlow = [&partNodeFlows](NonGradOp *key, Tensor *sum, int index) {
     auto found = partNodeFlows.find(key);
     if (found == partNodeFlows.end()) {
       partNodeFlows[key] = {};
@@ -791,31 +822,36 @@ void Graph::constructBackwards() {
     partSumFlows.erase(key);
   };
 
-  auto moveToCompNodeFlows = [&partNodeFlows, &compNodeFlows](Op *key) {
+  auto moveToCompNodeFlows = [&partNodeFlows, &compNodeFlows](NonGradOp *key) {
     compNodeFlows[key] = partNodeFlows[key];
     partNodeFlows.erase(key);
   };
 
   // communicate to the targets that the gradients have been
-  // created, this might extend compSumFlows
-  auto registerSumFlows = [&addSumFlow, &moveToCompSumFlows](Op *op) {
-    for (auto ind_ten : op->input.tensorMap()) {
-      int index      = ind_ten.first;
-      Tensor *tensor = ind_ten.second;
-      if (op->output.hasIndex(index)) {
-        bool allFlowsIn = addSumFlow(tensor, op->output.tensor(index));
-        if (allFlowsIn) {
-          moveToCompSumFlows(tensor);
+  // created from gradOp, this might extend compSumFlows
+  // takes in nonGradOp and gradOp. In the case of the loss op. 
+  // these are the same, for GradOps, these are as expected.
+  auto registerSumFlows =
+      [&addSumFlow, &moveToCompSumFlows](NonGradOp *nonGradOp, Op *gradOp) {
+        for (auto ind_ten : nonGradOp->input.tensorMap()) {
+          int index      = ind_ten.first;
+          Tensor *tensor = ind_ten.second;
+          if (gradOp->output.hasIndex(index)) {
+            bool allFlowsIn = addSumFlow(tensor, gradOp->output.tensor(index));
+            if (allFlowsIn) {
+              moveToCompSumFlows(tensor);
+            }
+          }
         }
-      }
-    }
-  };
+      };
+
+  registerSumFlows(lossOp, lossOp);
 
   auto registerNodeFlow =
       [this, &addNodeFlow, &moveToCompNodeFlows](Tensor *sum) {
         Tensor *nonGradient = tensors.getNonGradientOf(sum->id);
         if (nonGradient->hasProducer()) {
-          Op *op = nonGradient->getProducer();
+          NonGradOp *op = dynamic_cast<NonGradOp *>(nonGradient->getProducer());
           // the index at which op produced nonGradient
           int index = op->output.indices(nonGradient).at(0);
           // Notify op that the gradient at index is ready, it is sum.
@@ -826,15 +862,11 @@ void Graph::constructBackwards() {
         }
       };
 
-  std::vector<Op *> opsToRegister = {lossOp};
+  std::vector<GradOp *> opsToRegister = {};
 
-  while (!opsToRegister.empty()) {
-    // get an Op which has created gradients which are not connected
-    // to anything, and whose targets (SumOp) do not know that they
-    // have been created
-    Op *opToRegister = opsToRegister.back();
-    opsToRegister.resize(opsToRegister.size() - 1);
-    registerSumFlows(opToRegister);
+
+  bool isNewlyRegisteredOp = true;
+  do {
     for (auto &target_flows : compSumFlows) {
       // passing in first argument too, as the output name
       // will be based off of it. Also, we register the link
@@ -873,7 +905,7 @@ void Graph::constructBackwards() {
       }
     }
 
-    std::vector<Op *> opsToBuildGradsFor;
+    std::vector<NonGradOp *> opsToBuildGradsFor;
     for (auto &op__ind_ten : compNodeFlows) {
       opsToBuildGradsFor.push_back(op__ind_ten.first);
     }
@@ -881,17 +913,28 @@ void Graph::constructBackwards() {
     for (auto op : opsToBuildGradsFor) {
       std::map<int, Tensor *> ind_ten = std::move(compNodeFlows[op]);
       compNodeFlows.erase(op);
-      Op *newGradOp = growGradOp(op, ind_ten);
+      GradOp *newGradOp = growGradOp(op, ind_ten);
       opsToRegister.push_back(newGradOp);
     }
-  }
+
+    // get an Op which has created gradients which are not connected
+    // to anything, and whose targets (SumOp) do not know that they
+    // have been created
+    if (!opsToRegister.empty()) {
+      GradOp *opToRegister = opsToRegister.back();
+      opsToRegister.resize(opsToRegister.size() - 1);
+      registerSumFlows(opToRegister->nonGradOp, opToRegister);
+    } else {
+      isNewlyRegisteredOp = false;
+    }
+  } while (isNewlyRegisteredOp);
 }
 
 const std::map<int, Tensor *> &TensorIndexMap::tensorMap() const {
   return tensor_map;
 }
 
-Op *Graph::growFromNode(const Node &node) {
+NonGradOp *Graph::growFromNode(const Node &node) {
 
   // special case of CONSTANT Node, no Op is created
   if (getOpTypes().get(node.op_type()) == OpType::CONSTANT) {
@@ -905,7 +948,7 @@ Op *Graph::growFromNode(const Node &node) {
   ops[opId] = addOp(opId, node);
   connectInputs(node, opId);
   connectOutputs(node, opId);
-  return ops[opId].get();
+  return static_cast<NonGradOp *>(ops[opId].get());
 }
 
 template <typename T>
@@ -918,7 +961,8 @@ void Graph::connectInputs(const T &inContainer, OpId opId) {
       if (!tensors.contains(inName)) {
         throw error("input " + inName + " should already be in tensor map");
       } else {
-        ops[opId]->connectInTensor(inIndex, inName);
+        auto nonGradOp = static_cast<NonGradOp *>(ops[opId].get());
+        nonGradOp->connectInTensor(inIndex, inName);
       }
     }
   }
@@ -942,6 +986,7 @@ void Graph::connectOutputs(const T &outContainer, OpId opId) {
 OpTypes::OpTypes() {
 
   opTypes_ = {{"AveragePool", OpType::AVERAGEPOOL},
+              {"AveragePoolGrad", OpType::AVERAGEPOOLGRAD},
               {"Constant", OpType::CONSTANT},
               {"Conv", OpType::CONV},
               {"LogSoftmax", OpType::LOGSOFTMAX},
@@ -1039,6 +1084,9 @@ std::unique_ptr<Op> Graph::addOp(OpId opId, const Node &node) {
   }
   case OpType::SUM: {
     throw error("no constructor from node for Sum Op yet");
+  }
+  case OpType::AVERAGEPOOLGRAD: {
+    throw error("Gradient Ops not constructable from Node");
   }
   default: { throw error("No class for " + node.op_type()); }
   }

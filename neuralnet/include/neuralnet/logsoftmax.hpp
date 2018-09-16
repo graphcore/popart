@@ -4,7 +4,7 @@
 #include <neuralnet/graph.hpp>
 
 namespace neuralnet {
-class LogSoftmaxOp : public Op {
+class LogSoftmaxOp : public NonGradOp {
 public:
   LogSoftmaxOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph);
 

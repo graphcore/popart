@@ -124,6 +124,7 @@ private:
 
 enum class OpType {
   AVERAGEPOOL = 0,
+  AVERAGEPOOLGRAD,
   CONSTANT,
   CONV,
   LOGSOFTMAX,
@@ -201,9 +202,6 @@ public:
 
   // Op(OpId, OpType, std::string domain, Graph *);
 
-  // wire an tensor to input. updates input, and
-  // updates consumers of tensor with id TensorId
-  void connectInTensor(InIndex, TensorId);
 
   // create an Activation (output) tensor
   // and wire it to this Ops output
@@ -212,8 +210,8 @@ public:
   void append(std::stringstream &ss) const;
   virtual ~Op();
 
-  // The consumed Tensors
-  TensorIndexMap input;
+
+  //virtual const std::map<int, Tensor *> & getNonGradInputTensorMap() const = 0;
 
   // The produced Tensors
   TensorIndexMap output;
@@ -239,10 +237,10 @@ public:
   // MUST set output TensorInfos for all outputs
   virtual void setup();
 
-  virtual Node getGradientPartner() const;
+  virtual int edgesIn() const = 0;
 
-  virtual std::unique_ptr<Op>
-  getGradientOp(OpId, const std::map<int, Tensor *> &gradientsIn) const;
+   virtual void appendInput (  std::stringstream &, std::string prefix ) const = 0;
+
 
 private:
   void appendIO(std::stringstream &) const;
@@ -251,9 +249,50 @@ private:
   const std::string *const p_op_type;
   std::string op_domain;
 
+
   // design decision : see-sawing between storing a pointer
   // to the Node from which the Op derives (if it does derive
   // from a Node) between deciding not to.
+};
+
+class NonGradOp : public Op {
+public:
+  NonGradOp(OpId, const Node &, Graph *);
+  NonGradOp(const OpConstructorBundle &);
+  virtual std::unique_ptr<Op> getGradOp(OpId) const;
+  // simply input.n()
+  virtual int edgesIn() const override final;
+
+  // wire a tensor to input. updates input, and
+  // updates consumers of tensor with id TensorId
+  void connectInTensor(InIndex, TensorId);
+
+  // return input.tensorMap();
+  //virtual const std::map<int, Tensor *> & getNonGradInputTensorMap() const override final;
+
+  // The consumed Tensors
+  TensorIndexMap input;
+
+   virtual void appendInput (std::stringstream &, std::string prefix) const override final;
+
+};
+
+class GradOp : public Op {
+  public:
+  GradOp(OpId, const Node &, Graph *);
+  GradOp(const OpConstructorBundle &);
+  // how to do?
+  virtual int edgesIn() const override final;
+
+   virtual void appendInput (std::stringstream &, std::string prefix) const override final;
+
+
+   // return input.tensorMap of the forward Op
+  //virtual const std::map<int, Tensor *> & getNonGradInputTensorMap() const override final;
+
+  public:
+  NonGradOp * nonGradOp;
+
 };
 
 enum class TensorType;
@@ -388,15 +427,16 @@ private:
 
   // create an Op from Node (if not Constant Node), wire it to
   // correct input Tensors and create the activation output Tensors
-  Op *growFromNode(const Node &);
+  NonGradOp *growFromNode(const Node &);
 
   // create an Op from loss, and wire it to the correct input Tensors,
   // and create the activate output Tensor(s)
-  Op *growFromLoss();
+  NonGradOp *growFromLoss();
 
-  Op *growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum);
+  NonGradOp *growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum);
 
-  Op *growGradOp(Op *forwardOp, const std::map<int, Tensor *> &gradientsIn);
+  GradOp *growGradOp(NonGradOp *forwardOp,
+                     const std::map<int, Tensor *> &gradientsIn);
 
   // called from growFromNode and growFromLoss.
   // T requires functions input(int) and input_size()

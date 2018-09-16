@@ -53,7 +53,7 @@ std::vector<TensorId> NegLogLikeLoss::getStreamTensorNames() const {
 
 NegLogLikeLoss::NegLogLikeLoss(TensorId id0, TensorId id1) : X(id0), Y(id1) {}
 
-NegLogLikeOp::NegLogLikeOp(const OpConstructorBundle &bundle) : Op(bundle) {}
+NegLogLikeOp::NegLogLikeOp(const OpConstructorBundle &bundle) : NonGradOp(bundle) {}
 
 void NegLogLikeOp::setup() {
   // dX has same info as X

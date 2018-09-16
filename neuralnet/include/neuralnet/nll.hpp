@@ -14,7 +14,7 @@ namespace neuralnet {
 onnx::OpSchema createNegLogLikeOpSchema();
 const onnx::OpSchema &getNegLogLikeOpSchema();
 
-class NegLogLikeOp : public Op {
+class NegLogLikeOp : public NonGradOp {
 public:
   NegLogLikeOp(const OpConstructorBundle &);
   virtual void setup() override final;

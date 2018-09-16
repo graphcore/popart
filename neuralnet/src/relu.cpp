@@ -4,7 +4,7 @@
 namespace neuralnet {
 
 ReluOp::ReluOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph)
-    : Op(opId, node, pgraph) {
+    : NonGradOp(opId, node, pgraph) {
 
   // //std::cout << "in relu constructor" << std::endl;
 }

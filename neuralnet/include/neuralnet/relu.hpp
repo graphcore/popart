@@ -5,7 +5,7 @@
 
 namespace neuralnet {
 
-class ReluOp : public Op {
+class ReluOp : public NonGradOp {
 public:
   ReluOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph);
 

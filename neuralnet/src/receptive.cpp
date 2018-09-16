@@ -7,7 +7,7 @@ namespace neuralnet {
 HasReceptiveFieldOp::HasReceptiveFieldOp(OpId opId,
                                          const onnx::NodeProto &node,
                                          Graph *pgraph)
-    : Op(opId, node, pgraph) {}
+    : NonGradOp(opId, node, pgraph) {}
 
 void HasReceptiveFieldOp::setup() {
   batchSize    = input.tensor(0)->info.dim(0);

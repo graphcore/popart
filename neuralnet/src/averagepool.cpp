@@ -23,7 +23,28 @@ void AveragePoolOp::setSpatial() {
   }
 }
 
+
 // Pooling does not change the number of channels,
 // i.e it is the same as the number of input channels
 int64_t AveragePoolOp::getNOutChans() const { return nInChans; }
+
+std::unique_ptr<Op>
+AveragePoolOp::getGradOp(OpId id) const{
+                           //const std::map<int, Tensor *> &gradsIn) const {
+
+  std::unique_ptr<Op> gradOp (new AveragePoolGradOp(id, this)); //, gradsIn));
+
+}
+
+AveragePoolGradOp::AveragePoolGradOp(OpId opId,
+                                     const AveragePoolOp *op_)
+                                     //const std::map<int, Tensor *> &gradientsIn)
+    : GradOp({opId, "AveragePoolGrad", op_->pgraph, {}, getNeuralNetDomain()}),
+      averagePoolOp(op_) {
+
+        std::cout << "AveragePoolGradOp constructed" << std::endl;
+
+      }
+
+
 } // namespace neuralnet
