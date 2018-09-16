@@ -12,7 +12,7 @@ enum class TensorType {
   Const,
   //  Gradient,
   Momentum,
-  Other,
+  //  Other,
   Stream,
   Unknown,
   Variable,
@@ -36,7 +36,9 @@ public:
   // increment the current counts with those in this map
   void extend(const std::map<Op *, int> &);
   // return the total number of consumptions, taking
-  // into account Ops which consume multiple times
+  // into account Ops which consume multiple times,
+  // so the sum over consuming nodes of the the number of
+  // times consumed
   int getTotal() const;
   // the number of times each consumer uses the Tensor
   const std::map<Op *, int> &getMap() const;
@@ -45,6 +47,8 @@ public:
   std::vector<Op *> getOps();
 
 private:
+  // The number of times an Op consumes the Tensor which
+  // owns this Consumers
   std::map<Op *, int> consumers_m;
 };
 

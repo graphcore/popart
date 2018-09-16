@@ -48,7 +48,7 @@ public:
   // tensors.
   virtual std::vector<TensorId> getStreamTensorNames() const = 0;
 
-  // The name of the Loss Node
+  // The name of the Loss Op
   virtual TensorId getLossId() const = 0;
 
   // The op_type string which the Op which this node
@@ -58,10 +58,8 @@ public:
   OpId getOpId() const;
   Graph *getGraph() const;
 
-  // const std::vector<TensorId> & getInput() const;
   const TensorId &input(int i) const;
   int input_size() const;
-  // const std::vector<TensorId> & getOutput() const;
   const TensorId &output(int i) const;
   int output_size() const;
 
@@ -70,8 +68,17 @@ private:
   OpId opId{-1};
   // The Graph ofo the Op that this loss will generate
   Graph *pgraph{nullptr};
+
+  // The names of the input tensors
   std::vector<TensorId> input_;
+  // The names of the output tensors
   std::vector<TensorId> output_;
+
+  // Rule: output_.size() should be input_.size() + 1.
+  //     : In particular, let input_.size() = N.
+  //       The first N outputs are the gradients of the N
+  //       inputs, in order. Stream tensors included!
+  //       Label interpreted as probability vector for grad.
   virtual void setInOut(std::vector<TensorId> &,
                         std::vector<TensorId> &) const = 0;
 };
@@ -123,6 +130,7 @@ enum class OpType {
   NEGLOGLIKE,
   PAD,
   RELU,
+  SUM,
 };
 
 class TensorIndexMap {
@@ -133,11 +141,18 @@ public:
   void reset(int, Tensor *);
   Tensor *tensor(int);
   const Tensor *tensor(int) const;
+  bool hasIndex(int) const;
   const std::vector<int> &indices(Tensor *) const;
   const std::map<Tensor *, std::vector<int>> &indicesMap() const;
+  const std::map<int, Tensor *> &tensorMap() const;
   // the number or indices (keys of tensor_map)
   int n() const;
   void append(std::stringstream &, std::string prefix) const;
+  // set the TensorInfo of tensor(index) if hasIndex(index) is true
+  void setInfoIfIndex(const TensorInfo &, int index);
+  // the returned vector has correct TensorIds at indices in
+  // tensor_map and "" at unused indices inbetween
+  std::vector<TensorId> getSerialised() const;
 
 private:
   std::map<int, Tensor *> tensor_map;
@@ -221,10 +236,13 @@ public:
   const Attributes nAtts;
 
   // set shape and type parameters,
-  // MUST set output TensorInfos
+  // MUST set output TensorInfos for all outputs
   virtual void setup();
 
   virtual Node getGradientPartner() const;
+
+  virtual std::unique_ptr<Op>
+  getGradientOp(OpId, const std::map<int, Tensor *> &gradientsIn) const;
 
 private:
   void appendIO(std::stringstream &) const;
@@ -274,7 +292,7 @@ public:
   ~Tensors();
   // Store the Tensors of type Const
   const VectorAndSet constIds;
-  Tensor *get(TensorId);
+  Tensor *get(TensorId) const;
   void remove(TensorId);
   bool contains(TensorId) const;
   // create a Tensor, either of type Const or Variable
@@ -287,11 +305,19 @@ public:
   std::vector<TensorId> getIds(TensorType) const;
   std::vector<TensorId> getNoProducerIds() const;
   const onnx::TensorProto *getOnnxInit(TensorId) const;
+  void addNonGradient(TensorId gradId, Tensor *nonGradTensor);
+
+  // return the tensor of which the
+  // tensor with TensorId is a gradient
+  Tensor *getNonGradientOf(TensorId) const;
 
 private:
   std::map<TensorId, std::unique_ptr<Tensor>> M;
   OnnxTensorPtrs init;
   Graph *pgraph;
+
+  // from gradients to non-gradients (if there are any)
+  std::map<TensorId, Tensor *> non_gradients_;
 };
 
 class Graph {
@@ -367,6 +393,10 @@ private:
   // create an Op from loss, and wire it to the correct input Tensors,
   // and create the activate output Tensor(s)
   Op *growFromLoss();
+
+  Op *growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum);
+
+  Op *growGradOp(Op *forwardOp, const std::map<int, Tensor *> &gradientsIn);
 
   // called from growFromNode and growFromLoss.
   // T requires functions input(int) and input_size()

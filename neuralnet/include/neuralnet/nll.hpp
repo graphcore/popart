@@ -41,6 +41,9 @@ private:
   TensorId Y;
   virtual void setInOut(std::vector<TensorId> &,
                         std::vector<TensorId> &) const override final;
+
+  // this should be determined from the user's output request;
+  bool computeLabelGradient{false};
 };
 
 } // namespace neuralnet

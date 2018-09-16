@@ -19,8 +19,13 @@ onnx::OpSchema createNegLogLikeOpSchema() {
   schema.Input(0, "X", "Tensor pre-log-soft-max", "T", onnx::OpSchema::Single);
   schema.Input(1, "Y", "Label", "I", onnx::OpSchema::Single);
   schema.Output(
-      0, "dX", "Gradient of X w.r.t. Loss", "T", onnx::OpSchema::Single);
-  schema.Output(1, "Loss", "The Loss", "float", onnx::OpSchema::Optional);
+      0, "dX", "Gradient of X w.r.t. Loss", "T", onnx::OpSchema::Optional);
+  schema.Output(1,
+                "dY",
+                "Gradient of Y (probabilities) w.r.t. Loss",
+                "T",
+                onnx::OpSchema::Optional);
+  schema.Output(2, "Loss", "The Loss", "float", onnx::OpSchema::Optional);
   // Note : this MUST be set otherwise there is a segfault from
   // ONNX in Finalize(). A ticket should be openened with team ONNX.
   schema.TypeConstraint(
@@ -52,9 +57,11 @@ NegLogLikeOp::NegLogLikeOp(const OpConstructorBundle &bundle) : Op(bundle) {}
 
 void NegLogLikeOp::setup() {
   // dX has same info as X
-  output.tensor(0)->info = input.tensor(0)->info;
+  output.setInfoIfIndex(input.tensor(0)->info, 0);
+  // dY, same info as X
+  output.setInfoIfIndex(input.tensor(0)->info, 1);
   // Loss, always float32, rank 1 tensor of size batchsize
-  output.tensor(1)->info = {TP::FLOAT, {input.tensor(0)->info.dim(0)}};
+  output.setInfoIfIndex({TP::FLOAT, {input.tensor(0)->info.dim(0)}}, 2);
 }
 
 TensorId NegLogLikeLoss::getLossId() const { return "NLLloss"; }
@@ -77,17 +84,26 @@ void NegLogLikeLoss::setInOut(std::vector<TensorId> &input,
 
   // outputs are
   //     index 0 : the gradient of input 0 w.r.t. the loss
-  //     index 1 : the loss
+  //     index 1 : the gradient of input 0 w.r.t. the label
+  //     index 2 : the loss
   //     we just cofirm the above
   if (!(schema.outputs().at(0).GetName() == "dX")) {
     throw error("NegLogLike Schema does not have output 0 as dX");
   }
-  if (!(schema.outputs().at(1).GetName() == "Loss")) {
-    throw error("NegLogLike Schema does not have output 1 as Loss");
+  if (!(schema.outputs().at(1).GetName() == "dY")) {
+    throw error("NegLogLike Schema does not have output 1 as dY");
+  }
+  if (!(schema.outputs().at(2).GetName() == "Loss")) {
+    throw error("NegLogLike Schema does not have output 2 as Loss");
   }
 
-  input  = {X, Y};
-  output = {getGradId(X, getOpId(), /*index=*/0), getLossId()};
+  input = {X, Y};
+  output.resize(3, "");
+  output[0] = getGradId(X, getOpId(), /*index=*/0);
+  if (computeLabelGradient) {
+    output[1] = getGradId(Y, getOpId(), /*index=*/1);
+  }
+  output[2] = getLossId();
 }
 
 std::unique_ptr<Op> NegLogLikeLoss::getOp() const {

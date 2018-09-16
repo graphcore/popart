@@ -26,6 +26,17 @@ void Consumers::extend(const std::map<Op *, int> &m) {
   }
 }
 
+int Consumers::getTotal() const {
+  //  using X = decltype(consumers_m.begin());
+  //  return std::accumulate(consumers_m.begin(), consumers_m.end(), 0,
+  //      [](const X & v1, const X & v2){return v1.second + v2.second;});
+  int total = 0;
+  for (auto &op_count : consumers_m) {
+    total += op_count.second;
+  }
+  return total;
+}
+
 Tensor::Tensor(TensorId n, TensorType t, Graph *g)
     : id(n), pgraph(g), producer(nullptr),
       tensorTypeInfo(&getTensorTypeInfoMap().at(t)) {}
@@ -96,7 +107,7 @@ std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
       {TensorType::Const, {TensorType::Const, "Const"}},
       //{TensorType::Gradient, {TensorType::Gradient, "Gradient"}},
       {TensorType::Momentum, {TensorType::Momentum, "Momentum"}},
-      {TensorType::Other, {TensorType::Other, "Other"}},
+      //{TensorType::Other, {TensorType::Other, "Other"}},
       {TensorType::Stream, {TensorType::Stream, "Stream"}},
       {TensorType::Unknown, {TensorType::Unknown, "Unknown"}},
       {TensorType::Variable, {TensorType::Variable, "Variable"}}};
