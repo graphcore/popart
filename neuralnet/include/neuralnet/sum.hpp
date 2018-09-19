@@ -5,7 +5,7 @@
 
 namespace neuralnet {
 
-class SumOp : public NonGradOp {
+class SumOp : public Op {
 public:
   SumOp(const OpConstructorBundle &);
   virtual void setup() override final;

@@ -9,8 +9,8 @@
 
 namespace neuralnet {
 
-ConvOp::ConvOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph)
-    : HasReceptiveFieldOp(opId, node, pgraph) {
+ConvOp::ConvOp(const onnx::NodeProto &node, Graph *pgraph)
+    : HasReceptiveFieldOp(node, pgraph) {
   if (input.n()) {
     throw error("Conv with bias case not handled");
   }

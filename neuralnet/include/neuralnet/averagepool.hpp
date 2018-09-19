@@ -2,8 +2,8 @@
 #define GUARD_NEURALNET_AVERAGEPOOL_HPP
 
 #include <neuralnet/graph.hpp>
-#include <neuralnet/receptive.hpp>
 #include <neuralnet/names.hpp>
+#include <neuralnet/receptive.hpp>
 
 namespace neuralnet {
 
@@ -11,10 +11,8 @@ class Tensor;
 
 class AveragePoolOp : public HasReceptiveFieldOp {
 public:
-  AveragePoolOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph);
-  virtual std::unique_ptr<Op> getGradOp(
-      OpId) const override final;
-      //const std::map<int, Tensor *> &gradientsIn) const override final;
+  AveragePoolOp(const onnx::NodeProto &node, Graph *pgraph);
+  virtual OpsAndIndices getGradOps() const override final;
 
 private:
   virtual void setup0() override final;
@@ -22,19 +20,15 @@ private:
   int64_t getNOutChans() const override final;
 };
 
-class AveragePoolGradOp : public GradOp {
+class AveragePoolGradOp : public Op {
 
-  public:
-    
-    AveragePoolGradOp(OpId,
-                      const AveragePoolOp *);
-                      //const std::map<int, Tensor *> &gradientsIn);
+public:
+  AveragePoolGradOp(const AveragePoolOp *);
 
-  private: 
-    const AveragePoolOp * averagePoolOp;
-
+private:
+  const AveragePoolOp *averagePoolOp;
 };
 
-}
+} // namespace neuralnet
 
 #endif

@@ -7,7 +7,6 @@
 
 namespace neuralnet {
 
-
 enum class TensorType {
   Activation = 0, // this includes Gradient tensors
   Const,

@@ -3,10 +3,8 @@
 
 namespace neuralnet {
 
-LogSoftmaxOp::LogSoftmaxOp(OpId opId,
-                           const onnx::NodeProto &node,
-                           Graph *pgraph)
-    : NonGradOp(opId, node, pgraph) {
+LogSoftmaxOp::LogSoftmaxOp(const onnx::NodeProto &node, Graph *pgraph)
+    : Op(node, pgraph) {
   // //std::cout << "in logsoftmax constructor" << std::endl;
 }
 

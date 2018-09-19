@@ -5,10 +5,9 @@
 
 namespace neuralnet {
 
-class PadOp : public NonGradOp {
+class PadOp : public Op {
 public:
-  PadOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph)
-      : NonGradOp(opId, node, pgraph) {}
+  PadOp(const onnx::NodeProto &node, Graph *pgraph) : Op(node, pgraph) {}
 };
 } // namespace neuralnet
 

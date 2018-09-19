@@ -7,7 +7,7 @@ namespace neuralnet {
 
 class ConvOp : public HasReceptiveFieldOp {
 public:
-  ConvOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph);
+  ConvOp(const onnx::NodeProto &node, Graph *pgraph);
   int64_t nOutChans;
   int64_t group;
 

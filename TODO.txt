@@ -38,4 +38,12 @@ directly
 Loss should take in values before probabilities, and output loss and gradients of
 these. General rule for loss nodes : return gradient of input
 
+16/09/2018
+-----------------------
+expunge dynamic_cast.
 
+19/09/2018
+-----------------------
+rewrite code to create backwards pass, avoiding lambda functions (make them
+class functions) and spawning preferably 1 node per gradient to compute, with
+the option for nodes with several output gradient tensors. 

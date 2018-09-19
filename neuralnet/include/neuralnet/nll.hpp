@@ -14,7 +14,7 @@ namespace neuralnet {
 onnx::OpSchema createNegLogLikeOpSchema();
 const onnx::OpSchema &getNegLogLikeOpSchema();
 
-class NegLogLikeOp : public NonGradOp {
+class NegLogLikeOp : public Op {
 public:
   NegLogLikeOp(const OpConstructorBundle &);
   virtual void setup() override final;
@@ -29,7 +29,7 @@ public:
   // determine X from the onnx model
   NegLogLikeLoss(const onnx::ModelProto &, TensorId Y_);
   virtual ~NegLogLikeLoss() override = default;
-  virtual std::unique_ptr<Op> getOp() const override final;
+  virtual std::unique_ptr<Op> getSpecificOp() const override final;
   virtual std::vector<TensorId> getStreamTensorNames() const override final;
   virtual TensorId getLossId() const override final;
   virtual std::string op_type() const override final;

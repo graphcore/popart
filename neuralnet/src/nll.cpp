@@ -53,7 +53,7 @@ std::vector<TensorId> NegLogLikeLoss::getStreamTensorNames() const {
 
 NegLogLikeLoss::NegLogLikeLoss(TensorId id0, TensorId id1) : X(id0), Y(id1) {}
 
-NegLogLikeOp::NegLogLikeOp(const OpConstructorBundle &bundle) : NonGradOp(bundle) {}
+NegLogLikeOp::NegLogLikeOp(const OpConstructorBundle &bundle) : Op(bundle) {}
 
 void NegLogLikeOp::setup() {
   // dX has same info as X
@@ -106,9 +106,8 @@ void NegLogLikeLoss::setInOut(std::vector<TensorId> &input,
   output[2] = getLossId();
 }
 
-std::unique_ptr<Op> NegLogLikeLoss::getOp() const {
-  OpConstructorBundle b(
-      getOpId(), op_type(), getGraph(), {}, getNeuralNetDomain());
+std::unique_ptr<Op> NegLogLikeLoss::getSpecificOp() const {
+  OpConstructorBundle b(op_type(), getGraph(), {}, getNeuralNetDomain());
   std::unique_ptr<Op> nllOp(new NegLogLikeOp(b));
 
   return nllOp;

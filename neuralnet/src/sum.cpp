@@ -4,7 +4,7 @@
 
 namespace neuralnet {
 
-SumOp::SumOp(const OpConstructorBundle &bundle) : NonGradOp(bundle) {}
+SumOp::SumOp(const OpConstructorBundle &bundle) : Op(bundle) {}
 
 void SumOp::setup() {
   throw error("SumOp setup TODO");

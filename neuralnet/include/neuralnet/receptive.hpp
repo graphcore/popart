@@ -5,9 +5,9 @@
 
 namespace neuralnet {
 
-class HasReceptiveFieldOp : public NonGradOp {
+class HasReceptiveFieldOp : public Op {
 public:
-  HasReceptiveFieldOp(OpId opId, const onnx::NodeProto &node, Graph *pgraph);
+  HasReceptiveFieldOp(const onnx::NodeProto &node, Graph *pgraph);
   virtual void setup() override final;
   int nSpatialDims;
   int64_t batchSize, nInChans;
