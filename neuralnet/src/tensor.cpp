@@ -103,7 +103,7 @@ TensorTypeInfo::TensorTypeInfo(TensorType t_, std::string ts_)
 
 std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
   std::map<TensorType, TensorTypeInfo> tensor_types_m = {
-      {TensorType::Activation, {TensorType::Activation, "Activation"}},
+      {TensorType::ActGrad, {TensorType::ActGrad, "ActGrad"}},
       {TensorType::Const, {TensorType::Const, "Const"}},
       //{TensorType::Gradient, {TensorType::Gradient, "Gradient"}},
       {TensorType::Momentum, {TensorType::Momentum, "Momentum"}},

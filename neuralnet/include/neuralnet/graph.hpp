@@ -22,6 +22,48 @@ class Op;
 // otherwise throw an error
 TensorId getUniqueOutId(const onnx::ModelProto &m);
 
+
+// The gradient of a tensor is the sum of 1 or several tensors, 
+// 1 for each of the nodes which consumed it. This class is for
+// tracking/counting these as they come in down edges.
+class TensorGradRegistry{
+public:
+  using TMap = std::map<Tensor *, std::vector<Tensor *>>;
+  // Register tensor "grad" as being a 
+  // gradient of "nonGrad" w.r.t. loss along some edge
+  void insert(Tensor * nonGrad, Tensor * grad);
+
+  // Return the non-gradient tensors which have ALL their required gradients
+  // registed, and are thus ready to have their edge gradients summed to 
+  // obtain the final gradient.
+  // NOT a const member function
+  TMap popComplete();
+
+private:
+  // stores all non-grad tensors which have some but not all of
+  // their edges having provided gradients
+  TMap partial;
+  // stores all non-grad tensors which have had all of their
+  // edges provide gradients. When popCompleted() is called, 
+  // this map is returned,
+  TMap complete;
+
+};
+
+class OpGradRegistry{
+public:
+  using NMap = std::map<Op *, std::map<int, Tensor *>>;
+  void insert(Op * nonGrad, int index, Tensor * grad);
+  NMap popComplete();
+
+  private:
+  // For a non-grad-op, which input gradient have been computed
+   NMap partial;
+  // When all required gradient inputs are in, move from partial to complete
+   NMap complete;
+
+};
+
 class OpAndIndices {
 
 public:
@@ -244,7 +286,7 @@ public:
   Op(const Node &, Graph *);
   Op(const OpConstructorBundle &);
 
-  // create an Activation (output) tensor
+  // create an ActGrad (output) tensor
   // and wire it to this Ops output
   void createAndConnectOutTensor(OutIndex, TensorId);
 
@@ -300,7 +342,14 @@ public:
 
   // return a gradient op's non-gradient partner if relevant,
   // otherwise throws an error
-  Op *getNonGradOp() const;
+  virtual Op *getNonGradOp() const;
+
+  // what input index of a nonGradOp does 
+  // part gradient coming out at index partGradInd
+  // correspond to? If not relevant, throw an error
+  virtual int getNonGradInIndex(int partGradInd) const;
+
+  virtual bool readyToCreateGradients(std::map<int, Tensor *> &) const;
 
 private:
   void appendIO(std::stringstream &) const;
@@ -333,7 +382,6 @@ private:
   //    interleaved if they are of the same size
 };
 
-// Activation, Gradient, Variable etc
 enum class TensorType;
 
 class OpTypes {
@@ -377,8 +425,9 @@ public:
   void addInit(TensorId, const onnx::TensorProto *);
   // create a Tensor of type Stream
   void addStream(TensorId);
-  // create a Tensor of type Activation
-  void addActivation(TensorId);
+  // create a Tensor of type ActGrad (basically any tensor which is
+  // the output of an Op)
+  void addActGrad(TensorId);
   std::vector<TensorId> getInitIds() const;
   std::vector<TensorId> getIds(TensorType) const;
   std::vector<TensorId> getNoProducerIds() const;
@@ -386,7 +435,7 @@ public:
   void addNonGradient(TensorId gradId, Tensor *nonGradTensor);
 
   // return the tensor of which the
-  // tensor with TensorId is a gradient
+  // tensor with TensorId is a COMPLETE gradient
   Tensor *getNonGradientOf(TensorId) const;
 
 private:
@@ -484,9 +533,9 @@ private:
 
   const onnx::ModelProto onnxModel;
 
-  // Nodes created during the building of the graph, includes
-  // Nodes for the backwards pass.
-  std::vector<std::unique_ptr<Node>> constructedNodes;
+ // // Nodes created during the building of the graph, includes
+ // // Nodes for the backwards pass.
+ // std::vector<std::unique_ptr<Node>> constructedNodes;
 
   // create an Op from a Node
   std::unique_ptr<Op> addOp(const Node &);
@@ -495,6 +544,13 @@ private:
   // moves ownsership of created Op into the Graph, 
   // and returns the Op's OpId (which it already has)
   OpId moveIntoGraph(std::unique_ptr<Op> op);
+
+  void registerOpGrads(Op *);
+  void registerTensorGrad(Tensor *);
+
+  TensorGradRegistry tensor_grad_registry;
+  OpGradRegistry op_grad_registry;
+
 
   // total number of ops ever created
   OpId opsCounter{0};

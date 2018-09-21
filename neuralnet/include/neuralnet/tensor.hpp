@@ -8,7 +8,7 @@
 namespace neuralnet {
 
 enum class TensorType {
-  Activation = 0, // this includes Gradient tensors
+  ActGrad = 0, // an activation or a gradient, basically the output of an Op
   Const,
   //  Gradient,
   Momentum,
@@ -74,7 +74,7 @@ public:
   Tensor(TensorId n, TensorType t, Graph *g);
   TensorId id;
   Graph *pgraph;
-  // Activation, Variable, etc:
+  // ActGrad, Variable, etc:
   TensorType tensorType() const;
   const std::string &tensor_type() const;
   Consumers consumers;
