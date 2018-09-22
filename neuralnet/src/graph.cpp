@@ -18,9 +18,6 @@
 
 namespace neuralnet {
 
-OpAndIndices::OpAndIndices(std::unique_ptr<Op> gradOp_,
-                           const std::map<int, int> &m)
-    : gradOp(std::move(gradOp_)), forwardInToBackOut(m) {}
 
 // Passes calls to .size() and .at(int) to input_size() and input(int)
 // so that standard containers can be used in Graph::connectInputs.
@@ -65,7 +62,7 @@ std::vector<TensorId> TensorIndexMap::getSerialised() const {
 // The Op in the OpAndTensorIds is the gradient op, and
 // the TensorIds are the input indices of input of this
 // Op for which the gradient is computed
-OpsAndIndices Op::getGradOps() const {
+std::vector<std::unique_ptr<Op>> Op::getGradOps()  {
   throw error("Cannot get grodients for " + op_type());
 }
 
@@ -98,7 +95,6 @@ OpId Loss::getOpId() const {
 }
 
 std::unique_ptr<Op> Loss::finalSetAndGetOp(Graph *pgraph_) {
-
   pgraph = pgraph_;
   opId   = pgraph->getOpsCounter();
   setInOut(input_, output_);
@@ -427,9 +423,7 @@ void Graph::inferTensorInfos() {
   }
 
   for (Op *op : getTopologicallySorted()) {
-    std::cout << "setup for " << op->op_type() << std::flush;
     op->setup();
-    std::cout << " done" << std::endl;
   }
 }
 
@@ -443,6 +437,7 @@ const onnx::TensorProto *Tensors::getOnnxInit(TensorId id) const {
 void Graph::removePadSizeZero() {
   for (auto &op : opsOfType(OpType::PAD)) {
     if (!isLogged(op->input.tensor(0)->id)) {
+      std::cout << "removing null op " << op->id << std::endl;
       removeNullOp(op->input.tensor(0)->id, op->id);
     }
   }
@@ -459,8 +454,7 @@ std::vector<Op *> Graph::opsOfType(OpType opType) {
 }
 
 void Graph::removeNullOp(TensorId name, OpId opId) {
-  // [] (see header of ascii picture definitions)
-  // Tensor *tensorIn = tensors[name].get();
+  // [] (see .hpp for ascii picture definitions)
   Tensor *tensorIn = tensors.get(name);
   // ()
   Op *op = ops[opId].get();
@@ -474,6 +468,7 @@ void Graph::removeNullOp(TensorId name, OpId opId) {
   // (.) produces [.] directly
   int index = op0->output.indices(tensorIn)[0];
   op0->output.reset(index, tensorOut);
+  tensorOut->resetProducer(op0);
   // delete []
   tensors.remove(name);
   // tensors.erase(name);
@@ -482,12 +477,6 @@ void Graph::removeNullOp(TensorId name, OpId opId) {
   ops.erase(opId);
 }
 
-void Tensor::setProducer(Op *op) {
-  if (hasProducer()) {
-    throw error("Cannot set a producer for Tensor " + id + " as already one");
-  }
-  producer = op;
-}
 
 int TensorIndexMap::n() const { return static_cast<int>(tensor_map.size()); }
 
@@ -526,19 +515,26 @@ bool VectorAndSet::contains(std::string name) const {
   return m_vals.count(name) == 1;
 }
 
+void Tensors::insert(TensorId name, std::unique_ptr<Tensor> t){
+  if (M.find(name) != M.end()){
+    throw error("ILE : tensor " + name + " already in M");
+  }
+  M[name] = std::move(t);
+}
+
 void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
   init[name] = pt;
-  M[name]    = std::unique_ptr<Tensor>(new Tensor(
+  insert(name,  std::unique_ptr<Tensor>(new Tensor(
       name,
       constIds.contains(name) ? TensorType::Const : TensorType::Variable,
-      pgraph));
+      pgraph)));
 }
 
 std::string reservedPrefix() { return "d|=|_"; }
 
 void Tensors::addActGrad(TensorId tenId) {
-  M[tenId] = std::unique_ptr<Tensor>(
-      new Tensor(tenId, TensorType::ActGrad, pgraph));
+  insert(tenId, std::unique_ptr<Tensor>(
+      new Tensor(tenId, TensorType::ActGrad, pgraph)));
 }
 
 void Graph::confirmNonGradId(TensorId tenId) const {
@@ -550,8 +546,8 @@ void Graph::confirmNonGradId(TensorId tenId) const {
 }
 
 void Tensors::addStream(TensorId tenId) {
-  M[tenId] =
-      std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, pgraph));
+  insert(tenId, 
+      std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, pgraph)));
 }
 
 const std::vector<std::string> &Attributes::getNames() const { return names; }
@@ -644,7 +640,11 @@ void Attributes::append(std::stringstream &ss) const {
 
 TensorId getGradId(TensorId id) { return reservedPrefix() + id; }
 
-TensorId getGradId(TensorId tenId, OpId opId, int index) {
+TensorId getNonGradId(TensorId id) {
+  return id.substr(reservedPrefix().size());
+}
+
+TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
   std::stringstream ss;
   ss << reservedPrefix() << opId << '_' << index << '_' << tenId;
   return ss.str();
@@ -696,12 +696,6 @@ Op *Graph::growFromLoss() {
   connectInputs(*loss, opId);
   connectOutputs(*loss, opId);
   Op * op = ops[opId].get();
-//  for (auto & index_tensor : op->output.tensorMap()){
-//    // we use that the loss has the index of gradients 
-//    // corresponding to the input tensors
-//    tensors.addNonGradient(index_tensor.second->id,
-//                           op->input.tensor(index_tensor.first));
-//  }
   return op;
 }
 
@@ -719,41 +713,112 @@ Op *Graph::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   std::vector<TensorId> outputs{gradientId};
   connectInputs(InputWrapper<decltype(inputs)>(inputs), opId);
   connectOutputs(OutputWrapper<decltype(outputs)>(outputs), opId);
-
+  std::cout << "* adding non gradient for tensor " << gradientId << " as tensor "
+            << target->id << std::endl;
   tensors.addNonGradient(gradientId, target);
   return ops[opId].get();
 }
 
-std::vector<Op *>
-Graph::growGradOps(Op *forwardOp, const std::map<int, Tensor *> &gradients) {
-  auto backOpsAndIndices = forwardOp->getGradOps();
+
+std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
+
+  std::cout << "grow grad ops for " << nonGradOp->op_type() << std::endl;
+
+  OpId nonGradOpId = nonGradOp->id;
+  auto backOps = nonGradOp->getGradOps();
   std::vector<Op *> gradOps;
-  for (auto &op_indices : backOpsAndIndices) {
+  for (auto & upop : backOps) {
+    Op * gradOp = upop.get();
+    OpId gradOpId = moveIntoGraph(std::move(upop));
 
-    OpId opId = moveIntoGraph(std::move(op_indices.gradOp));
+    // connect inputs of gradOp
+    {
+      // inputs to gradOp (to populate in this scope):
+      std::map<int, std::string> m_inputs;
+      int max_input_index = 0;
+      for (auto &inOutMapper : gradOp->gradInputInfo()) {
 
-    throw error("need to make the connections to gradients");
+        int indexGrad     = inOutMapper.iGrad;
+        int indexFwd      = inOutMapper.iNonGrad;
+        GradOpInType type = inOutMapper.type;
 
-    zzzzzzzzzzzzzzzzzzz
+        max_input_index = std::max(indexGrad, max_input_index);
 
-    // register non-gradient tensors for gradient tensors
-    for (auto &index_tensor : ops[opId]->output.tensorMap()) {
-      int backwardIndex = index_tensor.first;
-      int forwardIndex  = op_indices.getForwardIndex(backwardIndex);
-      tensors.addNonGradient(index_tensor.second->id,
-                             forwardOp->input.tensor(forwardIndex));
+        // the input at index 'indexGrad' to gradOp is
+        switch (type) {
+        //  (1) the INPUT at index 'indexFwd' of nonGradOp
+        case GradOpInType::IN: {
+          m_inputs[indexGrad] = nonGradOp->input.tensor(indexFwd)->id;
+          break;
+        }
+
+        //  (2) the OUTPUT at index 'indexFwd' of nonGradOp
+        case GradOpInType::OUT: {
+          m_inputs[indexGrad] = nonGradOp->output.tensor(indexFwd)->id;
+          break;
+        }
+
+        //  (3) the GRADIENT of the OUTPUT
+        //      at index 'indexFwd' of nonGradOp.
+        case GradOpInType::GRADOUT: {
+          m_inputs[indexGrad] =
+              getGradId(nonGradOp->output.tensor(indexFwd)->id);
+          break;
+        }
+        }
+      }
+      // convert m_imputs to a vector, a format supported by connectInputs
+      std::vector<std::string> v_inputs(max_input_index + 1, "");
+      for (auto &index_id : m_inputs) {
+        v_inputs[index_id.first] = index_id.second;
+      }
+      connectInputs(InputWrapper<decltype(v_inputs)>(v_inputs), gradOpId);
     }
-    gradOps.push_back(ops[opId].get());
+
+    // connect outputs of gradOp
+    {
+      std::cout << "connect outputs for " << gradOp->op_type() << std::endl;
+      std::vector<TensorId> v_outputs;
+      for (auto out_in : gradOp->gradOutToNonGradIn()) {
+        int gradOut    = out_in.first;
+        int nonGradIn  = out_in.second;
+        TensorId inId  = nonGradOp->input.tensor(nonGradIn)->id;
+        TensorId outId = getEdgeGradId(inId, nonGradOpId, nonGradIn);
+        if (v_outputs.size() < gradOut + 1) {
+          v_outputs.resize(gradOut + 1, "");
+        }
+        v_outputs[gradOut] = outId;
+      }
+      std::cout << "connecting outputs for op id: " << gradOpId << std::endl;
+      connectOutputs(OutputWrapper<decltype(v_outputs)>(v_outputs), gradOpId);
+    }
+    // note, as the outputs of gradOp are edge-grad-tensors and not
+    // edge-grads, we do not need to match them to non-grad tensors. 
+    gradOps.push_back(gradOp);
   }
 
+  std::cout << "finished in grow grad ops for " << nonGradOp->op_type()
+            << std::endl;
   return gradOps;
 }
 
-int Op::getNonGradInIndex(int partGradInd) const {
+int Op::getNonGradInIndex(int) const {
   throw error("Op " + op_type() + " cannot `get non-grad in index'");
 }
 
-bool Op::readyToCreateGradients(std::map<int, Tensor *> &) const {
+GradInOutMapper::GradInOutMapper(int iG, int iNG, GradOpInType t)
+    : iGrad(iG), iNonGrad(iNG), type(t) {}
+
+const std::vector<GradInOutMapper> & Op::gradInputInfo() const{
+  throw error("Op " + op_type() + " cannot get `grad input info'");
+}
+
+
+const std::map<int, int> & Op::gradOutToNonGradIn() const{
+  throw error("Op " + op_type() + " cannot get `grad out to non grad in'");
+}
+
+bool Op::readyToCreateGradients(std::set<int> &) const {
   throw error("Op " + op_type() +
               " cannot determine if `ready to create gradients'");
 }
@@ -771,17 +836,23 @@ bool Op::readyToCreateGradients(std::map<int, Tensor *> &) const {
     }
 }
 
-void OpGradRegistry::insert(Op * nonGrad, int index, Tensor * grad){
+void OpGradRegistry::insert(Op * nonGrad, int index){
   auto found = partial.find(nonGrad);
+  // so far NO gradients for nonGrad are in:
   if (found == partial.end()){
     partial[nonGrad] = {};
   }
-  partial[nonGrad][index] = grad;
+  // this should be removed when we're happy the IL (internal logic)
+  // is correct:
+  if (partial[nonGrad].count(index) != 0){
+    throw error("ILE : index already present in OpGradRegistry::insert");
+  }
+  partial[nonGrad].insert(index);
   // probably just checks that the size of partial is
   // nonGrad->output.n(), but maybe not. 
   if (nonGrad->readyToCreateGradients(partial[nonGrad])){
-      complete[nonGrad] = partial[nonGrad];
-      partial.erase(nonGrad);
+    complete.push_back(nonGrad);
+    partial.erase(nonGrad);
   }
 }
 
@@ -791,7 +862,7 @@ std::map<Tensor *, std::vector<Tensor *>> TensorGradRegistry::popComplete() {
   return toRet;
 }
 
-OpGradRegistry::NMap OpGradRegistry::popComplete() {
+std::vector<Op*> OpGradRegistry::popComplete() {
   auto toRet = complete;
   complete = {};
   return toRet;
@@ -799,29 +870,42 @@ OpGradRegistry::NMap OpGradRegistry::popComplete() {
 
 
 // communicate that op has computed gradients
-void Graph::registerOpGrads(Op * gradOp){
-  for (auto & index_tensor : gradOp->output.tensorMap()){
-    Tensor * partGrad = index_tensor.second;
-    // For loss Op, nonGradOp == gradOp, otherwise it is the unique 
-    // Op corresponding to gradOp
-    Op * nonGradOp = gradOp->getNonGradOp();
-    // what input index of nonGradOp does the part gradient correspond to?
-    int inputIndex = gradOp->getNonGradInIndex(index_tensor.first);
-    tensor_grad_registry.insert(nonGradOp->input.tensor(inputIndex), partGrad); 
+void Graph::registerOpGrads(Op * op){
+  // For loss Op, nonGradOp == op, otherwise it is the unique
+  // Op corresponding to op
+  Op *nonGradOp = op->getNonGradOp();
+  for (auto & index_tensor : op->gradOutMap()){
+    int opOutInd = index_tensor.first;
+    Tensor *partGrad = index_tensor.second;
+    // what input index of nonGradOp does the 
+    // edge-gradient correspond to?
+    int nonGradInInd = op->getNonGradInIndex(opOutInd);
+    Tensor * nonGradTensor = nonGradOp->input.tensor(nonGradInInd);
+    tensor_grad_registry.insert(nonGradTensor, partGrad);
   }
+  std::cout << "register op grads for " << op->id << " complete" << std::endl;
 }
 
 
-// communicate that a new gradient tensor is ready (sum along edges)
+
+// communicate that a new gradient tensor 
+// (which is a sum along edges) is ready
 void Graph::registerTensorGrad(Tensor * sum){
   Tensor * nonGrad = tensors.getNonGradientOf(sum->id);
+  std::cout << "non gradient of tensor " << sum->id << " is tensor "
+            << nonGrad->id << std::endl;
   if (nonGrad->hasProducer()){
     Op * producer = nonGrad->getProducer();
+    std::cout << "the producer of tensor " << nonGrad->id << " is op "
+              << producer->id << std::endl;
+    std::cout  << " which is of type " << producer->op_type() << std::endl;
     // the index at which nonGrad was produced
     int index = producer->output.indices(nonGrad).at(0);
-    op_grad_registry.insert(producer, index, sum);
+    op_grad_registry.insert(producer, index);
   }
 }
+
+
 
 void Tensors::addNonGradient(TensorId id, Tensor *t) { non_gradients_[id] = t; }
 
@@ -829,29 +913,37 @@ void Tensors::addNonGradient(TensorId id, Tensor *t) { non_gradients_[id] = t; }
 void Graph::constructBackwards() {
   // definition: edge-gradient. What is output by a grad-op, 
   // and which will be summed with other edge-gradients to create
-  // a gradient. It is possible that an edge-gradient is same as a
-  // gradient, if a tensor has only 1 consumer.
+  // a gradient. It is possible that an edge-gradient has the same
+  // value as a gradient, if a tensor has only 1 consumer.
 
   // Add the Op which takes in activations and Streams, and
   // outputs edge-gradients (for all inputs) and the loss. 
   Op *lossOp = growFromLoss();
 
-  // grad-ops which have created edge-gradients, but the edge-gradients
-  // haven't signalled their existance to the powers which be
+  // grad-ops which have created edge-gradients, but the 
+  // edge-gradients haven't signalled their existance
   std::vector<Op *> opsToRegister = {lossOp};
+
   while (!opsToRegister.empty()){
 
+    std::cout << "will register op " << opsToRegister.back()->id << std::endl;
     registerOpGrads(opsToRegister.back());
+    std::cout << "registering op is complete" << std::endl;
     opsToRegister.resize(opsToRegister.size() - 1);
 
     for (auto &nongrad_egrads : tensor_grad_registry.popComplete()) {
       Tensor * nongrad = nongrad_egrads.first;
       const std::vector<Tensor *>  & egrads = nongrad_egrads.second;
-      // nongrad required below, as the name of the created op (sumOp)
-      // will be based off of it. Also, we register the link
-      // between sumOp and nongrad
+      // nongrad required below, as the name of the output of the 
+      // created op (sumOp) will be based off of it. Also, we 
+      // register the link between sumOp's output and nongrad
+      std::cout << "will grow sum op" << std::endl;
       Op *sumOp = growGradSumOp(nongrad, egrads);
+      std::cout << "sum op grown, it has id " << sumOp->id << std::endl;
+
       switch (nongrad->tensorType()) {
+
+      // if sumOp creates the gradient of an activation tensor,
       case TensorType::ActGrad: {
         registerTensorGrad(sumOp->output.tensor(0));
         break;
@@ -862,29 +954,51 @@ void Graph::constructBackwards() {
       case TensorType::Stream:
       case TensorType::Unknown:
       case TensorType::N:
-        throw error("cannot register node flow for " + nongrad->tensor_type() +
+        throw error("can't register gradient of " + nongrad->tensor_type() +
                     " tensor (yet?)");
 
       default: { throw error("only handling ActGrad and Variable for now"); }
       }
     }
+    std::cout << "grad ops registered" << std::endl;
 
-    for (auto &op__ind_ten : op_grad_registry.popComplete()) {
-      Op *op        = op__ind_ten.first;
-      const auto &ind_ten = op__ind_ten.second;
-      for (auto &gradOp : growGradOps(op, ind_ten)) {
+    for (Op * op : op_grad_registry.popComplete()) {
+      for (auto &gradOp : growGradOps(op)){
         opsToRegister.push_back(gradOp);
       }
     }
+
+    std::cout << "new ops grown" << std::endl;
   }
 }
+
+const std::map<int, Tensor*> & LossOp::gradOutMap() {
+  if (!gradOutMapIsSet){
+    gradOutMap_ = output.tensorMap();
+    // the last index is the loss, NOT a gradient thus remove it
+    int largest_out_index {0};
+    for (auto & x : gradOutMap_){
+      largest_out_index = std::max(largest_out_index, x.first);
+    }
+    gradOutMap_.erase(largest_out_index);
+    gradOutMapIsSet = true;;
+  }
+  return gradOutMap_;
+}
+
+LossOp::LossOp(const OpConstructorBundle &b ):Op(b) {}
 
 const std::map<int, Tensor *> &TensorIndexMap::tensorMap() const {
   return tensor_map;
 }
 
-Op *Op::getNonGradOp() const {
-  throw error("No GradOp for " + op_type() + " (yet?)");
+Op *Op::getNonGradOp()  {
+  throw error("No `get non grad op' for " + op_type() + " (yet?)");
+}
+
+
+const std::map<int, Tensor *> & Op::gradOutMap() {
+  throw error("No `grad out map' for " + op_type());
 }
 
 Op *Graph::growFromNode(const Node &node) {
@@ -914,8 +1028,8 @@ void Graph::connectInputs(const T &inContainer, OpId opId) {
       if (!tensors.contains(inName)) {
         throw error("input " + inName + " should already be in tensor map");
       } else {
-        auto nonGradOp = static_cast<Op *>(ops[opId].get());
-        nonGradOp->connectInTensor(inIndex, inName);
+        auto op = ops[opId].get();
+        op->connectInTensor(inIndex, inName);
       }
     }
   }
@@ -1042,6 +1156,15 @@ std::unique_ptr<Op> Graph::addOp(const Node &node) {
   }
   default: { throw error("No class for " + node.op_type()); }
   }
+}
+
+
+Op * LossOp::getNonGradOp() {
+  return this;
+}
+
+int LossOp::getNonGradInIndex(int index) const{
+  return index;
 }
 
 } // namespace neuralnet

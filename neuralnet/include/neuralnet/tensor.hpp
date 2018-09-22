@@ -83,6 +83,7 @@ public:
 
   Op *getProducer();
   void setProducer(Op *);
+  void resetProducer(Op *);
   bool hasProducer() const;
 
 private:

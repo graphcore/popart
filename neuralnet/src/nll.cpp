@@ -53,7 +53,9 @@ std::vector<TensorId> NegLogLikeLoss::getStreamTensorNames() const {
 
 NegLogLikeLoss::NegLogLikeLoss(TensorId id0, TensorId id1) : X(id0), Y(id1) {}
 
-NegLogLikeOp::NegLogLikeOp(const OpConstructorBundle &bundle) : Op(bundle) {}
+NegLogLikeOp::NegLogLikeOp(const OpConstructorBundle &bundle) : LossOp(bundle) {}
+
+
 
 void NegLogLikeOp::setup() {
   // dX has same info as X
@@ -99,9 +101,9 @@ void NegLogLikeLoss::setInOut(std::vector<TensorId> &input,
 
   input = {X, Y};
   output.resize(3, "");
-  output[0] = getGradId(X, getOpId(), /*index=*/0);
+  output[0] = getEdgeGradId(X, getOpId(), /*index=*/0);
   if (computeLabelGradient) {
-    output[1] = getGradId(Y, getOpId(), /*index=*/1);
+    output[1] = getEdgeGradId(Y, getOpId(), /*index=*/1);
   }
   output[2] = getLossId();
 }

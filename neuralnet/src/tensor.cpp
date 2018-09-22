@@ -26,6 +26,22 @@ void Consumers::extend(const std::map<Op *, int> &m) {
   }
 }
 
+void Tensor::setProducer(Op *op) {
+  if (hasProducer()) {
+    throw error("Cannot set a producer for Tensor " + id + " as already one");
+  }
+  producer = op;
+}
+
+void Tensor::resetProducer(Op *op) {
+  if (!hasProducer()) {
+    throw error("Cannot reset a producer for Tensor " + id + " as not one deja");
+  }
+  producer = op;
+}
+
+
+
 int Consumers::getTotal() const {
   //  using X = decltype(consumers_m.begin());
   //  return std::accumulate(consumers_m.begin(), consumers_m.end(), 0,

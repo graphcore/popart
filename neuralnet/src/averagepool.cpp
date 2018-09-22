@@ -25,20 +25,59 @@ void AveragePoolOp::setSpatial() {
 // i.e it is the same as the number of input channels
 int64_t AveragePoolOp::getNOutChans() const { return nInChans; }
 
-OpsAndIndices AveragePoolOp::getGradOps() const {
-  std::unique_ptr<Op> gradOp(new AveragePoolGradOp(this));
-
-  OpAndIndices grad0(std::move(gradOp), {{0, 0}});
-  OpsAndIndices opsAndIndices;
-  opsAndIndices.push_back(std::move(grad0));
-  return opsAndIndices;
+std::vector<std::unique_ptr<Op>> AveragePoolOp::getGradOps() {
+  std::vector<std::unique_ptr<Op>> upops;
+  upops.emplace_back(
+  std::unique_ptr<Op>(new AveragePoolGradOp(this)));
+  return upops;
 }
 
-AveragePoolGradOp::AveragePoolGradOp(const AveragePoolOp *op_)
+AveragePoolGradOp::AveragePoolGradOp(AveragePoolOp *op_)
     : Op({"AveragePoolGrad", op_->pgraph, {}, getNeuralNetDomain()}),
       averagePoolOp(op_) {
 
   std::cout << "AveragePoolGradOp constructed" << std::endl;
+}
+
+bool AveragePoolOp::readyToCreateGradients(std::set<int> & s0) const{
+  return s0.size() == output.n();
+}
+
+
+const std::vector<GradInOutMapper> & AveragePoolGradOp::gradInputInfo() const{
+  static const std::vector<GradInOutMapper> inInfo = createGradInputInfo();
+  return inInfo;
+}
+
+std::vector<GradInOutMapper> AveragePoolGradOp::createGradInputInfo()  const{
+  // the input to the grad-op at index 0 is the gradient 
+  // of the output of the non-grad-op at index 0.
+  return {{0, 0, GradOpInType::GRADOUT}};
+}
+
+const std::map<int, int> &AveragePoolGradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = createGradOutToNonGradInInfo();
+  return outInfo;
+}
+
+Op * AveragePoolGradOp::getNonGradOp() {
+  return averagePoolOp;
+}
+
+
+int AveragePoolGradOp::getNonGradInIndex(int gradOpOutIndex) const{
+  return gradOutToNonGradIn().at(gradOpOutIndex);
+}
+
+std::map<int, int> AveragePoolGradOp::createGradOutToNonGradInInfo() const{
+  // the grad-op output at index 0 corresponds 
+  // to the non-grad-op's input at index 0
+  return {{0,0}};
+}
+
+
+const std::map<int, Tensor *> & AveragePoolGradOp::gradOutMap(){
+  return output.tensorMap();
 }
 
 } // namespace neuralnet

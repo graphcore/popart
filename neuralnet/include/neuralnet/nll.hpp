@@ -14,7 +14,7 @@ namespace neuralnet {
 onnx::OpSchema createNegLogLikeOpSchema();
 const onnx::OpSchema &getNegLogLikeOpSchema();
 
-class NegLogLikeOp : public Op {
+class NegLogLikeOp : public LossOp {
 public:
   NegLogLikeOp(const OpConstructorBundle &);
   virtual void setup() override final;
@@ -22,7 +22,7 @@ public:
 
 class NegLogLikeLoss : public Loss {
 public:
-  // takes in of a tensor to apply NLL to
+  // takes in a tensor to apply NLL to
   // (the pre-soft-max tensor)
   // and the label Tensor
   NegLogLikeLoss(TensorId X_, TensorId Y_);

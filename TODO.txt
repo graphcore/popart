@@ -47,3 +47,9 @@ expunge dynamic_cast.
 rewrite code to create backwards pass, avoiding lambda functions (make them
 class functions) and spawning preferably 1 node per gradient to compute, with
 the option for nodes with several output gradient tensors. 
+
+22/09/2018
+-----------------------
+found a bug in removing a node. I should have a function (like in poponnx)
+which does a thorough test of the state of graph. This function can 
+be used for debugging purposed to find when the inconsistency was introduced.
