@@ -12,12 +12,10 @@ public:
 
   virtual void setup() override final;
   virtual bool readyToCreateGradients(std::set<int> &) const override final;
-
 };
 
-
-// takes output of ReluOp as input and not the output of ReluOp 
-// to determine where gradients become zero. It might be better 
+// takes output of ReluOp as input and not the output of ReluOp
+// to determine where gradients become zero. It might be better
 // (depending in what can be in-placed) to rather take the output
 // of ReluOp in to do this (or another binary tensor). This is why
 // I have called it ""
@@ -26,14 +24,15 @@ class ReluGradOp : public GradOp {
 public:
   ReluGradOp(ReluOp *);
   virtual Op *getNonGradOp() override final;
-  virtual const std::vector<GradInOutMapper> &gradInputInfo() const override final;
+  virtual const std::vector<GradInOutMapper> &
+  gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
   virtual void setup() override final;
 
 private:
   std::vector<GradInOutMapper> createReluGradInfo() const;
   std::map<int, int> createReluGradOutToIn() const;
-  ReluOp * reluOp;
+  ReluOp *reluOp;
 };
 
 } // namespace neuralnet

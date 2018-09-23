@@ -27,8 +27,7 @@ int64_t AveragePoolOp::getNOutChans() const { return nInChans; }
 
 std::vector<std::unique_ptr<Op>> AveragePoolOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(
-  std::unique_ptr<Op>(new AveragePoolGradOp(this)));
+  upops.emplace_back(std::unique_ptr<Op>(new AveragePoolGradOp(this)));
   return upops;
 }
 
@@ -38,18 +37,19 @@ AveragePoolGradOp::AveragePoolGradOp(AveragePoolOp *op_)
     : GradOp({"AveragePoolGrad", op_->pgraph, {}, getNeuralNetDomain()}),
       averagePoolOp(op_) {}
 
-bool AveragePoolOp::readyToCreateGradients(std::set<int> & s0) const{
+bool AveragePoolOp::readyToCreateGradients(std::set<int> &s0) const {
   return s0.size() == output.n();
 }
 
-
-const std::vector<GradInOutMapper> & AveragePoolGradOp::gradInputInfo() const{
-  static const std::vector<GradInOutMapper> inInfo = createAveragePoolGradInfo();
+const std::vector<GradInOutMapper> &AveragePoolGradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo =
+      createAveragePoolGradInfo();
   return inInfo;
 }
 
-std::vector<GradInOutMapper> AveragePoolGradOp::createAveragePoolGradInfo()  const{
-  // the input to the grad-op at index 0 is the gradient 
+std::vector<GradInOutMapper>
+AveragePoolGradOp::createAveragePoolGradInfo() const {
+  // the input to the grad-op at index 0 is the gradient
   // of the output of the non-grad-op at index 0.
   return {{0, 0, GradOpInType::GRADOUT}};
 }
@@ -59,23 +59,19 @@ const std::map<int, int> &AveragePoolGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-Op * AveragePoolGradOp::getNonGradOp() {
-  return averagePoolOp;
-}
+Op *AveragePoolGradOp::getNonGradOp() { return averagePoolOp; }
 
-
-int GradOp::getNonGradInIndex(int gradOpOutIndex) const{
+int GradOp::getNonGradInIndex(int gradOpOutIndex) const {
   return gradOutToNonGradIn().at(gradOpOutIndex);
 }
 
-std::map<int, int> AveragePoolGradOp::createAveragePoolGradOutToIn() const{
-  // the grad-op output at index 0 corresponds 
+std::map<int, int> AveragePoolGradOp::createAveragePoolGradOutToIn() const {
+  // the grad-op output at index 0 corresponds
   // to the non-grad-op's input at index 0
-  return {{0,0}};
+  return {{0, 0}};
 }
 
-
-const std::map<int, Tensor *> & GradOp::gradOutMap(){
+const std::map<int, Tensor *> &GradOp::gradOutMap() {
   return output.tensorMap();
 }
 

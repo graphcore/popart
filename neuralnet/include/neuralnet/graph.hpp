@@ -19,18 +19,18 @@ class Op;
 
 // the input tensor of a grad-op has what kinda
 // relation with the corresponding non-grad-op ?
-enum class GradOpInType  {IN = 0, OUT, GRADOUT};
+enum class GradOpInType { IN = 0, OUT, GRADOUT };
 
 class GradInOutMapper {
-  public:
-    GradInOutMapper(int iGrad_, int iNonGrad_, GradOpInType);
-    // input index to a grad-op
-    int iGrad;
-    // input/output/gradient-of-output to 
-    // corresponding non-grad op, where
-    int iNonGrad;
-    // input/output/gradient-of-output is
-    GradOpInType type;
+public:
+  GradInOutMapper(int iGrad_, int iNonGrad_, GradOpInType);
+  // input index to a grad-op
+  int iGrad;
+  // input/output/gradient-of-output to
+  // corresponding non-grad op, where
+  int iNonGrad;
+  // input/output/gradient-of-output is
+  GradOpInType type;
 };
 
 // if the GraphProto of the ModelProto argument
@@ -38,19 +38,18 @@ class GradInOutMapper {
 // otherwise throw an error
 TensorId getUniqueOutId(const onnx::ModelProto &m);
 
-
-// The gradient of a tensor is the sum of 1 or several tensors, 
+// The gradient of a tensor is the sum of 1 or several tensors,
 // 1 for each of the nodes which consumed it. This class is for
 // tracking/counting these as they come in down edges.
-class TensorGradRegistry{
+class TensorGradRegistry {
 public:
   using TMap = std::map<Tensor *, std::vector<Tensor *>>;
-  // Register tensor "edgeGrad" as being a 
+  // Register tensor "edgeGrad" as being a
   // gradient of "nonGrad" w.r.t. loss along some edge
-  void insert(Tensor * nonGrad, Tensor * edgeGrad);
+  void insert(Tensor *nonGrad, Tensor *edgeGrad);
 
   // Return the non-gradient tensors which have ALL their required gradients
-  // registed, and are thus ready to have their edge gradients summed to 
+  // registed, and are thus ready to have their edge gradients summed to
   // obtain the final gradient.
   // NOT a const member function
   TMap popComplete();
@@ -60,10 +59,9 @@ private:
   // their edges having provided gradients
   TMap partial;
   // stores all non-grad tensors which have had all of their
-  // edges provide gradients. When popCompleted() is called, 
+  // edges provide gradients. When popCompleted() is called,
   // this map is returned,
   TMap complete;
-
 };
 
 class OpGradRegistry {
@@ -82,10 +80,9 @@ private:
   std::vector<Op *> complete;
 };
 
-
-//class OpAndIndices {
+// class OpAndIndices {
 //
-//public:
+// public:
 //
 //  // this way or the other way round, the map?
 //  OpAndIndices(std::unique_ptr<Op> gradOp_,
@@ -95,7 +92,7 @@ private:
 //
 //  // Let the non-gradient Op be fwdOp.
 //  // then this is one of fwdOp's gradient Ops (which
-//  // computes the gradients of one or several of 
+//  // computes the gradients of one or several of
 //  // fwdOp's inputs):
 //  std::unique_ptr<Op> gradOp;
 //
@@ -115,7 +112,7 @@ private:
 //  std::map<int, int> backOutToForwardIn;
 //};
 //
-//using OpsAndIndices = std::vector<OpAndIndices>;
+// using OpsAndIndices = std::vector<OpAndIndices>;
 
 // Tensors to log every iteration
 // Also, frequency at which to return all weights
@@ -129,7 +126,7 @@ public:
   Loss()          = default;
   virtual ~Loss() = default;
 
-  // (1) set opId and pgraph (private class members). 
+  // (1) set opId and pgraph (private class members).
   //     This can't be done at construction
   //     time as they are not know at that point.
   //     Also, set input and output (same format as a Node : ""
@@ -182,12 +179,12 @@ private:
   virtual std::unique_ptr<Op> getSpecificOp() const = 0;
 };
 
-// where tensor tenId is consumed by Op with OpOd opId at 
-// index index, what should the name of the edge-gradient 
+// where tensor tenId is consumed by Op with OpOd opId at
+// index index, what should the name of the edge-gradient
 // along this edge be? This is purely string manipulation.
 TensorId getEdgeGradId(TensorId tenId, OpId opId, int index);
 
-// the name of the tensor of the total gradient 
+// the name of the tensor of the total gradient
 // (loss and regularizers)
 TensorId getGradId(TensorId tenId);
 
@@ -241,8 +238,7 @@ enum class OpType {
   SUM,
 };
 
-
-// models inputs and outputs to Ops, inputs/outputs 
+// models inputs and outputs to Ops, inputs/outputs
 // enter/leave at certain indices of an Op
 // 1 tensor per index, but 1+ index per tensor
 class TensorIndexMap {
@@ -273,9 +269,8 @@ private:
   std::map<Tensor *, std::vector<int>> indices_map;
 };
 
-
 // Wrapper around the container of onnx::AtrributeProtos
-// of a Node, provides faster and cleaner reads of values 
+// of a Node, provides faster and cleaner reads of values
 // from keys (strings)
 class Attributes {
 public:
@@ -336,7 +331,7 @@ public:
   // might the input tensors be modified?
   bool mayModify(InIndex) const;
 
-  // all Ops will be performed "as close to" the order of 
+  // all Ops will be performed "as close to" the order of
   // priority (highest to lowest) while still being topo sorted.
   // This is not finalised, might work differently...
   double priority() const;
@@ -368,17 +363,15 @@ public:
 
   // return a gradient op's non-gradient partner if relevant,
   // otherwise throws an error
-  // implementation note: why is this not a const member? 
+  // implementation note: why is this not a const member?
   // Because certain Ops (LossOps) return `this'
   virtual Op *getNonGradOp();
 
-
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
-  // dT is the edge-gradient of a tensor T which was the input 
+  // dT is the edge-gradient of a tensor T which was the input
   // to grad-op's non-grad partner. At what index was T the input
   // og non-grad-op? If not relevant (non-grad-ops) throw an error
   virtual int getNonGradInIndex(int gradOpOutIndex) const;
-
 
   // For grad-ops, matching input indices to
   // corresponding IN/OUT/GRADOUT indices of
@@ -388,7 +381,7 @@ public:
 
   // return the full map corresponding to getNonGradInIndex.
   // throws an error if not appropriate (non-grad)
-  virtual const std::map<int, int> & gradOutToNonGradIn() const;
+  virtual const std::map<int, int> &gradOutToNonGradIn() const;
 
   // for grad-ops, this is the same as output.tensorMap().
   // for loss-ops, this is like output.tensorMap() but with the
@@ -396,16 +389,14 @@ public:
   // for other ops, throws an error
   // it is not a const member, as the loss map only creates the
   // necessary output when this function is called
-  virtual const std::map<int, Tensor *> & gradOutMap();
-
+  virtual const std::map<int, Tensor *> &gradOutMap();
 
   // for non-grad-op `op', takes in the set of output indices
   // of `op' for which a gradient is available and returns
   // if all the gradients needed to create grad-ops are present
-  // fot many non-grad-ops, this will just compare the size of 
-  // the set passed in with the output.n() 
+  // fot many non-grad-ops, this will just compare the size of
+  // the set passed in with the output.n()
   virtual bool readyToCreateGradients(std::set<int> &) const;
-
 
 private:
   void appendIO(std::stringstream &) const;
@@ -415,15 +406,15 @@ private:
 
   // design decision : see-sawing between storing a pointer
   // to the Node from which the Op derives (if it does derive
-  // from a Node) or not. Deciding not to for now, (1) not much 
-  // to copy to the Op (2) cleaner 
+  // from a Node) or not. Deciding not to for now, (1) not much
+  // to copy to the Op (2) cleaner
 
   // design decision : see-sawing between having special classes
   // for NonGradOp and GradOp, deciding not to. The main motivation
-  // for HAVING the distinction was that inputs of GradOps would 
-  // work differently, that instead of listing them all, the 
-  // non-grad inputs would be implit from the corresponding 
-  // Op. Also, there could be functions like "getNonGrapOp" 
+  // for HAVING the distinction was that inputs of GradOps would
+  // work differently, that instead of listing them all, the
+  // non-grad inputs would be implit from the corresponding
+  // Op. Also, there could be functions like "getNonGrapOp"
   // which would return the NonGradOp for a GradOp.
   // Motivation for implicit input was the explicit:
   // 1) inefficient.
@@ -439,14 +430,11 @@ private:
 };
 
 class GradOp : public Op {
-public: 
+public:
   GradOp(const OpConstructorBundle &);
   virtual ~GradOp() override = default;
   virtual int getNonGradInIndex(int) const override final;
-  virtual const std::map<int, Tensor*> & gradOutMap() override final;
-
-
-
+  virtual const std::map<int, Tensor *> &gradOutMap() override final;
 };
 
 class LossOp : public Op {
@@ -456,17 +444,17 @@ public:
 
   // LossOps are their own non-grad-ops,
   // will return 'this'
-  virtual Op *getNonGradOp()  override final;
+  virtual Op *getNonGradOp() override final;
 
   // LossOps have input tensor and corresponding
   // output gradient at the same index, so return input
   virtual int getNonGradInIndex(int) const override final;
 
-  virtual const std::map<int, Tensor*> & gradOutMap() override final;
+  virtual const std::map<int, Tensor *> &gradOutMap() override final;
 
 private:
   // only set when gradOutMap() is called.
-  std::map<int, Tensor*> gradOutMap_;
+  std::map<int, Tensor *> gradOutMap_;
   bool gradOutMapIsSet;
 };
 
@@ -526,9 +514,7 @@ public:
   // tensor with TensorId is a COMPLETE gradient
   Tensor *getNonGradientOf(TensorId) const;
 
-
 private:
-
   std::map<TensorId, std::unique_ptr<Tensor>> M;
   // adds to M, but first confirms that TensorId already in
   void insert(TensorId, std::unique_ptr<Tensor>);
@@ -624,15 +610,15 @@ private:
 
   const onnx::ModelProto onnxModel;
 
- // // Nodes created during the building of the graph, includes
- // // Nodes for the backwards pass.
- // std::vector<std::unique_ptr<Node>> constructedNodes;
+  // // Nodes created during the building of the graph, includes
+  // // Nodes for the backwards pass.
+  // std::vector<std::unique_ptr<Node>> constructedNodes;
 
   // create an Op from a Node
   std::unique_ptr<Op> addOp(const Node &);
   std::map<OpId, std::unique_ptr<Op>> ops;
 
-  // moves ownsership of created Op into the Graph, 
+  // moves ownsership of created Op into the Graph,
   // and returns the Op's OpId (which it already has)
   OpId moveIntoGraph(std::unique_ptr<Op> op);
 
@@ -643,7 +629,6 @@ private:
 
   TensorGradRegistry tensor_grad_registry;
   OpGradRegistry op_grad_registry;
-
 
   // total number of ops ever created
   OpId opsCounter{100};

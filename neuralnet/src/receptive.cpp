@@ -39,7 +39,6 @@ void HasReceptiveFieldOp::setup() {
 }
 
 std::vector<int64_t> HasReceptiveFieldOp::getOutShape() const {
-  // //std::cout << "in getoutshape <" << std::flush;
   std::vector<int64_t> outShape(2 + nSpatialDims, 0);
   outShape[0] = batchSize;
   outShape[1] = getNOutChans();
@@ -54,7 +53,6 @@ std::vector<int64_t> HasReceptiveFieldOp::getOutShape() const {
             strides[spDim] +
         1;
   }
-  // //std::cout << "> done." << std::endl;
 
   return outShape;
 }

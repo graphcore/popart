@@ -26,14 +26,15 @@ class AveragePoolGradOp : public GradOp {
 public:
   AveragePoolGradOp(AveragePoolOp *);
   virtual Op *getNonGradOp() override final;
-  virtual const std::vector<GradInOutMapper> &gradInputInfo() const override final;
+  virtual const std::vector<GradInOutMapper> &
+  gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
   void setup() override final;
 
 private:
   std::vector<GradInOutMapper> createAveragePoolGradInfo() const;
   std::map<int, int> createAveragePoolGradOutToIn() const;
-  AveragePoolOp * averagePoolOp;
+  AveragePoolOp *averagePoolOp;
 };
 
 } // namespace neuralnet
