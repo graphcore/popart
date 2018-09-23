@@ -46,6 +46,7 @@ public:
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
   virtual void setup() override final;
+  virtual void imposeTopoCons() override final;
 
 private:
   std::vector<GradInOutMapper> createConvDataGradInfo() const;

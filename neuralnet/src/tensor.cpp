@@ -13,6 +13,63 @@ int Consumers::n(Op *op) const {
   }
 }
 
+std::vector<Op *> Consumers::consumersWhichTopoBefore(Op *op) {
+  auto found0 = consumers_m.find(op);
+  if (found0 == consumers_m.end()) {
+    throw error("Op " + std::to_string(op->id) + " is not a consumer");
+  }
+
+  // if op is topologically constrained to be the first consumer,
+  // then none of the other consumers need come before.
+  else if (op == topoFirst) {
+    return {};
+  }
+
+  // if it is constrained to be the last consumer, then all
+  // other consumers must come before it
+  else if (op == topoLast) {
+    std::vector<Op *> before;
+    before.reserve(consumers_m.size() - 1);
+    for (auto &consumer : getOps()) {
+      if (consumer != op) {
+        before.push_back(consumer);
+      }
+    }
+    return before;
+  }
+
+  // otherwise, if there is no op which must come first,
+  // then there is constraint
+  else if (topoFirst == nullptr) {
+    return {};
+  }
+
+  else {
+    return {topoFirst};
+  }
+  // Note : we might need more fine grained topo control.
+  // The advantage of First and Last is that we don't
+  // need to worry about new consumers being added
+}
+
+void Consumers::setTopoFirst(Op *op) {
+  if (topoFirst != nullptr) {
+    throw error("cannot set topo first when one already exists");
+  }
+  topoFirst = op;
+}
+
+void Consumers::removeTopoFirst() { topoFirst = nullptr; }
+
+void Consumers::setTopoLast(Op *op) {
+  if (topoLast != nullptr) {
+    throw error("cannot set topo last when one already exists");
+  }
+  topoLast = op;
+}
+
+void Consumers::removeTopoLast() { topoLast = nullptr; }
+
 const std::map<Op *, int> &Consumers::getMap() const { return consumers_m; }
 
 void Consumers::extend(const std::map<Op *, int> &m) {
@@ -120,9 +177,7 @@ std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
   std::map<TensorType, TensorTypeInfo> tensor_types_m = {
       {TensorType::ActGrad, {TensorType::ActGrad, "ActGrad"}},
       {TensorType::Const, {TensorType::Const, "Const"}},
-      //{TensorType::Gradient, {TensorType::Gradient, "Gradient"}},
       {TensorType::Momentum, {TensorType::Momentum, "Momentum"}},
-      //{TensorType::Other, {TensorType::Other, "Other"}},
       {TensorType::Stream, {TensorType::Stream, "Stream"}},
       {TensorType::Unknown, {TensorType::Unknown, "Unknown"}},
       {TensorType::Variable, {TensorType::Variable, "Variable"}}};

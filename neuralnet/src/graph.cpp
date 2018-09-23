@@ -19,7 +19,7 @@
 namespace neuralnet {
 
 // Passes calls to .size() and .at(int) to input_size() and input(int)
-// so that standard containers can be used in Graph::connectInputs.
+// so that standard containers can be used in Graph::connectInputs (as T)
 template <typename T> class InputWrapper {
 public:
   InputWrapper(const T &inputs_) : inputs(inputs_) {}
@@ -115,35 +115,78 @@ Graph *Loss::getGraph() const {
   return pgraph;
 }
 
-// Essentially Kahn's alogorithm (1962), see
-// https://en.wikipedia.org/wiki/Topological_sorting
-// Will people still be implementing this algorithm
-// in 1962 + 134 = 2096? :)
+// Essentially Kahn's alogorithm (1962, 56 years ago!),
+// see https://en.wikipedia.org/wiki/Topological_sorting
+// but not quite Kahn's algorithm as it there are some
+// additional constraints on the order of Ops imposed
+// externally
 std::vector<Op *> Graph::getTopologicallySorted() const {
 
+  // the topological sorting (to construct in this function)
   std::vector<Op *> sorted;
+  // ops which have all their input tensors
+  // created (but might be waiting for other ops
+  // to be inserted)
   std::vector<Op *> opsToProcess;
-  // map from each op to the number of input
-  // indices it is waiting on initialised as
-  // total number of input indices
-  std::map<Op *, int> awaiting;
+  // map from each op to the number of tensor input
+  // indices it is waiting on
+  std::map<Op *, int> nIndicesAwaiting;
+  // initialise nIndicesAwatings as total
+  // number of input indices
   for (auto &id_op : ops) {
-    awaiting[id_op.second.get()] = id_op.second->input.n();
+    Op *op               = id_op.second.get();
+    nIndicesAwaiting[op] = op->input.n();
   }
 
+  // the next two variables are needed because of the
+  // external constraints.
+  // (1) map for each op to the number of ops which still
+  // must be inserted before it can it can be inserted
+  std::map<Op *, int> nOpsAwaiting;
+  // (2) map from each op to a list of ops which are
+  // waiting for it
+  std::map<Op *, std::vector<Op *>> isWaitingFor;
+  // initialise (1) and (2)
+  for (auto &id_op : ops) {
+    Op *op           = id_op.second.get();
+    nOpsAwaiting[op] = 0;
+    isWaitingFor[op] = {};
+  }
+  for (auto &id_op : ops) {
+    Op *op = id_op.second.get();
+    for (auto &tensor_indices : op->input.indicesMap()) {
+      Tensor *inTen = tensor_indices.first;
+      // which consumer(s) of inTens must appear before op?
+      for (Op *otherCon : inTen->consumers.consumersWhichTopoBefore(op)) {
+        if (std::find(isWaitingFor[otherCon].begin(),
+                      isWaitingFor[otherCon].end(),
+                      op) == isWaitingFor[otherCon].end()) {
+          isWaitingFor[otherCon].push_back(op);
+          ++nOpsAwaiting[op];
+        }
+      }
+    }
+  }
+
+  auto readyToProcess = [&nIndicesAwaiting, &nOpsAwaiting](Op *op) {
+    return (nIndicesAwaiting[op] == 0 && nOpsAwaiting[op] == 0);
+  };
+
   // processing a tensor involves
-  // reducing the counts in awaiting for
+  // reducing the counts in `awaiting' for
   // ops which use it, and detecting which
   // ops have nothing left to wait for as a
   // result of such updating.
-  auto processTensor = [&opsToProcess, &awaiting](Tensor *tensor) {
-    for (auto &op_count : tensor->consumers.getMap()) {
-      awaiting[op_count.first] -= op_count.second;
-      if (awaiting[op_count.first] == 0) {
-        opsToProcess.push_back(op_count.first);
-      }
-    }
-  };
+  auto processTensor =
+      [&opsToProcess, &nIndicesAwaiting, &readyToProcess](Tensor *tensor) {
+        for (auto &op_count : tensor->consumers.getMap()) {
+          Op *op = op_count.first;
+          nIndicesAwaiting[op] -= op_count.second;
+          if (readyToProcess(op)) {
+            opsToProcess.push_back(op_count.first);
+          }
+        }
+      };
 
   // we will start by processing
   // the tensors which have no producers
@@ -156,6 +199,13 @@ std::vector<Op *> Graph::getTopologicallySorted() const {
     auto op = opsToProcess.back();
     opsToProcess.resize(opsToProcess.size() - 1);
     sorted.push_back(op);
+    for (Op *waitingOp : isWaitingFor[op]) {
+      --nOpsAwaiting[waitingOp];
+      if (readyToProcess(waitingOp)) {
+        opsToProcess.push_back(waitingOp);
+      }
+    }
+
     for (auto &tensor_indices : op->output.indicesMap()) {
       processTensor(tensor_indices.first);
     }
@@ -729,6 +779,7 @@ Op *Graph::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   }
   TensorId gradientId = getGradId(target->id);
   std::vector<TensorId> outputs{gradientId};
+
   connectInputs(InputWrapper<decltype(inputs)>(inputs), opId);
   connectOutputs(OutputWrapper<decltype(outputs)>(outputs), opId);
   tensors.addNonGradient(gradientId, target);
@@ -785,7 +836,10 @@ std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
       for (auto &index_id : m_inputs) {
         v_inputs[index_id.first] = index_id.second;
       }
+
       connectInputs(InputWrapper<decltype(v_inputs)>(v_inputs), gradOpId);
+      // modify topological constraints on consumers of inputs
+      gradOp->imposeTopoCons();
     }
 
     // connect outputs of gradOp
@@ -896,7 +950,6 @@ void Graph::registerOpGrads(Op *op) {
 // (which is a sum along edges) is ready
 void Graph::registerTensorGrad(Tensor *sum) {
   Tensor *nonGrad = tensors.getNonGradientOf(sum->id);
-  << nonGrad->id << std::endl;
   if (nonGrad->hasProducer()) {
     Op *producer = nonGrad->getProducer();
     // the index at which nonGrad was produced
@@ -1074,8 +1127,12 @@ const std::string &OpTypes::get(OpType opType) const {
 
 void Graph::append(std::stringstream &ss) {
   ss << "-- Graph --\n";
-  for (auto &id_op : ops) {
-    id_op.second->append(ss);
+  //  for (auto &id_op : ops) {
+  //    id_op.second->append(ss);
+  //  }
+
+  for (auto &op : getTopologicallySorted()) {
+    op->append(ss);
   }
 }
 

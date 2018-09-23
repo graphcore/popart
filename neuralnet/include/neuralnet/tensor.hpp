@@ -46,10 +46,21 @@ public:
   // Ops which consume multiple times
   std::vector<Op *> getOps();
 
+  // if op is not in consumers_m : throw an error.
+  // else, return a list of the other consumers which
+  // MUST be inserted earlier than op in the topological sort.
+  std::vector<Op *> consumersWhichTopoBefore(Op *op);
+  void setTopoFirst(Op *op);
+  void removeTopoFirst();
+  void setTopoLast(Op *op);
+  void removeTopoLast();
+
 private:
   // The number of times an Op consumes the Tensor which
   // owns this Consumers
   std::map<Op *, int> consumers_m;
+  Op *topoFirst{nullptr};
+  Op *topoLast{nullptr};
 };
 
 class TensorTypeInfo {

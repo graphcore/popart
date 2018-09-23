@@ -398,6 +398,8 @@ public:
   // the set passed in with the output.n()
   virtual bool readyToCreateGradients(std::set<int> &) const;
 
+  virtual void imposeTopoCons() {}
+
 private:
   void appendIO(std::stringstream &) const;
   virtual void appendMore(std::stringstream &) const {}
@@ -602,17 +604,14 @@ private:
 
   std::vector<Op *> growGradOps(Op *forwardOp);
 
-  // called from growFromNode and growFromLoss.
+  // called from growFromNode and growFromLoss and ...
   // T requires functions input(int) and input_size()
   template <typename T> void connectInputs(const T &, OpId opId);
+
   // T requires functions output(int) and output_size()
   template <typename T> void connectOutputs(const T &, OpId opId);
 
   const onnx::ModelProto onnxModel;
-
-  // // Nodes created during the building of the graph, includes
-  // // Nodes for the backwards pass.
-  // std::vector<std::unique_ptr<Node>> constructedNodes;
 
   // create an Op from a Node
   std::unique_ptr<Op> addOp(const Node &);
