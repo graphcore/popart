@@ -21,23 +21,19 @@ private:
   virtual bool readyToCreateGradients(std::set<int> &) const override final;
 };
 
-class AveragePoolGradOp : public Op {
+class AveragePoolGradOp : public GradOp {
 
 public:
   AveragePoolGradOp(AveragePoolOp *);
-  virtual const std::vector<GradInOutMapper> & gradInputInfo() const override final;
-  virtual const std::map<int, int> & gradOutToNonGradIn() const override final;
-  virtual Op * getNonGradOp() override final;
-  virtual const std::map<int, Tensor *> & gradOutMap() override final;
-  virtual int getNonGradInIndex(int gradOpOutIndex) const override final;
-
-
-
+  virtual Op *getNonGradOp() override final;
+  virtual const std::vector<GradInOutMapper> &gradInputInfo() const override final;
+  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
+  void setup() override final;
 
 private:
-  AveragePoolOp *averagePoolOp;
-  std::vector<GradInOutMapper> createGradInputInfo() const;
-  std::map<int, int> createGradOutToNonGradInInfo() const;
+  std::vector<GradInOutMapper> createAveragePoolGradInfo() const;
+  std::map<int, int> createAveragePoolGradOutToIn() const;
+  AveragePoolOp * averagePoolOp;
 };
 
 } // namespace neuralnet

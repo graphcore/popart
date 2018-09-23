@@ -7,8 +7,7 @@ namespace neuralnet {
 SumOp::SumOp(const OpConstructorBundle &bundle) : Op(bundle) {}
 
 void SumOp::setup() {
-  throw error("SumOp setup TODO");
-  // output.setInfoIfIndex(input.tensor(0)->info, 0);
+  output.tensor(0)->info = input.tensor(0)->info;
 }
 
 } // namespace neuralnet

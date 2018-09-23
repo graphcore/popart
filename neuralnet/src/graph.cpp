@@ -63,7 +63,7 @@ std::vector<TensorId> TensorIndexMap::getSerialised() const {
 // the TensorIds are the input indices of input of this
 // Op for which the gradient is computed
 std::vector<std::unique_ptr<Op>> Op::getGradOps()  {
-  throw error("Cannot get grodients for " + op_type());
+  throw error("Cannot get gradients for " + op_type());
 }
 
 bool TensorIndexMap::hasIndex(int index) const {
@@ -266,13 +266,16 @@ void Op::append(std::stringstream &ss) const {
   appendMore(ss);
 }
 
-void TensorIndexMap::append(std::stringstream &ss, std::string prefix) const {
+void TensorIndexMap::append(std::stringstream &ss,
+                            std::string prefix,
+                            int max_id_length) const {
   int index = 0;
-  for (auto &index_tensor : tensor_map) {
-    ss << prefix << '@' << index_tensor.first << ':'
-       << padded(index_tensor.second->id, 4)
 
-       << ' ' << padded(index_tensor.second->tensor_type(), 11);
+  for (auto &index_tensor : tensor_map) {
+    ss << prefix << '@' << index_tensor.first << ':' << ' '
+       << padded(index_tensor.second->id, max_id_length + 1)
+
+       << ' ' << padded(index_tensor.second->tensor_type(), 9);
     if (index_tensor.second->info.isSet()) {
       ss << ' ';
       index_tensor.second->info.append(ss);
@@ -285,13 +288,24 @@ void TensorIndexMap::append(std::stringstream &ss, std::string prefix) const {
   }
 }
 
+int TensorIndexMap::maxIdLength() const {
+  int max_id_length = 0;
+  for (const auto &tensor_indices : indicesMap()) {
+    max_id_length = std::max(max_id_length,
+                             static_cast<int>(tensor_indices.first->id.size()));
+  }
+  return max_id_length;
+}
+
 void Op::appendIO(std::stringstream &ss) const {
   static std::string tab = "    ";
   ss << '\n' << "Op " << id << " of type " << op_type() << '\n';
   ss << tab << "inputs" << '\n';
-  input.append(ss, tab + tab);
+
+  int max_id_length = std::max(input.maxIdLength(), output.maxIdLength());
+  input.append(ss, tab + tab, max_id_length);
   ss << '\n' << tab << "outputs" << '\n';
-  output.append(ss, tab + tab);
+  output.append(ss, tab + tab, max_id_length);
 }
 
 VectorAndSet::VectorAndSet(std::vector<std::string> &&vals) : v_vals(vals) {
@@ -437,7 +451,6 @@ const onnx::TensorProto *Tensors::getOnnxInit(TensorId id) const {
 void Graph::removePadSizeZero() {
   for (auto &op : opsOfType(OpType::PAD)) {
     if (!isLogged(op->input.tensor(0)->id)) {
-      std::cout << "removing null op " << op->id << std::endl;
       removeNullOp(op->input.tensor(0)->id, op->id);
     }
   }
@@ -530,7 +543,7 @@ void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
       pgraph)));
 }
 
-std::string reservedPrefix() { return "d|=|_"; }
+std::string reservedPrefix() { return "d__"; }
 
 void Tensors::addActGrad(TensorId tenId) {
   insert(tenId, std::unique_ptr<Tensor>(
@@ -645,8 +658,12 @@ TensorId getNonGradId(TensorId id) {
 }
 
 TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
+  // we don't need the name of the tensor which this is an edge-grad of, 
+  // the edge-gradient is uniquely defined by the the edge it flows on
+  // in the forward pass (input at 'index' to 'opId')
+  (void)tenId;
   std::stringstream ss;
-  ss << reservedPrefix() << opId << '_' << index << '_' << tenId;
+  ss << reservedPrefix() << opId << '_' << index;
   return ss.str();
 }
 
@@ -713,8 +730,6 @@ Op *Graph::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   std::vector<TensorId> outputs{gradientId};
   connectInputs(InputWrapper<decltype(inputs)>(inputs), opId);
   connectOutputs(OutputWrapper<decltype(outputs)>(outputs), opId);
-  std::cout << "* adding non gradient for tensor " << gradientId << " as tensor "
-            << target->id << std::endl;
   tensors.addNonGradient(gradientId, target);
   return ops[opId].get();
 }
@@ -722,7 +737,6 @@ Op *Graph::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
 std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
 
-  std::cout << "grow grad ops for " << nonGradOp->op_type() << std::endl;
 
   OpId nonGradOpId = nonGradOp->id;
   auto backOps = nonGradOp->getGradOps();
@@ -777,7 +791,6 @@ std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
 
     // connect outputs of gradOp
     {
-      std::cout << "connect outputs for " << gradOp->op_type() << std::endl;
       std::vector<TensorId> v_outputs;
       for (auto out_in : gradOp->gradOutToNonGradIn()) {
         int gradOut    = out_in.first;
@@ -789,7 +802,6 @@ std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
         }
         v_outputs[gradOut] = outId;
       }
-      std::cout << "connecting outputs for op id: " << gradOpId << std::endl;
       connectOutputs(OutputWrapper<decltype(v_outputs)>(v_outputs), gradOpId);
     }
     // note, as the outputs of gradOp are edge-grad-tensors and not
@@ -797,8 +809,6 @@ std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
     gradOps.push_back(gradOp);
   }
 
-  std::cout << "finished in grow grad ops for " << nonGradOp->op_type()
-            << std::endl;
   return gradOps;
 }
 
@@ -883,7 +893,6 @@ void Graph::registerOpGrads(Op * op){
     Tensor * nonGradTensor = nonGradOp->input.tensor(nonGradInInd);
     tensor_grad_registry.insert(nonGradTensor, partGrad);
   }
-  std::cout << "register op grads for " << op->id << " complete" << std::endl;
 }
 
 
@@ -892,13 +901,9 @@ void Graph::registerOpGrads(Op * op){
 // (which is a sum along edges) is ready
 void Graph::registerTensorGrad(Tensor * sum){
   Tensor * nonGrad = tensors.getNonGradientOf(sum->id);
-  std::cout << "non gradient of tensor " << sum->id << " is tensor "
             << nonGrad->id << std::endl;
   if (nonGrad->hasProducer()){
     Op * producer = nonGrad->getProducer();
-    std::cout << "the producer of tensor " << nonGrad->id << " is op "
-              << producer->id << std::endl;
-    std::cout  << " which is of type " << producer->op_type() << std::endl;
     // the index at which nonGrad was produced
     int index = producer->output.indices(nonGrad).at(0);
     op_grad_registry.insert(producer, index);
@@ -926,9 +931,7 @@ void Graph::constructBackwards() {
 
   while (!opsToRegister.empty()){
 
-    std::cout << "will register op " << opsToRegister.back()->id << std::endl;
     registerOpGrads(opsToRegister.back());
-    std::cout << "registering op is complete" << std::endl;
     opsToRegister.resize(opsToRegister.size() - 1);
 
     for (auto &nongrad_egrads : tensor_grad_registry.popComplete()) {
@@ -937,9 +940,7 @@ void Graph::constructBackwards() {
       // nongrad required below, as the name of the output of the 
       // created op (sumOp) will be based off of it. Also, we 
       // register the link between sumOp's output and nongrad
-      std::cout << "will grow sum op" << std::endl;
       Op *sumOp = growGradSumOp(nongrad, egrads);
-      std::cout << "sum op grown, it has id " << sumOp->id << std::endl;
 
       switch (nongrad->tensorType()) {
 
@@ -960,15 +961,12 @@ void Graph::constructBackwards() {
       default: { throw error("only handling ActGrad and Variable for now"); }
       }
     }
-    std::cout << "grad ops registered" << std::endl;
 
     for (Op * op : op_grad_registry.popComplete()) {
       for (auto &gradOp : growGradOps(op)){
         opsToRegister.push_back(gradOp);
       }
     }
-
-    std::cout << "new ops grown" << std::endl;
   }
 }
 
@@ -1056,10 +1054,13 @@ OpTypes::OpTypes() {
               {"AveragePoolGrad", OpType::AVERAGEPOOLGRAD},
               {"Constant", OpType::CONSTANT},
               {"Conv", OpType::CONV},
+              {"ConvDataGrad", OpType::CONVDATAGRAD},
+              {"ConvWeightsGrad", OpType::CONVWEIGHTSGRAD},
               {"LogSoftmax", OpType::LOGSOFTMAX},
               {"NegLogLike", OpType::NEGLOGLIKE},
               {"Pad", OpType::PAD},
               {"Relu", OpType::RELU},
+              {"ReluGrad", OpType::RELUGRAD},
               {"Sum", OpType::SUM}};
 
   for (auto &x : opTypes_) {
@@ -1151,9 +1152,12 @@ std::unique_ptr<Op> Graph::addOp(const Node &node) {
   case OpType::SUM: {
     throw error("no constructor from node for Sum Op yet");
   }
-  case OpType::AVERAGEPOOLGRAD: {
+  case OpType::RELUGRAD:
+  case OpType::AVERAGEPOOLGRAD:
+  case OpType::CONVDATAGRAD:
+  case OpType::CONVWEIGHTSGRAD:
     throw error("Gradient Ops not constructable from Node");
-  }
+  
   default: { throw error("No class for " + node.op_type()); }
   }
 }

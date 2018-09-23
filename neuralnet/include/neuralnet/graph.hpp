@@ -231,10 +231,13 @@ enum class OpType {
   AVERAGEPOOLGRAD,
   CONSTANT,
   CONV,
+  CONVDATAGRAD,
+  CONVWEIGHTSGRAD,
   LOGSOFTMAX,
   NEGLOGLIKE,
   PAD,
   RELU,
+  RELUGRAD,
   SUM,
 };
 
@@ -256,12 +259,14 @@ public:
   const std::map<int, Tensor *> &tensorMap() const;
   // the number or indices (keys of tensor_map)
   int n() const;
-  void append(std::stringstream &, std::string prefix) const;
+  void append(std::stringstream &, std::string prefix, int max_id_length) const;
   // set the TensorInfo of tensor(index) if hasIndex(index) is true
   void setInfoIfIndex(const TensorInfo &, int index);
   // the returned vector has correct TensorIds at indices in
   // tensor_map and "" at unused indices inbetween
   std::vector<TensorId> getSerialised() const;
+  // returns the longest TensorId of all Tensors in indices_map
+  int maxIdLength() const;
 
 private:
   std::map<int, Tensor *> tensor_map;
@@ -368,12 +373,6 @@ public:
   virtual Op *getNonGradOp();
 
 
-  // For grad-ops, matching input indices to
-  // corresponding IN/OUT/GRADOUT indices of
-  // corresponding non-grad-op.
-  // If not relevant (non-grad-ops), throw an error
-  virtual const std::vector<GradInOutMapper> & gradInputInfo() const;
-
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
   // dT is the edge-gradient of a tensor T which was the input 
   // to grad-op's non-grad partner. At what index was T the input
@@ -381,7 +380,14 @@ public:
   virtual int getNonGradInIndex(int gradOpOutIndex) const;
 
 
+  // For grad-ops, matching input indices to
+  // corresponding IN/OUT/GRADOUT indices of
+  // corresponding non-grad-op.
+  // throws an error if not appropriate (non-grad ops)
+  virtual const std::vector<GradInOutMapper> &gradInputInfo() const;
+
   // return the full map corresponding to getNonGradInIndex.
+  // throws an error if not appropriate (non-grad)
   virtual const std::map<int, int> & gradOutToNonGradIn() const;
 
   // for grad-ops, this is the same as output.tensorMap().
@@ -430,6 +436,17 @@ private:
   //    from non-grad op
   // 2) not sure what the problem is here. variadic inputs can be
   //    interleaved if they are of the same size
+};
+
+class GradOp : public Op {
+public: 
+  GradOp(const OpConstructorBundle &);
+  virtual ~GradOp() override = default;
+  virtual int getNonGradInIndex(int) const override final;
+  virtual const std::map<int, Tensor*> & gradOutMap() override final;
+
+
+
 };
 
 class LossOp : public Op {
