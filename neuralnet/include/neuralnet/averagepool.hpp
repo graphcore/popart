@@ -18,7 +18,6 @@ private:
   virtual void setup0() override final;
   virtual void setSpatial() override final;
   int64_t getNOutChans() const override final;
-  virtual bool readyToCreateGradients(std::set<int> &) const override final;
 };
 
 class AveragePoolGradOp : public GradOp {

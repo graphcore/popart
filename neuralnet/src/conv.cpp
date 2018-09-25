@@ -23,9 +23,6 @@ std::vector<std::unique_ptr<Op>> ConvOp::getGradOps() {
   return upops;
 }
 
-bool ConvOp::readyToCreateGradients(std::set<int> &s0) const {
-  return s0.size() == output.n();
-}
 
 void ConvWeightsGradOp::setup() {
   output.tensor(0)->info = input.tensor(convOp->weightsInIndex())->info;

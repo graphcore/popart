@@ -12,6 +12,7 @@ importlib.reload(pydriver)
 if (len(sys.argv) != 2):
     raise RuntimeError("onnx_net.py <log directory>")
 
+# define pytorch model
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
@@ -23,7 +24,6 @@ def conv3x3(in_planes, out_planes, stride=1):
         padding=1,
         bias=False)
 
-
 class Basic(torch.nn.Module):
     def __init__(self, inChans, outChans):
         super(Basic, self).__init__()
@@ -32,8 +32,13 @@ class Basic(torch.nn.Module):
         self.relu = torch.nn.functional.relu
         self.conv3 = conv3x3(outChans, outChans)
         self.logsoftmax = torch.nn.LogSoftmax(dim=0)
+        self.softmax = torch.nn.Softmax(dim=0)
 
-    def forward(self, x):
+    def forward(self, inputs):
+        image0 = inputs[0]
+        image1 = inputs[1]
+        x2 = self.relu(image1)
+        x = image0 + x2
         x = self.conv1(x)
         x = self.relu(x)
         x = self.conv2(x)
@@ -41,20 +46,28 @@ class Basic(torch.nn.Module):
         # interestingly if this is self.conv2,
         # the weights are the same (shared)
         x = self.conv3(x)
+        preProbSquared = x**2
         x = self.relu(x)
+        intermediate = x
         window_size = (int(x.size()[2]), int(x.size()[3]))
-        print(x.size())
         x = torch.nn.functional.avg_pool2d(x, kernel_size = window_size)
-        print(x.size())
-        # Not including logsoftmax as it is in the loss we will add, so
-        # not using x = self.logsoftmax(x)
-        print(x.size())
-        print("\n")
+        x = torch.squeeze(x)
+        # probabilities:
+        probs = self.logsoftmax(x)
+        # -> currently no support from pytorch
+        # -> for gather or log (pytorch 0.4.1)
+        # x = torch.gather(input = x, dim = 1, index= labels)
+        # loss = torch.log(x)
+
+        return preProbSquared, probs
 
 
-        #kernel_size=x.size()[2:], return_indices = False)
-        return x
 
+output_names = ["preProbSquared", "probs"]
+input_names = ["image0", "image1"]
+losses = [NLL("probs", "labels"), L1(0.1, "preProbSquared")]
+# regularizers = []
+# schedule = {"learnRate": 0.1}
 
 outputdir = sys.argv[1]
 if not os.path.exists(outputdir):
@@ -62,7 +75,12 @@ if not os.path.exists(outputdir):
     os.mkdir(outputdir)
 
 driver = pydriver.Driver(outputdir)
-driver.write(Basic(20, 10), [Variable(torch.rand(2, 20, 32, 32))])
+driver.write(
+    Basic(20, 10), [torch.rand(2, 20, 32, 32),
+                    torch.rand(2, 20, 32, 32)],
+    input_names=input_names,
+    output_names=output_names,
+    losses = losses)
 driver.run()
 
 print("pydriver python script complete.")

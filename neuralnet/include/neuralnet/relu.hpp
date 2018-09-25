@@ -11,7 +11,6 @@ public:
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
 
   virtual void setup() override final;
-  virtual bool readyToCreateGradients(std::set<int> &) const override final;
 };
 
 // takes output of ReluOp as input and not the output of ReluOp

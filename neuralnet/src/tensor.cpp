@@ -13,6 +13,7 @@ int Consumers::n(Op *op) const {
   }
 }
 
+
 std::vector<Op *> Consumers::consumersWhichTopoBefore(Op *op) {
   auto found0 = consumers_m.find(op);
   if (found0 == consumers_m.end()) {
@@ -110,7 +111,7 @@ int Consumers::getTotal() const {
 }
 
 Tensor::Tensor(TensorId n, TensorType t, Graph *g)
-    : id(n), pgraph(g), producer(nullptr),
+    : Vertex(), id(n), pgraph(g), producer(nullptr),
       tensorTypeInfo(&getTensorTypeInfoMap().at(t)) {}
 
 void Consumers::decrement(Op *op) {

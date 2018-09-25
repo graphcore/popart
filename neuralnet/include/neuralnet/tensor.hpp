@@ -4,6 +4,7 @@
 #include <map>
 #include <neuralnet/names.hpp>
 #include <neuralnet/tensorinfo.hpp>
+#include <neuralnet/vertex.hpp>
 
 namespace neuralnet {
 
@@ -37,7 +38,7 @@ public:
   void extend(const std::map<Op *, int> &);
   // return the total number of consumptions, taking
   // into account Ops which consume multiple times,
-  // so the sum over consuming nodes of the the number of
+  // so the sum over consuming nodes of the number of
   // times consumed
   int getTotal() const;
   // the number of times each consumer uses the Tensor
@@ -78,7 +79,8 @@ private:
 const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap();
 std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap();
 
-class Tensor {
+
+class Tensor : public Vertex {
 public:
   // note : producer (if there is one)
   // must be set after construction
@@ -92,6 +94,7 @@ public:
   // shape and data type. Not to be used be inferShape of pgraph has run
   TensorInfo info;
 
+
   Op *getProducer();
   void setProducer(Op *);
   void resetProducer(Op *);
@@ -100,6 +103,7 @@ public:
 private:
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
+
 };
 } // namespace neuralnet
 

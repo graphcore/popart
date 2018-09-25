@@ -10,6 +10,28 @@ public:
 
   virtual void setup() override final;
 };
+
+
+// if p = lsm(v) 
+//
+
+class LogSoftmaxGradOp : public GradOp {
+
+public:
+  LogSoftmaxGradOp(LogSoftmaxOp *);
+  virtual Op *getNonGradOp() override final;
+  virtual const std::vector<GradInOutMapper> &
+  gradInputInfo() const override final;
+  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
+  virtual void setup() override final;
+
+private:
+  std::vector<GradInOutMapper> createLogSoftmaxGradInfo() const;
+  std::map<int, int> createLogSoftmaxGradOutToIn() const;
+  LogSoftmaxOp *logsoftmaxOp;
+};
+
+
 } // namespace neuralnet
 
 #endif

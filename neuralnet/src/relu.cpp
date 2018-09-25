@@ -11,9 +11,6 @@ std::vector<std::unique_ptr<Op>> ReluOp::getGradOps() {
   return upops;
 }
 
-bool ReluOp::readyToCreateGradients(std::set<int> &s0) const {
-  return s0.size() == output.n();
-}
 
 void ReluOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 

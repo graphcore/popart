@@ -10,6 +10,7 @@
 #include <map>
 #include <neuralnet/names.hpp>
 #include <neuralnet/tensorinfo.hpp>
+#include <neuralnet/vertex.hpp>
 
 namespace neuralnet {
 
@@ -17,8 +18,8 @@ class Tensor;
 class Graph;
 class Op;
 
-// the input tensor of a grad-op has what kinda
-// relation with the corresponding non-grad-op ?
+// the input tensor of a grad-op has what kind of
+// relation to the corresponding non-grad-op ?
 enum class GradOpInType { IN = 0, OUT, GRADOUT };
 
 class GradInOutMapper {
@@ -235,7 +236,10 @@ enum class OpType {
   PAD,
   RELU,
   RELUGRAD,
+  SQUEEZE,
+  SQUEEZEGRAD,
   SUM,
+  VARUPDATE
 };
 
 // models inputs and outputs to Ops, inputs/outputs
@@ -306,10 +310,12 @@ public:
   std::string domain;
 };
 
-class Op {
+class Op : public Vertex {
 public:
   Op(const Node &, Graph *);
   Op(const OpConstructorBundle &);
+
+  std::string str() const;
 
   // create an ActGrad (output) tensor
   // and wire it to this Ops output
@@ -394,9 +400,9 @@ public:
   // for non-grad-op `op', takes in the set of output indices
   // of `op' for which a gradient is available and returns
   // if all the gradients needed to create grad-ops are present
-  // fot many non-grad-ops, this will just compare the size of
-  // the set passed in with the output.n()
-  virtual bool readyToCreateGradients(std::set<int> &) const;
+  // currently this will just compare the size of
+  // the set passed in with number of paths to loss
+  bool readyToCreateGradients(std::set<int> &) const;
 
   virtual void imposeTopoCons() {}
 
@@ -518,7 +524,7 @@ public:
 
 private:
   std::map<TensorId, std::unique_ptr<Tensor>> M;
-  // adds to M, but first confirms that TensorId already in
+  // adds to M, but first confirms that TensorId not already in
   void insert(TensorId, std::unique_ptr<Tensor>);
   OnnxTensorPtrs init;
   Graph *pgraph;
@@ -569,8 +575,15 @@ public:
 
   void constructForwards();
   void constructBackwards();
+  // for all tensors in the forward graph, set the number of
+  // paths to the loss (needed in the backwards pass)
+  void setNPathsToLoss(Op *lossOp);
   OpId getOpsCounter() const;
   OpId getAndIncrOpsCounter();
+
+  // get the learning rate tensor's id for Variable tensor
+  // Of course, the tensor is rank 0
+  TensorId getLearningRateId() const;
 
 private:
   // confirm that the names of the Const tensors
@@ -582,7 +595,7 @@ private:
   // gradients are named automatically. To prevent them
   // getting names already taken by non-gradiet tensors,
   // we check that a reserved pattern is not present.
-  void confirmNonGradId(TensorId tenId) const;
+  void confirmNonReservedId(TensorId tenId) const;
 
   // cofirm that no tensors in input(), nodes() or preRunKnowlede()
   // use reserved naming conventions. A note on design: The decision
@@ -590,11 +603,13 @@ private:
   // by automatically named tensors, was that when printing TensorIds
   // there would still be the possibility of conflict (i.e. projection
   // to single string might result in conflict).
-  void confirmNoGradIds() const;
+  void confirmNoReservedIds() const;
 
   // create an Op from Node (if not Constant Node), wire it to
   // correct input Tensors and create the activation output Tensors
   Op *growFromNode(const Node &);
+
+  Op *growVarUpdateOp(TensorId varId);
 
   // create an Op from loss, and wire it to the correct input Tensors,
   // and create the activate output Tensor(s)
@@ -631,6 +646,9 @@ private:
 
   // total number of ops ever created
   OpId opsCounter{100};
+
+  // The update ops which must be run during a training pass
+  std::vector<Op *> trainTargetOps;
 };
 
 } // namespace neuralnet

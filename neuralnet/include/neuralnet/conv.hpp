@@ -14,7 +14,6 @@ public:
   int dataInIndex() { return 0; }
   int weightsInIndex() { return 1; }
 
-  virtual bool readyToCreateGradients(std::set<int> &) const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
 
 private:

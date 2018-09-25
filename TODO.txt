@@ -53,3 +53,15 @@ the option for nodes with several output gradient tensors.
 found a bug in removing a node. I should have a function (like in poponnx)
 which does a thorough test of the state of graph. This function can 
 be used for debugging purposed to find when the inconsistency was introduced.
+
+23/09
+-----------------------
+I don't like the implementation of loss. It should be possible to have several
+losses. Change so that this is the case AND make this the default in basic
+
+25/09
+-----------------------
+spent much of the day fighting pytorch. Not log op, no gather op, makes the
+way I want to implement neuralnet impossible. I will have to go with a vector
+of losses, which takes tensors and output a single scalar. These will be summed
+to get the total loss. 

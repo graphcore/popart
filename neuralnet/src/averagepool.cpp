@@ -37,9 +37,6 @@ AveragePoolGradOp::AveragePoolGradOp(AveragePoolOp *op_)
     : GradOp({"AveragePoolGrad", op_->pgraph, {}, getNeuralNetDomain()}),
       averagePoolOp(op_) {}
 
-bool AveragePoolOp::readyToCreateGradients(std::set<int> &s0) const {
-  return s0.size() == output.n();
-}
 
 const std::vector<GradInOutMapper> &AveragePoolGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo =
