@@ -9,6 +9,7 @@ import pydriver
 import importlib
 importlib.reload(pydriver)
 
+
 if (len(sys.argv) != 2):
     raise RuntimeError("onnx_net.py <log directory>")
 
@@ -34,7 +35,7 @@ class Basic(torch.nn.Module):
         self.logsoftmax = torch.nn.LogSoftmax(dim=0)
         self.softmax = torch.nn.Softmax(dim=0)
 
-    def forward(self, inputs):
+    def forward0(self, inputs):
         image0 = inputs[0]
         image1 = inputs[1]
         x2 = self.relu(image1)
@@ -46,9 +47,8 @@ class Basic(torch.nn.Module):
         # interestingly if this is self.conv2,
         # the weights are the same (shared)
         x = self.conv3(x)
-        preProbSquared = x**2
+        preProbSquared = x + x
         x = self.relu(x)
-        intermediate = x
         window_size = (int(x.size()[2]), int(x.size()[3]))
         x = torch.nn.functional.avg_pool2d(x, kernel_size = window_size)
         x = torch.squeeze(x)
@@ -61,13 +61,22 @@ class Basic(torch.nn.Module):
 
         return preProbSquared, probs
 
+    def forward(self, inputs):
+        image0 = inputs[0]
+        image1 = inputs[1]
+        x0 = image0 + image0
+        x1 = image0 + image1
+        return x0, x1
 
 
-output_names = ["preProbSquared", "probs"]
+
+
+output_names_0 = ["preProbSquared", "probs"]
+output_names = ["x0", "x1"]
 input_names = ["image0", "image1"]
-losses = [NLL("probs", "labels"), L1(0.1, "preProbSquared")]
-# regularizers = []
-# schedule = {"learnRate": 0.1}
+
+losses_0 = [pydriver.NLL("probs", "labels"), pydriver.L1(0.1, "preProbSquared")]
+losses = [pydriver.L1(0.1, "x1")]
 
 outputdir = sys.argv[1]
 if not os.path.exists(outputdir):

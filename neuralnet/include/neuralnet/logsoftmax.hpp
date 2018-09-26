@@ -7,19 +7,15 @@ namespace neuralnet {
 class LogSoftmaxOp : public Op {
 public:
   LogSoftmaxOp(const onnx::NodeProto &node, Graph *pgraph);
-
+  virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
   virtual void setup() override final;
 };
-
-
-// if p = lsm(v) 
-//
 
 class LogSoftmaxGradOp : public GradOp {
 
 public:
   LogSoftmaxGradOp(LogSoftmaxOp *);
-  virtual Op *getNonGradOp() override final;
+  virtual Op *getNonGradOp() const override final;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
@@ -30,7 +26,6 @@ private:
   std::map<int, int> createLogSoftmaxGradOutToIn() const;
   LogSoftmaxOp *logsoftmaxOp;
 };
-
 
 } // namespace neuralnet
 

@@ -13,7 +13,6 @@ int Consumers::n(Op *op) const {
   }
 }
 
-
 std::vector<Op *> Consumers::consumersWhichTopoBefore(Op *op) {
   auto found0 = consumers_m.find(op);
   if (found0 == consumers_m.end()) {

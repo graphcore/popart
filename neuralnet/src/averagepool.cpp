@@ -37,7 +37,6 @@ AveragePoolGradOp::AveragePoolGradOp(AveragePoolOp *op_)
     : GradOp({"AveragePoolGrad", op_->pgraph, {}, getNeuralNetDomain()}),
       averagePoolOp(op_) {}
 
-
 const std::vector<GradInOutMapper> &AveragePoolGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo =
       createAveragePoolGradInfo();
@@ -56,7 +55,7 @@ const std::map<int, int> &AveragePoolGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-Op *AveragePoolGradOp::getNonGradOp() { return averagePoolOp; }
+Op *AveragePoolGradOp::getNonGradOp() const { return averagePoolOp; }
 
 int GradOp::getNonGradInIndex(int gradOpOutIndex) const {
   return gradOutToNonGradIn().at(gradOpOutIndex);
@@ -68,7 +67,7 @@ std::map<int, int> AveragePoolGradOp::createAveragePoolGradOutToIn() const {
   return {{0, 0}};
 }
 
-const std::map<int, Tensor *> &GradOp::gradOutMap() {
+const std::map<int, Tensor *> &GradOp::gradOutMap() const {
   return output.tensorMap();
 }
 

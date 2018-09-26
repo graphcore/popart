@@ -25,7 +25,7 @@ private:
 class ConvWeightsGradOp : public GradOp {
 public:
   ConvWeightsGradOp(ConvOp *);
-  virtual Op *getNonGradOp() override final;
+  virtual Op *getNonGradOp() const override final;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
@@ -40,7 +40,7 @@ private:
 class ConvDataGradOp : public GradOp {
 public:
   ConvDataGradOp(ConvOp *);
-  virtual Op *getNonGradOp() override final;
+  virtual Op *getNonGradOp() const override final;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;

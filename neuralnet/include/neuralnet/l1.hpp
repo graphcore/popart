@@ -1,38 +1,38 @@
-#ifndef GUARD_NEURALNET_NLL_HPP
-#define GUARD_NEURALNET_NLL_HPP
+#ifndef GUARD_NEURALNET_L1_HPP
+#define GUARD_NEURALNET_L1_HPP
 
 #include <neuralnet/graph.hpp>
 #include <neuralnet/loss.hpp>
 
 namespace neuralnet {
 
-class NllLoss : public Loss {
+class L1Loss : public Loss {
 public:
-  virtual ~NllLoss() override = default;
-  NllLoss(const std::string &argstring);
+  virtual ~L1Loss() override = default;
+  L1Loss(const std::string &argstring);
   virtual std::vector<TensorId> getStreamTensorNames() const override final;
   virtual std::unique_ptr<Op> getOp(Graph *) const override final;
   virtual std::string op_type() const override final;
 
-  int probsIn() const;
-  int labelsIn() const;
+private:
+  float lambda;
 };
 
-class NllOp : public Op {
+class L1Op : public Op {
 public:
-  NllOp(const OpConstructorBundle &, const NllLoss *nllloss);
+  L1Op(const OpConstructorBundle &, const L1Loss *l1loss);
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
   virtual void setup() override final;
-  const NllLoss *nlll() const;
+  const L1Loss *l1l() const;
 
 private:
-  const NllLoss *nllloss_;
+  const L1Loss *l1loss_;
 };
 
-class NllGradOp : public GradOp {
+class L1GradOp : public GradOp {
 
 public:
-  NllGradOp(NllOp *);
+  L1GradOp(L1Op *);
   virtual Op *getNonGradOp() const override final;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
@@ -40,9 +40,9 @@ public:
   virtual void setup() override final;
 
 private:
-  std::vector<GradInOutMapper> createNllLossGradInfo() const;
-  std::map<int, int> createNllLossGradOutToIn() const;
-  NllOp *nlllossOp;
+  std::vector<GradInOutMapper> createL1LossGradInfo() const;
+  std::map<int, int> createL1LossGradOutToIn() const;
+  L1Op *l1lossOp;
 };
 
 } // namespace neuralnet

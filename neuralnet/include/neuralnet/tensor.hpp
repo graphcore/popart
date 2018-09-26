@@ -79,7 +79,6 @@ private:
 const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap();
 std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap();
 
-
 class Tensor : public Vertex {
 public:
   // note : producer (if there is one)
@@ -94,7 +93,6 @@ public:
   // shape and data type. Not to be used be inferShape of pgraph has run
   TensorInfo info;
 
-
   Op *getProducer();
   void setProducer(Op *);
   void resetProducer(Op *);
@@ -103,7 +101,6 @@ public:
 private:
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
-
 };
 } // namespace neuralnet
 

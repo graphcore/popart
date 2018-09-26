@@ -1,6 +1,7 @@
 #include <map>
 #include <neuralnet/error.hpp>
 #include <neuralnet/graph.hpp>
+#include <neuralnet/loss.hpp>
 #include <neuralnet/tensor.hpp>
 #include <neuralnet/tensorinfo.hpp>
 #include <neuralnet/util.hpp>
@@ -8,10 +9,10 @@
 #include <vector>
 
 // The layers:
+#include <neuralnet/add.hpp>
 #include <neuralnet/averagepool.hpp>
 #include <neuralnet/conv.hpp>
 #include <neuralnet/logsoftmax.hpp>
-#include <neuralnet/nll.hpp>
 #include <neuralnet/pad.hpp>
 #include <neuralnet/relu.hpp>
 #include <neuralnet/squeeze.hpp>
@@ -87,35 +88,6 @@ const OpTypes &getOpTypes() {
 }
 
 void Op::setup() { throw error("No setup() for " + op_type()); }
-
-OpId Loss::getOpId() const {
-  if (opId < 0) {
-    throw error("opId of Loss not yet set");
-  }
-  return opId;
-}
-
-std::unique_ptr<Op> Loss::finalSetAndGetOp(Graph *pgraph_) {
-  pgraph = pgraph_;
-  opId   = pgraph->getOpsCounter();
-  setInOut(input_, output_);
-  return getSpecificOp();
-}
-
-// const std::vector<TensorId> &Loss::getInput() const { return input_; }
-// const std::vector<TensorId> &Loss::getOutput() const { return output_; }
-
-int Loss::input_size() const { return static_cast<int>(input_.size()); }
-const TensorId &Loss::input(int i) const { return input_.at(i); }
-int Loss::output_size() const { return static_cast<int>(output_.size()); }
-const TensorId &Loss::output(int i) const { return output_.at(i); }
-
-Graph *Loss::getGraph() const {
-  if (pgraph == nullptr) {
-    throw error("pgraph of Loss not yet set");
-  }
-  return pgraph;
-}
 
 // Essentially Kahn's alogorithm (1962, 56 years ago!),
 // see https://en.wikipedia.org/wiki/Topological_sorting
@@ -414,13 +386,13 @@ std::vector<TensorId> PreRunKnowledge::getAllTensorIds() const {
 Graph::Graph(onnx::ModelProto &&inMod,
              PreRunKnowledge &&perk,
              Recorder &&rec,
-             std::unique_ptr<Loss> &&ls,
+             std::vector<std::unique_ptr<Loss>> &&ls,
              std::vector<std::unique_ptr<Regularizer>> &&regs,
              // Schedule needed, if momentum the graph is different
              Schedule &&sched,
              // Weights tensors which are not to be updated
              std::vector<std::string> &&cTens)
-    : preRunKnowledge(perk), recorder(rec), loss(std::move(ls)),
+    : preRunKnowledge(perk), recorder(rec), losses(std::move(ls)),
       regularizers(std::move(regs)), schedule(sched),
       // constIds(std::move(cTens)),
       tensors(std::move(cTens), this), onnxModel(inMod) {
@@ -444,8 +416,11 @@ Graph::Graph(onnx::ModelProto &&inMod,
   }
 
   // other true inputs are for the loss calculation (class labels, etc)
-  for (const auto &lossStreamTensorName : loss->getStreamTensorNames()) {
-    tensors.addStream(lossStreamTensorName);
+  for (const auto &loss : losses) {
+    for (const auto &lossStreamTensorName : loss->getStreamTensorNames()) {
+      // TODO what if two bundles use the same streamed input?
+      tensors.addStream(lossStreamTensorName);
+    }
   }
 
   constructForwards();
@@ -486,6 +461,8 @@ void Graph::inferTensorInfos() {
     }
     tensors.get(id)->info = preRunKnowledge.getInfo(id);
   }
+
+  std::cout << "entering topological sort" << std::endl;
 
   for (Op *op : getTopologicallySorted()) {
     op->setup();
@@ -742,15 +719,6 @@ Tensor *Tensors::getNonGradientOf(TensorId id) const {
 
 bool Tensors::contains(TensorId id) const { return M.find(id) != M.end(); }
 
-TensorId getUniqueOutId(const onnx::ModelProto &m) {
-  auto nOuts = m.graph().output_size();
-  if (nOuts != 1) {
-    throw error("cannot create NegLogLikeLoss from onnx Graph with " +
-                std::to_string(nOuts) + " outputs");
-  }
-  return m.graph().output(0).name();
-}
-
 OpId Graph::getAndIncrOpsCounter() {
   OpId nOps0 = opsCounter;
   ++opsCounter;
@@ -763,14 +731,6 @@ OpId Graph::moveIntoGraph(std::unique_ptr<Op> op) {
   OpId id = op->id;
   ops[id] = std::move(op);
   return id;
-}
-
-Op *Graph::growFromLoss() {
-  OpId opId = moveIntoGraph(loss->finalSetAndGetOp(this));
-  connectInputs(*loss, opId);
-  connectOutputs(*loss, opId);
-  Op *op = ops[opId].get();
-  return op;
 }
 
 Op *Graph::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
@@ -836,7 +796,7 @@ std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
             ss << "No gradient for non-grad-op " << nonGradOp->str()
                << " at index " << indexFwd << '.'
                << " Could it be that the path along that index "
-               << "did not lead to loss, "
+               << "did not lead to final loss, "
                << "in which case the gradient is zero?";
             throw error(ss.str());
           }
@@ -896,12 +856,15 @@ const std::map<int, int> &Op::gradOutToNonGradIn() const {
 }
 
 bool Op::readyToCreateGradients(std::set<int> &s) const {
+  std::cout << "ready to create gradients  " << op_type() << " ? ready ("
+            << s.size() << ") == n paths to loss (" << nPathsToLoss() << ")"
+            << std::endl;
   return s.size() == nPathsToLoss();
-  // throw error("Op " + op_type() +
-  //         " cannot determine if `ready to create gradients'");
 }
 
 void TensorGradRegistry::insert(Tensor *nonGrad, Tensor *grad) {
+  std::cout << " ~~) insertion for non grad tensor " << nonGrad->id
+            << std::endl;
   auto found = partial.find(nonGrad);
   if (found == partial.end()) {
     partial[nonGrad] = {grad};
@@ -909,12 +872,16 @@ void TensorGradRegistry::insert(Tensor *nonGrad, Tensor *grad) {
     partial[nonGrad].push_back(grad);
   }
   if (partial[nonGrad].size() == nonGrad->nPathsToLoss()) {
+    std::cout << "   ~~~) completion for non grad tensor " << nonGrad->id
+              << std::endl;
     complete[nonGrad] = partial[nonGrad];
     partial.erase(nonGrad);
   }
 }
 
 void OpGradRegistry::insert(Op *nonGrad, int index) {
+  std::cout << "inserting " << nonGrad->op_type() << " in op grad reg "
+            << std::endl;
   auto found = partial.find(nonGrad);
   // so far NO gradients for nonGrad are in:
   if (found == partial.end()) {
@@ -948,11 +915,7 @@ std::vector<Op *> OpGradRegistry::popComplete() {
 
 // communicate that op has computed gradients
 void Graph::registerOpGrads(Op *op) {
-  // For loss Op, nonGradOp == op, otherwise it is the unique
-  // Op corresponding to op
   Op *nonGradOp = op->getNonGradOp();
-  std::cout << "registering op " << op->id << " of type " << op->op_type()
-            << std::endl;
   for (auto &index_tensor : op->gradOutMap()) {
     int opOutInd     = index_tensor.first;
     Tensor *partGrad = index_tensor.second;
@@ -960,8 +923,6 @@ void Graph::registerOpGrads(Op *op) {
     // edge-gradient correspond to?
     int nonGradInInd      = op->getNonGradInIndex(opOutInd);
     Tensor *nonGradTensor = nonGradOp->input.tensor(nonGradInInd);
-    std::cout << "     -> " << nonGradTensor->id << ", " << partGrad->id
-              << std::endl;
     tensor_grad_registry.insert(nonGradTensor, partGrad);
   }
 }
@@ -978,21 +939,27 @@ void Graph::registerTensorGrad(Tensor *sum) {
   }
 }
 
-void Graph::setNPathsToLoss(Op *lossOp) {
-  std::vector<Op *> opFront{lossOp};
-  std::set<Op *> opsSeen{lossOp};
+// TODO : this algo does alot if log checks to
+// see if path already taken, shouldn't be nec.
+void Graph::setNPathsToLoss() {
+  std::vector<Op *> opFront{getFinalLossOp()};
+  std::set<Op *> opsSeen{getFinalLossOp()};
+  std::set<Tensor *> tensorsSeen{};
   while (opFront.size() != 0) {
     Op *op = opFront.back();
     opFront.resize(opFront.size() - 1);
     for (auto &ind_ten : op->input.tensorMap()) {
       auto tensor = ind_ten.second;
       tensor->incrNPathsToLoss();
-      if (tensor->hasProducer()) {
-        auto producer = tensor->getProducer();
-        producer->incrNPathsToLoss();
-        if (opsSeen.count(producer) == 0) {
-          opFront.push_back(producer);
-          opsSeen.insert(producer);
+      if (tensorsSeen.count(tensor) == 0) {
+        tensorsSeen.insert(tensor);
+        if (tensor->hasProducer()) {
+          auto producer = tensor->getProducer();
+          producer->incrNPathsToLoss();
+          if (opsSeen.count(producer) == 0) {
+            opFront.push_back(producer);
+            opsSeen.insert(producer);
+          }
         }
       }
     }
@@ -1007,17 +974,20 @@ void Graph::constructBackwards() {
   // a gradient. It is possible that an edge-gradient has the same
   // value as a gradient, if a tensor has only 1 consumer.
 
-  // Add the Op which takes in activations and Streams, and
-  // outputs edge-gradients (for all inputs) and the loss.
-  Op *lossOp = growFromLoss();
+  growFinalLoss();
 
-  setNPathsToLoss(lossOp);
+  setNPathsToLoss();
 
   // grad-ops which have created edge-gradients, but the
-  // edge-gradients haven't signalled their existance
-  std::vector<Op *> opsToRegister = {lossOp};
+  // edge-gradients haven't signalled their existance.
+  // initialised as the gradients of the individual losses
+  std::cout << "growing loss gradients" << std::endl;
+  std::vector<Op *> opsToRegister = growLossGradients();
 
   while (!opsToRegister.empty()) {
+
+    std::cout << "--> to register: " << opsToRegister.back()->op_type()
+              << std::endl;
 
     registerOpGrads(opsToRegister.back());
     opsToRegister.resize(opsToRegister.size() - 1);
@@ -1025,7 +995,6 @@ void Graph::constructBackwards() {
     for (auto &nongrad_egrads : tensor_grad_registry.popComplete()) {
       Tensor *nongrad                     = nongrad_egrads.first;
       const std::vector<Tensor *> &egrads = nongrad_egrads.second;
-      std::cout << "creating sum for tensor " << nongrad->id << std::endl;
       // nongrad required below, as the name of the output of the
       // created op (sumOp) will be based off of it. Also, we
       // register the link between sumOp's output and nongrad
@@ -1043,14 +1012,14 @@ void Graph::constructBackwards() {
         // follows at the end of this function
         break;
       }
-      case TensorType::Const:
-      case TensorType::Momentum:
       case TensorType::Stream: {
         // if the user wants the gradient of the
         // input data (unusual case) maybe we won't
         // break here. Example case : generating adversarials
         break;
       }
+      case TensorType::Const:
+      case TensorType::Momentum:
       case TensorType::Unknown:
       case TensorType::N:
         throw error("can't register gradient of " + nongrad->tensor_type() +
@@ -1067,7 +1036,7 @@ void Graph::constructBackwards() {
     }
   }
 
-  std::cout << "while complete." << std::endl;
+  std::cout << "while is complete." << std::endl;
 
   //  // add weight ops (ignoring momentum's for now)
   //  for (auto & varId : tensors.getIds(TensorType::Variable)){
@@ -1093,31 +1062,15 @@ Op *Graph::growVarUpdateOp(TensorId varId) {
   return op;
 }
 
-const std::map<int, Tensor *> &LossOp::gradOutMap() {
-  if (!gradOutMapIsSet) {
-    gradOutMap_ = output.tensorMap();
-    // the last index is the loss, NOT a gradient thus remove it
-    int largest_out_index{0};
-    for (auto &x : gradOutMap_) {
-      largest_out_index = std::max(largest_out_index, x.first);
-    }
-    gradOutMap_.erase(largest_out_index);
-    gradOutMapIsSet = true;
-  }
-  return gradOutMap_;
-}
-
-LossOp::LossOp(const OpConstructorBundle &b) : Op(b) {}
-
 const std::map<int, Tensor *> &TensorIndexMap::tensorMap() const {
   return tensor_map;
 }
 
-Op *Op::getNonGradOp() {
+Op *Op::getNonGradOp() const {
   throw error("No `get non grad op' for " + op_type() + " (yet?)");
 }
 
-const std::map<int, Tensor *> &Op::gradOutMap() {
+const std::map<int, Tensor *> &Op::gradOutMap() const {
   throw error("No `grad out map' for " + op_type());
 }
 
@@ -1137,6 +1090,39 @@ Op *Graph::growFromNode(const Node &node) {
   connectOutputs(node, opId);
   return ops[opId].get();
 }
+
+Op *Graph::getFinalLossOp() {
+  if (finalLossOp == nullptr) {
+    throw error("ILE : final loss not set");
+  }
+  return finalLossOp;
+}
+
+void Graph::growFinalLoss() {
+  std::vector<Op *> lossOps;
+  for (auto &loss : losses) {
+    OpId opId = moveIntoGraph(loss->getOp(this));
+    connectInputs(*loss, opId);
+    connectOutputs(*loss, opId);
+    lossOps.push_back(ops[opId].get());
+  }
+
+  // now growing the FINAL loss:
+  OpId opId = moveIntoGraph(
+      std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getNeuralNetDomain()})));
+
+  std::vector<TensorId> inputs;
+  inputs.reserve(lossOps.size());
+  for (auto &op : lossOps) {
+    inputs.push_back(op->output.tensor(0)->id);
+  }
+  std::vector<TensorId> outputs{getFinalLossId()};
+  connectInputs(InputWrapper<decltype(inputs)>(inputs), opId);
+  connectOutputs(OutputWrapper<decltype(outputs)>(outputs), opId);
+  finalLossOp = ops[opId].get();
+}
+
+TensorId Graph::getFinalLossId() const { return "finalLoss"; }
 
 template <typename T>
 void Graph::connectInputs(const T &inContainer, OpId opId) {
@@ -1172,14 +1158,20 @@ void Graph::connectOutputs(const T &outContainer, OpId opId) {
 
 OpTypes::OpTypes() {
 
-  opTypes_ = {{"AveragePool", OpType::AVERAGEPOOL},
+  opTypes_ = {{"Add", OpType::ADD},
+              {"AddGrad", OpType::ADDGRAD},
+              {"AveragePool", OpType::AVERAGEPOOL},
               {"AveragePoolGrad", OpType::AVERAGEPOOLGRAD},
               {"Constant", OpType::CONSTANT},
               {"Conv", OpType::CONV},
               {"ConvDataGrad", OpType::CONVDATAGRAD},
               {"ConvWeightsGrad", OpType::CONVWEIGHTSGRAD},
+              {"L1", OpType::L1},
+              {"L1Grad", OpType::L1GRAD},
               {"LogSoftmax", OpType::LOGSOFTMAX},
-              {"NegLogLike", OpType::NEGLOGLIKE},
+              {"LogSoftmaxGrad", OpType::LOGSOFTMAXGRAD},
+              {"Nll", OpType::NLL},
+              {"NllGrad", OpType::NLLGRAD},
               {"Pad", OpType::PAD},
               {"Relu", OpType::RELU},
               {"ReluGrad", OpType::RELUGRAD},
@@ -1255,6 +1247,9 @@ Op::Op(const Node &node, Graph *pg)
 std::unique_ptr<Op> Graph::addOp(const Node &node) {
   using pOp = std::unique_ptr<Op>;
   switch (getOpTypes().get(node.op_type())) {
+  case OpType::ADD: {
+    return pOp(new AddOp(node, this));
+  }
   case OpType::AVERAGEPOOL: {
     return pOp(new AveragePoolOp(node, this));
   }
@@ -1267,10 +1262,7 @@ std::unique_ptr<Op> Graph::addOp(const Node &node) {
   case OpType::LOGSOFTMAX: {
     return pOp(new LogSoftmaxOp(node, this));
   }
-  case OpType::NEGLOGLIKE: {
-    throw error("cannot construct NegLogLike from a Node");
-    // return pOp(new NegLogLikeOp( node, this));
-  }
+
   case OpType::PAD: {
     return pOp(new PadOp(node, this));
   }
@@ -1283,13 +1275,21 @@ std::unique_ptr<Op> Graph::addOp(const Node &node) {
   case OpType::SQUEEZE: {
     return pOp(new SqueezeOp(node, this));
   }
+  case OpType::ADDGRAD:
   case OpType::SQUEEZEGRAD:
   case OpType::RELUGRAD:
   case OpType::AVERAGEPOOLGRAD:
   case OpType::CONVDATAGRAD:
   case OpType::CONVWEIGHTSGRAD:
+  case OpType::NLLGRAD:
+  case OpType::L1GRAD:
+  case OpType::LOGSOFTMAXGRAD:
   case OpType::VARUPDATE:
     throw error("Gradient Ops not constructable from Node");
+
+  case OpType::NLL:
+  case OpType::L1:
+    throw error("Loss Ops not constructable from Node");
 
   default: { throw error("No class for " + node.op_type()); }
   }
@@ -1299,8 +1299,17 @@ std::string Op::str() const {
   return std::to_string(id) + " (" + op_type() + ')';
 }
 
-Op *LossOp::getNonGradOp() { return this; }
-
-int LossOp::getNonGradInIndex(int index) const { return index; }
+std::vector<Op *> Graph::growLossGradients() {
+  std::vector<Op *> gradops;
+  for (auto &t_inds : getFinalLossOp()->input.indicesMap()) {
+    Tensor *t  = t_inds.first;
+    Op *lossOp = t->getProducer();
+    for (Op *gradop : growGradOps(lossOp)) {
+      std::cout << "created " << gradop->op_type() << std::endl;
+      gradops.push_back(gradop);
+    }
+  }
+  return gradops;
+}
 
 } // namespace neuralnet

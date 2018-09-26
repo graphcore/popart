@@ -12,6 +12,14 @@
 
 namespace neuralnet {
 
+class TensorInfo;
+
+// numpy output shape of:
+std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
+                           const std::vector<int64_t> &s1);
+
+TensorInfo npOut(const TensorInfo &i0, const TensorInfo &i1);
+
 // FLOAT, FLOAT16, INT8 etc.
 class DataTypeInfo {
 public:
@@ -30,9 +38,13 @@ private:
 const std::map<DataType, DataTypeInfo> &getDataTypeInfoMap();
 std::map<DataType, DataTypeInfo> initDataTypeInfoMap();
 
+const std::map<std::string, DataType> &getStrToDataTypeMap();
+std::map<std::string, DataType> initStrToDataTypeMap();
+
 class TensorInfo {
 public:
   TensorInfo(DataType, const std::vector<int64_t> &);
+  TensorInfo(std::string data_type, std::string shape);
   TensorInfo(const onnx::TensorProto &);
   void set(const onnx::TensorProto &);
   TensorInfo() = default;
@@ -46,6 +58,10 @@ public:
   const std::string &data_type() const;
   void append(std::stringstream &) const;
   bool isSet() const;
+  bool operator==(const TensorInfo &) const;
+  bool operator!=(const TensorInfo &) const;
+  DataType dataTypeFromString(const std::string &s) const;
+  std::vector<int64_t> shapeFromString(const std::string &s) const;
 
 private:
   const DataTypeInfo *dataTypeInfo = nullptr;

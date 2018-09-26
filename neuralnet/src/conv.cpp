@@ -23,7 +23,6 @@ std::vector<std::unique_ptr<Op>> ConvOp::getGradOps() {
   return upops;
 }
 
-
 void ConvWeightsGradOp::setup() {
   output.tensor(0)->info = input.tensor(convOp->weightsInIndex())->info;
 }
@@ -56,7 +55,7 @@ ConvWeightsGradOp::ConvWeightsGradOp(ConvOp *op_)
     : GradOp({"ConvWeightsGrad", op_->pgraph, {}, getNeuralNetDomain()}),
       convOp(op_) {}
 
-Op *ConvWeightsGradOp::getNonGradOp() { return convOp; }
+Op *ConvWeightsGradOp::getNonGradOp() const { return convOp; }
 
 const std::vector<GradInOutMapper> &ConvWeightsGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo =
@@ -87,7 +86,7 @@ ConvDataGradOp::ConvDataGradOp(ConvOp *op_)
     : GradOp({"ConvDataGrad", op_->pgraph, {}, getNeuralNetDomain()}),
       convOp(op_) {}
 
-Op *ConvDataGradOp::getNonGradOp() { return convOp; }
+Op *ConvDataGradOp::getNonGradOp() const { return convOp; }
 
 const std::vector<GradInOutMapper> &ConvDataGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createConvDataGradInfo();

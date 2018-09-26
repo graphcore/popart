@@ -5,6 +5,9 @@ import torch.onnx
 import subprocess
 from IPython.core.debugger import Tracer
 
+
+# string rules are .: ... : . : ...
+# lossName: input1 ... inputN: output : other things specific to the class
 class NLL:
     def __init__(self, probId, labelsId):
         self.probId = probId
@@ -12,7 +15,18 @@ class NLL:
 
     def string(self):
         #TODO : inherit this fuction, : should be common
-        return "NLL:%s %s"%(self.probId, self.labelsId)
+        return "NLL: %s %s : lossNLL : "%(self.probId, self.labelsId)
+   
+    def has_stream_in(self):
+        return True;
+
+    def stream_string(self, output_names, outputs):
+        output_index = output_names.index(self.probId)
+        probsShape = outputs[output_index].shape
+        batchsize = probsShape[0]
+        return "%s %s (%d)"%(self.labelsId, "INT32", batchsize)
+
+
 
 class L1:
     def __init__(self, lamb, tensorId):
@@ -20,7 +34,11 @@ class L1:
         self.tensorId = tensorId
 
     def string(self):
-        return "L1:%.3f %s"%(self.lamb, self.tensorId)
+        return "L1: %s : lossL1 : %.3f "%(self.tensorId, self.lamb)
+
+    def has_stream_in(self):
+        return False
+
 
 class Driver:
     def __init__(self, dirname):
@@ -61,7 +79,7 @@ class Driver:
             # the star seems to unpack the list,
             dummy_output = model(inputs)
 
-        
+
 
         # now jump into eval model.
         model.eval()
@@ -111,9 +129,17 @@ class Driver:
             filly.write('\n')
         filly.close()
 
+        # write the stream-to-loss information
+        loss_stream_fn = os.path.join(self.dirname, "loss_stream.txt")
+        filly = open(loss_stream_fn, "w")
+        for loss in losses:
+            if (loss.has_stream_in()):
+                filly.write(loss.stream_string(output_names, dummy_output))
+        filly.close()
+
+     
+
 
 
     def run(self):
         subprocess.call([self.pydriver_path, self.dirname])
-
-

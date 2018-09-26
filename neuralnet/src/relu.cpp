@@ -11,7 +11,6 @@ std::vector<std::unique_ptr<Op>> ReluOp::getGradOps() {
   return upops;
 }
 
-
 void ReluOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 
 void ReluGradOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
@@ -20,7 +19,7 @@ ReluGradOp::ReluGradOp(ReluOp *op_)
     : GradOp({"ReluGrad", op_->pgraph, {}, getNeuralNetDomain()}), reluOp(op_) {
 }
 
-Op *ReluGradOp::getNonGradOp() { return reluOp; }
+Op *ReluGradOp::getNonGradOp() const { return reluOp; }
 
 const std::vector<GradInOutMapper> &ReluGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createReluGradInfo();

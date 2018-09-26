@@ -9,7 +9,6 @@ class ReluOp : public Op {
 public:
   ReluOp(const onnx::NodeProto &node, Graph *pgraph);
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
-
   virtual void setup() override final;
 };
 
@@ -22,7 +21,7 @@ class ReluGradOp : public GradOp {
 
 public:
   ReluGradOp(ReluOp *);
-  virtual Op *getNonGradOp() override final;
+  virtual Op *getNonGradOp() const override final;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;

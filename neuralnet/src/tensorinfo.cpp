@@ -10,12 +10,34 @@ TensorInfo::TensorInfo(DataType t, const std::vector<int64_t> &s)
 
 TensorInfo::TensorInfo(const onnx::TensorProto &t) { set(t); }
 
+TensorInfo::TensorInfo(std::string s_type, std::string s_shape)
+    : TensorInfo(dataTypeFromString(s_type), shapeFromString(s_shape)) {}
+
 void TensorInfo::set(const onnx::TensorProto &t) {
   dataTypeInfo = &getDataTypeInfoMap().at(t.data_type());
   shape_v.reserve(t.dims_size());
   for (auto &v : t.dims()) {
     shape_v.push_back(v);
   }
+}
+
+// numpy output shape of:
+std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
+                           const std::vector<int64_t> &s1) {
+
+  if (s0 != s1) {
+    throw error("np broadcasting not implemented");
+  }
+
+  return s0;
+}
+
+TensorInfo npOut(const TensorInfo &i0, const TensorInfo &i1) {
+  if (i0 != i1) {
+    throw error("np broadcasting not supported, failed TensorInfo comparison");
+  }
+
+  return i1;
 }
 
 void TensorInfo::append(std::stringstream &ss) const {
@@ -57,6 +79,14 @@ const std::map<DataType, DataTypeInfo> &getDataTypeInfoMap() {
   return dataTypeInfoMap;
 }
 
+bool TensorInfo::operator==(const TensorInfo &i1) const {
+  return (shape_v == i1.shape_v && dataTypeInfo == i1.dataTypeInfo);
+}
+
+bool TensorInfo::operator!=(const TensorInfo &i1) const {
+  return !(operator==(i1));
+}
+
 std::map<DataType, DataTypeInfo> initDataTypeInfoMap() {
 
   return {{TP::UNDEFINED, {TP::UNDEFINED, -1, "UNDEFINED"}},
@@ -75,6 +105,41 @@ std::map<DataType, DataTypeInfo> initDataTypeInfoMap() {
           {TP::UINT64, {TP::UINT64, 8, "UINT64"}},
           {TP::COMPLEX64, {TP::COMPLEX64, 8, "COMPLEX64"}},
           {TP::COMPLEX128, {TP::COMPLEX128, 16, "COMPLEX128"}}};
+}
+
+std::map<std::string, DataType> initStrToDataTypeMap() {
+  std::map<std::string, DataType> invMap;
+  for (auto &type_inf : getDataTypeInfoMap()) {
+    auto dtInf           = type_inf.second;
+    invMap[dtInf.name()] = dtInf.type();
+  }
+  return invMap;
+}
+
+DataType TensorInfo::dataTypeFromString(const std::string &s) const {
+  auto found = getStrToDataTypeMap().find(s);
+  if (found == getStrToDataTypeMap().end()) {
+    throw error("no ONNX type " + s);
+  }
+  return found->second;
+}
+
+// expects shape to be "(1 2 400 3)" or "(5)", so no spaces allowed.
+std::vector<int64_t> TensorInfo::shapeFromString(const std::string &s) const {
+  // strip off the braces
+  std::string t = s.substr(1, s.size() - 1);
+  std::vector<int64_t> shape;
+  std::istringstream iss(t);
+  std::string frag;
+  while (iss >> frag) {
+    shape.push_back(std::stoi(frag));
+  }
+  return shape;
+}
+
+const std::map<std::string, DataType> &getStrToDataTypeMap() {
+  static std::map<std::string, DataType> m = initStrToDataTypeMap();
+  return m;
 }
 
 DataTypeInfo::DataTypeInfo(DataType type__, int nbytes__, std::string name__)

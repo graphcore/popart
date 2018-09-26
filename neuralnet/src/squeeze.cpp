@@ -3,7 +3,8 @@
 
 namespace neuralnet {
 
-SqueezeOp::SqueezeOp(const onnx::NodeProto &node, Graph *pgraph) : Op(node, pgraph) {}
+SqueezeOp::SqueezeOp(const onnx::NodeProto &node, Graph *pgraph)
+    : Op(node, pgraph) {}
 
 std::vector<std::unique_ptr<Op>> SqueezeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -16,10 +17,10 @@ void SqueezeOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 void SqueezeGradOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 
 SqueezeGradOp::SqueezeGradOp(SqueezeOp *op_)
-    : GradOp({"SqueezeGrad", op_->pgraph, {}, getNeuralNetDomain()}), squeezeOp(op_) {
-}
+    : GradOp({"SqueezeGrad", op_->pgraph, {}, getNeuralNetDomain()}),
+      squeezeOp(op_) {}
 
-Op *SqueezeGradOp::getNonGradOp() { return squeezeOp; }
+Op *SqueezeGradOp::getNonGradOp() const { return squeezeOp; }
 
 const std::vector<GradInOutMapper> &SqueezeGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createSqueezeGradInfo();
