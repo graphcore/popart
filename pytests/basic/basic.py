@@ -61,7 +61,7 @@ class Basic(torch.nn.Module):
 
         return preProbSquared, probs
 
-    def forward(self, inputs):
+    def forward1(self, inputs):
         image0 = inputs[0]
         image1 = inputs[1]
         x0 = image0 + image0
@@ -69,14 +69,29 @@ class Basic(torch.nn.Module):
         return x0, x1
 
 
+    def forward(self, inputs):
+        image0 = inputs[0]
+        image1 = inputs[1]
+        x0 = self.relu(image0)
+        x1 = self.relu(image1)
+        return x0, x1
+
+
 
 
 output_names_0 = ["preProbSquared", "probs"]
+losses_0 = [pydriver.NLL("probs", "labels"), pydriver.L1(0.1, "preProbSquared")]
+output_names_0 = ["x0", "x1"]
+
+output_names_1 = ["x0", "x1"]
+losses_1 = [pydriver.L1(0.1, "x1")]
+input_names_1 = ["image0", "image1"]
+
+
 output_names = ["x0", "x1"]
+losses = [pydriver.L1(0.1, "x1")]
 input_names = ["image0", "image1"]
 
-losses_0 = [pydriver.NLL("probs", "labels"), pydriver.L1(0.1, "preProbSquared")]
-losses = [pydriver.L1(0.1, "x1")]
 
 outputdir = sys.argv[1]
 if not os.path.exists(outputdir):

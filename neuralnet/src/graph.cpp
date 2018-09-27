@@ -383,6 +383,14 @@ std::vector<TensorId> PreRunKnowledge::getAllTensorIds() const {
   return all;
 }
 
+void Graph::setAllNodeInputsMap() {
+  for (auto &node : onnxModel.graph().node()) {
+    for (auto &name : node.input()) {
+      allNodeInputsMap.insert(name);
+    }
+  }
+}
+
 Graph::Graph(onnx::ModelProto &&inMod,
              PreRunKnowledge &&perk,
              Recorder &&rec,
@@ -398,13 +406,13 @@ Graph::Graph(onnx::ModelProto &&inMod,
       tensors(std::move(cTens), this), onnxModel(inMod) {
 
   confirmNoReservedIds();
+  setAllNodeInputsMap();
 
   auto &onnxGraph = onnxModel.graph();
-
   std::set<TensorId> onnxInitializers;
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();
-    tensors.addInit(tenId, &initializer);
+    addInitIfUsed(tenId, &initializer);
     onnxInitializers.emplace(tenId);
   }
 
@@ -461,8 +469,6 @@ void Graph::inferTensorInfos() {
     }
     tensors.get(id)->info = preRunKnowledge.getInfo(id);
   }
-
-  std::cout << "entering topological sort" << std::endl;
 
   for (Op *op : getTopologicallySorted()) {
     op->setup();
@@ -560,6 +566,14 @@ void Tensors::insert(TensorId name, std::unique_ptr<Tensor> t) {
     throw error("ILE : tensor " + name + " already in M");
   }
   M[name] = std::move(t);
+}
+
+void Graph::addInitIfUsed(TensorId id, const onnx::TensorProto *t) {
+  if (allNodeInputsMap.count(id) != 0) {
+    tensors.addInit(id, t);
+  } else {
+    std::cout << "unused ONNX tensor " << id << std::endl;
+  }
 }
 
 void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
@@ -1036,26 +1050,29 @@ void Graph::constructBackwards() {
     }
   }
 
-  std::cout << "while is complete." << std::endl;
 
-  //  // add weight ops (ignoring momentum's for now)
-  //  for (auto & varId : tensors.getIds(TensorType::Variable)){
-  //    Op * op = growVarUpdateOp(varId);
-  //  }
+    // add weight ops (ignoring momentum's for now)
+    for (auto & varId : tensors.getIds(TensorType::Variable)){
+      Op * op = growVarUpdateOp(varId);
+    }
 }
 
 TensorId Graph::getLearningRateId() const { return "learnRate"; }
 
 Op *Graph::growVarUpdateOp(TensorId varId) {
 
+  std::cout << "in var update op for " << varId << std::endl;
+
   OpId opId = moveIntoGraph(std::unique_ptr<Op>(new VarUpdateOp(varId, this)));
   Op *op    = ops[opId].get();
 
   std::vector<TensorId> inputs{varId, getGradId(varId), getLearningRateId()};
   connectInputs(InputWrapper<decltype(inputs)>(inputs), opId);
+ 
+  // there are no outputs of var-op
   std::vector<TensorId> outputs{};
-
   connectOutputs(OutputWrapper<decltype(outputs)>(outputs), opId);
+
   trainTargetOps.push_back(op);
 
   throw error("impl impose cons for var update op");
@@ -1074,12 +1091,19 @@ const std::map<int, Tensor *> &Op::gradOutMap() const {
   throw error("No `grad out map' for " + op_type());
 }
 
+
 Op *Graph::growFromNode(const Node &node) {
 
   // special case of CONSTANT Node, no Op is created
   if (getOpTypes().get(node.op_type()) == OpType::CONSTANT) {
     TensorId name = node.output(0);
-    tensors.addInit(name, &node.attribute(0).t());
+
+
+  // we confirm that this tensor is actually 
+  // the input of some Node in the Graph, because
+  // we've seen (in pytorch) that some initializers
+  // are not used (always '2', '3', '4' of shape (10,10,3,3)
+  addInitIfUsed(name, &node.attribute(0).t());
     // no Op created for a Constant Node
     return nullptr;
   }

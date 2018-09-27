@@ -546,6 +546,13 @@ private:
   std::vector<Op *> trainTargetOps;
 
   Op *finalLossOp{nullptr};
+
+
+  // all in input() of all in node() of the onnx Graph
+  void setAllNodeInputsMap();
+  std::set<std::string> allNodeInputsMap;
+  // only adds an init tensor if it is is allNodeInputsMap;
+  void addInitIfUsed(TensorId id, const onnx::TensorProto *t);
 };
 
 } // namespace neuralnet

@@ -65,3 +65,10 @@ spent much of the day fighting pytorch. Not log op, no gather op, makes the
 way I want to implement neuralnet impossible. I will have to go with a vector
 of losses, which takes tensors and output a single scalar. These will be summed
 to get the total loss. 
+
+27/09
+----------------------
+optimise out sum with 1 arg
+full circle, we're back to the weight update node
+
+
