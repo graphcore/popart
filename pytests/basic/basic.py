@@ -72,8 +72,8 @@ class Basic(torch.nn.Module):
     def forward(self, inputs):
         image0 = inputs[0]
         image1 = inputs[1]
-        x0 = self.relu(image0)
-        x1 = self.relu(image1)
+        x0 = self.conv1(image0)
+        x1 = self.conv1(image1)
         return x0, x1
 
 
@@ -89,7 +89,7 @@ input_names_1 = ["image0", "image1"]
 
 
 output_names = ["x0", "x1"]
-losses = [pydriver.L1(0.1, "x1")]
+losses = [pydriver.L1(0.1, "x0"), pydriver.L1(0.1, "x1")]
 input_names = ["image0", "image1"]
 
 
@@ -98,13 +98,16 @@ if not os.path.exists(outputdir):
     print("Making %s" % (outputdir, ))
     os.mkdir(outputdir)
 
+nInChans = 20
+nOutChans = 10
 driver = pydriver.Driver(outputdir)
 driver.write(
-    Basic(20, 10), [torch.rand(2, 20, 32, 32),
-                    torch.rand(2, 20, 32, 32)],
+    Basic(nInChans, nOutChans),
+    [torch.rand(2, nInChans, 32, 32),
+     torch.rand(2, nInChans, 32, 32)],
     input_names=input_names,
     output_names=output_names,
-    losses = losses)
+    losses=losses)
 driver.run()
 
 print("pydriver python script complete.")

@@ -600,9 +600,9 @@ void Graph::confirmNonReservedId(TensorId tenId) const {
                 reservedPrefix());
   }
 
-  if (tenId == getLearningRateId()) {
-    throw error("Provided tensor " + tenId + " has a reserved name");
-  }
+//  if (tenId == getLearningRateId()) {
+//    throw error("Provided tensor " + tenId + " has a reserved name");
+//  }
 }
 
 void Tensors::addStream(TensorId tenId) {
@@ -1050,14 +1050,17 @@ void Graph::constructBackwards() {
     }
   }
 
+  tensors.addStream(getLearningRateId());
 
-    // add weight ops (ignoring momentum's for now)
-    for (auto & varId : tensors.getIds(TensorType::Variable)){
-      Op * op = growVarUpdateOp(varId);
-    }
+  // add weight ops (ignoring momentum's for now)
+  for (auto &varId : tensors.getIds(TensorType::Variable)) {
+    Op *op = growVarUpdateOp(varId);
+  }
+
+
 }
 
-TensorId Graph::getLearningRateId() const { return "learnRate"; }
+TensorId getLearningRateId() { return "learnRate"; }
 
 Op *Graph::growVarUpdateOp(TensorId varId) {
 
@@ -1066,7 +1069,10 @@ Op *Graph::growVarUpdateOp(TensorId varId) {
   OpId opId = moveIntoGraph(std::unique_ptr<Op>(new VarUpdateOp(varId, this)));
   Op *op    = ops[opId].get();
 
-  std::vector<TensorId> inputs{varId, getGradId(varId), getLearningRateId()};
+  std::vector<TensorId> inputs(3, "");
+  inputs[VarUpdateOp::getVarIndex()] = varId;
+  inputs[VarUpdateOp::getVarGradIndex()] = getGradId(varId);
+  inputs[VarUpdateOp::getLearnRateIndex()] = getLearningRateId();
   connectInputs(InputWrapper<decltype(inputs)>(inputs), opId);
  
   // there are no outputs of var-op
@@ -1074,8 +1080,8 @@ Op *Graph::growVarUpdateOp(TensorId varId) {
   connectOutputs(OutputWrapper<decltype(outputs)>(outputs), opId);
 
   trainTargetOps.push_back(op);
+  op->imposeTopoCons();
 
-  throw error("impl impose cons for var update op");
   return op;
 }
 

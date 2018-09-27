@@ -106,6 +106,9 @@ int main(int argc, char **argv) {
     std::cout << ss.str() << std::endl;
   }
 
+  // add learning rate to pre-run knowldege
+  preRunKnowledge.addInfo(getLearningRateId(), {TP::FLOAT, {}});
+
   std::vector<std::string> constTensors{};
   Recorder recorder{};
   Schedule schedule{};

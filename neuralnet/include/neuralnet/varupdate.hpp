@@ -9,6 +9,10 @@ class VarUpdateOp : public Op {
 public:
   VarUpdateOp(TensorId, Graph *);
   virtual void setup() override final;
+  static int getVarIndex();
+  static int getVarGradIndex();
+  static int getLearnRateIndex();
+  void imposeTopoCons() override final;
 
 private:
   TensorId varId;

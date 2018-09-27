@@ -4,18 +4,22 @@ import onnx.numpy_helper
 import torch.onnx
 import subprocess
 from IPython.core.debugger import Tracer
+# from https://stackoverflow.com/questions/8628123/counting-instances-of-a-class
+# static class variable Python? 
+from itertools import count
 
 
 # string rules are .: ... : . : ...
 # lossName: input1 ... inputN: output : other things specific to the class
 class NLL:
+    counter = count(0)
     def __init__(self, probId, labelsId):
         self.probId = probId
         self.labelsId = labelsId
 
     def string(self):
         #TODO : inherit this fuction, : should be common
-        return "NLL: %s %s : lossNLL : "%(self.probId, self.labelsId)
+        return "NLL: %s %s : lossNLL_%d : "%(self.probId, self.labelsId, next(self.counter))
    
     def has_stream_in(self):
         return True;
@@ -29,12 +33,13 @@ class NLL:
 
 
 class L1:
+    counter = count(0)
     def __init__(self, lamb, tensorId):
         self.lamb = lamb
         self.tensorId = tensorId
 
     def string(self):
-        return "L1: %s : lossL1 : %.3f "%(self.tensorId, self.lamb)
+        return "L1: %s : lossL1_%d : %.3f "%(self.tensorId, next(self.counter), self.lamb)
 
     def has_stream_in(self):
         return False

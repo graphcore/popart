@@ -99,6 +99,10 @@ TensorId getGradId(TensorId tenId);
 // inverse of previous function
 TensorId getNonGradId(TensorId tenId);
 
+// get the learning rate tensor's id for Variable tensor
+// Of course, the tensor is rank 0
+TensorId getLearningRateId();
+
 // needs to be implemented. will manage things like
 // weight decay loss etc.
 class Regularizer {};
@@ -469,9 +473,6 @@ public:
   OpId getOpsCounter() const;
   OpId getAndIncrOpsCounter();
 
-  // get the learning rate tensor's id for Variable tensor
-  // Of course, the tensor is rank 0
-  TensorId getLearningRateId() const;
 
   TensorId getFinalLossId() const;
   Op *getFinalLossOp();
