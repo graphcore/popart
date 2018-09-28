@@ -7,30 +7,9 @@
 #pragma clang diagnostic pop // stop ignoring warnings
 
 #include <ostream>
-#include <string>
+#include <sstream>
 
 namespace neuralnet {
-
-// class TensorId{
-//
-// public:
-//  TensorId(std::string x):name(x) {}
-//  const std::string & str() const { return name;}
-//
-// private:
-//    std::string name;
-//
-//};
-//
-// bool operator<(const TensorId & a, const TensorId & b){
-//  return a.str() < b.str();
-//}
-//
-// std::ostream &operator<<(std::ostream &os, const TensorId &id) {
-//  os << id.str();
-//  return os;
-//}
-//
 
 using TensorId = std::string;
 
@@ -54,6 +33,19 @@ using OnnxTensorPtrs = std::map<TensorId, const onnx::TensorProto *>;
 using DataType = decltype(onnx::TensorProto().data_type());
 
 using TP = onnx::TensorProto;
+
+template <class T> void appendSequence(std::stringstream &ss, T t) {
+  int index = 0;
+  ss << '[';
+  for (auto &x : t) {
+    if (index != 0) {
+      ss << ' ';
+    }
+    ss << x;
+    ++index;
+  }
+  ss << ']';
+}
 
 } // namespace neuralnet
 

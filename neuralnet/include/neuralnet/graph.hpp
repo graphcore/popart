@@ -8,6 +8,7 @@
 #pragma clang diagnostic pop // stop ignoring warnings
 
 #include <map>
+#include <neuralnet/attributes.hpp>
 #include <neuralnet/names.hpp>
 #include <neuralnet/tensorinfo.hpp>
 #include <neuralnet/vertex.hpp>
@@ -18,6 +19,7 @@ class Tensor;
 class Graph;
 class Op;
 class Loss;
+class Pattern;
 
 // the input tensor of a grad-op has what kind of
 // relationship with the corresponding non-grad-op?
@@ -189,30 +191,6 @@ private:
   std::map<int, Tensor *> tensor_map;
   std::map<Tensor *, std::vector<int>> indices_map;
 };
-
-// Wrapper around the container of onnx::AtrributeProtos
-// of a Node, provides faster and cleaner reads of values
-// from keys (strings)
-class Attributes {
-public:
-  Attributes(decltype(onnx::NodeProto().attribute()) &);
-  Attributes() = default;
-  const std::vector<std::string> &getNames() const;
-  onnxAttPtr at(std::string name) const;
-  void append(std::stringstream &ss) const;
-  template <typename T> void setIfPresent(T &, std::string s) const;
-
-private:
-  std::map<std::string, onnxAttPtr> att_map;
-  std::vector<std::string> names;
-};
-
-template <> void Attributes::setIfPresent(int64_t &, std::string s) const;
-
-template <>
-void Attributes::setIfPresent(std::vector<int64_t> &, std::string s) const;
-
-template <> void Attributes::setIfPresent(std::string &, std::string s) const;
 
 class OpConstructorBundle {
 public:
@@ -440,7 +418,7 @@ public:
   // take training steps
   onnx::ModelProto step(int n);
   // if the tensor is returned to user (Recorder).
-  bool isLogged(TensorId);
+  bool isAnchored(TensorId);
   void append(std::stringstream &);
   PreRunKnowledge preRunKnowledge;
   Recorder recorder;
@@ -452,14 +430,6 @@ public:
   // split ConvOp with bias into two Ops, a ConvOp
   // followed by an x Op
   void splitConvBias();
-  // Padding with edges of width 0 is a nop,
-  // remove it unless logging tensors prevents
-  void removePadSizeZero();
-  // remove []->() where [] is Tensor and () is an Op and []->()
-  // forms part of (.)->[]->()->[.]. after this, this section will
-  // be (.)->[.]
-  void removeNullOp(TensorId name, OpId opId);
-  // return pointers to Ops of a certain type
   std::vector<Op *> opsOfType(OpType);
   void inferTensorInfos();
   // this does not take into priority, simple topological sort
@@ -473,11 +443,15 @@ public:
   OpId getOpsCounter() const;
   OpId getAndIncrOpsCounter();
 
-
   TensorId getFinalLossId() const;
   Op *getFinalLossOp();
+  void exportDot(std::string dotfn) const;
+  void eraseOp(OpId);
 
 private:
+  // modify the graph using with pattern matching
+  void applyPattern(const Pattern *);
+
   // confirm that the names of the Const tensors
   // from the user (constTensors) are in the onnx Model
   // Can be run after the forward pass of Graph has been
@@ -547,7 +521,6 @@ private:
   std::vector<Op *> trainTargetOps;
 
   Op *finalLossOp{nullptr};
-
 
   // all in input() of all in node() of the onnx Graph
   void setAllNodeInputsMap();

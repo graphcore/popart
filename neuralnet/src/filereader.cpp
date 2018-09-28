@@ -23,6 +23,12 @@ std::string getCanonicalDirName(const std::string &dirName0) {
   return bf::canonical(dirName0).string();
 }
 
+std::string getCanonicalFilename(const std::string &fn) {
+  namespace bf = boost::filesystem;
+  bf::path p(fn);
+  return bf::canonical(fn).string();
+}
+
 std::string appendDirFn(const std::string &dir, const std::string &fn) {
   boost::filesystem::path p(dir);
   auto fullPath = p / fn;

@@ -14,7 +14,7 @@ void HasReceptiveFieldOp::setup() {
   nSpatialDims = input.tensor(0)->info.rank() - 2;
 
   // default values:
-  pads.resize(nSpatialDims, 1);
+  pads.resize(nSpatialDims, 0);
   strides.resize(nSpatialDims * 2, 1);
   dilations.resize(nSpatialDims, 1);
 

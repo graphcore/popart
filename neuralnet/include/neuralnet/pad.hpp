@@ -7,7 +7,13 @@ namespace neuralnet {
 
 class PadOp : public Op {
 public:
-  PadOp(const onnx::NodeProto &node, Graph *pgraph) : Op(node, pgraph) {}
+  PadOp(const onnx::NodeProto &node, Graph *pgraph);
+  // returns true of all pad size in all dimensions
+  // and on both sides, are zero
+  bool padSizeZero() const;
+
+private:
+  std::vector<int64_t> pads;
 };
 } // namespace neuralnet
 

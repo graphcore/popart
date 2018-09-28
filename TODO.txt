@@ -17,18 +17,18 @@ Think about backend abstraction.
 
 06/09/2018
 -----------------------
- consolidate inferInfo, write inferInfo for AveragePool, re-organise ConvOp
- so that as much as possible is done in the constructor
+consolidate inferInfo, write inferInfo for AveragePool, re-organise ConvOp
+so that as much as possible is done in the constructor
 
- AveragePoolOp setup is basically the same as for ConvOp, even dilation should
- be kept (pytorch has it). Only ngroups which should go.
+AveragePoolOp setup is basically the same as for ConvOp, even dilation should
+be kept (pytorch has it). Only ngroups which should go.
 
 
 09/09/2018
 -----------------------
- Loss, streaming off, separate program run every n iterations. If 
- a requested tensor has been optimised out, just say too bad to the 
- user and move on
+Loss, streaming off, separate program run every n iterations. If 
+a requested tensor has been optimised out, just say too bad to the 
+user and move on
 
 10/09/2018
 -----------------------
@@ -56,19 +56,28 @@ be used for debugging purposed to find when the inconsistency was introduced.
 
 23/09
 -----------------------
-I don't like the implementation of loss. It should be possible to have several
-losses. Change so that this is the case AND make this the default in basic
+(done) I don't like the implementation of loss. It should be possible to have 
+several losses. Change so that this is the case AND make this the default in 
+basic
 
 25/09
 -----------------------
-spent much of the day fighting pytorch. Not log op, no gather op, makes the
+(done) spent much of the day fighting pytorch. No log op, no gather op, makes the
 way I want to implement neuralnet impossible. I will have to go with a vector
 of losses, which takes tensors and output a single scalar. These will be summed
 to get the total loss. 
 
 27/09
 ----------------------
-optimise out sum with 1 arg
-full circle, we're back to the weight update node
+(done) optimise out sum with 1 arg
+(done) full circle, we're back to the weight update node
 
-
+28/09
+----------------------
+make optimisations iron-clad. Class to inherit from? 
+Decide how the user states which tensors they want back (are anchored)
+(done) Visualisation tool, see the liveness through time. 
+AddGrad can be optimised out
+Pruning at end of graph construction to keep only the targets
+ops (of Graph) should be encapsulated, as tensors
+recomputation.......

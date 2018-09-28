@@ -1,7 +1,10 @@
+#include <fstream>
 #include <map>
 #include <neuralnet/error.hpp>
+#include <neuralnet/filereader.hpp>
 #include <neuralnet/graph.hpp>
 #include <neuralnet/loss.hpp>
+#include <neuralnet/patterns.hpp>
 #include <neuralnet/tensor.hpp>
 #include <neuralnet/tensorinfo.hpp>
 #include <neuralnet/util.hpp>
@@ -59,6 +62,14 @@ std::vector<TensorId> TensorIndexMap::getSerialised() const {
   return serialised;
 }
 
+void Graph::eraseOp(OpId id) {
+  auto found = ops.find(id);
+  if (found == ops.end()) {
+    throw error("ILE: no op " + std::to_string(id) + " to erase");
+  }
+  ops.erase(id);
+}
+
 // return a vector of 1 or several OpAndTensorIds for
 // obtaining the gradient of the inputs of this Op.
 // The Op in the OpAndTensorIds is the gradient op, and
@@ -86,6 +97,20 @@ const OpTypes &getOpTypes() {
   const static OpTypes X = initOpTypes();
   return X;
 }
+
+// A note on non-determinism. For maps with
+// pointers as keys, iterating through them
+// is non-deterministic with the default comparitor.
+// To prevent non-determinism in getTopologicallSorted,
+// we could use the following non-default comparitor
+// everywhere where there is a map with Op pointers,
+// and a similar one with Tensor pointers. A fair amount
+// of work...
+struct POpCmp {
+  bool operator()(const Op *const &a, const Op *const &b) const {
+    return a->id < b->id;
+  }
+};
 
 void Op::setup() { throw error("No setup() for " + op_type()); }
 
@@ -189,6 +214,29 @@ std::vector<Op *> Graph::getTopologicallySorted() const {
     throw error("failure to sort topologically");
   }
   return sorted;
+}
+
+void Graph::exportDot(const std::string dotfn) const {
+  std::ofstream strm;
+  strm.open(dotfn, std::ios::out);
+  if (!strm.is_open()) {
+    throw error("failed to open file `" + dotfn + '\'');
+  }
+  strm << "digraph net {\n";
+  for (auto &n : getTopologicallySorted()) {
+    strm << "n_" << n->id << " [shape= \"box\", label=\"" << n->op_type()
+         << "\"];\n";
+    for (auto &ind_ten : n->input.tensorMap()) {
+      strm << ind_ten.second->id << " -> n_" << n->id << ';' << '\n';
+    }
+
+    for (auto &ind_ten : n->output.tensorMap()) {
+      strm << "n_" << n->id << " -> " << ind_ten.second->id << ';' << '\n';
+    }
+  }
+  strm << '}' << '\n';
+  strm.flush();
+  std::cout << "written" << std::endl;
 }
 
 std::vector<TensorId> Tensors::getInitIds() const {
@@ -416,6 +464,11 @@ Graph::Graph(onnx::ModelProto &&inMod,
     onnxInitializers.emplace(tenId);
   }
 
+  for (auto &node : onnxGraph.node()) {
+    std::cout << node.op_type() << " " << node.output(0) << " ";
+  }
+  std::cout << std::endl;
+
   // onnx inputs which are not initializers are true inputs
   for (auto &valueInfo : onnxGraph.input()) {
     if (onnxInitializers.count(valueInfo.name()) == 0) {
@@ -441,11 +494,28 @@ Graph::Graph(onnx::ModelProto &&inMod,
 
   splitConvBias();
 
-  removePadSizeZero();
+  Identity identity;
+  applyPattern(&identity);
 
   constructBackwards();
+  applyPattern(&identity);
+
+  exportDot("/Users/jamesn/graphvizing/jam.dot");
 
   inferTensorInfos();
+}
+
+void Graph::applyPattern(const Pattern *pattern) {
+  for (auto &id_op : ops) {
+    Op *op = id_op.second.get();
+    if (pattern->matches(op)) {
+      std::cout << "Op " << op->op_type() << " matches " << std::endl;
+      if (pattern->removesNoAnchored(op)) {
+        std::cout << "Op " << op->op_type() << " safe to remove " << std::endl;
+        pattern->apply(op);
+      }
+    }
+  }
 }
 
 std::vector<TensorId> Tensors::getNoProducerIds() const {
@@ -479,17 +549,6 @@ const onnx::TensorProto *Tensors::getOnnxInit(TensorId id) const {
   return init.at(id);
 }
 
-// note : don't try too hard if tensors are logged,
-// user is probably not concerned about performance
-
-void Graph::removePadSizeZero() {
-  for (auto &op : opsOfType(OpType::PAD)) {
-    if (!isLogged(op->input.tensor(0)->id)) {
-      removeNullOp(op->input.tensor(0)->id, op->id);
-    }
-  }
-}
-
 std::vector<Op *> Graph::opsOfType(OpType opType) {
   std::vector<Op *> typedOps;
   for (auto &id_op : ops) {
@@ -500,30 +559,6 @@ std::vector<Op *> Graph::opsOfType(OpType opType) {
   return typedOps;
 }
 
-void Graph::removeNullOp(TensorId name, OpId opId) {
-  // [] (see .hpp for ascii picture definitions)
-  Tensor *tensorIn = tensors.get(name);
-  // ()
-  Op *op = ops[opId].get();
-  // [.]
-  Tensor *tensorOut = op->output.tensor(0);
-  // (.)
-  auto op0 = tensorIn->getProducer();
-  // [.] gets all consumers of [] other than ()
-  tensorOut->consumers.extend(tensorIn->consumers.getMap());
-  tensorOut->consumers.decrement(op);
-  // (.) produces [.] directly
-  int index = op0->output.indices(tensorIn)[0];
-  op0->output.reset(index, tensorOut);
-  tensorOut->resetProducer(op0);
-  // delete []
-  tensors.remove(name);
-  // tensors.erase(name);
-  // delete (.)
-  // removeOp(opId);
-  ops.erase(opId);
-}
-
 int TensorIndexMap::n() const { return static_cast<int>(tensor_map.size()); }
 
 // void Graph::removeOp(OpId id){
@@ -531,8 +566,8 @@ int TensorIndexMap::n() const { return static_cast<int>(tensor_map.size()); }
 //   ops.erase(id);
 // }
 
-bool Graph::isLogged(TensorId tenId) {
-  (void)tenId;
+bool Graph::isAnchored(TensorId tenId) {
+  throw error("this should be implemented: isAnchored");
   return false;
 }
 
@@ -600,103 +635,15 @@ void Graph::confirmNonReservedId(TensorId tenId) const {
                 reservedPrefix());
   }
 
-//  if (tenId == getLearningRateId()) {
-//    throw error("Provided tensor " + tenId + " has a reserved name");
-//  }
+  //  if (tenId == getLearningRateId()) {
+  //    throw error("Provided tensor " + tenId + " has a reserved name");
+  //  }
 }
 
 void Tensors::addStream(TensorId tenId) {
   insert(
       tenId,
       std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, pgraph)));
-}
-
-const std::vector<std::string> &Attributes::getNames() const { return names; }
-
-onnxAttPtr Attributes::at(std::string name) const { return att_map.at(name); }
-
-template <> void Attributes::setIfPresent(int64_t &v, std::string s) const {
-  auto found = att_map.find(s);
-  if (found != att_map.end()) {
-    v = found->second->i();
-  }
-}
-
-template <> void Attributes::setIfPresent(std::string &v, std::string s) const {
-  auto found = att_map.find(s);
-  if (found != att_map.end()) {
-    v = found->second->s();
-  }
-}
-
-template <>
-void Attributes::setIfPresent(std::vector<int64_t> &vs, std::string s) const {
-  auto found = att_map.find(s);
-  if (found != att_map.end()) {
-    vs.resize(0);
-    vs.reserve(found->second->ints_size());
-    for (auto &v : found->second->ints()) {
-      vs.push_back(v);
-    }
-  }
-}
-
-Attributes::Attributes(decltype(Node().attribute()) &attributes) {
-  for (auto &attribute : attributes) {
-    auto name = attribute.name();
-    names.push_back(name);
-    att_map[name] = &attribute;
-  }
-}
-
-void Attributes::append(std::stringstream &ss) const {
-  using AttPro = onnx::AttributeProto;
-  for (auto &name : names) {
-    ss << '\n';
-    ss << "  " << name << "  ";
-    auto attptr = att_map.at(name);
-    switch (attptr->type()) {
-    case AttPro::UNDEFINED: {
-      break;
-    }
-    case AttPro::FLOAT: {
-      ss << attptr->f();
-      break;
-    }
-    case AttPro::INT: {
-      ss << attptr->i();
-      break;
-    }
-    case AttPro::STRING: {
-      ss << attptr->s();
-      break;
-    }
-    case AttPro::TENSOR: {
-      break;
-    }
-    case AttPro::GRAPH: {
-      break;
-    }
-    case AttPro::FLOATS: {
-      appendSequence(ss, attptr->floats());
-      break;
-    }
-    case AttPro::INTS: {
-      appendSequence(ss, attptr->ints());
-      break;
-    }
-    case AttPro::STRINGS: {
-      appendSequence(ss, attptr->strings());
-      break;
-    }
-    case AttPro::TENSORS: {
-      break;
-    }
-    case AttPro::GRAPHS: {
-      break;
-    }
-    }
-  }
 }
 
 TensorId getGradId(TensorId id) { return reservedPrefix() + id; }
@@ -1056,8 +1003,6 @@ void Graph::constructBackwards() {
   for (auto &varId : tensors.getIds(TensorType::Variable)) {
     Op *op = growVarUpdateOp(varId);
   }
-
-
 }
 
 TensorId getLearningRateId() { return "learnRate"; }
@@ -1070,11 +1015,11 @@ Op *Graph::growVarUpdateOp(TensorId varId) {
   Op *op    = ops[opId].get();
 
   std::vector<TensorId> inputs(3, "");
-  inputs[VarUpdateOp::getVarIndex()] = varId;
-  inputs[VarUpdateOp::getVarGradIndex()] = getGradId(varId);
+  inputs[VarUpdateOp::getVarIndex()]       = varId;
+  inputs[VarUpdateOp::getVarGradIndex()]   = getGradId(varId);
   inputs[VarUpdateOp::getLearnRateIndex()] = getLearningRateId();
   connectInputs(InputWrapper<decltype(inputs)>(inputs), opId);
- 
+
   // there are no outputs of var-op
   std::vector<TensorId> outputs{};
   connectOutputs(OutputWrapper<decltype(outputs)>(outputs), opId);
@@ -1097,19 +1042,17 @@ const std::map<int, Tensor *> &Op::gradOutMap() const {
   throw error("No `grad out map' for " + op_type());
 }
 
-
 Op *Graph::growFromNode(const Node &node) {
 
   // special case of CONSTANT Node, no Op is created
   if (getOpTypes().get(node.op_type()) == OpType::CONSTANT) {
     TensorId name = node.output(0);
 
-
-  // we confirm that this tensor is actually 
-  // the input of some Node in the Graph, because
-  // we've seen (in pytorch) that some initializers
-  // are not used (always '2', '3', '4' of shape (10,10,3,3)
-  addInitIfUsed(name, &node.attribute(0).t());
+    // we confirm that this tensor is actually
+    // the input of some Node in the Graph, because
+    // we've seen (in pytorch) that some initializers
+    // are not used (always '2', '3', '4' of shape (10,10,3,3)
+    addInitIfUsed(name, &node.attribute(0).t());
     // no Op created for a Constant Node
     return nullptr;
   }

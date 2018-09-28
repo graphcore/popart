@@ -61,7 +61,7 @@ class Basic(torch.nn.Module):
 
         return preProbSquared, probs
 
-    def forward1(self, inputs):
+    def forward(self, inputs):
         image0 = inputs[0]
         image1 = inputs[1]
         x0 = image0 + image0
@@ -69,7 +69,7 @@ class Basic(torch.nn.Module):
         return x0, x1
 
 
-    def forward(self, inputs):
+    def forward1(self, inputs):
         image0 = inputs[0]
         image1 = inputs[1]
         x0 = self.conv1(image0)

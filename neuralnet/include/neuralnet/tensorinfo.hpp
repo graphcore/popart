@@ -68,19 +68,6 @@ private:
   std::vector<int64_t> shape_v;
 };
 
-template <class T> void appendSequence(std::stringstream &ss, T t) {
-  int index = 0;
-  ss << '[';
-  for (auto &x : t) {
-    if (index != 0) {
-      ss << ' ';
-    }
-    ss << x;
-    ++index;
-  }
-  ss << ']';
-}
-
 } // namespace neuralnet
 
 #endif

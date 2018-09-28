@@ -15,6 +15,8 @@ namespace io {
 // see boost.org/doc/libs/1_33_1/libs/filesystem/doc/path.htm#Canonical
 std::string getCanonicalDirName(const std::string &dirName0);
 
+std::string getCanonicalFilename(const std::string &dirName0);
+
 // construct a full path name by joining dir with fn (much like python
 // path.join)
 std::string appendDirFn(const std::string &dir, const std::string &fn);
