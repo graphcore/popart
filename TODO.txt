@@ -74,7 +74,7 @@ to get the total loss.
 
 28/09
 ----------------------
-make optimisations iron-clad. Class to inherit from? 
+(partially done) make optimisations iron-clad. Class to inherit from? 
 Decide how the user states which tensors they want back (are anchored)
 (done) Visualisation tool, see the liveness through time. 
 AddGrad can be optimised out

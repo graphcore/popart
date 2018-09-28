@@ -35,7 +35,7 @@ class Basic(torch.nn.Module):
         self.logsoftmax = torch.nn.LogSoftmax(dim=0)
         self.softmax = torch.nn.Softmax(dim=0)
 
-    def forward0(self, inputs):
+    def forward1(self, inputs):
         image0 = inputs[0]
         image1 = inputs[1]
         x2 = self.relu(image1)
@@ -79,18 +79,18 @@ class Basic(torch.nn.Module):
 
 
 
-output_names_0 = ["preProbSquared", "probs"]
-losses_0 = [pydriver.NLL("probs", "labels"), pydriver.L1(0.1, "preProbSquared")]
-output_names_0 = ["x0", "x1"]
-
-output_names_1 = ["x0", "x1"]
-losses_1 = [pydriver.L1(0.1, "x1")]
+output_names_1 = ["preProbSquared", "probs"]
+losses_1 = [pydriver.NLL("probs", "labels"), pydriver.L1(0.1, "preProbSquared")]
 input_names_1 = ["image0", "image1"]
 
-
 output_names = ["x0", "x1"]
-losses = [pydriver.L1(0.1, "x0"), pydriver.L1(0.1, "x1")]
+losses = [pydriver.L1(0.1, "x1")]
 input_names = ["image0", "image1"]
+
+
+output_names_0 = ["x0", "x1"]
+losses_0 = [pydriver.L1(0.1, "x0"), pydriver.L1(0.1, "x1")]
+input_names_0 = ["image0", "image1"]
 
 
 outputdir = sys.argv[1]

@@ -25,6 +25,7 @@ class NLL:
         return True;
 
     def stream_string(self, output_names, outputs):
+        print(output_names)
         output_index = output_names.index(self.probId)
         probsShape = outputs[output_index].shape
         batchsize = probsShape[0]

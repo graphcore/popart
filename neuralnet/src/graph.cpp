@@ -494,20 +494,29 @@ Graph::Graph(onnx::ModelProto &&inMod,
 
   splitConvBias();
 
-  Identity identity;
-  applyPattern(&identity);
+  PreUniRepl pre_uni_repl;
+  PostNRepl post_n_repl;
+
+  applyPattern(&pre_uni_repl);
+  applyPattern(&post_n_repl);
 
   constructBackwards();
-  applyPattern(&identity);
+
+  applyPattern(&pre_uni_repl);
+  applyPattern(&post_n_repl);
 
   exportDot("/Users/jamesn/graphvizing/jam.dot");
+  std::cout << "model written to jam.dot" << std::endl;
 
   inferTensorInfos();
 }
 
 void Graph::applyPattern(const Pattern *pattern) {
+  std::vector<Op*> v_ops;
   for (auto &id_op : ops) {
-    Op *op = id_op.second.get();
+    v_ops.push_back(id_op.second.get());
+  }
+  for (auto op : v_ops){
     if (pattern->matches(op)) {
       std::cout << "Op " << op->op_type() << " matches " << std::endl;
       if (pattern->removesNoAnchored(op)) {
@@ -561,13 +570,11 @@ std::vector<Op *> Graph::opsOfType(OpType opType) {
 
 int TensorIndexMap::n() const { return static_cast<int>(tensor_map.size()); }
 
-// void Graph::removeOp(OpId id){
-//   // ...
-//   ops.erase(id);
-// }
 
 bool Graph::isAnchored(TensorId tenId) {
-  throw error("this should be implemented: isAnchored");
+  if (tenId == "d__image0"){
+    return true;
+  }
   return false;
 }
 
