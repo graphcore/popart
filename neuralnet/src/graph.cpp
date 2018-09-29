@@ -447,9 +447,11 @@ Graph::Graph(onnx::ModelProto &&inMod,
              // Schedule needed, if momentum the graph is different
              Schedule &&sched,
              // Weights tensors which are not to be updated
-             std::vector<std::string> &&cTens)
-    : preRunKnowledge(perk), recorder(rec), losses(std::move(ls)),
-      regularizers(std::move(regs)), schedule(sched),
+             std::vector<std::string> &&cTens,
+             std::string logdir_)
+    : logdir(io::getCanonicalDirName(logdir_)), preRunKnowledge(perk),
+      recorder(rec), losses(std::move(ls)), regularizers(std::move(regs)),
+      schedule(sched),
       // constIds(std::move(cTens)),
       tensors(std::move(cTens), this), onnxModel(inMod) {
 
@@ -505,18 +507,24 @@ Graph::Graph(onnx::ModelProto &&inMod,
   applyPattern(&pre_uni_repl);
   applyPattern(&post_n_repl);
 
-  exportDot("/Users/jamesn/graphvizing/jam.dot");
+  // exportDot("/Users/jamesn/graphvizing/jam.dot");
+  exportDot(io::appendDirFn(logdir, "jam.dot"));
   std::cout << "model written to jam.dot" << std::endl;
+
+  // remove paths which are not used
+  prune();
 
   inferTensorInfos();
 }
 
+void Graph::prune() { trainTargetOps; }
+
 void Graph::applyPattern(const Pattern *pattern) {
-  std::vector<Op*> v_ops;
+  std::vector<Op *> v_ops;
   for (auto &id_op : ops) {
     v_ops.push_back(id_op.second.get());
   }
-  for (auto op : v_ops){
+  for (auto op : v_ops) {
     if (pattern->matches(op)) {
       std::cout << "Op " << op->op_type() << " matches " << std::endl;
       if (pattern->removesNoAnchored(op)) {
@@ -570,13 +578,7 @@ std::vector<Op *> Graph::opsOfType(OpType opType) {
 
 int TensorIndexMap::n() const { return static_cast<int>(tensor_map.size()); }
 
-
-bool Graph::isAnchored(TensorId tenId) {
-  if (tenId == "d__image0"){
-    return true;
-  }
-  return false;
-}
+bool Graph::isAnchored(TensorId tenId) { return recorder.isAnchored(tenId); }
 
 void Graph::splitConvBias() {}
 
@@ -1008,7 +1010,7 @@ void Graph::constructBackwards() {
 
   // add weight ops (ignoring momentum's for now)
   for (auto &varId : tensors.getIds(TensorType::Variable)) {
-    Op *op = growVarUpdateOp(varId);
+    growVarUpdateOp(varId);
   }
 }
 
@@ -1290,6 +1292,16 @@ std::vector<Op *> Graph::growLossGradients() {
     }
   }
   return gradops;
+}
+
+bool Recorder::isAnchored(TensorId id) const {
+  return (s_anchors.count(id) != 0);
+}
+
+Recorder::Recorder(const std::vector<TensorId> &v) : v_anchors(v) {
+  for (auto &id : v_anchors) {
+    s_anchors.insert(id);
+  }
 }
 
 } // namespace neuralnet

@@ -85,7 +85,15 @@ private:
 // Tensors to log every iteration
 // Also, frequency at which to return all weights
 // TODO(jn) ask David Norman how tensorflow does this.
-class Recorder {};
+class Recorder {
+public:
+  bool isAnchored(TensorId) const;
+  Recorder(const std::vector<TensorId> &);
+
+private:
+  std::set<TensorId> s_anchors;
+  const std::vector<TensorId> v_anchors;
+};
 
 std::string getNeuralNetDomain();
 
@@ -413,7 +421,10 @@ public:
         // Schedule needed, if momentum the graph is different
         Schedule &&sched,
         // Weights tensors which are not to be updated
-        std::vector<std::string> &&cTens);
+        std::vector<std::string> &&cTens,
+        std::string logdir_);
+
+  std::string logdir;
 
   // take training steps
   onnx::ModelProto step(int n);
@@ -437,6 +448,7 @@ public:
 
   void constructForwards();
   void constructBackwards();
+  void prune();
   // for all tensors in the forward graph, set the number of
   // paths to the final loss (needed in the backwards pass)
   void setNPathsToLoss();

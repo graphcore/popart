@@ -5,7 +5,7 @@ import torch.onnx
 import subprocess
 from IPython.core.debugger import Tracer
 # from https://stackoverflow.com/questions/8628123/counting-instances-of-a-class
-# static class variable Python? 
+# static class variable Python?
 from itertools import count
 
 
@@ -13,34 +13,37 @@ from itertools import count
 # lossName: input1 ... inputN: output : other things specific to the class
 class NLL:
     counter = count(0)
+
     def __init__(self, probId, labelsId):
         self.probId = probId
         self.labelsId = labelsId
 
     def string(self):
         #TODO : inherit this fuction, : should be common
-        return "NLL: %s %s : lossNLL_%d : "%(self.probId, self.labelsId, next(self.counter))
-   
+        return "NLL: %s %s : lossNLL_%d : " % (self.probId, self.labelsId,
+                                               next(self.counter))
+
     def has_stream_in(self):
-        return True;
+        return True
 
     def stream_string(self, output_names, outputs):
         print(output_names)
         output_index = output_names.index(self.probId)
         probsShape = outputs[output_index].shape
         batchsize = probsShape[0]
-        return "%s %s (%d)"%(self.labelsId, "INT32", batchsize)
-
+        return "%s %s (%d)" % (self.labelsId, "INT32", batchsize)
 
 
 class L1:
     counter = count(0)
+
     def __init__(self, lamb, tensorId):
         self.lamb = lamb
         self.tensorId = tensorId
 
     def string(self):
-        return "L1: %s : lossL1_%d : %.3f "%(self.tensorId, next(self.counter), self.lamb)
+        return "L1: %s : lossL1_%d : %.3f " % (self.tensorId, next(
+            self.counter), self.lamb)
 
     def has_stream_in(self):
         return False
@@ -78,14 +81,13 @@ class Driver:
         else:
             raise RuntimeError("unknown type in write_output")
 
-    def write(self, model, inputs, input_names, output_names, losses):
+    def write(self, model, inputs, input_names, output_names, anchors, losses,
+              outputdir):
 
         model.train()
         for i in range(5):
             # the star seems to unpack the list,
             dummy_output = model(inputs)
-
-
 
         # now jump into eval model.
         model.eval()
@@ -102,7 +104,7 @@ class Driver:
             input_i = inputs[i]
             dummy_input_tensor = onnx.numpy_helper.from_array(input_i.numpy())
             input_name_i = input_names[i]
-            fn_i = os.path.join(self.dirname, "%s.pb"%(input_name_i,))
+            fn_i = os.path.join(self.dirname, "%s.pb" % (input_name_i, ))
             with open(fn_i, 'wb') as f:
                 f.write(dummy_input_tensor.SerializeToString())
 
@@ -110,7 +112,6 @@ class Driver:
 
         self.nOut = 0
         self.write_output(dummy_output, output_names)
-
 
         # write the input and output names to file
         input_names_fn = os.path.join(self.dirname, "input_names.txt")
@@ -127,12 +128,27 @@ class Driver:
             filly.write('\n')
         filly.close()
 
+        # write the anchors (tensors which MUST be recorded)
+        anchor_names_fn = os.path.join(self.dirname, "anchors.txt")
+        print(anchor_names_fn)
+        filly = open(anchor_names_fn, "w")
+        for name in anchors:
+            filly.write(name)
+            filly.write('\n')
+        filly.close()
+
         # write the loss information
         loss_fn = os.path.join(self.dirname, "losses.txt")
         filly = open(loss_fn, "w")
         for loss in losses:
             filly.write(loss.string())
             filly.write('\n')
+        filly.close()
+
+        # write the outputdir to a file
+        loss_fn = os.path.join(self.dirname, "logdir.txt")
+        filly = open(loss_fn, "w")
+        filly.write(outputdir)
         filly.close()
 
         # write the stream-to-loss information
@@ -142,10 +158,6 @@ class Driver:
             if (loss.has_stream_in()):
                 filly.write(loss.stream_string(output_names, dummy_output))
         filly.close()
-
-     
-
-
 
     def run(self):
         subprocess.call([self.pydriver_path, self.dirname])

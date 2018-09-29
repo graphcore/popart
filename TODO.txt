@@ -77,7 +77,7 @@ to get the total loss.
 (partially done) make optimisations iron-clad. Class to inherit from? 
 Decide how the user states which tensors they want back (are anchored)
 (done) Visualisation tool, see the liveness through time. 
-AddGrad can be optimised out
+(done) AddGrad can be optimised out
 Pruning at end of graph construction to keep only the targets
 ops (of Graph) should be encapsulated, as tensors
 recomputation.......

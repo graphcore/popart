@@ -33,8 +33,15 @@ int main(int argc, char **argv) {
   auto outNamesPath   = io::appendDirFn(canLogDir, "output_names.txt");
   auto lossPath       = io::appendDirFn(canLogDir, "losses.txt");
   auto lossStreamPath = io::appendDirFn(canLogDir, "loss_stream.txt");
-  for (auto &x : std::vector<std::string>{
-           modelPath, inNamesPath, outNamesPath, lossPath, lossStreamPath}) {
+  auto anchorsPath    = io::appendDirFn(canLogDir, "anchors.txt");
+  auto logDirPath     = io::appendDirFn(canLogDir, "logdir.txt");
+  for (auto &x : std::vector<std::string>{modelPath,
+                                          inNamesPath,
+                                          outNamesPath,
+                                          lossPath,
+                                          lossStreamPath,
+                                          anchorsPath,
+                                          logDirPath}) {
     io::confirmRegularFile(x);
   }
 
@@ -57,6 +64,32 @@ int main(int argc, char **argv) {
     auto tensorOutPath  = io::appendDirFn(canLogDir, outputName + ".pb");
     outputs[outputName] = io::getTensor(tensorOutPath);
   }
+
+
+  // set anchor tensors
+  std::vector<TensorId> anchorNames;
+  std::string anchorName;
+  input = std::ifstream(anchorsPath, std::ios::in);
+  while (std::getline(input, anchorName)) {
+    anchorNames.push_back(anchorName);
+  }
+  Recorder recorder{anchorNames};
+
+
+  // load the logdir
+  input = std::ifstream(logDirPath, std::ios::in);
+  std::string logdir;
+  bool logdirObtained = false;
+  while (std::getline(input, logdir)) {
+    if (logdirObtained){
+      throw error("only 1 logdir allowed");
+    }
+    logdirObtained = true;
+  }
+  if (!logdirObtained){
+    throw error("failed to get log dir");
+  }
+
 
   // load losses
   std::vector<std::unique_ptr<Loss>> losses;
@@ -110,7 +143,7 @@ int main(int argc, char **argv) {
   preRunKnowledge.addInfo(getLearningRateId(), {TP::FLOAT, {}});
 
   std::vector<std::string> constTensors{};
-  Recorder recorder{};
+
   Schedule schedule{};
 
   auto model = io::getModel(modelPath);
@@ -123,7 +156,8 @@ int main(int argc, char **argv) {
               std::move(losses),
               std::move(regularizers),
               std::move(schedule),
-              std::move(constTensors));
+              std::move(constTensors), 
+              logdir);
 
   std::stringstream ss2;
   graph.append(ss2);

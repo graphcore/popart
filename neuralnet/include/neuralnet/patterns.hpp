@@ -31,7 +31,7 @@ public:
 
 // remove ()->[] where () is Tensor and [] is an Op and ()->[]
 // forms part of [.]->()->[]->(.). after this, this section will
-// be [.]->(.). [] is the root op of the pattern. 
+// be [.]->(.). [] is the root op of the pattern.
 // [] IS THE IDENTITY OP
 class PreUniRepl : public Pattern {
 public:
@@ -70,8 +70,8 @@ public:
   virtual std::vector<const Tensor *> removes(const Op *) const override final;
   virtual void apply(Op *) const override final;
 
-  // *1 : this pattern matches and removes []->() 
-  // whereas PreUniRepl matches and removes ()->[]. 
+  // *1 : this pattern matches and removes []->()
+  // whereas PreUniRepl matches and removes ()->[].
   // This pattern can be considered PostUniRepl when N = 1
 };
 

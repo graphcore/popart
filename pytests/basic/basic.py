@@ -8,12 +8,13 @@ sys.path.append("../../driver")
 import pydriver
 import importlib
 importlib.reload(pydriver)
-
+import subprocess
 
 if (len(sys.argv) != 2):
     raise RuntimeError("onnx_net.py <log directory>")
 
 # define pytorch model
+
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
@@ -25,17 +26,33 @@ def conv3x3(in_planes, out_planes, stride=1):
         padding=1,
         bias=False)
 
-class Basic(torch.nn.Module):
+
+model_number = 2
+
+
+class Basic0(torch.nn.Module):
     def __init__(self, inChans, outChans):
-        super(Basic, self).__init__()
+        super(Basic0, self).__init__()
         self.conv1 = conv3x3(inChans, outChans)
         self.conv2 = conv3x3(outChans, outChans)
         self.relu = torch.nn.functional.relu
         self.conv3 = conv3x3(outChans, outChans)
         self.logsoftmax = torch.nn.LogSoftmax(dim=0)
         self.softmax = torch.nn.Softmax(dim=0)
+        # specific to project neuralnet
+        self.output_names = ["preProbSquared", "probs"]
+        self.losses = [
+            pydriver.NLL("probs", "labels"),
+            pydriver.L1(0.1, "preProbSquared")
+        ]
+        self.input_names = ["image0", "image1"]
+        self.anchors = []
+        self.inputs = [
+            torch.rand(2, nInChans, 32, 32),
+            torch.rand(2, nInChans, 32, 32)
+        ]
 
-    def forward1(self, inputs):
+    def forward(self, inputs):
         image0 = inputs[0]
         image1 = inputs[1]
         x2 = self.relu(image1)
@@ -50,7 +67,7 @@ class Basic(torch.nn.Module):
         preProbSquared = x + x
         x = self.relu(x)
         window_size = (int(x.size()[2]), int(x.size()[3]))
-        x = torch.nn.functional.avg_pool2d(x, kernel_size = window_size)
+        x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
         x = torch.squeeze(x)
         # probabilities:
         probs = self.logsoftmax(x)
@@ -58,8 +75,17 @@ class Basic(torch.nn.Module):
         # -> for gather or log (pytorch 0.4.1)
         # x = torch.gather(input = x, dim = 1, index= labels)
         # loss = torch.log(x)
-
         return preProbSquared, probs
+
+
+class Basic1(torch.nn.Module):
+    def __init__(self):
+        super(Basic1, self).__init__()
+        self.output_names = ["x0", "x1"]
+        self.losses = [pydriver.L1(0.1, "x1")]
+        self.input_names = ["image0", "image1"]
+        self.anchors = []
+        self.inputs = [torch.rand(2, 3, 4, 5), torch.rand(2, 3, 4, 5)]
 
     def forward(self, inputs):
         image0 = inputs[0]
@@ -69,7 +95,20 @@ class Basic(torch.nn.Module):
         return x0, x1
 
 
-    def forward1(self, inputs):
+class Basic2(torch.nn.Module):
+    def __init__(self, inChans, outChans):
+        super(Basic2, self).__init__()
+        self.conv1 = conv3x3(inChans, outChans)
+        self.output_names = ["x0", "x1"]
+        self.losses = [pydriver.L1(0.1, "x1")]
+        self.input_names = ["image0", "image1"]
+        self.anchors = ["d__image0"]
+        self.inputs = [
+            torch.rand(2, nInChans, 32, 32),
+            torch.rand(2, nInChans, 32, 32)
+        ]
+
+    def forward(self, inputs):
         image0 = inputs[0]
         image1 = inputs[1]
         x0 = self.conv1(image0)
@@ -77,37 +116,40 @@ class Basic(torch.nn.Module):
         return x0, x1
 
 
-
-
-output_names_1 = ["preProbSquared", "probs"]
-losses_1 = [pydriver.NLL("probs", "labels"), pydriver.L1(0.1, "preProbSquared")]
-input_names_1 = ["image0", "image1"]
-
-output_names = ["x0", "x1"]
-losses = [pydriver.L1(0.1, "x1")]
-input_names = ["image0", "image1"]
-
-
-output_names_0 = ["x0", "x1"]
-losses_0 = [pydriver.L1(0.1, "x0"), pydriver.L1(0.1, "x1")]
-input_names_0 = ["image0", "image1"]
-
-
 outputdir = sys.argv[1]
 if not os.path.exists(outputdir):
     print("Making %s" % (outputdir, ))
     os.mkdir(outputdir)
 
-nInChans = 20
-nOutChans = 10
+model = None
+if model_number == 0:
+    nInChans = 20
+    nOutChans = 10
+    model = Basic0(nInChans, nOutChans)
+elif model_number == 1:
+    model = Basic1()
+elif model_number == 2:
+    nInChans = 20
+    nOutChans = 10
+    model = Basic2(nInChans, nOutChans)
+else:
+    raise RuntimeError("invalid model number")
+
 driver = pydriver.Driver(outputdir)
 driver.write(
-    Basic(nInChans, nOutChans),
-    [torch.rand(2, nInChans, 32, 32),
-     torch.rand(2, nInChans, 32, 32)],
-    input_names=input_names,
-    output_names=output_names,
-    losses=losses)
+    model,
+    inputs=model.inputs,
+    input_names=model.input_names,
+    output_names=model.output_names,
+    anchors=model.anchors,
+    losses=model.losses, 
+    outputdir=outputdir)
 driver.run()
+
+dotfile = os.path.join(outputdir, "jam.dot")
+outputfile = os.path.join(outputdir, "jam.pdf")
+print("generating %s"%(outputfile,))
+#dotgenline = "dot -T -o %s %s"%(outputfile, dotfile,)
+subprocess.call(["dot", "-o", outputfile, dotfile])
 
 print("pydriver python script complete.")

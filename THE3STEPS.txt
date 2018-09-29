@@ -1,0 +1,6 @@
+The 2 steps to efficient recomputation:
+
+1) min-liveness
+2) recompute graph
+3) sun-graph matching
+
