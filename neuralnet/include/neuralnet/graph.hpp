@@ -89,6 +89,7 @@ class Recorder {
 public:
   bool isAnchored(TensorId) const;
   Recorder(const std::vector<TensorId> &);
+  const std::vector<TensorId> &anchors() const;
 
 private:
   std::set<TensorId> s_anchors;
@@ -271,9 +272,18 @@ public:
   // TODO : why is this noy constant?
   virtual std::vector<std::unique_ptr<Op>> getGradOps();
 
-  // return a gradient op's non-gradient partner if relevant,
-  // otherwise throws an error
+  // return a gradient op's non-gradient partner,
+  // if relevant and still valid otherwise
+  // throws an error.
   virtual Op *getNonGradOp() const;
+  // Design choice.
+  // as optimisations get complex we might
+  // delete a non-grad op corresponding to a grad-op.
+  // For this reason, we prefer NOT to store the non-grad
+  // Op* directly by default (although we do in several cases)
+  // Preferred: store the id and look up the pointer when
+  // needed, so that we will get reliable failure via a map look-up.
+  // This is the approach with for example L1Op.
 
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
   // dT is the edge-gradient of a tensor T which was the input
@@ -394,6 +404,7 @@ public:
   std::vector<TensorId> getNoProducerIds() const;
   const onnx::TensorProto *getOnnxInit(TensorId) const;
   void addNonGradient(TensorId gradId, Tensor *nonGradTensor);
+  void append(std::stringstream &) const;
 
   // return the tensor of which the
   // tensor with TensorId is a COMPLETE gradient
@@ -459,6 +470,7 @@ public:
   Op *getFinalLossOp();
   void exportDot(std::string dotfn) const;
   void eraseOp(OpId);
+  Op *getOp(OpId);
 
 private:
   // modify the graph using with pattern matching
@@ -530,7 +542,7 @@ private:
   OpId opsCounter{100};
 
   // The update ops which must be run during a training pass
-  std::vector<Op *> trainTargetOps;
+  std::set<Op *> trainTargetOps;
 
   Op *finalLossOp{nullptr};
 
@@ -539,6 +551,13 @@ private:
   std::set<std::string> allNodeInputsMap;
   // only adds an init tensor if it is is allNodeInputsMap;
   void addInitIfUsed(TensorId id, const onnx::TensorProto *t);
+
+  // run after creating the backwards pass, checks that
+  // the user provided anchor tensors actually exist.
+  // the user may have not used the correct gradient
+  // tensor naming convention for example, this will
+  // be caught here.
+  void validateAnchors() const;
 };
 
 } // namespace neuralnet

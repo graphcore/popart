@@ -38,11 +38,13 @@ public:
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
   virtual void setup() override final;
+  const NllLoss *nlll() const;
 
 private:
   std::vector<GradInOutMapper> createNllLossGradInfo() const;
   std::map<int, int> createNllLossGradOutToIn() const;
-  NllOp *nlllossOp;
+  const NllLoss *nllloss_;
+  OpId nllOpId;
 };
 
 } // namespace neuralnet

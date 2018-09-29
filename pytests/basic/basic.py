@@ -27,7 +27,7 @@ def conv3x3(in_planes, out_planes, stride=1):
         bias=False)
 
 
-model_number = 2
+model_number = 0
 
 
 class Basic0(torch.nn.Module):
@@ -102,7 +102,7 @@ class Basic2(torch.nn.Module):
         self.output_names = ["x0", "x1"]
         self.losses = [pydriver.L1(0.1, "x1")]
         self.input_names = ["image0", "image1"]
-        self.anchors = ["d__image0"]
+        self.anchors = ["d__image1"]
         self.inputs = [
             torch.rand(2, nInChans, 32, 32),
             torch.rand(2, nInChans, 32, 32)
@@ -150,6 +150,7 @@ dotfile = os.path.join(outputdir, "jam.dot")
 outputfile = os.path.join(outputdir, "jam.pdf")
 print("generating %s"%(outputfile,))
 #dotgenline = "dot -T -o %s %s"%(outputfile, dotfile,)
-subprocess.call(["dot", "-o", outputfile, dotfile])
+log = subprocess.call(["dot", "-T", "pdf", "-o", outputfile, dotfile])
+print(log)
 
 print("pydriver python script complete.")

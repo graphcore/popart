@@ -213,6 +213,7 @@ std::vector<Op *> Graph::getTopologicallySorted() const {
   if (sorted.size() != ops.size()) {
     throw error("failure to sort topologically");
   }
+
   return sorted;
 }
 
@@ -236,7 +237,6 @@ void Graph::exportDot(const std::string dotfn) const {
   }
   strm << '}' << '\n';
   strm.flush();
-  std::cout << "written" << std::endl;
 }
 
 std::vector<TensorId> Tensors::getInitIds() const {
@@ -466,11 +466,6 @@ Graph::Graph(onnx::ModelProto &&inMod,
     onnxInitializers.emplace(tenId);
   }
 
-  for (auto &node : onnxGraph.node()) {
-    std::cout << node.op_type() << " " << node.output(0) << " ";
-  }
-  std::cout << std::endl;
-
   // onnx inputs which are not initializers are true inputs
   for (auto &valueInfo : onnxGraph.input()) {
     if (onnxInitializers.count(valueInfo.name()) == 0) {
@@ -503,21 +498,162 @@ Graph::Graph(onnx::ModelProto &&inMod,
   applyPattern(&post_n_repl);
 
   constructBackwards();
+  // confirm that all the anchor names provided
+  // are indeed real tensor names. This is a check
+  // that the user has not provided incorrect names.
+  // We allow duplicates.
+  validateAnchors();
 
   applyPattern(&pre_uni_repl);
   applyPattern(&post_n_repl);
 
-  // exportDot("/Users/jamesn/graphvizing/jam.dot");
+  prune();
+
   exportDot(io::appendDirFn(logdir, "jam.dot"));
   std::cout << "model written to jam.dot" << std::endl;
-
-  // remove paths which are not used
-  prune();
 
   inferTensorInfos();
 }
 
-void Graph::prune() { trainTargetOps; }
+void Tensors::append(std::stringstream &ss) const {
+  bool frst = true;
+  ss << '[';
+  for (auto &id_ptr : M) {
+    if (!frst) {
+      ss << ' ';
+    }
+    frst = false;
+    ss << id_ptr.first;
+  }
+  ss << ']';
+}
+
+void Graph::validateAnchors() const {
+  for (TensorId id : recorder.anchors()) {
+    if (!tensors.contains(id)) {
+      std::stringstream ss;
+      ss << "Anchor tensor `" << id << "' not in graph. ";
+      // add some trouble-shooting for a case I stumbled upon:
+      if (id.find(reservedPrefix()) != std::string::npos) {
+        std::string degrad = id.substr(reservedPrefix().size());
+        if (tensors.contains(degrad)) {
+          ss << "\nInterestingly, `" << degrad << '\'' << " IS in the graph.\n";
+          ss << "Note that not all tensors can have their gradients "
+             << "anchored:\nif an activation tensor does not lead "
+             << "to the loss,\nits gradient is zero and never computed.";
+        }
+      } else {
+        ss << "The tensors are:\n";
+        tensors.append(ss);
+      }
+      throw error(ss.str());
+    }
+  }
+}
+
+const std::vector<TensorId> &Recorder::anchors() const { return v_anchors; }
+
+void Graph::prune() {
+
+  // initialise with all the var
+  // update ops for training,
+  // and work backwards. This
+  // is the set which is returned
+  std::set<Op *> required = trainTargetOps;
+
+  // as we work backwards, we keep a
+  // "front" of tensors,
+  std::vector<Tensor *> tensorFront;
+
+  // when a tensor enters the "front",
+  // we record that it has been visited
+  std::set<Tensor *> tensorsVisited;
+
+  // the "front" is initialsed with (1) anchor tensors,
+  for (auto &tensorId : recorder.anchors()) {
+    Tensor *t = tensors.get(tensorId);
+    // we have this check here as we allow
+    // duplicated names from the (careless!) user
+    if (tensorsVisited.count(t) == 0) {
+      tensorFront.push_back(t);
+      tensorsVisited.insert(t);
+    }
+  }
+
+  // and (2), inputs to the training targets.
+  for (auto &op : trainTargetOps) {
+    for (auto t_inds : op->input.indicesMap()) {
+      Tensor *t = t_inds.first;
+      if (tensorsVisited.count(t) == 0) {
+        tensorFront.push_back(t);
+        tensorsVisited.insert(t);
+      }
+    }
+  }
+
+  while (tensorFront.size() != 0) {
+    Tensor *t = tensorFront.back();
+    tensorFront.resize(tensorFront.size() - 1);
+    if (t->hasProducer()) {
+      Op *op = t->getProducer();
+      if (required.count(op) == 0) {
+        required.insert(op);
+        for (auto t_inds : op->input.indicesMap()) {
+          Tensor *t_in = t_inds.first;
+          if (tensorsVisited.count(t_in) == 0) {
+            tensorFront.push_back(t_in);
+            tensorsVisited.insert(t_in);
+          }
+        }
+      }
+    }
+  }
+
+  // at this point, "required" is the set
+  // of all ops which are actually executed
+  // to get targets
+
+  //  TODO from here to the end must go
+  //  deleting ops is dangerous, as other
+  //  ops point to them (grad ops -> ops)
+  //  rather make this return the set required,
+  //  the in toposort, final step is just to filter
+  //  out the inactive ops.
+  //  maybe make a bool param to gettoposort:
+  //  'pruneUnused'.
+  //  But what about other places where ops are deleted?
+  //  Aren't they still risky for other ops pointing
+  //  to them?
+
+  // ops \ required
+  std::vector<Op *> opsToDelete;
+  // all outputs of opsToDelete
+  std::vector<Tensor *> tensorsToDelete;
+
+  for (auto &id_op : ops) {
+    Op *op = id_op.second.get();
+    if (required.count(op) == 0) {
+      opsToDelete.push_back(op);
+      for (auto &t_inds : op->output.indicesMap()) {
+        tensorsToDelete.push_back(t_inds.first);
+      }
+    }
+  }
+
+  for (Op *op : opsToDelete) {
+    // unwire the inputs
+    for (auto index_tensor : op->input.tensorMap()) {
+      Tensor *tensor = index_tensor.second;
+      tensor->consumers.decrement(op);
+    }
+    // and delete the Op
+    ops.erase(op->id);
+  }
+
+  for (Tensor *tensor : tensorsToDelete) {
+    tensors.remove(tensor->id);
+  }
+}
 
 void Graph::applyPattern(const Pattern *pattern) {
   std::vector<Op *> v_ops;
@@ -526,7 +662,6 @@ void Graph::applyPattern(const Pattern *pattern) {
   }
   for (auto op : v_ops) {
     if (pattern->matches(op)) {
-      std::cout << "Op " << op->op_type() << " matches " << std::endl;
       if (pattern->removesNoAnchored(op)) {
         std::cout << "Op " << op->op_type() << " safe to remove " << std::endl;
         pattern->apply(op);
@@ -826,9 +961,6 @@ const std::map<int, int> &Op::gradOutToNonGradIn() const {
 }
 
 bool Op::readyToCreateGradients(std::set<int> &s) const {
-  std::cout << "ready to create gradients  " << op_type() << " ? ready ("
-            << s.size() << ") == n paths to loss (" << nPathsToLoss() << ")"
-            << std::endl;
   return s.size() == nPathsToLoss();
 }
 
@@ -850,8 +982,6 @@ void TensorGradRegistry::insert(Tensor *nonGrad, Tensor *grad) {
 }
 
 void OpGradRegistry::insert(Op *nonGrad, int index) {
-  std::cout << "inserting " << nonGrad->op_type() << " in op grad reg "
-            << std::endl;
   auto found = partial.find(nonGrad);
   // so far NO gradients for nonGrad are in:
   if (found == partial.end()) {
@@ -951,13 +1081,9 @@ void Graph::constructBackwards() {
   // grad-ops which have created edge-gradients, but the
   // edge-gradients haven't signalled their existance.
   // initialised as the gradients of the individual losses
-  std::cout << "growing loss gradients" << std::endl;
   std::vector<Op *> opsToRegister = growLossGradients();
 
   while (!opsToRegister.empty()) {
-
-    std::cout << "--> to register: " << opsToRegister.back()->op_type()
-              << std::endl;
 
     registerOpGrads(opsToRegister.back());
     opsToRegister.resize(opsToRegister.size() - 1);
@@ -1018,8 +1144,6 @@ TensorId getLearningRateId() { return "learnRate"; }
 
 Op *Graph::growVarUpdateOp(TensorId varId) {
 
-  std::cout << "in var update op for " << varId << std::endl;
-
   OpId opId = moveIntoGraph(std::unique_ptr<Op>(new VarUpdateOp(varId, this)));
   Op *op    = ops[opId].get();
 
@@ -1033,7 +1157,7 @@ Op *Graph::growVarUpdateOp(TensorId varId) {
   std::vector<TensorId> outputs{};
   connectOutputs(OutputWrapper<decltype(outputs)>(outputs), opId);
 
-  trainTargetOps.push_back(op);
+  trainTargetOps.insert(op);
   op->imposeTopoCons();
 
   return op;
@@ -1287,7 +1411,6 @@ std::vector<Op *> Graph::growLossGradients() {
     Tensor *t  = t_inds.first;
     Op *lossOp = t->getProducer();
     for (Op *gradop : growGradOps(lossOp)) {
-      std::cout << "created " << gradop->op_type() << std::endl;
       gradops.push_back(gradop);
     }
   }
@@ -1302,6 +1425,14 @@ Recorder::Recorder(const std::vector<TensorId> &v) : v_anchors(v) {
   for (auto &id : v_anchors) {
     s_anchors.insert(id);
   }
+}
+
+Op *Graph::getOp(OpId opId) {
+  auto found = ops.find(opId);
+  if (found == ops.end()) {
+    throw error("No Op `" + std::to_string(opId) + "'");
+  }
+  return found->second.get();
 }
 
 } // namespace neuralnet

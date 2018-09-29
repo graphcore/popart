@@ -29,32 +29,28 @@ NllLoss::NllLoss(const std::string &argstring) : Loss(argstring) {
 
 void NllOp::setup() {
   // output is a scalar of the same type as probs
-  //
-
   output.tensor(0)->info.set(input.tensor(nlll()->probsIn())->info.dataType(),
                              {});
 }
 
 const NllLoss *NllOp::nlll() const { return nllloss_; }
+const NllLoss *NllGradOp::nlll() const { return nllloss_; }
 
 NllOp::NllOp(const OpConstructorBundle &b, const NllLoss *n)
     : Op(b), nllloss_(n) {}
 
 void NllGradOp::setup() {
   // gradient of probs has same shape as probs
-
-  std::stringstream ss;
-  auto outInfo = nlllossOp->input.tensor(nlllossOp->nlll()->probsIn())->info;
+  auto outInfo           = input.tensor(nlll()->probsIn())->info;
   output.tensor(0)->info = outInfo;
   outInfo.append(ss);
-  std::cout << ss.str() << std::endl;
 }
 
 NllGradOp::NllGradOp(NllOp *op_)
     : GradOp({"NllGrad", op_->pgraph, {}, getNeuralNetDomain()}),
-      nlllossOp(op_) {}
+      nllloss_(op_->nlll()), nllOpId(op_->id) {}
 
-Op *NllGradOp::getNonGradOp() const { return nlllossOp; }
+Op *NllGradOp::getNonGradOp() const { return pgraph->getOp(nllOpId); }
 
 const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createNllLossGradInfo();
@@ -67,7 +63,7 @@ std::map<int, int> NllGradOp::createNllLossGradOutToIn() const {
   // the op ONLY computes the gradient of probs,
   // no gradient for labels (one could interpret the
   // int as a sparse vector, but not neat)
-  return {{0, nlllossOp->nlll()->probsIn()}};
+  return {{0, nlll()->probsIn()}};
 }
 
 // as per pydriver.py
@@ -82,8 +78,8 @@ const std::map<int, int> &NllGradOp::gradOutToNonGradIn() const {
 std::vector<GradInOutMapper> NllGradOp::createNllLossGradInfo() const {
   // input at index 0 : labelsIn()
   // input at index 1 : probsIn()
-  return {{0, nlllossOp->nlll()->labelsIn(), GradOpInType::IN},
-          {1, nlllossOp->nlll()->probsIn(), GradOpInType::IN}};
+  return {{nlll()->labelsIn(), nlll()->labelsIn(), GradOpInType::IN},
+          {nlll()->probsIn(), nlll()->probsIn(), GradOpInType::IN}};
 }
 
 } // namespace neuralnet

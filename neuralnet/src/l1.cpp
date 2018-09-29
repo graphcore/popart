@@ -27,6 +27,7 @@ L1Loss::L1Loss(const std::string &argstring) : Loss(argstring) {
 }
 
 const L1Loss *L1Op::l1l() const { return l1loss_; }
+const L1Loss *L1GradOp::l1l() const { return l1loss_; }
 
 L1Op::L1Op(const OpConstructorBundle &b, const L1Loss *n) : Op(b), l1loss_(n) {}
 
@@ -41,10 +42,16 @@ void L1Op::setup() {
 }
 
 L1GradOp::L1GradOp(L1Op *op_)
-    : GradOp({"L1Grad", op_->pgraph, {}, getNeuralNetDomain()}), l1lossOp(op_) {
-}
+    : GradOp({"L1Grad", op_->pgraph, {}, getNeuralNetDomain()}),
+      l1OpId(op_->id), l1loss_(op_->l1l()) {}
 
-Op *L1GradOp::getNonGradOp() const { return l1lossOp; }
+Op *L1GradOp::getNonGradOp() const {
+  // we have chosen to go via the ID, rather
+  // than storing the raw pointer, as it
+  // is common for loss ops to be pruned
+  // off while loss grad ops remain
+  return pgraph->getOp(l1OpId);
+}
 
 const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createL1LossGradInfo();
