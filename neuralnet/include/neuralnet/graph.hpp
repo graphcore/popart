@@ -247,8 +247,8 @@ public:
 
   // all Ops will be performed "as close to" the order of
   // priority (highest to lowest) while still being topo sorted.
-  // This is not finalised, might work differently...
-  double priority() const;
+  // default : return 0.
+  virtual double priority() const;
 
   // "Relu" or "Conv" etc.
   const std::string &op_type() const;

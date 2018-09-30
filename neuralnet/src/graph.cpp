@@ -11,6 +11,7 @@
 #include <neuralnet/pbwrap.hpp>
 #include <sstream>
 #include <vector>
+#include <queue>
 
 // The layers:
 #include <neuralnet/add.hpp>
@@ -91,6 +92,17 @@ struct POpCmp {
   }
 };
 
+class OpPriorityComparer{
+  public:
+    bool operator()(const Op * const & op1, const Op * const & op2) const{
+      return op1->priority() < op2->priority();
+    }
+};
+
+double Op::priority() const{
+  return 0.0;
+}
+
 void Op::setup() { throw error("No setup() for " + op_type()); }
 
 // Essentially Kahn's alogorithm (1962, 56 years ago!),
@@ -103,9 +115,10 @@ std::vector<Op *> Graph::getTopologicallySorted() const {
   // the topological sorting (to construct in this function)
   std::vector<Op *> sorted;
   // ops which have all their input tensors
-  // created (but might be waiting for other ops
-  // to be inserted)
-  std::vector<Op *> opsToProcess;
+  // created, and are not waiting for any ops 
+  // to run before them
+  //OpPriorityComparer opCompare;
+  std::priority_queue<Op *, std::vector<Op*>, OpPriorityComparer> opsToProcess;
   // map from each op to the number of tensor input
   // indices it is waiting on
   std::map<Op *, int> nIndicesAwaiting;
@@ -124,9 +137,6 @@ std::vector<Op *> Graph::getTopologicallySorted() const {
   // (2) map from each op to a list of ops which are
   // waiting for it
   std::map<Op *, std::vector<Op *>> isWaitingFor;
-//  TODO here NOW, in addition to the consumersWhichTopoBefore constraint, 
-//       there will be a global constraint, stored at the graph level, 
-//       this will be used for recomputation... 
   // initialise (1) and (2)
   for (auto &id_op : ops) {
     Op *op           = id_op.second.get();
@@ -164,7 +174,7 @@ std::vector<Op *> Graph::getTopologicallySorted() const {
           Op *op = op_count.first;
           nIndicesAwaiting[op] -= op_count.second;
           if (readyToProcess(op)) {
-            opsToProcess.push_back(op_count.first);
+            opsToProcess.push(op_count.first);
           }
         }
       };
@@ -176,14 +186,14 @@ std::vector<Op *> Graph::getTopologicallySorted() const {
     processTensor(tensors.get(id));
   }
 
-  while (opsToProcess.size() != 0) {
-    auto op = opsToProcess.back();
-    opsToProcess.resize(opsToProcess.size() - 1);
+  while (!opsToProcess.empty()) {
+    auto op = opsToProcess.top();
+    opsToProcess.pop();
     sorted.push_back(op);
     for (Op *waitingOp : isWaitingFor[op]) {
       --nOpsAwaiting[waitingOp];
       if (readyToProcess(waitingOp)) {
-        opsToProcess.push_back(waitingOp);
+        opsToProcess.push(waitingOp);
       }
     }
 

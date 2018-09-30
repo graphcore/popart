@@ -13,6 +13,10 @@ public:
   static int getVarGradIndex();
   static int getLearnRateIndex();
   void imposeTopoCons() override final;
+  // very high priority, so that performed as early as possible
+  virtual double priority() const override final {
+    return std::numeric_limits<double>::max();
+  }
 
 private:
   TensorId varId;
