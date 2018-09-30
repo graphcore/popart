@@ -8,6 +8,7 @@
 #include <neuralnet/tensor.hpp>
 #include <neuralnet/tensorinfo.hpp>
 #include <neuralnet/util.hpp>
+#include <neuralnet/pbwrap.hpp>
 #include <sstream>
 #include <vector>
 
@@ -24,29 +25,7 @@
 
 namespace neuralnet {
 
-// Passes calls to .size() and .at(int) to input_size() and input(int)
-// so that standard containers can be used in Graph::connectInputs (as T)
-template <typename T> class InputWrapper {
-public:
-  InputWrapper(const T &inputs_) : inputs(inputs_) {}
-  int input_size() const { return static_cast<int>(inputs.size()); }
-  const TensorId &input(int inIndex) const { return inputs.at(inIndex); }
 
-private:
-  const T &inputs;
-};
-
-// Passes calls to .size() and .at(int) to output_size() and output(int)
-// so that standard containers can be used in Graph::connectOutputs.
-template <typename T> class OutputWrapper {
-public:
-  OutputWrapper(const T &outputs_) : outputs(outputs_) {}
-  int output_size() const { return static_cast<int>(outputs.size()); }
-  const TensorId &output(int inIndex) const { return outputs.at(inIndex); }
-
-private:
-  const T &outputs;
-};
 
 std::vector<TensorId> TensorIndexMap::getSerialised() const {
   int maxIndex = 0;
@@ -545,7 +524,7 @@ void Graph::addRecompute() {
   std::vector<Op *> nonCheckpoints;
 
   for (auto &op : nonCheckpoints) {
-    growRecomputeOp(op);
+    growRecomputeOp(op, checkpoints);
   }
 }
 
@@ -554,19 +533,35 @@ std::unique_ptr<Op> Op::clone() const {
 }
 
 // see diagram 74 in notebook ;/)
-Op *Graph::growRecomputeOp(Op *oriOp) {
+Op *Graph::growRecomputeOp(Op *oriOp, const std::set<Op*> & checkpoints) {
   // the recompute op:
   OpId rcId = moveIntoGraph(oriOp->clone());
   Op *rcOp  = ops[rcId].get();
 
   // set inputs and outputs of  the new Op.
-  std::vector<TensorId> inputs;
-  std::vector<TensorId> outputs;
+  std::map<int, TensorId> inputs;
+  std::map<int, TensorId> outputs;
   for (auto &index_tensor : oriOp->input.tensorMap()) {
-    // zzz zz z zz zzz
+    int index = index_tensor.first;
+    Tensor * tensor = index_tensor.second;
+    // if the tensor was produced by a non-checkpointed op, 
+    // we need to use the recomputed version of it
+    if (tensor->hasProducer() && checkpoints.count(tensor->getProducer()) == 0){
+      inputs[index] = getRecompId(tensor->id);
+    }
+    else{
+      inputs[index] = tensor->id;
+    }
   }
-  connectInputs(InputWrapper<decltype(inputs)>(inputs), rcId);
-  connectOutputs(OutputWrapper<decltype(outputs)>(outputs), rcId);
+  for (auto & index_tensor : oriOp->output.tensorMap()){
+    int index = index_tensor.first;
+    Tensor * tensor = index_tensor.second;
+    outputs[index] = getRecompId(tensor->id);
+  }
+
+
+  connectInputs(InputMapWrapper(inputs), rcId);
+  connectOutputs(OutputMapWrapper(outputs), rcId);
 
   // yank down the priority of the new Op
   // (must be run as late as possible):
@@ -576,14 +571,11 @@ Op *Graph::growRecomputeOp(Op *oriOp) {
   // note: oriOp will still be pointed to
   // by grad op as it's creator. This design
   // choice might need revision.
-
-  // note 2: tensors.getNonGradientOf(totalGradTensorId) still
-  // returns an originalOp. This too needs revision. I currently
-  // think getNonGradientOf should not be exposed, as it is
-  // specific to growing the backwards pass. TODO: don't have
-  // class member objects which are specific to 1 bit of functionality,
-  // it makes it unclear what needs to be maintained in a valid state.
 }
+
+// TODO: don't have
+// class member objects which are specific to 1 bit of functionality,
+// it makes it unclear what needs to be maintained in a valid state.
 
 void Tensors::append(std::stringstream &ss) const {
   bool frst = true;
@@ -604,8 +596,8 @@ void Graph::validateAnchors() const {
       std::stringstream ss;
       ss << "Anchor tensor `" << id << "' not in graph. ";
       // add some trouble-shooting for a case I stumbled upon:
-      if (id.find(reservedPrefix()) != std::string::npos) {
-        std::string degrad = id.substr(reservedPrefix().size());
+      if (id.find(reservedGradientPrefix()) != std::string::npos) {
+        std::string degrad = id.substr(reservedGradientPrefix().size());
         if (tensors.contains(degrad)) {
           ss << "\nInterestingly, `" << degrad << '\'' << " IS in the graph.\n";
           ss << "Note that not all tensors can have their gradients "
@@ -834,7 +826,11 @@ void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
              pgraph)));
 }
 
-std::string reservedPrefix() { return "d__"; }
+std::string reservedGradientPrefix() { return "d__"; }
+std::string reservedRecomputePrefix() { return "r__"; }
+std::vector<std::string> reservedPrefixes(){
+  return {reservedGradientPrefix(), reservedRecomputePrefix()};
+}
 
 void Tensors::addActGrad(TensorId tenId) {
   insert(
@@ -843,15 +839,13 @@ void Tensors::addActGrad(TensorId tenId) {
 }
 
 void Graph::confirmNonReservedId(TensorId tenId) const {
-  if (tenId.find(reservedPrefix()) != std::string::npos) {
-    throw error("Provided tensor " + tenId +
-                " has an invalid name: clash with reserved prefix " +
-                reservedPrefix());
+  for (auto reservedPrefix : reservedPrefixes()) {
+    if (tenId.find(reservedPrefix) != std::string::npos) {
+      throw error("Provided tensor " + tenId +
+                  " has an invalid name: clash with reserved prefix " +
+                  reservedPrefix);
+    }
   }
-
-  //  if (tenId == getLearningRateId()) {
-  //    throw error("Provided tensor " + tenId + " has a reserved name");
-  //  }
 }
 
 void Tensors::addStream(TensorId tenId) {
@@ -860,10 +854,10 @@ void Tensors::addStream(TensorId tenId) {
       std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, pgraph)));
 }
 
-TensorId getGradId(TensorId id) { return reservedPrefix() + id; }
+TensorId getGradId(TensorId id) { return reservedGradientPrefix() + id; }
 
 TensorId getNonGradId(TensorId id) {
-  return id.substr(reservedPrefix().size());
+  return id.substr(reservedGradientPrefix().size());
 }
 
 TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
@@ -872,8 +866,12 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
   // in the forward pass (input at 'index' to 'opId')
   (void)tenId;
   std::stringstream ss;
-  ss << reservedPrefix() << opId << '_' << index;
+  ss << reservedGradientPrefix() << opId << '_' << index;
   return ss.str();
+}
+
+TensorId getRecompId(TensorId tenId){
+
 }
 
 void Tensors::remove(TensorId id) { M.erase(id); }
@@ -907,8 +905,8 @@ Op *Graph::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   TensorId gradientId = getGradId(target->id);
   std::vector<TensorId> outputs{gradientId};
 
-  connectInputs(InputWrapper<decltype(inputs)>(inputs), opId);
-  connectOutputs(OutputWrapper<decltype(outputs)>(outputs), opId);
+  connectInputs(InputVecWrapper(inputs), opId);
+  connectOutputs(OutputVecWrapper(outputs), opId);
   return ops[opId].get();
 }
 
@@ -925,14 +923,14 @@ std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
     {
       // inputs to gradOp (to populate in this scope):
       std::map<int, std::string> m_inputs;
-      int max_input_index = 0;
+    //  int max_input_index = 0;
       for (auto &inOutMapper : gradOp->gradInputInfo()) {
 
         int indexGrad     = inOutMapper.iGrad;
         int indexFwd      = inOutMapper.iNonGrad;
         GradOpInType type = inOutMapper.type;
 
-        max_input_index = std::max(indexGrad, max_input_index);
+      //  max_input_index = std::max(indexGrad, max_input_index);
 
         // the input at index 'indexGrad' to gradOp is
         switch (type) {
@@ -967,12 +965,12 @@ std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
         }
       }
       // convert m_imputs to a vector, a format supported by connectInputs
-      std::vector<std::string> v_inputs(max_input_index + 1, "");
-      for (auto &index_id : m_inputs) {
-        v_inputs[index_id.first] = index_id.second;
-      }
+   //   std::vector<std::string> v_inputs(max_input_index + 1, "");
+   //   for (auto &index_id : m_inputs) {
+   //     v_inputs[index_id.first] = index_id.second;
+   //   }
 
-      connectInputs(InputWrapper<decltype(v_inputs)>(v_inputs), gradOpId);
+      connectInputs(InputMapWrapper(m_inputs), gradOpId);
       // modify topological constraints on consumers of inputs
       // gradOp->imposeTopoCons();
     }
@@ -990,7 +988,7 @@ std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
         }
         v_outputs[gradOut] = outId;
       }
-      connectOutputs(OutputWrapper<decltype(v_outputs)>(v_outputs), gradOpId);
+      connectOutputs(OutputVecWrapper(v_outputs), gradOpId);
     }
     // note, as the outputs of gradOp are edge-grad-tensors and not
     // edge-grads, we do not need to match them to non-grad tensors.
@@ -1206,11 +1204,11 @@ Op *Graph::growVarUpdateOp(TensorId varId) {
   inputs[VarUpdateOp::getVarIndex()]       = varId;
   inputs[VarUpdateOp::getVarGradIndex()]   = getGradId(varId);
   inputs[VarUpdateOp::getLearnRateIndex()] = getLearningRateId();
-  connectInputs(InputWrapper<decltype(inputs)>(inputs), opId);
+  connectInputs(InputVecWrapper(inputs), opId);
 
   // there are no outputs of var-op
   std::vector<TensorId> outputs{};
-  connectOutputs(OutputWrapper<decltype(outputs)>(outputs), opId);
+  connectOutputs(OutputVecWrapper(outputs), opId);
 
   trainTargetOps.insert(op);
   op->imposeTopoCons();
@@ -1274,8 +1272,8 @@ void Graph::growFinalLoss() {
     inputs.push_back(op->output.tensor(0)->id);
   }
   std::vector<TensorId> outputs{getFinalLossId()};
-  connectInputs(InputWrapper<decltype(inputs)>(inputs), opId);
-  connectOutputs(OutputWrapper<decltype(outputs)>(outputs), opId);
+  connectInputs(InputVecWrapper(inputs), opId);
+  connectOutputs(OutputVecWrapper(outputs), opId);
   finalLossOp = ops[opId].get();
 }
 

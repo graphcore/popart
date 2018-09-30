@@ -111,6 +111,9 @@ TensorId getGradId(TensorId tenId);
 // inverse of previous function
 TensorId getNonGradId(TensorId tenId);
 
+// get a recomputed tensor's name, based on original tensor
+TensorId getRecompId(TensorId tenId);
+
 // get the learning rate tensor's id for Variable tensor
 // Of course, the tensor is rank 0
 TensorId getLearningRateId();
@@ -383,7 +386,9 @@ private:
   std::set<std::string> m_vals;
 };
 
-std::string reservedPrefix();
+std::string reservedGradientPrefix();
+std::string reservedRecomputePrefix();
+std::vector<std::string> reservedPrefixes();
 
 class Tensors {
 public:
@@ -500,7 +505,7 @@ private:
 
   Op *growVarUpdateOp(TensorId varId);
 
-  Op *growRecomputeOp(Op *);
+  Op *growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints);
 
   Op *growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum);
 
