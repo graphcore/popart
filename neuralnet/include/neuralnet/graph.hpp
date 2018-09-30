@@ -313,7 +313,7 @@ public:
   // the set passed in with number of paths to final loss
   bool readyToCreateGradients(std::set<int> &) const;
 
-  virtual void imposeTopoCons() {}
+  virtual void imposeTopoCons();
 
   // return a copy of self, similar to
   // cpppatterns.com/patterns/virtual-constructor.html

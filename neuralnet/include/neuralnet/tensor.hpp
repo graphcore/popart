@@ -50,6 +50,7 @@ public:
   // if op is not in consumers_m : throw an error.
   // else, return a list of the other consumers which
   // MUST be inserted earlier than op in the topological sort.
+  // This functionality was added to support in-place ops
   std::vector<Op *> consumersWhichTopoBefore(Op *op);
   void setTopoFirst(Op *op);
   void removeTopoFirst();

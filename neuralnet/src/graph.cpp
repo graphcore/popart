@@ -124,6 +124,9 @@ std::vector<Op *> Graph::getTopologicallySorted() const {
   // (2) map from each op to a list of ops which are
   // waiting for it
   std::map<Op *, std::vector<Op *>> isWaitingFor;
+//  TODO here NOW, in addition to the consumersWhichTopoBefore constraint, 
+//       there will be a global constraint, stored at the graph level, 
+//       this will be used for recomputation... 
   // initialise (1) and (2)
   for (auto &id_op : ops) {
     Op *op           = id_op.second.get();
@@ -540,7 +543,6 @@ Op *Graph::growRecomputeOp(Op *oriOp, const std::set<Op*> & checkpoints) {
 
   // set inputs and outputs of  the new Op.
   std::map<int, TensorId> inputs;
-  std::map<int, TensorId> outputs;
   for (auto &index_tensor : oriOp->input.tensorMap()) {
     int index = index_tensor.first;
     Tensor * tensor = index_tensor.second;
@@ -553,14 +555,14 @@ Op *Graph::growRecomputeOp(Op *oriOp, const std::set<Op*> & checkpoints) {
       inputs[index] = tensor->id;
     }
   }
+  connectInputs(InputMapWrapper(inputs), rcId);
+
+  std::map<int, TensorId> outputs;
   for (auto & index_tensor : oriOp->output.tensorMap()){
     int index = index_tensor.first;
     Tensor * tensor = index_tensor.second;
     outputs[index] = getRecompId(tensor->id);
   }
-
-
-  connectInputs(InputMapWrapper(inputs), rcId);
   connectOutputs(OutputMapWrapper(outputs), rcId);
 
   // yank down the priority of the new Op
@@ -571,6 +573,9 @@ Op *Graph::growRecomputeOp(Op *oriOp, const std::set<Op*> & checkpoints) {
   // note: oriOp will still be pointed to
   // by grad op as it's creator. This design
   // choice might need revision.
+  //
+
+  return rcOp;
 }
 
 // TODO: don't have
@@ -856,6 +861,8 @@ void Tensors::addStream(TensorId tenId) {
 
 TensorId getGradId(TensorId id) { return reservedGradientPrefix() + id; }
 
+TensorId getRecompId(TensorId id) { return reservedRecomputePrefix() + id; }
+
 TensorId getNonGradId(TensorId id) {
   return id.substr(reservedGradientPrefix().size());
 }
@@ -870,9 +877,6 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
   return ss.str();
 }
 
-TensorId getRecompId(TensorId tenId){
-
-}
 
 void Tensors::remove(TensorId id) { M.erase(id); }
 
@@ -997,6 +1001,10 @@ std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
 
   return gradOps;
 }
+
+
+// the default is that there are no topo cons
+void Op::imposeTopoCons() {}
 
 int Op::getNonGradInIndex(int) const {
   throw error("Op " + op_type() + " cannot `get non-grad in index'");
@@ -1211,8 +1219,6 @@ Op *Graph::growVarUpdateOp(TensorId varId) {
   connectOutputs(OutputVecWrapper(outputs), opId);
 
   trainTargetOps.insert(op);
-  op->imposeTopoCons();
-
   return op;
 }
 
@@ -1281,6 +1287,7 @@ TensorId Graph::getFinalLossId() const { return "finalLoss"; }
 
 template <typename T>
 void Graph::connectInputs(const T &inContainer, OpId opId) {
+  Op * op = ops[opId].get();
   for (int inIndex = 0; inIndex < inContainer.input_size(); ++inIndex) {
     auto &inName = inContainer.input(inIndex);
     if (inName == "") {
@@ -1289,11 +1296,11 @@ void Graph::connectInputs(const T &inContainer, OpId opId) {
       if (!tensors.contains(inName)) {
         throw error("input " + inName + " should already be in tensor map");
       } else {
-        auto op = ops[opId].get();
         op->connectInTensor(inIndex, inName);
       }
     }
   }
+  op->imposeTopoCons();
 }
 
 template <typename T>
