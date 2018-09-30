@@ -23,7 +23,7 @@ void AddGradOp::setup() {
 AddGradOp::AddGradOp(AddOp *op_)
     : GradOp({"AddGrad", op_->pgraph, {}, getNeuralNetDomain()}), addOp(op_) {}
 
-Op *AddGradOp::getNonGradOp() const { return addOp; }
+Op *AddGradOp::getNonGradCreator() const { return addOp; }
 
 std::map<int, int> AddGradOp::createAddGradOutToIn() const {
   // the grad-op output at index 0 corresponds

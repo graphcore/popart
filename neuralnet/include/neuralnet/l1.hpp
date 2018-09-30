@@ -33,7 +33,7 @@ class L1GradOp : public GradOp {
 
 public:
   L1GradOp(L1Op *);
-  virtual Op *getNonGradOp() const override final;
+  virtual Op *getNonGradCreator() const override final;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;

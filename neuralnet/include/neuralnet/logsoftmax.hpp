@@ -15,7 +15,7 @@ class LogSoftmaxGradOp : public GradOp {
 
 public:
   LogSoftmaxGradOp(LogSoftmaxOp *);
-  virtual Op *getNonGradOp() const override final;
+  virtual Op *getNonGradCreator() const override final;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;

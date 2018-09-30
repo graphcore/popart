@@ -508,11 +508,81 @@ Graph::Graph(onnx::ModelProto &&inMod,
   applyPattern(&post_n_repl);
 
   prune();
+  // addRecompute();
 
   exportDot(io::appendDirFn(logdir, "jam.dot"));
   std::cout << "model written to jam.dot" << std::endl;
 
   inferTensorInfos();
+}
+
+std::vector<Op *> Graph::getTopologicallySortedTilLoss() const {
+  throw error("To implement : topologically sorted til loss");
+}
+
+void Graph::addRecompute() {
+  std::cout << "recompute, this is exciting." << std::endl;
+  std::vector<Op *> linearised = getTopologicallySortedTilLoss();
+
+  // live[i] : set of ops whose outputs have not all
+  // been consumed by non-grad consumers just after
+  // linearised[i] has run. So clearly
+  // linearised[i] \in live[i]
+  std::vector<std::set<Op *>> live;
+
+  // how much activation memory would be consumed
+  // just after linearised[i] ran, without recompute
+  std::vector<int64_t> totalMemory;
+
+  // Part I : setting checkpoints.
+  // 1) build live and totalMemory.
+  // 2) use them to set checkpoints: Ops whose
+  //   outputs we guarantee will be available
+  //   at any time
+  std::set<Op *> checkpoints;
+
+  // all non-checkpoint pre-loss nodes.
+  std::vector<Op *> nonCheckpoints;
+
+  for (auto &op : nonCheckpoints) {
+    growRecomputeOp(op);
+  }
+}
+
+std::unique_ptr<Op> Op::clone() const {
+  throw error("no clone implemented yet for " + op_type());
+}
+
+// see diagram 74 in notebook ;/)
+Op *Graph::growRecomputeOp(Op *oriOp) {
+  // the recompute op:
+  OpId rcId = moveIntoGraph(oriOp->clone());
+  Op *rcOp  = ops[rcId].get();
+
+  // set inputs and outputs of  the new Op.
+  std::vector<TensorId> inputs;
+  std::vector<TensorId> outputs;
+  for (auto &index_tensor : oriOp->input.tensorMap()) {
+    // zzz zz z zz zzz
+  }
+  connectInputs(InputWrapper<decltype(inputs)>(inputs), rcId);
+  connectOutputs(OutputWrapper<decltype(outputs)>(outputs), rcId);
+
+  // yank down the priority of the new Op
+  // (must be run as late as possible):
+
+  // oriOp's outputs should not be consumed by grad op:
+
+  // note: oriOp will still be pointed to
+  // by grad op as it's creator. This design
+  // choice might need revision.
+
+  // note 2: tensors.getNonGradientOf(totalGradTensorId) still
+  // returns an originalOp. This too needs revision. I currently
+  // think getNonGradientOf should not be exposed, as it is
+  // specific to growing the backwards pass. TODO: don't have
+  // class member objects which are specific to 1 bit of functionality,
+  // it makes it unclear what needs to be maintained in a valid state.
 }
 
 void Tensors::append(std::stringstream &ss) const {
@@ -806,21 +876,7 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
   return ss.str();
 }
 
-void Tensors::remove(TensorId id) {
-  M.erase(id);
-  auto found = non_gradients_.find(id);
-  if (found != non_gradients_.end()) {
-    non_gradients_.erase(id);
-  }
-}
-
-Tensor *Tensors::getNonGradientOf(TensorId id) const {
-  auto found = non_gradients_.find(id);
-  if (found != non_gradients_.end()) {
-    return found->second;
-  }
-  throw error("No non-gradient for " + id);
-}
+void Tensors::remove(TensorId id) { M.erase(id); }
 
 bool Tensors::contains(TensorId id) const { return M.find(id) != M.end(); }
 
@@ -853,7 +909,6 @@ Op *Graph::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
   connectInputs(InputWrapper<decltype(inputs)>(inputs), opId);
   connectOutputs(OutputWrapper<decltype(outputs)>(outputs), opId);
-  tensors.addNonGradient(gradientId, target);
   return ops[opId].get();
 }
 
@@ -1014,14 +1069,13 @@ std::vector<Op *> OpGradRegistry::popComplete() {
 }
 
 // communicate that op has computed gradients
-void Graph::registerOpGrads(Op *op) {
-  Op *nonGradOp = op->getNonGradOp();
-  for (auto &index_tensor : op->gradOutMap()) {
+void Graph::registerOpGrads(Op *gradOp, Op *nonGradOp) {
+  for (auto &index_tensor : gradOp->output.tensorMap()) {
     int opOutInd     = index_tensor.first;
     Tensor *partGrad = index_tensor.second;
     // what input index of nonGradOp does the
     // edge-gradient correspond to?
-    int nonGradInInd      = op->getNonGradInIndex(opOutInd);
+    int nonGradInInd      = gradOp->getNonGradInIndex(opOutInd);
     Tensor *nonGradTensor = nonGradOp->input.tensor(nonGradInInd);
     tensor_grad_registry.insert(nonGradTensor, partGrad);
   }
@@ -1030,7 +1084,7 @@ void Graph::registerOpGrads(Op *op) {
 // communicate that a new gradient tensor
 // (which is a sum along edges) is ready
 void Graph::registerTensorGrad(Tensor *sum) {
-  Tensor *nonGrad = tensors.getNonGradientOf(sum->id);
+  Tensor *nonGrad = tensors.get(getNonGradId(sum->id));
   if (nonGrad->hasProducer()) {
     Op *producer = nonGrad->getProducer();
     // the index at which nonGrad was produced
@@ -1066,7 +1120,8 @@ void Graph::setNPathsToLoss() {
   }
 }
 
-void Tensors::addNonGradient(TensorId id, Tensor *t) { non_gradients_[id] = t; }
+// void Tensors::addNonGradient(TensorId id, Tensor *t) { non_gradients_[id] =
+// t; }
 
 void Graph::constructBackwards() {
   // definition: edge-gradient. What is output by a grad-op,
@@ -1075,7 +1130,6 @@ void Graph::constructBackwards() {
   // value as a gradient, if a tensor has only 1 consumer.
 
   growFinalLoss();
-
   setNPathsToLoss();
 
   // grad-ops which have created edge-gradients, but the
@@ -1085,7 +1139,8 @@ void Graph::constructBackwards() {
 
   while (!opsToRegister.empty()) {
 
-    registerOpGrads(opsToRegister.back());
+    registerOpGrads(opsToRegister.back(),
+                    opsToRegister.back()->getNonGradCreator());
     opsToRegister.resize(opsToRegister.size() - 1);
 
     for (auto &nongrad_egrads : tensor_grad_registry.popComplete()) {
@@ -1167,12 +1222,8 @@ const std::map<int, Tensor *> &TensorIndexMap::tensorMap() const {
   return tensor_map;
 }
 
-Op *Op::getNonGradOp() const {
+Op *Op::getNonGradCreator() const {
   throw error("No `get non grad op' for " + op_type() + " (yet?)");
-}
-
-const std::map<int, Tensor *> &Op::gradOutMap() const {
-  throw error("No `grad out map' for " + op_type());
 }
 
 Op *Graph::growFromNode(const Node &node) {

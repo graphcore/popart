@@ -55,7 +55,7 @@ ConvWeightsGradOp::ConvWeightsGradOp(ConvOp *op_)
     : GradOp({"ConvWeightsGrad", op_->pgraph, {}, getNeuralNetDomain()}),
       convOp(op_) {}
 
-Op *ConvWeightsGradOp::getNonGradOp() const { return convOp; }
+Op *ConvWeightsGradOp::getNonGradCreator() const { return convOp; }
 
 const std::vector<GradInOutMapper> &ConvWeightsGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo =
@@ -86,7 +86,7 @@ ConvDataGradOp::ConvDataGradOp(ConvOp *op_)
     : GradOp({"ConvDataGrad", op_->pgraph, {}, getNeuralNetDomain()}),
       convOp(op_) {}
 
-Op *ConvDataGradOp::getNonGradOp() const { return convOp; }
+Op *ConvDataGradOp::getNonGradCreator() const { return convOp; }
 
 const std::vector<GradInOutMapper> &ConvDataGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createConvDataGradInfo();

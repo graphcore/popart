@@ -55,7 +55,7 @@ const std::map<int, int> &AveragePoolGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-Op *AveragePoolGradOp::getNonGradOp() const { return averagePoolOp; }
+Op *AveragePoolGradOp::getNonGradCreator() const { return averagePoolOp; }
 
 int GradOp::getNonGradInIndex(int gradOpOutIndex) const {
   return gradOutToNonGradIn().at(gradOpOutIndex);
@@ -65,10 +65,6 @@ std::map<int, int> AveragePoolGradOp::createAveragePoolGradOutToIn() const {
   // the grad-op output at index 0 corresponds
   // to the non-grad-op's input at index 0
   return {{0, 0}};
-}
-
-const std::map<int, Tensor *> &GradOp::gradOutMap() const {
-  return output.tensorMap();
 }
 
 void AveragePoolGradOp::setup() {

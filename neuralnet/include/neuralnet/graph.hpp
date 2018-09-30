@@ -23,8 +23,9 @@ class Pattern;
 
 // the input tensor of a grad-op has what kind of
 // relationship with the corresponding non-grad-op?
-// we do not allow an input to a grad-op to NOT be
-// directly related to the the corresponding non-grad-op.
+// design note: it's not possible for an input to a
+// grad-op to NOT be directly related to
+// the corresponding non-grad-op.
 enum class GradOpInType { IN = 0, OUT, GRADOUT };
 
 class GradInOutMapper {
@@ -32,10 +33,10 @@ public:
   GradInOutMapper(int iGrad_, int iNonGrad_, GradOpInType);
   // input index to a grad-op
   int iGrad;
-  // input/output/gradient-of-output index of
-  // corresponding non-grad op, where,
+  // input/output/gradient-of-output index to
+  // corresponding non-grad op,
   int iNonGrad;
-  // input/output/gradient-of-output is
+  // where input/output/gradient-of-output is
   GradOpInType type;
 };
 
@@ -272,16 +273,17 @@ public:
   // TODO : why is this noy constant?
   virtual std::vector<std::unique_ptr<Op>> getGradOps();
 
-  // return a gradient op's non-gradient partner,
-  // if relevant and still valid otherwise
-  // throws an error.
-  virtual Op *getNonGradOp() const;
+  // return a gradient op's non-gradient creator, if relevant.A
+  // if not relevant (this is a grad op etc) throws an error
+  // Note : the creator might have been optimised out, in which
+  // case calling this function has undefined bahaviour.
+  virtual Op *getNonGradCreator() const;
   // Design choice.
   // as optimisations get complex we might
   // delete a non-grad op corresponding to a grad-op.
   // For this reason, we prefer NOT to store the non-grad
-  // Op* directly by default (although we do in several cases)
-  // Preferred: store the id and look up the pointer when
+  // pointer directly by default (although we do in several cases)
+  // Prefered: store the id and look up the pointer when
   // needed, so that we will get reliable failure via a map look-up.
   // This is the approach with for example L1Op.
 
@@ -301,10 +303,6 @@ public:
   // throws an error if not appropriate (non-grad)
   virtual const std::map<int, int> &gradOutToNonGradIn() const;
 
-  // for grad-ops, this is the same as output.tensorMap().
-  // for other ops, throws an error
-  virtual const std::map<int, Tensor *> &gradOutMap() const;
-
   // for non-grad-op `op', takes in the set of output indices
   // of `op' for which a gradient is available and returns
   // if all the gradients needed to create grad-ops are present
@@ -313,6 +311,11 @@ public:
   bool readyToCreateGradients(std::set<int> &) const;
 
   virtual void imposeTopoCons() {}
+
+  // return a copy of self, similar to
+  // cpppatterns.com/patterns/virtual-constructor.html
+  // fancy-pants people call it "covariant return type"
+  virtual std::unique_ptr<Op> clone() const;
 
 private:
   void appendIO(std::stringstream &) const;
@@ -350,7 +353,6 @@ public:
   GradOp(const OpConstructorBundle &);
   virtual ~GradOp() override = default;
   virtual int getNonGradInIndex(int) const override final;
-  virtual const std::map<int, Tensor *> &gradOutMap() const override final;
 };
 
 enum class TensorType;
@@ -403,12 +405,7 @@ public:
   std::vector<TensorId> getIds(TensorType) const;
   std::vector<TensorId> getNoProducerIds() const;
   const onnx::TensorProto *getOnnxInit(TensorId) const;
-  void addNonGradient(TensorId gradId, Tensor *nonGradTensor);
   void append(std::stringstream &) const;
-
-  // return the tensor of which the
-  // tensor with TensorId is a COMPLETE gradient
-  Tensor *getNonGradientOf(TensorId) const;
 
 private:
   std::map<TensorId, std::unique_ptr<Tensor>> M;
@@ -416,9 +413,6 @@ private:
   void insert(TensorId, std::unique_ptr<Tensor>);
   OnnxTensorPtrs init;
   Graph *pgraph;
-
-  // from gradients to non-gradients (if there are any)
-  std::map<TensorId, Tensor *> non_gradients_;
 };
 
 class Graph {
@@ -456,10 +450,15 @@ public:
   void inferTensorInfos();
   // this does not take into priority, simple topological sort
   std::vector<Op *> getTopologicallySorted() const;
+  std::vector<Op *> getTopologicallySortedTilLoss() const;
 
   void constructForwards();
   void constructBackwards();
+  // remove nodes an tensors which are not
+  // needed to arrive at the target
   void prune();
+
+  void addRecompute();
   // for all tensors in the forward graph, set the number of
   // paths to the final loss (needed in the backwards pass)
   void setNPathsToLoss();
@@ -501,6 +500,8 @@ private:
 
   Op *growVarUpdateOp(TensorId varId);
 
+  Op *growRecomputeOp(Op *);
+
   Op *growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum);
 
   std::vector<Op *> growGradOps(Op *forwardOp);
@@ -531,7 +532,7 @@ private:
   OpId moveIntoGraph(std::unique_ptr<Op> op);
 
   // signal that a grad-op has created edge-gradients
-  void registerOpGrads(Op *);
+  void registerOpGrads(Op *grad, Op *nonGrad);
 
   void registerTensorGrad(Tensor *);
 

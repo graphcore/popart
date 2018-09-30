@@ -43,14 +43,13 @@ void NllGradOp::setup() {
   // gradient of probs has same shape as probs
   auto outInfo           = input.tensor(nlll()->probsIn())->info;
   output.tensor(0)->info = outInfo;
-  outInfo.append(ss);
 }
 
 NllGradOp::NllGradOp(NllOp *op_)
     : GradOp({"NllGrad", op_->pgraph, {}, getNeuralNetDomain()}),
       nllloss_(op_->nlll()), nllOpId(op_->id) {}
 
-Op *NllGradOp::getNonGradOp() const { return pgraph->getOp(nllOpId); }
+Op *NllGradOp::getNonGradCreator() const { return pgraph->getOp(nllOpId); }
 
 const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createNllLossGradInfo();

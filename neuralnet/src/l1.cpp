@@ -45,7 +45,7 @@ L1GradOp::L1GradOp(L1Op *op_)
     : GradOp({"L1Grad", op_->pgraph, {}, getNeuralNetDomain()}),
       l1OpId(op_->id), l1loss_(op_->l1l()) {}
 
-Op *L1GradOp::getNonGradOp() const {
+Op *L1GradOp::getNonGradCreator() const {
   // we have chosen to go via the ID, rather
   // than storing the raw pointer, as it
   // is common for loss ops to be pruned

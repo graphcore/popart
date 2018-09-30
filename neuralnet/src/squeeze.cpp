@@ -20,7 +20,7 @@ SqueezeGradOp::SqueezeGradOp(SqueezeOp *op_)
     : GradOp({"SqueezeGrad", op_->pgraph, {}, getNeuralNetDomain()}),
       squeezeOp(op_) {}
 
-Op *SqueezeGradOp::getNonGradOp() const { return squeezeOp; }
+Op *SqueezeGradOp::getNonGradCreator() const { return squeezeOp; }
 
 const std::vector<GradInOutMapper> &SqueezeGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createSqueezeGradInfo();

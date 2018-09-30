@@ -19,7 +19,7 @@ ReluGradOp::ReluGradOp(ReluOp *op_)
     : GradOp({"ReluGrad", op_->pgraph, {}, getNeuralNetDomain()}), reluOp(op_) {
 }
 
-Op *ReluGradOp::getNonGradOp() const { return reluOp; }
+Op *ReluGradOp::getNonGradCreator() const { return reluOp; }
 
 const std::vector<GradInOutMapper> &ReluGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createReluGradInfo();

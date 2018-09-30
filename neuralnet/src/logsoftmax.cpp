@@ -22,7 +22,7 @@ LogSoftmaxGradOp::LogSoftmaxGradOp(LogSoftmaxOp *op_)
     : GradOp({"LogSoftmaxGrad", op_->pgraph, {}, getNeuralNetDomain()}),
       logsoftmaxOp(op_) {}
 
-Op *LogSoftmaxGradOp::getNonGradOp() const { return logsoftmaxOp; }
+Op *LogSoftmaxGradOp::getNonGradCreator() const { return logsoftmaxOp; }
 
 const std::vector<GradInOutMapper> &LogSoftmaxGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createLogSoftmaxGradInfo();
