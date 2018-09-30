@@ -8,7 +8,7 @@ Must read:
 https://medium.com/tensorflow/fitting-larger-networks-into-memory-583e3c758ff9
 https://arxiv.org/pdf/1604.06174.pdf
 
-Thougts today, having written most of the basic neuralnet code:
+Thougts today, after having written most of the basic neuralnet code:
 * need to insert long-range topo-cons.
 * can match sub-graphs within sub-graphs. So match recompute paths, 
   and within these, match convs or whatever. 

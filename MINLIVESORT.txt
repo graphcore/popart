@@ -1,4 +1,3 @@
-
 On dags and topological sort
 ----------------------------
 
@@ -41,3 +40,8 @@ where c is in N(S) as otherwise bla bla I'm right
 
 Might be relevant:
 http://i.stanford.edu/pub/cstr/reports/cs/tn/95/22/CS-TN-95-22.pdf
+
+30/09/2018
+----------
+----------
+I think it is NP-complete. 
