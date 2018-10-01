@@ -9,9 +9,13 @@ namespace neuralnet {
 
 class Tensor;
 
+// c++ note : the conditions are suitable here
+// for the compiler to generate defaults for 
+// the 3: desctructor, copy constructor, =.
 class AveragePoolOp : public HasReceptiveFieldOp {
 public:
   AveragePoolOp(const onnx::NodeProto &node, Graph *pgraph);
+  virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
 
 private:

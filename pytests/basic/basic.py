@@ -27,7 +27,7 @@ def conv3x3(in_planes, out_planes, stride=1):
         bias=False)
 
 
-model_number = 0
+model_number = 3
 
 
 class Basic0(torch.nn.Module):
@@ -76,6 +76,37 @@ class Basic0(torch.nn.Module):
         # x = torch.gather(input = x, dim = 1, index= labels)
         # loss = torch.log(x)
         return preProbSquared, probs
+
+
+class Basic3(torch.nn.Module):
+    def __init__(self, nChans):
+        super(Basic3, self).__init__()
+        self.logsoftmax = torch.nn.LogSoftmax(dim=0)
+        # specific to project neuralnet
+        self.output_names = ["probs"]
+        self.losses = [
+            pydriver.NLL("probs", "labels")
+        ]
+        self.input_names = ["image0"]
+        self.anchors = []
+        self.inputs = [
+            torch.rand(2, nChans, 32, 32),
+        ]
+
+    def forward(self, inputs):
+        image0 = inputs[0]
+        x = conv3x3(nChans, nChans)(image0) 
+        x = conv3x3(nChans, nChans)(x)
+        x = conv3x3(nChans, nChans)(x) 
+        x = conv3x3(nChans, nChans)(x) 
+        x = conv3x3(nChans, nChans)(x)
+        x = conv3x3(nChans, nChans)(x) 
+        window_size = (int(x.size()[2]), int(x.size()[3]))
+        x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
+        x = torch.squeeze(x)
+        # probabilities:
+        probs = self.logsoftmax(x)
+        return probs
 
 
 class Basic1(torch.nn.Module):
@@ -132,6 +163,10 @@ elif model_number == 2:
     nInChans = 20
     nOutChans = 10
     model = Basic2(nInChans, nOutChans)
+elif model_number == 3:
+    nChans = 25
+    model = Basic3(nChans)
+
 else:
     raise RuntimeError("invalid model number")
 

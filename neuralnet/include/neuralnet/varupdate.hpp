@@ -8,15 +8,12 @@ namespace neuralnet {
 class VarUpdateOp : public Op {
 public:
   VarUpdateOp(TensorId, Graph *);
+  virtual std::unique_ptr<Op> clone() const override final;
   virtual void setup() override final;
   static int getVarIndex();
   static int getVarGradIndex();
   static int getLearnRateIndex();
   void imposeTopoCons() override final;
-  // very high priority, so that performed as early as possible
-  virtual double priority() const override final {
-    return std::numeric_limits<double>::max();
-  }
 
 private:
   TensorId varId;

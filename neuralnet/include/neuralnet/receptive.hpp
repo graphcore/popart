@@ -8,6 +8,8 @@ namespace neuralnet {
 class HasReceptiveFieldOp : public Op {
 public:
   HasReceptiveFieldOp(const onnx::NodeProto &node, Graph *pgraph);
+  // C++ rule of 3 for destructor, copy con, copy ass.
+
   virtual void setup() override final;
   int nSpatialDims;
   int64_t batchSize, nInChans;

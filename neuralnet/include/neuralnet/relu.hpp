@@ -8,6 +8,7 @@ namespace neuralnet {
 class ReluOp : public Op {
 public:
   ReluOp(const onnx::NodeProto &node, Graph *pgraph);
+  virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
   virtual void setup() override final;
 };

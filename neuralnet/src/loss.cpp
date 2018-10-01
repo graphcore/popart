@@ -57,24 +57,7 @@ Loss::Loss(const std::string &argstring) {
   std::istringstream ass(s_args);
   while (ass >> newArg) {
     args_.push_back(newArg);
-    std::cout << "args : " << newArg << std::endl;
   }
-
-  std::cout << "----------------" << std::endl;
-  for (auto &x : input_) {
-    std::cout << '`' << x << '\'' << std::endl;
-  }
-  std::cout << "----------------" << std::endl;
-
-  std::cout << '`' << output_ << '\'' << std::endl;
-
-  std::cout << "----------------" << std::endl;
-
-  for (auto &x : args_) {
-    std::cout << '`' << x << '\'' << std::endl;
-  }
-
-  std::cout << "----------------" << std::endl;
 }
 
 const std::vector<std::string> &Loss::args() const { return args_; }

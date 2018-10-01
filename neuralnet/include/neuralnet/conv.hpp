@@ -13,6 +13,7 @@ public:
   // from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv
   int dataInIndex() { return 0; }
   int weightsInIndex() { return 1; }
+  virtual std::unique_ptr<Op> clone() const override final;
 
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
 

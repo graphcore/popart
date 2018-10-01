@@ -5,12 +5,15 @@
 
 namespace neuralnet {
 
-void Vertex::incrNPathsToLoss() { ++nPathsToLoss_; }
+void Vertex::incrNPathsToLoss() {
+  if (nPathsToLoss_ < 0) {
+    nPathsToLoss_ = 1;
+  } else {
+    ++nPathsToLoss_;
+  }
+}
 
 int Vertex::nPathsToLoss() const {
-  if (nPathsToLoss_ == 0) {
-    throw error("ILE : number of paths to loss is unset or 0");
-  }
   return nPathsToLoss_;
 }
 

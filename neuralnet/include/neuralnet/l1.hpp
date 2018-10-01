@@ -8,7 +8,6 @@ namespace neuralnet {
 
 class L1Loss : public Loss {
 public:
-  virtual ~L1Loss() override = default;
   L1Loss(const std::string &argstring);
   virtual std::vector<TensorId> getStreamTensorNames() const override final;
   virtual std::unique_ptr<Op> getOp(Graph *) const override final;
@@ -21,6 +20,7 @@ private:
 class L1Op : public Op {
 public:
   L1Op(const OpConstructorBundle &, const L1Loss *l1loss);
+  virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
   virtual void setup() override final;
   const L1Loss *l1l() const;

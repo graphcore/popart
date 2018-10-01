@@ -5,7 +5,15 @@
 namespace neuralnet {
 VarUpdateOp::VarUpdateOp(TensorId varId_, Graph *pgraph)
     : Op({"VarUpdate", pgraph, {}, getNeuralNetDomain()}), varId(varId_),
-      varGradId(getGradId(varId)) {}
+      varGradId(getGradId(varId)) {
+  // very high priority, so that performed as early as possible
+    priority =  std::numeric_limits<double>::max();
+      }
+
+
+std::unique_ptr<Op> VarUpdateOp::clone() const {
+  return std::unique_ptr<Op>( new VarUpdateOp(*this));
+}
 
 void VarUpdateOp::setup() {
   // throw error("is there anything to do in var update op setup?");

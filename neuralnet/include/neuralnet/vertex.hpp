@@ -8,11 +8,14 @@ class Vertex {
 public:
   Vertex()          = default;
   virtual ~Vertex() = default;
+  Vertex(const Vertex &):nPathsToLoss_(-100){}
+  Vertex &operator=(const Vertex &) = delete;
+
   void incrNPathsToLoss();
   int nPathsToLoss() const;
 
 private:
-  int nPathsToLoss_{0};
+  int nPathsToLoss_{-100};
 };
 
 } // namespace neuralnet

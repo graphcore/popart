@@ -1,4 +1,4 @@
-#include <pbwrap.hpp>
+#include <neuralnet/pbwrap.hpp>
 
 namespace neuralnet {
 

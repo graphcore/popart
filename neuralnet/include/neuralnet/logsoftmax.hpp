@@ -7,6 +7,7 @@ namespace neuralnet {
 class LogSoftmaxOp : public Op {
 public:
   LogSoftmaxOp(const onnx::NodeProto &node, Graph *pgraph);
+  virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
   virtual void setup() override final;
 };

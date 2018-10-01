@@ -95,13 +95,9 @@ struct POpCmp {
 class OpPriorityComparer{
   public:
     bool operator()(const Op * const & op1, const Op * const & op2) const{
-      return op1->priority() < op2->priority();
+      return op1->priority < op2->priority;
     }
 };
-
-double Op::priority() const{
-  return 0.0;
-}
 
 void Op::setup() { throw error("No setup() for " + op_type()); }
 
@@ -109,8 +105,13 @@ void Op::setup() { throw error("No setup() for " + op_type()); }
 // see https://en.wikipedia.org/wiki/Topological_sorting
 // but not quite Kahn's algorithm as it there are some
 // additional constraints on the order of Ops imposed
-// externally
+// externally. Also not quite Kahn, as the vertices which
+// are ready to be inserted have an insertion "priority" 
+// set externally
 std::vector<Op *> Graph::getTopologicallySorted() const {
+
+  // TODO : make so that only needs to recompute this 
+  // if something has changed, otherwise returns a stored sorting. 
 
   // the topological sorting (to construct in this function)
   std::vector<Op *> sorted;
@@ -216,6 +217,7 @@ void Graph::exportDot(const std::string dotfn) const {
     throw error("failed to open file `" + dotfn + '\'');
   }
   strm << "digraph net {\n";
+  strm << "size=\"6,6\";\n";
   for (auto &n : getTopologicallySorted()) {
     strm << "n_" << n->id << " [shape= \"box\", label=\"" << n->op_type()
          << "\"];\n";
@@ -224,7 +226,12 @@ void Graph::exportDot(const std::string dotfn) const {
     }
 
     for (auto &ind_ten : n->output.tensorMap()) {
-      strm << "n_" << n->id << " -> " << ind_ten.second->id << ';' << '\n';
+      auto tenId = ind_ten.second->id;
+      strm << "n_" << n->id << " -> " << tenId << ';' << '\n';
+      TensorId possibleGradId = getGradId(tenId);
+      if (tensors.contains(possibleGradId)) {
+        //strm << "{rank=same; " << tenId << "; " << possibleGradId << ";}\n";
+      }
     }
   }
   strm << '}' << '\n';
@@ -255,7 +262,6 @@ std::vector<TensorId> Tensors::getIds(TensorType type) const {
 Tensors::Tensors(std::vector<std::string> &&vals1, Graph *pg)
     : constIds(std::move(vals1)), pgraph(pg) {}
 
-Op::~Op()                     = default;
 VectorAndSet::~VectorAndSet() = default;
 Tensors::~Tensors()           = default;
 Graph::~Graph()               = default;
@@ -489,6 +495,8 @@ Graph::Graph(onnx::ModelProto &&inMod,
   applyPattern(&pre_uni_repl);
   applyPattern(&post_n_repl);
 
+  growFinalLoss();
+  setNPathsToLoss();
   constructBackwards();
   // confirm that all the anchor names provided
   // are indeed real tensor names. This is a check
@@ -498,23 +506,29 @@ Graph::Graph(onnx::ModelProto &&inMod,
 
   applyPattern(&pre_uni_repl);
   applyPattern(&post_n_repl);
-
   prune();
-  // addRecompute();
+  inferTensorInfos();
+  addRecompute();
+  prune();
+  inferTensorInfos();
 
   exportDot(io::appendDirFn(logdir, "jam.dot"));
   std::cout << "model written to jam.dot" << std::endl;
 
-  inferTensorInfos();
 }
 
 std::vector<Op *> Graph::getTopologicallySortedTilLoss() const {
-  throw error("To implement : topologically sorted til loss");
+  std::vector<Op*> opsTowardsLoss;
+  for (auto op : getTopologicallySorted()){
+    if (op->nPathsToLoss() > 0){
+      opsTowardsLoss.push_back(op);
+    }
+  }
+  return opsTowardsLoss;
 }
 
 void Graph::addRecompute() {
-  std::cout << "recompute, this is exciting." << std::endl;
-  std::vector<Op *> linearised = getTopologicallySortedTilLoss();
+  std::vector<Op *> towardsLoss = getTopologicallySortedTilLoss();
 
   // live[i] : set of ops whose outputs have not all
   // been consumed by non-grad consumers just after
@@ -531,24 +545,31 @@ void Graph::addRecompute() {
   // 2) use them to set checkpoints: Ops whose
   //   outputs we guarantee will be available
   //   at any time
-  std::set<Op *> checkpoints;
+  std::set<Op *> checkpoints {tensors.get("10")->getProducer()};
 
   // all non-checkpoint pre-loss nodes.
   std::vector<Op *> nonCheckpoints;
+  for (auto & op : towardsLoss){
+    if (checkpoints.count(op) == 0){
+      nonCheckpoints.push_back(op);
+    }
+  }
 
   for (auto &op : nonCheckpoints) {
     growRecomputeOp(op, checkpoints);
   }
 }
 
-std::unique_ptr<Op> Op::clone() const {
-  throw error("no clone implemented yet for " + op_type());
+std::unique_ptr<Op> GradOp::clone() const {
+  throw error("no clone for GradOp " + op_type() + " (not thought necessary)");
 }
 
 // see diagram 74 in notebook ;/)
 Op *Graph::growRecomputeOp(Op *oriOp, const std::set<Op*> & checkpoints) {
+
   // the recompute op:
   OpId rcId = moveIntoGraph(oriOp->clone());
+
   Op *rcOp  = ops[rcId].get();
 
   // set inputs and outputs of  the new Op.
@@ -577,13 +598,29 @@ Op *Graph::growRecomputeOp(Op *oriOp, const std::set<Op*> & checkpoints) {
 
   // yank down the priority of the new Op
   // (must be run as late as possible):
+  rcOp->priority = std::numeric_limits<double>::lowest();
 
   // oriOp's outputs should not be consumed by grad op:
+  for (auto &ind_ten : oriOp->output.tensorMap()) {
+    Tensor *oriTen = ind_ten.second;
+    Tensor *recTen = tensors.get(getRecompId(oriTen->id));
+    for (auto &con : oriTen->consumers.getOps()) {
+      if (con->isGradOp()) {
+        for (auto & con_ind_ten : con->input.tensorMap()){
+          int gradIn = con_ind_ten.first;
+          if (con_ind_ten.second == oriTen){
+            con->input.reset(gradIn, recTen);
+            recTen->consumers.increment(con);
+            oriTen->consumers.decrement(con);
+          }
+        }
+      }
+    }
+  }
 
   // note: oriOp will still be pointed to
   // by grad op as it's creator. This design
   // choice might need revision.
-  //
 
   return rcOp;
 }
@@ -740,7 +777,6 @@ void Graph::applyPattern(const Pattern *pattern) {
   for (auto op : v_ops) {
     if (pattern->matches(op)) {
       if (pattern->removesNoAnchored(op)) {
-        std::cout << "Op " << op->op_type() << " safe to remove " << std::endl;
         pattern->apply(op);
       }
     }
@@ -1145,8 +1181,6 @@ void Graph::constructBackwards() {
   // a gradient. It is possible that an edge-gradient has the same
   // value as a gradient, if a tensor has only 1 consumer.
 
-  growFinalLoss();
-  setNPathsToLoss();
 
   // grad-ops which have created edge-gradients, but the
   // edge-gradients haven't signalled their existance.
@@ -1378,6 +1412,13 @@ void Graph::append(std::stringstream &ss) {
   for (auto &op : getTopologicallySorted()) {
     op->append(ss);
   }
+}
+
+Op::Op(const Op &op)
+    : priority(op.priority), opType(op.opType), pgraph(op.pgraph),
+      id(pgraph->getAndIncrOpsCounter()), nAtts(op.nAtts),
+      p_op_type(op.p_op_type), op_domain(op.op_domain) {
+  // input, output: empty.
 }
 
 const std::string &Op::domain() { return op_domain; }

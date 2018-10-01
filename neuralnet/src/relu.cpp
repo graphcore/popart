@@ -3,6 +3,10 @@
 
 namespace neuralnet {
 
+std::unique_ptr<Op> ReluOp::clone() const {
+  return std::unique_ptr<Op>( new ReluOp(*this));
+}
+
 ReluOp::ReluOp(const onnx::NodeProto &node, Graph *pgraph) : Op(node, pgraph) {}
 
 std::vector<std::unique_ptr<Op>> ReluOp::getGradOps() {

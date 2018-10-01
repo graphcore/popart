@@ -8,6 +8,7 @@ namespace neuralnet {
 class PadOp : public Op {
 public:
   PadOp(const onnx::NodeProto &node, Graph *pgraph);
+  virtual std::unique_ptr<Op> clone() const override final;
   // returns true of all pad size in all dimensions
   // and on both sides, are zero
   bool padSizeZero() const;

@@ -5,6 +5,10 @@
 
 namespace neuralnet {
 
+std::unique_ptr<Op> NllOp::clone() const {
+  return std::unique_ptr<Op>( new NllOp(*this));
+}
+
 std::vector<std::unique_ptr<Op>> NllOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(std::unique_ptr<Op>(new NllGradOp(this)));

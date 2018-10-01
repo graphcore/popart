@@ -11,6 +11,7 @@ public:
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
 
   virtual void setup() override final;
+  virtual std::unique_ptr<Op> clone() const override final;
 };
 
 class SqueezeGradOp : public GradOp {
