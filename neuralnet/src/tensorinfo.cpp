@@ -15,6 +15,7 @@ TensorInfo::TensorInfo(std::string s_type, std::string s_shape)
 
 void TensorInfo::set(const onnx::TensorProto &t) {
   dataTypeInfo = &getDataTypeInfoMap().at(t.data_type());
+  shape_v.resize(0);
   shape_v.reserve(t.dims_size());
   for (auto &v : t.dims()) {
     shape_v.push_back(v);

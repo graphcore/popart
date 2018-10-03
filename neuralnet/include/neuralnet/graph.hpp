@@ -239,6 +239,10 @@ public:
 
   void append(std::stringstream &ss) const;
 
+  // sum of the total memory of all output tensors
+  int64_t memOfOutputs() const;
+  // We might want a cycle counter too.
+
   // The consumed Tensors
   TensorIndexMap input;
 
@@ -578,6 +582,18 @@ private:
   // tensor naming convention for example, this will
   // be caught here.
   void validateAnchors() const;
+
+  // For every Op "op" in topoOps, there is a set of Ops "ops"
+  // defined as the union of
+  // 1) "op" and
+  // 2)  all Ops appearing before "op" which
+  // have output tensors for which there are Ops appearing after
+  // "op" in topoOps which will consume them.
+  // Note : if topoOps is just the forward pass, the grad-op
+  // consumers of a tensor do not appear in "ops". This agrees
+  // with the definition.
+  std::vector<std::set<Op *>>
+  getLiveSets(const std::vector<Op *> &topoOps) const;
 };
 
 } // namespace neuralnet

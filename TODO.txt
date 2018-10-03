@@ -81,3 +81,10 @@ Decide how the user states which tensors they want back (are anchored)
 (done) Pruning at end of graph construction to keep only the targets
 ops (of Graph) should be encapsulated, as tensors
 recomputation.......
+
+01/10
+----------------------
+checkpoint determination
+inplace relu and inplace add
+a local max liveness optimiser.
+

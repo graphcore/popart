@@ -27,7 +27,7 @@ def conv3x3(in_planes, out_planes, stride=1):
         bias=False)
 
 
-model_number = 3
+model_number = 4
 
 
 class Basic0(torch.nn.Module):
@@ -109,6 +109,43 @@ class Basic3(torch.nn.Module):
         return probs
 
 
+class Basic4(torch.nn.Module):
+    def __init__(self, nChans):
+        super(Basic4, self).__init__()
+        # specific to project neuralnet
+        self.output_names = ["Y"]
+        self.losses = [
+            pydriver.L1(0.1,"Y")
+        ]
+        self.input_names = ["image0"]
+        self.anchors = []
+        self.inputs = [
+            torch.rand(2, nChans, 25, 4),
+        ]
+        self.relu = torch.nn.functional.relu
+
+    def forward(self, inputs):
+        image0 = inputs[0]
+        x = conv3x3(nChans, nChans)(image0) 
+        x = conv3x3(nChans, nChans)(x)
+        x_early = self.relu(x)
+        x = conv3x3(nChans, nChans)(x) 
+        x = conv3x3(nChans, nChans)(x) 
+        x = conv3x3(nChans, nChans)(x)
+        x = conv3x3(nChans, nChans)(x) 
+        x0 = self.relu(x)
+        x1 = self.relu(x)
+        x2 = self.relu(x)
+        x3 = self.relu(x)
+        x01 = x0 + x1
+        x23 = x2 + x3
+        x0123 = x01 + x23
+        x = self.relu(x0123) + x_early
+        y = x + x
+        return y
+
+
+
 class Basic1(torch.nn.Module):
     def __init__(self):
         super(Basic1, self).__init__()
@@ -166,6 +203,9 @@ elif model_number == 2:
 elif model_number == 3:
     nChans = 25
     model = Basic3(nChans)
+elif model_number == 4:
+    nChans = 5
+    model = Basic4(nChans)
 
 else:
     raise RuntimeError("invalid model number")

@@ -52,6 +52,7 @@ public:
   const std::vector<int64_t> &shape() const;
   int rank() const;
   int64_t nelms() const;
+  // total bytes of tensor
   int64_t nbytes() const;
   int64_t dim(int i) const;
   DataType dataType() const;

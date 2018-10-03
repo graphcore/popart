@@ -1,17 +1,19 @@
+#include <array>
 #include <fstream>
 #include <map>
 #include <neuralnet/error.hpp>
 #include <neuralnet/filereader.hpp>
 #include <neuralnet/graph.hpp>
+#include <neuralnet/intervals.hpp>
 #include <neuralnet/loss.hpp>
 #include <neuralnet/patterns.hpp>
+#include <neuralnet/pbwrap.hpp>
 #include <neuralnet/tensor.hpp>
 #include <neuralnet/tensorinfo.hpp>
 #include <neuralnet/util.hpp>
-#include <neuralnet/pbwrap.hpp>
+#include <queue>
 #include <sstream>
 #include <vector>
-#include <queue>
 
 // The layers:
 #include <neuralnet/add.hpp>
@@ -527,29 +529,122 @@ std::vector<Op *> Graph::getTopologicallySortedTilLoss() const {
   return opsTowardsLoss;
 }
 
+std::vector<std::set<Op *>>
+Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
+
+  // the key op waits for the ops in val
+  // so the key op is later in the sort.
+  std::map<Op *, std::vector<Op *>> waiting;
+
+  // the number of ops that are waiting for key
+  // this is NOT the size of the values of is_waiting_for
+  std::map<Op *, int> nWaiting;
+
+  for (Op *op : topoOps) {
+    nWaiting[op]  = 0;
+    waiting[op] = {};
+  }
+  for (Op *op : topoOps) {
+    for (auto t_inds : op->input.indicesMap()) {
+      Tensor *tensor = t_inds.first;
+      if (tensor->hasProducer()) {
+        Op *prod = tensor->getProducer();
+        // have we noted that op is waiting for prod yet? if not,
+        if (std::find(waiting[op].begin(), waiting[op].end(), prod) ==
+            waiting[op].end()) {
+          // make note
+          waiting[op].push_back(prod);
+          // increase the number of ops waiting for prod
+          ++nWaiting[prod];
+        }
+      }
+    }
+  }
+
+  std::set<Op*> live = {};
+  std::vector<std::set<Op*>> liveSets;
+  for (Op * newOp : topoOps){
+    for (Op * isEarlier : waiting[newOp]){
+      if (live.count(isEarlier) == 0){
+        throw error(
+            "ILE: op should still be live (newOp waits for its output)");
+      }
+      --nWaiting[isEarlier];
+      if (nWaiting[isEarlier] == 0){
+        live.erase(isEarlier);
+      }
+    }
+    live.insert(newOp);
+    liveSets.push_back(live);
+  }
+  return liveSets;
+}
+
+int64_t Op::memOfOutputs() const{
+  int64_t mem = 0;
+  for (auto &  t_inds : output.indicesMap()){
+    mem += t_inds.first->info.nbytes();
+  }
+  return mem;
+}
+
+
 void Graph::addRecompute() {
-  std::vector<Op *> towardsLoss = getTopologicallySortedTilLoss();
+  std::vector<Op *> fwdOps = getTopologicallySortedTilLoss();
 
-  // live[i] : set of ops whose outputs have not all
-  // been consumed by non-grad consumers just after
-  // linearised[i] has run. So clearly
+  // liveSets[i] : set of ops whose outputs have not all
+  // been consumed by their (non-grad) consumers just after
+  // linearised[i] has run. By this defn,
   // linearised[i] \in live[i]
-  std::vector<std::set<Op *>> live;
+  std::vector<std::set<Op *>> liveSets = getLiveSets(fwdOps);
 
-  // how much activation memory would be consumed
-  // just after linearised[i] ran, without recompute
-  std::vector<int64_t> totalMemory;
+  // The memory (bytes) which will be needed to 
+  // store all the output tensors in a liveness set.
+  std::vector<int64_t> memoryOfLives;
+  for (auto & liveSet : liveSets){
+    int64_t mem = 0;
+    for (auto op : liveSet){
+      mem += op->memOfOutputs();
+    }
+    memoryOfLives.push_back(mem);
+  }
 
-  // Part I : setting checkpoints.
-  // 1) build live and totalMemory.
-  // 2) use them to set checkpoints: Ops whose
+  int nFwdOps = static_cast<int>(fwdOps.size());
+  if (nFwdOps != liveSets.size() || memoryOfLives.size() != nFwdOps){
+    throw error("ILE : sizes of vectors do not match");
+  }
+
+  std::vector<std::array<int, 2>> intervals = getDecreasingIntervals(nFwdOps);
+
+
+  //   defn, checkpoints: Ops whose
   //   outputs we guarantee will be available
   //   at any time
-  std::set<Op *> checkpoints {tensors.get("10")->getProducer()};
+  std::set<Op* > checkpoints;
+
+  // we choose the lowest memory set from each interval, 
+  // and add its members to checkpoints.
+  for (auto interval : intervals){
+    int begin = interval[0];
+    int end = interval[1];
+    int64_t lowestMemory = std::numeric_limits<int64_t>::max();
+    std::set<Op*> bestSet {};
+    for (int i = begin; i < end; ++i){
+      if (memoryOfLives[i] < lowestMemory){
+        lowestMemory = memoryOfLives[i];
+        bestSet = liveSets[i];
+      }
+    }
+    for (Op * op : bestSet){
+      if (checkpoints.count(op) == 0){
+        checkpoints.insert(op);
+      }
+    }
+  }
 
   // all non-checkpoint pre-loss nodes.
   std::vector<Op *> nonCheckpoints;
-  for (auto & op : towardsLoss){
+  for (auto & op : fwdOps){
     if (checkpoints.count(op) == 0){
       nonCheckpoints.push_back(op);
     }
