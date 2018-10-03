@@ -284,7 +284,7 @@ public:
   // return a vector of 1 or several gradient Ops: for
   // obtaining the gradient of the inputs of this Op.
   // If this Op is already a gradient Op, throws error
-  // TODO : why is this noy constant?
+  // Why is this not constant? For one, nOps counter increments.
   virtual std::vector<std::unique_ptr<Op>> getGradOps();
 
   // return a gradient op's non-gradient creator, if relevant.A

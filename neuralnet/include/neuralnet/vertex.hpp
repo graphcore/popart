@@ -3,7 +3,6 @@
 
 namespace neuralnet {
 
-
 class Vertex {
 
 public:
@@ -12,12 +11,9 @@ public:
   Vertex(const Vertex &) : nPathsToLoss_(-100) {}
   Vertex &operator=(const Vertex &) = delete;
 
-
   void incrNPathsToLoss();
   int nPathsToLoss() const;
-  void setNPathsToLossToZero() {
-    nPathsToLoss_ = 0;
-  }
+  void setNPathsToLossToZero() { nPathsToLoss_ = 0; }
 
 private:
   int nPathsToLoss_{-100};

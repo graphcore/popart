@@ -474,8 +474,7 @@ Graph::Graph(onnx::ModelProto &&inMod,
       // another loss might have already registered this tensor
       if (!tensors.contains(tenId)) {
         tensors.addStream(tenId);
-      }
-      else{
+      } else {
         Tensor *tensorAlreadyPresent = tensors.get(tenId);
         if (tensorAlreadyPresent->tensorType() != TensorType::Stream) {
           throw error("type mismatch for tensor " + tenId);
@@ -1197,24 +1196,24 @@ std::vector<Op *> OpGradRegistry::popComplete() {
   return toRet;
 }
 
-// design choice: I could have a "graphHasModified" 
-// flag which is set to true whenever the Graph changes, 
-// and then if graphHasModified is false, calls 
+// design choice: I could have a "graphHasModified"
+// flag which is set to true whenever the Graph changes,
+// and then if graphHasModified is false, calls
 // to this (and other) functions can do nothing.
 // The cost of maintaining graphHasModified is non-trivial
 // and would require runtime overhead, for now I'm not
 // going to implement it.
 void Graph::setNPathsToLoss() {
- 
+
   // initialize number of paths for
   // all Ops and Tensors to loss to be zero
-  for (auto &id_op : ops){
-    Op * op = id_op.second.get();
+  for (auto &id_op : ops) {
+    Op *op = id_op.second.get();
     op->setNPathsToLossToZero();
-    for (auto t_inds : op->input.indicesMap()){
+    for (auto t_inds : op->input.indicesMap()) {
       t_inds.first->setNPathsToLossToZero();
     }
-    for (auto t_inds : op->output.indicesMap()){
+    for (auto t_inds : op->output.indicesMap()) {
       t_inds.first->setNPathsToLossToZero();
     }
   }
@@ -1256,7 +1255,7 @@ void Graph::constructBackwards() {
   // is tedious. However, I also don't like having class variables
   // which are only used in one bit of functionality, because it becomes
   // unclear whether they should be maintained in a valid state throughout
-  // the objects life. In this case, I think the second is worse, so 
+  // the objects life. In this case, I think the second is worse, so
   // going for the lambda solution.
   TensorGradRegistry tensor_grad_registry;
   OpGradRegistry op_grad_registry;
