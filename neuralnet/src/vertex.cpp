@@ -13,8 +13,6 @@ void Vertex::incrNPathsToLoss() {
   }
 }
 
-int Vertex::nPathsToLoss() const {
-  return nPathsToLoss_;
-}
+int Vertex::nPathsToLoss() const { return nPathsToLoss_; }
 
 }; // namespace neuralnet

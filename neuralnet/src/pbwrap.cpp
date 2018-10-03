@@ -52,7 +52,9 @@ int InputMapWrapper::input_size() const { return get_size(); }
 OutputMapWrapper::OutputMapWrapper(const std::map<int, TensorId> &M_)
     : IOMapWrapper(M_) {}
 
-const TensorId &OutputMapWrapper::output(int inIndex) const { return idAt(inIndex); }
+const TensorId &OutputMapWrapper::output(int inIndex) const {
+  return idAt(inIndex);
+}
 
 int OutputMapWrapper::output_size() const { return get_size(); }
 

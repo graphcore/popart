@@ -1,7 +1,7 @@
+#include <memory>
 #include <neuralnet/conv.hpp>
 #include <neuralnet/error.hpp>
 #include <neuralnet/tensor.hpp>
-#include <memory>
 
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"
@@ -24,9 +24,8 @@ std::vector<std::unique_ptr<Op>> ConvOp::getGradOps() {
   return upops;
 }
 
-
 std::unique_ptr<Op> ConvOp::clone() const {
-  return std::unique_ptr<Op>( new ConvOp(*this));
+  return std::unique_ptr<Op>(new ConvOp(*this));
 }
 
 void ConvWeightsGradOp::setup() {

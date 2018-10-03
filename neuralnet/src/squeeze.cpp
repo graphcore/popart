@@ -12,9 +12,8 @@ std::vector<std::unique_ptr<Op>> SqueezeOp::getGradOps() {
   return upops;
 }
 
-
 std::unique_ptr<Op> SqueezeOp::clone() const {
-  return std::unique_ptr<Op>( new SqueezeOp(*this));
+  return std::unique_ptr<Op>(new SqueezeOp(*this));
 }
 
 void SqueezeOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }

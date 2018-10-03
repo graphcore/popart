@@ -6,7 +6,7 @@ namespace neuralnet {
 AddOp::AddOp(const onnx::NodeProto &node, Graph *pgraph) : Op(node, pgraph) {}
 
 std::unique_ptr<Op> AddOp::clone() const {
-  return std::unique_ptr<Op>( new AddOp(*this));
+  return std::unique_ptr<Op>(new AddOp(*this));
 }
 
 std::vector<std::unique_ptr<Op>> AddOp::getGradOps() {

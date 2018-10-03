@@ -225,7 +225,7 @@ public:
   Op(const Op &);
   Op &operator=(const Op &) = delete;
   // the rule-of-3 says that it's good
-  // practise to have an explicit destructor, 
+  // practise to have an explicit destructor,
   // given that there is an explict copy con.
   // But not really nec. as Vertex has a virtual
   // destructor.
@@ -259,7 +259,7 @@ public:
   // all Ops will be performed "as close to" the order of
   // priority (highest to lowest) while still being topo sorted.
   // default : 0.0
-  double priority {0.0};
+  double priority{0.0};
 
   // "Relu" or "Conv" etc.
   const std::string &op_type() const;
@@ -333,7 +333,7 @@ public:
 
   // note that this is virtual, and will
   // be overwritten by GradOp.
-  virtual bool isGradOp() const {return false;}
+  virtual bool isGradOp() const { return false; }
 
 private:
   void appendIO(std::stringstream &) const;
@@ -373,7 +373,7 @@ public:
   virtual std::unique_ptr<Op> clone() const override final;
   virtual ~GradOp() override = default;
   virtual int getNonGradInIndex(int) const override final;
-  virtual bool isGradOp() const override final {return true;}
+  virtual bool isGradOp() const override final { return true; }
 };
 
 enum class TensorType;

@@ -28,8 +28,6 @@
 
 namespace neuralnet {
 
-
-
 std::vector<TensorId> TensorIndexMap::getSerialised() const {
   int maxIndex = 0;
   for (auto &ind_tensor : tensor_map) {
@@ -94,11 +92,11 @@ struct POpCmp {
   }
 };
 
-class OpPriorityComparer{
-  public:
-    bool operator()(const Op * const & op1, const Op * const & op2) const{
-      return op1->priority < op2->priority;
-    }
+class OpPriorityComparer {
+public:
+  bool operator()(const Op *const &op1, const Op *const &op2) const {
+    return op1->priority < op2->priority;
+  }
 };
 
 void Op::setup() { throw error("No setup() for " + op_type()); }
@@ -108,20 +106,20 @@ void Op::setup() { throw error("No setup() for " + op_type()); }
 // but not quite Kahn's algorithm as it there are some
 // additional constraints on the order of Ops imposed
 // externally. Also not quite Kahn, as the vertices which
-// are ready to be inserted have an insertion "priority" 
+// are ready to be inserted have an insertion "priority"
 // set externally
 std::vector<Op *> Graph::getTopologicallySorted() const {
 
-  // TODO : make so that only needs to recompute this 
-  // if something has changed, otherwise returns a stored sorting. 
+  // TODO : make so that only needs to recompute this
+  // if something has changed, otherwise returns a stored sorting.
 
   // the topological sorting (to construct in this function)
   std::vector<Op *> sorted;
   // ops which have all their input tensors
-  // created, and are not waiting for any ops 
+  // created, and are not waiting for any ops
   // to run before them
-  //OpPriorityComparer opCompare;
-  std::priority_queue<Op *, std::vector<Op*>, OpPriorityComparer> opsToProcess;
+  // OpPriorityComparer opCompare;
+  std::priority_queue<Op *, std::vector<Op *>, OpPriorityComparer> opsToProcess;
   // map from each op to the number of tensor input
   // indices it is waiting on
   std::map<Op *, int> nIndicesAwaiting;
@@ -232,7 +230,7 @@ void Graph::exportDot(const std::string dotfn) const {
       strm << "n_" << n->id << " -> " << tenId << ';' << '\n';
       TensorId possibleGradId = getGradId(tenId);
       if (tensors.contains(possibleGradId)) {
-        //strm << "{rank=same; " << tenId << "; " << possibleGradId << ";}\n";
+        // strm << "{rank=same; " << tenId << "; " << possibleGradId << ";}\n";
       }
     }
   }
@@ -516,13 +514,12 @@ Graph::Graph(onnx::ModelProto &&inMod,
 
   exportDot(io::appendDirFn(logdir, "jam.dot"));
   std::cout << "model written to jam.dot" << std::endl;
-
 }
 
 std::vector<Op *> Graph::getTopologicallySortedTilLoss() const {
-  std::vector<Op*> opsTowardsLoss;
-  for (auto op : getTopologicallySorted()){
-    if (op->nPathsToLoss() > 0){
+  std::vector<Op *> opsTowardsLoss;
+  for (auto op : getTopologicallySorted()) {
+    if (op->nPathsToLoss() > 0) {
       opsTowardsLoss.push_back(op);
     }
   }
@@ -541,8 +538,8 @@ Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
   std::map<Op *, int> nWaiting;
 
   for (Op *op : topoOps) {
-    nWaiting[op]  = 0;
-    waiting[op] = {};
+    nWaiting[op] = 0;
+    waiting[op]  = {};
   }
   for (Op *op : topoOps) {
     for (auto t_inds : op->input.indicesMap()) {
@@ -561,16 +558,16 @@ Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
     }
   }
 
-  std::set<Op*> live = {};
-  std::vector<std::set<Op*>> liveSets;
-  for (Op * newOp : topoOps){
-    for (Op * isEarlier : waiting[newOp]){
-      if (live.count(isEarlier) == 0){
+  std::set<Op *> live = {};
+  std::vector<std::set<Op *>> liveSets;
+  for (Op *newOp : topoOps) {
+    for (Op *isEarlier : waiting[newOp]) {
+      if (live.count(isEarlier) == 0) {
         throw error(
             "ILE: op should still be live (newOp waits for its output)");
       }
       --nWaiting[isEarlier];
-      if (nWaiting[isEarlier] == 0){
+      if (nWaiting[isEarlier] == 0) {
         live.erase(isEarlier);
       }
     }
@@ -580,14 +577,13 @@ Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
   return liveSets;
 }
 
-int64_t Op::memOfOutputs() const{
+int64_t Op::memOfOutputs() const {
   int64_t mem = 0;
-  for (auto &  t_inds : output.indicesMap()){
+  for (auto &t_inds : output.indicesMap()) {
     mem += t_inds.first->info.nbytes();
   }
   return mem;
 }
-
 
 void Graph::addRecompute() {
   std::vector<Op *> fwdOps = getTopologicallySortedTilLoss();
@@ -598,45 +594,44 @@ void Graph::addRecompute() {
   // linearised[i] \in live[i]
   std::vector<std::set<Op *>> liveSets = getLiveSets(fwdOps);
 
-  // The memory (bytes) which will be needed to 
+  // The memory (bytes) which will be needed to
   // store all the output tensors in a liveness set.
   std::vector<int64_t> memoryOfLives;
-  for (auto & liveSet : liveSets){
+  for (auto &liveSet : liveSets) {
     int64_t mem = 0;
-    for (auto op : liveSet){
+    for (auto op : liveSet) {
       mem += op->memOfOutputs();
     }
     memoryOfLives.push_back(mem);
   }
 
   int nFwdOps = static_cast<int>(fwdOps.size());
-  if (nFwdOps != liveSets.size() || memoryOfLives.size() != nFwdOps){
+  if (nFwdOps != liveSets.size() || memoryOfLives.size() != nFwdOps) {
     throw error("ILE : sizes of vectors do not match");
   }
 
   std::vector<std::array<int, 2>> intervals = getDecreasingIntervals(nFwdOps);
 
-
   //   defn, checkpoints: Ops whose
   //   outputs we guarantee will be available
   //   at any time
-  std::set<Op* > checkpoints;
+  std::set<Op *> checkpoints;
 
-  // we choose the lowest memory set from each interval, 
+  // we choose the lowest memory set from each interval,
   // and add its members to checkpoints.
-  for (auto interval : intervals){
-    int begin = interval[0];
-    int end = interval[1];
+  for (auto interval : intervals) {
+    int begin            = interval[0];
+    int end              = interval[1];
     int64_t lowestMemory = std::numeric_limits<int64_t>::max();
-    std::set<Op*> bestSet {};
-    for (int i = begin; i < end; ++i){
-      if (memoryOfLives[i] < lowestMemory){
+    std::set<Op *> bestSet{};
+    for (int i = begin; i < end; ++i) {
+      if (memoryOfLives[i] < lowestMemory) {
         lowestMemory = memoryOfLives[i];
-        bestSet = liveSets[i];
+        bestSet      = liveSets[i];
       }
     }
-    for (Op * op : bestSet){
-      if (checkpoints.count(op) == 0){
+    for (Op *op : bestSet) {
+      if (checkpoints.count(op) == 0) {
         checkpoints.insert(op);
       }
     }
@@ -644,8 +639,8 @@ void Graph::addRecompute() {
 
   // all non-checkpoint pre-loss nodes.
   std::vector<Op *> nonCheckpoints;
-  for (auto & op : fwdOps){
-    if (checkpoints.count(op) == 0){
+  for (auto &op : fwdOps) {
+    if (checkpoints.count(op) == 0) {
       nonCheckpoints.push_back(op);
     }
   }
@@ -660,33 +655,33 @@ std::unique_ptr<Op> GradOp::clone() const {
 }
 
 // see diagram 74 in notebook ;/)
-Op *Graph::growRecomputeOp(Op *oriOp, const std::set<Op*> & checkpoints) {
+Op *Graph::growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints) {
 
   // the recompute op:
   OpId rcId = moveIntoGraph(oriOp->clone());
 
-  Op *rcOp  = ops[rcId].get();
+  Op *rcOp = ops[rcId].get();
 
   // set inputs and outputs of  the new Op.
   std::map<int, TensorId> inputs;
   for (auto &index_tensor : oriOp->input.tensorMap()) {
-    int index = index_tensor.first;
-    Tensor * tensor = index_tensor.second;
-    // if the tensor was produced by a non-checkpointed op, 
+    int index      = index_tensor.first;
+    Tensor *tensor = index_tensor.second;
+    // if the tensor was produced by a non-checkpointed op,
     // we need to use the recomputed version of it
-    if (tensor->hasProducer() && checkpoints.count(tensor->getProducer()) == 0){
+    if (tensor->hasProducer() &&
+        checkpoints.count(tensor->getProducer()) == 0) {
       inputs[index] = getRecompId(tensor->id);
-    }
-    else{
+    } else {
       inputs[index] = tensor->id;
     }
   }
   connectInputs(InputMapWrapper(inputs), rcId);
 
   std::map<int, TensorId> outputs;
-  for (auto & index_tensor : oriOp->output.tensorMap()){
-    int index = index_tensor.first;
-    Tensor * tensor = index_tensor.second;
+  for (auto &index_tensor : oriOp->output.tensorMap()) {
+    int index      = index_tensor.first;
+    Tensor *tensor = index_tensor.second;
     outputs[index] = getRecompId(tensor->id);
   }
   connectOutputs(OutputMapWrapper(outputs), rcId);
@@ -701,9 +696,9 @@ Op *Graph::growRecomputeOp(Op *oriOp, const std::set<Op*> & checkpoints) {
     Tensor *recTen = tensors.get(getRecompId(oriTen->id));
     for (auto &con : oriTen->consumers.getOps()) {
       if (con->isGradOp()) {
-        for (auto & con_ind_ten : con->input.tensorMap()){
+        for (auto &con_ind_ten : con->input.tensorMap()) {
           int gradIn = con_ind_ten.first;
-          if (con_ind_ten.second == oriTen){
+          if (con_ind_ten.second == oriTen) {
             con->input.reset(gradIn, recTen);
             recTen->consumers.increment(con);
             oriTen->consumers.decrement(con);
@@ -974,7 +969,7 @@ void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
 
 std::string reservedGradientPrefix() { return "d__"; }
 std::string reservedRecomputePrefix() { return "r__"; }
-std::vector<std::string> reservedPrefixes(){
+std::vector<std::string> reservedPrefixes() {
   return {reservedGradientPrefix(), reservedRecomputePrefix()};
 }
 
@@ -1017,7 +1012,6 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
   ss << reservedGradientPrefix() << opId << '_' << index;
   return ss.str();
 }
-
 
 void Tensors::remove(TensorId id) { M.erase(id); }
 
@@ -1068,14 +1062,14 @@ std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
     {
       // inputs to gradOp (to populate in this scope):
       std::map<int, std::string> m_inputs;
-    //  int max_input_index = 0;
+      //  int max_input_index = 0;
       for (auto &inOutMapper : gradOp->gradInputInfo()) {
 
         int indexGrad     = inOutMapper.iGrad;
         int indexFwd      = inOutMapper.iNonGrad;
         GradOpInType type = inOutMapper.type;
 
-      //  max_input_index = std::max(indexGrad, max_input_index);
+        //  max_input_index = std::max(indexGrad, max_input_index);
 
         // the input at index 'indexGrad' to gradOp is
         switch (type) {
@@ -1110,10 +1104,10 @@ std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
         }
       }
       // convert m_imputs to a vector, a format supported by connectInputs
-   //   std::vector<std::string> v_inputs(max_input_index + 1, "");
-   //   for (auto &index_id : m_inputs) {
-   //     v_inputs[index_id.first] = index_id.second;
-   //   }
+      //   std::vector<std::string> v_inputs(max_input_index + 1, "");
+      //   for (auto &index_id : m_inputs) {
+      //     v_inputs[index_id.first] = index_id.second;
+      //   }
 
       connectInputs(InputMapWrapper(m_inputs), gradOpId);
       // modify topological constraints on consumers of inputs
@@ -1142,7 +1136,6 @@ std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
 
   return gradOps;
 }
-
 
 // the default is that there are no topo cons
 void Op::imposeTopoCons() {}
@@ -1275,7 +1268,6 @@ void Graph::constructBackwards() {
   // and which will be summed with other edge-gradients to create
   // a gradient. It is possible that an edge-gradient has the same
   // value as a gradient, if a tensor has only 1 consumer.
-
 
   // grad-ops which have created edge-gradients, but the
   // edge-gradients haven't signalled their existance.
@@ -1426,7 +1418,7 @@ TensorId Graph::getFinalLossId() const { return "finalLoss"; }
 
 template <typename T>
 void Graph::connectInputs(const T &inContainer, OpId opId) {
-  Op * op = ops[opId].get();
+  Op *op = ops[opId].get();
   for (int inIndex = 0; inIndex < inContainer.input_size(); ++inIndex) {
     auto &inName = inContainer.input(inIndex);
     if (inName == "") {

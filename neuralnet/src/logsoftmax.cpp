@@ -14,9 +14,8 @@ std::vector<std::unique_ptr<Op>> LogSoftmaxOp::getGradOps() {
   return upops;
 }
 
-
 std::unique_ptr<Op> LogSoftmaxOp::clone() const {
-  return std::unique_ptr<Op>( new LogSoftmaxOp(*this));
+  return std::unique_ptr<Op>(new LogSoftmaxOp(*this));
 }
 
 void LogSoftmaxGradOp::setup() {

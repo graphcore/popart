@@ -10,7 +10,7 @@ namespace neuralnet {
 class Tensor;
 
 // c++ note : the conditions are suitable here
-// for the compiler to generate defaults for 
+// for the compiler to generate defaults for
 // the 3: desctructor, copy constructor, =.
 class AveragePoolOp : public HasReceptiveFieldOp {
 public:

@@ -8,7 +8,7 @@ class Vertex {
 public:
   Vertex()          = default;
   virtual ~Vertex() = default;
-  Vertex(const Vertex &):nPathsToLoss_(-100){}
+  Vertex(const Vertex &) : nPathsToLoss_(-100) {}
   Vertex &operator=(const Vertex &) = delete;
 
   void incrNPathsToLoss();

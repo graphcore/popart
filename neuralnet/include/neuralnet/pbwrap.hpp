@@ -2,11 +2,10 @@
 #define GUARD_PBWRAP_GRAPH_HPP
 
 #include <map>
-#include <vector>
 #include <neuralnet/names.hpp>
+#include <vector>
 
 namespace neuralnet {
-
 
 // These classes pass calls to .size() and .at() to
 // input_size() and input(int) and output_size() and output()

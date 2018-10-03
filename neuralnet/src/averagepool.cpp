@@ -21,9 +21,8 @@ void AveragePoolOp::setSpatial() {
   }
 }
 
-
 std::unique_ptr<Op> AveragePoolOp::clone() const {
-  return std::unique_ptr<Op>( new AveragePoolOp(*this));
+  return std::unique_ptr<Op>(new AveragePoolOp(*this));
 }
 
 // Pooling does not change the number of channels,
