@@ -554,14 +554,6 @@ private:
   // and returns the Op's OpId (which it already has)
   OpId moveIntoGraph(std::unique_ptr<Op> op);
 
-  // signal that a grad-op has created edge-gradients
-  void registerOpGrads(Op *grad, Op *nonGrad);
-
-  void registerTensorGrad(Tensor *);
-
-  TensorGradRegistry tensor_grad_registry;
-  OpGradRegistry op_grad_registry;
-
   // total number of ops ever created
   OpId opsCounter{100};
 

@@ -110,9 +110,6 @@ void Op::setup() { throw error("No setup() for " + op_type()); }
 // set externally
 std::vector<Op *> Graph::getTopologicallySorted() const {
 
-  // TODO : make so that only needs to recompute this
-  // if something has changed, otherwise returns a stored sorting.
-
   // the topological sorting (to construct in this function)
   std::vector<Op *> sorted;
   // ops which have all their input tensors
@@ -473,9 +470,17 @@ Graph::Graph(onnx::ModelProto &&inMod,
 
   // other true inputs are for the loss calculation (class labels, etc)
   for (const auto &loss : losses) {
-    for (const auto &lossStreamTensorName : loss->getStreamTensorNames()) {
-      // TODO what if two bundles use the same streamed input?
-      tensors.addStream(lossStreamTensorName);
+    for (const auto &tenId : loss->getStreamTensorNames()) {
+      // another loss might have already registered this tensor
+      if (!tensors.contains(tenId)) {
+        tensors.addStream(tenId);
+      }
+      else{
+        Tensor *tensorAlreadyPresent = tensors.get(tenId);
+        if (tensorAlreadyPresent->tensorType() != TensorType::Stream) {
+          throw error("type mismatch for tensor " + tenId);
+        }
+      }
     }
   }
 
@@ -715,10 +720,6 @@ Op *Graph::growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints) {
   return rcOp;
 }
 
-// TODO: don't have
-// class member objects which are specific to 1 bit of functionality,
-// it makes it unclear what needs to be maintained in a valid state.
-
 void Tensors::append(std::stringstream &ss) const {
   bool frst = true;
   ss << '[';
@@ -816,18 +817,6 @@ void Graph::prune() {
   // at this point, "required" is the set
   // of all ops which are actually executed
   // to get targets
-
-  //  TODO from here to the end must go
-  //  deleting ops is dangerous, as other
-  //  ops point to them (grad ops -> ops)
-  //  rather make this return the set required,
-  //  the in toposort, final step is just to filter
-  //  out the inactive ops.
-  //  maybe make a bool param to gettoposort:
-  //  'pruneUnused'.
-  //  But what about other places where ops are deleted?
-  //  Aren't they still risky for other ops pointing
-  //  to them?
 
   // ops \ required
   std::vector<Op *> opsToDelete;
@@ -1208,34 +1197,28 @@ std::vector<Op *> OpGradRegistry::popComplete() {
   return toRet;
 }
 
-// communicate that op has computed gradients
-void Graph::registerOpGrads(Op *gradOp, Op *nonGradOp) {
-  for (auto &index_tensor : gradOp->output.tensorMap()) {
-    int opOutInd     = index_tensor.first;
-    Tensor *partGrad = index_tensor.second;
-    // what input index of nonGradOp does the
-    // edge-gradient correspond to?
-    int nonGradInInd      = gradOp->getNonGradInIndex(opOutInd);
-    Tensor *nonGradTensor = nonGradOp->input.tensor(nonGradInInd);
-    tensor_grad_registry.insert(nonGradTensor, partGrad);
-  }
-}
-
-// communicate that a new gradient tensor
-// (which is a sum along edges) is ready
-void Graph::registerTensorGrad(Tensor *sum) {
-  Tensor *nonGrad = tensors.get(getNonGradId(sum->id));
-  if (nonGrad->hasProducer()) {
-    Op *producer = nonGrad->getProducer();
-    // the index at which nonGrad was produced
-    int index = producer->output.indices(nonGrad).at(0);
-    op_grad_registry.insert(producer, index);
-  }
-}
-
-// TODO : this algo does alot if log checks to
-// see if path already taken, shouldn't be nec.
+// design choice: I could have a "graphHasModified" 
+// flag which is set to true whenever the Graph changes, 
+// and then if graphHasModified is false, calls 
+// to this (and other) functions can do nothing.
+// The cost of maintaining graphHasModified is non-trivial
+// and would require runtime overhead, for now I'm not
+// going to implement it.
 void Graph::setNPathsToLoss() {
+ 
+  // initialize number of paths for
+  // all Ops and Tensors to loss to be zero
+  for (auto &id_op : ops){
+    Op * op = id_op.second.get();
+    op->setNPathsToLossToZero();
+    for (auto t_inds : op->input.indicesMap()){
+      t_inds.first->setNPathsToLossToZero();
+    }
+    for (auto t_inds : op->output.indicesMap()){
+      t_inds.first->setNPathsToLossToZero();
+    }
+  }
+
   std::vector<Op *> opFront{getFinalLossOp()};
   std::set<Op *> opsSeen{getFinalLossOp()};
   std::set<Tensor *> tensorsSeen{};
@@ -1260,14 +1243,48 @@ void Graph::setNPathsToLoss() {
   }
 }
 
-// void Tensors::addNonGradient(TensorId id, Tensor *t) { non_gradients_[id] =
-// t; }
-
 void Graph::constructBackwards() {
   // definition: edge-gradient. What is output by a grad-op,
   // and which will be summed with other edge-gradients to create
   // a gradient. It is possible that an edge-gradient has the same
   // value as a gradient, if a tensor has only 1 consumer.
+
+  // design decision w.r.t. lambda functions in this function:
+  // see-sawing between lambda functions (see two following here)
+  // and member functions. In general I don't like lambda functions,
+  // their return types are not easily visible and capturing parameters
+  // is tedious. However, I also don't like having class variables
+  // which are only used in one bit of functionality, because it becomes
+  // unclear whether they should be maintained in a valid state throughout
+  // the objects life. In this case, I think the second is worse, so 
+  // going for the lambda solution.
+  TensorGradRegistry tensor_grad_registry;
+  OpGradRegistry op_grad_registry;
+
+  // signal that a grad-op has created edge-gradients
+  auto registerOpGrads = [&tensor_grad_registry](Op *gradOp, Op *nonGradOp) {
+    for (auto &index_tensor : gradOp->output.tensorMap()) {
+      int opOutInd     = index_tensor.first;
+      Tensor *partGrad = index_tensor.second;
+      // what input index of nonGradOp does the
+      // edge-gradient correspond to?
+      int nonGradInInd      = gradOp->getNonGradInIndex(opOutInd);
+      Tensor *nonGradTensor = nonGradOp->input.tensor(nonGradInInd);
+      tensor_grad_registry.insert(nonGradTensor, partGrad);
+    }
+  };
+
+  // communicate that a new gradient tensor
+  // (which is a sum along edges) is ready
+  auto registerTensorGrad = [this, &op_grad_registry](Tensor *sum) {
+    Tensor *nonGrad = tensors.get(getNonGradId(sum->id));
+    if (nonGrad->hasProducer()) {
+      Op *producer = nonGrad->getProducer();
+      // the index at which nonGrad was produced
+      int index = producer->output.indices(nonGrad).at(0);
+      op_grad_registry.insert(producer, index);
+    }
+  };
 
   // grad-ops which have created edge-gradients, but the
   // edge-gradients haven't signalled their existance.
