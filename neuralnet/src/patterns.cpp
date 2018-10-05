@@ -16,8 +16,16 @@ bool Pattern::removesNoAnchored(const Op *op) const {
 };
 
 bool PreUniRepl::matches(const Op *op) const {
+  // op must have 1 input, and that input
+  // must be consumed by only op (and only once)
+  if (op->input.n() != 1) {
+    return false;
+  } else if (op->input.tensor(0)->consumers.getTotal() != 1) {
+    return false;
+  }
+
   // A sum with only one input
-  if (op->opType == OpType::SUM && op->input.n() == 1) {
+  else if (op->opType == OpType::SUM) {
     return true;
     // A pad with zero-padding
   } else if (op->opType == OpType::PAD &&

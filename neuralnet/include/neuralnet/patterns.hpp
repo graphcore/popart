@@ -33,6 +33,10 @@ public:
 // forms part of [.]->()->[]->(.). after this, this section will
 // be [.]->(.). [] is the root op of the pattern.
 // [] IS THE IDENTITY OP
+// () must be consumed by only []. This constraint can be
+//    removed, shouldn't be too hard before topo constraints
+//    are introduced. See TODO list 05/10 : topo constraints 
+//    should be made into a DAG
 class PreUniRepl : public Pattern {
 public:
   PreUniRepl()                   = default;
@@ -58,6 +62,7 @@ public:
 // then this should be replaced by
 // (ori) -> {[op0], [op0], [o1], [op2], [op2], [op2], [o3]}
 // removals : [*], (rep1), (rep2), (rep3)
+// TODO is this safe with topo constraits?
 class PostNRepl : public Pattern {
 public:
   PostNRepl()                   = default;
