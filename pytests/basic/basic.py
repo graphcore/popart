@@ -1,31 +1,26 @@
 import os
 import sys
 from torch.autograd import Variable
+import torch
 import torch.nn
 import torch.nn.functional
 import torchvision
 sys.path.append("../../driver")
-import pydriver
+import torchdriver
 import importlib
-importlib.reload(pydriver)
+importlib.reload(torchdriver)
 import subprocess
 
 import model0
-importlib.reload(model0)
 import model1
-importlib.reload(model1)
 import model2
-importlib.reload(model2)
-import model3
-importlib.reload(model3)
 import model4
-importlib.reload(model4)
 
 
 if (len(sys.argv) != 2):
     raise RuntimeError("onnx_net.py <log directory>")
 
-model_number = 4
+model_number =  0
 
 outputdir = sys.argv[1]
 if not os.path.exists(outputdir):
@@ -43,32 +38,22 @@ elif model_number == 2:
     nInChans = 20
     nOutChans = 10
     model = model2.Model2(nInChans, nOutChans)
-elif model_number == 3:
-    nChans = 25
-    model = model3.Model3(nChans)
 elif model_number == 4:
     nChans = 5
     model = model4.Model4(nChans)
-
 else:
     raise RuntimeError("invalid model number")
 
-driver = pydriver.Driver(outputdir)
-driver.write(
-    model,
-    inputs=model.inputs,
-    input_names=model.input_names,
-    output_names=model.output_names,
-    anchors=model.anchors,
-    losses=model.losses, 
-    outputdir=outputdir)
-driver.run()
+model.write(dirname=outputdir)
+model.run(dirname=outputdir)
 
-dotfile = os.path.join(outputdir, "jam.dot")
-outputfile = os.path.join(outputdir, "jam.pdf")
-print("generating %s"%(outputfile,))
-#dotgenline = "dot -T -o %s %s"%(outputfile, dotfile,)
-log = subprocess.call(["dot", "-T", "pdf", "-o", outputfile, dotfile])
-print(log)
 
-print("pydriver python script complete.")
+allDotPrefixes = [x[0:-4] for x in os.listdir(outputdir) if ".dot" in x]
+print("Will generate graph pdfs for all of:")
+print(allDotPrefixes)
+for name in allDotPrefixes:
+    dotfile = os.path.join(outputdir, "%s.dot"%(name,))
+    outputfile = os.path.join(outputdir, "%s.pdf"%(name,))
+    log = subprocess.call(["dot", "-T", "pdf", "-o", outputfile, dotfile])
+    print("Exit status on `%s' was: %s"%(name, log))
+print("torchdriver calling script complete.")

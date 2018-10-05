@@ -1,20 +1,15 @@
 import torch
 import sys
 sys.path.append("../../driver")
-import pydriver
-import importlib
-importlib.reload(pydriver)
+from torchdriver import PytorchOxModule, conv3x3
+from losses import NLL, L1
+from optimizers import SGD
+from datafeeds import FromTxtFiles
 
-class Model1(torch.nn.Module):
+
+class Module1(torch.nn.Module):
     def __init__(self):
-        super(Model1, self).__init__()
-        self.output_names = ["x0", "x1"]
-        self.losses = [pydriver.L1(0.1, "x1")]
-        self.input_names = ["image0", "image1"]
-        # as this model has no weights, if we don't include 
-        # an anchor it will all just be pruned away!
-        self.anchors = ["d__image0"]
-        self.inputs = [torch.rand(2, 3, 4, 5), torch.rand(2, 3, 4, 5)]
+        torch.nn.Module.__init__(self)
 
     def forward(self, inputs):
         image0 = inputs[0]
@@ -23,3 +18,35 @@ class Model1(torch.nn.Module):
         x1 = image0 + image1
         return x0, x1
 
+
+class Model1(PytorchOxModule):
+    def __init__(self):
+        PytorchOxModule.__init__(
+            self,
+            inNames=["image0", "image1"],
+            outNames=["x0", "x1"],
+            losses=[torchdriver.L1(0.1, "x1")],
+            optimizer=SGD(learnRate=0.001),
+            # as this model has no weights, if we don't include
+            # an anchor it will all just be pruned away!
+            anchors=["d__image0"],
+            # as there are no parameters to train, it must be
+            # false otherwise pytorch optimizer freaks out
+            neuralnetTest=False,
+            dataFeed=FromTxtFiles(
+                nSamples=12,
+                batchsize=2,
+                makeDummy=True,
+                streams={
+                    "image0": {
+                        "file": "./data4mod1/images0.txt",
+                        "type": "FLOAT",
+                        "shape": [3, 4, 5]
+                    },
+                    "image1": {
+                        "file": "./data4mod1/images1.txt",
+                        "type": "FLOAT",
+                        "shape": [3, 4, 5]
+                    }
+                }),
+            module=Module1())

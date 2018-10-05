@@ -80,11 +80,30 @@ Decide how the user states which tensors they want back (are anchored)
 (done) AddGrad can be optimised out
 (done) Pruning at end of graph construction to keep only the targets
 ops (of Graph) should be encapsulated, as tensors
-recomputation.......
+(done) recomputation.......
 
 01/10
 ----------------------
-checkpoint determination
+(done) checkpoint determination
 inplace relu and inplace add
 a local max liveness optimiser.
+graph image beautification.
+option to disable training target
+naming pytorch parameters
+training plan : 
+*----------->*
+|            |
+|            |
+|            |
+|            |
+v            v
+*----------->*
+where left->right   : exporting from pytorch
+and   top ->bottom  : training 
+
+
+05/10
+------------------------
+consumer topoCons is a DAG! and there is an
+elegant way to merge DAGs in the optimization pass
 

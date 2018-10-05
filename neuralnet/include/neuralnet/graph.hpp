@@ -122,9 +122,9 @@ TensorId getLearningRateId();
 // weight decay loss etc.
 class Regularizer {};
 
-// Learning scheduler
+// Learning optimizer
 // momentum, learning rates, etc.
-class Schedule {};
+class Optimizer {};
 
 // What is known about the Graph before it is run.
 // This knowledge can sometimes be compiled into the Graph,
@@ -446,8 +446,8 @@ public:
         // strings or something:
         std::vector<std::unique_ptr<Loss>> &&,
         std::vector<std::unique_ptr<Regularizer>> &&,
-        // Schedule needed, if momentum the graph is different
-        Schedule &&sched,
+        // Optimizer needed, if momentum the graph is different
+        Optimizer &&sched,
         // Weights tensors which are not to be updated
         std::vector<std::string> &&cTens,
         std::string logdir_);
@@ -463,7 +463,7 @@ public:
   Recorder recorder;
   std::vector<std::unique_ptr<Loss>> losses;
   std::vector<std::unique_ptr<Regularizer>> regularizers;
-  Schedule schedule;
+  Optimizer optimizer;
   Tensors tensors;
   ~Graph();
   // split ConvOp with bias into two Ops, a ConvOp

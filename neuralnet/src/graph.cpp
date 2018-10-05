@@ -109,7 +109,6 @@ void Op::setup() { throw error("No setup() for " + op_type()); }
 // are ready to be inserted have an insertion "priority"
 // set externally
 std::vector<Op *> Graph::getTopologicallySorted() const {
-
   // the topological sorting (to construct in this function)
   std::vector<Op *> sorted;
   // ops which have all their input tensors
@@ -203,7 +202,6 @@ std::vector<Op *> Graph::getTopologicallySorted() const {
   if (sorted.size() != ops.size()) {
     throw error("failure to sort topologically");
   }
-
   return sorted;
 }
 
@@ -439,14 +437,14 @@ Graph::Graph(onnx::ModelProto &&inMod,
              Recorder &&rec,
              std::vector<std::unique_ptr<Loss>> &&ls,
              std::vector<std::unique_ptr<Regularizer>> &&regs,
-             // Schedule needed, if momentum the graph is different
-             Schedule &&sched,
+             // Optimizer needed, if momentum the graph is different
+             Optimizer &&sched,
              // Weights tensors which are not to be updated
              std::vector<std::string> &&cTens,
              std::string logdir_)
     : logdir(io::getCanonicalDirName(logdir_)), preRunKnowledge(perk),
       recorder(rec), losses(std::move(ls)), regularizers(std::move(regs)),
-      schedule(sched),
+      optimizer(sched),
       // constIds(std::move(cTens)),
       tensors(std::move(cTens), this), onnxModel(inMod) {
 
@@ -484,6 +482,7 @@ Graph::Graph(onnx::ModelProto &&inMod,
   }
 
   constructForwards();
+  exportDot(io::appendDirFn(logdir, "jamForward0.dot"));
 
   // to developers: confirm fuctions like this
   // should be to check that there
@@ -498,7 +497,6 @@ Graph::Graph(onnx::ModelProto &&inMod,
 
   applyPattern(&pre_uni_repl);
   applyPattern(&post_n_repl);
-
   growFinalLoss();
   setNPathsToLoss();
   constructBackwards();
@@ -510,6 +508,7 @@ Graph::Graph(onnx::ModelProto &&inMod,
 
   applyPattern(&pre_uni_repl);
   applyPattern(&post_n_repl);
+
   prune();
   inferTensorInfos();
   addRecompute();
@@ -517,7 +516,6 @@ Graph::Graph(onnx::ModelProto &&inMod,
   inferTensorInfos();
 
   exportDot(io::appendDirFn(logdir, "jam.dot"));
-  std::cout << "model written to jam.dot" << std::endl;
 }
 
 std::vector<Op *> Graph::getTopologicallySortedTilLoss() const {
@@ -998,7 +996,8 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
   (void)tenId;
   std::stringstream ss;
   ss << reservedGradientPrefix() << opId << '_' << index;
-  return ss.str();
+  TensorId edgeGradId = ss.str();
+  return edgeGradId;
 }
 
 void Tensors::remove(TensorId id) { M.erase(id); }
@@ -1091,15 +1090,8 @@ std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
         }
         }
       }
-      // convert m_imputs to a vector, a format supported by connectInputs
-      //   std::vector<std::string> v_inputs(max_input_index + 1, "");
-      //   for (auto &index_id : m_inputs) {
-      //     v_inputs[index_id.first] = index_id.second;
-      //   }
 
       connectInputs(InputMapWrapper(m_inputs), gradOpId);
-      // modify topological constraints on consumers of inputs
-      // gradOp->imposeTopoCons();
     }
 
     // connect outputs of gradOp
@@ -1148,8 +1140,6 @@ bool Op::readyToCreateGradients(std::set<int> &s) const {
 }
 
 void TensorGradRegistry::insert(Tensor *nonGrad, Tensor *grad) {
-  std::cout << " ~~) insertion for non grad tensor " << nonGrad->id
-            << std::endl;
   auto found = partial.find(nonGrad);
   if (found == partial.end()) {
     partial[nonGrad] = {grad};
@@ -1157,8 +1147,6 @@ void TensorGradRegistry::insert(Tensor *nonGrad, Tensor *grad) {
     partial[nonGrad].push_back(grad);
   }
   if (partial[nonGrad].size() == nonGrad->nPathsToLoss()) {
-    std::cout << "   ~~~) completion for non grad tensor " << nonGrad->id
-              << std::endl;
     complete[nonGrad] = partial[nonGrad];
     partial.erase(nonGrad);
   }
@@ -1297,6 +1285,7 @@ void Graph::constructBackwards() {
     opsToRegister.resize(opsToRegister.size() - 1);
 
     for (auto &nongrad_egrads : tensor_grad_registry.popComplete()) {
+
       Tensor *nongrad                     = nongrad_egrads.first;
       const std::vector<Tensor *> &egrads = nongrad_egrads.second;
       // nongrad required below, as the name of the output of the

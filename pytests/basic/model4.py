@@ -1,45 +1,33 @@
 import torch
 import sys
 sys.path.append("../../driver")
-import pydriver
-import importlib
-importlib.reload(pydriver)
+from torchdriver import PytorchOxModule, conv3x3
+from losses import NLL, L1
+from optimizers import SGD
+from datafeeds import FromTxtFiles
 
-def conv3x3(in_planes, out_planes, stride=1):
-    """3x3 convolution with padding"""
-    return torch.nn.Conv2d(
-        in_planes,
-        out_planes,
-        kernel_size=3,
-        stride=stride,
-        padding=1,
-        bias=False)
 
-class Model4(torch.nn.Module):
+class Module4(torch.nn.Module):
     def __init__(self, nChans):
-        super(Model4, self).__init__()
-        # specific to project neuralnet
-        self.output_names = ["Y"]
-        self.losses = [
-            pydriver.L1(0.1,"Y")
-        ]
-        self.input_names = ["image0"]
-        self.anchors = []
-        self.inputs = [
-            torch.rand(2, nChans, 25, 4),
-        ]
+        super(Module4, self).__init__()
         self.relu = torch.nn.functional.relu
         self.nChans = nChans
+        self.conv1 = conv3x3(self.nChans, self.nChans)
+        self.conv2 = conv3x3(self.nChans, self.nChans)
+        self.conv3 = conv3x3(self.nChans, self.nChans)
+        self.conv4 = conv3x3(self.nChans, self.nChans)
+        self.conv5 = conv3x3(self.nChans, self.nChans)
+        self.conv6 = conv3x3(self.nChans, self.nChans)
 
     def forward(self, inputs):
         image0 = inputs[0]
-        x = conv3x3(self.nChans, self.nChans)(image0) 
-        x = conv3x3(self.nChans, self.nChans)(x)
+        x = self.conv1(image0)
+        x = self.conv2(x)
         x_early = self.relu(x)
-        x = conv3x3(self.nChans, self.nChans)(x) 
-        x = conv3x3(self.nChans, self.nChans)(x) 
-        x = conv3x3(self.nChans, self.nChans)(x)
-        x = conv3x3(self.nChans, self.nChans)(x) 
+        x = self.conv3(x)
+        x = self.conv4(x)
+        x = self.conv5(x)
+        x = self.conv6(x)
         x0 = self.relu(x)
         x1 = self.relu(x)
         x2 = self.relu(x)
@@ -50,3 +38,27 @@ class Model4(torch.nn.Module):
         x = self.relu(x0123) + x_early
         y = x + x
         return y
+
+
+class Model4(PytorchOxModule):
+    def __init__(self, nChans):
+        PytorchOxModule.__init__(
+            self,
+            inNames=["image0"],
+            outNames=["Y"],
+            losses=[L1(0.1, "Y")],
+            optimizer=SGD(learnRate=0.001),
+            anchors=[],
+            dataFeed=FromTxtFiles(
+                nSamples=12,
+                batchsize=2,
+                makeDummy=True,
+                streams={
+                    "image0": {
+                        "file": "./data/images0.txt",
+                        "type": "FLOAT",
+                        "shape": [nChans, 25, 4]
+                    },
+                }),
+            # and finally the pytorch specific part:
+            module=Module4(nChans))

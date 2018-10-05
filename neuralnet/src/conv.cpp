@@ -116,10 +116,4 @@ std::vector<GradInOutMapper> ConvDataGradOp::createConvDataGradInfo() const {
           {1, convOp->weightsInIndex(), GradOpInType::IN}};
 }
 
-void ConvDataGradOp::imposeTopoCons() {
-  // ig we wanted to say that
-  // this will is first consumer of the gradient:
-  // input.tensor(0)->consumers.setTopoFirst(this);
-}
-
 } // namespace neuralnet

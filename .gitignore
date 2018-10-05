@@ -1,9 +1,16 @@
 build
 *model.onnx
-pydriver
+driver/driver
+*pytests/data*
+pytests/pytrain/data
 *__pycache__*
 *__cache__*
 *output
 *.pb
 *.log
 scrapyard
+*pyc
+junk.py
+pytests/basic/data
+*data4mod1*
+*data4mod2*

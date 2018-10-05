@@ -127,14 +127,23 @@ DataType TensorInfo::dataTypeFromString(const std::string &s) const {
 
 // expects shape to be "(1 2 400 3)" or "(5)", so no spaces allowed.
 std::vector<int64_t> TensorInfo::shapeFromString(const std::string &s) const {
-  // strip off the braces
-  std::string t = s.substr(1, s.size() - 1);
-  std::vector<int64_t> shape;
-  std::istringstream iss(t);
-  std::string frag;
-  while (iss >> frag) {
-    shape.push_back(std::stoi(frag));
+  if (s.size() < 2 || s[0] != '(' || s[s.size() - 1] != ')') {
+    throw error("invalid string for shape");
   }
+  if (s.find(' ') != std::string::npos) {
+    throw error("s contains a space : not valid shape string");
+  }
+
+  std::vector<int64_t> shape;
+
+  // https://www.fluentcpp.com/2017/04/21/how-to-split-a-string-in-c/
+  std::string token;
+  std::istringstream tokenStream(s.substr(1, s.size() - 2));
+  while (std::getline(tokenStream, token, ',')) {
+    shape.push_back(std::stoi(token));
+  }
+
+  std::stringstream ss;
   return shape;
 }
 
