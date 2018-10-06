@@ -45,3 +45,8 @@ http://i.stanford.edu/pub/cstr/reports/cs/tn/95/22/CS-TN-95-22.pdf
 ----------
 ----------
 I think it is NP-complete. 
+
+06/10/2018
+----------
+----------
+How about: always take the longer path to nearest common descendent, until completion 
