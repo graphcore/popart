@@ -45,21 +45,32 @@ public:
   const std::map<Op *, int> &getMap() const;
   // the pointers to the consumers, no duplication for
   // Ops which consume multiple times
-  std::vector<Op *> getOps();
+  std::vector<Op *> getOps() const;
 
   // if op is not in consumers_m : throw an error.
   // else, return a list of the other consumers which
-  // MUST be inserted earlier than op in the topological 
-  // sort. This is DAG like, so if 
+  // MUST be inserted earlier than op in the topological
+  // sort. This is DAG like, so if
   // a->b (b after a)
   // b->c (c after b)
-  // then, consumersWhichTopoBefore(c) 
+  // then, consumersWhichTopoBefore(c)
   // can return {a,b} or just {b}.
-  // This functionality was added to support in-place 
+  // This functionality was added to support in-place
   // ops and weight update ops
-  std::vector<Op *> consumersWhichTopoBefore(Op *op);
+  std::vector<Op *> consumersWhichTopoBefore(Op *op) const;
+  // There can be 1 op which MUST come after all others
+  // This is a "strong" or "global" topo constraint
   void setTopoLast(Op *op);
   void removeTopoLast();
+  bool hasTopoLast() const;
+  Op *getTopoLast() const;
+  // A weak topo constraint is a single edge in the
+  // DAG, such as a->b in the above description.
+  // It just states the relative order between 2 ops
+  // Currently, we have no implementation of
+  // weak topo cons (they'll be needed for in-place
+  // though)
+  bool hasWeakTopoCons() const;
 
 private:
   // The number of times an Op consumes the Tensor which

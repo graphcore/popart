@@ -64,20 +64,69 @@ void PreUniRepl::apply(Op *op) const {
 }
 
 bool PostNRepl::matches(const Op *op) const {
+
   // Gradient of ADD
   if (op->opType == OpType::ADDGRAD) {
-    return true;
+    // good so far
   }
   // A sum with only one input
   else if (op->opType == OpType::SUM && op->input.n() == 1) {
-    return true;
-    // A pad with zero-padding
-  } else if (op->opType == OpType::PAD &&
-             dynamic_cast<const PadOp *>(op)->padSizeZero()) {
-    return true;
+    // good so far
+  }
+  // A pad with zero-padding
+  else if (op->opType == OpType::PAD &&
+           dynamic_cast<const PadOp *>(op)->padSizeZero()) {
+    // good so far
   } else {
     return false;
   }
+  // we check that the consumer topological constraints
+  // of (ori), and (rep1, rep2, rep3) can be be resolved
+  // if [*] is removed.
+  TopoBundle tcInf = getTopoConInfo(op);
+
+  // merging weak constraints is impossible
+  if (tcInf.nWeakTopoCons > 0) {
+    return false;
+  }
+
+  // at most 1 consumer can be last
+  else if (tcInf.nTopoLasts > 1) {
+    return false;
+  }
+
+  // if the last consumer is op, that won't
+  // work as op is going to be removed.
+  // Also, this should not be possible if this
+  // is really a replicating op
+  else if (tcInf.lastCon == op) {
+    return false;
+  }
+
+  // we have a viable match
+  return true;
+}
+
+PostNRepl::TopoBundle PostNRepl::getTopoConInfo(const Op *op) const {
+  TopoBundle tcInf;
+  std::vector<const Tensor *> wouldMerge;
+  // The unique input to op:
+  wouldMerge.push_back(op->input.tensor(0));
+  // And the N output ops:
+  for (auto &t_inds : op->output.indicesMap()) {
+    wouldMerge.push_back(t_inds.first);
+  }
+
+  for (auto &tensor : wouldMerge) {
+    if (tensor->consumers.hasTopoLast()) {
+      ++tcInf.nTopoLasts;
+      tcInf.lastCon = tensor->consumers.getTopoLast();
+    }
+    if (tensor->consumers.hasWeakTopoCons()) {
+      ++tcInf.nWeakTopoCons;
+    }
+  }
+  return tcInf;
 }
 
 // removes all the outputs of the root op from the Graph
@@ -91,9 +140,13 @@ std::vector<const Tensor *> PostNRepl::removes(const Op *op) const {
 
 // (see .hpp for ascii picture definitions)
 void PostNRepl::apply(Op *op) const {
-  // op is [*]
 
+  // op is [*]
   Tensor *ori = op->input.tensor(0);
+
+  // get the info on which will be the last op
+  // to consume ori, if there is one
+  TopoBundle tcInf = getTopoConInfo(op);
 
   std::vector<Tensor *> replicates;
   // setting replicates (rep1), (rep2), (rep3)
@@ -121,8 +174,17 @@ void PostNRepl::apply(Op *op) const {
   for (auto repl : replicates) {
     graph->tensors.remove(repl->id);
   }
+
   // delete [*]
   graph->eraseOp(op->id);
+
+  // finally, clear up topo last if necessary
+  if (ori->consumers.hasTopoLast()) {
+    ori->consumers.removeTopoLast();
+  }
+  if (tcInf.nTopoLasts == 1) {
+    ori->consumers.setTopoLast(tcInf.lastCon);
+  }
 }
 
 } // namespace neuralnet

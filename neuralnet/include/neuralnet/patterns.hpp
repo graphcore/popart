@@ -34,9 +34,8 @@ public:
 // be [.]->(.). [] is the root op of the pattern.
 // [] IS THE IDENTITY OP
 // () must be consumed by only []. This constraint can be
-//    removed, shouldn't be too hard before topo constraints
-//    are introduced. See TODO list 05/10 : topo constraints 
-//    should be made into a DAG
+//    removed, shouldn't be too hard, although care needed
+//    with topo cons (as always)
 class PreUniRepl : public Pattern {
 public:
   PreUniRepl()                   = default;
@@ -62,20 +61,35 @@ public:
 // then this should be replaced by
 // (ori) -> {[op0], [op0], [o1], [op2], [op2], [op2], [o3]}
 // removals : [*], (rep1), (rep2), (rep3)
-// TODO is this safe with topo constraits?
+// [*] is the root of the pattern
+// there are checks that the consumer dependecices of
+// ori, rep1, rep2 and pre3 can be merged
 class PostNRepl : public Pattern {
 public:
   PostNRepl()                   = default;
   virtual ~PostNRepl() override = default;
 
   // AddGrad (where N = 2)
-  // Pad with pad size zero (where N = 1) *1
-  // Sum with one input (where N = 1) *1
+  // Pad with pad size zero (where N = 1) *€
+  // Sum with one input (where N = 1) *€
   virtual bool matches(const Op *) const override final;
   virtual std::vector<const Tensor *> removes(const Op *) const override final;
   virtual void apply(Op *) const override final;
 
-  // *1 : this pattern matches and removes []->()
+private:
+  // of all the tensors to be merged into 1 (ori, rep1, rep2, re3)
+  // 1) how many of them have a "last" consumer,
+  // 2) how many of them have weak topological constraints,
+  // 3) if there is a single one with a "last" consumer, who is it?
+  class TopoBundle {
+  public:
+    int nTopoLasts{0};
+    int nWeakTopoCons{0};
+    Op *lastCon{nullptr};
+  };
+  TopoBundle getTopoConInfo(const Op *op) const;
+
+  // *€ : this pattern matches and removes []->()
   // whereas PreUniRepl matches and removes ()->[].
   // This pattern can be considered PostUniRepl when N = 1
 };

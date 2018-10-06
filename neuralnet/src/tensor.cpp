@@ -13,7 +13,7 @@ int Consumers::n(Op *op) const {
   }
 }
 
-std::vector<Op *> Consumers::consumersWhichTopoBefore(Op *op) {
+std::vector<Op *> Consumers::consumersWhichTopoBefore(Op *op) const {
   auto found0 = consumers_m.find(op);
   if (found0 == consumers_m.end()) {
     throw error("Op " + std::to_string(op->id) + " is not a consumer");
@@ -34,15 +34,28 @@ std::vector<Op *> Consumers::consumersWhichTopoBefore(Op *op) {
 
   // Note : we need more fine grained topo control.
   // The advantage of Last is that we don't
-  // need to worry about new consumers being added, 
+  // need to worry about new consumers being added,
   // very useful for the VarUpdate ops. Previously
-  // we had a First too, but decided this was not 
+  // we had a First too, but decided this was not
   // useful (inplace needs more precision than just
   // First when inplace ops appear sequentially)
-  else{
+  else {
     return {};
   }
+}
 
+bool Consumers::hasTopoLast() const { return topoLast != nullptr; }
+
+Op *Consumers::getTopoLast() const {
+  if (!hasTopoLast()) {
+    throw error("no topologically last op for consumers");
+  }
+  return topoLast;
+}
+
+bool Consumers::hasWeakTopoCons() const {
+  // no weak topo cons implemented yet
+  return false;
 }
 
 void Consumers::setTopoLast(Op *op) {
@@ -126,7 +139,7 @@ void Consumers::increment(Op *op) {
   }
 }
 
-std::vector<Op *> Consumers::getOps() {
+std::vector<Op *> Consumers::getOps() const {
   std::vector<Op *> ops;
   ops.reserve(consumers_m.size());
   for (auto &x : consumers_m) {
