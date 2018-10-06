@@ -19,12 +19,6 @@ std::vector<Op *> Consumers::consumersWhichTopoBefore(Op *op) {
     throw error("Op " + std::to_string(op->id) + " is not a consumer");
   }
 
-  // if op is topologically constrained to be the first consumer,
-  // then none of the other consumers need come before.
-  else if (op == topoFirst) {
-    return {};
-  }
-
   // if it is constrained to be the last consumer, then all
   // other consumers must come before it
   else if (op == topoLast) {
@@ -38,28 +32,18 @@ std::vector<Op *> Consumers::consumersWhichTopoBefore(Op *op) {
     return before;
   }
 
-  // otherwise, if there is no op which must come first,
-  // then there is constraint
-  else if (topoFirst == nullptr) {
+  // Note : we need more fine grained topo control.
+  // The advantage of Last is that we don't
+  // need to worry about new consumers being added, 
+  // very useful for the VarUpdate ops. Previously
+  // we had a First too, but decided this was not 
+  // useful (inplace needs more precision than just
+  // First when inplace ops appear sequentially)
+  else{
     return {};
   }
 
-  else {
-    return {topoFirst};
-  }
-  // Note : we might need more fine grained topo control.
-  // The advantage of First and Last is that we don't
-  // need to worry about new consumers being added
 }
-
-void Consumers::setTopoFirst(Op *op) {
-  if (topoFirst != nullptr) {
-    throw error("cannot set topo first when one already exists");
-  }
-  topoFirst = op;
-}
-
-void Consumers::removeTopoFirst() { topoFirst = nullptr; }
 
 void Consumers::setTopoLast(Op *op) {
   if (topoLast != nullptr) {

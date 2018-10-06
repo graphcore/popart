@@ -49,11 +49,15 @@ public:
 
   // if op is not in consumers_m : throw an error.
   // else, return a list of the other consumers which
-  // MUST be inserted earlier than op in the topological sort.
-  // This functionality was added to support in-place ops
+  // MUST be inserted earlier than op in the topological 
+  // sort. This is DAG like, so if 
+  // a->b (b after a)
+  // b->c (c after b)
+  // then, consumersWhichTopoBefore(c) 
+  // can return {a,b} or just {b}.
+  // This functionality was added to support in-place 
+  // ops and weight update ops
   std::vector<Op *> consumersWhichTopoBefore(Op *op);
-  void setTopoFirst(Op *op);
-  void removeTopoFirst();
   void setTopoLast(Op *op);
   void removeTopoLast();
 
@@ -61,7 +65,6 @@ private:
   // The number of times an Op consumes the Tensor which
   // owns this Consumers
   std::map<Op *, int> consumers_m;
-  Op *topoFirst{nullptr};
   Op *topoLast{nullptr};
 };
 
