@@ -14,3 +14,4 @@ junk.py
 pytests/basic/data
 *data4mod1*
 *data4mod2*
+*.so
