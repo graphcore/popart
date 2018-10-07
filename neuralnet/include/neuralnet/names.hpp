@@ -34,19 +34,6 @@ using DataType = decltype(onnx::TensorProto().data_type());
 
 using TP = onnx::TensorProto;
 
-template <class T> void appendSequence(std::stringstream &ss, T t) {
-  int index = 0;
-  ss << '[';
-  for (auto &x : t) {
-    if (index != 0) {
-      ss << ' ';
-    }
-    ss << x;
-    ++index;
-  }
-  ss << ']';
-}
-
 } // namespace neuralnet
 
 #endif

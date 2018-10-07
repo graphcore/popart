@@ -7,7 +7,7 @@ namespace neuralnet {
 
 // Wrapper around the container of onnx::AtrributeProtos
 // of a Node, provides faster and cleaner reads of values
-// from keys (strings)
+// from keys (strings) than onnx::AttribtesProto
 class Attributes {
 public:
   Attributes(decltype(onnx::NodeProto().attribute()) &);
@@ -16,7 +16,6 @@ public:
   onnxAttPtr at(std::string name) const;
   void append(std::stringstream &ss) const;
   template <typename T> void setIfPresent(T &, std::string key) const;
-
   // as above, but throws an error if key not present
   template <typename T> void set(T &, std::string key) const;
 

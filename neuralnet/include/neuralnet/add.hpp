@@ -14,7 +14,6 @@ public:
 };
 
 class AddGradOp : public GradOp {
-
 public:
   AddGradOp(AddOp *);
   virtual Op *getNonGradCreator() const override final;

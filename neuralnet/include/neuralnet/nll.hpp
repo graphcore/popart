@@ -13,7 +13,6 @@ public:
   virtual std::vector<TensorId> getStreamTensorNames() const override final;
   virtual std::unique_ptr<Op> getOp(Graph *) const override final;
   virtual std::string op_type() const override final;
-
   int probsIn() const;
   int labelsIn() const;
 };
@@ -31,7 +30,6 @@ private:
 };
 
 class NllGradOp : public GradOp {
-
 public:
   NllGradOp(NllOp *);
   virtual Op *getNonGradCreator() const override final;

@@ -5,10 +5,12 @@
 
 namespace neuralnet {
 
+// Examples of Ops with receptive fields include 
+// ConvOp and AveragePoolOp
 class HasReceptiveFieldOp : public Op {
 public:
   HasReceptiveFieldOp(const onnx::NodeProto &node, Graph *pgraph);
-  // C++ rule of 3 for destructor, copy con, copy ass.
+  // C++ rule of 3 for destructor, copy con, assignment op.
 
   virtual void setup() override final;
   int nSpatialDims;

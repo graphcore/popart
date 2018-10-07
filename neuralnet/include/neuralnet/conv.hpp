@@ -10,11 +10,12 @@ public:
   ConvOp(const onnx::NodeProto &node, Graph *pgraph);
   int64_t nOutChans;
   int64_t group;
-  // from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv
+  // from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv :
+  // data at index 0, weights at index 1.
+  // neuralnet's ConvOp does not support bias.
   int dataInIndex() { return 0; }
   int weightsInIndex() { return 1; }
   virtual std::unique_ptr<Op> clone() const override final;
-
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
 
 private:

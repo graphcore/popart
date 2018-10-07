@@ -2,11 +2,12 @@
 #define GUARD_NEURALNET_UTIL_HPP
 
 #include <string>
+#include <sstream>
 
 namespace neuralnet {
 
-// turn into a string and pad if necessary to
-// some minimum length
+// turn input into a string, and pads
+// it if necessary to some minimum length `padSize'
 template <typename T> std::string padded(T in, int padSize) {
   std::stringstream ss;
   ss << in;
@@ -15,6 +16,19 @@ template <typename T> std::string padded(T in, int padSize) {
     out.resize(padSize, ' ');
   }
   return out;
+}
+
+template <class T> void appendSequence(std::stringstream &ss, const T & t) {
+  int index = 0;
+  ss << '[';
+  for (auto &x : t) {
+    if (index != 0) {
+      ss << ' ';
+    }
+    ss << x;
+    ++index;
+  }
+  ss << ']';
 }
 
 } // namespace neuralnet

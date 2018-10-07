@@ -11,7 +11,7 @@ class Tensor;
 
 // c++ note : the conditions are suitable here
 // for the compiler to generate defaults for
-// the 3: desctructor, copy constructor, =.
+// "the 3": destructor, copy constructor, assigment op.
 class AveragePoolOp : public HasReceptiveFieldOp {
 public:
   AveragePoolOp(const onnx::NodeProto &node, Graph *pgraph);
@@ -25,7 +25,6 @@ private:
 };
 
 class AveragePoolGradOp : public GradOp {
-
 public:
   AveragePoolGradOp(AveragePoolOp *);
   virtual Op *getNonGradCreator() const override final;

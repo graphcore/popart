@@ -13,7 +13,6 @@ public:
 };
 
 class LogSoftmaxGradOp : public GradOp {
-
 public:
   LogSoftmaxGradOp(LogSoftmaxOp *);
   virtual Op *getNonGradCreator() const override final;

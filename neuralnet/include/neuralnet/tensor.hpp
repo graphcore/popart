@@ -9,11 +9,9 @@
 namespace neuralnet {
 
 enum class TensorType {
-  ActGrad = 0, // an activation or a gradient, basically the output of an Op
+  ActGrad = 0, // an activation or a gradient, basically any output of an Op
   Const,
-  //  Gradient,
   Momentum,
-  //  Other,
   Stream,
   Unknown,
   Variable,

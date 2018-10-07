@@ -1,5 +1,6 @@
 #include <neuralnet/attributes.hpp>
 #include <neuralnet/error.hpp>
+#include <neuralnet/util.hpp>
 #include <sstream>
 
 namespace neuralnet {

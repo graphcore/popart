@@ -9,13 +9,11 @@ class SqueezeOp : public Op {
 public:
   SqueezeOp(const onnx::NodeProto &node, Graph *pgraph);
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
-
   virtual void setup() override final;
   virtual std::unique_ptr<Op> clone() const override final;
 };
 
 class SqueezeGradOp : public GradOp {
-
 public:
   SqueezeGradOp(SqueezeOp *);
   virtual Op *getNonGradCreator() const override final;

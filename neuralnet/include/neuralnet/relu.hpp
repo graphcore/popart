@@ -19,7 +19,6 @@ public:
 // of ReluOp in to do this (or another binary tensor). This is why
 // I have called it ""
 class ReluGradOp : public GradOp {
-
 public:
   ReluGradOp(ReluOp *);
   virtual Op *getNonGradCreator() const override final;
