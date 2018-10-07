@@ -9,12 +9,15 @@ list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOU
 
 find_package(Threads REQUIRED)
 
-# I have written a FindONNX.cmake file
-find_package(onnx REQUIRED)
 
 # There is a FindProtobuf.cmake file on my computer at
 # /usr/local/share/cmake/Modules/FindProtobuf.cmake
 find_package(Protobuf REQUIRED) 
+
+# Using installed cmake find (ONNX must be installed)
+# For a hand-crafted Findonnx script, see a very early commit
+# or repo poponnx if available
+find_package(onnx REQUIRED)
 
 # Boost 1.66 and cmake do not agree. Waiting for fix from KitWARE.
 # find_package(Boost COMPONENTS filesystem system REQUIRED) 
@@ -25,5 +28,10 @@ find_package(BoostFilesystem REQUIRED)
 #Does require that the used has set path, something like
 find_package(CBLAS REQUIRED)
 
+
 add_subdirectory(neuralnet)
-add_subdirectory(driver)
+set(DRIVER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/driver)
+# light-weight wrapper using pybind11
+add_subdirectory(pyneuralnet)
+
+

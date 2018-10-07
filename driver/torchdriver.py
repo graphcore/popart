@@ -1,7 +1,6 @@
 import os
 import numpy as np
 import torch
-import onnx
 from driver import OxModule
 from optimizers import SGD
 from losses import NLL, L1

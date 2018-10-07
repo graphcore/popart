@@ -4,7 +4,7 @@
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"
 // The protobuf generated ONNX classes
-#include <onnx/onnx.pb.h>
+#include <onnx/onnx_pb.h>
 #pragma clang diagnostic pop // stop ignoring warnings
 
 #include <map>

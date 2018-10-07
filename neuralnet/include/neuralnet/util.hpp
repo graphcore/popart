@@ -1,8 +1,8 @@
 #ifndef GUARD_NEURALNET_UTIL_HPP
 #define GUARD_NEURALNET_UTIL_HPP
 
-#include <string>
 #include <sstream>
+#include <string>
 
 namespace neuralnet {
 
@@ -18,7 +18,7 @@ template <typename T> std::string padded(T in, int padSize) {
   return out;
 }
 
-template <class T> void appendSequence(std::stringstream &ss, const T & t) {
+template <class T> void appendSequence(std::stringstream &ss, const T &t) {
   int index = 0;
   ss << '[';
   for (auto &x : t) {

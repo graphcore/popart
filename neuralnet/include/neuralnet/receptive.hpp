@@ -5,7 +5,7 @@
 
 namespace neuralnet {
 
-// Examples of Ops with receptive fields include 
+// Examples of Ops with receptive fields include
 // ConvOp and AveragePoolOp
 class HasReceptiveFieldOp : public Op {
 public:

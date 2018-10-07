@@ -25,8 +25,7 @@ MESSAGE( STATUS "BOOST_FILESYSTEM_LIB to be used : " ${BOOST_FILESYSTEM_LIB} )
 MESSAGE( STATUS "BOOST_FILESYSTEM_INCLUDE_DIR to be used :  " ${BOOST_FILESYSTEM_INCLUDE_DIR} )
 
 target_include_directories (neuralnet PUBLIC 
-    # if the model checker is used: ${ONNX_UTILS_INCLUDE_DIR}
-    ${ONNX_PB_INCLUDE_DIR}
+    ${ONNX_INCLUDE_DIRS}
     ${ONNX_CHECKER_INCLUDE_DIR}
     ${Protobuf_INCLUDE_DIR}
     ${BOOST_FILESYSTEM_INCLUDE_DIR}
@@ -35,12 +34,9 @@ target_include_directories (neuralnet PUBLIC
 
 target_link_libraries(neuralnet
   # if the onnx mode checker is incorporated, this will be needed: ${ONNX_LIB}
-  ${ONNX_LIB}
+  onnx
   ${CBLAS_LIBRARIES}
-  ${ONNX_PROTO_LIB}
-  ${Protobuf_LIBRARIES} 
   ${BOOST_FILESYSTEM_LIB}
-  # filesystem (which is used) requires system
   ${BOOST_SYSTEM_LIB}
 )
 

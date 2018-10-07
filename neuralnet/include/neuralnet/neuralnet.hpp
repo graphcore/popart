@@ -1,11 +1,16 @@
 #ifndef GUARD_NEURALNET_NEURALNET_HPP
 #define GUARD_NEURALNET_NEURALNET_HPP
 
-namespace neuralnet{
+#include <string>
+
+namespace neuralnet {
+
+class Graph;
 
 class NeuralNet {
 public:
   NeuralNet(std::string logDir);
+  ~NeuralNet();
   // create Graph
   void makeGraph();
   // connect to a backend
@@ -14,8 +19,9 @@ public:
   void compile();
 
 private:
+  std::unique_ptr<Graph> graph;
 };
 
-}
+} // namespace neuralnet
 
 #endif
