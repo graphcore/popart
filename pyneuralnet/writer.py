@@ -3,7 +3,6 @@ Framework independent functionality for driving neuralnet
 """
 
 import os
-import pyneuralnet
 
 # We call an executable of neuralnet to run it,
 # we have no fancy cython or such likes yet
@@ -13,8 +12,7 @@ import subprocess
 from losses import NLL, L1
 from optimizers import SGD
 
-
-class OxModule():
+class NetWriter():
     """
     Base class, to be inherited once per framework
     """
@@ -60,7 +58,7 @@ class OxModule():
     def writeOnnx(self, dirname):
         """
         To be implemented once per framework,
-        see torchdriver.py for ideas
+        see torchwriter.py for ideas
         """
         raise NotImplementedError()
 
@@ -76,7 +74,7 @@ class OxModule():
             generating the ONNX model
         """
 
-        # this sectionMarker must match that in driver.cpp,
+        # this sectionMarker must match that in pyneuralnet.cpp,
         sectionMarker = ">>>>>>>>"
         schedFn = os.path.join(dirname, "schedule.txt")
         filly = open(schedFn, "w")
@@ -126,8 +124,4 @@ class OxModule():
         # write remaining, framework specific calls
         self.writeOnnx(dirname)
 
-        print("driver.py has completed the write\n------\n")
-
-    def run(self, dirname):
-        pyneuralnet.NeuralNet(dirname)
-            #os.path.dirname(dirname)) #os.path.abspath(__file__)))
+        print("writer.py has completed the write\n------\n")

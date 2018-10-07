@@ -1,7 +1,7 @@
 import torch
 import sys
-sys.path.append("../../driver")
-from torchdriver import PytorchOxModule, conv3x3
+sys.path.append("../../pyneuralnet")
+from torchwriter import PytorchNetWriter, conv3x3
 from losses import NLL, L1
 from optimizers import SGD
 from datafeeds import FromTxtFiles
@@ -40,9 +40,9 @@ class Module0(torch.nn.Module):
         return preProbSquared, probs
 
 
-class Model0(PytorchOxModule):
+class ModelWriter0(PytorchNetWriter):
     def __init__(self, inChans, outChans):
-        PytorchOxModule.__init__(
+        PytorchNetWriter.__init__(
             self,
             inNames=["image0", "image1"],
             outNames=["preProbSquared", "probs"],
@@ -73,5 +73,6 @@ class Model0(PytorchOxModule):
                         "shape": []
                     },
                 }),
-            # and finally the pytorch specific part:
+            # and finally the pytorch specific part, 
+            # (everything til now is generic NetWriter)
             module=Module0(inChans, outChans))

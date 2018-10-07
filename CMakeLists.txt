@@ -30,7 +30,7 @@ find_package(CBLAS REQUIRED)
 
 
 add_subdirectory(neuralnet)
-set(DRIVER_DIR ${CMAKE_CURRENT_SOURCE_DIR}/driver)
+set(PYNEURALNET_DIR ${CMAKE_CURRENT_SOURCE_DIR}/pyneuralnet)
 # light-weight wrapper using pybind11
 add_subdirectory(pyneuralnet)
 

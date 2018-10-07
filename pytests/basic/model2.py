@@ -1,7 +1,7 @@
 import torch
 import sys
-sys.path.append("../../driver")
-from torchdriver import PytorchOxModule, conv3x3
+sys.path.append("../../pyneuralnet")
+from torchwriter import PytorchNetWriter, conv3x3
 from losses import NLL, L1
 from optimizers import SGD
 from datafeeds import FromTxtFiles
@@ -18,13 +18,13 @@ class Module2(torch.nn.Module):
         x1 = self.conv1(image1)
         return x0, x1
 
-class Model2(PytorchOxModule):
+class ModelWriter2(PytorchNetWriter):
     def __init__(self, nIn, nOut):
-        PytorchOxModule.__init__(
+        PytorchNetWriter.__init__(
             self,
             inNames=["image0", "image1"],
             outNames=["x0", "x1"],
-            losses=[torchdriver.L1(0.1, "x1")],
+            losses=[torchwriter.L1(0.1, "x1")],
             optimizer=SGD(learnRate=0.001),
             # as this model has no weights, if we don't include
             # an anchor it will all just be pruned away!

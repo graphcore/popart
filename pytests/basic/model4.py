@@ -1,7 +1,7 @@
 import torch
 import sys
-sys.path.append("../../driver")
-from torchdriver import PytorchOxModule, conv3x3
+sys.path.append("../../pyneuralnet")
+from torchwriter import PytorchNetWriter, conv3x3
 from losses import NLL, L1
 from optimizers import SGD
 from datafeeds import FromTxtFiles
@@ -40,9 +40,9 @@ class Module4(torch.nn.Module):
         return y
 
 
-class Model4(PytorchOxModule):
+class ModelWriter4(PytorchNetWriter):
     def __init__(self, nChans):
-        PytorchOxModule.__init__(
+        PytorchNetWriter.__init__(
             self,
             inNames=["image0"],
             outNames=["Y"],

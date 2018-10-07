@@ -1,7 +1,9 @@
 import os
 import numpy as np
 import torch
-from driver import OxModule
+import torch.utils
+import torch.utils.data
+from writer import NetWriter
 from optimizers import SGD
 from losses import NLL, L1
 from datafeeds import FromTxtFiles
@@ -18,7 +20,7 @@ def conv3x3(in_planes, out_planes, stride=1):
         bias=False)
 
 
-class PytorchOxModule(OxModule):
+class PytorchNetWriter(NetWriter):
     def __init__(self, inNames, outNames, losses, optimizer, anchors,
                  neuralnetTest, dataFeed, module):
         """
@@ -27,7 +29,7 @@ class PytorchOxModule(OxModule):
         all others:
           -- parameters passed to base class.
         """
-        OxModule.__init__(self, inNames, outNames, losses, optimizer, anchors,
+        NetWriter.__init__(self, inNames, outNames, losses, optimizer, anchors,
                           neuralnetTest, dataFeed)
 
         self.module = module

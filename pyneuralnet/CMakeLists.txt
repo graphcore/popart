@@ -36,5 +36,6 @@ target_include_directories (pyneuralnet PUBLIC
 )
 
 install(TARGETS pyneuralnet
-  DESTINATION ${DRIVER_DIR})
+  # destination : this directory
+  DESTINATION ${PYNEURALNET_DIR})
 
