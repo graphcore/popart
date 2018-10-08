@@ -1,6 +1,6 @@
 import torch
 import sys
-sys.path.append("../../pyneuralnet")
+sys.path.append("../../pywillow")
 from torchwriter import PytorchNetWriter, conv3x3
 from losses import NLL, L1
 from optimizers import SGD
@@ -31,7 +31,7 @@ class ModelWriter2(PytorchNetWriter):
             anchors=["d__image1"],
             # as there are no parameters to train, it must be
             # false otherwise pytorch optimizer freaks out
-            neuralnetTest=True,
+            willowTest=True,
             dataFeed=FromTxtFiles(
                 nSamples=4,
                 batchsize=2,

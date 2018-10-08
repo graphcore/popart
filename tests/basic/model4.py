@@ -1,6 +1,6 @@
 import torch
 import sys
-sys.path.append("../../pyneuralnet")
+sys.path.append("../../pywillow")
 from torchwriter import PytorchNetWriter, conv3x3
 from losses import NLL, L1
 from optimizers import SGD

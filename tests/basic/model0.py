@@ -1,6 +1,6 @@
 import torch
 import sys
-sys.path.append("../../pyneuralnet")
+sys.path.append("../../pywillow")
 from torchwriter import PytorchNetWriter, conv3x3
 from losses import NLL, L1
 from optimizers import SGD
@@ -50,7 +50,7 @@ class ModelWriter0(PytorchNetWriter):
                     L1(0.1, "preProbSquared")],
             optimizer=SGD(learnRate=0.001),
             anchors=[],
-            neuralnetTest=True,
+            willowTest=True,
             dataFeed=FromTxtFiles(
                 nSamples=12,
                 batchsize=2,

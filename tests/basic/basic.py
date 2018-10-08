@@ -5,7 +5,7 @@ import model1
 import model2
 import model4
 
-from pyneuralnet import Willow
+from pywillow import Willow
 
 if (len(sys.argv) != 2):
     raise RuntimeError("onnx_net.py <log directory>")
