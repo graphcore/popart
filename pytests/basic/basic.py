@@ -5,7 +5,7 @@ import model1
 import model2
 import model4
 
-from pyneuralnet import NeuralNet
+from pyneuralnet import Willow
 
 if (len(sys.argv) != 2):
     raise RuntimeError("onnx_net.py <log directory>")
@@ -37,7 +37,7 @@ else:
 # write to file(s)
 writer.write(dirname=outputdir)
 # C++ class reads from file(s) and creates backwards graph
-pynet = NeuralNet(outputdir)
+pynet = Willow(outputdir)
 
 allDotPrefixes = [x[0:-4] for x in os.listdir(outputdir) if ".dot" in x]
 print("Will generate graph pdfs for all of:")

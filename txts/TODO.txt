@@ -107,3 +107,5 @@ and   top ->bottom  : training
 consumer topoCons is a DAG! and there is an
 elegant way to merge DAGs in the optimization pass
 
+08/10
+recomputation: initial partition using sqrt rule should use memory output

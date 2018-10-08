@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 
-project(neuralnet)
+project(willow)
 
 add_compile_definitions(ONNX_NAMESPACE=onnx)
 
@@ -29,9 +29,9 @@ find_package(BoostFilesystem REQUIRED)
 find_package(CBLAS REQUIRED)
 
 
-add_subdirectory(neuralnet)
-set(PYNEURALNET_DIR ${CMAKE_CURRENT_SOURCE_DIR}/pyneuralnet)
+add_subdirectory(willow)
+set(PYNEURALNET_DIR ${CMAKE_CURRENT_SOURCE_DIR}/pywillow)
 # light-weight wrapper using pybind11
-add_subdirectory(pyneuralnet)
+add_subdirectory(pywillow)
 
 
