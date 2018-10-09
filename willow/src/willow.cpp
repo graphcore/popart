@@ -44,7 +44,7 @@ Willow::Willow(std::string logDir_) {
     }
   }
 
-  PreRunKnowledge preRunKnowledge;
+  EarlyInfo earlyInfo;
 
   std::vector<TensorId> inNames;
   std::vector<TensorId> outNames;
@@ -117,24 +117,22 @@ Willow::Willow(std::string logDir_) {
     }
     std::string tensorName = frags[0];
     TensorInfo info(frags[1], frags[2]);
-    preRunKnowledge.addInfo(tensorName, info);
+    earlyInfo.addInfo(tensorName, info);
   }
 
   // add learning rate to pre-run knowldege
-  preRunKnowledge.addInfo(getLearningRateId(), {TP::FLOAT, {}});
+  earlyInfo.addInfo(getLearningRateId(), {TP::FLOAT, {}});
 
   std::vector<std::string> constTensors{};
 
   Optimizer optimizer{};
 
   auto model = io::getModel(modelPath);
-  std::vector<std::unique_ptr<Regularizer>> regularizers;
 
   graph.reset(new Graph(std::move(model),
-                        std::move(preRunKnowledge),
+                        std::move(earlyInfo),
                         std::move(recorder),
                         std::move(losses),
-                        std::move(regularizers),
                         std::move(optimizer),
                         std::move(constTensors),
                         logdir));

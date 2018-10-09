@@ -55,7 +55,7 @@ class ModelWriter4(PytorchNetWriter):
                 makeDummy=True,
                 streams={
                     "image0": {
-                        "file": "./data/images0.txt",
+                        "file": "../../data/data/images0.txt",
                         "type": "FLOAT",
                         "shape": [nChans, 25, 4]
                     },

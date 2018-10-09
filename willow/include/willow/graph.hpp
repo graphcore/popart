@@ -118,9 +118,6 @@ TensorId getRecompId(TensorId tenId);
 // Of course, the tensor is rank 0
 TensorId getLearningRateId();
 
-// needs to be implemented. will manage things like
-// weight decay loss etc.
-class Regularizer {};
 
 // Learning optimizer
 // momentum, learning rates, etc.
@@ -130,9 +127,9 @@ class Optimizer {};
 // This knowledge can sometimes be compiled into the Graph,
 // and for certain backends is even required, for example
 // Graphcore IPU requires all Stream Tensor shapes.
-class PreRunKnowledge {
+class EarlyInfo {
 public:
-  PreRunKnowledge() = default;
+  EarlyInfo() = default;
   void addInfo(TensorId, const TensorInfo &);
   const TensorInfo &getInfo(TensorId) const;
   bool hasInfo(TensorId) const;
@@ -441,11 +438,10 @@ private:
 class Graph {
 public:
   Graph(onnx::ModelProto &&,
-        PreRunKnowledge &&,
+        EarlyInfo &&,
         Recorder &&,
         // strings or something:
         std::vector<std::unique_ptr<Loss>> &&,
-        std::vector<std::unique_ptr<Regularizer>> &&,
         // Optimizer needed, if momentum the graph is different
         Optimizer &&sched,
         // Weights tensors which are not to be updated
@@ -459,10 +455,9 @@ public:
   // if the tensor is returned to user (Recorder).
   bool isAnchored(TensorId);
   void append(std::stringstream &);
-  PreRunKnowledge preRunKnowledge;
+  EarlyInfo earlyInfo;
   Recorder recorder;
   std::vector<std::unique_ptr<Loss>> losses;
-  std::vector<std::unique_ptr<Regularizer>> regularizers;
   Optimizer optimizer;
   Tensors tensors;
   ~Graph();

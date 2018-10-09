@@ -10,7 +10,7 @@ transform = transforms.Compose([
 ])
 
 trainset = torchvision.datasets.CIFAR10(
-    root='./data', train=True, download=True, transform=transform)
+    root='../../data/cifar10/', train=True, download=True, transform=transform)
 
 trainloader = torch.utils.data.DataLoader(
     trainset, batch_size=4, shuffle=False, num_workers=2)
@@ -31,6 +31,11 @@ def imshow(img):
 # get some random training images
 dataiter = iter(trainloader)
 images, labels = dataiter.next()
+X = images.numpy()
+print(X.dtype)
+X = images.to(torch.float16).numpy()
+print(X.dtype)
+raise RuntimeError("done")
 
 # show images
 imshow(torchvision.utils.make_grid(images))

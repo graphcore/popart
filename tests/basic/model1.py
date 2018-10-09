@@ -39,12 +39,12 @@ class ModelWriter1(PytorchNetWriter):
                 makeDummy=True,
                 streams={
                     "image0": {
-                        "file": "./data4mod1/images0.txt",
+                        "file": "../../data/data4mod1/images0.txt",
                         "type": "FLOAT",
                         "shape": [3, 4, 5]
                     },
                     "image1": {
-                        "file": "./data4mod1/images1.txt",
+                        "file": "../../data/data4mod1/images1.txt",
                         "type": "FLOAT",
                         "shape": [3, 4, 5]
                     }

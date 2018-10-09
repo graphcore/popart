@@ -57,18 +57,18 @@ class ModelWriter0(PytorchNetWriter):
                 makeDummy=True,
                 streams={
                     "image0": {
-                        "file": "./data/images0.txt",
+                        "file": "../../data/data/images0.txt",
                         "type": "FLOAT",
                         "shape": [inChans, 8, 8]
                     },
                     "image1": {
-                        "file": "./data/images1.txt",
+                        "file": "../../data/data/images1.txt",
                         "type": "FLOAT",
                         "shape": [inChans, 8, 8]
                     },
                     # a label is a scalar, hence the []
                     "label": {
-                        "file": "./data/label.txt",
+                        "file": "../../data/data/label.txt",
                         "type": "INT64",
                         "shape": []
                     },

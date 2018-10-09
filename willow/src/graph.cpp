@@ -378,15 +378,15 @@ VectorAndSet::VectorAndSet(std::vector<std::string> &&vals) : v_vals(vals) {
   }
 }
 
-void PreRunKnowledge::addInfo(TensorId id, const TensorInfo &info) {
+void EarlyInfo::addInfo(TensorId id, const TensorInfo &info) {
   infos[id] = info;
 }
 
-const TensorInfo &PreRunKnowledge::getInfo(TensorId id) const {
+const TensorInfo &EarlyInfo::getInfo(TensorId id) const {
   return infos.at(id);
 }
 
-bool PreRunKnowledge::hasInfo(TensorId id) const {
+bool EarlyInfo::hasInfo(TensorId id) const {
   return infos.find(id) != infos.end();
 }
 
@@ -402,19 +402,19 @@ void Graph::confirmNoReservedIds() const {
     confirmNonReservedId(out_.name());
   }
 
-  for (const auto &tenId : preRunKnowledge.getAllTensorIds()) {
+  for (const auto &tenId : earlyInfo.getAllTensorIds()) {
     confirmNonReservedId(tenId);
   }
 }
 
-std::vector<TensorId> PreRunKnowledge::getAllTensorIds() const {
+std::vector<TensorId> EarlyInfo::getAllTensorIds() const {
   // we first put the TensorIds into a set, so that duplication is removed
   std::set<TensorId> all_;
   for (const auto &id_info : infos) {
     all_.insert(id_info.first);
   }
 
-  // then any other TensorIds from other maps in PreRunKnowledge will be added
+  // then any other TensorIds from other maps in EarlyInfo will be added
   // to the set here.
 
   std::vector<TensorId> all;
@@ -433,17 +433,16 @@ void Graph::setAllNodeInputsMap() {
 }
 
 Graph::Graph(onnx::ModelProto &&inMod,
-             PreRunKnowledge &&perk,
+             EarlyInfo &&perk,
              Recorder &&rec,
              std::vector<std::unique_ptr<Loss>> &&ls,
-             std::vector<std::unique_ptr<Regularizer>> &&regs,
              // Optimizer needed, if momentum the graph is different
              Optimizer &&sched,
              // Weights tensors which are not to be updated
              std::vector<std::string> &&cTens,
              std::string logdir_)
-    : logdir(io::getCanonicalDirName(logdir_)), preRunKnowledge(perk),
-      recorder(rec), losses(std::move(ls)), regularizers(std::move(regs)),
+    : logdir(io::getCanonicalDirName(logdir_)), earlyInfo(perk),
+      recorder(rec), losses(std::move(ls)), 
       optimizer(sched),
       // constIds(std::move(cTens)),
       tensors(std::move(cTens), this), onnxModel(inMod) {
@@ -878,10 +877,10 @@ void Graph::inferTensorInfos() {
 
   std::vector<TensorId> streamTensors = tensors.getIds(TensorType::Stream);
   for (const auto &id : streamTensors) {
-    if (!(preRunKnowledge.hasInfo(id))) {
+    if (!(earlyInfo.hasInfo(id))) {
       throw error("expected pre-run knowledge for stream tensor " + id);
     }
-    tensors.get(id)->info = preRunKnowledge.getInfo(id);
+    tensors.get(id)->info = earlyInfo.getInfo(id);
   }
 
   for (Op *op : getTopologicallySorted()) {
