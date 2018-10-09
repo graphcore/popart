@@ -8,13 +8,19 @@ namespace willow {
 
 class NllLoss : public Loss {
 public:
-  virtual ~NllLoss() override = default;
-  NllLoss(const std::string &argstring);
+  NllLoss(TensorId probs, TensorId label, TensorId output);
+  // label is the only streamed input tensor to this loss
   virtual std::vector<TensorId> getStreamTensorNames() const override final;
   virtual std::unique_ptr<Op> getOp(Graph *) const override final;
   virtual std::string op_type() const override final;
   int probsIn() const;
-  int labelsIn() const;
+  int labelIn() const;
+  TensorId probsTensorId() const;
+  TensorId labelTensorId() const;
+
+  virtual std::unique_ptr<Loss> clone() const override final {
+    return std::unique_ptr<Loss>(new NllLoss(*this));
+  }
 };
 
 class NllOp : public Op {

@@ -5,8 +5,8 @@ import torch.utils
 import torch.utils.data
 from writer import NetWriter
 from optimizers import SGD
-from losses import NLL, L1
 from datafeeds import FromTxtFiles
+import pywillow
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -60,17 +60,18 @@ class PytorchNetWriter(NetWriter):
     def getTorchLossTarget(self, streamMap, outMap):
         """
         Build the torch extension for computing the
-        loss described by willow's losses
+        loss described by pywillow's losses
         """
         lossValues = []
         for loss in self.losses:
-            if isinstance(loss, NLL):
+            if isinstance(loss, pywillow.NllLoss):
                 criterion = torch.nn.NLLLoss()
                 lossValues.append(
-                    criterion(outMap[loss.probId], streamMap[loss.labelId]))
-            elif isinstance(loss, L1):
+                    criterion(outMap[loss.probsTensorId()],
+                              streamMap[loss.labelTensorId()]))
+            elif isinstance(loss, pywillow.L1Loss):
                 lossValues.append(
-                    loss.lamb * torch.norm(outMap[loss.tensorId], 1))
+                    loss.getLambda() * torch.norm(outMap[loss.getInputId()], 1))
 
         return sum(lossValues)
 
@@ -119,7 +120,7 @@ class PytorchNetWriter(NetWriter):
             data = iter(trainloader).next()
             self.writeOnnxModel(dirname,0, self.getStreamMap(data))
 
-        # note for other frameworks. If willowTest is always False, 
+        # note for other frameworks. If willowTest is always False,
         # this elimimates most of the work: don't need to worry about
         # Optimizer, losses, maybe not even data stream.
         else:

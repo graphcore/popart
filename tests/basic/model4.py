@@ -1,8 +1,8 @@
 import torch
 import sys
 sys.path.append("../../pywillow")
+from pywillow import L1Loss
 from torchwriter import PytorchNetWriter, conv3x3
-from losses import NLL, L1
 from optimizers import SGD
 from datafeeds import FromTxtFiles
 
@@ -46,7 +46,7 @@ class ModelWriter4(PytorchNetWriter):
             self,
             inNames=["image0"],
             outNames=["Y"],
-            losses=[L1(0.1, "Y")],
+            losses=[L1Loss("Y", "l1lossOut", 0.1)],
             optimizer=SGD(learnRate=0.001),
             anchors=[],
             dataFeed=FromTxtFiles(

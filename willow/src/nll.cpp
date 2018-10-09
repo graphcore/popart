@@ -1,7 +1,7 @@
+#include <sstream>
 #include <willow/error.hpp>
 #include <willow/nll.hpp>
 #include <willow/tensor.hpp>
-#include <sstream>
 
 namespace willow {
 
@@ -23,13 +23,24 @@ std::unique_ptr<Op> NllLoss::getOp(Graph *gp) const {
 std::string NllLoss::op_type() const { return "Nll"; }
 
 std::vector<TensorId> NllLoss::getStreamTensorNames() const {
-  return {input(labelsIn())};
+  return {input(labelIn())};
 }
 
-NllLoss::NllLoss(const std::string &argstring) : Loss(argstring) {
-  // expect 2 inputs, 0 args.
-  confirmSizes(2, 0);
+// as per pydriver.py
+int NllLoss::probsIn() const { return 0; }
+int NllLoss::labelIn() const { return 1; }
+
+NllLoss::NllLoss(TensorId probs, TensorId label, TensorId output)
+    : Loss({probs, label}, output) {
+  // confirming that I haven't miswired things
+  if (input(probsIn()) != probs || input(labelIn()) != label) {
+    throw error("ILE: mis-wired tensors in calling parent constructor");
+  }
 }
+
+TensorId NllLoss::probsTensorId() const { return input(probsIn()); }
+
+TensorId NllLoss::labelTensorId() const { return input(labelIn()); }
 
 void NllOp::setup() {
   // output is a scalar of the same type as probs
@@ -64,14 +75,10 @@ std::map<int, int> NllGradOp::createNllLossGradOutToIn() const {
   // the grad-op output at index 0 corresponds
   // to the non-grad-op's input at index probsIn()
   // the op ONLY computes the gradient of probs,
-  // no gradient for labels (one could interpret the
+  // no gradient for label (one could interpret the
   // int as a sparse vector, but not neat)
   return {{0, nlll()->probsIn()}};
 }
-
-// as per pydriver.py
-int NllLoss::probsIn() const { return 0; }
-int NllLoss::labelsIn() const { return 1; }
 
 const std::map<int, int> &NllGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = createNllLossGradOutToIn();
@@ -79,9 +86,9 @@ const std::map<int, int> &NllGradOp::gradOutToNonGradIn() const {
 }
 
 std::vector<GradInOutMapper> NllGradOp::createNllLossGradInfo() const {
-  // input at index 0 : labelsIn()
+  // input at index 0 : labelIn()
   // input at index 1 : probsIn()
-  return {{nlll()->labelsIn(), nlll()->labelsIn(), GradOpInType::IN},
+  return {{nlll()->labelIn(), nlll()->labelIn(), GradOpInType::IN},
           {nlll()->probsIn(), nlll()->probsIn(), GradOpInType::IN}};
 }
 

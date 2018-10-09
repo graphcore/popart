@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_LOSS_HPP
 
 #include <map>
+#include <willow/error.hpp>
 #include <willow/names.hpp>
 #include <willow/tensorinfo.hpp>
 #include <willow/vertex.hpp>
@@ -17,26 +18,22 @@ const std::map<std::string, eLoss> &lossMap();
 
 class Loss {
 public:
-  virtual ~Loss() = default;
-  Loss(const std::string &);
+  virtual ~Loss()    = default;
+  Loss(const Loss &) = default;
+  Loss &operator=(const Loss &) = delete;
+  Loss(const std::vector<TensorId> &input, TensorId output);
   virtual std::vector<TensorId> getStreamTensorNames() const = 0;
-  const std::vector<std::string> &other() const;
-  virtual std::unique_ptr<Op> getOp(Graph *) const = 0;
-  const std::vector<std::string> &args() const;
-
+  virtual std::unique_ptr<Op> getOp(Graph *) const           = 0;
   const TensorId &input(int i) const;
   int input_size() const;
   // takes in an int arg to conform
   // with Node function (uses same template)
   const TensorId &output(int) const;
   int output_size() const;
-  virtual std::string op_type() const = 0;
-
-protected:
-  void confirmSizes(int nIn, int nArgs) const;
+  virtual std::string op_type() const         = 0;
+  virtual std::unique_ptr<Loss> clone() const = 0;
 
 private:
-  std::vector<std::string> args_;
   // The names of the input tensors, same
   // format as a Node : "" represents no input
   std::vector<TensorId> input_;

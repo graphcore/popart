@@ -118,7 +118,6 @@ TensorId getRecompId(TensorId tenId);
 // Of course, the tensor is rank 0
 TensorId getLearningRateId();
 
-
 // Learning optimizer
 // momentum, learning rates, etc.
 class Optimizer {};
@@ -441,7 +440,7 @@ public:
         EarlyInfo &&,
         Recorder &&,
         // strings or something:
-        std::vector<std::unique_ptr<Loss>> &&,
+        const std::vector<Loss *> &,
         // Optimizer needed, if momentum the graph is different
         Optimizer &&sched,
         // Weights tensors which are not to be updated

@@ -1,7 +1,7 @@
+#include <numeric>
 #include <willow/error.hpp>
 #include <willow/tensorinfo.hpp>
 #include <willow/util.hpp>
-#include <numeric>
 
 namespace willow {
 

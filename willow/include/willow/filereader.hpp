@@ -5,8 +5,8 @@
 #pragma clang diagnostic ignored "-Weverything"
 #include <onnx/onnx_pb.h>
 #pragma clang diagnostic pop // stop ignoring warnings
-#include <willow/names.hpp>
 #include <sstream>
+#include <willow/names.hpp>
 
 namespace willow {
 namespace io {

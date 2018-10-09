@@ -1,8 +1,8 @@
 import torch
 import sys
 sys.path.append("../../pywillow")
+from pywillow import L1Loss
 from torchwriter import PytorchNetWriter, conv3x3
-from losses import NLL, L1
 from optimizers import SGD
 from datafeeds import FromTxtFiles
 
@@ -25,7 +25,7 @@ class ModelWriter1(PytorchNetWriter):
             self,
             inNames=["image0", "image1"],
             outNames=["x0", "x1"],
-            losses=[torchwriter.L1(0.1, "x1")],
+            losses=[L1Loss("x1", "l1LossVal", 0.1)],
             optimizer=SGD(learnRate=0.001),
             # as this model has no weights, if we don't include
             # an anchor it will all just be pruned away!

@@ -5,12 +5,13 @@ import model1
 import model2
 import model4
 
+import pywillow
 from pywillow import Willow
 
 if (len(sys.argv) != 2):
     raise RuntimeError("onnx_net.py <log directory>")
 
-model_number =  0
+model_number = 0
 
 outputdir = sys.argv[1]
 if not os.path.exists(outputdir):
@@ -37,7 +38,7 @@ else:
 # write to file(s)
 writer.write(dirname=outputdir)
 # C++ class reads from file(s) and creates backwards graph
-pynet = Willow(outputdir)
+pynet = Willow(outputdir, writer.losses)
 
 allDotPrefixes = [x[0:-4] for x in os.listdir(outputdir) if ".dot" in x]
 print("Will generate graph pdfs for all of:")

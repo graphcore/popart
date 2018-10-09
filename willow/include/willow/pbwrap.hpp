@@ -2,8 +2,8 @@
 #define GUARD_PBWRAP_GRAPH_HPP
 
 #include <map>
-#include <willow/names.hpp>
 #include <vector>
+#include <willow/names.hpp>
 
 namespace willow {
 

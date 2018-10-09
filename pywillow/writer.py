@@ -9,7 +9,6 @@ import os
 import subprocess
 
 # Framework independant training class for willow
-from losses import NLL, L1
 from optimizers import SGD
 
 class NetWriter():
@@ -25,7 +24,7 @@ class NetWriter():
         outNames:
           names of the outputs of the ONNX Model
         losses:
-          a list of Loss objects (see losses.py)
+          a list of willow Loss objects
         optimizer:
           an optimizer (see optimizers.py) or None if
           in evaluation mode
@@ -68,7 +67,7 @@ class NetWriter():
         (1) creates a file "schedule.txt" describing
             how training should proceed: loading data,
             the optimizer (learning rate etc),
-            the losses, batchsizes, etc.
+            the batchsizes, etc.
 
         (2) writeOnnx : framework specific details of
             generating the ONNX model
@@ -96,11 +95,6 @@ class NetWriter():
         writeSection("anchor names")
         for name in self.anchors:
             filly.write(name)
-            filly.write('\n')
-
-        writeSection("losses")
-        for loss in self.losses:
-            filly.write(loss.string())
             filly.write('\n')
 
         writeSection("optimizer")

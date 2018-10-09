@@ -1,6 +1,9 @@
 #include <array>
 #include <fstream>
 #include <map>
+#include <queue>
+#include <sstream>
+#include <vector>
 #include <willow/error.hpp>
 #include <willow/filereader.hpp>
 #include <willow/graph.hpp>
@@ -11,9 +14,6 @@
 #include <willow/tensor.hpp>
 #include <willow/tensorinfo.hpp>
 #include <willow/util.hpp>
-#include <queue>
-#include <sstream>
-#include <vector>
 
 // The layers:
 #include <willow/add.hpp>
@@ -382,9 +382,7 @@ void EarlyInfo::addInfo(TensorId id, const TensorInfo &info) {
   infos[id] = info;
 }
 
-const TensorInfo &EarlyInfo::getInfo(TensorId id) const {
-  return infos.at(id);
-}
+const TensorInfo &EarlyInfo::getInfo(TensorId id) const { return infos.at(id); }
 
 bool EarlyInfo::hasInfo(TensorId id) const {
   return infos.find(id) != infos.end();
@@ -435,17 +433,20 @@ void Graph::setAllNodeInputsMap() {
 Graph::Graph(onnx::ModelProto &&inMod,
              EarlyInfo &&perk,
              Recorder &&rec,
-             std::vector<std::unique_ptr<Loss>> &&ls,
+             const std::vector<Loss *> &lossesIn,
              // Optimizer needed, if momentum the graph is different
              Optimizer &&sched,
              // Weights tensors which are not to be updated
              std::vector<std::string> &&cTens,
              std::string logdir_)
-    : logdir(io::getCanonicalDirName(logdir_)), earlyInfo(perk),
-      recorder(rec), losses(std::move(ls)), 
+    : logdir(io::getCanonicalDirName(logdir_)), earlyInfo(perk), recorder(rec),
       optimizer(sched),
       // constIds(std::move(cTens)),
       tensors(std::move(cTens), this), onnxModel(inMod) {
+
+  for (auto &l : lossesIn) {
+    losses.emplace_back(l->clone());
+  }
 
   confirmNoReservedIds();
   setAllNodeInputsMap();
@@ -612,8 +613,9 @@ void Graph::addRecompute() {
   }
 
   // TODO : this should change. resnet-50 has way more memory for early layers.
-  // see https://github.com/albanie/convnet-burden/blob/master/reports/resnet18.md
-  // It should take in memoryOfLives, make intervals on cumulative memory. 
+  // see
+  // https://github.com/albanie/convnet-burden/blob/master/reports/resnet18.md
+  // It should take in memoryOfLives, make intervals on cumulative memory.
   std::vector<std::array<int, 2>> intervals = getDecreasingIntervals(nFwdOps);
 
   //   defn, checkpoints: Ops whose

@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_NEURALNET_HPP
 
 #include <string>
+#include <willow/loss.hpp>
 
 namespace willow {
 
@@ -9,12 +10,11 @@ class Graph;
 
 class Willow {
 public:
-
-  // TODO: include with anchors the frequency 
+  // TODO: include with anchors the frequency
   //       at which they are to be read.
-  // TODO: there will be some nice async 
+  // TODO: there will be some nice async
   //       thread programming for this class.
-  Willow(std::string logDir);
+  Willow(std::string logDir, const std::vector<Loss *> &);
   ~Willow();
   // create Graph
   void makeGraph();
@@ -28,8 +28,6 @@ public:
   void step();
   void getAnchors();
   void getWeights();
-
-  
 
 private:
   std::unique_ptr<Graph> graph;

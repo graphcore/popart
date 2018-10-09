@@ -1,19 +1,19 @@
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <willow/error.hpp>
 #include <willow/filereader.hpp>
 #include <willow/graph.hpp>
 #include <willow/l1.hpp>
 #include <willow/loss.hpp>
-#include <willow/willow.hpp>
 #include <willow/nll.hpp>
-#include <sstream>
+#include <willow/willow.hpp>
 
 namespace willow {
 
 Willow::~Willow() = default;
 
-Willow::Willow(std::string logDir_) {
+Willow::Willow(std::string logDir_, const std::vector<Loss *> &losses) {
 
   // logDir_ is the path to the directory where all reading and writing
   // is done. here we just expand it to its canonical form
@@ -79,27 +79,27 @@ Willow::Willow(std::string logDir_) {
   std::string logdir;
   setString("log directory", logdir);
 
-  std::vector<TensorId> lossStrings;
-  setVector("losses", lossStrings);
-  std::vector<std::unique_ptr<Loss>> losses;
-  for (auto lossLine : lossStrings) {
-    auto found = lossLine.find(':');
-    if (found == std::string::npos) {
-      throw error("invalid loss string in driver");
-    }
-    auto lossName = lossLine.substr(0, found);
-    lossLine      = lossLine.substr(found + 1);
-    switch (lossMap().at(lossName)) {
-    case eLoss::NLL: {
-      losses.push_back(std::unique_ptr<Loss>(new NllLoss(lossLine)));
-      break;
-    };
-    case eLoss::L1: {
-      losses.push_back(std::unique_ptr<Loss>(new L1Loss(lossLine)));
-      break;
-    }
-    }
-  }
+  // std::vector<TensorId> lossStrings;
+  // setVector("losses", lossStrings);
+  // std::vector<std::unique_ptr<Loss>> losses;
+  // for (auto lossLine : lossStrings) {
+  //   auto found = lossLine.find(':');
+  //   if (found == std::string::npos) {
+  //     throw error("invalid loss string in driver");
+  //   }
+  //   auto lossName = lossLine.substr(0, found);
+  //   lossLine      = lossLine.substr(found + 1);
+  //   switch (lossMap().at(lossName)) {
+  //   case eLoss::NLL: {
+  //     losses.push_back(std::unique_ptr<Loss>(new NllLoss(lossLine)));
+  //     break;
+  //   };
+  //   case eLoss::L1: {
+  //     losses.push_back(std::unique_ptr<Loss>(new L1Loss(lossLine)));
+  //     break;
+  //   }
+  //   }
+  // }
 
   std::vector<std::string> optimizerStrings;
   setVector("optimizer", optimizerStrings);
@@ -132,7 +132,7 @@ Willow::Willow(std::string logDir_) {
   graph.reset(new Graph(std::move(model),
                         std::move(earlyInfo),
                         std::move(recorder),
-                        std::move(losses),
+                        losses,
                         std::move(optimizer),
                         std::move(constTensors),
                         logdir));

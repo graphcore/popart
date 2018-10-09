@@ -8,10 +8,18 @@ namespace willow {
 
 class L1Loss : public Loss {
 public:
-  L1Loss(const std::string &argstring);
+  // where lambda*|"input"|_1 = "output" (so output has rank 0)
+  L1Loss(TensorId input, TensorId output, float lambda);
+  // There are no tensors streamed into this loss layer (unlike NLL for
+  // example which has a label streamed in)
   virtual std::vector<TensorId> getStreamTensorNames() const override final;
   virtual std::unique_ptr<Op> getOp(Graph *) const override final;
   virtual std::string op_type() const override final;
+  TensorId getInputId() const;
+  float getLambda() const;
+  virtual std::unique_ptr<Loss> clone() const override final {
+    return std::unique_ptr<Loss>(new L1Loss(*this));
+  }
 
 private:
   float lambda;

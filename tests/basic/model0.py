@@ -1,8 +1,8 @@
 import torch
 import sys
 sys.path.append("../../pywillow")
+import pywillow
 from torchwriter import PytorchNetWriter, conv3x3
-from losses import NLL, L1
 from optimizers import SGD
 from datafeeds import FromTxtFiles
 
@@ -46,8 +46,8 @@ class ModelWriter0(PytorchNetWriter):
             self,
             inNames=["image0", "image1"],
             outNames=["preProbSquared", "probs"],
-            losses=[NLL("probs", "label"),
-                    L1(0.1, "preProbSquared")],
+            losses=[pywillow.NllLoss("probs", "label", "nllLossVal"),
+                    pywillow.L1Loss("preProbSquared", "l1LossVal", 0.01)],
             optimizer=SGD(learnRate=0.001),
             anchors=[],
             willowTest=True,

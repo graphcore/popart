@@ -3,11 +3,11 @@
 #include <boost/filesystem.hpp>
 #pragma clang diagnostic pop // stop ignoring warnings
 #include <fstream>
+#include <sstream>
+#include <vector>
 #include <willow/error.hpp>
 #include <willow/filereader.hpp>
 #include <willow/names.hpp>
-#include <sstream>
-#include <vector>
 
 namespace willow {
 namespace io {

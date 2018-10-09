@@ -1,7 +1,7 @@
+#include <sstream>
 #include <willow/error.hpp>
 #include <willow/l1.hpp>
 #include <willow/tensor.hpp>
-#include <sstream>
 
 namespace willow {
 
@@ -24,11 +24,12 @@ std::string L1Loss::op_type() const { return "L1"; }
 
 std::vector<TensorId> L1Loss::getStreamTensorNames() const { return {}; }
 
-L1Loss::L1Loss(const std::string &argstring) : Loss(argstring) {
-  // expecting 1 input, 1 arg (lambda)
-  confirmSizes(1, 1);
-  lambda = std::stof(args()[0]);
-}
+L1Loss::L1Loss(TensorId input_, TensorId output_, float lmb)
+    : Loss({input_}, output_), lambda(lmb) {}
+
+TensorId L1Loss::getInputId() const { return input(0); }
+
+float L1Loss::getLambda() const { return lambda; }
 
 const L1Loss *L1Op::l1l() const { return l1loss_; }
 const L1Loss *L1GradOp::l1l() const { return l1loss_; }
@@ -46,8 +47,8 @@ void L1Op::setup() {
 }
 
 L1GradOp::L1GradOp(L1Op *op_)
-    : GradOp({"L1Grad", op_->pgraph, {}, getWillowDomain()}),
-      l1OpId(op_->id), l1loss_(op_->l1l()) {}
+    : GradOp({"L1Grad", op_->pgraph, {}, getWillowDomain()}), l1OpId(op_->id),
+      l1loss_(op_->l1l()) {}
 
 Op *L1GradOp::getNonGradCreator() const {
   // we have chosen to go via the ID, rather
