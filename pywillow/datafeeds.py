@@ -1,10 +1,12 @@
 import numpy as np
 import numpy.random as npr
 
+
 class FromTxtFiles:
     """
     for very small experiments
     """
+
     def __init__(self, nSamples, batchsize, makeDummy, streams):
         """
         nSamples:
@@ -53,7 +55,7 @@ class FromTxtFiles:
             else:
                 raise RuntimeError("unrecognised ONNX type")
 
-            self.data[tensorName] = np.loadtxt(fname = fileName, dtype = dtype_)
+            self.data[tensorName] = np.loadtxt(fname=fileName, dtype=dtype_)
             self.data[tensorName] = self.data[tensorName].reshape(totShape)
 
     def streamNames(self):
@@ -72,18 +74,17 @@ class FromTxtFiles:
             onnxType = self.streams[tensorName]["type"]
             elmShape = self.streams[tensorName]["shape"]
             totShape = [self.batchsize] + elmShape
-            shape = "(" +  ",".join([str(x) for x in totShape]) + ")"
-            out +="%s %s %s\n" % (tensorName, onnxType, shape)
+            shape = "(" + ",".join([str(x) for x in totShape]) + ")"
+            out += "%s %s %s\n" % (tensorName, onnxType, shape)
         return out
 
     def getLoadingString(self):
         out = "FromTxtFiles\n"
-        out += "nSamples = %d\n"%(self.nSamples,)
+        out += "nSamples = %d\n" % (self.nSamples, )
         for tensorName in self.streams.keys():
             fileName = self.streams[tensorName]["file"]
-            out +="%s %s\n" % (tensorName, fileName)
+            out += "%s %s\n" % (tensorName, fileName)
         return out
-
 
     def makeDummyData(self):
         for tensorName in self.streams.keys():
@@ -95,16 +96,11 @@ class FromTxtFiles:
 
             if onnxType == "FLOAT":
                 data = npr.randn(*totShape)
-                np.savetxt(fname = fileName, X = data.reshape(-1), fmt = "%.3f")
+                np.savetxt(fname=fileName, X=data.reshape(-1), fmt="%.3f")
 
             elif onnxType == "INT64":
-                data = npr.randint(low = 0, high = 10, size = totShape)
-                np.savetxt(fname = fileName, fmt = "%d", X = data.reshape(-1))
+                data = npr.randint(low=0, high=10, size=totShape)
+                np.savetxt(fname=fileName, fmt="%d", X=data.reshape(-1))
 
             else:
                 raise RuntimeError("unrecognised ONNX type " + onnxType)
-
-
-
-
-

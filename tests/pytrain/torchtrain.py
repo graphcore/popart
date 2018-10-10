@@ -1,50 +1,10 @@
 import torch
 import torchvision
 import torchvision.transforms as transforms
-
-######## Setup the data loading pipeline ##########
-
-transform = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-])
-
-trainset = torchvision.datasets.CIFAR10(
-    root='../../data/cifar10/', train=True, download=True, transform=transform)
-
-trainloader = torch.utils.data.DataLoader(
-    trainset, batch_size=4, shuffle=False, num_workers=2)
-
-classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse',
-           'ship', 'truck')
-
-import matplotlib.pyplot as pl
-import numpy as np
-
-# functions to show an image
-def imshow(img):
-    img = img / 2 + 0.5  # unnormalize
-    npimg = img.numpy()
-    pl.imshow(np.transpose(npimg, (1, 2, 0)))
-
-
-# get some random training images
-dataiter = iter(trainloader)
-images, labels = dataiter.next()
-X = images.numpy()
-print(X.dtype)
-X = images.to(torch.float16).numpy()
-print(X.dtype)
-raise RuntimeError("done")
-
-# show images
-imshow(torchvision.utils.make_grid(images))
-# pl.show()
-# print labels
-print(' '.join('%5s' % classes[labels[j]] for j in range(4)))
-
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.optim as optim
+
 
 
 class Net(nn.Module):
@@ -67,11 +27,8 @@ class Net(nn.Module):
         x = nn.LogSoftmax(dim=1)(x)
         return x
 
-
 net = Net()
 net.train()
-
-import torch.optim as optim
 
 optimizer = optim.SGD(net.parameters(), lr=0.001, momentum=0.9)
 
@@ -81,19 +38,19 @@ for epoch in range(2):  # loop over the dataset multiple times
     for i, data in enumerate(trainloader, 0):
         # get the inputs
         inputs, labels = data
-        #print(inputs.shape)
-
-       # raise RuntimeError("hmmm interessant")
 
         # zero the parameter gradients
         optimizer.zero_grad()
 
-        # forward + backward + optimize
+        # forward
         outputs = net(inputs)
 
-        criterion = nn.NLLLoss()  #nn.CrossEntropyLoss()
+        # backwards
+        criterion = nn.NLLLoss()
         loss = criterion(outputs, labels)
         loss.backward()
+
+        #update
         optimizer.step()
 
         # print statistics

@@ -6,8 +6,9 @@ from pywillow import L1Loss
 from optimizers import SGD
 from datafeeds import FromTxtFiles
 
+
 class Module2(torch.nn.Module):
-    def __init__(self,nInChans, nOutChans):
+    def __init__(self, nInChans, nOutChans):
         torch.nn.Module.__init__(self)
         self.conv1 = conv3x3(nInChans, nOutChans)
 
@@ -17,6 +18,7 @@ class Module2(torch.nn.Module):
         x0 = self.conv1(image0)
         x1 = self.conv1(image1)
         return x0, x1
+
 
 class ModelWriter2(PytorchNetWriter):
     def __init__(self, nIn, nOut):
@@ -49,5 +51,3 @@ class ModelWriter2(PytorchNetWriter):
                     }
                 }),
             module=Module2(nIn, nOut))
-
-

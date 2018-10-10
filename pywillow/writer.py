@@ -11,13 +11,14 @@ import subprocess
 # Framework independant training class for willow
 from optimizers import SGD
 
+
 class NetWriter():
     """
     Base class, to be inherited once per framework
     """
 
-    def __init__(self, inNames, outNames, losses, optimizer, anchors,
-                 willowTest, dataFeed):
+    def __init__(self, inNames, outNames, losses, optimizer, willowTest,
+                 dataFeed, earlyInfo):
         """
         inNames:
           A list (in order) of all the inputs to the ONNX Model.
@@ -38,6 +39,8 @@ class NetWriter():
           training steps
           (if evaluation mode) to be decided
         dataFeed:
+          how to get data
+        earlyInfo:
           for every loss stream input and standard input: the shape,
           ONNX DataType and how to get data
         """
@@ -45,14 +48,15 @@ class NetWriter():
         self.outNames = outNames
         self.losses = losses
         self.optimizer = optimizer
-        self.anchors = anchors
         self.willowTest = willowTest
         self.dataFeed = dataFeed
+        self.earlyInfo = earlyInfo
         self.trainMode = optimizer != None
 
-        if ((len(self.anchors) != 0) and (self.trainMode is False)):
-            raise RuntimeError("anchors only for trainMode")
+        print(self.dataFeed.nAnchors())
 
+        if ((self.dataFeed.nAnchors() != 0) and (self.trainMode is False)):
+            raise RuntimeError("anchors only for trainMode")
 
     def writeOnnx(self, dirname):
         """
@@ -60,7 +64,6 @@ class NetWriter():
         see torchwriter.py for ideas
         """
         raise NotImplementedError()
-
 
     def write(self, dirname):
         """
@@ -78,7 +81,7 @@ class NetWriter():
         schedFn = os.path.join(dirname, "schedule.txt")
         filly = open(schedFn, "w")
 
-        writeSection = lambda s : filly.write("%s %s\n"%(sectionMarker, s))
+        writeSection = lambda s: filly.write("%s %s\n" % (sectionMarker, s))
 
         writeSection("input names")
         for name in self.inNames:
@@ -90,27 +93,12 @@ class NetWriter():
             filly.write(name)
             filly.write('\n')
 
-        # write the anchors (the tensors which MUST
-        #              be recorded in training mode)
-        writeSection("anchor names")
-        for name in self.anchors:
-            filly.write(name)
-            filly.write('\n')
-
         writeSection("optimizer")
         filly.write(self.optimizer.string())
         filly.write('\n')
 
         writeSection("log directory")
         filly.write(dirname)
-        filly.write('\n')
-
-        writeSection("data info")
-        filly.write(self.dataFeed.getDataString())
-        filly.write('\n')
-
-        writeSection("data feed")
-        filly.write(self.dataFeed.getLoadingString())
         filly.write('\n')
 
         filly.close()

@@ -431,18 +431,21 @@ void Graph::setAllNodeInputsMap() {
 }
 
 Graph::Graph(onnx::ModelProto &&inMod,
-             EarlyInfo &&perk,
-             Recorder &&rec,
+             const EarlyInfo &perk,
+             const DataFlow &df,
              const std::vector<Loss *> &lossesIn,
              // Optimizer needed, if momentum the graph is different
              Optimizer &&sched,
              // Weights tensors which are not to be updated
              std::vector<std::string> &&cTens,
              std::string logdir_)
-    : logdir(io::getCanonicalDirName(logdir_)), earlyInfo(perk), recorder(rec),
+    : logdir(io::getCanonicalDirName(logdir_)), earlyInfo(perk), dataFlow(df),
       optimizer(sched),
       // constIds(std::move(cTens)),
       tensors(std::move(cTens), this), onnxModel(inMod) {
+
+  // TODO: this will change, obtained from optimizer:
+  earlyInfo.addInfo(getLearningRateId(), {TP::FLOAT, {}});
 
   for (auto &l : lossesIn) {
     losses.emplace_back(l->clone());
@@ -735,7 +738,7 @@ void Tensors::append(std::stringstream &ss) const {
 }
 
 void Graph::validateAnchors() const {
-  for (TensorId id : recorder.anchors()) {
+  for (TensorId id : dataFlow.anchors()) {
     if (!tensors.contains(id)) {
       std::stringstream ss;
       ss << "Anchor tensor `" << id << "' not in graph. ";
@@ -757,7 +760,9 @@ void Graph::validateAnchors() const {
   }
 }
 
-const std::vector<TensorId> &Recorder::anchors() const { return v_anchors; }
+const std::vector<TensorId> &DataFlow::anchors() const { return v_anchors; }
+
+int DataFlow::nAnchors() const { return static_cast<int>(v_anchors.size()); }
 
 void Graph::prune() {
 
@@ -776,7 +781,7 @@ void Graph::prune() {
   std::set<Tensor *> tensorsVisited;
 
   // the "front" is initialsed with (1) anchor tensors,
-  for (auto &tensorId : recorder.anchors()) {
+  for (auto &tensorId : dataFlow.anchors()) {
     Tensor *t = tensors.get(tensorId);
     // we have this check here as we allow
     // duplicated names from the (careless!) user
@@ -906,7 +911,7 @@ std::vector<Op *> Graph::opsOfType(OpType opType) {
 
 int TensorIndexMap::n() const { return static_cast<int>(tensor_map.size()); }
 
-bool Graph::isAnchored(TensorId tenId) { return recorder.isAnchored(tenId); }
+bool Graph::isAnchored(TensorId tenId) { return dataFlow.isAnchored(tenId); }
 
 void Graph::splitConvBias() {}
 
@@ -1620,11 +1625,12 @@ std::vector<Op *> Graph::growLossGradients() {
   return gradops;
 }
 
-bool Recorder::isAnchored(TensorId id) const {
+bool DataFlow::isAnchored(TensorId id) const {
   return (s_anchors.count(id) != 0);
 }
 
-Recorder::Recorder(const std::vector<TensorId> &v) : v_anchors(v) {
+DataFlow::DataFlow(int BpR, int bs, const std::vector<TensorId> &v)
+    : batchesPerRecord(BpR), batchSize(bs), v_anchors(v) {
   for (auto &id : v_anchors) {
     s_anchors.insert(id);
   }

@@ -15,6 +15,23 @@
 
 namespace willow {
 
+class DataFlow {
+public:
+  DataFlow(int batchesPerReturn, int batchsize, const std::vector<TensorId> &v);
+  bool isAnchored(TensorId) const;
+  const std::vector<TensorId> &anchors() const;
+  int nAnchors() const;
+
+private:
+  // number of batches between recording tensors
+  int batchesPerRecord;
+  // batch size
+  int batchSize;
+
+  std::set<TensorId> s_anchors;
+  const std::vector<TensorId> v_anchors;
+};
+
 class Tensor;
 class Graph;
 class Op;
@@ -81,20 +98,6 @@ private:
   // When all required gradient inputs are in,
   // move the key of partial from partial to complete
   std::vector<Op *> complete;
-};
-
-// Tensors to log every iteration
-// Also, frequency at which to return all weights
-// TODO(jn) ask David Norman how tensorflow does this.
-class Recorder {
-public:
-  bool isAnchored(TensorId) const;
-  Recorder(const std::vector<TensorId> &);
-  const std::vector<TensorId> &anchors() const;
-
-private:
-  std::set<TensorId> s_anchors;
-  const std::vector<TensorId> v_anchors;
 };
 
 std::string getWillowDomain();
@@ -437,8 +440,8 @@ private:
 class Graph {
 public:
   Graph(onnx::ModelProto &&,
-        EarlyInfo &&,
-        Recorder &&,
+        const EarlyInfo &,
+        const DataFlow &,
         // strings or something:
         const std::vector<Loss *> &,
         // Optimizer needed, if momentum the graph is different
@@ -451,11 +454,11 @@ public:
 
   // take training steps
   onnx::ModelProto step(int n);
-  // if the tensor is returned to user (Recorder).
+  // if the tensor is returned to user (passes call to DataFlow).
   bool isAnchored(TensorId);
   void append(std::stringstream &);
   EarlyInfo earlyInfo;
-  Recorder recorder;
+  DataFlow dataFlow;
   std::vector<std::unique_ptr<Loss>> losses;
   Optimizer optimizer;
   Tensors tensors;

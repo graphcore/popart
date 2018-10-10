@@ -1,5 +1,5 @@
-#ifndef GUARD_NEURALNET_NEURALNET_HPP
-#define GUARD_NEURALNET_NEURALNET_HPP
+#ifndef GUARD_NEURALNET_WILLOWNET_HPP
+#define GUARD_NEURALNET_WILLOWNET_HPP
 
 #include <string>
 #include <willow/loss.hpp>
@@ -8,14 +8,14 @@ namespace willow {
 
 class Graph;
 
-class Willow {
+class WillowNet {
 public:
-  // TODO: include with anchors the frequency
-  //       at which they are to be read.
-  // TODO: there will be some nice async
-  //       thread programming for this class.
-  Willow(std::string logDir, const std::vector<Loss *> &);
-  ~Willow();
+  WillowNet(std::string logDir,
+            const EarlyInfo &,
+            const DataFlow &dataFlow,
+            const std::vector<Loss *> &);
+
+  ~WillowNet();
   // create Graph
   void makeGraph();
   // connect to a backend (here, poplar with get an IPU)

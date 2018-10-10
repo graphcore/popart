@@ -3,5 +3,4 @@ class SGD:
         self.learnRate = learnRate
 
     def string(self):
-        return "SGD\nlearnRate=%.5f"%(self.learnRate,)
-
+        return "SGD\nlearnRate=%.5f" % (self.learnRate, )

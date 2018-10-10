@@ -1,18 +1,36 @@
 import torch
+from torchvision import transforms, datasets
 import sys
 sys.path.append("../../pywillow")
-import pywillow
+from pywillow import NllLoss, L1Loss, EarlyInfo, TensorInfo, DataFlow
 from torchwriter import PytorchNetWriter, conv3x3
+
 from optimizers import SGD
-from datafeeds import FromTxtFiles
+
+nInChans = 3
+nOutChans = 10
+
+# process 2 samples at a time, return requested
+# tensors every 6 batches (ie every 12 samples)
+# no anchors
+batchSize = 2
+nBatchesPerCycle = 6
+dataFeed = DataFlow(nBatchesPerCycle, batchSize, [])
+
+earlyInfo = EarlyInfo()
+earlyInfo.addInfo("image0", TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
+earlyInfo.addInfo("image1", TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
+earlyInfo.addInfo("label", TensorInfo("INT64", [batchSize]))
+
+### begin PyTorch
 
 
 class Module0(torch.nn.Module):
-    def __init__(self, inChans, outChans):
+    def __init__(self):
         torch.nn.Module.__init__(self)
-        self.conv1 = conv3x3(inChans, outChans)
-        self.conv2 = conv3x3(outChans, outChans)
-        self.conv3 = conv3x3(outChans, outChans)
+        self.conv1 = conv3x3(nInChans, nOutChans)
+        self.conv2 = conv3x3(nOutChans, nOutChans)
+        self.conv3 = conv3x3(nOutChans, nOutChans)
         self.relu = torch.nn.functional.relu
         self.logsoftmax = torch.nn.LogSoftmax(dim=0)
 
@@ -40,39 +58,42 @@ class Module0(torch.nn.Module):
         return preProbSquared, probs
 
 
+transform = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+])
+
+trainset = datasets.CIFAR10(
+    root='../../data/cifar10/', train=True, download=True, transform=transform)
+
+trainloader = torch.utils.data.DataLoader(
+    trainset, batch_size=4, shuffle=False, num_workers=2)
+
+### end PyTorch
+
+
 class ModelWriter0(PytorchNetWriter):
-    def __init__(self, inChans, outChans):
+    def __init__(self):
         PytorchNetWriter.__init__(
             self,
             inNames=["image0", "image1"],
             outNames=["preProbSquared", "probs"],
-            losses=[pywillow.NllLoss("probs", "label", "nllLossVal"),
-                    pywillow.L1Loss("preProbSquared", "l1LossVal", 0.01)],
+            losses=[
+                NllLoss("probs", "label", "nllLossVal"),
+                L1Loss("preProbSquared", "l1LossVal", 0.01)
+            ],
             optimizer=SGD(learnRate=0.001),
-            anchors=[],
+            # perform tests, using framework as ground truth
             willowTest=True,
-            dataFeed=FromTxtFiles(
-                nSamples=12,
-                batchsize=2,
-                makeDummy=True,
-                streams={
-                    "image0": {
-                        "file": "../../data/data/images0.txt",
-                        "type": "FLOAT",
-                        "shape": [inChans, 8, 8]
-                    },
-                    "image1": {
-                        "file": "../../data/data/images1.txt",
-                        "type": "FLOAT",
-                        "shape": [inChans, 8, 8]
-                    },
-                    # a label is a scalar, hence the []
-                    "label": {
-                        "file": "../../data/data/label.txt",
-                        "type": "INT64",
-                        "shape": []
-                    },
-                }),
-            # and finally the pytorch specific part, 
-            # (everything til now is generic NetWriter)
-            module=Module0(inChans, outChans))
+            earlyInfo=earlyInfo,
+            dataFeed=dataFeed,
+            ### begin PyTorch
+            module=Module0(),
+            trainloader=trainloader,
+            trainLoaderIndices={
+                "image0": 0,
+                "image1": 0,
+                "label": 1
+            }
+            ### end PyTorch
+        )

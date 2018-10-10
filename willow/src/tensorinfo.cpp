@@ -8,6 +8,9 @@ namespace willow {
 TensorInfo::TensorInfo(DataType t, const std::vector<int64_t> &s)
     : dataTypeInfo(&getDataTypeInfoMap().at(t)), shape_v(s) {}
 
+TensorInfo::TensorInfo(std::string s_type, const std::vector<int64_t> &s)
+    : TensorInfo(dataTypeFromString(s_type), s) {}
+
 TensorInfo::TensorInfo(const onnx::TensorProto &t) { set(t); }
 
 TensorInfo::TensorInfo(std::string s_type, std::string s_shape)
@@ -117,10 +120,32 @@ std::map<std::string, DataType> initStrToDataTypeMap() {
   return invMap;
 }
 
+const std::string &getAllONNXTypesString() {
+  const static std::string allTypes = initAllONNXTypesString();
+  return allTypes;
+}
+
+std::string initAllONNXTypesString() {
+  std::stringstream allTypes;
+  allTypes << '[';
+  bool firstType = true;
+  for (auto &name_type : getStrToDataTypeMap()) {
+    if (firstType) {
+      firstType = false;
+    } else {
+      allTypes << ',' << ' ';
+    }
+    allTypes << name_type.first;
+  }
+  allTypes << ']';
+  return allTypes.str();
+}
+
 DataType TensorInfo::dataTypeFromString(const std::string &s) const {
   auto found = getStrToDataTypeMap().find(s);
   if (found == getStrToDataTypeMap().end()) {
-    throw error("no ONNX type " + s);
+    throw error("no ONNX type " + s + ", they're " + getAllONNXTypesString() +
+                ".");
   }
   return found->second;
 }

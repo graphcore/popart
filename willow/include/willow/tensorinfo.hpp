@@ -41,10 +41,14 @@ std::map<DataType, DataTypeInfo> initDataTypeInfoMap();
 const std::map<std::string, DataType> &getStrToDataTypeMap();
 std::map<std::string, DataType> initStrToDataTypeMap();
 
+const std::string &getAllONNXTypesString();
+std::string initAllONNXTypesString();
+
 class TensorInfo {
 public:
   TensorInfo(DataType, const std::vector<int64_t> &);
   TensorInfo(std::string data_type, std::string shape);
+  TensorInfo(std::string data_type, const std::vector<int64_t> &);
   TensorInfo(const onnx::TensorProto &);
   void set(const onnx::TensorProto &);
   TensorInfo() = default;

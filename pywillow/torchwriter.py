@@ -6,8 +6,7 @@ import torch.utils
 import torch.utils.data
 from writer import NetWriter
 from optimizers import SGD
-from datafeeds import FromTxtFiles
-import pywillow
+from pywillow import TensorInfo, DataFlow, NllLoss, L1Loss
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -22,29 +21,29 @@ def conv3x3(in_planes, out_planes, stride=1):
 
 
 class PytorchNetWriter(NetWriter):
-    def __init__(self, inNames, outNames, losses, optimizer, anchors,
-                 willowTest, dataFeed, module):
+    def __init__(self, inNames, outNames, losses, optimizer, willowTest,
+                 dataFeed, earlyInfo, module, trainloader, trainLoaderIndices):
         """
         module:
           -- pytorch module (whose forward does not have the loss layers)
+        trainlader:
+          --
         all others:
           -- parameters passed to base class.
         """
-        NetWriter.__init__(self, inNames, outNames, losses, optimizer, anchors,
-                          willowTest, dataFeed)
+        NetWriter.__init__(
+            self,
+            inNames=inNames,
+            outNames=outNames,
+            losses=losses,
+            optimizer=optimizer,
+            willowTest=willowTest,
+            earlyInfo=earlyInfo,
+            dataFeed=dataFeed)
 
         self.module = module
-
-    def getTorchDataset(self):
-        """
-        convert willow's DataFeed to a torch Dataset
-        """
-        if isinstance(self.dataFeed, FromTxtFiles):
-            tensors = [torch.from_numpy(x) for x in self.dataFeed.streamVals()]
-            return torch.utils.data.dataset.TensorDataset(*tensors)
-
-        else:
-            raise RuntimeError("unrecognised DataFeed type")
+        self.trainloader = trainloader
+        self.trainLoaderIndices = trainLoaderIndices
 
     def getTorchOptimizer(self):
         """
@@ -65,15 +64,15 @@ class PytorchNetWriter(NetWriter):
         """
         lossValues = []
         for loss in self.losses:
-            if isinstance(loss, pywillow.NllLoss):
+            if isinstance(loss, NllLoss):
                 criterion = torch.nn.NLLLoss()
                 lossValues.append(
                     criterion(outMap[loss.probsTensorId()],
                               streamMap[loss.labelTensorId()]))
 
-            elif isinstance(loss, pywillow.L1Loss):
-                lossValues.append(
-                    loss.getLambda() * torch.norm(outMap[loss.getInputId()], 1))
+            elif isinstance(loss, L1Loss):
+                lossValues.append(loss.getLambda() * torch.norm(
+                    outMap[loss.getInputId()], 1))
 
         return sum(lossValues)
 
@@ -96,8 +95,8 @@ class PytorchNetWriter(NetWriter):
         # unpack the stream input from "data":
         streamMap = {}
         # this should return [image0, image1, label] for model 0
-        for j, streamName in enumerate(self.dataFeed.streamNames()):
-            streamMap[streamName] = data[j]
+        for streamName in self.trainLoaderIndices.keys():
+            streamMap[streamName] = data[self.trainLoaderIndices[streamName]]
         return streamMap
 
     def writeOnnx(self, dirname):
@@ -110,17 +109,9 @@ class PytorchNetWriter(NetWriter):
         onnx "trace", so I won't.
         """
 
-        dataset = self.getTorchDataset()
-
-        trainloader = torch.utils.data.DataLoader(
-            dataset,
-            batch_size=self.dataFeed.batchsize,
-            shuffle=False,
-            num_workers=0)
-
         if not self.willowTest:
             data = iter(trainloader).next()
-            self.writeOnnxModel(dirname,0, self.getStreamMap(data))
+            self.writeOnnxModel(dirname, 0, self.getStreamMap(data))
 
         # note for other frameworks. If willowTest is always False,
         # this elimimates most of the work: don't need to worry about
@@ -128,9 +119,12 @@ class PytorchNetWriter(NetWriter):
         else:
             torchOptimizer = self.getTorchOptimizer()
 
-            for i, data in enumerate(trainloader, 0):
+            for i, data in enumerate(self.trainloader, 0):
+                if i == 5:
+                    break
+
                 streamMap = self.getStreamMap(data)
-                self.writeOnnxModel(dirname,i, streamMap)
+                self.writeOnnxModel(dirname, i, streamMap)
 
                 #forwards - backwards - update
                 self.module.train()

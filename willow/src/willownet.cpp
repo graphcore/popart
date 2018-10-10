@@ -7,13 +7,16 @@
 #include <willow/l1.hpp>
 #include <willow/loss.hpp>
 #include <willow/nll.hpp>
-#include <willow/willow.hpp>
+#include <willow/willownet.hpp>
 
 namespace willow {
 
-Willow::~Willow() = default;
+WillowNet::~WillowNet() = default;
 
-Willow::Willow(std::string logDir_, const std::vector<Loss *> &losses) {
+WillowNet::WillowNet(std::string logDir_,
+                     const EarlyInfo &earlyInfo,
+                     const DataFlow &dataFlow,
+                     const std::vector<Loss *> &losses) {
 
   // logDir_ is the path to the directory where all reading and writing
   // is done. here we just expand it to its canonical form
@@ -44,12 +47,6 @@ Willow::Willow(std::string logDir_, const std::vector<Loss *> &losses) {
     }
   }
 
-  EarlyInfo earlyInfo;
-
-  std::vector<TensorId> inNames;
-  std::vector<TensorId> outNames;
-  std::vector<TensorId> anchorNames;
-
   auto setVector = [&sections](std::string sectionName,
                                std::vector<TensorId> &v) {
     if (sections.find(sectionName) == sections.end()) {
@@ -70,46 +67,20 @@ Willow::Willow(std::string logDir_, const std::vector<Loss *> &losses) {
     s = sections[sectionName][0];
   };
 
-  setVector("input names", inNames);
-  setVector("output names", outNames);
-  setVector("anchor names", anchorNames);
-
-  Recorder recorder{anchorNames};
-
   std::string logdir;
   setString("log directory", logdir);
 
   std::vector<std::string> optimizerStrings;
   setVector("optimizer", optimizerStrings);
-  std::vector<std::string> dataInfoStrings;
-  setVector("data info", dataInfoStrings);
-  for (auto &infoLine : dataInfoStrings) {
-    std::istringstream iss(infoLine);
-    std::vector<std::string> frags;
-    std::string frag;
-    while (iss >> frag) {
-      frags.push_back(frag);
-    }
-    if (frags.size() != 3) {
-      throw error("expected [name type shape]");
-    }
-    std::string tensorName = frags[0];
-    TensorInfo info(frags[1], frags[2]);
-    earlyInfo.addInfo(tensorName, info);
-  }
-
-  // add learning rate to pre-run knowldege
-  earlyInfo.addInfo(getLearningRateId(), {TP::FLOAT, {}});
 
   std::vector<std::string> constTensors{};
 
   Optimizer optimizer{};
-
   auto model = io::getModel(modelPath);
 
   graph.reset(new Graph(std::move(model),
-                        std::move(earlyInfo),
-                        std::move(recorder),
+                        earlyInfo,
+                        dataFlow,
                         losses,
                         std::move(optimizer),
                         std::move(constTensors),
@@ -120,8 +91,8 @@ Willow::Willow(std::string logDir_, const std::vector<Loss *> &losses) {
   std::cout << ss2.str();
 }
 
-void Willow::connect(std::string backend) {}
+void WillowNet::connect(std::string backend) {}
 
-void Willow::compile() {}
+void WillowNet::compile() {}
 
 } // namespace willow
