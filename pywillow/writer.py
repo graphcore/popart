@@ -2,15 +2,6 @@
 Framework independent functionality for driving willow
 """
 
-import os
-
-# We call an executable of willow to run it,
-# we have no fancy cython or such likes yet
-import subprocess
-
-# Framework independant training class for willow
-from optimizers import SGD
-
 
 class NetWriter():
     """
@@ -67,41 +58,9 @@ class NetWriter():
 
     def write(self, dirname):
         """
-        (1) creates a file "schedule.txt" describing
-            how training should proceed: loading data,
-            the optimizer (learning rate etc),
-            the batchsizes, etc.
-
-        (2) writeOnnx : framework specific details of
+            writeOnnx : framework specific details of
             generating the ONNX model
         """
-
-        # this sectionMarker must match that in pywillow.cpp,
-        sectionMarker = ">>>>>>>>"
-        schedFn = os.path.join(dirname, "schedule.txt")
-        filly = open(schedFn, "w")
-
-        writeSection = lambda s: filly.write("%s %s\n" % (sectionMarker, s))
-
-        writeSection("input names")
-        for name in self.inNames:
-            filly.write(name)
-            filly.write('\n')
-
-        writeSection("output names")
-        for name in self.outNames:
-            filly.write(name)
-            filly.write('\n')
-
-        writeSection("optimizer")
-        filly.write(self.optimizer.string())
-        filly.write('\n')
-
-        writeSection("log directory")
-        filly.write(dirname)
-        filly.write('\n')
-
-        filly.close()
 
         # write remaining, framework specific calls
         self.writeOnnx(dirname)

@@ -5,8 +5,7 @@ import torch
 import torch.utils
 import torch.utils.data
 from writer import NetWriter
-from optimizers import SGD
-from pywillow import TensorInfo, DataFlow, NllLoss, L1Loss
+from pywillow import TensorInfo, DataFlow, NllLoss, L1Loss, SGD
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -52,7 +51,7 @@ class PytorchNetWriter(NetWriter):
         if isinstance(self.optimizer, SGD):
             return torch.optim.SGD(
                 self.module.parameters(),
-                lr=self.optimizer.learnRate,
+                lr=self.optimizer.learnRate(),
                 momentum=0.0)
         else:
             raise RuntimeError("unrecognised optimizer")

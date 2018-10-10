@@ -1,10 +1,8 @@
 import torch
 import sys
 sys.path.append("../../pywillow")
-from pywillow import L1Loss
+from pywillow import L1Loss, SGD
 from torchwriter import PytorchNetWriter, conv3x3
-from optimizers import SGD
-from datafeeds import FromTxtFiles
 
 
 class Module4(torch.nn.Module):

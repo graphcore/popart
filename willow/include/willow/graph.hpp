@@ -10,6 +10,7 @@
 #include <map>
 #include <willow/attributes.hpp>
 #include <willow/names.hpp>
+#include <willow/optimizer.hpp>
 #include <willow/tensorinfo.hpp>
 #include <willow/vertex.hpp>
 
@@ -120,10 +121,6 @@ TensorId getRecompId(TensorId tenId);
 // get the learning rate tensor's id for Variable tensor
 // Of course, the tensor is rank 0
 TensorId getLearningRateId();
-
-// Learning optimizer
-// momentum, learning rates, etc.
-class Optimizer {};
 
 // What is known about the Graph before it is run.
 // This knowledge can sometimes be compiled into the Graph,
@@ -393,7 +390,7 @@ const OpTypes &getOpTypes();
 
 class VectorAndSet {
 public:
-  VectorAndSet(std::vector<std::string> &&vals);
+  VectorAndSet(const std::vector<std::string> &vals);
   bool contains(std::string) const;
   const std::vector<std::string> &v() const;
   ~VectorAndSet();
@@ -409,7 +406,7 @@ std::vector<std::string> reservedPrefixes();
 
 class Tensors {
 public:
-  Tensors(std::vector<std::string> &&vals1, Graph *pg);
+  Tensors(const std::vector<std::string> &vals1, Graph *pg);
   ~Tensors();
   // Store the Tensors of type Const
   const VectorAndSet constIds;
@@ -439,15 +436,15 @@ private:
 
 class Graph {
 public:
-  Graph(onnx::ModelProto &&,
+  Graph(std::string fnOnnxModel,
         const EarlyInfo &,
         const DataFlow &,
         // strings or something:
         const std::vector<Loss *> &,
         // Optimizer needed, if momentum the graph is different
-        Optimizer &&sched,
+        const Optimizer *,
         // Weights tensors which are not to be updated
-        std::vector<std::string> &&cTens,
+        const std::vector<std::string> &cTens,
         std::string logdir_);
 
   std::string logdir;
@@ -460,7 +457,7 @@ public:
   EarlyInfo earlyInfo;
   DataFlow dataFlow;
   std::vector<std::unique_ptr<Loss>> losses;
-  Optimizer optimizer;
+  std::unique_ptr<Optimizer> optimizer;
   Tensors tensors;
   ~Graph();
   // split ConvOp with bias into two Ops, a ConvOp
@@ -541,7 +538,7 @@ private:
   // T requires functions output(int) and output_size()
   template <typename T> void connectOutputs(const T &, OpId opId);
 
-  const onnx::ModelProto onnxModel;
+  onnx::ModelProto onnxModel;
 
   // create an Op from a Node
   std::unique_ptr<Op> addOp(const Node &);

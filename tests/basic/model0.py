@@ -1,26 +1,40 @@
 import torch
 from torchvision import transforms, datasets
 import sys
+import os
 sys.path.append("../../pywillow")
-from pywillow import NllLoss, L1Loss, EarlyInfo, TensorInfo, DataFlow
+from pywillow import NllLoss, L1Loss, EarlyInfo, TensorInfo, DataFlow, SGD, Graph
 from torchwriter import PytorchNetWriter, conv3x3
 
-from optimizers import SGD
+if (len(sys.argv) != 2):
+    raise RuntimeError("onnx_net.py <log directory>")
+
+outputdir = sys.argv[1]
+if not os.path.exists(outputdir):
+    print("Making %s" % (outputdir, ))
+    os.mkdir(outputdir)
 
 nInChans = 3
 nOutChans = 10
 
 # process 2 samples at a time, return requested
 # tensors every 6 batches (ie every 12 samples)
-# no anchors
+# anchors : return the losses
 batchSize = 2
 nBatchesPerCycle = 6
-dataFeed = DataFlow(nBatchesPerCycle, batchSize, [])
+dataFeed = DataFlow(nBatchesPerCycle, batchSize, ["nllLossVal", "l1LossVal"])
 
 earlyInfo = EarlyInfo()
 earlyInfo.addInfo("image0", TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 earlyInfo.addInfo("image1", TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 earlyInfo.addInfo("label", TensorInfo("INT64", [batchSize]))
+
+inNames = ["image0", "image1"]
+outNames = ["preProbSquared", "probs"]
+losses = [
+    NllLoss("probs", "label", "nllLossVal"),
+    L1Loss("preProbSquared", "l1LossVal", 0.01)
+]
 
 ### begin PyTorch
 
@@ -76,17 +90,14 @@ class ModelWriter0(PytorchNetWriter):
     def __init__(self):
         PytorchNetWriter.__init__(
             self,
-            inNames=["image0", "image1"],
-            outNames=["preProbSquared", "probs"],
-            losses=[
-                NllLoss("probs", "label", "nllLossVal"),
-                L1Loss("preProbSquared", "l1LossVal", 0.01)
-            ],
-            optimizer=SGD(learnRate=0.001),
-            # perform tests, using framework as ground truth
-            willowTest=True,
+            inNames=inNames,
+            outNames=outNames,
+            losses=losses,
+            optimizer=SGD(0.001),
             earlyInfo=earlyInfo,
             dataFeed=dataFeed,
+            # perform tests, using framework as ground truth
+            willowTest=True,
             ### begin PyTorch
             module=Module0(),
             trainloader=trainloader,
@@ -97,3 +108,24 @@ class ModelWriter0(PytorchNetWriter):
             }
             ### end PyTorch
         )
+
+
+# write to file(s)
+writer = ModelWriter0()
+writer.write(dirname=outputdir)
+
+# C++ class reads from file(s) and creates backwards graph
+pynet = Graph(
+    os.path.join(outputdir, "model0.onnx"), writer.earlyInfo, writer.dataFeed,
+    writer.losses, writer.optimizer, [], outputdir)
+
+allDotPrefixes = [x[0:-4] for x in os.listdir(outputdir) if ".dot" in x]
+print("Will generate graph pdfs for all of:")
+print(allDotPrefixes)
+import subprocess
+for name in allDotPrefixes:
+    dotfile = os.path.join(outputdir, "%s.dot" % (name, ))
+    outputfile = os.path.join(outputdir, "%s.pdf" % (name, ))
+    log = subprocess.call(["dot", "-T", "pdf", "-o", outputfile, dotfile])
+    print("Exit status on `%s' was: %s" % (name, log))
+print("torchwriter calling script complete.")

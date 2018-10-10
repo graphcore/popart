@@ -254,8 +254,8 @@ std::vector<TensorId> Tensors::getIds(TensorType type) const {
   return ids;
 }
 
-Tensors::Tensors(std::vector<std::string> &&vals1, Graph *pg)
-    : constIds(std::move(vals1)), pgraph(pg) {}
+Tensors::Tensors(const std::vector<std::string> &vals1, Graph *pg)
+    : constIds(vals1), pgraph(pg) {}
 
 VectorAndSet::~VectorAndSet() = default;
 Tensors::~Tensors()           = default;
@@ -372,7 +372,8 @@ void Op::appendIO(std::stringstream &ss) const {
   output.append(ss, tab + tab, max_id_length);
 }
 
-VectorAndSet::VectorAndSet(std::vector<std::string> &&vals) : v_vals(vals) {
+VectorAndSet::VectorAndSet(const std::vector<std::string> &vals)
+    : v_vals(vals) {
   for (auto &v : v_vals) {
     m_vals.insert(v);
   }
@@ -430,19 +431,22 @@ void Graph::setAllNodeInputsMap() {
   }
 }
 
-Graph::Graph(onnx::ModelProto &&inMod,
+Graph::Graph(std::string onnxModelFn,
              const EarlyInfo &perk,
              const DataFlow &df,
              const std::vector<Loss *> &lossesIn,
              // Optimizer needed, if momentum the graph is different
-             Optimizer &&sched,
+             const Optimizer *optimizerIn,
              // Weights tensors which are not to be updated
-             std::vector<std::string> &&cTens,
+             const std::vector<TensorId> &cTens,
              std::string logdir_)
     : logdir(io::getCanonicalDirName(logdir_)), earlyInfo(perk), dataFlow(df),
-      optimizer(sched),
-      // constIds(std::move(cTens)),
-      tensors(std::move(cTens), this), onnxModel(inMod) {
+      tensors(cTens, this) {
+
+  optimizer = optimizerIn->clone();
+
+  io::confirmRegularFile(onnxModelFn);
+  onnxModel = io::getModel(onnxModelFn);
 
   // TODO: this will change, obtained from optimizer:
   earlyInfo.addInfo(getLearningRateId(), {TP::FLOAT, {}});
@@ -453,7 +457,6 @@ Graph::Graph(onnx::ModelProto &&inMod,
 
   confirmNoReservedIds();
   setAllNodeInputsMap();
-
   auto &onnxGraph = onnxModel.graph();
   std::set<TensorId> onnxInitializers;
   for (const auto &initializer : onnxGraph.initializer()) {
@@ -468,7 +471,6 @@ Graph::Graph(onnx::ModelProto &&inMod,
       tensors.addStream(valueInfo.name());
     }
   }
-
   // other true inputs are for the loss calculation (class labels, etc)
   for (const auto &loss : losses) {
     for (const auto &tenId : loss->getStreamTensorNames()) {
@@ -519,6 +521,10 @@ Graph::Graph(onnx::ModelProto &&inMod,
   inferTensorInfos();
 
   exportDot(io::appendDirFn(logdir, "jam.dot"));
+
+  std::stringstream ss2;
+  append(ss2);
+  std::cout << ss2.str();
 }
 
 std::vector<Op *> Graph::getTopologicallySortedTilLoss() const {
