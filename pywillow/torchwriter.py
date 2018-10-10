@@ -1,4 +1,5 @@
 import os
+import sys
 import numpy as np
 import torch
 import torch.utils
@@ -69,6 +70,7 @@ class PytorchNetWriter(NetWriter):
                 lossValues.append(
                     criterion(outMap[loss.probsTensorId()],
                               streamMap[loss.labelTensorId()]))
+
             elif isinstance(loss, pywillow.L1Loss):
                 lossValues.append(
                     loss.getLambda() * torch.norm(outMap[loss.getInputId()], 1))

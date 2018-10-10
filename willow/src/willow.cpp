@@ -79,28 +79,6 @@ Willow::Willow(std::string logDir_, const std::vector<Loss *> &losses) {
   std::string logdir;
   setString("log directory", logdir);
 
-  // std::vector<TensorId> lossStrings;
-  // setVector("losses", lossStrings);
-  // std::vector<std::unique_ptr<Loss>> losses;
-  // for (auto lossLine : lossStrings) {
-  //   auto found = lossLine.find(':');
-  //   if (found == std::string::npos) {
-  //     throw error("invalid loss string in driver");
-  //   }
-  //   auto lossName = lossLine.substr(0, found);
-  //   lossLine      = lossLine.substr(found + 1);
-  //   switch (lossMap().at(lossName)) {
-  //   case eLoss::NLL: {
-  //     losses.push_back(std::unique_ptr<Loss>(new NllLoss(lossLine)));
-  //     break;
-  //   };
-  //   case eLoss::L1: {
-  //     losses.push_back(std::unique_ptr<Loss>(new L1Loss(lossLine)));
-  //     break;
-  //   }
-  //   }
-  // }
-
   std::vector<std::string> optimizerStrings;
   setVector("optimizer", optimizerStrings);
   std::vector<std::string> dataInfoStrings;
