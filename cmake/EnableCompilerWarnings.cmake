@@ -43,7 +43,7 @@ else()
                 # someone adds a new case (new enum) which is 
                 # not covered in the switch statement, default 
                 # catches it. 
-                 -Wno-covered-switch-default
+                -Wno-covered-switch-default
             )
             
         else()
@@ -52,6 +52,6 @@ else()
                 -Wno-deprecated-declarations
             )
         endif()
-        add_definitions(${CMAKE_COMPILER_WARNINGS})
+        add_compile_options(${CMAKE_COMPILER_WARNINGS})
     endforeach()
 endif ()

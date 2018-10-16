@@ -1,6 +1,10 @@
 # for more useful warnings
 include(EnableCompilerWarnings)
 
+# expansion of pybind macro, impossible to declare name 
+# of certain classes in headers
+add_compile_options("-Wno-missing-prototypes")
+
 include_directories("../willow/include")
 
 find_package(pybind11 REQUIRED)
