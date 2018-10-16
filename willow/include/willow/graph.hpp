@@ -439,15 +439,20 @@ public:
   Graph(std::string fnOnnxModel,
         const EarlyInfo &,
         const DataFlow &,
-        // strings or something:
         const std::vector<Loss *> &,
-        // Optimizer needed, if momentum the graph is different
         const Optimizer *,
         // Weights tensors which are not to be updated
         const std::vector<std::string> &cTens,
-        std::string logdir_);
+        std::string logdir_,
+        const std::vector<std::string> &patternNames);
 
   std::string logdir;
+
+  // update the optimizer. Note that the optimizer passed in
+  // must be compatible with that in setOptimizer if buildBackwards
+  // has already been called. Must call optimizerToDevice to
+  // take effect.
+  void updateOptimizer(const Optimizer *);
 
   // take training steps
   onnx::ModelProto step(int n);
@@ -457,7 +462,7 @@ public:
   EarlyInfo earlyInfo;
   DataFlow dataFlow;
   std::vector<std::unique_ptr<Loss>> losses;
-  std::unique_ptr<Optimizer> optimizer;
+  std::unique_ptr<Optimizer> optimizer{nullptr};
   Tensors tensors;
   ~Graph();
   // split ConvOp with bias into two Ops, a ConvOp
@@ -491,6 +496,9 @@ public:
 private:
   // modify the graph using with pattern matching
   void applyPattern(const Pattern *);
+
+  // patterns to apply after constructing forwards and backwards passes
+  std::vector<std::unique_ptr<Pattern>> patterns;
 
   // confirm that the names of the Const tensors
   // from the user (constTensors) are in the onnx Model

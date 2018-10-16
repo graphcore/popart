@@ -3,8 +3,16 @@
 #include <willow/pad.hpp>
 #include <willow/patterns.hpp>
 #include <willow/tensor.hpp>
+#include <willow/util.hpp>
 
 namespace willow {
+
+PatternTypes initPatternTypes() { return PatternTypes(); }
+
+const PatternTypes &getPatternTypes() {
+  const static PatternTypes X = initPatternTypes();
+  return X;
+}
 
 bool Pattern::removesNoAnchored(const Op *op) const {
   for (auto &tensor : removes(op)) {
@@ -14,6 +22,39 @@ bool Pattern::removesNoAnchored(const Op *op) const {
   }
   return true;
 };
+
+PatternTypes::PatternTypes() {
+
+  opTypes_ = {{"PostNRepl", PatternType::POSTNREPL},
+              {"PreUniRepl", PatternType::PREUNIREPL}};
+
+  std::vector<std::string> opTypeKeys;
+  opTypeKeys.reserve(opTypes_.size());
+  for (auto &x : opTypes_) {
+    strings_[x.second] = x.first;
+  }
+}
+
+const PatternType &PatternTypes::get(std::string op_type) const {
+  auto found = opTypes_.find(op_type);
+  if (found == opTypes_.end()) {
+    std::vector<std::string> opTypeNames;
+    opTypeNames.reserve(opTypes_.size());
+    for (auto &name_type : opTypes_) {
+      opTypeNames.push_back(name_type.first);
+    }
+    std::stringstream errm;
+    errm << "No PatternType found for " << op_type << ". Options are ";
+    appendSequence(errm, opTypeNames);
+    throw error(errm.str());
+  }
+
+  return found->second;
+}
+
+const std::string &PatternTypes::get(PatternType opType) const {
+  return strings_.at(opType);
+}
 
 bool PreUniRepl::matches(const Op *op) const {
   // op must have 1 input, and that input

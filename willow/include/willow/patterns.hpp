@@ -9,6 +9,22 @@ namespace willow {
 class Op;
 class Tensor;
 
+enum class PatternType { PREUNIREPL = 0, POSTNREPL };
+
+class PatternTypes {
+public:
+  PatternTypes();
+  const PatternType &get(std::string op_type) const;
+  const std::string &get(PatternType opType) const;
+
+private:
+  std::map<std::string, PatternType> opTypes_;
+  std::map<PatternType, std::string> strings_;
+};
+
+PatternTypes initPatternTypes();
+const PatternTypes &getPatternTypes();
+
 class Pattern {
 public:
   Pattern()          = default;
@@ -18,7 +34,7 @@ public:
   // pattern make a match?
   virtual bool matches(const Op *) const = 0;
   // If the pattern is applied
-  // (replaced with another patther),
+  // (replaced with another pattern),
   // which tensors will be removed?
   virtual std::vector<const Tensor *> removes(const Op *) const = 0;
   // apply the pattern,

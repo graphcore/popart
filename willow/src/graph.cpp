@@ -28,6 +28,10 @@
 
 namespace willow {
 
+void Graph::updateOptimizer(const Optimizer *) {
+  throw error("update optimizer not implemented. Must throw if incompat");
+}
+
 std::vector<TensorId> TensorIndexMap::getSerialised() const {
   int maxIndex = 0;
   for (auto &ind_tensor : tensor_map) {
@@ -435,14 +439,17 @@ Graph::Graph(std::string onnxModelFn,
              const EarlyInfo &perk,
              const DataFlow &df,
              const std::vector<Loss *> &lossesIn,
-             // Optimizer needed, if momentum the graph is different
              const Optimizer *optimizerIn,
              // Weights tensors which are not to be updated
              const std::vector<TensorId> &cTens,
-             std::string logdir_)
+             std::string logdir_,
+             const std::vector<std::string> &patternNames)
     : logdir(io::getCanonicalDirName(logdir_)), earlyInfo(perk), dataFlow(df),
       tensors(cTens, this) {
 
+  // learning rate, momentum, etc.
+  // Optimizer needed to construct backwards pass:
+  // if momentum the graph is different
   optimizer = optimizerIn->clone();
 
   io::confirmRegularFile(onnxModelFn);
@@ -486,9 +493,23 @@ Graph::Graph(std::string onnxModelFn,
     }
   }
 
-  constructForwards();
-  exportDot(io::appendDirFn(logdir, "jamForward0.dot"));
+  for (auto patternName : patternNames) {
+    switch (getPatternTypes().get(patternName)) {
+    case PatternType::PREUNIREPL: {
+      patterns.emplace_back(std::unique_ptr<Pattern>(new PreUniRepl));
+      break;
+    }
 
+    case PatternType::POSTNREPL: {
+      patterns.emplace_back(std::unique_ptr<Pattern>(new PostNRepl));
+      break;
+    }
+    }
+  }
+
+  constructForwards();
+
+  exportDot(io::appendDirFn(logdir, "jamForward0.dot"));
   // to developers: confirm fuctions like this
   // should be to check that there
   // are no contradictions in the user input, NOT
@@ -496,23 +517,23 @@ Graph::Graph(std::string onnxModelFn,
   confirmConstIds();
 
   splitConvBias();
-
-  PreUniRepl pre_uni_repl;
-  PostNRepl post_n_repl;
-
-  applyPattern(&pre_uni_repl);
-  applyPattern(&post_n_repl);
+  for (auto &pattern : patterns) {
+    applyPattern(pattern.get());
+  }
   growFinalLoss();
   setNPathsToLoss();
+
   constructBackwards();
+
   // confirm that all the anchor names provided
   // are indeed real tensor names. This is a check
   // that the user has not provided incorrect names.
   // We allow duplicates.
   validateAnchors();
 
-  applyPattern(&pre_uni_repl);
-  applyPattern(&post_n_repl);
+  for (auto &pattern : patterns) {
+    applyPattern(pattern.get());
+  }
 
   prune();
   inferTensorInfos();

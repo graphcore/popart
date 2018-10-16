@@ -117,7 +117,8 @@ writer.write(dirname=outputdir)
 # C++ class reads from file(s) and creates backwards graph
 pynet = Graph(
     os.path.join(outputdir, "model0.onnx"), writer.earlyInfo, writer.dataFeed,
-    writer.losses, writer.optimizer, [], outputdir)
+    writer.losses, writer.optimizer, [], outputdir,
+    ["PreUniRepl", "PostNRepl"])
 
 allDotPrefixes = [x[0:-4] for x in os.listdir(outputdir) if ".dot" in x]
 print("Will generate graph pdfs for all of:")

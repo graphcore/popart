@@ -66,5 +66,7 @@ PYBIND11_MODULE(pywillow, m) {
                     const std::vector<Loss *> &,
                     const Optimizer *,
                     const std::vector<TensorId> &,
-                    std::string>());
+                    std::string,
+                    const std::vector<std::string> &>())
+      .def("updateOptimizer", &Graph::updateOptimizer);
 }
