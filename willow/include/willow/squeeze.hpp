@@ -1,13 +1,13 @@
 #ifndef GUARD_NEURALNET_SQUEEZE_HPP
 #define GUARD_NEURALNET_SQUEEZE_HPP
 
-#include <willow/graph.hpp>
+#include <willow/ir.hpp>
 
 namespace willow {
 
 class SqueezeOp : public Op {
 public:
-  SqueezeOp(const onnx::NodeProto &node, Graph *pgraph);
+  SqueezeOp(const onnx::NodeProto &node, Ir *pir);
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
   virtual void setup() override final;
   virtual std::unique_ptr<Op> clone() const override final;

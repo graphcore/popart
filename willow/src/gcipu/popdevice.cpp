@@ -3,7 +3,7 @@
 
 namespace willow {
 
-PopDevice::PopDevice(const Graph *g) : Device(g) {
+PopDevice::PopDevice(const Ir *g) : Device(g) {
   std::cout << "Create pop device (from string?)" << std::endl;
 }
 

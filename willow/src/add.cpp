@@ -3,7 +3,7 @@
 
 namespace willow {
 
-AddOp::AddOp(const onnx::NodeProto &node, Graph *pgraph) : Op(node, pgraph) {}
+AddOp::AddOp(const onnx::NodeProto &node, Ir *pir) : Op(node, pir) {}
 
 std::unique_ptr<Op> AddOp::clone() const {
   return std::unique_ptr<Op>(new AddOp(*this));
@@ -25,7 +25,7 @@ void AddGradOp::setup() {
 }
 
 AddGradOp::AddGradOp(AddOp *op_)
-    : GradOp({"AddGrad", op_->pgraph, {}, getWillowDomain()}), addOp(op_) {}
+    : GradOp({"AddGrad", op_->pir, {}, getWillowDomain()}), addOp(op_) {}
 
 Op *AddGradOp::getNonGradCreator() const { return addOp; }
 

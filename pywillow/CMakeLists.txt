@@ -23,6 +23,7 @@ target_include_directories (pywillow PUBLIC
   )
 
 target_link_libraries(pywillow PRIVATE
+  willow
   # ...
 )
 

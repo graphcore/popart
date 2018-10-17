@@ -14,7 +14,7 @@ namespace willow {
 class PopDevice : public Device {
 
 public:
-  PopDevice(const Graph *);
+  PopDevice(const Ir *);
   virtual void prepare() override final;
 };
 

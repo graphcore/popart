@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_L1_HPP
 #define GUARD_NEURALNET_L1_HPP
 
-#include <willow/graph.hpp>
+#include <willow/ir.hpp>
 #include <willow/loss.hpp>
 
 namespace willow {
@@ -13,7 +13,7 @@ public:
   // There are no tensors streamed into this loss layer (unlike NLL for
   // example which has a label streamed in)
   virtual std::vector<TensorId> getStreamTensorNames() const override final;
-  virtual std::unique_ptr<Op> getOp(Graph *) const override final;
+  virtual std::unique_ptr<Op> getOp(Ir *) const override final;
   virtual std::string op_type() const override final;
   TensorId getInputId() const;
   float getLambda() const;

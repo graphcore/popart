@@ -1,7 +1,6 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <willow/graph.hpp>
 #include <willow/l1.hpp>
 #include <willow/loss.hpp>
 #include <willow/nll.hpp>

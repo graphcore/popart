@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_SUM_HPP
 #define GUARD_NEURALNET_SUM_HPP
 
-#include <willow/graph.hpp>
+#include <willow/ir.hpp>
 
 namespace willow {
 

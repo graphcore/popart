@@ -6,9 +6,6 @@
 
 namespace willow {
 
-class Op;
-class Tensor;
-
 enum class PatternType { PREUNIREPL = 0, POSTNREPL };
 
 class PatternTypes {

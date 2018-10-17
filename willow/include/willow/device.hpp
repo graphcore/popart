@@ -9,14 +9,14 @@ namespace willow {
 class Device {
 
 public:
-  Device(const Graph *);
+  Device(const Ir *);
   virtual ~Device();
   Device(const Device &) = delete;
   Device &operator=(const Device &) = delete;
   virtual void prepare()            = 0;
 
 protected:
-  const Graph *graph;
+  const Ir *pir;
 };
 
 } // namespace willow

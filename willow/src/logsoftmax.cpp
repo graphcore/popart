@@ -3,8 +3,8 @@
 
 namespace willow {
 
-LogSoftmaxOp::LogSoftmaxOp(const onnx::NodeProto &node, Graph *pgraph)
-    : Op(node, pgraph) {}
+LogSoftmaxOp::LogSoftmaxOp(const onnx::NodeProto &node, Ir *pir)
+    : Op(node, pir) {}
 
 void LogSoftmaxOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 
@@ -23,7 +23,7 @@ void LogSoftmaxGradOp::setup() {
 }
 
 LogSoftmaxGradOp::LogSoftmaxGradOp(LogSoftmaxOp *op_)
-    : GradOp({"LogSoftmaxGrad", op_->pgraph, {}, getWillowDomain()}),
+    : GradOp({"LogSoftmaxGrad", op_->pir, {}, getWillowDomain()}),
       logsoftmaxOp(op_) {}
 
 Op *LogSoftmaxGradOp::getNonGradCreator() const { return logsoftmaxOp; }

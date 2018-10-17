@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_NLL_HPP
 #define GUARD_NEURALNET_NLL_HPP
 
-#include <willow/graph.hpp>
+#include <willow/ir.hpp>
 #include <willow/loss.hpp>
 
 namespace willow {
@@ -11,7 +11,7 @@ public:
   NllLoss(TensorId probs, TensorId label, TensorId output);
   // label is the only streamed input tensor to this loss
   virtual std::vector<TensorId> getStreamTensorNames() const override final;
-  virtual std::unique_ptr<Op> getOp(Graph *) const override final;
+  virtual std::unique_ptr<Op> getOp(Ir *) const override final;
   virtual std::string op_type() const override final;
   int probsIn() const;
   int labelIn() const;

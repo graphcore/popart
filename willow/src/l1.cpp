@@ -15,7 +15,7 @@ std::vector<std::unique_ptr<Op>> L1Op::getGradOps() {
   return upops;
 }
 
-std::unique_ptr<Op> L1Loss::getOp(Graph *gp) const {
+std::unique_ptr<Op> L1Loss::getOp(Ir *gp) const {
   return std::unique_ptr<Op>(
       new L1Op({op_type(), gp, {}, getWillowDomain()}, this));
 }
@@ -47,7 +47,7 @@ void L1Op::setup() {
 }
 
 L1GradOp::L1GradOp(L1Op *op_)
-    : GradOp({"L1Grad", op_->pgraph, {}, getWillowDomain()}), l1OpId(op_->id),
+    : GradOp({"L1Grad", op_->pir, {}, getWillowDomain()}), l1OpId(op_->id),
       l1loss_(op_->l1l()) {}
 
 Op *L1GradOp::getNonGradCreator() const {
@@ -55,7 +55,7 @@ Op *L1GradOp::getNonGradCreator() const {
   // than storing the raw pointer, as it
   // is common for loss ops to be pruned
   // off while loss grad ops remain
-  return pgraph->getOp(l1OpId);
+  return pir->getOp(l1OpId);
 }
 
 const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {

@@ -9,7 +9,7 @@ namespace willow {
 
 // These classes pass calls to .size() and .at() to
 // input_size() and input(int) and output_size() and output()
-// so that standard containers can be used in Graph::connectInputs (as T)
+// so that standard containers can be used in Ir::connectInputs (as T)
 
 class InputVecWrapper {
 public:

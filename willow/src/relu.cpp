@@ -7,7 +7,7 @@ std::unique_ptr<Op> ReluOp::clone() const {
   return std::unique_ptr<Op>(new ReluOp(*this));
 }
 
-ReluOp::ReluOp(const onnx::NodeProto &node, Graph *pgraph) : Op(node, pgraph) {}
+ReluOp::ReluOp(const onnx::NodeProto &node, Ir *pir) : Op(node, pir) {}
 
 std::vector<std::unique_ptr<Op>> ReluOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -20,7 +20,7 @@ void ReluOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 void ReluGradOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 
 ReluGradOp::ReluGradOp(ReluOp *op_)
-    : GradOp({"ReluGrad", op_->pgraph, {}, getWillowDomain()}), reluOp(op_) {}
+    : GradOp({"ReluGrad", op_->pir, {}, getWillowDomain()}), reluOp(op_) {}
 
 Op *ReluGradOp::getNonGradCreator() const { return reluOp; }
 

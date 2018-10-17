@@ -1,5 +1,5 @@
 #include <willow/error.hpp>
-#include <willow/graph.hpp>
+#include <willow/ir.hpp>
 #include <willow/pad.hpp>
 #include <willow/patterns.hpp>
 #include <willow/tensor.hpp>
@@ -16,7 +16,7 @@ const PatternTypes &getPatternTypes() {
 
 bool Pattern::removesNoAnchored(const Op *op) const {
   for (auto &tensor : removes(op)) {
-    if (op->pgraph->isAnchored(tensor->id)) {
+    if (op->pir->isAnchored(tensor->id)) {
       return false;
     }
   }
@@ -97,11 +97,11 @@ void PreUniRepl::apply(Op *op) const {
   int index = op0->output.indices(tensorIn)[0];
   op0->output.reset(index, tensorOut);
   tensorOut->resetProducer(op0);
-  Graph *graph = op->pgraph;
+  Ir *pir = op->pir;
   // delete ()
-  graph->tensors.remove(tensorIn->id); // name);
+  pir->tensors.remove(tensorIn->id); // name);
   // delete [.]
-  graph->eraseOp(op->id);
+  pir->eraseOp(op->id);
 }
 
 bool PostNRepl::matches(const Op *op) const {
@@ -170,7 +170,7 @@ PostNRepl::TopoBundle PostNRepl::getTopoConInfo(const Op *op) const {
   return tcInf;
 }
 
-// removes all the outputs of the root op from the Graph
+// removes all the outputs of the root op from the Ir
 std::vector<const Tensor *> PostNRepl::removes(const Op *op) const {
   std::vector<const Tensor *> outs;
   for (auto &t_inds : op->output.indicesMap()) {
@@ -210,14 +210,14 @@ void PostNRepl::apply(Op *op) const {
     ori->consumers.extend(t_repl->consumers.getMap());
   }
   ori->consumers.decrement(op);
-  Graph *graph = op->pgraph;
+  Ir *pir = op->pir;
   // delete replicates
   for (auto repl : replicates) {
-    graph->tensors.remove(repl->id);
+    pir->tensors.remove(repl->id);
   }
 
   // delete [*]
-  graph->eraseOp(op->id);
+  pir->eraseOp(op->id);
 
   // finally, clear up topo last if necessary
   if (ori->consumers.hasTopoLast()) {

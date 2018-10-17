@@ -7,7 +7,7 @@ std::unique_ptr<Op> PadOp::clone() const {
   return std::unique_ptr<Op>(new PadOp(*this));
 }
 
-PadOp::PadOp(const onnx::NodeProto &node, Graph *pgraph) : Op(node, pgraph) {
+PadOp::PadOp(const onnx::NodeProto &node, Ir *pir) : Op(node, pir) {
   nAtts.set(pads, "pads");
 }
 

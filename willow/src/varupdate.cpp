@@ -3,8 +3,8 @@
 #include <willow/varupdate.hpp>
 
 namespace willow {
-VarUpdateOp::VarUpdateOp(TensorId varId_, Graph *pgraph)
-    : Op({"VarUpdate", pgraph, {}, getWillowDomain()}), varId(varId_),
+VarUpdateOp::VarUpdateOp(TensorId varId_, Ir *pir)
+    : Op({"VarUpdate", pir, {}, getWillowDomain()}), varId(varId_),
       varGradId(getGradId(varId)) {
   // very high priority, so that performed as early as possible
   priority = std::numeric_limits<double>::max();

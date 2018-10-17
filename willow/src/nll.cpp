@@ -15,7 +15,7 @@ std::vector<std::unique_ptr<Op>> NllOp::getGradOps() {
   return upops;
 }
 
-std::unique_ptr<Op> NllLoss::getOp(Graph *gp) const {
+std::unique_ptr<Op> NllLoss::getOp(Ir *gp) const {
   return std::unique_ptr<Op>(
       new NllOp({op_type(), gp, {}, getWillowDomain()}, this));
 }
@@ -61,10 +61,10 @@ void NllGradOp::setup() {
 }
 
 NllGradOp::NllGradOp(NllOp *op_)
-    : GradOp({"NllGrad", op_->pgraph, {}, getWillowDomain()}),
+    : GradOp({"NllGrad", op_->pir, {}, getWillowDomain()}),
       nllloss_(op_->nlll()), nllOpId(op_->id) {}
 
-Op *NllGradOp::getNonGradCreator() const { return pgraph->getOp(nllOpId); }
+Op *NllGradOp::getNonGradCreator() const { return pir->getOp(nllOpId); }
 
 const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createNllLossGradInfo();

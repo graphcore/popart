@@ -7,7 +7,7 @@ namespace willow {
 
 class ConvOp : public HasReceptiveFieldOp {
 public:
-  ConvOp(const onnx::NodeProto &node, Graph *pgraph);
+  ConvOp(const onnx::NodeProto &node, Ir *pir);
   int64_t nOutChans;
   int64_t group;
   // from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv :

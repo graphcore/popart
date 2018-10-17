@@ -115,8 +115,8 @@ TensorId getRecompId(TensorId tenId);
 // Of course, the tensor is rank 0
 TensorId getLearningRateId();
 
-// What is known about the Graph before it is run.
-// This knowledge can sometimes be compiled into the Graph,
+// What is known about the Ir before it is run.
+// This knowledge can sometimes be compiled into the Ir,
 // and for certain backends is even required, for example
 // Graphcore IPU requires all Stream Tensor shapes.
 class EarlyInfo {
@@ -135,7 +135,7 @@ public:
 private:
   std::map<TensorId, TensorInfo> infos;
   // we will also have a map of actual tensors, these
-  // can be used sometimes to compile the graph (slice
+  // can be used sometimes to compile the Graph (slice
   // indices for example)
 };
 
@@ -197,19 +197,19 @@ private:
 class OpConstructorBundle {
 public:
   OpConstructorBundle(std::string op_type,
-                      Graph *,
+                      Ir *,
                       Attributes,
                       std::string domain);
 
   std::string op_type;
-  Graph *pgraph;
+  Ir *pir;
   Attributes atts;
   std::string domain;
 };
 
 class Op : public Vertex {
 public:
-  Op(const Node &, Graph *);
+  Op(const Node &, Ir *);
   Op(const OpConstructorBundle &);
   Op(const Op &);
   Op &operator=(const Op &) = delete;
@@ -257,8 +257,8 @@ public:
   // political affiliation of the Op (same as NodeProto)
   const std::string &domain();
 
-  // the graph to which the Op belongs
-  Graph *pgraph;
+  // the Ir to which the Op belongs
+  Ir *pir;
 
   // The unique identifier of the Op (will always be set in Op::Op)
   OpId id{-1};
@@ -399,7 +399,7 @@ std::vector<std::string> reservedPrefixes();
 
 class Tensors {
 public:
-  Tensors(const std::vector<std::string> &vals1, Graph *pg);
+  Tensors(const std::vector<std::string> &vals1, Ir *pg);
   ~Tensors();
   // Store the Tensors of type Const
   const VectorAndSet constIds;
@@ -424,20 +424,20 @@ private:
   // adds to M, but first confirms that TensorId not already in
   void insert(TensorId, std::unique_ptr<Tensor>);
   OnnxTensorPtrs init;
-  Graph *pgraph;
+  Ir *pir;
 };
 
-// Graph Constructor inputs
-class GraphBundle {
+// Ir Constructor inputs
+class IrBundle {
 public:
-  GraphBundle(std::string fnModel_,
-              const EarlyInfo &,
-              const DataFlow &,
-              const std::vector<Loss *> &,
-              const Optimizer *,
-              const std::vector<std::string> &cTens_,
-              std::string logdir_,
-              const std::vector<std::string> &patternNames_);
+  IrBundle(std::string fnModel_,
+           const EarlyInfo &,
+           const DataFlow &,
+           const std::vector<Loss *> &,
+           const Optimizer *,
+           const std::vector<std::string> &cTens_,
+           std::string logdir_,
+           const std::vector<std::string> &patternNames_);
 
   std::string fnModel;
   const EarlyInfo &earlyInfo;
@@ -450,9 +450,9 @@ public:
   const std::vector<std::string> &patternNames;
 };
 
-class Graph {
+class Ir {
 public:
-  Graph(const GraphBundle &);
+  Ir(const IrBundle &);
   void updateOptimizer(const Optimizer *);
   // take training steps
   onnx::ModelProto step(int n);
@@ -461,7 +461,7 @@ public:
   void append(std::stringstream &);
   std::vector<std::unique_ptr<Loss>> losses;
   Tensors tensors;
-  ~Graph();
+  ~Ir();
   // split ConvOp with bias into two Ops, a ConvOp
   // followed by an x Op
   void splitConvBias();
@@ -481,7 +481,7 @@ public:
 private:
   // learning rate, momentum, etc.
   // Optimizer needed to construct backwards pass:
-  // if momentum the graph is different
+  // if momentum the Ir is different
   std::unique_ptr<Optimizer> optimizer{nullptr};
   std::string logdir;
   EarlyInfo earlyInfo;
@@ -494,11 +494,11 @@ private:
   void prune();
 
   void addRecompute();
-  // for all tensors in the forward graph, set the number of
+  // for all tensors in the forward pass, set the number of
   // paths to the final loss (needed in the backwards pass)
   void setNPathsToLoss();
 
-  // modify the graph using with pattern matching
+  // modify the Ir using with pattern matching
   void applyPattern(const Pattern *);
 
   // patterns to apply after constructing forwards and backwards passes
@@ -506,7 +506,7 @@ private:
 
   // confirm that the names of the Const tensors
   // from the user (constTensors) are in the onnx Model
-  // Can be run after the forward pass of Graph has been
+  // Can be run after the forward pass of Ir has been
   // constructed
   void confirmConstIds() const;
 
@@ -556,9 +556,9 @@ private:
   std::unique_ptr<Op> addOp(const Node &);
   std::map<OpId, std::unique_ptr<Op>> ops;
 
-  // moves ownsership of created Op into the Graph,
+  // moves ownsership of created Op into the Ir,
   // and returns the Op's OpId (which it already has)
-  OpId moveIntoGraph(std::unique_ptr<Op> op);
+  OpId moveIntoIr(std::unique_ptr<Op> op);
 
   // total number of ops ever created
   OpId opsCounter{100};
@@ -568,7 +568,7 @@ private:
 
   Op *finalLossOp{nullptr};
 
-  // all in input() of all in node() of the onnx Graph
+  // all in input() of all in node() of the onnx::Graph
   void setAllNodeInputsMap();
   std::set<std::string> allNodeInputsMap;
   // only adds an init tensor if it is is allNodeInputsMap;

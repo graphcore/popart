@@ -1,20 +1,18 @@
 #ifndef GUARD_NEURALNET_AVERAGEPOOL_HPP
 #define GUARD_NEURALNET_AVERAGEPOOL_HPP
 
-#include <willow/graph.hpp>
+#include <willow/ir.hpp>
 #include <willow/names.hpp>
 #include <willow/receptive.hpp>
 
 namespace willow {
-
-class Tensor;
 
 // c++ note : the conditions are suitable here
 // for the compiler to generate defaults for
 // "the 3": destructor, copy constructor, assigment op.
 class AveragePoolOp : public HasReceptiveFieldOp {
 public:
-  AveragePoolOp(const onnx::NodeProto &node, Graph *pgraph);
+  AveragePoolOp(const onnx::NodeProto &node, Ir *pir);
   virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
 

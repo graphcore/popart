@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_VOLE_HPP
 #define GUARD_NEURALNET_VOLE_HPP
 
-#include <willow/graph.hpp>
+#include <willow/ir.hpp>
 
 namespace willow {
 
@@ -9,7 +9,7 @@ namespace willow {
 // ConvOp and AveragePoolOp
 class HasReceptiveFieldOp : public Op {
 public:
-  HasReceptiveFieldOp(const onnx::NodeProto &node, Graph *pgraph);
+  HasReceptiveFieldOp(const onnx::NodeProto &node, Ir *pir);
   // C++ rule of 3 for destructor, copy con, assignment op.
 
   virtual void setup() override final;

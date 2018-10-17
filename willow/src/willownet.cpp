@@ -1,7 +1,7 @@
 #include <willow/device.hpp>
 #include <willow/error.hpp>
 #include <willow/gcipu/popdevice.hpp>
-#include <willow/graph.hpp>
+#include <willow/ir.hpp>
 #include <willow/willownet.hpp>
 
 namespace willow {
@@ -16,22 +16,22 @@ WillowNet::WillowNet(std::string onnxModelFn,
                      std::string logdir_,
                      const std::vector<std::string> &patternNames)
 
-    : graph(new Graph({onnxModelFn,
-                       perk,
-                       df,
-                       lossesIn,
-                       optimizerIn,
-                       cTens,
-                       logdir_,
-                       patternNames})) {}
+    : pir(new Ir({onnxModelFn,
+                  perk,
+                  df,
+                  lossesIn,
+                  optimizerIn,
+                  cTens,
+                  logdir_,
+                  patternNames})) {}
 
 void WillowNet::updateOptimizer(const Optimizer *optimizer) {
-  graph->updateOptimizer(optimizer);
+  pir->updateOptimizer(optimizer);
 }
 
 void WillowNet::setDevice(std::string deviceString) {
   if (deviceString == "IPU") {
-    device_.reset(new PopDevice(graph.get()));
+    device_.reset(new PopDevice(pir.get()));
   } else {
     throw error("How to set device from " + deviceString + " ??? ");
   }

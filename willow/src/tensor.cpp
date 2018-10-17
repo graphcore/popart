@@ -1,5 +1,5 @@
 #include <willow/error.hpp>
-#include <willow/graph.hpp>
+#include <willow/ir.hpp>
 #include <willow/tensor.hpp>
 
 namespace willow {
@@ -106,8 +106,8 @@ int Consumers::getTotal() const {
   return total;
 }
 
-Tensor::Tensor(TensorId n, TensorType t, Graph *g)
-    : Vertex(), id(n), pgraph(g), producer(nullptr),
+Tensor::Tensor(TensorId n, TensorType t, Ir *g)
+    : Vertex(), id(n), pir(g), producer(nullptr),
       tensorTypeInfo(&getTensorTypeInfoMap().at(t)) {}
 
 void Consumers::decrement(Op *op) {

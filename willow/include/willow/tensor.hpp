@@ -18,9 +18,6 @@ enum class TensorType {
   N // number of tensor types
 };
 
-class Op;
-class Graph;
-
 // The consumers (Ops) of a Tensor. Note that
 // one Op may consume a Tensor at multiple locations.
 class Consumers {
@@ -96,14 +93,14 @@ class Tensor : public Vertex {
 public:
   // note : producer (if there is one)
   // must be set after construction
-  Tensor(TensorId n, TensorType t, Graph *g);
+  Tensor(TensorId n, TensorType t, Ir *g);
   TensorId id;
-  Graph *pgraph;
+  Ir *pir;
   // ActGrad, Variable, etc:
   TensorType tensorType() const;
   const std::string &tensor_type() const;
   Consumers consumers;
-  // shape and data type. Not to be used be inferShape of pgraph has run
+  // shape and data type. Not to be used be inferShape of pir has run
   TensorInfo info;
 
   Op *getProducer();

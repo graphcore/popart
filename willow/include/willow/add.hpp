@@ -1,13 +1,13 @@
 #ifndef GUARD_NEURALNET_ADD_HPP
 #define GUARD_NEURALNET_ADD_HPP
 
-#include <willow/graph.hpp>
+#include <willow/ir.hpp>
 
 namespace willow {
 
 class AddOp : public Op {
 public:
-  AddOp(const onnx::NodeProto &node, Graph *pgraph);
+  AddOp(const onnx::NodeProto &node, Ir *pir);
   virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
   virtual void setup() override final;

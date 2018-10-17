@@ -6,8 +6,8 @@
 #include <vector>
 #include <willow/error.hpp>
 #include <willow/filereader.hpp>
-#include <willow/graph.hpp>
 #include <willow/intervals.hpp>
+#include <willow/ir.hpp>
 #include <willow/loss.hpp>
 #include <willow/optimizer.hpp>
 #include <willow/patterns.hpp>
@@ -29,7 +29,7 @@
 
 namespace willow {
 
-void Graph::updateOptimizer(const Optimizer *) {
+void Ir::updateOptimizer(const Optimizer *) {
   throw error("update optimizer not implemented. Must throw if incompat");
 }
 
@@ -47,7 +47,7 @@ std::vector<TensorId> TensorIndexMap::getSerialised() const {
   return serialised;
 }
 
-void Graph::eraseOp(OpId id) {
+void Ir::eraseOp(OpId id) {
   auto found = ops.find(id);
   if (found == ops.end()) {
     throw error("ILE: no op " + std::to_string(id) + " to erase");
@@ -113,7 +113,7 @@ void Op::setup() { throw error("No setup() for " + op_type()); }
 // externally. Also not quite Kahn, as the vertices which
 // are ready to be inserted have an insertion "priority"
 // set externally
-std::vector<Op *> Graph::getTopologicallySorted() const {
+std::vector<Op *> Ir::getTopologicallySorted() const {
   // the topological sorting (to construct in this function)
   std::vector<Op *> sorted;
   // ops which have all their input tensors
@@ -210,7 +210,7 @@ std::vector<Op *> Graph::getTopologicallySorted() const {
   return sorted;
 }
 
-void Graph::exportDot(const std::string dotfn) const {
+void Ir::exportDot(const std::string dotfn) const {
   std::ofstream strm;
   strm.open(dotfn, std::ios::out);
   if (!strm.is_open()) {
@@ -259,12 +259,12 @@ std::vector<TensorId> Tensors::getIds(TensorType type) const {
   return ids;
 }
 
-Tensors::Tensors(const std::vector<std::string> &vals1, Graph *pg)
-    : constIds(vals1), pgraph(pg) {}
+Tensors::Tensors(const std::vector<std::string> &vals1, Ir *pg)
+    : constIds(vals1), pir(pg) {}
 
 VectorAndSet::~VectorAndSet() = default;
 Tensors::~Tensors()           = default;
-Graph::~Graph()               = default;
+Ir::~Ir()                     = default;
 
 void TensorIndexMap::insert(int index, Tensor *ptensor) {
   tensor_map[index] = ptensor;
@@ -307,14 +307,14 @@ const std::vector<int> &TensorIndexMap::indices(Tensor *ptensor) const {
 }
 
 void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
-  Tensor *ptensor = pgraph->tensors.get(tenId);
+  Tensor *ptensor = pir->tensors.get(tenId);
   input.insert(inIndex, ptensor);
   ptensor->consumers.increment(this);
 }
 
 void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
-  pgraph->tensors.addActGrad(tenId);
-  Tensor *ptensor = pgraph->tensors.get(tenId);
+  pir->tensors.addActGrad(tenId);
+  Tensor *ptensor = pir->tensors.get(tenId);
   output.insert(outIndex, ptensor);
   ptensor->setProducer(this);
 }
@@ -394,7 +394,7 @@ bool EarlyInfo::hasInfo(TensorId id) const {
   return infos.find(id) != infos.end();
 }
 
-void Graph::confirmNoReservedIds() const {
+void Ir::confirmNoReservedIds() const {
 
   auto &onnxGraph = onnxModel.graph();
 
@@ -428,7 +428,7 @@ std::vector<TensorId> EarlyInfo::getAllTensorIds() const {
   return all;
 }
 
-void Graph::setAllNodeInputsMap() {
+void Ir::setAllNodeInputsMap() {
   for (auto &node : onnxModel.graph().node()) {
     for (auto &name : node.input()) {
       allNodeInputsMap.insert(name);
@@ -436,19 +436,19 @@ void Graph::setAllNodeInputsMap() {
   }
 }
 
-GraphBundle::GraphBundle(std::string fnModel_,
-                         const EarlyInfo &earlyInfo_,
-                         const DataFlow &dataFlow_,
-                         const std::vector<Loss *> &losses_,
-                         const Optimizer *optimizer_,
-                         const std::vector<std::string> &cTens_,
-                         std::string logdir_,
-                         const std::vector<std::string> &patternNames_)
+IrBundle::IrBundle(std::string fnModel_,
+                   const EarlyInfo &earlyInfo_,
+                   const DataFlow &dataFlow_,
+                   const std::vector<Loss *> &losses_,
+                   const Optimizer *optimizer_,
+                   const std::vector<std::string> &cTens_,
+                   std::string logdir_,
+                   const std::vector<std::string> &patternNames_)
     : fnModel(fnModel_), earlyInfo(earlyInfo_), dataFlow(dataFlow_),
       losses(losses_), optimizer(optimizer_), cTens(cTens_), logdir(logdir_),
       patternNames(patternNames_) {}
 
-Graph::Graph(const GraphBundle &gb)
+Ir::Ir(const IrBundle &gb)
     : tensors(gb.cTens, this), logdir(io::getCanonicalDirName(gb.logdir)),
       earlyInfo(gb.earlyInfo), dataFlow(gb.dataFlow) {
 
@@ -550,7 +550,7 @@ Graph::Graph(const GraphBundle &gb)
   std::cout << ss2.str();
 }
 
-std::vector<Op *> Graph::getTopologicallySortedTilLoss() const {
+std::vector<Op *> Ir::getTopologicallySortedTilLoss() const {
   std::vector<Op *> opsTowardsLoss;
   for (auto op : getTopologicallySorted()) {
     if (op->nPathsToLoss() > 0) {
@@ -561,7 +561,7 @@ std::vector<Op *> Graph::getTopologicallySortedTilLoss() const {
 }
 
 std::vector<std::set<Op *>>
-Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
+Ir::getLiveSets(const std::vector<Op *> &topoOps) const {
 
   // the key op waits for the ops in val
   // so the key op is later in the sort.
@@ -619,7 +619,7 @@ int64_t Op::memOfOutputs() const {
   return mem;
 }
 
-void Graph::addRecompute() {
+void Ir::addRecompute() {
   std::vector<Op *> fwdOps = getTopologicallySortedTilLoss();
 
   // liveSets[i] : set of ops whose outputs have not all
@@ -693,10 +693,10 @@ std::unique_ptr<Op> GradOp::clone() const {
 }
 
 // see diagram 74 in notebook ;/)
-Op *Graph::growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints) {
+Op *Ir::growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints) {
 
   // the recompute op:
-  OpId rcId = moveIntoGraph(oriOp->clone());
+  OpId rcId = moveIntoIr(oriOp->clone());
 
   Op *rcOp = ops[rcId].get();
 
@@ -766,16 +766,16 @@ void Tensors::append(std::stringstream &ss) const {
   ss << ']';
 }
 
-void Graph::validateAnchors() const {
+void Ir::validateAnchors() const {
   for (TensorId id : dataFlow.anchors()) {
     if (!tensors.contains(id)) {
       std::stringstream ss;
-      ss << "Anchor tensor `" << id << "' not in graph. ";
+      ss << "Anchor tensor `" << id << "' not in tensors. ";
       // add some trouble-shooting for a case I stumbled upon:
       if (id.find(reservedGradientPrefix()) != std::string::npos) {
         std::string degrad = id.substr(reservedGradientPrefix().size());
         if (tensors.contains(degrad)) {
-          ss << "\nInterestingly, `" << degrad << '\'' << " IS in the graph.\n";
+          ss << "\nInterestingly, `" << degrad << '\'' << " IS in tensors.\n";
           ss << "Note that not all tensors can have their gradients "
              << "anchored:\nif an activation tensor does not lead "
              << "to the loss,\nits gradient is zero and never computed.";
@@ -793,7 +793,7 @@ const std::vector<TensorId> &DataFlow::anchors() const { return v_anchors; }
 
 int DataFlow::nAnchors() const { return static_cast<int>(v_anchors.size()); }
 
-void Graph::prune() {
+void Ir::prune() {
 
   // initialise with all the var
   // update ops for training,
@@ -883,7 +883,7 @@ void Graph::prune() {
   }
 }
 
-void Graph::applyPattern(const Pattern *pattern) {
+void Ir::applyPattern(const Pattern *pattern) {
   std::vector<Op *> v_ops;
   for (auto &id_op : ops) {
     v_ops.push_back(id_op.second.get());
@@ -905,7 +905,7 @@ std::vector<TensorId> Tensors::getNoProducerIds() const {
   return t0;
 }
 
-void Graph::inferTensorInfos() {
+void Ir::inferTensorInfos() {
   for (const auto &tensorId : tensors.getInitIds()) {
     auto pt = tensors.getOnnxInit(tensorId);
     tensors.get(tensorId)->info.set(*pt);
@@ -928,7 +928,7 @@ const onnx::TensorProto *Tensors::getOnnxInit(TensorId id) const {
   return init.at(id);
 }
 
-std::vector<Op *> Graph::opsOfType(OpType opType) {
+std::vector<Op *> Ir::opsOfType(OpType opType) {
   std::vector<Op *> typedOps;
   for (auto &id_op : ops) {
     if (id_op.second->opType == opType) {
@@ -940,22 +940,22 @@ std::vector<Op *> Graph::opsOfType(OpType opType) {
 
 int TensorIndexMap::n() const { return static_cast<int>(tensor_map.size()); }
 
-bool Graph::isAnchored(TensorId tenId) { return dataFlow.isAnchored(tenId); }
+bool Ir::isAnchored(TensorId tenId) { return dataFlow.isAnchored(tenId); }
 
-void Graph::splitConvBias() {}
+void Ir::splitConvBias() {}
 
 const std::vector<std::string> &VectorAndSet::v() const { return v_vals; }
 
-void Graph::confirmConstIds() const {
+void Ir::confirmConstIds() const {
   for (auto &tensorId : tensors.constIds.v()) {
     if (!tensors.contains(tensorId)) {
       throw error("no tensor " + tensorId +
-                  " in graph, error in const tensor names");
+                  " in tensors, error in const tensor names");
     }
   }
 }
 
-void Graph::constructForwards() {
+void Ir::constructForwards() {
   auto &onnxGraph = onnxModel.graph();
   auto &onnxNodes = onnxGraph.node();
   for (const auto &node : onnxNodes) {
@@ -974,7 +974,7 @@ void Tensors::insert(TensorId name, std::unique_ptr<Tensor> t) {
   M[name] = std::move(t);
 }
 
-void Graph::addInitIfUsed(TensorId id, const onnx::TensorProto *t) {
+void Ir::addInitIfUsed(TensorId id, const onnx::TensorProto *t) {
   if (allNodeInputsMap.count(id) != 0) {
     tensors.addInit(id, t);
   } else {
@@ -988,7 +988,7 @@ void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
          std::unique_ptr<Tensor>(new Tensor(
              name,
              constIds.contains(name) ? TensorType::Const : TensorType::Variable,
-             pgraph)));
+             pir)));
 }
 
 std::string reservedGradientPrefix() { return "d__"; }
@@ -998,12 +998,11 @@ std::vector<std::string> reservedPrefixes() {
 }
 
 void Tensors::addActGrad(TensorId tenId) {
-  insert(
-      tenId,
-      std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::ActGrad, pgraph)));
+  insert(tenId,
+         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::ActGrad, pir)));
 }
 
-void Graph::confirmNonReservedId(TensorId tenId) const {
+void Ir::confirmNonReservedId(TensorId tenId) const {
   for (auto reservedPrefix : reservedPrefixes()) {
     if (tenId.find(reservedPrefix) != std::string::npos) {
       throw error("Provided tensor " + tenId +
@@ -1014,9 +1013,8 @@ void Graph::confirmNonReservedId(TensorId tenId) const {
 }
 
 void Tensors::addStream(TensorId tenId) {
-  insert(
-      tenId,
-      std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, pgraph)));
+  insert(tenId,
+         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, pir)));
 }
 
 TensorId getGradId(TensorId id) { return reservedGradientPrefix() + id; }
@@ -1042,23 +1040,23 @@ void Tensors::remove(TensorId id) { M.erase(id); }
 
 bool Tensors::contains(TensorId id) const { return M.find(id) != M.end(); }
 
-OpId Graph::getAndIncrOpsCounter() {
+OpId Ir::getAndIncrOpsCounter() {
   OpId nOps0 = opsCounter;
   ++opsCounter;
   return nOps0;
 }
 
-OpId Graph::getOpsCounter() const { return opsCounter; }
+OpId Ir::getOpsCounter() const { return opsCounter; }
 
-OpId Graph::moveIntoGraph(std::unique_ptr<Op> op) {
+OpId Ir::moveIntoIr(std::unique_ptr<Op> op) {
   OpId id = op->id;
   ops[id] = std::move(op);
   return id;
 }
 
-Op *Graph::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
+Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
-  OpId opId = moveIntoGraph(
+  OpId opId = moveIntoIr(
       std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getWillowDomain()})));
 
   std::vector<TensorId> inputs;
@@ -1074,14 +1072,14 @@ Op *Graph::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   return ops[opId].get();
 }
 
-std::vector<Op *> Graph::growGradOps(Op *nonGradOp) {
+std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
 
   OpId nonGradOpId = nonGradOp->id;
   auto backOps     = nonGradOp->getGradOps();
   std::vector<Op *> gradOps;
   for (auto &upop : backOps) {
     Op *gradOp    = upop.get();
-    OpId gradOpId = moveIntoGraph(std::move(upop));
+    OpId gradOpId = moveIntoIr(std::move(upop));
 
     // connect inputs of gradOp
     {
@@ -1222,14 +1220,14 @@ std::vector<Op *> OpGradRegistry::popComplete() {
   return toRet;
 }
 
-// design choice: I could have a "graphHasModified"
-// flag which is set to true whenever the Graph changes,
-// and then if graphHasModified is false, calls
+// design choice: I could have a "irHasModeified"
+// flag which is set to true whenever the Ir changes,
+// and then if irHasModeified is false, calls
 // to this (and other) functions can do nothing.
-// The cost of maintaining graphHasModified is non-trivial
+// The cost of maintaining irHasModeified is non-trivial
 // and would require runtime overhead, for now I'm not
 // going to implement it.
-void Graph::setNPathsToLoss() {
+void Ir::setNPathsToLoss() {
 
   // initialize number of paths for
   // all Ops and Tensors to loss to be zero
@@ -1268,7 +1266,7 @@ void Graph::setNPathsToLoss() {
   }
 }
 
-void Graph::constructBackwards() {
+void Ir::constructBackwards() {
   // definition: edge-gradient. What is output by a grad-op,
   // and which will be summed with other edge-gradients to create
   // a gradient. It is possible that an edge-gradient has the same
@@ -1377,9 +1375,9 @@ void Graph::constructBackwards() {
 
 TensorId getLearningRateId() { return "learnRate"; }
 
-Op *Graph::growVarUpdateOp(TensorId varId) {
+Op *Ir::growVarUpdateOp(TensorId varId) {
 
-  OpId opId = moveIntoGraph(std::unique_ptr<Op>(new VarUpdateOp(varId, this)));
+  OpId opId = moveIntoIr(std::unique_ptr<Op>(new VarUpdateOp(varId, this)));
   Op *op    = ops[opId].get();
 
   std::vector<TensorId> inputs(3, "");
@@ -1404,14 +1402,14 @@ Op *Op::getNonGradCreator() const {
   throw error("No `get non grad op' for " + op_type() + " (yet?)");
 }
 
-Op *Graph::growFromNode(const Node &node) {
+Op *Ir::growFromNode(const Node &node) {
 
   // special case of CONSTANT Node, no Op is created
   if (getOpTypes().get(node.op_type()) == OpType::CONSTANT) {
     TensorId name = node.output(0);
 
     // we confirm that this tensor is actually
-    // the input of some Node in the Graph, because
+    // the input of some Node in the onnx::Graph, because
     // we've seen (in pytorch) that some initializers
     // are not used (always '2', '3', '4' of shape (10,10,3,3)
     addInitIfUsed(name, &node.attribute(0).t());
@@ -1419,31 +1417,31 @@ Op *Graph::growFromNode(const Node &node) {
     return nullptr;
   }
 
-  OpId opId = moveIntoGraph(addOp(node));
+  OpId opId = moveIntoIr(addOp(node));
 
   connectInputs(node, opId);
   connectOutputs(node, opId);
   return ops[opId].get();
 }
 
-Op *Graph::getFinalLossOp() {
+Op *Ir::getFinalLossOp() {
   if (finalLossOp == nullptr) {
     throw error("ILE : final loss not set");
   }
   return finalLossOp;
 }
 
-void Graph::growFinalLoss() {
+void Ir::growFinalLoss() {
   std::vector<Op *> lossOps;
   for (auto &loss : losses) {
-    OpId opId = moveIntoGraph(loss->getOp(this));
+    OpId opId = moveIntoIr(loss->getOp(this));
     connectInputs(*loss, opId);
     connectOutputs(*loss, opId);
     lossOps.push_back(ops[opId].get());
   }
 
   // now growing the FINAL loss:
-  OpId opId = moveIntoGraph(
+  OpId opId = moveIntoIr(
       std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getWillowDomain()})));
 
   std::vector<TensorId> inputs;
@@ -1457,10 +1455,9 @@ void Graph::growFinalLoss() {
   finalLossOp = ops[opId].get();
 }
 
-TensorId Graph::getFinalLossId() const { return "finalLoss"; }
+TensorId Ir::getFinalLossId() const { return "finalLoss"; }
 
-template <typename T>
-void Graph::connectInputs(const T &inContainer, OpId opId) {
+template <typename T> void Ir::connectInputs(const T &inContainer, OpId opId) {
   Op *op = ops[opId].get();
   for (int inIndex = 0; inIndex < inContainer.input_size(); ++inIndex) {
     auto &inName = inContainer.input(inIndex);
@@ -1478,7 +1475,7 @@ void Graph::connectInputs(const T &inContainer, OpId opId) {
 }
 
 template <typename T>
-void Graph::connectOutputs(const T &outContainer, OpId opId) {
+void Ir::connectOutputs(const T &outContainer, OpId opId) {
   for (int outIndex = 0; outIndex < outContainer.output_size(); ++outIndex) {
     auto &outName = outContainer.output(outIndex);
     if (outName == "") {
@@ -1533,8 +1530,8 @@ const std::string &OpTypes::get(OpType opType) const {
   return strings_.at(opType);
 }
 
-void Graph::append(std::stringstream &ss) {
-  ss << "-- Graph --\n";
+void Ir::append(std::stringstream &ss) {
+  ss << "-- Ir --\n";
   //  for (auto &id_op : ops) {
   //    id_op.second->append(ss);
   //  }
@@ -1545,9 +1542,9 @@ void Graph::append(std::stringstream &ss) {
 }
 
 Op::Op(const Op &op)
-    : priority(op.priority), opType(op.opType), pgraph(op.pgraph),
-      id(pgraph->getAndIncrOpsCounter()), nAtts(op.nAtts),
-      p_op_type(op.p_op_type), op_domain(op.op_domain) {
+    : priority(op.priority), opType(op.opType), pir(op.pir),
+      id(pir->getAndIncrOpsCounter()), nAtts(op.nAtts), p_op_type(op.p_op_type),
+      op_domain(op.op_domain) {
   // input, output: empty.
 }
 
@@ -1556,18 +1553,18 @@ const std::string &Op::domain() { return op_domain; }
 const std::string &Op::op_type() const { return *p_op_type; }
 
 OpConstructorBundle::OpConstructorBundle(std::string op_type_,
-                                         Graph *pgraph_,
+                                         Ir *pir_,
                                          Attributes atts_,
                                          std::string domain_)
-    : op_type(op_type_), pgraph(pgraph_), atts(atts_), domain(domain_) {}
+    : op_type(op_type_), pir(pir_), atts(atts_), domain(domain_) {}
 
 Op::Op(const OpConstructorBundle &b)
     : // opType (from string op_type)
       opType(getOpTypes().get(b.op_type)),
-      // the Graph
-      pgraph(b.pgraph),
+      // the Ir
+      pir(b.pir),
       // the id
-      id(pgraph->getAndIncrOpsCounter()),
+      id(pir->getAndIncrOpsCounter()),
       // the Attributes
       nAtts(b.atts),
       // opType
@@ -1575,11 +1572,11 @@ Op::Op(const OpConstructorBundle &b)
       // domain
       op_domain(b.domain) {}
 
-Op::Op(const Node &node, Graph *pg)
+Op::Op(const Node &node, Ir *pg)
     : // We set opType, looked up in a map from the string node.op_type()
       opType(getOpTypes().get(node.op_type())),
-      // pointer to the graph containing this node
-      pgraph(pg), id(pgraph->getAndIncrOpsCounter()),
+      // pointer to the Ir containing this node
+      pir(pg), id(pir->getAndIncrOpsCounter()),
       // willow::Attributes constructed from contained of onnx::Attribute s
       nAtts(node.attribute()),
       // We set the pointer to the string version of opType, in another map
@@ -1587,7 +1584,7 @@ Op::Op(const Node &node, Graph *pg)
       // And finally we strip off the domain of the Node
       op_domain(node.domain()) {}
 
-std::unique_ptr<Op> Graph::addOp(const Node &node) {
+std::unique_ptr<Op> Ir::addOp(const Node &node) {
   using pOp = std::unique_ptr<Op>;
   switch (getOpTypes().get(node.op_type())) {
   case OpType::ADD: {
@@ -1642,7 +1639,7 @@ std::string Op::str() const {
   return std::to_string(id) + " (" + op_type() + ')';
 }
 
-std::vector<Op *> Graph::growLossGradients() {
+std::vector<Op *> Ir::growLossGradients() {
   std::vector<Op *> gradops;
   for (auto &t_inds : getFinalLossOp()->input.indicesMap()) {
     Tensor *t  = t_inds.first;
@@ -1665,7 +1662,7 @@ DataFlow::DataFlow(int BpR, int bs, const std::vector<TensorId> &v)
   }
 }
 
-Op *Graph::getOp(OpId opId) {
+Op *Ir::getOp(OpId opId) {
   auto found = ops.find(opId);
   if (found == ops.end()) {
     throw error("No Op `" + std::to_string(opId) + "'");

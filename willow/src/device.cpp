@@ -4,6 +4,6 @@ namespace willow {
 
 Device::~Device() = default;
 
-Device::Device(const Graph *g) : graph(g) {}
+Device::Device(const Ir *g) : pir(g) {}
 
 } // namespace willow

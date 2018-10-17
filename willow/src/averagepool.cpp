@@ -4,8 +4,8 @@
 
 namespace willow {
 
-AveragePoolOp::AveragePoolOp(const onnx::NodeProto &node, Graph *pgraph)
-    : HasReceptiveFieldOp(node, pgraph) {}
+AveragePoolOp::AveragePoolOp(const onnx::NodeProto &node, Ir *pir)
+    : HasReceptiveFieldOp(node, pir) {}
 
 void AveragePoolOp::setup0() {}
 
@@ -38,7 +38,7 @@ std::vector<std::unique_ptr<Op>> AveragePoolOp::getGradOps() {
 GradOp::GradOp(const OpConstructorBundle &b) : Op(b) {}
 
 AveragePoolGradOp::AveragePoolGradOp(AveragePoolOp *op_)
-    : GradOp({"AveragePoolGrad", op_->pgraph, {}, getWillowDomain()}),
+    : GradOp({"AveragePoolGrad", op_->pir, {}, getWillowDomain()}),
       averagePoolOp(op_) {}
 
 const std::vector<GradInOutMapper> &AveragePoolGradOp::gradInputInfo() const {

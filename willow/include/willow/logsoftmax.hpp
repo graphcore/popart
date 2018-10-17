@@ -1,12 +1,12 @@
 #ifndef GUARD_NEURALNET_LOGSOFTMAX_HPP
 #define GUARD_NEURALNET_LOGSOFTMAX_HPP
 
-#include <willow/graph.hpp>
+#include <willow/ir.hpp>
 
 namespace willow {
 class LogSoftmaxOp : public Op {
 public:
-  LogSoftmaxOp(const onnx::NodeProto &node, Graph *pgraph);
+  LogSoftmaxOp(const onnx::NodeProto &node, Ir *pir);
   virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
   virtual void setup() override final;

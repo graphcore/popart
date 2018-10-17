@@ -1,13 +1,13 @@
 #ifndef GUARD_NEURALNET_RELU_HPP
 #define GUARD_NEURALNET_RELU_HPP
 
-#include <willow/graph.hpp>
+#include <willow/ir.hpp>
 
 namespace willow {
 
 class ReluOp : public Op {
 public:
-  ReluOp(const onnx::NodeProto &node, Graph *pgraph);
+  ReluOp(const onnx::NodeProto &node, Ir *pir);
   virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
   virtual void setup() override final;

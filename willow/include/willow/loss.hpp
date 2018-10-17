@@ -9,9 +9,6 @@
 
 namespace willow {
 
-class Op;
-class Graph;
-
 enum class eLoss { NLL, L1 };
 std::map<std::string, eLoss> initLossMap();
 const std::map<std::string, eLoss> &lossMap();
@@ -23,7 +20,7 @@ public:
   Loss &operator=(const Loss &) = delete;
   Loss(const std::vector<TensorId> &input, TensorId output);
   virtual std::vector<TensorId> getStreamTensorNames() const = 0;
-  virtual std::unique_ptr<Op> getOp(Graph *) const           = 0;
+  virtual std::unique_ptr<Op> getOp(Ir *) const              = 0;
   const TensorId &input(int i) const;
   int input_size() const;
   // takes in an int arg to conform

@@ -10,8 +10,8 @@
 
 namespace willow {
 
-ConvOp::ConvOp(const onnx::NodeProto &node, Graph *pgraph)
-    : HasReceptiveFieldOp(node, pgraph) {
+ConvOp::ConvOp(const onnx::NodeProto &node, Ir *pir)
+    : HasReceptiveFieldOp(node, pir) {
   if (input.n()) {
     throw error("Conv with bias case not handled");
   }
@@ -57,7 +57,7 @@ void ConvOp::setSpatial() {
 int64_t ConvOp::getNOutChans() const { return nOutChans; }
 
 ConvWeightsGradOp::ConvWeightsGradOp(ConvOp *op_)
-    : GradOp({"ConvWeightsGrad", op_->pgraph, {}, getWillowDomain()}),
+    : GradOp({"ConvWeightsGrad", op_->pir, {}, getWillowDomain()}),
       convOp(op_) {}
 
 Op *ConvWeightsGradOp::getNonGradCreator() const { return convOp; }
@@ -88,8 +88,7 @@ ConvWeightsGradOp::createConvWeightsGradInfo() const {
 }
 
 ConvDataGradOp::ConvDataGradOp(ConvOp *op_)
-    : GradOp({"ConvDataGrad", op_->pgraph, {}, getWillowDomain()}),
-      convOp(op_) {}
+    : GradOp({"ConvDataGrad", op_->pir, {}, getWillowDomain()}), convOp(op_) {}
 
 Op *ConvDataGradOp::getNonGradCreator() const { return convOp; }
 

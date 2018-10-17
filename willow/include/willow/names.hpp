@@ -37,7 +37,7 @@ using TP = onnx::TensorProto;
 class DataFlow;
 class Device;
 class EarlyInfo;
-class Graph;
+class Ir;
 class Loss;
 class Op;
 class Optimizer;

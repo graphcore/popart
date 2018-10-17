@@ -4,9 +4,8 @@
 
 namespace willow {
 
-HasReceptiveFieldOp::HasReceptiveFieldOp(const onnx::NodeProto &node,
-                                         Graph *pgraph)
-    : Op(node, pgraph) {}
+HasReceptiveFieldOp::HasReceptiveFieldOp(const onnx::NodeProto &node, Ir *pir)
+    : Op(node, pir) {}
 
 void HasReceptiveFieldOp::setup() {
   batchSize    = input.tensor(0)->info.dim(0);
