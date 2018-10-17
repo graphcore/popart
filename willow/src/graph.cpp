@@ -444,8 +444,10 @@ Graph::Graph(std::string onnxModelFn,
              const std::vector<TensorId> &cTens,
              std::string logdir_,
              const std::vector<std::string> &patternNames)
-    : logdir(io::getCanonicalDirName(logdir_)), earlyInfo(perk), dataFlow(df),
-      tensors(cTens, this) {
+    : tensors(cTens, this), logdir(io::getCanonicalDirName(logdir_)),
+      earlyInfo(perk), dataFlow(df)
+
+{
 
   // learning rate, momentum, etc.
   // Optimizer needed to construct backwards pass:

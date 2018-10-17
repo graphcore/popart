@@ -446,23 +446,16 @@ public:
         std::string logdir_,
         const std::vector<std::string> &patternNames);
 
-  std::string logdir;
-
   // update the optimizer. Note that the optimizer passed in
-  // must be compatible with that in setOptimizer if buildBackwards
-  // has already been called. Must call optimizerToDevice to
-  // take effect.
+  // must be compatible with that in the constructor
+  // Must call optimizerToDevice to take effect.
   void updateOptimizer(const Optimizer *);
-
   // take training steps
   onnx::ModelProto step(int n);
   // if the tensor is returned to user (passes call to DataFlow).
   bool isAnchored(TensorId);
   void append(std::stringstream &);
-  EarlyInfo earlyInfo;
-  DataFlow dataFlow;
   std::vector<std::unique_ptr<Loss>> losses;
-  std::unique_ptr<Optimizer> optimizer{nullptr};
   Tensors tensors;
   ~Graph();
   // split ConvOp with bias into two Ops, a ConvOp
@@ -473,6 +466,19 @@ public:
   // this does not take into priority, simple topological sort
   std::vector<Op *> getTopologicallySorted() const;
   std::vector<Op *> getTopologicallySortedTilLoss() const;
+  OpId getOpsCounter() const;
+  OpId getAndIncrOpsCounter();
+  TensorId getFinalLossId() const;
+  Op *getFinalLossOp();
+  void exportDot(std::string dotfn) const;
+  void eraseOp(OpId);
+  Op *getOp(OpId);
+
+private:
+  std::unique_ptr<Optimizer> optimizer{nullptr};
+  std::string logdir;
+  EarlyInfo earlyInfo;
+  DataFlow dataFlow;
 
   void constructForwards();
   void constructBackwards();
@@ -484,16 +490,7 @@ public:
   // for all tensors in the forward graph, set the number of
   // paths to the final loss (needed in the backwards pass)
   void setNPathsToLoss();
-  OpId getOpsCounter() const;
-  OpId getAndIncrOpsCounter();
 
-  TensorId getFinalLossId() const;
-  Op *getFinalLossOp();
-  void exportDot(std::string dotfn) const;
-  void eraseOp(OpId);
-  Op *getOp(OpId);
-
-private:
   // modify the graph using with pattern matching
   void applyPattern(const Pattern *);
 
