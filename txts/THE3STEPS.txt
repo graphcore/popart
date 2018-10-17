@@ -1,6 +1,0 @@
-The cleanest solution would involve solving 3 problems:
-
-1) min-liveness (appears to be an NP-complete problem, requires heuristics)
-2) recompute graph
-3) sun-graph matching
-

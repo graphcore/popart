@@ -1,18 +1,19 @@
-  // thoughts 18/09/2018:
-  // 1) alow multiple gradients to computed by one node, but prefer a single
-  // gradient to be computed by one node. This will allow more refined 
-  // pruning of dead paths: if any target depends on a node the node must run,
-  // so rather split nodes as finely as possible.
-  // 2) as implied by 1, don't worry about dead paths here. Their removal will
-  // follow as a subsequent step. Here the full backwards pass in constructed
-  // INCLUDING all stream tensors. 
-  // 3) it is fine to wait for gradients to be in before spawning the new 
-  // gradient nodes. This will not effect the final graph, and there is no
-  // risk of deadlock.
+thoughts 18/09/2018:
+
+1) alow multiple gradients to be computed by one node, but prefer a single
+gradient to be computed by one node. This will allow more refined 
+pruning of dead paths: if any target depends on a node the node must run,
+so rather split nodes as finely as possible.
+2) as implied by 1, don't worry about dead paths here. Their removal will
+follow as a subsequent step. Here the full backwards pass in constructed
+INCLUDING all stream tensors. 
+3) it is fine to wait for gradients to be in before spawning the new 
+gradient nodes. This will not effect the final graph, and there is no
+risk of deadlock.
 
 
-  // for backwards nodes with stream inputs, we don't want to compute
-  // the gradient for the stream inputs (by default, unless user explicitly
-  // requests). This can be done by setting the corresponding output to ""
-  // (somewhere). Update : done after during pruning step.
+for backwards nodes with stream inputs, we don't want to compute
+the gradient for the stream inputs (by default, unless user explicitly
+requests). This can be done by setting the corresponding output to ""
+(somewhere). Update : done after during pruning step.
 
