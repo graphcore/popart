@@ -34,6 +34,16 @@ using DataType = decltype(onnx::TensorProto().data_type());
 
 using TP = onnx::TensorProto;
 
+class DataFlow;
+class Device;
+class EarlyInfo;
+class Graph;
+class Loss;
+class Op;
+class Optimizer;
+class Pattern;
+class Tensor;
+
 } // namespace willow
 
 #endif

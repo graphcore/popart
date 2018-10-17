@@ -32,13 +32,6 @@ private:
   const std::vector<TensorId> v_anchors;
 };
 
-class Tensor;
-class Graph;
-class Op;
-class Loss;
-class Optimizer;
-class Pattern;
-
 // the input tensor of a grad-op has what kind of
 // relationship with the corresponding non-grad-op?
 // design note: it's not possible for an input to a

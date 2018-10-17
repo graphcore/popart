@@ -1,5 +1,7 @@
 #include <willow/graph.hpp>
 #include <willow/willownet.hpp>
+#include <willow/device.hpp>
+
 
 namespace willow {
 
@@ -12,6 +14,7 @@ WillowNet::WillowNet(std::string onnxModelFn,
                      const std::vector<TensorId> &cTens,
                      std::string logdir_,
                      const std::vector<std::string> &patternNames)
+
     : graph(new Graph({onnxModelFn,
                        perk,
                        df,
@@ -24,5 +27,7 @@ WillowNet::WillowNet(std::string onnxModelFn,
 void WillowNet::updateOptimizer(const Optimizer *optimizer) {
   graph->updateOptimizer(optimizer);
 }
+
+WillowNet::~WillowNet() = default;
 
 } // namespace willow

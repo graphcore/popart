@@ -1,7 +1,5 @@
 include(GNUInstallDirs)
 
-
-
 # for more useful warnings
 include(EnableCompilerWarnings)
 
