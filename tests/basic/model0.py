@@ -3,7 +3,7 @@ from torchvision import transforms, datasets
 import sys
 import os
 sys.path.append("../../pywillow")
-from pywillow import NllLoss, L1Loss, EarlyInfo, TensorInfo, DataFlow, SGD, Graph
+from pywillow import NllLoss, L1Loss, EarlyInfo, TensorInfo, DataFlow, SGD, WillowNet
 from torchwriter import PytorchNetWriter, conv3x3
 
 if (len(sys.argv) != 2):
@@ -115,7 +115,7 @@ writer = ModelWriter0()
 writer.write(dirname=outputdir)
 
 # C++ class reads from file(s) and creates backwards graph
-pynet = Graph(
+pynet = WillowNet(
     os.path.join(outputdir, "model0.onnx"), writer.earlyInfo, writer.dataFeed,
     writer.losses, writer.optimizer, [], outputdir,
     ["PreUniRepl", "PostNRepl"])

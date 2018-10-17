@@ -9,6 +9,7 @@
 #include <willow/graph.hpp>
 #include <willow/intervals.hpp>
 #include <willow/loss.hpp>
+#include <willow/optimizer.hpp>
 #include <willow/patterns.hpp>
 #include <willow/pbwrap.hpp>
 #include <willow/tensor.hpp>
@@ -435,32 +436,31 @@ void Graph::setAllNodeInputsMap() {
   }
 }
 
-Graph::Graph(std::string onnxModelFn,
-             const EarlyInfo &perk,
-             const DataFlow &df,
-             const std::vector<Loss *> &lossesIn,
-             const Optimizer *optimizerIn,
-             // Weights tensors which are not to be updated
-             const std::vector<TensorId> &cTens,
-             std::string logdir_,
-             const std::vector<std::string> &patternNames)
-    : tensors(cTens, this), logdir(io::getCanonicalDirName(logdir_)),
-      earlyInfo(perk), dataFlow(df)
+GraphBundle::GraphBundle(std::string fnModel_,
+                         const EarlyInfo &earlyInfo_,
+                         const DataFlow &dataFlow_,
+                         const std::vector<Loss *> &losses_,
+                         const Optimizer *optimizer_,
+                         const std::vector<std::string> &cTens_,
+                         std::string logdir_,
+                         const std::vector<std::string> &patternNames_)
+    : fnModel(fnModel_), earlyInfo(earlyInfo_), dataFlow(dataFlow_),
+      losses(losses_), optimizer(optimizer_), cTens(cTens_), logdir(logdir_),
+      patternNames(patternNames_) {}
 
-{
+Graph::Graph(const GraphBundle &gb)
+    : tensors(gb.cTens, this), logdir(io::getCanonicalDirName(gb.logdir)),
+      earlyInfo(gb.earlyInfo), dataFlow(gb.dataFlow) {
 
-  // learning rate, momentum, etc.
-  // Optimizer needed to construct backwards pass:
-  // if momentum the graph is different
-  optimizer = optimizerIn->clone();
+  optimizer = gb.optimizer->clone();
 
-  io::confirmRegularFile(onnxModelFn);
-  onnxModel = io::getModel(onnxModelFn);
+  io::confirmRegularFile(gb.fnModel);
+  onnxModel = io::getModel(gb.fnModel);
 
   // TODO: this will change, obtained from optimizer:
   earlyInfo.addInfo(getLearningRateId(), {TP::FLOAT, {}});
 
-  for (auto &l : lossesIn) {
+  for (auto &l : gb.losses) {
     losses.emplace_back(l->clone());
   }
 
@@ -495,7 +495,7 @@ Graph::Graph(std::string onnxModelFn,
     }
   }
 
-  for (auto patternName : patternNames) {
+  for (auto patternName : gb.patternNames) {
     switch (getPatternTypes().get(patternName)) {
     case PatternType::PREUNIREPL: {
       patterns.emplace_back(std::unique_ptr<Pattern>(new PreUniRepl));

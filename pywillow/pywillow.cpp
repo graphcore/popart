@@ -5,6 +5,8 @@
 #include <willow/l1.hpp>
 #include <willow/loss.hpp>
 #include <willow/nll.hpp>
+#include <willow/optimizer.hpp>
+#include <willow/willownet.hpp>
 
 // note to developers: be very careful
 // about exposing functions which return pointers
@@ -59,7 +61,7 @@ PYBIND11_MODULE(pywillow, m) {
       .def(py::init<float>())
       .def("learnRate", &SGD::learnRate);
 
-  py::class_<Graph>(m, "Graph")
+  py::class_<WillowNet>(m, "WillowNet")
       .def(py::init<std::string,
                     const EarlyInfo &,
                     const DataFlow &,
@@ -68,5 +70,5 @@ PYBIND11_MODULE(pywillow, m) {
                     const std::vector<TensorId> &,
                     std::string,
                     const std::vector<std::string> &>())
-      .def("updateOptimizer", &Graph::updateOptimizer);
+      .def("updateOptimizer", &WillowNet::updateOptimizer);
 }

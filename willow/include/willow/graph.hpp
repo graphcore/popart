@@ -10,7 +10,6 @@
 #include <map>
 #include <willow/attributes.hpp>
 #include <willow/names.hpp>
-#include <willow/optimizer.hpp>
 #include <willow/tensorinfo.hpp>
 #include <willow/vertex.hpp>
 
@@ -37,6 +36,7 @@ class Tensor;
 class Graph;
 class Op;
 class Loss;
+class Optimizer;
 class Pattern;
 
 // the input tensor of a grad-op has what kind of
@@ -434,21 +434,32 @@ private:
   Graph *pgraph;
 };
 
+// Graph Constructor inputs
+class GraphBundle {
+public:
+  GraphBundle(std::string fnModel_,
+              const EarlyInfo &,
+              const DataFlow &,
+              const std::vector<Loss *> &,
+              const Optimizer *,
+              const std::vector<std::string> &cTens_,
+              std::string logdir_,
+              const std::vector<std::string> &patternNames_);
+
+  std::string fnModel;
+  const EarlyInfo &earlyInfo;
+  const DataFlow &dataFlow;
+  const std::vector<Loss *> &losses;
+  const Optimizer *optimizer;
+  // Weights tensors which are not to be updated
+  const std::vector<std::string> &cTens;
+  std::string logdir;
+  const std::vector<std::string> &patternNames;
+};
+
 class Graph {
 public:
-  Graph(std::string fnOnnxModel,
-        const EarlyInfo &,
-        const DataFlow &,
-        const std::vector<Loss *> &,
-        const Optimizer *,
-        // Weights tensors which are not to be updated
-        const std::vector<std::string> &cTens,
-        std::string logdir_,
-        const std::vector<std::string> &patternNames);
-
-  // update the optimizer. Note that the optimizer passed in
-  // must be compatible with that in the constructor
-  // Must call optimizerToDevice to take effect.
+  Graph(const GraphBundle &);
   void updateOptimizer(const Optimizer *);
   // take training steps
   onnx::ModelProto step(int n);
@@ -475,6 +486,9 @@ public:
   Op *getOp(OpId);
 
 private:
+  // learning rate, momentum, etc.
+  // Optimizer needed to construct backwards pass:
+  // if momentum the graph is different
   std::unique_ptr<Optimizer> optimizer{nullptr};
   std::string logdir;
   EarlyInfo earlyInfo;
