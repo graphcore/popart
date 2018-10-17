@@ -70,5 +70,17 @@ PYBIND11_MODULE(pywillow, m) {
                     const std::vector<TensorId> &,
                     std::string,
                     const std::vector<std::string> &>())
-      .def("updateOptimizer", &WillowNet::updateOptimizer);
+      .def("updateOptimizer", &WillowNet::updateOptimizer)
+      .def("setDevice", &WillowNet::setDevice)
+      .def("prepareDevice", &WillowNet::prepareDevice)
+      .def("weightsFromHost", &WillowNet::weightsFromHost)
+      .def("optimizerFromHost", &WillowNet::optimizerFromHost)
+      .def("step", &WillowNet::step)
+      .def("modelToHost", &WillowNet::modelToHost);
+
+  // This does not seem to work :/
+  // Thoroughly read
+  // https://pybind11.readthedocs.io/en/stable/advanced/exceptions.html
+  // and looked through pybind11 code, still can't get it to bight
+  auto ex5 = py::register_exception<willow::error>(m, "WillowException");
 }

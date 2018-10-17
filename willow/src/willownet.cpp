@@ -1,7 +1,8 @@
+#include <willow/device.hpp>
+#include <willow/error.hpp>
+#include <willow/gcipu/popdevice.hpp>
 #include <willow/graph.hpp>
 #include <willow/willownet.hpp>
-#include <willow/device.hpp>
-
 
 namespace willow {
 
@@ -28,6 +29,40 @@ void WillowNet::updateOptimizer(const Optimizer *optimizer) {
   graph->updateOptimizer(optimizer);
 }
 
+void WillowNet::setDevice(std::string deviceString) {
+  if (deviceString == "IPU") {
+    device_.reset(new PopDevice(graph.get()));
+  } else {
+    throw error("How to set device from " + deviceString + " ??? ");
+  }
+}
+
 WillowNet::~WillowNet() = default;
+
+void WillowNet::prepareDevice() {
+  throw error("pop device not ready, prepareDevice");
+}
+
+void WillowNet::weightsFromHost() {
+  throw error("pop device not ready, weights from host");
+}
+
+// write whatever optimizer tensors (learning rates,
+// momentum, initial momentum tensors (zero)) there are to device
+void WillowNet::optimizerFromHost() {
+  throw error("pop device not ready, optimizer from host");
+}
+
+// For Poplar, this will involve reading and writing
+// Poplar::Stream <--> these addresses.
+void WillowNet::step(const std::map<TensorId, const void *> &in,
+                     const std::map<TensorId, void *> &out) {
+  throw error("pop device not ready, step");
+}
+
+// write current model to ONNX file
+void WillowNet::modelToHost(std::string fn) {
+  throw error("pop device not ready, model to host");
+}
 
 } // namespace willow

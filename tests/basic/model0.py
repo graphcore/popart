@@ -120,6 +120,11 @@ pynet = WillowNet(
     writer.losses, writer.optimizer, [], outputdir,
     ["PreUniRepl", "PostNRepl"])
 
+pynet.setDevice("IPU")
+pynet.prepareDevice()
+pynet.weightsFromHost()
+pynet.optimizerFromHost()
+
 allDotPrefixes = [x[0:-4] for x in os.listdir(outputdir) if ".dot" in x]
 print("Will generate graph pdfs for all of:")
 print(allDotPrefixes)

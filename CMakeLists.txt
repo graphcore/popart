@@ -1,14 +1,13 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.4)
 
 project(willow)
 
 add_compile_definitions(ONNX_NAMESPACE=onnx)
 
-#Where to find FindALib.cmake files
-list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake)
+#Where to find Findxxxx.cmake files
+list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake)
 
 find_package(Threads REQUIRED)
-
 
 # There is a FindProtobuf.cmake file on my computer at
 # /usr/local/share/cmake/Modules/FindProtobuf.cmake
@@ -28,9 +27,8 @@ find_package(BoostFilesystem REQUIRED)
 #Does require that the used has set path, something like
 find_package(CBLAS REQUIRED)
 
-
 add_subdirectory(willow)
-set(PYNEURALNET_DIR ${CMAKE_CURRENT_SOURCE_DIR}/pywillow)
+set(PYWILLOW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/pywillow)
 # light-weight wrapper using pybind11
 add_subdirectory(pywillow)
 

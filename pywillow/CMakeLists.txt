@@ -19,27 +19,14 @@ message(STATUS "Python library : " ${PYTHON_LIBRARY})
 pybind11_add_module(pywillow pywillow.cpp)
 
 target_include_directories (pywillow PUBLIC 
-    # if the model checker is used: ${ONNX_UTILS_INCLUDE_DIR}
-    ${ONNX_PB_INCLUDE_DIR}
-    ${ONNX_CHECKER_INCLUDE_DIR}
-    ${Protobuf_INCLUDE_DIR}
-    ${BOOST_FILESYSTEM_INCLUDE_DIR}
-    ${CBLAS_INCLUDE_DIRS}
-    ${PYTHON_INCLUDE_DIRS}
-    )
+  # ...
+  )
 
-  target_link_libraries(pywillow PRIVATE
-  willow
-  ${ONNX_LIB}
-  ${CBLAS_LIBRARIES}
-  ${ONNX_PROTO_LIB}
-  ${Protobuf_LIBRARIES} 
-  ${BOOST_FILESYSTEM_LIB}
-  ${BOOST_SYSTEM_LIB}
-  ${PYTHON_LIBRARY}
+target_link_libraries(pywillow PRIVATE
+  # ...
 )
 
 install(TARGETS pywillow
   # destination : this directory
-  DESTINATION ${PYNEURALNET_DIR})
+  DESTINATION ${PYWILLOW_DIR})
 
