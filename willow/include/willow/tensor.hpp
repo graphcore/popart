@@ -18,6 +18,14 @@ enum class TensorType {
   N // number of tensor types
 };
 
+enum class TensorSpec {
+  ConvWeight = 0,
+  ConvBias,
+  ConvInput,
+  Unknown,
+  N
+};
+
 // The consumers (Ops) of a Tensor. Note that
 // one Op may consume a Tensor at multiple locations.
 class Consumers {
@@ -75,7 +83,6 @@ private:
 };
 
 class TensorTypeInfo {
-
 public:
   TensorTypeInfo(TensorType, std::string);
   TensorType type() const;
@@ -85,22 +92,41 @@ private:
   TensorType tensorType_;
   std::string tensor_type_;
 };
-
 const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap();
 std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap();
+
+
+class TensorSpecInfo {
+public:
+  TensorSpecInfo(TensorSpec, std::string);
+  TensorSpec spec() const;
+  const std::string &spec_s() const;
+
+private:
+  TensorSpec tensorSpec_;
+  std::string tensor_spec_;
+};
+const std::map<TensorSpec, TensorSpecInfo> &getTenSpecMap();
+std::map<TensorSpec, TensorSpecInfo> initTenSpecMap();
 
 class Tensor : public Vertex {
 public:
   // note : producer (if there is one)
   // must be set after construction
-  Tensor(TensorId n, TensorType t, Ir *g);
+  Tensor(TensorId, TensorType, Ir *);
   TensorId id;
   Ir *pir;
   // ActGrad, Variable, etc:
   TensorType tensorType() const;
   const std::string &tensor_type() const;
+
+
+  // ConvWeight, ConvBias, etc
+  TensorSpec tensorSpec() const;
+  const std::string & tensor_spec() const;
+
   Consumers consumers;
-  // shape and data type. Not to be used be inferShape of pir has run
+  // shape and data type. Not to be used before inferShape of pir has run
   TensorInfo info;
 
   Op *getProducer();
@@ -112,6 +138,7 @@ private:
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
 };
+
 } // namespace willow
 
 #endif

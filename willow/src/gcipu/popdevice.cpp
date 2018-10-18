@@ -13,6 +13,9 @@ PopDevice::PopDevice(const Ir *pir) : Device(pir) {
 
 void PopDevice::prepare() {
   pGraph.reset(new poplar::Graph(popDevice));
+
+  // create poplar::Tensors etc.
+
   throw error("need to prepare poplar popDevice");
 }
 

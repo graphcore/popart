@@ -157,6 +157,12 @@ const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap() {
   return M;
 }
 
+const std::map<TensorSpec, TensorSpecInfo> &
+getTenSpecMap() {
+  static std::map<TensorSpec, TensorSpecInfo> M = initTenSpecMap();
+  return M;
+}
+
 TensorType Tensor::tensorType() const { return tensorTypeInfo->type(); }
 
 const std::string &Tensor::tensor_type() const {
@@ -170,6 +176,11 @@ const std::string &TensorTypeInfo::type_s() const { return tensor_type_; }
 TensorTypeInfo::TensorTypeInfo(TensorType t_, std::string ts_)
     : tensorType_(t_), tensor_type_(ts_) {}
 
+
+TensorSpecInfo::TensorSpecInfo(TensorSpec s_, std::string ss_)
+    : tensorSpec_(s_), tensor_spec_(ss_) {}
+
+
 std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
   std::map<TensorType, TensorTypeInfo> tensor_types_m = {
       {TensorType::ActGrad, {TensorType::ActGrad, "ActGrad"}},
@@ -182,6 +193,17 @@ std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
     throw error("missing element in TensorTypes");
   }
   return tensor_types_m;
+}
+
+
+std::map<TensorSpec, TensorSpecInfo> initTenSpecMap() {
+  std::map<TensorSpec, TensorSpecInfo> tensor_specs_m = {
+      {TensorSpec::ConvWeight, {TensorSpec::ConvWeight, "ConvWeight"}},
+      {TensorSpec::ConvBias, {TensorSpec::ConvBias, "ConvBias"}}};
+  if (tensor_specs_m.size() != static_cast<int64_t>(TensorSpec::N)) {
+    throw error("missing element in TensorSpecs");
+  }
+  return tensor_specs_m;
 }
 
 } // namespace willow
