@@ -20,12 +20,19 @@ pybind11_add_module(pywillow pywillow.cpp)
 
 target_include_directories (pywillow PUBLIC 
   # ...
-  )
+)
 
 target_link_libraries(pywillow PRIVATE
+  ${POPLAR_LIB}
   willow
   # ...
 )
+
+# This is useful on OS/X, see 
+# https://stackoverflow.com/questions/47697761 and
+# https://stackoverflow.com/questions/40079424/prepend-to-rpath
+set_target_properties(pywillow PROPERTIES
+  INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 install(TARGETS pywillow
   # destination : this directory

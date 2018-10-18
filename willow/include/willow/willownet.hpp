@@ -23,6 +23,7 @@ public:
   // Must call optimizerToDevice to take effect.
   void updateOptimizer(const Optimizer *);
 
+  // see exampledriver.cpp in poponnx for an idea of what should be done here
   void setDevice(std::string x);
 
   // for IPUs, this will be creating the poplar::Graph,

@@ -38,6 +38,7 @@ target_link_libraries(willow
   ${CBLAS_LIBRARIES}
   ${BOOST_FILESYSTEM_LIB}
   ${BOOST_SYSTEM_LIB}
+  ${POPLAR_LIB}
 )
 
 install(TARGETS willow

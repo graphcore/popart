@@ -3,14 +3,19 @@
 
 namespace willow {
 
-PopDevice::PopDevice(const Ir *g) : Device(g) {
-  std::cout << "Create pop device (from string?)" << std::endl;
+PopDevice::PopDevice(const Ir *pir) : Device(pir) {
+  poplar::IPUModel ipumodel;
+  popDevice = ipumodel.createDevice();
+  if (!popDevice.attach()) {
+    throw error("failed to attach to popDevice");
+  }
 }
 
 void PopDevice::prepare() {
-throw error("need to prepare poplar device");
+  pGraph.reset(new poplar::Graph(popDevice));
+  throw error("need to prepare poplar popDevice");
 }
 
 } // namespace willow
 
-// implement popdevice here
+// implement poppopDevice here
