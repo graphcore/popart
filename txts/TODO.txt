@@ -1,8 +1,3 @@
-aka project checkpoint. 
-
-skills needed:
--- pytorch training: how does it work exactly.
-
 TODO: 
 
 
@@ -108,4 +103,8 @@ consumer topoCons is a DAG! and there is an
 elegant way to merge DAGs in the optimization pass
 
 08/10
-recomputation: initial partition using sqrt rule should use memory output
+(done) recomputation: initial partition using sqrt rule should use memory output
+
+19/10
+static compilation: all nodes not on path from stream input MUST be static
+compiled. 
