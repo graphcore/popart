@@ -1,7 +1,7 @@
 #include <willow/device.hpp>
 #include <willow/error.hpp>
 #include <willow/ir.hpp>
-#include <willow/popx/popdevice.hpp>
+#include <willow/popx/devicex.hpp>
 #include <willow/willownet.hpp>
 
 namespace willow {
@@ -30,8 +30,10 @@ void WillowNet::updateOptimizer(const Optimizer *optimizer) {
 }
 
 void WillowNet::setDevice(std::string deviceString) {
+  // TODO : here, need macro around specific device types,
+  // might not have enabled to build with them.
   if (deviceString == "IPU") {
-    device_.reset(new PopDevice(pir.get()));
+    device_.reset(new popx::Devicex(pir.get()));
   } else {
     throw error("How to set device from " + deviceString + " ??? ");
   }

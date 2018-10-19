@@ -4,28 +4,29 @@
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"
 #include <poplar/DeviceManager.hpp>
-#include <poplar/Graph.hpp>
 #include <poplar/Engine.hpp>
+#include <poplar/Graph.hpp>
 #include <poplar/IPUModel.hpp>
 #pragma clang diagnostic pop // stop ignoring warnings
 
 #include <willow/device.hpp>
 
 namespace willow {
+namespace popx {
 
-class PopOp;
+class Opx;
 
-class PopDevice : public Device {
+class Devicex : public willow::Device {
 
 public:
-  PopDevice(const Ir *);
+  Devicex(const Ir *);
   virtual void prepare() override final;
-  PopOp * getPopOp(OpId);
+  Opx *getOpx(OpId);
 
 private:
-  std::unique_ptr<poplar::Graph> pGraph {nullptr};
-  std::unique_ptr<poplar::Engine> pEngine {nullptr};
-  std::unique_ptr<poplar::Target> pTarget {nullptr};
+  std::unique_ptr<poplar::Graph> pGraph{nullptr};
+  std::unique_ptr<poplar::Engine> pEngine{nullptr};
+  std::unique_ptr<poplar::Target> pTarget{nullptr};
   poplar::Device popDevice;
 
   poplar::program::Sequence weightsToHost;
@@ -33,15 +34,15 @@ private:
   poplar::program::Sequence weightsFromHost;
   poplar::program::Sequence step;
 
-  poplar::Tensor createPopTensor(Tensor * tensor);
-  std::unique_ptr<PopOp> createPopOp(const Op *);
+  poplar::Tensor createPopTensor(Tensor *tensor);
+  std::unique_ptr<Opx> createOpx(Op *);
 
-  // 1-to-1 mapping between Ops and PopOps
-  std::map<OpId, std::unique_ptr<PopOp>> pop_ops;
+  // 1-to-1 mapping between Ops and Opxs
+  std::map<OpId, std::unique_ptr<Opx>> opxs;
   std::map<TensorId, poplar::Tensor> pop_tensors;
-
 };
 
+} // namespace popx
 } // namespace willow
 
 #endif
