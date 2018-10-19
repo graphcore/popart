@@ -13,10 +13,12 @@ public:
   // from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv :
   // data at index 0, weights at index 1.
   // willow's ConvOp does not support bias.
-  int dataInIndex() { return 0; }
-  int weightsInIndex() { return 1; }
+  int dataInIndex() const { return 0; }
+  int weightsInIndex() const { return 1; }
   virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
+  Speck inputSpeckAt(int index) const override final;
+  std::map<int, Speck> createSpeckMap() const;
 
 private:
   virtual int64_t getNOutChans() const override final;

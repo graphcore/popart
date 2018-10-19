@@ -68,6 +68,19 @@ const std::vector<GradInOutMapper> &ConvWeightsGradOp::gradInputInfo() const {
   return inInfo;
 }
 
+std::map<int, Speck> ConvOp::createSpeckMap() const {
+  std::map<int, Speck> M;
+  M[weightsInIndex()] = Speck::ConvWeight;
+  M[dataInIndex()]    = Speck::ConvData;
+  return M;
+}
+
+// Conv has specialised input Speck, we override the default here
+Speck ConvOp::inputSpeckAt(int index) const {
+  static const std::map<int, Speck> M = createSpeckMap();
+  return M.at(index);
+}
+
 std::map<int, int> ConvWeightsGradOp::createConvWeightsGradOutToIn() const {
   // the grad-op output at index 0 corresponds
   // to the conv ops weight input index

@@ -37,7 +37,6 @@ Speck Consumers::consensusSpeck() {
 
   // Rule 2)
   else if (allSpecks.size() == 2) {
-
     if (allSpecks[0] == Speck::Any) {
       return allSpecks[1];
     } else if (allSpecks[1] == Speck::Any) {
@@ -62,7 +61,7 @@ std::map<Speck, SpeckInfo> initSpeckMap() {
   std::map<Speck, SpeckInfo> specks_m = {
       {Speck::ConvWeight, {Speck::ConvWeight, "ConvWeight"}},
       {Speck::ConvBias, {Speck::ConvBias, "ConvBias"}},
-      {Speck::ConvInput, {Speck::ConvInput, "ConvInput"}},
+      {Speck::ConvData, {Speck::ConvData, "ConvData"}},
       {Speck::Any, {Speck::Any, "Any"}}};
   if (specks_m.size() != static_cast<int64_t>(Speck::N)) {
     throw error("missing element in Specks");

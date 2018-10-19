@@ -23,7 +23,7 @@ enum class TensorType {
 enum class Speck {
   ConvWeight = 0,
   ConvBias,
-  ConvInput,
+  ConvData,
   Any,
   N // number of tensor specks
 };

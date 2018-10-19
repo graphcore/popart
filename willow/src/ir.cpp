@@ -335,7 +335,7 @@ void Op::append(std::stringstream &ss) const {
   appendMore(ss);
 }
 
-Speck Op::inputSpeckAt(int index) {
+Speck Op::inputSpeckAt(int index) const {
   // perform a health check: is the index a valid input index?
   if (!input.hasIndex(index)) {
     throw error("no input index " + std::to_string(index));

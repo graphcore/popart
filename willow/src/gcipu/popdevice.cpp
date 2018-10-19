@@ -20,6 +20,7 @@ void PopDevice::prepare() {
   for (auto id : pir->tensors.getInitIds()){
     Tensor * initTensor = pir->tensors.get(id);
     Speck speck = initTensor->consumers.consensusSpeck();
+    std::cout << getSpeckMap().at(speck).speck_s() << std::endl;
   }
 
   // create poplar::Tensors etc.

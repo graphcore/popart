@@ -330,7 +330,7 @@ public:
   // The specific tensor "Speck" expected at input index
   // default return : Speck::Any. That is, if not specified,
   // assume any Speck is valid
-  virtual Speck inputSpeckAt(int);
+  virtual Speck inputSpeckAt(int) const;
 
 private:
   void appendIO(std::stringstream &) const;
