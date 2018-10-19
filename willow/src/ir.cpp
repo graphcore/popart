@@ -335,6 +335,16 @@ void Op::append(std::stringstream &ss) const {
   appendMore(ss);
 }
 
+Speck Op::inputSpeckAt(int index) {
+  // perform a health check: is the index a valid input index?
+  if (!input.hasIndex(index)) {
+    throw error("no input index " + std::to_string(index));
+  }
+  // this is the default return type for an Op, this will be overwritten
+  // where specific Specks are needed.
+  return Speck::Any;
+}
+
 void TensorIndexMap::append(std::stringstream &ss,
                             std::string prefix,
                             int max_id_length) const {
@@ -718,9 +728,9 @@ Op *Ir::growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints) {
 
   std::map<int, TensorId> outputs;
   for (auto &index_tensor : oriOp->output.tensorMap()) {
-    int index      = index_tensor.first;
-    Tensor *tensor = index_tensor.second;
-    outputs[index] = getRecompId(tensor->id);
+    int index            = index_tensor.first;
+    const Tensor *tensor = index_tensor.second;
+    outputs[index]       = getRecompId(tensor->id);
   }
   connectOutputs(OutputMapWrapper(outputs), rcId);
 

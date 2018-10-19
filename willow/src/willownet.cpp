@@ -39,9 +39,7 @@ void WillowNet::setDevice(std::string deviceString) {
 
 WillowNet::~WillowNet() = default;
 
-void WillowNet::prepareDevice() {
-  throw error("pop device not ready, prepareDevice");
-}
+void WillowNet::prepareDevice() { device_->prepare(); }
 
 void WillowNet::weightsFromHost() {
   throw error("pop device not ready, weights from host");

@@ -18,18 +18,23 @@ enum class TensorType {
   N // number of tensor types
 };
 
-enum class TensorSpec {
+// The (Spec)ific "type" of a tensor,
+// as expected by a consumer of the tensor
+enum class Speck {
   ConvWeight = 0,
   ConvBias,
   ConvInput,
-  Unknown,
-  N
+  Any,
+  N // number of tensor specks
 };
 
 // The consumers (Ops) of a Tensor. Note that
 // one Op may consume a Tensor at multiple locations.
 class Consumers {
 public:
+  // Consumers is specific to a unique Tensor, which is stored
+  // for later use in the constructor
+  Consumers(Tensor *tensorConsumed_);
   // The number of times an Op consumes a Tensor,
   // returns a non-negative integer
   int n(Op *) const;
@@ -75,11 +80,23 @@ public:
   // though)
   bool hasWeakTopoCons() const;
 
+  // The consuming ops vote on what unique
+  // Speck the consumed tensor should have.
+  // Rules for voting on the Speck:
+  // 1) if all consumers expect Speck X,
+  //    return X, where X could be Any, ConvWeight, etc.
+  // 2) if all consumers expect either Any or X,
+  //    return X
+  // 3) if number of different Specks of consumers
+  //    is greater than 2, error.
+  Speck consensusSpeck();
+
 private:
   // The number of times an Op consumes the Tensor which
   // owns this Consumers
   std::map<Op *, int> consumers_m;
   Op *topoLast{nullptr};
+  Tensor *tensorConsumed;
 };
 
 class TensorTypeInfo {
@@ -95,19 +112,18 @@ private:
 const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap();
 std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap();
 
-
-class TensorSpecInfo {
+class SpeckInfo {
 public:
-  TensorSpecInfo(TensorSpec, std::string);
-  TensorSpec spec() const;
-  const std::string &spec_s() const;
+  SpeckInfo(Speck, std::string);
+  Speck speck() const;
+  const std::string &speck_s() const;
 
 private:
-  TensorSpec tensorSpec_;
-  std::string tensor_spec_;
+  Speck speck_;
+  std::string speck_s_;
 };
-const std::map<TensorSpec, TensorSpecInfo> &getTenSpecMap();
-std::map<TensorSpec, TensorSpecInfo> initTenSpecMap();
+const std::map<Speck, SpeckInfo> &getSpeckMap();
+std::map<Speck, SpeckInfo> initSpeckMap();
 
 class Tensor : public Vertex {
 public:
@@ -119,11 +135,6 @@ public:
   // ActGrad, Variable, etc:
   TensorType tensorType() const;
   const std::string &tensor_type() const;
-
-
-  // ConvWeight, ConvBias, etc
-  TensorSpec tensorSpec() const;
-  const std::string & tensor_spec() const;
 
   Consumers consumers;
   // shape and data type. Not to be used before inferShape of pir has run

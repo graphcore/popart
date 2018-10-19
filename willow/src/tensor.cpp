@@ -1,8 +1,74 @@
 #include <willow/error.hpp>
 #include <willow/ir.hpp>
 #include <willow/tensor.hpp>
+#include <willow/util.hpp>
 
 namespace willow {
+
+const std::map<Speck, SpeckInfo> &getSpeckMap() {
+  static std::map<Speck, SpeckInfo> M = initSpeckMap();
+  return M;
+}
+
+Consumers::Consumers(Tensor *tensorConsumed_)
+    : tensorConsumed(tensorConsumed_) {}
+
+Speck Consumers::consensusSpeck() {
+  std::vector<Speck> allSpecks;
+  // for all consumers of this tensor,
+  for (Op *consumer : getOps()) {
+    // and for all indices at which it is consumed,
+    auto indices = consumer->input.indices(tensorConsumed);
+    for (int index : indices) {
+      // what is the Speck at this index?
+      // i.e. what kind of Tensor is expected at this index?
+      auto speck = consumer->inputSpeckAt(index);
+      if (std::find(allSpecks.begin(), allSpecks.end(), speck) ==
+          allSpecks.end()) {
+        allSpecks.push_back(speck);
+      }
+    }
+  }
+
+  // Rule 1)
+  if (allSpecks.size() == 1) {
+    return allSpecks[0];
+  }
+
+  // Rule 2)
+  else if (allSpecks.size() == 2) {
+
+    if (allSpecks[0] == Speck::Any) {
+      return allSpecks[1];
+    } else if (allSpecks[1] == Speck::Any) {
+      return allSpecks[0];
+    }
+  }
+
+  // Rule 3)
+  std::stringstream errm;
+  errm << "Failed to determine Speck for " << tensorConsumed->id
+       << ", consumers expected : ";
+  for (auto &speck : allSpecks) {
+    errm << getSpeckMap().at(speck).speck_s();
+    errm << " ";
+  }
+  throw error(errm.str());
+}
+
+SpeckInfo::SpeckInfo(Speck s_, std::string s_s_) : speck_(s_), speck_s_(s_s_) {}
+
+std::map<Speck, SpeckInfo> initSpeckMap() {
+  std::map<Speck, SpeckInfo> specks_m = {
+      {Speck::ConvWeight, {Speck::ConvWeight, "ConvWeight"}},
+      {Speck::ConvBias, {Speck::ConvBias, "ConvBias"}},
+      {Speck::ConvInput, {Speck::ConvInput, "ConvInput"}},
+      {Speck::Any, {Speck::Any, "Any"}}};
+  if (specks_m.size() != static_cast<int64_t>(Speck::N)) {
+    throw error("missing element in Specks");
+  }
+  return specks_m;
+}
 
 int Consumers::n(Op *op) const {
   auto found = consumers_m.find(op);
@@ -106,8 +172,10 @@ int Consumers::getTotal() const {
   return total;
 }
 
+// using 'this' in a constructor list? Be careful.
+// https://stackoverflow.com/questions/5058349
 Tensor::Tensor(TensorId n, TensorType t, Ir *g)
-    : Vertex(), id(n), pir(g), producer(nullptr),
+    : Vertex(), id(n), pir(g), consumers(this), producer(nullptr),
       tensorTypeInfo(&getTensorTypeInfoMap().at(t)) {}
 
 void Consumers::decrement(Op *op) {
@@ -157,12 +225,6 @@ const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap() {
   return M;
 }
 
-const std::map<TensorSpec, TensorSpecInfo> &
-getTenSpecMap() {
-  static std::map<TensorSpec, TensorSpecInfo> M = initTenSpecMap();
-  return M;
-}
-
 TensorType Tensor::tensorType() const { return tensorTypeInfo->type(); }
 
 const std::string &Tensor::tensor_type() const {
@@ -170,16 +232,13 @@ const std::string &Tensor::tensor_type() const {
 }
 
 TensorType TensorTypeInfo::type() const { return tensorType_; }
+Speck SpeckInfo::speck() const { return speck_; }
 
 const std::string &TensorTypeInfo::type_s() const { return tensor_type_; }
+const std::string &SpeckInfo::speck_s() const { return speck_s_; }
 
 TensorTypeInfo::TensorTypeInfo(TensorType t_, std::string ts_)
     : tensorType_(t_), tensor_type_(ts_) {}
-
-
-TensorSpecInfo::TensorSpecInfo(TensorSpec s_, std::string ss_)
-    : tensorSpec_(s_), tensor_spec_(ss_) {}
-
 
 std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
   std::map<TensorType, TensorTypeInfo> tensor_types_m = {
@@ -193,17 +252,6 @@ std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
     throw error("missing element in TensorTypes");
   }
   return tensor_types_m;
-}
-
-
-std::map<TensorSpec, TensorSpecInfo> initTenSpecMap() {
-  std::map<TensorSpec, TensorSpecInfo> tensor_specs_m = {
-      {TensorSpec::ConvWeight, {TensorSpec::ConvWeight, "ConvWeight"}},
-      {TensorSpec::ConvBias, {TensorSpec::ConvBias, "ConvBias"}}};
-  if (tensor_specs_m.size() != static_cast<int64_t>(TensorSpec::N)) {
-    throw error("missing element in TensorSpecs");
-  }
-  return tensor_specs_m;
 }
 
 } // namespace willow

@@ -207,6 +207,8 @@ public:
   std::string domain;
 };
 
+enum class Speck;
+
 class Op : public Vertex {
 public:
   Op(const Node &, Ir *);
@@ -281,6 +283,7 @@ public:
   // Note : the creator might have been optimised out, in which
   // case calling this function has undefined bahaviour.
   virtual Op *getNonGradCreator() const;
+
   // Design choice.
   // as optimisations get complex we might
   // delete a non-grad op corresponding to a grad-op.
@@ -323,6 +326,11 @@ public:
   // note that this is virtual, and will
   // be overwritten by GradOp.
   virtual bool isGradOp() const { return false; }
+
+  // The specific tensor "Speck" expected at input index
+  // default return : Speck::Any. That is, if not specified,
+  // assume any Speck is valid
+  virtual Speck inputSpeckAt(int);
 
 private:
   void appendIO(std::stringstream &) const;

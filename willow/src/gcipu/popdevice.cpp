@@ -1,4 +1,6 @@
 #include <willow/error.hpp>
+#include <willow/ir.hpp>
+#include <willow/tensor.hpp>
 #include <willow/gcipu/popdevice.hpp>
 
 namespace willow {
@@ -11,14 +13,20 @@ PopDevice::PopDevice(const Ir *pir) : Device(pir) {
   }
 }
 
+// go all the way to creating the engine
 void PopDevice::prepare() {
   pGraph.reset(new poplar::Graph(popDevice));
 
-  // create poplar::Tensors etc.
+  for (auto id : pir->tensors.getInitIds()){
+    Tensor * initTensor = pir->tensors.get(id);
+    Speck speck = initTensor->consumers.consensusSpeck();
+  }
 
+  // create poplar::Tensors etc.
   throw error("need to prepare poplar popDevice");
 }
 
+
+
 } // namespace willow
 
-// implement poppopDevice here
