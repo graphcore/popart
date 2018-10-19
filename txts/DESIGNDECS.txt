@@ -1,19 +1,43 @@
-thoughts 18/09/2018:
+Keeping track of controversial design decisions, trying to give
+strong arguments to prevent developers (me) from fluctuating between
+designs. 
+
+18/09/2018:
+-----------
 
 1) alow multiple gradients to be computed by one node, but prefer a single
 gradient to be computed by one node. This will allow more refined 
-pruning of dead paths: if any target depends on a node the node must run,
+pruning of dead paths: if any target depends on a node, the node must run,
 so rather split nodes as finely as possible.
-2) as implied by 1, don't worry about dead paths here. Their removal will
-follow as a subsequent step. Here the full backwards pass in constructed
-INCLUDING all stream tensors. 
+
+2) don't worry about dead paths until the end. Their removal will follow as 
+a final step.
+
 3) it is fine to wait for gradients to be in before spawning the new 
 gradient nodes. This will not effect the final graph, and there is no
 risk of deadlock.
 
-
 for backwards nodes with stream inputs, we don't want to compute
 the gradient for the stream inputs (by default, unless user explicitly
 requests). This can be done by setting the corresponding output to ""
-(somewhere). Update : done after during pruning step.
+(somewhere). Update : done after/during pruning step.
+
+19/10/2018:
+-----------
+
+Arguments for and against having Poplar in abstract Ir. 
+
+Against:
+1) leaky abstraction making code harder to understand. 
+2) Should keep it general enough for any kind of device extension. 
+
+For:
+1) Total code base size reduction. No need to have a whole new set of
+   representations for the ops.
+2) One fewer switch statement. No need to switch on Ir's Op to determine
+   which Poplar functionality to call
+3) Closer to how poponnx does things, will make code porting easier
+
+For now I feel like the best long term decision is Against. So keeping 
+Poplar API calls as far from the abstract Ir for now.
 

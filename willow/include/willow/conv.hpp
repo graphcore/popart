@@ -17,8 +17,6 @@ public:
   int weightsInIndex() const { return 1; }
   virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
-  Speck inputSpeckAt(int index) const override final;
-  std::map<int, Speck> createSpeckMap() const;
 
 private:
   virtual int64_t getNOutChans() const override final;

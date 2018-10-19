@@ -18,16 +18,6 @@ enum class TensorType {
   N // number of tensor types
 };
 
-// The (Spec)ific "type" of a tensor,
-// as expected by a consumer of the tensor
-enum class Speck {
-  ConvWeight = 0,
-  ConvBias,
-  ConvData,
-  Any,
-  N // number of tensor specks
-};
-
 // The consumers (Ops) of a Tensor. Note that
 // one Op may consume a Tensor at multiple locations.
 class Consumers {
@@ -80,17 +70,6 @@ public:
   // though)
   bool hasWeakTopoCons() const;
 
-  // The consuming ops vote on what unique
-  // Speck the consumed tensor should have.
-  // Rules for voting on the Speck:
-  // 1) if all consumers expect Speck X,
-  //    return X, where X could be Any, ConvWeight, etc.
-  // 2) if all consumers expect either Any or X,
-  //    return X
-  // 3) if number of different Specks of consumers
-  //    is greater than 2, error.
-  Speck consensusSpeck();
-
 private:
   // The number of times an Op consumes the Tensor which
   // owns this Consumers
@@ -111,19 +90,6 @@ private:
 };
 const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap();
 std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap();
-
-class SpeckInfo {
-public:
-  SpeckInfo(Speck, std::string);
-  Speck speck() const;
-  const std::string &speck_s() const;
-
-private:
-  Speck speck_;
-  std::string speck_s_;
-};
-const std::map<Speck, SpeckInfo> &getSpeckMap();
-std::map<Speck, SpeckInfo> initSpeckMap();
 
 class Tensor : public Vertex {
 public:

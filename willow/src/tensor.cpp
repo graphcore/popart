@@ -5,68 +5,12 @@
 
 namespace willow {
 
-const std::map<Speck, SpeckInfo> &getSpeckMap() {
-  static std::map<Speck, SpeckInfo> M = initSpeckMap();
-  return M;
-}
-
 Consumers::Consumers(Tensor *tensorConsumed_)
-    : tensorConsumed(tensorConsumed_) {}
-
-Speck Consumers::consensusSpeck() {
-  std::vector<Speck> allSpecks;
-  // for all consumers of this tensor,
-  for (Op *consumer : getOps()) {
-    // and for all indices at which it is consumed,
-    auto indices = consumer->input.indices(tensorConsumed);
-    for (int index : indices) {
-      // what is the Speck at this index?
-      // i.e. what kind of Tensor is expected at this index?
-      auto speck = consumer->inputSpeckAt(index);
-      if (std::find(allSpecks.begin(), allSpecks.end(), speck) ==
-          allSpecks.end()) {
-        allSpecks.push_back(speck);
-      }
-    }
-  }
-
-  // Rule 1)
-  if (allSpecks.size() == 1) {
-    return allSpecks[0];
-  }
-
-  // Rule 2)
-  else if (allSpecks.size() == 2) {
-    if (allSpecks[0] == Speck::Any) {
-      return allSpecks[1];
-    } else if (allSpecks[1] == Speck::Any) {
-      return allSpecks[0];
-    }
-  }
-
-  // Rule 3)
-  std::stringstream errm;
-  errm << "Failed to determine Speck for " << tensorConsumed->id
-       << ", consumers expected : ";
-  for (auto &speck : allSpecks) {
-    errm << getSpeckMap().at(speck).speck_s();
-    errm << " ";
-  }
-  throw error(errm.str());
-}
-
-SpeckInfo::SpeckInfo(Speck s_, std::string s_s_) : speck_(s_), speck_s_(s_s_) {}
-
-std::map<Speck, SpeckInfo> initSpeckMap() {
-  std::map<Speck, SpeckInfo> specks_m = {
-      {Speck::ConvWeight, {Speck::ConvWeight, "ConvWeight"}},
-      {Speck::ConvBias, {Speck::ConvBias, "ConvBias"}},
-      {Speck::ConvData, {Speck::ConvData, "ConvData"}},
-      {Speck::Any, {Speck::Any, "Any"}}};
-  if (specks_m.size() != static_cast<int64_t>(Speck::N)) {
-    throw error("missing element in Specks");
-  }
-  return specks_m;
+    : tensorConsumed(tensorConsumed_) {
+  // currently this class variable is not used,
+  // to prevent a warning about unused class variable
+  // we do this
+  (void)tensorConsumed;
 }
 
 int Consumers::n(Op *op) const {
@@ -231,10 +175,8 @@ const std::string &Tensor::tensor_type() const {
 }
 
 TensorType TensorTypeInfo::type() const { return tensorType_; }
-Speck SpeckInfo::speck() const { return speck_; }
 
 const std::string &TensorTypeInfo::type_s() const { return tensor_type_; }
-const std::string &SpeckInfo::speck_s() const { return speck_s_; }
 
 TensorTypeInfo::TensorTypeInfo(TensorType t_, std::string ts_)
     : tensorType_(t_), tensor_type_(ts_) {}

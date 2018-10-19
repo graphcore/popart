@@ -14,7 +14,7 @@ if (POPLAR_BACKEND)
 message( STATUS "Building WITH Poplar IPU backend")
 find_package(Poplar REQUIRED)
 # concatenate poplar backend sources to the list of files to compile
-file(GLOB pop_backend_sources src/gcipu/*cpp)
+file(GLOB pop_backend_sources src/popx/*cpp)
 set(sources ${sources} ${pop_backend_sources})
 else()
 message( STATUS "Building WITHOUT Poplar IPU backend")

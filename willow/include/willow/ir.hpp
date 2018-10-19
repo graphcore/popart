@@ -207,8 +207,6 @@ public:
   std::string domain;
 };
 
-enum class Speck;
-
 class Op : public Vertex {
 public:
   Op(const Node &, Ir *);
@@ -326,11 +324,6 @@ public:
   // note that this is virtual, and will
   // be overwritten by GradOp.
   virtual bool isGradOp() const { return false; }
-
-  // The specific tensor "Speck" expected at input index
-  // default return : Speck::Any. That is, if not specified,
-  // assume any Speck is valid
-  virtual Speck inputSpeckAt(int) const;
 
 private:
   void appendIO(std::stringstream &) const;

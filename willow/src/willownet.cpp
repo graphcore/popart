@@ -1,7 +1,7 @@
 #include <willow/device.hpp>
 #include <willow/error.hpp>
-#include <willow/gcipu/popdevice.hpp>
 #include <willow/ir.hpp>
+#include <willow/popx/popdevice.hpp>
 #include <willow/willownet.hpp>
 
 namespace willow {
