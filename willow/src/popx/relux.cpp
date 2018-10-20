@@ -13,5 +13,15 @@ ReluOpx::ReluOpx(Op *op) : Opx(op) {
 
 ReluOp *ReluOpx::getReluOp() const { return dynamic_cast<ReluOp *>(getOp()); }
 
+ReluGradOpx::ReluGradOpx(Op *op) : Opx(op) {
+  if (op->opType != OpType::RELUGRAD) {
+    throw error("cannot create ReluGradOpx from " + op->op_type());
+  }
+}
+
+ReluGradOp *ReluGradOpx::getReluGradOp() const {
+  return dynamic_cast<ReluGradOp *>(getOp());
+}
+
 } // namespace popx
 } // namespace willow

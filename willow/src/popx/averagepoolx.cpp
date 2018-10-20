@@ -15,5 +15,15 @@ AveragePoolOp *AveragePoolOpx::getAveragePoolOp() const {
   return dynamic_cast<AveragePoolOp *>(getOp());
 }
 
+AveragePoolGradOpx::AveragePoolGradOpx(Op *op) : Opx(op) {
+  if (op->opType != OpType::AVERAGEPOOLGRAD) {
+    throw error("cannot create AveragePoolGradOpx from " + op->op_type());
+  }
+}
+
+AveragePoolGradOp *AveragePoolGradOpx::getAveragePoolGradOp() const {
+  return dynamic_cast<AveragePoolGradOp *>(getOp());
+}
+
 } // namespace popx
 } // namespace willow

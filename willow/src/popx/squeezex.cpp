@@ -15,5 +15,15 @@ SqueezeOp *SqueezeOpx::getSqueezeOp() const {
   return dynamic_cast<SqueezeOp *>(getOp());
 }
 
+SqueezeGradOpx::SqueezeGradOpx(Op *op) : Opx(op) {
+  if (op->opType != OpType::SQUEEZEGRAD) {
+    throw error("cannot create SqueezeGradOpx from " + op->op_type());
+  }
+}
+
+SqueezeGradOp *SqueezeGradOpx::getSqueezeGradOp() const {
+  return dynamic_cast<SqueezeGradOp *>(getOp());
+}
+
 } // namespace popx
 } // namespace willow

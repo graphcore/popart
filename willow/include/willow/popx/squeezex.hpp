@@ -7,6 +7,7 @@
 namespace willow {
 
 class SqueezeOp;
+class SqueezeGradOp;
 
 namespace popx {
 
@@ -14,6 +15,12 @@ class SqueezeOpx : public Opx {
 public:
   SqueezeOpx(Op *);
   SqueezeOp *getSqueezeOp() const;
+};
+
+class SqueezeGradOpx : public Opx {
+public:
+  SqueezeGradOpx(Op *);
+  SqueezeGradOp *getSqueezeGradOp() const;
 };
 
 } // namespace popx

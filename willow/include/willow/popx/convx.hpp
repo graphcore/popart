@@ -7,6 +7,8 @@
 namespace willow {
 
 class ConvOp;
+class ConvWeightsGradOp;
+class ConvDataGradOp;
 
 namespace popx {
 
@@ -16,6 +18,18 @@ public:
   ConvOp *getConvOp() const;
   virtual poplar::Tensor createInput(int index) const override final;
   virtual bool canCreateInput(int index) const override final;
+};
+
+class ConvDataGradOpx : public Opx {
+public:
+  ConvDataGradOpx(Op *);
+  ConvDataGradOp *getConvDataGradOp() const;
+};
+
+class ConvWeightsGradOpx : public Opx {
+public:
+  ConvWeightsGradOpx(Op *);
+  ConvWeightsGradOp *getConvWeightsGradOp() const;
 };
 
 } // namespace popx

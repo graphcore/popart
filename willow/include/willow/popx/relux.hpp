@@ -7,6 +7,7 @@
 namespace willow {
 
 class ReluOp;
+class ReluGradOp;
 
 namespace popx {
 
@@ -14,6 +15,12 @@ class ReluOpx : public Opx {
 public:
   ReluOpx(Op *);
   ReluOp *getReluOp() const;
+};
+
+class ReluGradOpx : public Opx {
+public:
+  ReluGradOpx(Op *);
+  ReluGradOp *getReluGradOp() const;
 };
 
 } // namespace popx

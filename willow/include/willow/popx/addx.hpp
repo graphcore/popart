@@ -7,6 +7,7 @@
 namespace willow {
 
 class AddOp;
+class AddGradOp;
 
 namespace popx {
 
@@ -14,6 +15,12 @@ class AddOpx : public Opx {
 public:
   AddOpx(Op *);
   AddOp *getAddOp() const;
+};
+
+class AddGradOpx : public Opx {
+public:
+  AddGradOpx(Op *);
+  AddGradOp *getAddGradOp() const;
 };
 
 } // namespace popx

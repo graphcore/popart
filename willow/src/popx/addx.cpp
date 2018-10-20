@@ -13,5 +13,15 @@ AddOpx::AddOpx(Op *op) : Opx(op) {
 
 AddOp *AddOpx::getAddOp() const { return dynamic_cast<AddOp *>(getOp()); }
 
+AddGradOpx::AddGradOpx(Op *op) : Opx(op) {
+  if (op->opType != OpType::ADDGRAD) {
+    throw error("cannot create AddGradOpx from " + op->op_type());
+  }
+}
+
+AddGradOp *AddGradOpx::getAddGradOp() const {
+  return dynamic_cast<AddGradOp *>(getOp());
+}
+
 } // namespace popx
 } // namespace willow

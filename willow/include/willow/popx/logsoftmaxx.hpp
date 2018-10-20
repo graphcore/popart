@@ -7,6 +7,7 @@
 namespace willow {
 
 class LogSoftmaxOp;
+class LogSoftmaxGradOp;
 
 namespace popx {
 
@@ -14,6 +15,12 @@ class LogSoftmaxOpx : public Opx {
 public:
   LogSoftmaxOpx(Op *);
   LogSoftmaxOp *getLogSoftmaxOp() const;
+};
+
+class LogSoftmaxGradOpx : public Opx {
+public:
+  LogSoftmaxGradOpx(Op *);
+  LogSoftmaxGradOp *getLogSoftmaxGradOp() const;
 };
 
 } // namespace popx
