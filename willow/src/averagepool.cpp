@@ -9,15 +9,15 @@ AveragePoolOp::AveragePoolOp(const onnx::NodeProto &node, Ir *pir)
 
 void AveragePoolOp::setup0() {}
 
-void AveragePoolOp::setSpatial() {
-  spatial.reserve(nSpatialDims);
+void AveragePoolOp::setSpatialK() {
+  spatialK.resize(nSpatialDims);
   std::vector<int64_t> kernel_shape;
   nAtts.setIfPresent(kernel_shape, "kernel_shape");
   if (kernel_shape.size() != input.tensor(0)->info.rank() - 2) {
     throw error("invald kernel_shape, not same rank as tensor operate on");
   }
   for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
-    spatial.push_back(kernel_shape[spDim]);
+    spatialK[spDim] = kernel_shape[spDim];
   }
 }
 

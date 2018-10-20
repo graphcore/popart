@@ -15,13 +15,16 @@ public:
   // willow's ConvOp does not support bias.
   int dataInIndex() const { return 0; }
   int weightsInIndex() const { return 1; }
+  // convenience functions:
+  const Tensor *dataIn() const;
+  const Tensor *weightsIn() const;
   virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
+  virtual int64_t getNOutChans() const override final;
 
 private:
-  virtual int64_t getNOutChans() const override final;
   virtual void setup0() override final;
-  virtual void setSpatial() override final;
+  virtual void setSpatialK() override final;
 };
 
 class ConvWeightsGradOp : public GradOp {

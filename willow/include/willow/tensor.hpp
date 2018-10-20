@@ -69,6 +69,7 @@ public:
   // weak topo cons (they'll be needed for in-place
   // though)
   bool hasWeakTopoCons() const;
+  void append(std::stringstream &ss);
 
 private:
   // The number of times an Op consumes the Tensor which

@@ -121,19 +121,53 @@ Opx *Devicex::getOpx(OpId id) { return opxs.at(id).get(); }
 // Design decision : leave the option for a Tensor to be
 // created based on complex global criteria open.
 poplar::Tensor Devicex::createPopTensor(Tensor *tensor) {
-  // if there is just one consumer, does it know
-  // how to create a poplar::Tensor?
-  if (tensor->consumers.getTotal() == 1) {
-    Op *op        = tensor->consumers.getOps()[0];
-    auto conIndex = op->input.indices(tensor)[0];
-    auto conId    = op->id;
-    auto popOp    = getOpx(conId);
-    if (popOp->canCreateInput(conIndex)) {
-      return popOp->createInput(conIndex);
+
+  // Do any of the consumers know how to create a poplar::Tensor?
+  // If so, collect those that do, and the index at which consumed.
+  // Note that an Opx may appear several times, with different
+  // consumption indices.
+  std::vector<OpxAndInIndex> candidates;
+  for (Op *op : tensor->consumers.getOps()) {
+    for (int index : op->input.indices(tensor)) {
+      auto conOpId = op->id;
+      Opx *opx     = getOpx(conOpId);
+      if (opx->canCreateInput(index)) {
+        candidates.push_back({index, opx});
+      }
     }
   }
-  throw error("beflumoxed in create tensor");
+
+  if (candidates.size() > 1) {
+    // check that all creators are in agreement on how
+    // to create the poplar::Tensor. If they are, just keep
+    // the first one.
+    bool allEquivalent = true;
+    auto cand0         = candidates[0];
+    for (int i = 1; i < candidates.size(); ++i) {
+      auto cand1 = candidates[i];
+      if (!cand0.opx->createsEquiv(cand0.index, cand1.opx, cand1.index)) {
+        allEquivalent = false;
+        break;
+      }
+    }
+
+    if (allEquivalent) {
+      candidates.resize(1);
+    }
+  }
+
+  if (candidates.size() == 1) {
+    return candidates[0].opx->createInput(candidates[0].index);
+  }
+
+  std::stringstream ss;
+  ss << "Failed to add tensor " << tensor->id << '.';
+  tensor->consumers.append(ss);
+  throw error(ss.str());
 }
+
+OpxAndInIndex::OpxAndInIndex(int conIndex_, Opx *opx_)
+    : index(conIndex_), opx(opx_) {}
 
 // go all the way to creating the engine
 void Devicex::prepare() {
@@ -152,6 +186,15 @@ void Devicex::prepare() {
 
   // create poplar::Tensors etc.
   throw error("need to prepare poplar popDevice");
+}
+
+poplar::Type getPopType(const TensorInfo &info) {
+  switch (info.dataType()) {
+  case TP::FLOAT: {
+    return poplar::FLOAT;
+  }
+  default: { throw error("Is there a poplar type for " + info.data_type()); }
+  }
 }
 
 } // namespace popx

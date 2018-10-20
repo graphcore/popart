@@ -31,6 +31,16 @@ template <class T> void appendSequence(std::stringstream &ss, const T &t) {
   ss << ']';
 }
 
+template <typename X, typename Y>
+std::vector<Y> vXtoY(const std::vector<X> &c0) {
+  std::vector<Y> c1;
+  c1.reserve(c0.size());
+  for (const X &v0 : c0) {
+    c1.push_back(static_cast<Y>(v0));
+  }
+  return c1;
+}
+
 } // namespace willow
 
 #endif

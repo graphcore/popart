@@ -15,11 +15,11 @@ public:
   AveragePoolOp(const onnx::NodeProto &node, Ir *pir);
   virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
+  int64_t getNOutChans() const override final;
 
 private:
   virtual void setup0() override final;
-  virtual void setSpatial() override final;
-  int64_t getNOutChans() const override final;
+  virtual void setSpatialK() override final;
 };
 
 class AveragePoolGradOp : public GradOp {

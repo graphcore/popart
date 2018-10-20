@@ -17,6 +17,12 @@ ConvOp::ConvOp(const onnx::NodeProto &node, Ir *pir)
   }
 }
 
+const Tensor *ConvOp::dataIn() const { return input.tensor(dataInIndex()); }
+
+const Tensor *ConvOp::weightsIn() const {
+  return input.tensor(weightsInIndex());
+}
+
 std::vector<std::unique_ptr<Op>> ConvOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(std::unique_ptr<Op>(new ConvDataGradOp(this)));
@@ -37,20 +43,21 @@ void ConvDataGradOp::setup() {
 }
 
 void ConvOp::setup0() {
-  nOutChans = input.tensor(1)->info.dim(0);
+  nOutChans = weightsIn()->info.dim(0);
   // setting groups from the input tensor,
   // we could also use the value in nAtts, as
   // "group" is required property of the ONNX conv op
-  group = nInChans / input.tensor(1)->info.dim(1);
+  group = nInChans / weightsIn()->info.dim(1);
 }
 
 // ConvOp attributes only MIGHT contain the kernel shape,
 // but we can ALWAYS get it directly from the kernel tensor
 // at input index 1 so this is the preferred way to do it
-void ConvOp::setSpatial() {
-  spatial.reserve(nSpatialDims);
+void ConvOp::setSpatialK() {
+  spatialK.resize(nSpatialDims);
+  spatialK.reserve(nSpatialDims);
   for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
-    spatial.push_back(input.tensor(1)->info.dim(spDim + 2));
+    spatialK[spDim] = weightsIn()->info.dim(spDim + 2);
   }
 }
 

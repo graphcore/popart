@@ -16,6 +16,17 @@ namespace popx {
 
 class Opx;
 
+poplar::Type getPopType(const TensorInfo &);
+
+// A bundle class for an int and an Opx.
+class OpxAndInIndex {
+public:
+  OpxAndInIndex(int, Opx *);
+  OpxAndInIndex() = default;
+  int index;
+  Opx *opx;
+};
+
 class Devicex : public willow::Device {
 
 public:

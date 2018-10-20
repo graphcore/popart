@@ -4,6 +4,11 @@
 #include <willow/names.hpp>
 #include <willow/popx/opx.hpp>
 
+#pragma clang diagnostic push // start ignoring warnings
+#pragma clang diagnostic ignored "-Weverything"
+#include <poplin/Convolution.hpp>
+#pragma clang diagnostic pop // stop ignoring warnings
+
 namespace willow {
 
 class ConvOp;
@@ -18,6 +23,15 @@ public:
   ConvOp *getConvOp() const;
   virtual poplar::Tensor createInput(int index) const override final;
   virtual bool canCreateInput(int index) const override final;
+  virtual bool createsEquiv(int, Opx *, int) const override final;
+  const poplin::ConvParams &getParams() const;
+
+private:
+  poplin::ConvParams params;
+  poplar::OptionFlags opts;
+
+  // convOpt.set("pass", "INFERENCE_FWD");
+  // const poplar::OptionFlags &options = {},
 };
 
 class ConvDataGradOpx : public Opx {

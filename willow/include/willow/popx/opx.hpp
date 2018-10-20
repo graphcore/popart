@@ -18,6 +18,8 @@ namespace popx {
 class Opx {
 
 public:
+  // need to pass Devicex down to here, easy
+  // access to poplar objects TODO TODO
   Opx(Op *);
   virtual ~Opx();
 
@@ -26,6 +28,10 @@ public:
   virtual poplar::Tensor createInput(int index) const;
   // default return false
   virtual bool canCreateInput(int index) const;
+  // If this Opx creates a poplar::Tensor at index0 (via createInput),
+  // does it create the same poplar::Tensor as if opx1 creates one at
+  // index1?. default behaviour : throws error
+  virtual bool createsEquiv(int index0, Opx *opx1, int index1) const;
 
   Op *getOp() const;
 

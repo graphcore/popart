@@ -39,6 +39,10 @@ target_link_libraries(willow
   ${BOOST_FILESYSTEM_LIB}
   ${BOOST_SYSTEM_LIB}
   ${POPLAR_LIB}
+  ${POPLIN_LIB}
+  ${POPNN_LIB}
+  ${POPOPS_LIB}
+  ${POPUTIL_LIB}
 )
 
 install(TARGETS willow

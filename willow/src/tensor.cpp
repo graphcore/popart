@@ -53,6 +53,24 @@ std::vector<Op *> Consumers::consumersWhichTopoBefore(Op *op) const {
   }
 }
 
+void Consumers::append(std::stringstream &ss) {
+  std::string tab = "     ";
+
+  ss << '\n';
+  ss << "Consumer count of Tensor " << tensorConsumed->id << " : " << '\n';
+  int max_length = 0;
+  for (auto &op_count : getMap()) {
+    max_length =
+        std::max(max_length, static_cast<int>(op_count.first->str().size()));
+  }
+
+  for (auto &op_count : getMap()) {
+    ss << padded(op_count.first->str(), max_length + 1) << " : "
+       << op_count.second << '\n';
+  }
+  ss << "Total number of consumptions: " << getTotal();
+}
+
 bool Consumers::hasTopoLast() const { return topoLast != nullptr; }
 
 Op *Consumers::getTopoLast() const {
