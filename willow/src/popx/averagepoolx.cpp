@@ -5,7 +5,7 @@
 namespace willow {
 namespace popx {
 
-AveragePoolOpx::AveragePoolOpx(Op *op) : Opx(op) {
+AveragePoolOpx::AveragePoolOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::AVERAGEPOOL) {
     throw error("cannot create AveragePoolOpx from " + op->op_type());
   }
@@ -15,7 +15,8 @@ AveragePoolOp *AveragePoolOpx::getAveragePoolOp() const {
   return dynamic_cast<AveragePoolOp *>(getOp());
 }
 
-AveragePoolGradOpx::AveragePoolGradOpx(Op *op) : Opx(op) {
+AveragePoolGradOpx::AveragePoolGradOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {
   if (op->opType != OpType::AVERAGEPOOLGRAD) {
     throw error("cannot create AveragePoolGradOpx from " + op->op_type());
   }

@@ -5,7 +5,7 @@
 namespace willow {
 namespace popx {
 
-PadOpx::PadOpx(Op *op) : Opx(op) {
+PadOpx::PadOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::PAD) {
     throw error("cannot create PadOpx from " + op->op_type());
   }

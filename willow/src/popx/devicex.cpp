@@ -30,19 +30,19 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
   switch (op->opType) {
 
   case OpType::ADD: {
-    return std::unique_ptr<Opx>(new AddOpx(op));
+    return std::unique_ptr<Opx>(new AddOpx(op, this));
   }
 
   case OpType::ADDGRAD: {
-    return std::unique_ptr<Opx>(new AddGradOpx(op));
+    return std::unique_ptr<Opx>(new AddGradOpx(op, this));
   }
 
   case OpType::AVERAGEPOOL: {
-    return std::unique_ptr<Opx>(new AveragePoolOpx(op));
+    return std::unique_ptr<Opx>(new AveragePoolOpx(op, this));
   }
 
   case OpType::AVERAGEPOOLGRAD: {
-    return std::unique_ptr<Opx>(new AveragePoolGradOpx(op));
+    return std::unique_ptr<Opx>(new AveragePoolGradOpx(op, this));
   }
 
   case OpType::CONSTANT: {
@@ -50,67 +50,67 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
   }
 
   case OpType::CONV: {
-    return std::unique_ptr<Opx>(new ConvOpx(op));
+    return std::unique_ptr<Opx>(new ConvOpx(op, this));
   }
 
   case OpType::CONVDATAGRAD: {
-    return std::unique_ptr<Opx>(new ConvDataGradOpx(op));
+    return std::unique_ptr<Opx>(new ConvDataGradOpx(op, this));
   }
 
   case OpType::CONVWEIGHTSGRAD: {
-    return std::unique_ptr<Opx>(new ConvWeightsGradOpx(op));
+    return std::unique_ptr<Opx>(new ConvWeightsGradOpx(op, this));
   }
 
   case OpType::L1: {
-    return std::unique_ptr<Opx>(new L1Opx(op));
+    return std::unique_ptr<Opx>(new L1Opx(op, this));
   }
 
   case OpType::L1GRAD: {
-    return std::unique_ptr<Opx>(new L1GradOpx(op));
+    return std::unique_ptr<Opx>(new L1GradOpx(op, this));
   }
 
   case OpType::LOGSOFTMAX: {
-    return std::unique_ptr<Opx>(new LogSoftmaxOpx(op));
+    return std::unique_ptr<Opx>(new LogSoftmaxOpx(op, this));
   }
 
   case OpType::LOGSOFTMAXGRAD: {
-    return std::unique_ptr<Opx>(new LogSoftmaxGradOpx(op));
+    return std::unique_ptr<Opx>(new LogSoftmaxGradOpx(op, this));
   }
 
   case OpType::NLL: {
-    return std::unique_ptr<Opx>(new NllOpx(op));
+    return std::unique_ptr<Opx>(new NllOpx(op, this));
   }
 
   case OpType::NLLGRAD: {
-    return std::unique_ptr<Opx>(new NllGradOpx(op));
+    return std::unique_ptr<Opx>(new NllGradOpx(op, this));
   }
 
   case OpType::PAD: {
-    return std::unique_ptr<Opx>(new PadOpx(op));
+    return std::unique_ptr<Opx>(new PadOpx(op, this));
   }
 
   case OpType::RELU: {
-    return std::unique_ptr<Opx>(new ReluOpx(op));
+    return std::unique_ptr<Opx>(new ReluOpx(op, this));
   }
 
   case OpType::RELUGRAD: {
-    return std::unique_ptr<Opx>(new ReluGradOpx(op));
+    return std::unique_ptr<Opx>(new ReluGradOpx(op, this));
   }
 
   case OpType::SQUEEZE: {
-    return std::unique_ptr<Opx>(new SqueezeOpx(op));
+    return std::unique_ptr<Opx>(new SqueezeOpx(op, this));
   }
 
   case OpType::SQUEEZEGRAD: {
-    return std::unique_ptr<Opx>(new SqueezeGradOpx(op));
+    return std::unique_ptr<Opx>(new SqueezeGradOpx(op, this));
   }
 
   case OpType::SUM: {
-    return std::unique_ptr<Opx>(new SumOpx(op));
+    return std::unique_ptr<Opx>(new SumOpx(op, this));
   }
 
   case OpType::VARUPDATE: {
-    return std::unique_ptr<Opx>(new VarUpdateOpx(op));
+    return std::unique_ptr<Opx>(new VarUpdateOpx(op, this));
   }
   default: { throw error("No get pop op for " + op->op_type()); }
   }

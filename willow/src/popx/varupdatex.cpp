@@ -5,7 +5,7 @@
 namespace willow {
 namespace popx {
 
-VarUpdateOpx::VarUpdateOpx(Op *op) : Opx(op) {
+VarUpdateOpx::VarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::VARUPDATE) {
     throw error("cannot create VarUpdateOpx from " + op->op_type());
   }

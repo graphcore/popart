@@ -5,7 +5,7 @@
 namespace willow {
 namespace popx {
 
-LogSoftmaxOpx::LogSoftmaxOpx(Op *op) : Opx(op) {
+LogSoftmaxOpx::LogSoftmaxOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::LOGSOFTMAX) {
     throw error("cannot create LogSoftmaxOpx from " + op->op_type());
   }
@@ -15,7 +15,8 @@ LogSoftmaxOp *LogSoftmaxOpx::getLogSoftmaxOp() const {
   return dynamic_cast<LogSoftmaxOp *>(getOp());
 }
 
-LogSoftmaxGradOpx::LogSoftmaxGradOpx(Op *op) : Opx(op) {
+LogSoftmaxGradOpx::LogSoftmaxGradOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {
   if (op->opType != OpType::LOGSOFTMAXGRAD) {
     throw error("cannot create LogSoftmaxGradOpx from " + op->op_type());
   }

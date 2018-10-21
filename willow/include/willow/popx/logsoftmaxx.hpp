@@ -13,13 +13,13 @@ namespace popx {
 
 class LogSoftmaxOpx : public Opx {
 public:
-  LogSoftmaxOpx(Op *);
+  LogSoftmaxOpx(Op *, Devicex *);
   LogSoftmaxOp *getLogSoftmaxOp() const;
 };
 
 class LogSoftmaxGradOpx : public Opx {
 public:
-  LogSoftmaxGradOpx(Op *);
+  LogSoftmaxGradOpx(Op *, Devicex *);
   LogSoftmaxGradOp *getLogSoftmaxGradOp() const;
 };
 

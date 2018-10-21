@@ -10,7 +10,7 @@ namespace popx {
 
 const poplin::ConvParams &ConvOpx::getParams() const { return params; }
 
-ConvOpx::ConvOpx(Op *op) : Opx(op) {
+ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::CONV) {
     throw error("cannot create ConvOpx from " + op->op_type());
   }
@@ -88,7 +88,7 @@ poplar::Tensor ConvOpx::createInput(int index) const {
   throw error("I know I said I could");
 }
 
-ConvDataGradOpx::ConvDataGradOpx(Op *op) : Opx(op) {
+ConvDataGradOpx::ConvDataGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::CONVDATAGRAD) {
     throw error("cannot create ConvDataGradOpx from " + op->op_type());
   }
@@ -98,7 +98,8 @@ ConvDataGradOp *ConvDataGradOpx::getConvDataGradOp() const {
   return dynamic_cast<ConvDataGradOp *>(getOp());
 }
 
-ConvWeightsGradOpx::ConvWeightsGradOpx(Op *op) : Opx(op) {
+ConvWeightsGradOpx::ConvWeightsGradOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {
   if (op->opType != OpType::CONVWEIGHTSGRAD) {
     throw error("cannot create ConvWeightsGradOpx from " + op->op_type());
   }

@@ -5,7 +5,7 @@
 namespace willow {
 namespace popx {
 
-SumOpx::SumOpx(Op *op) : Opx(op) {
+SumOpx::SumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::SUM) {
     throw error("cannot create SumOpx from " + op->op_type());
   }

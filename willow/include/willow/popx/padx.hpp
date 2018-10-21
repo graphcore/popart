@@ -12,7 +12,7 @@ namespace popx {
 
 class PadOpx : public Opx {
 public:
-  PadOpx(Op *);
+  PadOpx(Op *, Devicex *);
   PadOp *getPadOp() const;
 };
 

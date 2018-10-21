@@ -13,13 +13,13 @@ namespace popx {
 
 class SqueezeOpx : public Opx {
 public:
-  SqueezeOpx(Op *);
+  SqueezeOpx(Op *, Devicex *);
   SqueezeOp *getSqueezeOp() const;
 };
 
 class SqueezeGradOpx : public Opx {
 public:
-  SqueezeGradOpx(Op *);
+  SqueezeGradOpx(Op *, Devicex *);
   SqueezeGradOp *getSqueezeGradOp() const;
 };
 

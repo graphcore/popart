@@ -12,7 +12,7 @@ namespace popx {
 
 class VarUpdateOpx : public Opx {
 public:
-  VarUpdateOpx(Op *);
+  VarUpdateOpx(Op *, Devicex *);
   VarUpdateOp *getVarUpdateOp() const;
 };
 

@@ -19,7 +19,7 @@ namespace popx {
 
 class ConvOpx : public Opx {
 public:
-  ConvOpx(Op *);
+  ConvOpx(Op *, Devicex *);
   ConvOp *getConvOp() const;
   virtual poplar::Tensor createInput(int index) const override final;
   virtual bool canCreateInput(int index) const override final;
@@ -36,13 +36,13 @@ private:
 
 class ConvDataGradOpx : public Opx {
 public:
-  ConvDataGradOpx(Op *);
+  ConvDataGradOpx(Op *, Devicex *);
   ConvDataGradOp *getConvDataGradOp() const;
 };
 
 class ConvWeightsGradOpx : public Opx {
 public:
-  ConvWeightsGradOpx(Op *);
+  ConvWeightsGradOpx(Op *, Devicex *);
   ConvWeightsGradOp *getConvWeightsGradOp() const;
 };
 

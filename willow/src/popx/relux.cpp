@@ -5,7 +5,7 @@
 namespace willow {
 namespace popx {
 
-ReluOpx::ReluOpx(Op *op) : Opx(op) {
+ReluOpx::ReluOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::RELU) {
     throw error("cannot create ReluOpx from " + op->op_type());
   }
@@ -13,7 +13,7 @@ ReluOpx::ReluOpx(Op *op) : Opx(op) {
 
 ReluOp *ReluOpx::getReluOp() const { return dynamic_cast<ReluOp *>(getOp()); }
 
-ReluGradOpx::ReluGradOpx(Op *op) : Opx(op) {
+ReluGradOpx::ReluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::RELUGRAD) {
     throw error("cannot create ReluGradOpx from " + op->op_type());
   }

@@ -13,13 +13,13 @@ namespace popx {
 
 class AddOpx : public Opx {
 public:
-  AddOpx(Op *);
+  AddOpx(Op *, Devicex *);
   AddOp *getAddOp() const;
 };
 
 class AddGradOpx : public Opx {
 public:
-  AddGradOpx(Op *);
+  AddGradOpx(Op *, Devicex *);
   AddGradOp *getAddGradOp() const;
 };
 

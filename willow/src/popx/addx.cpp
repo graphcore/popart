@@ -5,7 +5,7 @@
 namespace willow {
 namespace popx {
 
-AddOpx::AddOpx(Op *op) : Opx(op) {
+AddOpx::AddOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::ADD) {
     throw error("cannot create AddOpx from " + op->op_type());
   }
@@ -13,7 +13,7 @@ AddOpx::AddOpx(Op *op) : Opx(op) {
 
 AddOp *AddOpx::getAddOp() const { return dynamic_cast<AddOp *>(getOp()); }
 
-AddGradOpx::AddGradOpx(Op *op) : Opx(op) {
+AddGradOpx::AddGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::ADDGRAD) {
     throw error("cannot create AddGradOpx from " + op->op_type());
   }

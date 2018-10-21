@@ -13,13 +13,13 @@ namespace popx {
 
 class ReluOpx : public Opx {
 public:
-  ReluOpx(Op *);
+  ReluOpx(Op *, Devicex *);
   ReluOp *getReluOp() const;
 };
 
 class ReluGradOpx : public Opx {
 public:
-  ReluGradOpx(Op *);
+  ReluGradOpx(Op *, Devicex *);
   ReluGradOp *getReluGradOp() const;
 };
 

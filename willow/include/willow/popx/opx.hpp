@@ -15,12 +15,14 @@ namespace willow {
 
 namespace popx {
 
+class Devicex;
+
 class Opx {
 
 public:
   // need to pass Devicex down to here, easy
-  // access to poplar objects TODO TODO
-  Opx(Op *);
+  // access to poplar objects
+  Opx(Op *, Devicex *);
   virtual ~Opx();
 
   // create the input poplar::Tensor for input at index
@@ -37,6 +39,7 @@ public:
 
 private:
   Op *op;
+  Devicex *devicex;
 };
 
 } // namespace popx

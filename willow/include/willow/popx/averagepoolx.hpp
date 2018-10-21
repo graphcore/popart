@@ -13,13 +13,13 @@ namespace popx {
 
 class AveragePoolOpx : public Opx {
 public:
-  AveragePoolOpx(Op *);
+  AveragePoolOpx(Op *, Devicex *);
   AveragePoolOp *getAveragePoolOp() const;
 };
 
 class AveragePoolGradOpx : public Opx {
 public:
-  AveragePoolGradOpx(Op *);
+  AveragePoolGradOpx(Op *, Devicex *);
   AveragePoolGradOp *getAveragePoolGradOp() const;
 };
 

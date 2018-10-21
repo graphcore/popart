@@ -12,7 +12,7 @@ namespace popx {
 
 class SumOpx : public Opx {
 public:
-  SumOpx(Op *);
+  SumOpx(Op *, Devicex *);
   SumOp *getSumOp() const;
 };
 

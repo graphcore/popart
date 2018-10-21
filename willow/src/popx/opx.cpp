@@ -5,7 +5,7 @@
 namespace willow {
 namespace popx {
 
-Opx::Opx(Op *op_) : op(op_) {}
+Opx::Opx(Op *op_, Devicex *devicex_) : op(op_), devicex(devicex_) {}
 Opx::~Opx() = default;
 
 poplar::Tensor Opx::createInput(int) const {
