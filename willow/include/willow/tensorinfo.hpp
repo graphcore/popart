@@ -54,6 +54,9 @@ public:
   TensorInfo() = default;
   void set(DataType, const std::vector<int64_t> &);
   const std::vector<int64_t> &shape() const;
+  // A helper functions for back-ends which
+  // prefer the size as (unsigned) size_t.
+  std::vector<size_t> shape_szt() const;
   int rank() const;
   int64_t nelms() const;
   // total bytes of tensor

@@ -8,6 +8,7 @@
 #include <poplar/Graph.hpp>
 #include <poplar/IPUModel.hpp>
 #include <poplin/Convolution.hpp>
+#include <poputil/TileMapping.hpp>
 #pragma clang diagnostic pop // stop ignoring warnings
 
 #include <willow/device.hpp>

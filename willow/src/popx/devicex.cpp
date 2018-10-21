@@ -135,6 +135,13 @@ TaskId Devicex::taskWhichCreates(TensorId) {
 // created based on complex global criteria open.
 PriTask Devicex::createPopTensorTask(Tensor *tensor) {
 
+  auto errorbase = [&tensor]() {
+    std::stringstream ss;
+    ss << "Failed to add tensor " << tensor->id << '.';
+    tensor->consumers.append(ss);
+    return ss.str();
+  };
+
   // Do any of the consumers know how to create a poplar::Tensor?
   // If so, collect those that do, and the index at which consumed.
   // Note that an Opx may appear several times, with different
@@ -164,11 +171,13 @@ PriTask Devicex::createPopTensorTask(Tensor *tensor) {
       }
     }
 
+    // they're all equivalent, select the first candidate as the creator
     if (allEquivalent) {
       candidates.resize(1);
     }
   }
 
+  // a unique candidate creator will create the tensor
   if (candidates.size() == 1) {
     Opx *creator = candidates[0].opx;
     int inIndex  = candidates[0].index;
@@ -180,7 +189,6 @@ PriTask Devicex::createPopTensorTask(Tensor *tensor) {
     // before creator creates input tensor at index inIndex.
     std::vector<TaskId> deps;
     for (TensorId tenId : creator->mustExistBeforeCreate(inIndex)) {
-      // TensorId inName = creator->getOp()->input.tensor(inIndex).id;
       TaskId dep = taskWhichCreates(tenId);
       deps.push_back(dep);
     }
@@ -192,10 +200,26 @@ PriTask Devicex::createPopTensorTask(Tensor *tensor) {
             f};
   }
 
-  std::stringstream ss;
-  ss << "Failed to add tensor " << tensor->id << '.';
-  tensor->consumers.append(ss);
-  throw error(ss.str());
+  else if (candidates.size() > 1) {
+    throw error(errorbase() + "\nConflicting creator candidates.");
+  }
+
+  else {
+    std::cout << "WARNING\n"
+              << errorbase() << "\nNo creator candidates. We should perform a "
+              << "depth search to find a candidate. Creating linearly. ";
+
+    auto f = [this, tensor]() {
+      std::cout << "Creating poplar::Tensor " << tensor->id
+                << " by mapping linearly" << std::endl;
+      auto newTensor = graph().addVariable(
+          getPopType(tensor->info), tensor->info.shape_szt(), tensor->id);
+      poputil::mapTensorLinearly(graph(), newTensor);
+      pop_tensors[tensor->id] = newTensor;
+    };
+
+    return {1e6, tensor->id, {}, f};
+  }
 }
 
 OpxAndInIndex::OpxAndInIndex(int conIndex_, Opx *opx_)
@@ -212,10 +236,17 @@ void Devicex::prepare() {
     opxs[op->id] = createOpx(op);
   }
 
-  // create poplar::Tensor for each of the initializers
+  // create a poplar::Tensor for each of the initializers
   for (auto id : pir->tensors.getInitIds()) {
     Tensor *tensor = pir->tensors.get(id);
     tasks.add(createPopTensorTask(tensor));
+  }
+
+  // create a poplar::Tensor for each of the stream tensors
+  for (auto id : pir->tensors.getIds(TensorType::Stream)) {
+    Tensor *tensor = pir->tensors.get(id);
+    tasks.add(createPopTensorTask(tensor));
+    std::cout << "must create " << id << std::endl;
   }
 
   for (auto &task : tasks.getLinearised()) {

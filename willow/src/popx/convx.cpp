@@ -36,8 +36,8 @@ ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
   params = poplin::ConvParams(popOutType,          // dType,
                               cOp->batchSize,      // batchSize,
-                              cOp->spatialD_u64(), // inputFieldShape,
-                              cOp->spatialK_u64(), // kernelShape,
+                              cOp->spatialD_szt(), // inputFieldShape,
+                              cOp->spatialK_szt(), // kernelShape,
 
                               cOp->nInChans,       // inputChannels,
                               cOp->getNOutChans(), // outputChannels,

@@ -70,11 +70,11 @@ std::vector<int64_t> HasReceptiveFieldOp::getOutShape() const {
   return outShape;
 }
 
-std::vector<size_t> HasReceptiveFieldOp::spatialD_u64() const {
+std::vector<size_t> HasReceptiveFieldOp::spatialD_szt() const {
   return vXtoY<int64_t, size_t>(spatialD);
 }
 
-std::vector<size_t> HasReceptiveFieldOp::spatialK_u64() const {
+std::vector<size_t> HasReceptiveFieldOp::spatialK_szt() const {
   return vXtoY<int64_t, size_t>(spatialK);
 }
 

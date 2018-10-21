@@ -25,6 +25,15 @@ void TensorInfo::set(const onnx::TensorProto &t) {
   }
 }
 
+std::vector<size_t> TensorInfo::shape_szt() const {
+  std::vector<size_t> szts;
+  szts.reserve(rank());
+  for (auto &x : shape()) {
+    szts.push_back(static_cast<size_t>(x));
+  }
+  return szts;
+}
+
 // numpy output shape of:
 std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
                            const std::vector<int64_t> &s1) {

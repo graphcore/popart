@@ -35,8 +35,8 @@ public:
   // These convenience functions reduce backend boilerplate.
   // Recall that the willow project always prefers signed
   // ints of strictly defined sizes, internally.
-  std::vector<size_t> spatialD_u64() const;
-  std::vector<size_t> spatialK_u64() const;
+  std::vector<size_t> spatialD_szt() const;
+  std::vector<size_t> spatialK_szt() const;
   std::vector<uint32_t> lowerPads_u32() const;
   std::vector<uint32_t> upperPads_u32() const;
   std::vector<uint32_t> dilations_u32() const;
