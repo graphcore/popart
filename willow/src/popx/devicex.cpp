@@ -18,12 +18,20 @@
 namespace willow {
 namespace popx {
 
+poplar::Graph &Devicex::graph() { return *pGraph; }
+
 Devicex::Devicex(const Ir *pir) : willow::Device(pir) {
   poplar::IPUModel ipumodel;
   popDevice = ipumodel.createDevice();
   if (!popDevice.attach()) {
     throw error("failed to attach to popDevice");
   }
+
+  // TODO : if inference, forward should be INFERENCE_FWD
+  fwdConvOptions.pass = enigma::Pass::TRAINING_FWD;
+  bwdConvOptions.pass = enigma::Pass::TRAINING_BWD;
+  wuConvOptions.pass  = enigma::Pass::TRAINING_WU;
+  engineOptions.set({{"target.workerStackSizeInBytes", "0x200"}});
 }
 
 std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
@@ -182,10 +190,9 @@ void Devicex::prepare() {
   for (auto id : pir->tensors.getInitIds()) {
     Tensor *tensor          = pir->tensors.get(id);
     pop_tensors[tensor->id] = createPopTensor(tensor);
+    std::cout << "created poplar::Tensor " << tensor->id << std::endl;
   }
-
   // create poplar::Tensors etc.
-  throw error("need to prepare poplar popDevice");
 }
 
 poplar::Type getPopType(const TensorInfo &info) {

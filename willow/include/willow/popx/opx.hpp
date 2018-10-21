@@ -36,10 +36,11 @@ public:
   virtual bool createsEquiv(int index0, Opx *opx1, int index1) const;
 
   Op *getOp() const;
+  Devicex *getDevx() const;
 
 private:
-  Op *op;
-  Devicex *devicex;
+  Op *op_;
+  Devicex *devicex_;
 };
 
 } // namespace popx

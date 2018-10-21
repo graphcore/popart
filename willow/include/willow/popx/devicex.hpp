@@ -7,9 +7,11 @@
 #include <poplar/Engine.hpp>
 #include <poplar/Graph.hpp>
 #include <poplar/IPUModel.hpp>
+#include <poplin/Convolution.hpp>
 #pragma clang diagnostic pop // stop ignoring warnings
 
 #include <willow/device.hpp>
+#include <willow/popx/enigma.hpp>
 
 namespace willow {
 namespace popx {
@@ -33,6 +35,15 @@ public:
   Devicex(const Ir *);
   virtual void prepare() override final;
   Opx *getOpx(OpId);
+  poplar::Graph &graph();
+
+  // enigma has a PlanningCache for matmul and conv
+  poplin::PlanningCache convCache;
+  poplin::PlanningCache matmulCache;
+
+  // completed in Devicex constructor.
+  enigma::ConvOptions fwdConvOptions, bwdConvOptions, wuConvOptions;
+  poplar::OptionFlags engineOptions;
 
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};

@@ -84,8 +84,15 @@ ConvOp *ConvOpx::getConvOp() const { return dynamic_cast<ConvOp *>(getOp()); }
 bool ConvOpx::canCreateInput(int) const { return true; }
 
 poplar::Tensor ConvOpx::createInput(int index) const {
-  // return poplin::createWeights(.....);
-  throw error("I know I said I could");
+  return poplin::createWeights(
+      getDevx()->graph(),                                      // graph
+      params,                                                  // params
+      getOp()->str(),                                          // name
+      enigma::toPoplibsConvOptions(getDevx()->fwdConvOptions), // options
+      &getDevx()->convCache                                    // cache
+  );
+
+  // throw error("I know I said I could");
 }
 
 ConvDataGradOpx::ConvDataGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {

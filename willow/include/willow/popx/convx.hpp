@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_CONVX_HPP
 
 #include <willow/names.hpp>
+#include <willow/popx/enigma.hpp>
 #include <willow/popx/opx.hpp>
 
 #pragma clang diagnostic push // start ignoring warnings
@@ -28,7 +29,7 @@ public:
 
 private:
   poplin::ConvParams params;
-  poplar::OptionFlags opts;
+  enigma::ConvOptions opts;
 
   // convOpt.set("pass", "INFERENCE_FWD");
   // const poplar::OptionFlags &options = {},
