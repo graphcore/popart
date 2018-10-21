@@ -10,6 +10,13 @@ namespace popx {
 
 const poplin::ConvParams &ConvOpx::getParams() const { return params; }
 
+std::vector<TensorId> ConvOpx::mustExistBeforeCreate(int) const {
+  // both creating weights and input are done
+  // without requiring the pre-existance of any
+  // other poplar::Tensor
+  return {};
+}
+
 ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::CONV) {
     throw error("cannot create ConvOpx from " + op->op_type());
@@ -84,15 +91,18 @@ ConvOp *ConvOpx::getConvOp() const { return dynamic_cast<ConvOp *>(getOp()); }
 bool ConvOpx::canCreateInput(int) const { return true; }
 
 poplar::Tensor ConvOpx::createInput(int index) const {
-  return poplin::createWeights(
-      getDevx()->graph(),                                      // graph
-      params,                                                  // params
-      getOp()->str(),                                          // name
-      enigma::toPoplibsConvOptions(getDevx()->fwdConvOptions), // options
-      &getDevx()->convCache                                    // cache
-  );
 
-  // throw error("I know I said I could");
+  if (index == getConvOp()->weightsInIndex()) {
+    return poplin::createWeights(
+        getDevx()->graph(),                                      // graph
+        params,                                                  // params
+        getOp()->str(),                                          // name
+        enigma::toPoplibsConvOptions(getDevx()->fwdConvOptions), // options
+        &getDevx()->convCache                                    // cache
+    );
+  } else {
+    throw error("conv opx cannot create tensor at this index yet");
+  }
 }
 
 ConvDataGradOpx::ConvDataGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {

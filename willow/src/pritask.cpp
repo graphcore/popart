@@ -8,13 +8,13 @@
 namespace willow {
 
 PriTask::PriTask(double p,
-                 std::string n,
-                 const std::vector<std::string> &d,
+                 TaskId n,
+                 const std::vector<TaskId> &d,
                  const std::function<void()> &f_)
     : priority(p), name(n), dependsOn(d), f(f_) {}
 
-void PriTask::removeDep(const std::string &dep) {
-  std::vector<std::string> newDependsOn;
+void PriTask::removeDep(const TaskId &dep) {
+  std::vector<TaskId> newDependsOn;
   newDependsOn.reserve(dependsOn.size());
   for (auto &x : dependsOn) {
     if (x != dep) {
@@ -44,7 +44,7 @@ void PriTasks::add(const PriTask &t) {
 // this function will reorder v_tasks so that there are no dependency breakages.
 std::vector<PriTask> PriTasks::getLinearised() const {
   std::priority_queue<PriTask> pq;
-  std::unordered_map<std::string, std::vector<std::string>> dependentsOf;
+  std::unordered_map<TaskId, std::vector<TaskId>> dependentsOf;
   std::vector<PriTask> linearisedTasks;
 
   auto tasksMapCopy = tasksMap;

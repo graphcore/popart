@@ -12,6 +12,7 @@
 namespace willow {
 
 using TensorId = std::string;
+using TaskId   = std::string;
 
 using OpId = int;
 // using TensorId = std::string;

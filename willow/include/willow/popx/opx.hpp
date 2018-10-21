@@ -29,11 +29,14 @@ public:
   // default : throw error (not all Opxs can createInput)
   virtual poplar::Tensor createInput(int index) const;
   // default return false
-  virtual bool canCreateInput(int index) const;
+  virtual bool canCreateInput(int index0) const;
   // If this Opx creates a poplar::Tensor at index0 (via createInput),
   // does it create the same poplar::Tensor as if opx1 creates one at
   // index1?. default behaviour : throws error
   virtual bool createsEquiv(int index0, Opx *opx1, int index1) const;
+  // To create a poplar::Tensor for input index index0, which
+  // poplar::Tensors must already exist?
+  virtual std::vector<TensorId> mustExistBeforeCreate(int index0) const;
 
   Op *getOp() const;
   Devicex *getDevx() const;

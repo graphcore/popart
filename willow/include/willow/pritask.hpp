@@ -5,6 +5,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <willow/names.hpp>
 
 namespace willow {
 
@@ -13,35 +14,33 @@ class PriTask {
 public:
   double priority;
   // the name of this task, must be a unique identifier
-  std::string name;
+  TaskId name;
   // the names of tasks which MUST appear before this task in a linearisation
-  std::vector<std::string> dependsOn;
+  std::vector<TaskId> dependsOn;
   std::function<void()> f;
   PriTask() = default;
   PriTask(double p,
-          std::string n,
-          const std::vector<std::string> &d,
+          TaskId n,
+          const std::vector<TaskId> &d,
           const std::function<void()> &f_);
 
   // remove dep from dependsOn.
-  void removeDep(const std::string &dep);
+  void removeDep(const TaskId &dep);
 };
-
 
 // returns true if "a" has lower priority than "b"
 bool operator<(const PriTask &a, const PriTask &b);
 
 class PriTasks {
 public:
-  std::unordered_map<std::string, PriTask> tasksMap;
+  std::unordered_map<TaskId, PriTask> tasksMap;
   void add(const PriTask &t);
 
-  // return the tasks in an order of descending priority as far 
+  // return the tasks in an order of descending priority as far
   // as possible, subject to all dependencies being satisfied.
   // the algorithm used is yet another variant of  Kahn's algorithm
   std::vector<PriTask> getLinearised() const;
-  PriTasks()  = default;
-
+  PriTasks() = default;
 };
 
 } // namespace willow

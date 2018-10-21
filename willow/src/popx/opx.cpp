@@ -17,6 +17,13 @@ bool Opx::createsEquiv(int, Opx *, int) const {
               op_->op_type());
 }
 
+std::vector<TensorId> Opx::mustExistBeforeCreate(int index0) const {
+  throw error(
+      "Opx for " + op_->op_type() +
+      " cannot say which poplar Tensors must exist to create at index " +
+      std::to_string(index0));
+}
+
 Op *Opx::getOp() const { return op_; }
 
 Devicex *Opx::getDevx() const { return devicex_; }

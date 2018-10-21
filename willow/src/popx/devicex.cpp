@@ -13,6 +13,7 @@
 #include <willow/popx/squeezex.hpp>
 #include <willow/popx/sumx.hpp>
 #include <willow/popx/varupdatex.hpp>
+#include <willow/pritask.hpp>
 #include <willow/tensor.hpp>
 
 namespace willow {
@@ -126,9 +127,13 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
 Opx *Devicex::getOpx(OpId id) { return opxs.at(id).get(); }
 
+TaskId Devicex::taskWhichCreates(TensorId) {
+  throw error("must impl taskWhichCreates");
+}
+
 // Design decision : leave the option for a Tensor to be
 // created based on complex global criteria open.
-poplar::Tensor Devicex::createPopTensor(Tensor *tensor) {
+PriTask Devicex::createPopTensorTask(Tensor *tensor) {
 
   // Do any of the consumers know how to create a poplar::Tensor?
   // If so, collect those that do, and the index at which consumed.
@@ -165,7 +170,26 @@ poplar::Tensor Devicex::createPopTensor(Tensor *tensor) {
   }
 
   if (candidates.size() == 1) {
-    return candidates[0].opx->createInput(candidates[0].index);
+    Opx *creator = candidates[0].opx;
+    int inIndex  = candidates[0].index;
+    auto f       = [this, creator, inIndex, tensor]() {
+      std::cout << "Creating poplar::Tensor " << tensor->id << std::endl;
+      pop_tensors[tensor->id] = creator->createInput(inIndex);
+    };
+    // the inputs of creator which must have poplar::Tensors
+    // before creator creates input tensor at index inIndex.
+    std::vector<TaskId> deps;
+    for (TensorId tenId : creator->mustExistBeforeCreate(inIndex)) {
+      // TensorId inName = creator->getOp()->input.tensor(inIndex).id;
+      TaskId dep = taskWhichCreates(tenId);
+      deps.push_back(dep);
+    }
+
+    return {1e6,        // TODO ask D.Norman whether the
+                        // time of tensor creation is important
+            tensor->id, // the task name is the tensor name
+            deps,
+            f};
   }
 
   std::stringstream ss;
@@ -179,6 +203,8 @@ OpxAndInIndex::OpxAndInIndex(int conIndex_, Opx *opx_)
 
 // go all the way to creating the engine
 void Devicex::prepare() {
+
+  PriTasks tasks;
   pGraph.reset(new poplar::Graph(popDevice));
 
   // create a Opx for every Op
@@ -188,9 +214,12 @@ void Devicex::prepare() {
 
   // create poplar::Tensor for each of the initializers
   for (auto id : pir->tensors.getInitIds()) {
-    Tensor *tensor          = pir->tensors.get(id);
-    pop_tensors[tensor->id] = createPopTensor(tensor);
-    std::cout << "created poplar::Tensor " << tensor->id << std::endl;
+    Tensor *tensor = pir->tensors.get(id);
+    tasks.add(createPopTensorTask(tensor));
+  }
+
+  for (auto &task : tasks.getLinearised()) {
+    task.f();
   }
   // create poplar::Tensors etc.
 }

@@ -25,14 +25,13 @@ public:
   virtual poplar::Tensor createInput(int index) const override final;
   virtual bool canCreateInput(int index) const override final;
   virtual bool createsEquiv(int, Opx *, int) const override final;
+  virtual std::vector<TensorId>
+  mustExistBeforeCreate(int index0) const override final;
   const poplin::ConvParams &getParams() const;
 
 private:
   poplin::ConvParams params;
   enigma::ConvOptions opts;
-
-  // convOpt.set("pass", "INFERENCE_FWD");
-  // const poplar::OptionFlags &options = {},
 };
 
 class ConvDataGradOpx : public Opx {

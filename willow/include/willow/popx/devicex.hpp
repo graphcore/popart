@@ -12,6 +12,7 @@
 
 #include <willow/device.hpp>
 #include <willow/popx/enigma.hpp>
+#include <willow/pritask.hpp>
 
 namespace willow {
 namespace popx {
@@ -45,6 +46,10 @@ public:
   enigma::ConvOptions fwdConvOptions, bwdConvOptions, wuConvOptions;
   poplar::OptionFlags engineOptions;
 
+  // return the name of the task which creates a poplar::Tensor
+  // This function is pure string manipulation
+  TaskId taskWhichCreates(TensorId);
+
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
@@ -56,7 +61,7 @@ private:
   poplar::program::Sequence weightsFromHost;
   poplar::program::Sequence step;
 
-  poplar::Tensor createPopTensor(Tensor *tensor);
+  PriTask createPopTensorTask(Tensor *tensor);
   std::unique_ptr<Opx> createOpx(Op *);
 
   // 1-to-1 mapping between Ops and Opxs
