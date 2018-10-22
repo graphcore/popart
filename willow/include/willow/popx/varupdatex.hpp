@@ -6,14 +6,21 @@
 
 namespace willow {
 
-class VarUpdateOp;
+class SGDVarUpdateOp;
+class ConstSGDVarUpdateOp;
 
 namespace popx {
 
-class VarUpdateOpx : public Opx {
+class SGDVarUpdateOpx : public Opx {
 public:
-  VarUpdateOpx(Op *, Devicex *);
-  VarUpdateOp *getVarUpdateOp() const;
+  SGDVarUpdateOpx(Op *, Devicex *);
+  SGDVarUpdateOp *getSGDVarUpdateOp() const;
+};
+
+class ConstSGDVarUpdateOpx : public Opx {
+public:
+  ConstSGDVarUpdateOpx(Op *, Devicex *);
+  ConstSGDVarUpdateOp *getConstSGDVarUpdateOp() const;
 };
 
 } // namespace popx

@@ -3,7 +3,7 @@ from torchvision import transforms, datasets
 import sys
 import os
 sys.path.append("../../pywillow")
-from pywillow import NllLoss, L1Loss, EarlyInfo, TensorInfo, DataFlow, SGD, WillowNet
+from pywillow import NllLoss, L1Loss, EarlyInfo, TensorInfo, DataFlow, SGD, ConstSGD, WillowNet
 from torchwriter import PytorchNetWriter, conv3x3
 
 if (len(sys.argv) != 2):
@@ -93,7 +93,7 @@ class ModelWriter0(PytorchNetWriter):
             inNames=inNames,
             outNames=outNames,
             losses=losses,
-            optimizer=SGD(0.001),
+            optimizer=ConstSGD(0.001),
             earlyInfo=earlyInfo,
             dataFeed=dataFeed,
             # perform tests, using framework as ground truth

@@ -5,7 +5,7 @@ import torch
 import torch.utils
 import torch.utils.data
 from writer import NetWriter
-from pywillow import TensorInfo, DataFlow, NllLoss, L1Loss, SGD
+from pywillow import TensorInfo, DataFlow, NllLoss, L1Loss, SGD, ConstSGD
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -48,7 +48,8 @@ class PytorchNetWriter(NetWriter):
         """
         convert willow's Optimizer to a torch Optimizer
         """
-        if isinstance(self.optimizer, SGD):
+        if (isinstance(self.optimizer, SGD)
+                or isinstance(self.optimizer, ConstSGD)):
             return torch.optim.SGD(
                 self.module.parameters(),
                 lr=self.optimizer.learnRate(),

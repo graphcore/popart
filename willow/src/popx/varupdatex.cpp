@@ -5,14 +5,25 @@
 namespace willow {
 namespace popx {
 
-VarUpdateOpx::VarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::VARUPDATE) {
-    throw error("cannot create VarUpdateOpx from " + op->op_type());
+SGDVarUpdateOpx::SGDVarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  if (op->opType != OpType::SGDVARUPDATE) {
+    throw error("cannot create SGDVarUpdateOpx from " + op->op_type());
   }
 }
 
-VarUpdateOp *VarUpdateOpx::getVarUpdateOp() const {
-  return dynamic_cast<VarUpdateOp *>(getOp());
+SGDVarUpdateOp *SGDVarUpdateOpx::getSGDVarUpdateOp() const {
+  return dynamic_cast<SGDVarUpdateOp *>(getOp());
+}
+
+ConstSGDVarUpdateOpx::ConstSGDVarUpdateOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {
+  if (op->opType != OpType::CONSTSGDVARUPDATE) {
+    throw error("cannot create ConstSGDVarUpdateOpx from " + op->op_type());
+  }
+}
+
+ConstSGDVarUpdateOp *ConstSGDVarUpdateOpx::getConstSGDVarUpdateOp() const {
+  return dynamic_cast<ConstSGDVarUpdateOp *>(getOp());
 }
 
 } // namespace popx

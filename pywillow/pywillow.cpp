@@ -17,7 +17,6 @@ namespace py = pybind11;
 using namespace willow;
 
 PYBIND11_MODULE(pywillow, m) {
-  // py::module m("pywillow", "binding for willow");
   m.doc() = "binding for C++ willow library";
 
   py::class_<DataFlow>(m, "DataFlow")
@@ -54,11 +53,14 @@ PYBIND11_MODULE(pywillow, m) {
       .def("getLambda", &L1Loss::getLambda);
 
   py::class_<Optimizer> optimizer(m, "Optimizer");
-  // optimizer.def(py::init<>());
 
-  py::class_<SGD>(m, "SGD", optimizer)
-      .def(py::init<float>())
-      .def("learnRate", &SGD::learnRate);
+  py::class_<BaseSGD> basesgd(m, "BaseSGD", optimizer);
+  // Note that we do not define a constructor, as it is a virtual class
+  basesgd.def("learnRate", &BaseSGD::learnRate);
+
+  // The Optimizer classes which are non-virtual:
+  py::class_<SGD>(m, "SGD", basesgd).def(py::init<float>());
+  py::class_<ConstSGD>(m, "ConstSGD", basesgd).def(py::init<float>());
 
   py::class_<WillowNet>(m, "WillowNet")
       .def(py::init<std::string,

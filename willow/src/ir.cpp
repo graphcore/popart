@@ -457,8 +457,10 @@ Ir::Ir(const IrBundle &gb)
   io::confirmRegularFile(gb.fnModel);
   onnxModel = io::getModel(gb.fnModel);
 
-  // TODO: this will change, obtained from optimizer:
-  earlyInfo.addInfo(getLearningRateId(), {TP::FLOAT, {}});
+  for (auto &id_info : optimizer->tensorInfos()) {
+    earlyInfo.addInfo(id_info.first, id_info.second);
+    tensors.addStream(id_info.first);
+  }
 
   for (auto &l : gb.losses) {
     losses.emplace_back(l->clone());
@@ -1365,25 +1367,18 @@ void Ir::constructBackwards() {
     }
   }
 
-  tensors.addStream(getLearningRateId());
-
   // add weight ops (ignoring momentum's for now)
   for (auto &varId : tensors.getIds(TensorType::Variable)) {
     growVarUpdateOp(varId);
   }
 }
 
-TensorId getLearningRateId() { return "learnRate"; }
-
 Op *Ir::growVarUpdateOp(TensorId varId) {
 
-  OpId opId = moveIntoIr(std::unique_ptr<Op>(new VarUpdateOp(varId, this)));
-  Op *op    = ops[opId].get();
+  OpId opId   = moveIntoIr(optimizer->createOp(varId, this));
+  auto inputs = optimizer->getInputIds(varId);
 
-  std::vector<TensorId> inputs(3, "");
-  inputs[VarUpdateOp::getVarIndex()]       = varId;
-  inputs[VarUpdateOp::getVarGradIndex()]   = getGradId(varId);
-  inputs[VarUpdateOp::getLearnRateIndex()] = getLearningRateId();
+  Op *op = ops[opId].get();
   connectInputs(InputVecWrapper(inputs), opId);
 
   // there are no outputs of var-op
@@ -1391,6 +1386,7 @@ Op *Ir::growVarUpdateOp(TensorId varId) {
   connectOutputs(OutputVecWrapper(outputs), opId);
 
   trainTargetOps.insert(op);
+
   return op;
 }
 
@@ -1511,7 +1507,8 @@ OpTypes::OpTypes() {
               {"Sum", OpType::SUM},
               {"Squeeze", OpType::SQUEEZE},
               {"SqueezeGrad", OpType::SQUEEZEGRAD},
-              {"VarUpdate", OpType::VARUPDATE}};
+              {"SGDVarUpdate", OpType::SGDVARUPDATE},
+              {"ConstSGDVarUpdate", OpType::CONSTSGDVARUPDATE}};
 
   for (auto &x : opTypes_) {
     strings_[x.second] = x.first;
@@ -1624,7 +1621,8 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::NLLGRAD:
   case OpType::L1GRAD:
   case OpType::LOGSOFTMAXGRAD:
-  case OpType::VARUPDATE:
+  case OpType::SGDVARUPDATE:
+  case OpType::CONSTSGDVARUPDATE:
     throw error("Gradient Ops not constructable from Node");
 
   case OpType::NLL:

@@ -3,29 +3,40 @@
 #include <willow/varupdate.hpp>
 
 namespace willow {
-VarUpdateOp::VarUpdateOp(TensorId varId_, Ir *pir)
-    : Op({"VarUpdate", pir, {}, getWillowDomain()}), varId(varId_),
+VarUpdateOp::VarUpdateOp(std::string op_type, TensorId varId_, Ir *pir)
+    : Op({op_type, pir, {}, getWillowDomain()}), varId(varId_),
       varGradId(getGradId(varId)) {
   // very high priority, so that performed as early as possible
   priority = std::numeric_limits<double>::max();
 }
 
-std::unique_ptr<Op> VarUpdateOp::clone() const {
-  return std::unique_ptr<Op>(new VarUpdateOp(*this));
+void VarUpdateOp::setup() {
+  // void functions (like VarUpdateOp) have
+  // no output tensors to set shapes for
 }
 
-void VarUpdateOp::setup() {
-  // throw error("is there anything to do in var update op setup?");
+void VarUpdateOp::imposeTopoCons() {
+  input.tensor(getVarIndex())->consumers.setTopoLast(this);
 }
 
 int VarUpdateOp::getVarIndex() { return 0; }
 
 int VarUpdateOp::getVarGradIndex() { return 1; }
 
-int VarUpdateOp::getLearnRateIndex() { return 2; }
+SGDVarUpdateOp::SGDVarUpdateOp(TensorId varId_, Ir *pir)
+    : VarUpdateOp("SGDVarUpdate", varId_, pir) {}
 
-void VarUpdateOp::imposeTopoCons() {
-  input.tensor(getVarIndex())->consumers.setTopoLast(this);
+std::unique_ptr<Op> SGDVarUpdateOp::clone() const {
+  return std::unique_ptr<Op>(new SGDVarUpdateOp(*this));
+}
+
+int SGDVarUpdateOp::getLearnRateIndex() { return 2; }
+
+ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_, Ir *pir)
+    : VarUpdateOp("ConstSGDVarUpdate", varId_, pir) {}
+
+std::unique_ptr<Op> ConstSGDVarUpdateOp::clone() const {
+  return std::unique_ptr<Op>(new ConstSGDVarUpdateOp(*this));
 }
 
 } // namespace willow

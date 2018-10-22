@@ -70,6 +70,10 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new ConvWeightsGradOpx(op, this));
   }
 
+  case OpType::CONSTSGDVARUPDATE: {
+    return std::unique_ptr<Opx>(new ConstSGDVarUpdateOpx(op, this));
+  }
+
   case OpType::L1: {
     return std::unique_ptr<Opx>(new L1Opx(op, this));
   }
@@ -106,6 +110,10 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new ReluGradOpx(op, this));
   }
 
+  case OpType::SGDVARUPDATE: {
+    return std::unique_ptr<Opx>(new SGDVarUpdateOpx(op, this));
+  }
+
   case OpType::SQUEEZE: {
     return std::unique_ptr<Opx>(new SqueezeOpx(op, this));
   }
@@ -118,9 +126,6 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new SumOpx(op, this));
   }
 
-  case OpType::VARUPDATE: {
-    return std::unique_ptr<Opx>(new VarUpdateOpx(op, this));
-  }
   default: { throw error("No get pop op for " + op->op_type()); }
   }
 }
@@ -205,7 +210,7 @@ PriTask Devicex::createPopTensorTask(Tensor *tensor) {
   }
 
   else {
-    std::cout << "WARNING\n"
+    std::cout << "\nWARNING\n"
               << errorbase() << "\nNo creator candidates. We should perform a "
               << "depth search to find a candidate. Creating linearly. ";
 
@@ -242,7 +247,7 @@ void Devicex::prepare() {
     tasks.add(createPopTensorTask(tensor));
   }
 
-  //TODO : create the program which writes all the weights
+  // TODO : create the program which writes all the weights
 
   // create a poplar::Tensor for each of the stream tensors
   for (auto id : pir->tensors.getIds(TensorType::Stream)) {
@@ -250,7 +255,6 @@ void Devicex::prepare() {
     tasks.add(createPopTensorTask(tensor));
     // TODO : register tensor is a stream
   }
-
 
   for (auto &task : tasks.getLinearised()) {
     task.f();

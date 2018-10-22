@@ -111,10 +111,6 @@ TensorId getNonGradId(TensorId tenId);
 // get a recomputed tensor's name, based on original tensor
 TensorId getRecompId(TensorId tenId);
 
-// get the learning rate tensor's id for Variable tensor
-// Of course, the tensor is rank 0
-TensorId getLearningRateId();
-
 // What is known about the Ir before it is run.
 // This knowledge can sometimes be compiled into the Ir,
 // and for certain backends is even required, for example
@@ -145,6 +141,7 @@ enum class OpType {
   AVERAGEPOOL,
   AVERAGEPOOLGRAD,
   CONSTANT,
+  CONSTSGDVARUPDATE,
   CONV,
   CONVDATAGRAD,
   CONVWEIGHTSGRAD,
@@ -157,10 +154,10 @@ enum class OpType {
   PAD,
   RELU,
   RELUGRAD,
+  SGDVARUPDATE,
   SQUEEZE,
   SQUEEZEGRAD,
-  SUM,
-  VARUPDATE
+  SUM
 };
 
 // models inputs and outputs to Ops, inputs/outputs
