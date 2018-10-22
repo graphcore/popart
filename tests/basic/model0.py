@@ -27,7 +27,7 @@ dataFeed = DataFlow(nBatchesPerCycle, batchSize, ["nllLossVal", "l1LossVal"])
 earlyInfo = EarlyInfo()
 earlyInfo.addInfo("image0", TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 earlyInfo.addInfo("image1", TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
-earlyInfo.addInfo("label", TensorInfo("INT64", [batchSize]))
+earlyInfo.addInfo("label", TensorInfo("INT32", [batchSize]))
 
 inNames = ["image0", "image1"]
 outNames = ["preProbSquared", "probs"]

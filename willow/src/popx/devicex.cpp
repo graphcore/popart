@@ -242,12 +242,15 @@ void Devicex::prepare() {
     tasks.add(createPopTensorTask(tensor));
   }
 
+  //TODO : create the program which writes all the weights
+
   // create a poplar::Tensor for each of the stream tensors
   for (auto id : pir->tensors.getIds(TensorType::Stream)) {
     Tensor *tensor = pir->tensors.get(id);
     tasks.add(createPopTensorTask(tensor));
-    std::cout << "must create " << id << std::endl;
+    // TODO : register tensor is a stream
   }
+
 
   for (auto &task : tasks.getLinearised()) {
     task.f();
@@ -260,7 +263,12 @@ poplar::Type getPopType(const TensorInfo &info) {
   case TP::FLOAT: {
     return poplar::FLOAT;
   }
-  default: { throw error("Is there a poplar type for " + info.data_type()); }
+  case TP::INT32: {
+    return poplar::INT;
+  }
+  default: {
+    throw error("Is there a poplar type for " + info.data_type() + "?");
+  }
   }
 }
 

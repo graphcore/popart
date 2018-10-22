@@ -108,3 +108,9 @@ elegant way to merge DAGs in the optimization pass
 19/10
 static compilation: all nodes not on path from stream input MUST be static
 compiled. 
+
+21/10
+scaledAddTo takes the scalar as a float. I want it to be a tensor. 
+Questions: 
+1) how should I map the tensor?
+2) what API funtion should I call?
