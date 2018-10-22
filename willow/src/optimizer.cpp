@@ -50,4 +50,23 @@ std::unique_ptr<Optimizer> ConstSGD::clone() const {
 
 std::map<TensorId, TensorInfo> ConstSGD::tensorInfos() const { return {}; }
 
+bool SGD::validReplacement(const Optimizer *other) const {
+  if (other->type() != type()) {
+    return false;
+  }
+  // until we have momentum option, returning true
+  return true;
+}
+
+OptimizerType SGD::type() const { return OptimizerType::SGD; }
+
+std::string SGD::type_s() const { return "SGD"; }
+
+// ConstSGD can never be replaced
+bool ConstSGD::validReplacement(const Optimizer *) const { return false; }
+
+OptimizerType ConstSGD::type() const { return OptimizerType::CONSTSGD; }
+
+std::string ConstSGD::type_s() const { return "ConstSGD"; }
+
 } // namespace willow

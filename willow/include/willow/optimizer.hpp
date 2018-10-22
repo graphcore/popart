@@ -11,6 +11,8 @@ namespace willow {
 // This function is pure string manipulation
 TensorId getLearningRateId();
 
+enum class OptimizerType { SGD = 0, CONSTSGD };
+
 class Optimizer {
 public:
   virtual ~Optimizer()         = default;
@@ -24,6 +26,12 @@ public:
   // what are the correct input names to the Op created above?
   // the names depend on the name of the Variable being updated.
   virtual std::vector<TensorId> getInputIds(TensorId varId) const = 0;
+  // Can this optimizer be replaced by other? This is not true
+  // if for example this has no momentum by other does, as the
+  // graph structure would need to change.
+  virtual bool validReplacement(const Optimizer *other) const = 0;
+  virtual OptimizerType type() const                          = 0;
+  virtual std::string type_s() const                          = 0;
 };
 
 class BaseSGD : public Optimizer {
@@ -38,10 +46,13 @@ private:
 class SGD : public BaseSGD {
 public:
   SGD(float lr);
-  virtual std::map<TensorId, TensorInfo> tensorInfos() const override final;
   virtual std::unique_ptr<Optimizer> clone() const override final;
+  virtual std::map<TensorId, TensorInfo> tensorInfos() const override final;
   virtual std::unique_ptr<Op> createOp(TensorId, Ir *) const override final;
   virtual std::vector<TensorId> getInputIds(TensorId) const override final;
+  virtual bool validReplacement(const Optimizer *other) const override final;
+  virtual OptimizerType type() const override final;
+  virtual std::string type_s() const override final;
 };
 
 // may not change during training
@@ -52,6 +63,9 @@ public:
   virtual std::map<TensorId, TensorInfo> tensorInfos() const override final;
   virtual std::unique_ptr<Op> createOp(TensorId, Ir *) const override final;
   virtual std::vector<TensorId> getInputIds(TensorId) const override final;
+  virtual bool validReplacement(const Optimizer *other) const override final;
+  virtual OptimizerType type() const override final;
+  virtual std::string type_s() const override final;
 };
 
 } // namespace willow

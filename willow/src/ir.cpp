@@ -29,8 +29,16 @@
 
 namespace willow {
 
-void Ir::updateOptimizer(const Optimizer *) {
-  throw error("update optimizer not implemented. Must throw if incompat");
+void Ir::updateOptimizer(const Optimizer *newOptimizer) {
+  if (optimizer.get() == nullptr) {
+    throw error("ILE: cannot update optimizer before it is set");
+  }
+  if (!optimizer->validReplacement(newOptimizer)) {
+    throw error("This Optimizer of type " + newOptimizer->type_s() +
+                " is not a valid replacement for optimizer of type " +
+                optimizer->type_s());
+  }
+  optimizer = newOptimizer->clone();
 }
 
 std::vector<TensorId> TensorIndexMap::getSerialised() const {
