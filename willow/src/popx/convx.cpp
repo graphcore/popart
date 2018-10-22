@@ -32,7 +32,7 @@ ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   std::vector<unsigned> ones(cOp->nSpatialDims, 1);
 
   // we assume that the output type is the same as the input
-  auto popOutType = getPopType(cOp->dataIn()->info);
+  auto popOutType = popType(cOp->dataIn()->info);
 
   params = poplin::ConvParams(popOutType,          // dType,
                               cOp->batchSize,      // batchSize,

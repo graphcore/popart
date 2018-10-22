@@ -1,5 +1,6 @@
 #include <willow/error.hpp>
 #include <willow/ir.hpp>
+#include <willow/onnxutil.hpp>
 #include <willow/tensor.hpp>
 #include <willow/util.hpp>
 
@@ -52,6 +53,21 @@ std::vector<Op *> Consumers::consumersWhichTopoBefore(Op *op) const {
     return {};
   }
 }
+
+TensorData *Tensor::tensorData() {
+  if (data_.get() == nullptr) {
+    throw error("Data not set for " + id);
+  }
+  return data_.get();
+}
+
+TensorData::TensorData(const onnx::TensorProto &tp) {
+  TensorInfo info(tp);
+  data_.resize(info.nbytes());
+  std::memcpy(data_.data(), onnxutil::getData(tp), info.nbytes());
+}
+
+void *TensorData::data() { return data_.data(); }
 
 void Consumers::append(std::stringstream &ss) {
   std::string tab = "     ";
@@ -138,6 +154,11 @@ int Consumers::getTotal() const {
 Tensor::Tensor(TensorId n, TensorType t, Ir *g)
     : Vertex(), id(n), pir(g), consumers(this), producer(nullptr),
       tensorTypeInfo(&getTensorTypeInfoMap().at(t)) {}
+
+Tensor::Tensor(TensorId n, TensorType t, Ir *g, const onnx::TensorProto *tp)
+    : Tensor(n, t, g) {
+  data_.reset(new TensorData(*tp));
+}
 
 void Consumers::decrement(Op *op) {
   auto found = consumers_m.find(op);

@@ -92,11 +92,23 @@ private:
 const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap();
 std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap();
 
+class TensorData {
+public:
+  TensorData(const TensorInfo &, const void *);
+  TensorData(const onnx::TensorProto &);
+  void *data();
+
+private:
+  std::vector<char> data_;
+};
+
 class Tensor : public Vertex {
 public:
   // note : producer (if there is one)
   // must be set after construction
   Tensor(TensorId, TensorType, Ir *);
+  // As above, but sets TensorData from TensorProto
+  Tensor(TensorId, TensorType, Ir *, const onnx::TensorProto *);
   TensorId id;
   Ir *pir;
   // ActGrad, Variable, etc:
@@ -111,10 +123,12 @@ public:
   void setProducer(Op *);
   void resetProducer(Op *);
   bool hasProducer() const;
+  TensorData *tensorData();
 
 private:
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
+  std::unique_ptr<TensorData> data_{nullptr};
 };
 
 } // namespace willow

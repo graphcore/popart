@@ -43,9 +43,7 @@ WillowNet::~WillowNet() = default;
 
 void WillowNet::prepareDevice() { device_->prepare(); }
 
-void WillowNet::weightsFromHost() {
-  throw error("pop device not ready, weights from host");
-}
+void WillowNet::weightsFromHost() { device_->weightsFromHost(); }
 
 // write whatever optimizer tensors (learning rates,
 // momentum, initial momentum tensors (zero)) there are to device

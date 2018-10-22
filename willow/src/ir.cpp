@@ -990,7 +990,8 @@ void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
          std::unique_ptr<Tensor>(new Tensor(
              name,
              constIds.contains(name) ? TensorType::Const : TensorType::Variable,
-             pir)));
+             pir,
+             pt)));
 }
 
 std::string reservedGradientPrefix() { return "d__"; }

@@ -18,9 +18,11 @@
 namespace willow {
 namespace popx {
 
+using PopStreamId = std::string;
+
 class Opx;
 
-poplar::Type getPopType(const TensorInfo &);
+poplar::Type popType(const TensorInfo &);
 
 // A bundle class for an int and an Opx.
 class OpxAndInIndex {
@@ -36,6 +38,7 @@ class Devicex : public willow::Device {
 public:
   Devicex(const Ir *);
   virtual void prepare() override final;
+  void weightsFromHost() override final;
   Opx *getOpx(OpId);
   poplar::Graph &graph();
 
@@ -57,17 +60,38 @@ private:
   std::unique_ptr<poplar::Target> pTarget{nullptr};
   poplar::Device popDevice;
 
-  poplar::program::Sequence weightsToHost;
-  poplar::program::Sequence optimizerToHost;
-  poplar::program::Sequence weightsFromHost;
-  poplar::program::Sequence step;
+  poplar::program::Sequence weightsFromHostProg;
+  poplar::program::Sequence optimizerFromHostProg;
+  poplar::program::Sequence stepProg;
+  poplar::program::Sequence weightsToHostProg;
 
-  PriTask createPopTensorTask(Tensor *tensor);
+  // Task to create a poplar::Tensor, choosing
+  // the correct create call (createWeights, addLinearly, etc)
+  PriTask popTensorTask(Tensor *tensor);
+  TaskId popTensorTaskId(TensorId);
+
+  // Task to create a poplar::Stream to write to poplar::Tensor
+  PriTask streamFromHostTask(Tensor *tensor);
+  TaskId streamFromHostTaskId(TensorId);
+
+  // Task to append a Copy from poplar::Stream to poplar::Tensor
+  PriTask weightsFromHostTask(Tensor *tensor);
+  TaskId weightsFromHostTaskId(TensorId);
+
+  // The ID of the poplar::Stream host->device for poplar::Tensor
+  PopStreamId h2dId(TensorId);
+
   std::unique_ptr<Opx> createOpx(Op *);
 
   // 1-to-1 mapping between Ops and Opxs
   std::map<OpId, std::unique_ptr<Opx>> opxs;
-  std::map<TensorId, poplar::Tensor> pop_tensors;
+  std::map<TensorId, poplar::Tensor> popTensors;
+
+  // the poplar::Streams for poplar::Tensors,
+  // from host to device:
+  std::map<TensorId, poplar::DataStream> fromHostStreams;
+  // and from device to host:
+  std::map<TensorId, poplar::DataStream> toHostStreams;
 };
 
 } // namespace popx

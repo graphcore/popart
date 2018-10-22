@@ -14,6 +14,7 @@ public:
   Device(const Device &) = delete;
   Device &operator=(const Device &) = delete;
   virtual void prepare()            = 0;
+  virtual void weightsFromHost()    = 0;
 
 protected:
   const Ir *pir;

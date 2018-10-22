@@ -35,6 +35,11 @@ Devicex::Devicex(const Ir *pir) : willow::Device(pir) {
   engineOptions.set({{"target.workerStackSizeInBytes", "0x200"}});
 }
 
+void Devicex::weightsFromHost() {
+  // TODO : "0" should be from a map of sorts
+  pEngine->run(0);
+}
+
 std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
   switch (op->opType) {
 
@@ -138,7 +143,7 @@ TaskId Devicex::taskWhichCreates(TensorId) {
 
 // Design decision : leave the option for a Tensor to be
 // created based on complex global criteria open.
-PriTask Devicex::createPopTensorTask(Tensor *tensor) {
+PriTask Devicex::popTensorTask(Tensor *tensor) {
 
   auto errorbase = [&tensor]() {
     std::stringstream ss;
@@ -188,7 +193,7 @@ PriTask Devicex::createPopTensorTask(Tensor *tensor) {
     int inIndex  = candidates[0].index;
     auto f       = [this, creator, inIndex, tensor]() {
       std::cout << "Creating poplar::Tensor " << tensor->id << std::endl;
-      pop_tensors[tensor->id] = creator->createInput(inIndex);
+      popTensors[tensor->id] = creator->createInput(inIndex);
     };
     // the inputs of creator which must have poplar::Tensors
     // before creator creates input tensor at index inIndex.
@@ -198,9 +203,9 @@ PriTask Devicex::createPopTensorTask(Tensor *tensor) {
       deps.push_back(dep);
     }
 
-    return {1e6,        // TODO ask D.Norman whether the
-                        // time of tensor creation is important
-            tensor->id, // the task name is the tensor name
+    return {1e6,                         // TODO ask D.Norman whether the
+                                         // time of tensor creation is important
+            popTensorTaskId(tensor->id), // the task name
             deps,
             f};
   }
@@ -218,13 +223,31 @@ PriTask Devicex::createPopTensorTask(Tensor *tensor) {
       std::cout << "Creating poplar::Tensor " << tensor->id
                 << " by mapping linearly" << std::endl;
       auto newTensor = graph().addVariable(
-          getPopType(tensor->info), tensor->info.shape_szt(), tensor->id);
+          popType(tensor->info), tensor->info.shape_szt(), tensor->id);
       poputil::mapTensorLinearly(graph(), newTensor);
-      pop_tensors[tensor->id] = newTensor;
+      popTensors[tensor->id] = newTensor;
     };
 
-    return {1e6, tensor->id, {}, f};
+    return {1e6, popTensorTaskId(tensor->id), {}, f};
   }
+}
+
+PriTask Devicex::streamFromHostTask(Tensor *tensor) {
+  auto f = [this, tensor]() {
+    std::cout << "Creating Host to Device FIFO " << tensor->id << std::endl;
+
+    fromHostStreams.emplace(tensor->id,
+                            graph().addHostToDeviceFIFO(h2dId(tensor->id),
+                                                        popType(tensor->info),
+                                                        tensor->info.nelms()));
+  };
+
+  return {
+      0,                                // priority unimportant
+      streamFromHostTaskId(tensor->id), // name of this task
+      {popTensorTaskId(tensor->id)}, // depends on poplar::Tensor being created
+      f                              // what to run when the task is executed
+  };
 }
 
 OpxAndInIndex::OpxAndInIndex(int conIndex_, Opx *opx_)
@@ -244,25 +267,72 @@ void Devicex::prepare() {
   // create a poplar::Tensor for each of the initializers
   for (auto id : pir->tensors.getInitIds()) {
     Tensor *tensor = pir->tensors.get(id);
-    tasks.add(createPopTensorTask(tensor));
+    // create poplar::Tensor
+    tasks.add(popTensorTask(tensor));
+    // create poplar::DataStream
+    tasks.add(streamFromHostTask(tensor));
+    // add DataStream to program
+    tasks.add(weightsFromHostTask(tensor));
   }
-
-  // TODO : create the program which writes all the weights
 
   // create a poplar::Tensor for each of the stream tensors
   for (auto id : pir->tensors.getIds(TensorType::Stream)) {
     Tensor *tensor = pir->tensors.get(id);
-    tasks.add(createPopTensorTask(tensor));
+    tasks.add(popTensorTask(tensor));
     // TODO : register tensor is a stream
   }
 
   for (auto &task : tasks.getLinearised()) {
     task.f();
   }
-  // create poplar::Tensors etc.
+  std::cout << "All tasks complete" << std::endl;
+
+  pEngine.reset(
+      new poplar::Engine(graph(), weightsFromHostProg, engineOptions));
+  std::cout << "Engine has been created" << std::endl;
+
+  pEngine->load(popDevice);
+  std::cout << "Engine has loaded device" << std::endl;
+
+  for (auto &streamer : fromHostStreams) {
+    std::cout << streamer.first << std::endl;
+  }
+
+  for (auto id : pir->tensors.getInitIds()) {
+    Tensor *tensor = pir->tensors.get(id);
+    pEngine->connectStream(h2dId(id), tensor->tensorData()->data());
+  }
+
+  std::cout << "Streams connected" << std::endl;
 }
 
-poplar::Type getPopType(const TensorInfo &info) {
+TaskId Devicex::streamFromHostTaskId(TensorId id) {
+  return "streamFromHostTask_" + id;
+}
+
+TaskId Devicex::weightsFromHostTaskId(TensorId id) {
+  return "weightsFromHostTask_" + id;
+}
+
+TaskId Devicex::popTensorTaskId(TensorId id) { return "popTensorTaskId_" + id; }
+
+PopStreamId Devicex::h2dId(TensorId id) { return "h2d_" + id; }
+
+PriTask Devicex::weightsFromHostTask(Tensor *tensor) {
+
+  auto f = [tensor, this]() {
+    weightsFromHostProg.add(poplar::program::Copy(
+        fromHostStreams.at(tensor->id), popTensors.at(tensor->id)));
+  };
+
+  // add copy from host to stream
+  return {0, // priority does not matter for weights writing
+          weightsFromHostTaskId(tensor->id),
+          {streamFromHostTaskId(tensor->id), popTensorTaskId(tensor->id)},
+          f};
+}
+
+poplar::Type popType(const TensorInfo &info) {
   switch (info.dataType()) {
   case TP::FLOAT: {
     return poplar::FLOAT;
