@@ -60,13 +60,15 @@ Devicex::Devicex(const Ir *pir) : willow::Device(pir) {
 }
 
 void Devicex::weightsFromHost() {
-  std::cout << "writing weights from host" << std::endl;
+  std::cout << "writing weights from host, " << std::flush;
   pEngine->run(PopPrograms::ProgramIndex::WEIGHTSFROMHOST);
+  std::cout << "done." << std::endl;
 }
 
 void Devicex::optimizerFromHost() {
-  std::cout << "writing optimizer from host" << std::endl;
+  std::cout << "writing optimizer from host, " << std::flush;
   pEngine->run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
+  std::cout << "done." << std::endl;
 };
 
 std::unique_ptr<Opx> Devicex::createOpx(Op *op) {

@@ -25,13 +25,6 @@ class Opx;
 class PopPrograms {
 
 public:
-  poplar::program::Sequence &weightsFromHost();
-  poplar::program::Sequence &optimizerFromHost();
-  poplar::program::Sequence &step();
-  poplar::program::Sequence &weightsToHost();
-  std::vector<poplar::program::Program> progs();
-
-private:
   enum ProgramIndex {
     WEIGHTSFROMHOST = 0,
     OPTIMIZERFROMHOST,
@@ -40,6 +33,13 @@ private:
     N // The number of programs
   };
 
+  poplar::program::Sequence &weightsFromHost();
+  poplar::program::Sequence &optimizerFromHost();
+  poplar::program::Sequence &step();
+  poplar::program::Sequence &weightsToHost();
+  std::vector<poplar::program::Program> progs();
+
+private:
   std::array<poplar::program::Sequence, ProgramIndex::N> seqs;
 };
 
