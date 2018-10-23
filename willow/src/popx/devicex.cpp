@@ -19,6 +19,30 @@
 namespace willow {
 namespace popx {
 
+poplar::program::Sequence &PopPrograms::weightsFromHost() {
+  return seqs[ProgramIndex::WEIGHTSFROMHOST];
+}
+
+poplar::program::Sequence &PopPrograms::optimizerFromHost() {
+  return seqs[ProgramIndex::OPTIMIZERFROMHOST];
+}
+
+poplar::program::Sequence &PopPrograms::step() {
+  return seqs[ProgramIndex::STEP];
+}
+
+poplar::program::Sequence &PopPrograms::weightsToHost() {
+  return seqs[ProgramIndex::WEIGHTSTOHOST];
+}
+
+std::vector<poplar::program::Program> PopPrograms::progs() {
+  std::vector<poplar::program::Program> ps;
+  for (auto &x : seqs) {
+    ps.push_back(x);
+  }
+  return ps;
+}
+
 poplar::Graph &Devicex::graph() { return *pGraph; }
 
 Devicex::Devicex(const Ir *pir) : willow::Device(pir) {
@@ -36,9 +60,14 @@ Devicex::Devicex(const Ir *pir) : willow::Device(pir) {
 }
 
 void Devicex::weightsFromHost() {
-  // TODO : "0" should be from a map of sorts
-  pEngine->run(0);
+  std::cout << "writing weights from host" << std::endl;
+  pEngine->run(PopPrograms::ProgramIndex::WEIGHTSFROMHOST);
 }
+
+void Devicex::optimizerFromHost() {
+  std::cout << "writing optimizer from host" << std::endl;
+  pEngine->run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
+};
 
 std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
   switch (op->opType) {
@@ -203,8 +232,10 @@ PriTask Devicex::popTensorTask(Tensor *tensor) {
       deps.push_back(dep);
     }
 
-    return {1e6,                         // TODO ask D.Norman whether the
-                                         // time of tensor creation is important
+    // Discussion with David Norman suggests creating tensors as
+    // late as possible gives better IPU memory use, so
+    // giving this low priority.
+    return {-1e6,
             popTensorTaskId(tensor->id), // the task name
             deps,
             f};
@@ -264,22 +295,29 @@ void Devicex::prepare() {
     opxs[op->id] = createOpx(op);
   }
 
-  // create a poplar::Tensor for each of the initializers
+  // initializers : 1) make tensor, 2) make stream, 3) create write prog.
   for (auto id : pir->tensors.getInitIds()) {
     Tensor *tensor = pir->tensors.get(id);
-    // create poplar::Tensor
+    // 1
     tasks.add(popTensorTask(tensor));
-    // create poplar::DataStream
+    // 2
     tasks.add(streamFromHostTask(tensor));
-    // add DataStream to program
-    tasks.add(weightsFromHostTask(tensor));
+    // 3
+    tasks.add(fromHostTask(tensor, progs.weightsFromHost()));
   }
 
-  // create a poplar::Tensor for each of the stream tensors
+  // stream-to-device tensors : 1)  make tensor 2) make stream
   for (auto id : pir->tensors.getIds(TensorType::Stream)) {
     Tensor *tensor = pir->tensors.get(id);
+    // 1
     tasks.add(popTensorTask(tensor));
-    // TODO : register tensor is a stream
+    // 2
+    tasks.add(streamFromHostTask(tensor));
+  }
+
+  // create prog. to write optimizer tensors to dev.
+  for (Tensor *tensor : pir->optimizerTensors()) {
+    tasks.add(fromHostTask(tensor, progs.optimizerFromHost()));
   }
 
   for (auto &task : tasks.getLinearised()) {
@@ -287,48 +325,49 @@ void Devicex::prepare() {
   }
   std::cout << "All tasks complete" << std::endl;
 
-  pEngine.reset(
-      new poplar::Engine(graph(), weightsFromHostProg, engineOptions));
+  pEngine.reset(new poplar::Engine(graph(), progs.progs(), engineOptions));
   std::cout << "Engine has been created" << std::endl;
 
   pEngine->load(popDevice);
   std::cout << "Engine has loaded device" << std::endl;
 
-  for (auto &streamer : fromHostStreams) {
-    std::cout << streamer.first << std::endl;
-  }
-
+  std::cout << "Connecting initializer streams" << std::endl;
   for (auto id : pir->tensors.getInitIds()) {
     Tensor *tensor = pir->tensors.get(id);
     pEngine->connectStream(h2dId(id), tensor->tensorData()->data());
   }
 
-  std::cout << "Streams connected" << std::endl;
+  std::cout << "Connecting optimizer streams" << std::endl;
+  for (Tensor *tensor : pir->optimizerTensors()) {
+    pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
+  }
 }
 
 TaskId Devicex::streamFromHostTaskId(TensorId id) {
   return "streamFromHostTask_" + id;
 }
 
-TaskId Devicex::weightsFromHostTaskId(TensorId id) {
-  return "weightsFromHostTask_" + id;
-}
+TaskId Devicex::fromHostTaskId(TensorId id) { return "fromHostTask_" + id; }
 
 TaskId Devicex::popTensorTaskId(TensorId id) { return "popTensorTaskId_" + id; }
 
 PopStreamId Devicex::h2dId(TensorId id) { return "h2d_" + id; }
 
-PriTask Devicex::weightsFromHostTask(Tensor *tensor) {
+PriTask Devicex::fromHostTask(Tensor *tensor, poplar::program::Sequence &sq) {
 
-  auto f = [tensor, this]() {
-    weightsFromHostProg.add(poplar::program::Copy(
-        fromHostStreams.at(tensor->id), popTensors.at(tensor->id)));
+  auto f = [&sq, tensor, this]() {
+    std::cout << "Adding poplar::program::Copy from host " << tensor->id
+              << std::endl;
+    sq.add(poplar::program::Copy(fromHostStreams.at(tensor->id),
+                                 popTensors.at(tensor->id)));
   };
 
-  // add copy from host to stream
-  return {0, // priority does not matter for weights writing
-          weightsFromHostTaskId(tensor->id),
-          {streamFromHostTaskId(tensor->id), popTensorTaskId(tensor->id)},
+  return {-1e6, // writes to device: always as late as possible
+          fromHostTaskId(tensor->id),
+          {
+              streamFromHostTaskId(tensor->id), // poplar::Stream created
+              popTensorTaskId(tensor->id)       // poplar::Tensor created
+          },
           f};
 }
 

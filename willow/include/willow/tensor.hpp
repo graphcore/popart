@@ -107,8 +107,6 @@ public:
   // note : producer (if there is one)
   // must be set after construction
   Tensor(TensorId, TensorType, Ir *);
-  // As above, but sets TensorData from TensorProto
-  Tensor(TensorId, TensorType, Ir *, const onnx::TensorProto *);
   TensorId id;
   Ir *pir;
   // ActGrad, Variable, etc:
@@ -124,6 +122,10 @@ public:
   void resetProducer(Op *);
   bool hasProducer() const;
   TensorData *tensorData();
+
+  template <typename... Args> void setTensorData(Args &&... args) {
+    data_.reset(new TensorData(std::forward<Args>(args)...));
+  }
 
 private:
   Op *producer;

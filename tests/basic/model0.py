@@ -25,9 +25,9 @@ nBatchesPerCycle = 6
 dataFeed = DataFlow(nBatchesPerCycle, batchSize, ["nllLossVal", "l1LossVal"])
 
 earlyInfo = EarlyInfo()
-earlyInfo.addInfo("image0", TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
-earlyInfo.addInfo("image1", TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
-earlyInfo.addInfo("label", TensorInfo("INT32", [batchSize]))
+earlyInfo.add("image0", TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
+earlyInfo.add("image1", TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
+earlyInfo.add("label", TensorInfo("INT32", [batchSize]))
 
 inNames = ["image0", "image1"]
 outNames = ["preProbSquared", "probs"]
@@ -93,7 +93,7 @@ class ModelWriter0(PytorchNetWriter):
             inNames=inNames,
             outNames=outNames,
             losses=losses,
-            optimizer=ConstSGD(0.001),
+            optimizer=SGD(0.001),
             earlyInfo=earlyInfo,
             dataFeed=dataFeed,
             # perform tests, using framework as ground truth

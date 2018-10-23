@@ -47,9 +47,7 @@ void WillowNet::weightsFromHost() { device_->weightsFromHost(); }
 
 // write whatever optimizer tensors (learning rates,
 // momentum, initial momentum tensors (zero)) there are to device
-void WillowNet::optimizerFromHost() {
-  throw error("pop device not ready, optimizer from host");
-}
+void WillowNet::optimizerFromHost() { device_->optimizerFromHost(); }
 
 // For Poplar, this will involve reading and writing
 // Poplar::Stream <--> these addresses.

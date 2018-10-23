@@ -32,6 +32,10 @@ public:
   virtual bool validReplacement(const Optimizer *other) const = 0;
   virtual OptimizerType type() const                          = 0;
   virtual std::string type_s() const                          = 0;
+  // for all Tensors in tensorInfos, find the tensor in
+  // the Ir and reset its TensorData accordingly
+  void resetTensorDatas(Ir *) const;
+  virtual void setTensorData(Tensor *) const = 0;
 };
 
 class BaseSGD : public Optimizer {
@@ -53,6 +57,7 @@ public:
   virtual bool validReplacement(const Optimizer *other) const override final;
   virtual OptimizerType type() const override final;
   virtual std::string type_s() const override final;
+  virtual void setTensorData(Tensor *) const override final;
 };
 
 // may not change during training
@@ -66,6 +71,7 @@ public:
   virtual bool validReplacement(const Optimizer *other) const override final;
   virtual OptimizerType type() const override final;
   virtual std::string type_s() const override final;
+  virtual void setTensorData(Tensor *) const override final;
 };
 
 } // namespace willow

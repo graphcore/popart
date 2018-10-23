@@ -29,6 +29,18 @@
 
 namespace willow {
 
+std::vector<Tensor *> Ir::optimizerTensors() const {
+  if (optimizer.get() == nullptr) {
+    throw error("ILE : No optimizerTensors til Optimizer is set");
+  }
+
+  std::vector<Tensor *> optTensors;
+  for (auto &id_info : optimizer->tensorInfos()) {
+    optTensors.push_back(tensors.get(id_info.first));
+  }
+  return optTensors;
+}
+
 void Ir::updateOptimizer(const Optimizer *newOptimizer) {
   if (optimizer.get() == nullptr) {
     throw error("ILE: cannot update optimizer before it is set");
@@ -39,6 +51,7 @@ void Ir::updateOptimizer(const Optimizer *newOptimizer) {
                 optimizer->type_s());
   }
   optimizer = newOptimizer->clone();
+  optimizer->resetTensorDatas(this);
 }
 
 std::vector<TensorId> TensorIndexMap::getSerialised() const {
@@ -392,15 +405,17 @@ VectorAndSet::VectorAndSet(const std::vector<std::string> &vals)
   }
 }
 
-void EarlyInfo::addInfo(TensorId id, const TensorInfo &info) {
-  infos[id] = info;
+void EarlyInfo::add(TensorId id, const TensorInfo &info) { infos[id] = info; }
+
+const TensorInfo &EarlyInfo::get(TensorId id) const {
+  auto found = infos.find(id);
+  if (found == infos.end()) {
+    throw error("No early info for " + id);
+  }
+  return found->second;
 }
 
-const TensorInfo &EarlyInfo::getInfo(TensorId id) const { return infos.at(id); }
-
-bool EarlyInfo::hasInfo(TensorId id) const {
-  return infos.find(id) != infos.end();
-}
+bool EarlyInfo::has(TensorId id) const { return infos.find(id) != infos.end(); }
 
 void Ir::confirmNoReservedIds() const {
 
@@ -461,13 +476,14 @@ Ir::Ir(const IrBundle &gb)
       earlyInfo(gb.earlyInfo), dataFlow(gb.dataFlow) {
 
   optimizer = gb.optimizer->clone();
-
   io::confirmRegularFile(gb.fnModel);
   onnxModel = io::getModel(gb.fnModel);
 
   for (auto &id_info : optimizer->tensorInfos()) {
-    earlyInfo.addInfo(id_info.first, id_info.second);
-    tensors.addStream(id_info.first);
+    TensorId id     = id_info.first;
+    TensorInfo info = id_info.second;
+    tensors.addStream(id, info);
+    optimizer->setTensorData(tensors.get(id));
   }
 
   for (auto &l : gb.losses) {
@@ -486,8 +502,9 @@ Ir::Ir(const IrBundle &gb)
 
   // onnx inputs which are not initializers are true inputs
   for (auto &valueInfo : onnxGraph.input()) {
-    if (onnxInitializers.count(valueInfo.name()) == 0) {
-      tensors.addStream(valueInfo.name());
+    TensorId id = valueInfo.name();
+    if (onnxInitializers.count(id) == 0) {
+      tensors.addStream(id, earlyInfo.get(id));
     }
   }
   // other true inputs are for the loss calculation (class labels, etc)
@@ -495,7 +512,7 @@ Ir::Ir(const IrBundle &gb)
     for (const auto &tenId : loss->getStreamTensorNames()) {
       // another loss might have already registered this tensor
       if (!tensors.contains(tenId)) {
-        tensors.addStream(tenId);
+        tensors.addStream(tenId, earlyInfo.get(tenId));
       } else {
         Tensor *tensorAlreadyPresent = tensors.get(tenId);
         if (tensorAlreadyPresent->tensorType() != TensorType::Stream) {
@@ -916,26 +933,10 @@ std::vector<TensorId> Tensors::getNoProducerIds() const {
 }
 
 void Ir::inferTensorInfos() {
-  for (const auto &tensorId : tensors.getInitIds()) {
-    auto pt = tensors.getOnnxInit(tensorId);
-    tensors.get(tensorId)->info.set(*pt);
-  }
-
-  std::vector<TensorId> streamTensors = tensors.getIds(TensorType::Stream);
-  for (const auto &id : streamTensors) {
-    if (!(earlyInfo.hasInfo(id))) {
-      throw error("expected pre-run knowledge for stream tensor " + id);
-    }
-    tensors.get(id)->info = earlyInfo.getInfo(id);
-  }
 
   for (Op *op : getTopologicallySorted()) {
     op->setup();
   }
-}
-
-const onnx::TensorProto *Tensors::getOnnxInit(TensorId id) const {
-  return init.at(id);
 }
 
 std::vector<Op *> Ir::opsOfType(OpType opType) {
@@ -993,13 +994,21 @@ void Ir::addInitIfUsed(TensorId id, const onnx::TensorProto *t) {
 }
 
 void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
-  init[name] = pt;
   insert(name,
          std::unique_ptr<Tensor>(new Tensor(
              name,
              constIds.contains(name) ? TensorType::Const : TensorType::Variable,
-             pir,
-             pt)));
+             pir)));
+
+  Tensor *init = get(name);
+  init->info   = TensorInfo(*pt);
+  init->setTensorData(*pt);
+}
+
+void Tensors::addStream(TensorId tenId, const TensorInfo &info) {
+  insert(tenId,
+         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, pir)));
+  get(tenId)->info = info;
 }
 
 std::string reservedGradientPrefix() { return "d__"; }
@@ -1021,11 +1030,6 @@ void Ir::confirmNonReservedId(TensorId tenId) const {
                   reservedPrefix);
     }
   }
-}
-
-void Tensors::addStream(TensorId tenId) {
-  insert(tenId,
-         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, pir)));
 }
 
 TensorId getGradId(TensorId id) { return reservedGradientPrefix() + id; }

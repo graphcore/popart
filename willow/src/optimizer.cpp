@@ -1,4 +1,7 @@
+#include <willow/error.hpp>
+#include <willow/ir.hpp>
 #include <willow/optimizer.hpp>
+#include <willow/tensor.hpp>
 #include <willow/varupdate.hpp>
 
 namespace willow {
@@ -29,6 +32,21 @@ std::vector<TensorId> SGD::getInputIds(TensorId varId) const {
   inputs[VarUpdateOp::getVarGradIndex()]      = getGradId(varId);
   inputs[SGDVarUpdateOp::getLearnRateIndex()] = getLearningRateId();
   return inputs;
+}
+
+void SGD::setTensorData(Tensor *t) const {
+  if (t->id == getLearningRateId()) {
+    float lRate = learnRate();
+    t->setTensorData(t->info, &lRate);
+  }
+}
+
+void Optimizer::resetTensorDatas(Ir *pir) const {
+  throw error("Request to reset tensor datas, not implemented");
+}
+
+void ConstSGD::setTensorData(Tensor *) const {
+  throw error("ILE : ConstSGD does not set tensor data");
 }
 
 std::unique_ptr<Op> ConstSGD::createOp(TensorId varId, Ir *pir) const {

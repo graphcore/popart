@@ -31,9 +31,9 @@ PYBIND11_MODULE(pywillow, m) {
 
   py::class_<EarlyInfo>(m, "EarlyInfo")
       .def(py::init<>())
-      .def("addInfo", &EarlyInfo::addInfo)
-      .def("getInfo", &EarlyInfo::hasInfo)
-      .def("hasInfo", &EarlyInfo::hasInfo);
+      .def("add", &EarlyInfo::add)
+      .def("get", &EarlyInfo::get)
+      .def("has", &EarlyInfo::has);
 
   py::class_<Loss> loss(m, "Loss");
   loss.def("input", &Loss::input);

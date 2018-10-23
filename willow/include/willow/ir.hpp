@@ -118,10 +118,9 @@ TensorId getRecompId(TensorId tenId);
 class EarlyInfo {
 public:
   EarlyInfo() = default;
-  void addInfo(TensorId, const TensorInfo &);
-  const TensorInfo &getInfo(TensorId) const;
-  bool hasInfo(TensorId) const;
-  const std::map<TensorId, TensorInfo> &getInfos() const;
+  void add(TensorId, const TensorInfo &);
+  const TensorInfo &get(TensorId) const;
+  bool has(TensorId) const;
 
   // return all unique TensorIds of tensors with any
   // information stored in this object, be it TensorInfo
@@ -407,7 +406,7 @@ public:
   // create a Tensor, either of type Const or Variable
   void addInit(TensorId, const onnx::TensorProto *);
   // create a Tensor of type Stream
-  void addStream(TensorId);
+  void addStream(TensorId, const TensorInfo &);
   // create a Tensor of type ActGrad (basically any tensor which is
   // the output of an Op)
   void addActGrad(TensorId);
@@ -421,7 +420,6 @@ private:
   std::map<TensorId, std::unique_ptr<Tensor>> M;
   // adds to M, but first confirms that TensorId not already in
   void insert(TensorId, std::unique_ptr<Tensor>);
-  OnnxTensorPtrs init;
   Ir *pir;
 };
 
@@ -459,6 +457,8 @@ public:
   void append(std::stringstream &);
   std::vector<std::unique_ptr<Loss>> losses;
   Tensors tensors;
+  // The tensors specific to the optimization. Learning rate(s), momentum(s) etc
+  std::vector<Tensor *> optimizerTensors() const;
   ~Ir();
   // split ConvOp with bias into two Ops, a ConvOp
   // followed by an x Op

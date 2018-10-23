@@ -22,6 +22,27 @@ using PopStreamId = std::string;
 
 class Opx;
 
+class PopPrograms {
+
+public:
+  poplar::program::Sequence &weightsFromHost();
+  poplar::program::Sequence &optimizerFromHost();
+  poplar::program::Sequence &step();
+  poplar::program::Sequence &weightsToHost();
+  std::vector<poplar::program::Program> progs();
+
+private:
+  enum ProgramIndex {
+    WEIGHTSFROMHOST = 0,
+    OPTIMIZERFROMHOST,
+    STEP,
+    WEIGHTSTOHOST,
+    N // The number of programs
+  };
+
+  std::array<poplar::program::Sequence, ProgramIndex::N> seqs;
+};
+
 poplar::Type popType(const TensorInfo &);
 
 // A bundle class for an int and an Opx.
@@ -39,6 +60,7 @@ public:
   Devicex(const Ir *);
   virtual void prepare() override final;
   void weightsFromHost() override final;
+  void optimizerFromHost() override final;
   Opx *getOpx(OpId);
   poplar::Graph &graph();
 
@@ -60,10 +82,7 @@ private:
   std::unique_ptr<poplar::Target> pTarget{nullptr};
   poplar::Device popDevice;
 
-  poplar::program::Sequence weightsFromHostProg;
-  poplar::program::Sequence optimizerFromHostProg;
-  poplar::program::Sequence stepProg;
-  poplar::program::Sequence weightsToHostProg;
+  PopPrograms progs;
 
   // Task to create a poplar::Tensor, choosing
   // the correct create call (createWeights, addLinearly, etc)
@@ -75,8 +94,8 @@ private:
   TaskId streamFromHostTaskId(TensorId);
 
   // Task to append a Copy from poplar::Stream to poplar::Tensor
-  PriTask weightsFromHostTask(Tensor *tensor);
-  TaskId weightsFromHostTaskId(TensorId);
+  PriTask fromHostTask(Tensor *tensor, poplar::program::Sequence &);
+  TaskId fromHostTaskId(TensorId);
 
   // The ID of the poplar::Stream host->device for poplar::Tensor
   PopStreamId h2dId(TensorId);
