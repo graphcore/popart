@@ -3,7 +3,8 @@ from torchvision import transforms, datasets
 import sys
 import os
 sys.path.append("../../pywillow")
-from pywillow import NllLoss, L1Loss, EarlyInfo, TensorInfo, DataFlow, SGD, ConstSGD, WillowNet
+from pywillow import NllLoss, L1Loss, EarlyInfo, TensorInfo, PyStepIO
+from pywillow import DataFlow, SGD, ConstSGD, WillowNet, getTensorInfo
 from torchwriter import PytorchNetWriter, conv3x3
 
 if (len(sys.argv) != 2):
@@ -120,11 +121,6 @@ pynet = WillowNet(
     writer.losses, writer.optimizer, [], outputdir,
     ["PreUniRepl", "PostNRepl"])
 
-pynet.setDevice("IPU")
-pynet.prepareDevice()
-pynet.weightsFromHost()
-pynet.optimizerFromHost()
-
 allDotPrefixes = [x[0:-4] for x in os.listdir(outputdir) if ".dot" in x]
 print("Will generate graph pdfs for all of:")
 print(allDotPrefixes)
@@ -135,3 +131,22 @@ for name in allDotPrefixes:
     log = subprocess.call(["dot", "-T", "pdf", "-o", outputfile, dotfile])
     print("Exit status on `%s' was: %s" % (name, log))
 print("torchwriter calling script complete.")
+
+pynet.setDevice("IPU")
+pynet.prepareDevice()
+pynet.weightsFromHost()
+pynet.optimizerFromHost()
+
+for epoch in range(2):  # loop over the dataset multiple times
+    running_loss = 0.0
+    for i, data in enumerate(trainloader, 0):
+        if i == 5:
+            break
+
+        images, labels = data
+        inputs = {"image0": images.numpy(), "image1": images.numpy()}
+        outputs = {"label": labels.numpy()}
+        pystepio = PyStepIO(inputs, outputs)
+        pynet.step(pystepio)
+
+#saveModel(fileNameForModelWrite)

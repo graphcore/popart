@@ -5,6 +5,27 @@
 
 namespace willow {
 
+class StepInData {
+public:
+  const void *data;
+  // This is used to confirm that data is as expected
+  TensorInfo info;
+};
+
+class StepOutData {
+public:
+  void *data;
+  // This is used to confirm that data is as expected
+  TensorInfo info;
+};
+
+class StepIO {
+public:
+  virtual ~StepIO()                       = default;
+  virtual StepInData in(TensorId) const   = 0;
+  virtual StepOutData out(TensorId) const = 0;
+};
+
 class WillowNet {
 public:
   WillowNet(std::string fnOnnxModel,
@@ -38,13 +59,12 @@ public:
   void optimizerFromHost();
 
   // take training steps, number of steps specified in DataFlow
-  // input data from address in "in"
-  // output data to addrresses in "out"
+  // input data from address in stepIO.in
+  // output data to addresses in stepIO.out
   // For Poplar, this will involve reading and writing
-  // Poplar::Stream <--> these addresses.
+  // Poplar::Stream host addresses <--> these addresses.
   // TODO : sort out input and output locations.
-  void step(const std::map<TensorId, const void *> &in,
-            const std::map<TensorId, void *> &out);
+  void step(const StepIO &stepIO);
 
   // write current model to ONNX file
   void modelToHost(std::string fn);

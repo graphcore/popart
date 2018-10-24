@@ -51,13 +51,13 @@ void WillowNet::optimizerFromHost() { device_->optimizerFromHost(); }
 
 // For Poplar, this will involve reading and writing
 // Poplar::Stream <--> these addresses.
-void WillowNet::step(const std::map<TensorId, const void *> &in,
-                     const std::map<TensorId, void *> &out) {
+
+void WillowNet::step(const StepIO &) {
   throw error("pop device not ready, step");
 }
 
 // write current model to ONNX file
-void WillowNet::modelToHost(std::string fn) {
+void WillowNet::modelToHost(std::string) {
   throw error("pop device not ready, model to host");
 }
 

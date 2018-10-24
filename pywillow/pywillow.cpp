@@ -1,6 +1,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <willow/error.hpp>
 #include <willow/l1.hpp>
 #include <willow/loss.hpp>
 #include <willow/nll.hpp>
@@ -16,8 +17,86 @@
 namespace py = pybind11;
 using namespace willow;
 
+std::map<std::string, DataType> initNpTypeMap() {
+  std::map<std::string, DataType> M;
+  // see tensorinfo.hpp for the complete list of
+  // DataTypes (defined originally in ONNX)
+  M["float16"] = TP::FLOAT16;
+  M["float32"] = TP::FLOAT;
+  M["float64"] = TP::DOUBLE;
+  M["int16"]   = TP::INT16;
+  M["int32"]   = TP::INT32;
+  M["int64"]   = TP::INT64;
+  return M;
+}
+
+DataType getDataTypeFromNpType(std::string npType) {
+  const static std::map<std::string, DataType> M = initNpTypeMap();
+  auto found                                     = M.find(npType);
+  if (found == M.end()) {
+    throw error("No numpy type " + npType + " registered in map to DataType");
+  }
+  return found->second;
+}
+
+TensorInfo getTensorInfo(py::array npArr) {
+  auto dtype = npArr.dtype();
+  // This seems to be the correct way to get
+  // the string format from a dtype, I kind of
+  // just stumbled upon it
+  auto typeString = py::str(dtype);
+  auto tRank      = npArr.ndim();
+  std::vector<int64_t> shape;
+  for (int i = 0; i < tRank; ++i) {
+    shape.push_back(npArr.shape(i));
+  }
+  return TensorInfo(getDataTypeFromNpType(typeString), shape);
+}
+
+class PyStepIO : public StepIO {
+public:
+  PyStepIO(std::map<TensorId, py::array> inputs_,
+           std::map<TensorId, py::array> outputs_)
+      : inputs(inputs_), outputs(outputs_) {}
+
+  template <typename T>
+  T get(TensorId id,
+        const std::map<TensorId, py::array> &M,
+        std::string mapName) const {
+    auto found = M.find(id);
+    if (found == M.end()) {
+      throw error("No tensor " + id + " provided in PyStepIO's " + mapName);
+    }
+    py::array npArr = found->second;
+    T stepData;
+    stepData.data = npArr.request().ptr;
+    stepData.info = getTensorInfo(npArr);
+    return stepData;
+  }
+
+  virtual StepInData in(TensorId id) const override final {
+    return get<StepInData>(id, inputs, "inputs");
+  }
+
+  virtual StepOutData out(TensorId id) const override final {
+    return get<StepOutData>(id, outputs, "outputs");
+  }
+
+private:
+  std::map<TensorId, py::array> inputs;
+  std::map<TensorId, py::array> outputs;
+};
+
 PYBIND11_MODULE(pywillow, m) {
   m.doc() = "binding for C++ willow library";
+
+  m.def("getTensorInfo", &getTensorInfo);
+
+  py::class_<StepIO> stepio(m, "StepIO");
+
+  py::class_<PyStepIO>(m, "PyStepIO", stepio)
+      .def(py::init<std::map<TensorId, py::array>,
+                    std::map<TensorId, py::array>>());
 
   py::class_<DataFlow>(m, "DataFlow")
       .def(py::init<int, int, const std::vector<TensorId> &>(),
