@@ -18,17 +18,24 @@ if not os.path.exists(outputdir):
 nInChans = 3
 nOutChans = 10
 
-# process 2 samples at a time, return requested
-# tensors every 6 batches (ie every 12 samples)
-# anchors : return the losses
-batchSize = 2
-nBatchesPerCycle = 6
-dataFeed = DataFlow(nBatchesPerCycle, batchSize, ["nllLossVal", "l1LossVal"])
+# process samplesPerBatch = 2 samples at a time,
+# so weights updated on average gradient of samplesPerBatch = 2
+# samples: samplesPerBatch is EXACTLY the standard batch size.
+samplesPerBatch = 2
+# Return requested tensors every batchesPerStep = 3 cycles.
+# so (ie only communicate back to host every 2*3 = 6 samples)
+batchesPerStep = 3
+# anchors : return the losses (final list parameter to DataFlow)
+anchors = ["nllLossVal", "l1LossVal"]
+
+dataFeed = DataFlow(batchesPerStep, samplesPerBatch, anchors)
 
 earlyInfo = EarlyInfo()
-earlyInfo.add("image0", TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
-earlyInfo.add("image1", TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
-earlyInfo.add("label", TensorInfo("INT32", [batchSize]))
+earlyInfo.add("image0", TensorInfo("FLOAT",
+                                   [samplesPerBatch, nInChans, 32, 32]))
+earlyInfo.add("image1", TensorInfo("FLOAT",
+                                   [samplesPerBatch, nInChans, 32, 32]))
+earlyInfo.add("label", TensorInfo("INT32", [samplesPerBatch]))
 
 inNames = ["image0", "image1"]
 outNames = ["preProbSquared", "probs"]
@@ -81,10 +88,19 @@ transform = transforms.Compose([
 trainset = datasets.CIFAR10(
     root='../../data/cifar10/', train=True, download=True, transform=transform)
 
-trainloader = torch.utils.data.DataLoader(
-    trainset, batch_size=4, shuffle=False, num_workers=2)
+# To take a few training steps in Pytorch, for verification purposes
+verifTrainLoader = torch.utils.data.DataLoader(
+    trainset, batch_size=samplesPerBatch, shuffle=False, num_workers=2)
 
 ### end PyTorch
+
+willowTrainLoader = torch.utils.data.DataLoader(
+    trainset,
+    # the amount of data loaded for each willow step
+    # note this is not the batch size, it's the "step" size
+    batch_size=samplesPerBatch * batchesPerStep,
+    shuffle=False,
+    num_workers=2)
 
 
 class ModelWriter0(PytorchNetWriter):
@@ -98,10 +114,10 @@ class ModelWriter0(PytorchNetWriter):
             earlyInfo=earlyInfo,
             dataFeed=dataFeed,
             # perform tests, using framework as ground truth
-            willowTest=True,
+            willowVerif=True,
             ### begin PyTorch
             module=Module0(),
-            trainloader=trainloader,
+            trainloader=verifTrainLoader,
             trainLoaderIndices={
                 "image0": 0,
                 "image1": 0,
@@ -139,13 +155,18 @@ pynet.optimizerFromHost()
 
 for epoch in range(2):  # loop over the dataset multiple times
     running_loss = 0.0
-    for i, data in enumerate(trainloader, 0):
+    for i, data in enumerate(willowTrainLoader, 0):
         if i == 5:
             break
 
         images, labels = data
-        inputs = {"image0": images.numpy(), "image1": images.numpy()}
-        outputs = {"label": labels.numpy()}
+        inputs = {
+            "image0": images.numpy(),
+            "image1": images.numpy(),
+            "label": labels.numpy()
+        }
+        # TODO : create output tensors
+        outputs = {}
         pystepio = PyStepIO(inputs, outputs)
         pynet.step(pystepio)
 

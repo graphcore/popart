@@ -20,7 +20,7 @@ def conv3x3(in_planes, out_planes, stride=1):
 
 
 class PytorchNetWriter(NetWriter):
-    def __init__(self, inNames, outNames, losses, optimizer, willowTest,
+    def __init__(self, inNames, outNames, losses, optimizer, willowVerif,
                  dataFeed, earlyInfo, module, trainloader, trainLoaderIndices):
         """
         module:
@@ -36,7 +36,7 @@ class PytorchNetWriter(NetWriter):
             outNames=outNames,
             losses=losses,
             optimizer=optimizer,
-            willowTest=willowTest,
+            willowVerif=willowVerif,
             earlyInfo=earlyInfo,
             dataFeed=dataFeed)
 
@@ -109,13 +109,13 @@ class PytorchNetWriter(NetWriter):
         onnx "trace", so I won't.
         """
 
-        if not self.willowTest:
+        if not self.willowVerif:
             data = iter(trainloader).next()
             self.writeOnnxModel(dirname, 0, self.getStreamMap(data))
 
-        # note for other frameworks. If willowTest is always False,
-        # this elimimates most of the work: don't need to worry about
-        # Optimizer, losses, maybe not even data stream.
+        # note for other frameworks. If willowVerif is always False,
+        # this elimimates most of the work done here: don't need to
+        # worry about Optimizer, losses, maybe not even data stream.
         else:
             torchOptimizer = self.getTorchOptimizer()
 

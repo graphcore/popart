@@ -6,6 +6,7 @@
 #include <willow/loss.hpp>
 #include <willow/nll.hpp>
 #include <willow/optimizer.hpp>
+#include <willow/stepio.hpp>
 #include <willow/willownet.hpp>
 
 // note to developers: be very careful

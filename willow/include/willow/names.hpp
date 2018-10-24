@@ -44,6 +44,9 @@ class Op;
 class Optimizer;
 class Pattern;
 class Tensor;
+class StepInData;
+class StepOutData;
+class StepIO;
 
 } // namespace willow
 

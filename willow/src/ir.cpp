@@ -41,6 +41,20 @@ std::vector<Tensor *> Ir::optimizerTensors() const {
   return optTensors;
 }
 
+// the rule followed : a Stream tensor which is not an
+// optimizer tensor is a streamed data tensor
+std::vector<Tensor *> Ir::dataStreamTensors() const {
+  std::vector<Tensor *> dsTensors;
+  auto optTensorInfo = optimizer->tensorInfos();
+  for (TensorId id : tensors.getIds(TensorType::Stream)) {
+
+    if (optTensorInfo.find(id) == optTensorInfo.end()) {
+      dsTensors.push_back(tensors.get(id));
+    }
+  }
+  return dsTensors;
+}
+
 void Ir::updateOptimizer(const Optimizer *newOptimizer) {
   if (optimizer.get() == nullptr) {
     throw error("ILE: cannot update optimizer before it is set");
@@ -472,8 +486,8 @@ IrBundle::IrBundle(std::string fnModel_,
       patternNames(patternNames_) {}
 
 Ir::Ir(const IrBundle &gb)
-    : tensors(gb.cTens, this), logdir(io::getCanonicalDirName(gb.logdir)),
-      earlyInfo(gb.earlyInfo), dataFlow(gb.dataFlow) {
+    : tensors(gb.cTens, this), dataFlow(gb.dataFlow),
+      logdir(io::getCanonicalDirName(gb.logdir)), earlyInfo(gb.earlyInfo) {
 
   optimizer = gb.optimizer->clone();
   io::confirmRegularFile(gb.fnModel);
@@ -817,6 +831,10 @@ void Ir::validateAnchors() const {
 }
 
 const std::vector<TensorId> &DataFlow::anchors() const { return v_anchors; }
+
+int DataFlow::samplesPerBatch() const { return samplesPerBatch_; }
+
+int DataFlow::batchesPerStep() const { return batchesPerStep_; }
 
 int DataFlow::nAnchors() const { return static_cast<int>(v_anchors.size()); }
 
@@ -1667,7 +1685,7 @@ bool DataFlow::isAnchored(TensorId id) const {
 }
 
 DataFlow::DataFlow(int BpR, int bs, const std::vector<TensorId> &v)
-    : batchesPerRecord(BpR), batchSize(bs), v_anchors(v) {
+    : batchesPerStep_(BpR), samplesPerBatch_(bs), v_anchors(v) {
   for (auto &id : v_anchors) {
     s_anchors.insert(id);
   }

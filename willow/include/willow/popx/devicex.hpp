@@ -59,8 +59,9 @@ class Devicex : public willow::Device {
 public:
   Devicex(const Ir *);
   virtual void prepare() override final;
-  void weightsFromHost() override final;
-  void optimizerFromHost() override final;
+  virtual void weightsFromHost() override final;
+  virtual void optimizerFromHost() override final;
+  virtual void step(const StepIO &) override final;
   Opx *getOpx(OpId);
   poplar::Graph &graph();
 
@@ -111,6 +112,16 @@ private:
   std::map<TensorId, poplar::DataStream> fromHostStreams;
   // and from device to host:
   std::map<TensorId, poplar::DataStream> toHostStreams;
+
+  std::map<TensorId, std::vector<char>> h2dBuffers;
+
+  // copy a step tensor from user provided src, to allocated memory dst
+  void
+  copyToStreamHostAddr(void *dst,       // destination of copy (a step tensor)
+                       const void *src, // source of copy
+                       const TensorInfo &dstInfo, // the info for dst
+                       const TensorInfo &srcInfo, // user provided info for src
+                       TensorId id);
 };
 
 } // namespace popx

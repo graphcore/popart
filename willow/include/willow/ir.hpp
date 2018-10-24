@@ -17,16 +17,22 @@ namespace willow {
 
 class DataFlow {
 public:
-  DataFlow(int batchesPerReturn, int batchsize, const std::vector<TensorId> &v);
+  DataFlow(int batchesPerStep,
+           int samplesPerBatch,
+           const std::vector<TensorId> &v);
   bool isAnchored(TensorId) const;
   const std::vector<TensorId> &anchors() const;
   int nAnchors() const;
+  int samplesPerBatch() const;
+  int batchesPerStep() const;
 
 private:
-  // number of batches between recording tensors
-  int batchesPerRecord;
-  // batch size
-  int batchSize;
+  // The number of batches between recording tensors
+  int batchesPerStep_;
+  // EXACTLY the batch size
+  int samplesPerBatch_;
+  // Note: there is no communication to the host 
+  // for batchesPerStep_ * samplesPerBatch_ samples.
 
   std::set<TensorId> s_anchors;
   const std::vector<TensorId> v_anchors;
@@ -459,6 +465,9 @@ public:
   Tensors tensors;
   // The tensors specific to the optimization. Learning rate(s), momentum(s) etc
   std::vector<Tensor *> optimizerTensors() const;
+  // The input data tensors. label(s), image(s), etc. This does not include
+  // optimizer stream tensors (they are not data)
+  std::vector<Tensor *> dataStreamTensors() const;
   ~Ir();
   // split ConvOp with bias into two Ops, a ConvOp
   // followed by an x Op
@@ -475,6 +484,7 @@ public:
   void exportDot(std::string dotfn) const;
   void eraseOp(OpId);
   Op *getOp(OpId);
+  const DataFlow dataFlow;
 
 private:
   // learning rate, momentum, etc.
@@ -483,8 +493,8 @@ private:
   std::unique_ptr<Optimizer> optimizer{nullptr};
   std::string logdir;
   EarlyInfo earlyInfo;
-  DataFlow dataFlow;
 
+private:
   void constructForwards();
   void constructBackwards();
   // remove nodes an tensors which are not

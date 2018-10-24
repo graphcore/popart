@@ -8,7 +8,7 @@ class NetWriter():
     Base class, to be inherited once per framework
     """
 
-    def __init__(self, inNames, outNames, losses, optimizer, willowTest,
+    def __init__(self, inNames, outNames, losses, optimizer, willowVerif,
                  dataFeed, earlyInfo):
         """
         inNames:
@@ -25,7 +25,7 @@ class NetWriter():
           which must be computed and returned. If not in training
           mode, then outputs of forward are the (only) tensors
           to return
-        willowTest:
+        willowVerif:
           (if training mode) generate the ONNX models at succesive
           training steps
           (if evaluation mode) to be decided
@@ -39,7 +39,7 @@ class NetWriter():
         self.outNames = outNames
         self.losses = losses
         self.optimizer = optimizer
-        self.willowTest = willowTest
+        self.willowVerif = willowVerif
         self.dataFeed = dataFeed
         self.earlyInfo = earlyInfo
         self.trainMode = optimizer != None

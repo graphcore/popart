@@ -41,7 +41,7 @@ void SGD::setTensorData(Tensor *t) const {
   }
 }
 
-void Optimizer::resetTensorDatas(Ir *pir) const {
+void Optimizer::resetTensorDatas(Ir *) const {
   throw error("Request to reset tensor datas, not implemented");
 }
 

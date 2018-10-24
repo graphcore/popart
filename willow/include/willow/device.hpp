@@ -16,7 +16,8 @@ public:
   virtual void prepare()            = 0;
   virtual void weightsFromHost()    = 0;
   // write optimizer-specific tensors (learning rates, etc.) to Device
-  virtual void optimizerFromHost() = 0;
+  virtual void optimizerFromHost()  = 0;
+  virtual void step(const StepIO &) = 0;
 
 protected:
   const Ir *pir;

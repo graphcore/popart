@@ -14,6 +14,7 @@
 #include <willow/popx/sumx.hpp>
 #include <willow/popx/varupdatex.hpp>
 #include <willow/pritask.hpp>
+#include <willow/stepio.hpp>
 #include <willow/tensor.hpp>
 
 namespace willow {
@@ -69,7 +70,89 @@ void Devicex::optimizerFromHost() {
   std::cout << "writing optimizer from host, " << std::flush;
   pEngine->run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
   std::cout << "done." << std::endl;
-};
+}
+
+void Devicex::copyToStreamHostAddr(
+    void *dst,                 // destination of copy (a step tensor)
+    const void *src,           // source of copy
+    const TensorInfo &dstInfo, // the info for dst
+    const TensorInfo &srcInfo, // user provided info for src
+    TensorId id // for clear error message, we need the id of the tensor
+) {
+
+  // confirm that the shapes of dst and src agree
+  if (dstInfo.shape() != srcInfo.shape()) {
+    std::stringstream ss;
+    ss << "Shape discrepency for tensor " << id
+       << ",\nStep tensor info (user) : ";
+    srcInfo.append(ss);
+    ss << "\nStep tensor info (expected) : ";
+    dstInfo.append(ss);
+    ss << ",\nBatches per step : " << pir->dataFlow.batchesPerStep() << '.';
+    throw error(ss.str());
+  }
+
+  auto srcType = srcInfo.dataType();
+  auto dstType = dstInfo.dataType();
+
+  // check type compatibility
+  if (srcType == dstType) {
+    // copy the full step data from src to dst
+    std::memcpy(dst, src, srcInfo.nbytes());
+  }
+
+  else if (srcType == TP::INT64 && dstType == TP::INT32) {
+    auto dst_int32 = static_cast<int *>(dst);
+    auto src_int64 = static_cast<const int64_t *>(src);
+    for (auto i = 0; i < dstInfo.nelms(); ++i) {
+      dst_int32[i] = static_cast<int>(src_int64[i]);
+    }
+  }
+  // add more custom copies here. Design decision: don't
+  // just blindly cast, if the user provides an int
+  // tensor when a float tensor is expected they might
+  // have made a mistake.
+
+  else {
+    std::stringstream ss;
+    ss << "Type disrcepency for tensor " << id
+       << ". User provided : " << srcInfo.data_type()
+       << " and expected : " << dstInfo.data_type()
+       << ". Consider a custom copy here (as memcpy cannot be used)";
+    throw error(ss.str());
+  }
+}
+
+void Devicex::step(const StepIO &stepio) {
+  std::cout << "performing one step, " << std::flush;
+
+  std::cout << "first copying from StepIO.in(...) to streams, " << std::flush;
+  for (Tensor *tensor : pir->dataStreamTensors()) {
+    StepInData stepin = stepio.in(tensor->id);
+
+    // where to write to on host,
+    auto dst = static_cast<void *>(h2dBuffers.at(tensor->id).data());
+    // where to read from on host,
+    auto src = stepin.data;
+
+    // we calculate the TensorInfo for dst. It is almost tensor->info,
+    // except it's for a full step tensor, so the first shape dimension
+    // is larger by a factor batchesPerStep().
+    auto stepDstShape = tensor->info.shape();
+    stepDstShape[0] *= pir->dataFlow.batchesPerStep();
+    TensorInfo dstInfo{tensor->info.dataType(), stepDstShape};
+
+    // the info of the user provided src step tensor
+    TensorInfo srcInfo = stepin.info;
+
+    copyToStreamHostAddr(dst, src, dstInfo, srcInfo, tensor->id);
+  }
+
+  std::cout << "now running the step program, " << std::flush;
+  pEngine->run(PopPrograms::ProgramIndex::STEP);
+
+  std::cout << "finally copying from streams to StepIO.out(). " << std::endl;
+}
 
 std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
   switch (op->opType) {
@@ -342,6 +425,24 @@ void Devicex::prepare() {
   std::cout << "Connecting optimizer streams" << std::endl;
   for (Tensor *tensor : pir->optimizerTensors()) {
     pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
+  }
+
+  std::cout << "Creating host buffers for data-from-host-streams and connecting"
+            << std::endl;
+  for (Tensor *tensor : pir->dataStreamTensors()) {
+    PopStreamId streamId = h2dId(tensor->id);
+    // allocate host memory, where the poplar::Stream will read data from
+    int64_t n_bytes = pir->dataFlow.batchesPerStep() * tensor->info.nbytes();
+    h2dBuffers[tensor->id] = std::vector<char>(n_bytes);
+    char *data0            = h2dBuffers[tensor->id].data();
+    // casting to void *, although in theory const void * would be enough
+    // as the these addresses are only read from. However, Poplar
+    // only has a void * version.
+    auto addr0 = static_cast<void *>(data0);
+    auto addr1 = static_cast<void *>(data0 + n_bytes);
+
+    // connect the stream (circular buffer)
+    pEngine->connectStream(streamId, addr0, addr1);
   }
 }
 

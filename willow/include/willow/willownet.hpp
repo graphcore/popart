@@ -5,27 +5,6 @@
 
 namespace willow {
 
-class StepInData {
-public:
-  const void *data;
-  // This is used to confirm that data is as expected
-  TensorInfo info;
-};
-
-class StepOutData {
-public:
-  void *data;
-  // This is used to confirm that data is as expected
-  TensorInfo info;
-};
-
-class StepIO {
-public:
-  virtual ~StepIO()                       = default;
-  virtual StepInData in(TensorId) const   = 0;
-  virtual StepOutData out(TensorId) const = 0;
-};
-
 class WillowNet {
 public:
   WillowNet(std::string fnOnnxModel,

@@ -50,11 +50,8 @@ void WillowNet::weightsFromHost() { device_->weightsFromHost(); }
 void WillowNet::optimizerFromHost() { device_->optimizerFromHost(); }
 
 // For Poplar, this will involve reading and writing
-// Poplar::Stream <--> these addresses.
-
-void WillowNet::step(const StepIO &) {
-  throw error("pop device not ready, step");
-}
+// Poplar::Stream <--> these addresses and running a program
+void WillowNet::step(const StepIO &stepio) { device_->step(stepio); }
 
 // write current model to ONNX file
 void WillowNet::modelToHost(std::string) {
