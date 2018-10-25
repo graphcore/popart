@@ -74,8 +74,8 @@ public:
   poplar::OptionFlags engineOptions;
 
   // return the name of the task which creates a poplar::Tensor
-  // This function is pure string manipulation
-  TaskId taskWhichCreates(TensorId);
+  // This function is mostly string manipulation
+  TaskId taskWhichCreates(TensorId) const;
 
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
@@ -85,21 +85,31 @@ private:
 
   PopPrograms progs;
 
-  // Task to create a poplar::Tensor, choosing
+  // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
-  PriTask popTensorTask(Tensor *tensor);
-  TaskId popTensorTaskId(TensorId);
+  PriTask initTensorTask(Tensor *tensor);
+  TaskId initTensorTaskId(TensorId) const;
 
   // Task to create a poplar::Stream to write to poplar::Tensor
+  // C++ Note: if a lambda function which modifies `this' is created
+  // it must be const w.r.t this, even if it not run
   PriTask streamFromHostTask(Tensor *tensor);
-  TaskId streamFromHostTaskId(TensorId);
+  TaskId streamFromHostTaskId(TensorId) const;
+
+  // Task to create a poplar::Stream to write from poplar::Tensor
+  PriTask streamToHostTask(Tensor *tensor);
+  TaskId streamToHostTaskId(TensorId) const;
 
   // Task to append a Copy from poplar::Stream to poplar::Tensor
-  PriTask fromHostTask(Tensor *tensor, poplar::program::Sequence &);
-  TaskId fromHostTaskId(TensorId);
+  PriTask fromHostTask(Tensor *tensor, poplar::program::Sequence &) const;
+  TaskId fromHostTaskId(TensorId) const;
+
+  TaskId opTaskId(Op *) const;
 
   // The ID of the poplar::Stream host->device for poplar::Tensor
-  PopStreamId h2dId(TensorId);
+  PopStreamId h2dId(TensorId) const;
+  // and for device->host
+  PopStreamId d2hId(TensorId) const;
 
   std::unique_ptr<Opx> createOpx(Op *);
 
@@ -114,6 +124,7 @@ private:
   std::map<TensorId, poplar::DataStream> toHostStreams;
 
   std::map<TensorId, std::vector<char>> h2dBuffers;
+  std::map<TensorId, std::vector<char>> d2hBuffers;
 
   // copy a step tensor from user provided src, to allocated memory dst
   void

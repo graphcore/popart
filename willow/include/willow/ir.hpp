@@ -15,27 +15,49 @@
 
 namespace willow {
 
+enum class AnchorReturnType {
+  FINAL = 0, // return just the final batch of the step
+  SUM,       // return the sum of all samples at the end
+             // of the step
+  ALL        // return all batches in the step, with writes
+             // after each each batch. Exact mirror of input
+             // data streams.
+};
+// Suppose we have an anchor scalar (0-d) tensor,
+// Suppose batchesPerStep = 3 and samplesPerBatch = 2.
+// Suppose that the 6 samples processed in a step have values
+// 1, 2, 1, 0, 1, 3
+// Then, under each of the AnchorReturnTypes the returned tensors are,
+// FINAL : [1, 3]             (1-d tensor)
+// SUM   : 8                  (0-d tensor)
+// ALL   : [1, 2, 1, 0, 1, 3] (1-d tensor)
+
 class DataFlow {
 public:
   DataFlow(int batchesPerStep,
            int samplesPerBatch,
-           const std::vector<TensorId> &v);
+           const std::vector<TensorId> &,
+           AnchorReturnType);
+
   bool isAnchored(TensorId) const;
   const std::vector<TensorId> &anchors() const;
   int nAnchors() const;
   int samplesPerBatch() const;
   int batchesPerStep() const;
+  // TODO : AnchorReturnType can be made
+  // tensor specific at no cost
+  AnchorReturnType art() const;
 
 private:
   // The number of batches between recording tensors
   int batchesPerStep_;
   // EXACTLY the batch size
   int samplesPerBatch_;
-  // Note: there is no communication to the host 
+  // Note: there is no communication to the host
   // for batchesPerStep_ * samplesPerBatch_ samples.
-
   std::set<TensorId> s_anchors;
   const std::vector<TensorId> v_anchors;
+  AnchorReturnType art_;
 };
 
 // the input tensor of a grad-op has what kind of
@@ -470,7 +492,7 @@ public:
   std::vector<Tensor *> dataStreamTensors() const;
   ~Ir();
   // split ConvOp with bias into two Ops, a ConvOp
-  // followed by an x Op
+  // followed by an x Op TODO : move to Patterns
   void splitConvBias();
   std::vector<Op *> opsOfType(OpType);
   void inferTensorInfos();

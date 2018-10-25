@@ -95,15 +95,22 @@ PYBIND11_MODULE(pywillow, m) {
 
   py::class_<StepIO> stepio(m, "StepIO");
 
+  py::enum_<AnchorReturnType>(m, "AnchorReturnType")
+      .value("FINAL", AnchorReturnType::FINAL)
+      .value("SUM", AnchorReturnType::SUM)
+      .value("ALL", AnchorReturnType::ALL);
+
   py::class_<PyStepIO>(m, "PyStepIO", stepio)
       .def(py::init<std::map<TensorId, py::array>,
                     std::map<TensorId, py::array>>());
 
   py::class_<DataFlow>(m, "DataFlow")
-      .def(py::init<int, int, const std::vector<TensorId> &>(),
-           py::arg("Batches processed between returning anchors"),
-           py::arg("Batch size"),
-           py::arg("Anchor tensors (tensors to return)"))
+      .def(
+          py::init<int, int, const std::vector<TensorId> &, AnchorReturnType>(),
+          py::arg("Batches processed between returning anchors"),
+          py::arg("Batch size"),
+          py::arg("Anchor tensors (tensors to return)"),
+          py::arg("Anchor return type"))
       .def("nAnchors", &DataFlow::nAnchors);
 
   py::class_<TensorInfo>(m, "TensorInfo")

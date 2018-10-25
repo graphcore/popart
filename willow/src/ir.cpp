@@ -29,6 +29,8 @@
 
 namespace willow {
 
+AnchorReturnType DataFlow::art() const { return art_; }
+
 std::vector<Tensor *> Ir::optimizerTensors() const {
   if (optimizer.get() == nullptr) {
     throw error("ILE : No optimizerTensors til Optimizer is set");
@@ -1684,10 +1686,16 @@ bool DataFlow::isAnchored(TensorId id) const {
   return (s_anchors.count(id) != 0);
 }
 
-DataFlow::DataFlow(int BpR, int bs, const std::vector<TensorId> &v)
-    : batchesPerStep_(BpR), samplesPerBatch_(bs), v_anchors(v) {
+DataFlow::DataFlow(int BpR,
+                   int bs,
+                   const std::vector<TensorId> &v,
+                   AnchorReturnType artIn_)
+    : batchesPerStep_(BpR), samplesPerBatch_(bs), v_anchors(v), art_(artIn_) {
   for (auto &id : v_anchors) {
     s_anchors.insert(id);
+  }
+  if (art_ != AnchorReturnType::ALL) {
+    throw error("Only ALL AnchorReturnType is currently supported");
   }
 }
 

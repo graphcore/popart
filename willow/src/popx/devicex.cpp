@@ -152,6 +152,12 @@ void Devicex::step(const StepIO &stepio) {
   pEngine->run(PopPrograms::ProgramIndex::STEP);
 
   std::cout << "finally copying from streams to StepIO.out(). " << std::endl;
+  for (TensorId anchorId : pir->dataFlow.anchors()) {
+    StepOutData stepout = stepio.out(anchorId);
+    auto dst            = stepout.data;
+    auto src = static_cast<const void *>(d2hBuffers.at(anchorId).data());
+    throw error("need to copy from stream to out here");
+  }
 }
 
 std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
@@ -251,13 +257,23 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
 Opx *Devicex::getOpx(OpId id) { return opxs.at(id).get(); }
 
-TaskId Devicex::taskWhichCreates(TensorId) {
-  throw error("must impl taskWhichCreates");
+TaskId Devicex::taskWhichCreates(TensorId id) const {
+  Tensor *tensor = pir->tensors.get(id);
+  // streamed and init tensors are created with
+  // tasks with names from initTensorTaskId
+  // These tensors are recognisable as having no producing Op.
+  if (tensor->hasProducer() == false) {
+    return initTensorTaskId(id);
+  }
+
+  else {
+    return opTaskId(tensor->getProducer());
+  }
 }
 
 // Design decision : leave the option for a Tensor to be
 // created based on complex global criteria open.
-PriTask Devicex::popTensorTask(Tensor *tensor) {
+PriTask Devicex::initTensorTask(Tensor *tensor) {
 
   auto errorbase = [&tensor]() {
     std::stringstream ss;
@@ -321,7 +337,7 @@ PriTask Devicex::popTensorTask(Tensor *tensor) {
     // late as possible gives better IPU memory use, so
     // giving this low priority.
     return {-1e6,
-            popTensorTaskId(tensor->id), // the task name
+            initTensorTaskId(tensor->id), // the task name
             deps,
             f};
   }
@@ -344,14 +360,13 @@ PriTask Devicex::popTensorTask(Tensor *tensor) {
       popTensors[tensor->id] = newTensor;
     };
 
-    return {1e6, popTensorTaskId(tensor->id), {}, f};
+    return {1e6, initTensorTaskId(tensor->id), {}, f};
   }
 }
 
 PriTask Devicex::streamFromHostTask(Tensor *tensor) {
   auto f = [this, tensor]() {
-    std::cout << "Creating Host to Device FIFO " << tensor->id << std::endl;
-
+    std::cout << "Creating host-to-device FIFO " << tensor->id << std::endl;
     fromHostStreams.emplace(tensor->id,
                             graph().addHostToDeviceFIFO(h2dId(tensor->id),
                                                         popType(tensor->info),
@@ -361,8 +376,25 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
   return {
       0,                                // priority unimportant
       streamFromHostTaskId(tensor->id), // name of this task
-      {popTensorTaskId(tensor->id)}, // depends on poplar::Tensor being created
-      f                              // what to run when the task is executed
+      {initTensorTaskId(tensor->id)},   // poplar::Tensor must exist
+      f                                 // what to run when the task is executed
+  };
+}
+
+PriTask Devicex::streamToHostTask(Tensor *tensor) {
+  auto f = [this, tensor]() {
+    std::cout << "Creating device-to-host FIFO " << tensor->id << std::endl;
+    toHostStreams.emplace(tensor->id,
+                          graph().addDeviceToHostFIFO(d2hId(tensor->id),
+                                                      popType(tensor->info),
+                                                      tensor->info.nelms()));
+  };
+
+  return {
+      0,                              // priority unimportant
+      streamToHostTaskId(tensor->id), // name of this task
+      {taskWhichCreates(tensor->id)}, // poplar::Tensor must exist
+      f                               // what to run when the task is executed
   };
 }
 
@@ -384,7 +416,7 @@ void Devicex::prepare() {
   for (auto id : pir->tensors.getInitIds()) {
     Tensor *tensor = pir->tensors.get(id);
     // 1
-    tasks.add(popTensorTask(tensor));
+    tasks.add(initTensorTask(tensor));
     // 2
     tasks.add(streamFromHostTask(tensor));
     // 3
@@ -395,15 +427,23 @@ void Devicex::prepare() {
   for (auto id : pir->tensors.getIds(TensorType::Stream)) {
     Tensor *tensor = pir->tensors.get(id);
     // 1
-    tasks.add(popTensorTask(tensor));
+    tasks.add(initTensorTask(tensor));
     // 2
     tasks.add(streamFromHostTask(tensor));
   }
 
-  // create prog. to write optimizer tensors to dev.
+  // stream-to-host tensors : 1) make streams
+  for (auto id : pir->dataFlow.anchors()) {
+    // 1
+    tasks.add(streamToHostTask(pir->tensors.get(id)));
+  }
+
+  // create Program to write optimizer tensors to device
   for (Tensor *tensor : pir->optimizerTensors()) {
     tasks.add(fromHostTask(tensor, progs.optimizerFromHost()));
   }
+
+  // TODO : make the darned network!
 
   for (auto &task : tasks.getLinearised()) {
     task.f();
@@ -427,7 +467,16 @@ void Devicex::prepare() {
     pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
   }
 
-  std::cout << "Creating host buffers for data-from-host-streams and connecting"
+  auto engineToStream =
+      [this](char *data0, int64_t n_bytes, PopStreamId streamId) {
+        // Poplar has no const void * version, disappointing
+        auto addr0 = static_cast<void *>(data0);
+        auto addr1 = static_cast<void *>(data0 + n_bytes);
+        // connect the stream (circular buffer)
+        pEngine->connectStream(streamId, addr0, addr1);
+      };
+
+  std::cout << "Creating host buffers for h2d streams, and connecting"
             << std::endl;
   for (Tensor *tensor : pir->dataStreamTensors()) {
     PopStreamId streamId = h2dId(tensor->id);
@@ -435,28 +484,62 @@ void Devicex::prepare() {
     int64_t n_bytes = pir->dataFlow.batchesPerStep() * tensor->info.nbytes();
     h2dBuffers[tensor->id] = std::vector<char>(n_bytes);
     char *data0            = h2dBuffers[tensor->id].data();
-    // casting to void *, although in theory const void * would be enough
-    // as the these addresses are only read from. However, Poplar
-    // only has a void * version.
-    auto addr0 = static_cast<void *>(data0);
-    auto addr1 = static_cast<void *>(data0 + n_bytes);
+    engineToStream(data0, n_bytes, streamId);
+  }
 
-    // connect the stream (circular buffer)
-    pEngine->connectStream(streamId, addr0, addr1);
+  std::cout << "Creating host buffers for d2h streams, and connecting"
+            << std::endl;
+  for (TensorId anchorId : pir->dataFlow.anchors()) {
+    PopStreamId streamId = d2hId(anchorId);
+    Tensor *tensor       = pir->tensors.get(anchorId);
+    int64_t batch_bytes  = tensor->info.nbytes();
+    int64_t n_bytes;
+    switch (pir->dataFlow.art()) {
+    case (AnchorReturnType::FINAL): {
+      n_bytes = batch_bytes;
+      break;
+    }
+    case (AnchorReturnType::SUM): {
+      n_bytes = batch_bytes / pir->dataFlow.samplesPerBatch();
+      break;
+    }
+    case (AnchorReturnType::ALL): {
+      n_bytes = batch_bytes * pir->dataFlow.batchesPerStep();
+      break;
+    }
+    }
+    d2hBuffers[anchorId] = std::vector<char>(n_bytes);
+    char *data0          = d2hBuffers[tensor->id].data();
+    engineToStream(data0, n_bytes, streamId);
   }
 }
 
-TaskId Devicex::streamFromHostTaskId(TensorId id) {
+TaskId Devicex::streamFromHostTaskId(TensorId id) const {
   return "streamFromHostTask_" + id;
 }
 
-TaskId Devicex::fromHostTaskId(TensorId id) { return "fromHostTask_" + id; }
+TaskId Devicex::streamToHostTaskId(TensorId id) const {
+  return "streamFromHostTask_" + id;
+}
 
-TaskId Devicex::popTensorTaskId(TensorId id) { return "popTensorTaskId_" + id; }
+TaskId Devicex::fromHostTaskId(TensorId id) const {
+  return "fromHostTask_" + id;
+}
 
-PopStreamId Devicex::h2dId(TensorId id) { return "h2d_" + id; }
+TaskId Devicex::initTensorTaskId(TensorId id) const {
+  return "initTensorTaskId_" + id;
+}
 
-PriTask Devicex::fromHostTask(Tensor *tensor, poplar::program::Sequence &sq) {
+TaskId Devicex::opTaskId(Op *op) const {
+  return "fromOpTask_" + std::to_string(op->id) + '_' + op->op_type();
+}
+
+PopStreamId Devicex::h2dId(TensorId id) const { return "h2d_" + id; }
+
+PopStreamId Devicex::d2hId(TensorId id) const { return "d2h_" + id; }
+
+PriTask Devicex::fromHostTask(Tensor *tensor,
+                              poplar::program::Sequence &sq) const {
 
   auto f = [&sq, tensor, this]() {
     std::cout << "Adding poplar::program::Copy from host " << tensor->id
@@ -469,7 +552,7 @@ PriTask Devicex::fromHostTask(Tensor *tensor, poplar::program::Sequence &sq) {
           fromHostTaskId(tensor->id),
           {
               streamFromHostTaskId(tensor->id), // poplar::Stream created
-              popTensorTaskId(tensor->id)       // poplar::Tensor created
+              initTensorTaskId(tensor->id)      // poplar::Tensor created
           },
           f};
 }

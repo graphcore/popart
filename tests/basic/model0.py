@@ -5,6 +5,7 @@ import os
 sys.path.append("../../pywillow")
 from pywillow import NllLoss, L1Loss, EarlyInfo, TensorInfo, PyStepIO
 from pywillow import DataFlow, SGD, ConstSGD, WillowNet, getTensorInfo
+from pywillow import AnchorReturnType
 from torchwriter import PytorchNetWriter, conv3x3
 
 if (len(sys.argv) != 2):
@@ -25,10 +26,12 @@ samplesPerBatch = 2
 # Return requested tensors every batchesPerStep = 3 cycles.
 # so (ie only communicate back to host every 2*3 = 6 samples)
 batchesPerStep = 3
-# anchors : return the losses (final list parameter to DataFlow)
+# anchors : return the losses
 anchors = ["nllLossVal", "l1LossVal"]
+# what to return. See relevant poplar headers for option descriptions
+art = AnchorReturnType.ALL
 
-dataFeed = DataFlow(batchesPerStep, samplesPerBatch, anchors)
+dataFeed = DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
 
 earlyInfo = EarlyInfo()
 earlyInfo.add("image0", TensorInfo("FLOAT",
