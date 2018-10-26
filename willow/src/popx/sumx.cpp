@@ -11,7 +11,7 @@ SumOpx::SumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-SumOp *SumOpx::getSumOp() const { return dynamic_cast<SumOp *>(getOp()); }
+SumOp *SumOpx::getSumOp() const { return dynamic_cast<SumOp *>(op_p); }
 
 } // namespace popx
 } // namespace willow

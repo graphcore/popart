@@ -38,12 +38,17 @@ public:
   // poplar::Tensors must already exist?
   virtual std::vector<TensorId> mustExistBeforeCreate(int index0) const;
 
-  Op *getOp() const;
-  Devicex *getDevx() const;
+  // adds poplar::Tensors to devicex_->popTensors, 
+  // one for each output of op_.
+  virtual void grow() const;
 
-private:
-  Op *op_;
-  Devicex *devicex_;
+
+  // The Op corresponding to this Opx
+  Op * op_p;
+
+  // The Devicex to which this Opx belongs
+  Devicex * dv_p;
+
 };
 
 } // namespace popx

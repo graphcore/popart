@@ -11,7 +11,7 @@ NllOpx::NllOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-NllOp *NllOpx::getNllOp() const { return dynamic_cast<NllOp *>(getOp()); }
+NllOp *NllOpx::getNllOp() const { return dynamic_cast<NllOp *>(op_p); }
 
 NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::NLLGRAD) {
@@ -20,7 +20,7 @@ NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 NllGradOp *NllGradOpx::getNllGradOp() const {
-  return dynamic_cast<NllGradOp *>(getOp());
+  return dynamic_cast<NllGradOp *>(op_p);
 }
 
 } // namespace popx

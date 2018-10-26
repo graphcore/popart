@@ -29,6 +29,11 @@
 
 namespace willow {
 
+
+TensorId TensorIndexMap::id(int index) const{
+  return tensor(index)->id;
+}
+
 AnchorReturnType DataFlow::art() const { return art_; }
 
 std::vector<Tensor *> Ir::optimizerTensors() const {

@@ -12,7 +12,7 @@ AveragePoolOpx::AveragePoolOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 AveragePoolOp *AveragePoolOpx::getAveragePoolOp() const {
-  return dynamic_cast<AveragePoolOp *>(getOp());
+  return dynamic_cast<AveragePoolOp *>(op_p);
 }
 
 AveragePoolGradOpx::AveragePoolGradOpx(Op *op, Devicex *devicex)
@@ -23,7 +23,7 @@ AveragePoolGradOpx::AveragePoolGradOpx(Op *op, Devicex *devicex)
 }
 
 AveragePoolGradOp *AveragePoolGradOpx::getAveragePoolGradOp() const {
-  return dynamic_cast<AveragePoolGradOp *>(getOp());
+  return dynamic_cast<AveragePoolGradOp *>(op_p);
 }
 
 } // namespace popx

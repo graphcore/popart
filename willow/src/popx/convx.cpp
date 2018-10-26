@@ -67,7 +67,7 @@ ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 bool ConvOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
   // if opx1 is not a ConvOpx, it does not create the same poplar::Tensor
-  if (opx1->getOp()->opType != OpType::CONV) {
+  if (opx1->op_p->opType != OpType::CONV) {
     return false;
   }
 
@@ -86,7 +86,7 @@ bool ConvOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
   return true;
 }
 
-ConvOp *ConvOpx::getConvOp() const { return dynamic_cast<ConvOp *>(getOp()); }
+ConvOp *ConvOpx::getConvOp() const { return dynamic_cast<ConvOp *>(op_p); }
 
 bool ConvOpx::canCreateInput(int) const { return true; }
 
@@ -94,11 +94,11 @@ poplar::Tensor ConvOpx::createInput(int index) const {
 
   if (index == getConvOp()->weightsInIndex()) {
     return poplin::createWeights(
-        getDevx()->graph(),                                      // graph
+        dv_p->graph(),                                      // graph
         params,                                                  // params
-        getOp()->str(),                                          // name
-        enigma::toPoplibsConvOptions(getDevx()->fwdConvOptions), // options
-        &getDevx()->convCache                                    // cache
+        op_p->str(),                                          // name
+        enigma::toPoplibsConvOptions(dv_p->fwdConvOptions), // options
+        &dv_p->convCache                                    // cache
     );
   } else {
     throw error("conv opx cannot create tensor at this index yet");
@@ -112,7 +112,7 @@ ConvDataGradOpx::ConvDataGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 ConvDataGradOp *ConvDataGradOpx::getConvDataGradOp() const {
-  return dynamic_cast<ConvDataGradOp *>(getOp());
+  return dynamic_cast<ConvDataGradOp *>(op_p);
 }
 
 ConvWeightsGradOpx::ConvWeightsGradOpx(Op *op, Devicex *devicex)
@@ -123,7 +123,7 @@ ConvWeightsGradOpx::ConvWeightsGradOpx(Op *op, Devicex *devicex)
 }
 
 ConvWeightsGradOp *ConvWeightsGradOpx::getConvWeightsGradOp() const {
-  return dynamic_cast<ConvWeightsGradOp *>(getOp());
+  return dynamic_cast<ConvWeightsGradOp *>(op_p);
 }
 
 } // namespace popx

@@ -17,8 +17,36 @@
 #include <willow/stepio.hpp>
 #include <willow/tensor.hpp>
 
+
+#pragma clang diagnostic push // start ignoring warnings
+#pragma clang diagnostic ignored "-Weverything"
+#include <popops/codelets.hpp>
+#include <popnn/codelets.hpp>
+#include <poplin/codelets.hpp>
+#pragma clang diagnostic pop // stop ignoring warnings
+
+
 namespace willow {
 namespace popx {
+
+void Devicex::insert(TensorId id, const poplar::Tensor &pt) {
+  auto found = popTensors.find(id);
+  if (found != popTensors.end()) {
+    throw error("poplar::Tensor " + id + " already in map");
+  }
+  popTensors[id] = pt;
+}
+
+const poplar::Tensor & Devicex::getTensor(TensorId id){
+  auto found = popTensors.find(id);
+  if (found == popTensors.end()){
+    throw error("no poplar::Tensor " + id);
+  }
+  return found->second;
+}
+
+
+
 
 poplar::program::Sequence &PopPrograms::weightsFromHost() {
   return seqs[ProgramIndex::WEIGHTSFROMHOST];
@@ -347,18 +375,19 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   }
 
   else {
-    std::cout << "\nWARNING\n"
-              << errorbase() << "\nNo creator candidates. We should perform a "
-              << "depth search to find a candidate. Creating linearly. ";
 
-    auto f = [this, tensor]() {
-      std::cout << "Creating poplar::Tensor " << tensor->id
-                << " by mapping linearly" << std::endl;
-      auto newTensor = graph().addVariable(
+    auto f =
+        [this, tensor]() {
+          std::cout << "Creating " << tensor->id << " linearly. "
+                    << "WARNING :  "
+                    << "No creator candidates. We should perform a "
+                    << "depth search to find a candidate. " << std::endl;
+
+          auto newTensor = graph().addVariable(
           popType(tensor->info), tensor->info.shape_szt(), tensor->id);
-      poputil::mapTensorLinearly(graph(), newTensor);
-      popTensors[tensor->id] = newTensor;
-    };
+          poputil::mapTensorLinearly(graph(), newTensor);
+          popTensors[tensor->id] = newTensor;
+        };
 
     return {1e6, initTensorTaskId(tensor->id), {}, f};
   }
@@ -398,19 +427,46 @@ PriTask Devicex::streamToHostTask(Tensor *tensor) {
   };
 }
 
+PriTask Devicex::opTask(Op *op, double priority) {
+
+  OpId id  = op->id;
+  Opx *opx = getOpx(id);
+
+  // although priority should guarantee that this
+  // task is only run after inputs are all created, 
+  // we add a dependency to the input tensors, just
+  // in case someone plays with the priorities
+  std::vector<TaskId> deps;
+  for (auto t_inds : op->input.indicesMap()) {
+    Tensor *tensor = t_inds.first;
+    deps.push_back(taskWhichCreates(tensor->id));
+  }
+
+  auto f = [opx, deps]() {
+    std::cout << "Creating output tensors for " << opx->op_p->str() << std::endl;
+    opx->grow();
+  };
+
+  return {priority, opTaskId(op), deps, f};
+}
+
 OpxAndInIndex::OpxAndInIndex(int conIndex_, Opx *opx_)
     : index(conIndex_), opx(opx_) {}
 
 // go all the way to creating the engine
 void Devicex::prepare() {
 
-  PriTasks tasks;
   pGraph.reset(new poplar::Graph(popDevice));
+  popops::addCodelets(graph());
+  poplin::addCodelets(graph());
+  popnn::addCodelets(graph());
 
   // create a Opx for every Op
   for (Op *op : pir->getTopologicallySorted()) {
     opxs[op->id] = createOpx(op);
   }
+
+  PriTasks tasks;
 
   // initializers : 1) make tensor, 2) make stream, 3) create write prog.
   for (auto id : pir->tensors.getInitIds()) {
@@ -443,7 +499,14 @@ void Devicex::prepare() {
     tasks.add(fromHostTask(tensor, progs.optimizerFromHost()));
   }
 
-  // TODO : make the darned network!
+  // making the network!
+  std::vector<Op*> ops = pir->getTopologicallySorted();
+  double priority = 0.;
+  for (int i = 0; i < ops.size(); ++i){
+    Op * op = ops[i];
+    tasks.add(opTask(op, priority));
+    priority -=1.;
+  }
 
   for (auto &task : tasks.getLinearised()) {
     task.f();

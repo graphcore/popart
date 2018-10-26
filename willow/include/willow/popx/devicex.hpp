@@ -77,13 +77,17 @@ public:
   // This function is mostly string manipulation
   TaskId taskWhichCreates(TensorId) const;
 
+  const poplar::Tensor & getTensor(TensorId);
+  void insert(TensorId, const poplar::Tensor &);
+
+  PopPrograms progs;
+
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
   std::unique_ptr<poplar::Target> pTarget{nullptr};
   poplar::Device popDevice;
 
-  PopPrograms progs;
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
@@ -103,7 +107,8 @@ private:
   // Task to append a Copy from poplar::Stream to poplar::Tensor
   PriTask fromHostTask(Tensor *tensor, poplar::program::Sequence &) const;
   TaskId fromHostTaskId(TensorId) const;
-
+  
+  PriTask opTask(Op *, double  priority);
   TaskId opTaskId(Op *) const;
 
   // The ID of the poplar::Stream host->device for poplar::Tensor

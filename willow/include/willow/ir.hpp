@@ -198,6 +198,9 @@ public:
   void reset(int, Tensor *);
   Tensor *tensor(int);
   const Tensor *tensor(int) const;
+  // The id of the Tensor at an index
+  // == tensor(int)->id
+  TensorId id(int) const;
   bool hasIndex(int) const;
   const std::vector<int> &indices(Tensor *) const;
   const std::map<Tensor *, std::vector<int>> &indicesMap() const;

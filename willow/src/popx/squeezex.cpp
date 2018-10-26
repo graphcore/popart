@@ -12,7 +12,7 @@ SqueezeOpx::SqueezeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 SqueezeOp *SqueezeOpx::getSqueezeOp() const {
-  return dynamic_cast<SqueezeOp *>(getOp());
+  return dynamic_cast<SqueezeOp *>(op_p);
 }
 
 SqueezeGradOpx::SqueezeGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -22,7 +22,7 @@ SqueezeGradOpx::SqueezeGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 SqueezeGradOp *SqueezeGradOpx::getSqueezeGradOp() const {
-  return dynamic_cast<SqueezeGradOp *>(getOp());
+  return dynamic_cast<SqueezeGradOp *>(op_p);
 }
 
 } // namespace popx

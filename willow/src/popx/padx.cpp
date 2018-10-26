@@ -11,7 +11,7 @@ PadOpx::PadOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-PadOp *PadOpx::getPadOp() const { return dynamic_cast<PadOp *>(getOp()); }
+PadOp *PadOpx::getPadOp() const { return dynamic_cast<PadOp *>(op_p); }
 
 } // namespace popx
 } // namespace willow

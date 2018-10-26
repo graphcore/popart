@@ -12,7 +12,7 @@ SGDVarUpdateOpx::SGDVarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 SGDVarUpdateOp *SGDVarUpdateOpx::getSGDVarUpdateOp() const {
-  return dynamic_cast<SGDVarUpdateOp *>(getOp());
+  return dynamic_cast<SGDVarUpdateOp *>(op_p);
 }
 
 ConstSGDVarUpdateOpx::ConstSGDVarUpdateOpx(Op *op, Devicex *devicex)
@@ -23,7 +23,7 @@ ConstSGDVarUpdateOpx::ConstSGDVarUpdateOpx(Op *op, Devicex *devicex)
 }
 
 ConstSGDVarUpdateOp *ConstSGDVarUpdateOpx::getConstSGDVarUpdateOp() const {
-  return dynamic_cast<ConstSGDVarUpdateOp *>(getOp());
+  return dynamic_cast<ConstSGDVarUpdateOp *>(op_p);
 }
 
 } // namespace popx

@@ -11,7 +11,7 @@ ReluOpx::ReluOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-ReluOp *ReluOpx::getReluOp() const { return dynamic_cast<ReluOp *>(getOp()); }
+ReluOp *ReluOpx::getReluOp() const { return dynamic_cast<ReluOp *>(op_p); }
 
 ReluGradOpx::ReluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::RELUGRAD) {
@@ -20,7 +20,7 @@ ReluGradOpx::ReluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 ReluGradOp *ReluGradOpx::getReluGradOp() const {
-  return dynamic_cast<ReluGradOp *>(getOp());
+  return dynamic_cast<ReluGradOp *>(op_p);
 }
 
 } // namespace popx

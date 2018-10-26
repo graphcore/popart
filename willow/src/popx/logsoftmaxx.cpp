@@ -12,7 +12,7 @@ LogSoftmaxOpx::LogSoftmaxOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 LogSoftmaxOp *LogSoftmaxOpx::getLogSoftmaxOp() const {
-  return dynamic_cast<LogSoftmaxOp *>(getOp());
+  return dynamic_cast<LogSoftmaxOp *>(op_p);
 }
 
 LogSoftmaxGradOpx::LogSoftmaxGradOpx(Op *op, Devicex *devicex)
@@ -23,7 +23,7 @@ LogSoftmaxGradOpx::LogSoftmaxGradOpx(Op *op, Devicex *devicex)
 }
 
 LogSoftmaxGradOp *LogSoftmaxGradOpx::getLogSoftmaxGradOp() const {
-  return dynamic_cast<LogSoftmaxGradOp *>(getOp());
+  return dynamic_cast<LogSoftmaxGradOp *>(op_p);
 }
 
 } // namespace popx
