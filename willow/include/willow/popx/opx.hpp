@@ -37,18 +37,26 @@ public:
   // To create a poplar::Tensor for input index index0, which
   // poplar::Tensors must already exist?
   virtual std::vector<TensorId> mustExistBeforeCreate(int index0) const;
-
-  // adds poplar::Tensors to devicex_->popTensors, 
+  // adds poplar::Tensors to devicex_->popTensors,
   // one for each output of op_.
   virtual void grow() const;
 
+  // The following reduce boilerplate.
+
+  // shortcut for dv_p->graph
+  poplar::Graph &graph() const;
+  // shortcut for dv_p->tensors.get
+  const poplar::Tensor &get(TensorId) const;
+  // shortcut for dv_p->tensors.insert
+  void insert(TensorId, const poplar::Tensor &) const;
+  // shortcut for dv_p->progs.step
+  poplar::program::Sequence &step() const;
 
   // The Op corresponding to this Opx
-  Op * op_p;
+  Op *op_p;
 
   // The Devicex to which this Opx belongs
-  Devicex * dv_p;
-
+  Devicex *dv_p;
 };
 
 } // namespace popx

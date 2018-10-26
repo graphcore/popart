@@ -54,6 +54,20 @@ public:
   Opx *opx;
 };
 
+class PopTensors {
+public:
+  PopTensors(const Ir *);
+  void insert(TensorId, const poplar::Tensor &);
+  const poplar::Tensor &get(TensorId) const;
+
+private:
+  std::map<TensorId, poplar::Tensor> tensors_;
+  // This Ir is used to compare the shape
+  // of a poplar::Tensor added with `insert', 
+  // with the corresponding willow::Tensor's
+  const Ir *pir;
+};
+
 class Devicex : public willow::Device {
 
 public:
@@ -62,32 +76,31 @@ public:
   virtual void weightsFromHost() override final;
   virtual void optimizerFromHost() override final;
   virtual void step(const StepIO &) override final;
+
+  PopPrograms progs;
   Opx *getOpx(OpId);
   poplar::Graph &graph();
+
+  // return the name of the task which creates a poplar::Tensor
+  // This function is mostly string manipulation
+  TaskId taskWhichCreates(TensorId) const;
 
   // enigma has a PlanningCache for matmul and conv
   poplin::PlanningCache convCache;
   poplin::PlanningCache matmulCache;
 
   // completed in Devicex constructor.
+
   enigma::ConvOptions fwdConvOptions, bwdConvOptions, wuConvOptions;
   poplar::OptionFlags engineOptions;
 
-  // return the name of the task which creates a poplar::Tensor
-  // This function is mostly string manipulation
-  TaskId taskWhichCreates(TensorId) const;
-
-  const poplar::Tensor & getTensor(TensorId);
-  void insert(TensorId, const poplar::Tensor &);
-
-  PopPrograms progs;
+  PopTensors tensors;
 
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
   std::unique_ptr<poplar::Target> pTarget{nullptr};
   poplar::Device popDevice;
-
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
@@ -107,8 +120,8 @@ private:
   // Task to append a Copy from poplar::Stream to poplar::Tensor
   PriTask fromHostTask(Tensor *tensor, poplar::program::Sequence &) const;
   TaskId fromHostTaskId(TensorId) const;
-  
-  PriTask opTask(Op *, double  priority);
+
+  PriTask opTask(Op *, double priority);
   TaskId opTaskId(Op *) const;
 
   // The ID of the poplar::Stream host->device for poplar::Tensor
@@ -120,7 +133,6 @@ private:
 
   // 1-to-1 mapping between Ops and Opxs
   std::map<OpId, std::unique_ptr<Opx>> opxs;
-  std::map<TensorId, poplar::Tensor> popTensors;
 
   // the poplar::Streams for poplar::Tensors,
   // from host to device:

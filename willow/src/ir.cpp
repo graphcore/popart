@@ -29,10 +29,7 @@
 
 namespace willow {
 
-
-TensorId TensorIndexMap::id(int index) const{
-  return tensor(index)->id;
-}
+TensorId TensorIndexMap::id(int index) const { return tensor(index)->id; }
 
 AnchorReturnType DataFlow::art() const { return art_; }
 

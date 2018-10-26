@@ -18,6 +18,17 @@ class TensorInfo;
 std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
                            const std::vector<int64_t> &s1);
 
+template <typename T> std::vector<T> squeeze(const std::vector<T> &v) {
+  std::vector<T> w;
+  w.reserve(v.size());
+  for (auto &x : v) {
+    if (x != 1) {
+      w.push_back(x);
+    }
+  }
+  return w;
+}
+
 TensorInfo npOut(const TensorInfo &i0, const TensorInfo &i1);
 
 // FLOAT, FLOAT16, INT8 etc.

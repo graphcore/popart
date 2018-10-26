@@ -28,10 +28,10 @@ public:
   virtual std::vector<TensorId>
   mustExistBeforeCreate(int index0) const override final;
   const poplin::ConvParams &getParams() const;
+  void grow() const override final;
 
 private:
   poplin::ConvParams params;
-  enigma::ConvOptions opts;
 };
 
 class ConvDataGradOpx : public Opx {

@@ -5,6 +5,11 @@
 #include <willow/tensor.hpp>
 #include <willow/util.hpp>
 
+#pragma clang diagnostic push // start ignoring warnings
+#pragma clang diagnostic ignored "-Weverything"
+#include <poplin/Convolution.hpp>
+#pragma clang diagnostic pop // stop ignoring warnings
+
 namespace willow {
 namespace popx {
 
@@ -17,7 +22,25 @@ std::vector<TensorId> ConvOpx::mustExistBeforeCreate(int) const {
   return {};
 }
 
+void ConvOpx::grow() const {
+
+  auto outTensor = poplin::convolution(
+      graph(),                           // graph
+      get(getConvOp()->dataIn()->id),    // in
+      get(getConvOp()->weightsIn()->id), // weights
+      params,                            // params
+      false,                             // transposeAndFlipWeights,
+      dv_p->progs.step(),                // prog
+      std::to_string(op_p->id),          // debugPrefix
+      enigma::toPoplibsConvOptions(dv_p->fwdConvOptions), // options
+      &dv_p->convCache                                    // cache
+  );
+
+  insert(op_p->output.id(0), outTensor);
+}
+
 ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+
   if (op->opType != OpType::CONV) {
     throw error("cannot create ConvOpx from " + op->op_type());
   }
@@ -94,9 +117,9 @@ poplar::Tensor ConvOpx::createInput(int index) const {
 
   if (index == getConvOp()->weightsInIndex()) {
     return poplin::createWeights(
-        dv_p->graph(),                                      // graph
-        params,                                                  // params
-        op_p->str(),                                          // name
+        graph(),                                            // graph
+        params,                                             // params
+        op_p->str(),                                        // name
         enigma::toPoplibsConvOptions(dv_p->fwdConvOptions), // options
         &dv_p->convCache                                    // cache
     );

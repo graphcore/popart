@@ -15,6 +15,7 @@ class ReluOpx : public Opx {
 public:
   ReluOpx(Op *, Devicex *);
   ReluOp *getReluOp() const;
+  void grow() const;
 };
 
 class ReluGradOpx : public Opx {

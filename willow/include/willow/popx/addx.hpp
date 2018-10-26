@@ -16,7 +16,6 @@ public:
   AddOpx(Op *, Devicex *);
   AddOp *getAddOp() const;
   virtual void grow() const override final;
-
 };
 
 class AddGradOpx : public Opx {
