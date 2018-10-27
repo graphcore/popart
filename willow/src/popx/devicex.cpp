@@ -28,6 +28,29 @@
 namespace willow {
 namespace popx {
 
+std::string Devicex::getConstTensorKey(const poplar::Type &type,
+                                       const std::vector<size_t> &shape,
+                                       double val) const {
+  std::stringstream ss;
+  ss << type << "___";
+  appendSequence(ss, shape);
+  ss << "___";
+  ss << val;
+  std::string key = ss.str();
+  return key;
+}
+
+const poplar::Tensor &Devicex::getConst(const poplar::Type &type,
+                                        const std::vector<size_t> &shape,
+                                        double val) {
+  std::string key = getConstTensorKey(type, shape, val);
+  if (constTensors.find(key) == constTensors.end()) {
+    std::cout << "Creating const tensor " << key << std::endl;
+    constTensors[key] = graph().addConstant(type, shape, val);
+  }
+  return constTensors[key];
+}
+
 PopTensors::PopTensors(const Ir *ir_) : pir(ir_) {}
 
 void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {

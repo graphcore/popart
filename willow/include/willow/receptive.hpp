@@ -39,6 +39,8 @@ public:
   std::vector<size_t> spatialK_szt() const;
   std::vector<uint32_t> lowerPads_u32() const;
   std::vector<uint32_t> upperPads_u32() const;
+  std::vector<int> lowerPads_i32() const;
+  std::vector<int> upperPads_i32() const;
   std::vector<uint32_t> dilations_u32() const;
   std::vector<uint32_t> strides_u32() const;
 

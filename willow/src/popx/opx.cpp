@@ -44,5 +44,18 @@ void Opx::insert(TensorId id, const poplar::Tensor &tensor) const {
 
 poplar::program::Sequence &Opx::step() const { return dv_p->progs.step(); }
 
+TensorId Opx::inId(int index) const { return op_p->input.id(index); }
+
+TensorId Opx::outId(int index) const { return op_p->output.id(index); }
+
+std::string Opx::idStr() const { return std::to_string(op_p->id); }
+
+poplar::Tensor Opx::cloneNcopy(TensorId id) const {
+  auto outTensor = graph().clone(get(id));
+  poplar::program::Copy copyProg(get(id), outTensor);
+  step().add(copyProg);
+  return outTensor;
+}
+
 } // namespace popx
 } // namespace willow

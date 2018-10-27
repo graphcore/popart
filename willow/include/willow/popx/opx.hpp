@@ -40,6 +40,9 @@ public:
   // adds poplar::Tensors to devicex_->popTensors,
   // one for each output of op_.
   virtual void grow() const;
+  // clone the poplar::Tensor identified by its TensorId,
+  // and copy the contents of it, in the step() program.
+  poplar::Tensor cloneNcopy(TensorId) const;
 
   // The following reduce boilerplate.
 
@@ -51,6 +54,12 @@ public:
   void insert(TensorId, const poplar::Tensor &) const;
   // shortcut for dv_p->progs.step
   poplar::program::Sequence &step() const;
+  // shortcut for op_p->input.id(int)
+  TensorId inId(int) const;
+  // shortcut for op_p->output.id(int)
+  TensorId outId(int) const;
+  // shortcut for std::to_string(op_p->id)
+  std::string idStr() const;
 
   // The Op corresponding to this Opx
   Op *op_p;

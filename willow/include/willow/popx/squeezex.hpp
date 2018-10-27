@@ -15,6 +15,7 @@ class SqueezeOpx : public Opx {
 public:
   SqueezeOpx(Op *, Devicex *);
   SqueezeOp *getSqueezeOp() const;
+  virtual void grow() const override final;
 };
 
 class SqueezeGradOpx : public Opx {

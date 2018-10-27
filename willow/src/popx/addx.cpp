@@ -17,13 +17,13 @@ AddOpx::AddOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void AddOpx::grow() const {
-  insert(op_p->output.id(0),
+  insert(outId(0),
          popops::map(graph(),
                      popops::expr::BinaryOpType::ADD,
-                     get(op_p->input.id(0)),
-                     get(op_p->input.id(1)),
+                     get(inId(0)),
+                     get(inId(1)),
                      step(),
-                     std::to_string(op_p->id)));
+                     idStr()));
 }
 
 AddOp *AddOpx::getAddOp() const { return dynamic_cast<AddOp *>(op_p); }

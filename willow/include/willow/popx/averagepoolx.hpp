@@ -15,6 +15,7 @@ class AveragePoolOpx : public Opx {
 public:
   AveragePoolOpx(Op *, Devicex *);
   AveragePoolOp *getAveragePoolOp() const;
+  void grow() const override final;
 };
 
 class AveragePoolGradOpx : public Opx {

@@ -86,6 +86,14 @@ std::vector<uint32_t> HasReceptiveFieldOp::upperPads_u32() const {
   return vXtoY<int64_t, uint32_t>(upperPads());
 }
 
+std::vector<int> HasReceptiveFieldOp::lowerPads_i32() const {
+  return vXtoY<int64_t, int>(lowerPads());
+}
+
+std::vector<int> HasReceptiveFieldOp::upperPads_i32() const {
+  return vXtoY<int64_t, int>(upperPads());
+}
+
 std::vector<uint32_t> HasReceptiveFieldOp::dilations_u32() const {
   return vXtoY<int64_t, uint32_t>(dilations);
 }

@@ -1,9 +1,16 @@
 #include <willow/error.hpp>
 #include <willow/popx/squeezex.hpp>
 #include <willow/squeeze.hpp>
+#include <willow/tensor.hpp>
 
 namespace willow {
 namespace popx {
+
+void SqueezeOpx::grow() const {
+  auto outTensor = cloneNcopy(inId(0));
+  outTensor.reshape(op_p->output.tensor(0)->info.shape_szt());
+  insert(outId(0), outTensor);
+}
 
 SqueezeOpx::SqueezeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::SQUEEZE) {

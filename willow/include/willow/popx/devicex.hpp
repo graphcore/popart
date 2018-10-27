@@ -59,11 +59,12 @@ public:
   PopTensors(const Ir *);
   void insert(TensorId, const poplar::Tensor &);
   const poplar::Tensor &get(TensorId) const;
+  bool contains(TensorId) const;
 
 private:
   std::map<TensorId, poplar::Tensor> tensors_;
   // This Ir is used to compare the shape
-  // of a poplar::Tensor added with `insert', 
+  // of a poplar::Tensor added with `insert',
   // with the corresponding willow::Tensor's
   const Ir *pir;
 };
@@ -96,11 +97,24 @@ public:
 
   PopTensors tensors;
 
+  // If a tensor matching the input parameters already exists,
+  // just return it. otherwise create and return.
+  const poplar::Tensor &getConst(const poplar::Type &type,
+                                 const std::vector<size_t> &shape,
+                                 double val);
+
 private:
+  // unique identifier based on  the 3 input parameters
+  std::string getConstTensorKey(const poplar::Type &,
+                                const std::vector<size_t> &shape,
+                                double val) const;
+
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
   std::unique_ptr<poplar::Target> pTarget{nullptr};
   poplar::Device popDevice;
+
+  std::map<std::string, poplar::Tensor> constTensors;
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)

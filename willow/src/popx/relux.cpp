@@ -18,15 +18,15 @@ ReluOpx::ReluOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void ReluOpx::grow() const {
-  auto inName    = op_p->input.id(0);
-  auto outName   = op_p->output.id(0);
-  auto outTensor = graph().clone(get(inName));
-  poplar::program::Copy copyProg(get(inName), outTensor);
-  step().add(copyProg);
-  popnn::nonLinearity(
-      graph(), popnn::NonLinearityType::RELU, outTensor, step(), outName);
 
-  insert(outName, outTensor);
+  // There is only an in-place poplibs Relu. We therefore clone first,
+  auto outTensor = cloneNcopy(inId(0));
+
+  // and apply the inplace relu.
+  popnn::nonLinearity(
+      graph(), popnn::NonLinearityType::RELU, outTensor, step(), outId(0));
+
+  insert(outId(0), outTensor);
 }
 
 ReluOp *ReluOpx::getReluOp() const { return dynamic_cast<ReluOp *>(op_p); }
