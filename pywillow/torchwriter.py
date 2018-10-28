@@ -65,10 +65,15 @@ class PytorchNetWriter(NetWriter):
         lossValues = []
         for loss in self.losses:
             if isinstance(loss, NllLoss):
+                # note that pytorch documentation has this to
+                # say about softmax:
+                # Use LogSoftmax instead (it’s faster and has
+                # better numerical properties)
                 criterion = torch.nn.NLLLoss()
                 lossValues.append(
-                    criterion(outMap[loss.probsTensorId()],
-                              streamMap[loss.labelTensorId()]))
+                    criterion(
+                        torch.log(outMap[loss.probsTensorId()]),
+                        streamMap[loss.labelTensorId()]))
 
             elif isinstance(loss, L1Loss):
                 lossValues.append(loss.getLambda() * torch.norm(

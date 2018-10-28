@@ -6,7 +6,7 @@
 
 namespace willow {
 
-enum class PatternType { PREUNIREPL = 0, POSTNREPL, LSMGRADDIRECT };
+enum class PatternType { PREUNIREPL = 0, POSTNREPL, SOFTMAXGRADDIRECT };
 
 class PatternTypes {
 public:
@@ -63,10 +63,10 @@ private:
 // consider,
 // (label), (probs) -> [NLLGrad]
 // [NllGrad] -> (d_probs)
-// (d_probs), (probs) -> [LogSoftmaxGrad] -> (d_acts).
+// (d_probs), (probs) -> [SoftmaxGrad] -> (d_acts).
 // This pattern replaces this with,
-// (label), (probs) -> [LogSoftmaxGradDirect] -> (d_acts).
-class LsmGradDirect : public FuserPattern {
+// (label), (probs) -> [SoftmaxGradDirect] -> (d_acts).
+class SoftmaxGradDirect : public FuserPattern {
 private:
   virtual OpType get0() const override final;
   virtual OpType get1() const override final;

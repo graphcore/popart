@@ -118,5 +118,7 @@ Questions:
 28/10
 Validation loss, how will I compute it? 
 Do I need to split step() into fwd() and bwd()? Probably, yes
+That said, for things like Batch Norm which change internal parameters, 
+how will I tell fwd() that the parameters must not change?
 
 

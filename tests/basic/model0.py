@@ -57,7 +57,9 @@ class Module0(torch.nn.Module):
         self.conv2 = conv3x3(nOutChans, nOutChans)
         self.conv3 = conv3x3(nOutChans, nOutChans)
         self.relu = torch.nn.functional.relu
-        self.logsoftmax = torch.nn.LogSoftmax(dim=0)
+        # for softmax dim -1 is correct for [sample][class],
+        # gives class probabilities for each sample.
+        self.softmax = torch.nn.Softmax(dim=-1)
 
     def forward(self, inputs):
         image0 = inputs[0]
@@ -75,7 +77,10 @@ class Module0(torch.nn.Module):
         x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
         x = torch.squeeze(x)
         # probabilities:
-        probs = self.logsoftmax(x)
+        # Note that for Nll, Pytorch requires logsoftmax input.
+        # We do this separately the framework dependant section,
+        # torchwriter.py
+        probs = self.softmax(x)
         # -> currently no support from pytorch
         # -> for gather or log (pytorch 0.4.1)
         # x = torch.gather(input = x, dim = 1, index= labels)
@@ -143,7 +148,7 @@ pynet = WillowNet(
     writer.optimizer,
     [],
     outputdir,
-    ["PreUniRepl", "PostNRepl", "LsmGradDirect"
+    ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"
      ]  # The optimization passes to run, see patterns.hpp
 )
 

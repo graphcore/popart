@@ -20,9 +20,9 @@
 #include <willow/add.hpp>
 #include <willow/averagepool.hpp>
 #include <willow/conv.hpp>
-#include <willow/logsoftmax.hpp>
 #include <willow/pad.hpp>
 #include <willow/relu.hpp>
+#include <willow/softmax.hpp>
 #include <willow/squeeze.hpp>
 #include <willow/sum.hpp>
 #include <willow/varupdate.hpp>
@@ -552,8 +552,8 @@ Ir::Ir(const IrBundle &gb)
       break;
     }
 
-    case PatternType::LSMGRADDIRECT: {
-      patterns.emplace_back(std::unique_ptr<Pattern>(new LsmGradDirect));
+    case PatternType::SOFTMAXGRADDIRECT: {
+      patterns.emplace_back(std::unique_ptr<Pattern>(new SoftmaxGradDirect));
       break;
     }
 
@@ -1552,9 +1552,9 @@ OpTypes::OpTypes() {
               {"ConvWeightsGrad", OpType::CONVWEIGHTSGRAD},
               {"L1", OpType::L1},
               {"L1Grad", OpType::L1GRAD},
-              {"LogSoftmax", OpType::LOGSOFTMAX},
-              {"LogSoftmaxGrad", OpType::LOGSOFTMAXGRAD},
-              {"LogSoftmaxGradDirect", OpType::LOGSOFTMAXGRADDIRECT},
+              {"Softmax", OpType::SOFTMAX},
+              {"SoftmaxGrad", OpType::SOFTMAXGRAD},
+              {"SoftmaxGradDirect", OpType::SOFTMAXGRADDIRECT},
               {"Nll", OpType::NLL},
               {"NllGrad", OpType::NLLGRAD},
               {"Pad", OpType::PAD},
@@ -1652,8 +1652,8 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::CONV: {
     return pOp(new ConvOp(node, this));
   }
-  case OpType::LOGSOFTMAX: {
-    return pOp(new LogSoftmaxOp(node, this));
+  case OpType::SOFTMAX: {
+    return pOp(new SoftmaxOp(node, this));
   }
 
   case OpType::PAD: {
@@ -1676,7 +1676,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::CONVWEIGHTSGRAD:
   case OpType::NLLGRAD:
   case OpType::L1GRAD:
-  case OpType::LOGSOFTMAXGRAD:
+  case OpType::SOFTMAXGRAD:
   case OpType::SGDVARUPDATE:
   case OpType::CONSTSGDVARUPDATE:
     throw error("Gradient Ops not constructable from Node");
@@ -1685,7 +1685,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::L1:
     throw error("Loss Ops not constructable from Node");
 
-  case OpType::LOGSOFTMAXGRADDIRECT:
+  case OpType::SOFTMAXGRADDIRECT:
     throw error("Non-ONNX Ops not constructable from Node");
 
   default: { throw error("No class for " + node.op_type()); }

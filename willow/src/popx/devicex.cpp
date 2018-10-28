@@ -5,11 +5,11 @@
 #include <willow/popx/convx.hpp>
 #include <willow/popx/devicex.hpp>
 #include <willow/popx/l1x.hpp>
-#include <willow/popx/logsoftmaxx.hpp>
 #include <willow/popx/nllx.hpp>
 #include <willow/popx/opx.hpp>
 #include <willow/popx/padx.hpp>
 #include <willow/popx/relux.hpp>
+#include <willow/popx/softmaxx.hpp>
 #include <willow/popx/squeezex.hpp>
 #include <willow/popx/sumx.hpp>
 #include <willow/popx/varupdatex.hpp>
@@ -275,16 +275,16 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new L1GradOpx(op, this));
   }
 
-  case OpType::LOGSOFTMAX: {
-    return std::unique_ptr<Opx>(new LogSoftmaxOpx(op, this));
+  case OpType::SOFTMAX: {
+    return std::unique_ptr<Opx>(new SoftmaxOpx(op, this));
   }
 
-  case OpType::LOGSOFTMAXGRAD: {
-    return std::unique_ptr<Opx>(new LogSoftmaxGradOpx(op, this));
+  case OpType::SOFTMAXGRAD: {
+    return std::unique_ptr<Opx>(new SoftmaxGradOpx(op, this));
   }
 
-  case OpType::LOGSOFTMAXGRADDIRECT: {
-    return std::unique_ptr<Opx>(new LogSoftmaxGradDirectOpx(op, this));
+  case OpType::SOFTMAXGRADDIRECT: {
+    return std::unique_ptr<Opx>(new SoftmaxGradDirectOpx(op, this));
   }
 
   case OpType::NLL: {

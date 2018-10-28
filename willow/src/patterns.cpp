@@ -1,15 +1,15 @@
 #include <willow/error.hpp>
 #include <willow/ir.hpp>
-#include <willow/logsoftmax.hpp>
 #include <willow/pad.hpp>
 #include <willow/patterns.hpp>
 #include <willow/pbwrap.hpp>
+#include <willow/softmax.hpp>
 #include <willow/tensor.hpp>
 #include <willow/util.hpp>
 
 namespace willow {
 
-class LogSoftmaxGradDirectOp;
+class SoftmaxGradDirectOp;
 
 PatternTypes initPatternTypes() { return PatternTypes(); }
 
@@ -32,7 +32,7 @@ PatternTypes::PatternTypes() {
   opTypes_ = {
       {"PostNRepl", PatternType::POSTNREPL},
       {"PreUniRepl", PatternType::PREUNIREPL},
-      {"LsmGradDirect", PatternType::LSMGRADDIRECT},
+      {"SoftmaxGradDirect", PatternType::SOFTMAXGRADDIRECT},
   };
 
   std::vector<std::string> opTypeKeys;
@@ -84,11 +84,11 @@ bool PreUniRepl::matches(const Op *op) const {
   }
 }
 
-// NLLGRAD (0) -> x -> LOGSOFTMAXGRAD.
-OpType LsmGradDirect::get0() const { return OpType::NLLGRAD; }
+// NLLGRAD (0) -> x -> SOFTMAXGRAD.
+OpType SoftmaxGradDirect::get0() const { return OpType::NLLGRAD; }
 
-// NLLGRAD -> x -> LOGSOFTMAXGRAD (1).
-OpType LsmGradDirect::get1() const { return OpType::LOGSOFTMAXGRAD; }
+// NLLGRAD -> x -> SOFTMAXGRAD (1).
+OpType SoftmaxGradDirect::get1() const { return OpType::SOFTMAXGRAD; }
 
 bool FuserPattern::matches(const Op *op0) const {
   if (op0->opType == get0()) {
@@ -260,16 +260,16 @@ void PostNRepl::apply(Op *op) const {
   }
 }
 
-OpId LsmGradDirect::moveMergedIntoIr(Op *opRoot) const {
-  // The root of the pattern is an NLLGrad, 
-  // we need to move from it th the LogSoftmaxOp
-  Ir *pir     = opRoot->pir;
-  Op *nllgrad = opRoot;
-  Op *lsmgrad = nllgrad->output.tensor(0)->consumers.getOps()[0];
-  // found the LogSoftmaxOp
-  Op *lsm     = lsmgrad->getNonGradCreator();
+OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
+  // The root of the pattern is an NLLGrad,
+  // we need to move from it th the SoftmaxOp
+  Ir *pir         = opRoot->pir;
+  Op *nllgrad     = opRoot;
+  Op *softmaxgrad = nllgrad->output.tensor(0)->consumers.getOps()[0];
+  // found the SoftmaxOp
+  Op *softmax = softmaxgrad->getNonGradCreator();
 
-  return pir->moveIntoIr(std::unique_ptr<Op>(new LogSoftmaxGradDirectOp(lsm)));
+  return pir->moveIntoIr(std::unique_ptr<Op>(new SoftmaxGradDirectOp(softmax)));
 }
 
 void FuserPattern::apply(Op *op) const {
@@ -284,7 +284,7 @@ void FuserPattern::apply(Op *op) const {
   // - the inputs if op0
   // - the output of op1
   OpId id01 = moveMergedIntoIr(op);
-  Op *op01 = pir->getOp(id01);
+  Op *op01  = pir->getOp(id01);
 
   // wire-up the inputs
   pir->connectInputsFromInputMapWrapper(
