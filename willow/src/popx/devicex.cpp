@@ -283,6 +283,10 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new LogSoftmaxGradOpx(op, this));
   }
 
+  case OpType::LOGSOFTMAXGRADDIRECT: {
+    return std::unique_ptr<Opx>(new LogSoftmaxGradDirectOpx(op, this));
+  }
+
   case OpType::NLL: {
     return std::unique_ptr<Opx>(new NllOpx(op, this));
   }

@@ -15,6 +15,8 @@
 
 namespace willow {
 
+class InputMapWrapper;
+
 enum class AnchorReturnType {
   FINAL = 0, // return just the final batch of the step
   SUM,       // return the sum of all samples at the end
@@ -176,6 +178,7 @@ enum class OpType {
   L1GRAD,
   LOGSOFTMAX,
   LOGSOFTMAXGRAD,
+  LOGSOFTMAXGRADDIRECT,
   NLL,
   NLLGRAD,
   PAD,
@@ -205,6 +208,7 @@ public:
   const std::vector<int> &indices(Tensor *) const;
   const std::map<Tensor *, std::vector<int>> &indicesMap() const;
   const std::map<int, Tensor *> &tensorMap() const;
+  std::map<int, TensorId> tensorIdMap() const;
   // the number or indices (keys of tensor_map)
   int n() const;
   void append(std::stringstream &, std::string prefix, int max_id_length) const;
@@ -511,7 +515,21 @@ public:
   Op *getOp(OpId);
   const DataFlow dataFlow;
 
+  // see connectInputs, this is just an instantiation of it
+  void connectInputsFromInputMapWrapper(const InputMapWrapper &, OpId opId);
+
+  // moves ownership of created Op into the Ir,
+  // and returns the Op's OpId
+  OpId moveIntoIr(std::unique_ptr<Op> op);
+
 private:
+  // called from growFromNode and many other places where Ops created
+  // T requires functions input(int) and input_size()
+  template <typename T> void connectInputs(const T &, OpId opId);
+
+  // T requires functions output(int) and output_size()
+  template <typename T> void connectOutputs(const T &, OpId opId);
+
   // learning rate, momentum, etc.
   // Optimizer needed to construct backwards pass:
   // if momentum the Ir is different
@@ -519,7 +537,6 @@ private:
   std::string logdir;
   EarlyInfo earlyInfo;
 
-private:
   void constructForwards();
   void constructBackwards();
   // remove nodes an tensors which are not
@@ -576,22 +593,11 @@ private:
   // grad-op
   std::vector<Op *> growLossGradients();
 
-  // called from growFromNode and ...
-  // T requires functions input(int) and input_size()
-  template <typename T> void connectInputs(const T &, OpId opId);
-
-  // T requires functions output(int) and output_size()
-  template <typename T> void connectOutputs(const T &, OpId opId);
-
   onnx::ModelProto onnxModel;
 
   // create an Op from a Node
   std::unique_ptr<Op> addOp(const Node &);
   std::map<OpId, std::unique_ptr<Op>> ops;
-
-  // moves ownsership of created Op into the Ir,
-  // and returns the Op's OpId (which it already has)
-  OpId moveIntoIr(std::unique_ptr<Op> op);
 
   // total number of ops ever created
   OpId opsCounter{100};

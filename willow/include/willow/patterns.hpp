@@ -6,7 +6,7 @@
 
 namespace willow {
 
-enum class PatternType { PREUNIREPL = 0, POSTNREPL };
+enum class PatternType { PREUNIREPL = 0, POSTNREPL, LSMGRADDIRECT };
 
 class PatternTypes {
 public:
@@ -40,6 +40,37 @@ public:
   // if applied to op, would there
   // be no Anchored tensors removed?
   bool removesNoAnchored(const Op *) const;
+};
+
+// {(a), (b), (c)} -> [op0] -> (d) -> [op1] -> {(e), (f)}
+//                    ====================>
+// {(a), (b), (c)} ->        [op01]         -> {(e), (f)}
+class FuserPattern : public Pattern {
+public:
+  virtual bool matches(const Op *) const override final;
+  virtual std::vector<const Tensor *> removes(const Op *) const override final;
+  virtual void apply(Op *) const override final;
+
+private:
+  // OpType of op0 in schematic
+  virtual OpType get0() const = 0;
+  // OpType of op1 in schematic
+  virtual OpType get1() const = 0;
+  // how to create a new op01 and move it into Ir
+  virtual OpId moveMergedIntoIr(Op *baseOp) const = 0;
+};
+
+// consider,
+// (label), (probs) -> [NLLGrad]
+// [NllGrad] -> (d_probs)
+// (d_probs), (probs) -> [LogSoftmaxGrad] -> (d_acts).
+// This pattern replaces this with,
+// (label), (probs) -> [LogSoftmaxGradDirect] -> (d_acts).
+class LsmGradDirect : public FuserPattern {
+private:
+  virtual OpType get0() const override final;
+  virtual OpType get1() const override final;
+  virtual OpId moveMergedIntoIr(Op *baseOp) const override final;
 };
 
 // remove ()->[] where () is Tensor and [] is an Op and ()->[]

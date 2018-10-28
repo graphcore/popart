@@ -1,11 +1,15 @@
 #include <willow/error.hpp>
 #include <willow/ir.hpp>
+#include <willow/logsoftmax.hpp>
 #include <willow/pad.hpp>
 #include <willow/patterns.hpp>
+#include <willow/pbwrap.hpp>
 #include <willow/tensor.hpp>
 #include <willow/util.hpp>
 
 namespace willow {
+
+class LogSoftmaxGradDirectOp;
 
 PatternTypes initPatternTypes() { return PatternTypes(); }
 
@@ -25,8 +29,11 @@ bool Pattern::removesNoAnchored(const Op *op) const {
 
 PatternTypes::PatternTypes() {
 
-  opTypes_ = {{"PostNRepl", PatternType::POSTNREPL},
-              {"PreUniRepl", PatternType::PREUNIREPL}};
+  opTypes_ = {
+      {"PostNRepl", PatternType::POSTNREPL},
+      {"PreUniRepl", PatternType::PREUNIREPL},
+      {"LsmGradDirect", PatternType::LSMGRADDIRECT},
+  };
 
   std::vector<std::string> opTypeKeys;
   opTypeKeys.reserve(opTypes_.size());
@@ -77,8 +84,32 @@ bool PreUniRepl::matches(const Op *op) const {
   }
 }
 
+// NLLGRAD (0) -> x -> LOGSOFTMAXGRAD.
+OpType LsmGradDirect::get0() const { return OpType::NLLGRAD; }
+
+// NLLGRAD -> x -> LOGSOFTMAXGRAD (1).
+OpType LsmGradDirect::get1() const { return OpType::LOGSOFTMAXGRAD; }
+
+bool FuserPattern::matches(const Op *op0) const {
+  if (op0->opType == get0()) {
+    const Tensor *ten_d = op0->output.tensor(0);
+    // Consumed just once? Should be the case
+    if (ten_d->consumers.getTotal() == 1) {
+      Op *op1 = ten_d->consumers.getOps()[0];
+      if (op1->opType == get1()) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 std::vector<const Tensor *> PreUniRepl::removes(const Op *op) const {
   return {op->input.tensor(0)};
+}
+
+std::vector<const Tensor *> FuserPattern::removes(const Op *op) const {
+  return {op->output.tensor(0)};
 }
 
 // (see .hpp for ascii picture definitions)
@@ -182,6 +213,8 @@ std::vector<const Tensor *> PostNRepl::removes(const Op *op) const {
 // (see .hpp for ascii picture definitions)
 void PostNRepl::apply(Op *op) const {
 
+  Ir *pir = op->pir;
+
   // op is [*]
   Tensor *ori = op->input.tensor(0);
 
@@ -210,7 +243,6 @@ void PostNRepl::apply(Op *op) const {
     ori->consumers.extend(t_repl->consumers.getMap());
   }
   ori->consumers.decrement(op);
-  Ir *pir = op->pir;
   // delete replicates
   for (auto repl : replicates) {
     pir->tensors.remove(repl->id);
@@ -226,6 +258,62 @@ void PostNRepl::apply(Op *op) const {
   if (tcInf.nTopoLasts == 1) {
     ori->consumers.setTopoLast(tcInf.lastCon);
   }
+}
+
+OpId LsmGradDirect::moveMergedIntoIr(Op *opRoot) const {
+  // The root of the pattern is an NLLGrad, 
+  // we need to move from it th the LogSoftmaxOp
+  Ir *pir     = opRoot->pir;
+  Op *nllgrad = opRoot;
+  Op *lsmgrad = nllgrad->output.tensor(0)->consumers.getOps()[0];
+  // found the LogSoftmaxOp
+  Op *lsm     = lsmgrad->getNonGradCreator();
+
+  return pir->moveIntoIr(std::unique_ptr<Op>(new LogSoftmaxGradDirectOp(lsm)));
+}
+
+void FuserPattern::apply(Op *op) const {
+  Ir *pir = op->pir;
+
+  Op *op0      = op;
+  Tensor *out0 = op0->output.tensor(0);
+  Op *op1      = out0->consumers.getOps()[0];
+  Tensor *out1 = op1->output.tensor(0);
+
+  // create the replacement op01, connect it to
+  // - the inputs if op0
+  // - the output of op1
+  OpId id01 = moveMergedIntoIr(op);
+  Op *op01 = pir->getOp(id01);
+
+  // wire-up the inputs
+  pir->connectInputsFromInputMapWrapper(
+      InputMapWrapper(op0->input.tensorIdMap()), id01);
+  for (auto index_tensor : op0->input.tensorMap()) {
+    Tensor *in0 = index_tensor.second;
+    in0->consumers.decrement(op0);
+    // Send any topological constraints from op0 to op01
+    if (in0->consumers.hasTopoLast()) {
+      if (in0->consumers.getTopoLast() == op0) {
+        in0->consumers.removeTopoLast();
+        in0->consumers.setTopoLast(op01);
+      }
+    }
+    if (in0->consumers.hasWeakTopoCons()) {
+      throw error("WeakTopoCons needs handling in this Fuser Pattern.");
+    }
+  }
+
+  // we can't use connectOutputs, as that expects
+  // that the output Tensor doesn't exist and must
+  // be created. We rewire outputs manually:
+  op01->output.insert(0, out1);
+  out1->resetProducer(op01);
+
+  // remove the tensor and nodes
+  pir->tensors.remove(out0->id);
+  pir->eraseOp(op0->id);
+  pir->eraseOp(op1->id);
 }
 
 } // namespace willow

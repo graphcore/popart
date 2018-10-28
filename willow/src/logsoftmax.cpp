@@ -1,3 +1,4 @@
+#include <willow/error.hpp>
 #include <willow/logsoftmax.hpp>
 #include <willow/tensor.hpp>
 
@@ -51,6 +52,37 @@ LogSoftmaxGradOp::createLogSoftmaxGradInfo() const {
   // the (1-sparse) gradient of the output will be used to determine
   // which index gets 1 - p, instead of - p .
   return {{0, 0, GradOpInType::GRADOUT}, {1, 0, GradOpInType::OUT}};
+}
+
+LogSoftmaxGradDirectOp::LogSoftmaxGradDirectOp(Op *op)
+    : Op({"LogSoftmaxGradDirect", // op_type
+          op->pir,                //
+          {},                     // no Attributes
+          getWillowDomain()}) {
+  if (op->opType != OpType::LOGSOFTMAX) {
+    throw error(
+        "Require LogSoftmaxOp in LogSoftmaxGradDirectOp constructor, not " +
+        op->op_type());
+  }
+  logsoftmaxOp = static_cast<LogSoftmaxOp *>(op);
+}
+
+std::vector<std::unique_ptr<Op>> LogSoftmaxGradDirectOp::getGradOps() {
+  throw error(
+      "LogSoftmaxGradDirectOp is not a true non-grad op, no getGradOps");
+}
+
+LogSoftmaxOp *LogSoftmaxGradDirectOp::getLogSofmaxOp() const {
+  return logsoftmaxOp;
+}
+
+std::unique_ptr<Op> LogSoftmaxGradDirectOp::clone() const {
+  throw error("Unexpected (but valid) request to clone LogSoftmaxGradDirectOp");
+}
+
+void LogSoftmaxGradDirectOp::setup() {
+  // gradient of activations has same shape as probabilities
+  output.tensor(0)->info = input.tensor(0)->info;
 }
 
 } // namespace willow

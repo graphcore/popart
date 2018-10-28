@@ -163,7 +163,7 @@ Tensor::Tensor(TensorId n, TensorType t, Ir *g)
 void Consumers::decrement(Op *op) {
   auto found = consumers_m.find(op);
   if (found == consumers_m.end()) {
-    throw error("cannot decrement non-existant consumer");
+    throw error("cannot decrement non-existant consumer, " + op->str());
   }
   --(found->second);
   if (found->second == 0) {

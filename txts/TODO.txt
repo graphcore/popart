@@ -115,4 +115,8 @@ Questions:
 1) how should I map the tensor?
 2) what API funtion should I call?
 
+28/10
+Validation loss, how will I compute it? 
+Do I need to split step() into fwd() and bwd()? Probably, yes
+
 

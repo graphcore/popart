@@ -136,9 +136,16 @@ writer.write(dirname=outputdir)
 
 # C++ class reads from file(s) and creates backwards graph
 pynet = WillowNet(
-    os.path.join(outputdir, "model0.onnx"), writer.earlyInfo, writer.dataFeed,
-    writer.losses, writer.optimizer, [], outputdir,
-    ["PreUniRepl", "PostNRepl"])
+    os.path.join(outputdir, "model0.onnx"),
+    writer.earlyInfo,
+    writer.dataFeed,
+    writer.losses,
+    writer.optimizer,
+    [],
+    outputdir,
+    ["PreUniRepl", "PostNRepl", "LsmGradDirect"
+     ]  # The optimization passes to run, see patterns.hpp
+)
 
 allDotPrefixes = [x[0:-4] for x in os.listdir(outputdir) if ".dot" in x]
 print("Will generate graph pdfs for all of:")

@@ -551,6 +551,14 @@ Ir::Ir(const IrBundle &gb)
       patterns.emplace_back(std::unique_ptr<Pattern>(new PostNRepl));
       break;
     }
+
+    case PatternType::LSMGRADDIRECT: {
+      patterns.emplace_back(std::unique_ptr<Pattern>(new LsmGradDirect));
+      break;
+    }
+
+    default:
+      throw error("unrecognised PatternType");
     }
   }
 
@@ -1429,6 +1437,14 @@ const std::map<int, Tensor *> &TensorIndexMap::tensorMap() const {
   return tensor_map;
 }
 
+std::map<int, TensorId> TensorIndexMap::tensorIdMap() const {
+  std::map<int, TensorId> M;
+  for (auto &index_tensor : tensorMap()) {
+    M[index_tensor.first] = index_tensor.second->id;
+  }
+  return M;
+}
+
 Op *Op::getNonGradCreator() const {
   throw error("No `get non grad op' for " + op_type() + " (yet?)");
 }
@@ -1505,6 +1521,10 @@ template <typename T> void Ir::connectInputs(const T &inContainer, OpId opId) {
   op->imposeTopoCons();
 }
 
+void Ir::connectInputsFromInputMapWrapper(const InputMapWrapper &in, OpId id) {
+  connectInputs(in, id);
+}
+
 template <typename T>
 void Ir::connectOutputs(const T &outContainer, OpId opId) {
   for (int outIndex = 0; outIndex < outContainer.output_size(); ++outIndex) {
@@ -1534,6 +1554,7 @@ OpTypes::OpTypes() {
               {"L1Grad", OpType::L1GRAD},
               {"LogSoftmax", OpType::LOGSOFTMAX},
               {"LogSoftmaxGrad", OpType::LOGSOFTMAXGRAD},
+              {"LogSoftmaxGradDirect", OpType::LOGSOFTMAXGRADDIRECT},
               {"Nll", OpType::NLL},
               {"NllGrad", OpType::NLLGRAD},
               {"Pad", OpType::PAD},
@@ -1553,7 +1574,7 @@ OpTypes::OpTypes() {
 const OpType &OpTypes::get(std::string op_type) const {
   auto found = opTypes_.find(op_type);
   if (found == opTypes_.end()) {
-    throw error("No OpType found for " + op_type);
+    throw error("No OpType found for `" + op_type + "'");
   }
   return found->second;
 }
@@ -1663,6 +1684,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::NLL:
   case OpType::L1:
     throw error("Loss Ops not constructable from Node");
+
+  case OpType::LOGSOFTMAXGRADDIRECT:
+    throw error("Non-ONNX Ops not constructable from Node");
 
   default: { throw error("No class for " + node.op_type()); }
   }

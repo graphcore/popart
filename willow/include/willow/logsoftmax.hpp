@@ -27,6 +27,21 @@ private:
   LogSoftmaxOp *logsoftmaxOp;
 };
 
+// not a gradient of a single Op, so not inheriting from GradOp
+class LogSoftmaxGradDirectOp : public Op {
+public:
+  // where Op in this constructor must be a LogSoftMaxOp
+  LogSoftmaxGradDirectOp(Op *);
+  virtual std::unique_ptr<Op> clone() const override final;
+  // this Op has no Grad Ops, throw error if called
+  virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
+  virtual void setup() override final;
+  LogSoftmaxOp *getLogSofmaxOp() const;
+
+private:
+  LogSoftmaxOp *logsoftmaxOp;
+};
+
 } // namespace willow
 
 #endif
