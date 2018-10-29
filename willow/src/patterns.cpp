@@ -271,7 +271,7 @@ OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
   Op *softmax = softmaxgrad->getNonGradCreator();
 
   return pir->moveIntoIr(std::unique_ptr<Op>(new SoftmaxGradDirectOp(
-      softmax, static_cast<NllGradOp *>(nllgrad)->nlll())));
+      softmax, dynamic_cast<NllGradOp *>(nllgrad)->nlll())));
 }
 
 void FuserPattern::apply(Op *op) const {

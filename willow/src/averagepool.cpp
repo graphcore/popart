@@ -47,11 +47,25 @@ const std::vector<GradInOutMapper> &AveragePoolGradOp::gradInputInfo() const {
   return inInfo;
 }
 
+// The input to the average pool (PrePooled) is
+// the input to the grad op at index 0.
+int AveragePoolGradOp::getPrePooledIn() const { return 0; }
+
+int AveragePoolGradOp::getPooledIn() const { return 1; }
+
+int AveragePoolGradOp::getGradPooledIn() const { return 2; }
+
 std::vector<GradInOutMapper>
 AveragePoolGradOp::createAveragePoolGradInfo() const {
-  // the input to the grad-op at index 0 is the gradient
-  // of the output of the non-grad-op at index 0.
-  return {{0, 0, GradOpInType::GRADOUT}};
+  // the input to the grad-op at index getGradPooledIn()
+  // is the gradient of the output of the average pool
+  // at index 0.
+  // the input to the grad-op at index getPooledIn()
+  // is the output of the average pool at index 0
+  // etc for getPrePooledIn()
+  return {{getGradPooledIn(), 0, GradOpInType::GRADOUT},
+          {getPooledIn(), 0, GradOpInType::OUT},
+          {getPrePooledIn(), 0, GradOpInType::IN}};
 }
 
 const std::map<int, int> &AveragePoolGradOp::gradOutToNonGradIn() const {
@@ -73,7 +87,7 @@ std::map<int, int> AveragePoolGradOp::createAveragePoolGradOutToIn() const {
 
 void AveragePoolGradOp::setup() {
   output.tensor(0)->info =
-      static_cast<AveragePoolOp *>(getNonGradCreator())->input.tensor(0)->info;
+      dynamic_cast<AveragePoolOp *>(getNonGradCreator())->input.tensor(0)->info;
 }
 
 } // namespace willow

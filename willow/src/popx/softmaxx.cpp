@@ -81,10 +81,6 @@ void SoftmaxGradDirectOpx::grow() const {
   TensorId labelId           = sfmgd->nlll()->labelTensorId();
   TensorId probsId           = sfmgd->nlll()->probsTensorId();
 
-  std::stringstream ss;
-  appendSequence(ss, get(probsId).shape());
-  std::cout << ss.str() << std::endl;
-
   // 1 at position "label", 0 elsewhere.
   auto oneHot =
       graph().clone(get(probsId).elementType(), get(probsId), "..OneHot");

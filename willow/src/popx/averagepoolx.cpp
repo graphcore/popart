@@ -1,6 +1,7 @@
 #include <willow/averagepool.hpp>
 #include <willow/error.hpp>
 #include <willow/popx/averagepoolx.hpp>
+#include <willow/util.hpp>
 
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"
@@ -32,6 +33,30 @@ void AveragePoolOpx::grow() const {
                               get(inId(0)),
                               step(),
                               idStr()));
+}
+
+void AveragePoolGradOpx::grow() const {
+  AveragePoolGradOp *agOp = getAveragePoolGradOp();
+  AveragePoolOp *aOp = dynamic_cast<AveragePoolOp *>(agOp->getNonGradCreator());
+
+  TensorId prePooledId  = inId(agOp->getPrePooledIn());
+  TensorId pooledId     = inId(agOp->getPooledIn());
+  TensorId gradPooledId = inId(agOp->getGradPooledIn());
+
+  insert(outId(0),
+         popnn::pooling::poolInputGradient(
+             graph(),
+             popnn::PoolingType::AVG, // poolingType
+             aOp->spatialK_szt(),     // kernelShape
+             aOp->strides_u32(),      // stride
+             aOp->lowerPads_i32(),    // inputPaddingLower
+             aOp->upperPads_i32(),
+             get(prePooledId),  // in
+             get(pooledId),     // pooled
+             get(gradPooledId), // pooledGradient
+             step(),            // prog
+             idStr()            // debugPredix
+             ));
 }
 
 AveragePoolGradOpx::AveragePoolGradOpx(Op *op, Devicex *devicex)

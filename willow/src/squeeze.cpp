@@ -23,7 +23,7 @@ void SqueezeOp::setup() {
 
 void SqueezeGradOp::setup() {
   output.tensor(0)->info =
-      static_cast<SqueezeOp *>(getNonGradCreator())->input.tensor(0)->info;
+      dynamic_cast<SqueezeOp *>(getNonGradCreator())->input.tensor(0)->info;
 }
 
 SqueezeGradOp::SqueezeGradOp(SqueezeOp *op_)

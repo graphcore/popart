@@ -22,6 +22,7 @@ class AveragePoolGradOpx : public Opx {
 public:
   AveragePoolGradOpx(Op *, Devicex *);
   AveragePoolGradOp *getAveragePoolGradOp() const;
+  void grow() const override final;
 };
 
 } // namespace popx

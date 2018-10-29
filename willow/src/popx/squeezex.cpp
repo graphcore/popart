@@ -30,7 +30,8 @@ SqueezeGradOpx::SqueezeGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 void SqueezeGradOpx::grow() const {
   auto outTensor = cloneNcopy(inId(0));
-  outTensor.reshape(getSqueezeGradOp()->output.tensor(0)->info.shape_szt());
+  outTensor =
+      outTensor.reshape(getSqueezeGradOp()->output.tensor(0)->info.shape_szt());
   insert(outId(0), outTensor);
 }
 

@@ -30,10 +30,6 @@ void NllOpx::grow() const {
   // probs = probs.reshape({probs.dim(0), probs.numElements() / probs.dim(0)});
   auto oneHot = graph().clone(probs.elementType(), probs, "..OneHot");
 
-  std::stringstream ss;
-  appendSequence(ss, get(probsId).shape());
-  std::cout << "nllopx : " << ss.str() << std::endl;
-
   popops::encodeOneHot(graph(), get(labelId), oneHot, step(), "..Nll");
 
   // oneHot, from a tensor which is sparse with a single 1 per row,
