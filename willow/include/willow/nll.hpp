@@ -17,10 +17,7 @@ public:
   int labelIn() const;
   TensorId probsTensorId() const;
   TensorId labelTensorId() const;
-
-  virtual std::unique_ptr<Loss> clone() const override final {
-    return std::unique_ptr<Loss>(new NllLoss(*this));
-  }
+  virtual std::unique_ptr<Loss> clone() const override final;
 };
 
 class NllOp : public Op {

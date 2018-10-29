@@ -118,6 +118,7 @@ public:
   TensorInfo info;
 
   Op *getProducer();
+  const Op *getProducer() const;
   void setProducer(Op *);
   void resetProducer(Op *);
   bool hasProducer() const;

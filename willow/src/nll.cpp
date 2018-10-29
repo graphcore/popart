@@ -9,6 +9,10 @@ std::unique_ptr<Op> NllOp::clone() const {
   return std::unique_ptr<Op>(new NllOp(*this));
 }
 
+std::unique_ptr<Loss> NllLoss::clone() const {
+  return std::unique_ptr<Loss>(new NllLoss(*this));
+}
+
 std::vector<std::unique_ptr<Op>> NllOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(std::unique_ptr<Op>(new NllGradOp(this)));
@@ -43,9 +47,9 @@ TensorId NllLoss::probsTensorId() const { return input(probsIn()); }
 TensorId NllLoss::labelTensorId() const { return input(labelIn()); }
 
 void NllOp::setup() {
-  // output is a scalar of the same type as probs
-  output.tensor(0)->info.set(input.tensor(nlll()->probsIn())->info.dataType(),
-                             {});
+  const auto &probsInInfo = input.tensor(nlll()->probsIn())->info;
+  // output is a 1-d tensor, dimension size : batchsize
+  output.tensor(0)->info.set(probsInInfo.dataType(), {probsInInfo.dim(0)});
 }
 
 const NllLoss *NllOp::nlll() const { return nllloss_; }

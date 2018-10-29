@@ -1,6 +1,15 @@
 #include <willow/error.hpp>
+#include <willow/nll.hpp>
 #include <willow/popx/softmaxx.hpp>
 #include <willow/softmax.hpp>
+#include <willow/util.hpp>
+
+#pragma clang diagnostic push // start ignoring warnings
+#pragma clang diagnostic ignored "-Weverything"
+#include "popops/Encoding.hpp"
+#include <popnn/NonLinearity.hpp>
+#include <popops/ElementWise.hpp>
+#pragma clang diagnostic pop // stop ignoring warnings
 
 namespace willow {
 namespace popx {
@@ -12,7 +21,15 @@ SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void SoftmaxOpx::grow() const {
-  throw error("SoftmaxOpx::grow not implemented yet");
+
+  // There is only an in-place poplibs Softmax. We therefore clone first,
+  auto outTensor = cloneNcopy(inId(0));
+
+  // and apply the inplace softmax,
+  popnn::nonLinearity(
+      graph(), popnn::NonLinearityType::SOFTMAX, outTensor, step(), outId(0));
+
+  insert(outId(0), outTensor);
 }
 
 SoftmaxOp *SoftmaxOpx::getSoftmaxOp() const {
@@ -38,6 +55,53 @@ SoftmaxGradDirectOpx::SoftmaxGradDirectOpx(Op *op, Devicex *devicex)
 
 SoftmaxGradDirectOp *SoftmaxGradDirectOpx::getSoftmaxGradDirectOp() const {
   return dynamic_cast<SoftmaxGradDirectOp *>(op_p);
+}
+
+// The maths:
+// loss = -ln(p_j), where j is the true class
+// d(loss)/d(p_i) = 0, d(loss)/d(p_j) = -1/p_j
+// p_j = exp(v_j) / S
+// where S = sum_{all indices k} [ exp(v_k) ]
+// By the quotient rule:
+// d(p_j)/d(v_i)  = (0 - exp(v_j).exp(v_i)) / S^2
+//                = -p_i.p_j
+// d(p_j)/d(v_j)  = (exp(v_j).S - exp(v_j).exp(v_j)) / S^2
+//                = p_j - p_i.p_j
+// Then, using the chain rule,
+// d(loss)/d(v_i) = p_i
+// d(loss)/d(v_j) = p_j - 1
+//
+// -----
+// |   |
+// |   |
+// -----
+
+void SoftmaxGradDirectOpx::grow() const {
+  SoftmaxGradDirectOp *sfmgd = getSoftmaxGradDirectOp();
+  TensorId labelId           = sfmgd->nlll()->labelTensorId();
+  TensorId probsId           = sfmgd->nlll()->probsTensorId();
+
+  std::stringstream ss;
+  appendSequence(ss, get(probsId).shape());
+  std::cout << ss.str() << std::endl;
+
+  // 1 at position "label", 0 elsewhere.
+  auto oneHot =
+      graph().clone(get(probsId).elementType(), get(probsId), "..OneHot");
+  popops::encodeOneHot(graph(), get(labelId), oneHot, step(), "..Nll");
+  // -1 at position "label", 0 elsewhere.
+  popops::mapInPlace(
+      graph(), popops::expr::UnaryOpType::NEGATE, oneHot, step(), "..neg");
+
+  // p - 1 at position "label" label, p elsewhere.
+  popops::mapInPlace(graph(),
+                     popops::expr::BinaryOpType::ADD,
+                     oneHot,
+                     get(probsId),
+                     step(),
+                     "..sub");
+
+  insert(outId(0), oneHot);
 }
 
 } // namespace popx

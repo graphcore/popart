@@ -64,7 +64,7 @@ void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
                 " in pir, is this a valid poplar::Tensor?");
   }
 
-  // confirm shapes agree (up to squeezing out the ones)
+  // confirm shapes agree (up to squeezing out the extra 1s)
   auto expectedShape = pir->tensors.get(id)->info.shape_szt();
 
   if (squeeze(pt.shape()) != squeeze(expectedShape)) {

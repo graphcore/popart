@@ -72,7 +72,8 @@ std::map<int, int> AveragePoolGradOp::createAveragePoolGradOutToIn() const {
 }
 
 void AveragePoolGradOp::setup() {
-  output.tensor(0)->info = input.tensor(0)->info;
+  output.tensor(0)->info =
+      static_cast<AveragePoolOp *>(getNonGradCreator())->input.tensor(0)->info;
 }
 
 } // namespace willow

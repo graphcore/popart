@@ -1,5 +1,6 @@
 #include <willow/error.hpp>
 #include <willow/ir.hpp>
+#include <willow/nll.hpp>
 #include <willow/pad.hpp>
 #include <willow/patterns.hpp>
 #include <willow/pbwrap.hpp>
@@ -269,7 +270,8 @@ OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
   // found the SoftmaxOp
   Op *softmax = softmaxgrad->getNonGradCreator();
 
-  return pir->moveIntoIr(std::unique_ptr<Op>(new SoftmaxGradDirectOp(softmax)));
+  return pir->moveIntoIr(std::unique_ptr<Op>(new SoftmaxGradDirectOp(
+      softmax, static_cast<NllGradOp *>(nllgrad)->nlll())));
 }
 
 void FuserPattern::apply(Op *op) const {

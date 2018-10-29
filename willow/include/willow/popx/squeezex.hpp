@@ -22,6 +22,7 @@ class SqueezeGradOpx : public Opx {
 public:
   SqueezeGradOpx(Op *, Devicex *);
   SqueezeGradOp *getSqueezeGradOp() const;
+  virtual void grow() const override final;
 };
 
 } // namespace popx

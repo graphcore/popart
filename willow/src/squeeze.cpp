@@ -15,9 +15,16 @@ std::unique_ptr<Op> SqueezeOp::clone() const {
   return std::unique_ptr<Op>(new SqueezeOp(*this));
 }
 
-void SqueezeOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
+void SqueezeOp::setup() {
+  output.tensor(0)->info = {input.tensor(0)->info.dataType(),
+                            squeeze(input.tensor(0)->info.shape())};
+}
+// input.tensor(0)->info; }
 
-void SqueezeGradOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
+void SqueezeGradOp::setup() {
+  output.tensor(0)->info =
+      static_cast<SqueezeOp *>(getNonGradCreator())->input.tensor(0)->info;
+}
 
 SqueezeGradOp::SqueezeGradOp(SqueezeOp *op_)
     : GradOp({"SqueezeGrad", op_->pir, {}, getWillowDomain()}), squeezeOp(op_) {

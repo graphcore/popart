@@ -29,6 +29,7 @@ class SoftmaxGradDirectOpx : public Opx {
 public:
   SoftmaxGradDirectOpx(Op *, Devicex *);
   SoftmaxGradDirectOp *getSoftmaxGradDirectOp() const;
+  void grow() const override final;
 };
 
 } // namespace popx
