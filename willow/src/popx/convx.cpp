@@ -100,10 +100,26 @@ void ConvDataGradOpx::grow() const {
       dataGradParams,                          // params
       true,                                    // transposeAndFlipWeights,
       dv_p->progs.step(),                      // prog
-      std::to_string(op_p->id),                // debugPrefix
+      idStr(),                                 // debugPrefix
       enigma::toPoplibsConvOptions(dv_p->bwdConvOptions), // options
       &dv_p->convCache                                    // cache
   );
+}
+
+void ConvWeightsGradOpx::grow() const {
+
+  ConvWeightsGradOp *gradOp = getConvWeightsGradOp();
+  ConvOp *convOp            = gradOp->getConvOp();
+
+  poplar::Tensor wGrad = poplin::calculateWeightDeltas(
+      graph(),                                           // graph
+      get(inId(gradOp->getGradConvolvedIn())),           // zDeltas,
+      get(inId(gradOp->getPreConvolvedIn())),            // activations,
+      getFwdConvParams(convOp),                          // params
+      step(),                                            // prog
+      idStr(),                                           // debugPrefix
+      enigma::toPoplibsConvOptions(dv_p->wuConvOptions), // options
+      &dv_p->convCache);                                 // cache
 }
 
 ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {

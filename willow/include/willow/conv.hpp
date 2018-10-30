@@ -38,6 +38,14 @@ public:
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
   virtual void setup() override final;
 
+  // The input index where the gradient of
+  // the output of convolution is inserted to this Op
+  int getGradConvolvedIn() const;
+
+  // The input index where the input to the
+  // convolution (ConvOp) is inserted to this Op
+  int getPreConvolvedIn() const;
+
 private:
   std::vector<GradInOutMapper> createConvWeightsGradInfo() const;
   std::map<int, int> createConvWeightsGradOutToIn() const;

@@ -86,12 +86,16 @@ const std::map<int, int> &ConvWeightsGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
+int ConvWeightsGradOp::getGradConvolvedIn() const { return 0; }
+
+int ConvWeightsGradOp::getPreConvolvedIn() const { return 1; }
+
 std::vector<GradInOutMapper>
 ConvWeightsGradOp::createConvWeightsGradInfo() const {
-  // input at index 0 : gradient of output of conv
-  // input at index 1 : data input to conv
-  return {{0, 0, GradOpInType::GRADOUT},
-          {1, convOp->dataInIndex(), GradOpInType::IN}};
+  // input at index getGradConvolvedIn() (0) : gradient of output of conv
+  // input at index getPreConvolvedIn() (1)  : data input to conv
+  return {{getGradConvolvedIn(), 0, GradOpInType::GRADOUT},
+          {getPreConvolvedIn(), convOp->dataInIndex(), GradOpInType::IN}};
 }
 
 ConvDataGradOp::ConvDataGradOp(ConvOp *op_)

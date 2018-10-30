@@ -52,6 +52,7 @@ class ConvWeightsGradOpx : public Opx {
 public:
   ConvWeightsGradOpx(Op *, Devicex *);
   ConvWeightsGradOp *getConvWeightsGradOp() const;
+  virtual void grow() const override final;
 };
 
 } // namespace popx
