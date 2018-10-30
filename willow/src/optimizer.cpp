@@ -50,7 +50,7 @@ void ConstSGD::setTensorData(Tensor *) const {
 }
 
 std::unique_ptr<Op> ConstSGD::createOp(TensorId varId, Ir *pir) const {
-  return std::unique_ptr<Op>(new ConstSGDVarUpdateOp(varId, pir));
+  return std::unique_ptr<Op>(new ConstSGDVarUpdateOp(varId, pir, learnRate()));
 }
 
 std::vector<TensorId> ConstSGD::getInputIds(TensorId varId) const {

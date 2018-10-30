@@ -18,6 +18,7 @@ public:
   // write optimizer-specific tensors (learning rates, etc.) to Device
   virtual void optimizerFromHost()  = 0;
   virtual void step(const StepIO &) = 0;
+  const Ir *ir() const;
 
 protected:
   const Ir *pir;

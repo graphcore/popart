@@ -35,11 +35,11 @@ std::unique_ptr<Op> ConvOp::clone() const {
 }
 
 void ConvWeightsGradOp::setup() {
-  output.tensor(0)->info = input.tensor(convOp->weightsInIndex())->info;
+  output.tensor(0)->info = convOp->input.tensor(convOp->weightsInIndex())->info;
 }
 
 void ConvDataGradOp::setup() {
-  output.tensor(0)->info = input.tensor(convOp->dataInIndex())->info;
+  output.tensor(0)->info = convOp->input.tensor(convOp->dataInIndex())->info;
 }
 
 void ConvOp::setup0() {

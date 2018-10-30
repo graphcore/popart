@@ -21,6 +21,7 @@ class ConstSGDVarUpdateOpx : public Opx {
 public:
   ConstSGDVarUpdateOpx(Op *, Devicex *);
   ConstSGDVarUpdateOp *getConstSGDVarUpdateOp() const;
+  void grow() const override final;
 };
 
 } // namespace popx

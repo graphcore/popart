@@ -31,8 +31,12 @@ public:
 
 class ConstSGDVarUpdateOp : public VarUpdateOp {
 public:
-  ConstSGDVarUpdateOp(TensorId, Ir *);
+  ConstSGDVarUpdateOp(TensorId, Ir *, float learnRate);
   virtual std::unique_ptr<Op> clone() const override final;
+  float getLearnRate() const;
+
+private:
+  float learnRate;
 };
 
 } // namespace willow

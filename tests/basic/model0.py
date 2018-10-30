@@ -118,7 +118,7 @@ class ModelWriter0(PytorchNetWriter):
             inNames=inNames,
             outNames=outNames,
             losses=losses,
-            optimizer=SGD(0.001),
+            optimizer=ConstSGD(0.001),
             earlyInfo=earlyInfo,
             dataFeed=dataFeed,
             # perform tests, using framework as ground truth

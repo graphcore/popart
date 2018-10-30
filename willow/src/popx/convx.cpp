@@ -104,6 +104,8 @@ void ConvDataGradOpx::grow() const {
       enigma::toPoplibsConvOptions(dv_p->bwdConvOptions), // options
       &dv_p->convCache                                    // cache
   );
+
+  insert(op_p->output.id(0), outTensor);
 }
 
 void ConvWeightsGradOpx::grow() const {
@@ -120,6 +122,8 @@ void ConvWeightsGradOpx::grow() const {
       idStr(),                                           // debugPrefix
       enigma::toPoplibsConvOptions(dv_p->wuConvOptions), // options
       &dv_p->convCache);                                 // cache
+
+  insert(op_p->output.id(0), wGrad);
 }
 
 ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {

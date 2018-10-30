@@ -2,6 +2,11 @@
 #include <willow/popx/varupdatex.hpp>
 #include <willow/varupdate.hpp>
 
+#pragma clang diagnostic push // start ignoring warnings
+#pragma clang diagnostic ignored "-Weverything"
+#include <popops/ScaledAdd.hpp>
+#pragma clang diagnostic pop // stop ignoring warnings
+
 namespace willow {
 namespace popx {
 
@@ -24,6 +29,18 @@ ConstSGDVarUpdateOpx::ConstSGDVarUpdateOpx(Op *op, Devicex *devicex)
 
 ConstSGDVarUpdateOp *ConstSGDVarUpdateOpx::getConstSGDVarUpdateOp() const {
   return dynamic_cast<ConstSGDVarUpdateOp *>(op_p);
+}
+
+void ConstSGDVarUpdateOpx::grow() const {
+  auto vu_op = getConstSGDVarUpdateOp();
+  popops::scaledAddTo(graph(),
+                      get(inId(vu_op->getVarIndex())),     // weights
+                      get(inId(vu_op->getVarGradIndex())), // weightDeltas
+                      -1.0f * (vu_op->getLearnRate()),
+                      step(),
+                      idStr());
+
+  // no poplar::Tensors to insert!
 }
 
 } // namespace popx

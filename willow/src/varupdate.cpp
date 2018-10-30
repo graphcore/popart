@@ -32,8 +32,10 @@ std::unique_ptr<Op> SGDVarUpdateOp::clone() const {
 
 int SGDVarUpdateOp::getLearnRateIndex() { return 2; }
 
-ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_, Ir *pir)
-    : VarUpdateOp("ConstSGDVarUpdate", varId_, pir) {}
+ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_, Ir *pir, float lr_)
+    : VarUpdateOp("ConstSGDVarUpdate", varId_, pir), learnRate(lr_) {}
+
+float ConstSGDVarUpdateOp::getLearnRate() const { return learnRate; }
 
 std::unique_ptr<Op> ConstSGDVarUpdateOp::clone() const {
   return std::unique_ptr<Op>(new ConstSGDVarUpdateOp(*this));
