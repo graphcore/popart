@@ -26,6 +26,8 @@ SoftmaxGradOp::SoftmaxGradOp(SoftmaxOp *op_)
 
 Op *SoftmaxGradOp::getNonGradCreator() const { return softmaxOp; }
 
+SoftmaxOp *SoftmaxGradOp::getSoftmaxOp() const { return softmaxOp; }
+
 const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createSoftmaxGradInfo();
   return inInfo;

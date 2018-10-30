@@ -21,6 +21,10 @@ void AveragePoolOp::setSpatialK() {
   }
 }
 
+AveragePoolOp *AveragePoolGradOp::getAveragePoolOp() const {
+  return averagePoolOp;
+}
+
 std::unique_ptr<Op> AveragePoolOp::clone() const {
   return std::unique_ptr<Op>(new AveragePoolOp(*this));
 }
@@ -86,8 +90,7 @@ std::map<int, int> AveragePoolGradOp::createAveragePoolGradOutToIn() const {
 }
 
 void AveragePoolGradOp::setup() {
-  output.tensor(0)->info =
-      dynamic_cast<AveragePoolOp *>(getNonGradCreator())->input.tensor(0)->info;
+  output.tensor(0)->info = getAveragePoolOp()->input.tensor(0)->info;
 }
 
 } // namespace willow

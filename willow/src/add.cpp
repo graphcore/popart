@@ -15,6 +15,8 @@ std::vector<std::unique_ptr<Op>> AddOp::getGradOps() {
   return upops;
 }
 
+AddOp *AddGradOp::getAddOp() const { return addOp; }
+
 void AddOp::setup() {
   output.tensor(0)->info = npOut(input.tensor(0)->info, input.tensor(1)->info);
 }

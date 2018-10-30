@@ -24,6 +24,8 @@ ReluGradOp::ReluGradOp(ReluOp *op_)
 
 Op *ReluGradOp::getNonGradCreator() const { return reluOp; }
 
+ReluOp *ReluGradOp::getReluOp() const { return reluOp; }
+
 const std::vector<GradInOutMapper> &ReluGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createReluGradInfo();
   return inInfo;

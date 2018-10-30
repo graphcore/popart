@@ -499,7 +499,7 @@ public:
   std::vector<Tensor *> dataStreamTensors() const;
   ~Ir();
   // split ConvOp with bias into two Ops, a ConvOp
-  // followed by an x Op TODO : move to Patterns
+  // followed by an x Op TODO : move to Patterns (see task T5098)
   void splitConvBias();
   std::vector<Op *> opsOfType(OpType);
   void inferTensorInfos();

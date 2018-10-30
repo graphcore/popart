@@ -697,7 +697,8 @@ void Ir::addRecompute() {
     throw error("ILE : sizes of vectors do not match");
   }
 
-  // TODO : this should change. resnet-50 has way more memory for early layers.
+  // TODO (see T5099)
+  // this should change. resnet-50 has way more memory for early layers.
   // see
   // https://github.com/albanie/convnet-burden/blob/master/reports/resnet18.md
   // It should take in memoryOfLives, make intervals on cumulative memory.

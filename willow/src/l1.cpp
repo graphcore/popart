@@ -58,6 +58,10 @@ Op *L1GradOp::getNonGradCreator() const {
   return pir->getOp(l1OpId);
 }
 
+L1Op *L1GradOp::getL1Op() const {
+  return dynamic_cast<L1Op *>(pir->getOp(l1OpId));
+}
+
 const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createL1LossGradInfo();
   return inInfo;

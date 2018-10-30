@@ -30,8 +30,10 @@ void WillowNet::updateOptimizer(const Optimizer *optimizer) {
 }
 
 void WillowNet::setDevice(std::string deviceString) {
-  // TODO : here, need macro around specific device types,
-  // might not have enabled to build with them.
+  // TODO(See task T5103) : here, need macro around specific device types,
+  // might not have enabled to build with them. (in CMakeLists.txt
+  // there is POPLAR_BACKEND option)
+
   if (deviceString == "IPU") {
     device_.reset(new popx::Devicex(pir.get()));
   } else {

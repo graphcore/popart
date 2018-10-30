@@ -31,6 +31,8 @@ class ConvWeightsGradOp : public GradOp {
 public:
   ConvWeightsGradOp(ConvOp *);
   virtual Op *getNonGradCreator() const override final;
+  // equivalent of getNonGradCreator, but no downcasting
+  ConvOp *getConvOp() const;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
@@ -46,10 +48,17 @@ class ConvDataGradOp : public GradOp {
 public:
   ConvDataGradOp(ConvOp *);
   virtual Op *getNonGradCreator() const override final;
+  // equivalent of getNonGradCreator, but no downcasting
+  ConvOp *getConvOp() const;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
   virtual void setup() override final;
+
+  // The input index where the weight tensor is inserted
+  int getWeightsIn() const;
+  // The input index where the gradient of the output is inserted
+  int getGradConvolvedIn() const;
 
 private:
   std::vector<GradInOutMapper> createConvDataGradInfo() const;

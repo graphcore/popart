@@ -115,13 +115,14 @@ std::vector<poplar::program::Program> PopPrograms::progs() {
 poplar::Graph &Devicex::graph() { return *pGraph; }
 
 Devicex::Devicex(const Ir *pir) : willow::Device(pir), tensors(pir) {
+  // TODO, better device handling (see T5105)
   poplar::IPUModel ipumodel;
   popDevice = ipumodel.createDevice();
   if (!popDevice.attach()) {
     throw error("failed to attach to popDevice");
   }
 
-  // TODO : if inference, forward should be INFERENCE_FWD
+  // TODO (see T5100) : if inference, forward should be INFERENCE_FWD
   fwdConvOptions.pass = enigma::Pass::TRAINING_FWD;
   bwdConvOptions.pass = enigma::Pass::TRAINING_BWD;
   wuConvOptions.pass  = enigma::Pass::TRAINING_WU;

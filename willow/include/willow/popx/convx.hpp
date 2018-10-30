@@ -18,6 +18,9 @@ class ConvDataGradOp;
 
 namespace popx {
 
+poplin::ConvParams getFwdConvParams(const ConvOp *cOp);
+poplin::ConvParams getDataGradParams(const ConvDataGradOp *convDataGradOp);
+
 class ConvOpx : public Opx {
 public:
   ConvOpx(Op *, Devicex *);
@@ -28,16 +31,21 @@ public:
   virtual std::vector<TensorId>
   mustExistBeforeCreate(int index0) const override final;
   const poplin::ConvParams &getParams() const;
-  void grow() const override final;
+  virtual void grow() const override final;
 
 private:
-  poplin::ConvParams params;
+  poplin::ConvParams fwdParams;
 };
 
 class ConvDataGradOpx : public Opx {
 public:
   ConvDataGradOpx(Op *, Devicex *);
   ConvDataGradOp *getConvDataGradOp() const;
+  virtual void grow() const override final;
+  const poplin::ConvParams &getParams() const;
+
+private:
+  poplin::ConvParams dataGradParams;
 };
 
 class ConvWeightsGradOpx : public Opx {

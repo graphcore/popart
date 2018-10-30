@@ -115,11 +115,19 @@ const std::map<int, int> &ConvDataGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
+int ConvDataGradOp::getWeightsIn() const { return 0; }
+
+int ConvDataGradOp::getGradConvolvedIn() const { return 1; }
+
 std::vector<GradInOutMapper> ConvDataGradOp::createConvDataGradInfo() const {
-  // input at index 0 : gradient of output of conv
-  // input at index 1 : weights input to conv
-  return {{0, 0, GradOpInType::GRADOUT},
-          {1, convOp->weightsInIndex(), GradOpInType::IN}};
+  // input at index getGradConvolvedIn() : gradient of output of conv
+  // input at index getWeightsIn()       : weights input to conv
+  return {{getGradConvolvedIn(), 0, GradOpInType::GRADOUT},
+          {getWeightsIn(), convOp->weightsInIndex(), GradOpInType::IN}};
 }
+
+ConvOp *ConvWeightsGradOp::getConvOp() const { return convOp; }
+
+ConvOp *ConvDataGradOp::getConvOp() const { return convOp; }
 
 } // namespace willow

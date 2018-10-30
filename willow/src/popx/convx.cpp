@@ -7,18 +7,68 @@
 
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"
+#include <poplin/ConvUtil.hpp>
 #include <poplin/Convolution.hpp>
 #pragma clang diagnostic pop // stop ignoring warnings
 
 namespace willow {
 namespace popx {
 
-const poplin::ConvParams &ConvOpx::getParams() const { return params; }
+poplin::ConvParams getFwdConvParams(const ConvOp *cOp) {
+
+  std::vector<unsigned> zeros(cOp->nSpatialDims, 0);
+  std::vector<bool> falses(cOp->nSpatialDims, false);
+  std::vector<unsigned> ones(cOp->nSpatialDims, 1);
+
+  // we assume that the output type is the same as the input
+  auto popOutType = popType(cOp->dataIn()->info);
+
+  return poplin::ConvParams(popOutType,          // dType,
+                            cOp->batchSize,      // batchSize,
+                            cOp->spatialD_szt(), // inputFieldShape,
+                            cOp->spatialK_szt(), // kernelShape,
+
+                            cOp->nInChans,       // inputChannels,
+                            cOp->getNOutChans(), // outputChannels,
+                            cOp->group,          // numConvGroups,
+
+                            zeros,                // inputTruncationLower,
+                            zeros,                // inputTruncationUpper,
+                            ones,                 // inputDilation,
+                            cOp->lowerPads_u32(), // inputPaddingLower,
+                            cOp->upperPads_u32(), // inputPaddingUpper
+                            falses,               // flipInput,
+
+                            zeros,                // kernelTruncationLower,
+                            zeros,                // kernelTruncationUpper,
+                            cOp->dilations_u32(), // kernelDilation,
+                            zeros,                // kernelPaddingLower,
+                            zeros,                // kernelPaddingUpper,
+                            falses,               // flipKernel,
+
+                            zeros,              // outputTruncationLower,
+                            zeros,              // outputTruncationUpper,
+                            cOp->strides_u32(), // stride,
+                            zeros,              // outputPaddingLower,
+                            zeros               // outputPaddingUpper.
+  );
+}
+
+poplin::ConvParams getDataGradParams(const ConvDataGradOp *convDataGradOp) {
+  // we get the fwd params, and then use a utility function to convert
+  // to bwd params.
+  auto fwdParams = getFwdConvParams(convDataGradOp->getConvOp());
+  // this utility function converts fwd params to bwd params.
+  // see poplin/ConvUtil.hpp
+  return poplin::getGradientParams(fwdParams);
+}
+
+const poplin::ConvParams &ConvOpx::getParams() const { return fwdParams; }
 
 std::vector<TensorId> ConvOpx::mustExistBeforeCreate(int) const {
-  // both creating weights and input are done
+  // creation of both weights and of input are done
   // without requiring the pre-existance of any
-  // other poplar::Tensor
+  // other poplar::Tensor, so returning empty TensorId vector
   return {};
 }
 
@@ -28,15 +78,32 @@ void ConvOpx::grow() const {
       graph(),                           // graph
       get(getConvOp()->dataIn()->id),    // in
       get(getConvOp()->weightsIn()->id), // weights
-      params,                            // params
+      fwdParams,                         // params
       false,                             // transposeAndFlipWeights,
       dv_p->progs.step(),                // prog
-      std::to_string(op_p->id),          // debugPrefix
+      idStr(),                           // debugPrefix
       enigma::toPoplibsConvOptions(dv_p->fwdConvOptions), // options
       &dv_p->convCache                                    // cache
   );
 
   insert(op_p->output.id(0), outTensor);
+}
+
+void ConvDataGradOpx::grow() const {
+
+  ConvDataGradOp *gradOp = getConvDataGradOp();
+
+  auto outTensor = poplin::convolution(
+      graph(),                                 // graph
+      get(inId(gradOp->getGradConvolvedIn())), // in
+      get(inId(gradOp->getWeightsIn())),       // weights
+      dataGradParams,                          // params
+      true,                                    // transposeAndFlipWeights,
+      dv_p->progs.step(),                      // prog
+      std::to_string(op_p->id),                // debugPrefix
+      enigma::toPoplibsConvOptions(dv_p->bwdConvOptions), // options
+      &dv_p->convCache                                    // cache
+  );
 }
 
 ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -50,42 +117,7 @@ ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
     throw error("Poplar only supports convolutions with 2 spatial dimensions");
   }
 
-  std::vector<unsigned> zeros(cOp->nSpatialDims, 0);
-  std::vector<bool> falses(cOp->nSpatialDims, false);
-  std::vector<unsigned> ones(cOp->nSpatialDims, 1);
-
-  // we assume that the output type is the same as the input
-  auto popOutType = popType(cOp->dataIn()->info);
-
-  params = poplin::ConvParams(popOutType,          // dType,
-                              cOp->batchSize,      // batchSize,
-                              cOp->spatialD_szt(), // inputFieldShape,
-                              cOp->spatialK_szt(), // kernelShape,
-
-                              cOp->nInChans,       // inputChannels,
-                              cOp->getNOutChans(), // outputChannels,
-                              cOp->group,          // numConvGroups,
-
-                              zeros,                // inputTruncationLower,
-                              zeros,                // inputTruncationUpper,
-                              ones,                 // inputDilation,
-                              cOp->lowerPads_u32(), // inputPaddingLower,
-                              cOp->upperPads_u32(), // inputPaddingUpper
-                              falses,               // flipInput,
-
-                              zeros,                // kernelTruncationLower,
-                              zeros,                // kernelTruncationUpper,
-                              cOp->dilations_u32(), // kernelDilation,
-                              zeros,                // kernelPaddingLower,
-                              zeros,                // kernelPaddingUpper,
-                              falses,               // flipKernel,
-
-                              zeros,              // outputTruncationLower,
-                              zeros,              // outputTruncationUpper,
-                              cOp->strides_u32(), // stride,
-                              zeros,              // outputPaddingLower,
-                              zeros               // outputPaddingUpper.
-  );
+  fwdParams = getFwdConvParams(cOp);
 }
 
 bool ConvOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
@@ -118,7 +150,7 @@ poplar::Tensor ConvOpx::createInput(int index) const {
   if (index == getConvOp()->weightsInIndex()) {
     return poplin::createWeights(
         graph(),                                            // graph
-        params,                                             // params
+        fwdParams,                                          // params
         op_p->str(),                                        // name
         enigma::toPoplibsConvOptions(dv_p->fwdConvOptions), // options
         &dv_p->convCache                                    // cache
@@ -132,6 +164,7 @@ ConvDataGradOpx::ConvDataGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::CONVDATAGRAD) {
     throw error("cannot create ConvDataGradOpx from " + op->op_type());
   }
+  dataGradParams = getDataGradParams(getConvDataGradOp());
 }
 
 ConvDataGradOp *ConvDataGradOpx::getConvDataGradOp() const {

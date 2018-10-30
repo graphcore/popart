@@ -42,7 +42,6 @@ public:
   // output data to addresses in stepIO.out
   // For Poplar, this will involve reading and writing
   // Poplar::Stream host addresses <--> these addresses.
-  // TODO : sort out input and output locations.
   void step(const StepIO &stepIO);
 
   // write current model to ONNX file

@@ -70,6 +70,10 @@ NllGradOp::NllGradOp(NllOp *op_)
 
 Op *NllGradOp::getNonGradCreator() const { return pir->getOp(nllOpId); }
 
+NllOp *NllGradOp::getNllOp() const {
+  return dynamic_cast<NllOp *>(pir->getOp(nllOpId));
+}
+
 const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createNllLossGradInfo();
   return inInfo;

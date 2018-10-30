@@ -22,6 +22,8 @@ class ReluGradOp : public GradOp {
 public:
   ReluGradOp(ReluOp *);
   virtual Op *getNonGradCreator() const override final;
+  // equivalent of getNonGradCreator, but no downcasting
+  ReluOp *getReluOp() const;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
