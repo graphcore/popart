@@ -6,4 +6,5 @@ data
 *.log
 *.pyc
 *.so
+*.dylib
 experimental

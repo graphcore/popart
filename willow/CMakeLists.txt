@@ -26,6 +26,9 @@ message( STATUS "BOOST_FILESYSTEM_LIB to be used : " ${BOOST_FILESYSTEM_LIB} )
 message( STATUS "BOOST_FILESYSTEM_INCLUDE_DIR to be used :  " ${BOOST_FILESYSTEM_INCLUDE_DIR} )
 
 target_include_directories (willow PUBLIC 
+    # if the model checker is used: ${ONNX_UTILS_INCLUDE_DIR}
+    ${ONNX_PB_INCLUDE_DIR}
+    ${ONNX_CHECKER_INCLUDE_DIR}
     ${ONNX_INCLUDE_DIRS}
     ${Protobuf_INCLUDE_DIR}
     ${BOOST_FILESYSTEM_INCLUDE_DIR}
@@ -35,10 +38,10 @@ target_include_directories (willow PUBLIC
 
 
 target_link_libraries(willow
-  onnx
-  onnx_proto
-  protobuf
-  ${ONNX_LIBRARIES}
+  # if the onnx mode checker is incorporated, this will be needed: ${ONNX_LIB}
+  ${ONNX_LIB}
+  ${ONNX_PROTO_LIB}
+  ${Protobuf_LIBRARIES} 
   ${CBLAS_LIBRARIES}
   ${BOOST_FILESYSTEM_LIB}
   ${BOOST_SYSTEM_LIB}
