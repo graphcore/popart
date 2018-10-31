@@ -42,11 +42,18 @@ const std::map<int, int> &ReluGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
+int ReluGradOp::getReludIn() const { return 1; }
+
+int ReluGradOp::getGradReludIn() const { return 0; }
+
 std::vector<GradInOutMapper> ReluGradOp::createReluGradInfo() const {
-  // input at index 0 : gradient of output of relu
-  // input at index 1 : output of relu
-  // can do better?
-  return {{0, 0, GradOpInType::GRADOUT}, {1, 0, GradOpInType::OUT}};
+  // input at index getGradReludIn() (=0) : gradient of output of relu
+  // input at index getReludIn() (=1)     : output of relu
+  // can we do better sometimes with in-placing?
+  // The 0's below : As the there is only 1 output of Relu, it
+  // is output at index 0.
+  return {{getGradReludIn(), 0, GradOpInType::GRADOUT},
+          {getReludIn(), 0, GradOpInType::OUT}};
 }
 
 } // namespace willow

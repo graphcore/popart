@@ -22,6 +22,7 @@ class ReluGradOpx : public Opx {
 public:
   ReluGradOpx(Op *, Devicex *);
   ReluGradOp *getReluGradOp() const;
+  void grow() const override final;
 };
 
 } // namespace popx

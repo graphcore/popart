@@ -41,5 +41,21 @@ ReluGradOp *ReluGradOpx::getReluGradOp() const {
   return dynamic_cast<ReluGradOp *>(op_p);
 }
 
+void ReluGradOpx::grow() const {
+
+  ReluGradOp *rgop = getReluGradOp();
+
+  auto outTensor = nonLinearityInputGradient(
+      graph(),                           // graph,
+      popnn::NonLinearityType::RELU,     // nonLinearityType,
+      get(inId(rgop->getReludIn())),     //  out,
+      get(inId(rgop->getGradReludIn())), //  outGradient,
+      step(),                            // prog,
+      idStr()                            // debugPrefix
+  );
+
+  insert(op_p->output.id(0), outTensor);
+}
+
 } // namespace popx
 } // namespace willow

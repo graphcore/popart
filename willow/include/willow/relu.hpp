@@ -13,11 +13,10 @@ public:
   virtual void setup() override final;
 };
 
-// takes output of ReluOp as input and not the output of ReluOp
+// takes output of ReluOp as input and not the input of ReluOp
 // to determine where gradients become zero. It might be better
-// (depending in what can be in-placed) to rather take the output
-// of ReluOp in to do this (or another binary tensor). This is why
-// I have called it ""
+// (depending in what can be in-placed) to rather take the input
+// of ReluOp in to do this (or a boolean tensor).
 class ReluGradOp : public GradOp {
 public:
   ReluGradOp(ReluOp *);
@@ -28,6 +27,14 @@ public:
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
   virtual void setup() override final;
+
+  // The index at which the output of the Relu (the "relud" tensor)
+  // is an input to this ReluGradOp
+  int getReludIn() const;
+
+  // The index at which the gradient of the output of
+  // the Relu is an input to this ReluGradOp
+  int getGradReludIn() const;
 
 private:
   std::vector<GradInOutMapper> createReluGradInfo() const;
