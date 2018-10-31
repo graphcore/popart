@@ -34,7 +34,7 @@ target_include_directories (willow PUBLIC
     )
 
 target_link_libraries(willow
-  onnx
+  ${ONNX_LIBRARIES}
   ${CBLAS_LIBRARIES}
   ${BOOST_FILESYSTEM_LIB}
   ${BOOST_SYSTEM_LIB}
