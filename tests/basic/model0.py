@@ -152,6 +152,10 @@ pynet = WillowNet(
      ]  # The optimization passes to run, see patterns.hpp
 )
 
+# get the tensor info for these guys:
+for anchor in anchors:
+    x = pynet.getInfo(anchor)
+
 allDotPrefixes = [x[0:-4] for x in os.listdir(outputdir) if ".dot" in x]
 print("Will generate graph pdfs for all of:")
 print(allDotPrefixes)
@@ -165,6 +169,8 @@ print("torchwriter calling script complete.")
 
 pynet.setDevice("IPU")
 pynet.prepareDevice()
+
+
 pynet.weightsFromHost()
 pynet.optimizerFromHost()
 
@@ -181,6 +187,7 @@ for epoch in range(2):  # loop over the dataset multiple times
             "label": labels.numpy()
         }
         # TODO : create output tensors
+
         outputs = {}
         pystepio = PyStepIO(inputs, outputs)
         pynet.step(pystepio)

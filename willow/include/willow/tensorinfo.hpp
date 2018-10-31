@@ -34,16 +34,21 @@ TensorInfo npOut(const TensorInfo &i0, const TensorInfo &i1);
 // FLOAT, FLOAT16, INT8 etc.
 class DataTypeInfo {
 public:
-  DataTypeInfo(DataType type__, int nbytes__, std::string name__);
+  DataTypeInfo(DataType type__,
+               int nbytes__,
+               std::string name__,
+               std::string lcasename__);
   DataType type() const;
   // number of bytes of 1 element
   const int &nbytes() const;
   const std::string &name() const;
+  const std::string &lcasename() const;
 
 private:
   DataType type_;
   int nbytes_;
   std::string name_;
+  std::string lcasename_;
 };
 
 const std::map<DataType, DataTypeInfo> &getDataTypeInfoMap();
@@ -75,6 +80,7 @@ public:
   int64_t dim(int i) const;
   DataType dataType() const;
   const std::string &data_type() const;
+  const std::string &data_type_lcase() const;
   void append(std::stringstream &) const;
   bool isSet() const;
   bool operator==(const TensorInfo &) const;

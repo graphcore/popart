@@ -47,6 +47,9 @@ public:
   // write current model to ONNX file
   void modelToHost(std::string fn);
 
+  // get the TensorInfo on a Tensor
+  TensorInfo getInfo(TensorId) const;
+
 private:
   // abstraction of the computation
   std::unique_ptr<Ir> pir;

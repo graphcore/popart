@@ -64,6 +64,10 @@ const std::string &TensorInfo::data_type() const {
   return dataTypeInfo->name();
 }
 
+const std::string &TensorInfo::data_type_lcase() const {
+  return dataTypeInfo->lcasename();
+}
+
 const std::vector<int64_t> &TensorInfo::shape() const { return shape_v; }
 
 int TensorInfo::rank() const { return static_cast<int>(shape_v.size()); }
@@ -102,22 +106,22 @@ bool TensorInfo::operator!=(const TensorInfo &i1) const {
 
 std::map<DataType, DataTypeInfo> initDataTypeInfoMap() {
 
-  return {{TP::UNDEFINED, {TP::UNDEFINED, -1, "UNDEFINED"}},
-          {TP::FLOAT, {TP::FLOAT, 4, "FLOAT"}},
-          {TP::UINT8, {TP::UINT8, 1, "UINT8"}},
-          {TP::INT8, {TP::INT8, 1, "INT8"}},
-          {TP::UINT16, {TP::UINT16, 2, "UINT16"}},
-          {TP::INT16, {TP::INT16, 2, "INT16"}},
-          {TP::INT32, {TP::INT32, 4, "INT32"}},
-          {TP::INT64, {TP::INT64, 8, "INT64"}},
-          {TP::STRING, {TP::STRING, -1, "STRING"}},
-          {TP::BOOL, {TP::BOOL, 1, "BOOL"}},
-          {TP::FLOAT16, {TP::FLOAT16, 2, "FLOAT16"}},
-          {TP::DOUBLE, {TP::DOUBLE, 8, "DOUBLE"}},
-          {TP::UINT32, {TP::UINT32, 4, "UINT32"}},
-          {TP::UINT64, {TP::UINT64, 8, "UINT64"}},
-          {TP::COMPLEX64, {TP::COMPLEX64, 8, "COMPLEX64"}},
-          {TP::COMPLEX128, {TP::COMPLEX128, 16, "COMPLEX128"}}};
+  return {{TP::UNDEFINED, {TP::UNDEFINED, -1, "UNDEFINED", "undefined"}},
+          {TP::FLOAT, {TP::FLOAT, 4, "FLOAT", "float32"}},
+          {TP::UINT8, {TP::UINT8, 1, "UINT8", "uint"}},
+          {TP::INT8, {TP::INT8, 1, "INT8", "int8"}},
+          {TP::UINT16, {TP::UINT16, 2, "UINT16", "uint16"}},
+          {TP::INT16, {TP::INT16, 2, "INT16", "int16"}},
+          {TP::INT32, {TP::INT32, 4, "INT32", "int32"}},
+          {TP::INT64, {TP::INT64, 8, "INT64", "int64"}},
+          {TP::STRING, {TP::STRING, -1, "STRING", "string"}},
+          {TP::BOOL, {TP::BOOL, 1, "BOOL", "bool"}},
+          {TP::FLOAT16, {TP::FLOAT16, 2, "FLOAT16", "float16"}},
+          {TP::DOUBLE, {TP::DOUBLE, 8, "DOUBLE", "float64"}},
+          {TP::UINT32, {TP::UINT32, 4, "UINT32", "uint32"}},
+          {TP::UINT64, {TP::UINT64, 8, "UINT64", "uint64"}},
+          {TP::COMPLEX64, {TP::COMPLEX64, 8, "COMPLEX64", "complex64"}},
+          {TP::COMPLEX128, {TP::COMPLEX128, 16, "COMPLEX128", "complex128"}}};
 }
 
 std::map<std::string, DataType> initStrToDataTypeMap() {
@@ -186,12 +190,18 @@ const std::map<std::string, DataType> &getStrToDataTypeMap() {
   return m;
 }
 
-DataTypeInfo::DataTypeInfo(DataType type__, int nbytes__, std::string name__)
-    : type_(type__), nbytes_(nbytes__), name_(name__) {}
+DataTypeInfo::DataTypeInfo(DataType type__,
+                           int nbytes__,
+                           std::string name__,
+                           std::string lcasename__)
+    : type_(type__), nbytes_(nbytes__), name_(name__), lcasename_(lcasename__) {
+}
 
 const int &DataTypeInfo::nbytes() const { return nbytes_; }
 
 const std::string &DataTypeInfo::name() const { return name_; }
+
+const std::string &DataTypeInfo::lcasename() const { return lcasename_; }
 
 DataType DataTypeInfo::type() const { return type_; }
 
