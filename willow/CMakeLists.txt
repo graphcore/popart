@@ -33,7 +33,11 @@ target_include_directories (willow PUBLIC
     ${POPLAR_INCLUDE_DIR}
     )
 
+
 target_link_libraries(willow
+  onnx
+  onnx_proto
+  protobuf
   ${ONNX_LIBRARIES}
   ${CBLAS_LIBRARIES}
   ${BOOST_FILESYSTEM_LIB}
