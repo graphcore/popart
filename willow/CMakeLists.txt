@@ -36,7 +36,6 @@ target_include_directories (willow PUBLIC
     ${POPLAR_INCLUDE_DIR}
     )
 
-
 target_link_libraries(willow
   # if the onnx mode checker is incorporated, this will be needed: ${ONNX_LIB}
   ${ONNX_LIB}
@@ -54,7 +53,7 @@ target_link_libraries(willow
 
 install(TARGETS willow
         EXPORT willow
-	DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	      DESTINATION ${CMAKE_INSTALL_LIBDIR}
         COMPONENT willow
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 

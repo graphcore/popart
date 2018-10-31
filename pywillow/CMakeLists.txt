@@ -28,11 +28,14 @@ target_link_libraries(pywillow PRIVATE
   # ...
 )
 
-# This is useful on OS/X, see 
+# This was useful on OS/X for a while, see 
 # https://stackoverflow.com/questions/47697761 and
 # https://stackoverflow.com/questions/40079424/prepend-to-rpath
-set_target_properties(pywillow PROPERTIES
-  INSTALL_RPATH_USE_LINK_PATH TRUE)
+# set_target_properties(pywillow PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+#
+# but then it stopped working, and this seems to work, 
+# see https://gist.github.com/robertmaynard/5750737
+set_target_properties(pywillow PROPERTIES INSTALL_RPATH "@loader_path/.")
 
 install(TARGETS pywillow
   DESTINATION ${CMAKE_INSTALL_LIBDIR})
