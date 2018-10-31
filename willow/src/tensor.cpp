@@ -1,3 +1,4 @@
+#include <cstring>
 #include <willow/error.hpp>
 #include <willow/ir.hpp>
 #include <willow/onnxutil.hpp>

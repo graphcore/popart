@@ -23,7 +23,8 @@ WillowNet::WillowNet(std::string onnxModelFn,
                   optimizerIn,
                   cTens,
                   logdir_,
-                  patternNames})) {}
+                  patternNames})),
+      device_(nullptr) {}
 
 void WillowNet::updateOptimizer(const Optimizer *optimizer) {
   pir->updateOptimizer(optimizer);

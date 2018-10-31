@@ -1,3 +1,4 @@
+#include <iostream>
 #include <willow/error.hpp>
 #include <willow/ir.hpp>
 #include <willow/popx/addx.hpp>

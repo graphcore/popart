@@ -47,7 +47,7 @@ target_link_libraries(willow
 
 install(TARGETS willow
         EXPORT willow
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        DESTINATION ${PYWILLOW_DIR} #${CMAKE_INSTALL_LIBDIR}
         COMPONENT willow
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 

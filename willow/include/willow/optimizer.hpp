@@ -15,9 +15,9 @@ enum class OptimizerType { SGD = 0, CONSTSGD };
 
 class Optimizer {
 public:
-  virtual ~Optimizer()         = default;
-  Optimizer()                  = default;
-  Optimizer(const Optimizer &) = default;
+  virtual ~Optimizer();
+  Optimizer();
+  Optimizer(const Optimizer &);
   // The information for all optimizer specific tensors
   virtual std::map<TensorId, TensorInfo> tensorInfos() const = 0;
   virtual std::unique_ptr<Optimizer> clone() const           = 0;

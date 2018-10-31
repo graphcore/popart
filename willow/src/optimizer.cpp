@@ -6,6 +6,10 @@
 
 namespace willow {
 
+Optimizer::~Optimizer()                 = default;
+Optimizer::Optimizer()                  = default;
+Optimizer::Optimizer(const Optimizer &) = default;
+
 TensorId getLearningRateId() { return "learnRate"; }
 
 BaseSGD::BaseSGD(float lr) : learnRate_(lr) {}

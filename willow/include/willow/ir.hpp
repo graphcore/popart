@@ -483,6 +483,7 @@ public:
 
 class Ir {
 public:
+  ~Ir();
   Ir(const IrBundle &);
   void updateOptimizer(const Optimizer *);
   // take training steps
@@ -497,7 +498,6 @@ public:
   // The input data tensors. label(s), image(s), etc. This does not include
   // optimizer stream tensors (they are not data)
   std::vector<Tensor *> dataStreamTensors() const;
-  ~Ir();
   // split ConvOp with bias into two Ops, a ConvOp
   // followed by an x Op TODO : move to Patterns (see task T5098)
   void splitConvBias();
@@ -533,7 +533,7 @@ private:
   // learning rate, momentum, etc.
   // Optimizer needed to construct backwards pass:
   // if momentum the Ir is different
-  std::unique_ptr<Optimizer> optimizer{nullptr};
+  std::unique_ptr<Optimizer> optimizer;
   std::string logdir;
   EarlyInfo earlyInfo;
 

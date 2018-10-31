@@ -1,5 +1,7 @@
+#include <algorithm>
 #include <array>
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <queue>
 #include <sstream>
@@ -490,7 +492,7 @@ IrBundle::IrBundle(std::string fnModel_,
       patternNames(patternNames_) {}
 
 Ir::Ir(const IrBundle &gb)
-    : tensors(gb.cTens, this), dataFlow(gb.dataFlow),
+    : tensors(gb.cTens, this), dataFlow(gb.dataFlow), optimizer(nullptr),
       logdir(io::getCanonicalDirName(gb.logdir)), earlyInfo(gb.earlyInfo) {
 
   optimizer = gb.optimizer->clone();

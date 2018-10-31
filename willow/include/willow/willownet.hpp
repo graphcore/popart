@@ -49,8 +49,8 @@ public:
 
 private:
   // abstraction of the computation
-  std::unique_ptr<Ir> pir{nullptr};
-  std::unique_ptr<Device> device_{nullptr};
+  std::unique_ptr<Ir> pir;
+  std::unique_ptr<Device> device_;
 };
 } // namespace willow
 
