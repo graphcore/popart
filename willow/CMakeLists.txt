@@ -21,7 +21,6 @@ message( STATUS "Building WITHOUT Poplar IPU backend")
 endif()
 
 add_library(willow SHARED ${sources})
-message(STATUS "${sources}")
 message( STATUS "BOOST_FILESYSTEM_LIB to be used : " ${BOOST_FILESYSTEM_LIB} )
 message( STATUS "BOOST_FILESYSTEM_INCLUDE_DIR to be used :  " ${BOOST_FILESYSTEM_INCLUDE_DIR} )
 
