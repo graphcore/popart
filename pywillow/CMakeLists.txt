@@ -35,6 +35,10 @@ set_target_properties(pywillow PROPERTIES
   INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 install(TARGETS pywillow
-  # destination : this directory
-  DESTINATION ${PYWILLOW_DIR})
+  DESTINATION ${CMAKE_INSTALL_LIBDIR})
+
+install(FILES
+  writer.py
+  torchwriter.py
+  DESTINATION ${CMAKE_INSTALL_PYDIR})
 

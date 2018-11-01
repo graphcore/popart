@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.4)
 
 project(willow)
 
+set(CMAKE_INSTALL_PYDIR python)
+
 #with cmake >= 3.12 this should be add_compile_definitions(ONNX_NAMESPACE=onnx)
 add_definitions(-DONNX_NAMESPACE=onnx)
 
@@ -30,7 +32,7 @@ find_package(BoostFilesystem REQUIRED)
 
 set(PYWILLOW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/pywillow)
 add_subdirectory(willow)
+
 # light-weight wrapper using pybind11
 add_subdirectory(pywillow)
-
 
