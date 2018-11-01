@@ -2,8 +2,8 @@
 #include <willow/error.hpp>
 #include <willow/ir.hpp>
 #include <willow/popx/devicex.hpp>
-#include <willow/willownet.hpp>
 #include <willow/tensor.hpp>
+#include <willow/willownet.hpp>
 
 namespace willow {
 
@@ -47,7 +47,7 @@ void WillowNet::setDevice(std::string deviceString) {
 TensorInfo WillowNet::getInfo(TensorId id) const {
   TensorInfo info = pir->tensors.get(id)->info;
   if (!info.isSet()) {
-    throw error("TensorInfo for `" + id +  "' not set");
+    throw error("TensorInfo for `" + id + "' not set");
   }
   return info;
 }

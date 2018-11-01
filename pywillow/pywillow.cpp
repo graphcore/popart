@@ -54,7 +54,6 @@ TensorInfo getTensorInfo(py::array npArr) {
   return TensorInfo(getDataTypeFromNpType(typeString), shape);
 }
 
-
 class PyStepIO : public StepIO {
 public:
   PyStepIO(std::map<TensorId, py::array> inputs_,
@@ -101,7 +100,6 @@ PYBIND11_MODULE(pywillow, m) {
       .value("SUM", AnchorReturnType::SUM)
       .value("ALL", AnchorReturnType::ALL);
 
-
   py::class_<PyStepIO>(m, "PyStepIO", stepio)
       .def(py::init<std::map<TensorId, py::array>,
                     std::map<TensorId, py::array>>());
@@ -116,8 +114,9 @@ PYBIND11_MODULE(pywillow, m) {
       .def("nAnchors", &DataFlow::nAnchors);
 
   py::class_<TensorInfo>(m, "TensorInfo")
-      .def(py::init<std::string, const std::vector<int64_t> &>());
-
+      .def(py::init<std::string, const std::vector<int64_t> &>())
+      .def("data_type_lcase", &TensorInfo::data_type_lcase)
+      .def("shape", &TensorInfo::shape);
 
   py::class_<EarlyInfo>(m, "EarlyInfo")
       .def(py::init<>())
@@ -169,7 +168,6 @@ PYBIND11_MODULE(pywillow, m) {
       .def("step", &WillowNet::step)
       .def("modelToHost", &WillowNet::modelToHost)
       .def("getInfo", &WillowNet::getInfo);
-
 
   // This does not seem to work :/
   // Thoroughly read

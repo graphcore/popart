@@ -169,6 +169,13 @@ void Devicex::copyToStreamHostAddr(
   if (srcType == dstType) {
     // copy the full step data from src to dst
     std::memcpy(dst, src, srcInfo.nbytes());
+    //   view the src values:
+    //   if (srcType == TP::FLOAT) {
+    //     for (int i = 0; i < srcInfo.nbytes() / 4; i += 1) {
+    //       std::cout << *(static_cast<const float *>(src) + i) << "  ";
+    //     }
+    //     std::cout << std::endl;
+    //   }
   }
 
   else if (srcType == TP::INT64 && dstType == TP::INT32) {
@@ -221,13 +228,35 @@ void Devicex::step(const StepIO &stepio) {
   std::cout << "now running the step program, " << std::flush;
   pEngine->run(PopPrograms::ProgramIndex::STEP);
 
-  std::cout << "finally copying from streams to StepIO.out(). " << std::endl;
+  std::cout << "finally copying from streams to StepIO.out(), " << std::flush;
   for (TensorId anchorId : pir->dataFlow.anchors()) {
     StepOutData stepout = stepio.out(anchorId);
     auto dst            = stepout.data;
     auto src = static_cast<const void *>(d2hBuffers.at(anchorId).data());
-    throw error("need to copy from stream to out here");
+
+    // size of the char vector,
+    int nbytes_src = d2hBuffers.at(anchorId).size();
+
+    // number of bytes of the destination,
+    int nbytes_dst = stepout.info.nbytes();
+
+    if (nbytes_src != nbytes_dst) {
+      std::stringstream errms;
+      errms << "sizes (in bytes) of src (" << nbytes_src << ") and dst ("
+            << nbytes_dst << ") differ.";
+      throw error(errms.str());
+    }
+
+    //   if (stepout.info.dataType() == TP::FLOAT) {
+    //     for (int i = 0; i < nbytes_dst / 4; i += 1) {
+    //       std::cout << *(static_cast<const float *>(src) + i) << "  ";
+    //     }
+    //     std::cout << std::endl;
+    //   }
+
+    std::memcpy(dst, src, nbytes_src);
   }
+  std::cout << "done." << std::endl;
 }
 
 std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
@@ -628,7 +657,7 @@ TaskId Devicex::streamFromHostTaskId(TensorId id) const {
 }
 
 TaskId Devicex::streamToHostTaskId(TensorId id) const {
-  return "streamFromHostTask_" + id;
+  return "streamToHostTask_" + id;
 }
 
 TaskId Devicex::fromHostTaskId(TensorId id) const {

@@ -42,8 +42,13 @@ void L1GradOp::setup() {
 }
 
 void L1Op::setup() {
-  // output is a scalar of the same type as input
-  output.tensor(0)->info.set(input.tensor(0)->info.dataType(), {});
+  // output is a vector of length=batchsize, of the same type as input
+  TensorInfo info0 = input.tensor(0)->info;
+  if (info0.rank() == 0) {
+    throw error("L1Op not valid for rank-0 tensor (scalar)");
+  }
+  int64_t batchsize = info0.dim(0);
+  output.tensor(0)->info.set(input.tensor(0)->info.dataType(), {batchsize});
 }
 
 L1GradOp::L1GradOp(L1Op *op_)

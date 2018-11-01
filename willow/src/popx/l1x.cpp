@@ -54,8 +54,15 @@ void L1Opx::grow() const {
                                          step(),
                                          "abs/" + inId(0));
 
-  std::vector<size_t> dims(absTensor.rank());
-  std::iota(dims.begin(), dims.end(), 0);
+  if (absTensor.rank() == 0) {
+    throw error("invalid tensor (rank-0) in L1Opx");
+  }
+
+  std::vector<size_t> dims(absTensor.rank() - 1);
+
+  // we will reduce over {1,....rank -1}. NOT
+  // over dimension 0, which is batch id
+  std::iota(dims.begin(), dims.end(), 1);
 
   poplar::Tensor reduction =
       popops::reduce(graph(),

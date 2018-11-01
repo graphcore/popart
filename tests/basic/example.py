@@ -1,7 +1,9 @@
 import torch
 from torchvision import transforms, datasets
 import sys
+import numpy as np
 import os
+
 sys.path.append("../../pywillow")
 from pywillow import NllLoss, L1Loss, EarlyInfo, TensorInfo, PyStepIO
 from pywillow import DataFlow, SGD, ConstSGD, WillowNet, getTensorInfo
@@ -26,13 +28,16 @@ samplesPerBatch = 2
 # Return requested tensors every batchesPerStep = 3 cycles.
 # so (ie only communicate back to host every 2*3 = 6 samples)
 batchesPerStep = 3
-# anchors : return the losses
-anchors = ["nllLossVal", "l1LossVal"]
-# what to return. See relevant poplar headers for option descriptions
+# anchors : in this example, we choose to return the losses and the probs
+anchors = ["nllLossVal", "l1LossVal", "probs"]
+# what to return. See ir.hpp for option descriptions
 art = AnchorReturnType.ALL
 
 dataFeed = DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
 
+# willow is non-dynamic. All input Tensor shapes and types must be fed
+# into the WillowNet constructor. In this example there are 3 streamed inputs:
+# 2 images and a label
 earlyInfo = EarlyInfo()
 earlyInfo.add("image0", TensorInfo("FLOAT",
                                    [samplesPerBatch, nInChans, 32, 32]))
@@ -41,7 +46,11 @@ earlyInfo.add("image1", TensorInfo("FLOAT",
 earlyInfo.add("label", TensorInfo("INT32", [samplesPerBatch]))
 
 inNames = ["image0", "image1"]
+
+# outNames are not anchors, they are the Tensors which will be connected to
+# the loss layers
 outNames = ["preProbSquared", "probs"]
+
 losses = [
     NllLoss("probs", "label", "nllLossVal"),
     L1Loss("preProbSquared", "l1LossVal", 0.01)
@@ -123,7 +132,7 @@ class ModelWriter0(PytorchNetWriter):
             dataFeed=dataFeed,
             # perform tests, using framework as ground truth
             willowVerif=True,
-            ### begin PyTorch
+            ### begin PyTorch >>>
             module=Module0(),
             trainloader=verifTrainLoader,
             trainLoaderIndices={
@@ -131,7 +140,7 @@ class ModelWriter0(PytorchNetWriter):
                 "image1": 0,
                 "label": 1
             }
-            ### end PyTorch
+            ### <<< end PyTorch
         )
 
 
@@ -139,7 +148,7 @@ class ModelWriter0(PytorchNetWriter):
 writer = ModelWriter0()
 writer.write(dirname=outputdir)
 
-# C++ class reads from file(s) and creates backwards graph
+# Reads model from file and creates backwards graph
 pynet = WillowNet(
     os.path.join(outputdir, "model0.onnx"),
     writer.earlyInfo,
@@ -152,9 +161,22 @@ pynet = WillowNet(
      ]  # The optimization passes to run, see patterns.hpp
 )
 
-# get the tensor info for these guys:
+# get the tensor info for the anchors
+outputs = {}
 for anchor in anchors:
     x = pynet.getInfo(anchor)
+    print(x.data_type_lcase())
+    print(x.shape())
+    outShape = x.shape()
+    if art is AnchorReturnType.ALL:
+        outShape[0] = outShape[0] * batchesPerStep
+    elif art is AnchorReturnType.SUM:
+        outShape[0] = outShape[0] / batchesPerStep
+    elif art is AnchorReturnType.FINAL:
+        outShape[0] = outShape[0]
+    else:
+        raise RuntimeError("unrecognised Anchor Type")
+    outputs[anchor] = np.empty(shape=outShape, dtype=x.data_type_lcase())
 
 allDotPrefixes = [x[0:-4] for x in os.listdir(outputdir) if ".dot" in x]
 print("Will generate graph pdfs for all of:")
@@ -167,17 +189,20 @@ for name in allDotPrefixes:
     print("Exit status on `%s' was: %s" % (name, log))
 print("torchwriter calling script complete.")
 
+#
 pynet.setDevice("IPU")
 pynet.prepareDevice()
 
-
+# write weights to device
 pynet.weightsFromHost()
+
+# write optimizer tensors to device (if any such tensors)
 pynet.optimizerFromHost()
 
 for epoch in range(2):  # loop over the dataset multiple times
     running_loss = 0.0
     for i, data in enumerate(willowTrainLoader, 0):
-        if i == 5:
+        if i == 2:
             break
 
         images, labels = data
@@ -186,9 +211,9 @@ for epoch in range(2):  # loop over the dataset multiple times
             "image1": images.numpy(),
             "label": labels.numpy()
         }
-        # TODO : create output tensors
+        print("outputs at iteration %d:" % (i, ))
+        print(outputs)
 
-        outputs = {}
         pystepio = PyStepIO(inputs, outputs)
         pynet.step(pystepio)
 
