@@ -43,5 +43,5 @@ install(TARGETS pywillow
 install(FILES
   writer.py
   torchwriter.py
-  DESTINATION ${CMAKE_INSTALL_PYDIR})
+  DESTINATION ${INSTALL_PYDIR})
 
