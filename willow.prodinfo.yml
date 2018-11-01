@@ -1,0 +1,11 @@
+id : poponnx
+type : tool
+title: ONNX libraries for poplar
+version: @VERSION@
+source_id: @SNAPSHOT@
+repo: @VIEW_REMOTE_URL@
+elements:
+  - name: PopONNX framework (@OS_TYPE@)
+    file: @PACKAGE_FILE_NAME@.tar.gz
+    type: poponnx_build_@OS_TYPE@
+@PKG_ELEMENTS@

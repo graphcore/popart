@@ -4,8 +4,19 @@ project(willow)
 
 enable_testing()
 
-set(INSTALL_PYDIR ${CMAKE_INSTALL_PREFIX}/python)
-set(INSTALL_EXAMPLES ${CMAKE_INSTALL_PREFIX}/examples)
+if(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
+  set(OS_TYPE osx)
+elseif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
+  set(OS_TYPE linux)
+else()
+  set(OS_TYPE unknown)
+endif()
+
+# Distribution paths
+set(INSTALL_PYDIR python)
+set(INSTALL_EXAMPLES examples)
+
+# Tests path
 set(INSTALL_TESTS ${CMAKE_INSTALL_PREFIX}/tests)
 
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
@@ -47,4 +58,98 @@ add_subdirectory(pywillow)
 
 # Examples and tests
 add_subdirectory(tests)
+
+#------ cpack information
+execute_process(
+  COMMAND git rev-parse HEAD
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  OUTPUT_VARIABLE VIEW_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+string(SUBSTRING ${VIEW_HASH} 0 10 VIEW_SHORT_HASH)
+
+set(SNAPSHOT ${VIEW_SHORT_HASH})
+
+set(CPACK_PACKAGE_VENDOR graphcore)
+set(CPACK_GENERATOR TGZ)
+
+file(READ ${PROJECT_SOURCE_DIR}/version.json VERSION_JSON)
+string(REGEX REPLACE
+       ".*major[^:]*: \"([^\"]*)\".*" "\\1"
+       CPACK_PACKAGE_VERSION_MAJOR
+       ${VERSION_JSON})
+string(REGEX REPLACE
+       ".*minor[^:]*: \"([^\"]*)\".*" "\\1"
+       CPACK_PACKAGE_VERSION_MINOR
+       ${VERSION_JSON})
+string(REGEX REPLACE
+       ".*point[^:]*: \"([^\"]*)\".*" "\\1"
+       CPACK_PACKAGE_VERSION_PATCH
+       ${VERSION_JSON})
+
+set(VERSION ${CPACK_PACKAGE_VERSION_MAJOR})
+set(VERSION ${VERSION}.${CPACK_PACKAGE_VERSION_MINOR})
+set(VERSION ${VERSION}.${CPACK_PACKAGE_VERSION_PATCH})
+
+if(${OS_TYPE} STREQUAL osx)
+  set(PACKAGE_OS_TYPE osx)
+elseif(${OS_TYPE} STREQUAL linux)
+  # For now we assume we are packaging for ubuntu 18.04, this
+  # will have to change at a later date to a be a parameter of the build
+  set(PACKAGE_OS_TYPE ubuntu_18_04)
+else()
+  set(PACKAGE_OS_TYPE unknown)
+endif()
+
+
+set(PACKAGE_FILE_NAME poponnx-${PACKAGE_OS_TYPE}-${VERSION}-${SNAPSHOT})
+set(CPACK_PACKAGE_FILE_NAME ${PACKAGE_FILE_NAME})
+
+set(USER_GUIDE_PDF_NAME poponnx-user-guide-${VERSION}-${SNAPSHOT}.pdf)
+set(USER_GUIDE_HTML_NAME poponnx-user-guide-html-${VERSION}-${SNAPSHOT}.zip)
+set(PRODINFO_FILE_NAME poponnx-${VERSION}-${SNAPSHOT}.yml)
+
+include(CPack)
+
+set(PKG_UPLOAD_DIR ../../pkg)
+
+if(BUILD_DOCS)
+add_custom_target(package_and_move
+  COMMAND ${CMAKE_CPACK_COMMAND}
+  COMMAND bash -c "mkdir -p ${PKG_UPLOAD_DIR}"
+  COMMAND bash -c "mv ${PACKAGE_FILE_NAME}.tar.gz ${PKG_UPLOAD_DIR}"
+  COMMAND bash -c "mv ${PRODINFO_FILE_NAME} ${PKG_UPLOAD_DIR}"
+  COMMAND bash -c "mv ${USER_GUIDE_PDF_NAME} ${PKG_UPLOAD_DIR}"
+  COMMAND bash -c "mv ${USER_GUIDE_HTML_NAME} ${PKG_UPLOAD_DIR}"
+)
+else()
+add_custom_target(package_and_move
+  COMMAND ${CMAKE_CPACK_COMMAND}
+  COMMAND bash -c "mkdir -p ${PKG_UPLOAD_DIR}"
+  COMMAND bash -c "mv ${PACKAGE_FILE_NAME}.tar.gz ${PKG_UPLOAD_DIR}"
+  COMMAND bash -c "mv ${PRODINFO_FILE_NAME} ${PKG_UPLOAD_DIR}"
+)
+endif()
+#------ end of cpack information
+
+#------ product info file
+if(BUILD_DOCS)
+  string(APPEND PKG_ELEMENTS "  - name: ONNX for Poplar user guide (PDF)\n"
+                             "    file: ${USER_GUIDE_PDF_NAME}\n"
+                             "    type: pdf\n")
+
+  string(APPEND PKG_ELEMENTS "  - name: ONNX for Poplar user guide (HTML)\n"
+                             "    file: ${USER_GUIDE_HTML_NAME}\n"
+                             "    type: html_zip\n")
+endif()
+
+execute_process(
+  COMMAND git config --get remote.origin.url
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/..
+  OUTPUT_VARIABLE VIEW_REMOTE_URL
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+configure_file(willow.prodinfo.yml
+  ${CMAKE_BINARY_DIR}/${PRODINFO_FILE_NAME}
+  @ONLY)
+#------ end of product info file
 
