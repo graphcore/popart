@@ -35,7 +35,9 @@ target_link_libraries(pywillow PRIVATE
 #
 # but then it stopped working, and this seems to work, 
 # see https://gist.github.com/robertmaynard/5750737
+if (APPLE)
 set_target_properties(pywillow PROPERTIES INSTALL_RPATH "@loader_path/.")
+endif()
 
 install(TARGETS pywillow
   DESTINATION ${CMAKE_INSTALL_LIBDIR})

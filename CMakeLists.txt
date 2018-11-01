@@ -2,8 +2,16 @@ cmake_minimum_required(VERSION 3.4)
 
 project(willow)
 
+enable_testing()
+
 set(INSTALL_PYDIR ${CMAKE_INSTALL_PREFIX}/python)
 set(INSTALL_EXAMPLES ${CMAKE_INSTALL_PREFIX}/examples)
+set(INSTALL_TESTS ${CMAKE_INSTALL_PREFIX}/tests)
+
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+set(CMAKE_MACOSX_RPATH 1)
+set(CMAKE_INSTALL_RPATH "${POPLAR_INSTALL_DIR}/lib")
 
 #with cmake >= 3.12 this should be add_compile_definitions(ONNX_NAMESPACE=onnx)
 add_definitions(-DONNX_NAMESPACE=onnx)
