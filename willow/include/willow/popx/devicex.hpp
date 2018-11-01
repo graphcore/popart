@@ -135,6 +135,10 @@ private:
   PriTask fromHostTask(Tensor *tensor, poplar::program::Sequence &) const;
   TaskId fromHostTaskId(TensorId) const;
 
+  // Task to append a Copy to poplar::Stream from poplar::Tensor
+  PriTask toHostTask(Tensor *tensor, poplar::program::Sequence &) const;
+  TaskId toHostTaskId(TensorId) const;
+
   PriTask opTask(Op *, double priority);
   TaskId opTaskId(Op *) const;
 

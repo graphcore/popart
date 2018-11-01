@@ -169,13 +169,6 @@ void Devicex::copyToStreamHostAddr(
   if (srcType == dstType) {
     // copy the full step data from src to dst
     std::memcpy(dst, src, srcInfo.nbytes());
-    //   view the src values:
-    //   if (srcType == TP::FLOAT) {
-    //     for (int i = 0; i < srcInfo.nbytes() / 4; i += 1) {
-    //       std::cout << *(static_cast<const float *>(src) + i) << "  ";
-    //     }
-    //     std::cout << std::endl;
-    //   }
   }
 
   else if (srcType == TP::INT64 && dstType == TP::INT32) {
@@ -202,7 +195,6 @@ void Devicex::copyToStreamHostAddr(
 
 void Devicex::step(const StepIO &stepio) {
   std::cout << "performing one step, " << std::flush;
-
   std::cout << "first copying from StepIO.in(...) to streams, " << std::flush;
   for (Tensor *tensor : pir->dataStreamTensors()) {
     StepInData stepin = stepio.in(tensor->id);
@@ -235,10 +227,10 @@ void Devicex::step(const StepIO &stepio) {
     auto src = static_cast<const void *>(d2hBuffers.at(anchorId).data());
 
     // size of the char vector,
-    int nbytes_src = d2hBuffers.at(anchorId).size();
+    int64_t nbytes_src = d2hBuffers.at(anchorId).size();
 
     // number of bytes of the destination,
-    int nbytes_dst = stepout.info.nbytes();
+    int64_t nbytes_dst = stepout.info.nbytes();
 
     if (nbytes_src != nbytes_dst) {
       std::stringstream errms;
@@ -246,13 +238,6 @@ void Devicex::step(const StepIO &stepio) {
             << nbytes_dst << ") differ.";
       throw error(errms.str());
     }
-
-    //   if (stepout.info.dataType() == TP::FLOAT) {
-    //     for (int i = 0; i < nbytes_dst / 4; i += 1) {
-    //       std::cout << *(static_cast<const float *>(src) + i) << "  ";
-    //     }
-    //     std::cout << std::endl;
-    //   }
 
     std::memcpy(dst, src, nbytes_src);
   }
@@ -509,14 +494,20 @@ PriTask Devicex::opTask(Op *op, double priority) {
   // although priority should guarantee that this
   // task is only run after inputs are all created,
   // we add a dependency to the input tensors, just
-  // in case someone plays with the priorities
+  // in case someone plays with the priorities.
+  // Moreover, we must state the copy-from-host deps
   std::vector<TaskId> deps;
   for (auto t_inds : op->input.indicesMap()) {
     Tensor *tensor = t_inds.first;
     deps.push_back(taskWhichCreates(tensor->id));
+    // if the tensor is streamed on, we must wait 
+    // 'til the Copy has happened
+    if (tensor->tensorType() == TensorType::Stream) {
+      deps.push_back(fromHostTaskId(tensor->id));
+    }
   }
 
-  auto f = [opx, deps]() {
+  auto f = [opx]() {
     std::cout << "Creating output tensors for " << opx->op_p->str()
               << std::endl;
     opx->grow();
@@ -563,10 +554,14 @@ void Devicex::prepare() {
     tasks.add(streamFromHostTask(tensor));
   }
 
-  // stream-to-host tensors : 1) make streams
+  // stream-to-host tensors : 1) make streams 2) make copy programs
+  // note that the order in which tasks are added does not matter,
+  // they will be topologically sorted before running
   for (auto id : pir->dataFlow.anchors()) {
     // 1
     tasks.add(streamToHostTask(pir->tensors.get(id)));
+    // 2
+    tasks.add(toHostTask(pir->tensors.get(id), progs.step()));
   }
 
   // create Program to write optimizer tensors to device
@@ -575,6 +570,9 @@ void Devicex::prepare() {
   }
 
   // making the network!
+  for (Tensor *tensor : pir->dataStreamTensors()) {
+    tasks.add(fromHostTask(tensor, progs.step()));
+  }
   std::vector<Op *> ops = pir->getTopologicallySorted();
   double priority       = 0.;
   for (int i = 0; i < ops.size(); ++i) {
@@ -664,6 +662,8 @@ TaskId Devicex::fromHostTaskId(TensorId id) const {
   return "fromHostTask_" + id;
 }
 
+TaskId Devicex::toHostTaskId(TensorId id) const { return "toHostTask_" + id; }
+
 TaskId Devicex::initTensorTaskId(TensorId id) const {
   return "initTensorTaskId_" + id;
 }
@@ -691,6 +691,26 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
           {
               streamFromHostTaskId(tensor->id), // poplar::Stream created
               initTensorTaskId(tensor->id)      // poplar::Tensor created
+          },
+          f};
+}
+
+PriTask Devicex::toHostTask(Tensor *tensor,
+                            poplar::program::Sequence &sq) const {
+
+  auto f = [&sq, tensor, this]() {
+    std::cout << "Adding poplar::program::Copy to host " << tensor->id
+              << std::endl;
+    sq.add(poplar::program::Copy(tensors.get(tensor->id),
+                                 toHostStreams.at(tensor->id)));
+  };
+
+  return {+1e6, // writes to host: always as early as possible
+          toHostTaskId(tensor->id),
+          {
+              // the dependencies:
+              streamToHostTaskId(tensor->id), // poplar::Stream creation task,
+              taskWhichCreates(tensor->id)    // poplar::Tensor creation task.
           },
           f};
 }

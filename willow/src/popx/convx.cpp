@@ -175,6 +175,14 @@ poplar::Tensor ConvOpx::createInput(int index) const {
         enigma::toPoplibsConvOptions(dv_p->fwdConvOptions), // options
         &dv_p->convCache                                    // cache
     );
+  } else if (index == getConvOp()->dataInIndex()) {
+    return poplin::createInput(
+        graph(),                                            // graph
+        fwdParams,                                          // params
+        idStr(),                                            // name
+        enigma::toPoplibsConvOptions(dv_p->fwdConvOptions), // options
+        &dv_p->convCache                                    // cache
+    );
   } else {
     throw error("conv opx cannot create tensor at this index yet");
   }
