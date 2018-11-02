@@ -153,3 +153,6 @@ configure_file(willow.prodinfo.yml
   @ONLY)
 #------ end of product info file
 
+# Docs
+add_subdirectory(docs)
+

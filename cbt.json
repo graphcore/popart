@@ -1,7 +1,8 @@
 {
   "dependencies" : [
     "onnx",
-    "pybind11"
+    "pybind11",
+    "gcdoc"
   ]
 }
 
