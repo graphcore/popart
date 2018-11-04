@@ -29,6 +29,24 @@
 namespace willow {
 namespace popx {
 
+void Devicex::weightsToHost(
+    const std::map<TensorId, MutableVoidData> &onnxModelData) {
+  std::cout << "Writing weights to host" << std::endl;
+  // write weights from IPU to host stream memory points
+  pEngine->run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
+  std::cout << "Writing weights to ONNX ModelProto" << std::endl;
+  // copy from the host stream memory points to the
+  // addresses on onnxModelData
+  for (auto initId : pir->tensors.getInitIds()) {
+    auto found = onnxModelData.find(initId);
+    if (found == onnxModelData.end()) {
+      throw error("No TensorId " + initId + " in final host destination map");
+    }
+    MutableVoidData mv_data = found->second;
+    hostStreamToHost(mv_data, initId);
+  }
+}
+
 std::string Devicex::getConstTensorKey(const poplar::Type &type,
                                        const std::vector<size_t> &shape,
                                        double val) const {
@@ -131,18 +149,18 @@ Devicex::Devicex(const Ir *pir) : willow::Device(pir), tensors(pir) {
 }
 
 void Devicex::weightsFromHost() {
-  std::cout << "writing weights from host, " << std::flush;
+  std::cout << "Writing weights from host, " << std::flush;
   pEngine->run(PopPrograms::ProgramIndex::WEIGHTSFROMHOST);
   std::cout << "done." << std::endl;
 }
 
 void Devicex::optimizerFromHost() {
-  std::cout << "writing optimizer from host, " << std::flush;
+  std::cout << "Writing optimizer from host, " << std::flush;
   pEngine->run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
   std::cout << "done." << std::endl;
 }
 
-void Devicex::copyToStreamHostAddr(
+void Devicex::hostToHostStream(
     void *dst,                 // destination of copy (a step tensor)
     const void *src,           // source of copy
     const TensorInfo &dstInfo, // the info for dst
@@ -193,11 +211,43 @@ void Devicex::copyToStreamHostAddr(
   }
 }
 
+// Copy from the host end of a d2h stream, to some final host memory.
+// This is the step which follows a copy from device to host.
+// poplar::Streams cannot write to an arbitrary dynamic address,
+// they are connected to a fixed host address. This function copies
+// from that fixed address to a dynamic address (mv_data).
+void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
+
+  // The host end of the poplar::Stream,
+  // we will try to copy from here
+  auto src = static_cast<const void *>(d2hBuffers.at(id).data());
+
+  auto dst = mv_data.data;
+
+  // size of the host end of the poplar stream.
+  // It is a char vector, so this is in bytes.
+  int64_t nbytes_src = d2hBuffers.at(id).size();
+
+  // number of bytes of the destination.
+  int64_t nbytes_dst = mv_data.info.nbytes();
+
+  // We confirm that the sizes of src and dst are the same
+  if (nbytes_src != nbytes_dst) {
+    std::stringstream errms;
+    errms << "sizes (in bytes) of src (" << nbytes_src << ") and dst ("
+          << nbytes_dst << ") differ in hostStreamToHost";
+    throw error(errms.str());
+  }
+
+  std::memcpy(dst, src, nbytes_src);
+}
+
 void Devicex::step(const StepIO &stepio) {
-  std::cout << "performing one step, " << std::flush;
-  std::cout << "first copying from StepIO.in(...) to streams, " << std::flush;
+  std::cout << "Performing one step: " << std::endl;
+  std::string prefix = "     ";
+  std::cout << prefix << "Copying to h2d stream address(es) " << std::endl;
   for (Tensor *tensor : pir->dataStreamTensors()) {
-    StepInData stepin = stepio.in(tensor->id);
+    ConstVoidData stepin = stepio.in(tensor->id);
 
     // where to write to on host,
     auto dst = static_cast<void *>(h2dBuffers.at(tensor->id).data());
@@ -214,34 +264,20 @@ void Devicex::step(const StepIO &stepio) {
     // the info of the user provided src step tensor
     TensorInfo srcInfo = stepin.info;
 
-    copyToStreamHostAddr(dst, src, dstInfo, srcInfo, tensor->id);
+    hostToHostStream(dst, src, dstInfo, srcInfo, tensor->id);
   }
 
-  std::cout << "now running the step program, " << std::flush;
-  pEngine->run(PopPrograms::ProgramIndex::STEP);
+  std::cout << prefix << "Running the step program " << std::endl;
+  // TODO : this should be in a poplar for loop (see T5093)
+  for (int i = 0; i < pir->dataFlow.batchesPerStep(); ++i) {
+    pEngine->run(PopPrograms::ProgramIndex::STEP);
+  }
 
-  std::cout << "finally copying from streams to StepIO.out(), " << std::flush;
+  std::cout << prefix << "Copying from d2h stream address(es) " << std::endl;
   for (TensorId anchorId : pir->dataFlow.anchors()) {
-    StepOutData stepout = stepio.out(anchorId);
-    auto dst            = stepout.data;
-    auto src = static_cast<const void *>(d2hBuffers.at(anchorId).data());
-
-    // size of the char vector,
-    int64_t nbytes_src = d2hBuffers.at(anchorId).size();
-
-    // number of bytes of the destination,
-    int64_t nbytes_dst = stepout.info.nbytes();
-
-    if (nbytes_src != nbytes_dst) {
-      std::stringstream errms;
-      errms << "sizes (in bytes) of src (" << nbytes_src << ") and dst ("
-            << nbytes_dst << ") differ.";
-      throw error(errms.str());
-    }
-
-    std::memcpy(dst, src, nbytes_src);
+    MutableVoidData stepout = stepio.out(anchorId);
+    hostStreamToHost(stepout, anchorId);
   }
-  std::cout << "done." << std::endl;
 }
 
 std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
@@ -500,7 +536,7 @@ PriTask Devicex::opTask(Op *op, double priority) {
   for (auto t_inds : op->input.indicesMap()) {
     Tensor *tensor = t_inds.first;
     deps.push_back(taskWhichCreates(tensor->id));
-    // if the tensor is streamed on, we must wait 
+    // if the tensor is streamed on, we must wait
     // 'til the Copy has happened
     if (tensor->tensorType() == TensorType::Stream) {
       deps.push_back(fromHostTaskId(tensor->id));
@@ -519,7 +555,7 @@ PriTask Devicex::opTask(Op *op, double priority) {
 OpxAndInIndex::OpxAndInIndex(int conIndex_, Opx *opx_)
     : index(conIndex_), opx(opx_) {}
 
-// go all the way to creating the engine
+// go all the way to creating the engine and connecting streams
 void Devicex::prepare() {
 
   pGraph.reset(new poplar::Graph(popDevice));
@@ -534,7 +570,12 @@ void Devicex::prepare() {
 
   PriTasks tasks;
 
-  // initializers : 1) make tensor, 2) make stream, 3) create write prog.
+  // initializers :
+  // 1) make tensor,
+  // 2) make stream from host,
+  // 3) create write prog,
+  // 4) make stream to host,
+  // 5) create read prog.
   for (auto id : pir->tensors.getInitIds()) {
     Tensor *tensor = pir->tensors.get(id);
     // 1
@@ -543,6 +584,10 @@ void Devicex::prepare() {
     tasks.add(streamFromHostTask(tensor));
     // 3
     tasks.add(fromHostTask(tensor, progs.weightsFromHost()));
+    // 4
+    tasks.add(streamToHostTask(tensor));
+    // 5
+    tasks.add(toHostTask(tensor, progs.weightsToHost()));
   }
 
   // stream-to-device tensors : 1)  make tensor 2) make stream
@@ -585,6 +630,7 @@ void Devicex::prepare() {
     task.f();
   }
   std::cout << "All tasks complete" << std::endl;
+  std::cout << "Creating poplar::Engine" << std::endl;
 
   pEngine.reset(new poplar::Engine(graph(), progs.progs(), engineOptions));
   std::cout << "Engine has been created" << std::endl;
@@ -623,7 +669,7 @@ void Devicex::prepare() {
     engineToStream(data0, n_bytes, streamId);
   }
 
-  std::cout << "Creating host buffers for d2h streams, and connecting"
+  std::cout << "Creating host buffers for anchor d2h streams, connecting"
             << std::endl;
   for (TensorId anchorId : pir->dataFlow.anchors()) {
     PopStreamId streamId = d2hId(anchorId);
@@ -646,6 +692,18 @@ void Devicex::prepare() {
     }
     d2hBuffers[anchorId] = std::vector<char>(n_bytes);
     char *data0          = d2hBuffers[tensor->id].data();
+    engineToStream(data0, n_bytes, streamId);
+  }
+
+  std::cout << "Creating host buffers for weight d2h streams, connecting"
+            << std::endl;
+
+  for (auto initId : pir->tensors.getInitIds()) {
+    PopStreamId streamId = d2hId(initId);
+    Tensor *tensor       = pir->tensors.get(initId);
+    int64_t n_bytes      = tensor->info.nbytes();
+    d2hBuffers[initId]   = std::vector<char>(n_bytes);
+    char *data0          = d2hBuffers[initId].data();
     engineToStream(data0, n_bytes, streamId);
   }
 }
@@ -723,9 +781,24 @@ poplar::Type popType(const TensorInfo &info) {
   case TP::INT32: {
     return poplar::INT;
   }
-  default: {
+
+  case TP::UNDEFINED:
+  case TP::UINT8:
+  case TP::INT8:
+  case TP::UINT16:
+  case TP::INT16:
+  case TP::INT64:
+  case TP::STRING:
+  case TP::BOOL:
+  case TP::FLOAT16:
+  case TP::BFLOAT16:
+  case TP::DOUBLE:
+  case TP::UINT32:
+  case TP::UINT64:
+  case TP::COMPLEX64:
+  case TP::COMPLEX128:
+  default:
     throw error("Is there a poplar type for " + info.data_type() + "?");
-  }
   }
 }
 

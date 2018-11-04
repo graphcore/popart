@@ -5,6 +5,7 @@
 #include <willow/l1.hpp>
 #include <willow/loss.hpp>
 #include <willow/nll.hpp>
+#include <willow/numerics.hpp>
 #include <willow/optimizer.hpp>
 #include <willow/stepio.hpp>
 #include <willow/willownet.hpp>
@@ -75,12 +76,12 @@ public:
     return stepData;
   }
 
-  virtual StepInData in(TensorId id) const override final {
-    return get<StepInData>(id, inputs, "inputs");
+  virtual ConstVoidData in(TensorId id) const override final {
+    return get<ConstVoidData>(id, inputs, "inputs");
   }
 
-  virtual StepOutData out(TensorId id) const override final {
-    return get<StepOutData>(id, outputs, "outputs");
+  virtual MutableVoidData out(TensorId id) const override final {
+    return get<MutableVoidData>(id, outputs, "outputs");
   }
 
 private:
@@ -111,12 +112,25 @@ PYBIND11_MODULE(pywillow, m) {
           py::arg("Batch size"),
           py::arg("Anchor tensors (tensors to return)"),
           py::arg("Anchor return type"))
-      .def("nAnchors", &DataFlow::nAnchors);
+      .def("nAnchors", &DataFlow::nAnchors)
+      .def("samplesPerBatch", &DataFlow::samplesPerBatch)
+      .def("batchesPerStep", &DataFlow::batchesPerStep)
+      .def("samplesPerStep", &DataFlow::samplesPerStep)
+      // see https://pybind11.readthedocs.io/en/stable/advanced/functions.html
+      // for how pybind handles values returned by reference. I'm taking
+      // the safe option here and copying the anchors.
+      .def("anchors", &DataFlow::anchors, pybind11::return_value_policy::copy)
+      .def("art", &DataFlow::art);
 
   py::class_<TensorInfo>(m, "TensorInfo")
       .def(py::init<std::string, const std::vector<int64_t> &>())
       .def("data_type_lcase", &TensorInfo::data_type_lcase)
       .def("shape", &TensorInfo::shape);
+
+  py::class_<numerics::NumericsReport>(m, "NumericsReport")
+      .def(py::init<std::string, std::string, std::string, std::string>())
+      .def("report", &numerics::NumericsReport::report)
+      .def("fullReport", &numerics::NumericsReport::fullReport);
 
   py::class_<EarlyInfo>(m, "EarlyInfo")
       .def(py::init<>())

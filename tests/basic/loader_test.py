@@ -1,10 +1,14 @@
 import sys
-import os
 
-sys.path.append('../lib')
+# We test if we can load pywillow.
+# This requires that the python library
+# and its dependencies are found, should
+# be in the following location if installed:
+sys.path.append('../../lib')
+sys.path.append('../../python')
 
-from pywillow import NllLoss, L1Loss, EarlyInfo, TensorInfo, PyStepIO
-from pywillow import DataFlow, SGD, ConstSGD, WillowNet, getTensorInfo
-from pywillow import AnchorReturnType
+# the core library, which wraps C++ willow,
+import pywillow
 
-
+# and some utility python functions.
+import writer

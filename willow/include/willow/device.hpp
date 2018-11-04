@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_DEVICE_HPP
 
 #include <willow/names.hpp>
+#include <willow/stepio.hpp>
 #include <willow/tensorinfo.hpp>
 
 namespace willow {
@@ -15,6 +16,7 @@ public:
   Device &operator=(const Device &) = delete;
   virtual void prepare()            = 0;
   virtual void weightsFromHost()    = 0;
+  virtual void weightsToHost(const std::map<TensorId, MutableVoidData> &) = 0;
   // write optimizer-specific tensors (learning rates, etc.) to Device
   virtual void optimizerFromHost()  = 0;
   virtual void step(const StepIO &) = 0;

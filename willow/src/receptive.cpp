@@ -61,7 +61,7 @@ std::vector<int64_t> HasReceptiveFieldOp::getOutShape() const {
   for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
     outShape[spDim + 2] =
         //(input.tensor(0)->info.dim(spDim + 2)
-        (spatialD[spDim] + pads[2 * spDim] + pads[2 * spDim + 1] -
+        (spatialD[spDim] + pads[spDim] + pads[nSpatialDims + spDim] -
          dilations[spDim] * (spatialK[spDim] - 1) - 1) /
             strides[spDim] +
         1;

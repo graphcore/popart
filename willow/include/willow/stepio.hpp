@@ -2,17 +2,18 @@
 #define GUARD_NEURALNET_STEPIO_HPP
 
 #include <willow/names.hpp>
+#include <willow/tensorinfo.hpp>
 
 namespace willow {
 
-class StepInData {
+class ConstVoidData {
 public:
   const void *data;
   // This is used to confirm that data is as expected
   TensorInfo info;
 };
 
-class StepOutData {
+class MutableVoidData {
 public:
   void *data;
   // This is used to confirm that data is as expected
@@ -21,9 +22,9 @@ public:
 
 class StepIO {
 public:
-  virtual ~StepIO()                       = default;
-  virtual StepInData in(TensorId) const   = 0;
-  virtual StepOutData out(TensorId) const = 0;
+  virtual ~StepIO()                           = default;
+  virtual ConstVoidData in(TensorId) const    = 0;
+  virtual MutableVoidData out(TensorId) const = 0;
 };
 
 } // namespace willow

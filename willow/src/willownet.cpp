@@ -1,7 +1,11 @@
+#include <fstream>
 #include <willow/device.hpp>
 #include <willow/error.hpp>
+#include <willow/filereader.hpp>
 #include <willow/ir.hpp>
+#include <willow/onnxutil.hpp>
 #include <willow/popx/devicex.hpp>
+#include <willow/stepio.hpp>
 #include <willow/tensor.hpp>
 #include <willow/willownet.hpp>
 
@@ -67,8 +71,22 @@ void WillowNet::optimizerFromHost() { device_->optimizerFromHost(); }
 void WillowNet::step(const StepIO &stepio) { device_->step(stepio); }
 
 // write current model to ONNX file
-void WillowNet::modelToHost(std::string) {
-  throw error("pop device not ready, model to host");
+void WillowNet::modelToHost(std::string fn) {
+
+  onnx::ModelProto model = pir->getModel();
+
+  std::map<TensorId, MutableVoidData> initMap;
+  for (int init_index = 0; init_index < model.graph().initializer_size();
+       ++init_index) {
+    onnx::TensorProto &tp =
+        *model.mutable_graph()->mutable_initializer(init_index);
+    TensorId tenId = tp.name();
+    initMap[tenId] = onnxutil::getMutableData(tp);
+  }
+
+  device_->weightsToHost(initMap);
+
+  io::writeModel(model, fn);
 }
 
 } // namespace willow

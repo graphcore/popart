@@ -10,5 +10,7 @@ echo "clang-format -i pywillow/*cpp"
 clang-format -i pywillow/*cpp
 echo "yapf -i tests/basic/*py"
 yapf -i tests/basic/*py
+echo "yapf -i tests/cifar10/*py"
+yapf -i tests/cifar10/*py
 echo "yapf -i pywillow/*py"
 yapf -i pywillow/*py

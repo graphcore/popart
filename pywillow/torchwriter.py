@@ -20,13 +20,11 @@ def conv3x3(in_planes, out_planes, stride=1):
 
 
 class PytorchNetWriter(NetWriter):
-    def __init__(self, inNames, outNames, losses, optimizer, willowVerif,
-                 dataFeed, earlyInfo, module, trainloader, trainLoaderIndices):
+    def __init__(self, inNames, outNames, losses, optimizer, dataFeed,
+                 earlyInfo, module):
         """
         module:
           -- pytorch module (whose forward does not have the loss layers)
-        trainlader:
-          --
         all others:
           -- parameters passed to base class.
         """
@@ -36,13 +34,10 @@ class PytorchNetWriter(NetWriter):
             outNames=outNames,
             losses=losses,
             optimizer=optimizer,
-            willowVerif=willowVerif,
             earlyInfo=earlyInfo,
             dataFeed=dataFeed)
 
         self.module = module
-        self.trainloader = trainloader
-        self.trainLoaderIndices = trainLoaderIndices
 
     def getTorchOptimizer(self):
         """
@@ -70,41 +65,43 @@ class PytorchNetWriter(NetWriter):
                 # Use LogSoftmax instead (it’s faster and has
                 # better numerical properties)
                 criterion = torch.nn.NLLLoss()
+
                 lossValues.append(
                     criterion(
                         torch.log(outMap[loss.probsTensorId()]),
-                        streamMap[loss.labelTensorId()]))
+                        torch.LongTensor(streamMap[loss.labelTensorId()])))
 
             elif isinstance(loss, L1Loss):
                 lossValues.append(loss.getLambda() * torch.norm(
                     outMap[loss.getInputId()], 1))
 
+            else:
+                raise RuntimeError(
+                    "unrecognised loss, cannot get equivalent Torch version")
+
         return sum(lossValues)
 
-    def writeOnnxModel(self, dirname, t_step, streamMap):
-        # write ONNX model
-        fnModel = os.path.join(dirname, "model%d.onnx" % (t_step, ))
-        print("writing ONNX model (t=%d) to protobuf file" % (t_step, ))
-        # now jump into eval mode, just to write the onnx model
-        # note that this might do strange things with batch-normalisation
+    def saveModel(self, fnModel):
+        print("Writing ONNX model to protobuf file %s" % (fnModel, ))
+        # jump into eval mode, just to write the onnx model.
+        # note that this might do strange things with batch-normalisation (?)
         self.module.eval()
-        print("  --writing %s" % (fnModel, ))
+
+        inputDataInfos = [self.earlyInfo.get(tid) for tid in self.inNames]
+        inputData = [
+            torch.Tensor(np.ones(shape=x.shape(), dtype=x.data_type_lcase()))
+            for x in inputDataInfos
+        ]
+
         torch.onnx.export(
-            self.module, [streamMap[inName] for inName in self.inNames],
+            self.module,
+            inputData,
             fnModel,
             verbose=False,
             input_names=self.inNames,
             output_names=self.outNames)
 
-    def getStreamMap(self, data):
-        # unpack the stream input from "data":
-        streamMap = {}
-        # this should return [image0, image1, label] for model 0
-        for streamName in self.trainLoaderIndices.keys():
-            streamMap[streamName] = data[self.trainLoaderIndices[streamName]]
-        return streamMap
-
-    def writeOnnx(self, dirname):
+    def step(self, inMap):
         """
         TODO : sort out case of tuples of tuples for outputs
 
@@ -113,34 +110,46 @@ class PytorchNetWriter(NetWriter):
         the order will always correspond to the order of the
         onnx "trace", so I won't.
         """
+        torchOptimizer = self.getTorchOptimizer()
+        self.module.train()
+        batchSize = self.dataFeed.samplesPerBatch()
 
-        if not self.willowVerif:
-            data = iter(trainloader).next()
-            self.writeOnnxModel(dirname, 0, self.getStreamMap(data))
+        # perform forwards - backwards - update
+        # for each of the substeps (substep = batch)
 
-        # note for other frameworks. If willowVerif is always False,
-        # this elimimates most of the work done here: don't need to
-        # worry about Optimizer, losses, maybe not even data stream.
-        else:
-            torchOptimizer = self.getTorchOptimizer()
+        # this list we store a map of the output tensors
+        # for each of the batches in the step
+        substepOutMaps = []
+        for substep in range(self.dataFeed.batchesPerStep()):
 
-            for i, data in enumerate(self.trainloader, 0):
-                if i == 5:
-                    break
+            substepOutMap = {}
+            substepInMap = {}
+            for inId in inMap.keys():
+                substepInMap[inId] = inMap[inId][substep * batchSize:
+                                                 (substep + 1) * batchSize]
 
-                streamMap = self.getStreamMap(data)
-                self.writeOnnxModel(dirname, i, streamMap)
+            torchOptimizer.zero_grad()
+            substepInputs = [
+                torch.Tensor(substepInMap[name]) for name in self.inNames
+            ]
 
-                #forwards - backwards - update
-                self.module.train()
-                torchOptimizer.zero_grad()
-                outputs = self.module(
-                    [streamMap[name] for name in self.inNames])
-                outMap = {}
+            # forward pass
+            substepOutputs = self.module(substepInputs)
+
+            if len(self.outNames) == 1:
+                substepOutMap[self.outNames[0]] = substepOutputs
+            else:
                 for j, outName in enumerate(self.outNames):
-                    outMap[outName] = outputs[j]
-                lossTarget = self.getTorchLossTarget(streamMap, outMap)
-                lossTarget.backward()
-                torchOptimizer.step()
-                for p in self.module.parameters():
-                    print(p.max())
+                    substepOutMap[outName] = substepOutputs[j]
+
+            # backwards pass
+
+            lossTarget = self.getTorchLossTarget(substepInMap, substepOutMap)
+            lossTarget.backward()
+            torchOptimizer.step()
+
+            substepOutMaps.append(substepOutMap)
+
+        # returning: list with one entry per substep, of the
+        # output of the batch processed at the substep
+        return substepOutMaps

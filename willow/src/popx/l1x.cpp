@@ -34,10 +34,11 @@ void L1GradOpx::grow() const {
                                             step(),
                                             "signum/" + inId(0));
 
-  // scale by lambda, so +lambda if positive, -lambda if negative, 0 if zero.
+  // scale the signum tensor by lambda,
+  // so +lambda if positive, -lambda if negative, 0 if zero
   poplar::Tensor gradTensor = popops::map(graph(),
                                           popops::expr::BinaryOpType::MULTIPLY,
-                                          get(inId(0)),
+                                          signumTensor,
                                           t_lambda,
                                           step(),
                                           "multiply/" + inId(0));

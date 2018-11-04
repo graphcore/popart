@@ -2,6 +2,7 @@
 #include <willow/error.hpp>
 #include <willow/ir.hpp>
 #include <willow/onnxutil.hpp>
+#include <willow/stepio.hpp>
 #include <willow/tensor.hpp>
 #include <willow/util.hpp>
 
@@ -63,9 +64,9 @@ TensorData *Tensor::tensorData() {
 }
 
 TensorData::TensorData(const onnx::TensorProto &tp) {
-  TensorInfo info(tp);
-  data_.resize(info.nbytes());
-  std::memcpy(data_.data(), onnxutil::getData(tp), info.nbytes());
+  ConstVoidData cv_data = onnxutil::getConstData(tp);
+  data_.resize(cv_data.info.nbytes());
+  std::memcpy(data_.data(), cv_data.data, cv_data.info.nbytes());
 }
 
 TensorData::TensorData(const TensorInfo &info, const void *from) {

@@ -117,6 +117,7 @@ std::map<DataType, DataTypeInfo> initDataTypeInfoMap() {
           {TP::STRING, {TP::STRING, -1, "STRING", "string"}},
           {TP::BOOL, {TP::BOOL, 1, "BOOL", "bool"}},
           {TP::FLOAT16, {TP::FLOAT16, 2, "FLOAT16", "float16"}},
+          {TP::BFLOAT16, {TP::FLOAT16, 2, "BFLOAT16", "bfloat16"}},
           {TP::DOUBLE, {TP::DOUBLE, 8, "DOUBLE", "float64"}},
           {TP::UINT32, {TP::UINT32, 4, "UINT32", "uint32"}},
           {TP::UINT64, {TP::UINT64, 8, "UINT64", "uint64"}},

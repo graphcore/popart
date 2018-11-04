@@ -42,15 +42,22 @@ void SGD::setTensorData(Tensor *t) const {
   if (t->id == getLearningRateId()) {
     float lRate = learnRate();
     t->setTensorData(t->info, &lRate);
+  } else {
+    throw error("SGD can only set the learning rate (" + getLearningRateId() +
+                ") and not (" + t->id + ") currently");
   }
 }
 
-void Optimizer::resetTensorDatas(Ir *) const {
-  throw error("Request to reset tensor datas, not implemented");
+void SGD::resetTensorDatas(Ir *) const {
+  throw error("Request to reset tensor datas for SGD, not implemented");
 }
 
 void ConstSGD::setTensorData(Tensor *) const {
   throw error("ILE : ConstSGD does not set tensor data");
+}
+
+void ConstSGD::resetTensorDatas(Ir *) const {
+  throw error("ConstSGD does not have any tensors to reset");
 }
 
 std::unique_ptr<Op> ConstSGD::createOp(TensorId varId, Ir *pir) const {

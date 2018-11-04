@@ -46,8 +46,7 @@ public:
   int nAnchors() const;
   int samplesPerBatch() const;
   int batchesPerStep() const;
-  // TODO : AnchorReturnType can be made
-  // tensor specific at no cost
+  int samplesPerStep() const;
   AnchorReturnType art() const;
 
 private:
@@ -514,6 +513,7 @@ public:
   void eraseOp(OpId);
   Op *getOp(OpId);
   const DataFlow dataFlow;
+  onnx::ModelProto getModel() const;
 
   // see connectInputs, this is just an instantiation of it
   void connectInputsFromInputMapWrapper(const InputMapWrapper &, OpId opId);

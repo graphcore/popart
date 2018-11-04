@@ -72,7 +72,7 @@ onnx::ModelProto getModel(std::string filename) {
 
   if (!input.is_open()) {
     std::stringstream ss;
-    ss << "failed to open file " << filename;
+    ss << "Failed to open file " << filename;
     throw error(ss.str());
   }
 
@@ -86,11 +86,30 @@ onnx::ModelProto getModel(std::string filename) {
 
   if (modelProto.graph().node_size() == 0) {
     std::stringstream ss;
-    ss << "In loading ModelProto from " << filename << '\n';
-    ss << "model with zero nodes (=weird). Pedantic throw";
+    ss << "In loading ModelProto from " << filename << ':' << ' ';
+    ss << "ModelProto has no nodes (=weird). Pedantic bail.";
     throw error(ss.str());
   }
   return modelProto;
+}
+
+void writeModel(const onnx::ModelProto &model, std::string filename) {
+
+  std::ofstream ofs;
+  ofs.open(filename, std::ofstream::out | std::ofstream::binary);
+  if (!ofs.is_open()) {
+    std::stringstream ss;
+    ss << "Failed to open file " << filename;
+    throw error(ss.str());
+  }
+
+  // Standard Message Methods have this functionality for serializing
+  // https://developers.google.com/protocol-buffers/docs/cpptutorial
+  if (!model.SerializeToOstream(&ofs)) {
+    std::stringstream ss;
+    ss << "Failed to serialize ModelProto to " << filename;
+    throw error(ss.str());
+  }
 }
 
 onnx::TensorProto getTensor(std::string filename) {

@@ -121,4 +121,17 @@ Do I need to split step() into fwd() and bwd()? Probably, yes
 That said, for things like Batch Norm which change internal parameters, 
 how will I tell fwd() that the parameters must not change?
 
+04/11
+1) stepio.hpp functionality and TensorInfo in tensor.hpp should be
+   merged, at least put in the same header
+2) AnchorReturnType can be made tensor specific at no cost. Also, 
+   create a task to implement the other AnchorTypes (SUM, FINAL)
+3) A task for Ir::getModel() : return a version without weight data filled in.
+   This task will cause problems with Const Tensors in the comparison though
+4) Device::weightsFromHost should not be hard-wired to a single onnx::ModelProto
+5) weightsToHost and step have similar input types, but they look nothing alike
+   task : make them resemble each other
+6) inclusion of devicex.hpp in willownet.cpp should only be done if 
+   the cmake flag to build a poplar backend is set 
+
 

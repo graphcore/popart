@@ -77,6 +77,8 @@ public:
   virtual void weightsFromHost() override final;
   virtual void optimizerFromHost() override final;
   virtual void step(const StepIO &) override final;
+  virtual void
+  weightsToHost(const std::map<TensorId, MutableVoidData> &) override final;
 
   PopPrograms progs;
   Opx *getOpx(OpId);
@@ -162,12 +164,19 @@ private:
   std::map<TensorId, std::vector<char>> d2hBuffers;
 
   // copy a step tensor from user provided src, to allocated memory dst
-  void
-  copyToStreamHostAddr(void *dst,       // destination of copy (a step tensor)
-                       const void *src, // source of copy
-                       const TensorInfo &dstInfo, // the info for dst
-                       const TensorInfo &srcInfo, // user provided info for src
-                       TensorId id);
+  // input parameters are,
+  // dst     : destination of copy, this is the host end of a poplar::Stream
+  // src     : source of the copy
+  // dstInfo : the info for dst
+  // srcInfo : user provided info for src. Both TensorInfos are required
+  //           so that we can verify dst and src are the same size
+  void hostToHostStream(void *dst,
+                        const void *src,
+                        const TensorInfo &dstInfo,
+                        const TensorInfo &srcInfo,
+                        TensorId id);
+
+  void hostStreamToHost(const MutableVoidData &mv_data, TensorId id);
 };
 
 } // namespace popx

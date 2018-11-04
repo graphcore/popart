@@ -31,9 +31,15 @@
 
 namespace willow {
 
+onnx::ModelProto Ir::getModel() const { return onnxModel; }
+
 TensorId TensorIndexMap::id(int index) const { return tensor(index)->id; }
 
 AnchorReturnType DataFlow::art() const { return art_; }
+
+int DataFlow::samplesPerStep() const {
+  return samplesPerBatch() * batchesPerStep();
+}
 
 std::vector<Tensor *> Ir::optimizerTensors() const {
   if (optimizer.get() == nullptr) {
@@ -471,6 +477,9 @@ std::vector<TensorId> EarlyInfo::getAllTensorIds() const {
   return all;
 }
 
+// used for circumventing the pytorch bug,
+// where some initializers are not used :
+// https://github.com/pytorch/pytorch/issues/13552
 void Ir::setAllNodeInputsMap() {
   for (auto &node : onnxModel.graph().node()) {
     for (auto &name : node.input()) {
