@@ -5,8 +5,8 @@
 #include <willow/ir.hpp>
 #include <willow/onnxutil.hpp>
 #include <willow/popx/devicex.hpp>
-#include <willow/stepio.hpp>
 #include <willow/tensor.hpp>
+#include <willow/tensordata.hpp>
 #include <willow/willownet.hpp>
 
 namespace willow {

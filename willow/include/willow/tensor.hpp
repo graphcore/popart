@@ -3,6 +3,7 @@
 
 #include <map>
 #include <willow/names.hpp>
+#include <willow/tensordata.hpp>
 #include <willow/tensorinfo.hpp>
 #include <willow/vertex.hpp>
 
@@ -91,16 +92,6 @@ private:
 };
 const std::map<TensorType, TensorTypeInfo> &getTensorTypeInfoMap();
 std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap();
-
-class TensorData {
-public:
-  TensorData(const TensorInfo &, const void *);
-  TensorData(const onnx::TensorProto &);
-  void *data();
-
-private:
-  std::vector<char> data_;
-};
 
 class Tensor : public Vertex {
 public:

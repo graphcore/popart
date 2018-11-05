@@ -5,7 +5,7 @@
 #pragma clang diagnostic ignored "-Weverything"
 #include <onnx/onnx_pb.h>
 #pragma clang diagnostic pop // stop ignoring warnings
-#include <willow/stepio.hpp>
+#include <willow/tensordata.hpp>
 
 namespace willow {
 namespace onnxutil {

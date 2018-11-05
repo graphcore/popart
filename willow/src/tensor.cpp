@@ -2,8 +2,8 @@
 #include <willow/error.hpp>
 #include <willow/ir.hpp>
 #include <willow/onnxutil.hpp>
-#include <willow/stepio.hpp>
 #include <willow/tensor.hpp>
+#include <willow/tensordata.hpp>
 #include <willow/util.hpp>
 
 namespace willow {
@@ -62,19 +62,6 @@ TensorData *Tensor::tensorData() {
   }
   return data_.get();
 }
-
-TensorData::TensorData(const onnx::TensorProto &tp) {
-  ConstVoidData cv_data = onnxutil::getConstData(tp);
-  data_.resize(cv_data.info.nbytes());
-  std::memcpy(data_.data(), cv_data.data, cv_data.info.nbytes());
-}
-
-TensorData::TensorData(const TensorInfo &info, const void *from) {
-  data_.resize(info.nbytes());
-  std::memcpy(data_.data(), from, info.nbytes());
-}
-
-void *TensorData::data() { return data_.data(); }
 
 void Consumers::append(std::stringstream &ss) {
   std::string tab = "     ";

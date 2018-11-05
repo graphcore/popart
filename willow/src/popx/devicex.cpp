@@ -15,8 +15,8 @@
 #include <willow/popx/sumx.hpp>
 #include <willow/popx/varupdatex.hpp>
 #include <willow/pritask.hpp>
-#include <willow/stepio.hpp>
 #include <willow/tensor.hpp>
+#include <willow/tensordata.hpp>
 #include <willow/util.hpp>
 
 #pragma clang diagnostic push // start ignoring warnings

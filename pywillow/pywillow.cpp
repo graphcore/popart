@@ -7,7 +7,7 @@
 #include <willow/nll.hpp>
 #include <willow/numerics.hpp>
 #include <willow/optimizer.hpp>
-#include <willow/stepio.hpp>
+#include <willow/tensordata.hpp>
 #include <willow/willownet.hpp>
 
 // note to developers: be very careful

@@ -2,7 +2,7 @@
 #define GUARD_NEURALNET_DEVICE_HPP
 
 #include <willow/names.hpp>
-#include <willow/stepio.hpp>
+#include <willow/tensordata.hpp>
 #include <willow/tensorinfo.hpp>
 
 namespace willow {
