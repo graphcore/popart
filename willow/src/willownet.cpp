@@ -21,7 +21,7 @@ WillowNet::WillowNet(std::string onnxModelFn,
                      std::string logdir_,
                      const std::vector<std::string> &patternNames)
 
-    : pir(new Ir({onnxModelFn,
+    : pir_(new Ir({onnxModelFn,
                   perk,
                   df,
                   lossesIn,
@@ -32,7 +32,7 @@ WillowNet::WillowNet(std::string onnxModelFn,
       device_(nullptr) {}
 
 void WillowNet::updateOptimizer(const Optimizer *optimizer) {
-  pir->updateOptimizer(optimizer);
+  pir_->updateOptimizer(optimizer);
 }
 
 void WillowNet::setDevice(std::string deviceString) {
@@ -41,7 +41,7 @@ void WillowNet::setDevice(std::string deviceString) {
   // there is POPLAR_BACKEND option)
 
   if (deviceString == "IPU") {
-    device_.reset(new popx::Devicex(pir.get()));
+    device_.reset(new popx::Devicex(pir_.get()));
   } else {
     throw error("How to set device from " + deviceString + " ??? ");
   }
@@ -49,7 +49,7 @@ void WillowNet::setDevice(std::string deviceString) {
 
 // get the TensorInfo on a Tensor
 TensorInfo WillowNet::getInfo(TensorId id) const {
-  TensorInfo info = pir->tensors.get(id)->info;
+  TensorInfo info = pir_->tensors.get(id)->info;
   if (!info.isSet()) {
     throw error("TensorInfo for `" + id + "' not set");
   }
@@ -73,7 +73,7 @@ void WillowNet::step(const StepIO &stepio) { device_->step(stepio); }
 // write current model to ONNX file
 void WillowNet::modelToHost(std::string fn) {
 
-  onnx::ModelProto model = pir->getModel();
+  onnx::ModelProto model = pir_->getModel();
 
   std::map<TensorId, MutableVoidData> initMap;
   for (int init_index = 0; init_index < model.graph().initializer_size();
