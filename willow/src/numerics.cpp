@@ -3,6 +3,8 @@
 #include <willow/numerics.hpp>
 #include <willow/onnxutil.hpp>
 
+#include <cmath>
+
 namespace willow {
 namespace numerics {
 
