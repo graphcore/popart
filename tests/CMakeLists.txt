@@ -2,7 +2,7 @@ include(CPack)
 
 set(CPACK_SOURCE_IGNORE_FILES ${INSTALL_TESTS})
 
-add_test(NAME loader_test WORKING_DIRECTORY ${INSTALL_TESTS} COMMAND python basic/loader_test.py)
+add_test(NAME loader_test WORKING_DIRECTORY ${INSTALL_TESTS} COMMAND python3 basic/loader_test.py)
 
 install(DIRECTORY .
 	DESTINATION ${INSTALL_TESTS}

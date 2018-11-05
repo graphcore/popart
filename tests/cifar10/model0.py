@@ -1,17 +1,9 @@
 import sys
-# the relative path from this file when installed
-# to the pywillow shared library file
-sys.path.append('../../lib')
-import pywillow
-
-# and the relative path to the utility
-# python pywillow files
-sys.path.append('../../python')
-import torchwriter
-import torch
-
-import c10driver
 import os
+import torch
+import c10driver
+import pywillow
+import torchwriter
 
 if (len(sys.argv) != 2):
     raise RuntimeError("onnx_net.py <log directory>")

@@ -1,13 +1,22 @@
 import sys
-sys.path.append("../../lib")
-sys.path.append("../../python")
 import os
 import torch
-import pywillow
 import numpy as np
 from torchvision import transforms, datasets
 
-from IPython.core.debugger import Tracer
+## Search for pywillow .so when importing
+testdir = os.path.dirname(os.path.abspath(__file__))
+libpath = os.path.join(testdir, "../../lib")
+sys.path.append(libpath)
+# So python finds libwillow.so when importing pywillow
+# (without having to export LD_LIBRARY_PATH)
+import ctypes
+ctypes.cdll.LoadLibrary(os.path.join(libpath, "libwillow.so"))
+import pywillow
+
+# Required for torchwriter if install/willow/python not in PYTHONPATH env var
+pypath = os.path.join(testdir, "../../python")
+sys.path.append(pypath)
 
 
 def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):

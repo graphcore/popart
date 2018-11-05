@@ -2,14 +2,11 @@
 # description of what's going on.
 
 import sys
-sys.path.append('../../lib')
-sys.path.append('../../python')
-
-import c10driver
 import os
+import torch
+import c10driver
 import pywillow
 import torchwriter
-import torch
 
 if (len(sys.argv) != 2):
     raise RuntimeError("onnx_net.py <log directory>")

@@ -8,9 +8,9 @@ echo "clang-format -i willow/include/willow/popx/*hpp"
 clang-format -i willow/include/willow/popx/*hpp
 echo "clang-format -i pywillow/*cpp"
 clang-format -i pywillow/*cpp
-echo "yapf -i tests/basic/*py"
-yapf -i tests/basic/*py
-echo "yapf -i tests/cifar10/*py"
-yapf -i tests/cifar10/*py
-echo "yapf -i pywillow/*py"
-yapf -i pywillow/*py
+echo "python -m yapf -i tests/basic/*py"
+python -m yapf -i tests/basic/*py
+echo "python -m yapf -i tests/cifar10/*py"
+python -m yapf -i tests/cifar10/*py
+echo "python -m yapf -i pywillow/*py"
+python -m yapf -i pywillow/*py
