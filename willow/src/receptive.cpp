@@ -39,7 +39,10 @@ void HasReceptiveFieldOp::setup() {
   // need to be careful with the ordering here.
   setup0();
 
-  output.tensor(0)->info.set(input.tensor(0)->info.dataType(), getOutShape());
+  // we assume that the output type is the same as the input type
+  outType = input.tensor(0)->info.dataType();
+
+  output.tensor(0)->info.set(outType, getOutShape());
 }
 
 std::vector<int64_t> HasReceptiveFieldOp::lowerPads() const {

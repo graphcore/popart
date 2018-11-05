@@ -66,13 +66,7 @@ void NllGradOp::setup() {
 
 NllGradOp::NllGradOp(NllOp *op_)
     : GradOp({"NllGrad", op_->pir, {}, getWillowDomain()}),
-      nllloss_(op_->nlll()), nllOpId(op_->id) {}
-
-Op *NllGradOp::getNonGradCreator() const { return pir->getOp(nllOpId); }
-
-NllOp *NllGradOp::getNllOp() const {
-  return dynamic_cast<NllOp *>(pir->getOp(nllOpId));
-}
+      nllloss_(op_->nlll()) {}
 
 const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createNllLossGradInfo();

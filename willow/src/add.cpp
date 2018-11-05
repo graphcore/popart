@@ -15,21 +15,19 @@ std::vector<std::unique_ptr<Op>> AddOp::getGradOps() {
   return upops;
 }
 
-AddOp *AddGradOp::getAddOp() const { return addOp; }
-
 void AddOp::setup() {
   output.tensor(0)->info = npOut(input.tensor(0)->info, input.tensor(1)->info);
 }
 
 void AddGradOp::setup() {
-  output.tensor(0)->info = addOp->input.tensor(0)->info;
-  output.tensor(1)->info = addOp->input.tensor(1)->info;
+  // shapes and types of gradients are the same as the inputs
+  output.tensor(0)->info = info0;
+  output.tensor(1)->info = info1;
 }
 
 AddGradOp::AddGradOp(AddOp *op_)
-    : GradOp({"AddGrad", op_->pir, {}, getWillowDomain()}), addOp(op_) {}
-
-Op *AddGradOp::getNonGradCreator() const { return addOp; }
+    : GradOp({"AddGrad", op_->pir, {}, getWillowDomain()}),
+      info0(op_->input.tensor(0)->info), info1(op_->input.tensor(1)->info) {}
 
 std::map<int, int> AddGradOp::createAddGradOutToIn() const {
   // the grad-op output at index 0 corresponds

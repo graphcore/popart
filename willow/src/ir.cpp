@@ -31,6 +31,12 @@
 
 namespace willow {
 
+GradNonGradPair::GradNonGradPair(Op *g_, Op *ng_) : grad(g_), nongrad(ng_) {}
+
+GradNonGradPair::GradNonGradPair() : GradNonGradPair(nullptr, nullptr) {}
+
+GradOp::GradOp(const OpConstructorBundle &b) : Op(b) {}
+
 onnx::ModelProto Ir::getModel() const { return onnxModel; }
 
 TensorId TensorIndexMap::id(int index) const { return tensor(index)->id; }
@@ -573,15 +579,17 @@ Ir::Ir(const IrBundle &gb)
     }
   }
 
+  // construct the forward pass from ONNX,
   constructForwards();
 
-  exportDot(io::appendDirFn(logdir, "jamForward0.dot"));
+  exportDot(io::appendDirFn(logdir, "fwd0.dot"));
   // to developers: confirm fuctions like this
   // should be to check that there
   // are no contradictions in the user input, NOT
   // in the implementation of the library willow.
   confirmConstIds();
 
+  // TODO: T5098 for bias in Conv Node.
   splitConvBias();
   for (auto &pattern : patterns) {
     applyPattern(pattern.get());
@@ -602,12 +610,10 @@ Ir::Ir(const IrBundle &gb)
   }
 
   prune();
-  inferTensorInfos();
   addRecompute();
   prune();
-  inferTensorInfos();
 
-  exportDot(io::appendDirFn(logdir, "jam.dot"));
+  exportDot(io::appendDirFn(logdir, "fwdBwd0.dot"));
 
   std::stringstream ss2;
   append(ss2);
@@ -788,6 +794,7 @@ Op *Ir::growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints) {
     outputs[index]       = getRecompId(tensor->id);
   }
   connectOutputs(OutputMapWrapper(outputs), rcId);
+  rcOp->setup();
 
   // yank down the priority of the new Op
   // (must be run as late as possible):
@@ -974,13 +981,6 @@ std::vector<TensorId> Tensors::getNoProducerIds() const {
   return t0;
 }
 
-void Ir::inferTensorInfos() {
-
-  for (Op *op : getTopologicallySorted()) {
-    op->setup();
-  }
-}
-
 std::vector<Op *> Ir::opsOfType(OpType opType) {
   std::vector<Op *> typedOps;
   for (auto &id_op : ops) {
@@ -1126,7 +1126,9 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
   connectInputs(InputVecWrapper(inputs), opId);
   connectOutputs(OutputVecWrapper(outputs), opId);
-  return ops[opId].get();
+  Op *op = ops[opId].get();
+  op->setup();
+  return op;
 }
 
 std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
@@ -1202,6 +1204,8 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
       }
       connectOutputs(OutputVecWrapper(v_outputs), gradOpId);
     }
+    gradOp->setup();
+
     // note, as the outputs of gradOp are edge-grad-tensors and not
     // edge-grads, we do not need to match them to non-grad tensors.
     gradOps.push_back(gradOp);
@@ -1369,12 +1373,12 @@ void Ir::constructBackwards() {
   // grad-ops which have created edge-gradients, but the
   // edge-gradients haven't signalled their existance.
   // initialised as the gradients of the individual losses
-  std::vector<Op *> opsToRegister = growLossGradients();
+  std::vector<GradNonGradPair> opsToRegister = growLossGradients();
 
   while (!opsToRegister.empty()) {
 
-    registerOpGrads(opsToRegister.back(),
-                    opsToRegister.back()->getNonGradCreator());
+    registerOpGrads(opsToRegister.back().grad, opsToRegister.back().nongrad);
+
     opsToRegister.resize(opsToRegister.size() - 1);
 
     for (auto &nongrad_egrads : tensor_grad_registry.popComplete()) {
@@ -1417,7 +1421,7 @@ void Ir::constructBackwards() {
 
     for (Op *op : op_grad_registry.popComplete()) {
       for (auto &gradOp : growGradOps(op)) {
-        opsToRegister.push_back(gradOp);
+        opsToRegister.push_back({gradOp, op});
       }
     }
   }
@@ -1439,6 +1443,7 @@ Op *Ir::growVarUpdateOp(TensorId varId) {
   // there are no outputs of var-op
   std::vector<TensorId> outputs{};
   connectOutputs(OutputVecWrapper(outputs), opId);
+  op->setup();
 
   trainTargetOps.insert(op);
 
@@ -1455,10 +1460,6 @@ std::map<int, TensorId> TensorIndexMap::tensorIdMap() const {
     M[index_tensor.first] = index_tensor.second->id;
   }
   return M;
-}
-
-Op *Op::getNonGradCreator() const {
-  throw error("No `get non grad op' for " + op_type() + " (yet?)");
 }
 
 Op *Ir::growFromNode(const Node &node) {
@@ -1480,7 +1481,11 @@ Op *Ir::growFromNode(const Node &node) {
 
   connectInputs(node, opId);
   connectOutputs(node, opId);
-  return ops[opId].get();
+  Op *fromNodeOp = ops[opId].get();
+  // finally, set the output tensor info for the output
+  // tensors, and any other Op specific class variables
+  fromNodeOp->setup();
+  return fromNodeOp;
 }
 
 Op *Ir::getFinalLossOp() {
@@ -1492,14 +1497,17 @@ Op *Ir::getFinalLossOp() {
 
 void Ir::growFinalLoss() {
   std::vector<Op *> lossOps;
+  // first, grow each of the individual losses from the user
   for (auto &loss : losses) {
     OpId opId = moveIntoIr(loss->getOp(this));
     connectInputs(*loss, opId);
     connectOutputs(*loss, opId);
-    lossOps.push_back(ops[opId].get());
+    Op *lossOp = ops[opId].get();
+    lossOps.push_back(lossOp);
+    lossOp->setup();
   }
 
-  // now growing the FINAL loss:
+  // now growing the FINAL loss (sum of individual losses)
   OpId opId = moveIntoIr(
       std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getWillowDomain()})));
 
@@ -1512,6 +1520,7 @@ void Ir::growFinalLoss() {
   connectInputs(InputVecWrapper(inputs), opId);
   connectOutputs(OutputVecWrapper(outputs), opId);
   finalLossOp = ops[opId].get();
+  finalLossOp->setup();
 }
 
 TensorId Ir::getFinalLossId() const { return "finalLoss"; }
@@ -1708,16 +1717,16 @@ std::string Op::str() const {
   return std::to_string(id) + " (" + op_type() + ')';
 }
 
-std::vector<Op *> Ir::growLossGradients() {
-  std::vector<Op *> gradops;
+std::vector<GradNonGradPair> Ir::growLossGradients() {
+  std::vector<GradNonGradPair> pairs;
   for (auto &t_inds : getFinalLossOp()->input.indicesMap()) {
     Tensor *t  = t_inds.first;
     Op *lossOp = t->getProducer();
-    for (Op *gradop : growGradOps(lossOp)) {
-      gradops.push_back(gradop);
+    for (Op *gradOp : growGradOps(lossOp)) {
+      pairs.push_back({gradOp, lossOp});
     }
   }
-  return gradops;
+  return pairs;
 }
 
 bool DataFlow::isAnchored(TensorId id) const {

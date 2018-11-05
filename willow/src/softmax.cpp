@@ -21,12 +21,7 @@ std::unique_ptr<Op> SoftmaxOp::clone() const {
 void SoftmaxGradOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 
 SoftmaxGradOp::SoftmaxGradOp(SoftmaxOp *op_)
-    : GradOp({"SoftmaxGrad", op_->pir, {}, getWillowDomain()}), softmaxOp(op_) {
-}
-
-Op *SoftmaxGradOp::getNonGradCreator() const { return softmaxOp; }
-
-SoftmaxOp *SoftmaxGradOp::getSoftmaxOp() const { return softmaxOp; }
+    : GradOp({"SoftmaxGrad", op_->pir, {}, getWillowDomain()}) {}
 
 const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createSoftmaxGradInfo();
@@ -56,17 +51,13 @@ std::vector<GradInOutMapper> SoftmaxGradOp::createSoftmaxGradInfo() const {
           {actsIn(), 0, GradOpInType::IN}};
 }
 
-SoftmaxGradDirectOp::SoftmaxGradDirectOp(Op *op, const NllLoss *nls)
+SoftmaxGradDirectOp::SoftmaxGradDirectOp(Ir *ir,
+                                         const NllLoss *nls)
     : Op({"SoftmaxGradDirect", // op_type
-          op->pir,             //
+          ir,                  //
           {},                  // no Attributes
           getWillowDomain()}) {
-  if (op->opType != OpType::SOFTMAX) {
-    throw error("Require SoftmaxOp in SoftmaxGradDirectOp constructor, not " +
-                op->op_type());
-  }
-  softmaxOp = static_cast<SoftmaxOp *>(op);
-  nllloss_  = nls;
+  nllloss_ = nls;
 }
 
 const NllLoss *SoftmaxGradDirectOp::nlll() const { return nllloss_; }
@@ -74,8 +65,6 @@ const NllLoss *SoftmaxGradDirectOp::nlll() const { return nllloss_; }
 std::vector<std::unique_ptr<Op>> SoftmaxGradDirectOp::getGradOps() {
   throw error("SoftmaxGradDirectOp is not a true non-grad op, no getGradOps");
 }
-
-SoftmaxOp *SoftmaxGradDirectOp::getSoftmaxOp() const { return softmaxOp; }
 
 std::unique_ptr<Op> SoftmaxGradDirectOp::clone() const {
   throw error("Unexpected (but valid) request to clone SoftmaxGradDirectOp");

@@ -802,5 +802,9 @@ poplar::Type popType(const TensorInfo &info) {
   }
 }
 
+// piggy-backing on TensorInfo's data_type()
+// function to get a string of the DataType
+poplar::Type popType(DataType type) { return popType(TensorInfo(type, {1})); }
+
 } // namespace popx
 } // namespace willow

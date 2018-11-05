@@ -15,6 +15,18 @@
 
 namespace willow {
 
+// helper class used during backwards pass construction.
+// This class helps to decouple the non-grad op from a
+// grad op (previously grad ops kept a pointer to a non-grad
+// op, which was dangerous as optimisations remove ops)
+class GradNonGradPair {
+public:
+  Op *grad;
+  Op *nongrad;
+  GradNonGradPair(Op *g_, Op *ng_);
+  GradNonGradPair();
+};
+
 class InputMapWrapper;
 
 enum class AnchorReturnType {
@@ -241,6 +253,7 @@ class Op : public Vertex {
 public:
   Op(const Node &, Ir *);
   Op(const OpConstructorBundle &);
+  // Note: copy constructor does NOT copy input and output.
   Op(const Op &);
   Op &operator=(const Op &) = delete;
   // the rule-of-3 says that it's good
@@ -297,7 +310,8 @@ public:
   const Attributes nAtts;
 
   // set shape and type parameters,
-  // MUST set output TensorInfos for all outputs
+  // This function MUST set output
+  // TensorInfos for all outputs
   virtual void setup();
 
   // return a vector of 1 or several gradient Ops: for
@@ -305,12 +319,6 @@ public:
   // If this Op is already a gradient Op, throws error
   // Why is this not constant? For one, nOps counter increments.
   virtual std::vector<std::unique_ptr<Op>> getGradOps();
-
-  // return a gradient op's non-gradient creator, if relevant.A
-  // if not relevant (this is a grad op etc) throws an error
-  // Note : the creator might have been optimised out, in which
-  // case calling this function has undefined bahaviour.
-  virtual Op *getNonGradCreator() const;
 
   // Design choice.
   // as optimisations get complex we might
@@ -348,7 +356,7 @@ public:
 
   // return a copy of self, similar to
   // cpppatterns.com/patterns/virtual-constructor.html
-  // fancy-pants people call it "covariant return type"
+  // some people call it "covariant return type"
   virtual std::unique_ptr<Op> clone() const = 0;
 
   // note that this is virtual, and will
@@ -379,7 +387,7 @@ private:
   //    handle variadic input size? (ie SumOp).
 
   // rebuttal to
-  // 1) not valid (a few more strings?) and also constricts
+  // 1) not valid (a few more strings?) and also constructs
   //    the grad op to always take all inputs and outputs
   //    from non-grad op
   // 2) not sure what the problem is here. variadic inputs can be
@@ -501,7 +509,6 @@ public:
   // followed by an x Op TODO : move to Patterns (see task T5098)
   void splitConvBias();
   std::vector<Op *> opsOfType(OpType);
-  void inferTensorInfos();
   // this does not take into priority, simple topological sort
   std::vector<Op *> getTopologicallySorted() const;
   std::vector<Op *> getTopologicallySortedTilLoss() const;
@@ -589,9 +596,9 @@ private:
   // as well as an op which sums them to get the final op
   void growFinalLoss();
 
-  // for each of the losses described by loss, create a
-  // grad-op
-  std::vector<Op *> growLossGradients();
+  // for each of the losses described by loss,
+  // create a grad-op. Return a vector of {gradop, lossop} pairs
+  std::vector<GradNonGradPair> growLossGradients();
 
   onnx::ModelProto onnxModel;
 

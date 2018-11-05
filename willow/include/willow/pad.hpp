@@ -12,6 +12,7 @@ public:
   // returns true of all pad size in all dimensions
   // and on both sides, are zero
   bool padSizeZero() const;
+  void setup() override final;
 
 private:
   std::vector<int64_t> pads;

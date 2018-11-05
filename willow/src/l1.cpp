@@ -52,19 +52,7 @@ void L1Op::setup() {
 }
 
 L1GradOp::L1GradOp(L1Op *op_)
-    : GradOp({"L1Grad", op_->pir, {}, getWillowDomain()}), l1OpId(op_->id),
-      l1loss_(op_->l1l()) {}
-
-Op *L1GradOp::getNonGradCreator() const {
-  // we have chosen to go via the ID, rather
-  // than storing the raw pointer, as it
-  // is common for loss ops to be pruned
-  // off while loss grad ops remain
-  return pir->getOp(l1OpId);
-}
-
-L1Op *L1GradOp::getL1Op() const {
-  return dynamic_cast<L1Op *>(pir->getOp(l1OpId));
+    : GradOp({"L1Grad", op_->pir, {}, getWillowDomain()}), l1loss_(op_->l1l()) {
 }
 
 const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {

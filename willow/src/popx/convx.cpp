@@ -21,9 +21,9 @@ poplin::ConvParams getFwdConvParams(const ConvOp *cOp) {
   std::vector<unsigned> ones(cOp->nSpatialDims, 1);
 
   // we assume that the output type is the same as the input
-  auto popOutType = popType(cOp->dataIn()->info);
+  auto popOutType = cOp->outType;
 
-  return poplin::ConvParams(popOutType,          // dType,
+  return poplin::ConvParams(popType(popOutType), // dType,
                             cOp->batchSize,      // batchSize,
                             cOp->spatialD_szt(), // inputFieldShape,
                             cOp->spatialK_szt(), // kernelShape,
@@ -55,9 +55,9 @@ poplin::ConvParams getFwdConvParams(const ConvOp *cOp) {
 }
 
 poplin::ConvParams getDataGradParams(const ConvDataGradOp *convDataGradOp) {
-  // we get the fwd params, and then use a utility function to convert
-  // to bwd params.
-  auto fwdParams = getFwdConvParams(convDataGradOp->getConvOp());
+  // we get the fwd params, and then use a utility
+  // function to convert to bwd params.
+  auto fwdParams = getFwdConvParams(convDataGradOp->getCloneOfCreator());
   // this utility function converts fwd params to bwd params.
   // see poplin/ConvUtil.hpp
   return poplin::getGradientParams(fwdParams);
@@ -90,17 +90,15 @@ void ConvOpx::grow() const {
 }
 
 void ConvDataGradOpx::grow() const {
-
   ConvDataGradOp *gradOp = getConvDataGradOp();
-
-  auto outTensor = poplin::convolution(
+  auto outTensor         = poplin::convolution(
       graph(),                                 // graph
       get(inId(gradOp->getGradConvolvedIn())), // in
       get(inId(gradOp->getWeightsIn())),       // weights
       dataGradParams,                          // params
-      true,                                    // transposeAndFlipWeights,
-      dv_p->progs.step(),                      // prog
-      idStr(),                                 // debugPrefix
+      true,               // transposeAndFlipWeights,
+      dv_p->progs.step(), // prog
+      idStr(),            // debugPrefix
       enigma::toPoplibsConvOptions(dv_p->bwdConvOptions), // options
       &dv_p->convCache                                    // cache
   );
@@ -109,11 +107,9 @@ void ConvDataGradOpx::grow() const {
 }
 
 void ConvWeightsGradOpx::grow() const {
-
   ConvWeightsGradOp *gradOp = getConvWeightsGradOp();
-  ConvOp *convOp            = gradOp->getConvOp();
-
-  poplar::Tensor wGrad = poplin::calculateWeightDeltas(
+  const ConvOp *convOp      = gradOp->getCloneOfCreator();
+  poplar::Tensor wGrad      = poplin::calculateWeightDeltas(
       graph(),                                           // graph
       get(inId(gradOp->getGradConvolvedIn())),           // zDeltas,
       get(inId(gradOp->getPreConvolvedIn())),            // activations,
@@ -167,7 +163,7 @@ bool ConvOpx::canCreateInput(int) const { return true; }
 
 poplar::Tensor ConvOpx::createInput(int index) const {
 
-  if (index == getConvOp()->weightsInIndex()) {
+  if (index == convWeightsInIndex()) {
     return poplin::createWeights(
         graph(),                                            // graph
         fwdParams,                                          // params
@@ -175,7 +171,7 @@ poplar::Tensor ConvOpx::createInput(int index) const {
         enigma::toPoplibsConvOptions(dv_p->fwdConvOptions), // options
         &dv_p->convCache                                    // cache
     );
-  } else if (index == getConvOp()->dataInIndex()) {
+  } else if (index == convDataInIndex()) {
     return poplin::createInput(
         graph(),                                            // graph
         fwdParams,                                          // params

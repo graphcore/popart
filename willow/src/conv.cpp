@@ -11,6 +11,9 @@
 
 namespace willow {
 
+int convDataInIndex() { return 0; }
+int convWeightsInIndex() { return 1; }
+
 ConvOp::ConvOp(const onnx::NodeProto &node, Ir *pir)
     : HasReceptiveFieldOp(node, pir) {
   if (input.n()) {
@@ -18,10 +21,10 @@ ConvOp::ConvOp(const onnx::NodeProto &node, Ir *pir)
   }
 }
 
-const Tensor *ConvOp::dataIn() const { return input.tensor(dataInIndex()); }
+const Tensor *ConvOp::dataIn() const { return input.tensor(convDataInIndex()); }
 
 const Tensor *ConvOp::weightsIn() const {
-  return input.tensor(weightsInIndex());
+  return input.tensor(convWeightsInIndex());
 }
 
 std::vector<std::unique_ptr<Op>> ConvOp::getGradOps() {
@@ -35,13 +38,9 @@ std::unique_ptr<Op> ConvOp::clone() const {
   return std::unique_ptr<Op>(new ConvOp(*this));
 }
 
-void ConvWeightsGradOp::setup() {
-  output.tensor(0)->info = convOp->input.tensor(convOp->weightsInIndex())->info;
-}
+void ConvWeightsGradOp::setup() { output.tensor(0)->info = weightsInfo; }
 
-void ConvDataGradOp::setup() {
-  output.tensor(0)->info = convOp->input.tensor(convOp->dataInIndex())->info;
-}
+void ConvDataGradOp::setup() { output.tensor(0)->info = dataInfo; }
 
 void ConvOp::setup0() {
   nOutChans = weightsIn()->info.dim(0);
@@ -62,13 +61,20 @@ void ConvOp::setSpatialK() {
   }
 }
 
+const ConvOp *ConvWeightsGradOp::getCloneOfCreator() const {
+  return dynamic_cast<const ConvOp *>(cloneOfCreator.get());
+}
+
+const ConvOp *ConvDataGradOp::getCloneOfCreator() const {
+  return dynamic_cast<const ConvOp *>(cloneOfCreator.get());
+}
+
 int64_t ConvOp::getNOutChans() const { return nOutChans; }
 
 ConvWeightsGradOp::ConvWeightsGradOp(ConvOp *op_)
     : GradOp({"ConvWeightsGrad", op_->pir, {}, getWillowDomain()}),
-      convOp(op_) {}
-
-Op *ConvWeightsGradOp::getNonGradCreator() const { return convOp; }
+      cloneOfCreator(op_->clone()),
+      weightsInfo(op_->input.tensor(convWeightsInIndex())->info) {}
 
 const std::vector<GradInOutMapper> &ConvWeightsGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo =
@@ -79,7 +85,7 @@ const std::vector<GradInOutMapper> &ConvWeightsGradOp::gradInputInfo() const {
 std::map<int, int> ConvWeightsGradOp::createConvWeightsGradOutToIn() const {
   // the grad-op output at index 0 corresponds
   // to the conv ops weight input index
-  return {{0, convOp->weightsInIndex()}};
+  return {{0, convWeightsInIndex()}};
 }
 
 const std::map<int, int> &ConvWeightsGradOp::gradOutToNonGradIn() const {
@@ -96,13 +102,13 @@ ConvWeightsGradOp::createConvWeightsGradInfo() const {
   // input at index getGradConvolvedIn() (0) : gradient of output of conv
   // input at index getPreConvolvedIn() (1)  : data input to conv
   return {{getGradConvolvedIn(), 0, GradOpInType::GRADOUT},
-          {getPreConvolvedIn(), convOp->dataInIndex(), GradOpInType::IN}};
+          {getPreConvolvedIn(), convDataInIndex(), GradOpInType::IN}};
 }
 
 ConvDataGradOp::ConvDataGradOp(ConvOp *op_)
-    : GradOp({"ConvDataGrad", op_->pir, {}, getWillowDomain()}), convOp(op_) {}
-
-Op *ConvDataGradOp::getNonGradCreator() const { return convOp; }
+    : GradOp({"ConvDataGrad", op_->pir, {}, getWillowDomain()}),
+      cloneOfCreator(op_->clone()),
+      dataInfo(op_->input.tensor(convDataInIndex())->info) {}
 
 const std::vector<GradInOutMapper> &ConvDataGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createConvDataGradInfo();
@@ -112,7 +118,7 @@ const std::vector<GradInOutMapper> &ConvDataGradOp::gradInputInfo() const {
 std::map<int, int> ConvDataGradOp::createConvDataGradOutToIn() const {
   // the grad-op output at index 0 corresponds
   // to the conv ops input input index
-  return {{0, convOp->dataInIndex()}};
+  return {{0, convDataInIndex()}};
 }
 
 const std::map<int, int> &ConvDataGradOp::gradOutToNonGradIn() const {
@@ -128,11 +134,7 @@ std::vector<GradInOutMapper> ConvDataGradOp::createConvDataGradInfo() const {
   // input at index getGradConvolvedIn() : gradient of output of conv
   // input at index getWeightsIn()       : weights input to conv
   return {{getGradConvolvedIn(), 0, GradOpInType::GRADOUT},
-          {getWeightsIn(), convOp->weightsInIndex(), GradOpInType::IN}};
+          {getWeightsIn(), convWeightsInIndex(), GradOpInType::IN}};
 }
-
-ConvOp *ConvWeightsGradOp::getConvOp() const { return convOp; }
-
-ConvOp *ConvDataGradOp::getConvOp() const { return convOp; }
 
 } // namespace willow

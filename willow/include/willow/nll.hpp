@@ -35,9 +35,6 @@ private:
 class NllGradOp : public GradOp {
 public:
   NllGradOp(NllOp *);
-  virtual Op *getNonGradCreator() const override final;
-  // equivalent of getNonGradCreator, but no downcasting
-  NllOp *getNllOp() const;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
@@ -48,7 +45,7 @@ private:
   std::vector<GradInOutMapper> createNllLossGradInfo() const;
   std::map<int, int> createNllLossGradOutToIn() const;
   const NllLoss *nllloss_;
-  OpId nllOpId;
+  // OpId nllOpId;
 };
 
 } // namespace willow

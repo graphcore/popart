@@ -5,16 +5,17 @@
 
 namespace willow {
 
+// from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv :
+// "data" at index 0, "weights" at index 1.
+// willow's ConvOp does not support bias.
+int convDataInIndex();
+int convWeightsInIndex();
+
 class ConvOp : public HasReceptiveFieldOp {
 public:
   ConvOp(const onnx::NodeProto &node, Ir *pir);
   int64_t nOutChans;
   int64_t group;
-  // from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv :
-  // data at index 0, weights at index 1.
-  // willow's ConvOp does not support bias.
-  int dataInIndex() const { return 0; }
-  int weightsInIndex() const { return 1; }
   // convenience functions:
   const Tensor *dataIn() const;
   const Tensor *weightsIn() const;
@@ -30,9 +31,6 @@ private:
 class ConvWeightsGradOp : public GradOp {
 public:
   ConvWeightsGradOp(ConvOp *);
-  virtual Op *getNonGradCreator() const override final;
-  // equivalent of getNonGradCreator, but no downcasting
-  ConvOp *getConvOp() const;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
@@ -45,23 +43,23 @@ public:
   // The input index where the input to the
   // convolution (ConvOp) is inserted to this Op
   int getPreConvolvedIn() const;
+  const ConvOp *getCloneOfCreator() const;
 
 private:
   std::vector<GradInOutMapper> createConvWeightsGradInfo() const;
   std::map<int, int> createConvWeightsGradOutToIn() const;
-  ConvOp *convOp;
+  std::unique_ptr<Op> cloneOfCreator;
+  TensorInfo weightsInfo;
 };
 
 class ConvDataGradOp : public GradOp {
 public:
   ConvDataGradOp(ConvOp *);
-  virtual Op *getNonGradCreator() const override final;
-  // equivalent of getNonGradCreator, but no downcasting
-  ConvOp *getConvOp() const;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
   virtual void setup() override final;
+  const ConvOp *getCloneOfCreator() const;
 
   // The input index where the weight tensor is inserted
   int getWeightsIn() const;
@@ -71,7 +69,8 @@ public:
 private:
   std::vector<GradInOutMapper> createConvDataGradInfo() const;
   std::map<int, int> createConvDataGradOutToIn() const;
-  ConvOp *convOp;
+  std::unique_ptr<Op> cloneOfCreator;
+  TensorInfo dataInfo;
 };
 
 } // namespace willow

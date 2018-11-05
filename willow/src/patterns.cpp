@@ -264,14 +264,11 @@ void PostNRepl::apply(Op *op) const {
 OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
   // The root of the pattern is an NLLGrad,
   // we need to move from it th the SoftmaxOp
-  Ir *pir         = opRoot->pir;
-  Op *nllgrad     = opRoot;
-  Op *softmaxgrad = nllgrad->output.tensor(0)->consumers.getOps()[0];
-  // found the SoftmaxOp
-  Op *softmax = softmaxgrad->getNonGradCreator();
+  Ir *pir     = opRoot->pir;
+  Op *nllgrad = opRoot;
 
   return pir->moveIntoIr(std::unique_ptr<Op>(new SoftmaxGradDirectOp(
-      softmax, dynamic_cast<NllGradOp *>(nllgrad)->nlll())));
+      pir, dynamic_cast<NllGradOp *>(nllgrad)->nlll())));
 }
 
 void FuserPattern::apply(Op *op) const {

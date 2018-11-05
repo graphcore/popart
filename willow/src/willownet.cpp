@@ -22,13 +22,13 @@ WillowNet::WillowNet(std::string onnxModelFn,
                      const std::vector<std::string> &patternNames)
 
     : pir_(new Ir({onnxModelFn,
-                  perk,
-                  df,
-                  lossesIn,
-                  optimizerIn,
-                  cTens,
-                  logdir_,
-                  patternNames})),
+                   perk,
+                   df,
+                   lossesIn,
+                   optimizerIn,
+                   cTens,
+                   logdir_,
+                   patternNames})),
       device_(nullptr) {}
 
 void WillowNet::updateOptimizer(const Optimizer *optimizer) {

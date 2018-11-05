@@ -20,11 +20,7 @@ void ReluOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 void ReluGradOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 
 ReluGradOp::ReluGradOp(ReluOp *op_)
-    : GradOp({"ReluGrad", op_->pir, {}, getWillowDomain()}), reluOp(op_) {}
-
-Op *ReluGradOp::getNonGradCreator() const { return reluOp; }
-
-ReluOp *ReluGradOp::getReluOp() const { return reluOp; }
+    : GradOp({"ReluGrad", op_->pir, {}, getWillowDomain()}) {}
 
 const std::vector<GradInOutMapper> &ReluGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createReluGradInfo();

@@ -16,9 +16,6 @@ public:
 class SqueezeGradOp : public GradOp {
 public:
   SqueezeGradOp(SqueezeOp *);
-  virtual Op *getNonGradCreator() const override final;
-  // equivalent of getNonGradCreator, but no downcasting
-  SqueezeOp *getSqueezeOp() const;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
@@ -27,7 +24,8 @@ public:
 private:
   std::vector<GradInOutMapper> createSqueezeGradInfo() const;
   std::map<int, int> createSqueezeGradOutToIn() const;
-  SqueezeOp *squeezeOp;
+  // The shape and type of the input to the constructing forward op
+  TensorInfo unsqueezedInfo;
 };
 
 } // namespace willow

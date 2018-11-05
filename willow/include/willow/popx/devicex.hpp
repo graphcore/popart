@@ -44,6 +44,7 @@ private:
 };
 
 poplar::Type popType(const TensorInfo &);
+poplar::Type popType(DataType);
 
 // A bundle class for an int and an Opx.
 class OpxAndInIndex {

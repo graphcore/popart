@@ -14,15 +14,16 @@ void AveragePoolOp::setSpatialK() {
   std::vector<int64_t> kernel_shape;
   nAtts.setIfPresent(kernel_shape, "kernel_shape");
   if (kernel_shape.size() != input.tensor(0)->info.rank() - 2) {
-    throw error("invald kernel_shape, not same rank as tensor operate on");
+    throw error(
+        "invalid kernel_shape, not same rank as the tensor operated on");
   }
   for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
     spatialK[spDim] = kernel_shape[spDim];
   }
 }
 
-AveragePoolOp *AveragePoolGradOp::getAveragePoolOp() const {
-  return averagePoolOp;
+const AveragePoolOp *AveragePoolGradOp::getCloneOfCreator() {
+  return dynamic_cast<AveragePoolOp *>(cloneOfCreator.get());
 }
 
 std::unique_ptr<Op> AveragePoolOp::clone() const {
@@ -39,11 +40,9 @@ std::vector<std::unique_ptr<Op>> AveragePoolOp::getGradOps() {
   return upops;
 }
 
-GradOp::GradOp(const OpConstructorBundle &b) : Op(b) {}
-
 AveragePoolGradOp::AveragePoolGradOp(AveragePoolOp *op_)
     : GradOp({"AveragePoolGrad", op_->pir, {}, getWillowDomain()}),
-      averagePoolOp(op_) {}
+      unpooledInfo(op_->input.tensor(0)->info), cloneOfCreator(op_->clone()) {}
 
 const std::vector<GradInOutMapper> &AveragePoolGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo =
@@ -77,8 +76,6 @@ const std::map<int, int> &AveragePoolGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-Op *AveragePoolGradOp::getNonGradCreator() const { return averagePoolOp; }
-
 int GradOp::getNonGradInIndex(int gradOpOutIndex) const {
   return gradOutToNonGradIn().at(gradOpOutIndex);
 }
@@ -89,8 +86,6 @@ std::map<int, int> AveragePoolGradOp::createAveragePoolGradOutToIn() const {
   return {{0, 0}};
 }
 
-void AveragePoolGradOp::setup() {
-  output.tensor(0)->info = getAveragePoolOp()->input.tensor(0)->info;
-}
+void AveragePoolGradOp::setup() { output.tensor(0)->info = unpooledInfo; }
 
 } // namespace willow

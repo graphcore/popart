@@ -24,6 +24,8 @@ public:
   std::vector<int64_t> spatialK;
   // the spatial dimensions of the data
   std::vector<int64_t> spatialD;
+  DataType outType;
+
   virtual void setup() override final;
   virtual int64_t getNOutChans() const = 0;
   // return the nSpatialDims lower pads (pads left, bottom)

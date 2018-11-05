@@ -11,8 +11,6 @@ std::vector<std::unique_ptr<Op>> SqueezeOp::getGradOps() {
   return upops;
 }
 
-SqueezeOp *SqueezeGradOp::getSqueezeOp() const { return squeezeOp; }
-
 std::unique_ptr<Op> SqueezeOp::clone() const {
   return std::unique_ptr<Op>(new SqueezeOp(*this));
 }
@@ -23,15 +21,11 @@ void SqueezeOp::setup() {
 }
 // input.tensor(0)->info; }
 
-void SqueezeGradOp::setup() {
-  output.tensor(0)->info = getSqueezeOp()->input.tensor(0)->info;
-}
+void SqueezeGradOp::setup() { output.tensor(0)->info = unsqueezedInfo; }
 
 SqueezeGradOp::SqueezeGradOp(SqueezeOp *op_)
-    : GradOp({"SqueezeGrad", op_->pir, {}, getWillowDomain()}), squeezeOp(op_) {
-}
-
-Op *SqueezeGradOp::getNonGradCreator() const { return squeezeOp; }
+    : GradOp({"SqueezeGrad", op_->pir, {}, getWillowDomain()}),
+      unsqueezedInfo(op_->input.tensor(0)->info) {}
 
 const std::vector<GradInOutMapper> &SqueezeGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createSqueezeGradInfo();

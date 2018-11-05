@@ -25,9 +25,6 @@ private:
 class AveragePoolGradOp : public GradOp {
 public:
   AveragePoolGradOp(AveragePoolOp *);
-  virtual Op *getNonGradCreator() const override final;
-  // equivalent of getNonGradCreator, but no downcasting
-  AveragePoolOp *getAveragePoolOp() const;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
@@ -46,11 +43,21 @@ public:
   int getPrePooledIn() const;
   int getPooledIn() const;
   int getGradPooledIn() const;
+  const AveragePoolOp *getCloneOfCreator();
 
 private:
   std::vector<GradInOutMapper> createAveragePoolGradInfo() const;
   std::map<int, int> createAveragePoolGradOutToIn() const;
-  AveragePoolOp *averagePoolOp;
+  // The shape and type of the input to the
+  // forward op which creates this backwards op
+  TensorInfo unpooledInfo;
+  // A copy of the forward op which creates
+  // this backwards op. Note
+  // 1) backends will need a copy of this op to determine
+  //    how to do the backwards pass (padding, striding, etc)
+  // 2) we DON'T store a pointer to the creating forward op,
+  //    which might be optimised out and deleted
+  std::unique_ptr<Op> cloneOfCreator;
 };
 
 } // namespace willow

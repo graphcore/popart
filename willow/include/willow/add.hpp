@@ -16,9 +16,6 @@ public:
 class AddGradOp : public GradOp {
 public:
   AddGradOp(AddOp *);
-  virtual Op *getNonGradCreator() const override final;
-  // equivalent of getNonGradCreator, but no downcasting
-  AddOp *getAddOp() const;
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
@@ -27,7 +24,11 @@ public:
 private:
   std::vector<GradInOutMapper> createAddGradInfo() const;
   std::map<int, int> createAddGradOutToIn() const;
-  AddOp *addOp;
+  // Info on Tensors 0 and 1.
+  // gradient of an input has the same
+  // shape and type as the input itself
+  TensorInfo info0;
+  TensorInfo info1;
 };
 
 } // namespace willow

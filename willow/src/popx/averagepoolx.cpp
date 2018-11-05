@@ -36,8 +36,8 @@ void AveragePoolOpx::grow() const {
 }
 
 void AveragePoolGradOpx::grow() const {
-  AveragePoolGradOp *agOp = getAveragePoolGradOp();
-  AveragePoolOp *aOp      = agOp->getAveragePoolOp();
+  AveragePoolGradOp *agOp  = getAveragePoolGradOp();
+  const AveragePoolOp *aOp = agOp->getCloneOfCreator();
 
   TensorId prePooledId  = inId(agOp->getPrePooledIn());
   TensorId pooledId     = inId(agOp->getPooledIn());
