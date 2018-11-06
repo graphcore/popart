@@ -1,23 +1,47 @@
+WILLOW OVERVIEW
+---------------
+TODO
+
+CONTRIBUTING
+------------
+
+CODE STYLE
+----------
+Please run the ./format.sh script in the base willow directory
+before making a pull request (aka a diff). This uses clang-format 
+on C++ code and yapf on Python code. Please use yapf version 0.24. 
+yapf can be installed with pip.
+
+Compiler warnings: If using clang++ (preferred compiler), many useful 
+extra warnings are enabled (see cmake/EnableCompilerWarnings.cmake). 
+Warnings with g++ are being worked on (an open task)
+
+
 CONFIGURE and BUILD
 -------------------
 
-This will be cleaned up.
+These are directions for building directly from the willow repository
+(not from willow_view which is the suggested way to build). 
+To build from the willow_view directory, see the instructions in that
+repository
 
-On Ubunutu, I had success with
+
+On Ubuntu, in a clean build directory:
 ```
-cmake -DONNX_DIR=../installonnx/share/cmake/ONNX 
-      -DCMAKE_PREFIX_PATH=/home/jamesn/ws_willow/installpybind11/share/cmake/pybind11/ 
-      -DPOPLAR_INSTALL_DIR=~/poplar_download/poplar-install/  
-      ../willow/
+cmake -DONNX_DIR=/where/onnx/installed/share/cmake/ONNX 
+      -DCMAKE_PREFIX_PATH=/where/pybind11/installed/share/cmake/pybind11
+      -DPOPLAR_INSTALL_DIR=/where/poplar/installed
+      -DCMAKE_INSTALL_PREFIX=/where/to/install/willow
+      /path/to/base/willow/dir
 ```
 
-where the above is run from directory buildwillow, 
+where I assume above that ONNX and pybind are already built and installed.
 
-jamesn@sw15-ublade00:~/ws_willow/buildwillow$ ls ..
-buildonnx  buildpybind11  buildwillow  installonnx  installpybind11  onnx  pybind11  willow
+Next, install pytorch (directions on pytorch website). 
 
-install pytorch (use directions on website)
+Now, 
+export LD_LIBRARY_PATH=~/where/willow/installed/lib:/where/poplar/installed/lib
 
-export LD_LIBRARY_PATH=~/ws_willow/willow/pywillow/:~/poplar_download/poplar-install/lib/
+and you should be ready to use pywillow with an `import pywillow`
 
-and you should be ready to use pywillow
+
