@@ -29,23 +29,27 @@ public:
 
 class InputMapWrapper;
 
+// An anchor tensor is a tensor which the user wants returned
+// after a step is run. Anchors are essentially what tensorflow calls
+// "fetches". AnchorReturnType specifies what exactly should be
+// returned for a tensor, currently the 3 options are:
+
 enum class AnchorReturnType {
   FINAL = 0, // return just the final batch of the step
   SUM,       // return the sum of all samples at the end
              // of the step
-  ALL        // return all batches in the step, with writes
-             // after each each batch. Exact mirror of input
-             // data streams.
+  ALL        // return all batches in the step.
 };
-// Suppose we have an anchor scalar (0-d) tensor,
+// As an example, suppose we have an anchor scalar (0-d) tensor,
 // Suppose batchesPerStep = 3 and samplesPerBatch = 2.
-// Suppose that the 6 samples processed in a step have values
+// Suppose that the 2*3 = 6 samples processed in a step have values
 // 1, 2, 1, 0, 1, 3
 // Then, under each of the AnchorReturnTypes the returned tensors are,
 // FINAL : [1, 3]             (1-d tensor)
 // SUM   : 8                  (0-d tensor)
 // ALL   : [1, 2, 1, 0, 1, 3] (1-d tensor)
 
+// Describe what and when the user wants returned.
 class DataFlow {
 public:
   DataFlow(int batchesPerStep,
@@ -56,18 +60,22 @@ public:
   bool isAnchored(TensorId) const;
   const std::vector<TensorId> &anchors() const;
   int nAnchors() const;
+  // batch-size:
   int samplesPerBatch() const;
   int batchesPerStep() const;
+  // samplesPerBatch() * batchesPerStep():
   int samplesPerStep() const;
   AnchorReturnType art() const;
 
 private:
-  // The number of batches between recording tensors
+  // The number of batches between returning anchors
+  // to the user. There is no communication between the
+  // user and Willow while batchesPerStep_ batches are processed.
   int batchesPerStep_;
-  // EXACTLY the batch size
+  // EXACTLY the batch-size
   int samplesPerBatch_;
-  // Note: there is no communication to the host
-  // for batchesPerStep_ * samplesPerBatch_ samples.
+  // There is no communication to the host while
+  // batchesPerStep_ * samplesPerBatch_ samples are processed
   std::set<TensorId> s_anchors;
   const std::vector<TensorId> v_anchors;
   AnchorReturnType art_;
@@ -85,16 +93,17 @@ public:
   GradInOutMapper(int iGrad_, int iNonGrad_, GradOpInType);
   // input index to a grad-op
   int iGrad;
-  // input/output/gradient-of-output index to
+  // "input/output/gradient-of-output" index to
   // corresponding non-grad op,
   int iNonGrad;
-  // where input/output/gradient-of-output is
+  // where "input/output/gradient-of-output" above is
   GradOpInType type;
 };
 
 // The gradient of a tensor is the sum of 1 or several tensors,
 // 1 for each of the nodes which consumed it. This class is for
-// tracking/counting these as they come in down edges.
+// tracking/counting these as they come in down edges in backwards
+// part of the training compute graph.
 class TensorGradRegistry {
 public:
   using TMap = std::map<Tensor *, std::vector<Tensor *>>;
@@ -103,15 +112,15 @@ public:
   void insert(Tensor *nonGrad, Tensor *edgeGrad);
 
   // Return the non-gradient tensors which have ALL their
-  // required gradientsregisted, and are thus ready to
+  // required gradients registered, and are thus ready to
   // have their edge gradients summed to
   // obtain the final gradient.
-  // NOT a const member function
+  // Note that this is NOT a const pop member function
   TMap popComplete();
 
 private:
-  // stores all non-grad tensors which have some but not all of
-  // their edges having provided gradients
+  // stores all non-grad tensors which have some, but not all of
+  // their edges already having gradients registered
   TMap partial;
   // stores all non-grad tensors which have had all of their
   // edges provide gradients. When popCompleted() is called,
@@ -127,7 +136,7 @@ public:
   std::vector<Op *> popComplete();
 
 private:
-  // For a non-grad-op, which if its outputs (by index)
+  // For a non-grad-op, which of its outputs (by index)
   // have had a gradient computed
   std::map<Op *, std::set<int>> partial;
   // When all required gradient inputs are in,
@@ -138,15 +147,15 @@ private:
 std::string getWillowDomain();
 
 // where tensor tenId is consumed by Op with OpId opId at
-// index index, what should the name of the edge-gradient
-// along this edge be? This is purely string manipulation.
+// index "index", what should the name of the edge-gradient
+// along this edge be? This is pure string manipulation.
 TensorId getEdgeGradId(TensorId tenId, OpId opId, int index);
 
-// the name of the tensor of the total gradient
-// (loss and regularizers)
+// the name of the tensor which is the
+// total gradient of a forward tensor
 TensorId getGradId(TensorId tenId);
 
-// inverse of previous function
+// inverse of previous function (non-grad name of grad tensor)
 TensorId getNonGradId(TensorId tenId);
 
 // get a recomputed tensor's name, based on original tensor
@@ -155,7 +164,9 @@ TensorId getRecompId(TensorId tenId);
 // What is known about the Ir before it is run.
 // This knowledge can sometimes be compiled into the Ir,
 // and for certain backends is even required, for example
-// Graphcore IPU requires all Stream Tensor shapes.
+// the IPU requires all Stream Tensor shapes.
+// In the future (TODO T5252) it will also contain indices for slicing
+// tensors (I think the LSTM from pytorch might require this)
 class EarlyInfo {
 public:
   EarlyInfo() = default;
@@ -164,15 +175,15 @@ public:
   bool has(TensorId) const;
 
   // return all unique TensorIds of tensors with any
-  // information stored in this object, be it TensorInfo
-  // or actual tensor.
+  // information stored in this object, either TensorInfo
+  // or an actual tensor
   std::vector<TensorId> getAllTensorIds() const;
 
 private:
   std::map<TensorId, TensorInfo> infos;
   // we will also have a map of actual tensors, these
   // can be used sometimes to compile the Graph (slice
-  // indices for example)
+  // indices for example) (TODO T5252)
 };
 
 enum class OpType {
@@ -201,26 +212,28 @@ enum class OpType {
   SUM
 };
 
-// models inputs and outputs to Ops, inputs/outputs
-// enter/leave at certain indices of an Op
-// 1 tensor per index, but 1+ index per tensor
+// Inputs and outputs to Ops will use this class.
+// inputs (outputs) enter (leave) at certain indices
+// of an Op. There is 1 tensor per index,
+// but 1+ index per tensor.
 class TensorIndexMap {
 public:
   void insert(int, Tensor *);
   // the Tensor at index changes. Note that there
-  // must already be a Tensor at the index
+  // must already be a Tensor at the index (otherwise insert should be used)
   void reset(int, Tensor *);
+  // get the Tensor at at index
   Tensor *tensor(int);
   const Tensor *tensor(int) const;
   // The id of the Tensor at an index
-  // == tensor(int)->id
+  // This is just a helper function (same as tensor(int)->id)
   TensorId id(int) const;
   bool hasIndex(int) const;
   const std::vector<int> &indices(Tensor *) const;
   const std::map<Tensor *, std::vector<int>> &indicesMap() const;
   const std::map<int, Tensor *> &tensorMap() const;
   std::map<int, TensorId> tensorIdMap() const;
-  // the number or indices (keys of tensor_map)
+  // the number or indices. Exactly the number of keys of tensor_map
   int n() const;
   void append(std::stringstream &, std::string prefix, int max_id_length) const;
   // set the TensorInfo of tensor(index) if hasIndex(index) is true
@@ -253,10 +266,10 @@ class Op : public Vertex {
 public:
   Op(const Node &, Ir *);
   Op(const OpConstructorBundle &);
-  // Note: copy constructor does NOT copy input and output.
+  // Note: copy constructor does NOT copy input and output
   Op(const Op &);
   Op &operator=(const Op &) = delete;
-  // the rule-of-3 says that it's good
+  // A c++ aside: the rule-of-3 says that it's good
   // practise to have an explicit destructor,
   // given that there is an explict copy con.
   // But not really nec. as Vertex has a virtual
@@ -266,14 +279,14 @@ public:
   std::string str() const;
 
   // create an ActGrad (output) tensor
-  // and wire it to this Ops output
+  // and wire it to this Op's output
   void createAndConnectOutTensor(OutIndex, TensorId);
 
   void append(std::stringstream &ss) const;
 
   // sum of the total memory of all output tensors
+  // We might want a cycle counter too for more sophisticated recomputation
   int64_t memOfOutputs() const;
-  // We might want a cycle counter too.
 
   // The consumed Tensors
   TensorIndexMap input;
@@ -288,8 +301,9 @@ public:
   // might the input tensors be modified?
   bool mayModify(InIndex) const;
 
-  // all Ops will be performed "as close to" the order of
-  // priority (highest to lowest) while still being topo sorted.
+  // all Ops will be topologically sorted "as close to" the order of
+  // priority (highest to lowest) while still resulting in a valid
+  // topological ordering.
   // default : 0.0
   double priority{0.0};
 
@@ -297,7 +311,8 @@ public:
   const std::string &op_type() const;
   const OpType opType;
 
-  // political affiliation of the Op (same as NodeProto)
+  // political affiliation of the Op
+  // same domain as from the NodeProto if constructed from ONNX
   const std::string &domain();
 
   // the Ir to which the Op belongs
@@ -306,7 +321,7 @@ public:
   // The unique identifier of the Op (will always be set in Op::Op)
   OpId id{-1};
 
-  // attributes from the Node, if it was created from one
+  // attributes from the Node, if it was created from ONNX
   const Attributes nAtts;
 
   // set shape and type parameters,
@@ -319,15 +334,6 @@ public:
   // If this Op is already a gradient Op, throws error
   // Why is this not constant? For one, nOps counter increments.
   virtual std::vector<std::unique_ptr<Op>> getGradOps();
-
-  // Design choice.
-  // as optimisations get complex we might
-  // delete a non-grad op corresponding to a grad-op.
-  // For this reason, we prefer NOT to store the non-grad
-  // pointer directly by default (although we do in several cases)
-  // Prefered: store the id and look up the pointer when
-  // needed, so that we will get reliable failure via a map look-up.
-  // This is the approach with for example L1Op.
 
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
   // dT is the edge-gradient of a tensor T which was the input
