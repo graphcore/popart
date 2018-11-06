@@ -1,6 +1,8 @@
 #include <willow/onnxutil.hpp>
 #include <willow/tensordata.hpp>
 
+#include <cstring>
+
 namespace willow {
 
 TensorData::TensorData(const onnx::TensorProto &tp) {
