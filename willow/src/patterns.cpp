@@ -19,13 +19,13 @@ const PatternTypes &getPatternTypes() {
   return X;
 }
 
-bool Pattern::removesNoAnchored(const Op *op) const {
-  for (auto &tensor : removes(op)) {
+bool Pattern::touchesAnchored(const Op *op) const {
+  for (auto &tensor : touches(op)) {
     if (op->pir->isAnchored(tensor->id)) {
-      return false;
+      return true;
     }
   }
-  return true;
+  return false;
 };
 
 PatternTypes::PatternTypes() {
@@ -105,11 +105,11 @@ bool FuserPattern::matches(const Op *op0) const {
   return false;
 }
 
-std::vector<const Tensor *> PreUniRepl::removes(const Op *op) const {
+std::vector<const Tensor *> PreUniRepl::touches(const Op *op) const {
   return {op->input.tensor(0)};
 }
 
-std::vector<const Tensor *> FuserPattern::removes(const Op *op) const {
+std::vector<const Tensor *> FuserPattern::touches(const Op *op) const {
   return {op->output.tensor(0)};
 }
 
@@ -151,6 +151,7 @@ bool PostNRepl::matches(const Op *op) const {
            dynamic_cast<const PadOp *>(op)->padSizeZero()) {
     // good so far
   } else {
+    // doesn't match a known case of PostNRepl
     return false;
   }
   // we check that the consumer topological constraints
@@ -168,8 +169,8 @@ bool PostNRepl::matches(const Op *op) const {
     return false;
   }
 
-  // if the last consumer is op, that won't
-  // work as op is going to be removed.
+  // if the last consumer is op ([*] in the schematic),
+  // that won't work as op is going to be removed.
   // Also, this should not be possible if this
   // is really a replicating op
   else if (tcInf.lastCon == op) {
@@ -185,7 +186,7 @@ PostNRepl::TopoBundle PostNRepl::getTopoConInfo(const Op *op) const {
   std::vector<const Tensor *> wouldMerge;
   // The unique input to op:
   wouldMerge.push_back(op->input.tensor(0));
-  // And the N output ops:
+  // And the N output tensors of op:
   for (auto &t_inds : op->output.indicesMap()) {
     wouldMerge.push_back(t_inds.first);
   }
@@ -202,11 +203,20 @@ PostNRepl::TopoBundle PostNRepl::getTopoConInfo(const Op *op) const {
   return tcInf;
 }
 
-// removes all the outputs of the root op from the Ir
-std::vector<const Tensor *> PostNRepl::removes(const Op *op) const {
+// touches all the outputs of the root op [*] from the Ir,
+// and maybe the input to the root op.
+std::vector<const Tensor *> PostNRepl::touches(const Op *op) const {
   std::vector<const Tensor *> outs;
   for (auto &t_inds : op->output.indicesMap()) {
     outs.push_back(t_inds.first);
+  }
+  // if one of new consumers of (ori) is an inplace-consumer, then (ori)
+  // is touched. We take a superset of this case: if there
+  // are any topological constraints on any of (ori, rep1, rep2, rep3),
+  // we assume (ori) is touched.
+  TopoBundle topoBundle = getTopoConInfo(op);
+  if (topoBundle.nTopoLasts > 0 || topoBundle.nWeakTopoCons > 0) {
+    outs.push_back(op->input.tensor(0));
   }
   return outs;
 }

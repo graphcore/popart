@@ -966,7 +966,7 @@ void Ir::applyPattern(const Pattern *pattern) {
   }
   for (auto op : v_ops) {
     if (pattern->matches(op)) {
-      if (pattern->removesNoAnchored(op)) {
+      if (!pattern->touchesAnchored(op)) {
         pattern->apply(op);
       }
     }

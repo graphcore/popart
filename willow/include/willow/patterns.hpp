@@ -22,24 +22,39 @@ private:
 PatternTypes initPatternTypes();
 const PatternTypes &getPatternTypes();
 
+// Definition: A tensor is "touched" by a Pattern if
+// its state is different at any point in the execution of the
+// computation graph, different measured between
+// 1) with Pattern applied
+// 2) without Pattern applied
+//
+// As an example of touching a tensor: if a tensor is removed, 
+// we say that is has been touched (as applying the Pattern 
+// has changed it).
+// Before a Pattern is applied, we always check that it does
+// not touch an anchor tensor. Historical note: we previously
+// only checked for deletion but this seems too weak. Consider for
+// example: a tensor might get a new consumer added to it which
+// modifies it in-place.
+
 class Pattern {
 public:
   Pattern()          = default;
   virtual ~Pattern() = default;
 
-  // Does op at the root of the
-  // pattern make a match?
-  virtual bool matches(const Op *) const = 0;
-  // If the pattern is applied
-  // (replaced with another pattern),
-  // which tensors will be removed?
-  virtual std::vector<const Tensor *> removes(const Op *) const = 0;
-  // apply the pattern,
-  // changes the graph of the op
-  virtual void apply(Op *) const = 0;
+  // Does this Pattern match the sub-graph centered (rooted)
+  // on op?
+  virtual bool matches(const Op *op) const = 0;
+  // If this Pattern were to be applied at op, which
+  // Tensors in the subgraph centered (rooted) on op
+  // would be touched?
+  virtual std::vector<const Tensor *> touches(const Op *op) const = 0;
+  // Apply this Pattern, modifying the sub-graph centered (rooted)
+  // on op
+  virtual void apply(Op *op) const = 0;
   // if applied to op, would there
-  // be no Anchored tensors removed?
-  bool removesNoAnchored(const Op *) const;
+  // be any anchored tensors touched?
+  bool touchesAnchored(const Op *) const;
 };
 
 // {(a), (b), (c)} -> [op0] -> (d) -> [op1] -> {(e), (f)}
@@ -48,7 +63,10 @@ public:
 class FuserPattern : public Pattern {
 public:
   virtual bool matches(const Op *) const override final;
-  virtual std::vector<const Tensor *> removes(const Op *) const override final;
+  // Only (d) is touched. Therefore, a Pattern where [op1] and
+  // [op01] perform inplace changes to an input tensor should
+  // not inherit from FuserPattern.
+  virtual std::vector<const Tensor *> touches(const Op *) const override final;
   virtual void apply(Op *) const override final;
 
 private:
@@ -73,7 +91,7 @@ private:
   virtual OpId moveMergedIntoIr(Op *baseOp) const override final;
 };
 
-// remove ()->[] where () is Tensor and [] is an Op and ()->[]
+// remove ()->[] where () is a Tensor and [] is an Op and ()->[]
 // forms part of [.]->()->[]->(.). after this, this section will
 // be [.]->(.). [] is the root op of the pattern.
 // [] IS THE IDENTITY OP
@@ -88,15 +106,16 @@ public:
   // Pad with pad size zero
   // Sum with one input
   virtual bool matches(const Op *) const override final;
-  virtual std::vector<const Tensor *> removes(const Op *) const override final;
+  //  Only tensor (), which is deleted, is touched
+  virtual std::vector<const Tensor *> touches(const Op *) const override final;
   virtual void apply(Op *) const override final;
 };
 
 // consider,
 // (ori) -> [*] -> {(rep1), (rep2), (rep3)}
 // where rep1 = ori, rep2 = ori, rep3 = ori
-// We call the Op [*] a N-replicator.
-// It is similar to identity above, but it
+// We call the Op [*] an N-replicator.
+// It is similar to the identity in PreUniRepl, but it
 // has N=3 copies of the input instead of N=1.
 // if (ori) -> {[op0], [*], [op1]}, and
 // (rep1) -> {[op0], [op2], [op2]}, and
@@ -117,7 +136,10 @@ public:
   // Pad with pad size zero (where N = 1) *€
   // Sum with one input (where N = 1) *€
   virtual bool matches(const Op *) const override final;
-  virtual std::vector<const Tensor *> removes(const Op *) const override final;
+  // rep1, rep2 and rep3 are touched (as they are deleted)
+  // ori might be touched, if one its new consumers performs
+  // an inplace modification to it.
+  virtual std::vector<const Tensor *> touches(const Op *) const override final;
   virtual void apply(Op *) const override final;
 
 private:
