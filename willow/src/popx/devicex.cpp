@@ -135,8 +135,7 @@ poplar::Graph &Devicex::graph() { return *pGraph; }
 
 Devicex::Devicex(const Ir *pir) : willow::Device(pir), tensors(pir) {
   // TODO, better device handling (see T5105)
-  poplar::IPUModel ipumodel;
-  popDevice = ipumodel.createDevice();
+  popDevice = poplar::Device::createCPUDevice();
   if (!popDevice.attach()) {
     throw error("failed to attach to popDevice");
   }

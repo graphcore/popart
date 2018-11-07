@@ -30,9 +30,7 @@ earlyInfo.add(
 inNames = ["image0"]
 cifarInIndices = {"image0": 0, "label": 1}
 outNames = ["out"]
-losses = [
- pywillow.L1Loss("out", "l1LossVal", 0.1)
-]
+losses = [pywillow.L1Loss("out", "l1LossVal", 0.1)]
 willowOptPasses = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
 
 

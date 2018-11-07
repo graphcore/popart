@@ -28,8 +28,8 @@ const PatternTypes &getPatternTypes();
 // 1) with Pattern applied
 // 2) without Pattern applied
 //
-// As an example of touching a tensor: if a tensor is removed, 
-// we say that is has been touched (as applying the Pattern 
+// As an example of touching a tensor: if a tensor is removed,
+// we say that is has been touched (as applying the Pattern
 // has changed it).
 // Before a Pattern is applied, we always check that it does
 // not touch an anchor tensor. Historical note: we previously
