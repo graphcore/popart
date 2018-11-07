@@ -4,15 +4,16 @@ import os
 # We test if we can load pywillow. this requires that the python
 # library and its dependencies are found.
 
-## Search for pywillow .so when importing
+## Search for pywillow .so/.dylib when importing
 testdir = os.path.dirname(os.path.abspath(__file__))
 libpath = os.path.join(testdir, "../../lib")
 sys.path.append(libpath)
 
-# So python finds libwillow.so when importing pywillow
-# (eithout having to export LD_LIBRARY_PATH )
-import ctypes
-ctypes.cdll.LoadLibrary(os.path.join(libpath, "libwillow.so"))
+if sys.platform != "darwin":
+    # So python finds libwillow.so when importing pywillow
+    # (without having to export LD_LIBRARY_PATH)
+    import ctypes
+    ctypes.cdll.LoadLibrary(os.path.join(libpath, "libwillow.so"))
 
 # Required for torchwriter if install/willow/python not in PYTHONPATH env var
 pypath = os.path.join(testdir, "../../python")
