@@ -64,12 +64,11 @@ class PytorchNetWriter(NetWriter):
                 # say about softmax:
                 # Use LogSoftmax instead (it’s faster and has
                 # better numerical properties)
-                criterion = torch.nn.NLLLoss()
-
-                lossValues.append(
-                    criterion(
-                        torch.log(outMap[loss.probsTensorId()]),
-                        torch.LongTensor(streamMap[loss.labelTensorId()])))
+                criterion = torch.nn.NLLLoss(reduction="sum")
+                logsoftmax = torch.log(outMap[loss.probsTensorId()])
+                longlabels = torch.LongTensor(streamMap[loss.labelTensorId()])
+                nll_loss = criterion(logsoftmax, longlabels)
+                lossValues.append(nll_loss)
 
             elif isinstance(loss, L1Loss):
                 lossValues.append(loss.getLambda() * torch.norm(
@@ -143,7 +142,6 @@ class PytorchNetWriter(NetWriter):
                     substepOutMap[outName] = substepOutputs[j]
 
             # backwards pass
-
             lossTarget = self.getTorchLossTarget(substepInMap, substepOutMap)
             lossTarget.backward()
             torchOptimizer.step()

@@ -107,12 +107,13 @@ def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):
 
     stepi = 0
     numReports = []
-    for epoch in range(20):  # loop over the dataset multiple times
+    for epoch in range(4):  # loop over the dataset multiple times
         for i, data in enumerate(stepLoader, 0):
             if i == 1:
                 break
 
             images, labels = data
+
             inputs = {}
             for tenId in cifarInIndices.keys():
                 inputs[tenId] = data[cifarInIndices[tenId]].numpy()
@@ -125,7 +126,7 @@ def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):
             pystepio = pywillow.PyStepIO(inputs, willowAnchorArrays)
             willowNet.step(pystepio)
 
-            # write models to file, gather comparison statisitics
+            # write models to file, gather comparison statistics
             fnTorchModel = getFnTorch(stepi)
             torchWriter.saveModel(fnTorchModel)
             fnWillowModel = getFnWillow(stepi)
@@ -140,7 +141,7 @@ def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):
                 numReports.append(
                     pywillow.NumericsReport(
                         getFnTorch(stepi - 1), fnTorchModel,
-                        getFnWillow(stepi - 1), fnTorchModel))
+                        getFnWillow(stepi - 1), fnWillowModel))
 
     for report in numReports:
         print(report.fullReport())

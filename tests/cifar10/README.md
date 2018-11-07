@@ -13,3 +13,7 @@ two image inputs and a label. Uses AveragePooling, and 2 losses : l1 and nll
 model2
 ------
 A simple model which include a linear layer
+
+model5
+------
+Basic test of NLL (testing bug fix to issue reported in T5271)
