@@ -13,7 +13,7 @@ public:
   virtual void setup() override final;
 };
 
-class AddGradOp : public GradOp {
+class AddGradOp : public Op {
 public:
   AddGradOp(AddOp *);
   virtual const std::vector<GradInOutMapper> &

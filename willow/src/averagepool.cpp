@@ -41,7 +41,7 @@ std::vector<std::unique_ptr<Op>> AveragePoolOp::getGradOps() {
 }
 
 AveragePoolGradOp::AveragePoolGradOp(AveragePoolOp *op_)
-    : GradOp({"AveragePoolGrad", op_->pir, {}, getWillowDomain()}),
+    : Op({"AveragePoolGrad", op_->pir, {}, getWillowDomain()}),
       unpooledInfo(op_->input.tensor(0)->info), cloneOfCreator(op_->clone()) {}
 
 const std::vector<GradInOutMapper> &AveragePoolGradOp::gradInputInfo() const {
@@ -74,10 +74,6 @@ AveragePoolGradOp::createAveragePoolGradInfo() const {
 const std::map<int, int> &AveragePoolGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = createAveragePoolGradOutToIn();
   return outInfo;
-}
-
-int GradOp::getNonGradInIndex(int gradOpOutIndex) const {
-  return gradOutToNonGradIn().at(gradOpOutIndex);
 }
 
 std::map<int, int> AveragePoolGradOp::createAveragePoolGradOutToIn() const {

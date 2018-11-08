@@ -52,8 +52,7 @@ void L1Op::setup() {
 }
 
 L1GradOp::L1GradOp(L1Op *op_)
-    : GradOp({"L1Grad", op_->pir, {}, getWillowDomain()}), l1loss_(op_->l1l()) {
-}
+    : Op({"L1Grad", op_->pir, {}, getWillowDomain()}), l1loss_(op_->l1l()) {}
 
 const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createL1LossGradInfo();

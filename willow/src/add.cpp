@@ -26,7 +26,7 @@ void AddGradOp::setup() {
 }
 
 AddGradOp::AddGradOp(AddOp *op_)
-    : GradOp({"AddGrad", op_->pir, {}, getWillowDomain()}),
+    : Op({"AddGrad", op_->pir, {}, getWillowDomain()}),
       info0(op_->input.tensor(0)->info), info1(op_->input.tensor(1)->info) {}
 
 std::map<int, int> AddGradOp::createAddGradOutToIn() const {

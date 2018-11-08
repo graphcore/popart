@@ -17,7 +17,7 @@ public:
 // to determine where gradients become zero. It might be better
 // (depending in what can be in-placed) to rather take the input
 // of ReluOp in to do this (or a boolean tensor).
-class ReluGradOp : public GradOp {
+class ReluGradOp : public Op {
 public:
   ReluGradOp(ReluOp *);
   virtual const std::vector<GradInOutMapper> &

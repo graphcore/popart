@@ -28,7 +28,7 @@ private:
   virtual void setSpatialK() override final;
 };
 
-class ConvWeightsGradOp : public GradOp {
+class ConvWeightsGradOp : public Op {
 public:
   ConvWeightsGradOp(ConvOp *);
   virtual const std::vector<GradInOutMapper> &
@@ -52,7 +52,7 @@ private:
   TensorInfo weightsInfo;
 };
 
-class ConvDataGradOp : public GradOp {
+class ConvDataGradOp : public Op {
 public:
   ConvDataGradOp(ConvOp *);
   virtual const std::vector<GradInOutMapper> &

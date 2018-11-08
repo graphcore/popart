@@ -13,7 +13,7 @@ public:
   virtual std::unique_ptr<Op> clone() const override final;
 };
 
-class SqueezeGradOp : public GradOp {
+class SqueezeGradOp : public Op {
 public:
   SqueezeGradOp(SqueezeOp *);
   virtual const std::vector<GradInOutMapper> &

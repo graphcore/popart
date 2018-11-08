@@ -72,7 +72,7 @@ const ConvOp *ConvDataGradOp::getCloneOfCreator() const {
 int64_t ConvOp::getNOutChans() const { return nOutChans; }
 
 ConvWeightsGradOp::ConvWeightsGradOp(ConvOp *op_)
-    : GradOp({"ConvWeightsGrad", op_->pir, {}, getWillowDomain()}),
+    : Op({"ConvWeightsGrad", op_->pir, {}, getWillowDomain()}),
       cloneOfCreator(op_->clone()),
       weightsInfo(op_->input.tensor(convWeightsInIndex())->info) {}
 
@@ -106,7 +106,7 @@ ConvWeightsGradOp::createConvWeightsGradInfo() const {
 }
 
 ConvDataGradOp::ConvDataGradOp(ConvOp *op_)
-    : GradOp({"ConvDataGrad", op_->pir, {}, getWillowDomain()}),
+    : Op({"ConvDataGrad", op_->pir, {}, getWillowDomain()}),
       cloneOfCreator(op_->clone()),
       dataInfo(op_->input.tensor(convDataInIndex())->info) {}
 

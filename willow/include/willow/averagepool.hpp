@@ -22,7 +22,7 @@ private:
   virtual void setSpatialK() override final;
 };
 
-class AveragePoolGradOp : public GradOp {
+class AveragePoolGradOp : public Op {
 public:
   AveragePoolGradOp(AveragePoolOp *);
   virtual const std::vector<GradInOutMapper> &

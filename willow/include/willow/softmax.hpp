@@ -15,7 +15,7 @@ public:
   virtual void setup() override final;
 };
 
-class SoftmaxGradOp : public GradOp {
+class SoftmaxGradOp : public Op {
 public:
   SoftmaxGradOp(SoftmaxOp *);
   virtual const std::vector<GradInOutMapper> &

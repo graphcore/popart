@@ -363,11 +363,8 @@ public:
   // return a copy of self, similar to
   // cpppatterns.com/patterns/virtual-constructor.html
   // some people call it "covariant return type"
-  virtual std::unique_ptr<Op> clone() const = 0;
-
-  // note that this is virtual, and will
-  // be overwritten by GradOp.
-  virtual bool isGradOp() const { return false; }
+  // Throws error from this class if not implemented
+  virtual std::unique_ptr<Op> clone() const;
 
 private:
   void appendIO(std::stringstream &) const;
@@ -379,35 +376,6 @@ private:
   // to the Node from which the Op derives (if it does derive
   // from a Node) or not. Deciding not to for now, (1) not much
   // to copy to the Op (2) cleaner
-
-  // design decision : see-sawing between having special classes
-  // for NonGradOp and GradOp, deciding not to. The main motivation
-  // for HAVING the distinction was that inputs of GradOps would
-  // work differently, that instead of listing them all, the
-  // non-grad inputs would be implit from the corresponding
-  // Op. Also, there could be functions like "getNonGrapOp"
-  // which would return the NonGradOp for a GradOp.
-  // Motivation for implicit input was the explicit:
-  // 1) inefficient.
-  // 2) if done in the same dimensions (ie concat the inputs), how to
-  //    handle variadic input size? (ie SumOp).
-
-  // rebuttal to
-  // 1) not valid (a few more strings?) and also constructs
-  //    the grad op to always take all inputs and outputs
-  //    from non-grad op
-  // 2) not sure what the problem is here. variadic inputs can be
-  //    interleaved if they are of the same size
-};
-
-class GradOp : public Op {
-public:
-  GradOp(const OpConstructorBundle &);
-  // no clone for GradOp currently, so will throw an error
-  virtual std::unique_ptr<Op> clone() const override final;
-  virtual ~GradOp() override = default;
-  virtual int getNonGradInIndex(int) const override final;
-  virtual bool isGradOp() const override final { return true; }
 };
 
 enum class TensorType;

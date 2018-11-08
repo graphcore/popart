@@ -21,7 +21,7 @@ std::unique_ptr<Op> SoftmaxOp::clone() const {
 void SoftmaxGradOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 
 SoftmaxGradOp::SoftmaxGradOp(SoftmaxOp *op_)
-    : GradOp({"SoftmaxGrad", op_->pir, {}, getWillowDomain()}) {}
+    : Op({"SoftmaxGrad", op_->pir, {}, getWillowDomain()}) {}
 
 const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = createSoftmaxGradInfo();

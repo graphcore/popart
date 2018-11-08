@@ -31,11 +31,13 @@
 
 namespace willow {
 
+std::unique_ptr<Op> Op::clone() const {
+  throw error("No clone implemented for " + op_type());
+}
+
 GradNonGradPair::GradNonGradPair(Op *g_, Op *ng_) : grad(g_), nongrad(ng_) {}
 
 GradNonGradPair::GradNonGradPair() : GradNonGradPair(nullptr, nullptr) {}
-
-GradOp::GradOp(const OpConstructorBundle &b) : Op(b) {}
 
 onnx::ModelProto Ir::getModel() const { return onnxModel; }
 
@@ -598,6 +600,7 @@ Ir::Ir(const IrBundle &gb)
   setNPathsToLoss();
 
   constructBackwards();
+  setNPathsToLoss();
 
   // confirm that all the anchor names provided
   // are indeed real tensor names. This is a check
@@ -759,11 +762,7 @@ void Ir::addRecompute() {
   }
 }
 
-std::unique_ptr<Op> GradOp::clone() const {
-  throw error("no clone for GradOp " + op_type() + " (not thought necessary)");
-}
-
-// see diagram 74 in notebook ;/)
+// We should make a diagram explaining Willow recompute
 Op *Ir::growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints) {
 
   // the recompute op:
@@ -805,7 +804,7 @@ Op *Ir::growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints) {
     Tensor *oriTen = ind_ten.second;
     Tensor *recTen = tensors.get(getRecompId(oriTen->id));
     for (auto &con : oriTen->consumers.getOps()) {
-      if (con->isGradOp()) {
+      if (con->nPathsToLoss() == 0) {
         for (auto &con_ind_ten : con->input.tensorMap()) {
           int gradIn = con_ind_ten.first;
           if (con_ind_ten.second == oriTen) {
@@ -1217,8 +1216,8 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
 // the default is that there are no topo cons
 void Op::imposeTopoCons() {}
 
-int Op::getNonGradInIndex(int) const {
-  throw error("Op " + op_type() + " cannot `get non-grad in index'");
+int Op::getNonGradInIndex(int gradOpOutIndex) const {
+  return gradOutToNonGradIn().at(gradOpOutIndex);
 }
 
 GradInOutMapper::GradInOutMapper(int iG, int iNG, GradOpInType t)
@@ -1281,7 +1280,7 @@ std::vector<Op *> OpGradRegistry::popComplete() {
   return toRet;
 }
 
-// design choice: I could have a "irHasModeified"
+// design choice: we could have an "irHasChanged"
 // flag which is set to true whenever the Ir changes,
 // and then if irHasModeified is false, calls
 // to this (and other) functions can do nothing.
@@ -1289,6 +1288,9 @@ std::vector<Op *> OpGradRegistry::popComplete() {
 // and would require runtime overhead, for now I'm not
 // going to implement it.
 void Ir::setNPathsToLoss() {
+
+  // Note: if the finalLossOp has been optimised out,
+  // this function cannot be used.
 
   // initialize number of paths for
   // all Ops and Tensors to loss to be zero

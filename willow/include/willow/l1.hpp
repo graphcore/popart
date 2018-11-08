@@ -37,7 +37,7 @@ private:
   const L1Loss *l1loss_;
 };
 
-class L1GradOp : public GradOp {
+class L1GradOp : public Op {
 
 public:
   L1GradOp(L1Op *);

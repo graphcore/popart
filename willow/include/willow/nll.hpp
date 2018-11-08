@@ -32,7 +32,7 @@ private:
   const NllLoss *nllloss_;
 };
 
-class NllGradOp : public GradOp {
+class NllGradOp : public Op {
 public:
   NllGradOp(NllOp *);
   virtual const std::vector<GradInOutMapper> &
