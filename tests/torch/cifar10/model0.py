@@ -49,8 +49,9 @@ dataFeed = poponnx_core.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
 # types must be fed into the WillowNet constructor.
 # In this example there is 1 streamed input, image0.
 earlyInfo = poponnx_core.EarlyInfo()
-earlyInfo.add("image0",
-              poponnx_core.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
+earlyInfo.add(
+    "image0",
+    poponnx_core.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
 
 inNames = ["image0"]
 

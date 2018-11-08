@@ -32,11 +32,11 @@ art = poponnx_core.AnchorReturnType.ALL
 dataFeed = poponnx_core.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
 earlyInfo = poponnx_core.EarlyInfo()
 earlyInfo.add(
-    "image0", poponnx_core.TensorInfo("FLOAT",
-                                  [samplesPerBatch, nInChans, 32, 32]))
+    "image0",
+    poponnx_core.TensorInfo("FLOAT", [samplesPerBatch, nInChans, 32, 32]))
 earlyInfo.add(
-    "image1", poponnx_core.TensorInfo("FLOAT",
-                                  [samplesPerBatch, nInChans, 32, 32]))
+    "image1",
+    poponnx_core.TensorInfo("FLOAT", [samplesPerBatch, nInChans, 32, 32]))
 earlyInfo.add("label", poponnx_core.TensorInfo("INT32", [samplesPerBatch]))
 inNames = ["image0", "image1"]
 cifarInIndices = {"image0": 0, "image1": 0, "label": 1}
