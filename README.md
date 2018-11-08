@@ -42,6 +42,6 @@ Next, install pytorch (directions on pytorch website).
 Now, 
 export LD_LIBRARY_PATH=~/where/willow/installed/lib:/where/poplar/installed/lib
 
-and you should be ready to use pywillow with an `import pywillow`
+and you should be ready to use poponnx with an `import poponnx`
 
 

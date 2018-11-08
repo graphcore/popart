@@ -16,34 +16,33 @@ message(STATUS "Python include dir: " ${PYTHON_INCLUDE_DIR})
 message(STATUS "Python library : " ${PYTHON_LIBRARY})
 # find_package(PythonLibs)
 
-pybind11_add_module(pywillow pywillow.cpp)
+pybind11_add_module(poponnx_core poponnx.cpp)
 
-target_include_directories (pywillow PUBLIC 
+target_include_directories (poponnx_core PUBLIC
   # ...
 )
 
-target_link_libraries(pywillow PRIVATE
+target_link_libraries(poponnx_core PRIVATE
   ${POPLAR_LIB}
-  willow
+  poponnx
   # ...
 )
 
 # This was useful on OS/X for a while, see 
 # https://stackoverflow.com/questions/47697761 and
 # https://stackoverflow.com/questions/40079424/prepend-to-rpath
-# set_target_properties(pywillow PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
+# set_target_properties(poponnx_core PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 #
 # but then it stopped working, and this seems to work, 
 # see https://gist.github.com/robertmaynard/5750737
 if (APPLE)
-set_target_properties(pywillow PROPERTIES INSTALL_RPATH "@loader_path/.")
+set_target_properties(poponnx_core PROPERTIES INSTALL_RPATH "@loader_path/.")
 endif()
 
-install(TARGETS pywillow
+install(TARGETS poponnx_core
   DESTINATION ${CMAKE_INSTALL_LIBDIR})
 
-install(FILES
-  writer.py
-  torchwriter.py
+install(DIRECTORY
+  poponnx
   DESTINATION ${INSTALL_PYDIR})
 

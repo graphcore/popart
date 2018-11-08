@@ -89,8 +89,8 @@ private:
   std::map<TensorId, py::array> outputs;
 };
 
-PYBIND11_MODULE(pywillow, m) {
-  m.doc() = "binding for C++ willow library";
+PYBIND11_MODULE(poponnx_core, m) {
+  m.doc() = "binding for C++ poponnx library";
 
   m.def("getTensorInfo", &getTensorInfo);
 

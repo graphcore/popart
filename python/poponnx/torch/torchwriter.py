@@ -1,11 +1,9 @@
-import os
-import sys
 import numpy as np
 import torch
 import torch.utils
 import torch.utils.data
-from writer import NetWriter
-from pywillow import TensorInfo, DataFlow, NllLoss, L1Loss, SGD, ConstSGD
+from poponnx.writer import NetWriter
+from poponnx_core import TensorInfo, DataFlow, NllLoss, L1Loss, SGD, ConstSGD
 
 
 def conv3x3(in_planes, out_planes, stride=1):
@@ -41,7 +39,7 @@ class PytorchNetWriter(NetWriter):
 
     def getTorchOptimizer(self):
         """
-        convert willow's Optimizer to a torch Optimizer
+        convert poponnx's Optimizer to a torch Optimizer
         """
         if (isinstance(self.optimizer, SGD)
                 or isinstance(self.optimizer, ConstSGD)):
@@ -55,7 +53,7 @@ class PytorchNetWriter(NetWriter):
     def getTorchLossTarget(self, streamMap, outMap):
         """
         Build the torch extension for computing the
-        loss described by pywillow's losses
+        loss described by poponnx's losses
         """
         lossValues = []
         for loss in self.losses:

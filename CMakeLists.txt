@@ -50,11 +50,11 @@ find_package(BoostFilesystem REQUIRED)
 # at some future point we might want this for a CPU backend for willow
 # find_package(CBLAS REQUIRED)
 
-set(PYWILLOW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/pywillow)
+set(POPONNX_PYTHON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/python)
 add_subdirectory(willow)
 
-# light-weight wrapper using pybind11
-add_subdirectory(pywillow)
+# light-weight wrapper using pybind11, plus python support libraries
+add_subdirectory(python)
 
 # Examples and tests
 add_subdirectory(tests)

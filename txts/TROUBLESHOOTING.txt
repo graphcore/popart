@@ -8,7 +8,8 @@ libc++abi.dylib: terminating with uncaught exception of type google::protobuf::F
 The above error is cause when I have 
 ```
 import onnx
-import pynwillow
+import poponnx
+import poponnx.torch
 ```
 
 The problem is described here

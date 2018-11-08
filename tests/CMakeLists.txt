@@ -2,7 +2,27 @@ include(CPack)
 
 set(CPACK_SOURCE_IGNORE_FILES ${INSTALL_TESTS})
 
-add_test(NAME loader_test WORKING_DIRECTORY ${INSTALL_TESTS} COMMAND python3 basic/loader_test.py)
+# poponnx tests (do not require pytorch
+add_test(NAME loader_test
+		 WORKING_DIRECTORY ${INSTALL_TESTS}
+		 COMMAND python3 poponnx/loader_test.py)
+
+# poponnx.torch tests (require pytorch and torchvision)
+add_test(NAME model0
+		 WORKING_DIRECTORY ${INSTALL_TESTS}
+		 COMMAND python3 torch/cifar10/model0.py .)
+
+add_test(NAME model1
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/model1.py .)
+
+#add_test(NAME model2
+#		WORKING_DIRECTORY ${INSTALL_TESTS}
+#		COMMAND python3 torch/cifar10/model2.py .)
+
+add_test(NAME model5
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/model5.py .)
 
 install(DIRECTORY .
 	DESTINATION ${INSTALL_TESTS}

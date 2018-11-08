@@ -3,22 +3,21 @@ import os
 import torch
 import numpy as np
 from torchvision import transforms, datasets
+import poponnx_core
 
-## Search for pywillow .so/.dylib when importing
+## Search for poponnx .so/.dylib when importing
 testdir = os.path.dirname(os.path.abspath(__file__))
-libpath = os.path.abspath(os.path.join(testdir, "../../lib"))
+libpath = os.path.abspath(os.path.join(testdir, "../../../lib"))
 sys.path.append(libpath)
 
 if sys.platform != "darwin":
-    # So python finds libwillow.so when importing pywillow
+    # So python finds poponnx.so when importing poponnx
     # (without having to export LD_LIBRARY_PATH)
     import ctypes
-    ctypes.cdll.LoadLibrary(os.path.join(libpath, "libwillow.so"))
+    ctypes.cdll.LoadLibrary(os.path.join(libpath, "libpoponnx.so"))
 
-import pywillow
-
-# Required for torchwriter if install/willow/python not in PYTHONPATH env var
-pypath = os.path.join(testdir, "../../python")
+# Required for torchWriter if install/willow/python not in PYTHONPATH env var
+pypath = os.path.join(testdir, "../../python/poponnx/torch")
 sys.path.append(pypath)
 
 
@@ -54,9 +53,10 @@ def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):
 
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
-    willowNet = pywillow.WillowNet(fnModel0, earlyInfo, dataFeed,
-                                   torchWriter.losses, torchWriter.optimizer,
-                                   [], outputdir, willowOptPasses)
+    willowNet = poponnx_core.WillowNet(fnModel0, earlyInfo, dataFeed,
+                                       torchWriter.losses,
+                                       torchWriter.optimizer, [], outputdir,
+                                       willowOptPasses)
 
     # get the tensor info for the anchors
     willowAnchorArrays = {}
@@ -64,11 +64,11 @@ def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):
         x = willowNet.getInfo(anchor)
         outShape = x.shape()
         # Note : == is not the same as "is" here.
-        if dataFeed.art() == pywillow.AnchorReturnType.ALL:
+        if dataFeed.art() == poponnx_core.AnchorReturnType.ALL:
             outShape[0] = outShape[0] * dataFeed.batchesPerStep()
-        elif dataFeed.art() == pywillow.AnchorReturnType.SUM:
+        elif dataFeed.art() == poponnx_core.AnchorReturnType.SUM:
             outShape[0] = outShape[0] / dataFeed.batchesPerStep()
-        elif dataFeed.art() == pywillow.AnchorReturnType.FINAL:
+        elif dataFeed.art() == poponnx_core.AnchorReturnType.FINAL:
             outShape[0] = outShape[0]
         else:
             raise RuntimeError("unrecognised AnchorType")
@@ -82,8 +82,8 @@ def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):
     for name in allDotPrefixes:
         dotfile = os.path.join(outputdir, "%s.dot" % (name, ))
         outputfile = os.path.join(outputdir, "%s.pdf" % (name, ))
-        log = subprocess.call(["dot", "-T", "pdf", "-o", outputfile, dotfile])
-        print("Exit status on `%s' was: %s" % (name, log))
+        #log = subprocess.call(["dot", "-T", "pdf", "-o", outputfile, dotfile])
+        #print("Exit status on `%s' was: %s" % (name, log))
     print("torchWriter calling script complete.")
 
     print("Setting device to IPU, and preparing it")
@@ -123,7 +123,7 @@ def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):
             torchOutputs = torchWriter.step(inputs)
 
             # take batchesPerStep fwd-bwd passes (1 step), Willow
-            pystepio = pywillow.PyStepIO(inputs, willowAnchorArrays)
+            pystepio = poponnx_core.PyStepIO(inputs, willowAnchorArrays)
             willowNet.step(pystepio)
 
             # write models to file, gather comparison statistics
@@ -134,12 +134,12 @@ def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):
 
             if stepi == 1:
                 numReports.append(
-                    pywillow.NumericsReport(fnModel0, fnTorchModel, fnModel0,
-                                            fnWillowModel))
+                    poponnx_core.NumericsReport(fnModel0, fnTorchModel,
+                                                fnModel0, fnWillowModel))
 
             else:
                 numReports.append(
-                    pywillow.NumericsReport(
+                    poponnx_core.NumericsReport(
                         getFnTorch(stepi - 1), fnTorchModel,
                         getFnWillow(stepi - 1), fnWillowModel))
 

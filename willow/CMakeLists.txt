@@ -20,11 +20,11 @@ else()
 message( STATUS "Building WITHOUT Poplar IPU backend")
 endif()
 
-add_library(willow SHARED ${sources})
+add_library(poponnx SHARED ${sources})
 message( STATUS "BOOST_FILESYSTEM_LIB to be used : " ${BOOST_FILESYSTEM_LIB} )
 message( STATUS "BOOST_FILESYSTEM_INCLUDE_DIR to be used :  " ${BOOST_FILESYSTEM_INCLUDE_DIR} )
 
-target_include_directories (willow PUBLIC 
+target_include_directories (poponnx PUBLIC 
     # if the model checker is used: ${ONNX_UTILS_INCLUDE_DIR}
     ${ONNX_PB_INCLUDE_DIR}
     ${ONNX_CHECKER_INCLUDE_DIR}
@@ -35,7 +35,7 @@ target_include_directories (willow PUBLIC
     ${POPLAR_INCLUDE_DIR}
     )
 
-target_link_libraries(willow
+target_link_libraries(poponnx
   # if the onnx mode checker is incorporated, this will be needed: ${ONNX_LIB}
   ${ONNX_LIB}
   ${ONNX_PROTO_LIB}
@@ -50,9 +50,9 @@ target_link_libraries(willow
   ${POPUTIL_LIB}
 )
 
-install(TARGETS willow
-        EXPORT willow
+install(TARGETS poponnx
+        EXPORT poponnx
 	      DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        COMPONENT willow
+        COMPONENT poponnx
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 

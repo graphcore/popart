@@ -6,11 +6,11 @@ echo "clang-format -i willow/include/willow/*hpp"
 clang-format -i willow/include/willow/*hpp
 echo "clang-format -i willow/include/willow/popx/*hpp"
 clang-format -i willow/include/willow/popx/*hpp
-echo "clang-format -i pywillow/*cpp"
-clang-format -i pywillow/*cpp
-echo "python -m yapf -i tests/basic/*py"
-python -m yapf -i tests/basic/*py
-echo "python -m yapf -i tests/cifar10/*py"
-python -m yapf -i tests/cifar10/*py
-echo "python -m yapf -i pywillow/*py"
-python -m yapf -i pywillow/*py
+echo "clang-format -i python/poponnx/*cpp"
+clang-format -i tests/poponnx/*cpp
+echo "python -m yapf -i tests/poponnx/*py"
+python -m yapf -i tests/torch/*py
+echo "python -m yapf -i tests/torch/cifar10/*py"
+python -m yapf -i tests/torch/cifar10/*py
+echo "python -m yapf -i python/poponnx/*py"
+python -m yapf -i python/poponnx/*py

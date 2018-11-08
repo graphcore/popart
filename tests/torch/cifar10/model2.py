@@ -3,10 +3,17 @@
 
 import sys
 import os
+
+# TODO this needs to be removed using __init__.py or some similar scheme
+testdir = os.path.dirname(os.path.abspath(__file__))
+libpath = os.path.join(testdir, "../../../lib")
+sys.path.append(libpath)
+
 import torch
 import c10driver
-import pywillow
-import torchwriter
+import poponnx_core
+
+from poponnx.torch import torchwriter
 
 if (len(sys.argv) != 2):
     raise RuntimeError("onnx_net.py <log directory>")
@@ -21,16 +28,16 @@ nOutChans = 10
 samplesPerBatch = 2
 batchesPerStep = 3
 anchors = ["l1LossVal", "out"]
-art = pywillow.AnchorReturnType.ALL
-dataFeed = pywillow.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
-earlyInfo = pywillow.EarlyInfo()
+art = poponnx_core.AnchorReturnType.ALL
+dataFeed = poponnx_core.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
+earlyInfo = poponnx_core.EarlyInfo()
 earlyInfo.add(
-    "image0", pywillow.TensorInfo("FLOAT",
+    "image0", poponnx_core.TensorInfo("FLOAT",
                                   [samplesPerBatch, nInChans, 32, 32]))
 inNames = ["image0"]
 cifarInIndices = {"image0": 0, "label": 1}
 outNames = ["out"]
-losses = [pywillow.L1Loss("out", "l1LossVal", 0.1)]
+losses = [poponnx_core.L1Loss("out", "l1LossVal", 0.1)]
 willowOptPasses = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
 
 
@@ -54,7 +61,7 @@ class Module0(torch.nn.Module):
         x = torch.squeeze(x)
         # This is the where the GEMM happens:
         raise RuntimeError(
-            "At this point, we're about to enter a linear layer, but willow hasn't implemented this yet"
+            "At this point, we're about to enter a linear layer, but poponnx hasn't implemented this yet"
         )
         out = self.linear(x)
         return out
@@ -64,7 +71,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
     losses=losses,
-    optimizer=pywillow.ConstSGD(0.001),
+    optimizer=poponnx_core.ConstSGD(0.001),
     earlyInfo=earlyInfo,
     dataFeed=dataFeed,
     ### Torch specific:

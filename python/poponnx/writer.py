@@ -1,5 +1,5 @@
 """
-Framework independent functionality for driving willow
+Framework independent functionality for driving poponnx
 """
 
 
@@ -16,7 +16,7 @@ class NetWriter():
         outNames:
           names of the outputs of the ONNX Model
         losses:
-          a list of willow Loss objects
+          a list of poponnx Loss objects
         optimizer:
           an optimizer (see optimizers.py) or None if
           in evaluation mode
@@ -56,7 +56,7 @@ class NetWriter():
         """
         perform batchesPerStep training steps. This function
         only needs to be implemented by frameworks which will
-        be used to verify willow. See torchwriter.py for an 
+        be used to verify poponnx. See torchwriter.py for an
         example implementation.
         """
         raise NotImplementedError()

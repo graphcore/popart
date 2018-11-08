@@ -3,10 +3,17 @@
 
 import sys
 import os
+
+# TODO this needs to be removed using __init__.py or some similar scheme
+testdir = os.path.dirname(os.path.abspath(__file__))
+libpath = os.path.join(testdir, "../../../lib")
+sys.path.append(libpath)
+
 import torch
 import c10driver
-import pywillow
-import torchwriter
+import poponnx_core
+
+from poponnx.torch import torchwriter
 
 if (len(sys.argv) != 2):
     raise RuntimeError("onnx_net.py <log directory>")
@@ -21,22 +28,22 @@ nOutChans = 10
 samplesPerBatch = 2
 batchesPerStep = 3
 anchors = ["nllLossVal", "l1LossVal", "probs"]
-art = pywillow.AnchorReturnType.ALL
-dataFeed = pywillow.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
-earlyInfo = pywillow.EarlyInfo()
+art = poponnx_core.AnchorReturnType.ALL
+dataFeed = poponnx_core.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
+earlyInfo = poponnx_core.EarlyInfo()
 earlyInfo.add(
-    "image0", pywillow.TensorInfo("FLOAT",
+    "image0", poponnx_core.TensorInfo("FLOAT",
                                   [samplesPerBatch, nInChans, 32, 32]))
 earlyInfo.add(
-    "image1", pywillow.TensorInfo("FLOAT",
+    "image1", poponnx_core.TensorInfo("FLOAT",
                                   [samplesPerBatch, nInChans, 32, 32]))
-earlyInfo.add("label", pywillow.TensorInfo("INT32", [samplesPerBatch]))
+earlyInfo.add("label", poponnx_core.TensorInfo("INT32", [samplesPerBatch]))
 inNames = ["image0", "image1"]
 cifarInIndices = {"image0": 0, "image1": 0, "label": 1}
 outNames = ["preProbSquared", "probs"]
 losses = [
-    pywillow.NllLoss("probs", "label", "nllLossVal"),
-    pywillow.L1Loss("preProbSquared", "l1LossVal", 0.01)
+    poponnx_core.NllLoss("probs", "label", "nllLossVal"),
+    poponnx_core.L1Loss("preProbSquared", "l1LossVal", 0.01)
 ]
 willowOptPasses = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
 
@@ -83,7 +90,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
     losses=losses,
-    optimizer=pywillow.ConstSGD(0.001),
+    optimizer=poponnx_core.ConstSGD(0.001),
     earlyInfo=earlyInfo,
     dataFeed=dataFeed,
     ### Torch specific:
