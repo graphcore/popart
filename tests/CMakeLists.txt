@@ -2,6 +2,8 @@ include(CPack)
 
 set(CPACK_SOURCE_IGNORE_FILES ${INSTALL_TESTS})
 
+add_subdirectory(poponnx)
+
 # poponnx tests (do not require pytorch)
 add_test(NAME pytest
 		 WORKING_DIRECTORY ${INSTALL_TESTS}
