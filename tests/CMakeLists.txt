@@ -32,4 +32,4 @@ add_test(NAME model6
 
 install(DIRECTORY .
 	DESTINATION ${INSTALL_TESTS}
-	FILES_MATCHING PATTERN "*.py")
+	FILES_MATCHING REGEX ".*\.(py|sh)$")

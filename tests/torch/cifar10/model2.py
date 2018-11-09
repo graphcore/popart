@@ -1,16 +1,13 @@
 # see model0.py for a more detailed
 # description of what's going on.
 
-#import c10 driver first, as it appends the necessary
-# paths to sys.path. This is a temporary solution
-import c10driver
-
 import sys
 import os
 import torch
 import numpy as np
 from torchvision import transforms, datasets
-import poponnx_core
+import c10driver
+import poponnx
 from poponnx.torch import torchwriter
 
 if (len(sys.argv) != 2):
@@ -26,16 +23,16 @@ nOutChans = 10
 samplesPerBatch = 2
 batchesPerStep = 3
 anchors = ["l1LossVal", "out"]
-art = poponnx_core.AnchorReturnType.ALL
-dataFeed = poponnx_core.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
-earlyInfo = poponnx_core.EarlyInfo()
+art = poponnx.AnchorReturnType.ALL
+dataFeed = poponnx.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
+earlyInfo = poponnx.EarlyInfo()
 earlyInfo.add(
     "image0",
-    poponnx_core.TensorInfo("FLOAT", [samplesPerBatch, nInChans, 32, 32]))
+    poponnx.TensorInfo("FLOAT", [samplesPerBatch, nInChans, 32, 32]))
 inNames = ["image0"]
 cifarInIndices = {"image0": 0, "label": 1}
 outNames = ["out"]
-losses = [poponnx_core.L1Loss("out", "l1LossVal", 0.1)]
+losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
 willowOptPasses = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
 
 
@@ -69,7 +66,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
     losses=losses,
-    optimizer=poponnx_core.ConstSGD(0.001),
+    optimizer=poponnx.ConstSGD(0.001),
     earlyInfo=earlyInfo,
     dataFeed=dataFeed,
     ### Torch specific:

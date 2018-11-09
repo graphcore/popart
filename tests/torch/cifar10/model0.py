@@ -1,10 +1,7 @@
-#import c10 driver first, as it appends the necessary
-# paths to sys.path. This is a temporary solution
-import c10driver
-
 import sys
 import os
-import poponnx_core
+import c10driver
+import poponnx
 from poponnx.torch import torchwriter
 #we require torch in this file to create the torch Module
 import torch
@@ -38,20 +35,21 @@ anchors = ["l1LossVal", "out", "image0"]
 # What exactly should be returned of anchors?
 # Last batch in step, all samples in step,
 # sum over samples in step? See ir.hpp for details.
-art = poponnx_core.AnchorReturnType.ALL
+art = poponnx.AnchorReturnType.ALL
 
-dataFeed = poponnx_core.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
+dataFeed = poponnx.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the Net constructor.
 # In this example there is 1 streamed input, image0.
-earlyInfo = poponnx_core.EarlyInfo()
+earlyInfo = poponnx.EarlyInfo()
 earlyInfo.add(
     "image0",
-    poponnx_core.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
+    poponnx.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
 
 inNames = ["image0"]
 
+# outNames: not the same as anchors,
 # outNames: not the same as anchors,
 # these are the Tensors which will be
 # connected to the loss layers
@@ -60,7 +58,7 @@ outNames = ["out"]
 #cifar training data loader : at index 0 : image, at index 1 : label.
 cifarInIndices = {"image0": 0}
 
-losses = [poponnx_core.L1Loss("out", "l1LossVal", 0.1)]
+losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
 
 # The optimization passes to run in the Ir, see patterns.hpp
 willowOptPasses = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
@@ -90,7 +88,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
     losses=losses,
-    optimizer=poponnx_core.ConstSGD(0.001),
+    optimizer=poponnx.ConstSGD(0.001),
     earlyInfo=earlyInfo,
     dataFeed=dataFeed,
     ### Torch specific:

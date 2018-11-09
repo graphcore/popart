@@ -1,13 +1,11 @@
 # see model0.py for a more detailed
 # description of what's going on.
 
-#import c10 driver first, as it appends the necessary
-# paths to sys.path. This is a temporary solution
-import c10driver
-
 import sys
 import os
-import poponnx_core
+
+import c10driver
+import poponnx
 from poponnx.torch import torchwriter
 #we require torch in this file to create the torch Module
 import torch
@@ -33,22 +31,22 @@ nOutChans = 10
 samplesPerBatch = 2
 batchesPerStep = 3
 anchors = ["nllLossVal", "l1LossVal", "probs"]
-art = poponnx_core.AnchorReturnType.ALL
-dataFeed = poponnx_core.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
-earlyInfo = poponnx_core.EarlyInfo()
+art = poponnx.AnchorReturnType.ALL
+dataFeed = poponnx.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
+earlyInfo = poponnx.EarlyInfo()
 earlyInfo.add(
     "image0",
-    poponnx_core.TensorInfo("FLOAT", [samplesPerBatch, nInChans, 32, 32]))
+    poponnx.TensorInfo("FLOAT", [samplesPerBatch, nInChans, 32, 32]))
 earlyInfo.add(
     "image1",
-    poponnx_core.TensorInfo("FLOAT", [samplesPerBatch, nInChans, 32, 32]))
-earlyInfo.add("label", poponnx_core.TensorInfo("INT32", [samplesPerBatch]))
+    poponnx.TensorInfo("FLOAT", [samplesPerBatch, nInChans, 32, 32]))
+earlyInfo.add("label", poponnx.TensorInfo("INT32", [samplesPerBatch]))
 inNames = ["image0", "image1"]
 cifarInIndices = {"image0": 0, "image1": 0, "label": 1}
 outNames = ["preProbSquared", "probs"]
 losses = [
-    poponnx_core.NllLoss("probs", "label", "nllLossVal"),
-    poponnx_core.L1Loss("preProbSquared", "l1LossVal", 0.01)
+    poponnx.NllLoss("probs", "label", "nllLossVal"),
+    poponnx.L1Loss("preProbSquared", "l1LossVal", 0.01)
 ]
 willowOptPasses = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
 
@@ -95,7 +93,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
     losses=losses,
-    optimizer=poponnx_core.ConstSGD(0.001),
+    optimizer=poponnx.ConstSGD(0.001),
     earlyInfo=earlyInfo,
     dataFeed=dataFeed,
     ### Torch specific:

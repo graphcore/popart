@@ -2,8 +2,9 @@ import numpy as np
 import torch
 import torch.utils
 import torch.utils.data
+import poponnx
 from poponnx.writer import NetWriter
-from poponnx_core import TensorInfo, DataFlow, NllLoss, L1Loss, SGD, ConstSGD
+from poponnx import TensorInfo, DataFlow, NllLoss, L1Loss, SGD, ConstSGD
 
 
 def conv3x3(in_planes, out_planes, stride=1):
