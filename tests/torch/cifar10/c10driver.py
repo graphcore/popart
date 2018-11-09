@@ -1,25 +1,27 @@
-import sys
 import os
-import torch
-import numpy as np
-from torchvision import transforms, datasets
-import poponnx_core
+import sys
 
-## Search for poponnx .so/.dylib when importing
+## Search paths for poponnx .so/.dylib and .py files
+# TODO this needs to be removed using __init__.py or some similar scheme
 testdir = os.path.dirname(os.path.abspath(__file__))
+# .so/.dylib file
 libpath = os.path.abspath(os.path.join(testdir, "../../../lib"))
 sys.path.append(libpath)
+# .py files
+pypath = os.path.abspath(os.path.join(testdir, "../../../python"))
+sys.path.append(pypath)
 
 if sys.platform != "darwin":
-    # So python finds poponnx.so when importing poponnx
+    # So python finds poponnx.so when importing poponnx (for Ubuntu)
     # (without having to export LD_LIBRARY_PATH)
     import ctypes
     ctypes.cdll.LoadLibrary(os.path.join(libpath, "libpoponnx.so"))
 
-# Required for torchWriter if install/willow/python not in PYTHONPATH env var
-pypath = os.path.join(testdir, "../../python/poponnx/torch")
-sys.path.append(pypath)
-
+import torch
+import numpy as np
+from torchvision import transforms, datasets
+import poponnx_core
+from poponnx.torch import torchwriter
 
 def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):
 
@@ -31,11 +33,13 @@ def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
+    c10datadir = os.path.abspath(os.path.join(outputdir, 'cifar10data'))
+    if (not os.path.exists(c10datadir)):
+        print("Creating directory %s" % (c10datadir))
+        os.mkdir(c10datadir)
+
     trainset = datasets.CIFAR10(
-        root='../../data/cifar10/',
-        train=True,
-        download=True,
-        transform=transform)
+        root=c10datadir, train=True, download=True, transform=transform)
 
     fnModel0 = os.path.join(outputdir, "model0.onnx")
 

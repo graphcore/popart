@@ -1,18 +1,16 @@
 # see model0.py for a more detailed
 # description of what's going on.
 
+#import c10 driver first, as it appends the necessary
+# paths to sys.path. This is a temporary solution
+import c10driver
+
 import sys
 import os
-
-# TODO this needs to be removed using __init__.py or some similar scheme
-testdir = os.path.dirname(os.path.abspath(__file__))
-libpath = os.path.join(testdir, "../../../lib")
-sys.path.append(libpath)
-
 import torch
-import c10driver
+import numpy as np
+from torchvision import transforms, datasets
 import poponnx_core
-
 from poponnx.torch import torchwriter
 
 if (len(sys.argv) != 2):
