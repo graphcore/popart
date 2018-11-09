@@ -87,6 +87,7 @@ public:
   bool operator!=(const TensorInfo &) const;
   DataType dataTypeFromString(const std::string &s) const;
   std::vector<int64_t> shapeFromString(const std::string &s) const;
+  onnx::TypeProto getOnnxTypeProto() const;
 
 private:
   const DataTypeInfo *dataTypeInfo = nullptr;

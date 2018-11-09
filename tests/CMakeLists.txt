@@ -2,10 +2,10 @@ include(CPack)
 
 set(CPACK_SOURCE_IGNORE_FILES ${INSTALL_TESTS})
 
-# poponnx tests (do not require pytorch
-add_test(NAME loader_test
+# poponnx tests (do not require pytorch)
+add_test(NAME pytest
 		 WORKING_DIRECTORY ${INSTALL_TESTS}
-		 COMMAND python3 poponnx/loader_test.py)
+		 COMMAND pytest)
 
 # poponnx.torch tests (require pytorch and torchvision)
 add_test(NAME model0

@@ -1,6 +1,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <poponnx/builder.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/l1.hpp>
 #include <poponnx/loss.hpp>
@@ -182,6 +183,15 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("step", &Net::step)
       .def("modelToHost", &Net::modelToHost)
       .def("getInfo", &Net::getInfo);
+
+  py::class_<Builder>(m, "Builder")
+      .def(py::init<>())
+      .def("addInputTensor", &Builder::addInputTensor)
+      .def("addOutputTensor", &Builder::addOutputTensor)
+      .def("add", &Builder::add)
+      .def("getModelProto", [](const Builder& builder){
+        return py::bytes(builder.getModelProto());
+      });
 
   // This does not seem to work :/
   // Thoroughly read

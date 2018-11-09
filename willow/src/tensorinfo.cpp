@@ -186,6 +186,20 @@ std::vector<int64_t> TensorInfo::shapeFromString(const std::string &s) const {
   return shape;
 }
 
+onnx::TypeProto TensorInfo::getOnnxTypeProto() const {
+  onnx::TypeProto typeProto;
+
+  onnx::TypeProto_Tensor* tensor = typeProto.mutable_tensor_type();
+  tensor->set_elem_type(dataTypeInfo->type());
+
+  onnx::TensorShapeProto* shape = tensor->mutable_shape();
+  for (auto d : shape_v) {
+    shape->add_dim()->set_dim_value(d);
+  }
+
+  return typeProto;
+}
+
 const std::map<std::string, DataType> &getStrToDataTypeMap() {
   static std::map<std::string, DataType> m = initStrToDataTypeMap();
   return m;

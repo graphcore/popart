@@ -1,6 +1,8 @@
 import sys
 import os
 
+import pytest
+
 # We test if we can load poponnx. this requires that the python
 # library and its dependencies are found.
 
@@ -19,15 +21,28 @@ if sys.platform != "darwin":
 pypath = os.path.join(testdir, "../../python")
 sys.path.append(pypath)
 
-def test_import():
-    # the core library
-    import poponnx
+# the core library
+import poponnx
 
-    # and some utility python functions.
-    import poponnx.writer
+# Components in the core library
+from poponnx_core import Builder, TensorInfo
 
-    # Components in the core library
-    from poponnx_core import TensorInfo, DataFlow, NllLoss, L1Loss
-    from poponnx_core import ConstSGD, SGD
+def test_basic():
 
-    assert(True)
+    builder = Builder()
+
+    i1 = builder.addInputTensor(TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(TensorInfo("FLOAT", [1, 2, 32, 32]))
+
+    o = builder.add(i1, i2)
+
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    assert(len(proto) > 0)
+    assert(len(i1) > 0)
+    assert(len(i2) > 0)
+    assert(len(o) > 0)
+    assert(i1 != i2)
+    assert(i2 != o)
