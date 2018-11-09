@@ -1,6 +1,6 @@
-#include <willow/averagepool.hpp>
-#include <willow/error.hpp>
-#include <willow/tensor.hpp>
+#include <poponnx/averagepool.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/tensor.hpp>
 
 namespace willow {
 

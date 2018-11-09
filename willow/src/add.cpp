@@ -1,5 +1,5 @@
-#include <willow/add.hpp>
-#include <willow/tensor.hpp>
+#include <poponnx/add.hpp>
+#include <poponnx/tensor.hpp>
 
 namespace willow {
 

@@ -1,8 +1,8 @@
 #include <algorithm>
-#include <willow/error.hpp>
-#include <willow/pad.hpp>
-#include <willow/tensor.hpp>
-#include <willow/util.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/pad.hpp>
+#include <poponnx/tensor.hpp>
+#include <poponnx/util.hpp>
 
 namespace willow {
 

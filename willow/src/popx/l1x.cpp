@@ -1,9 +1,9 @@
 #include <numeric>
-#include <willow/error.hpp>
-#include <willow/l1.hpp>
-#include <willow/popx/devicex.hpp>
-#include <willow/popx/l1x.hpp>
-#include <willow/tensor.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/l1.hpp>
+#include <poponnx/popx/devicex.hpp>
+#include <poponnx/popx/l1x.hpp>
+#include <poponnx/tensor.hpp>
 
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"

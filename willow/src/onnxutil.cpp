@@ -1,6 +1,6 @@
-#include <willow/error.hpp>
-#include <willow/onnxutil.hpp>
-#include <willow/tensorinfo.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/onnxutil.hpp>
+#include <poponnx/tensorinfo.hpp>
 
 namespace willow {
 namespace onnxutil {

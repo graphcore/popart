@@ -1,6 +1,6 @@
-#include <willow/error.hpp>
-#include <willow/softmax.hpp>
-#include <willow/tensor.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/softmax.hpp>
+#include <poponnx/tensor.hpp>
 
 namespace willow {
 

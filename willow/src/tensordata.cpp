@@ -1,5 +1,5 @@
-#include <willow/onnxutil.hpp>
-#include <willow/tensordata.hpp>
+#include <poponnx/onnxutil.hpp>
+#include <poponnx/tensordata.hpp>
 
 #include <cstring>
 

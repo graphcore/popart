@@ -1,6 +1,6 @@
-#include <willow/error.hpp>
-#include <willow/pad.hpp>
-#include <willow/popx/padx.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/pad.hpp>
+#include <poponnx/popx/padx.hpp>
 
 namespace willow {
 namespace popx {

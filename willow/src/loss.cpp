@@ -1,6 +1,6 @@
 #include <sstream>
-#include <willow/error.hpp>
-#include <willow/loss.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/loss.hpp>
 
 namespace willow {
 

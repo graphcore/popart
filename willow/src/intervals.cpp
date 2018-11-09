@@ -1,4 +1,4 @@
-#include <willow/intervals.hpp>
+#include <poponnx/intervals.hpp>
 // for std::sqrt
 #include <cmath>
 

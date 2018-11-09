@@ -1,23 +1,23 @@
 #include <iostream>
-#include <willow/error.hpp>
-#include <willow/ir.hpp>
-#include <willow/popx/addx.hpp>
-#include <willow/popx/averagepoolx.hpp>
-#include <willow/popx/convx.hpp>
-#include <willow/popx/devicex.hpp>
-#include <willow/popx/l1x.hpp>
-#include <willow/popx/nllx.hpp>
-#include <willow/popx/opx.hpp>
-#include <willow/popx/padx.hpp>
-#include <willow/popx/relux.hpp>
-#include <willow/popx/softmaxx.hpp>
-#include <willow/popx/squeezex.hpp>
-#include <willow/popx/sumx.hpp>
-#include <willow/popx/varupdatex.hpp>
-#include <willow/pritask.hpp>
-#include <willow/tensor.hpp>
-#include <willow/tensordata.hpp>
-#include <willow/util.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/ir.hpp>
+#include <poponnx/popx/addx.hpp>
+#include <poponnx/popx/averagepoolx.hpp>
+#include <poponnx/popx/convx.hpp>
+#include <poponnx/popx/devicex.hpp>
+#include <poponnx/popx/l1x.hpp>
+#include <poponnx/popx/nllx.hpp>
+#include <poponnx/popx/opx.hpp>
+#include <poponnx/popx/padx.hpp>
+#include <poponnx/popx/relux.hpp>
+#include <poponnx/popx/softmaxx.hpp>
+#include <poponnx/popx/squeezex.hpp>
+#include <poponnx/popx/sumx.hpp>
+#include <poponnx/popx/varupdatex.hpp>
+#include <poponnx/pritask.hpp>
+#include <poponnx/tensor.hpp>
+#include <poponnx/tensordata.hpp>
+#include <poponnx/util.hpp>
 
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"

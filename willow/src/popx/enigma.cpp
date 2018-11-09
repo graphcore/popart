@@ -1,4 +1,4 @@
-#include <willow/popx/enigma.hpp>
+#include <poponnx/popx/enigma.hpp>
 
 namespace willow {
 namespace popx {

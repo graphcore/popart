@@ -1,12 +1,12 @@
-#include <willow/error.hpp>
-#include <willow/ir.hpp>
-#include <willow/nll.hpp>
-#include <willow/pad.hpp>
-#include <willow/patterns.hpp>
-#include <willow/pbwrap.hpp>
-#include <willow/softmax.hpp>
-#include <willow/tensor.hpp>
-#include <willow/util.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/ir.hpp>
+#include <poponnx/nll.hpp>
+#include <poponnx/pad.hpp>
+#include <poponnx/patterns.hpp>
+#include <poponnx/pbwrap.hpp>
+#include <poponnx/softmax.hpp>
+#include <poponnx/tensor.hpp>
+#include <poponnx/util.hpp>
 
 namespace willow {
 

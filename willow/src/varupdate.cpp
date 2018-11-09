@@ -1,6 +1,6 @@
-#include <willow/error.hpp>
-#include <willow/tensor.hpp>
-#include <willow/varupdate.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/tensor.hpp>
+#include <poponnx/varupdate.hpp>
 
 namespace willow {
 VarUpdateOp::VarUpdateOp(std::string op_type, TensorId varId_, Ir *pir)

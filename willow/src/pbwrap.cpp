@@ -1,4 +1,4 @@
-#include <willow/pbwrap.hpp>
+#include <poponnx/pbwrap.hpp>
 
 namespace willow {
 

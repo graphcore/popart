@@ -1,5 +1,5 @@
-#include <willow/error.hpp>
-#include <willow/vertex.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/vertex.hpp>
 
 #include <sstream>
 

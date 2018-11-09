@@ -1,7 +1,7 @@
-#include <willow/averagepool.hpp>
-#include <willow/error.hpp>
-#include <willow/popx/averagepoolx.hpp>
-#include <willow/util.hpp>
+#include <poponnx/averagepool.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/popx/averagepoolx.hpp>
+#include <poponnx/util.hpp>
 
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"

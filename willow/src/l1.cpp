@@ -1,7 +1,7 @@
 #include <sstream>
-#include <willow/error.hpp>
-#include <willow/l1.hpp>
-#include <willow/tensor.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/l1.hpp>
+#include <poponnx/tensor.hpp>
 
 namespace willow {
 

@@ -1,10 +1,10 @@
 #include <cstring>
-#include <willow/error.hpp>
-#include <willow/ir.hpp>
-#include <willow/onnxutil.hpp>
-#include <willow/tensor.hpp>
-#include <willow/tensordata.hpp>
-#include <willow/util.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/ir.hpp>
+#include <poponnx/onnxutil.hpp>
+#include <poponnx/tensor.hpp>
+#include <poponnx/tensordata.hpp>
+#include <poponnx/util.hpp>
 
 namespace willow {
 

@@ -1,6 +1,6 @@
-#include <willow/error.hpp>
-#include <willow/sum.hpp>
-#include <willow/tensor.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/sum.hpp>
+#include <poponnx/tensor.hpp>
 
 namespace willow {
 

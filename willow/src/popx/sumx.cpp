@@ -1,6 +1,6 @@
-#include <willow/error.hpp>
-#include <willow/popx/sumx.hpp>
-#include <willow/sum.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/popx/sumx.hpp>
+#include <poponnx/sum.hpp>
 
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"

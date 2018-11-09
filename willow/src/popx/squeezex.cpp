@@ -1,7 +1,7 @@
-#include <willow/error.hpp>
-#include <willow/popx/squeezex.hpp>
-#include <willow/squeeze.hpp>
-#include <willow/tensor.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/popx/squeezex.hpp>
+#include <poponnx/squeeze.hpp>
+#include <poponnx/tensor.hpp>
 
 namespace willow {
 namespace popx {

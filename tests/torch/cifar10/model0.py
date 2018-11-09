@@ -46,7 +46,7 @@ art = poponnx_core.AnchorReturnType.ALL
 dataFeed = poponnx_core.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
 
 # willow is non-dynamic. All input Tensor shapes and
-# types must be fed into the WillowNet constructor.
+# types must be fed into the Net constructor.
 # In this example there is 1 streamed input, image0.
 earlyInfo = poponnx_core.EarlyInfo()
 earlyInfo.add(

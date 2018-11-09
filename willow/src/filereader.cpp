@@ -5,9 +5,9 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
-#include <willow/error.hpp>
-#include <willow/filereader.hpp>
-#include <willow/names.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/filereader.hpp>
+#include <poponnx/names.hpp>
 
 namespace willow {
 namespace io {

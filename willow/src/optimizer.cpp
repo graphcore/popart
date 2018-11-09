@@ -1,8 +1,8 @@
-#include <willow/error.hpp>
-#include <willow/ir.hpp>
-#include <willow/optimizer.hpp>
-#include <willow/tensor.hpp>
-#include <willow/varupdate.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/ir.hpp>
+#include <poponnx/optimizer.hpp>
+#include <poponnx/tensor.hpp>
+#include <poponnx/varupdate.hpp>
 
 namespace willow {
 

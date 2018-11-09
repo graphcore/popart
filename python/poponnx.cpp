@@ -1,14 +1,14 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
-#include <willow/error.hpp>
-#include <willow/l1.hpp>
-#include <willow/loss.hpp>
-#include <willow/nll.hpp>
-#include <willow/numerics.hpp>
-#include <willow/optimizer.hpp>
-#include <willow/tensordata.hpp>
-#include <willow/willownet.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/l1.hpp>
+#include <poponnx/loss.hpp>
+#include <poponnx/net.hpp>
+#include <poponnx/nll.hpp>
+#include <poponnx/numerics.hpp>
+#include <poponnx/optimizer.hpp>
+#include <poponnx/tensordata.hpp>
 
 // note to developers: be very careful
 // about exposing functions which return pointers
@@ -165,7 +165,7 @@ PYBIND11_MODULE(poponnx_core, m) {
   py::class_<SGD>(m, "SGD", basesgd).def(py::init<float>());
   py::class_<ConstSGD>(m, "ConstSGD", basesgd).def(py::init<float>());
 
-  py::class_<WillowNet>(m, "WillowNet")
+  py::class_<Net>(m, "Net")
       .def(py::init<std::string,
                     const EarlyInfo &,
                     const DataFlow &,
@@ -174,14 +174,14 @@ PYBIND11_MODULE(poponnx_core, m) {
                     const std::vector<TensorId> &,
                     std::string,
                     const std::vector<std::string> &>())
-      .def("updateOptimizer", &WillowNet::updateOptimizer)
-      .def("setDevice", &WillowNet::setDevice)
-      .def("prepareDevice", &WillowNet::prepareDevice)
-      .def("weightsFromHost", &WillowNet::weightsFromHost)
-      .def("optimizerFromHost", &WillowNet::optimizerFromHost)
-      .def("step", &WillowNet::step)
-      .def("modelToHost", &WillowNet::modelToHost)
-      .def("getInfo", &WillowNet::getInfo);
+      .def("updateOptimizer", &Net::updateOptimizer)
+      .def("setDevice", &Net::setDevice)
+      .def("prepareDevice", &Net::prepareDevice)
+      .def("weightsFromHost", &Net::weightsFromHost)
+      .def("optimizerFromHost", &Net::optimizerFromHost)
+      .def("step", &Net::step)
+      .def("modelToHost", &Net::modelToHost)
+      .def("getInfo", &Net::getInfo);
 
   // This does not seem to work :/
   // Thoroughly read

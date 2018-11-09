@@ -1,4 +1,4 @@
-#include <willow/device.hpp>
+#include <poponnx/device.hpp>
 
 namespace willow {
 

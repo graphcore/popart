@@ -1,7 +1,7 @@
-#include <willow/device.hpp>
-#include <willow/error.hpp>
-#include <willow/popx/relux.hpp>
-#include <willow/relu.hpp>
+#include <poponnx/device.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/popx/relux.hpp>
+#include <poponnx/relu.hpp>
 
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"

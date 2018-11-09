@@ -1,7 +1,7 @@
-#include <willow/error.hpp>
-#include <willow/nll.hpp>
-#include <willow/popx/nllx.hpp>
-#include <willow/util.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/nll.hpp>
+#include <poponnx/popx/nllx.hpp>
+#include <poponnx/util.hpp>
 
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"

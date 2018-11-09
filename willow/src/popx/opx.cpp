@@ -1,7 +1,7 @@
-#include <willow/conv.hpp>
-#include <willow/error.hpp>
-#include <willow/popx/devicex.hpp>
-#include <willow/popx/opx.hpp>
+#include <poponnx/conv.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/popx/devicex.hpp>
+#include <poponnx/popx/opx.hpp>
 
 namespace willow {
 namespace popx {

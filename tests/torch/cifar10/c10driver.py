@@ -53,7 +53,7 @@ def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):
 
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
-    willowNet = poponnx_core.WillowNet(
+    willowNet = poponnx_core.Net(
         fnModel0, earlyInfo, dataFeed, torchWriter.losses,
         torchWriter.optimizer, [], outputdir, willowOptPasses)
 

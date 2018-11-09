@@ -6,28 +6,28 @@
 #include <queue>
 #include <sstream>
 #include <vector>
-#include <willow/error.hpp>
-#include <willow/filereader.hpp>
-#include <willow/intervals.hpp>
-#include <willow/ir.hpp>
-#include <willow/loss.hpp>
-#include <willow/optimizer.hpp>
-#include <willow/patterns.hpp>
-#include <willow/pbwrap.hpp>
-#include <willow/tensor.hpp>
-#include <willow/tensorinfo.hpp>
-#include <willow/util.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/filereader.hpp>
+#include <poponnx/intervals.hpp>
+#include <poponnx/ir.hpp>
+#include <poponnx/loss.hpp>
+#include <poponnx/optimizer.hpp>
+#include <poponnx/patterns.hpp>
+#include <poponnx/pbwrap.hpp>
+#include <poponnx/tensor.hpp>
+#include <poponnx/tensorinfo.hpp>
+#include <poponnx/util.hpp>
 
 // The layers:
-#include <willow/add.hpp>
-#include <willow/averagepool.hpp>
-#include <willow/conv.hpp>
-#include <willow/pad.hpp>
-#include <willow/relu.hpp>
-#include <willow/softmax.hpp>
-#include <willow/squeeze.hpp>
-#include <willow/sum.hpp>
-#include <willow/varupdate.hpp>
+#include <poponnx/add.hpp>
+#include <poponnx/averagepool.hpp>
+#include <poponnx/conv.hpp>
+#include <poponnx/pad.hpp>
+#include <poponnx/relu.hpp>
+#include <poponnx/softmax.hpp>
+#include <poponnx/squeeze.hpp>
+#include <poponnx/sum.hpp>
+#include <poponnx/varupdate.hpp>
 
 namespace willow {
 

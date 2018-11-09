@@ -1,7 +1,7 @@
-#include <willow/error.hpp>
-#include <willow/receptive.hpp>
-#include <willow/tensor.hpp>
-#include <willow/util.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/receptive.hpp>
+#include <poponnx/tensor.hpp>
+#include <poponnx/util.hpp>
 
 namespace willow {
 

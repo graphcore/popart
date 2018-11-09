@@ -1,8 +1,8 @@
-#include <willow/error.hpp>
-#include <willow/nll.hpp>
-#include <willow/popx/softmaxx.hpp>
-#include <willow/softmax.hpp>
-#include <willow/util.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/nll.hpp>
+#include <poponnx/popx/softmaxx.hpp>
+#include <poponnx/softmax.hpp>
+#include <poponnx/util.hpp>
 
 #pragma clang diagnostic push // start ignoring warnings
 #pragma clang diagnostic ignored "-Weverything"

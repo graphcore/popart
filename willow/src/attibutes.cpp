@@ -1,7 +1,7 @@
 #include <sstream>
-#include <willow/attributes.hpp>
-#include <willow/error.hpp>
-#include <willow/util.hpp>
+#include <poponnx/attributes.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/util.hpp>
 
 namespace willow {
 

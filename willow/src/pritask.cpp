@@ -2,8 +2,8 @@
 #include <iostream>
 #include <queue> // we use a priority_queue
 #include <sstream>
-#include <willow/error.hpp>
-#include <willow/pritask.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/pritask.hpp>
 
 namespace willow {
 

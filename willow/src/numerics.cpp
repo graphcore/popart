@@ -1,7 +1,7 @@
-#include <willow/error.hpp>
-#include <willow/filereader.hpp>
-#include <willow/numerics.hpp>
-#include <willow/onnxutil.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/filereader.hpp>
+#include <poponnx/numerics.hpp>
+#include <poponnx/onnxutil.hpp>
 
 #include <cmath>
 
