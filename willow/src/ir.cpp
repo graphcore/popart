@@ -26,6 +26,7 @@
 #include <poponnx/relu.hpp>
 #include <poponnx/softmax.hpp>
 #include <poponnx/squeeze.hpp>
+#include <poponnx/subtract.hpp>
 #include <poponnx/sum.hpp>
 #include <poponnx/varupdate.hpp>
 
@@ -1583,6 +1584,8 @@ OpTypes::OpTypes() {
               {"Pad", OpType::PAD},
               {"Relu", OpType::RELU},
               {"ReluGrad", OpType::RELUGRAD},
+              {"Sub", OpType::SUBTRACT},
+              {"SubtractGrad", OpType::SUBTRACTGRAD},
               {"Sum", OpType::SUM},
               {"Squeeze", OpType::SQUEEZE},
               {"SqueezeGrad", OpType::SQUEEZEGRAD},
@@ -1685,6 +1688,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::RELU: {
     return pOp(new ReluOp(node, this));
   }
+  case OpType::SUBTRACT: {
+    return pOp(new SubtractOp(node, this));
+  }
   case OpType::SUM: {
     throw error("no constructor from node for Sum Op yet");
   }
@@ -1702,6 +1708,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::SOFTMAXGRAD:
   case OpType::SGDVARUPDATE:
   case OpType::CONSTSGDVARUPDATE:
+  case OpType::SUBTRACTGRAD:
     throw error("Gradient Ops not constructable from Node");
 
   case OpType::NLL:

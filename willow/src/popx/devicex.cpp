@@ -12,6 +12,7 @@
 #include <poponnx/popx/relux.hpp>
 #include <poponnx/popx/softmaxx.hpp>
 #include <poponnx/popx/squeezex.hpp>
+#include <poponnx/popx/subtractx.hpp>
 #include <poponnx/popx/sumx.hpp>
 #include <poponnx/popx/varupdatex.hpp>
 #include <poponnx/pritask.hpp>
@@ -368,6 +369,14 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::SQUEEZEGRAD: {
     return std::unique_ptr<Opx>(new SqueezeGradOpx(op, this));
+  }
+
+  case OpType::SUBTRACT: {
+    return std::unique_ptr<Opx>(new SubtractOpx(op, this));
+  }
+
+  case OpType::SUBTRACTGRAD: {
+    return std::unique_ptr<Opx>(new SubtractGradOpx(op, this));
   }
 
   case OpType::SUM: {

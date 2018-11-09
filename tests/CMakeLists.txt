@@ -24,6 +24,10 @@ add_test(NAME model5
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model5.py .)
 
+add_test(NAME model6
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/model6.py .)
+
 install(DIRECTORY .
 	DESTINATION ${INSTALL_TESTS}
 	FILES_MATCHING PATTERN "*.py")

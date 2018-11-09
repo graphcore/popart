@@ -209,6 +209,8 @@ enum class OpType {
   SGDVARUPDATE,
   SQUEEZE,
   SQUEEZEGRAD,
+  SUBTRACT,
+  SUBTRACTGRAD,
   SUM
 };
 

@@ -17,3 +17,7 @@ A simple model which include a linear layer
 model5
 ------
 Basic test of NLL (testing bug fix to issue reported in T5271)
+
+model6
+------
+same as model1, but uses Subtract rather than Add
