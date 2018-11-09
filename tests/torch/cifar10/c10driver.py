@@ -23,6 +23,7 @@ from torchvision import transforms, datasets
 import poponnx_core
 from poponnx.torch import torchwriter
 
+
 def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):
 
     dataFeed = torchWriter.dataFeed
@@ -57,9 +58,9 @@ def run(torchWriter, willowOptPasses, outputdir, cifarInIndices):
 
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
-    willowNet = poponnx_core.Net(
-        fnModel0, earlyInfo, dataFeed, torchWriter.losses,
-        torchWriter.optimizer, [], outputdir, willowOptPasses)
+    willowNet = poponnx_core.Net(fnModel0, earlyInfo, dataFeed,
+                                 torchWriter.losses, torchWriter.optimizer, [],
+                                 outputdir, willowOptPasses)
 
     # get the tensor info for the anchors
     willowAnchorArrays = {}

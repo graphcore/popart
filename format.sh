@@ -4,8 +4,8 @@ clang-format -i willow/src/*cpp
 clang-format -i willow/src/popx/*cpp
 
 echo "inplace clang-formatting all .hpp files in listed directories,"
-clang-format -i willow/include/willow/*hpp
-clang-format -i willow/include/willow/popx/*hpp
+clang-format -i willow/include/poponnx/*hpp
+clang-format -i willow/include/poponnx/popx/*hpp
 
 echo "inplace yapfing all .py files in listed directories,"
 python -m yapf -i tests/torch/cifar10/*py

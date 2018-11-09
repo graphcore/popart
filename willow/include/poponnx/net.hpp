@@ -8,13 +8,13 @@ namespace willow {
 class Net {
 public:
   Net(std::string fnOnnxModel,
-            const EarlyInfo &,
-            const DataFlow &,
-            const std::vector<Loss *> &,
-            const Optimizer *,
-            const std::vector<std::string> &cTens,
-            std::string logdir_,
-            const std::vector<std::string> &patternNames);
+      const EarlyInfo &,
+      const DataFlow &,
+      const std::vector<Loss *> &,
+      const Optimizer *,
+      const std::vector<std::string> &cTens,
+      std::string logdir_,
+      const std::vector<std::string> &patternNames);
 
   ~Net();
 
