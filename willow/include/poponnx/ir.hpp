@@ -486,8 +486,8 @@ public:
   void splitConvBias();
   std::vector<Op *> opsOfType(OpType);
   // this does not take into priority, simple topological sort
-  std::vector<Op *> getTopologicallySorted() const;
-  std::vector<Op *> getTopologicallySortedTilLoss() const;
+  std::vector<Op *> getOpSchedule() const;
+  std::vector<Op *> getOpScheduleTilLoss() const;
   OpId getOpsCounter() const;
   OpId getAndIncrOpsCounter();
   TensorId getFinalLossId() const;

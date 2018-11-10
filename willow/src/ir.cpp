@@ -14,6 +14,7 @@
 #include <poponnx/optimizer.hpp>
 #include <poponnx/patterns.hpp>
 #include <poponnx/pbwrap.hpp>
+#include <poponnx/scheduler.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/util.hpp>
@@ -139,131 +140,14 @@ const OpTypes &getOpTypes() {
   return X;
 }
 
-// A note on non-determinism. For maps with
-// pointers as keys, iterating through them
-// is non-deterministic with the default comparitor.
-// To prevent non-determinism in getTopologicallSorted,
-// we could use the following non-default comparitor
-// everywhere where there is a map with Op pointers,
-// and a similar one with Tensor pointers. A fair amount
-// of work...
-struct POpCmp {
-  bool operator()(const Op *const &a, const Op *const &b) const {
-    return a->id < b->id;
-  }
-};
-
-class OpPriorityComparer {
-public:
-  bool operator()(const Op *const &op1, const Op *const &op2) const {
-    return op1->priority < op2->priority;
-  }
-};
 
 void Op::setup() { throw error("No setup() for " + op_type()); }
 
-// Essentially Kahn's alogorithm (1962, 56 years ago!),
-// see https://en.wikipedia.org/wiki/Topological_sorting
-// but not quite Kahn's algorithm as it there are some
-// additional constraints on the order of Ops imposed
-// externally. Also not quite Kahn, as the vertices which
-// are ready to be inserted have an insertion "priority"
-// set externally
-std::vector<Op *> Ir::getTopologicallySorted() const {
-  // the topological sorting (to construct in this function)
-  std::vector<Op *> sorted;
-  // ops which have all their input tensors
-  // created, and are not waiting for any ops
-  // to run before them
-  // OpPriorityComparer opCompare;
-  std::priority_queue<Op *, std::vector<Op *>, OpPriorityComparer> opsToProcess;
-  // map from each op to the number of tensor input
-  // indices it is waiting on
-  std::map<Op *, int> nIndicesAwaiting;
-  // initialise nIndicesAwatings as total
-  // number of input indices
-  for (auto &id_op : ops) {
-    Op *op               = id_op.second.get();
-    nIndicesAwaiting[op] = op->input.n();
-  }
 
-  // the next two variables are needed because of the
-  // external constraints.
-  // (1) map for each op to the number of ops which still
-  // must be inserted before it can it can be inserted
-  std::map<Op *, int> nOpsAwaiting;
-  // (2) map from each op to a list of ops which are
-  // waiting for it
-  std::map<Op *, std::vector<Op *>> isWaitingFor;
-  // initialise (1) and (2)
-  for (auto &id_op : ops) {
-    Op *op           = id_op.second.get();
-    nOpsAwaiting[op] = 0;
-    isWaitingFor[op] = {};
-  }
-  for (auto &id_op : ops) {
-    Op *op = id_op.second.get();
-    for (auto &tensor_indices : op->input.indicesMap()) {
-      Tensor *inTen = tensor_indices.first;
-      // which consumer(s) of inTens must appear before op?
-      for (Op *otherCon : inTen->consumers.consumersWhichTopoBefore(op)) {
-        if (std::find(isWaitingFor[otherCon].begin(),
-                      isWaitingFor[otherCon].end(),
-                      op) == isWaitingFor[otherCon].end()) {
-          isWaitingFor[otherCon].push_back(op);
-          ++nOpsAwaiting[op];
-        }
-      }
-    }
-  }
-
-  auto readyToProcess = [&nIndicesAwaiting, &nOpsAwaiting](Op *op) {
-    return (nIndicesAwaiting[op] == 0 && nOpsAwaiting[op] == 0);
-  };
-
-  // processing a tensor involves
-  // reducing the counts in `awaiting' for
-  // ops which use it, and detecting which
-  // ops have nothing left to wait for as a
-  // result of such updating.
-  auto processTensor =
-      [&opsToProcess, &nIndicesAwaiting, &readyToProcess](Tensor *tensor) {
-        for (auto &op_count : tensor->consumers.getMap()) {
-          Op *op = op_count.first;
-          nIndicesAwaiting[op] -= op_count.second;
-          if (readyToProcess(op)) {
-            opsToProcess.push(op_count.first);
-          }
-        }
-      };
-
-  // we will start by processing
-  // the tensors which have no producers
-  auto t0 = tensors.getNoProducerIds();
-  for (auto &id : t0) {
-    processTensor(tensors.get(id));
-  }
-
-  while (!opsToProcess.empty()) {
-    auto op = opsToProcess.top();
-    opsToProcess.pop();
-    sorted.push_back(op);
-    for (Op *waitingOp : isWaitingFor[op]) {
-      --nOpsAwaiting[waitingOp];
-      if (readyToProcess(waitingOp)) {
-        opsToProcess.push(waitingOp);
-      }
-    }
-
-    for (auto &tensor_indices : op->output.indicesMap()) {
-      processTensor(tensor_indices.first);
-    }
-  }
-
-  if (sorted.size() != ops.size()) {
-    throw error("failure to sort topologically");
-  }
-  return sorted;
+std::vector<Op *> Ir::getOpSchedule() const {
+  // TODO - should the schedule be memoized
+  auto scheduler = Scheduler::getScheduler("default");
+  return scheduler->getSchedule(ops, tensors);
 }
 
 void Ir::exportDot(const std::string dotfn) const {
@@ -274,7 +158,7 @@ void Ir::exportDot(const std::string dotfn) const {
   }
   strm << "digraph net {\n";
   strm << "size=\"6,6\";\n";
-  for (auto &n : getTopologicallySorted()) {
+  for (auto &n : getOpSchedule()) {
     strm << "n_" << n->id << " [shape= \"box\", label=\"" << n->op_type()
          << "\"];\n";
     for (auto &ind_ten : n->input.tensorMap()) {
@@ -624,9 +508,9 @@ Ir::Ir(const IrBundle &gb)
   std::cout << ss2.str();
 }
 
-std::vector<Op *> Ir::getTopologicallySortedTilLoss() const {
+std::vector<Op *> Ir::getOpScheduleTilLoss() const {
   std::vector<Op *> opsTowardsLoss;
-  for (auto op : getTopologicallySorted()) {
+  for (auto op : getOpSchedule()) {
     if (op->nPathsToLoss() > 0) {
       opsTowardsLoss.push_back(op);
     }
@@ -694,7 +578,7 @@ int64_t Op::memOfOutputs() const {
 }
 
 void Ir::addRecompute() {
-  std::vector<Op *> fwdOps = getTopologicallySortedTilLoss();
+  std::vector<Op *> fwdOps = getOpScheduleTilLoss();
 
   // liveSets[i] : set of ops whose outputs have not all
   // been consumed by their (non-grad) consumers just after
@@ -1615,7 +1499,7 @@ void Ir::append(std::stringstream &ss) {
   //    id_op.second->append(ss);
   //  }
 
-  for (auto &op : getTopologicallySorted()) {
+  for (auto &op : getOpSchedule()) {
     op->append(ss);
   }
 }

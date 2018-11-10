@@ -572,7 +572,7 @@ void Devicex::prepare() {
   popnn::addCodelets(graph());
 
   // create a Opx for every Op
-  for (Op *op : pir->getTopologicallySorted()) {
+  for (Op *op : pir->getOpSchedule()) {
     opxs[op->id] = createOpx(op);
   }
 
@@ -626,7 +626,7 @@ void Devicex::prepare() {
   for (Tensor *tensor : pir->dataStreamTensors()) {
     tasks.add(fromHostTask(tensor, progs.step()));
   }
-  std::vector<Op *> ops = pir->getTopologicallySorted();
+  std::vector<Op *> ops = pir->getOpSchedule();
   double priority       = 0.;
   for (int i = 0; i < ops.size(); ++i) {
     Op *op = ops[i];
