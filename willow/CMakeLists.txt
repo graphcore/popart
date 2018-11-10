@@ -4,7 +4,6 @@ include(GNUInstallDirs)
 include(EnableCompilerWarnings)
 
 option(POPLAR_BACKEND "Build Poplar backend (Graphcore IPU)" ON)
-add_definitions(-std=c++11)
 include_directories("include")
 
 

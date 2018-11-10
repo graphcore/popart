@@ -4,6 +4,9 @@ project(willow)
 
 enable_testing()
 
+# All C++ code in this project will be compiled as C++11
+add_definitions(-std=c++11)
+
 if(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
   set(OS_TYPE osx)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)
