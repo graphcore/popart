@@ -21,7 +21,8 @@ def test_net_from_string():
     optimizer = poponnx.SGD(0.01)
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
-    poponnx.Net(proto, earlyInfo, dataFlow, losses, optimizer, [], "/tmp", [])
+    poponnx.Net(proto, earlyInfo, dataFlow, losses, optimizer, [], "/tmp", "",
+                [])
 
 
 def test_net_from_file():
@@ -47,7 +48,7 @@ def test_net_from_file():
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     poponnx.Net("test.onnx", earlyInfo, dataFlow, losses, optimizer, [], "/tmp",
-                [])
+                "",[])
 
 def test_net_failure():
 
@@ -61,7 +62,7 @@ def test_net_failure():
 
     with pytest.raises(poponnx.exception) as e_info:
         poponnx.Net("nothing", earlyInfo, dataFlow, losses, optimizer, [],
-                    "/tmp", [])
+                    "/tmp", "",[])
 
     assert(e_info.type == poponnx.exception)
     assert(e_info.value.args[0] == "Failed to parse ModelProto from string")
