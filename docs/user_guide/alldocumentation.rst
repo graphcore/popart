@@ -4,7 +4,7 @@ Using ONNX with Poplar
 Introduction
 ------------
 
-PopONNX is part of the Poplar set of tools for designing and running algorithms
+Poponnx is part of the Poplar set of tools for designing and running algorithms
 on networks of Graphcore IPU processors.
 
 It has three main features:
@@ -22,7 +22,7 @@ APIs are available for C++ and python.
 Supported operations
 ----------
 
-PopOnnx is compatible with ONNX
+Poponnx is compatible with ONNX
 [1.3](https://github.com/onnx/onnx/blob/master/docs/Versioning.md).
 It supports ONNX
 [ai.onnx](https://github.com/onnx/onnx/blob/master/docs/Operators.md) operator
@@ -40,9 +40,9 @@ References
 Importing graphs
 --------------
 
-The Net class is the runtime environment for executing graphs on the IPU hardware.
-It can read an ONNX graph from a serialized ONNX model protobuf (ModelProto),
-either directly from disk or from memory.
+The Session class is the runtime environment for executing graphs on the IPU
+hardware. It can read an ONNX graph from a serialized ONNX model protobuf
+(ModelProto), either directly from disk or from memory.
 
 Some metadata must be supplied to augment the data present in the ONNX graph.
 
@@ -65,7 +65,7 @@ Example:
   losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
   optimizer = poponnx.ConstSGD(0.001)
 
-  net = poponnx.Net("alexnet.onnx", dataFeed, losses, optimizer)
+  session = poponnx.Session("alexnet.onnx", dataFeed, losses, optimizer)
 
 
 Building graphs without a third party framework
@@ -95,19 +95,41 @@ party framework.
   losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
   optimizer = poponnx.ConstSGD(0.001)
 
-  net = poponnx.Net(proto, dataFeed, losses, optimizer)
+  session = poponnx.Session(proto, dataFeed, losses, optimizer)
 
 Executing graphs
 --------------
 
-The Net class runs graphs on the IPU hardware.
+The Session class runs graphs on the IPU hardware.
 
 Data feeds can be from single python or numpy arrays, from python iterators
 producing many tensors, and from specialized high-performance data feed objects.
 
-Example
+The graph can be executed in inference, evaluation or training modes.
+
+In inference, only the forward pass will be executed. The user is
+responsible for ensuring that the forward graph finishes with the appropriate
+operation for an inference.  If the ONNX file does not contain a Softmax on
+the end, then the user should use the ``builder`` class to append a Softmax.
+
+In evaluation, the forward pass and the losses will be executed, and the
+final loss value will be returned.
+
+In training, a full forward pass, loss calculation and backward pass will be
+done.
+
+Training example:
 
 ::
 
-  TBD
+  ...
 
+  session = poponnx.Session(proto, dataFeed, losses, optimizer)
+
+  ...
+
+  inputs = { 'image': image_data }
+  anchors = { 'loss': np.zeros([1000]) }
+  io = poponnx.PyStepIO(inputs, anchorArrays)
+
+  session.train(io)
