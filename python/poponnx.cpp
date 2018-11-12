@@ -190,7 +190,9 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("prepareDevice", &Net::prepareDevice)
       .def("weightsFromHost", &Net::weightsFromHost)
       .def("optimizerFromHost", &Net::optimizerFromHost)
-      .def("step", &Net::step)
+      .def("train", &Net::train)
+      .def("evaluate", &Net::evaluate)
+      .def("infer", &Net::infer)
       .def("modelToHost", &Net::modelToHost)
       .def("getInfo", &Net::getInfo);
 

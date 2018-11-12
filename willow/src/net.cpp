@@ -72,9 +72,11 @@ void Net::weightsFromHost() { device_->weightsFromHost(); }
 // momentum, initial momentum tensors (zero)) there are to device
 void Net::optimizerFromHost() { device_->optimizerFromHost(); }
 
-// For Poplar, this will involve reading and writing
-// Poplar::Stream <--> these addresses and running a program
-void Net::step(const StepIO &stepio) { device_->step(stepio); }
+void Net::train(const StepIO &stepio) { device_->step(stepio); }
+
+void Net::evaluate(const StepIO &stepio) { return; }
+
+void Net::infer(const StepIO &stepio) { return; }
 
 // write current model to ONNX file
 void Net::modelToHost(const std::string &fn) {

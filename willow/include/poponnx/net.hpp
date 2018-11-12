@@ -80,19 +80,31 @@ public:
   void optimizerFromHost();
 
   /**
-   * take 1 training step (i.e. process nBatchesPerStep batches, where
-   * nBatchesPerStep is specified in the DataFlow object passed into
-   * the constructor).
+   * Perform one training step.
+   *
    * input data  : from address in stepIO.in
    * output data : to addresses in stepIO.out
-   * For Poplar, this involves reading and writing between
-   * poplar::Stream host addresses and the addresses specified in stepIO,
-   * and then between the Stream host addresses and the IPU tensors.
    */
-  void step(const StepIO &stepIO);
+  void train(const StepIO &stepIO);
 
   /**
-   * write current model to ONNX file
+  * Perform one evaluation step.
+  *
+  * input data  : from address in stepIO.in
+  * output data : to addresses in stepIO.out
+  */
+  void evaluate(const StepIO &stepIO);
+
+  /**
+  * Perform one inference step.
+  *
+  * input data  : from address in stepIO.in
+  * output data : to addresses in stepIO.out
+  */
+  void infer(const StepIO &stepIO);
+
+  /**
+   * Write current model to ONNX file
    */
   void modelToHost(const std::string &fn);
 

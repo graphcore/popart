@@ -113,7 +113,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
 
             # take batchesPerStep fwd-bwd passes (1 step), PopOnnx
             pystepio = poponnx.PyStepIO(inputs, anchorArrays)
-            net.step(pystepio)
+            net.train(pystepio)
 
             # write models to file, gather comparison statistics
             fnTorchModel = getFnTorch(stepi)
