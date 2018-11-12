@@ -10,6 +10,7 @@
 #include <poponnx/popx/nllx.hpp>
 #include <poponnx/popx/opx.hpp>
 #include <poponnx/popx/padx.hpp>
+#include <poponnx/popx/reducesumx.hpp>
 #include <poponnx/popx/relux.hpp>
 #include <poponnx/popx/softmaxx.hpp>
 #include <poponnx/popx/squeezex.hpp>
@@ -358,6 +359,14 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::PAD: {
     return std::unique_ptr<Opx>(new PadOpx(op, this));
+  }
+
+  case OpType::REDUCESUM: {
+    return std::unique_ptr<Opx>(new ReduceSumOpx(op, this));
+  }
+
+  case OpType::REDUCESUMGRAD: {
+    return std::unique_ptr<Opx>(new ReduceSumGradOpx(op, this));
   }
 
   case OpType::RELU: {

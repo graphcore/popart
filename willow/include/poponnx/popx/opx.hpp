@@ -13,6 +13,8 @@
 
 namespace willow {
 
+class TensorInfo;
+
 namespace popx {
 
 class Devicex;
@@ -60,6 +62,14 @@ public:
   TensorId outId(int) const;
   // shortcut for std::to_string(op_p->id)
   std::string idStr() const;
+  // shortcut for op_p->input.tensor(int)->info
+  const TensorInfo &inInfo(int) const;
+  // shortcut for op_p->input.tensor(int)->info.shape()
+  const std::vector<int64_t> &inShape(int) const;
+  // shortcut for op_p->input.tensor(int)->info
+  const TensorInfo &outInfo(int) const;
+  // shortcut for op_p->input.tensor(int)->info.shape()
+  const std::vector<int64_t> &outShape(int) const;
 
   // The Op corresponding to this Opx
   Op *op_p;

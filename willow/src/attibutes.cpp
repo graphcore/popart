@@ -49,6 +49,15 @@ void Attributes::set(std::vector<int64_t> &vs, std::string key) const {
   }
 }
 
+template <> void Attributes::set(int64_t &v, std::string key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    v = found->second->i();
+  } else {
+    throw error("no attribute key " + key);
+  }
+}
+
 Attributes::Attributes(decltype(Node().attribute()) &attributes) {
   for (auto &attribute : attributes) {
     auto name = attribute.name();

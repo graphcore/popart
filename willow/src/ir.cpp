@@ -27,6 +27,7 @@
 #include <poponnx/conv.hpp>
 #include <poponnx/identity.hpp>
 #include <poponnx/pad.hpp>
+#include <poponnx/reducesum.hpp>
 #include <poponnx/relu.hpp>
 #include <poponnx/softmax.hpp>
 #include <poponnx/squeeze.hpp>
@@ -1477,6 +1478,8 @@ OpTypes::OpTypes() {
               {"Nll", OpType::NLL},
               {"NllGrad", OpType::NLLGRAD},
               {"Pad", OpType::PAD},
+              {"ReduceSum", OpType::REDUCESUM},
+              {"ReduceSumGrad", OpType::REDUCESUMGRAD},
               {"Relu", OpType::RELU},
               {"ReluGrad", OpType::RELUGRAD},
               {"Sub", OpType::SUBTRACT},
@@ -1582,6 +1585,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::PAD: {
     return pOp(new PadOp(node, this));
   }
+  case OpType::REDUCESUM: {
+    return pOp(new ReduceSumOp(node, this));
+  }
   case OpType::RELU: {
     return pOp(new ReluOp(node, this));
   }
@@ -1596,6 +1602,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   }
   case OpType::ADDGRAD:
   case OpType::SQUEEZEGRAD:
+  case OpType::REDUCESUMGRAD:
   case OpType::RELUGRAD:
   case OpType::AVERAGEPOOLGRAD:
   case OpType::CONVDATAGRAD:

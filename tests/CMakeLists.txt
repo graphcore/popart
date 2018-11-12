@@ -30,6 +30,10 @@ add_test(NAME model6
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model6.py .)
 
+add_test(NAME model_reduce_sum
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/model_reduce_sum.py .)
+
 install(DIRECTORY .
 	DESTINATION ${INSTALL_TESTS}
 	FILES_MATCHING REGEX ".*\.(py|sh)$")

@@ -2,6 +2,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/opx.hpp>
+#include <poponnx/tensor.hpp>
 
 namespace willow {
 namespace popx {
@@ -47,6 +48,22 @@ poplar::program::Sequence &Opx::step() const { return dv_p->progs.step(); }
 TensorId Opx::inId(int index) const { return op_p->input.id(index); }
 
 TensorId Opx::outId(int index) const { return op_p->output.id(index); }
+
+const TensorInfo &Opx::inInfo(int index) const {
+  return op_p->input.tensor(index)->info;
+}
+
+const std::vector<int64_t> &Opx::inShape(int index) const {
+  return inInfo(index).shape();
+}
+
+const TensorInfo &Opx::outInfo(int index) const {
+  return op_p->output.tensor(index)->info;
+}
+
+const std::vector<int64_t> &Opx::outShape(int index) const {
+  return outInfo(index).shape();
+}
 
 std::string Opx::idStr() const { return std::to_string(op_p->id); }
 

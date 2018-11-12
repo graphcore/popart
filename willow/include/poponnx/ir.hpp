@@ -207,6 +207,8 @@ enum class OpType {
   NLL,
   NLLGRAD,
   PAD,
+  REDUCESUM,
+  REDUCESUMGRAD,
   RELU,
   RELUGRAD,
   SGDVARUPDATE,
