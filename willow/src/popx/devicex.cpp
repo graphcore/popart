@@ -5,6 +5,7 @@
 #include <poponnx/popx/averagepoolx.hpp>
 #include <poponnx/popx/convx.hpp>
 #include <poponnx/popx/devicex.hpp>
+#include <poponnx/popx/identityx.hpp>
 #include <poponnx/popx/l1x.hpp>
 #include <poponnx/popx/nllx.hpp>
 #include <poponnx/popx/opx.hpp>
@@ -317,6 +318,14 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::CONSTSGDVARUPDATE: {
     return std::unique_ptr<Opx>(new ConstSGDVarUpdateOpx(op, this));
+  }
+
+  case OpType::IDENTITY: {
+    return std::unique_ptr<Opx>(new IdentityOpx(op, this));
+  }
+
+  case OpType::IDENTITYGRAD: {
+    return std::unique_ptr<Opx>(new IdentityGradOpx(op, this));
   }
 
   case OpType::L1: {

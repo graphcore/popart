@@ -23,6 +23,7 @@
 #include <poponnx/add.hpp>
 #include <poponnx/averagepool.hpp>
 #include <poponnx/conv.hpp>
+#include <poponnx/identity.hpp>
 #include <poponnx/pad.hpp>
 #include <poponnx/relu.hpp>
 #include <poponnx/softmax.hpp>
@@ -1458,6 +1459,8 @@ OpTypes::OpTypes() {
               {"Conv", OpType::CONV},
               {"ConvDataGrad", OpType::CONVDATAGRAD},
               {"ConvWeightsGrad", OpType::CONVWEIGHTSGRAD},
+              {"Identity", OpType::IDENTITY},
+              {"IdentityGrad", OpType::IDENTITYGRAD},
               {"L1", OpType::L1},
               {"L1Grad", OpType::L1GRAD},
               {"Softmax", OpType::SOFTMAX},
@@ -1561,6 +1564,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   }
   case OpType::CONV: {
     return pOp(new ConvOp(node, this));
+  }
+  case OpType::IDENTITY: {
+    return pOp(new IdentityOp(node, this));
   }
   case OpType::SOFTMAX: {
     return pOp(new SoftmaxOp(node, this));
