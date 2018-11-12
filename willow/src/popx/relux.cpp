@@ -23,7 +23,7 @@ void ReluOpx::grow() const {
   auto outTensor = cloneNcopy(inId(0));
 
   // and apply the inplace relu.
-  popnn::nonLinearity(
+  popnn::nonLinearityInPlace(
       graph(), popnn::NonLinearityType::RELU, outTensor, step(), outId(0));
 
   insert(outId(0), outTensor);
@@ -45,7 +45,7 @@ void ReluGradOpx::grow() const {
 
   ReluGradOp *rgop = getReluGradOp();
 
-  auto outTensor = nonLinearityInputGradient(
+  auto outTensor = popnn::nonLinearityInputGradient(
       graph(),                           // graph,
       popnn::NonLinearityType::RELU,     // nonLinearityType,
       get(inId(rgop->getReludIn())),     //  out,
