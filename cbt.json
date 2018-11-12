@@ -2,7 +2,8 @@
   "dependencies" : [
     "onnx",
     "pybind11",
-    "gcdoc"
+    "gcdoc",
+    "spdlog"
   ]
 }
 
