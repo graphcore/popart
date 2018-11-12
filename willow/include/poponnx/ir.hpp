@@ -10,6 +10,7 @@
 #include <map>
 #include <poponnx/attributes.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/optionflags.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/vertex.hpp>
 
@@ -453,6 +454,7 @@ public:
            const Optimizer *optimizer,
            const std::vector<std::string> &cTens,
            const std::string &logdir,
+           const std::string &userOptions,
            const std::vector<std::string> &patternNames);
 
   const onnx::ModelProto &modelProto;
@@ -463,6 +465,7 @@ public:
   // Weights tensors which are not to be updated
   const std::vector<std::string> &cTens;
   std::string logdir;
+  std::string userOptions;
   const std::vector<std::string> &patternNames;
 };
 
@@ -520,6 +523,7 @@ private:
   // if momentum the Ir is different
   std::unique_ptr<Optimizer> optimizer;
   std::string logdir;
+  std::string userOptions;
   EarlyInfo earlyInfo;
 
   void constructForwards();

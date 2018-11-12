@@ -17,6 +17,7 @@ Net::Net(const std::string &modelProtoOrFilename,
          const Optimizer *optimizerIn,
          const std::vector<TensorId> &cTens,
          std::string logdir,
+         std::string userOptions,
          const std::vector<std::string> &patternNames)
 
     : device_(nullptr) {
@@ -36,6 +37,7 @@ Net::Net(const std::string &modelProtoOrFilename,
                      optimizerIn,
                      cTens,
                      logdir,
+                     userOptions,
                      patternNames}));
 }
 

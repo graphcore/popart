@@ -42,8 +42,9 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
 
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
-    net = poponnx.Net(fnModel0, earlyInfo, dataFeed, torchWriter.losses,
-                      torchWriter.optimizer, [], outputdir, passes)
+    net = poponnx.Net(fnModel0, earlyInfo, dataFeed, 
+                      torchWriter.losses, torchWriter.optimizer, 
+                      [], outputdir, "exportDot=1", passes)
 
     # get the tensor info for the anchors
     anchorArrays = {}

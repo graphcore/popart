@@ -13,6 +13,7 @@
 #include <poponnx/ir.hpp>
 #include <poponnx/loss.hpp>
 #include <poponnx/optimizer.hpp>
+#include <poponnx/optionflags.hpp>
 #include <poponnx/patterns.hpp>
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/scheduler.hpp>
@@ -388,14 +389,16 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto,
                    const Optimizer *optimizer,
                    const std::vector<std::string> &cTens,
                    const std::string &logdir,
+                   const std::string &userOptions,
                    const std::vector<std::string> &patternNames)
     : modelProto(modelProto), earlyInfo(earlyInfo), dataFlow(dataFlow),
       losses(losses), optimizer(optimizer), cTens(cTens), logdir(logdir),
-      patternNames(patternNames) {}
+      userOptions(userOptions), patternNames(patternNames) {}
 
 Ir::Ir(const IrBundle &gb)
     : tensors(gb.cTens, this), dataFlow(gb.dataFlow), optimizer(nullptr),
-      logdir(io::getCanonicalDirName(gb.logdir)), earlyInfo(gb.earlyInfo) {
+      logdir(io::getCanonicalDirName(gb.logdir)), userOptions(gb.userOptions),
+      earlyInfo(gb.earlyInfo) {
 
   optimizer = gb.optimizer->clone();
   onnxModel = gb.modelProto;
@@ -468,7 +471,12 @@ Ir::Ir(const IrBundle &gb)
   // construct the forward pass from ONNX,
   constructForwards();
 
-  exportDot(io::appendDirFn(logdir, "fwd0.dot"));
+  // Set default options, and override with user-provided key-value pairs
+  OptionFlags optionFlags(userOptions);
+
+  if (optionFlags.options.exportDot) {
+    exportDot(io::appendDirFn(logdir, "fwd0.dot"));
+  }
   // to developers: confirm fuctions like this
   // should be to check that there
   // are no contradictions in the user input, NOT
@@ -500,7 +508,9 @@ Ir::Ir(const IrBundle &gb)
   addRecompute();
   prune();
 
-  exportDot(io::appendDirFn(logdir, "fwdBwd0.dot"));
+  if (optionFlags.options.exportDot) {
+    exportDot(io::appendDirFn(logdir, "fwdBwd0.dot"));
+  }
 
   std::stringstream ss2;
   append(ss2);

@@ -174,6 +174,7 @@ PYBIND11_MODULE(poponnx_core, m) {
                     const Optimizer *,
                     const std::vector<TensorId> &,
                     std::string,
+                    std::string,
                     const std::vector<std::string> &>(),
            py::arg("model"),
            py::arg("earlyInfo").none(),
@@ -182,6 +183,7 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("optimizer").none(),
            py::arg("cTens"),
            py::arg("logdir"),
+           py::arg("userOptions"),
            py::arg("patternNames"))
       .def("updateOptimizer", &Net::updateOptimizer)
       .def("setDevice", &Net::setDevice)

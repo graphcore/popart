@@ -22,6 +22,7 @@ public:
    * \param optimizer The name of an optimizer to use when training
    * \param cTens List of weight tensors which are not to be updated
    * \param logdir Directory to dump logging information into
+   * \param userOptions String to configure net options
    * \param patternNames
    */
   Net(const std::string &model,
@@ -31,6 +32,7 @@ public:
       const Optimizer *optimizer,
       const std::vector<std::string> &cTens,
       std::string logdir,
+      std::string userOptions,
       const std::vector<std::string> &patternNames);
 
   ~Net();
