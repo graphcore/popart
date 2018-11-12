@@ -446,16 +446,16 @@ private:
 // Ir Constructor inputs
 class IrBundle {
 public:
-  IrBundle(std::string fnModel_,
-           const EarlyInfo &,
-           const DataFlow &,
-           const std::vector<Loss *> &,
-           const Optimizer *,
-           const std::vector<std::string> &cTens_,
-           std::string logdir_,
-           const std::vector<std::string> &patternNames_);
+  IrBundle(const onnx::ModelProto &modelProto,
+           const EarlyInfo &earlyInfo,
+           const DataFlow &dataFlow,
+           const std::vector<Loss *> &losses,
+           const Optimizer *optimizer,
+           const std::vector<std::string> &cTens,
+           const std::string &logdir,
+           const std::vector<std::string> &patternNames);
 
-  std::string fnModel;
+  const onnx::ModelProto &modelProto;
   const EarlyInfo &earlyInfo;
   const DataFlow &dataFlow;
   const std::vector<Loss *> &losses;

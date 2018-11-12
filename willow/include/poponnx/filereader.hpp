@@ -21,10 +21,11 @@ std::string getCanonicalFilename(const std::string &dirName0);
 // path.join)
 std::string appendDirFn(const std::string &dir, const std::string &fn);
 
-/// load a ModeloProto from a file
-/// see https://github.com/onnx/onnx/blob/master/onnx/onnx.in.proto
-/// and C++ generated header onnx.pb.h for class def.
-onnx::ModelProto getModel(std::string filename);
+/// load a ModelProto from a file
+onnx::ModelProto getModelFromFile(const std::string &filename);
+
+/// load a ModelProto from a string
+onnx::ModelProto getModelFromString(const std::string &modelProto);
 
 // serialize a ModelProto to a binary protobuf file
 void writeModel(const onnx::ModelProto &model, std::string filename);

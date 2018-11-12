@@ -6,6 +6,7 @@
 #include <queue>
 #include <sstream>
 #include <vector>
+
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
 #include <poponnx/intervals.hpp>
@@ -141,9 +142,7 @@ const OpTypes &getOpTypes() {
   return X;
 }
 
-
 void Op::setup() { throw error("No setup() for " + op_type()); }
-
 
 std::vector<Op *> Ir::getOpSchedule() const {
   // TODO - should the schedule be memoized
@@ -382,25 +381,24 @@ void Ir::setAllNodeInputsMap() {
   }
 }
 
-IrBundle::IrBundle(std::string fnModel_,
-                   const EarlyInfo &earlyInfo_,
-                   const DataFlow &dataFlow_,
-                   const std::vector<Loss *> &losses_,
-                   const Optimizer *optimizer_,
-                   const std::vector<std::string> &cTens_,
-                   std::string logdir_,
-                   const std::vector<std::string> &patternNames_)
-    : fnModel(fnModel_), earlyInfo(earlyInfo_), dataFlow(dataFlow_),
-      losses(losses_), optimizer(optimizer_), cTens(cTens_), logdir(logdir_),
-      patternNames(patternNames_) {}
+IrBundle::IrBundle(const onnx::ModelProto &modelProto,
+                   const EarlyInfo &earlyInfo,
+                   const DataFlow &dataFlow,
+                   const std::vector<Loss *> &losses,
+                   const Optimizer *optimizer,
+                   const std::vector<std::string> &cTens,
+                   const std::string &logdir,
+                   const std::vector<std::string> &patternNames)
+    : modelProto(modelProto), earlyInfo(earlyInfo), dataFlow(dataFlow),
+      losses(losses), optimizer(optimizer), cTens(cTens), logdir(logdir),
+      patternNames(patternNames) {}
 
 Ir::Ir(const IrBundle &gb)
     : tensors(gb.cTens, this), dataFlow(gb.dataFlow), optimizer(nullptr),
       logdir(io::getCanonicalDirName(gb.logdir)), earlyInfo(gb.earlyInfo) {
 
   optimizer = gb.optimizer->clone();
-  io::confirmRegularFile(gb.fnModel);
-  onnxModel = io::getModel(gb.fnModel);
+  onnxModel = gb.modelProto;
 
   for (auto &id_info : optimizer->tensorInfos()) {
     TensorId id     = id_info.first;
@@ -1497,7 +1495,6 @@ const std::string &OpTypes::get(OpType opType) const {
 }
 
 void Ir::append(std::stringstream &ss) {
-  ss << "-- Ir --\n";
   //  for (auto &id_op : ops) {
   //    id_op.second->append(ss);
   //  }

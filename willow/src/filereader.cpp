@@ -61,7 +61,12 @@ OnnxTensors getOutputTensors(const onnx::GraphProto &g, std::string dir) {
   return getAndMatchTensors(fns, names);
 }
 
-onnx::ModelProto getModel(std::string filename) {
+static bool getModelFromStream(std::istream &istream,
+                               onnx::ModelProto &modelProto) {
+  return modelProto.ParseFromIstream(&istream);
+}
+
+onnx::ModelProto getModelFromFile(const std::string &filename) {
   // Verify that the version of the library that we linked against is
   // compatible with the version of the headers we compiled against.
   // As suggested at developers.google.com/protocol-buffers/docs/cpptutorial
@@ -78,18 +83,29 @@ onnx::ModelProto getModel(std::string filename) {
 
   onnx::ModelProto modelProto;
 
-  if (!modelProto.ParseFromIstream(&input)) {
+  if (!getModelFromStream(input, modelProto)) {
     std::stringstream ss;
-    ss << "Failed to parse ModelProto from \n" << filename;
+    ss << "Failed to parse ModelProto from file " << filename;
     throw error(ss.str());
   }
 
-  if (modelProto.graph().node_size() == 0) {
-    std::stringstream ss;
-    ss << "In loading ModelProto from " << filename << ':' << ' ';
-    ss << "ModelProto has no nodes (=weird). Pedantic bail.";
-    throw error(ss.str());
+  return modelProto;
+}
+
+onnx::ModelProto getModelFromString(const std::string &stringProto) {
+  // Verify that the version of the library that we linked against is
+  // compatible with the version of the headers we compiled against.
+  // As suggested at developers.google.com/protocol-buffers/docs/cpptutorial
+  GOOGLE_PROTOBUF_VERIFY_VERSION;
+
+  std::stringstream input(stringProto);
+
+  onnx::ModelProto modelProto;
+
+  if (!getModelFromStream(input, modelProto)) {
+    throw error("Failed to parse ModelProto from string");
   }
+
   return modelProto;
 }
 

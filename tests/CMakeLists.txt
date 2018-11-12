@@ -7,7 +7,7 @@ add_subdirectory(poponnx)
 # poponnx tests (do not require pytorch)
 add_test(NAME pytest
 		 WORKING_DIRECTORY ${INSTALL_TESTS}
-		 COMMAND pytest)
+		 COMMAND pytest -s)
 
 # poponnx.torch tests (require pytorch and torchvision)
 add_test(NAME model0

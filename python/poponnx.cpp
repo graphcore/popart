@@ -174,7 +174,15 @@ PYBIND11_MODULE(poponnx_core, m) {
                     const Optimizer *,
                     const std::vector<TensorId> &,
                     std::string,
-                    const std::vector<std::string> &>())
+                    const std::vector<std::string> &>(),
+           py::arg("model"),
+           py::arg("earlyInfo").none(),
+           py::arg("dataFlow").none(),
+           py::arg("losses"),
+           py::arg("optimizer").none(),
+           py::arg("cTens"),
+           py::arg("logdir"),
+           py::arg("patternNames"))
       .def("updateOptimizer", &Net::updateOptimizer)
       .def("setDevice", &Net::setDevice)
       .def("prepareDevice", &Net::prepareDevice)
@@ -189,13 +197,9 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("addInputTensor", &Builder::addInputTensor)
       .def("addOutputTensor", &Builder::addOutputTensor)
       .def("add", &Builder::add)
-      .def("getModelProto", [](const Builder& builder){
+      .def("getModelProto", [](const Builder &builder) {
         return py::bytes(builder.getModelProto());
       });
 
-  // This does not seem to work :/
-  // Thoroughly read
-  // https://pybind11.readthedocs.io/en/stable/advanced/exceptions.html
-  // and looked through pybind11 code, still can't get it to bight
-  auto ex5 = py::register_exception<willow::error>(m, "WillowException");
+  py::register_exception<willow::error>(m, "exception");
 }

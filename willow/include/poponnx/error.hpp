@@ -8,13 +8,12 @@
 
 namespace willow {
 
-// A  class for any exception which arises from the willow library.
+/**
+ * Exception class for poponnx
+ */
 class error : public std::runtime_error {
 public:
-  explicit error(const std::string &what) : std::runtime_error(who() + what) {}
-
-private:
-  std::string who() { return "willow: "; }
+  explicit error(const std::string &what) : std::runtime_error(what) {}
 };
 
 } // namespace willow

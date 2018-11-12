@@ -52,7 +52,7 @@ NumericsReport::NumericsReport(std::string A0, // A starts
 
   std::map<std::string, onnx::ModelProto> models;
   for (auto fn : fns) {
-    models[fn] = io::getModel(fn);
+    models[fn] = io::getModelFromFile(fn);
   }
 
   const onnx::ModelProto &mA0 = models[A0];

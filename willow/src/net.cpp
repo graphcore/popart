@@ -1,4 +1,3 @@
-#include <fstream>
 #include <poponnx/device.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
@@ -11,39 +10,44 @@
 
 namespace willow {
 
-Net::Net(std::string onnxModelFn,
+Net::Net(const std::string &modelProtoOrFilename,
          const EarlyInfo &perk,
          const DataFlow &df,
          const std::vector<Loss *> &lossesIn,
          const Optimizer *optimizerIn,
-         // Weights tensors which are not to be updated
          const std::vector<TensorId> &cTens,
-         std::string logdir_,
+         std::string logdir,
          const std::vector<std::string> &patternNames)
 
-    : pir_(new Ir({onnxModelFn,
-                   perk,
-                   df,
-                   lossesIn,
-                   optimizerIn,
-                   cTens,
-                   logdir_,
-                   patternNames})),
-      device_(nullptr) {}
+    : device_(nullptr) {
+
+  onnx::ModelProto modelProto;
+  try {
+    modelProto = io::getModelFromFile(modelProtoOrFilename);
+  } catch (const error &) {
+    modelProto = io::getModelFromString(modelProtoOrFilename);
+    ;
+  }
+
+  pir_.reset(new Ir({modelProto,
+                     perk,
+                     df,
+                     lossesIn,
+                     optimizerIn,
+                     cTens,
+                     logdir,
+                     patternNames}));
+}
 
 void Net::updateOptimizer(const Optimizer *optimizer) {
   pir_->updateOptimizer(optimizer);
 }
 
-void Net::setDevice(std::string deviceString) {
-  // TODO(See task T5103) : here, need macro around specific device types,
-  // might not have enabled to build with them. (in CMakeLists.txt
-  // there is POPLAR_BACKEND option)
-
+void Net::setDevice(const std::string &deviceString) {
   if (deviceString == "IPU") {
     device_.reset(new popx::Devicex(pir_.get()));
   } else {
-    throw error("How to set device from " + deviceString + " ??? ");
+    throw error("Unrecognised device type: " + deviceString);
   }
 }
 
@@ -71,7 +75,7 @@ void Net::optimizerFromHost() { device_->optimizerFromHost(); }
 void Net::step(const StepIO &stepio) { device_->step(stepio); }
 
 // write current model to ONNX file
-void Net::modelToHost(std::string fn) {
+void Net::modelToHost(const std::string &fn) {
 
   onnx::ModelProto model = pir_->getModel();
 
