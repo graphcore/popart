@@ -2,6 +2,7 @@
 
 import pytest
 
+
 def test_import():
     # the core library
     import poponnx
@@ -9,4 +10,4 @@ def test_import():
     # and some utility python functions.
     import poponnx.writer
 
-    assert('SGD' in dir(poponnx))
+    assert ('SGD' in dir(poponnx))

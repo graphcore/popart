@@ -12,7 +12,7 @@ std::string BuilderImpl::getNextId() {
 
 BuilderImpl::BuilderImpl() : next_id_(0) {
   model_.set_ir_version(3);
-  auto* opset_import = model_.add_opset_import();
+  auto *opset_import = model_.add_opset_import();
   opset_import->set_version(9);
 }
 
@@ -31,14 +31,14 @@ std::string BuilderImpl::addInputTensor(const TensorInfo &tensorInfo) {
 }
 
 void BuilderImpl::addOutputTensor(const std::string &arg0) {
-  auto *graph = model_.mutable_graph();
-  auto* output = graph->add_output();
+  auto *graph  = model_.mutable_graph();
+  auto *output = graph->add_output();
 
   bool found = false;
-  for (const auto& vi : graph->value_info()) {
+  for (const auto &vi : graph->value_info()) {
     if (vi.name() == arg0) {
       *output = vi;
-      found = true;
+      found   = true;
     }
   }
 
@@ -51,7 +51,7 @@ std::string BuilderImpl::add(const std::string &arg0, const std::string &arg1) {
   auto id = getNextId();
 
   auto *graph = model_.mutable_graph();
-  auto *node = graph->add_node();
+  auto *node  = graph->add_node();
   node->set_op_type("Add");
   node->add_input(arg0);
   node->add_input(arg1);

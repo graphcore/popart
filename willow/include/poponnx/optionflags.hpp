@@ -12,9 +12,7 @@ namespace willow {
 struct Options {
   bool exportDot;
 };
-enum eOptions {
-  e_exportDot
-};
+enum eOptions { e_exportDot };
 
 // User-options are supplied to the class constructor as a
 // comma-separated list of key-value pairs. No whitespace is

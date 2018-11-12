@@ -23,10 +23,10 @@ public:
 
   virtual ~Scheduler() {}
 
-  virtual std::vector<Op *> getSchedule(const OpMap& ops,
-                                        const Tensors& tensors) const = 0;
+  virtual std::vector<Op *> getSchedule(const OpMap &ops,
+                                        const Tensors &tensors) const = 0;
 
-  static std::unique_ptr<Scheduler> getScheduler(const std::string& scheduler);
+  static std::unique_ptr<Scheduler> getScheduler(const std::string &scheduler);
 };
 
 } // namespace willow

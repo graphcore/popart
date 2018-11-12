@@ -7,6 +7,7 @@ import numpy as np
 from torchvision import transforms, datasets
 from poponnx.torch import torchwriter
 
+
 def run(torchWriter, passes, outputdir, cifarInIndices):
 
     dataFeed = torchWriter.dataFeed
@@ -42,9 +43,9 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
 
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
-    net = poponnx.Net(fnModel0, earlyInfo, dataFeed, 
-                      torchWriter.losses, torchWriter.optimizer, 
-                      [], outputdir, "exportDot=1", passes)
+    net = poponnx.Net(fnModel0, earlyInfo, dataFeed, torchWriter.losses,
+                      torchWriter.optimizer, [], outputdir, "exportDot=1",
+                      passes)
 
     # get the tensor info for the anchors
     anchorArrays = {}
@@ -60,8 +61,8 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
             outShape[0] = outShape[0]
         else:
             raise RuntimeError("unrecognised AnchorType")
-        anchorArrays[anchor] = 7 * np.ones(shape=outShape,
-                                           dtype=x.data_type_lcase())
+        anchorArrays[anchor] = 7 * np.ones(
+            shape=outShape, dtype=x.data_type_lcase())
 
     allDotPrefixes = [x[0:-4] for x in os.listdir(outputdir) if ".dot" in x]
     print("Will generate graph pdfs for all of:")

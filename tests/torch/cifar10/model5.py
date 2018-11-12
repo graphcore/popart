@@ -25,9 +25,8 @@ anchors = ["nllLossVal", "probs"]
 art = poponnx.AnchorReturnType.ALL
 dataFeed = poponnx.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
 earlyInfo = poponnx.EarlyInfo()
-earlyInfo.add(
-    "image0",
-    poponnx.TensorInfo("FLOAT", [samplesPerBatch, nInChans, 32, 32]))
+earlyInfo.add("image0",
+              poponnx.TensorInfo("FLOAT", [samplesPerBatch, nInChans, 32, 32]))
 earlyInfo.add("label", poponnx.TensorInfo("INT32", [samplesPerBatch]))
 inNames = ["image0"]
 cifarInIndices = {"image0": 0, "label": 1}

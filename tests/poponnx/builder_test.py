@@ -2,6 +2,7 @@ import pytest
 
 import poponnx
 
+
 def test_basic():
 
     builder = poponnx.Builder()
@@ -15,9 +16,9 @@ def test_basic():
 
     proto = builder.getModelProto()
 
-    assert(len(proto) > 0)
-    assert(len(i1) > 0)
-    assert(len(i2) > 0)
-    assert(len(o) > 0)
-    assert(i1 != i2)
-    assert(i2 != o)
+    assert (len(proto) > 0)
+    assert (len(i1) > 0)
+    assert (len(i2) > 0)
+    assert (len(o) > 0)
+    assert (i1 != i2)
+    assert (i2 != o)

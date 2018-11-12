@@ -43,9 +43,8 @@ dataFeed = poponnx.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
 # types must be fed into the Net constructor.
 # In this example there is 1 streamed input, image0.
 earlyInfo = poponnx.EarlyInfo()
-earlyInfo.add(
-    "image0",
-    poponnx.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
+earlyInfo.add("image0",
+              poponnx.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
 
 inNames = ["image0"]
 

@@ -29,7 +29,7 @@ public:
    * Adds one of the outputs from a node in the graph into the list of output
    * tensors.
    */
-  void addOutputTensor(const std::string& arg0);
+  void addOutputTensor(const std::string &arg0);
 
   /**
    * Add the Addition operator to the model

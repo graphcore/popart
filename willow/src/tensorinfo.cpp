@@ -189,10 +189,10 @@ std::vector<int64_t> TensorInfo::shapeFromString(const std::string &s) const {
 onnx::TypeProto TensorInfo::getOnnxTypeProto() const {
   onnx::TypeProto typeProto;
 
-  onnx::TypeProto_Tensor* tensor = typeProto.mutable_tensor_type();
+  onnx::TypeProto_Tensor *tensor = typeProto.mutable_tensor_type();
   tensor->set_elem_type(dataTypeInfo->type());
 
-  onnx::TensorShapeProto* shape = tensor->mutable_shape();
+  onnx::TensorShapeProto *shape = tensor->mutable_shape();
   for (auto d : shape_v) {
     shape->add_dim()->set_dim_value(d);
   }

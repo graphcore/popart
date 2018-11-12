@@ -21,9 +21,8 @@ public:
 
   ~TopologicalScheduler() override {}
 
-  std::vector<Op *> getSchedule(const OpMap& ops,
-                                const Tensors& tensors) const override;
-  
+  std::vector<Op *> getSchedule(const OpMap &ops,
+                                const Tensors &tensors) const override;
 };
 
 } // namespace willow

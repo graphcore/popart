@@ -23,14 +23,15 @@ struct POpCmp {
 };
 
 class OpPriorityComparer {
- public:
+public:
   bool operator()(const Op *const &op1, const Op *const &op2) const {
     return op1->priority < op2->priority;
   }
 };
 
-std::vector<Op *> TopologicalScheduler::getSchedule(
-    const OpMap& ops, const class Tensors& tensors) const {
+std::vector<Op *>
+TopologicalScheduler::getSchedule(const OpMap &ops,
+                                  const class Tensors &tensors) const {
   // the topological sorting (to construct in this function)
   std::vector<Op *> sorted;
   // ops which have all their input tensors

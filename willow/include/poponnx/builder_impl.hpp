@@ -17,7 +17,7 @@ public:
 
   std::string addInputTensor(const TensorInfo &tensorInfo);
 
-  void addOutputTensor(const std::string& arg0);
+  void addOutputTensor(const std::string &arg0);
 
   std::string add(const std::string &arg0, const std::string &arg1);
 
