@@ -8,6 +8,7 @@
 #include <poplar/Graph.hpp>
 #include <poplar/IPUModel.hpp>
 #include <poplin/Convolution.hpp>
+#include <poplin/MatMul.hpp>
 #include <poputil/TileMapping.hpp>
 #pragma clang diagnostic pop // stop ignoring warnings
 
@@ -91,11 +92,12 @@ public:
 
   // enigma has a PlanningCache for matmul and conv
   poplin::PlanningCache convCache;
-  poplin::PlanningCache matmulCache;
+  poplin::matmul::PlanningCache matmulCache;
 
   // completed in Devicex constructor.
 
   enigma::ConvOptions fwdConvOptions, bwdConvOptions, wuConvOptions;
+  poplar::OptionFlags fwdMmOptions, bwdMmLhsOptions, bwdMmRhsOptions;
   poplar::OptionFlags engineOptions;
 
   PopTensors tensors;

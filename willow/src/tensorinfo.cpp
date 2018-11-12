@@ -53,7 +53,7 @@ TensorInfo npOut(const TensorInfo &i0, const TensorInfo &i1) {
   return i1;
 }
 
-void TensorInfo::append(std::stringstream &ss) const {
+void TensorInfo::append(std::ostream &ss) const {
   ss << padded(dataTypeInfo->name(), 8);
   appendSequence(ss, shape_v);
 }
@@ -203,6 +203,11 @@ onnx::TypeProto TensorInfo::getOnnxTypeProto() const {
 const std::map<std::string, DataType> &getStrToDataTypeMap() {
   static std::map<std::string, DataType> m = initStrToDataTypeMap();
   return m;
+}
+
+std::ostream &operator<<(std::ostream &stream, const TensorInfo &ti) {
+  ti.append(stream);
+  return stream;
 }
 
 DataTypeInfo::DataTypeInfo(DataType type__,

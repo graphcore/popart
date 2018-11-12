@@ -7,6 +7,7 @@
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/identityx.hpp>
 #include <poponnx/popx/l1x.hpp>
+#include <poponnx/popx/matmulx.hpp>
 #include <poponnx/popx/nllx.hpp>
 #include <poponnx/popx/opx.hpp>
 #include <poponnx/popx/padx.hpp>
@@ -147,6 +148,12 @@ Devicex::Devicex(const Ir *pir) : willow::Device(pir), tensors(pir) {
   fwdConvOptions.pass = enigma::Pass::TRAINING_FWD;
   bwdConvOptions.pass = enigma::Pass::TRAINING_BWD;
   wuConvOptions.pass  = enigma::Pass::TRAINING_WU;
+
+  // Not sure what they options should be
+  fwdMmOptions.set({{"fullyConnectedPass", "TRAINING_FWD"}});
+  bwdMmLhsOptions.set({{"fullyConnectedPass", "TRAINING_BWD"}});
+  bwdMmRhsOptions.set({{"fullyConnectedPass", "TRAINING_WU"}});
+
   engineOptions.set({{"target.workerStackSizeInBytes", "0x200"}});
 }
 
@@ -347,6 +354,18 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::SOFTMAXGRADDIRECT: {
     return std::unique_ptr<Opx>(new SoftmaxGradDirectOpx(op, this));
+  }
+
+  case OpType::MATMUL: {
+    return std::unique_ptr<Opx>(new MatMulOpx(op, this));
+  }
+
+  case OpType::MATMULLHSGRAD: {
+    return std::unique_ptr<Opx>(new MatMulLhsGradOpx(op, this));
+  }
+
+  case OpType::MATMULRHSGRAD: {
+    return std::unique_ptr<Opx>(new MatMulRhsGradOpx(op, this));
   }
 
   case OpType::NLL: {

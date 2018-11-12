@@ -26,6 +26,7 @@
 #include <poponnx/averagepool.hpp>
 #include <poponnx/conv.hpp>
 #include <poponnx/identity.hpp>
+#include <poponnx/matmul.hpp>
 #include <poponnx/pad.hpp>
 #include <poponnx/reducesum.hpp>
 #include <poponnx/relu.hpp>
@@ -395,6 +396,11 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto,
     : modelProto(modelProto), earlyInfo(earlyInfo), dataFlow(dataFlow),
       losses(losses), optimizer(optimizer), cTens(cTens), logdir(logdir),
       userOptions(userOptions), patternNames(patternNames) {}
+
+Ir::Ir() : tensors({}, this), optimizer(nullptr) {
+  // The default constructor does not do anything, may need to change
+  // when in memory graph creation is supported
+}
 
 Ir::Ir(const IrBundle &gb)
     : tensors(gb.cTens, this), dataFlow(gb.dataFlow), optimizer(nullptr),
@@ -1118,6 +1124,11 @@ int Op::getNonGradInIndex(int gradOpOutIndex) const {
 GradInOutMapper::GradInOutMapper(int iG, int iNG, GradOpInType t)
     : iGrad(iG), iNonGrad(iNG), type(t) {}
 
+bool GradInOutMapper::operator==(const GradInOutMapper &rhs) const {
+  return (type == rhs.type) && (iGrad == rhs.iGrad) &&
+         (iNonGrad == rhs.iNonGrad);
+}
+
 const std::vector<GradInOutMapper> &Op::gradInputInfo() const {
   throw error("Op " + op_type() + " cannot get `grad input info'");
 }
@@ -1477,6 +1488,9 @@ OpTypes::OpTypes() {
               {"SoftmaxGradDirect", OpType::SOFTMAXGRADDIRECT},
               {"Nll", OpType::NLL},
               {"NllGrad", OpType::NLLGRAD},
+              {"MatMul", OpType::MATMUL},
+              {"MatMulLhsGrad", OpType::MATMULLHSGRAD},
+              {"MatMulRhsGrad", OpType::MATMULRHSGRAD},
               {"Pad", OpType::PAD},
               {"ReduceSum", OpType::REDUCESUM},
               {"ReduceSumGrad", OpType::REDUCESUMGRAD},
@@ -1600,6 +1614,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::SQUEEZE: {
     return pOp(new SqueezeOp(node, this));
   }
+  case OpType::MATMUL: {
+    return pOp(new MatMulOp(node, this));
+  }
   case OpType::ADDGRAD:
   case OpType::SQUEEZEGRAD:
   case OpType::REDUCESUMGRAD:
@@ -1613,6 +1630,8 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::SGDVARUPDATE:
   case OpType::CONSTSGDVARUPDATE:
   case OpType::SUBTRACTGRAD:
+  case OpType::MATMULLHSGRAD:
+  case OpType::MATMULRHSGRAD:
     throw error("Gradient Ops not constructable from Node");
 
   case OpType::NLL:
@@ -1645,6 +1664,8 @@ std::vector<GradNonGradPair> Ir::growLossGradients() {
 bool DataFlow::isAnchored(TensorId id) const {
   return (s_anchors.count(id) != 0);
 }
+
+DataFlow::DataFlow() = default;
 
 DataFlow::DataFlow(int BpR,
                    int bs,

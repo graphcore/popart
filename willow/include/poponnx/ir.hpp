@@ -53,6 +53,7 @@ enum class AnchorReturnType {
 // Describe what and when the user wants returned.
 class DataFlow {
 public:
+  DataFlow();
   DataFlow(int batchesPerStep,
            int samplesPerBatch,
            const std::vector<TensorId> &,
@@ -99,6 +100,8 @@ public:
   int iNonGrad;
   // where "input/output/gradient-of-output" above is
   GradOpInType type;
+
+  bool operator==(const GradInOutMapper &rhs) const;
 };
 
 // The gradient of a tensor is the sum of 1 or several tensors,
@@ -206,6 +209,9 @@ enum class OpType {
   SOFTMAXGRADDIRECT,
   NLL,
   NLLGRAD,
+  MATMUL,
+  MATMULLHSGRAD,
+  MATMULRHSGRAD,
   PAD,
   REDUCESUM,
   REDUCESUMGRAD,
@@ -474,6 +480,7 @@ public:
 class Ir {
 public:
   ~Ir();
+  Ir();
   Ir(const IrBundle &);
   void updateOptimizer(const Optimizer *);
   // take training steps

@@ -8,3 +8,4 @@ data
 *.so
 *.dylib
 experimental
+.vscode/*

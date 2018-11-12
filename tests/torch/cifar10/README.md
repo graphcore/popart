@@ -25,3 +25,7 @@ same as model1, but uses Subtract rather than Add
 model_reduce_sum
 ------
 output = sum(conv(input), dim=1) and loss is l1 norm of output
+
+model7
+------
+Same setup as model2 but with a matmul at the end

@@ -35,6 +35,8 @@ using DataType = decltype(onnx::TensorProto().data_type());
 
 using TP = onnx::TensorProto;
 
+using Shape = std::vector<int64_t>;
+
 class DataFlow;
 class Device;
 class EarlyInfo;

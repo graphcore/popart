@@ -81,7 +81,7 @@ public:
   DataType dataType() const;
   const std::string &data_type() const;
   const std::string &data_type_lcase() const;
-  void append(std::stringstream &) const;
+  void append(std::ostream &) const;
   bool isSet() const;
   bool operator==(const TensorInfo &) const;
   bool operator!=(const TensorInfo &) const;
@@ -93,6 +93,8 @@ private:
   const DataTypeInfo *dataTypeInfo = nullptr;
   std::vector<int64_t> shape_v;
 };
+
+std::ostream &operator<<(std::ostream &stream, const TensorInfo &ti);
 
 } // namespace willow
 
