@@ -3,7 +3,9 @@
     "onnx",
     "pybind11",
     "gcdoc",
-    "spdlog"
-  ]
+    "spdlog",
+    "boost"
+  ],
+  "superproject_cmake_includes" : [ "SuperProjectConfig.cmake" ]
 }
 

@@ -20,16 +20,14 @@ message( STATUS "Building WITHOUT Poplar IPU backend")
 endif()
 
 add_library(poponnx SHARED ${sources})
-message( STATUS "BOOST_FILESYSTEM_LIB to be used : " ${BOOST_FILESYSTEM_LIB} )
-message( STATUS "BOOST_FILESYSTEM_INCLUDE_DIR to be used :  " ${BOOST_FILESYSTEM_INCLUDE_DIR} )
 
-target_include_directories (poponnx PUBLIC 
+target_include_directories (poponnx PUBLIC
     # if the model checker is used: ${ONNX_UTILS_INCLUDE_DIR}
     ${ONNX_PB_INCLUDE_DIR}
     ${ONNX_CHECKER_INCLUDE_DIR}
     ${ONNX_INCLUDE_DIRS}
     ${Protobuf_INCLUDE_DIR}
-    ${BOOST_FILESYSTEM_INCLUDE_DIR}
+    ${Boost_INCLUDE_DIRS}
     ${CBLAS_INCLUDE_DIRS}
     ${POPLAR_INCLUDE_DIR}
     )
@@ -38,10 +36,9 @@ target_link_libraries(poponnx
   # if the onnx mode checker is incorporated, this will be needed: ${ONNX_LIB}
   ${ONNX_LIB}
   ${ONNX_PROTO_LIB}
-  ${Protobuf_LIBRARIES} 
+  ${Protobuf_LIBRARIES}
   ${CBLAS_LIBRARIES}
-  ${BOOST_FILESYSTEM_LIB}
-  ${BOOST_SYSTEM_LIB}
+  ${Boost_LIBRARIES}
   ${POPLAR_LIB}
   ${POPLIN_LIB}
   ${POPNN_LIB}

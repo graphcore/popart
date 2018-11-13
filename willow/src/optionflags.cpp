@@ -1,4 +1,7 @@
+#pragma clang diagnostic push // start ignoring warnings
+#pragma clang diagnostic ignored "-Weverything"
 #include <boost/lexical_cast.hpp>
+#pragma clang diagnostic pop // stop ignoring warnings
 #include <iterator>
 #include <map>
 #include <stdexcept>

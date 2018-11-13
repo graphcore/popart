@@ -1,6 +1,8 @@
 #define BOOST_TEST_MODULE MatMulTest
-
+#pragma clang diagnostic push // start ignoring warnings
+#pragma clang diagnostic ignored "-Weverything"
 #include <boost/test/unit_test.hpp>
+#pragma clang diagnostic pop // stop ignoring warnings
 #include <poponnx/error.hpp>
 #include <poponnx/matmul.hpp>
 #include <poponnx/optimizer.hpp>

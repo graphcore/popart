@@ -44,12 +44,11 @@ find_package(Protobuf REQUIRED)
 # or repo poponnx if available
 find_package(ONNX REQUIRED)
 
-# Boost 1.66 and cmake do not agree. Waiting for fix from KitWARE.
-# find_package(Boost COMPONENTS filesystem system REQUIRED) 
-# For now I'm using a workaround search which searches along
-# the poplar install path, and then on system path
-find_package(BoostFilesystem REQUIRED) 
-
+#Link Boost statically
+set(Boost_USE_STATIC_LIBS ON)
+set(Boost_USE_STATIC_RUNTIME ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+find_package(Boost REQUIRED COMPONENTS filesystem system)
 # at some future point we might want this for a CPU backend for willow
 # find_package(CBLAS REQUIRED)
 
