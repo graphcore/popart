@@ -22,8 +22,13 @@ def test_net_from_string():
     optimizer = poponnx.SGD(0.01)
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
-    poponnx.Session(proto, earlyInfo, dataFlow, losses, optimizer, [], "/tmp",
-                    "", [])
+    poponnx.Session(
+        fnModel=proto,
+        earlyInfo=earlyInfo,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        outputdir="/tmp")
 
 
 def test_net_from_file():
@@ -48,8 +53,13 @@ def test_net_from_file():
     optimizer = poponnx.SGD(0.01)
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
-    poponnx.Session("test.onnx", earlyInfo, dataFlow, losses, optimizer, [],
-                    "/tmp", "", [])
+    poponnx.Session(
+        fnModel="test.onnx",
+        earlyInfo=earlyInfo,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        outputdir="/tmp")
 
 
 def test_net_failure():
@@ -63,8 +73,13 @@ def test_net_failure():
     losses = [poponnx.L1Loss("None", "l1LossVal", 0.1)]
 
     with pytest.raises(poponnx.exception) as e_info:
-        poponnx.Session("nothing", earlyInfo, dataFlow, losses, optimizer, [],
-                        "/tmp", "", [])
+        poponnx.Session(
+            fnModel="nothing",
+            earlyInfo=earlyInfo,
+            dataFeed=dataFlow,
+            losses=losses,
+            optimizer=optimizer,
+            outputdir="/tmp")
 
     assert (e_info.type == poponnx.exception)
     assert (e_info.value.args[0] == "Failed to parse ModelProto from string")
