@@ -5,12 +5,6 @@
 
 namespace willow {
 
-// from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv :
-// "data" at index 0, "weights" at index 1.
-// willow's ConvOp does not support bias.
-int convDataInIndex();
-int convWeightsInIndex();
-
 class ConvOp : public HasReceptiveFieldOp {
 public:
   ConvOp(const onnx::NodeProto &node, Ir *pir);
@@ -22,6 +16,14 @@ public:
   virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
   virtual int64_t getNOutChans() const override final;
+
+  // from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv :
+  // "data" at index 0, "weights" at index 1, "bias" as index 2.
+  // willow's ConvOp does not support bias, but bias can be used when
+  // ConvBiasPattern is used.
+  static int dataInIndex();
+  static int weightsInIndex();
+  static int biasInIndex();
 
 private:
   virtual void setup0() override final;

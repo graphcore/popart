@@ -21,6 +21,9 @@
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/util.hpp>
 
+// The patterns
+#include <poponnx/convbiaspattern.hpp>
+
 // The layers:
 #include <poponnx/add.hpp>
 #include <poponnx/averagepool.hpp>
@@ -237,6 +240,30 @@ void TensorIndexMap::reset(int index, Tensor *ptensor) {
     indices_map[previous] = newIndices;
   } else {
     indices_map.erase(previous);
+  }
+}
+
+void TensorIndexMap::erase(int index) {
+  const auto tm_itr = tensor_map.find(index);
+
+  if (tm_itr != tensor_map.end()) {
+    const auto im_itr = indices_map.find(tm_itr->second);
+
+    auto &imv    = im_itr->second;
+    auto imv_itr = std::find(imv.begin(), imv.end(), index);
+
+    // Remove the index from indices_map.
+    if (imv_itr != imv.end()) {
+      imv.erase(imv_itr);
+    }
+
+    // If the Tensor has no indices, remove it from indices_map.
+    if (imv.empty()) {
+      indices_map.erase(im_itr);
+    }
+
+    // Remove the tensor from the tensor_map.
+    tensor_map.erase(tm_itr);
   }
 }
 
@@ -471,6 +498,11 @@ Ir::Ir(const IrBundle &gb)
       break;
     }
 
+    case PatternType::SPLITCONVBIAS: {
+      patterns.emplace_back(new ConvBiasPattern);
+      break;
+    }
+
     default:
       throw error("unrecognised PatternType");
     }
@@ -491,8 +523,6 @@ Ir::Ir(const IrBundle &gb)
   // in the implementation of the library willow.
   confirmConstIds();
 
-  // TODO: T5098 for bias in Conv Node.
-  splitConvBias();
   for (auto &pattern : patterns) {
     applyPattern(pattern.get());
   }
@@ -895,8 +925,6 @@ std::vector<Op *> Ir::opsOfType(OpType opType) {
 int TensorIndexMap::n() const { return static_cast<int>(tensor_map.size()); }
 
 bool Ir::isAnchored(TensorId tenId) { return dataFlow.isAnchored(tenId); }
-
-void Ir::splitConvBias() {}
 
 const std::vector<std::string> &VectorAndSet::v() const { return v_vals; }
 
@@ -1474,6 +1502,9 @@ OpTypes::OpTypes() {
 
   opTypes_ = {{"Add", OpType::ADD},
               {"AddGrad", OpType::ADDGRAD},
+              {"AddBias", OpType::ADDBIAS},
+              {"AddBiasDataGrad", OpType::ADDBIASDATAGRAD},
+              {"AddBiasBiasGrad", OpType::ADDBIASBIASGRAD},
               {"AveragePool", OpType::AVERAGEPOOL},
               {"AveragePoolGrad", OpType::AVERAGEPOOLGRAD},
               {"Constant", OpType::CONSTANT},
@@ -1624,6 +1655,8 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
     return pOp(new MatMulOp(node, this));
   }
   case OpType::ADDGRAD:
+  case OpType::ADDBIASBIASGRAD:
+  case OpType::ADDBIASDATAGRAD:
   case OpType::SQUEEZEGRAD:
   case OpType::REDUCESUMGRAD:
   case OpType::RELUGRAD:
@@ -1631,6 +1664,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::CONVDATAGRAD:
   case OpType::CONVWEIGHTSGRAD:
   case OpType::NEGATEGRAD:
+  case OpType::IDENTITYGRAD:
   case OpType::NLLGRAD:
   case OpType::L1GRAD:
   case OpType::SOFTMAXGRAD:
@@ -1645,6 +1679,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::L1:
     throw error("Loss Ops not constructable from Node");
 
+  case OpType::ADDBIAS:
   case OpType::SOFTMAXGRADDIRECT:
     throw error("Non-ONNX Ops not constructable from Node");
 

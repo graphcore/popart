@@ -190,6 +190,9 @@ private:
 enum class OpType {
   ADD = 0,
   ADDGRAD,
+  ADDBIAS,
+  ADDBIASDATAGRAD,
+  ADDBIASBIASGRAD,
   AVERAGEPOOL,
   AVERAGEPOOLGRAD,
   CONSTANT,
@@ -234,6 +237,10 @@ public:
   // the Tensor at index changes. Note that there
   // must already be a Tensor at the index (otherwise insert should be used)
   void reset(int, Tensor *);
+  // Remove the Tensor index from the tensorMap.
+  // If the Tensor is not referred to by any indices, it is removed from the
+  // indicesMap.
+  void erase(int);
   // get the Tensor at at index
   Tensor *tensor(int);
   const Tensor *tensor(int) const;

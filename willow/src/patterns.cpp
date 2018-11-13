@@ -30,11 +30,10 @@ bool Pattern::touchesAnchored(const Op *op) const {
 
 PatternTypes::PatternTypes() {
 
-  opTypes_ = {
-      {"PostNRepl", PatternType::POSTNREPL},
-      {"PreUniRepl", PatternType::PREUNIREPL},
-      {"SoftmaxGradDirect", PatternType::SOFTMAXGRADDIRECT},
-  };
+  opTypes_ = {{"PostNRepl", PatternType::POSTNREPL},
+              {"PreUniRepl", PatternType::PREUNIREPL},
+              {"SoftmaxGradDirect", PatternType::SOFTMAXGRADDIRECT},
+              {"SplitConvBias", PatternType::SPLITCONVBIAS}};
 
   std::vector<std::string> opTypeKeys;
   opTypeKeys.reserve(opTypes_.size());

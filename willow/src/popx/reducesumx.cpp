@@ -13,7 +13,7 @@ namespace willow {
 namespace popx {
 
 ReduceSumOpx::ReduceSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::REDUCESUM) {
+  if (dynamic_cast<ReduceSumOp *>(op) == nullptr) {
     throw error("cannot create ReduceSumOpx from " + op->op_type());
   }
 }

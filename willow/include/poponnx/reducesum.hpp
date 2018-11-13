@@ -8,6 +8,9 @@ namespace willow {
 class ReduceSumOp : public Op {
 public:
   ReduceSumOp(const OpConstructorBundle &);
+  ReduceSumOp(const OpConstructorBundle &,
+              const std::vector<int64_t> &axes,
+              int64_t keepdims);
   ReduceSumOp(const onnx::NodeProto &node, Ir *pir);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() override final;

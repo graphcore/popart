@@ -6,7 +6,12 @@
 
 namespace willow {
 
-enum class PatternType { PREUNIREPL = 0, POSTNREPL, SOFTMAXGRADDIRECT };
+enum class PatternType {
+  PREUNIREPL = 0,
+  POSTNREPL,
+  SOFTMAXGRADDIRECT,
+  SPLITCONVBIAS
+};
 
 class PatternTypes {
 public:

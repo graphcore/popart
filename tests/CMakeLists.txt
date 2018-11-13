@@ -38,6 +38,10 @@ add_test(NAME model7
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model7.py .)
 
+add_test(NAME model_conv_bias
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/model_conv_bias.py .)
+
 install(DIRECTORY .
 	DESTINATION ${INSTALL_TESTS}
 	FILES_MATCHING REGEX ".*\.(py|sh|md)$")

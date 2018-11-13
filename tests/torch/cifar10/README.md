@@ -29,3 +29,7 @@ output = sum(conv(input), dim=1) and loss is l1 norm of output
 model7
 ------
 Same setup as model2 but with a matmul at the end
+
+model_conv_bias
+------
+output = conv(input) with bias and loss is l1 norm of output

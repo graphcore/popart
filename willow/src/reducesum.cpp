@@ -9,7 +9,22 @@
 
 namespace willow {
 
-ReduceSumOp::ReduceSumOp(const OpConstructorBundle &bundle) : Op(bundle) {}
+ReduceSumOp::ReduceSumOp(const OpConstructorBundle &bundle) : Op(bundle) {
+  nAtts.setIfPresent(axes, "axes");
+  nAtts.setIfPresent(keepdims, "keepdims");
+
+  // Sorting the axes for general backend compatibility
+  std::sort(axes.begin(), axes.end());
+}
+
+ReduceSumOp::ReduceSumOp(const OpConstructorBundle &bundle,
+                         const std::vector<int64_t> &axes_,
+                         int64_t keepdims_)
+    : Op(bundle), axes(axes_), keepdims(keepdims_) {
+
+  // Sorting the axes for general backend compatibility
+  std::sort(axes.begin(), axes.end());
+}
 
 ReduceSumOp::ReduceSumOp(const onnx::NodeProto &node, Ir *pir)
     : Op(node, pir), keepdims(0) {

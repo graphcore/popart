@@ -1,6 +1,7 @@
 #include <iostream>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
+#include <poponnx/popx/addbiasx.hpp>
 #include <poponnx/popx/addx.hpp>
 #include <poponnx/popx/averagepoolx.hpp>
 #include <poponnx/popx/convx.hpp>
@@ -296,6 +297,19 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::ADDGRAD: {
     return std::unique_ptr<Opx>(new AddGradOpx(op, this));
+  }
+
+  case OpType::ADDBIAS: {
+    new AddBiasOpx(op, this);
+    return std::unique_ptr<Opx>(new AddBiasOpx(op, this));
+  }
+
+  case OpType::ADDBIASBIASGRAD: {
+    return std::unique_ptr<Opx>(new AddBiasBiasGradOpx(op, this));
+  }
+
+  case OpType::ADDBIASDATAGRAD: {
+    return std::unique_ptr<Opx>(new AddBiasDataGradOpx(op, this));
   }
 
   case OpType::AVERAGEPOOL: {

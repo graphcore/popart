@@ -160,7 +160,7 @@ bool ConvOpx::canCreateInput(int) const { return true; }
 
 poplar::Tensor ConvOpx::createInput(int index) const {
 
-  if (index == convWeightsInIndex()) {
+  if (index == ConvOp::weightsInIndex()) {
     return poplin::createWeights(
         graph(),                                            // graph
         fwdParams,                                          // params
@@ -168,7 +168,7 @@ poplar::Tensor ConvOpx::createInput(int index) const {
         enigma::toPoplibsConvOptions(dv_p->fwdConvOptions), // options
         &dv_p->convCache                                    // cache
     );
-  } else if (index == convDataInIndex()) {
+  } else if (index == ConvOp::dataInIndex()) {
     return poplin::createInput(
         graph(),                                            // graph
         fwdParams,                                          // params
