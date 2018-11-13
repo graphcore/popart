@@ -27,6 +27,7 @@
 #include <poponnx/conv.hpp>
 #include <poponnx/identity.hpp>
 #include <poponnx/matmul.hpp>
+#include <poponnx/negate.hpp>
 #include <poponnx/pad.hpp>
 #include <poponnx/reducesum.hpp>
 #include <poponnx/relu.hpp>
@@ -1486,6 +1487,8 @@ OpTypes::OpTypes() {
               {"Softmax", OpType::SOFTMAX},
               {"SoftmaxGrad", OpType::SOFTMAXGRAD},
               {"SoftmaxGradDirect", OpType::SOFTMAXGRADDIRECT},
+              {"Negate", OpType::NEGATE},
+              {"NegateGrad", OpType::NEGATEGRAD},
               {"Nll", OpType::NLL},
               {"NllGrad", OpType::NLLGRAD},
               {"MatMul", OpType::MATMUL},
@@ -1592,6 +1595,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::IDENTITY: {
     return pOp(new IdentityOp(node, this));
   }
+  case OpType::NEGATE: {
+    return pOp(new NegateOp(node, this));
+  }
   case OpType::SOFTMAX: {
     return pOp(new SoftmaxOp(node, this));
   }
@@ -1624,6 +1630,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::AVERAGEPOOLGRAD:
   case OpType::CONVDATAGRAD:
   case OpType::CONVWEIGHTSGRAD:
+  case OpType::NEGATEGRAD:
   case OpType::NLLGRAD:
   case OpType::L1GRAD:
   case OpType::SOFTMAXGRAD:
