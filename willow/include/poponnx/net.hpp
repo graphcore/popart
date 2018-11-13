@@ -88,19 +88,19 @@ public:
   void train(const StepIO &stepIO);
 
   /**
-  * Perform one evaluation step.
-  *
-  * input data  : from address in stepIO.in
-  * output data : to addresses in stepIO.out
-  */
+   * Perform one evaluation step.
+   *
+   * input data  : from address in stepIO.in
+   * output data : to addresses in stepIO.out
+   */
   void evaluate(const StepIO &stepIO);
 
   /**
-  * Perform one inference step.
-  *
-  * input data  : from address in stepIO.in
-  * output data : to addresses in stepIO.out
-  */
+   * Perform one inference step.
+   *
+   * input data  : from address in stepIO.in
+   * output data : to addresses in stepIO.out
+   */
   void infer(const StepIO &stepIO);
 
   /**

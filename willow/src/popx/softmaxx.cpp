@@ -22,12 +22,11 @@ SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 void SoftmaxOpx::grow() const {
 
-  // There is only an in-place poplibs Softmax. We therefore clone first,
-  auto outTensor = cloneNcopy(inId(0));
-
-  // and apply the inplace softmax,
-  popnn::nonLinearity(
-      graph(), popnn::NonLinearityType::SOFTMAX, outTensor, step(), outId(0));
+  auto outTensor = popnn::nonLinearity(graph(),
+                                       popnn::NonLinearityType::SOFTMAX,
+                                       get(inId(0)),
+                                       step(),
+                                       outId(0));
 
   insert(outId(0), outTensor);
 }
