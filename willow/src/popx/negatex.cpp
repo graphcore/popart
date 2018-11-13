@@ -1,11 +1,7 @@
+#include <popops/ElementWise.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/negate.hpp>
 #include <poponnx/popx/negatex.hpp>
-
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
-#include <popops/ElementWise.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 namespace willow {
 namespace popx {

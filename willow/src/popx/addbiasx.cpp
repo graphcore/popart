@@ -1,12 +1,8 @@
+#include <poplin/Convolution.hpp>
+#include <popops/Reduce.hpp>
 #include <poponnx/addbias.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/popx/addbiasx.hpp>
-
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
-#include <poplin/Convolution.hpp>
-#include <popops/Reduce.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 namespace willow {
 namespace popx {
