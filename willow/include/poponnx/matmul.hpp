@@ -10,7 +10,7 @@ public:
   MatMulOp(const onnx::NodeProto &node, Ir *pir);
   MatMulOp(const MatMulOp &) = default;
   MatMulOp &operator=(const MatMulOp &) = delete;
-  virtual ~MatMulOp()                   = default;
+  virtual ~MatMulOp() override          = default;
 
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
   virtual void setup() override final;
@@ -28,7 +28,7 @@ public:
   MatMulLhsGradOp(const MatMulOp &op_);
   MatMulLhsGradOp(const MatMulLhsGradOp &) = default;
   MatMulLhsGradOp &operator=(const MatMulLhsGradOp &) = delete;
-  virtual ~MatMulLhsGradOp()                          = default;
+  virtual ~MatMulLhsGradOp() override                 = default;
 
   int getGradInputIndex() const;
   int getRhsInputIndex() const;
@@ -49,7 +49,7 @@ public:
   MatMulRhsGradOp(const MatMulOp &op_);
   MatMulRhsGradOp(const MatMulRhsGradOp &) = default;
   MatMulRhsGradOp &operator=(const MatMulRhsGradOp &) = delete;
-  virtual ~MatMulRhsGradOp()                          = default;
+  virtual ~MatMulRhsGradOp() override                 = default;
 
   int getGradInputIndex() const;
   int getLhsInputIndex() const;

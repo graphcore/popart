@@ -18,13 +18,6 @@ ReduceSumOpx::ReduceSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-template <typename IIter>
-static bool contains(IIter begin,
-                     IIter end,
-                     typename std::iterator_traits<IIter>::value_type elem) {
-  return std::find(begin, end, elem) != end;
-}
-
 template <typename T1, typename T2>
 static std::vector<T1> vector_cast(const std::vector<T2> &xs) {
   std::vector<T1> ys;
@@ -69,7 +62,7 @@ void ReduceSumGradOpx::grow() const {
   // Broadcasting across each dimension
   for (int dim = 0; dim < new_shape.size(); ++dim) {
     if (new_shape[dim] != output_shape[dim]) {
-      output = output.broadcast(output_shape[dim], dim);
+      output = output.broadcast(static_cast<uint32_t>(output_shape[dim]), dim);
     }
   }
 

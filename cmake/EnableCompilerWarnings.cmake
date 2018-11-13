@@ -16,7 +16,7 @@ else()
             -Winit-self
             -Wreturn-type
             -Wsequence-point
-            #-Wshadow
+            -Wshadow
             -Wswitch
             -Wtrigraphs
             -Wundef

@@ -15,7 +15,7 @@ namespace popx {
 class MatMulOpx : public Opx {
 public:
   MatMulOpx(Op *, Devicex *);
-  virtual ~MatMulOpx() = default;
+  virtual ~MatMulOpx() override = default;
 
   MatMulOp *getMatMulOp() const;
   virtual void grow() const override final;
@@ -24,7 +24,7 @@ public:
 class MatMulLhsGradOpx : public Opx {
 public:
   MatMulLhsGradOpx(Op *, Devicex *);
-  virtual ~MatMulLhsGradOpx() = default;
+  virtual ~MatMulLhsGradOpx() override = default;
 
   MatMulLhsGradOp *getMatMulLhsGradOp() const;
   virtual void grow() const override final;
@@ -33,7 +33,7 @@ public:
 class MatMulRhsGradOpx : public Opx {
 public:
   MatMulRhsGradOpx(Op *, Devicex *);
-  virtual ~MatMulRhsGradOpx() = default;
+  virtual ~MatMulRhsGradOpx() override = default;
 
   MatMulRhsGradOp *getMatMulRhsGradOp() const;
   virtual void grow() const override final;

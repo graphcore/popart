@@ -412,18 +412,18 @@ void Ir::setAllNodeInputsMap() {
   }
 }
 
-IrBundle::IrBundle(const onnx::ModelProto &modelProto,
-                   const EarlyInfo &earlyInfo,
-                   const DataFlow &dataFlow,
-                   const std::vector<Loss *> &losses,
-                   const Optimizer *optimizer,
-                   const std::vector<std::string> &cTens,
-                   const std::string &logdir,
-                   const std::string &userOptions,
-                   const std::vector<std::string> &patternNames)
-    : modelProto(modelProto), earlyInfo(earlyInfo), dataFlow(dataFlow),
-      losses(losses), optimizer(optimizer), cTens(cTens), logdir(logdir),
-      userOptions(userOptions), patternNames(patternNames) {}
+IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
+                   const EarlyInfo &earlyInfo_,
+                   const DataFlow &dataFlow_,
+                   const std::vector<Loss *> &losses_,
+                   const Optimizer *optimizer_,
+                   const std::vector<std::string> &cTens_,
+                   const std::string &logdir_,
+                   const std::string &userOptions_,
+                   const std::vector<std::string> &patternNames_)
+    : modelProto(modelProto_), earlyInfo(earlyInfo_), dataFlow(dataFlow_),
+      losses(losses_), optimizer(optimizer_), cTens(cTens_), logdir(logdir_),
+      userOptions(userOptions_), patternNames(patternNames_) {}
 
 Ir::Ir() : tensors({}, this), optimizer(nullptr) {
   // The default constructor does not do anything, may need to change

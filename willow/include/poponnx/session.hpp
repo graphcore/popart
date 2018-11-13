@@ -23,7 +23,7 @@ public:
    * \param cTens List of weight tensors which are not to be updated
    * \param logdir Directory to dump logging information into
    * \param userOptions String to configure session options
-   * \param patternNames
+   * \param patternNames Optimization patterns to apply
    */
   Session(const std::string &model,
           const EarlyInfo &earlyInfo,
