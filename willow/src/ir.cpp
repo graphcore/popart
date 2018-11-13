@@ -1532,7 +1532,7 @@ void Ir::append(std::stringstream &ss) {
 }
 
 Op::Op(const Op &op)
-    : priority(op.priority), opType(op.opType), pir(op.pir),
+    : Vertex(op), priority(op.priority), opType(op.opType), pir(op.pir),
       id(pir->getAndIncrOpsCounter()), nAtts(op.nAtts), p_op_type(op.p_op_type),
       op_domain(op.op_domain) {
   // input, output: empty.

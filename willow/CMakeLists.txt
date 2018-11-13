@@ -49,6 +49,11 @@ target_link_libraries(poponnx
   ${POPUTIL_LIB}
 )
 
+# The following defines cause compiler warnings if not set
+target_compile_definitions(poponnx
+  PRIVATE PROTOBUF_INLINE_NOT_IN_HEADERS=0
+)
+
 install(TARGETS poponnx
         EXPORT poponnx
 	      DESTINATION ${CMAKE_INSTALL_LIBDIR}

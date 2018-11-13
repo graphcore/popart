@@ -22,6 +22,14 @@ target_include_directories (poponnx_core PUBLIC
   # ...
 )
 
+# Not defining them results in compiler warnings that they will default to 0
+target_compile_definitions(poponnx_core
+  PRIVATE PROTOBUF_INLINE_NOT_IN_HEADERS=0
+  PRIVATE PYBIND11_HAS_OPTIONAL=0
+  PRIVATE PYBIND11_HAS_EXP_OPTIONAL=0
+  PRIVATE PYBIND11_HAS_VARIANT=0
+)
+
 target_link_libraries(poponnx_core PRIVATE
   ${POPLAR_LIB}
   poponnx

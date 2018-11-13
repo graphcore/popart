@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <string>
 
+#include <poponnx/error.hpp>
 #include <poponnx/optionflags.hpp>
 
 namespace willow {
@@ -12,6 +13,7 @@ eOptions OptionFlags::getEOption(std::string const &option) {
   if (option == "exportDot")
     return e_exportDot;
   // if (option == "anotherOpt") return e_anotherOpt;
+  throw error("Invalid EOption " + option);
 }
 
 void OptionFlags::updateOptions() {

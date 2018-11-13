@@ -74,9 +74,9 @@ void Net::optimizerFromHost() { device_->optimizerFromHost(); }
 
 void Net::train(const StepIO &stepio) { device_->step(stepio); }
 
-void Net::evaluate(const StepIO &stepio) { return; }
+void Net::evaluate(const StepIO &) { return; }
 
-void Net::infer(const StepIO &stepio) { return; }
+void Net::infer(const StepIO &) { return; }
 
 // write current model to ONNX file
 void Net::modelToHost(const std::string &fn) {
