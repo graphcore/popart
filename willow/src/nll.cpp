@@ -68,29 +68,22 @@ NllGradOp::NllGradOp(NllOp *op_)
     : Op({"NllGrad", op_->pir, {}, getWillowDomain()}), nllloss_(op_->nlll()) {}
 
 const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = createNllLossGradInfo();
+  // input at index 0 : labelIn()
+  // input at index 1 : probsIn()
+  static const std::vector<GradInOutMapper> inInfo = {
+      {nlll()->labelIn(), nlll()->labelIn(), GradOpInType::IN},
+      {nlll()->probsIn(), nlll()->probsIn(), GradOpInType::IN}};
   return inInfo;
 }
 
-std::map<int, int> NllGradOp::createNllLossGradOutToIn() const {
+const std::map<int, int> &NllGradOp::gradOutToNonGradIn() const {
   // the grad-op output at index 0 corresponds
   // to the non-grad-op's input at index probsIn()
   // the op ONLY computes the gradient of probs,
   // no gradient for label (one could interpret the
   // int as a sparse vector, but not neat)
-  return {{0, nlll()->probsIn()}};
-}
-
-const std::map<int, int> &NllGradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = createNllLossGradOutToIn();
+  static const std::map<int, int> outInfo = {{0, nlll()->probsIn()}};
   return outInfo;
-}
-
-std::vector<GradInOutMapper> NllGradOp::createNllLossGradInfo() const {
-  // input at index 0 : labelIn()
-  // input at index 1 : probsIn()
-  return {{nlll()->labelIn(), nlll()->labelIn(), GradOpInType::IN},
-          {nlll()->probsIn(), nlll()->probsIn(), GradOpInType::IN}};
 }
 
 } // namespace willow

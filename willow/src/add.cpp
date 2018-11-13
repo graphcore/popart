@@ -29,28 +29,20 @@ AddGradOp::AddGradOp(AddOp *op_)
     : Op({"AddGrad", op_->pir, {}, getWillowDomain()}),
       info0(op_->input.tensor(0)->info), info1(op_->input.tensor(1)->info) {}
 
-std::map<int, int> AddGradOp::createAddGradOutToIn() const {
+const std::map<int, int> &AddGradOp::gradOutToNonGradIn() const {
   // the grad-op output at index 0 corresponds
   // to the non-grad-op's input at index 0
   // ditto 1.
-  return {{0, 0}, {1, 1}};
-}
-
-const std::map<int, int> &AddGradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = createAddGradOutToIn();
+  static const std::map<int, int> outInfo = {{0, 0}, {1, 1}};
   return outInfo;
 }
 
 const std::vector<GradInOutMapper> &AddGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = createAddGradInfo();
-  return inInfo;
-}
-
-std::vector<GradInOutMapper> AddGradOp::createAddGradInfo() const {
   // input at index 0 : gradient of output of add
   // might need to reduce across certain axes of this
   // if numpy broadcasting happened
-  return {{0, 0, GradOpInType::GRADOUT}};
+  static const std::vector<GradInOutMapper> inInfo = {
+      {0, 0, GradOpInType::GRADOUT}};
+  return inInfo;
 }
-
 } // namespace willow

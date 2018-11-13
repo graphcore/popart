@@ -29,26 +29,19 @@ SubtractGradOp::SubtractGradOp(SubtractOp *op_)
     : Op({"SubtractGrad", op_->pir, {}, getWillowDomain()}),
       info0(op_->input.tensor(0)->info), info1(op_->input.tensor(1)->info) {}
 
-std::map<int, int> SubtractGradOp::createSubtractGradOutToIn() const {
+const std::map<int, int> &SubtractGradOp::gradOutToNonGradIn() const {
   // the grad-op output at index 0 corresponds
   // to the non-grad-op's input at index 0
   // ditto 1.
-  return {{0, 0}, {1, 1}};
-}
-
-const std::map<int, int> &SubtractGradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = createSubtractGradOutToIn();
+  static const std::map<int, int> outInfo = {{0, 0}, {1, 1}};
   return outInfo;
 }
 
 const std::vector<GradInOutMapper> &SubtractGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = createSubtractGradInfo();
-  return inInfo;
-}
-
-std::vector<GradInOutMapper> SubtractGradOp::createSubtractGradInfo() const {
   // input at index 0 : gradient of output of subtract
-  return {{0, 0, GradOpInType::GRADOUT}};
+  static const std::vector<GradInOutMapper> inInfo = {
+      {0, 0, GradOpInType::GRADOUT}};
+  return inInfo;
 }
 
 } // namespace willow

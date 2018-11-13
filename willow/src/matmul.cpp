@@ -70,28 +70,24 @@ void MatMulLhsGradOp::setup() {
 }
 
 const std::vector<GradInOutMapper> &MatMulLhsGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = createMatMulLhsGradInfo();
+  // The gradient of the fwd-op is input at index 0.
+  // The index at which the rhs tensor is the input to the grad-op
+  // is the same as the index at which is the input to the fwd-op
+  static const std::vector<GradInOutMapper> inInfo = {
+      {getGradInputIndex(), 0, GradOpInType::GRADOUT},
+      {getRhsInputIndex(), rhsInputIndex(), GradOpInType::IN}};
   return inInfo;
 }
 
 const std::map<int, int> &MatMulLhsGradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = createMatMulLhsGradOutToIn();
+  // the grad-op output at index 0 corresponds
+  // to the non-grad-op's input at index 0
+  static const std::map<int, int> outInfo = {{0, lhsInputIndex()}};
   return outInfo;
 }
 
 int MatMulLhsGradOp::getGradInputIndex() const { return 0; }
 int MatMulLhsGradOp::getRhsInputIndex() const { return 1; }
-
-std::vector<GradInOutMapper> MatMulLhsGradOp::createMatMulLhsGradInfo() const {
-  return {{getGradInputIndex(), 0, GradOpInType::GRADOUT},
-          {getRhsInputIndex(), rhsInputIndex(), GradOpInType::IN}};
-}
-
-std::map<int, int> MatMulLhsGradOp::createMatMulLhsGradOutToIn() const {
-  // the grad-op output at index 0 corresponds
-  // to the non-grad-op's input at index 0
-  return {{0, lhsInputIndex()}};
-}
 
 MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
     : Op({"MatMulRhsGrad", fwdOp.pir, {}, getWillowDomain()}),
@@ -102,26 +98,20 @@ void MatMulRhsGradOp::setup() {
   output.tensor(0)->info = {fwdOpOutputGrad.dataType(), outputShape};
 }
 const std::vector<GradInOutMapper> &MatMulRhsGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = createMatMulRhsGradInfo();
+  static const std::vector<GradInOutMapper> inInfo = {
+      {getGradInputIndex(), 0, GradOpInType::GRADOUT},
+      {getLhsInputIndex(), lhsInputIndex(), GradOpInType::IN}};
   return inInfo;
 }
 
 const std::map<int, int> &MatMulRhsGradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = createMatMulRhsGradOutToIn();
+  // the grad-op output at index 0 corresponds
+  // to the non-grad-op's input at index 1
+  static const std::map<int, int> outInfo = {{0, rhsInputIndex()}};
   return outInfo;
 }
 
 int MatMulRhsGradOp::getGradInputIndex() const { return 0; }
 int MatMulRhsGradOp::getLhsInputIndex() const { return 1; }
 
-std::vector<GradInOutMapper> MatMulRhsGradOp::createMatMulRhsGradInfo() const {
-  return {{getGradInputIndex(), 0, GradOpInType::GRADOUT},
-          {getLhsInputIndex(), lhsInputIndex(), GradOpInType::IN}};
-}
-
-std::map<int, int> MatMulRhsGradOp::createMatMulRhsGradOutToIn() const {
-  // the grad-op output at index 0 corresponds
-  // to the non-grad-op's input at index 1
-  return {{0, rhsInputIndex()}};
-}
 } // namespace willow

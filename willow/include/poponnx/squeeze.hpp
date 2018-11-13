@@ -22,8 +22,6 @@ public:
   virtual void setup() override final;
 
 private:
-  std::vector<GradInOutMapper> createSqueezeGradInfo() const;
-  std::map<int, int> createSqueezeGradOutToIn() const;
   // The shape and type of the input to the constructing forward op
   TensorInfo unsqueezedInfo;
 };

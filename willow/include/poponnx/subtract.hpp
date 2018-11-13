@@ -22,8 +22,6 @@ public:
   virtual void setup() override final;
 
 private:
-  std::vector<GradInOutMapper> createSubtractGradInfo() const;
-  std::map<int, int> createSubtractGradOutToIn() const;
   // Info on Tensors 0 and 1.
   // gradient of an input has the same
   // shape and type as the input itself

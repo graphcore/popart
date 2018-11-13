@@ -46,8 +46,6 @@ public:
   const ConvOp *getCloneOfCreator() const;
 
 private:
-  std::vector<GradInOutMapper> createConvWeightsGradInfo() const;
-  std::map<int, int> createConvWeightsGradOutToIn() const;
   std::unique_ptr<Op> cloneOfCreator;
   TensorInfo weightsInfo;
 };
@@ -67,8 +65,6 @@ public:
   int getGradConvolvedIn() const;
 
 private:
-  std::vector<GradInOutMapper> createConvDataGradInfo() const;
-  std::map<int, int> createConvDataGradOutToIn() const;
   std::unique_ptr<Op> cloneOfCreator;
   TensorInfo dataInfo;
 };

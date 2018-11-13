@@ -48,8 +48,6 @@ public:
   const L1Loss *l1l() const;
 
 private:
-  std::vector<GradInOutMapper> createL1LossGradInfo() const;
-  std::map<int, int> createL1LossGradOutToIn() const;
   const L1Loss *l1loss_;
 };
 

@@ -24,32 +24,25 @@ SoftmaxGradOp::SoftmaxGradOp(SoftmaxOp *op_)
     : Op({"SoftmaxGrad", op_->pir, {}, getWillowDomain()}) {}
 
 const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = createSoftmaxGradInfo();
+  // input at index 0 (probGradInputIndex()) : gradient of output of softmax
+  // input at index 1 (actsIn()): input of softmax (activations before p)
+  // the (1-sparse) gradient of the output will be used
+  static const std::vector<GradInOutMapper> inInfo = {
+      {gradProbsIn(), 0, GradOpInType::GRADOUT},
+      {actsIn(), 0, GradOpInType::IN}};
   return inInfo;
 }
 
-std::map<int, int> SoftmaxGradOp::createSoftmaxGradOutToIn() const {
-  // the grad-op output at index 0 corresponds
-  // to the non-grad-op's input at index 0
-  return {{0, 0}};
-}
-
 const std::map<int, int> &SoftmaxGradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = createSoftmaxGradOutToIn();
+  // the grad-op's output at index 0 corresponds
+  // to the non-grad-op's input at index 0
+  static const std::map<int, int> outInfo = {{0, 0}};
   return outInfo;
 }
 
 int SoftmaxGradOp::gradProbsIn() const { return 0; }
 
 int SoftmaxGradOp::actsIn() const { return 1; }
-
-std::vector<GradInOutMapper> SoftmaxGradOp::createSoftmaxGradInfo() const {
-  // input at index 0 (probGradInputIndex()) : gradient of output of softmax
-  // input at index 1 (actsIn()): input of softmax (activations before p)
-  // the (1-sparse) gradient of the output will be used
-  return {{gradProbsIn(), 0, GradOpInType::GRADOUT},
-          {actsIn(), 0, GradOpInType::IN}};
-}
 
 SoftmaxGradDirectOp::SoftmaxGradDirectOp(Ir *ir,
                                          const NllLoss *nls)

@@ -19,7 +19,6 @@ void SqueezeOp::setup() {
   output.tensor(0)->info = {input.tensor(0)->info.dataType(),
                             squeeze(input.tensor(0)->info.shape())};
 }
-// input.tensor(0)->info; }
 
 void SqueezeGradOp::setup() { output.tensor(0)->info = unsqueezedInfo; }
 
@@ -28,24 +27,17 @@ SqueezeGradOp::SqueezeGradOp(SqueezeOp *op_)
       unsqueezedInfo(op_->input.tensor(0)->info) {}
 
 const std::vector<GradInOutMapper> &SqueezeGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = createSqueezeGradInfo();
+  // input at index 0 : gradient of output of squeeze
+  static const std::vector<GradInOutMapper> inInfo = {
+      {0, 0, GradOpInType::GRADOUT}};
   return inInfo;
 }
 
-std::map<int, int> SqueezeGradOp::createSqueezeGradOutToIn() const {
+const std::map<int, int> &SqueezeGradOp::gradOutToNonGradIn() const {
   // the grad-op output at index 0 corresponds
   // to the non-grad-op's input at index 0
-  return {{0, 0}};
-}
-
-const std::map<int, int> &SqueezeGradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = createSqueezeGradOutToIn();
+  static const std::map<int, int> outInfo = {{0, 0}};
   return outInfo;
-}
-
-std::vector<GradInOutMapper> SqueezeGradOp::createSqueezeGradInfo() const {
-  // input at index 0 : gradient of output of squeeze
-  return {{0, 0, GradOpInType::GRADOUT}};
 }
 
 } // namespace willow

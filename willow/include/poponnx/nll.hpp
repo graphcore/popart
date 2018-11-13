@@ -42,10 +42,7 @@ public:
   const NllLoss *nlll() const;
 
 private:
-  std::vector<GradInOutMapper> createNllLossGradInfo() const;
-  std::map<int, int> createNllLossGradOutToIn() const;
   const NllLoss *nllloss_;
-  // OpId nllOpId;
 };
 
 } // namespace willow

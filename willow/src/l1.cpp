@@ -55,24 +55,16 @@ L1GradOp::L1GradOp(L1Op *op_)
     : Op({"L1Grad", op_->pir, {}, getWillowDomain()}), l1loss_(op_->l1l()) {}
 
 const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo = createL1LossGradInfo();
+  // input at index 0 of this grad op is the input at index 0 of the L1
+  // non-grad op.
+  static const std::vector<GradInOutMapper> inInfo = {{0, 0, GradOpInType::IN}};
   return inInfo;
 }
 
-std::map<int, int> L1GradOp::createL1LossGradOutToIn() const {
-  // grad-ops (only) out corresponds to ops (only) in.
-  return {{0, 0}};
-}
-
 const std::map<int, int> &L1GradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = createL1LossGradOutToIn();
+  // grad-op's (only) output corresponds to op's (only) input.
+  static const std::map<int, int> outInfo = {{0, 0}};
   return outInfo;
-}
-
-std::vector<GradInOutMapper> L1GradOp::createL1LossGradInfo() const {
-  // input at index 0 of grad in input at index 0 of non-grad
-  // we will need to use lambda
-  return {{0, 0, GradOpInType::IN}};
 }
 
 } // namespace willow

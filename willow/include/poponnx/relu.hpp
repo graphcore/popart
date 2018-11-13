@@ -32,10 +32,6 @@ public:
   // The index at which the gradient of the output of
   // the Relu is an input to this ReluGradOp
   int getGradReludIn() const;
-
-private:
-  std::vector<GradInOutMapper> createReluGradInfo() const;
-  std::map<int, int> createReluGradOutToIn() const;
 };
 
 } // namespace willow

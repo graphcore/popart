@@ -24,10 +24,6 @@ public:
   virtual void setup() override final;
   int gradProbsIn() const;
   int actsIn() const;
-
-private:
-  std::vector<GradInOutMapper> createSoftmaxGradInfo() const;
-  std::map<int, int> createSoftmaxGradOutToIn() const;
 };
 
 // not a gradient of a single Op, so not inheriting from GradOp

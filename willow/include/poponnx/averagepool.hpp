@@ -46,8 +46,6 @@ public:
   const AveragePoolOp *getCloneOfCreator();
 
 private:
-  std::vector<GradInOutMapper> createAveragePoolGradInfo() const;
-  std::map<int, int> createAveragePoolGradOutToIn() const;
   // The shape and type of the input to the
   // forward op which creates this backwards op
   TensorInfo unpooledInfo;

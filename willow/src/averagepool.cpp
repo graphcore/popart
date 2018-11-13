@@ -45,8 +45,17 @@ AveragePoolGradOp::AveragePoolGradOp(AveragePoolOp *op_)
       unpooledInfo(op_->input.tensor(0)->info), cloneOfCreator(op_->clone()) {}
 
 const std::vector<GradInOutMapper> &AveragePoolGradOp::gradInputInfo() const {
-  static const std::vector<GradInOutMapper> inInfo =
-      createAveragePoolGradInfo();
+
+  // the input to the grad-op at index getGradPooledIn()
+  // is the gradient of the output of the average pool
+  // at index 0.
+  // the input to the grad-op at index getPooledIn()
+  // is the output of the average pool at index 0
+  // etc for getPrePooledIn()
+  static const std::vector<GradInOutMapper> inInfo = {
+      {getGradPooledIn(), 0, GradOpInType::GRADOUT},
+      {getPooledIn(), 0, GradOpInType::OUT},
+      {getPrePooledIn(), 0, GradOpInType::IN}};
   return inInfo;
 }
 
@@ -58,28 +67,11 @@ int AveragePoolGradOp::getPooledIn() const { return 1; }
 
 int AveragePoolGradOp::getGradPooledIn() const { return 2; }
 
-std::vector<GradInOutMapper>
-AveragePoolGradOp::createAveragePoolGradInfo() const {
-  // the input to the grad-op at index getGradPooledIn()
-  // is the gradient of the output of the average pool
-  // at index 0.
-  // the input to the grad-op at index getPooledIn()
-  // is the output of the average pool at index 0
-  // etc for getPrePooledIn()
-  return {{getGradPooledIn(), 0, GradOpInType::GRADOUT},
-          {getPooledIn(), 0, GradOpInType::OUT},
-          {getPrePooledIn(), 0, GradOpInType::IN}};
-}
-
 const std::map<int, int> &AveragePoolGradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = createAveragePoolGradOutToIn();
-  return outInfo;
-}
-
-std::map<int, int> AveragePoolGradOp::createAveragePoolGradOutToIn() const {
   // the grad-op output at index 0 corresponds
   // to the non-grad-op's input at index 0
-  return {{0, 0}};
+  static const std::map<int, int> outInfo = {{0, 0}};
+  return outInfo;
 }
 
 void AveragePoolGradOp::setup() { output.tensor(0)->info = unpooledInfo; }

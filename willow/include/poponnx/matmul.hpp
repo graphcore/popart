@@ -39,8 +39,6 @@ public:
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
 
 private:
-  std::vector<GradInOutMapper> createMatMulLhsGradInfo() const;
-  std::map<int, int> createMatMulLhsGradOutToIn() const;
   Shape outputShape;
   TensorInfo fwdOpOutputGrad;
   TensorInfo rhs;
@@ -62,8 +60,6 @@ public:
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
 
 private:
-  std::vector<GradInOutMapper> createMatMulRhsGradInfo() const;
-  std::map<int, int> createMatMulRhsGradOutToIn() const;
   Shape outputShape;
   TensorInfo fwdOpOutputGrad;
   TensorInfo lhs;
