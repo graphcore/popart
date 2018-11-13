@@ -4,7 +4,7 @@
 #include <poponnx/names.hpp>
 namespace willow {
 
-class Net;
+class Session;
 namespace numerics {
 
 class NumericsReport {

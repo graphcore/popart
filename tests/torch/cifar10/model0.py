@@ -40,7 +40,7 @@ art = poponnx.AnchorReturnType.ALL
 dataFeed = poponnx.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
 
 # willow is non-dynamic. All input Tensor shapes and
-# types must be fed into the Net constructor.
+# types must be fed into the Session constructor.
 # In this example there is 1 streamed input, image0.
 earlyInfo = poponnx.EarlyInfo()
 earlyInfo.add("image0",

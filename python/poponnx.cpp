@@ -5,10 +5,10 @@
 #include <poponnx/error.hpp>
 #include <poponnx/l1.hpp>
 #include <poponnx/loss.hpp>
-#include <poponnx/net.hpp>
 #include <poponnx/nll.hpp>
 #include <poponnx/numerics.hpp>
 #include <poponnx/optimizer.hpp>
+#include <poponnx/session.hpp>
 #include <poponnx/tensordata.hpp>
 
 // note to developers: be very careful
@@ -166,7 +166,7 @@ PYBIND11_MODULE(poponnx_core, m) {
   py::class_<SGD>(m, "SGD", basesgd).def(py::init<float>());
   py::class_<ConstSGD>(m, "ConstSGD", basesgd).def(py::init<float>());
 
-  py::class_<Net>(m, "Net")
+  py::class_<Session>(m, "SessionCore")
       .def(py::init<std::string,
                     const EarlyInfo &,
                     const DataFlow &,
@@ -185,16 +185,16 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("logdir"),
            py::arg("userOptions"),
            py::arg("patternNames"))
-      .def("updateOptimizer", &Net::updateOptimizer)
-      .def("setDevice", &Net::setDevice)
-      .def("prepareDevice", &Net::prepareDevice)
-      .def("weightsFromHost", &Net::weightsFromHost)
-      .def("optimizerFromHost", &Net::optimizerFromHost)
-      .def("train", &Net::train)
-      .def("evaluate", &Net::evaluate)
-      .def("infer", &Net::infer)
-      .def("modelToHost", &Net::modelToHost)
-      .def("getInfo", &Net::getInfo);
+      .def("updateOptimizer", &Session::updateOptimizer)
+      .def("setDevice", &Session::setDevice)
+      .def("prepareDevice", &Session::prepareDevice)
+      .def("weightsFromHost", &Session::weightsFromHost)
+      .def("optimizerFromHost", &Session::optimizerFromHost)
+      .def("train", &Session::train)
+      .def("evaluate", &Session::evaluate)
+      .def("infer", &Session::infer)
+      .def("modelToHost", &Session::modelToHost)
+      .def("getInfo", &Session::getInfo);
 
   py::class_<Builder>(m, "Builder")
       .def(py::init<>())

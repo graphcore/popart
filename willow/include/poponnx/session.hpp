@@ -6,10 +6,10 @@
 namespace willow {
 
 /**
- * Net is a runtime instance the provides an interface for executing ONNX
+ * Session is a runtime instance the provides an interface for executing ONNX
  * graphs on IPU hardware.
  */
-class Net {
+class Session {
 public:
   /** Create a runtime class for executing an ONNX graph on a set of IPU
    *  hardware.
@@ -22,20 +22,20 @@ public:
    * \param optimizer The name of an optimizer to use when training
    * \param cTens List of weight tensors which are not to be updated
    * \param logdir Directory to dump logging information into
-   * \param userOptions String to configure net options
+   * \param userOptions String to configure session options
    * \param patternNames
    */
-  Net(const std::string &model,
-      const EarlyInfo &earlyInfo,
-      const DataFlow &dataFlow,
-      const std::vector<Loss *> &losses,
-      const Optimizer *optimizer,
-      const std::vector<std::string> &cTens,
-      std::string logdir,
-      std::string userOptions,
-      const std::vector<std::string> &patternNames);
+  Session(const std::string &model,
+          const EarlyInfo &earlyInfo,
+          const DataFlow &dataFlow,
+          const std::vector<Loss *> &losses,
+          const Optimizer *optimizer,
+          const std::vector<std::string> &cTens,
+          std::string logdir,
+          std::string userOptions,
+          const std::vector<std::string> &patternNames);
 
-  ~Net();
+  ~Session();
 
   /** Update the optimizer.
    *

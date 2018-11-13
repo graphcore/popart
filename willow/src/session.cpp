@@ -2,23 +2,23 @@
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/net.hpp>
 #include <poponnx/onnxutil.hpp>
 #include <poponnx/popx/devicex.hpp>
+#include <poponnx/session.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
 
 namespace willow {
 
-Net::Net(const std::string &modelProtoOrFilename,
-         const EarlyInfo &perk,
-         const DataFlow &df,
-         const std::vector<Loss *> &lossesIn,
-         const Optimizer *optimizerIn,
-         const std::vector<TensorId> &cTens,
-         std::string logdir,
-         std::string userOptions,
-         const std::vector<std::string> &patternNames)
+Session::Session(const std::string &modelProtoOrFilename,
+                 const EarlyInfo &perk,
+                 const DataFlow &df,
+                 const std::vector<Loss *> &lossesIn,
+                 const Optimizer *optimizerIn,
+                 const std::vector<TensorId> &cTens,
+                 std::string logdir,
+                 std::string userOptions,
+                 const std::vector<std::string> &patternNames)
 
     : device_(nullptr) {
 
@@ -41,11 +41,11 @@ Net::Net(const std::string &modelProtoOrFilename,
                      patternNames}));
 }
 
-void Net::updateOptimizer(const Optimizer *optimizer) {
+void Session::updateOptimizer(const Optimizer *optimizer) {
   pir_->updateOptimizer(optimizer);
 }
 
-void Net::setDevice(const std::string &deviceString) {
+void Session::setDevice(const std::string &deviceString) {
   if (deviceString == "IPU") {
     device_.reset(new popx::Devicex(pir_.get()));
   } else {
@@ -54,7 +54,7 @@ void Net::setDevice(const std::string &deviceString) {
 }
 
 // get the TensorInfo on a Tensor
-TensorInfo Net::getInfo(TensorId id) const {
+TensorInfo Session::getInfo(TensorId id) const {
   TensorInfo info = pir_->tensors.get(id)->info;
   if (!info.isSet()) {
     throw error("TensorInfo for `" + id + "' not set");
@@ -62,24 +62,24 @@ TensorInfo Net::getInfo(TensorId id) const {
   return info;
 }
 
-Net::~Net() = default;
+Session::~Session() = default;
 
-void Net::prepareDevice() { device_->prepare(); }
+void Session::prepareDevice() { device_->prepare(); }
 
-void Net::weightsFromHost() { device_->weightsFromHost(); }
+void Session::weightsFromHost() { device_->weightsFromHost(); }
 
 // write whatever optimizer tensors (learning rates,
 // momentum, initial momentum tensors (zero)) there are to device
-void Net::optimizerFromHost() { device_->optimizerFromHost(); }
+void Session::optimizerFromHost() { device_->optimizerFromHost(); }
 
-void Net::train(const StepIO &stepio) { device_->step(stepio); }
+void Session::train(const StepIO &stepio) { device_->step(stepio); }
 
-void Net::evaluate(const StepIO &) { return; }
+void Session::evaluate(const StepIO &) { return; }
 
-void Net::infer(const StepIO &) { return; }
+void Session::infer(const StepIO &) { return; }
 
 // write current model to ONNX file
-void Net::modelToHost(const std::string &fn) {
+void Session::modelToHost(const std::string &fn) {
 
   onnx::ModelProto model = pir_->getModel();
 

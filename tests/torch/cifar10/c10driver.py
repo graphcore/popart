@@ -43,26 +43,18 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
 
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
-    net = poponnx.Net(fnModel0, earlyInfo, dataFeed, torchWriter.losses,
-                      torchWriter.optimizer, [], outputdir, "exportDot=1",
-                      passes)
+    session = poponnx.Session(
+        fnModel=fnModel0,
+        earlyInfo=earlyInfo,
+        dataFeed=dataFeed,
+        losses=torchWriter.losses,
+        optimizer=torchWriter.optimizer,
+        outputdir=outputdir,
+        passes=passes,
+        userOptions="exportDot=1")
 
     # get the tensor info for the anchors
-    anchorArrays = {}
-    for anchor in dataFeed.anchors():
-        x = net.getInfo(anchor)
-        outShape = x.shape()
-        # Note : == is not the same as "is" here.
-        if dataFeed.art() == poponnx.AnchorReturnType.ALL:
-            outShape[0] = outShape[0] * dataFeed.batchesPerStep()
-        elif dataFeed.art() == poponnx.AnchorReturnType.SUM:
-            outShape[0] = outShape[0] / dataFeed.batchesPerStep()
-        elif dataFeed.art() == poponnx.AnchorReturnType.FINAL:
-            outShape[0] = outShape[0]
-        else:
-            raise RuntimeError("unrecognised AnchorType")
-        anchorArrays[anchor] = 7 * np.ones(
-            shape=outShape, dtype=x.data_type_lcase())
+    anchorArrays = session.initAnchorArrays()
 
     allDotPrefixes = [x[0:-4] for x in os.listdir(outputdir) if ".dot" in x]
     print("Will generate graph pdfs for all of:")
@@ -76,14 +68,14 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
     print("torchWriter calling script complete.")
 
     print("Setting device to IPU, and preparing it")
-    net.setDevice("IPU")
-    net.prepareDevice()
+    session.setDevice("IPU")
+    session.prepareDevice()
 
     print("Writing weights to device")
-    net.weightsFromHost()
+    session.weightsFromHost()
 
     print("Writing Optimizer tensors to device, if there are any")
-    net.optimizerFromHost()
+    session.optimizerFromHost()
 
     def getFnModel(framework, stepi):
         return os.path.join(outputdir, "%sModel_%d.onnx" % (framework, stepi))
@@ -113,13 +105,13 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
 
             # take batchesPerStep fwd-bwd passes (1 step), PopOnnx
             pystepio = poponnx.PyStepIO(inputs, anchorArrays)
-            net.train(pystepio)
+            session.train(pystepio)
 
             # write models to file, gather comparison statistics
             fnTorchModel = getFnTorch(stepi)
             torchWriter.saveModel(fnTorchModel)
             fnPopOnnxModel = getFnPopOnnx(stepi)
-            net.modelToHost(fnPopOnnxModel)
+            session.modelToHost(fnPopOnnxModel)
 
             if stepi == 1:
                 numReports.append(
