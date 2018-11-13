@@ -5,10 +5,7 @@
 #include <poponnx/popx/enigma.hpp>
 #include <poponnx/popx/opx.hpp>
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include <poplin/Convolution.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 namespace willow {
 

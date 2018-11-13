@@ -1,13 +1,10 @@
 #ifndef GUARD_NEURALNET_POPOP_HPP
 #define GUARD_NEURALNET_POPOP_HPP
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include <poplar/DeviceManager.hpp>
 #include <poplar/Engine.hpp>
 #include <poplar/Graph.hpp>
 #include <poplar/IPUModel.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 #include <poponnx/names.hpp>
 

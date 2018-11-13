@@ -1,10 +1,7 @@
 #ifndef GUARD_NEURALNET_NAMES_HPP
 #define GUARD_NEURALNET_NAMES_HPP
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include <onnx/onnx_pb.h>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 #include <ostream>
 #include <sstream>
@@ -15,7 +12,6 @@ using TensorId = std::string;
 using TaskId   = std::string;
 
 using OpId = int;
-// using TensorId = std::string;
 
 // The position at which a Tensor is consumed by an Op
 using InIndex = int;

@@ -5,11 +5,8 @@
 #include <poponnx/popx/l1x.hpp>
 #include <poponnx/tensor.hpp>
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include <popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 namespace willow {
 namespace popx {

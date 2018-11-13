@@ -1,8 +1,6 @@
 #ifndef GUARD_NEURALNET_POPDEVICE_HPP
 #define GUARD_NEURALNET_POPDEVICE_HPP
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include <poplar/DeviceManager.hpp>
 #include <poplar/Engine.hpp>
 #include <poplar/Graph.hpp>
@@ -10,7 +8,6 @@
 #include <poplin/Convolution.hpp>
 #include <poplin/MatMul.hpp>
 #include <poputil/TileMapping.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 #include <poponnx/device.hpp>
 #include <poponnx/popx/enigma.hpp>

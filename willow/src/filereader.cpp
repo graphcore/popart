@@ -1,7 +1,4 @@
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include <boost/filesystem.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
 #include <fstream>
 #include <sstream>
 #include <vector>

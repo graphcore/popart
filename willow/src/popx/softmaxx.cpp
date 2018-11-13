@@ -4,12 +4,9 @@
 #include <poponnx/softmax.hpp>
 #include <poponnx/util.hpp>
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include "popops/Encoding.hpp"
 #include <popnn/NonLinearity.hpp>
 #include <popops/ElementWise.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 namespace willow {
 namespace popx {

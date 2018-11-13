@@ -24,11 +24,6 @@ else()
             -Wunreachable-code
             -Wunused
             -Wno-sign-compare
-            # we use a pragma in clang to ignore warnings
-            # from external headers, but g++ doesn't recognise
-            # the pragma and bombards us with warnings. So
-            # here we say NO warnings about unkown pragmas:
-            -Wno-unknown-pragmas
         )
         if (CMAKE_${COMPILER}_COMPILER_ID MATCHES "Clang")
             list(APPEND CMAKE_COMPILER_WARNINGS

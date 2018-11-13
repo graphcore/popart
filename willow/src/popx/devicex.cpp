@@ -24,12 +24,9 @@
 #include <poponnx/tensordata.hpp>
 #include <poponnx/util.hpp>
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include <poplin/codelets.hpp>
 #include <popnn/codelets.hpp>
 #include <popops/codelets.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 namespace willow {
 namespace popx {

@@ -2,10 +2,7 @@
 #include <poponnx/popx/subtractx.hpp>
 #include <poponnx/subtract.hpp>
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include <popops/ElementWise.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 namespace willow {
 namespace popx {

@@ -3,11 +3,8 @@
 #include <poponnx/error.hpp>
 #include <poponnx/tensor.hpp>
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 // The CPU backend may require cblas.h
 // #include <cblas.h>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 namespace willow {
 

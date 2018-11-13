@@ -1,10 +1,7 @@
 #ifndef GUARD_NEURALNET_ONNXUTIL_HPP
 #define GUARD_NEURALNET_ONNXUTIL_HPP
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include <onnx/onnx_pb.h>
-#pragma clang diagnostic pop // stop ignoring warnings
 #include <poponnx/tensordata.hpp>
 
 namespace willow {

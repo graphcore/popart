@@ -2,10 +2,7 @@
 #include <poponnx/popx/varupdatex.hpp>
 #include <poponnx/varupdate.hpp>
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include <popops/ScaledAdd.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 namespace willow {
 namespace popx {

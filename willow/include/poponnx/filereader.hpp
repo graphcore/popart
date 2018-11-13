@@ -1,10 +1,7 @@
 #ifndef GUARD_NEURALNET_FILEREADER_HPP
 #define GUARD_NEURALNET_FILEREADER_HPP
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include <onnx/onnx_pb.h>
-#pragma clang diagnostic pop // stop ignoring warnings
 #include <sstream>
 #include <poponnx/names.hpp>
 

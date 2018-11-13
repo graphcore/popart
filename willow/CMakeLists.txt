@@ -21,7 +21,7 @@ endif()
 
 add_library(poponnx SHARED ${sources})
 
-target_include_directories (poponnx PUBLIC
+target_include_directories (poponnx SYSTEM PUBLIC
     # if the model checker is used: ${ONNX_UTILS_INCLUDE_DIR}
     ${ONNX_PB_INCLUDE_DIR}
     ${ONNX_CHECKER_INCLUDE_DIR}

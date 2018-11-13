@@ -3,10 +3,7 @@
 
 #include <poponnx/names.hpp>
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include <poplar/OptionFlags.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 // taken directly from enigma, commit
 // Date:   Fri Oct 19 13:54:14 2018 +0100

@@ -3,10 +3,7 @@
 #include <poponnx/popx/relux.hpp>
 #include <poponnx/relu.hpp>
 
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
 #include <popnn/NonLinearity.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
 
 namespace willow {
 namespace popx {
