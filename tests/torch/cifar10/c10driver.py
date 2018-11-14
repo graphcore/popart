@@ -41,6 +41,9 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
         shuffle=False,
         num_workers=3)
 
+    opts = poponnx.SessionOptionsCore()
+    opts.exportDot = True
+
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
     session = poponnx.Session(
@@ -51,7 +54,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
         optimizer=torchWriter.optimizer,
         outputdir=outputdir,
         passes=passes,
-        userOptions="exportDot=1")
+        userOptions=opts)
 
     # get the tensor info for the anchors
     anchorArrays = session.initAnchorArrays()

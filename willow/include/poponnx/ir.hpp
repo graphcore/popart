@@ -468,7 +468,7 @@ public:
            const Optimizer *optimizer,
            const std::vector<std::string> &cTens,
            const std::string &logdir,
-           const std::string &userOptions,
+           const SessionOptions &userOptions,
            const std::vector<std::string> &patternNames);
 
   const onnx::ModelProto &modelProto;
@@ -479,7 +479,7 @@ public:
   // Weights tensors which are not to be updated
   const std::vector<std::string> &cTens;
   std::string logdir;
-  std::string userOptions;
+  const SessionOptions &userOptions;
   const std::vector<std::string> &patternNames;
 };
 
@@ -538,7 +538,7 @@ private:
   // if momentum the Ir is different
   std::unique_ptr<Optimizer> optimizer;
   std::string logdir;
-  std::string userOptions;
+  SessionOptions userOptions;
   EarlyInfo earlyInfo;
 
   void constructForwards();

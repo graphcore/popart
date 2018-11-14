@@ -8,6 +8,7 @@
 #include <poponnx/nll.hpp>
 #include <poponnx/numerics.hpp>
 #include <poponnx/optimizer.hpp>
+#include <poponnx/optionflags.hpp>
 #include <poponnx/session.hpp>
 #include <poponnx/tensordata.hpp>
 
@@ -166,6 +167,13 @@ PYBIND11_MODULE(poponnx_core, m) {
   py::class_<SGD>(m, "SGD", basesgd).def(py::init<float>());
   py::class_<ConstSGD>(m, "ConstSGD", basesgd).def(py::init<float>());
 
+  py::class_<SessionOptions>(m, "SessionOptionsCore")
+      .def(py::init<>())
+      .def_readwrite("exportDot", &SessionOptions::exportDot)
+      .def_readwrite("engineOptions", &SessionOptions::engineOptions)
+      .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
+      .def_readwrite("reportOptions", &SessionOptions::reportOptions);
+
   py::class_<Session>(m, "SessionCore")
       .def(py::init<std::string,
                     const EarlyInfo &,
@@ -174,7 +182,7 @@ PYBIND11_MODULE(poponnx_core, m) {
                     const Optimizer *,
                     const std::vector<TensorId> &,
                     std::string,
-                    std::string,
+                    const SessionOptions &,
                     const std::vector<std::string> &>(),
            py::arg("model"),
            py::arg("earlyInfo").none(),

@@ -14,7 +14,7 @@ class Session(poponnx.SessionCore):
                  outputdir,
                  passes=[],
                  cTens=[],
-                 userOptions=""):
+                 userOptions=poponnx.SessionOptionsCore()):
         super(Session,
               self).__init__(fnModel, earlyInfo, dataFeed, losses, optimizer,
                              cTens, outputdir, userOptions, passes)

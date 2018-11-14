@@ -419,7 +419,7 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
                    const Optimizer *optimizer_,
                    const std::vector<std::string> &cTens_,
                    const std::string &logdir_,
-                   const std::string &userOptions_,
+                   const SessionOptions &userOptions_,
                    const std::vector<std::string> &patternNames_)
     : modelProto(modelProto_), earlyInfo(earlyInfo_), dataFlow(dataFlow_),
       losses(losses_), optimizer(optimizer_), cTens(cTens_), logdir(logdir_),
@@ -511,12 +511,10 @@ Ir::Ir(const IrBundle &gb)
   // construct the forward pass from ONNX,
   constructForwards();
 
-  // Set default options, and override with user-provided key-value pairs
-  OptionFlags optionFlags(userOptions);
-
-  if (optionFlags.options.exportDot) {
+  if (userOptions.exportDot) {
     exportDot(io::appendDirFn(logdir, "fwd0.dot"));
   }
+
   // to developers: confirm fuctions like this
   // should be to check that there
   // are no contradictions in the user input, NOT
@@ -546,7 +544,7 @@ Ir::Ir(const IrBundle &gb)
   addRecompute();
   prune();
 
-  if (optionFlags.options.exportDot) {
+  if (userOptions.exportDot) {
     exportDot(io::appendDirFn(logdir, "fwdBwd0.dot"));
   }
 

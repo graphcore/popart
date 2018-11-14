@@ -5,6 +5,8 @@
 
 namespace willow {
 
+struct SessionOptions;
+
 /**
  * Session is a runtime instance the provides an interface for executing ONNX
  * graphs on IPU hardware.
@@ -32,7 +34,7 @@ public:
           const Optimizer *optimizer,
           const std::vector<std::string> &cTens,
           std::string logdir,
-          std::string userOptions,
+          const SessionOptions &userOptions,
           const std::vector<std::string> &patternNames);
 
   ~Session();
