@@ -11,7 +11,7 @@ namespace popx {
 class IdentityOpx : public Opx {
 public:
   IdentityOpx(Op *, Devicex *);
-  virtual void grow() const override final;
+  virtual void grow(poplar::program::Sequence &) const override final;
 };
 
 class IdentityGradOpx : public IdentityOpx {

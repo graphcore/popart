@@ -18,7 +18,7 @@ NllOpx::NllOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 NllOp *NllOpx::getNllOp() const { return dynamic_cast<NllOp *>(op_p); }
 
-void NllOpx::grow() const {
+void NllOpx::grow(poplar::program::Sequence &prog) const {
   TensorId labelId     = getNllOp()->nlll()->labelTensorId();
   TensorId probsId     = getNllOp()->nlll()->probsTensorId();
   poplar::Tensor probs = get(probsId);
@@ -27,7 +27,7 @@ void NllOpx::grow() const {
   // probs = probs.reshape({probs.dim(0), probs.numElements() / probs.dim(0)});
   auto oneHot = graph().clone(probs.elementType(), probs, "..OneHot");
 
-  popops::encodeOneHot(graph(), get(labelId), oneHot, step(), "..Nll");
+  popops::encodeOneHot(graph(), get(labelId), oneHot, prog, "..Nll");
 
   // oneHot, from a tensor which is sparse with a single 1 per row,
   //           to a tensor which is sparse with a single p per row.
@@ -35,23 +35,20 @@ void NllOpx::grow() const {
                      popops::expr::BinaryOpType::MULTIPLY,
                      oneHot,
                      probs,
-                     step(),
+                     prog,
                      "..mul");
 
   // sum rows, so that just the p corresponding to the label remains
   poplar::Tensor reduction =
-      popops::reduce(graph(), oneHot, {1}, {popops::Operation::ADD}, step());
+      popops::reduce(graph(), oneHot, {1}, {popops::Operation::ADD}, prog);
 
   // and log it,
-  popops::mapInPlace(graph(),
-                     popops::expr::UnaryOpType::LOGARITHM,
-                     reduction,
-                     step(),
-                     "..log");
+  popops::mapInPlace(
+      graph(), popops::expr::UnaryOpType::LOGARITHM, reduction, prog, "..log");
 
   // and negate it.
   popops::mapInPlace(
-      graph(), popops::expr::UnaryOpType::NEGATE, reduction, step(), "..neg");
+      graph(), popops::expr::UnaryOpType::NEGATE, reduction, prog, "..neg");
 
   insert(outId(0), reduction);
 }

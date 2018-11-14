@@ -30,7 +30,7 @@ static std::vector<T1> vector_cast(const std::vector<T2> &xs) {
   return ys;
 }
 
-void ReduceSumOpx::grow() const {
+void ReduceSumOpx::grow(poplar::program::Sequence &prog) const {
   const auto op    = dynamic_cast<ReduceSumOp *>(op_p);
   const auto input = get(inId(0));
 
@@ -38,7 +38,7 @@ void ReduceSumOpx::grow() const {
                                       input,
                                       vector_cast<std::size_t>(op->getAxes()),
                                       {popops::Operation::ADD},
-                                      step());
+                                      prog);
 
   insert(outId(0), output_tensor.reshape(outInfo(0).shape_szt()));
 }
@@ -50,7 +50,7 @@ ReduceSumGradOpx::ReduceSumGradOpx(Op *op, Devicex *devicex)
   }
 }
 
-void ReduceSumGradOpx::grow() const {
+void ReduceSumGradOpx::grow(poplar::program::Sequence &) const {
   const auto op        = dynamic_cast<ReduceSumGradOp *>(op_p);
   auto &input          = get(inId(0));
   auto input_shape     = inShape(0);

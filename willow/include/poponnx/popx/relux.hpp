@@ -15,14 +15,14 @@ class ReluOpx : public Opx {
 public:
   ReluOpx(Op *, Devicex *);
   ReluOp *getReluOp() const;
-  void grow() const override final;
+  void grow(poplar::program::Sequence &) const override final;
 };
 
 class ReluGradOpx : public Opx {
 public:
   ReluGradOpx(Op *, Devicex *);
   ReluGradOp *getReluGradOp() const;
-  void grow() const override final;
+  void grow(poplar::program::Sequence &) const override final;
 };
 
 } // namespace popx

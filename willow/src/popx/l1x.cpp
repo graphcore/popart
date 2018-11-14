@@ -17,7 +17,7 @@ L1Opx::L1Opx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-void L1GradOpx::grow() const {
+void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   L1GradOp *l1gradop = getL1GradOp();
   poplar::Tensor t_lambda =
       dv_p->getConst(popType(op_p->input.tensor(0)->info),
@@ -28,7 +28,7 @@ void L1GradOpx::grow() const {
   poplar::Tensor signumTensor = popops::map(graph(),
                                             popops::expr::UnaryOpType::SIGNUM,
                                             get(inId(0)),
-                                            step(),
+                                            prog,
                                             "signum/" + inId(0));
 
   // scale the signum tensor by lambda,
@@ -37,19 +37,19 @@ void L1GradOpx::grow() const {
                                           popops::expr::BinaryOpType::MULTIPLY,
                                           signumTensor,
                                           t_lambda,
-                                          step(),
+                                          prog,
                                           "multiply/" + inId(0));
 
   insert(outId(0), gradTensor);
 }
 
 // lambda * sum_{0,..rank-1} |v|
-void L1Opx::grow() const {
+void L1Opx::grow(poplar::program::Sequence &prog) const {
   L1Op *l1op               = getL1Op();
   poplar::Tensor absTensor = popops::map(graph(),
                                          popops::expr::UnaryOpType::ABSOLUTE,
                                          get(inId(0)),
-                                         step(),
+                                         prog,
                                          "abs/" + inId(0));
 
   if (absTensor.rank() == 0) {
@@ -67,7 +67,7 @@ void L1Opx::grow() const {
                      absTensor,
                      dims,
                      {popops::Operation::ADD, l1op->l1l()->getLambda()},
-                     step());
+                     prog);
 
   insert(outId(0), reduction);
 }

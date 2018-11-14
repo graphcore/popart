@@ -393,6 +393,8 @@ public:
   // Throws error from this class if not implemented
   virtual std::unique_ptr<Op> clone() const;
 
+  virtual bool isLossOp() const;
+
 private:
   void appendIO(std::stringstream &) const;
   virtual void appendMore(std::stringstream &) const {}

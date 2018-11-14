@@ -11,7 +11,9 @@ IdentityOpx::IdentityOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-void IdentityOpx::grow() const { insert(outId(0), Opx::cloneNcopy(inId(0))); }
+void IdentityOpx::grow(poplar::program::Sequence &prog) const {
+  insert(outId(0), Opx::cloneNcopy(prog, inId(0)));
+}
 
 IdentityGradOpx::IdentityGradOpx(Op *op, Devicex *devicex)
     : IdentityOpx(op, devicex) {

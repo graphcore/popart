@@ -13,13 +13,13 @@ SubtractOpx::SubtractOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-void SubtractOpx::grow() const {
+void SubtractOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(0),
          popops::map(graph(),
                      popops::expr::BinaryOpType::SUBTRACT,
                      get(inId(0)),
                      get(inId(1)),
-                     step(),
+                     prog,
                      idStr()));
 }
 

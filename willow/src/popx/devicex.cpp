@@ -111,27 +111,73 @@ const poplar::Tensor &PopTensors::get(TensorId id) const {
   return found->second;
 }
 
-poplar::program::Sequence &PopPrograms::weightsFromHost() {
-  return seqs[ProgramIndex::WEIGHTSFROMHOST];
+poplar::program::Sequence &PopPrograms::weightsFromHostFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::WEIGHTSFROMHOST)];
 }
 
-poplar::program::Sequence &PopPrograms::optimizerFromHost() {
-  return seqs[ProgramIndex::OPTIMIZERFROMHOST];
+poplar::program::Sequence &PopPrograms::optimizerFromHostFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::OPTIMIZERFROMHOST)];
 }
 
-poplar::program::Sequence &PopPrograms::step() {
-  return seqs[ProgramIndex::STEP];
+poplar::program::Sequence &PopPrograms::forwardFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::FORWARD)];
 }
 
-poplar::program::Sequence &PopPrograms::weightsToHost() {
-  return seqs[ProgramIndex::WEIGHTSTOHOST];
+poplar::program::Sequence &PopPrograms::lossFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::LOSS)];
+}
+
+poplar::program::Sequence &PopPrograms::backwardFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::BACKWARD)];
+}
+
+poplar::program::Sequence &PopPrograms::weightsToHostFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::WEIGHTSTOHOST)];
+}
+
+poplar::program::Sequence PopPrograms::weightsFromHost() {
+  return weightsFromHostFragment();
+}
+
+poplar::program::Sequence PopPrograms::optimizerFromHost() {
+  return optimizerFromHostFragment();
+}
+
+poplar::program::Sequence PopPrograms::infer() { return forwardFragment(); }
+
+poplar::program::Sequence PopPrograms::evaluate() {
+  poplar::program::Sequence eval;
+
+  eval.add(forwardFragment());
+  eval.add(lossFragment());
+
+  return eval;
+}
+
+poplar::program::Sequence PopPrograms::train() {
+  poplar::program::Sequence trn;
+
+  trn.add(forwardFragment());
+  trn.add(lossFragment());
+  trn.add(backwardFragment());
+
+  return trn;
+}
+
+poplar::program::Sequence PopPrograms::weightsToHost() {
+  return weightsToHostFragment();
 }
 
 std::vector<poplar::program::Program> PopPrograms::progs() {
-  std::vector<poplar::program::Program> ps;
-  for (auto &x : seqs) {
-    ps.push_back(x);
-  }
+  std::vector<poplar::program::Program> ps(ProgramIndex::N);
+
+  ps[ProgramIndex::WEIGHTSFROMHOST]   = weightsFromHost();
+  ps[ProgramIndex::OPTIMIZERFROMHOST] = optimizerFromHost();
+  ps[ProgramIndex::INFER]             = infer();
+  ps[ProgramIndex::EVALUATE]          = evaluate();
+  ps[ProgramIndex::TRAIN]             = train();
+  ps[ProgramIndex::WEIGHTSTOHOST]     = weightsToHost();
+
   return ps;
 }
 
@@ -257,11 +303,10 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
   std::memcpy(dst, src, nbytes_src);
 }
 
-void Devicex::step(const StepIO &stepio) {
-  logging::debug("Performing one step: ");
+void Devicex::anchorsHostToHostStreams(const StepIO &stepio) {
   std::string prefix = "     ";
-  logging::debug(prefix + "Copying to h2d stream address(es) ");
-  for (Tensor *tensor : ir().dataStreamTensors()) {
+  std::cout << prefix << "Copying to h2d stream address(es) " << std::endl;
+  for (Tensor *tensor : pir->dataStreamTensors()) {
     ConstVoidData stepin = stepio.in(tensor->id);
 
     // where to write to on host,
@@ -281,18 +326,57 @@ void Devicex::step(const StepIO &stepio) {
 
     hostToHostStream(dst, src, dstInfo, srcInfo, tensor->id);
   }
+}
 
-  logging::debug(prefix + "Running the step program ");
-  // TODO : this should be in a poplar for loop (see T5093)
-  for (int i = 0; i < ir().getDataFlow().batchesPerStep(); ++i) {
-    pEngine->run(PopPrograms::ProgramIndex::STEP);
-  }
-
-  logging::debug(prefix + "Copying from d2h stream address(es) ");
-  for (TensorId anchorId : ir().getDataFlow().anchors()) {
+void Devicex::anchorsHostFromHostStreams(const StepIO &stepio) {
+  std::string prefix = "     ";
+  std::cout << prefix << "Copying from d2h stream address(es) " << std::endl;
+  for (TensorId anchorId : pir->dataFlow.anchors()) {
     MutableVoidData stepout = stepio.out(anchorId);
     hostStreamToHost(stepout, anchorId);
   }
+}
+
+void Devicex::infer(const StepIO &stepio) {
+  std::string prefix = "     ";
+  std::cout << "Performing one inference step: " << std::endl;
+  anchorsHostToHostStreams(stepio);
+
+  std::cout << prefix << "Running the inference program " << std::endl;
+  // TODO : this should be in a poplar for loop (see T5093)
+  for (int i = 0; i < pir->dataFlow.batchesPerStep(); ++i) {
+    pEngine->run(PopPrograms::ProgramIndex::INFER);
+  }
+
+  anchorsHostFromHostStreams(stepio);
+}
+
+void Devicex::evaluate(const StepIO &stepio) {
+  std::string prefix = "     ";
+  std::cout << "Performing one evaluate step: " << std::endl;
+  anchorsHostToHostStreams(stepio);
+
+  std::cout << prefix << "Running the evaluate program " << std::endl;
+  // TODO : this should be in a poplar for loop (see T5093)
+  for (int i = 0; i < pir->dataFlow.batchesPerStep(); ++i) {
+    pEngine->run(PopPrograms::ProgramIndex::EVALUATE);
+  }
+
+  anchorsHostFromHostStreams(stepio);
+}
+
+void Devicex::train(const StepIO &stepio) {
+  std::string prefix = "     ";
+  std::cout << "Performing one train step: " << std::endl;
+  anchorsHostToHostStreams(stepio);
+
+  std::cout << prefix << "Running the train program " << std::endl;
+  // TODO : this should be in a poplar for loop (see T5093)
+  for (int i = 0; i < pir->dataFlow.batchesPerStep(); ++i) {
+    pEngine->run(PopPrograms::ProgramIndex::TRAIN);
+  }
+
+  anchorsHostFromHostStreams(stepio);
 }
 
 std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
@@ -625,9 +709,18 @@ PriTask Devicex::opTask(Op *op, double priority) {
     }
   }
 
-  auto f = [opx]() {
-    logging::debug("Creating output tensors for " + opx->op_p->str());
-    opx->grow();
+  auto f = [op, opx, this]() {
+    std::cout << "Creating output tensors for " << opx->op_p->str()
+              << std::endl;
+
+    if (op->nPathsToLoss() == 0) {
+      opx->grow(progs.backwardFragment());
+    } else if (op->isLossOp() || (op == op->pir->getFinalLossOp()) ||
+               (opx->outId(0) == op->pir->getFinalLossId())) {
+      opx->grow(progs.lossFragment());
+    } else {
+      opx->grow(progs.forwardFragment());
+    }
   };
 
   return {priority, opTaskId(op), deps, f};
@@ -664,11 +757,11 @@ void Devicex::prepare() {
     // 2
     tasks.add(streamFromHostTask(tensor));
     // 3
-    tasks.add(fromHostTask(tensor, progs.weightsFromHost()));
+    tasks.add(fromHostTask(tensor, progs.weightsFromHostFragment()));
     // 4
     tasks.add(streamToHostTask(tensor));
     // 5
-    tasks.add(toHostTask(tensor, progs.weightsToHost()));
+    tasks.add(toHostTask(tensor, progs.weightsToHostFragment()));
   }
 
   // stream-to-device tensors : 1)  make tensor 2) make stream
@@ -687,17 +780,17 @@ void Devicex::prepare() {
     // 1
     tasks.add(streamToHostTask(ir().getTensors().get(id)));
     // 2
-    tasks.add(toHostTask(ir().getTensors().get(id), progs.step()));
+    tasks.add(toHostTask(pir->tensors.get(id), progs.forwardFragment()));
   }
 
   // create Program to write optimizer tensors to device
-  for (Tensor *tensor : ir().optimizerTensors()) {
-    tasks.add(fromHostTask(tensor, progs.optimizerFromHost()));
+  for (Tensor *tensor : pir->optimizerTensors()) {
+    tasks.add(fromHostTask(tensor, progs.optimizerFromHostFragment()));
   }
 
   // making the network!
-  for (Tensor *tensor : ir().dataStreamTensors()) {
-    tasks.add(fromHostTask(tensor, progs.step()));
+  for (Tensor *tensor : pir->dataStreamTensors()) {
+    tasks.add(fromHostTask(tensor, progs.forwardFragment()));
   }
   std::vector<Op *> ops = ir().getOpSchedule();
   double priority       = 0.;

@@ -99,11 +99,11 @@ void Session::weightsFromHost() { device_->weightsFromHost(); }
 // momentum, initial momentum tensors (zero)) there are to device
 void Session::optimizerFromHost() { device_->optimizerFromHost(); }
 
-void Session::train(const StepIO &stepio) { device_->step(stepio); }
+void Session::train(const StepIO &stepio) { device_->train(stepio); }
 
-void Session::evaluate(const StepIO &) { return; }
+void Session::evaluate(const StepIO &stepio) { device_->evaluate(stepio); }
 
-void Session::infer(const StepIO &) { return; }
+void Session::infer(const StepIO &stepio) { device_->infer(stepio); }
 
 // write current model to ONNX file
 void Session::modelToHost(const std::string &fn) {

@@ -13,13 +13,13 @@ namespace popx {
 class ReduceSumOpx : public Opx {
 public:
   ReduceSumOpx(Op *, Devicex *);
-  void grow() const override;
+  void grow(poplar::program::Sequence &) const override;
 };
 
 class ReduceSumGradOpx : public Opx {
 public:
   ReduceSumGradOpx(Op *, Devicex *);
-  void grow() const override;
+  void grow(poplar::program::Sequence &) const override;
 };
 
 } // namespace popx

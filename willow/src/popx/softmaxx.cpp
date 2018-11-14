@@ -17,13 +17,10 @@ SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-void SoftmaxOpx::grow() const {
+void SoftmaxOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto outTensor = popnn::nonLinearity(graph(),
-                                       popnn::NonLinearityType::SOFTMAX,
-                                       get(inId(0)),
-                                       step(),
-                                       outId(0));
+  auto outTensor = popnn::nonLinearity(
+      graph(), popnn::NonLinearityType::SOFTMAX, get(inId(0)), prog, outId(0));
 
   insert(outId(0), outTensor);
 }
@@ -72,7 +69,7 @@ SoftmaxGradDirectOp *SoftmaxGradDirectOpx::getSoftmaxGradDirectOp() const {
 // |   |
 // -----
 
-void SoftmaxGradDirectOpx::grow() const {
+void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   SoftmaxGradDirectOp *sfmgd = getSoftmaxGradDirectOp();
   TensorId labelId           = sfmgd->nlll()->labelTensorId();
   TensorId probsId           = sfmgd->nlll()->probsTensorId();
@@ -80,17 +77,17 @@ void SoftmaxGradDirectOpx::grow() const {
   // 1 at position "label", 0 elsewhere.
   auto oneHot =
       graph().clone(get(probsId).elementType(), get(probsId), "..OneHot");
-  popops::encodeOneHot(graph(), get(labelId), oneHot, step(), "..Nll");
+  popops::encodeOneHot(graph(), get(labelId), oneHot, prog, "..Nll");
   // -1 at position "label", 0 elsewhere.
   popops::mapInPlace(
-      graph(), popops::expr::UnaryOpType::NEGATE, oneHot, step(), "..neg");
+      graph(), popops::expr::UnaryOpType::NEGATE, oneHot, prog, "..neg");
 
   // p - 1 at position "label" label, p elsewhere.
   popops::mapInPlace(graph(),
                      popops::expr::BinaryOpType::ADD,
                      oneHot,
                      get(probsId),
-                     step(),
+                     prog,
                      "..sub");
 
   insert(outId(0), oneHot);

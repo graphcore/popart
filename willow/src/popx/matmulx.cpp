@@ -17,12 +17,12 @@ MatMulOpx::MatMulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-void MatMulOpx::grow() const {
+void MatMulOpx::grow(poplar::program::Sequence &prog) const {
 
   auto outTensor = poplin::matMul(graph(),                         // graph
                                   get(getMatMulOp()->lhsIn()->id), // A
                                   get(getMatMulOp()->rhsIn()->id), // B
-                                  dv_p->progs.step(),              // prog
+                                  prog,                            // prog
                                   idStr(),            // debugPrefix
                                   dv_p->fwdMmOptions, // options
                                   &dv_p->matmulCache  // cache
@@ -93,13 +93,13 @@ MatMulLhsGradOpx::MatMulLhsGradOpx(Op *op, Devicex *devicex)
   }
 }
 
-void MatMulLhsGradOpx::grow() const {
+void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
 
   auto outTensor = poplin::matMul(
       graph(),                                                         // graph
       get(inId(getMatMulLhsGradOp()->getGradInputIndex())),            // A
       get(inId(getMatMulLhsGradOp()->getRhsInputIndex())).transpose(), // B
-      step(),                                                          // prog
+      prog,                                                            // prog
       idStr(),               // debugPrefix
       dv_p->bwdMmLhsOptions, // options
       &dv_p->matmulCache     // cache
@@ -123,13 +123,13 @@ MatMulRhsGradOp *MatMulRhsGradOpx::getMatMulRhsGradOp() const {
   return dynamic_cast<MatMulRhsGradOp *>(op_p);
 }
 
-void MatMulRhsGradOpx::grow() const {
+void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
 
   auto outTensor = poplin::matMul(
       graph(),                                                         // graph
       get(inId(getMatMulRhsGradOp()->getLhsInputIndex())).transpose(), // A
       get(inId(getMatMulRhsGradOp()->getGradInputIndex())),            // B
-      step(),                                                          // prog
+      prog,                                                            // prog
       idStr(),               // debugPrefix
       dv_p->bwdMmRhsOptions, // options
       &dv_p->matmulCache     // cache

@@ -28,13 +28,13 @@ ConstSGDVarUpdateOp *ConstSGDVarUpdateOpx::getConstSGDVarUpdateOp() const {
   return dynamic_cast<ConstSGDVarUpdateOp *>(op_p);
 }
 
-void ConstSGDVarUpdateOpx::grow() const {
+void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto vu_op = getConstSGDVarUpdateOp();
   popops::scaledAddTo(graph(),
                       get(inId(vu_op->getVarIndex())),     // weights
                       get(inId(vu_op->getVarGradIndex())), // weightDeltas
                       -1.0f * (vu_op->getLearnRate()),
-                      step(),
+                      prog,
                       idStr());
 
   // no poplar::Tensors to insert!

@@ -28,4 +28,12 @@ const TensorId &Loss::output(int i) const {
 Loss::Loss(const std::vector<TensorId> &in_, TensorId out_)
     : input_(in_), output_(out_) {}
 
+LossOp::LossOp(const Node &node, Ir *ir) : Op(node, ir) {}
+
+LossOp::LossOp(const OpConstructorBundle &bundle) : Op(bundle) {}
+
+LossOp::LossOp(const Op &op) : Op(op) {}
+
+bool LossOp::isLossOp() const { return true; }
+
 } // namespace willow

@@ -20,11 +20,11 @@ AddBiasDataGradOpx::AddBiasDataGradOpx(Op *op, Devicex *devicex)
   }
 }
 
-void AddBiasOpx::grow() const {
+void AddBiasOpx::grow(poplar::program::Sequence &prog) const {
   // Clone & copy the input tensor because poplin::addBias is in-place.
-  const auto result = Opx::cloneNcopy(inId(AddBiasOp::dataInIndex()));
+  const auto result = Opx::cloneNcopy(prog, inId(AddBiasOp::dataInIndex()));
   poplin::addBias(
-      graph(), result, get(inId(AddBiasOp::biasInIndex())), step(), idStr());
+      graph(), result, get(inId(AddBiasOp::biasInIndex())), prog, idStr());
   insert(outId(0), result);
 }
 

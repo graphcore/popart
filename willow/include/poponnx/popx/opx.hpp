@@ -38,12 +38,10 @@ public:
   virtual std::vector<TensorId> mustExistBeforeCreate(int index0) const;
   // adds poplar::Tensors to devicex_->popTensors,
   // one for each output of op_.
-  virtual void grow() const;
+  virtual void grow(poplar::program::Sequence &) const;
   // clone the poplar::Tensor identified by its TensorId,
   // and copy the contents of it, in the step() program.
-  poplar::Tensor cloneNcopy(TensorId) const;
-
-  // The following reduce boilerplate.
+  poplar::Tensor cloneNcopy(poplar::program::Sequence &, TensorId) const;
 
   // shortcut for dv_p->graph
   poplar::Graph &graph() const;
@@ -51,8 +49,6 @@ public:
   const poplar::Tensor &get(TensorId) const;
   // shortcut for dv_p->tensors.insert
   void insert(TensorId, const poplar::Tensor &) const;
-  // shortcut for dv_p->progs.step
-  poplar::program::Sequence &step() const;
   // shortcut for op_p->input.id(int)
   TensorId inId(int) const;
   // shortcut for op_p->output.id(int)

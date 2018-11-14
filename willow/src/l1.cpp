@@ -34,7 +34,8 @@ float L1Loss::getLambda() const { return lambda; }
 const L1Loss *L1Op::l1l() const { return l1loss_; }
 const L1Loss *L1GradOp::l1l() const { return l1loss_; }
 
-L1Op::L1Op(const OpConstructorBundle &b, const L1Loss *n) : Op(b), l1loss_(n) {}
+L1Op::L1Op(const OpConstructorBundle &b, const L1Loss *n)
+    : LossOp(b), l1loss_(n) {}
 
 void L1GradOp::setup() {
   // gradient of input has same shape as input to L1

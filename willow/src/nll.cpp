@@ -56,7 +56,7 @@ const NllLoss *NllOp::nlll() const { return nllloss_; }
 const NllLoss *NllGradOp::nlll() const { return nllloss_; }
 
 NllOp::NllOp(const OpConstructorBundle &b, const NllLoss *n)
-    : Op(b), nllloss_(n) {}
+    : LossOp(b), nllloss_(n) {}
 
 void NllGradOp::setup() {
   // gradient of probs has same shape as probs

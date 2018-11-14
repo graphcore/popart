@@ -21,7 +21,7 @@ class ConstSGDVarUpdateOpx : public Opx {
 public:
   ConstSGDVarUpdateOpx(Op *, Devicex *);
   ConstSGDVarUpdateOp *getConstSGDVarUpdateOp() const;
-  void grow() const override final;
+  void grow(poplar::program::Sequence &) const override final;
 };
 
 } // namespace popx

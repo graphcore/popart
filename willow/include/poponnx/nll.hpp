@@ -20,7 +20,7 @@ public:
   virtual std::unique_ptr<Loss> clone() const override final;
 };
 
-class NllOp : public Op {
+class NllOp : public LossOp {
 public:
   NllOp(const OpConstructorBundle &, const NllLoss *nllloss);
   virtual std::unique_ptr<Op> clone() const override final;

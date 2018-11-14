@@ -28,7 +28,7 @@ public:
   virtual std::vector<TensorId>
   mustExistBeforeCreate(int index0) const override final;
   const poplin::ConvParams &getParams() const;
-  virtual void grow() const override final;
+  virtual void grow(poplar::program::Sequence &) const override final;
 
 private:
   poplin::ConvParams fwdParams;
@@ -38,7 +38,7 @@ class ConvDataGradOpx : public Opx {
 public:
   ConvDataGradOpx(Op *, Devicex *);
   ConvDataGradOp *getConvDataGradOp() const;
-  virtual void grow() const override final;
+  virtual void grow(poplar::program::Sequence &) const override final;
   const poplin::ConvParams &getParams() const;
 
 private:
@@ -49,7 +49,7 @@ class ConvWeightsGradOpx : public Opx {
 public:
   ConvWeightsGradOpx(Op *, Devicex *);
   ConvWeightsGradOp *getConvWeightsGradOp() const;
-  virtual void grow() const override final;
+  virtual void grow(poplar::program::Sequence &) const override final;
 };
 
 } // namespace popx

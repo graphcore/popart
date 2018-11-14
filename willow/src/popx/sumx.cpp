@@ -15,7 +15,7 @@ SumOpx::SumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 SumOp *SumOpx::getSumOp() const { return dynamic_cast<SumOp *>(op_p); }
 
-void SumOpx::grow() const {
+void SumOpx::grow(poplar::program::Sequence &prog) const {
   // if the total number of tensors is less than
   // "5", then perform a series of adds.
   if (getSumOp()->input.n() < 5) {
@@ -23,7 +23,7 @@ void SumOpx::grow() const {
                                      popops::expr::BinaryOpType::ADD,
                                      get(inId(0)),
                                      get(inId(1)),
-                                     step(),
+                                     prog,
                                      idStr());
 
     for (int i = 2; i < getSumOp()->input.n(); ++i) {
@@ -31,7 +31,7 @@ void SumOpx::grow() const {
                          popops::expr::BinaryOpType::ADD,
                          sum,
                          get(inId(i)),
-                         step(),
+                         prog,
                          idStr());
     }
     insert(outId(0), sum);

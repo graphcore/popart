@@ -15,14 +15,14 @@ class SqueezeOpx : public Opx {
 public:
   SqueezeOpx(Op *, Devicex *);
   SqueezeOp *getSqueezeOp() const;
-  virtual void grow() const override final;
+  virtual void grow(poplar::program::Sequence &) const override final;
 };
 
 class SqueezeGradOpx : public Opx {
 public:
   SqueezeGradOpx(Op *, Devicex *);
   SqueezeGradOp *getSqueezeGradOp() const;
-  virtual void grow() const override final;
+  virtual void grow(poplar::program::Sequence &) const override final;
 };
 
 } // namespace popx

@@ -15,7 +15,7 @@ class AddOpx : public Opx {
 public:
   AddOpx(Op *, Devicex *);
   AddOp *getAddOp() const;
-  virtual void grow() const override final;
+  virtual void grow(poplar::program::Sequence &) const override final;
 };
 
 // TODO (task T5432) should inherit from ReduceSum when we have numpy

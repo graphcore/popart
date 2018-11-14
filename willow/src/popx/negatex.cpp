@@ -12,12 +12,12 @@ NegateOpx::NegateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-void NegateOpx::grow() const {
+void NegateOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(0),
          popops::map(graph(),
                      popops::expr::UnaryOpType::NEGATE,
                      get(inId(0)),
-                     step(),
+                     prog,
                      idStr()));
 }
 

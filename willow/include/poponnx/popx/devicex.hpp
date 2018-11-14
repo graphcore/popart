@@ -26,19 +26,44 @@ public:
   enum ProgramIndex {
     WEIGHTSFROMHOST = 0,
     OPTIMIZERFROMHOST,
-    STEP,
+    INFER,
+    EVALUATE,
+    TRAIN,
     WEIGHTSTOHOST,
     N // The number of programs
   };
 
-  poplar::program::Sequence &weightsFromHost();
-  poplar::program::Sequence &optimizerFromHost();
-  poplar::program::Sequence &step();
-  poplar::program::Sequence &weightsToHost();
+  // Program fragments are not necessarily complete program that can be given to
+  // a poplar engine.
+  poplar::program::Sequence &weightsFromHostFragment();
+  poplar::program::Sequence &optimizerFromHostFragment();
+  poplar::program::Sequence &forwardFragment();
+  poplar::program::Sequence &lossFragment();
+  poplar::program::Sequence &backwardFragment();
+  poplar::program::Sequence &weightsToHostFragment();
+
   std::vector<poplar::program::Program> progs();
 
 private:
-  std::array<poplar::program::Sequence, ProgramIndex::N> seqs;
+  enum class ProgramFragmentIndex {
+    WEIGHTSFROMHOST = 0,
+    OPTIMIZERFROMHOST,
+    FORWARD,
+    LOSS,
+    BACKWARD,
+    WEIGHTSTOHOST,
+    N // The number of program fragments
+  };
+
+  static constexpr int seqs_size = static_cast<int>(ProgramFragmentIndex::N);
+  std::array<poplar::program::Sequence, seqs_size> seqs;
+
+  poplar::program::Sequence weightsFromHost();
+  poplar::program::Sequence optimizerFromHost();
+  poplar::program::Sequence infer();
+  poplar::program::Sequence evaluate();
+  poplar::program::Sequence train();
+  poplar::program::Sequence weightsToHost();
 };
 
 poplar::Type popType(const TensorInfo &);
@@ -75,7 +100,9 @@ public:
   virtual void prepare() override final;
   virtual void weightsFromHost() override final;
   virtual void optimizerFromHost() override final;
-  virtual void step(const StepIO &) override final;
+  virtual void infer(const StepIO &) override final;
+  virtual void evaluate(const StepIO &) override final;
+  virtual void train(const StepIO &) override final;
   virtual void
   weightsToHost(const std::map<TensorId, MutableVoidData> &) override final;
 
@@ -177,6 +204,12 @@ private:
                         TensorId id);
 
   void hostStreamToHost(const MutableVoidData &mv_data, TensorId id);
+
+  // Call hostToHostStream on all the Tensors in pir->dataStreamTensors()
+  void anchorsHostToHostStreams(const StepIO &stepio);
+
+  // Call hostStreamToHost in all the Tensors in pir->dataFlow.anchors()
+  void anchorsHostFromHostStreams(const StepIO &stepio);
 };
 
 } // namespace popx

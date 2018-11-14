@@ -27,7 +27,7 @@ std::vector<TensorId> Opx::mustExistBeforeCreate(int index0) const {
       std::to_string(index0));
 }
 
-void Opx::grow() const {
+void Opx::grow(poplar::program::Sequence &) const {
   throw error("adding poplar::Tensors not implemented for " + op_p->op_type());
 }
 
@@ -42,8 +42,6 @@ const poplar::Tensor &Opx::get(TensorId id) const {
 void Opx::insert(TensorId id, const poplar::Tensor &tensor) const {
   dv_p->tensors.insert(id, tensor);
 }
-
-poplar::program::Sequence &Opx::step() const { return dv_p->progs.step(); }
 
 TensorId Opx::inId(int index) const { return op_p->input.id(index); }
 
@@ -67,10 +65,11 @@ const std::vector<int64_t> &Opx::outShape(int index) const {
 
 std::string Opx::idStr() const { return std::to_string(op_p->id); }
 
-poplar::Tensor Opx::cloneNcopy(TensorId id) const {
+poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
+                               TensorId id) const {
   auto outTensor = graph().clone(get(id));
   poplar::program::Copy copyProg(get(id), outTensor);
-  step().add(copyProg);
+  prog.add(copyProg);
   return outTensor;
 }
 

@@ -14,14 +14,14 @@ ReluOpx::ReluOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-void ReluOpx::grow() const {
+void ReluOpx::grow(poplar::program::Sequence &prog) const {
 
   // There is only an in-place poplibs Relu. We therefore clone first,
-  auto outTensor = cloneNcopy(inId(0));
+  auto outTensor = cloneNcopy(prog, inId(0));
 
   // and apply the inplace relu.
   popnn::nonLinearityInPlace(
-      graph(), popnn::NonLinearityType::RELU, outTensor, step(), outId(0));
+      graph(), popnn::NonLinearityType::RELU, outTensor, prog, outId(0));
 
   insert(outId(0), outTensor);
 }
@@ -38,7 +38,7 @@ ReluGradOp *ReluGradOpx::getReluGradOp() const {
   return dynamic_cast<ReluGradOp *>(op_p);
 }
 
-void ReluGradOpx::grow() const {
+void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
 
   ReluGradOp *rgop = getReluGradOp();
 
@@ -47,7 +47,7 @@ void ReluGradOpx::grow() const {
       popnn::NonLinearityType::RELU,     // nonLinearityType,
       get(inId(rgop->getReludIn())),     //  out,
       get(inId(rgop->getGradReludIn())), //  outGradient,
-      step(),                            // prog,
+      prog,                              // prog,
       idStr()                            // debugPrefix
   );
 

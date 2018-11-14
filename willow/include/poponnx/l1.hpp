@@ -25,7 +25,7 @@ private:
   float lambda;
 };
 
-class L1Op : public Op {
+class L1Op : public LossOp {
 public:
   L1Op(const OpConstructorBundle &, const L1Loss *l1loss);
   virtual std::unique_ptr<Op> clone() const override final;

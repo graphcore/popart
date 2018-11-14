@@ -18,7 +18,7 @@ AveragePoolOp *AveragePoolOpx::getAveragePoolOp() const {
   return dynamic_cast<AveragePoolOp *>(op_p);
 }
 
-void AveragePoolOpx::grow() const {
+void AveragePoolOpx::grow(poplar::program::Sequence &prog) const {
   AveragePoolOp *aOp = getAveragePoolOp();
   insert(outId(0),
          popnn::pooling::pool(graph(),
@@ -28,11 +28,11 @@ void AveragePoolOpx::grow() const {
                               aOp->lowerPads_i32(),
                               aOp->upperPads_i32(),
                               get(inId(0)),
-                              step(),
+                              prog,
                               idStr()));
 }
 
-void AveragePoolGradOpx::grow() const {
+void AveragePoolGradOpx::grow(poplar::program::Sequence &prog) const {
   AveragePoolGradOp *agOp  = getAveragePoolGradOp();
   const AveragePoolOp *aOp = agOp->getCloneOfCreator();
 
@@ -51,7 +51,7 @@ void AveragePoolGradOpx::grow() const {
              get(prePooledId),  // in
              get(pooledId),     // pooled
              get(gradPooledId), // pooledGradient
-             step(),            // prog
+             prog,              // prog
              idStr()            // debugPredix
              ));
 }

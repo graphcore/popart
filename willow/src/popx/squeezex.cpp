@@ -6,8 +6,8 @@
 namespace willow {
 namespace popx {
 
-void SqueezeOpx::grow() const {
-  auto outTensor = cloneNcopy(inId(0));
+void SqueezeOpx::grow(poplar::program::Sequence &prog) const {
+  auto outTensor = cloneNcopy(prog, inId(0));
   outTensor      = outTensor.reshape(op_p->output.tensor(0)->info.shape_szt());
   insert(outId(0), outTensor);
 }
@@ -28,8 +28,8 @@ SqueezeGradOpx::SqueezeGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-void SqueezeGradOpx::grow() const {
-  auto outTensor = cloneNcopy(inId(0));
+void SqueezeGradOpx::grow(poplar::program::Sequence &prog) const {
+  auto outTensor = cloneNcopy(prog, inId(0));
   outTensor =
       outTensor.reshape(getSqueezeGradOp()->output.tensor(0)->info.shape_szt());
   insert(outId(0), outTensor);

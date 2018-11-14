@@ -3,6 +3,7 @@
 
 #include <map>
 #include <poponnx/error.hpp>
+#include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/vertex.hpp>
@@ -36,6 +37,15 @@ private:
   std::vector<TensorId> input_;
   // The name of the output tensor
   TensorId output_;
+};
+
+class LossOp : public Op {
+public:
+  LossOp(const Node &, Ir *);
+  LossOp(const OpConstructorBundle &);
+  LossOp(const Op &);
+
+  bool isLossOp() const override;
 };
 
 } // namespace willow

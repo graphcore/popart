@@ -43,6 +43,8 @@
 
 namespace willow {
 
+bool Op::isLossOp() const { return false; }
+
 std::unique_ptr<Op> Op::clone() const {
   throw error("No clone implemented for " + op_type());
 }

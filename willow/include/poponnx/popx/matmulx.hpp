@@ -24,7 +24,7 @@ public:
   mustExistBeforeCreate(int index0) const override final;
 
   MatMulOp *getMatMulOp() const;
-  virtual void grow() const override final;
+  virtual void grow(poplar::program::Sequence &) const override final;
 };
 
 class MatMulLhsGradOpx : public Opx {
@@ -33,7 +33,7 @@ public:
   virtual ~MatMulLhsGradOpx() override = default;
 
   MatMulLhsGradOp *getMatMulLhsGradOp() const;
-  virtual void grow() const override final;
+  virtual void grow(poplar::program::Sequence &) const override final;
 };
 
 class MatMulRhsGradOpx : public Opx {
@@ -42,7 +42,7 @@ public:
   virtual ~MatMulRhsGradOpx() override = default;
 
   MatMulRhsGradOp *getMatMulRhsGradOp() const;
-  virtual void grow() const override final;
+  virtual void grow(poplar::program::Sequence &) const override final;
 };
 
 } // namespace popx

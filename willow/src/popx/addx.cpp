@@ -13,13 +13,13 @@ AddOpx::AddOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-void AddOpx::grow() const {
+void AddOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(0),
          popops::map(graph(),
                      popops::expr::BinaryOpType::ADD,
                      get(inId(0)),
                      get(inId(1)),
-                     step(),
+                     prog,
                      idStr()));
 }
 
