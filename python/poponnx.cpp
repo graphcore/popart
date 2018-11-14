@@ -12,12 +12,6 @@
 #include <poponnx/session.hpp>
 #include <poponnx/tensordata.hpp>
 
-// note to developers: be very careful
-// about exposing functions which return pointers
-// or references, python ref counter might behave
-// unexpectedly. More info:
-// https://pybind11.readthedocs.io/en/stable/advanced/functions.html
-
 namespace py = pybind11;
 using namespace willow;
 
@@ -45,9 +39,6 @@ DataType getDataTypeFromNpType(std::string npType) {
 
 TensorInfo getTensorInfo(py::array npArr) {
   auto dtype = npArr.dtype();
-  // This seems to be the correct way to get
-  // the string format from a dtype, I kind of
-  // just stumbled upon it
   auto typeString = py::str(dtype);
   auto tRank      = npArr.ndim();
   std::vector<int64_t> shape;
@@ -105,32 +96,37 @@ PYBIND11_MODULE(poponnx_core, m) {
 
   py::class_<PyStepIO>(m, "PyStepIO", stepio)
       .def(py::init<std::map<TensorId, py::array>,
-                    std::map<TensorId, py::array>>());
+                    std::map<TensorId, py::array>>(),
+           py::arg("inputs"),
+           py::arg("outputs"));
 
   py::class_<DataFlow>(m, "DataFlow")
       .def(
           py::init<int, int, const std::vector<TensorId> &, AnchorReturnType>(),
-          py::arg("Batches processed between returning anchors"),
-          py::arg("Batch size"),
-          py::arg("Anchor tensors (tensors to return)"),
-          py::arg("Anchor return type"))
+          py::arg("batchesPerStep"),
+          py::arg("batchSize"),
+          py::arg("anchorTensors"),
+          py::arg("anchorReturnType"))
       .def("nAnchors", &DataFlow::nAnchors)
       .def("samplesPerBatch", &DataFlow::samplesPerBatch)
       .def("batchesPerStep", &DataFlow::batchesPerStep)
       .def("samplesPerStep", &DataFlow::samplesPerStep)
-      // see https://pybind11.readthedocs.io/en/stable/advanced/functions.html
-      // for how pybind handles values returned by reference. I'm taking
-      // the safe option here and copying the anchors.
       .def("anchors", &DataFlow::anchors, pybind11::return_value_policy::copy)
       .def("art", &DataFlow::art);
 
   py::class_<TensorInfo>(m, "TensorInfo")
-      .def(py::init<std::string, const std::vector<int64_t> &>())
+      .def(py::init<std::string, const std::vector<int64_t> &>(),
+           py::arg("dataType"),
+           py::arg("shape"))
       .def("data_type_lcase", &TensorInfo::data_type_lcase)
       .def("shape", &TensorInfo::shape);
 
   py::class_<numerics::NumericsReport>(m, "NumericsReport")
-      .def(py::init<std::string, std::string, std::string, std::string>())
+      .def(py::init<std::string, std::string, std::string, std::string>(),
+           py::arg("A0"),
+           py::arg("A1"),
+           py::arg("B0"),
+           py::arg("B1"))
       .def("report", &numerics::NumericsReport::report)
       .def("fullReport", &numerics::NumericsReport::fullReport);
 
@@ -144,15 +140,17 @@ PYBIND11_MODULE(poponnx_core, m) {
   loss.def("input", &Loss::input);
 
   py::class_<NllLoss>(m, "NllLoss", loss)
-      .def(py::init<TensorId, TensorId, TensorId>())
+      .def(py::init<TensorId, TensorId, TensorId>(),
+           py::arg("probabilities"),
+           py::arg("labels"),
+           py::arg("output"))
       .def("probsTensorId", &NllLoss::probsTensorId)
       .def("labelTensorId", &NllLoss::labelTensorId);
 
-  // TODO : document all the functions like this one
   py::class_<L1Loss>(m, "L1Loss", loss)
       .def(py::init<TensorId, TensorId, float>(),
-           py::arg("The ID of the input tensor"),
-           py::arg("The ID of the output tensor"),
+           py::arg("input"),
+           py::arg("output"),
            py::arg("lambda"))
       .def("getInputId", &L1Loss::getInputId)
       .def("getLambda", &L1Loss::getLambda);
@@ -160,12 +158,13 @@ PYBIND11_MODULE(poponnx_core, m) {
   py::class_<Optimizer> optimizer(m, "Optimizer");
 
   py::class_<BaseSGD> basesgd(m, "BaseSGD", optimizer);
-  // Note that we do not define a constructor, as it is a virtual class
   basesgd.def("learnRate", &BaseSGD::learnRate);
 
-  // The Optimizer classes which are non-virtual:
-  py::class_<SGD>(m, "SGD", basesgd).def(py::init<float>());
-  py::class_<ConstSGD>(m, "ConstSGD", basesgd).def(py::init<float>());
+  py::class_<SGD>(m, "SGD", basesgd)
+      .def(py::init<float>(),py::arg("learning_rate"));
+
+  py::class_<ConstSGD>(m, "ConstSGD", basesgd)
+      .def(py::init<float>(),py::arg("learning_rate"));
 
   py::class_<SessionOptions>(m, "SessionOptionsCore")
       .def(py::init<>())
