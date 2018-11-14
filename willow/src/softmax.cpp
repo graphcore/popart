@@ -4,7 +4,7 @@
 
 namespace willow {
 
-SoftmaxOp::SoftmaxOp(const onnx::NodeProto &node, Ir *pir) : Op(node, pir) {}
+SoftmaxOp::SoftmaxOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
 
 void SoftmaxOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 

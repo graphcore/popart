@@ -26,4 +26,6 @@ function(add_poponnx_unit_test name)
 endfunction()
 
 add_poponnx_unit_test(sampletest sampletest.cpp)
+add_poponnx_unit_test(dataflowtest dataflowtest.cpp)
+add_poponnx_unit_test(earlyinfotest earlyinfotest.cpp)
 add_poponnx_unit_test(matmultest matmul.cpp)

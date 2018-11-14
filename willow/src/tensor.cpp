@@ -145,8 +145,8 @@ int Consumers::getTotal() const {
 
 // using 'this' in a constructor list? Be careful.
 // https://stackoverflow.com/questions/5058349
-Tensor::Tensor(TensorId n, TensorType t, Ir *g)
-    : Vertex(), id(n), pir(g), consumers(this), producer(nullptr),
+Tensor::Tensor(TensorId n, TensorType t, Ir &g)
+    : Vertex(), id(n), consumers(this), ir(g), producer(nullptr),
       tensorTypeInfo(&getTensorTypeInfoMap().at(t)) {}
 
 void Consumers::decrement(Op *op) {

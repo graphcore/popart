@@ -7,7 +7,7 @@ std::unique_ptr<Op> ReluOp::clone() const {
   return std::unique_ptr<Op>(new ReluOp(*this));
 }
 
-ReluOp::ReluOp(const onnx::NodeProto &node, Ir *pir) : Op(node, pir) {}
+ReluOp::ReluOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
 
 std::vector<std::unique_ptr<Op>> ReluOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;

@@ -130,7 +130,7 @@ void PreUniRepl::apply(Op *op) const {
   tensorOut->resetProducer(op0);
   Ir *pir = op->pir;
   // delete ()
-  pir->tensors.remove(tensorIn->id); // name);
+  pir->getTensors().remove(tensorIn->id); // name);
   // delete [.]
   pir->eraseOp(op->id);
 }
@@ -255,7 +255,7 @@ void PostNRepl::apply(Op *op) const {
   ori->consumers.decrement(op);
   // delete replicates
   for (auto repl : replicates) {
-    pir->tensors.remove(repl->id);
+    pir->getTensors().remove(repl->id);
   }
 
   // delete [*]
@@ -319,7 +319,7 @@ void FuserPattern::apply(Op *op) const {
   out1->resetProducer(op01);
 
   // remove the tensor and nodes
-  pir->tensors.remove(out0->id);
+  pir->getTensors().remove(out0->id);
   pir->eraseOp(op0->id);
   pir->eraseOp(op1->id);
 }

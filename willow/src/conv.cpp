@@ -12,8 +12,8 @@ int ConvOp::dataInIndex() { return 0; }
 int ConvOp::weightsInIndex() { return 1; }
 int ConvOp::biasInIndex() { return 2; }
 
-ConvOp::ConvOp(const onnx::NodeProto &node, Ir *pir)
-    : HasReceptiveFieldOp(node, pir) {}
+ConvOp::ConvOp(const onnx::NodeProto &node, Ir *_pir)
+    : HasReceptiveFieldOp(node, _pir) {}
 
 const Tensor *ConvOp::dataIn() const {
   return input.tensor(ConvOp::dataInIndex());

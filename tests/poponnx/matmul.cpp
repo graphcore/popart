@@ -1,16 +1,13 @@
 #define BOOST_TEST_MODULE MatMulTest
-#pragma clang diagnostic push // start ignoring warnings
-#pragma clang diagnostic ignored "-Weverything"
+
 #include <boost/test/unit_test.hpp>
-#pragma clang diagnostic pop // stop ignoring warnings
+
 #include <poponnx/error.hpp>
 #include <poponnx/matmul.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/tensor.hpp>
 
 #include <poponnx/popx/matmulx.hpp>
-
-#include <iostream>
 
 using namespace willow;
 
@@ -25,15 +22,15 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
 
   willow::MatMulOp mm(node, &ir);
 
-  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, &ir);
+  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
   lhs.info.set(willow::TP::FLOAT, {2, 2});
   mm.input.insert(0, &lhs);
 
-  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, &ir);
+  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
   rhs.info.set(willow::TP::FLOAT, {2, 2});
   mm.input.insert(1, &rhs);
 
-  willow::Tensor out("out", willow::TensorType::ActGrad, &ir);
+  willow::Tensor out("out", willow::TensorType::ActGrad, ir);
   mm.output.insert(0, &out);
 
   // Test the setup is correct
@@ -64,7 +61,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
       willow::MatMulLhsGradOp *lhsGradOp =
           dynamic_cast<willow::MatMulLhsGradOp *>(op);
 
-      willow::Tensor lhsOut("out", willow::TensorType::ActGrad, &ir);
+      willow::Tensor lhsOut("out", willow::TensorType::ActGrad, ir);
       lhsGradOp->output.insert(0, &lhsOut);
 
       BOOST_CHECK(lhsGradOp->getGradInputIndex() == 0);
@@ -89,7 +86,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
       willow::MatMulRhsGradOp *rhsGradOp =
           dynamic_cast<willow::MatMulRhsGradOp *>(op);
 
-      willow::Tensor rhsOut("out", willow::TensorType::ActGrad, &ir);
+      willow::Tensor rhsOut("out", willow::TensorType::ActGrad, ir);
       rhsGradOp->output.insert(0, &rhsOut);
 
       BOOST_CHECK(rhsGradOp->getGradInputIndex() == 0);
@@ -130,15 +127,15 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
 
   willow::MatMulOp mm(node, &ir);
 
-  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, &ir);
+  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
   lhs.info.set(willow::TP::FLOAT, {3, 2});
   mm.input.insert(0, &lhs);
 
-  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, &ir);
+  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
   rhs.info.set(willow::TP::FLOAT, {2, 6});
   mm.input.insert(1, &rhs);
 
-  willow::Tensor out("out", willow::TensorType::ActGrad, &ir);
+  willow::Tensor out("out", willow::TensorType::ActGrad, ir);
   mm.output.insert(0, &out);
 
   // Test the setup is correct
@@ -169,7 +166,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
       willow::MatMulLhsGradOp *lhsGradOp =
           dynamic_cast<willow::MatMulLhsGradOp *>(op);
 
-      willow::Tensor lhsOut("out", willow::TensorType::ActGrad, &ir);
+      willow::Tensor lhsOut("out", willow::TensorType::ActGrad, ir);
       lhsGradOp->output.insert(0, &lhsOut);
 
       BOOST_CHECK(lhsGradOp->getGradInputIndex() == 0);
@@ -194,7 +191,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
       willow::MatMulRhsGradOp *rhsGradOp =
           dynamic_cast<willow::MatMulRhsGradOp *>(op);
 
-      willow::Tensor rhsOut("out", willow::TensorType::ActGrad, &ir);
+      willow::Tensor rhsOut("out", willow::TensorType::ActGrad, ir);
       rhsGradOp->output.insert(0, &rhsOut);
 
       BOOST_CHECK(rhsGradOp->getGradInputIndex() == 0);
@@ -235,15 +232,15 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase1) {
 
   willow::MatMulOp mm(node, &ir);
 
-  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, &ir);
+  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
   lhs.info.set(willow::TP::FLOAT, {2, 2, 3});
   mm.input.insert(0, &lhs);
 
-  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, &ir);
+  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
   rhs.info.set(willow::TP::FLOAT, {2, 2});
   mm.input.insert(1, &rhs);
 
-  willow::Tensor out("out", willow::TensorType::ActGrad, &ir);
+  willow::Tensor out("out", willow::TensorType::ActGrad, ir);
   mm.output.insert(0, &out);
 
   // Test the setup is correct
@@ -260,11 +257,11 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase2) {
 
   willow::MatMulOp mm(node, &ir);
 
-  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, &ir);
+  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
   lhs.info.set(willow::TP::FLOAT, {2, 2});
   mm.input.insert(0, &lhs);
 
-  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, &ir);
+  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
   rhs.info.set(willow::TP::FLOAT, {2});
   mm.input.insert(1, &rhs);
 
@@ -282,15 +279,15 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase3) {
 
   willow::MatMulOp mm(node, &ir);
 
-  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, &ir);
+  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
   lhs.info.set(willow::TP::FLOAT, {2, 3});
   mm.input.insert(0, &lhs);
 
-  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, &ir);
+  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
   rhs.info.set(willow::TP::FLOAT, {10, 2});
   mm.input.insert(1, &rhs);
 
-  willow::Tensor out("out", willow::TensorType::ActGrad, &ir);
+  willow::Tensor out("out", willow::TensorType::ActGrad, ir);
   mm.output.insert(0, &out);
 
   // Test the setup is correct

@@ -55,7 +55,7 @@ public:
 
 class PopTensors {
 public:
-  PopTensors(const Ir *);
+  PopTensors(const Ir &);
   void insert(TensorId, const poplar::Tensor &);
   const poplar::Tensor &get(TensorId) const;
   bool contains(TensorId) const;
@@ -65,13 +65,13 @@ private:
   // This Ir is used to compare the shape
   // of a poplar::Tensor added with `insert',
   // with the corresponding willow::Tensor's
-  const Ir *pir;
+  const Ir &ir;
 };
 
 class Devicex : public willow::Device {
 
 public:
-  Devicex(const Ir *);
+  Devicex(const Ir &);
   virtual void prepare() override final;
   virtual void weightsFromHost() override final;
   virtual void optimizerFromHost() override final;

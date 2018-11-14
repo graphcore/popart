@@ -34,9 +34,9 @@ void AddBiasOp::setup() {
 }
 
 AddBiasBiasGradOp::AddBiasBiasGradOp(AddBiasOp *op_,
-                                     const std::vector<int64_t> &axes)
+                                     const std::vector<int64_t> &_axes)
     : ReduceSumOp({"AddBiasBiasGrad", op_->pir, {}, getWillowDomain()},
-                  axes,
+                  _axes,
                   0) {}
 
 const std::map<int, int> &AddBiasBiasGradOp::gradOutToNonGradIn() const {

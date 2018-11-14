@@ -54,12 +54,6 @@ onnx::ModelProto Ir::getModel() const { return onnxModel; }
 
 TensorId TensorIndexMap::id(int index) const { return tensor(index)->id; }
 
-AnchorReturnType DataFlow::art() const { return art_; }
-
-int DataFlow::samplesPerStep() const {
-  return samplesPerBatch() * batchesPerStep();
-}
-
 std::vector<Tensor *> Ir::optimizerTensors() const {
   if (optimizer.get() == nullptr) {
     throw error("ILE : No optimizerTensors til Optimizer is set");
@@ -206,11 +200,16 @@ std::vector<TensorId> Tensors::getIds(TensorType type) const {
   return ids;
 }
 
-Tensors::Tensors(const std::vector<std::string> &vals1, Ir *pg)
-    : constIds(vals1), pir(pg) {}
+Tensors::Tensors(Ir &pg) : ir(pg) {}
+
+Tensors::Tensors(const std::vector<TensorId> &vals1, Ir &pg)
+    : constIds(vals1), ir(pg) {}
+
+void Tensors::setConstIds(const std::vector<TensorId> &vals) {
+  constIds.reset(vals);
+}
 
 VectorAndSet::~VectorAndSet() = default;
-Tensors::~Tensors()           = default;
 Ir::~Ir()                     = default;
 
 void TensorIndexMap::insert(int index, Tensor *ptensor) {
@@ -278,14 +277,14 @@ const std::vector<int> &TensorIndexMap::indices(Tensor *ptensor) const {
 }
 
 void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
-  Tensor *ptensor = pir->tensors.get(tenId);
+  Tensor *ptensor = pir->getTensors().get(tenId);
   input.insert(inIndex, ptensor);
   ptensor->consumers.increment(this);
 }
 
 void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
-  pir->tensors.addActGrad(tenId);
-  Tensor *ptensor = pir->tensors.get(tenId);
+  pir->getTensors().addActGrad(tenId);
+  Tensor *ptensor = pir->getTensors().get(tenId);
   output.insert(outIndex, ptensor);
   ptensor->setProducer(this);
 }
@@ -348,8 +347,22 @@ void Op::appendIO(std::stringstream &ss) const {
   output.append(ss, tab + tab, max_id_length);
 }
 
+VectorAndSet::VectorAndSet() {}
+
 VectorAndSet::VectorAndSet(const std::vector<std::string> &vals)
     : v_vals(vals) {
+  for (auto &v : v_vals) {
+    m_vals.insert(v);
+  }
+}
+
+void VectorAndSet::reset(const std::vector<std::string> &vals) {
+
+  // Replace the old with the new
+  v_vals = vals;
+
+  // Clear and initialise the m_vals set
+  m_vals.clear();
   for (auto &v : v_vals) {
     m_vals.insert(v);
   }
@@ -425,24 +438,29 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
       losses(losses_), optimizer(optimizer_), cTens(cTens_), logdir(logdir_),
       userOptions(userOptions_), patternNames(patternNames_) {}
 
-Ir::Ir() : tensors({}, this), optimizer(nullptr) {
-  // The default constructor does not do anything, may need to change
-  // when in memory graph creation is supported
-}
+Ir::Ir() : tensors(*this) {}
 
-Ir::Ir(const IrBundle &gb)
-    : tensors(gb.cTens, this), dataFlow(gb.dataFlow), optimizer(nullptr),
-      logdir(io::getCanonicalDirName(gb.logdir)), userOptions(gb.userOptions),
-      earlyInfo(gb.earlyInfo) {
+// FFS : Guard against multiple calls to prepare
 
-  optimizer = gb.optimizer->clone();
+void Ir::prepare(const IrBundle &gb) {
+
+  tensors.setConstIds(gb.cTens);
+  dataFlow    = gb.dataFlow;
+  logdir      = io::getCanonicalDirName(gb.logdir);
+  userOptions = gb.userOptions;
+  earlyInfo   = gb.earlyInfo;
+
   onnxModel = gb.modelProto;
 
-  for (auto &id_info : optimizer->tensorInfos()) {
-    TensorId id     = id_info.first;
-    TensorInfo info = id_info.second;
-    tensors.addStream(id, info);
-    optimizer->setTensorData(tensors.get(id));
+  // Q : Is the optimizer optional?
+  if (gb.optimizer) {
+    optimizer = gb.optimizer->clone();
+    for (auto &id_info : optimizer->tensorInfos()) {
+      TensorId id     = id_info.first;
+      TensorInfo info = id_info.second;
+      tensors.addStream(id, info);
+      optimizer->setTensorData(tensors.get(id));
+    }
   }
 
   for (auto &l : gb.losses) {
@@ -790,14 +808,6 @@ void Ir::validateAnchors() const {
   }
 }
 
-const std::vector<TensorId> &DataFlow::anchors() const { return v_anchors; }
-
-int DataFlow::samplesPerBatch() const { return samplesPerBatch_; }
-
-int DataFlow::batchesPerStep() const { return batchesPerStep_; }
-
-int DataFlow::nAnchors() const { return static_cast<int>(v_anchors.size()); }
-
 void Ir::prune() {
 
   // initialise with all the var
@@ -927,7 +937,7 @@ bool Ir::isAnchored(TensorId tenId) { return dataFlow.isAnchored(tenId); }
 const std::vector<std::string> &VectorAndSet::v() const { return v_vals; }
 
 void Ir::confirmConstIds() const {
-  for (auto &tensorId : tensors.constIds.v()) {
+  for (auto &tensorId : tensors.getConstIds().v()) {
     if (!tensors.contains(tensorId)) {
       throw error("no tensor " + tensorId +
                   " in tensors, error in const tensor names");
@@ -967,7 +977,7 @@ void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
          std::unique_ptr<Tensor>(new Tensor(
              name,
              constIds.contains(name) ? TensorType::Const : TensorType::Variable,
-             pir)));
+             ir)));
 
   Tensor *init = get(name);
   init->info   = TensorInfo(*pt);
@@ -976,7 +986,7 @@ void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
 
 void Tensors::addStream(TensorId tenId, const TensorInfo &info) {
   insert(tenId,
-         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, pir)));
+         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, ir)));
   get(tenId)->info = info;
 }
 
@@ -988,7 +998,7 @@ std::vector<std::string> reservedPrefixes() {
 
 void Tensors::addActGrad(TensorId tenId) {
   insert(tenId,
-         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::ActGrad, pir)));
+         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::ActGrad, ir)));
 }
 
 void Ir::confirmNonReservedId(TensorId tenId) const {
@@ -1707,7 +1717,8 @@ bool DataFlow::isAnchored(TensorId id) const {
   return (s_anchors.count(id) != 0);
 }
 
-DataFlow::DataFlow() = default;
+DataFlow::DataFlow()
+    : batchesPerStep_(0), samplesPerBatch_(0), art_(AnchorReturnType::FINAL) {}
 
 DataFlow::DataFlow(int BpR,
                    int bs,

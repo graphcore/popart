@@ -175,15 +175,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("reportOptions", &SessionOptions::reportOptions);
 
   py::class_<Session>(m, "SessionCore")
-      .def(py::init<std::string,
-                    const EarlyInfo &,
-                    const DataFlow &,
-                    const std::vector<Loss *> &,
-                    const Optimizer *,
-                    const std::vector<TensorId> &,
-                    std::string,
-                    const SessionOptions &,
-                    const std::vector<std::string> &>(),
+      .def(py::init(&Session::createFromOnnxModel),
            py::arg("model"),
            py::arg("earlyInfo").none(),
            py::arg("dataFlow").none(),

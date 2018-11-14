@@ -5,7 +5,8 @@ namespace willow {
 
 IdentityOp::IdentityOp(const OpConstructorBundle &bundle) : Op(bundle) {}
 
-IdentityOp::IdentityOp(const onnx::NodeProto &node, Ir *pir) : Op(node, pir) {}
+IdentityOp::IdentityOp(const onnx::NodeProto &node, Ir *_pir)
+    : Op(node, _pir) {}
 
 std::unique_ptr<Op> IdentityOp::clone() const {
   return std::unique_ptr<Op>(new IdentityOp(*this));

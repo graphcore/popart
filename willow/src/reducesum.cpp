@@ -26,8 +26,8 @@ ReduceSumOp::ReduceSumOp(const OpConstructorBundle &bundle,
   std::sort(axes.begin(), axes.end());
 }
 
-ReduceSumOp::ReduceSumOp(const onnx::NodeProto &node, Ir *pir)
-    : Op(node, pir), keepdims(0) {
+ReduceSumOp::ReduceSumOp(const onnx::NodeProto &node, Ir *_pir)
+    : Op(node, _pir), keepdims(0) {
   nAtts.setIfPresent(axes, "axes");
   nAtts.setIfPresent(keepdims, "keepdims");
 

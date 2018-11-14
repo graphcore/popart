@@ -25,7 +25,7 @@ void PadOp::setup() {
   output.tensor(0)->info = {input.tensor(0)->info.dataType(), outShape};
 }
 
-PadOp::PadOp(const onnx::NodeProto &node, Ir *pir) : Op(node, pir) {
+PadOp::PadOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {
   nAtts.set(pads, "pads");
 }
 

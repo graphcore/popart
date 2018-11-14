@@ -40,7 +40,7 @@ void Devicex::weightsToHost(
   std::cout << "Writing weights to ONNX ModelProto" << std::endl;
   // copy from the host stream memory points to the
   // addresses on onnxModelData
-  for (auto initId : pir->tensors.getInitIds()) {
+  for (auto initId : ir().getTensors().getInitIds()) {
     auto found = onnxModelData.find(initId);
     if (found == onnxModelData.end()) {
       throw error("No TensorId " + initId + " in final host destination map");
@@ -73,7 +73,7 @@ const poplar::Tensor &Devicex::getConst(const poplar::Type &type,
   return constTensors[key];
 }
 
-PopTensors::PopTensors(const Ir *ir_) : pir(ir_) {}
+PopTensors::PopTensors(const Ir &ir_) : ir(ir_) {}
 
 void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
   auto found = tensors_.find(id);
@@ -81,13 +81,13 @@ void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
     throw error("ILE: poplar::Tensor " + id + " already in map");
   }
 
-  if (!pir->tensors.contains(id)) {
+  if (!ir.getTensors().contains(id)) {
     throw error("ILE: no tensor named " + id +
-                " in pir, is this a valid poplar::Tensor?");
+                " in ir, is this a valid poplar::Tensor?");
   }
 
   // confirm shapes agree (up to squeezing out the extra 1s)
-  auto expectedShape = pir->tensors.get(id)->info.shape_szt();
+  auto expectedShape = ir.getTensors().get(id)->info.shape_szt();
 
   if (squeeze(pt.shape()) != squeeze(expectedShape)) {
     std::stringstream ss;
@@ -136,7 +136,7 @@ std::vector<poplar::program::Program> PopPrograms::progs() {
 
 poplar::Graph &Devicex::graph() { return *pGraph; }
 
-Devicex::Devicex(const Ir *pir) : willow::Device(pir), tensors(pir) {
+Devicex::Devicex(const Ir &ir) : willow::Device(ir), tensors(ir) {
   // TODO, better device handling (see T5105)
   popDevice = poplar::Device::createCPUDevice();
   if (!popDevice.attach()) {
@@ -184,7 +184,8 @@ void Devicex::hostToHostStream(
     srcInfo.append(ss);
     ss << "\nStep tensor info (expected) : ";
     dstInfo.append(ss);
-    ss << ",\nBatches per step : " << pir->dataFlow.batchesPerStep() << '.';
+    ss << ",\nBatches per step : " << ir().getDataFlow().batchesPerStep()
+       << '.';
     throw error(ss.str());
   }
 
@@ -254,7 +255,7 @@ void Devicex::step(const StepIO &stepio) {
   std::cout << "Performing one step: " << std::endl;
   std::string prefix = "     ";
   std::cout << prefix << "Copying to h2d stream address(es) " << std::endl;
-  for (Tensor *tensor : pir->dataStreamTensors()) {
+  for (Tensor *tensor : ir().dataStreamTensors()) {
     ConstVoidData stepin = stepio.in(tensor->id);
 
     // where to write to on host,
@@ -266,7 +267,7 @@ void Devicex::step(const StepIO &stepio) {
     // except it's for a full step tensor, so the first shape dimension
     // is larger by a factor batchesPerStep().
     auto stepDstShape = tensor->info.shape();
-    stepDstShape[0] *= pir->dataFlow.batchesPerStep();
+    stepDstShape[0] *= ir().getDataFlow().batchesPerStep();
     TensorInfo dstInfo{tensor->info.dataType(), stepDstShape};
 
     // the info of the user provided src step tensor
@@ -277,12 +278,12 @@ void Devicex::step(const StepIO &stepio) {
 
   std::cout << prefix << "Running the step program " << std::endl;
   // TODO : this should be in a poplar for loop (see T5093)
-  for (int i = 0; i < pir->dataFlow.batchesPerStep(); ++i) {
+  for (int i = 0; i < ir().getDataFlow().batchesPerStep(); ++i) {
     pEngine->run(PopPrograms::ProgramIndex::STEP);
   }
 
   std::cout << prefix << "Copying from d2h stream address(es) " << std::endl;
-  for (TensorId anchorId : pir->dataFlow.anchors()) {
+  for (TensorId anchorId : ir().getDataFlow().anchors()) {
     MutableVoidData stepout = stepio.out(anchorId);
     hostStreamToHost(stepout, anchorId);
   }
@@ -451,7 +452,7 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 Opx *Devicex::getOpx(OpId id) { return opxs.at(id).get(); }
 
 TaskId Devicex::taskWhichCreates(TensorId id) const {
-  Tensor *tensor = pir->tensors.get(id);
+  Tensor *tensor = ir().getTensors().get(id);
   // streamed and init tensors are created with
   // tasks with names from initTensorTaskId
   // These tensors are recognisable as having no producing Op.
@@ -633,7 +634,7 @@ void Devicex::prepare() {
   popnn::addCodelets(graph());
 
   // create a Opx for every Op
-  for (Op *op : pir->getOpSchedule()) {
+  for (Op *op : ir().getOpSchedule()) {
     opxs[op->id] = createOpx(op);
   }
 
@@ -645,8 +646,8 @@ void Devicex::prepare() {
   // 3) create write prog,
   // 4) make stream to host,
   // 5) create read prog.
-  for (auto id : pir->tensors.getInitIds()) {
-    Tensor *tensor = pir->tensors.get(id);
+  for (auto id : ir().getTensors().getInitIds()) {
+    Tensor *tensor = ir().getTensors().get(id);
     // 1
     tasks.add(initTensorTask(tensor));
     // 2
@@ -660,8 +661,8 @@ void Devicex::prepare() {
   }
 
   // stream-to-device tensors : 1)  make tensor 2) make stream
-  for (auto id : pir->tensors.getIds(TensorType::Stream)) {
-    Tensor *tensor = pir->tensors.get(id);
+  for (auto id : ir().getTensors().getIds(TensorType::Stream)) {
+    Tensor *tensor = ir().getTensors().get(id);
     // 1
     tasks.add(initTensorTask(tensor));
     // 2
@@ -671,23 +672,23 @@ void Devicex::prepare() {
   // stream-to-host tensors : 1) make streams 2) make copy programs
   // note that the order in which tasks are added does not matter,
   // they will be topologically sorted before running
-  for (auto id : pir->dataFlow.anchors()) {
+  for (auto id : ir().getDataFlow().anchors()) {
     // 1
-    tasks.add(streamToHostTask(pir->tensors.get(id)));
+    tasks.add(streamToHostTask(ir().getTensors().get(id)));
     // 2
-    tasks.add(toHostTask(pir->tensors.get(id), progs.step()));
+    tasks.add(toHostTask(ir().getTensors().get(id), progs.step()));
   }
 
   // create Program to write optimizer tensors to device
-  for (Tensor *tensor : pir->optimizerTensors()) {
+  for (Tensor *tensor : ir().optimizerTensors()) {
     tasks.add(fromHostTask(tensor, progs.optimizerFromHost()));
   }
 
   // making the network!
-  for (Tensor *tensor : pir->dataStreamTensors()) {
+  for (Tensor *tensor : ir().dataStreamTensors()) {
     tasks.add(fromHostTask(tensor, progs.step()));
   }
-  std::vector<Op *> ops = pir->getOpSchedule();
+  std::vector<Op *> ops = ir().getOpSchedule();
   double priority       = 0.;
   for (int i = 0; i < ops.size(); ++i) {
     Op *op = ops[i];
@@ -708,13 +709,13 @@ void Devicex::prepare() {
   std::cout << "Engine has loaded device" << std::endl;
 
   std::cout << "Connecting initializer streams" << std::endl;
-  for (auto id : pir->tensors.getInitIds()) {
-    Tensor *tensor = pir->tensors.get(id);
+  for (auto id : ir().getTensors().getInitIds()) {
+    Tensor *tensor = ir().getTensors().get(id);
     pEngine->connectStream(h2dId(id), tensor->tensorData()->data());
   }
 
   std::cout << "Connecting optimizer streams" << std::endl;
-  for (Tensor *tensor : pir->optimizerTensors()) {
+  for (Tensor *tensor : ir().optimizerTensors()) {
     pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
   }
 
@@ -729,10 +730,11 @@ void Devicex::prepare() {
 
   std::cout << "Creating host buffers for h2d streams, and connecting"
             << std::endl;
-  for (Tensor *tensor : pir->dataStreamTensors()) {
+  for (Tensor *tensor : ir().dataStreamTensors()) {
     PopStreamId streamId = h2dId(tensor->id);
     // allocate host memory, where the poplar::Stream will read data from
-    int64_t n_bytes = pir->dataFlow.batchesPerStep() * tensor->info.nbytes();
+    int64_t n_bytes =
+        ir().getDataFlow().batchesPerStep() * tensor->info.nbytes();
     h2dBuffers[tensor->id] = std::vector<char>(n_bytes);
     char *data0            = h2dBuffers[tensor->id].data();
     engineToStream(data0, n_bytes, streamId);
@@ -740,22 +742,22 @@ void Devicex::prepare() {
 
   std::cout << "Creating host buffers for anchor d2h streams, connecting"
             << std::endl;
-  for (TensorId anchorId : pir->dataFlow.anchors()) {
+  for (TensorId anchorId : ir().getDataFlow().anchors()) {
     PopStreamId streamId = d2hId(anchorId);
-    Tensor *tensor       = pir->tensors.get(anchorId);
+    Tensor *tensor       = ir().getTensors().get(anchorId);
     int64_t batch_bytes  = tensor->info.nbytes();
     int64_t n_bytes;
-    switch (pir->dataFlow.art()) {
+    switch (ir().getDataFlow().art()) {
     case (AnchorReturnType::FINAL): {
       n_bytes = batch_bytes;
       break;
     }
     case (AnchorReturnType::SUM): {
-      n_bytes = batch_bytes / pir->dataFlow.samplesPerBatch();
+      n_bytes = batch_bytes / ir().getDataFlow().samplesPerBatch();
       break;
     }
     case (AnchorReturnType::ALL): {
-      n_bytes = batch_bytes * pir->dataFlow.batchesPerStep();
+      n_bytes = batch_bytes * ir().getDataFlow().batchesPerStep();
       break;
     }
     }
@@ -767,9 +769,9 @@ void Devicex::prepare() {
   std::cout << "Creating host buffers for weight d2h streams, connecting"
             << std::endl;
 
-  for (auto initId : pir->tensors.getInitIds()) {
+  for (auto initId : ir().getTensors().getInitIds()) {
     PopStreamId streamId = d2hId(initId);
-    Tensor *tensor       = pir->tensors.get(initId);
+    Tensor *tensor       = ir().getTensors().get(initId);
     int64_t n_bytes      = tensor->info.nbytes();
     d2hBuffers[initId]   = std::vector<char>(n_bytes);
     char *data0          = d2hBuffers[initId].data();

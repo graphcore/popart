@@ -3,7 +3,7 @@
 
 namespace willow {
 
-SqueezeOp::SqueezeOp(const onnx::NodeProto &node, Ir *pir) : Op(node, pir) {}
+SqueezeOp::SqueezeOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
 
 std::vector<std::unique_ptr<Op>> SqueezeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;

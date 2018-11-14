@@ -2,10 +2,6 @@
 
 namespace willow {
 
-Device::~Device() = default;
-
-Device::Device(const Ir *g) : pir(g) {}
-
-const Ir *Device::ir() const { return pir; }
+// No implementation - delete me
 
 } // namespace willow

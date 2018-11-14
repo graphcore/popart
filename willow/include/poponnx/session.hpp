@@ -12,7 +12,12 @@ struct SessionOptions;
  * graphs on IPU hardware.
  */
 class Session {
+
+  Session();
+
 public:
+  ~Session();
+
   /** Create a runtime class for executing an ONNX graph on a set of IPU
    *  hardware.
    *
@@ -27,17 +32,17 @@ public:
    * \param userOptions String to configure session options
    * \param patternNames Optimization patterns to apply
    */
-  Session(const std::string &model,
-          const EarlyInfo &earlyInfo,
-          const DataFlow &dataFlow,
-          const std::vector<Loss *> &losses,
-          const Optimizer *optimizer,
-          const std::vector<std::string> &cTens,
-          std::string logdir,
-          const SessionOptions &userOptions,
-          const std::vector<std::string> &patternNames);
 
-  ~Session();
+  static std::unique_ptr<Session>
+  createFromOnnxModel(const std::string &model,
+                      const EarlyInfo &earlyInfo,
+                      const DataFlow &dataFlow,
+                      const std::vector<Loss *> &losses,
+                      const Optimizer *optimizer,
+                      const std::vector<std::string> &cTens,
+                      std::string logdir,
+                      const SessionOptions &userOptions,
+                      const std::vector<std::string> &patternNames);
 
   /** Update the optimizer.
    *
@@ -121,13 +126,23 @@ private:
    * all the compute graph optimisations, backwards pass construction,
    * recomputation growing etc. happens.
    */
-  std::unique_ptr<Ir> pir_;
+  Ir ir;
 
   /**
    * Implementation of the computation, for IPU backend this is
    * where calls to poplar are made.
    */
   std::unique_ptr<Device> device_;
+
+  void configureFromOnnx(const std::string &model,
+                         const EarlyInfo &earlyInfo,
+                         const DataFlow &dataFlow,
+                         const std::vector<Loss *> &losses,
+                         const Optimizer *optimizer,
+                         const std::vector<std::string> &cTens,
+                         std::string logdir,
+                         const SessionOptions &userOptions,
+                         const std::vector<std::string> &patternNames);
 };
 } // namespace willow
 

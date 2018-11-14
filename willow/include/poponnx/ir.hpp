@@ -6,6 +6,7 @@
 
 #include <map>
 #include <poponnx/attributes.hpp>
+#include <poponnx/error.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/optionflags.hpp>
 #include <poponnx/tensorinfo.hpp>
@@ -56,15 +57,18 @@ public:
            const std::vector<TensorId> &,
            AnchorReturnType);
 
+  DataFlow(const DataFlow &rhs) = default;
+  DataFlow &operator=(const DataFlow &rhs) = default;
+
   bool isAnchored(TensorId) const;
-  const std::vector<TensorId> &anchors() const;
-  int nAnchors() const;
+  const std::vector<TensorId> &anchors() const { return v_anchors; }
+  int nAnchors() const { return static_cast<int>(v_anchors.size()); }
   // batch-size:
-  int samplesPerBatch() const;
-  int batchesPerStep() const;
+  int samplesPerBatch() const { return samplesPerBatch_; }
+  int batchesPerStep() const { return batchesPerStep_; }
   // samplesPerBatch() * batchesPerStep():
-  int samplesPerStep() const;
-  AnchorReturnType art() const;
+  int samplesPerStep() const { return samplesPerBatch() * batchesPerStep(); }
+  AnchorReturnType art() const { return art_; }
 
 private:
   // The number of batches between returning anchors
@@ -76,7 +80,7 @@ private:
   // There is no communication to the host while
   // batchesPerStep_ * samplesPerBatch_ samples are processed
   std::set<TensorId> s_anchors;
-  const std::vector<TensorId> v_anchors;
+  std::vector<TensorId> v_anchors;
   AnchorReturnType art_;
 };
 
@@ -170,7 +174,9 @@ TensorId getRecompId(TensorId tenId);
 // tensors (I think the LSTM from pytorch might require this)
 class EarlyInfo {
 public:
-  EarlyInfo() = default;
+  EarlyInfo()                     = default;
+  EarlyInfo(const EarlyInfo &rhs) = default;
+
   void add(TensorId, const TensorInfo &);
   const TensorInfo &get(TensorId) const;
   bool has(TensorId) const;
@@ -416,10 +422,14 @@ const OpTypes &getOpTypes();
 
 class VectorAndSet {
 public:
+  VectorAndSet();
   VectorAndSet(const std::vector<std::string> &vals);
+  ~VectorAndSet();
+  VectorAndSet &operator=(const VectorAndSet &rhs) = default;
   bool contains(std::string) const;
   const std::vector<std::string> &v() const;
-  ~VectorAndSet();
+
+  void reset(const std::vector<std::string> &vals);
 
 private:
   std::vector<std::string> v_vals;
@@ -432,10 +442,10 @@ std::vector<std::string> reservedPrefixes();
 
 class Tensors {
 public:
-  Tensors(const std::vector<std::string> &vals1, Ir *pg);
-  ~Tensors();
-  // Store the Tensors of type Const
-  const VectorAndSet constIds;
+  Tensors(Ir &pg);
+  Tensors(const std::vector<TensorId> &vals1, Ir &pg);
+  ~Tensors() = default;
+
   Tensor *get(TensorId) const;
   void remove(TensorId);
   bool contains(TensorId) const;
@@ -452,11 +462,18 @@ public:
   const onnx::TensorProto *getOnnxInit(TensorId) const;
   void append(std::stringstream &) const;
 
+  const VectorAndSet &getConstIds() const { return constIds; }
+  void setConstIds(const std::vector<TensorId> &vals);
+
 private:
+  // Store the Tensors of type Const
+  VectorAndSet constIds;
+
   std::map<TensorId, std::unique_ptr<Tensor>> M;
   // adds to M, but first confirms that TensorId not already in
   void insert(TensorId, std::unique_ptr<Tensor>);
-  Ir *pir;
+
+  Ir &ir;
 };
 
 // Ir Constructor inputs
@@ -484,11 +501,18 @@ public:
   const std::vector<std::string> &patternNames;
 };
 
+// FFS : Use a factory method to create the IR class and return a pointer
+//       Then the constructor can be private.
+// ie. static std::unique_ptr<Ir> create(const IrBundle&);
+
 class Ir {
 public:
-  ~Ir();
   Ir();
-  Ir(const IrBundle &);
+  ~Ir();
+
+  // Prepare the IR based on the IrBundle configuration
+  void prepare(const IrBundle &);
+
   void updateOptimizer(const Optimizer *);
   // take training steps
   onnx::ModelProto step(int n);
@@ -496,12 +520,14 @@ public:
   bool isAnchored(TensorId);
   void append(std::stringstream &);
   std::vector<std::unique_ptr<Loss>> losses;
-  Tensors tensors;
+
   // The tensors specific to the optimization. Learning rate(s), momentum(s) etc
   std::vector<Tensor *> optimizerTensors() const;
+
   // The input data tensors. label(s), image(s), etc. This does not include
   // optimizer stream tensors (they are not data)
   std::vector<Tensor *> dataStreamTensors() const;
+
   // split ConvOp with bias into two Ops, a ConvOp
   // followed by an x Op TODO : move to Patterns (see task T5098)
   void splitConvBias();
@@ -516,7 +542,6 @@ public:
   void exportDot(std::string dotfn) const;
   void eraseOp(OpId);
   Op *getOp(OpId);
-  const DataFlow dataFlow;
   onnx::ModelProto getModel() const;
 
   // see connectInputs, this is just an instantiation of it
@@ -526,7 +551,17 @@ public:
   // and returns the Op's OpId
   OpId moveIntoIr(std::unique_ptr<Op> op);
 
+  // Accessors for the tensors
+  const Tensors &getTensors() const { return tensors; }
+  Tensors &getTensors() { return tensors; }
+
+  // Accessors for the dataFlow
+  const DataFlow &getDataFlow() const { return dataFlow; }
+
 private:
+  Tensors tensors;
+  DataFlow dataFlow;
+
   // called from growFromNode and many other places where Ops created
   // T requires functions input(int) and input_size()
   template <typename T> void connectInputs(const T &, OpId opId);

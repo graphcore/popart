@@ -24,8 +24,8 @@ std::string L1Loss::op_type() const { return "L1"; }
 
 std::vector<TensorId> L1Loss::getStreamTensorNames() const { return {}; }
 
-L1Loss::L1Loss(TensorId input_, TensorId output_, float lmb)
-    : Loss({input_}, output_), lambda(lmb) {}
+L1Loss::L1Loss(TensorId in_, TensorId out_, float lmb)
+    : Loss({in_}, out_), lambda(lmb) {}
 
 TensorId L1Loss::getInputId() const { return input(0); }
 

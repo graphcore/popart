@@ -97,9 +97,9 @@ class Tensor : public Vertex {
 public:
   // note : producer (if there is one)
   // must be set after construction
-  Tensor(TensorId, TensorType, Ir *);
+  Tensor(TensorId, TensorType, Ir &);
   TensorId id;
-  Ir *pir;
+
   // ActGrad, Variable, etc:
   TensorType tensorType() const;
   const std::string &tensor_type() const;
@@ -120,6 +120,7 @@ public:
   }
 
 private:
+  Ir &ir;
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
   std::unique_ptr<TensorData> data_{nullptr};

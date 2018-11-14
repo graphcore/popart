@@ -6,6 +6,8 @@
 
 #include <poplin/MatMul.hpp>
 
+#include <iostream>
+
 namespace willow {
 namespace popx {
 

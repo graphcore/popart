@@ -23,10 +23,10 @@ void ConvBiasPattern::apply(Op *op) const {
   std::unique_ptr<Op> add_bias_op(new AddBiasOp(conv));
   const auto tmp_tensor_id = "prebias" + conv->output.id(0);
 
-  op->pir->tensors.addActGrad(tmp_tensor_id);
+  op->pir->getTensors().addActGrad(tmp_tensor_id);
 
   const auto b  = conv->input.tensor(ConvOp::biasInIndex());
-  const auto t  = op->pir->tensors.get(tmp_tensor_id);
+  const auto t  = op->pir->getTensors().get(tmp_tensor_id);
   const auto a1 = conv->output.tensor(ConvOp::dataInIndex());
 
   const auto add_bias = add_bias_op.get();

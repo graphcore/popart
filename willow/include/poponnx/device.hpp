@@ -10,8 +10,8 @@ namespace willow {
 class Device {
 
 public:
-  Device(const Ir *);
-  virtual ~Device();
+  Device(const Ir &g) : _ir(g) {}
+  virtual ~Device()      = default;
   Device(const Device &) = delete;
   Device &operator=(const Device &) = delete;
   virtual void prepare()            = 0;
@@ -20,10 +20,10 @@ public:
   // write optimizer-specific tensors (learning rates, etc.) to Device
   virtual void optimizerFromHost()  = 0;
   virtual void step(const StepIO &) = 0;
-  const Ir *ir() const;
+  const Ir &ir() const { return _ir; }
 
-protected:
-  const Ir *pir;
+private:
+  const Ir &_ir;
 };
 
 } // namespace willow

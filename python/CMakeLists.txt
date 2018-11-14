@@ -18,6 +18,9 @@ message(STATUS "Python library : " ${PYTHON_LIBRARY})
 
 pybind11_add_module(poponnx_core poponnx.cpp)
 
+target_include_directories (poponnx_core SYSTEM PUBLIC
+  ${pybind11_INCLUDE_DIR}
+)
 target_include_directories (poponnx_core PUBLIC
   # ...
 )

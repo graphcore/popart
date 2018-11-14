@@ -3,8 +3,8 @@
 #include <poponnx/varupdate.hpp>
 
 namespace willow {
-VarUpdateOp::VarUpdateOp(std::string op_type, TensorId varId_, Ir *pir)
-    : Op({op_type, pir, {}, getWillowDomain()}), varId(varId_),
+VarUpdateOp::VarUpdateOp(std::string op_type, TensorId varId_, Ir *_pir)
+    : Op({op_type, _pir, {}, getWillowDomain()}), varId(varId_),
       varGradId(getGradId(varId)) {
   // very high priority, so that performed as early as possible
   priority = std::numeric_limits<double>::max();
@@ -23,8 +23,8 @@ int VarUpdateOp::getVarIndex() { return 0; }
 
 int VarUpdateOp::getVarGradIndex() { return 1; }
 
-SGDVarUpdateOp::SGDVarUpdateOp(TensorId varId_, Ir *pir)
-    : VarUpdateOp("SGDVarUpdate", varId_, pir) {}
+SGDVarUpdateOp::SGDVarUpdateOp(TensorId varId_, Ir *_pir)
+    : VarUpdateOp("SGDVarUpdate", varId_, _pir) {}
 
 std::unique_ptr<Op> SGDVarUpdateOp::clone() const {
   return std::unique_ptr<Op>(new SGDVarUpdateOp(*this));
@@ -32,8 +32,8 @@ std::unique_ptr<Op> SGDVarUpdateOp::clone() const {
 
 int SGDVarUpdateOp::getLearnRateIndex() { return 2; }
 
-ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_, Ir *pir, float lr_)
-    : VarUpdateOp("ConstSGDVarUpdate", varId_, pir), learnRate(lr_) {}
+ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_, Ir *_pir, float lr_)
+    : VarUpdateOp("ConstSGDVarUpdate", varId_, _pir), learnRate(lr_) {}
 
 float ConstSGDVarUpdateOp::getLearnRate() const { return learnRate; }
 

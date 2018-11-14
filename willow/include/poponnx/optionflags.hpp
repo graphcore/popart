@@ -11,6 +11,9 @@ namespace willow {
  * A structure containing user configuration options for the Session class
  */
 struct SessionOptions {
+
+  SessionOptions &operator=(const SessionOptions &rhs) = default;
+
   /// Export 'dot' files of the forward and backward passes
   bool exportDot = false;
 

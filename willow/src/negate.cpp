@@ -5,7 +5,7 @@ namespace willow {
 
 NegateOp::NegateOp(const OpConstructorBundle &bundle) : Op(bundle) {}
 
-NegateOp::NegateOp(const onnx::NodeProto &node, Ir *pir) : Op(node, pir) {}
+NegateOp::NegateOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
 
 std::unique_ptr<Op> NegateOp::clone() const {
   return std::unique_ptr<Op>(new NegateOp(*this));

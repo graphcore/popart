@@ -5,7 +5,7 @@
 
 namespace willow {
 
-MatMulOp::MatMulOp(const onnx::NodeProto &node, Ir *pir) : Op(node, pir) {}
+MatMulOp::MatMulOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
 
 std::unique_ptr<Op> MatMulOp::clone() const {
   return make_unique<MatMulOp>(*this);

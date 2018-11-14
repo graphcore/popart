@@ -4,8 +4,8 @@
 
 namespace willow {
 
-AveragePoolOp::AveragePoolOp(const onnx::NodeProto &node, Ir *pir)
-    : HasReceptiveFieldOp(node, pir) {}
+AveragePoolOp::AveragePoolOp(const onnx::NodeProto &node, Ir *_pir)
+    : HasReceptiveFieldOp(node, _pir) {}
 
 void AveragePoolOp::setup0() {}
 
