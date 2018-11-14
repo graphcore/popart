@@ -2,12 +2,13 @@
 #define GUARD_NEURALNET_SUBTRACTX_HPP
 
 #include <poponnx/names.hpp>
+#include <poponnx/popx/identityx.hpp>
+#include <poponnx/popx/negatex.hpp>
 #include <poponnx/popx/opx.hpp>
 
 namespace willow {
 
 class SubtractOp;
-class SubtractGradOp;
 
 namespace popx {
 
@@ -18,10 +19,14 @@ public:
   virtual void grow() const override final;
 };
 
-class SubtractGradOpx : public Opx {
+class SubtractArg0GradOpx : public IdentityOpx {
 public:
-  SubtractGradOpx(Op *, Devicex *);
-  SubtractGradOp *getSubtractGradOp() const;
+  SubtractArg0GradOpx(Op *, Devicex *);
+};
+
+class SubtractArg1GradOpx : public NegateOpx {
+public:
+  SubtractArg1GradOpx(Op *, Devicex *);
 };
 
 } // namespace popx

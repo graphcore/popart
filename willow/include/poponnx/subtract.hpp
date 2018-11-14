@@ -1,7 +1,9 @@
 #ifndef GUARD_NEURALNET_SUBTRACT_HPP
 #define GUARD_NEURALNET_SUBTRACT_HPP
 
+#include <poponnx/identity.hpp>
 #include <poponnx/ir.hpp>
+#include <poponnx/negate.hpp>
 
 namespace willow {
 
@@ -11,22 +13,27 @@ public:
   virtual std::unique_ptr<Op> clone() const override final;
   virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
   virtual void setup() override final;
+
+  // Current implementation places arg0 input at index 0, and arg1 input
+  // at index 1.
+  static int arg0Index();
+  static int arg1Index();
 };
 
-class SubtractGradOp : public Op {
+class SubtractArg0GradOp : public IdentityOp {
 public:
-  SubtractGradOp(SubtractOp *);
+  SubtractArg0GradOp(SubtractOp *);
   virtual const std::vector<GradInOutMapper> &
   gradInputInfo() const override final;
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
-  virtual void setup() override final;
+};
 
-private:
-  // Info on Tensors 0 and 1.
-  // gradient of an input has the same
-  // shape and type as the input itself
-  TensorInfo info0;
-  TensorInfo info1;
+class SubtractArg1GradOp : public NegateOp {
+public:
+  SubtractArg1GradOp(SubtractOp *);
+  virtual const std::vector<GradInOutMapper> &
+  gradInputInfo() const override final;
+  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
 };
 
 } // namespace willow

@@ -3,6 +3,9 @@
 
 namespace willow {
 
+int SubtractOp::arg0Index() { return 0; }
+int SubtractOp::arg1Index() { return 1; }
+
 SubtractOp::SubtractOp(const onnx::NodeProto &node, Ir *pir) : Op(node, pir) {}
 
 std::unique_ptr<Op> SubtractOp::clone() const {
@@ -11,7 +14,8 @@ std::unique_ptr<Op> SubtractOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> SubtractOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(std::unique_ptr<Op>(new SubtractGradOp(this)));
+  upops.emplace_back(std::unique_ptr<Op>(new SubtractArg0GradOp(this)));
+  upops.emplace_back(std::unique_ptr<Op>(new SubtractArg1GradOp(this)));
   return upops;
 }
 
@@ -19,28 +23,35 @@ void SubtractOp::setup() {
   output.tensor(0)->info = npOut(input.tensor(0)->info, input.tensor(1)->info);
 }
 
-void SubtractGradOp::setup() {
-  // shapes and types of gradients are the same as the inputs
-  output.tensor(0)->info = info0;
-  output.tensor(1)->info = info1;
-}
+SubtractArg0GradOp::SubtractArg0GradOp(SubtractOp *op_)
+    : IdentityOp({"SubtractArg0Grad", op_->pir, {}, getWillowDomain()}) {}
 
-SubtractGradOp::SubtractGradOp(SubtractOp *op_)
-    : Op({"SubtractGrad", op_->pir, {}, getWillowDomain()}),
-      info0(op_->input.tensor(0)->info), info1(op_->input.tensor(1)->info) {}
+const std::map<int, int> &SubtractArg0GradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {{0, SubtractOp::arg0Index()}};
 
-const std::map<int, int> &SubtractGradOp::gradOutToNonGradIn() const {
-  // the grad-op output at index 0 corresponds
-  // to the non-grad-op's input at index 0
-  // ditto 1.
-  static const std::map<int, int> outInfo = {{0, 0}, {1, 1}};
   return outInfo;
 }
 
-const std::vector<GradInOutMapper> &SubtractGradOp::gradInputInfo() const {
-  // input at index 0 : gradient of output of subtract
+const std::vector<GradInOutMapper> &SubtractArg0GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {0, 0, GradOpInType::GRADOUT}};
+
+  return inInfo;
+}
+
+SubtractArg1GradOp::SubtractArg1GradOp(SubtractOp *op_)
+    : NegateOp({"SubtractArg1Grad", op_->pir, {}, getWillowDomain()}) {}
+
+const std::map<int, int> &SubtractArg1GradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {{0, SubtractOp::arg1Index()}};
+
+  return outInfo;
+}
+
+const std::vector<GradInOutMapper> &SubtractArg1GradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {0, 0, GradOpInType::GRADOUT}};
+
   return inInfo;
 }
 

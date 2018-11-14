@@ -27,14 +27,18 @@ SubtractOp *SubtractOpx::getSubtractOp() const {
   return dynamic_cast<SubtractOp *>(op_p);
 }
 
-SubtractGradOpx::SubtractGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op_p->opType != OpType::SUBTRACTGRAD) {
-    throw error("cannot create SubtractGradOpx from " + op_p->op_type());
+SubtractArg0GradOpx::SubtractArg0GradOpx(Op *op, Devicex *devicex)
+    : IdentityOpx(op, devicex) {
+  if (op_p->opType != OpType::SUBTRACTARG0GRAD) {
+    throw error("cannot create SubtractArg0GradOpx from " + op_p->op_type());
   }
 }
 
-SubtractGradOp *SubtractGradOpx::getSubtractGradOp() const {
-  return dynamic_cast<SubtractGradOp *>(op_p);
+SubtractArg1GradOpx::SubtractArg1GradOpx(Op *op, Devicex *devicex)
+    : NegateOpx(op, devicex) {
+  if (op_p->opType != OpType::SUBTRACTARG1GRAD) {
+    throw error("cannot create SubtractArg1GradOpx from " + op_p->op_type());
+  }
 }
 
 } // namespace popx

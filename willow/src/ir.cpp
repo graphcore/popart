@@ -1529,7 +1529,8 @@ OpTypes::OpTypes() {
               {"Relu", OpType::RELU},
               {"ReluGrad", OpType::RELUGRAD},
               {"Sub", OpType::SUBTRACT},
-              {"SubtractGrad", OpType::SUBTRACTGRAD},
+              {"SubtractArg0Grad", OpType::SUBTRACTARG0GRAD},
+              {"SubtractArg1Grad", OpType::SUBTRACTARG1GRAD},
               {"Sum", OpType::SUM},
               {"Squeeze", OpType::SQUEEZE},
               {"SqueezeGrad", OpType::SQUEEZEGRAD},
@@ -1668,7 +1669,8 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::SOFTMAXGRAD:
   case OpType::SGDVARUPDATE:
   case OpType::CONSTSGDVARUPDATE:
-  case OpType::SUBTRACTGRAD:
+  case OpType::SUBTRACTARG0GRAD:
+  case OpType::SUBTRACTARG1GRAD:
   case OpType::MATMULLHSGRAD:
   case OpType::MATMULRHSGRAD:
     throw error("Gradient Ops not constructable from Node");

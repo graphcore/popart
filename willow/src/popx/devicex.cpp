@@ -432,8 +432,12 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new SubtractOpx(op, this));
   }
 
-  case OpType::SUBTRACTGRAD: {
-    return std::unique_ptr<Opx>(new SubtractGradOpx(op, this));
+  case OpType::SUBTRACTARG0GRAD: {
+    return std::unique_ptr<Opx>(new SubtractArg0GradOpx(op, this));
+  }
+
+  case OpType::SUBTRACTARG1GRAD: {
+    return std::unique_ptr<Opx>(new SubtractArg1GradOpx(op, this));
   }
 
   case OpType::SUM: {
