@@ -16,8 +16,13 @@ public:
   virtual void setup() override final;
   virtual std::unique_ptr<Op> clone() const override final;
 
+  static int getLhsInputIndex() { return 0; }
+  static int getRhsInputIndex() { return 1; }
+  static int getOutputIndex() { return 0; }
+
   const Tensor *lhsIn() const;
   const Tensor *rhsIn() const;
+  const Tensor *out() const;
 
 private:
   Shape outputShape;
@@ -30,8 +35,8 @@ public:
   MatMulLhsGradOp &operator=(const MatMulLhsGradOp &) = delete;
   virtual ~MatMulLhsGradOp() override                 = default;
 
-  int getGradInputIndex() const;
-  int getRhsInputIndex() const;
+  static int getGradInputIndex() { return 0; }
+  static int getRhsInputIndex() { return 1; }
 
   virtual void setup() override final;
   virtual const std::vector<GradInOutMapper> &
@@ -51,8 +56,8 @@ public:
   MatMulRhsGradOp &operator=(const MatMulRhsGradOp &) = delete;
   virtual ~MatMulRhsGradOp() override                 = default;
 
-  int getGradInputIndex() const;
-  int getLhsInputIndex() const;
+  static int getGradInputIndex() { return 0; }
+  static int getLhsInputIndex() { return 1; }
 
   virtual void setup() override final;
   virtual const std::vector<GradInOutMapper> &

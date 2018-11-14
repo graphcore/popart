@@ -17,6 +17,12 @@ public:
   MatMulOpx(Op *, Devicex *);
   virtual ~MatMulOpx() override = default;
 
+  virtual poplar::Tensor createInput(int index) const override final;
+  virtual bool canCreateInput(int index) const override final;
+  virtual bool createsEquiv(int, Opx *, int) const override final;
+  virtual std::vector<TensorId>
+  mustExistBeforeCreate(int index0) const override final;
+
   MatMulOp *getMatMulOp() const;
   virtual void grow() const override final;
 };

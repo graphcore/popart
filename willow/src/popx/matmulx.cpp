@@ -33,6 +33,57 @@ MatMulOp *MatMulOpx::getMatMulOp() const {
   return dynamic_cast<MatMulOp *>(op_p);
 }
 
+bool MatMulOpx::canCreateInput(int) const { return true; }
+
+poplar::Tensor MatMulOpx::createInput(int index) const {
+
+  if (index == MatMulOp::getLhsInputIndex()) {
+    return poplin::createMatMulInputLHS(
+        graph(),
+        popType(getMatMulOp()->lhsIn()->info.dataType()),
+        getMatMulOp()->lhsIn()->info.shape_szt(),
+        getMatMulOp()->rhsIn()->info.shape_szt(),
+        idStr(),
+        dv_p->fwdMmOptions,
+        &dv_p->matmulCache);
+  } else if (index == MatMulOp::getRhsInputIndex()) {
+    return poplin::createMatMulInputRHS(
+        graph(),
+        popType(getMatMulOp()->rhsIn()->info.dataType()),
+        getMatMulOp()->lhsIn()->info.shape_szt(),
+        getMatMulOp()->rhsIn()->info.shape_szt(),
+        idStr(),
+        dv_p->fwdMmOptions,
+        &dv_p->matmulCache);
+  } else {
+    throw error("matmul opx cannot create tensor for index " +
+                std::to_string(index));
+  }
+}
+
+bool MatMulOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
+
+  if (opx1->op_p->opType != OpType::MATMUL)
+    return false;
+
+  if (ind0 != ind1)
+    return false;
+
+  // Test that the shapes and types of inputs and outpus of the two ops are the
+  // same
+  // TODO : Could optimzie this to not use the either lhs or rhs
+  MatMulOpx *rhs = dynamic_cast<MatMulOpx *>(opx1);
+  if (getMatMulOp()->lhsIn()->info != rhs->getMatMulOp()->lhsIn()->info ||
+      getMatMulOp()->rhsIn()->info != rhs->getMatMulOp()->rhsIn()->info ||
+      getMatMulOp()->out()->info != rhs->getMatMulOp()->out()->info) {
+    return false;
+  }
+
+  return true;
+}
+
+std::vector<TensorId> MatMulOpx::mustExistBeforeCreate(int) const { return {}; }
+
 MatMulLhsGradOpx::MatMulLhsGradOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
   if (op_p->opType != OpType::MATMULLHSGRAD) {

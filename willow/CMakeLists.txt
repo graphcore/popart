@@ -51,9 +51,9 @@ target_compile_definitions(poponnx
   PRIVATE PROTOBUF_INLINE_NOT_IN_HEADERS=0
 )
 
+
 install(TARGETS poponnx
         EXPORT poponnx
 	      DESTINATION ${CMAKE_INSTALL_LIBDIR}
         COMPONENT poponnx
         INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
-
