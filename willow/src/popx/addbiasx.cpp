@@ -56,9 +56,7 @@ poplar::Tensor AddBiasOpx::createInput(int index) const {
                               inId(AddBiasOp::biasInIndex()));
 }
 
-bool AddBiasOpx::createsEquiv(int index0, Opx *opx1, int index1) const {
-  return false;
-}
+bool AddBiasOpx::createsEquiv(int, Opx *, int) const { return false; }
 
 AddBiasOp *AddBiasOpx::getAddBiasOp() const {
   return dynamic_cast<AddBiasOp *>(op_p);
