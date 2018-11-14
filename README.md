@@ -20,10 +20,10 @@ Warnings with g++ are being worked on (an open task)
 CONFIGURE and BUILD
 -------------------
 
-These are directions for building directly from the willow repository
-(not from willow_view which is the suggested way to build). 
-To build from the willow_view directory, see the instructions in that
-repository
+These are directions for building directly from the willow repository, 
+not from the willow_view repo, which is the suggested way to build.
+To build from the willow_view directory, see the instructions in the wiki:
+https://phabricator.sourcevertex.net/w/onnx/
 
 
 On Ubuntu, in a clean build directory:
@@ -37,7 +37,7 @@ cmake -DONNX_DIR=/where/onnx/installed/share/cmake/ONNX
 
 where I assume above that ONNX and pybind are already built and installed.
 
-Next, install pytorch (directions on pytorch website). 
+Next, install pytorch, the directions are on the pytorch website.
 
 Now, 
 export LD_LIBRARY_PATH=~/where/willow/installed/lib:/where/poplar/installed/lib
