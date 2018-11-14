@@ -18,6 +18,11 @@ public:
   AddBiasOpx(Op *, Devicex *);
   AddBiasOp *getAddBiasOp() const;
   void grow() const override final;
+
+  std::vector<TensorId> mustExistBeforeCreate(int index0) const override;
+  bool canCreateInput(int index0) const final;
+  poplar::Tensor createInput(int index) const final;
+  bool createsEquiv(int index0, Opx *opx1, int index1) const final;
 };
 
 class AddBiasDataGradOpx : public IdentityOpx {

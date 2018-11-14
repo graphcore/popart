@@ -32,6 +32,34 @@ void AddBiasOpx::grow() const {
   insert(outId(0), result);
 }
 
+std::vector<TensorId> AddBiasOpx::mustExistBeforeCreate(int index) const {
+  if (index != AddBiasOp::biasInIndex()) {
+    throw error("AddBiasOpx::mustExistBeforeCreate : Invalid index = " +
+                std::to_string(index));
+  }
+
+  return {inId(AddBiasOp::dataInIndex())};
+}
+
+bool AddBiasOpx::canCreateInput(int index) const {
+  return index == AddBiasOp::biasInIndex();
+}
+
+poplar::Tensor AddBiasOpx::createInput(int index) const {
+  if (index != AddBiasOp::biasInIndex()) {
+    throw error("AddBiasOpx::createInput : Invalid index = " +
+                std::to_string(index));
+  }
+
+  return poplin::createBiases(graph(),
+                              get(inId(AddBiasOp::dataInIndex())),
+                              inId(AddBiasOp::biasInIndex()));
+}
+
+bool AddBiasOpx::createsEquiv(int index0, Opx *opx1, int index1) const {
+  return false;
+}
+
 AddBiasOp *AddBiasOpx::getAddBiasOp() const {
   return dynamic_cast<AddBiasOp *>(op_p);
 }
