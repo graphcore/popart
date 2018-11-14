@@ -154,6 +154,9 @@ Devicex::Devicex(const Ir &ir) : willow::Device(ir), tensors(ir) {
   bwdMmRhsOptions.set({{"fullyConnectedPass", "TRAINING_WU"}});
 
   engineOptions.set({{"target.workerStackSizeInBytes", "0x200"}});
+  for (auto it : pir->getSessionOptions().engineOptions) {
+    engineOptions.set(it.first, it.second);
+  }
 }
 
 void Devicex::weightsFromHost() {
@@ -702,7 +705,11 @@ void Devicex::prepare() {
   std::cout << "All tasks complete" << std::endl;
   std::cout << "Creating poplar::Engine" << std::endl;
 
-  pEngine.reset(new poplar::Engine(graph(), progs.progs(), engineOptions));
+  try {
+    pEngine.reset(new poplar::Engine(graph(), progs.progs(), engineOptions));
+  } catch (const poplar::poplar_error &e) {
+    throw error(std::string("Engine compilation error: ") + e.what());
+  }
   std::cout << "Engine has been created" << std::endl;
 
   pEngine->load(popDevice);

@@ -544,6 +544,8 @@ public:
   Op *getOp(OpId);
   onnx::ModelProto getModel() const;
 
+  const SessionOptions &getSessionOptions() const { return userOptions; }
+
   // see connectInputs, this is just an instantiation of it
   void connectInputsFromInputMapWrapper(const InputMapWrapper &, OpId opId);
 
