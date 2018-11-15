@@ -195,7 +195,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("modelToHost", &Session::modelToHost)
       .def("getInfo", &Session::getInfo);
 
-  py::class_<Builder>(m, "Builder")
+  py::class_<Builder>(m, "BuilderCore")
       .def(py::init<>())
       .def("addInputTensor", &Builder::addInputTensor, py::arg("tensorInfo"))
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))

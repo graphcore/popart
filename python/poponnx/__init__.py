@@ -7,5 +7,6 @@ sys.path.insert(0, lp)
 
 # Import all symbols into our namespace
 from poponnx_core import *
+from poponnx.builder import Builder
 from poponnx.session import Session
 from poponnx.options import SessionOptions
