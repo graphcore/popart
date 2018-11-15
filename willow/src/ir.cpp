@@ -1509,7 +1509,8 @@ void Ir::connectOutputs(const T &outContainer, OpId opId) {
 OpTypes::OpTypes() {
 
   opTypes_ = {{"Add", OpType::ADD},
-              {"AddGrad", OpType::ADDGRAD},
+              {"AddArg0Grad", OpType::ADDARG0GRAD},
+              {"AddArg1Grad", OpType::ADDARG1GRAD},
               {"AddBias", OpType::ADDBIAS},
               {"AddBiasDataGrad", OpType::ADDBIASDATAGRAD},
               {"AddBiasBiasGrad", OpType::ADDBIASBIASGRAD},
@@ -1663,7 +1664,8 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::MATMUL: {
     return pOp(new MatMulOp(node, this));
   }
-  case OpType::ADDGRAD:
+  case OpType::ADDARG0GRAD:
+  case OpType::ADDARG1GRAD:
   case OpType::ADDBIASBIASGRAD:
   case OpType::ADDBIASDATAGRAD:
   case OpType::SQUEEZEGRAD:

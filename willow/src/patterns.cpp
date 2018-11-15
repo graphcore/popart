@@ -137,8 +137,8 @@ void PreUniRepl::apply(Op *op) const {
 
 bool PostNRepl::matches(const Op *op) const {
 
-  // Gradient of ADD
-  if (op->opType == OpType::ADDGRAD) {
+  // TODO: capture all the N = 1 cases (Ops which inherit from IdentityOp).
+  if (op->opType == OpType::IDENTITY) {
     // good so far
   }
   // A sum with only one input

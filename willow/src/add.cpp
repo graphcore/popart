@@ -3,7 +3,10 @@
 
 namespace willow {
 
-AddOp::AddOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
+int AddOp::arg0Index() { return 0; }
+int AddOp::arg1Index() { return 1; }
+
+AddOp::AddOp(const onnx::NodeProto &node, Ir *pir) : Op(node, pir) {}
 
 std::unique_ptr<Op> AddOp::clone() const {
   return std::unique_ptr<Op>(new AddOp(*this));
@@ -11,7 +14,8 @@ std::unique_ptr<Op> AddOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> AddOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(std::unique_ptr<Op>(new AddGradOp(this)));
+  upops.emplace_back(std::unique_ptr<Op>(new AddArg0GradOp(this)));
+  upops.emplace_back(std::unique_ptr<Op>(new AddArg1GradOp(this)));
   return upops;
 }
 
@@ -19,25 +23,29 @@ void AddOp::setup() {
   output.tensor(0)->info = npOut(input.tensor(0)->info, input.tensor(1)->info);
 }
 
-void AddGradOp::setup() {
-  // shapes and types of gradients are the same as the inputs
-  output.tensor(0)->info = info0;
-  output.tensor(1)->info = info1;
-}
+AddArg0GradOp::AddArg0GradOp(AddOp *op_)
+    : IdentityOp({"AddArg0Grad", op_->pir, {}, getWillowDomain()}) {}
 
-AddGradOp::AddGradOp(AddOp *op_)
-    : Op({"AddGrad", op_->pir, {}, getWillowDomain()}),
-      info0(op_->input.tensor(0)->info), info1(op_->input.tensor(1)->info) {}
-
-const std::map<int, int> &AddGradOp::gradOutToNonGradIn() const {
-  // the grad-op output at index 0 corresponds
-  // to the non-grad-op's input at index 0
-  // ditto 1.
-  static const std::map<int, int> outInfo = {{0, 0}, {1, 1}};
+const std::map<int, int> &AddArg0GradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {{0, AddOp::arg0Index()}};
   return outInfo;
 }
 
-const std::vector<GradInOutMapper> &AddGradOp::gradInputInfo() const {
+const std::vector<GradInOutMapper> &AddArg0GradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {0, 0, GradOpInType::GRADOUT}};
+  return inInfo;
+}
+
+AddArg1GradOp::AddArg1GradOp(AddOp *op_)
+    : IdentityOp({"AddArg1Grad", op_->pir, {}, getWillowDomain()}) {}
+
+const std::map<int, int> &AddArg1GradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {{0, AddOp::arg1Index()}};
+  return outInfo;
+}
+
+const std::vector<GradInOutMapper> &AddArg1GradOp::gradInputInfo() const {
   // input at index 0 : gradient of output of add
   // might need to reduce across certain axes of this
   // if numpy broadcasting happened
@@ -45,4 +53,5 @@ const std::vector<GradInOutMapper> &AddGradOp::gradInputInfo() const {
       {0, 0, GradOpInType::GRADOUT}};
   return inInfo;
 }
+
 } // namespace willow

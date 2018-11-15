@@ -2,12 +2,12 @@
 #define GUARD_NEURALNET_ADDX_HPP
 
 #include <poponnx/names.hpp>
+#include <poponnx/popx/identityx.hpp>
 #include <poponnx/popx/opx.hpp>
 
 namespace willow {
 
 class AddOp;
-class AddGradOp;
 
 namespace popx {
 
@@ -18,10 +18,18 @@ public:
   virtual void grow() const override final;
 };
 
-class AddGradOpx : public Opx {
+// TODO (task T5432) should inherit from ReduceSum when we have numpy
+// broadcasting
+class AddArg0GradOpx : public IdentityOpx {
 public:
-  AddGradOpx(Op *, Devicex *);
-  AddGradOp *getAddGradOp() const;
+  AddArg0GradOpx(Op *, Devicex *);
+};
+
+// TODO (task T5432) should inherit from ReduceSum when we have numpy
+// broadcasting
+class AddArg1GradOpx : public IdentityOpx {
+public:
+  AddArg1GradOpx(Op *, Devicex *);
 };
 
 } // namespace popx

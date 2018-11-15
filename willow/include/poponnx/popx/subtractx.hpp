@@ -19,11 +19,15 @@ public:
   virtual void grow() const override final;
 };
 
+// TODO (task T5432) should inherit from ReduceSum when we have numpy
+// broadcasting
 class SubtractArg0GradOpx : public IdentityOpx {
 public:
   SubtractArg0GradOpx(Op *, Devicex *);
 };
 
+// TODO (task T5432) should inherit from ReduceSum when we have numpy
+// broadcasting
 class SubtractArg1GradOpx : public NegateOpx {
 public:
   SubtractArg1GradOpx(Op *, Devicex *);

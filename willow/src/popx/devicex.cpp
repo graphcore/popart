@@ -299,8 +299,12 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new AddOpx(op, this));
   }
 
-  case OpType::ADDGRAD: {
-    return std::unique_ptr<Opx>(new AddGradOpx(op, this));
+  case OpType::ADDARG0GRAD: {
+    return std::unique_ptr<Opx>(new AddArg0GradOpx(op, this));
+  }
+
+  case OpType::ADDARG1GRAD: {
+    return std::unique_ptr<Opx>(new AddArg1GradOpx(op, this));
   }
 
   case OpType::ADDBIAS: {

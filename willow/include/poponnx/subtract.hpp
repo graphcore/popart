@@ -20,6 +20,8 @@ public:
   static int arg1Index();
 };
 
+// TODO (task T5432) should inherit from ReduceSum when we have numpy
+// broadcasting
 class SubtractArg0GradOp : public IdentityOp {
 public:
   SubtractArg0GradOp(SubtractOp *);
@@ -28,6 +30,8 @@ public:
   virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
 };
 
+// TODO (task T5432) should inherit from ReduceSum when we have numpy
+// broadcasting
 class SubtractArg1GradOp : public NegateOp {
 public:
   SubtractArg1GradOp(SubtractOp *);

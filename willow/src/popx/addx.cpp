@@ -25,14 +25,18 @@ void AddOpx::grow() const {
 
 AddOp *AddOpx::getAddOp() const { return dynamic_cast<AddOp *>(op_p); }
 
-AddGradOpx::AddGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op_p->opType != OpType::ADDGRAD) {
-    throw error("cannot create AddGradOpx from " + op_p->op_type());
+AddArg0GradOpx::AddArg0GradOpx(Op *op, Devicex *devicex)
+    : IdentityOpx(op, devicex) {
+  if (op_p->opType != OpType::ADDARG0GRAD) {
+    throw error("cannot create AddArg0GradOpx from " + op_p->op_type());
   }
 }
 
-AddGradOp *AddGradOpx::getAddGradOp() const {
-  return dynamic_cast<AddGradOp *>(op_p);
+AddArg1GradOpx::AddArg1GradOpx(Op *op, Devicex *devicex)
+    : IdentityOpx(op, devicex) {
+  if (op_p->opType != OpType::ADDARG1GRAD) {
+    throw error("cannot create AddArg1GradOpx from " + op_p->op_type());
+  }
 }
 
 } // namespace popx

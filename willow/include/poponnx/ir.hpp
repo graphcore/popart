@@ -195,7 +195,8 @@ private:
 
 enum class OpType {
   ADD = 0,
-  ADDGRAD,
+  ADDARG0GRAD,
+  ADDARG1GRAD,
   ADDBIAS,
   ADDBIASDATAGRAD,
   ADDBIASBIASGRAD,
