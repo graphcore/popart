@@ -305,7 +305,7 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
 
 void Devicex::anchorsHostToHostStreams(const StepIO &stepio) {
   std::string prefix = "     ";
-  std::cout << prefix << "Copying to h2d stream address(es) " << std::endl;
+  logging::debug(prefix + "Copying to h2d stream address(es) ");
   for (Tensor *tensor : ir().dataStreamTensors()) {
     ConstVoidData stepin = stepio.in(tensor->id);
 
@@ -330,7 +330,7 @@ void Devicex::anchorsHostToHostStreams(const StepIO &stepio) {
 
 void Devicex::anchorsHostFromHostStreams(const StepIO &stepio) {
   std::string prefix = "     ";
-  std::cout << prefix << "Copying from d2h stream address(es) " << std::endl;
+  logging::debug(prefix + "Copying from d2h stream address(es) ");
   for (TensorId anchorId : ir().getDataFlow().anchors()) {
     MutableVoidData stepout = stepio.out(anchorId);
     hostStreamToHost(stepout, anchorId);
@@ -339,10 +339,10 @@ void Devicex::anchorsHostFromHostStreams(const StepIO &stepio) {
 
 void Devicex::infer(const StepIO &stepio) {
   std::string prefix = "     ";
-  std::cout << "Performing one inference step: " << std::endl;
+  logging::debug("Performing one inference step: ");
   anchorsHostToHostStreams(stepio);
 
-  std::cout << prefix << "Running the inference program " << std::endl;
+  logging::debug(prefix + "Running the inference program ");
   // TODO : this should be in a poplar for loop (see T5093)
   for (int i = 0; i < ir().getDataFlow().batchesPerStep(); ++i) {
     pEngine->run(PopPrograms::ProgramIndex::INFER);
@@ -353,10 +353,10 @@ void Devicex::infer(const StepIO &stepio) {
 
 void Devicex::evaluate(const StepIO &stepio) {
   std::string prefix = "     ";
-  std::cout << "Performing one evaluate step: " << std::endl;
+  logging::debug("Performing one evaluate step: ");
   anchorsHostToHostStreams(stepio);
 
-  std::cout << prefix << "Running the evaluate program " << std::endl;
+  logging::debug(prefix + "Running the evaluate program ");
   // TODO : this should be in a poplar for loop (see T5093)
   for (int i = 0; i < ir().getDataFlow().batchesPerStep(); ++i) {
     pEngine->run(PopPrograms::ProgramIndex::EVALUATE);
@@ -367,10 +367,10 @@ void Devicex::evaluate(const StepIO &stepio) {
 
 void Devicex::train(const StepIO &stepio) {
   std::string prefix = "     ";
-  std::cout << "Performing one train step: " << std::endl;
+  logging::debug("Performing one train step: ");
   anchorsHostToHostStreams(stepio);
 
-  std::cout << prefix << "Running the train program " << std::endl;
+  logging::debug(prefix + "Running the train program ");
   // TODO : this should be in a poplar for loop (see T5093)
   for (int i = 0; i < ir().getDataFlow().batchesPerStep(); ++i) {
     pEngine->run(PopPrograms::ProgramIndex::TRAIN);
@@ -710,8 +710,7 @@ PriTask Devicex::opTask(Op *op, double priority) {
   }
 
   auto f = [op, opx, this]() {
-    std::cout << "Creating output tensors for " << opx->op_p->str()
-              << std::endl;
+    logging::debug("Creating output tensors for " + opx->op_p->str());
 
     if (op->nPathsToLoss() == 0) {
       opx->grow(progs.backwardFragment());
