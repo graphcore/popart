@@ -13,7 +13,7 @@ namespace willow {
 namespace popx {
 
 ReduceSumOpx::ReduceSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (dynamic_cast<ReduceSumOp *>(op) == nullptr) {
+  if (!op->isConvertibleTo<ReduceSumOp>()) {
     throw error("cannot create ReduceSumOpx from " + op->op_type());
   }
 }
@@ -46,7 +46,7 @@ void ReduceSumOpx::grow(poplar::program::Sequence &prog) const {
 ReduceSumGradOpx::ReduceSumGradOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
   if (op->opType != OpType::REDUCESUMGRAD) {
-    throw error("cannot create ReduceSumOpx from " + op->op_type());
+    throw error("cannot create ReduceSumGradOpx from " + op->op_type());
   }
 }
 

@@ -6,7 +6,7 @@ namespace willow {
 namespace popx {
 
 IdentityOpx::IdentityOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (dynamic_cast<IdentityOp *>(op) == nullptr) {
+  if (!op->isConvertibleTo<IdentityOp>()) {
     throw error("cannot create IdentityOpx from " + op->op_type());
   }
 }
@@ -17,7 +17,7 @@ void IdentityOpx::grow(poplar::program::Sequence &prog) const {
 
 IdentityGradOpx::IdentityGradOpx(Op *op, Devicex *devicex)
     : IdentityOpx(op, devicex) {
-  if (dynamic_cast<IdentityGradOp *>(op) == nullptr) {
+  if (!op->isConvertibleTo<IdentityGradOp>()) {
     throw error("cannot create IdentityGradOpx from " + op->op_type());
   }
 }

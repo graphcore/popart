@@ -395,6 +395,10 @@ public:
 
   virtual bool isLossOp() const;
 
+  template <typename T> bool isConvertibleTo() const {
+    return dynamic_cast<const T *>(this) != nullptr;
+  }
+
 private:
   void appendIO(std::stringstream &) const;
   virtual void appendMore(std::stringstream &) const {}
