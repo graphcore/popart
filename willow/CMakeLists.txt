@@ -19,6 +19,9 @@ else()
 message( STATUS "Building WITHOUT Poplar IPU backend")
 endif()
 
+find_package(Spdlog REQUIRED)
+message(STATUS "spdlog at " ${Spdlog_INCLUDE_DIRS})
+
 add_library(poponnx SHARED ${sources})
 
 target_include_directories (poponnx SYSTEM PUBLIC
@@ -28,6 +31,7 @@ target_include_directories (poponnx SYSTEM PUBLIC
     ${ONNX_INCLUDE_DIRS}
     ${Protobuf_INCLUDE_DIR}
     ${Boost_INCLUDE_DIRS}
+	${SPDLOG_INCLUDE_DIRS}
     ${CBLAS_INCLUDE_DIRS}
     ${POPLAR_INCLUDE_DIR}
     )
@@ -39,6 +43,7 @@ target_link_libraries(poponnx
   ${Protobuf_LIBRARIES}
   ${CBLAS_LIBRARIES}
   ${Boost_LIBRARIES}
+  ${SPDLOG_LIBRARIES}
   ${POPLAR_LIB}
   ${POPLIN_LIB}
   ${POPNN_LIB}

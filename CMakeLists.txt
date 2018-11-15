@@ -44,6 +44,9 @@ find_package(Protobuf REQUIRED)
 # or repo poponnx if available
 find_package(ONNX REQUIRED)
 
+# The logging library
+find_package(Spdlog REQUIRED)
+
 #Link Boost statically
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)
