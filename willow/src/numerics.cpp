@@ -18,10 +18,10 @@ private:
   int64_t nSamples;
 
 public:
-  void insert(T v_A0, T v_A1, T v_B0, T v_B1) {
+  void insert(T v_AStarts, T v_AEnds, T v_BStarts, T v_BEnds) {
     ++nSamples;
-    T dA = v_A1 - v_A0;
-    T dB = v_B1 - v_B0;
+    T dA = v_AEnds - v_AStarts;
+    T dB = v_BEnds - v_BStarts;
     ss_dA += dA * dA;
     ss_dB += dB * dB;
     ss_dAB += (dA - dB) * (dA - dB);
@@ -36,16 +36,16 @@ public:
   }
 };
 
-NumericsReport::NumericsReport(std::string A0, // A starts
-                               std::string A1, // A ends
-                               std::string B0, // B starts
-                               std::string B1  // B ends
+NumericsReport::NumericsReport(std::string AStarts, // A starts
+                               std::string AEnds,   // A ends
+                               std::string BStarts, // B starts
+                               std::string BEnds    // B ends
 ) {
 
   //   auto varTensors =
   //   willowNet.getIr()->tensors.getIds(TensorType::Variable);
 
-  std::vector<std::string> fns{A0, A1, B0, B1};
+  std::vector<std::string> fns{AStarts, AEnds, BStarts, BEnds};
   for (auto fn : fns) {
     io::confirmRegularFile(fn);
   }
@@ -55,16 +55,16 @@ NumericsReport::NumericsReport(std::string A0, // A starts
     models[fn] = io::getModelFromFile(fn);
   }
 
-  const onnx::ModelProto &mA0 = models[A0];
+  const onnx::ModelProto &mAStarts = models[AStarts];
 
   for (auto fn : fns) {
     if (models[fn].graph().initializer_size() !=
-        mA0.graph().initializer_size()) {
+        mAStarts.graph().initializer_size()) {
       throw error("GraphProtos have different number of initializers");
     }
   }
 
-  for (int wIndex = 0; wIndex < mA0.graph().initializer_size(); ++wIndex) {
+  for (int wIndex = 0; wIndex < mAStarts.graph().initializer_size(); ++wIndex) {
 
     auto getTensor = [wIndex,
                       &models](std::string fn) -> const onnx::TensorProto & {
@@ -74,7 +74,7 @@ NumericsReport::NumericsReport(std::string A0, // A starts
     // confirm Tensor names are the same
     // across Models, at index wIndex.
     for (auto fn : fns) {
-      if (getTensor(A0).name() != getTensor(fn).name()) {
+      if (getTensor(AStarts).name() != getTensor(fn).name()) {
         throw error("Tensor names do not correspond between TensorProtos");
       }
     }
@@ -87,25 +87,26 @@ NumericsReport::NumericsReport(std::string A0, // A starts
     // confirm the TensorInfos (shape and type) are the
     // same across Models, at index wIndex.
     for (auto fn : fns) {
-      if (cv_datas[A0].info != cv_datas[fn].info) {
+      if (cv_datas[AStarts].info != cv_datas[fn].info) {
         throw error("TensorProto infos differ");
       }
     }
 
-    if (cv_datas[A0].info.dataType() == TP::FLOAT) {
+    if (cv_datas[AStarts].info.dataType() == TP::FLOAT) {
       NumericsTracker<float> tracker;
-      for (unsigned i = 0; i < cv_datas[A0].info.nelms(); ++i) {
-        tracker.insert(static_cast<const float *>(cv_datas[A0].data)[i],
-                       static_cast<const float *>(cv_datas[A1].data)[i],
-                       static_cast<const float *>(cv_datas[B0].data)[i],
-                       static_cast<const float *>(cv_datas[B1].data)[i]);
+      for (unsigned i = 0; i < cv_datas[AStarts].info.nelms(); ++i) {
+        tracker.insert(static_cast<const float *>(cv_datas[AStarts].data)[i],
+                       static_cast<const float *>(cv_datas[AEnds].data)[i],
+                       static_cast<const float *>(cv_datas[BStarts].data)[i],
+                       static_cast<const float *>(cv_datas[BEnds].data)[i]);
       }
 
-      reports[getTensor(A0).name()] = tracker.str();
+      reports[getTensor(AStarts).name()] = tracker.str();
     }
 
     else {
-      throw error("Create report for type " + cv_datas[A0].info.data_type());
+      throw error("Create report for type " +
+                  cv_datas[AStarts].info.data_type());
     }
   }
 }
