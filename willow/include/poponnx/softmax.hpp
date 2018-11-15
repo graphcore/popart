@@ -10,18 +10,17 @@ class NllLoss;
 class SoftmaxOp : public Op {
 public:
   SoftmaxOp(const onnx::NodeProto &node, Ir *pir);
-  virtual std::unique_ptr<Op> clone() const override final;
-  virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
-  virtual void setup() override final;
+  std::unique_ptr<Op> clone() const final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  void setup() final;
 };
 
 class SoftmaxGradOp : public Op {
 public:
   SoftmaxGradOp(SoftmaxOp *);
-  virtual const std::vector<GradInOutMapper> &
-  gradInputInfo() const override final;
-  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
-  virtual void setup() override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
   int gradProbsIn() const;
   int actsIn() const;
 };
@@ -33,10 +32,10 @@ public:
   // where this is created by a merger between the Op
   // and an NllGradOp
   SoftmaxGradDirectOp(Ir *, const NllLoss *);
-  virtual std::unique_ptr<Op> clone() const override final;
+  std::unique_ptr<Op> clone() const final;
   // this Op has no Grad Ops: throws error if called
-  virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
-  virtual void setup() override final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  void setup() final;
   const NllLoss *nlll() const;
 
 private:

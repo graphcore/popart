@@ -50,30 +50,30 @@ private:
 class SGD : public BaseSGD {
 public:
   SGD(float lr);
-  virtual std::unique_ptr<Optimizer> clone() const override final;
-  virtual std::map<TensorId, TensorInfo> tensorInfos() const override final;
-  virtual std::unique_ptr<Op> createOp(TensorId, Ir *) const override final;
-  virtual std::vector<TensorId> getInputIds(TensorId) const override final;
-  virtual bool validReplacement(const Optimizer *other) const override final;
-  virtual OptimizerType type() const override final;
-  virtual std::string type_s() const override final;
-  virtual void setTensorData(Tensor *) const override final;
-  virtual void resetTensorDatas(Ir *) const override final;
+  std::unique_ptr<Optimizer> clone() const final;
+  std::map<TensorId, TensorInfo> tensorInfos() const final;
+  std::unique_ptr<Op> createOp(TensorId, Ir *) const final;
+  std::vector<TensorId> getInputIds(TensorId) const final;
+  bool validReplacement(const Optimizer *other) const final;
+  OptimizerType type() const final;
+  std::string type_s() const final;
+  void setTensorData(Tensor *) const final;
+  void resetTensorDatas(Ir *) const final;
 };
 
 // may not change during training
 class ConstSGD : public BaseSGD {
 public:
   ConstSGD(float lr);
-  virtual std::unique_ptr<Optimizer> clone() const override final;
-  virtual std::map<TensorId, TensorInfo> tensorInfos() const override final;
-  virtual std::unique_ptr<Op> createOp(TensorId, Ir *) const override final;
-  virtual std::vector<TensorId> getInputIds(TensorId) const override final;
-  virtual bool validReplacement(const Optimizer *other) const override final;
-  virtual OptimizerType type() const override final;
-  virtual std::string type_s() const override final;
-  virtual void setTensorData(Tensor *) const override final;
-  virtual void resetTensorDatas(Ir *) const override final;
+  std::unique_ptr<Optimizer> clone() const final;
+  std::map<TensorId, TensorInfo> tensorInfos() const final;
+  std::unique_ptr<Op> createOp(TensorId, Ir *) const final;
+  std::vector<TensorId> getInputIds(TensorId) const final;
+  bool validReplacement(const Optimizer *other) const final;
+  OptimizerType type() const final;
+  std::string type_s() const final;
+  void setTensorData(Tensor *) const final;
+  void resetTensorDatas(Ir *) const final;
 };
 
 } // namespace willow

@@ -13,8 +13,8 @@ public:
               int64_t keepdims);
   ReduceSumOp(const onnx::NodeProto &node, Ir *pir);
   std::unique_ptr<Op> clone() const override;
-  std::vector<std::unique_ptr<Op>> getGradOps() override final;
-  void setup() override final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  void setup() final;
 
   // A list of integers, along which to reduce. These axes will either be
   // removed or have size 1, depending on the value of getKeepDims.
@@ -34,11 +34,11 @@ class ReduceSumGradOp : public Op {
 public:
   ReduceSumGradOp(ReduceSumOp *fwdOp,
                   const std::vector<int64_t> &backward_shape);
-  std::unique_ptr<Op> clone() const override final;
-  void setup() override final;
+  std::unique_ptr<Op> clone() const final;
+  void setup() final;
 
-  const std::vector<GradInOutMapper> &gradInputInfo() const override final;
-  const std::map<int, int> &gradOutToNonGradIn() const override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
   const std::vector<int64_t> &backwardShape() const;
 
 private:

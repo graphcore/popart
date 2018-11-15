@@ -26,7 +26,7 @@ public:
   std::vector<int64_t> spatialD;
   DataType outType;
 
-  virtual void setup() override final;
+  void setup() final;
   virtual int64_t getNOutChans() const = 0;
   // return the nSpatialDims lower pads (pads left, bottom)
   std::vector<int64_t> lowerPads() const;

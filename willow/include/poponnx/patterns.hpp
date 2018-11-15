@@ -67,12 +67,12 @@ public:
 // {(a), (b), (c)} ->        [op01]         -> {(e), (f)}
 class FuserPattern : public Pattern {
 public:
-  virtual bool matches(const Op *) const override final;
+  bool matches(const Op *) const final;
   // Only (d) is touched. Therefore, a Pattern where [op1] and
   // [op01] perform inplace changes to an input tensor should
   // not inherit from FuserPattern.
-  virtual std::vector<const Tensor *> touches(const Op *) const override final;
-  virtual void apply(Op *) const override final;
+  std::vector<const Tensor *> touches(const Op *) const final;
+  void apply(Op *) const final;
 
 private:
   // OpType of op0 in schematic
@@ -91,9 +91,9 @@ private:
 // (label), (probs) -> [SoftmaxGradDirect] -> (d_acts).
 class SoftmaxGradDirect : public FuserPattern {
 private:
-  virtual OpType get0() const override final;
-  virtual OpType get1() const override final;
-  virtual OpId moveMergedIntoIr(Op *baseOp) const override final;
+  OpType get0() const final;
+  OpType get1() const final;
+  OpId moveMergedIntoIr(Op *baseOp) const final;
 };
 
 // remove ()->[] where () is a Tensor and [] is an Op and ()->[]
@@ -105,15 +105,15 @@ private:
 //    with topo cons (as always)
 class PreUniRepl : public Pattern {
 public:
-  PreUniRepl()                   = default;
-  virtual ~PreUniRepl() override = default;
+  PreUniRepl()           = default;
+  ~PreUniRepl() override = default;
 
   // Pad with pad size zero
   // Sum with one input
-  virtual bool matches(const Op *) const override final;
+  bool matches(const Op *) const final;
   //  Only tensor (), which is deleted, is touched
-  virtual std::vector<const Tensor *> touches(const Op *) const override final;
-  virtual void apply(Op *) const override final;
+  std::vector<const Tensor *> touches(const Op *) const final;
+  void apply(Op *) const final;
 };
 
 // consider,
@@ -134,18 +134,18 @@ public:
 // ori, rep1, rep2 and pre3 can be merged
 class PostNRepl : public Pattern {
 public:
-  PostNRepl()                   = default;
-  virtual ~PostNRepl() override = default;
+  PostNRepl()           = default;
+  ~PostNRepl() override = default;
 
   // AddGrad (where N = 2)
   // Pad with pad size zero (where N = 1) *€
   // Sum with one input (where N = 1) *€
-  virtual bool matches(const Op *) const override final;
+  bool matches(const Op *) const final;
   // rep1, rep2 and rep3 are touched (as they are deleted)
   // ori might be touched, if one its new consumers performs
   // an inplace modification to it.
-  virtual std::vector<const Tensor *> touches(const Op *) const override final;
-  virtual void apply(Op *) const override final;
+  std::vector<const Tensor *> touches(const Op *) const final;
+  void apply(Op *) const final;
 
 private:
   // of all the tensors to be merged into 1 (ori, rep1, rep2, re3)

@@ -10,9 +10,9 @@ namespace willow {
 class SubtractOp : public Op {
 public:
   SubtractOp(const onnx::NodeProto &node, Ir *pir);
-  virtual std::unique_ptr<Op> clone() const override final;
-  virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
-  virtual void setup() override final;
+  std::unique_ptr<Op> clone() const final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  void setup() final;
 
   // Current implementation places arg0 input at index 0, and arg1 input
   // at index 1.
@@ -25,9 +25,8 @@ public:
 class SubtractArg0GradOp : public IdentityOp {
 public:
   SubtractArg0GradOp(SubtractOp *);
-  virtual const std::vector<GradInOutMapper> &
-  gradInputInfo() const override final;
-  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
 };
 
 // TODO (task T5432) should inherit from ReduceSum when we have numpy
@@ -35,9 +34,8 @@ public:
 class SubtractArg1GradOp : public NegateOp {
 public:
   SubtractArg1GradOp(SubtractOp *);
-  virtual const std::vector<GradInOutMapper> &
-  gradInputInfo() const override final;
-  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
 };
 
 } // namespace willow

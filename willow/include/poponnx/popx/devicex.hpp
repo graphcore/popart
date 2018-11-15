@@ -97,14 +97,13 @@ class Devicex : public willow::Device {
 
 public:
   Devicex(const Ir &);
-  virtual void prepare() override final;
-  virtual void weightsFromHost() override final;
-  virtual void optimizerFromHost() override final;
-  virtual void infer(const StepIO &) override final;
-  virtual void evaluate(const StepIO &) override final;
-  virtual void train(const StepIO &) override final;
-  virtual void
-  weightsToHost(const std::map<TensorId, MutableVoidData> &) override final;
+  void prepare() final;
+  void weightsFromHost() final;
+  void optimizerFromHost() final;
+  void infer(const StepIO &) final;
+  void evaluate(const StepIO &) final;
+  void train(const StepIO &) final;
+  void weightsToHost(const std::map<TensorId, MutableVoidData> &) final;
 
   PopPrograms progs;
   Opx *getOpx(OpId);

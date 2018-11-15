@@ -14,7 +14,7 @@ class SumOpx : public Opx {
 public:
   SumOpx(Op *, Devicex *);
   SumOp *getSumOp() const;
-  void grow(poplar::program::Sequence &) const override final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

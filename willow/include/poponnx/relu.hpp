@@ -8,9 +8,9 @@ namespace willow {
 class ReluOp : public Op {
 public:
   ReluOp(const onnx::NodeProto &node, Ir *pir);
-  virtual std::unique_ptr<Op> clone() const override final;
-  virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
-  virtual void setup() override final;
+  std::unique_ptr<Op> clone() const final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  void setup() final;
 };
 
 // takes output of ReluOp as input and not the input of ReluOp
@@ -20,10 +20,9 @@ public:
 class ReluGradOp : public Op {
 public:
   ReluGradOp(ReluOp *);
-  virtual const std::vector<GradInOutMapper> &
-  gradInputInfo() const override final;
-  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
-  virtual void setup() override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
 
   // The index at which the output of the Relu (the "relud" tensor)
   // is an input to this ReluGradOp

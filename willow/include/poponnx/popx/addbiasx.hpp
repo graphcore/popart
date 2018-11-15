@@ -17,7 +17,7 @@ class AddBiasOpx : public Opx {
 public:
   AddBiasOpx(Op *, Devicex *);
   AddBiasOp *getAddBiasOp() const;
-  void grow(poplar::program::Sequence &) const override final;
+  void grow(poplar::program::Sequence &) const final;
 
   std::vector<TensorId> mustExistBeforeCreate(int index0) const override;
   bool canCreateInput(int index0) const final;

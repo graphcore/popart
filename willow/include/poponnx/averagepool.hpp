@@ -13,22 +13,21 @@ namespace willow {
 class AveragePoolOp : public HasReceptiveFieldOp {
 public:
   AveragePoolOp(const onnx::NodeProto &node, Ir *pir);
-  virtual std::unique_ptr<Op> clone() const override final;
-  virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
-  int64_t getNOutChans() const override final;
+  std::unique_ptr<Op> clone() const final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  int64_t getNOutChans() const final;
 
 private:
-  virtual void setup0() override final;
-  virtual void setSpatialK() override final;
+  void setup0() final;
+  void setSpatialK() final;
 };
 
 class AveragePoolGradOp : public Op {
 public:
   AveragePoolGradOp(AveragePoolOp *);
-  virtual const std::vector<GradInOutMapper> &
-  gradInputInfo() const override final;
-  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
-  void setup() override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
   // Op for computing the gradient of the pre-pooled activations.
   // In theory, all we need to do this is the gradient of the
   // pooled activations. But we are requiring that all 3 of,

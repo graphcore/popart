@@ -15,7 +15,7 @@ class NllOpx : public Opx {
 public:
   NllOpx(Op *, Devicex *);
   NllOp *getNllOp() const;
-  void grow(poplar::program::Sequence &) const override final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class NllGradOpx : public Opx {

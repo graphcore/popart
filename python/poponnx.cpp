@@ -69,11 +69,11 @@ public:
     return stepData;
   }
 
-  virtual ConstVoidData in(TensorId id) const override final {
+  ConstVoidData in(TensorId id) const final {
     return get<ConstVoidData>(id, inputs, "inputs");
   }
 
-  virtual MutableVoidData out(TensorId id) const override final {
+  MutableVoidData out(TensorId id) const final {
     return get<MutableVoidData>(id, outputs, "outputs");
   }
 

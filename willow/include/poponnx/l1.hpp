@@ -12,12 +12,12 @@ public:
   L1Loss(TensorId input, TensorId output, float lambda);
   // There are no tensors streamed into this loss layer (unlike NLL for
   // example which has a label streamed in)
-  virtual std::vector<TensorId> getStreamTensorNames() const override final;
-  virtual std::unique_ptr<Op> getOp(Ir *) const override final;
-  virtual std::string op_type() const override final;
+  std::vector<TensorId> getStreamTensorNames() const final;
+  std::unique_ptr<Op> getOp(Ir *) const final;
+  std::string op_type() const final;
   TensorId getInputId() const;
   float getLambda() const;
-  virtual std::unique_ptr<Loss> clone() const override final {
+  std::unique_ptr<Loss> clone() const final {
     return std::unique_ptr<Loss>(new L1Loss(*this));
   }
 
@@ -28,9 +28,9 @@ private:
 class L1Op : public LossOp {
 public:
   L1Op(const OpConstructorBundle &, const L1Loss *l1loss);
-  virtual std::unique_ptr<Op> clone() const override final;
-  virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
-  virtual void setup() override final;
+  std::unique_ptr<Op> clone() const final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  void setup() final;
   const L1Loss *l1l() const;
 
 private:
@@ -41,10 +41,9 @@ class L1GradOp : public Op {
 
 public:
   L1GradOp(L1Op *);
-  virtual const std::vector<GradInOutMapper> &
-  gradInputInfo() const override final;
-  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
-  virtual void setup() override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
   const L1Loss *l1l() const;
 
 private:

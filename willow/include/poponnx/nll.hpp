@@ -10,22 +10,22 @@ class NllLoss : public Loss {
 public:
   NllLoss(TensorId probs, TensorId label, TensorId output);
   // label is the only streamed input tensor to this loss
-  virtual std::vector<TensorId> getStreamTensorNames() const override final;
-  virtual std::unique_ptr<Op> getOp(Ir *) const override final;
-  virtual std::string op_type() const override final;
+  std::vector<TensorId> getStreamTensorNames() const final;
+  std::unique_ptr<Op> getOp(Ir *) const final;
+  std::string op_type() const final;
   int probsIn() const;
   int labelIn() const;
   TensorId probsTensorId() const;
   TensorId labelTensorId() const;
-  virtual std::unique_ptr<Loss> clone() const override final;
+  std::unique_ptr<Loss> clone() const final;
 };
 
 class NllOp : public LossOp {
 public:
   NllOp(const OpConstructorBundle &, const NllLoss *nllloss);
-  virtual std::unique_ptr<Op> clone() const override final;
-  virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
-  virtual void setup() override final;
+  std::unique_ptr<Op> clone() const final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  void setup() final;
   const NllLoss *nlll() const;
 
 private:
@@ -35,10 +35,9 @@ private:
 class NllGradOp : public Op {
 public:
   NllGradOp(NllOp *);
-  virtual const std::vector<GradInOutMapper> &
-  gradInputInfo() const override final;
-  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
-  virtual void setup() override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
   const NllLoss *nlll() const;
 
 private:

@@ -10,11 +10,11 @@ public:
   MatMulOp(const onnx::NodeProto &node, Ir *pir);
   MatMulOp(const MatMulOp &) = default;
   MatMulOp &operator=(const MatMulOp &) = delete;
-  virtual ~MatMulOp() override          = default;
+  ~MatMulOp() override                  = default;
 
-  virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
-  virtual void setup() override final;
-  virtual std::unique_ptr<Op> clone() const override final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  void setup() final;
+  std::unique_ptr<Op> clone() const final;
 
   static int getLhsInputIndex() { return 0; }
   static int getRhsInputIndex() { return 1; }
@@ -33,15 +33,14 @@ public:
   MatMulLhsGradOp(const MatMulOp &op_);
   MatMulLhsGradOp(const MatMulLhsGradOp &) = default;
   MatMulLhsGradOp &operator=(const MatMulLhsGradOp &) = delete;
-  virtual ~MatMulLhsGradOp() override                 = default;
+  ~MatMulLhsGradOp() override                         = default;
 
   static int getGradInputIndex() { return 0; }
   static int getRhsInputIndex() { return 1; }
 
-  virtual void setup() override final;
-  virtual const std::vector<GradInOutMapper> &
-  gradInputInfo() const override final;
-  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
+  void setup() final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
 
 private:
   Shape outputShape;
@@ -54,15 +53,14 @@ public:
   MatMulRhsGradOp(const MatMulOp &op_);
   MatMulRhsGradOp(const MatMulRhsGradOp &) = default;
   MatMulRhsGradOp &operator=(const MatMulRhsGradOp &) = delete;
-  virtual ~MatMulRhsGradOp() override                 = default;
+  ~MatMulRhsGradOp() override                         = default;
 
   static int getGradInputIndex() { return 0; }
   static int getLhsInputIndex() { return 1; }
 
-  virtual void setup() override final;
-  virtual const std::vector<GradInOutMapper> &
-  gradInputInfo() const override final;
-  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
+  void setup() final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
 
 private:
   Shape outputShape;

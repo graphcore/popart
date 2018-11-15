@@ -16,7 +16,7 @@ class SoftmaxOpx : public Opx {
 public:
   SoftmaxOpx(Op *, Devicex *);
   SoftmaxOp *getSoftmaxOp() const;
-  void grow(poplar::program::Sequence &) const override final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class SoftmaxGradOpx : public Opx {
@@ -29,7 +29,7 @@ class SoftmaxGradDirectOpx : public Opx {
 public:
   SoftmaxGradDirectOpx(Op *, Devicex *);
   SoftmaxGradDirectOp *getSoftmaxGradDirectOp() const;
-  void grow(poplar::program::Sequence &) const override final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

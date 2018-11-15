@@ -11,7 +11,7 @@ namespace popx {
 class NegateOpx : public Opx {
 public:
   NegateOpx(Op *, Devicex *);
-  virtual void grow(poplar::program::Sequence &) const override final;
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class NegateGradOpx : public NegateOpx {

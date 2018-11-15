@@ -14,9 +14,9 @@ class ConvOp;
 class AddBiasOp : public Op {
 public:
   AddBiasOp(ConvOp *);
-  std::unique_ptr<Op> clone() const override final;
-  std::vector<std::unique_ptr<Op>> getGradOps() override final;
-  void setup() override final;
+  std::unique_ptr<Op> clone() const final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  void setup() final;
 
   // Current implementation places the data input at index 0, and the bias input
   // at index 1.
@@ -29,8 +29,8 @@ public:
 class AddBiasDataGradOp : public IdentityOp {
 public:
   AddBiasDataGradOp(AddBiasOp *);
-  const std::vector<GradInOutMapper> &gradInputInfo() const override final;
-  const std::map<int, int> &gradOutToNonGradIn() const override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
 };
 
 // The gradient op for the bias input of the add bias op.
@@ -38,8 +38,8 @@ public:
 class AddBiasBiasGradOp : public ReduceSumOp {
 public:
   AddBiasBiasGradOp(AddBiasOp *, const std::vector<int64_t> &axes);
-  const std::vector<GradInOutMapper> &gradInputInfo() const override final;
-  const std::map<int, int> &gradOutToNonGradIn() const override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
 };
 
 } // namespace willow

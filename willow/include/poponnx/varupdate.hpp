@@ -9,13 +9,13 @@ class VarUpdateOp : public Op {
 public:
   // op_type: passed down from class which inherits
   VarUpdateOp(std::string op_type, TensorId, Ir *);
-  virtual void setup() override final;
+  void setup() final;
   static int getVarIndex();
   static int getVarGradIndex();
   // Impose the rule that:
   // This must be the final operation on the Variable
   // Tensor, as it is modified by this Op.
-  void imposeTopoCons() override final;
+  void imposeTopoCons() final;
 
 private:
   TensorId varId;
@@ -25,14 +25,14 @@ private:
 class SGDVarUpdateOp : public VarUpdateOp {
 public:
   SGDVarUpdateOp(TensorId, Ir *);
-  virtual std::unique_ptr<Op> clone() const override final;
+  std::unique_ptr<Op> clone() const final;
   static int getLearnRateIndex();
 };
 
 class ConstSGDVarUpdateOp : public VarUpdateOp {
 public:
   ConstSGDVarUpdateOp(TensorId, Ir *, float learnRate);
-  virtual std::unique_ptr<Op> clone() const override final;
+  std::unique_ptr<Op> clone() const final;
   float getLearnRate() const;
 
 private:

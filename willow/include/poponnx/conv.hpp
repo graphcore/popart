@@ -13,9 +13,9 @@ public:
   // convenience functions:
   const Tensor *dataIn() const;
   const Tensor *weightsIn() const;
-  virtual std::unique_ptr<Op> clone() const override final;
-  virtual std::vector<std::unique_ptr<Op>> getGradOps() override final;
-  virtual int64_t getNOutChans() const override final;
+  std::unique_ptr<Op> clone() const final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  int64_t getNOutChans() const final;
 
   // from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv :
   // "data" at index 0, "weights" at index 1, "bias" as index 2.
@@ -26,17 +26,16 @@ public:
   static int biasInIndex();
 
 private:
-  virtual void setup0() override final;
-  virtual void setSpatialK() override final;
+  void setup0() final;
+  void setSpatialK() final;
 };
 
 class ConvWeightsGradOp : public Op {
 public:
   ConvWeightsGradOp(ConvOp *);
-  virtual const std::vector<GradInOutMapper> &
-  gradInputInfo() const override final;
-  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
-  virtual void setup() override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
 
   // The input index where the gradient of
   // the output of convolution is inserted to this Op
@@ -55,10 +54,9 @@ private:
 class ConvDataGradOp : public Op {
 public:
   ConvDataGradOp(ConvOp *);
-  virtual const std::vector<GradInOutMapper> &
-  gradInputInfo() const override final;
-  virtual const std::map<int, int> &gradOutToNonGradIn() const override final;
-  virtual void setup() override final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
   const ConvOp *getCloneOfCreator() const;
 
   // The input index where the weight tensor is inserted
