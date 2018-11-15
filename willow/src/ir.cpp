@@ -1,16 +1,17 @@
 #include <algorithm>
 #include <array>
 #include <fstream>
-#include <iostream>
 #include <map>
 #include <queue>
 #include <sstream>
+#include <string>
 #include <vector>
 
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
 #include <poponnx/intervals.hpp>
 #include <poponnx/ir.hpp>
+#include <poponnx/logging.hpp>
 #include <poponnx/loss.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/optionflags.hpp>
@@ -568,7 +569,7 @@ void Ir::prepare(const IrBundle &gb) {
 
   std::stringstream ss2;
   append(ss2);
-  std::cout << ss2.str();
+  logging::info(ss2.str());
 }
 
 std::vector<Op *> Ir::getOpScheduleTilLoss() const {
@@ -968,7 +969,7 @@ void Ir::addInitIfUsed(TensorId id, const onnx::TensorProto *t) {
   if (allNodeInputsMap.count(id) != 0) {
     tensors.addInit(id, t);
   } else {
-    std::cout << "unused ONNX tensor " << id << std::endl;
+    logging::warn("Unused ONNX tensor  " + id);
   }
 }
 

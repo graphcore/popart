@@ -1,6 +1,6 @@
-#include <iostream>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
+#include <poponnx/logging.hpp>
 #include <poponnx/popx/addbiasx.hpp>
 #include <poponnx/popx/addx.hpp>
 #include <poponnx/popx/averagepoolx.hpp>
@@ -34,10 +34,11 @@ namespace popx {
 
 void Devicex::weightsToHost(
     const std::map<TensorId, MutableVoidData> &onnxModelData) {
-  std::cout << "Writing weights to host" << std::endl;
+
+  logging::debug("Writing weights to host");
   // write weights from IPU to host stream memory points
   pEngine->run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
-  std::cout << "Writing weights to ONNX ModelProto" << std::endl;
+  logging::debug("Writing weights to ONNX ModelProto");
   // copy from the host stream memory points to the
   // addresses on onnxModelData
   for (auto initId : ir().getTensors().getInitIds()) {
@@ -67,7 +68,7 @@ const poplar::Tensor &Devicex::getConst(const poplar::Type &type,
                                         double val) {
   std::string key = getConstTensorKey(type, shape, val);
   if (constTensors.find(key) == constTensors.end()) {
-    std::cout << "Creating const tensor " << key << std::endl;
+    logging::debug("Creating const tensor " + key);
     constTensors[key] = graph().addConstant(type, shape, val);
   }
   return constTensors[key];
@@ -154,21 +155,23 @@ Devicex::Devicex(const Ir &ir) : willow::Device(ir), tensors(ir) {
   bwdMmRhsOptions.set({{"fullyConnectedPass", "TRAINING_WU"}});
 
   engineOptions.set({{"target.workerStackSizeInBytes", "0x200"}});
-  for (auto it : pir->getSessionOptions().engineOptions) {
+  for (auto it : ir.getSessionOptions().engineOptions) {
     engineOptions.set(it.first, it.second);
   }
 }
 
 void Devicex::weightsFromHost() {
-  std::cout << "Writing weights from host, " << std::flush;
+  logging::debug("Writing weights from host, ");
+  logging::flush();
   pEngine->run(PopPrograms::ProgramIndex::WEIGHTSFROMHOST);
-  std::cout << "done." << std::endl;
+  logging::debug("done.");
 }
 
 void Devicex::optimizerFromHost() {
-  std::cout << "Writing optimizer from host, " << std::flush;
+  logging::debug("Writing optimizer from host, ");
+  logging::flush();
   pEngine->run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
-  std::cout << "done." << std::endl;
+  logging::debug("done.");
 }
 
 void Devicex::hostToHostStream(
@@ -255,9 +258,9 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
 }
 
 void Devicex::step(const StepIO &stepio) {
-  std::cout << "Performing one step: " << std::endl;
+  logging::debug("Performing one step: ");
   std::string prefix = "     ";
-  std::cout << prefix << "Copying to h2d stream address(es) " << std::endl;
+  logging::debug(prefix + "Copying to h2d stream address(es) ");
   for (Tensor *tensor : ir().dataStreamTensors()) {
     ConstVoidData stepin = stepio.in(tensor->id);
 
@@ -279,13 +282,13 @@ void Devicex::step(const StepIO &stepio) {
     hostToHostStream(dst, src, dstInfo, srcInfo, tensor->id);
   }
 
-  std::cout << prefix << "Running the step program " << std::endl;
+  logging::debug(prefix + "Running the step program ");
   // TODO : this should be in a poplar for loop (see T5093)
   for (int i = 0; i < ir().getDataFlow().batchesPerStep(); ++i) {
     pEngine->run(PopPrograms::ProgramIndex::STEP);
   }
 
-  std::cout << prefix << "Copying from d2h stream address(es) " << std::endl;
+  logging::debug(prefix + "Copying from d2h stream address(es) ");
   for (TensorId anchorId : ir().getDataFlow().anchors()) {
     MutableVoidData stepout = stepio.out(anchorId);
     hostStreamToHost(stepout, anchorId);
@@ -523,7 +526,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     Opx *creator = candidates[0].opx;
     int inIndex  = candidates[0].index;
     auto f       = [this, creator, inIndex, tensor]() {
-      std::cout << "Creating poplar::Tensor " << tensor->id << std::endl;
+      logging::debug("Creating poplar::Tensor " + tensor->id);
       tensors.insert(tensor->id, creator->createInput(inIndex));
     };
     // the inputs of creator which must have poplar::Tensors
@@ -550,10 +553,12 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   else {
 
     auto f = [this, tensor]() {
-      std::cout << "Creating " << tensor->id << " linearly. "
-                << "WARNING :  "
-                << "No creator candidates. We should perform a "
-                << "depth search to find a candidate. " << std::endl;
+      std::stringstream ss;
+      ss << "Creating " << tensor->id << " linearly. "
+         << "WARNING :  "
+         << "No creator candidates. We should perform a "
+         << "depth search to find a candidate. " << std::endl;
+      logging::warn(ss.str());
 
       auto newTensor = graph().addVariable(
           popType(tensor->info), tensor->info.shape_szt(), tensor->id);
@@ -567,7 +572,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
 PriTask Devicex::streamFromHostTask(Tensor *tensor) {
   auto f = [this, tensor]() {
-    std::cout << "Creating host-to-device FIFO " << tensor->id << std::endl;
+    logging::debug("Creating host-to-device FIFO " + tensor->id);
     fromHostStreams.emplace(tensor->id,
                             graph().addHostToDeviceFIFO(h2dId(tensor->id),
                                                         popType(tensor->info),
@@ -584,7 +589,7 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
 
 PriTask Devicex::streamToHostTask(Tensor *tensor) {
   auto f = [this, tensor]() {
-    std::cout << "Creating device-to-host FIFO " << tensor->id << std::endl;
+    logging::debug("Creating device-to-host FIFO " + tensor->id);
     toHostStreams.emplace(tensor->id,
                           graph().addDeviceToHostFIFO(d2hId(tensor->id),
                                                       popType(tensor->info),
@@ -621,8 +626,7 @@ PriTask Devicex::opTask(Op *op, double priority) {
   }
 
   auto f = [opx]() {
-    std::cout << "Creating output tensors for " << opx->op_p->str()
-              << std::endl;
+    logging::debug("Creating output tensors for " + opx->op_p->str());
     opx->grow();
   };
 
@@ -706,26 +710,26 @@ void Devicex::prepare() {
   for (auto &task : tasks.getLinearised()) {
     task.f();
   }
-  std::cout << "All tasks complete" << std::endl;
-  std::cout << "Creating poplar::Engine" << std::endl;
+  logging::info("All tasks complete");
+  logging::debug("Creating poplar::Engine");
 
   try {
     pEngine.reset(new poplar::Engine(graph(), progs.progs(), engineOptions));
   } catch (const poplar::poplar_error &e) {
     throw error(std::string("Engine compilation error: ") + e.what());
   }
-  std::cout << "Engine has been created" << std::endl;
+  logging::debug("Engine has been created");
 
   pEngine->load(popDevice);
-  std::cout << "Engine has loaded device" << std::endl;
+  logging::debug("Engine has loaded device");
 
-  std::cout << "Connecting initializer streams" << std::endl;
+  logging::debug("Connecting initializer streams");
   for (auto id : ir().getTensors().getInitIds()) {
     Tensor *tensor = ir().getTensors().get(id);
     pEngine->connectStream(h2dId(id), tensor->tensorData()->data());
   }
 
-  std::cout << "Connecting optimizer streams" << std::endl;
+  logging::debug("Connecting optimizer streams");
   for (Tensor *tensor : ir().optimizerTensors()) {
     pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
   }
@@ -739,8 +743,7 @@ void Devicex::prepare() {
         pEngine->connectStream(streamId, addr0, addr1);
       };
 
-  std::cout << "Creating host buffers for h2d streams, and connecting"
-            << std::endl;
+  logging::debug("Creating host buffers for h2d streams, and connecting");
   for (Tensor *tensor : ir().dataStreamTensors()) {
     PopStreamId streamId = h2dId(tensor->id);
     // allocate host memory, where the poplar::Stream will read data from
@@ -751,8 +754,7 @@ void Devicex::prepare() {
     engineToStream(data0, n_bytes, streamId);
   }
 
-  std::cout << "Creating host buffers for anchor d2h streams, connecting"
-            << std::endl;
+  logging::debug("Creating host buffers for anchor d2h streams, connecting");
   for (TensorId anchorId : ir().getDataFlow().anchors()) {
     PopStreamId streamId = d2hId(anchorId);
     Tensor *tensor       = ir().getTensors().get(anchorId);
@@ -777,8 +779,7 @@ void Devicex::prepare() {
     engineToStream(data0, n_bytes, streamId);
   }
 
-  std::cout << "Creating host buffers for weight d2h streams, connecting"
-            << std::endl;
+  logging::debug("Creating host buffers for weight d2h streams, connecting");
 
   for (auto initId : ir().getTensors().getInitIds()) {
     PopStreamId streamId = d2hId(initId);
@@ -820,8 +821,7 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
                               poplar::program::Sequence &sq) const {
 
   auto f = [&sq, tensor, this]() {
-    std::cout << "Adding poplar::program::Copy from host " << tensor->id
-              << std::endl;
+    logging::debug("Adding poplar::program::Copy from host " + tensor->id);
     sq.add(poplar::program::Copy(fromHostStreams.at(tensor->id),
                                  tensors.get(tensor->id)));
   };
@@ -839,8 +839,7 @@ PriTask Devicex::toHostTask(Tensor *tensor,
                             poplar::program::Sequence &sq) const {
 
   auto f = [&sq, tensor, this]() {
-    std::cout << "Adding poplar::program::Copy to host " << tensor->id
-              << std::endl;
+    logging::debug("Adding poplar::program::Copy to host " + tensor->id);
     sq.add(poplar::program::Copy(tensors.get(tensor->id),
                                  toHostStreams.at(tensor->id)));
   };
