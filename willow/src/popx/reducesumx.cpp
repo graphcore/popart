@@ -50,14 +50,14 @@ ReduceSumGradOpx::ReduceSumGradOpx(Op *op, Devicex *devicex)
   }
 }
 
-void ReduceSumGradOpx::grow(poplar::program::Sequence &) const {
+void ReduceSumGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto op        = dynamic_cast<ReduceSumGradOp *>(op_p);
-  auto &input          = get(inId(0));
+  auto output          = cloneNcopy(prog, inId(0));
   auto input_shape     = inShape(0);
   auto output_shape    = outShape(0);
   const auto new_shape = vector_cast<std::size_t>(op->backwardShape());
 
-  auto output = input.reshape(new_shape);
+  output = output.reshape(new_shape);
 
   // Broadcasting across each dimension
   for (int dim = 0; dim < new_shape.size(); ++dim) {
