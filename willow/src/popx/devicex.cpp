@@ -306,7 +306,7 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
 void Devicex::anchorsHostToHostStreams(const StepIO &stepio) {
   std::string prefix = "     ";
   std::cout << prefix << "Copying to h2d stream address(es) " << std::endl;
-  for (Tensor *tensor : pir->dataStreamTensors()) {
+  for (Tensor *tensor : ir().dataStreamTensors()) {
     ConstVoidData stepin = stepio.in(tensor->id);
 
     // where to write to on host,
@@ -331,7 +331,7 @@ void Devicex::anchorsHostToHostStreams(const StepIO &stepio) {
 void Devicex::anchorsHostFromHostStreams(const StepIO &stepio) {
   std::string prefix = "     ";
   std::cout << prefix << "Copying from d2h stream address(es) " << std::endl;
-  for (TensorId anchorId : pir->dataFlow.anchors()) {
+  for (TensorId anchorId : ir().getDataFlow().anchors()) {
     MutableVoidData stepout = stepio.out(anchorId);
     hostStreamToHost(stepout, anchorId);
   }
@@ -344,7 +344,7 @@ void Devicex::infer(const StepIO &stepio) {
 
   std::cout << prefix << "Running the inference program " << std::endl;
   // TODO : this should be in a poplar for loop (see T5093)
-  for (int i = 0; i < pir->dataFlow.batchesPerStep(); ++i) {
+  for (int i = 0; i < ir().getDataFlow().batchesPerStep(); ++i) {
     pEngine->run(PopPrograms::ProgramIndex::INFER);
   }
 
@@ -358,7 +358,7 @@ void Devicex::evaluate(const StepIO &stepio) {
 
   std::cout << prefix << "Running the evaluate program " << std::endl;
   // TODO : this should be in a poplar for loop (see T5093)
-  for (int i = 0; i < pir->dataFlow.batchesPerStep(); ++i) {
+  for (int i = 0; i < ir().getDataFlow().batchesPerStep(); ++i) {
     pEngine->run(PopPrograms::ProgramIndex::EVALUATE);
   }
 
@@ -372,7 +372,7 @@ void Devicex::train(const StepIO &stepio) {
 
   std::cout << prefix << "Running the train program " << std::endl;
   // TODO : this should be in a poplar for loop (see T5093)
-  for (int i = 0; i < pir->dataFlow.batchesPerStep(); ++i) {
+  for (int i = 0; i < ir().getDataFlow().batchesPerStep(); ++i) {
     pEngine->run(PopPrograms::ProgramIndex::TRAIN);
   }
 
@@ -780,16 +780,16 @@ void Devicex::prepare() {
     // 1
     tasks.add(streamToHostTask(ir().getTensors().get(id)));
     // 2
-    tasks.add(toHostTask(pir->tensors.get(id), progs.forwardFragment()));
+    tasks.add(toHostTask(ir().getTensors().get(id), progs.forwardFragment()));
   }
 
   // create Program to write optimizer tensors to device
-  for (Tensor *tensor : pir->optimizerTensors()) {
+  for (Tensor *tensor : ir().optimizerTensors()) {
     tasks.add(fromHostTask(tensor, progs.optimizerFromHostFragment()));
   }
 
   // making the network!
-  for (Tensor *tensor : pir->dataStreamTensors()) {
+  for (Tensor *tensor : ir().dataStreamTensors()) {
     tasks.add(fromHostTask(tensor, progs.forwardFragment()));
   }
   std::vector<Op *> ops = ir().getOpSchedule();

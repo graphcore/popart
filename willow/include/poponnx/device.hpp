@@ -22,7 +22,7 @@ public:
   virtual void infer(const StepIO &)    = 0;
   virtual void evaluate(const StepIO &) = 0;
   virtual void train(const StepIO &)    = 0;
-  const Ir *ir() const;
+  const Ir &ir() const { return _ir; }
 
 private:
   const Ir &_ir;
