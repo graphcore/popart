@@ -62,6 +62,156 @@ std::string BuilderImpl::add(const std::string &arg0, const std::string &arg1) {
   return id;
 }
 
+std::string BuilderImpl::convolution(const std::string &arg0,
+                                     const std::string &arg1,
+                                     const std::vector<int> strides,
+                                     const std::vector<int> padding,
+                                     const std::vector<int> dilation,
+                                     int groups) {
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type("Conv");
+  node->add_input(arg0);
+  node->add_input(arg1);
+  node->add_output(id);
+
+  auto *auto_pad_attr = node->add_attribute();
+  auto_pad_attr->set_name("auto_pad");
+  auto_pad_attr->set_type(onnx::AttributeProto::STRING);
+  auto_pad_attr->set_s("NOTSET");
+
+  auto *dilations_attr = node->add_attribute();
+  dilations_attr->set_name("dilations");
+  for (auto i : dilation) {
+    dilations_attr->add_ints(i);
+  }
+
+  auto *group_attr = node->add_attribute();
+  group_attr->set_name("group");
+  group_attr->set_i(groups);
+
+  auto *pads_attr = node->add_attribute();
+  pads_attr->set_name("pads");
+  for (auto i : padding) {
+    pads_attr->add_ints(i);
+  }
+
+  auto *strides_attr = node->add_attribute();
+  strides_attr->set_name("strides");
+  for (auto i : strides) {
+    strides_attr->add_ints(i);
+  }
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return id;
+}
+
+std::string BuilderImpl::convolutionWithBias(const std::string &arg0,
+                                             const std::string &arg1,
+                                             const std::string &arg2,
+                                             const std::vector<int> strides,
+                                             const std::vector<int> padding,
+                                             const std::vector<int> dilation,
+                                             int groups) {
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type("Conv");
+  node->add_input(arg0);
+  node->add_input(arg1);
+  node->add_input(arg2);
+  node->add_output(id);
+
+  auto *auto_pad_attr = node->add_attribute();
+  auto_pad_attr->set_name("auto_pad");
+  auto_pad_attr->set_type(onnx::AttributeProto::STRING);
+  auto_pad_attr->set_s("NOTSET");
+
+  auto *dilations_attr = node->add_attribute();
+  dilations_attr->set_name("dilations");
+  for (auto i : dilation) {
+    dilations_attr->add_ints(i);
+  }
+
+  auto *group_attr = node->add_attribute();
+  group_attr->set_name("group");
+  group_attr->set_i(groups);
+
+  auto *pads_attr = node->add_attribute();
+  pads_attr->set_name("pads");
+  for (auto i : padding) {
+    pads_attr->add_ints(i);
+  }
+
+  auto *strides_attr = node->add_attribute();
+  strides_attr->set_name("strides");
+  for (auto i : strides) {
+    strides_attr->add_ints(i);
+  }
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return id;
+}
+
+std::string BuilderImpl::gemm(const std::string &arg0,
+                              const std::string &arg1,
+                              const std::string &arg2,
+                              float alpha,
+                              float beta,
+                              int transA,
+                              int transB) {
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type("GEMM");
+  node->add_input(arg0);
+  node->add_input(arg1);
+  node->add_input(arg2);
+  node->add_output(id);
+
+  auto *alpha_attr = node->add_attribute();
+  alpha_attr->set_name("alpha");
+  alpha_attr->set_f(alpha);
+
+  auto *beta_attr = node->add_attribute();
+  beta_attr->set_name("beta");
+  beta_attr->set_f(beta);
+
+  auto *transa_attr = node->add_attribute();
+  transa_attr->set_name("transA");
+  transa_attr->set_i(transA);
+
+  auto *transb_attr = node->add_attribute();
+  transb_attr->set_name("transB");
+  transb_attr->set_i(transB);
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return id;
+}
+
+std::string BuilderImpl::matmul(const std::string &arg0,
+                                const std::string &arg1) {
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type("MatMul");
+  node->add_input(arg0);
+  node->add_input(arg1);
+  node->add_output(id);
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return id;
+}
+
 std::string BuilderImpl::getModelProto() const {
   std::string output;
   model_.SerializeToString(&output);

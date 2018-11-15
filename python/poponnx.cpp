@@ -38,7 +38,7 @@ DataType getDataTypeFromNpType(std::string npType) {
 }
 
 TensorInfo getTensorInfo(py::array npArr) {
-  auto dtype = npArr.dtype();
+  auto dtype      = npArr.dtype();
   auto typeString = py::str(dtype);
   auto tRank      = npArr.ndim();
   std::vector<int64_t> shape;
@@ -161,10 +161,10 @@ PYBIND11_MODULE(poponnx_core, m) {
   basesgd.def("learnRate", &BaseSGD::learnRate);
 
   py::class_<SGD>(m, "SGD", basesgd)
-      .def(py::init<float>(),py::arg("learning_rate"));
+      .def(py::init<float>(), py::arg("learning_rate"));
 
   py::class_<ConstSGD>(m, "ConstSGD", basesgd)
-      .def(py::init<float>(),py::arg("learning_rate"));
+      .def(py::init<float>(), py::arg("learning_rate"));
 
   py::class_<SessionOptions>(m, "SessionOptionsCore")
       .def(py::init<>())
@@ -197,9 +197,36 @@ PYBIND11_MODULE(poponnx_core, m) {
 
   py::class_<Builder>(m, "Builder")
       .def(py::init<>())
-      .def("addInputTensor", &Builder::addInputTensor)
-      .def("addOutputTensor", &Builder::addOutputTensor)
-      .def("add", &Builder::add)
+      .def("addInputTensor", &Builder::addInputTensor, py::arg("tensorInfo"))
+      .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
+      .def("add", &Builder::add, py::arg("lhs"), py::arg("rhs"))
+      .def("convolution",
+           &Builder::convolution,
+           py::arg("input"),
+           py::arg("kernel"),
+           py::arg("strides"),
+           py::arg("padding"),
+           py::arg("dilation"),
+           py::arg("groups"))
+      .def("convolutionWithBias",
+           &Builder::convolutionWithBias,
+           py::arg("input"),
+           py::arg("kernel"),
+           py::arg("bias"),
+           py::arg("strides"),
+           py::arg("padding"),
+           py::arg("dilation"),
+           py::arg("groups"))
+      .def("gemm",
+           &Builder::gemm,
+           py::arg("lhs"),
+           py::arg("rhs"),
+           py::arg("bias"),
+           py::arg("alpha"),
+           py::arg("beta"),
+           py::arg("transA"),
+           py::arg("transB"))
+      .def("matmul", &Builder::matmul, py::arg("lhs"), py::arg("rhs"))
       .def("getModelProto", [](const Builder &builder) {
         return py::bytes(builder.getModelProto());
       });
