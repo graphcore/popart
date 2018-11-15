@@ -120,6 +120,36 @@ public:
    */
   TensorInfo getInfo(TensorId) const;
 
+  /**
+   * Retrieve the summary from from the poplar::Engine
+   *
+   * The options which were given to the constructor will influence the
+   * information in the report.
+   *
+   * \return a string containing the report
+   */
+  std::string getSummaryReport() const;
+
+  /**
+   * Retrieve the graph report from the poplar::Engine
+   *
+   * The options which were given to the constructor will influence the
+   * information in the report.
+   *
+   * \return a string containing the graph (compilation) report
+   */
+  std::string getGraphReport() const;
+
+  /**
+   * Retrieve the execution report from the poplar::Engine
+   *
+   * The options which were given to the constructor will influence the
+   * information in the report.
+   *
+   * \return a string containing the execution report
+   */
+  std::string getExecutionReport() const;
+
 private:
   /**
    * abstraction of the computation, the Ir is where

@@ -23,6 +23,9 @@ public:
   virtual void evaluate(const StepIO &) = 0;
   virtual void train(const StepIO &)    = 0;
   const Ir &ir() const { return _ir; }
+  virtual std::string getSummaryReport() const   = 0;
+  virtual std::string getGraphReport() const     = 0;
+  virtual std::string getExecutionReport() const = 0;
 
 private:
   const Ir &_ir;

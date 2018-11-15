@@ -193,7 +193,10 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("evaluate", &Session::evaluate)
       .def("infer", &Session::infer)
       .def("modelToHost", &Session::modelToHost)
-      .def("getInfo", &Session::getInfo);
+      .def("getInfo", &Session::getInfo)
+      .def("getSummaryReport", &Session::getSummaryReport)
+      .def("getGraphReport", &Session::getGraphReport)
+      .def("getExecutionReport", &Session::getExecutionReport);
 
   py::class_<Builder>(m, "BuilderCore")
       .def(py::init<>())

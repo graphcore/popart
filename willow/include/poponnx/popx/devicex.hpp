@@ -105,6 +105,10 @@ public:
   void train(const StepIO &) final;
   void weightsToHost(const std::map<TensorId, MutableVoidData> &) final;
 
+  virtual std::string getSummaryReport() const override final;
+  virtual std::string getGraphReport() const override final;
+  virtual std::string getExecutionReport() const override final;
+
   PopPrograms progs;
   Opx *getOpx(OpId);
   poplar::Graph &graph();
@@ -121,7 +125,7 @@ public:
 
   enigma::ConvOptions fwdConvOptions, bwdConvOptions, wuConvOptions;
   poplar::OptionFlags fwdMmOptions, bwdMmLhsOptions, bwdMmRhsOptions;
-  poplar::OptionFlags engineOptions;
+  poplar::OptionFlags engineOptions, reportOptions;
 
   PopTensors tensors;
 

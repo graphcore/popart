@@ -204,6 +204,10 @@ Devicex::Devicex(const Ir &ir) : willow::Device(ir), tensors(ir) {
   for (auto it : ir.getSessionOptions().engineOptions) {
     engineOptions.set(it.first, it.second);
   }
+
+  for (auto it : ir.getSessionOptions().reportOptions) {
+    reportOptions.set(it.first, it.second);
+  }
 }
 
 void Devicex::weightsFromHost() {
@@ -944,6 +948,50 @@ PriTask Devicex::toHostTask(Tensor *tensor,
               taskWhichCreates(tensor->id)    // poplar::Tensor creation task.
           },
           f};
+}
+
+std::string Devicex::getSummaryReport() const {
+  if (pEngine == nullptr) {
+    throw error(
+        "Session must have been prepared before a report can be fetched");
+  }
+  try {
+    std::stringstream ss;
+    pEngine->printSummary(ss, reportOptions);
+    return ss.str();
+  } catch (const poplar::poplar_error &e) {
+    throw error(e.what());
+  }
+}
+
+std::string Devicex::getGraphReport() const {
+  if (pEngine == nullptr) {
+    throw error(
+        "Session must have been prepared before a report can be fetched");
+  }
+  try {
+    std::stringstream ss;
+    auto report = pEngine->getGraphReport(reportOptions);
+    report.serialize(ss, poplar::SerializationFormat::JSON);
+    return ss.str();
+  } catch (const poplar::poplar_error &e) {
+    throw error(e.what());
+  }
+}
+
+std::string Devicex::getExecutionReport() const {
+  if (pEngine == nullptr) {
+    throw error(
+        "Session must have been prepared before a report can be fetched");
+  }
+  try {
+    std::stringstream ss;
+    auto report = pEngine->getExecutionReport(reportOptions);
+    report.serialize(ss, poplar::SerializationFormat::JSON);
+    return ss.str();
+  } catch (const poplar::poplar_error &e) {
+    throw error(e.what());
+  }
 }
 
 poplar::Type popType(const TensorInfo &info) {

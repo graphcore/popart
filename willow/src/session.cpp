@@ -124,4 +124,16 @@ void Session::modelToHost(const std::string &fn) {
   io::writeModel(model, fn);
 }
 
+std::string Session::getSummaryReport() const {
+  return device_->getSummaryReport();
+}
+
+std::string Session::getGraphReport() const {
+  return device_->getGraphReport();
+}
+
+std::string Session::getExecutionReport() const {
+  return device_->getExecutionReport();
+}
+
 } // namespace willow
