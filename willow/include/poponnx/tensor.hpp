@@ -108,8 +108,7 @@ public:
   // shape and data type. Not to be used before inferShape of pir has run
   TensorInfo info;
 
-  Op *getProducer();
-  const Op *getProducer() const;
+  Op *getProducer() const;
   void setProducer(Op *);
   void resetProducer(Op *);
   bool hasProducer() const;

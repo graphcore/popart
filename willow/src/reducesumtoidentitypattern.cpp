@@ -8,15 +8,14 @@
 
 namespace willow {
 
-bool ReduceSumToIdentityPattern::matches(const Op *op) const {
+bool ReduceSumToIdentityPattern::matches(Op *op) const {
   // A reduce sum that doesn't change the shape is an identity operation
   return op->isConvertibleTo<ReduceSumOp>() &&
          (op->input.tensor(0)->info.shape() ==
           op->output.tensor(0)->info.shape());
 }
 
-std::vector<const Tensor *>
-ReduceSumToIdentityPattern::touches(const Op *) const {
+std::vector<const Tensor *> ReduceSumToIdentityPattern::touches(Op *) const {
   return {};
 }
 

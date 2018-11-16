@@ -50,17 +50,17 @@ public:
 
   // Does this Pattern match the sub-graph centered (rooted)
   // on op?
-  virtual bool matches(const Op *op) const = 0;
+  virtual bool matches(Op *op) const = 0;
   // If this Pattern were to be applied at op, which
   // Tensors in the subgraph centered (rooted) on op
   // would be touched?
-  virtual std::vector<const Tensor *> touches(const Op *op) const = 0;
+  virtual std::vector<const Tensor *> touches(Op *op) const = 0;
   // Apply this Pattern, modifying the sub-graph centered (rooted)
   // on op
   virtual void apply(Op *op) const = 0;
   // if applied to op, would there
   // be any anchored tensors touched?
-  bool touchesAnchored(const Op *) const;
+  bool touchesAnchored(Op *) const;
 };
 
 // {(a), (b), (c)} -> [op0] -> (d) -> [op1] -> {(e), (f)}
@@ -68,11 +68,11 @@ public:
 // {(a), (b), (c)} ->        [op01]         -> {(e), (f)}
 class FuserPattern : public Pattern {
 public:
-  bool matches(const Op *) const final;
+  bool matches(Op *) const final;
   // Only (d) is touched. Therefore, a Pattern where [op1] and
   // [op01] perform inplace changes to an input tensor should
   // not inherit from FuserPattern.
-  std::vector<const Tensor *> touches(const Op *) const final;
+  std::vector<const Tensor *> touches(Op *) const final;
   void apply(Op *) const final;
 
 private:
@@ -111,9 +111,9 @@ public:
 
   // Pad with pad size zero
   // Sum with one input
-  bool matches(const Op *) const final;
+  bool matches(Op *) const final;
   //  Only tensor (), which is deleted, is touched
-  std::vector<const Tensor *> touches(const Op *) const final;
+  std::vector<const Tensor *> touches(Op *) const final;
   void apply(Op *) const final;
 };
 
@@ -141,11 +141,11 @@ public:
   // AddGrad (where N = 2)
   // Pad with pad size zero (where N = 1) *€
   // Sum with one input (where N = 1) *€
-  bool matches(const Op *) const final;
+  bool matches(Op *) const final;
   // rep1, rep2 and rep3 are touched (as they are deleted)
   // ori might be touched, if one its new consumers performs
   // an inplace modification to it.
-  std::vector<const Tensor *> touches(const Op *) const final;
+  std::vector<const Tensor *> touches(Op *) const final;
   void apply(Op *) const final;
 
 private:
@@ -159,7 +159,7 @@ private:
     int nWeakTopoCons{0};
     Op *lastCon{nullptr};
   };
-  TopoBundle getTopoConInfo(const Op *op) const;
+  TopoBundle getTopoConInfo(Op *op) const;
 
   // *€ : this pattern matches and removes []->()
   // whereas PreUniRepl matches and removes ()->[].

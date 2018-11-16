@@ -17,14 +17,12 @@ namespace willow {
 // and a similar one with Tensor pointers. A fair amount
 // of work...
 struct POpCmp {
-  bool operator()(const Op *const &a, const Op *const &b) const {
-    return a->id < b->id;
-  }
+  bool operator()(Op *const &a, Op *const &b) const { return a->id < b->id; }
 };
 
 class OpPriorityComparer {
 public:
-  bool operator()(const Op *const &op1, const Op *const &op2) const {
+  bool operator()(Op *const &op1, Op *const &op2) const {
     return op1->priority < op2->priority;
   }
 };

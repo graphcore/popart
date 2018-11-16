@@ -160,17 +160,11 @@ void Consumers::decrement(Op *op) {
   }
 }
 
-const Op *Tensor::getProducer() const {
+Op *Tensor::getProducer() const {
   if (!hasProducer()) {
     throw error("No producer for tensor " + id + " to return");
   }
   return producer;
-}
-
-// Scott Meyers solution for const version of non-const function
-Op *Tensor::getProducer() {
-  // only ugly-ugly line but it is correct
-  return const_cast<Op *>(const_cast<const Tensor &>(*this).getProducer());
 }
 
 bool Tensor::hasProducer() const { return producer != nullptr; }

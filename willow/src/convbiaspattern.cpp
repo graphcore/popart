@@ -9,13 +9,11 @@
 
 namespace willow {
 
-bool ConvBiasPattern::matches(const Op *op) const {
+bool ConvBiasPattern::matches(Op *op) const {
   return (op->opType == OpType::CONV) && (op->input.n() == 3);
 }
 
-std::vector<const Tensor *> ConvBiasPattern::touches(const Op *) const {
-  return {};
-}
+std::vector<const Tensor *> ConvBiasPattern::touches(Op *) const { return {}; }
 
 void ConvBiasPattern::apply(Op *op) const {
   const auto conv = dynamic_cast<ConvOp *>(op);

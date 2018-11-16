@@ -20,7 +20,7 @@ const PatternTypes &getPatternTypes() {
   return X;
 }
 
-bool Pattern::touchesAnchored(const Op *op) const {
+bool Pattern::touchesAnchored(Op *op) const {
   for (auto &tensor : touches(op)) {
     if (op->pir->isAnchored(tensor->id)) {
       return true;
@@ -65,7 +65,7 @@ const std::string &PatternTypes::get(PatternType opType) const {
   return strings_.at(opType);
 }
 
-bool PreUniRepl::matches(const Op *op) const {
+bool PreUniRepl::matches(Op *op) const {
   // op must have 1 input, and that input
   // must be consumed by only op (and only once)
   if (op->input.n() != 1) {
@@ -92,7 +92,7 @@ OpType SoftmaxGradDirect::get0() const { return OpType::NLLGRAD; }
 // NLLGRAD -> x -> SOFTMAXGRAD (1).
 OpType SoftmaxGradDirect::get1() const { return OpType::SOFTMAXGRAD; }
 
-bool FuserPattern::matches(const Op *op0) const {
+bool FuserPattern::matches(Op *op0) const {
   if (op0->opType == get0()) {
     const Tensor *ten_d = op0->output.tensor(0);
     // Consumed just once? Should be the case
@@ -106,11 +106,11 @@ bool FuserPattern::matches(const Op *op0) const {
   return false;
 }
 
-std::vector<const Tensor *> PreUniRepl::touches(const Op *op) const {
+std::vector<const Tensor *> PreUniRepl::touches(Op *op) const {
   return {op->input.tensor(0)};
 }
 
-std::vector<const Tensor *> FuserPattern::touches(const Op *op) const {
+std::vector<const Tensor *> FuserPattern::touches(Op *op) const {
   return {op->output.tensor(0)};
 }
 
@@ -137,7 +137,7 @@ void PreUniRepl::apply(Op *op) const {
   pir->eraseOp(op->id);
 }
 
-bool PostNRepl::matches(const Op *op) const {
+bool PostNRepl::matches(Op *op) const {
 
   // The Identity op fits the criteria of PostNRepl: An Op which replicates its
   // input N times (where N = 1 for identity)
@@ -183,7 +183,7 @@ bool PostNRepl::matches(const Op *op) const {
   return true;
 }
 
-PostNRepl::TopoBundle PostNRepl::getTopoConInfo(const Op *op) const {
+PostNRepl::TopoBundle PostNRepl::getTopoConInfo(Op *op) const {
   TopoBundle tcInf;
   std::vector<const Tensor *> wouldMerge;
   // The unique input to op:
@@ -207,7 +207,7 @@ PostNRepl::TopoBundle PostNRepl::getTopoConInfo(const Op *op) const {
 
 // touches all the outputs of the root op [*] from the Ir,
 // and maybe the input to the root op.
-std::vector<const Tensor *> PostNRepl::touches(const Op *op) const {
+std::vector<const Tensor *> PostNRepl::touches(Op *op) const {
   std::vector<const Tensor *> outs;
   for (auto &t_inds : op->output.indicesMap()) {
     outs.push_back(t_inds.first);
