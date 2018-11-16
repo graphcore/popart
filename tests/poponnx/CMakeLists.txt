@@ -15,17 +15,32 @@ function(add_test_executable name)
   endif()
 endfunction()
 
-function(add_poponnx_unit_test name)
+function(add_poponnx_cpp_unit_test name)
   message(STATUS
-    "Adding test '${name}' with sources '${ARGN}'")
+    "Adding C++ test '${name}' with sources '${ARGN}'")
   add_test_executable(${name} ${ARGN})
   set(executable_name "${name}")
   add_test(NAME "${name}"
-    COMMAND ${name}
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
+           COMMAND ${name}
+           WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
 endfunction()
 
-add_poponnx_unit_test(sampletest sampletest.cpp)
-add_poponnx_unit_test(dataflowtest dataflowtest.cpp)
-add_poponnx_unit_test(earlyinfotest earlyinfotest.cpp)
-add_poponnx_unit_test(matmultest matmul.cpp)
+add_poponnx_cpp_unit_test(dataflowtest dataflowtest.cpp)
+add_poponnx_cpp_unit_test(earlyinfotest earlyinfotest.cpp)
+add_poponnx_cpp_unit_test(matmultest matmul.cpp)
+
+
+function(add_poponnx_py_unit_test name)
+  message(STATUS
+    "Adding Python test '${name}'")
+  add_test(NAME "${name}"
+           COMMAND python3 ${name}.py
+           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+endfunction()
+
+add_poponnx_py_unit_test(builder_test)
+add_poponnx_py_unit_test(loader_test)
+add_poponnx_py_unit_test(net_test)
+add_poponnx_py_unit_test(operators_test)
+add_poponnx_py_unit_test(options_test)
+add_poponnx_py_unit_test(report_test)
