@@ -24,6 +24,7 @@
 
 // The patterns
 #include <poponnx/convbiaspattern.hpp>
+#include <poponnx/reducesumtoidentitypattern.hpp>
 
 // The layers:
 #include <poponnx/add.hpp>
@@ -521,6 +522,11 @@ void Ir::prepare(const IrBundle &gb) {
 
     case PatternType::SPLITCONVBIAS: {
       patterns.emplace_back(new ConvBiasPattern);
+      break;
+    }
+
+    case PatternType::REDUCESUMTOIDENTITY: {
+      patterns.emplace_back(new ReduceSumToIdentityPattern);
       break;
     }
 

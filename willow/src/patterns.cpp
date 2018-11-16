@@ -33,7 +33,8 @@ PatternTypes::PatternTypes() {
   opTypes_ = {{"PostNRepl", PatternType::POSTNREPL},
               {"PreUniRepl", PatternType::PREUNIREPL},
               {"SoftmaxGradDirect", PatternType::SOFTMAXGRADDIRECT},
-              {"SplitConvBias", PatternType::SPLITCONVBIAS}};
+              {"SplitConvBias", PatternType::SPLITCONVBIAS},
+              {"ReduceSumToIdentity", PatternType::REDUCESUMTOIDENTITY}};
 
   std::vector<std::string> opTypeKeys;
   opTypeKeys.reserve(opTypes_.size());

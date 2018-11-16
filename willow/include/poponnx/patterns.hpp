@@ -10,7 +10,8 @@ enum class PatternType {
   PREUNIREPL = 0,
   POSTNREPL,
   SOFTMAXGRADDIRECT,
-  SPLITCONVBIAS
+  SPLITCONVBIAS,
+  REDUCESUMTOIDENTITY
 };
 
 class PatternTypes {
