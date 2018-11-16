@@ -1,4 +1,5 @@
 #include <poponnx/error.hpp>
+#include <poponnx/identity.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/nll.hpp>
 #include <poponnx/pad.hpp>
@@ -138,8 +139,9 @@ void PreUniRepl::apply(Op *op) const {
 
 bool PostNRepl::matches(const Op *op) const {
 
-  // TODO: capture all the N = 1 cases (Ops which inherit from IdentityOp).
-  if (op->opType == OpType::IDENTITY) {
+  // The Identity op fits the criteria of PostNRepl: An Op which replicates its
+  // input N times (where N = 1 for identity)
+  if (op->isConvertibleTo<IdentityOp>()) {
     // good so far
   }
   // A sum with only one input
