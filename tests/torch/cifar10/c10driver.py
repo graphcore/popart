@@ -43,6 +43,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
 
     opts = poponnx.SessionOptionsCore()
     opts.exportDot = True
+    opts.logging = {"all": "TRACE", "session": "WARN"}
 
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations

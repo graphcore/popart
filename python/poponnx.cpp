@@ -171,7 +171,8 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("exportDot", &SessionOptions::exportDot)
       .def_readwrite("engineOptions", &SessionOptions::engineOptions)
       .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
-      .def_readwrite("reportOptions", &SessionOptions::reportOptions);
+      .def_readwrite("reportOptions", &SessionOptions::reportOptions)
+      .def_readwrite("logging", &SessionOptions::loggingOptions);
 
   py::class_<Session>(m, "SessionCore")
       .def(py::init(&Session::createFromOnnxModel),

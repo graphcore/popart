@@ -6,7 +6,7 @@ namespace willow {
 int AddOp::arg0Index() { return 0; }
 int AddOp::arg1Index() { return 1; }
 
-AddOp::AddOp(const onnx::NodeProto &node, Ir *pir) : Op(node, pir) {}
+AddOp::AddOp(const onnx::NodeProto &node, Ir *ir) : Op(node, ir) {}
 
 std::unique_ptr<Op> AddOp::clone() const {
   return std::unique_ptr<Op>(new AddOp(*this));

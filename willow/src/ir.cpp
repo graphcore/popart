@@ -577,7 +577,7 @@ void Ir::prepare(const IrBundle &gb) {
 
   std::stringstream ss2;
   append(ss2);
-  logging::info(ss2.str());
+  logging::ir::info(ss2.str());
 }
 
 std::vector<Op *> Ir::getOpScheduleTilLoss() const {
@@ -977,7 +977,7 @@ void Ir::addInitIfUsed(TensorId id, const onnx::TensorProto *t) {
   if (allNodeInputsMap.count(id) != 0) {
     tensors.addInit(id, t);
   } else {
-    logging::warn("Unused ONNX tensor  " + id);
+    logging::ir::warn("Unused ONNX tensor  " + id);
   }
 }
 

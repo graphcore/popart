@@ -79,6 +79,7 @@ def test_engine_options_passed_to_engine():
 
     opts = poponnx.SessionOptions()
     opts.engineOptions = {'option': 'value'}
+    opts.logging = {'all': 'DEGBUG'}
 
     session = poponnx.Session(
         fnModel=proto,

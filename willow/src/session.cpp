@@ -2,6 +2,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
 #include <poponnx/ir.hpp>
+#include <poponnx/logging.hpp>
 #include <poponnx/onnxutil.hpp>
 #include <poponnx/optionflags.hpp>
 #include <poponnx/popx/devicex.hpp>
@@ -23,6 +24,8 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
                                 std::string logdir,
                                 const SessionOptions &userOptions,
                                 const std::vector<std::string> &patternNames) {
+
+  logging::session::trace("Session::configureFromOnnx");
 
   onnx::ModelProto modelProto;
   try {
@@ -53,6 +56,11 @@ Session::createFromOnnxModel(const std::string &model,
                              const SessionOptions &userOptions,
                              const std::vector<std::string> &patternNames) {
 
+  // Needs to be the first call to initialise the logging settings
+  logging::configure(userOptions.loggingOptions);
+
+  logging::session::trace("Session::createFromOnnx");
+
   // Note : Can not use make_unique as the implementation can not acces the
   // private constructor
   auto session = std::unique_ptr<Session>(new Session());
@@ -69,10 +77,12 @@ Session::createFromOnnxModel(const std::string &model,
 }
 
 void Session::updateOptimizer(const Optimizer *optimizer) {
+  logging::session::trace("Session::updateOptimzier");
   ir.updateOptimizer(optimizer);
 }
 
 void Session::setDevice(const std::string &deviceString) {
+  logging::session::trace("Session::setDevice({})", deviceString);
   if (deviceString == "IPU") {
     device_.reset(new popx::Devicex(ir));
   } else {
@@ -82,6 +92,7 @@ void Session::setDevice(const std::string &deviceString) {
 
 // get the TensorInfo on a Tensor
 TensorInfo Session::getInfo(TensorId id) const {
+  logging::session::trace("Session::getInfo({})", id);
   TensorInfo info = ir.getTensors().get(id)->info;
   if (!info.isSet()) {
     throw error("TensorInfo for `" + id + "' not set");
@@ -91,22 +102,41 @@ TensorInfo Session::getInfo(TensorId id) const {
 
 Session::~Session() = default;
 
-void Session::prepareDevice() { device_->prepare(); }
+void Session::prepareDevice() {
+  logging::session::trace("Session::prepareDevice()");
+  device_->prepare();
+}
 
-void Session::weightsFromHost() { device_->weightsFromHost(); }
+void Session::weightsFromHost() {
+  logging::session::trace("Sessions::weightsFromHost");
+  device_->weightsFromHost();
+}
 
 // write whatever optimizer tensors (learning rates,
 // momentum, initial momentum tensors (zero)) there are to device
-void Session::optimizerFromHost() { device_->optimizerFromHost(); }
+void Session::optimizerFromHost() {
+  logging::session::trace("Session::optimzierFromHost");
+  device_->optimizerFromHost();
+}
 
-void Session::train(const StepIO &stepio) { device_->train(stepio); }
+void Session::train(const StepIO &stepio) {
+  logging::session::trace("Session::train");
+  device_->train(stepio);
+}
 
-void Session::evaluate(const StepIO &stepio) { device_->evaluate(stepio); }
+void Session::evaluate(const StepIO &stepio) {
+  logging::session::trace("Session::evaluate");
+  device_->evaluate(stepio);
+}
 
-void Session::infer(const StepIO &stepio) { device_->infer(stepio); }
+void Session::infer(const StepIO &stepio) {
+  logging::session::trace("Session::infer");
+  device_->infer(stepio);
+}
 
 // write current model to ONNX file
 void Session::modelToHost(const std::string &fn) {
+  logging::session::trace("Session::modelToHost");
 
   onnx::ModelProto model = ir.getModel();
 
@@ -125,14 +155,17 @@ void Session::modelToHost(const std::string &fn) {
 }
 
 std::string Session::getSummaryReport() const {
+  logging::session::trace("Session::getSummaryReport");
   return device_->getSummaryReport();
 }
 
 std::string Session::getGraphReport() const {
+  logging::session::trace("Session::getGraphReport");
   return device_->getGraphReport();
 }
 
 std::string Session::getExecutionReport() const {
+  logging::session::trace("Session::getExecutionReport");
   return device_->getExecutionReport();
 }
 

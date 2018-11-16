@@ -5,6 +5,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <poponnx/logging.hpp>
 
 namespace willow {
 
@@ -13,7 +14,11 @@ namespace willow {
  */
 class error : public std::runtime_error {
 public:
-  explicit error(const std::string &what) : std::runtime_error(what) {}
+  explicit error(const std::string &what) : std::runtime_error(what) {
+    // log the error, need to ensure we do not use this expection in the
+    // logging class.
+    logging::err(what);
+  }
 };
 
 } // namespace willow
