@@ -42,6 +42,10 @@ public:
   // clone the poplar::Tensor identified by its TensorId,
   // and copy the contents of it, in the step() program.
   poplar::Tensor cloneNcopy(poplar::program::Sequence &, TensorId) const;
+  // Return the poplar Tensor identified by its TensorId, numpy broadcasting it
+  // up to the given shape. Throws an exception of the identified Tensor doesn't
+  // have a compatible shape.
+  poplar::Tensor broadcast(const std::vector<int64_t> &, TensorId) const;
 
   // shortcut for dv_p->graph
   poplar::Graph &graph() const;

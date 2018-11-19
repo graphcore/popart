@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <numeric>
 #include <poponnx/error.hpp>
 #include <poponnx/tensorinfo.hpp>
@@ -34,23 +35,77 @@ std::vector<size_t> TensorInfo::shape_szt() const {
   return szts;
 }
 
-// numpy output shape of:
+static int64_t broadcastableDimSize(int64_t a, int64_t b) {
+  if ((a > 0) && (b > 0) && ((a == b) || (a == 1) || (b == 1))) {
+    return std::max(a, b);
+  } else {
+    // Incompatible dimensions found. Throw an exception, borrowing the same
+    // terminology as numpy.
+    throw error("np broadcasting failed, frames are not aligned");
+  }
+}
+
+// Calculate the numpy broadcast shape as described in
+// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
+//
+// For Example:
+// s0            = {   1, 4, 5} &
+// s1            = {2, 3, 1, 1} =>
+// npOut(s0, s1) = {2, 3, 4, 5}
+// Look in tests/poponnx/numpybroadcastshapetest.cpp for more examples.
 std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
                            const std::vector<int64_t> &s1) {
+  // In the given example:
+  // s0      = {   1, 4, 5} &
+  // s1      = {2, 3, 4, 5} =>
+  // result := {1, 1, 1, 1}
+  std::vector<int64_t> result(std::max(s0.size(), s1.size()), 1);
 
-  if (s0 != s1) {
-    throw error("np broadcasting not implemented");
-  }
+  // Calculate the length of the overlap between `s0` and `s1` in `result`.
+  //
+  // In the given example:
+  // overlap := min(|s0|, |s1|) = 3
+  const auto overlap = std::min(s0.size(), s1.size());
 
-  return s0;
+  // If the lengths of `s0` and `s1` mismatch, copy the prefix of the longer
+  // shape into `result`. At least one of these copies will be a no-op.
+  //
+  // In the given example:
+  // overlap = 3            &
+  // s0      = {   1, 4, 5} &
+  // s1      = {2, 3, 1, 1} &
+  // result  = {1, 1, 1, 1} =>
+  // result := {2, 1, 1, 1}
+  const auto dst_itr = std::next(result.rbegin(), overlap);
+  std::copy(std::next(s0.rbegin(), overlap), s0.rend(), dst_itr);
+  std::copy(std::next(s1.rbegin(), overlap), s1.rend(), dst_itr);
+
+  // Take the element-wise maximum of `s0` and `s1` in the overlapping region
+  // and put it into `result`. This will throw an exception if the elements are
+  // not numpy broadcast compatible.
+  //
+  // In the given example:
+  // overlap = 3            &
+  // s0      = {   1, 4, 5} &
+  // s1      = {2, 3, 1, 1} &
+  // result  = {2, 1, 1, 1} =>
+  // result := {2, 3, 4, 5}
+  util::zipWith(s0.rbegin(),
+                std::next(s0.rbegin(), overlap),
+                s1.rbegin(),
+                std::next(s1.rbegin(), overlap),
+                result.rbegin(),
+                broadcastableDimSize);
+
+  return result;
 }
 
 TensorInfo npOut(const TensorInfo &i0, const TensorInfo &i1) {
-  if (i0 != i1) {
-    throw error("np broadcasting not supported, failed TensorInfo comparison");
+  if (i0.dataType() != i1.dataType()) {
+    throw error("np broadcasting failed, incompatible types");
   }
 
-  return i1;
+  return {i0.dataType(), npOut(i0.shape(), i1.shape())};
 }
 
 void TensorInfo::append(std::ostream &ss) const {

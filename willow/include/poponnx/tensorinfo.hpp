@@ -11,7 +11,8 @@ namespace willow {
 
 class TensorInfo;
 
-// numpy output shape of:
+// Calculate the numpy broadcast shape as described in
+// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
 std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
                            const std::vector<int64_t> &s1);
 
@@ -26,6 +27,8 @@ template <typename T> std::vector<T> squeeze(const std::vector<T> &v) {
   return w;
 }
 
+// Calculate the numpy broadcast shape as described in
+// https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
 TensorInfo npOut(const TensorInfo &i0, const TensorInfo &i1);
 
 // FLOAT, FLOAT16, INT8 etc.
