@@ -1729,13 +1729,13 @@ bool DataFlow::isAnchored(TensorId id) const {
 }
 
 DataFlow::DataFlow()
-    : batchesPerStep_(0), samplesPerBatch_(0), art_(AnchorReturnType::FINAL) {}
+    : batchesPerStep_(0), batchSize_(0), art_(AnchorReturnType::FINAL) {}
 
 DataFlow::DataFlow(int BpR,
                    int bs,
                    const std::vector<TensorId> &v,
                    AnchorReturnType artIn_)
-    : batchesPerStep_(BpR), samplesPerBatch_(bs), v_anchors(v), art_(artIn_) {
+    : batchesPerStep_(BpR), batchSize_(bs), v_anchors(v), art_(artIn_) {
   for (auto &id : v_anchors) {
     s_anchors.insert(id);
   }

@@ -864,7 +864,7 @@ void Devicex::prepare() {
       break;
     }
     case (AnchorReturnType::SUM): {
-      n_bytes = batch_bytes / ir().getDataFlow().samplesPerBatch();
+      n_bytes = batch_bytes / ir().getDataFlow().batchSize();
       break;
     }
     case (AnchorReturnType::ALL): {

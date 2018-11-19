@@ -19,15 +19,15 @@ if not os.path.exists(outputdir):
 
 nInChans = 3
 nOutChans = 10
-samplesPerBatch = 3
+batchSize = 3
 batchesPerStep = 2
 anchors = ["nllLossVal", "probs"]
 art = poponnx.AnchorReturnType.ALL
-dataFeed = poponnx.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
+dataFeed = poponnx.DataFlow(batchesPerStep, batchSize, anchors, art)
 earlyInfo = poponnx.EarlyInfo()
 earlyInfo.add("image0",
-              poponnx.TensorInfo("FLOAT", [samplesPerBatch, nInChans, 32, 32]))
-earlyInfo.add("label", poponnx.TensorInfo("INT32", [samplesPerBatch]))
+              poponnx.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
+earlyInfo.add("label", poponnx.TensorInfo("INT32", [batchSize]))
 inNames = ["image0"]
 cifarInIndices = {"image0": 0, "label": 1}
 outNames = ["probs"]

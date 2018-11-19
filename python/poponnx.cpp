@@ -108,9 +108,8 @@ PYBIND11_MODULE(poponnx_core, m) {
           py::arg("anchorTensors"),
           py::arg("anchorReturnType"))
       .def("nAnchors", &DataFlow::nAnchors)
-      .def("samplesPerBatch", &DataFlow::samplesPerBatch)
+      .def("batchSize", &DataFlow::batchSize)
       .def("batchesPerStep", &DataFlow::batchesPerStep)
-      .def("samplesPerStep", &DataFlow::samplesPerStep)
       .def("anchors", &DataFlow::anchors, pybind11::return_value_policy::copy)
       .def("art", &DataFlow::art);
 

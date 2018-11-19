@@ -110,7 +110,7 @@ class PytorchNetWriter(NetWriter):
         """
         torchOptimizer = self.getTorchOptimizer()
         self.module.train()
-        batchSize = self.dataFeed.samplesPerBatch()
+        batchSize = self.dataFeed.batchSize()
 
         # perform forwards - backwards - update
         # for each of the substeps (substep = batch)

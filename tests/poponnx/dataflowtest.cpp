@@ -11,9 +11,8 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case1) {
   auto df = willow::DataFlow();
 
   BOOST_CHECK(df.nAnchors() == 0);
-  BOOST_CHECK(df.samplesPerBatch() == 0);
+  BOOST_CHECK(df.batchSize() == 0);
   BOOST_CHECK(df.batchesPerStep() == 0);
-  BOOST_CHECK(df.samplesPerStep() == 0);
   BOOST_CHECK(df.art() == AnchorReturnType::FINAL);
   BOOST_CHECK(df.isAnchored("one") == false);
 }
@@ -23,9 +22,8 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
   auto df = willow::DataFlow(5, 2, {"one", "two"}, AnchorReturnType::ALL);
 
   BOOST_CHECK(df.nAnchors() == 2);
-  BOOST_CHECK(df.samplesPerBatch() == 2);
+  BOOST_CHECK(df.batchSize() == 2);
   BOOST_CHECK(df.batchesPerStep() == 5);
-  BOOST_CHECK(df.samplesPerStep() == 10);
   BOOST_CHECK(df.art() == AnchorReturnType::ALL);
   BOOST_CHECK(df.isAnchored("two") == true);
   BOOST_CHECK(df.isAnchored("three") == false);
@@ -33,9 +31,8 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
   willow::DataFlow df2(df);
 
   BOOST_CHECK(df2.nAnchors() == 2);
-  BOOST_CHECK(df2.samplesPerBatch() == 2);
+  BOOST_CHECK(df2.batchSize() == 2);
   BOOST_CHECK(df2.batchesPerStep() == 5);
-  BOOST_CHECK(df2.samplesPerStep() == 10);
   BOOST_CHECK(df2.art() == AnchorReturnType::ALL);
   BOOST_CHECK(df2.isAnchored("two") == true);
   BOOST_CHECK(df2.isAnchored("three") == false);
@@ -44,9 +41,8 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
   willow::DataFlow df3 = df;
 
   BOOST_CHECK(df3.nAnchors() == 2);
-  BOOST_CHECK(df3.samplesPerBatch() == 2);
+  BOOST_CHECK(df3.batchSize() == 2);
   BOOST_CHECK(df3.batchesPerStep() == 5);
-  BOOST_CHECK(df3.samplesPerStep() == 10);
   BOOST_CHECK(df3.art() == AnchorReturnType::ALL);
   BOOST_CHECK(df3.isAnchored("two") == true);
   BOOST_CHECK(df3.isAnchored("three") == false);

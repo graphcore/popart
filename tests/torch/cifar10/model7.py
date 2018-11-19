@@ -17,11 +17,11 @@ if not os.path.exists(outputdir):
 
 nChans = 3
 oChans = 10
-# process samplesPerBatch = 2 samples at a time,
+# process batchSize = 2 samples at a time,
 # so weights updated on average gradient of
-# samplesPerBatch = 2 samples. samplesPerBatch
+# batchSize = 2 samples. batchSize
 # is EXACTLY the batch size.
-samplesPerBatch = 2
+batchSize = 2
 
 # Return requested tensors every batchesPerStep = 3 cycles.
 # so only communicate back to host every 2*3 = 6 samples.
@@ -38,15 +38,14 @@ anchors = ["l1LossVal", "out"]
 # sum over samples in step? See ir.hpp for details.
 art = poponnx_core.AnchorReturnType.ALL
 
-dataFeed = poponnx_core.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
+dataFeed = poponnx_core.DataFlow(batchesPerStep, batchSize, anchors, art)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the WillowNet constructor.
 # In this example there is 1 streamed input, image0.
 earlyInfo = poponnx_core.EarlyInfo()
-earlyInfo.add(
-    "image0",
-    poponnx_core.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
+earlyInfo.add("image0",
+              poponnx_core.TensorInfo("FLOAT", [batchSize, nChans, 32, 32]))
 
 inNames = ["image0"]
 
