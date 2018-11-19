@@ -4,7 +4,7 @@
 
 namespace willow {
 VarUpdateOp::VarUpdateOp(std::string op_type, TensorId varId_, Ir *_pir)
-    : Op({op_type, _pir, {}, getWillowDomain()}), varId(varId_),
+    : Op({op_type, _pir, {}, getPoponnxDomain()}), varId(varId_),
       varGradId(getGradId(varId)) {
   // very high priority, so that performed as early as possible
   priority = std::numeric_limits<double>::max();

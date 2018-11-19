@@ -6,6 +6,8 @@
 
 #include <map>
 #include <poponnx/attributes.hpp>
+#include <poponnx/dataflow.hpp>
+#include <poponnx/earlyinfo.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/optionflags.hpp>
@@ -27,61 +29,6 @@ public:
 };
 
 class InputMapWrapper;
-
-// An anchor tensor is a tensor which the user wants returned
-// after a step is run. Anchors are essentially what tensorflow calls
-// "fetches". AnchorReturnType specifies what exactly should be
-// returned for a tensor, currently the 3 options are:
-
-enum class AnchorReturnType {
-  FINAL = 0, // return just the final batch of the step
-  SUM,       // return the sum of all samples at the end
-             // of the step
-  ALL        // return all batches in the step.
-};
-// As an example, suppose we have an anchor scalar (0-d) tensor,
-// Suppose batchesPerStep = 3 and batchSize = 2.
-// Suppose that the 2*3 = 6 samples processed in a step have values
-// 1, 2, 1, 0, 1, 3
-// Then, under each of the AnchorReturnTypes the returned tensors are,
-// FINAL : [1, 3]             (1-d tensor)
-// SUM   : 8                  (0-d tensor)
-// ALL   : [1, 2, 1, 0, 1, 3] (1-d tensor)
-
-// Describe what and when the user wants returned.
-class DataFlow {
-public:
-  DataFlow();
-  DataFlow(int batchesPerStep,
-           int batchSize,
-           const std::vector<TensorId> &,
-           AnchorReturnType);
-
-  DataFlow(const DataFlow &rhs) = default;
-  DataFlow &operator=(const DataFlow &rhs) = default;
-
-  bool isAnchored(TensorId) const;
-  const std::vector<TensorId> &anchors() const { return v_anchors; }
-  int nAnchors() const { return static_cast<int>(v_anchors.size()); }
-  int batchSize() const { return batchSize_; }
-  int batchesPerStep() const { return batchesPerStep_; }
-  AnchorReturnType art() const { return art_; }
-
-private:
-  /// The number of batches processed by the backend in one call to train,
-  /// evaluate or infer.
-  int batchesPerStep_;
-
-  /// The size of the minibatch
-  int batchSize_;
-
-  /// The set of tensors to return to the user after execution
-  std::vector<TensorId> v_anchors;
-  std::set<TensorId> s_anchors;
-
-  /// Anchor return type for multi-batch training, inference, or evaluation
-  AnchorReturnType art_;
-};
 
 // the input tensor of a grad-op has what kind of
 // relationship with the corresponding non-grad-op?
@@ -148,7 +95,7 @@ private:
   std::vector<Op *> complete;
 };
 
-std::string getWillowDomain();
+std::string getPoponnxDomain();
 
 // where tensor tenId is consumed by Op with OpId opId at
 // index "index", what should the name of the edge-gradient
@@ -164,33 +111,6 @@ TensorId getNonGradId(TensorId tenId);
 
 // get a recomputed tensor's name, based on original tensor
 TensorId getRecompId(TensorId tenId);
-
-// What is known about the Ir before it is run.
-// This knowledge can sometimes be compiled into the Ir,
-// and for certain backends is even required, for example
-// the IPU requires all Stream Tensor shapes.
-// In the future (TODO T5252) it will also contain indices for slicing
-// tensors (I think the LSTM from pytorch might require this)
-class EarlyInfo {
-public:
-  EarlyInfo()                     = default;
-  EarlyInfo(const EarlyInfo &rhs) = default;
-
-  void add(TensorId, const TensorInfo &);
-  const TensorInfo &get(TensorId) const;
-  bool has(TensorId) const;
-
-  // return all unique TensorIds of tensors with any
-  // information stored in this object, either TensorInfo
-  // or an actual tensor
-  std::vector<TensorId> getAllTensorIds() const;
-
-private:
-  std::map<TensorId, TensorInfo> infos;
-  // we will also have a map of actual tensors, these
-  // can be used sometimes to compile the Graph (slice
-  // indices for example) (TODO T5252)
-};
 
 enum class OpType {
   ADD = 0,

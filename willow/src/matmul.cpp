@@ -65,7 +65,7 @@ void MatMulOp::setup() {
 }
 
 MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)
-    : Op({"MatMulLhsGrad", fwdOp.pir, {}, getWillowDomain()}),
+    : Op({"MatMulLhsGrad", fwdOp.pir, {}, getPoponnxDomain()}),
       fwdOpOutputGrad(fwdOp.output.tensor(0)->info), rhs(fwdOp.rhsIn()->info) {}
 
 void MatMulLhsGradOp::setup() {
@@ -91,7 +91,7 @@ const std::map<int, int> &MatMulLhsGradOp::gradOutToNonGradIn() const {
 }
 
 MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
-    : Op({"MatMulRhsGrad", fwdOp.pir, {}, getWillowDomain()}),
+    : Op({"MatMulRhsGrad", fwdOp.pir, {}, getPoponnxDomain()}),
       fwdOpOutputGrad(fwdOp.output.tensor(0)->info), lhs(fwdOp.lhsIn()->info) {}
 
 void MatMulRhsGradOp::setup() {

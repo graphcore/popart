@@ -17,7 +17,7 @@ std::vector<std::unique_ptr<Op>> L1Op::getGradOps() {
 
 std::unique_ptr<Op> L1Loss::getOp(Ir *gp) const {
   return std::unique_ptr<Op>(
-      new L1Op({op_type(), gp, {}, getWillowDomain()}, this));
+      new L1Op({op_type(), gp, {}, getPoponnxDomain()}, this));
 }
 
 std::string L1Loss::op_type() const { return "L1"; }
@@ -53,7 +53,7 @@ void L1Op::setup() {
 }
 
 L1GradOp::L1GradOp(L1Op *op_)
-    : Op({"L1Grad", op_->pir, {}, getWillowDomain()}), l1loss_(op_->l1l()) {}
+    : Op({"L1Grad", op_->pir, {}, getPoponnxDomain()}), l1loss_(op_->l1l()) {}
 
 const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {
   // input at index 0 of this grad op is the input at index 0 of the L1

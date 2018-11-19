@@ -20,7 +20,7 @@ std::vector<std::unique_ptr<Op>> NegateOp::getGradOps() {
 void NegateOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 
 NegateGradOp::NegateGradOp(NegateOp *fwdOp)
-    : NegateOp({"NegateGrad", fwdOp->pir, {}, getWillowDomain()}) {}
+    : NegateOp({"NegateGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
 
 std::unique_ptr<Op> NegateGradOp::clone() const {
   return std::unique_ptr<Op>(new NegateGradOp(*this));

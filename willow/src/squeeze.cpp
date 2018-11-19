@@ -23,7 +23,7 @@ void SqueezeOp::setup() {
 void SqueezeGradOp::setup() { output.tensor(0)->info = unsqueezedInfo; }
 
 SqueezeGradOp::SqueezeGradOp(SqueezeOp *op_)
-    : Op({"SqueezeGrad", op_->pir, {}, getWillowDomain()}),
+    : Op({"SqueezeGrad", op_->pir, {}, getPoponnxDomain()}),
       unsqueezedInfo(op_->input.tensor(0)->info) {}
 
 const std::vector<GradInOutMapper> &SqueezeGradOp::gradInputInfo() const {

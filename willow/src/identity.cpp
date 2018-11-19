@@ -21,7 +21,7 @@ std::vector<std::unique_ptr<Op>> IdentityOp::getGradOps() {
 void IdentityOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 
 IdentityGradOp::IdentityGradOp(IdentityOp *fwdOp)
-    : IdentityOp({"IdentityGrad", fwdOp->pir, {}, getWillowDomain()}) {}
+    : IdentityOp({"IdentityGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
 
 std::unique_ptr<Op> IdentityGradOp::clone() const {
   return std::unique_ptr<Op>(new IdentityGradOp(*this));

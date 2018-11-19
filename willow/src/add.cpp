@@ -24,7 +24,7 @@ void AddOp::setup() {
 }
 
 AddArg0GradOp::AddArg0GradOp(AddOp *op_)
-    : IdentityOp({"AddArg0Grad", op_->pir, {}, getWillowDomain()}) {}
+    : IdentityOp({"AddArg0Grad", op_->pir, {}, getPoponnxDomain()}) {}
 
 const std::map<int, int> &AddArg0GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {{0, AddOp::arg0Index()}};
@@ -38,7 +38,7 @@ const std::vector<GradInOutMapper> &AddArg0GradOp::gradInputInfo() const {
 }
 
 AddArg1GradOp::AddArg1GradOp(AddOp *op_)
-    : IdentityOp({"AddArg1Grad", op_->pir, {}, getWillowDomain()}) {}
+    : IdentityOp({"AddArg1Grad", op_->pir, {}, getPoponnxDomain()}) {}
 
 const std::map<int, int> &AddArg1GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {{0, AddOp::arg1Index()}};

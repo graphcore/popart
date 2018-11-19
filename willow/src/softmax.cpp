@@ -21,7 +21,7 @@ std::unique_ptr<Op> SoftmaxOp::clone() const {
 void SoftmaxGradOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 
 SoftmaxGradOp::SoftmaxGradOp(SoftmaxOp *op_)
-    : Op({"SoftmaxGrad", op_->pir, {}, getWillowDomain()}) {}
+    : Op({"SoftmaxGrad", op_->pir, {}, getPoponnxDomain()}) {}
 
 const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
   // input at index 0 (probGradInputIndex()) : gradient of output of softmax
@@ -49,7 +49,7 @@ SoftmaxGradDirectOp::SoftmaxGradDirectOp(Ir *ir,
     : Op({"SoftmaxGradDirect", // op_type
           ir,                  //
           {},                  // no Attributes
-          getWillowDomain()}) {
+          getPoponnxDomain()}) {
   nllloss_ = nls;
 }
 

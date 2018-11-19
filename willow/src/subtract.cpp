@@ -25,7 +25,7 @@ void SubtractOp::setup() {
 }
 
 SubtractArg0GradOp::SubtractArg0GradOp(SubtractOp *op_)
-    : IdentityOp({"SubtractArg0Grad", op_->pir, {}, getWillowDomain()}) {}
+    : IdentityOp({"SubtractArg0Grad", op_->pir, {}, getPoponnxDomain()}) {}
 
 const std::map<int, int> &SubtractArg0GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {{0, SubtractOp::arg0Index()}};
@@ -41,7 +41,7 @@ const std::vector<GradInOutMapper> &SubtractArg0GradOp::gradInputInfo() const {
 }
 
 SubtractArg1GradOp::SubtractArg1GradOp(SubtractOp *op_)
-    : NegateOp({"SubtractArg1Grad", op_->pir, {}, getWillowDomain()}) {}
+    : NegateOp({"SubtractArg1Grad", op_->pir, {}, getPoponnxDomain()}) {}
 
 const std::map<int, int> &SubtractArg1GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {{0, SubtractOp::arg1Index()}};

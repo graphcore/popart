@@ -41,7 +41,7 @@ std::vector<std::unique_ptr<Op>> AveragePoolOp::getGradOps() {
 }
 
 AveragePoolGradOp::AveragePoolGradOp(AveragePoolOp *op_)
-    : Op({"AveragePoolGrad", op_->pir, {}, getWillowDomain()}),
+    : Op({"AveragePoolGrad", op_->pir, {}, getPoponnxDomain()}),
       unpooledInfo(op_->input.tensor(0)->info), cloneOfCreator(op_->clone()) {}
 
 const std::vector<GradInOutMapper> &AveragePoolGradOp::gradInputInfo() const {

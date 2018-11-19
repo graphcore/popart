@@ -138,7 +138,7 @@ void TensorIndexMap::setInfoIfIndex(const TensorInfo &info_, int index) {
   }
 }
 
-std::string getWillowDomain() { return "gnilwen.semaj"; }
+std::string getPoponnxDomain() { return "gnilwen.semaj"; }
 
 OpTypes initOpTypes() { return OpTypes(); }
 
@@ -372,18 +372,6 @@ void VectorAndSet::reset(const std::vector<std::string> &vals) {
   }
 }
 
-void EarlyInfo::add(TensorId id, const TensorInfo &info) { infos[id] = info; }
-
-const TensorInfo &EarlyInfo::get(TensorId id) const {
-  auto found = infos.find(id);
-  if (found == infos.end()) {
-    throw error("No early info for " + id);
-  }
-  return found->second;
-}
-
-bool EarlyInfo::has(TensorId id) const { return infos.find(id) != infos.end(); }
-
 void Ir::confirmNoReservedIds() const {
 
   auto &onnxGraph = onnxModel.graph();
@@ -399,23 +387,6 @@ void Ir::confirmNoReservedIds() const {
   for (const auto &tenId : earlyInfo.getAllTensorIds()) {
     confirmNonReservedId(tenId);
   }
-}
-
-std::vector<TensorId> EarlyInfo::getAllTensorIds() const {
-  // we first put the TensorIds into a set, so that duplication is removed
-  std::set<TensorId> all_;
-  for (const auto &id_info : infos) {
-    all_.insert(id_info.first);
-  }
-
-  // then any other TensorIds from other maps in EarlyInfo will be added
-  // to the set here.
-
-  std::vector<TensorId> all;
-  for (auto &x : all_) {
-    all.push_back(x);
-  }
-  return all;
 }
 
 // used for circumventing the pytorch bug,
@@ -1060,7 +1031,7 @@ OpId Ir::moveIntoIr(std::unique_ptr<Op> op) {
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
   OpId opId = moveIntoIr(
-      std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getWillowDomain()})));
+      std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getPoponnxDomain()})));
 
   std::vector<TensorId> inputs;
   inputs.reserve(toSum.size());
@@ -1463,7 +1434,7 @@ void Ir::growFinalLoss() {
 
   // now growing the FINAL loss (sum of individual losses)
   OpId opId = moveIntoIr(
-      std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getWillowDomain()})));
+      std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getPoponnxDomain()})));
 
   std::vector<TensorId> inputs;
   inputs.reserve(lossOps.size());
@@ -1722,26 +1693,6 @@ std::vector<GradNonGradPair> Ir::growLossGradients() {
     }
   }
   return pairs;
-}
-
-bool DataFlow::isAnchored(TensorId id) const {
-  return (s_anchors.count(id) != 0);
-}
-
-DataFlow::DataFlow()
-    : batchesPerStep_(0), batchSize_(0), art_(AnchorReturnType::FINAL) {}
-
-DataFlow::DataFlow(int BpR,
-                   int bs,
-                   const std::vector<TensorId> &v,
-                   AnchorReturnType artIn_)
-    : batchesPerStep_(BpR), batchSize_(bs), v_anchors(v), art_(artIn_) {
-  for (auto &id : v_anchors) {
-    s_anchors.insert(id);
-  }
-  if (art_ != AnchorReturnType::ALL) {
-    throw error("Only ALL AnchorReturnType is currently supported");
-  }
 }
 
 Op *Ir::getOp(OpId opId) {

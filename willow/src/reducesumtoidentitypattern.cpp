@@ -25,7 +25,7 @@ void ReduceSumToIdentityPattern::apply(Op *op) const {
   auto output_tensor = reduce->output.tensor(0);
   auto ir            = op->pir;
   auto identity_op   = make_unique<IdentityOp>(
-      OpConstructorBundle{"Identity", ir, {}, getWillowDomain()});
+      OpConstructorBundle{"Identity", ir, {}, getPoponnxDomain()});
 
   // Add the identity op to the IR
   auto identity = identity_op.get();

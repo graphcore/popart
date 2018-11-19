@@ -73,7 +73,7 @@ bool ReduceSumOp::getKeepDims() const { return keepdims; }
 
 ReduceSumGradOp::ReduceSumGradOp(ReduceSumOp *fwdOp,
                                  const std::vector<int64_t> &backward_shape_)
-    : Op({"ReduceSumGrad", fwdOp->pir, {}, getWillowDomain()}),
+    : Op({"ReduceSumGrad", fwdOp->pir, {}, getPoponnxDomain()}),
       outputTensorInfo(fwdOp->input.tensor(0)->info),
       backward_shape(backward_shape_) {}
 

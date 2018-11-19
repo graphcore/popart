@@ -20,7 +20,7 @@ void ReluOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 void ReluGradOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
 
 ReluGradOp::ReluGradOp(ReluOp *op_)
-    : Op({"ReluGrad", op_->pir, {}, getWillowDomain()}) {}
+    : Op({"ReluGrad", op_->pir, {}, getPoponnxDomain()}) {}
 
 const std::vector<GradInOutMapper> &ReluGradOp::gradInputInfo() const {
   // input at index getGradReludIn() (=0) : gradient of output of relu

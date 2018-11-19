@@ -11,7 +11,7 @@ int AddBiasOp::dataInIndex() { return 0; }
 int AddBiasOp::biasInIndex() { return 1; }
 
 AddBiasOp::AddBiasOp(ConvOp *op_)
-    : Op({"AddBias", op_->pir, {}, getWillowDomain()}) {}
+    : Op({"AddBias", op_->pir, {}, getPoponnxDomain()}) {}
 
 std::unique_ptr<Op> AddBiasOp::clone() const {
   return std::unique_ptr<Op>(new AddBiasOp(*this));
@@ -35,7 +35,7 @@ void AddBiasOp::setup() {
 
 AddBiasBiasGradOp::AddBiasBiasGradOp(AddBiasOp *op_,
                                      const std::vector<int64_t> &_axes)
-    : ReduceSumOp({"AddBiasBiasGrad", op_->pir, {}, getWillowDomain()},
+    : ReduceSumOp({"AddBiasBiasGrad", op_->pir, {}, getPoponnxDomain()},
                   _axes,
                   0) {}
 
@@ -53,7 +53,7 @@ const std::vector<GradInOutMapper> &AddBiasBiasGradOp::gradInputInfo() const {
 }
 
 AddBiasDataGradOp::AddBiasDataGradOp(AddBiasOp *op)
-    : IdentityOp({"AddBiasDataGrad", op->pir, {}, getWillowDomain()}) {}
+    : IdentityOp({"AddBiasDataGrad", op->pir, {}, getPoponnxDomain()}) {}
 
 const std::vector<GradInOutMapper> &AddBiasDataGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
