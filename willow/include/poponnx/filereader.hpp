@@ -25,12 +25,12 @@ onnx::ModelProto getModelFromFile(const std::string &filename);
 onnx::ModelProto getModelFromString(const std::string &modelProto);
 
 // serialize a ModelProto to a binary protobuf file
-void writeModel(const onnx::ModelProto &model, std::string filename);
+void writeModel(const onnx::ModelProto &model, const std::string &filename);
 
 // getNode function from previous versions has been removed
 
 // load TensorProto
-onnx::TensorProto getTensor(std::string filename);
+onnx::TensorProto getTensor(const std::string &filename);
 
 // fns are of the form somethingorother_dd.suffix
 // for each fn in fns:
@@ -43,25 +43,29 @@ OnnxTensors getAndMatchTensors(const std::vector<std::string> &fns,
                                const std::vector<std::string> &names);
 
 // return all full path names of files which match toMatch in directory dir
-std::vector<std::string> getMatchFns(std::string dir, std::string toMatch);
+std::vector<std::string> getMatchFns(const std::string &dir,
+                                     const std::string &toMatch);
 
 // load all tensors in directory dir with "input" in their name.
 // The Graph g is needed, it us used to name the tensors correctly.
 // it matches the input_dd to g.input(dd).
-OnnxTensors getInputTensors(const onnx::GraphProto &g, std::string dir);
+OnnxTensors getInputTensors(const onnx::GraphProto &g, const std::string &dir);
 
 // load all tensors in directory dir with "output" in their name.
-OnnxTensors getOutputTensors(const onnx::GraphProto &g, std::string dir);
+OnnxTensors getOutputTensors(const onnx::GraphProto &g, const std::string &dir);
+
+// Check if a filename is a regular file
+bool isRegularFile(const std::string &filename);
 
 // utility.
-void confirmRegularFile(std::string filename);
+void confirmRegularFile(const std::string &filename);
 
 // return all full path names for regular files in dir
-std::vector<std::string> getFns(std::string dir);
+std::vector<std::string> getFns(const std::string &dir);
 
 // return the fullpath names of all
 // subdirectories of directory dir
-std::vector<std::string> getDirns(std::string dir);
+std::vector<std::string> getDirns(const std::string &dir);
 
 } // namespace io
 } // namespace willow

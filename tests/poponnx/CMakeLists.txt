@@ -35,8 +35,8 @@ function(add_poponnx_py_unit_test name)
   message(STATUS
     "Adding Python test '${name}'")
   add_test(NAME "${name}"
-           COMMAND py.test -s ${name}.py
-           WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
+           COMMAND pytest -s ${CMAKE_CURRENT_SOURCE_DIR}/${name}.py
+           WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
 endfunction()
 
 add_poponnx_py_unit_test(builder_test)

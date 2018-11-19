@@ -32,7 +32,11 @@ std::string appendDirFn(const std::string &dir, const std::string &fn) {
   return fullPath.string();
 }
 
-void confirmRegularFile(std::string filename) {
+bool isRegularFile(const std::string &filename) {
+  return boost::filesystem::is_regular_file(filename);
+}
+
+void confirmRegularFile(const std::string &filename) {
   if (!boost::filesystem::is_regular_file(filename)) {
     std::stringstream ss;
     ss << filename << " is not a regular file, cannot load";
@@ -40,7 +44,7 @@ void confirmRegularFile(std::string filename) {
   }
 }
 
-OnnxTensors getInputTensors(const onnx::GraphProto &g, std::string dir) {
+OnnxTensors getInputTensors(const onnx::GraphProto &g, const std::string &dir) {
   auto fns = getMatchFns(dir, "input");
   std::vector<std::string> names;
   for (auto &x : g.input()) {
@@ -49,7 +53,8 @@ OnnxTensors getInputTensors(const onnx::GraphProto &g, std::string dir) {
   return getAndMatchTensors(fns, names);
 }
 
-OnnxTensors getOutputTensors(const onnx::GraphProto &g, std::string dir) {
+OnnxTensors getOutputTensors(const onnx::GraphProto &g,
+                             const std::string &dir) {
   auto fns = getMatchFns(dir, "output");
   std::vector<std::string> names;
   for (auto &x : g.output()) {
@@ -106,7 +111,7 @@ onnx::ModelProto getModelFromString(const std::string &stringProto) {
   return modelProto;
 }
 
-void writeModel(const onnx::ModelProto &model, std::string filename) {
+void writeModel(const onnx::ModelProto &model, const std::string &filename) {
 
   std::ofstream ofs;
   ofs.open(filename, std::ofstream::out | std::ofstream::binary);
@@ -125,7 +130,7 @@ void writeModel(const onnx::ModelProto &model, std::string filename) {
   }
 }
 
-onnx::TensorProto getTensor(std::string filename) {
+onnx::TensorProto getTensor(const std::string &filename) {
 
   confirmRegularFile(filename);
   std::fstream fs(filename, std::ios::in | std::ios::binary);
@@ -176,7 +181,8 @@ OnnxTensors getAndMatchTensors(const std::vector<std::string> &fns,
 }
 
 // return all names of full path names of files which match to_match
-std::vector<std::string> getMatchFns(std::string dir, std::string to_match) {
+std::vector<std::string> getMatchFns(const std::string &dir,
+                                     const std::string &to_match) {
   namespace bf = boost::filesystem;
   std::vector<std::string> matches;
   auto fns = getFns(dir);
@@ -191,7 +197,7 @@ std::vector<std::string> getMatchFns(std::string dir, std::string to_match) {
 }
 
 template <typename T>
-std::vector<std::string> getInDir(std::string dir, T check) {
+std::vector<std::string> getInDir(const std::string &dir, T check) {
   // std::function<bool(const boost::filesystem::path &path)>
   std::vector<std::string> fns;
   namespace bf = boost::filesystem;
@@ -213,14 +219,14 @@ std::vector<std::string> getInDir(std::string dir, T check) {
   return fns;
 }
 
-std::vector<std::string> getDirns(std::string dir) {
+std::vector<std::string> getDirns(const std::string &dir) {
   auto is_dir = [](const boost::filesystem::path &path) {
     return boost::filesystem::is_directory(path);
   };
   return getInDir(dir, is_dir);
 }
 // return all full path names for regular files in dir
-std::vector<std::string> getFns(std::string dir) {
+std::vector<std::string> getFns(const std::string &dir) {
   auto is_reg = [](const boost::filesystem::path &path) {
     return boost::filesystem::is_regular_file(path);
   };

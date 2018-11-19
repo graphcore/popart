@@ -28,9 +28,9 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
   logging::session::trace("Session::configureFromOnnx");
 
   onnx::ModelProto modelProto;
-  try {
+  if (io::isRegularFile(modelProtoOrFilename)) {
     modelProto = io::getModelFromFile(modelProtoOrFilename);
-  } catch (const error &) {
+  } else {
     modelProto = io::getModelFromString(modelProtoOrFilename);
   }
 
