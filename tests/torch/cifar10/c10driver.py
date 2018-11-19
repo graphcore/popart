@@ -9,6 +9,11 @@ from torchvision import transforms, datasets
 from poponnx.torch import torchwriter
 
 
+class TestFailureError(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
 def run(torchWriter, passes, outputdir, cifarInIndices):
 
     dataFeed = torchWriter.dataFeed
@@ -139,7 +144,6 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
         matches = re.findall('= (\S*)', freport)
         for match in matches:
             result = float(match)
-            print("Result = " + str(result))
 
             # Raise an error if the result is greater than the margin
             if (result > margin):
