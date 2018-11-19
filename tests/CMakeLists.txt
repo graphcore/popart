@@ -4,11 +4,6 @@ set(CPACK_SOURCE_IGNORE_FILES ${INSTALL_TESTS})
 
 add_subdirectory(poponnx)
 
-# poponnx tests (do not require pytorch)
-add_test(NAME pytest
-		 WORKING_DIRECTORY ${INSTALL_TESTS}
-		 COMMAND pytest -s)
-
 # poponnx.torch tests (require pytorch and torchvision)
 add_test(NAME model0
 		 WORKING_DIRECTORY ${INSTALL_TESTS}
