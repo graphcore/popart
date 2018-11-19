@@ -4,6 +4,7 @@ import tempfile
 import poponnx
 import torch
 import numpy as np
+import re
 from torchvision import transforms, datasets
 from poponnx.torch import torchwriter
 
@@ -130,3 +131,17 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
 
     for report in numReports:
         print(report.fullReport())
+
+    margin = 1.0e-8
+
+    for report in numReports:
+        freport = report.fullReport()
+        matches = re.findall('= (\S*)', freport)
+        for match in matches:
+            result = float(match)
+            print("Result = " + str(result))
+
+            # Raise an error if the result is greater than the margin
+            if (result > margin):
+                raise TestFailureError(
+                    str(result) + " is greater than " + str(margin))
