@@ -34,6 +34,7 @@ target_include_directories (poponnx SYSTEM PUBLIC
 	${SPDLOG_INCLUDE_DIRS}
     ${CBLAS_INCLUDE_DIRS}
     ${POPLAR_INCLUDE_DIR}
+    ${POPLIBS_INCLUDE_DIR}
     )
 
 target_link_libraries(poponnx
