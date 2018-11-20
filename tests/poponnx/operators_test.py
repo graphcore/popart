@@ -100,3 +100,56 @@ def test_convolution(tmpdir):
                         dtype=np.float32)
 
     assert (np.array_equal(anchors[o], expected))
+
+
+def test_matmul():
+    # create a basic model with a matmul operator
+    # and compare the answer against numpy.matmul
+
+    builder = poponnx.Builder()
+
+    i1shape = poponnx.TensorInfo("FLOAT", [2, 3])
+    i2shape = poponnx.TensorInfo("FLOAT", [3, 4])
+
+    i1 = builder.addInputTensor(i1shape)
+    i2 = builder.addInputTensor(i2shape)
+    o = builder.matmul(i1, i2)
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    earlyInfo = poponnx.EarlyInfo()
+    earlyInfo.add(i1, i1shape)
+    earlyInfo.add(i2, i2shape)
+
+    dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
+    optimizer = poponnx.SGD(0.01)
+    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
+
+    session = poponnx.Session(
+        fnModel=proto,
+        earlyInfo=earlyInfo,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        outputdir="/tmp")
+
+    session.setDevice("IPU")
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    inputs = {
+        i1:
+        np.array([[1, 2, 3], [4, 5, 6]], dtype=np.float32),
+        i2:
+        np.array([[7, 8, 9, 10], [11, 12, 13, 14], [15, 16, 17, 18]],
+                 dtype=np.float32)
+    }
+
+    stepio = poponnx.PyStepIO(inputs, anchors)
+
+    session.infer(stepio)
+
+    # test the poponnx answer against the numpy answer
+    assert (np.array_equal(anchors[o], np.matmul(inputs[i1], inputs[i2])))
