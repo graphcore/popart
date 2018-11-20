@@ -2,6 +2,7 @@
 #define NEURALNET_TENSOR_HPP
 
 #include <map>
+#include <poponnx/error.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/tensordata.hpp>
 #include <poponnx/tensorinfo.hpp>
@@ -115,6 +116,12 @@ public:
   TensorData *tensorData();
 
   template <typename... Args> void setTensorData(Args &&... args) {
+    // if data has already been created and had a stream
+    // connected to it, changing the data will lead to
+    // the stream reading from the wrong address.
+    if (data_) {
+      throw error("attempting to setTensorData a second time");
+    }
     data_.reset(new TensorData(std::forward<Args>(args)...));
   }
 

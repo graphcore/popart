@@ -551,6 +551,23 @@ void Ir::prepare(const IrBundle &gb) {
   logging::ir::info(ss2.str());
 }
 
+void Ir::resetWeights(const onnx::ModelProto &modelProto) {
+  auto onnxGraph = modelProto.graph();
+
+  for (const auto &initializer : onnxGraph.initializer()) {
+    TensorId tenId = initializer.name();
+    if (!tensors.contains(tenId)) {
+      throw error("no tensor " + tenId + " in tensors");
+    }
+    auto tensor = tensors.get(tenId);
+    if (tensor->info != TensorInfo(initializer)) {
+      throw error(
+          "trying to reset weights using tensor with non matching tensor info");
+    }
+    tensor->tensorData()->resetData(initializer);
+  }
+}
+
 std::vector<Op *> Ir::getOpScheduleTilLoss() const {
   std::vector<Op *> opsTowardsLoss;
   for (auto op : getOpSchedule()) {

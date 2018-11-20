@@ -37,6 +37,10 @@ add_test(NAME model_conv_bias
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model_conv_bias.py .)
 
+add_test(NAME reset_weights
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/reset_weights.py .)
+
 install(DIRECTORY .
 	DESTINATION ${INSTALL_TESTS}
 	FILES_MATCHING REGEX ".*\.(py|sh|md)$")

@@ -439,6 +439,9 @@ public:
   // Prepare the IR based on the IrBundle configuration
   void prepare(const IrBundle &);
 
+  // Reset the weights with data from an ONNX model
+  void resetWeights(const onnx::ModelProto &modelProto);
+
   void updateOptimizer(const Optimizer *);
   // take training steps
   onnx::ModelProto step(int n);

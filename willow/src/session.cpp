@@ -13,7 +13,21 @@
 
 namespace willow {
 
+// Get an ONNX model protobuf, either from a file, or the string directly
+onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename);
+
 Session::Session() {}
+
+onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename) {
+  onnx::ModelProto modelProto;
+  if (io::isRegularFile(modelProtoOrFilename)) {
+    modelProto = io::getModelFromFile(modelProtoOrFilename);
+  } else {
+    modelProto = io::getModelFromString(modelProtoOrFilename);
+  }
+
+  return modelProto;
+}
 
 void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
                                 const EarlyInfo &perk,
@@ -27,12 +41,7 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
 
   logging::session::trace("Session::configureFromOnnx");
 
-  onnx::ModelProto modelProto;
-  if (io::isRegularFile(modelProtoOrFilename)) {
-    modelProto = io::getModelFromFile(modelProtoOrFilename);
-  } else {
-    modelProto = io::getModelFromString(modelProtoOrFilename);
-  }
+  auto modelProto = getModelProto(modelProtoOrFilename);
 
   ir.prepare({modelProto,
               perk,
@@ -167,6 +176,12 @@ std::string Session::getGraphReport() const {
 std::string Session::getExecutionReport() const {
   logging::session::trace("Session::getExecutionReport");
   return device_->getExecutionReport();
+}
+
+void Session::resetHostWeights(const std::string &modelProtoOrFilename) {
+  logging::session::trace("Session::updateModel");
+  auto modelProto = getModelProto(modelProtoOrFilename);
+  ir.resetWeights(modelProto);
 }
 
 } // namespace willow

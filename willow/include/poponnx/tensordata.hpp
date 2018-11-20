@@ -20,6 +20,10 @@ public:
   TensorData(const onnx::TensorProto &);
   void *data();
 
+  // reset the data in the TensorData input data must
+  // be the same size as the existing data_
+  void resetData(const onnx::TensorProto &);
+
 private:
   std::vector<char> data_;
 };

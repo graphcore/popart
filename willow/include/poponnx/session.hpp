@@ -150,6 +150,17 @@ public:
    */
   std::string getExecutionReport() const;
 
+  /**
+   * Reset the weights with the weights in a ONNX model that differs to the
+   * current model only in weights. This only updates the weights on the host;
+   * the user still needs to call weightsFromHost() after this to update the
+   * weights on the device.
+   *
+   * \param model Either an ONNX model protobuf, or the name of a file
+   *              containing an ONNX model protobuf
+   */
+  void resetHostWeights(const std::string &model);
+
 private:
   /**
    * abstraction of the computation, the Ir is where

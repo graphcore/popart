@@ -196,7 +196,8 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("getInfo", &Session::getInfo)
       .def("getSummaryReport", &Session::getSummaryReport)
       .def("getGraphReport", &Session::getGraphReport)
-      .def("getExecutionReport", &Session::getExecutionReport);
+      .def("getExecutionReport", &Session::getExecutionReport)
+      .def("resetHostWeights", &Session::resetHostWeights);
 
   py::class_<Builder>(m, "BuilderCore")
       .def(py::init<>())
