@@ -1,9 +1,6 @@
-# Test for basic importing
-
-import pytest
-
-# the core library
+import numpy as np
 import poponnx
+import pytest
 
 
 def test_create_empty_options():
@@ -60,8 +57,10 @@ def test_set_reportOptions():
 def test_engine_options_passed_to_engine():
     builder = poponnx.Builder()
 
-    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    shape = poponnx.TensorInfo("FLOAT", [1, 2, 32, 32])
+
+    i1 = builder.addInputTensor(shape)
+    i2 = builder.addInputTensor(shape)
 
     o = builder.add([i1, i2])
 
@@ -70,16 +69,16 @@ def test_engine_options_passed_to_engine():
     proto = builder.getModelProto()
 
     earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    earlyInfo.add(i2, poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    earlyInfo.add(i1, shape)
+    earlyInfo.add(i2, shape)
 
-    dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
+    dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
     optimizer = poponnx.SGD(0.01)
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptions()
     opts.engineOptions = {'option': 'value'}
-    opts.logging = {'all': 'DEGBUG'}
+    opts.logging = {'all': 'DEBUG'}
 
     session = poponnx.Session(
         fnModel=proto,
@@ -90,8 +89,8 @@ def test_engine_options_passed_to_engine():
         outputdir="/tmp",
         userOptions=opts)
 
-    session.initAnchorArrays()
     session.setDevice("IPU")
+    session.initAnchorArrays()
 
     with pytest.raises(poponnx.exception) as e_info:
         session.prepareDevice()
