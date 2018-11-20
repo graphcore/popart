@@ -3,7 +3,7 @@ import pytest
 import poponnx
 
 
-def test_net_from_string():
+def test_net_from_string(tmpdir):
 
     builder = poponnx.Builder()
 
@@ -28,10 +28,10 @@ def test_net_from_string():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        outputdir="/tmp")
+        outputdir=str(tmpdir))
 
 
-def test_net_from_file():
+def test_net_from_file(tmpdir):
 
     builder = poponnx.Builder()
 
@@ -59,10 +59,10 @@ def test_net_from_file():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        outputdir="/tmp")
+        outputdir=str(tmpdir))
 
 
-def test_net_failure():
+def test_net_failure(tmpdir):
 
     earlyInfo = poponnx.EarlyInfo()
     earlyInfo.add("1", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
@@ -79,7 +79,7 @@ def test_net_failure():
             dataFeed=dataFlow,
             losses=losses,
             optimizer=optimizer,
-            outputdir="/tmp")
+            outputdir=str(tmpdir))
 
     assert (e_info.type == poponnx.exception)
     assert (e_info.value.args[0] == "Failed to parse ModelProto from string")

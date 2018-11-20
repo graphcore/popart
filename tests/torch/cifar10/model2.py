@@ -10,14 +10,6 @@ import c10driver
 import poponnx
 from poponnx.torch import torchwriter
 
-if (len(sys.argv) != 2):
-    raise RuntimeError("onnx_net.py <log directory>")
-
-outputdir = sys.argv[1]
-if not os.path.exists(outputdir):
-    print("Making %s" % (outputdir, ))
-    os.mkdir(outputdir)
-
 nInChans = 3
 nOutChans = 10
 batchSize = 2
@@ -70,5 +62,10 @@ torchWriter = torchwriter.PytorchNetWriter(
     dataFeed=dataFeed,
     ### Torch specific:
     module=Module0())
+
+try:
+    outputdir = sys.argv[1]
+except IndexError:
+    outputdir = None
 
 c10driver.run(torchWriter, willowOptPasses, outputdir, cifarInIndices)

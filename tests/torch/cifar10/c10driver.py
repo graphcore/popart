@@ -5,6 +5,7 @@ import poponnx
 import torch
 import numpy as np
 import re
+from tempfile import TemporaryDirectory
 from torchvision import transforms, datasets
 from poponnx.torch import torchwriter
 
@@ -15,7 +16,17 @@ class TestFailureError(Exception):
 
 
 def run(torchWriter, passes, outputdir, cifarInIndices):
+    if outputdir is None:
+        with TemporaryDirectory() as outputdir:
+            _run_impl(torchWriter, passes, outputdir, cifarInIndices)
+    else:
+        if not os.path.exists(outputdir):
+            os.mkdir(outputdir)
 
+        _run_impl(torchWriter, passes, outputdir, cifarInIndices)
+
+
+def _run_impl(torchWriter, passes, outputdir, cifarInIndices):
     dataFeed = torchWriter.dataFeed
     earlyInfo = torchWriter.earlyInfo
 

@@ -3,7 +3,7 @@ import pytest
 import poponnx
 
 
-def test_add():
+def test_add(tmpdir):
 
     builder = poponnx.Builder()
 
@@ -30,7 +30,7 @@ def test_add():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        outputdir="/tmp")
+        outputdir=str(tmpdir))
 
     session.setDevice("IPU")
     anchors = session.initAnchorArrays()
@@ -48,7 +48,7 @@ def test_add():
     assert (np.array_equal(anchors[o], [4, 6]))
 
 
-def test_convolution():
+def test_convolution(tmpdir):
 
     builder = poponnx.Builder()
 
@@ -76,7 +76,7 @@ def test_convolution():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        outputdir="/tmp")
+        outputdir=str(tmpdir))
 
     session.setDevice("IPU")
     anchors = session.initAnchorArrays()

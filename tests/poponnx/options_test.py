@@ -54,7 +54,7 @@ def test_set_reportOptions():
     assert (opts.reportOptions['option'] == 'value')
 
 
-def test_engine_options_passed_to_engine():
+def test_engine_options_passed_to_engine(tmpdir):
     builder = poponnx.Builder()
 
     shape = poponnx.TensorInfo("FLOAT", [1, 2, 32, 32])
@@ -86,7 +86,7 @@ def test_engine_options_passed_to_engine():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        outputdir="/tmp",
+        outputdir=str(tmpdir),
         userOptions=opts)
 
     session.setDevice("IPU")

@@ -7,18 +7,7 @@ from poponnx.torch import torchwriter
 import torch
 from torchvision import transforms, datasets
 import re
-
-
-def getFnModel(framework, stepi):
-    return os.path.join(outputdir, "%sModel_%d.onnx" % (framework, stepi))
-
-
-def getFnPopOnnx(stepi):
-    return getFnModel("PopOnnx", stepi)
-
-
-def getFnTorch(stepi):
-    return getFnModel("Torch", stepi)
+from tempfile import TemporaryDirectory
 
 
 def get_trainset():
@@ -122,6 +111,15 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
 
             torchWriter.step(inputs)
 
+    def getFnModel(framework, stepi):
+        return os.path.join(outputdir, "%sModel_%d.onnx" % (framework, stepi))
+
+    def getFnPopOnnx(stepi):
+        return getFnModel("PopOnnx", stepi)
+
+    def getFnTorch(stepi):
+        return getFnModel("Torch", stepi)
+
     # save the pytorch model
     fnTorchModel = getFnTorch(0)
     torchWriter.saveModel(fnTorchModel)
@@ -147,14 +145,6 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
     diff = compare_models(fnModel0, fnTorchModel, fnModel0, fnPopOnnxModel)
     assert (diff == 0.0)
 
-
-if (len(sys.argv) != 2):
-    raise RuntimeError("onnx_net.py <log directory>")
-
-outputdir = sys.argv[1]
-if not os.path.exists(outputdir):
-    print("Making %s" % (outputdir, ))
-    os.mkdir(outputdir)
 
 nChans = 3
 
@@ -235,4 +225,9 @@ torchWriter = torchwriter.PytorchNetWriter(
     # Torch specific:
     module=Module0())
 
-run(torchWriter, willowOptPasses, outputdir, cifarInIndices)
+if len(sys.argv) == 2:
+    outputdir = sys.argv[1]
+    run(torchWriter, willowOptPasses, outputdir, cifarInIndices)
+else:
+    with TemporaryDirectory() as outputdir:
+        run(torchWriter, willowOptPasses, outputdir, cifarInIndices)
