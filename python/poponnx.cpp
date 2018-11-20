@@ -203,34 +203,62 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def(py::init<>())
       .def("addInputTensor", &Builder::addInputTensor, py::arg("tensorInfo"))
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
-      .def("add", &Builder::add, py::arg("lhs"), py::arg("rhs"))
+      .def("abs", &Builder::abs, py::arg("args"))
+      .def("acos", &Builder::acos, py::arg("args"))
+      .def("acosh", &Builder::acosh, py::arg("args"))
+      .def("add", &Builder::add, py::arg("args"))
+      .def("logical_and", &Builder::logical_and, py::arg("args"))
+      .def("asin", &Builder::asin, py::arg("args"))
+      .def("asinh", &Builder::asinh, py::arg("args"))
+      .def("atan", &Builder::atan, py::arg("args"))
+      .def("atanh", &Builder::atanh, py::arg("args"))
+      .def("ceil", &Builder::ceil, py::arg("args"))
+      .def("cos", &Builder::cos, py::arg("args"))
+      .def("cosh", &Builder::cosh, py::arg("args"))
+      .def("div", &Builder::div, py::arg("args"))
+      .def("elu", &Builder::elu, py::arg("args"))
+      .def("equal", &Builder::equal, py::arg("args"))
+      .def("exp", &Builder::exp, py::arg("args"))
+      .def("floor", &Builder::floor, py::arg("args"))
+      .def("greater", &Builder::greater, py::arg("args"))
+      .def("identity", &Builder::identity, py::arg("args"))
+      .def("less", &Builder::less, py::arg("args"))
+      .def("log", &Builder::log, py::arg("args"))
+      .def("max", &Builder::max, py::arg("args"))
+      .def("mean", &Builder::mean, py::arg("args"))
+      .def("min", &Builder::min, py::arg("args"))
+      .def("mul", &Builder::mul, py::arg("args"))
+      .def("neg", &Builder::neg, py::arg("args"))
+      .def("logical_not", &Builder::logical_not, py::arg("args"))
+      .def("logical_or", &Builder::logical_or, py::arg("args"))
+      .def("pow", &Builder::pow, py::arg("args"))
+      .def("reciprocal", &Builder::reciprocal, py::arg("args"))
+      .def("relu", &Builder::relu, py::arg("args"))
+      .def("sigmoid", &Builder::sigmoid, py::arg("args"))
+      .def("sin", &Builder::sin, py::arg("args"))
+      .def("sinh", &Builder::sinh, py::arg("args"))
+      .def("softsign", &Builder::softsign, py::arg("args"))
+      .def("sqrt", &Builder::sqrt, py::arg("args"))
+      .def("sub", &Builder::sub, py::arg("args"))
+      .def("sum", &Builder::sum, py::arg("args"))
+      .def("tan", &Builder::tan, py::arg("args"))
+      .def("tanh", &Builder::tanh, py::arg("args"))
+      .def("logical_xor", &Builder::logical_xor, py::arg("args"))
       .def("convolution",
            &Builder::convolution,
-           py::arg("input"),
-           py::arg("kernel"),
-           py::arg("strides"),
-           py::arg("padding"),
-           py::arg("dilation"),
-           py::arg("groups"))
-      .def("convolutionWithBias",
-           &Builder::convolutionWithBias,
-           py::arg("input"),
-           py::arg("kernel"),
-           py::arg("bias"),
+           py::arg("args"),
            py::arg("strides"),
            py::arg("padding"),
            py::arg("dilation"),
            py::arg("groups"))
       .def("gemm",
            &Builder::gemm,
-           py::arg("lhs"),
-           py::arg("rhs"),
-           py::arg("bias"),
+           py::arg("args"),
            py::arg("alpha"),
            py::arg("beta"),
            py::arg("transA"),
            py::arg("transB"))
-      .def("matmul", &Builder::matmul, py::arg("lhs"), py::arg("rhs"))
+      .def("matmul", &Builder::matmul, py::arg("args"))
       .def("getModelProto", [](const Builder &builder) {
         return py::bytes(builder.getModelProto());
       });

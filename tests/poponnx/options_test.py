@@ -63,7 +63,7 @@ def test_engine_options_passed_to_engine():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
-    o = builder.add(i1, i2)
+    o = builder.add([i1, i2])
 
     builder.addOutputTensor(o)
 

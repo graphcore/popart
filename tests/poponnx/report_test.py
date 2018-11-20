@@ -9,7 +9,7 @@ def test_summary_report_before_execution():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add(i1, i2)
+    o = builder.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -43,7 +43,7 @@ def test_graph_report_before_execution():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add(i1, i2)
+    o = builder.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -77,7 +77,7 @@ def test_execution_report_before_execution():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add(i1, i2)
+    o = builder.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -111,7 +111,7 @@ def test_summary_report_with_cpu_device():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add(i1, i2)
+    o = builder.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -148,7 +148,7 @@ def test_graph_report_with_cpu_device():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add(i1, i2)
+    o = builder.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -185,7 +185,7 @@ def test_execution_report_with_cpu_device():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add(i1, i2)
+    o = builder.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()

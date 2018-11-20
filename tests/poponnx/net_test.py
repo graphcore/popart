@@ -9,7 +9,7 @@ def test_net_from_string():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add(i1, i2)
+    o = builder.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -37,7 +37,7 @@ def test_net_from_file():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add(i1, i2)
+    o = builder.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
