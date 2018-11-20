@@ -33,6 +33,17 @@ public:
     N // The number of programs
   };
 
+  // Order of these enums is used for scheduling
+  enum class ProgramFragmentIndex {
+    WEIGHTSFROMHOST = 0,
+    OPTIMIZERFROMHOST,
+    FORWARD,
+    LOSS,
+    BACKWARD,
+    WEIGHTSTOHOST,
+    N // The number of program fragments
+  };
+
   // Program fragments are not necessarily complete program that can be given to
   // a poplar engine.
   poplar::program::Sequence &weightsFromHostFragment();
@@ -44,17 +55,9 @@ public:
 
   std::vector<poplar::program::Program> progs();
 
-private:
-  enum class ProgramFragmentIndex {
-    WEIGHTSFROMHOST = 0,
-    OPTIMIZERFROMHOST,
-    FORWARD,
-    LOSS,
-    BACKWARD,
-    WEIGHTSTOHOST,
-    N // The number of program fragments
-  };
+  poplar::program::Sequence &programFragment(PopPrograms::ProgramFragmentIndex);
 
+private:
   static constexpr int seqs_size = static_cast<int>(ProgramFragmentIndex::N);
   std::array<poplar::program::Sequence, seqs_size> seqs;
 
@@ -213,6 +216,19 @@ private:
 
   // Call hostStreamToHost in all the Tensors in pir->dataFlow.anchors()
   void anchorsHostFromHostStreams(const StepIO &stepio);
+
+  // Helper function to compare program fragment indices
+  static bool compareProgramFragmentIndex(PopPrograms::ProgramFragmentIndex a,
+                                          PopPrograms::ProgramFragmentIndex b);
+
+  // Helper function to compare ops based on the program fragment they belong to
+  static bool compareProgramFragmentOps(Op *a, Op *b);
+
+  // Helper function to find the program fragment index an op belongs in
+  static PopPrograms::ProgramFragmentIndex opProgramFragmentIndex(Op *op);
+
+  // Helper function to find the program fragment an op belongs in
+  poplar::program::Sequence &opProgramFragment(Op *op);
 };
 
 } // namespace popx

@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
@@ -181,6 +183,11 @@ std::vector<poplar::program::Program> PopPrograms::progs() {
   ps[ProgramIndex::WEIGHTSTOHOST]     = weightsToHost();
 
   return ps;
+}
+
+poplar::program::Sequence &
+PopPrograms::programFragment(PopPrograms::ProgramFragmentIndex index) {
+  return seqs[static_cast<int>(index)];
 }
 
 poplar::Graph &Devicex::graph() { return *pGraph; }
@@ -692,6 +699,23 @@ PriTask Devicex::streamToHostTask(Tensor *tensor) {
   };
 }
 
+// Helper function to find the program fragment index an op belongs in
+PopPrograms::ProgramFragmentIndex Devicex::opProgramFragmentIndex(Op *op) {
+  if (op->nPathsToLoss() == 0) {
+    return PopPrograms::ProgramFragmentIndex::BACKWARD;
+  } else if (op->isLossOp() || (op == op->pir->getFinalLossOp()) ||
+             (op->output.id(0) == op->pir->getFinalLossId())) {
+    return PopPrograms::ProgramFragmentIndex::LOSS;
+  } else {
+    return PopPrograms::ProgramFragmentIndex::FORWARD;
+  }
+}
+
+// Helper function to find the program fragment an op belongs in
+poplar::program::Sequence &Devicex::opProgramFragment(Op *op) {
+  return progs.programFragment(opProgramFragmentIndex(op));
+}
+
 PriTask Devicex::opTask(Op *op, double priority) {
 
   OpId id  = op->id;
@@ -716,14 +740,7 @@ PriTask Devicex::opTask(Op *op, double priority) {
   auto f = [op, opx, this]() {
     logging::devicex::debug("Creating output tensors for " + opx->op_p->str());
 
-    if (op->nPathsToLoss() == 0) {
-      opx->grow(progs.backwardFragment());
-    } else if (op->isLossOp() || (op == op->pir->getFinalLossOp()) ||
-               (opx->outId(0) == op->pir->getFinalLossId())) {
-      opx->grow(progs.lossFragment());
-    } else {
-      opx->grow(progs.forwardFragment());
-    }
+    opx->grow(opProgramFragment(op));
   };
 
   return {priority, opTaskId(op), deps, f};
@@ -731,6 +748,18 @@ PriTask Devicex::opTask(Op *op, double priority) {
 
 OpxAndInIndex::OpxAndInIndex(int conIndex_, Opx *opx_)
     : index(conIndex_), opx(opx_) {}
+
+// Helper function to compare program fragment indices
+bool Devicex::compareProgramFragmentIndex(PopPrograms::ProgramFragmentIndex a,
+                                          PopPrograms::ProgramFragmentIndex b) {
+  return static_cast<int>(a) < static_cast<int>(b);
+}
+
+// Helper function to compare ops based on the program fragment they belong to
+bool Devicex::compareProgramFragmentOps(Op *a, Op *b) {
+  return compareProgramFragmentIndex(opProgramFragmentIndex(a),
+                                     opProgramFragmentIndex(b));
+}
 
 // go all the way to creating the engine and connecting streams
 void Devicex::prepare() {
@@ -783,7 +812,11 @@ void Devicex::prepare() {
     // 1
     tasks.add(streamToHostTask(ir().getTensors().get(id)));
     // 2
-    tasks.add(toHostTask(ir().getTensors().get(id), progs.forwardFragment()));
+    auto ops = ir().getTensors().get(id)->associatedOps();
+    auto earliest_op =
+        *std::min_element(ops.begin(), ops.end(), compareProgramFragmentOps);
+    tasks.add(
+        toHostTask(ir().getTensors().get(id), opProgramFragment(earliest_op)));
   }
 
   // create Program to write optimizer tensors to device
@@ -793,7 +826,10 @@ void Devicex::prepare() {
 
   // making the network!
   for (Tensor *tensor : ir().dataStreamTensors()) {
-    tasks.add(fromHostTask(tensor, progs.forwardFragment()));
+    auto ops = tensor->associatedOps();
+    auto earliest_op =
+        *std::min_element(ops.begin(), ops.end(), compareProgramFragmentOps);
+    tasks.add(fromHostTask(tensor, opProgramFragment(earliest_op)));
   }
   std::vector<Op *> ops = ir().getOpSchedule();
   double priority       = 0.;

@@ -202,6 +202,16 @@ const std::string &Tensor::tensor_type() const {
   return tensorTypeInfo->type_s();
 }
 
+std::vector<Op *> Tensor::associatedOps() const {
+  std::vector<Op *> result = consumers.getOps();
+
+  if (hasProducer()) {
+    result.push_back(getProducer());
+  }
+
+  return result;
+}
+
 TensorType TensorTypeInfo::type() const { return tensorType_; }
 
 const std::string &TensorTypeInfo::type_s() const { return tensor_type_; }

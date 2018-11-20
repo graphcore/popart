@@ -118,6 +118,9 @@ public:
     data_.reset(new TensorData(std::forward<Args>(args)...));
   }
 
+  // Get all consumer ops and the producer op
+  std::vector<Op *> associatedOps() const;
+
 private:
   Ir &ir;
   Op *producer;
