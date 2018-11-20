@@ -817,7 +817,7 @@ void Devicex::prepare() {
     auto earliest_op =
         std::min_element(ops.begin(), ops.end(), compareProgramFragmentOps);
     if (earliest_op == ops.end()) {
-      logging::devicex::warning("Tensor {} has no consumers", tensor->id);
+      logging::devicex::warn("Tensor {} has no consumers", tensor->id);
     } else {
       tasks.add(toHostTask(tensor, opProgramFragment(*earliest_op)));
     }
@@ -834,7 +834,7 @@ void Devicex::prepare() {
     auto earliest_op =
         std::min_element(ops.begin(), ops.end(), compareProgramFragmentOps);
     if (earliest_op == ops.end()) {
-      logging::devicex::warning("Tensor {} has no consumers", tensor->id);
+      logging::devicex::warn("Tensor {} has no consumers", tensor->id);
     } else {
       tasks.add(fromHostTask(tensor, opProgramFragment(*earliest_op)));
     }
