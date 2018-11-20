@@ -812,11 +812,15 @@ void Devicex::prepare() {
     // 1
     tasks.add(streamToHostTask(ir().getTensors().get(id)));
     // 2
-    auto ops = ir().getTensors().get(id)->associatedOps();
+    auto *tensor = ir().getTensors().get(id);
+    auto ops     = tensor->associatedOps();
     auto earliest_op =
-        *std::min_element(ops.begin(), ops.end(), compareProgramFragmentOps);
-    tasks.add(
-        toHostTask(ir().getTensors().get(id), opProgramFragment(earliest_op)));
+        std::min_element(ops.begin(), ops.end(), compareProgramFragmentOps);
+    if (earliest_op == ops.end()) {
+      logging::devicex::warning("Tensor {} has no consumers", tensor->id);
+    } else {
+      tasks.add(toHostTask(tensor, opProgramFragment(*earliest_op)));
+    }
   }
 
   // create Program to write optimizer tensors to device
@@ -828,8 +832,12 @@ void Devicex::prepare() {
   for (Tensor *tensor : ir().dataStreamTensors()) {
     auto ops = tensor->associatedOps();
     auto earliest_op =
-        *std::min_element(ops.begin(), ops.end(), compareProgramFragmentOps);
-    tasks.add(fromHostTask(tensor, opProgramFragment(earliest_op)));
+        std::min_element(ops.begin(), ops.end(), compareProgramFragmentOps);
+    if (earliest_op == ops.end()) {
+      logging::devicex::warning("Tensor {} has no consumers", tensor->id);
+    } else {
+      tasks.add(fromHostTask(tensor, opProgramFragment(*earliest_op)));
+    }
   }
   std::vector<Op *> ops = ir().getOpSchedule();
   double priority       = 0.;
