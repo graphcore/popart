@@ -98,7 +98,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
         # the amount of data loaded for each step.
         # note this is not the batch size, it's the "step" size
         # (samples per step)
-        batch_size=dataFeed.samplesPerStep(),
+        batch_size=dataFeed.batchSize() * dataFeed.batchesPerStep(),
         shuffle=False,
         num_workers=3)
 
@@ -136,7 +136,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
 
     print(f'Updating weights using model {fnTorchModel}')
     # update the weights from model fnTorchModel
-    session.resetWeights(fnTorchModel)
+    session.resetHostWeights(fnTorchModel)
     session.weightsFromHost()
 
     # save the poponnx model
