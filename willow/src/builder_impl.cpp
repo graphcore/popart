@@ -6,7 +6,7 @@
 
 namespace willow {
 
-static void check_arg_range(const std::vector<std::string> &args,
+static void check_arg_range(const std::vector<TensorId> &args,
                             int min,
                             int max,
                             const char *name) {
@@ -19,7 +19,7 @@ static void check_arg_range(const std::vector<std::string> &args,
   }
 }
 
-static void check_arg_count(const std::vector<std::string> &args,
+static void check_arg_count(const std::vector<TensorId> &args,
                             int count,
                             const char *name) {
   auto len = args.size();
@@ -30,7 +30,7 @@ static void check_arg_count(const std::vector<std::string> &args,
   }
 }
 
-static void check_arg_exists(const std::vector<std::string> &args,
+static void check_arg_exists(const std::vector<TensorId> &args,
                              const char *name) {
   auto len = args.size();
   if (len == 0) {
@@ -40,15 +40,15 @@ static void check_arg_exists(const std::vector<std::string> &args,
   }
 }
 
-static void add_args(Node *node, const std::vector<std::string> &args) {
+static void add_args(Node *node, const std::vector<TensorId> &args) {
   for (const auto &arg : args) {
     node->add_input(arg);
   }
 }
 
-std::string BuilderImpl::add_simple_op(const std::vector<std::string> &args,
-                                       const char *name,
-                                       int arg_count) {
+TensorId BuilderImpl::add_simple_op(const std::vector<TensorId> &args,
+                                    const char *name,
+                                    int arg_count) {
   check_arg_count(args, arg_count, name);
 
   auto id = getNextId();
@@ -64,8 +64,8 @@ std::string BuilderImpl::add_simple_op(const std::vector<std::string> &args,
   return id;
 }
 
-std::string BuilderImpl::add_variadic_op(const std::vector<std::string> &args,
-                                         const char *name) {
+TensorId BuilderImpl::add_variadic_op(const std::vector<TensorId> &args,
+                                      const char *name) {
   check_arg_exists(args, name);
 
   auto id = getNextId();
@@ -81,7 +81,7 @@ std::string BuilderImpl::add_variadic_op(const std::vector<std::string> &args,
   return id;
 }
 
-std::string BuilderImpl::getNextId() {
+TensorId BuilderImpl::getNextId() {
   next_id_++;
   return std::to_string(next_id_);
 }
@@ -92,7 +92,7 @@ BuilderImpl::BuilderImpl() : next_id_(0) {
   opset_import->set_version(9);
 }
 
-std::string BuilderImpl::addInputTensor(const TensorInfo &tensorInfo) {
+TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo) {
   auto id             = getNextId();
   auto onnxTensorType = tensorInfo.getOnnxTypeProto();
 
@@ -106,7 +106,7 @@ std::string BuilderImpl::addInputTensor(const TensorInfo &tensorInfo) {
   return id;
 }
 
-void BuilderImpl::addOutputTensor(const std::string &arg0) {
+void BuilderImpl::addOutputTensor(const TensorId &arg0) {
   auto *graph  = model_.mutable_graph();
   auto *output = graph->add_output();
 
@@ -123,179 +123,179 @@ void BuilderImpl::addOutputTensor(const std::string &arg0) {
   }
 }
 
-std::string BuilderImpl::abs(const std::vector<std::string> &args) {
+TensorId BuilderImpl::abs(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Abs", 1);
 }
 
-std::string BuilderImpl::acos(const std::vector<std::string> &args) {
+TensorId BuilderImpl::acos(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Acos", 1);
 }
 
-std::string BuilderImpl::acosh(const std::vector<std::string> &args) {
+TensorId BuilderImpl::acosh(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Acosh", 1);
 }
 
-std::string BuilderImpl::add(const std::vector<std::string> &args) {
+TensorId BuilderImpl::add(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Add", 2);
 }
 
-std::string BuilderImpl::logical_and(const std::vector<std::string> &args) {
+TensorId BuilderImpl::logical_and(const std::vector<TensorId> &args) {
   return add_simple_op(args, "And", 2);
 }
 
-std::string BuilderImpl::asin(const std::vector<std::string> &args) {
+TensorId BuilderImpl::asin(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Asin", 1);
 }
 
-std::string BuilderImpl::asinh(const std::vector<std::string> &args) {
+TensorId BuilderImpl::asinh(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Asinh", 1);
 }
 
-std::string BuilderImpl::atan(const std::vector<std::string> &args) {
+TensorId BuilderImpl::atan(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Atan", 1);
 }
 
-std::string BuilderImpl::atanh(const std::vector<std::string> &args) {
+TensorId BuilderImpl::atanh(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Atanh", 1);
 }
 
-std::string BuilderImpl::cast(const std::vector<std::string> &args) {
+TensorId BuilderImpl::cast(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Cast", 1);
 }
 
-std::string BuilderImpl::ceil(const std::vector<std::string> &args) {
+TensorId BuilderImpl::ceil(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Ceil", 1);
 }
 
-std::string BuilderImpl::cos(const std::vector<std::string> &args) {
+TensorId BuilderImpl::cos(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Cos", 1);
 }
 
-std::string BuilderImpl::cosh(const std::vector<std::string> &args) {
+TensorId BuilderImpl::cosh(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Cosh", 1);
 }
 
-std::string BuilderImpl::div(const std::vector<std::string> &args) {
+TensorId BuilderImpl::div(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Div", 2);
 }
 
-std::string BuilderImpl::elu(const std::vector<std::string> &args) {
+TensorId BuilderImpl::elu(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Elu", 1);
 }
 
-std::string BuilderImpl::equal(const std::vector<std::string> &args) {
+TensorId BuilderImpl::equal(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Equal", 2);
 }
 
-std::string BuilderImpl::exp(const std::vector<std::string> &args) {
+TensorId BuilderImpl::exp(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Exp", 1);
 }
 
-std::string BuilderImpl::floor(const std::vector<std::string> &args) {
+TensorId BuilderImpl::floor(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Floor", 1);
 }
 
-std::string BuilderImpl::greater(const std::vector<std::string> &args) {
+TensorId BuilderImpl::greater(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Greater", 2);
 }
 
-std::string BuilderImpl::identity(const std::vector<std::string> &args) {
+TensorId BuilderImpl::identity(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Identity", 1);
 }
 
-std::string BuilderImpl::less(const std::vector<std::string> &args) {
+TensorId BuilderImpl::less(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Less", 2);
 }
 
-std::string BuilderImpl::log(const std::vector<std::string> &args) {
+TensorId BuilderImpl::log(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Log", 1);
 }
 
-std::string BuilderImpl::max(const std::vector<std::string> &args) {
+TensorId BuilderImpl::max(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Max", 2);
 }
 
-std::string BuilderImpl::mean(const std::vector<std::string> &args) {
+TensorId BuilderImpl::mean(const std::vector<TensorId> &args) {
   return add_variadic_op(args, "Mean");
 }
 
-std::string BuilderImpl::min(const std::vector<std::string> &args) {
+TensorId BuilderImpl::min(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Min", 2);
 }
 
-std::string BuilderImpl::mul(const std::vector<std::string> &args) {
+TensorId BuilderImpl::mul(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Mul", 2);
 }
 
-std::string BuilderImpl::neg(const std::vector<std::string> &args) {
+TensorId BuilderImpl::neg(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Neg", 1);
 }
 
-std::string BuilderImpl::logical_not(const std::vector<std::string> &args) {
+TensorId BuilderImpl::logical_not(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Not", 1);
 }
 
-std::string BuilderImpl::logical_or(const std::vector<std::string> &args) {
+TensorId BuilderImpl::logical_or(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Or", 2);
 }
 
-std::string BuilderImpl::pow(const std::vector<std::string> &args) {
+TensorId BuilderImpl::pow(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Pow", 2);
 }
 
-std::string BuilderImpl::reciprocal(const std::vector<std::string> &args) {
+TensorId BuilderImpl::reciprocal(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Reciprocal", 1);
 }
 
-std::string BuilderImpl::relu(const std::vector<std::string> &args) {
+TensorId BuilderImpl::relu(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Relu", 1);
 }
 
-std::string BuilderImpl::sigmoid(const std::vector<std::string> &args) {
+TensorId BuilderImpl::sigmoid(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Sigmoid", 1);
 }
 
-std::string BuilderImpl::sin(const std::vector<std::string> &args) {
+TensorId BuilderImpl::sin(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Sin", 1);
 }
 
-std::string BuilderImpl::sinh(const std::vector<std::string> &args) {
+TensorId BuilderImpl::sinh(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Sinh", 1);
 }
 
-std::string BuilderImpl::softsign(const std::vector<std::string> &args) {
+TensorId BuilderImpl::softsign(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Softsign", 1);
 }
 
-std::string BuilderImpl::sqrt(const std::vector<std::string> &args) {
+TensorId BuilderImpl::sqrt(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Sqrt", 1);
 }
 
-std::string BuilderImpl::sub(const std::vector<std::string> &args) {
+TensorId BuilderImpl::sub(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Sub", 2);
 }
 
-std::string BuilderImpl::sum(const std::vector<std::string> &args) {
+TensorId BuilderImpl::sum(const std::vector<TensorId> &args) {
   return add_variadic_op(args, "Sum");
 }
 
-std::string BuilderImpl::tan(const std::vector<std::string> &args) {
+TensorId BuilderImpl::tan(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Tan", 1);
 }
 
-std::string BuilderImpl::tanh(const std::vector<std::string> &args) {
+TensorId BuilderImpl::tanh(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Tanh", 1);
 }
 
-std::string BuilderImpl::logical_xor(const std::vector<std::string> &args) {
+TensorId BuilderImpl::logical_xor(const std::vector<TensorId> &args) {
   return add_simple_op(args, "Xor", 2);
 }
 
-std::string BuilderImpl::convolution(const std::vector<std::string> &args,
-                                     const std::vector<int> strides,
-                                     const std::vector<int> padding,
-                                     const std::vector<int> dilation,
-                                     int groups) {
+TensorId BuilderImpl::convolution(const std::vector<TensorId> &args,
+                                  const std::vector<int> strides,
+                                  const std::vector<int> padding,
+                                  const std::vector<int> dilation,
+                                  int groups) {
   check_arg_range(args, 2, 3, "Conv");
 
   auto id = getNextId();
@@ -338,11 +338,11 @@ std::string BuilderImpl::convolution(const std::vector<std::string> &args,
   return id;
 }
 
-std::string BuilderImpl::gemm(const std::vector<std::string> &args,
-                              float alpha,
-                              float beta,
-                              int transA,
-                              int transB) {
+TensorId BuilderImpl::gemm(const std::vector<TensorId> &args,
+                           float alpha,
+                           float beta,
+                           int transA,
+                           int transB) {
   check_arg_count(args, 3, "GEMM");
 
   auto id = getNextId();
@@ -374,7 +374,7 @@ std::string BuilderImpl::gemm(const std::vector<std::string> &args,
   return id;
 }
 
-std::string BuilderImpl::matmul(const std::vector<std::string> &args) {
+TensorId BuilderImpl::matmul(const std::vector<TensorId> &args) {
   check_arg_count(args, 2, "MatMul");
 
   auto id = getNextId();

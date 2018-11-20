@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 
+#include <poponnx/names.hpp>
+
 namespace willow {
 
 class BuilderImpl;
@@ -24,13 +26,13 @@ public:
    * \param tensorInfo The shape and type of the input tensor
    * \return The unique name of the input tensor
    */
-  std::string addInputTensor(const TensorInfo &tensorInfo);
+  TensorId addInputTensor(const TensorInfo &tensorInfo);
 
   /**
    * Adds one of the outputs from a node in the graph into the list of output
    * tensors.
    */
-  void addOutputTensor(const std::string &arg0);
+  void addOutputTensor(const TensorId &arg0);
 
   /**
    * Add the absolute value operator to the model
@@ -40,7 +42,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string abs(const std::vector<std::string> &args);
+  TensorId abs(const std::vector<TensorId> &args);
 
   /**
    * Add the arc-cosine operator to the model
@@ -50,7 +52,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string acos(const std::vector<std::string> &args);
+  TensorId acos(const std::vector<TensorId> &args);
 
   /**
    * Add the arc-hyperbolic-cosine operator to the model
@@ -60,7 +62,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string acosh(const std::vector<std::string> &args);
+  TensorId acosh(const std::vector<TensorId> &args);
 
   /**
    * Add the addition operator to the model
@@ -70,7 +72,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string add(const std::vector<std::string> &args);
+  TensorId add(const std::vector<TensorId> &args);
 
   /**
    * Add the logical AND operator to the model
@@ -80,7 +82,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string logical_and(const std::vector<std::string> &args);
+  TensorId logical_and(const std::vector<TensorId> &args);
 
   /**
    * Add the arc sine operator to the model
@@ -90,7 +92,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string asin(const std::vector<std::string> &args);
+  TensorId asin(const std::vector<TensorId> &args);
 
   /**
    * Add the arc hyperbolic sine operator to the model
@@ -100,7 +102,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string asinh(const std::vector<std::string> &args);
+  TensorId asinh(const std::vector<TensorId> &args);
 
   /**
    * Add the arc tangent operator to the model
@@ -110,7 +112,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string atan(const std::vector<std::string> &args);
+  TensorId atan(const std::vector<TensorId> &args);
 
   /**
    * Add the arc hyperbolic tangent operator to the model
@@ -120,7 +122,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string atanh(const std::vector<std::string> &args);
+  TensorId atanh(const std::vector<TensorId> &args);
 
   /**
    * Add the cast operator to the model
@@ -130,7 +132,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string cast(const std::vector<std::string> &args);
+  TensorId cast(const std::vector<TensorId> &args);
 
   /**
    * Add the ceil operator to the model
@@ -140,7 +142,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string ceil(const std::vector<std::string> &args);
+  TensorId ceil(const std::vector<TensorId> &args);
 
   /**
    * Add the cosine operator to the model
@@ -150,7 +152,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string cos(const std::vector<std::string> &args);
+  TensorId cos(const std::vector<TensorId> &args);
 
   /**
    * Add the hyperbolic cosine operator to the model
@@ -160,7 +162,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string cosh(const std::vector<std::string> &args);
+  TensorId cosh(const std::vector<TensorId> &args);
 
   /**
    * Add the divide operator to the model
@@ -170,7 +172,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string div(const std::vector<std::string> &args);
+  TensorId div(const std::vector<TensorId> &args);
 
   /**
    * Add the exponential linear operator to the model
@@ -180,7 +182,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string elu(const std::vector<std::string> &args);
+  TensorId elu(const std::vector<TensorId> &args);
 
   /**
    * Add the equal-to operator to the model
@@ -190,7 +192,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string equal(const std::vector<std::string> &args);
+  TensorId equal(const std::vector<TensorId> &args);
 
   /**
    * Add the exponent operator to the model
@@ -200,7 +202,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string exp(const std::vector<std::string> &args);
+  TensorId exp(const std::vector<TensorId> &args);
 
   /**
    * Add the floor operator to the model
@@ -210,7 +212,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string floor(const std::vector<std::string> &args);
+  TensorId floor(const std::vector<TensorId> &args);
 
   /**
    * Add the greater-than operator to the model
@@ -220,7 +222,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string greater(const std::vector<std::string> &args);
+  TensorId greater(const std::vector<TensorId> &args);
 
   /**
    * Add the identity operator to the model
@@ -230,7 +232,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string identity(const std::vector<std::string> &args);
+  TensorId identity(const std::vector<TensorId> &args);
 
   /**
    * Add the less-than operator to the model
@@ -240,7 +242,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string less(const std::vector<std::string> &args);
+  TensorId less(const std::vector<TensorId> &args);
 
   /**
    * Add the logarithm operator to the model
@@ -250,7 +252,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string log(const std::vector<std::string> &args);
+  TensorId log(const std::vector<TensorId> &args);
 
   /**
    * Add the maximum operator to the model
@@ -260,7 +262,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string max(const std::vector<std::string> &args);
+  TensorId max(const std::vector<TensorId> &args);
 
   /**
    * Add the mean operator to the model
@@ -270,7 +272,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string mean(const std::vector<std::string> &args);
+  TensorId mean(const std::vector<TensorId> &args);
 
   /**
    * Add the minimum operator to the model
@@ -280,7 +282,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string min(const std::vector<std::string> &args);
+  TensorId min(const std::vector<TensorId> &args);
 
   /**
    * Add the multiply operator to the model
@@ -290,7 +292,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string mul(const std::vector<std::string> &args);
+  TensorId mul(const std::vector<TensorId> &args);
 
   /**
    * Add the negate operator to the model
@@ -300,7 +302,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string neg(const std::vector<std::string> &args);
+  TensorId neg(const std::vector<TensorId> &args);
 
   /**
    * Add the logical NOT operator to the model
@@ -310,7 +312,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string logical_not(const std::vector<std::string> &args);
+  TensorId logical_not(const std::vector<TensorId> &args);
 
   /**
    * Add the logical OR operator to the model
@@ -320,7 +322,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string logical_or(const std::vector<std::string> &args);
+  TensorId logical_or(const std::vector<TensorId> &args);
 
   /**
    * Add the power operator to the model
@@ -330,7 +332,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string pow(const std::vector<std::string> &args);
+  TensorId pow(const std::vector<TensorId> &args);
 
   /**
    * Add the reciprocal operator to the model
@@ -340,7 +342,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string reciprocal(const std::vector<std::string> &args);
+  TensorId reciprocal(const std::vector<TensorId> &args);
 
   /**
    * Add the rectified linear operator to the model
@@ -350,7 +352,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string relu(const std::vector<std::string> &args);
+  TensorId relu(const std::vector<TensorId> &args);
 
   /**
    * Add the sigmoid operator to the model
@@ -360,7 +362,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string sigmoid(const std::vector<std::string> &args);
+  TensorId sigmoid(const std::vector<TensorId> &args);
 
   /**
    * Add the sine operator to the model
@@ -370,7 +372,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string sin(const std::vector<std::string> &args);
+  TensorId sin(const std::vector<TensorId> &args);
 
   /**
    * Add the hyperbolic sine operator to the model
@@ -380,7 +382,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string sinh(const std::vector<std::string> &args);
+  TensorId sinh(const std::vector<TensorId> &args);
 
   /**
    * Add the softsign operator to the model
@@ -390,7 +392,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string softsign(const std::vector<std::string> &args);
+  TensorId softsign(const std::vector<TensorId> &args);
 
   /**
    * Add the square root operator to the model
@@ -400,7 +402,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string sqrt(const std::vector<std::string> &args);
+  TensorId sqrt(const std::vector<TensorId> &args);
 
   /**
    * Add the subtract operator to the model
@@ -410,7 +412,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string sub(const std::vector<std::string> &args);
+  TensorId sub(const std::vector<TensorId> &args);
 
   /**
    * Add the variadic summation operator to the model
@@ -420,7 +422,7 @@ public:
    * \param args The tensor arguments
    * \return The name of the result tensor
    */
-  std::string sum(const std::vector<std::string> &args);
+  TensorId sum(const std::vector<TensorId> &args);
 
   /**
    * Add the tangent operator to the model
@@ -430,7 +432,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string tan(const std::vector<std::string> &args);
+  TensorId tan(const std::vector<TensorId> &args);
 
   /**
    * Add the hyperbolic tangent operator to the model
@@ -440,7 +442,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string tanh(const std::vector<std::string> &args);
+  TensorId tanh(const std::vector<TensorId> &args);
 
   /**
    * Add the logical XOR operator to the model
@@ -450,7 +452,7 @@ public:
    * \param args The tensor argument
    * \return The name of the result tensor
    */
-  std::string logical_xor(const std::vector<std::string> &args);
+  TensorId logical_xor(const std::vector<TensorId> &args);
 
   /**
    * Add a convolution to the model
@@ -470,11 +472,11 @@ public:
    * \param groups The number of filter groups
    * \return The name of the result tensor
    */
-  std::string convolution(const std::vector<std::string> &args,
-                          const std::vector<int> strides,
-                          const std::vector<int> padding,
-                          const std::vector<int> dilation,
-                          int groups);
+  TensorId convolution(const std::vector<TensorId> &args,
+                       const std::vector<int> strides,
+                       const std::vector<int> padding,
+                       const std::vector<int> dilation,
+                       int groups);
 
   /**
    * Add a GEMM operation to the model
@@ -488,11 +490,11 @@ public:
    * \param transB Whether B should be transposed
    * \return The name of the result tensor
    */
-  std::string gemm(const std::vector<std::string> &args,
-                   float alpha,
-                   float beta,
-                   int transA,
-                   int transB);
+  TensorId gemm(const std::vector<TensorId> &args,
+                float alpha,
+                float beta,
+                int transA,
+                int transB);
 
   /**
    * Add a MatMul operation to the model
@@ -502,7 +504,7 @@ public:
    * \param args N-dimensional matrix A, and N-dimensional matrix B
    * \return The name of the result tensor
    */
-  std::string matmul(const std::vector<std::string> &args);
+  TensorId matmul(const std::vector<TensorId> &args);
 
   /**
    * Retrieve the ONNX serialized ModelProto
