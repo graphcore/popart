@@ -102,7 +102,7 @@ def test_convolution(tmpdir):
     assert (np.array_equal(anchors[o], expected))
 
 
-def test_matmul():
+def test_matmul(tmpdir):
     # create a basic model with a matmul operator
     # and compare the answer against numpy.matmul
 
@@ -113,7 +113,7 @@ def test_matmul():
 
     i1 = builder.addInputTensor(i1shape)
     i2 = builder.addInputTensor(i2shape)
-    o = builder.matmul(i1, i2)
+    o = builder.matmul([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -132,7 +132,7 @@ def test_matmul():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        outputdir="/tmp")
+        outputdir=str(tmpdir))
 
     session.setDevice("IPU")
     anchors = session.initAnchorArrays()
