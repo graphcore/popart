@@ -126,7 +126,7 @@ public:
 
   // completed in Devicex constructor.
 
-  enigma::ConvOptions fwdConvOptions, bwdConvOptions, wuConvOptions;
+  poplar::OptionFlags fwdConvOptions, bwdConvOptions, wuConvOptions;
   poplar::OptionFlags fwdMmOptions, bwdMmLhsOptions, bwdMmRhsOptions;
   poplar::OptionFlags engineOptions, reportOptions;
 

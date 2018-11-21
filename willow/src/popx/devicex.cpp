@@ -30,6 +30,7 @@
 #include <poplin/codelets.hpp>
 #include <popnn/codelets.hpp>
 #include <popops/codelets.hpp>
+#include <poputil/exceptions.hpp>
 
 namespace willow {
 namespace popx {
@@ -200,16 +201,22 @@ Devicex::Devicex(const Ir &ir) : willow::Device(ir), tensors(ir) {
   }
 
   // TODO (see T5100) : if inference, forward should be INFERENCE_FWD
-  fwdConvOptions.pass = enigma::Pass::TRAINING_FWD;
-  bwdConvOptions.pass = enigma::Pass::TRAINING_BWD;
-  wuConvOptions.pass  = enigma::Pass::TRAINING_WU;
+  for (auto it : ir.getSessionOptions().convolutionOptions) {
+    fwdConvOptions.set(it.first, it.second);
+    bwdConvOptions.set(it.first, it.second);
+    wuConvOptions.set(it.first, it.second);
+  }
+
+  fwdConvOptions.set("pass", "TRAINING_FWD");
+  bwdConvOptions.set("pass", "TRAINING_BWD");
+  wuConvOptions.set("pass", "TRAINING_WU");
 
   // Not sure what they options should be
-  fwdMmOptions.set({{"fullyConnectedPass", "TRAINING_FWD"}});
-  bwdMmLhsOptions.set({{"fullyConnectedPass", "TRAINING_BWD"}});
-  bwdMmRhsOptions.set({{"fullyConnectedPass", "TRAINING_WU"}});
+  fwdMmOptions.set("fullyConnectedPass", "TRAINING_FWD");
+  bwdMmLhsOptions.set("fullyConnectedPass", "TRAINING_BWD");
+  bwdMmRhsOptions.set("fullyConnectedPass", "TRAINING_WU");
 
-  engineOptions.set({{"target.workerStackSizeInBytes", "0x200"}});
+  engineOptions.set("target.workerStackSizeInBytes", "0x200");
   for (auto it : ir.getSessionOptions().engineOptions) {
     engineOptions.set(it.first, it.second);
   }
@@ -850,14 +857,11 @@ void Devicex::prepare() {
   for (auto &task : tasks.getLinearised()) {
     task.f();
   }
+
   logging::devicex::info("All tasks complete");
   logging::devicex::debug("Creating poplar::Engine");
 
-  try {
-    pEngine.reset(new poplar::Engine(graph(), progs.progs(), engineOptions));
-  } catch (const poplar::poplar_error &e) {
-    throw error(std::string("Engine compilation error: ") + e.what());
-  }
+  pEngine.reset(new poplar::Engine(graph(), progs.progs(), engineOptions));
   logging::devicex::debug("Engine has been created");
 
   pEngine->load(popDevice);
@@ -1004,13 +1008,9 @@ std::string Devicex::getSummaryReport() const {
     throw error(
         "Session must have been prepared before a report can be fetched");
   }
-  try {
-    std::stringstream ss;
-    pEngine->printSummary(ss, reportOptions);
-    return ss.str();
-  } catch (const poplar::poplar_error &e) {
-    throw error(e.what());
-  }
+  std::stringstream ss;
+  pEngine->printSummary(ss, reportOptions);
+  return ss.str();
 }
 
 std::string Devicex::getGraphReport() const {
@@ -1018,14 +1018,10 @@ std::string Devicex::getGraphReport() const {
     throw error(
         "Session must have been prepared before a report can be fetched");
   }
-  try {
-    std::stringstream ss;
-    auto report = pEngine->getGraphReport(reportOptions);
-    report.serialize(ss, poplar::SerializationFormat::JSON);
-    return ss.str();
-  } catch (const poplar::poplar_error &e) {
-    throw error(e.what());
-  }
+  std::stringstream ss;
+  auto report = pEngine->getGraphReport(reportOptions);
+  report.serialize(ss, poplar::SerializationFormat::JSON);
+  return ss.str();
 }
 
 std::string Devicex::getExecutionReport() const {
@@ -1033,14 +1029,10 @@ std::string Devicex::getExecutionReport() const {
     throw error(
         "Session must have been prepared before a report can be fetched");
   }
-  try {
-    std::stringstream ss;
-    auto report = pEngine->getExecutionReport(reportOptions);
-    report.serialize(ss, poplar::SerializationFormat::JSON);
-    return ss.str();
-  } catch (const poplar::poplar_error &e) {
-    throw error(e.what());
-  }
+  std::stringstream ss;
+  auto report = pEngine->getExecutionReport(reportOptions);
+  report.serialize(ss, poplar::SerializationFormat::JSON);
+  return ss.str();
 }
 
 poplar::Type popType(const TensorInfo &info) {

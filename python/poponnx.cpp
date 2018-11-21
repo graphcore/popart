@@ -12,6 +12,9 @@
 #include <poponnx/session.hpp>
 #include <poponnx/tensordata.hpp>
 
+#include <poplar/exceptions.hpp>
+#include <poputil/exceptions.hpp>
+
 namespace py = pybind11;
 using namespace willow;
 
@@ -263,5 +266,7 @@ PYBIND11_MODULE(poponnx_core, m) {
         return py::bytes(builder.getModelProto());
       });
 
-  py::register_exception<willow::error>(m, "exception");
+  py::register_exception<willow::error>(m, "poponnx_exception");
+  py::register_exception<poplar::poplar_error>(m, "poplar_exception");
+  py::register_exception<poputil::poplib_error>(m, "poplibs_exception");
 }

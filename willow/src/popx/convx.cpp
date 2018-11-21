@@ -71,34 +71,34 @@ std::vector<TensorId> ConvOpx::mustExistBeforeCreate(int) const {
 
 void ConvOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto outTensor = poplin::convolution(
-      graph(),                           // graph
-      get(getConvOp()->dataIn()->id),    // in
-      get(getConvOp()->weightsIn()->id), // weights
-      fwdParams,                         // params
-      false,                             // transposeAndFlipWeights,
-      prog,                              // prog
-      idStr(),                           // debugPrefix
-      enigma::toPoplibsConvOptions(dv_p->fwdConvOptions), // options
-      &dv_p->convCache                                    // cache
-  );
+  auto outTensor =
+      poplin::convolution(graph(),                           // graph
+                          get(getConvOp()->dataIn()->id),    // in
+                          get(getConvOp()->weightsIn()->id), // weights
+                          fwdParams,                         // params
+                          false,                // transposeAndFlipWeights,
+                          prog,                 // prog
+                          idStr(),              // debugPrefix
+                          dv_p->fwdConvOptions, // options
+                          &dv_p->convCache      // cache
+      );
 
   insert(outId(0), outTensor);
 }
 
 void ConvDataGradOpx::grow(poplar::program::Sequence &prog) const {
   ConvDataGradOp *gradOp = getConvDataGradOp();
-  auto outTensor         = poplin::convolution(
-      graph(),                                 // graph
-      get(inId(gradOp->getGradConvolvedIn())), // in
-      get(inId(gradOp->getWeightsIn())),       // weights
-      dataGradParams,                          // params
-      true,    // transposeAndFlipWeights,
-      prog,    // prog
-      idStr(), // debugPrefix
-      enigma::toPoplibsConvOptions(dv_p->bwdConvOptions), // options
-      &dv_p->convCache                                    // cache
-  );
+  auto outTensor =
+      poplin::convolution(graph(),                                 // graph
+                          get(inId(gradOp->getGradConvolvedIn())), // in
+                          get(inId(gradOp->getWeightsIn())),       // weights
+                          dataGradParams,                          // params
+                          true,                 // transposeAndFlipWeights,
+                          prog,                 // prog
+                          idStr(),              // debugPrefix
+                          dv_p->bwdConvOptions, // options
+                          &dv_p->convCache      // cache
+      );
 
   insert(outId(0), outTensor);
 }
@@ -107,14 +107,14 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
   ConvWeightsGradOp *gradOp = getConvWeightsGradOp();
   const ConvOp *convOp      = gradOp->getCloneOfCreator();
   poplar::Tensor wGrad      = poplin::calculateWeightDeltas(
-      graph(),                                           // graph
-      get(inId(gradOp->getGradConvolvedIn())),           // zDeltas,
-      get(inId(gradOp->getPreConvolvedIn())),            // activations,
-      getFwdConvParams(convOp),                          // params
-      prog,                                              // prog
-      idStr(),                                           // debugPrefix
-      enigma::toPoplibsConvOptions(dv_p->wuConvOptions), // options
-      &dv_p->convCache);                                 // cache
+      graph(),                                 // graph
+      get(inId(gradOp->getGradConvolvedIn())), // zDeltas,
+      get(inId(gradOp->getPreConvolvedIn())),  // activations,
+      getFwdConvParams(convOp),                // params
+      prog,                                    // prog
+      idStr(),                                 // debugPrefix
+      dv_p->wuConvOptions,                     // options
+      &dv_p->convCache);                       // cache
 
   insert(outId(0), wGrad);
 }
@@ -161,20 +161,18 @@ bool ConvOpx::canCreateInput(int) const { return true; }
 poplar::Tensor ConvOpx::createInput(int index) const {
 
   if (index == ConvOp::weightsInIndex()) {
-    return poplin::createWeights(
-        graph(),                                            // graph
-        fwdParams,                                          // params
-        op_p->str(),                                        // name
-        enigma::toPoplibsConvOptions(dv_p->fwdConvOptions), // options
-        &dv_p->convCache                                    // cache
+    return poplin::createWeights(graph(),              // graph
+                                 fwdParams,            // params
+                                 op_p->str(),          // name
+                                 dv_p->fwdConvOptions, // options
+                                 &dv_p->convCache      // cache
     );
   } else if (index == ConvOp::dataInIndex()) {
-    return poplin::createInput(
-        graph(),                                            // graph
-        fwdParams,                                          // params
-        idStr(),                                            // name
-        enigma::toPoplibsConvOptions(dv_p->fwdConvOptions), // options
-        &dv_p->convCache                                    // cache
+    return poplin::createInput(graph(),              // graph
+                               fwdParams,            // params
+                               idStr(),              // name
+                               dv_p->fwdConvOptions, // options
+                               &dv_p->convCache      // cache
     );
   } else {
     throw error("conv opx cannot create tensor at this index yet");

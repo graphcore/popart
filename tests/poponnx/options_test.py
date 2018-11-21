@@ -92,7 +92,52 @@ def test_engine_options_passed_to_engine(tmpdir):
     session.setDevice("IPU")
     session.initAnchorArrays()
 
-    with pytest.raises(poponnx.exception) as e_info:
+    with pytest.raises(poponnx.poplar_exception) as e_info:
         session.prepareDevice()
 
     assert (e_info.value.args[0].endswith("Unrecognised option 'option'"))
+
+
+def test_convolution_options(tmpdir):
+
+    builder = poponnx.Builder()
+
+    data_shape = poponnx.TensorInfo("FLOAT", [1, 2, 4, 4])
+    filt_shape = poponnx.TensorInfo("FLOAT", [3, 2, 3, 3])
+
+    i1 = builder.addInputTensor(data_shape)
+    i2 = builder.addInputTensor(filt_shape)
+    o = builder.convolution([i1, i2], [1, 1], [1, 1, 1, 1], [1, 1], 1)
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    earlyInfo = poponnx.EarlyInfo()
+    earlyInfo.add(i1, data_shape)
+    earlyInfo.add(i2, filt_shape)
+
+    dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
+    optimizer = poponnx.SGD(0.01)
+    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
+
+    opts = poponnx.SessionOptions()
+    opts.convolutionOptions = {'startTileMultiplier': '3'}
+    opts.logging = {'all': 'DEBUG'}
+
+    session = poponnx.Session(
+        fnModel=proto,
+        earlyInfo=earlyInfo,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        outputdir=str(tmpdir),
+        userOptions=opts)
+
+    session.setDevice("IPU")
+    anchors = session.initAnchorArrays()
+
+    with pytest.raises(poponnx.poplibs_exception) as e_info:
+        session.prepareDevice()
+
+    assert (e_info.value.args[0].endswith(
+        "Must start distributing convolutions on an even tile."))

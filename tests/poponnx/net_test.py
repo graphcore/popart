@@ -72,7 +72,7 @@ def test_net_failure(tmpdir):
     optimizer = poponnx.SGD(0.01)
     losses = [poponnx.L1Loss("None", "l1LossVal", 0.1)]
 
-    with pytest.raises(poponnx.exception) as e_info:
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
         poponnx.Session(
             fnModel="nothing",
             earlyInfo=earlyInfo,
@@ -81,5 +81,5 @@ def test_net_failure(tmpdir):
             optimizer=optimizer,
             outputdir=str(tmpdir))
 
-    assert (e_info.type == poponnx.exception)
+    assert (e_info.type == poponnx.poponnx_exception)
     assert (e_info.value.args[0] == "Failed to parse ModelProto from string")

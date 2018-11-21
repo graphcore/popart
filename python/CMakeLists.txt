@@ -8,13 +8,10 @@ add_compile_options("-Wno-missing-prototypes")
 include_directories("../willow/include")
 
 find_package(pybind11 REQUIRED)
+find_package(Poplar REQUIRED)
 
-# https://pybind11.readthedocs.io/en/master/faq.html
-# suggests not using find_package(PythonLibs), because 
-# pybind11 finds Python itself
 message(STATUS "Python include dir: " ${PYTHON_INCLUDE_DIR})
 message(STATUS "Python library : " ${PYTHON_LIBRARY})
-# find_package(PythonLibs)
 
 pybind11_add_module(poponnx_core poponnx.cpp)
 
@@ -22,7 +19,8 @@ target_include_directories (poponnx_core SYSTEM PUBLIC
   ${pybind11_INCLUDE_DIR}
 )
 target_include_directories (poponnx_core PUBLIC
-  # ...
+  ${POPLAR_INCLUDE_DIR}
+  ${POPLIBS_INCLUDE_DIR}
 )
 
 # Not defining them results in compiler warnings that they will default to 0
