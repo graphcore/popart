@@ -109,7 +109,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
                 inputs[tenId] = data[cifarInIndices[tenId]].numpy()
             stepi += 1
 
-            torchWriter.step(inputs)
+            torchWriter.train(inputs)
 
     def getFnModel(framework, stepi):
         return os.path.join(outputdir, "%sModel_%d.onnx" % (framework, stepi))
