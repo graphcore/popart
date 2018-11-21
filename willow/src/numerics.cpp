@@ -8,34 +8,6 @@
 namespace willow {
 namespace numerics {
 
-template <typename T> class NumericsTracker {
-
-private:
-  // sums of squares of weight differences
-  T ss_dA{0};
-  T ss_dB{0};
-  T ss_dAB{0};
-  int64_t nSamples;
-
-public:
-  void insert(T v_AStarts, T v_AEnds, T v_BStarts, T v_BEnds) {
-    ++nSamples;
-    T dA = v_AEnds - v_AStarts;
-    T dB = v_BEnds - v_BStarts;
-    ss_dA += dA * dA;
-    ss_dB += dB * dB;
-    ss_dAB += (dA - dB) * (dA - dB);
-  }
-
-  std::string str() {
-    T relerr = (ss_dAB) / (std::sqrt(ss_dA * ss_dB) + 1e-8f);
-    std::stringstream ss;
-    ss.precision(8);
-    ss << "|dA - dB|^2 / (|dA||dB| + 1e-8)  = " << relerr;
-    return ss.str();
-  }
-};
-
 NumericsReport::NumericsReport(std::string AStarts, // A starts
                                std::string AEnds,   // A ends
                                std::string BStarts, // B starts
@@ -100,7 +72,7 @@ NumericsReport::NumericsReport(std::string AStarts, // A starts
                        static_cast<const float *>(cv_datas[BStarts].data)[i],
                        static_cast<const float *>(cv_datas[BEnds].data)[i]);
       }
-
+      relerrs[getTensor(AStarts).name()] = tracker.getRelativeError();
       reports[getTensor(AStarts).name()] = tracker.str();
     }
 
@@ -128,5 +100,10 @@ std::string NumericsReport::report(TensorId id) const {
   }
   return found->second;
 }
+
+std::map<TensorId, float> NumericsReport::getRelativeErrors() {
+  return relerrs;
+}
+
 } // namespace numerics
 } // namespace willow

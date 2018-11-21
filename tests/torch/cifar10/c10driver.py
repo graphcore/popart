@@ -4,10 +4,12 @@ import tempfile
 import poponnx
 import torch
 import numpy as np
+import math
 import re
 from tempfile import TemporaryDirectory
 from torchvision import transforms, datasets
 from poponnx.torch import torchwriter
+from poponnx import NllLoss, L1Loss
 
 
 class TestFailureError(Exception):
@@ -15,20 +17,23 @@ class TestFailureError(Exception):
         super().__init__(message)
 
 
-def run(torchWriter, passes, outputdir, cifarInIndices):
+def run(torchWriter, passes, outputdir, cifarInIndices, mode="train"):
     if outputdir is None:
         with TemporaryDirectory() as outputdir:
-            _run_impl(torchWriter, passes, outputdir, cifarInIndices)
+            _run_impl(torchWriter, passes, outputdir, cifarInIndices, mode)
     else:
         if not os.path.exists(outputdir):
             os.mkdir(outputdir)
 
-        _run_impl(torchWriter, passes, outputdir, cifarInIndices)
+        _run_impl(torchWriter, passes, outputdir, cifarInIndices, mode)
 
 
-def _run_impl(torchWriter, passes, outputdir, cifarInIndices):
+def _run_impl(torchWriter, passes, outputdir, cifarInIndices, mode):
     dataFeed = torchWriter.dataFeed
     earlyInfo = torchWriter.earlyInfo
+    validModes = ["infer", "evaluate", "train"]
+    if mode not in validModes:
+        raise Exception("mode must be one of " + str(validModes))
 
     transform = transforms.Compose([
         transforms.ToTensor(),
@@ -107,6 +112,34 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices):
     def getFnTorch(stepi):
         return getFnModel("Torch", stepi)
 
+    def reportTensorError(tensorInd, result):
+        reportStr = str(tensorInd) + " :\n"
+        reportStr += "  |pA - tA|^2 / (|pA||tA| + 1e-8)  = " + str(
+            result) + "\n"
+        return reportStr
+
+    def getAnchorTensor(tId, anchorArrays):
+        assertStr = "Loss tensor must be specified as an anchor"
+        assert (tId in anchorArrays.keys()), assertStr
+        return anchorArrays[loss.output(0)]
+
+    def getTensorError(pA, tA):
+        # pA, tA are corresponding tensors from two models
+        pA_shape = np.shape(pA)
+        tA_shape = np.shape(tA)
+        assert (pA_shape == tA_shape), "Arrays must be same shape"
+
+        ss_err = np.sum((np.array(pA) - np.array(tA))**2)
+        ss_pA = np.sum(np.array(pA)**2)
+        ss_tA = np.sum(np.array(tA)**2)
+        return ss_err / (math.sqrt(ss_pA * ss_tA) + 1.0e-8)
+
+    def checkResult(result, margin):
+        if (result > margin):
+            raise TestFailureError(
+                str(result) + " is greater than " + str(margin))
+
+    margin = 1.0e-8
     stepi = 0
     numReports = []
     for epoch in range(4):  # loop over the dataset multiple times
@@ -121,42 +154,66 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices):
                 inputs[tenId] = data[cifarInIndices[tenId]].numpy()
             stepi += 1
 
-            # take batchesPerStep fwd-bwd passes (1 step), Torch
-            torchOutputs = torchWriter.step(inputs)
+            if mode == "train":
+                # take batchesPerStep passes (1 step), Torch
+                torchWriter.train(inputs)
 
-            # take batchesPerStep fwd-bwd passes (1 step), PopOnnx
-            pystepio = poponnx.PyStepIO(inputs, anchorArrays)
-            session.train(pystepio)
+                # take batchesPerStep passes (1 step), PopOnnx
+                pystepio = poponnx.PyStepIO(inputs, anchorArrays)
+                session.train(pystepio)
 
-            # write models to file, gather comparison statistics
-            fnTorchModel = getFnTorch(stepi)
-            torchWriter.saveModel(fnTorchModel)
-            fnPopOnnxModel = getFnPopOnnx(stepi)
-            session.modelToHost(fnPopOnnxModel)
+                # write models to file
+                fnTorchModel = getFnTorch(stepi)
+                torchWriter.saveModel(fnTorchModel)
+                fnPopOnnxModel = getFnPopOnnx(stepi)
+                session.modelToHost(fnPopOnnxModel)
 
-            if stepi == 1:
-                numReports.append(
-                    poponnx.NumericsReport(fnModel0, fnTorchModel, fnModel0,
-                                           fnPopOnnxModel))
-
-            else:
-                numReports.append(
-                    poponnx.NumericsReport(
+                # Compare parameters from updated Onnx models
+                if stepi == 1:
+                    nr = poponnx.NumericsReport(fnModel0, fnTorchModel,
+                                                fnModel0, fnPopOnnxModel)
+                else:
+                    nr = poponnx.NumericsReport(
                         getFnTorch(stepi - 1), fnTorchModel,
-                        getFnPopOnnx(stepi - 1), fnPopOnnxModel))
+                        getFnPopOnnx(stepi - 1), fnPopOnnxModel)
 
-    for report in numReports:
-        print(report.fullReport())
+                print(nr.fullReport())
+                # One relative error calculated per weight tensor
+                for tId, relerror in nr.getRelativeErrors().items():
+                    checkResult(relerror, margin)
 
-    margin = 1.0e-8
+            elif mode == "evaluate":
+                # take batchesPerStep passes (1 step), Torch
+                # returns scalar for each sample
+                torchLosses = torchWriter.evaluate(inputs)
 
-    for report in numReports:
-        freport = report.fullReport()
-        matches = re.findall('= (\S*)', freport)
-        for match in matches:
-            result = float(match)
+                # take batchesPerStep passes (1 step), PopOnnx
+                pystepio = poponnx.PyStepIO(inputs, anchorArrays)
+                session.evaluate(pystepio)
 
-            # Raise an error if the result is greater than the margin
-            if (result > margin):
-                raise TestFailureError(
-                    str(result) + " is greater than " + str(margin))
+                # Compare torch loss tensors with poponnx loss from
+                # anchor tensor map
+                pLoss = np.zeros(stepLoader.batch_size)
+                for loss in torchWriter.losses:
+                    pLoss_ = getAnchorTensor(loss.output(0), anchorArrays)
+                    pLoss = np.add(pLoss, pLoss_)
+                result = getTensorError(torchLosses, pLoss)
+                print(reportTensorError(0, result))
+                checkResult(result, margin)
+
+            elif mode == "infer":
+                # take batchesPerStep passes (1 step), Torch
+                # returns map of outputs for each sample
+                torchOutputs = torchWriter.infer(inputs)
+
+                # take batchesPerStep passes (1 step), PopOnnx
+                pystepio = poponnx.PyStepIO(inputs, anchorArrays)
+                session.infer(pystepio)
+
+                # Compare torch outputs tensors with poponnx output from
+                # anchor tensor maps
+                for nInd, outName in enumerate(torchWriter.outNames):
+                    result = getTensorError(torchOutputs[outName],
+                                            anchorArrays[outName])
+                    print(reportTensorError(nInd, result))
+                    checkResult(result, margin)

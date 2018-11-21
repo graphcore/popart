@@ -130,7 +130,8 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("B0"),
            py::arg("B1"))
       .def("report", &numerics::NumericsReport::report)
-      .def("fullReport", &numerics::NumericsReport::fullReport);
+      .def("fullReport", &numerics::NumericsReport::fullReport)
+      .def("getRelativeErrors", &numerics::NumericsReport::getRelativeErrors);
 
   py::class_<EarlyInfo>(m, "EarlyInfo")
       .def(py::init<>())
@@ -140,6 +141,7 @@ PYBIND11_MODULE(poponnx_core, m) {
 
   py::class_<Loss> loss(m, "Loss");
   loss.def("input", &Loss::input);
+  loss.def("output", &Loss::output);
 
   py::class_<NllLoss>(m, "NllLoss", loss)
       .def(py::init<TensorId, TensorId, TensorId>(),

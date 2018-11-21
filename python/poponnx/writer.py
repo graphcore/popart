@@ -52,9 +52,27 @@ class NetWriter():
         """
         raise NotImplementedError()
 
-    def step(self, inputsMap):
+    def train(self, inputsMap):
         """
         perform batchesPerStep training steps. This function
+        only needs to be implemented by frameworks which will
+        be used to verify poponnx. See torchwriter.py for an
+        example implementation.
+        """
+        raise NotImplementedError()
+
+    def eval(self, inputsMap):
+        """
+        perform batchesPerStep evaluation steps. This function
+        only needs to be implemented by frameworks which will
+        be used to verify poponnx. See torchwriter.py for an
+        example implementation.
+        """
+        raise NotImplementedError()
+
+    def infer(self, inputsMap):
+        """
+        perform batchesPerStep inference steps. This function
         only needs to be implemented by frameworks which will
         be used to verify poponnx. See torchwriter.py for an
         example implementation.

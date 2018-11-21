@@ -99,14 +99,9 @@ class PytorchNetWriter(NetWriter):
             input_names=self.inNames,
             output_names=self.outNames)
 
-    def step(self, inMap):
+    def train(self, inMap):
         """
-        TODO : sort out case of tuples of tuples for outputs
-
-        w.r.t. parameter names. It is possible to flatten
-        named_parameters of module, but it is not clear that
-        the order will always correspond to the order of the
-        onnx "trace", so I won't.
+        Does training
         """
         torchOptimizer = self.getTorchOptimizer()
         self.module.train()
@@ -115,11 +110,10 @@ class PytorchNetWriter(NetWriter):
         # perform forwards - backwards - update
         # for each of the substeps (substep = batch)
 
-        # this list we store a map of the output tensors
-        # for each of the batches in the step
-        substepOutMaps = []
+        substepParameterMaps = []
         for substep in range(self.dataFeed.batchesPerStep()):
 
+            substepParameterMap = {}
             substepOutMap = {}
             substepInMap = {}
             for inId in inMap.keys():
@@ -142,11 +136,108 @@ class PytorchNetWriter(NetWriter):
 
             # backwards pass
             lossTarget = self.getTorchLossTarget(substepInMap, substepOutMap)
+
             lossTarget.backward()
             torchOptimizer.step()
 
-            substepOutMaps.append(substepOutMap)
+            for name, param in self.module.named_parameters():
+                substepParameterMap[name] = param.data
+            substepParameterMaps.append(substepParameterMap)
 
         # returning: list with one entry per substep, of the
-        # output of the batch processed at the substep
-        return substepOutMaps
+        # parameters of the model processed at the substep
+        return substepParameterMaps
+
+    def evaluate(self, inMap):
+        """
+        Does evaluation (i.e. forward pass and loss calculation, but no
+        backward pass)
+
+        TODO : sort out case of tuples of tuples for outputs
+
+        w.r.t. parameter names. It is possible to flatten
+        named_parameters of module, but it is not clear that
+        the order will always correspond to the order of the
+        onnx "trace", so I won't.
+        """
+        torchOptimizer = self.getTorchOptimizer()
+        self.module.eval()
+
+        # perform forwards pass for each of the
+        # substeps (substep = batch)
+
+        # in this list we store loss tensors for each of
+        # the samples in the step
+        losses = []
+        stepSize = self.dataFeed.batchesPerStep() * self.dataFeed.batchSize()
+        for substep in range(stepSize):
+
+            substepOutMap = {}
+            substepInMap = {}
+            for inId in inMap.keys():
+                substepInMap[inId] = inMap[inId][substep:substep + 1]
+
+            torchOptimizer.zero_grad()
+            substepInputs = [
+                torch.Tensor(substepInMap[name]) for name in self.inNames
+            ]
+
+            # forward pass
+            substepOutputs = self.module(substepInputs)
+
+            if len(self.outNames) == 1:
+                substepOutMap[self.outNames[0]] = substepOutputs
+            else:
+                for j, outName in enumerate(self.outNames):
+                    substepOutMap[outName] = substepOutputs[j]
+
+            # calculate loss, as in backwards pass, but don't update
+            # model
+            lossTarget = self.getTorchLossTarget(substepInMap, substepOutMap)
+            losses.append(lossTarget.item())
+
+        # returning: list with one entry per sample, of the losses
+        return losses
+
+    def infer(self, inMap):
+        """
+        Does inference 
+
+        TODO : sort out case of tuples of tuples for outputs
+
+        w.r.t. parameter names. It is possible to flatten
+        named_parameters of module, but it is not clear that
+        the order will always correspond to the order of the
+        onnx "trace", so I won't.
+        """
+        self.module.eval()
+
+        # perform forwards pass for each of the
+        # substeps (substep = batch)
+
+        # in this map we store a list of the output tensors
+        # for each of the samples in the step
+        substepOutMap = {}
+        for outName in self.outNames:
+            substepOutMap[outName] = []
+        stepSize = self.dataFeed.batchesPerStep() * self.dataFeed.batchSize()
+        for substep in range(stepSize):
+
+            substepInMap = {}
+            for inId in inMap.keys():
+                substepInMap[inId] = inMap[inId][substep:substep + 1]
+
+            substepInputs = [
+                torch.Tensor(substepInMap[name]) for name in self.inNames
+            ]
+
+            # forward pass
+            substepOutputs = self.module(substepInputs)
+
+            substepOutputTensors = substepOutputs.detach()
+            for j, outName in enumerate(self.outNames):
+                substepOutMap[outName].append(substepOutputTensors[j].numpy())
+
+        # returning: list with one entry per sample, of the
+        # output of the batch
+        return substepOutMap
