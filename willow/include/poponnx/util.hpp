@@ -84,6 +84,28 @@ void zipWith(IIter1 begin1,
   }
 }
 
+/// Count the number of differences between a pair of sequences.
+///
+/// \param begin1 end1  - The first sequence of elements.
+/// \param begin2 end2  - The second sequence of elements.
+///
+/// \note The IIter1 and IIter2 types must satisfy the `InputIterator` concept.
+template <typename IIter1, typename IIter2>
+std::size_t
+count_mismatch(IIter1 begin1, IIter1 end1, IIter2 begin2, IIter2 end2) {
+  std::size_t result = 0;
+
+  while (begin1 != end1 && begin2 != end2) {
+    if (*begin1 != *begin2) {
+      result++;
+    }
+    begin1++;
+    begin2++;
+  }
+
+  return result + std::distance(begin1, end1) + std::distance(begin2, end2);
+}
+
 } // namespace util
 } // namespace willow
 

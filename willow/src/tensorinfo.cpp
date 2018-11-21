@@ -108,6 +108,77 @@ TensorInfo npOut(const TensorInfo &i0, const TensorInfo &i1) {
   return {i0.dataType(), npOut(i0.shape(), i1.shape())};
 }
 
+// Compute the reduction axis for a reduction op.
+//
+// For Example:
+// in            = {   1, 4, 5} &
+// out           = {2, 3, 4, 5} =>
+// npIn(in, out) = {0, 1}
+std::vector<int64_t> npReductionAxis(const std::vector<int64_t> &in,
+                                     const std::vector<int64_t> &out) {
+  // Calculate the length of the overlap between `in` and `out`, the length of
+  // the prefix, and the number of differences between `in` and `out`.
+  //
+  // In the given example:
+  // in       = {   1, 4, 5}          &
+  // out      = {2, 3, 4, 5}          =>
+  // overlap := |in|              = 3 &
+  // prefix  := |out|  - overlap  = 1 &
+  // diffs   := mismatch(in, out) = 2
+  const auto overlap = in.size();
+  const auto prefix  = out.size() - overlap;
+  const auto diffs =
+      util::count_mismatch(in.rbegin(), in.rend(), out.rbegin(), out.rend());
+
+  // Create a vector for storing the axes to reduce over. This will be equal to
+  // the number of differences between `in` and `out`.
+  //
+  // In the given example:
+  // diffs = 2 =>
+  // axes := {*, *}
+  std::vector<int64_t> axes(diffs);
+
+  // The prefix axis must be included. If `in` and `out` have equal rank, this
+  // will be a no-op.
+  //
+  // In the given example:
+  // in     = {   1, 4, 5} &
+  // out    = {2, 3, 4, 5} &
+  // prefix = 1            &
+  // axes   = {*, *}       =>
+  // axes  := {0, *}
+  std::iota(axes.begin(), std::next(axes.begin(), prefix), 0);
+
+  // For the remaining axes, find the mismatches in the overlapping region and
+  // put the indices in `axes`. We are guaranteed to find exactly `diffs -
+  // prefix` mismatches.
+  //
+  // In the given example:
+  // in      = {   1, 4, 5} &
+  // out     = {2, 3, 4, 5} &
+  // diffs   = 2            &
+  // prefix  = 1            &
+  // axes    = {0, *}       =>
+  // axes   := {0, 1}
+  auto itr_o = std::next(axes.begin(), prefix);
+  auto itr_a = in.begin();
+  auto itr_b = std::next(out.begin(), prefix);
+  for (int i = 0; i < (diffs - prefix); ++i) {
+    std::tie(itr_a, itr_b) = std::mismatch(itr_a, in.end(), itr_b);
+    *itr_o                 = prefix + std::distance(in.begin(), itr_a);
+
+    itr_o++;
+    itr_a++;
+    itr_b++;
+  }
+
+  // Return the axes.
+  //
+  // In the given example:
+  // axes = {0, 1}
+  return axes;
+}
+
 void TensorInfo::append(std::ostream &ss) const {
   ss << padded(dataTypeInfo->name(), 8);
   appendSequence(ss, shape_v);

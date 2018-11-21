@@ -25,6 +25,7 @@
 // The patterns
 #include <poponnx/convbiaspattern.hpp>
 #include <poponnx/reducesumtoidentitypattern.hpp>
+#include <poponnx/subtractarg1gradoppattern.hpp>
 
 // The layers:
 #include <poponnx/add.hpp>
@@ -501,6 +502,11 @@ void Ir::prepare(const IrBundle &gb) {
       break;
     }
 
+    case PatternType::SUBTRACTARG1GRADOP: {
+      patterns.emplace_back(make_unique<SubtractArg1GradOpPattern>());
+      break;
+    }
+
     default:
       throw error("unrecognised PatternType");
     }
@@ -537,6 +543,7 @@ void Ir::prepare(const IrBundle &gb) {
   for (auto &pattern : patterns) {
     applyPattern(pattern.get());
   }
+  setNPathsToLoss();
 
   prune();
   addRecompute();

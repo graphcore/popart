@@ -4,6 +4,7 @@
 #include <poponnx/identity.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/negate.hpp>
+#include <poponnx/reducesum.hpp>
 
 namespace willow {
 
@@ -20,13 +21,15 @@ public:
   static int arg1Index();
 };
 
-// TODO (task T5432) should inherit from ReduceSum when we have numpy
-// broadcasting
-class SubtractArg0GradOp : public IdentityOp {
+class SubtractArg0GradOp : public ReduceSumOp {
 public:
-  SubtractArg0GradOp(SubtractOp *);
+  SubtractArg0GradOp(SubtractOp *, const std::vector<int64_t> &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
+
+private:
+  TensorInfo forward_op_arg_info;
 };
 
 // TODO (task T5432) should inherit from ReduceSum when we have numpy
@@ -34,8 +37,14 @@ public:
 class SubtractArg1GradOp : public NegateOp {
 public:
   SubtractArg1GradOp(SubtractOp *);
+  std::unique_ptr<Op> clone() const final;
+  void setup() final;
+
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
+
+private:
+  TensorInfo forward_op_arg_info;
 };
 
 } // namespace willow

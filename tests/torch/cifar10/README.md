@@ -40,3 +40,7 @@ Test updating the weights using a second model that differs from the first only 
 Create a pytorch model, export it to onnx and load it using poponnx.
 Run a number of steps on the pytorch model, reexport the model to onnx, and use this onnx model
 to reset the weights of the poponnx model.
+
+model_broadcasts
+------
+An example model that uses implicit broadcasting on the addition and subtraction operations

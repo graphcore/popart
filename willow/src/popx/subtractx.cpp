@@ -28,7 +28,7 @@ SubtractOp *SubtractOpx::getSubtractOp() const {
 }
 
 SubtractArg0GradOpx::SubtractArg0GradOpx(Op *op, Devicex *devicex)
-    : IdentityOpx(op, devicex) {
+    : ReduceSumOpx(op, devicex) {
   if (op_p->opType != OpType::SUBTRACTARG0GRAD) {
     throw error("cannot create SubtractArg0GradOpx from " + op_p->op_type());
   }

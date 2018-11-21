@@ -1,8 +1,8 @@
 #ifndef GUARD_NEURALNET_ADD_HPP
 #define GUARD_NEURALNET_ADD_HPP
 
-#include <poponnx/identity.hpp>
 #include <poponnx/ir.hpp>
+#include <poponnx/reducesum.hpp>
 
 namespace willow {
 
@@ -19,22 +19,26 @@ public:
   static int arg1Index();
 };
 
-// TODO (task T5432) should inherit from ReduceSum when we have numpy
-// broadcasting
-class AddArg0GradOp : public IdentityOp {
+class AddArg0GradOp : public ReduceSumOp {
 public:
-  AddArg0GradOp(AddOp *);
+  AddArg0GradOp(AddOp *, const std::vector<int64_t> &axes);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
+
+private:
+  TensorInfo forward_op_arg_info;
 };
 
-// TODO (task T5432) should inherit from ReduceSum when we have numpy
-// broadcasting
-class AddArg1GradOp : public IdentityOp {
+class AddArg1GradOp : public ReduceSumOp {
 public:
-  AddArg1GradOp(AddOp *);
+  AddArg1GradOp(AddOp *, const std::vector<int64_t> &axes);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
+
+private:
+  TensorInfo forward_op_arg_info;
 };
 
 } // namespace willow

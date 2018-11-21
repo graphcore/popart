@@ -14,7 +14,7 @@ public:
   ReduceSumOp(const onnx::NodeProto &node, Ir *pir);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
-  void setup() final;
+  void setup() override;
 
   // A list of integers, along which to reduce. These axes will either be
   // removed or have size 1, depending on the value of getKeepDims.

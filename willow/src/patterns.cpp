@@ -35,7 +35,8 @@ PatternTypes::PatternTypes() {
               {"PreUniRepl", PatternType::PREUNIREPL},
               {"SoftmaxGradDirect", PatternType::SOFTMAXGRADDIRECT},
               {"SplitConvBias", PatternType::SPLITCONVBIAS},
-              {"ReduceSumToIdentity", PatternType::REDUCESUMTOIDENTITY}};
+              {"ReduceSumToIdentity", PatternType::REDUCESUMTOIDENTITY},
+              {"SubtractArg1GradOp", PatternType::SUBTRACTARG1GRADOP}};
 
   std::vector<std::string> opTypeKeys;
   opTypeKeys.reserve(opTypes_.size());

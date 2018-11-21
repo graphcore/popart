@@ -16,6 +16,10 @@ class TensorInfo;
 std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
                            const std::vector<int64_t> &s1);
 
+// Compute the reduction axis for a reduction op.
+std::vector<int64_t> npReductionAxis(const std::vector<int64_t> &in,
+                                     const std::vector<int64_t> &out);
+
 template <typename T> std::vector<T> squeeze(const std::vector<T> &v) {
   std::vector<T> w;
   w.reserve(v.size());
