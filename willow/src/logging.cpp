@@ -105,6 +105,7 @@ std::string moduleName(const Module m) {
   case Module::poponnx:
     module = "poponnx";
     break;
+  case Module::none:
   default:
     module = "<unknown>";
     break;
@@ -113,8 +114,8 @@ std::string moduleName(const Module m) {
   return prefix + module;
 }
 
-const std::string defaultLoggerDestination = "stdout";
-const std::string defaultLoggerLevel       = "INFO";
+const char *defaultLoggerDestination = "stdout";
+const char *defaultLoggerLevel       = "INFO";
 
 LoggingContext::LoggingContext() {
   auto POPONNX_LOG_DEST   = std::getenv("POPONNX_LOG_DEST");
@@ -134,7 +135,7 @@ LoggingContext::LoggingContext() {
   if (POPONNX_LOG_CONFIG) {
     try {
       boost::property_tree::read_json(POPONNX_LOG_CONFIG, loggingConfig);
-    } catch (const boost::exception &e) {
+    } catch (const boost::exception &) {
       std::cerr << "Error reading log configuration file: "
                 << boost::current_exception_diagnostic_information()
                 << std::endl;

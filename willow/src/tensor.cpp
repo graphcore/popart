@@ -147,7 +147,10 @@ int Consumers::getTotal() const {
 // https://stackoverflow.com/questions/5058349
 Tensor::Tensor(TensorId n, TensorType t, Ir &g)
     : Vertex(), id(n), consumers(this), ir(g), producer(nullptr),
-      tensorTypeInfo(&getTensorTypeInfoMap().at(t)) {}
+      tensorTypeInfo(&getTensorTypeInfoMap().at(t)) {
+  // ir is currently unused - this removes the compiler warning
+  (void)ir;
+}
 
 void Consumers::decrement(Op *op) {
   auto found = consumers_m.find(op);
