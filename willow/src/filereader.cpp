@@ -33,7 +33,13 @@ std::string appendDirFn(const std::string &dir, const std::string &fn) {
 }
 
 bool isRegularFile(const std::string &filename) {
-  return boost::filesystem::is_regular_file(filename);
+  boost::system::error_code ec;
+  auto isRegularFile = boost::filesystem::is_regular_file(filename, ec);
+  // If the file system API reports an error then we assume that this is not a
+  // regular file.
+  // See
+  // https://www.boost.org/doc/libs/1_45_0/libs/filesystem/v3/doc/reference.html#status
+  return ec ? false : isRegularFile;
 }
 
 void confirmRegularFile(const std::string &filename) {
