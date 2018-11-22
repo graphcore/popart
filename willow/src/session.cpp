@@ -90,13 +90,9 @@ void Session::updateOptimizer(const Optimizer *optimizer) {
   ir.updateOptimizer(optimizer);
 }
 
-void Session::setDevice(const std::string &deviceString) {
-  logging::session::trace("Session::setDevice({})", deviceString);
-  if (deviceString == "IPU") {
-    device_.reset(new popx::Devicex(ir));
-  } else {
-    throw error("Unrecognised device type: " + deviceString);
-  }
+void Session::setDevice(DeviceInfo &deviceInfo) {
+  logging::session::trace("Session::setDevice({})", deviceInfo);
+  device_.reset(new popx::Devicex(ir, deviceInfo));
 }
 
 // get the TensorInfo on a Tensor

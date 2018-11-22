@@ -6,25 +6,12 @@ import os
 
 import c10driver
 import poponnx
+import cmdline
 from poponnx.torch import torchwriter
 #we require torch in this file to create the torch Module
 import torch
 
-if (len(sys.argv) != 2):
-    raise RuntimeError("onnx_net.py <log directory>")
-
-outputdir = sys.argv[1]
-if not os.path.exists(outputdir):
-    print("Making %s" % (outputdir, ))
-    os.mkdir(outputdir)
-
-if (len(sys.argv) != 2):
-    raise RuntimeError("onnx_net.py <log directory>")
-
-outputdir = sys.argv[1]
-if not os.path.exists(outputdir):
-    print("Making %s" % (outputdir, ))
-    os.mkdir(outputdir)
+args = cmdline.parse()
 
 nInChans = 3
 nOutChans = 10
@@ -73,4 +60,5 @@ torchWriter = torchwriter.PytorchNetWriter(
     ### Torch specific:
     module=Module0())
 
-c10driver.run(torchWriter, willowOptPasses, outputdir, cifarInIndices)
+c10driver.run(torchWriter, willowOptPasses, args.outputdir, cifarInIndices,
+              args.device, args.device_hw_id)

@@ -10,6 +10,7 @@
 #include <poputil/TileMapping.hpp>
 
 #include <poponnx/device.hpp>
+#include <poponnx/devicemanager.hpp>
 #include <poponnx/popx/enigma.hpp>
 #include <poponnx/pritask.hpp>
 
@@ -99,7 +100,7 @@ private:
 class Devicex : public willow::Device {
 
 public:
-  Devicex(const Ir &);
+  Devicex(const Ir &, DeviceInfo &deviceInfo);
   void prepare() final;
   void weightsFromHost() final;
   void optimizerFromHost() final;

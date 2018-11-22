@@ -2,10 +2,12 @@ import c10driver
 
 import sys
 import os
-#import torch
 import poponnx_core
+import cmdline
 from poponnx.torch import torchwriter
 import torch
+
+args = cmdline.parse()
 
 nChans = 3
 oChans = 10
@@ -94,9 +96,5 @@ torchWriter = torchwriter.PytorchNetWriter(
     ### Torch specific:
     module=Module0())
 
-try:
-    outputdir = sys.argv[1]
-except IndexError:
-    outputdir = None
-
-c10driver.run(torchWriter, willowOptPasses, outputdir, cifarInIndices)
+c10driver.run(torchWriter, willowOptPasses, args.outputdir, cifarInIndices,
+              args.device, args.hw_id)

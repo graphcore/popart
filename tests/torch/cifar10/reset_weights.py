@@ -44,7 +44,7 @@ def get_session(fnModel, earlyInfo, dataFeed, torchWriter, outputdir, passes,
         userOptions=opts)
 
     print("Setting device to IPU, and preparing it")
-    session.setDevice("IPU")
+    session.setDevice(poponnx.DeviceManager().createCpuDevice())
     session.prepareDevice()
 
     print("Writing weights to device")

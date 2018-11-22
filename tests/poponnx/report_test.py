@@ -30,7 +30,7 @@ def test_summary_report_before_execution(tmpdir):
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
-    session.setDevice("IPU")
+    session.setDevice(poponnx.DeviceManager().createCpuDevice())
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         session.getSummaryReport()
@@ -67,7 +67,7 @@ def test_graph_report_before_execution(tmpdir):
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
-    session.setDevice("IPU")
+    session.setDevice(poponnx.DeviceManager().createCpuDevice())
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         session.getGraphReport()
@@ -104,7 +104,7 @@ def test_execution_report_before_execution(tmpdir):
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
-    session.setDevice("IPU")
+    session.setDevice(poponnx.DeviceManager().createCpuDevice())
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         session.getExecutionReport()
@@ -141,8 +141,7 @@ def test_summary_report_with_cpu_device(tmpdir):
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
-    # TODO - this should be a CPU device
-    session.setDevice("IPU")
+    session.setDevice(poponnx.DeviceManager().createCpuDevice())
 
     session.prepareDevice()
 
@@ -181,8 +180,7 @@ def test_graph_report_with_cpu_device(tmpdir):
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
-    # TODO - this should be a CPU device
-    session.setDevice("IPU")
+    session.setDevice(poponnx.DeviceManager().createCpuDevice())
 
     session.prepareDevice()
 
@@ -223,8 +221,7 @@ def test_execution_report_with_cpu_device(tmpdir):
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
-    # TODO - this should be a CPU device
-    session.setDevice("IPU")
+    session.setDevice(poponnx.DeviceManager().createCpuDevice())
 
     session.prepareDevice()
 

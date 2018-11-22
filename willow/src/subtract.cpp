@@ -31,9 +31,9 @@ void SubtractOp::setup() {
 }
 
 SubtractArg0GradOp::SubtractArg0GradOp(SubtractOp *op_,
-                                       const std::vector<int64_t> &axes)
+                                       const std::vector<int64_t> &_axes)
     : ReduceSumOp({"SubtractArg0Grad", op_->pir, {}, getPoponnxDomain()},
-                  axes,
+                  _axes,
                   false),
       forward_op_arg_info(op_->input.tensor(SubtractOp::arg0Index())->info) {}
 

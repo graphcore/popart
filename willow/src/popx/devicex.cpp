@@ -33,6 +33,11 @@
 #include <popops/codelets.hpp>
 #include <poputil/exceptions.hpp>
 
+#include <poponnx/devicemanager.hpp>
+#include <poponnx/popx/devicexmanager.hpp>
+
+#include <cctype>
+
 namespace willow {
 namespace popx {
 
@@ -194,9 +199,12 @@ PopPrograms::programFragment(PopPrograms::ProgramFragmentIndex index) {
 
 poplar::Graph &Devicex::graph() { return *pGraph; }
 
-Devicex::Devicex(const Ir &ir) : willow::Device(ir), tensors(ir) {
-  // TODO, better device handling (see T5105)
-  popDevice = poplar::Device::createCPUDevice();
+Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
+    : willow::Device(ir), tensors(ir) {
+
+  // do not like the dyanmic cast, is there a better way....
+  popDevice = dynamic_cast<DevicexInfo &>(deviceInfo).getDevice();
+
   if (!popDevice.attach()) {
     throw error("failed to attach to popDevice");
   }

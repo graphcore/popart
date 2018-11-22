@@ -7,6 +7,8 @@ namespace willow {
 
 struct SessionOptions;
 
+class DeviceInfo;
+
 /**
  * Session is a runtime instance the provides an interface for executing ONNX
  * graphs on IPU hardware.
@@ -59,10 +61,12 @@ public:
 
   /**
    * Select a device type.
+   *  TODO : This function should return a new class on which you can perform
+   * operations which need the device
    *
-   * /param deviceType One of 'IPU', 'IPU_MODEL', 'CPU'
+   * /param deviceInfo which defines the type of device to work on
    */
-  void setDevice(const std::string &deviceType);
+  void setDevice(DeviceInfo &deviceInfo);
 
   /**
    * Prepare the network for execution.

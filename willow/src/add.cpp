@@ -30,9 +30,9 @@ void AddOp::setup() {
   output.tensor(0)->info = npOut(input.tensor(0)->info, input.tensor(1)->info);
 }
 
-AddArg0GradOp::AddArg0GradOp(AddOp *op_, const std::vector<int64_t> &axes)
+AddArg0GradOp::AddArg0GradOp(AddOp *op_, const std::vector<int64_t> &_axes)
     : ReduceSumOp({"AddArg0Grad", op_->pir, {}, getPoponnxDomain()},
-                  axes,
+                  _axes,
                   false),
       forward_op_arg_info(op_->input.tensor(AddOp::arg0Index())->info) {}
 
@@ -49,9 +49,9 @@ const std::vector<GradInOutMapper> &AddArg0GradOp::gradInputInfo() const {
 
 void AddArg0GradOp::setup() { output.tensor(0)->info = forward_op_arg_info; }
 
-AddArg1GradOp::AddArg1GradOp(AddOp *op_, const std::vector<int64_t> &axes)
+AddArg1GradOp::AddArg1GradOp(AddOp *op_, const std::vector<int64_t> &_axes)
     : ReduceSumOp({"AddArg1Grad", op_->pir, {}, getPoponnxDomain()},
-                  axes,
+                  _axes,
                   false),
       forward_op_arg_info(op_->input.tensor(AddOp::arg1Index())->info) {}
 

@@ -17,18 +17,27 @@ class TestFailureError(Exception):
         super().__init__(message)
 
 
-def run(torchWriter, passes, outputdir, cifarInIndices, mode="train"):
+def run(torchWriter,
+        passes,
+        outputdir,
+        cifarInIndices,
+        device,
+        device_hw_id,
+        mode="train"):
     if outputdir is None:
         with TemporaryDirectory() as outputdir:
-            _run_impl(torchWriter, passes, outputdir, cifarInIndices, mode)
+            _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
+                      device_hw_id, mode)
     else:
         if not os.path.exists(outputdir):
             os.mkdir(outputdir)
 
-        _run_impl(torchWriter, passes, outputdir, cifarInIndices, mode)
+        _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
+                  device_hw_id, mode)
 
 
-def _run_impl(torchWriter, passes, outputdir, cifarInIndices, mode):
+def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
+              device_hw_id, mode):
     dataFeed = torchWriter.dataFeed
     earlyInfo = torchWriter.earlyInfo
     validModes = ["infer", "evaluate", "train"]
@@ -63,6 +72,44 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, mode):
         shuffle=False,
         num_workers=3)
 
+    deviceManager = poponnx.DeviceManager()
+
+    # Create a CPU device
+    if device == "cpu":
+        device = deviceManager.createCpuDevice()
+
+    # Create an IPU Model device
+    elif device == "ipu_model":
+
+        options = {"compileIPUCode": True, 'numIPUs': 2, "tilesPerIPU": 1216}
+        device = deviceManager.createIpuModelDevice(options)
+
+    # Create an Simulator
+    elif device == "sim":
+        options = {"numIpus": 1, "tilesPerIpu": 1216}
+        device = deviceManager.createSimDevice(options)
+
+    # Get a Hardware Device
+    elif device == "hw":
+        # Get a hardware device that meets the reqirements, may throw if none are avaliable
+        # Will attach to the device
+        if device_hw_id:
+            device = deviceManager.acquireDeviceById(device_hw_id)
+        else:
+            device = deviceManager.acquireAvaliableDevice()
+
+    # Enumerate a use an items from the list
+    if True:
+
+        print("Enumerating devices")
+        print("-------------------------------------")
+        for idx, d in enumerate(deviceManager.enumerateDevices()):
+            print('{0}. {1}'.format(idx, d))
+        print("")
+
+    # Print details of the selected device
+    print('Selected Device : {0}'.format(device))
+
     opts = poponnx.SessionOptionsCore()
     opts.exportDot = True
     opts.logging = {"all": "TRACE", "session": "WARN"}
@@ -94,7 +141,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, mode):
     print("torchWriter calling script complete.")
 
     print("Setting device to IPU, and preparing it")
-    session.setDevice("IPU")
+    session.setDevice(device)
     session.prepareDevice()
 
     print("Writing weights to device")

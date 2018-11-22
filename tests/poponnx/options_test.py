@@ -89,7 +89,7 @@ def test_engine_options_passed_to_engine(tmpdir):
         outputdir=str(tmpdir),
         userOptions=opts)
 
-    session.setDevice("IPU")
+    session.setDevice(poponnx.DeviceManager().createCpuDevice())
     session.initAnchorArrays()
 
     with pytest.raises(poponnx.poplar_exception) as e_info:
@@ -133,7 +133,7 @@ def test_convolution_options(tmpdir):
         outputdir=str(tmpdir),
         userOptions=opts)
 
-    session.setDevice("IPU")
+    session.setDevice(poponnx.DeviceManager().createCpuDevice())
     anchors = session.initAnchorArrays()
 
     with pytest.raises(poponnx.poplibs_exception) as e_info:

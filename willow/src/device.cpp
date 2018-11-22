@@ -1,7 +1,4 @@
 #include <poponnx/device.hpp>
+#include <poponnx/error.hpp>
 
-namespace willow {
-
-// No implementation - delete me
-
-} // namespace willow
+namespace willow {} // namespace willow

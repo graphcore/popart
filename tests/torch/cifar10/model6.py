@@ -3,17 +3,13 @@
 
 import sys
 import os
-
-# TODO this needs to be removed using __init__.py or some similar scheme
-testdir = os.path.dirname(os.path.abspath(__file__))
-libpath = os.path.join(testdir, "../../../lib")
-sys.path.append(libpath)
-
 import torch
 import c10driver
+import cmdline
 import poponnx_core
-
 from poponnx.torch import torchwriter
+
+args = cmdline.parse()
 
 nInChans = 3
 nOutChans = 10
@@ -88,9 +84,5 @@ torchWriter = torchwriter.PytorchNetWriter(
     ### Torch specific:
     module=Module0())
 
-try:
-    outputdir = sys.argv[1]
-except IndexError:
-    outputdir = None
-
-c10driver.run(torchWriter, willowOptPasses, outputdir, cifarInIndices)
+c10driver.run(torchWriter, willowOptPasses, args.outputdir, cifarInIndices,
+              args.device, args.hw_id)

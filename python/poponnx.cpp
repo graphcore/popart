@@ -2,6 +2,8 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <poponnx/builder.hpp>
+#include <poponnx/device.hpp>
+#include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/l1.hpp>
 #include <poponnx/loss.hpp>
@@ -50,6 +52,25 @@ TensorInfo getTensorInfo(py::array npArr) {
   return TensorInfo(getDataTypeFromNpType(typeString), shape);
 }
 
+// The follow code attempts to convert the python dictionary
+// (py::dict) into a map of strings for keys and values. The default
+// pybind will attempt to match types
+// TODO : This is not very elegant code is there a better way to do
+// this?
+std::map<std::string, std::string> getDictionary(py::dict pydict) {
+
+  std::map<std::string, std::string> dictionary;
+  for (auto element : pydict) {
+    std::stringstream key;
+    key << element.first;
+
+    std::stringstream value;
+    value << element.second;
+
+    dictionary.insert(std::make_pair(key.str(), value.str()));
+  }
+  return dictionary;
+}
 class PyStepIO : public StepIO {
 public:
   PyStepIO(std::map<TensorId, py::array> inputs_,
@@ -285,6 +306,59 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("matmul", &Builder::matmul, py::arg("args"))
       .def("getModelProto", [](const Builder &builder) {
         return py::bytes(builder.getModelProto());
+      });
+
+  // PyBinding to a singlton
+  py::class_<DeviceManager, std::unique_ptr<DeviceManager, py::nodelete>>(
+      m, "DeviceManager")
+      .def(py::init([]() {
+        return std::unique_ptr<DeviceManager, py::nodelete>(
+            &DeviceManager::getDeviceManager());
+      }))
+      .def("acquireAvaliableDevice",
+           (std::unique_ptr<DeviceInfo>(DeviceManager::*)()) &
+               DeviceManager::acquireAvaliableDevice)
+      .def("acquireAvaliableDevice",
+           (std::unique_ptr<DeviceInfo>(DeviceManager::*)(int, int)) &
+               DeviceManager::acquireAvaliableDevice,
+           py::arg("numIpus"),
+           py::arg("tilesPerIpu"))
+      .def(
+          "acquireDeviceById", &DeviceManager::acquireDeviceById, py::arg("id"))
+      .def("createCpuDevice", &DeviceManager::createCpuDevice)
+      .def("createIpuModelDevice",
+           [](DeviceManager &dm, py::dict e) {
+             std::map<std::string, std::string> options = getDictionary(e);
+             return dm.createIpuModelDevice(options);
+           })
+      .def("createSimDevice",
+           [](DeviceManager &dm, py::dict e) {
+             std::map<std::string, std::string> options = getDictionary(e);
+             return dm.createSimDevice(options);
+           })
+      .def("enumerateDevices", &DeviceManager::enumerateDevices);
+
+  // Do enum need to be uppercase?
+  py::enum_<DeviceType>(m, "DeviceType")
+      .value("IpuModel", DeviceType::IpuModel)
+      .value("Cpu", DeviceType::Cpu)
+      .value("Ipu", DeviceType::Ipu)
+      .value("Sim", DeviceType::Sim);
+
+  py::class_<DeviceInfo>(m, "DeviceInfo")
+      .def("attach", &DeviceInfo::attach)
+      .def("detach", &DeviceInfo::detach)
+      .def_property_readonly("type", &DeviceInfo::getType)
+      .def_property_readonly("version", &DeviceInfo::getVersion)
+      .def_property_readonly("id", &DeviceInfo::getId)
+      .def_property_readonly("numIpus", &DeviceInfo::getNumIpus)
+      .def_property_readonly("tilesPerIpu", &DeviceInfo::getTilesPerIpu)
+      .def_property_readonly("numWorkerContexts",
+                             &DeviceInfo::getNumWorkerContexts)
+      .def("__repr__", [](const DeviceInfo &di) {
+        std::stringstream ss;
+        ss << di;
+        return ss.str();
       });
 
   py::register_exception<willow::error>(m, "poponnx_exception");

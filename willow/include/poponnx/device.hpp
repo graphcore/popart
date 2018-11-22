@@ -8,7 +8,6 @@
 namespace willow {
 
 class Device {
-
 public:
   Device(const Ir &g) : _ir(g) {}
   virtual ~Device()      = default;
