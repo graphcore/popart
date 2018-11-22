@@ -35,7 +35,7 @@ PatternTypes::PatternTypes() {
               {"PreUniRepl", PatternType::PREUNIREPL},
               {"SoftmaxGradDirect", PatternType::SOFTMAXGRADDIRECT},
               {"SplitConvBias", PatternType::SPLITCONVBIAS},
-              {"ReduceSumToIdentity", PatternType::REDUCESUMTOIDENTITY},
+              {"OpToIdentity", PatternType::OPTOIDENTITY},
               {"SubtractArg1GradOp", PatternType::SUBTRACTARG1GRADOP}};
 
   std::vector<std::string> opTypeKeys;
@@ -142,21 +142,11 @@ bool PostNRepl::matches(Op *op) const {
 
   // The Identity op fits the criteria of PostNRepl: An Op which replicates its
   // input N times (where N = 1 for identity)
-  if (op->isConvertibleTo<IdentityOp>()) {
-    // good so far
-  }
-  // A sum with only one input
-  else if (op->opType == OpType::SUM && op->input.n() == 1) {
-    // good so far
-  }
-  // A pad with zero-padding
-  else if (op->opType == OpType::PAD &&
-           dynamic_cast<const PadOp *>(op)->padSizeZero()) {
-    // good so far
-  } else {
+  if (!op->isConvertibleTo<IdentityOp>()) {
     // doesn't match a known case of PostNRepl
     return false;
   }
+
   // we check that the consumer topological constraints
   // of (ori), and (rep1, rep2, rep3) can be be resolved
   // if [*] is removed.
@@ -168,7 +158,7 @@ bool PostNRepl::matches(Op *op) const {
   }
 
   // at most 1 consumer can be last
-  else if (tcInf.nTopoLasts > 1) {
+  if (tcInf.nTopoLasts > 1) {
     return false;
   }
 
@@ -176,7 +166,7 @@ bool PostNRepl::matches(Op *op) const {
   // that won't work as op is going to be removed.
   // Also, this should not be possible if this
   // is really a replicating op
-  else if (tcInf.lastCon == op) {
+  if (tcInf.lastCon == op) {
     return false;
   }
 

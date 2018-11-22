@@ -35,7 +35,9 @@ losses = [
     poponnx_core.NllLoss("probs", "label", "nllLossVal"),
     poponnx_core.L1Loss("preProbSquared", "l1LossVal", 0.01)
 ]
-willowOptPasses = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
+willowOptPasses = [
+    "PreUniRepl", "PostNRepl", "SoftmaxGradDirect", "OpToIdentity"
+]
 
 
 class Module0(torch.nn.Module):

@@ -24,7 +24,7 @@
 
 // The patterns
 #include <poponnx/convbiaspattern.hpp>
-#include <poponnx/reducesumtoidentitypattern.hpp>
+#include <poponnx/optoidentitypattern.hpp>
 #include <poponnx/subtractarg1gradoppattern.hpp>
 
 // The layers:
@@ -497,8 +497,8 @@ void Ir::prepare(const IrBundle &gb) {
       break;
     }
 
-    case PatternType::REDUCESUMTOIDENTITY: {
-      patterns.emplace_back(new ReduceSumToIdentityPattern);
+    case PatternType::OPTOIDENTITY: {
+      patterns.emplace_back(new OpToIdentityPattern);
       break;
     }
 

@@ -5,9 +5,8 @@
 
 namespace willow {
 
-// Replace reduce sum operations that reduce over no axes, or reduce on an axis
-// of size 1, with an identity operation
-class ReduceSumToIdentityPattern : public Pattern {
+// Replace ops that return their only input unchanged with an identity op
+class OpToIdentityPattern : public Pattern {
 public:
   // Does op at the root of the
   // pattern make a match?
