@@ -407,6 +407,98 @@ TensorId BuilderImpl::convolution(const std::vector<TensorId> &args,
   return id;
 }
 
+TensorId BuilderImpl::averagepool(const std::vector<TensorId> &args,
+                                  const std::vector<int> kernel_shape,
+                                  const std::vector<int> strides,
+                                  const std::vector<int> padding) {
+  check_arg_count(args, 1, "AveragePool");
+
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type("AveragePool");
+  add_args(node, args);
+  node->add_output(id);
+
+  auto *auto_pad_attr = node->add_attribute();
+  auto_pad_attr->set_name("auto_pad");
+  auto_pad_attr->set_type(onnx::AttributeProto::STRING);
+  auto_pad_attr->set_s("NOTSET");
+
+  auto *count_include_pad_attr = node->add_attribute();
+  count_include_pad_attr->set_name("count_include_pad");
+  count_include_pad_attr->set_i(0);
+
+  auto *kernel_shape_attr = node->add_attribute();
+  kernel_shape_attr->set_name("kernel_shape");
+  for (auto i : kernel_shape) {
+    kernel_shape_attr->add_ints(i);
+  }
+
+  auto *pads_attr = node->add_attribute();
+  pads_attr->set_name("pads");
+  for (auto i : padding) {
+    pads_attr->add_ints(i);
+  }
+
+  auto *strides_attr = node->add_attribute();
+  strides_attr->set_name("strides");
+  for (auto i : strides) {
+    strides_attr->add_ints(i);
+  }
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return id;
+}
+
+TensorId BuilderImpl::maxpool(const std::vector<TensorId> &args,
+                              const std::vector<int> kernel_shape,
+                              const std::vector<int> strides,
+                              const std::vector<int> padding) {
+  check_arg_count(args, 1, "MaxPool");
+
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type("MaxPool");
+  add_args(node, args);
+  node->add_output(id);
+
+  auto *auto_pad_attr = node->add_attribute();
+  auto_pad_attr->set_name("auto_pad");
+  auto_pad_attr->set_type(onnx::AttributeProto::STRING);
+  auto_pad_attr->set_s("NOTSET");
+
+  auto *storage_order_pad_attr = node->add_attribute();
+  storage_order_pad_attr->set_name("storage_order");
+  storage_order_pad_attr->set_i(0);
+
+  auto *kernel_shape_attr = node->add_attribute();
+  kernel_shape_attr->set_name("kernel_shape");
+  for (auto i : kernel_shape) {
+    kernel_shape_attr->add_ints(i);
+  }
+
+  auto *pads_attr = node->add_attribute();
+  pads_attr->set_name("pads");
+  for (auto i : padding) {
+    pads_attr->add_ints(i);
+  }
+
+  auto *strides_attr = node->add_attribute();
+  strides_attr->set_name("strides");
+  for (auto i : strides) {
+    strides_attr->add_ints(i);
+  }
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return id;
+}
+
 TensorId BuilderImpl::gemm(const std::vector<TensorId> &args,
                            float alpha,
                            float beta,

@@ -196,6 +196,20 @@ TensorId Builder::convolution(const std::vector<TensorId> &args,
   return impl_->convolution(args, strides, padding, dilation, groups);
 }
 
+TensorId Builder::averagepool(const std::vector<TensorId> &args,
+                              const std::vector<int> kernel_shape,
+                              const std::vector<int> strides,
+                              const std::vector<int> padding) {
+  return impl_->averagepool(args, kernel_shape, strides, padding);
+}
+
+TensorId Builder::maxpool(const std::vector<TensorId> &args,
+                          const std::vector<int> kernel_shape,
+                          const std::vector<int> strides,
+                          const std::vector<int> padding) {
+  return impl_->maxpool(args, kernel_shape, strides, padding);
+}
+
 TensorId Builder::gemm(const std::vector<TensorId> &args,
                        float alpha,
                        float beta,

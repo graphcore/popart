@@ -487,6 +487,42 @@ public:
                        int groups);
 
   /**
+   * Add an averagepool to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#AveragePool
+   *
+   * \param args The data input
+   * \param kernel_shape The size of the kernel along each axis
+   * \param strides The filter stride in each of the spatial dimensions
+   * \param padding The input padding in each of the spatial directions. This
+   *                has the same format as the ONNX node, where the values are
+   *                grouped [d1_begin, d2_begin, ..., d1_end, d2_end, ...]
+   * \return The name of the result tensor
+   */
+  TensorId averagepool(const std::vector<TensorId> &args,
+                       const std::vector<int> kernel_shape,
+                       const std::vector<int> strides,
+                       const std::vector<int> padding);
+
+  /**
+   * Add a maxpool to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MaxPool
+   *
+   * \param args The data input
+   * \param kernel_shape The size of the kernel along each axis
+   * \param strides The filter stride in each of the spatial dimensions
+   * \param padding The input padding in each of the spatial directions. This
+   *                has the same format as the ONNX node, where the values are
+   *                grouped [d1_begin, d2_begin, ..., d1_end, d2_end, ...]
+   * \return The name of the result tensor
+   */
+  TensorId maxpool(const std::vector<TensorId> &args,
+                   const std::vector<int> kernel_shape,
+                   const std::vector<int> strides,
+                   const std::vector<int> padding);
+
+  /**
    * Add a GEMM operation to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Gemm

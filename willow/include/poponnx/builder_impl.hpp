@@ -70,6 +70,16 @@ public:
                        const std::vector<int> dilation,
                        int groups = 1);
 
+  TensorId averagepool(const std::vector<TensorId> &args,
+                       const std::vector<int> kernel_shape,
+                       const std::vector<int> strides,
+                       const std::vector<int> padding);
+
+  TensorId maxpool(const std::vector<TensorId> &args,
+                   const std::vector<int> kernel_shape,
+                   const std::vector<int> strides,
+                   const std::vector<int> padding);
+
   TensorId gemm(const std::vector<TensorId> &args,
                 float alpha,
                 float beta,

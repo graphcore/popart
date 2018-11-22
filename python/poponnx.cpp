@@ -262,6 +262,18 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("padding"),
            py::arg("dilation"),
            py::arg("groups"))
+      .def("averagepool",
+           &Builder::averagepool,
+           py::arg("args"),
+           py::arg("kernel_shape"),
+           py::arg("strides"),
+           py::arg("padding"))
+      .def("maxpool",
+           &Builder::maxpool,
+           py::arg("args"),
+           py::arg("kernel_shape"),
+           py::arg("strides"),
+           py::arg("padding"))
       .def("gemm",
            &Builder::gemm,
            py::arg("args"),

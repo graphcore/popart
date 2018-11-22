@@ -11,6 +11,7 @@
 #include <poponnx/popx/identityx.hpp>
 #include <poponnx/popx/l1x.hpp>
 #include <poponnx/popx/matmulx.hpp>
+#include <poponnx/popx/maxpoolx.hpp>
 #include <poponnx/popx/negatex.hpp>
 #include <poponnx/popx/nllx.hpp>
 #include <poponnx/popx/opx.hpp>
@@ -467,6 +468,14 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::L1GRAD: {
     return std::unique_ptr<Opx>(new L1GradOpx(op, this));
+  }
+
+  case OpType::MAXPOOL: {
+    return std::unique_ptr<Opx>(new MaxPoolOpx(op, this));
+  }
+
+  case OpType::MAXPOOLGRAD: {
+    return std::unique_ptr<Opx>(new MaxPoolGradOpx(op, this));
   }
 
   case OpType::NEGATE: {

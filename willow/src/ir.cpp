@@ -33,6 +33,7 @@
 #include <poponnx/conv.hpp>
 #include <poponnx/identity.hpp>
 #include <poponnx/matmul.hpp>
+#include <poponnx/maxpool.hpp>
 #include <poponnx/negate.hpp>
 #include <poponnx/pad.hpp>
 #include <poponnx/reducesum.hpp>
@@ -1528,6 +1529,8 @@ OpTypes::OpTypes() {
               {"IdentityGrad", OpType::IDENTITYGRAD},
               {"L1", OpType::L1},
               {"L1Grad", OpType::L1GRAD},
+              {"MaxPool", OpType::MAXPOOL},
+              {"MaxPoolGrad", OpType::MAXPOOLGRAD},
               {"Softmax", OpType::SOFTMAX},
               {"SoftmaxGrad", OpType::SOFTMAXGRAD},
               {"SoftmaxGradDirect", OpType::SOFTMAXGRADDIRECT},
@@ -1646,6 +1649,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::SOFTMAX: {
     return pOp(new SoftmaxOp(node, this));
   }
+  case OpType::MAXPOOL: {
+    return pOp(new MaxPoolOp(node, this));
+  }
 
   case OpType::PAD: {
     return pOp(new PadOp(node, this));
@@ -1682,6 +1688,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::IDENTITYGRAD:
   case OpType::NLLGRAD:
   case OpType::L1GRAD:
+  case OpType::MAXPOOLGRAD:
   case OpType::SOFTMAXGRAD:
   case OpType::SGDVARUPDATE:
   case OpType::CONSTSGDVARUPDATE:

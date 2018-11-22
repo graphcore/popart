@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 import poponnx
+import torch
 
 
 def test_add(tmpdir):
@@ -153,3 +154,95 @@ def test_matmul(tmpdir):
 
     # test the poponnx answer against the numpy answer
     assert (np.array_equal(anchors[o], np.matmul(inputs[i1], inputs[i2])))
+
+
+def test_averagepool(tmpdir):
+    builder = poponnx.Builder()
+
+    data_shape = poponnx.TensorInfo("FLOAT", [1, 1, 6, 6])
+    i1 = builder.addInputTensor(data_shape)
+
+    o = builder.averagepool([i1], [2, 2], [2, 2], [0, 0, 0, 0])
+
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    earlyInfo = poponnx.EarlyInfo()
+    earlyInfo.add(i1, data_shape)
+
+    dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
+    optimizer = poponnx.SGD(0.01)
+    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
+
+    session = poponnx.Session(
+        fnModel=proto,
+        earlyInfo=earlyInfo,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        outputdir=str(tmpdir))
+
+    session.setDevice("IPU")
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    data = np.random.rand(1, 1, 6, 6).astype(np.float32)
+
+    inputs = {i1: data}
+
+    stepio = poponnx.PyStepIO(inputs, anchors)
+    session.infer(stepio)
+
+    # get the pytorch output
+    torch_avgpool = torch.nn.AvgPool2d(2, 2)
+    torch_output = torch_avgpool(torch.from_numpy(data))
+
+    assert (np.array_equal(torch_output.numpy(), anchors[o]))
+
+
+def test_maxpool(tmpdir):
+    builder = poponnx.Builder()
+
+    data_shape = poponnx.TensorInfo("FLOAT", [1, 1, 6, 6])
+    i1 = builder.addInputTensor(data_shape)
+
+    o = builder.maxpool([i1], [2, 2], [2, 2], [0, 0, 0, 0])
+
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    earlyInfo = poponnx.EarlyInfo()
+    earlyInfo.add(i1, data_shape)
+
+    dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
+    optimizer = poponnx.SGD(0.01)
+    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
+
+    session = poponnx.Session(
+        fnModel=proto,
+        earlyInfo=earlyInfo,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        outputdir=str(tmpdir))
+
+    session.setDevice("IPU")
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    data = np.random.rand(1, 1, 6, 6).astype(np.float32)
+
+    inputs = {i1: data}
+
+    stepio = poponnx.PyStepIO(inputs, anchors)
+    session.infer(stepio)
+
+    # get the pytorch output
+    torch_avgpool = torch.nn.MaxPool2d(2, 2)
+    torch_output = torch_avgpool(torch.from_numpy(data))
+
+    assert (np.array_equal(torch_output.numpy(), anchors[o]))
