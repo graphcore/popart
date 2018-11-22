@@ -16,6 +16,7 @@ public:
   BuilderImpl();
 
   TensorId addInputTensor(const TensorInfo &tensorInfo);
+  TensorId addInitializedInputTensor(const ConstVoidData &initData);
 
   void addOutputTensor(const TensorId &arg0);
 

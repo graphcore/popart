@@ -1,6 +1,6 @@
-import pytest
-
+import numpy as np
 import poponnx
+import pytest
 
 
 def test_basic():
@@ -461,3 +461,67 @@ def test_add_matmul():
         builder.matmul(0, 0, 0, 0, 0, 0, 0)
 
     assert (e_info.value.args[0].startswith("matmul(): incompatible function"))
+
+
+def test_initialized_input_fp32():
+
+    builder1 = poponnx.Builder()
+    builder1.addInputTensor(poponnx.TensorInfo("FLOAT", [100, 100]))
+    proto1 = builder1.getModelProto()
+    assert (len(proto1) > 0)
+
+    builder2 = poponnx.Builder()
+    builder2.addInitializedInputTensor(np.ones([100, 100], np.float32))
+    proto2 = builder2.getModelProto()
+
+    assert (len(proto2) > 0)
+
+    assert (len(proto2) > len(proto1))
+
+
+def test_initialized_input_int32():
+
+    builder1 = poponnx.Builder()
+    builder1.addInputTensor(poponnx.TensorInfo("INT32", [100, 100]))
+    proto1 = builder1.getModelProto()
+    assert (len(proto1) > 0)
+
+    builder2 = poponnx.Builder()
+    builder2.addInitializedInputTensor(np.ones([100, 100], np.int32))
+    proto2 = builder2.getModelProto()
+
+    assert (len(proto2) > 0)
+
+    assert (len(proto2) > len(proto1))
+
+
+def test_initialized_input_fp16():
+
+    builder1 = poponnx.Builder()
+    builder1.addInputTensor(poponnx.TensorInfo("FLOAT16", [100, 100]))
+    proto1 = builder1.getModelProto()
+    assert (len(proto1) > 0)
+
+    builder2 = poponnx.Builder()
+    builder2.addInitializedInputTensor(np.ones([100, 100], np.float16))
+    proto2 = builder2.getModelProto()
+
+    assert (len(proto2) > 0)
+
+    assert (len(proto2) > len(proto1))
+
+
+def test_initialized_input_bool():
+
+    builder1 = poponnx.Builder()
+    builder1.addInputTensor(poponnx.TensorInfo("BOOL", [100, 100]))
+    proto1 = builder1.getModelProto()
+    assert (len(proto1) > 0)
+
+    builder2 = poponnx.Builder()
+    builder2.addInitializedInputTensor(np.ones([100, 100], np.bool))
+    proto2 = builder2.getModelProto()
+
+    assert (len(proto2) > 0)
+
+    assert (len(proto2) > len(proto1))

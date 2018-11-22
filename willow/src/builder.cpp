@@ -12,6 +12,10 @@ TensorId Builder::addInputTensor(const TensorInfo &tensorInfo) {
   return impl_->addInputTensor(tensorInfo);
 }
 
+TensorId Builder::addInitializedInputTensor(const ConstVoidData &initData) {
+  return impl_->addInitializedInputTensor(initData);
+}
+
 void Builder::addOutputTensor(const TensorId &arg0) {
   return impl_->addOutputTensor(arg0);
 }

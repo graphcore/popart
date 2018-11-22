@@ -29,6 +29,14 @@ public:
   TensorId addInputTensor(const TensorInfo &tensorInfo);
 
   /**
+   * Add a new preinitialized input tensor to the model
+   *
+   * \param initData The initial data of the input tensor
+   * \return The unique name of the input tensor
+   */
+  TensorId addInitializedInputTensor(const ConstVoidData &initData);
+
+  /**
    * Adds one of the outputs from a node in the graph into the list of output
    * tensors.
    */

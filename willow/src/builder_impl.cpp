@@ -1,5 +1,6 @@
 #include <poponnx/builder_impl.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/tensordata.hpp>
 #include <poponnx/tensorinfo.hpp>
 
 #include <onnx/shape_inference/implementation.h>
@@ -102,6 +103,74 @@ TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo) {
 
   auto *type = input->mutable_type();
   *type      = onnxTensorType;
+
+  return id;
+}
+
+TensorId BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData) {
+  auto id             = getNextId();
+  auto onnxTensorType = initData.info.getOnnxTypeProto();
+
+  auto *graph = model_.mutable_graph();
+  auto *input = graph->add_input();
+  input->set_name(id);
+
+  auto *type = input->mutable_type();
+  *type      = onnxTensorType;
+
+  auto *initializer = graph->add_initializer();
+  initializer->set_data_type(initData.info.dataType());
+
+  for (auto d : initData.info.shape()) {
+    initializer->add_dims(d);
+  }
+
+  int element_count = static_cast<int>(initData.info.nelms());
+
+  switch (initData.info.dataType()) {
+  case onnx::TensorProto_DataType_FLOAT: {
+    auto src = static_cast<const float *>(initData.data);
+    auto dst = initializer->mutable_float_data();
+    dst->Resize(element_count, 0.0f);
+    memcpy(dst->mutable_data(), src, initData.info.nbytes());
+    break;
+  }
+  case onnx::TensorProto_DataType_INT32: {
+    auto src = static_cast<const int32_t *>(initData.data);
+    auto dst = initializer->mutable_int32_data();
+    dst->Resize(element_count, 0);
+    memcpy(dst->mutable_data(), src, initData.info.nbytes());
+    break;
+  }
+  case onnx::TensorProto_DataType_BOOL: {
+    auto src = static_cast<const int32_t *>(initData.data);
+    auto dst = initializer->mutable_int32_data();
+    dst->Resize(element_count, 0);
+    memcpy(dst->mutable_data(), src, initData.info.nbytes());
+    break;
+  }
+  case onnx::TensorProto_DataType_FLOAT16: {
+    auto src = static_cast<const int32_t *>(initData.data);
+    auto dst = initializer->mutable_int32_data();
+    dst->Resize((element_count + 1) / 2, 0);
+    memcpy(dst->mutable_data(), src, initData.info.nbytes());
+    break;
+  }
+  case onnx::TensorProto_DataType_UNDEFINED:
+  case onnx::TensorProto_DataType_UINT8:
+  case onnx::TensorProto_DataType_INT8:
+  case onnx::TensorProto_DataType_UINT16:
+  case onnx::TensorProto_DataType_INT16:
+  case onnx::TensorProto_DataType_INT64:
+  case onnx::TensorProto_DataType_STRING:
+  case onnx::TensorProto_DataType_DOUBLE:
+  case onnx::TensorProto_DataType_UINT32:
+  case onnx::TensorProto_DataType_UINT64:
+  case onnx::TensorProto_DataType_COMPLEX64:
+  case onnx::TensorProto_DataType_COMPLEX128:
+  case onnx::TensorProto_DataType_BFLOAT16:
+    throw error("Unsupported data type in initializer");
+  }
 
   return id;
 }

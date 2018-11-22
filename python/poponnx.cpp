@@ -24,10 +24,8 @@ std::map<std::string, DataType> initNpTypeMap() {
   // DataTypes (defined originally in ONNX)
   M["float16"] = TP::FLOAT16;
   M["float32"] = TP::FLOAT;
-  M["float64"] = TP::DOUBLE;
-  M["int16"]   = TP::INT16;
   M["int32"]   = TP::INT32;
-  M["int64"]   = TP::INT64;
+  M["bool"]    = TP::BOOL;
   return M;
 }
 
@@ -206,7 +204,15 @@ PYBIND11_MODULE(poponnx_core, m) {
 
   py::class_<Builder>(m, "BuilderCore")
       .def(py::init<>())
-      .def("addInputTensor", &Builder::addInputTensor, py::arg("tensorInfo"))
+      .def("addInputTensor", &Builder::addInputTensor, py::arg("initVal"))
+      .def("addInitializedInputTensor",
+           [](Builder &builder, py::array array) {
+             ConstVoidData initData;
+             initData.data = array.request().ptr;
+             initData.info = getTensorInfo(array);
+             builder.addInitializedInputTensor(initData);
+           },
+           py::arg("initVal"))
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
       .def("abs", &Builder::abs, py::arg("args"))
       .def("acos", &Builder::acos, py::arg("args"))
