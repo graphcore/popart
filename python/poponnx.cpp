@@ -25,6 +25,7 @@ std::map<std::string, DataType> initNpTypeMap() {
   M["float16"] = TP::FLOAT16;
   M["float32"] = TP::FLOAT;
   M["int32"]   = TP::INT32;
+  M["int64"]   = TP::INT64;
   M["bool"]    = TP::BOOL;
   return M;
 }
@@ -204,7 +205,7 @@ PYBIND11_MODULE(poponnx_core, m) {
 
   py::class_<Builder>(m, "BuilderCore")
       .def(py::init<>())
-      .def("addInputTensor", &Builder::addInputTensor, py::arg("initVal"))
+      .def("addInputTensor", &Builder::addInputTensor, py::arg("tensorInfo"))
       .def("addInitializedInputTensor",
            [](Builder &builder, py::array array) {
              ConstVoidData initData;
