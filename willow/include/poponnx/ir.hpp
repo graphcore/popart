@@ -11,6 +11,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/optionflags.hpp>
+#include <poponnx/optypes.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/vertex.hpp>
 
@@ -95,8 +96,6 @@ private:
   std::vector<Op *> complete;
 };
 
-std::string getPoponnxDomain();
-
 // where tensor tenId is consumed by Op with OpId opId at
 // index "index", what should the name of the edge-gradient
 // along this edge be? This is pure string manipulation.
@@ -111,50 +110,6 @@ TensorId getNonGradId(TensorId tenId);
 
 // get a recomputed tensor's name, based on original tensor
 TensorId getRecompId(TensorId tenId);
-
-enum class OpType {
-  ADD = 0,
-  ADDARG0GRAD,
-  ADDARG1GRAD,
-  ADDBIAS,
-  ADDBIASDATAGRAD,
-  ADDBIASBIASGRAD,
-  AVERAGEPOOL,
-  AVERAGEPOOLGRAD,
-  CONSTANT,
-  CONSTSGDVARUPDATE,
-  CONV,
-  CONVDATAGRAD,
-  CONVWEIGHTSGRAD,
-  IDENTITY,
-  IDENTITYGRAD,
-  L1,
-  L1GRAD,
-  MAXPOOL,
-  MAXPOOLGRAD,
-  SOFTMAX,
-  SOFTMAXGRAD,
-  SOFTMAXGRADDIRECT,
-  NEGATE,
-  NEGATEGRAD,
-  NLL,
-  NLLGRAD,
-  MATMUL,
-  MATMULLHSGRAD,
-  MATMULRHSGRAD,
-  PAD,
-  REDUCESUM,
-  REDUCESUMGRAD,
-  RELU,
-  RELUGRAD,
-  SGDVARUPDATE,
-  SQUEEZE,
-  SQUEEZEGRAD,
-  SUBTRACT,
-  SUBTRACTARG0GRAD,
-  SUBTRACTARG1GRAD,
-  SUM
-};
 
 // Inputs and outputs to Ops will use this class.
 // inputs (outputs) enter (leave) at certain indices
@@ -324,7 +279,7 @@ private:
   void appendIO(std::stringstream &) const;
   virtual void appendMore(std::stringstream &) const {}
   const std::string *const p_op_type;
-  std::string op_domain;
+  const std::string *const p_op_domain;
 
   // design decision : see-sawing between storing a pointer
   // to the Node from which the Op derives (if it does derive
@@ -333,20 +288,6 @@ private:
 };
 
 enum class TensorType;
-
-class OpTypes {
-public:
-  OpTypes();
-  const OpType &get(std::string op_type) const;
-  const std::string &get(OpType opType) const;
-
-private:
-  std::map<std::string, OpType> opTypes_;
-  std::map<OpType, std::string> strings_;
-};
-
-OpTypes initOpTypes();
-const OpTypes &getOpTypes();
 
 class VectorAndSet {
 public:

@@ -140,15 +140,6 @@ void TensorIndexMap::setInfoIfIndex(const TensorInfo &info_, int index) {
   }
 }
 
-std::string getPoponnxDomain() { return "gnilwen.semaj"; }
-
-OpTypes initOpTypes() { return OpTypes(); }
-
-const OpTypes &getOpTypes() {
-  const static OpTypes X = initOpTypes();
-  return X;
-}
-
 void Op::setup() { throw error("No setup() for " + op_type()); }
 
 std::vector<Op *> Ir::getOpSchedule() const {
@@ -1056,7 +1047,7 @@ OpId Ir::moveIntoIr(std::unique_ptr<Op> op) {
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
   OpId opId = moveIntoIr(
-      std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getPoponnxDomain()})));
+      std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getOnnxDomain()})));
 
   std::vector<TensorId> inputs;
   inputs.reserve(toSum.size());
@@ -1415,7 +1406,7 @@ std::map<int, TensorId> TensorIndexMap::tensorIdMap() const {
 Op *Ir::growFromNode(const Node &node) {
 
   // special case of CONSTANT Node, no Op is created
-  if (getOpTypes().get(node.op_type()) == OpType::CONSTANT) {
+  if (getOpTypes().get(node.op_type(), node.domain()) == OpType::CONSTANT) {
     TensorId name = node.output(0);
 
     // we confirm that this tensor is actually
@@ -1459,7 +1450,7 @@ void Ir::growFinalLoss() {
 
   // now growing the FINAL loss (sum of individual losses)
   OpId opId = moveIntoIr(
-      std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getPoponnxDomain()})));
+      std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getOnnxDomain()})));
 
   std::vector<TensorId> inputs;
   inputs.reserve(lossOps.size());
@@ -1511,67 +1502,6 @@ void Ir::connectOutputs(const T &outContainer, OpId opId) {
   }
 }
 
-OpTypes::OpTypes() {
-
-  opTypes_ = {{"Add", OpType::ADD},
-              {"AddArg0Grad", OpType::ADDARG0GRAD},
-              {"AddArg1Grad", OpType::ADDARG1GRAD},
-              {"AddBias", OpType::ADDBIAS},
-              {"AddBiasDataGrad", OpType::ADDBIASDATAGRAD},
-              {"AddBiasBiasGrad", OpType::ADDBIASBIASGRAD},
-              {"AveragePool", OpType::AVERAGEPOOL},
-              {"AveragePoolGrad", OpType::AVERAGEPOOLGRAD},
-              {"Constant", OpType::CONSTANT},
-              {"Conv", OpType::CONV},
-              {"ConvDataGrad", OpType::CONVDATAGRAD},
-              {"ConvWeightsGrad", OpType::CONVWEIGHTSGRAD},
-              {"Identity", OpType::IDENTITY},
-              {"IdentityGrad", OpType::IDENTITYGRAD},
-              {"L1", OpType::L1},
-              {"L1Grad", OpType::L1GRAD},
-              {"MaxPool", OpType::MAXPOOL},
-              {"MaxPoolGrad", OpType::MAXPOOLGRAD},
-              {"Softmax", OpType::SOFTMAX},
-              {"SoftmaxGrad", OpType::SOFTMAXGRAD},
-              {"SoftmaxGradDirect", OpType::SOFTMAXGRADDIRECT},
-              {"Negate", OpType::NEGATE},
-              {"NegateGrad", OpType::NEGATEGRAD},
-              {"Nll", OpType::NLL},
-              {"NllGrad", OpType::NLLGRAD},
-              {"MatMul", OpType::MATMUL},
-              {"MatMulLhsGrad", OpType::MATMULLHSGRAD},
-              {"MatMulRhsGrad", OpType::MATMULRHSGRAD},
-              {"Pad", OpType::PAD},
-              {"ReduceSum", OpType::REDUCESUM},
-              {"ReduceSumGrad", OpType::REDUCESUMGRAD},
-              {"Relu", OpType::RELU},
-              {"ReluGrad", OpType::RELUGRAD},
-              {"Sub", OpType::SUBTRACT},
-              {"SubtractArg0Grad", OpType::SUBTRACTARG0GRAD},
-              {"SubtractArg1Grad", OpType::SUBTRACTARG1GRAD},
-              {"Sum", OpType::SUM},
-              {"Squeeze", OpType::SQUEEZE},
-              {"SqueezeGrad", OpType::SQUEEZEGRAD},
-              {"SGDVarUpdate", OpType::SGDVARUPDATE},
-              {"ConstSGDVarUpdate", OpType::CONSTSGDVARUPDATE}};
-
-  for (auto &x : opTypes_) {
-    strings_[x.second] = x.first;
-  }
-}
-
-const OpType &OpTypes::get(std::string op_type) const {
-  auto found = opTypes_.find(op_type);
-  if (found == opTypes_.end()) {
-    throw error("No OpType found for `" + op_type + "'");
-  }
-  return found->second;
-}
-
-const std::string &OpTypes::get(OpType opType) const {
-  return strings_.at(opType);
-}
-
 void Ir::append(std::stringstream &ss) {
   //  for (auto &id_op : ops) {
   //    id_op.second->append(ss);
@@ -1585,11 +1515,11 @@ void Ir::append(std::stringstream &ss) {
 Op::Op(const Op &op)
     : Vertex(op), priority(op.priority), opType(op.opType), pir(op.pir),
       id(pir->getAndIncrOpsCounter()), nAtts(op.nAtts), p_op_type(op.p_op_type),
-      op_domain(op.op_domain) {
+      p_op_domain(op.p_op_domain) {
   // input, output: empty.
 }
 
-const std::string &Op::domain() { return op_domain; }
+const std::string &Op::domain() { return *p_op_domain; }
 
 const std::string &Op::op_type() const { return *p_op_type; }
 
@@ -1601,7 +1531,7 @@ OpConstructorBundle::OpConstructorBundle(std::string op_type_,
 
 Op::Op(const OpConstructorBundle &b)
     : // opType (from string op_type)
-      opType(getOpTypes().get(b.op_type)),
+      opType(getOpTypes().get(b.op_type, b.domain)),
       // the Ir
       pir(b.pir),
       // the id
@@ -1609,25 +1539,25 @@ Op::Op(const OpConstructorBundle &b)
       // the Attributes
       nAtts(b.atts),
       // opType
-      p_op_type(&getOpTypes().get(opType)),
+      p_op_type(&getOpTypes().getName(opType)),
       // domain
-      op_domain(b.domain) {}
+      p_op_domain(&getOpTypes().getDomain(opType)) {}
 
 Op::Op(const Node &node, Ir *pg)
     : // We set opType, looked up in a map from the string node.op_type()
-      opType(getOpTypes().get(node.op_type())),
+      opType(getOpTypes().get(node.op_type(), node.domain())),
       // pointer to the Ir containing this node
       pir(pg), id(pir->getAndIncrOpsCounter()),
       // willow::Attributes constructed from contained of onnx::Attribute s
       nAtts(node.attribute()),
       // We set the pointer to the string version of opType, in another map
-      p_op_type(&getOpTypes().get(opType)),
+      p_op_type(&getOpTypes().getName(opType)),
       // And finally we strip off the domain of the Node
-      op_domain(node.domain()) {}
+      p_op_domain(&getOpTypes().getDomain(opType)) {}
 
 std::unique_ptr<Op> Ir::addOp(const Node &node) {
   using pOp = std::unique_ptr<Op>;
-  switch (getOpTypes().get(node.op_type())) {
+  switch (getOpTypes().get(node.op_type(), node.domain())) {
   case OpType::ADD: {
     return pOp(new AddOp(node, this));
   }

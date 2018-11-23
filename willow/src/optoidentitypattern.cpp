@@ -30,7 +30,7 @@ void OpToIdentityPattern::apply(Op *op) const {
   auto output_tensor = op->output.tensor(0);
   auto ir            = op->pir;
   auto identity_op   = make_unique<IdentityOp>(
-      OpConstructorBundle{"Identity", ir, {}, getPoponnxDomain()});
+      OpConstructorBundle{"Identity", ir, {}, getOnnxDomain()});
 
   // Add the identity op to the IR
   auto identity = identity_op.get();

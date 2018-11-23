@@ -110,6 +110,10 @@ PYBIND11_MODULE(poponnx_core, m) {
 
   m.def("getTensorInfo", &getTensorInfo);
 
+  m.def("getSupportedOperations",
+        &getSupportedOperations,
+        py::arg("includeInternal"));
+
   py::class_<StepIO> stepio(m, "StepIO");
 
   py::enum_<AnchorReturnType>(m, "AnchorReturnType")

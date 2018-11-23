@@ -13,6 +13,15 @@ def getDevice():
     # return poponnx.DeviceManager().acquireAvaliableHwDevice()
 
 
+def test_get_op_types():
+    ops_public = poponnx.getSupportedOperations(False)
+    assert (len(ops_public) > 0)
+
+    ops_all = poponnx.getSupportedOperations(True)
+    assert (len(ops_all) > 0)
+    assert (len(ops_all) > len(ops_public))
+
+
 def test_add(tmpdir):
 
     builder = poponnx.Builder()

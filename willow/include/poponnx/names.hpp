@@ -11,6 +11,9 @@ namespace willow {
 using TensorId = std::string;
 using TaskId   = std::string;
 
+using OpName   = std::string;
+using OpDomain = std::string;
+
 using OpId = int;
 
 // The position at which a Tensor is consumed by an Op
