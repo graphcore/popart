@@ -44,6 +44,8 @@ else()
                 # not covered in the switch statement, default 
                 # catches it. 
                 -Wno-covered-switch-default
+                # This warning seems unavoidable for non-trivial static construction.
+                -Wno-global-constructors
             )
             
         else()
