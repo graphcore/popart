@@ -525,3 +525,25 @@ def test_initialized_input_bool():
     assert (len(proto2) > 0)
 
     assert (len(proto2) > len(proto1))
+
+
+def test_inout_tensor_info():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+
+    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+
+    builder.addOutputTensor(o)
+
+    assert (builder.getInputTensorIds() == [i1, i2])
+    assert (builder.getOutputTensorIds() == [o])
+    assert (builder.getTensorShape(i1) == [1, 2, 32, 32])
+    assert (builder.getTensorShape(i2) == [4, 2, 3, 3])
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.getTensorShape("NotAnId")
+    assert (
+        e_info.value.args[0].find("is not an input or output tesor. Must be"))

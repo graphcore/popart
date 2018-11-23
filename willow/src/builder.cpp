@@ -224,4 +224,16 @@ TensorId Builder::matmul(const std::vector<TensorId> &args) {
 
 std::string Builder::getModelProto() const { return impl_->getModelProto(); }
 
+std::vector<TensorId> Builder::getInputTensorIds() const {
+  return impl_->getInputTensorIds();
+}
+
+std::vector<TensorId> Builder::getOutputTensorIds() const {
+  return impl_->getOutputTensorIds();
+}
+
+std::vector<int64_t> Builder::getTensorShape(const TensorId id) {
+  return impl_->getTensorShape(id);
+}
+
 } // namespace willow

@@ -90,6 +90,12 @@ public:
 
   std::string getModelProto() const;
 
+  std::vector<TensorId> getInputTensorIds() const;
+
+  std::vector<TensorId> getOutputTensorIds() const;
+
+  std::vector<int64_t> getTensorShape(const TensorId id);
+
 private:
   TensorId add_simple_op(const std::vector<TensorId> &args,
                          const char *name,
@@ -98,6 +104,18 @@ private:
   TensorId add_variadic_op(const std::vector<TensorId> &args, const char *name);
 
   TensorId getNextId();
+
+  bool isInputTensor(TensorId id) const;
+
+  bool isOutputTensor(TensorId id) const;
+
+  std::string getStrFromTensorIdVec(std::vector<TensorId> v) const;
+
+  int getInputTensorIndex(TensorId id) const;
+
+  int getOutputTensorIndex(TensorId id) const;
+
+  const onnx::ValueInfoProto &getValueInfoProto(TensorId id) const;
 
   uint64_t next_id_;
 

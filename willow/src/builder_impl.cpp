@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <poponnx/builder_impl.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/tensordata.hpp>
@@ -556,6 +558,119 @@ std::string BuilderImpl::getModelProto() const {
   std::string output;
   model_.SerializeToString(&output);
   return output;
+}
+
+std::vector<TensorId> BuilderImpl::getInputTensorIds() const {
+  std::vector<TensorId> inNames;
+  for (const auto &input : model_.graph().input()) {
+    inNames.push_back(input.name());
+  }
+  return inNames;
+}
+
+std::vector<TensorId> BuilderImpl::getOutputTensorIds() const {
+  std::vector<TensorId> outNames;
+  for (const auto &output : model_.graph().output()) {
+    outNames.push_back(output.name());
+  }
+  return outNames;
+}
+
+bool BuilderImpl::isInputTensor(TensorId id) const {
+  std::vector<TensorId> inIds = getInputTensorIds();
+  if (std::find(inIds.begin(), inIds.end(), id) != inIds.end()) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+bool BuilderImpl::isOutputTensor(TensorId id) const {
+  std::vector<TensorId> outIds = getOutputTensorIds();
+  if (std::find(outIds.begin(), outIds.end(), id) != outIds.end()) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+std::string BuilderImpl::getStrFromTensorIdVec(std::vector<TensorId> v) const {
+  const char *const delim = " ";
+  std::ostringstream s;
+  std::copy(v.begin(), v.end(), std::ostream_iterator<std::string>(s, delim));
+  return s.str();
+}
+
+int BuilderImpl::getInputTensorIndex(TensorId id) const {
+  if (isInputTensor(id)) {
+    int index = -1;
+    for (int i = 0; i < model_.graph().input_size(); i++) {
+      if (model_.graph().input(i).name() == id) {
+        index = i;
+      }
+    }
+    if (index == -1) {
+      std::stringstream err;
+      err << id << " index not found";
+      throw error(err.str());
+    }
+    return index;
+  } else {
+    std::stringstream err;
+    err << id << " is not an input tesor. Must be "
+        << getStrFromTensorIdVec(getInputTensorIds());
+    throw error(err.str());
+  }
+}
+
+int BuilderImpl::getOutputTensorIndex(TensorId id) const {
+  if (isOutputTensor(id)) {
+    int index = -1;
+    for (int i = 0; i < model_.graph().output_size(); i++) {
+      if (model_.graph().output(i).name() == id) {
+        index = i;
+      }
+    }
+    if (index == -1) {
+      std::stringstream err;
+      err << id << " index not found";
+      throw error(err.str());
+    }
+    return index;
+  } else {
+    std::stringstream err;
+    err << id << " is not an output tesor. Must be "
+        << getStrFromTensorIdVec(getOutputTensorIds());
+    throw error(err.str());
+  }
+}
+
+const onnx::ValueInfoProto &BuilderImpl::getValueInfoProto(TensorId id) const {
+  if (isInputTensor(id)) {
+    const onnx::ValueInfoProto &t =
+        model_.graph().input(getInputTensorIndex(id));
+    return t;
+  } else if (isOutputTensor(id)) {
+    const onnx::ValueInfoProto &t =
+        model_.graph().output(getOutputTensorIndex(id));
+    return t;
+  } else {
+    std::stringstream err;
+    err << id << " is not an input or output tensor. Must be one of "
+        << getStrFromTensorIdVec(getInputTensorIds())
+        << getStrFromTensorIdVec(getOutputTensorIds());
+    throw error(err.str());
+  }
+}
+
+std::vector<int64_t> BuilderImpl::getTensorShape(const TensorId id) {
+  std::vector<int64_t> shape;
+
+  auto &t = getValueInfoProto(id);
+  for (const auto &dim : t.type().tensor_type().shape().dim()) {
+    shape.push_back(dim.dim_value());
+  }
+  return shape;
 }
 
 } // namespace willow

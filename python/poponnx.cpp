@@ -308,9 +308,13 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("transA"),
            py::arg("transB"))
       .def("matmul", &Builder::matmul, py::arg("args"))
-      .def("getModelProto", [](const Builder &builder) {
-        return py::bytes(builder.getModelProto());
-      });
+      .def("getModelProto",
+           [](const Builder &builder) {
+             return py::bytes(builder.getModelProto());
+           })
+      .def("getInputTensorIds", &Builder::getInputTensorIds)
+      .def("getOutputTensorIds", &Builder::getOutputTensorIds)
+      .def("getTensorShape", &Builder::getTensorShape, py::arg("id"));
 
   // PyBinding to a singlton
   py::class_<DeviceManager, std::unique_ptr<DeviceManager, py::nodelete>>(

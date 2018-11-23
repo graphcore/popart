@@ -557,6 +557,28 @@ public:
    */
   std::string getModelProto() const;
 
+  /**
+   * Getter for ONNX graph input tensors
+   *
+   * \return A vector of input tensor names
+   */
+  std::vector<TensorId> getInputTensorIds() const;
+
+  /**
+   * Getter for ONNX graph output tensors
+   *
+   * \return A vector of output tensor names
+   */
+  std::vector<TensorId> getOutputTensorIds() const;
+
+  /**
+   * Getter for ONNX graph tensor shape
+   *
+   * \param id Tensor id
+   * \return A vector of tensor dimensions
+   */
+  std::vector<int64_t> getTensorShape(const TensorId id);
+
 private:
   std::unique_ptr<BuilderImpl> impl_;
 };
