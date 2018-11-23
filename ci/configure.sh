@@ -67,7 +67,7 @@ cd build
 NUM_PROCS=$(get_processor_count)
 
 # Configure cmake
-CC=clang CXX=clang++   cmake . -DPOPLAR_INSTALL_DIR=`readlink -f ../../external/poplar-install/` -DEXTERNAL_PROJECT_NUM_JOBS=${NUM_PROCS}
+CC=clang CXX=clang++   cmake . -DPOPLAR_INSTALL_DIR=`readlink -f ../../external/poplar-install/` -DEXTERNAL_PROJECT_NUM_JOBS=${NUM_PROCS} -DPOPONNX_CMAKE_ARGS=-DBUILD_DOCS=ON
 
 echo "Done"
 

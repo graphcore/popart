@@ -21,8 +21,8 @@ fi
 VE="${PWD}/../external/willow_build_python_${PYBIN}"
 source ${VE}/bin/activate
 
-cd build
-./test.sh willow -VV
+cd build/build/willow
+make package_and_move
 
 echo "Done"
 
