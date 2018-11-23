@@ -364,5 +364,5 @@ PYBIND11_MODULE(poponnx_core, m) {
 
   py::register_exception<willow::error>(m, "poponnx_exception");
   py::register_exception<poplar::poplar_error>(m, "poplar_exception");
-  py::register_exception<poputil::poplib_error>(m, "poplibs_exception");
+  py::register_exception<poputil::poplibs_error>(m, "poplibs_exception");
 }
