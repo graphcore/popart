@@ -32,7 +32,7 @@ std::vector<const Tensor *> PreUniRepl::touches(Op *op) const {
 }
 
 // (see .hpp for ascii picture definitions)
-void PreUniRepl::apply(Op *op) const {
+bool PreUniRepl::apply(Op *op) const {
   // op is []
   // ()
   Tensor *tensorIn = op->input.tensor(0);
@@ -52,6 +52,8 @@ void PreUniRepl::apply(Op *op) const {
   pir->getTensors().remove(tensorIn->id); // name);
   // delete [.]
   pir->eraseOp(op->id);
+
+  return true;
 }
 
 } // namespace willow

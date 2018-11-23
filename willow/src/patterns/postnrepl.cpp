@@ -8,7 +8,7 @@
 namespace willow {
 
 // (see .hpp for ascii picture definitions)
-void PostNRepl::apply(Op *op) const {
+bool PostNRepl::apply(Op *op) const {
 
   Ir *pir = op->pir;
 
@@ -43,6 +43,8 @@ void PostNRepl::apply(Op *op) const {
 
   // delete [*]
   pir->eraseOp(op->id);
+
+  return true;
 }
 
 bool PostNRepl::matches(Op *op) const {

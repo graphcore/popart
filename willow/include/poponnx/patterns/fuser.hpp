@@ -15,7 +15,7 @@ public:
   // [op01] perform inplace changes to an input tensor should
   // not inherit from Fuser.
   std::vector<const Tensor *> touches(Op *) const final;
-  void apply(Op *) const final;
+  bool apply(Op *) const final;
   PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 
 private:

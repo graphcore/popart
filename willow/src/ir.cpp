@@ -528,12 +528,8 @@ void Ir::prepare(const IrBundle &gb) {
   // are no contradictions in the names provided
   // as constant tensors
   confirmConstIds();
-  for (auto &pattern : patterns) {
-    if (pattern->phase() == PatternPhase::PRETOPOCONS) {
-      applyPattern(pattern.get());
-    }
-  }
 
+  applyPatterns(PatternPhase::PRETOPOCONS);
   growFinalLoss();
   updateVertices();
   setNPathsToLoss();
@@ -550,11 +546,8 @@ void Ir::prepare(const IrBundle &gb) {
   validateAnchors();
   applyTransform(0);
 
-  for (auto &pattern : patterns) {
-    if (pattern->phase() == PatternPhase::PRETOPOCONS) {
-      applyPattern(pattern.get());
-    }
-  }
+  applyPatterns(PatternPhase::PRETOPOCONS);
+  setNPathsToLoss();
 
   updateVertices();
   applyTransform(1);
@@ -705,7 +698,9 @@ void Ir::validateAnchors() const {
 // this iteration is potentially dangerous.
 // An Op in v_ops might
 // be deleted by an earlier Op.
-void Ir::applyPattern(const Pattern *pattern) {
+bool Ir::applyPattern(const Pattern *pattern) {
+  bool result = false;
+
   std::vector<Op *> v_ops;
   for (auto &id_op : ops) {
     v_ops.push_back(id_op.second.get());
@@ -714,7 +709,23 @@ void Ir::applyPattern(const Pattern *pattern) {
     // T5616: This op might have deleted at this point!
     if (pattern->matches(op)) {
       if (!pattern->touchesAnchored(op)) {
-        pattern->apply(op);
+        result |= pattern->apply(op);
+      }
+    }
+  }
+
+  return result;
+}
+
+void Ir::applyPatterns(PatternPhase phase) {
+  bool keepRunning = true;
+
+  while (keepRunning) {
+    keepRunning = false;
+
+    for (auto &pattern : patterns) {
+      if (pattern->phase() == phase) {
+        keepRunning |= applyPattern(pattern.get());
       }
     }
   }

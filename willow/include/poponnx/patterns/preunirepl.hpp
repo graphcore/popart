@@ -22,7 +22,7 @@ public:
   bool matches(Op *) const final;
   //  Only tensor (), which is deleted, is touched
   std::vector<const Tensor *> touches(Op *) const final;
-  void apply(Op *) const final;
+  bool apply(Op *) const final;
   PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 

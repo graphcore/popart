@@ -61,7 +61,7 @@ std::vector<const Tensor *> Inplace0::touches(Op *op) const {
   return {op->input.tensor(0), op->output.tensor(0)};
 }
 
-void Inplace0::apply(Op *op) const {
+bool Inplace0::apply(Op *op) const {
 
   // (1) create the inplace replacement for op
   std::unique_ptr<Op> up_inplaceOp = op->getInplaceVariant(0);
@@ -110,6 +110,8 @@ void Inplace0::apply(Op *op) const {
 
   inplaceOp->pir->eraseOp(op->id);
   inplaceOp->pir->getTensors().remove(out->id);
+
+  return true;
 }
 
 bool Inplace0::matches(Op *op) const {

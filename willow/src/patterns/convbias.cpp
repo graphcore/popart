@@ -12,7 +12,7 @@ bool ConvBiasPattern::matches(Op *op) const {
 
 std::vector<const Tensor *> ConvBiasPattern::touches(Op *) const { return {}; }
 
-void ConvBiasPattern::apply(Op *op) const {
+bool ConvBiasPattern::apply(Op *op) const {
   const auto conv = dynamic_cast<ConvOp *>(op);
 
   std::unique_ptr<Op> add_bias_op(new AddBiasOp(conv));
@@ -41,6 +41,8 @@ void ConvBiasPattern::apply(Op *op) const {
 
   conv->output.reset(0, t);
   add_bias->output.insert(0, a1);
+
+  return true;
 }
 
 } // namespace willow

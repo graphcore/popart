@@ -19,6 +19,8 @@
 
 #include <poponnx/transforms/transform.hpp>
 
+#include <poponnx/patterns/patterns.hpp>
+
 namespace willow {
 
 // helper class used during backwards pass construction.
@@ -513,7 +515,12 @@ private:
   void updateVertices();
 
   // modify the Ir using with pattern matching
-  void applyPattern(const Pattern *);
+  // Returns true if a change to the Ir was made.
+  bool applyPattern(const Pattern *);
+
+  // modify the Ir using all the registered patterns.
+  // Returns true if a change to the Ir was made.
+  void applyPatterns(PatternPhase);
 
   // modify the Ir using a graph transformation
   void applyTransform(int transformId);

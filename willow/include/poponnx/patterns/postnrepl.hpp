@@ -33,7 +33,7 @@ public:
   // ori might be touched, if one its new consumers performs
   // an inplace modification to it.
   std::vector<const Tensor *> touches(Op *) const final;
-  void apply(Op *) const final;
+  bool apply(Op *) const final;
   PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 
   // *€ : this pattern matches and removes []->()

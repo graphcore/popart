@@ -16,7 +16,7 @@ std::vector<const Tensor *> SubtractArg1GradOpPattern::touches(Op *) const {
   return {};
 }
 
-void SubtractArg1GradOpPattern::apply(Op *op) const {
+bool SubtractArg1GradOpPattern::apply(Op *op) const {
   auto input_tensor  = op->input.tensor(0);
   auto output_tensor = op->output.tensor(0);
   auto ir            = op->pir;
@@ -56,6 +56,8 @@ void SubtractArg1GradOpPattern::apply(Op *op) const {
 
   // Remove the reducesum op
   ir->eraseOp(op->id);
+
+  return true;
 }
 
 } // namespace willow

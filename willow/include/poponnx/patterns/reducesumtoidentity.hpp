@@ -18,7 +18,7 @@ public:
   std::vector<const Tensor *> touches(Op *) const override;
   // apply the pattern,
   // changes the graph of the op
-  void apply(Op *) const override;
+  bool apply(Op *) const override;
   PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 } // namespace willow

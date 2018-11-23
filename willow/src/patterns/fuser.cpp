@@ -6,7 +6,7 @@
 
 namespace willow {
 
-void Fuser::apply(Op *op) const {
+bool Fuser::apply(Op *op) const {
   Ir *pir = op->pir;
 
   Op *op0      = op;
@@ -38,6 +38,8 @@ void Fuser::apply(Op *op) const {
   pir->getTensors().remove(out0->id);
   pir->eraseOp(op0->id);
   pir->eraseOp(op1->id);
+
+  return true;
 }
 
 bool Fuser::matches(Op *op0) const {

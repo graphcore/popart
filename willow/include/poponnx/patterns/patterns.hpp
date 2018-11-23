@@ -69,7 +69,7 @@ public:
   virtual std::vector<const Tensor *> touches(Op *op) const = 0;
   // Apply this Pattern, modifying the sub-graph
   // centered (rooted) on op
-  virtual void apply(Op *op) const = 0;
+  virtual bool apply(Op *op) const = 0;
   // if applied to op, would there
   // be any anchored tensors touched?
   bool touchesAnchored(Op *) const;

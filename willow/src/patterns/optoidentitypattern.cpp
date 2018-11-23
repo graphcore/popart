@@ -24,7 +24,7 @@ std::vector<const Tensor *> OpToIdentityPattern::touches(Op *) const {
   return {};
 }
 
-void OpToIdentityPattern::apply(Op *op) const {
+bool OpToIdentityPattern::apply(Op *op) const {
   auto input_tensor  = op->input.tensor(0);
   auto output_tensor = op->output.tensor(0);
   auto ir            = op->pir;
@@ -46,6 +46,8 @@ void OpToIdentityPattern::apply(Op *op) const {
 
   // Remove the op
   ir->eraseOp(op->id);
+
+  return true;
 }
 
 } // namespace willow
