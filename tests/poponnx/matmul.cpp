@@ -3,11 +3,11 @@
 #include <boost/test/unit_test.hpp>
 
 #include <poponnx/error.hpp>
-#include <poponnx/matmul.hpp>
+#include <poponnx/op/matmul.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/tensor.hpp>
 
-#include <poponnx/popx/matmulx.hpp>
+#include <poponnx/popx/op/matmulx.hpp>
 
 using namespace willow;
 

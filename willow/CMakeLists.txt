@@ -8,6 +8,8 @@ include_directories("include")
 
 
 file(GLOB sources src/*cpp)
+file(GLOB op_sources src/op/*cpp)
+file(GLOB opx_sources src/popx/op/*cpp)
 
 if (POPLAR_BACKEND)
 message( STATUS "Building WITH Poplar IPU backend")
@@ -22,7 +24,7 @@ endif()
 find_package(Spdlog REQUIRED)
 message(STATUS "spdlog at " ${Spdlog_INCLUDE_DIRS})
 
-add_library(poponnx SHARED ${sources})
+add_library(poponnx SHARED ${sources} ${op_sources} ${opx_sources})
 
 target_include_directories (poponnx SYSTEM PUBLIC
     # if the model checker is used: ${ONNX_UTILS_INCLUDE_DIR}

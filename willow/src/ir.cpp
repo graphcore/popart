@@ -12,7 +12,7 @@
 #include <poponnx/intervals.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
-#include <poponnx/loss.hpp>
+#include <poponnx/op/loss.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/optionflags.hpp>
 #include <poponnx/patterns.hpp>
@@ -28,21 +28,21 @@
 #include <poponnx/subtractarg1gradoppattern.hpp>
 
 // The layers:
-#include <poponnx/add.hpp>
-#include <poponnx/averagepool.hpp>
-#include <poponnx/conv.hpp>
-#include <poponnx/identity.hpp>
-#include <poponnx/matmul.hpp>
-#include <poponnx/maxpool.hpp>
-#include <poponnx/negate.hpp>
-#include <poponnx/pad.hpp>
-#include <poponnx/reducesum.hpp>
-#include <poponnx/relu.hpp>
-#include <poponnx/softmax.hpp>
-#include <poponnx/squeeze.hpp>
-#include <poponnx/subtract.hpp>
-#include <poponnx/sum.hpp>
-#include <poponnx/varupdate.hpp>
+#include <poponnx/op/add.hpp>
+#include <poponnx/op/averagepool.hpp>
+#include <poponnx/op/conv.hpp>
+#include <poponnx/op/identity.hpp>
+#include <poponnx/op/matmul.hpp>
+#include <poponnx/op/maxpool.hpp>
+#include <poponnx/op/negate.hpp>
+#include <poponnx/op/pad.hpp>
+#include <poponnx/op/reducesum.hpp>
+#include <poponnx/op/relu.hpp>
+#include <poponnx/op/softmax.hpp>
+#include <poponnx/op/squeeze.hpp>
+#include <poponnx/op/subtract.hpp>
+#include <poponnx/op/sum.hpp>
+#include <poponnx/op/varupdate.hpp>
 
 namespace willow {
 

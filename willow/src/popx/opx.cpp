@@ -1,5 +1,5 @@
-#include <poponnx/conv.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/op/conv.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/opx.hpp>
 #include <poponnx/tensor.hpp>

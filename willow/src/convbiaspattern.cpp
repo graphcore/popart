@@ -1,6 +1,6 @@
-#include <poponnx/addbias.hpp>
-#include <poponnx/conv.hpp>
 #include <poponnx/ir.hpp>
+#include <poponnx/op/addbias.hpp>
+#include <poponnx/op/conv.hpp>
 #include <poponnx/tensor.hpp>
 
 #include <poponnx/convbiaspattern.hpp>

@@ -1,11 +1,11 @@
 #include <poponnx/error.hpp>
-#include <poponnx/identity.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/nll.hpp>
-#include <poponnx/pad.hpp>
+#include <poponnx/op/identity.hpp>
+#include <poponnx/op/nll.hpp>
+#include <poponnx/op/pad.hpp>
+#include <poponnx/op/softmax.hpp>
 #include <poponnx/patterns.hpp>
 #include <poponnx/pbwrap.hpp>
-#include <poponnx/softmax.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
 

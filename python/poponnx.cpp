@@ -5,10 +5,10 @@
 #include <poponnx/device.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
-#include <poponnx/l1.hpp>
-#include <poponnx/loss.hpp>
-#include <poponnx/nll.hpp>
 #include <poponnx/numerics.hpp>
+#include <poponnx/op/l1.hpp>
+#include <poponnx/op/loss.hpp>
+#include <poponnx/op/nll.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/optionflags.hpp>
 #include <poponnx/session.hpp>

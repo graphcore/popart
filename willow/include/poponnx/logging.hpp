@@ -32,7 +32,7 @@
 /// 1. Add an entry to the Module enum
 /// 2. Add a MAKE_MODULE_TEMPLATE macro call
 /// 3. Add the entry to the string conversion functions in the .cpp file
-/// 4. Update the ONNX webpage to describe the new module 
+/// 4. Update the ONNX webpage to describe the new module
 ///    (https://phabricator.sourcevertex.net/w/onnx/)
 
 namespace willow {

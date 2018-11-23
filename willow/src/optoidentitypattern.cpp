@@ -1,7 +1,7 @@
-#include <poponnx/identity.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/pad.hpp>
-#include <poponnx/reducesum.hpp>
+#include <poponnx/op/identity.hpp>
+#include <poponnx/op/pad.hpp>
+#include <poponnx/op/reducesum.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
 
