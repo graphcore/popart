@@ -316,13 +316,14 @@ PYBIND11_MODULE(poponnx_core, m) {
             &DeviceManager::getDeviceManager());
       }))
       .def("acquireAvaliableDevice",
-           (std::unique_ptr<DeviceInfo>(DeviceManager::*)()) &
-               DeviceManager::acquireAvaliableDevice)
-      .def("acquireAvaliableDevice",
-           (std::unique_ptr<DeviceInfo>(DeviceManager::*)(int, int)) &
-               DeviceManager::acquireAvaliableDevice,
-           py::arg("numIpus"),
-           py::arg("tilesPerIpu"))
+           static_cast<std::unique_ptr<DeviceInfo> (DeviceManager::*)()>(
+               &DeviceManager::acquireAvaliableDevice))
+      .def(
+          "acquireAvaliableDevice",
+          static_cast<std::unique_ptr<DeviceInfo> (DeviceManager::*)(int, int)>(
+              &DeviceManager::acquireAvaliableDevice),
+          py::arg("numIpus"),
+          py::arg("tilesPerIpu"))
       .def(
           "acquireDeviceById", &DeviceManager::acquireDeviceById, py::arg("id"))
       .def("createCpuDevice", &DeviceManager::createCpuDevice)

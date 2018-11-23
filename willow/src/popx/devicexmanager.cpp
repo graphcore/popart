@@ -45,6 +45,9 @@ void DevicexManager::enumerate(
           make_unique<DevicexIpuInfo>(*this, device.getId(), device);
       devices.push_back(std::move(ipu));
     } break;
+    case DeviceType::IpuModel:
+    case DeviceType::Cpu:
+    case DeviceType::Sim:
     default: {
       // Do nothing for the 'host' devices
     }
@@ -77,11 +80,12 @@ bool mapFind<bool>(const std::map<std::string, std::string> &map,
   if (it != map.end()) {
     // make the value lower case
     std::string value = it->second;
-    std::transform(
-        value.begin(),
-        value.end(),
-        value.begin(),
-        [](unsigned char c) -> unsigned char { return std::tolower(c); });
+    std::transform(value.begin(),
+                   value.end(),
+                   value.begin(),
+                   [](unsigned char c) -> unsigned char {
+                     return static_cast<unsigned char>(std::tolower(c));
+                   });
     return ((it->second == "true") ? true : false);
   } else {
     return defaultValue;
@@ -168,7 +172,7 @@ std::string DevicexIpuInfo::getVersion() const {
 }
 
 namespace {
-DevicexManager s_devicexManager;
+static DevicexManager s_devicexManager;
 }
 
 } // namespace popx

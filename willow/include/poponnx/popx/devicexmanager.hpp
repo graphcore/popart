@@ -17,7 +17,7 @@ public:
 
   virtual std::unique_ptr<willow::DeviceInfo>
   createHostDevice(willow::DeviceType type,
-                   const std::map<std::string, std::string> &options);
+                   const std::map<std::string, std::string> &options) override;
 
 private:
 };
@@ -91,6 +91,8 @@ private:
   bool isAttached = false;
   int id;
 };
+
+willow::DeviceType convertDeviceType(poplar::TargetType targetType);
 
 } // namespace popx
 } // namespace willow

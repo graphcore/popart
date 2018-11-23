@@ -17,7 +17,11 @@ class DeviceInfo {
 
 public:
   DeviceInfo(DeviceProvider &_provider, DeviceType _type)
-      : provider(_provider), type(_type) {}
+      : provider(_provider), type(_type) {
+    (void)provider;
+  }
+
+  virtual ~DeviceInfo() {}
 
   /// Attach to the IPU.
   /// \return Returns true if successfully attaches to the device
@@ -58,6 +62,8 @@ std::ostream &operator<<(std::ostream &os, const DeviceInfo &di);
 /// manager
 class DeviceProvider {
 public:
+  virtual ~DeviceProvider() {}
+
   /// Get a list of ipu devices
   virtual void enumerate(std::vector<std::unique_ptr<DeviceInfo>> &devices) = 0;
 
@@ -140,6 +146,14 @@ public:
   std::unique_ptr<DeviceInfo>
   createSimDevice(std::map<std::string, std::string> &options);
 };
+
+/** Write a representation of a DeviceType to an output stream
+ *
+ * \param os output stream
+ * \param dt device type reference
+ * \return the same output stream for chaining
+ */
+std::ostream &operator<<(std::ostream &os, const DeviceType &dt);
 
 } // namespace willow
 
