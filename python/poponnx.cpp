@@ -308,6 +308,88 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("transA"),
            py::arg("transB"))
       .def("matmul", &Builder::matmul, py::arg("args"))
+      .def("addNodeAttribute",
+           static_cast<void (Builder::*)(const std::string &,
+                                         const int64_t &,
+                                         const std::set<TensorId> &)>(
+               &Builder::addNodeAttribute),
+           py::arg("attributeName"),
+           py::arg("attributeValue"),
+           py::arg("nodeOutputNames"))
+      .def("addNodeAttribute",
+           static_cast<void (Builder::*)(const std::string &,
+                                         const std::vector<int64_t> &,
+                                         const std::set<TensorId> &)>(
+               &Builder::addNodeAttribute),
+           py::arg("attributeName"),
+           py::arg("attributeValue"),
+           py::arg("nodeOutputNames"))
+      .def("addNodeAttribute",
+           static_cast<void (Builder::*)(
+               const std::string &, const float &, const std::set<TensorId> &)>(
+               &Builder::addNodeAttribute),
+           py::arg("attributeName"),
+           py::arg("attributeValue"),
+           py::arg("nodeOutputNames"))
+      .def("addNodeAttribute",
+           static_cast<void (Builder::*)(const std::string &,
+                                         const std::vector<float> &,
+                                         const std::set<TensorId> &)>(
+               &Builder::addNodeAttribute),
+           py::arg("attributeName"),
+           py::arg("attributeValue"),
+           py::arg("nodeOutputNames"))
+      .def("addNodeAttribute",
+           static_cast<void (Builder::*)(const std::string &,
+                                         const std::string &,
+                                         const std::set<TensorId> &)>(
+               &Builder::addNodeAttribute),
+           py::arg("attributeName"),
+           py::arg("attributeValue"),
+           py::arg("nodeOutputNames"))
+      .def("addNodeAttribute",
+           static_cast<void (Builder::*)(const std::string &,
+                                         const std::vector<std::string> &,
+                                         const std::set<TensorId> &)>(
+               &Builder::addNodeAttribute),
+           py::arg("attributeName"),
+           py::arg("attributeValue"),
+           py::arg("nodeOutputNames"))
+      .def("nodeHasAttribute",
+           &Builder::nodeHasAttribute,
+           py::arg("attributeName"),
+           py::arg("nodeOutputNames"))
+      .def("getInt64NodeAttribute",
+           &Builder::getInt64NodeAttribute,
+           py::arg("attributeName"),
+           py::arg("nodeOutputNames"))
+      .def("getInt64VectorNodeAttribute",
+           &Builder::getInt64VectorNodeAttribute,
+           py::arg("attributeName"),
+           py::arg("nodeOutputNames"))
+      .def("getFloatNodeAttribute",
+           &Builder::getFloatNodeAttribute,
+           py::arg("attributeName"),
+           py::arg("nodeOutputNames"))
+      .def("getFloatVectorNodeAttribute",
+           &Builder::getFloatVectorNodeAttribute,
+           py::arg("attributeName"),
+           py::arg("nodeOutputNames"))
+      .def("getStringNodeAttribute",
+           &Builder::getStringNodeAttribute,
+           py::arg("attributeName"),
+           py::arg("nodeOutputNames"))
+      .def("getStringVectorNodeAttribute",
+           &Builder::getStringVectorNodeAttribute,
+           py::arg("attributeName"),
+           py::arg("nodeOutputNames"))
+      .def("removeNodeAttribute",
+           &Builder::removeNodeAttribute,
+           py::arg("attributeName"),
+           py::arg("nodeOutputNames"))
+      .def("getAllNodeAttributeNames",
+           &Builder::getAllNodeAttributeNames,
+           py::arg("nodeOutputNames"))
       .def("getModelProto",
            [](const Builder &builder) {
              return py::bytes(builder.getModelProto());

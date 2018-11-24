@@ -546,4 +546,338 @@ def test_inout_tensor_info():
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.getTensorShape("NotAnId")
     assert (
-        e_info.value.args[0].find("is not an input or output tesor. Must be"))
+        e_info.value.args[0].find("is not an input or output tensor. Must be"))
+
+
+def test_add_int_attribute():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+
+    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+
+    builder.addOutputTensor(o)
+    # Set then get
+    val = 100
+    builder.addNodeAttribute("test", val, set(o))
+    res = builder.getInt64NodeAttribute("test", set(o))
+    assert (res == val)
+
+
+def test_add_int_vector_attribute():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+
+    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+
+    builder.addOutputTensor(o)
+    # Set then get
+    val = [100, 200, -1]
+    builder.addNodeAttribute("test", val, set(o))
+    res = builder.getInt64VectorNodeAttribute("test", set(o))
+    assert (res == val)
+
+
+def test_add_float_attribute():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+
+    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+
+    builder.addOutputTensor(o)
+    # Set then get
+    val = .1
+    builder.addNodeAttribute("test", val, set(o))
+    res = builder.getFloatNodeAttribute("test", set(o))
+    assert (res == pytest.approx(val))
+
+
+def test_add_float_vector_attribute():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+
+    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+
+    builder.addOutputTensor(o)
+    # Set then get
+    val = [100., -.1, 100.0, 10.0]
+    builder.addNodeAttribute("test", val, set(o))
+    res = builder.getFloatVectorNodeAttribute("test", set(o))
+    assert (res == pytest.approx(val))
+
+
+def test_add_string_attribute():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+
+    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+
+    builder.addOutputTensor(o)
+    # Set then get
+    val = "test"
+    builder.addNodeAttribute("test", val, set(o))
+    res = builder.getStringNodeAttribute("test", set(o))
+    assert (res == val)
+
+
+def test_add_string_vector_attribute():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+
+    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+
+    builder.addOutputTensor(o)
+    # Set then get
+    val = ["test", "test2", "test"]
+    builder.addNodeAttribute("test", val, set(o))
+    res = builder.getStringVectorNodeAttribute("test", set(o))
+    assert (res == val)
+
+
+def test_add_attribute_missing_node():
+
+    builder = poponnx.Builder()
+    val = 100
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.addNodeAttribute("test", val, set(("i", "j")))
+        assert (e_info.value.args[0].find(
+            "Could not find a node with outputs i, j."))
+
+
+def test_has_attribute():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+
+    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+
+    builder.addOutputTensor(o)
+    # Set then get
+    val = 100
+    builder.addNodeAttribute("test", val, set(o))
+    res = builder.nodeHasAttribute("test", set(o))
+    assert (res)
+    res = builder.nodeHasAttribute("test2", set(o))
+    assert (not res)
+
+
+def test_get_all_attribute_names():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    o = builder.add((i1, i1))
+
+    builder.addOutputTensor(o)
+    builder.addNodeAttribute("test", 100., set(o))
+    builder.addNodeAttribute("test2", -1, set(o))
+    builder.addNodeAttribute("test3", "abba", set(o))
+    res = builder.getAllNodeAttributeNames(set(o))
+    assert (set(res) == set(("test", "test2", "test3")))
+
+    res = builder.getFloatNodeAttribute("test", set(o))
+    assert (res == pytest.approx(100.))
+
+    res = builder.getInt64NodeAttribute("test2", set(o))
+    assert (res == -1)
+
+    res = builder.getStringNodeAttribute("test3", set(o))
+    assert (res == "abba")
+
+
+def test_get_conv_strides_attribute():
+
+    strides = [1, 1]
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+
+    o = builder.convolution([i1, i2], strides, [0, 0, 0, 0], [1, 1], 1)
+
+    builder.addOutputTensor(o)
+    res = builder.getInt64VectorNodeAttribute("strides", set(o))
+    assert (res == strides)
+
+
+def test_dont_override_attribute():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    o = builder.add((i1, i1))
+
+    builder.addOutputTensor(o)
+    builder.addNodeAttribute("test", 100., set(o))
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.addNodeAttribute("test", 100, set(o))
+        assert (e_info.value.args[0].find("Node already has attribute test."))
+
+
+def test_get_attribute_doesnt_exist():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    o = builder.add((i1, i1))
+
+    builder.addOutputTensor(o)
+    builder.addNodeAttribute("test", 100., set(o))
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.getFloatNodeAttribute("test1", set(o))
+        assert (
+            e_info.value.args[0].find("Node does not have an attribute test1"))
+
+
+def test_remove_attribute():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+
+    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+
+    builder.addOutputTensor(o)
+    # Set then get
+    val = 100
+    builder.addNodeAttribute("test", val, set(o))
+    res = builder.nodeHasAttribute("test", set(o))
+    assert (res)
+    builder.removeNodeAttribute("test", set(o))
+    res = builder.nodeHasAttribute("test", set(o))
+    assert (not res)
+
+
+def test_remove_attribute_doesnt_exist():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+
+    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+
+    builder.addOutputTensor(o)
+    # Set then get
+    val = 100
+    builder.addNodeAttribute("test", val, set(o))
+    res = builder.nodeHasAttribute("test", set(o))
+    assert (res)
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.removeNodeAttribute("test1", set(o))
+        assert (e_info.value.args[0].find(
+            "Cannot remove attribute test1 as it does not exist."))
+
+
+def test_get_attribute_wrong_type_int():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    o = builder.add((i1, i1))
+
+    builder.addOutputTensor(o)
+    builder.addNodeAttribute("test", 100., set(o))
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.getInt64NodeAttribute("test", set(o))
+        assert (e_info.value.args[0].find("Node test is not an integer."))
+
+
+def test_get_attribute_wrong_type_int_vector():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    o = builder.add((i1, i1))
+
+    builder.addOutputTensor(o)
+    builder.addNodeAttribute("test", 100., set(o))
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.getInt64VectorNodeAttribute("test", set(o))
+        assert (
+            e_info.value.args[0].find("Node test is not an integer vector."))
+
+
+def test_get_attribute_wrong_type_float():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    o = builder.add((i1, i1))
+
+    builder.addOutputTensor(o)
+    builder.addNodeAttribute("test", 100, set(o))
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.getFloatNodeAttribute("test", set(o))
+        assert (e_info.value.args[0].find("Node test is not a float."))
+
+
+def test_get_attribute_wrong_type_float_vector():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    o = builder.add((i1, i1))
+
+    builder.addOutputTensor(o)
+    builder.addNodeAttribute("test", 100, set(o))
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.getFloatVectorNodeAttribute("test", set(o))
+        assert (e_info.value.args[0].find("Node test is not a float vector."))
+
+
+def test_get_attribute_wrong_type_string():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    o = builder.add((i1, i1))
+
+    builder.addOutputTensor(o)
+    builder.addNodeAttribute("test", 100, set(o))
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.getStringNodeAttribute("test", set(o))
+        assert (e_info.value.args[0].find("Node test is not a string."))
+
+
+def test_get_attribute_wrong_type_string_vector():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    o = builder.add((i1, i1))
+
+    builder.addOutputTensor(o)
+    builder.addNodeAttribute("test", 100, set(o))
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.getStringVectorNodeAttribute("test", set(o))
+        assert (e_info.value.args[0].find("Node test is not a string vector."))

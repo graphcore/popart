@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <iterator>
+#include <sstream>
 
 #include <poponnx/builder_impl.hpp>
 #include <poponnx/error.hpp>
@@ -363,10 +365,10 @@ TensorId BuilderImpl::logical_xor(const std::vector<TensorId> &args) {
 }
 
 TensorId BuilderImpl::convolution(const std::vector<TensorId> &args,
-                                  const std::vector<int> strides,
-                                  const std::vector<int> padding,
-                                  const std::vector<int> dilation,
-                                  int groups) {
+                                  const std::vector<int64_t> strides,
+                                  const std::vector<int64_t> padding,
+                                  const std::vector<int64_t> dilation,
+                                  int64_t groups) {
   check_arg_range(args, 2, 3, "Conv");
 
   auto id = getNextId();
@@ -377,32 +379,11 @@ TensorId BuilderImpl::convolution(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  auto *auto_pad_attr = node->add_attribute();
-  auto_pad_attr->set_name("auto_pad");
-  auto_pad_attr->set_type(onnx::AttributeProto::STRING);
-  auto_pad_attr->set_s("NOTSET");
-
-  auto *dilations_attr = node->add_attribute();
-  dilations_attr->set_name("dilations");
-  for (auto i : dilation) {
-    dilations_attr->add_ints(i);
-  }
-
-  auto *group_attr = node->add_attribute();
-  group_attr->set_name("group");
-  group_attr->set_i(groups);
-
-  auto *pads_attr = node->add_attribute();
-  pads_attr->set_name("pads");
-  for (auto i : padding) {
-    pads_attr->add_ints(i);
-  }
-
-  auto *strides_attr = node->add_attribute();
-  strides_attr->set_name("strides");
-  for (auto i : strides) {
-    strides_attr->add_ints(i);
-  }
+  addNodeAttribute("auto_pad", "NOTSET", {id});
+  addNodeAttribute("dilations", dilation, {id});
+  addNodeAttribute("group", groups, {id});
+  addNodeAttribute("pads", padding, {id});
+  addNodeAttribute("strides", strides, {id});
 
   onnx::shape_inference::InferShapes(model_);
 
@@ -410,9 +391,9 @@ TensorId BuilderImpl::convolution(const std::vector<TensorId> &args,
 }
 
 TensorId BuilderImpl::averagepool(const std::vector<TensorId> &args,
-                                  const std::vector<int> kernel_shape,
-                                  const std::vector<int> strides,
-                                  const std::vector<int> padding) {
+                                  const std::vector<int64_t> kernel_shape,
+                                  const std::vector<int64_t> strides,
+                                  const std::vector<int64_t> padding) {
   check_arg_count(args, 1, "AveragePool");
 
   auto id = getNextId();
@@ -423,32 +404,11 @@ TensorId BuilderImpl::averagepool(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  auto *auto_pad_attr = node->add_attribute();
-  auto_pad_attr->set_name("auto_pad");
-  auto_pad_attr->set_type(onnx::AttributeProto::STRING);
-  auto_pad_attr->set_s("NOTSET");
-
-  auto *count_include_pad_attr = node->add_attribute();
-  count_include_pad_attr->set_name("count_include_pad");
-  count_include_pad_attr->set_i(0);
-
-  auto *kernel_shape_attr = node->add_attribute();
-  kernel_shape_attr->set_name("kernel_shape");
-  for (auto i : kernel_shape) {
-    kernel_shape_attr->add_ints(i);
-  }
-
-  auto *pads_attr = node->add_attribute();
-  pads_attr->set_name("pads");
-  for (auto i : padding) {
-    pads_attr->add_ints(i);
-  }
-
-  auto *strides_attr = node->add_attribute();
-  strides_attr->set_name("strides");
-  for (auto i : strides) {
-    strides_attr->add_ints(i);
-  }
+  addNodeAttribute("auto_pad", "NOTSET", {id});
+  addNodeAttribute("count_include_pad", static_cast<int64_t>(0), {id});
+  addNodeAttribute("kernel_shape", kernel_shape, {id});
+  addNodeAttribute("pads", padding, {id});
+  addNodeAttribute("strides", strides, {id});
 
   onnx::shape_inference::InferShapes(model_);
 
@@ -456,9 +416,9 @@ TensorId BuilderImpl::averagepool(const std::vector<TensorId> &args,
 }
 
 TensorId BuilderImpl::maxpool(const std::vector<TensorId> &args,
-                              const std::vector<int> kernel_shape,
-                              const std::vector<int> strides,
-                              const std::vector<int> padding) {
+                              const std::vector<int64_t> kernel_shape,
+                              const std::vector<int64_t> strides,
+                              const std::vector<int64_t> padding) {
   check_arg_count(args, 1, "MaxPool");
 
   auto id = getNextId();
@@ -469,32 +429,11 @@ TensorId BuilderImpl::maxpool(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  auto *auto_pad_attr = node->add_attribute();
-  auto_pad_attr->set_name("auto_pad");
-  auto_pad_attr->set_type(onnx::AttributeProto::STRING);
-  auto_pad_attr->set_s("NOTSET");
-
-  auto *storage_order_pad_attr = node->add_attribute();
-  storage_order_pad_attr->set_name("storage_order");
-  storage_order_pad_attr->set_i(0);
-
-  auto *kernel_shape_attr = node->add_attribute();
-  kernel_shape_attr->set_name("kernel_shape");
-  for (auto i : kernel_shape) {
-    kernel_shape_attr->add_ints(i);
-  }
-
-  auto *pads_attr = node->add_attribute();
-  pads_attr->set_name("pads");
-  for (auto i : padding) {
-    pads_attr->add_ints(i);
-  }
-
-  auto *strides_attr = node->add_attribute();
-  strides_attr->set_name("strides");
-  for (auto i : strides) {
-    strides_attr->add_ints(i);
-  }
+  addNodeAttribute("auto_pad", "NOTSET", {id});
+  addNodeAttribute("storage_order", static_cast<int64_t>(0), {id});
+  addNodeAttribute("kernel_shape", kernel_shape, {id});
+  addNodeAttribute("pads", padding, {id});
+  addNodeAttribute("strides", strides, {id});
 
   onnx::shape_inference::InferShapes(model_);
 
@@ -504,8 +443,8 @@ TensorId BuilderImpl::maxpool(const std::vector<TensorId> &args,
 TensorId BuilderImpl::gemm(const std::vector<TensorId> &args,
                            float alpha,
                            float beta,
-                           int transA,
-                           int transB) {
+                           int64_t transA,
+                           int64_t transB) {
   check_arg_count(args, 3, "GEMM");
 
   auto id = getNextId();
@@ -516,21 +455,10 @@ TensorId BuilderImpl::gemm(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  auto *alpha_attr = node->add_attribute();
-  alpha_attr->set_name("alpha");
-  alpha_attr->set_f(alpha);
-
-  auto *beta_attr = node->add_attribute();
-  beta_attr->set_name("beta");
-  beta_attr->set_f(beta);
-
-  auto *transa_attr = node->add_attribute();
-  transa_attr->set_name("transA");
-  transa_attr->set_i(transA);
-
-  auto *transb_attr = node->add_attribute();
-  transb_attr->set_name("transB");
-  transb_attr->set_i(transB);
+  addNodeAttribute("alpha", alpha, {id});
+  addNodeAttribute("beta", beta, {id});
+  addNodeAttribute("transA", transA, {id});
+  addNodeAttribute("transB", transB, {id});
 
   onnx::shape_inference::InferShapes(model_);
 
@@ -552,6 +480,262 @@ TensorId BuilderImpl::matmul(const std::vector<TensorId> &args) {
   onnx::shape_inference::InferShapes(model_);
 
   return id;
+}
+
+bool BuilderImpl::findNodeProtoByOutputNamesImpl(
+    onnx::NodeProto *&out,
+    const std::set<TensorId> &nodeOutputNames) {
+  onnx::GraphProto *graph = model_.mutable_graph();
+  for (onnx::NodeProto &node : *graph->mutable_node()) {
+    // Don't check nodes which don't have the same number of outputs.
+    if (node.output_size() != nodeOutputNames.size()) {
+      continue;
+    }
+
+    // Match up all the outputs - note that output names are always unique so we
+    // don't need to worry about the order.
+    std::set<TensorId> unfoundNodeOutputNames = nodeOutputNames;
+    for (const std::string &output : node.output()) {
+      if (unfoundNodeOutputNames.count(output)) {
+        unfoundNodeOutputNames.erase(output);
+      }
+    }
+
+    // Return the node if we matched.
+    if (unfoundNodeOutputNames.size() == 0) {
+      out = &node;
+      return true;
+    }
+  }
+  return false;
+}
+
+onnx::NodeProto &BuilderImpl::findNodeProtoByOutputNames(
+    const std::set<TensorId> &nodeOutputNames) {
+  onnx::NodeProto *node = nullptr;
+  bool found            = findNodeProtoByOutputNamesImpl(node, nodeOutputNames);
+  if (!found) {
+    std::ostringstream stream;
+    std::copy(nodeOutputNames.begin(),
+              nodeOutputNames.end(),
+              std::ostream_iterator<TensorId>(stream, " ,"));
+    std::string s = stream.str();
+    s.erase(s.length() - 2);
+    throw error("Could not find a node with outputs " + s + ".");
+  }
+  return *node;
+}
+
+bool BuilderImpl::nodeHasAttributeImpl(onnx::AttributeProto *&out,
+                                       onnx::NodeProto &node,
+                                       const std::string &attributeName) {
+  // Finds an attribute in a node.
+  for (onnx::AttributeProto &attribute : *node.mutable_attribute()) {
+    if (attribute.name().compare(attributeName) == 0) {
+      out = &attribute;
+      return true;
+    }
+  }
+  return false;
+}
+
+bool BuilderImpl::nodeHasAttribute(const std::string &attributeName,
+                                   const std::set<TensorId> &nodeOutputNames) {
+  onnx::NodeProto &node      = findNodeProtoByOutputNames(nodeOutputNames);
+  onnx::AttributeProto *attr = nullptr; // unused
+  return nodeHasAttributeImpl(attr, node, attributeName);
+}
+
+onnx::AttributeProto &
+BuilderImpl::addNewAttributeToNode(const std::string &attributeName,
+                                   const std::set<TensorId> &nodeOutputNames) {
+  onnx::NodeProto &node      = findNodeProtoByOutputNames(nodeOutputNames);
+  onnx::AttributeProto *attr = nullptr;
+  bool hasAttribute          = nodeHasAttributeImpl(attr, node, attributeName);
+  if (hasAttribute) {
+    throw error("Node already has attribute " + attributeName + ".");
+  }
+  attr = node.add_attribute();
+  attr->set_name(attributeName);
+  return *attr;
+}
+
+void BuilderImpl::addNodeAttribute(const std::string &attributeName,
+                                   const int64_t &attributeValue,
+                                   const std::set<TensorId> &nodeOutputNames) {
+  onnx::AttributeProto &attr =
+      addNewAttributeToNode(attributeName, nodeOutputNames);
+  attr.set_type(onnx::AttributeProto::INT);
+  attr.set_i(attributeValue);
+}
+
+void BuilderImpl::addNodeAttribute(const std::string &attributeName,
+                                   const std::vector<int64_t> &attributeValue,
+                                   const std::set<TensorId> &nodeOutputNames) {
+  onnx::AttributeProto &attr =
+      addNewAttributeToNode(attributeName, nodeOutputNames);
+  attr.set_type(onnx::AttributeProto::INTS);
+  for (int64_t i : attributeValue) {
+    attr.add_ints(i);
+  }
+}
+
+void BuilderImpl::addNodeAttribute(const std::string &attributeName,
+                                   const float &attributeValue,
+                                   const std::set<TensorId> &nodeOutputNames) {
+  onnx::AttributeProto &attr =
+      addNewAttributeToNode(attributeName, nodeOutputNames);
+  attr.set_type(onnx::AttributeProto::FLOAT);
+  attr.set_f(attributeValue);
+}
+
+void BuilderImpl::addNodeAttribute(const std::string &attributeName,
+                                   const std::vector<float> &attributeValue,
+                                   const std::set<TensorId> &nodeOutputNames) {
+  onnx::AttributeProto &attr =
+      addNewAttributeToNode(attributeName, nodeOutputNames);
+  attr.set_type(onnx::AttributeProto::FLOATS);
+  for (float f : attributeValue) {
+    attr.add_floats(f);
+  }
+}
+
+void BuilderImpl::addNodeAttribute(const std::string &attributeName,
+                                   const std::string &attributeValue,
+                                   const std::set<TensorId> &nodeOutputNames) {
+  onnx::AttributeProto &attr =
+      addNewAttributeToNode(attributeName, nodeOutputNames);
+  attr.set_type(onnx::AttributeProto::STRING);
+  attr.set_s(attributeValue);
+}
+
+void BuilderImpl::addNodeAttribute(
+    const std::string &attributeName,
+    const std::vector<std::string> &attributeValue,
+    const std::set<TensorId> &nodeOutputNames) {
+  onnx::AttributeProto &attr =
+      addNewAttributeToNode(attributeName, nodeOutputNames);
+  attr.set_type(onnx::AttributeProto::STRINGS);
+  for (std::string s : attributeValue) {
+    attr.add_strings(s);
+  }
+}
+
+onnx::AttributeProto &
+BuilderImpl::getNodeAttribute(const std::string &attributeName,
+                              const std::set<TensorId> &nodeOutputNames) {
+  onnx::NodeProto &node      = findNodeProtoByOutputNames(nodeOutputNames);
+  onnx::AttributeProto *attr = nullptr;
+  bool hasAttribute          = nodeHasAttributeImpl(attr, node, attributeName);
+  if (!hasAttribute) {
+    throw error("Node does not have an attribute " + attributeName + ".");
+  }
+  return *attr;
+}
+
+int64_t
+BuilderImpl::getInt64NodeAttribute(const std::string &attributeName,
+                                   const std::set<TensorId> &nodeOutputNames) {
+  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != onnx::AttributeProto::INT) {
+    throw error("Attribute " + attributeName + " is not an integer.");
+  }
+  return attr.i();
+}
+
+std::vector<int64_t> BuilderImpl::getInt64VectorNodeAttribute(
+    const std::string &attributeName,
+    const std::set<TensorId> &nodeOutputNames) {
+  std::vector<int64_t> out;
+  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != onnx::AttributeProto::INTS) {
+    throw error("Attribute " + attributeName + " is not an integer vector.");
+  }
+  for (int64_t i : attr.ints()) {
+    out.push_back(i);
+  }
+  return out;
+}
+
+float BuilderImpl::getFloatNodeAttribute(
+    const std::string &attributeName,
+    const std::set<TensorId> &nodeOutputNames) {
+  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != onnx::AttributeProto::FLOAT) {
+    throw error("Attribute " + attributeName + " is not a float.");
+  }
+  return attr.f();
+}
+
+std::vector<float> BuilderImpl::getFloatVectorNodeAttribute(
+    const std::string &attributeName,
+    const std::set<TensorId> &nodeOutputNames) {
+  std::vector<float> out;
+  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != onnx::AttributeProto::FLOATS) {
+    throw error("Attribute " + attributeName + " is not a float vector.");
+  }
+  for (float f : attr.floats()) {
+    out.push_back(f);
+  }
+  return out;
+}
+
+std::string
+BuilderImpl::getStringNodeAttribute(const std::string &attributeName,
+                                    const std::set<TensorId> &nodeOutputNames) {
+  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != onnx::AttributeProto::STRING) {
+    throw error("Attribute " + attributeName + " is not a string.");
+  }
+  return attr.s();
+}
+
+std::vector<std::string> BuilderImpl::getStringVectorNodeAttribute(
+    const std::string &attributeName,
+    const std::set<TensorId> &nodeOutputNames) {
+  std::vector<std::string> out;
+  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != onnx::AttributeProto::STRINGS) {
+    throw error("Attribute " + attributeName + " is not a string vector.");
+  }
+  for (std::string s : attr.strings()) {
+    out.push_back(s);
+  }
+  return out;
+}
+
+void BuilderImpl::removeNodeAttribute(
+    const std::string &attributeName,
+    const std::set<TensorId> &nodeOutputNames) {
+  onnx::NodeProto &node = findNodeProtoByOutputNames(nodeOutputNames);
+  // To delete an attribute we must find the iterator for the attribute that we
+  // want to delete.
+  auto *attrs      = node.mutable_attribute();
+  auto attr_it     = attrs->begin();
+  auto attr_it_end = attrs->end();
+  for (; attr_it != attr_it_end; attr_it++) {
+    auto attr = *attr_it;
+    if (attr.name().compare(attributeName) == 0) {
+      break;
+    }
+  }
+  if (attr_it != attr_it_end) {
+    attrs->erase(attr_it);
+  } else {
+    throw error("Cannot remove attribute " + attributeName +
+                " as it does not exist.");
+  }
+}
+
+std::vector<std::string> BuilderImpl::getAllNodeAttributeNames(
+    const std::set<TensorId> &nodeOutputNames) {
+  onnx::NodeProto &node = findNodeProtoByOutputNames(nodeOutputNames);
+  std::vector<std::string> out;
+  for (auto attr : node.attribute()) {
+    out.push_back(attr.name());
+  }
+  return out;
 }
 
 std::string BuilderImpl::getModelProto() const {
@@ -617,7 +801,7 @@ int BuilderImpl::getInputTensorIndex(TensorId id) const {
     return index;
   } else {
     std::stringstream err;
-    err << id << " is not an input tesor. Must be "
+    err << id << " is not an input tensor. Must be "
         << getStrFromTensorIdVec(getInputTensorIds());
     throw error(err.str());
   }
@@ -639,7 +823,7 @@ int BuilderImpl::getOutputTensorIndex(TensorId id) const {
     return index;
   } else {
     std::stringstream err;
-    err << id << " is not an output tesor. Must be "
+    err << id << " is not an output tensor. Must be "
         << getStrFromTensorIdVec(getOutputTensorIds());
     throw error(err.str());
   }

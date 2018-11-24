@@ -481,10 +481,10 @@ public:
    * \return The name of the result tensor
    */
   TensorId convolution(const std::vector<TensorId> &args,
-                       const std::vector<int> strides,
-                       const std::vector<int> padding,
-                       const std::vector<int> dilation,
-                       int groups);
+                       const std::vector<int64_t> strides,
+                       const std::vector<int64_t> padding,
+                       const std::vector<int64_t> dilation,
+                       int64_t groups);
 
   /**
    * Add an averagepool to the model
@@ -500,9 +500,9 @@ public:
    * \return The name of the result tensor
    */
   TensorId averagepool(const std::vector<TensorId> &args,
-                       const std::vector<int> kernel_shape,
-                       const std::vector<int> strides,
-                       const std::vector<int> padding);
+                       const std::vector<int64_t> kernel_shape,
+                       const std::vector<int64_t> strides,
+                       const std::vector<int64_t> padding);
 
   /**
    * Add a maxpool to the model
@@ -518,9 +518,9 @@ public:
    * \return The name of the result tensor
    */
   TensorId maxpool(const std::vector<TensorId> &args,
-                   const std::vector<int> kernel_shape,
-                   const std::vector<int> strides,
-                   const std::vector<int> padding);
+                   const std::vector<int64_t> kernel_shape,
+                   const std::vector<int64_t> strides,
+                   const std::vector<int64_t> padding);
 
   /**
    * Add a GEMM operation to the model
@@ -537,8 +537,8 @@ public:
   TensorId gemm(const std::vector<TensorId> &args,
                 float alpha,
                 float beta,
-                int transA,
-                int transB);
+                int64_t transA,
+                int64_t transB);
 
   /**
    * Add a MatMul operation to the model
@@ -549,6 +549,218 @@ public:
    * \return The name of the result tensor
    */
   TensorId matmul(const std::vector<TensorId> &args);
+
+  /**
+   * Add an attribute to the ONNX node which is uniquely identified by the
+   * outputs.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute already exists.
+   *
+   * \param attributeName The name of the attribute to add.
+   * \param attributeValue An int64_t value of the attribute to add.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  void addNodeAttribute(const std::string &attributeName,
+                        const int64_t &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Add an attribute to the ONNX node which is uniquely identified by the
+   * outputs.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute already exists.
+   *
+   * \param attributeName The name of the attribute to add.
+   * \param attributeValue An std::vector<int64_t> value of the attribute to
+   *                       add.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  void addNodeAttribute(const std::string &attributeName,
+                        const std::vector<int64_t> &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Add an attribute to the ONNX node which is uniquely identified by the
+   * outputs.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute already exists.
+   *
+   * \param attributeName The name of the attribute to add.
+   * \param attributeValue A float value of the attribute to add.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  void addNodeAttribute(const std::string &attributeName,
+                        const float &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Add an attribute to the ONNX node which is uniquely identified by the
+   * outputs.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute already exists.
+   *
+   * \param attributeName The name of the attribute to add.
+   * \param attributeValue An std::vector<float> value of the attribute to add.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  void addNodeAttribute(const std::string &attributeName,
+                        const std::vector<float> &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Add an attribute to the ONNX node which is uniquely identified by the
+   * outputs.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute already exists.
+   *
+   * \param attributeName The name of the attribute to add.
+   * \param attributeValue A std::string value of the attribute to add.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  void addNodeAttribute(const std::string &attributeName,
+                        const std::string &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Add an attribute to the ONNX node which is uniquely identified by the
+   * outputs.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute already exists.
+   *
+   * \param attributeName The name of the attribute to add.
+   * \param attributeValue An std::vector<std::string> value of the attribute to
+   *                       add.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  void addNodeAttribute(const std::string &attributeName,
+                        const std::vector<std::string> &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Check whether the ONNX node has an attribute set.
+   * This functions will throw an exception if it can't find the unique
+   * node.
+   *
+   * \param attributeName The name of the attribute to find.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  bool nodeHasAttribute(const std::string &attributeName,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Get the int64_t value of the attribute for the ONNX node.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute does not exist or it has not been set to the
+   * int64_t type.
+   *
+   * \param attributeName The name of the attribute to find.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   * \return Value of the attribute
+   */
+  int64_t getInt64NodeAttribute(const std::string &attributeName,
+                                const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Get the std::vector<int64_t> value of the attribute for the ONNX node.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute does not exist or it has not been set to the
+   * std::vector<int64_t> type.
+   *
+   * \param attributeName The name of the attribute to find.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   * \return Value of the attribute
+   */
+  std::vector<int64_t>
+  getInt64VectorNodeAttribute(const std::string &attributeName,
+                              const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Get the float value of the attribute for the ONNX node.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute does not exist or it has not been set to the
+   * float type.
+   *
+   * \param attributeName The name of the attribute to find.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   * \return Value of the attribute
+   */
+  float getFloatNodeAttribute(const std::string &attributeName,
+                              const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Get the std::vector<float> value of the attribute for the ONNX node.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute does not exist.
+   *
+   * \param attributeName The name of the attribute to find.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   * \return Value of the attribute
+   */
+  std::vector<float>
+  getFloatVectorNodeAttribute(const std::string &attributeName,
+                              const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Get the std::string value of the attribute for the ONNX node.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute does not exist or it has not been set to the
+   * std::string type.
+   *
+   * \param attributeName The name of the attribute to find.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   * \return Value of the attribute
+   */
+  std::string getStringNodeAttribute(const std::string &attributeName,
+                                     const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Get the std::vector<std::string> value of the attribute for the ONNX node.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute does not exist.
+   *
+   * \param attributeName The name of the attribute to find.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   * \return Value of the attribute
+   */
+  std::vector<std::string>
+  getStringVectorNodeAttribute(const std::string &attributeName,
+                               const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Remove an attribute from the ONNX node.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute does not exist.
+   *
+   * \param attributeName The name of the attribute to find.
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  void removeNodeAttribute(const std::string &attributeName,
+                           const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Get all the attribute names from the ONNX node.
+   * This functions will throw an exception if it can't find the unique
+   * node.
+   *
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  std::vector<std::string>
+  getAllNodeAttributeNames(const std::set<TensorId> &nodeOutputNames);
 
   /**
    * Retrieve the ONNX serialized ModelProto

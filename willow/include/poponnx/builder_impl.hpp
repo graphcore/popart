@@ -65,28 +65,82 @@ public:
   TensorId logical_xor(const std::vector<TensorId> &args);
 
   TensorId convolution(const std::vector<TensorId> &args,
-                       const std::vector<int> strides,
-                       const std::vector<int> padding,
-                       const std::vector<int> dilation,
-                       int groups = 1);
+                       const std::vector<int64_t> strides,
+                       const std::vector<int64_t> padding,
+                       const std::vector<int64_t> dilation,
+                       int64_t groups = 1);
 
   TensorId averagepool(const std::vector<TensorId> &args,
-                       const std::vector<int> kernel_shape,
-                       const std::vector<int> strides,
-                       const std::vector<int> padding);
+                       const std::vector<int64_t> kernel_shape,
+                       const std::vector<int64_t> strides,
+                       const std::vector<int64_t> padding);
 
   TensorId maxpool(const std::vector<TensorId> &args,
-                   const std::vector<int> kernel_shape,
-                   const std::vector<int> strides,
-                   const std::vector<int> padding);
+                   const std::vector<int64_t> kernel_shape,
+                   const std::vector<int64_t> strides,
+                   const std::vector<int64_t> padding);
 
   TensorId gemm(const std::vector<TensorId> &args,
                 float alpha,
                 float beta,
-                int transA,
-                int transB);
+                int64_t transA,
+                int64_t transB);
 
   TensorId matmul(const std::vector<TensorId> &args);
+
+  void addNodeAttribute(const std::string &attributeName,
+                        const int64_t &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  void addNodeAttribute(const std::string &attributeName,
+                        const std::vector<int64_t> &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  void addNodeAttribute(const std::string &attributeName,
+                        const float &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  void addNodeAttribute(const std::string &attributeName,
+                        const std::vector<float> &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  void addNodeAttribute(const std::string &attributeName,
+                        const std::string &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  void addNodeAttribute(const std::string &attributeName,
+                        const std::vector<std::string> &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  bool nodeHasAttribute(const std::string &attributeName,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  int64_t getInt64NodeAttribute(const std::string &attributeName,
+                                const std::set<TensorId> &nodeOutputNames);
+
+  std::vector<int64_t>
+  getInt64VectorNodeAttribute(const std::string &attributeName,
+                              const std::set<TensorId> &nodeOutputNames);
+
+  float getFloatNodeAttribute(const std::string &attributeName,
+                              const std::set<TensorId> &nodeOutputNames);
+
+  std::vector<float>
+  getFloatVectorNodeAttribute(const std::string &attributeName,
+                              const std::set<TensorId> &nodeOutputNames);
+
+  std::string getStringNodeAttribute(const std::string &attributeName,
+                                     const std::set<TensorId> &nodeOutputNames);
+
+  std::vector<std::string>
+  getStringVectorNodeAttribute(const std::string &attributeName,
+                               const std::set<TensorId> &nodeOutputNames);
+
+  void removeNodeAttribute(const std::string &attributeName,
+                           const std::set<TensorId> &nodeOutputNames);
+
+  std::vector<std::string>
+  getAllNodeAttributeNames(const std::set<TensorId> &nodeOutputNames);
 
   std::string getModelProto() const;
 
@@ -116,6 +170,25 @@ private:
   int getOutputTensorIndex(TensorId id) const;
 
   const onnx::ValueInfoProto &getValueInfoProto(TensorId id) const;
+
+  bool
+  findNodeProtoByOutputNamesImpl(onnx::NodeProto *&out,
+                                 const std::set<TensorId> &nodeOutputNames);
+
+  onnx::NodeProto &
+  findNodeProtoByOutputNames(const std::set<TensorId> &nodeOutputNames);
+
+  bool nodeHasAttributeImpl(onnx::AttributeProto *&out,
+                            onnx::NodeProto &node,
+                            const std::string &attributeName);
+
+  onnx::AttributeProto &
+  addNewAttributeToNode(const std::string &attributeName,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  onnx::AttributeProto &
+  getNodeAttribute(const std::string &attributeName,
+                   const std::set<TensorId> &nodeOutputNames);
 
   uint64_t next_id_;
 

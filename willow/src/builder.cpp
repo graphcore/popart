@@ -189,37 +189,124 @@ TensorId Builder::logical_xor(const std::vector<TensorId> &args) {
 }
 
 TensorId Builder::convolution(const std::vector<TensorId> &args,
-                              const std::vector<int> strides,
-                              const std::vector<int> padding,
-                              const std::vector<int> dilation,
-                              int groups) {
+                              const std::vector<int64_t> strides,
+                              const std::vector<int64_t> padding,
+                              const std::vector<int64_t> dilation,
+                              int64_t groups) {
   return impl_->convolution(args, strides, padding, dilation, groups);
 }
 
 TensorId Builder::averagepool(const std::vector<TensorId> &args,
-                              const std::vector<int> kernel_shape,
-                              const std::vector<int> strides,
-                              const std::vector<int> padding) {
+                              const std::vector<int64_t> kernel_shape,
+                              const std::vector<int64_t> strides,
+                              const std::vector<int64_t> padding) {
   return impl_->averagepool(args, kernel_shape, strides, padding);
 }
 
 TensorId Builder::maxpool(const std::vector<TensorId> &args,
-                          const std::vector<int> kernel_shape,
-                          const std::vector<int> strides,
-                          const std::vector<int> padding) {
+                          const std::vector<int64_t> kernel_shape,
+                          const std::vector<int64_t> strides,
+                          const std::vector<int64_t> padding) {
   return impl_->maxpool(args, kernel_shape, strides, padding);
 }
 
 TensorId Builder::gemm(const std::vector<TensorId> &args,
                        float alpha,
                        float beta,
-                       int transA,
-                       int transB) {
+                       int64_t transA,
+                       int64_t transB) {
   return impl_->gemm(args, alpha, beta, transA, transB);
 }
 
 TensorId Builder::matmul(const std::vector<TensorId> &args) {
   return impl_->matmul(args);
+}
+
+void Builder::addNodeAttribute(const std::string &attributeName,
+                               const int64_t &attributeValue,
+                               const std::set<TensorId> &nodeOutputNames) {
+  impl_->addNodeAttribute(attributeName, attributeValue, nodeOutputNames);
+}
+
+void Builder::addNodeAttribute(const std::string &attributeName,
+                               const std::vector<int64_t> &attributeValue,
+                               const std::set<TensorId> &nodeOutputNames) {
+  impl_->addNodeAttribute(attributeName, attributeValue, nodeOutputNames);
+}
+
+void Builder::addNodeAttribute(const std::string &attributeName,
+                               const float &attributeValue,
+                               const std::set<TensorId> &nodeOutputNames) {
+  impl_->addNodeAttribute(attributeName, attributeValue, nodeOutputNames);
+}
+
+void Builder::addNodeAttribute(const std::string &attributeName,
+                               const std::vector<float> &attributeValue,
+                               const std::set<TensorId> &nodeOutputNames) {
+  impl_->addNodeAttribute(attributeName, attributeValue, nodeOutputNames);
+}
+
+void Builder::addNodeAttribute(const std::string &attributeName,
+                               const std::string &attributeValue,
+                               const std::set<TensorId> &nodeOutputNames) {
+  impl_->addNodeAttribute(attributeName, attributeValue, nodeOutputNames);
+}
+
+void Builder::addNodeAttribute(const std::string &attributeName,
+                               const std::vector<std::string> &attributeValue,
+                               const std::set<TensorId> &nodeOutputNames) {
+  impl_->addNodeAttribute(attributeName, attributeValue, nodeOutputNames);
+}
+
+bool Builder::nodeHasAttribute(const std::string &attributeName,
+                               const std::set<TensorId> &nodeOutputNames) {
+  return impl_->nodeHasAttribute(attributeName, nodeOutputNames);
+}
+
+int64_t
+Builder::getInt64NodeAttribute(const std::string &attributeName,
+                               const std::set<TensorId> &nodeOutputNames) {
+  return impl_->getInt64NodeAttribute(attributeName, nodeOutputNames);
+}
+
+std::vector<int64_t> Builder::getInt64VectorNodeAttribute(
+    const std::string &attributeName,
+    const std::set<TensorId> &nodeOutputNames) {
+  return impl_->getInt64VectorNodeAttribute(attributeName, nodeOutputNames);
+}
+
+float Builder::getFloatNodeAttribute(
+    const std::string &attributeName,
+    const std::set<TensorId> &nodeOutputNames) {
+  return impl_->getFloatNodeAttribute(attributeName, nodeOutputNames);
+}
+
+std::vector<float> Builder::getFloatVectorNodeAttribute(
+    const std::string &attributeName,
+    const std::set<TensorId> &nodeOutputNames) {
+  return impl_->getFloatVectorNodeAttribute(attributeName, nodeOutputNames);
+}
+
+std::string
+Builder::getStringNodeAttribute(const std::string &attributeName,
+                                const std::set<TensorId> &nodeOutputNames) {
+  return impl_->getStringNodeAttribute(attributeName, nodeOutputNames);
+}
+
+std::vector<std::string> Builder::getStringVectorNodeAttribute(
+    const std::string &attributeName,
+    const std::set<TensorId> &nodeOutputNames) {
+  return impl_->getStringVectorNodeAttribute(attributeName, nodeOutputNames);
+}
+
+void Builder::removeNodeAttribute(const std::string &attributeName,
+                                  const std::set<TensorId> &nodeOutputNames) {
+  impl_->removeNodeAttribute(attributeName, nodeOutputNames);
+}
+
+std::vector<std::string>
+Builder::getAllNodeAttributeNames(const std::set<TensorId> &nodeOutputNames) {
+  return impl_->getAllNodeAttributeNames(nodeOutputNames);
 }
 
 std::string Builder::getModelProto() const { return impl_->getModelProto(); }
