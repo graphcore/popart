@@ -13,6 +13,9 @@ namespace onnxutil {
 ConstVoidData getConstData(const onnx::TensorProto &tp);
 MutableVoidData getMutableData(onnx::TensorProto &tp);
 
+// Get an ONNX model protobuf, either from a file, or the string directly
+onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename);
+
 } // namespace onnxutil
 } // namespace willow
 

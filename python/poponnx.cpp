@@ -229,7 +229,9 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("resetHostWeights", &Session::resetHostWeights);
 
   py::class_<Builder>(m, "BuilderCore")
-      .def(py::init<>())
+      .def(py::init(&Builder::create))
+      .def(py::init(&Builder::createFromOnnxModel),
+           py::arg("modelProtoOrFilename"))
       .def("addInputTensor", &Builder::addInputTensor, py::arg("tensorInfo"))
       .def("addInitializedInputTensor",
            [](Builder &builder, py::array array) {
@@ -390,6 +392,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("getAllNodeAttributeNames",
            &Builder::getAllNodeAttributeNames,
            py::arg("nodeOutputNames"))
+      .def("getTensorTranslation", &Builder::getTensorTranslation)
       .def("getModelProto",
            [](const Builder &builder) {
              return py::bytes(builder.getModelProto());

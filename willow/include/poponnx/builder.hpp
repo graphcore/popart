@@ -16,8 +16,24 @@ class TensorInfo;
  * An interface for a Builder, used for creating ONNX graphs.
  */
 class Builder {
-public:
   Builder();
+
+public:
+  /**
+   * Create a builder for an ONNX model.
+   */
+  static std::unique_ptr<Builder> create();
+
+  /**
+   * Create a builder which loads a serialized ONNX ModelProto into the builder
+   * and validates it.
+   *
+   * \param modelProtoOrFilename Either an ONNX model protobuf, or the name of a
+   *                             file containing an ONNX model protobuf.
+   */
+  static std::unique_ptr<Builder>
+  createFromOnnxModel(const std::string &modelProtoOrFilename);
+
   ~Builder();
 
   /**
@@ -763,6 +779,15 @@ public:
   getAllNodeAttributeNames(const std::set<TensorId> &nodeOutputNames);
 
   /**
+   * When an ONNX model is loaded, all the tensor names are made unique. This
+   * function returns the translation table from the original tensor names to
+   * the unique names for all the tensors which were translated.
+   *
+   * \return Translation table
+   */
+  const std::map<std::string, TensorId> getTensorTranslation() const;
+
+  /**
    * Retrieve the ONNX serialized ModelProto
    *
    * \return A serialized ONNX ModelProto
@@ -792,6 +817,17 @@ public:
   std::vector<int64_t> getTensorShape(const TensorId id);
 
 private:
+  void configure();
+  void configure(const std::string &modelProtoOrFilename);
+
+  /**
+   * Load a serialized ONNX ModelProto into the builder and validate it.
+   *
+   * \param modelProtoOrFilename Either an ONNX model protobuf, or the name of a
+   *                             file containing an ONNX model protobuf.
+   */
+  void loadModelProto(const std::string &modelProtoOrFilename);
+
   std::unique_ptr<BuilderImpl> impl_;
 };
 

@@ -13,21 +13,7 @@
 
 namespace willow {
 
-// Get an ONNX model protobuf, either from a file, or the string directly
-onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename);
-
 Session::Session() {}
-
-onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename) {
-  onnx::ModelProto modelProto;
-  if (io::isRegularFile(modelProtoOrFilename)) {
-    modelProto = io::getModelFromFile(modelProtoOrFilename);
-  } else {
-    modelProto = io::getModelFromString(modelProtoOrFilename);
-  }
-
-  return modelProto;
-}
 
 void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
                                 const EarlyInfo &perk,
@@ -41,7 +27,7 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
 
   logging::session::trace("Session::configureFromOnnx");
 
-  auto modelProto = getModelProto(modelProtoOrFilename);
+  auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
 
   ir.prepare({modelProto,
               perk,
@@ -176,7 +162,7 @@ std::string Session::getExecutionReport() const {
 
 void Session::resetHostWeights(const std::string &modelProtoOrFilename) {
   logging::session::trace("Session::updateModel");
-  auto modelProto = getModelProto(modelProtoOrFilename);
+  auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
   ir.resetWeights(modelProto);
 }
 

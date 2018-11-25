@@ -3,8 +3,22 @@
 namespace willow {
 
 class TensorInfo;
-
 Builder::Builder() : impl_(new BuilderImpl()) {}
+
+void Builder::configure() { impl_->configure(); }
+
+std::unique_ptr<Builder> Builder::create() {
+  auto builder = std::unique_ptr<Builder>(new Builder());
+  builder->configure();
+  return builder;
+}
+
+std::unique_ptr<Builder>
+Builder::createFromOnnxModel(const std::string &modelProtoOrFilename) {
+  auto builder = create();
+  builder->loadModelProto(modelProtoOrFilename);
+  return builder;
+}
 
 Builder::~Builder() {}
 
@@ -307,6 +321,14 @@ void Builder::removeNodeAttribute(const std::string &attributeName,
 std::vector<std::string>
 Builder::getAllNodeAttributeNames(const std::set<TensorId> &nodeOutputNames) {
   return impl_->getAllNodeAttributeNames(nodeOutputNames);
+}
+
+void Builder::loadModelProto(const std::string &modelProtoOrFilename) {
+  impl_->loadModelProto(modelProtoOrFilename);
+}
+
+const std::map<std::string, TensorId> Builder::getTensorTranslation() const {
+  return impl_->getTensorTranslation();
 }
 
 std::string Builder::getModelProto() const { return impl_->getModelProto(); }

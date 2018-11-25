@@ -4,12 +4,20 @@
 
 #include <poponnx/builder_impl.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/onnxutil.hpp>
 #include <poponnx/tensordata.hpp>
 #include <poponnx/tensorinfo.hpp>
 
+#include <iostream>
+#include <onnx/checker.h>
 #include <onnx/shape_inference/implementation.h>
 
 namespace willow {
+
+// Supported IR version
+const static uint64_t irVersion = 3;
+// Supported operator set version
+const static int64_t operatorSetVersion = 9;
 
 static void check_arg_range(const std::vector<TensorId> &args,
                             int min,
@@ -91,10 +99,14 @@ TensorId BuilderImpl::getNextId() {
   return std::to_string(next_id_);
 }
 
-BuilderImpl::BuilderImpl() : next_id_(0) {
-  model_.set_ir_version(3);
+BuilderImpl::BuilderImpl() {}
+
+void BuilderImpl::configure() {
+  next_id_ = 0;
+  model_.set_ir_version(irVersion);
   auto *opset_import = model_.add_opset_import();
-  opset_import->set_version(9);
+  opset_import->set_version(operatorSetVersion);
+  model_.mutable_graph()->set_name("BuilderGraph");
 }
 
 TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo) {
@@ -736,6 +748,111 @@ std::vector<std::string> BuilderImpl::getAllNodeAttributeNames(
     out.push_back(attr.name());
   }
   return out;
+}
+
+// We need to make sure the name translation is unique between different model
+// imports.
+inline static void
+checkUnique(const std::string &name,
+            const std::map<std::string, TensorId> &tensorTranslation) {
+  if (tensorTranslation.count(name)) {
+    std::stringstream ss;
+    ss << "Tensor translation not unique. The name " << name
+       << " already appeared in a previously imported model.";
+    throw error(ss.str());
+  }
+}
+
+inline static const TensorId
+getTranslation(const std::string &name,
+               const std::map<std::string, TensorId> &tensorTranslation) {
+  auto it = tensorTranslation.find(name);
+  if (it == tensorTranslation.end()) {
+    std::stringstream ss;
+    ss << "Tensor " << name << " has not been translated.";
+    throw error(ss.str());
+  }
+  return it->second;
+}
+
+void BuilderImpl::uniquifyNames(onnx::GraphProto &graph) {
+  std::map<std::string, TensorId> currentTensorTranslation;
+  // First go through all the inputs.
+  for (onnx::ValueInfoProto &vip : *graph.mutable_input()) {
+    std::string oldName = vip.name();
+    checkUnique(oldName, tensorTranslation_);
+    auto newId                        = getNextId();
+    currentTensorTranslation[oldName] = newId;
+    vip.set_name(newId);
+  }
+
+  // Go through all the nodes.
+  for (onnx::NodeProto &node : *graph.mutable_node()) {
+    // Translates all the inputs - NodeProto should be topologically sorted, so
+    // we all node inputs have already been defined.
+    for (std::string &name : *node.mutable_input()) {
+      name = getTranslation(name, currentTensorTranslation);
+    }
+
+    // Translate all the outputs
+    for (std::string &name : *node.mutable_output()) {
+      auto newId                     = getNextId();
+      currentTensorTranslation[name] = newId;
+      name                           = newId;
+    }
+  }
+
+  // Go through all the graph outputs.
+  for (onnx::ValueInfoProto &vip : *graph.mutable_output()) {
+    std::string oldName = vip.name();
+    auto newId          = getTranslation(oldName, currentTensorTranslation);
+    vip.set_name(newId);
+  }
+
+  // Check the model is still valid after translation.
+  onnx::checker::check_model(model_);
+
+  // Merge currentTensorTranslation into tensorTranslation_.
+  tensorTranslation_.insert(currentTensorTranslation.begin(),
+                            currentTensorTranslation.end());
+}
+
+void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
+  // TODO T5564 - merge the models rather than override the existing one.
+  model_ = onnxutil::getModelProto(modelProtoOrFilename);
+
+  // Check imported model is valid.
+  onnx::checker::check_model(model_);
+
+  // Check the IR version.
+  if (model_.ir_version() != irVersion) {
+    std::stringstream ss;
+    ss << "Expecting ONNX IR version " << irVersion << ", but got "
+       << model_.ir_version() << ".";
+    throw error(ss.str());
+  }
+
+  // Check the opset versions.
+  for (auto opset : model_.opset_import()) {
+    if (opset.version() != operatorSetVersion) {
+      std::stringstream ss;
+      ss << "Expecting ONNX opset version " << operatorSetVersion
+         << ", but got " << opset.version() << ".";
+      throw error(ss.str());
+    }
+  }
+
+  if (model_.has_graph()) {
+    // We need to make sure all the names are and will be unique - translate
+    // them into TensorIDs.
+    onnx::GraphProto &graph = *model_.mutable_graph();
+    uniquifyNames(graph);
+  }
+}
+
+const std::map<std::string, TensorId>
+BuilderImpl::getTensorTranslation() const {
+  return tensorTranslation_;
 }
 
 std::string BuilderImpl::getModelProto() const {

@@ -1,4 +1,5 @@
 #include <poponnx/error.hpp>
+#include <poponnx/filereader.hpp>
 #include <poponnx/onnxutil.hpp>
 #include <poponnx/tensorinfo.hpp>
 
@@ -47,6 +48,17 @@ MutableVoidData getMutableData(onnx::TensorProto &tp) {
     }
   }
   return mv_data;
+}
+
+onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename) {
+  onnx::ModelProto modelProto;
+  if (io::isRegularFile(modelProtoOrFilename)) {
+    modelProto = io::getModelFromFile(modelProtoOrFilename);
+  } else {
+    modelProto = io::getModelFromString(modelProtoOrFilename);
+  }
+
+  return modelProto;
 }
 
 } // namespace onnxutil

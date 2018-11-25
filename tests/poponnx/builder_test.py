@@ -1,6 +1,13 @@
 import numpy as np
+import pytest
 import poponnx
 import pytest
+
+
+def getDevice():
+
+    # A cpu device
+    return poponnx.DeviceManager().createCpuDevice()
 
 
 def test_basic():
@@ -881,3 +888,140 @@ def test_get_attribute_wrong_type_string_vector():
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.getStringVectorNodeAttribute("test", set(o))
         assert (e_info.value.args[0].find("Node test is not a string vector."))
+
+
+def test_load_onnx_model_from_other_builder(tmpdir):
+
+    # Run the first builder
+    builder = poponnx.Builder()
+
+    shape = poponnx.TensorInfo("FLOAT", [2])
+
+    i1 = builder.addInputTensor(shape)
+    i2 = builder.addInputTensor(shape)
+    o = builder.add([i1, i2])
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    earlyInfo = poponnx.EarlyInfo()
+    earlyInfo.add(i1, shape)
+    earlyInfo.add(i2, shape)
+
+    dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
+    optimizer = poponnx.SGD(0.01)
+    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
+
+    session = poponnx.Session(
+        fnModel=proto,
+        earlyInfo=earlyInfo,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        outputdir=str(tmpdir))
+
+    session.setDevice(getDevice())
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    inputs = {
+        i1: np.array([1, 2], dtype=np.float32),
+        i2: np.array([3, 4], dtype=np.float32)
+    }
+    stepio = poponnx.PyStepIO(inputs, anchors)
+
+    session.infer(stepio)
+    assert (np.array_equal(anchors[o], [4, 6]))
+
+    # Run a builder that imports the model of the other builder and check the
+    # output is still the same
+    builder2 = poponnx.Builder(proto)
+    translation = builder2.getTensorTranslation()
+    print(translation)
+    earlyInfo = poponnx.EarlyInfo()
+    earlyInfo.add(translation[i1], shape)
+    earlyInfo.add(translation[i2], shape)
+
+    dataFlow = poponnx.DataFlow(1, 1, [translation[o]],
+                                poponnx.AnchorReturnType.ALL)
+    optimizer = poponnx.SGD(0.01)
+    losses = [poponnx.L1Loss(translation[o], "l1LossVal", 0.1)]
+
+    proto2 = builder.getModelProto()
+    session = poponnx.Session(
+        fnModel=proto2,
+        earlyInfo=earlyInfo,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        outputdir=str(tmpdir))
+
+    session.setDevice(getDevice())
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    inputs = {
+        translation[i1]: np.array([1, 2], dtype=np.float32),
+        translation[i2]: np.array([3, 4], dtype=np.float32)
+    }
+    stepio = poponnx.PyStepIO(inputs, anchors)
+
+    session.infer(stepio)
+
+    assert (np.array_equal(anchors[translation[o]], [4, 6]))
+
+
+def test_load_onnx_model_from_file(tmpdir):
+
+    # Create a builder, store the model in a file and load it into a different
+    # builder.
+    builder = poponnx.Builder()
+
+    shape = poponnx.TensorInfo("FLOAT", [2])
+
+    i1 = builder.addInputTensor(shape)
+    i2 = builder.addInputTensor(shape)
+    o = builder.add([i1, i2])
+    builder.addOutputTensor(o)
+    filename = tmpdir + "/model.onnx"
+    with open(filename, 'wb') as out:
+        out.write(builder.getModelProto())
+
+    builder2 = poponnx.Builder(str(filename))
+    translation = builder2.getTensorTranslation()
+    print(translation)
+    earlyInfo = poponnx.EarlyInfo()
+    earlyInfo.add(translation[i1], shape)
+    earlyInfo.add(translation[i2], shape)
+
+    dataFlow = poponnx.DataFlow(1, 1, [translation[o]],
+                                poponnx.AnchorReturnType.ALL)
+    optimizer = poponnx.SGD(0.01)
+    losses = [poponnx.L1Loss(translation[o], "l1LossVal", 0.1)]
+
+    proto = builder2.getModelProto()
+
+    session = poponnx.Session(
+        fnModel=proto,
+        earlyInfo=earlyInfo,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        outputdir=str(tmpdir))
+
+    session.setDevice(getDevice())
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    inputs = {
+        translation[i1]: np.array([1, 2], dtype=np.float32),
+        translation[i2]: np.array([3, 4], dtype=np.float32)
+    }
+    stepio = poponnx.PyStepIO(inputs, anchors)
+
+    session.infer(stepio)
+
+    assert (np.array_equal(anchors[translation[o]], [4, 6]))

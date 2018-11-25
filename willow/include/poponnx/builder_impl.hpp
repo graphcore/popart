@@ -4,6 +4,7 @@
 #include <poponnx/builder.hpp>
 #include <poponnx/names.hpp>
 
+#include <map>
 #include <string>
 
 namespace willow {
@@ -14,6 +15,8 @@ namespace willow {
 class BuilderImpl {
 public:
   BuilderImpl();
+
+  void configure();
 
   TensorId addInputTensor(const TensorInfo &tensorInfo);
   TensorId addInitializedInputTensor(const ConstVoidData &initData);
@@ -142,6 +145,10 @@ public:
   std::vector<std::string>
   getAllNodeAttributeNames(const std::set<TensorId> &nodeOutputNames);
 
+  void loadModelProto(const std::string &modelProtoOrFilename);
+
+  const std::map<std::string, TensorId> getTensorTranslation() const;
+
   std::string getModelProto() const;
 
   std::vector<TensorId> getInputTensorIds() const;
@@ -158,6 +165,8 @@ private:
   TensorId add_variadic_op(const std::vector<TensorId> &args, const char *name);
 
   TensorId getNextId();
+
+  void uniquifyNames(onnx::GraphProto &graph);
 
   bool isInputTensor(TensorId id) const;
 
@@ -190,9 +199,11 @@ private:
   getNodeAttribute(const std::string &attributeName,
                    const std::set<TensorId> &nodeOutputNames);
 
-  uint64_t next_id_;
+  uint64_t next_id_ = 0;
 
   onnx::ModelProto model_;
+
+  std::map<std::string, TensorId> tensorTranslation_;
 };
 
 } // namespace willow
