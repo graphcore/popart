@@ -2,9 +2,7 @@
 
 set -e
 
-source utils.sh
-
-# Should be run with the willow view directory as the CWD.
+# Should be run with the poponnx_view directory as the CWD.
 #
 # This downloads the snapshot of poplar found in tbe config
 # file, and unpacks it into ../external/poplar-install
@@ -14,13 +12,15 @@ if [ "$#" -ne 2 ]; then
   exit 1
 fi
 
-if [ ! -d willow ]; then
-  echo "CWD needs to be willow_view"
+if [ ! -d poponnx ]; then
+  echo "CWD needs to be poponnx_view"
   exit 1
 fi
 
+source ./poponnx/ci/utils.sh
+
 # Update this as necessary
-SOURCE_ID=`cat willow/poplar_version`
+SOURCE_ID=`cat poponnx/poplar_version`
 
 # Put release in the 'external' directory
 rm -rf ../external
@@ -28,7 +28,7 @@ mkdir -p ../external
 cd ../external
 
 # Download
-python ../willow_view/swdb_api/swdb_download_latest.py \
+python ../poponnx_view/swdb_api/swdb_download_latest.py \
        $1 ${SOURCE_ID} $2 poplar_installer.tar.gz > download.log
 
 # Extract

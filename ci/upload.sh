@@ -4,11 +4,11 @@ set -e
 
 if [ ! -f "view.txt" ]
 then
-  echo "Run 'bash willow/ci/test.sh' from the willow_view directory."
+  echo "Run 'bash poponnx/ci/test.sh' from the poponnx_view directory."
   exit 1
 fi
 
-source ./willow/ci/utils.sh
+source ./poponnx/ci/utils.sh
 
 if [ $# -gt 0 ]
 then
@@ -18,10 +18,10 @@ else
 fi
 
 # Use the virtualenv for building
-VE="${PWD}/../external/willow_build_python_${PYBIN}"
+VE="${PWD}/../external/poponnx_build_python_${PYBIN}"
 source ${VE}/bin/activate
 
-cd build/build/willow
+cd build/build/poponnx
 make package_and_move
 
 echo "Done"
