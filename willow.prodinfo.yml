@@ -3,7 +3,7 @@ type : tool
 title: ONNX libraries for poplar
 version: @VERSION@
 source_id: @SNAPSHOT@
-repo: @VIEW_REMOTE_URL@
+repo: git@phabricator.sourcevertex.net:diffusion/POPONNXVIEW/poponnx_view.git
 elements:
   - name: PopONNX framework (@OS_TYPE@)
     file: @PACKAGE_FILE_NAME@.tar.gz
