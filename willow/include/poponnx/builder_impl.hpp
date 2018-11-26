@@ -71,7 +71,8 @@ public:
                        const std::vector<int64_t> strides,
                        const std::vector<int64_t> padding,
                        const std::vector<int64_t> dilation,
-                       int64_t groups = 1);
+                       int64_t groups      = 1,
+                       bool cacheOperation = true);
 
   TensorId averagepool(const std::vector<TensorId> &args,
                        const std::vector<int64_t> kernel_shape,

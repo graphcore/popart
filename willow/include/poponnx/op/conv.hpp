@@ -10,6 +10,7 @@ public:
   ConvOp(const onnx::NodeProto &node, Ir *pir);
   int64_t nOutChans;
   int64_t group;
+  bool cacheOperation = true;
   // convenience functions:
   const Tensor *dataIn() const;
   const Tensor *weightsIn() const;

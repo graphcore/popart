@@ -2,15 +2,7 @@ import numpy as np
 import pytest
 import poponnx
 import torch
-
-
-def getDevice():
-
-    # A cpu device
-    return poponnx.DeviceManager().createCpuDevice()
-
-    # An ipu device
-    # return poponnx.DeviceManager().acquireAvaliableHwDevice()
+import test_util as tu
 
 
 def test_get_op_types():
@@ -51,7 +43,7 @@ def test_add(tmpdir):
         optimizer=optimizer,
         outputdir=str(tmpdir))
 
-    session.setDevice(getDevice())
+    session.setDevice(tu.get_poplar_cpu_device())
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -97,7 +89,7 @@ def test_convolution(tmpdir):
         optimizer=optimizer,
         outputdir=str(tmpdir))
 
-    session.setDevice(getDevice())
+    session.setDevice(tu.get_poplar_cpu_device())
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -153,7 +145,7 @@ def test_matmul(tmpdir):
         optimizer=optimizer,
         outputdir=str(tmpdir))
 
-    session.setDevice(getDevice())
+    session.setDevice(tu.get_poplar_cpu_device())
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -201,7 +193,7 @@ def test_averagepool(tmpdir):
         optimizer=optimizer,
         outputdir=str(tmpdir))
 
-    session.setDevice(getDevice())
+    session.setDevice(tu.get_poplar_cpu_device())
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -247,7 +239,7 @@ def test_maxpool(tmpdir):
         optimizer=optimizer,
         outputdir=str(tmpdir))
 
-    session.setDevice(getDevice())
+    session.setDevice(tu.get_poplar_cpu_device())
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()

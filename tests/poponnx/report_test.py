@@ -1,5 +1,6 @@
 import poponnx
 import pytest
+import test_util as tu
 
 
 def test_summary_report_before_execution(tmpdir):
@@ -30,7 +31,7 @@ def test_summary_report_before_execution(tmpdir):
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
-    session.setDevice(poponnx.DeviceManager().createCpuDevice())
+    session.setDevice(tu.get_poplar_cpu_device())
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         session.getSummaryReport()
@@ -67,7 +68,7 @@ def test_graph_report_before_execution(tmpdir):
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
-    session.setDevice(poponnx.DeviceManager().createCpuDevice())
+    session.setDevice(tu.get_poplar_cpu_device())
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         session.getGraphReport()
@@ -104,7 +105,7 @@ def test_execution_report_before_execution(tmpdir):
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
-    session.setDevice(poponnx.DeviceManager().createCpuDevice())
+    session.setDevice(tu.get_poplar_cpu_device())
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         session.getExecutionReport()
@@ -141,7 +142,7 @@ def test_summary_report_with_cpu_device(tmpdir):
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
-    session.setDevice(poponnx.DeviceManager().createCpuDevice())
+    session.setDevice(tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 
@@ -180,7 +181,7 @@ def test_graph_report_with_cpu_device(tmpdir):
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
-    session.setDevice(poponnx.DeviceManager().createCpuDevice())
+    session.setDevice(tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 
@@ -221,7 +222,7 @@ def test_execution_report_with_cpu_device(tmpdir):
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
-    session.setDevice(poponnx.DeviceManager().createCpuDevice())
+    session.setDevice(tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 

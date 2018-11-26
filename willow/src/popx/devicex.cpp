@@ -3,6 +3,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
+#include <poponnx/popx/convoptionsx.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/addbiasx.hpp>
 #include <poponnx/popx/op/addx.hpp>
@@ -211,14 +212,14 @@ Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
 
   // TODO (see T5100) : if inference, forward should be INFERENCE_FWD
   for (auto it : ir.getSessionOptions().convolutionOptions) {
-    fwdConvOptions.set(it.first, it.second);
-    bwdConvOptions.set(it.first, it.second);
-    wuConvOptions.set(it.first, it.second);
+    fwdConvOptions.options[it.first] = it.second;
+    bwdConvOptions.options[it.first] = it.second;
+    wuConvOptions.options[it.first]  = it.second;
   }
 
-  fwdConvOptions.set("pass", "TRAINING_FWD");
-  bwdConvOptions.set("pass", "TRAINING_BWD");
-  wuConvOptions.set("pass", "TRAINING_WU");
+  fwdConvOptions.options["pass"] = "TRAINING_FWD";
+  bwdConvOptions.options["pass"] = "TRAINING_BWD";
+  wuConvOptions.options["pass"]  = "TRAINING_WU";
 
   // Not sure what they options should be
   fwdMmOptions.set("fullyConnectedPass", "TRAINING_FWD");

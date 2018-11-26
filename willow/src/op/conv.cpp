@@ -44,6 +44,12 @@ void ConvOp::setup0() {
   // we could also use the value in nAtts, as
   // "group" is required property of the ONNX conv op
   group = nInChans / weightsIn()->info.dim(1);
+
+  // Get the attribute wether we should do graph caching for this convolution.
+  nAtts.setIfPresent(cacheOperation, "__cache_operation");
+  // Override if caching has been disabled for the whole graph.
+  const auto &sessionOptions = pir->getSessionOptions();
+  cacheOperation &= sessionOptions.enableConvolutionGraphCaching;
 }
 
 // ConvOp attributes only MIGHT contain the kernel shape,

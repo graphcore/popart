@@ -17,6 +17,10 @@ struct SessionOptions {
   /// Export 'dot' files of the forward and backward passes
   bool exportDot = false;
 
+  /// Controls caching of the convolution graphs. If set to false, then none of
+  ///  the convolutions will be cached.
+  bool enableConvolutionGraphCaching = true;
+
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;
 

@@ -197,6 +197,8 @@ PYBIND11_MODULE(poponnx_core, m) {
   py::class_<SessionOptions>(m, "SessionOptionsCore")
       .def(py::init<>())
       .def_readwrite("exportDot", &SessionOptions::exportDot)
+      .def_readwrite("enableConvolutionGraphCaching",
+                     &SessionOptions::enableConvolutionGraphCaching)
       .def_readwrite("engineOptions", &SessionOptions::engineOptions)
       .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
       .def_readwrite("reportOptions", &SessionOptions::reportOptions)
@@ -289,7 +291,8 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("strides"),
            py::arg("padding"),
            py::arg("dilation"),
-           py::arg("groups"))
+           py::arg("groups"),
+           py::arg("cacheOperation") = true)
       .def("averagepool",
            &Builder::averagepool,
            py::arg("args"),

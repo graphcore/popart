@@ -11,7 +11,9 @@
 
 #include <poponnx/device.hpp>
 #include <poponnx/devicemanager.hpp>
+#include <poponnx/popx/convoptionsx.hpp>
 #include <poponnx/popx/enigma.hpp>
+#include <poponnx/popx/graphcachex.hpp>
 #include <poponnx/pritask.hpp>
 
 namespace willow {
@@ -20,6 +22,7 @@ namespace popx {
 using PopStreamId = std::string;
 
 class Opx;
+class GraphCachex;
 
 class PopPrograms {
 
@@ -125,9 +128,10 @@ public:
   poplin::PlanningCache convCache;
   poplin::matmul::PlanningCache matmulCache;
 
-  // completed in Devicex constructor.
+  // Poplar level graph caching
+  GraphCachex graphCache;
 
-  poplar::OptionFlags fwdConvOptions, bwdConvOptions, wuConvOptions;
+  ConvOptions fwdConvOptions, bwdConvOptions, wuConvOptions;
   poplar::OptionFlags fwdMmOptions, bwdMmLhsOptions, bwdMmRhsOptions;
   poplar::OptionFlags engineOptions, reportOptions;
 

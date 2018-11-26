@@ -26,6 +26,8 @@ private:
 
 template <> void Attributes::setIfPresent(int64_t &, std::string s) const;
 
+template <> void Attributes::setIfPresent(bool &v, std::string s) const;
+
 template <>
 void Attributes::setIfPresent(std::vector<int64_t> &, std::string s) const;
 

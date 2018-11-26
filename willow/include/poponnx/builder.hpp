@@ -494,13 +494,20 @@ public:
    *                grouped [d1_begin, d2_begin, ..., d1_end, d2_end, ...]
    * \param dilation The dilation value along each spatial axis of the filter
    * \param groups The number of filter groups
+   * \param cacheOperation Whether to cache the part of the Poplar graph
+   *                              for this convolution (and any corresponding
+   *                              training pass convolutions). Caching of the
+   *                              Poplar graph will reduce the size of the
+   *                              program, but it will introduce extra copies
+   *                              to the execution program.
    * \return The name of the result tensor
    */
   TensorId convolution(const std::vector<TensorId> &args,
                        const std::vector<int64_t> strides,
                        const std::vector<int64_t> padding,
                        const std::vector<int64_t> dilation,
-                       int64_t groups);
+                       int64_t groups,
+                       bool cacheOperation);
 
   /**
    * Add an averagepool to the model

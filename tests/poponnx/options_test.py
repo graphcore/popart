@@ -1,6 +1,7 @@
 import numpy as np
 import poponnx
 import pytest
+import test_util as tu
 
 
 def test_create_empty_options():
@@ -19,6 +20,15 @@ def test_set_exportDot_flag():
     opts.exportDot = True
 
     assert (opts.exportDot == True)
+
+
+def test_set_enableConvolutionGraphCaching_flag():
+
+    opts = poponnx.SessionOptions()
+    assert (opts.enableConvolutionGraphCaching == True)
+
+    opts.enableConvolutionGraphCaching = False
+    assert (opts.enableConvolutionGraphCaching == False)
 
 
 def test_set_engineOptions():
@@ -89,7 +99,7 @@ def test_engine_options_passed_to_engine(tmpdir):
         outputdir=str(tmpdir),
         userOptions=opts)
 
-    session.setDevice(poponnx.DeviceManager().createCpuDevice())
+    session.setDevice(tu.get_poplar_cpu_device())
     session.initAnchorArrays()
 
     with pytest.raises(poponnx.poplar_exception) as e_info:
@@ -133,7 +143,7 @@ def test_convolution_options(tmpdir):
         outputdir=str(tmpdir),
         userOptions=opts)
 
-    session.setDevice(poponnx.DeviceManager().createCpuDevice())
+    session.setDevice(tu.get_poplar_cpu_device())
     anchors = session.initAnchorArrays()
 
     with pytest.raises(poponnx.poplibs_exception) as e_info:

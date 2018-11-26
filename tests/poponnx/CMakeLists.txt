@@ -40,6 +40,7 @@ function(add_poponnx_py_unit_test name)
 endfunction()
 
 add_poponnx_py_unit_test(builder_test)
+add_poponnx_py_unit_test(graph_caching_test)
 add_poponnx_py_unit_test(loader_test)
 add_poponnx_py_unit_test(net_test)
 add_poponnx_py_unit_test(operators_test)

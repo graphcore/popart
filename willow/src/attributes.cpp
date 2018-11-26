@@ -16,6 +16,13 @@ template <> void Attributes::setIfPresent(int64_t &v, std::string s) const {
   }
 }
 
+template <> void Attributes::setIfPresent(bool &v, std::string s) const {
+  auto found = att_map.find(s);
+  if (found != att_map.end()) {
+    v = found->second->i() != 0;
+  }
+}
+
 template <> void Attributes::setIfPresent(std::string &v, std::string s) const {
   auto found = att_map.find(s);
   if (found != att_map.end()) {

@@ -380,7 +380,8 @@ TensorId BuilderImpl::convolution(const std::vector<TensorId> &args,
                                   const std::vector<int64_t> strides,
                                   const std::vector<int64_t> padding,
                                   const std::vector<int64_t> dilation,
-                                  int64_t groups) {
+                                  int64_t groups,
+                                  bool cacheOperation) {
   check_arg_range(args, 2, 3, "Conv");
 
   auto id = getNextId();
@@ -396,6 +397,8 @@ TensorId BuilderImpl::convolution(const std::vector<TensorId> &args,
   addNodeAttribute("group", groups, {id});
   addNodeAttribute("pads", padding, {id});
   addNodeAttribute("strides", strides, {id});
+  addNodeAttribute(
+      "__cache_operation", static_cast<int64_t>(cacheOperation), {id});
 
   onnx::shape_inference::InferShapes(model_);
 

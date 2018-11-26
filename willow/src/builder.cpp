@@ -206,8 +206,10 @@ TensorId Builder::convolution(const std::vector<TensorId> &args,
                               const std::vector<int64_t> strides,
                               const std::vector<int64_t> padding,
                               const std::vector<int64_t> dilation,
-                              int64_t groups) {
-  return impl_->convolution(args, strides, padding, dilation, groups);
+                              int64_t groups,
+                              bool cacheOperation) {
+  return impl_->convolution(
+      args, strides, padding, dilation, groups, cacheOperation);
 }
 
 TensorId Builder::averagepool(const std::vector<TensorId> &args,
