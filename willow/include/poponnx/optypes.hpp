@@ -51,8 +51,14 @@ enum class OpType {
   SUM
 };
 
-using OpTypeMap =
-    std::map<std::pair<OpName, OpDomain>, std::pair<OpType, bool>>;
+struct OpTypeInfo {
+  OpTypeInfo(OpType t, bool p) : type(t), is_public(p) {}
+
+  OpType type;
+  bool is_public;
+};
+
+using OpTypeMap = std::map<std::pair<OpName, OpDomain>, OpTypeInfo>;
 
 class OpTypes {
 public:
