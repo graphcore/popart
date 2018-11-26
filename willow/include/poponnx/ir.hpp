@@ -5,6 +5,7 @@
 #include <onnx/onnx_pb.h>
 
 #include <map>
+
 #include <poponnx/attributes.hpp>
 #include <poponnx/dataflow.hpp>
 #include <poponnx/earlyinfo.hpp>
@@ -12,6 +13,7 @@
 #include <poponnx/names.hpp>
 #include <poponnx/optionflags.hpp>
 #include <poponnx/optypes.hpp>
+#include <poponnx/scheduler.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/vertex.hpp>
 
@@ -179,7 +181,7 @@ public:
   // destructor.
   virtual ~Op() = default;
 
-  std::string str() const;
+  std::string str() const final;
 
   // create an ActGrad (output) tensor
   // and wire it to this Op's output
@@ -238,6 +240,15 @@ public:
   // Why is this not constant? For one, nOps counter increments.
   virtual std::vector<std::unique_ptr<Op>> getGradOps();
 
+  // Can the input at inIndex be modified inplace to
+  // become the output at index 0?
+  // This function doesn't check for anchor violations
+  // or topological order violations
+  virtual bool hasInplaceVariant(InIndex) const;
+
+  // get the inplace Op described above
+  virtual std::unique_ptr<Op> getInplaceVariant(InIndex);
+
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
   // dT is the edge-gradient of a tensor T which was the input
   // to grad-op's non-grad partner. At what index was T the input
@@ -261,19 +272,20 @@ public:
   // the set passed in with number of paths to final loss
   bool readyToCreateGradients(std::set<int> &) const;
 
-  virtual void imposeTopoCons();
-
   // return a copy of self, similar to
   // cpppatterns.com/patterns/virtual-constructor.html
   // some people call it "covariant return type"
   // Throws error from this class if not implemented
   virtual std::unique_ptr<Op> clone() const;
 
-  virtual bool isLossOp() const;
-
   template <typename T> bool isConvertibleTo() const {
     return dynamic_cast<const T *>(this) != nullptr;
   }
+
+  // Is this Op a LossOp (nll, l1loss, etc)? Note:
+  // the Sum op which adds the losses together is not
+  // a LossOp (although its Phase is LOSS)
+  virtual bool isLossOp() const;
 
 private:
   void appendIO(std::stringstream &) const;
@@ -400,17 +412,27 @@ public:
   // optimizer stream tensors (they are not data)
   std::vector<Tensor *> dataStreamTensors() const;
 
-  // split ConvOp with bias into two Ops, a ConvOp
-  // followed by an x Op TODO : move to Patterns (see task T5098)
-  void splitConvBias();
   std::vector<Op *> opsOfType(OpType);
-  // this does not take into priority, simple topological sort
-  std::vector<Op *> getOpSchedule() const;
-  std::vector<Op *> getOpScheduleTilLoss() const;
+
+  // Essentially Kahn's algorithm (1962),
+  // https://en.wikipedia.org/wiki/Topological_sorting
+  // with additional constrains imposed through the input paramater.
+  // Ops which are ready to be inserted have an insertion "priority",
+  // set elsewhere.
+  std::vector<Op *> getOpSchedule(const OpsBeforeKey &) const;
+
+  // Do all the Ops with all their dependencies form a DAG?
+  bool isSchedulable(const OpsBeforeKey &) const;
+
+private:
+  std::unique_ptr<Scheduler> scheduler;
+
+public:
   OpId getOpsCounter() const;
   OpId getAndIncrOpsCounter();
   TensorId getFinalLossId() const;
-  Op *getFinalLossOp();
+  // The OpId if the Op which sums all loss values from the LossOps
+  OpId getFinalLossOpId() const;
   void exportDot(std::string dotfn) const;
   void eraseOp(OpId);
   Op *getOp(OpId);
@@ -428,6 +450,8 @@ public:
   // Accessors for the tensors
   const Tensors &getTensors() const { return tensors; }
   Tensors &getTensors() { return tensors; }
+
+  const std::map<OpId, std::unique_ptr<Op>> &getOps() const { return ops; }
 
   // Accessors for the dataFlow
   const DataFlow &getDataFlow() const { return dataFlow; }
@@ -457,10 +481,19 @@ private:
   // needed to arrive at the target
   void prune();
 
+  // The variable update ops must be final consumers of the
+  // input variable tensor. This function imposes these constraints
+  void setVarUpdateCons();
+
   void addRecompute();
-  // for all tensors in the forward pass, set the number of
-  // paths to the final loss (needed in the backwards pass)
+  // The number of paths to the loss is used in
+  // constructing the backwards pass. This functions set
+  // this number of all Ops and Tensors
   void setNPathsToLoss();
+
+  // For all vertices set the phase, and whether or not
+  // there is a path to vertex in whose phase is BWD.
+  void updateVertices();
 
   // modify the Ir using with pattern matching
   void applyPattern(const Pattern *);
@@ -519,7 +552,7 @@ private:
   // The update ops which must be run during a training pass
   std::set<Op *> trainTargetOps;
 
-  Op *finalLossOp{nullptr};
+  OpId finalLossId{-1000};
 
   // all in input() of all in node() of the onnx::Graph
   void setAllNodeInputsMap();

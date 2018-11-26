@@ -132,7 +132,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
     diff = compare_models(fnModel0, fnTorchModel, fnModel0, fnPopOnnxModel)
     assert (diff > 0.0)
 
-    print(f'Updating weights using model {fnTorchModel}')
+    print("Updating weights using model %s" % (fnTorchModel, ))
     # update the weights from model fnTorchModel
     session.resetHostWeights(fnTorchModel)
     session.weightsFromHost()

@@ -69,8 +69,9 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         # note this is not the batch size, it's the "step" size
         # (samples per step)
         batch_size=dataFeed.batchSize() * dataFeed.batchesPerStep(),
+        #single-threaded non-random data loading
         shuffle=False,
-        num_workers=3)
+        num_workers=0)
 
     deviceManager = poponnx.DeviceManager()
 
@@ -133,12 +134,17 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     print("Will generate graph pdfs for all of:")
     print(allDotPrefixes)
     import subprocess
-    for name in allDotPrefixes:
-        dotfile = os.path.join(outputdir, "%s.dot" % (name, ))
-        outputfile = os.path.join(outputdir, "%s.pdf" % (name, ))
-        #log = subprocess.call(["dot", "-T", "pdf", "-o", outputfile, dotfile])
-        #print("Exit status on `%s' was: %s" % (name, log))
-    print("torchWriter calling script complete.")
+    # set generateFromDots to True to
+    # generate pdf figures of the Ir. It
+    # requires the 'dot' program
+    generateFromDots = False
+    if generateFromDots:
+        for name in allDotPrefixes:
+            dotfile = os.path.join(outputdir, "%s.dot" % (name, ))
+            outputfile = os.path.join(outputdir, "%s.pdf" % (name, ))
+            log = subprocess.call(
+                ["dot", "-T", "pdf", "-o", outputfile, dotfile])
+            print("Exit status on `%s' was: %s" % (name, log))
 
     print("Setting device to IPU, and preparing it")
     session.setDevice(device)

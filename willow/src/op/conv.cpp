@@ -76,7 +76,12 @@ int64_t ConvOp::getNOutChans() const { return nOutChans; }
 ConvWeightsGradOp::ConvWeightsGradOp(ConvOp *op_)
     : Op({"ConvWeightsGrad", op_->pir, {}, getPoponnxDomain()}),
       cloneOfCreator(op_->clone()),
-      weightsInfo(op_->input.tensor(ConvOp::weightsInIndex())->info) {}
+      weightsInfo(op_->input.tensor(ConvOp::weightsInIndex())->info) {
+  // we want this Op to be executed early, so that the weight
+  // update can be performed as early as possible, thus making
+  // weight gradient tensors non-live. TODO : same for matmul
+  priority = std::numeric_limits<double>::max();
+}
 
 const std::vector<GradInOutMapper> &ConvWeightsGradOp::gradInputInfo() const {
   // input at index getGradConvolvedIn() (0) : gradient of output of conv

@@ -12,10 +12,6 @@ public:
   void setup() final;
   static int getVarIndex();
   static int getVarGradIndex();
-  // Impose the rule that:
-  // This must be the final operation on the Variable
-  // Tensor, as it is modified by this Op.
-  void imposeTopoCons() final;
 
 private:
   TensorId varId;

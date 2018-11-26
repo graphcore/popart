@@ -14,7 +14,7 @@ void PadOp::setup() {
 
   int tRank = input.tensor(0)->info.rank();
   if (pads.size() != 2 * tRank) {
-    throw error("Tensor rank not twice padding size");
+    throw error("Tensor rank not half padding size");
   }
 
   std::vector<int64_t> outShape(tRank, 0);

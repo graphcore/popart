@@ -11,6 +11,14 @@ public:
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
+  bool hasInplaceVariant(InIndex) const final;
+  std::unique_ptr<Op> getInplaceVariant(InIndex) final;
+};
+
+class ReluInplaceOp : public Op {
+public:
+  ReluInplaceOp(ReluOp *);
+  void setup() final;
 };
 
 // takes output of ReluOp as input and not the input of ReluOp

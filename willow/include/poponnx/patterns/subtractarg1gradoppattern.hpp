@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_SUBTRACT_ARG1_GRAD_PATTERN_HPP
 #define GUARD_NEURALNET_SUBTRACT_ARG1_GRAD_PATTERN_HPP
 
-#include <poponnx/patterns.hpp>
+#include <poponnx/patterns/patterns.hpp>
 
 namespace willow {
 
@@ -18,6 +18,9 @@ public:
   // apply the pattern,
   // changes the graph of the op
   void apply(Op *) const override;
+  // what phase should this Pattern run in? PRETOPOCONS, as it does not
+  // handle topological constraints.
+  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 
 } // namespace willow

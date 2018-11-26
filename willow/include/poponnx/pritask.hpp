@@ -19,10 +19,10 @@ public:
   std::vector<TaskId> dependsOn;
   std::function<void()> f;
   PriTask() = default;
-  PriTask(double p,
-          TaskId n,
-          const std::vector<TaskId> &d,
-          const std::function<void()> &f_);
+  PriTask(double priority,
+          TaskId,
+          const std::vector<TaskId> &deps,
+          const std::function<void()> &func);
 
   // remove dep from dependsOn.
   void removeDep(const TaskId &dep);
@@ -38,7 +38,8 @@ public:
 
   // return the tasks in an order of descending priority as far
   // as possible, subject to all dependencies being satisfied.
-  // the algorithm used is yet another variant of  Kahn's algorithm
+  // the algorithm used is a variant of  Kahn's algorithm.
+  // An error is thrown if not linearizable (schedulable).
   std::vector<PriTask> getLinearised() const;
   PriTasks() = default;
 };

@@ -49,6 +49,8 @@ class ConstVoidData;
 class MutableOutData;
 class StepIO;
 
+using OpsBeforeKey = std::map<Op *, std::vector<Op *>>;
+
 } // namespace willow
 
 #endif

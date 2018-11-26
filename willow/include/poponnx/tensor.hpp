@@ -58,27 +58,40 @@ public:
   // This functionality was added to support in-place
   // ops and weight update ops
   std::vector<Op *> consumersWhichTopoBefore(Op *op) const;
-  // There can be 1 op which MUST come after all others
-  // This is a "strong" or "global" topo constraint
-  void setTopoLast(Op *op);
-  void removeTopoLast();
-  bool hasTopoLast() const;
-  Op *getTopoLast() const;
-  // A weak topo constraint is a single edge in the
+
+  // walk through the topoCons map ( Op * -> std::vector<Op*> ),
+  // replacing all occurences of "beforeTransfer" with "afterTransfer",
+  // for both the keys and the values in the vectors
+  void takeTopoCons(Op *beforeTranfer, Op *afterTransfer);
+
+  // insert topological constraints such that
+  // "last" is guaranteed to run after all other consumers
+  void setTopoLast(Op *last);
+
+  // A topo constraint is a single edge in the
   // DAG, such as a->b in the above description.
-  // It just states the relative order between 2 ops
-  // Currently, we have no implementation of
-  // weak topo cons (they'll be needed for in-place
-  // though)
-  bool hasWeakTopoCons() const;
+  // It states the relative order between 2 ops.
+  void insertTopoCon(Op *before, Op *after);
+  // Are there any topo constraints?
+  bool hasTopoCons() const;
+
+  // remove all appearances of an op in topoCons
+  void removeTopoCons(Op *);
+
+  // append information about this object
   void append(std::stringstream &ss);
+
+  // transfer all consumer ops and their topological
+  // constraints to this Consumers
+  void takeFrom(Consumers &giver);
 
 private:
   // The number of times an Op consumes the Tensor which
-  // owns this Consumers
+  // owns these Consumers
   std::map<Op *, int> consumers_m;
-  Op *topoLast{nullptr};
   Tensor *tensorConsumed;
+  // map [key : values] where the values topo before the key
+  OpsBeforeKey topoCons;
 };
 
 class TensorTypeInfo {
@@ -100,6 +113,7 @@ public:
   // must be set after construction
   Tensor(TensorId, TensorType, Ir &);
   TensorId id;
+  std::string str() const final { return id; }
 
   // ActGrad, Variable, etc:
   TensorType tensorType() const;

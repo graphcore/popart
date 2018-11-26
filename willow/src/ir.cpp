@@ -2,7 +2,6 @@
 #include <array>
 #include <fstream>
 #include <map>
-#include <queue>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -15,7 +14,6 @@
 #include <poponnx/op/loss.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/optionflags.hpp>
-#include <poponnx/patterns.hpp>
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/scheduler.hpp>
 #include <poponnx/tensor.hpp>
@@ -23,9 +21,13 @@
 #include <poponnx/util.hpp>
 
 // The patterns
-#include <poponnx/convbiaspattern.hpp>
-#include <poponnx/optoidentitypattern.hpp>
-#include <poponnx/subtractarg1gradoppattern.hpp>
+#include <poponnx/patterns/convbias.hpp>
+#include <poponnx/patterns/inplace.hpp>
+#include <poponnx/patterns/optoidentitypattern.hpp>
+#include <poponnx/patterns/postnrepl.hpp>
+#include <poponnx/patterns/preunirepl.hpp>
+#include <poponnx/patterns/softmaxgraddirect.hpp>
+#include <poponnx/patterns/subtractarg1gradoppattern.hpp>
 
 // The layers:
 #include <poponnx/op/add.hpp>
@@ -142,12 +144,6 @@ void TensorIndexMap::setInfoIfIndex(const TensorInfo &info_, int index) {
 
 void Op::setup() { throw error("No setup() for " + op_type()); }
 
-std::vector<Op *> Ir::getOpSchedule() const {
-  // TODO - should the schedule be memoized
-  auto scheduler = Scheduler::getScheduler("default");
-  return scheduler->getSchedule(ops, tensors);
-}
-
 void Ir::exportDot(const std::string dotfn) const {
   std::ofstream strm;
   strm.open(dotfn, std::ios::out);
@@ -156,9 +152,12 @@ void Ir::exportDot(const std::string dotfn) const {
   }
   strm << "digraph net {\n";
   strm << "size=\"6,6\";\n";
-  for (auto &n : getOpSchedule()) {
-    strm << "n_" << n->id << " [shape= \"box\", label=\"" << n->op_type()
-         << "\"];\n";
+  // the position in the schedule at which an op runs
+  int scheduleIndex = 0;
+  for (auto &n : getOpSchedule({})) {
+    strm << "n_" << n->id << " [shape= \"box\", label=\"" << scheduleIndex
+         << '.' << ' ' << n->op_type() << "\"];\n";
+    ++scheduleIndex;
     for (auto &ind_ten : n->input.tensorMap()) {
       strm << ind_ten.second->id << " -> n_" << n->id << ';' << '\n';
     }
@@ -223,6 +222,10 @@ void TensorIndexMap::reset(int index, Tensor *ptensor) {
   auto previous = tensor_map[index];
 
   tensor_map[index] = ptensor;
+
+  if (indices_map.find(ptensor) == indices_map.end()) {
+    indices_map[ptensor] = {};
+  }
   indices_map[ptensor].push_back(index);
 
   // clean up previous tensor
@@ -412,6 +415,8 @@ Ir::Ir() : tensors(*this) {}
 
 void Ir::prepare(const IrBundle &gb) {
 
+  scheduler.reset(new Scheduler(this));
+
   tensors.setConstIds(gb.cTens);
   dataFlow    = gb.dataFlow;
   logdir      = io::getCanonicalDirName(gb.logdir);
@@ -429,6 +434,11 @@ void Ir::prepare(const IrBundle &gb) {
       tensors.addStream(id, info);
       optimizer->setTensorData(tensors.get(id));
     }
+  }
+
+  // A (jn) : No
+  else {
+    throw error("Optimizer required in IrBundle");
   }
 
   for (auto &l : gb.losses) {
@@ -499,6 +509,11 @@ void Ir::prepare(const IrBundle &gb) {
       break;
     }
 
+    case PatternType::INPLACE0: {
+      patterns.emplace_back(new Inplace0);
+      break;
+    }
+
     default:
       throw error("unrecognised PatternType");
     }
@@ -506,45 +521,66 @@ void Ir::prepare(const IrBundle &gb) {
 
   // construct the forward pass from ONNX,
   constructForwards();
-
   if (userOptions.exportDot) {
     exportDot(io::appendDirFn(logdir, "fwd0.dot"));
   }
 
-  // to developers: confirm fuctions like this
-  // should be to check that there
-  // are no contradictions in the user input, NOT
-  // in the implementation of the library willow.
+  // This function checks that there
+  // are no contradictions in the names provided
+  // as constant tensors
   confirmConstIds();
-
   for (auto &pattern : patterns) {
-    applyPattern(pattern.get());
+    if (pattern->phase() == PatternPhase::PRETOPOCONS) {
+      applyPattern(pattern.get());
+    }
   }
   growFinalLoss();
+  updateVertices();
   setNPathsToLoss();
-
   constructBackwards();
-  setNPathsToLoss();
+  updateVertices();
 
   // confirm that all the anchor names provided
   // are indeed real tensor names. This is a check
   // that the user has not provided incorrect names.
   // We allow duplicates.
   validateAnchors();
+  prune();
 
   for (auto &pattern : patterns) {
-    applyPattern(pattern.get());
+    if (pattern->phase() == PatternPhase::PRETOPOCONS) {
+      applyPattern(pattern.get());
+    }
   }
-  setNPathsToLoss();
 
-  prune();
+  updateVertices();
   addRecompute();
-  prune();
+  updateVertices();
 
+  // we now start applying topological constraints between
+  // Ops directly. First, we ensure that the VarUpdate Ops
+  // are the final consumers of the Variable tensors
+  setVarUpdateCons();
   if (userOptions.exportDot) {
     exportDot(io::appendDirFn(logdir, "fwdBwd0.dot"));
   }
 
+  prune();
+
+  // Now, we apply the Patterns which can handle and create
+  // topological constaints. Currently, this is only one
+  // in-placing Pattern.
+  for (auto &pattern : patterns) {
+    if (pattern->phase() == PatternPhase::WITHTOPOCONS) {
+      applyPattern(pattern.get());
+    }
+  }
+
+  updateVertices();
+
+  if (userOptions.exportDot) {
+    exportDot(io::appendDirFn(logdir, "fwdBwd1.dot"));
+  }
   std::stringstream ss2;
   append(ss2);
   logging::ir::info(ss2.str());
@@ -565,16 +601,6 @@ void Ir::resetWeights(const onnx::ModelProto &modelProto) {
     }
     tensor->tensorData()->resetData(initializer);
   }
-}
-
-std::vector<Op *> Ir::getOpScheduleTilLoss() const {
-  std::vector<Op *> opsTowardsLoss;
-  for (auto op : getOpSchedule()) {
-    if (op->nPathsToLoss() > 0) {
-      opsTowardsLoss.push_back(op);
-    }
-  }
-  return opsTowardsLoss;
 }
 
 std::vector<std::set<Op *>>
@@ -637,7 +663,12 @@ int64_t Op::memOfOutputs() const {
 }
 
 void Ir::addRecompute() {
-  std::vector<Op *> fwdOps = getOpScheduleTilLoss();
+  std::vector<Op *> fwdOps;
+  for (auto op : getOpSchedule({})) {
+    if (op->isFwdToBwd()) {
+      fwdOps.push_back(op);
+    }
+  }
 
   // liveSets[i] : set of ops whose outputs have not all
   // been consumed by their (non-grad) consumers just after
@@ -748,7 +779,7 @@ Op *Ir::growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints) {
     Tensor *oriTen = ind_ten.second;
     Tensor *recTen = tensors.get(getRecompId(oriTen->id));
     for (auto &con : oriTen->consumers.getOps()) {
-      if (con->nPathsToLoss() == 0) {
+      if (con->getPhase() == Phase::BWD) {
         for (auto &con_ind_ten : con->input.tensorMap()) {
           int gradIn = con_ind_ten.first;
           if (con_ind_ten.second == oriTen) {
@@ -885,6 +916,11 @@ void Ir::prune() {
       Tensor *tensor = index_tensor.second;
       tensor->consumers.decrement(op);
     }
+    // remove the topo cons which might exist
+    for (auto tensor_indices : op->input.indicesMap()) {
+      Tensor *tensor = tensor_indices.first;
+      tensor->consumers.removeTopoCons(op);
+    }
     // and delete the Op
     ops.erase(op->id);
   }
@@ -894,12 +930,17 @@ void Ir::prune() {
   }
 }
 
+// TODO T5616
+// this iteration is potentially dangerous.
+// An Op in v_ops might
+// be deleted by an earlier Op.
 void Ir::applyPattern(const Pattern *pattern) {
   std::vector<Op *> v_ops;
   for (auto &id_op : ops) {
     v_ops.push_back(id_op.second.get());
   }
   for (auto op : v_ops) {
+    // T5616: This op might have deleted at this point!
     if (pattern->matches(op)) {
       if (!pattern->touchesAnchored(op)) {
         pattern->apply(op);
@@ -945,7 +986,12 @@ void Ir::constructForwards() {
   auto &onnxGraph = onnxModel.graph();
   auto &onnxNodes = onnxGraph.node();
   for (const auto &node : onnxNodes) {
-    growFromNode(node);
+    Op *op = growFromNode(node);
+
+    // Not necessary to set the phase here (it will be done in
+    // updateVertices). To check our logic though, we do this here
+    // and then check that we agree in updateVertices()
+    op->setPhase(Phase::FWD);
   }
 }
 
@@ -1147,9 +1193,6 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
   return gradOps;
 }
 
-// the default is that there are no topo cons
-void Op::imposeTopoCons() {}
-
 int Op::getNonGradInIndex(int gradOpOutIndex) const {
   return gradOutToNonGradIn().at(gradOpOutIndex);
 }
@@ -1168,6 +1211,12 @@ const std::vector<GradInOutMapper> &Op::gradInputInfo() const {
 
 const std::map<int, int> &Op::gradOutToNonGradIn() const {
   throw error("Op " + op_type() + " cannot get `grad out to non grad in'");
+}
+
+bool Op::hasInplaceVariant(InIndex) const { return false; }
+
+std::unique_ptr<Op> Op::getInplaceVariant(InIndex) {
+  throw error("Op " + op_type() + "cannot get an inplace Op");
 }
 
 bool Op::readyToCreateGradients(std::set<int> &s) const {
@@ -1226,10 +1275,191 @@ std::vector<Op *> OpGradRegistry::popComplete() {
 // The cost of maintaining irHasModeified is non-trivial
 // and would require runtime overhead, for now I'm not
 // going to implement it.
-void Ir::setNPathsToLoss() {
 
-  // Note: if the finalLossOp has been optimised out,
-  // this function cannot be used.
+void Ir::updateVertices() {
+
+  // for all vertices (Ops and Tensors),
+  // what phase is it is (FWD, BWD, LOSS) ?
+
+  // for all vertices (Ops and Tensors),
+  // is there a path to a BWD vertex? (YES, NO)
+
+  // determine the phase of all Ops
+  for (auto &id_op : ops) {
+    Op *op = id_op.second.get();
+
+    // There are several potential sources of information
+    // that can be used to determine the Phase of an Op.
+    // We gather all such sources, and confirm that they
+    // are in agreement.
+    std::vector<Phase> suggestions;
+
+    // source 1 : if the op already has a
+    // phase set, it should be the same.
+    Phase prevPhase = op->getPhase();
+    if (prevPhase != Phase::UNDEFINED) {
+      suggestions.push_back(prevPhase);
+    }
+
+    // source 2 : if a producer of the op's
+    // inputs is BWD, then it must be BWD too.
+    for (auto tensor_indices : op->input.indicesMap()) {
+      Tensor *inTensor = tensor_indices.first;
+      if (inTensor->hasProducer()) {
+        if (inTensor->getProducer()->getPhase() == Phase::BWD) {
+          suggestions.push_back(Phase::BWD);
+        }
+      }
+    }
+
+    // source 3 : if any of the consumers of the
+    // op's outputs is FWD, then it must be FWD too.
+    for (auto tensor_indices : op->output.indicesMap()) {
+      Tensor *outTensor = tensor_indices.first;
+      for (Op *consumer : outTensor->consumers.getOps()) {
+        if (consumer->getPhase() == Phase::FWD) {
+          suggestions.push_back(Phase::FWD);
+        }
+      }
+    }
+
+    // source 4 : if the op is inherits from the
+    // LossOp base class, then it is LOSS.
+    if (op->isLossOp()) {
+      suggestions.push_back(Phase::LOSS);
+    }
+
+    // source 5: if the output is "finalLoss", then it is LOSS
+    if (op->output.hasIndex(0) && op->output.id(0) == getFinalLossId()) {
+      suggestions.push_back(Phase::LOSS);
+    }
+
+    // source 6 : if an input or an output has a gradient
+    // or recompute prefix, it is BWD
+    std::vector<TensorId> insNouts;
+    for (auto tensor_indices : op->output.indicesMap()) {
+      insNouts.push_back(tensor_indices.first->id);
+    }
+    for (auto tensor_indices : op->input.indicesMap()) {
+      insNouts.push_back(tensor_indices.first->id);
+    }
+    for (auto id : insNouts) {
+      if ((id.find(reservedGradientPrefix()) != std::string::npos) ||
+          (id.find(reservedRecomputePrefix()) != std::string::npos)) {
+        suggestions.push_back(Phase::BWD);
+      }
+    }
+
+    if (suggestions.size() == 0) {
+      // no suggestions, it must a FWD (assuming all
+      // tensors in backwards hace a gradient or
+      // recompute prefix in them)
+      op->setPhase(Phase::FWD);
+    } else {
+      for (auto phase : suggestions) {
+        if (phase != suggestions[0]) {
+          std::stringstream ss;
+          ss << "failed to determine phase of " + op->str() +
+                    ", which has suggested phases: ";
+          std::vector<std::string> suggestions_s;
+          for (auto &x : suggestions) {
+            suggestions_s.push_back(phase_names().at(x));
+          }
+          appendSequence(ss, suggestions_s);
+          throw error(ss.str());
+        }
+      }
+      op->setPhase(suggestions[0]);
+    }
+  }
+
+  // now we set the tensor phases,
+  // as the phase of the earliest
+  // consumer or producer
+  for (auto &id_op : ops) {
+    Op *op = id_op.second.get();
+    std::vector<Tensor *> associated_tensors;
+
+    for (auto tensor_indices : op->output.indicesMap()) {
+      associated_tensors.push_back(tensor_indices.first);
+    }
+
+    for (auto tensor_indices : op->input.indicesMap()) {
+      associated_tensors.push_back(tensor_indices.first);
+    }
+
+    for (Tensor *tensor : associated_tensors) {
+      auto ass_ops = tensor->associatedOps();
+      if (ass_ops.size() == 0) {
+        throw error("Tensor " + tensor->id + " has no associated ops");
+      }
+      // starting with the latest of the phases (BWD),
+      // update whenever an associated op is in an earlier phase.
+      tensor->setPhase(Phase::BWD);
+      for (auto ass_op : ass_ops) {
+        // FWD is the earliest Phase, if any associated Op is
+        // in the FWD phase then so is this tensor
+        if (ass_op->getPhase() == Phase::FWD) {
+          tensor->setPhase(Phase::FWD);
+        } else if (ass_op->getPhase() == Phase::LOSS &&
+                   tensor->getPhase() == Phase::BWD) {
+          tensor->setPhase(Phase::LOSS);
+        }
+      }
+    }
+  }
+
+  // All phases now set.
+
+  // Now, set if there is a path to a bwd op.
+  // we do this starting from scratch.
+
+  std::set<Op *> s_op_front;
+  std::vector<Op *> v_op_front;
+
+  // initialising all Ops and Vertices to NO
+  for (auto &id_op : ops) {
+    Op *op = id_op.second.get();
+    op->setPathToBwd(PathToBwd::NO);
+    for (auto &tensor_indices : op->input.indicesMap()) {
+      tensor_indices.first->setPathToBwd(PathToBwd::NO);
+    }
+    for (auto &tensor_indices : op->output.indicesMap()) {
+      tensor_indices.first->setPathToBwd(PathToBwd::NO);
+    }
+  }
+
+  // initialising all backward and loss
+  // Ops to YES, adding them to the front
+  for (auto &id_op : ops) {
+    Op *op = id_op.second.get();
+    if (op->getPhase() == Phase::BWD || op->getPhase() == Phase::LOSS) {
+      op->setPathToBwd(PathToBwd::YES);
+      v_op_front.push_back(op);
+      s_op_front.insert(op);
+    }
+  }
+
+  while (v_op_front.size() != 0) {
+    Op *onPath = v_op_front.back();
+    v_op_front.resize(v_op_front.size() - 1);
+    s_op_front.erase(onPath);
+    for (auto &tensor_indices : onPath->input.indicesMap()) {
+      Tensor *tOnPath = tensor_indices.first;
+      tOnPath->setPathToBwd(PathToBwd::YES);
+      if (tOnPath->hasProducer()) {
+        Op *producer = tOnPath->getProducer();
+        producer->setPathToBwd(PathToBwd::YES);
+        if (s_op_front.count(producer) == 0) {
+          s_op_front.insert(producer);
+          v_op_front.push_back(producer);
+        }
+      }
+    }
+  }
+}
+
+void Ir::setNPathsToLoss() {
 
   // initialize number of paths for
   // all Ops and Tensors to loss to be zero
@@ -1244,8 +1474,17 @@ void Ir::setNPathsToLoss() {
     }
   }
 
-  std::vector<Op *> opFront{getFinalLossOp()};
-  std::set<Op *> opsSeen{getFinalLossOp()};
+  // Note: if the finalLossOp has been optimised out,
+  // this function cannot be used.
+  auto found = ops.find(finalLossId);
+  if (found == ops.end()) {
+    throw error(
+        "The final loss op does not exist, it may have been optimized away");
+  }
+  Op *finalLossOp = found->second.get();
+
+  std::vector<Op *> opFront{finalLossOp};
+  std::set<Op *> opsSeen{finalLossOp};
   std::set<Tensor *> tensorsSeen{};
   while (opFront.size() != 0) {
     Op *op = opFront.back();
@@ -1331,6 +1570,11 @@ void Ir::constructBackwards() {
       // register the link between sumOp's output and nongrad
       Op *sumOp = growGradSumOp(nongrad, egrads);
 
+      // Not necessary to set the phase here (it will be done in
+      // updateVertices). To check our logic though, we do this here
+      // and then check that we agree in updateVertices()
+      sumOp->setPhase(Phase::BWD);
+
       switch (nongrad->tensorType()) {
 
       // if sumOp creates the gradient of an activation tensor,
@@ -1367,7 +1611,7 @@ void Ir::constructBackwards() {
     }
   }
 
-  // add weight ops (ignoring momentum's for now)
+  // add weight update ops (we are ignoring momentums for now)
   for (auto &varId : tensors.getIds(TensorType::Variable)) {
     growVarUpdateOp(varId);
   }
@@ -1386,9 +1630,43 @@ Op *Ir::growVarUpdateOp(TensorId varId) {
   connectOutputs(OutputVecWrapper(outputs), opId);
   op->setup();
 
+  // Not necessary to set the phase here (it will be done in
+  // updateVertices). To check our logic though, we do this here
+  // and then check that we agree in updateVertices()
+  op->setPhase(Phase::BWD);
+
   trainTargetOps.insert(op);
 
   return op;
+}
+
+void Ir::setVarUpdateCons() {
+
+  for (auto &varId : tensors.getIds(TensorType::Variable)) {
+    // impose the constraint that the varupdates
+    // are the last consumers of the vars
+    Tensor *var = tensors.get(varId);
+
+    // we first determine which consumer
+    // is the updater. It is the void Op
+    Op *varupdater = nullptr;
+    for (Op *consumer : var->consumers.getOps()) {
+      if (consumer->output.n() == 0) {
+        varupdater = consumer;
+        break;
+      }
+    }
+    if (varupdater == nullptr) {
+      throw error("Failed to determine updater of " + var->id);
+    }
+
+    // set the constraints
+    for (Op *consumer : var->consumers.getOps()) {
+      if (consumer != varupdater) {
+        var->consumers.insertTopoCon(consumer, varupdater);
+      }
+    }
+  }
 }
 
 const std::map<int, Tensor *> &TensorIndexMap::tensorMap() const {
@@ -1429,13 +1707,6 @@ Op *Ir::growFromNode(const Node &node) {
   return fromNodeOp;
 }
 
-Op *Ir::getFinalLossOp() {
-  if (finalLossOp == nullptr) {
-    throw error("ILE : final loss not set");
-  }
-  return finalLossOp;
-}
-
 void Ir::growFinalLoss() {
   std::vector<Op *> lossOps;
   // first, grow each of the individual losses from the user
@@ -1446,6 +1717,11 @@ void Ir::growFinalLoss() {
     Op *lossOp = ops[opId].get();
     lossOps.push_back(lossOp);
     lossOp->setup();
+
+    // Not necessary to set the phase here (it will be done in
+    // updateVertices). To check our logic though, we do this here
+    // and then check that we agree in updateVertices()
+    lossOp->setPhase(Phase::LOSS);
   }
 
   // now growing the FINAL loss (sum of individual losses)
@@ -1460,8 +1736,13 @@ void Ir::growFinalLoss() {
   std::vector<TensorId> outputs{getFinalLossId()};
   connectInputs(InputVecWrapper(inputs), opId);
   connectOutputs(OutputVecWrapper(outputs), opId);
-  finalLossOp = ops[opId].get();
-  finalLossOp->setup();
+  ops[opId]->setup();
+
+  // Not necessary to set the phase here (it will be done in
+  // updateVertices). To check our logic though, we do this here
+  // and then check that we agree in updateVertices()
+  ops[opId]->setPhase(Phase::LOSS);
+  finalLossId = opId;
 }
 
 TensorId Ir::getFinalLossId() const { return "finalLoss"; }
@@ -1480,7 +1761,6 @@ template <typename T> void Ir::connectInputs(const T &inContainer, OpId opId) {
       }
     }
   }
-  op->imposeTopoCons();
 }
 
 void Ir::connectInputsFromInputMapWrapper(const InputMapWrapper &in, OpId id) {
@@ -1503,11 +1783,7 @@ void Ir::connectOutputs(const T &outContainer, OpId opId) {
 }
 
 void Ir::append(std::stringstream &ss) {
-  //  for (auto &id_op : ops) {
-  //    id_op.second->append(ss);
-  //  }
-
-  for (auto &op : getOpSchedule()) {
+  for (auto &op : getOpSchedule({})) {
     op->append(ss);
   }
 }
@@ -1633,6 +1909,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
     throw error("Loss Ops not constructable from Node");
 
   case OpType::ADDBIAS:
+  case OpType::RELUINPLACE:
   case OpType::SOFTMAXGRADDIRECT:
     throw error("Non-ONNX Ops not constructable from Node");
 
@@ -1646,7 +1923,7 @@ std::string Op::str() const {
 
 std::vector<GradNonGradPair> Ir::growLossGradients() {
   std::vector<GradNonGradPair> pairs;
-  for (auto &t_inds : getFinalLossOp()->input.indicesMap()) {
+  for (auto &t_inds : getOp(finalLossId)->input.indicesMap()) {
     Tensor *t  = t_inds.first;
     Op *lossOp = t->getProducer();
     for (Op *gradOp : growGradOps(lossOp)) {
@@ -1656,12 +1933,31 @@ std::vector<GradNonGradPair> Ir::growLossGradients() {
   return pairs;
 }
 
+OpId Ir::getFinalLossOpId() const { return finalLossId; }
+
 Op *Ir::getOp(OpId opId) {
   auto found = ops.find(opId);
   if (found == ops.end()) {
     throw error("No Op `" + std::to_string(opId) + "'");
   }
   return found->second.get();
+}
+
+std::vector<Op *> Ir::getOpSchedule(const OpsBeforeKey &gCons) const {
+  auto sorted = scheduler->getPartialOpSchedule(gCons);
+  if (sorted.size() != ops.size()) {
+    throw error("failure to sort topologically in getOpSchedule");
+  }
+  return sorted;
+}
+
+// Are the Ops with all the dependencies a DAG?
+bool Ir::isSchedulable(const OpsBeforeKey &gCons) const {
+  auto sorted = scheduler->getPartialOpSchedule(gCons);
+  if (sorted.size() != ops.size()) {
+    return false;
+  }
+  return true;
 }
 
 } // namespace willow

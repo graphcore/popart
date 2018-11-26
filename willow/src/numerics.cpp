@@ -14,9 +14,6 @@ NumericsReport::NumericsReport(std::string AStarts, // A starts
                                std::string BEnds    // B ends
 ) {
 
-  //   auto varTensors =
-  //   willowNet.getIr()->tensors.getIds(TensorType::Variable);
-
   std::vector<std::string> fns{AStarts, AEnds, BStarts, BEnds};
   for (auto fn : fns) {
     io::confirmRegularFile(fn);
@@ -86,9 +83,7 @@ NumericsReport::NumericsReport(std::string AStarts, // A starts
 std::string NumericsReport::fullReport() const {
   std::stringstream ss;
   for (const auto &id_report : reports) {
-    ss << '\n'
-       << id_report.first << " : \n"
-       << "     " << id_report.second;
+    ss << '\n' << id_report.first << " : \n" << id_report.second;
   }
   return ss.str();
 }

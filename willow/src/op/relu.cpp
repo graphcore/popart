@@ -3,8 +3,26 @@
 
 namespace willow {
 
+bool ReluOp::hasInplaceVariant(InIndex) const {
+  // we could throw an error if the indices are not both zero,
+  // but we assume that both the in and out indices are zero.
+  // In which case, the ReluOp does have an inplace variant.
+  return true;
+}
+
+ReluInplaceOp::ReluInplaceOp(ReluOp *relu_op)
+    : Op({"ReluInplace", relu_op->pir, {}, getPoponnxDomain()}) {}
+
+void ReluInplaceOp::setup() {
+  // no output, nothing to setup
+}
+
 std::unique_ptr<Op> ReluOp::clone() const {
   return std::unique_ptr<Op>(new ReluOp(*this));
+}
+
+std::unique_ptr<Op> ReluOp::getInplaceVariant(InIndex) {
+  return std::unique_ptr<Op>(new ReluInplaceOp(this));
 }
 
 ReluOp::ReluOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}

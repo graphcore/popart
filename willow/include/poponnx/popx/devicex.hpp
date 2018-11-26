@@ -222,18 +222,11 @@ private:
   // Call hostStreamToHost in all the Tensors in pir->dataFlow.anchors()
   void anchorsHostFromHostStreams(const StepIO &stepio);
 
-  // Helper function to compare program fragment indices
-  static bool compareProgramFragmentIndex(PopPrograms::ProgramFragmentIndex a,
-                                          PopPrograms::ProgramFragmentIndex b);
+  // Helper function to find the program fragment index an op/tensor belongs in
+  static PopPrograms::ProgramFragmentIndex programFragmentIndex(Vertex *vertex);
 
-  // Helper function to compare ops based on the program fragment they belong to
-  static bool compareProgramFragmentOps(Op *a, Op *b);
-
-  // Helper function to find the program fragment index an op belongs in
-  static PopPrograms::ProgramFragmentIndex opProgramFragmentIndex(Op *op);
-
-  // Helper function to find the program fragment an op belongs in
-  poplar::program::Sequence &opProgramFragment(Op *op);
+  // Helper function to find the program fragment an op/tensor belongs in
+  poplar::program::Sequence &programFragment(Vertex *);
 };
 
 } // namespace popx

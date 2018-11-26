@@ -2,10 +2,9 @@
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/pad.hpp>
 #include <poponnx/op/reducesum.hpp>
+#include <poponnx/patterns/optoidentitypattern.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
-
-#include <poponnx/optoidentitypattern.hpp>
 
 namespace willow {
 

@@ -15,10 +15,6 @@ void VarUpdateOp::setup() {
   // no output tensors to set shapes for
 }
 
-void VarUpdateOp::imposeTopoCons() {
-  input.tensor(getVarIndex())->consumers.setTopoLast(this);
-}
-
 int VarUpdateOp::getVarIndex() { return 0; }
 
 int VarUpdateOp::getVarGradIndex() { return 1; }

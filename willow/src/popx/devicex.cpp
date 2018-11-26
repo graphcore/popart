@@ -1,10 +1,16 @@
 #include <algorithm>
-
+#include <cctype>
+#include <poplin/codelets.hpp>
+#include <popnn/codelets.hpp>
+#include <popops/codelets.hpp>
+#include <poputil/exceptions.hpp>
+#include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
 #include <poponnx/popx/convoptionsx.hpp>
 #include <poponnx/popx/devicex.hpp>
+#include <poponnx/popx/devicexmanager.hpp>
 #include <poponnx/popx/op/addbiasx.hpp>
 #include <poponnx/popx/op/addx.hpp>
 #include <poponnx/popx/op/averagepoolx.hpp>
@@ -28,16 +34,6 @@
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
 #include <poponnx/util.hpp>
-
-#include <poplin/codelets.hpp>
-#include <popnn/codelets.hpp>
-#include <popops/codelets.hpp>
-#include <poputil/exceptions.hpp>
-
-#include <poponnx/devicemanager.hpp>
-#include <poponnx/popx/devicexmanager.hpp>
-
-#include <cctype>
 
 namespace willow {
 namespace popx {
@@ -203,7 +199,7 @@ poplar::Graph &Devicex::graph() { return *pGraph; }
 Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
     : willow::Device(ir), tensors(ir) {
 
-  // do not like the dyanmic cast, is there a better way....
+  // do not like the dynamic cast, is there a better way....
   popDevice = dynamic_cast<DevicexInfo &>(deviceInfo).getDevice();
 
   if (!popDevice.attach()) {
@@ -543,6 +539,10 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new ReluOpx(op, this));
   }
 
+  case OpType::RELUINPLACE: {
+    return std::unique_ptr<Opx>(new ReluInplaceOpx(op, this));
+  }
+
   case OpType::RELUGRAD: {
     return std::unique_ptr<Opx>(new ReluGradOpx(op, this));
   }
@@ -724,21 +724,28 @@ PriTask Devicex::streamToHostTask(Tensor *tensor) {
   };
 }
 
-// Helper function to find the program fragment index an op belongs in
-PopPrograms::ProgramFragmentIndex Devicex::opProgramFragmentIndex(Op *op) {
-  if (op->nPathsToLoss() == 0) {
+PopPrograms::ProgramFragmentIndex
+Devicex::programFragmentIndex(Vertex *vertex) {
+  switch (vertex->getPhase()) {
+  case Phase::BWD: {
     return PopPrograms::ProgramFragmentIndex::BACKWARD;
-  } else if (op->isLossOp() || (op == op->pir->getFinalLossOp()) ||
-             (op->output.id(0) == op->pir->getFinalLossId())) {
+  }
+  case Phase::LOSS: {
     return PopPrograms::ProgramFragmentIndex::LOSS;
-  } else {
+  }
+  case Phase::FWD: {
     return PopPrograms::ProgramFragmentIndex::FORWARD;
+  }
+  case Phase::UNDEFINED: {
+    throw error("Failed to determine fragment of vertex " + vertex->str() +
+                " from UNDEFINED phase. ");
+  }
+  default: { throw error("Failed to determine fragment of vertex"); }
   }
 }
 
-// Helper function to find the program fragment an op belongs in
-poplar::program::Sequence &Devicex::opProgramFragment(Op *op) {
-  return progs.programFragment(opProgramFragmentIndex(op));
+poplar::program::Sequence &Devicex::programFragment(Vertex *vertex) {
+  return progs.programFragment(programFragmentIndex(vertex));
 }
 
 PriTask Devicex::opTask(Op *op, double priority) {
@@ -764,27 +771,13 @@ PriTask Devicex::opTask(Op *op, double priority) {
 
   auto f = [op, opx, this]() {
     logging::devicex::debug("Creating output tensors for " + opx->op_p->str());
-
-    opx->grow(opProgramFragment(op));
+    opx->grow(programFragment(op));
   };
-
   return {priority, opTaskId(op), deps, f};
 }
 
 OpxAndInIndex::OpxAndInIndex(int conIndex_, Opx *opx_)
     : index(conIndex_), opx(opx_) {}
-
-// Helper function to compare program fragment indices
-bool Devicex::compareProgramFragmentIndex(PopPrograms::ProgramFragmentIndex a,
-                                          PopPrograms::ProgramFragmentIndex b) {
-  return static_cast<int>(a) < static_cast<int>(b);
-}
-
-// Helper function to compare ops based on the program fragment they belong to
-bool Devicex::compareProgramFragmentOps(Op *a, Op *b) {
-  return compareProgramFragmentIndex(opProgramFragmentIndex(a),
-                                     opProgramFragmentIndex(b));
-}
 
 // go all the way to creating the engine and connecting streams
 void Devicex::prepare() {
@@ -794,8 +787,8 @@ void Devicex::prepare() {
   poplin::addCodelets(graph());
   popnn::addCodelets(graph());
 
-  // create a Opx for every Op
-  for (Op *op : ir().getOpSchedule()) {
+  // create an Opx for every Op
+  for (Op *op : ir().getOpSchedule({})) {
     opxs[op->id] = createOpx(op);
   }
 
@@ -838,14 +831,7 @@ void Devicex::prepare() {
     tasks.add(streamToHostTask(ir().getTensors().get(id)));
     // 2
     auto *tensor = ir().getTensors().get(id);
-    auto ops     = tensor->associatedOps();
-    auto earliest_op =
-        std::min_element(ops.begin(), ops.end(), compareProgramFragmentOps);
-    if (earliest_op == ops.end()) {
-      logging::devicex::warn("Tensor {} has no consumers", tensor->id);
-    } else {
-      tasks.add(toHostTask(tensor, opProgramFragment(*earliest_op)));
-    }
+    tasks.add(toHostTask(tensor, programFragment(tensor)));
   }
 
   // create Program to write optimizer tensors to device
@@ -855,16 +841,9 @@ void Devicex::prepare() {
 
   // making the network!
   for (Tensor *tensor : ir().dataStreamTensors()) {
-    auto ops = tensor->associatedOps();
-    auto earliest_op =
-        std::min_element(ops.begin(), ops.end(), compareProgramFragmentOps);
-    if (earliest_op == ops.end()) {
-      logging::devicex::warn("Tensor {} has no consumers", tensor->id);
-    } else {
-      tasks.add(fromHostTask(tensor, opProgramFragment(*earliest_op)));
-    }
+    tasks.add(fromHostTask(tensor, programFragment(tensor)));
   }
-  std::vector<Op *> ops = ir().getOpSchedule();
+  std::vector<Op *> ops = ir().getOpSchedule({});
   double priority       = 0.;
   for (int i = 0; i < ops.size(); ++i) {
     Op *op = ops[i];

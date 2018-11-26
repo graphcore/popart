@@ -2,10 +2,9 @@
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/reducesum.hpp>
 #include <poponnx/op/subtract.hpp>
+#include <poponnx/patterns/subtractarg1gradoppattern.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
-
-#include <poponnx/subtractarg1gradoppattern.hpp>
 
 namespace willow {
 

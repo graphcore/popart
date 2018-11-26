@@ -66,6 +66,8 @@ OpTypes::OpTypes() {
       {std::make_pair("Relu", ai_onnx), OpTypeInfo(OpType::RELU, true)},
       {std::make_pair("ReluGrad", ai_graphcore),
        OpTypeInfo(OpType::RELUGRAD, false)},
+      {std::make_pair("ReluInplace", ai_graphcore),
+       OpTypeInfo(OpType::RELUINPLACE, false)},
       {std::make_pair("Sub", ai_onnx), OpTypeInfo(OpType::SUBTRACT, true)},
       {std::make_pair("SubtractArg0Grad", ai_graphcore),
        OpTypeInfo(OpType::SUBTRACTARG0GRAD, false)},

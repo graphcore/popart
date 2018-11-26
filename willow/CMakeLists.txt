@@ -7,24 +7,28 @@ option(POPLAR_BACKEND "Build Poplar backend (Graphcore IPU)" ON)
 include_directories("include")
 
 
+# core poponnx source files:
 file(GLOB sources src/*cpp)
 file(GLOB op_sources src/op/*cpp)
+file(GLOB patterns_sources src/patterns/*cpp)
+# poplar backend op specifc:
+file(GLOB x_sources src/popx/*cpp)
 file(GLOB opx_sources src/popx/op/*cpp)
 
+set(sources ${sources} ${op_sources} ${patterns_sources})
 if (POPLAR_BACKEND)
 message( STATUS "Building WITH Poplar IPU backend")
 find_package(Poplar REQUIRED)
 # concatenate poplar backend sources to the list of files to compile
-file(GLOB pop_backend_sources src/popx/*cpp)
-set(sources ${sources} ${pop_backend_sources})
+set(sources ${sources} ${x_sources} ${opx_sources})
 else()
 message( STATUS "Building WITHOUT Poplar IPU backend")
 endif()
 
 find_package(Spdlog REQUIRED)
-message(STATUS "spdlog at " ${Spdlog_INCLUDE_DIRS})
+message(STATUS "Spdlog include dir is " ${Spdlog_INCLUDE_DIRS})
 
-add_library(poponnx SHARED ${sources} ${op_sources} ${opx_sources})
+add_library(poponnx SHARED ${sources})
 
 target_include_directories (poponnx SYSTEM PUBLIC
     # if the model checker is used: ${ONNX_UTILS_INCLUDE_DIR}

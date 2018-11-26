@@ -1,12 +1,13 @@
 #ifndef GUARD_NEURALNET_REDUCE_SUM_TO_IDENTITY_PATTERN_HPP
 #define GUARD_NEURALNET_REDUCE_SUM_TO_IDENTITY_PATTERN_HPP
 
-#include <poponnx/patterns.hpp>
+#include <poponnx/patterns/patterns.hpp>
 
 namespace willow {
 
-// Replace ops that return their only input unchanged with an identity op
-class OpToIdentityPattern : public Pattern {
+// Replace reduce sum operations that reduce over no axes, or reduce on an axis
+// of size 1, with an identity operation
+class ReduceSumToIdentity : public Pattern {
 public:
   // Does op at the root of the
   // pattern make a match?
@@ -18,6 +19,7 @@ public:
   // apply the pattern,
   // changes the graph of the op
   void apply(Op *) const override;
+  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 } // namespace willow
 

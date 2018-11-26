@@ -14,6 +14,12 @@ ReluOpx::ReluOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
+ReluInplaceOpx::ReluInplaceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  if (op->opType != OpType::RELUINPLACE) {
+    throw error("cannot create ReluInplaceOpx from " + op->op_type());
+  }
+}
+
 void ReluOpx::grow(poplar::program::Sequence &prog) const {
 
   // There is only an in-place poplibs Relu. We therefore clone first,
@@ -26,7 +32,17 @@ void ReluOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(0), outTensor);
 }
 
+void ReluInplaceOpx::grow(poplar::program::Sequence &prog) const {
+  // apply the inplace relu,
+  popnn::nonLinearityInPlace(
+      graph(), popnn::NonLinearityType::RELU, get(inId(0)), prog, inId(0));
+}
+
 ReluOp *ReluOpx::getReluOp() const { return dynamic_cast<ReluOp *>(op_p); }
+
+ReluInplaceOp *ReluInplaceOpx::getReluInplaceOp() const {
+  return dynamic_cast<ReluInplaceOp *>(op_p);
+}
 
 ReluGradOpx::ReluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (op->opType != OpType::RELUGRAD) {

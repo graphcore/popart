@@ -34,7 +34,7 @@ losses = [
     poponnx.L1Loss("preProbSquared", "l1LossVal", 0.01)
 ]
 willowOptPasses = [
-    "PreUniRepl", "PostNRepl", "SoftmaxGradDirect", "OpToIdentity"
+    "PreUniRepl", "PostNRepl", "SoftmaxGradDirect", "OpToIdentity", "Inplace0"
 ]
 
 
