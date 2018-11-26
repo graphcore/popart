@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <queue>
+
 #include <poponnx/ir.hpp>
 #include <poponnx/scheduler.hpp>
 #include <poponnx/tensor.hpp>

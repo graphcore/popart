@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <cstring>
+
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/onnxutil.hpp>
