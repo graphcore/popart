@@ -90,7 +90,14 @@ public:
                 int64_t transA,
                 int64_t transB);
 
+  TensorId pad(const std::vector<TensorId> &args,
+               std::string mode,
+               const std::vector<int64_t> pads,
+               float value);
+
   TensorId matmul(const std::vector<TensorId> &args);
+
+  TensorId softmax(const std::vector<TensorId> &args);
 
   void addNodeAttribute(const std::string &attributeName,
                         const int64_t &attributeValue,

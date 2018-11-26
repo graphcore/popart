@@ -564,6 +564,23 @@ public:
                 int64_t transB);
 
   /**
+   * Add a Pad operation to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Pad
+   *
+   * \param args Tensor T
+   * \param mode Three modes: constant, reflect, edge
+   * \param pads The input padding in each of the spatial directions. This
+   *                has the same format as the ONNX node, where the values are
+   *                grouped [d1_begin, d2_begin, ..., d1_end, d2_end, ...]
+   * \param value The value to be filled
+   */
+  TensorId pad(const std::vector<TensorId> &args,
+               std::string mode,
+               const std::vector<int64_t> pads,
+               float value);
+
+  /**
    * Add a MatMul operation to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MatMul
@@ -572,6 +589,17 @@ public:
    * \return The name of the result tensor
    */
   TensorId matmul(const std::vector<TensorId> &args);
+
+  /**
+   * Add a Softmax operation to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softmax
+   *
+   * \param args Tensor T
+   * \return The name of the result tensor
+   *
+   */
+  TensorId softmax(const std::vector<TensorId> &args);
 
   /**
    * Add an attribute to the ONNX node which is uniquely identified by the

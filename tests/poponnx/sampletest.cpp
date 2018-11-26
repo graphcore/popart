@@ -1,7 +1,7 @@
 #define BOOST_TEST_MODULE SampleTest
 
-#include <poplar/Tensor.hpp>
 #include <boost/test/unit_test.hpp>
+#include <poplar/Tensor.hpp>
 
 BOOST_AUTO_TEST_CASE(Sample) {
   // Checks everything is set up correctly.

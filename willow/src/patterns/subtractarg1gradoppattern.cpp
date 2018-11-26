@@ -20,12 +20,13 @@ void SubtractArg1GradOpPattern::apply(Op *op) const {
   auto input_tensor  = op->input.tensor(0);
   auto output_tensor = op->output.tensor(0);
   auto ir            = op->pir;
-  auto negate_op     = make_unique<NegateOp>(
-      OpConstructorBundle{"Negate", ir, {}, getPoponnxDomain()});
+  auto negate_op     = make_unique<NegateOp>(OpConstructorBundle{
+      "Negate", ir, {}, getOpTypes().getDomain(OpType::NEGATE)});
   auto axes =
       npReductionAxis(output_tensor->info.shape(), input_tensor->info.shape());
   auto reducesum_op = make_unique<ReduceSumOp>(
-      OpConstructorBundle{"ReduceSum", ir, {}, getPoponnxDomain()},
+      OpConstructorBundle{
+          "ReduceSum", ir, {}, getOpTypes().getDomain(OpType::REDUCESUM)},
       axes,
       false);
 

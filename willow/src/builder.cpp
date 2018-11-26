@@ -234,8 +234,19 @@ TensorId Builder::gemm(const std::vector<TensorId> &args,
   return impl_->gemm(args, alpha, beta, transA, transB);
 }
 
+TensorId Builder::pad(const std::vector<TensorId> &args,
+                      std::string mode,
+                      const std::vector<int64_t> pads,
+                      float value) {
+  return impl_->pad(args, mode, pads, value);
+}
+
 TensorId Builder::matmul(const std::vector<TensorId> &args) {
   return impl_->matmul(args);
+}
+
+TensorId Builder::softmax(const std::vector<TensorId> &args) {
+  return impl_->softmax(args);
 }
 
 void Builder::addNodeAttribute(const std::string &attributeName,

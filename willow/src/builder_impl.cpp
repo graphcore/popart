@@ -480,6 +480,29 @@ TensorId BuilderImpl::gemm(const std::vector<TensorId> &args,
   return id;
 }
 
+TensorId BuilderImpl::pad(const std::vector<TensorId> &args,
+                          std::string mode,
+                          const std::vector<int64_t> pads,
+                          float value) {
+  check_arg_count(args, 1, "Pad");
+
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type("Pad");
+  add_args(node, args);
+  node->add_output(id);
+
+  addNodeAttribute("mode", mode, {id});
+  addNodeAttribute("pads", pads, {id});
+  addNodeAttribute("value", value, {id});
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return id;
+}
+
 TensorId BuilderImpl::matmul(const std::vector<TensorId> &args) {
   check_arg_count(args, 2, "MatMul");
 
@@ -491,6 +514,25 @@ TensorId BuilderImpl::matmul(const std::vector<TensorId> &args) {
   node->add_input(args[0]);
   node->add_input(args[1]);
   node->add_output(id);
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return id;
+}
+
+TensorId BuilderImpl::softmax(const std::vector<TensorId> &args) {
+  check_arg_count(args, 1, "Softmax");
+
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type("Softmax");
+  add_args(node, args);
+  node->add_output(id);
+
+  int64_t axis = 1;
+  addNodeAttribute("axis", axis, {id});
 
   onnx::shape_inference::InferShapes(model_);
 

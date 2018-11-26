@@ -10,6 +10,7 @@ clang-format -i willow/include/poponnx/*hpp
 clang-format -i willow/include/poponnx/popx/*hpp
 clang-format -i willow/include/poponnx/patterns/*hpp
 clang-format -i willow/include/poponnx/op/*hpp
+clang-format -i tests/poponnx/*cpp
 
 echo "inplace yapfing all .py files in listed directories,"
 python -m yapf -i tests/torch/cifar10/*py
