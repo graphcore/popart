@@ -16,6 +16,7 @@
 
 #include <poplar/exceptions.hpp>
 #include <poputil/exceptions.hpp>
+#include <stdexcept>
 
 namespace py = pybind11;
 using namespace willow;
@@ -458,7 +459,30 @@ PYBIND11_MODULE(poponnx_core, m) {
         return ss.str();
       });
 
-  py::register_exception<willow::error>(m, "poponnx_exception");
-  py::register_exception<poplar::poplar_error>(m, "poplar_exception");
-  py::register_exception<poputil::poplibs_error>(m, "poplibs_exception");
+  // Exceptions are processed explicitly to allow the main dynamic library
+  // to do the type inference.  This prevents some inter dynamic library type
+  // inference issues on OS/X
+  static py::exception<willow::error> eWillow(m, "poponnx_exception");
+  static py::exception<poplar::poplar_error> ePoplar(m, "poplar_exception");
+  static py::exception<poputil::poplibs_error> ePoplibs(m, "poplibs_exception");
+
+  py::register_exception_translator([](std::exception_ptr p) {
+    try {
+      std::rethrow_exception(p);
+    } catch (std::exception &e) {
+      switch (willow::getErrorSource(e)) {
+      case willow::ErrorSource::poponnx:
+        eWillow(e.what());
+        return;
+      case willow::ErrorSource::poplar:
+        ePoplar(e.what());
+        return;
+      case willow::ErrorSource::poplibs:
+        ePoplibs(e.what());
+        return;
+      case willow::ErrorSource::unknown:
+        throw;
+      }
+    }
+  });
 }
