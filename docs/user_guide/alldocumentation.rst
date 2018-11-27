@@ -11,7 +11,7 @@ It has three main features:
 
 1) It can import ONNX graphs into a runtime environment.
 2) It runs imported graphs in inference, evaluation or training modes, by
-building a Poplar engine, hooking up data feeds and schduling the execution
+building a Poplar engine, connecting data feeds and schduling the execution
 of the Engine.
 3) It provdes a simple interface for constructing ONNX graphs without needing
 a third party framework.
@@ -60,7 +60,7 @@ Example:
   torch.onnx.export(model, in, "alexnet.onnx")
 
   # Create a runtime environment
-  dataFeed = poponnx.DataFlow(500, 4, ["l1LossVal", "out", "image0"],
+  dataFeed = poponnx.DataFlow(500, 4, ["l1LossVal"],
                               poponnx.AnchorReturnType.ALL)
   losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
   optimizer = poponnx.ConstSGD(0.001)
@@ -73,6 +73,8 @@ Building graphs without a third party framework
 
 There is a Builder class for constucting ONNX graphs without needing a third
 party framework.
+
+In this example, a simple addition is prepared for execution.
 
 ::
 
@@ -90,12 +92,9 @@ party framework.
 
 
   # Create a runtime environment
-  dataFeed = poponnx.DataFlow(500, 4, ["l1LossVal", "out", "image0"],
-                              poponnx.AnchorReturnType.ALL)
-  losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
-  optimizer = poponnx.ConstSGD(0.001)
+  dataFeed = poponnx.DataFlow(500, 4, [o], poponnx.AnchorReturnType.ALL)
 
-  session = poponnx.Session(proto, dataFeed, losses, optimizer)
+  session = poponnx.Session(proto, dataFeed)
 
 Executing graphs
 --------------
@@ -130,6 +129,7 @@ Training example:
 
   inputs = { 'image': image_data }
   anchors = { 'loss': np.zeros([1000]) }
-  io = poponnx.PyStepIO(inputs, anchorArrays)
+  io = poponnx.PyStepIO(inputs, anchors)
 
   session.train(io)
+
