@@ -1,6 +1,8 @@
 #ifndef GUARD_NEURALNET_NUMERICS_HPP
 #define GUARD_NEURALNET_NUMERICS_HPP
 
+#include <cmath>
+
 #include <poponnx/names.hpp>
 namespace willow {
 
