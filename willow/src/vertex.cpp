@@ -1,4 +1,6 @@
+#include <map>
 #include <sstream>
+
 #include <poponnx/error.hpp>
 #include <poponnx/vertex.hpp>
 
