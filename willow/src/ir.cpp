@@ -991,7 +991,9 @@ void Ir::constructForwards() {
     // Not necessary to set the phase here (it will be done in
     // updateVertices). To check our logic though, we do this here
     // and then check that we agree in updateVertices()
-    op->setPhase(Phase::FWD);
+    if (op) {
+      op->setPhase(Phase::FWD);
+    }
   }
 }
 

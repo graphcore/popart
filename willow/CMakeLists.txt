@@ -26,7 +26,7 @@ message( STATUS "Building WITHOUT Poplar IPU backend")
 endif()
 
 find_package(Spdlog REQUIRED)
-message(STATUS "Spdlog include dir is " ${Spdlog_INCLUDE_DIRS})
+message(STATUS "Spdlog include dir is " ${SPDLOG_INCLUDE_DIRS})
 
 add_library(poponnx SHARED ${sources})
 
