@@ -22,13 +22,16 @@ source ./poponnx/ci/utils.sh
 # Update this as necessary
 SOURCE_ID=`cat poponnx/poplar_version`
 
+# Get the current directory
+VIEW_DIR=${PWD}
+
 # Put release in the 'external' directory
 rm -rf ../external
 mkdir -p ../external
 cd ../external
 
 # Download
-python ../poponnx_view/swdb_api/swdb_download_latest.py \
+python ${VIEW_DIR}/swdb_api/swdb_download_latest.py \
        $1 ${SOURCE_ID} $2 poplar_installer.tar.gz > download.log
 
 # Extract
