@@ -136,6 +136,7 @@ TensorId BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData) {
 
   auto *initializer = graph->add_initializer();
   initializer->set_data_type(initData.info.dataType());
+  initializer->set_name(id);
 
   for (auto d : initData.info.shape()) {
     initializer->add_dims(d);

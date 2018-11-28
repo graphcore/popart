@@ -29,6 +29,10 @@
 #include <poponnx/patterns/softmaxgraddirect.hpp>
 #include <poponnx/patterns/subtractarg1gradoppattern.hpp>
 
+// The transformations
+#include <poponnx/transforms/prune.hpp>
+#include <poponnx/transforms/recompute.hpp>
+
 // The layers:
 #include <poponnx/op/add.hpp>
 #include <poponnx/op/averagepool.hpp>
@@ -63,13 +67,11 @@ onnx::ModelProto Ir::getModel() const { return onnxModel; }
 TensorId TensorIndexMap::id(int index) const { return tensor(index)->id; }
 
 std::vector<Tensor *> Ir::optimizerTensors() const {
-  if (optimizer.get() == nullptr) {
-    throw error("ILE : No optimizerTensors til Optimizer is set");
-  }
-
   std::vector<Tensor *> optTensors;
-  for (auto &id_info : optimizer->tensorInfos()) {
-    optTensors.push_back(tensors.get(id_info.first));
+  if (optimizer.get() != nullptr) {
+    for (auto &id_info : optimizer->tensorInfos()) {
+      optTensors.push_back(tensors.get(id_info.first));
+    }
   }
   return optTensors;
 }
@@ -78,9 +80,11 @@ std::vector<Tensor *> Ir::optimizerTensors() const {
 // optimizer tensor is a streamed data tensor
 std::vector<Tensor *> Ir::dataStreamTensors() const {
   std::vector<Tensor *> dsTensors;
-  auto optTensorInfo = optimizer->tensorInfos();
+  std::map<TensorId, TensorInfo> optTensorInfo;
+  if (optimizer != nullptr) {
+    optTensorInfo = optimizer->tensorInfos();
+  }
   for (TensorId id : tensors.getIds(TensorType::Stream)) {
-
     if (optTensorInfo.find(id) == optTensorInfo.end()) {
       dsTensors.push_back(tensors.get(id));
     }
@@ -425,7 +429,6 @@ void Ir::prepare(const IrBundle &gb) {
 
   onnxModel = gb.modelProto;
 
-  // Q : Is the optimizer optional?
   if (gb.optimizer) {
     optimizer = gb.optimizer->clone();
     for (auto &id_info : optimizer->tensorInfos()) {
@@ -434,11 +437,6 @@ void Ir::prepare(const IrBundle &gb) {
       tensors.addStream(id, info);
       optimizer->setTensorData(tensors.get(id));
     }
-  }
-
-  // A (jn) : No
-  else {
-    throw error("Optimizer required in IrBundle");
   }
 
   for (auto &l : gb.losses) {
@@ -451,6 +449,7 @@ void Ir::prepare(const IrBundle &gb) {
   std::set<TensorId> onnxInitializers;
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();
+    logging::info("Init tensor is {}", tenId);
     addInitIfUsed(tenId, &initializer);
     onnxInitializers.emplace(tenId);
   }
@@ -534,18 +533,22 @@ void Ir::prepare(const IrBundle &gb) {
       applyPattern(pattern.get());
     }
   }
+
   growFinalLoss();
   updateVertices();
   setNPathsToLoss();
   constructBackwards();
   updateVertices();
 
+  transforms.emplace(std::make_pair(0, new Prune));
+  transforms.emplace(std::make_pair(1, new Recompute));
+
   // confirm that all the anchor names provided
   // are indeed real tensor names. This is a check
   // that the user has not provided incorrect names.
   // We allow duplicates.
   validateAnchors();
-  prune();
+  applyTransform(0);
 
   for (auto &pattern : patterns) {
     if (pattern->phase() == PatternPhase::PRETOPOCONS) {
@@ -554,7 +557,7 @@ void Ir::prepare(const IrBundle &gb) {
   }
 
   updateVertices();
-  addRecompute();
+  applyTransform(1);
   updateVertices();
 
   // we now start applying topological constraints between
@@ -565,7 +568,7 @@ void Ir::prepare(const IrBundle &gb) {
     exportDot(io::appendDirFn(logdir, "fwdBwd0.dot"));
   }
 
-  prune();
+  applyTransform(0);
 
   // Now, we apply the Patterns which can handle and create
   // topological constaints. Currently, this is only one
@@ -662,143 +665,6 @@ int64_t Op::memOfOutputs() const {
   return mem;
 }
 
-void Ir::addRecompute() {
-  std::vector<Op *> fwdOps;
-  for (auto op : getOpSchedule({})) {
-    if (op->isFwdToBwd()) {
-      fwdOps.push_back(op);
-    }
-  }
-
-  // liveSets[i] : set of ops whose outputs have not all
-  // been consumed by their (non-grad) consumers just after
-  // linearised[i] has run. By this defn,
-  // linearised[i] \in live[i]
-  std::vector<std::set<Op *>> liveSets = getLiveSets(fwdOps);
-
-  // The memory (bytes) which will be needed to
-  // store all the output tensors in a liveness set.
-  std::vector<int64_t> memoryOfLives;
-  for (auto &liveSet : liveSets) {
-    int64_t mem = 0;
-    for (auto op : liveSet) {
-      mem += op->memOfOutputs();
-    }
-    memoryOfLives.push_back(mem);
-  }
-
-  int nFwdOps = static_cast<int>(fwdOps.size());
-  if (nFwdOps != liveSets.size() || memoryOfLives.size() != nFwdOps) {
-    throw error("ILE : sizes of vectors do not match");
-  }
-
-  // TODO (see T5099)
-  // this should change. resnet-50 has way more memory for early layers.
-  // see
-  // https://github.com/albanie/convnet-burden/blob/master/reports/resnet18.md
-  // It should take in memoryOfLives, make intervals on cumulative memory.
-  std::vector<std::array<int, 2>> intervals = getDecreasingIntervals(nFwdOps);
-
-  //   defn, checkpoints: Ops whose
-  //   outputs we guarantee will be available
-  //   at any time
-  std::set<Op *> checkpoints;
-
-  // we choose the lowest memory set from each interval,
-  // and add its members to checkpoints.
-  for (auto interval : intervals) {
-    int begin            = interval[0];
-    int end              = interval[1];
-    int64_t lowestMemory = std::numeric_limits<int64_t>::max();
-    std::set<Op *> bestSet{};
-    for (int i = begin; i < end; ++i) {
-      if (memoryOfLives[i] < lowestMemory) {
-        lowestMemory = memoryOfLives[i];
-        bestSet      = liveSets[i];
-      }
-    }
-    for (Op *op : bestSet) {
-      if (checkpoints.count(op) == 0) {
-        checkpoints.insert(op);
-      }
-    }
-  }
-
-  // all non-checkpoint pre-loss nodes.
-  std::vector<Op *> nonCheckpoints;
-  for (auto &op : fwdOps) {
-    if (checkpoints.count(op) == 0) {
-      nonCheckpoints.push_back(op);
-    }
-  }
-
-  for (auto &op : nonCheckpoints) {
-    growRecomputeOp(op, checkpoints);
-  }
-}
-
-// We should make a diagram explaining Willow recompute
-Op *Ir::growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints) {
-
-  // the recompute op:
-  OpId rcId = moveIntoIr(oriOp->clone());
-
-  Op *rcOp = ops[rcId].get();
-
-  // set inputs and outputs of  the new Op.
-  std::map<int, TensorId> inputs;
-  for (auto &index_tensor : oriOp->input.tensorMap()) {
-    int index      = index_tensor.first;
-    Tensor *tensor = index_tensor.second;
-    // if the tensor was produced by a non-checkpointed op,
-    // we need to use the recomputed version of it
-    if (tensor->hasProducer() &&
-        checkpoints.count(tensor->getProducer()) == 0) {
-      inputs[index] = getRecompId(tensor->id);
-    } else {
-      inputs[index] = tensor->id;
-    }
-  }
-  connectInputs(InputMapWrapper(inputs), rcId);
-
-  std::map<int, TensorId> outputs;
-  for (auto &index_tensor : oriOp->output.tensorMap()) {
-    int index            = index_tensor.first;
-    const Tensor *tensor = index_tensor.second;
-    outputs[index]       = getRecompId(tensor->id);
-  }
-  connectOutputs(OutputMapWrapper(outputs), rcId);
-  rcOp->setup();
-
-  // yank down the priority of the new Op
-  // (must be run as late as possible):
-  rcOp->priority = std::numeric_limits<double>::lowest();
-
-  // oriOp's outputs should not be consumed by grad op:
-  for (auto &ind_ten : oriOp->output.tensorMap()) {
-    Tensor *oriTen = ind_ten.second;
-    Tensor *recTen = tensors.get(getRecompId(oriTen->id));
-    for (auto &con : oriTen->consumers.getOps()) {
-      if (con->getPhase() == Phase::BWD) {
-        for (auto &con_ind_ten : con->input.tensorMap()) {
-          int gradIn = con_ind_ten.first;
-          if (con_ind_ten.second == oriTen) {
-            con->input.reset(gradIn, recTen);
-            recTen->consumers.increment(con);
-            oriTen->consumers.decrement(con);
-          }
-        }
-      }
-    }
-  }
-
-  // note: oriOp will still be pointed to
-  // by grad op as it's creator. This design
-  // choice might need revision.
-
-  return rcOp;
-}
-
 void Tensors::append(std::stringstream &ss) const {
   bool frst = true;
   ss << '[';
@@ -835,101 +701,6 @@ void Ir::validateAnchors() const {
   }
 }
 
-void Ir::prune() {
-
-  // initialise with all the var
-  // update ops for training,
-  // and work backwards. This
-  // is the set which is returned
-  std::set<Op *> required = trainTargetOps;
-
-  // as we work backwards, we keep a
-  // "front" of tensors,
-  std::vector<Tensor *> tensorFront;
-
-  // when a tensor enters the "front",
-  // we record that it has been visited
-  std::set<Tensor *> tensorsVisited;
-
-  // the "front" is initialsed with (1) anchor tensors,
-  for (auto &tensorId : dataFlow.anchors()) {
-    Tensor *t = tensors.get(tensorId);
-    // we have this check here as we allow
-    // duplicated names from the (careless!) user
-    if (tensorsVisited.count(t) == 0) {
-      tensorFront.push_back(t);
-      tensorsVisited.insert(t);
-    }
-  }
-
-  // and (2), inputs to the training targets.
-  for (auto &op : trainTargetOps) {
-    for (auto t_inds : op->input.indicesMap()) {
-      Tensor *t = t_inds.first;
-      if (tensorsVisited.count(t) == 0) {
-        tensorFront.push_back(t);
-        tensorsVisited.insert(t);
-      }
-    }
-  }
-
-  while (tensorFront.size() != 0) {
-    Tensor *t = tensorFront.back();
-    tensorFront.resize(tensorFront.size() - 1);
-    if (t->hasProducer()) {
-      Op *op = t->getProducer();
-      if (required.count(op) == 0) {
-        required.insert(op);
-        for (auto t_inds : op->input.indicesMap()) {
-          Tensor *t_in = t_inds.first;
-          if (tensorsVisited.count(t_in) == 0) {
-            tensorFront.push_back(t_in);
-            tensorsVisited.insert(t_in);
-          }
-        }
-      }
-    }
-  }
-
-  // at this point, "required" is the set
-  // of all ops which are actually executed
-  // to get targets
-
-  // ops \ required
-  std::vector<Op *> opsToDelete;
-  // all outputs of opsToDelete
-  std::vector<Tensor *> tensorsToDelete;
-
-  for (auto &id_op : ops) {
-    Op *op = id_op.second.get();
-    if (required.count(op) == 0) {
-      opsToDelete.push_back(op);
-      for (auto &t_inds : op->output.indicesMap()) {
-        tensorsToDelete.push_back(t_inds.first);
-      }
-    }
-  }
-
-  for (Op *op : opsToDelete) {
-    // unwire the inputs
-    for (auto index_tensor : op->input.tensorMap()) {
-      Tensor *tensor = index_tensor.second;
-      tensor->consumers.decrement(op);
-    }
-    // remove the topo cons which might exist
-    for (auto tensor_indices : op->input.indicesMap()) {
-      Tensor *tensor = tensor_indices.first;
-      tensor->consumers.removeTopoCons(op);
-    }
-    // and delete the Op
-    ops.erase(op->id);
-  }
-
-  for (Tensor *tensor : tensorsToDelete) {
-    tensors.remove(tensor->id);
-  }
-}
-
 // TODO T5616
 // this iteration is potentially dangerous.
 // An Op in v_ops might
@@ -947,6 +718,10 @@ void Ir::applyPattern(const Pattern *pattern) {
       }
     }
   }
+}
+
+void Ir::applyTransform(int transformId) {
+  transforms.at(transformId)->apply(*this);
 }
 
 std::vector<TensorId> Tensors::getNoProducerIds() const {
@@ -1462,6 +1237,12 @@ void Ir::updateVertices() {
 }
 
 void Ir::setNPathsToLoss() {
+  auto found = ops.find(finalLossId);
+  if (found == ops.end()) {
+    // There will be no losses at all for an inference
+    return;
+  }
+  Op *finalLossOp = found->second.get();
 
   // initialize number of paths for
   // all Ops and Tensors to loss to be zero
@@ -1475,15 +1256,6 @@ void Ir::setNPathsToLoss() {
       t_inds.first->setNPathsToLossToZero();
     }
   }
-
-  // Note: if the finalLossOp has been optimised out,
-  // this function cannot be used.
-  auto found = ops.find(finalLossId);
-  if (found == ops.end()) {
-    throw error(
-        "The final loss op does not exist, it may have been optimized away");
-  }
-  Op *finalLossOp = found->second.get();
 
   std::vector<Op *> opFront{finalLossOp};
   std::set<Op *> opsSeen{finalLossOp};
@@ -1710,6 +1482,11 @@ Op *Ir::growFromNode(const Node &node) {
 }
 
 void Ir::growFinalLoss() {
+  // There may be no losses (in inference especially)
+  if (losses.size() == 0) {
+    return;
+  }
+
   std::vector<Op *> lossOps;
   // first, grow each of the individual losses from the user
   for (auto &loss : losses) {
@@ -1767,6 +1544,11 @@ template <typename T> void Ir::connectInputs(const T &inContainer, OpId opId) {
 
 void Ir::connectInputsFromInputMapWrapper(const InputMapWrapper &in, OpId id) {
   connectInputs(in, id);
+}
+
+void Ir::connectOutputsFromOutputMapWrapper(const OutputMapWrapper &out,
+                                            OpId id) {
+  connectOutputs(out, id);
 }
 
 template <typename T>
@@ -1925,11 +1707,13 @@ std::string Op::str() const {
 
 std::vector<GradNonGradPair> Ir::growLossGradients() {
   std::vector<GradNonGradPair> pairs;
-  for (auto &t_inds : getOp(finalLossId)->input.indicesMap()) {
-    Tensor *t  = t_inds.first;
-    Op *lossOp = t->getProducer();
-    for (Op *gradOp : growGradOps(lossOp)) {
-      pairs.push_back({gradOp, lossOp});
+  if (ops.find(finalLossId) != ops.end()) {
+    for (auto &t_inds : getOp(finalLossId)->input.indicesMap()) {
+      Tensor *t  = t_inds.first;
+      Op *lossOp = t->getProducer();
+      for (Op *gradOp : growGradOps(lossOp)) {
+        pairs.push_back({gradOp, lossOp});
+      }
     }
   }
   return pairs;

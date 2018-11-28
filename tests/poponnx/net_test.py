@@ -19,15 +19,11 @@ def test_net_from_string(tmpdir):
     earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
 
@@ -50,15 +46,11 @@ def test_net_from_file(tmpdir):
     earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     poponnx.Session(
         fnModel="test.onnx",
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
 
@@ -69,16 +61,12 @@ def test_net_failure(tmpdir):
     earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss("None", "l1LossVal", 0.1)]
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         poponnx.Session(
             fnModel="nothing",
             earlyInfo=earlyInfo,
             dataFeed=dataFlow,
-            losses=losses,
-            optimizer=optimizer,
             outputdir=str(tmpdir))
 
     assert (e_info.type == poponnx.poponnx_exception)

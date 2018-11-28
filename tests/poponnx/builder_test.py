@@ -909,15 +909,11 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     earlyInfo.add(i2, shape)
 
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
     session.setDevice(getDevice())

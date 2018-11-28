@@ -31,6 +31,8 @@ add_poponnx_cpp_unit_test(loggingtest loggingtest.cpp)
 add_poponnx_cpp_unit_test(matmultest matmul.cpp)
 add_poponnx_cpp_unit_test(numpybroadcastshapetest numpybroadcastshapetest.cpp)
 add_poponnx_cpp_unit_test(patterns_test patterns_test.cpp)
+add_poponnx_cpp_unit_test(prune_test prune_test.cpp)
+add_poponnx_cpp_unit_test(recompute_test recompute_test.cpp)
 
 function(add_poponnx_py_unit_test name)
   message(STATUS

@@ -9,9 +9,9 @@ class Session(poponnx.SessionCore):
                  fnModel,
                  earlyInfo,
                  dataFeed,
-                 losses,
-                 optimizer,
-                 outputdir,
+                 losses=[],
+                 optimizer=None,
+                 outputdir="",
                  passes=[],
                  cTens=[],
                  userOptions=poponnx.SessionOptionsCore()):

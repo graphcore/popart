@@ -32,15 +32,11 @@ def test_add(tmpdir):
     earlyInfo.add(i2, shape)
 
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
     session.setDevice(tu.get_poplar_cpu_device())
@@ -78,15 +74,11 @@ def test_convolution(tmpdir):
     earlyInfo.add(i2, filt_shape)
 
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
     session.setDevice(tu.get_poplar_cpu_device())
@@ -134,15 +126,11 @@ def test_matmul(tmpdir):
     earlyInfo.add(i2, i2shape)
 
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
     session.setDevice(tu.get_poplar_cpu_device())
@@ -182,15 +170,11 @@ def test_averagepool(tmpdir):
     earlyInfo.add(i1, data_shape)
 
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
     session.setDevice(tu.get_poplar_cpu_device())
@@ -228,15 +212,11 @@ def test_maxpool(tmpdir):
     earlyInfo.add(i1, data_shape)
 
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
     session.setDevice(tu.get_poplar_cpu_device())

@@ -39,12 +39,12 @@ public:
   createFromOnnxModel(const std::string &model,
                       const EarlyInfo &earlyInfo,
                       const DataFlow &dataFlow,
-                      const std::vector<Loss *> &losses,
-                      const Optimizer *optimizer,
-                      const std::vector<std::string> &cTens,
-                      std::string logdir,
-                      const SessionOptions &userOptions,
-                      const std::vector<std::string> &patternNames);
+                      const std::vector<Loss *> &losses     = {},
+                      const Optimizer *optimizer            = nullptr,
+                      const std::vector<std::string> &cTens = {},
+                      std::string logdir                    = "",
+                      const SessionOptions &userOptions     = SessionOptions(),
+                      const std::vector<std::string> &patternNames = {});
 
   /** Update the optimizer.
    *

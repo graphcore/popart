@@ -4,7 +4,7 @@ set(BUILD_DOCS OFF CACHE BOOL "Build documentation")
 
 if (BUILD_DOCS)
   find_package(gcdoc REQUIRED)
-  set(LIBS willow)
+  set(LIBS poponnx)
 
   foreach(lib ${LIBS})
     get_target_property(LIB_INCLUDE_DIRS ${lib} INTERFACE_INCLUDE_DIRECTORIES)

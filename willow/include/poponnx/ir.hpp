@@ -17,6 +17,8 @@
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/vertex.hpp>
 
+#include <poponnx/transforms/transform.hpp>
+
 namespace willow {
 
 // helper class used during backwards pass construction.
@@ -32,6 +34,7 @@ public:
 };
 
 class InputMapWrapper;
+class OutputMapWrapper;
 
 // the input tensor of a grad-op has what kind of
 // relationship with the corresponding non-grad-op?
@@ -440,8 +443,8 @@ public:
 
   const SessionOptions &getSessionOptions() const { return userOptions; }
 
-  // see connectInputs, this is just an instantiation of it
   void connectInputsFromInputMapWrapper(const InputMapWrapper &, OpId opId);
+  void connectOutputsFromOutputMapWrapper(const OutputMapWrapper &, OpId opId);
 
   // moves ownership of created Op into the Ir,
   // and returns the Op's OpId
@@ -455,6 +458,20 @@ public:
 
   // Accessors for the dataFlow
   const DataFlow &getDataFlow() const { return dataFlow; }
+
+  const std::set<Op *> &getTrainTargetOps() { return trainTargetOps; }
+
+  // For every Op "op" in topoOps, there is a set of Ops "ops"
+  // defined as the union of
+  // 1) "op" and
+  // 2)  all Ops appearing before "op" which
+  // have output tensors for which there are Ops appearing after
+  // "op" in topoOps which will consume them.
+  // Note : if topoOps is just the forward pass, the grad-op
+  // consumers of a tensor do not appear in "ops". This agrees
+  // with the definition.
+  std::vector<std::set<Op *>>
+  getLiveSets(const std::vector<Op *> &topoOps) const;
 
 private:
   Tensors tensors;
@@ -498,8 +515,14 @@ private:
   // modify the Ir using with pattern matching
   void applyPattern(const Pattern *);
 
+  // modify the Ir using a graph transformation
+  void applyTransform(int transformId);
+
   // patterns to apply after constructing forwards and backwards passes
   std::vector<std::unique_ptr<Pattern>> patterns;
+
+  // set of all graph transformations
+  std::map<int, std::unique_ptr<Transform>> transforms;
 
   // confirm that the names of the Const tensors
   // from the user (constTensors) are in the onnx Model
@@ -566,18 +589,6 @@ private:
   // tensor naming convention for example, this will
   // be caught here.
   void validateAnchors() const;
-
-  // For every Op "op" in topoOps, there is a set of Ops "ops"
-  // defined as the union of
-  // 1) "op" and
-  // 2)  all Ops appearing before "op" which
-  // have output tensors for which there are Ops appearing after
-  // "op" in topoOps which will consume them.
-  // Note : if topoOps is just the forward pass, the grad-op
-  // consumers of a tensor do not appear in "ops". This agrees
-  // with the definition.
-  std::vector<std::set<Op *>>
-  getLiveSets(const std::vector<Op *> &topoOps) const;
 };
 
 } // namespace willow

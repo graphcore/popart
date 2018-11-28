@@ -11,11 +11,12 @@ include_directories("include")
 file(GLOB sources src/*cpp)
 file(GLOB op_sources src/op/*cpp)
 file(GLOB patterns_sources src/patterns/*cpp)
+file(GLOB transforms_sources src/transforms/*cpp)
 # poplar backend op specifc:
 file(GLOB x_sources src/popx/*cpp)
 file(GLOB opx_sources src/popx/op/*cpp)
 
-set(sources ${sources} ${op_sources} ${patterns_sources})
+set(sources ${sources} ${op_sources} ${patterns_sources} ${transforms_sources})
 if (POPLAR_BACKEND)
 message( STATUS "Building WITH Poplar IPU backend")
 find_package(Poplar REQUIRED)

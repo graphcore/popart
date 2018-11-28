@@ -83,8 +83,6 @@ def test_engine_options_passed_to_engine(tmpdir):
     earlyInfo.add(i2, shape)
 
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptions()
     opts.engineOptions = {'option': 'value'}
@@ -94,8 +92,6 @@ def test_engine_options_passed_to_engine(tmpdir):
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir),
         userOptions=opts)
 
@@ -127,8 +123,6 @@ def test_convolution_options(tmpdir):
     earlyInfo.add(i2, filt_shape)
 
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptions()
     opts.convolutionOptions = {'startTileMultiplier': '3'}
@@ -138,8 +132,6 @@ def test_convolution_options(tmpdir):
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir),
         userOptions=opts)
 

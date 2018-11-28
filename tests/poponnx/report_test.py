@@ -19,15 +19,11 @@ def test_summary_report_before_execution(tmpdir):
     earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
@@ -56,15 +52,11 @@ def test_graph_report_before_execution(tmpdir):
     earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
@@ -93,15 +85,11 @@ def test_execution_report_before_execution(tmpdir):
     earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
@@ -130,15 +118,11 @@ def test_summary_report_with_cpu_device(tmpdir):
     earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
@@ -169,15 +153,11 @@ def test_graph_report_with_cpu_device(tmpdir):
     earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
@@ -210,15 +190,11 @@ def test_execution_report_with_cpu_device(tmpdir):
     earlyInfo.add("2", shape)
 
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
-    optimizer = poponnx.SGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
         dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
         outputdir=str(tmpdir))
 
     session.initAnchorArrays()
