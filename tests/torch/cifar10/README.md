@@ -44,3 +44,7 @@ to reset the weights of the poponnx model.
 model_broadcasts
 ------
 An example model that uses implicit broadcasting on the addition and subtraction operations
+
+model_matmul
+------
+An example model that uses a stacked matmul

@@ -28,50 +28,97 @@ const Tensor *MatMulOp::rhsIn() const {
 
 const Tensor *MatMulOp::out() const { return output.tensor(getOutputIndex()); }
 
-void MatMulOp::setup() {
-
+std::vector<int64_t> MatMulOp::lhsBroadcastShape() const {
   const Tensor *lhs = lhsIn();
   const Tensor *rhs = rhsIn();
 
-  // Assumption : The data type of the lhs & rhs are the same, as defined
-  // in the ONNX spec.
+  return MatMulOp::lhsNpBroadcastShape(lhs->info.shape(), rhs->info.shape());
+}
 
-  if (lhs->info.rank() != 2) {
-    std::stringstream ss;
-    ss << "MatMulOp only supports input of rank 2. Input 0 " << lhs->id << ":"
-       << lhs->info << " has rank " << lhs->info.rank();
-    lhs->info.append(ss);
-    throw error(ss.str());
+std::vector<int64_t> MatMulOp::rhsBroadcastShape() const {
+  const Tensor *lhs = lhsIn();
+  const Tensor *rhs = rhsIn();
+
+  return MatMulOp::rhsNpBroadcastShape(lhs->info.shape(), rhs->info.shape());
+}
+
+Shape MatMulOp::lhsNpBroadcastShape(Shape lhs, Shape rhs) {
+  if (lhs.empty() || rhs.empty()) {
+    throw error("MatMul op doesn't support scalars");
   }
 
-  if (rhs->info.rank() != 2) {
-    std::stringstream ss;
-    ss << "MatMulOp only supports input of rank 2. Input 1 " << rhs->id << ":"
-       << rhs->info << " has rank " << rhs->info.rank();
-    rhs->info.append(ss);
-    throw error(ss.str());
+  Shape result = MatMulOp::npMatMulOut(lhs, rhs);
+  std::copy(lhs.end() - 2, lhs.end(), result.end() - 2);
+
+  return result;
+}
+
+Shape MatMulOp::rhsNpBroadcastShape(Shape lhs, Shape rhs) {
+  if (lhs.empty() || rhs.empty()) {
+    throw error("MatMul op doesn't support scalars");
   }
 
-  if (lhs->info.dim(1) != rhs->info.dim(0)) {
-    std::stringstream ss;
-    ss << "MapMulOp mismatch input sizes " << lhs->id << ":" << lhs->info
-       << ",  " << rhs->id << ":" << rhs->info;
-    throw error(ss.str());
+  Shape result = MatMulOp::npMatMulOut(lhs, rhs);
+  std::copy(rhs.end() - 2, rhs.end(), result.end() - 2);
+
+  return result;
+}
+
+Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) {
+  if (lhs.empty() || rhs.empty()) {
+    throw error("MatMul op doesn't support scalars");
   }
 
+  const bool lhs_prepend = lhs.size() == 1;
+  const bool rhs_append  = rhs.size() == 1;
+
+  // If the first argument is 1-D, it is promoted to a matrix by prepending a 1
+  // to its dimensions.
+  if (lhs_prepend) {
+    lhs.insert(lhs.begin(), 1);
+  }
+
+  // If the second argument is 1-D, it is promoted to a matrix by appending a 1
+  // to its dimensions
+  if (rhs_append) {
+    rhs.push_back(1);
+  }
+
+  Shape result =
+      npOut({lhs.begin(), lhs.end() - 2}, {rhs.begin(), rhs.end() - 2});
+
+  // After matrix multiplication the prepended 1 is removed.
+  // We implement this by not adding it.
+  if (!lhs_prepend) {
+    result.push_back(lhs[lhs.size() - 2]);
+  }
+
+  // After matrix multiplication the appended 1 is removed.
+  // We implement this by not adding it.
+  if (!rhs_append) {
+    result.push_back(rhs[rhs.size() - 1]);
+  }
+
+  if (lhs[lhs.size() - 1] != rhs[rhs.size() - 2]) {
+    throw error("MatMulOp mismatched input sizes");
+  }
+
+  return result;
+}
+
+void MatMulOp::setup() {
   // Define the shape of the output tensor
-  outputShape            = {lhs->info.dim(0), rhs->info.dim(1)};
-  output.tensor(0)->info = {lhs->info.dataType(), outputShape};
+  output.tensor(0)->info = {
+      lhsIn()->info.dataType(),
+      MatMulOp::npMatMulOut(lhsBroadcastShape(), rhsBroadcastShape())};
 }
 
 MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)
     : Op({"MatMulLhsGrad", fwdOp.pir, {}, getPoponnxDomain()}),
-      fwdOpOutputGrad(fwdOp.output.tensor(0)->info), rhs(fwdOp.rhsIn()->info) {}
+      fwdOpOutputGrad(fwdOp.output.tensor(0)->info),
+      fwdOpLhsInfo(fwdOp.lhsIn()->info), fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
 
-void MatMulLhsGradOp::setup() {
-  outputShape            = {fwdOpOutputGrad.dim(0), rhs.dim(0)};
-  output.tensor(0)->info = {fwdOpOutputGrad.dataType(), outputShape};
-}
+void MatMulLhsGradOp::setup() { output.tensor(0)->info = fwdOpLhsInfo; }
 
 const std::vector<GradInOutMapper> &MatMulLhsGradOp::gradInputInfo() const {
   // The gradient of the fwd-op is input at index 0.
@@ -90,14 +137,21 @@ const std::map<int, int> &MatMulLhsGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
+Shape MatMulLhsGradOp::getGradInputShape() const {
+  return fwdOpOutputGrad.shape();
+}
+
+Shape MatMulLhsGradOp::getRhsInputShape() const { return fwdOpRhsInfo.shape(); }
+
+Shape MatMulLhsGradOp::getOutputShape() const { return fwdOpLhsInfo.shape(); }
+
 MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
     : Op({"MatMulRhsGrad", fwdOp.pir, {}, getPoponnxDomain()}),
-      fwdOpOutputGrad(fwdOp.output.tensor(0)->info), lhs(fwdOp.lhsIn()->info) {}
+      fwdOpOutputGrad(fwdOp.output.tensor(0)->info),
+      fwdOpLhsInfo(fwdOp.lhsIn()->info), fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
 
-void MatMulRhsGradOp::setup() {
-  outputShape            = {lhs.dim(1), fwdOpOutputGrad.dim(1)};
-  output.tensor(0)->info = {fwdOpOutputGrad.dataType(), outputShape};
-}
+void MatMulRhsGradOp::setup() { output.tensor(0)->info = fwdOpRhsInfo; }
+
 const std::vector<GradInOutMapper> &MatMulRhsGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getGradInputIndex(), MatMulOp::getOutputIndex(), GradOpInType::GRADOUT},
@@ -111,4 +165,13 @@ const std::map<int, int> &MatMulRhsGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {{0, MatMulOp::getRhsInputIndex()}};
   return outInfo;
 }
+
+Shape MatMulRhsGradOp::getGradInputShape() const {
+  return fwdOpOutputGrad.shape();
+}
+
+Shape MatMulRhsGradOp::getLhsInputShape() const { return fwdOpLhsInfo.shape(); }
+
+Shape MatMulRhsGradOp::getOutputShape() const { return fwdOpRhsInfo.shape(); }
+
 } // namespace willow

@@ -221,6 +221,60 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
   }
 }
 
+// Test the simple [2x1x4x3x2] * [3x1x2x6] matrix
+BOOST_AUTO_TEST_CASE(MatMul_Case3) {
+  // Setup
+  onnx::NodeProto node;
+  node.set_op_type("MatMul");
+
+  willow::Ir ir;
+
+  willow::MatMulOp mm(node, &ir);
+
+  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
+  lhs.info.set(willow::TP::FLOAT, {2, 1, 4, 3, 2});
+  mm.input.insert(0, &lhs);
+
+  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
+  rhs.info.set(willow::TP::FLOAT, {3, 1, 2, 6});
+  mm.input.insert(1, &rhs);
+
+  willow::Tensor out("out", willow::TensorType::ActGrad, ir);
+  mm.output.insert(0, &out);
+
+  // Test the setup is correct
+  mm.setup();
+  BOOST_CHECK(mm.output.tensor(0)->info.dim(0) == 2);
+  BOOST_CHECK(mm.output.tensor(0)->info.dim(1) == 3);
+  BOOST_CHECK(mm.output.tensor(0)->info.dim(2) == 4);
+  BOOST_CHECK(mm.output.tensor(0)->info.dim(3) == 3);
+  BOOST_CHECK(mm.output.tensor(0)->info.dim(4) == 6);
+  BOOST_CHECK(mm.output.tensor(0)->info.dataType() == willow::TP::FLOAT);
+  BOOST_CHECK(mm.rhsIn() == &rhs);
+  BOOST_CHECK(mm.lhsIn() == &lhs);
+
+  auto gradOps = mm.getGradOps();
+  BOOST_CHECK(gradOps.size() == 2);
+  BOOST_CHECK(gradOps[0]->isConvertibleTo<willow::MatMulLhsGradOp>());
+  BOOST_CHECK(gradOps[1]->isConvertibleTo<willow::MatMulRhsGradOp>());
+
+  std::vector<willow::Tensor> tensors;
+  tensors.reserve(gradOps.size());
+
+  for (auto &op : gradOps) {
+    // Danger: Can cause a realloc which invalidates pointers. This won't happen
+    // if the vector has space reserved.
+    tensors.emplace_back("out", willow::TensorType::ActGrad, ir);
+    op->output.reset(0, &tensors.back());
+    op->setup();
+  }
+
+  BOOST_CHECK(gradOps[0]->output.tensor(0)->info ==
+              mm.input.tensor(willow::MatMulOp::getLhsInputIndex())->info);
+  BOOST_CHECK(gradOps[1]->output.tensor(0)->info ==
+              mm.input.tensor(willow::MatMulOp::getRhsInputIndex())->info);
+}
+
 // Test invalid rank on lhs
 BOOST_AUTO_TEST_CASE(MatMul_ErrorCase1) {
 
@@ -246,28 +300,7 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase1) {
   // Test the setup is correct
   BOOST_CHECK_THROW(mm.setup(), error);
 }
-// Test invalid rank on rhs
-BOOST_AUTO_TEST_CASE(MatMul_ErrorCase2) {
 
-  // Setup
-  onnx::NodeProto node;
-  node.set_op_type("MatMul");
-
-  willow::Ir ir;
-
-  willow::MatMulOp mm(node, &ir);
-
-  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
-  lhs.info.set(willow::TP::FLOAT, {2, 2});
-  mm.input.insert(0, &lhs);
-
-  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
-  rhs.info.set(willow::TP::FLOAT, {2});
-  mm.input.insert(1, &rhs);
-
-  // Test the setup is correct
-  BOOST_CHECK_THROW(mm.setup(), error);
-}
 // Test invalid matrix multiplication
 BOOST_AUTO_TEST_CASE(MatMul_ErrorCase3) {
 
@@ -294,8 +327,8 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase3) {
   BOOST_CHECK_THROW(mm.setup(), error);
 }
 
-/*
-BOOST_AUTO_TEST_CASE(MatMulX_Case1){
+// Test invalid matrix multiplication
+BOOST_AUTO_TEST_CASE(MatMul_ErrorCase4) {
 
   // Setup
   onnx::NodeProto node;
@@ -305,20 +338,17 @@ BOOST_AUTO_TEST_CASE(MatMulX_Case1){
 
   willow::MatMulOp mm(node, &ir);
 
-  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, &ir);
-  lhs.info.set(willow::TP::FLOAT, {3, 2});
+  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
+  lhs.info.set(willow::TP::FLOAT, {});
   mm.input.insert(0, &lhs);
 
-  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, &ir);
-  rhs.info.set(willow::TP::FLOAT, {2, 6});
+  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
+  rhs.info.set(willow::TP::FLOAT, {10, 2});
   mm.input.insert(1, &rhs);
 
-  willow::Tensor out("out", willow::TensorType::ActGrad, &ir);
+  willow::Tensor out("out", willow::TensorType::ActGrad, ir);
   mm.output.insert(0, &out);
 
-
-  popx::MatMulOpx op(&mm, 0);
-
-  op.grow();
+  // Test the setup is correct
+  BOOST_CHECK_THROW(mm.setup(), error);
 }
-*/

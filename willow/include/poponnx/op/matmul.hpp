@@ -24,8 +24,18 @@ public:
   const Tensor *rhsIn() const;
   const Tensor *out() const;
 
-private:
-  Shape outputShape;
+  // The ONNX tensor shape
+  Shape lhsBroadcastShape() const;
+  Shape rhsBroadcastShape() const;
+
+  // Follow the numpy matmul broadcasting rules for the left operand shape
+  static Shape lhsNpBroadcastShape(Shape lhs, Shape rhs);
+
+  // Follow the numpy matmul broadcasting rules for the right operand shape
+  static Shape rhsNpBroadcastShape(Shape lhs, Shape rhs);
+
+  // Follow the numpy matmul broadcasting rules for the output shape
+  static Shape npMatMulOut(Shape lhs, Shape rhs);
 };
 
 class MatMulLhsGradOp : public Op {
@@ -42,10 +52,18 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
+  // The ONNX tensor shape
+  // The shape of the grad op's gradient input
+  Shape getGradInputShape() const;
+  // The shape of the grad op's rhs input
+  Shape getRhsInputShape() const;
+  // The shape of the grad op's output
+  Shape getOutputShape() const;
+
 private:
-  Shape outputShape;
   TensorInfo fwdOpOutputGrad;
-  TensorInfo rhs;
+  TensorInfo fwdOpLhsInfo;
+  TensorInfo fwdOpRhsInfo;
 };
 
 class MatMulRhsGradOp : public Op {
@@ -62,10 +80,18 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
+  // The ONNX tensor shape
+  // The shape of the grad op's gradient input
+  Shape getLhsInputShape() const;
+  // The shape of the grad op's rhs input
+  Shape getGradInputShape() const;
+  // The shape of the grad op's output
+  Shape getOutputShape() const;
+
 private:
-  Shape outputShape;
   TensorInfo fwdOpOutputGrad;
-  TensorInfo lhs;
+  TensorInfo fwdOpLhsInfo;
+  TensorInfo fwdOpRhsInfo;
 };
 
 } // namespace willow

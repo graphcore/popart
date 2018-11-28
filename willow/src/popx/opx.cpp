@@ -75,19 +75,23 @@ poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
 
 poplar::Tensor Opx::broadcast(const std::vector<int64_t> &desired_shape,
                               TensorId id) const {
-  auto outTensor      = get(id);
-  const auto &t_shape = outTensor.shape();
+  return broadcast(desired_shape, get(id));
+}
+
+poplar::Tensor Opx::broadcast(const std::vector<int64_t> &desired_shape,
+                              poplar::Tensor t) const {
+  const auto &t_shape = t.shape();
 
   // `new_shape` is `t_shape` prepended with ones to have matching rank as
   // `desired_shape`
   std::vector<std::size_t> new_shape(desired_shape.size(), 1);
   std::copy(t_shape.rbegin(), t_shape.rend(), new_shape.rbegin());
 
-  // `outTensor` now has matching rank as `desired_shape`
-  outTensor = outTensor.reshape(new_shape);
+  // `t` now has matching rank as `desired_shape`
+  t = t.reshape(new_shape);
 
-  // Iteratively broadcast each mismatched dimension of `outTensor`. This will
-  // result in the shape of `outTensor` matching `desired_shape`.
+  // Iteratively broadcast each mismatched dimension of `t`. This will
+  // result in the shape of `t` matching `desired_shape`.
   for (int dim = 0; dim < desired_shape.size(); ++dim) {
     if (new_shape[dim] != desired_shape[dim] && new_shape[dim] != 1) {
       // Incompatible dimension found. Throw an exception, borrowing the same
@@ -96,12 +100,11 @@ poplar::Tensor Opx::broadcast(const std::vector<int64_t> &desired_shape,
     }
 
     if (new_shape[dim] != desired_shape[dim]) {
-      outTensor =
-          outTensor.broadcast(static_cast<unsigned>(desired_shape[dim]), dim);
+      t = t.broadcast(static_cast<unsigned>(desired_shape[dim]), dim);
     }
   }
 
-  return outTensor;
+  return t;
 }
 
 } // namespace popx
