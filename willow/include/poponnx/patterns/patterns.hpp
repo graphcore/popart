@@ -16,6 +16,7 @@ enum class PatternType {
   SPLITCONVBIAS,
   OPTOIDENTITY,
   SUBTRACTARG1GRADOP,
+  MULARGGRADOP,
   // The patterns which can handle topological constraints:
   INPLACE0
 };

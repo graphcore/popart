@@ -19,6 +19,7 @@
 #include <poponnx/popx/op/l1x.hpp>
 #include <poponnx/popx/op/matmulx.hpp>
 #include <poponnx/popx/op/maxpoolx.hpp>
+#include <poponnx/popx/op/mulx.hpp>
 #include <poponnx/popx/op/negatex.hpp>
 #include <poponnx/popx/op/nllx.hpp>
 #include <poponnx/popx/op/padx.hpp>
@@ -481,6 +482,20 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::MAXPOOLGRAD: {
     return std::unique_ptr<Opx>(new MaxPoolGradOpx(op, this));
+  }
+
+  case OpType::MUL: {
+    return std::unique_ptr<Opx>(new MulOpx(op, this));
+  }
+
+  case OpType::MULARG0GRAD: {
+    throw error("MulArg0GradOp should be optimised out, \"MulArgGradOp\" "
+                "pattern is required");
+  }
+
+  case OpType::MULARG1GRAD: {
+    throw error("MulArg1GradOp should be optimised out, \"MulArgGradOp\" "
+                "pattern is required");
   }
 
   case OpType::NEGATE: {

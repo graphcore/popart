@@ -32,6 +32,7 @@ PatternTypes::PatternTypes() {
               {"SplitConvBias", PatternType::SPLITCONVBIAS},
               {"OpToIdentity", PatternType::OPTOIDENTITY},
               {"SubtractArg1GradOp", PatternType::SUBTRACTARG1GRADOP},
+              {"MulArgGradOp", PatternType::MULARGGRADOP},
               {"Inplace0", PatternType::INPLACE0}};
 
   std::vector<std::string> opTypeKeys;

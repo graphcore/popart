@@ -23,6 +23,7 @@
 // The patterns
 #include <poponnx/patterns/convbias.hpp>
 #include <poponnx/patterns/inplace.hpp>
+#include <poponnx/patterns/mularggradoppattern.hpp>
 #include <poponnx/patterns/optoidentitypattern.hpp>
 #include <poponnx/patterns/postnrepl.hpp>
 #include <poponnx/patterns/preunirepl.hpp>
@@ -40,6 +41,7 @@
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/matmul.hpp>
 #include <poponnx/op/maxpool.hpp>
+#include <poponnx/op/mul.hpp>
 #include <poponnx/op/negate.hpp>
 #include <poponnx/op/pad.hpp>
 #include <poponnx/op/reducesum.hpp>
@@ -505,6 +507,11 @@ void Ir::prepare(const IrBundle &gb) {
 
     case PatternType::SUBTRACTARG1GRADOP: {
       patterns.emplace_back(make_unique<SubtractArg1GradOpPattern>());
+      break;
+    }
+
+    case PatternType::MULARGGRADOP: {
+      patterns.emplace_back(make_unique<MulArgGradOpPattern>());
       break;
     }
 
@@ -1653,7 +1660,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::MAXPOOL: {
     return pOp(new MaxPoolOp(node, this));
   }
-
+  case OpType::MUL: {
+    return pOp(new MulOp(node, this));
+  }
   case OpType::PAD: {
     return pOp(new PadOp(node, this));
   }
@@ -1690,6 +1699,8 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::NLLGRAD:
   case OpType::L1GRAD:
   case OpType::MAXPOOLGRAD:
+  case OpType::MULARG0GRAD:
+  case OpType::MULARG1GRAD:
   case OpType::SOFTMAXGRAD:
   case OpType::SGDVARUPDATE:
   case OpType::CONSTSGDVARUPDATE:

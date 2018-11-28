@@ -43,6 +43,10 @@ add_test(NAME model7
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model7.py)
 
+add_test(NAME model8
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/model8.py)
+
 add_test(NAME model_conv_bias
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model_conv_bias.py)

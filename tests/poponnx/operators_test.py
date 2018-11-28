@@ -236,3 +236,167 @@ def test_maxpool(tmpdir):
     torch_output = torch_avgpool(torch.from_numpy(data))
 
     assert (np.array_equal(torch_output.numpy(), anchors[o]))
+
+
+def test_mul(tmpdir):
+    builder = poponnx.Builder()
+
+    shape = poponnx.TensorInfo("FLOAT", [2])
+    i1 = builder.addInputTensor(shape)
+    i2 = builder.addInputTensor(shape)
+
+    o = builder.mul([i1, i2])
+
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    earlyInfo = poponnx.EarlyInfo()
+    earlyInfo.add(i1, shape)
+    earlyInfo.add(i2, shape)
+
+    print('')
+    print('i1', i1)
+    print('i2', i2)
+    print('o', o)
+    dataFlow = poponnx.DataFlow(1, 1, [o, 'd__' + i1, 'd__' + i2, 'd__' + o],
+                                poponnx.AnchorReturnType.ALL)
+    optimizer = poponnx.SGD(0.01)
+    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
+
+    opts = poponnx.SessionOptionsCore()
+    opts.logging = {"all": "TRACE"}
+    opts.exportDot = True
+
+    optPasses = ["PreUniRepl", "MulArgGradOp"]
+
+    session = poponnx.Session(
+        fnModel=proto,
+        earlyInfo=earlyInfo,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        outputdir=str(tmpdir),
+        passes=optPasses,
+        userOptions=opts)
+
+    session.setDevice(tu.get_poplar_cpu_device())
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    # generate random test data
+    d1 = np.random.rand(*shape.shape()).astype(np.float32)
+    d2 = np.random.rand(*shape.shape()).astype(np.float32)
+
+    inputs = {i1: d1, i2: d2}
+
+    # run poponnx training step
+    stepio = poponnx.PyStepIO(inputs, anchors)
+    session.train(stepio)
+
+    # do a multiply with pytorch to compare to poponnx output
+    ti1 = torch.from_numpy(d1)
+    ti1.requires_grad_(True)
+    ti2 = torch.from_numpy(d2)
+    ti2.requires_grad_(True)
+    to = ti1 * ti2
+
+    # pass poponnx output gradient through the pytorch mul gradient
+    # to compare to poponnx mul gradient output
+    tg = to.grad_fn(torch.from_numpy(anchors['d__' + o]))
+
+    # convert torch output to numpy
+    to = to.data.numpy()
+    tg = (tg[0].data.numpy(), tg[1].data.numpy())
+
+    # check output of op
+    assert np.array_equal(to, anchors[o])
+    # check output of gradient ops
+    assert np.array_equal(tg[0], anchors['d__' + i1])
+    assert np.array_equal(tg[1], anchors['d__' + i2])
+
+
+def test_broadcast_mul(tmpdir):
+    builder = poponnx.Builder()
+
+    i1_shape = poponnx.TensorInfo("FLOAT", [2, 2])
+    i2_shape = poponnx.TensorInfo("FLOAT", [2])
+
+    i1 = builder.addInputTensor(i1_shape)
+    i2 = builder.addInputTensor(i2_shape)
+
+    o = builder.mul([i1, i2])
+
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    earlyInfo = poponnx.EarlyInfo()
+    earlyInfo.add(i1, i1_shape)
+    earlyInfo.add(i2, i2_shape)
+
+    print('')
+    print('i1', i1)
+    print('i2', i2)
+    print('o', o)
+    dataFlow = poponnx.DataFlow(1, 1, [o, 'd__' + i1, 'd__' + i2, 'd__' + o],
+                                poponnx.AnchorReturnType.ALL)
+    optimizer = poponnx.SGD(0.01)
+    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
+
+    opts = poponnx.SessionOptionsCore()
+    opts.logging = {"all": "TRACE"}
+    opts.exportDot = True
+
+    optPasses = ["PreUniRepl", "MulArgGradOp"]
+
+    session = poponnx.Session(
+        fnModel=proto,
+        earlyInfo=earlyInfo,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        outputdir=str(tmpdir),
+        passes=optPasses,
+        userOptions=opts)
+
+    session.setDevice(tu.get_poplar_cpu_device())
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    # generate random test data
+    d1 = np.random.rand(*i1_shape.shape()).astype(np.float32)
+    d2 = np.random.rand(*i2_shape.shape()).astype(np.float32)
+
+    inputs = {i1: d1, i2: d2}
+
+    # run poponnx training step
+    stepio = poponnx.PyStepIO(inputs, anchors)
+    session.train(stepio)
+
+    # do a multiply with pytorch to compare to poponnx output
+    ti1 = torch.from_numpy(d1)
+    ti1.requires_grad_(True)
+    ti2 = torch.from_numpy(d2)
+    ti2.requires_grad_(True)
+    to = ti1 * ti2
+
+    # pass poponnx output gradient through the pytorch mul gradient
+    # to compare to poponnx mul gradient output
+    tg = to.grad_fn(torch.from_numpy(anchors['d__' + o]))
+
+    # convert torch output to numpy
+    to = to.data.numpy()
+    tg = (tg[0].data.numpy(), tg[1].data.numpy())
+
+    # check output of op
+    assert np.array_equal(to, anchors[o])
+    # check the grad tensors shapes match the input tensors
+    assert (d1.shape == anchors['d__' + i1].shape)
+    assert (d2.shape == anchors['d__' + i2].shape)
+    # check output of gradient ops
+    # need to do a reduce sum on one of the pytorch outputs
+    assert np.array_equal(tg[0], anchors['d__' + i1])
+    assert np.array_equal(np.sum(tg[1], axis=0), anchors['d__' + i2])

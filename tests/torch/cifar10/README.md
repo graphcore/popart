@@ -22,6 +22,10 @@ model6
 ------
 same as model1, but uses Subtract rather than Add
 
+model8
+------
+same as model1, but uses Mul rather than Add
+
 model_reduce_sum
 ------
 output = sum(conv(input), dim=1) and loss is l1 norm of output
