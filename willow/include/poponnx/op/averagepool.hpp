@@ -5,7 +5,7 @@
 #include <poponnx/names.hpp>
 #include <poponnx/op/receptive.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // c++ note : the conditions are suitable here
 // for the compiler to generate defaults for
@@ -57,6 +57,6 @@ private:
   std::unique_ptr<Op> cloneOfCreator;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

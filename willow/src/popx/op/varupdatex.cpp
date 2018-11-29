@@ -4,7 +4,7 @@
 
 #include <popops/ScaledAdd.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 SGDVarUpdateOpx::SGDVarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -41,4 +41,4 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

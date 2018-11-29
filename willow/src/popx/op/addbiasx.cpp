@@ -4,7 +4,7 @@
 #include <poponnx/op/addbias.hpp>
 #include <poponnx/popx/op/addbiasx.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 AddBiasOpx::AddBiasOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -66,4 +66,4 @@ AddBiasBiasGradOpx::AddBiasBiasGradOpx(Op *op, Devicex *devicex)
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

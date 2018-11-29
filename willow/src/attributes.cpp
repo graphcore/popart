@@ -3,7 +3,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 
 const std::vector<std::string> &Attributes::getNames() const { return names; }
 
@@ -123,4 +123,4 @@ void Attributes::append(std::stringstream &ss) const {
   }
 }
 
-} // namespace willow
+} // namespace poponnx

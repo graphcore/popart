@@ -5,7 +5,7 @@
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // Example 1:
 // Consider the following SERIES of non-linearity ops:
@@ -170,4 +170,4 @@ bool Inplace0::matches(Op *op) const {
   return true;
 }
 
-} // namespace willow
+} // namespace poponnx

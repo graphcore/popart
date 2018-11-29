@@ -6,7 +6,7 @@
 #include <poponnx/popx/op/reducesumx.hpp>
 #include <poponnx/popx/opx.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class AddBiasOp;
 class AddBiasGradOp;
@@ -36,6 +36,6 @@ public:
 };
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

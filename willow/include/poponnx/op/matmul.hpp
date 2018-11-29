@@ -3,7 +3,7 @@
 
 #include <poponnx/ir.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class MatMulOp : public Op {
 public:
@@ -94,6 +94,6 @@ private:
   TensorInfo fwdOpRhsInfo;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

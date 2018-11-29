@@ -4,7 +4,7 @@
 #include <poponnx/names.hpp>
 #include <poponnx/popx/opx.hpp>
 
-namespace willow {
+namespace poponnx {
 
 namespace popx {
 
@@ -20,6 +20,6 @@ public:
 };
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

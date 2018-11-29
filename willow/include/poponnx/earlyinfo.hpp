@@ -3,7 +3,7 @@
 
 #include <poponnx/tensorinfo.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // What is known about the Ir before it is run.
 // This knowledge can sometimes be compiled into the Ir,
@@ -31,6 +31,6 @@ private:
   // indices for example) (TODO T5252)
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

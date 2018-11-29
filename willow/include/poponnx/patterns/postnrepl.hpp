@@ -3,7 +3,7 @@
 
 #include <poponnx/patterns/patterns.hpp>
 
-namespace willow {
+namespace poponnx {
 // consider,
 // (ori) -> [*] -> {(rep1), (rep2), (rep3)}
 // where rep1 = ori, rep2 = ori, rep3 = ori
@@ -41,6 +41,6 @@ public:
   // This pattern can be considered PostUniRepl when N = 1
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

@@ -5,7 +5,7 @@
 #include <map>
 #include <string>
 
-namespace willow {
+namespace poponnx {
 
 /**
  * A structure containing user configuration options for the Session class
@@ -34,6 +34,6 @@ struct SessionOptions {
   std::map<std::string, std::string> loggingOptions;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

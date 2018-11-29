@@ -5,7 +5,7 @@
 #include <poponnx/scheduler.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // A note on non-determinism. For maps with
 // pointers as keys, iterating through them
@@ -146,4 +146,4 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons) const {
   return sorted;
 }
 
-} // namespace willow
+} // namespace poponnx

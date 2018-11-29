@@ -1,7 +1,7 @@
 #include <poponnx/op/negate.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 NegateOp::NegateOp(const OpConstructorBundle &bundle) : Op(bundle) {}
 
@@ -39,4 +39,4 @@ const std::map<int, int> &NegateGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-} // namespace willow
+} // namespace poponnx

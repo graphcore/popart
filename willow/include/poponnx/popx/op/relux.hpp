@@ -4,7 +4,7 @@
 #include <poponnx/names.hpp>
 #include <poponnx/popx/opx.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class ReluOp;
 class ReluInplaceOp;
@@ -34,6 +34,6 @@ public:
 };
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

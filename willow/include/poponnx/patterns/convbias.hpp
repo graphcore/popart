@@ -3,7 +3,7 @@
 
 #include <poponnx/patterns/patterns.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // Expand convolution operations that take a bias variable into a convolution
 // operation followed by an add bias operation.
@@ -24,6 +24,6 @@ public:
   // handle topological constraints.
   PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
-} // namespace willow
+} // namespace poponnx
 
 #endif

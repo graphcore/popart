@@ -3,7 +3,7 @@
 
 #include <poponnx/ir.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class ReduceSumOp : public Op {
 public:
@@ -46,6 +46,6 @@ private:
   const std::vector<int64_t> backward_shape;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

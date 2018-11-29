@@ -5,7 +5,7 @@
 #include <poponnx/popx/op/reducesumx.hpp>
 #include <poponnx/popx/opx.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class MulOp;
 
@@ -19,6 +19,6 @@ public:
 };
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

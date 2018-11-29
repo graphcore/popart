@@ -52,7 +52,7 @@
 #include <poponnx/op/sum.hpp>
 #include <poponnx/op/varupdate.hpp>
 
-namespace willow {
+namespace poponnx {
 
 bool Op::modifies(InIndex) const {
   // default for ops is: No, it does not modify the input
@@ -308,7 +308,7 @@ Tensor *Tensors::get(TensorId tenId) const {
   return found->second.get();
 }
 
-// willow streams and prints are "impolite" (will not add new line at end)
+// poponnx streams and prints are "impolite" (will not add new line at end)
 
 void Op::append(std::stringstream &ss) const {
   appendIO(ss);
@@ -1631,7 +1631,7 @@ Op::Op(const Node &node, Ir *pg)
       opType(getOpTypes().get(node.op_type(), node.domain())),
       // pointer to the Ir containing this node
       pir(pg), id(pir->getAndIncrOpsCounter()),
-      // willow::Attributes constructed from contained of onnx::Attribute s
+      // poponnx::Attributes constructed from contained of onnx::Attribute s
       nAtts(node.attribute()),
       // We set the pointer to the string version of opType, in another map
       p_op_type(&getOpTypes().getName(opType)),
@@ -1773,4 +1773,4 @@ bool Ir::isSchedulable(const OpsBeforeKey &gCons) const {
   return true;
 }
 
-} // namespace willow
+} // namespace poponnx

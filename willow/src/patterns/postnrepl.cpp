@@ -5,7 +5,7 @@
 #include <poponnx/patterns/postnrepl.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // (see .hpp for ascii picture definitions)
 bool PostNRepl::apply(Op *op) const {
@@ -81,4 +81,4 @@ std::vector<const Tensor *> PostNRepl::touches(Op *op) const {
   return outs;
 }
 
-} // namespace willow
+} // namespace poponnx

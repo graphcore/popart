@@ -1,6 +1,6 @@
 #include <poponnx/pbwrap.hpp>
 
-namespace willow {
+namespace poponnx {
 
 InputVecWrapper::InputVecWrapper(const std::vector<TensorId> &inputs_)
     : inputs(inputs_) {}
@@ -58,4 +58,4 @@ const TensorId &OutputMapWrapper::output(int inIndex) const {
 
 int OutputMapWrapper::output_size() const { return get_size(); }
 
-} // namespace willow
+} // namespace poponnx

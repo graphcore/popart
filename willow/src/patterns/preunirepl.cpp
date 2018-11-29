@@ -4,7 +4,7 @@
 #include <poponnx/patterns/preunirepl.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 bool PreUniRepl::matches(Op *op) const {
   // op must have 1 input, and that input
@@ -56,4 +56,4 @@ bool PreUniRepl::apply(Op *op) const {
   return true;
 }
 
-} // namespace willow
+} // namespace poponnx

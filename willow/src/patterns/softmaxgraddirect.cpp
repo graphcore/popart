@@ -3,7 +3,7 @@
 #include <poponnx/op/softmax.hpp>
 #include <poponnx/patterns/softmaxgraddirect.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // NLLGRAD (0) -> x -> SOFTMAXGRAD.
 OpType SoftmaxGradDirect::get0() const { return OpType::NLLGRAD; }
@@ -21,4 +21,4 @@ OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
       pir, dynamic_cast<NllGradOp *>(nllgrad)->nlll())));
 }
 
-} // namespace willow
+} // namespace poponnx

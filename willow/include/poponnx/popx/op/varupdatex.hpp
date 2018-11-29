@@ -4,7 +4,7 @@
 #include <poponnx/names.hpp>
 #include <poponnx/popx/opx.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class SGDVarUpdateOp;
 class ConstSGDVarUpdateOp;
@@ -25,6 +25,6 @@ public:
 };
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

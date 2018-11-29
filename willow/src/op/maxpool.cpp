@@ -2,7 +2,7 @@
 #include <poponnx/op/maxpool.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 MaxPoolOp::MaxPoolOp(const onnx::NodeProto &node, Ir *_pir)
     : HasReceptiveFieldOp(node, _pir) {}
@@ -82,4 +82,4 @@ const std::map<int, int> &MaxPoolGradOp::gradOutToNonGradIn() const {
 
 void MaxPoolGradOp::setup() { output.tensor(0)->info = unpooledInfo; }
 
-} // namespace willow
+} // namespace poponnx

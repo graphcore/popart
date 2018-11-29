@@ -4,7 +4,7 @@
 
 #include <popops/ElementWise.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 MulOpx::MulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -26,4 +26,4 @@ void MulOpx::grow(poplar::program::Sequence &prog) const {
 MulOp *MulOpx::getMulOp() const { return dynamic_cast<MulOp *>(op_p); }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

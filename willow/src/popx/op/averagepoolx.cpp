@@ -5,7 +5,7 @@
 
 #include <popnn/Pooling.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 AveragePoolOpx::AveragePoolOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -68,4 +68,4 @@ AveragePoolGradOp *AveragePoolGradOpx::getAveragePoolGradOp() const {
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

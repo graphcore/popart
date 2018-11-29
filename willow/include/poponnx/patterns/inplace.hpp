@@ -3,7 +3,7 @@
 
 #include <poponnx/patterns/patterns.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // For an Op "op" with
 //    N inputs and 1 output,
@@ -19,6 +19,6 @@ public:
   PatternPhase phase() const final { return PatternPhase::WITHTOPOCONS; }
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

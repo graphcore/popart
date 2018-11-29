@@ -4,7 +4,7 @@
 #include <poponnx/patterns/convbias.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 bool ConvBiasPattern::matches(Op *op) const {
   return (op->opType == OpType::CONV) && (op->input.n() == 3);
@@ -45,4 +45,4 @@ bool ConvBiasPattern::apply(Op *op) const {
   return true;
 }
 
-} // namespace willow
+} // namespace poponnx

@@ -1,7 +1,7 @@
 #include <poponnx/op/squeeze.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 SqueezeOp::SqueezeOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
 
@@ -40,4 +40,4 @@ const std::map<int, int> &SqueezeGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-} // namespace willow
+} // namespace poponnx

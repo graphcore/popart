@@ -4,7 +4,7 @@
 #include <poponnx/names.hpp>
 #include <poponnx/tensorinfo.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // get the learning rate Tensor's id.
 // Of course, the tensor is rank 0
@@ -76,6 +76,6 @@ public:
   void resetTensorDatas(Ir *) const final;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

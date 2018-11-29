@@ -3,7 +3,7 @@
 
 #include <poponnx/patterns/patterns.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // Replace reduce sum operations that reduce over no axes, or reduce on an axis
 // of size 1, with an identity operation
@@ -21,6 +21,6 @@ public:
   bool apply(Op *) const override;
   PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
-} // namespace willow
+} // namespace poponnx
 
 #endif

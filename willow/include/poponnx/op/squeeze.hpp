@@ -3,7 +3,7 @@
 
 #include <poponnx/ir.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class SqueezeOp : public Op {
 public:
@@ -25,6 +25,6 @@ private:
   TensorInfo unsqueezedInfo;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

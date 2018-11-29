@@ -4,7 +4,7 @@
 #include <map>
 #include <poponnx/names.hpp>
 
-namespace willow {
+namespace poponnx {
 
 enum class OpType;
 
@@ -78,6 +78,6 @@ public:
   virtual PatternPhase phase() const = 0;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

@@ -10,7 +10,7 @@
 #include <poplin/ConvUtil.hpp>
 #include <poplin/Convolution.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 poplin::ConvParams getFwdConvParams(const ConvOp *cOp) {
@@ -209,4 +209,4 @@ ConvWeightsGradOp *ConvWeightsGradOpx::getConvWeightsGradOp() const {
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

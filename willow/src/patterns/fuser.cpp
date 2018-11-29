@@ -4,7 +4,7 @@
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 bool Fuser::apply(Op *op) const {
   Ir *pir = op->pir;
@@ -72,4 +72,4 @@ std::vector<const Tensor *> Fuser::touches(Op *op) const {
   return {op->output.tensor(0)};
 }
 
-} // namespace willow
+} // namespace poponnx

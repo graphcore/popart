@@ -8,7 +8,7 @@
 // taken directly from enigma, commit
 // Date:   Fri Oct 19 13:54:14 2018 +0100
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 namespace enigma {
 
@@ -16,6 +16,6 @@ enum class DeviceType { Cpu, IpuModel, Sim, Hw };
 
 } // namespace enigma
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

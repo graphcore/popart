@@ -14,7 +14,7 @@
 #include <iostream>
 #include <string>
 
-namespace willow {
+namespace poponnx {
 namespace logging {
 
 namespace {
@@ -153,7 +153,7 @@ LoggingContext::LoggingContext() {
       sink =
           std::make_shared<spdlog::sinks::simple_file_sink_mt>(logDest, true);
     } catch (const spdlog::spdlog_ex &e) {
-      // Should we be throwing an willow exception?
+      // Should we be throwing an poponnx exception?
       std::cerr << "Error opening log file: " << e.what() << std::endl;
       throw;
     }
@@ -227,4 +227,4 @@ void setLogLevel(Module m, Level l) {
 void flush(Module m) { LoggingContext::getLogger(m)->flush(); }
 
 } // namespace logging
-} // namespace willow
+} // namespace poponnx

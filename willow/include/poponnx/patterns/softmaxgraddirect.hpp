@@ -3,7 +3,7 @@
 
 #include <poponnx/patterns/fuser.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // consider,
 // (label), (probs) -> [NLLGrad]
@@ -19,6 +19,6 @@ private:
   OpId moveMergedIntoIr(Op *baseOp) const final;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

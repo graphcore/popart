@@ -4,7 +4,7 @@
 #include <poponnx/optimizer.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 Optimizer::~Optimizer()                 = default;
 Optimizer::Optimizer()                  = default;
@@ -98,4 +98,4 @@ OptimizerType ConstSGD::type() const { return OptimizerType::CONSTSGD; }
 
 std::string ConstSGD::type_s() const { return "ConstSGD"; }
 
-} // namespace willow
+} // namespace poponnx

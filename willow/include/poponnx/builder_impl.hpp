@@ -7,7 +7,7 @@
 #include <map>
 #include <string>
 
-namespace willow {
+namespace poponnx {
 
 /**
  * An implementation of a Builder
@@ -214,5 +214,5 @@ private:
   std::map<std::string, TensorId> tensorTranslation_;
 };
 
-} // namespace willow
+} // namespace poponnx
 #endif // GUARD_BUILDER_IMPL_H

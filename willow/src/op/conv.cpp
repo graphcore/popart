@@ -6,7 +6,7 @@
 // The CPU backend may require cblas.h
 // #include <cblas.h>
 
-namespace willow {
+namespace poponnx {
 
 int ConvOp::dataInIndex() { return 0; }
 int ConvOp::weightsInIndex() { return 1; }
@@ -128,4 +128,4 @@ int ConvDataGradOp::getWeightsIn() const { return 0; }
 
 int ConvDataGradOp::getGradConvolvedIn() const { return 1; }
 
-} // namespace willow
+} // namespace poponnx

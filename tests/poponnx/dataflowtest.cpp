@@ -5,10 +5,10 @@
 
 #include <poponnx/ir.hpp>
 
-using namespace willow;
+using namespace poponnx;
 
 BOOST_AUTO_TEST_CASE(DataFlow_Case1) {
-  auto df = willow::DataFlow();
+  auto df = poponnx::DataFlow();
 
   BOOST_CHECK(df.nAnchors() == 0);
   BOOST_CHECK(df.batchSize() == 0);
@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case1) {
 
 BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
 
-  auto df = willow::DataFlow(5, 2, {"one", "two"}, AnchorReturnType::ALL);
+  auto df = poponnx::DataFlow(5, 2, {"one", "two"}, AnchorReturnType::ALL);
 
   BOOST_CHECK(df.nAnchors() == 2);
   BOOST_CHECK(df.batchSize() == 2);
@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
   BOOST_CHECK(df.isAnchored("two") == true);
   BOOST_CHECK(df.isAnchored("three") == false);
 
-  willow::DataFlow df2(df);
+  poponnx::DataFlow df2(df);
 
   BOOST_CHECK(df2.nAnchors() == 2);
   BOOST_CHECK(df2.batchSize() == 2);
@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
   BOOST_CHECK(df2.isAnchored("three") == false);
   BOOST_CHECK(df2.anchors()[0] == "one");
 
-  willow::DataFlow df3 = df;
+  poponnx::DataFlow df3 = df;
 
   BOOST_CHECK(df3.nAnchors() == 2);
   BOOST_CHECK(df3.batchSize() == 2);

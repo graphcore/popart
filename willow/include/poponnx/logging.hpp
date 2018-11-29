@@ -35,7 +35,7 @@
 /// 4. Update the ONNX webpage to describe the new module
 ///    (https://phabricator.sourcevertex.net/w/onnx/)
 
-namespace willow {
+namespace poponnx {
 namespace logging {
 
 enum class Level {
@@ -153,6 +153,6 @@ MAKE_MODULE_TEMPLATE(devicex)
   logging::lvl("{}: " fmtStr, __PRETTY_FUNCTION__, __VA_ARGS__)
 
 } // namespace logging
-} // namespace willow
+} // namespace poponnx
 
 #endif // GUARD_LOGGING_HPP

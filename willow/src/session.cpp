@@ -11,7 +11,7 @@
 #include <poponnx/tensordata.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 
 Session::Session() {}
 
@@ -166,4 +166,4 @@ void Session::resetHostWeights(const std::string &modelProtoOrFilename) {
   ir.resetWeights(modelProto);
 }
 
-} // namespace willow
+} // namespace poponnx

@@ -4,7 +4,7 @@
 #include <poponnx/ir.hpp>
 #include <poponnx/op/loss.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class L1Loss : public Loss {
 public:
@@ -50,6 +50,6 @@ private:
   const L1Loss *l1loss_;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

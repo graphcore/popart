@@ -6,7 +6,7 @@
 #include <ostream>
 #include <sstream>
 
-namespace willow {
+namespace poponnx {
 
 using TensorId = std::string;
 using TaskId   = std::string;
@@ -51,6 +51,6 @@ class StepIO;
 
 using OpsBeforeKey = std::map<Op *, std::vector<Op *>>;
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

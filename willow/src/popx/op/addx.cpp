@@ -4,7 +4,7 @@
 
 #include <popops/ElementWise.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 AddOpx::AddOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -40,4 +40,4 @@ AddArg1GradOpx::AddArg1GradOpx(Op *op, Devicex *devicex)
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

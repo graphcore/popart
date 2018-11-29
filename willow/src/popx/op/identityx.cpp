@@ -2,7 +2,7 @@
 #include <poponnx/op/identity.hpp>
 #include <poponnx/popx/op/identityx.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 IdentityOpx::IdentityOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -23,4 +23,4 @@ IdentityGradOpx::IdentityGradOpx(Op *op, Devicex *devicex)
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

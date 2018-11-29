@@ -1,5 +1,5 @@
-#ifndef GUARD_WILLOW_PRITASK_HPP
-#define GUARD_WILLOW_PRITASK_HPP
+#ifndef GUARD_PRITASK_HPP
+#define GUARD_PRITASK_HPP
 
 #include <functional>
 #include <string>
@@ -7,7 +7,7 @@
 #include <vector>
 #include <poponnx/names.hpp>
 
-namespace willow {
+namespace poponnx {
 
 /** A Pritask is a task which has a priority and a set of dependent tasks. */
 class PriTask {
@@ -44,6 +44,6 @@ public:
   PriTasks() = default;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

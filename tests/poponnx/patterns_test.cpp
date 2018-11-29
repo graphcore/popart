@@ -12,7 +12,7 @@
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorinfo.hpp>
 
-using namespace willow;
+using namespace poponnx;
 
 BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
   // clang-format off

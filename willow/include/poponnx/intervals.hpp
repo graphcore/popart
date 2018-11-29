@@ -4,7 +4,7 @@
 #include <array>
 #include <vector>
 
-namespace willow {
+namespace poponnx {
 
 // split [0,N) into intervals, s.t. each subsequent
 // interval has width 1 less than the previous one
@@ -14,6 +14,6 @@ namespace willow {
 // 2 eggs.
 std::vector<std::array<int, 2>> getDecreasingIntervals(int N);
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

@@ -3,7 +3,7 @@
 
 #include <poponnx/transforms/transform.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class Recompute : public Transform {
 public:
@@ -13,6 +13,6 @@ public:
   virtual bool apply(Ir &ir) override;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

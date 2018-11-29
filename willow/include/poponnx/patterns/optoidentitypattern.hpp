@@ -3,7 +3,7 @@
 
 #include <poponnx/patterns/patterns.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // Replace ops that return their only input unchanged with an identity op
 class OpToIdentityPattern : public Pattern {
@@ -22,6 +22,6 @@ public:
   // handle topological constraints.
   PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
-} // namespace willow
+} // namespace poponnx
 
 #endif

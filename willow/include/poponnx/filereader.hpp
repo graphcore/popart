@@ -5,7 +5,7 @@
 #include <sstream>
 #include <poponnx/names.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace io {
 
 // get the canonical directory name
@@ -68,5 +68,5 @@ std::vector<std::string> getFns(const std::string &dir);
 std::vector<std::string> getDirns(const std::string &dir);
 
 } // namespace io
-} // namespace willow
+} // namespace poponnx
 #endif

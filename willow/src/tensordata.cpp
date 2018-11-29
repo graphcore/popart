@@ -4,7 +4,7 @@
 
 #include <cstring>
 
-namespace willow {
+namespace poponnx {
 
 TensorData::TensorData(const onnx::TensorProto &tp) {
   ConstVoidData cv_data = onnxutil::getConstData(tp);
@@ -27,4 +27,4 @@ void TensorData::resetData(const onnx::TensorProto &tp) {
   std::memcpy(data_.data(), cv_data.data, cv_data.info.nbytes());
 }
 
-} // namespace willow
+} // namespace poponnx

@@ -14,7 +14,7 @@
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/transforms/prune.hpp>
 
-using namespace willow;
+using namespace poponnx;
 
 BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
   // Build an onnnx model

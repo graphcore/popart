@@ -4,7 +4,7 @@
 #include <poponnx/names.hpp>
 #include <poponnx/popx/opx.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class SumOp;
 
@@ -18,6 +18,6 @@ public:
 };
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

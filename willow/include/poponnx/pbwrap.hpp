@@ -5,7 +5,7 @@
 #include <vector>
 #include <poponnx/names.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // These classes pass calls to .size() and .at() to
 // input_size() and input(int) and output_size() and output()
@@ -58,6 +58,6 @@ public:
   int output_size() const;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

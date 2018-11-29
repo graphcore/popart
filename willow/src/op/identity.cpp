@@ -1,7 +1,7 @@
 #include <poponnx/op/identity.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 IdentityOp::IdentityOp(const OpConstructorBundle &bundle) : Op(bundle) {}
 
@@ -40,4 +40,4 @@ const std::map<int, int> &IdentityGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-} // namespace willow
+} // namespace poponnx

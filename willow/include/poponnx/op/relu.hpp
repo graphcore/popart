@@ -3,7 +3,7 @@
 
 #include <poponnx/ir.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class ReluOp : public Op {
 public:
@@ -43,6 +43,6 @@ public:
   int getGradReludIn() const;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

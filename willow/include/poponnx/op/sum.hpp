@@ -3,7 +3,7 @@
 
 #include <poponnx/ir.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class SumOp : public Op {
 public:
@@ -12,6 +12,6 @@ public:
   void setup() final;
   std::unique_ptr<Op> clone() const final;
 };
-} // namespace willow
+} // namespace poponnx
 
 #endif

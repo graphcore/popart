@@ -2,7 +2,7 @@
 #include <poponnx/op/averagepool.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 AveragePoolOp::AveragePoolOp(const onnx::NodeProto &node, Ir *_pir)
     : HasReceptiveFieldOp(node, _pir) {}
@@ -76,4 +76,4 @@ const std::map<int, int> &AveragePoolGradOp::gradOutToNonGradIn() const {
 
 void AveragePoolGradOp::setup() { output.tensor(0)->info = unpooledInfo; }
 
-} // namespace willow
+} // namespace poponnx

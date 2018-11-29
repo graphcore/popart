@@ -4,14 +4,14 @@
 #include <poplar/exceptions.hpp>
 #include <poputil/exceptions.hpp>
 
-namespace willow {
+namespace poponnx {
 
 error::error(const std::string &what) : std::runtime_error(what) {
   logging::err(what);
 }
 
 ErrorSource getErrorSource(const std::exception &e) {
-  if (dynamic_cast<const willow::error *>(&e)) {
+  if (dynamic_cast<const poponnx::error *>(&e)) {
     return ErrorSource::poponnx;
   }
   if (dynamic_cast<const poplar::poplar_error *>(&e)) {
@@ -23,4 +23,4 @@ ErrorSource getErrorSource(const std::exception &e) {
   return ErrorSource::unknown;
 }
 
-} // namespace willow
+} // namespace poponnx

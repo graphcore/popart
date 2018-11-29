@@ -4,7 +4,7 @@
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 
 std::unique_ptr<Op> PadOp::clone() const {
   return std::unique_ptr<Op>(new PadOp(*this));
@@ -34,4 +34,4 @@ bool PadOp::padSizeZero() const {
       pads.cbegin(), pads.cend(), [](int64_t p) { return p == 0; });
 }
 
-} // namespace willow
+} // namespace poponnx

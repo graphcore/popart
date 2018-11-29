@@ -2,7 +2,7 @@
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 
 int SubtractOp::arg0Index() { return 0; }
 int SubtractOp::arg1Index() { return 1; }
@@ -79,4 +79,4 @@ void SubtractArg1GradOp::setup() {
   output.tensor(0)->info = forward_op_arg_info;
 }
 
-} // namespace willow
+} // namespace poponnx

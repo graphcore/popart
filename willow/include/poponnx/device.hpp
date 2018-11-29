@@ -5,7 +5,7 @@
 #include <poponnx/tensordata.hpp>
 #include <poponnx/tensorinfo.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class Device {
 public:
@@ -30,6 +30,6 @@ private:
   const Ir &_ir;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

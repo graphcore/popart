@@ -9,7 +9,7 @@
 
 #include <popops/Reduce.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 ReduceSumOpx::ReduceSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -71,4 +71,4 @@ void ReduceSumGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

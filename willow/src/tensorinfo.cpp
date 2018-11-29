@@ -4,7 +4,7 @@
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 
 TensorInfo::TensorInfo(DataType t, const std::vector<int64_t> &s)
     : dataTypeInfo(&getDataTypeInfoMap().at(t)), shape_v(s) {}
@@ -351,4 +351,4 @@ const std::string &DataTypeInfo::lcasename() const { return lcasename_; }
 
 DataType DataTypeInfo::type() const { return type_; }
 
-} // namespace willow
+} // namespace poponnx

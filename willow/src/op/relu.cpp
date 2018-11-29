@@ -1,7 +1,7 @@
 #include <poponnx/op/relu.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 bool ReluOp::hasInplaceVariant(InIndex) const {
   // we could throw an error if the indices are not both zero,
@@ -66,4 +66,4 @@ int ReluGradOp::getReludIn() const { return 1; }
 
 int ReluGradOp::getGradReludIn() const { return 0; }
 
-} // namespace willow
+} // namespace poponnx

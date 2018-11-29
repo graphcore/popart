@@ -4,12 +4,12 @@
 #include <poponnx/names.hpp>
 #include <poponnx/tensorinfo.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // TODO: This API should change when T5207 is done
 
 // A class to hold data, used
-// within the willow::Tensor class.
+// within the poponnx::Tensor class.
 class TensorData {
 public:
   // create by copying from src to data_,
@@ -56,6 +56,6 @@ public:
   virtual MutableVoidData out(TensorId) const = 0;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

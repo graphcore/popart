@@ -7,7 +7,7 @@
 
 #include <poplin/Convolution.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class ConvOp;
 class ConvWeightsGradOp;
@@ -52,6 +52,6 @@ public:
 };
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

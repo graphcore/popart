@@ -4,7 +4,7 @@
 #include <poponnx/names.hpp>
 #include <poponnx/popx/opx.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class MatMulOp;
 class MatMulLhsGradOp;
@@ -96,6 +96,6 @@ private:
 };
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

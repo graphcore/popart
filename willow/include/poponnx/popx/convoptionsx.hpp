@@ -7,7 +7,7 @@
 
 #include <poplar/OptionFlags.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 // --- TODO ---
 // THIS WHOLE FILE WILL BE REMOVED ONCE T5614 is done.
@@ -33,6 +33,6 @@ struct ConvOptions {
 };
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

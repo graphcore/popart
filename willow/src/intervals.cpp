@@ -2,7 +2,7 @@
 // for std::sqrt
 #include <cmath>
 
-namespace willow {
+namespace poponnx {
 
 std::vector<std::array<int, 2>> getDecreasingIntervals(int N) {
   // what is the largest K s.t.
@@ -33,4 +33,4 @@ std::vector<std::array<int, 2>> getDecreasingIntervals(int N) {
   }
 }
 
-} // namespace willow
+} // namespace poponnx

@@ -4,7 +4,7 @@
 #include <poponnx/popx/opx.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 Opx::Opx(Op *op_p_, Devicex *dv_p_) : op_p(op_p_), dv_p(dv_p_) {}
@@ -108,4 +108,4 @@ poplar::Tensor Opx::broadcast(const std::vector<int64_t> &desired_shape,
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

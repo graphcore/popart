@@ -4,7 +4,7 @@
 #include <vector>
 #include <poponnx/names.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class Scheduler {
 
@@ -20,6 +20,6 @@ private:
   const Ir *pir;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

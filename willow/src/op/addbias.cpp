@@ -5,7 +5,7 @@
 #include <poponnx/op/conv.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 int AddBiasOp::dataInIndex() { return 0; }
 int AddBiasOp::biasInIndex() { return 1; }
@@ -68,4 +68,4 @@ const std::map<int, int> &AddBiasDataGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-} // namespace willow
+} // namespace poponnx

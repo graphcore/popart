@@ -3,7 +3,7 @@
 #include <poponnx/op/negate.hpp>
 #include <poponnx/popx/op/negatex.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 NegateOpx::NegateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -29,4 +29,4 @@ NegateGradOpx::NegateGradOpx(Op *op, Devicex *devicex)
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

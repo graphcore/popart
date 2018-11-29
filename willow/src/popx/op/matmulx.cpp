@@ -9,7 +9,7 @@
 #include <poplin/MatMul.hpp>
 #include <popops/Reduce.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 MatMulOpx::MatMulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -346,4 +346,4 @@ std::vector<std::size_t> MatMulRhsGradOpx::getOutputReductionAxes() const {
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

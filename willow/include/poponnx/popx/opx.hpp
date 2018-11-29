@@ -8,7 +8,7 @@
 
 #include <poponnx/names.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class TensorInfo;
 
@@ -80,6 +80,6 @@ public:
 };
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

@@ -3,7 +3,7 @@
 
 #include <poponnx/names.hpp>
 
-namespace willow {
+namespace poponnx {
 
 enum class DeviceType { IpuModel, Cpu, Ipu, Sim };
 
@@ -155,6 +155,6 @@ public:
  */
 std::ostream &operator<<(std::ostream &os, const DeviceType &dt);
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

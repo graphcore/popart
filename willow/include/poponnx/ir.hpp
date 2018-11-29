@@ -19,7 +19,7 @@
 #include <poponnx/patterns/patterns.hpp>
 #include <poponnx/transforms/transform.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // helper class used during backwards pass construction.
 // This class helps to decouple the non-grad op from a
@@ -599,6 +599,6 @@ private:
   void validateAnchors() const;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

@@ -2,7 +2,7 @@
 #include <poponnx/op/softmax.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 SoftmaxOp::SoftmaxOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
 
@@ -68,4 +68,4 @@ void SoftmaxGradDirectOp::setup() {
   output.tensor(0)->info = input.tensor(0)->info;
 }
 
-} // namespace willow
+} // namespace poponnx

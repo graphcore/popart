@@ -3,7 +3,7 @@
 
 #include <poponnx/patterns/patterns.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // remove ()->[] where () is a Tensor and [] is an Op and ()->[]
 // forms part of [.]->()->[]->(.). after this, this section will
@@ -26,6 +26,6 @@ public:
   PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

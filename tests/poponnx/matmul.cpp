@@ -9,7 +9,7 @@
 
 #include <poponnx/popx/op/matmulx.hpp>
 
-using namespace willow;
+using namespace poponnx;
 
 // Test the simple [2x2] * [2x2] matrix
 BOOST_AUTO_TEST_CASE(MatMul_Case1) {
@@ -18,50 +18,50 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
   onnx::NodeProto node;
   node.set_op_type("MatMul");
 
-  willow::Ir ir;
+  poponnx::Ir ir;
 
-  willow::MatMulOp mm(node, &ir);
+  poponnx::MatMulOp mm(node, &ir);
 
-  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
-  lhs.info.set(willow::TP::FLOAT, {2, 2});
+  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
+  lhs.info.set(poponnx::TP::FLOAT, {2, 2});
   mm.input.insert(0, &lhs);
 
-  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
-  rhs.info.set(willow::TP::FLOAT, {2, 2});
+  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, ir);
+  rhs.info.set(poponnx::TP::FLOAT, {2, 2});
   mm.input.insert(1, &rhs);
 
-  willow::Tensor out("out", willow::TensorType::ActGrad, ir);
+  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, ir);
   mm.output.insert(0, &out);
 
   // Test the setup is correct
   mm.setup();
   BOOST_CHECK(mm.output.tensor(0)->info.dim(0) == 2);
   BOOST_CHECK(mm.output.tensor(0)->info.dim(1) == 2);
-  BOOST_CHECK(mm.output.tensor(0)->info.dataType() == willow::TP::FLOAT);
+  BOOST_CHECK(mm.output.tensor(0)->info.dataType() == poponnx::TP::FLOAT);
   BOOST_CHECK(mm.rhsIn() == &rhs);
   BOOST_CHECK(mm.lhsIn() == &lhs);
 
   // Test the clone operation
-  std::unique_ptr<willow::Op> mmClone = mm.clone();
-  willow::MatMulOp *mmPtr = dynamic_cast<willow::MatMulOp *>(mmClone.get());
+  std::unique_ptr<poponnx::Op> mmClone = mm.clone();
+  poponnx::MatMulOp *mmPtr = dynamic_cast<poponnx::MatMulOp *>(mmClone.get());
   BOOST_CHECK(mmPtr != nullptr);
   // Clone aka copy does not copy input & output???
   // BOOST_CHECK(mmPtr->output.tensor(0)->info.dim(0) == 2);
   // BOOST_CHECK(mmPtr->output.tensor(0)->info.dim(1) == 2);
-  // BOOST_CHECK(mmPtr->output.tensor(0)->info.dataType() == willow::TP::FLOAT);
-  // BOOST_CHECK(mmPtr->rhsIn() == &rhs);
+  // BOOST_CHECK(mmPtr->output.tensor(0)->info.dataType() ==
+  // poponnx::TP::FLOAT); BOOST_CHECK(mmPtr->rhsIn() == &rhs);
   // BOOST_CHECK(mmPtr->lhsIn() == &lhs);
 
   auto gradOps = mm.getGradOps();
   BOOST_CHECK(gradOps.size() == 2);
 
   for (auto &&gradOp : gradOps) {
-    willow::Op *op = gradOp.get();
-    if (typeid(*op) == typeid(willow::MatMulLhsGradOp)) {
-      willow::MatMulLhsGradOp *lhsGradOp =
-          dynamic_cast<willow::MatMulLhsGradOp *>(op);
+    poponnx::Op *op = gradOp.get();
+    if (typeid(*op) == typeid(poponnx::MatMulLhsGradOp)) {
+      poponnx::MatMulLhsGradOp *lhsGradOp =
+          dynamic_cast<poponnx::MatMulLhsGradOp *>(op);
 
-      willow::Tensor lhsOut("out", willow::TensorType::ActGrad, ir);
+      poponnx::Tensor lhsOut("out", poponnx::TensorType::ActGrad, ir);
       lhsGradOp->output.insert(0, &lhsOut);
 
       BOOST_CHECK(lhsGradOp->getGradInputIndex() == 0);
@@ -71,22 +71,22 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
       BOOST_CHECK(lhsGradOp->output.tensor(0)->info.dim(0) == 2);
       BOOST_CHECK(lhsGradOp->output.tensor(0)->info.dim(1) == 2);
       BOOST_CHECK(lhsGradOp->output.tensor(0)->info.dataType() ==
-                  willow::TP::FLOAT);
+                  poponnx::TP::FLOAT);
 
       auto gradInfo = lhsGradOp->gradInputInfo();
       std::vector<GradInOutMapper> expectedGradInfo = {
-          {0, 0, willow::GradOpInType::GRADOUT},
-          {1, 1, willow::GradOpInType::IN}};
+          {0, 0, poponnx::GradOpInType::GRADOUT},
+          {1, 1, poponnx::GradOpInType::IN}};
       BOOST_CHECK(gradInfo == expectedGradInfo);
 
       auto mapping                       = lhsGradOp->gradOutToNonGradIn();
       std::map<int, int> expectedMapping = {{0, 0}};
       BOOST_CHECK(mapping == expectedMapping);
-    } else if (typeid(*op) == typeid(willow::MatMulRhsGradOp)) {
-      willow::MatMulRhsGradOp *rhsGradOp =
-          dynamic_cast<willow::MatMulRhsGradOp *>(op);
+    } else if (typeid(*op) == typeid(poponnx::MatMulRhsGradOp)) {
+      poponnx::MatMulRhsGradOp *rhsGradOp =
+          dynamic_cast<poponnx::MatMulRhsGradOp *>(op);
 
-      willow::Tensor rhsOut("out", willow::TensorType::ActGrad, ir);
+      poponnx::Tensor rhsOut("out", poponnx::TensorType::ActGrad, ir);
       rhsGradOp->output.insert(0, &rhsOut);
 
       BOOST_CHECK(rhsGradOp->getGradInputIndex() == 0);
@@ -96,12 +96,12 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
       BOOST_CHECK(rhsGradOp->output.tensor(0)->info.dim(0) == 2);
       BOOST_CHECK(rhsGradOp->output.tensor(0)->info.dim(1) == 2);
       BOOST_CHECK(rhsGradOp->output.tensor(0)->info.dataType() ==
-                  willow::TP::FLOAT);
+                  poponnx::TP::FLOAT);
 
       auto gradInfo = rhsGradOp->gradInputInfo();
       std::vector<GradInOutMapper> expectedGradInfo = {
-          {0, 0, willow::GradOpInType::GRADOUT},
-          {1, 0, willow::GradOpInType::IN}};
+          {0, 0, poponnx::GradOpInType::GRADOUT},
+          {1, 0, poponnx::GradOpInType::IN}};
 
       BOOST_CHECK(gradInfo == expectedGradInfo);
 
@@ -123,50 +123,50 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
   onnx::NodeProto node;
   node.set_op_type("MatMul");
 
-  willow::Ir ir;
+  poponnx::Ir ir;
 
-  willow::MatMulOp mm(node, &ir);
+  poponnx::MatMulOp mm(node, &ir);
 
-  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
-  lhs.info.set(willow::TP::FLOAT, {3, 2});
+  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
+  lhs.info.set(poponnx::TP::FLOAT, {3, 2});
   mm.input.insert(0, &lhs);
 
-  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
-  rhs.info.set(willow::TP::FLOAT, {2, 6});
+  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, ir);
+  rhs.info.set(poponnx::TP::FLOAT, {2, 6});
   mm.input.insert(1, &rhs);
 
-  willow::Tensor out("out", willow::TensorType::ActGrad, ir);
+  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, ir);
   mm.output.insert(0, &out);
 
   // Test the setup is correct
   mm.setup();
   BOOST_CHECK(mm.output.tensor(0)->info.dim(0) == 3);
   BOOST_CHECK(mm.output.tensor(0)->info.dim(1) == 6);
-  BOOST_CHECK(mm.output.tensor(0)->info.dataType() == willow::TP::FLOAT);
+  BOOST_CHECK(mm.output.tensor(0)->info.dataType() == poponnx::TP::FLOAT);
   BOOST_CHECK(mm.rhsIn() == &rhs);
   BOOST_CHECK(mm.lhsIn() == &lhs);
 
   // Test the clone operation
-  std::unique_ptr<willow::Op> mmClone = mm.clone();
-  willow::MatMulOp *mmPtr = dynamic_cast<willow::MatMulOp *>(mmClone.get());
+  std::unique_ptr<poponnx::Op> mmClone = mm.clone();
+  poponnx::MatMulOp *mmPtr = dynamic_cast<poponnx::MatMulOp *>(mmClone.get());
   BOOST_CHECK(mmPtr != nullptr);
   // Clone aka copy does not copy input & output???
   // BOOST_CHECK(mmPtr->output.tensor(0)->info.dim(0) == 2);
   // BOOST_CHECK(mmPtr->output.tensor(0)->info.dim(1) == 2);
-  // BOOST_CHECK(mmPtr->output.tensor(0)->info.dataType() == willow::TP::FLOAT);
-  // BOOST_CHECK(mmPtr->rhsIn() == &rhs);
+  // BOOST_CHECK(mmPtr->output.tensor(0)->info.dataType() ==
+  // poponnx::TP::FLOAT); BOOST_CHECK(mmPtr->rhsIn() == &rhs);
   // BOOST_CHECK(mmPtr->lhsIn() == &lhs);
 
   auto gradOps = mm.getGradOps();
   BOOST_CHECK(gradOps.size() == 2);
 
   for (auto &&gradOp : gradOps) {
-    willow::Op *op = gradOp.get();
-    if (typeid(*op) == typeid(willow::MatMulLhsGradOp)) {
-      willow::MatMulLhsGradOp *lhsGradOp =
-          dynamic_cast<willow::MatMulLhsGradOp *>(op);
+    poponnx::Op *op = gradOp.get();
+    if (typeid(*op) == typeid(poponnx::MatMulLhsGradOp)) {
+      poponnx::MatMulLhsGradOp *lhsGradOp =
+          dynamic_cast<poponnx::MatMulLhsGradOp *>(op);
 
-      willow::Tensor lhsOut("out", willow::TensorType::ActGrad, ir);
+      poponnx::Tensor lhsOut("out", poponnx::TensorType::ActGrad, ir);
       lhsGradOp->output.insert(0, &lhsOut);
 
       BOOST_CHECK(lhsGradOp->getGradInputIndex() == 0);
@@ -176,22 +176,22 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
       BOOST_CHECK(lhsGradOp->output.tensor(0)->info.dim(0) == 3);
       BOOST_CHECK(lhsGradOp->output.tensor(0)->info.dim(1) == 2);
       BOOST_CHECK(lhsGradOp->output.tensor(0)->info.dataType() ==
-                  willow::TP::FLOAT);
+                  poponnx::TP::FLOAT);
 
       auto gradInfo = lhsGradOp->gradInputInfo();
       std::vector<GradInOutMapper> expectedGradInfo = {
-          {0, 0, willow::GradOpInType::GRADOUT},
-          {1, 1, willow::GradOpInType::IN}};
+          {0, 0, poponnx::GradOpInType::GRADOUT},
+          {1, 1, poponnx::GradOpInType::IN}};
       BOOST_CHECK(gradInfo == expectedGradInfo);
 
       auto mapping                       = lhsGradOp->gradOutToNonGradIn();
       std::map<int, int> expectedMapping = {{0, 0}};
       BOOST_CHECK(mapping == expectedMapping);
-    } else if (typeid(*op) == typeid(willow::MatMulRhsGradOp)) {
-      willow::MatMulRhsGradOp *rhsGradOp =
-          dynamic_cast<willow::MatMulRhsGradOp *>(op);
+    } else if (typeid(*op) == typeid(poponnx::MatMulRhsGradOp)) {
+      poponnx::MatMulRhsGradOp *rhsGradOp =
+          dynamic_cast<poponnx::MatMulRhsGradOp *>(op);
 
-      willow::Tensor rhsOut("out", willow::TensorType::ActGrad, ir);
+      poponnx::Tensor rhsOut("out", poponnx::TensorType::ActGrad, ir);
       rhsGradOp->output.insert(0, &rhsOut);
 
       BOOST_CHECK(rhsGradOp->getGradInputIndex() == 0);
@@ -201,12 +201,12 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
       BOOST_CHECK(rhsGradOp->output.tensor(0)->info.dim(0) == 2);
       BOOST_CHECK(rhsGradOp->output.tensor(0)->info.dim(1) == 6);
       BOOST_CHECK(rhsGradOp->output.tensor(0)->info.dataType() ==
-                  willow::TP::FLOAT);
+                  poponnx::TP::FLOAT);
 
       auto gradInfo = rhsGradOp->gradInputInfo();
       std::vector<GradInOutMapper> expectedGradInfo = {
-          {0, 0, willow::GradOpInType::GRADOUT},
-          {1, 0, willow::GradOpInType::IN}};
+          {0, 0, poponnx::GradOpInType::GRADOUT},
+          {1, 0, poponnx::GradOpInType::IN}};
 
       BOOST_CHECK(gradInfo == expectedGradInfo);
 
@@ -227,19 +227,19 @@ BOOST_AUTO_TEST_CASE(MatMul_Case3) {
   onnx::NodeProto node;
   node.set_op_type("MatMul");
 
-  willow::Ir ir;
+  poponnx::Ir ir;
 
-  willow::MatMulOp mm(node, &ir);
+  poponnx::MatMulOp mm(node, &ir);
 
-  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
-  lhs.info.set(willow::TP::FLOAT, {2, 1, 4, 3, 2});
+  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
+  lhs.info.set(poponnx::TP::FLOAT, {2, 1, 4, 3, 2});
   mm.input.insert(0, &lhs);
 
-  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
-  rhs.info.set(willow::TP::FLOAT, {3, 1, 2, 6});
+  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, ir);
+  rhs.info.set(poponnx::TP::FLOAT, {3, 1, 2, 6});
   mm.input.insert(1, &rhs);
 
-  willow::Tensor out("out", willow::TensorType::ActGrad, ir);
+  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, ir);
   mm.output.insert(0, &out);
 
   // Test the setup is correct
@@ -249,30 +249,30 @@ BOOST_AUTO_TEST_CASE(MatMul_Case3) {
   BOOST_CHECK(mm.output.tensor(0)->info.dim(2) == 4);
   BOOST_CHECK(mm.output.tensor(0)->info.dim(3) == 3);
   BOOST_CHECK(mm.output.tensor(0)->info.dim(4) == 6);
-  BOOST_CHECK(mm.output.tensor(0)->info.dataType() == willow::TP::FLOAT);
+  BOOST_CHECK(mm.output.tensor(0)->info.dataType() == poponnx::TP::FLOAT);
   BOOST_CHECK(mm.rhsIn() == &rhs);
   BOOST_CHECK(mm.lhsIn() == &lhs);
 
   auto gradOps = mm.getGradOps();
   BOOST_CHECK(gradOps.size() == 2);
-  BOOST_CHECK(gradOps[0]->isConvertibleTo<willow::MatMulLhsGradOp>());
-  BOOST_CHECK(gradOps[1]->isConvertibleTo<willow::MatMulRhsGradOp>());
+  BOOST_CHECK(gradOps[0]->isConvertibleTo<poponnx::MatMulLhsGradOp>());
+  BOOST_CHECK(gradOps[1]->isConvertibleTo<poponnx::MatMulRhsGradOp>());
 
-  std::vector<willow::Tensor> tensors;
+  std::vector<poponnx::Tensor> tensors;
   tensors.reserve(gradOps.size());
 
   for (auto &op : gradOps) {
     // Danger: Can cause a realloc which invalidates pointers. This won't happen
     // if the vector has space reserved.
-    tensors.emplace_back("out", willow::TensorType::ActGrad, ir);
+    tensors.emplace_back("out", poponnx::TensorType::ActGrad, ir);
     op->output.reset(0, &tensors.back());
     op->setup();
   }
 
   BOOST_CHECK(gradOps[0]->output.tensor(0)->info ==
-              mm.input.tensor(willow::MatMulOp::getLhsInputIndex())->info);
+              mm.input.tensor(poponnx::MatMulOp::getLhsInputIndex())->info);
   BOOST_CHECK(gradOps[1]->output.tensor(0)->info ==
-              mm.input.tensor(willow::MatMulOp::getRhsInputIndex())->info);
+              mm.input.tensor(poponnx::MatMulOp::getRhsInputIndex())->info);
 }
 
 // Test invalid rank on lhs
@@ -282,19 +282,19 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase1) {
   onnx::NodeProto node;
   node.set_op_type("MatMul");
 
-  willow::Ir ir;
+  poponnx::Ir ir;
 
-  willow::MatMulOp mm(node, &ir);
+  poponnx::MatMulOp mm(node, &ir);
 
-  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
-  lhs.info.set(willow::TP::FLOAT, {2, 2, 3});
+  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
+  lhs.info.set(poponnx::TP::FLOAT, {2, 2, 3});
   mm.input.insert(0, &lhs);
 
-  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
-  rhs.info.set(willow::TP::FLOAT, {2, 2});
+  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, ir);
+  rhs.info.set(poponnx::TP::FLOAT, {2, 2});
   mm.input.insert(1, &rhs);
 
-  willow::Tensor out("out", willow::TensorType::ActGrad, ir);
+  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, ir);
   mm.output.insert(0, &out);
 
   // Test the setup is correct
@@ -308,19 +308,19 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase3) {
   onnx::NodeProto node;
   node.set_op_type("MatMul");
 
-  willow::Ir ir;
+  poponnx::Ir ir;
 
-  willow::MatMulOp mm(node, &ir);
+  poponnx::MatMulOp mm(node, &ir);
 
-  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
-  lhs.info.set(willow::TP::FLOAT, {2, 3});
+  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
+  lhs.info.set(poponnx::TP::FLOAT, {2, 3});
   mm.input.insert(0, &lhs);
 
-  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
-  rhs.info.set(willow::TP::FLOAT, {10, 2});
+  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, ir);
+  rhs.info.set(poponnx::TP::FLOAT, {10, 2});
   mm.input.insert(1, &rhs);
 
-  willow::Tensor out("out", willow::TensorType::ActGrad, ir);
+  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, ir);
   mm.output.insert(0, &out);
 
   // Test the setup is correct
@@ -334,19 +334,19 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase4) {
   onnx::NodeProto node;
   node.set_op_type("MatMul");
 
-  willow::Ir ir;
+  poponnx::Ir ir;
 
-  willow::MatMulOp mm(node, &ir);
+  poponnx::MatMulOp mm(node, &ir);
 
-  willow::Tensor lhs("lhs", willow::TensorType::ActGrad, ir);
-  lhs.info.set(willow::TP::FLOAT, {});
+  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
+  lhs.info.set(poponnx::TP::FLOAT, {});
   mm.input.insert(0, &lhs);
 
-  willow::Tensor rhs("rhs", willow::TensorType::ActGrad, ir);
-  rhs.info.set(willow::TP::FLOAT, {10, 2});
+  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, ir);
+  rhs.info.set(poponnx::TP::FLOAT, {10, 2});
   mm.input.insert(1, &rhs);
 
-  willow::Tensor out("out", willow::TensorType::ActGrad, ir);
+  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, ir);
   mm.output.insert(0, &out);
 
   // Test the setup is correct

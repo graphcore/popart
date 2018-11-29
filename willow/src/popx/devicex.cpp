@@ -36,7 +36,7 @@
 #include <poponnx/tensordata.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 void Devicex::weightsToHost(
@@ -198,7 +198,7 @@ PopPrograms::programFragment(PopPrograms::ProgramFragmentIndex index) {
 poplar::Graph &Devicex::graph() { return *pGraph; }
 
 Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
-    : willow::Device(ir), tensors(ir) {
+    : poponnx::Device(ir), tensors(ir) {
 
   // do not like the dynamic cast, is there a better way....
   popDevice = dynamic_cast<DevicexInfo &>(deviceInfo).getDevice();
@@ -1081,4 +1081,4 @@ poplar::Type popType(const TensorInfo &info) {
 poplar::Type popType(DataType type) { return popType(TensorInfo(type, {1})); }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

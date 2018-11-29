@@ -3,7 +3,7 @@
 
 #include <poponnx/ir.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class VarUpdateOp : public Op {
 public:
@@ -37,6 +37,6 @@ private:
   float learnRate;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

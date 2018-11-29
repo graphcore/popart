@@ -4,7 +4,7 @@
 #include <cmath>
 
 #include <poponnx/names.hpp>
-namespace willow {
+namespace poponnx {
 
 class Session;
 namespace numerics {
@@ -56,6 +56,6 @@ public:
 };
 
 } // namespace numerics
-} // namespace willow
+} // namespace poponnx
 
 #endif

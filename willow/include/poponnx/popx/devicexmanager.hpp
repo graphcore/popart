@@ -5,29 +5,29 @@
 
 #include <poponnx/devicemanager.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
-class DevicexManager : public willow::DeviceProvider {
+class DevicexManager : public poponnx::DeviceProvider {
 public:
   DevicexManager();
 
-  virtual void
-  enumerate(std::vector<std::unique_ptr<willow::DeviceInfo>> &devices) override;
+  virtual void enumerate(
+      std::vector<std::unique_ptr<poponnx::DeviceInfo>> &devices) override;
 
-  virtual std::unique_ptr<willow::DeviceInfo>
-  createHostDevice(willow::DeviceType type,
+  virtual std::unique_ptr<poponnx::DeviceInfo>
+  createHostDevice(poponnx::DeviceType type,
                    const std::map<std::string, std::string> &options) override;
 
 private:
 };
 
-class DevicexInfo : public willow::DeviceInfo {
+class DevicexInfo : public poponnx::DeviceInfo {
 public:
   DevicexInfo(DeviceProvider &_provider,
-              willow::DeviceType _type,
+              poponnx::DeviceType _type,
               poplar::Device &_device)
-      : willow::DeviceInfo(_provider, _type), device(std::move(_device)) {}
+      : poponnx::DeviceInfo(_provider, _type), device(std::move(_device)) {}
 
   virtual bool attach();
   virtual void detach();
@@ -55,7 +55,7 @@ protected:
 class DevicexCpuInfo : public DevicexInfo {
 public:
   DevicexCpuInfo(DeviceProvider &_provider, poplar::Device &_device)
-      : DevicexInfo(_provider, willow::DeviceType::Cpu, _device) {}
+      : DevicexInfo(_provider, poponnx::DeviceType::Cpu, _device) {}
 
   virtual int getId() const { return 0; }
   virtual std::string getVersion() const { return "<unknown-cpu>"; }
@@ -63,7 +63,7 @@ public:
 class DevicexSimInfo : public DevicexInfo {
 public:
   DevicexSimInfo(DeviceProvider &_provider, poplar::Device &_device)
-      : DevicexInfo(_provider, willow::DeviceType::Sim, _device) {}
+      : DevicexInfo(_provider, poponnx::DeviceType::Sim, _device) {}
 
   virtual int getId() const { return 0; }
   virtual std::string getVersion() const { return "<unknown-sim>"; }
@@ -71,7 +71,7 @@ public:
 class DevicexIpuModelInfo : public DevicexInfo {
 public:
   DevicexIpuModelInfo(DeviceProvider &_provider, poplar::Device &_device)
-      : DevicexInfo(_provider, willow::DeviceType::IpuModel, _device) {}
+      : DevicexInfo(_provider, poponnx::DeviceType::IpuModel, _device) {}
 
   virtual int getId() const { return 0; }
   virtual std::string getVersion() const { return "<unknown-ipumodel>"; }
@@ -79,7 +79,7 @@ public:
 class DevicexIpuInfo : public DevicexInfo {
 public:
   DevicexIpuInfo(DeviceProvider &_provider, int _id, poplar::Device &_device)
-      : DevicexInfo(_provider, willow::DeviceType::Ipu, _device), id(_id) {}
+      : DevicexInfo(_provider, poponnx::DeviceType::Ipu, _device), id(_id) {}
 
   virtual bool attach();
   virtual void detach();
@@ -92,9 +92,9 @@ private:
   int id;
 };
 
-willow::DeviceType convertDeviceType(poplar::TargetType targetType);
+poponnx::DeviceType convertDeviceType(poplar::TargetType targetType);
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

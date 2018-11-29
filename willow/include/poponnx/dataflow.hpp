@@ -4,7 +4,7 @@
 #include <poponnx/dataflow.hpp>
 #include <poponnx/tensorinfo.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // An anchor tensor is a tensor which the user wants returned
 // after a step is run. Anchors are essentially what tensorflow calls
@@ -61,6 +61,6 @@ private:
   AnchorReturnType art_;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

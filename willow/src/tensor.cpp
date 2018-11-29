@@ -8,7 +8,7 @@
 #include <poponnx/tensordata.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 
 void Consumers::takeFrom(Consumers &giver) {
   // we first confirm that no consumers are shared,
@@ -313,4 +313,4 @@ std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
   return tensor_types_m;
 }
 
-} // namespace willow
+} // namespace poponnx

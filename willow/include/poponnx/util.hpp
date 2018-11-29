@@ -4,7 +4,7 @@
 #include <sstream>
 #include <string>
 
-namespace willow {
+namespace poponnx {
 
 // turn input into a string, and pads
 // it if necessary to some minimum length `padSize'
@@ -41,8 +41,7 @@ std::vector<Y> vXtoY(const std::vector<X> &c0) {
   return c1;
 }
 
-// Place this function in the willow namespace for now
-// TODO : Move to C++14 and this function will be standard.
+// TODO : If we move to C++14, this function will be standard.
 template <typename T, typename... Args>
 std::unique_ptr<T> make_unique(Args &&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
@@ -107,6 +106,6 @@ count_mismatch(IIter1 begin1, IIter1 end1, IIter2 begin2, IIter2 end2) {
 }
 
 } // namespace util
-} // namespace willow
+} // namespace poponnx
 
 #endif

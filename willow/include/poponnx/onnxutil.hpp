@@ -4,7 +4,7 @@
 #include <onnx/onnx_pb.h>
 #include <poponnx/tensordata.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace onnxutil {
 
 // for many types (float16, float, int, etc) onnx::TensorProto has
@@ -17,6 +17,6 @@ MutableVoidData getMutableData(onnx::TensorProto &tp);
 onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename);
 
 } // namespace onnxutil
-} // namespace willow
+} // namespace poponnx
 
 #endif

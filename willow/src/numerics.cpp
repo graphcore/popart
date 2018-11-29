@@ -5,7 +5,7 @@
 
 #include <cmath>
 
-namespace willow {
+namespace poponnx {
 namespace numerics {
 
 NumericsReport::NumericsReport(std::string AStarts, // A starts
@@ -101,4 +101,4 @@ std::map<TensorId, float> NumericsReport::getRelativeErrors() {
 }
 
 } // namespace numerics
-} // namespace willow
+} // namespace poponnx

@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_TRANSFORM_HPP
 #define GUARD_NEURALNET_TRANSFORM_HPP
 
-namespace willow {
+namespace poponnx {
 
 class Ir;
 
@@ -13,6 +13,6 @@ public:
   virtual bool apply(Ir &ir) = 0;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

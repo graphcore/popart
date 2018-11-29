@@ -6,7 +6,7 @@
 #include <poponnx/filereader.hpp>
 #include <poponnx/names.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace io {
 
 std::string getCanonicalDirName(const std::string &dirName0) {
@@ -14,7 +14,7 @@ std::string getCanonicalDirName(const std::string &dirName0) {
   if (!bf::is_directory(dirName0)) {
     std::stringstream ss;
     ss << "Directory does not exist: " << dirName0;
-    throw willow::error(ss.str());
+    throw poponnx::error(ss.str());
   }
   bf::path p(dirName0);
   return bf::canonical(dirName0).string();
@@ -239,4 +239,4 @@ std::vector<std::string> getFns(const std::string &dir) {
   return getInDir(dir, is_reg);
 }
 } // namespace io
-} // namespace willow
+} // namespace poponnx

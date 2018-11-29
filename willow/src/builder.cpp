@@ -1,6 +1,6 @@
 #include <poponnx/builder_impl.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class TensorInfo;
 Builder::Builder() : impl_(new BuilderImpl()) {}
@@ -358,4 +358,4 @@ std::vector<int64_t> Builder::getTensorShape(const TensorId id) {
   return impl_->getTensorShape(id);
 }
 
-} // namespace willow
+} // namespace poponnx

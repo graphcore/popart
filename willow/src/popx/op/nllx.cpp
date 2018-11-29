@@ -7,7 +7,7 @@
 #include <popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 NllOpx::NllOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -64,4 +64,4 @@ NllGradOp *NllGradOpx::getNllGradOp() const {
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

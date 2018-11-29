@@ -1,7 +1,7 @@
 #include <poponnx/dataflow.hpp>
 #include <poponnx/error.hpp>
 
-namespace willow {
+namespace poponnx {
 
 DataFlow::DataFlow()
     : batchesPerStep_(0), batchSize_(0), art_(AnchorReturnType::FINAL) {}
@@ -23,4 +23,4 @@ bool DataFlow::isAnchored(TensorId id) const {
   return (s_anchors.count(id) != 0);
 }
 
-} // namespace willow
+} // namespace poponnx

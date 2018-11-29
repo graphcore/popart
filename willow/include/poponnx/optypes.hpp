@@ -5,7 +5,7 @@
 
 #include <poponnx/names.hpp>
 
-namespace willow {
+namespace poponnx {
 
 enum class OpType {
   ADD = 0,
@@ -86,6 +86,6 @@ getSupportedOperations(bool includePrivate);
 OpDomain getOnnxDomain();
 OpDomain getPoponnxDomain();
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

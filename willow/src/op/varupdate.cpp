@@ -2,7 +2,7 @@
 #include <poponnx/op/varupdate.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 VarUpdateOp::VarUpdateOp(std::string op_type, TensorId varId_, Ir *_pir)
     : Op({op_type, _pir, {}, getPoponnxDomain()}), varId(varId_),
       varGradId(getGradId(varId)) {
@@ -41,4 +41,4 @@ std::unique_ptr<Op> ConstSGDVarUpdateOp::clone() const {
   return std::unique_ptr<Op>(new ConstSGDVarUpdateOp(*this));
 }
 
-} // namespace willow
+} // namespace poponnx

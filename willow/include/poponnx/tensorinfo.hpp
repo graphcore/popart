@@ -7,7 +7,7 @@
 #include <vector>
 #include <poponnx/names.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class TensorInfo;
 
@@ -100,6 +100,6 @@ private:
 
 std::ostream &operator<<(std::ostream &stream, const TensorInfo &ti);
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

@@ -3,7 +3,7 @@
 #include <poponnx/onnxutil.hpp>
 #include <poponnx/tensorinfo.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace onnxutil {
 
 ConstVoidData getConstData(const onnx::TensorProto &tp) {
@@ -62,4 +62,4 @@ onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename) {
 }
 
 } // namespace onnxutil
-} // namespace willow
+} // namespace poponnx

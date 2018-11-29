@@ -3,7 +3,7 @@
 
 #include <poponnx/patterns/patterns.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // Replace a MulArgGradOp with a multiply followed by a reduce sum
 class MulArgGradOpPattern : public Pattern {
@@ -23,6 +23,6 @@ public:
   PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

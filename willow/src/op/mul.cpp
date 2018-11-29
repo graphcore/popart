@@ -1,7 +1,7 @@
 #include <poponnx/op/mul.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 InIndex MulOp::arg0Index() { return 0; }
 InIndex MulOp::arg1Index() { return 1; }
@@ -78,4 +78,4 @@ const std::vector<GradInOutMapper> &MulArg1GradOp::gradInputInfo() const {
   return inInfo;
 }
 
-} // namespace willow
+} // namespace poponnx

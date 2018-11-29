@@ -7,7 +7,7 @@
 
 #include <poponnx/names.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class BuilderImpl;
 class TensorInfo;
@@ -866,5 +866,5 @@ private:
   std::unique_ptr<BuilderImpl> impl_;
 };
 
-} // namespace willow
+} // namespace poponnx
 #endif // GUARD_BUILDER_H

@@ -33,7 +33,7 @@ static const BroadcastTestCase test_cases[] = {
 
 BOOST_AUTO_TEST_CASE(NumpyBroadcastShape) {
   for (const auto &test_case : test_cases) {
-    const auto new_shape = willow::npOut(test_case.a_shape, test_case.b_shape);
+    const auto new_shape = poponnx::npOut(test_case.a_shape, test_case.b_shape);
     BOOST_TEST(new_shape == test_case.result_shape,
                boost::test_tools::per_element());
   }
@@ -90,7 +90,7 @@ static const BroadcastBackwardTestCase backward_test_cases[] = {
 BOOST_AUTO_TEST_CASE(NumpyBroadcastBackwardShape) {
   for (const auto &test_case : backward_test_cases) {
     const auto axes =
-        willow::npReductionAxis(test_case.in_shape, test_case.out_shape);
+        poponnx::npReductionAxis(test_case.in_shape, test_case.out_shape);
     BOOST_TEST(axes == test_case.result_axes, boost::test_tools::per_element());
   }
 }

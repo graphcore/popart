@@ -5,7 +5,7 @@
 
 #include <popnn/Pooling.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 MaxPoolOpx::MaxPoolOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -67,4 +67,4 @@ MaxPoolGradOp *MaxPoolGradOpx::getMaxPoolGradOp() const {
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

@@ -4,7 +4,7 @@
 #include <poponnx/ir.hpp>
 #include <poponnx/op/reducesum.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class AddOp : public Op {
 public:
@@ -41,6 +41,6 @@ private:
   TensorInfo forward_op_arg_info;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

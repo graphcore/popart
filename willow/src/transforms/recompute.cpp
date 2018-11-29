@@ -7,7 +7,7 @@
 
 #include <poponnx/transforms/recompute.hpp>
 
-namespace willow {
+namespace poponnx {
 
 namespace {
 
@@ -151,4 +151,4 @@ bool Recompute::apply(Ir &ir) {
   return true;
 }
 
-} // namespace willow
+} // namespace poponnx

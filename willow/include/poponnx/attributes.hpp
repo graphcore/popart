@@ -3,7 +3,7 @@
 
 #include <poponnx/names.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // Wrapper around the container of onnx::AtrributeProtos
 // of a Node, provides faster and cleaner reads of values
@@ -36,6 +36,6 @@ template <> void Attributes::setIfPresent(std::string &, std::string s) const;
 template <>
 void Attributes::set(std::vector<int64_t> &vs, std::string key) const;
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

@@ -3,7 +3,7 @@
 
 #include <poponnx/patterns/patterns.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // Replace a SubtractArg1GradOp with a negate followed by a reducesum
 class SubtractArg1GradOpPattern : public Pattern {
@@ -23,6 +23,6 @@ public:
   PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

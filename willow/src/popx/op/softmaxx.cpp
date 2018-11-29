@@ -8,7 +8,7 @@
 #include <popnn/NonLinearity.hpp>
 #include <popops/ElementWise.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -94,4 +94,4 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

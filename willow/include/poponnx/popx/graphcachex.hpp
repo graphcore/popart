@@ -7,7 +7,7 @@
 
 #include <map>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 class GraphCachex {
@@ -154,6 +154,6 @@ private:
 };
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

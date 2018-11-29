@@ -1,7 +1,7 @@
 #include <poponnx/earlyinfo.hpp>
 #include <poponnx/error.hpp>
 
-namespace willow {
+namespace poponnx {
 
 void EarlyInfo::add(TensorId id, const TensorInfo &info) { infos[id] = info; }
 
@@ -32,4 +32,4 @@ std::vector<TensorId> EarlyInfo::getAllTensorIds() const {
   return all;
 }
 
-} // namespace willow
+} // namespace poponnx

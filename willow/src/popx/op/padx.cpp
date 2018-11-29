@@ -2,7 +2,7 @@
 #include <poponnx/op/pad.hpp>
 #include <poponnx/popx/op/padx.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 PadOpx::PadOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -14,4 +14,4 @@ PadOpx::PadOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 PadOp *PadOpx::getPadOp() const { return dynamic_cast<PadOp *>(op_p); }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

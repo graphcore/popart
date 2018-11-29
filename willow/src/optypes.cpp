@@ -4,7 +4,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/optypes.hpp>
 
-namespace willow {
+namespace poponnx {
 
 static const char *ai_onnx      = "ai.onnx";
 static const char *ai_graphcore = "ai.graphcore";
@@ -136,4 +136,4 @@ getSupportedOperations(bool includePrivate) {
 std::string getOnnxDomain() { return ai_onnx; }
 std::string getPoponnxDomain() { return ai_graphcore; }
 
-} // namespace willow
+} // namespace poponnx

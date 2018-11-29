@@ -19,7 +19,7 @@
 #include <stdexcept>
 
 namespace py = pybind11;
-using namespace willow;
+using namespace poponnx;
 
 std::map<std::string, DataType> initNpTypeMap() {
   std::map<std::string, DataType> M;
@@ -462,7 +462,7 @@ PYBIND11_MODULE(poponnx_core, m) {
   // Exceptions are processed explicitly to allow the main dynamic library
   // to do the type inference.  This prevents some inter dynamic library type
   // inference issues on OS/X
-  static py::exception<willow::error> eWillow(m, "poponnx_exception");
+  static py::exception<poponnx::error> ePoponnx(m, "poponnx_exception");
   static py::exception<poplar::poplar_error> ePoplar(m, "poplar_exception");
   static py::exception<poputil::poplibs_error> ePoplibs(m, "poplibs_exception");
 
@@ -470,17 +470,17 @@ PYBIND11_MODULE(poponnx_core, m) {
     try {
       std::rethrow_exception(p);
     } catch (std::exception &e) {
-      switch (willow::getErrorSource(e)) {
-      case willow::ErrorSource::poponnx:
-        eWillow(e.what());
+      switch (poponnx::getErrorSource(e)) {
+      case poponnx::ErrorSource::poponnx:
+        ePoponnx(e.what());
         return;
-      case willow::ErrorSource::poplar:
+      case poponnx::ErrorSource::poplar:
         ePoplar(e.what());
         return;
-      case willow::ErrorSource::poplibs:
+      case poponnx::ErrorSource::poplibs:
         ePoplibs(e.what());
         return;
-      case willow::ErrorSource::unknown:
+      case poponnx::ErrorSource::unknown:
         throw;
       }
     }

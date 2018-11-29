@@ -5,7 +5,7 @@
 
 #include <popnn/NonLinearity.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 ReluOpx::ReluOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -71,4 +71,4 @@ void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

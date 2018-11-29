@@ -3,7 +3,7 @@
 
 #include <poponnx/patterns/patterns.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // {(a),    (b), (c)} ->     [op0] ->          (out0)
 // {(out0), (e), (f)} ->     [op1] ->          {(g), (h)}
@@ -29,6 +29,6 @@ private:
   virtual OpId moveMergedIntoIr(Op *baseOp) const = 0;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

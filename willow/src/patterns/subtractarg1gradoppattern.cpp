@@ -6,7 +6,7 @@
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 
 bool SubtractArg1GradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<SubtractArg1GradOp>();
@@ -60,4 +60,4 @@ bool SubtractArg1GradOpPattern::apply(Op *op) const {
   return true;
 }
 
-} // namespace willow
+} // namespace poponnx

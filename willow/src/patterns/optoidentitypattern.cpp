@@ -6,7 +6,7 @@
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 
 bool OpToIdentityPattern::matches(Op *op) const {
   // A reduce op that doesn't reduce anything
@@ -50,4 +50,4 @@ bool OpToIdentityPattern::apply(Op *op) const {
   return true;
 }
 
-} // namespace willow
+} // namespace poponnx

@@ -3,7 +3,7 @@
 
 #include <poponnx/op/receptive.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class ConvOp : public HasReceptiveFieldOp {
 public:
@@ -20,7 +20,7 @@ public:
 
   // from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv :
   // "data" at index 0, "weights" at index 1, "bias" as index 2.
-  // willow's ConvOp does not support bias, but bias can be used when
+  // poponnx's ConvOp does not support bias, but bias can be used when
   // ConvBiasPattern is used.
   static int dataInIndex();
   static int weightsInIndex();
@@ -70,6 +70,6 @@ private:
   TensorInfo dataInfo;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

@@ -6,7 +6,7 @@
 #include <poponnx/names.hpp>
 #include <poponnx/op/reducesum.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class MulOp : public Op {
 public:
@@ -53,6 +53,6 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const final;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

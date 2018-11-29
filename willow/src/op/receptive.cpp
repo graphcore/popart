@@ -3,7 +3,7 @@
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 
 HasReceptiveFieldOp::HasReceptiveFieldOp(const onnx::NodeProto &node, Ir *_pir)
     : Op(node, _pir) {}
@@ -105,4 +105,4 @@ std::vector<uint32_t> HasReceptiveFieldOp::strides_u32() const {
   return vXtoY<int64_t, uint32_t>(strides);
 }
 
-} // namespace willow
+} // namespace poponnx

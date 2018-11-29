@@ -1,7 +1,7 @@
 #ifndef NEURALNET_VERTEX_HPP
 #define NEURALNET_VERTEX_HPP
 
-namespace willow {
+namespace poponnx {
 
 // All Vertices are partitioned into FWD, BWD, LOSS.
 // Recompute Ops and gradient Ops are BWD
@@ -47,6 +47,6 @@ private:
   PathToBwd path_to_bwd_;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

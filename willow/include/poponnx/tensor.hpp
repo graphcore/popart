@@ -8,7 +8,7 @@
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/vertex.hpp>
 
-namespace willow {
+namespace poponnx {
 
 enum class TensorType {
   ActGrad = 0, // an activation or a gradient, basically any output of an Op
@@ -149,6 +149,6 @@ private:
   std::unique_ptr<TensorData> data_{nullptr};
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

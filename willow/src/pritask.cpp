@@ -5,7 +5,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/pritask.hpp>
 
-namespace willow {
+namespace poponnx {
 
 PriTask::PriTask(double p,
                  TaskId n,
@@ -128,4 +128,4 @@ std::vector<PriTask> PriTasks::getLinearised() const {
   return linearisedTasks;
 }
 
-} // namespace willow
+} // namespace poponnx

@@ -10,10 +10,10 @@
 
 #include <algorithm>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
-willow::DeviceType convertDeviceType(poplar::TargetType targetType) {
+poponnx::DeviceType convertDeviceType(poplar::TargetType targetType) {
   switch (targetType) {
   case poplar::TargetType::IPU:
     return DeviceType::Ipu;
@@ -30,18 +30,18 @@ DevicexManager::DevicexManager() {
 }
 
 void DevicexManager::enumerate(
-    std::vector<std::unique_ptr<willow::DeviceInfo>> &devices) {
+    std::vector<std::unique_ptr<poponnx::DeviceInfo>> &devices) {
 
   auto deviceManager = poplar::DeviceManager::getDeviceManager();
   std::vector<poplar::Device> popdevices = deviceManager.getDevices();
 
   for (auto &device : popdevices) {
 
-    willow::DeviceType type =
+    poponnx::DeviceType type =
         convertDeviceType(device.getTarget().getTargetType());
     switch (type) {
     case DeviceType::Ipu: {
-      std::unique_ptr<willow::DeviceInfo> ipu =
+      std::unique_ptr<poponnx::DeviceInfo> ipu =
           make_unique<DevicexIpuInfo>(*this, device.getId(), device);
       devices.push_back(std::move(ipu));
     } break;
@@ -92,8 +92,8 @@ bool mapFind<bool>(const std::map<std::string, std::string> &map,
   }
 }
 
-std::unique_ptr<willow::DeviceInfo> DevicexManager::createHostDevice(
-    willow::DeviceType type,
+std::unique_ptr<poponnx::DeviceInfo> DevicexManager::createHostDevice(
+    poponnx::DeviceType type,
     const std::map<std::string, std::string> &options) {
 
   switch (type) {
@@ -176,4 +176,4 @@ static DevicexManager s_devicexManager;
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

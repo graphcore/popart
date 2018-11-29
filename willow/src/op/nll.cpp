@@ -3,7 +3,7 @@
 #include <poponnx/op/nll.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 std::unique_ptr<Op> NllOp::clone() const {
   return std::unique_ptr<Op>(new NllOp(*this));
@@ -87,4 +87,4 @@ const std::map<int, int> &NllGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-} // namespace willow
+} // namespace poponnx

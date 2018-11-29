@@ -4,7 +4,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/vertex.hpp>
 
-namespace willow {
+namespace poponnx {
 
 std::map<Phase, std::string> init_phase_names() {
   return {{Phase::FWD, "FWD"},
@@ -62,4 +62,4 @@ bool Vertex::isFwdToBwd() const {
   return hasPathToBwd() && (getPhase() == Phase::FWD);
 }
 
-}; // namespace willow
+}; // namespace poponnx

@@ -1,7 +1,7 @@
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
 
-namespace willow {
+namespace poponnx {
 
 DeviceManager &DeviceManager::getDeviceManager() {
   static DeviceManager deviceManager;
@@ -140,4 +140,4 @@ std::ostream &operator<<(std::ostream &os, const DeviceInfo &di) {
   return os << di.toString();
 }
 
-} // namespace willow
+} // namespace poponnx

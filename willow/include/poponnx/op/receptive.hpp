@@ -3,7 +3,7 @@
 
 #include <poponnx/ir.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // Examples of Ops with receptive fields include
 // ConvOp and AveragePoolOp
@@ -35,8 +35,7 @@ public:
 
   // backend might prefer a different number format.
   // These convenience functions reduce backend boilerplate.
-  // Recall that the willow project always prefers signed
-  // ints of strictly defined sizes, internally.
+  // Poponnx uses signed ints of strictly defined sizes, internally.
   std::vector<size_t> spatialD_szt() const;
   std::vector<size_t> spatialK_szt() const;
   std::vector<uint32_t> lowerPads_u32() const;
@@ -54,6 +53,6 @@ private:
   virtual void setup0() = 0;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

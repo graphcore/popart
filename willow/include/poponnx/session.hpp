@@ -3,7 +3,7 @@
 
 #include <poponnx/names.hpp>
 
-namespace willow {
+namespace poponnx {
 
 struct SessionOptions;
 
@@ -189,6 +189,6 @@ private:
                          const SessionOptions &userOptions,
                          const std::vector<std::string> &patternNames);
 };
-} // namespace willow
+} // namespace poponnx
 
 #endif

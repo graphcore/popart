@@ -16,7 +16,7 @@
 #include <poponnx/popx/graphcachex.hpp>
 #include <poponnx/pritask.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 using PopStreamId = std::string;
@@ -96,11 +96,11 @@ private:
   std::map<TensorId, poplar::Tensor> tensors_;
   // This Ir is used to compare the shape
   // of a poplar::Tensor added with `insert',
-  // with the corresponding willow::Tensor's
+  // with the corresponding poponnx::Tensor's
   const Ir &ir;
 };
 
-class Devicex : public willow::Device {
+class Devicex : public poponnx::Device {
 
 public:
   Devicex(const Ir &, DeviceInfo &deviceInfo);
@@ -230,6 +230,6 @@ private:
 };
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx
 
 #endif

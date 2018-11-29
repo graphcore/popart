@@ -3,7 +3,7 @@
 #include <poponnx/popx/op/squeezex.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 void SqueezeOpx::grow(poplar::program::Sequence &prog) const {
@@ -40,4 +40,4 @@ SqueezeGradOp *SqueezeGradOpx::getSqueezeGradOp() const {
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

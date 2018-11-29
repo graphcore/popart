@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.4)
 
-project(willow)
+project(poponnx)
 
 enable_testing()
 
@@ -52,7 +52,6 @@ set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 find_package(Boost REQUIRED COMPONENTS filesystem system)
-# at some future point we might want this for a CPU backend for willow
 # find_package(CBLAS REQUIRED)
 
 set(POPONNX_PYTHON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/python)
@@ -153,7 +152,7 @@ execute_process(
   OUTPUT_VARIABLE VIEW_REMOTE_URL
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-configure_file(willow.prodinfo.yml
+configure_file(poponnx.prodinfo.yml
   ${CMAKE_BINARY_DIR}/${PRODINFO_FILE_NAME}
   @ONLY)
 #------ end of product info file

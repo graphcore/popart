@@ -3,7 +3,7 @@
 
 #include <poponnx/ir.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class PadOp : public Op {
 public:
@@ -17,6 +17,6 @@ public:
 private:
   std::vector<int64_t> pads;
 };
-} // namespace willow
+} // namespace poponnx
 
 #endif

@@ -8,7 +8,7 @@
 #include <popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 L1Opx::L1Opx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -85,4 +85,4 @@ L1GradOp *L1GradOpx::getL1GradOp() const {
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

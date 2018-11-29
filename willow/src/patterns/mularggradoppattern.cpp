@@ -5,7 +5,7 @@
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 
 bool MulArgGradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<MulArgGradOp>();
@@ -72,4 +72,4 @@ bool MulArgGradOpPattern::apply(Op *op) const {
   return true;
 }
 
-} // namespace willow
+} // namespace poponnx

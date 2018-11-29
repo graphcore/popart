@@ -3,7 +3,7 @@
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 
 MatMulOp::MatMulOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
 
@@ -174,4 +174,4 @@ Shape MatMulRhsGradOp::getLhsInputShape() const { return fwdOpLhsInfo.shape(); }
 
 Shape MatMulRhsGradOp::getOutputShape() const { return fwdOpRhsInfo.shape(); }
 
-} // namespace willow
+} // namespace poponnx

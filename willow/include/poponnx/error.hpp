@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace willow {
+namespace poponnx {
 
 /**
  * Exception class for poponnx
@@ -25,6 +25,6 @@ enum ErrorSource {
 
 ErrorSource getErrorSource(const std::exception &e);
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

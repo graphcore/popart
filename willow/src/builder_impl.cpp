@@ -12,7 +12,7 @@
 #include <onnx/checker.h>
 #include <onnx/shape_inference/implementation.h>
 
-namespace willow {
+namespace poponnx {
 
 // Supported IR version
 const static uint64_t irVersion = 3;
@@ -1020,4 +1020,4 @@ std::vector<int64_t> BuilderImpl::getTensorShape(const TensorId id) {
   return shape;
 }
 
-} // namespace willow
+} // namespace poponnx

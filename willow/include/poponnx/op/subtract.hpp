@@ -6,7 +6,7 @@
 #include <poponnx/op/negate.hpp>
 #include <poponnx/op/reducesum.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class SubtractOp : public Op {
 public:
@@ -47,6 +47,6 @@ private:
   TensorInfo forward_op_arg_info;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

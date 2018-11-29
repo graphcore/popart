@@ -1,7 +1,7 @@
 #include <poponnx/op/add.hpp>
 #include <poponnx/tensor.hpp>
 
-namespace willow {
+namespace poponnx {
 
 int AddOp::arg0Index() { return 0; }
 int AddOp::arg1Index() { return 1; }
@@ -71,4 +71,4 @@ const std::vector<GradInOutMapper> &AddArg1GradOp::gradInputInfo() const {
 
 void AddArg1GradOp::setup() { output.tensor(0)->info = forward_op_arg_info; }
 
-} // namespace willow
+} // namespace poponnx

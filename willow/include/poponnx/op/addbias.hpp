@@ -5,7 +5,7 @@
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/reducesum.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class ConvOp;
 
@@ -42,6 +42,6 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const final;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

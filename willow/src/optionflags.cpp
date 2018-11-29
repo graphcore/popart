@@ -1,7 +1,7 @@
 #include <poponnx/optionflags.hpp>
 
-namespace willow {
+namespace poponnx {
 
 // No implementation required
 
-} // namespace willow
+} // namespace poponnx

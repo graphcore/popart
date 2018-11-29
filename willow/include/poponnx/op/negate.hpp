@@ -3,7 +3,7 @@
 
 #include <poponnx/ir.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class NegateOp : public Op {
 public:
@@ -23,6 +23,6 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const final;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

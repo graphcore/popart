@@ -8,7 +8,7 @@
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/vertex.hpp>
 
-namespace willow {
+namespace poponnx {
 
 enum class eLoss { NLL, L1 };
 std::map<std::string, eLoss> initLossMap();
@@ -48,6 +48,6 @@ public:
   bool isLossOp() const override;
 };
 
-} // namespace willow
+} // namespace poponnx
 
 #endif

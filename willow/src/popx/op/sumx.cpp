@@ -4,7 +4,7 @@
 
 #include <popops/ElementWise.hpp>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 
 SumOpx::SumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -43,4 +43,4 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

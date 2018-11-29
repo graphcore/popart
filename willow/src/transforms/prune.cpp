@@ -5,7 +5,7 @@
 
 #include <poponnx/transforms/prune.hpp>
 
-namespace willow {
+namespace poponnx {
 
 bool Prune::apply(Ir &ir) {
 
@@ -120,4 +120,4 @@ bool Prune::apply(Ir &ir) {
   return true;
 }
 
-} // namespace willow
+} // namespace poponnx

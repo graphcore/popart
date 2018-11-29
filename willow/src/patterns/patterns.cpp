@@ -4,7 +4,7 @@
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
 
-namespace willow {
+namespace poponnx {
 
 class SoftmaxGradDirectOp;
 
@@ -63,4 +63,4 @@ const std::string &PatternTypes::get(PatternType opType) const {
   return strings_.at(opType);
 }
 
-} // namespace willow
+} // namespace poponnx

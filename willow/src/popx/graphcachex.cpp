@@ -9,7 +9,7 @@
 #include <iostream>
 #include <map>
 
-namespace willow {
+namespace poponnx {
 namespace popx {
 namespace {
 bool isTrainingBwdPass(const ConvOptions &options) {
@@ -244,4 +244,4 @@ GraphCachex::calculateWeightDeltas(poplar::Graph &graph,
                                      cache);
 }
 } // namespace popx
-} // namespace willow
+} // namespace poponnx

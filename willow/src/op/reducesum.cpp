@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-namespace willow {
+namespace poponnx {
 
 ReduceSumOp::ReduceSumOp(const OpConstructorBundle &bundle) : Op(bundle) {
   nAtts.setIfPresent(axes, "axes");
@@ -100,4 +100,4 @@ const std::vector<int64_t> &ReduceSumGradOp::backwardShape() const {
 
 void ReduceSumGradOp::setup() { output.tensor(0)->info = outputTensorInfo; }
 
-} // namespace willow
+} // namespace poponnx
