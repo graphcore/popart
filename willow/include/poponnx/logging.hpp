@@ -49,11 +49,12 @@ enum class Level {
 };
 
 enum class Module {
-  poponnx, /// Generic poponnx module, used when the module is not passed
-  session, /// Session module
-  ir,      /// Ir module
-  devicex, /// Devicex module
-  none     /// The undefined module
+  poponnx,   /// Generic poponnx module, used when the module is not passed
+  session,   /// Session module
+  ir,        /// Ir module
+  devicex,   /// Devicex module
+  transform, /// Transform module
+  none       /// The undefined module
 };
 
 // configure the logging using a map of modules to level
@@ -140,6 +141,7 @@ MAKE_LOG_TEMPLATE(crit, Critical)
 MAKE_MODULE_TEMPLATE(session)
 MAKE_MODULE_TEMPLATE(ir)
 MAKE_MODULE_TEMPLATE(devicex)
+MAKE_MODULE_TEMPLATE(transform)
 
 // Convenience macro to create a log entry prefixed with function name e.g.:
 //    void someFunc(int i) {

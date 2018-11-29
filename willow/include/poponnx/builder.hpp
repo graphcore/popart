@@ -506,8 +506,8 @@ public:
                        const std::vector<int64_t> strides,
                        const std::vector<int64_t> padding,
                        const std::vector<int64_t> dilation,
-                       int64_t groups,
-                       bool cacheOperation);
+                       int64_t groups      = 1,
+                       bool cacheOperation = false);
 
   /**
    * Add an averagepool to the model

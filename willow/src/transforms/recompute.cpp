@@ -74,7 +74,9 @@ Op *growRecomputeOp(Ir &ir, Op *oriOp, const std::set<Op *> &checkpoints) {
 
 } // namespace
 
-bool Recompute::apply(Ir &ir) {
+std::size_t Recompute::id() { return typeid(Recompute).hash_code(); }
+
+bool Recompute::apply(Ir &ir) const {
   std::vector<Op *> fwdOps;
   for (auto op : ir.getOpSchedule({})) {
     if (op->isFwdToBwd()) {
@@ -149,6 +151,10 @@ bool Recompute::apply(Ir &ir) {
   }
 
   return true;
+}
+
+namespace {
+bool init = Transform::registerTransform(new Recompute);
 }
 
 } // namespace poponnx

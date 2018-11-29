@@ -7,7 +7,9 @@
 
 namespace poponnx {
 
-bool Prune::apply(Ir &ir) {
+std::size_t Prune::id() { return typeid(Prune).hash_code(); }
+
+bool Prune::apply(Ir &ir) const {
 
   // initialise with all the var
   // update ops for training,
@@ -118,6 +120,10 @@ bool Prune::apply(Ir &ir) {
   }
 
   return true;
+}
+
+namespace {
+bool init = Transform::registerTransform(new Prune);
 }
 
 } // namespace poponnx

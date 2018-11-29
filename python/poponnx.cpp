@@ -293,7 +293,7 @@ PYBIND11_MODULE(poponnx_core, m) {
              ConstVoidData initData;
              initData.data = array.request().ptr;
              initData.info = getTensorInfo(array);
-             builder.addInitializedInputTensor(initData);
+             return builder.addInitializedInputTensor(initData);
            },
            py::arg("initVal"))
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
@@ -344,7 +344,7 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("strides"),
            py::arg("padding"),
            py::arg("dilation"),
-           py::arg("groups"),
+           py::arg("groups")         = 1,
            py::arg("cacheOperation") = true)
       .def("averagepool",
            &Builder::averagepool,

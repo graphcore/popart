@@ -21,6 +21,9 @@ struct SessionOptions {
   ///  the convolutions will be cached.
   bool enableConvolutionGraphCaching = true;
 
+  /// Enable recomputation
+  bool enableRecomputation = false;
+
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;
 

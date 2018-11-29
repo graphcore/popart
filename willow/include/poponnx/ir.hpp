@@ -492,6 +492,12 @@ public:
   std::vector<std::set<Op *>>
   getLiveSets(const std::vector<Op *> &topoOps) const;
 
+  // modify the Ir using a graph transformation (public for unit testing only)
+  void applyTransform(std::size_t transformId);
+
+  // enable/disable a transform stage (public for unit testing only)
+  void enableTransform(std::size_t transformId, bool enable);
+
 private:
   Tensors tensors;
   DataFlow dataFlow;
@@ -539,15 +545,9 @@ private:
   // Returns true if a change to the Ir was made.
   void applyPatterns(PatternPhase);
 
-  // modify the Ir using a graph transformation
-  void applyTransform(int transformId);
-
   // The set of patterns to apply after constructing forwards and backwards
   // passes
   Patterns patterns;
-
-  // set of all graph transformations
-  std::map<int, std::unique_ptr<Transform>> transforms;
 
   // confirm that the names of the Const tensors
   // from the user (constTensors) are in the onnx Model
@@ -596,6 +596,9 @@ private:
 
   // total number of ops ever created
   OpId opsCounter{100};
+
+  // Map of transform Id to enable flag
+  std::map<std::size_t, bool> transformEnableMap;
 
   // The update ops which must be run during a training pass
   std::set<Op *> trainTargetOps;

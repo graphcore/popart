@@ -428,6 +428,8 @@ void Ir::prepare(const IrBundle &gb) {
 
   onnxModel = gb.modelProto;
 
+  enableTransform(Recompute::id(), userOptions.enableRecomputation);
+
   if (gb.optimizer) {
     optimizer = gb.optimizer->clone();
     for (auto &id_info : optimizer->tensorInfos()) {
@@ -496,21 +498,18 @@ void Ir::prepare(const IrBundle &gb) {
   constructBackwards();
   updateVertices();
 
-  transforms.emplace(std::make_pair(0, new Prune));
-  transforms.emplace(std::make_pair(1, new Recompute));
-
   // confirm that all the anchor names provided
   // are indeed real tensor names. This is a check
   // that the user has not provided incorrect names.
   // We allow duplicates.
   validateAnchors();
-  applyTransform(0);
+  applyTransform(Prune::id());
 
   applyPatterns(PatternPhase::PRETOPOCONS);
   setNPathsToLoss();
 
   updateVertices();
-  applyTransform(1);
+  applyTransform(Recompute::id());
   updateVertices();
 
   // we now start applying topological constraints between
@@ -521,7 +520,7 @@ void Ir::prepare(const IrBundle &gb) {
     exportDot(io::appendDirFn(logdir, "fwdBwd0.dot"));
   }
 
-  applyTransform(0);
+  applyTransform(Prune::id());
 
   // Now, we apply the Patterns which can handle and create
   // topological constaints. Currently, this is only one
@@ -689,8 +688,16 @@ void Ir::applyPatterns(PatternPhase phase) {
   }
 }
 
-void Ir::applyTransform(int transformId) {
-  transforms.at(transformId)->apply(*this);
+void Ir::applyTransform(std::size_t transformId) {
+  // Unless explictly set, a transform is enabled
+  if (transformEnableMap.count(transformId) == 0 ||
+      transformEnableMap.at(transformId)) {
+    Transform::applyTransform(transformId, *this);
+  }
+}
+
+void Ir::enableTransform(std::size_t transformId, bool enable) {
+  transformEnableMap[transformId] = enable;
 }
 
 std::vector<TensorId> Tensors::getNoProducerIds() const {

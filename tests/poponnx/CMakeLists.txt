@@ -33,6 +33,7 @@ add_poponnx_cpp_unit_test(numpybroadcastshapetest numpybroadcastshapetest.cpp)
 add_poponnx_cpp_unit_test(patternstest patterns_test.cpp)
 add_poponnx_cpp_unit_test(prunetest prune_test.cpp)
 add_poponnx_cpp_unit_test(recomputetest recompute_test.cpp)
+add_poponnx_cpp_unit_test(transformtest transform_test.cpp)
 
 function(add_poponnx_py_unit_test name)
   message(STATUS
