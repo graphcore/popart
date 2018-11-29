@@ -12,6 +12,8 @@ public:
   void setup() final;
   static int getVarIndex();
   static int getVarGradIndex();
+  // This Op modifies the input at index getVarIndex()
+  virtual bool modifies(InIndex) const final;
 
 private:
   TensorId varId;

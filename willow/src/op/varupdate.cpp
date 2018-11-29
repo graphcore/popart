@@ -15,6 +15,10 @@ void VarUpdateOp::setup() {
   // no output tensors to set shapes for
 }
 
+bool VarUpdateOp::modifies(InIndex in_index) const {
+  return in_index == getVarIndex();
+}
+
 int VarUpdateOp::getVarIndex() { return 0; }
 
 int VarUpdateOp::getVarGradIndex() { return 1; }

@@ -19,6 +19,8 @@ class ReluInplaceOp : public Op {
 public:
   ReluInplaceOp(ReluOp *);
   void setup() final;
+  // This in-place Op modifies its unique input at InIndex 0
+  bool modifies(InIndex) const final;
 };
 
 // takes output of ReluOp as input and not the input of ReluOp

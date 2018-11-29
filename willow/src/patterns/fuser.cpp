@@ -11,18 +11,20 @@ bool Fuser::apply(Op *op) const {
 
   Op *op0      = op;
   Tensor *out0 = op0->output.tensor(0);
-  Op *op1      = out0->consumers.getOps()[0];
-  Tensor *out1 = op1->output.tensor(0);
+  // we have checked that out0 only has 1 consumer
+  Op *op1 = out0->consumers.getOps()[0];
 
   // create the replacement op01, connect it to
-  // - the inputs if op0
-  // - the output of op1
+  // - the inputs of op0
+  // - the outputs of op1
   OpId id01 = moveMergedIntoIr(op);
   Op *op01  = pir->getOp(id01);
 
-  // wire-up the inputs
+  // wire-up the inputs.
+  // 1) connect the inputs of op0 to op01
   pir->connectInputsFromInputMapWrapper(
       InputMapWrapper(op0->input.tensorIdMap()), id01);
+  // 2) disconnect the inputs of op0 from op0
   for (auto index_tensor : op0->input.tensorMap()) {
     Tensor *in0 = index_tensor.second;
     in0->consumers.decrement(op0);
@@ -31,23 +33,33 @@ bool Fuser::apply(Op *op) const {
   // we can't use connectOutputs, as that expects
   // that the output Tensor doesn't exist and must
   // be created. We rewire outputs manually:
-  op01->output.insert(0, out1);
-  out1->resetProducer(op01);
+  for (auto index_tensor : op1->output.tensorMap()) {
+    OutIndex index = index_tensor.first;
+    Tensor *tensor = index_tensor.second;
+    op01->output.insert(index, tensor);
+    tensor->resetProducer(op01);
+  }
 
   // remove the tensor and nodes
+  for (auto index_tensor : op1->input.tensorMap()) {
+    // InIndex index = index_tensor.first;
+    Tensor *tensor = index_tensor.second;
+    tensor->consumers.decrement(op1);
+  }
+  pir->eraseOp(op1->id);
+
   pir->getTensors().remove(out0->id);
   pir->eraseOp(op0->id);
-  pir->eraseOp(op1->id);
 
   return true;
 }
 
 bool Fuser::matches(Op *op0) const {
   if (op0->opType == get0()) {
-    const Tensor *ten_d = op0->output.tensor(0);
-    // Consumed just once? Should be the case
-    if (ten_d->consumers.getTotal() == 1) {
-      Op *op1 = ten_d->consumers.getOps()[0];
+    const Tensor *out0 = op0->output.tensor(0);
+    // out0 must be consumed just once
+    if (out0->consumers.getTotal() == 1) {
+      Op *op1 = out0->consumers.getOps()[0];
       if (op1->opType == get1()) {
         return true;
       }

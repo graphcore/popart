@@ -54,6 +54,11 @@
 
 namespace willow {
 
+bool Op::modifies(InIndex) const {
+  // default for ops is: No, it does not modify the input
+  return false;
+}
+
 bool Op::isLossOp() const { return false; }
 
 std::unique_ptr<Op> Op::clone() const {
@@ -1676,7 +1681,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
     return pOp(new SubtractOp(node, this));
   }
   case OpType::SUM: {
-    throw error("no constructor from node for Sum Op yet");
+    return pOp(new SumOp(node, this));
   }
   case OpType::SQUEEZE: {
     return pOp(new SqueezeOp(node, this));

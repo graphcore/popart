@@ -49,14 +49,30 @@ bool Prune::apply(Ir &ir) {
     Tensor *t = tensorFront.back();
     tensorFront.resize(tensorFront.size() - 1);
     if (t->hasProducer()) {
-      Op *op = t->getProducer();
-      if (required.count(op) == 0) {
-        required.insert(op);
-        for (auto t_inds : op->input.indicesMap()) {
-          Tensor *t_in = t_inds.first;
-          if (tensorsVisited.count(t_in) == 0) {
-            tensorFront.push_back(t_in);
-            tensorsVisited.insert(t_in);
+      std::set<Op *> newRequired = {};
+      // Tensor t is on a target path. If any its
+      // consumers modify it, they are required
+      for (Op *consumer : t->consumers.getOps()) {
+        // at any of the indices which op consumes t,
+        // does it modify t?
+        for (InIndex index : consumer->input.indices(t)) {
+          if (consumer->modifies(index)) {
+            newRequired.insert(consumer);
+          }
+        }
+      }
+      // the producer of t is required
+      newRequired.insert(t->getProducer());
+
+      for (Op *op : newRequired) {
+        if (required.count(op) == 0) {
+          required.insert(op);
+          for (auto t_inds : op->input.indicesMap()) {
+            Tensor *t_in = t_inds.first;
+            if (tensorsVisited.count(t_in) == 0) {
+              tensorFront.push_back(t_in);
+              tensorsVisited.insert(t_in);
+            }
           }
         }
       }

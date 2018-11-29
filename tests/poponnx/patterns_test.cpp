@@ -17,7 +17,9 @@ using namespace willow;
 BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
   // clang-format off
   //
-  // (*) -> [Identity] -> () -> [Identity] -> (*) -> [Identity] -> () -> [Identity] -> () -> [Identity] -> () -> [Identity] -> () -> [Identity] -> (*)
+  // (*) -> [Identity] -> () -> [Identity] -> (*) 
+  //     -> [Identity] -> () -> [Identity] ->  () 
+  //     -> [Identity] -> () -> [Identity] ->  () -> [Identity] -> (*)
   //
   // where (*) are Anchors should become
   //
@@ -25,7 +27,7 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
   //
   // clang-format on
 
-  // Build an onnnx model
+  // Build an onnx model
   auto builder = Builder::create();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
@@ -81,7 +83,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
   //
   // {(i1), (i2)} -> [Add] -> () -> [Identity] -> (identOut)
 
-  // Build an onnnx model
+  // Build an onnx model
   auto builder = Builder::create();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
@@ -132,7 +134,7 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
   //
   // {(i1), (i2)} -> [Add] -> () -> [Identity] () -> [Identity] -> (identOut)
 
-  // Build an onnnx model
+  // Build an onnx model
   auto builder = Builder::create();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
@@ -183,7 +185,7 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
   // {(i1), (i2)} -> [Conv] -> (convOut)
   // {(i3), (convOut)} -> [AddBias] () -> [Identity] -> (identOut)
 
-  // Build an onnnx model
+  // Build an onnx model
   auto builder = Builder::create();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{1, 2, 2}};
@@ -244,7 +246,7 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
   // should become
   //
   // () -> [Negate] -> () -> [ReduceSum] -> ()
-  // Build an onnnx model
+  // Build an onnx model
   auto builder = Builder::create();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
@@ -301,7 +303,7 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
   //
   // (label), (probs) -> [SoftmaxGradDirect] -> (d_acts)
 
-  // Build an onnnx model
+  // Build an onnx model
   auto builder = Builder::create();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
@@ -350,4 +352,127 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
   BOOST_CHECK(ir.opsOfType(OpType::NLLGRAD).size() == 0);
   BOOST_CHECK(ir.opsOfType(OpType::SOFTMAXGRAD).size() == 0);
   BOOST_CHECK(ir.opsOfType(OpType::SOFTMAXGRADDIRECT).size() == 1);
+}
+
+// where we test that a series of Relus is converted
+// into InplaceRelus by the Inplace0 pattern.
+BOOST_AUTO_TEST_CASE(Inplace0_series) {
+
+  // Consider the SERIES of Relu Ops:
+  //
+  // (in0) -> [Relu] -> (h0)
+  //       -> [Relu] -> (h1)
+  //       -> [Relu] -> (preId)
+  //       -> [Identity] -> (out),
+  //
+  // with (out) as an anchor tensor. This should become,
+  //
+  // (in0) -> {[ReluInplace], [ReluInplace], [ReluInplace]}
+  // (in0) -> [Identity] -> (out).
+
+  // Build an onnx model
+  auto builder = Builder::create();
+
+  TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
+  auto in0   = builder->addInputTensor(shape);
+  auto h0    = builder->relu({in0});
+  auto h1    = builder->relu({h0});
+  auto preId = builder->relu({h1});
+  auto out   = builder->identity({preId});
+  builder->addOutputTensor(out);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR
+  auto earlyInfo = EarlyInfo();
+  earlyInfo.add(in0, shape);
+  std::vector<TensorId> anchors{out};
+  auto dataFlow  = DataFlow(1, 1, anchors, AnchorReturnType::ALL);
+  auto optimizer = SGD(0.01);
+  std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
+
+  Ir ir;
+  ir.prepare({modelProto,
+              earlyInfo,
+              dataFlow,
+              losses,
+              &optimizer,
+              {},
+              ".",
+              {},
+              {"Inplace0"}});
+
+  // Check the ir
+  // All the Relus have been optimised out,
+  BOOST_CHECK(ir.opsOfType(OpType::RELU).size() == 0);
+  // and have been replaced with ReluInplace.
+  BOOST_CHECK(ir.opsOfType(OpType::RELUINPLACE).size() == 3);
+}
+
+// where we test that with Relus is parallel, exactly 1 of
+// them is converted into an InplaceRelu by the Inplace0 pattern.
+BOOST_AUTO_TEST_CASE(Inplace0_parallel) {
+
+  // Consider the Relu Ops in PARALLEL
+  //
+  //           | -- [Relu] -- (h0) -- |
+  //           |                      | --- [Add] -- (h3) -|
+  // (in0) >---| -- [Relu] -- (h1) -- |                    |
+  //           |                                           | -> [Add] -- (out)
+  //           | -- [Relu] -- (h2) ----------------------- |
+  //
+  // We can make the first relu in-place, but then stall as
+  // an in-place op must run after all other consumers (and
+  // therefore there can only be one in-place consumer here). So, we expect:
+  //
+  //           | -------------------- |
+  //           |                      |
+  //           | -- [ReluInplace]     |
+  //           |                      | --- [Add] -- (h3) -|
+  // (in0) >---| -- [Relu] -- (h1) -- |                    |
+  //           |                                           | -> [Add] -- (out)
+  //           | -- [Relu] -- (h2) ----------------------- |
+  //
+  //
+
+  // Build an onnx model
+  auto builder = Builder::create();
+
+  TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
+  auto in0 = builder->addInputTensor(shape);
+  auto h0  = builder->relu({in0});
+  auto h1  = builder->relu({in0});
+  auto h2  = builder->relu({in0});
+  auto h3  = builder->add({h0, h1});
+  auto out = builder->add({h2, h3});
+  builder->addOutputTensor(out);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR
+  auto earlyInfo = EarlyInfo();
+  earlyInfo.add(in0, shape);
+  std::vector<TensorId> anchors{out};
+  auto dataFlow  = DataFlow(1, 1, anchors, AnchorReturnType::ALL);
+  auto optimizer = SGD(0.01);
+  std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
+
+  Ir ir;
+  ir.prepare({modelProto,
+              earlyInfo,
+              dataFlow,
+              losses,
+              &optimizer,
+              {},
+              ".",
+              {},
+              {"Inplace0"}});
+
+  // Check the ir
+  // All the Relus have been optimised out,
+  BOOST_CHECK(ir.opsOfType(OpType::RELU).size() == 3 - 1);
+  // and have been replaced with ReluInplace.
+  BOOST_CHECK(ir.opsOfType(OpType::RELUINPLACE).size() == 1);
 }

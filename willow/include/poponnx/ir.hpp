@@ -2,9 +2,8 @@
 #define GUARD_NEURALNET_GRAPH_HPP
 
 // The protobuf generated ONNX classes
-#include <onnx/onnx_pb.h>
-
 #include <map>
+#include <onnx/onnx_pb.h>
 
 #include <poponnx/attributes.hpp>
 #include <poponnx/dataflow.hpp>
@@ -17,9 +16,8 @@
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/vertex.hpp>
 
-#include <poponnx/transforms/transform.hpp>
-
 #include <poponnx/patterns/patterns.hpp>
+#include <poponnx/transforms/transform.hpp>
 
 namespace willow {
 
@@ -253,6 +251,9 @@ public:
 
   // get the inplace Op described above
   virtual std::unique_ptr<Op> getInplaceVariant(InIndex);
+
+  // Does this Op modify the input at index InIndex? Default: No.
+  virtual bool modifies(InIndex) const;
 
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
   // dT is the edge-gradient of a tensor T which was the input

@@ -17,6 +17,9 @@ void ReluInplaceOp::setup() {
   // no output, nothing to setup
 }
 
+// we do not check that the InIndex is 0, we could
+bool ReluInplaceOp::modifies(InIndex) const { return true; }
+
 std::unique_ptr<Op> ReluOp::clone() const {
   return std::unique_ptr<Op>(new ReluOp(*this));
 }

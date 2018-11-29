@@ -5,9 +5,11 @@
 
 namespace willow {
 
-// {(a), (b), (c)} -> [op0] -> (d) -> [op1] -> {(e), (f)}
-//                    ====================>
-// {(a), (b), (c)} ->        [op01]         -> {(e), (f)}
+// {(a),    (b), (c)} ->     [op0] ->          (out0)
+// {(out0), (e), (f)} ->     [op1] ->          {(g), (h)}
+//                     ==================>
+// {(a), (b), (c)} ->        [op01]         -> {(g), (h)}
+// where op1 is the only consumer of out0.
 class Fuser : public Pattern {
 public:
   bool matches(Op *) const final;
