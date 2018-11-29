@@ -45,9 +45,9 @@ const std::vector<int64_t> &MulArgGradOp::getReductionAxes() {
 void MulArgGradOp::setup() { output.tensor(0)->info = forward_op_arg_info; }
 
 MulArg0GradOp::MulArg0GradOp(MulOp *op_,
-                             const std::vector<int64_t> &reduction_axes)
+                             const std::vector<int64_t> &_reduction_axes)
     : MulArgGradOp({"MulArg0Grad", op_->pir, {}, getPoponnxDomain()},
-                   reduction_axes,
+                   _reduction_axes,
                    op_->input.tensor(MulOp::arg0Index())->info) {}
 
 const std::map<int, int> &MulArg0GradOp::gradOutToNonGradIn() const {
@@ -62,9 +62,9 @@ const std::vector<GradInOutMapper> &MulArg0GradOp::gradInputInfo() const {
 }
 
 MulArg1GradOp::MulArg1GradOp(MulOp *op_,
-                             const std::vector<int64_t> &reduction_axes)
+                             const std::vector<int64_t> &_reduction_axes)
     : MulArgGradOp({"MulArg1Grad", op_->pir, {}, getPoponnxDomain()},
-                   reduction_axes,
+                   _reduction_axes,
                    op_->input.tensor(MulOp::arg1Index())->info) {}
 
 const std::map<int, int> &MulArg1GradOp::gradOutToNonGradIn() const {

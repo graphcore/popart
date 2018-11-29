@@ -2,6 +2,7 @@ import c10driver
 
 import sys
 import os
+import poponnx
 import poponnx_core
 import cmdline
 from poponnx.torch import torchwriter
@@ -54,9 +55,8 @@ cifarInIndices = {"image0": 0, "label": 1}
 losses = [poponnx_core.L1Loss("out", "l1LossVal", 0.1)]
 
 # The optimization passes to run in the Ir, see patterns.hpp
-willowOptPasses = [
-    "PreUniRepl", "PostNRepl", "SoftmaxGradDirect", "OpToIdentity"
-]
+willowOptPasses = poponnx.Patterns()
+willowOptPasses.OpToIdentity = True
 
 
 class Module0(torch.nn.Module):

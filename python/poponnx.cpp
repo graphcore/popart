@@ -11,6 +11,7 @@
 #include <poponnx/op/nll.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/optionflags.hpp>
+#include <poponnx/patterns/patterns.hpp>
 #include <poponnx/session.hpp>
 #include <poponnx/tensordata.hpp>
 
@@ -205,6 +206,56 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("reportOptions", &SessionOptions::reportOptions)
       .def_readwrite("logging", &SessionOptions::loggingOptions);
 
+  py::enum_<PatternsLevel>(m, "PatternsLevel")
+      .value("ALL", PatternsLevel::ALL)
+      .value("DEFAULT", PatternsLevel::DEFAULT)
+      .value("NONE", PatternsLevel::NONE);
+
+  py::enum_<PatternType>(m, "PatternType")
+      .value("PREUNIREPL", PatternType::PREUNIREPL)
+      .value("POSTNREPL", PatternType::POSTNREPL)
+      .value("SOFTMAXGRADDIRECT", PatternType::SOFTMAXGRADDIRECT)
+      .value("SPLITCONVBIAS", PatternType::SPLITCONVBIAS)
+      .value("OPTOIDENTITY", PatternType::OPTOIDENTITY)
+      .value("SUBTRACTARG1GRADOP", PatternType::SUBTRACTARG1GRADOP)
+      .value("MULARGGRADOP", PatternType::MULARGGRADOP)
+      .value("INPLACE0", PatternType::INPLACE0);
+
+  py::class_<Patterns>(m, "Patterns")
+      .def(py::init<>())
+      .def(py::init<PatternsLevel>())
+      .def(py::init<std::vector<PatternType>>())
+      .def(py::init(
+          [](std::vector<std::string> l) { return Patterns::create(l); }))
+      .def_property("PreUniRepl",
+                    &Patterns::isPreUniReplEnabled,
+                    &Patterns::enablePreUniRepl)
+      .def_property("PostNRepl",
+                    &Patterns::isPostNReplEnabled,
+                    &Patterns::enablePostNRepl)
+      .def_property("SoftMaxGradDirect",
+                    &Patterns::isSoftMaxGradDirectEnabled,
+                    &Patterns::enableSoftMaxGradDirect)
+      .def_property("SplitConvBias",
+                    &Patterns::isSplitConvBiasEnabled,
+                    &Patterns::enableSplitConvBias)
+      .def_property("OpToIdentity",
+                    &Patterns::isOpToIdentityEnabled,
+                    &Patterns::enableOpToIdentity)
+      .def_property("SubtractArg1GradOp",
+                    &Patterns::isSubtractArg1GradOpEnabled,
+                    &Patterns::enableSubtractArg1GradOp)
+      .def_property("MulArgGradOp",
+                    &Patterns::isMulArgGradOpEnabled,
+                    &Patterns::enableMulArgGradOp)
+      .def_property(
+          "InPlace0", &Patterns::isInPlace0Enabled, &Patterns::enableInPlace0)
+      .def("__repr__", [](const Patterns &p) {
+        std::stringstream ss;
+        ss << p;
+        return ss.str();
+      });
+
   py::class_<Session>(m, "SessionCore")
       .def(py::init(&Session::createFromOnnxModel),
            py::arg("model"),
@@ -215,7 +266,7 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("cTens"),
            py::arg("logdir"),
            py::arg("userOptions"),
-           py::arg("patternNames"))
+           py::arg("patterns"))
       .def("updateOptimizer", &Session::updateOptimizer)
       .def("setDevice", &Session::setDevice)
       .def("prepareDevice", &Session::prepareDevice)
@@ -436,7 +487,6 @@ PYBIND11_MODULE(poponnx_core, m) {
            })
       .def("enumerateDevices", &DeviceManager::enumerateDevices);
 
-  // Do enum need to be uppercase?
   py::enum_<DeviceType>(m, "DeviceType")
       .value("IpuModel", DeviceType::IpuModel)
       .value("Cpu", DeviceType::Cpu)

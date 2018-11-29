@@ -50,4 +50,9 @@ bool OpToIdentityPattern::apply(Op *op) const {
   return true;
 }
 
+namespace {
+static PatternCreator<OpToIdentityPattern>
+    opToIdentityPattern(PatternType::OPTOIDENTITY, "OpToIdentity");
+}
+
 } // namespace poponnx

@@ -374,7 +374,7 @@ public:
            const std::vector<std::string> &cTens,
            const std::string &logdir,
            const SessionOptions &userOptions,
-           const std::vector<std::string> &patternNames);
+           const Patterns &patterns);
 
   const onnx::ModelProto &modelProto;
   const EarlyInfo &earlyInfo;
@@ -385,7 +385,7 @@ public:
   const std::vector<std::string> &cTens;
   std::string logdir;
   const SessionOptions &userOptions;
-  const std::vector<std::string> &patternNames;
+  const Patterns &patterns;
 };
 
 // FFS : Use a factory method to create the IR class and return a pointer
@@ -526,8 +526,9 @@ private:
   // modify the Ir using a graph transformation
   void applyTransform(int transformId);
 
-  // patterns to apply after constructing forwards and backwards passes
-  std::vector<std::unique_ptr<Pattern>> patterns;
+  // The set of patterns to apply after constructing forwards and backwards
+  // passes
+  Patterns patterns;
 
   // set of all graph transformations
   std::map<int, std::unique_ptr<Transform>> transforms;

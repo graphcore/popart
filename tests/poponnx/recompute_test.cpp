@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
               {},
               ".",
               {},
-              {"OpToIdentity", "PostNRepl"}});
+              Patterns({PatternType::OPTOIDENTITY, PatternType::POSTNREPL})});
 
   // All but the original 6 operations should be pruned
   BOOST_CHECK_EQUAL(ir.getOpSchedule({}).size(), 46);

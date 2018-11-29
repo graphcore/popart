@@ -54,9 +54,6 @@ cifarInIndices = {"image0": 0}
 
 losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
 
-# The optimization passes to run in the Ir, see patterns.hpp
-willowOptPasses = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
-
 
 class Module0(torch.nn.Module):
     def __init__(self):
@@ -92,5 +89,5 @@ torchWriter = torchwriter.PytorchNetWriter(
     ### Torch specific:
     module=Module0())
 
-c10driver.run(torchWriter, willowOptPasses, args.outputdir, cifarInIndices,
-              args.device, args.hw_id)
+c10driver.run(torchWriter, None, args.outputdir, cifarInIndices, args.device,
+              args.hw_id)

@@ -12,9 +12,13 @@ class Session(poponnx.SessionCore):
                  losses=[],
                  optimizer=None,
                  outputdir="",
-                 passes=[],
+                 passes=poponnx.Patterns(),
                  cTens=[],
                  userOptions=poponnx.SessionOptionsCore()):
+
+        if passes == None:
+            passes = poponnx.Patterns()
+
         super(Session,
               self).__init__(fnModel, earlyInfo, dataFeed, losses, optimizer,
                              cTens, outputdir, userOptions, passes)

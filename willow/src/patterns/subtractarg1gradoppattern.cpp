@@ -60,4 +60,9 @@ bool SubtractArg1GradOpPattern::apply(Op *op) const {
   return true;
 }
 
+namespace {
+static PatternCreator<SubtractArg1GradOpPattern>
+    PreUniReplPattern(PatternType::SUBTRACTARG1GRADOP, "SubtractArg1GradOp");
+}
+
 } // namespace poponnx

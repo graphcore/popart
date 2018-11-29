@@ -192,7 +192,7 @@ cifarInIndices = {"image0": 0}
 losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
 
 # The optimization passes to run in the Ir, see patterns.hpp
-willowOptPasses = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
+willowOptPasses = poponnx.Patterns()
 
 
 class Module0(torch.nn.Module):

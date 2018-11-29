@@ -7,6 +7,9 @@
 namespace poponnx {
 
 bool Fuser::apply(Op *op) const {
+
+  logging::ir::warn("Fuser::apply");
+
   Ir *pir = op->pir;
 
   Op *op0      = op;

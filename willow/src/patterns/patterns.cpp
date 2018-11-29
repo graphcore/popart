@@ -1,66 +1,84 @@
-#include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
+#include <poponnx/logging.hpp>
 #include <poponnx/patterns/patterns.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
 
 namespace poponnx {
 
-class SoftmaxGradDirectOp;
+Patterns::Patterns(PatternsLevel level) {
 
-PatternTypes initPatternTypes() { return PatternTypes(); }
+  switch (level) {
+  case PatternsLevel::NONE: {
+  } break;
 
-const PatternTypes &getPatternTypes() {
-  const static PatternTypes X = initPatternTypes();
-  return X;
+  // The default set of patterns
+  case PatternsLevel::DEFAULT:
+  case PatternsLevel::ALL: {
+    // right now we will enable all the options, maybe later there will be a
+    // subset
+    auto patternList = PatternManager::getPatternList();
+    for (auto pattern : patternList) {
+      settings.insert(std::pair<PatternType, bool>(pattern, true));
+    }
+  } break;
+  }
 }
 
-bool Pattern::touchesAnchored(Op *op) const {
-  for (auto &tensor : touches(op)) {
-    if (op->pir->isAnchored(tensor->id)) {
-      return true;
-    }
+Patterns::Patterns(std::vector<PatternType> types) {
+
+  for (auto type : types) {
+    settings.insert(std::pair<PatternType, bool>(type, true));
   }
+}
+
+Patterns Patterns::create(std::vector<std::string> strings) {
+  Patterns patterns(PatternsLevel::NONE);
+
+  for (auto p : strings) {
+    auto type = PatternManager::convertPatternType(p);
+    if (type) {
+      patterns.settings.insert(std::pair<PatternType, bool>(*type, true));
+    } else
+      logging::ir::warn("Unknown pattern {}", p);
+  }
+
+  return patterns;
+}
+
+bool Patterns::isPatternEnabled(PatternType t) {
+
+  auto it = settings.find(t);
+  if (it != settings.end()) {
+    return it->second;
+  }
+
   return false;
-};
-
-PatternTypes::PatternTypes() {
-
-  opTypes_ = {{"PostNRepl", PatternType::POSTNREPL},
-              {"PreUniRepl", PatternType::PREUNIREPL},
-              {"SoftmaxGradDirect", PatternType::SOFTMAXGRADDIRECT},
-              {"SplitConvBias", PatternType::SPLITCONVBIAS},
-              {"OpToIdentity", PatternType::OPTOIDENTITY},
-              {"SubtractArg1GradOp", PatternType::SUBTRACTARG1GRADOP},
-              {"MulArgGradOp", PatternType::MULARGGRADOP},
-              {"Inplace0", PatternType::INPLACE0}};
-
-  std::vector<std::string> opTypeKeys;
-  opTypeKeys.reserve(opTypes_.size());
-  for (auto &x : opTypes_) {
-    strings_[x.second] = x.first;
-  }
 }
 
-const PatternType &PatternTypes::get(std::string op_type) const {
-  auto found = opTypes_.find(op_type);
-  if (found == opTypes_.end()) {
-    std::vector<std::string> opTypeNames;
-    opTypeNames.reserve(opTypes_.size());
-    for (auto &name_type : opTypes_) {
-      opTypeNames.push_back(name_type.first);
+Patterns &Patterns::enablePattern(PatternType t, bool v) {
+  logging::ir::warn("Pattern {} {}", static_cast<int>(t), v);
+  settings[t] = v;
+  return *this;
+}
+
+std::vector<std::unique_ptr<Pattern>> Patterns::getPatternList() {
+
+  std::vector<std::unique_ptr<Pattern>> patterns;
+
+  for (auto p : settings) {
+    if (p.second) {
+      patterns.emplace_back(PatternManager::createPattern(p.first));
     }
-    std::stringstream errm;
-    errm << "No PatternType found for " << op_type << ". Options are ";
-    appendSequence(errm, opTypeNames);
-    throw error(errm.str());
   }
 
-  return found->second;
+  return patterns;
 }
 
-const std::string &PatternTypes::get(PatternType opType) const {
-  return strings_.at(opType);
+std::ostream &operator<<(std::ostream &os, const Patterns &patterns) {
+
+  for (auto setting : patterns.settings) {
+    os << PatternManager::getPatternName(setting.first) << " ";
+  }
+
+  return os;
 }
 
 } // namespace poponnx

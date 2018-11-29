@@ -35,7 +35,6 @@ def test_convolution_cached_by_default():
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"doLayerWiseBreakdown": "true"}
 
-    passes = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
 
     session = poponnx.Session(
         fnModel=proto,
@@ -44,7 +43,6 @@ def test_convolution_cached_by_default():
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
-        passes=passes,
         outputdir="/tmp")
 
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
@@ -110,8 +108,6 @@ def test_convolution_cached_set_to_true():
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"doLayerWiseBreakdown": "true"}
 
-    passes = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
-
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
@@ -119,7 +115,6 @@ def test_convolution_cached_set_to_true():
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
-        passes=passes,
         outputdir="/tmp")
 
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
@@ -185,8 +180,6 @@ def test_convolution_cached_set_to_false():
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"doLayerWiseBreakdown": "true"}
 
-    passes = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
-
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
@@ -194,7 +187,6 @@ def test_convolution_cached_set_to_false():
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
-        passes=passes,
         outputdir="/tmp")
 
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
@@ -260,8 +252,6 @@ def test_convolution_some_convolutions_cached():
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"doLayerWiseBreakdown": "true"}
 
-    passes = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
-
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
@@ -269,7 +259,6 @@ def test_convolution_some_convolutions_cached():
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
-        passes=passes,
         outputdir="/tmp")
 
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
@@ -340,8 +329,6 @@ def test_convolution_disable_all():
     opts.reportOptions = {"doLayerWiseBreakdown": "true"}
     opts.enableConvolutionGraphCaching = False
 
-    passes = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
-
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,
@@ -349,7 +336,6 @@ def test_convolution_disable_all():
         losses=losses,
         optimizer=optimizer,
         userOptions=opts,
-        passes=passes,
         outputdir="/tmp")
 
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))

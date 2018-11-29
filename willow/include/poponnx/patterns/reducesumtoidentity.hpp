@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_REDUCE_SUM_TO_IDENTITY_PATTERN_HPP
 #define GUARD_NEURALNET_REDUCE_SUM_TO_IDENTITY_PATTERN_HPP
 
-#include <poponnx/patterns/patterns.hpp>
+#include <poponnx/patterns/pattern.hpp>
 
 namespace poponnx {
 

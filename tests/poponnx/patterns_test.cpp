@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
               {},
               ".",
               {},
-              {"PostNRepl"}});
+              Patterns({PatternType::POSTNREPL})});
 
   // Check the ir
   // All but one of the identityOps should have been removed from the ir
@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
               {},
               ".",
               {},
-              {"PreUniRepl"}});
+              Patterns({PatternType::PREUNIREPL})});
 
   // Check the ir
   // the PadOp should have been removed
@@ -169,7 +169,7 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
               {},
               ".",
               {},
-              {"OpToIdentity"}});
+              Patterns({PatternType::OPTOIDENTITY})});
 
   // Check the ir
   // the PadOp should have been replaced with an IdentityOp
@@ -222,7 +222,7 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
               {},
               ".",
               {},
-              {"SplitConvBias"}});
+              Patterns({PatternType::SPLITCONVBIAS})});
 
   // Check the ir
   // Input 1 should connect to ConvOp
@@ -285,7 +285,7 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
               {},
               ".",
               {},
-              {"SubtractArg1GradOp"}});
+              Patterns({PatternType::SUBTRACTARG1GRADOP})});
 
   // Check the ir
   // SubtractArg1Grad should have been replaced with Negate and ReduceSum
@@ -336,15 +336,16 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
   opts.exportDot = true;
 
   Ir ir;
-  ir.prepare({modelProto,
-              earlyInfo,
-              dataFlow,
-              losses,
-              &optimizer,
-              {},
-              ".",
-              opts,
-              {"PreUniRepl", "SoftmaxGradDirect"}});
+  ir.prepare(
+      {modelProto,
+       earlyInfo,
+       dataFlow,
+       losses,
+       &optimizer,
+       {},
+       ".",
+       opts,
+       Patterns({PatternType::PREUNIREPL, PatternType::SOFTMAXGRADDIRECT})});
 
   // Check the ir
   // NllGradOp and SoftmaxGradOp should have been replaced with
@@ -401,7 +402,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_series) {
               {},
               ".",
               {},
-              {"Inplace0"}});
+              Patterns({PatternType::INPLACE0})});
 
   // Check the ir
   // All the Relus have been optimised out,
@@ -468,7 +469,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_parallel) {
               {},
               ".",
               {},
-              {"Inplace0"}});
+              Patterns({PatternType::INPLACE0})});
 
   // Check the ir
   // All the Relus have been optimised out,

@@ -20,16 +20,6 @@
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/util.hpp>
 
-// The patterns
-#include <poponnx/patterns/convbias.hpp>
-#include <poponnx/patterns/inplace.hpp>
-#include <poponnx/patterns/mularggradoppattern.hpp>
-#include <poponnx/patterns/optoidentitypattern.hpp>
-#include <poponnx/patterns/postnrepl.hpp>
-#include <poponnx/patterns/preunirepl.hpp>
-#include <poponnx/patterns/softmaxgraddirect.hpp>
-#include <poponnx/patterns/subtractarg1gradoppattern.hpp>
-
 // The transformations
 #include <poponnx/transforms/prune.hpp>
 #include <poponnx/transforms/recompute.hpp>
@@ -415,10 +405,10 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
                    const std::vector<std::string> &cTens_,
                    const std::string &logdir_,
                    const SessionOptions &userOptions_,
-                   const std::vector<std::string> &patternNames_)
+                   const Patterns &patterns_)
     : modelProto(modelProto_), earlyInfo(earlyInfo_), dataFlow(dataFlow_),
       losses(losses_), optimizer(optimizer_), cTens(cTens_), logdir(logdir_),
-      userOptions(userOptions_), patternNames(patternNames_) {}
+      userOptions(userOptions_), patterns(patterns_) {}
 
 Ir::Ir() : tensors(*this) {}
 
@@ -433,6 +423,7 @@ void Ir::prepare(const IrBundle &gb) {
   logdir      = io::getCanonicalDirName(gb.logdir);
   userOptions = gb.userOptions;
   earlyInfo   = gb.earlyInfo;
+  patterns    = gb.patterns;
 
   onnxModel = gb.modelProto;
 
@@ -483,52 +474,8 @@ void Ir::prepare(const IrBundle &gb) {
     }
   }
 
-  for (auto patternName : gb.patternNames) {
-    switch (getPatternTypes().get(patternName)) {
-    case PatternType::PREUNIREPL: {
-      patterns.emplace_back(std::unique_ptr<Pattern>(new PreUniRepl));
-      break;
-    }
-
-    case PatternType::POSTNREPL: {
-      patterns.emplace_back(std::unique_ptr<Pattern>(new PostNRepl));
-      break;
-    }
-
-    case PatternType::SOFTMAXGRADDIRECT: {
-      patterns.emplace_back(std::unique_ptr<Pattern>(new SoftmaxGradDirect));
-      break;
-    }
-
-    case PatternType::SPLITCONVBIAS: {
-      patterns.emplace_back(new ConvBiasPattern);
-      break;
-    }
-
-    case PatternType::OPTOIDENTITY: {
-      patterns.emplace_back(new OpToIdentityPattern);
-      break;
-    }
-
-    case PatternType::SUBTRACTARG1GRADOP: {
-      patterns.emplace_back(make_unique<SubtractArg1GradOpPattern>());
-      break;
-    }
-
-    case PatternType::MULARGGRADOP: {
-      patterns.emplace_back(make_unique<MulArgGradOpPattern>());
-      break;
-    }
-
-    case PatternType::INPLACE0: {
-      patterns.emplace_back(new Inplace0);
-      break;
-    }
-
-    default:
-      throw error("unrecognised PatternType");
-    }
-  }
+  logging::ir::info("Patterns : {}", patterns);
+  // todo : validate the selected patterns
 
   // construct the forward pass from ONNX,
   constructForwards();
@@ -578,11 +525,7 @@ void Ir::prepare(const IrBundle &gb) {
   // Now, we apply the Patterns which can handle and create
   // topological constaints. Currently, this is only one
   // in-placing Pattern.
-  for (auto &pattern : patterns) {
-    if (pattern->phase() == PatternPhase::WITHTOPOCONS) {
-      applyPattern(pattern.get());
-    }
-  }
+  applyPatterns(PatternPhase::WITHTOPOCONS);
 
   updateVertices();
 
@@ -732,10 +675,12 @@ bool Ir::applyPattern(const Pattern *pattern) {
 void Ir::applyPatterns(PatternPhase phase) {
   bool keepRunning = true;
 
+  std::vector<std::unique_ptr<Pattern>> patternList = patterns.getPatternList();
+
   while (keepRunning) {
     keepRunning = false;
 
-    for (auto &pattern : patterns) {
+    for (auto &pattern : patternList) {
       if (pattern->phase() == phase) {
         keepRunning |= applyPattern(pattern.get());
       }

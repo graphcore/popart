@@ -6,7 +6,7 @@
 namespace poponnx {
 
 struct SessionOptions;
-
+class Patterns;
 class DeviceInfo;
 
 /**
@@ -44,8 +44,7 @@ public:
                       const std::vector<std::string> &cTens = {},
                       std::string logdir                    = "",
                       const SessionOptions &userOptions     = SessionOptions(),
-                      const std::vector<std::string> &patternNames = {});
-
+                      const Patterns &patterns              = Patterns());
   /** Update the optimizer.
    *
    * Note that the optimizer passed in must be compatible with that passed to
@@ -187,7 +186,7 @@ private:
                          const std::vector<std::string> &cTens,
                          std::string logdir,
                          const SessionOptions &userOptions,
-                         const std::vector<std::string> &patternNames);
+                         const Patterns &patterns);
 };
 } // namespace poponnx
 

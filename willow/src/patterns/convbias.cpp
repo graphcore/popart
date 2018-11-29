@@ -2,6 +2,7 @@
 #include <poponnx/op/addbias.hpp>
 #include <poponnx/op/conv.hpp>
 #include <poponnx/patterns/convbias.hpp>
+#include <poponnx/patterns/patterns.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -43,6 +44,11 @@ bool ConvBiasPattern::apply(Op *op) const {
   add_bias->output.insert(0, a1);
 
   return true;
+}
+
+namespace {
+static PatternCreator<ConvBiasPattern>
+    convBiasPattern(PatternType::SPLITCONVBIAS, "SplitConvBias");
 }
 
 } // namespace poponnx

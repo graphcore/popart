@@ -1,6 +1,7 @@
 #ifndef GUARD_NEURALNET_UTIL_HPP
 #define GUARD_NEURALNET_UTIL_HPP
 
+#include <memory>
 #include <sstream>
 #include <string>
 

@@ -21,4 +21,9 @@ OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
       pir, dynamic_cast<NllGradOp *>(nllgrad)->nlll())));
 }
 
+namespace {
+static PatternCreator<SoftmaxGradDirect>
+    PreUniReplPattern(PatternType::SOFTMAXGRADDIRECT, "SoftmaxGradDirect");
+}
+
 } // namespace poponnx

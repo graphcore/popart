@@ -54,9 +54,17 @@ BOOST_AUTO_TEST_CASE(PruneTest) {
       DataFlow(1, 1, {tensorIds.back(), tensorIds[2]}, AnchorReturnType::ALL);
   std::vector<Loss *> losses;
 
+  // This test needs to disable all patterns.
   Ir ir;
-  ir.prepare(
-      {modelProto, earlyInfo, dataFlow, losses, nullptr, {}, ".", {}, {}});
+  ir.prepare({modelProto,
+              earlyInfo,
+              dataFlow,
+              losses,
+              nullptr,
+              {},
+              ".",
+              {},
+              Patterns(PatternsLevel::NONE)});
 
   // All but the original 6 operations should be pruned
   BOOST_CHECK(ir.getOps().size() == 6);

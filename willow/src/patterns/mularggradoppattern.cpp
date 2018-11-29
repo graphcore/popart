@@ -72,4 +72,9 @@ bool MulArgGradOpPattern::apply(Op *op) const {
   return true;
 }
 
+namespace {
+static PatternCreator<MulArgGradOpPattern>
+    MulArgGradOpPattern(PatternType::MULARGGRADOP, "MulArgGradOp");
+}
+
 } // namespace poponnx

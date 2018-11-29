@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_PREUNIREPL_HPP
 #define GUARD_NEURALNET_PREUNIREPL_HPP
 
-#include <poponnx/patterns/patterns.hpp>
+#include <poponnx/patterns/pattern.hpp>
 
 namespace poponnx {
 

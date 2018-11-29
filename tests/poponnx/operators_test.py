@@ -268,7 +268,7 @@ def test_mul(tmpdir):
     opts.logging = {"all": "TRACE"}
     opts.exportDot = True
 
-    optPasses = ["PreUniRepl", "MulArgGradOp"]
+    optPasses = poponnx.Patterns(["PreUniRepl", "MulArgGradOp"])
 
     session = poponnx.Session(
         fnModel=proto,
@@ -349,7 +349,7 @@ def test_broadcast_mul(tmpdir):
     opts.logging = {"all": "TRACE"}
     opts.exportDot = True
 
-    optPasses = ["PreUniRepl", "MulArgGradOp"]
+    optPatterns = poponnx.Patterns(["PreUniRepl", "MulArgGradOp"])
 
     session = poponnx.Session(
         fnModel=proto,
@@ -358,7 +358,7 @@ def test_broadcast_mul(tmpdir):
         losses=losses,
         optimizer=optimizer,
         outputdir=str(tmpdir),
-        passes=optPasses,
+        passes=optPatterns,
         userOptions=opts)
 
     session.setDevice(tu.get_poplar_cpu_device())

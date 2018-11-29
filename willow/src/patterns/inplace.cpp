@@ -170,4 +170,9 @@ bool Inplace0::matches(Op *op) const {
   return true;
 }
 
+namespace {
+static PatternCreator<Inplace0> inplace0Pattern(PatternType::INPLACE0,
+                                                "InPlace0");
+}
+
 } // namespace poponnx

@@ -26,9 +26,6 @@ losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
 #cifar training data loader : at index 0 : image, at index 1 : label.
 cifarInIndices = {"image0": 0}
 
-# The optimization passes to run in the Ir, see patterns.hpp
-willowOptPasses = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
-
 
 class Module0(torch.nn.Module):
     def __init__(self):
@@ -67,7 +64,7 @@ torchWriter = torchwriter.PytorchNetWriter(
 # Passes if torch and poponnx models match
 c10driver.run(
     torchWriter=torchWriter,
-    passes=willowOptPasses,
+    passes=None,
     outputdir=args.outputdir,
     cifarInIndices=cifarInIndices,
     device=args.device,

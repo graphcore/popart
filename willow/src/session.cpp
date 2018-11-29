@@ -23,7 +23,7 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
                                 const std::vector<TensorId> &cTens,
                                 std::string logdir,
                                 const SessionOptions &userOptions,
-                                const std::vector<std::string> &patternNames) {
+                                const Patterns &patterns) {
 
   logging::session::trace("Session::configureFromOnnx");
 
@@ -37,7 +37,7 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
               cTens,
               logdir,
               userOptions,
-              patternNames});
+              patterns});
 }
 
 std::unique_ptr<Session>
@@ -49,7 +49,7 @@ Session::createFromOnnxModel(const std::string &model,
                              const std::vector<std::string> &cTens,
                              std::string logdir,
                              const SessionOptions &userOptions,
-                             const std::vector<std::string> &patternNames) {
+                             const Patterns &patterns) {
 
   // Needs to be the first call to initialise the logging settings
   logging::configure(userOptions.loggingOptions);
@@ -67,7 +67,7 @@ Session::createFromOnnxModel(const std::string &model,
                              cTens,
                              logdir,
                              userOptions,
-                             patternNames);
+                             patterns);
   return session;
 }
 

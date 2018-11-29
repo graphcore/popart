@@ -27,7 +27,6 @@ inNames = ["image0"]
 cifarInIndices = {"image0": 0, "label": 1}
 outNames = ["probs"]
 losses = [poponnx.NllLoss("probs", "label", "nllLossVal")]
-willowOptPasses = ["PreUniRepl", "PostNRepl", "SoftmaxGradDirect"]
 
 
 class Module0(torch.nn.Module):
@@ -69,5 +68,5 @@ torchWriter = torchwriter.PytorchNetWriter(
     ### Torch specific:
     module=Module0())
 
-c10driver.run(torchWriter, willowOptPasses, args.outputdir, cifarInIndices,
-              args.device, args.hw_id)
+c10driver.run(torchWriter, None, args.outputdir, cifarInIndices, args.device,
+              args.hw_id)

@@ -30,9 +30,9 @@ inNames = ["image0", "image1"]
 cifarInIndices = {"image0": 0, "image1": 0, "label": 1}
 outNames = ["out"]
 losses = [poponnx.L1Loss("out", "l1LossVal", 0.01)]
-willowOptPasses = [
-    "PreUniRepl", "PostNRepl", "SoftmaxGradDirect", "SubtractArg1GradOp"
-]
+
+willowOptPasses = poponnx.Patterns()
+willowOptPasses.SubtractArg1GradOp = True
 
 
 class Module0(torch.nn.Module):

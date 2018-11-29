@@ -6,6 +6,7 @@ import os
 import torch
 import c10driver
 import cmdline
+import poponnx
 import poponnx_core
 from poponnx.torch import torchwriter
 
@@ -31,9 +32,9 @@ losses = [
     poponnx_core.NllLoss("probs", "label", "nllLossVal"),
     poponnx_core.L1Loss("preProbSquared", "l1LossVal", 0.01)
 ]
-willowOptPasses = [
-    "PreUniRepl", "PostNRepl", "SoftmaxGradDirect", "OpToIdentity"
-]
+
+willowOptPasses = poponnx.Patterns()
+willowOptPasses.OpToIdentity = True
 
 
 class Module0(torch.nn.Module):
