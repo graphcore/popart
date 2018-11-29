@@ -1,24 +1,27 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/softmax.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/util.hpp>
 
 namespace poponnx {
 
 SoftmaxOp::SoftmaxOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
 
-void SoftmaxOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
+void SoftmaxOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 std::vector<std::unique_ptr<Op>> SoftmaxOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(std::unique_ptr<Op>(new SoftmaxGradOp(this)));
+  upops.emplace_back(make_unique<SoftmaxGradOp>(this));
   return upops;
 }
 
 std::unique_ptr<Op> SoftmaxOp::clone() const {
-  return std::unique_ptr<Op>(new SoftmaxOp(*this));
+  return make_unique<SoftmaxOp>(*this);
 }
 
-void SoftmaxGradOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
+void SoftmaxGradOp::setup() {
+  outInfo(getOutIndex()) = inInfo(getGradProbsInIndex());
+}
 
 SoftmaxGradOp::SoftmaxGradOp(SoftmaxOp *op_)
     : Op({"SoftmaxGrad", op_->pir, {}, getPoponnxDomain()}) {}
@@ -28,21 +31,18 @@ const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
   // input at index 1 (actsIn()): input of softmax (activations before p)
   // the (1-sparse) gradient of the output will be used
   static const std::vector<GradInOutMapper> inInfo = {
-      {gradProbsIn(), 0, GradOpInType::GRADOUT},
-      {actsIn(), 0, GradOpInType::IN}};
+      {getGradProbsInIndex(), SoftmaxOp::getOutIndex(), GradOpInType::GRADOUT},
+      {getActsInIndex(), SoftmaxOp::getInIndex(), GradOpInType::IN}};
   return inInfo;
 }
 
 const std::map<int, int> &SoftmaxGradOp::gradOutToNonGradIn() const {
   // the grad-op's output at index 0 corresponds
   // to the non-grad-op's input at index 0
-  static const std::map<int, int> outInfo = {{0, 0}};
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), SoftmaxOp::getInIndex()}};
   return outInfo;
 }
-
-int SoftmaxGradOp::gradProbsIn() const { return 0; }
-
-int SoftmaxGradOp::actsIn() const { return 1; }
 
 SoftmaxGradDirectOp::SoftmaxGradDirectOp(Ir *ir,
                                          const NllLoss *nls)
@@ -65,7 +65,7 @@ std::unique_ptr<Op> SoftmaxGradDirectOp::clone() const {
 
 void SoftmaxGradDirectOp::setup() {
   // gradient of activations has same shape as probabilities
-  output.tensor(0)->info = input.tensor(0)->info;
+  outInfo(getOutIndex()) = inInfo(getInIndex());
 }
 
 } // namespace poponnx

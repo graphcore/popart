@@ -14,11 +14,11 @@ AddOpx::AddOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void AddOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(0),
+  insert(outId(AddOp::getOutIndex()),
          popops::map(graph(),
                      popops::expr::BinaryOpType::ADD,
-                     get(inId(0)),
-                     get(inId(1)),
+                     get(inId(AddOp::getArg0InIndex())),
+                     get(inId(AddOp::getArg1InIndex())),
                      prog,
                      idStr()));
 }

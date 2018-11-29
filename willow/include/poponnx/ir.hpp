@@ -45,9 +45,9 @@ enum class GradOpInType { IN = 0, OUT, GRADOUT };
 
 class GradInOutMapper {
 public:
-  GradInOutMapper(int iGrad_, int iNonGrad_, GradOpInType);
+  GradInOutMapper(InIndex iGrad_, int iNonGrad_, GradOpInType);
   // input index to a grad-op
-  int iGrad;
+  InIndex iGrad;
   // "input/output/gradient-of-output" index to
   // corresponding non-grad op,
   int iNonGrad;
@@ -292,6 +292,22 @@ public:
   // the Sum op which adds the losses together is not
   // a LossOp (although its Phase is LOSS)
   virtual bool isLossOp() const;
+
+  Tensor *inTensor(InIndex index);
+  const Tensor *inTensor(InIndex index) const;
+  Tensor *outTensor(OutIndex index);
+  const Tensor *outTensor(OutIndex index) const;
+
+  TensorInfo &inInfo(InIndex index);
+  const TensorInfo &inInfo(InIndex index) const;
+  TensorInfo &outInfo(OutIndex index);
+  const TensorInfo &outInfo(OutIndex index) const;
+
+  const Shape &inShape(InIndex index);
+  const Shape &outShape(OutIndex index);
+
+  Rank inRank(InIndex index);
+  Rank outRank(OutIndex index);
 
 private:
   void appendIO(std::stringstream &) const;

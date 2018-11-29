@@ -16,6 +16,7 @@ public:
   std::unique_ptr<Op> getOp(Ir *) const final;
   std::string op_type() const final;
   TensorId getInputId() const;
+
   float getLambda() const;
   std::unique_ptr<Loss> clone() const final {
     return std::unique_ptr<Loss>(new L1Loss(*this));
@@ -33,6 +34,9 @@ public:
   void setup() final;
   const L1Loss *l1l() const;
 
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
+
 private:
   const L1Loss *l1loss_;
 };
@@ -45,6 +49,9 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
   const L1Loss *l1l() const;
+
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
 
 private:
   const L1Loss *l1loss_;

@@ -14,6 +14,9 @@ public:
   bool padSizeZero() const;
   void setup() final;
 
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
+
 private:
   std::vector<int64_t> pads;
 };

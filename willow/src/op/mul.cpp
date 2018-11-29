@@ -3,33 +3,29 @@
 
 namespace poponnx {
 
-InIndex MulOp::arg0Index() { return 0; }
-InIndex MulOp::arg1Index() { return 1; }
-
 MulOp::MulOp(const onnx::NodeProto &node, Ir *ir) : Op(node, ir) {}
 
 MulOp::MulOp(const OpConstructorBundle &bundle) : Op(bundle) {}
 
-std::unique_ptr<Op> MulOp::clone() const {
-  return std::unique_ptr<Op>(new MulOp(*this));
-}
+std::unique_ptr<Op> MulOp::clone() const { return make_unique<MulOp>(*this); }
 
 std::vector<std::unique_ptr<Op>> MulOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
 
-  const auto &shape_in_0   = input.tensor(arg0Index())->info.shape();
-  const auto &shape_in_1   = input.tensor(arg1Index())->info.shape();
-  const auto &shape_output = output.tensor(0)->info.shape();
+  const auto &shape_in_0   = inShape(getArg0InIndex());
+  const auto &shape_in_1   = inShape(getArg1InIndex());
+  const auto &shape_output = outShape(getOutIndex());
 
-  upops.emplace_back(std::unique_ptr<Op>(
-      new MulArg0GradOp(this, npReductionAxis(shape_in_0, shape_output))));
-  upops.emplace_back(std::unique_ptr<Op>(
-      new MulArg1GradOp(this, npReductionAxis(shape_in_1, shape_output))));
+  upops.emplace_back(make_unique<MulArg0GradOp>(
+      this, npReductionAxis(shape_in_0, shape_output)));
+  upops.emplace_back(make_unique<MulArg1GradOp>(
+      this, npReductionAxis(shape_in_1, shape_output)));
   return upops;
 }
 
 void MulOp::setup() {
-  output.tensor(0)->info = npOut(input.tensor(0)->info, input.tensor(1)->info);
+  outInfo(getOutIndex()) =
+      npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
 }
 
 MulArgGradOp::MulArgGradOp(const OpConstructorBundle &bundle,
@@ -42,22 +38,24 @@ const std::vector<int64_t> &MulArgGradOp::getReductionAxes() {
   return reduction_axes;
 }
 
-void MulArgGradOp::setup() { output.tensor(0)->info = forward_op_arg_info; }
+void MulArgGradOp::setup() { outInfo(getOutIndex()) = forward_op_arg_info; }
 
 MulArg0GradOp::MulArg0GradOp(MulOp *op_,
                              const std::vector<int64_t> &_reduction_axes)
     : MulArgGradOp({"MulArg0Grad", op_->pir, {}, getPoponnxDomain()},
                    _reduction_axes,
-                   op_->input.tensor(MulOp::arg0Index())->info) {}
+                   op_->inInfo(MulOp::getArg0InIndex())) {}
 
 const std::map<int, int> &MulArg0GradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = {{0, MulOp::arg0Index()}};
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), MulOp::getArg0InIndex()}};
   return outInfo;
 }
 
 const std::vector<GradInOutMapper> &MulArg0GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {0, 0, GradOpInType::GRADOUT}, {1, MulOp::arg1Index(), GradOpInType::IN}};
+      {0, getOutIndex(), GradOpInType::GRADOUT},
+      {1, MulOp::getArg1InIndex(), GradOpInType::IN}};
   return inInfo;
 }
 
@@ -65,16 +63,18 @@ MulArg1GradOp::MulArg1GradOp(MulOp *op_,
                              const std::vector<int64_t> &_reduction_axes)
     : MulArgGradOp({"MulArg1Grad", op_->pir, {}, getPoponnxDomain()},
                    _reduction_axes,
-                   op_->input.tensor(MulOp::arg1Index())->info) {}
+                   op_->inInfo(MulOp::getArg1InIndex())) {}
 
 const std::map<int, int> &MulArg1GradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = {{0, MulOp::arg1Index()}};
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), MulOp::getArg1InIndex()}};
   return outInfo;
 }
 
 const std::vector<GradInOutMapper> &MulArg1GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {0, 0, GradOpInType::GRADOUT}, {1, MulOp::arg0Index(), GradOpInType::IN}};
+      {0, getOutIndex(), GradOpInType::GRADOUT},
+      {1, MulOp::getArg0InIndex(), GradOpInType::IN}};
   return inInfo;
 }
 

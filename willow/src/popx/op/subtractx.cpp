@@ -14,11 +14,11 @@ SubtractOpx::SubtractOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void SubtractOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(0),
+  insert(outId(SubtractOp::getOutIndex()),
          popops::map(graph(),
                      popops::expr::BinaryOpType::SUBTRACT,
-                     get(inId(0)),
-                     get(inId(1)),
+                     get(inId(SubtractOp::getArg0InIndex())),
+                     get(inId(SubtractOp::getArg1InIndex())),
                      prog,
                      idStr()));
 }

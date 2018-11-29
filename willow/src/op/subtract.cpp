@@ -4,30 +4,29 @@
 
 namespace poponnx {
 
-int SubtractOp::arg0Index() { return 0; }
-int SubtractOp::arg1Index() { return 1; }
-
 SubtractOp::SubtractOp(const onnx::NodeProto &node, Ir *_pir)
     : Op(node, _pir) {}
 
 std::unique_ptr<Op> SubtractOp::clone() const {
-  return std::unique_ptr<Op>(new SubtractOp(*this));
+  return make_unique<SubtractOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> SubtractOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
 
-  const auto &shape_a0 = input.tensor(SubtractOp::arg0Index())->info.shape();
-  const auto &shape_o0 = output.tensor(0)->info.shape();
+  const auto &shape_a0 = inShape(SubtractOp::getArg0InIndex());
+  const auto &shape_o0 = outShape(SubtractOp::getOutIndex());
 
-  upops.emplace_back(std::unique_ptr<Op>(
-      new SubtractArg0GradOp(this, npReductionAxis(shape_a0, shape_o0))));
-  upops.emplace_back(std::unique_ptr<Op>(new SubtractArg1GradOp(this)));
+  upops.emplace_back(make_unique<SubtractArg0GradOp>(
+      this, npReductionAxis(shape_a0, shape_o0)));
+  upops.emplace_back(make_unique<SubtractArg1GradOp>(this));
+
   return upops;
 }
 
 void SubtractOp::setup() {
-  output.tensor(0)->info = npOut(input.tensor(0)->info, input.tensor(1)->info);
+  outInfo(SubtractOp::getOutIndex()) =
+      npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
 }
 
 SubtractArg0GradOp::SubtractArg0GradOp(SubtractOp *op_,
@@ -35,38 +34,40 @@ SubtractArg0GradOp::SubtractArg0GradOp(SubtractOp *op_,
     : ReduceSumOp({"SubtractArg0Grad", op_->pir, {}, getPoponnxDomain()},
                   _axes,
                   false),
-      forward_op_arg_info(op_->input.tensor(SubtractOp::arg0Index())->info) {}
+      forward_op_arg_info(op_->inInfo(SubtractOp::getArg0InIndex())) {}
 
 const std::map<int, int> &SubtractArg0GradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = {{0, SubtractOp::arg0Index()}};
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), SubtractOp::getArg0InIndex()}};
 
   return outInfo;
 }
 
 const std::vector<GradInOutMapper> &SubtractArg0GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {0, 0, GradOpInType::GRADOUT}};
+      {getInIndex(), SubtractOp::getOutIndex(), GradOpInType::GRADOUT}};
 
   return inInfo;
 }
 
 void SubtractArg0GradOp::setup() {
-  output.tensor(0)->info = forward_op_arg_info;
+  outInfo(getOutIndex()) = forward_op_arg_info;
 }
 
 SubtractArg1GradOp::SubtractArg1GradOp(SubtractOp *op_)
     : NegateOp({"SubtractArg1Grad", op_->pir, {}, getPoponnxDomain()}),
-      forward_op_arg_info(op_->input.tensor(SubtractOp::arg1Index())->info) {}
+      forward_op_arg_info(op_->inInfo(SubtractOp::getArg1InIndex())) {}
 
 const std::map<int, int> &SubtractArg1GradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = {{0, SubtractOp::arg1Index()}};
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), SubtractOp::getArg1InIndex()}};
 
   return outInfo;
 }
 
 const std::vector<GradInOutMapper> &SubtractArg1GradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {0, 0, GradOpInType::GRADOUT}};
+      {getInIndex(), SubtractOp::getOutIndex(), GradOpInType::GRADOUT}};
 
   return inInfo;
 }
@@ -76,7 +77,7 @@ std::unique_ptr<Op> SubtractArg1GradOp::clone() const {
 }
 
 void SubtractArg1GradOp::setup() {
-  output.tensor(0)->info = forward_op_arg_info;
+  outInfo(getOutIndex()) = forward_op_arg_info;
 }
 
 } // namespace poponnx

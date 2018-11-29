@@ -66,18 +66,18 @@ std::string initAllONNXTypesString();
 
 class TensorInfo {
 public:
-  TensorInfo(DataType, const std::vector<int64_t> &);
+  TensorInfo(DataType, const Shape &);
   TensorInfo(std::string data_type, std::string shape);
-  TensorInfo(std::string data_type, const std::vector<int64_t> &);
+  TensorInfo(std::string data_type, const Shape &);
   TensorInfo(const onnx::TensorProto &);
   void set(const onnx::TensorProto &);
   TensorInfo() = default;
-  void set(DataType, const std::vector<int64_t> &);
-  const std::vector<int64_t> &shape() const;
+  void set(DataType, const Shape &);
+  const Shape &shape() const;
   // A helper functions for back-ends which
   // prefer the size as (unsigned) size_t.
   std::vector<size_t> shape_szt() const;
-  int rank() const;
+  Rank rank() const;
   int64_t nelms() const;
   // total bytes of tensor
   int64_t nbytes() const;
@@ -90,12 +90,12 @@ public:
   bool operator==(const TensorInfo &) const;
   bool operator!=(const TensorInfo &) const;
   DataType dataTypeFromString(const std::string &s) const;
-  std::vector<int64_t> shapeFromString(const std::string &s) const;
+  Shape shapeFromString(const std::string &s) const;
   onnx::TypeProto getOnnxTypeProto() const;
 
 private:
   const DataTypeInfo *dataTypeInfo = nullptr;
-  std::vector<int64_t> shape_v;
+  Shape shape_v;
 };
 
 std::ostream &operator<<(std::ostream &stream, const TensorInfo &ti);

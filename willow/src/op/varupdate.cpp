@@ -1,6 +1,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/varupdate.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/util.hpp>
 
 namespace poponnx {
 VarUpdateOp::VarUpdateOp(std::string op_type, TensorId varId_, Ir *_pir)
@@ -16,21 +17,15 @@ void VarUpdateOp::setup() {
 }
 
 bool VarUpdateOp::modifies(InIndex in_index) const {
-  return in_index == getVarIndex();
+  return in_index == getVarInIndex();
 }
-
-int VarUpdateOp::getVarIndex() { return 0; }
-
-int VarUpdateOp::getVarGradIndex() { return 1; }
 
 SGDVarUpdateOp::SGDVarUpdateOp(TensorId varId_, Ir *_pir)
     : VarUpdateOp("SGDVarUpdate", varId_, _pir) {}
 
 std::unique_ptr<Op> SGDVarUpdateOp::clone() const {
-  return std::unique_ptr<Op>(new SGDVarUpdateOp(*this));
+  return make_unique<SGDVarUpdateOp>(*this);
 }
-
-int SGDVarUpdateOp::getLearnRateIndex() { return 2; }
 
 ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_, Ir *_pir, float lr_)
     : VarUpdateOp("ConstSGDVarUpdate", varId_, _pir), learnRate(lr_) {}
@@ -38,7 +33,7 @@ ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_, Ir *_pir, float lr_)
 float ConstSGDVarUpdateOp::getLearnRate() const { return learnRate; }
 
 std::unique_ptr<Op> ConstSGDVarUpdateOp::clone() const {
-  return std::unique_ptr<Op>(new ConstSGDVarUpdateOp(*this));
+  return make_unique<ConstSGDVarUpdateOp>(*this);
 }
 
 } // namespace poponnx

@@ -22,9 +22,10 @@ public:
   // "data" at index 0, "weights" at index 1, "bias" as index 2.
   // poponnx's ConvOp does not support bias, but bias can be used when
   // ConvBiasPattern is used.
-  static int dataInIndex();
-  static int weightsInIndex();
-  static int biasInIndex();
+  static InIndex getDataInIndex() { return 0; }
+  static InIndex getWeightsInIndex() { return 1; }
+  static InIndex getBiasInIndex() { return 2; }
+  static OutIndex getOutIndex() { return 0; }
 
 private:
   void setup0() final;
@@ -40,11 +41,14 @@ public:
 
   // The input index where the gradient of
   // the output of convolution is inserted to this Op
-  int getGradConvolvedIn() const;
+  static InIndex getGradConvolvedInIndex() { return 0; }
 
   // The input index where the input to the
   // convolution (ConvOp) is inserted to this Op
-  int getPreConvolvedIn() const;
+  static InIndex getPreConvolvedInIndex() { return 1; }
+
+  static OutIndex getOutIndex() { return 0; }
+
   const ConvOp *getCloneOfCreator() const;
 
 private:
@@ -61,9 +65,10 @@ public:
   const ConvOp *getCloneOfCreator() const;
 
   // The input index where the weight tensor is inserted
-  int getWeightsIn() const;
+  static InIndex getWeightsInIndex() { return 0; }
   // The input index where the gradient of the output is inserted
-  int getGradConvolvedIn() const;
+  static InIndex getGradConvolvedInIndex() { return 1; }
+  static OutIndex getOutIndex() { return 0; }
 
 private:
   std::unique_ptr<Op> cloneOfCreator;

@@ -10,8 +10,10 @@ public:
   // op_type: passed down from class which inherits
   VarUpdateOp(std::string op_type, TensorId, Ir *);
   void setup() final;
-  static int getVarIndex();
-  static int getVarGradIndex();
+
+  static InIndex getVarInIndex() { return 0; }
+  static InIndex getVarGradInIndex() { return 1; }
+
   // This Op modifies the input at index getVarIndex()
   virtual bool modifies(InIndex) const final;
 
@@ -24,7 +26,8 @@ class SGDVarUpdateOp : public VarUpdateOp {
 public:
   SGDVarUpdateOp(TensorId, Ir *);
   std::unique_ptr<Op> clone() const final;
-  static int getLearnRateIndex();
+
+  static InIndex getLearnRateInIndex() { return 2; }
 };
 
 class ConstSGDVarUpdateOp : public VarUpdateOp {

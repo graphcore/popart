@@ -64,8 +64,8 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
       poponnx::Tensor lhsOut("out", poponnx::TensorType::ActGrad, ir);
       lhsGradOp->output.insert(0, &lhsOut);
 
-      BOOST_CHECK(lhsGradOp->getGradInputIndex() == 0);
-      BOOST_CHECK(lhsGradOp->getRhsInputIndex() == 1);
+      BOOST_CHECK(lhsGradOp->getGradInIndex() == 0);
+      BOOST_CHECK(lhsGradOp->getRhsInIndex() == 1);
 
       lhsGradOp->setup();
       BOOST_CHECK(lhsGradOp->output.tensor(0)->info.dim(0) == 2);
@@ -89,8 +89,8 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
       poponnx::Tensor rhsOut("out", poponnx::TensorType::ActGrad, ir);
       rhsGradOp->output.insert(0, &rhsOut);
 
-      BOOST_CHECK(rhsGradOp->getGradInputIndex() == 0);
-      BOOST_CHECK(rhsGradOp->getLhsInputIndex() == 1);
+      BOOST_CHECK(rhsGradOp->getGradInIndex() == 0);
+      BOOST_CHECK(rhsGradOp->getLhsInIndex() == 1);
 
       rhsGradOp->setup();
       BOOST_CHECK(rhsGradOp->output.tensor(0)->info.dim(0) == 2);
@@ -169,8 +169,8 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
       poponnx::Tensor lhsOut("out", poponnx::TensorType::ActGrad, ir);
       lhsGradOp->output.insert(0, &lhsOut);
 
-      BOOST_CHECK(lhsGradOp->getGradInputIndex() == 0);
-      BOOST_CHECK(lhsGradOp->getRhsInputIndex() == 1);
+      BOOST_CHECK(lhsGradOp->getGradInIndex() == 0);
+      BOOST_CHECK(lhsGradOp->getRhsInIndex() == 1);
 
       lhsGradOp->setup();
       BOOST_CHECK(lhsGradOp->output.tensor(0)->info.dim(0) == 3);
@@ -194,8 +194,8 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
       poponnx::Tensor rhsOut("out", poponnx::TensorType::ActGrad, ir);
       rhsGradOp->output.insert(0, &rhsOut);
 
-      BOOST_CHECK(rhsGradOp->getGradInputIndex() == 0);
-      BOOST_CHECK(rhsGradOp->getLhsInputIndex() == 1);
+      BOOST_CHECK(rhsGradOp->getGradInIndex() == 0);
+      BOOST_CHECK(rhsGradOp->getLhsInIndex() == 1);
 
       rhsGradOp->setup();
       BOOST_CHECK(rhsGradOp->output.tensor(0)->info.dim(0) == 2);
@@ -270,9 +270,9 @@ BOOST_AUTO_TEST_CASE(MatMul_Case3) {
   }
 
   BOOST_CHECK(gradOps[0]->output.tensor(0)->info ==
-              mm.input.tensor(poponnx::MatMulOp::getLhsInputIndex())->info);
+              mm.input.tensor(poponnx::MatMulOp::getLhsInIndex())->info);
   BOOST_CHECK(gradOps[1]->output.tensor(0)->info ==
-              mm.input.tensor(poponnx::MatMulOp::getRhsInputIndex())->info);
+              mm.input.tensor(poponnx::MatMulOp::getRhsInIndex())->info);
 }
 
 // Test invalid rank on lhs

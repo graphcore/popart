@@ -4,8 +4,7 @@
 #include <poponnx/ir.hpp>
 #include <poponnx/op/reducesum.hpp>
 #include <poponnx/tensor.hpp>
-
-#include <iostream>
+#include <poponnx/util.hpp>
 
 namespace poponnx {
 
@@ -36,19 +35,19 @@ ReduceSumOp::ReduceSumOp(const onnx::NodeProto &node, Ir *_pir)
 }
 
 std::unique_ptr<Op> ReduceSumOp::clone() const {
-  return std::unique_ptr<Op>(new ReduceSumOp(*this));
+  return make_unique<ReduceSumOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> ReduceSumOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
-  result.emplace_back(new ReduceSumGradOp(this, backward_shape));
+  result.emplace_back(make_unique<ReduceSumGradOp>(this, backward_shape));
   return result;
 }
 
 void ReduceSumOp::setup() {
-  const auto input_shape = input.tensor(0)->info.shape();
+  const auto input_shape = inShape(getInIndex());
 
-  std::vector<int64_t> output_shape;
+  Shape output_shape;
   output_shape.reserve(input_shape.size());
   backward_shape.reserve(input_shape.size());
 
@@ -64,7 +63,7 @@ void ReduceSumOp::setup() {
     }
   }
 
-  output.tensor(0)->info = {input.tensor(0)->info.dataType(), output_shape};
+  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), output_shape};
 }
 
 const std::vector<int64_t> &ReduceSumOp::getAxes() const { return axes; }
@@ -72,13 +71,13 @@ const std::vector<int64_t> &ReduceSumOp::getAxes() const { return axes; }
 bool ReduceSumOp::getKeepDims() const { return keepdims; }
 
 ReduceSumGradOp::ReduceSumGradOp(ReduceSumOp *fwdOp,
-                                 const std::vector<int64_t> &backward_shape_)
+                                 const Shape &backward_shape_)
     : Op({"ReduceSumGrad", fwdOp->pir, {}, getPoponnxDomain()}),
-      outputTensorInfo(fwdOp->input.tensor(0)->info),
+      outputTensorInfo(fwdOp->inInfo(ReduceSumOp::getInIndex())),
       backward_shape(backward_shape_) {}
 
 std::unique_ptr<Op> ReduceSumGradOp::clone() const {
-  return std::unique_ptr<Op>(new ReduceSumGradOp(*this));
+  return make_unique<ReduceSumGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &ReduceSumGradOp::gradInputInfo() const {
@@ -94,10 +93,8 @@ const std::map<int, int> &ReduceSumGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-const std::vector<int64_t> &ReduceSumGradOp::backwardShape() const {
-  return backward_shape;
-}
+const Shape &ReduceSumGradOp::backwardShape() const { return backward_shape; }
 
-void ReduceSumGradOp::setup() { output.tensor(0)->info = outputTensorInfo; }
+void ReduceSumGradOp::setup() { outInfo(getOutIndex()) = outputTensorInfo; }
 
 } // namespace poponnx

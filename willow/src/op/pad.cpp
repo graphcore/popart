@@ -6,23 +6,21 @@
 
 namespace poponnx {
 
-std::unique_ptr<Op> PadOp::clone() const {
-  return std::unique_ptr<Op>(new PadOp(*this));
-}
+std::unique_ptr<Op> PadOp::clone() const { return make_unique<PadOp>(*this); }
 
 void PadOp::setup() {
 
-  int tRank = input.tensor(0)->info.rank();
+  int tRank = inRank(getInIndex());
   if (pads.size() != 2 * tRank) {
     throw error("Tensor rank not half padding size");
   }
 
-  std::vector<int64_t> outShape(tRank, 0);
-  for (int i = 0; i < input.tensor(0)->info.rank(); ++i) {
-    outShape[i] = input.tensor(0)->info.dim(i) + pads[i] + pads[i + tRank];
+  Shape outShape(tRank, 0);
+  for (int i = 0; i < tRank; ++i) {
+    outShape[i] = inInfo(getInIndex()).dim(i) + pads[i] + pads[i + tRank];
   }
 
-  output.tensor(0)->info = {input.tensor(0)->info.dataType(), outShape};
+  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), outShape};
 }
 
 PadOp::PadOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {

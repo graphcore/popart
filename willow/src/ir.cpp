@@ -1677,6 +1677,33 @@ std::string Op::str() const {
   return std::to_string(id) + " (" + op_type() + ')';
 }
 
+Tensor *Op::inTensor(InIndex index) { return input.tensor(index); }
+const Tensor *Op::inTensor(InIndex index) const { return input.tensor(index); }
+Tensor *Op::outTensor(OutIndex index) { return output.tensor(index); }
+const Tensor *Op::outTensor(OutIndex index) const {
+  return output.tensor(index);
+}
+
+TensorInfo &Op::inInfo(InIndex index) { return inTensor(index)->info; }
+const TensorInfo &Op::inInfo(InIndex index) const {
+  return inTensor(index)->info;
+}
+TensorInfo &Op::outInfo(OutIndex index) { return outTensor(index)->info; }
+const TensorInfo &Op::outInfo(OutIndex index) const {
+  return outTensor(index)->info;
+}
+
+const Shape &Op::inShape(InIndex index) {
+  return inTensor(index)->info.shape();
+}
+const Shape &Op::outShape(OutIndex index) {
+  return outTensor(index)->info.shape();
+}
+
+int Op::inRank(InIndex index) { return inTensor(index)->info.rank(); }
+
+int Op::outRank(InIndex index) { return outTensor(index)->info.rank(); }
+
 std::vector<GradNonGradPair> Ir::growLossGradients() {
   std::vector<GradNonGradPair> pairs;
   if (ops.find(finalLossId) != ops.end()) {

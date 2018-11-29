@@ -59,12 +59,12 @@ void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
   ReluGradOp *rgop = getReluGradOp();
 
   auto outTensor = popnn::nonLinearityInputGradient(
-      graph(),                           // graph,
-      popnn::NonLinearityType::RELU,     // nonLinearityType,
-      get(inId(rgop->getReludIn())),     //  out,
-      get(inId(rgop->getGradReludIn())), //  outGradient,
-      prog,                              // prog,
-      idStr()                            // debugPrefix
+      graph(),                                // graph,
+      popnn::NonLinearityType::RELU,          // nonLinearityType,
+      get(inId(rgop->getReludInIndex())),     //  out,
+      get(inId(rgop->getGradReludInIndex())), //  outGradient,
+      prog,                                   // prog,
+      idStr()                                 // debugPrefix
   );
 
   insert(op_p->output.id(0), outTensor);

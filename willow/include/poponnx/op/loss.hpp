@@ -22,11 +22,11 @@ public:
   Loss(const std::vector<TensorId> &input, TensorId output);
   virtual std::vector<TensorId> getStreamTensorNames() const = 0;
   virtual std::unique_ptr<Op> getOp(Ir *) const              = 0;
-  const TensorId &input(int i) const;
+  const TensorId &input(InIndex i) const;
   int input_size() const;
   // takes in an int arg to conform
   // with Node function (uses same template)
-  const TensorId &output(int) const;
+  const TensorId &output(OutIndex) const;
   int output_size() const;
   virtual std::string op_type() const         = 0;
   virtual std::unique_ptr<Loss> clone() const = 0;

@@ -22,10 +22,10 @@ class ConvOpx : public Opx {
 public:
   ConvOpx(Op *, Devicex *);
   ConvOp *getConvOp() const;
-  poplar::Tensor createInput(int index) const final;
-  bool canCreateInput(int index) const final;
+  poplar::Tensor createInput(InIndex index) const final;
+  bool canCreateInput(InIndex index) const final;
   bool createsEquiv(int, Opx *, int) const final;
-  std::vector<TensorId> mustExistBeforeCreate(int index0) const final;
+  std::vector<TensorId> mustExistBeforeCreate(InIndex index0) const final;
   const poplin::ConvParams &getParams() const;
   void grow(poplar::program::Sequence &) const final;
 

@@ -45,8 +45,11 @@ public:
   std::vector<uint32_t> dilations_u32() const;
   std::vector<uint32_t> strides_u32() const;
 
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
+
 private:
-  std::vector<int64_t> getOutShape() const;
+  Shape getOutShape() const;
   // set the public vector "spatialK"
   virtual void setSpatialK() = 0;
   // anything else that a sub-class needs to do should go here:

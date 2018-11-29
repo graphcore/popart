@@ -7,9 +7,9 @@ namespace poponnx {
 namespace popx {
 
 void SqueezeOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = cloneNcopy(prog, inId(0));
-  outTensor      = outTensor.reshape(op_p->output.tensor(0)->info.shape_szt());
-  insert(outId(0), outTensor);
+  auto outTensor = cloneNcopy(prog, inId(SqueezeOp::getInIndex()));
+  outTensor = outTensor.reshape(outInfo(SqueezeOp::getOutIndex()).shape_szt());
+  insert(outId(SqueezeOp::getOutIndex()), outTensor);
 }
 
 SqueezeOpx::SqueezeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -29,10 +29,10 @@ SqueezeGradOpx::SqueezeGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void SqueezeGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = cloneNcopy(prog, inId(0));
-  outTensor =
-      outTensor.reshape(getSqueezeGradOp()->output.tensor(0)->info.shape_szt());
-  insert(outId(0), outTensor);
+  auto outTensor = cloneNcopy(prog, inId(SqueezeGradOp::getInIndex()));
+  outTensor = outTensor.reshape(outInfo(SqueezeOp::getOutIndex()).shape_szt());
+  // outTensor.reshape(getSqueezeGradOp()->output.tensor(0)->info.shape_szt());
+  insert(outId(SqueezeGradOp::getOutIndex()), outTensor);
 }
 
 SqueezeGradOp *SqueezeGradOpx::getSqueezeGradOp() const {

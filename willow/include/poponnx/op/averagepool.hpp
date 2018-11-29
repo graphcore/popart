@@ -17,6 +17,9 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   int64_t getNOutChans() const final;
 
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
+
 private:
   void setup0() final;
   void setSpatialK() final;
@@ -39,9 +42,11 @@ public:
   // We MUST provide an alternative as this is
   // kind of a bug in the poplibs API (see T5079), any optimised
   // backend will want just 1 input (gradient of pooling output)
-  int getPrePooledIn() const;
-  int getPooledIn() const;
-  int getGradPooledIn() const;
+  static InIndex getPrePooledInIndex() { return 0; }
+  static InIndex getPooledInIndex() { return 1; }
+  static InIndex getGradPooledInIndex() { return 2; }
+  static OutIndex getOutIndex() { return 0; }
+
   const AveragePoolOp *getCloneOfCreator();
 
 private:

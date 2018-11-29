@@ -9,12 +9,15 @@ HasReceptiveFieldOp::HasReceptiveFieldOp(const onnx::NodeProto &node, Ir *_pir)
     : Op(node, _pir) {}
 
 void HasReceptiveFieldOp::setup() {
-  batchSize    = input.tensor(0)->info.dim(0);
-  nInChans     = input.tensor(0)->info.dim(1);
-  nSpatialDims = input.tensor(0)->info.rank() - 2;
+
+  auto &inputInfo = inInfo(getInIndex());
+
+  batchSize    = inputInfo.dim(0);
+  nInChans     = inputInfo.dim(1);
+  nSpatialDims = inputInfo.rank() - 2;
   spatialD.resize(nSpatialDims);
   for (int i = 0; i < nSpatialDims; ++i) {
-    spatialD[i] = input.tensor(0)->info.dim(i + 2);
+    spatialD[i] = inputInfo.dim(i + 2);
   }
 
   // default values:
@@ -40,9 +43,9 @@ void HasReceptiveFieldOp::setup() {
   setup0();
 
   // we assume that the output type is the same as the input type
-  outType = input.tensor(0)->info.dataType();
+  outType = inputInfo.dataType();
 
-  output.tensor(0)->info.set(outType, getOutShape());
+  outInfo(getOutIndex()).set(outType, getOutShape());
 }
 
 std::vector<int64_t> HasReceptiveFieldOp::lowerPads() const {
@@ -53,8 +56,8 @@ std::vector<int64_t> HasReceptiveFieldOp::upperPads() const {
   return std::vector<int64_t>(pads.begin() + nSpatialDims, pads.end());
 }
 
-std::vector<int64_t> HasReceptiveFieldOp::getOutShape() const {
-  std::vector<int64_t> outShape(2 + nSpatialDims, 0);
+Shape HasReceptiveFieldOp::getOutShape() const {
+  Shape outShape(2 + nSpatialDims, 0);
   outShape[0] = batchSize;
   outShape[1] = getNOutChans();
   // see https://pytorch.org/docs/stable/nn.html for

@@ -22,6 +22,8 @@ using InIndex = int;
 // The position at which a Tensor is output by an Op
 using OutIndex = int;
 
+using Rank = int;
+
 using Node = onnx::NodeProto;
 
 using onnxAttPtr = decltype(&onnx::NodeProto().attribute(0));

@@ -58,19 +58,23 @@ public:
   // shortcut for dv_p->tensors.insert
   void insert(TensorId, const poplar::Tensor &) const;
   // shortcut for op_p->input.id(int)
-  TensorId inId(int) const;
+  TensorId inId(InIndex) const;
   // shortcut for op_p->output.id(int)
-  TensorId outId(int) const;
+  TensorId outId(OutIndex) const;
+  // shortcut for op_p->input.id(int)
+  Tensor *inTensor(InIndex) const;
+  // shortcut for op_p->output.id(int)
+  Tensor *outTensor(OutIndex) const;
   // shortcut for std::to_string(op_p->id)
   std::string idStr() const;
   // shortcut for op_p->input.tensor(int)->info
-  const TensorInfo &inInfo(int) const;
+  const TensorInfo &inInfo(InIndex) const;
   // shortcut for op_p->input.tensor(int)->info.shape()
-  const std::vector<int64_t> &inShape(int) const;
+  const Shape &inShape(InIndex) const;
   // shortcut for op_p->input.tensor(int)->info
-  const TensorInfo &outInfo(int) const;
+  const TensorInfo &outInfo(OutIndex) const;
   // shortcut for op_p->input.tensor(int)->info.shape()
-  const std::vector<int64_t> &outShape(int) const;
+  const Shape &outShape(OutIndex) const;
 
   // The Op corresponding to this Opx
   Op *op_p;

@@ -11,6 +11,10 @@ public:
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
+
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
+
   bool hasInplaceVariant(InIndex) const final;
   std::unique_ptr<Op> getInplaceVariant(InIndex) final;
 };
@@ -36,11 +40,13 @@ public:
 
   // The index at which the output of the Relu (the "relud" tensor)
   // is an input to this ReluGradOp
-  int getReludIn() const;
+  static InIndex getReludInIndex() { return 1; }
 
   // The index at which the gradient of the output of
   // the Relu is an input to this ReluGradOp
-  int getGradReludIn() const;
+  static InIndex getGradReludInIndex() { return 0; }
+
+  static OutIndex getOutIndex() { return 0; }
 };
 
 } // namespace poponnx

@@ -18,15 +18,11 @@ std::vector<std::unique_ptr<Op>> MatMulOp::getGradOps() {
   return upops;
 }
 
-const Tensor *MatMulOp::lhsIn() const {
-  return input.tensor(getLhsInputIndex());
-}
+const Tensor *MatMulOp::lhsIn() const { return inTensor(getLhsInIndex()); }
 
-const Tensor *MatMulOp::rhsIn() const {
-  return input.tensor(getRhsInputIndex());
-}
+const Tensor *MatMulOp::rhsIn() const { return inTensor(getRhsInIndex()); }
 
-const Tensor *MatMulOp::out() const { return output.tensor(getOutputIndex()); }
+const Tensor *MatMulOp::out() const { return outTensor(getOutIndex()); }
 
 std::vector<int64_t> MatMulOp::lhsBroadcastShape() const {
   const Tensor *lhs = lhsIn();
@@ -125,15 +121,16 @@ const std::vector<GradInOutMapper> &MatMulLhsGradOp::gradInputInfo() const {
   // The index at which the rhs tensor is the input to the grad-op
   // is the same as the index at which it the input to the fwd-op
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradInputIndex(), MatMulOp::getOutputIndex(), GradOpInType::GRADOUT},
-      {getRhsInputIndex(), MatMulOp::getRhsInputIndex(), GradOpInType::IN}};
+      {getGradInIndex(), MatMulOp::getOutIndex(), GradOpInType::GRADOUT},
+      {getRhsInIndex(), MatMulOp::getRhsInIndex(), GradOpInType::IN}};
   return inInfo;
 }
 
 const std::map<int, int> &MatMulLhsGradOp::gradOutToNonGradIn() const {
   // the grad-op output at index 0 corresponds
   // to the non-grad-op's input at index 0
-  static const std::map<int, int> outInfo = {{0, MatMulOp::getLhsInputIndex()}};
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), MatMulOp::getLhsInIndex()}};
   return outInfo;
 }
 
@@ -154,15 +151,16 @@ void MatMulRhsGradOp::setup() { output.tensor(0)->info = fwdOpRhsInfo; }
 
 const std::vector<GradInOutMapper> &MatMulRhsGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getGradInputIndex(), MatMulOp::getOutputIndex(), GradOpInType::GRADOUT},
-      {getLhsInputIndex(), MatMulOp::getLhsInputIndex(), GradOpInType::IN}};
+      {getGradInIndex(), MatMulOp::getOutIndex(), GradOpInType::GRADOUT},
+      {getLhsInIndex(), MatMulOp::getLhsInIndex(), GradOpInType::IN}};
   return inInfo;
 }
 
 const std::map<int, int> &MatMulRhsGradOp::gradOutToNonGradIn() const {
   // the grad-op output at index 0 corresponds
   // to the non-grad-op's input at index 1
-  static const std::map<int, int> outInfo = {{0, MatMulOp::getRhsInputIndex()}};
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), MatMulOp::getRhsInIndex()}};
   return outInfo;
 }
 

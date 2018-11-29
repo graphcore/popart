@@ -16,9 +16,9 @@ public:
   void setup() final;
   std::unique_ptr<Op> clone() const final;
 
-  static int getLhsInputIndex() { return 0; }
-  static int getRhsInputIndex() { return 1; }
-  static int getOutputIndex() { return 0; }
+  static InIndex getLhsInIndex() { return 0; }
+  static InIndex getRhsInIndex() { return 1; }
+  static OutIndex getOutIndex() { return 0; }
 
   const Tensor *lhsIn() const;
   const Tensor *rhsIn() const;
@@ -45,8 +45,9 @@ public:
   MatMulLhsGradOp &operator=(const MatMulLhsGradOp &) = delete;
   ~MatMulLhsGradOp() override                         = default;
 
-  static int getGradInputIndex() { return 0; }
-  static int getRhsInputIndex() { return 1; }
+  static InIndex getGradInIndex() { return 0; }
+  static InIndex getRhsInIndex() { return 1; }
+  static OutIndex getOutIndex() { return 0; }
 
   void setup() final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
@@ -73,8 +74,9 @@ public:
   MatMulRhsGradOp &operator=(const MatMulRhsGradOp &) = delete;
   ~MatMulRhsGradOp() override                         = default;
 
-  static int getGradInputIndex() { return 0; }
-  static int getLhsInputIndex() { return 1; }
+  static InIndex getGradInIndex() { return 0; }
+  static InIndex getLhsInIndex() { return 1; }
+  static OutIndex getOutIndex() { return 0; }
 
   void setup() final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;

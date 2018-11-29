@@ -15,10 +15,10 @@ const std::map<std::string, eLoss> &lossMap() {
 
 int Loss::input_size() const { return static_cast<int>(input_.size()); }
 
-const TensorId &Loss::input(int i) const { return input_.at(i); }
+const TensorId &Loss::input(InIndex i) const { return input_.at(i); }
 
 int Loss::output_size() const { return 1; }
-const TensorId &Loss::output(int i) const {
+const TensorId &Loss::output(OutIndex i) const {
   if (i != 0) {
     throw error("only 1 loss output");
   }

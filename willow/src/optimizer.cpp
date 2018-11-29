@@ -32,9 +32,9 @@ std::unique_ptr<Op> SGD::createOp(TensorId varId, Ir *pir) const {
 
 std::vector<TensorId> SGD::getInputIds(TensorId varId) const {
   std::vector<TensorId> inputs(3, "");
-  inputs[VarUpdateOp::getVarIndex()]          = varId;
-  inputs[VarUpdateOp::getVarGradIndex()]      = getGradId(varId);
-  inputs[SGDVarUpdateOp::getLearnRateIndex()] = getLearningRateId();
+  inputs[VarUpdateOp::getVarInIndex()]          = varId;
+  inputs[VarUpdateOp::getVarGradInIndex()]      = getGradId(varId);
+  inputs[SGDVarUpdateOp::getLearnRateInIndex()] = getLearningRateId();
   return inputs;
 }
 
@@ -66,8 +66,8 @@ std::unique_ptr<Op> ConstSGD::createOp(TensorId varId, Ir *pir) const {
 
 std::vector<TensorId> ConstSGD::getInputIds(TensorId varId) const {
   std::vector<TensorId> inputs(2, "");
-  inputs[VarUpdateOp::getVarIndex()]     = varId;
-  inputs[VarUpdateOp::getVarGradIndex()] = getGradId(varId);
+  inputs[VarUpdateOp::getVarInIndex()]     = varId;
+  inputs[VarUpdateOp::getVarGradInIndex()] = getGradId(varId);
   return inputs;
 }
 

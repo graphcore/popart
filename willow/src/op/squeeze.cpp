@@ -1,5 +1,6 @@
 #include <poponnx/op/squeeze.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/util.hpp>
 
 namespace poponnx {
 
@@ -7,36 +8,37 @@ SqueezeOp::SqueezeOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
 
 std::vector<std::unique_ptr<Op>> SqueezeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(std::unique_ptr<Op>(new SqueezeGradOp(this)));
+  upops.emplace_back(make_unique<SqueezeGradOp>(this));
   return upops;
 }
 
 std::unique_ptr<Op> SqueezeOp::clone() const {
-  return std::unique_ptr<Op>(new SqueezeOp(*this));
+  return make_unique<SqueezeOp>(*this);
 }
 
 void SqueezeOp::setup() {
-  output.tensor(0)->info = {input.tensor(0)->info.dataType(),
-                            squeeze(input.tensor(0)->info.shape())};
+  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(),
+                            squeeze(inShape(getInIndex()))};
 }
 
-void SqueezeGradOp::setup() { output.tensor(0)->info = unsqueezedInfo; }
+void SqueezeGradOp::setup() { outInfo(getOutIndex()) = unsqueezedInfo; }
 
 SqueezeGradOp::SqueezeGradOp(SqueezeOp *op_)
     : Op({"SqueezeGrad", op_->pir, {}, getPoponnxDomain()}),
-      unsqueezedInfo(op_->input.tensor(0)->info) {}
+      unsqueezedInfo(op_->inInfo(SqueezeOp::getInIndex())) {}
 
 const std::vector<GradInOutMapper> &SqueezeGradOp::gradInputInfo() const {
   // input at index 0 : gradient of output of squeeze
   static const std::vector<GradInOutMapper> inInfo = {
-      {0, 0, GradOpInType::GRADOUT}};
+      {getInIndex(), SqueezeOp::getOutIndex(), GradOpInType::GRADOUT}};
   return inInfo;
 }
 
 const std::map<int, int> &SqueezeGradOp::gradOutToNonGradIn() const {
   // the grad-op output at index 0 corresponds
   // to the non-grad-op's input at index 0
-  static const std::map<int, int> outInfo = {{0, 0}};
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), SqueezeOp::getInIndex()}};
   return outInfo;
 }
 

@@ -6,10 +6,10 @@
 
 namespace poponnx {
 
-TensorInfo::TensorInfo(DataType t, const std::vector<int64_t> &s)
+TensorInfo::TensorInfo(DataType t, const Shape &s)
     : dataTypeInfo(&getDataTypeInfoMap().at(t)), shape_v(s) {}
 
-TensorInfo::TensorInfo(std::string s_type, const std::vector<int64_t> &s)
+TensorInfo::TensorInfo(std::string s_type, const Shape &s)
     : TensorInfo(dataTypeFromString(s_type), s) {}
 
 TensorInfo::TensorInfo(const onnx::TensorProto &t) { set(t); }
@@ -194,9 +194,9 @@ const std::string &TensorInfo::data_type_lcase() const {
   return dataTypeInfo->lcasename();
 }
 
-const std::vector<int64_t> &TensorInfo::shape() const { return shape_v; }
+const Shape &TensorInfo::shape() const { return shape_v; }
 
-int TensorInfo::rank() const { return static_cast<int>(shape_v.size()); }
+Rank TensorInfo::rank() const { return static_cast<int>(shape_v.size()); }
 
 int64_t TensorInfo::nelms() const {
   return std::accumulate(
@@ -211,7 +211,7 @@ int64_t TensorInfo::dim(int i) const { return shape_v[i]; }
 
 DataType TensorInfo::dataType() const { return dataTypeInfo->type(); }
 
-void TensorInfo::set(DataType t, const std::vector<int64_t> &s) {
+void TensorInfo::set(DataType t, const Shape &s) {
   dataTypeInfo = &getDataTypeInfoMap().at(t);
   shape_v      = s;
 }
@@ -291,7 +291,7 @@ DataType TensorInfo::dataTypeFromString(const std::string &s) const {
 }
 
 // expects shape to be "(1 2 400 3)" or "(5)", so no spaces allowed.
-std::vector<int64_t> TensorInfo::shapeFromString(const std::string &s) const {
+Shape TensorInfo::shapeFromString(const std::string &s) const {
   if (s.size() < 2 || s[0] != '(' || s[s.size() - 1] != ')') {
     throw error("invalid string for shape");
   }
@@ -299,7 +299,7 @@ std::vector<int64_t> TensorInfo::shapeFromString(const std::string &s) const {
     throw error("s contains a space : not valid shape string");
   }
 
-  std::vector<int64_t> shape;
+  Shape shape;
 
   // https://www.fluentcpp.com/2017/04/21/how-to-split-a-string-in-c/
   std::string token;

@@ -13,6 +13,9 @@ public:
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
+
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
 };
 
 class SoftmaxGradOp : public Op {
@@ -23,6 +26,10 @@ public:
   void setup() final;
   int gradProbsIn() const;
   int actsIn() const;
+
+  static InIndex getGradProbsInIndex() { return 0; }
+  static InIndex getActsInIndex() { return 1; }
+  static OutIndex getOutIndex() { return 0; }
 };
 
 // not a gradient of a single Op, so not inheriting from GradOp
@@ -37,6 +44,9 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
   const NllLoss *nlll() const;
+
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
 
 private:
   const NllLoss *nllloss_;

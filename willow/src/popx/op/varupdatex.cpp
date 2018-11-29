@@ -31,8 +31,8 @@ ConstSGDVarUpdateOp *ConstSGDVarUpdateOpx::getConstSGDVarUpdateOp() const {
 void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto vu_op = getConstSGDVarUpdateOp();
   popops::scaledAddTo(graph(),
-                      get(inId(vu_op->getVarIndex())),     // weights
-                      get(inId(vu_op->getVarGradIndex())), // weightDeltas
+                      get(inId(vu_op->getVarInIndex())),     // weights
+                      get(inId(vu_op->getVarGradInIndex())), // weightDeltas
                       -1.0f * (vu_op->getLearnRate()),
                       prog,
                       idStr());

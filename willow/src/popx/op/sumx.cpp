@@ -26,7 +26,7 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
                                      prog,
                                      idStr());
 
-    for (int i = 2; i < getSumOp()->input.n(); ++i) {
+    for (InIndex i = 2; i < getSumOp()->input.n(); ++i) {
       popops::mapInPlace(graph(),
                          popops::expr::BinaryOpType::ADD,
                          sum,
@@ -34,7 +34,7 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
                          prog,
                          idStr());
     }
-    insert(outId(0), sum);
+    insert(outId(SumOp::getOutIndex()), sum);
   }
 
   else {

@@ -1,5 +1,6 @@
 #include <poponnx/op/identity.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/util.hpp>
 
 namespace poponnx {
 
@@ -9,12 +10,12 @@ IdentityOp::IdentityOp(const onnx::NodeProto &node, Ir *_pir)
     : Op(node, _pir) {}
 
 std::unique_ptr<Op> IdentityOp::clone() const {
-  return std::unique_ptr<Op>(new IdentityOp(*this));
+  return make_unique<IdentityOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> IdentityOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(new IdentityGradOp(this));
+  upops.emplace_back(make_unique<IdentityGradOp>(this));
   return upops;
 }
 
@@ -24,18 +25,19 @@ IdentityGradOp::IdentityGradOp(IdentityOp *fwdOp)
     : IdentityOp({"IdentityGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
 
 std::unique_ptr<Op> IdentityGradOp::clone() const {
-  return std::unique_ptr<Op>(new IdentityGradOp(*this));
+  return make_unique<IdentityGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &IdentityGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {0, 0, GradOpInType::GRADOUT}};
+      {getInIndex(), IdentityOp::getOutIndex(), GradOpInType::GRADOUT}};
 
   return inInfo;
 }
 
 const std::map<int, int> &IdentityGradOp::gradOutToNonGradIn() const {
-  static const std::map<int, int> outInfo = {{0, 0}};
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), IdentityOp::getInIndex()}};
 
   return outInfo;
 }

@@ -64,7 +64,7 @@ poplin::ConvParams getDataGradParams(const ConvDataGradOp *convDataGradOp) {
 
 const poplin::ConvParams &ConvOpx::getParams() const { return fwdParams; }
 
-std::vector<TensorId> ConvOpx::mustExistBeforeCreate(int) const {
+std::vector<TensorId> ConvOpx::mustExistBeforeCreate(InIndex) const {
   // creation of both weights and of input are done
   // without requiring the pre-existance of any
   // other poplar::Tensor, so returning empty TensorId vector
@@ -93,10 +93,10 @@ void ConvDataGradOpx::grow(poplar::program::Sequence &prog) const {
   ConvDataGradOp *gradOp = getConvDataGradOp();
   const ConvOp *convOp   = gradOp->getCloneOfCreator();
   auto outTensor         = dv_p->graphCache.convolution(
-      graph(),                                 // graph
-      get(inId(gradOp->getGradConvolvedIn())), // in
-      get(inId(gradOp->getWeightsIn())),       // weights
-      dataGradParams,                          // params
+      graph(),                                      // graph
+      get(inId(gradOp->getGradConvolvedInIndex())), // in
+      get(inId(gradOp->getWeightsInIndex())),       // weights
+      dataGradParams,                               // params
       true,                   // transposeAndFlipWeights,
       prog,                   // prog
       convOp->cacheOperation, // cacheOperation
@@ -112,15 +112,15 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
   ConvWeightsGradOp *gradOp = getConvWeightsGradOp();
   const ConvOp *convOp      = gradOp->getCloneOfCreator();
   poplar::Tensor wGrad      = dv_p->graphCache.calculateWeightDeltas(
-      graph(),                                 // graph
-      get(inId(gradOp->getGradConvolvedIn())), // zDeltas,
-      get(inId(gradOp->getPreConvolvedIn())),  // activations,
-      getFwdConvParams(convOp),                // params
-      prog,                                    // prog
-      convOp->cacheOperation,                  // cacheOperation
-      idStr(),                                 // debugPrefix
-      dv_p->wuConvOptions,                     // options
-      &dv_p->convCache);                       // cache
+      graph(),                                      // graph
+      get(inId(gradOp->getGradConvolvedInIndex())), // zDeltas,
+      get(inId(gradOp->getPreConvolvedInIndex())),  // activations,
+      getFwdConvParams(convOp),                     // params
+      prog,                                         // prog
+      convOp->cacheOperation,                       // cacheOperation
+      idStr(),                                      // debugPrefix
+      dv_p->wuConvOptions,                          // options
+      &dv_p->convCache);                            // cache
 
   insert(outId(0), wGrad);
 }
@@ -162,11 +162,11 @@ bool ConvOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
 
 ConvOp *ConvOpx::getConvOp() const { return dynamic_cast<ConvOp *>(op_p); }
 
-bool ConvOpx::canCreateInput(int) const { return true; }
+bool ConvOpx::canCreateInput(InIndex) const { return true; }
 
-poplar::Tensor ConvOpx::createInput(int index) const {
+poplar::Tensor ConvOpx::createInput(InIndex index) const {
 
-  if (index == ConvOp::weightsInIndex()) {
+  if (index == ConvOp::getWeightsInIndex()) {
     return poplin::createWeights(
         graph(),                              // graph
         fwdParams,                            // params
@@ -174,7 +174,7 @@ poplar::Tensor ConvOpx::createInput(int index) const {
         dv_p->fwdConvOptions.toOptionFlags(), // options
         &dv_p->convCache                      // cache
     );
-  } else if (index == ConvOp::dataInIndex()) {
+  } else if (index == ConvOp::getDataInIndex()) {
     return poplin::createInput(graph(),                              // graph
                                fwdParams,                            // params
                                idStr(),                              // name

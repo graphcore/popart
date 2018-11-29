@@ -43,23 +43,25 @@ void Opx::insert(TensorId id, const poplar::Tensor &tensor) const {
   dv_p->tensors.insert(id, tensor);
 }
 
-TensorId Opx::inId(int index) const { return op_p->input.id(index); }
+TensorId Opx::inId(InIndex index) const { return op_p->input.id(index); }
+TensorId Opx::outId(OutIndex index) const { return op_p->output.id(index); }
 
-TensorId Opx::outId(int index) const { return op_p->output.id(index); }
-
-const TensorInfo &Opx::inInfo(int index) const {
-  return op_p->input.tensor(index)->info;
+Tensor *Opx::inTensor(InIndex index) const { return op_p->input.tensor(index); }
+Tensor *Opx::outTensor(OutIndex index) const {
+  return op_p->output.tensor(index);
 }
 
-const std::vector<int64_t> &Opx::inShape(int index) const {
-  return inInfo(index).shape();
+const TensorInfo &Opx::inInfo(InIndex index) const {
+  return inTensor(index)->info;
 }
 
-const TensorInfo &Opx::outInfo(int index) const {
-  return op_p->output.tensor(index)->info;
+const Shape &Opx::inShape(InIndex index) const { return inInfo(index).shape(); }
+
+const TensorInfo &Opx::outInfo(OutIndex index) const {
+  return outTensor(index)->info;
 }
 
-const std::vector<int64_t> &Opx::outShape(int index) const {
+const Shape &Opx::outShape(OutIndex index) const {
   return outInfo(index).shape();
 }
 

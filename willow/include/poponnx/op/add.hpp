@@ -15,8 +15,9 @@ public:
 
   // Current implementation places arg0 input at index 0, and arg1 input
   // at index 1.
-  static int arg0Index();
-  static int arg1Index();
+  static InIndex getArg0InIndex() { return 0; }
+  static InIndex getArg1InIndex() { return 1; }
+  static OutIndex getOutIndex() { return 0; }
 };
 
 class AddArg0GradOp : public ReduceSumOp {
@@ -25,6 +26,9 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
+
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
 
 private:
   TensorInfo forward_op_arg_info;
@@ -36,6 +40,9 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
+
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
 
 private:
   TensorInfo forward_op_arg_info;

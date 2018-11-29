@@ -20,8 +20,8 @@ public:
   void grow(poplar::program::Sequence &) const final;
 
   std::vector<TensorId> mustExistBeforeCreate(int index0) const override;
-  bool canCreateInput(int index0) const final;
-  poplar::Tensor createInput(int index) const final;
+  bool canCreateInput(InIndex index0) const final;
+  poplar::Tensor createInput(InIndex index) const final;
   bool createsEquiv(int index0, Opx *opx1, int index1) const final;
 };
 

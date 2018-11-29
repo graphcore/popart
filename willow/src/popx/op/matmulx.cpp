@@ -121,12 +121,12 @@ MatMulOp *MatMulOpx::getMatMulOp() const {
   return dynamic_cast<MatMulOp *>(op_p);
 }
 
-bool MatMulOpx::canCreateInput(int) const { return true; }
+bool MatMulOpx::canCreateInput(InIndex) const { return true; }
 
 poplar::Tensor MatMulOpx::createInput(int index) const {
   auto matmul = getMatMulOp();
 
-  if (index == MatMulOp::getLhsInputIndex()) {
+  if (index == MatMulOp::getLhsInIndex()) {
     return poplin::createMatMulGroupedInputLHS(
                graph(),
                popType(getMatMulOp()->lhsIn()->info.dataType()),
@@ -136,7 +136,7 @@ poplar::Tensor MatMulOpx::createInput(int index) const {
                dv_p->fwdMmOptions,
                &dv_p->matmulCache)
         .reshape(matmul->lhsIn()->info.shape_szt());
-  } else if (index == MatMulOp::getRhsInputIndex()) {
+  } else if (index == MatMulOp::getRhsInIndex()) {
     return poplin::createMatMulGroupedInputRHS(
                graph(),
                popType(getMatMulOp()->rhsIn()->info.dataType()),
@@ -173,7 +173,9 @@ bool MatMulOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
   return true;
 }
 
-std::vector<TensorId> MatMulOpx::mustExistBeforeCreate(int) const { return {}; }
+std::vector<TensorId> MatMulOpx::mustExistBeforeCreate(InIndex) const {
+  return {};
+}
 
 MatMulLhsGradOpx::MatMulLhsGradOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
@@ -184,9 +186,9 @@ MatMulLhsGradOpx::MatMulLhsGradOpx(Op *op, Devicex *devicex)
 
 void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
   auto a = broadcast(getGradInputBroadcastShape(),
-                     inId(getMatMulLhsGradOp()->getGradInputIndex()));
+                     inId(getMatMulLhsGradOp()->getGradInIndex()));
   auto b = broadcast(getRhsInputBroadcastShape(),
-                     inId(getMatMulLhsGradOp()->getRhsInputIndex()));
+                     inId(getMatMulLhsGradOp()->getRhsInIndex()));
 
   a = a.reshape(getGradInputShape());
   b = b.reshape(getRhsInputShape())
@@ -273,9 +275,9 @@ MatMulRhsGradOp *MatMulRhsGradOpx::getMatMulRhsGradOp() const {
 
 void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
   auto a = broadcast(getLhsInputBroadcastShape(),
-                     inId(getMatMulRhsGradOp()->getLhsInputIndex()));
+                     inId(getMatMulRhsGradOp()->getLhsInIndex()));
   auto b = broadcast(getGradInputBroadcastShape(),
-                     inId(getMatMulRhsGradOp()->getGradInputIndex()));
+                     inId(getMatMulRhsGradOp()->getGradInIndex()));
 
   a = a.reshape(getLhsInputShape())
           .dimShuffle({0, 2, 1}); // Transpose matrix stack

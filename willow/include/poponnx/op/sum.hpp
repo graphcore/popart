@@ -11,6 +11,11 @@ public:
   SumOp(const onnx::NodeProto &node, Ir *pir);
   void setup() final;
   std::unique_ptr<Op> clone() const final;
+
+  // The sum can have an variable number if input tensors, so can not define
+  // the fixed input index's
+
+  static OutIndex getOutIndex() { return 0; }
 };
 } // namespace poponnx
 

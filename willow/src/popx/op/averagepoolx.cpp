@@ -36,9 +36,9 @@ void AveragePoolGradOpx::grow(poplar::program::Sequence &prog) const {
   AveragePoolGradOp *agOp  = getAveragePoolGradOp();
   const AveragePoolOp *aOp = agOp->getCloneOfCreator();
 
-  TensorId prePooledId  = inId(agOp->getPrePooledIn());
-  TensorId pooledId     = inId(agOp->getPooledIn());
-  TensorId gradPooledId = inId(agOp->getGradPooledIn());
+  TensorId prePooledId  = inId(agOp->getPrePooledInIndex());
+  TensorId pooledId     = inId(agOp->getPooledInIndex());
+  TensorId gradPooledId = inId(agOp->getGradPooledInIndex());
 
   insert(outId(0),
          popnn::pooling::poolInputGradient(

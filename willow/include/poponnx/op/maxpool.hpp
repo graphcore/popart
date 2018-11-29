@@ -17,6 +17,9 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   int64_t getNOutChans() const final;
 
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
+
 private:
   void setup0() final;
   void setSpatialK() final;
@@ -28,9 +31,12 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
-  int getPrePooledIn() const;
-  int getPooledIn() const;
-  int getGradPooledIn() const;
+
+  static InIndex getPrePooledInIndex() { return 0; }
+  static InIndex getPooledInIndex() { return 1; }
+  static InIndex getGradPooledInIndex() { return 2; }
+  static OutIndex getOutIndex() { return 0; }
+
   const MaxPoolOp *getCloneOfCreator();
 
 private:

@@ -22,34 +22,34 @@ AddBiasDataGradOpx::AddBiasDataGradOpx(Op *op, Devicex *devicex)
 
 void AddBiasOpx::grow(poplar::program::Sequence &prog) const {
   // Clone & copy the input tensor because poplin::addBias is in-place.
-  const auto result = Opx::cloneNcopy(prog, inId(AddBiasOp::dataInIndex()));
+  const auto result = Opx::cloneNcopy(prog, inId(AddBiasOp::getDataInIndex()));
   poplin::addBias(
-      graph(), result, get(inId(AddBiasOp::biasInIndex())), prog, idStr());
-  insert(outId(0), result);
+      graph(), result, get(inId(AddBiasOp::getBiasInIndex())), prog, idStr());
+  insert(outId(AddBiasOp::getOutIndex()), result);
 }
 
-std::vector<TensorId> AddBiasOpx::mustExistBeforeCreate(int index) const {
-  if (index != AddBiasOp::biasInIndex()) {
+std::vector<TensorId> AddBiasOpx::mustExistBeforeCreate(InIndex index) const {
+  if (index != AddBiasOp::getBiasInIndex()) {
     throw error("AddBiasOpx::mustExistBeforeCreate : Invalid index = " +
                 std::to_string(index));
   }
 
-  return {inId(AddBiasOp::dataInIndex())};
+  return {inId(AddBiasOp::getDataInIndex())};
 }
 
-bool AddBiasOpx::canCreateInput(int index) const {
-  return index == AddBiasOp::biasInIndex();
+bool AddBiasOpx::canCreateInput(InIndex index) const {
+  return index == AddBiasOp::getBiasInIndex();
 }
 
-poplar::Tensor AddBiasOpx::createInput(int index) const {
-  if (index != AddBiasOp::biasInIndex()) {
+poplar::Tensor AddBiasOpx::createInput(InIndex index) const {
+  if (index != AddBiasOp::getBiasInIndex()) {
     throw error("AddBiasOpx::createInput : Invalid index = " +
                 std::to_string(index));
   }
 
   return poplin::createBiases(graph(),
-                              get(inId(AddBiasOp::dataInIndex())),
-                              inId(AddBiasOp::biasInIndex()));
+                              get(inId(AddBiasOp::getDataInIndex())),
+                              inId(AddBiasOp::getBiasInIndex()));
 }
 
 bool AddBiasOpx::createsEquiv(int, Opx *, int) const { return false; }

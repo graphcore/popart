@@ -24,26 +24,31 @@ public:
   // preserve the rank of the output tensor.
   bool getKeepDims() const;
 
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
+
 private:
-  std::vector<int64_t> backward_shape;
+  Shape backward_shape;
   std::vector<int64_t> axes;
   int64_t keepdims;
 };
 
 class ReduceSumGradOp : public Op {
 public:
-  ReduceSumGradOp(ReduceSumOp *fwdOp,
-                  const std::vector<int64_t> &backward_shape);
+  ReduceSumGradOp(ReduceSumOp *fwdOp, const Shape &backward_shape);
   std::unique_ptr<Op> clone() const final;
   void setup() final;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
-  const std::vector<int64_t> &backwardShape() const;
+  const Shape &backwardShape() const;
+
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
 
 private:
   TensorInfo outputTensorInfo;
-  const std::vector<int64_t> backward_shape;
+  const Shape backward_shape;
 };
 
 } // namespace poponnx

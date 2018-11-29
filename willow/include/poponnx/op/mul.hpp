@@ -18,8 +18,9 @@ public:
 
   // Current implementation places arg0 input at index 0, and arg1 input
   // at index 1.
-  static InIndex arg0Index();
-  static InIndex arg1Index();
+  static InIndex getArg0InIndex() { return 0; }
+  static InIndex getArg1InIndex() { return 1; }
+  static OutIndex getOutIndex() { return 0; }
 };
 
 class MulArgGradOp : public Op {
@@ -33,6 +34,7 @@ public:
   //   dB = reduceSum(mul(dC,A)).
   // this function returns the axes along which to perform the reduction.
   const std::vector<int64_t> &getReductionAxes();
+  static OutIndex getOutIndex() { return 0; }
 
 private:
   std::vector<int64_t> reduction_axes;
@@ -44,6 +46,7 @@ public:
   MulArg0GradOp(MulOp *, const std::vector<int64_t> &reduction_axes);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
+  static OutIndex getOutIndex() { return 0; }
 };
 
 class MulArg1GradOp : public MulArgGradOp {

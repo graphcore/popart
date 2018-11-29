@@ -21,9 +21,9 @@ bool ConvBiasPattern::apply(Op *op) const {
 
   op->pir->getTensors().addActGrad(tmp_tensor_id);
 
-  const auto b  = conv->input.tensor(ConvOp::biasInIndex());
+  const auto b  = conv->input.tensor(ConvOp::getBiasInIndex());
   const auto t  = op->pir->getTensors().get(tmp_tensor_id);
-  const auto a1 = conv->output.tensor(ConvOp::dataInIndex());
+  const auto a1 = conv->output.tensor(ConvOp::getDataInIndex());
 
   const auto add_bias = add_bias_op.get();
 
@@ -36,9 +36,9 @@ bool ConvBiasPattern::apply(Op *op) const {
   b->consumers.decrement(conv);
   a1->resetProducer(add_bias);
 
-  conv->input.erase(ConvOp::biasInIndex());
-  add_bias->input.insert(AddBiasOp::dataInIndex(), t);
-  add_bias->input.insert(AddBiasOp::biasInIndex(), b);
+  conv->input.erase(ConvOp::getBiasInIndex());
+  add_bias->input.insert(AddBiasOp::getDataInIndex(), t);
+  add_bias->input.insert(AddBiasOp::getBiasInIndex(), b);
 
   conv->output.reset(0, t);
   add_bias->output.insert(0, a1);
