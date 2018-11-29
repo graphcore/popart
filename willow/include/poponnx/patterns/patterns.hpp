@@ -123,6 +123,9 @@ public:
   bool isMulArgGradOpEnabled() {
     return isPatternEnabled(PatternType::MULARGGRADOP);
   }
+  bool isReciprocalGradOpEnabled() {
+    return isPatternEnabled(PatternType::RECIPROCALGRADOP);
+  }
   bool isInPlace0Enabled() { return isPatternEnabled(PatternType::INPLACE0); }
 
   // The following methods are fluent allow you to
@@ -148,6 +151,9 @@ public:
   }
   Patterns &enableMulArgGradOp(bool v) {
     return enablePattern(PatternType::MULARGGRADOP, v);
+  }
+  Patterns &enableReciprocalGradOp(bool v) {
+    return enablePattern(PatternType::RECIPROCALGRADOP, v);
   }
   Patterns &enableInPlace0(bool v) {
     return enablePattern(PatternType::INPLACE0, v);

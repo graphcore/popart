@@ -400,3 +400,62 @@ def test_broadcast_mul(tmpdir):
     # need to do a reduce sum on one of the pytorch outputs
     assert np.array_equal(tg[0], anchors['d__' + i1])
     assert np.array_equal(np.sum(tg[1], axis=0), anchors['d__' + i2])
+
+
+def test_reciprocal(tmpdir):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    # create graph
+    test = tu.BasicSession(tmpdir)
+    i1 = test.add_input_tensor(d1)
+    o = test.builder.reciprocal([i1])
+    test.builder.addOutputTensor(o)
+
+    test.passes.extend(["PreUniRepl"])
+
+    # run the poponnx session
+    anchors = test.run(o, [o], 'infer')
+
+    # create and run numpy reference
+    def numpy_reference(i1):
+        outputs = {}
+        outputs[o] = 1 / i1
+        return outputs
+
+    reference_results = numpy_reference(d1)
+
+    # compare results
+    for key in [o]:
+        print(f'Checking anchor {key} ...')
+        assert np.array_equal(anchors[key], reference_results[key])
+
+
+def test_reciprocal_grad(tmpdir):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    # create graph
+    test = tu.BasicSession(tmpdir)
+    i1 = test.add_input_tensor(d1)
+    o = test.builder.reciprocal([i1])
+    test.builder.addOutputTensor(o)
+
+    test.passes.extend(["PreUniRepl", "ReciprocalGradOp"])
+
+    # run the poponnx session
+    anchors = test.run(o, [o, 'd__' + o, 'd__' + i1], 'train')
+
+    # create and run numpy reference
+    def numpy_reference(i, d__o):
+        outputs = {}
+        outputs[o] = 1 / i
+        outputs['d__' + i1] = -(1 / (d__o**2))
+        return outputs
+
+    reference_results = numpy_reference(d1, anchors['d__' + o])
+
+    # compare results
+    for key in [o, 'd__' + i1]:
+        print(f'Checking anchor {key} ...')
+        assert np.array_equal(anchors[key], reference_results[key])

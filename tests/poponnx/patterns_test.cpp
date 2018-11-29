@@ -477,3 +477,59 @@ BOOST_AUTO_TEST_CASE(Inplace0_parallel) {
   // and have been replaced with ReluInplace.
   BOOST_CHECK(ir.opsOfType(OpType::RELUINPLACE).size() == 1);
 }
+
+BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
+  // () -> [ReciprocalGrad] -> ()
+  //
+  // should become
+  //
+  // () -> [Square] -> () -> [Reciprocal] -> () -> [Negate] -> ()
+
+  // Build an onnnx model
+  auto builder = Builder::create();
+
+  TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
+
+  auto input = builder->addInputTensor(shape);
+
+  auto output = builder->reciprocal({input});
+
+  builder->addOutputTensor(output);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR
+  auto earlyInfo = EarlyInfo();
+  earlyInfo.add(input, shape);
+  // Add the last tensor, and the 3rd tensor as anchors
+  auto dataFlow =
+      DataFlow(1,
+               1,
+               {output, reservedGradientPrefix() + input, "l1LossVal"},
+               AnchorReturnType::ALL);
+  auto optimizer = SGD(0.01);
+  std::vector<Loss *> losses{new L1Loss(output, "l1LossVal", 0.1)};
+
+  auto opts      = SessionOptions();
+  opts.exportDot = true;
+
+  Ir ir;
+  ir.prepare({modelProto,
+              earlyInfo,
+              dataFlow,
+              losses,
+              &optimizer,
+              {},
+              ".",
+              opts,
+              Patterns({PatternType::RECIPROCALGRADOP})});
+
+  // Check the ir
+  // ReciprocalGradOp should have been replace with SquareOp, ReciprocalOp, and
+  // NegateOp
+  BOOST_CHECK(ir.opsOfType(OpType::RECIPROCALGRAD).size() == 0);
+  BOOST_CHECK(ir.opsOfType(OpType::SQUARE).size() == 1);
+  BOOST_CHECK(ir.opsOfType(OpType::RECIPROCAL).size() == 2);
+  BOOST_CHECK(ir.opsOfType(OpType::NEGATE).size() == 1);
+}

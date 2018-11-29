@@ -1,6 +1,7 @@
 import fnmatch
 import re
 import poponnx
+import numpy as np
 
 
 def get_poplar_cpu_device():
@@ -64,3 +65,64 @@ def check_all_compute_sets_and_list(cs_list, whitelist):
 def get_compute_set_regex_count(regex, cs_list):
 
     return len([cs for cs in cs_list if re.search(regex, cs)])
+
+
+class BasicSession:
+    def __init__(self, logging_dir):
+        self.builder = poponnx.Builder()
+        self.early_info = poponnx.EarlyInfo()
+        self._setup_opts()
+        self.passes = []
+        self.logging_dir = logging_dir
+        self.inputs = {}
+
+    def _setup_opts(self):
+        self.opts = poponnx.SessionOptionsCore()
+        self.opts.logging = {'all': 'TRACE'}
+        self.opts.exportDot = False
+
+    def add_input_tensor(self, data):
+        dtype = self._convert_dtype(data.dtype)
+        shape = poponnx.TensorInfo(dtype, data.shape)
+
+        tensor_id = self.builder.addInputTensor(shape)
+        self.early_info.add(tensor_id, shape)
+        self.inputs[tensor_id] = data
+
+        return tensor_id
+
+    # take a numpy dtype and return a type suitable for TensorInfo
+    def _convert_dtype(self, dtype):
+        if dtype == np.dtype('float32'):
+            return 'FLOAT'
+
+        raise Exception(
+            f'bad dtype {dtype}, (only float32 currently supported)')
+
+    def run(self, output, anchors, step_method):
+        dataFlow = poponnx.DataFlow(1, 1, anchors,
+                                    poponnx.AnchorReturnType.ALL)
+        optimizer = poponnx.SGD(0.01)
+        losses = [poponnx.L1Loss(output, "l1LossVal", 0.1)]
+        proto = self.builder.getModelProto()
+
+        session = poponnx.Session(
+            fnModel=proto,
+            earlyInfo=self.early_info,
+            dataFeed=dataFlow,
+            losses=losses,
+            optimizer=optimizer,
+            outputdir=str(self.logging_dir),
+            passes=poponnx.Patterns(self.passes),
+            userOptions=self.opts)
+
+        session.setDevice(get_poplar_cpu_device())
+        anchors = session.initAnchorArrays()
+
+        session.prepareDevice()
+
+        stepio = poponnx.PyStepIO(self.inputs, anchors)
+        # step method should have a value of 'infer', 'train' or 'evaluate'
+        getattr(session, step_method)(stepio)
+
+        return anchors

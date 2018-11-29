@@ -219,6 +219,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .value("OPTOIDENTITY", PatternType::OPTOIDENTITY)
       .value("SUBTRACTARG1GRADOP", PatternType::SUBTRACTARG1GRADOP)
       .value("MULARGGRADOP", PatternType::MULARGGRADOP)
+      .value("RECIPROCALGRADOP", PatternType::RECIPROCALGRADOP)
       .value("INPLACE0", PatternType::INPLACE0);
 
   py::class_<Patterns>(m, "Patterns")

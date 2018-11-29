@@ -34,6 +34,7 @@
 #include <poponnx/op/mul.hpp>
 #include <poponnx/op/negate.hpp>
 #include <poponnx/op/pad.hpp>
+#include <poponnx/op/reciprocal.hpp>
 #include <poponnx/op/reducesum.hpp>
 #include <poponnx/op/relu.hpp>
 #include <poponnx/op/softmax.hpp>
@@ -1616,6 +1617,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::PAD: {
     return pOp(new PadOp(node, this));
   }
+  case OpType::RECIPROCAL: {
+    return pOp(new ReciprocalOp(node, this));
+  }
   case OpType::REDUCESUM: {
     return pOp(new ReduceSumOp(node, this));
   }
@@ -1639,6 +1643,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::ADDBIASBIASGRAD:
   case OpType::ADDBIASDATAGRAD:
   case OpType::SQUEEZEGRAD:
+  case OpType::RECIPROCALGRAD:
   case OpType::REDUCESUMGRAD:
   case OpType::RELUGRAD:
   case OpType::AVERAGEPOOLGRAD:
@@ -1653,6 +1658,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::MULARG1GRAD:
   case OpType::SOFTMAXGRAD:
   case OpType::SGDVARUPDATE:
+  case OpType::SQUARE:
   case OpType::CONSTSGDVARUPDATE:
   case OpType::SUBTRACTARG0GRAD:
   case OpType::SUBTRACTARG1GRAD:
