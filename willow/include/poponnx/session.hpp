@@ -32,7 +32,7 @@ public:
    * \param cTens List of weight tensors which are not to be updated
    * \param logdir Directory to dump logging information into
    * \param userOptions String to configure session options
-   * \param patternNames Optimization patterns to apply
+   * \param patterns Optimization patterns to apply
    */
 
   static std::unique_ptr<Session>
