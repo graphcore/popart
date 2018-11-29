@@ -66,8 +66,11 @@ cd build
 # Number of processors
 NUM_PROCS=$(get_processor_count)
 
+# Get path to poplar
+POPLAR_PATH=$(python -c "import os.path; print(os.path.realpath('../../external/poplar-install/'))")
+
 # Configure cmake
-#CC=clang CXX=clang++   cmake . -DPOPLAR_INSTALL_DIR=`readlink -f ../../external/poplar-install/` -DEXTERNAL_PROJECT_NUM_JOBS=${NUM_PROCS} -DPOPONNX_CMAKE_ARGS=-DBUILD_DOCS=ON
+#CC=clang CXX=clang++   cmake . -DPOPLAR_INSTALL_DIR=${POPLAR_PATH} -DEXTERNAL_PROJECT_NUM_JOBS=${NUM_PROCS} -DPOPONNX_CMAKE_ARGS=-DBUILD_DOCS=ON
 cmake . -DPOPLAR_INSTALL_DIR=`readlink -f ../../external/poplar-install/` -DEXTERNAL_PROJECT_NUM_JOBS=${NUM_PROCS} -DPOPONNX_CMAKE_ARGS=-DBUILD_DOCS=ON
 
 echo "Done"
