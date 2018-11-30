@@ -31,7 +31,7 @@ const std::map<int, int> &ReciprocalGradOp::gradOutToNonGradIn() const {
 
 const std::vector<GradInOutMapper> &ReciprocalGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {0, 0, GradOpInType::GRADOUT}};
+      {0, 0, GradOpInType::GRADOUT}, {1, 0, GradOpInType::IN}};
   return inInfo;
 }
 

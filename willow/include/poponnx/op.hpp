@@ -83,6 +83,8 @@ public:
   // updates consumers of tensor with id TensorId
   void connectInTensor(InIndex, TensorId);
 
+  void connectOutTensor(OutIndex, TensorId);
+
   // might the input tensors be modified?
   bool mayModify(InIndex) const;
 

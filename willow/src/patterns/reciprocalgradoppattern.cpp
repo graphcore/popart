@@ -1,6 +1,7 @@
 #include <utility>
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
+#include <poponnx/op/mul.hpp>
 #include <poponnx/op/negate.hpp>
 #include <poponnx/op/reciprocal.hpp>
 #include <poponnx/op/square.hpp>
@@ -20,9 +21,10 @@ std::vector<const Tensor *> ReciprocalGradOpPattern::touches(Op *) const {
 }
 
 bool ReciprocalGradOpPattern::apply(Op *op) const {
-  auto input  = op->input->tensor(0);
-  auto output = op->output->tensor(0);
-  auto ir     = op->pir;
+  auto grad_input    = op->inTensor(0);
+  auto fwd_input     = op->inTensor(1);
+  auto output_tensor = op->outTensor(0);
+  auto ir            = op->pir;
 
   // create the new ops
   auto square_op     = make_unique<SquareOp>(OpConstructorBundle{
@@ -31,51 +33,59 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
       "Reciprocal", ir, {}, getOpTypes().getDomain(OpType::RECIPROCAL)});
   auto negate_op     = make_unique<NegateOp>(OpConstructorBundle{
       "Negate", ir, {}, getOpTypes().getDomain(OpType::NEGATE)});
+  auto mul_op        = make_unique<MulOp>(OpConstructorBundle{
+      "Mul", ir, {}, getOpTypes().getDomain(OpType::NEGATE)});
 
   // move ops into ir
   auto square     = square_op.get();
   auto reciprocal = reciprocal_op.get();
   auto negate     = negate_op.get();
+  auto mul        = mul_op.get();
   ir->moveIntoIr(std::move(square_op));
   ir->moveIntoIr(std::move(reciprocal_op));
   ir->moveIntoIr(std::move(negate_op));
+  ir->moveIntoIr(std::move(mul_op));
 
-  // create a tensors to connect the new ops
-  const auto square_reciprocal_tensor_id = "t__0__" + op->output->id(0);
-  op->pir->getTensors().addActGrad(square_reciprocal_tensor_id);
-  const auto square_reciprocal_tensor =
-      ir->getTensors().get(square_reciprocal_tensor_id);
-  square_reciprocal_tensor->info = input->info;
-
-  const auto reciprocal_negate_tensor_id = "t__1__" + op->output->id(0);
-  op->pir->getTensors().addActGrad(reciprocal_negate_tensor_id);
-  const auto reciprocal_negate_tensor =
-      ir->getTensors().get(reciprocal_negate_tensor_id);
-  reciprocal_negate_tensor->info = input->info;
-
-  // Remap the tensor-to-op relationships
-  input->consumers.decrement(op);
-  input->consumers.increment(square);
-
-  square_reciprocal_tensor->setProducer(square);
-  square_reciprocal_tensor->consumers.increment(reciprocal);
-  reciprocal_negate_tensor->setProducer(reciprocal);
-  reciprocal_negate_tensor->consumers.increment(negate);
-
-  output->resetProducer(negate);
-
-  // Remap the op-to-tensor relationships
-  square->input->insert(0, input);
-  square->output->insert(0, square_reciprocal_tensor);
-  reciprocal->input->insert(0, square_reciprocal_tensor);
-  reciprocal->output->insert(0, reciprocal_negate_tensor);
-  negate->input->insert(0, reciprocal_negate_tensor);
-  negate->output->insert(0, output);
-
-  // Remove the reducesum op
+  // Remove the ReciprocalGradOp
+  disconnectOp(op);
   ir->eraseOp(op->id);
 
+  // Connect up the new ops
+  square->connectInTensor(0, fwd_input->id);
+  square->createAndConnectOutTensor(0, "t__0__" + fwd_input->id);
+  square->outInfo(0) = fwd_input->info;
+
+  reciprocal->connectInTensor(0, "t__0__" + fwd_input->id);
+  reciprocal->createAndConnectOutTensor(0, "t__1__" + fwd_input->id);
+  reciprocal->outInfo(0) = square->outInfo(0);
+
+  negate->connectInTensor(0, "t__1__" + fwd_input->id);
+  negate->createAndConnectOutTensor(0, "t__2__" + fwd_input->id);
+  negate->outInfo(0) = reciprocal->outInfo(0);
+
+  mul->connectInTensor(0, negate->outTensor(0)->id);
+  mul->connectInTensor(1, grad_input->id);
+  mul->connectOutTensor(0, output_tensor->id);
+
   return true;
+}
+
+void ReciprocalGradOpPattern::disconnectOp(Op *op) const {
+  std::vector<InIndex> inputs;
+  for (auto entry : op->input->tensorMap()) {
+    inputs.push_back(entry.first);
+    auto tensor = entry.second;
+    tensor->consumers.decrement(op);
+  }
+  op->input->clear();
+
+  std::vector<InIndex> outputs;
+  for (auto entry : op->output->tensorMap()) {
+    outputs.push_back(entry.first);
+    auto tensor = entry.second;
+    tensor->resetProducer(nullptr);
+  }
+  op->output->clear();
 }
 
 namespace {

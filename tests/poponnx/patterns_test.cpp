@@ -528,10 +528,11 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
               Patterns({PatternType::RECIPROCALGRADOP})});
 
   // Check the ir
-  // ReciprocalGradOp should have been replace with SquareOp, ReciprocalOp, and
-  // NegateOp
+  // ReciprocalGradOp should have been replace with SquareOp, ReciprocalOp,
+  // NegateOp, and a MulOp
   BOOST_CHECK(ir.opsOfType(OpType::RECIPROCALGRAD).size() == 0);
   BOOST_CHECK(ir.opsOfType(OpType::SQUARE).size() == 1);
   BOOST_CHECK(ir.opsOfType(OpType::RECIPROCAL).size() == 2);
   BOOST_CHECK(ir.opsOfType(OpType::NEGATE).size() == 1);
+  BOOST_CHECK(ir.opsOfType(OpType::MUL).size() == 1);
 }

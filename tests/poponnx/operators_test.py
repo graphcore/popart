@@ -447,15 +447,21 @@ def test_reciprocal_grad(tmpdir):
     anchors = test.run(o, [o, 'd__' + o, 'd__' + i1], 'train')
 
     # create and run numpy reference
-    def numpy_reference(i, d__o):
+    def torch_reference(i, d__o):
+        a = torch.tensor(i)
+        a.requires_grad_(True)
+        b = 1 / a
+        b.backward(torch.tensor(d__o))
+
         outputs = {}
-        outputs[o] = 1 / i
-        outputs['d__' + i1] = -(1 / (d__o**2))
+        outputs[o] = b.data.numpy()
+        outputs['d__' + i1] = a.grad.data.numpy()
+
         return outputs
 
-    reference_results = numpy_reference(d1, anchors['d__' + o])
+    reference_results = torch_reference(d1, anchors['d__' + o])
 
     # compare results
     for key in [o, 'd__' + i1]:
         print('Checking anchor %s ...' % (key, ))
-        assert np.array_equal(anchors[key], reference_results[key])
+        assert np.allclose(anchors[key], reference_results[key])

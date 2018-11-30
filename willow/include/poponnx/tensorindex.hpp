@@ -21,6 +21,7 @@ public:
   // If the Tensor is not referred to by any indices, it is removed from the
   // indicesMap.
   void erase(int);
+  void clear();
   // get the Tensor at at index
   Tensor *tensor(int);
   const Tensor *tensor(int) const;

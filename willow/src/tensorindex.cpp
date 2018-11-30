@@ -136,6 +136,11 @@ void TensorIndexMap::erase(int index) {
   }
 }
 
+void TensorIndexMap::clear() {
+  tensor_map.clear();
+  indices_map.clear();
+}
+
 Tensor *TensorIndexMap::tensor(int index) { return tensor_map[index]; }
 
 const Tensor *TensorIndexMap::tensor(int index) const {

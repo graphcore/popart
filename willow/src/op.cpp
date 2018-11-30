@@ -74,6 +74,12 @@ void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
   ptensor->consumers.increment(this);
 }
 
+void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
+  Tensor *ptensor = pir->getTensors().get(tenId);
+  output->insert(outIndex, ptensor);
+  ptensor->setProducer(this);
+}
+
 void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
   pir->getTensors().addActGrad(tenId);
   Tensor *ptensor = pir->getTensors().get(tenId);

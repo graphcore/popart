@@ -21,6 +21,9 @@ public:
   // what phase should this Pattern run in? PRETOPOCONS, as it does not
   // handle topological constraints.
   PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
+
+private:
+  void disconnectOp(Op *op) const;
 };
 
 } // namespace poponnx
