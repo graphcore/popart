@@ -31,6 +31,13 @@ if (BUILD_DOCS)
   )
 
   add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/docs/html/doxygen
+    COMMAND cmake -E make_directory ${CMAKE_BINARY_DIR}/docs/html/doxygen
+    COMMENT "Creating build folder for 'docs/html/doxygen'"
+    DEPENDS ${CMAKE_BINARY_DIR}/docs
+  )
+
+  add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/docs/pdfgen
     COMMAND ${GCDOC} -v -x ${CMAKE_BINARY_DIR}/docs/Doxyfile -r ${RELEASE} -b pdf user_guide ${CMAKE_BINARY_DIR}/docs/latex/poponnx.pdf
     COMMENT "Building PDF documentation from 'user_guide' directory"
@@ -43,7 +50,7 @@ if (BUILD_DOCS)
     COMMAND ${GCDOC} -v -x ${CMAKE_BINARY_DIR}/docs/Doxyfile -r ${RELEASE} -b html user_guide ${CMAKE_BINARY_DIR}/docs/html
     COMMENT "Building html documentation from 'user_guide' directory"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    DEPENDS ${CMAKE_BINARY_DIR}/docs ${CMAKE_BINARY_DIR}/docs/Doxyfile
+    DEPENDS ${CMAKE_BINARY_DIR}/docs ${CMAKE_BINARY_DIR}/docs/Doxyfile ${CMAKE_BINARY_DIR}/docs/html/doxygen
   )
 
   add_custom_target(html_zip ALL
