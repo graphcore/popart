@@ -240,6 +240,11 @@ void Ir::prepare(const IrBundle &gb) {
 
   enableTransform(Recompute::id(), userOptions.enableRecomputation);
 
+  // Require gb.losses.empty() => !gb.optimizer
+  if (gb.losses.empty() && gb.optimizer) {
+    throw error("An optimizer is set without any losses");
+  }
+
   if (gb.optimizer) {
     optimizer = gb.optimizer->clone();
     for (auto &id_info : optimizer->tensorInfos()) {
@@ -248,6 +253,11 @@ void Ir::prepare(const IrBundle &gb) {
       tensors.addStream(id, info);
       optimizer->setTensorData(tensors.get(id));
     }
+    executionMode = ExecutionMode::TRAINING;
+  } else if (gb.losses.empty()) {
+    executionMode = ExecutionMode::INFERENCE;
+  } else {
+    executionMode = ExecutionMode::EVALUATION;
   }
 
   for (auto &l : gb.losses) {
@@ -302,10 +312,19 @@ void Ir::prepare(const IrBundle &gb) {
   confirmConstIds();
 
   applyPatterns(PatternPhase::PRETOPOCONS);
-  growFinalLoss();
-  updateVertices();
-  setNPathsToLoss();
-  constructBackwards();
+
+  //  transforms.emplace(std::make_pair(0, new Prune));
+  //  transforms.emplace(std::make_pair(1, new Recompute));
+
+  if (canEvaluate()) {
+    growFinalLoss();
+
+    updateVertices();
+    setNPathsToLoss();
+  }
+  if (canTrain()) {
+    constructBackwards();
+  }
   updateVertices();
 
   // confirm that all the anchor names provided
@@ -325,7 +344,10 @@ void Ir::prepare(const IrBundle &gb) {
   // we now start applying topological constraints between
   // Ops directly. First, we ensure that the VarUpdate Ops
   // are the final consumers of the Variable tensors
-  setVarUpdateCons();
+  if (canTrain()) {
+    setVarUpdateCons();
+  }
+
   if (userOptions.exportDot) {
     exportDot(io::appendDirFn(logdir, "fwdBwd0.dot"));
   }
@@ -1344,6 +1366,20 @@ bool Ir::isSchedulable(const OpsBeforeKey &gCons) const {
     return false;
   }
   return true;
+}
+
+Ir::ExecutionMode Ir::getExecutionMode() const { return executionMode; }
+
+bool Ir::canInfer() const {
+  return getExecutionMode() == ExecutionMode::INFERENCE || canEvaluate();
+}
+
+bool Ir::canEvaluate() const {
+  return getExecutionMode() == ExecutionMode::EVALUATION || canTrain();
+}
+
+bool Ir::canTrain() const {
+  return getExecutionMode() == ExecutionMode::TRAINING;
 }
 
 } // namespace poponnx

@@ -112,16 +112,28 @@ void Session::optimizerFromHost() {
 
 void Session::train(const StepIO &stepio) {
   logging::session::trace("Session::train");
+  if (!ir.canTrain()) {
+    throw error("Trying to train when not in training mode");
+  }
+
   device_->train(stepio);
 }
 
 void Session::evaluate(const StepIO &stepio) {
   logging::session::trace("Session::evaluate");
+  if (!ir.canEvaluate()) {
+    throw error("Trying to evaluate when not in evaluation mode");
+  }
+
   device_->evaluate(stepio);
 }
 
 void Session::infer(const StepIO &stepio) {
   logging::session::trace("Session::infer");
+  if (!ir.canInfer()) {
+    throw error("Trying to infer when not in inference mode");
+  }
+
   device_->infer(stepio);
 }
 

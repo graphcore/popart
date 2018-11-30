@@ -41,9 +41,6 @@ class NetWriter():
 
         print(self.dataFeed.nAnchors())
 
-        if ((self.dataFeed.nAnchors() != 0) and (self.trainMode is False)):
-            raise RuntimeError("anchors only for trainMode")
-
     def saveModel(self, filename):
         """
         To be implemented once per framework:

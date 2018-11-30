@@ -12,7 +12,7 @@ args = cmdline.parse()
 nChans = 3
 samplesPerBatch = 2
 batchesPerStep = 3
-anchors = ["l1LossVal", "out", "image0"]
+anchors = ["out"]
 art = poponnx.AnchorReturnType.ALL
 dataFeed = poponnx.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
 earlyInfo = poponnx.EarlyInfo()
@@ -21,7 +21,8 @@ earlyInfo.add("image0",
 
 inNames = ["image0"]
 outNames = ["out"]
-losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
+losses = []
+optimizer = None
 
 #cifar training data loader : at index 0 : image, at index 1 : label.
 cifarInIndices = {"image0": 0}
@@ -55,7 +56,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
     losses=losses,
-    optimizer=poponnx.ConstSGD(0.001),
+    optimizer=optimizer,
     earlyInfo=earlyInfo,
     dataFeed=dataFeed,
     ### Torch specific:

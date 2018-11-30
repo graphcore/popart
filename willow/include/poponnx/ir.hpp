@@ -358,6 +358,25 @@ private:
   // tensor naming convention for example, this will
   // be caught here.
   void validateAnchors() const;
+
+public:
+  enum class ExecutionMode { INFERENCE, EVALUATION, TRAINING };
+
+  ExecutionMode getExecutionMode() const;
+
+  // Can the IR be used for inference.
+  bool canInfer() const;
+
+  // Can the IR be used for evaluation.
+  // This is true when there are losses to compute.
+  bool canEvaluate() const;
+
+  // Can the IR be used for training.
+  // This is true when there are losses and an optimizer.
+  bool canTrain() const;
+
+private:
+  ExecutionMode executionMode = ExecutionMode::TRAINING;
 };
 
 } // namespace poponnx

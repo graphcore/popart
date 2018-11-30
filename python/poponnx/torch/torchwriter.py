@@ -160,7 +160,6 @@ class PytorchNetWriter(NetWriter):
         the order will always correspond to the order of the
         onnx "trace", so I won't.
         """
-        torchOptimizer = self.getTorchOptimizer()
         self.module.eval()
 
         # perform forwards pass for each of the
@@ -177,7 +176,6 @@ class PytorchNetWriter(NetWriter):
             for inId in inMap.keys():
                 substepInMap[inId] = inMap[inId][substep:substep + 1]
 
-            torchOptimizer.zero_grad()
             substepInputs = [
                 torch.Tensor(substepInMap[name]) for name in self.inNames
             ]
