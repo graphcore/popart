@@ -1,4 +1,6 @@
+#include <algorithm>
 #include <memory>
+#include <vector>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
 #include <poponnx/util.hpp>

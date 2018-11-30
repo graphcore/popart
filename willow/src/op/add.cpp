@@ -1,4 +1,6 @@
 #include <vector>
+// for `find', we need the algorithm header
+#include <algorithm>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/add.hpp>
 #include <poponnx/tensor.hpp>

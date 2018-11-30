@@ -329,7 +329,7 @@ private:
   // create a grad-op. Return a vector of {gradop, lossop} pairs
   std::vector<GradNonGradPair> growLossGradients();
 
-  std::unique_ptr<onnx::ModelProto> onnxModel{nullptr};
+  std::unique_ptr<onnx::ModelProto> onnxModel;
 
   // create an Op from a Node
   std::unique_ptr<Op> addOp(const Node &);

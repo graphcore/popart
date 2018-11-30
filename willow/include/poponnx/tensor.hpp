@@ -2,6 +2,7 @@
 #define NEURALNET_TENSOR_HPP
 
 #include <map>
+#include <memory>
 #include <poponnx/error.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/tensordata.hpp>
@@ -146,7 +147,9 @@ private:
   Ir &ir;
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
-  std::unique_ptr<TensorData> data_{nullptr};
+  // Note : we cannot initialise this as {nullptr} with gcc, must be done in
+  // constructor in .cpp
+  std::unique_ptr<TensorData> data_;
 };
 
 } // namespace poponnx

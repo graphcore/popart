@@ -221,7 +221,7 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
       losses(losses_), optimizer(optimizer_), cTens(cTens_), logdir(logdir_),
       userOptions(userOptions_), patterns(patterns_) {}
 
-Ir::Ir() : tensors(*this) {}
+Ir::Ir() : tensors(*this), onnxModel(nullptr) {}
 
 // FFS : Guard against multiple calls to prepare
 

@@ -1,6 +1,7 @@
 #ifndef GUARD_NEURALNET_DEVICEMANAGER_HPP
 #define GUARD_NEURALNET_DEVICEMANAGER_HPP
 
+#include <memory>
 #include <vector>
 #include <poponnx/names.hpp>
 

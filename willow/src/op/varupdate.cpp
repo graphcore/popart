@@ -1,3 +1,4 @@
+#include <limits>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/varupdate.hpp>
 #include <poponnx/tensornames.hpp>

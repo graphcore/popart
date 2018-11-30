@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_NAMES_HPP
 
 #include <map>
+#include <vector>
 
 // forward declaring onnx classes, done to
 // help reduce the number of compilation units

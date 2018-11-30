@@ -1,6 +1,7 @@
 #ifndef GUARD_NEURALNET_OP_HPP
 #define GUARD_NEURALNET_OP_HPP
 
+#include <memory>
 #include <set>
 #include <poponnx/attributes.hpp>
 #include <poponnx/names.hpp>
@@ -70,11 +71,13 @@ public:
   // We might want a cycle counter too for more sophisticated recomputation
   int64_t memOfOutputs() const;
 
+  // We use pointers to TensorIndexMaps for PIMPL reasons.
+  // Note that we cannot initialise these with {nullptr} on gcc.
+  // They are initialised in the Op constuctors
   // The consumed Tensors
-  std::unique_ptr<TensorIndexMap> input{nullptr};
-
+  std::unique_ptr<TensorIndexMap> input;
   // The produced Tensors
-  std::unique_ptr<TensorIndexMap> output{nullptr};
+  std::unique_ptr<TensorIndexMap> output;
 
   // wire a tensor to input: updates input and
   // updates consumers of tensor with id TensorId
