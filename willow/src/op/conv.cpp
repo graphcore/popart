@@ -1,8 +1,9 @@
 #include <memory>
 #include <poponnx/error.hpp>
+#include <poponnx/ir.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/conv.hpp>
 #include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
 
 namespace poponnx {
 

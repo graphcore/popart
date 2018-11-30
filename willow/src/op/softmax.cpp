@@ -1,7 +1,7 @@
 #include <poponnx/error.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/softmax.hpp>
 #include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
 
 namespace poponnx {
 

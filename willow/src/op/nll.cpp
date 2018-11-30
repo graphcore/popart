@@ -1,8 +1,8 @@
 #include <sstream>
 #include <poponnx/error.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/nll.hpp>
 #include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
 
 namespace poponnx {
 
@@ -44,9 +44,9 @@ TensorId NllLoss::probsTensorId() const { return input(getProbsInIndex()); }
 TensorId NllLoss::labelTensorId() const { return input(getLabelInIndex()); }
 
 void NllOp::setup() {
-  const auto &probsInInfo = input.tensor(nlll()->getProbsInIndex())->info;
+  const auto &probsInInfo = inInfo(nlll()->getProbsInIndex());
   // output is a 1-d tensor, dimension size : batchsize
-  output.tensor(0)->info.set(probsInInfo.dataType(), {probsInInfo.dim(0)});
+  outInfo(0).set(probsInInfo.dataType(), {probsInInfo.dim(0)});
 }
 
 const NllLoss *NllOp::nlll() const { return nllloss_; }
@@ -57,8 +57,8 @@ NllOp::NllOp(const OpConstructorBundle &b, const NllLoss *n)
 
 void NllGradOp::setup() {
   // gradient of probs has same shape as probs
-  auto outInfo           = input.tensor(nlll()->getProbsInIndex())->info;
-  output.tensor(0)->info = outInfo;
+  auto out_info = inInfo(nlll()->getProbsInIndex());
+  outInfo(0)    = out_info;
 }
 
 NllGradOp::NllGradOp(NllOp *op_)

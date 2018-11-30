@@ -1,3 +1,4 @@
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/square.hpp>
 #include <poponnx/tensor.hpp>
 
@@ -15,6 +16,6 @@ std::vector<std::unique_ptr<Op>> SquareOp::getGradOps() {
   throw error("Grad op has not been implemented for SquareOp");
 }
 
-void SquareOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
+void SquareOp::setup() { outInfo(0) = inInfo(0); }
 
 } // namespace poponnx

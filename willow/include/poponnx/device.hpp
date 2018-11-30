@@ -2,8 +2,8 @@
 #define GUARD_NEURALNET_DEVICE_HPP
 
 #include <poponnx/names.hpp>
+// MutableVoidData is defined in here:
 #include <poponnx/tensordata.hpp>
-#include <poponnx/tensorinfo.hpp>
 
 namespace poponnx {
 

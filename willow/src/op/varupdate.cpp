@@ -1,7 +1,6 @@
-#include <poponnx/error.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/varupdate.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
+#include <poponnx/tensornames.hpp>
 
 namespace poponnx {
 VarUpdateOp::VarUpdateOp(std::string op_type, TensorId varId_, Ir *_pir)

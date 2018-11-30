@@ -2,8 +2,8 @@
 #define GUARD_NEURALNET_MUL_HPP
 
 #include <vector>
-#include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/op/reducesum.hpp>
 
 namespace poponnx {

@@ -1,6 +1,6 @@
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
 
 namespace poponnx {
 
@@ -19,7 +19,7 @@ std::vector<std::unique_ptr<Op>> IdentityOp::getGradOps() {
   return upops;
 }
 
-void IdentityOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
+void IdentityOp::setup() { outInfo(0) = inInfo(0); }
 
 IdentityGradOp::IdentityGradOp(IdentityOp *fwdOp)
     : IdentityOp({"IdentityGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}

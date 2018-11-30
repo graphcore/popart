@@ -2,6 +2,7 @@
 #define GUARD_BUILDER_H
 
 #include <memory>
+#include <set>
 #include <string>
 #include <vector>
 

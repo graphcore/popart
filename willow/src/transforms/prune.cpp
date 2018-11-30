@@ -1,6 +1,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/tensor.hpp>
 
 #include <poponnx/transforms/prune.hpp>
@@ -38,7 +39,7 @@ bool Prune::apply(Ir &ir) const {
 
   // and (2), inputs to the training targets.
   for (auto &op : required) {
-    for (auto t_inds : op->input.indicesMap()) {
+    for (auto t_inds : op->input->indicesMap()) {
       Tensor *t = t_inds.first;
       if (tensorsVisited.count(t) == 0) {
         tensorFront.push_back(t);
@@ -57,7 +58,7 @@ bool Prune::apply(Ir &ir) const {
       for (Op *consumer : t->consumers.getOps()) {
         // at any of the indices which op consumes t,
         // does it modify t?
-        for (InIndex index : consumer->input.indices(t)) {
+        for (InIndex index : consumer->input->indices(t)) {
           if (consumer->modifies(index)) {
             newRequired.insert(consumer);
           }
@@ -69,7 +70,7 @@ bool Prune::apply(Ir &ir) const {
       for (Op *op : newRequired) {
         if (required.count(op) == 0) {
           required.insert(op);
-          for (auto t_inds : op->input.indicesMap()) {
+          for (auto t_inds : op->input->indicesMap()) {
             Tensor *t_in = t_inds.first;
             if (tensorsVisited.count(t_in) == 0) {
               tensorFront.push_back(t_in);
@@ -94,7 +95,7 @@ bool Prune::apply(Ir &ir) const {
     Op *op = id_op.second.get();
     if (required.count(op) == 0) {
       opsToDelete.push_back(op);
-      for (auto &t_inds : op->output.indicesMap()) {
+      for (auto &t_inds : op->output->indicesMap()) {
         tensorsToDelete.push_back(t_inds.first);
       }
     }
@@ -102,12 +103,12 @@ bool Prune::apply(Ir &ir) const {
 
   for (Op *op : opsToDelete) {
     // unwire the inputs
-    for (auto index_tensor : op->input.tensorMap()) {
+    for (auto index_tensor : op->input->tensorMap()) {
       Tensor *tensor = index_tensor.second;
       tensor->consumers.decrement(op);
     }
     // remove the topo cons which might exist
-    for (auto tensor_indices : op->input.indicesMap()) {
+    for (auto tensor_indices : op->input->indicesMap()) {
       Tensor *tensor = tensor_indices.first;
       tensor->consumers.removeTopoCons(op);
     }

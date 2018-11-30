@@ -1,8 +1,8 @@
 #include <poponnx/error.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/nll.hpp>
 #include <poponnx/op/softmax.hpp>
 #include <poponnx/popx/op/softmaxx.hpp>
-#include <poponnx/util.hpp>
 
 #include "popops/Encoding.hpp"
 #include <popnn/NonLinearity.hpp>

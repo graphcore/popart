@@ -15,7 +15,7 @@ ReciprocalOpx::ReciprocalOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void ReciprocalOpx::grow(poplar::program::Sequence &prog) const {
-  auto ones = dv_p->getConst(popType(op_p->input.tensor(0)->info), {1}, 1.0);
+  auto ones = dv_p->getConst(popType(op_p->inInfo(0)), {1}, 1.0);
 
   insert(outId(0),
          popops::map(graph(),

@@ -20,7 +20,7 @@ L1Opx::L1Opx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   L1GradOp *l1gradop = getL1GradOp();
   poplar::Tensor t_lambda =
-      dv_p->getConst(popType(op_p->input.tensor(0)->info),
+      dv_p->getConst(popType(op_p->inInfo(0)),
                      {1},
                      static_cast<double>(l1gradop->l1l()->getLambda()));
 

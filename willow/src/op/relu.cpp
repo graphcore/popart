@@ -1,6 +1,6 @@
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/relu.hpp>
 #include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
 
 namespace poponnx {
 

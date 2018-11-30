@@ -6,6 +6,140 @@
 namespace poponnx {
 namespace onnxutil {
 
+// functions for translating between poponnx's enum class and onnx's enum
+onnx::TensorProto_DataType getTPDataType(DataType data_type) {
+  switch (data_type) {
+  case DataType::UINT8: {
+    return onnx::TensorProto_DataType_UINT8;
+  }
+  case DataType::INT8: {
+    return onnx::TensorProto_DataType_INT8;
+  }
+  case DataType::UINT16: {
+    return onnx::TensorProto_DataType_UINT16;
+  }
+  case DataType::INT16: {
+    return onnx::TensorProto_DataType_INT16;
+  }
+  case DataType::INT32: {
+    return onnx::TensorProto_DataType_INT32;
+  }
+  case DataType::INT64: {
+    return onnx::TensorProto_DataType_INT64;
+  }
+  case DataType::UINT32: {
+    return onnx::TensorProto_DataType_UINT32;
+  }
+  case DataType::UINT64: {
+    return onnx::TensorProto_DataType_UINT64;
+  }
+  case DataType::BOOL: {
+    return onnx::TensorProto_DataType_BOOL;
+  }
+  case DataType::FLOAT: {
+    return onnx::TensorProto_DataType_FLOAT;
+  }
+  case DataType::FLOAT16: {
+    return onnx::TensorProto_DataType_FLOAT16;
+  }
+  case DataType::BFLOAT16: {
+    return onnx::TensorProto_DataType_BFLOAT16;
+  }
+  case DataType::DOUBLE: {
+    return onnx::TensorProto_DataType_DOUBLE;
+  }
+  case DataType::COMPLEX64: {
+    return onnx::TensorProto_DataType_COMPLEX64;
+  }
+  case DataType::COMPLEX128: {
+    return onnx::TensorProto_DataType_COMPLEX128;
+  }
+  case DataType::STRING: {
+    return onnx::TensorProto_DataType_STRING;
+  }
+  case DataType::UNDEFINED: {
+    return onnx::TensorProto_DataType_UNDEFINED;
+  }
+  default:
+    throw error("unrecognised PopONNX DataType");
+  }
+}
+
+DataType getDataType(onnx::TensorProto_DataType tpd) {
+
+  switch (tpd) {
+  case onnx::TensorProto_DataType_UINT8: {
+    return DataType::UINT8;
+  }
+  case onnx::TensorProto_DataType_INT8: {
+    return DataType::INT8;
+  }
+
+  case onnx::TensorProto_DataType_UINT16: {
+    return DataType::UINT16;
+  }
+
+  case onnx::TensorProto_DataType_INT16: {
+    return DataType::INT16;
+  }
+
+  case onnx::TensorProto_DataType_INT32: {
+    return DataType::INT32;
+  }
+
+  case onnx::TensorProto_DataType_INT64: {
+    return DataType::INT64;
+  }
+
+  case onnx::TensorProto_DataType_UINT32: {
+    return DataType::UINT32;
+  }
+
+  case onnx::TensorProto_DataType_UINT64: {
+    return DataType::UINT64;
+  }
+
+  case onnx::TensorProto_DataType_BOOL: {
+    return DataType::BOOL;
+  }
+
+  case onnx::TensorProto_DataType_FLOAT: {
+    return DataType::FLOAT;
+  }
+
+  case onnx::TensorProto_DataType_FLOAT16: {
+    return DataType::FLOAT16;
+  }
+
+  case onnx::TensorProto_DataType_BFLOAT16: {
+    return DataType::BFLOAT16;
+  }
+
+  case onnx::TensorProto_DataType_DOUBLE: {
+    return DataType::DOUBLE;
+  }
+
+  case onnx::TensorProto_DataType_COMPLEX64: {
+    return DataType::COMPLEX64;
+  }
+
+  case onnx::TensorProto_DataType_COMPLEX128: {
+    return DataType::COMPLEX128;
+  }
+
+  case onnx::TensorProto_DataType_STRING: {
+    return DataType::STRING;
+  }
+
+  case onnx::TensorProto_DataType_UNDEFINED: {
+    return DataType::UNDEFINED;
+  }
+
+  default:
+    throw error("unrecognised ONNX DataType");
+  }
+}
+
 ConstVoidData getConstData(const onnx::TensorProto &tp) {
   ConstVoidData cv_data;
   cv_data.info = TensorInfo(tp);

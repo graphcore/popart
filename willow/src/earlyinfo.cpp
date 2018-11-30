@@ -1,3 +1,4 @@
+#include <set>
 #include <poponnx/earlyinfo.hpp>
 #include <poponnx/error.hpp>
 

@@ -2,6 +2,7 @@
 #include <queue>
 
 #include <poponnx/ir.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/scheduler.hpp>
 #include <poponnx/tensor.hpp>
 
@@ -45,7 +46,7 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons) const {
   // number of input indices
   for (auto &id_op : ops) {
     Op *op               = id_op.second.get();
-    nIndicesAwaiting[op] = op->input.n();
+    nIndicesAwaiting[op] = op->input->n();
   }
 
   // the next two variables are needed because of the
@@ -77,7 +78,7 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons) const {
     Op *after = id_op.second.get();
 
     // we first check the local constraints on the consumers of "after"
-    for (auto &tensor_indices : after->input.indicesMap()) {
+    for (auto &tensor_indices : after->input->indicesMap()) {
       Tensor *inTen = tensor_indices.first;
       // which consumer(s) of inTens must appear before op?
       for (Op *before : inTen->consumers.consumersWhichTopoBefore(after)) {
@@ -138,7 +139,7 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons) const {
       }
     }
 
-    for (auto &tensor_indices : op->output.indicesMap()) {
+    for (auto &tensor_indices : op->output->indicesMap()) {
       processTensor(tensor_indices.first);
     }
   }

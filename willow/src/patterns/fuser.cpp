@@ -1,5 +1,5 @@
-#include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/patterns/fuser.hpp>
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/tensor.hpp>
@@ -13,7 +13,7 @@ bool Fuser::apply(Op *op) const {
   Ir *pir = op->pir;
 
   Op *op0      = op;
-  Tensor *out0 = op0->output.tensor(0);
+  Tensor *out0 = op0->output->tensor(0);
   // we have checked that out0 only has 1 consumer
   Op *op1 = out0->consumers.getOps()[0];
 
@@ -26,9 +26,9 @@ bool Fuser::apply(Op *op) const {
   // wire-up the inputs.
   // 1) connect the inputs of op0 to op01
   pir->connectInputsFromInputMapWrapper(
-      InputMapWrapper(op0->input.tensorIdMap()), id01);
+      InputMapWrapper(op0->input->tensorIdMap()), id01);
   // 2) disconnect the inputs of op0 from op0
-  for (auto index_tensor : op0->input.tensorMap()) {
+  for (auto index_tensor : op0->input->tensorMap()) {
     Tensor *in0 = index_tensor.second;
     in0->consumers.decrement(op0);
   }
@@ -36,15 +36,15 @@ bool Fuser::apply(Op *op) const {
   // we can't use connectOutputs, as that expects
   // that the output Tensor doesn't exist and must
   // be created. We rewire outputs manually:
-  for (auto index_tensor : op1->output.tensorMap()) {
+  for (auto index_tensor : op1->output->tensorMap()) {
     OutIndex index = index_tensor.first;
     Tensor *tensor = index_tensor.second;
-    op01->output.insert(index, tensor);
+    op01->output->insert(index, tensor);
     tensor->resetProducer(op01);
   }
 
   // remove the tensor and nodes
-  for (auto index_tensor : op1->input.tensorMap()) {
+  for (auto index_tensor : op1->input->tensorMap()) {
     // InIndex index = index_tensor.first;
     Tensor *tensor = index_tensor.second;
     tensor->consumers.decrement(op1);
@@ -59,7 +59,7 @@ bool Fuser::apply(Op *op) const {
 
 bool Fuser::matches(Op *op0) const {
   if (op0->opType == get0()) {
-    const Tensor *out0 = op0->output.tensor(0);
+    const Tensor *out0 = op0->output->tensor(0);
     // out0 must be consumed just once
     if (out0->consumers.getTotal() == 1) {
       Op *op1 = out0->consumers.getOps()[0];
@@ -72,7 +72,7 @@ bool Fuser::matches(Op *op0) const {
 }
 
 std::vector<const Tensor *> Fuser::touches(Op *op) const {
-  return {op->output.tensor(0)};
+  return {op->output->tensor(0)};
 }
 
 } // namespace poponnx

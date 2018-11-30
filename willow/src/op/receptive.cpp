@@ -1,4 +1,5 @@
 #include <poponnx/error.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/receptive.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
@@ -66,7 +67,7 @@ Shape HasReceptiveFieldOp::getOutShape() const {
   // (same link, maxpool2d)
   for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
     outShape[spDim + 2] =
-        //(input.tensor(0)->info.dim(spDim + 2)
+        //(inInfo(0).dim(spDim + 2)
         (spatialD[spDim] + pads[spDim] + pads[nSpatialDims + spDim] -
          dilations[spDim] * (spatialK[spDim] - 1) - 1) /
             strides[spDim] +

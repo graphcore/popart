@@ -1,10 +1,10 @@
 #include <poponnx/ir.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/reducesum.hpp>
 #include <poponnx/op/subtract.hpp>
 #include <poponnx/patterns/subtractarg1gradoppattern.hpp>
 #include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
 
 namespace poponnx {
 
@@ -17,8 +17,8 @@ std::vector<const Tensor *> SubtractArg1GradOpPattern::touches(Op *) const {
 }
 
 bool SubtractArg1GradOpPattern::apply(Op *op) const {
-  auto input_tensor  = op->input.tensor(0);
-  auto output_tensor = op->output.tensor(0);
+  auto input_tensor  = op->input->tensor(0);
+  auto output_tensor = op->output->tensor(0);
   auto ir            = op->pir;
   auto negate_op     = make_unique<NegateOp>(OpConstructorBundle{
       "Negate", ir, {}, getOpTypes().getDomain(OpType::NEGATE)});
@@ -30,7 +30,7 @@ bool SubtractArg1GradOpPattern::apply(Op *op) const {
       axes,
       false);
 
-  const auto tmp_tensor_id = "t__" + op->output.id(0);
+  const auto tmp_tensor_id = "t__" + op->output->id(0);
   op->pir->getTensors().addActGrad(tmp_tensor_id);
   const auto tmp_tensor = ir->getTensors().get(tmp_tensor_id);
   tmp_tensor->info      = input_tensor->info;
@@ -49,10 +49,10 @@ bool SubtractArg1GradOpPattern::apply(Op *op) const {
   output_tensor->resetProducer(reducesum);
 
   // Remap the op-to-tensor relationships
-  negate->input.insert(0, input_tensor);
-  negate->output.insert(0, tmp_tensor);
-  reducesum->input.insert(0, tmp_tensor);
-  reducesum->output.insert(0, output_tensor);
+  negate->input->insert(0, input_tensor);
+  negate->output->insert(0, tmp_tensor);
+  reducesum->input->insert(0, tmp_tensor);
+  reducesum->output->insert(0, output_tensor);
 
   // Remove the reducesum op
   ir->eraseOp(op->id);

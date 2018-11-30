@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_VOLE_HPP
 #define GUARD_NEURALNET_VOLE_HPP
 
-#include <poponnx/ir.hpp>
+#include <poponnx/op.hpp>
 
 namespace poponnx {
 

@@ -1,8 +1,8 @@
 #ifndef GUARD_NEURALNET_MAXPOOL_HPP
 #define GUARD_NEURALNET_MAXPOOL_HPP
 
-#include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/op/receptive.hpp>
 
 namespace poponnx {

@@ -1,13 +1,39 @@
 #ifndef GUARD_NEURALNET_TENSORINFO_HPP
 #define GUARD_NEURALNET_TENSORINFO_HPP
 
-#include <onnx/onnx_pb.h>
-
 #include <sstream>
 #include <vector>
 #include <poponnx/names.hpp>
 
 namespace poponnx {
+
+// There is a 1-1 correspondence
+// between poponnx::DataTypes
+// and onnx::TensorProto_DataTypes, aka
+// decltype(onnx::TensorProto().data_type()).
+
+enum class DataType {
+  // fixed point types
+  UINT8 = 0,
+  INT8,
+  UINT16,
+  INT16,
+  INT32,
+  INT64,
+  UINT32,
+  UINT64,
+  BOOL,
+  // floating point types
+  FLOAT,
+  FLOAT16,
+  BFLOAT16,
+  DOUBLE,
+  COMPLEX64,
+  COMPLEX128,
+  // other types
+  STRING,
+  UNDEFINED,
+};
 
 class TensorInfo;
 

@@ -1,5 +1,6 @@
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/patterns/pattern.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>

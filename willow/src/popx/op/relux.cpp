@@ -2,6 +2,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/relu.hpp>
 #include <poponnx/popx/op/relux.hpp>
+#include <poponnx/tensorindex.hpp>
 
 #include <popnn/NonLinearity.hpp>
 
@@ -67,7 +68,7 @@ void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
       idStr()                                 // debugPrefix
   );
 
-  insert(op_p->output.id(0), outTensor);
+  insert(op_p->output->id(0), outTensor);
 }
 
 } // namespace popx

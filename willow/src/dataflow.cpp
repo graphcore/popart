@@ -1,3 +1,4 @@
+#include <vector>
 #include <poponnx/dataflow.hpp>
 #include <poponnx/error.hpp>
 

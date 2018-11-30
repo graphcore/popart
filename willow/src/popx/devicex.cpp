@@ -8,6 +8,8 @@
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
+#include <poponnx/makeunique.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/popx/convoptionsx.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/devicexmanager.hpp>
@@ -36,7 +38,6 @@
 #include <poponnx/pritask.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
-#include <poponnx/util.hpp>
 
 namespace poponnx {
 namespace popx {
@@ -277,7 +278,7 @@ void Devicex::hostToHostStream(
     std::memcpy(dst, src, srcInfo.nbytes());
   }
 
-  else if (srcType == TP::INT64 && dstType == TP::INT32) {
+  else if (srcType == DataType::INT64 && dstType == DataType::INT32) {
     auto dst_int32 = static_cast<int *>(dst);
     auto src_int64 = static_cast<const int64_t *>(src);
     for (auto i = 0; i < dstInfo.nelms(); ++i) {
@@ -422,7 +423,6 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
   }
 
   case OpType::ADDBIAS: {
-    new AddBiasOpx(op, this);
     return std::unique_ptr<Opx>(new AddBiasOpx(op, this));
   }
 
@@ -642,7 +642,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   // consumption indices.
   std::vector<OpxAndInIndex> candidates;
   for (Op *op : tensor->consumers.getOps()) {
-    for (int index : op->input.indices(tensor)) {
+    for (int index : op->input->indices(tensor)) {
       auto conOpId = op->id;
       Opx *opx     = getOpx(conOpId);
       if (opx->canCreateInput(index)) {
@@ -789,7 +789,7 @@ PriTask Devicex::opTask(Op *op, double priority) {
   // in case someone plays with the priorities.
   // Moreover, we must state the copy-from-host deps
   std::vector<TaskId> deps;
-  for (auto t_inds : op->input.indicesMap()) {
+  for (auto t_inds : op->input->indicesMap()) {
     Tensor *tensor = t_inds.first;
     deps.push_back(taskWhichCreates(tensor->id));
     // if the tensor is streamed on, we must wait
@@ -1064,28 +1064,28 @@ std::string Devicex::getExecutionReport() const {
 
 poplar::Type popType(const TensorInfo &info) {
   switch (info.dataType()) {
-  case TP::FLOAT: {
+  case DataType::FLOAT: {
     return poplar::FLOAT;
   }
-  case TP::INT32: {
+  case DataType::INT32: {
     return poplar::INT;
   }
 
-  case TP::UNDEFINED:
-  case TP::UINT8:
-  case TP::INT8:
-  case TP::UINT16:
-  case TP::INT16:
-  case TP::INT64:
-  case TP::STRING:
-  case TP::BOOL:
-  case TP::FLOAT16:
-  case TP::BFLOAT16:
-  case TP::DOUBLE:
-  case TP::UINT32:
-  case TP::UINT64:
-  case TP::COMPLEX64:
-  case TP::COMPLEX128:
+  case DataType::UNDEFINED:
+  case DataType::UINT8:
+  case DataType::INT8:
+  case DataType::UINT16:
+  case DataType::INT16:
+  case DataType::INT64:
+  case DataType::STRING:
+  case DataType::BOOL:
+  case DataType::FLOAT16:
+  case DataType::BFLOAT16:
+  case DataType::DOUBLE:
+  case DataType::UINT32:
+  case DataType::UINT64:
+  case DataType::COMPLEX64:
+  case DataType::COMPLEX128:
   default:
     throw error("Is there a poplar type for " + info.data_type() + "?");
   }

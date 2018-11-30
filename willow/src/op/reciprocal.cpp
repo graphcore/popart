@@ -19,7 +19,7 @@ std::vector<std::unique_ptr<Op>> ReciprocalOp::getGradOps() {
   return upops;
 }
 
-void ReciprocalOp::setup() { output.tensor(0)->info = input.tensor(0)->info; }
+void ReciprocalOp::setup() { outInfo(0) = inInfo(0); }
 
 ReciprocalGradOp::ReciprocalGradOp(ReciprocalOp *op_)
     : Op({"ReciprocalGrad", op_->pir, {}, getPoponnxDomain()}) {}
@@ -35,8 +35,6 @@ const std::vector<GradInOutMapper> &ReciprocalGradOp::gradInputInfo() const {
   return inInfo;
 }
 
-void ReciprocalGradOp::setup() {
-  output.tensor(0)->info = input.tensor(0)->info;
-}
+void ReciprocalGradOp::setup() { outInfo(0) = inInfo(0); }
 
 } // namespace poponnx

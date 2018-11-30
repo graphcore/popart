@@ -1,16 +1,18 @@
 #ifndef GUARD_NEURALNET_ATTRIBUTES_HPP
 #define GUARD_NEURALNET_ATTRIBUTES_HPP
 
+#include <map>
+#include <vector>
 #include <poponnx/names.hpp>
 
 namespace poponnx {
 
 // Wrapper around the container of onnx::AtrributeProtos
 // of a Node, provides faster and cleaner reads of values
-// from keys (strings) than onnx::AttribtesProto
+// from keys (strings) than onnx::AttributesProto
 class Attributes {
 public:
-  Attributes(decltype(onnx::NodeProto().attribute()) &);
+  Attributes(const NodeAttributes &);
   Attributes() = default;
   const std::vector<std::string> &getNames() const;
   onnxAttPtr at(std::string name) const;

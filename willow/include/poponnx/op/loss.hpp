@@ -3,10 +3,9 @@
 
 #include <map>
 #include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/tensorinfo.hpp>
-#include <poponnx/vertex.hpp>
 
 namespace poponnx {
 

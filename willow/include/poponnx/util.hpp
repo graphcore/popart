@@ -42,12 +42,6 @@ std::vector<Y> vXtoY(const std::vector<X> &c0) {
   return c1;
 }
 
-// TODO : If we move to C++14, this function will be standard.
-template <typename T, typename... Args>
-std::unique_ptr<T> make_unique(Args &&... args) {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-
 namespace util {
 
 /// Zip a pair of sequences with a given function into a third sequence.

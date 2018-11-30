@@ -2,13 +2,14 @@
 #include <poponnx/popx/devicexmanager.hpp>
 
 #include <poponnx/error.hpp>
-#include <poponnx/util.hpp>
+#include <poponnx/makeunique.hpp>
 
 #include <poplar/Device.hpp>
 #include <poplar/IPUModel.hpp>
 #include <poplar/exceptions.hpp>
 
 #include <algorithm>
+#include <sstream>
 
 namespace poponnx {
 namespace popx {

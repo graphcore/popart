@@ -1,7 +1,8 @@
 #include <poponnx/error.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/matmul.hpp>
 #include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
+#include <poponnx/tensorindex.hpp>
 
 namespace poponnx {
 
@@ -104,17 +105,17 @@ Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) {
 
 void MatMulOp::setup() {
   // Define the shape of the output tensor
-  output.tensor(0)->info = {
+  outInfo(0) = {
       lhsIn()->info.dataType(),
       MatMulOp::npMatMulOut(lhsBroadcastShape(), rhsBroadcastShape())};
 }
 
 MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)
     : Op({"MatMulLhsGrad", fwdOp.pir, {}, getPoponnxDomain()}),
-      fwdOpOutputGrad(fwdOp.output.tensor(0)->info),
-      fwdOpLhsInfo(fwdOp.lhsIn()->info), fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
+      fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
+      fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
 
-void MatMulLhsGradOp::setup() { output.tensor(0)->info = fwdOpLhsInfo; }
+void MatMulLhsGradOp::setup() { outInfo(0) = fwdOpLhsInfo; }
 
 const std::vector<GradInOutMapper> &MatMulLhsGradOp::gradInputInfo() const {
   // The gradient of the fwd-op is input at index 0.
@@ -144,10 +145,10 @@ Shape MatMulLhsGradOp::getOutputShape() const { return fwdOpLhsInfo.shape(); }
 
 MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
     : Op({"MatMulRhsGrad", fwdOp.pir, {}, getPoponnxDomain()}),
-      fwdOpOutputGrad(fwdOp.output.tensor(0)->info),
-      fwdOpLhsInfo(fwdOp.lhsIn()->info), fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
+      fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
+      fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
 
-void MatMulRhsGradOp::setup() { output.tensor(0)->info = fwdOpRhsInfo; }
+void MatMulRhsGradOp::setup() { outInfo(0) = fwdOpRhsInfo; }
 
 const std::vector<GradInOutMapper> &MatMulRhsGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {

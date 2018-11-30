@@ -1,11 +1,11 @@
 #include <poponnx/error.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/conv.hpp>
 #include <poponnx/popx/convoptionsx.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/graphcachex.hpp>
 #include <poponnx/popx/op/convx.hpp>
 #include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
 
 #include <poplin/ConvUtil.hpp>
 #include <poplin/Convolution.hpp>

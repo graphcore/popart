@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_ADD_HPP
 #define GUARD_NEURALNET_ADD_HPP
 
-#include <poponnx/ir.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/op/reducesum.hpp>
 
 namespace poponnx {

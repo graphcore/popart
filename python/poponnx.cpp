@@ -5,6 +5,7 @@
 #include <poponnx/device.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/ir.hpp>
 #include <poponnx/numerics.hpp>
 #include <poponnx/op/l1.hpp>
 #include <poponnx/op/loss.hpp>
@@ -26,11 +27,11 @@ std::map<std::string, DataType> initNpTypeMap() {
   std::map<std::string, DataType> M;
   // see tensorinfo.hpp for the complete list of
   // DataTypes (defined originally in ONNX)
-  M["float16"] = TP::FLOAT16;
-  M["float32"] = TP::FLOAT;
-  M["int32"]   = TP::INT32;
-  M["int64"]   = TP::INT64;
-  M["bool"]    = TP::BOOL;
+  M["float16"] = DataType::FLOAT16;
+  M["float32"] = DataType::FLOAT;
+  M["int32"]   = DataType::INT32;
+  M["int64"]   = DataType::INT64;
+  M["bool"]    = DataType::BOOL;
   return M;
 }
 

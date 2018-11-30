@@ -1,8 +1,8 @@
+#include <popops/ElementWise.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/op/sum.hpp>
 #include <poponnx/popx/op/sumx.hpp>
-
-#include <popops/ElementWise.hpp>
+#include <poponnx/tensorindex.hpp>
 
 namespace poponnx {
 namespace popx {
@@ -18,7 +18,7 @@ SumOp *SumOpx::getSumOp() const { return dynamic_cast<SumOp *>(op_p); }
 void SumOpx::grow(poplar::program::Sequence &prog) const {
   // if the total number of tensors is less than
   // "5", then perform a series of adds.
-  if (getSumOp()->input.n() < 5) {
+  if (getSumOp()->input->n() < 5) {
     poplar::Tensor sum = popops::map(graph(),
                                      popops::expr::BinaryOpType::ADD,
                                      get(inId(0)),
@@ -26,7 +26,7 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
                                      prog,
                                      idStr());
 
-    for (InIndex i = 2; i < getSumOp()->input.n(); ++i) {
+    for (InIndex i = 2; i < getSumOp()->input->n(); ++i) {
       popops::mapInPlace(graph(),
                          popops::expr::BinaryOpType::ADD,
                          sum,

@@ -35,7 +35,6 @@ def test_convolution_cached_by_default():
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"doLayerWiseBreakdown": "true"}
 
-
     session = poponnx.Session(
         fnModel=proto,
         earlyInfo=earlyInfo,

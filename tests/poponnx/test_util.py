@@ -97,7 +97,7 @@ class BasicSession:
             return 'FLOAT'
 
         raise Exception(
-            f'bad dtype {dtype}, (only float32 currently supported)')
+            'bad dtype %s, (only float32 currently supported)' % (dtype, ))
 
     def run(self, output, anchors, step_method):
         dataFlow = poponnx.DataFlow(1, 1, anchors,

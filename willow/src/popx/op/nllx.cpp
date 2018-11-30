@@ -1,7 +1,7 @@
 #include <poponnx/error.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/nll.hpp>
 #include <poponnx/popx/op/nllx.hpp>
-#include <poponnx/util.hpp>
 
 #include "popops/Encoding.hpp"
 #include <popops/ElementWise.hpp>

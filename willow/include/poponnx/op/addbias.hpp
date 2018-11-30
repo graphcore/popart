@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_ADDBIAS_HPP
 #define GUARD_NEURALNET_ADDBIAS_HPP
 
-#include <poponnx/ir.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/reducesum.hpp>
 

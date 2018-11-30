@@ -427,7 +427,7 @@ def test_reciprocal(tmpdir):
 
     # compare results
     for key in [o]:
-        print(f'Checking anchor {key} ...')
+        print('Checking anchor %s ...' % (key, ))
         assert np.array_equal(anchors[key], reference_results[key])
 
 
@@ -457,5 +457,5 @@ def test_reciprocal_grad(tmpdir):
 
     # compare results
     for key in [o, 'd__' + i1]:
-        print(f'Checking anchor {key} ...')
+        print('Checking anchor %s ...' % (key, ))
         assert np.array_equal(anchors[key], reference_results[key])

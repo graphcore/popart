@@ -1,5 +1,5 @@
-#include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/patterns/inplace.hpp>
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/tensor.hpp>
@@ -58,7 +58,7 @@ std::vector<const Tensor *> Inplace0::touches(Op *op) const {
   // to host will be done after all inplace consumers of a tensor have
   // run, we can set this up such that the output tensor is not
   // touched (where the defn of touched would then be slightly different)
-  return {op->input.tensor(0), op->output.tensor(0)};
+  return {op->input->tensor(0), op->output->tensor(0)};
 }
 
 bool Inplace0::apply(Op *op) const {
@@ -70,9 +70,9 @@ bool Inplace0::apply(Op *op) const {
 
   // (2) connect the inputs of op to inplaceOp
   op->pir->connectInputsFromInputMapWrapper(
-      InputMapWrapper(op->input.tensorIdMap()), inplaceId);
+      InputMapWrapper(op->input->tensorIdMap()), inplaceId);
 
-  for (auto index_tensor : op->input.tensorMap()) {
+  for (auto index_tensor : op->input->tensorMap()) {
     Tensor *in_tensor = index_tensor.second;
 
     // (3) all tensors which have op as a consumer,
@@ -85,10 +85,10 @@ bool Inplace0::apply(Op *op) const {
   }
 
   // The tensor which will be updated in-place:
-  Tensor *in0 = inplaceOp->input.tensor(0);
+  Tensor *in0 = inplaceOp->input->tensor(0);
 
   // The tensor which will be removed:
-  Tensor *out = op->output.tensor(0);
+  Tensor *out = op->output->tensor(0);
 
   // (5) Make sure that all consumers of in0 run before inplaceOp
   in0->consumers.setTopoLast(inplaceOp);
@@ -116,11 +116,11 @@ bool Inplace0::apply(Op *op) const {
 
 bool Inplace0::matches(Op *op) const {
 
-  if (!op->input.hasIndex(0)) {
+  if (!op->input->hasIndex(0)) {
     return false;
   }
 
-  if (!op->output.hasIndex(0)) {
+  if (!op->output->hasIndex(0)) {
     return false;
   }
 
@@ -130,7 +130,7 @@ bool Inplace0::matches(Op *op) const {
 
   // the tensor which we're proposing
   // to perform an in-place modification on
-  const Tensor *t_inplace = op->input.tensor(0);
+  const Tensor *t_inplace = op->input->tensor(0);
 
   // Consider an Op which does
   // C <- gamma*A + B

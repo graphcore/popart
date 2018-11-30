@@ -1,6 +1,7 @@
 #include <poponnx/op/negate.hpp>
+
+#include <poponnx/makeunique.hpp>
 #include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
 
 namespace poponnx {
 

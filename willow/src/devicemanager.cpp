@@ -1,3 +1,4 @@
+#include <sstream>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
 

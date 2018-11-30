@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_L1_HPP
 #define GUARD_NEURALNET_L1_HPP
 
-#include <poponnx/ir.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/op/loss.hpp>
 
 namespace poponnx {

@@ -1,3 +1,4 @@
+#include <onnx/onnx_pb.h>
 #include <sstream>
 #include <poponnx/attributes.hpp>
 #include <poponnx/error.hpp>
@@ -65,7 +66,7 @@ template <> void Attributes::set(int64_t &v, std::string key) const {
   }
 }
 
-Attributes::Attributes(decltype(Node().attribute()) &attributes) {
+Attributes::Attributes(const NodeAttributes &attributes) {
   for (auto &attribute : attributes) {
     auto name = attribute.name();
     names.push_back(name);

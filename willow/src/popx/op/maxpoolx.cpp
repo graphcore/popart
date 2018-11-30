@@ -1,7 +1,7 @@
 #include <poponnx/error.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/maxpool.hpp>
 #include <poponnx/popx/op/maxpoolx.hpp>
-#include <poponnx/util.hpp>
 
 #include <popnn/Pooling.hpp>
 

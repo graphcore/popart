@@ -1,8 +1,7 @@
 #ifndef GUARD_NEURALNET_SUBTRACT_HPP
 #define GUARD_NEURALNET_SUBTRACT_HPP
 
-#include <poponnx/ir.hpp>
-#include <poponnx/op/identity.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/op/negate.hpp>
 #include <poponnx/op/reducesum.hpp>
 

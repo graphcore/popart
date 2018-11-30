@@ -1,6 +1,7 @@
+#include <vector>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/add.hpp>
 #include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
 
 namespace poponnx {
 

@@ -16,6 +16,10 @@ MutableVoidData getMutableData(onnx::TensorProto &tp);
 // Get an ONNX model protobuf, either from a file, or the string directly
 onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename);
 
+// functions for translating between poponnx's enum class and onnx's enum
+onnx::TensorProto_DataType getTPDataType(DataType);
+DataType getDataType(onnx::TensorProto_DataType);
+
 } // namespace onnxutil
 } // namespace poponnx
 

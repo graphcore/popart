@@ -1,11 +1,14 @@
 #ifndef GUARD_BUILDER_IMPL_H
 #define GUARD_BUILDER_IMPL_H
 
+#include <map>
+#include <string>
 #include <poponnx/builder.hpp>
 #include <poponnx/names.hpp>
 
-#include <map>
-#include <string>
+// The BuilderImpl class has an onnx::ModelProto, so we cannot
+// use the forward declarations in names.hpp at this point
+#include <onnx/onnx_pb.h>
 
 namespace poponnx {
 

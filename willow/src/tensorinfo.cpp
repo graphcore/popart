@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <numeric>
+#include <onnx/onnx_pb.h>
 #include <poponnx/error.hpp>
+#include <poponnx/onnxutil.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/util.hpp>
 
@@ -18,7 +20,7 @@ TensorInfo::TensorInfo(std::string s_type, std::string s_shape)
     : TensorInfo(dataTypeFromString(s_type), shapeFromString(s_shape)) {}
 
 void TensorInfo::set(const onnx::TensorProto &t) {
-  dataTypeInfo = &getDataTypeInfoMap().at(t.data_type());
+  dataTypeInfo = &getDataTypeInfoMap().at(onnxutil::getDataType(t.data_type()));
   shape_v.resize(0);
   shape_v.reserve(t.dims_size());
   for (auto &v : t.dims()) {
@@ -232,23 +234,26 @@ bool TensorInfo::operator!=(const TensorInfo &i1) const {
 
 std::map<DataType, DataTypeInfo> initDataTypeInfoMap() {
 
-  return {{TP::UNDEFINED, {TP::UNDEFINED, -1, "UNDEFINED", "undefined"}},
-          {TP::FLOAT, {TP::FLOAT, 4, "FLOAT", "float32"}},
-          {TP::UINT8, {TP::UINT8, 1, "UINT8", "uint"}},
-          {TP::INT8, {TP::INT8, 1, "INT8", "int8"}},
-          {TP::UINT16, {TP::UINT16, 2, "UINT16", "uint16"}},
-          {TP::INT16, {TP::INT16, 2, "INT16", "int16"}},
-          {TP::INT32, {TP::INT32, 4, "INT32", "int32"}},
-          {TP::INT64, {TP::INT64, 8, "INT64", "int64"}},
-          {TP::STRING, {TP::STRING, -1, "STRING", "string"}},
-          {TP::BOOL, {TP::BOOL, 1, "BOOL", "bool"}},
-          {TP::FLOAT16, {TP::FLOAT16, 2, "FLOAT16", "float16"}},
-          {TP::BFLOAT16, {TP::FLOAT16, 2, "BFLOAT16", "bfloat16"}},
-          {TP::DOUBLE, {TP::DOUBLE, 8, "DOUBLE", "float64"}},
-          {TP::UINT32, {TP::UINT32, 4, "UINT32", "uint32"}},
-          {TP::UINT64, {TP::UINT64, 8, "UINT64", "uint64"}},
-          {TP::COMPLEX64, {TP::COMPLEX64, 8, "COMPLEX64", "complex64"}},
-          {TP::COMPLEX128, {TP::COMPLEX128, 16, "COMPLEX128", "complex128"}}};
+  return {
+      {DataType::UNDEFINED,
+       {DataType::UNDEFINED, -1, "UNDEFINED", "undefined"}},
+      {DataType::FLOAT, {DataType::FLOAT, 4, "FLOAT", "float32"}},
+      {DataType::UINT8, {DataType::UINT8, 1, "UINT8", "uint"}},
+      {DataType::INT8, {DataType::INT8, 1, "INT8", "int8"}},
+      {DataType::UINT16, {DataType::UINT16, 2, "UINT16", "uint16"}},
+      {DataType::INT16, {DataType::INT16, 2, "INT16", "int16"}},
+      {DataType::INT32, {DataType::INT32, 4, "INT32", "int32"}},
+      {DataType::INT64, {DataType::INT64, 8, "INT64", "int64"}},
+      {DataType::STRING, {DataType::STRING, -1, "STRING", "string"}},
+      {DataType::BOOL, {DataType::BOOL, 1, "BOOL", "bool"}},
+      {DataType::FLOAT16, {DataType::FLOAT16, 2, "FLOAT16", "float16"}},
+      {DataType::BFLOAT16, {DataType::FLOAT16, 2, "BFLOAT16", "bfloat16"}},
+      {DataType::DOUBLE, {DataType::DOUBLE, 8, "DOUBLE", "float64"}},
+      {DataType::UINT32, {DataType::UINT32, 4, "UINT32", "uint32"}},
+      {DataType::UINT64, {DataType::UINT64, 8, "UINT64", "uint64"}},
+      {DataType::COMPLEX64, {DataType::COMPLEX64, 8, "COMPLEX64", "complex64"}},
+      {DataType::COMPLEX128,
+       {DataType::COMPLEX128, 16, "COMPLEX128", "complex128"}}};
 }
 
 std::map<std::string, DataType> initStrToDataTypeMap() {
@@ -316,7 +321,7 @@ onnx::TypeProto TensorInfo::getOnnxTypeProto() const {
   onnx::TypeProto typeProto;
 
   onnx::TypeProto_Tensor *tensor = typeProto.mutable_tensor_type();
-  tensor->set_elem_type(dataTypeInfo->type());
+  tensor->set_elem_type(onnxutil::getTPDataType(dataTypeInfo->type()));
 
   onnx::TensorShapeProto *shape = tensor->mutable_shape();
   for (auto d : shape_v) {

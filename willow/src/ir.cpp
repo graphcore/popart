@@ -17,52 +17,26 @@
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/scheduler.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/tensorinfo.hpp>
+#include <poponnx/tensornames.hpp>
 #include <poponnx/util.hpp>
 
 // The transformations
 #include <poponnx/transforms/prune.hpp>
 #include <poponnx/transforms/recompute.hpp>
 
-// The layers:
-#include <poponnx/op/add.hpp>
-#include <poponnx/op/averagepool.hpp>
-#include <poponnx/op/conv.hpp>
-#include <poponnx/op/identity.hpp>
-#include <poponnx/op/matmul.hpp>
-#include <poponnx/op/maxpool.hpp>
-#include <poponnx/op/mul.hpp>
-#include <poponnx/op/negate.hpp>
-#include <poponnx/op/pad.hpp>
-#include <poponnx/op/reciprocal.hpp>
-#include <poponnx/op/reducesum.hpp>
-#include <poponnx/op/relu.hpp>
-#include <poponnx/op/softmax.hpp>
-#include <poponnx/op/squeeze.hpp>
-#include <poponnx/op/subtract.hpp>
+// The layers required to construct the backwards pass
 #include <poponnx/op/sum.hpp>
 #include <poponnx/op/varupdate.hpp>
 
 namespace poponnx {
 
-bool Op::modifies(InIndex) const {
-  // default for ops is: No, it does not modify the input
-  return false;
-}
-
-bool Op::isLossOp() const { return false; }
-
-std::unique_ptr<Op> Op::clone() const {
-  throw error("No clone implemented for " + op_type());
-}
-
 GradNonGradPair::GradNonGradPair(Op *g_, Op *ng_) : grad(g_), nongrad(ng_) {}
 
 GradNonGradPair::GradNonGradPair() : GradNonGradPair(nullptr, nullptr) {}
 
-onnx::ModelProto Ir::getModel() const { return onnxModel; }
-
-TensorId TensorIndexMap::id(int index) const { return tensor(index)->id; }
+onnx::ModelProto Ir::getModel() const { return *onnxModel; }
 
 std::vector<Tensor *> Ir::optimizerTensors() const {
   std::vector<Tensor *> optTensors;
@@ -103,20 +77,6 @@ void Ir::updateOptimizer(const Optimizer *newOptimizer) {
   optimizer->resetTensorDatas(this);
 }
 
-std::vector<TensorId> TensorIndexMap::getSerialised() const {
-  int maxIndex = 0;
-  for (auto &ind_tensor : tensor_map) {
-    if (ind_tensor.first > maxIndex) {
-      maxIndex = ind_tensor.first;
-    }
-  }
-  std::vector<TensorId> serialised(maxIndex, "");
-  for (auto &ind_tensor : tensor_map) {
-    serialised[ind_tensor.first] = ind_tensor.second->id;
-  }
-  return serialised;
-}
-
 void Ir::eraseOp(OpId id) {
   auto found = ops.find(id);
   if (found == ops.end()) {
@@ -124,27 +84,6 @@ void Ir::eraseOp(OpId id) {
   }
   ops.erase(id);
 }
-
-// return a vector of 1 or several OpAndTensorIds for
-// obtaining the gradient of the inputs of this Op.
-// The Op in the OpAndTensorIds is the gradient op, and
-// the TensorIds are the input indices of input of this
-// Op for which the gradient is computed
-std::vector<std::unique_ptr<Op>> Op::getGradOps() {
-  throw error("Cannot get gradients for " + op_type());
-}
-
-bool TensorIndexMap::hasIndex(int index) const {
-  return tensor_map.find(index) != tensor_map.end();
-}
-
-void TensorIndexMap::setInfoIfIndex(const TensorInfo &info_, int index) {
-  if (hasIndex(index)) {
-    tensor(index)->info = info_;
-  }
-}
-
-void Op::setup() { throw error("No setup() for " + op_type()); }
 
 void Ir::exportDot(const std::string dotfn) const {
   std::ofstream strm;
@@ -160,11 +99,11 @@ void Ir::exportDot(const std::string dotfn) const {
     strm << "n_" << n->id << " [shape= \"box\", label=\"" << scheduleIndex
          << '.' << ' ' << n->op_type() << "\"];\n";
     ++scheduleIndex;
-    for (auto &ind_ten : n->input.tensorMap()) {
+    for (auto &ind_ten : n->input->tensorMap()) {
       strm << ind_ten.second->id << " -> n_" << n->id << ';' << '\n';
     }
 
-    for (auto &ind_ten : n->output.tensorMap()) {
+    for (auto &ind_ten : n->output->tensorMap()) {
       auto tenId = ind_ten.second->id;
       strm << "n_" << n->id << " -> " << tenId << ';' << '\n';
       TensorId possibleGradId = getGradId(tenId);
@@ -210,87 +149,6 @@ void Tensors::setConstIds(const std::vector<TensorId> &vals) {
 VectorAndSet::~VectorAndSet() = default;
 Ir::~Ir()                     = default;
 
-void TensorIndexMap::insert(int index, Tensor *ptensor) {
-  tensor_map[index] = ptensor;
-  auto found        = indices_map.find(ptensor);
-  if (found == indices_map.end()) {
-    indices_map[ptensor] = {index};
-  } else {
-    indices_map[ptensor].push_back(index);
-  }
-}
-
-void TensorIndexMap::reset(int index, Tensor *ptensor) {
-  auto previous = tensor_map[index];
-
-  tensor_map[index] = ptensor;
-
-  if (indices_map.find(ptensor) == indices_map.end()) {
-    indices_map[ptensor] = {};
-  }
-  indices_map[ptensor].push_back(index);
-
-  // clean up previous tensor
-  std::vector<int> newIndices;
-  for (auto &ind : indices_map[previous]) {
-    if (ind != index) {
-      newIndices.push_back(ind);
-    }
-  }
-  if (newIndices.size() != 0) {
-    indices_map[previous] = newIndices;
-  } else {
-    indices_map.erase(previous);
-  }
-}
-
-void TensorIndexMap::erase(int index) {
-  const auto tm_itr = tensor_map.find(index);
-
-  if (tm_itr != tensor_map.end()) {
-    const auto im_itr = indices_map.find(tm_itr->second);
-
-    auto &imv    = im_itr->second;
-    auto imv_itr = std::find(imv.begin(), imv.end(), index);
-
-    // Remove the index from indices_map.
-    if (imv_itr != imv.end()) {
-      imv.erase(imv_itr);
-    }
-
-    // If the Tensor has no indices, remove it from indices_map.
-    if (imv.empty()) {
-      indices_map.erase(im_itr);
-    }
-
-    // Remove the tensor from the tensor_map.
-    tensor_map.erase(tm_itr);
-  }
-}
-
-Tensor *TensorIndexMap::tensor(int index) { return tensor_map[index]; }
-
-const Tensor *TensorIndexMap::tensor(int index) const {
-  return tensor_map.at(index);
-}
-
-const std::vector<int> &TensorIndexMap::indices(Tensor *ptensor) const {
-  return indices_map.at(ptensor);
-}
-
-void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
-  Tensor *ptensor = pir->getTensors().get(tenId);
-  input.insert(inIndex, ptensor);
-  ptensor->consumers.increment(this);
-}
-
-void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
-  pir->getTensors().addActGrad(tenId);
-  Tensor *ptensor = pir->getTensors().get(tenId);
-  output.insert(outIndex, ptensor);
-  ptensor->setProducer(this);
-}
-
 Tensor *Tensors::get(TensorId tenId) const {
   auto found = M.find(tenId);
   if (found == M.end()) {
@@ -300,54 +158,6 @@ Tensor *Tensors::get(TensorId tenId) const {
 }
 
 // poponnx streams and prints are "impolite" (will not add new line at end)
-
-void Op::append(std::stringstream &ss) const {
-  appendIO(ss);
-  ss << '\n';
-  appendMore(ss);
-}
-
-void TensorIndexMap::append(std::stringstream &ss,
-                            std::string prefix,
-                            int max_id_length) const {
-  int index = 0;
-
-  for (auto &index_tensor : tensor_map) {
-    ss << prefix << '@' << index_tensor.first << ':' << ' '
-       << padded(index_tensor.second->id, max_id_length + 1)
-
-       << ' ' << padded(index_tensor.second->tensor_type(), 9);
-    if (index_tensor.second->info.isSet()) {
-      ss << ' ';
-      index_tensor.second->info.append(ss);
-    }
-
-    ++index;
-    if (index != tensor_map.size()) {
-      ss << '\n';
-    }
-  }
-}
-
-int TensorIndexMap::maxIdLength() const {
-  int max_id_length = 0;
-  for (const auto &tensor_indices : indicesMap()) {
-    max_id_length = std::max(max_id_length,
-                             static_cast<int>(tensor_indices.first->id.size()));
-  }
-  return max_id_length;
-}
-
-void Op::appendIO(std::stringstream &ss) const {
-  static std::string tab = "    ";
-  ss << '\n' << "Op " << id << " of type " << op_type() << '\n';
-  ss << tab << "inputs" << '\n';
-
-  int max_id_length = std::max(input.maxIdLength(), output.maxIdLength());
-  input.append(ss, tab + tab, max_id_length);
-  ss << '\n' << tab << "outputs" << '\n';
-  output.append(ss, tab + tab, max_id_length);
-}
 
 VectorAndSet::VectorAndSet() {}
 
@@ -372,7 +182,7 @@ void VectorAndSet::reset(const std::vector<std::string> &vals) {
 
 void Ir::confirmNoReservedIds() const {
 
-  auto &onnxGraph = onnxModel.graph();
+  auto &onnxGraph = onnxModel->graph();
 
   for (const auto &in_ : onnxGraph.input()) {
     confirmNonReservedId(in_.name());
@@ -391,7 +201,7 @@ void Ir::confirmNoReservedIds() const {
 // where some initializers are not used :
 // https://github.com/pytorch/pytorch/issues/13552
 void Ir::setAllNodeInputsMap() {
-  for (auto &node : onnxModel.graph().node()) {
+  for (auto &node : onnxModel->graph().node()) {
     for (auto &name : node.input()) {
       allNodeInputsMap.insert(name);
     }
@@ -426,7 +236,7 @@ void Ir::prepare(const IrBundle &gb) {
   earlyInfo   = gb.earlyInfo;
   patterns    = gb.patterns;
 
-  onnxModel = gb.modelProto;
+  onnxModel.reset(new onnx::ModelProto(gb.modelProto));
 
   enableTransform(Recompute::id(), userOptions.enableRecomputation);
 
@@ -446,7 +256,7 @@ void Ir::prepare(const IrBundle &gb) {
 
   confirmNoReservedIds();
   setAllNodeInputsMap();
-  auto &onnxGraph = onnxModel.graph();
+  auto &onnxGraph = onnxModel->graph();
   std::set<TensorId> onnxInitializers;
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();
@@ -570,7 +380,7 @@ Ir::getLiveSets(const std::vector<Op *> &topoOps) const {
     waiting[op]  = {};
   }
   for (Op *op : topoOps) {
-    for (auto t_inds : op->input.indicesMap()) {
+    for (auto t_inds : op->input->indicesMap()) {
       Tensor *tensor = t_inds.first;
       if (tensor->hasProducer()) {
         Op *prod = tensor->getProducer();
@@ -603,14 +413,6 @@ Ir::getLiveSets(const std::vector<Op *> &topoOps) const {
     liveSets.push_back(live);
   }
   return liveSets;
-}
-
-int64_t Op::memOfOutputs() const {
-  int64_t mem = 0;
-  for (auto &t_inds : output.indicesMap()) {
-    mem += t_inds.first->info.nbytes();
-  }
-  return mem;
 }
 
 void Tensors::append(std::stringstream &ss) const {
@@ -718,8 +520,6 @@ std::vector<Op *> Ir::opsOfType(OpType opType) {
   return typedOps;
 }
 
-int TensorIndexMap::n() const { return static_cast<int>(tensor_map.size()); }
-
 bool Ir::isAnchored(TensorId tenId) { return dataFlow.isAnchored(tenId); }
 
 const std::vector<std::string> &VectorAndSet::v() const { return v_vals; }
@@ -734,7 +534,7 @@ void Ir::confirmConstIds() const {
 }
 
 void Ir::constructForwards() {
-  auto &onnxGraph = onnxModel.graph();
+  auto &onnxGraph = onnxModel->graph();
   auto &onnxNodes = onnxGraph.node();
   for (const auto &node : onnxNodes) {
     Op *op = growFromNode(node);
@@ -806,25 +606,6 @@ void Ir::confirmNonReservedId(TensorId tenId) const {
   }
 }
 
-TensorId getGradId(TensorId id) { return reservedGradientPrefix() + id; }
-
-TensorId getRecompId(TensorId id) { return reservedRecomputePrefix() + id; }
-
-TensorId getNonGradId(TensorId id) {
-  return id.substr(reservedGradientPrefix().size());
-}
-
-TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
-  // we don't need the name of the tensor which this is an edge-grad of,
-  // the edge-gradient is uniquely defined by the the edge it flows on
-  // in the forward pass (input at 'index' to 'opId')
-  (void)tenId;
-  std::stringstream ss;
-  ss << reservedGradientPrefix() << opId << '_' << index;
-  TensorId edgeGradId = ss.str();
-  return edgeGradId;
-}
-
 void Tensors::remove(TensorId id) { M.erase(id); }
 
 bool Tensors::contains(TensorId id) const { return M.find(id) != M.end(); }
@@ -889,20 +670,20 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         switch (type) {
         //  (1) the INPUT at index 'indexFwd' of nonGradOp
         case GradOpInType::IN: {
-          m_inputs[indexGrad] = nonGradOp->input.tensor(indexFwd)->id;
+          m_inputs[indexGrad] = nonGradOp->input->tensor(indexFwd)->id;
           break;
         }
 
         //  (2) the OUTPUT at index 'indexFwd' of nonGradOp
         case GradOpInType::OUT: {
-          m_inputs[indexGrad] = nonGradOp->output.tensor(indexFwd)->id;
+          m_inputs[indexGrad] = nonGradOp->output->tensor(indexFwd)->id;
           break;
         }
 
         //  (3) the GRADIENT of the OUTPUT
         //      at index 'indexFwd' of nonGradOp.
         case GradOpInType::GRADOUT: {
-          if (!nonGradOp->output.hasIndex(indexFwd)) {
+          if (!nonGradOp->output->hasIndex(indexFwd)) {
             std::stringstream ss;
             ss << "No gradient for non-grad-op " << nonGradOp->str()
                << " at index " << indexFwd << '.'
@@ -912,7 +693,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
             throw error(ss.str());
           }
           m_inputs[indexGrad] =
-              getGradId(nonGradOp->output.tensor(indexFwd)->id);
+              getGradId(nonGradOp->output->tensor(indexFwd)->id);
           break;
         }
         }
@@ -927,7 +708,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
       for (auto out_in : gradOp->gradOutToNonGradIn()) {
         int gradOut    = out_in.first;
         int nonGradIn  = out_in.second;
-        TensorId inId  = nonGradOp->input.tensor(nonGradIn)->id;
+        TensorId inId  = nonGradOp->input->tensor(nonGradIn)->id;
         TensorId outId = getEdgeGradId(inId, nonGradOpId, nonGradIn);
         if (v_outputs.size() < gradOut + 1) {
           v_outputs.resize(gradOut + 1, "");
@@ -944,36 +725,6 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
   }
 
   return gradOps;
-}
-
-int Op::getNonGradInIndex(int gradOpOutIndex) const {
-  return gradOutToNonGradIn().at(gradOpOutIndex);
-}
-
-GradInOutMapper::GradInOutMapper(int iG, int iNG, GradOpInType t)
-    : iGrad(iG), iNonGrad(iNG), type(t) {}
-
-bool GradInOutMapper::operator==(const GradInOutMapper &rhs) const {
-  return (type == rhs.type) && (iGrad == rhs.iGrad) &&
-         (iNonGrad == rhs.iNonGrad);
-}
-
-const std::vector<GradInOutMapper> &Op::gradInputInfo() const {
-  throw error("Op " + op_type() + " cannot get `grad input info'");
-}
-
-const std::map<int, int> &Op::gradOutToNonGradIn() const {
-  throw error("Op " + op_type() + " cannot get `grad out to non grad in'");
-}
-
-bool Op::hasInplaceVariant(InIndex) const { return false; }
-
-std::unique_ptr<Op> Op::getInplaceVariant(InIndex) {
-  throw error("Op " + op_type() + "cannot get an inplace Op");
-}
-
-bool Op::readyToCreateGradients(std::set<int> &s) const {
-  return s.size() == nPathsToLoss();
 }
 
 void TensorGradRegistry::insert(Tensor *nonGrad, Tensor *grad) {
@@ -1002,7 +753,7 @@ void OpGradRegistry::insert(Op *nonGrad, int index) {
   }
   partial[nonGrad].insert(index);
   // probably just checks that the size of partial is
-  // nonGrad->output.n(), but maybe not.
+  // nonGrad->output->n(), but maybe not.
   if (nonGrad->readyToCreateGradients(partial[nonGrad])) {
     complete.push_back(nonGrad);
     partial.erase(nonGrad);
@@ -1056,7 +807,7 @@ void Ir::updateVertices() {
 
     // source 2 : if a producer of the op's
     // inputs is BWD, then it must be BWD too.
-    for (auto tensor_indices : op->input.indicesMap()) {
+    for (auto tensor_indices : op->input->indicesMap()) {
       Tensor *inTensor = tensor_indices.first;
       if (inTensor->hasProducer()) {
         if (inTensor->getProducer()->getPhase() == Phase::BWD) {
@@ -1067,7 +818,7 @@ void Ir::updateVertices() {
 
     // source 3 : if any of the consumers of the
     // op's outputs is FWD, then it must be FWD too.
-    for (auto tensor_indices : op->output.indicesMap()) {
+    for (auto tensor_indices : op->output->indicesMap()) {
       Tensor *outTensor = tensor_indices.first;
       for (Op *consumer : outTensor->consumers.getOps()) {
         if (consumer->getPhase() == Phase::FWD) {
@@ -1083,17 +834,17 @@ void Ir::updateVertices() {
     }
 
     // source 5: if the output is "finalLoss", then it is LOSS
-    if (op->output.hasIndex(0) && op->output.id(0) == getFinalLossId()) {
+    if (op->output->hasIndex(0) && op->output->id(0) == getFinalLossId()) {
       suggestions.push_back(Phase::LOSS);
     }
 
     // source 6 : if an input or an output has a gradient
     // or recompute prefix, it is BWD
     std::vector<TensorId> insNouts;
-    for (auto tensor_indices : op->output.indicesMap()) {
+    for (auto tensor_indices : op->output->indicesMap()) {
       insNouts.push_back(tensor_indices.first->id);
     }
-    for (auto tensor_indices : op->input.indicesMap()) {
+    for (auto tensor_indices : op->input->indicesMap()) {
       insNouts.push_back(tensor_indices.first->id);
     }
     for (auto id : insNouts) {
@@ -1133,11 +884,11 @@ void Ir::updateVertices() {
     Op *op = id_op.second.get();
     std::vector<Tensor *> associated_tensors;
 
-    for (auto tensor_indices : op->output.indicesMap()) {
+    for (auto tensor_indices : op->output->indicesMap()) {
       associated_tensors.push_back(tensor_indices.first);
     }
 
-    for (auto tensor_indices : op->input.indicesMap()) {
+    for (auto tensor_indices : op->input->indicesMap()) {
       associated_tensors.push_back(tensor_indices.first);
     }
 
@@ -1174,10 +925,10 @@ void Ir::updateVertices() {
   for (auto &id_op : ops) {
     Op *op = id_op.second.get();
     op->setPathToBwd(PathToBwd::NO);
-    for (auto &tensor_indices : op->input.indicesMap()) {
+    for (auto &tensor_indices : op->input->indicesMap()) {
       tensor_indices.first->setPathToBwd(PathToBwd::NO);
     }
-    for (auto &tensor_indices : op->output.indicesMap()) {
+    for (auto &tensor_indices : op->output->indicesMap()) {
       tensor_indices.first->setPathToBwd(PathToBwd::NO);
     }
   }
@@ -1197,7 +948,7 @@ void Ir::updateVertices() {
     Op *onPath = v_op_front.back();
     v_op_front.resize(v_op_front.size() - 1);
     s_op_front.erase(onPath);
-    for (auto &tensor_indices : onPath->input.indicesMap()) {
+    for (auto &tensor_indices : onPath->input->indicesMap()) {
       Tensor *tOnPath = tensor_indices.first;
       tOnPath->setPathToBwd(PathToBwd::YES);
       if (tOnPath->hasProducer()) {
@@ -1225,10 +976,10 @@ void Ir::setNPathsToLoss() {
   for (auto &id_op : ops) {
     Op *op = id_op.second.get();
     op->setNPathsToLossToZero();
-    for (auto t_inds : op->input.indicesMap()) {
+    for (auto t_inds : op->input->indicesMap()) {
       t_inds.first->setNPathsToLossToZero();
     }
-    for (auto t_inds : op->output.indicesMap()) {
+    for (auto t_inds : op->output->indicesMap()) {
       t_inds.first->setNPathsToLossToZero();
     }
   }
@@ -1239,7 +990,7 @@ void Ir::setNPathsToLoss() {
   while (opFront.size() != 0) {
     Op *op = opFront.back();
     opFront.resize(opFront.size() - 1);
-    for (auto &ind_ten : op->input.tensorMap()) {
+    for (auto &ind_ten : op->input->tensorMap()) {
       auto tensor = ind_ten.second;
       tensor->incrNPathsToLoss();
       if (tensorsSeen.count(tensor) == 0) {
@@ -1277,13 +1028,13 @@ void Ir::constructBackwards() {
 
   // signal that a grad-op has created edge-gradients
   auto registerOpGrads = [&tensor_grad_registry](Op *gradOp, Op *nonGradOp) {
-    for (auto &index_tensor : gradOp->output.tensorMap()) {
+    for (auto &index_tensor : gradOp->output->tensorMap()) {
       int opOutInd     = index_tensor.first;
       Tensor *partGrad = index_tensor.second;
       // what input index of nonGradOp does the
       // edge-gradient correspond to?
       int nonGradInInd      = gradOp->getNonGradInIndex(opOutInd);
-      Tensor *nonGradTensor = nonGradOp->input.tensor(nonGradInInd);
+      Tensor *nonGradTensor = nonGradOp->input->tensor(nonGradInInd);
       tensor_grad_registry.insert(nonGradTensor, partGrad);
     }
   };
@@ -1295,7 +1046,7 @@ void Ir::constructBackwards() {
     if (nonGrad->hasProducer()) {
       Op *producer = nonGrad->getProducer();
       // the index at which nonGrad was produced
-      int index = producer->output.indices(nonGrad).at(0);
+      int index = producer->output->indices(nonGrad).at(0);
       op_grad_registry.insert(producer, index);
     }
   };
@@ -1329,7 +1080,7 @@ void Ir::constructBackwards() {
 
       // if sumOp creates the gradient of an activation tensor,
       case TensorType::ActGrad: {
-        registerTensorGrad(sumOp->output.tensor(0));
+        registerTensorGrad(sumOp->output->tensor(0));
         break;
       }
       case TensorType::Variable: {
@@ -1401,7 +1152,7 @@ void Ir::setVarUpdateCons() {
     // is the updater. It is the void Op
     Op *varupdater = nullptr;
     for (Op *consumer : var->consumers.getOps()) {
-      if (consumer->output.n() == 0) {
+      if (consumer->output->n() == 0) {
         varupdater = consumer;
         break;
       }
@@ -1417,18 +1168,6 @@ void Ir::setVarUpdateCons() {
       }
     }
   }
-}
-
-const std::map<int, Tensor *> &TensorIndexMap::tensorMap() const {
-  return tensor_map;
-}
-
-std::map<int, TensorId> TensorIndexMap::tensorIdMap() const {
-  std::map<int, TensorId> M;
-  for (auto &index_tensor : tensorMap()) {
-    M[index_tensor.first] = index_tensor.second->id;
-  }
-  return M;
 }
 
 Op *Ir::growFromNode(const Node &node) {
@@ -1486,7 +1225,7 @@ void Ir::growFinalLoss() {
   std::vector<TensorId> inputs;
   inputs.reserve(lossOps.size());
   for (auto &op : lossOps) {
-    inputs.push_back(op->output.tensor(0)->id);
+    inputs.push_back(op->output->tensor(0)->id);
   }
   std::vector<TensorId> outputs{getFinalLossId()};
   connectInputs(InputVecWrapper(inputs), opId);
@@ -1548,162 +1287,11 @@ void Ir::append(std::stringstream &ss) {
   }
 }
 
-Op::Op(const Op &op)
-    : Vertex(op), priority(op.priority), opType(op.opType), pir(op.pir),
-      id(pir->getAndIncrOpsCounter()), nAtts(op.nAtts), p_op_type(op.p_op_type),
-      p_op_domain(op.p_op_domain) {
-  // input, output: empty.
-}
-
-const std::string &Op::domain() { return *p_op_domain; }
-
-const std::string &Op::op_type() const { return *p_op_type; }
-
-OpConstructorBundle::OpConstructorBundle(std::string op_type_,
-                                         Ir *pir_,
-                                         Attributes atts_,
-                                         std::string domain_)
-    : op_type(op_type_), pir(pir_), atts(atts_), domain(domain_) {}
-
-Op::Op(const OpConstructorBundle &b)
-    : // opType (from string op_type)
-      opType(getOpTypes().get(b.op_type, b.domain)),
-      // the Ir
-      pir(b.pir),
-      // the id
-      id(pir->getAndIncrOpsCounter()),
-      // the Attributes
-      nAtts(b.atts),
-      // opType
-      p_op_type(&getOpTypes().getName(opType)),
-      // domain
-      p_op_domain(&getOpTypes().getDomain(opType)) {}
-
-Op::Op(const Node &node, Ir *pg)
-    : // We set opType, looked up in a map from the string node.op_type()
-      opType(getOpTypes().get(node.op_type(), node.domain())),
-      // pointer to the Ir containing this node
-      pir(pg), id(pir->getAndIncrOpsCounter()),
-      // poponnx::Attributes constructed from contained of onnx::Attribute s
-      nAtts(node.attribute()),
-      // We set the pointer to the string version of opType, in another map
-      p_op_type(&getOpTypes().getName(opType)),
-      // And finally we strip off the domain of the Node
-      p_op_domain(&getOpTypes().getDomain(opType)) {}
-
-std::unique_ptr<Op> Ir::addOp(const Node &node) {
-  using pOp = std::unique_ptr<Op>;
-  switch (getOpTypes().get(node.op_type(), node.domain())) {
-  case OpType::ADD: {
-    return pOp(new AddOp(node, this));
-  }
-  case OpType::AVERAGEPOOL: {
-    return pOp(new AveragePoolOp(node, this));
-  }
-  case OpType::CONSTANT: {
-    throw error("ILE. Constant Ops are not to be added");
-  }
-  case OpType::CONV: {
-    return pOp(new ConvOp(node, this));
-  }
-  case OpType::IDENTITY: {
-    return pOp(new IdentityOp(node, this));
-  }
-  case OpType::NEGATE: {
-    return pOp(new NegateOp(node, this));
-  }
-  case OpType::SOFTMAX: {
-    return pOp(new SoftmaxOp(node, this));
-  }
-  case OpType::MAXPOOL: {
-    return pOp(new MaxPoolOp(node, this));
-  }
-  case OpType::MUL: {
-    return pOp(new MulOp(node, this));
-  }
-  case OpType::PAD: {
-    return pOp(new PadOp(node, this));
-  }
-  case OpType::RECIPROCAL: {
-    return pOp(new ReciprocalOp(node, this));
-  }
-  case OpType::REDUCESUM: {
-    return pOp(new ReduceSumOp(node, this));
-  }
-  case OpType::RELU: {
-    return pOp(new ReluOp(node, this));
-  }
-  case OpType::SUBTRACT: {
-    return pOp(new SubtractOp(node, this));
-  }
-  case OpType::SUM: {
-    return pOp(new SumOp(node, this));
-  }
-  case OpType::SQUEEZE: {
-    return pOp(new SqueezeOp(node, this));
-  }
-  case OpType::MATMUL: {
-    return pOp(new MatMulOp(node, this));
-  }
-  case OpType::ADDARG0GRAD:
-  case OpType::ADDARG1GRAD:
-  case OpType::ADDBIASBIASGRAD:
-  case OpType::ADDBIASDATAGRAD:
-  case OpType::SQUEEZEGRAD:
-  case OpType::RECIPROCALGRAD:
-  case OpType::REDUCESUMGRAD:
-  case OpType::RELUGRAD:
-  case OpType::AVERAGEPOOLGRAD:
-  case OpType::CONVDATAGRAD:
-  case OpType::CONVWEIGHTSGRAD:
-  case OpType::NEGATEGRAD:
-  case OpType::IDENTITYGRAD:
-  case OpType::NLLGRAD:
-  case OpType::L1GRAD:
-  case OpType::MAXPOOLGRAD:
-  case OpType::MULARG0GRAD:
-  case OpType::MULARG1GRAD:
-  case OpType::SOFTMAXGRAD:
-  case OpType::SGDVARUPDATE:
-  case OpType::SQUARE:
-  case OpType::CONSTSGDVARUPDATE:
-  case OpType::SUBTRACTARG0GRAD:
-  case OpType::SUBTRACTARG1GRAD:
-  case OpType::MATMULLHSGRAD:
-  case OpType::MATMULRHSGRAD:
-    throw error("Gradient Ops not constructable from Node");
-
-  case OpType::NLL:
-  case OpType::L1:
-    throw error("Loss Ops not constructable from Node");
-
-  case OpType::ADDBIAS:
-  case OpType::RELUINPLACE:
-  case OpType::SOFTMAXGRADDIRECT:
-    throw error("Non-ONNX Ops not constructable from Node");
-
-  default: { throw error("No class for " + node.op_type()); }
-  }
-}
-
-std::string Op::str() const {
-  return std::to_string(id) + " (" + op_type() + ')';
-}
-
-Tensor *Op::inTensor(InIndex index) { return input.tensor(index); }
-const Tensor *Op::inTensor(InIndex index) const { return input.tensor(index); }
-Tensor *Op::outTensor(OutIndex index) { return output.tensor(index); }
+Tensor *Op::inTensor(InIndex index) { return input->tensor(index); }
+const Tensor *Op::inTensor(InIndex index) const { return input->tensor(index); }
+Tensor *Op::outTensor(OutIndex index) { return output->tensor(index); }
 const Tensor *Op::outTensor(OutIndex index) const {
-  return output.tensor(index);
-}
-
-TensorInfo &Op::inInfo(InIndex index) { return inTensor(index)->info; }
-const TensorInfo &Op::inInfo(InIndex index) const {
-  return inTensor(index)->info;
-}
-TensorInfo &Op::outInfo(OutIndex index) { return outTensor(index)->info; }
-const TensorInfo &Op::outInfo(OutIndex index) const {
-  return outTensor(index)->info;
+  return output->tensor(index);
 }
 
 const Shape &Op::inShape(InIndex index) {
@@ -1720,7 +1308,7 @@ int Op::outRank(InIndex index) { return outTensor(index)->info.rank(); }
 std::vector<GradNonGradPair> Ir::growLossGradients() {
   std::vector<GradNonGradPair> pairs;
   if (ops.find(finalLossId) != ops.end()) {
-    for (auto &t_inds : getOp(finalLossId)->input.indicesMap()) {
+    for (auto &t_inds : getOp(finalLossId)->input->indicesMap()) {
       Tensor *t  = t_inds.first;
       Op *lossOp = t->getProducer();
       for (Op *gradOp : growGradOps(lossOp)) {

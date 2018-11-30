@@ -3,6 +3,8 @@
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/matmulx.hpp>
 #include <poponnx/tensor.hpp>
+// #include <poponnx/tensorindex.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/util.hpp>
 
@@ -91,8 +93,7 @@ std::vector<std::size_t> MatMulOpx::getRhsInputCoallocShape() const {
 
 std::vector<std::size_t> MatMulOpx::getOutputShape() const {
   auto matmul = getMatMulOp();
-
-  return MatMulOpx::onnxShapeToPoplar(matmul->output.tensor(0)->info.shape());
+  return MatMulOpx::onnxShapeToPoplar(matmul->outInfo(0).shape());
 }
 
 void MatMulOpx::grow(poplar::program::Sequence &prog) const {
@@ -113,8 +114,7 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
                                          &dv_p->matmulCache  // cache
   );
 
-  insert(outId(0),
-         outTensor.reshape(matmul->output.tensor(0)->info.shape_szt()));
+  insert(outId(0), outTensor.reshape(matmul->outInfo(0).shape_szt()));
 }
 
 MatMulOp *MatMulOpx::getMatMulOp() const {

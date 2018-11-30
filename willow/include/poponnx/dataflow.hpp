@@ -1,8 +1,9 @@
 #ifndef GUARD_NEURALNET_DATAFLOW_HPP
 #define GUARD_NEURALNET_DATAFLOW_HPP
 
-#include <poponnx/dataflow.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <set>
+#include <vector>
+#include <poponnx/names.hpp>
 
 namespace poponnx {
 

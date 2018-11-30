@@ -3,6 +3,7 @@
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/opx.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 
 namespace poponnx {
 namespace popx {
@@ -43,12 +44,14 @@ void Opx::insert(TensorId id, const poplar::Tensor &tensor) const {
   dv_p->tensors.insert(id, tensor);
 }
 
-TensorId Opx::inId(InIndex index) const { return op_p->input.id(index); }
-TensorId Opx::outId(OutIndex index) const { return op_p->output.id(index); }
+TensorId Opx::inId(InIndex index) const { return op_p->input->id(index); }
+TensorId Opx::outId(OutIndex index) const { return op_p->output->id(index); }
 
-Tensor *Opx::inTensor(InIndex index) const { return op_p->input.tensor(index); }
+Tensor *Opx::inTensor(InIndex index) const {
+  return op_p->input->tensor(index);
+}
 Tensor *Opx::outTensor(OutIndex index) const {
-  return op_p->output.tensor(index);
+  return op_p->output->tensor(index);
 }
 
 const TensorInfo &Opx::inInfo(InIndex index) const {

@@ -2,6 +2,7 @@
 #define GUARD_PBWRAP_GRAPH_HPP
 
 #include <map>
+#include <ostream>
 #include <vector>
 #include <poponnx/names.hpp>
 

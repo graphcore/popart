@@ -2,8 +2,10 @@
 #include <poponnx/intervals.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensornames.hpp>
 
 #include <poponnx/transforms/recompute.hpp>
 
@@ -20,7 +22,7 @@ Op *growRecomputeOp(Ir &ir, Op *oriOp, const std::set<Op *> &checkpoints) {
 
   // set inputs and outputs of  the new Op.
   std::map<int, TensorId> inputs;
-  for (auto &index_tensor : oriOp->input.tensorMap()) {
+  for (auto &index_tensor : oriOp->input->tensorMap()) {
     int index      = index_tensor.first;
     Tensor *tensor = index_tensor.second;
     // if the tensor was produced by a non-checkpointed op,
@@ -35,7 +37,7 @@ Op *growRecomputeOp(Ir &ir, Op *oriOp, const std::set<Op *> &checkpoints) {
   ir.connectInputsFromInputMapWrapper(InputMapWrapper(inputs), rcId);
 
   std::map<int, TensorId> outputs;
-  for (auto &index_tensor : oriOp->output.tensorMap()) {
+  for (auto &index_tensor : oriOp->output->tensorMap()) {
     int index            = index_tensor.first;
     const Tensor *tensor = index_tensor.second;
     outputs[index]       = getRecompId(tensor->id);
@@ -48,15 +50,15 @@ Op *growRecomputeOp(Ir &ir, Op *oriOp, const std::set<Op *> &checkpoints) {
   rcOp->priority = std::numeric_limits<double>::lowest();
 
   // oriOp's outputs should not be consumed by grad op:
-  for (auto &ind_ten : oriOp->output.tensorMap()) {
+  for (auto &ind_ten : oriOp->output->tensorMap()) {
     Tensor *oriTen = ind_ten.second;
     Tensor *recTen = ir.getTensors().get(getRecompId(oriTen->id));
     for (auto &con : oriTen->consumers.getOps()) {
       if (con->getPhase() == Phase::BWD) {
-        for (auto &con_ind_ten : con->input.tensorMap()) {
+        for (auto &con_ind_ten : con->input->tensorMap()) {
           int gradIn = con_ind_ten.first;
           if (con_ind_ten.second == oriTen) {
-            con->input.reset(gradIn, recTen);
+            con->input->reset(gradIn, recTen);
             recTen->consumers.increment(con);
             oriTen->consumers.decrement(con);
           }

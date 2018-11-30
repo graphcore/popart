@@ -6,11 +6,13 @@
 #include <poponnx/dataflow.hpp>
 #include <poponnx/earlyinfo.hpp>
 #include <poponnx/filereader.hpp>
+#include <poponnx/ir.hpp>
 #include <poponnx/op/l1.hpp>
 #include <poponnx/op/nll.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorinfo.hpp>
+#include <poponnx/tensornames.hpp>
 
 using namespace poponnx;
 
@@ -229,9 +231,9 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
   // ConvOp should only have 2 inputs
   auto input1Tensor = ir.getTensors().get(input1);
   auto convOp       = input1Tensor->consumers.getOps()[0];
-  BOOST_CHECK(convOp->input.n() == 2);
+  BOOST_CHECK(convOp->input->n() == 2);
 
-  auto bias = convOp->output.tensor(0)->consumers.getOps()[0];
+  auto bias = convOp->output->tensor(0)->consumers.getOps()[0];
   BOOST_CHECK(bias->op_type() == "AddBias");
 
   // Input3 should be consumed only by the AddBiasOp

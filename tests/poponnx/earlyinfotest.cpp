@@ -1,9 +1,10 @@
-
 #define BOOST_TEST_MODULE EarlyUnfoTest
 
 #include <boost/test/unit_test.hpp>
 
-#include <poponnx/ir.hpp>
+#include <poponnx/earlyinfo.hpp>
+#include <poponnx/error.hpp>
+#include <poponnx/tensorinfo.hpp>
 
 using namespace poponnx;
 

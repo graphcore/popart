@@ -3,6 +3,7 @@
 #include <poponnx/op/varupdate.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensornames.hpp>
 
 namespace poponnx {
 
@@ -23,7 +24,7 @@ std::unique_ptr<Optimizer> SGD::clone() const {
 }
 
 std::map<TensorId, TensorInfo> SGD::tensorInfos() const {
-  return {{getLearningRateId(), {TP::FLOAT, {}}}};
+  return {{getLearningRateId(), {DataType::FLOAT, {}}}};
 }
 
 std::unique_ptr<Op> SGD::createOp(TensorId varId, Ir *pir) const {

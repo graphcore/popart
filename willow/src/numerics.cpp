@@ -61,7 +61,7 @@ NumericsReport::NumericsReport(std::string AStarts, // A starts
       }
     }
 
-    if (cv_datas[AStarts].info.dataType() == TP::FLOAT) {
+    if (cv_datas[AStarts].info.dataType() == DataType::FLOAT) {
       NumericsTracker<float> tracker;
       for (unsigned i = 0; i < cv_datas[AStarts].info.nelms(); ++i) {
         tracker.insert(static_cast<const float *>(cv_datas[AStarts].data)[i],

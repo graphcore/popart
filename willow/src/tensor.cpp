@@ -2,10 +2,11 @@
 #include <cstring>
 
 #include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
 #include <poponnx/onnxutil.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/util.hpp>
 
 namespace poponnx {
@@ -28,11 +29,11 @@ void Consumers::takeFrom(Consumers &giver) {
     topoCons[op]    = giver.topoCons[op];
 
     // set the input of op to be this->tensorConsumed
-    for (auto index_tensor : op->input.tensorMap()) {
+    for (auto index_tensor : op->input->tensorMap()) {
       InIndex inIndex = index_tensor.first;
       Tensor *tensor  = index_tensor.second;
       if (tensor == giver.tensorConsumed) {
-        op->input.reset(inIndex, tensorConsumed);
+        op->input->reset(inIndex, tensorConsumed);
       }
     }
   }
