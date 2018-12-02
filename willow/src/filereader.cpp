@@ -1,3 +1,4 @@
+#define BOOST_ERROR_CODE_HEADER_ONLY
 #include <boost/filesystem.hpp>
 #include <fstream>
 #include <sstream>

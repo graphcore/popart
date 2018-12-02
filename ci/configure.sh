@@ -17,6 +17,15 @@ else
   PYBIN=python3
 fi
 
+if [ $# -gt 1 ]
+then
+  echo "Building docs"
+  DOCS="-DPOPONNX_CMAKE_ARGS=-DBUILD_DOCS=ON"
+else
+  echo "Not building docs"
+  DOCS=""
+fi
+
 case ${PYBIN} in
 python2)
   PYPKG="python@2"
@@ -70,8 +79,8 @@ NUM_PROCS=$(get_processor_count)
 POPLAR_PATH=$(python -c "import os.path; print(os.path.realpath('../../external/poplar-install/'))")
 
 # Configure cmake
-#CC=clang CXX=clang++   cmake . -DPOPLAR_INSTALL_DIR=${POPLAR_PATH} -DEXTERNAL_PROJECT_NUM_JOBS=${NUM_PROCS} -DPOPONNX_CMAKE_ARGS=-DBUILD_DOCS=ON
-cmake . -DPOPLAR_INSTALL_DIR=${POPLAR_PATH} -DEXTERNAL_PROJECT_NUM_JOBS=${NUM_PROCS} -DPOPONNX_CMAKE_ARGS=-DBUILD_DOCS=ON
+#CC=clang CXX=clang++   cmake . -DPOPLAR_INSTALL_DIR=${POPLAR_PATH} -DEXTERNAL_PROJECT_NUM_JOBS=${NUM_PROCS} ${DOCS}
+cmake . -DPOPLAR_INSTALL_DIR=${POPLAR_PATH} -DEXTERNAL_PROJECT_NUM_JOBS=${NUM_PROCS} ${DOCS}
 
 echo "Done"
 
