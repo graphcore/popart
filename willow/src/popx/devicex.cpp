@@ -17,6 +17,7 @@
 #include <poponnx/popx/op/addx.hpp>
 #include <poponnx/popx/op/averagepoolx.hpp>
 #include <poponnx/popx/op/convx.hpp>
+#include <poponnx/popx/op/divx.hpp>
 #include <poponnx/popx/op/identityx.hpp>
 #include <poponnx/popx/op/l1x.hpp>
 #include <poponnx/popx/op/matmulx.hpp>
@@ -460,6 +461,20 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::CONSTSGDVARUPDATE: {
     return std::unique_ptr<Opx>(new ConstSGDVarUpdateOpx(op, this));
+  }
+
+  case OpType::DIV: {
+    return std::unique_ptr<Opx>(new DivOpx(op, this));
+  }
+
+  case OpType::DIVARG0GRAD: {
+    throw error("DivArg0GradOp should be optimised out, \"DivArg0GradOp\" "
+                "pattern is required");
+  }
+
+  case OpType::DIVARG1GRAD: {
+    throw error("DivArg1GradOp should be optimised out, \"DivArg1GradOp\" "
+                "pattern is required");
   }
 
   case OpType::IDENTITY: {

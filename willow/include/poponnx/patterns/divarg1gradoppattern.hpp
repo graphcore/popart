@@ -1,12 +1,15 @@
-#ifndef GUARD_NEURALNET_RECIPROCAL_GRAD_OP_PATTERN_HPP
-#define GUARD_NEURALNET_RECIPROCAL_GRAD_OP_PATTERN_HPP
+#ifndef GUARD_NEURALNET_DIV_ARG_1_GRAD_OP_PATTERN_HPP
+#define GUARD_NEURALNET_DIV_ARG_1_GRAD_OP_PATTERN_HPP
 
 #include <poponnx/patterns/patterns.hpp>
 
 namespace poponnx {
 
-// Replace a ReciprocalGradOp with [Square] -> [Reciprocal] -> [Negate]
-class ReciprocalGradOpPattern : public Pattern {
+// Replace a DivArg1GradOp with
+// (fwd_in1) -> [Square] -> (tmp1)
+// {(gradOut), (fwd_in0)} -> [Mul] -> (tmp2)
+// {(tmp2), (tmp1)} -> [Div] -> [Negate] -> [ReduceSum]
+class DivArg1GradOpPattern : public Pattern {
 public:
   // Does op at the root of the
   // pattern make a match?

@@ -126,6 +126,12 @@ public:
   bool isReciprocalGradOpEnabled() {
     return isPatternEnabled(PatternType::RECIPROCALGRADOP);
   }
+  bool isDivArg0GradOpEnabled() {
+    return isPatternEnabled(PatternType::DIVARG0GRADOP);
+  }
+  bool isDivArg1GradOpEnabled() {
+    return isPatternEnabled(PatternType::DIVARG1GRADOP);
+  }
   bool isInPlace0Enabled() { return isPatternEnabled(PatternType::INPLACE0); }
 
   // The following methods are fluent allow you to
@@ -154,6 +160,12 @@ public:
   }
   Patterns &enableReciprocalGradOp(bool v) {
     return enablePattern(PatternType::RECIPROCALGRADOP, v);
+  }
+  Patterns &enableDivArg0GradOp(bool v) {
+    return enablePattern(PatternType::DIVARG0GRADOP, v);
+  }
+  Patterns &enableDivArg1GradOp(bool v) {
+    return enablePattern(PatternType::DIVARG1GRADOP, v);
   }
   Patterns &enableInPlace0(bool v) {
     return enablePattern(PatternType::INPLACE0, v);

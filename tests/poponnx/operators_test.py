@@ -30,9 +30,7 @@ def test_add(tmpdir):
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        outputdir=str(tmpdir))
+        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
 
     session.setDevice(tu.get_poplar_cpu_device())
     anchors = session.initAnchorArrays()
@@ -67,9 +65,7 @@ def test_convolution(tmpdir):
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        outputdir=str(tmpdir))
+        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
 
     session.setDevice(tu.get_poplar_cpu_device())
     anchors = session.initAnchorArrays()
@@ -114,9 +110,7 @@ def test_matmul(tmpdir):
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        outputdir=str(tmpdir))
+        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
 
     session.setDevice(tu.get_poplar_cpu_device())
     anchors = session.initAnchorArrays()
@@ -154,9 +148,7 @@ def test_averagepool(tmpdir):
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        outputdir=str(tmpdir))
+        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
 
     session.setDevice(tu.get_poplar_cpu_device())
     anchors = session.initAnchorArrays()
@@ -192,9 +184,7 @@ def test_maxpool(tmpdir):
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        outputdir=str(tmpdir))
+        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
 
     session.setDevice(tu.get_poplar_cpu_device())
     anchors = session.initAnchorArrays()
@@ -422,5 +412,74 @@ def test_reciprocal_grad(tmpdir):
 
     # compare results
     for key in [o, 'd__' + i1]:
+        print('Checking anchor %s ...' % (key, ))
+        assert np.allclose(anchors[key], reference_results[key])
+
+
+def test_div(tmpdir):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+    d2 = np.random.rand(4).astype(np.float32)
+
+    # create graph
+    test = tu.BasicSession(tmpdir)
+    i1 = test.add_input_tensor(d1)
+    i2 = test.add_input_tensor(d2)
+    o = test.builder.div([i1, i2])
+    test.builder.addOutputTensor(o)
+
+    test.passes.extend(["PreUniRepl"])
+
+    # run the poponnx session
+    anchors = test.run(o, [o], 'infer')
+
+    # create and run numpy reference
+    def numpy_reference(i1, i2):
+        outputs = {}
+        outputs[o] = i1 / i2
+        return outputs
+
+    reference_results = numpy_reference(d1, d2)
+
+    # compare results
+    for key in [o]:
+        print('Checking anchor %s ...' % (key, ))
+        assert np.array_equal(anchors[key], reference_results[key])
+
+
+def test_div_grad(tmpdir):
+    # create test data
+    d1 = np.random.rand(4, 1, 4).astype(np.float32)
+    d2 = np.random.rand(3, 1).astype(np.float32)
+
+    # create graph
+    test = tu.BasicSession(tmpdir)
+    i1 = test.add_input_tensor(d1)
+    i2 = test.add_input_tensor(d2)
+    o = test.builder.div([i1, i2])
+    test.builder.addOutputTensor(o)
+
+    test.passes.extend(["PreUniRepl", "DivArg0GradOp", "DivArg1GradOp"])
+
+    # run the poponnx session
+    anchors = test.run(o, [o, 'd__' + o, 'd__' + i1, 'd__' + i2], 'train')
+
+    # create and run torch reference
+    def torch_reference(d__o):
+        t1 = torch.tensor(d1, requires_grad=True)
+        t2 = torch.tensor(d2, requires_grad=True)
+        out = t1 / t2
+        out.backward(torch.tensor(d__o))
+
+        outputs = {}
+        outputs[o] = out.data.numpy()
+        outputs['d__' + i1] = t1.grad.data.numpy()
+        outputs['d__' + i2] = t2.grad.data.numpy()
+        return outputs
+
+    reference_results = torch_reference(anchors['d__' + o])
+
+    # compare results
+    for key in [o, 'd__' + i1, 'd__' + i2]:
         print('Checking anchor %s ...' % (key, ))
         assert np.allclose(anchors[key], reference_results[key])

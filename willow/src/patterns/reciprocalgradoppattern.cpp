@@ -47,7 +47,7 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
   ir->moveIntoIr(std::move(mul_op));
 
   // Remove the ReciprocalGradOp
-  disconnectOp(op);
+  op->disconnectAllTensors();
   ir->eraseOp(op->id);
 
   // Connect up the new ops
@@ -68,24 +68,6 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
   mul->connectOutTensor(0, output_tensor->id);
 
   return true;
-}
-
-void ReciprocalGradOpPattern::disconnectOp(Op *op) const {
-  std::vector<InIndex> inputs;
-  for (auto entry : op->input->tensorMap()) {
-    inputs.push_back(entry.first);
-    auto tensor = entry.second;
-    tensor->consumers.decrement(op);
-  }
-  op->input->clear();
-
-  std::vector<InIndex> outputs;
-  for (auto entry : op->output->tensorMap()) {
-    outputs.push_back(entry.first);
-    auto tensor = entry.second;
-    tensor->resetProducer(nullptr);
-  }
-  op->output->clear();
 }
 
 namespace {

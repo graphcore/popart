@@ -85,6 +85,8 @@ public:
 
   void connectOutTensor(OutIndex, TensorId);
 
+  void disconnectAllTensors();
+
   // might the input tensors be modified?
   bool mayModify(InIndex) const;
 

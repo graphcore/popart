@@ -6,6 +6,7 @@
 #include <poponnx/op/add.hpp>
 #include <poponnx/op/averagepool.hpp>
 #include <poponnx/op/conv.hpp>
+#include <poponnx/op/div.hpp>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/matmul.hpp>
 #include <poponnx/op/maxpool.hpp>
@@ -78,6 +79,24 @@ void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
   Tensor *ptensor = pir->getTensors().get(tenId);
   output->insert(outIndex, ptensor);
   ptensor->setProducer(this);
+}
+
+void Op::disconnectAllTensors() {
+  std::vector<InIndex> inputs;
+  for (auto entry : input->tensorMap()) {
+    inputs.push_back(entry.first);
+    auto tensor = entry.second;
+    tensor->consumers.decrement(this);
+  }
+  input->clear();
+
+  std::vector<InIndex> outputs;
+  for (auto entry : output->tensorMap()) {
+    outputs.push_back(entry.first);
+    auto tensor = entry.second;
+    tensor->resetProducer(nullptr);
+  }
+  output->clear();
 }
 
 void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
@@ -195,6 +214,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::CONV: {
     return pOp(new ConvOp(node, this));
   }
+  case OpType::DIV: {
+    return pOp(new DivOp(node, this));
+  }
   case OpType::IDENTITY: {
     return pOp(new IdentityOp(node, this));
   }
@@ -241,6 +263,8 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::ADDARG1GRAD:
   case OpType::ADDBIASBIASGRAD:
   case OpType::ADDBIASDATAGRAD:
+  case OpType::DIVARG0GRAD:
+  case OpType::DIVARG1GRAD:
   case OpType::SQUEEZEGRAD:
   case OpType::REDUCESUMGRAD:
   case OpType::RELUGRAD:
