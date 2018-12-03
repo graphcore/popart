@@ -267,46 +267,15 @@ void Ir::prepare(const IrBundle &gb) {
 
   confirmNoReservedIds();
   setAllNodeInputsMap();
-  auto &onnxGraph = onnxModel->graph();
-  std::set<TensorId> onnxInitializers;
-  for (const auto &initializer : onnxGraph.initializer()) {
-    TensorId tenId = initializer.name();
-    logging::info("Init tensor is {}", tenId);
-    addInitIfUsed(tenId, &initializer);
-    onnxInitializers.emplace(tenId);
-  }
 
-  // onnx inputs which are not initializers are true inputs
-  for (auto &valueInfo : onnxGraph.input()) {
-    TensorId id = valueInfo.name();
-    if (onnxInitializers.count(id) == 0) {
-      if (valueInfo.has_type() && valueInfo.type().tensor_type().has_shape()) {
-        tensors.addStream(id, TensorInfo(valueInfo.type()));
-      } else {
-        tensors.addStream(id, inputShapeInfo.get(id));
-      }
-    }
-  }
-  // other true inputs are for the loss calculation (class labels, etc)
-  for (const auto &loss : losses) {
-    for (const auto &tenId : loss->getStreamTensorNames()) {
-      // another loss might have already registered this tensor
-      if (!tensors.contains(tenId)) {
-        tensors.addStream(tenId, inputShapeInfo.get(tenId));
-      } else {
-        Tensor *tensorAlreadyPresent = tensors.get(tenId);
-        if (tensorAlreadyPresent->tensorType() != TensorType::Stream) {
-          throw error("type mismatch for tensor " + tenId);
-        }
-      }
-    }
-  }
+  registerTensors();
 
   logging::ir::info("Patterns : {}", patterns);
   // todo : validate the selected patterns
 
   // construct the forward pass from ONNX,
   constructForwards();
+
   if (userOptions.exportDot) {
     exportDot(io::appendDirFn(logdir, "fwd0.dot"));
   }
@@ -368,13 +337,14 @@ void Ir::prepare(const IrBundle &gb) {
   if (userOptions.exportDot) {
     exportDot(io::appendDirFn(logdir, "fwdBwd1.dot"));
   }
+
   std::stringstream ss2;
   append(ss2);
   logging::ir::info(ss2.str());
 }
 
 void Ir::resetWeights(const onnx::ModelProto &modelProto) {
-  auto onnxGraph = modelProto.graph();
+  auto &onnxGraph = modelProto.graph();
 
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();
@@ -387,6 +357,44 @@ void Ir::resetWeights(const onnx::ModelProto &modelProto) {
           "trying to reset weights using tensor with non matching tensor info");
     }
     tensor->tensorData()->resetData(initializer);
+  }
+}
+
+void Ir::registerTensors() {
+  auto &onnxGraph = onnxModel->graph();
+
+  std::set<TensorId> onnxInitializers;
+  for (const auto &initializer : onnxGraph.initializer()) {
+    TensorId tenId = initializer.name();
+    logging::info("Init tensor is {}", tenId);
+    addInitIfUsed(tenId, &initializer);
+    onnxInitializers.emplace(tenId);
+  }
+
+  // onnx inputs which are not initializers are true inputs
+  for (auto &valueInfo : onnxGraph.input()) {
+    TensorId id = valueInfo.name();
+    if (onnxInitializers.count(id) == 0) {
+      if (valueInfo.has_type() && valueInfo.type().tensor_type().has_shape()) {
+        tensors.addStream(id, TensorInfo(valueInfo.type()));
+      } else {
+        tensors.addStream(id, inputShapeInfo.get(id));
+      }
+    }
+  }
+  // other true inputs are for the loss calculation (class labels, etc)
+  for (const auto &loss : losses) {
+    for (const auto &tenId : loss->getStreamTensorNames()) {
+      // another loss might have already registered this tensor
+      if (!tensors.contains(tenId)) {
+        tensors.addStream(tenId, inputShapeInfo.get(tenId));
+      } else {
+        Tensor *tensorAlreadyPresent = tensors.get(tenId);
+        if (tensorAlreadyPresent->tensorType() != TensorType::Stream) {
+          throw error("type mismatch for tensor " + tenId);
+        }
+      }
+    }
   }
 }
 

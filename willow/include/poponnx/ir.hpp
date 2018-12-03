@@ -239,10 +239,32 @@ public:
   // enable/disable a transform stage (public for unit testing only)
   void enableTransform(std::size_t transformId, bool enable);
 
-private:
-  Tensors tensors;
-  DataFlow dataFlow;
+  // only adds an init tensor if it is is allNodeInputsMap;
+  void addInitIfUsed(TensorId id, const onnx::TensorProto *t);
 
+  // run after creating the backwards pass, checks that
+  // the user provided anchor tensors actually exist.
+  // the user may have not used the correct gradient
+  // tensor naming convention for example, this will
+  // be caught here.
+  void validateAnchors() const;
+
+  enum class ExecutionMode { INFERENCE, EVALUATION, TRAINING };
+
+  ExecutionMode getExecutionMode() const;
+
+  // Can the IR be used for inference.
+  bool canInfer() const;
+
+  // Can the IR be used for evaluation.
+  // This is true when there are losses to compute.
+  bool canEvaluate() const;
+
+  // Can the IR be used for training.
+  // This is true when there are losses and an optimizer.
+  bool canTrain() const;
+
+private:
   // called from growFromNode and many other places where Ops created
   // T requires functions input(int) and input_size()
   template <typename T> void connectInputs(const T &, OpId opId);
@@ -250,25 +272,20 @@ private:
   // T requires functions output(int) and output_size()
   template <typename T> void connectOutputs(const T &, OpId opId);
 
-  // learning rate, momentum, etc.
-  // Optimizer needed to construct backwards pass:
-  // if momentum the Ir is different
-  std::unique_ptr<Optimizer> optimizer;
-  std::string logdir;
-  SessionOptions userOptions;
-  InputShapeInfo inputShapeInfo;
-
+  // Convert the ONNX graph into the forwards pass of the IR
   void constructForwards();
+
+  // Construct the backwards pass of the IR by doing an autograd of the forward
+  // pass
   void constructBackwards();
-  // remove nodes an tensors which are not
-  // needed to arrive at the target
-  void prune();
 
   // The variable update ops must be final consumers of the
   // input variable tensor. This function imposes these constraints
   void setVarUpdateCons();
 
-  void addRecompute();
+  // Register the input and output tensors of the ONNX graph
+  void registerTensors();
+
   // The number of paths to the loss is used in
   // constructing the backwards pass. This functions set
   // this number of all Ops and Tensors
@@ -285,10 +302,6 @@ private:
   // modify the Ir using all the registered patterns.
   // Returns true if a change to the Ir was made.
   void applyPatterns(PatternPhase);
-
-  // The set of patterns to apply after constructing forwards and backwards
-  // passes
-  Patterns patterns;
 
   // confirm that the names of the Const tensors
   // from the user (constTensors) are in the onnx Model
@@ -329,7 +342,23 @@ private:
   // create a grad-op. Return a vector of {gradop, lossop} pairs
   std::vector<GradNonGradPair> growLossGradients();
 
+private:
+  Tensors tensors;
+  DataFlow dataFlow;
+
   std::unique_ptr<onnx::ModelProto> onnxModel;
+
+  // learning rate, momentum, etc.
+  // Optimizer needed to construct backwards pass:
+  // if momentum the Ir is different
+  std::unique_ptr<Optimizer> optimizer;
+  std::string logdir;
+  SessionOptions userOptions;
+  InputShapeInfo inputShapeInfo;
+
+  // The set of patterns to apply after constructing forwards and backwards
+  // passes
+  Patterns patterns;
 
   // create an Op from a Node
   std::unique_ptr<Op> addOp(const Node &);
@@ -349,33 +378,7 @@ private:
   // all in input() of all in node() of the onnx::Graph
   void setAllNodeInputsMap();
   std::set<std::string> allNodeInputsMap;
-  // only adds an init tensor if it is is allNodeInputsMap;
-  void addInitIfUsed(TensorId id, const onnx::TensorProto *t);
 
-  // run after creating the backwards pass, checks that
-  // the user provided anchor tensors actually exist.
-  // the user may have not used the correct gradient
-  // tensor naming convention for example, this will
-  // be caught here.
-  void validateAnchors() const;
-
-public:
-  enum class ExecutionMode { INFERENCE, EVALUATION, TRAINING };
-
-  ExecutionMode getExecutionMode() const;
-
-  // Can the IR be used for inference.
-  bool canInfer() const;
-
-  // Can the IR be used for evaluation.
-  // This is true when there are losses to compute.
-  bool canEvaluate() const;
-
-  // Can the IR be used for training.
-  // This is true when there are losses and an optimizer.
-  bool canTrain() const;
-
-private:
   ExecutionMode executionMode = ExecutionMode::TRAINING;
 
   bool isPrepared = false;
