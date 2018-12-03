@@ -377,6 +377,8 @@ public:
 
 private:
   ExecutionMode executionMode = ExecutionMode::TRAINING;
+
+  bool isPrepared = false;
 };
 
 } // namespace poponnx

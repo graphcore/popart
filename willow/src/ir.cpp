@@ -223,10 +223,10 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
 
 Ir::Ir() : tensors(*this), onnxModel(nullptr) {}
 
-// FFS : Guard against multiple calls to prepare
-
 void Ir::prepare(const IrBundle &gb) {
-
+  if (isPrepared) {
+    throw error("Ir::prepare called more than once");
+  }
   scheduler.reset(new Scheduler(this));
 
   tensors.setConstIds(gb.cTens);
@@ -360,6 +360,8 @@ void Ir::prepare(const IrBundle &gb) {
   applyPatterns(PatternPhase::WITHTOPOCONS);
 
   updateVertices();
+
+  isPrepared = true;
 
   if (userOptions.exportDot) {
     exportDot(io::appendDirFn(logdir, "fwdBwd1.dot"));
