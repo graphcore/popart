@@ -20,7 +20,7 @@ def conv3x3(in_planes, out_planes, stride=1):
 
 class PytorchNetWriter(NetWriter):
     def __init__(self, inNames, outNames, losses, optimizer, dataFeed,
-                 earlyInfo, module):
+                 inputShapeInfo, module):
         """
         module:
           -- pytorch module (whose forward does not have the loss layers)
@@ -33,7 +33,7 @@ class PytorchNetWriter(NetWriter):
             outNames=outNames,
             losses=losses,
             optimizer=optimizer,
-            earlyInfo=earlyInfo,
+            inputShapeInfo=inputShapeInfo,
             dataFeed=dataFeed)
 
         self.module = module
@@ -85,7 +85,7 @@ class PytorchNetWriter(NetWriter):
         # note that this might do strange things with batch-normalisation (?)
         self.module.eval()
 
-        inputDataInfos = [self.earlyInfo.get(tid) for tid in self.inNames]
+        inputDataInfos = [self.inputShapeInfo.get(tid) for tid in self.inNames]
         inputData = [
             torch.Tensor(np.ones(shape=x.shape(), dtype=x.data_type_lcase()))
             for x in inputDataInfos

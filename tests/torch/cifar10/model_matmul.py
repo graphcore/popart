@@ -37,9 +37,9 @@ dataFeed = poponnx_core.DataFlow(batchesPerStep, batchSize, anchors, art)
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the WillowNet constructor.
 # In this example there is 1 streamed input, image0.
-earlyInfo = poponnx_core.EarlyInfo()
-earlyInfo.add("image0",
-              poponnx_core.TensorInfo("FLOAT", [batchSize, nChans, 32, 32]))
+inputShapeInfo = poponnx_core.InputShapeInfo()
+inputShapeInfo.add(
+    "image0", poponnx_core.TensorInfo("FLOAT", [batchSize, nChans, 32, 32]))
 
 inNames = []
 
@@ -75,7 +75,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     outNames=outNames,
     losses=losses,
     optimizer=poponnx_core.ConstSGD(0.001),
-    earlyInfo=earlyInfo,
+    inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:
     module=Module0())

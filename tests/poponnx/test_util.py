@@ -70,7 +70,7 @@ def get_compute_set_regex_count(regex, cs_list):
 class BasicSession:
     def __init__(self, logging_dir):
         self.builder = poponnx.Builder()
-        self.early_info = poponnx.EarlyInfo()
+        self.early_info = poponnx.InputShapeInfo()
         self._setup_opts()
         self.passes = []
         self.logging_dir = logging_dir
@@ -108,7 +108,7 @@ class BasicSession:
 
         session = poponnx.Session(
             fnModel=proto,
-            earlyInfo=self.early_info,
+            inputShapeInfo=self.early_info,
             dataFeed=dataFlow,
             losses=losses,
             optimizer=optimizer,

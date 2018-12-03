@@ -904,17 +904,10 @@ def test_load_onnx_model_from_other_builder(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, shape)
-    earlyInfo.add(i2, shape)
-
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
-        fnModel=proto,
-        earlyInfo=earlyInfo,
-        dataFeed=dataFlow,
-        outputdir=str(tmpdir))
+        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
 
     session.setDevice(getDevice())
     anchors = session.initAnchorArrays()
@@ -934,10 +927,6 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     # output is still the same
     builder2 = poponnx.Builder(proto)
     translation = builder2.getTensorTranslation()
-    print(translation)
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(translation[i1], shape)
-    earlyInfo.add(translation[i2], shape)
 
     dataFlow = poponnx.DataFlow(1, 1, [translation[o]],
                                 poponnx.AnchorReturnType.ALL)
@@ -947,7 +936,6 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     proto2 = builder.getModelProto()
     session = poponnx.Session(
         fnModel=proto2,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
@@ -987,10 +975,6 @@ def test_load_onnx_model_from_file(tmpdir):
 
     builder2 = poponnx.Builder(str(filename))
     translation = builder2.getTensorTranslation()
-    print(translation)
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(translation[i1], shape)
-    earlyInfo.add(translation[i2], shape)
 
     dataFlow = poponnx.DataFlow(1, 1, [translation[o]],
                                 poponnx.AnchorReturnType.ALL)
@@ -1001,7 +985,6 @@ def test_load_onnx_model_from_file(tmpdir):
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,

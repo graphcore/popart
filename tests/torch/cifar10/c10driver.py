@@ -39,7 +39,7 @@ def run(torchWriter,
 def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
               device_hw_id, mode):
     dataFeed = torchWriter.dataFeed
-    earlyInfo = torchWriter.earlyInfo
+    inputShapeInfo = torchWriter.inputShapeInfo
     validModes = ["infer", "evaluate", "train"]
     if mode not in validModes:
         raise Exception("mode must be one of " + str(validModes))
@@ -119,7 +119,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     # performs Ir optimisations
     session = poponnx.Session(
         fnModel=fnModel0,
-        earlyInfo=earlyInfo,
+        inputShapeInfo=inputShapeInfo,
         dataFeed=dataFeed,
         losses=torchWriter.losses,
         optimizer=torchWriter.optimizer,

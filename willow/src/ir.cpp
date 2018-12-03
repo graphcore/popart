@@ -192,7 +192,7 @@ void Ir::confirmNoReservedIds() const {
     confirmNonReservedId(out_.name());
   }
 
-  for (const auto &tenId : earlyInfo.getAllTensorIds()) {
+  for (const auto &tenId : inputShapeInfo.getAllTensorIds()) {
     confirmNonReservedId(tenId);
   }
 }
@@ -209,7 +209,7 @@ void Ir::setAllNodeInputsMap() {
 }
 
 IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
-                   const EarlyInfo &earlyInfo_,
+                   const InputShapeInfo &inputShapeInfo_,
                    const DataFlow &dataFlow_,
                    const std::vector<Loss *> &losses_,
                    const Optimizer *optimizer_,
@@ -217,9 +217,10 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
                    const std::string &logdir_,
                    const SessionOptions &userOptions_,
                    const Patterns &patterns_)
-    : modelProto(modelProto_), earlyInfo(earlyInfo_), dataFlow(dataFlow_),
-      losses(losses_), optimizer(optimizer_), cTens(cTens_), logdir(logdir_),
-      userOptions(userOptions_), patterns(patterns_) {}
+    : modelProto(modelProto_), inputShapeInfo(inputShapeInfo_),
+      dataFlow(dataFlow_), losses(losses_), optimizer(optimizer_),
+      cTens(cTens_), logdir(logdir_), userOptions(userOptions_),
+      patterns(patterns_) {}
 
 Ir::Ir() : tensors(*this), onnxModel(nullptr) {}
 
@@ -230,11 +231,11 @@ void Ir::prepare(const IrBundle &gb) {
   scheduler.reset(new Scheduler(this));
 
   tensors.setConstIds(gb.cTens);
-  dataFlow    = gb.dataFlow;
-  logdir      = io::getCanonicalDirName(gb.logdir);
-  userOptions = gb.userOptions;
-  earlyInfo   = gb.earlyInfo;
-  patterns    = gb.patterns;
+  dataFlow       = gb.dataFlow;
+  logdir         = io::getCanonicalDirName(gb.logdir);
+  userOptions    = gb.userOptions;
+  inputShapeInfo = gb.inputShapeInfo;
+  patterns       = gb.patterns;
 
   onnxModel.reset(new onnx::ModelProto(gb.modelProto));
 
@@ -279,7 +280,11 @@ void Ir::prepare(const IrBundle &gb) {
   for (auto &valueInfo : onnxGraph.input()) {
     TensorId id = valueInfo.name();
     if (onnxInitializers.count(id) == 0) {
-      tensors.addStream(id, earlyInfo.get(id));
+      if (valueInfo.has_type() && valueInfo.type().tensor_type().has_shape()) {
+        tensors.addStream(id, TensorInfo(valueInfo.type()));
+      } else {
+        tensors.addStream(id, inputShapeInfo.get(id));
+      }
     }
   }
   // other true inputs are for the loss calculation (class labels, etc)
@@ -287,7 +292,7 @@ void Ir::prepare(const IrBundle &gb) {
     for (const auto &tenId : loss->getStreamTensorNames()) {
       // another loss might have already registered this tensor
       if (!tensors.contains(tenId)) {
-        tensors.addStream(tenId, earlyInfo.get(tenId));
+        tensors.addStream(tenId, inputShapeInfo.get(tenId));
       } else {
         Tensor *tensorAlreadyPresent = tensors.get(tenId);
         if (tensorAlreadyPresent->tensorType() != TensorType::Stream) {
@@ -312,9 +317,6 @@ void Ir::prepare(const IrBundle &gb) {
   confirmConstIds();
 
   applyPatterns(PatternPhase::PRETOPOCONS);
-
-  //  transforms.emplace(std::make_pair(0, new Prune));
-  //  transforms.emplace(std::make_pair(1, new Recompute));
 
   if (canEvaluate()) {
     growFinalLoss();

@@ -14,15 +14,10 @@ def test_net_from_string(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add("1", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
 
     poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir))
 
@@ -41,31 +36,21 @@ def test_net_from_file(tmpdir):
     with open("test.onnx", "wb") as f:
         f.write(proto)
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add("1", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
 
     poponnx.Session(
         fnModel="test.onnx",
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir))
 
 
 def test_net_failure(tmpdir):
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add("1", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         poponnx.Session(
             fnModel="nothing",
-            earlyInfo=earlyInfo,
             dataFeed=dataFlow,
             outputdir=str(tmpdir))
 

@@ -95,8 +95,10 @@ public:
   TensorInfo(DataType, const Shape &);
   TensorInfo(std::string data_type, std::string shape);
   TensorInfo(std::string data_type, const Shape &);
-  TensorInfo(const onnx::TensorProto &);
+  explicit TensorInfo(const onnx::TensorProto &);
+  explicit TensorInfo(const onnx::TypeProto &);
   void set(const onnx::TensorProto &);
+  void set(const onnx::TypeProto &);
   TensorInfo() = default;
   void set(DataType, const Shape &);
   const Shape &shape() const;

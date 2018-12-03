@@ -29,13 +29,13 @@ def get_trainset():
     return trainset
 
 
-def get_session(fnModel, earlyInfo, dataFeed, torchWriter, outputdir, passes,
-                opts):
+def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, outputdir,
+                passes, opts):
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
     session = poponnx.Session(
         fnModel=fnModel,
-        earlyInfo=earlyInfo,
+        inputShapeInfo=inputShapeInfo,
         dataFeed=dataFeed,
         losses=torchWriter.losses,
         optimizer=torchWriter.optimizer,
@@ -73,7 +73,7 @@ def compare_models(model_A0, model_A1, model_B0, model_B1):
 
 def run(torchWriter, passes, outputdir, cifarInIndices):
     dataFeed = torchWriter.dataFeed
-    earlyInfo = torchWriter.earlyInfo
+    inputShapeInfo = torchWriter.inputShapeInfo
 
     fnModel0 = os.path.join(outputdir, "model0.onnx")
 
@@ -95,7 +95,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
     opts.exportDot = True
     opts.logging = {"all": "TRACE", "session": "TRACE"}
 
-    session = get_session(fnModel0, earlyInfo, dataFeed, torchWriter,
+    session = get_session(fnModel0, inputShapeInfo, dataFeed, torchWriter,
                           outputdir, passes, opts)
 
     stepi = 0
@@ -174,9 +174,9 @@ dataFeed = poponnx.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the Session constructor.
 # In this example there is 1 streamed input, image0.
-earlyInfo = poponnx.EarlyInfo()
-earlyInfo.add("image0",
-              poponnx.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
+inputShapeInfo = poponnx.InputShapeInfo()
+inputShapeInfo.add(
+    "image0", poponnx.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
 
 inNames = ["image0"]
 
@@ -220,7 +220,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     outNames=outNames,
     losses=losses,
     optimizer=poponnx.ConstSGD(0.001),
-    earlyInfo=earlyInfo,
+    inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     # Torch specific:
     module=Module0())

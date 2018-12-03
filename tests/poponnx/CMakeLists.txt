@@ -26,7 +26,7 @@ function(add_poponnx_cpp_unit_test name)
 endfunction()
 
 add_poponnx_cpp_unit_test(dataflowtest dataflowtest.cpp)
-add_poponnx_cpp_unit_test(earlyinfotest earlyinfotest.cpp)
+add_poponnx_cpp_unit_test(inputshapeinfotest inputshapeinfotest.cpp)
 add_poponnx_cpp_unit_test(loggingtest loggingtest.cpp)
 add_poponnx_cpp_unit_test(matmultest matmul.cpp)
 add_poponnx_cpp_unit_test(numpybroadcastshapetest numpybroadcastshapetest.cpp)

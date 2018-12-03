@@ -5,8 +5,8 @@
 
 #include <poponnx/builder.hpp>
 #include <poponnx/dataflow.hpp>
-#include <poponnx/earlyinfo.hpp>
 #include <poponnx/filereader.hpp>
+#include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
 #include <poponnx/optimizer.hpp>
@@ -47,8 +47,6 @@ BOOST_AUTO_TEST_CASE(PruneTest) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto earlyInfo = EarlyInfo();
-  earlyInfo.add(i1, shape);
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow =
       DataFlow(1, 1, {tensorIds.back(), tensorIds[2]}, AnchorReturnType::ALL);
@@ -57,7 +55,7 @@ BOOST_AUTO_TEST_CASE(PruneTest) {
   // This test needs to disable all patterns.
   Ir ir;
   ir.prepare({modelProto,
-              earlyInfo,
+              InputShapeInfo(),
               dataFlow,
               losses,
               nullptr,

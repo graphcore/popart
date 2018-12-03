@@ -78,10 +78,6 @@ def test_engine_options_passed_to_engine(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, shape)
-    earlyInfo.add(i2, shape)
-
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     opts = poponnx.SessionOptions()
@@ -90,7 +86,6 @@ def test_engine_options_passed_to_engine(tmpdir):
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir),
         userOptions=opts)
@@ -118,10 +113,6 @@ def test_convolution_options(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, data_shape)
-    earlyInfo.add(i2, filt_shape)
-
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     opts = poponnx.SessionOptions()
@@ -130,7 +121,6 @@ def test_convolution_options(tmpdir):
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir),
         userOptions=opts)

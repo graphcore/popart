@@ -160,11 +160,11 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("fullReport", &numerics::NumericsReport::fullReport)
       .def("getRelativeErrors", &numerics::NumericsReport::getRelativeErrors);
 
-  py::class_<EarlyInfo>(m, "EarlyInfo")
+  py::class_<InputShapeInfo>(m, "InputShapeInfo")
       .def(py::init<>())
-      .def("add", &EarlyInfo::add)
-      .def("get", &EarlyInfo::get)
-      .def("has", &EarlyInfo::has);
+      .def("add", &InputShapeInfo::add)
+      .def("get", &InputShapeInfo::get)
+      .def("has", &InputShapeInfo::has);
 
   py::class_<Loss> loss(m, "Loss");
   loss.def("input", &Loss::input);
@@ -261,8 +261,8 @@ PYBIND11_MODULE(poponnx_core, m) {
   py::class_<Session>(m, "SessionCore")
       .def(py::init(&Session::createFromOnnxModel),
            py::arg("model"),
-           py::arg("earlyInfo").none(),
            py::arg("dataFlow").none(),
+           py::arg("inputShapeInfo"),
            py::arg("losses"),
            py::arg("optimizer").none(),
            py::arg("cTens"),

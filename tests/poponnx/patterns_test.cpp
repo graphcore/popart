@@ -4,8 +4,8 @@
 #include <vector>
 #include <poponnx/builder.hpp>
 #include <poponnx/dataflow.hpp>
-#include <poponnx/earlyinfo.hpp>
 #include <poponnx/filereader.hpp>
+#include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/op/l1.hpp>
 #include <poponnx/op/nll.hpp>
@@ -47,8 +47,6 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto earlyInfo = EarlyInfo();
-  earlyInfo.add(i1, shape);
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow =
       DataFlow(1, 1, {tensorIds.back(), tensorIds[2]}, AnchorReturnType::ALL);
@@ -57,7 +55,7 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
 
   Ir ir;
   ir.prepare({modelProto,
-              earlyInfo,
+              InputShapeInfo(),
               dataFlow,
               losses,
               &optimizer,
@@ -103,9 +101,6 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto earlyInfo = EarlyInfo();
-  earlyInfo.add(input1, shape);
-  earlyInfo.add(input2, shape);
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, 1, {identOut}, AnchorReturnType::ALL);
   auto optimizer = SGD(0.01);
@@ -113,7 +108,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
 
   Ir ir;
   ir.prepare({modelProto,
-              earlyInfo,
+              InputShapeInfo(),
               dataFlow,
               losses,
               &optimizer,
@@ -154,9 +149,6 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto earlyInfo = EarlyInfo();
-  earlyInfo.add(input1, shape);
-  earlyInfo.add(input2, shape);
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, 1, {identOut}, AnchorReturnType::ALL);
   auto optimizer = SGD(0.01);
@@ -164,7 +156,7 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
 
   Ir ir;
   ir.prepare({modelProto,
-              earlyInfo,
+              InputShapeInfo(),
               dataFlow,
               losses,
               &optimizer,
@@ -206,10 +198,6 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto earlyInfo = EarlyInfo();
-  earlyInfo.add(input1, shape);
-  earlyInfo.add(input2, shape);
-  earlyInfo.add(input3, shape);
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, 1, {identOut}, AnchorReturnType::ALL);
   auto optimizer = SGD(0.01);
@@ -217,7 +205,7 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
 
   Ir ir;
   ir.prepare({modelProto,
-              earlyInfo,
+              InputShapeInfo(),
               dataFlow,
               losses,
               &optimizer,
@@ -265,9 +253,6 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto earlyInfo = EarlyInfo();
-  earlyInfo.add(input1, shape);
-  earlyInfo.add(input2, shape);
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1,
                            1,
@@ -280,7 +265,7 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
 
   Ir ir;
   ir.prepare({modelProto,
-              earlyInfo,
+              InputShapeInfo(),
               dataFlow,
               losses,
               &optimizer,
@@ -322,9 +307,6 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto earlyInfo = EarlyInfo();
-  earlyInfo.add(input1, shape);
-  earlyInfo.add(input2, shape);
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow =
       DataFlow(1,
@@ -340,7 +322,7 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
   Ir ir;
   ir.prepare(
       {modelProto,
-       earlyInfo,
+       InputShapeInfo(),
        dataFlow,
        losses,
        &optimizer,
@@ -388,8 +370,6 @@ BOOST_AUTO_TEST_CASE(Inplace0_series) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto earlyInfo = EarlyInfo();
-  earlyInfo.add(in0, shape);
   std::vector<TensorId> anchors{out};
   auto dataFlow  = DataFlow(1, 1, anchors, AnchorReturnType::ALL);
   auto optimizer = SGD(0.01);
@@ -397,7 +377,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_series) {
 
   Ir ir;
   ir.prepare({modelProto,
-              earlyInfo,
+              InputShapeInfo(),
               dataFlow,
               losses,
               &optimizer,
@@ -455,8 +435,6 @@ BOOST_AUTO_TEST_CASE(Inplace0_parallel) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto earlyInfo = EarlyInfo();
-  earlyInfo.add(in0, shape);
   std::vector<TensorId> anchors{out};
   auto dataFlow  = DataFlow(1, 1, anchors, AnchorReturnType::ALL);
   auto optimizer = SGD(0.01);
@@ -464,7 +442,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_parallel) {
 
   Ir ir;
   ir.prepare({modelProto,
-              earlyInfo,
+              InputShapeInfo(),
               dataFlow,
               losses,
               &optimizer,
@@ -502,8 +480,6 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto earlyInfo = EarlyInfo();
-  earlyInfo.add(input, shape);
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow =
       DataFlow(1,
@@ -518,7 +494,7 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
 
   Ir ir;
   ir.prepare({modelProto,
-              earlyInfo,
+              InputShapeInfo(),
               dataFlow,
               losses,
               &optimizer,

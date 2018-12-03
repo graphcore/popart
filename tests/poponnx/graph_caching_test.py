@@ -23,9 +23,6 @@ def test_convolution_cached_by_default():
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, data_shape)
-    earlyInfo.add(i2, filt_shape)
     anchor_names = ['d__' + i1, 'd__' + i2]
     dataFlow = poponnx.DataFlow(1, 1, anchor_names,
                                 poponnx.AnchorReturnType.ALL)
@@ -37,7 +34,6 @@ def test_convolution_cached_by_default():
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
@@ -95,9 +91,6 @@ def test_convolution_cached_set_to_true():
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, data_shape)
-    earlyInfo.add(i2, filt_shape)
     anchor_names = ['d__' + i1, 'd__' + i2]
     dataFlow = poponnx.DataFlow(1, 1, anchor_names,
                                 poponnx.AnchorReturnType.ALL)
@@ -109,7 +102,6 @@ def test_convolution_cached_set_to_true():
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
@@ -167,9 +159,6 @@ def test_convolution_cached_set_to_false():
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, data_shape)
-    earlyInfo.add(i2, filt_shape)
     anchor_names = ['d__' + i1, 'd__' + i2]
     dataFlow = poponnx.DataFlow(1, 1, anchor_names,
                                 poponnx.AnchorReturnType.ALL)
@@ -181,7 +170,6 @@ def test_convolution_cached_set_to_false():
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
@@ -239,9 +227,6 @@ def test_convolution_some_convolutions_cached():
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, data_shape)
-    earlyInfo.add(i2, filt_shape)
     anchor_names = ['d__' + i1, 'd__' + i2]
     dataFlow = poponnx.DataFlow(1, 1, anchor_names,
                                 poponnx.AnchorReturnType.ALL)
@@ -253,7 +238,6 @@ def test_convolution_some_convolutions_cached():
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
@@ -315,9 +299,6 @@ def test_convolution_disable_all():
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, data_shape)
-    earlyInfo.add(i2, filt_shape)
     anchor_names = ['d__' + i1, 'd__' + i2]
     dataFlow = poponnx.DataFlow(1, 1, anchor_names,
                                 poponnx.AnchorReturnType.ALL)
@@ -330,7 +311,6 @@ def test_convolution_disable_all():
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,

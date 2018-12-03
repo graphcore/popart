@@ -5,8 +5,8 @@
 
 #include <poponnx/builder.hpp>
 #include <poponnx/dataflow.hpp>
-#include <poponnx/earlyinfo.hpp>
 #include <poponnx/filereader.hpp>
+#include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/op/l1.hpp>
 #include <poponnx/optimizer.hpp>
@@ -25,50 +25,40 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
   float weight_vals[4 * 4 * 3 * 3] = {0};
   ConstVoidData weight_data        = {weight_vals, weights_shape};
 
-  auto earlyInfo = EarlyInfo();
-
   auto act = builder->addInputTensor(input_shape);
-  earlyInfo.add(act, input_shape);
 
   auto weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act          = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act     = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act     = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act     = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act     = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act     = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act     = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
@@ -85,7 +75,7 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
 
   Ir ir;
   ir.prepare({modelProto,
-              earlyInfo,
+              InputShapeInfo(),
               dataFlow,
               losses,
               &optimizer,
@@ -108,50 +98,40 @@ BOOST_AUTO_TEST_CASE(RecomputeTest) {
   float weight_vals[4 * 4 * 3 * 3] = {0};
   ConstVoidData weight_data        = {weight_vals, weights_shape};
 
-  auto earlyInfo = EarlyInfo();
-
   auto act = builder->addInputTensor(input_shape);
-  earlyInfo.add(act, input_shape);
 
   auto weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act          = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act     = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act     = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act     = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act     = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act     = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  earlyInfo.add(weights, weights_shape);
-  act = builder->convolution(
+  act     = builder->convolution(
       {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
   act = builder->relu({act});
 
@@ -168,7 +148,7 @@ BOOST_AUTO_TEST_CASE(RecomputeTest) {
 
   Ir ir;
   ir.prepare({modelProto,
-              earlyInfo,
+              InputShapeInfo(),
               dataFlow,
               losses,
               &optimizer,

@@ -7,8 +7,8 @@ import numpy as np
 class Session(poponnx.SessionCore):
     def __init__(self,
                  fnModel,
-                 earlyInfo,
                  dataFeed,
+                 inputShapeInfo=poponnx.InputShapeInfo(),
                  losses=[],
                  optimizer=None,
                  outputdir="",
@@ -20,8 +20,8 @@ class Session(poponnx.SessionCore):
             passes = poponnx.Patterns()
 
         super(Session,
-              self).__init__(fnModel, earlyInfo, dataFeed, losses, optimizer,
-                             cTens, outputdir, userOptions, passes)
+              self).__init__(fnModel, dataFeed, inputShapeInfo, losses,
+                             optimizer, cTens, outputdir, userOptions, passes)
         self.dataFeed = dataFeed
 
     def initAnchorArrays(self):

@@ -16,16 +16,29 @@ TensorInfo::TensorInfo(std::string s_type, const Shape &s)
 
 TensorInfo::TensorInfo(const onnx::TensorProto &t) { set(t); }
 
+TensorInfo::TensorInfo(const onnx::TypeProto &t) { set(t); }
+
 TensorInfo::TensorInfo(std::string s_type, std::string s_shape)
     : TensorInfo(dataTypeFromString(s_type), shapeFromString(s_shape)) {}
 
 void TensorInfo::set(const onnx::TensorProto &t) {
   dataTypeInfo = &getDataTypeInfoMap().at(onnxutil::getDataType(t.data_type()));
-  shape_v.resize(0);
-  shape_v.reserve(t.dims_size());
+  shape_v.clear();
   for (auto &v : t.dims()) {
     shape_v.push_back(v);
   }
+  shape_v.shrink_to_fit();
+}
+
+void TensorInfo::set(const onnx::TypeProto &t) {
+  auto type = t.tensor_type();
+  dataTypeInfo =
+      &getDataTypeInfoMap().at(onnxutil::getDataType(type.elem_type()));
+  shape_v.clear();
+  for (auto &v : type.shape().dim()) {
+    shape_v.push_back(v.dim_value());
+  }
+  shape_v.shrink_to_fit();
 }
 
 std::vector<size_t> TensorInfo::shape_szt() const {

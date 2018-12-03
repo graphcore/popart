@@ -14,15 +14,10 @@ def test_summary_report_before_execution(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add("1", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir))
 
@@ -47,15 +42,10 @@ def test_graph_report_before_execution(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add("1", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir))
 
@@ -80,15 +70,10 @@ def test_execution_report_before_execution(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add("1", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir))
 
@@ -113,15 +98,10 @@ def test_summary_report_with_cpu_device(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add("1", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir))
 
@@ -148,15 +128,10 @@ def test_graph_report_with_cpu_device(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add("1", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    earlyInfo.add("2", poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-
     dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir))
 
@@ -185,15 +160,10 @@ def test_execution_report_with_cpu_device(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add("1", shape)
-    earlyInfo.add("2", shape)
-
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir))
 

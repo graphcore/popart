@@ -27,15 +27,10 @@ def test_add(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, shape)
-    earlyInfo.add(i2, shape)
-
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir))
 
@@ -69,15 +64,10 @@ def test_convolution(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, data_shape)
-    earlyInfo.add(i2, filt_shape)
-
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir))
 
@@ -121,15 +111,10 @@ def test_matmul(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, i1shape)
-    earlyInfo.add(i2, i2shape)
-
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir))
 
@@ -166,14 +151,10 @@ def test_averagepool(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, data_shape)
-
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir))
 
@@ -208,14 +189,10 @@ def test_maxpool(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, data_shape)
-
     dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         outputdir=str(tmpdir))
 
@@ -251,14 +228,6 @@ def test_mul(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, shape)
-    earlyInfo.add(i2, shape)
-
-    print('')
-    print('i1', i1)
-    print('i2', i2)
-    print('o', o)
     dataFlow = poponnx.DataFlow(1, 1, [o, 'd__' + i1, 'd__' + i2, 'd__' + o],
                                 poponnx.AnchorReturnType.ALL)
     optimizer = poponnx.SGD(0.01)
@@ -272,7 +241,6 @@ def test_mul(tmpdir):
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
@@ -332,14 +300,6 @@ def test_broadcast_mul(tmpdir):
 
     proto = builder.getModelProto()
 
-    earlyInfo = poponnx.EarlyInfo()
-    earlyInfo.add(i1, i1_shape)
-    earlyInfo.add(i2, i2_shape)
-
-    print('')
-    print('i1', i1)
-    print('i2', i2)
-    print('o', o)
     dataFlow = poponnx.DataFlow(1, 1, [o, 'd__' + i1, 'd__' + i2, 'd__' + o],
                                 poponnx.AnchorReturnType.ALL)
     optimizer = poponnx.SGD(0.01)
@@ -353,7 +313,6 @@ def test_broadcast_mul(tmpdir):
 
     session = poponnx.Session(
         fnModel=proto,
-        earlyInfo=earlyInfo,
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,

@@ -1,5 +1,5 @@
-#ifndef GUARD_NEURALNET_EARLYINFO_HPP
-#define GUARD_NEURALNET_EARLYINFO_HPP
+#ifndef GUARD_NEURALNET_InputShapeInfo_HPP
+#define GUARD_NEURALNET_InputShapeInfo_HPP
 
 #include <poponnx/tensorinfo.hpp>
 
@@ -11,9 +11,9 @@ namespace poponnx {
 // the IPU requires all Stream Tensor shapes.
 // In the future (TODO T5252) it will also contain indices for slicing
 // tensors (I think the LSTM from pytorch might require this)
-class EarlyInfo {
+class InputShapeInfo {
 public:
-  EarlyInfo() = default;
+  InputShapeInfo() = default;
 
   void add(TensorId, const TensorInfo &);
   const TensorInfo &get(TensorId) const;

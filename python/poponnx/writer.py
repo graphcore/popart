@@ -9,7 +9,7 @@ class NetWriter():
     """
 
     def __init__(self, inNames, outNames, losses, optimizer, dataFeed,
-                 earlyInfo):
+                 inputShapeInfo):
         """
         inNames:
           A list (in order) of all the inputs to the ONNX Model.
@@ -27,7 +27,7 @@ class NetWriter():
           to return
         dataFeed:
           how to get data
-        earlyInfo:
+        inputShapeInfo:
           for every loss stream input and standard input: the shape,
           ONNX DataType and how to get data
         """
@@ -36,7 +36,7 @@ class NetWriter():
         self.losses = losses
         self.optimizer = optimizer
         self.dataFeed = dataFeed
-        self.earlyInfo = earlyInfo
+        self.inputShapeInfo = inputShapeInfo
         self.trainMode = optimizer != None
 
         print(self.dataFeed.nAnchors())

@@ -3,7 +3,7 @@
 
 #include <map>
 #include <poponnx/dataflow.hpp>
-#include <poponnx/earlyinfo.hpp>
+#include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/optionflags.hpp>
 #include <poponnx/patterns/patterns.hpp>
@@ -124,7 +124,7 @@ private:
 class IrBundle {
 public:
   IrBundle(const onnx::ModelProto &modelProto,
-           const EarlyInfo &earlyInfo,
+           const InputShapeInfo &inputShapeInfo,
            const DataFlow &dataFlow,
            const std::vector<Loss *> &losses,
            const Optimizer *optimizer,
@@ -134,7 +134,7 @@ public:
            const Patterns &patterns);
 
   const onnx::ModelProto &modelProto;
-  const EarlyInfo &earlyInfo;
+  const InputShapeInfo &inputShapeInfo;
   const DataFlow &dataFlow;
   const std::vector<Loss *> &losses;
   const Optimizer *optimizer;
@@ -256,7 +256,7 @@ private:
   std::unique_ptr<Optimizer> optimizer;
   std::string logdir;
   SessionOptions userOptions;
-  EarlyInfo earlyInfo;
+  InputShapeInfo inputShapeInfo;
 
   void constructForwards();
   void constructBackwards();

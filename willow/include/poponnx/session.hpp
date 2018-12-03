@@ -25,20 +25,19 @@ public:
    *
    * \param model Either an ONNX model protobuf, or the name of a file
    *              containing an ONNX model protobuf
-   * \param earlyInfo Information about the shapes of input and output tensors
-   * \param dataFlow Configuration for the data feeds and fetches
-   * \param losses A list of loss layers to use when training
-   * \param optimizer The name of an optimizer to use when training
-   * \param cTens List of weight tensors which are not to be updated
-   * \param logdir Directory to dump logging information into
-   * \param userOptions String to configure session options
+   * \param inputShapeInfo Information about the shapes of input and output
+   * tensors \param dataFlow Configuration for the data feeds and fetches \param
+   * losses A list of loss layers to use when training \param optimizer The name
+   * of an optimizer to use when training \param cTens List of weight tensors
+   * which are not to be updated \param logdir Directory to dump logging
+   * information into \param userOptions String to configure session options
    * \param patterns Optimization patterns to apply
    */
 
   static std::unique_ptr<Session>
   createFromOnnxModel(const std::string &model,
-                      const EarlyInfo &earlyInfo,
                       const DataFlow &dataFlow,
+                      const InputShapeInfo &inputShapeInfo  = InputShapeInfo(),
                       const std::vector<Loss *> &losses     = {},
                       const Optimizer *optimizer            = nullptr,
                       const std::vector<std::string> &cTens = {},
@@ -179,8 +178,8 @@ private:
   std::unique_ptr<Device> device_;
 
   void configureFromOnnx(const std::string &model,
-                         const EarlyInfo &earlyInfo,
                          const DataFlow &dataFlow,
+                         const InputShapeInfo &inputShapeInfo,
                          const std::vector<Loss *> &losses,
                          const Optimizer *optimizer,
                          const std::vector<std::string> &cTens,

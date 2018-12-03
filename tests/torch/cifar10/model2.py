@@ -20,9 +20,9 @@ batchesPerStep = 3
 anchors = ["l1LossVal", "out"]
 art = poponnx.AnchorReturnType.ALL
 dataFeed = poponnx.DataFlow(batchesPerStep, batchSize, anchors, art)
-earlyInfo = poponnx.EarlyInfo()
-earlyInfo.add("image0",
-              poponnx.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
+inputShapeInfo = poponnx.InputShapeInfo()
+inputShapeInfo.add("image0",
+                   poponnx.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 inNames = ["image0"]
 cifarInIndices = {"image0": 0, "label": 1}
 outNames = ["out"]
@@ -60,7 +60,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     outNames=outNames,
     losses=losses,
     optimizer=poponnx.ConstSGD(0.001),
-    earlyInfo=earlyInfo,
+    inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:
     module=Module0())

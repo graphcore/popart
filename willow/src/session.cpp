@@ -16,8 +16,8 @@ namespace poponnx {
 Session::Session() {}
 
 void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
-                                const EarlyInfo &perk,
                                 const DataFlow &df,
+                                const InputShapeInfo &perk,
                                 const std::vector<Loss *> &lossesIn,
                                 const Optimizer *optimizerIn,
                                 const std::vector<TensorId> &cTens,
@@ -42,8 +42,8 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
 
 std::unique_ptr<Session>
 Session::createFromOnnxModel(const std::string &model,
-                             const EarlyInfo &earlyInfo,
                              const DataFlow &dataFlow,
+                             const InputShapeInfo &inputShapeInfo,
                              const std::vector<Loss *> &losses,
                              const Optimizer *optimizer,
                              const std::vector<std::string> &cTens,
@@ -60,8 +60,8 @@ Session::createFromOnnxModel(const std::string &model,
   // private constructor
   auto session = std::unique_ptr<Session>(new Session());
   session->configureFromOnnx(model,
-                             earlyInfo,
                              dataFlow,
+                             inputShapeInfo,
                              losses,
                              optimizer,
                              cTens,

@@ -2,14 +2,14 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <poponnx/earlyinfo.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/tensorinfo.hpp>
 
 using namespace poponnx;
 
-BOOST_AUTO_TEST_CASE(EarlyInfo_Case1) {
-  auto ei = poponnx::EarlyInfo();
+BOOST_AUTO_TEST_CASE(InputShapeInfo_Case1) {
+  auto ei = poponnx::InputShapeInfo();
 
   BOOST_CHECK(ei.has("cat") == false);
   BOOST_CHECK(ei.getAllTensorIds().size() == 0);
@@ -24,7 +24,7 @@ BOOST_AUTO_TEST_CASE(EarlyInfo_Case1) {
 
   BOOST_CHECK(input == output);
 
-  poponnx::EarlyInfo ei2(ei);
+  poponnx::InputShapeInfo ei2(ei);
 
   BOOST_CHECK(ei.has("cat") == true);
   BOOST_CHECK(ei2.has("cat") == true);

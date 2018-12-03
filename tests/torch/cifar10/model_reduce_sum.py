@@ -37,9 +37,9 @@ dataFeed = poponnx.DataFlow(batchesPerStep, batchSize, anchors, art)
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the Session constructor.
 # In this example there is 1 streamed input, image0.
-earlyInfo = poponnx.EarlyInfo()
-earlyInfo.add("image0", poponnx.TensorInfo("FLOAT",
-                                           [batchSize, nChans, 32, 32]))
+inputShapeInfo = poponnx.InputShapeInfo()
+inputShapeInfo.add("image0",
+                   poponnx.TensorInfo("FLOAT", [batchSize, nChans, 32, 32]))
 
 inNames = ["image0"]
 
@@ -79,7 +79,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     outNames=outNames,
     losses=losses,
     optimizer=poponnx.ConstSGD(0.001),
-    earlyInfo=earlyInfo,
+    inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:
     module=Module0())
