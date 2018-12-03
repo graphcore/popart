@@ -25,10 +25,10 @@ static void check_arg_range(const std::vector<TensorId> &args,
                             const char *name) {
   auto len = args.size();
   if (len < min || len > max) {
-    std::stringstream err;
-    err << name << " has invalid number of args. Must be between " << min
-        << " and  " << max;
-    throw error(err.str());
+    throw error("{}  has invalid number of args. Must be between {} and {}",
+                name,
+                min,
+                max);
   }
 }
 
@@ -37,9 +37,7 @@ static void check_arg_count(const std::vector<TensorId> &args,
                             const char *name) {
   auto len = args.size();
   if (len != count) {
-    std::stringstream err;
-    err << name << " has invalid number of args. Must be " << count;
-    throw error(err.str());
+    throw error("{} has invalid number of args. Must be {}", name, count);
   }
 }
 
@@ -47,9 +45,7 @@ static void check_arg_exists(const std::vector<TensorId> &args,
                              const char *name) {
   auto len = args.size();
   if (len == 0) {
-    std::stringstream err;
-    err << name << " has no arguments";
-    throw error(err.str());
+    throw error("{} has no arguments", name);
   }
 }
 
@@ -802,10 +798,9 @@ inline static void
 checkUnique(const std::string &name,
             const std::map<std::string, TensorId> &tensorTranslation) {
   if (tensorTranslation.count(name)) {
-    std::stringstream ss;
-    ss << "Tensor translation not unique. The name " << name
-       << " already appeared in a previously imported model.";
-    throw error(ss.str());
+    throw error("Tensor translation not unique. The name {}  already appeared "
+                "in a previously imported model.",
+                name);
   }
 }
 
@@ -814,9 +809,7 @@ getTranslation(const std::string &name,
                const std::map<std::string, TensorId> &tensorTranslation) {
   auto it = tensorTranslation.find(name);
   if (it == tensorTranslation.end()) {
-    std::stringstream ss;
-    ss << "Tensor " << name << " has not been translated.";
-    throw error(ss.str());
+    throw error("Tensor {} has not been translated.", name);
   }
   return it->second;
 }
@@ -872,19 +865,17 @@ void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
 
   // Check the IR version.
   if (model_.ir_version() != irVersion) {
-    std::stringstream ss;
-    ss << "Expecting ONNX IR version " << irVersion << ", but got "
-       << model_.ir_version() << ".";
-    throw error(ss.str());
+    throw error("Expecting ONNX IR version {}, but got {}.",
+                irVersion,
+                model_.ir_version());
   }
 
   // Check the opset versions.
   for (auto opset : model_.opset_import()) {
     if (opset.version() != operatorSetVersion) {
-      std::stringstream ss;
-      ss << "Expecting ONNX opset version " << operatorSetVersion
-         << ", but got " << opset.version() << ".";
-      throw error(ss.str());
+      throw error("Expecting ONNX opset version {}, but got {}.",
+                  operatorSetVersion,
+                  opset.version());
     }
   }
 
@@ -957,16 +948,13 @@ int BuilderImpl::getInputTensorIndex(TensorId id) const {
       }
     }
     if (index == -1) {
-      std::stringstream err;
-      err << id << " index not found";
-      throw error(err.str());
+      throw error("{} index not found", id);
     }
     return index;
   } else {
-    std::stringstream err;
-    err << id << " is not an input tensor. Must be "
-        << getStrFromTensorIdVec(getInputTensorIds());
-    throw error(err.str());
+    throw error("{} is not an input tensor. Must be {}",
+                id,
+                getStrFromTensorIdVec(getInputTensorIds()));
   }
 }
 
@@ -979,16 +967,13 @@ int BuilderImpl::getOutputTensorIndex(TensorId id) const {
       }
     }
     if (index == -1) {
-      std::stringstream err;
-      err << id << " index not found";
-      throw error(err.str());
+      throw error("{} index not found", id);
     }
     return index;
   } else {
-    std::stringstream err;
-    err << id << " is not an output tensor. Must be "
-        << getStrFromTensorIdVec(getOutputTensorIds());
-    throw error(err.str());
+    throw error("{} is not an output tensor. Must be {}",
+                id,
+                getStrFromTensorIdVec(getOutputTensorIds()));
   }
 }
 
@@ -1002,11 +987,10 @@ const onnx::ValueInfoProto &BuilderImpl::getValueInfoProto(TensorId id) const {
         model_.graph().output(getOutputTensorIndex(id));
     return t;
   } else {
-    std::stringstream err;
-    err << id << " is not an input or output tensor. Must be one of "
-        << getStrFromTensorIdVec(getInputTensorIds())
-        << getStrFromTensorIdVec(getOutputTensorIds());
-    throw error(err.str());
+    throw error("{} is not an input or output tensor. Must be one of {} {}",
+                id,
+                getStrFromTensorIdVec(getInputTensorIds()),
+                getStrFromTensorIdVec(getOutputTensorIds()));
   }
 }
 

@@ -13,9 +13,7 @@ namespace io {
 std::string getCanonicalDirName(const std::string &dirName0) {
   namespace bf = boost::filesystem;
   if (!bf::is_directory(dirName0)) {
-    std::stringstream ss;
-    ss << "Directory does not exist: " << dirName0;
-    throw poponnx::error(ss.str());
+    throw poponnx::error("Directory does not exisit: {}", dirName0);
   }
   bf::path p(dirName0);
   return bf::canonical(dirName0).string();
@@ -45,9 +43,7 @@ bool isRegularFile(const std::string &filename) {
 
 void confirmRegularFile(const std::string &filename) {
   if (!boost::filesystem::is_regular_file(filename)) {
-    std::stringstream ss;
-    ss << filename << " is not a regular file, cannot load";
-    throw error(ss.str());
+    throw error("{} is not a regular file, cannot load", filename);
   }
 }
 
@@ -123,17 +119,13 @@ void writeModel(const onnx::ModelProto &model, const std::string &filename) {
   std::ofstream ofs;
   ofs.open(filename, std::ofstream::out | std::ofstream::binary);
   if (!ofs.is_open()) {
-    std::stringstream ss;
-    ss << "Failed to open file " << filename;
-    throw error(ss.str());
+    throw error("Failed to open file {}", filename);
   }
 
   // Standard Message Methods have this functionality for serializing
   // https://developers.google.com/protocol-buffers/docs/cpptutorial
   if (!model.SerializeToOstream(&ofs)) {
-    std::stringstream ss;
-    ss << "Failed to serialize ModelProto to " << filename;
-    throw error(ss.str());
+    throw error("Failed to serialize ModelProto to {}", filename);
   }
 }
 
@@ -173,11 +165,10 @@ OnnxTensors getAndMatchTensors(const std::vector<std::string> &fns,
     auto numStr = name.substr(dStart + 1, dEnd - dStart - 1);
     auto number = std::stoul(numStr);
     if (number >= names.size()) {
-      std::stringstream errmss;
-      errmss << "number extracted from filename exceeds size of names. "
-             << "number = " << number
-             << " and size of names = " << names.size();
-      throw error(errmss.str());
+      throw error("number extracted from filename exceeds size of names. "
+                  "number = {} and size of names = {}",
+                  number,
+                  names.size());
     }
     // At this point Tensor does not have a name (at least in the test suite).
     tensor.set_name(names[number]);
@@ -210,9 +201,7 @@ std::vector<std::string> getInDir(const std::string &dir, T check) {
   namespace bf = boost::filesystem;
   bf::path p(dir);
   if (!is_directory(p)) {
-    std::stringstream ss;
-    ss << p << " in not a directory, bailing from getInDir";
-    throw error(ss.str());
+    throw error("{} in not a directory, bailing from getInDir", p);
   } else {
     bf::directory_iterator eod;
     for (bf::directory_iterator dir_itr(p); dir_itr != eod; ++dir_itr) {

@@ -53,7 +53,7 @@ void Attributes::set(std::vector<int64_t> &vs, std::string key) const {
       vs.push_back(v);
     }
   } else {
-    throw error("no attribute key " + key);
+    throw error("no attribute key {}", key);
   }
 }
 
@@ -62,7 +62,7 @@ template <> void Attributes::set(int64_t &v, std::string key) const {
   if (found != att_map.end()) {
     v = found->second->i();
   } else {
-    throw error("no attribute key " + key);
+    throw error("no attribute key {}", key);
   }
 }
 

@@ -39,7 +39,7 @@ DataType getDataTypeFromNpType(std::string npType) {
   const static std::map<std::string, DataType> M = initNpTypeMap();
   auto found                                     = M.find(npType);
   if (found == M.end()) {
-    throw error("No numpy type " + npType + " registered in map to DataType");
+    throw error("No numpy type {} registered in map to DataType", npType);
   }
   return found->second;
 }
@@ -86,7 +86,7 @@ public:
         std::string mapName) const {
     auto found = M.find(id);
     if (found == M.end()) {
-      throw error("No tensor " + id + " provided in PyStepIO's " + mapName);
+      throw error("No tensor {} provided in PyStepIO's {}", id, mapName);
     }
     py::array npArr = found->second;
     T stepData;

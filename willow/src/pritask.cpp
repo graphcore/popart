@@ -22,10 +22,8 @@ void PriTask::removeDep(const TaskId &dep) {
     }
   }
   if (newDependsOn.size() + 1 != dependsOn.size()) {
-    std::stringstream ss;
-    ss << "failed to remove dependency `" << dep << "' for PriTask `" << name
-       << "'. ";
-    throw error(ss.str());
+    throw error(
+        "failed to remove dependency '{}' for PriTask '{}'.", dep, name);
   }
   dependsOn = newDependsOn;
 }
@@ -36,7 +34,7 @@ bool operator<(const PriTask &a, const PriTask &b) {
 
 void PriTasks::add(const PriTask &t) {
   if (tasksMap.find(t.name) != tasksMap.end()) {
-    throw error("already encountered name " + t.name + " in tasks");
+    throw error("already encountered name {} in tasks", t.name);
   }
   tasksMap[t.name] = t;
 }

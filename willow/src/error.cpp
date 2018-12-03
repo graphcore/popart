@@ -6,10 +6,6 @@
 
 namespace poponnx {
 
-error::error(const std::string &what) : std::runtime_error(what) {
-  logging::err(what);
-}
-
 ErrorSource getErrorSource(const std::exception &e) {
   if (dynamic_cast<const poponnx::error *>(&e)) {
     return ErrorSource::poponnx;

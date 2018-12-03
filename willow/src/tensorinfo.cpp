@@ -302,8 +302,7 @@ std::string initAllONNXTypesString() {
 DataType TensorInfo::dataTypeFromString(const std::string &s) const {
   auto found = getStrToDataTypeMap().find(s);
   if (found == getStrToDataTypeMap().end()) {
-    throw error("no ONNX type " + s + ", they're " + getAllONNXTypesString() +
-                ".");
+    throw error("no ONNX type {}, they're {}.", s, getAllONNXTypesString());
   }
   return found->second;
 }
