@@ -75,14 +75,13 @@ public:
   TensorId logical_xor(const std::vector<TensorId> &args,
                        const std::string &name);
 
-  TensorId
-  convolution(const std::vector<TensorId> &args,
-              const std::vector<int64_t> strides,
-              const std::vector<int64_t> padding,
-              const std::vector<int64_t> dilation,
-              int64_t groups,
-              bool cacheOperation,
-              const std::string &name);
+  TensorId convolution(const std::vector<TensorId> &args,
+                       const std::vector<int64_t> strides,
+                       const std::vector<int64_t> padding,
+                       const std::vector<int64_t> dilation,
+                       int64_t groups,
+                       bool cacheOperation,
+                       const std::string &name);
 
   TensorId averagepool(const std::vector<TensorId> &args,
                        const std::vector<int64_t> kernel_shape,
@@ -134,7 +133,15 @@ public:
                         const std::set<TensorId> &nodeOutputNames);
 
   void addNodeAttribute(const std::string &attributeName,
+                        const char *attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  void addNodeAttribute(const std::string &attributeName,
                         const std::vector<std::string> &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  void addNodeAttribute(const std::string &attributeName,
+                        const bool attributeValue,
                         const std::set<TensorId> &nodeOutputNames);
 
   bool nodeHasAttribute(const std::string &attributeName,
@@ -160,6 +167,9 @@ public:
   std::vector<std::string>
   getStringVectorNodeAttribute(const std::string &attributeName,
                                const std::set<TensorId> &nodeOutputNames);
+
+  bool getBoolNodeAttribute(const std::string &attributeName,
+                            const std::set<TensorId> &nodeOutputNames);
 
   void removeNodeAttribute(const std::string &attributeName,
                            const std::set<TensorId> &nodeOutputNames);

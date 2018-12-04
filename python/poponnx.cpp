@@ -593,7 +593,16 @@ PYBIND11_MODULE(poponnx_core, m) {
            })
       .def("getInputTensorIds", &Builder::getInputTensorIds)
       .def("getOutputTensorIds", &Builder::getOutputTensorIds)
-      .def("getTensorShape", &Builder::getTensorShape, py::arg("id"));
+      .def("getTensorShape", &Builder::getTensorShape, py::arg("id"))
+      .def("recomputeOutputInBackwardPass",
+           static_cast<void (Builder::*)(const TensorId &, bool value)>(
+               &Builder::recomputeOutputInBackwardPass),
+           py::arg("nodeOutputNames"),
+           py::arg("value") = true)
+      .def("getRecomputeOutputInBackwardPass",
+           static_cast<bool (Builder::*)(const TensorId &)>(
+               &Builder::getRecomputeOutputInBackwardPass),
+           py::arg("nodeOutputNames"));
 
   // PyBinding to a singlton
   py::class_<DeviceManager, std::unique_ptr<DeviceManager, py::nodelete>>(

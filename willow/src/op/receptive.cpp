@@ -34,7 +34,8 @@ void HasReceptiveFieldOp::setup() {
   std::string auto_pad = "NOTSET";
   nAtts.setIfPresent(auto_pad, "auto_pad");
   if (auto_pad != "NOTSET") {
-    throw error("auto_pad not NOTSET, deprecated and not supported");
+    throw error("auto_pad not NOTSET, deprecated and not supported '{}'",
+                auto_pad);
   }
 
   setSpatialK();

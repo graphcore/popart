@@ -1,4 +1,5 @@
 #include <poponnx/builder_impl.hpp>
+#include <poponnx/logging.hpp>
 
 namespace poponnx {
 
@@ -329,7 +330,19 @@ void Builder::addNodeAttribute(const std::string &attributeName,
 }
 
 void Builder::addNodeAttribute(const std::string &attributeName,
+                               const char *attributeValue,
+                               const std::set<TensorId> &nodeOutputNames) {
+  impl_->addNodeAttribute(attributeName, attributeValue, nodeOutputNames);
+}
+
+void Builder::addNodeAttribute(const std::string &attributeName,
                                const std::vector<std::string> &attributeValue,
+                               const std::set<TensorId> &nodeOutputNames) {
+  impl_->addNodeAttribute(attributeName, attributeValue, nodeOutputNames);
+}
+
+void Builder::addNodeAttribute(const std::string &attributeName,
+                               const bool attributeValue,
                                const std::set<TensorId> &nodeOutputNames) {
   impl_->addNodeAttribute(attributeName, attributeValue, nodeOutputNames);
 }
@@ -373,6 +386,11 @@ std::vector<std::string> Builder::getStringVectorNodeAttribute(
     const std::string &attributeName,
     const std::set<TensorId> &nodeOutputNames) {
   return impl_->getStringVectorNodeAttribute(attributeName, nodeOutputNames);
+}
+
+bool Builder::getBoolNodeAttribute(const std::string &attributeName,
+                                   const std::set<TensorId> &nodeOutputNames) {
+  return impl_->getBoolNodeAttribute(attributeName, nodeOutputNames);
 }
 
 void Builder::removeNodeAttribute(const std::string &attributeName,

@@ -741,6 +741,15 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
   attr.set_s(attributeValue);
 }
 
+void BuilderImpl::addNodeAttribute(const std::string &attributeName,
+                                   const char *attributeValue,
+                                   const std::set<TensorId> &nodeOutputNames) {
+  onnx::AttributeProto &attr =
+      addNewAttributeToNode(attributeName, nodeOutputNames);
+  attr.set_type(onnx::AttributeProto::STRING);
+  attr.set_s(attributeValue);
+}
+
 void BuilderImpl::addNodeAttribute(
     const std::string &attributeName,
     const std::vector<std::string> &attributeValue,
@@ -751,6 +760,15 @@ void BuilderImpl::addNodeAttribute(
   for (std::string s : attributeValue) {
     attr.add_strings(s);
   }
+}
+
+void BuilderImpl::addNodeAttribute(const std::string &attributeName,
+                                   const bool attributeValue,
+                                   const std::set<TensorId> &nodeOutputNames) {
+  onnx::AttributeProto &attr =
+      addNewAttributeToNode(attributeName, nodeOutputNames);
+  attr.set_type(onnx::AttributeProto::INT);
+  attr.set_i(static_cast<int>(attributeValue));
 }
 
 onnx::AttributeProto &
@@ -835,6 +853,18 @@ std::vector<std::string> BuilderImpl::getStringVectorNodeAttribute(
     out.push_back(s);
   }
   return out;
+}
+
+bool BuilderImpl::getBoolNodeAttribute(
+    const std::string &attributeName,
+    const std::set<TensorId> &nodeOutputNames) {
+
+  onnx::AttributeProto &attr = getNodeAttribute(attributeName, nodeOutputNames);
+  if (attr.type() != onnx::AttributeProto::INT) {
+    throw error("Attribute " + attributeName + " is not a int.");
+  }
+
+  return static_cast<bool>(attr.i());
 }
 
 void BuilderImpl::removeNodeAttribute(

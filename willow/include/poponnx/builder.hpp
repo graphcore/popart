@@ -19,6 +19,9 @@ class TensorInfo;
 class Builder {
   Builder();
 
+  static constexpr const char *sRecomputeOutputInBackwardPass =
+      "recomputeOutputInBackwardPass";
+
 public:
   /**
    * Create a builder for an ONNX model.
@@ -683,6 +686,29 @@ public:
                    const std::string &name = {});
 
   /**
+   * Add an attribute to the ONNX mode to recompute the output in the backwards
+   * pass
+   *
+   * \param nodeOutputName Name of the output tensor of the ONNX node
+   * \param value If the recompute is enabled/disabled
+   */
+  void recomputeOutputInBackwardPass(const TensorId &nodeOutputName,
+                                     bool value = true) {
+    addNodeAttribute(sRecomputeOutputInBackwardPass, value, {nodeOutputName});
+  }
+  /**
+   * Add an attribute to the ONNX mode to recompute the output in the backwards
+   * pass
+   *
+   * \param nodeOutputNames Names of the output tensors of the ONNX node
+   * \param value If the recompute is enabled/disabled
+   */
+  void recomputeOutputInBackwardPass(const std::set<TensorId> &nodeOutputNames,
+                                     bool value = true) {
+    addNodeAttribute(sRecomputeOutputInBackwardPass, value, nodeOutputNames);
+  }
+
+  /**
    * Add an attribute to the ONNX node which is uniquely identified by the
    * outputs.
    * This functions will throw an exception if it can't find the unique
@@ -758,6 +784,10 @@ public:
                         const std::string &attributeValue,
                         const std::set<TensorId> &nodeOutputNames);
 
+  void addNodeAttribute(const std::string &attributeName,
+                        const char *attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
   /**
    * Add an attribute to the ONNX node which is uniquely identified by the
    * outputs.
@@ -772,6 +802,21 @@ public:
    */
   void addNodeAttribute(const std::string &attributeName,
                         const std::vector<std::string> &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Add an attribute to the ONNX node which is uniquely identified by the
+   * outputs.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute already exists.
+   *
+   * \param attributeName The name of the attribute to add.
+   * \param attributeValue An bool value of the attribute to add
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  void addNodeAttribute(const std::string &attributeName,
+                        const bool attributeValue,
                         const std::set<TensorId> &nodeOutputNames);
 
   /**
@@ -871,6 +916,9 @@ public:
   getStringVectorNodeAttribute(const std::string &attributeName,
                                const std::set<TensorId> &nodeOutputNames);
 
+  bool getBoolNodeAttribute(const std::string &attributeName,
+                            const std::set<TensorId> &nodeOutputNames);
+
   /**
    * Remove an attribute from the ONNX node.
    * This functions will throw an exception if it can't find the unique
@@ -893,6 +941,33 @@ public:
    */
   std::vector<std::string>
   getAllNodeAttributeNames(const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Get the recompute output in backwards pass attribute names from the ONNX
+   * node. This functions will throw an exception if it can't find the unique
+   * node.
+   *
+   * \param nodeOutputName Name of the output tensor of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  bool getRecomputeOutputInBackwardPass(const TensorId &nodeOutputName) {
+    return getBoolNodeAttribute(sRecomputeOutputInBackwardPass,
+                                {nodeOutputName});
+  }
+
+  /**
+   * Get the recompute output in backwards pass attribute names from the ONNX
+   * node. This functions will throw an exception if it can't find the unique
+   * node.
+   *
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  bool
+  getRecomputeOutputInBackwardPass(const std::set<TensorId> &nodeOutputNames) {
+    return getBoolNodeAttribute(sRecomputeOutputInBackwardPass,
+                                nodeOutputNames);
+  }
 
   /**
    * When an ONNX model is loaded, all the tensor names are made unique. This

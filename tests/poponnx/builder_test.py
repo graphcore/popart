@@ -556,6 +556,23 @@ def test_inout_tensor_info():
         e_info.value.args[0].find("is not an input or output tensor. Must be"))
 
 
+def test_recompute_output_in_backward_pass():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+
+    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    builder.recomputeOutputInBackwardPass(o)
+
+    builder.addOutputTensor(o)
+    # Test that tha attribute has been set
+    val = True
+    res = builder.getRecomputeOutputInBackwardPass(o)
+    assert (res == val)
+
+
 def test_add_int_attribute():
 
     builder = poponnx.Builder()
