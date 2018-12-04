@@ -63,6 +63,8 @@ pip install numpy
 pip install pytest
 pip install yapf
 pip install torchvision
+pip install pyyaml
+pip install requests
 
 # Create a directory for building
 rm -rf build
