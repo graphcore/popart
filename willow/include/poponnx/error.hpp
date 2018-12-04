@@ -3,7 +3,6 @@
 #ifndef GUARD_NEURALNET_ERROR_HPP
 #define GUARD_NEURALNET_ERROR_HPP
 
-#include <boost/stacktrace.hpp>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -41,9 +40,6 @@ public:
   explicit error(const char *s, const Args &... args) try : std
     ::runtime_error(fmt::format(s, args...)) {
       logging::err(what());
-      std::stringstream ss;
-      ss << boost::stacktrace::stacktrace();
-      logging::err(ss.str());
     }
   catch (const fmt::FormatError &e) {
     std::string reason =
@@ -56,9 +52,6 @@ public:
   explicit error(const std::string &s, const Args &... args) try : std
     ::runtime_error(fmt::format(s, args...)) {
       logging::err(what());
-      std::stringstream ss;
-      ss << boost::stacktrace::stacktrace();
-      logging::err(ss.str());
     }
   catch (const fmt::FormatError &e) {
     std::string reason =

@@ -52,7 +52,6 @@ target_link_libraries(poponnx
   ${CBLAS_LIBRARIES}
   ${Boost_LIBRARIES}
   ${SPDLOG_LIBRARIES}
-  ${CMAKE_DL_LIBS}
   ${POPLAR_LIB}
   ${POPLIN_LIB}
   ${POPNN_LIB}
