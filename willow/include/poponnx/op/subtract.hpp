@@ -2,7 +2,6 @@
 #define GUARD_NEURALNET_SUBTRACT_HPP
 
 #include <poponnx/op.hpp>
-#include <poponnx/op/negate.hpp>
 #include <poponnx/op/reducesum.hpp>
 
 namespace poponnx {
@@ -37,7 +36,7 @@ private:
 
 // TODO (task T5432) should inherit from ReduceSum when we have numpy
 // broadcasting
-class SubtractArg1GradOp : public NegateOp {
+class SubtractArg1GradOp : public Op {
 public:
   SubtractArg1GradOp(SubtractOp *);
   std::unique_ptr<Op> clone() const final;

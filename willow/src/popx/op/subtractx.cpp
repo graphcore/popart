@@ -34,12 +34,5 @@ SubtractArg0GradOpx::SubtractArg0GradOpx(Op *op, Devicex *devicex)
   }
 }
 
-SubtractArg1GradOpx::SubtractArg1GradOpx(Op *op, Devicex *devicex)
-    : NegateOpx(op, devicex) {
-  if (op_p->opType != OpType::SUBTRACTARG1GRAD) {
-    throw error("cannot create SubtractArg1GradOpx from " + op_p->op_type());
-  }
-}
-
 } // namespace popx
 } // namespace poponnx

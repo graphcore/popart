@@ -55,7 +55,7 @@ void SubtractArg0GradOp::setup() {
 }
 
 SubtractArg1GradOp::SubtractArg1GradOp(SubtractOp *op_)
-    : NegateOp({"SubtractArg1Grad", op_->pir, {}, getPoponnxDomain()}),
+    : Op({"SubtractArg1Grad", op_->pir, {}, getPoponnxDomain()}),
       forward_op_arg_info(op_->inInfo(SubtractOp::getArg1InIndex())) {}
 
 const std::map<int, int> &SubtractArg1GradOp::gradOutToNonGradIn() const {

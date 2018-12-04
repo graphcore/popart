@@ -614,7 +614,8 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
   }
 
   case OpType::SUBTRACTARG1GRAD: {
-    return std::unique_ptr<Opx>(new SubtractArg1GradOpx(op, this));
+    throw error("SubtractArg1GradOpx should be removed by pattern "
+                "'SubtractArg1GradOp'");
   }
 
   case OpType::SUM: {

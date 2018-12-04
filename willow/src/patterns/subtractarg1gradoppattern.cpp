@@ -1,6 +1,7 @@
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/identity.hpp>
+#include <poponnx/op/negate.hpp>
 #include <poponnx/op/reducesum.hpp>
 #include <poponnx/op/subtract.hpp>
 #include <poponnx/patterns/subtractarg1gradoppattern.hpp>
