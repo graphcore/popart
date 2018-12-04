@@ -104,6 +104,8 @@ public:
   // same domain as from the NodeProto if constructed from ONNX
   const std::string &domain();
 
+  const std::string &name() const;
+
   // the Ir to which the Op belongs
   Ir *pir;
 
@@ -196,6 +198,7 @@ private:
   virtual void appendMore(std::stringstream &) const {}
   const std::string *const p_op_type;
   const std::string *const p_op_domain;
+  std::string _name;
 
   // design decision : see-sawing between storing a pointer
   // to the Node from which the Op derives (if it does derive

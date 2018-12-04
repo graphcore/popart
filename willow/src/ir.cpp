@@ -86,6 +86,8 @@ void Ir::eraseOp(OpId id) {
 }
 
 void Ir::exportDot(const std::string dotfn) const {
+
+  logging::ir::info("Writing dot file to {}", dotfn);
   std::ofstream strm;
   strm.open(dotfn, std::ios::out);
   if (!strm.is_open()) {
@@ -97,7 +99,13 @@ void Ir::exportDot(const std::string dotfn) const {
   int scheduleIndex = 0;
   for (auto &n : getOpSchedule({})) {
     strm << "n_" << n->id << " [shape= \"box\", label=\"" << scheduleIndex
-         << '.' << ' ' << n->op_type() << "\"];\n";
+         << '.' << ' ' << n->op_type();
+
+    // Add the debug name if present
+    if (!n->name().empty())
+      strm << "(" << n->name() << ")";
+
+    strm << "\"];\n";
     ++scheduleIndex;
     for (auto &ind_ten : n->input->tensorMap()) {
       strm << ind_ten.second->id << " -> n_" << n->id << ';' << '\n';

@@ -157,6 +157,8 @@ const std::string &Op::domain() { return *p_op_domain; }
 
 const std::string &Op::op_type() const { return *p_op_type; }
 
+const std::string &Op::name() const { return _name; }
+
 OpConstructorBundle::OpConstructorBundle(std::string op_type_,
                                          Ir *pir_,
                                          Attributes atts_,
@@ -167,7 +169,7 @@ Op::Op(const Op &op)
     : Vertex(op), input(new TensorIndexMap), output(new TensorIndexMap),
       priority(op.priority), opType(op.opType), pir(op.pir),
       id(pir->getAndIncrOpsCounter()), nAtts(op.nAtts), p_op_type(op.p_op_type),
-      p_op_domain(op.p_op_domain) {
+      p_op_domain(op.p_op_domain), _name(op._name) {
   // input, output: empty.
 }
 
@@ -197,7 +199,12 @@ Op::Op(const Node &node, Ir *pg)
       // We set the pointer to the string version of opType, in another map
       p_op_type(&getOpTypes().getName(opType)),
       // And finally we strip off the domain of the Node
-      p_op_domain(&getOpTypes().getDomain(opType)) {}
+      p_op_domain(&getOpTypes().getDomain(opType)) {
+  // Set the name if it has been specified on the node.
+  if (node.has_name()) {
+    _name = node.name();
+  }
+}
 
 std::unique_ptr<Op> Ir::addOp(const Node &node) {
   using pOp = std::unique_ptr<Op>;

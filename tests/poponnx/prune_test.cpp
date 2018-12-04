@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(PruneTest) {
   builder->add({i1, i1});
   auto i2 = builder->add({i1, i1});
   builder->add({i2, i2});
-  builder->add({i2, i2});
+  builder->add({i2, i2}, "test_add");
   builder->add({i2, i2});
   builder->add({i2, i2});
   builder->add({i2, i2});

@@ -27,80 +27,91 @@ public:
   void addOutputTensor(const TensorId &arg0);
 
   // Operations requiring only tensor inputs
-  TensorId abs(const std::vector<TensorId> &args);
-  TensorId acos(const std::vector<TensorId> &args);
-  TensorId acosh(const std::vector<TensorId> &args);
-  TensorId add(const std::vector<TensorId> &args);
-  TensorId logical_and(const std::vector<TensorId> &args);
-  TensorId asin(const std::vector<TensorId> &args);
-  TensorId asinh(const std::vector<TensorId> &args);
-  TensorId atan(const std::vector<TensorId> &args);
-  TensorId atanh(const std::vector<TensorId> &args);
-  TensorId cast(const std::vector<TensorId> &args);
-  TensorId ceil(const std::vector<TensorId> &args);
-  TensorId cos(const std::vector<TensorId> &args);
-  TensorId cosh(const std::vector<TensorId> &args);
-  TensorId div(const std::vector<TensorId> &args);
-  TensorId elu(const std::vector<TensorId> &args);
-  TensorId equal(const std::vector<TensorId> &args);
-  TensorId exp(const std::vector<TensorId> &args);
-  TensorId floor(const std::vector<TensorId> &args);
-  TensorId greater(const std::vector<TensorId> &args);
-  TensorId identity(const std::vector<TensorId> &args);
-  TensorId less(const std::vector<TensorId> &args);
-  TensorId log(const std::vector<TensorId> &args);
-  TensorId max(const std::vector<TensorId> &args);
-  TensorId mean(const std::vector<TensorId> &args);
-  TensorId min(const std::vector<TensorId> &args);
-  TensorId mul(const std::vector<TensorId> &args);
-  TensorId neg(const std::vector<TensorId> &args);
-  TensorId logical_not(const std::vector<TensorId> &args);
-  TensorId logical_or(const std::vector<TensorId> &args);
-  TensorId pow(const std::vector<TensorId> &args);
-  TensorId reciprocal(const std::vector<TensorId> &args);
-  TensorId relu(const std::vector<TensorId> &args);
-  TensorId sigmoid(const std::vector<TensorId> &args);
-  TensorId sin(const std::vector<TensorId> &args);
-  TensorId sinh(const std::vector<TensorId> &args);
-  TensorId softsign(const std::vector<TensorId> &args);
-  TensorId sqrt(const std::vector<TensorId> &args);
-  TensorId sub(const std::vector<TensorId> &args);
-  TensorId sum(const std::vector<TensorId> &args);
-  TensorId tan(const std::vector<TensorId> &args);
-  TensorId tanh(const std::vector<TensorId> &args);
-  TensorId logical_xor(const std::vector<TensorId> &args);
+  TensorId abs(const std::vector<TensorId> &args, const std::string &name);
+  TensorId acos(const std::vector<TensorId> &args, const std::string &name);
+  TensorId acosh(const std::vector<TensorId> &args, const std::string &name);
+  TensorId add(const std::vector<TensorId> &args, const std::string &name);
+  TensorId logical_and(const std::vector<TensorId> &args,
+                       const std::string &name);
+  TensorId asin(const std::vector<TensorId> &args, const std::string &name);
+  TensorId asinh(const std::vector<TensorId> &args, const std::string &name);
+  TensorId atan(const std::vector<TensorId> &args, const std::string &name);
+  TensorId atanh(const std::vector<TensorId> &args, const std::string &name);
+  TensorId cast(const std::vector<TensorId> &args, const std::string &name);
+  TensorId ceil(const std::vector<TensorId> &args, const std::string &name);
+  TensorId cos(const std::vector<TensorId> &args, const std::string &name);
+  TensorId cosh(const std::vector<TensorId> &args, const std::string &name);
+  TensorId div(const std::vector<TensorId> &args, const std::string &name);
+  TensorId elu(const std::vector<TensorId> &args, const std::string &name);
+  TensorId equal(const std::vector<TensorId> &args, const std::string &name);
+  TensorId exp(const std::vector<TensorId> &args, const std::string &name);
+  TensorId floor(const std::vector<TensorId> &args, const std::string &name);
+  TensorId greater(const std::vector<TensorId> &args, const std::string &name);
+  TensorId identity(const std::vector<TensorId> &args, const std::string &name);
+  TensorId less(const std::vector<TensorId> &args, const std::string &name);
+  TensorId log(const std::vector<TensorId> &args, const std::string &name);
+  TensorId max(const std::vector<TensorId> &args, const std::string &name);
+  TensorId mean(const std::vector<TensorId> &args, const std::string &name);
+  TensorId min(const std::vector<TensorId> &args, const std::string &name);
+  TensorId mul(const std::vector<TensorId> &args, const std::string &name);
+  TensorId neg(const std::vector<TensorId> &args, const std::string &name);
+  TensorId logical_not(const std::vector<TensorId> &args,
+                       const std::string &name);
+  TensorId logical_or(const std::vector<TensorId> &args,
+                      const std::string &name);
+  TensorId pow(const std::vector<TensorId> &args, const std::string &name);
+  TensorId reciprocal(const std::vector<TensorId> &args,
+                      const std::string &name);
+  TensorId relu(const std::vector<TensorId> &args, const std::string &name);
+  TensorId sigmoid(const std::vector<TensorId> &args, const std::string &name);
+  TensorId sin(const std::vector<TensorId> &args, const std::string &name);
+  TensorId sinh(const std::vector<TensorId> &args, const std::string &name);
+  TensorId softsign(const std::vector<TensorId> &args, const std::string &name);
+  TensorId sqrt(const std::vector<TensorId> &args, const std::string &name);
+  TensorId sub(const std::vector<TensorId> &args, const std::string &name);
+  TensorId sum(const std::vector<TensorId> &args, const std::string &name);
+  TensorId tan(const std::vector<TensorId> &args, const std::string &name);
+  TensorId tanh(const std::vector<TensorId> &args, const std::string &name);
+  TensorId logical_xor(const std::vector<TensorId> &args,
+                       const std::string &name);
 
-  TensorId convolution(const std::vector<TensorId> &args,
-                       const std::vector<int64_t> strides,
-                       const std::vector<int64_t> padding,
-                       const std::vector<int64_t> dilation,
-                       int64_t groups      = 1,
-                       bool cacheOperation = true);
+  TensorId
+  convolution(const std::vector<TensorId> &args,
+              const std::vector<int64_t> strides,
+              const std::vector<int64_t> padding,
+              const std::vector<int64_t> dilation,
+              int64_t groups,
+              bool cacheOperation,
+              const std::string &name);
 
   TensorId averagepool(const std::vector<TensorId> &args,
                        const std::vector<int64_t> kernel_shape,
                        const std::vector<int64_t> strides,
-                       const std::vector<int64_t> padding);
+                       const std::vector<int64_t> padding,
+                       const std::string &name);
 
   TensorId maxpool(const std::vector<TensorId> &args,
                    const std::vector<int64_t> kernel_shape,
                    const std::vector<int64_t> strides,
-                   const std::vector<int64_t> padding);
+                   const std::vector<int64_t> padding,
+                   const std::string &name);
 
   TensorId gemm(const std::vector<TensorId> &args,
                 float alpha,
                 float beta,
                 int64_t transA,
-                int64_t transB);
+                int64_t transB,
+                const std::string &name);
 
   TensorId pad(const std::vector<TensorId> &args,
                std::string mode,
                const std::vector<int64_t> pads,
-               float value);
+               float value,
+               const std::string &name);
 
-  TensorId matmul(const std::vector<TensorId> &args);
+  TensorId matmul(const std::vector<TensorId> &args, const std::string &name);
 
-  TensorId softmax(const std::vector<TensorId> &args);
+  TensorId softmax(const std::vector<TensorId> &args, const std::string &name);
 
   void addNodeAttribute(const std::string &attributeName,
                         const int64_t &attributeValue,
@@ -170,10 +181,13 @@ public:
 
 private:
   TensorId add_simple_op(const std::vector<TensorId> &args,
-                         const char *name,
-                         int arg_count);
+                         const char *op_type,
+                         int arg_count,
+                         const std::string &name);
 
-  TensorId add_variadic_op(const std::vector<TensorId> &args, const char *name);
+  TensorId add_variadic_op(const std::vector<TensorId> &args,
+                           const char *op_type,
+                           const std::string &name);
 
   TensorId getNextId();
 

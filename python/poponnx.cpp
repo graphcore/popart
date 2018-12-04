@@ -305,47 +305,170 @@ PYBIND11_MODULE(poponnx_core, m) {
            },
            py::arg("initVal"))
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
-      .def("abs", &Builder::abs, py::arg("args"))
-      .def("acos", &Builder::acos, py::arg("args"))
-      .def("acosh", &Builder::acosh, py::arg("args"))
-      .def("add", &Builder::add, py::arg("args"))
-      .def("logical_and", &Builder::logical_and, py::arg("args"))
-      .def("asin", &Builder::asin, py::arg("args"))
-      .def("asinh", &Builder::asinh, py::arg("args"))
-      .def("atan", &Builder::atan, py::arg("args"))
-      .def("atanh", &Builder::atanh, py::arg("args"))
-      .def("ceil", &Builder::ceil, py::arg("args"))
-      .def("cos", &Builder::cos, py::arg("args"))
-      .def("cosh", &Builder::cosh, py::arg("args"))
-      .def("div", &Builder::div, py::arg("args"))
-      .def("elu", &Builder::elu, py::arg("args"))
-      .def("equal", &Builder::equal, py::arg("args"))
-      .def("exp", &Builder::exp, py::arg("args"))
-      .def("floor", &Builder::floor, py::arg("args"))
-      .def("greater", &Builder::greater, py::arg("args"))
-      .def("identity", &Builder::identity, py::arg("args"))
-      .def("less", &Builder::less, py::arg("args"))
-      .def("log", &Builder::log, py::arg("args"))
-      .def("max", &Builder::max, py::arg("args"))
-      .def("mean", &Builder::mean, py::arg("args"))
-      .def("min", &Builder::min, py::arg("args"))
-      .def("mul", &Builder::mul, py::arg("args"))
-      .def("neg", &Builder::neg, py::arg("args"))
-      .def("logical_not", &Builder::logical_not, py::arg("args"))
-      .def("logical_or", &Builder::logical_or, py::arg("args"))
-      .def("pow", &Builder::pow, py::arg("args"))
-      .def("reciprocal", &Builder::reciprocal, py::arg("args"))
-      .def("relu", &Builder::relu, py::arg("args"))
-      .def("sigmoid", &Builder::sigmoid, py::arg("args"))
-      .def("sin", &Builder::sin, py::arg("args"))
-      .def("sinh", &Builder::sinh, py::arg("args"))
-      .def("softsign", &Builder::softsign, py::arg("args"))
-      .def("sqrt", &Builder::sqrt, py::arg("args"))
-      .def("sub", &Builder::sub, py::arg("args"))
-      .def("sum", &Builder::sum, py::arg("args"))
-      .def("tan", &Builder::tan, py::arg("args"))
-      .def("tanh", &Builder::tanh, py::arg("args"))
-      .def("logical_xor", &Builder::logical_xor, py::arg("args"))
+      .def("abs",
+           &Builder::abs,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("acos",
+           &Builder::acos,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("acosh",
+           &Builder::acosh,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("add",
+           &Builder::add,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("logical_and",
+           &Builder::logical_and,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("asin",
+           &Builder::asin,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("asinh",
+           &Builder::asinh,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("atan",
+           &Builder::atan,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("atanh",
+           &Builder::atanh,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("ceil",
+           &Builder::ceil,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("cos",
+           &Builder::cos,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("cosh",
+           &Builder::cosh,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("div",
+           &Builder::div,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("elu",
+           &Builder::elu,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("equal",
+           &Builder::equal,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("exp",
+           &Builder::exp,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("floor",
+           &Builder::floor,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("greater",
+           &Builder::greater,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("identity",
+           &Builder::identity,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("less",
+           &Builder::less,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("log",
+           &Builder::log,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("max",
+           &Builder::max,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("mean",
+           &Builder::mean,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("min",
+           &Builder::min,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("mul",
+           &Builder::mul,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("neg",
+           &Builder::neg,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("logical_not",
+           &Builder::logical_not,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("logical_or",
+           &Builder::logical_or,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("pow",
+           &Builder::pow,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("reciprocal",
+           &Builder::reciprocal,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("relu",
+           &Builder::relu,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("sigmoid",
+           &Builder::sigmoid,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("sin",
+           &Builder::sin,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("sinh",
+           &Builder::sinh,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("softsign",
+           &Builder::softsign,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("sqrt",
+           &Builder::sqrt,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("sub",
+           &Builder::sub,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("sum",
+           &Builder::sum,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("tan",
+           &Builder::tan,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("tanh",
+           &Builder::tanh,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("logical_xor",
+           &Builder::logical_xor,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
       .def("convolution",
            &Builder::convolution,
            py::arg("args"),
@@ -353,27 +476,34 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("padding"),
            py::arg("dilation"),
            py::arg("groups")         = 1,
-           py::arg("cacheOperation") = true)
+           py::arg("cacheOperation") = true,
+           py::arg("debugPrefix")    = std::string())
       .def("averagepool",
            &Builder::averagepool,
            py::arg("args"),
            py::arg("kernel_shape"),
            py::arg("strides"),
-           py::arg("padding"))
+           py::arg("padding"),
+           py::arg("debugPrefix") = std::string())
       .def("maxpool",
            &Builder::maxpool,
            py::arg("args"),
            py::arg("kernel_shape"),
            py::arg("strides"),
-           py::arg("padding"))
+           py::arg("padding"),
+           py::arg("debugPrefix") = std::string())
       .def("gemm",
            &Builder::gemm,
            py::arg("args"),
            py::arg("alpha"),
            py::arg("beta"),
            py::arg("transA"),
-           py::arg("transB"))
-      .def("matmul", &Builder::matmul, py::arg("args"))
+           py::arg("transB"),
+           py::arg("debugPrefix") = std::string())
+      .def("matmul",
+           &Builder::matmul,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
       .def("addNodeAttribute",
            static_cast<void (Builder::*)(const std::string &,
                                          const int64_t &,

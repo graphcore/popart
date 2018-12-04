@@ -34,172 +34,214 @@ void Builder::addOutputTensor(const TensorId &arg0) {
   return impl_->addOutputTensor(arg0);
 }
 
-TensorId Builder::abs(const std::vector<TensorId> &args) {
-  return impl_->abs(args);
+TensorId Builder::abs(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->abs(args, name);
 }
 
-TensorId Builder::acos(const std::vector<TensorId> &args) {
-  return impl_->acos(args);
+TensorId Builder::acos(const std::vector<TensorId> &args,
+                       const std::string &name) {
+  return impl_->acos(args, name);
 }
 
-TensorId Builder::acosh(const std::vector<TensorId> &args) {
-  return impl_->acosh(args);
+TensorId Builder::acosh(const std::vector<TensorId> &args,
+                        const std::string &name) {
+  return impl_->acosh(args, name);
 }
 
-TensorId Builder::add(const std::vector<TensorId> &args) {
-  return impl_->add(args);
+TensorId Builder::add(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->add(args, name);
 }
 
-TensorId Builder::logical_and(const std::vector<TensorId> &args) {
-  return impl_->logical_and(args);
+TensorId Builder::logical_and(const std::vector<TensorId> &args,
+                              const std::string &name) {
+  return impl_->logical_and(args, name);
 }
 
-TensorId Builder::asin(const std::vector<TensorId> &args) {
-  return impl_->asin(args);
+TensorId Builder::asin(const std::vector<TensorId> &args,
+                       const std::string &name) {
+  return impl_->asin(args, name);
 }
 
-TensorId Builder::asinh(const std::vector<TensorId> &args) {
-  return impl_->asinh(args);
+TensorId Builder::asinh(const std::vector<TensorId> &args,
+                        const std::string &name) {
+  return impl_->asinh(args, name);
 }
 
-TensorId Builder::atan(const std::vector<TensorId> &args) {
-  return impl_->atan(args);
+TensorId Builder::atan(const std::vector<TensorId> &args,
+                       const std::string &name) {
+  return impl_->atan(args, name);
 }
 
-TensorId Builder::atanh(const std::vector<TensorId> &args) {
-  return impl_->atanh(args);
+TensorId Builder::atanh(const std::vector<TensorId> &args,
+                        const std::string &name) {
+  return impl_->atanh(args, name);
 }
 
-TensorId Builder::cast(const std::vector<TensorId> &args) {
-  return impl_->cast(args);
+TensorId Builder::cast(const std::vector<TensorId> &args,
+                       const std::string &name) {
+  return impl_->cast(args, name);
 }
 
-TensorId Builder::ceil(const std::vector<TensorId> &args) {
-  return impl_->ceil(args);
+TensorId Builder::ceil(const std::vector<TensorId> &args,
+                       const std::string &name) {
+  return impl_->ceil(args, name);
 }
 
-TensorId Builder::cos(const std::vector<TensorId> &args) {
-  return impl_->cos(args);
+TensorId Builder::cos(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->cos(args, name);
 }
 
-TensorId Builder::cosh(const std::vector<TensorId> &args) {
-  return impl_->cosh(args);
+TensorId Builder::cosh(const std::vector<TensorId> &args,
+                       const std::string &name) {
+  return impl_->cosh(args, name);
 }
 
-TensorId Builder::div(const std::vector<TensorId> &args) {
-  return impl_->div(args);
+TensorId Builder::div(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->div(args, name);
 }
 
-TensorId Builder::elu(const std::vector<TensorId> &args) {
-  return impl_->elu(args);
+TensorId Builder::elu(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->elu(args, name);
 }
 
-TensorId Builder::equal(const std::vector<TensorId> &args) {
-  return impl_->equal(args);
+TensorId Builder::equal(const std::vector<TensorId> &args,
+                        const std::string &name) {
+  return impl_->equal(args, name);
 }
 
-TensorId Builder::exp(const std::vector<TensorId> &args) {
-  return impl_->exp(args);
+TensorId Builder::exp(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->exp(args, name);
 }
 
-TensorId Builder::floor(const std::vector<TensorId> &args) {
-  return impl_->floor(args);
+TensorId Builder::floor(const std::vector<TensorId> &args,
+                        const std::string &name) {
+  return impl_->floor(args, name);
 }
 
-TensorId Builder::greater(const std::vector<TensorId> &args) {
-  return impl_->greater(args);
+TensorId Builder::greater(const std::vector<TensorId> &args,
+                          const std::string &name) {
+  return impl_->greater(args, name);
 }
 
-TensorId Builder::identity(const std::vector<TensorId> &args) {
-  return impl_->identity(args);
+TensorId Builder::identity(const std::vector<TensorId> &args,
+                           const std::string &name) {
+  return impl_->identity(args, name);
 }
 
-TensorId Builder::less(const std::vector<TensorId> &args) {
-  return impl_->less(args);
+TensorId Builder::less(const std::vector<TensorId> &args,
+                       const std::string &name) {
+  return impl_->less(args, name);
 }
 
-TensorId Builder::log(const std::vector<TensorId> &args) {
-  return impl_->log(args);
+TensorId Builder::log(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->log(args, name);
 }
 
-TensorId Builder::max(const std::vector<TensorId> &args) {
-  return impl_->max(args);
+TensorId Builder::max(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->max(args, name);
 }
 
-TensorId Builder::mean(const std::vector<TensorId> &args) {
-  return impl_->mean(args);
+TensorId Builder::mean(const std::vector<TensorId> &args,
+                       const std::string &name) {
+  return impl_->mean(args, name);
 }
 
-TensorId Builder::min(const std::vector<TensorId> &args) {
-  return impl_->min(args);
+TensorId Builder::min(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->min(args, name);
 }
 
-TensorId Builder::mul(const std::vector<TensorId> &args) {
-  return impl_->mul(args);
+TensorId Builder::mul(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->mul(args, name);
 }
 
-TensorId Builder::neg(const std::vector<TensorId> &args) {
-  return impl_->neg(args);
+TensorId Builder::neg(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->neg(args, name);
 }
 
-TensorId Builder::logical_not(const std::vector<TensorId> &args) {
-  return impl_->logical_not(args);
+TensorId Builder::logical_not(const std::vector<TensorId> &args,
+                              const std::string &name) {
+  return impl_->logical_not(args, name);
 }
 
-TensorId Builder::logical_or(const std::vector<TensorId> &args) {
-  return impl_->logical_or(args);
+TensorId Builder::logical_or(const std::vector<TensorId> &args,
+                             const std::string &name) {
+  return impl_->logical_or(args, name);
 }
 
-TensorId Builder::pow(const std::vector<TensorId> &args) {
-  return impl_->pow(args);
+TensorId Builder::pow(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->pow(args, name);
 }
 
-TensorId Builder::reciprocal(const std::vector<TensorId> &args) {
-  return impl_->reciprocal(args);
+TensorId Builder::reciprocal(const std::vector<TensorId> &args,
+                             const std::string &name) {
+  return impl_->reciprocal(args, name);
 }
 
-TensorId Builder::relu(const std::vector<TensorId> &args) {
-  return impl_->relu(args);
+TensorId Builder::relu(const std::vector<TensorId> &args,
+                       const std::string &name) {
+  return impl_->relu(args, name);
 }
 
-TensorId Builder::sigmoid(const std::vector<TensorId> &args) {
-  return impl_->sigmoid(args);
+TensorId Builder::sigmoid(const std::vector<TensorId> &args,
+                          const std::string &name) {
+  return impl_->sigmoid(args, name);
 }
 
-TensorId Builder::sin(const std::vector<TensorId> &args) {
-  return impl_->sin(args);
+TensorId Builder::sin(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->sin(args, name);
 }
 
-TensorId Builder::sinh(const std::vector<TensorId> &args) {
-  return impl_->sinh(args);
+TensorId Builder::sinh(const std::vector<TensorId> &args,
+                       const std::string &name) {
+  return impl_->sinh(args, name);
 }
 
-TensorId Builder::softsign(const std::vector<TensorId> &args) {
-  return impl_->softsign(args);
+TensorId Builder::softsign(const std::vector<TensorId> &args,
+                           const std::string &name) {
+  return impl_->softsign(args, name);
 }
 
-TensorId Builder::sqrt(const std::vector<TensorId> &args) {
-  return impl_->sqrt(args);
+TensorId Builder::sqrt(const std::vector<TensorId> &args,
+                       const std::string &name) {
+  return impl_->sqrt(args, name);
 }
 
-TensorId Builder::sub(const std::vector<TensorId> &args) {
-  return impl_->sub(args);
+TensorId Builder::sub(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->sub(args, name);
 }
 
-TensorId Builder::sum(const std::vector<TensorId> &args) {
-  return impl_->sum(args);
+TensorId Builder::sum(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->sum(args, name);
 }
 
-TensorId Builder::tan(const std::vector<TensorId> &args) {
-  return impl_->tan(args);
+TensorId Builder::tan(const std::vector<TensorId> &args,
+                      const std::string &name) {
+  return impl_->tan(args, name);
 }
 
-TensorId Builder::tanh(const std::vector<TensorId> &args) {
-  return impl_->tanh(args);
+TensorId Builder::tanh(const std::vector<TensorId> &args,
+                       const std::string &name) {
+  return impl_->tanh(args, name);
 }
 
-TensorId Builder::logical_xor(const std::vector<TensorId> &args) {
-  return impl_->logical_xor(args);
+TensorId Builder::logical_xor(const std::vector<TensorId> &args,
+                              const std::string &name) {
+  return impl_->logical_xor(args, name);
 }
 
 TensorId Builder::convolution(const std::vector<TensorId> &args,
@@ -207,46 +249,53 @@ TensorId Builder::convolution(const std::vector<TensorId> &args,
                               const std::vector<int64_t> padding,
                               const std::vector<int64_t> dilation,
                               int64_t groups,
-                              bool cacheOperation) {
+                              bool cacheOperation,
+                              const std::string &name) {
   return impl_->convolution(
-      args, strides, padding, dilation, groups, cacheOperation);
+      args, strides, padding, dilation, groups, cacheOperation, name);
 }
 
 TensorId Builder::averagepool(const std::vector<TensorId> &args,
                               const std::vector<int64_t> kernel_shape,
                               const std::vector<int64_t> strides,
-                              const std::vector<int64_t> padding) {
-  return impl_->averagepool(args, kernel_shape, strides, padding);
+                              const std::vector<int64_t> padding,
+                              const std::string &name) {
+  return impl_->averagepool(args, kernel_shape, strides, padding, name);
 }
 
 TensorId Builder::maxpool(const std::vector<TensorId> &args,
                           const std::vector<int64_t> kernel_shape,
                           const std::vector<int64_t> strides,
-                          const std::vector<int64_t> padding) {
-  return impl_->maxpool(args, kernel_shape, strides, padding);
+                          const std::vector<int64_t> padding,
+                          const std::string &name) {
+  return impl_->maxpool(args, kernel_shape, strides, padding, name);
 }
 
 TensorId Builder::gemm(const std::vector<TensorId> &args,
                        float alpha,
                        float beta,
                        int64_t transA,
-                       int64_t transB) {
-  return impl_->gemm(args, alpha, beta, transA, transB);
+                       int64_t transB,
+                       const std::string &name) {
+  return impl_->gemm(args, alpha, beta, transA, transB, name);
 }
 
 TensorId Builder::pad(const std::vector<TensorId> &args,
                       std::string mode,
                       const std::vector<int64_t> pads,
-                      float value) {
-  return impl_->pad(args, mode, pads, value);
+                      float value,
+                      const std::string &name) {
+  return impl_->pad(args, mode, pads, value, name);
 }
 
-TensorId Builder::matmul(const std::vector<TensorId> &args) {
-  return impl_->matmul(args);
+TensorId Builder::matmul(const std::vector<TensorId> &args,
+                         const std::string &name) {
+  return impl_->matmul(args, name);
 }
 
-TensorId Builder::softmax(const std::vector<TensorId> &args) {
-  return impl_->softmax(args);
+TensorId Builder::softmax(const std::vector<TensorId> &args,
+                          const std::string &name) {
+  return impl_->softmax(args, name);
 }
 
 void Builder::addNodeAttribute(const std::string &attributeName,

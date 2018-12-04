@@ -68,7 +68,15 @@ const Shape &Opx::outShape(OutIndex index) const {
   return outInfo(index).shape();
 }
 
-std::string Opx::idStr() const { return std::to_string(op_p->id); }
+// If the operator has been named return the name, (i.e. "my_add.23")
+// else return the id (i.e "23")
+std::string Opx::idStr() const {
+  if (!op_p->name().empty()) {
+    return op_p->name() + std::string(".") + std::to_string(op_p->id);
+  } else {
+    return std::to_string(op_p->id);
+  }
+}
 
 poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
                                TensorId id) const {

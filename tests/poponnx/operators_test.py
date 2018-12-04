@@ -21,7 +21,7 @@ def test_add(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.add([i1, i2])
+        o = builder.add([i1, i2], "test_add")
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + i2, 'd__' + o]
 
