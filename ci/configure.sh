@@ -17,7 +17,7 @@ else
   PYBIN=python3
 fi
 
-if [ $# -gt 1 ]
+if command -v sphinx-build
 then
   echo "Building docs"
   DOCS="-DPOPONNX_CMAKE_ARGS=-DBUILD_DOCS=ON"
