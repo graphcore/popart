@@ -30,13 +30,15 @@ class Session(poponnx.SessionCore):
             x = self.getInfo(anchor)
             outShape = x.shape()
             # Note : == is not the same as "is" here.
-            dfArt = self.dataFeed.art()
+            artId = self.dataFeed.art(anchor).id()
             batchesPerStep = self.dataFeed.batchesPerStep()
-            if dfArt == poponnx.AnchorReturnType.ALL:
+            batchSize = self.dataFeed.batchSize()
+            if artId == poponnx.AnchorReturnTypeId.ALL:
                 outShape[0] = outShape[0] * batchesPerStep
-            elif dfArt == poponnx.AnchorReturnType.SUM:
-                outShape[0] = outShape[0] / batchesPerStep
-            elif dfArt == poponnx.AnchorReturnType.FINAL:
+            elif artId == poponnx.AnchorReturnTypeId.EVERYN:
+                arf = self.dataFeed.art(anchor).rf()
+                outShape[0] = outShape[0] * (batchesPerStep // arf)
+            elif artId == poponnx.AnchorReturnTypeId.FINAL:
                 outShape[0] = outShape[0]
             else:
                 raise RuntimeError("unrecognised AnchorType")

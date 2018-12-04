@@ -100,8 +100,10 @@ class BasicSession:
             'bad dtype %s, (only float32 currently supported)' % (dtype, ))
 
     def run(self, output, anchors, step_method):
-        dataFlow = poponnx.DataFlow(1, 1, anchors,
-                                    poponnx.AnchorReturnType.ALL)
+        anchorDefs = {}
+        for anchorId in anchors:
+            anchorDefs[anchorId] = poponnx.AnchorReturnType("ALL")
+        dataFlow = poponnx.DataFlow(1, 1, anchorDefs)
         optimizer = poponnx.SGD(0.01)
         losses = [poponnx.L1Loss(output, "l1LossVal", 0.1)]
         proto = self.builder.getModelProto()

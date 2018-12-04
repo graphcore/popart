@@ -48,8 +48,9 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
+  auto art = AnchorReturnType("ALL");
   auto dataFlow =
-      DataFlow(1, 1, {tensorIds.back(), tensorIds[2]}, AnchorReturnType::ALL);
+      DataFlow(1, 1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = SGD(0.01);
   std::vector<Loss *> losses{new L1Loss(tensorIds.back(), "l1LossVal", 0.1)};
 
@@ -102,7 +103,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1, 1, {identOut}, AnchorReturnType::ALL);
+  auto dataFlow  = DataFlow(1, 1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = SGD(0.01);
   std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
 
@@ -150,7 +151,7 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1, 1, {identOut}, AnchorReturnType::ALL);
+  auto dataFlow  = DataFlow(1, 1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = SGD(0.01);
   std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
 
@@ -199,7 +200,7 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1, 1, {identOut}, AnchorReturnType::ALL);
+  auto dataFlow  = DataFlow(1, 1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = SGD(0.01);
   std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
 
@@ -254,12 +255,12 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
+  auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1,
                            1,
-                           {identOut,
-                            reservedGradientPrefix() + input1,
-                            reservedGradientPrefix() + input2},
-                           AnchorReturnType::ALL);
+                           {{identOut, art},
+                            {reservedGradientPrefix() + input1, art},
+                            {reservedGradientPrefix() + input2, art}});
   auto optimizer = SGD(0.01);
   std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
 
@@ -308,11 +309,12 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow =
-      DataFlow(1,
-               1,
-               {softmaxOut, reservedGradientPrefix() + input1, "nllLossVal"},
-               AnchorReturnType::ALL);
+  auto art       = AnchorReturnType("ALL");
+  auto dataFlow  = DataFlow(1,
+                           1,
+                           {{softmaxOut, art},
+                            {reservedGradientPrefix() + input1, art},
+                            {"nllLossVal", art}});
   auto optimizer = SGD(0.01);
   std::vector<Loss *> losses{new NllLoss(softmaxOut, input2, "nllLossVal")};
 
@@ -370,8 +372,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_series) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  std::vector<TensorId> anchors{out};
-  auto dataFlow  = DataFlow(1, 1, anchors, AnchorReturnType::ALL);
+  auto dataFlow  = DataFlow(1, 1, {{out, AnchorReturnType("ALL")}});
   auto optimizer = SGD(0.01);
   std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
 
@@ -435,8 +436,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_parallel) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  std::vector<TensorId> anchors{out};
-  auto dataFlow  = DataFlow(1, 1, anchors, AnchorReturnType::ALL);
+  auto dataFlow  = DataFlow(1, 1, {{out, AnchorReturnType("ALL")}});
   auto optimizer = SGD(0.01);
   std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
 
@@ -481,11 +481,12 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow =
-      DataFlow(1,
-               1,
-               {output, reservedGradientPrefix() + input, "l1LossVal"},
-               AnchorReturnType::ALL);
+  auto art       = AnchorReturnType("ALL");
+  auto dataFlow  = DataFlow(1,
+                           1,
+                           {{output, art},
+                            {reservedGradientPrefix() + input, art},
+                            {"l1LossVal", art}});
   auto optimizer = SGD(0.01);
   std::vector<Loss *> losses{new L1Loss(output, "l1LossVal", 0.1)};
 

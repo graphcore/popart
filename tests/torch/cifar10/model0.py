@@ -19,20 +19,22 @@ batchSize = 2
 
 # Return requested tensors every batchesPerStep = 3 cycles.
 # so only communicate back to host every 2*3 = 6 samples.
-batchesPerStep = 3
+batchesPerStep = 4
 
-# anchors : in this example,
-# return the l1 loss "l1LossVal",
+# Anchors, and how they are returned.
+# Last batch in step, all samples in step,
+# every N batches in a step? See ir.hpp for details.
+# In this example:
+# the l1 loss "l1LossVal",
 # the tensor to which the loss is applied "out",
 # and the input tensor "image0"
-anchors = ["l1LossVal", "out", "image0"]
+anchors = {
+    "l1LossVal": poponnx.AnchorReturnType("EVERYN", 2),
+    "out": poponnx.AnchorReturnType("FINAL"),
+    "image0": poponnx.AnchorReturnType("ALL")
+}
 
-# What exactly should be returned of anchors?
-# Last batch in step, all samples in step,
-# sum over samples in step? See ir.hpp for details.
-art = poponnx.AnchorReturnType.ALL
-
-dataFeed = poponnx.DataFlow(batchesPerStep, batchSize, anchors, art)
+dataFeed = poponnx.DataFlow(batchesPerStep, batchSize, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the Session constructor.
@@ -43,7 +45,6 @@ inputShapeInfo.add("image0",
 
 inNames = ["image0"]
 
-# outNames: not the same as anchors,
 # outNames: not the same as anchors,
 # these are the Tensors which will be
 # connected to the loss layers

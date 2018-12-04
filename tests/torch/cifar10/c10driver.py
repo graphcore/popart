@@ -172,11 +172,48 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         return reportStr
 
     def getAnchorTensor(tId, anchorArrays):
-        assertStr = "Loss tensor must be specified as an anchor"
+        assertStr = "Tensor" + tId + " must be specified as an anchor"
         assert (tId in anchorArrays.keys()), assertStr
-        return anchorArrays[loss.output(0)]
+        return anchorArrays[tId]
 
-    def getTensorError(pA, tA):
+    def getLossesFromAnchors(torchWriter, anchorArrays):
+        # Check all losses are anchored
+        for loss in torchWriter.losses:
+            lossId = loss.output(0)
+            assertStr = "All loss tensors mist be anchored"
+            assert (torchWriter.dataFeed.isAnchored(lossId)), assertStr
+
+        # Check all losses have the same anchor return type
+        fisrtLossId = torchWriter.losses[0].output(0)
+        firstLossArtId = torchWriter.dataFeed.art(fisrtLossId).id()
+        if (len(torchWriter.losses) > 1):
+            for loss in torchWriter.losses:
+                lossId = loss.output(0)
+                lossArtId = torchWriter.dataFeed.art(lossId).id()
+                assertStr = "All losses must have the same return type"
+                assert (lossArtId == firstLossArtId), assertStr
+
+        # Return sum over losses for each sample
+        lenLosses = len(getAnchorTensor(fisrtLossId, anchorArrays))
+        pLosses = np.zeros(lenLosses)
+        for loss in torchWriter.losses:
+            pLosses_ = getAnchorTensor(loss.output(0), anchorArrays)
+            pLosses = np.add(pLosses, pLosses_)
+
+        return pLosses
+
+    def batchwise(list, batchsize):
+        return zip(*[iter(list)] * batchsize)
+
+    def subsampleBatches(list, batchsize, n):
+        subsampledList = []
+        for i, batch in enumerate(batchwise(list, batchsize)):
+            if (i + 1) % n == 0:
+                for el in batch:
+                    subsampledList.append(el)
+        return subsampledList
+
+    def getTensorError(tA, pA):
         # pA, tA are corresponding tensors from two models
         pA_shape = np.shape(pA)
         tA_shape = np.shape(tA)
@@ -243,20 +280,25 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                 # take batchesPerStep passes (1 step), PopOnnx
                 pystepio = poponnx.PyStepIO(inputs, anchorArrays)
                 session.evaluate(pystepio)
+                pLosses = getLossesFromAnchors(torchWriter, anchorArrays)
 
                 # Compare torch loss tensors with poponnx loss from
-                # anchor tensor map
-                pLoss = np.zeros(stepLoader.batch_size)
-                for loss in torchWriter.losses:
-                    pLoss_ = getAnchorTensor(loss.output(0), anchorArrays)
-                    pLoss = np.add(pLoss, pLoss_)
-                result = getTensorError(torchLosses, pLoss)
+                # anchor tensor map.
+                # Torch losses returned for all samples, whereas
+                # anchors are returned as specified by the user.
+                # Subsample torch outputs to match dimensions
+                torchLosses = subsampleBatches(
+                    torchLosses, dataFeed.batchSize(),
+                    len(torchLosses) // len(pLosses))
+                result = getTensorError(torchLosses, pLosses)
                 print(reportTensorError(0, result))
                 checkResult(result, margin)
 
             elif mode == "infer":
                 # take batchesPerStep passes (1 step), Torch
                 # returns map of outputs for each sample
+                # Note: already are of dimension matching the
+                # anchors
                 torchOutputs = torchWriter.infer(inputs)
 
                 # take batchesPerStep passes (1 step), PopOnnx
@@ -266,7 +308,13 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                 # Compare torch outputs tensors with poponnx output from
                 # anchor tensor maps
                 for nInd, outName in enumerate(torchWriter.outNames):
-                    result = getTensorError(torchOutputs[outName],
-                                            anchorArrays[outName])
+                    # Torch outputs returned for all samples, whereas
+                    # anchors are returned as specified by the user.
+                    # Subsample torch outputs to match dimensions
+                    torchOuput = subsampleBatches(
+                        torchOutputs[outName], dataFeed.batchSize(),
+                        len(torchOutputs[outName]) // len(
+                            anchorArrays[outName]))
+                    result = getTensorError(torchOuput, anchorArrays[outName])
                     print(reportTensorError(nInd, result))
                     checkResult(result, margin)

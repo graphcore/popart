@@ -48,8 +48,10 @@ BOOST_AUTO_TEST_CASE(PruneTest) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow =
-      DataFlow(1, 1, {tensorIds.back(), tensorIds[2]}, AnchorReturnType::ALL);
+  auto dataFlow = DataFlow(1,
+                           1,
+                           {{tensorIds.back(), AnchorReturnType("ALL")},
+                            {tensorIds[2], AnchorReturnType("ALL")}});
   std::vector<Loss *> losses;
 
   // This test needs to disable all patterns.

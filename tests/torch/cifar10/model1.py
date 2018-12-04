@@ -17,15 +17,19 @@ nInChans = 3
 nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
-anchors = ["nllLossVal", "l1LossVal", "probs"]
-art = poponnx.AnchorReturnType.ALL
-dataFeed = poponnx.DataFlow(batchesPerStep, batchSize, anchors, art)
+anchors = {
+    "l1LossVal": poponnx.AnchorReturnType("FINAL"),
+    "nllLossVal": poponnx.AnchorReturnType("FINAL"),
+    "probs": poponnx.AnchorReturnType("FINAL")
+}
+dataFeed = poponnx.DataFlow(batchesPerStep, batchSize, anchors)
 inputShapeInfo = poponnx.InputShapeInfo()
 inputShapeInfo.add("image0",
                    poponnx.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 inputShapeInfo.add("image1",
                    poponnx.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 inputShapeInfo.add("label", poponnx.TensorInfo("INT32", [batchSize]))
+
 inNames = ["image0", "image1"]
 cifarInIndices = {"image0": 0, "image1": 0, "label": 1}
 outNames = ["preProbSquared", "probs"]

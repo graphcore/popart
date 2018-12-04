@@ -11,10 +11,13 @@ args = cmdline.parse()
 
 nChans = 3
 samplesPerBatch = 2
-batchesPerStep = 3
-anchors = ["l1LossVal", "out", "image0"]
-art = poponnx.AnchorReturnType.ALL
-dataFeed = poponnx.DataFlow(batchesPerStep, samplesPerBatch, anchors, art)
+batchesPerStep = 4
+anchors = {
+    "l1LossVal": poponnx.AnchorReturnType("EVERYN", 2),
+    "out": poponnx.AnchorReturnType("FINAL"),
+    "image0": poponnx.AnchorReturnType("ALL")
+}
+dataFeed = poponnx.DataFlow(batchesPerStep, samplesPerBatch, anchors)
 inputShapeInfo = poponnx.InputShapeInfo()
 inputShapeInfo.add(
     "image0", poponnx.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))

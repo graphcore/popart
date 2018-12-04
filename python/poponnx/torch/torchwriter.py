@@ -152,21 +152,15 @@ class PytorchNetWriter(NetWriter):
         """
         Does evaluation (i.e. forward pass and loss calculation, but no
         backward pass)
-
-        TODO : sort out case of tuples of tuples for outputs
-
-        w.r.t. parameter names. It is possible to flatten
-        named_parameters of module, but it is not clear that
-        the order will always correspond to the order of the
-        onnx "trace", so I won't.
         """
         self.module.eval()
 
         # perform forwards pass for each of the
         # substeps (substep = batch)
 
-        # in this list we store loss tensors for each of
-        # the samples in the step
+        # in this list we store loss tensors for every Nth
+        # sample in the step (as determined by the return
+        # frequency of the anchor tensor)
         losses = []
         stepSize = self.dataFeed.batchesPerStep() * self.dataFeed.batchSize()
         for substep in range(stepSize):
@@ -183,11 +177,8 @@ class PytorchNetWriter(NetWriter):
             # forward pass
             substepOutputs = self.module(substepInputs)
 
-            if len(self.outNames) == 1:
-                substepOutMap[self.outNames[0]] = substepOutputs
-            else:
-                for j, outName in enumerate(self.outNames):
-                    substepOutMap[outName] = substepOutputs[j]
+            for j, outName in enumerate(self.outNames):
+                substepOutMap[outName] = substepOutputs[j]
 
             # calculate loss, as in backwards pass, but don't update
             # model
@@ -199,14 +190,7 @@ class PytorchNetWriter(NetWriter):
 
     def infer(self, inMap):
         """
-        Does inference 
-
-        TODO : sort out case of tuples of tuples for outputs
-
-        w.r.t. parameter names. It is possible to flatten
-        named_parameters of module, but it is not clear that
-        the order will always correspond to the order of the
-        onnx "trace", so I won't.
+        Does inference (i.e. forward pass only)
         """
         self.module.eval()
 
@@ -214,7 +198,8 @@ class PytorchNetWriter(NetWriter):
         # substeps (substep = batch)
 
         # in this map we store a list of the output tensors
-        # for each of the samples in the step
+        # for every Nth sample in the step (as determined by
+        # the return frequency of the anchor tensor)
         substepOutMap = {}
         for outName in self.outNames:
             substepOutMap[outName] = []
@@ -231,10 +216,11 @@ class PytorchNetWriter(NetWriter):
 
             # forward pass
             substepOutputs = self.module(substepInputs)
-
             substepOutputTensors = substepOutputs.detach()
+
             for j, outName in enumerate(self.outNames):
-                substepOutMap[outName].append(substepOutputTensors[j].numpy())
+                npTensor = substepOutputTensors[j].numpy()
+                substepOutMap[outName].append(npTensor)
 
         # returning: list with one entry per sample, of the
         # output of the batch

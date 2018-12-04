@@ -14,12 +14,9 @@ def test_net_from_string(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
+    dataFlow = poponnx.DataFlow(1, 1, {})
 
-    poponnx.Session(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        outputdir=str(tmpdir))
+    poponnx.Session(fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
 
 
 def test_net_from_file(tmpdir):
@@ -36,23 +33,19 @@ def test_net_from_file(tmpdir):
     with open("test.onnx", "wb") as f:
         f.write(proto)
 
-    dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
+    dataFlow = poponnx.DataFlow(1, 1, {})
 
     poponnx.Session(
-        fnModel="test.onnx",
-        dataFeed=dataFlow,
-        outputdir=str(tmpdir))
+        fnModel="test.onnx", dataFeed=dataFlow, outputdir=str(tmpdir))
 
 
 def test_net_failure(tmpdir):
 
-    dataFlow = poponnx.DataFlow(1, 1, [], poponnx.AnchorReturnType.ALL)
+    dataFlow = poponnx.DataFlow(1, 1, {})
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         poponnx.Session(
-            fnModel="nothing",
-            dataFeed=dataFlow,
-            outputdir=str(tmpdir))
+            fnModel="nothing", dataFeed=dataFlow, outputdir=str(tmpdir))
 
     assert (e_info.type == poponnx.poponnx_exception)
     assert (e_info.value.args[0] == "Failed to parse ModelProto from string")

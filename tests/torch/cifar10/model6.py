@@ -16,9 +16,12 @@ nInChans = 3
 nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
-anchors = ["nllLossVal", "l1LossVal", "probs"]
-art = poponnx_core.AnchorReturnType.ALL
-dataFeed = poponnx_core.DataFlow(batchesPerStep, batchSize, anchors, art)
+anchors = {
+    "l1LossVal": poponnx_core.AnchorReturnType("FINAL"),
+    "nllLossVal": poponnx_core.AnchorReturnType("FINAL"),
+    "probs": poponnx_core.AnchorReturnType("FINAL")
+}
+dataFeed = poponnx_core.DataFlow(batchesPerStep, batchSize, anchors)
 inputShapeInfo = poponnx_core.InputShapeInfo()
 inputShapeInfo.add(
     "image0", poponnx_core.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))

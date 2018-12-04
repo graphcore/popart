@@ -156,6 +156,10 @@ private:
 
   std::map<std::string, poplar::Tensor> constTensors;
 
+  // Variable tensors used keep track of batch Id
+  std::map<int, poplar::Tensor> batchCountingTensors;
+  std::map<int, poplar::Tensor> batchCountCheckingTensors;
+
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
   PriTask initTensorTask(Tensor *tensor);
@@ -178,6 +182,20 @@ private:
   // Task to append a Copy to poplar::Stream from poplar::Tensor
   PriTask toHostTask(Tensor *tensor, poplar::program::Sequence &) const;
   TaskId toHostTaskId(TensorId) const;
+
+  // Task to create poplar::Tensors from nothing, specifically for
+  // use in keeping track of the batch count
+  PriTask initBatchCounterTensorsTask(poplar::program::Sequence &sq);
+  TaskId initBatchCounterTensorsTaskId() const;
+
+  // Task to add a program to increment and check the batch count
+  PriTask updateBatchCoutTask(poplar::program::Sequence &sq);
+  TaskId updateBatchCoutTaskId() const;
+
+  // Task to append a Copy to poplar::Stream from poplar::Tensor every
+  // N batches
+  PriTask
+  toHostEveryNBatchesTask(Tensor *tensor, int N, poplar::program::Sequence &);
 
   PriTask opTask(Op *, double priority);
   TaskId opTaskId(Op *) const;

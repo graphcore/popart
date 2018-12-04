@@ -2,6 +2,7 @@
 #include <cctype>
 #include <poplin/codelets.hpp>
 #include <popnn/codelets.hpp>
+#include <popops/ElementWise.hpp>
 #include <popops/codelets.hpp>
 #include <poputil/exceptions.hpp>
 #include <poponnx/devicemanager.hpp>
@@ -868,15 +869,43 @@ void Devicex::prepare() {
     tasks.add(streamFromHostTask(tensor));
   }
 
+  // Depending on anchor return types specified by the user, some
+  // tensors may need to be added to the graph to keep track of
+  // batch count.
+  if (ir().getDataFlow().isBatchCountingRequired()) {
+    tasks.add(initBatchCounterTensorsTask(progs.forwardFragment()));
+    tasks.add(updateBatchCoutTask(progs.forwardFragment()));
+  }
+
   // stream-to-host tensors : 1) make streams 2) make copy programs
   // note that the order in which tasks are added does not matter,
   // they will be topologically sorted before running
-  for (auto id : ir().getDataFlow().anchors()) {
+  for (auto anchorId : ir().getDataFlow().anchors()) {
     // 1
-    tasks.add(streamToHostTask(ir().getTensors().get(id)));
+    tasks.add(streamToHostTask(ir().getTensors().get(anchorId)));
     // 2
-    auto *tensor = ir().getTensors().get(id);
-    tasks.add(toHostTask(tensor, programFragment(tensor)));
+    auto *tensor = ir().getTensors().get(anchorId);
+    switch (ir().getDataFlow().art(anchorId).id()) {
+    // Copy program runs after every batch
+    case (AnchorReturnTypeId::ALL): {
+      tasks.add(toHostTask(tensor, programFragment(tensor)));
+      break;
+    }
+    // Copy program runs at the end of the step
+    case (AnchorReturnTypeId::FINAL): {
+      tasks.add(toHostEveryNBatchesTask(tensor,
+                                        ir().getDataFlow().batchesPerStep(),
+                                        programFragment(tensor)));
+      break;
+    }
+    // Copy program runs at the end of every N batches
+    case (AnchorReturnTypeId::EVERYN): {
+      tasks.add(toHostEveryNBatchesTask(tensor,
+                                        ir().getDataFlow().art(anchorId).rf(),
+                                        programFragment(tensor)));
+      break;
+    }
+    }
   }
 
   // create Program to write optimizer tensors to device
@@ -948,16 +977,17 @@ void Devicex::prepare() {
     Tensor *tensor       = ir().getTensors().get(anchorId);
     int64_t batch_bytes  = tensor->info.nbytes();
     int64_t n_bytes;
-    switch (ir().getDataFlow().art()) {
-    case (AnchorReturnType::FINAL): {
+    switch (ir().getDataFlow().art(anchorId).id()) {
+    case (AnchorReturnTypeId::FINAL): {
       n_bytes = batch_bytes;
       break;
     }
-    case (AnchorReturnType::SUM): {
-      n_bytes = batch_bytes / ir().getDataFlow().batchSize();
+    case (AnchorReturnTypeId::EVERYN): {
+      n_bytes = batch_bytes * (ir().getDataFlow().batchesPerStep() /
+                               ir().getDataFlow().art(anchorId).rf());
       break;
     }
-    case (AnchorReturnType::ALL): {
+    case (AnchorReturnTypeId::ALL): {
       n_bytes = batch_bytes * ir().getDataFlow().batchesPerStep();
       break;
     }
@@ -993,6 +1023,12 @@ TaskId Devicex::fromHostTaskId(TensorId id) const {
 }
 
 TaskId Devicex::toHostTaskId(TensorId id) const { return "toHostTask_" + id; }
+
+TaskId Devicex::initBatchCounterTensorsTaskId() const {
+  return "initBatchCounterTensorsTask";
+}
+
+TaskId Devicex::updateBatchCoutTaskId() const { return "updateBatchCoutTask"; }
 
 TaskId Devicex::initTensorTaskId(TensorId id) const {
   return "initTensorTaskId_" + id;
@@ -1039,6 +1075,100 @@ PriTask Devicex::toHostTask(Tensor *tensor,
           toHostTaskId(tensor->id),
           {
               // the dependencies:
+              streamToHostTaskId(tensor->id), // poplar::Stream creation task,
+              taskWhichCreates(tensor->id)    // poplar::Tensor creation task.
+          },
+          f};
+}
+
+PriTask Devicex::initBatchCounterTensorsTask(poplar::program::Sequence &sq) {
+
+  auto f = [&sq, this]() {
+    logging::devicex::debug("Adding batch counter tensors");
+
+    // Add scalar tensors outside of the ir to track the batch
+    // Id and decide when to execute the copy to the host
+    for (int N : ir().getDataFlow().rfs()) {
+      // Add to map so copy task can access
+      batchCountingTensors[N]      = graph().addVariable(poplar::INT, {});
+      batchCountCheckingTensors[N] = graph().addVariable(poplar::BOOL, {});
+
+      getConst(poplar::INT, {}, N);
+
+      poputil::mapTensorLinearly(graph(), batchCountingTensors[N]);
+      poputil::mapTensorLinearly(graph(), batchCountCheckingTensors[N]);
+    }
+
+    // Make sure const 1 tensor exists
+    getConst(poplar::INT, {}, 1);
+  };
+
+  return {+1e6, // followed by writes to host: always as early as possible
+          initBatchCounterTensorsTaskId(),
+          {},
+          f};
+}
+
+PriTask Devicex::updateBatchCoutTask(poplar::program::Sequence &sq) {
+
+  auto f = [&sq, this]() {
+    logging::devicex::debug("Adding batch count checker program");
+
+    // Placeholder 'do nothing' branch if not running assign program
+    poplar::program::Sequence emptyseq;
+
+    // Increment the batch count at the at the earliest point
+    // the anchor tensor is required, and check if it is a
+    // copy batch
+    for (int N : ir().getDataFlow().rfs()) {
+      popops::addInPlace(
+          graph(), batchCountingTensors[N], getConst(poplar::INT, {}, 1), sq);
+
+      batchCountCheckingTensors[N] = popops::eq(
+          graph(), batchCountingTensors[N], getConst(poplar::INT, {}, N), sq);
+
+      // Reset batch count once it has reached N
+      sq.add(poplar::program::If(
+          batchCountCheckingTensors[N],
+          poplar::program::Assign(batchCountingTensors[N], 0),
+          emptyseq));
+    }
+  };
+
+  return {+1e6, // followed by writes to host: always as early as possible
+          updateBatchCoutTaskId(),
+          {
+              initBatchCounterTensorsTaskId() // poplar::Tensor creation task
+          },
+          f};
+}
+
+PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
+                                         int N,
+                                         poplar::program::Sequence &sq) {
+
+  auto f = [&sq, tensor, N, this]() {
+    logging::devicex::debug(
+        "Adding conditional poplar::program::Copy to host " + tensor->id);
+
+    poplar::Tensor isNthBatch = batchCountCheckingTensors.at(N);
+
+    // Program to copy the anchor tensor and reset batch count
+    poplar::program::Sequence copyseq;
+    copyseq.add(poplar::program::Copy(tensors.get(tensor->id),
+                                      toHostStreams.at(tensor->id)));
+
+    // Placeholder 'do nothing' branch if not running copy program
+    poplar::program::Sequence emptyseq;
+
+    sq.add(poplar::program::If(isNthBatch, copyseq, emptyseq));
+  };
+
+  return {+1e6, // writes to host: always as early as possible
+          toHostTaskId(tensor->id),
+          {
+              // the dependencies:
+              updateBatchCoutTaskId(),        // updating poplar::Tensor task,
               streamToHostTaskId(tensor->id), // poplar::Stream creation task,
               taskWhichCreates(tensor->id)    // poplar::Tensor creation task.
           },

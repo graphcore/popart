@@ -119,10 +119,10 @@ PYBIND11_MODULE(poponnx_core, m) {
 
   py::class_<StepIO> stepio(m, "StepIO");
 
-  py::enum_<AnchorReturnType>(m, "AnchorReturnType")
-      .value("FINAL", AnchorReturnType::FINAL)
-      .value("SUM", AnchorReturnType::SUM)
-      .value("ALL", AnchorReturnType::ALL);
+  py::enum_<AnchorReturnTypeId>(m, "AnchorReturnTypeId")
+      .value("FINAL", AnchorReturnTypeId::FINAL)
+      .value("EVERYN", AnchorReturnTypeId::EVERYN)
+      .value("ALL", AnchorReturnTypeId::ALL);
 
   py::class_<PyStepIO>(m, "PyStepIO", stepio)
       .def(py::init<std::map<TensorId, py::array>,
@@ -130,13 +130,20 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("inputs"),
            py::arg("outputs"));
 
+  py::class_<AnchorReturnType>(m, "AnchorReturnType")
+      .def(py::init<std::string>(), py::arg("anchorReturnTypeString"))
+      .def(py::init<std::string, int>(),
+           py::arg("anchorReturnTypeString"),
+           py::arg("returnFrequency"))
+      .def("id", &AnchorReturnType::id)
+      .def("rf", &AnchorReturnType::rf);
+
   py::class_<DataFlow>(m, "DataFlow")
-      .def(
-          py::init<int, int, const std::vector<TensorId> &, AnchorReturnType>(),
-          py::arg("batchesPerStep"),
-          py::arg("batchSize"),
-          py::arg("anchorTensors"),
-          py::arg("anchorReturnType"))
+      .def(py::init<int, int, const std::map<TensorId, AnchorReturnType> &>(),
+           py::arg("batchesPerStep"),
+           py::arg("batchSize"),
+           py::arg("anchorTensors"))
+      .def("isAnchored", &DataFlow::isAnchored)
       .def("nAnchors", &DataFlow::nAnchors)
       .def("batchSize", &DataFlow::batchSize)
       .def("batchesPerStep", &DataFlow::batchesPerStep)

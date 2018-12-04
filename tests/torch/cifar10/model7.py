@@ -22,18 +22,14 @@ batchSize = 2
 # so only communicate back to host every 2*3 = 6 samples.
 batchesPerStep = 3
 
-# anchors : in this example,
+# anchors, and how they are returned: in this example,
 # return the l1 loss "l1LossVal",
-# the tensor to which the loss is applied "out",
-# and the input tensor "image0"
-anchors = ["l1LossVal", "out"]
-
-# What exactly should be returned of anchors?
-# Last batch in step, all samples in step,
-# sum over samples in step? See ir.hpp for details.
-art = poponnx_core.AnchorReturnType.ALL
-
-dataFeed = poponnx_core.DataFlow(batchesPerStep, batchSize, anchors, art)
+# the tensor to which the loss is applied "out"
+anchors = {
+    "l1LossVal": poponnx_core.AnchorReturnType("FINAL"),
+    "out": poponnx_core.AnchorReturnType("FINAL")
+}
+dataFeed = poponnx_core.DataFlow(batchesPerStep, batchSize, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the WillowNet constructor.

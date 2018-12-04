@@ -904,7 +904,7 @@ def test_load_onnx_model_from_other_builder(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
+    dataFlow = poponnx.DataFlow(1, 1, {o: poponnx.AnchorReturnType("ALL")})
 
     session = poponnx.Session(
         fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
@@ -928,8 +928,8 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     builder2 = poponnx.Builder(proto)
     translation = builder2.getTensorTranslation()
 
-    dataFlow = poponnx.DataFlow(1, 1, [translation[o]],
-                                poponnx.AnchorReturnType.ALL)
+    dataFlow = poponnx.DataFlow(
+        1, 1, {translation[o]: poponnx.AnchorReturnType("ALL")})
     optimizer = poponnx.SGD(0.01)
     losses = [poponnx.L1Loss(translation[o], "l1LossVal", 0.1)]
 
@@ -976,8 +976,8 @@ def test_load_onnx_model_from_file(tmpdir):
     builder2 = poponnx.Builder(str(filename))
     translation = builder2.getTensorTranslation()
 
-    dataFlow = poponnx.DataFlow(1, 1, [translation[o]],
-                                poponnx.AnchorReturnType.ALL)
+    dataFlow = poponnx.DataFlow(
+        1, 1, {translation[o]: poponnx.AnchorReturnType("ALL")})
     optimizer = poponnx.SGD(0.01)
     losses = [poponnx.L1Loss(translation[o], "l1LossVal", 0.1)]
 

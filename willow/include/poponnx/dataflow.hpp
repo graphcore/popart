@@ -12,39 +12,60 @@ namespace poponnx {
 // "fetches". AnchorReturnType specifies what exactly should be
 // returned for a tensor, currently the 3 options are:
 
-enum class AnchorReturnType {
+enum class AnchorReturnTypeId {
   FINAL = 0, // return just the final batch of the step
-  SUM,       // return the sum of all samples at the end
-             // of the step
+  EVERYN,    // return every Nth batch in the step
   ALL        // return all batches in the step.
 };
 // As an example, suppose we have an anchor scalar (0-d) tensor,
-// Suppose batchesPerStep = 3 and batchSize = 2.
-// Suppose that the 2*3 = 6 samples processed in a step have values
-// 1, 2, 1, 0, 1, 3
+// Suppose batchesPerStep = 4 and batchSize = 2.
+// Suppose that the 2*4 = 8 samples processed in a step have values
+// 1, 2, 1, 0, 1, 3, 2, 0
 // Then, under each of the AnchorReturnTypes the returned tensors are,
-// FINAL : [1, 3]             (1-d tensor)
-// SUM   : 8                  (0-d tensor)
-// ALL   : [1, 2, 1, 0, 1, 3] (1-d tensor)
+// FINAL       : [2, 0]                   (1-d tensor)
+// EVERYN, N=2 : [1, 0, 2, 0]             (1-d tensor)
+// ALL         : [1, 2, 1, 0, 1, 3, 2, 0] (1-d tensor)
 
-// Describe what and when the user wants returned.
+class AnchorReturnType {
+public:
+  // If AnchorReturnTypeId is EVERYN, a valid return frequency must
+  // also be supplied. Othwise just supply the Id.
+  AnchorReturnType(std::string artString);
+  AnchorReturnType(std::string artString, int returnFrequency);
+
+  AnchorReturnTypeId id() const { return artId_; }
+  // Return frequency
+  int rf() const;
+
+private:
+  AnchorReturnTypeId getIdFromStr(std::string artString);
+
+  AnchorReturnTypeId artId_;
+
+  int returnFrequency_;
+};
+
+// Specifies parameters for the host-device data streams.
+// Used to control the amount input data processed each step,
+// and how the user wants data returned
 class DataFlow {
 public:
   DataFlow();
   DataFlow(int batchesPerStep,
            int batchSize,
-           const std::vector<TensorId> &,
-           AnchorReturnType);
+           const std::map<TensorId, AnchorReturnType> &);
 
   DataFlow(const DataFlow &rhs) = default;
   DataFlow &operator=(const DataFlow &rhs) = default;
 
   bool isAnchored(TensorId) const;
+  bool isBatchCountingRequired() const;
   const std::vector<TensorId> &anchors() const { return v_anchors; }
+  const std::vector<int> &rfs() const { return v_rfs; }
   int nAnchors() const { return static_cast<int>(v_anchors.size()); }
   int batchSize() const { return batchSize_; }
   int batchesPerStep() const { return batchesPerStep_; }
-  AnchorReturnType art() const { return art_; }
+  AnchorReturnType art(TensorId anchorId) const;
 
 private:
   /// The number of batches processed by the backend in one call to train,
@@ -54,12 +75,23 @@ private:
   /// The size of the minibatch
   int batchSize_;
 
-  /// The set of tensors to return to the user after execution
+  /// The set of tensors to return to the user after execution, and how
+  /// frequently they are returned during multi-batch training, inference,
+  /// or evaluation
+  std::map<TensorId, AnchorReturnType> m_anchors;
+
+  /// The set of anchor tensors, extracted from the map
   std::vector<TensorId> v_anchors;
   std::set<TensorId> s_anchors;
 
-  /// Anchor return type for multi-batch training, inference, or evaluation
-  AnchorReturnType art_;
+  // The unique set of return frequencies for all anchors
+  // Depending on the anchor return type, extra tensors are added
+  // to the graph during its construction to keep track of batch
+  // count. This member ensures the minimum number of tensors are
+  // added.
+  std::vector<int> v_rfs;
+
+  void isValidAnchorReturnFrequency(TensorId anchorId, int batchesPerStep);
 };
 
 } // namespace poponnx

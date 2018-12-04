@@ -78,7 +78,7 @@ def test_engine_options_passed_to_engine(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
+    dataFlow = poponnx.DataFlow(1, 1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptions()
     opts.engineOptions = {'option': 'value'}
@@ -113,7 +113,7 @@ def test_convolution_options(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = poponnx.DataFlow(1, 1, [o], poponnx.AnchorReturnType.ALL)
+    dataFlow = poponnx.DataFlow(1, 1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptions()
     opts.convolutionOptions = {'startTileMultiplier': '3'}

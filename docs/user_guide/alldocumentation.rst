@@ -60,8 +60,8 @@ Example:
   torch.onnx.export(model, in, "alexnet.onnx")
 
   # Create a runtime environment
-  dataFeed = poponnx.DataFlow(500, 4, ["l1LossVal"],
-                              poponnx.AnchorReturnType.ALL)
+  anchors = {"l1LossVal" : poponnx.AnchorReturnType("ALL")}
+  dataFeed = poponnx.DataFlow(500, 4, anchors)
   losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
   optimizer = poponnx.ConstSGD(0.001)
 
@@ -90,9 +90,9 @@ In this example, a simple addition is prepared for execution.
 
   proto = builder.getModelProto()
 
-
   # Create a runtime environment
-  dataFeed = poponnx.DataFlow(500, 4, [o], poponnx.AnchorReturnType.ALL)
+  anchors = {o : poponnx.AnchorReturnType("ALL")}
+  dataFeed = poponnx.DataFlow(500, 4, anchors)
 
   session = poponnx.Session(proto, dataFeed)
 
