@@ -47,7 +47,8 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
   ir->moveIntoIr(std::move(mul_op));
 
   // Remove the ReciprocalGradOp
-  op->disconnectAllTensors();
+  op->disconnectAllInputs();
+  op->disconnectAllOutputs();
   ir->eraseOp(op->id);
 
   // Connect up the new ops

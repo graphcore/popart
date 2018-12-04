@@ -19,15 +19,17 @@ std::vector<const Tensor *> DivArg1GradOpPattern::touches(Op *) const {
   return {};
 }
 
-// output = - (gradOut * arg_0) / arg_1^2
+// grad_out = - (grad_in * arg_0) / arg_1^2
 bool DivArg1GradOpPattern::apply(Op *op) const {
-  auto grad_out = op->input->tensor(0);
-  auto fwd_in0  = op->input->tensor(1);
-  auto fwd_in1  = op->input->tensor(2);
-  auto output   = op->output->tensor(0);
+  auto grad_in  = op->inTensor(DivArg1GradOp::getGradInIndex());
+  auto fwd_in0  = op->inTensor(DivArg1GradOp::getFwdArg0InIndex());
+  auto fwd_in1  = op->inTensor(DivArg1GradOp::getFwdArg1InIndex());
+  auto grad_out = op->outTensor(DivArg1GradOp::getOutIndex());
 
   auto ir = op->pir;
 
+  // we assume this dynamic_cast call has been confirmed
+  // to be valid via a previous call to DivArg1GradOpPattern::matches
   auto axes = dynamic_cast<DivArg1GradOp *>(op)->getReductionAxes();
 
   // create the new ops
@@ -58,30 +60,31 @@ bool DivArg1GradOpPattern::apply(Op *op) const {
   ir->moveIntoIr(std::move(reduce_op));
 
   // Remove the DivArg1GradOp
-  op->disconnectAllTensors();
+  op->disconnectAllInputs();
+  op->disconnectAllOutputs();
   ir->eraseOp(op->id);
 
   // Connect up the new ops
   square->connectInTensor(0, fwd_in1->id);
-  square->createAndConnectOutTensor(0, "t__0__" + grad_out->id);
+  square->createAndConnectOutTensor(0, "t__0__" + grad_in->id);
   square->outInfo(0) = square->inInfo(0);
 
-  mul->connectInTensor(0, grad_out->id);
+  mul->connectInTensor(0, grad_in->id);
   mul->connectInTensor(1, fwd_in0->id);
-  mul->createAndConnectOutTensor(0, "t__1__" + grad_out->id);
+  mul->createAndConnectOutTensor(0, "t__1__" + grad_in->id);
   mul->outInfo(0) = npOut(mul->inInfo(0), mul->inInfo(1));
 
   div->connectInTensor(0, mul->outTensor(0)->id);
   div->connectInTensor(1, square->outTensor(0)->id);
-  div->createAndConnectOutTensor(0, "t__2__" + grad_out->id);
+  div->createAndConnectOutTensor(0, "t__2__" + grad_in->id);
   div->outInfo(0) = npOut(div->inInfo(0), div->inInfo(1));
 
   negate->connectInTensor(0, div->outTensor(0)->id);
-  negate->createAndConnectOutTensor(0, "t__3__" + grad_out->id);
+  negate->createAndConnectOutTensor(0, "t__3__" + grad_in->id);
   negate->outInfo(0) = negate->inInfo(0);
 
   reduce->connectInTensor(0, negate->outTensor(0)->id);
-  reduce->connectOutTensor(0, output->id);
+  reduce->connectOutTensor(0, grad_out->id);
 
   return true;
 }

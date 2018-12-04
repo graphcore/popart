@@ -81,18 +81,16 @@ void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
   ptensor->setProducer(this);
 }
 
-void Op::disconnectAllTensors() {
-  std::vector<InIndex> inputs;
+void Op::disconnectAllInputs() {
   for (auto entry : input->tensorMap()) {
-    inputs.push_back(entry.first);
     auto tensor = entry.second;
     tensor->consumers.decrement(this);
   }
   input->clear();
+}
 
-  std::vector<InIndex> outputs;
+void Op::disconnectAllOutputs() {
   for (auto entry : output->tensorMap()) {
-    outputs.push_back(entry.first);
     auto tensor = entry.second;
     tensor->resetProducer(nullptr);
   }

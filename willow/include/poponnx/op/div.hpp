@@ -38,7 +38,9 @@ public:
   const std::vector<int64_t> &getReductionAxes() const;
 
 private:
+  // Used to set the outputs TensorInfo
   TensorInfo forward_op_arg_info;
+  // reduction axes eventually passed to ReduceSumOp
   std::vector<int64_t> reduction_axes;
 };
 
@@ -48,6 +50,10 @@ public:
   DivArg0GradOp(DivOp *, const std::vector<int64_t> &reduction_axes);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
+
+  static InIndex getGradInIndex() { return 0; }
+  static InIndex getFwdArg0InIndex() { return 1; }
+  static OutIndex getOutIndex() { return 0; }
 };
 
 // - (gradOut * arg_0) / arg_1^2
@@ -56,6 +62,11 @@ public:
   DivArg1GradOp(DivOp *, const std::vector<int64_t> &reduction_axes);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
+
+  static InIndex getGradInIndex() { return 0; }
+  static InIndex getFwdArg0InIndex() { return 1; }
+  static InIndex getFwdArg1InIndex() { return 2; }
+  static OutIndex getOutIndex() { return 0; }
 };
 
 } // namespace poponnx

@@ -16,14 +16,16 @@ std::vector<const Tensor *> DivArg0GradOpPattern::touches(Op *) const {
   return {};
 }
 
-// output = grad_out / fwd_in1
+// grad_out = grad_in / fwd_in1
 bool DivArg0GradOpPattern::apply(Op *op) const {
-  auto grad_out = op->input->tensor(0);
-  auto fwd_in1  = op->input->tensor(1);
-  auto output   = op->output->tensor(0);
+  auto grad_in  = op->inTensor(DivArg0GradOp::getGradInIndex());
+  auto fwd_in1  = op->inTensor(DivArg0GradOp::getFwdArg0InIndex());
+  auto grad_out = op->outTensor(DivArg0GradOp::getOutIndex());
 
   auto ir = op->pir;
 
+  // we assume this dynamic_cast call has been confirmed
+  // to be valid via a previous call to DivArg0GradOpPattern::matches
   auto axes = dynamic_cast<DivArg0GradOp *>(op)->getReductionAxes();
 
   // create the new ops
@@ -42,17 +44,18 @@ bool DivArg0GradOpPattern::apply(Op *op) const {
   ir->moveIntoIr(std::move(reduce_op));
 
   // Remove the DivArg0GradOp
-  op->disconnectAllTensors();
+  op->disconnectAllInputs();
+  op->disconnectAllOutputs();
   ir->eraseOp(op->id);
 
   // Connect up the new ops
-  div->connectInTensor(0, grad_out->id);
+  div->connectInTensor(0, grad_in->id);
   div->connectInTensor(1, fwd_in1->id);
-  div->createAndConnectOutTensor(0, "t__" + grad_out->id);
-  div->outInfo(0) = npOut(grad_out->info, fwd_in1->info);
+  div->createAndConnectOutTensor(0, "t__" + grad_in->id);
+  div->outInfo(0) = npOut(grad_in->info, fwd_in1->info);
 
   reduce->connectInTensor(0, div->outTensor(0)->id);
-  reduce->connectOutTensor(0, output->id);
+  reduce->connectOutTensor(0, grad_out->id);
 
   return true;
 }

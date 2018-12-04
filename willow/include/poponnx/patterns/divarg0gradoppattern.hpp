@@ -6,7 +6,7 @@
 namespace poponnx {
 
 // Replace a DivArg0GradOp with
-// {(gradOut), (fwd_in1)} -> [Div] -> [ReduceSum] -> (out)
+// {(grad_in), (fwd_in1)} -> [Div] -> [ReduceSum] -> (grad_out)
 class DivArg0GradOpPattern : public Pattern {
 public:
   // Does op at the root of the
