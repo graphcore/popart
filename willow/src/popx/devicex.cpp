@@ -127,6 +127,12 @@ const poplar::Tensor &PopTensors::get(TensorId id) const {
   return found->second;
 }
 
+PopPrograms::PopPrograms(const int repeatCount_) : repeatCount(repeatCount_) {
+  if (repeatCount_ <= 0) {
+    throw error("Program repeat count must be greater than zero");
+  }
+}
+
 poplar::program::Sequence &PopPrograms::weightsFromHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::WEIGHTSFROMHOST)];
 }
@@ -159,25 +165,27 @@ poplar::program::Sequence PopPrograms::optimizerFromHost() {
   return optimizerFromHostFragment();
 }
 
-poplar::program::Sequence PopPrograms::infer() { return forwardFragment(); }
+poplar::program::Repeat PopPrograms::infer() {
+  return poplar::program::Repeat(repeatCount, forwardFragment());
+}
 
-poplar::program::Sequence PopPrograms::evaluate() {
+poplar::program::Repeat PopPrograms::evaluate() {
   poplar::program::Sequence eval;
 
   eval.add(forwardFragment());
   eval.add(lossFragment());
 
-  return eval;
+  return poplar::program::Repeat(repeatCount, eval);
 }
 
-poplar::program::Sequence PopPrograms::train() {
+poplar::program::Repeat PopPrograms::train() {
   poplar::program::Sequence trn;
 
   trn.add(forwardFragment());
   trn.add(lossFragment());
   trn.add(backwardFragment());
 
-  return trn;
+  return poplar::program::Repeat(repeatCount, trn);
 }
 
 poplar::program::Sequence PopPrograms::weightsToHost() {
@@ -205,7 +213,8 @@ PopPrograms::programFragment(PopPrograms::ProgramFragmentIndex index) {
 poplar::Graph &Devicex::graph() { return *pGraph; }
 
 Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
-    : poponnx::Device(ir), tensors(ir) {
+    : poponnx::Device(ir), tensors(ir),
+      progs(PopPrograms(ir.getDataFlow().batchesPerStep())) {
 
   // do not like the dynamic cast, is there a better way....
   popDevice = dynamic_cast<DevicexInfo &>(deviceInfo).getDevice();
@@ -225,7 +234,7 @@ Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
   bwdConvOptions.options["pass"] = "TRAINING_BWD";
   wuConvOptions.options["pass"]  = "TRAINING_WU";
 
-  // Not sure what they options should be
+  // Not sure what these options should be
   fwdMmOptions.set("fullyConnectedPass", "TRAINING_FWD");
   bwdMmLhsOptions.set("fullyConnectedPass", "TRAINING_BWD");
   bwdMmRhsOptions.set("fullyConnectedPass", "TRAINING_WU");
@@ -375,10 +384,7 @@ void Devicex::infer(const StepIO &stepio) {
   anchorsHostToHostStreams(stepio);
 
   logging::debug(prefix + "Running the inference program ");
-  // TODO : this should be in a poplar for loop (see T5093)
-  for (int i = 0; i < ir().getDataFlow().batchesPerStep(); ++i) {
-    pEngine->run(PopPrograms::ProgramIndex::INFER);
-  }
+  pEngine->run(PopPrograms::ProgramIndex::INFER);
 
   anchorsHostFromHostStreams(stepio);
 }
@@ -389,10 +395,7 @@ void Devicex::evaluate(const StepIO &stepio) {
   anchorsHostToHostStreams(stepio);
 
   logging::debug(prefix + "Running the evaluate program ");
-  // TODO : this should be in a poplar for loop (see T5093)
-  for (int i = 0; i < ir().getDataFlow().batchesPerStep(); ++i) {
-    pEngine->run(PopPrograms::ProgramIndex::EVALUATE);
-  }
+  pEngine->run(PopPrograms::ProgramIndex::EVALUATE);
 
   anchorsHostFromHostStreams(stepio);
 }
@@ -403,10 +406,7 @@ void Devicex::train(const StepIO &stepio) {
   anchorsHostToHostStreams(stepio);
 
   logging::debug(prefix + "Running the train program ");
-  // TODO : this should be in a poplar for loop (see T5093)
-  for (int i = 0; i < ir().getDataFlow().batchesPerStep(); ++i) {
-    pEngine->run(PopPrograms::ProgramIndex::TRAIN);
-  }
+  pEngine->run(PopPrograms::ProgramIndex::TRAIN);
 
   anchorsHostFromHostStreams(stepio);
 }

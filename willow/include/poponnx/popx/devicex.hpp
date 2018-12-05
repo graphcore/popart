@@ -27,6 +27,12 @@ class GraphCachex;
 class PopPrograms {
 
 public:
+  // We may want to run some programs multiple times without having
+  // to communicate with the host to call the 'run'. By supplying a
+  // count, we can loop a repeatable program inside a Poplar repeat
+  // program
+  PopPrograms(const int repeatCount);
+
   enum ProgramIndex {
     WEIGHTSFROMHOST = 0,
     OPTIMIZERFROMHOST,
@@ -57,19 +63,24 @@ public:
   poplar::program::Sequence &backwardFragment();
   poplar::program::Sequence &weightsToHostFragment();
 
+  // A list of programs that can be run by the Poplar engine.
   std::vector<poplar::program::Program> progs();
 
   poplar::program::Sequence &programFragment(PopPrograms::ProgramFragmentIndex);
 
 private:
+  // Specify how many times to loop the 'repeatable' programs
+  // (infer, eval, train)
+  int repeatCount;
+
   static constexpr int seqs_size = static_cast<int>(ProgramFragmentIndex::N);
   std::array<poplar::program::Sequence, seqs_size> seqs;
 
   poplar::program::Sequence weightsFromHost();
   poplar::program::Sequence optimizerFromHost();
-  poplar::program::Sequence infer();
-  poplar::program::Sequence evaluate();
-  poplar::program::Sequence train();
+  poplar::program::Repeat infer();
+  poplar::program::Repeat evaluate();
+  poplar::program::Repeat train();
   poplar::program::Sequence weightsToHost();
 };
 
@@ -117,6 +128,7 @@ public:
   virtual std::string getExecutionReport() const override final;
 
   PopPrograms progs;
+
   Opx *getOpx(OpId);
   poplar::Graph &graph();
 
