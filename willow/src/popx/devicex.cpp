@@ -966,7 +966,7 @@ void Devicex::prepare() {
   // tensors may need to be added to the graph to keep track of
   // batch count.
   if (ir().getDataFlow().isBatchCountingRequired()) {
-    tasks.add(initBatchCounterTensorsTask(progs.forwardFragment()));
+    tasks.add(initBatchCounterTensorsTask());
     tasks.add(updateBatchCoutTask(progs.forwardFragment()));
   }
 
@@ -1178,9 +1178,9 @@ PriTask Devicex::toHostTask(Tensor *tensor,
           f};
 }
 
-PriTask Devicex::initBatchCounterTensorsTask(poplar::program::Sequence &sq) {
+PriTask Devicex::initBatchCounterTensorsTask() {
 
-  auto f = [&sq, this]() {
+  auto f = [this]() {
     logging::devicex::debug("Adding batch counter tensors");
 
     // Add scalar tensors outside of the ir to track the batch

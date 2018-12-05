@@ -198,7 +198,7 @@ private:
 
   // Task to create poplar::Tensors from nothing, specifically for
   // use in keeping track of the batch count
-  PriTask initBatchCounterTensorsTask(poplar::program::Sequence &sq);
+  PriTask initBatchCounterTensorsTask();
   TaskId initBatchCounterTensorsTaskId() const;
 
   // Task to add a program to increment and check the batch count
