@@ -288,6 +288,84 @@ def test_reciprocal_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_sin(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.sin([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.sin(a)
+        return [b]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_sin_grad(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.sin([i1])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.sin(a)
+        d__o = ref_data.getOutputTensorGrad(0)
+        b.backward(torch.tensor(d__o))
+        return [b, a.grad, None]
+
+    op_tester.passes = ['PreUniRepl', 'SinGradOp']
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_cos(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.cos([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.cos(a)
+        return [b]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_cos_grad(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.cos([i1])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.cos(a)
+        d__o = ref_data.getOutputTensorGrad(0)
+        b.backward(torch.tensor(d__o))
+        return [b, a.grad, None]
+
+    op_tester.passes = ['PreUniRepl', 'CosGradOp']
+    op_tester.run(init_builder, reference, 'train')
+
+
 # Usage:
 #   Add `op_tester` as an argument to a test function
 #   In the test function:

@@ -18,6 +18,7 @@
 #include <poponnx/popx/op/addx.hpp>
 #include <poponnx/popx/op/averagepoolx.hpp>
 #include <poponnx/popx/op/convx.hpp>
+#include <poponnx/popx/op/cosx.hpp>
 #include <poponnx/popx/op/divx.hpp>
 #include <poponnx/popx/op/identityx.hpp>
 #include <poponnx/popx/op/l1x.hpp>
@@ -30,6 +31,7 @@
 #include <poponnx/popx/op/reciprocalx.hpp>
 #include <poponnx/popx/op/reducesumx.hpp>
 #include <poponnx/popx/op/relux.hpp>
+#include <poponnx/popx/op/sinx.hpp>
 #include <poponnx/popx/op/softmaxx.hpp>
 #include <poponnx/popx/op/squarex.hpp>
 #include <poponnx/popx/op/squeezex.hpp>
@@ -452,6 +454,15 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new ConvOpx(op, this));
   }
 
+  case OpType::COS: {
+    return std::unique_ptr<Opx>(new CosOpx(op, this));
+  }
+
+  case OpType::COSGRAD: {
+    throw error(
+        "CosGradOp should be optimised out, \"CosGradOp\" pattern is required");
+  }
+
   case OpType::CONVDATAGRAD: {
     return std::unique_ptr<Opx>(new ConvDataGradOpx(op, this));
   }
@@ -522,6 +533,15 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::NEGATEGRAD: {
     return std::unique_ptr<Opx>(new NegateGradOpx(op, this));
+  }
+
+  case OpType::SIN: {
+    return std::unique_ptr<Opx>(new SinOpx(op, this));
+  }
+
+  case OpType::SINGRAD: {
+    throw error(
+        "SinGradOp should be optimised out, \"SinGradOp\" pattern is required");
   }
 
   case OpType::SOFTMAX: {

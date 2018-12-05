@@ -6,6 +6,7 @@
 #include <poponnx/op/add.hpp>
 #include <poponnx/op/averagepool.hpp>
 #include <poponnx/op/conv.hpp>
+#include <poponnx/op/cos.hpp>
 #include <poponnx/op/div.hpp>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/matmul.hpp>
@@ -16,6 +17,7 @@
 #include <poponnx/op/reciprocal.hpp>
 #include <poponnx/op/reducesum.hpp>
 #include <poponnx/op/relu.hpp>
+#include <poponnx/op/sin.hpp>
 #include <poponnx/op/softmax.hpp>
 #include <poponnx/op/square.hpp>
 #include <poponnx/op/squeeze.hpp>
@@ -219,6 +221,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::CONV: {
     return pOp(new ConvOp(node, this));
   }
+  case OpType::COS: {
+    return pOp(new CosOp(node, this));
+  }
   case OpType::DIV: {
     return pOp(new DivOp(node, this));
   }
@@ -252,6 +257,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::RELU: {
     return pOp(new ReluOp(node, this));
   }
+  case OpType::SIN: {
+    return pOp(new SinOp(node, this));
+  }
   case OpType::SUBTRACT: {
     return pOp(new SubtractOp(node, this));
   }
@@ -268,6 +276,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::ADDARG1GRAD:
   case OpType::ADDBIASBIASGRAD:
   case OpType::ADDBIASDATAGRAD:
+  case OpType::COSGRAD:
   case OpType::DIVARG0GRAD:
   case OpType::DIVARG1GRAD:
   case OpType::SQUEEZEGRAD:
@@ -284,6 +293,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::MULARG0GRAD:
   case OpType::MULARG1GRAD:
   case OpType::RECIPROCALGRAD:
+  case OpType::SINGRAD:
   case OpType::SOFTMAXGRAD:
   case OpType::SGDVARUPDATE:
   case OpType::CONSTSGDVARUPDATE:

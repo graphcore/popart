@@ -132,6 +132,8 @@ public:
   bool isDivArg1GradOpEnabled() {
     return isPatternEnabled(PatternType::DIVARG1GRADOP);
   }
+  bool isSinGradOpEnabled() { return isPatternEnabled(PatternType::SINGRADOP); }
+  bool isCosGradOpEnabled() { return isPatternEnabled(PatternType::COSGRADOP); }
   bool isInPlace0Enabled() { return isPatternEnabled(PatternType::INPLACE0); }
 
   // The following methods are fluent allow you to
@@ -166,6 +168,12 @@ public:
   }
   Patterns &enableDivArg1GradOp(bool v) {
     return enablePattern(PatternType::DIVARG1GRADOP, v);
+  }
+  Patterns &enableSinGradOp(bool v) {
+    return enablePattern(PatternType::SINGRADOP, v);
+  }
+  Patterns &enableCosGradOp(bool v) {
+    return enablePattern(PatternType::COSGRADOP, v);
   }
   Patterns &enableInPlace0(bool v) {
     return enablePattern(PatternType::INPLACE0, v);

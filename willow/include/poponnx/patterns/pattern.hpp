@@ -20,6 +20,8 @@ enum class PatternType {
   RECIPROCALGRADOP,
   DIVARG0GRADOP,
   DIVARG1GRADOP,
+  SINGRADOP,
+  COSGRADOP,
   // The patterns which can handle topological constraints:
   INPLACE0
 };
