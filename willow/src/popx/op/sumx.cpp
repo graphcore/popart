@@ -16,9 +16,13 @@ SumOpx::SumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 SumOp *SumOpx::getSumOp() const { return dynamic_cast<SumOp *>(op_p); }
 
 void SumOpx::grow(poplar::program::Sequence &prog) const {
+  if (getSumOp()->input->n() == 1) {
+    throw error(
+        "SumOpx with one input should be removed by pattern 'PreUniRepl'");
+  }
   // if the total number of tensors is less than
   // "5", then perform a series of adds.
-  if (getSumOp()->input->n() < 5) {
+  else if (getSumOp()->input->n() < 5) {
     poplar::Tensor sum = popops::map(graph(),
                                      popops::expr::BinaryOpType::ADD,
                                      get(inId(0)),
