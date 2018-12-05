@@ -17,13 +17,14 @@ public:
   static OutIndex getOutIndex() { return 0; }
 };
 
-class SinGradOp : public SinOp {
+class SinGradOp : public Op {
 public:
   SinGradOp(SinOp *fwdOp);
   std::unique_ptr<Op> clone() const final;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
 
   static InIndex getGradInIndex() { return 0; }
   static InIndex getFwdArgInIndex() { return 1; }

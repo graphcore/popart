@@ -16,10 +16,10 @@ std::vector<std::unique_ptr<Op>> SinOp::getGradOps() {
   return upops;
 }
 
-void SinOp::setup() { outInfo(getInIndex()) = inInfo(getOutIndex()); }
+void SinOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 SinGradOp::SinGradOp(SinOp *fwdOp)
-    : SinOp({"SinGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
+    : Op({"SinGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
 
 std::unique_ptr<Op> SinGradOp::clone() const {
   return make_unique<SinGradOp>(*this);
@@ -39,5 +39,7 @@ const std::map<int, int> &SinGradOp::gradOutToNonGradIn() const {
 
   return outInfo;
 }
+
+void SinGradOp::setup() { outInfo(getOutIndex()) = inInfo(getFwdArgInIndex()); }
 
 } // namespace poponnx

@@ -16,10 +16,10 @@ std::vector<std::unique_ptr<Op>> CosOp::getGradOps() {
   return upops;
 }
 
-void CosOp::setup() { outInfo(getInIndex()) = inInfo(getOutIndex()); }
+void CosOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 CosGradOp::CosGradOp(CosOp *fwdOp)
-    : CosOp({"CosGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
+    : Op({"CosGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
 
 std::unique_ptr<Op> CosGradOp::clone() const {
   return make_unique<CosGradOp>(*this);
@@ -39,5 +39,7 @@ const std::map<int, int> &CosGradOp::gradOutToNonGradIn() const {
 
   return outInfo;
 }
+
+void CosGradOp::setup() { outInfo(getOutIndex()) = inInfo(getFwdArgInIndex()); }
 
 } // namespace poponnx
