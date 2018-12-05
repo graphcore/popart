@@ -642,6 +642,10 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new SumOpx(op, this));
   }
 
+  case OpType::TAN: {
+    throw error("TanOp should be removed by pattern 'TanOp'");
+  }
+
   default: { throw error("No get pop op for " + op->op_type()); }
   }
 }

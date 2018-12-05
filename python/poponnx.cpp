@@ -230,6 +230,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .value("RECIPROCALGRADOP", PatternType::RECIPROCALGRADOP)
       .value("SINGRADOP", PatternType::SINGRADOP)
       .value("COSGRADOP", PatternType::COSGRADOP)
+      .value("TANOP", PatternType::TANOP)
       .value("INPLACE0", PatternType::INPLACE0);
 
   py::class_<Patterns>(m, "Patterns")

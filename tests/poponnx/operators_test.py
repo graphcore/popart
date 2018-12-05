@@ -366,6 +366,49 @@ def test_cos_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_tan(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.tan([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.tan(a)
+        return [b]
+
+    op_tester.passes = ['TanOp']
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_tan_grad(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.tan([i1])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.tan(a)
+        d__o = ref_data.getOutputTensorGrad(0)
+        b.backward(torch.tensor(d__o))
+        return [b, a.grad, None]
+
+    op_tester.passes = [
+        'PreUniRepl', 'TanOp', 'DivArg0GradOp', 'DivArg1GradOp', 'SinGradOp',
+        'CosGradOp'
+    ]
+    op_tester.run(init_builder, reference, 'train')
+
+
 # Usage:
 #   Add `op_tester` as an argument to a test function
 #   In the test function:

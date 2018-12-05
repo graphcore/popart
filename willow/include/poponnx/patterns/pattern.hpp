@@ -22,6 +22,7 @@ enum class PatternType {
   DIVARG1GRADOP,
   SINGRADOP,
   COSGRADOP,
+  TANOP,
   // The patterns which can handle topological constraints:
   INPLACE0
 };

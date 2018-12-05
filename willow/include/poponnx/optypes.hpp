@@ -62,7 +62,8 @@ enum class OpType {
   SUBTRACT,
   SUBTRACTARG0GRAD,
   SUBTRACTARG1GRAD,
-  SUM
+  SUM,
+  TAN
 };
 
 struct OpTypeInfo {

@@ -102,7 +102,8 @@ OpTypes::OpTypes() {
       {std::make_pair("SGDVarUpdate", ai_graphcore),
        OpTypeInfo(OpType::SGDVARUPDATE, false)},
       {std::make_pair("ConstSGDVarUpdate", ai_graphcore),
-       OpTypeInfo(OpType::CONSTSGDVARUPDATE, false)}};
+       OpTypeInfo(OpType::CONSTSGDVARUPDATE, false)},
+      {std::make_pair("Tan", ai_onnx), OpTypeInfo(OpType::TAN, true)}};
 
   for (auto &x : opTypes_) {
     strings_[x.second.type] = x.first;

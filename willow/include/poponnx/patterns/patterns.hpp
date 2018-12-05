@@ -134,6 +134,7 @@ public:
   }
   bool isSinGradOpEnabled() { return isPatternEnabled(PatternType::SINGRADOP); }
   bool isCosGradOpEnabled() { return isPatternEnabled(PatternType::COSGRADOP); }
+  bool isTanOpEnabled() { return isPatternEnabled(PatternType::TANOP); }
   bool isInPlace0Enabled() { return isPatternEnabled(PatternType::INPLACE0); }
 
   // The following methods are fluent allow you to
@@ -175,6 +176,7 @@ public:
   Patterns &enableCosGradOp(bool v) {
     return enablePattern(PatternType::COSGRADOP, v);
   }
+  Patterns &enableTanOp(bool v) { return enablePattern(PatternType::TANOP, v); }
   Patterns &enableInPlace0(bool v) {
     return enablePattern(PatternType::INPLACE0, v);
   }

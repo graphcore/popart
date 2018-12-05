@@ -23,6 +23,7 @@
 #include <poponnx/op/squeeze.hpp>
 #include <poponnx/op/subtract.hpp>
 #include <poponnx/op/sum.hpp>
+#include <poponnx/op/tan.hpp>
 #include <poponnx/op/varupdate.hpp>
 
 namespace poponnx {
@@ -268,6 +269,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   }
   case OpType::SQUEEZE: {
     return pOp(new SqueezeOp(node, this));
+  }
+  case OpType::TAN: {
+    return pOp(new TanOp(node, this));
   }
   case OpType::MATMUL: {
     return pOp(new MatMulOp(node, this));
