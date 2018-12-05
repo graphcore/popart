@@ -1109,7 +1109,7 @@ PriTask Devicex::initBatchCounterTensorsTask(poplar::program::Sequence &sq) {
 
     // Add scalar tensors outside of the ir to track the batch
     // Id and decide when to execute the copy to the host
-    for (int N : ir().getDataFlow().rfs()) {
+    for (ReturnFrequency N : ir().getDataFlow().rfs()) {
       // Add to map so copy task can access
       batchCountingTensors[N]      = graph().addVariable(poplar::INT, {});
       batchCountCheckingTensors[N] = graph().addVariable(poplar::BOOL, {});
@@ -1141,7 +1141,7 @@ PriTask Devicex::updateBatchCoutTask(poplar::program::Sequence &sq) {
     // Increment the batch count at the at the earliest point
     // the anchor tensor is required, and check if it is a
     // copy batch
-    for (int N : ir().getDataFlow().rfs()) {
+    for (ReturnFrequency N : ir().getDataFlow().rfs()) {
       popops::addInPlace(
           graph(), batchCountingTensors[N], getConst(poplar::INT, {}, 1), sq);
 
