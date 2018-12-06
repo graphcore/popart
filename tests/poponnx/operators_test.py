@@ -409,6 +409,46 @@ def test_tan_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_sqrt(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.sqrt([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        out = torch.sqrt(a)
+        return [out]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_sqrt_grad(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.sqrt([i1])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        out = torch.sqrt(a)
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, a.grad, None]
+
+    op_tester.passes = ['PreUniRepl', 'SqrtGradOp']
+    op_tester.run(init_builder, reference, 'train')
+
+
 # Usage:
 #   Add `op_tester` as an argument to a test function
 #   In the test function:

@@ -31,8 +31,10 @@
 #include <poponnx/popx/op/reciprocalx.hpp>
 #include <poponnx/popx/op/reducesumx.hpp>
 #include <poponnx/popx/op/relux.hpp>
+#include <poponnx/popx/op/scalex.hpp>
 #include <poponnx/popx/op/sinx.hpp>
 #include <poponnx/popx/op/softmaxx.hpp>
+#include <poponnx/popx/op/sqrtx.hpp>
 #include <poponnx/popx/op/squarex.hpp>
 #include <poponnx/popx/op/squeezex.hpp>
 #include <poponnx/popx/op/subtractx.hpp>
@@ -609,8 +611,20 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new ReluGradOpx(op, this));
   }
 
+  case OpType::SCALE: {
+    return std::unique_ptr<Opx>(new ScaleOpx(op, this));
+  }
+
   case OpType::SGDVARUPDATE: {
     return std::unique_ptr<Opx>(new SGDVarUpdateOpx(op, this));
+  }
+
+  case OpType::SQRT: {
+    return std::unique_ptr<Opx>(new SqrtOpx(op, this));
+  }
+
+  case OpType::SQRTGRAD: {
+    throw error("SqrtGradOp should be removed by pattern 'SqrtGradOp'");
   }
 
   case OpType::SQUARE: {

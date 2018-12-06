@@ -136,6 +136,9 @@ public:
   bool isCosGradOpEnabled() { return isPatternEnabled(PatternType::COSGRADOP); }
   bool isTanOpEnabled() { return isPatternEnabled(PatternType::TANOP); }
   bool isInPlace0Enabled() { return isPatternEnabled(PatternType::INPLACE0); }
+  bool isSqrtGradOpEnabled() {
+    return isPatternEnabled(PatternType::SQRTGRADOP);
+  }
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
@@ -179,6 +182,9 @@ public:
   Patterns &enableTanOp(bool v) { return enablePattern(PatternType::TANOP, v); }
   Patterns &enableInPlace0(bool v) {
     return enablePattern(PatternType::INPLACE0, v);
+  }
+  Patterns &enableSqrtGradOp(bool v) {
+    return enablePattern(PatternType::SQRTGRADOP, v);
   }
 
   std::vector<std::unique_ptr<Pattern>> getPatternList();

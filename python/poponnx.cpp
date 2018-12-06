@@ -231,7 +231,10 @@ PYBIND11_MODULE(poponnx_core, m) {
       .value("SINGRADOP", PatternType::SINGRADOP)
       .value("COSGRADOP", PatternType::COSGRADOP)
       .value("TANOP", PatternType::TANOP)
-      .value("INPLACE0", PatternType::INPLACE0);
+      .value("INPLACE0", PatternType::INPLACE0)
+      .value("DIVARG0GRADOP", PatternType::DIVARG0GRADOP)
+      .value("DIVARG1GRADOP", PatternType::DIVARG1GRADOP)
+      .value("SQRTGRADOP", PatternType::SQRTGRADOP);
 
   py::class_<Patterns>(m, "Patterns")
       .def(py::init<>())
