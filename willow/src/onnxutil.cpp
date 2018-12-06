@@ -155,10 +155,10 @@ ConstVoidData getConstData(const onnx::TensorProto &tp) {
       cv_data.data = reinterpret_cast<const void *>(&(tp.float_data().Get(0)));
     } else if (tp.data_type() == onnx::TensorProto::INT64) {
       cv_data.data = reinterpret_cast<const void *>(&(tp.int64_data().Get(0)));
-    }
-
-    else {
-      throw error("getConstData needs implementing for" +
+    } else if (tp.data_type() == onnx::TensorProto::FLOAT16) {
+      cv_data.data = reinterpret_cast<const void *>(&(tp.int32_data().Get(0)));
+    } else {
+      throw error("getConstData needs implementing for " +
                   cv_data.info.data_type());
     }
   }
@@ -176,6 +176,9 @@ MutableVoidData getMutableData(onnx::TensorProto &tp) {
     if (tp.data_type() == onnx::TensorProto::FLOAT) {
       mv_data.data =
           reinterpret_cast<void *>(tp.mutable_float_data()->Mutable(0));
+    } else if (tp.data_type() == onnx::TensorProto::FLOAT16) {
+      mv_data.data =
+          reinterpret_cast<void *>(tp.mutable_int32_data()->Mutable(0));
     } else {
       throw error("getMutableData needs implementing for " +
                   mv_data.info.data_type());

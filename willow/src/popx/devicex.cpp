@@ -969,13 +969,12 @@ void Devicex::prepare() {
   }
 
   logging::devicex::info("All tasks complete");
-  logging::devicex::debug("Creating poplar::Engine");
 
   pEngine.reset(new poplar::Engine(graph(), progs.progs(), engineOptions));
-  logging::devicex::debug("Engine has been created");
+  logging::devicex::info("Engine created");
 
   pEngine->load(popDevice);
-  logging::devicex::debug("Engine has loaded device");
+  logging::devicex::info("Engine loaded");
 
   logging::devicex::debug("Connecting initializer streams");
   for (auto id : ir().getTensors().getInitIds()) {
@@ -1254,6 +1253,9 @@ poplar::Type popType(const TensorInfo &info) {
   case DataType::INT32: {
     return poplar::INT;
   }
+  case DataType::FLOAT16: {
+    return poplar::HALF;
+  }
 
   case DataType::UNDEFINED:
   case DataType::UINT8:
@@ -1263,7 +1265,6 @@ poplar::Type popType(const TensorInfo &info) {
   case DataType::INT64:
   case DataType::STRING:
   case DataType::BOOL:
-  case DataType::FLOAT16:
   case DataType::BFLOAT16:
   case DataType::DOUBLE:
   case DataType::UINT32:

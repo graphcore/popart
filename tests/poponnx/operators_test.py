@@ -476,6 +476,9 @@ def op_tester(tmpdir):
         if dtype == np.dtype('float32'):
             return 'FLOAT'
 
+        if dtype == np.dtype('float16'):
+            return 'FLOAT16'
+
         raise Exception(
             'bad dtype %s, (only float32 currently supported)' % (dtype, ))
 
