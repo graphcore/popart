@@ -23,9 +23,12 @@ enum class OpType {
   CONVWEIGHTSGRAD,
   COS,
   COSGRAD,
+  COSH,
   DIV,
   DIVARG0GRAD,
   DIVARG1GRAD,
+  EXP,
+  EXPGRAD,
   IDENTITY,
   IDENTITYGRAD,
   L1,
@@ -54,6 +57,7 @@ enum class OpType {
   RELUGRAD,
   RELUINPLACE,
   SCALE,
+  SCALEGRAD,
   SGDVARUPDATE,
   SIN,
   SINGRAD,
@@ -66,7 +70,9 @@ enum class OpType {
   SUBTRACTARG0GRAD,
   SUBTRACTARG1GRAD,
   SUM,
-  TAN
+  TAN,
+  TANH,
+  TANHGRAD,
 };
 
 struct OpTypeInfo {

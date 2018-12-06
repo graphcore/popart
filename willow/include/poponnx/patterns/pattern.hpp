@@ -24,6 +24,9 @@ enum class PatternType {
   COSGRADOP,
   TANTOSINOVERCOS,
   SQRTGRADOP,
+  EXPGRADOP,
+  COSHOP,
+  TANHGRADOP,
   // The patterns which can handle topological constraints:
   INPLACE0
 };

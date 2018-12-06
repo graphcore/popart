@@ -234,7 +234,9 @@ PYBIND11_MODULE(poponnx_core, m) {
       .value("INPLACE0", PatternType::INPLACE0)
       .value("DIVARG0GRADOP", PatternType::DIVARG0GRADOP)
       .value("DIVARG1GRADOP", PatternType::DIVARG1GRADOP)
-      .value("SQRTGRADOP", PatternType::SQRTGRADOP);
+      .value("SQRTGRADOP", PatternType::SQRTGRADOP)
+      .value("EXPGRADOP", PatternType::EXPGRADOP)
+      .value("TANHGRADOP", PatternType::TANHGRADOP);
 
   py::class_<Patterns>(m, "Patterns")
       .def(py::init<>())

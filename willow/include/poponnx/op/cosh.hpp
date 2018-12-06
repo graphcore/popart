@@ -1,15 +1,15 @@
-#ifndef GUARD_NEURALNET_SQUARE_HPP
-#define GUARD_NEURALNET_SQUARE_HPP
+#ifndef GUARD_NEURALNET_COSH_HPP
+#define GUARD_NEURALNET_COSH_HPP
 
 #include <poponnx/op.hpp>
 
 namespace poponnx {
 
-class SquareOp : public Op {
+class CoshOp : public Op {
 public:
-  SquareOp(const OpConstructorBundle &);
-  SquareOp(const onnx::NodeProto &node, Ir *pir);
-  std::unique_ptr<Op> clone() const final;
+  CoshOp(const OpConstructorBundle &);
+  CoshOp(const onnx::NodeProto &node, Ir *pir);
+  std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
 

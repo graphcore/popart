@@ -7,7 +7,9 @@
 #include <poponnx/op/averagepool.hpp>
 #include <poponnx/op/conv.hpp>
 #include <poponnx/op/cos.hpp>
+#include <poponnx/op/cosh.hpp>
 #include <poponnx/op/div.hpp>
+#include <poponnx/op/exp.hpp>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/matmul.hpp>
 #include <poponnx/op/maxpool.hpp>
@@ -25,6 +27,7 @@
 #include <poponnx/op/subtract.hpp>
 #include <poponnx/op/sum.hpp>
 #include <poponnx/op/tan.hpp>
+#include <poponnx/op/tanh.hpp>
 #include <poponnx/op/varupdate.hpp>
 
 namespace poponnx {
@@ -226,8 +229,14 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::COS: {
     return pOp(new CosOp(node, this));
   }
+  case OpType::COSH: {
+    return pOp(new CoshOp(node, this));
+  }
   case OpType::DIV: {
     return pOp(new DivOp(node, this));
+  }
+  case OpType::EXP: {
+    return pOp(new ExpOp(node, this));
   }
   case OpType::IDENTITY: {
     return pOp(new IdentityOp(node, this));
@@ -277,6 +286,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::TAN: {
     return pOp(new TanOp(node, this));
   }
+  case OpType::TANH: {
+    return pOp(new TanhOp(node, this));
+  }
   case OpType::MATMUL: {
     return pOp(new MatMulOp(node, this));
   }
@@ -287,6 +299,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::COSGRAD:
   case OpType::DIVARG0GRAD:
   case OpType::DIVARG1GRAD:
+  case OpType::EXPGRAD:
   case OpType::SQUEEZEGRAD:
   case OpType::REDUCESUMGRAD:
   case OpType::RELUGRAD:
@@ -303,12 +316,14 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::RECIPROCALGRAD:
   case OpType::SINGRAD:
   case OpType::SCALE:
+  case OpType::SCALEGRAD:
   case OpType::SOFTMAXGRAD:
   case OpType::SGDVARUPDATE:
   case OpType::SQRTGRAD:
   case OpType::CONSTSGDVARUPDATE:
   case OpType::SUBTRACTARG0GRAD:
   case OpType::SUBTRACTARG1GRAD:
+  case OpType::TANHGRAD:
   case OpType::MATMULLHSGRAD:
   case OpType::MATMULRHSGRAD:
     throw error("Gradient Ops not constructable from Node");

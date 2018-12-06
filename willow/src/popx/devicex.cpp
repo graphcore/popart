@@ -20,6 +20,7 @@
 #include <poponnx/popx/op/convx.hpp>
 #include <poponnx/popx/op/cosx.hpp>
 #include <poponnx/popx/op/divx.hpp>
+#include <poponnx/popx/op/expx.hpp>
 #include <poponnx/popx/op/identityx.hpp>
 #include <poponnx/popx/op/l1x.hpp>
 #include <poponnx/popx/op/matmulx.hpp>
@@ -39,6 +40,7 @@
 #include <poponnx/popx/op/squeezex.hpp>
 #include <poponnx/popx/op/subtractx.hpp>
 #include <poponnx/popx/op/sumx.hpp>
+#include <poponnx/popx/op/tanhx.hpp>
 #include <poponnx/popx/op/varupdatex.hpp>
 #include <poponnx/popx/opx.hpp>
 #include <poponnx/pritask.hpp>
@@ -465,6 +467,10 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
         "CosGradOp should be optimised out, \"CosGradOp\" pattern is required");
   }
 
+  case OpType::COSH: {
+    throw error("CoshOp should be removed by pattern 'CoshOp'");
+  }
+
   case OpType::CONVDATAGRAD: {
     return std::unique_ptr<Opx>(new ConvDataGradOpx(op, this));
   }
@@ -489,6 +495,14 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
   case OpType::DIVARG1GRAD: {
     throw error("DivArg1GradOp should be optimised out, \"DivArg1GradOp\" "
                 "pattern is required");
+  }
+
+  case OpType::EXP: {
+    return std::unique_ptr<Opx>(new ExpOpx(op, this));
+  }
+
+  case OpType::EXPGRAD: {
+    throw error("ExpGradOp should be removed by pattern 'ExpGradOp'");
   }
 
   case OpType::IDENTITY: {
@@ -615,6 +629,10 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new ScaleOpx(op, this));
   }
 
+  case OpType::SCALEGRAD: {
+    return std::unique_ptr<Opx>(new ScaleGradOpx(op, this));
+  }
+
   case OpType::SGDVARUPDATE: {
     return std::unique_ptr<Opx>(new SGDVarUpdateOpx(op, this));
   }
@@ -658,6 +676,14 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::TAN: {
     throw error("TanOp should be removed by pattern 'TanOp'");
+  }
+
+  case OpType::TANH: {
+    return std::unique_ptr<Opx>(new TanhOpx(op, this));
+  }
+
+  case OpType::TANHGRAD: {
+    throw error("TanhGradOp should be removed by pattern 'TanhGradOp'");
   }
 
   default: { throw error("No get pop op for " + op->op_type()); }

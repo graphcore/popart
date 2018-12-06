@@ -8,7 +8,7 @@ namespace poponnx {
 namespace popx {
 
 ScaleOpx::ScaleOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (dynamic_cast<ScaleOp *>(op) == nullptr) {
+  if (!op->isConvertibleTo<ScaleOp>()) {
     throw error("cannot create ScaleOpx from " + op->op_type());
   }
 }
@@ -26,6 +26,12 @@ void ScaleOpx::grow(poplar::program::Sequence &prog) const {
                      get(inId(0)),
                      prog,
                      idStr()));
+}
+
+ScaleGradOpx::ScaleGradOpx(Op *op, Devicex *devicex) : ScaleOpx(op, devicex) {
+  if (!op->isConvertibleTo<ScaleGradOp>()) {
+    throw error("cannot create ScaleGradOpx from " + op->op_type());
+  }
 }
 
 } // namespace popx

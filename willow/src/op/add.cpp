@@ -9,6 +9,8 @@ namespace poponnx {
 
 AddOp::AddOp(const onnx::NodeProto &node, Ir *ir) : Op(node, ir) {}
 
+AddOp::AddOp(const OpConstructorBundle &bundle) : Op(bundle) {}
+
 std::unique_ptr<Op> AddOp::clone() const { return make_unique<AddOp>(*this); }
 
 std::vector<std::unique_ptr<Op>> AddOp::getGradOps() {

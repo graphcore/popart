@@ -449,6 +449,124 @@ def test_sqrt_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_tanh(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.tanh([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.tanh(a)
+        return [b]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_tanh_grad(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.tanh([i1])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.tanh(a)
+        d__o = ref_data.getOutputTensorGrad(0)
+        b.backward(torch.tensor(d__o))
+        return [b, a.grad, None]
+
+    op_tester.passes = ['PreUniRepl', 'TanhGradOp', 'CoshOp']
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_exp(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.exp([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.exp(a)
+        return [b]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_exp_grad(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.exp([i1])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.exp(a)
+        d__o = ref_data.getOutputTensorGrad(0)
+        b.backward(torch.tensor(d__o))
+        return [b, a.grad, None]
+
+    op_tester.passes = ['PreUniRepl', 'ExpGradOp']
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_cosh(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.cosh([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.cosh(a)
+        return [b]
+
+    op_tester.passes = ['PreUniRepl', 'CoshOp']
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_cosh_grad(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.cosh([i1])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.cosh(a)
+        d__o = ref_data.getOutputTensorGrad(0)
+        b.backward(torch.tensor(d__o))
+        return [b, a.grad, None]
+
+    op_tester.passes = ['PreUniRepl', 'CoshOp', 'ExpGradOp']
+    op_tester.run(init_builder, reference, 'train')
+
+
 # Usage:
 #   Add `op_tester` as an argument to a test function
 #   In the test function:

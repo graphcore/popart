@@ -36,11 +36,15 @@ OpTypes::OpTypes() {
       {std::make_pair("Cos", ai_onnx), OpTypeInfo(OpType::COS, true)},
       {std::make_pair("CosGrad", ai_graphcore),
        OpTypeInfo(OpType::COSGRAD, false)},
+      {std::make_pair("Cosh", ai_onnx), OpTypeInfo(OpType::COSH, true)},
       {std::make_pair("Div", ai_onnx), OpTypeInfo(OpType::DIV, true)},
       {std::make_pair("DivArg0Grad", ai_graphcore),
        OpTypeInfo(OpType::DIVARG0GRAD, false)},
       {std::make_pair("DivArg1Grad", ai_graphcore),
        OpTypeInfo(OpType::DIVARG1GRAD, false)},
+      {std::make_pair("Exp", ai_onnx), OpTypeInfo(OpType::EXP, true)},
+      {std::make_pair("ExpGrad", ai_graphcore),
+       OpTypeInfo(OpType::EXPGRAD, false)},
       {std::make_pair("Identity", ai_onnx), OpTypeInfo(OpType::IDENTITY, true)},
       {std::make_pair("IdentityGrad", ai_graphcore),
        OpTypeInfo(OpType::IDENTITYGRAD, false)},
@@ -89,6 +93,8 @@ OpTypes::OpTypes() {
       {std::make_pair("SinGrad", ai_graphcore),
        OpTypeInfo(OpType::SINGRAD, false)},
       {std::make_pair("Scale", ai_graphcore), OpTypeInfo(OpType::SCALE, false)},
+      {std::make_pair("ScaleGrad", ai_graphcore),
+       OpTypeInfo(OpType::SCALEGRAD, false)},
       {std::make_pair("Sub", ai_onnx), OpTypeInfo(OpType::SUBTRACT, true)},
       {std::make_pair("SubtractArg0Grad", ai_graphcore),
        OpTypeInfo(OpType::SUBTRACTARG0GRAD, false)},
@@ -107,7 +113,10 @@ OpTypes::OpTypes() {
        OpTypeInfo(OpType::SGDVARUPDATE, false)},
       {std::make_pair("ConstSGDVarUpdate", ai_graphcore),
        OpTypeInfo(OpType::CONSTSGDVARUPDATE, false)},
-      {std::make_pair("Tan", ai_onnx), OpTypeInfo(OpType::TAN, true)}};
+      {std::make_pair("Tan", ai_onnx), OpTypeInfo(OpType::TAN, true)},
+      {std::make_pair("Tanh", ai_onnx), OpTypeInfo(OpType::TANH, true)},
+      {std::make_pair("TanhGrad", ai_graphcore),
+       OpTypeInfo(OpType::TANHGRAD, false)}};
 
   for (auto &x : opTypes_) {
     strings_[x.second.type] = x.first;

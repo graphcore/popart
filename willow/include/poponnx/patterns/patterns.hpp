@@ -141,6 +141,10 @@ public:
   bool isSqrtGradOpEnabled() {
     return isPatternEnabled(PatternType::SQRTGRADOP);
   }
+  bool isExpGradOpEnabled() { return isPatternEnabled(PatternType::EXPGRADOP); }
+  bool isTanhGradOpEnabled() {
+    return isPatternEnabled(PatternType::TANHGRADOP);
+  }
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
@@ -189,6 +193,12 @@ public:
   }
   Patterns &enableSqrtGradOp(bool v) {
     return enablePattern(PatternType::SQRTGRADOP, v);
+  }
+  Patterns &enableExpGradOp(bool v) {
+    return enablePattern(PatternType::EXPGRADOP, v);
+  }
+  Patterns &enableTanhGradOp(bool v) {
+    return enablePattern(PatternType::TANHGRADOP, v);
   }
 
   std::vector<std::unique_ptr<Pattern>> getPatternList();
