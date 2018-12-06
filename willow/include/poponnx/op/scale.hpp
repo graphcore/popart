@@ -1,20 +1,16 @@
 #ifndef GUARD_NEURALNET_SCALE_HPP
 #define GUARD_NEURALNET_SCALE_HPP
 
-#include <poponnx/op.hpp>
+#include <poponnx/op/elementwise.hpp>
 
 namespace poponnx {
 
 // y = scale_factor * x
-class ScaleOp : public Op {
+class ScaleOp : public ElementWiseUnaryOp {
 public:
   ScaleOp(const OpConstructorBundle &, float scale_factor);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
-  void setup() final;
-
-  static InIndex getInIndex() { return 0; }
-  static OutIndex getOutIndex() { return 0; }
 
   float getScaleFactor() const;
 

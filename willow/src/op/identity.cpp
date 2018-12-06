@@ -4,10 +4,11 @@
 
 namespace poponnx {
 
-IdentityOp::IdentityOp(const OpConstructorBundle &bundle) : Op(bundle) {}
+IdentityOp::IdentityOp(const OpConstructorBundle &bundle)
+    : ElementWiseUnaryOp(bundle) {}
 
 IdentityOp::IdentityOp(const onnx::NodeProto &node, Ir *_pir)
-    : Op(node, _pir) {}
+    : ElementWiseUnaryOp(node, _pir) {}
 
 std::unique_ptr<Op> IdentityOp::clone() const {
   return make_unique<IdentityOp>(*this);
@@ -18,8 +19,6 @@ std::vector<std::unique_ptr<Op>> IdentityOp::getGradOps() {
   upops.emplace_back(make_unique<IdentityGradOp>(this));
   return upops;
 }
-
-void IdentityOp::setup() { outInfo(0) = inInfo(0); }
 
 IdentityGradOp::IdentityGradOp(IdentityOp *fwdOp)
     : IdentityOp({"IdentityGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}

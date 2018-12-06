@@ -5,7 +5,7 @@
 namespace poponnx {
 
 ScaleOp::ScaleOp(const OpConstructorBundle &bundle, float scale_factor_)
-    : Op(bundle), scale_factor(scale_factor_) {}
+    : ElementWiseUnaryOp(bundle), scale_factor(scale_factor_) {}
 
 std::unique_ptr<Op> ScaleOp::clone() const {
   return make_unique<ScaleOp>(*this);
@@ -16,8 +16,6 @@ std::vector<std::unique_ptr<Op>> ScaleOp::getGradOps() {
   upops.emplace_back(make_unique<ScaleGradOp>(this));
   return upops;
 }
-
-void ScaleOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 float ScaleOp::getScaleFactor() const { return scale_factor; }
 

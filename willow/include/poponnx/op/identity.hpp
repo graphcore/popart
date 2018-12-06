@@ -2,19 +2,16 @@
 #define GUARD_NEURALNET_IDENTITY_HPP
 
 #include <poponnx/op.hpp>
+#include <poponnx/op/elementwise.hpp>
 
 namespace poponnx {
 
-class IdentityOp : public Op {
+class IdentityOp : public ElementWiseUnaryOp {
 public:
   IdentityOp(const OpConstructorBundle &);
   IdentityOp(const onnx::NodeProto &node, Ir *pir);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
-  void setup() final;
-
-  static InIndex getInIndex() { return 0; }
-  static OutIndex getOutIndex() { return 0; }
 };
 
 class IdentityGradOp : public IdentityOp {

@@ -4,7 +4,8 @@
 
 namespace poponnx {
 
-SqrtOp::SqrtOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
+SqrtOp::SqrtOp(const onnx::NodeProto &node, Ir *_pir)
+    : ElementWiseUnaryOp(node, _pir) {}
 
 std::unique_ptr<Op> SqrtOp::clone() const { return make_unique<SqrtOp>(*this); }
 
@@ -13,8 +14,6 @@ std::vector<std::unique_ptr<Op>> SqrtOp::getGradOps() {
   upops.emplace_back(make_unique<SqrtGradOp>(this));
   return upops;
 }
-
-void SqrtOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 SqrtGradOp::SqrtGradOp(SqrtOp *fwdOp)
     : Op({"SqrtGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}

@@ -5,9 +5,11 @@
 
 namespace poponnx {
 
-NegateOp::NegateOp(const OpConstructorBundle &bundle) : Op(bundle) {}
+NegateOp::NegateOp(const OpConstructorBundle &bundle)
+    : ElementWiseUnaryOp(bundle) {}
 
-NegateOp::NegateOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
+NegateOp::NegateOp(const onnx::NodeProto &node, Ir *_pir)
+    : ElementWiseUnaryOp(node, _pir) {}
 
 std::unique_ptr<Op> NegateOp::clone() const {
   return make_unique<NegateOp>(*this);
@@ -18,8 +20,6 @@ std::vector<std::unique_ptr<Op>> NegateOp::getGradOps() {
   upops.emplace_back(make_unique<NegateGradOp>(this));
   return upops;
 }
-
-void NegateOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 NegateGradOp::NegateGradOp(NegateOp *fwdOp)
     : NegateOp({"NegateGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}

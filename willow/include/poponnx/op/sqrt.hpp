@@ -2,19 +2,16 @@
 #define GUARD_NEURALNET_SQRT_HPP
 
 #include <poponnx/op.hpp>
+#include <poponnx/op/elementwise.hpp>
 
 namespace poponnx {
 
 // y = sqrt(x)
-class SqrtOp : public Op {
+class SqrtOp : public ElementWiseUnaryOp {
 public:
   SqrtOp(const onnx::NodeProto &node, Ir *pir);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
-  void setup() final;
-
-  static InIndex getInIndex() { return 0; }
-  static OutIndex getOutIndex() { return 0; }
 };
 
 class SqrtGradOp : public Op {

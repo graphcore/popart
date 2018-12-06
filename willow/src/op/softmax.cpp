@@ -5,9 +5,8 @@
 
 namespace poponnx {
 
-SoftmaxOp::SoftmaxOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
-
-void SoftmaxOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
+SoftmaxOp::SoftmaxOp(const onnx::NodeProto &node, Ir *_pir)
+    : ElementWiseUnaryOp(node, _pir) {}
 
 std::vector<std::unique_ptr<Op>> SoftmaxOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
