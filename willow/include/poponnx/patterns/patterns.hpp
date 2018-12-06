@@ -134,7 +134,9 @@ public:
   }
   bool isSinGradOpEnabled() { return isPatternEnabled(PatternType::SINGRADOP); }
   bool isCosGradOpEnabled() { return isPatternEnabled(PatternType::COSGRADOP); }
-  bool isTanOpEnabled() { return isPatternEnabled(PatternType::TANOP); }
+  bool isTanToSinOverCosEnabled() {
+    return isPatternEnabled(PatternType::TANTOSINOVERCOS);
+  }
   bool isInPlace0Enabled() { return isPatternEnabled(PatternType::INPLACE0); }
   bool isSqrtGradOpEnabled() {
     return isPatternEnabled(PatternType::SQRTGRADOP);
@@ -179,7 +181,9 @@ public:
   Patterns &enableCosGradOp(bool v) {
     return enablePattern(PatternType::COSGRADOP, v);
   }
-  Patterns &enableTanOp(bool v) { return enablePattern(PatternType::TANOP, v); }
+  Patterns &enableTanToSinOverCos(bool v) {
+    return enablePattern(PatternType::TANTOSINOVERCOS, v);
+  }
   Patterns &enableInPlace0(bool v) {
     return enablePattern(PatternType::INPLACE0, v);
   }

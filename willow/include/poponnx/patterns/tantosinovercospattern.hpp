@@ -1,5 +1,5 @@
-#ifndef GUARD_NEURALNET_TAN_OP_PATTERN_HPP
-#define GUARD_NEURALNET_TAN_OP_PATTERN_HPP
+#ifndef GUARD_NEURALNET_TAN_TO_SIN_OVER_COS_PATTERN_HPP
+#define GUARD_NEURALNET_TAN_TO_SIN_OVER_COS_PATTERN_HPP
 
 #include <poponnx/patterns/patterns.hpp>
 
@@ -9,7 +9,7 @@ namespace poponnx {
 // (fwd_in) -> [Cos] -> (cos_out)
 // (fwd_in) -> [Sin] -> (sin_out)
 // {(sin_out), (cos_out) -> [Div] -> (fwd_out)
-class TanOpPattern : public Pattern {
+class TanToSinOverCosPattern : public Pattern {
 public:
   // Does op at the root of the
   // pattern make a match?

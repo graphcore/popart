@@ -4,20 +4,22 @@
 #include <poponnx/op/div.hpp>
 #include <poponnx/op/sin.hpp>
 #include <poponnx/op/tan.hpp>
-#include <poponnx/patterns/tanoppattern.hpp>
+#include <poponnx/patterns/tantosinovercospattern.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorinfo.hpp>
 
 namespace poponnx {
 
-bool TanOpPattern::matches(Op *op) const {
+bool TanToSinOverCosPattern::matches(Op *op) const {
   return op->isConvertibleTo<TanOp>();
 }
 
-std::vector<const Tensor *> TanOpPattern::touches(Op *) const { return {}; }
+std::vector<const Tensor *> TanToSinOverCosPattern::touches(Op *) const {
+  return {};
+}
 
 // fwd_out = sin(fwd_in) / cos(fwd_in)
-bool TanOpPattern::apply(Op *op) const {
+bool TanToSinOverCosPattern::apply(Op *op) const {
   auto fwd_in  = op->inTensor(TanOp::getInIndex());
   auto fwd_out = op->outTensor(TanOp::getOutIndex());
 
@@ -63,7 +65,8 @@ bool TanOpPattern::apply(Op *op) const {
 }
 
 namespace {
-static PatternCreator<TanOpPattern> TanOpPattern(PatternType::TANOP, "TanOp");
+static PatternCreator<TanToSinOverCosPattern>
+    TanToSinOverCosPattern(PatternType::TANTOSINOVERCOS, "TanToSinOverCos");
 }
 
 } // namespace poponnx
