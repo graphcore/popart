@@ -54,21 +54,23 @@ namespace popx {
 void Devicex::weightsToHost(
     const std::map<TensorId, MutableVoidData> &onnxModelData) {
 
-  logging::devicex::debug("Writing weights to host");
-  // write weights from IPU to host stream memory points
+  if (useSyntheticData() == false) {
+    logging::devicex::debug("Writing weights to host");
+    // write weights from IPU to host stream memory points
 
-  pEngine->run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
+    pEngine->run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
 
-  logging::devicex::debug("Writing weights to ONNX ModelProto");
-  // copy from the host stream memory points to the
-  // addresses on onnxModelData
-  for (auto initId : ir().getTensors().getInitIds()) {
-    auto found = onnxModelData.find(initId);
-    if (found == onnxModelData.end()) {
-      throw error("No TensorId " + initId + " in final host destination map");
+    logging::devicex::debug("Writing weights to ONNX ModelProto");
+    // copy from the host stream memory points to the
+    // addresses on onnxModelData
+    for (auto initId : ir().getTensors().getInitIds()) {
+      auto found = onnxModelData.find(initId);
+      if (found == onnxModelData.end()) {
+        throw error("No TensorId " + initId + " in final host destination map");
+      }
+      MutableVoidData mv_data = found->second;
+      hostStreamToHost(mv_data, initId);
     }
-    MutableVoidData mv_data = found->second;
-    hostStreamToHost(mv_data, initId);
   }
 }
 
@@ -255,15 +257,19 @@ Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
 }
 
 void Devicex::weightsFromHost() {
-  logging::devicex::debug("Writing weights from host, ");
-  pEngine->run(PopPrograms::ProgramIndex::WEIGHTSFROMHOST);
-  logging::devicex::debug("done.");
+  if (useSyntheticData() == false) {
+    logging::devicex::debug("Writing weights from host, ");
+    pEngine->run(PopPrograms::ProgramIndex::WEIGHTSFROMHOST);
+    logging::devicex::debug("done.");
+  }
 }
 
 void Devicex::optimizerFromHost() {
-  logging::devicex::debug("Writing optimizer from host, ");
-  pEngine->run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
-  logging::devicex::debug("done.");
+  if (useSyntheticData() == false) {
+    logging::devicex::debug("Writing optimizer from host, ");
+    pEngine->run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
+    logging::devicex::debug("done.");
+  }
 }
 
 void Devicex::hostToHostStream(
@@ -350,36 +356,42 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
 }
 
 void Devicex::anchorsHostToHostStreams(const StepIO &stepio) {
-  std::string prefix = "     ";
-  logging::devicex::debug(prefix + "Copying to h2d stream address(es) ");
-  for (Tensor *tensor : ir().dataStreamTensors()) {
-    ConstVoidData stepin = stepio.in(tensor->id);
 
-    // where to write to on host,
-    auto dst = static_cast<void *>(h2dBuffers.at(tensor->id).data());
-    // where to read from on host,
-    auto src = stepin.data;
+  if (useSyntheticData() == false) {
+    std::string prefix = "     ";
+    logging::devicex::debug(prefix + "Copying to h2d stream address(es) ");
+    for (Tensor *tensor : ir().dataStreamTensors()) {
+      ConstVoidData stepin = stepio.in(tensor->id);
 
-    // we calculate the TensorInfo for dst. It is almost tensor->info,
-    // except it's for a full step tensor, so the first shape dimension
-    // is larger by a factor batchesPerStep().
-    auto stepDstShape = tensor->info.shape();
-    stepDstShape[0] *= ir().getDataFlow().batchesPerStep();
-    TensorInfo dstInfo{tensor->info.dataType(), stepDstShape};
+      // where to write to on host,
+      auto dst = static_cast<void *>(h2dBuffers.at(tensor->id).data());
+      // where to read from on host,
+      auto src = stepin.data;
 
-    // the info of the user provided src step tensor
-    TensorInfo srcInfo = stepin.info;
+      // we calculate the TensorInfo for dst. It is almost tensor->info,
+      // except it's for a full step tensor, so the first shape dimension
+      // is larger by a factor batchesPerStep().
+      auto stepDstShape = tensor->info.shape();
+      stepDstShape[0] *= ir().getDataFlow().batchesPerStep();
+      TensorInfo dstInfo{tensor->info.dataType(), stepDstShape};
 
-    hostToHostStream(dst, src, dstInfo, srcInfo, tensor->id);
+      // the info of the user provided src step tensor
+      TensorInfo srcInfo = stepin.info;
+
+      hostToHostStream(dst, src, dstInfo, srcInfo, tensor->id);
+    }
   }
 }
 
 void Devicex::anchorsHostFromHostStreams(const StepIO &stepio) {
-  std::string prefix = "     ";
-  logging::devicex::debug(prefix + "Copying from d2h stream address(es) ");
-  for (TensorId anchorId : ir().getDataFlow().anchors()) {
-    MutableVoidData stepout = stepio.out(anchorId);
-    hostStreamToHost(stepout, anchorId);
+
+  if (useSyntheticData() == false) {
+    std::string prefix = "     ";
+    logging::devicex::debug(prefix + "Copying from d2h stream address(es) ");
+    for (TensorId anchorId : ir().getDataFlow().anchors()) {
+      MutableVoidData stepout = stepio.out(anchorId);
+      hostStreamToHost(stepout, anchorId);
+    }
   }
 }
 
@@ -885,7 +897,8 @@ PriTask Devicex::opTask(Op *op, double priority) {
     // if the tensor is streamed on, we must wait
     // 'til the Copy has happened
     if (tensor->tensorType() == TensorType::Stream) {
-      deps.push_back(fromHostTaskId(tensor->id));
+      if (useSyntheticData() == false)
+        deps.push_back(fromHostTaskId(tensor->id));
     }
   }
 
@@ -924,14 +937,17 @@ void Devicex::prepare() {
     Tensor *tensor = ir().getTensors().get(id);
     // 1
     tasks.add(initTensorTask(tensor));
-    // 2
-    tasks.add(streamFromHostTask(tensor));
-    // 3
-    tasks.add(fromHostTask(tensor, progs.weightsFromHostFragment()));
-    // 4
-    tasks.add(streamToHostTask(tensor));
-    // 5
-    tasks.add(toHostTask(tensor, progs.weightsToHostFragment()));
+
+    if (useSyntheticData() == false) {
+      // 2
+      tasks.add(streamFromHostTask(tensor));
+      // 3
+      tasks.add(fromHostTask(tensor, progs.weightsFromHostFragment()));
+      // 4
+      tasks.add(streamToHostTask(tensor));
+      // 5
+      tasks.add(toHostTask(tensor, progs.weightsToHostFragment()));
+    }
   }
 
   // stream-to-device tensors : 1)  make tensor 2) make stream
@@ -939,8 +955,11 @@ void Devicex::prepare() {
     Tensor *tensor = ir().getTensors().get(id);
     // 1
     tasks.add(initTensorTask(tensor));
-    // 2
-    tasks.add(streamFromHostTask(tensor));
+
+    if (useSyntheticData() == false) {
+      // 2
+      tasks.add(streamFromHostTask(tensor));
+    }
   }
 
   // Depending on anchor return types specified by the user, some
@@ -954,43 +973,46 @@ void Devicex::prepare() {
   // stream-to-host tensors : 1) make streams 2) make copy programs
   // note that the order in which tasks are added does not matter,
   // they will be topologically sorted before running
-  for (auto anchorId : ir().getDataFlow().anchors()) {
-    // 1
-    tasks.add(streamToHostTask(ir().getTensors().get(anchorId)));
-    // 2
-    auto *tensor = ir().getTensors().get(anchorId);
-    switch (ir().getDataFlow().art(anchorId).id()) {
-    // Copy program runs after every batch
-    case (AnchorReturnTypeId::ALL): {
-      tasks.add(toHostTask(tensor, programFragment(tensor)));
-      break;
+  if (useSyntheticData() == false) {
+    for (auto anchorId : ir().getDataFlow().anchors()) {
+      // 1
+      tasks.add(streamToHostTask(ir().getTensors().get(anchorId)));
+      // 2
+      auto *tensor = ir().getTensors().get(anchorId);
+      switch (ir().getDataFlow().art(anchorId).id()) {
+      // Copy program runs after every batch
+      case (AnchorReturnTypeId::ALL): {
+        tasks.add(toHostTask(tensor, programFragment(tensor)));
+        break;
+      }
+      // Copy program runs at the end of the step
+      case (AnchorReturnTypeId::FINAL): {
+        tasks.add(toHostEveryNBatchesTask(tensor,
+                                          ir().getDataFlow().batchesPerStep(),
+                                          programFragment(tensor)));
+        break;
+      }
+      // Copy program runs at the end of every N batches
+      case (AnchorReturnTypeId::EVERYN): {
+        tasks.add(toHostEveryNBatchesTask(tensor,
+                                          ir().getDataFlow().art(anchorId).rf(),
+                                          programFragment(tensor)));
+        break;
+      }
+      }
     }
-    // Copy program runs at the end of the step
-    case (AnchorReturnTypeId::FINAL): {
-      tasks.add(toHostEveryNBatchesTask(tensor,
-                                        ir().getDataFlow().batchesPerStep(),
-                                        programFragment(tensor)));
-      break;
+
+    // create Program to write optimizer tensors to device
+    for (Tensor *tensor : ir().optimizerTensors()) {
+      tasks.add(fromHostTask(tensor, progs.optimizerFromHostFragment()));
     }
-    // Copy program runs at the end of every N batches
-    case (AnchorReturnTypeId::EVERYN): {
-      tasks.add(toHostEveryNBatchesTask(tensor,
-                                        ir().getDataFlow().art(anchorId).rf(),
-                                        programFragment(tensor)));
-      break;
-    }
+
+    // making the network!
+    for (Tensor *tensor : ir().dataStreamTensors()) {
+      tasks.add(fromHostTask(tensor, programFragment(tensor)));
     }
   }
 
-  // create Program to write optimizer tensors to device
-  for (Tensor *tensor : ir().optimizerTensors()) {
-    tasks.add(fromHostTask(tensor, progs.optimizerFromHostFragment()));
-  }
-
-  // making the network!
-  for (Tensor *tensor : ir().dataStreamTensors()) {
-    tasks.add(fromHostTask(tensor, programFragment(tensor)));
-  }
   std::vector<Op *> ops = ir().getOpSchedule({});
   double priority       = 0.;
   for (int i = 0; i < ops.size(); ++i) {
@@ -1011,75 +1033,77 @@ void Devicex::prepare() {
   pEngine->load(popDevice);
   logging::devicex::info("Engine loaded");
 
-  logging::devicex::debug("Connecting initializer streams");
-  for (auto id : ir().getTensors().getInitIds()) {
-    Tensor *tensor = ir().getTensors().get(id);
-    pEngine->connectStream(h2dId(id), tensor->tensorData()->data());
-  }
-
-  logging::devicex::debug("Connecting optimizer streams");
-  for (Tensor *tensor : ir().optimizerTensors()) {
-    pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
-  }
-
-  auto engineToStream =
-      [this](char *data0, int64_t n_bytes, PopStreamId streamId) {
-        // Poplar has no const void * version, disappointing
-        auto addr0 = static_cast<void *>(data0);
-        auto addr1 = static_cast<void *>(data0 + n_bytes);
-        // connect the stream (circular buffer)
-        pEngine->connectStream(streamId, addr0, addr1);
-      };
-
-  logging::devicex::debug(
-      "Creating host buffers for h2d streams, and connecting");
-  for (Tensor *tensor : ir().dataStreamTensors()) {
-    PopStreamId streamId = h2dId(tensor->id);
-    // allocate host memory, where the poplar::Stream will read data from
-    int64_t n_bytes =
-        ir().getDataFlow().batchesPerStep() * tensor->info.nbytes();
-    h2dBuffers[tensor->id] = std::vector<char>(n_bytes);
-    char *data0            = h2dBuffers[tensor->id].data();
-    engineToStream(data0, n_bytes, streamId);
-  }
-
-  logging::devicex::debug(
-      "Creating host buffers for anchor d2h streams, connecting");
-  for (TensorId anchorId : ir().getDataFlow().anchors()) {
-    PopStreamId streamId = d2hId(anchorId);
-    Tensor *tensor       = ir().getTensors().get(anchorId);
-    int64_t batch_bytes  = tensor->info.nbytes();
-    int64_t n_bytes;
-    switch (ir().getDataFlow().art(anchorId).id()) {
-    case (AnchorReturnTypeId::FINAL): {
-      n_bytes = batch_bytes;
-      break;
+  if (useSyntheticData() == false) {
+    logging::devicex::debug("Connecting initializer streams");
+    for (auto id : ir().getTensors().getInitIds()) {
+      Tensor *tensor = ir().getTensors().get(id);
+      pEngine->connectStream(h2dId(id), tensor->tensorData()->data());
     }
-    case (AnchorReturnTypeId::EVERYN): {
-      n_bytes = batch_bytes * (ir().getDataFlow().batchesPerStep() /
-                               ir().getDataFlow().art(anchorId).rf());
-      break;
-    }
-    case (AnchorReturnTypeId::ALL): {
-      n_bytes = batch_bytes * ir().getDataFlow().batchesPerStep();
-      break;
-    }
-    }
-    d2hBuffers[anchorId] = std::vector<char>(n_bytes);
-    char *data0          = d2hBuffers[tensor->id].data();
-    engineToStream(data0, n_bytes, streamId);
-  }
 
-  logging::devicex::debug(
-      "Creating host buffers for weight d2h streams, connecting");
+    logging::devicex::debug("Connecting optimizer streams");
+    for (Tensor *tensor : ir().optimizerTensors()) {
+      pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
+    }
 
-  for (auto initId : ir().getTensors().getInitIds()) {
-    PopStreamId streamId = d2hId(initId);
-    Tensor *tensor       = ir().getTensors().get(initId);
-    int64_t n_bytes      = tensor->info.nbytes();
-    d2hBuffers[initId]   = std::vector<char>(n_bytes);
-    char *data0          = d2hBuffers[initId].data();
-    engineToStream(data0, n_bytes, streamId);
+    auto engineToStream =
+        [this](char *data0, int64_t n_bytes, PopStreamId streamId) {
+          // Poplar has no const void * version, disappointing
+          auto addr0 = static_cast<void *>(data0);
+          auto addr1 = static_cast<void *>(data0 + n_bytes);
+          // connect the stream (circular buffer)
+          pEngine->connectStream(streamId, addr0, addr1);
+        };
+
+    logging::devicex::debug(
+        "Creating host buffers for h2d streams, and connecting");
+    for (Tensor *tensor : ir().dataStreamTensors()) {
+      PopStreamId streamId = h2dId(tensor->id);
+      // allocate host memory, where the poplar::Stream will read data from
+      int64_t n_bytes =
+          ir().getDataFlow().batchesPerStep() * tensor->info.nbytes();
+      h2dBuffers[tensor->id] = std::vector<char>(n_bytes);
+      char *data0            = h2dBuffers[tensor->id].data();
+      engineToStream(data0, n_bytes, streamId);
+    }
+
+    logging::devicex::debug(
+        "Creating host buffers for anchor d2h streams, connecting");
+    for (TensorId anchorId : ir().getDataFlow().anchors()) {
+      PopStreamId streamId = d2hId(anchorId);
+      Tensor *tensor       = ir().getTensors().get(anchorId);
+      int64_t batch_bytes  = tensor->info.nbytes();
+      int64_t n_bytes;
+      switch (ir().getDataFlow().art(anchorId).id()) {
+      case (AnchorReturnTypeId::FINAL): {
+        n_bytes = batch_bytes;
+        break;
+      }
+      case (AnchorReturnTypeId::EVERYN): {
+        n_bytes = batch_bytes * (ir().getDataFlow().batchesPerStep() /
+                                 ir().getDataFlow().art(anchorId).rf());
+        break;
+      }
+      case (AnchorReturnTypeId::ALL): {
+        n_bytes = batch_bytes * ir().getDataFlow().batchesPerStep();
+        break;
+      }
+      }
+      d2hBuffers[anchorId] = std::vector<char>(n_bytes);
+      char *data0          = d2hBuffers[tensor->id].data();
+      engineToStream(data0, n_bytes, streamId);
+    }
+
+    logging::devicex::debug(
+        "Creating host buffers for weight d2h streams, connecting");
+
+    for (auto initId : ir().getTensors().getInitIds()) {
+      PopStreamId streamId = d2hId(initId);
+      Tensor *tensor       = ir().getTensors().get(initId);
+      int64_t n_bytes      = tensor->info.nbytes();
+      d2hBuffers[initId]   = std::vector<char>(n_bytes);
+      char *data0          = d2hBuffers[initId].data();
+      engineToStream(data0, n_bytes, streamId);
+    }
   }
 }
 
@@ -1314,6 +1338,10 @@ poplar::Type popType(const TensorInfo &info) {
 // piggy-backing on TensorInfo's data_type()
 // function to get a string of the DataType
 poplar::Type popType(DataType type) { return popType(TensorInfo(type, {1})); }
+
+bool Devicex::useSyntheticData() {
+  return (ir().getSessionOptions().ignoreData);
+}
 
 } // namespace popx
 } // namespace poponnx

@@ -24,6 +24,10 @@ struct SessionOptions {
   /// Enable recomputation
   bool enableRecomputation = false;
 
+  /// Use synthetic data i.e. disable data transfer to/from the host
+  /// Set to 'true' to use synthetic data, 'false' to use real data
+  bool ignoreData = false;
+
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;
 

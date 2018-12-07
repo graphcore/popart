@@ -259,6 +259,10 @@ private:
 
   // Helper function to find the program fragment an op/tensor belongs in
   poplar::program::Sequence &programFragment(Vertex *);
+
+  // Returns true if using synthetic data, false if using real data
+  // This will return the options.ignoreData flag
+  bool useSyntheticData();
 };
 
 } // namespace popx

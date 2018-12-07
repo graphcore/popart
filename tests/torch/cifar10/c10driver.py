@@ -23,21 +23,22 @@ def run(torchWriter,
         cifarInIndices,
         device,
         device_hw_id,
-        mode="train"):
+        mode="train",
+        syntheticData=False):
     if outputdir is None:
         with TemporaryDirectory() as outputdir:
             _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
-                      device_hw_id, mode)
+                      device_hw_id, mode, syntheticData)
     else:
         if not os.path.exists(outputdir):
             os.mkdir(outputdir)
 
         _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
-                  device_hw_id, mode)
+                  device_hw_id, mode, syntheticData)
 
 
 def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
-              device_hw_id, mode):
+              device_hw_id, mode, syntheticData):
     dataFeed = torchWriter.dataFeed
     inputShapeInfo = torchWriter.inputShapeInfo
     validModes = ["infer", "evaluate", "train"]
@@ -114,6 +115,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     opts = poponnx.SessionOptionsCore()
     opts.exportDot = True
     opts.logging = {"all": "TRACE", "session": "WARN"}
+    opts.ignoreData = syntheticData
 
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations

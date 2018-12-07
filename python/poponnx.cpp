@@ -207,6 +207,7 @@ PYBIND11_MODULE(poponnx_core, m) {
   py::class_<SessionOptions>(m, "SessionOptionsCore")
       .def(py::init<>())
       .def_readwrite("exportDot", &SessionOptions::exportDot)
+      .def_readwrite("ignoreData", &SessionOptions::ignoreData)
       .def_readwrite("enableConvolutionGraphCaching",
                      &SessionOptions::enableConvolutionGraphCaching)
       .def_readwrite("engineOptions", &SessionOptions::engineOptions)
