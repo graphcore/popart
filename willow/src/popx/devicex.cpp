@@ -33,6 +33,7 @@
 #include <poponnx/popx/op/reducesumx.hpp>
 #include <poponnx/popx/op/relux.hpp>
 #include <poponnx/popx/op/scalex.hpp>
+#include <poponnx/popx/op/sigmoidx.hpp>
 #include <poponnx/popx/op/sinx.hpp>
 #include <poponnx/popx/op/softmaxx.hpp>
 #include <poponnx/popx/op/sqrtx.hpp>
@@ -549,6 +550,14 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::NEGATEGRAD: {
     return std::unique_ptr<Opx>(new NegateGradOpx(op, this));
+  }
+
+  case OpType::SIGMOID: {
+    return std::unique_ptr<Opx>(new SigmoidOpx(op, this));
+  }
+
+  case OpType::SIGMOIDGRAD: {
+    return std::unique_ptr<Opx>(new SigmoidGradOpx(op, this));
   }
 
   case OpType::SIN: {

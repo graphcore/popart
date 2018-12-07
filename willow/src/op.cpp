@@ -19,6 +19,7 @@
 #include <poponnx/op/reciprocal.hpp>
 #include <poponnx/op/reducesum.hpp>
 #include <poponnx/op/relu.hpp>
+#include <poponnx/op/sigmoid.hpp>
 #include <poponnx/op/sin.hpp>
 #include <poponnx/op/softmax.hpp>
 #include <poponnx/op/sqrt.hpp>
@@ -271,6 +272,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::RELU: {
     return pOp(new ReluOp(node, this));
   }
+  case OpType::SIGMOID: {
+    return pOp(new SigmoidOp(node, this));
+  }
   case OpType::SIN: {
     return pOp(new SinOp(node, this));
   }
@@ -314,6 +318,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::MULARG0GRAD:
   case OpType::MULARG1GRAD:
   case OpType::RECIPROCALGRAD:
+  case OpType::SIGMOIDGRAD:
   case OpType::SINGRAD:
   case OpType::SCALE:
   case OpType::SCALEGRAD:

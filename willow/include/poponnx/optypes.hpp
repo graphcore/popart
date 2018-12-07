@@ -59,6 +59,8 @@ enum class OpType {
   SCALE,
   SCALEGRAD,
   SGDVARUPDATE,
+  SIGMOID,
+  SIGMOIDGRAD,
   SIN,
   SINGRAD,
   SQRT,
