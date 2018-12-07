@@ -4,15 +4,12 @@ set(BUILD_DOCS OFF CACHE BOOL "Build documentation")
 
 if (BUILD_DOCS)
   find_package(gcdoc REQUIRED)
-  set(LIBS poponnx)
 
-  foreach(lib ${LIBS})
-    get_target_property(LIB_INCLUDE_DIRS ${lib} INTERFACE_INCLUDE_DIRECTORIES)
-    set(DOXYGEN_INPUT0 ${DOXYGEN_INPUT0} ${LIB_INCLUDE_DIRS}/${lib})
-  endforeach(lib)
+  list(APPEND DOXYGEN_INPUT0 "")
+  list(APPEND DOXYGEN_INPUT0 ${CMAKE_SOURCE_DIR}/willow/include)
+  list(APPEND DOXYGEN_INPUT0 ${CMAKE_SOURCE_DIR}/${INSTALL_PYDIR})
 
-  list(REMOVE_DUPLICATES DOXYGEN_INPUT0)
-  string (REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT0}")
+  string(REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT0}")
   configure_file(user_guide/Doxyfile.in Doxyfile @ONLY)
 
   set(RELEASE "1.0.0")
@@ -42,7 +39,9 @@ if (BUILD_DOCS)
     COMMAND ${GCDOC} -v -x ${CMAKE_BINARY_DIR}/docs/Doxyfile -r ${RELEASE} -b pdf user_guide ${CMAKE_BINARY_DIR}/docs/latex/poponnx.pdf
     COMMENT "Building PDF documentation from 'user_guide' directory"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    DEPENDS ${CMAKE_BINARY_DIR}/docs/latex ${CMAKE_BINARY_DIR}/docs/Doxyfile
+    DEPENDS ${CMAKE_BINARY_DIR}/docs/latex
+            ${CMAKE_BINARY_DIR}/docs/Doxyfile
+            poponnx
   )
 
   add_custom_command(
@@ -50,7 +49,10 @@ if (BUILD_DOCS)
     COMMAND ${GCDOC} -v -x ${CMAKE_BINARY_DIR}/docs/Doxyfile -r ${RELEASE} -b html user_guide ${CMAKE_BINARY_DIR}/docs/html
     COMMENT "Building html documentation from 'user_guide' directory"
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    DEPENDS ${CMAKE_BINARY_DIR}/docs ${CMAKE_BINARY_DIR}/docs/Doxyfile ${CMAKE_BINARY_DIR}/docs/html/doxygen
+    DEPENDS ${CMAKE_BINARY_DIR}/docs
+            ${CMAKE_BINARY_DIR}/docs/Doxyfile
+            ${CMAKE_BINARY_DIR}/docs/html/doxygen
+            poponnx
   )
 
   add_custom_target(html_zip ALL

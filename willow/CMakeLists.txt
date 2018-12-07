@@ -38,7 +38,7 @@ target_include_directories (poponnx SYSTEM PUBLIC
     ${ONNX_INCLUDE_DIRS}
     ${Protobuf_INCLUDE_DIR}
     ${Boost_INCLUDE_DIRS}
-	${SPDLOG_INCLUDE_DIRS}
+    ${SPDLOG_INCLUDE_DIRS}
     ${CBLAS_INCLUDE_DIRS}
     ${POPLAR_INCLUDE_DIR}
     ${POPLIBS_INCLUDE_DIR}
@@ -67,6 +67,10 @@ target_compile_definitions(poponnx
 
 install(TARGETS poponnx
         EXPORT poponnx
-	      DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        COMPONENT poponnx
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        COMPONENT poponnx)
+
+install(DIRECTORY "include/poponnx"
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        COMPONENT poponnx)
+
