@@ -34,18 +34,41 @@ public:
 
 class OpConstructorBundle {
 public:
-  OpConstructorBundle(std::string op_type,
-                      Ir *,
-                      Attributes,
-                      std::string domain);
+  OpConstructorBundle(OpType op_type, Ir *, Attributes);
 
-  std::string op_type;
+  OpType op_type;
   Ir *pir;
   Attributes atts;
-  std::string domain;
 };
 
 class Op : public Vertex {
+public:
+  // We use pointers to TensorIndexMaps for PIMPL reasons.
+  // Note that we cannot initialise these with {nullptr} on gcc.
+  // They are initialised in the Op constuctors
+  // The consumed Tensors
+  std::unique_ptr<TensorIndexMap> input;
+  // The produced Tensors
+  std::unique_ptr<TensorIndexMap> output;
+
+  // all Ops will be topologically sorted "as close to" the order of
+  // priority (highest to lowest) while still resulting in a valid
+  // topological ordering.
+  // default : 0.0
+  double priority{0.0};
+
+  // the Ir to which the Op belongs
+  Ir *pir;
+
+  // The unique identifier of the Op (will always be set in Op::Op)
+  OpId id{-1};
+
+  // The operation type and domain
+  const OpType opType;
+
+  // attributes from the Node, if it was created from ONNX
+  const Attributes nAtts;
+
 public:
   Op(const Node &, Ir *);
   Op(const OpConstructorBundle &);
@@ -71,14 +94,6 @@ public:
   // We might want a cycle counter too for more sophisticated recomputation
   int64_t memOfOutputs() const;
 
-  // We use pointers to TensorIndexMaps for PIMPL reasons.
-  // Note that we cannot initialise these with {nullptr} on gcc.
-  // They are initialised in the Op constuctors
-  // The consumed Tensors
-  std::unique_ptr<TensorIndexMap> input;
-  // The produced Tensors
-  std::unique_ptr<TensorIndexMap> output;
-
   // wire a tensor to input: updates input and
   // updates consumers of tensor with id TensorId
   void connectInTensor(InIndex, TensorId);
@@ -91,30 +106,14 @@ public:
   // might the input tensors be modified?
   bool mayModify(InIndex) const;
 
-  // all Ops will be topologically sorted "as close to" the order of
-  // priority (highest to lowest) while still resulting in a valid
-  // topological ordering.
-  // default : 0.0
-  double priority{0.0};
-
   // "Relu" or "Conv" etc.
   const std::string &op_type() const;
-  const OpType opType;
 
   // political affiliation of the Op
   // same domain as from the NodeProto if constructed from ONNX
   const std::string &domain();
 
   const std::string &name() const;
-
-  // the Ir to which the Op belongs
-  Ir *pir;
-
-  // The unique identifier of the Op (will always be set in Op::Op)
-  OpId id{-1};
-
-  // attributes from the Node, if it was created from ONNX
-  const Attributes nAtts;
 
   // set shape and type parameters,
   // This function MUST set output
@@ -197,14 +196,9 @@ public:
 private:
   void appendIO(std::stringstream &) const;
   virtual void appendMore(std::stringstream &) const {}
-  const std::string *const p_op_type;
-  const std::string *const p_op_domain;
-  std::string _name;
 
-  // design decision : see-sawing between storing a pointer
-  // to the Node from which the Op derives (if it does derive
-  // from a Node) or not. Deciding not to for now, (1) not much
-  // to copy to the Op (2) cleaner
+  // A user supplied name
+  std::string _name;
 };
 
 } // namespace poponnx

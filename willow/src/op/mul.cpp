@@ -43,7 +43,7 @@ void MulArgGradOp::setup() { outInfo(getOutIndex()) = forward_op_arg_info; }
 
 MulArg0GradOp::MulArg0GradOp(MulOp *op_,
                              const std::vector<int64_t> &_reduction_axes)
-    : MulArgGradOp({"MulArg0Grad", op_->pir, {}, getPoponnxDomain()},
+    : MulArgGradOp({OpType::MULARG0GRAD, op_->pir, {}},
                    _reduction_axes,
                    op_->inInfo(MulOp::getArg0InIndex())) {}
 
@@ -62,7 +62,7 @@ const std::vector<GradInOutMapper> &MulArg0GradOp::gradInputInfo() const {
 
 MulArg1GradOp::MulArg1GradOp(MulOp *op_,
                              const std::vector<int64_t> &_reduction_axes)
-    : MulArgGradOp({"MulArg1Grad", op_->pir, {}, getPoponnxDomain()},
+    : MulArgGradOp({OpType::MULARG1GRAD, op_->pir, {}},
                    _reduction_axes,
                    op_->inInfo(MulOp::getArg1InIndex())) {}
 

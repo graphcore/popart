@@ -21,7 +21,7 @@ std::vector<std::unique_ptr<Op>> IdentityOp::getGradOps() {
 }
 
 IdentityGradOp::IdentityGradOp(IdentityOp *fwdOp)
-    : IdentityOp({"IdentityGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
+    : IdentityOp({OpType::IDENTITYGRAD, fwdOp->pir, {}}) {}
 
 std::unique_ptr<Op> IdentityGradOp::clone() const {
   return make_unique<IdentityGradOp>(*this);

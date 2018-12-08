@@ -43,7 +43,7 @@ const std::vector<int64_t> &DivArgGradOp::getReductionAxes() const {
 
 DivArg0GradOp::DivArg0GradOp(DivOp *op,
                              const std::vector<int64_t> &reduction_axes_)
-    : DivArgGradOp({"DivArg0Grad", op->pir, {}, getPoponnxDomain()},
+    : DivArgGradOp({OpType::DIVARG0GRAD, op->pir, {}},
                    reduction_axes_,
                    op->inInfo(DivOp::getArg0InIndex())) {}
 
@@ -62,7 +62,7 @@ const std::vector<GradInOutMapper> &DivArg0GradOp::gradInputInfo() const {
 
 DivArg1GradOp::DivArg1GradOp(DivOp *op,
                              const std::vector<int64_t> &reduction_axes_)
-    : DivArgGradOp({"DivArg1Grad", op->pir, {}, getPoponnxDomain()},
+    : DivArgGradOp({OpType::DIVARG1GRAD, op->pir, {}},
                    reduction_axes_,
                    op->inInfo(DivOp::getArg1InIndex())) {}
 

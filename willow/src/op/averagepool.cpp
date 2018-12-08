@@ -42,7 +42,7 @@ std::vector<std::unique_ptr<Op>> AveragePoolOp::getGradOps() {
 }
 
 AveragePoolGradOp::AveragePoolGradOp(AveragePoolOp *op_)
-    : Op({"AveragePoolGrad", op_->pir, {}, getPoponnxDomain()}),
+    : Op({OpType::AVERAGEPOOLGRAD, op_->pir, {}}),
       unpooledInfo(op_->inInfo(AveragePoolOp::getInIndex())),
       cloneOfCreator(op_->clone()) {}
 

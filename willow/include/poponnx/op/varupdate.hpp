@@ -8,7 +8,7 @@ namespace poponnx {
 class VarUpdateOp : public Op {
 public:
   // op_type: passed down from class which inherits
-  VarUpdateOp(std::string op_type, TensorId, Ir *);
+  VarUpdateOp(OpType op_type, TensorId, Ir *);
   void setup() final;
 
   static InIndex getVarInIndex() { return 0; }

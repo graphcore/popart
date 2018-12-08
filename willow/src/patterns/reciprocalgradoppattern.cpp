@@ -27,14 +27,13 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
   auto ir            = op->pir;
 
   // create the new ops
-  auto square_op     = make_unique<SquareOp>(OpConstructorBundle{
-      "Square", ir, {}, getOpTypes().getDomain(OpType::SQUARE)});
-  auto reciprocal_op = make_unique<ReciprocalOp>(OpConstructorBundle{
-      "Reciprocal", ir, {}, getOpTypes().getDomain(OpType::RECIPROCAL)});
-  auto negate_op     = make_unique<NegateOp>(OpConstructorBundle{
-      "Negate", ir, {}, getOpTypes().getDomain(OpType::NEGATE)});
-  auto mul_op        = make_unique<MulOp>(OpConstructorBundle{
-      "Mul", ir, {}, getOpTypes().getDomain(OpType::NEGATE)});
+  auto square_op =
+      make_unique<SquareOp>(OpConstructorBundle{OpType::SQUARE, ir, {}});
+  auto reciprocal_op = make_unique<ReciprocalOp>(
+      OpConstructorBundle{OpType::RECIPROCAL, ir, {}});
+  auto negate_op =
+      make_unique<NegateOp>(OpConstructorBundle{OpType::NEGATE, ir, {}});
+  auto mul_op = make_unique<MulOp>(OpConstructorBundle{OpType::MUL, ir, {}});
 
   // move ops into ir
   auto square     = square_op.get();

@@ -67,8 +67,7 @@ const ConvOp *ConvDataGradOp::getCloneOfCreator() const {
 int64_t ConvOp::getNOutChans() const { return nOutChans; }
 
 ConvWeightsGradOp::ConvWeightsGradOp(ConvOp *op_)
-    : Op({"ConvWeightsGrad", op_->pir, {}, getPoponnxDomain()}),
-      cloneOfCreator(op_->clone()),
+    : Op({OpType::CONVWEIGHTSGRAD, op_->pir, {}}), cloneOfCreator(op_->clone()),
       weightsInfo(op_->inInfo(ConvOp::getWeightsInIndex())) {
   // we want this Op to be executed early, so that the weight
   // update can be performed as early as possible, thus making
@@ -94,8 +93,7 @@ const std::map<int, int> &ConvWeightsGradOp::gradOutToNonGradIn() const {
 }
 
 ConvDataGradOp::ConvDataGradOp(ConvOp *op_)
-    : Op({"ConvDataGrad", op_->pir, {}, getPoponnxDomain()}),
-      cloneOfCreator(op_->clone()),
+    : Op({OpType::CONVDATAGRAD, op_->pir, {}}), cloneOfCreator(op_->clone()),
       dataInfo(op_->inInfo(ConvOp::getDataInIndex())) {}
 
 const std::vector<GradInOutMapper> &ConvDataGradOp::gradInputInfo() const {

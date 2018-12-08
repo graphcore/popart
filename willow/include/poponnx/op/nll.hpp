@@ -12,7 +12,7 @@ public:
   // label is the only streamed input tensor to this loss
   std::vector<TensorId> getStreamTensorNames() const final;
   std::unique_ptr<Op> getOp(Ir *) const final;
-  std::string op_type() const final;
+  OpType op_type() const final;
 
   static InIndex getProbsInIndex() { return 0; }
   static InIndex getLabelInIndex() { return 1; }

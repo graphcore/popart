@@ -23,7 +23,7 @@ void SoftmaxGradOp::setup() {
 }
 
 SoftmaxGradOp::SoftmaxGradOp(SoftmaxOp *op_)
-    : Op({"SoftmaxGrad", op_->pir, {}, getPoponnxDomain()}) {}
+    : Op({OpType::SOFTMAXGRAD, op_->pir, {}}) {}
 
 const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
   // input at index 0 (probGradInputIndex()) : gradient of output of softmax
@@ -43,12 +43,8 @@ const std::map<int, int> &SoftmaxGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-SoftmaxGradDirectOp::SoftmaxGradDirectOp(Ir *ir,
-                                         const NllLoss *nls)
-    : Op({"SoftmaxGradDirect", // op_type
-          ir,                  //
-          {},                  // no Attributes
-          getPoponnxDomain()}) {
+SoftmaxGradDirectOp::SoftmaxGradDirectOp(Ir *ir, const NllLoss *nls)
+    : Op({OpType::SOFTMAXGRADDIRECT, ir, {}}) {
   nllloss_ = nls;
 }
 

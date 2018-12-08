@@ -24,7 +24,7 @@ void SqueezeOp::setup() {
 void SqueezeGradOp::setup() { outInfo(getOutIndex()) = unsqueezedInfo; }
 
 SqueezeGradOp::SqueezeGradOp(SqueezeOp *op_)
-    : Op({"SqueezeGrad", op_->pir, {}, getPoponnxDomain()}),
+    : Op({OpType::SQUEEZEGRAD, op_->pir, {}}),
       unsqueezedInfo(op_->inInfo(SqueezeOp::getInIndex())) {}
 
 const std::vector<GradInOutMapper> &SqueezeGradOp::gradInputInfo() const {

@@ -23,8 +23,7 @@ bool ExpGradOpPattern::apply(Op *op) const {
   auto ir = op->pir;
 
   // create the new ops
-  auto mul_op = make_unique<MulOp>(
-      OpConstructorBundle{"Mul", ir, {}, getOpTypes().getDomain(OpType::MUL)});
+  auto mul_op = make_unique<MulOp>(OpConstructorBundle{OpType::MUL, ir, {}});
 
   // move ops into ir
   auto mul = mul_op.get();

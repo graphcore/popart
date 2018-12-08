@@ -20,8 +20,7 @@ std::vector<std::unique_ptr<Op>> ScaleOp::getGradOps() {
 float ScaleOp::getScaleFactor() const { return scale_factor; }
 
 ScaleGradOp::ScaleGradOp(ScaleOp *fwdOp)
-    : ScaleOp({"ScaleGrad", fwdOp->pir, {}, getPoponnxDomain()},
-              fwdOp->getScaleFactor()) {}
+    : ScaleOp({OpType::SCALEGRAD, fwdOp->pir, {}}, fwdOp->getScaleFactor()) {}
 
 std::unique_ptr<Op> ScaleGradOp::clone() const {
   return make_unique<ScaleGradOp>(*this);

@@ -22,7 +22,7 @@ std::vector<std::unique_ptr<Op>> NegateOp::getGradOps() {
 }
 
 NegateGradOp::NegateGradOp(NegateOp *fwdOp)
-    : NegateOp({"NegateGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
+    : NegateOp({OpType::NEGATEGRAD, fwdOp->pir, {}}) {}
 
 std::unique_ptr<Op> NegateGradOp::clone() const {
   return make_unique<NegateGradOp>(*this);

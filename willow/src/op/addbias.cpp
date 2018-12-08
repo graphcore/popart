@@ -7,8 +7,7 @@
 
 namespace poponnx {
 
-AddBiasOp::AddBiasOp(ConvOp *op_)
-    : Op({"AddBias", op_->pir, {}, getPoponnxDomain()}) {}
+AddBiasOp::AddBiasOp(ConvOp *op_) : Op({OpType::ADDBIAS, op_->pir, {}}) {}
 
 std::unique_ptr<Op> AddBiasOp::clone() const {
   return make_unique<AddBiasOp>(*this);
@@ -30,9 +29,7 @@ void AddBiasOp::setup() { outInfo(getOutIndex()) = inInfo(getDataInIndex()); }
 
 AddBiasBiasGradOp::AddBiasBiasGradOp(AddBiasOp *op_,
                                      const std::vector<int64_t> &_axes)
-    : ReduceSumOp({"AddBiasBiasGrad", op_->pir, {}, getPoponnxDomain()},
-                  _axes,
-                  0) {}
+    : ReduceSumOp({OpType::ADDBIASBIASGRAD, op_->pir, {}}, _axes, 0) {}
 
 const std::map<int, int> &AddBiasBiasGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
@@ -49,7 +46,7 @@ const std::vector<GradInOutMapper> &AddBiasBiasGradOp::gradInputInfo() const {
 }
 
 AddBiasDataGradOp::AddBiasDataGradOp(AddBiasOp *op)
-    : IdentityOp({"AddBiasDataGrad", op->pir, {}, getPoponnxDomain()}) {}
+    : IdentityOp({OpType::ADDBIASDATAGRAD, op->pir, {}}) {}
 
 const std::vector<GradInOutMapper> &AddBiasDataGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {

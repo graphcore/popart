@@ -22,8 +22,7 @@ std::vector<std::unique_ptr<Op>> ReciprocalOp::getGradOps() {
 }
 
 ReciprocalGradOp::ReciprocalGradOp(ReciprocalOp *op_)
-    : ElementWiseNonLinearUnaryGradOp(
-          {"ReciprocalGrad", op_->pir, {}, getPoponnxDomain()}) {}
+    : ElementWiseNonLinearUnaryGradOp({OpType::RECIPROCALGRAD, op_->pir, {}}) {}
 
 std::unique_ptr<Op> ReciprocalGradOp::clone() const {
   return make_unique<ReciprocalGradOp>(*this);

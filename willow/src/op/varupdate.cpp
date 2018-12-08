@@ -4,9 +4,8 @@
 #include <poponnx/tensornames.hpp>
 
 namespace poponnx {
-VarUpdateOp::VarUpdateOp(std::string op_type, TensorId varId_, Ir *_pir)
-    : Op({op_type, _pir, {}, getPoponnxDomain()}), varId(varId_),
-      varGradId(getGradId(varId)) {
+VarUpdateOp::VarUpdateOp(OpType op_type, TensorId varId_, Ir *_pir)
+    : Op({op_type, _pir, {}}), varId(varId_), varGradId(getGradId(varId)) {
   // very high priority, so that performed as early as possible
   priority = std::numeric_limits<double>::max();
 }
@@ -21,14 +20,14 @@ bool VarUpdateOp::modifies(InIndex in_index) const {
 }
 
 SGDVarUpdateOp::SGDVarUpdateOp(TensorId varId_, Ir *_pir)
-    : VarUpdateOp("SGDVarUpdate", varId_, _pir) {}
+    : VarUpdateOp(OpType::SGDVARUPDATE, varId_, _pir) {}
 
 std::unique_ptr<Op> SGDVarUpdateOp::clone() const {
   return make_unique<SGDVarUpdateOp>(*this);
 }
 
 ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_, Ir *_pir, float lr_)
-    : VarUpdateOp("ConstSGDVarUpdate", varId_, _pir), learnRate(lr_) {}
+    : VarUpdateOp(OpType::CONSTSGDVARUPDATE, varId_, _pir), learnRate(lr_) {}
 
 float ConstSGDVarUpdateOp::getLearnRate() const { return learnRate; }
 

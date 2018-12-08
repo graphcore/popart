@@ -49,7 +49,7 @@ std::vector<std::unique_ptr<Op>> MaxPoolOp::getGradOps() {
 }
 
 MaxPoolGradOp::MaxPoolGradOp(MaxPoolOp *op_)
-    : Op({"MaxPoolGrad", op_->pir, {}, getPoponnxDomain()}),
+    : Op({OpType::MAXPOOLGRAD, op_->pir, {}}),
       unpooledInfo(op_->inInfo(MaxPoolOp::getInIndex())),
       cloneOfCreator(op_->clone()) {}
 

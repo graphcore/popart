@@ -18,8 +18,7 @@ std::vector<std::unique_ptr<Op>> ExpOp::getGradOps() {
 
 void ExpOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
-ExpGradOp::ExpGradOp(ExpOp *fwdOp)
-    : Op({"ExpGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
+ExpGradOp::ExpGradOp(ExpOp *fwdOp) : Op({OpType::EXPGRAD, fwdOp->pir, {}}) {}
 
 std::unique_ptr<Op> ExpGradOp::clone() const {
   return make_unique<ExpGradOp>(*this);

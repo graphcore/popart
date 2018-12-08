@@ -12,7 +12,7 @@ bool ReluOp::hasInplaceVariant(InIndex) const {
 }
 
 ReluInplaceOp::ReluInplaceOp(ReluOp *relu_op)
-    : Op({"ReluInplace", relu_op->pir, {}, getPoponnxDomain()}) {}
+    : Op({OpType::RELUINPLACE, relu_op->pir, {}}) {}
 
 void ReluInplaceOp::setup() {
   // no output, nothing to setup
@@ -41,8 +41,7 @@ void ReluGradOp::setup() {
   outInfo(getOutIndex()) = inInfo(getGradReludInIndex());
 }
 
-ReluGradOp::ReluGradOp(ReluOp *op_)
-    : Op({"ReluGrad", op_->pir, {}, getPoponnxDomain()}) {}
+ReluGradOp::ReluGradOp(ReluOp *op_) : Op({OpType::RELUGRAD, op_->pir, {}}) {}
 
 const std::vector<GradInOutMapper> &ReluGradOp::gradInputInfo() const {
   // input at index getGradReludIn() (=0) : gradient of output of relu

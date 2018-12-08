@@ -668,8 +668,8 @@ OpId Ir::moveIntoIr(std::unique_ptr<Op> op) {
 
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
-  OpId opId = moveIntoIr(
-      std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getOnnxDomain()})));
+  OpId opId =
+      moveIntoIr(std::unique_ptr<Op>(new SumOp({OpType::SUM, this, {}})));
 
   std::vector<TensorId> inputs;
   inputs.reserve(toSum.size());
@@ -1261,8 +1261,8 @@ void Ir::growFinalLoss() {
   }
 
   // now growing the FINAL loss (sum of individual losses)
-  OpId opId = moveIntoIr(
-      std::unique_ptr<Op>(new SumOp({"Sum", this, {}, getOnnxDomain()})));
+  OpId opId =
+      moveIntoIr(std::unique_ptr<Op>(new SumOp({OpType::SUM, this, {}})));
 
   std::vector<TensorId> inputs;
   inputs.reserve(lossOps.size());

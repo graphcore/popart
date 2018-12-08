@@ -19,11 +19,10 @@ std::vector<std::unique_ptr<Op>> NllOp::getGradOps() {
 }
 
 std::unique_ptr<Op> NllLoss::getOp(Ir *gp) const {
-  return std::unique_ptr<Op>(
-      new NllOp({op_type(), gp, {}, getPoponnxDomain()}, this));
+  return std::unique_ptr<Op>(new NllOp({OpType::NLL, gp, {}}, this));
 }
 
-std::string NllLoss::op_type() const { return "Nll"; }
+OpType NllLoss::op_type() const { return OpType::NLL; }
 
 std::vector<TensorId> NllLoss::getStreamTensorNames() const {
   return {input(getLabelInIndex())};
@@ -62,8 +61,7 @@ void NllGradOp::setup() {
 }
 
 NllGradOp::NllGradOp(NllOp *op_)
-    : Op({"NllGrad", op_->pir, {}, getPoponnxDomain()}), nllloss_(op_->nlll()) {
-}
+    : Op({OpType::NLLGRAD, op_->pir, {}}), nllloss_(op_->nlll()) {}
 
 const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
   // input at index 0 : labelIn()

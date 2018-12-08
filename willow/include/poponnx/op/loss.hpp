@@ -27,7 +27,7 @@ public:
   // with Node function (uses same template)
   const TensorId &output(OutIndex) const;
   int output_size() const;
-  virtual std::string op_type() const         = 0;
+  virtual OpType op_type() const              = 0;
   virtual std::unique_ptr<Loss> clone() const = 0;
 
 private:

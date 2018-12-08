@@ -18,8 +18,7 @@ std::vector<std::unique_ptr<Op>> CosOp::getGradOps() {
 }
 
 CosGradOp::CosGradOp(CosOp *fwdOp)
-    : ElementWiseNonLinearUnaryGradOp(
-          {"CosGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
+    : ElementWiseNonLinearUnaryGradOp({OpType::COSGRAD, fwdOp->pir, {}}) {}
 
 std::unique_ptr<Op> CosGradOp::clone() const {
   return make_unique<CosGradOp>(*this);

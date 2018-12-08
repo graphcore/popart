@@ -28,8 +28,8 @@ bool OpToIdentityPattern::apply(Op *op) const {
   auto input_tensor  = op->input->tensor(0);
   auto output_tensor = op->output->tensor(0);
   auto ir            = op->pir;
-  auto identity_op   = make_unique<IdentityOp>(
-      OpConstructorBundle{"Identity", ir, {}, getOnnxDomain()});
+  auto identity_op =
+      make_unique<IdentityOp>(OpConstructorBundle{OpType::IDENTITY, ir, {}});
 
   // Add the identity op to the IR
   auto identity = identity_op.get();

@@ -159,53 +159,43 @@ void Op::appendIO(std::stringstream &ss) const {
   output->append(ss, tab + tab, max_id_length);
 }
 
-const std::string &Op::domain() { return *p_op_domain; }
+const std::string &Op::domain() { return getOpTypes().getDomain(opType); }
 
-const std::string &Op::op_type() const { return *p_op_type; }
+const std::string &Op::op_type() const { return getOpTypes().getName(opType); }
 
 const std::string &Op::name() const { return _name; }
 
-OpConstructorBundle::OpConstructorBundle(std::string op_type_,
+OpConstructorBundle::OpConstructorBundle(OpType op_type_,
                                          Ir *pir_,
-                                         Attributes atts_,
-                                         std::string domain_)
-    : op_type(op_type_), pir(pir_), atts(atts_), domain(domain_) {}
+                                         Attributes atts_)
+    : op_type(op_type_), pir(pir_), atts(atts_) {}
 
 Op::Op(const Op &op)
     : Vertex(op), input(new TensorIndexMap), output(new TensorIndexMap),
-      priority(op.priority), opType(op.opType), pir(op.pir),
-      id(pir->getAndIncrOpsCounter()), nAtts(op.nAtts), p_op_type(op.p_op_type),
-      p_op_domain(op.p_op_domain), _name(op._name) {
+      priority(op.priority), pir(op.pir), id(pir->getAndIncrOpsCounter()),
+      opType(op.opType), nAtts(op.nAtts), _name(op._name) {
   // input, output: empty.
 }
 
 Op::Op(const OpConstructorBundle &b)
-    : input(new TensorIndexMap), output(new TensorIndexMap),
-      // opType (from string op_type)
-      opType(getOpTypes().get(b.op_type, b.domain)),
+    : input(new TensorIndexMap), output(new TensorIndexMap), priority(0.0),
       // the Ir
       pir(b.pir),
       // the id
       id(pir->getAndIncrOpsCounter()),
-      // the Attributes
-      nAtts(b.atts),
       // opType
-      p_op_type(&getOpTypes().getName(opType)),
-      // domain
-      p_op_domain(&getOpTypes().getDomain(opType)) {}
+      opType(b.op_type),
+      // the Attributes
+      nAtts(b.atts) {}
 
 Op::Op(const Node &node, Ir *pg)
-    : input(new TensorIndexMap), output(new TensorIndexMap),
-      // We set opType, looked up in a map from the string node.op_type()
-      opType(getOpTypes().get(node.op_type(), node.domain())),
+    : input(new TensorIndexMap), output(new TensorIndexMap), priority(0.0),
       // pointer to the Ir containing this node
       pir(pg), id(pir->getAndIncrOpsCounter()),
-      // poponnx::Attributes constructed from contained of onnx::Attribute s
-      nAtts(node.attribute()),
-      // We set the pointer to the string version of opType, in another map
-      p_op_type(&getOpTypes().getName(opType)),
-      // And finally we strip off the domain of the Node
-      p_op_domain(&getOpTypes().getDomain(opType)) {
+      // We set opType, looked up in a map from the string node.op_type()
+      opType(getOpTypes().get(node.op_type(), node.domain())),
+      // poponnx::Attributes constructed from contained of onnx::Attribute
+      nAtts(node.attribute()) {
   // Set the name if it has been specified on the node.
   if (node.has_name()) {
     _name = node.name();

@@ -26,12 +26,9 @@ bool TanToSinOverCosPattern::apply(Op *op) const {
   auto ir = op->pir;
 
   // create the new ops
-  auto sin_op = make_unique<SinOp>(
-      OpConstructorBundle{"Sin", ir, {}, getOpTypes().getDomain(OpType::SIN)});
-  auto cos_op = make_unique<CosOp>(
-      OpConstructorBundle{"Cos", ir, {}, getOpTypes().getDomain(OpType::COS)});
-  auto div_op = make_unique<DivOp>(
-      OpConstructorBundle{"Div", ir, {}, getOpTypes().getDomain(OpType::DIV)});
+  auto sin_op = make_unique<SinOp>(OpConstructorBundle{OpType::SIN, ir, {}});
+  auto cos_op = make_unique<CosOp>(OpConstructorBundle{OpType::COS, ir, {}});
+  auto div_op = make_unique<DivOp>(OpConstructorBundle{OpType::DIV, ir, {}});
 
   // move ops into ir
   auto sin = sin_op.get();

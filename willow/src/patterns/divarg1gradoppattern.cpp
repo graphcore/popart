@@ -33,19 +33,14 @@ bool DivArg1GradOpPattern::apply(Op *op) const {
   auto axes = dynamic_cast<DivArg1GradOp *>(op)->getReductionAxes();
 
   // create the new ops
-  auto square_op = make_unique<SquareOp>(OpConstructorBundle{
-      "Square", ir, {}, getOpTypes().getDomain(OpType::SQUARE)});
-  auto div_op    = make_unique<DivOp>(
-      OpConstructorBundle{"Div", ir, {}, getOpTypes().getDomain(OpType::DIV)});
-  auto mul_op = make_unique<MulOp>(
-      OpConstructorBundle{"Mul", ir, {}, getOpTypes().getDomain(OpType::MUL)});
-  auto negate_op = make_unique<NegateOp>(OpConstructorBundle{
-      "Negate", ir, {}, getOpTypes().getDomain(OpType::NEGATE)});
+  auto square_op =
+      make_unique<SquareOp>(OpConstructorBundle{OpType::SQUARE, ir, {}});
+  auto div_op = make_unique<DivOp>(OpConstructorBundle{OpType::DIV, ir, {}});
+  auto mul_op = make_unique<MulOp>(OpConstructorBundle{OpType::MUL, ir, {}});
+  auto negate_op =
+      make_unique<NegateOp>(OpConstructorBundle{OpType::NEGATE, ir, {}});
   auto reduce_op = make_unique<ReduceSumOp>(
-      OpConstructorBundle{
-          "ReduceSum", ir, {}, getOpTypes().getDomain(OpType::REDUCESUM)},
-      axes,
-      false);
+      OpConstructorBundle{OpType::REDUCESUM, ir, {}}, axes, false);
 
   // move ops into ir
   auto square = square_op.get();

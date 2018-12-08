@@ -34,9 +34,7 @@ void AddOp::setup() {
 }
 
 AddArg0GradOp::AddArg0GradOp(AddOp *op_, const std::vector<int64_t> &_axes)
-    : ReduceSumOp({"AddArg0Grad", op_->pir, {}, getPoponnxDomain()},
-                  _axes,
-                  false),
+    : ReduceSumOp({OpType::ADDARG0GRAD, op_->pir, {}}, _axes, false),
       forward_op_arg_info(op_->inInfo(AddOp::getArg0InIndex())) {}
 
 const std::map<int, int> &AddArg0GradOp::gradOutToNonGradIn() const {
@@ -54,9 +52,7 @@ const std::vector<GradInOutMapper> &AddArg0GradOp::gradInputInfo() const {
 void AddArg0GradOp::setup() { outInfo(getOutIndex()) = forward_op_arg_info; }
 
 AddArg1GradOp::AddArg1GradOp(AddOp *op_, const std::vector<int64_t> &_axes)
-    : ReduceSumOp({"AddArg1Grad", op_->pir, {}, getPoponnxDomain()},
-                  _axes,
-                  false),
+    : ReduceSumOp({OpType::ADDARG1GRAD, op_->pir, {}}, _axes, false),
       forward_op_arg_info(op_->inInfo(AddOp::getArg1InIndex())) {}
 
 const std::map<int, int> &AddArg1GradOp::gradOutToNonGradIn() const {

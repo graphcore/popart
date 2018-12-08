@@ -25,18 +25,13 @@ bool CoshOpPattern::apply(Op *op) const {
   auto ir = op->pir;
 
   // create the new ops
-  auto negate_op = make_unique<NegateOp>(OpConstructorBundle{
-      "Negate", ir, {}, getOpTypes().getDomain(OpType::NEGATE)});
-  auto exp1_op   = make_unique<ExpOp>(
-      OpConstructorBundle{"Exp", ir, {}, getOpTypes().getDomain(OpType::EXP)});
-  auto exp2_op = make_unique<ExpOp>(
-      OpConstructorBundle{"Exp", ir, {}, getOpTypes().getDomain(OpType::EXP)});
-  auto add_op = make_unique<AddOp>(
-      OpConstructorBundle{"Add", ir, {}, getOpTypes().getDomain(OpType::ADD)});
-  auto scale_op = make_unique<ScaleOp>(
-      OpConstructorBundle{
-          "Scale", ir, {}, getOpTypes().getDomain(OpType::SCALE)},
-      0.5f);
+  auto negate_op =
+      make_unique<NegateOp>(OpConstructorBundle{OpType::NEGATE, ir, {}});
+  auto exp1_op = make_unique<ExpOp>(OpConstructorBundle{OpType::EXP, ir, {}});
+  auto exp2_op = make_unique<ExpOp>(OpConstructorBundle{OpType::EXP, ir, {}});
+  auto add_op  = make_unique<AddOp>(OpConstructorBundle{OpType::ADD, ir, {}});
+  auto scale_op =
+      make_unique<ScaleOp>(OpConstructorBundle{OpType::SCALE, ir, {}}, 0.5f);
 
   // move ops into ir
   auto negate = negate_op.get();

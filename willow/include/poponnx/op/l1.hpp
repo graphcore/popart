@@ -14,7 +14,7 @@ public:
   // example which has a label streamed in)
   std::vector<TensorId> getStreamTensorNames() const final;
   std::unique_ptr<Op> getOp(Ir *) const final;
-  std::string op_type() const final;
+  OpType op_type() const final;
   TensorId getInputId() const;
 
   float getLambda() const;

@@ -27,12 +27,10 @@ bool TanhGradOpPattern::apply(Op *op) const {
   auto ir = op->pir;
 
   // create the new ops
-  auto cosh_op   = make_unique<CoshOp>(OpConstructorBundle{
-      "Cosh", ir, {}, getOpTypes().getDomain(OpType::COSH)});
-  auto square_op = make_unique<SquareOp>(OpConstructorBundle{
-      "Square", ir, {}, getOpTypes().getDomain(OpType::SQUARE)});
-  auto div_op    = make_unique<DivOp>(
-      OpConstructorBundle{"Div", ir, {}, getOpTypes().getDomain(OpType::DIV)});
+  auto cosh_op = make_unique<CoshOp>(OpConstructorBundle{OpType::COSH, ir, {}});
+  auto square_op =
+      make_unique<SquareOp>(OpConstructorBundle{OpType::SQUARE, ir, {}});
+  auto div_op = make_unique<DivOp>(OpConstructorBundle{OpType::DIV, ir, {}});
 
   // move ops into ir
   auto cosh   = cosh_op.get();

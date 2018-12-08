@@ -21,7 +21,7 @@ std::vector<std::unique_ptr<Op>> SigmoidOp::getGradOps() {
 }
 
 SigmoidGradOp::SigmoidGradOp(SigmoidOp *fwdOp)
-    : Op({"SigmoidGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
+    : Op({OpType::SIGMOIDGRAD, fwdOp->pir, {}}) {}
 
 std::unique_ptr<Op> SigmoidGradOp::clone() const {
   return make_unique<SigmoidGradOp>(*this);

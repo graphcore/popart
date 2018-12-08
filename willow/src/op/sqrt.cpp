@@ -16,7 +16,7 @@ std::vector<std::unique_ptr<Op>> SqrtOp::getGradOps() {
 }
 
 SqrtGradOp::SqrtGradOp(SqrtOp *fwdOp)
-    : Op({"SqrtGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
+    : Op({OpType::SQRTGRAD, fwdOp->pir, {}}) {}
 
 std::unique_ptr<Op> SqrtGradOp::clone() const {
   return make_unique<SqrtGradOp>(*this);

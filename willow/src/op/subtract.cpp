@@ -31,9 +31,7 @@ void SubtractOp::setup() {
 
 SubtractArg0GradOp::SubtractArg0GradOp(SubtractOp *op_,
                                        const std::vector<int64_t> &_axes)
-    : ReduceSumOp({"SubtractArg0Grad", op_->pir, {}, getPoponnxDomain()},
-                  _axes,
-                  false),
+    : ReduceSumOp({OpType::SUBTRACTARG0GRAD, op_->pir, {}}, _axes, false),
       forward_op_arg_info(op_->inInfo(SubtractOp::getArg0InIndex())) {}
 
 const std::map<int, int> &SubtractArg0GradOp::gradOutToNonGradIn() const {
@@ -55,7 +53,7 @@ void SubtractArg0GradOp::setup() {
 }
 
 SubtractArg1GradOp::SubtractArg1GradOp(SubtractOp *op_)
-    : Op({"SubtractArg1Grad", op_->pir, {}, getPoponnxDomain()}),
+    : Op({OpType::SUBTRACTARG1GRAD, op_->pir, {}}),
       forward_op_arg_info(op_->inInfo(SubtractOp::getArg1InIndex())) {}
 
 const std::map<int, int> &SubtractArg1GradOp::gradOutToNonGradIn() const {

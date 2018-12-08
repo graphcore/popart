@@ -111,7 +111,7 @@ void MatMulOp::setup() {
 }
 
 MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)
-    : Op({"MatMulLhsGrad", fwdOp.pir, {}, getPoponnxDomain()}),
+    : Op({OpType::MATMULLHSGRAD, fwdOp.pir, {}}),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
       fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
 
@@ -144,7 +144,7 @@ Shape MatMulLhsGradOp::getRhsInputShape() const { return fwdOpRhsInfo.shape(); }
 Shape MatMulLhsGradOp::getOutputShape() const { return fwdOpLhsInfo.shape(); }
 
 MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
-    : Op({"MatMulRhsGrad", fwdOp.pir, {}, getPoponnxDomain()}),
+    : Op({OpType::MATMULRHSGRAD, fwdOp.pir, {}}),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
       fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
 

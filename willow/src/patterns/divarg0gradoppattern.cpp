@@ -29,13 +29,9 @@ bool DivArg0GradOpPattern::apply(Op *op) const {
   auto axes = dynamic_cast<DivArg0GradOp *>(op)->getReductionAxes();
 
   // create the new ops
-  auto div_op = make_unique<DivOp>(
-      OpConstructorBundle{"Div", ir, {}, getOpTypes().getDomain(OpType::DIV)});
+  auto div_op    = make_unique<DivOp>(OpConstructorBundle{OpType::DIV, ir, {}});
   auto reduce_op = make_unique<ReduceSumOp>(
-      OpConstructorBundle{
-          "ReduceSum", ir, {}, getOpTypes().getDomain(OpType::REDUCESUM)},
-      axes,
-      false);
+      OpConstructorBundle{OpType::REDUCESUM, ir, {}}, axes, false);
 
   // move ops into ir
   auto div    = div_op.get();

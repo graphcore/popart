@@ -18,8 +18,7 @@ std::vector<std::unique_ptr<Op>> SinOp::getGradOps() {
 }
 
 SinGradOp::SinGradOp(SinOp *fwdOp)
-    : ElementWiseNonLinearUnaryGradOp(
-          {"SinGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
+    : ElementWiseNonLinearUnaryGradOp({OpType::SINGRAD, fwdOp->pir, {}}) {}
 
 std::unique_ptr<Op> SinGradOp::clone() const {
   return make_unique<SinGradOp>(*this);

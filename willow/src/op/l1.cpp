@@ -15,11 +15,10 @@ std::vector<std::unique_ptr<Op>> L1Op::getGradOps() {
 }
 
 std::unique_ptr<Op> L1Loss::getOp(Ir *gp) const {
-  return std::unique_ptr<Op>(
-      new L1Op({op_type(), gp, {}, getPoponnxDomain()}, this));
+  return std::unique_ptr<Op>(new L1Op({op_type(), gp, {}}, this));
 }
 
-std::string L1Loss::op_type() const { return "L1"; }
+OpType L1Loss::op_type() const { return OpType::L1; }
 
 std::vector<TensorId> L1Loss::getStreamTensorNames() const { return {}; }
 
@@ -52,7 +51,7 @@ void L1Op::setup() {
 }
 
 L1GradOp::L1GradOp(L1Op *op_)
-    : Op({"L1Grad", op_->pir, {}, getPoponnxDomain()}), l1loss_(op_->l1l()) {}
+    : Op({OpType::L1GRAD, op_->pir, {}}), l1loss_(op_->l1l()) {}
 
 const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {
   // input at index 0 of this grad op is the input at index 0 of the L1

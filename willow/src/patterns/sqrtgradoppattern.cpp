@@ -25,12 +25,9 @@ bool SqrtGradOpPattern::apply(Op *op) const {
   auto ir = op->pir;
 
   // create the new ops
-  auto scale_op = make_unique<ScaleOp>(
-      OpConstructorBundle{
-          "Scale", ir, {}, getOpTypes().getDomain(OpType::SCALE)},
-      2.0f);
-  auto div_op = make_unique<DivOp>(
-      OpConstructorBundle{"Div", ir, {}, getOpTypes().getDomain(OpType::DIV)});
+  auto scale_op =
+      make_unique<ScaleOp>(OpConstructorBundle{OpType::SCALE, ir, {}}, 2.0f);
+  auto div_op = make_unique<DivOp>(OpConstructorBundle{OpType::DIV, ir, {}});
 
   // move ops into ir
   auto scale = scale_op.get();

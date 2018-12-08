@@ -19,7 +19,7 @@ std::vector<std::unique_ptr<Op>> TanhOp::getGradOps() {
 void TanhOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 TanhGradOp::TanhGradOp(TanhOp *fwdOp)
-    : Op({"TanhGrad", fwdOp->pir, {}, getPoponnxDomain()}) {}
+    : Op({OpType::TANHGRAD, fwdOp->pir, {}}) {}
 
 std::unique_ptr<Op> TanhGradOp::clone() const {
   return make_unique<TanhGradOp>(*this);
