@@ -6,6 +6,7 @@
 #include <poplar/Graph.hpp>
 #include <poplar/IPUModel.hpp>
 
+#include <poponnx/error.hpp>
 #include <poponnx/names.hpp>
 
 namespace poponnx {
@@ -39,9 +40,12 @@ public:
   // adds poplar::Tensors to devicex_->popTensors,
   // one for each output of op_.
   virtual void grow(poplar::program::Sequence &) const;
-  // clone the poplar::Tensor identified by its TensorId,
-  // and copy the contents of it, in the step() program.
+  // clone the poplar::Tensor identified by its TensorId, and copy the contents
+  // of it.
   poplar::Tensor cloneNcopy(poplar::program::Sequence &, TensorId) const;
+  // clone the poplar::Tensor and copy the contents of it.
+  poplar::Tensor cloneNcopy(poplar::program::Sequence &,
+                            const poplar::Tensor &) const;
   // Return the poplar Tensor identified by its TensorId, numpy broadcasting it
   // up to the given shape. Throws an exception if the identified Tensor doesn't
   // have a compatible shape.
@@ -78,6 +82,19 @@ public:
 
   // The Op corresponding to this Opx
   Op *op_p;
+
+  // Generic function to cast the op to it derived type
+  // FFS : Use it to replace all the getXXX member function with dynamic_cast
+  template <class OP> OP &getOp() const {
+    OP *d_op = dynamic_cast<OP *>(op_p);
+    if (d_op == nullptr) {
+      throw error("Failed to cast to op ({}) derived op ({}), type:{} ",
+                  typeid(op_p).name(),
+                  typeid(d_op).name(),
+                  op_p->op_type());
+    }
+    return *d_op;
+  }
 
   // The Devicex to which this Opx belongs
   Devicex *dv_p;

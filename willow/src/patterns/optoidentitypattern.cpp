@@ -3,21 +3,26 @@
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/pad.hpp>
 #include <poponnx/op/reducesum.hpp>
+#include <poponnx/op/subsample.hpp>
 #include <poponnx/patterns/optoidentitypattern.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 
 namespace poponnx {
 
 bool OpToIdentityPattern::matches(Op *op) const {
   // A reduce op that doesn't reduce anything
-  return (op->isConvertibleTo<ReduceSumOp>() &&
-          (op->input->tensor(0)->info.shape() ==
-           op->output->tensor(0)->info.shape())) ||
-         // A sum op with only one input
-         (op->opType == OpType::SUM && op->input->n() == 1) ||
-         // A pad op with no padding
-         (op->opType == OpType::PAD &&
-          dynamic_cast<const PadOp *>(op)->padSizeZero());
+  return ((op->isConvertibleTo<ReduceSumOp>() &&
+           (op->input->tensor(0)->info.shape() ==
+            op->output->tensor(0)->info.shape())) ||
+          // A sum op with only one input
+          (op->opType == OpType::SUM && op->input->n() == 1) ||
+          // A pad op with no padding
+          (op->opType == OpType::PAD &&
+           dynamic_cast<const PadOp *>(op)->padSizeZero()) ||
+          // A subsample with all strides being 1
+          (op->opType == OpType::SUBSAMPLE &&
+           dynamic_cast<const SubsampleOp *>(op)->strideSizeOne()));
 }
 
 std::vector<const Tensor *> OpToIdentityPattern::touches(Op *) const {

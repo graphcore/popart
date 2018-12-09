@@ -606,6 +606,110 @@ def test_sigmoid_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def subsample_helper(op_tester, input, strides, output, grad_ouput):
+    # create test data
+    d1 = input
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.subsample([i1], strides)
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1]
+
+    def reference(ref_data):
+        return [output, grad_ouput]
+
+    op_tester.passes = ['PreUniRepl', 'SqrtGradOp']
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_subample1(op_tester):
+    subsample_helper(
+        op_tester,
+        np.array([[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]],
+                 dtype=np.float32), [2, 2],
+        np.array([[1, 3], [3, 5]], dtype=np.float32),
+        np.array(
+            [[0.1, 0, 0.1, 0], [0, 0, 0, 0], [0.1, 0, 0.1, 0], [0, 0, 0, 0]],
+            dtype=np.float32))
+
+
+def test_subample2(op_tester):
+    subsample_helper(
+        op_tester,
+        np.array([[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]],
+                 dtype=np.float32), [1, 1],
+        np.array([[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]],
+                 dtype=np.float32),
+        np.array([[0.1, 0.1, 0.1, 0.1], [0.1, 0.1, 0.1, 0.1],
+                  [0.1, 0.1, 0.1, 0.1], [0.1, 0.1, 0.1, 0.1]],
+                 dtype=np.float32))
+
+
+def test_subample3(op_tester):
+    subsample_helper(
+        op_tester,
+        np.array([[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]],
+                 dtype=np.float32), [2, 1],
+        np.array([
+            [1, 2, 3, 4],
+            [3, 4, 5, 6],
+        ], dtype=np.float32),
+        np.array([[0.1, 0.1, 0.1, 0.1], [0, 0, 0, 0], [0.1, 0.1, 0.1, 0.1],
+                  [0, 0, 0, 0]],
+                 dtype=np.float32))
+
+
+def test_subample4(op_tester):
+    subsample_helper(
+        op_tester,
+        np.array([[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]],
+                 dtype=np.float32), [3, 3],
+        np.array([[1, 4], [4, 7]], dtype=np.float32),
+        np.array(
+            [[0.1, 0, 0, 0.1], [0, 0, 0, 0], [0, 0, 0, 0], [0.1, 0, 0, 0.1]],
+            dtype=np.float32))
+
+
+def test_subample5(op_tester):
+    subsample_helper(
+        op_tester,
+        np.array([[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]],
+                 dtype=np.float32), [4, 4], np.array([[1]], dtype=np.float32),
+        np.array([[0.1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                 dtype=np.float32))
+
+
+# Test the error case where there is a 0 stride
+def test_subample6(op_tester):
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+
+        subsample_helper(
+            op_tester,
+            np.array([[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6], [4, 5, 6, 7]],
+                     dtype=np.float32), [4, 0],
+            np.array([[1]], dtype=np.float32),
+            np.array(
+                [[0.1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+                dtype=np.float32))
+
+    assert (e_info.value.args[0].startswith(
+        "Strides invalid. 0 stride at index 1"))
+
+
+# How to test for > 2 D tensors ?
+
+# Need to test when the strides are larger than the dimentions
+# subsample_helper(tmpdir,
+#                  np.array([ [1, 2, 3, 4],
+#                             [2, 3, 4, 5],
+#                             [3, 4, 5, 6],
+#                             [4, 5, 6, 7]], dtype=np.float32),
+#                  [5, 5],
+#                  np.array([ [1] ], dtype=np.float32))
+
+
 # Usage:
 #   Add `op_tester` as an argument to a test function
 #   In the test function:
@@ -725,7 +829,6 @@ def op_tester(tmpdir):
                     raise Exception('unexpected type', type(t))
 
             ref_out = [fix_type(i) for i in ref_out]
-
             for index, key in enumerate(anchors):
                 if ref_out[index] is not None:
                     print('Testing anchor "{}"...'.format(key))

@@ -501,6 +501,11 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("strides"),
            py::arg("padding"),
            py::arg("debugPrefix") = std::string())
+      .def("subsample",
+           &Builder::subsample,
+           py::arg("args"),
+           py::arg("strides"),
+           py::arg("debugPrefix") = std::string())
       .def("gemm",
            &Builder::gemm,
            py::arg("args"),

@@ -299,6 +299,12 @@ TensorId Builder::softmax(const std::vector<TensorId> &args,
   return impl_->softmax(args, name);
 }
 
+TensorId Builder::subsample(const std::vector<TensorId> &args,
+                            const std::vector<int64_t> &strides,
+                            const std::string &name) {
+  return impl_->subsample(args, strides, name);
+}
+
 void Builder::addNodeAttribute(const std::string &attributeName,
                                const int64_t &attributeValue,
                                const std::set<TensorId> &nodeOutputNames) {

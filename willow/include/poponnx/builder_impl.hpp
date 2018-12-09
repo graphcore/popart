@@ -112,6 +112,10 @@ public:
 
   TensorId softmax(const std::vector<TensorId> &args, const std::string &name);
 
+  TensorId subsample(const std::vector<TensorId> &args,
+                     const std::vector<int64_t> &strides,
+                     const std::string &name);
+
   void addNodeAttribute(const std::string &attributeName,
                         const int64_t &attributeValue,
                         const std::set<TensorId> &nodeOutputNames);

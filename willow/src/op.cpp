@@ -25,6 +25,7 @@
 #include <poponnx/op/sqrt.hpp>
 #include <poponnx/op/square.hpp>
 #include <poponnx/op/squeeze.hpp>
+#include <poponnx/op/subsample.hpp>
 #include <poponnx/op/subtract.hpp>
 #include <poponnx/op/sum.hpp>
 #include <poponnx/op/tan.hpp>
@@ -271,6 +272,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::SUBTRACT: {
     return pOp(new SubtractOp(node, this));
   }
+  case OpType::SUBSAMPLE: {
+    return pOp(new SubsampleOp(node, this));
+  }
   case OpType::SUM: {
     return pOp(new SumOp(node, this));
   }
@@ -319,6 +323,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::SUBTRACTARG0GRAD:
   case OpType::SUBTRACTARG1GRAD:
   case OpType::TANHGRAD:
+  case OpType::SUBSAMPLEGRAD:
   case OpType::MATMULLHSGRAD:
   case OpType::MATMULRHSGRAD:
     throw error("Gradient Ops not constructable from Node");

@@ -5,6 +5,7 @@
 #include <poponnx/builder_impl.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/onnxutil.hpp>
+#include <poponnx/optypes.hpp>
 #include <poponnx/tensordata.hpp>
 #include <poponnx/tensorinfo.hpp>
 
@@ -608,6 +609,29 @@ TensorId BuilderImpl::softmax(const std::vector<TensorId> &args,
 
   int64_t axis = 1;
   addNodeAttribute("axis", axis, {id});
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return id;
+}
+
+TensorId BuilderImpl::subsample(const std::vector<TensorId> &args,
+                                const std::vector<int64_t> &strides,
+                                const std::string &name) {
+
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type("Subsample");
+  node->set_domain(getPoponnxDomain());
+  add_args(node, args);
+  node->add_output(id);
+
+  if (!name.empty())
+    node->set_name(name);
+
+  addNodeAttribute("strides", strides, {id});
 
   onnx::shape_inference::InferShapes(model_);
 

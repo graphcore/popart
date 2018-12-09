@@ -86,6 +86,13 @@ poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
   return outTensor;
 }
 
+poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
+                               const poplar::Tensor &tensor) const {
+  auto outTensor = graph().clone(tensor);
+  prog.add(poplar::program::Copy(tensor, outTensor));
+  return outTensor;
+}
+
 poplar::Tensor Opx::broadcast(const std::vector<int64_t> &desired_shape,
                               TensorId id) const {
   return broadcast(desired_shape, get(id));

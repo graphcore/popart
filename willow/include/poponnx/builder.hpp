@@ -686,6 +686,21 @@ public:
                    const std::string &name = {});
 
   /**
+   * Add a subsample operation to the model
+   *
+   * This is a poplar extention
+   *
+   * If multiple tensors are provided that strides will applied to them all
+   *
+   * \param args Tensor T
+   * \param srides The strides
+   * \return The name of the result tensor
+   */
+  TensorId subsample(const std::vector<TensorId> &args,
+                     const std::vector<int64_t> &strides,
+                     const std::string &name = {});
+
+  /**
    * Add an attribute to the ONNX mode to recompute the output in the backwards
    * pass
    *

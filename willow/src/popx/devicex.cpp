@@ -39,6 +39,7 @@
 #include <poponnx/popx/op/sqrtx.hpp>
 #include <poponnx/popx/op/squarex.hpp>
 #include <poponnx/popx/op/squeezex.hpp>
+#include <poponnx/popx/op/subsamplex.hpp>
 #include <poponnx/popx/op/subtractx.hpp>
 #include <poponnx/popx/op/sumx.hpp>
 #include <poponnx/popx/op/tanhx.hpp>
@@ -220,8 +221,8 @@ PopPrograms::programFragment(PopPrograms::ProgramFragmentIndex index) {
 poplar::Graph &Devicex::graph() { return *pGraph; }
 
 Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
-    : poponnx::Device(ir), tensors(ir),
-      progs(PopPrograms(ir.getDataFlow().batchesPerStep())) {
+    : poponnx::Device(ir),
+      progs(PopPrograms(ir.getDataFlow().batchesPerStep())), tensors(ir) {
 
   // do not like the dynamic cast, is there a better way....
   popDevice = dynamic_cast<DevicexInfo &>(deviceInfo).getDevice();
@@ -697,6 +698,14 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::TAN: {
     throw error("TanOp should be removed by pattern 'TanOp'");
+  }
+
+  case OpType::SUBSAMPLE: {
+    return std::unique_ptr<Opx>(new SubsampleOpx(op, this));
+  }
+
+  case OpType::SUBSAMPLEGRAD: {
+    return std::unique_ptr<Opx>(new SubsampleGradOpx(op, this));
   }
 
   case OpType::TANH: {
