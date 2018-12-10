@@ -157,6 +157,15 @@ configure_file(poponnx.prodinfo.yml
   @ONLY)
 #------ end of product info file
 
+#------ enable script
+configure_file(enable.sh.in
+  ${CMAKE_BINARY_DIR}/enable.sh
+  @ONLY)
+
+install(FILES ${CMAKE_BINARY_DIR}/enable.sh
+        DESTINATION .)
+#------ end of enable script
+
 # Docs
 add_subdirectory(docs)
 
