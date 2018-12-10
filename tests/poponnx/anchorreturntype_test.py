@@ -66,27 +66,26 @@ def test_invalid_art_id():
             "Invalid anchor return type ID supplied: INVALID")
 
 
-def test_invalid_freq1():
+def test_invalid_period1():
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         poponnx.AnchorReturnType("ALL", 2)
 
     assert (
         e_info.value.args[0] ==
-        "A return frequency should not be supplied for this anchor return type"
-    )
+        "A return period should not be supplied for this anchor return type")
 
 
-def test_invalid_freq2():
+def test_invalid_period2():
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         poponnx.AnchorReturnType("EVERYN", -1)
 
     assert (e_info.value.args[0] ==
-            "Anchor return frequency must be greater than zero")
+            "Anchor return period must be greater than zero")
 
 
-def test_invalid_freq3():
+def test_invalid_period3():
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         poponnx.AnchorReturnType("EVERYN")
 
     assert (e_info.value.args[0] ==
-            "Must specify return frequency with option 'EVERYN'")
+            "Must specify return period with option 'EVERYN'")

@@ -36,8 +36,8 @@ class Session(poponnx.SessionCore):
             if artId == poponnx.AnchorReturnTypeId.ALL:
                 outShape[0] = outShape[0] * batchesPerStep
             elif artId == poponnx.AnchorReturnTypeId.EVERYN:
-                arf = self.dataFeed.art(anchor).rf()
-                outShape[0] = outShape[0] * (batchesPerStep // arf)
+                arp = self.dataFeed.art(anchor).rp()
+                outShape[0] = outShape[0] * (batchesPerStep // arp)
             elif artId == poponnx.AnchorReturnTypeId.FINAL:
                 outShape[0] = outShape[0]
             else:

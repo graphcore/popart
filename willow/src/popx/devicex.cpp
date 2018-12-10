@@ -1004,7 +1004,7 @@ void Devicex::prepare() {
       // Copy program runs at the end of every N batches
       case (AnchorReturnTypeId::EVERYN): {
         tasks.add(toHostEveryNBatchesTask(tensor,
-                                          ir().getDataFlow().art(anchorId).rf(),
+                                          ir().getDataFlow().art(anchorId).rp(),
                                           programFragment(tensor)));
         break;
       }
@@ -1089,7 +1089,7 @@ void Devicex::prepare() {
       }
       case (AnchorReturnTypeId::EVERYN): {
         n_bytes = batch_bytes * (ir().getDataFlow().batchesPerStep() /
-                                 ir().getDataFlow().art(anchorId).rf());
+                                 ir().getDataFlow().art(anchorId).rp());
         break;
       }
       case (AnchorReturnTypeId::ALL): {
@@ -1194,7 +1194,7 @@ PriTask Devicex::initBatchCounterTensorsTask() {
 
     // Add scalar tensors outside of the ir to track the batch
     // Id and decide when to execute the copy to the host
-    for (ReturnFrequency N : ir().getDataFlow().rfs()) {
+    for (ReturnPeriod N : ir().getDataFlow().rps()) {
       // Add to map so copy task can access
       batchCountingTensors[N]      = graph().addVariable(poplar::INT, {});
       batchCountCheckingTensors[N] = graph().addVariable(poplar::BOOL, {});
@@ -1226,7 +1226,7 @@ PriTask Devicex::updateBatchCoutTask(poplar::program::Sequence &sq) {
     // Increment the batch count at the at the earliest point
     // the anchor tensor is required, and check if it is a
     // copy batch
-    for (ReturnFrequency N : ir().getDataFlow().rfs()) {
+    for (ReturnPeriod N : ir().getDataFlow().rps()) {
       popops::addInPlace(
           graph(), batchCountingTensors[N], getConst(poplar::INT, {}, 1), sq);
 

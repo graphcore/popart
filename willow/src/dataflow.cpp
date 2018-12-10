@@ -6,29 +6,29 @@
 namespace poponnx {
 
 AnchorReturnType::AnchorReturnType(std::string artString)
-    : artId_(getIdFromStr(artString)), returnFrequency_(0) {
+    : artId_(getIdFromStr(artString)), returnPeriod_(0) {
   if (id() == AnchorReturnTypeId::EVERYN) {
-    throw error("Must specify return frequency with option 'EVERYN'");
+    throw error("Must specify return period with option 'EVERYN'");
   }
 }
 
-AnchorReturnType::AnchorReturnType(std::string artString, int returnFrequency)
-    : artId_(getIdFromStr(artString)), returnFrequency_(returnFrequency) {
+AnchorReturnType::AnchorReturnType(std::string artString, int returnPeriod)
+    : artId_(getIdFromStr(artString)), returnPeriod_(returnPeriod) {
   if (id() == AnchorReturnTypeId::EVERYN) {
-    if (returnFrequency_ <= 0) {
-      throw error("Anchor return frequency must be greater than zero");
+    if (returnPeriod_ <= 0) {
+      throw error("Anchor return period must be greater than zero");
     }
   } else {
-    throw error("A return frequency should not be supplied for this anchor "
+    throw error("A return period should not be supplied for this anchor "
                 "return type");
   }
 }
 
-int AnchorReturnType::rf() const {
+int AnchorReturnType::rp() const {
   if (id() == AnchorReturnTypeId::EVERYN)
-    return returnFrequency_;
+    return returnPeriod_;
   else
-    throw error("A return frequency should not be supplied for this anchor "
+    throw error("A return period should not be supplied for this anchor "
                 "return type");
 }
 
@@ -52,9 +52,9 @@ DataFlow::DataFlow(int BpR,
   for (auto &id_rt : m_anchors) {
     v_anchors.push_back(id_rt.first);
     s_anchors.insert(id_rt.first);
-    isValidAnchorReturnFrequency(id_rt.first, batchesPerStep_);
+    isValidAnchorReturnPeriod(id_rt.first, batchesPerStep_);
 
-    // Compile unique list of return frequencies for all anchors,
+    // Compile unique list of return periods for all anchors,
     // used when building the graph so that a minimum of Tensors
     // are added to track batch count
     int rf;
@@ -64,7 +64,7 @@ DataFlow::DataFlow(int BpR,
       break;
     }
     case AnchorReturnTypeId::EVERYN: {
-      rf = id_rt.second.rf();
+      rf = id_rt.second.rp();
       break;
     }
     case AnchorReturnTypeId::ALL: {
@@ -74,8 +74,8 @@ DataFlow::DataFlow(int BpR,
     }
     }
     if (rf) {
-      if (std::find(v_rfs.begin(), v_rfs.end(), rf) == v_rfs.end()) {
-        v_rfs.push_back(rf);
+      if (std::find(v_rps.begin(), v_rps.end(), rf) == v_rps.end()) {
+        v_rps.push_back(rf);
       }
     }
   }
@@ -85,7 +85,7 @@ bool DataFlow::isAnchored(TensorId id) const {
   return (s_anchors.count(id) != 0);
 }
 
-bool DataFlow::isBatchCountingRequired() const { return (!rfs().empty()); }
+bool DataFlow::isBatchCountingRequired() const { return (!rps().empty()); }
 
 AnchorReturnType DataFlow::art(TensorId anchorId) const {
   if (!isAnchored(anchorId)) {
@@ -95,17 +95,16 @@ AnchorReturnType DataFlow::art(TensorId anchorId) const {
   return m_anchors.at(anchorId);
 }
 
-void DataFlow::isValidAnchorReturnFrequency(TensorId anchorId,
-                                            int batchesPerStep) {
+void DataFlow::isValidAnchorReturnPeriod(TensorId anchorId,
+                                         int batchesPerStep) {
   if (art(anchorId).id() == AnchorReturnTypeId::EVERYN) {
-    if (art(anchorId).rf() > batchesPerStep) {
-      throw error(
-          "Return frequency must be <= to the number of batches per step");
-    } else if (batchesPerStep % art(anchorId).rf() != 0) {
+    if (art(anchorId).rp() > batchesPerStep) {
+      throw error("Return period must be <= to the number of batches per step");
+    } else if (batchesPerStep % art(anchorId).rp() != 0) {
       // Design decision, otherwise the position of batch N
       // will vary between epochs when looping over multiple
       // epochs
-      throw error("Return frequency must be a factor of the number of batches "
+      throw error("Return period must be a factor of the number of batches "
                   "per step");
     }
   }

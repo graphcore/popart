@@ -28,21 +28,21 @@ enum class AnchorReturnTypeId {
 
 class AnchorReturnType {
 public:
-  // If AnchorReturnTypeId is EVERYN, a valid return frequency must
+  // If AnchorReturnTypeId is EVERYN, a valid return period must
   // also be supplied. Othwise just supply the Id.
   AnchorReturnType(std::string artString);
-  AnchorReturnType(std::string artString, int returnFrequency);
+  AnchorReturnType(std::string artString, int returnPeriod);
 
   AnchorReturnTypeId id() const { return artId_; }
-  // Return frequency
-  int rf() const;
+  // Return period
+  int rp() const;
 
 private:
   AnchorReturnTypeId getIdFromStr(std::string artString);
 
   AnchorReturnTypeId artId_;
 
-  int returnFrequency_;
+  int returnPeriod_;
 };
 
 // Specifies parameters for the host-device data streams.
@@ -61,7 +61,7 @@ public:
   bool isAnchored(TensorId) const;
   bool isBatchCountingRequired() const;
   const std::vector<TensorId> &anchors() const { return v_anchors; }
-  const std::vector<int> &rfs() const { return v_rfs; }
+  const std::vector<int> &rps() const { return v_rps; }
   int nAnchors() const { return static_cast<int>(v_anchors.size()); }
   int batchSize() const { return batchSize_; }
   int batchesPerStep() const { return batchesPerStep_; }
@@ -84,14 +84,14 @@ private:
   std::vector<TensorId> v_anchors;
   std::set<TensorId> s_anchors;
 
-  // The unique set of return frequencies for all anchors
+  // The unique set of return periods for all anchors.
   // Depending on the anchor return type, extra tensors are added
   // to the graph during its construction to keep track of batch
   // count. This member ensures the minimum number of tensors are
   // added.
-  std::vector<int> v_rfs;
+  std::vector<int> v_rps;
 
-  void isValidAnchorReturnFrequency(TensorId anchorId, int batchesPerStep);
+  void isValidAnchorReturnPeriod(TensorId anchorId, int batchesPerStep);
 };
 
 } // namespace poponnx

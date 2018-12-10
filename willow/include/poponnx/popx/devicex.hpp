@@ -19,8 +19,7 @@
 namespace poponnx {
 namespace popx {
 
-using PopStreamId     = std::string;
-using ReturnFrequency = int;
+using PopStreamId = std::string;
 
 class Opx;
 class GraphCachex;
@@ -169,9 +168,10 @@ private:
 
   std::map<std::string, poplar::Tensor> constTensors;
 
-  // Non-const tensors used keep track of batch count, modulo return frequency
-  std::map<ReturnFrequency, poplar::Tensor> batchCountingTensors;
-  std::map<ReturnFrequency, poplar::Tensor> batchCountCheckingTensors;
+  // Non-const tensors used to keep track of batch count, modulo the return
+  // period
+  std::map<ReturnPeriod, poplar::Tensor> batchCountingTensors;
+  std::map<ReturnPeriod, poplar::Tensor> batchCountCheckingTensors;
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
@@ -208,7 +208,7 @@ private:
   // Task to append a Copy to poplar::Stream from poplar::Tensor every
   // N batches
   PriTask toHostEveryNBatchesTask(Tensor *tensor,
-                                  ReturnFrequency N,
+                                  ReturnPeriod N,
                                   poplar::program::Sequence &);
 
   PriTask opTask(Op *, double priority);

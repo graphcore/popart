@@ -27,13 +27,14 @@ namespace poponnx {
 
 // Some type aliases, which hopefully
 // make poponnx code clearer
-using Shape    = std::vector<int64_t>;
-using Rank     = int;
-using TensorId = std::string;
-using TaskId   = std::string;
-using OpName   = std::string;
-using OpDomain = std::string;
-using OpId     = int;
+using Shape        = std::vector<int64_t>;
+using Rank         = int;
+using TensorId     = std::string;
+using TaskId       = std::string;
+using OpName       = std::string;
+using OpDomain     = std::string;
+using OpId         = int;
+using ReturnPeriod = int;
 // The position at which a Tensor is consumed by an Op
 using InIndex = int;
 // The position at which a Tensor is output by an Op

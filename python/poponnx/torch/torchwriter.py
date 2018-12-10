@@ -160,7 +160,7 @@ class PytorchNetWriter(NetWriter):
 
         # in this list we store loss tensors for every Nth
         # sample in the step (as determined by the return
-        # frequency of the anchor tensor)
+        # period of the anchor tensor)
         losses = []
         stepSize = self.dataFeed.batchesPerStep() * self.dataFeed.batchSize()
         for substep in range(stepSize):
@@ -199,7 +199,7 @@ class PytorchNetWriter(NetWriter):
 
         # in this map we store a list of the output tensors
         # for every Nth sample in the step (as determined by
-        # the return frequency of the anchor tensor)
+        # the return period of the anchor tensor)
         substepOutMap = {}
         for outName in self.outNames:
             substepOutMap[outName] = []

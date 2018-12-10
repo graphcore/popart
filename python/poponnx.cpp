@@ -134,9 +134,9 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def(py::init<std::string>(), py::arg("anchorReturnTypeString"))
       .def(py::init<std::string, int>(),
            py::arg("anchorReturnTypeString"),
-           py::arg("returnFrequency"))
+           py::arg("returnPeriod"))
       .def("id", &AnchorReturnType::id)
-      .def("rf", &AnchorReturnType::rf);
+      .def("rp", &AnchorReturnType::rp);
 
   py::class_<DataFlow>(m, "DataFlow")
       .def(py::init<int, int, const std::map<TensorId, AnchorReturnType> &>(),
