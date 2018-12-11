@@ -7,13 +7,17 @@ add_custom_command(TARGET poponnx_examples
                    ${CMAKE_SOURCE_DIR}/examples/python
                    ${CMAKE_BINARY_DIR}/examples/python
 )
-add_custom_command(TARGET poponnx_examples
+
+
+add_custom_target(poponnx_run_examples
+  DEPENDS poponnx_examples
+)
+
+add_custom_command(TARGET poponnx_run_examples
   COMMAND cmake -E copy
                    ${CMAKE_SOURCE_DIR}/examples/run_example.sh
                    ${CMAKE_BINARY_DIR}/examples/
 )
-
-add_custom_target(poponnx_run_examples)
 
 function(add_poponnx_py_example name)
   message(STATUS
