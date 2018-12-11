@@ -1,6 +1,5 @@
-ONNX for Poplar
-===============
-
+ONNX for the IPU
+================
 
 .. gcdoc::
     :verb-borders:
@@ -8,7 +7,11 @@ ONNX for Poplar
 .. toctree::
     :maxdepth: 2
 
-    alldocumentation
-
-
+    intro
+    importing
+    builder
+    executing
+    examples
+    supported_ops
+    refereces
 

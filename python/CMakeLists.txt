@@ -37,6 +37,13 @@ target_link_libraries(poponnx_core PRIVATE
   # ...
 )
 
+add_custom_command(
+  TARGET poponnx_core
+  PRE_BUILD
+  COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/poponnx ${CMAKE_BINARY_DIR}/python/poponnx
+  COMMENT "Copying python module"
+)
+
 # This was useful on OS/X for a while, see 
 # https://stackoverflow.com/questions/47697761 and
 # https://stackoverflow.com/questions/40079424/prepend-to-rpath

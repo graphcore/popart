@@ -693,7 +693,7 @@ public:
    * If multiple tensors are provided that strides will applied to them all
    *
    * \param args Tensor T
-   * \param srides The strides
+   * \param strides The strides
    * \return The name of the result tensor
    */
   TensorId subsample(const std::vector<TensorId> &args,

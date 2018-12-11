@@ -62,6 +62,7 @@ add_subdirectory(python)
 
 # Examples and tests
 add_subdirectory(tests)
+add_subdirectory(examples)
 
 #------ cpack information
 execute_process(

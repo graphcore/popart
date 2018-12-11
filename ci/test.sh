@@ -24,5 +24,8 @@ source ${VE}/bin/activate
 cd build
 ./test.sh poponnx -VV
 
+cd build/poponnx
+make poponnx_examples
+
 echo "Done"
 
