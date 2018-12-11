@@ -1,5 +1,6 @@
 import sys
 import os
+import numpy as np
 import tempfile
 import poponnx
 from poponnx.torch import torchwriter
@@ -87,7 +88,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
         # the amount of data loaded for each step.
         # note this is not the batch size, it's the "step" size
         # (samples per step)
-        batch_size=dataFeed.batchSize() * dataFeed.batchesPerStep(),
+        batch_size=torchWriter.samplesPerBatch * dataFeed.batchesPerStep(),
         shuffle=False,
         num_workers=3)
 
@@ -98,6 +99,15 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
     session = get_session(fnModel0, inputShapeInfo, dataFeed, torchWriter,
                           outputdir, passes, opts)
 
+    def addStepDimension(data, batchesPerStep):
+        if batchesPerStep == 1:
+            return data
+        else:
+            dataShape = np.array(np.shape(data))
+            dataShape[0] //= batchesPerStep
+            dataShape = np.insert(dataShape, 0, batchesPerStep)
+            return np.reshape(data, dataShape)
+
     stepi = 0
     for epoch in range(4):  # loop over the dataset multiple times
         for i, data in enumerate(stepLoader, 0):
@@ -106,7 +116,9 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
 
             inputs = {}
             for tenId in cifarInIndices.keys():
-                inputs[tenId] = data[cifarInIndices[tenId]].numpy()
+                inputs[tenId] = \
+                    addStepDimension(data[cifarInIndices[tenId]].numpy(),
+                                     session.dataFeed.batchesPerStep())
             stepi += 1
 
             torchWriter.train(inputs)
@@ -168,7 +180,7 @@ anchors = {
     "image0": poponnx.AnchorReturnType("FINAL")
 }
 
-dataFeed = poponnx.DataFlow(batchesPerStep, samplesPerBatch, anchors)
+dataFeed = poponnx.DataFlow(batchesPerStep, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the Session constructor.
@@ -222,7 +234,8 @@ torchWriter = torchwriter.PytorchNetWriter(
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     # Torch specific:
-    module=Module0())
+    module=Module0(),
+    samplesPerBatch=samplesPerBatch)
 
 if len(sys.argv) == 2:
     outputdir = sys.argv[1]

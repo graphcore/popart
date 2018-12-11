@@ -69,7 +69,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         # the amount of data loaded for each step.
         # note this is not the batch size, it's the "step" size
         # (samples per step)
-        batch_size=dataFeed.batchSize() * dataFeed.batchesPerStep(),
+        batch_size=torchWriter.samplesPerBatch * dataFeed.batchesPerStep(),
         #single-threaded non-random data loading
         shuffle=False,
         num_workers=0)
@@ -158,6 +158,15 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     print("Writing Optimizer tensors to device, if there are any")
     session.optimizerFromHost()
 
+    def addStepDimension(data, batchesPerStep):
+        if batchesPerStep == 1:
+            return data
+        else:
+            dataShape = np.array(np.shape(data))
+            dataShape[0] //= batchesPerStep
+            dataShape = np.insert(dataShape, 0, batchesPerStep)
+            return np.reshape(data, dataShape)
+
     def getFnModel(framework, stepi):
         return os.path.join(outputdir, "%sModel_%d.onnx" % (framework, stepi))
 
@@ -196,24 +205,25 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                 assert (lossArtId == firstLossArtId), assertStr
 
         # Return sum over losses for each sample
-        lenLosses = len(getAnchorTensor(fisrtLossId, anchorArrays))
-        pLosses = np.zeros(lenLosses)
+        lossShape = np.shape(getAnchorTensor(fisrtLossId, anchorArrays))
+        pLosses = np.zeros(lossShape)
         for loss in torchWriter.losses:
             pLosses_ = getAnchorTensor(loss.output(0), anchorArrays)
             pLosses = np.add(pLosses, pLosses_)
 
         return pLosses
 
-    def batchwise(list, batchsize):
-        return zip(*[iter(list)] * batchsize)
+    def subsampleBatches(array, refShape):
+        arrayShape = np.shape(array)
 
-    def subsampleBatches(list, batchsize, n):
-        subsampledList = []
-        for i, batch in enumerate(batchwise(list, batchsize)):
-            if (i + 1) % n == 0:
-                for el in batch:
-                    subsampledList.append(el)
-        return subsampledList
+        # Every Nth batch
+        if len(arrayShape) == len(refShape):
+            n = arrayShape[0] // refShape[0]
+            return array[n - 1::n]
+
+        # Last batch only
+        else:
+            return array[-1]
 
     def getTensorError(tA, pA):
         # pA, tA are corresponding tensors from two models
@@ -232,19 +242,24 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                 str(result) + " is greater than " + str(margin))
 
     margin = 1.0e-8
-    stepi = 0
     numReports = []
+
     for epoch in range(4):  # loop over the dataset multiple times
-        for i, data in enumerate(stepLoader, 0):
-            if i == 1:
+        for stepi, stepData in enumerate(stepLoader):
+            if stepi == 1:  # Perform N steps, N=1
                 break
 
-            images, labels = data
-
+            # Form the input map for one step's worth of data.
+            # Note: data from the torch DataLoader has shape:
+            #   [stepSize * batchSize, sampleShape]
+            # whereas Poponnx expects input data of the shape:
+            #   [stepSize, batchSize, sampleShape]
+            # so we reshape the input array before passing to the stepio
             inputs = {}
             for tenId in cifarInIndices.keys():
-                inputs[tenId] = data[cifarInIndices[tenId]].numpy()
-            stepi += 1
+                inputs[tenId] = \
+                    addStepDimension(stepData[cifarInIndices[tenId]].numpy(),
+                                     session.dataFeed.batchesPerStep())
 
             if mode == "train":
                 # take batchesPerStep passes (1 step), Torch
@@ -261,7 +276,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                 session.modelToHost(fnPopOnnxModel)
 
                 # Compare parameters from updated Onnx models
-                if stepi == 1:
+                if stepi == 0:
                     nr = poponnx.NumericsReport(fnModel0, fnTorchModel,
                                                 fnModel0, fnPopOnnxModel)
                 else:
@@ -289,9 +304,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                 # Torch losses returned for all samples, whereas
                 # anchors are returned as specified by the user.
                 # Subsample torch outputs to match dimensions
-                torchLosses = subsampleBatches(
-                    torchLosses, dataFeed.batchSize(),
-                    len(torchLosses) // len(pLosses))
+                torchLosses = subsampleBatches(torchLosses, np.shape(pLosses))
                 result = getTensorError(torchLosses, pLosses)
                 print(reportTensorError(0, result))
                 checkResult(result, margin)
@@ -314,9 +327,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                     # anchors are returned as specified by the user.
                     # Subsample torch outputs to match dimensions
                     torchOuput = subsampleBatches(
-                        torchOutputs[outName], dataFeed.batchSize(),
-                        len(torchOutputs[outName]) // len(
-                            anchorArrays[outName]))
+                        torchOutputs[outName], np.shape(anchorArrays[outName]))
                     result = getTensorError(torchOuput, anchorArrays[outName])
                     print(reportTensorError(nInd, result))
                     checkResult(result, margin)

@@ -34,7 +34,6 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case1) {
   auto df = poponnx::DataFlow();
 
   BOOST_CHECK(df.nAnchors() == 0);
-  BOOST_CHECK(df.batchSize() == 0);
   BOOST_CHECK(df.batchesPerStep() == 0);
   BOOST_CHECK(df.isAnchored("one") == false);
 }
@@ -43,11 +42,9 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
 
   auto df = poponnx::DataFlow(
       5,
-      2,
       {{"one", AnchorReturnType("ALL")}, {"two", AnchorReturnType("FINAL")}});
 
   BOOST_CHECK(df.nAnchors() == 2);
-  BOOST_CHECK(df.batchSize() == 2);
   BOOST_CHECK(df.batchesPerStep() == 5);
   BOOST_CHECK(df.art("one").id() == AnchorReturnTypeId::ALL);
   BOOST_CHECK(df.art("two").id() == AnchorReturnTypeId::FINAL);
@@ -57,7 +54,6 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
   poponnx::DataFlow df2(df);
 
   BOOST_CHECK(df2.nAnchors() == 2);
-  BOOST_CHECK(df2.batchSize() == 2);
   BOOST_CHECK(df2.batchesPerStep() == 5);
   BOOST_CHECK(df.art("one").id() == AnchorReturnTypeId::ALL);
   BOOST_CHECK(df.art("two").id() == AnchorReturnTypeId::FINAL);
@@ -68,7 +64,6 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
   poponnx::DataFlow df3 = df;
 
   BOOST_CHECK(df3.nAnchors() == 2);
-  BOOST_CHECK(df3.batchSize() == 2);
   BOOST_CHECK(df3.batchesPerStep() == 5);
   BOOST_CHECK(df.art("one").id() == AnchorReturnTypeId::ALL);
   BOOST_CHECK(df.art("two").id() == AnchorReturnTypeId::FINAL);
@@ -80,7 +75,6 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
 BOOST_AUTO_TEST_CASE(DataFlow_Case3) {
 
   auto df = poponnx::DataFlow(6,
-                              2,
                               {{"one", AnchorReturnType("EVERYN", 2)},
                                {"two", AnchorReturnType("FINAL")}});
 
@@ -92,12 +86,12 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case4) {
 
   auto art = AnchorReturnType("EVERYN", 6);
   BOOST_CHECK_EXCEPTION(
-      poponnx::DataFlow(5, 2, {{"one", art}}), error, inValidReturnPeriod2);
+      poponnx::DataFlow(5, {{"one", art}}), error, inValidReturnPeriod2);
 }
 
 BOOST_AUTO_TEST_CASE(DataFlow_Case5) {
 
   auto art = AnchorReturnType("EVERYN", 3);
   BOOST_CHECK_EXCEPTION(
-      poponnx::DataFlow(5, 2, {{"one", art}}), error, inValidReturnPeriod3);
+      poponnx::DataFlow(5, {{"one", art}}), error, inValidReturnPeriod3);
 }

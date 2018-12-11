@@ -43,12 +43,10 @@ AnchorReturnTypeId AnchorReturnType::getIdFromStr(std::string artString) {
     throw error("Invalid anchor return type ID supplied: " + artString);
 }
 
-DataFlow::DataFlow() : batchesPerStep_(0), batchSize_(0) {}
+DataFlow::DataFlow() : batchesPerStep_(0) {}
 
-DataFlow::DataFlow(int BpR,
-                   int bs,
-                   const std::map<TensorId, AnchorReturnType> &m)
-    : batchesPerStep_(BpR), batchSize_(bs), m_anchors(m) {
+DataFlow::DataFlow(int BpR, const std::map<TensorId, AnchorReturnType> &m)
+    : batchesPerStep_(BpR), m_anchors(m) {
   for (auto &id_rt : m_anchors) {
     v_anchors.push_back(id_rt.first);
     s_anchors.insert(id_rt.first);

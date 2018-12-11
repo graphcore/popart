@@ -45,9 +45,8 @@ BOOST_AUTO_TEST_CASE(SytheticData_False) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto art = AnchorReturnType("ALL");
-  auto dataFlow =
-      DataFlow(1, 1, {{tensorIds.back(), art}, {tensorIds[2], art}});
+  auto art       = AnchorReturnType("ALL");
+  auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = SGD(0.01);
   std::vector<Loss *> losses{new L1Loss(tensorIds.back(), "l1LossVal", 0.1)};
 
@@ -97,9 +96,8 @@ BOOST_AUTO_TEST_CASE(SytheticData_True) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto art = AnchorReturnType("ALL");
-  auto dataFlow =
-      DataFlow(1, 1, {{tensorIds.back(), art}, {tensorIds[2], art}});
+  auto art       = AnchorReturnType("ALL");
+  auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = SGD(0.01);
   std::vector<Loss *> losses{new L1Loss(tensorIds.back(), "l1LossVal", 0.1)};
 

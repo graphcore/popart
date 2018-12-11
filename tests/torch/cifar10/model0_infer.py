@@ -10,11 +10,11 @@ import torch
 args = cmdline.parse()
 
 nChans = 3
-samplesPerBatch = 2
 batchesPerStep = 4
 anchors = {"out": poponnx.AnchorReturnType("EVERYN", 2)}
-dataFeed = poponnx.DataFlow(batchesPerStep, samplesPerBatch, anchors)
+dataFeed = poponnx.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = poponnx.InputShapeInfo()
+samplesPerBatch = 6
 inputShapeInfo.add(
     "image0", poponnx.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
 
@@ -59,7 +59,8 @@ torchWriter = torchwriter.PytorchNetWriter(
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:
-    module=Module0())
+    module=Module0(),
+    samplesPerBatch=samplesPerBatch)
 
 # Passes if torch and poponnx models match
 c10driver.run(

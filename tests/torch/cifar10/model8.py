@@ -22,7 +22,7 @@ anchors = {
     "probs": poponnx.AnchorReturnType("FINAL"),
     "image0": poponnx.AnchorReturnType("ALL")
 }
-dataFeed = poponnx.DataFlow(batchesPerStep, batchSize, anchors)
+dataFeed = poponnx.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = poponnx.InputShapeInfo()
 inputShapeInfo.add("image0",
                    poponnx.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
@@ -86,7 +86,8 @@ torchWriter = torchwriter.PytorchNetWriter(
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:
-    module=Module0())
+    module=Module0(),
+    samplesPerBatch=batchSize)
 
 c10driver.run(torchWriter, willowOptPasses, args.outputdir, cifarInIndices,
               args.device, args.hw_id)

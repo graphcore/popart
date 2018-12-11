@@ -103,7 +103,7 @@ class BasicSession:
         anchorDefs = {}
         for anchorId in anchors:
             anchorDefs[anchorId] = poponnx.AnchorReturnType("ALL")
-        dataFlow = poponnx.DataFlow(1, 1, anchorDefs)
+        dataFlow = poponnx.DataFlow(1, anchorDefs)
         optimizer = poponnx.SGD(0.01)
         losses = [poponnx.L1Loss(output, "l1LossVal", 0.1)]
         proto = self.builder.getModelProto()

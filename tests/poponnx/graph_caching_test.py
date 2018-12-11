@@ -25,7 +25,7 @@ def test_convolution_cached_by_default():
 
     anchor_names = ['d__' + i1, 'd__' + i2]
     dataFlow = \
-        poponnx.DataFlow(1, 1,
+        poponnx.DataFlow(1,
                          {anchor_names[0] : poponnx.AnchorReturnType("ALL"),
                           anchor_names[1] : poponnx.AnchorReturnType("ALL")})
     optimizer = poponnx.SGD(0.01)
@@ -95,7 +95,7 @@ def test_convolution_cached_set_to_true():
 
     anchor_names = ['d__' + i1, 'd__' + i2]
     dataFlow = \
-        poponnx.DataFlow(1, 1,
+        poponnx.DataFlow(1,
                          {anchor_names[0] : poponnx.AnchorReturnType("ALL"),
                           anchor_names[1] : poponnx.AnchorReturnType("ALL")})
     optimizer = poponnx.SGD(0.01)
@@ -165,7 +165,7 @@ def test_convolution_cached_set_to_false():
 
     anchor_names = ['d__' + i1, 'd__' + i2]
     dataFlow = \
-        poponnx.DataFlow(1, 1,
+        poponnx.DataFlow(1,
                          {anchor_names[0] : poponnx.AnchorReturnType("ALL"),
                           anchor_names[1] : poponnx.AnchorReturnType("ALL")})
     optimizer = poponnx.SGD(0.01)
@@ -235,7 +235,7 @@ def test_convolution_some_convolutions_cached():
 
     anchor_names = ['d__' + i1, 'd__' + i2]
     dataFlow = \
-        poponnx.DataFlow(1, 1,
+        poponnx.DataFlow(1,
                          {anchor_names[0] : poponnx.AnchorReturnType("ALL"),
                           anchor_names[1] : poponnx.AnchorReturnType("ALL")})
     optimizer = poponnx.SGD(0.01)
@@ -309,7 +309,7 @@ def test_convolution_disable_all():
 
     anchor_names = ['d__' + i1, 'd__' + i2]
     dataFlow = \
-        poponnx.DataFlow(1, 1,
+        poponnx.DataFlow(1,
                          {anchor_names[0] : poponnx.AnchorReturnType("ALL"),
                           anchor_names[1] : poponnx.AnchorReturnType("ALL")})
     optimizer = poponnx.SGD(0.01)

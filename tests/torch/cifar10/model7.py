@@ -29,7 +29,7 @@ anchors = {
     "l1LossVal": poponnx_core.AnchorReturnType("FINAL"),
     "out": poponnx_core.AnchorReturnType("FINAL")
 }
-dataFeed = poponnx_core.DataFlow(batchesPerStep, batchSize, anchors)
+dataFeed = poponnx_core.DataFlow(batchesPerStep, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the WillowNet constructor.
@@ -90,7 +90,8 @@ torchWriter = torchwriter.PytorchNetWriter(
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:
-    module=Module0())
+    module=Module0(),
+    samplesPerBatch=batchSize)
 
 c10driver.run(torchWriter, willowOptPasses, args.outputdir, cifarInIndices,
               args.device, args.hw_id)

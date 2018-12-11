@@ -139,13 +139,11 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("rp", &AnchorReturnType::rp);
 
   py::class_<DataFlow>(m, "DataFlow")
-      .def(py::init<int, int, const std::map<TensorId, AnchorReturnType> &>(),
+      .def(py::init<int, const std::map<TensorId, AnchorReturnType> &>(),
            py::arg("batchesPerStep"),
-           py::arg("batchSize"),
            py::arg("anchorTensors"))
       .def("isAnchored", &DataFlow::isAnchored)
       .def("nAnchors", &DataFlow::nAnchors)
-      .def("batchSize", &DataFlow::batchSize)
       .def("batchesPerStep", &DataFlow::batchesPerStep)
       .def("anchors", &DataFlow::anchors, pybind11::return_value_policy::copy)
       .def("art", &DataFlow::art);

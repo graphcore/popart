@@ -27,22 +27,31 @@ class Session(poponnx.SessionCore):
     def initAnchorArrays(self):
         anchorArrays = {}
         for anchor in self.dataFeed.anchors():
-            x = self.getInfo(anchor)
-            outShape = x.shape()
-            # Note : == is not the same as "is" here.
-            artId = self.dataFeed.art(anchor).id()
+            anchorInfo = self.getInfo(anchor)
+
+            # Anchor tensor shape corresponds to a single input sample. The
+            # anchor array, as returned to the user, has a shape which is a
+            # function of sample shape, step size, and return type
+            anchorShape = anchorInfo.shape()
             batchesPerStep = self.dataFeed.batchesPerStep()
-            batchSize = self.dataFeed.batchSize()
-            if artId == poponnx.AnchorReturnTypeId.ALL:
-                outShape[0] = outShape[0] * batchesPerStep
+            artId = self.dataFeed.art(anchor).id()
+
+            # There are some conditions where the output is a single sample,
+            # and therefore has the same shape as the anchor tensor
+            # Otherwise, samples are returned over an extra dimension in the
+            # output
+            if batchesPerStep == 1 or artId == poponnx.AnchorReturnTypeId.FINAL:
+                anchorArrayShape = anchorShape
+            elif artId == poponnx.AnchorReturnTypeId.ALL:
+                anchorArrayShape = anchorShape
+                anchorArrayShape.insert(0, batchesPerStep)
             elif artId == poponnx.AnchorReturnTypeId.EVERYN:
+                anchorArrayShape = anchorShape
                 arp = self.dataFeed.art(anchor).rp()
-                outShape[0] = outShape[0] * (batchesPerStep // arp)
-            elif artId == poponnx.AnchorReturnTypeId.FINAL:
-                outShape[0] = outShape[0]
-            else:
-                raise RuntimeError("unrecognised AnchorType")
+                if arp != batchesPerStep:
+                    anchorArrayShape.insert(0, batchesPerStep // arp)
+
             anchorArrays[anchor] = np.empty(
-                shape=outShape, dtype=x.data_type_lcase())
+                shape=anchorArrayShape, dtype=anchorInfo.data_type_lcase())
 
         return anchorArrays

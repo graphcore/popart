@@ -790,7 +790,7 @@ def op_tester(tmpdir):
             for anchorId in anchorIds:
                 anchors[anchorId] = poponnx.AnchorReturnType("ALL")
 
-            dataFlow = poponnx.DataFlow(1, 1, anchors)
+            dataFlow = poponnx.DataFlow(1, anchors)
             optimizer = poponnx.SGD(0.01)
             losses = [poponnx.L1Loss(anchorIds[0], "l1LossVal", 0.1)]
             proto = bld.getModelProto()

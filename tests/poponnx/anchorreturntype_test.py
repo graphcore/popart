@@ -5,19 +5,20 @@ import torch
 import test_util as tu
 
 
-def identity_inference_session(tmpdir, inputArray, art):
+def identity_inference_session(tmpdir, inputShape, inputArray, BPS, art):
 
     builder = poponnx.Builder()
 
-    shape = poponnx.TensorInfo("FLOAT", [1, 1])
+    inInfo = poponnx.TensorInfo("FLOAT", inputShape)
 
-    i1 = builder.addInputTensor(shape)
+    i1 = builder.addInputTensor(inInfo)
     o = builder.identity([i1])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
 
-    dataFlow = poponnx.DataFlow(8, 1, {o: art})
+    batchesPerStep = BPS
+    dataFlow = poponnx.DataFlow(batchesPerStep, {o: art})
 
     session = poponnx.Session(
         fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
@@ -37,27 +38,95 @@ def identity_inference_session(tmpdir, inputArray, art):
     return anchors[o]
 
 
-def test_returntype_all(tmpdir):
-    inputArray = [[1], [2], [3], [4], [5], [6], [7], [8]]
+# 0-d input tensors, batchesPerStep = 1
+def test_returntype_all1(tmpdir):
+    inputArray = 1
     art = poponnx.AnchorReturnType("ALL")
-    anchors_o = identity_inference_session(tmpdir, inputArray, art)
+    anchors_o = identity_inference_session(tmpdir, [], inputArray, 1, art)
     assert (np.array_equal(anchors_o, inputArray))
 
 
-def test_returntype_final(tmpdir):
-    inputArray = [[1], [2], [3], [4], [5], [6], [7], [8]]
+def test_returntype_evern1(tmpdir):
+    inputArray = 1
+    art = poponnx.AnchorReturnType("EVERYN", 1)
+    anchors_o = identity_inference_session(tmpdir, [], inputArray, 1, art)
+    assert (np.array_equal(anchors_o, inputArray))
+
+
+def test_returntype_final1(tmpdir):
+    inputArray = 1
     art = poponnx.AnchorReturnType("FINAL")
-    anchors_o = identity_inference_session(tmpdir, inputArray, art)
-    assert (np.array_equal(anchors_o, [[8]]))
+    anchors_o = identity_inference_session(tmpdir, [], inputArray, 1, art)
+    assert (np.array_equal(anchors_o, inputArray))
 
 
-def test_returntype_everyn(tmpdir):
-    inputArray = [[1], [2], [3], [4], [5], [6], [7], [8]]
+# 0-d input tensors, batchesPerStep > 1
+def test_returntype_all2(tmpdir):
+    inputArray = [1, 2, 3, 4, 5, 6, 7, 8]
+    art = poponnx.AnchorReturnType("ALL")
+    anchors_o = identity_inference_session(tmpdir, [], inputArray, 8, art)
+    assert (np.array_equal(anchors_o, inputArray))
+
+
+def test_returntype_everyn2(tmpdir):
+    inputArray = [1, 2, 3, 4, 5, 6, 7, 8]
     art = poponnx.AnchorReturnType("EVERYN", 4)
-    anchors_o = identity_inference_session(tmpdir, inputArray, art)
-    assert (np.array_equal(anchors_o, [[4], [8]]))
+    anchors_o = identity_inference_session(tmpdir, [], inputArray, 8, art)
+    assert (np.array_equal(anchors_o, [4, 8]))
 
 
+def test_returntype_final2(tmpdir):
+    inputArray = [1, 2, 3, 4, 5, 6, 7, 8]
+    art = poponnx.AnchorReturnType("FINAL")
+    anchors_o = identity_inference_session(tmpdir, [], inputArray, 8, art)
+    assert (np.array_equal(anchors_o, 8))
+
+
+# 1-d input tensors, batchesPerStep = 1
+def test_returntype_all3(tmpdir):
+    inputArray = [1, 2]
+    art = poponnx.AnchorReturnType("ALL")
+    anchors_o = identity_inference_session(tmpdir, [2], inputArray, 1, art)
+    assert (np.array_equal(anchors_o, inputArray))
+
+
+def test_returntype_everyn3(tmpdir):
+    inputArray = [1, 2]
+    art = poponnx.AnchorReturnType("EVERYN", 1)
+    anchors_o = identity_inference_session(tmpdir, [2], inputArray, 1, art)
+    assert (np.array_equal(anchors_o, inputArray))
+
+
+def test_returntype_final3(tmpdir):
+    inputArray = [1, 2]
+    art = poponnx.AnchorReturnType("FINAL")
+    anchors_o = identity_inference_session(tmpdir, [2], inputArray, 1, art)
+    assert (np.array_equal(anchors_o, inputArray))
+
+
+# 1-d input tensors, batchesPerStep > 1
+def test_returntype_all4(tmpdir):
+    inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
+    art = poponnx.AnchorReturnType("ALL")
+    anchors_o = identity_inference_session(tmpdir, [2], inputArray, 4, art)
+    assert (np.array_equal(anchors_o, inputArray))
+
+
+def test_returntype_everyn4(tmpdir):
+    inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
+    art = poponnx.AnchorReturnType("EVERYN", 2)
+    anchors_o = identity_inference_session(tmpdir, [2], inputArray, 4, art)
+    assert (np.array_equal(anchors_o, [[3, 4], [7, 8]]))
+
+
+def test_returntype_final4(tmpdir):
+    inputArray = [[1, 2], [3, 4], [5, 6], [7, 8]]
+    art = poponnx.AnchorReturnType("FINAL")
+    anchors_o = identity_inference_session(tmpdir, [2], inputArray, 4, art)
+    assert (np.array_equal(anchors_o, [7, 8]))
+
+
+# Error cases
 def test_invalid_art_id():
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         poponnx.AnchorReturnType("INVALID")

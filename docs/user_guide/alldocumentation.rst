@@ -61,7 +61,7 @@ Example:
 
   # Create a runtime environment
   anchors = {"l1LossVal" : poponnx.AnchorReturnType("ALL")}
-  dataFeed = poponnx.DataFlow(500, 4, anchors)
+  dataFeed = poponnx.DataFlow(500, anchors)
   losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
   optimizer = poponnx.ConstSGD(0.001)
 
@@ -92,7 +92,7 @@ In this example, a simple addition is prepared for execution.
 
   # Create a runtime environment
   anchors = {o : poponnx.AnchorReturnType("ALL")}
-  dataFeed = poponnx.DataFlow(500, 4, anchors)
+  dataFeed = poponnx.DataFlow(500, anchors)
 
   session = poponnx.Session(proto, dataFeed)
 

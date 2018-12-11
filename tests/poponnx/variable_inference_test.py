@@ -17,7 +17,7 @@ def inference_add_to_variable(tmpdir, type, np_type):
 
     proto = builder.getModelProto()
 
-    dataFlow = poponnx.DataFlow(1, 1, {o: poponnx.AnchorReturnType("ALL")})
+    dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     session = poponnx.Session(
         fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))

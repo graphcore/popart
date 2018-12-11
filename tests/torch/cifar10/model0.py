@@ -17,8 +17,8 @@ nChans = 3
 # is EXACTLY the batch size.
 batchSize = 2
 
-# Return requested tensors every batchesPerStep = 3 cycles.
-# so only communicate back to host every 2*3 = 6 samples.
+# Return requested tensors every batchesPerStep = 4 cycles.
+# so only communicate back to host every 2*4 = 8 samples.
 batchesPerStep = 4
 
 # Anchors, and how they are returned.
@@ -34,7 +34,7 @@ anchors = {
     "image0": poponnx.AnchorReturnType("ALL")
 }
 
-dataFeed = poponnx.DataFlow(batchesPerStep, batchSize, anchors)
+dataFeed = poponnx.DataFlow(batchesPerStep, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the Session constructor.
@@ -88,7 +88,8 @@ torchWriter = torchwriter.PytorchNetWriter(
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:
-    module=Module0())
+    module=Module0(),
+    samplesPerBatch=batchSize)
 
 c10driver.run(torchWriter, None, args.outputdir, cifarInIndices, args.device,
               args.hw_id)

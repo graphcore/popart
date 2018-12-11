@@ -32,7 +32,7 @@ anchors = ["l1LossVal", "out"]
 # sum over samples in step? See ir.hpp for details.
 art = poponnx_core.AnchorReturnType.ALL
 
-dataFeed = poponnx_core.DataFlow(batchesPerStep, batchSize, anchors, art)
+dataFeed = poponnx_core.DataFlow(batchesPerStep, anchors, art)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the WillowNet constructor.

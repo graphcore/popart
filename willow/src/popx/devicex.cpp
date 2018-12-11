@@ -369,11 +369,15 @@ void Devicex::anchorsHostToHostStreams(const StepIO &stepio) {
       // where to read from on host,
       auto src = stepin.data;
 
-      // we calculate the TensorInfo for dst. It is almost tensor->info,
-      // except it's for a full step tensor, so the first shape dimension
-      // is larger by a factor batchesPerStep().
+      // we calculate the TensorInfo for dst. If batchesPerStep() = 1, then
+      // it has the same dimensions as tensor->info. Otherwise it has has
+      // an extra dimension of size batchesPerStep() to accommmodate all
+      // step anchor tensors.
       auto stepDstShape = tensor->info.shape();
-      stepDstShape[0] *= ir().getDataFlow().batchesPerStep();
+      if (ir().getDataFlow().batchesPerStep() > 1) {
+        stepDstShape.insert(stepDstShape.begin(),
+                            ir().getDataFlow().batchesPerStep());
+      }
       TensorInfo dstInfo{tensor->info.dataType(), stepDstShape};
 
       // the info of the user provided src step tensor

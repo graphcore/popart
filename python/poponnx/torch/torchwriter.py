@@ -20,7 +20,7 @@ def conv3x3(in_planes, out_planes, stride=1):
 
 class PytorchNetWriter(NetWriter):
     def __init__(self, inNames, outNames, losses, optimizer, dataFeed,
-                 inputShapeInfo, module):
+                 inputShapeInfo, module, samplesPerBatch):
         """
         module:
           -- pytorch module (whose forward does not have the loss layers)
@@ -37,6 +37,7 @@ class PytorchNetWriter(NetWriter):
             dataFeed=dataFeed)
 
         self.module = module
+        self.samplesPerBatch = samplesPerBatch
 
     def getTorchOptimizer(self):
         """
@@ -105,20 +106,18 @@ class PytorchNetWriter(NetWriter):
         """
         torchOptimizer = self.getTorchOptimizer()
         self.module.train()
-        batchSize = self.dataFeed.batchSize()
 
         # perform forwards - backwards - update
         # for each of the substeps (substep = batch)
 
-        substepParameterMaps = []
-        for substep in range(self.dataFeed.batchesPerStep()):
+        stepParameterMap = []
+        for substepi in range(self.dataFeed.batchesPerStep()):
 
             substepParameterMap = {}
             substepOutMap = {}
             substepInMap = {}
             for inId in inMap.keys():
-                substepInMap[inId] = inMap[inId][substep * batchSize:
-                                                 (substep + 1) * batchSize]
+                substepInMap[inId] = inMap[inId][substepi][0:]
 
             torchOptimizer.zero_grad()
             substepInputs = [
@@ -142,11 +141,11 @@ class PytorchNetWriter(NetWriter):
 
             for name, param in self.module.named_parameters():
                 substepParameterMap[name] = param.data
-            substepParameterMaps.append(substepParameterMap)
+            stepParameterMap.append(substepParameterMap)
 
         # returning: list with one entry per substep, of the
         # parameters of the model processed at the substep
-        return substepParameterMaps
+        return stepParameterMap
 
     def evaluate(self, inMap):
         """
@@ -155,37 +154,40 @@ class PytorchNetWriter(NetWriter):
         """
         self.module.eval()
 
-        # perform forwards pass for each of the
-        # substeps (substep = batch)
-
-        # in this list we store loss tensors for every Nth
-        # sample in the step (as determined by the return
-        # period of the anchor tensor)
+        # perform forwards pass for each batch
         losses = []
-        stepSize = self.dataFeed.batchesPerStep() * self.dataFeed.batchSize()
-        for substep in range(stepSize):
+        for substepi in range(self.dataFeed.batchesPerStep()):
+            sampleLosses = []
 
-            substepOutMap = {}
-            substepInMap = {}
-            for inId in inMap.keys():
-                substepInMap[inId] = inMap[inId][substep:substep + 1]
+            for samplei in range(self.samplesPerBatch):
+                sampleInMap = {}
+                sampleOutMap = {}
 
-            substepInputs = [
-                torch.Tensor(substepInMap[name]) for name in self.inNames
-            ]
+                for inId in inMap.keys():
+                    sampleInMap[inId] = inMap[inId][substepi][samplei:samplei +
+                                                              1]
 
-            # forward pass
-            substepOutputs = self.module(substepInputs)
+                sampleInputs = [
+                    torch.Tensor(sampleInMap[name]) for name in self.inNames
+                ]
 
-            for j, outName in enumerate(self.outNames):
-                substepOutMap[outName] = substepOutputs[j]
+                # forward pass
+                sampleOutputs = self.module(sampleInputs)
 
-            # calculate loss, as in backwards pass, but don't update
-            # model
-            lossTarget = self.getTorchLossTarget(substepInMap, substepOutMap)
-            losses.append(lossTarget.item())
+                if len(self.outNames) == 1:
+                    sampleOutMap[self.outNames[0]] = sampleOutputs
+                else:
+                    for j, outName in enumerate(self.outNames):
+                        sampleOutMap[outName] = sampleOutputs[j]
 
-        # returning: list with one entry per sample, of the losses
+                # calculate loss, as in backwards pass, but don't update
+                # model
+                lossTarget = self.getTorchLossTarget(sampleInMap, sampleOutMap)
+                sampleLosses.append(lossTarget.item())
+
+            losses.append(sampleLosses)
+
+        # returning: list with loss scalar per sample
         return losses
 
     def infer(self, inMap):
@@ -194,34 +196,30 @@ class PytorchNetWriter(NetWriter):
         """
         self.module.eval()
 
-        # perform forwards pass for each of the
-        # substeps (substep = batch)
-
-        # in this map we store a list of the output tensors
-        # for every Nth sample in the step (as determined by
-        # the return period of the anchor tensor)
-        substepOutMap = {}
+        # perform forwards pass for each substep
+        stepOutMap = {}
         for outName in self.outNames:
-            substepOutMap[outName] = []
-        stepSize = self.dataFeed.batchesPerStep() * self.dataFeed.batchSize()
-        for substep in range(stepSize):
+            stepOutMap[outName] = []
 
-            substepInMap = {}
-            for inId in inMap.keys():
-                substepInMap[inId] = inMap[inId][substep:substep + 1]
+        for substepi in range(self.dataFeed.batchesPerStep()):
 
-            substepInputs = [
-                torch.Tensor(substepInMap[name]) for name in self.inNames
+            substepTorchInputs = [
+                torch.Tensor(inMap[inId][substepi][0:])
+                for inId in inMap.keys()
             ]
 
             # forward pass
-            substepOutputs = self.module(substepInputs)
+            substepOutputs = self.module(substepTorchInputs)
             substepOutputTensors = substepOutputs.detach()
 
-            for j, outName in enumerate(self.outNames):
-                npTensor = substepOutputTensors[j].numpy()
-                substepOutMap[outName].append(npTensor)
+            if len(self.outNames) == 1:
+                stepOutMap[self.outNames[0]].append(
+                    substepOutputTensors.numpy())
+            else:
+                for j, outName in enumerate(self.outNames):
+                    npTensor = substepOutputTensors[j].numpy()
+                    stepOutMap[outName].append(npTensor)
 
-        # returning: list with one entry per sample, of the
-        # output of the batch
-        return substepOutMap
+        # returning: list with one entry per substep, each containing
+        # one entry per sample
+        return stepOutMap

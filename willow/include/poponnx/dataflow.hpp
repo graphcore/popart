@@ -18,13 +18,13 @@ enum class AnchorReturnTypeId {
   ALL        // return all batches in the step.
 };
 // As an example, suppose we have an anchor scalar (0-d) tensor,
-// Suppose batchesPerStep = 4 and batchSize = 2.
-// Suppose that the 2*4 = 8 samples processed in a step have values
-// 1, 2, 1, 0, 1, 3, 2, 0
+// Suppose batchesPerStep = 4 and we process them in a batch of batchSize = 2
+// Suppose that the 2*4 = 8 samples are supplied in a 2d tensor with values:
+// [[1, 2], [1, 0], [1, 3], [2, 0]]
 // Then, under each of the AnchorReturnTypes the returned tensors are,
-// FINAL       : [2, 0]                   (1-d tensor)
-// EVERYN, N=2 : [1, 0, 2, 0]             (1-d tensor)
-// ALL         : [1, 2, 1, 0, 1, 3, 2, 0] (1-d tensor)
+// FINAL       : [2, 0]                           (1-d tensor)
+// EVERYN, N=2 : [[1, 0], [2, 0]]                 (2-d tensor)
+// ALL         : [[1, 2], [1, 0], [1, 3], [2, 0]] (2-d tensor)
 
 class AnchorReturnType {
 public:
@@ -51,9 +51,7 @@ private:
 class DataFlow {
 public:
   DataFlow();
-  DataFlow(int batchesPerStep,
-           int batchSize,
-           const std::map<TensorId, AnchorReturnType> &);
+  DataFlow(int batchesPerStep, const std::map<TensorId, AnchorReturnType> &);
 
   DataFlow(const DataFlow &rhs) = default;
   DataFlow &operator=(const DataFlow &rhs) = default;
@@ -63,7 +61,6 @@ public:
   const std::vector<TensorId> &anchors() const { return v_anchors; }
   const std::vector<int> &rps() const { return v_rps; }
   int nAnchors() const { return static_cast<int>(v_anchors.size()); }
-  int batchSize() const { return batchSize_; }
   int batchesPerStep() const { return batchesPerStep_; }
   AnchorReturnType art(TensorId anchorId) const;
 
@@ -71,9 +68,6 @@ private:
   /// The number of batches processed by the backend in one call to train,
   /// evaluate or infer.
   int batchesPerStep_;
-
-  /// The size of the minibatch
-  int batchSize_;
 
   /// The set of tensors to return to the user after execution, and how
   /// frequently they are returned during multi-batch training, inference,
