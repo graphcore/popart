@@ -25,7 +25,7 @@ cd build
 ./test.sh poponnx -VV
 
 cd build/poponnx
-make poponnx_examples
+make poponnx_run_examples
 
 echo "Done"
 

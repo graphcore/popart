@@ -37,9 +37,9 @@ if (BUILD_DOCS)
   )
 
   add_custom_command(
-    OUTPUT ${CMAKE_BINARY_DIR}/docs/html/doxygen
-    COMMAND cmake -E make_directory ${CMAKE_BINARY_DIR}/docs/html/doxygen
-    COMMENT "Creating build folder for 'docs/html/doxygen'"
+    OUTPUT ${CMAKE_BINARY_DIR}/docs/html/doxygen/latex
+    COMMAND cmake -E make_directory ${CMAKE_BINARY_DIR}/docs/html/doxygen/latex
+    COMMENT "Creating build folder for 'docs/html/doxygen/latex'"
     DEPENDS ${CMAKE_BINARY_DIR}/docs
   )
 
@@ -77,7 +77,7 @@ if (BUILD_DOCS)
     COMMENT "Building html documentation from 'user_guide' directory"
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/docs
     DEPENDS ${CMAKE_BINARY_DIR}/docs/Doxyfile
-            ${CMAKE_BINARY_DIR}/docs/html/doxygen
+            ${CMAKE_BINARY_DIR}/docs/html/doxygen/latex
 	    ${CMAKE_BINARY_DIR}/docs/user_guide
 	    ${SUPPORTED_OPS_GEN}
 	    poponnx_examples

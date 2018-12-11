@@ -13,12 +13,12 @@ add_custom_command(TARGET poponnx_examples
                    ${CMAKE_BINARY_DIR}/examples/
 )
 
-add_custom_target(poponnx_examples)
+add_custom_target(poponnx_run_examples)
 
 function(add_poponnx_py_example name)
   message(STATUS
     "Adding example '${name}'")
-  add_custom_command(TARGET poponnx_examples
+  add_custom_command(TARGET poponnx_run_examples
                      COMMAND bash ${CMAKE_BINARY_DIR}/examples/run_example.sh
 		                  ${CMAKE_CURRENT_SOURCE_DIR}/python/${name}.py
                      WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
