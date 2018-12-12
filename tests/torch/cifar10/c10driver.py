@@ -116,6 +116,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     opts.exportDot = True
     opts.logging = {"all": "TRACE", "session": "WARN"}
     opts.ignoreData = syntheticData
+    opts.logDir = outputdir
 
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
@@ -125,7 +126,6 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         dataFeed=dataFeed,
         losses=torchWriter.losses,
         optimizer=torchWriter.optimizer,
-        outputdir=outputdir,
         passes=passes,
         userOptions=opts)
 

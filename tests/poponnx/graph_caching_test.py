@@ -39,8 +39,7 @@ def test_convolution_cached_by_default():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        userOptions=opts,
-        outputdir="/tmp")
+        userOptions=opts)
 
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
     anchors = session.initAnchorArrays()
@@ -109,8 +108,7 @@ def test_convolution_cached_set_to_true():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        userOptions=opts,
-        outputdir="/tmp")
+        userOptions=opts)
 
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
     anchors = session.initAnchorArrays()
@@ -179,8 +177,7 @@ def test_convolution_cached_set_to_false():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        userOptions=opts,
-        outputdir="/tmp")
+        userOptions=opts)
 
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
     anchors = session.initAnchorArrays()
@@ -249,8 +246,7 @@ def test_convolution_some_convolutions_cached():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        userOptions=opts,
-        outputdir="/tmp")
+        userOptions=opts)
 
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
     anchors = session.initAnchorArrays()
@@ -324,8 +320,7 @@ def test_convolution_disable_all():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        userOptions=opts,
-        outputdir="/tmp")
+        userOptions=opts)
 
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
     anchors = session.initAnchorArrays()

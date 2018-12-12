@@ -19,8 +19,7 @@ def inference_add_to_variable(tmpdir, type, np_type):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(
-        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
+    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
 
     session.setDevice(tu.get_poplar_cpu_device())
     session.prepareDevice()

@@ -16,8 +16,7 @@ def test_summary_report_before_execution(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {})
 
-    session = poponnx.Session(
-        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
+    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
 
     session.initAnchorArrays()
     session.setDevice(tu.get_poplar_cpu_device())
@@ -42,8 +41,7 @@ def test_graph_report_before_execution(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {})
 
-    session = poponnx.Session(
-        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
+    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
 
     session.initAnchorArrays()
     session.setDevice(tu.get_poplar_cpu_device())
@@ -68,8 +66,7 @@ def test_execution_report_before_execution(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {})
 
-    session = poponnx.Session(
-        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
+    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
 
     session.initAnchorArrays()
     session.setDevice(tu.get_poplar_cpu_device())
@@ -94,8 +91,7 @@ def test_summary_report_with_cpu_device(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {})
 
-    session = poponnx.Session(
-        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
+    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
 
     session.initAnchorArrays()
     session.setDevice(tu.get_poplar_cpu_device())
@@ -122,8 +118,7 @@ def test_graph_report_with_cpu_device(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {})
 
-    session = poponnx.Session(
-        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
+    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
 
     session.initAnchorArrays()
     session.setDevice(tu.get_poplar_cpu_device())
@@ -152,8 +147,7 @@ def test_execution_report_with_cpu_device(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(
-        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
+    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
 
     session.initAnchorArrays()
     session.setDevice(tu.get_poplar_cpu_device())

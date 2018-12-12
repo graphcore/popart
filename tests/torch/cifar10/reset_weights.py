@@ -30,8 +30,7 @@ def get_trainset():
     return trainset
 
 
-def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, outputdir,
-                passes, opts):
+def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, passes, opts):
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
     session = poponnx.Session(
@@ -40,7 +39,6 @@ def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, outputdir,
         dataFeed=dataFeed,
         losses=torchWriter.losses,
         optimizer=torchWriter.optimizer,
-        outputdir=outputdir,
         passes=passes,
         userOptions=opts)
 
@@ -95,9 +93,10 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
     opts = poponnx.SessionOptionsCore()
     opts.exportDot = True
     opts.logging = {"all": "TRACE", "session": "TRACE"}
+    opts.logDir = outputdir
 
     session = get_session(fnModel0, inputShapeInfo, dataFeed, torchWriter,
-                          outputdir, passes, opts)
+                          passes, opts)
 
     def addStepDimension(data, batchesPerStep):
         if batchesPerStep == 1:

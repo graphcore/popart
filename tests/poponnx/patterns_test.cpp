@@ -60,7 +60,6 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
               losses,
               &optimizer,
               {},
-              ".",
               {},
               Patterns({PatternType::POSTNREPL})});
 
@@ -113,7 +112,6 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
               losses,
               &optimizer,
               {},
-              ".",
               {},
               Patterns({PatternType::PREUNIREPL})});
 
@@ -161,7 +159,6 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
               losses,
               &optimizer,
               {},
-              ".",
               {},
               Patterns({PatternType::OPTOIDENTITY})});
 
@@ -210,7 +207,6 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
               losses,
               &optimizer,
               {},
-              ".",
               {},
               Patterns({PatternType::SPLITCONVBIAS})});
 
@@ -269,7 +265,6 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
               losses,
               &optimizer,
               {},
-              ".",
               {},
               Patterns({PatternType::SUBTRACTARG1GRADOP})});
 
@@ -326,7 +321,6 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
        losses,
        &optimizer,
        {},
-       ".",
        opts,
        Patterns({PatternType::PREUNIREPL, PatternType::SOFTMAXGRADDIRECT})});
 
@@ -380,7 +374,6 @@ BOOST_AUTO_TEST_CASE(Inplace0_series) {
               losses,
               &optimizer,
               {},
-              ".",
               {},
               Patterns({PatternType::INPLACE0})});
 
@@ -444,7 +437,6 @@ BOOST_AUTO_TEST_CASE(Inplace0_parallel) {
               losses,
               &optimizer,
               {},
-              ".",
               {},
               Patterns({PatternType::INPLACE0})});
 
@@ -496,7 +488,6 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
               losses,
               &optimizer,
               {},
-              ".",
               opts,
               Patterns({PatternType::RECIPROCALGRADOP})});
 

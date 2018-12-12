@@ -14,6 +14,9 @@ struct SessionOptions {
 
   SessionOptions &operator=(const SessionOptions &rhs) = default;
 
+  /// A directory for log traces to be written into
+  std::string logDir;
+
   /// Export 'dot' files of the forward and backward passes
   bool exportDot = false;
 

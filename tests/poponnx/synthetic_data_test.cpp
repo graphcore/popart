@@ -57,7 +57,6 @@ BOOST_AUTO_TEST_CASE(SytheticData_False) {
       losses,
       &optimizer,
       {},
-      std::string("."),
       {},
       Patterns({poponnx::PatternType::POSTNREPL}));
 
@@ -111,7 +110,6 @@ BOOST_AUTO_TEST_CASE(SytheticData_True) {
       losses,
       &optimizer,
       {},
-      std::string("."),
       options,
       Patterns({poponnx::PatternType::POSTNREPL}));
 

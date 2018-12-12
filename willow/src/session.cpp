@@ -21,7 +21,6 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
                                 const std::vector<Loss *> &lossesIn,
                                 const Optimizer *optimizerIn,
                                 const std::vector<TensorId> &cTens,
-                                std::string logdir,
                                 const SessionOptions &userOptions,
                                 const Patterns &patterns) {
 
@@ -35,7 +34,6 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
               lossesIn,
               optimizerIn,
               cTens,
-              logdir,
               userOptions,
               patterns});
 }
@@ -47,7 +45,6 @@ Session::createFromOnnxModel(const std::string &model,
                              const std::vector<Loss *> &losses,
                              const Optimizer *optimizer,
                              const std::vector<std::string> &cTens,
-                             std::string logdir,
                              const SessionOptions &userOptions,
                              const Patterns &patterns) {
 
@@ -65,7 +62,6 @@ Session::createFromOnnxModel(const std::string &model,
                              losses,
                              optimizer,
                              cTens,
-                             logdir,
                              userOptions,
                              patterns);
   return session;

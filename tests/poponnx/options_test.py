@@ -12,6 +12,7 @@ def test_create_empty_options():
     assert (len(opts.engineOptions) == 0)
     assert (len(opts.convolutionOptions) == 0)
     assert (len(opts.reportOptions) == 0)
+    assert (opts.logDir == "")
 
 
 def test_set_exportDot_flag():
@@ -85,10 +86,7 @@ def test_engine_options_passed_to_engine(tmpdir):
     opts.logging = {'all': 'DEBUG'}
 
     session = poponnx.Session(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        outputdir=str(tmpdir),
-        userOptions=opts)
+        fnModel=proto, dataFeed=dataFlow, userOptions=opts)
 
     session.setDevice(tu.get_poplar_cpu_device())
     session.initAnchorArrays()
@@ -120,10 +118,7 @@ def test_convolution_options(tmpdir):
     opts.logging = {'all': 'DEBUG'}
 
     session = poponnx.Session(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        outputdir=str(tmpdir),
-        userOptions=opts)
+        fnModel=proto, dataFeed=dataFlow, userOptions=opts)
 
     session.setDevice(tu.get_poplar_cpu_device())
     anchors = session.initAnchorArrays()

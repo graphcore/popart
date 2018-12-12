@@ -222,13 +222,11 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
                    const std::vector<Loss *> &losses_,
                    const Optimizer *optimizer_,
                    const std::vector<std::string> &cTens_,
-                   const std::string &logdir_,
                    const SessionOptions &userOptions_,
                    const Patterns &patterns_)
     : modelProto(modelProto_), inputShapeInfo(inputShapeInfo_),
       dataFlow(dataFlow_), losses(losses_), optimizer(optimizer_),
-      cTens(cTens_), logdir(logdir_), userOptions(userOptions_),
-      patterns(patterns_) {}
+      cTens(cTens_), userOptions(userOptions_), patterns(patterns_) {}
 
 Ir::Ir() : tensors(*this), onnxModel(nullptr) {}
 
@@ -240,7 +238,6 @@ void Ir::prepare(const IrBundle &gb) {
 
   tensors.setConstIds(gb.cTens);
   dataFlow       = gb.dataFlow;
-  logdir         = io::getCanonicalDirName(gb.logdir);
   userOptions    = gb.userOptions;
   inputShapeInfo = gb.inputShapeInfo;
   patterns       = gb.patterns;
@@ -285,7 +282,7 @@ void Ir::prepare(const IrBundle &gb) {
   constructForwards();
 
   if (userOptions.exportDot) {
-    exportDot(io::appendDirFn(logdir, "fwd0.dot"));
+    exportDot(io::appendDirFn(userOptions.logDir, "fwd0.dot"));
   }
 
   // This function checks that there
@@ -328,7 +325,7 @@ void Ir::prepare(const IrBundle &gb) {
   }
 
   if (userOptions.exportDot) {
-    exportDot(io::appendDirFn(logdir, "fwdBwd0.dot"));
+    exportDot(io::appendDirFn(userOptions.logDir, "fwdBwd0.dot"));
   }
 
   applyTransform(Prune::id());
@@ -343,7 +340,7 @@ void Ir::prepare(const IrBundle &gb) {
   isPrepared = true;
 
   if (userOptions.exportDot) {
-    exportDot(io::appendDirFn(logdir, "fwdBwd1.dot"));
+    exportDot(io::appendDirFn(userOptions.logDir, "fwdBwd1.dot"));
   }
 
   std::stringstream ss2;

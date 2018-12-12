@@ -71,15 +71,15 @@ class BasicSession:
     def __init__(self, logging_dir):
         self.builder = poponnx.Builder()
         self.early_info = poponnx.InputShapeInfo()
-        self._setup_opts()
+        self._setup_opts(logging_dir)
         self.passes = []
-        self.logging_dir = logging_dir
         self.inputs = {}
 
-    def _setup_opts(self):
+    def _setup_opts(self, logging_dir):
         self.opts = poponnx.SessionOptionsCore()
         self.opts.logging = {'all': 'TRACE'}
         self.opts.exportDot = False
+        self.opts.logDir = str(logging_dir)
 
     def add_input_tensor(self, data):
         dtype = self._convert_dtype(data.dtype)
@@ -114,7 +114,6 @@ class BasicSession:
             dataFeed=dataFlow,
             losses=losses,
             optimizer=optimizer,
-            outputdir=str(self.logging_dir),
             passes=poponnx.Patterns(self.passes),
             userOptions=self.opts)
 

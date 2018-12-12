@@ -798,13 +798,13 @@ def op_tester(tmpdir):
             opts = poponnx.SessionOptionsCore()
             opts.logging = {'all': 'TRACE'}
             opts.exportDot = False
+            opts.logDir = self.logging_dir
 
             session = poponnx.Session(
                 fnModel=proto,
                 dataFeed=dataFlow,
                 losses=losses,
                 optimizer=optimizer,
-                outputdir=self.logging_dir,
                 passes=poponnx.Patterns(self.passes),
                 userOptions=opts)
 

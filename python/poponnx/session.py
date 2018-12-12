@@ -11,7 +11,6 @@ class Session(poponnx.SessionCore):
                  inputShapeInfo=poponnx.InputShapeInfo(),
                  losses=[],
                  optimizer=None,
-                 outputdir="",
                  passes=poponnx.Patterns(),
                  cTens=[],
                  userOptions=poponnx.SessionOptionsCore()):
@@ -21,7 +20,7 @@ class Session(poponnx.SessionCore):
 
         super(Session,
               self).__init__(fnModel, dataFeed, inputShapeInfo, losses,
-                             optimizer, cTens, outputdir, userOptions, passes)
+                             optimizer, cTens, userOptions, passes)
         self.dataFeed = dataFeed
 
     def initAnchorArrays(self):

@@ -923,8 +923,7 @@ def test_load_onnx_model_from_other_builder(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(
-        fnModel=proto, dataFeed=dataFlow, outputdir=str(tmpdir))
+    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
 
     session.setDevice(getDevice())
     anchors = session.initAnchorArrays()
@@ -952,11 +951,7 @@ def test_load_onnx_model_from_other_builder(tmpdir):
 
     proto2 = builder.getModelProto()
     session = poponnx.Session(
-        fnModel=proto2,
-        dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
-        outputdir=str(tmpdir))
+        fnModel=proto2, dataFeed=dataFlow, losses=losses, optimizer=optimizer)
 
     session.setDevice(getDevice())
     anchors = session.initAnchorArrays()
@@ -1001,11 +996,7 @@ def test_load_onnx_model_from_file(tmpdir):
     proto = builder2.getModelProto()
 
     session = poponnx.Session(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
-        outputdir=str(tmpdir))
+        fnModel=proto, dataFeed=dataFlow, losses=losses, optimizer=optimizer)
 
     session.setDevice(getDevice())
     anchors = session.initAnchorArrays()

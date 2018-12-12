@@ -204,6 +204,7 @@ PYBIND11_MODULE(poponnx_core, m) {
 
   py::class_<SessionOptions>(m, "SessionOptionsCore")
       .def(py::init<>())
+      .def_readwrite("logDir", &SessionOptions::logDir)
       .def_readwrite("exportDot", &SessionOptions::exportDot)
       .def_readwrite("ignoreData", &SessionOptions::ignoreData)
       .def_readwrite("enableConvolutionGraphCaching",
@@ -280,7 +281,6 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("losses"),
            py::arg("optimizer").none(),
            py::arg("cTens"),
-           py::arg("logdir"),
            py::arg("userOptions"),
            py::arg("patterns"))
       .def("updateOptimizer", &Session::updateOptimizer)

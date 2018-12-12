@@ -129,7 +129,6 @@ public:
            const std::vector<Loss *> &losses,
            const Optimizer *optimizer,
            const std::vector<std::string> &cTens,
-           const std::string &logdir,
            const SessionOptions &userOptions,
            const Patterns &patterns);
 
@@ -140,7 +139,6 @@ public:
   const Optimizer *optimizer;
   // Weights tensors which are not to be updated
   const std::vector<std::string> &cTens;
-  std::string logdir;
   const SessionOptions &userOptions;
   const Patterns &patterns;
 };
@@ -352,7 +350,6 @@ private:
   // Optimizer needed to construct backwards pass:
   // if momentum the Ir is different
   std::unique_ptr<Optimizer> optimizer;
-  std::string logdir;
   SessionOptions userOptions;
   InputShapeInfo inputShapeInfo;
 

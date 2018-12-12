@@ -61,7 +61,6 @@ BOOST_AUTO_TEST_CASE(PruneTest) {
               losses,
               nullptr,
               {},
-              ".",
               {},
               Patterns(PatternsLevel::NONE)});
 
