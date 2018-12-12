@@ -119,6 +119,7 @@ public:
   // ActGrad, Variable, etc:
   TensorType tensorType() const;
   const std::string &tensor_type() const;
+  const TensorTypeInfo *getTensorTypeInfo() const { return tensorTypeInfo; }
 
   Consumers consumers;
   // shape and data type. Not to be used before inferShape of pir has run
@@ -128,12 +129,14 @@ public:
   void setProducer(Op *);
   void resetProducer(Op *);
   bool hasProducer() const;
+  bool hasTensorData() const;
   TensorData *tensorData();
 
   template <typename... Args> void setTensorData(Args &&... args) {
     // if data has already been created and had a stream
     // connected to it, changing the data will lead to
     // the stream reading from the wrong address.
+    // Rather use TensorData::resetData.
     if (data_) {
       throw error("attempting to setTensorData a second time");
     }
@@ -147,8 +150,8 @@ private:
   Ir &ir;
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
-  // Note : we cannot initialise this as {nullptr} with gcc, must be done in
-  // constructor in .cpp
+  // c++ note : we cannot initialise this as {nullptr} with gcc
+  // when using pimpl, it must be initialised in the .cpp constructor
   std::unique_ptr<TensorData> data_;
 };
 

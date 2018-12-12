@@ -164,6 +164,13 @@ TensorId BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData) {
     memcpy(dst->mutable_data(), src, initData.info.nbytes());
     break;
   }
+  case DataType::INT64: {
+    auto src = static_cast<const int64_t *>(initData.data);
+    auto dst = initializer->mutable_int64_data();
+    dst->Resize(2 * element_count, 0);
+    memcpy(dst->mutable_data(), src, initData.info.nbytes());
+    break;
+  }
   case DataType::BOOL: {
     auto src = static_cast<const int32_t *>(initData.data);
     auto dst = initializer->mutable_int32_data();
@@ -183,7 +190,6 @@ TensorId BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData) {
   case DataType::INT8:
   case DataType::UINT16:
   case DataType::INT16:
-  case DataType::INT64:
   case DataType::STRING:
   case DataType::DOUBLE:
   case DataType::UINT32:
@@ -222,6 +228,11 @@ TensorId BuilderImpl::abs(const std::vector<TensorId> &args,
 TensorId BuilderImpl::acos(const std::vector<TensorId> &args,
                            const std::string &name) {
   return add_simple_op(args, "Acos", 1, name);
+}
+
+TensorId BuilderImpl::reshape(const std::vector<TensorId> &args,
+                              const std::string &name) {
+  return add_simple_op(args, "Reshape", 2, name);
 }
 
 TensorId BuilderImpl::acosh(const std::vector<TensorId> &args,

@@ -61,6 +61,8 @@ enum class OpType {
   RELU,
   RELUGRAD,
   RELUINPLACE,
+  RESHAPE,
+  RESHAPEGRAD,
   SCALE,
   SCALEGRAD,
   SGDVARUPDATE,
@@ -88,6 +90,8 @@ struct OpTypeInfo {
   OpTypeInfo(OpType t, bool p) : type(t), is_public(p) {}
 
   OpType type;
+
+  // Does poponnx expose the Op in its public API ?
   bool is_public;
 };
 

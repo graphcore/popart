@@ -33,6 +33,7 @@
 #include <poponnx/popx/op/reciprocalx.hpp>
 #include <poponnx/popx/op/reducesumx.hpp>
 #include <poponnx/popx/op/relux.hpp>
+#include <poponnx/popx/op/reshapex.hpp>
 #include <poponnx/popx/op/scalex.hpp>
 #include <poponnx/popx/op/sigmoidx.hpp>
 #include <poponnx/popx/op/sinx.hpp>
@@ -663,6 +664,14 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::RELUGRAD: {
     return std::unique_ptr<Opx>(new ReluGradOpx(op, this));
+  }
+
+  case OpType::RESHAPE: {
+    return std::unique_ptr<Opx>(new ReshapeOpx(op, this));
+  }
+
+  case OpType::RESHAPEGRAD: {
+    return std::unique_ptr<Opx>(new ReshapeGradOpx(op, this));
   }
 
   case OpType::SCALE: {

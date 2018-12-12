@@ -45,8 +45,10 @@ public:
 
 private:
   float learnRate_;
+  // We will add momentum here
 };
 
+// learning rate and momentum may change during training
 class SGD : public BaseSGD {
 public:
   SGD(float lr);
@@ -61,7 +63,7 @@ public:
   void resetTensorDatas(Ir *) const final;
 };
 
-// may not change during training
+// learning rate and momentum aren't allowed to change during training
 class ConstSGD : public BaseSGD {
 public:
   ConstSGD(float lr);

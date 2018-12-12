@@ -47,7 +47,7 @@ BOOST_AUTO_TEST_CASE(SytheticData_False) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(tensorIds.back(), "l1LossVal", 0.1)};
 
   auto session = poponnx::Session::createFromOnnxModel(
@@ -71,7 +71,9 @@ BOOST_AUTO_TEST_CASE(SytheticData_False) {
   BOOST_TEST(devicex->useSyntheticData() == false);
   BOOST_TEST(devicex->h2dBuffers.size() == 1);
   BOOST_TEST(devicex->d2hBuffers.size() == 2);
-  BOOST_TEST(devicex->fromHostStreams.size() == 2);
+  // The one input tensor
+  BOOST_TEST(devicex->fromHostStreams.size() == 1);
+  // The two anchor tensors
   BOOST_TEST(devicex->toHostStreams.size() == 2);
 }
 BOOST_AUTO_TEST_CASE(SytheticData_True) {
@@ -97,7 +99,7 @@ BOOST_AUTO_TEST_CASE(SytheticData_True) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(tensorIds.back(), "l1LossVal", 0.1)};
 
   SessionOptions options;

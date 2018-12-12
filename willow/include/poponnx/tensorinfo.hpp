@@ -66,6 +66,7 @@ class DataTypeInfo {
 public:
   DataTypeInfo(DataType type__,
                int nbytes__,
+               bool isFixedPoint__,
                std::string name__,
                std::string lcasename__);
   DataType type() const;
@@ -73,10 +74,12 @@ public:
   const int &nbytes() const;
   const std::string &name() const;
   const std::string &lcasename() const;
+  bool isFixedPoint() const;
 
 private:
   DataType type_;
   int nbytes_;
+  bool isFixedPoint_;
   std::string name_;
   std::string lcasename_;
 };
@@ -120,6 +123,7 @@ public:
   DataType dataTypeFromString(const std::string &s) const;
   Shape shapeFromString(const std::string &s) const;
   onnx::TypeProto getOnnxTypeProto() const;
+  const DataTypeInfo *getDataTypeInfo() const;
 
 private:
   const DataTypeInfo *dataTypeInfo = nullptr;

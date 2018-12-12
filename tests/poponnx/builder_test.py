@@ -946,7 +946,7 @@ def test_load_onnx_model_from_other_builder(tmpdir):
 
     dataFlow = poponnx.DataFlow(
         1, {translation[o]: poponnx.AnchorReturnType("ALL")})
-    optimizer = poponnx.SGD(0.01)
+    optimizer = poponnx.ConstSGD(0.01)
     losses = [poponnx.L1Loss(translation[o], "l1LossVal", 0.1)]
 
     proto2 = builder.getModelProto()
@@ -990,7 +990,7 @@ def test_load_onnx_model_from_file(tmpdir):
 
     dataFlow = poponnx.DataFlow(
         1, {translation[o]: poponnx.AnchorReturnType("ALL")})
-    optimizer = poponnx.SGD(0.01)
+    optimizer = poponnx.ConstSGD(0.01)
     losses = [poponnx.L1Loss(translation[o], "l1LossVal", 0.1)]
 
     proto = builder2.getModelProto()

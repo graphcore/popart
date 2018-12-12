@@ -38,9 +38,7 @@ public:
 
   template <typename... Args>
   explicit error(const char *s, const Args &... args) try : std
-    ::runtime_error(fmt::format(s, args...)) {
-      logging::err(what());
-    }
+    ::runtime_error(fmt::format(s, args...)) { logging::err(what()); }
   catch (const fmt::FormatError &e) {
     std::string reason =
         std::string("Poponnx exception format error ") + std::string(e.what());
@@ -50,9 +48,7 @@ public:
 
   template <typename... Args>
   explicit error(const std::string &s, const Args &... args) try : std
-    ::runtime_error(fmt::format(s, args...)) {
-      logging::err(what());
-    }
+    ::runtime_error(fmt::format(s, args...)) { logging::err(what()); }
   catch (const fmt::FormatError &e) {
     std::string reason =
         std::string("Poponnx exception format error:") + std::string(e.what());

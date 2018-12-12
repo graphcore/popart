@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(tensorIds.back(), "l1LossVal", 0.1)};
 
   Ir ir;
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
 
   Ir ir;
@@ -149,7 +149,7 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
 
   Ir ir;
@@ -197,7 +197,7 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
 
   Ir ir;
@@ -255,7 +255,7 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
                            {{identOut, art},
                             {reservedGradientPrefix() + input1, art},
                             {reservedGradientPrefix() + input2, art}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
 
   Ir ir;
@@ -307,7 +307,7 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
                            {{softmaxOut, art},
                             {reservedGradientPrefix() + input1, art},
                             {"nllLossVal", art}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new NllLoss(softmaxOut, input2, "nllLossVal")};
 
   auto opts      = SessionOptions();
@@ -364,7 +364,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_series) {
 
   // Create the IR
   auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
 
   Ir ir;
@@ -427,7 +427,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_parallel) {
 
   // Create the IR
   auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
 
   Ir ir;
@@ -475,7 +475,7 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
                            {{output, art},
                             {reservedGradientPrefix() + input, art},
                             {"l1LossVal", art}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(output, "l1LossVal", 0.1)};
 
   auto opts      = SessionOptions();

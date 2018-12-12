@@ -68,6 +68,8 @@ private:
   std::vector<Op *> complete;
 };
 
+// Stores string elements in both a std::vector and a std::set
+// The elements in the std::vector will be unique
 class VectorAndSet {
 public:
   VectorAndSet();
@@ -76,7 +78,8 @@ public:
   VectorAndSet &operator=(const VectorAndSet &rhs) = default;
   bool contains(std::string) const;
   const std::vector<std::string> &v() const;
-
+  // insert string if not present, otherwise do nothing
+  void insert(const std::string &);
   void reset(const std::vector<std::string> &vals);
 
 private:
@@ -102,12 +105,16 @@ public:
   void addActGrad(TensorId);
   std::vector<TensorId> getInitIds() const;
   std::vector<TensorId> getIds(TensorType) const;
+  std::vector<TensorId> getAllTensorIds() const;
   std::vector<TensorId> getNoProducerIds() const;
   const onnx::TensorProto *getOnnxInit(TensorId) const;
   void append(std::stringstream &) const;
 
   const VectorAndSet &getConstIds() const { return constIds; }
   void setConstIds(const std::vector<TensorId> &vals);
+  void insertConstId(const std::string &);
+  // remove all Tensors which have no producer and no consumers
+  void removeIsolated();
 
 private:
   // Store the Tensors of type Const
@@ -237,9 +244,6 @@ public:
   // enable/disable a transform stage (public for unit testing only)
   void enableTransform(std::size_t transformId, bool enable);
 
-  // only adds an init tensor if it is is allNodeInputsMap;
-  void addInitIfUsed(TensorId id, const onnx::TensorProto *t);
-
   // run after creating the backwards pass, checks that
   // the user provided anchor tensors actually exist.
   // the user may have not used the correct gradient
@@ -281,8 +285,9 @@ private:
   // input variable tensor. This function imposes these constraints
   void setVarUpdateCons();
 
-  // Register the input and output tensors of the ONNX graph
-  void registerTensors();
+  // Register the input tensors of the ONNX graph,
+  // and the inputs to the losses
+  void registerInputTensors();
 
   // The number of paths to the loss is used in
   // constructing the backwards pass. This functions set
@@ -353,8 +358,8 @@ private:
   SessionOptions userOptions;
   InputShapeInfo inputShapeInfo;
 
-  // The set of patterns to apply after constructing forwards and backwards
-  // passes
+  // The set of patterns to apply after constructing
+  // forwards and backwards passes
   Patterns patterns;
 
   // create an Op from a Node
@@ -371,10 +376,6 @@ private:
   std::set<Op *> trainTargetOps;
 
   OpId finalLossId{-1000};
-
-  // all in input() of all in node() of the onnx::Graph
-  void setAllNodeInputsMap();
-  std::set<std::string> allNodeInputsMap;
 
   ExecutionMode executionMode = ExecutionMode::TRAINING;
 

@@ -249,24 +249,26 @@ std::map<DataType, DataTypeInfo> initDataTypeInfoMap() {
 
   return {
       {DataType::UNDEFINED,
-       {DataType::UNDEFINED, -1, "UNDEFINED", "undefined"}},
-      {DataType::FLOAT, {DataType::FLOAT, 4, "FLOAT", "float32"}},
-      {DataType::UINT8, {DataType::UINT8, 1, "UINT8", "uint"}},
-      {DataType::INT8, {DataType::INT8, 1, "INT8", "int8"}},
-      {DataType::UINT16, {DataType::UINT16, 2, "UINT16", "uint16"}},
-      {DataType::INT16, {DataType::INT16, 2, "INT16", "int16"}},
-      {DataType::INT32, {DataType::INT32, 4, "INT32", "int32"}},
-      {DataType::INT64, {DataType::INT64, 8, "INT64", "int64"}},
-      {DataType::STRING, {DataType::STRING, -1, "STRING", "string"}},
-      {DataType::BOOL, {DataType::BOOL, 1, "BOOL", "bool"}},
-      {DataType::FLOAT16, {DataType::FLOAT16, 2, "FLOAT16", "float16"}},
-      {DataType::BFLOAT16, {DataType::FLOAT16, 2, "BFLOAT16", "bfloat16"}},
-      {DataType::DOUBLE, {DataType::DOUBLE, 8, "DOUBLE", "float64"}},
-      {DataType::UINT32, {DataType::UINT32, 4, "UINT32", "uint32"}},
-      {DataType::UINT64, {DataType::UINT64, 8, "UINT64", "uint64"}},
-      {DataType::COMPLEX64, {DataType::COMPLEX64, 8, "COMPLEX64", "complex64"}},
+       {DataType::UNDEFINED, -1, false, "UNDEFINED", "undefined"}},
+      {DataType::FLOAT, {DataType::FLOAT, 4, false, "FLOAT", "float32"}},
+      {DataType::UINT8, {DataType::UINT8, 1, true, "UINT8", "uint"}},
+      {DataType::INT8, {DataType::INT8, 1, true, "INT8", "int8"}},
+      {DataType::UINT16, {DataType::UINT16, 2, true, "UINT16", "uint16"}},
+      {DataType::INT16, {DataType::INT16, 2, true, "INT16", "int16"}},
+      {DataType::INT32, {DataType::INT32, 4, true, "INT32", "int32"}},
+      {DataType::INT64, {DataType::INT64, 8, true, "INT64", "int64"}},
+      {DataType::STRING, {DataType::STRING, -1, false, "STRING", "string"}},
+      {DataType::BOOL, {DataType::BOOL, 1, true, "BOOL", "bool"}},
+      {DataType::FLOAT16, {DataType::FLOAT16, 2, false, "FLOAT16", "float16"}},
+      {DataType::BFLOAT16,
+       {DataType::BFLOAT16, 2, false, "BFLOAT16", "bfloat16"}},
+      {DataType::DOUBLE, {DataType::DOUBLE, 8, false, "DOUBLE", "float64"}},
+      {DataType::UINT32, {DataType::UINT32, 4, false, "UINT32", "uint32"}},
+      {DataType::UINT64, {DataType::UINT64, 8, false, "UINT64", "uint64"}},
+      {DataType::COMPLEX64,
+       {DataType::COMPLEX64, 8, false, "COMPLEX64", "complex64"}},
       {DataType::COMPLEX128,
-       {DataType::COMPLEX128, 16, "COMPLEX128", "complex128"}}};
+       {DataType::COMPLEX128, 16, false, "COMPLEX128", "complex128"}}};
 }
 
 std::map<std::string, DataType> initStrToDataTypeMap() {
@@ -343,6 +345,8 @@ onnx::TypeProto TensorInfo::getOnnxTypeProto() const {
   return typeProto;
 }
 
+const DataTypeInfo *TensorInfo::getDataTypeInfo() const { return dataTypeInfo; }
+
 const std::map<std::string, DataType> &getStrToDataTypeMap() {
   static std::map<std::string, DataType> m = initStrToDataTypeMap();
   return m;
@@ -355,16 +359,19 @@ std::ostream &operator<<(std::ostream &stream, const TensorInfo &ti) {
 
 DataTypeInfo::DataTypeInfo(DataType type__,
                            int nbytes__,
+                           bool isFixedPoint__,
                            std::string name__,
                            std::string lcasename__)
-    : type_(type__), nbytes_(nbytes__), name_(name__), lcasename_(lcasename__) {
-}
+    : type_(type__), nbytes_(nbytes__), isFixedPoint_(isFixedPoint__),
+      name_(name__), lcasename_(lcasename__) {}
 
 const int &DataTypeInfo::nbytes() const { return nbytes_; }
 
 const std::string &DataTypeInfo::name() const { return name_; }
 
 const std::string &DataTypeInfo::lcasename() const { return lcasename_; }
+
+bool DataTypeInfo::isFixedPoint() const { return isFixedPoint_; }
 
 DataType DataTypeInfo::type() const { return type_; }
 

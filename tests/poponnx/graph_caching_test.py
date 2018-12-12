@@ -28,7 +28,7 @@ def test_convolution_cached_by_default():
         poponnx.DataFlow(1,
                          {anchor_names[0] : poponnx.AnchorReturnType("ALL"),
                           anchor_names[1] : poponnx.AnchorReturnType("ALL")})
-    optimizer = poponnx.SGD(0.01)
+    optimizer = poponnx.ConstSGD(0.01)
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
@@ -97,7 +97,7 @@ def test_convolution_cached_set_to_true():
         poponnx.DataFlow(1,
                          {anchor_names[0] : poponnx.AnchorReturnType("ALL"),
                           anchor_names[1] : poponnx.AnchorReturnType("ALL")})
-    optimizer = poponnx.SGD(0.01)
+    optimizer = poponnx.ConstSGD(0.01)
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
@@ -166,7 +166,7 @@ def test_convolution_cached_set_to_false():
         poponnx.DataFlow(1,
                          {anchor_names[0] : poponnx.AnchorReturnType("ALL"),
                           anchor_names[1] : poponnx.AnchorReturnType("ALL")})
-    optimizer = poponnx.SGD(0.01)
+    optimizer = poponnx.ConstSGD(0.01)
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
@@ -235,7 +235,7 @@ def test_convolution_some_convolutions_cached():
         poponnx.DataFlow(1,
                          {anchor_names[0] : poponnx.AnchorReturnType("ALL"),
                           anchor_names[1] : poponnx.AnchorReturnType("ALL")})
-    optimizer = poponnx.SGD(0.01)
+    optimizer = poponnx.ConstSGD(0.01)
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
@@ -308,7 +308,7 @@ def test_convolution_disable_all():
         poponnx.DataFlow(1,
                          {anchor_names[0] : poponnx.AnchorReturnType("ALL"),
                           anchor_names[1] : poponnx.AnchorReturnType("ALL")})
-    optimizer = poponnx.SGD(0.01)
+    optimizer = poponnx.ConstSGD(0.01)
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()

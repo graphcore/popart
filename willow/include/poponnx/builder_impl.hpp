@@ -67,6 +67,7 @@ public:
   TensorId reciprocal(const std::vector<TensorId> &args,
                       const std::string &name);
   TensorId relu(const std::vector<TensorId> &args, const std::string &name);
+  TensorId reshape(const std::vector<TensorId> &args, const std::string &name);
   TensorId sigmoid(const std::vector<TensorId> &args, const std::string &name);
   TensorId sin(const std::vector<TensorId> &args, const std::string &name);
   TensorId sinh(const std::vector<TensorId> &args, const std::string &name);

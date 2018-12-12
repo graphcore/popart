@@ -45,6 +45,11 @@ TensorId Builder::acos(const std::vector<TensorId> &args,
   return impl_->acos(args, name);
 }
 
+TensorId Builder::reshape(const std::vector<TensorId> &args,
+                          const std::string &name) {
+  return impl_->reshape(args, name);
+}
+
 TensorId Builder::acosh(const std::vector<TensorId> &args,
                         const std::string &name) {
   return impl_->acosh(args, name);

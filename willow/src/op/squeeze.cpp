@@ -1,6 +1,5 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/squeeze.hpp>
-#include <poponnx/tensor.hpp>
 
 namespace poponnx {
 

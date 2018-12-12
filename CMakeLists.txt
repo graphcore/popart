@@ -7,6 +7,19 @@ enable_testing()
 # All C++ code in this project will be compiled as C++11
 add_definitions(-std=c++11)
 
+# colorful ninja, idea from
+# medium.com/@alasher/colored-c-compiler-output-with-ninja-clang-gcc-10bfe7f2b949
+option (FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." TRUE)
+if (${FORCE_COLORED_OUTPUT})
+    MESSAGE(STATUS "CMAKE_CXX_COMPILER_ID is \""   ${CMAKE_CXX_COMPILER_ID} "\"")
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+       add_compile_options (-fdiagnostics-color=always)
+     elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang" OR
+             "${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang" )
+       add_compile_options (-fcolor-diagnostics)
+    endif ()
+endif ()
+
 if(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
   set(OS_TYPE osx)
 elseif(${CMAKE_SYSTEM_NAME} STREQUAL Linux)

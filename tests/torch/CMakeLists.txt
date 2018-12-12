@@ -54,3 +54,8 @@ add_test(NAME model_conv_bias
 add_test(NAME reset_weights
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/reset_weights.py)
+
+
+add_test(NAME model_reshape
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/reset_weights.py)

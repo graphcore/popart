@@ -96,7 +96,9 @@ public:
 
   // wire a tensor to input: updates input and
   // updates consumers of tensor with id TensorId
-  void connectInTensor(InIndex, TensorId);
+  void defaultConnectInTensor(InIndex, TensorId);
+
+  virtual void connectInTensor(InIndex, TensorId);
 
   void connectOutTensor(OutIndex, TensorId);
 

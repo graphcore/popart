@@ -8,6 +8,7 @@ namespace poponnx {
 namespace popx {
 
 SGDVarUpdateOpx::SGDVarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  // needs implementing
   if (op->opType != OpType::SGDVARUPDATE) {
     throw error("cannot create SGDVarUpdateOpx from " + op->op_type());
   }

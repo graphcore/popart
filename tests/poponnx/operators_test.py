@@ -1477,7 +1477,7 @@ def op_tester(tmpdir):
             dataFlow = poponnx.DataFlow(1, anchors)
 
             if (step_type == 'train'):
-                optimizer = poponnx.SGD(0.01)
+                optimizer = poponnx.ConstSGD(0.01)
             else:
                 optimizer = None
 

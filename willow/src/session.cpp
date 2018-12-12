@@ -102,7 +102,7 @@ void Session::weightsFromHost() {
 // write whatever optimizer tensors (learning rates,
 // momentum, initial momentum tensors (zero)) there are to device
 void Session::optimizerFromHost() {
-  logging::session::trace("Session::optimzierFromHost");
+  logging::session::trace("Session::optimizerFromHost");
   device_->optimizerFromHost();
 }
 

@@ -32,6 +32,26 @@
 
 namespace poponnx {
 
+std::vector<TensorId> Tensors::getAllTensorIds() const {
+  std::vector<TensorId> allIds;
+  allIds.reserve(M.size());
+  for (auto &id_tensor : M) {
+    allIds.push_back(id_tensor.first);
+  }
+  return allIds;
+}
+
+// remove all Tensors with no producer and no consumers
+void Tensors::removeIsolated() {
+  for (auto &id : getAllTensorIds()) {
+    Tensor *tensor = M[id].get();
+    if (tensor->hasProducer() == false && tensor->consumers.getTotal() == 0) {
+      M.erase(id);
+      logging::ir::info("Removing isolated Tensor {}", id);
+    }
+  }
+}
+
 GradNonGradPair::GradNonGradPair(Op *g_, Op *ng_) : grad(g_), nongrad(ng_) {}
 
 GradNonGradPair::GradNonGradPair() : GradNonGradPair(nullptr, nullptr) {}
@@ -188,6 +208,13 @@ void VectorAndSet::reset(const std::vector<std::string> &vals) {
   }
 }
 
+void VectorAndSet::insert(const std::string &id) {
+  if (m_vals.find(id) == m_vals.end()) {
+    v_vals.push_back(id);
+    m_vals.insert(id);
+  }
+}
+
 void Ir::confirmNoReservedIds() const {
 
   auto &onnxGraph = onnxModel->graph();
@@ -202,17 +229,6 @@ void Ir::confirmNoReservedIds() const {
 
   for (const auto &tenId : inputShapeInfo.getAllTensorIds()) {
     confirmNonReservedId(tenId);
-  }
-}
-
-// used for circumventing the pytorch bug,
-// where some initializers are not used :
-// https://github.com/pytorch/pytorch/issues/13552
-void Ir::setAllNodeInputsMap() {
-  for (auto &node : onnxModel->graph().node()) {
-    for (auto &name : node.input()) {
-      allNodeInputsMap.insert(name);
-    }
   }
 }
 
@@ -271,9 +287,8 @@ void Ir::prepare(const IrBundle &gb) {
   }
 
   confirmNoReservedIds();
-  setAllNodeInputsMap();
 
-  registerTensors();
+  registerInputTensors();
 
   logging::ir::info("Patterns : {}", patterns);
   // todo : validate the selected patterns
@@ -294,10 +309,14 @@ void Ir::prepare(const IrBundle &gb) {
 
   if (canEvaluate()) {
     growFinalLoss();
-
     updateVertices();
     setNPathsToLoss();
   }
+
+  // tensors with no producer and no consumers are removed
+  // at this point. We may want something more subtle.
+  tensors.removeIsolated();
+
   if (canTrain()) {
     constructBackwards();
   }
@@ -365,14 +384,14 @@ void Ir::resetWeights(const onnx::ModelProto &modelProto) {
   }
 }
 
-void Ir::registerTensors() {
+void Ir::registerInputTensors() {
   auto &onnxGraph = onnxModel->graph();
 
   std::set<TensorId> onnxInitializers;
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();
     logging::info("Init tensor is {}", tenId);
-    addInitIfUsed(tenId, &initializer);
+    tensors.addInit(tenId, &initializer);
     onnxInitializers.emplace(tenId);
   }
 
@@ -598,15 +617,8 @@ void Tensors::insert(TensorId name, std::unique_ptr<Tensor> t) {
   M[name] = std::move(t);
 }
 
-void Ir::addInitIfUsed(TensorId id, const onnx::TensorProto *t) {
-  if (allNodeInputsMap.count(id) != 0) {
-    tensors.addInit(id, t);
-  } else {
-    logging::ir::warn("Unused ONNX tensor  " + id);
-  }
-}
-
 void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
+
   insert(name,
          std::unique_ptr<Tensor>(new Tensor(
              name,
@@ -1159,6 +1171,11 @@ void Ir::constructBackwards() {
 
 Op *Ir::growVarUpdateOp(TensorId varId) {
 
+  // A sanity check that the Tensor is not fixed point type
+  if (tensors.get(varId)->info.getDataTypeInfo()->isFixedPoint()) {
+    throw error("Currently only floating point variable tensors are updatable");
+  }
+
   OpId opId   = moveIntoIr(optimizer->createOp(varId, this));
   auto inputs = optimizer->getInputIds(varId);
 
@@ -1209,17 +1226,18 @@ void Ir::setVarUpdateCons() {
   }
 }
 
+void Tensors::insertConstId(const std::string &id) { constIds.insert(id); }
+
 Op *Ir::growFromNode(const Node &node) {
 
   // special case of CONSTANT Node, no Op is created
   if (getOpTypes().get(node.op_type(), node.domain()) == OpType::CONSTANT) {
     TensorId name = node.output(0);
-
-    // we confirm that this tensor is actually
-    // the input of some Node in the onnx::Graph, because
-    // we've seen (in pytorch) that some initializers
-    // are not used (always '2', '3', '4' of shape (10,10,3,3)
-    addInitIfUsed(name, &node.attribute(0).t());
+    // We assume that a tensor coming from a Constant Node should
+    // not have a gradient computed for it or be updated during training
+    // We may need to change this assumption for some ONNX Model exporters
+    tensors.insertConstId(name);
+    tensors.addInit(name, &node.attribute(0).t());
     // no Op created for a Constant Node
     return nullptr;
   }
@@ -1228,9 +1246,10 @@ Op *Ir::growFromNode(const Node &node) {
 
   connectInputs(node, opId);
   connectOutputs(node, opId);
-  Op *fromNodeOp = ops[opId].get();
+
   // finally, set the output tensor info for the output
   // tensors, and any other Op specific class variables
+  Op *fromNodeOp = ops[opId].get();
   fromNodeOp->setup();
   return fromNodeOp;
 }
@@ -1290,6 +1309,9 @@ template <typename T> void Ir::connectInputs(const T &inContainer, OpId opId) {
       if (!tensors.contains(inName)) {
         throw error("input " + inName + " should already be in tensor map");
       } else {
+        // default: connects tensor <-> op, in both directions.
+        // Note that this is a virtual function, and so specific Ops
+        // may to do something different to the default here.
         op->connectInTensor(inIndex, inName);
       }
     }

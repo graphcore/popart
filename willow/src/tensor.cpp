@@ -155,6 +155,13 @@ std::vector<Op *> Consumers::consumersWhichTopoBefore(Op *op) const {
   }
 }
 
+bool Tensor::hasTensorData() const {
+  if (data_.get() == nullptr) {
+    return false;
+  }
+  return true;
+}
+
 TensorData *Tensor::tensorData() {
   if (data_.get() == nullptr) {
     throw error("Data not set for " + id);

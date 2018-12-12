@@ -67,7 +67,7 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
 
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
 
   SessionOptions opts;
@@ -139,7 +139,7 @@ BOOST_AUTO_TEST_CASE(RecomputeTest) {
 
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
 
   SessionOptions opts;

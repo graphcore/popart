@@ -74,6 +74,18 @@ public:
   TensorId abs(const std::vector<TensorId> &args, const std::string &name = {});
 
   /**
+   * Add the reshape operator to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Reshape
+   *
+   * \param args The tensor arguments
+   * \param name Optional identifer for operation
+   * \return The name of the output, reshaped tensor
+   */
+  TensorId reshape(const std::vector<TensorId> &args,
+                   const std::string &name = {});
+
+  /**
    * Add the arc-cosine operator to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ACos

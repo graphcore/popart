@@ -21,6 +21,7 @@
 #include <poponnx/op/reciprocal.hpp>
 #include <poponnx/op/reducesum.hpp>
 #include <poponnx/op/relu.hpp>
+#include <poponnx/op/reshape.hpp>
 #include <poponnx/op/sigmoid.hpp>
 #include <poponnx/op/sin.hpp>
 #include <poponnx/op/softmax.hpp>
@@ -81,10 +82,14 @@ std::vector<std::unique_ptr<Op>> Op::getGradOps() {
 
 void Op::setup() { throw error("No setup() for " + op_type()); }
 
-void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
+void Op::defaultConnectInTensor(InIndex inIndex, TensorId tenId) {
   Tensor *ptensor = pir->getTensors().get(tenId);
   input->insert(inIndex, ptensor);
   ptensor->consumers.increment(this);
+}
+
+void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
+  defaultConnectInTensor(inIndex, tenId);
 }
 
 void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
@@ -272,6 +277,11 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::RELU: {
     return pOp(new ReluOp(node, this));
   }
+
+  case OpType::RESHAPE: {
+    return pOp(new ReshapeOp(node, this));
+  }
+
   case OpType::SIGMOID: {
     return pOp(new SigmoidOp(node, this));
   }
@@ -310,6 +320,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::DIVARG0GRAD:
   case OpType::DIVARG1GRAD:
   case OpType::EXPGRAD:
+  case OpType::RESHAPEGRAD:
   case OpType::SQUEEZEGRAD:
   case OpType::REDUCESUMGRAD:
   case OpType::RELUGRAD:
