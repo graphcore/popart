@@ -19,7 +19,7 @@ proto = builder.getModelProto()
 dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
 # Create a session to compile and execute the graph
-session = poponnx.Session(fnModel=proto, dataFeed=dataFlow, outputdir='.')
+session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
 
 # Select a device and compile graph
 session.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
