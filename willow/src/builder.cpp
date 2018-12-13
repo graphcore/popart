@@ -305,6 +305,33 @@ TensorId Builder::subsample(const std::vector<TensorId> &args,
   return impl_->subsample(args, strides, name);
 }
 
+Builder::BatchNormalizationTrainingOutputs
+Builder::batchnormalizationTraining(const TensorId x,
+                                    const TensorId scale,
+                                    const TensorId b,
+                                    const TensorId mean,
+                                    const TensorId var,
+                                    const float epsilon,
+                                    const float momentum,
+                                    const int spatial,
+                                    const std::string &name) {
+  return impl_->batchnormalizationTraining(
+      x, scale, b, mean, var, epsilon, momentum, spatial, name);
+}
+
+TensorId Builder::batchnormalizationTesting(const TensorId x,
+                                            const TensorId scale,
+                                            const TensorId b,
+                                            const TensorId mean,
+                                            const TensorId var,
+                                            const float epsilon,
+                                            const float momentum,
+                                            const int spatial,
+                                            const std::string &name) {
+  return impl_->batchnormalizationTesting(
+      x, scale, b, mean, var, epsilon, momentum, spatial, name);
+}
+
 TensorId Builder::transpose(const std::vector<TensorId> &args,
                             const std::vector<int64_t> &perm,
                             const std::string &name) {

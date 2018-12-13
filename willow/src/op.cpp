@@ -5,6 +5,7 @@
 // The layers:
 #include <poponnx/op/add.hpp>
 #include <poponnx/op/averagepool.hpp>
+#include <poponnx/op/batchnorm.hpp>
 #include <poponnx/op/conv.hpp>
 #include <poponnx/op/cos.hpp>
 #include <poponnx/op/cosh.hpp>
@@ -213,6 +214,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   }
   case OpType::AVERAGEPOOL: {
     return pOp(new AveragePoolOp(node, this));
+  }
+  case OpType::BATCHNORM: {
+    return pOp(new BatchNormOp(node, this));
   }
   case OpType::CONSTANT: {
     throw error("ILE. Constant Ops are not to be added");

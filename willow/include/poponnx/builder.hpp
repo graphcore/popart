@@ -714,6 +714,52 @@ public:
                      const std::vector<int64_t> &perm,
                      const std::string &name = {});
 
+  /*
+   * Add a Batch Normalization operation to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#batchnormalization
+   *
+   * \param args Tensor T
+   * \return The name of the result tensor
+   *
+   */
+
+  // The set of output from the batchNormalization test
+  // Would have liked to use std::optional instead of pointers
+  struct BatchNormalizationTrainingOutputs {
+    TensorId y;
+    TensorId mean;
+    TensorId var;
+    TensorId savedMean;
+    TensorId savedVar;
+  };
+
+  // @SL@ Q : the is a vector of tensors. This op only works on an single input
+  // tensor. Is it better to make it a single tensorid or be consistent?
+  // @SL@ Q : Should the mode be in this function (it is not in the onnx
+  // operator definition). Where can the mode be read from when building the
+  // graph?
+  BatchNormalizationTrainingOutputs
+  batchnormalizationTraining(const TensorId x,
+                             const TensorId scale,
+                             const TensorId b,
+                             const TensorId mean,
+                             const TensorId var,
+                             const float epsilon     = 1e-5,
+                             const float momentum    = 0.9,
+                             const int spatial       = 1,
+                             const std::string &name = {});
+
+  TensorId batchnormalizationTesting(const TensorId x,
+                                     const TensorId scale,
+                                     const TensorId b,
+                                     const TensorId mean,
+                                     const TensorId var,
+                                     const float epsilon     = 1e-5,
+                                     const float momentum    = 0.9,
+                                     const int spatial       = 1,
+                                     const std::string &name = {});
+
   /**
    * Add an attribute to the ONNX mode to recompute the output in the backwards
    * pass

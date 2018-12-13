@@ -662,6 +662,90 @@ TensorId BuilderImpl::transpose(const std::vector<TensorId> &args,
   return id;
 }
 
+Builder::BatchNormalizationTrainingOutputs
+BuilderImpl::batchnormalizationTraining(const TensorId x,
+                                        const TensorId scale,
+                                        const TensorId b,
+                                        const TensorId mean,
+                                        const TensorId var,
+                                        const float epsilon,
+                                        const float momentum,
+                                        const int spatial,
+                                        const std::string &name) {
+  Builder::BatchNormalizationTrainingOutputs outputs;
+
+  // Give each output tensor an id
+  outputs.y         = getNextId();
+  outputs.mean      = getNextId();
+  outputs.var       = getNextId();
+  outputs.savedMean = getNextId();
+  outputs.savedVar  = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type("BatchNormalization");
+
+  node->add_input(x);
+  node->add_input(scale);
+  node->add_input(b);
+  node->add_input(mean);
+  node->add_input(var);
+
+  node->add_output(outputs.y);
+  node->add_output(outputs.mean);
+  node->add_output(outputs.var);
+  node->add_output(outputs.savedMean);
+  node->add_output(outputs.savedVar);
+
+  if (!name.empty())
+    node->set_name(name);
+
+  addNodeAttribute("epsilon", epsilon, *node);
+  addNodeAttribute("momentum", momentum, *node);
+  addNodeAttribute("spatial", spatial, *node);
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return outputs;
+}
+
+TensorId BuilderImpl::batchnormalizationTesting(const TensorId x,
+                                                const TensorId scale,
+                                                const TensorId b,
+                                                const TensorId mean,
+                                                const TensorId var,
+                                                const float epsilon,
+                                                const float momentum,
+                                                const int spatial,
+                                                const std::string &name) {
+
+  // Give each output tensor an id
+  auto y = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type("BatchNormalization");
+
+  node->add_input(x);
+  node->add_input(scale);
+  node->add_input(b);
+  node->add_input(mean);
+  node->add_input(var);
+
+  node->add_output(y);
+
+  if (!name.empty())
+    node->set_name(name);
+
+  addNodeAttribute("epsilon", epsilon, *node);
+  addNodeAttribute("momentum", momentum, *node);
+  addNodeAttribute("spatial", spatial, *node);
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return y;
+}
+
 bool BuilderImpl::findNodeProtoByOutputNamesImpl(
     onnx::NodeProto *&out,
     const std::set<TensorId> &nodeOutputNames) {
@@ -729,7 +813,13 @@ bool BuilderImpl::nodeHasAttribute(const std::string &attributeName,
 onnx::AttributeProto &
 BuilderImpl::addNewAttributeToNode(const std::string &attributeName,
                                    const std::set<TensorId> &nodeOutputNames) {
-  onnx::NodeProto &node      = findNodeProtoByOutputNames(nodeOutputNames);
+  onnx::NodeProto &node = findNodeProtoByOutputNames(nodeOutputNames);
+  return addNewAttributeToNode(attributeName, node);
+}
+
+onnx::AttributeProto &
+BuilderImpl::addNewAttributeToNode(const std::string &attributeName,
+                                   onnx::NodeProto &node) {
   onnx::AttributeProto *attr = nullptr;
   bool hasAttribute          = nodeHasAttributeImpl(attr, node, attributeName);
   if (hasAttribute) {
@@ -750,6 +840,23 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
 }
 
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
+                                   const int &attributeValue,
+                                   const std::set<TensorId> &nodeOutputNames) {
+  onnx::AttributeProto &attr =
+      addNewAttributeToNode(attributeName, nodeOutputNames);
+  attr.set_type(onnx::AttributeProto::INT);
+  attr.set_i(attributeValue);
+}
+
+void BuilderImpl::addNodeAttribute(const std::string &attributeName,
+                                   const int &attributeValue,
+                                   onnx::NodeProto &node) {
+  onnx::AttributeProto &attr = addNewAttributeToNode(attributeName, node);
+  attr.set_type(onnx::AttributeProto::INT);
+  attr.set_i(attributeValue);
+}
+
+void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const std::vector<int64_t> &attributeValue,
                                    const std::set<TensorId> &nodeOutputNames) {
   onnx::AttributeProto &attr =
@@ -765,6 +872,14 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const std::set<TensorId> &nodeOutputNames) {
   onnx::AttributeProto &attr =
       addNewAttributeToNode(attributeName, nodeOutputNames);
+  attr.set_type(onnx::AttributeProto::FLOAT);
+  attr.set_f(attributeValue);
+}
+
+void BuilderImpl::addNodeAttribute(const std::string &attributeName,
+                                   const float &attributeValue,
+                                   onnx::NodeProto &node) {
+  onnx::AttributeProto &attr = addNewAttributeToNode(attributeName, node);
   attr.set_type(onnx::AttributeProto::FLOAT);
   attr.set_f(attributeValue);
 }

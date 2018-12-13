@@ -17,6 +17,7 @@
 #include <poponnx/popx/op/addbiasx.hpp>
 #include <poponnx/popx/op/addx.hpp>
 #include <poponnx/popx/op/averagepoolx.hpp>
+#include <poponnx/popx/op/batchnormx.hpp>
 #include <poponnx/popx/op/convx.hpp>
 #include <poponnx/popx/op/cosx.hpp>
 #include <poponnx/popx/op/divx.hpp>
@@ -469,6 +470,14 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new AveragePoolGradOpx(op, this));
   }
 
+  case OpType::BATCHNORM: {
+    return std::unique_ptr<Opx>(new BatchNormOpx(op, this));
+  }
+
+  case OpType::BATCHNORMGRAD: {
+    return std::unique_ptr<Opx>(new BatchNormGradOpx(op, this));
+  }
+
   case OpType::CONSTANT: {
     throw error("ILE: No Opx for CONSTANT");
   }
@@ -919,7 +928,12 @@ PriTask Devicex::opTask(Op *op, double priority) {
   std::vector<TaskId> deps;
   for (auto t_inds : op->input->indicesMap()) {
     Tensor *tensor = t_inds.first;
-    deps.push_back(taskWhichCreates(tensor->id));
+
+    auto creatorTask = taskWhichCreates(tensor->id);
+    // Make sure we only add the creatorTask once in the dependency list
+    if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end())
+      deps.push_back(creatorTask);
+
     // if the tensor is streamed on, we must wait
     // 'til the Copy has happened
     if (tensor->tensorType() == TensorType::Stream) {

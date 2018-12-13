@@ -299,6 +299,16 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("getExecutionReport", &Session::getExecutionReport)
       .def("resetHostWeights", &Session::resetHostWeights);
 
+  py::class_<Builder::BatchNormalizationTrainingOutputs>(
+      m, "BatchNormalizationTrainingOutputs")
+      .def_readonly("y", &Builder::BatchNormalizationTrainingOutputs::y)
+      .def_readonly("mean", &Builder::BatchNormalizationTrainingOutputs::mean)
+      .def_readonly("var", &Builder::BatchNormalizationTrainingOutputs::var)
+      .def_readonly("savedMean",
+                    &Builder::BatchNormalizationTrainingOutputs::savedMean)
+      .def_readonly("savedvar",
+                    &Builder::BatchNormalizationTrainingOutputs::savedVar);
+
   py::class_<Builder>(m, "BuilderCore")
       .def(py::init(&Builder::create))
       .def(py::init(&Builder::createFromOnnxModel),
@@ -521,6 +531,28 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("matmul",
            &Builder::matmul,
            py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("batchnormalizationTraining",
+           &Builder::batchnormalizationTraining,
+           py::arg("x"),
+           py::arg("scale"),
+           py::arg("b"),
+           py::arg("mean"),
+           py::arg("var"),
+           py::arg("epsilon")     = 1e-5,
+           py::arg("momentum")    = 0.9,
+           py::arg("spatial")     = 1,
+           py::arg("debugPrefix") = std::string())
+      .def("batchnormalizationTesting",
+           &Builder::batchnormalizationTesting,
+           py::arg("x"),
+           py::arg("scale"),
+           py::arg("b"),
+           py::arg("mean"),
+           py::arg("var"),
+           py::arg("epsilon")     = 1e-5,
+           py::arg("momentum")    = 0.9,
+           py::arg("spatial")     = 1,
            py::arg("debugPrefix") = std::string())
       .def("addNodeAttribute",
            static_cast<void (Builder::*)(const std::string &,

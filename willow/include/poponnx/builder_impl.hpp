@@ -10,6 +10,10 @@
 // use the forward declarations in names.hpp at this point
 #include <onnx/onnx_pb.h>
 
+namespace onnx {
+class NodeProto;
+}
+
 namespace poponnx {
 
 /**
@@ -116,10 +120,32 @@ public:
                      const std::vector<int64_t> &strides,
                      const std::string &name);
 
+  Builder::BatchNormalizationTrainingOutputs
+  batchnormalizationTraining(const TensorId x,
+                             const TensorId scale,
+                             const TensorId b,
+                             const TensorId mean,
+                             const TensorId var,
+                             const float epsilon,
+                             const float momentum,
+                             const int spatial,
+                             const std::string &name);
+
+  TensorId batchnormalizationTesting(const TensorId x,
+                                     const TensorId scale,
+                                     const TensorId b,
+                                     const TensorId mean,
+                                     const TensorId var,
+                                     const float epsilon,
+                                     const float momentum,
+                                     const int spatial,
+                                     const std::string &name);
+
   TensorId transpose(const std::vector<TensorId> &args,
                      const std::vector<int64_t> &perm,
                      const std::string &name);
 
+  // The following do seem to be ripe for a template
   void addNodeAttribute(const std::string &attributeName,
                         const int64_t &attributeValue,
                         const std::set<TensorId> &nodeOutputNames);
@@ -150,6 +176,10 @@ public:
 
   void addNodeAttribute(const std::string &attributeName,
                         const bool attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  void addNodeAttribute(const std::string &attributeName,
+                        const int &attributeValue,
                         const std::set<TensorId> &nodeOutputNames);
 
   bool nodeHasAttribute(const std::string &attributeName,
@@ -238,9 +268,20 @@ private:
   addNewAttributeToNode(const std::string &attributeName,
                         const std::set<TensorId> &nodeOutputNames);
 
+  onnx::AttributeProto &addNewAttributeToNode(const std::string &attributeName,
+                                              onnx::NodeProto &node);
+
   onnx::AttributeProto &
   getNodeAttribute(const std::string &attributeName,
                    const std::set<TensorId> &nodeOutputNames);
+
+  void addNodeAttribute(const std::string &attributeName,
+                        const float &attributeValue,
+                        onnx::NodeProto &node);
+
+  void addNodeAttribute(const std::string &attributeName,
+                        const int &attributeValue,
+                        onnx::NodeProto &node);
 
   uint64_t next_id_ = 0;
 

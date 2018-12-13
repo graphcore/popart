@@ -24,10 +24,24 @@ template <> void Attributes::setIfPresent(bool &v, std::string s) const {
   }
 }
 
+template <> void Attributes::setIfPresent(int &v, std::string s) const {
+  auto found = att_map.find(s);
+  if (found != att_map.end()) {
+    v = found->second->i() != 0;
+  }
+}
+
 template <> void Attributes::setIfPresent(std::string &v, std::string s) const {
   auto found = att_map.find(s);
   if (found != att_map.end()) {
     v = found->second->s();
+  }
+}
+
+template <> void Attributes::setIfPresent(float &v, std::string s) const {
+  auto found = att_map.find(s);
+  if (found != att_map.end()) {
+    v = found->second->f();
   }
 }
 
@@ -40,13 +54,6 @@ void Attributes::setIfPresent(std::vector<int64_t> &vs, std::string s) const {
     for (auto &v : found->second->ints()) {
       vs.push_back(v);
     }
-  }
-}
-
-template <> void Attributes::setIfPresent(float &v, std::string s) const {
-  auto found = att_map.find(s);
-  if (found != att_map.end()) {
-    v = found->second->f();
   }
 }
 
@@ -68,6 +75,24 @@ template <> void Attributes::set(int64_t &v, std::string key) const {
   auto found = att_map.find(key);
   if (found != att_map.end()) {
     v = found->second->i();
+  } else {
+    throw error("no attribute key {}", key);
+  }
+}
+
+template <> void Attributes::set(int &v, std::string key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    v = found->second->i();
+  } else {
+    throw error("no attribute key {}", key);
+  }
+}
+
+template <> void Attributes::set(float &v, std::string key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    v = found->second->f();
   } else {
     throw error("no attribute key {}", key);
   }

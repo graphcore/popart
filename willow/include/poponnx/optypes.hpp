@@ -24,6 +24,8 @@ enum class OpType {
   COS,
   COSGRAD,
   COSH,
+  BATCHNORM,
+  BATCHNORMGRAD,
   DIV,
   DIVARG0GRAD,
   DIVARG1GRAD,
