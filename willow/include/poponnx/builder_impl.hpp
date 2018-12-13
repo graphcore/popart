@@ -116,6 +116,10 @@ public:
                      const std::vector<int64_t> &strides,
                      const std::string &name);
 
+  TensorId transpose(const std::vector<TensorId> &args,
+                     const std::vector<int64_t> &perm,
+                     const std::string &name);
+
   void addNodeAttribute(const std::string &attributeName,
                         const int64_t &attributeValue,
                         const std::set<TensorId> &nodeOutputNames);

@@ -521,13 +521,13 @@ TensorId BuilderImpl::gemm(const std::vector<TensorId> &args,
                            int64_t transA,
                            int64_t transB,
                            const std::string &name) {
-  check_arg_count(args, 3, "GEMM");
+  check_arg_count(args, 3, "Gemm");
 
   auto id = getNextId();
 
   auto *graph = model_.mutable_graph();
   auto *node  = graph->add_node();
-  node->set_op_type("GEMM");
+  node->set_op_type("Gemm");
   add_args(node, args);
   node->add_output(id);
 
@@ -632,6 +632,30 @@ TensorId BuilderImpl::subsample(const std::vector<TensorId> &args,
     node->set_name(name);
 
   addNodeAttribute("strides", strides, {id});
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return id;
+}
+
+TensorId BuilderImpl::transpose(const std::vector<TensorId> &args,
+                                const std::vector<int64_t> &perm,
+                                const std::string &name) {
+  check_arg_count(args, 1, "Transpose");
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+
+  node->set_op_type("Transpose");
+
+  add_args(node, args);
+  node->add_output(id);
+
+  if (!name.empty())
+    node->set_name(name);
+
+  addNodeAttribute("perm", perm, {id});
 
   onnx::shape_inference::InferShapes(model_);
 

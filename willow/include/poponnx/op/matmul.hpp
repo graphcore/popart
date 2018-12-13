@@ -8,6 +8,7 @@ namespace poponnx {
 class MatMulOp : public Op {
 public:
   MatMulOp(const onnx::NodeProto &node, Ir *pir);
+  MatMulOp(const OpConstructorBundle &);
   MatMulOp(const MatMulOp &) = default;
   MatMulOp &operator=(const MatMulOp &) = delete;
   ~MatMulOp() override                  = default;

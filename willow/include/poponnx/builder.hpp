@@ -701,6 +701,20 @@ public:
                      const std::string &name = {});
 
   /**
+   * Add a Transpose operation to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Transpose
+   *
+   * \param args Tensor T
+   * \param perm The new axes permutation
+   * \return The name of the result tensor
+   *
+   */
+  TensorId transpose(const std::vector<TensorId> &args,
+                     const std::vector<int64_t> &perm,
+                     const std::string &name = {});
+
+  /**
    * Add an attribute to the ONNX mode to recompute the output in the backwards
    * pass
    *

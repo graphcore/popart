@@ -145,6 +145,9 @@ public:
   bool isTanhGradOpEnabled() {
     return isPatternEnabled(PatternType::TANHGRADOP);
   }
+  bool isGemmDecompositionEnabled() {
+    return isPatternEnabled(PatternType::GEMMDECOMPOSITION);
+  }
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
@@ -199,6 +202,9 @@ public:
   }
   Patterns &enableTanhGradOp(bool v) {
     return enablePattern(PatternType::TANHGRADOP, v);
+  }
+  Patterns &enableGemmDecomposition(bool v) {
+    return enablePattern(PatternType::GEMMDECOMPOSITION, v);
   }
 
   std::vector<std::unique_ptr<Pattern>> getPatternList();

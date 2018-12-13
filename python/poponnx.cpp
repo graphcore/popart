@@ -236,7 +236,8 @@ PYBIND11_MODULE(poponnx_core, m) {
       .value("DIVARG1GRADOP", PatternType::DIVARG1GRADOP)
       .value("SQRTGRADOP", PatternType::SQRTGRADOP)
       .value("EXPGRADOP", PatternType::EXPGRADOP)
-      .value("TANHGRADOP", PatternType::TANHGRADOP);
+      .value("TANHGRADOP", PatternType::TANHGRADOP)
+      .value("GEMMDECOMPOSITION", PatternType::GEMMDECOMPOSITION);
 
   py::class_<Patterns>(m, "Patterns")
       .def(py::init<>())
@@ -511,6 +512,11 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("beta"),
            py::arg("transA"),
            py::arg("transB"),
+           py::arg("debugPrefix") = std::string())
+      .def("transpose",
+           &Builder::transpose,
+           py::arg("args"),
+           py::arg("perm"),
            py::arg("debugPrefix") = std::string())
       .def("matmul",
            &Builder::matmul,

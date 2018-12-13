@@ -29,6 +29,7 @@ enum class OpType {
   DIVARG1GRAD,
   EXP,
   EXPGRAD,
+  GEMM,
   IDENTITY,
   IDENTITYGRAD,
   L1,
@@ -77,6 +78,8 @@ enum class OpType {
   TAN,
   TANH,
   TANHGRAD,
+  TRANSPOSE,
+  TRANSPOSEGRAD
 };
 
 struct OpTypeInfo {

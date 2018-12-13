@@ -305,6 +305,12 @@ TensorId Builder::subsample(const std::vector<TensorId> &args,
   return impl_->subsample(args, strides, name);
 }
 
+TensorId Builder::transpose(const std::vector<TensorId> &args,
+                            const std::vector<int64_t> &perm,
+                            const std::string &name) {
+  return impl_->transpose(args, perm, name);
+}
+
 void Builder::addNodeAttribute(const std::string &attributeName,
                                const int64_t &attributeValue,
                                const std::set<TensorId> &nodeOutputNames) {

@@ -50,9 +50,6 @@ class Module0(torch.nn.Module):
         x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
         x = torch.squeeze(x)
         # This is the where the GEMM happens:
-        raise RuntimeError(
-            "At this point, we're about to enter a linear layer, but poponnx hasn't implemented this yet"
-        )
         out = self.linear(x)
         return out
 
@@ -65,7 +62,8 @@ torchWriter = torchwriter.PytorchNetWriter(
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:
-    module=Module0())
+    module=Module0(),
+    samplesPerBatch=batchSize)
 
 c10driver.run(torchWriter, None, args.outputdir, cifarInIndices, args.device,
               args.hw_id)

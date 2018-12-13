@@ -43,6 +43,7 @@
 #include <poponnx/popx/op/subtractx.hpp>
 #include <poponnx/popx/op/sumx.hpp>
 #include <poponnx/popx/op/tanhx.hpp>
+#include <poponnx/popx/op/transposex.hpp>
 #include <poponnx/popx/op/varupdatex.hpp>
 #include <poponnx/popx/opx.hpp>
 #include <poponnx/pritask.hpp>
@@ -523,6 +524,10 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     throw error("ExpGradOp should be removed by pattern 'ExpGradOp'");
   }
 
+  case OpType::GEMM: {
+    throw error("GemmOp should be removed by pattern 'GemmOp'");
+  }
+
   case OpType::IDENTITY: {
     return std::unique_ptr<Opx>(new IdentityOpx(op, this));
   }
@@ -718,6 +723,14 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
   case OpType::TANHGRAD: {
     throw error("TanhGradOp should be removed by pattern 'TanhGradOp'");
+  }
+
+  case OpType::TRANSPOSE: {
+    return std::unique_ptr<Opx>(new TransposeOpx(op, this));
+  }
+
+  case OpType::TRANSPOSEGRAD: {
+    return std::unique_ptr<Opx>(new TransposeGradOpx(op, this));
   }
 
   default: { throw error("No get pop op for " + op->op_type()); }

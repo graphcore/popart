@@ -35,6 +35,8 @@ void Attributes::setIfPresent(std::vector<int64_t> &, std::string s) const;
 
 template <> void Attributes::setIfPresent(std::string &, std::string s) const;
 
+template <> void Attributes::setIfPresent(float &, std::string s) const;
+
 template <>
 void Attributes::set(std::vector<int64_t> &vs, std::string key) const;
 

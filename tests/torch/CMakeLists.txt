@@ -23,9 +23,9 @@ add_test(NAME model1
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model1.py)
 
-#add_test(NAME model2
-#		WORKING_DIRECTORY ${INSTALL_TESTS}
-#		COMMAND python3 torch/cifar10/model2.py)
+add_test(NAME model2
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/model2.py)
 
 add_test(NAME model5
 		WORKING_DIRECTORY ${INSTALL_TESTS}

@@ -43,6 +43,13 @@ void Attributes::setIfPresent(std::vector<int64_t> &vs, std::string s) const {
   }
 }
 
+template <> void Attributes::setIfPresent(float &v, std::string s) const {
+  auto found = att_map.find(s);
+  if (found != att_map.end()) {
+    v = found->second->f();
+  }
+}
+
 template <>
 void Attributes::set(std::vector<int64_t> &vs, std::string key) const {
   auto found = att_map.find(key);

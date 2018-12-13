@@ -10,6 +10,7 @@
 #include <poponnx/op/cosh.hpp>
 #include <poponnx/op/div.hpp>
 #include <poponnx/op/exp.hpp>
+#include <poponnx/op/gemm.hpp>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/matmul.hpp>
 #include <poponnx/op/maxpool.hpp>
@@ -30,6 +31,7 @@
 #include <poponnx/op/sum.hpp>
 #include <poponnx/op/tan.hpp>
 #include <poponnx/op/tanh.hpp>
+#include <poponnx/op/transpose.hpp>
 #include <poponnx/op/varupdate.hpp>
 
 namespace poponnx {
@@ -230,6 +232,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::EXP: {
     return pOp(new ExpOp(node, this));
   }
+  case OpType::GEMM: {
+    return pOp(new GemmOp(node, this));
+  }
   case OpType::IDENTITY: {
     return pOp(new IdentityOp(node, this));
   }
@@ -290,6 +295,9 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::MATMUL: {
     return pOp(new MatMulOp(node, this));
   }
+  case OpType::TRANSPOSE: {
+    return pOp(new TransposeOp(node, this));
+  }
   case OpType::ADDARG0GRAD:
   case OpType::ADDARG1GRAD:
   case OpType::ADDBIASBIASGRAD:
@@ -324,6 +332,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::SUBTRACTARG1GRAD:
   case OpType::TANHGRAD:
   case OpType::SUBSAMPLEGRAD:
+  case OpType::TRANSPOSEGRAD:
   case OpType::MATMULLHSGRAD:
   case OpType::MATMULRHSGRAD:
     throw error("Gradient Ops not constructable from Node");
