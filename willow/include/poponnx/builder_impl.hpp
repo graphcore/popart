@@ -226,6 +226,8 @@ public:
 
   std::vector<TensorId> getOutputTensorIds() const;
 
+  std::vector<TensorId> getValueTensorIds() const;
+
   std::vector<int64_t> getTensorShape(const TensorId id);
 
 private:
@@ -246,11 +248,15 @@ private:
 
   bool isOutputTensor(TensorId id) const;
 
+  bool isValueTensor(TensorId id) const;
+
   std::string getStrFromTensorIdVec(std::vector<TensorId> v) const;
 
   int getInputTensorIndex(TensorId id) const;
 
   int getOutputTensorIndex(TensorId id) const;
+
+  int getValueTensorIndex(TensorId id) const;
 
   const onnx::ValueInfoProto &getValueInfoProto(TensorId id) const;
 

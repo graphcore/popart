@@ -29,11 +29,11 @@ BatchNormOp *BatchNormOpx::getBatchNormOp() const {
 }
 
 // convert variant to inverse standard deviation
-poplar::Tensor convertVarToInvSd(poplar::program::Sequence &prog,
-                                 poplar::Graph &graph,
-                                 const poplar::Tensor &var,
-                                 float epsilon,
-                                 std::string idStr) {
+static poplar::Tensor convertVarToInvSd(poplar::program::Sequence &prog,
+                                        poplar::Graph &graph,
+                                        const poplar::Tensor &var,
+                                        float epsilon,
+                                        std::string idStr) {
   // This will be replaced by the new operator Tim P is developing
   return popops::map(
       graph,
@@ -44,11 +44,11 @@ poplar::Tensor convertVarToInvSd(poplar::program::Sequence &prog,
 }
 
 // convert inverse standard deviation to variance
-poplar::Tensor convertInvSdToVar(poplar::program::Sequence &prog,
-                                 poplar::Graph &graph,
-                                 const poplar::Tensor &invSd,
-                                 float epsilon,
-                                 std::string idStr) {
+static poplar::Tensor convertInvSdToVar(poplar::program::Sequence &prog,
+                                        poplar::Graph &graph,
+                                        const poplar::Tensor &invSd,
+                                        float epsilon,
+                                        std::string idStr) {
   // This will be replaced by the new operator Tim P is developing
   return popops::map(
       graph,
@@ -62,7 +62,7 @@ poplar::Tensor convertInvSdToVar(poplar::program::Sequence &prog,
 // tensors with the feature index in dimension 1.
 // - For 4D tensors we are already in the right format
 // - For nD tensors we can flatten to a 2D {X, C}
-std::pair<poplar::Tensor, poplar::Shape>
+static std::pair<poplar::Tensor, poplar::Shape>
 convertOnnxInputToPoplarInput(const poplar::Tensor &onnxInput) {
   poplar::Tensor poplarInput;
   poplar::Shape nonBroadcastDimensions;
@@ -75,7 +75,7 @@ convertOnnxInputToPoplarInput(const poplar::Tensor &onnxInput) {
     nonBroadcastDimensions = poplarInput.shape();
     nonBroadcastDimensions.pop_back();
 
-    auto count  = onnxInput.numElements() / onnxInput.dim({1});
+    auto count  = onnxInput.numElements() / onnxInput.dim(1);
     poplarInput = poplarInput.reshapePartial(0, finalDimension, {count});
   }
 
@@ -83,7 +83,7 @@ convertOnnxInputToPoplarInput(const poplar::Tensor &onnxInput) {
 }
 
 // Convert back from poplar format to onnx format
-poplar::Tensor
+static poplar::Tensor
 convertPoplarOutputToOnnxOutput(const poplar::Tensor &poplarOutput,
                                 const poplar::Shape &nonBroadcastDimensions) {
   poplar::Tensor onnxOutput;
@@ -130,7 +130,7 @@ poplar::Tensor BatchNormOpx::batchNormalise(poplar::program::Sequence &prog,
       graph(), x, multiplcand, addend, prog, idStr());
 }
 
-bool isZeroElementArray(const poplar::Shape &shape) {
+static bool isZeroElementArray(const poplar::Shape &shape) {
   return std::all_of(
       shape.begin(), shape.end(), [](int dim) -> bool { return dim == 0; });
 }

@@ -382,6 +382,8 @@ def test_add_conv():
     assert (i1 != i2)
     assert (i2 != o)
 
+    assert (builder.getTensorShape(o) == [1, 4, 30, 30])
+
     with pytest.raises(TypeError) as e_info:
         builder.convolution()
 
@@ -411,6 +413,8 @@ def test_add_conv_and_bias():
     assert (i1 != i2)
     assert (i2 != o)
 
+    assert (builder.getTensorShape(o) == [1, 4, 30, 30])
+
     with pytest.raises(TypeError) as e_info:
         builder.convolution()
 
@@ -438,6 +442,8 @@ def test_add_gemm():
     assert (i1 != i2)
     assert (i2 != o)
 
+    assert (builder.getTensorShape(o) == [12, 16])
+
     with pytest.raises(TypeError) as e_info:
         builder.gemm(0, 0, 0, 0, 0, 0, 0)
 
@@ -463,6 +469,8 @@ def test_add_matmul():
     assert (len(o) > 0)
     assert (i1 != i2)
     assert (i2 != o)
+
+    assert (builder.getTensorShape(o) == [2, 4])
 
     with pytest.raises(TypeError) as e_info:
         builder.matmul(0, 0, 0, 0, 0, 0, 0)
@@ -540,15 +548,23 @@ def test_inout_tensor_info():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+    i3 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    x = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    y = builder.convolution([i1, i3], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.add([x, y])
 
     builder.addOutputTensor(o)
 
-    assert (builder.getInputTensorIds() == [i1, i2])
+    assert (builder.getInputTensorIds() == [i1, i2, i3])
     assert (builder.getOutputTensorIds() == [o])
+    assert (builder.getValueTensorIds() == [x, y, o])
     assert (builder.getTensorShape(i1) == [1, 2, 32, 32])
     assert (builder.getTensorShape(i2) == [4, 2, 3, 3])
+    assert (builder.getTensorShape(i3) == [4, 2, 3, 3])
+    assert (builder.getTensorShape(x) == [1, 4, 30, 30])
+    assert (builder.getTensorShape(y) == [1, 4, 30, 30])
+    assert (builder.getTensorShape(o) == [1, 4, 30, 30])
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.getTensorShape("NotAnId")

@@ -455,7 +455,6 @@ TensorId BuilderImpl::convolution(const std::vector<TensorId> &args,
   if (!name.empty())
     node->set_name(name);
 
-  addNodeAttribute("auto_pad", "NOTSET", {id});
   addNodeAttribute("dilations", dilation, {id});
   addNodeAttribute("group", groups, {id});
   addNodeAttribute("pads", padding, {id});
@@ -486,7 +485,6 @@ TensorId BuilderImpl::averagepool(const std::vector<TensorId> &args,
   if (!name.empty())
     node->set_name(name);
 
-  addNodeAttribute("auto_pad", "NOTSET", {id});
   addNodeAttribute("count_include_pad", static_cast<int64_t>(0), {id});
   addNodeAttribute("kernel_shape", kernel_shape, {id});
   addNodeAttribute("pads", padding, {id});
@@ -515,7 +513,6 @@ TensorId BuilderImpl::maxpool(const std::vector<TensorId> &args,
   if (!name.empty())
     node->set_name(name);
 
-  addNodeAttribute("auto_pad", "NOTSET", {id});
   addNodeAttribute("storage_order", static_cast<int64_t>(0), {id});
   addNodeAttribute("kernel_shape", kernel_shape, {id});
   addNodeAttribute("pads", padding, {id});
@@ -1196,22 +1193,27 @@ std::vector<TensorId> BuilderImpl::getOutputTensorIds() const {
   return outNames;
 }
 
+std::vector<TensorId> BuilderImpl::getValueTensorIds() const {
+  std::vector<TensorId> valueNames;
+  for (const auto &value_info : model_.graph().value_info()) {
+    valueNames.push_back(value_info.name());
+  }
+  return valueNames;
+}
+
 bool BuilderImpl::isInputTensor(TensorId id) const {
   std::vector<TensorId> inIds = getInputTensorIds();
-  if (std::find(inIds.begin(), inIds.end(), id) != inIds.end()) {
-    return true;
-  } else {
-    return false;
-  }
+  return std::find(inIds.begin(), inIds.end(), id) != inIds.end();
 }
 
 bool BuilderImpl::isOutputTensor(TensorId id) const {
   std::vector<TensorId> outIds = getOutputTensorIds();
-  if (std::find(outIds.begin(), outIds.end(), id) != outIds.end()) {
-    return true;
-  } else {
-    return false;
-  }
+  return std::find(outIds.begin(), outIds.end(), id) != outIds.end();
+}
+
+bool BuilderImpl::isValueTensor(TensorId id) const {
+  std::vector<TensorId> valueIds = getValueTensorIds();
+  return std::find(valueIds.begin(), valueIds.end(), id) != valueIds.end();
 }
 
 std::string BuilderImpl::getStrFromTensorIdVec(std::vector<TensorId> v) const {
@@ -1259,6 +1261,25 @@ int BuilderImpl::getOutputTensorIndex(TensorId id) const {
   }
 }
 
+int BuilderImpl::getValueTensorIndex(TensorId id) const {
+  if (isValueTensor(id)) {
+    int index = -1;
+    for (int i = 0; i < model_.graph().value_info_size(); i++) {
+      if (model_.graph().value_info(i).name() == id) {
+        index = i;
+      }
+    }
+    if (index == -1) {
+      throw error("{} index not found", id);
+    }
+    return index;
+  } else {
+    throw error("{} is not an value tensor. Must be {}",
+                id,
+                getStrFromTensorIdVec(getOutputTensorIds()));
+  }
+}
+
 const onnx::ValueInfoProto &BuilderImpl::getValueInfoProto(TensorId id) const {
   if (isInputTensor(id)) {
     const onnx::ValueInfoProto &t =
@@ -1268,11 +1289,16 @@ const onnx::ValueInfoProto &BuilderImpl::getValueInfoProto(TensorId id) const {
     const onnx::ValueInfoProto &t =
         model_.graph().output(getOutputTensorIndex(id));
     return t;
+  } else if (isValueTensor(id)) {
+    const onnx::ValueInfoProto &t =
+        model_.graph().value_info(getValueTensorIndex(id));
+    return t;
   } else {
-    throw error("{} is not an input or output tensor. Must be one of {} {}",
+    throw error("{} is not an known tensor. Must be one of {} {} {}",
                 id,
                 getStrFromTensorIdVec(getInputTensorIds()),
-                getStrFromTensorIdVec(getOutputTensorIds()));
+                getStrFromTensorIdVec(getOutputTensorIds()),
+                getStrFromTensorIdVec(getValueTensorIds()));
   }
 }
 

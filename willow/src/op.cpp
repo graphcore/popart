@@ -350,6 +350,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::TRANSPOSEGRAD:
   case OpType::MATMULLHSGRAD:
   case OpType::MATMULRHSGRAD:
+  case OpType::BATCHNORMGRAD:
     throw error("Gradient Ops not constructable from Node");
 
   case OpType::NLL:

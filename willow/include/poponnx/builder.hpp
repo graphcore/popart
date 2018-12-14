@@ -757,8 +757,8 @@ public:
                              const TensorId b,
                              const TensorId mean,
                              const TensorId var,
-                             const float epsilon     = 1e-5,
-                             const float momentum    = 0.9,
+                             const float epsilon     = 1e-5f,
+                             const float momentum    = 0.9f,
                              const int spatial       = 1,
                              const std::string &name = {});
 
@@ -767,8 +767,8 @@ public:
                                      const TensorId b,
                                      const TensorId mean,
                                      const TensorId var,
-                                     const float epsilon     = 1e-5,
-                                     const float momentum    = 0.9,
+                                     const float epsilon     = 1e-5f,
+                                     const float momentum    = 0.9f,
                                      const int spatial       = 1,
                                      const std::string &name = {});
 
@@ -1073,21 +1073,32 @@ public:
   std::string getModelProto() const;
 
   /**
-   * Getter for ONNX graph input tensors
+   * Return a list of ONNX graph input tensor ids
    *
    * \return A vector of input tensor names
    */
   std::vector<TensorId> getInputTensorIds() const;
 
   /**
-   * Getter for ONNX graph output tensors
+   * Return a list of ONNX graph output tensor ids
    *
    * \return A vector of output tensor names
    */
   std::vector<TensorId> getOutputTensorIds() const;
 
   /**
-   * Getter for ONNX graph tensor shape
+   * Return a list of ONNX graph value tensor ids
+   *
+   * These tensors are stored in the `value_info` section
+   * of the ONNX GraphProto structure.
+   *
+   * \return A vector of output tensor names
+   */
+  std::vector<TensorId> getValueTensorIds() const;
+
+  /**
+   * Return an ONNX graph tensor shape, from either the input,
+   * output, or value_info lists in the GraphProto
    *
    * \param id Tensor id
    * \return A vector of tensor dimensions
