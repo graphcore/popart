@@ -28,7 +28,7 @@ std::unique_ptr<Op> TanhGradOp::clone() const {
 const std::vector<GradInOutMapper> &TanhGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getGradInIndex(), TanhOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getFwdArgInIndex(), TanhOp::getInIndex(), GradOpInType::IN}};
+      {getFwdOutInIndex(), TanhOp::getOutIndex(), GradOpInType::OUT}};
 
   return inInfo;
 }
@@ -41,7 +41,7 @@ const std::map<int, int> &TanhGradOp::gradOutToNonGradIn() const {
 }
 
 void TanhGradOp::setup() {
-  outInfo(getOutIndex()) = inInfo(getFwdArgInIndex());
+  outInfo(getOutIndex()) = inInfo(getFwdOutInIndex());
 }
 
 } // namespace poponnx

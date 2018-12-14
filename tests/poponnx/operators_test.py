@@ -484,7 +484,7 @@ def test_tanh_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
-    op_tester.passes = ['PreUniRepl', 'TanhGradOp', 'CoshOp']
+    op_tester.passes = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -978,7 +978,7 @@ def test_batchnorm_train_2(op_tester):
     var = np.ones(2).astype(np.float32)
     epsilon = 1e-05
     momentum = 0.1
-        
+
     # Relax the relative tolerance as small numbers lose precison
     op_tester.rtol = 1e-04
 
@@ -1521,16 +1521,20 @@ def op_tester(tmpdir):
             for index, key in enumerate(anchors):
                 if ref_out[index] is not None:
                     print('Testing anchor "{}"...'.format(key))
-                    if (np.allclose(anchor_map[key], ref_out[index], self.rtol, self.atol) == False):
+                    if (np.allclose(anchor_map[key], ref_out[index], self.rtol,
+                                    self.atol) == False):
                         print('rtol:{} atol:{}'.format(self.rtol, self.atol))
                         print('Poponnx : {}', anchor_map[key])
                         print('Torch : {}', ref_out[index])
                         print('{}', np.subtract(anchor_map[key],
                                                 ref_out[index]))
-                        print('{}', np.isclose(anchor_map[key],
-                                               ref_out[index], self.rtol, self.atol))
+                        print(
+                            '{}',
+                            np.isclose(anchor_map[key], ref_out[index],
+                                       self.rtol, self.atol))
 
-                    assert np.allclose(anchor_map[key], ref_out[index], self.rtol, self.atol)
+                    assert np.allclose(anchor_map[key], ref_out[index],
+                                       self.rtol, self.atol)
                 else:
                     print('Not Testing anchor "{}" as it is None'.format(key))
 

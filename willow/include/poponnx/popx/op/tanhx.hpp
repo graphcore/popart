@@ -14,6 +14,12 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
+class TanhGradOpx : public Opx {
+public:
+  TanhGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
 } // namespace popx
 } // namespace poponnx
 

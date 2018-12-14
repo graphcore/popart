@@ -740,7 +740,7 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
   }
 
   case OpType::TANHGRAD: {
-    throw error("TanhGradOp should be removed by pattern 'TanhGradOp'");
+    return std::unique_ptr<Opx>(new TanhGradOpx(op, this));
   }
 
   case OpType::TRANSPOSE: {
