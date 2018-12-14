@@ -446,6 +446,8 @@ TensorId BuilderImpl::convolution(const std::vector<TensorId> &args,
 
   auto id = getNextId();
 
+  VerifyWindowParameters(args[0], strides, padding, dilation);
+
   auto *graph = model_.mutable_graph();
   auto *node  = graph->add_node();
   node->set_op_type("Conv");
@@ -476,6 +478,8 @@ TensorId BuilderImpl::averagepool(const std::vector<TensorId> &args,
 
   auto id = getNextId();
 
+  VerifyWindowParameters(args[0], strides, padding);
+
   auto *graph = model_.mutable_graph();
   auto *node  = graph->add_node();
   node->set_op_type("AveragePool");
@@ -503,6 +507,8 @@ TensorId BuilderImpl::maxpool(const std::vector<TensorId> &args,
   check_arg_count(args, 1, "MaxPool");
 
   auto id = getNextId();
+
+  VerifyWindowParameters(args[0], strides, padding);
 
   auto *graph = model_.mutable_graph();
   auto *node  = graph->add_node();
@@ -560,6 +566,15 @@ TensorId BuilderImpl::pad(const std::vector<TensorId> &args,
   check_arg_count(args, 1, "Pad");
 
   auto id = getNextId();
+
+  auto rank = getTensorShape(args[0]).size();
+  if (pads.size() != rank * 2) {
+    throw error(
+        "Padding vector (length {}) doesn't contain 2 entries per input "
+        "dimension {}",
+        pads.size(),
+        rank);
+  }
 
   auto *graph = model_.mutable_graph();
   auto *node  = graph->add_node();
@@ -1310,6 +1325,34 @@ std::vector<int64_t> BuilderImpl::getTensorShape(const TensorId id) {
     shape.push_back(dim.dim_value());
   }
   return shape;
+}
+
+void BuilderImpl::VerifyWindowParameters(TensorId input,
+                                         const std::vector<int64_t> strides,
+                                         const std::vector<int64_t> padding,
+                                         const std::vector<int64_t> dilation) {
+  auto num_spatial_dims = getTensorShape(input).size() - 2;
+  if (num_spatial_dims < 1) {
+    throw error("Input tensor has no spatial dimensions");
+  }
+  if (strides.size() != num_spatial_dims) {
+    throw error(
+        "Length of strides vector {} != number of spatial dimensions {}",
+        strides.size(),
+        num_spatial_dims);
+  }
+  if (padding.size() != num_spatial_dims * 2) {
+    throw error("Padding vector (length {}) does not have 2 values for each "
+                "spatial dimension {}",
+                strides.size(),
+                num_spatial_dims);
+  }
+  if (dilation.size() != 0 && dilation.size() != num_spatial_dims) {
+    throw error(
+        "Length of dilations vector {} != number of spatial dimensions {}",
+        strides.size(),
+        num_spatial_dims);
+  }
 }
 
 } // namespace poponnx

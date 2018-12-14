@@ -362,6 +362,28 @@ def test_basic():
     assert (e_info.value.args[0].startswith("add(): incompatible function"))
 
 
+def test_add_pad():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [10]))
+
+    o = builder.pad([i1], "constant", [2, 3], 0.0)
+
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    assert (len(proto) > 0)
+
+    assert (builder.getTensorShape(o) == [15])
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.pad([i1], "constant", [2, 3, 4, 5], 0.0)
+
+    assert (e_info.value.args[0].startswith("Padding vector (length 4) "))
+
+
 def test_add_conv():
 
     builder = poponnx.Builder()
@@ -389,6 +411,24 @@ def test_add_conv():
 
     assert (e_info.value.args[0].startswith(
         "convolution(): incompatible function"))
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.convolution([i1, i2], [1], [0, 0, 0, 0], [1, 1], 1)
+
+    assert (e_info.value.args[0].startswith(
+        "Length of strides vector 1 != number"))
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.convolution([i1, i2], [1, 1], [0, 0], [1, 1], 1)
+
+    assert (e_info.value.args[0].startswith(
+        "Padding vector (length 2) does not have 2 values for each spatial"))
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1], 1)
+
+    assert (e_info.value.args[0].startswith(
+        "Length of dilations vector 2 != number of spatial d"))
 
 
 def test_add_conv_and_bias():

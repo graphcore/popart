@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
   // Build an onnx model
   auto builder = Builder::create();
 
-  TensorInfo shape{"FLOAT", std::vector<int64_t>{1, 2, 2}};
+  TensorInfo shape{"FLOAT", std::vector<int64_t>{1, 2, 2, 2}};
 
   auto input1 = builder->addInputTensor(shape);
   auto input2 = builder->addInputTensor(shape);

@@ -260,6 +260,10 @@ private:
 
   const onnx::ValueInfoProto &getValueInfoProto(TensorId id) const;
 
+  void VerifyWindowParameters(TensorId input,
+                              const std::vector<int64_t> strides  = {},
+                              const std::vector<int64_t> padding  = {},
+                              const std::vector<int64_t> dilation = {});
   bool
   findNodeProtoByOutputNamesImpl(onnx::NodeProto *&out,
                                  const std::set<TensorId> &nodeOutputNames);
