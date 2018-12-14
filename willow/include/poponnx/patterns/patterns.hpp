@@ -83,8 +83,10 @@ template <class PATTERN> class PatternCreator {
 public:
   PatternCreator(PatternType type, std::string name) {
     PatternManager::registerPattern(
-        type, name, []() -> std::unique_ptr<Pattern> {
-          return std::unique_ptr<PATTERN>(new PATTERN());
+        type, name, [name]() -> std::unique_ptr<Pattern> {
+          auto pattern = std::unique_ptr<PATTERN>(new PATTERN());
+          pattern->initialise(name);
+          return pattern;
         });
   }
 };

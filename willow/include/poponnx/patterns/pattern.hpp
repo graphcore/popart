@@ -75,8 +75,13 @@ public:
 
   static TensorId createImtermediateTensorId(TensorId base_id);
 
+  void initialise(std::string pattern_name);
+
+  const std::string &getPatternName() const;
+
 private:
   static int tensor_counter;
+  std::string pattern_name;
 };
 
 } // namespace poponnx

@@ -527,6 +527,9 @@ bool Ir::applyPattern(const Pattern *pattern) {
     // T5616: This op might have deleted at this point!
     if (pattern->matches(op)) {
       if (!pattern->touchesAnchored(op)) {
+        logging::pattern::debug("Applying pattern {} to op {}",
+                                pattern->getPatternName(),
+                                op->str());
         result |= pattern->apply(op);
       }
     }

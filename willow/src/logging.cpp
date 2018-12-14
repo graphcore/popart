@@ -87,6 +87,8 @@ Module moduleFromString(const std::string &module) {
     return Module::ir;
   if (module == "transform")
     return Module::transform;
+  if (module == "pattern")
+    return Module::pattern;
 
   return Module::none;
 }
@@ -109,6 +111,9 @@ std::string moduleName(const Module m) {
     break;
   case Module::transform:
     module = "transform";
+    break;
+  case Module::pattern:
+    module = "pattern";
     break;
   case Module::none:
   default:

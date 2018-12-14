@@ -54,6 +54,7 @@ enum class Module {
   ir,        /// Ir module
   devicex,   /// Devicex module
   transform, /// Transform module
+  pattern,   /// Pattern module
   none       /// The undefined module
 };
 
@@ -142,6 +143,7 @@ MAKE_MODULE_TEMPLATE(session)
 MAKE_MODULE_TEMPLATE(ir)
 MAKE_MODULE_TEMPLATE(devicex)
 MAKE_MODULE_TEMPLATE(transform)
+MAKE_MODULE_TEMPLATE(pattern)
 
 // Convenience macro to create a log entry prefixed with function name e.g.:
 //    void someFunc(int i) {

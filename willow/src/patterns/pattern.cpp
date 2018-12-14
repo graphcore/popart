@@ -25,4 +25,10 @@ TensorId Pattern::createImtermediateTensorId(TensorId base_id) {
   return temp_id;
 }
 
+void Pattern::initialise(std::string pattern_name_) {
+  pattern_name = pattern_name_;
+}
+
+const std::string &Pattern::getPatternName() const { return pattern_name; }
+
 } // namespace poponnx
