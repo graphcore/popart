@@ -44,6 +44,13 @@ template <> void Attributes::setIfPresent(float &, const std::string &s) const;
 template <>
 void Attributes::set(std::vector<int64_t> &vs, const std::string &key) const;
 
+template <>
+void Attributes::set(std::vector<int> &vs, const std::string &key) const;
+
+template <> void Attributes::set(int &i, const std::string &key) const;
+
+template <> void Attributes::set(float &i, const std::string &key) const;
+
 } // namespace poponnx
 
 #endif
