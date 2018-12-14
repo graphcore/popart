@@ -40,7 +40,8 @@ bool SinGradOpPattern::apply(Op *op) const {
 
   // Connect up the new ops
   cos->connectInTensor(CosOp::getInIndex(), fwd_in->id);
-  cos->createAndConnectOutTensor(CosOp::getOutIndex(), "t__" + grad_in->id);
+  cos->createAndConnectOutTensor(CosOp::getOutIndex(),
+                                 createTemporaryTensorId(grad_in->id));
   cos->setup();
 
   mul->connectInTensor(MulOp::getArg0InIndex(), grad_in->id);

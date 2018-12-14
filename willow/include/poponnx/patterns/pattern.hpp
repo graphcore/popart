@@ -73,6 +73,11 @@ public:
   bool touchesAnchored(Op *) const;
   // What phase will this Pattern be run at?
   virtual PatternPhase phase() const = 0;
+
+  static TensorId createTemporaryTensorId(TensorId base_id);
+
+private:
+  static int tensor_counter;
 };
 
 } // namespace poponnx

@@ -52,24 +52,27 @@ bool CoshOpPattern::apply(Op *op) const {
 
   // Connect up the new ops
   exp1->connectInTensor(ExpOp::getInIndex(), input->id);
-  exp1->createAndConnectOutTensor(ExpOp::getOutIndex(), "t__0__" + input->id);
+  exp1->createAndConnectOutTensor(ExpOp::getOutIndex(),
+                                  createTemporaryTensorId(input->id));
   exp1->setup();
 
   negate->connectInTensor(NegateOp::getInIndex(), input->id);
   negate->createAndConnectOutTensor(NegateOp::getOutIndex(),
-                                    "t__1__" + input->id);
+                                    createTemporaryTensorId(input->id));
   negate->setup();
 
   exp2->connectInTensor(ExpOp::getInIndex(),
                         negate->outTensor(NegateOp::getOutIndex())->id);
-  exp2->createAndConnectOutTensor(ExpOp::getOutIndex(), "t__2__" + input->id);
+  exp2->createAndConnectOutTensor(ExpOp::getOutIndex(),
+                                  createTemporaryTensorId(input->id));
   exp2->setup();
 
   add->connectInTensor(AddOp::getArg0InIndex(),
                        exp1->outTensor(ExpOp::getOutIndex())->id);
   add->connectInTensor(AddOp::getArg1InIndex(),
                        exp2->outTensor(ExpOp::getOutIndex())->id);
-  add->createAndConnectOutTensor(AddOp::getOutIndex(), "t__3__" + input->id);
+  add->createAndConnectOutTensor(AddOp::getOutIndex(),
+                                 createTemporaryTensorId(input->id));
   add->setup();
 
   scale->connectInTensor(ScaleOp::getInIndex(),

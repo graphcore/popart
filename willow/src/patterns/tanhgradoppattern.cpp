@@ -48,13 +48,13 @@ bool TanhGradOpPattern::apply(Op *op) const {
   // Connect up the new ops
   cosh->connectInTensor(CoshOp::getInIndex(), fwd_in->id);
   cosh->createAndConnectOutTensor(CoshOp::getOutIndex(),
-                                  "t__0__" + grad_in->id);
+                                  createTemporaryTensorId(grad_in->id));
   cosh->setup();
 
   square->connectInTensor(SquareOp::getInIndex(),
                           cosh->outTensor(CoshOp::getOutIndex())->id);
   square->createAndConnectOutTensor(SquareOp::getOutIndex(),
-                                    "t__1__" + grad_in->id);
+                                    createTemporaryTensorId(grad_in->id));
   square->setup();
 
   div->connectInTensor(DivOp::getArg0InIndex(), grad_in->id);

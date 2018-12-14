@@ -42,7 +42,8 @@ bool SqrtGradOpPattern::apply(Op *op) const {
 
   // Connect up the new ops
   scale->connectInTensor(ScaleOp::getInIndex(), fwd_out->id);
-  scale->createAndConnectOutTensor(ScaleOp::getOutIndex(), "t__" + fwd_out->id);
+  scale->createAndConnectOutTensor(ScaleOp::getOutIndex(),
+                                   createTemporaryTensorId(fwd_out->id));
   scale->setup();
 
   div->connectInTensor(DivOp::getArg0InIndex(), grad_in->id);

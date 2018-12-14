@@ -38,7 +38,7 @@ bool MulArgGradOpPattern::apply(Op *op) const {
   ir->moveIntoIr(std::move(reduce_sum_op));
 
   // create a tensor to connect the multiply and reducesum ops
-  const auto tmp_tensor_id = "t__" + op->output->id(0);
+  const auto tmp_tensor_id = createTemporaryTensorId(op->output->id(0));
   op->pir->getTensors().addActGrad(tmp_tensor_id);
   const auto tmp_tensor = ir->getTensors().get(tmp_tensor_id);
   tmp_tensor->info      = npOut(input_0->info, input_1->info);

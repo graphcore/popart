@@ -61,21 +61,21 @@ bool DivArg1GradOpPattern::apply(Op *op) const {
 
   // Connect up the new ops
   square->connectInTensor(0, fwd_in1->id);
-  square->createAndConnectOutTensor(0, "t__0__" + grad_in->id);
+  square->createAndConnectOutTensor(0, createTemporaryTensorId(grad_in->id));
   square->outInfo(0) = square->inInfo(0);
 
   mul->connectInTensor(0, grad_in->id);
   mul->connectInTensor(1, fwd_in0->id);
-  mul->createAndConnectOutTensor(0, "t__1__" + grad_in->id);
+  mul->createAndConnectOutTensor(0, createTemporaryTensorId(grad_in->id));
   mul->outInfo(0) = npOut(mul->inInfo(0), mul->inInfo(1));
 
   div->connectInTensor(0, mul->outTensor(0)->id);
   div->connectInTensor(1, square->outTensor(0)->id);
-  div->createAndConnectOutTensor(0, "t__2__" + grad_in->id);
+  div->createAndConnectOutTensor(0, createTemporaryTensorId(grad_in->id));
   div->outInfo(0) = npOut(div->inInfo(0), div->inInfo(1));
 
   negate->connectInTensor(0, div->outTensor(0)->id);
-  negate->createAndConnectOutTensor(0, "t__3__" + grad_in->id);
+  negate->createAndConnectOutTensor(0, createTemporaryTensorId(grad_in->id));
   negate->outInfo(0) = negate->inInfo(0);
 
   reduce->connectInTensor(0, negate->outTensor(0)->id);

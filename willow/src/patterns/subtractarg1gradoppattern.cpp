@@ -28,7 +28,7 @@ bool SubtractArg1GradOpPattern::apply(Op *op) const {
   auto reducesum_op = make_unique<ReduceSumOp>(
       OpConstructorBundle{OpType::REDUCESUM, ir, {}}, axes, false);
 
-  const auto tmp_tensor_id = "t__" + op->output->id(0);
+  const auto tmp_tensor_id = createTemporaryTensorId(op->output->id(0));
   op->pir->getTensors().addActGrad(tmp_tensor_id);
   const auto tmp_tensor = ir->getTensors().get(tmp_tensor_id);
   tmp_tensor->info      = input_tensor->info;
