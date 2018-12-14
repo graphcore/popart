@@ -19,7 +19,7 @@ bool Pattern::touchesAnchored(Op *op) const {
   return false;
 };
 
-TensorId Pattern::createTemporaryTensorId(TensorId base_id) {
+TensorId Pattern::createImtermediateTensorId(TensorId base_id) {
   auto temp_id = fmt::format("t{}__{}", tensor_counter++, base_id);
   logging::ir::trace("Generating tensor id {}", temp_id);
   return temp_id;

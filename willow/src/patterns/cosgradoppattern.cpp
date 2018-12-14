@@ -46,14 +46,14 @@ bool CosGradOpPattern::apply(Op *op) const {
   // Connect up the new ops
   sin->connectInTensor(SinOp::getInIndex(), fwd_in->id);
   sin->createAndConnectOutTensor(SinOp::getOutIndex(),
-                                 createTemporaryTensorId(grad_in->id));
+                                 createImtermediateTensorId(grad_in->id));
   sin->setup();
 
   mul->connectInTensor(MulOp::getArg0InIndex(), grad_in->id);
   mul->connectInTensor(MulOp::getArg1InIndex(),
                        sin->outTensor(SinOp::getOutIndex())->id);
   mul->createAndConnectOutTensor(MulOp::getOutIndex(),
-                                 createTemporaryTensorId(grad_in->id));
+                                 createImtermediateTensorId(grad_in->id));
   mul->setup();
 
   negate->connectInTensor(NegateOp::getInIndex(),

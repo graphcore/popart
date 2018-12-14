@@ -52,18 +52,20 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
 
   // Connect up the new ops
   square->connectInTensor(0, fwd_input->id);
-  square->createAndConnectOutTensor(0, createTemporaryTensorId(fwd_input->id));
+  square->createAndConnectOutTensor(0,
+                                    createImtermediateTensorId(fwd_input->id));
   square->outInfo(0) = fwd_input->info;
 
   reciprocal->connectInTensor(0,
                               square->outTensor(SquareOp::getOutIndex())->id);
-  reciprocal->createAndConnectOutTensor(0,
-                                        createTemporaryTensorId(fwd_input->id));
+  reciprocal->createAndConnectOutTensor(
+      0, createImtermediateTensorId(fwd_input->id));
   reciprocal->outInfo(0) = square->outInfo(0);
 
   negate->connectInTensor(
       0, reciprocal->outTensor(ReciprocalOp::getOutIndex())->id);
-  negate->createAndConnectOutTensor(0, createTemporaryTensorId(fwd_input->id));
+  negate->createAndConnectOutTensor(0,
+                                    createImtermediateTensorId(fwd_input->id));
   negate->outInfo(0) = reciprocal->outInfo(0);
 
   mul->connectInTensor(0, negate->outTensor(0)->id);
