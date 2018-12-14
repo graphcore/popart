@@ -29,7 +29,7 @@ public:
   // Attributes
   float getEpsilon() { return epsilon; }
   float getMomentum() { return momentum; }
-  int getSpatial() { return spatial; }
+  int64_t getSpatial() { return spatial; }
 
   bool isTraining() { return training; }
 
@@ -37,7 +37,7 @@ private:
   bool training = false;
   float epsilon;
   float momentum;
-  int spatial;
+  int64_t spatial;
 };
 
 class BatchNormGradOp : public Op {

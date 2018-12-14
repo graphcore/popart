@@ -28,28 +28,21 @@ private:
 };
 
 template <>
-void Attributes::setIfPresent(int64_t &, const std::string &s) const;
-
-template <> void Attributes::setIfPresent(bool &v, const std::string &s) const;
-
-template <>
 void Attributes::setIfPresent(std::vector<int64_t> &,
-                              const std::string &s) const;
-
+                              const std::string &key) const;
 template <>
-void Attributes::setIfPresent(std::string &, const std::string &s) const;
-
-template <> void Attributes::setIfPresent(float &, const std::string &s) const;
+void Attributes::setIfPresent(int64_t &, const std::string &key) const;
+template <>
+void Attributes::setIfPresent(bool &v, const std::string &key) const;
+template <>
+void Attributes::setIfPresent(std::string &, const std::string &key) const;
+template <>
+void Attributes::setIfPresent(float &, const std::string &key) const;
 
 template <>
 void Attributes::set(std::vector<int64_t> &vs, const std::string &key) const;
-
-template <>
-void Attributes::set(std::vector<int> &vs, const std::string &key) const;
-
-template <> void Attributes::set(int &i, const std::string &key) const;
-
-template <> void Attributes::set(float &i, const std::string &key) const;
+template <> void Attributes::set(float &v, const std::string &key) const;
+template <> void Attributes::set(int64_t &v, const std::string &key) const;
 
 } // namespace poponnx
 

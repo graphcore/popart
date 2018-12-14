@@ -86,15 +86,6 @@ template <> void Attributes::set(int64_t &v, const std::string &key) const {
   }
 }
 
-template <> void Attributes::set(int &v, const std::string &key) const {
-  auto found = att_map.find(key);
-  if (found != att_map.end()) {
-    v = static_cast<int>(found->second->i());
-  } else {
-    throw error("no attribute key {}", key);
-  }
-}
-
 template <> void Attributes::set(float &v, const std::string &key) const {
   auto found = att_map.find(key);
   if (found != att_map.end()) {
