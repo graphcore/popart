@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 
+#include <poponnx/constexpr.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
 #include <poponnx/intervals.hpp>
@@ -250,6 +251,7 @@ void Ir::prepare(const IrBundle &gb) {
   if (isPrepared) {
     throw error("Ir::prepare called more than once");
   }
+
   scheduler.reset(new Scheduler(this));
 
   tensors.setConstIds(gb.cTens);
@@ -406,6 +408,7 @@ void Ir::registerInputTensors() {
       }
     }
   }
+
   // other true inputs are for the loss calculation (class labels, etc)
   for (const auto &loss : losses) {
     for (const auto &tenId : loss->getStreamTensorNames()) {
@@ -592,16 +595,35 @@ void Ir::confirmConstIds() const {
 }
 
 void Ir::constructForwards() {
+
+  ConstExprUtil ce_util;
+  // Select the relevant input tensors
+  // see constexpr.hpp for details
+  std::vector<TensorId> nonConstExprIn = tensors.getIds(TensorType::Stream);
+  if (executionMode == ExecutionMode::TRAINING) {
+    auto varIds = tensors.getIds(TensorType::Variable);
+    nonConstExprIn.insert(nonConstExprIn.end(), varIds.begin(), varIds.end());
+  }
+  auto constExprClassifier =
+      ce_util.getClassifier(onnxModel->graph(), nonConstExprIn);
+
   auto &onnxGraph = onnxModel->graph();
   auto &onnxNodes = onnxGraph.node();
   for (const auto &node : onnxNodes) {
-    Op *op = growFromNode(node);
-
-    // Not necessary to set the phase here (it will be done in
-    // updateVertices). To check our logic though, we do this here
-    // and then check that we agree in updateVertices()
-    if (op) {
-      op->setPhase(Phase::FWD);
+    // if a node has multiple outputs, we assume it is not const-expr.
+    // we may want to relax this assumption at a later point.
+    if (node.output_size() == 1 &&
+        constExprClassifier.isConstExprTensor(node.output(0))) {
+      // the Node must be processed now, it is a ConstExprNode
+      ce_util.processNode(node, this);
+    } else {
+      Op *op = growFromNode(node);
+      // Not necessary to set the phase here (it will be done in
+      // updateVertices). To check our logic though, we do this here
+      // and then check that we agree in updateVertices()
+      if (op) {
+        op->setPhase(Phase::FWD);
+      }
     }
   }
 }
@@ -617,6 +639,17 @@ void Tensors::insert(TensorId name, std::unique_ptr<Tensor> t) {
   M[name] = std::move(t);
 }
 
+void Tensors::addConstInit(const TensorId &name,
+                           const TensorInfo &info,
+                           const void *src) {
+  insert(name,
+         std::unique_ptr<Tensor>(new Tensor(name, TensorType::Const, ir)));
+
+  Tensor *init = get(name);
+  init->info   = info;
+  init->setTensorData(info, src);
+}
+
 void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
 
   insert(name,
@@ -628,6 +661,18 @@ void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
   Tensor *init = get(name);
   init->info   = TensorInfo(*pt);
   init->setTensorData(*pt);
+
+  // A sanity check: if the tensor is fixed point, it is Const
+  if (get(name)->info.getDataTypeInfo()->isFixedPoint()) {
+    if (!constIds.contains(name)) {
+      std::stringstream ss;
+      ss << "A fixed point initializer tensor `" << name
+         << "' was not tagged as Constant"
+         << ". Currently only floating point tensors can be Variabl3, "
+         << " please explicitly label `" << name << "' as Constant";
+      throw error(ss.str());
+    }
+  }
 }
 
 void Tensors::addStream(TensorId tenId, const TensorInfo &info) {
@@ -1229,18 +1274,6 @@ void Ir::setVarUpdateCons() {
 void Tensors::insertConstId(const std::string &id) { constIds.insert(id); }
 
 Op *Ir::growFromNode(const Node &node) {
-
-  // special case of CONSTANT Node, no Op is created
-  if (getOpTypes().get(node.op_type(), node.domain()) == OpType::CONSTANT) {
-    TensorId name = node.output(0);
-    // We assume that a tensor coming from a Constant Node should
-    // not have a gradient computed for it or be updated during training
-    // We may need to change this assumption for some ONNX Model exporters
-    tensors.insertConstId(name);
-    tensors.addInit(name, &node.attribute(0).t());
-    // no Op created for a Constant Node
-    return nullptr;
-  }
 
   OpId opId = moveIntoIr(addOp(node));
 

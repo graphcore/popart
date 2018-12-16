@@ -96,8 +96,10 @@ public:
   Tensor *get(TensorId) const;
   void remove(TensorId);
   bool contains(TensorId) const;
-  // create a Tensor, either of type Const or Variable
-  void addInit(TensorId, const onnx::TensorProto *);
+  // create a Tensor, either of type Const or Variable,
+  // depending on whether "id" is in constIds
+  void addInit(TensorId id, const onnx::TensorProto *);
+  void addConstInit(const TensorId &, const TensorInfo &, const void *);
   // create a Tensor of type Stream
   void addStream(TensorId, const TensorInfo &);
   // create a Tensor of type ActGrad (basically any tensor which is
@@ -286,7 +288,8 @@ private:
   void setVarUpdateCons();
 
   // Register the input tensors of the ONNX graph,
-  // and the inputs to the losses
+  // and the inputs to the losses. For the ONNX input tensors,
+  // determines which are Stream and which are Variable
   void registerInputTensors();
 
   // The number of paths to the loss is used in

@@ -15,7 +15,7 @@ void ReshapeOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ReshapeOpx::ReshapeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::RESHAPE) {
+  if (!op->isConvertibleTo<ReshapeOp>()) {
     throw error("cannot create ReshapeOpx from " + op->op_type());
   }
 }

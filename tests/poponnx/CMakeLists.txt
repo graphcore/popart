@@ -37,6 +37,7 @@ add_poponnx_cpp_unit_test(recomputetest recompute_test.cpp)
 add_poponnx_cpp_unit_test(transformtest transform_test.cpp)
 add_poponnx_cpp_unit_test(syntheticdatatest synthetic_data_test.cpp)
 add_poponnx_cpp_unit_test(viewchangingtest view_changing_test.cpp)
+add_poponnx_cpp_unit_test(constexprtest constexpr_test.cpp)
 
 function(add_poponnx_py_unit_test name)
   message(STATUS

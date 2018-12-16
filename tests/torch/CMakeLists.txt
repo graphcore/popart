@@ -58,4 +58,4 @@ add_test(NAME reset_weights
 
 add_test(NAME model_reshape
 		WORKING_DIRECTORY ${INSTALL_TESTS}
-		COMMAND python3 torch/cifar10/reset_weights.py)
+		COMMAND python3 torch/cifar10/model_reshape.py)

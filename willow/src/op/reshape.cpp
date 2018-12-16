@@ -49,7 +49,7 @@ ReshapeOp::ReshapeOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {
   // Finally, we can set the shape of the output tensor
   outShape      = {};
   int64_t *data = static_cast<int64_t *>(tensorData->data());
-  for (unsigned i = 0; i < shapeTensor->info.dim(0); ++i) {
+  for (int i = 0; i < shapeTensor->info.dim(0); ++i) {
     outShape.push_back(data[i]);
   }
 }

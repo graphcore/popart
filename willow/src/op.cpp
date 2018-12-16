@@ -224,7 +224,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
     return pOp(new BatchNormOp(node, this));
   }
   case OpType::CONSTANT: {
-    throw error("ILE. Constant Ops are not to be added");
+    throw error("ILE. Constant Op should have been processed as a ConstExpr");
   }
   case OpType::CONV: {
     return pOp(new ConvOp(node, this));

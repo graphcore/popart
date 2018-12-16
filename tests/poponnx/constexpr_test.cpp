@@ -16,23 +16,46 @@
 
 using namespace poponnx;
 
-BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
+BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
+
+  // The compute graph :
+  //
+  // data  -----------------------------|
+  //                                    |
+  //                                    |
+  //                                    |
+  //                                    |- RESHAPE ---> output
+  //                                    |
+  // shape0 -------|                    |
+  //               |                    |
+  //               |- ADD - outshape ---|
+  //               |
+  // shape1 -------|
 
   // We will reshape a tensor from rank-4:
   Shape inShape = {2, 5, 3, 4};
-  // to rank-2:
-  Shape outShape = {10, 12};
+  // to rank-2: {10, 12},
   // Note above that the total number elements of the tensor remains 120
 
-  Shape outShapeSize = {static_cast<int64_t>(outShape.size())};
+  // where the output shape {10, 12} will be the sum of two tensors,
+  // 1)
+  Shape shape0 = {7, 4};
+  // 2)
+  Shape shape1 = {3, 8};
+
+  Shape outShapeSize = {static_cast<int64_t>(shape0.size())};
   TensorInfo inInfo{"FLOAT", inShape};
-  ConstVoidData outShapeData = {outShape.data(), {"INT64", outShapeSize}};
+
+  ConstVoidData out0ShapeData = {shape0.data(), {"INT64", outShapeSize}};
+  ConstVoidData out1ShapeData = {shape1.data(), {"INT64", outShapeSize}};
 
   // Build an onnx model
   auto builder    = Builder::create();
-  auto newShapeId = builder->addInitializedInputTensor(outShapeData);
+  auto shape0Id   = builder->addInitializedInputTensor(out0ShapeData);
+  auto shape1Id   = builder->addInitializedInputTensor(out1ShapeData);
   auto inId       = builder->addInputTensor(inInfo);
-  auto outId      = builder->reshape({inId, newShapeId});
+  auto outShapeId = builder->add({shape0Id, shape1Id});
+  auto outId      = builder->reshape({inId, outShapeId});
   builder->addOutputTensor(outId);
 
   auto proto      = builder->getModelProto();
@@ -50,13 +73,19 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
               dataFlow,
               losses,
               &optimizer,
-              {newShapeId}, // constant tensors
-              {},           // no SessionOptions
+              // Labeling the two fixed-point tensors which
+              // are added together as Constant.
+              {shape0Id, shape1Id},
+              {}, // no SessionOptions
               Patterns({PatternType::POSTNREPL})});
 
   // Check the ir
   // 1) that the Reshape Op is present,
   BOOST_CHECK(ir.opsOfType(OpType::RESHAPE).size() == 1);
   // 2) that the shape of the output tensor is as specified.
+  Shape outShape;
+  for (int i = 0; i < outShapeSize[0]; ++i) {
+    outShape.push_back(shape0[i] + shape1[i]);
+  }
   BOOST_CHECK(ir.getTensors().get(outId)->info.shape() == outShape);
 }
