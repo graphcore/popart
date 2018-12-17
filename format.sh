@@ -5,6 +5,7 @@ clang-format -i willow/src/popx/*cpp
 clang-format -i willow/src/popx/op/*cpp
 clang-format -i willow/src/patterns/*cpp
 clang-format -i willow/src/op/*cpp
+clang-format -i willow/src/ces/*cpp
 clang-format -i willow/src/transforms/*cpp
 
 echo "inplace clang-formatting all .hpp files in listed directories,"
@@ -13,6 +14,7 @@ clang-format -i willow/include/poponnx/popx/*hpp
 clang-format -i willow/include/poponnx/popx/op/*hpp
 clang-format -i willow/include/poponnx/patterns/*hpp
 clang-format -i willow/include/poponnx/op/*hpp
+clang-format -i willow/include/poponnx/ces/*hpp
 clang-format -i willow/include/poponnx/transforms/*hpp
 clang-format -i tests/poponnx/*cpp
 

@@ -32,7 +32,8 @@ void HasReceptiveFieldOp::setup() {
   nAtts.setIfPresent(dilations, "dilations");
 
   if (nAtts.hasAttribute("auto_pad")) {
-    throw error("auto_pad is set, but is deprecated and unsupported");
+    throw error(
+        "auto_pad is set, but is deprecated and unsupported by poponnx");
   }
 
   setSpatialK();

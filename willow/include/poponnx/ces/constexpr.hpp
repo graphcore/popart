@@ -2,15 +2,34 @@
 #define GUARD_NEURALNET_CONSTEXPR_HPP
 
 #include <map>
+#include <poponnx/attributes.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/names.hpp>
 
 namespace poponnx {
 
+// Base class for processing NodeProtos as constant expressions
+class ConstExprOp {
+public:
+  ConstExprOp(const onnx::NodeProto &, Ir *);
+  virtual ~ConstExprOp() = default;
+  // insert the output of the Node as a constant tensor
+  virtual void insertOutput() = 0;
+  Tensor *atInIndex(InIndex) const;
+  TensorId atOutIndex0() const;
+  void
+  addConstInitTensor(const TensorId &, const TensorInfo &, const void *) const;
+
+protected:
+  // The NodeProto to process as a constant expression
+  const onnx::NodeProto &node;
+  Ir *ir;
+  const Attributes nAtts;
+};
+
 class ConstExprClassifier {
 public:
   ConstExprClassifier(std::map<TensorId, bool> &&M_) : M(M_) {}
-  // is a Tensor a ConstExprTensor?
   bool isConstExprTensor(TensorId id) const;
 
 private:

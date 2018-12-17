@@ -148,18 +148,53 @@ ConstVoidData getConstData(const onnx::TensorProto &tp) {
   if (tp.has_raw_data()) {
     cv_data.data = reinterpret_cast<const void *>(&(tp.raw_data()[0]));
   }
-  // note protobuf repeated feld is essentially stl vector (has a function
+  // note: protobuf repeated field is essentially stl vector (has a function
   // Capactity()) and so data is contiguous
   else {
-    if (tp.data_type() == onnx::TensorProto::FLOAT) {
+    switch (tp.data_type()) {
+    // we glean from onnx.proto that COMPLEX64 is stored in the float field
+    case onnx::TensorProto::COMPLEX64:
+    case onnx::TensorProto::FLOAT: {
       cv_data.data = reinterpret_cast<const void *>(&(tp.float_data().Get(0)));
-    } else if (tp.data_type() == onnx::TensorProto::INT64) {
+      break;
+    }
+    // onnx.proto states that COMPLEX128 is stored in the double field
+    case onnx::TensorProto::COMPLEX128:
+    case onnx::TensorProto::DOUBLE: {
+      cv_data.data = reinterpret_cast<const void *>(&(tp.double_data().Get(0)));
+      break;
+    }
+    case onnx::TensorProto::INT64: {
       cv_data.data = reinterpret_cast<const void *>(&(tp.int64_data().Get(0)));
-    } else if (tp.data_type() == onnx::TensorProto::FLOAT16) {
+      break;
+    }
+
+    // onnx.proto states that UINT32 is stored in the uint64 field
+    case onnx::TensorProto::UINT64:
+    case onnx::TensorProto::UINT32: {
+      cv_data.data = reinterpret_cast<const void *>(&(tp.uint64_data().Get(0)));
+      break;
+    }
+
+    // onnx.proto states that the following are stored as int32
+    // field: INT32, INT16, INT8, UINT16, UINT8, BOOL, or FLOAT16
+    case onnx::TensorProto::INT32:
+    case onnx::TensorProto::INT16:
+    case onnx::TensorProto::INT8:
+    case onnx::TensorProto::UINT16:
+    case onnx::TensorProto::UINT8:
+    case onnx::TensorProto::BOOL:
+    case onnx::TensorProto::FLOAT16: {
       cv_data.data = reinterpret_cast<const void *>(&(tp.int32_data().Get(0)));
-    } else {
+      break;
+    }
+    case onnx::TensorProto::UNDEFINED:
+    case onnx::TensorProto::BFLOAT16:
+    case onnx::TensorProto::STRING:
+    default: {
       throw error("getConstData needs implementing for " +
                   cv_data.info.data_type());
+    }
     }
   }
 

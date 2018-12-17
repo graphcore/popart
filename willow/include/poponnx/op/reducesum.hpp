@@ -21,13 +21,15 @@ public:
   const std::vector<int64_t> &getAxes() const;
 
   // Keep the reduced dimensions or not. A value of `true` means this op will
-  // preserve the rank of the output tensor.
+  // preserve the rank of the input tensor, inserting 1 at reduced axes
   bool getKeepDims() const;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
 private:
+  // The input shape, with '1' inserted in reduction axes.
+  // This is the same as the output shape if keepdims is true.
   Shape backward_shape;
   std::vector<int64_t> axes;
   int64_t keepdims;
@@ -48,6 +50,9 @@ public:
 
 private:
   TensorInfo outputTensorInfo;
+  // Copied from constructing ReduceSumOp. In this context, it is
+  // the shape of this grad Op's input, but with '1's inserted where
+  // broadcasts are required to obtain the gradient of the fwd Op's input
   const Shape backward_shape;
 };
 

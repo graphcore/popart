@@ -50,6 +50,7 @@ OpTypes::OpTypes() {
       {std::make_pair("ExpGrad", ai_graphcore),
        OpTypeInfo(OpType::EXPGRAD, false)},
       {std::make_pair("Gemm", ai_onnx), OpTypeInfo(OpType::GEMM, true)},
+      {std::make_pair("Cast", ai_onnx), OpTypeInfo(OpType::CAST, true)},
       {std::make_pair("Identity", ai_onnx), OpTypeInfo(OpType::IDENTITY, true)},
       {std::make_pair("IdentityGrad", ai_graphcore),
        OpTypeInfo(OpType::IDENTITYGRAD, false)},

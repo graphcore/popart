@@ -1,11 +1,37 @@
 #include <onnx/onnx_pb.h>
-#include <poponnx/constexpr.hpp>
+#include <poponnx/attributes.hpp>
+#include <poponnx/ces/addce.hpp>
+#include <poponnx/ces/castce.hpp>
+#include <poponnx/ces/constexpr.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
+#include <poponnx/onnxutil.hpp>
 #include <poponnx/optypes.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
+
+void ConstExprOp::addConstInitTensor(const TensorId &id,
+                                     const TensorInfo &info,
+                                     const void *data) const {
+  ir->getTensors().addConstInit(id, info, data);
+}
+
+Tensor *ConstExprOp::atInIndex(InIndex index) const {
+  if (index >= node.input_size()) {
+    throw error("Index {} too large on ConstExprOp::atInIndex", index);
+  }
+  TensorId id = node.input(index);
+  if (!ir->getTensors().contains(id)) {
+    throw error("No Tensor {} from ConstExprOp::atInIndex", id);
+  }
+  return ir->getTensors().get(id);
+}
+
+TensorId ConstExprOp::atOutIndex0() const { return node.output(0); }
+
+ConstExprOp::ConstExprOp(const onnx::NodeProto &n, Ir *i)
+    : node(n), ir(i), nAtts(node.attribute()) {}
 
 bool ConstExprClassifier::isConstExprTensor(TensorId id) const {
   auto found = M.find(id);
@@ -18,6 +44,13 @@ bool ConstExprClassifier::isConstExprTensor(TensorId id) const {
 void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
   OpType opType = getOpTypes().get(node.op_type(), node.domain());
   switch (opType) {
+
+  case OpType::CAST: {
+    CastCe caster(node, ir);
+    caster.insertOutput();
+    break;
+  }
+
   case OpType::CONSTANT: {
     TensorId name = node.output(0);
     // We assume that a tensor coming from a Constant Node should
@@ -28,23 +61,9 @@ void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
     break;
   }
 
-  // A proof of concept ConstExprAdd.
   case OpType::ADD: {
-    Tensor *in0 = ir->getTensors().get(node.input(0));
-    Tensor *in1 = ir->getTensors().get(node.input(1));
-    if (in0->info.shape() != in1->info.shape()) {
-      throw error("ConstExprAdd doesn't support broadcasting yet");
-    }
-    if (in0->info.dataType() != DataType::INT64) {
-      throw error("Only INT64 currently supported in ConstExprAdd");
-    }
-    std::vector<int64_t> output;
-    int64_t *data0 = static_cast<int64_t *>(in0->tensorData()->data());
-    int64_t *data1 = static_cast<int64_t *>(in1->tensorData()->data());
-    for (int i = 0; i < in0->info.nelms(); ++i) {
-      output.push_back(data0[i] + data1[i]);
-    }
-    ir->getTensors().addConstInit(node.output(0), in0->info, output.data());
+    ConstExprAdd adder(node, ir);
+    adder.insertOutput();
     break;
   }
 

@@ -12,6 +12,7 @@ namespace poponnx {
 
 class BuilderImpl;
 class TensorInfo;
+enum class DataType;
 
 /**
  * An interface for a Builder, used for creating ONNX graphs.
@@ -186,10 +187,12 @@ public:
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cast
    *
    * \param args The tensor argument
+   * \param to   DataType of the output tensor
    * \param name Optional identifer for operation
    * \return The name of the result tensor
    */
   TensorId cast(const std::vector<TensorId> &args,
+                DataType to,
                 const std::string &name = {});
 
   /**

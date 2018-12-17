@@ -362,7 +362,11 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   case OpType::SOFTMAXGRADDIRECT:
     throw error("Non-ONNX Ops not constructable from Node");
 
-  default: { throw error("No class for " + node.op_type()); }
+  case OpType::CAST:
+    throw error("Currently there is only a ConstExprCast in poponnx, CastOp "
+                "not yet implemented. ");
+
+  default: { throw error("Failed to create Op for " + node.op_type()); }
   }
 }
 

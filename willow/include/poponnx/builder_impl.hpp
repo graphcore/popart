@@ -41,7 +41,9 @@ public:
   TensorId asinh(const std::vector<TensorId> &args, const std::string &name);
   TensorId atan(const std::vector<TensorId> &args, const std::string &name);
   TensorId atanh(const std::vector<TensorId> &args, const std::string &name);
-  TensorId cast(const std::vector<TensorId> &args, const std::string &name);
+  TensorId cast(const std::vector<TensorId> &args,
+                onnx::TensorProto_DataType to,
+                const std::string &name);
   TensorId ceil(const std::vector<TensorId> &args, const std::string &name);
   TensorId cos(const std::vector<TensorId> &args, const std::string &name);
   TensorId cosh(const std::vector<TensorId> &args, const std::string &name);

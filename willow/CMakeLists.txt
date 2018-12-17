@@ -8,15 +8,22 @@ include_directories("include")
 
 
 # core poponnx source files:
-file(GLOB sources src/*cpp)
+file(GLOB core_sources src/*cpp)
 file(GLOB op_sources src/op/*cpp)
+file(GLOB ces_sources src/ces/*cpp)
 file(GLOB patterns_sources src/patterns/*cpp)
 file(GLOB transforms_sources src/transforms/*cpp)
 # poplar backend op specifc:
 file(GLOB x_sources src/popx/*cpp)
 file(GLOB opx_sources src/popx/op/*cpp)
 
-set(sources ${sources} ${op_sources} ${patterns_sources} ${transforms_sources})
+set(sources 
+  ${core_sources} 
+  ${op_sources} 
+  ${ces_sources} 
+  ${patterns_sources} 
+  ${transforms_sources})
+
 if (POPLAR_BACKEND)
 message( STATUS "Building WITH Poplar IPU backend")
 find_package(Poplar REQUIRED)

@@ -1,5 +1,6 @@
 #include <poponnx/builder_impl.hpp>
 #include <poponnx/logging.hpp>
+#include <poponnx/onnxutil.hpp>
 
 namespace poponnx {
 
@@ -86,8 +87,9 @@ TensorId Builder::atanh(const std::vector<TensorId> &args,
 }
 
 TensorId Builder::cast(const std::vector<TensorId> &args,
+                       DataType to,
                        const std::string &name) {
-  return impl_->cast(args, name);
+  return impl_->cast(args, onnxutil::getTPDataType(to), name);
 }
 
 TensorId Builder::ceil(const std::vector<TensorId> &args,

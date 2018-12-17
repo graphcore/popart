@@ -479,6 +479,10 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
     return std::unique_ptr<Opx>(new BatchNormGradOpx(op, this));
   }
 
+  case OpType::CAST: {
+    throw error("No CastOpx implementation yet");
+  }
+
   case OpType::CONSTANT: {
     throw error("ILE: No Opx for CONSTANT");
   }

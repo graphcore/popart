@@ -271,8 +271,11 @@ TensorId BuilderImpl::atanh(const std::vector<TensorId> &args,
 }
 
 TensorId BuilderImpl::cast(const std::vector<TensorId> &args,
+                           onnx::TensorProto_DataType to,
                            const std::string &name) {
-  return add_simple_op(args, "Cast", 1, name);
+  TensorId id = add_simple_op(args, "Cast", 1, name);
+  addNodeAttribute("to", to, {id});
+  return id;
 }
 
 TensorId BuilderImpl::ceil(const std::vector<TensorId> &args,

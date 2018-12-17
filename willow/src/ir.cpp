@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include <poponnx/constexpr.hpp>
+#include <poponnx/ces/constexpr.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
 #include <poponnx/intervals.hpp>
@@ -671,7 +671,7 @@ void Tensors::addInit(TensorId name, const onnx::TensorProto *pt) {
       std::stringstream ss;
       ss << "A fixed point initializer tensor `" << name
          << "' was not tagged as Constant"
-         << ". Currently only floating point tensors can be Variabl3, "
+         << ". Currently only floating point tensors can be Variable, "
          << " please explicitly label `" << name << "' as Constant";
       throw error(ss.str());
     }
@@ -1193,12 +1193,14 @@ void Ir::constructBackwards() {
         // break here. Example case : generating adversarials
         break;
       }
-      case TensorType::Const:
+      case TensorType::Const: {
+        break;
+      }
       case TensorType::Momentum:
       case TensorType::Unknown:
       case TensorType::N:
-        throw error("can't register gradient of " + nongrad->tensor_type() +
-                    " tensor (yet?)");
+        throw error("can't currently register gradient of " +
+                    nongrad->tensor_type() + " tensor, " + nongrad->str());
 
       default: { throw error("only handling ActGrad and Variable for now"); }
       }

@@ -18,15 +18,11 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
-// TODO (task T5432) should inherit from ReduceSum when we have numpy
-// broadcasting
 class AddArg0GradOpx : public ReduceSumOpx {
 public:
   AddArg0GradOpx(Op *, Devicex *);
 };
 
-// TODO (task T5432) should inherit from ReduceSum when we have numpy
-// broadcasting
 class AddArg1GradOpx : public ReduceSumOpx {
 public:
   AddArg1GradOpx(Op *, Devicex *);
