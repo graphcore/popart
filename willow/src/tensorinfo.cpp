@@ -50,14 +50,47 @@ std::vector<size_t> TensorInfo::shape_szt() const {
   return szts;
 }
 
-static int64_t broadcastableDimSize(int64_t a, int64_t b) {
+static bool isBroadcastableDims(int64_t a, int64_t b) {
   if ((a > 0) && (b > 0) && ((a == b) || (a == 1) || (b == 1))) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+static int64_t broadcastableDimSize(int64_t a, int64_t b) {
+  if (isBroadcastableDims(a, b)) {
     return std::max(a, b);
   } else {
     // Incompatible dimensions found. Throw an exception, borrowing the same
     // terminology as numpy.
     throw error("np broadcasting failed, frames are not aligned");
   }
+}
+
+static std::string npOutExceptionMessage(const std::vector<int64_t> &s0,
+                                         const std::vector<int64_t> &s1,
+                                         const std::string &debugName) {
+  std::stringstream ss;
+
+  const auto reduction = [](std::string a, int64_t b) {
+    return a + (a.empty() ? "" : ", ") + std::to_string(b);
+  };
+
+  const auto s0_str =
+      std::accumulate(s0.begin(), s0.end(), std::string{}, reduction);
+  const auto s1_str =
+      std::accumulate(s1.begin(), s1.end(), std::string{}, reduction);
+
+  ss << "np broadcasting failed";
+
+  if (!debugName.empty()) {
+    ss << " on '" << debugName << '\'';
+  }
+
+  ss << ", frames [" << s0_str << "] and [" << s1_str << "] are not aligned";
+
+  return ss.str();
 }
 
 // Calculate the numpy broadcast shape as described in
@@ -69,7 +102,8 @@ static int64_t broadcastableDimSize(int64_t a, int64_t b) {
 // npOut(s0, s1) = {2, 3, 4, 5}
 // Look in tests/poponnx/numpybroadcastshapetest.cpp for more examples.
 std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
-                           const std::vector<int64_t> &s1) {
+                           const std::vector<int64_t> &s1,
+                           const std::string &debugName) {
   // In the given example:
   // s0      = {   1, 4, 5} &
   // s1      = {2, 3, 4, 5} =>
@@ -94,6 +128,16 @@ std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
   const auto dst_itr = std::next(result.rbegin(), overlap);
   std::copy(std::next(s0.rbegin(), overlap), s0.rend(), dst_itr);
   std::copy(std::next(s1.rbegin(), overlap), s1.rend(), dst_itr);
+
+  // Check that the overlapping region is numpy broadcastable.
+  if (!std::inner_product(s0.rbegin(),
+                          std::next(s0.rbegin(), overlap),
+                          s1.rbegin(),
+                          true,
+                          std::logical_and<bool>(),
+                          isBroadcastableDims)) {
+    throw error(npOutExceptionMessage(s0, s1, debugName));
+  }
 
   // Take the element-wise maximum of `s0` and `s1` in the overlapping region
   // and put it into `result`. This will throw an exception if the elements are

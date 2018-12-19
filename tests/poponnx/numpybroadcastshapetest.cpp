@@ -1,6 +1,7 @@
 #define BOOST_TEST_MODULE NumpyBroadcastShape
 
 #include <boost/test/unit_test.hpp>
+#include <poponnx/error.hpp>
 #include <poponnx/tensorinfo.hpp>
 
 struct BroadcastTestCase {
@@ -92,5 +93,42 @@ BOOST_AUTO_TEST_CASE(NumpyBroadcastBackwardShape) {
     const auto axes =
         poponnx::npReductionAxis(test_case.in_shape, test_case.out_shape);
     BOOST_TEST(axes == test_case.result_axes, boost::test_tools::per_element());
+  }
+}
+
+struct ExceptionTestCase {
+  std::string name;
+  std::vector<int64_t> a_shape;
+  std::vector<int64_t> b_shape;
+  std::string msg;
+};
+
+// clang-format off
+ExceptionTestCase exception_test_cases[] = {
+    {""   , {   3}, {   4}, "np broadcasting failed, frames [3] and [4] are not aligned"},
+    {""   , {1, 3}, {   4}, "np broadcasting failed, frames [1, 3] and [4] are not aligned"},
+    {""   , {4, 3}, {   4}, "np broadcasting failed, frames [4, 3] and [4] are not aligned"},
+    {"foo", {   3}, {   4}, "np broadcasting failed on 'foo', frames [3] and [4] are not aligned"},
+    {"foo", {1, 3}, {   4}, "np broadcasting failed on 'foo', frames [1, 3] and [4] are not aligned"},
+    {"foo", {4, 3}, {   4}, "np broadcasting failed on 'foo', frames [4, 3] and [4] are not aligned"},
+    {""   , {   3}, {3, 4}, "np broadcasting failed, frames [3] and [3, 4] are not aligned"},
+    {""   , {   3}, {1, 4}, "np broadcasting failed, frames [3] and [1, 4] are not aligned"},
+    {""   , {   3}, {   4}, "np broadcasting failed, frames [3] and [4] are not aligned"},
+    {"foo", {   3}, {3, 4}, "np broadcasting failed on 'foo', frames [3] and [3, 4] are not aligned"},
+    {"foo", {   3}, {1, 4}, "np broadcasting failed on 'foo', frames [3] and [1, 4] are not aligned"},
+    {"foo", {   3}, {   4}, "np broadcasting failed on 'foo', frames [3] and [4] are not aligned"},
+};
+// clang-format on
+
+BOOST_AUTO_TEST_CASE(NumpyBroadcastException) {
+  for (const auto &test_case : exception_test_cases) {
+    const auto predicate = [&](poponnx::error e) {
+      return test_case.msg == e.what();
+    };
+
+    BOOST_CHECK_EXCEPTION(
+        poponnx::npOut(test_case.a_shape, test_case.b_shape, test_case.name),
+        poponnx::error,
+        predicate);
   }
 }

@@ -40,7 +40,8 @@ class TensorInfo;
 // Calculate the numpy broadcast shape as described in
 // https://docs.scipy.org/doc/numpy/user/basics.broadcasting.html
 std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
-                           const std::vector<int64_t> &s1);
+                           const std::vector<int64_t> &s1,
+                           const std::string &debugName = "");
 
 // Compute the reduction axis for a reduction op.
 std::vector<int64_t> npReductionAxis(const std::vector<int64_t> &in,
