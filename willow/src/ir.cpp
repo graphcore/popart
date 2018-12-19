@@ -512,25 +512,30 @@ void Ir::validateAnchors() const {
   }
 }
 
-// TODO T5616
-// this iteration is potentially dangerous.
-// An Op in v_ops might
-// be deleted by an earlier Op.
 bool Ir::applyPattern(const Pattern *pattern) {
   bool result = false;
 
-  std::vector<Op *> v_ops;
+  std::vector<OpId> v_ops;
+  v_ops.reserve(ops.size());
+
   for (auto &id_op : ops) {
-    v_ops.push_back(id_op.second.get());
+    v_ops.push_back(id_op.first);
   }
-  for (auto op : v_ops) {
-    // T5616: This op might have deleted at this point!
-    if (pattern->matches(op)) {
-      if (!pattern->touchesAnchored(op)) {
-        logging::pattern::debug("Applying pattern {} to op {}",
-                                pattern->getPatternName(),
-                                op->str());
-        result |= pattern->apply(op);
+
+  for (auto opId : v_ops) {
+    auto itr = ops.find(opId);
+
+    // If the op still exists
+    if (itr != ops.end()) {
+      Op *op = itr->second.get();
+
+      if (pattern->matches(op)) {
+        if (!pattern->touchesAnchored(op)) {
+          logging::pattern::debug("Applying pattern {} to op {}",
+                                  pattern->getPatternName(),
+                                  op->str());
+          result |= pattern->apply(op);
+        }
       }
     }
   }
