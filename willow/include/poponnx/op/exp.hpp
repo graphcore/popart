@@ -7,8 +7,10 @@ namespace poponnx {
 
 class ExpOp : public Op {
 public:
-  ExpOp(const OpConstructorBundle &);
-  ExpOp(const onnx::NodeProto &node, Ir *pir);
+  ExpOp(const OperatorIdentifier &_opid,
+        Ir *_ir,
+        const std::string &name = "",
+        const Attributes &_attr = {});
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;

@@ -7,7 +7,10 @@ namespace poponnx {
 
 class SqueezeOp : public Op {
 public:
-  SqueezeOp(const onnx::NodeProto &node, Ir *pir);
+  SqueezeOp(const OperatorIdentifier &_opid,
+            Ir *_ir,
+            const std::string &name = "",
+            const Attributes &_attr = {});
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
   std::unique_ptr<Op> clone() const final;

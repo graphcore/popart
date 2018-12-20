@@ -22,9 +22,9 @@ public:
 
 private:
   // OpType of op0 in schematic
-  virtual OpType get0() const = 0;
+  virtual const OperatorIdentifier &get0() const = 0;
   // OpType of op1 in schematic
-  virtual OpType get1() const = 0;
+  virtual const OperatorIdentifier &get1() const = 0;
   // how to create a new op01 and move it into Ir
   virtual OpId moveMergedIntoIr(Op *baseOp) const = 0;
 };

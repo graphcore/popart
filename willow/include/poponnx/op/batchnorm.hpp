@@ -7,7 +7,10 @@ namespace poponnx {
 
 class BatchNormOp : public Op {
 public:
-  BatchNormOp(const onnx::NodeProto &node, Ir *pir);
+  BatchNormOp(const OperatorIdentifier &_opid,
+              Ir *_ir,
+              const std::string &name = "",
+              const Attributes &_attr = {});
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;

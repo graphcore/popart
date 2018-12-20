@@ -7,7 +7,10 @@ namespace poponnx {
 
 class ReluOp : public Op {
 public:
-  ReluOp(const onnx::NodeProto &node, Ir *pir);
+  ReluOp(const OperatorIdentifier &_opid,
+         Ir *_ir,
+         const std::string &name = "",
+         const Attributes &_attr = {});
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;

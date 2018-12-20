@@ -9,7 +9,10 @@ namespace poponnx {
 // ConvOp and AveragePoolOp
 class HasReceptiveFieldOp : public Op {
 public:
-  HasReceptiveFieldOp(const onnx::NodeProto &node, Ir *pir);
+  HasReceptiveFieldOp(const OperatorIdentifier &_opid,
+                      Ir *_ir,
+                      const std::string &name = "",
+                      const Attributes &_attr = {});
   // C++ rule of 3 for destructor, copy con, assignment op.
 
   int nSpatialDims;

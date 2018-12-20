@@ -1,11 +1,15 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/scale.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-ScaleOp::ScaleOp(const OpConstructorBundle &bundle, float scale_factor_)
-    : ElementWiseUnaryOp(bundle), scale_factor(scale_factor_) {}
+ScaleOp::ScaleOp(const OperatorIdentifier &_opid,
+                 Ir *_ir,
+                 const std::string &name,
+                 const Attributes &_attr)
+    : ElementWiseUnaryOp(_opid, _ir, name, _attr) {}
 
 std::unique_ptr<Op> ScaleOp::clone() const {
   return make_unique<ScaleOp>(*this);
@@ -20,7 +24,9 @@ std::vector<std::unique_ptr<Op>> ScaleOp::getGradOps() {
 float ScaleOp::getScaleFactor() const { return scale_factor; }
 
 ScaleGradOp::ScaleGradOp(ScaleOp *fwdOp)
-    : ScaleOp({OpType::SCALEGRAD, fwdOp->pir, {}}, fwdOp->getScaleFactor()) {}
+    : ScaleOp(Onnx::GradOperators::ScaleGrad, fwdOp->pir) {
+  setScaleFactor(fwdOp->getScaleFactor());
+}
 
 std::unique_ptr<Op> ScaleGradOp::clone() const {
   return make_unique<ScaleGradOp>(*this);
@@ -40,4 +46,10 @@ const std::map<int, int> &ScaleGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
+namespace {
+static OpCreator<ScaleOp> scaleOpCreator(Onnx::Operators::Scale);
+static GradOpCreator<ScaleGradOp>
+    scaleGradOpCreator(Onnx::GradOperators::ScaleGrad);
+
+} // namespace
 } // namespace poponnx

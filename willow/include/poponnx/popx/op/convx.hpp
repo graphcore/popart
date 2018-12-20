@@ -21,7 +21,6 @@ poplin::ConvParams getDataGradParams(const ConvDataGradOp *convDataGradOp);
 class ConvOpx : public Opx {
 public:
   ConvOpx(Op *, Devicex *);
-  ConvOp *getConvOp() const;
   poplar::Tensor createInput(InIndex index) const final;
   bool canCreateInput(InIndex index) const final;
   bool createsEquiv(int, Opx *, int) const final;
@@ -36,7 +35,6 @@ private:
 class ConvDataGradOpx : public Opx {
 public:
   ConvDataGradOpx(Op *, Devicex *);
-  ConvDataGradOp *getConvDataGradOp() const;
   void grow(poplar::program::Sequence &) const final;
   const poplin::ConvParams &getParams() const;
 
@@ -47,7 +45,6 @@ private:
 class ConvWeightsGradOpx : public Opx {
 public:
   ConvWeightsGradOpx(Op *, Devicex *);
-  ConvWeightsGradOp *getConvWeightsGradOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 

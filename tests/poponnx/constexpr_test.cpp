@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
 
   // Check the ir
   // 1) that the Reshape Op is present,
-  BOOST_CHECK(ir.opsOfType(OpType::RESHAPE).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Reshape).size() == 1);
   // 2) that the shape of the output tensor is as specified.
   Shape outShape;
   for (int i = 0; i < outShapeSize[0]; ++i) {
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
 
   // Check the ir
   // 1) The Matmul Op is present,
-  auto matmuls = ir.opsOfType(OpType::MATMUL);
+  auto matmuls = ir.opsOfType(Onnx::Operators::MatMul);
   BOOST_CHECK(matmuls.size() == 1);
   BOOST_CHECK(matmuls[0]->input->hasIndex(1));
   auto weights = matmuls[0]->input->tensor(1);

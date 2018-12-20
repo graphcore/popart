@@ -6,7 +6,6 @@
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/onnxutil.hpp>
-#include <poponnx/optypes.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -42,116 +41,38 @@ bool ConstExprClassifier::isConstExprTensor(TensorId id) const {
 }
 
 void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
-  OpType opType = getOpTypes().get(node.op_type(), node.domain());
-  switch (opType) {
 
-  case OpType::CAST: {
-    CastCe caster(node, ir);
-    caster.insertOutput();
-    break;
+  // For now we need to look at the domain and set the version. We really should
+  // get the version from the model
+  unsigned version = 9;
+  if (node.domain() == Domain::ai_graphcore) {
+    version = 1;
   }
 
-  case OpType::CONSTANT: {
+  OperatorIdentifier opid(node.domain(), node.op_type(), version);
+
+  // TODO :  Consider moving this into the op and register a constexprutil
+  // function
+
+  if (opid == Onnx::Operators::Cast) {
+    CastCe caster(node, ir);
+    caster.insertOutput();
+  } else if (opid == Onnx::Operators::Constant) {
     TensorId name = node.output(0);
     // We assume that a tensor coming from a Constant Node should
     // not have a gradient computed for it or be updated during training
     // We may need to change this assumption for some ONNX Model exporters
     ir->getTensors().insertConstId(name);
     ir->getTensors().addInit(name, &node.attribute(0).t());
-    break;
-  }
-
-  case OpType::ADD: {
+  } else if (opid == Onnx::Operators::Add) {
     ConstExprAdd adder(node, ir);
     adder.insertOutput();
-    break;
-  }
 
-  case OpType::AVERAGEPOOL:
-  case OpType::BATCHNORM:
-  case OpType::CONV:
-  case OpType::COS:
-  case OpType::COSH:
-  case OpType::DIV:
-  case OpType::EXP:
-  case OpType::GEMM:
-  case OpType::IDENTITY:
-  case OpType::NEGATE:
-  case OpType::RECIPROCAL:
-  case OpType::SQRT:
-  case OpType::SQUARE:
-  case OpType::SOFTMAX:
-  case OpType::MAXPOOL:
-  case OpType::MUL:
-  case OpType::PAD:
-  case OpType::REDUCESUM:
-  case OpType::RELU:
-  case OpType::RESHAPE:
-  case OpType::SIGMOID:
-  case OpType::SIN:
-  case OpType::SUBTRACT:
-  case OpType::SUBSAMPLE:
-  case OpType::SUM:
-  case OpType::SQUEEZE:
-  case OpType::TAN:
-  case OpType::TANH:
-  case OpType::MATMUL:
-  case OpType::TRANSPOSE:
-    throw error("No ConstExpr implementation of " + node.op_type() + ". " +
-                "Consider what OpType::ADD does (creates a Const Tensor) " +
-                "if you would like to implement a ConstExpr");
-
-  case OpType::ADDARG0GRAD:
-  case OpType::ADDARG1GRAD:
-  case OpType::ADDBIASBIASGRAD:
-  case OpType::ADDBIASDATAGRAD:
-  case OpType::COSGRAD:
-  case OpType::DIVARG0GRAD:
-  case OpType::DIVARG1GRAD:
-  case OpType::EXPGRAD:
-  case OpType::RESHAPEGRAD:
-  case OpType::SQUEEZEGRAD:
-  case OpType::REDUCESUMGRAD:
-  case OpType::RELUGRAD:
-  case OpType::AVERAGEPOOLGRAD:
-  case OpType::CONVDATAGRAD:
-  case OpType::CONVWEIGHTSGRAD:
-  case OpType::NEGATEGRAD:
-  case OpType::IDENTITYGRAD:
-  case OpType::NLLGRAD:
-  case OpType::L1GRAD:
-  case OpType::MAXPOOLGRAD:
-  case OpType::MULARG0GRAD:
-  case OpType::MULARG1GRAD:
-  case OpType::RECIPROCALGRAD:
-  case OpType::SIGMOIDGRAD:
-  case OpType::SINGRAD:
-  case OpType::SCALE:
-  case OpType::SCALEGRAD:
-  case OpType::SOFTMAXGRAD:
-  case OpType::SGDVARUPDATE:
-  case OpType::SQRTGRAD:
-  case OpType::CONSTSGDVARUPDATE:
-  case OpType::SUBTRACTARG0GRAD:
-  case OpType::SUBTRACTARG1GRAD:
-  case OpType::TANHGRAD:
-  case OpType::SUBSAMPLEGRAD:
-  case OpType::TRANSPOSEGRAD:
-  case OpType::MATMULLHSGRAD:
-  case OpType::MATMULRHSGRAD:
-  case OpType::BATCHNORMGRAD:
-    throw error("No ConstExpr implementations for grad Ops");
-
-  case OpType::NLL:
-  case OpType::L1:
-    throw error("No ConstExpr implementations for loss Ops");
-
-  case OpType::ADDBIAS:
-  case OpType::RELUINPLACE:
-  case OpType::SOFTMAXGRADDIRECT:
-    throw error("No ConstExpr implementations for non-ONNX Ops");
-
-  default: { throw error("No ConstExpr for " + node.op_type()); }
+  } else {
+    throw error("No ConstExpr implementation of {}. "
+                "Consider what OpType::ADD does (creates a Const Tensor) "
+                "if you would like to implement a ConstExpr",
+                opid);
   }
 }
 

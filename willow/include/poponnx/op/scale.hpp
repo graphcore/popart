@@ -8,10 +8,15 @@ namespace poponnx {
 // y = scale_factor * x
 class ScaleOp : public ElementWiseUnaryOp {
 public:
-  ScaleOp(const OpConstructorBundle &, float scale_factor);
+  ScaleOp(const OperatorIdentifier &_opid,
+          Ir *_ir,
+          const std::string &name = "",
+          const Attributes &_attr = {});
+
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
+  void setScaleFactor(float value) { scale_factor = value; }
   float getScaleFactor() const;
 
 private:

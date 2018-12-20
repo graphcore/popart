@@ -2,6 +2,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/nll.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -19,10 +20,12 @@ std::vector<std::unique_ptr<Op>> NllOp::getGradOps() {
 }
 
 std::unique_ptr<Op> NllLoss::getOp(Ir *gp) const {
-  return std::unique_ptr<Op>(new NllOp({OpType::NLL, gp, {}}, this));
+  return std::unique_ptr<Op>(new NllOp(Onnx::CustomOperators::Nll, gp, this));
 }
 
-OpType NllLoss::op_type() const { return OpType::NLL; }
+const OperatorIdentifier &NllLoss::op_type() const {
+  return Onnx::CustomOperators::Nll;
+}
 
 std::vector<TensorId> NllLoss::getStreamTensorNames() const {
   return {input(getLabelInIndex())};
@@ -51,8 +54,8 @@ void NllOp::setup() {
 const NllLoss *NllOp::nlll() const { return nllloss_; }
 const NllLoss *NllGradOp::nlll() const { return nllloss_; }
 
-NllOp::NllOp(const OpConstructorBundle &b, const NllLoss *n)
-    : LossOp(b), nllloss_(n) {}
+NllOp::NllOp(const OperatorIdentifier &_opid, Ir *_ir, const NllLoss *n)
+    : LossOp(_opid, _ir), nllloss_(n) {}
 
 void NllGradOp::setup() {
   // gradient of probs has same shape as probs
@@ -61,7 +64,7 @@ void NllGradOp::setup() {
 }
 
 NllGradOp::NllGradOp(NllOp *op_)
-    : Op({OpType::NLLGRAD, op_->pir, {}}), nllloss_(op_->nlll()) {}
+    : Op(Onnx::CustomGradOperators::NllGrad, op_->pir), nllloss_(op_->nlll()) {}
 
 const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
   // input at index 0 : labelIn()
@@ -82,5 +85,11 @@ const std::map<int, int> &NllGradOp::gradOutToNonGradIn() const {
       {getOutIndex(), nlll()->getProbsInIndex()}};
   return outInfo;
 }
+
+namespace {
+static LossOpCreator<NllLoss> nllOpCreator(Onnx::CustomOperators::Nll);
+static GradOpCreator<NllGradOp>
+    nllGradOpCreator(Onnx::CustomGradOperators::NllGrad);
+} // namespace
 
 } // namespace poponnx

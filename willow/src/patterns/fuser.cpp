@@ -58,12 +58,14 @@ bool Fuser::apply(Op *op) const {
 }
 
 bool Fuser::matches(Op *op0) const {
-  if (op0->opType == get0()) {
+  // if (op0->opType == get0()) {
+  if (op0->opid == get0()) {
     const Tensor *out0 = op0->output->tensor(0);
     // out0 must be consumed just once
     if (out0->consumers.getTotal() == 1) {
       Op *op1 = out0->consumers.getOps()[0];
-      if (op1->opType == get1()) {
+      // if (op1->opType == get1()) {
+      if (op1->opid == get1()) {
         return true;
       }
     }

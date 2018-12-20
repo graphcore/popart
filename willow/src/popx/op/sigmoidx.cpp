@@ -2,14 +2,13 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/sigmoid.hpp>
 #include <poponnx/popx/op/sigmoidx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 namespace poponnx {
 namespace popx {
 
 SigmoidOpx::SigmoidOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (!op->isConvertibleTo<SigmoidOp>()) {
-    throw error("cannot create SigmoidOpx from " + op->op_type());
-  }
+  verifyOp<SigmoidOp>(op, Onnx::Operators::Sigmoid);
 }
 
 void SigmoidOpx::grow(poplar::program::Sequence &prog) const {
@@ -27,9 +26,7 @@ void SigmoidOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 SigmoidGradOpx::SigmoidGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (!op->isConvertibleTo<SigmoidGradOp>()) {
-    throw error("cannot create SigmoidGradOpx from " + op->op_type());
-  }
+  verifyOp<SigmoidGradOp>(op, Onnx::GradOperators::SigmoidGrad);
 }
 
 void SigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
@@ -44,6 +41,12 @@ void SigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(SigmoidOp::getOutIndex()), outTensor);
 }
+
+namespace {
+OpxCreator<SigmoidOpx> sigmoidOpxCreator(Onnx::Operators::Sigmoid);
+OpxCreator<SigmoidGradOpx>
+    sigmoidGradOpxCreator(Onnx::GradOperators::SigmoidGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/averagepool.hpp>
 #include <poponnx/popx/op/averagepoolx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 #include <popnn/Pooling.hpp>
 
@@ -9,36 +10,32 @@ namespace poponnx {
 namespace popx {
 
 AveragePoolOpx::AveragePoolOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::AVERAGEPOOL) {
-    throw error("cannot create AveragePoolOpx from " + op->op_type());
-  }
-}
-
-AveragePoolOp *AveragePoolOpx::getAveragePoolOp() const {
-  return dynamic_cast<AveragePoolOp *>(op_p);
+  verifyOp<AveragePoolOp>(op, Onnx::Operators::AveragePool);
 }
 
 void AveragePoolOpx::grow(poplar::program::Sequence &prog) const {
-  AveragePoolOp *aOp = getAveragePoolOp();
+
+  AveragePoolOp &aOp = getOp<AveragePoolOp>();
+
   insert(outId(0),
          popnn::pooling::pool(graph(),
                               popnn::PoolingType::AVG,
-                              aOp->spatialK_szt(),
-                              aOp->strides_u32(),
-                              aOp->lowerPads_i32(),
-                              aOp->upperPads_i32(),
+                              aOp.spatialK_szt(),
+                              aOp.strides_u32(),
+                              aOp.lowerPads_i32(),
+                              aOp.upperPads_i32(),
                               get(inId(0)),
                               prog,
                               idStr()));
 }
 
 void AveragePoolGradOpx::grow(poplar::program::Sequence &prog) const {
-  AveragePoolGradOp *agOp  = getAveragePoolGradOp();
-  const AveragePoolOp *aOp = agOp->getCloneOfCreator();
+  AveragePoolGradOp &agOp  = getOp<AveragePoolGradOp>();
+  const AveragePoolOp *aOp = agOp.getCloneOfCreator();
 
-  TensorId prePooledId  = inId(agOp->getPrePooledInIndex());
-  TensorId pooledId     = inId(agOp->getPooledInIndex());
-  TensorId gradPooledId = inId(agOp->getGradPooledInIndex());
+  TensorId prePooledId  = inId(agOp.getPrePooledInIndex());
+  TensorId pooledId     = inId(agOp.getPooledInIndex());
+  TensorId gradPooledId = inId(agOp.getGradPooledInIndex());
 
   insert(outId(0),
          popnn::pooling::poolInputGradient(
@@ -58,14 +55,14 @@ void AveragePoolGradOpx::grow(poplar::program::Sequence &prog) const {
 
 AveragePoolGradOpx::AveragePoolGradOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
-  if (op->opType != OpType::AVERAGEPOOLGRAD) {
-    throw error("cannot create AveragePoolGradOpx from " + op->op_type());
-  }
+  verifyOp<AveragePoolGradOp>(op, Onnx::GradOperators::AveragePoolGrad);
 }
 
-AveragePoolGradOp *AveragePoolGradOpx::getAveragePoolGradOp() const {
-  return dynamic_cast<AveragePoolGradOp *>(op_p);
-}
+namespace {
+OpxCreator<AveragePoolOpx> averagePoolOpxCreator(Onnx::Operators::AveragePool);
+OpxCreator<AveragePoolGradOpx>
+    averagePoolGradOpxCreator(Onnx::GradOperators::AveragePoolGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

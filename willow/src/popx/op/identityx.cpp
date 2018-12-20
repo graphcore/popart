@@ -1,14 +1,13 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/popx/op/identityx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 namespace poponnx {
 namespace popx {
 
 IdentityOpx::IdentityOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (!op->isConvertibleTo<IdentityOp>()) {
-    throw error("cannot create IdentityOpx from " + op->op_type());
-  }
+  verifyOp<IdentityOp>(op, Onnx::Operators::Identity);
 }
 
 void IdentityOpx::grow(poplar::program::Sequence &prog) const {
@@ -17,10 +16,14 @@ void IdentityOpx::grow(poplar::program::Sequence &prog) const {
 
 IdentityGradOpx::IdentityGradOpx(Op *op, Devicex *devicex)
     : IdentityOpx(op, devicex) {
-  if (!op->isConvertibleTo<IdentityGradOp>()) {
-    throw error("cannot create IdentityGradOpx from " + op->op_type());
-  }
+  verifyOp<IdentityGradOp>(op, Onnx::GradOperators::IdentityGrad);
 }
+
+namespace {
+OpxCreator<IdentityOpx> identityOpxCreator(Onnx::Operators::Identity);
+OpxCreator<IdentityGradOpx>
+    identityGradOpxCreator(Onnx::GradOperators::IdentityGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

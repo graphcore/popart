@@ -14,7 +14,7 @@ public:
   // example which has a label streamed in)
   std::vector<TensorId> getStreamTensorNames() const final;
   std::unique_ptr<Op> getOp(Ir *) const final;
-  OpType op_type() const final;
+  const OperatorIdentifier &op_type() const final;
   TensorId getInputId() const;
 
   float getLambda() const;
@@ -28,7 +28,7 @@ private:
 
 class L1Op : public LossOp {
 public:
-  L1Op(const OpConstructorBundle &, const L1Loss *l1loss);
+  L1Op(const OperatorIdentifier &_opid, Ir *_ir, const L1Loss *l1loss);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;

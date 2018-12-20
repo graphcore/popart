@@ -15,7 +15,6 @@ namespace popx {
 class SubtractOpx : public Opx {
 public:
   SubtractOpx(Op *, Devicex *);
-  SubtractOp *getSubtractOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 

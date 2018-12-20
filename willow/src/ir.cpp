@@ -13,6 +13,7 @@
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
 #include <poponnx/op/loss.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/optionflags.hpp>
 #include <poponnx/pbwrap.hpp>
@@ -120,7 +121,7 @@ void Ir::exportDot(const std::string dotfn) const {
   int scheduleIndex = 0;
   for (auto &n : getOpSchedule({})) {
     strm << "n_" << n->id << " [shape= \"box\", label=\"" << scheduleIndex
-         << '.' << ' ' << n->op_type();
+         << '.' << ' ' << n->opid;
 
     // Add the debug name if present
     if (!n->name().empty())
@@ -579,10 +580,10 @@ std::vector<TensorId> Tensors::getNoProducerIds() const {
   return t0;
 }
 
-std::vector<Op *> Ir::opsOfType(OpType opType) {
+std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) {
   std::vector<Op *> typedOps;
   for (auto &id_op : ops) {
-    if (id_op.second->opType == opType) {
+    if (id_op.second->opid == opid) {
       typedOps.push_back(id_op.second.get());
     }
   }
@@ -730,8 +731,7 @@ OpId Ir::moveIntoIr(std::unique_ptr<Op> op) {
 
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
-  OpId opId =
-      moveIntoIr(std::unique_ptr<Op>(new SumOp({OpType::SUM, this, {}})));
+  OpId opId = moveIntoIr(OpManager::createOp(Onnx::Operators::Sum, this));
 
   std::vector<TensorId> inputs;
   inputs.reserve(toSum.size());
@@ -1320,8 +1320,7 @@ void Ir::growFinalLoss() {
   }
 
   // now growing the FINAL loss (sum of individual losses)
-  OpId opId =
-      moveIntoIr(std::unique_ptr<Op>(new SumOp({OpType::SUM, this, {}})));
+  OpId opId = moveIntoIr(OpManager::createOp(Onnx::Operators::Sum, this));
 
   std::vector<TensorId> inputs;
   inputs.reserve(lossOps.size());

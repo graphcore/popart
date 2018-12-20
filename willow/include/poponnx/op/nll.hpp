@@ -12,7 +12,7 @@ public:
   // label is the only streamed input tensor to this loss
   std::vector<TensorId> getStreamTensorNames() const final;
   std::unique_ptr<Op> getOp(Ir *) const final;
-  OpType op_type() const final;
+  const OperatorIdentifier &op_type() const final;
 
   static InIndex getProbsInIndex() { return 0; }
   static InIndex getLabelInIndex() { return 1; }
@@ -25,7 +25,7 @@ public:
 
 class NllOp : public LossOp {
 public:
-  NllOp(const OpConstructorBundle &, const NllLoss *nllloss);
+  NllOp(const OperatorIdentifier &_opid, Ir *_ir, const NllLoss *nllloss);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;

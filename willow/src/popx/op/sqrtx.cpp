@@ -2,14 +2,13 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/sqrt.hpp>
 #include <poponnx/popx/op/sqrtx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 namespace poponnx {
 namespace popx {
 
 SqrtOpx::SqrtOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (dynamic_cast<SqrtOp *>(op) == nullptr) {
-    throw error("cannot create SqrtOpx from " + op->op_type());
-  }
+  verifyOp<SqrtOp>(op, Onnx::Operators::Sqrt);
 }
 
 void SqrtOpx::grow(poplar::program::Sequence &prog) const {
@@ -20,6 +19,14 @@ void SqrtOpx::grow(poplar::program::Sequence &prog) const {
                      prog,
                      idStr()));
 }
+
+namespace {
+OpxCreator<SqrtOpx> sqrtOpxCreator(Onnx::Operators::Sqrt);
+OpxCreator<Opx> softmaxGradOpxCreator(
+    Onnx::GradOperators::SqrtGrad,
+    "SqrtGradOp should be removed by pattern 'SqrtGradOp'");
+
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

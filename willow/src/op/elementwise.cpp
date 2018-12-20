@@ -3,19 +3,20 @@
 
 namespace poponnx {
 
-ElementWiseUnaryOp::ElementWiseUnaryOp(const OpConstructorBundle &bundle)
-    : Op(bundle) {}
-
-ElementWiseUnaryOp::ElementWiseUnaryOp(const onnx::NodeProto &node, Ir *_pir)
-    : Op(node, _pir) {}
+ElementWiseUnaryOp::ElementWiseUnaryOp(const OperatorIdentifier &_opid,
+                                       Ir *_ir,
+                                       const std::string &name,
+                                       const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {}
 
 void ElementWiseUnaryOp::setup() {
   outInfo(getOutIndex()) = inInfo(getInIndex());
 }
 
 ElementWiseNonLinearUnaryGradOp::ElementWiseNonLinearUnaryGradOp(
-    const OpConstructorBundle &bundle)
-    : Op(bundle) {}
+    const OperatorIdentifier &_opid,
+    Ir *_ir)
+    : Op(_opid, _ir) {}
 
 const std::vector<GradInOutMapper> &
 ElementWiseNonLinearUnaryGradOp::gradInputInfo() const {

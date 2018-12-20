@@ -1,14 +1,15 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/sigmoid.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-SigmoidOp::SigmoidOp(const OpConstructorBundle &bundle)
-    : ElementWiseUnaryOp(bundle) {}
-
-SigmoidOp::SigmoidOp(const onnx::NodeProto &node, Ir *_pir)
-    : ElementWiseUnaryOp(node, _pir) {}
+SigmoidOp::SigmoidOp(const OperatorIdentifier &_opid,
+                     Ir *_ir,
+                     const std::string &name,
+                     const Attributes &_attr)
+    : ElementWiseUnaryOp(_opid, _ir, name, _attr) {}
 
 std::unique_ptr<Op> SigmoidOp::clone() const {
   return make_unique<SigmoidOp>(*this);
@@ -21,7 +22,7 @@ std::vector<std::unique_ptr<Op>> SigmoidOp::getGradOps() {
 }
 
 SigmoidGradOp::SigmoidGradOp(SigmoidOp *fwdOp)
-    : Op({OpType::SIGMOIDGRAD, fwdOp->pir, {}}) {}
+    : Op(Onnx::GradOperators::SigmoidGrad, fwdOp->pir) {}
 
 std::unique_ptr<Op> SigmoidGradOp::clone() const {
   return make_unique<SigmoidGradOp>(*this);
@@ -45,5 +46,11 @@ const std::map<int, int> &SigmoidGradOp::gradOutToNonGradIn() const {
 void SigmoidGradOp::setup() {
   outInfo(getOutIndex()) = inInfo(getFwdOutInIndex());
 }
+
+namespace {
+static OpCreator<SigmoidOp> sigmoidOpCreator(Onnx::Operators::Sigmoid);
+static GradOpCreator<SigmoidGradOp>
+    sigmoidGradOpCreator(Onnx::GradOperators::SigmoidGrad);
+} // namespace
 
 } // namespace poponnx

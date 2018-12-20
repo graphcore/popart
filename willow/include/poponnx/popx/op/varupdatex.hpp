@@ -14,13 +14,11 @@ namespace popx {
 class SGDVarUpdateOpx : public Opx {
 public:
   SGDVarUpdateOpx(Op *, Devicex *);
-  SGDVarUpdateOp *getSGDVarUpdateOp() const;
 };
 
 class ConstSGDVarUpdateOpx : public Opx {
 public:
   ConstSGDVarUpdateOpx(Op *, Devicex *);
-  ConstSGDVarUpdateOp *getConstSGDVarUpdateOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 

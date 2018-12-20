@@ -14,14 +14,12 @@ namespace popx {
 class AveragePoolOpx : public Opx {
 public:
   AveragePoolOpx(Op *, Devicex *);
-  AveragePoolOp *getAveragePoolOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 
 class AveragePoolGradOpx : public Opx {
 public:
   AveragePoolGradOpx(Op *, Devicex *);
-  AveragePoolGradOp *getAveragePoolGradOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 

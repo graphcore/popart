@@ -14,14 +14,12 @@ namespace popx {
 class MaxPoolOpx : public Opx {
 public:
   MaxPoolOpx(Op *, Devicex *);
-  MaxPoolOp *getMaxPoolOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 
 class MaxPoolGradOpx : public Opx {
 public:
   MaxPoolGradOpx(Op *, Devicex *);
-  MaxPoolGradOp *getMaxPoolGradOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 

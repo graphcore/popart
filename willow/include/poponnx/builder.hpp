@@ -7,6 +7,9 @@
 #include <vector>
 
 #include <poponnx/names.hpp>
+#include <poponnx/opidentifier.hpp>
+
+#include <boost/any.hpp>
 
 namespace poponnx {
 
@@ -774,6 +777,15 @@ public:
                                      const float momentum    = 0.9f,
                                      const int spatial       = 1,
                                      const std::string &name = {});
+
+  // Add a custom op to the model
+  // TODO : Think of a better name
+  std::vector<TensorId>
+  customOp(const OperatorIdentifier &opid,
+           const std::vector<boost::any> &inputs,
+           const unsigned numOutputs,
+           const std::vector<std::pair<std::string, boost::any>> &attributes,
+           const std::string &name = "");
 
   /**
    * Add an attribute to the ONNX mode to recompute the output in the backwards

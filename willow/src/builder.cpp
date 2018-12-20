@@ -1,6 +1,7 @@
 #include <poponnx/builder_impl.hpp>
 #include <poponnx/logging.hpp>
 #include <poponnx/onnxutil.hpp>
+#include <poponnx/opidentifier.hpp>
 
 namespace poponnx {
 
@@ -343,6 +344,15 @@ TensorId Builder::transpose(const std::vector<TensorId> &args,
                             const std::vector<int64_t> &perm,
                             const std::string &name) {
   return impl_->transpose(args, perm, name);
+}
+
+std::vector<TensorId> Builder::customOp(
+    const OperatorIdentifier &opid,
+    const std::vector<boost::any> &inputs,
+    const unsigned numOutputs,
+    const std::vector<std::pair<std::string, boost::any>> &attributes,
+    const std::string &name) {
+  return impl_->customOp(opid, inputs, numOutputs, attributes, name);
 }
 
 void Builder::addNodeAttribute(const std::string &attributeName,

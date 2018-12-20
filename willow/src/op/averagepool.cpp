@@ -1,12 +1,16 @@
 #include <poponnx/error.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/averagepool.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-AveragePoolOp::AveragePoolOp(const onnx::NodeProto &node, Ir *_pir)
-    : HasReceptiveFieldOp(node, _pir) {}
+AveragePoolOp::AveragePoolOp(const OperatorIdentifier &_opid,
+                             Ir *_ir,
+                             const std::string &name,
+                             const Attributes &_attr)
+    : HasReceptiveFieldOp(_opid, _ir, name, _attr) {}
 
 void AveragePoolOp::setup0() {}
 
@@ -42,7 +46,7 @@ std::vector<std::unique_ptr<Op>> AveragePoolOp::getGradOps() {
 }
 
 AveragePoolGradOp::AveragePoolGradOp(AveragePoolOp *op_)
-    : Op({OpType::AVERAGEPOOLGRAD, op_->pir, {}}),
+    : Op({Onnx::GradOperators::AveragePoolGrad, op_->pir, {}}),
       unpooledInfo(op_->inInfo(AveragePoolOp::getInIndex())),
       cloneOfCreator(op_->clone()) {}
 
@@ -75,5 +79,12 @@ const std::map<int, int> &AveragePoolGradOp::gradOutToNonGradIn() const {
 }
 
 void AveragePoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
+
+namespace {
+static OpCreator<AveragePoolOp>
+    averagePoolOpCreator(Onnx::Operators::AveragePool);
+static GradOpCreator<AveragePoolGradOp>
+    averagePoolGradOpCreator(Onnx::GradOperators::AveragePoolGrad);
+} // namespace
 
 } // namespace poponnx

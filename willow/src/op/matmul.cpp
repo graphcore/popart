@@ -1,14 +1,17 @@
 #include <poponnx/error.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/matmul.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
 
 namespace poponnx {
 
-MatMulOp::MatMulOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
-
-MatMulOp::MatMulOp(const OpConstructorBundle &bundle) : Op(bundle) {}
+MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
+                   Ir *_ir,
+                   const std::string &name,
+                   const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {}
 
 std::unique_ptr<Op> MatMulOp::clone() const {
   return make_unique<MatMulOp>(*this);
@@ -113,7 +116,7 @@ void MatMulOp::setup() {
 }
 
 MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)
-    : Op({OpType::MATMULLHSGRAD, fwdOp.pir, {}}),
+    : Op(Onnx::GradOperators::MatMulLhsGrad, fwdOp.pir),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
       fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
 
@@ -146,7 +149,7 @@ Shape MatMulLhsGradOp::getRhsInputShape() const { return fwdOpRhsInfo.shape(); }
 Shape MatMulLhsGradOp::getOutputShape() const { return fwdOpLhsInfo.shape(); }
 
 MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
-    : Op({OpType::MATMULRHSGRAD, fwdOp.pir, {}}),
+    : Op(Onnx::GradOperators::MatMulRhsGrad, fwdOp.pir),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
       fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
 
@@ -174,5 +177,13 @@ Shape MatMulRhsGradOp::getGradInputShape() const {
 Shape MatMulRhsGradOp::getLhsInputShape() const { return fwdOpLhsInfo.shape(); }
 
 Shape MatMulRhsGradOp::getOutputShape() const { return fwdOpRhsInfo.shape(); }
+
+namespace {
+static OpCreator<MatMulOp> matMulOpCreator(Onnx::Operators::MatMul);
+static GradOpCreator<MatMulLhsGradOp>
+    matmulLhsGradOpCreator(Onnx::GradOperators::MatMulLhsGrad);
+static GradOpCreator<MatMulRhsGradOp>
+    matmulRhsGradOpCreator(Onnx::GradOperators::MatMulRhsGrad);
+} // namespace
 
 } // namespace poponnx

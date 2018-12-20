@@ -10,8 +10,10 @@ namespace poponnx {
 
 class MulOp : public Op {
 public:
-  MulOp(const onnx::NodeProto &node, Ir *pir);
-  MulOp(const OpConstructorBundle &);
+  MulOp(const OperatorIdentifier &_opid,
+        Ir *_ir,
+        const std::string &name = "",
+        const Attributes &_attr = {});
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -25,9 +27,13 @@ public:
 
 class MulArgGradOp : public Op {
 public:
-  MulArgGradOp(const OpConstructorBundle &,
+  MulArgGradOp(const OperatorIdentifier &_opid,
+               Ir *_ir,
                const std::vector<int64_t> &reduction_axes,
                const TensorInfo &forward_op_arg_info);
+  // MulArgGradOp(const OpConstructorBundle &,
+  // const std::vector<int64_t> &reduction_axes,
+  // const TensorInfo &forward_op_arg_info);
   void setup() final;
   // In C = mul(A,B) with numpy-style broadcasting,
   //   dA = reduceSum(mul(dC,B)), and

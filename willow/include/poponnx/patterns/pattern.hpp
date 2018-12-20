@@ -6,7 +6,6 @@
 
 namespace poponnx {
 
-enum class OpType;
 
 enum class PatternType {
   // Before the inplace Patterns:

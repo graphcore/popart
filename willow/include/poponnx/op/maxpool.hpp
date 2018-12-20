@@ -12,7 +12,10 @@ namespace poponnx {
 // "the 3": destructor, copy constructor, assigment op.
 class MaxPoolOp : public HasReceptiveFieldOp {
 public:
-  MaxPoolOp(const onnx::NodeProto &node, Ir *pir);
+  MaxPoolOp(const OperatorIdentifier &_opid,
+            Ir *_ir,
+            const std::string &name = "",
+            const Attributes &_attr = {});
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   int64_t getNOutChans() const final;

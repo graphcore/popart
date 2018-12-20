@@ -3,6 +3,7 @@
 #include <poponnx/op/l1.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/l1x.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 #include <popops/ElementWise.hpp>
@@ -12,17 +13,15 @@ namespace poponnx {
 namespace popx {
 
 L1Opx::L1Opx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::L1) {
-    throw error("cannot create L1Opx from " + op->op_type());
-  }
+  verifyOp<L1Op>(op, Onnx::CustomOperators::L1);
 }
 
 void L1GradOpx::grow(poplar::program::Sequence &prog) const {
-  L1GradOp *l1gradop = getL1GradOp();
+  L1GradOp &l1gradop = getOp<L1GradOp>();
   poplar::Tensor t_lambda =
       dv_p->getConst(popType(op_p->inInfo(0)),
                      {1},
-                     static_cast<double>(l1gradop->l1l()->getLambda()));
+                     static_cast<double>(l1gradop.l1l()->getLambda()));
 
   // Signum : +1 of positive, -1 if negative, 0 if zero.
   poplar::Tensor signumTensor = popops::map(graph(),
@@ -45,7 +44,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
 
 // lambda * sum_{0,..rank-1} |v|
 void L1Opx::grow(poplar::program::Sequence &prog) const {
-  L1Op *l1op               = getL1Op();
+  L1Op &l1op               = getOp<L1Op>();
   poplar::Tensor absTensor = popops::map(graph(),
                                          popops::expr::UnaryOpType::ABSOLUTE,
                                          get(inId(0)),
@@ -66,23 +65,20 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
       popops::reduce(graph(),
                      absTensor,
                      dims,
-                     {popops::Operation::ADD, l1op->l1l()->getLambda()},
+                     {popops::Operation::ADD, l1op.l1l()->getLambda()},
                      prog);
 
   insert(outId(0), reduction);
 }
 
-L1Op *L1Opx::getL1Op() const { return dynamic_cast<L1Op *>(op_p); }
-
 L1GradOpx::L1GradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::L1GRAD) {
-    throw error("cannot create L1GradOpx from " + op->op_type());
-  }
+  verifyOp<L1GradOp>(op, Onnx::CustomGradOperators::L1Grad);
 }
 
-L1GradOp *L1GradOpx::getL1GradOp() const {
-  return dynamic_cast<L1GradOp *>(op_p);
-}
+namespace {
+OpxCreator<L1Opx> l1OpxCreator(Onnx::CustomOperators::L1);
+OpxCreator<L1GradOpx> l1GradOpxCreator(Onnx::CustomGradOperators::L1Grad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

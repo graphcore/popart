@@ -5,6 +5,7 @@
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/graphcachex.hpp>
 #include <poponnx/popx/op/convx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 #include <poplin/ConvUtil.hpp>
@@ -72,31 +73,31 @@ std::vector<TensorId> ConvOpx::mustExistBeforeCreate(InIndex) const {
 }
 
 void ConvOpx::grow(poplar::program::Sequence &prog) const {
-  ConvOp *convOp = getConvOp();
+  ConvOp &convOp = getOp<ConvOp>();
   auto outTensor =
-      dv_p->graphCache.convolution(graph(),                      // graph
-                                   get(convOp->dataIn()->id),    // in
-                                   get(convOp->weightsIn()->id), // weights
-                                   fwdParams,                    // params
+      dv_p->graphCache.convolution(graph(),                     // graph
+                                   get(convOp.dataIn()->id),    // in
+                                   get(convOp.weightsIn()->id), // weights
+                                   fwdParams,                   // params
                                    false, // transposeAndFlipWeights,
                                    prog,  // prog
-                                   convOp->cacheOperation, // cacheOperation
-                                   idStr(),                // debugPrefix
-                                   dv_p->fwdConvOptions,   // options
-                                   &dv_p->convCache        // cache
+                                   convOp.cacheOperation, // cacheOperation
+                                   idStr(),               // debugPrefix
+                                   dv_p->fwdConvOptions,  // options
+                                   &dv_p->convCache       // cache
       );
 
   insert(outId(0), outTensor);
 }
 
 void ConvDataGradOpx::grow(poplar::program::Sequence &prog) const {
-  ConvDataGradOp *gradOp = getConvDataGradOp();
-  const ConvOp *convOp   = gradOp->getCloneOfCreator();
+  ConvDataGradOp &gradOp = getOp<ConvDataGradOp>();
+  const ConvOp *convOp   = gradOp.getCloneOfCreator();
   auto outTensor         = dv_p->graphCache.convolution(
-      graph(),                                      // graph
-      get(inId(gradOp->getGradConvolvedInIndex())), // in
-      get(inId(gradOp->getWeightsInIndex())),       // weights
-      dataGradParams,                               // params
+      graph(),                                     // graph
+      get(inId(gradOp.getGradConvolvedInIndex())), // in
+      get(inId(gradOp.getWeightsInIndex())),       // weights
+      dataGradParams,                              // params
       true,                   // transposeAndFlipWeights,
       prog,                   // prog
       convOp->cacheOperation, // cacheOperation
@@ -109,39 +110,36 @@ void ConvDataGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
-  ConvWeightsGradOp *gradOp = getConvWeightsGradOp();
-  const ConvOp *convOp      = gradOp->getCloneOfCreator();
+  ConvWeightsGradOp &gradOp = getOp<ConvWeightsGradOp>();
+  const ConvOp *convOp      = gradOp.getCloneOfCreator();
   poplar::Tensor wGrad      = dv_p->graphCache.calculateWeightDeltas(
-      graph(),                                      // graph
-      get(inId(gradOp->getGradConvolvedInIndex())), // zDeltas,
-      get(inId(gradOp->getPreConvolvedInIndex())),  // activations,
-      getFwdConvParams(convOp),                     // params
-      prog,                                         // prog
-      convOp->cacheOperation,                       // cacheOperation
-      idStr(),                                      // debugPrefix
-      dv_p->wuConvOptions,                          // options
-      &dv_p->convCache);                            // cache
+      graph(),                                     // graph
+      get(inId(gradOp.getGradConvolvedInIndex())), // zDeltas,
+      get(inId(gradOp.getPreConvolvedInIndex())),  // activations,
+      getFwdConvParams(convOp),                    // params
+      prog,                                        // prog
+      convOp->cacheOperation,                      // cacheOperation
+      idStr(),                                     // debugPrefix
+      dv_p->wuConvOptions,                         // options
+      &dv_p->convCache);                           // cache
 
   insert(outId(0), wGrad);
 }
 
 ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  verifyOp<ConvOp>(op, Onnx::Operators::Conv);
 
-  if (op->opType != OpType::CONV) {
-    throw error("cannot create ConvOpx from " + op->op_type());
-  }
-
-  ConvOp *cOp = getConvOp();
-  if (cOp->dataIn()->info.rank() != 4 || cOp->weightsIn()->info.rank() != 4) {
+  ConvOp &cOp = getOp<ConvOp>();
+  if (cOp.dataIn()->info.rank() != 4 || cOp.weightsIn()->info.rank() != 4) {
     throw error("Poplar only supports convolutions with 2 spatial dimensions");
   }
 
-  fwdParams = getFwdConvParams(cOp);
+  fwdParams = getFwdConvParams(&cOp);
 }
 
 bool ConvOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
   // if opx1 is not a ConvOpx, it does not create the same poplar::Tensor
-  if (opx1->op_p->opType != OpType::CONV) {
+  if (opx1->op_p->opid != Onnx::Operators::Conv) {
     return false;
   }
 
@@ -159,8 +157,6 @@ bool ConvOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
 
   return true;
 }
-
-ConvOp *ConvOpx::getConvOp() const { return dynamic_cast<ConvOp *>(op_p); }
 
 bool ConvOpx::canCreateInput(InIndex) const { return true; }
 
@@ -187,26 +183,22 @@ poplar::Tensor ConvOpx::createInput(InIndex index) const {
 }
 
 ConvDataGradOpx::ConvDataGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::CONVDATAGRAD) {
-    throw error("cannot create ConvDataGradOpx from " + op->op_type());
-  }
-  dataGradParams = getDataGradParams(getConvDataGradOp());
-}
-
-ConvDataGradOp *ConvDataGradOpx::getConvDataGradOp() const {
-  return dynamic_cast<ConvDataGradOp *>(op_p);
+  verifyOp<ConvDataGradOp>(op, Onnx::GradOperators::ConvDataGrad);
+  dataGradParams = getDataGradParams(&(getOp<ConvDataGradOp>()));
 }
 
 ConvWeightsGradOpx::ConvWeightsGradOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
-  if (op->opType != OpType::CONVWEIGHTSGRAD) {
-    throw error("cannot create ConvWeightsGradOpx from " + op->op_type());
-  }
+  verifyOp<ConvWeightsGradOp>(op, Onnx::GradOperators::ConvWeightsGrad);
 }
 
-ConvWeightsGradOp *ConvWeightsGradOpx::getConvWeightsGradOp() const {
-  return dynamic_cast<ConvWeightsGradOp *>(op_p);
-}
+namespace {
+OpxCreator<ConvOpx> convpxCreator(Onnx::Operators::Conv);
+OpxCreator<ConvDataGradOpx>
+    convDataGradOpxCreator(Onnx::GradOperators::ConvDataGrad);
+OpxCreator<ConvWeightsGradOpx>
+    convWeightsGradOpxCreator(Onnx::GradOperators::ConvWeightsGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

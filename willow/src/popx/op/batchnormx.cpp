@@ -3,6 +3,7 @@
 #include <poponnx/op/batchnorm.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/batchnormx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 #include <poplar/Tensor.hpp>
 #include <popnn/BatchNorm.hpp>
@@ -19,13 +20,7 @@ namespace poponnx {
 namespace popx {
 
 BatchNormOpx::BatchNormOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::BATCHNORM) {
-    throw error("cannot create BatchNormOpx from " + op->op_type());
-  }
-}
-
-BatchNormOp *BatchNormOpx::getBatchNormOp() const {
-  return dynamic_cast<BatchNormOp *>(op_p);
+  verifyOp<BatchNormOp>(op, Onnx::Operators::BatchNormalization);
 }
 
 // convert variant to inverse standard deviation
@@ -152,11 +147,11 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
   auto var   = get(inId(BatchNormOp::getVarInIndex()));
 
   // Attributes
-  float epsilon  = getBatchNormOp()->getEpsilon();
-  float momentum = getBatchNormOp()->getMomentum();
-  // int spatial = getBatchNormOp()->getSpatial();
+  float epsilon  = getOp<BatchNormOp>().getEpsilon();
+  float momentum = getOp<BatchNormOp>().getMomentum();
+  // int spatial = getOp<BatchNormOp>().getSpatial();
 
-  if (getBatchNormOp()->isTraining()) {
+  if (getOp<BatchNormOp>().isTraining()) {
 
     // Special case - zero sized array
     if (isZeroElementArray(x.shape())) {
@@ -288,13 +283,7 @@ BatchNormGradOpx::batchNormaliseGrad(poplar::program::Sequence &prog,
 
 BatchNormGradOpx::BatchNormGradOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
-  if (op_p->opType != OpType::BATCHNORMGRAD) {
-    throw error("cannot create BatchNormGradOpx from " + op_p->op_type());
-  }
-}
-
-BatchNormGradOp *BatchNormGradOpx::getBatchNormGradOp() const {
-  return dynamic_cast<BatchNormGradOp *>(op_p);
+  verifyOp<BatchNormGradOp>(op, Onnx::GradOperators::BatchNormalizationGrad);
 }
 
 void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
@@ -306,9 +295,9 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
   auto yGrad = get(inId(BatchNormGradOp::getYGradInIndex()));
 
   // Attributes
-  float epsilon = getBatchNormGradOp()->getFwdOp()->getEpsilon();
-  // float momentum = getBatchNormGradOp()->getFwdOp()->getMomentum();
-  // int spatial = getBatchNormGradOp()->getFwdOp()->getSpatial();
+  float epsilon = getOp<BatchNormGradOp>().getFwdOp()->getEpsilon();
+  // float momentum = getOp<BatchNormGradOp>().getFwdOp()->getMomentum();
+  // int spatial = getOp<BatchNormGradOp>().getFwdOp()->getSpatial();
 
   // Special case - zero sized array
   if (isZeroElementArray(x.shape())) {
@@ -342,6 +331,13 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
     insert(outId(BatchNormGradOp::getBOutIndex()), bGrad);
   }
 }
+
+namespace {
+OpxCreator<BatchNormOpx>
+    batchNormOpxCreator(Onnx::Operators::BatchNormalization);
+OpxCreator<BatchNormGradOpx>
+    batchNormGradOpxCreator(Onnx::GradOperators::BatchNormalizationGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

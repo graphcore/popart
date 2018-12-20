@@ -3,38 +3,8 @@
 #include <poponnx/tensor.hpp>
 
 // The layers:
-#include <poponnx/op/add.hpp>
-#include <poponnx/op/averagepool.hpp>
-#include <poponnx/op/batchnorm.hpp>
-#include <poponnx/op/conv.hpp>
-#include <poponnx/op/cos.hpp>
-#include <poponnx/op/cosh.hpp>
-#include <poponnx/op/div.hpp>
-#include <poponnx/op/exp.hpp>
-#include <poponnx/op/gemm.hpp>
-#include <poponnx/op/identity.hpp>
-#include <poponnx/op/matmul.hpp>
-#include <poponnx/op/maxpool.hpp>
-#include <poponnx/op/mul.hpp>
-#include <poponnx/op/negate.hpp>
-#include <poponnx/op/pad.hpp>
-#include <poponnx/op/reciprocal.hpp>
-#include <poponnx/op/reducesum.hpp>
-#include <poponnx/op/relu.hpp>
-#include <poponnx/op/reshape.hpp>
-#include <poponnx/op/sigmoid.hpp>
-#include <poponnx/op/sin.hpp>
-#include <poponnx/op/softmax.hpp>
-#include <poponnx/op/sqrt.hpp>
-#include <poponnx/op/square.hpp>
-#include <poponnx/op/squeeze.hpp>
-#include <poponnx/op/subsample.hpp>
-#include <poponnx/op/subtract.hpp>
-#include <poponnx/op/sum.hpp>
-#include <poponnx/op/tan.hpp>
-#include <poponnx/op/tanh.hpp>
-#include <poponnx/op/transpose.hpp>
-#include <poponnx/op/varupdate.hpp>
+#include <poponnx/op.hpp>
+#include <poponnx/opmanager.hpp>
 
 namespace poponnx {
 
@@ -66,7 +36,7 @@ bool Op::modifies(InIndex) const {
 bool Op::isLossOp() const { return false; }
 
 std::unique_ptr<Op> Op::clone() const {
-  throw error("No clone implemented for " + op_type());
+  throw error("No clone implemented for {}", opid);
 }
 
 Op::~Op() = default;
@@ -77,10 +47,10 @@ Op::~Op() = default;
 // the TensorIds are the input indices of input of this
 // Op for which the gradient is computed
 std::vector<std::unique_ptr<Op>> Op::getGradOps() {
-  throw error("Cannot get gradients for " + op_type());
+  throw error("Cannot get gradients for {}", opid);
 }
 
-void Op::setup() { throw error("No setup() for " + op_type()); }
+void Op::setup() { throw error("No setup() for {}", opid); }
 
 void Op::defaultConnectInTensor(InIndex inIndex, TensorId tenId) {
   Tensor *ptensor = pir->getTensors().get(tenId);
@@ -132,17 +102,17 @@ int Op::getNonGradInIndex(int gradOpOutIndex) const {
 }
 
 const std::vector<GradInOutMapper> &Op::gradInputInfo() const {
-  throw error("Op " + op_type() + " cannot get `grad input info'");
+  throw error("Op {} cannot get `grad input info'", opid);
 }
 
 const std::map<int, int> &Op::gradOutToNonGradIn() const {
-  throw error("Op " + op_type() + " cannot get `grad out to non grad in'");
+  throw error("Op {} cannot get `grad out to non grad in'", opid);
 }
 
 bool Op::hasInplaceVariant(InIndex) const { return false; }
 
 std::unique_ptr<Op> Op::getInplaceVariant(InIndex) {
-  throw error("Op " + op_type() + "cannot get an inplace Op");
+  throw error("Op {} cannot get an inplace Op", opid);
 }
 
 bool Op::readyToCreateGradients(std::set<int> &s) const {
@@ -159,7 +129,7 @@ int64_t Op::memOfOutputs() const {
 
 void Op::appendIO(std::stringstream &ss) const {
   static std::string tab = "    ";
-  ss << '\n' << "Op " << id << " of type " << op_type() << '\n';
+  ss << '\n' << "Op " << id << " of type " << opid << '\n';
   ss << tab << "inputs" << '\n';
 
   int max_id_length = std::max(input->maxIdLength(), output->maxIdLength());
@@ -168,210 +138,55 @@ void Op::appendIO(std::stringstream &ss) const {
   output->append(ss, tab + tab, max_id_length);
 }
 
-const std::string &Op::domain() { return getOpTypes().getDomain(opType); }
-
-const std::string &Op::op_type() const { return getOpTypes().getName(opType); }
-
 const std::string &Op::name() const { return _name; }
-
-OpConstructorBundle::OpConstructorBundle(OpType op_type_,
-                                         Ir *pir_,
-                                         Attributes atts_)
-    : op_type(op_type_), pir(pir_), atts(atts_) {}
 
 Op::Op(const Op &op)
     : Vertex(op), input(new TensorIndexMap), output(new TensorIndexMap),
       priority(op.priority), pir(op.pir), id(pir->getAndIncrOpsCounter()),
-      opType(op.opType), nAtts(op.nAtts), _name(op._name) {
+      opid(op.opid), nAtts(op.nAtts), _name(op._name) {
   // input, output: empty.
 }
 
-Op::Op(const OpConstructorBundle &b)
+Op::Op(const OperatorIdentifier &_opid,
+       Ir *_ir,
+       const std::string &_name_,
+       const Attributes &_attributes)
     : input(new TensorIndexMap), output(new TensorIndexMap), priority(0.0),
       // the Ir
-      pir(b.pir),
+      pir(_ir),
       // the id
-      id(pir->getAndIncrOpsCounter()),
-      // opType
-      opType(b.op_type),
+      id(_ir->getAndIncrOpsCounter()), opid(_opid),
       // the Attributes
-      nAtts(b.atts) {}
-
-Op::Op(const Node &node, Ir *pg)
-    : input(new TensorIndexMap), output(new TensorIndexMap), priority(0.0),
-      // pointer to the Ir containing this node
-      pir(pg), id(pir->getAndIncrOpsCounter()),
-      // We set opType, looked up in a map from the string node.op_type()
-      opType(getOpTypes().get(node.op_type(), node.domain())),
-      // poponnx::Attributes constructed from contained of onnx::Attribute
-      nAtts(node.attribute()) {
-  // Set the name if it has been specified on the node.
-  if (node.has_name()) {
-    _name = node.name();
-  }
-}
+      nAtts(_attributes), _name(_name_) {}
 
 std::unique_ptr<Op> Ir::addOp(const Node &node) {
-  using pOp = std::unique_ptr<Op>;
-  switch (getOpTypes().get(node.op_type(), node.domain())) {
-  case OpType::ADD: {
-    return pOp(new AddOp(node, this));
-  }
-  case OpType::AVERAGEPOOL: {
-    return pOp(new AveragePoolOp(node, this));
-  }
-  case OpType::BATCHNORM: {
-    return pOp(new BatchNormOp(node, this));
-  }
-  case OpType::CONSTANT: {
-    throw error("ILE. Constant Op should have been processed as a ConstExpr");
-  }
-  case OpType::CONV: {
-    return pOp(new ConvOp(node, this));
-  }
-  case OpType::COS: {
-    return pOp(new CosOp(node, this));
-  }
-  case OpType::COSH: {
-    return pOp(new CoshOp(node, this));
-  }
-  case OpType::DIV: {
-    return pOp(new DivOp(node, this));
-  }
-  case OpType::EXP: {
-    return pOp(new ExpOp(node, this));
-  }
-  case OpType::GEMM: {
-    return pOp(new GemmOp(node, this));
-  }
-  case OpType::IDENTITY: {
-    return pOp(new IdentityOp(node, this));
-  }
-  case OpType::NEGATE: {
-    return pOp(new NegateOp(node, this));
-  }
-  case OpType::RECIPROCAL: {
-    return pOp(new ReciprocalOp(node, this));
-  }
-  case OpType::SQRT: {
-    return pOp(new SqrtOp(node, this));
-  }
-  case OpType::SQUARE: {
-    return pOp(new SquareOp(node, this));
-  }
-  case OpType::SOFTMAX: {
-    return pOp(new SoftmaxOp(node, this));
-  }
-  case OpType::MAXPOOL: {
-    return pOp(new MaxPoolOp(node, this));
-  }
-  case OpType::MUL: {
-    return pOp(new MulOp(node, this));
-  }
-  case OpType::PAD: {
-    return pOp(new PadOp(node, this));
-  }
-  case OpType::REDUCESUM: {
-    return pOp(new ReduceSumOp(node, this));
-  }
-  case OpType::RELU: {
-    return pOp(new ReluOp(node, this));
+
+  // For now we need to look at the domain and set the version. We really should
+  // get the version from the model
+  unsigned version = 9;
+  if (node.domain() == Domain::ai_graphcore) {
+    version = 1;
   }
 
-  case OpType::RESHAPE: {
-    return pOp(new ReshapeOp(node, this));
-  }
+  OperatorIdentifier opid(node.domain(), node.op_type(), version);
 
-  case OpType::SIGMOID: {
-    return pOp(new SigmoidOp(node, this));
-  }
-  case OpType::SIN: {
-    return pOp(new SinOp(node, this));
-  }
-  case OpType::SUBTRACT: {
-    return pOp(new SubtractOp(node, this));
-  }
-  case OpType::SUBSAMPLE: {
-    return pOp(new SubsampleOp(node, this));
-  }
-  case OpType::SUM: {
-    return pOp(new SumOp(node, this));
-  }
-  case OpType::SQUEEZE: {
-    return pOp(new SqueezeOp(node, this));
-  }
-  case OpType::TAN: {
-    return pOp(new TanOp(node, this));
-  }
-  case OpType::TANH: {
-    return pOp(new TanhOp(node, this));
-  }
-  case OpType::MATMUL: {
-    return pOp(new MatMulOp(node, this));
-  }
-  case OpType::TRANSPOSE: {
-    return pOp(new TransposeOp(node, this));
-  }
-  case OpType::ADDARG0GRAD:
-  case OpType::ADDARG1GRAD:
-  case OpType::ADDBIASBIASGRAD:
-  case OpType::ADDBIASDATAGRAD:
-  case OpType::COSGRAD:
-  case OpType::DIVARG0GRAD:
-  case OpType::DIVARG1GRAD:
-  case OpType::EXPGRAD:
-  case OpType::RESHAPEGRAD:
-  case OpType::SQUEEZEGRAD:
-  case OpType::REDUCESUMGRAD:
-  case OpType::RELUGRAD:
-  case OpType::AVERAGEPOOLGRAD:
-  case OpType::CONVDATAGRAD:
-  case OpType::CONVWEIGHTSGRAD:
-  case OpType::NEGATEGRAD:
-  case OpType::IDENTITYGRAD:
-  case OpType::NLLGRAD:
-  case OpType::L1GRAD:
-  case OpType::MAXPOOLGRAD:
-  case OpType::MULARG0GRAD:
-  case OpType::MULARG1GRAD:
-  case OpType::RECIPROCALGRAD:
-  case OpType::SIGMOIDGRAD:
-  case OpType::SINGRAD:
-  case OpType::SCALE:
-  case OpType::SCALEGRAD:
-  case OpType::SOFTMAXGRAD:
-  case OpType::SGDVARUPDATE:
-  case OpType::SQRTGRAD:
-  case OpType::CONSTSGDVARUPDATE:
-  case OpType::SUBTRACTARG0GRAD:
-  case OpType::SUBTRACTARG1GRAD:
-  case OpType::TANHGRAD:
-  case OpType::SUBSAMPLEGRAD:
-  case OpType::TRANSPOSEGRAD:
-  case OpType::MATMULLHSGRAD:
-  case OpType::MATMULRHSGRAD:
-  case OpType::BATCHNORMGRAD:
-    throw error("Gradient Ops not constructable from Node");
-
-  case OpType::NLL:
-  case OpType::L1:
-    throw error("Loss Ops not constructable from Node");
-
-  case OpType::ADDBIAS:
-  case OpType::RELUINPLACE:
-  case OpType::SOFTMAXGRADDIRECT:
-    throw error("Non-ONNX Ops not constructable from Node");
-
-  case OpType::CAST:
-    throw error("Currently there is only a ConstExprCast in poponnx, CastOp "
-                "not yet implemented. ");
-
-  default: { throw error("Failed to create Op for " + node.op_type()); }
+  std::unique_ptr<Op> p =
+      OpManager::createOp(opid, this, node.name(), node.attribute());
+  if (p != nullptr)
+    return p;
+  else {
+    if (opid == Onnx::Operators::Constant) {
+      throw error("ILE. Constant Ops are not to be added");
+    } else {
+      throw error("No class for {}", opid);
+    }
   }
 }
 
 std::string Op::str() const {
-  return std::to_string(id) + " (" + op_type() + ')';
+  std::stringstream ss;
+  ss << id << "(" << opid << ")";
+  return ss.str();
 }
 
 } // namespace poponnx

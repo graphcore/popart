@@ -5,6 +5,7 @@
 #include <poponnx/dataflow.hpp>
 #include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/opidentifier.hpp>
 #include <poponnx/optionflags.hpp>
 #include <poponnx/patterns/patterns.hpp>
 #include <poponnx/tensorindex.hpp>
@@ -182,7 +183,7 @@ public:
   // optimizer stream tensors (they are not data)
   std::vector<Tensor *> dataStreamTensors() const;
 
-  std::vector<Op *> opsOfType(OpType);
+  std::vector<Op *> opsOfType(const OperatorIdentifier &opid);
 
   // Essentially Kahn's algorithm (1962),
   // https://en.wikipedia.org/wiki/Topological_sorting

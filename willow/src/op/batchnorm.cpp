@@ -2,12 +2,17 @@
 #include <vector>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/batchnorm.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
 
 namespace poponnx {
 
-BatchNormOp::BatchNormOp(const onnx::NodeProto &node, Ir *ir) : Op(node, ir) {}
+BatchNormOp::BatchNormOp(const OperatorIdentifier &_opid,
+                         Ir *_ir,
+                         const std::string &name,
+                         const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {}
 
 std::unique_ptr<Op> BatchNormOp::clone() const {
   return make_unique<BatchNormOp>(*this);
@@ -82,7 +87,7 @@ void BatchNormOp::setup() {
 }
 
 BatchNormGradOp::BatchNormGradOp(BatchNormOp *op_)
-    : Op({OpType::BATCHNORMGRAD, op_->pir, {}}), fwdOp(op_) {}
+    : Op(Onnx::GradOperators::BatchNormalizationGrad, op_->pir), fwdOp(op_) {}
 
 const std::map<int, int> &BatchNormGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
@@ -111,5 +116,12 @@ void BatchNormGradOp::setup() {
   outInfo(getScaleOutIndex()) = fwdOp->inInfo(BatchNormOp::getScaleInIndex());
   outInfo(getBOutIndex())     = fwdOp->inInfo(BatchNormOp::getBInIndex());
 }
+
+namespace {
+static OpCreator<BatchNormOp>
+    batchNormOpCreator(Onnx::Operators::BatchNormalization);
+static GradOpCreator<BatchNormGradOp>
+    batchNormGradOpCreator(Onnx::GradOperators::BatchNormalizationGrad);
+} // namespace
 
 } // namespace poponnx

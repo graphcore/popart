@@ -1,6 +1,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/add.hpp>
 #include <poponnx/popx/op/addx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 
@@ -8,9 +9,7 @@ namespace poponnx {
 namespace popx {
 
 AddOpx::AddOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::ADD) {
-    throw error("cannot create AddOpx from " + op->op_type());
-  }
+  verifyOp<AddOp>(op, Onnx::Operators::Add);
 }
 
 void AddOpx::grow(poplar::program::Sequence &prog) const {
@@ -23,21 +22,23 @@ void AddOpx::grow(poplar::program::Sequence &prog) const {
                      idStr()));
 }
 
-AddOp *AddOpx::getAddOp() const { return dynamic_cast<AddOp *>(op_p); }
-
 AddArg0GradOpx::AddArg0GradOpx(Op *op, Devicex *devicex)
     : ReduceSumOpx(op, devicex) {
-  if (op_p->opType != OpType::ADDARG0GRAD) {
-    throw error("cannot create AddArg0GradOpx from " + op_p->op_type());
-  }
+  verifyOp<AddArg0GradOp>(op, Onnx::GradOperators::AddArg0Grad);
 }
 
 AddArg1GradOpx::AddArg1GradOpx(Op *op, Devicex *devicex)
     : ReduceSumOpx(op, devicex) {
-  if (op_p->opType != OpType::ADDARG1GRAD) {
-    throw error("cannot create AddArg1GradOpx from " + op_p->op_type());
-  }
+  verifyOp<AddArg1GradOp>(op, Onnx::GradOperators::AddArg1Grad);
 }
+
+namespace {
+OpxCreator<AddOpx> addOpxCreator(Onnx::Operators::Add);
+OpxCreator<AddArg0GradOpx>
+    addArg0GradOpxCreator(Onnx::GradOperators::AddArg0Grad);
+OpxCreator<AddArg1GradOpx>
+    addArg1GradOpxCreator(Onnx::GradOperators::AddArg1Grad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

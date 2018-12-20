@@ -1,6 +1,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/mul.hpp>
 #include <poponnx/popx/op/mulx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 
@@ -8,9 +9,7 @@ namespace poponnx {
 namespace popx {
 
 MulOpx::MulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (!op->isConvertibleTo<MulOp>()) {
-    throw error("cannot create MulOpx from " + op->op_type());
-  }
+  verifyOp<MulOp>(op, Onnx::Operators::Mul);
 }
 
 void MulOpx::grow(poplar::program::Sequence &prog) const {
@@ -23,7 +22,17 @@ void MulOpx::grow(poplar::program::Sequence &prog) const {
                      idStr()));
 }
 
-MulOp *MulOpx::getMulOp() const { return dynamic_cast<MulOp *>(op_p); }
+namespace {
+static OpxCreator<MulOpx> mulOpxCreator(Onnx::Operators::Mul);
+static OpxCreator<Opx>
+    mulArg0GradOpxCreator(Onnx::GradOperators::MulArg0Grad,
+                          "MulArg0GradOp should be optimised out, "
+                          "\"MulArgGradOp\" pattern is required");
+static OpxCreator<Opx>
+    mulArg1GradOpxCreator(Onnx::GradOperators::MulArg1Grad,
+                          "MulArg1GradOp should be optimised out, "
+                          "\"MulArgGradOp\" pattern is required");
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

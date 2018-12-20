@@ -10,13 +10,16 @@ namespace poponnx {
 // https://github.com/onnx/onnx/blob/master/docs/Operators.md#Transpose
 class TransposeOp : public Op {
 public:
-  TransposeOp(const OpConstructorBundle &, const std::vector<int64_t> &perm);
-  TransposeOp(const onnx::NodeProto &node, Ir *pir);
+  TransposeOp(const OperatorIdentifier &_opid,
+              Ir *_ir,
+              const std::string &name = "",
+              const Attributes &_attr = {});
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
   void setup() final;
 
+  void setPerm(const std::vector<int64_t> &value) { perm = value; }
   const std::vector<int64_t> &getPerm() const;
 
   static InIndex getInIndex() { return 0; }

@@ -10,6 +10,7 @@
 #include <poponnx/op/l1.hpp>
 #include <poponnx/op/loss.hpp>
 #include <poponnx/op/nll.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/optionflags.hpp>
 #include <poponnx/patterns/patterns.hpp>
@@ -74,7 +75,7 @@ std::map<std::string, std::string> getDictionary(py::dict pydict) {
   }
   return dictionary;
 }
-class PyStepIO : public StepIO {
+class PyStepIO : public IStepIO {
 public:
   PyStepIO(std::map<TensorId, py::array> inputs_,
            std::map<TensorId, py::array> outputs_)
@@ -114,10 +115,10 @@ PYBIND11_MODULE(poponnx_core, m) {
   m.def("getTensorInfo", &getTensorInfo);
 
   m.def("getSupportedOperations",
-        &getSupportedOperations,
+        &OpManager::getSupportedOperations,
         py::arg("includeInternal"));
 
-  py::class_<StepIO> stepio(m, "StepIO");
+  py::class_<IStepIO> stepio(m, "IStepIO");
 
   py::enum_<AnchorReturnTypeId>(m, "AnchorReturnTypeId")
       .value("FINAL", AnchorReturnTypeId::FINAL)

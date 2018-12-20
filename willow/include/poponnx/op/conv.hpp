@@ -7,7 +7,10 @@ namespace poponnx {
 
 class ConvOp : public HasReceptiveFieldOp {
 public:
-  ConvOp(const onnx::NodeProto &node, Ir *pir);
+  ConvOp(const OperatorIdentifier &_opid,
+         Ir *_ir,
+         const std::string &name = "",
+         const Attributes &_attr = {});
   int64_t nOutChans;
   int64_t group;
   bool cacheOperation = true;

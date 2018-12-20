@@ -14,7 +14,6 @@ namespace popx {
 class AddOpx : public Opx {
 public:
   AddOpx(Op *, Devicex *);
-  AddOp *getAddOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 

@@ -3,15 +3,14 @@
 #include <poponnx/op/reciprocal.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/reciprocalx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 namespace popx {
 
 ReciprocalOpx::ReciprocalOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (dynamic_cast<ReciprocalOp *>(op) == nullptr) {
-    throw error("cannot create ReciprocalOpx from " + op->op_type());
-  }
+  verifyOp<ReciprocalOp>(op, Onnx::Operators::Reciprocal);
 }
 
 void ReciprocalOpx::grow(poplar::program::Sequence &prog) const {
@@ -25,6 +24,13 @@ void ReciprocalOpx::grow(poplar::program::Sequence &prog) const {
                      prog,
                      idStr()));
 }
+
+namespace {
+OpxCreator<ReciprocalOpx> reciprocalOpxCreator(Onnx::Operators::Reciprocal);
+OpxCreator<Opx> reciprocalGradGradOpxCreator(
+    Onnx::GradOperators::ReciprocalGrad,
+    "ReciprocalGradOpx should be removed by pattern 'ReciprocalGradOpx'");
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

@@ -1,12 +1,15 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/mul.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-MulOp::MulOp(const onnx::NodeProto &node, Ir *ir) : Op(node, ir) {}
-
-MulOp::MulOp(const OpConstructorBundle &bundle) : Op(bundle) {}
+MulOp::MulOp(const OperatorIdentifier &_opid,
+             Ir *_ir,
+             const std::string &name,
+             const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {}
 
 std::unique_ptr<Op> MulOp::clone() const { return make_unique<MulOp>(*this); }
 
@@ -29,10 +32,11 @@ void MulOp::setup() {
       npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
 }
 
-MulArgGradOp::MulArgGradOp(const OpConstructorBundle &bundle,
+MulArgGradOp::MulArgGradOp(const OperatorIdentifier &_opid,
+                           Ir *_ir,
                            const std::vector<int64_t> &reduction_axes_,
                            const TensorInfo &forward_op_arg_info_)
-    : Op(bundle), reduction_axes(reduction_axes_),
+    : Op(_opid, _ir), reduction_axes(reduction_axes_),
       forward_op_arg_info(forward_op_arg_info_) {}
 
 const std::vector<int64_t> &MulArgGradOp::getReductionAxes() {
@@ -43,7 +47,8 @@ void MulArgGradOp::setup() { outInfo(getOutIndex()) = forward_op_arg_info; }
 
 MulArg0GradOp::MulArg0GradOp(MulOp *op_,
                              const std::vector<int64_t> &_reduction_axes)
-    : MulArgGradOp({OpType::MULARG0GRAD, op_->pir, {}},
+    : MulArgGradOp(Onnx::GradOperators::MulArg0Grad,
+                   op_->pir,
                    _reduction_axes,
                    op_->inInfo(MulOp::getArg0InIndex())) {}
 
@@ -62,7 +67,8 @@ const std::vector<GradInOutMapper> &MulArg0GradOp::gradInputInfo() const {
 
 MulArg1GradOp::MulArg1GradOp(MulOp *op_,
                              const std::vector<int64_t> &_reduction_axes)
-    : MulArgGradOp({OpType::MULARG1GRAD, op_->pir, {}},
+    : MulArgGradOp(Onnx::GradOperators::MulArg1Grad,
+                   op_->pir,
                    _reduction_axes,
                    op_->inInfo(MulOp::getArg1InIndex())) {}
 
@@ -78,5 +84,13 @@ const std::vector<GradInOutMapper> &MulArg1GradOp::gradInputInfo() const {
       {1, MulOp::getArg0InIndex(), GradOpInType::IN}};
   return inInfo;
 }
+
+namespace {
+static OpCreator<MulOp> mulOpCreator(Onnx::Operators::Mul);
+static GradOpCreator<MulArg0GradOp>
+    mulArg0GradOpCreator(Onnx::GradOperators::MulArg0Grad);
+static GradOpCreator<MulArg1GradOp>
+    mulArg1GradOpCreator(Onnx::GradOperators::MulArg1Grad);
+} // namespace
 
 } // namespace poponnx

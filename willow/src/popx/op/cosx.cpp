@@ -2,14 +2,13 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/cos.hpp>
 #include <poponnx/popx/op/cosx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 namespace poponnx {
 namespace popx {
 
 CosOpx::CosOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (!op->isConvertibleTo<CosOp>()) {
-    throw error("cannot create CosOpx from " + op->op_type());
-  }
+  verifyOp<CosOp>(op, Onnx::Operators::Cos);
 }
 
 void CosOpx::grow(poplar::program::Sequence &prog) const {
@@ -20,6 +19,16 @@ void CosOpx::grow(poplar::program::Sequence &prog) const {
                      prog,
                      idStr()));
 }
+
+namespace {
+OpxCreator<CosOpx> cosOpxCreator(Onnx::Operators::Cos);
+OpxCreator<Opx> coshOpxCreator(Onnx::Operators::Cosh,
+                               "Cosh should be removed by pattern \"CoshOp\"");
+OpxCreator<Opx> cosGradOpxCreator(
+    Onnx::GradOperators::CosGrad,
+    "CosGradOp should be optimised out, \"CosGradOp\" pattern is required");
+
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

@@ -1,20 +1,18 @@
 #include <algorithm>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/transpose.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-TransposeOp::TransposeOp(const OpConstructorBundle &bundle,
-                         const std::vector<int64_t> &perm_)
-    : Op(bundle), perm(perm_) {}
+TransposeOp::TransposeOp(const OperatorIdentifier &_opid,
+                         Ir *_ir,
+                         const std::string &name,
+                         const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {
 
-TransposeOp::TransposeOp(const onnx::NodeProto &node, Ir *_pir)
-    : Op(node, _pir) {
   nAtts.setIfPresent(perm, "perm");
-  if (perm.empty()) {
-    setDefaultPerm();
-  }
 }
 
 std::unique_ptr<Op> TransposeOp::clone() const {
@@ -66,8 +64,9 @@ void TransposeOp::setDefaultPerm() {
 }
 
 TransposeGradOp::TransposeGradOp(TransposeOp *fwdOp)
-    : TransposeOp({OpType::TRANSPOSEGRAD, fwdOp->pir, {}},
-                  fwdOp->generateReversePermutation()) {}
+    : TransposeOp(Onnx::GradOperators::TransposeGrad, fwdOp->pir) {
+  setPerm(fwdOp->generateReversePermutation());
+}
 
 std::unique_ptr<Op> TransposeGradOp::clone() const {
   return make_unique<TransposeGradOp>(*this);
@@ -86,5 +85,11 @@ const std::map<int, int> &TransposeGradOp::gradOutToNonGradIn() const {
 
   return outInfo;
 }
+
+namespace {
+static OpCreator<TransposeOp> transposeOpCreator(Onnx::Operators::Transpose);
+static GradOpCreator<TransposeGradOp>
+    transposeGradOpCreator(Onnx::GradOperators::TransposeGrad);
+} // namespace
 
 } // namespace poponnx

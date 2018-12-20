@@ -14,9 +14,10 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
-class NegateGradOpx : public NegateOpx {
+class NegateGradOpx : public Opx {
 public:
   NegateGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

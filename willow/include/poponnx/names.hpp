@@ -55,7 +55,7 @@ class TensorIndexMap;
 class TensorInfo;
 class ConstVoidData;
 class MutableOutData;
-class StepIO;
+class IStepIO;
 class GradInOutMapper;
 class InputMapWrapper;
 class OutputMapWrapper;

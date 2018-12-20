@@ -1,13 +1,14 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/sin.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
-
-SinOp::SinOp(const OpConstructorBundle &bundle) : ElementWiseUnaryOp(bundle) {}
-
-SinOp::SinOp(const onnx::NodeProto &node, Ir *_pir)
-    : ElementWiseUnaryOp(node, _pir) {}
+SinOp::SinOp(const OperatorIdentifier &_opid,
+             Ir *_ir,
+             const std::string &name,
+             const Attributes &_attr)
+    : ElementWiseUnaryOp(_opid, _ir, name, _attr) {}
 
 std::unique_ptr<Op> SinOp::clone() const { return make_unique<SinOp>(*this); }
 
@@ -18,10 +19,16 @@ std::vector<std::unique_ptr<Op>> SinOp::getGradOps() {
 }
 
 SinGradOp::SinGradOp(SinOp *fwdOp)
-    : ElementWiseNonLinearUnaryGradOp({OpType::SINGRAD, fwdOp->pir, {}}) {}
+    : ElementWiseNonLinearUnaryGradOp(Onnx::GradOperators::SinGrad,
+                                      fwdOp->pir) {}
 
 std::unique_ptr<Op> SinGradOp::clone() const {
   return make_unique<SinGradOp>(*this);
 }
+
+namespace {
+static OpCreator<SinOp> sinOpCreator(Onnx::Operators::Sin);
+static GradOpCreator<SinGradOp> sinGradOpCreator(Onnx::GradOperators::SinGrad);
+} // namespace
 
 } // namespace poponnx

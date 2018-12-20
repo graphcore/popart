@@ -27,13 +27,11 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
   auto ir            = op->pir;
 
   // create the new ops
-  auto square_op =
-      make_unique<SquareOp>(OpConstructorBundle{OpType::SQUARE, ir, {}});
-  auto reciprocal_op = make_unique<ReciprocalOp>(
-      OpConstructorBundle{OpType::RECIPROCAL, ir, {}});
-  auto negate_op =
-      make_unique<NegateOp>(OpConstructorBundle{OpType::NEGATE, ir, {}});
-  auto mul_op = make_unique<MulOp>(OpConstructorBundle{OpType::MUL, ir, {}});
+  auto square_op = make_unique<SquareOp>(Onnx::CustomOperators::Square, ir);
+  auto reciprocal_op =
+      make_unique<ReciprocalOp>(Onnx::Operators::Reciprocal, ir);
+  auto negate_op = make_unique<NegateOp>(Onnx::Operators::Neg, ir);
+  auto mul_op    = make_unique<MulOp>(Onnx::Operators::Mul, ir);
 
   // move ops into ir
   auto square     = square_op.get();

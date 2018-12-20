@@ -8,8 +8,10 @@ namespace poponnx {
 
 class NegateOp : public ElementWiseUnaryOp {
 public:
-  NegateOp(const OpConstructorBundle &);
-  NegateOp(const onnx::NodeProto &node, Ir *pir);
+  NegateOp(const OperatorIdentifier &_opid,
+           Ir *_ir,
+           const std::string &name = "",
+           const Attributes &_attr = {});
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 };

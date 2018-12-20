@@ -2,12 +2,16 @@
 #include <poponnx/op/maxpool.hpp>
 
 #include <poponnx/makeunique.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-MaxPoolOp::MaxPoolOp(const onnx::NodeProto &node, Ir *_pir)
-    : HasReceptiveFieldOp(node, _pir) {}
+MaxPoolOp::MaxPoolOp(const OperatorIdentifier &_opid,
+                     Ir *_ir,
+                     const std::string &name,
+                     const Attributes &_attr)
+    : HasReceptiveFieldOp(_opid, _ir, name, _attr) {}
 
 void MaxPoolOp::setup0() {
   int64_t storage_order = 0;
@@ -49,7 +53,7 @@ std::vector<std::unique_ptr<Op>> MaxPoolOp::getGradOps() {
 }
 
 MaxPoolGradOp::MaxPoolGradOp(MaxPoolOp *op_)
-    : Op({OpType::MAXPOOLGRAD, op_->pir, {}}),
+    : Op(Onnx::GradOperators::MaxPoolGrad, op_->pir),
       unpooledInfo(op_->inInfo(MaxPoolOp::getInIndex())),
       cloneOfCreator(op_->clone()) {}
 
@@ -80,5 +84,11 @@ const std::map<int, int> &MaxPoolGradOp::gradOutToNonGradIn() const {
 }
 
 void MaxPoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
+
+namespace {
+static OpCreator<MaxPoolOp> maxPoolOpxCreator(Onnx::Operators::MaxPool);
+static GradOpCreator<MaxPoolGradOp>
+    maxPoolGradOpxCreator(Onnx::GradOperators::MaxPoolGrad);
+} // namespace
 
 } // namespace poponnx

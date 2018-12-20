@@ -1,9 +1,18 @@
 #include <algorithm>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/pad.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
+
+PadOp::PadOp(const OperatorIdentifier &_opid,
+             Ir *_ir,
+             const std::string &name,
+             const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {
+  nAtts.set(pads, "pads");
+}
 
 std::unique_ptr<Op> PadOp::clone() const { return make_unique<PadOp>(*this); }
 
@@ -22,13 +31,13 @@ void PadOp::setup() {
   outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), outShape};
 }
 
-PadOp::PadOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {
-  nAtts.set(pads, "pads");
-}
-
 bool PadOp::padSizeZero() const {
   return std::all_of(
       pads.cbegin(), pads.cend(), [](int64_t p) { return p == 0; });
+}
+
+namespace {
+static OpCreator<PadOp> padCreator(Onnx::Operators::Pad);
 }
 
 } // namespace poponnx

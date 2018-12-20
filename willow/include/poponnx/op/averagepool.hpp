@@ -12,7 +12,10 @@ namespace poponnx {
 // "the 3": destructor, copy constructor, assigment op.
 class AveragePoolOp : public HasReceptiveFieldOp {
 public:
-  AveragePoolOp(const onnx::NodeProto &node, Ir *pir);
+  AveragePoolOp(const OperatorIdentifier &_opid,
+                Ir *_ir,
+                const std::string &name = "",
+                const Attributes &_attr = {});
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   int64_t getNOutChans() const final;

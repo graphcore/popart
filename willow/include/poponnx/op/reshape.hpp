@@ -12,10 +12,13 @@ namespace poponnx {
 // but it is slightly different: this Op is static w.r.t. shape
 class ReshapeOp : public Op {
 public:
-  ReshapeOp(const onnx::NodeProto &node, Ir *pir);
+  ReshapeOp(const OperatorIdentifier &_opid,
+            Ir *_ir,
+            const std::string &name = "",
+            const Attributes &_attr = {});
 
   // This will be used by ReshapeGradOp
-  ReshapeOp(const OpConstructorBundle &, const Shape &outShape_);
+  ReshapeOp(const OperatorIdentifier &_opid, Ir *_ir, const Shape &outShape_);
 
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   std::unique_ptr<Op> clone() const final;

@@ -1,5 +1,6 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/relu.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -12,7 +13,7 @@ bool ReluOp::hasInplaceVariant(InIndex) const {
 }
 
 ReluInplaceOp::ReluInplaceOp(ReluOp *relu_op)
-    : Op({OpType::RELUINPLACE, relu_op->pir, {}}) {}
+    : Op(Onnx::CustomOperators::ReluInplace, relu_op->pir) {}
 
 void ReluInplaceOp::setup() {
   // no output, nothing to setup
@@ -27,7 +28,11 @@ std::unique_ptr<Op> ReluOp::getInplaceVariant(InIndex) {
   return make_unique<ReluInplaceOp>(this);
 }
 
-ReluOp::ReluOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
+ReluOp::ReluOp(const OperatorIdentifier &_opid,
+               Ir *_ir,
+               const std::string &name,
+               const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {}
 
 std::vector<std::unique_ptr<Op>> ReluOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -41,7 +46,8 @@ void ReluGradOp::setup() {
   outInfo(getOutIndex()) = inInfo(getGradReludInIndex());
 }
 
-ReluGradOp::ReluGradOp(ReluOp *op_) : Op({OpType::RELUGRAD, op_->pir, {}}) {}
+ReluGradOp::ReluGradOp(ReluOp *op_)
+    : Op(Onnx::GradOperators::ReluGrad, op_->pir) {}
 
 const std::vector<GradInOutMapper> &ReluGradOp::gradInputInfo() const {
   // input at index getGradReludIn() (=0) : gradient of output of relu
@@ -62,5 +68,13 @@ const std::map<int, int> &ReluGradOp::gradOutToNonGradIn() const {
       {getOutIndex(), ReluOp::getInIndex()}};
   return outInfo;
 }
+
+namespace {
+static OpCreator<ReluOp> reluOpCreator(Onnx::Operators::Relu);
+static GradOpCreator<ReluInplaceOp>
+    reluInPlaceOpCreator(Onnx::CustomOperators::ReluInplace);
+static GradOpCreator<ReluGradOp>
+    reluGradOpCreator(Onnx::GradOperators::ReluGrad);
+} // namespace
 
 } // namespace poponnx

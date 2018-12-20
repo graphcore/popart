@@ -5,6 +5,7 @@
 #include <poponnx/tensor.hpp>
 // #include <poponnx/tensorindex.hpp>
 #include <poponnx/makeunique.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/util.hpp>
 
@@ -15,9 +16,7 @@ namespace poponnx {
 namespace popx {
 
 MatMulOpx::MatMulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::MATMUL) {
-    throw error("cannot create MatMulOpx from " + op->op_type());
-  }
+  verifyOp<MatMulOp>(op, Onnx::Operators::MatMul);
 }
 
 std::vector<std::size_t> MatMulOpx::onnxShapeToPoplar(const Shape &shape) {
@@ -147,14 +146,13 @@ poplar::Tensor MatMulOpx::createInput(int index) const {
                &dv_p->matmulCache)
         .reshape(matmul->rhsIn()->info.shape_szt());
   } else {
-    throw error("matmul opx cannot create tensor for index " +
-                std::to_string(index));
+    throw error("matmul opx cannot create tensor for index {}", index);
   }
 }
 
 bool MatMulOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
 
-  if (opx1->op_p->opType != OpType::MATMUL)
+  if (opx1->op_p->opid != Onnx::Operators::MatMul)
     return false;
 
   if (ind0 != ind1)
@@ -179,9 +177,7 @@ std::vector<TensorId> MatMulOpx::mustExistBeforeCreate(InIndex) const {
 
 MatMulLhsGradOpx::MatMulLhsGradOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
-  if (op_p->opType != OpType::MATMULLHSGRAD) {
-    throw error("cannot create MatMulLhsGradOpx from " + op_p->op_type());
-  }
+  verifyOp<MatMulLhsGradOp>(op, Onnx::GradOperators::MatMulLhsGrad);
 }
 
 void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
@@ -264,9 +260,7 @@ std::vector<std::size_t> MatMulLhsGradOpx::getOutputReductionAxes() const {
 
 MatMulRhsGradOpx::MatMulRhsGradOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
-  if (op_p->opType != OpType::MATMULRHSGRAD) {
-    throw error("cannot create MatMulRhsGradOpx from " + op_p->op_type());
-  }
+  verifyOp<MatMulRhsGradOp>(op, Onnx::GradOperators::MatMulRhsGrad);
 }
 
 MatMulRhsGradOp *MatMulRhsGradOpx::getMatMulRhsGradOp() const {
@@ -346,6 +340,14 @@ std::vector<std::size_t> MatMulRhsGradOpx::getOutputReductionAxes() const {
       npReductionAxis(matmul_rgrad->getOutputShape(),
                       vXtoY<std::size_t, int64_t>(getOutputShape())));
 }
+
+namespace {
+OpxCreator<MatMulOpx> matmulOpxCreator(Onnx::Operators::MatMul);
+OpxCreator<MatMulLhsGradOpx>
+    matmulLhsGradOpxCreator(Onnx::GradOperators::MatMulLhsGrad);
+OpxCreator<MatMulRhsGradOpx>
+    matmulRhsGradOpxCreator(Onnx::GradOperators::MatMulRhsGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

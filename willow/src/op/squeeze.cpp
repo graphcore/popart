@@ -1,9 +1,14 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/squeeze.hpp>
+#include <poponnx/opmanager.hpp>
 
 namespace poponnx {
 
-SqueezeOp::SqueezeOp(const onnx::NodeProto &node, Ir *_pir) : Op(node, _pir) {}
+SqueezeOp::SqueezeOp(const OperatorIdentifier &_opid,
+                     Ir *_ir,
+                     const std::string &name,
+                     const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {}
 
 std::vector<std::unique_ptr<Op>> SqueezeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -23,7 +28,7 @@ void SqueezeOp::setup() {
 void SqueezeGradOp::setup() { outInfo(getOutIndex()) = unsqueezedInfo; }
 
 SqueezeGradOp::SqueezeGradOp(SqueezeOp *op_)
-    : Op({OpType::SQUEEZEGRAD, op_->pir, {}}),
+    : Op(Onnx::GradOperators::SqueezeGrad, op_->pir),
       unsqueezedInfo(op_->inInfo(SqueezeOp::getInIndex())) {}
 
 const std::vector<GradInOutMapper> &SqueezeGradOp::gradInputInfo() const {
@@ -40,5 +45,11 @@ const std::map<int, int> &SqueezeGradOp::gradOutToNonGradIn() const {
       {getOutIndex(), SqueezeOp::getInIndex()}};
   return outInfo;
 }
+
+namespace {
+static OpCreator<SqueezeOp> squeezeOpCreator(Onnx::Operators::Squeeze);
+static GradOpCreator<SqueezeGradOp>
+    squeezeGradOpCreator(Onnx::GradOperators::SqueezeGrad);
+} // namespace
 
 } // namespace poponnx

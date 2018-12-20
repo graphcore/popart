@@ -2,6 +2,7 @@
 #include <poponnx/op/conv.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/opx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
 
@@ -13,23 +14,22 @@ Opx::Opx(Op *op_p_, Devicex *dv_p_) : op_p(op_p_), dv_p(dv_p_) {}
 Opx::~Opx() = default;
 
 poplar::Tensor Opx::createInput(int) const {
-  throw error("Opx for " + op_p->op_type() + " cannot create Input");
+  throw error("Opx for {} cannot create Input", op_p->opid);
 }
 
 bool Opx::createsEquiv(int, Opx *, int) const {
-  throw error("No check for equivalent tensor create for type " +
-              op_p->op_type());
+  throw error("No check for equivalent tensor create for type {}", op_p->opid);
 }
 
 std::vector<TensorId> Opx::mustExistBeforeCreate(int index0) const {
-  throw error(
-      "Opx for " + op_p->op_type() +
-      " cannot say which poplar Tensors must exist to create at index " +
-      std::to_string(index0));
+  throw error("Opx for {} cannot say which poplar Tensors must exist to create "
+              "at index {}",
+              op_p->opid,
+              index0);
 }
 
 void Opx::grow(poplar::program::Sequence &) const {
-  throw error("adding poplar::Tensors not implemented for " + op_p->op_type());
+  throw error("adding poplar::Tensors not implemented for {}", op_p->opid);
 }
 
 bool Opx::canCreateInput(int) const { return false; }
@@ -126,6 +126,15 @@ poplar::Tensor Opx::broadcast(const std::vector<int64_t> &desired_shape,
 
   return t;
 }
+
+// TODO : Find a better place to put these, ops that will be optimized out
+// before creating opx's
+namespace {
+OpxCreator<Opx> gemmOpxCreator(Onnx::Operators::Gemm,
+                               "GemmOp should be removed by pattern 'GemmOp'");
+OpxCreator<Opx> tanGradOpxCreator(Onnx::Operators::Tan,
+                                  "TanOp should be removed by pattern 'TanOp'");
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

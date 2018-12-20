@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/nll.hpp>
 #include <poponnx/popx/op/nllx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 #include "popops/Encoding.hpp"
 #include <popops/ElementWise.hpp>
@@ -11,16 +12,12 @@ namespace poponnx {
 namespace popx {
 
 NllOpx::NllOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::NLL) {
-    throw error("cannot create NllOpx from " + op->op_type());
-  }
+  verifyOp<NllOp>(op, Onnx::CustomOperators::Nll);
 }
 
-NllOp *NllOpx::getNllOp() const { return dynamic_cast<NllOp *>(op_p); }
-
 void NllOpx::grow(poplar::program::Sequence &prog) const {
-  TensorId labelId     = getNllOp()->nlll()->labelTensorId();
-  TensorId probsId     = getNllOp()->nlll()->probsTensorId();
+  TensorId labelId     = getOp<NllOp>().nlll()->labelTensorId();
+  TensorId probsId     = getOp<NllOp>().nlll()->probsTensorId();
   poplar::Tensor probs = get(probsId);
 
   // Tensor taking one-hot encoded output must be 2 dimensional
@@ -54,14 +51,14 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::NLLGRAD) {
-    throw error("cannot create NllGradOpx from " + op->op_type());
-  }
+  verifyOp<NllGradOp>(op, Onnx::CustomGradOperators::NllGrad);
 }
 
-NllGradOp *NllGradOpx::getNllGradOp() const {
-  return dynamic_cast<NllGradOp *>(op_p);
-}
+namespace {
+static OpxCreator<NllOpx> nllOpxCreator(Onnx::CustomOperators::Nll);
+static OpxCreator<NllGradOpx>
+    nllGradOpxCreator(Onnx::CustomGradOperators::NllGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

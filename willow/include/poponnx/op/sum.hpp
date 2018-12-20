@@ -7,8 +7,10 @@ namespace poponnx {
 
 class SumOp : public Op {
 public:
-  SumOp(const OpConstructorBundle &);
-  SumOp(const onnx::NodeProto &node, Ir *pir);
+  SumOp(const OperatorIdentifier &_opid,
+        Ir *_ir,
+        const std::string &name = "",
+        const Attributes &_attr = {});
   void setup() final;
   std::unique_ptr<Op> clone() const final;
 

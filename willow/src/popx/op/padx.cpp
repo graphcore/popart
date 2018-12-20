@@ -1,17 +1,18 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/pad.hpp>
 #include <poponnx/popx/op/padx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 namespace poponnx {
 namespace popx {
 
 PadOpx::PadOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::PAD) {
-    throw error("cannot create PadOpx from " + op->op_type());
-  }
+  verifyOp<PadOp>(op, Onnx::Operators::Pad);
 }
 
-PadOp *PadOpx::getPadOp() const { return dynamic_cast<PadOp *>(op_p); }
+namespace {
+OpxCreator<PadOpx> padOpxCreator(Onnx::Operators::Pad);
+}
 
 } // namespace popx
 } // namespace poponnx

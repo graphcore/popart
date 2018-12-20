@@ -7,7 +7,11 @@ namespace poponnx {
 
 class PadOp : public Op {
 public:
-  PadOp(const onnx::NodeProto &node, Ir *pir);
+  PadOp(const OperatorIdentifier &_opid,
+        Ir *_ir,
+        const std::string &name = "",
+        const Attributes &_attr = {});
+
   std::unique_ptr<Op> clone() const final;
   // returns true of all pad size in all dimensions
   // and on both sides, are zero

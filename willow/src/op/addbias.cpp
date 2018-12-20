@@ -3,11 +3,13 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/addbias.hpp>
 #include <poponnx/op/conv.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-AddBiasOp::AddBiasOp(ConvOp *op_) : Op({OpType::ADDBIAS, op_->pir, {}}) {}
+AddBiasOp::AddBiasOp(ConvOp *op_)
+    : Op(Onnx::CustomOperators::AddBias, op_->pir) {}
 
 std::unique_ptr<Op> AddBiasOp::clone() const {
   return make_unique<AddBiasOp>(*this);
@@ -29,7 +31,10 @@ void AddBiasOp::setup() { outInfo(getOutIndex()) = inInfo(getDataInIndex()); }
 
 AddBiasBiasGradOp::AddBiasBiasGradOp(AddBiasOp *op_,
                                      const std::vector<int64_t> &_axes)
-    : ReduceSumOp({OpType::ADDBIASBIASGRAD, op_->pir, {}}, _axes, 0) {}
+    : ReduceSumOp(Onnx::CustomGradOperators::AddBiasBiasGrad,
+                  op_->pir,
+                  _axes,
+                  0) {}
 
 const std::map<int, int> &AddBiasBiasGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
@@ -46,7 +51,7 @@ const std::vector<GradInOutMapper> &AddBiasBiasGradOp::gradInputInfo() const {
 }
 
 AddBiasDataGradOp::AddBiasDataGradOp(AddBiasOp *op)
-    : IdentityOp({OpType::ADDBIASDATAGRAD, op->pir, {}}) {}
+    : IdentityOp({Onnx::CustomGradOperators::AddBiasDataGrad, op->pir, {}}) {}
 
 const std::vector<GradInOutMapper> &AddBiasDataGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
@@ -61,5 +66,16 @@ const std::map<int, int> &AddBiasDataGradOp::gradOutToNonGradIn() const {
 
   return outInfo;
 }
+
+namespace {
+
+// The AddBiasOp should not be created from the onnx graph
+static OpCreator<AddBiasOp>
+    addOpCreator(Onnx::CustomOperators::AddBias, nullptr, false);
+static GradOpCreator<AddBiasBiasGradOp>
+    addBiasBiasGradOpCreator(Onnx::CustomGradOperators::AddBiasBiasGrad);
+static GradOpCreator<AddBiasDataGradOp>
+    addBiasDataGradOpCreator(Onnx::CustomGradOperators::AddBiasDataGrad);
+} // namespace
 
 } // namespace poponnx

@@ -2,6 +2,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/l1.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -15,10 +16,12 @@ std::vector<std::unique_ptr<Op>> L1Op::getGradOps() {
 }
 
 std::unique_ptr<Op> L1Loss::getOp(Ir *gp) const {
-  return std::unique_ptr<Op>(new L1Op({op_type(), gp, {}}, this));
+  return std::unique_ptr<Op>(new L1Op(op_type(), gp, this));
 }
 
-OpType L1Loss::op_type() const { return OpType::L1; }
+const OperatorIdentifier &L1Loss::op_type() const {
+  return Onnx::CustomOperators::L1;
+}
 
 std::vector<TensorId> L1Loss::getStreamTensorNames() const { return {}; }
 
@@ -32,8 +35,8 @@ float L1Loss::getLambda() const { return lambda; }
 const L1Loss *L1Op::l1l() const { return l1loss_; }
 const L1Loss *L1GradOp::l1l() const { return l1loss_; }
 
-L1Op::L1Op(const OpConstructorBundle &b, const L1Loss *n)
-    : LossOp(b), l1loss_(n) {}
+L1Op::L1Op(const OperatorIdentifier &_opid, Ir *_ir, const L1Loss *n)
+    : LossOp(_opid, _ir), l1loss_(n) {}
 
 void L1GradOp::setup() {
   // gradient of input has same shape as input to L1
@@ -51,7 +54,7 @@ void L1Op::setup() {
 }
 
 L1GradOp::L1GradOp(L1Op *op_)
-    : Op({OpType::L1GRAD, op_->pir, {}}), l1loss_(op_->l1l()) {}
+    : Op(Onnx::CustomGradOperators::L1Grad, op_->pir), l1loss_(op_->l1l()) {}
 
 const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {
   // input at index 0 of this grad op is the input at index 0 of the L1
@@ -67,5 +70,11 @@ const std::map<int, int> &L1GradOp::gradOutToNonGradIn() const {
       {getOutIndex(), L1Op::getInIndex()}};
   return outInfo;
 }
+
+namespace {
+static LossOpCreator<L1Op> l1OpCreator(Onnx::CustomOperators::L1);
+static GradOpCreator<L1GradOp>
+    l1GradOpCreator(Onnx::CustomGradOperators::L1Grad);
+} // namespace
 
 } // namespace poponnx

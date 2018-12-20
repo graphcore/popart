@@ -55,11 +55,11 @@ bool PostNRepl::matches(Op *op) const {
     // good so far
   }
   // A sum with only one input
-  else if (op->opType == OpType::SUM && op->input->n() == 1) {
+  else if (op->opid == Onnx::Operators::Sum && op->input->n() == 1) {
     // good so far
   }
   // A pad with zero-padding
-  else if (op->opType == OpType::PAD &&
+  else if (op->opid == Onnx::Operators::Pad &&
            dynamic_cast<const PadOp *>(op)->padSizeZero()) {
     // good so far
   } else {

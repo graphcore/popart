@@ -1,6 +1,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/subtract.hpp>
 #include <poponnx/popx/op/subtractx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 
@@ -8,9 +9,7 @@ namespace poponnx {
 namespace popx {
 
 SubtractOpx::SubtractOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::SUBTRACT) {
-    throw error("cannot create SubtractOpx from " + op->op_type());
-  }
+  verifyOp<SubtractOp>(op, Onnx::Operators::Sub);
 }
 
 void SubtractOpx::grow(poplar::program::Sequence &prog) const {
@@ -23,16 +22,19 @@ void SubtractOpx::grow(poplar::program::Sequence &prog) const {
                      idStr()));
 }
 
-SubtractOp *SubtractOpx::getSubtractOp() const {
-  return dynamic_cast<SubtractOp *>(op_p);
-}
-
 SubtractArg0GradOpx::SubtractArg0GradOpx(Op *op, Devicex *devicex)
     : ReduceSumOpx(op, devicex) {
-  if (op_p->opType != OpType::SUBTRACTARG0GRAD) {
-    throw error("cannot create SubtractArg0GradOpx from " + op_p->op_type());
-  }
+  verifyOp<SubtractArg0GradOp>(op, Onnx::GradOperators::SubArg0Grad);
 }
+
+namespace {
+OpxCreator<SubtractOpx> subtractOpxCreator(Onnx::Operators::Sub);
+OpxCreator<SubtractArg0GradOpx>
+    subtractArg0GradOpxCreator(Onnx::GradOperators::SubArg0Grad);
+OpxCreator<Opx> subtractArg1GradOpxCreator(
+    Onnx::GradOperators::SubArg1Grad,
+    "SubtractArg1GradOpx should be removed by pattern 'SubtractArg1GradOp'");
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

@@ -1,6 +1,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/div.hpp>
 #include <poponnx/popx/op/divx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 
@@ -8,9 +9,7 @@ namespace poponnx {
 namespace popx {
 
 DivOpx::DivOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (!op->isConvertibleTo<DivOp>()) {
-    throw error("cannot create DivOpx from " + op->op_type());
-  }
+  verifyOp<DivOp>(op, Onnx::Operators::Div);
 }
 
 void DivOpx::grow(poplar::program::Sequence &prog) const {
@@ -23,7 +22,15 @@ void DivOpx::grow(poplar::program::Sequence &prog) const {
                      idStr()));
 }
 
-DivOp *DivOpx::getDivOp() const { return dynamic_cast<DivOp *>(op_p); }
+namespace {
+OpxCreator<DivOpx> divOpxCreator(Onnx::Operators::Div);
+OpxCreator<Opx> divArg0OpxCreator(
+    Onnx::GradOperators::DivArg0Grad,
+    "DivArg0Grad should be optimised out, \"DivArg0Grad\" pattern is required");
+OpxCreator<Opx> divArg1OpxCreator(Onnx::GradOperators::DivArg1Grad,
+                                  "DivArg1Grad should be optimised out, "
+                                  "\"DivArg1GradOp\" pattern is required");
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

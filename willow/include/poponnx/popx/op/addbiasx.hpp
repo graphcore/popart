@@ -16,7 +16,6 @@ namespace popx {
 class AddBiasOpx : public Opx {
 public:
   AddBiasOpx(Op *, Devicex *);
-  AddBiasOp *getAddBiasOp() const;
   void grow(poplar::program::Sequence &) const final;
 
   std::vector<TensorId> mustExistBeforeCreate(int index0) const override;

@@ -27,8 +27,8 @@ public:
   // with Node function (uses same template)
   const TensorId &output(OutIndex) const;
   int output_size() const;
-  virtual OpType op_type() const              = 0;
-  virtual std::unique_ptr<Loss> clone() const = 0;
+  virtual const OperatorIdentifier &op_type() const = 0;
+  virtual std::unique_ptr<Loss> clone() const       = 0;
 
 private:
   // The names of the input tensors, same
@@ -40,8 +40,10 @@ private:
 
 class LossOp : public Op {
 public:
-  LossOp(const Node &, Ir *);
-  LossOp(const OpConstructorBundle &);
+  LossOp(const OperatorIdentifier &_opid,
+         Ir *_ir,
+         const std::string &name = "",
+         const Attributes &_attr = {});
   LossOp(const Op &);
 
   bool isLossOp() const override;

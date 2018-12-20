@@ -14,12 +14,10 @@ using namespace poponnx;
 BOOST_AUTO_TEST_CASE(MatMul_Case1) {
 
   // Setup
-  onnx::NodeProto node;
-  node.set_op_type("MatMul");
 
   poponnx::Ir ir;
 
-  poponnx::MatMulOp mm(node, &ir);
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul, &ir);
 
   poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
   lhs.info.set(poponnx::DataType::FLOAT, {2, 2});
@@ -117,12 +115,10 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
 BOOST_AUTO_TEST_CASE(MatMul_Case2) {
 
   // Setup
-  onnx::NodeProto node;
-  node.set_op_type("MatMul");
 
   poponnx::Ir ir;
 
-  poponnx::MatMulOp mm(node, &ir);
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul, &ir);
 
   poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
   lhs.info.set(poponnx::DataType::FLOAT, {3, 2});
@@ -219,12 +215,10 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
 // Test the simple [2x1x4x3x2] * [3x1x2x6] matrix
 BOOST_AUTO_TEST_CASE(MatMul_Case3) {
   // Setup
-  onnx::NodeProto node;
-  node.set_op_type("MatMul");
 
   poponnx::Ir ir;
 
-  poponnx::MatMulOp mm(node, &ir);
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul, &ir);
 
   poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
   lhs.info.set(poponnx::DataType::FLOAT, {2, 1, 4, 3, 2});
@@ -274,12 +268,10 @@ BOOST_AUTO_TEST_CASE(MatMul_Case3) {
 BOOST_AUTO_TEST_CASE(MatMul_ErrorCase1) {
 
   // Setup
-  onnx::NodeProto node;
-  node.set_op_type("MatMul");
 
   poponnx::Ir ir;
 
-  poponnx::MatMulOp mm(node, &ir);
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul, &ir);
 
   poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
   lhs.info.set(poponnx::DataType::FLOAT, {2, 2, 3});
@@ -300,12 +292,10 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase1) {
 BOOST_AUTO_TEST_CASE(MatMul_ErrorCase3) {
 
   // Setup
-  onnx::NodeProto node;
-  node.set_op_type("MatMul");
 
   poponnx::Ir ir;
 
-  poponnx::MatMulOp mm(node, &ir);
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul, &ir);
 
   poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
   lhs.info.set(poponnx::DataType::FLOAT, {2, 3});
@@ -326,12 +316,10 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase3) {
 BOOST_AUTO_TEST_CASE(MatMul_ErrorCase4) {
 
   // Setup
-  onnx::NodeProto node;
-  node.set_op_type("MatMul");
 
   poponnx::Ir ir;
 
-  poponnx::MatMulOp mm(node, &ir);
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul, &ir);
 
   poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
   lhs.info.set(poponnx::DataType::FLOAT, {});

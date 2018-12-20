@@ -118,9 +118,9 @@ public:
   void prepare() final;
   void weightsFromHost() final;
   void optimizerFromHost() final;
-  void infer(const StepIO &) final;
-  void evaluate(const StepIO &) final;
-  void train(const StepIO &) final;
+  void infer(const IStepIO &) final;
+  void evaluate(const IStepIO &) final;
+  void train(const IStepIO &) final;
   void weightsToHost(const std::map<TensorId, MutableVoidData> &) final;
 
   virtual std::string getSummaryReport() const override final;
@@ -249,10 +249,10 @@ private:
   void hostStreamToHost(const MutableVoidData &mv_data, TensorId id);
 
   // Call hostToHostStream on all the Tensors in pir->dataStreamTensors()
-  void anchorsHostToHostStreams(const StepIO &stepio);
+  void anchorsHostToHostStreams(const IStepIO &stepio);
 
   // Call hostStreamToHost in all the Tensors in pir->dataFlow.anchors()
-  void anchorsHostFromHostStreams(const StepIO &stepio);
+  void anchorsHostFromHostStreams(const IStepIO &stepio);
 
   // Helper function to find the program fragment index an op/tensor belongs in
   static PopPrograms::ProgramFragmentIndex programFragmentIndex(Vertex *vertex);

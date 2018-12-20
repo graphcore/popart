@@ -8,7 +8,10 @@ namespace poponnx {
 
 class SubtractOp : public Op {
 public:
-  SubtractOp(const onnx::NodeProto &node, Ir *pir);
+  SubtractOp(const OperatorIdentifier &_opid,
+             Ir *_ir,
+             const std::string &name = "",
+             const Attributes &_attr = {});
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;

@@ -2,14 +2,13 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/tanh.hpp>
 #include <poponnx/popx/op/tanhx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 namespace poponnx {
 namespace popx {
 
 TanhOpx::TanhOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (!op->isConvertibleTo<TanhOp>()) {
-    throw error("cannot create TanhOpx from " + op->op_type());
-  }
+  verifyOp<TanhOp>(op, Onnx::Operators::Tanh);
 }
 
 void TanhOpx::grow(poplar::program::Sequence &prog) const {
@@ -21,9 +20,7 @@ void TanhOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 TanhGradOpx::TanhGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (!op->isConvertibleTo<TanhGradOp>()) {
-    throw error("cannot create TanhGradOpx from " + op->op_type());
-  }
+  verifyOp<TanhGradOp>(op, Onnx::GradOperators::TanhGrad);
 }
 
 void TanhGradOpx::grow(poplar::program::Sequence &prog) const {
@@ -34,6 +31,11 @@ void TanhGradOpx::grow(poplar::program::Sequence &prog) const {
       graph(), popnn::NonLinearityType::TANH, fwd_out, grad_out, prog, out_id);
   insert(out_id, out_tensor);
 }
+
+namespace {
+OpxCreator<TanhOpx> tanhOpxCreator(Onnx::Operators::Tanh);
+OpxCreator<TanhGradOpx> tanhGradOpxCreator(Onnx::GradOperators::TanhGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

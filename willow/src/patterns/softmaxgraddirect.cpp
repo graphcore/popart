@@ -6,10 +6,14 @@
 namespace poponnx {
 
 // NLLGRAD (0) -> x -> SOFTMAXGRAD.
-OpType SoftmaxGradDirect::get0() const { return OpType::NLLGRAD; }
+const OperatorIdentifier &SoftmaxGradDirect::get0() const {
+  return Onnx::CustomGradOperators::NllGrad;
+}
 
 // NLLGRAD -> x -> SOFTMAXGRAD (1).
-OpType SoftmaxGradDirect::get1() const { return OpType::SOFTMAXGRAD; }
+const OperatorIdentifier &SoftmaxGradDirect::get1() const {
+  return Onnx::GradOperators::SoftmaxGrad;
+}
 
 OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
   // The root of the pattern is an NLLGrad,

@@ -1,13 +1,17 @@
 #include <poponnx/error.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/receptive.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
 
 namespace poponnx {
 
-HasReceptiveFieldOp::HasReceptiveFieldOp(const onnx::NodeProto &node, Ir *_pir)
-    : Op(node, _pir) {}
+HasReceptiveFieldOp::HasReceptiveFieldOp(const OperatorIdentifier &_opid,
+                                         Ir *_ir,
+                                         const std::string &name,
+                                         const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {}
 
 void HasReceptiveFieldOp::setup() {
 

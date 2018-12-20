@@ -2,6 +2,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/relu.hpp>
 #include <poponnx/popx/op/relux.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensorindex.hpp>
 
 #include <popnn/NonLinearity.hpp>
@@ -10,15 +11,11 @@ namespace poponnx {
 namespace popx {
 
 ReluOpx::ReluOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::RELU) {
-    throw error("cannot create ReluOpx from " + op->op_type());
-  }
+  verifyOp<ReluOp>(op, Onnx::Operators::Relu);
 }
 
 ReluInplaceOpx::ReluInplaceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::RELUINPLACE) {
-    throw error("cannot create ReluInplaceOpx from " + op->op_type());
-  }
+  verifyOp<ReluInplaceOp>(op, Onnx::CustomOperators::ReluInplace);
 }
 
 void ReluOpx::grow(poplar::program::Sequence &prog) const {
@@ -39,37 +36,32 @@ void ReluInplaceOpx::grow(poplar::program::Sequence &prog) const {
       graph(), popnn::NonLinearityType::RELU, get(inId(0)), prog, inId(0));
 }
 
-ReluOp *ReluOpx::getReluOp() const { return dynamic_cast<ReluOp *>(op_p); }
-
-ReluInplaceOp *ReluInplaceOpx::getReluInplaceOp() const {
-  return dynamic_cast<ReluInplaceOp *>(op_p);
-}
-
 ReluGradOpx::ReluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::RELUGRAD) {
-    throw error("cannot create ReluGradOpx from " + op->op_type());
-  }
-}
-
-ReluGradOp *ReluGradOpx::getReluGradOp() const {
-  return dynamic_cast<ReluGradOp *>(op_p);
+  verifyOp<ReluGradOp>(op, Onnx::GradOperators::ReluGrad);
 }
 
 void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
 
-  ReluGradOp *rgop = getReluGradOp();
+  ReluGradOp &rgop = getOp<ReluGradOp>();
 
   auto outTensor = popnn::nonLinearityInputGradient(
-      graph(),                                // graph,
-      popnn::NonLinearityType::RELU,          // nonLinearityType,
-      get(inId(rgop->getReludInIndex())),     //  out,
-      get(inId(rgop->getGradReludInIndex())), //  outGradient,
-      prog,                                   // prog,
-      idStr()                                 // debugPrefix
+      graph(),                               // graph,
+      popnn::NonLinearityType::RELU,         // nonLinearityType,
+      get(inId(rgop.getReludInIndex())),     //  out,
+      get(inId(rgop.getGradReludInIndex())), //  outGradient,
+      prog,                                  // prog,
+      idStr()                                // debugPrefix
   );
 
   insert(op_p->output->id(0), outTensor);
 }
+
+namespace {
+OpxCreator<ReluOpx> reluxOpxCreator(Onnx::Operators::Relu);
+OpxCreator<ReluInplaceOpx>
+    reluxInplaceOpxCreator(Onnx::CustomOperators::ReluInplace);
+OpxCreator<ReluGradOpx> reluxGradOpxCreator(Onnx::GradOperators::ReluGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

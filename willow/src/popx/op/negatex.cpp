@@ -2,14 +2,13 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/negate.hpp>
 #include <poponnx/popx/op/negatex.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 namespace poponnx {
 namespace popx {
 
 NegateOpx::NegateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (dynamic_cast<NegateOp *>(op) == nullptr) {
-    throw error("cannot create NegateOpx from " + op->op_type());
-  }
+  verifyOp<NegateOp>(op, Onnx::Operators::Neg);
 }
 
 void NegateOpx::grow(poplar::program::Sequence &prog) const {
@@ -21,12 +20,24 @@ void NegateOpx::grow(poplar::program::Sequence &prog) const {
                      idStr()));
 }
 
-NegateGradOpx::NegateGradOpx(Op *op, Devicex *devicex)
-    : NegateOpx(op, devicex) {
-  if (dynamic_cast<NegateGradOp *>(op) == nullptr) {
-    throw error("cannot create NegateGradOpx from " + op->op_type());
-  }
+NegateGradOpx::NegateGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  verifyOp<NegateGradOp>(op, Onnx::GradOperators::NegGrad);
 }
+
+void NegateGradOpx::grow(poplar::program::Sequence &prog) const {
+  insert(outId(0),
+         popops::map(graph(),
+                     popops::expr::UnaryOpType::NEGATE,
+                     get(inId(0)),
+                     prog,
+                     idStr()));
+}
+
+namespace {
+static OpxCreator<NegateOpx> negOpxCreator(Onnx::Operators::Neg);
+static OpxCreator<NegateGradOpx>
+    negGradOpxCreator(Onnx::GradOperators::NegGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

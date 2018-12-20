@@ -16,12 +16,17 @@ bool OpToIdentityPattern::matches(Op *op) const {
            (op->input->tensor(0)->info.shape() ==
             op->output->tensor(0)->info.shape())) ||
           // A sum op with only one input
-          (op->opType == OpType::SUM && op->input->n() == 1) ||
+          //(op->opType == OpType::SUM && op->input->n() == 1) ||
+          (op->opid == Onnx::Operators::Sum && op->input->n() == 1) ||
           // A pad op with no padding
-          (op->opType == OpType::PAD &&
+          //(op->opType == OpType::PAD && dynamic_cast<const PadOp
+          //*>(op)->padSizeZero()) ||
+          (op->opid == Onnx::Operators::Pad &&
            dynamic_cast<const PadOp *>(op)->padSizeZero()) ||
           // A subsample with all strides being 1
-          (op->opType == OpType::SUBSAMPLE &&
+          //(op->opType == OpType::SUBSAMPLE && dynamic_cast<const SubsampleOp
+          //*>(op)->strideSizeOne()));
+          (op->opid == Onnx::CustomOperators::Subsample &&
            dynamic_cast<const SubsampleOp *>(op)->strideSizeOne()));
 }
 
@@ -33,8 +38,9 @@ bool OpToIdentityPattern::apply(Op *op) const {
   auto input_tensor  = op->input->tensor(0);
   auto output_tensor = op->output->tensor(0);
   auto ir            = op->pir;
-  auto identity_op =
-      make_unique<IdentityOp>(OpConstructorBundle{OpType::IDENTITY, ir, {}});
+  // auto identity_op =
+  // make_unique<IdentityOp>(OpConstructorBundle{OpType::IDENTITY, ir, {}});
+  auto identity_op = make_unique<IdentityOp>(Onnx::Operators::Identity, ir);
 
   // Add the identity op to the IR
   auto identity = identity_op.get();

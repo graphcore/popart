@@ -1,6 +1,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/reshape.hpp>
 #include <poponnx/popx/op/reshapex.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -15,17 +16,19 @@ void ReshapeOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ReshapeOpx::ReshapeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (!op->isConvertibleTo<ReshapeOp>()) {
-    throw error("cannot create ReshapeOpx from " + op->op_type());
-  }
+  verifyOp<ReshapeOp>(op);
 }
 
 ReshapeGradOpx::ReshapeGradOpx(Op *op, Devicex *devicex)
     : ReshapeOpx(op, devicex) {
-  if (op->opType != OpType::RESHAPEGRAD) {
-    throw error("cannot create ReshapeGradOpx from " + op->op_type());
-  }
+  verifyOp<ReshapeGradOp>(op, Onnx::GradOperators::ReshapeGrad);
 }
+
+namespace {
+OpxCreator<ReshapeOpx> reshapeOpxCreator(Onnx::Operators::Reshape);
+OpxCreator<ReshapeGradOpx>
+    reshapeGradOpxCreator(Onnx::GradOperators::ReshapeGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

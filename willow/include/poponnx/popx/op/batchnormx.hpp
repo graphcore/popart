@@ -14,7 +14,6 @@ namespace popx {
 class BatchNormOpx : public Opx {
 public:
   BatchNormOpx(Op *, Devicex *);
-  BatchNormOp *getBatchNormOp() const;
   void grow(poplar::program::Sequence &) const final;
 
 private:
@@ -30,7 +29,6 @@ class BatchNormGradOpx : public Opx {
 public:
   BatchNormGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
-  BatchNormGradOp *getBatchNormGradOp() const;
 
 private:
   std::tuple<poplar::Tensor, poplar::Tensor, poplar::Tensor>

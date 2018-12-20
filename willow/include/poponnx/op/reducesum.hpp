@@ -7,11 +7,15 @@ namespace poponnx {
 
 class ReduceSumOp : public Op {
 public:
-  ReduceSumOp(const OpConstructorBundle &);
-  ReduceSumOp(const OpConstructorBundle &,
+  ReduceSumOp(const OperatorIdentifier &_opid,
+              Ir *_ir,
+              const std::string &name = "",
+              const Attributes &_attr = {});
+  ReduceSumOp(const OperatorIdentifier &_opid,
+              Ir *_ir,
               const std::vector<int64_t> &axes,
               int64_t keepdims);
-  ReduceSumOp(const onnx::NodeProto &node, Ir *pir);
+
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() override;

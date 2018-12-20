@@ -8,7 +8,7 @@
 namespace poponnx {
 
 bool ConvBiasPattern::matches(Op *op) const {
-  return (op->opType == OpType::CONV) && (op->input->n() == 3);
+  return (op->opid == Onnx::Operators::Conv) && (op->input->n() == 3);
 }
 
 std::vector<const Tensor *> ConvBiasPattern::touches(Op *) const { return {}; }

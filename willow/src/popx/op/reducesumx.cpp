@@ -5,6 +5,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/reducesum.hpp>
 #include <poponnx/popx/op/reducesumx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 #include <popops/Reduce.hpp>
@@ -13,9 +14,7 @@ namespace poponnx {
 namespace popx {
 
 ReduceSumOpx::ReduceSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (!op->isConvertibleTo<ReduceSumOp>()) {
-    throw error("cannot create ReduceSumOpx from " + op->op_type());
-  }
+  verifyOp<ReduceSumOp>(op);
 }
 
 template <typename T1, typename T2>
@@ -45,9 +44,7 @@ void ReduceSumOpx::grow(poplar::program::Sequence &prog) const {
 
 ReduceSumGradOpx::ReduceSumGradOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
-  if (op->opType != OpType::REDUCESUMGRAD) {
-    throw error("cannot create ReduceSumGradOpx from " + op->op_type());
-  }
+  verifyOp<ReduceSumGradOp>(op, Onnx::GradOperators::ReduceSumGrad);
 }
 
 void ReduceSumGradOpx::grow(poplar::program::Sequence &prog) const {
@@ -69,6 +66,12 @@ void ReduceSumGradOpx::grow(poplar::program::Sequence &prog) const {
   // output now matches the shape of output_shape
   insert(outId(0), output);
 }
+
+namespace {
+OpxCreator<ReduceSumOpx> reduceSumOpxCreator(Onnx::Operators::ReduceSum);
+OpxCreator<ReduceSumGradOpx>
+    reduceSumGradGradOpxCreator(Onnx::GradOperators::ReduceSumGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

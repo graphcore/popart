@@ -13,7 +13,6 @@ namespace popx {
 class SumOpx : public Opx {
 public:
   SumOpx(Op *, Devicex *);
-  SumOp *getSumOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 

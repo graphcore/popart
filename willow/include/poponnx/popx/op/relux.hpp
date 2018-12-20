@@ -15,21 +15,18 @@ namespace popx {
 class ReluOpx : public Opx {
 public:
   ReluOpx(Op *, Devicex *);
-  ReluOp *getReluOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 
 class ReluInplaceOpx : public Opx {
 public:
   ReluInplaceOpx(Op *, Devicex *);
-  ReluInplaceOp *getReluInplaceOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 
 class ReluGradOpx : public Opx {
 public:
   ReluGradOpx(Op *, Devicex *);
-  ReluGradOp *getReluGradOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 

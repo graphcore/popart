@@ -44,9 +44,8 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   auto ir = op->pir;
 
   // create the new ops
-  auto matmul_op =
-      make_unique<MatMulOp>(OpConstructorBundle{OpType::MATMUL, ir, {}});
-  auto add_op = make_unique<AddOp>(OpConstructorBundle{OpType::ADD, ir, {}});
+  auto matmul_op = make_unique<MatMulOp>(Onnx::Operators::MatMul, ir);
+  auto add_op    = make_unique<AddOp>(Onnx::Operators::Add, ir);
 
   // move ops into ir
   auto matmul = matmul_op.get();
@@ -98,8 +97,8 @@ static void scaleTensor(const TensorId &input,
                         const TensorId &output,
                         float scale_factor,
                         Ir *ir) {
-  auto scale_op = make_unique<ScaleOp>(
-      OpConstructorBundle{OpType::SCALE, ir, {}}, scale_factor);
+  auto scale_op = make_unique<ScaleOp>(Onnx::Operators::Scale, ir);
+  scale_op->setScaleFactor(scale_factor);
 
   auto scale = scale_op.get();
   ir->moveIntoIr(std::move(scale_op));
@@ -112,8 +111,9 @@ static void scaleTensor(const TensorId &input,
 static void
 transposeTensor(const TensorId &input, const TensorId &output, Ir *ir) {
   std::vector<int64_t> perm{1, 0};
-  auto transpose_op = make_unique<TransposeOp>(
-      OpConstructorBundle{OpType::TRANSPOSE, ir, {}}, perm);
+
+  auto transpose_op = make_unique<TransposeOp>(Onnx::Operators::Transpose, ir);
+  transpose_op->setPerm(perm);
 
   auto transpose = transpose_op.get();
   ir->moveIntoIr(std::move(transpose_op));

@@ -1,11 +1,15 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/subtract.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-SubtractOp::SubtractOp(const onnx::NodeProto &node, Ir *_pir)
-    : Op(node, _pir) {}
+SubtractOp::SubtractOp(const OperatorIdentifier &_opid,
+                       Ir *_ir,
+                       const std::string &name,
+                       const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {}
 
 std::unique_ptr<Op> SubtractOp::clone() const {
   return make_unique<SubtractOp>(*this);
@@ -31,7 +35,7 @@ void SubtractOp::setup() {
 
 SubtractArg0GradOp::SubtractArg0GradOp(SubtractOp *op_,
                                        const std::vector<int64_t> &_axes)
-    : ReduceSumOp({OpType::SUBTRACTARG0GRAD, op_->pir, {}}, _axes, false),
+    : ReduceSumOp(Onnx::GradOperators::SubArg0Grad, op_->pir, _axes, false),
       forward_op_arg_info(op_->inInfo(SubtractOp::getArg0InIndex())) {}
 
 const std::map<int, int> &SubtractArg0GradOp::gradOutToNonGradIn() const {
@@ -53,7 +57,7 @@ void SubtractArg0GradOp::setup() {
 }
 
 SubtractArg1GradOp::SubtractArg1GradOp(SubtractOp *op_)
-    : Op({OpType::SUBTRACTARG1GRAD, op_->pir, {}}),
+    : Op(Onnx::GradOperators::SubArg1Grad, op_->pir),
       forward_op_arg_info(op_->inInfo(SubtractOp::getArg1InIndex())) {}
 
 const std::map<int, int> &SubtractArg1GradOp::gradOutToNonGradIn() const {
@@ -77,5 +81,13 @@ std::unique_ptr<Op> SubtractArg1GradOp::clone() const {
 void SubtractArg1GradOp::setup() {
   outInfo(getOutIndex()) = forward_op_arg_info;
 }
+
+namespace {
+static OpCreator<SubtractOp> subtractOpCreator(Onnx::Operators::Sub);
+static GradOpCreator<SubtractArg0GradOp>
+    subtractArg0GradOpCreator(Onnx::GradOperators::SubArg0Grad);
+static GradOpCreator<SubtractArg1GradOp>
+    subtractArg1GradOpCreator(Onnx::GradOperators::SubArg1Grad);
+} // namespace
 
 } // namespace poponnx

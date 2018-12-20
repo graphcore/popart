@@ -14,40 +14,8 @@
 #include <poponnx/popx/convoptionsx.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/devicexmanager.hpp>
-#include <poponnx/popx/op/addbiasx.hpp>
-#include <poponnx/popx/op/addx.hpp>
-#include <poponnx/popx/op/averagepoolx.hpp>
-#include <poponnx/popx/op/batchnormx.hpp>
-#include <poponnx/popx/op/convx.hpp>
-#include <poponnx/popx/op/cosx.hpp>
-#include <poponnx/popx/op/divx.hpp>
-#include <poponnx/popx/op/expx.hpp>
-#include <poponnx/popx/op/identityx.hpp>
-#include <poponnx/popx/op/l1x.hpp>
-#include <poponnx/popx/op/matmulx.hpp>
-#include <poponnx/popx/op/maxpoolx.hpp>
-#include <poponnx/popx/op/mulx.hpp>
-#include <poponnx/popx/op/negatex.hpp>
-#include <poponnx/popx/op/nllx.hpp>
-#include <poponnx/popx/op/padx.hpp>
-#include <poponnx/popx/op/reciprocalx.hpp>
-#include <poponnx/popx/op/reducesumx.hpp>
-#include <poponnx/popx/op/relux.hpp>
-#include <poponnx/popx/op/reshapex.hpp>
-#include <poponnx/popx/op/scalex.hpp>
-#include <poponnx/popx/op/sigmoidx.hpp>
-#include <poponnx/popx/op/sinx.hpp>
-#include <poponnx/popx/op/softmaxx.hpp>
-#include <poponnx/popx/op/sqrtx.hpp>
-#include <poponnx/popx/op/squarex.hpp>
-#include <poponnx/popx/op/squeezex.hpp>
-#include <poponnx/popx/op/subsamplex.hpp>
-#include <poponnx/popx/op/subtractx.hpp>
-#include <poponnx/popx/op/sumx.hpp>
-#include <poponnx/popx/op/tanhx.hpp>
-#include <poponnx/popx/op/transposex.hpp>
-#include <poponnx/popx/op/varupdatex.hpp>
 #include <poponnx/popx/opx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/pritask.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
@@ -359,7 +327,7 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
   std::memcpy(dst, src, nbytes_src);
 }
 
-void Devicex::anchorsHostToHostStreams(const StepIO &stepio) {
+void Devicex::anchorsHostToHostStreams(const IStepIO &stepio) {
 
   if (useSyntheticData() == false) {
     std::string prefix = "     ";
@@ -391,7 +359,7 @@ void Devicex::anchorsHostToHostStreams(const StepIO &stepio) {
   }
 }
 
-void Devicex::anchorsHostFromHostStreams(const StepIO &stepio) {
+void Devicex::anchorsHostFromHostStreams(const IStepIO &stepio) {
 
   if (useSyntheticData() == false) {
     std::string prefix = "     ";
@@ -403,7 +371,7 @@ void Devicex::anchorsHostFromHostStreams(const StepIO &stepio) {
   }
 }
 
-void Devicex::infer(const StepIO &stepio) {
+void Devicex::infer(const IStepIO &stepio) {
   std::string prefix = "     ";
   logging::debug("Performing one inference step: ");
   anchorsHostToHostStreams(stepio);
@@ -414,7 +382,7 @@ void Devicex::infer(const StepIO &stepio) {
   anchorsHostFromHostStreams(stepio);
 }
 
-void Devicex::evaluate(const StepIO &stepio) {
+void Devicex::evaluate(const IStepIO &stepio) {
   std::string prefix = "     ";
   logging::debug("Performing one evaluate step: ");
   anchorsHostToHostStreams(stepio);
@@ -425,7 +393,7 @@ void Devicex::evaluate(const StepIO &stepio) {
   anchorsHostFromHostStreams(stepio);
 }
 
-void Devicex::train(const StepIO &stepio) {
+void Devicex::train(const IStepIO &stepio) {
   std::string prefix = "     ";
   logging::debug("Performing one train step: ");
   anchorsHostToHostStreams(stepio);
@@ -437,326 +405,18 @@ void Devicex::train(const StepIO &stepio) {
 }
 
 std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
-  switch (op->opType) {
 
-  case OpType::ADD: {
-    return std::unique_ptr<Opx>(new AddOpx(op, this));
-  }
-
-  case OpType::ADDARG0GRAD: {
-    return std::unique_ptr<Opx>(new AddArg0GradOpx(op, this));
-  }
-
-  case OpType::ADDARG1GRAD: {
-    return std::unique_ptr<Opx>(new AddArg1GradOpx(op, this));
-  }
-
-  case OpType::ADDBIAS: {
-    return std::unique_ptr<Opx>(new AddBiasOpx(op, this));
-  }
-
-  case OpType::ADDBIASBIASGRAD: {
-    return std::unique_ptr<Opx>(new AddBiasBiasGradOpx(op, this));
-  }
-
-  case OpType::ADDBIASDATAGRAD: {
-    return std::unique_ptr<Opx>(new AddBiasDataGradOpx(op, this));
-  }
-
-  case OpType::AVERAGEPOOL: {
-    return std::unique_ptr<Opx>(new AveragePoolOpx(op, this));
-  }
-
-  case OpType::AVERAGEPOOLGRAD: {
-    return std::unique_ptr<Opx>(new AveragePoolGradOpx(op, this));
-  }
-
-  case OpType::BATCHNORM: {
-    return std::unique_ptr<Opx>(new BatchNormOpx(op, this));
-  }
-
-  case OpType::BATCHNORMGRAD: {
-    return std::unique_ptr<Opx>(new BatchNormGradOpx(op, this));
-  }
-
-  case OpType::CAST: {
-    throw error("No CastOpx implementation yet");
-  }
-
-  case OpType::CONSTANT: {
-    throw error("ILE: No Opx for CONSTANT");
-  }
-
-  case OpType::CONV: {
-    return std::unique_ptr<Opx>(new ConvOpx(op, this));
-  }
-
-  case OpType::COS: {
-    return std::unique_ptr<Opx>(new CosOpx(op, this));
-  }
-
-  case OpType::COSGRAD: {
-    throw error(
-        "CosGradOp should be optimised out, \"CosGradOp\" pattern is required");
-  }
-
-  case OpType::COSH: {
-    throw error("CoshOp should be removed by pattern 'CoshOp'");
-  }
-
-  case OpType::CONVDATAGRAD: {
-    return std::unique_ptr<Opx>(new ConvDataGradOpx(op, this));
-  }
-
-  case OpType::CONVWEIGHTSGRAD: {
-    return std::unique_ptr<Opx>(new ConvWeightsGradOpx(op, this));
-  }
-
-  case OpType::CONSTSGDVARUPDATE: {
-    return std::unique_ptr<Opx>(new ConstSGDVarUpdateOpx(op, this));
-  }
-
-  case OpType::DIV: {
-    return std::unique_ptr<Opx>(new DivOpx(op, this));
-  }
-
-  case OpType::DIVARG0GRAD: {
-    throw error("DivArg0GradOp should be optimised out, \"DivArg0GradOp\" "
-                "pattern is required");
-  }
-
-  case OpType::DIVARG1GRAD: {
-    throw error("DivArg1GradOp should be optimised out, \"DivArg1GradOp\" "
-                "pattern is required");
-  }
-
-  case OpType::EXP: {
-    return std::unique_ptr<Opx>(new ExpOpx(op, this));
-  }
-
-  case OpType::EXPGRAD: {
-    throw error("ExpGradOp should be removed by pattern 'ExpGradOp'");
-  }
-
-  case OpType::GEMM: {
-    throw error("GemmOp should be removed by pattern 'GemmOp'");
-  }
-
-  case OpType::IDENTITY: {
-    return std::unique_ptr<Opx>(new IdentityOpx(op, this));
-  }
-
-  case OpType::IDENTITYGRAD: {
-    return std::unique_ptr<Opx>(new IdentityGradOpx(op, this));
-  }
-
-  case OpType::L1: {
-    return std::unique_ptr<Opx>(new L1Opx(op, this));
-  }
-
-  case OpType::L1GRAD: {
-    return std::unique_ptr<Opx>(new L1GradOpx(op, this));
-  }
-
-  case OpType::MAXPOOL: {
-    return std::unique_ptr<Opx>(new MaxPoolOpx(op, this));
-  }
-
-  case OpType::MAXPOOLGRAD: {
-    return std::unique_ptr<Opx>(new MaxPoolGradOpx(op, this));
-  }
-
-  case OpType::MUL: {
-    return std::unique_ptr<Opx>(new MulOpx(op, this));
-  }
-
-  case OpType::MULARG0GRAD: {
-    throw error("MulArg0GradOp should be optimised out, \"MulArgGradOp\" "
-                "pattern is required");
-  }
-
-  case OpType::MULARG1GRAD: {
-    throw error("MulArg1GradOp should be optimised out, \"MulArgGradOp\" "
-                "pattern is required");
-  }
-
-  case OpType::NEGATE: {
-    return std::unique_ptr<Opx>(new NegateOpx(op, this));
-  }
-
-  case OpType::NEGATEGRAD: {
-    return std::unique_ptr<Opx>(new NegateGradOpx(op, this));
-  }
-
-  case OpType::SIGMOID: {
-    return std::unique_ptr<Opx>(new SigmoidOpx(op, this));
-  }
-
-  case OpType::SIGMOIDGRAD: {
-    return std::unique_ptr<Opx>(new SigmoidGradOpx(op, this));
-  }
-
-  case OpType::SIN: {
-    return std::unique_ptr<Opx>(new SinOpx(op, this));
-  }
-
-  case OpType::SINGRAD: {
-    throw error(
-        "SinGradOp should be optimised out, \"SinGradOp\" pattern is required");
-  }
-
-  case OpType::SOFTMAX: {
-    return std::unique_ptr<Opx>(new SoftmaxOpx(op, this));
-  }
-
-  case OpType::SOFTMAXGRAD: {
-    return std::unique_ptr<Opx>(new SoftmaxGradOpx(op, this));
-  }
-
-  case OpType::SOFTMAXGRADDIRECT: {
-    return std::unique_ptr<Opx>(new SoftmaxGradDirectOpx(op, this));
-  }
-
-  case OpType::MATMUL: {
-    return std::unique_ptr<Opx>(new MatMulOpx(op, this));
-  }
-
-  case OpType::MATMULLHSGRAD: {
-    return std::unique_ptr<Opx>(new MatMulLhsGradOpx(op, this));
-  }
-
-  case OpType::MATMULRHSGRAD: {
-    return std::unique_ptr<Opx>(new MatMulRhsGradOpx(op, this));
-  }
-
-  case OpType::NLL: {
-    return std::unique_ptr<Opx>(new NllOpx(op, this));
-  }
-
-  case OpType::NLLGRAD: {
-    return std::unique_ptr<Opx>(new NllGradOpx(op, this));
-  }
-
-  case OpType::PAD: {
-    return std::unique_ptr<Opx>(new PadOpx(op, this));
-  }
-
-  case OpType::RECIPROCAL: {
-    return std::unique_ptr<Opx>(new ReciprocalOpx(op, this));
-  }
-
-  case OpType::RECIPROCALGRAD: {
-    throw error(
-        "ReciprocalGradOpx should be removed by pattern 'ReciprocalGradOpx'");
-  }
-
-  case OpType::REDUCESUM: {
-    return std::unique_ptr<Opx>(new ReduceSumOpx(op, this));
-  }
-
-  case OpType::REDUCESUMGRAD: {
-    return std::unique_ptr<Opx>(new ReduceSumGradOpx(op, this));
-  }
-
-  case OpType::RELU: {
-    return std::unique_ptr<Opx>(new ReluOpx(op, this));
-  }
-
-  case OpType::RELUINPLACE: {
-    return std::unique_ptr<Opx>(new ReluInplaceOpx(op, this));
-  }
-
-  case OpType::RELUGRAD: {
-    return std::unique_ptr<Opx>(new ReluGradOpx(op, this));
-  }
-
-  case OpType::RESHAPE: {
-    return std::unique_ptr<Opx>(new ReshapeOpx(op, this));
-  }
-
-  case OpType::RESHAPEGRAD: {
-    return std::unique_ptr<Opx>(new ReshapeGradOpx(op, this));
-  }
-
-  case OpType::SCALE: {
-    return std::unique_ptr<Opx>(new ScaleOpx(op, this));
-  }
-
-  case OpType::SCALEGRAD: {
-    return std::unique_ptr<Opx>(new ScaleGradOpx(op, this));
-  }
-
-  case OpType::SGDVARUPDATE: {
-    return std::unique_ptr<Opx>(new SGDVarUpdateOpx(op, this));
-  }
-
-  case OpType::SQRT: {
-    return std::unique_ptr<Opx>(new SqrtOpx(op, this));
-  }
-
-  case OpType::SQRTGRAD: {
-    throw error("SqrtGradOp should be removed by pattern 'SqrtGradOp'");
-  }
-
-  case OpType::SQUARE: {
-    return std::unique_ptr<Opx>(new SquareOpx(op, this));
-  }
-
-  case OpType::SQUEEZE: {
-    return std::unique_ptr<Opx>(new SqueezeOpx(op, this));
-  }
-
-  case OpType::SQUEEZEGRAD: {
-    return std::unique_ptr<Opx>(new SqueezeGradOpx(op, this));
-  }
-
-  case OpType::SUBTRACT: {
-    return std::unique_ptr<Opx>(new SubtractOpx(op, this));
-  }
+  auto opx = OpxManager::createOpx(op, this);
 
-  case OpType::SUBTRACTARG0GRAD: {
-    return std::unique_ptr<Opx>(new SubtractArg0GradOpx(op, this));
+  if (!opx) {
+    if (op->opid == Onnx::Operators::Constant) {
+      throw error("ILE: No Opx for CONSTANT");
+    } else {
+      throw error("Could not create opx for '{}'", op->opid);
+    }
   }
 
-  case OpType::SUBTRACTARG1GRAD: {
-    throw error("SubtractArg1GradOpx should be removed by pattern "
-                "'SubtractArg1GradOp'");
-  }
-
-  case OpType::SUM: {
-    return std::unique_ptr<Opx>(new SumOpx(op, this));
-  }
-
-  case OpType::TAN: {
-    throw error("TanOp should be removed by pattern 'TanOp'");
-  }
-
-  case OpType::SUBSAMPLE: {
-    return std::unique_ptr<Opx>(new SubsampleOpx(op, this));
-  }
-
-  case OpType::SUBSAMPLEGRAD: {
-    return std::unique_ptr<Opx>(new SubsampleGradOpx(op, this));
-  }
-
-  case OpType::TANH: {
-    return std::unique_ptr<Opx>(new TanhOpx(op, this));
-  }
-
-  case OpType::TANHGRAD: {
-    return std::unique_ptr<Opx>(new TanhGradOpx(op, this));
-  }
-
-  case OpType::TRANSPOSE: {
-    return std::unique_ptr<Opx>(new TransposeOpx(op, this));
-  }
-
-  case OpType::TRANSPOSEGRAD: {
-    return std::unique_ptr<Opx>(new TransposeGradOpx(op, this));
-  }
-
-  default: { throw error("No get pop op for " + op->op_type()); }
-  }
+  return opx;
 }
 
 Opx *Devicex::getOpx(OpId id) { return opxs.at(id).get(); }
@@ -1185,7 +845,12 @@ TaskId Devicex::initTensorTaskId(TensorId id) const {
 }
 
 TaskId Devicex::opTaskId(Op *op) const {
-  return "fromOpTask_" + std::to_string(op->id) + '_' + op->op_type();
+
+  std::stringstream ss;
+  ss << "fromOpTask_" << op->id << '_' << op->opid;
+  return ss.str();
+
+  // return "fromOpTask_" + std::to_string(op->id) + '_' + op->opid;
 }
 
 PopStreamId Devicex::h2dId(TensorId id) const { return "h2d_" + id; }

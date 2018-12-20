@@ -1,12 +1,16 @@
 #include <poponnx/error.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/softmax.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-SoftmaxOp::SoftmaxOp(const onnx::NodeProto &node, Ir *_pir)
-    : ElementWiseUnaryOp(node, _pir) {}
+SoftmaxOp::SoftmaxOp(const OperatorIdentifier &_opid,
+                     Ir *_ir,
+                     const std::string &name,
+                     const Attributes &_attr)
+    : ElementWiseUnaryOp(_opid, _ir, name, _attr) {}
 
 std::vector<std::unique_ptr<Op>> SoftmaxOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -23,7 +27,7 @@ void SoftmaxGradOp::setup() {
 }
 
 SoftmaxGradOp::SoftmaxGradOp(SoftmaxOp *op_)
-    : Op({OpType::SOFTMAXGRAD, op_->pir, {}}) {}
+    : Op(Onnx::GradOperators::SoftmaxGrad, op_->pir) {}
 
 const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
   // input at index 0 (probGradInputIndex()) : gradient of output of softmax
@@ -44,7 +48,7 @@ const std::map<int, int> &SoftmaxGradOp::gradOutToNonGradIn() const {
 }
 
 SoftmaxGradDirectOp::SoftmaxGradDirectOp(Ir *ir, const NllLoss *nls)
-    : Op({OpType::SOFTMAXGRADDIRECT, ir, {}}) {
+    : Op(Onnx::CustomGradOperators::SoftmaxGradDirect, ir) {
   nllloss_ = nls;
 }
 
@@ -62,5 +66,13 @@ void SoftmaxGradDirectOp::setup() {
   // gradient of activations has same shape as probabilities
   outInfo(getOutIndex()) = inInfo(getInIndex());
 }
+
+namespace {
+static OpCreator<SoftmaxOp> softmaxOpCreator(Onnx::Operators::Softmax);
+static GradOpCreator<SoftmaxGradOp>
+    softmaxGradOpCreator(Onnx::GradOperators::SoftmaxGrad);
+static GradOpCreator<SoftmaxGradDirectOp>
+    softmaxGradDirectOpCreator(Onnx::CustomGradOperators::SoftmaxGradDirect);
+} // namespace
 
 } // namespace poponnx

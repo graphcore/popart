@@ -24,8 +24,8 @@ bool SinGradOpPattern::apply(Op *op) const {
   auto ir = op->pir;
 
   // create the new ops
-  auto cos_op = make_unique<CosOp>(OpConstructorBundle{OpType::COS, ir, {}});
-  auto mul_op = make_unique<MulOp>(OpConstructorBundle{OpType::MUL, ir, {}});
+  auto cos_op = make_unique<CosOp>(Onnx::Operators::Cos, ir);
+  auto mul_op = make_unique<MulOp>(Onnx::Operators::Mul, ir);
 
   // move ops into ir
   auto cos = cos_op.get();

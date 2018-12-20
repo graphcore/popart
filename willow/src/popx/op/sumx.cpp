@@ -2,27 +2,27 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/sum.hpp>
 #include <poponnx/popx/op/sumx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensorindex.hpp>
 
 namespace poponnx {
 namespace popx {
 
 SumOpx::SumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::SUM) {
-    throw error("cannot create SumOpx from " + op->op_type());
-  }
+  verifyOp<SumOp>(op, Onnx::Operators::Sum);
 }
 
-SumOp *SumOpx::getSumOp() const { return dynamic_cast<SumOp *>(op_p); }
-
 void SumOpx::grow(poplar::program::Sequence &prog) const {
-  if (getSumOp()->input->n() == 1) {
+
+  SumOp &sumOp = getOp<SumOp>();
+
+  if (sumOp.input->n() == 1) {
     throw error(
         "SumOpx with one input should be removed by pattern 'PreUniRepl'");
   }
   // if the total number of tensors is less than
   // "5", then perform a series of adds.
-  else if (getSumOp()->input->n() < 5) {
+  else if (sumOp.input->n() < 5) {
     poplar::Tensor sum = popops::map(graph(),
                                      popops::expr::BinaryOpType::ADD,
                                      get(inId(0)),
@@ -30,7 +30,7 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
                                      prog,
                                      idStr());
 
-    for (InIndex i = 2; i < getSumOp()->input->n(); ++i) {
+    for (InIndex i = 2; i < sumOp.input->n(); ++i) {
       popops::mapInPlace(graph(),
                          popops::expr::BinaryOpType::ADD,
                          sum,
@@ -44,6 +44,10 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
   else {
     throw error("Must implemented SumOpx::grow() for greater than 4 inputs");
   }
+}
+
+namespace {
+OpxCreator<SumOpx> sumOpxCreator(Onnx::Operators::Sum);
 }
 
 } // namespace popx

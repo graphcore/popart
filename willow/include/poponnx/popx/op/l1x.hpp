@@ -14,14 +14,12 @@ namespace popx {
 class L1Opx : public Opx {
 public:
   L1Opx(Op *, Devicex *);
-  L1Op *getL1Op() const;
   void grow(poplar::program::Sequence &) const final;
 };
 
 class L1GradOpx : public Opx {
 public:
   L1GradOpx(Op *, Devicex *);
-  L1GradOp *getL1GradOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 

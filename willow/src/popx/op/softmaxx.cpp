@@ -3,6 +3,7 @@
 #include <poponnx/op/nll.hpp>
 #include <poponnx/op/softmax.hpp>
 #include <poponnx/popx/op/softmaxx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 #include "popops/Encoding.hpp"
 #include <popnn/NonLinearity.hpp>
@@ -12,9 +13,7 @@ namespace poponnx {
 namespace popx {
 
 SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::SOFTMAX) {
-    throw error("cannot create SoftmaxOpx from " + op->op_type());
-  }
+  verifyOp<SoftmaxOp>(op, Onnx::Operators::Softmax);
 }
 
 void SoftmaxOpx::grow(poplar::program::Sequence &prog) const {
@@ -25,29 +24,14 @@ void SoftmaxOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(0), outTensor);
 }
 
-SoftmaxOp *SoftmaxOpx::getSoftmaxOp() const {
-  return dynamic_cast<SoftmaxOp *>(op_p);
-}
-
 SoftmaxGradOpx::SoftmaxGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::SOFTMAXGRAD) {
-    throw error("cannot create SoftmaxGradOpx from " + op->op_type());
-  }
-}
-
-SoftmaxGradOp *SoftmaxGradOpx::getSoftmaxGradOp() const {
-  return dynamic_cast<SoftmaxGradOp *>(op_p);
+  verifyOp<SoftmaxGradOp>(op, Onnx::GradOperators::SoftmaxGrad);
 }
 
 SoftmaxGradDirectOpx::SoftmaxGradDirectOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
-  if (op->opType != OpType::SOFTMAXGRADDIRECT) {
-    throw error("cannot create SoftmaxGradDirectOpx from " + op->op_type());
-  }
-}
-
-SoftmaxGradDirectOp *SoftmaxGradDirectOpx::getSoftmaxGradDirectOp() const {
-  return dynamic_cast<SoftmaxGradDirectOp *>(op_p);
+  verifyOp<SoftmaxGradDirectOp>(op,
+                                Onnx::CustomGradOperators::SoftmaxGradDirect);
 }
 
 // The maths:
@@ -70,9 +54,9 @@ SoftmaxGradDirectOp *SoftmaxGradDirectOpx::getSoftmaxGradDirectOp() const {
 // -----
 
 void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
-  SoftmaxGradDirectOp *sfmgd = getSoftmaxGradDirectOp();
-  TensorId labelId           = sfmgd->nlll()->labelTensorId();
-  TensorId probsId           = sfmgd->nlll()->probsTensorId();
+  SoftmaxGradDirectOp &sfmgd = getOp<SoftmaxGradDirectOp>();
+  TensorId labelId           = sfmgd.nlll()->labelTensorId();
+  TensorId probsId           = sfmgd.nlll()->probsTensorId();
 
   // 1 at position "label", 0 elsewhere.
   auto oneHot =
@@ -92,6 +76,14 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(0), oneHot);
 }
+
+namespace {
+OpxCreator<SoftmaxOpx> softmaxOpxCreator(Onnx::Operators::Softmax);
+OpxCreator<SoftmaxGradOpx>
+    softmaxGradOpxCreator(Onnx::GradOperators::SoftmaxGrad);
+OpxCreator<SoftmaxGradDirectOpx>
+    softmaxGradDirectOpxCreator(Onnx::CustomGradOperators::SoftmaxGradDirect);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

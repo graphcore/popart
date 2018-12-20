@@ -17,12 +17,12 @@ namespace poponnx {
 // FFS : add gcc like levels O2, O3, OS etc
 enum class PatternsLevel { NONE, DEFAULT, ALL };
 
-// This is a factory class which the ptatterns are registered with
+// This is a factory class which the patterns are registered with
 class PatternManager {
 
   PatternManager() = default;
 
-  // List of all registed pattern types
+  // List of all registered pattern types
   std::vector<PatternType> patterns;
 
   // Used to convert a string to a pattern type
@@ -77,7 +77,7 @@ public:
   }
 };
 
-// This class registers a lambda function to cerate a pattern with the
+// This class registers a lambda function to create a pattern with the
 // PatternManager
 template <class PATTERN> class PatternCreator {
 public:

@@ -1,13 +1,15 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/cos.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-CosOp::CosOp(const OpConstructorBundle &bundle) : ElementWiseUnaryOp(bundle) {}
-
-CosOp::CosOp(const onnx::NodeProto &node, Ir *_pir)
-    : ElementWiseUnaryOp(node, _pir) {}
+CosOp::CosOp(const OperatorIdentifier &_opid,
+             Ir *_ir,
+             const std::string &name,
+             const Attributes &_attr)
+    : ElementWiseUnaryOp(_opid, _ir, name, _attr) {}
 
 std::unique_ptr<Op> CosOp::clone() const { return make_unique<CosOp>(*this); }
 
@@ -18,10 +20,16 @@ std::vector<std::unique_ptr<Op>> CosOp::getGradOps() {
 }
 
 CosGradOp::CosGradOp(CosOp *fwdOp)
-    : ElementWiseNonLinearUnaryGradOp({OpType::COSGRAD, fwdOp->pir, {}}) {}
+    : ElementWiseNonLinearUnaryGradOp(Onnx::GradOperators::CosGrad,
+                                      fwdOp->pir) {}
 
 std::unique_ptr<Op> CosGradOp::clone() const {
   return make_unique<CosGradOp>(*this);
 }
+
+namespace {
+static OpCreator<CosOp> cosOpCreator(Onnx::Operators::Cos);
+static GradOpCreator<CosGradOp> cosGradOpCreator(Onnx::GradOperators::CosGrad);
+} // namespace
 
 } // namespace poponnx

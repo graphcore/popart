@@ -8,7 +8,10 @@ namespace poponnx {
 // out = alpha * transA(A) * transB(B) + beta * C
 class GemmOp : public Op {
 public:
-  GemmOp(const onnx::NodeProto &node, Ir *pir);
+  GemmOp(const OperatorIdentifier &_opid,
+         Ir *_ir,
+         const std::string &name = "",
+         const Attributes &_attr = {});
 
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;

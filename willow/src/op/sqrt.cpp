@@ -1,11 +1,15 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/sqrt.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-SqrtOp::SqrtOp(const onnx::NodeProto &node, Ir *_pir)
-    : ElementWiseUnaryOp(node, _pir) {}
+SqrtOp::SqrtOp(const OperatorIdentifier &_opid,
+               Ir *_ir,
+               const std::string &name,
+               const Attributes &_attr)
+    : ElementWiseUnaryOp(_opid, _ir, name, _attr) {}
 
 std::unique_ptr<Op> SqrtOp::clone() const { return make_unique<SqrtOp>(*this); }
 
@@ -16,7 +20,7 @@ std::vector<std::unique_ptr<Op>> SqrtOp::getGradOps() {
 }
 
 SqrtGradOp::SqrtGradOp(SqrtOp *fwdOp)
-    : Op({OpType::SQRTGRAD, fwdOp->pir, {}}) {}
+    : Op(Onnx::GradOperators::SqrtGrad, fwdOp->pir) {}
 
 std::unique_ptr<Op> SqrtGradOp::clone() const {
   return make_unique<SqrtGradOp>(*this);
@@ -38,5 +42,11 @@ const std::map<int, int> &SqrtGradOp::gradOutToNonGradIn() const {
 
   return outInfo;
 }
+
+namespace {
+static OpCreator<SqrtOp> sqrtOpCreator(Onnx::Operators::Sqrt);
+static GradOpCreator<SqrtGradOp>
+    sqrtGradOpCreator(Onnx::GradOperators::SqrtGrad);
+} // namespace
 
 } // namespace poponnx

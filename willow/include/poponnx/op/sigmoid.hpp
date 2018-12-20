@@ -7,8 +7,10 @@ namespace poponnx {
 
 class SigmoidOp : public ElementWiseUnaryOp {
 public:
-  SigmoidOp(const OpConstructorBundle &);
-  SigmoidOp(const onnx::NodeProto &node, Ir *pir);
+  SigmoidOp(const OperatorIdentifier &_opid,
+            Ir *_ir,
+            const std::string &name = "",
+            const Attributes &_attr = {});
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 };

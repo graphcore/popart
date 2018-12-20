@@ -3,21 +3,18 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/addbias.hpp>
 #include <poponnx/popx/op/addbiasx.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 
 namespace poponnx {
 namespace popx {
 
 AddBiasOpx::AddBiasOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (op->opType != OpType::ADDBIAS) {
-    throw error("cannot create AddBiasOpx from " + op->op_type());
-  }
+  verifyOp<AddBiasOp>(op, Onnx::CustomOperators::AddBias);
 }
 
 AddBiasDataGradOpx::AddBiasDataGradOpx(Op *op, Devicex *devicex)
     : IdentityOpx(op, devicex) {
-  if (op->opType != OpType::ADDBIASDATAGRAD) {
-    throw error("cannot create AddBiasDataGradOpx from " + op->op_type());
-  }
+  verifyOp<AddBiasDataGradOp>(op, Onnx::CustomGradOperators::AddBiasDataGrad);
 }
 
 void AddBiasOpx::grow(poplar::program::Sequence &prog) const {
@@ -54,16 +51,18 @@ poplar::Tensor AddBiasOpx::createInput(InIndex index) const {
 
 bool AddBiasOpx::createsEquiv(int, Opx *, int) const { return false; }
 
-AddBiasOp *AddBiasOpx::getAddBiasOp() const {
-  return dynamic_cast<AddBiasOp *>(op_p);
-}
-
 AddBiasBiasGradOpx::AddBiasBiasGradOpx(Op *op, Devicex *devicex)
     : ReduceSumOpx(op, devicex) {
-  if (op_p->opType != OpType::ADDBIASBIASGRAD) {
-    throw error("cannot create AddBiasBiasGradOpx from " + op_p->op_type());
-  }
+  verifyOp<AddBiasBiasGradOp>(op, Onnx::CustomGradOperators::AddBiasBiasGrad);
 }
+
+namespace {
+OpxCreator<AddBiasOpx> addBiasOpxCreator(Onnx::CustomOperators::AddBias);
+OpxCreator<AddBiasBiasGradOpx>
+    addBiasBiasGradOpxCreator(Onnx::CustomGradOperators::AddBiasBiasGrad);
+OpxCreator<AddBiasDataGradOpx>
+    addBiasDataGradOpxCreator(Onnx::CustomGradOperators::AddBiasDataGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

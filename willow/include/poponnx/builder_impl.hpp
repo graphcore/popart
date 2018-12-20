@@ -5,6 +5,9 @@
 #include <string>
 #include <poponnx/builder.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/opidentifier.hpp>
+
+#include <boost/any.hpp>
 
 // The BuilderImpl class has an onnx::ModelProto, so we cannot
 // use the forward declarations in names.hpp at this point
@@ -148,7 +151,16 @@ public:
                      const std::vector<int64_t> &perm,
                      const std::string &name);
 
+  // Add a custom op to the model
+  std::vector<TensorId>
+  customOp(const OperatorIdentifier &opid,
+           const std::vector<boost::any> &inputs,
+           const unsigned numOutputs,
+           const std::vector<std::pair<std::string, boost::any>> &attributes,
+           const std::string &name);
+
   // The following do seem to be ripe for a template
+
   void addNodeAttribute(const std::string &attributeName,
                         const int64_t &attributeValue,
                         const std::set<TensorId> &nodeOutputNames);
@@ -234,12 +246,12 @@ public:
 
 private:
   TensorId add_simple_op(const std::vector<TensorId> &args,
-                         const char *op_type,
+                         const OperatorIdentifier &opid,
                          int arg_count,
                          const std::string &name);
 
   TensorId add_variadic_op(const std::vector<TensorId> &args,
-                           const char *op_type,
+                           const OperatorIdentifier &opid,
                            const std::string &name);
 
   TensorId getNextId();
@@ -294,6 +306,10 @@ private:
 
   void addNodeAttribute(const std::string &attributeName,
                         const int &attributeValue,
+                        onnx::NodeProto &node);
+
+  void addNodeAttribute(const std::string &attributeName,
+                        const boost::any &attributeValue,
                         onnx::NodeProto &node);
 
   uint64_t next_id_ = 0;

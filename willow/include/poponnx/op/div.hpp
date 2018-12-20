@@ -10,8 +10,10 @@ namespace poponnx {
 // arg_0 / arg_1
 class DivOp : public Op {
 public:
-  DivOp(const onnx::NodeProto &node, Ir *pir);
-  DivOp(const OpConstructorBundle &);
+  DivOp(const OperatorIdentifier &_opid,
+        Ir *_ir,
+        const std::string &name = "",
+        const Attributes &_attr = {});
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -26,7 +28,8 @@ public:
 // Base class for DivArg grad ops
 class DivArgGradOp : public Op {
 public:
-  DivArgGradOp(const OpConstructorBundle &,
+  DivArgGradOp(const OperatorIdentifier &_opid,
+               Ir *_ir,
                const std::vector<int64_t> &reduction_axes,
                const TensorInfo &forward_op_arg_info);
   void setup() final;

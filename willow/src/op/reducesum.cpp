@@ -1,29 +1,27 @@
 #include <algorithm>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/reducesum.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-ReduceSumOp::ReduceSumOp(const OpConstructorBundle &bundle) : Op(bundle) {
-  nAtts.setIfPresent(axes, "axes");
-  nAtts.setIfPresent(keepdims, "keepdims");
-
-  // Sorting the axes for general backend compatibility
-  std::sort(axes.begin(), axes.end());
-}
-
-ReduceSumOp::ReduceSumOp(const OpConstructorBundle &bundle,
+// TODO : See if we can get rid of this one
+ReduceSumOp::ReduceSumOp(const OperatorIdentifier &_opid,
+                         Ir *_ir,
                          const std::vector<int64_t> &axes_,
                          int64_t keepdims_)
-    : Op(bundle), axes(axes_), keepdims(keepdims_) {
+    : Op(_opid, _ir), axes(axes_), keepdims(keepdims_) {
 
   // Sorting the axes for general backend compatibility
   std::sort(axes.begin(), axes.end());
 }
 
-ReduceSumOp::ReduceSumOp(const onnx::NodeProto &node, Ir *_pir)
-    : Op(node, _pir), keepdims(0) {
+ReduceSumOp::ReduceSumOp(const OperatorIdentifier &_opid,
+                         Ir *_ir,
+                         const std::string &name,
+                         const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr), keepdims(0) {
   nAtts.setIfPresent(axes, "axes");
   nAtts.setIfPresent(keepdims, "keepdims");
 
@@ -69,7 +67,7 @@ bool ReduceSumOp::getKeepDims() const { return keepdims; }
 
 ReduceSumGradOp::ReduceSumGradOp(ReduceSumOp *fwdOp,
                                  const Shape &backward_shape_)
-    : Op({OpType::REDUCESUMGRAD, fwdOp->pir, {}}),
+    : Op(Onnx::GradOperators::ReduceSumGrad, fwdOp->pir),
       outputTensorInfo(fwdOp->inInfo(ReduceSumOp::getInIndex())),
       backward_shape(backward_shape_) {}
 
@@ -93,5 +91,11 @@ const std::map<int, int> &ReduceSumGradOp::gradOutToNonGradIn() const {
 const Shape &ReduceSumGradOp::backwardShape() const { return backward_shape; }
 
 void ReduceSumGradOp::setup() { outInfo(getOutIndex()) = outputTensorInfo; }
+
+namespace {
+static OpCreator<ReduceSumOp> reduceSumOpCreator(Onnx::Operators::ReduceSum);
+static GradOpCreator<ReduceSumGradOp>
+    reduceSumGradOpCreator(Onnx::GradOperators::ReduceSumGrad);
+} // namespace
 
 } // namespace poponnx

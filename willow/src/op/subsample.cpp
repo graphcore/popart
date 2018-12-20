@@ -1,16 +1,18 @@
 #include <algorithm>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/subsample.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
 #include <poponnx/util.hpp>
 
 namespace poponnx {
 
-SubsampleOp::SubsampleOp(const OpConstructorBundle &bundle) : Op(bundle) {}
-
-SubsampleOp::SubsampleOp(const onnx::NodeProto &node, Ir *_pir)
-    : Op(node, _pir) {}
+SubsampleOp::SubsampleOp(const OperatorIdentifier &_opid,
+                         Ir *_ir,
+                         const std::string &name,
+                         const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {}
 
 std::unique_ptr<Op> SubsampleOp::clone() const {
   return make_unique<SubsampleOp>(*this);
@@ -62,7 +64,7 @@ bool SubsampleOp::strideSizeOne() const {
 }
 
 SubsampleGradOp::SubsampleGradOp(SubsampleOp *_fwdOp)
-    : Op({OpType::SUBSAMPLEGRAD, _fwdOp->pir, {}}), fwdOp(_fwdOp),
+    : Op(Onnx::CustomGradOperators::SubsampleGrad, _fwdOp->pir), fwdOp(_fwdOp),
       fwdOpInfo(_fwdOp->inInfo(0)) {}
 
 std::unique_ptr<Op> SubsampleGradOp::clone() const {
@@ -84,5 +86,12 @@ const std::map<int, int> &SubsampleGradOp::gradOutToNonGradIn() const {
 
   return outInfo;
 }
+
+namespace {
+static OpCreator<SubsampleOp>
+    subsampleOpCreator(Onnx::CustomOperators::Subsample, false);
+static GradOpCreator<SubsampleGradOp>
+    subsamplGradeOpCreator(Onnx::CustomGradOperators::SubsampleGrad);
+} // namespace
 
 } // namespace poponnx

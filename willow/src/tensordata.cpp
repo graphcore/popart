@@ -27,4 +27,20 @@ void TensorData::resetData(const onnx::TensorProto &tp) {
   std::memcpy(data_.data(), cv_data.data, cv_data.info.nbytes());
 }
 
+template <> DataType ArrayWrapper<float>::getDtype() { return DataType::FLOAT; }
+
+template <>
+std::ostream &operator<<(std::ostream &os, const ArrayWrapper<float> &array) {
+  os << "{";
+  for (int i = 0; i < array.getShape(0); ++i) {
+    if (i != 0) {
+      os << ", ";
+    }
+
+    os << (static_cast<float *>(array.data))[i];
+  }
+  os << "}";
+  return os;
+}
+
 } // namespace poponnx

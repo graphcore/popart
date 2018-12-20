@@ -9,7 +9,10 @@ class NllLoss;
 
 class SoftmaxOp : public ElementWiseUnaryOp {
 public:
-  SoftmaxOp(const onnx::NodeProto &node, Ir *pir);
+  SoftmaxOp(const OperatorIdentifier &_opid,
+            Ir *_ir,
+            const std::string &name = "",
+            const Attributes &_attr = {});
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 };

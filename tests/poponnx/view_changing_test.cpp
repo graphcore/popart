@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
 
   // Check the ir
   // 1) that the Reshape Op is present,
-  BOOST_CHECK(ir.opsOfType(OpType::RESHAPE).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Reshape).size() == 1);
   // 2) that the shape of the output tensor is as specified.
   BOOST_CHECK(ir.getTensors().get(outId)->info.shape() == outShape);
 }

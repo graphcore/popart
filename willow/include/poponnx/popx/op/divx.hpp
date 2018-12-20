@@ -13,7 +13,6 @@ namespace popx {
 class DivOpx : public Opx {
 public:
   DivOpx(Op *, Devicex *);
-  DivOp *getDivOp() const;
   void grow(poplar::program::Sequence &) const final;
 };
 

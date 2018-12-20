@@ -5,7 +5,7 @@
 #include <set>
 #include <poponnx/attributes.hpp>
 #include <poponnx/names.hpp>
-#include <poponnx/optypes.hpp>
+#include <poponnx/opidentifier.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/vertex.hpp>
 
@@ -32,15 +32,6 @@ public:
   bool operator==(const GradInOutMapper &rhs) const;
 };
 
-class OpConstructorBundle {
-public:
-  OpConstructorBundle(OpType op_type, Ir *, Attributes);
-
-  OpType op_type;
-  Ir *pir;
-  Attributes atts;
-};
-
 class Op : public Vertex {
 public:
   // We use pointers to TensorIndexMaps for PIMPL reasons.
@@ -63,15 +54,21 @@ public:
   // The unique identifier of the Op (will always be set in Op::Op)
   OpId id{-1};
 
-  // The operation type and domain
-  const OpType opType;
+  // The operation type, domain & version
+  //   A given operator is identified by a three-tuple: (domain, op_type, and
+  //   op_version). This is written as domain.op_type:op_version in prose (e.g.,
+  //   com.acme.FastConv:3). Nodes in graphs always refer to operators by their
+  //   three-part identifier.
+  OperatorIdentifier opid;
 
   // attributes from the Node, if it was created from ONNX
   const Attributes nAtts;
 
 public:
-  Op(const Node &, Ir *);
-  Op(const OpConstructorBundle &);
+  Op(const OperatorIdentifier &_opid,
+     Ir *_ir,
+     const std::string &name = {},
+     const Attributes &_attr = {});
   // Note: copy constructor does NOT copy input and output
   Op(const Op &);
   Op &operator=(const Op &) = delete;
@@ -107,13 +104,6 @@ public:
 
   // might the input tensors be modified?
   bool mayModify(InIndex) const;
-
-  // "Relu" or "Conv" etc.
-  const std::string &op_type() const;
-
-  // political affiliation of the Op
-  // same domain as from the NodeProto if constructed from ONNX
-  const std::string &domain();
 
   const std::string &name() const;
 

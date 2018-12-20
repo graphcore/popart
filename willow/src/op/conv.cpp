@@ -5,12 +5,16 @@
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/conv.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-ConvOp::ConvOp(const onnx::NodeProto &node, Ir *_pir)
-    : HasReceptiveFieldOp(node, _pir) {}
+ConvOp::ConvOp(const OperatorIdentifier &_opid,
+               Ir *_ir,
+               const std::string &name,
+               const Attributes &_attr)
+    : HasReceptiveFieldOp(_opid, _ir, name, _attr) {}
 
 const Tensor *ConvOp::dataIn() const { return inTensor(getDataInIndex()); }
 
@@ -67,7 +71,8 @@ const ConvOp *ConvDataGradOp::getCloneOfCreator() const {
 int64_t ConvOp::getNOutChans() const { return nOutChans; }
 
 ConvWeightsGradOp::ConvWeightsGradOp(ConvOp *op_)
-    : Op({OpType::CONVWEIGHTSGRAD, op_->pir, {}}), cloneOfCreator(op_->clone()),
+    : Op(Onnx::GradOperators::ConvWeightsGrad, op_->pir),
+      cloneOfCreator(op_->clone()),
       weightsInfo(op_->inInfo(ConvOp::getWeightsInIndex())) {
   // we want this Op to be executed early, so that the weight
   // update can be performed as early as possible, thus making
@@ -93,7 +98,8 @@ const std::map<int, int> &ConvWeightsGradOp::gradOutToNonGradIn() const {
 }
 
 ConvDataGradOp::ConvDataGradOp(ConvOp *op_)
-    : Op({OpType::CONVDATAGRAD, op_->pir, {}}), cloneOfCreator(op_->clone()),
+    : Op(Onnx::GradOperators::ConvDataGrad, op_->pir),
+      cloneOfCreator(op_->clone()),
       dataInfo(op_->inInfo(ConvOp::getDataInIndex())) {}
 
 const std::vector<GradInOutMapper> &ConvDataGradOp::gradInputInfo() const {
@@ -112,5 +118,13 @@ const std::map<int, int> &ConvDataGradOp::gradOutToNonGradIn() const {
       {getOutIndex(), ConvOp::getDataInIndex()}};
   return outInfo;
 }
+
+namespace {
+static OpCreator<ConvOp> convOpCreator(Onnx::Operators::Conv);
+static GradOpCreator<ConvDataGradOp>
+    convDataGradOpCreator(Onnx::GradOperators::ConvDataGrad);
+static GradOpCreator<ConvWeightsGradOp>
+    convWeightsGradOpCreator(Onnx::GradOperators::ConvWeightsGrad);
+} // namespace
 
 } // namespace poponnx

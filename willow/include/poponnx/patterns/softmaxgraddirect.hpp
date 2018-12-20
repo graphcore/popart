@@ -14,8 +14,8 @@ namespace poponnx {
 
 class SoftmaxGradDirect : public Fuser {
 private:
-  OpType get0() const final;
-  OpType get1() const final;
+  const OperatorIdentifier &get0() const final;
+  const OperatorIdentifier &get1() const final;
   OpId moveMergedIntoIr(Op *baseOp) const final;
 };
 

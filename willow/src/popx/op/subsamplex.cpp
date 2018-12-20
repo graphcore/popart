@@ -3,6 +3,7 @@
 #include <poponnx/op/subsample.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/subsamplex.hpp>
+#include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 #include <ostream>
@@ -10,9 +11,7 @@ namespace poponnx {
 namespace popx {
 
 SubsampleOpx::SubsampleOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  if (!op->isConvertibleTo<SubsampleOp>()) {
-    throw error("cannot create SubsampleOpx from " + op->op_type());
-  }
+  verifyOp<SubsampleOp>(op, Onnx::CustomOperators::Subsample);
 }
 
 void SubsampleOpx::grow(poplar::program::Sequence &prog) const {
@@ -31,9 +30,7 @@ void SubsampleOpx::grow(poplar::program::Sequence &prog) const {
 
 SubsampleGradOpx::SubsampleGradOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
-  if (!op->isConvertibleTo<SubsampleGradOp>()) {
-    throw error("cannot create SubsampleGradOpx from " + op->op_type());
-  }
+  verifyOp<SubsampleGradOp>(op, Onnx::CustomGradOperators::SubsampleGrad);
 }
 
 // Starting from the gradient of the output of Subsample, we iteratively expand
@@ -86,6 +83,12 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
 
   insert(outId(0), cloneNcopy(prog, outTensor));
 }
+
+namespace {
+OpxCreator<SubsampleOpx> subsampleOpxCreator(Onnx::CustomOperators::Subsample);
+OpxCreator<SubsampleGradOpx>
+    subsampleGradOpxCreator(Onnx::CustomGradOperators::SubsampleGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

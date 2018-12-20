@@ -1,6 +1,7 @@
 #ifndef GUARD_NEURALNET_NET_HPP
 #define GUARD_NEURALNET_NET_HPP
 
+#include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
 
 namespace poponnx {
@@ -94,7 +95,7 @@ public:
    * input data  : from address in stepIO.in
    * output data : to addresses in stepIO.out
    */
-  void train(const StepIO &stepIO);
+  void train(const IStepIO &stepIO);
 
   /**
    * Perform one evaluation step.
@@ -102,7 +103,7 @@ public:
    * input data  : from address in stepIO.in
    * output data : to addresses in stepIO.out
    */
-  void evaluate(const StepIO &stepIO);
+  void evaluate(const IStepIO &stepIO);
 
   /**
    * Perform one inference step.
@@ -110,7 +111,7 @@ public:
    * input data  : from address in stepIO.in
    * output data : to addresses in stepIO.out
    */
-  void infer(const StepIO &stepIO);
+  void infer(const IStepIO &stepIO);
 
   /**
    * Write current model to ONNX file

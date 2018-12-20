@@ -1,12 +1,15 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/div.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-DivOp::DivOp(const onnx::NodeProto &node, Ir *ir) : Op(node, ir) {}
-
-DivOp::DivOp(const OpConstructorBundle &bundle) : Op(bundle) {}
+DivOp::DivOp(const OperatorIdentifier &_opid,
+             Ir *_ir,
+             const std::string &name,
+             const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {}
 
 std::unique_ptr<Op> DivOp::clone() const { return make_unique<DivOp>(*this); }
 
@@ -29,10 +32,11 @@ void DivOp::setup() {
       npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
 }
 
-DivArgGradOp::DivArgGradOp(const OpConstructorBundle &bundle,
+DivArgGradOp::DivArgGradOp(const OperatorIdentifier &_opid,
+                           Ir *_ir,
                            const std::vector<int64_t> &reduction_axes_,
                            const TensorInfo &forward_op_arg_info_)
-    : Op(bundle), forward_op_arg_info(forward_op_arg_info_),
+    : Op(_opid, _ir), forward_op_arg_info(forward_op_arg_info_),
       reduction_axes(reduction_axes_) {}
 
 void DivArgGradOp::setup() { outInfo(0) = forward_op_arg_info; }
@@ -43,7 +47,8 @@ const std::vector<int64_t> &DivArgGradOp::getReductionAxes() const {
 
 DivArg0GradOp::DivArg0GradOp(DivOp *op,
                              const std::vector<int64_t> &reduction_axes_)
-    : DivArgGradOp({OpType::DIVARG0GRAD, op->pir, {}},
+    : DivArgGradOp(Onnx::GradOperators::DivArg0Grad,
+                   op->pir,
                    reduction_axes_,
                    op->inInfo(DivOp::getArg0InIndex())) {}
 
@@ -62,7 +67,8 @@ const std::vector<GradInOutMapper> &DivArg0GradOp::gradInputInfo() const {
 
 DivArg1GradOp::DivArg1GradOp(DivOp *op,
                              const std::vector<int64_t> &reduction_axes_)
-    : DivArgGradOp({OpType::DIVARG1GRAD, op->pir, {}},
+    : DivArgGradOp(Onnx::GradOperators::DivArg1Grad,
+                   op->pir,
                    reduction_axes_,
                    op->inInfo(DivOp::getArg1InIndex())) {}
 
@@ -79,5 +85,13 @@ const std::vector<GradInOutMapper> &DivArg1GradOp::gradInputInfo() const {
       {2, DivOp::getArg1InIndex(), GradOpInType::IN}};
   return inInfo;
 }
+
+namespace {
+static OpCreator<DivOp> divOpCreator(Onnx::Operators::Div);
+static GradOpCreator<DivArg0GradOp>
+    divArg0GradOpCreator(Onnx::GradOperators::DivArg0Grad);
+static GradOpCreator<DivArg1GradOp>
+    divArg1GradOpCreator(Onnx::GradOperators::DivArg1Grad);
+} // namespace
 
 } // namespace poponnx

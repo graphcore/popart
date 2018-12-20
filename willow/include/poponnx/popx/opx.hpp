@@ -91,9 +91,25 @@ public:
       throw error("Failed to cast to op ({}) derived op ({}), type:{} ",
                   typeid(op_p).name(),
                   typeid(d_op).name(),
-                  op_p->op_type());
+                  op_p->opid);
     }
     return *d_op;
+  }
+
+  // Generic function to test that op is of the right type and onnx operators
+  template <class OP> void verifyOp(Op *op, const OperatorIdentifier &opid) {
+    if (op->opid != opid) {
+      throw error("Cannot create opx for {} from {}", opid, op->opid);
+    }
+    if (!op->isConvertibleTo<OP>()) {
+      throw error("Cannot create opx type for {} from {}", opid, op->opid);
+    }
+  }
+
+  template <class OP> void verifyOp(Op *op) {
+    if (!op->isConvertibleTo<OP>()) {
+      throw error("Cannot create opx type from {}", op->opid);
+    }
   }
 
   // The Devicex to which this Opx belongs

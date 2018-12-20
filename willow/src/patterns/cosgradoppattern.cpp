@@ -25,10 +25,9 @@ bool CosGradOpPattern::apply(Op *op) const {
   auto ir = op->pir;
 
   // create the new ops
-  auto sin_op = make_unique<SinOp>(OpConstructorBundle{OpType::SIN, ir, {}});
-  auto mul_op = make_unique<MulOp>(OpConstructorBundle{OpType::MUL, ir, {}});
-  auto negate_op =
-      make_unique<NegateOp>(OpConstructorBundle{OpType::NEGATE, ir, {}});
+  auto sin_op    = make_unique<SinOp>(Onnx::Operators::Sin, ir);
+  auto mul_op    = make_unique<MulOp>(Onnx::Operators::Mul, ir);
+  auto negate_op = make_unique<NegateOp>(Onnx::Operators::Neg, ir);
 
   // move ops into ir
   auto sin    = sin_op.get();

@@ -2,11 +2,16 @@
 #include <poponnx/logging.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/gemm.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-GemmOp::GemmOp(const onnx::NodeProto &node, Ir *ir) : Op(node, ir) {}
+GemmOp::GemmOp(const OperatorIdentifier &_opid,
+               Ir *_ir,
+               const std::string &name,
+               const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {}
 
 std::unique_ptr<Op> GemmOp::clone() const { return make_unique<GemmOp>(*this); }
 
@@ -45,5 +50,9 @@ float GemmOp::getBeta() const { return beta; }
 
 bool GemmOp::getTransA() const { return transA; }
 bool GemmOp::getTransB() const { return transB; }
+
+namespace {
+static OpCreator<GemmOp> gemmOpCreator(Onnx::Operators::Gemm);
+}
 
 } // namespace poponnx
