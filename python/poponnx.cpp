@@ -652,6 +652,15 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("getOutputTensorIds", &Builder::getOutputTensorIds)
       .def("getValueTensorIds", &Builder::getValueTensorIds)
       .def("getTensorShape", &Builder::getTensorShape, py::arg("id"))
+      .def("ipuNumber",
+           static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
+               &Builder::ipuNumber),
+           py::arg("nodeOutputNames"),
+           py::arg("value") = 0)
+      .def("getIpuNumber",
+           static_cast<int64_t (Builder::*)(const TensorId &)>(
+               &Builder::getIpuNumber),
+           py::arg("nodeOutputNames"))
       .def("recomputeOutputInBackwardPass",
            static_cast<void (Builder::*)(const TensorId &, bool value)>(
                &Builder::recomputeOutputInBackwardPass),

@@ -629,6 +629,23 @@ def test_recompute_output_in_backward_pass():
     assert (res == val)
 
 
+def test_set_virtual_graph():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
+
+    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    builder.virtualGraph(o, 1)
+
+    builder.addOutputTensor(o)
+    # Test that tha attribute has been set
+    val = 1
+    res = builder.getVirtualGraph(o)
+    assert (res == val)
+
+
 def test_add_int_attribute():
 
     builder = poponnx.Builder()

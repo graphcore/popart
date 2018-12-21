@@ -70,6 +70,11 @@ using Node           = onnx::NodeProto;
 using OnnxTensorPtrs = std::map<TensorId, const onnx::TensorProto *>;
 using OpsBeforeKey   = std::map<Op *, std::vector<Op *>>;
 
+// Custom node attribute names
+static constexpr const char *sRecomputeOutputAttribute =
+    "__recomputeOutputInBackwardPass";
+static constexpr const char *sVirtualGraphAttribute = "__ipuNumber";
+
 } // namespace poponnx
 
 #endif

@@ -23,9 +23,6 @@ enum class DataType;
 class Builder {
   Builder();
 
-  static constexpr const char *sRecomputeOutputInBackwardPass =
-      "recomputeOutputInBackwardPass";
-
 public:
   /**
    * Create a builder for an ONNX model.
@@ -686,6 +683,7 @@ public:
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MatMul
    *
    * \param args N-dimensional matrix A, and N-dimensional matrix B
+   * \param name Optional identifer for operation
    * \return The name of the result tensor
    */
   TensorId matmul(const std::vector<TensorId> &args,
@@ -697,6 +695,7 @@ public:
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softmax
    *
    * \param args Tensor T
+   * \param name Optional identifer for operation
    * \return The name of the result tensor
    *
    */
@@ -712,6 +711,7 @@ public:
    *
    * \param args Tensor T
    * \param strides The strides
+   * \param name Optional identifer for operation
    * \return The name of the result tensor
    */
   TensorId subsample(const std::vector<TensorId> &args,
@@ -725,22 +725,13 @@ public:
    *
    * \param args Tensor T
    * \param perm The new axes permutation
+   * \param name Optional identifer for operation
    * \return The name of the result tensor
    *
    */
   TensorId transpose(const std::vector<TensorId> &args,
                      const std::vector<int64_t> &perm,
                      const std::string &name = {});
-
-  /*
-   * Add a Batch Normalization operation to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#batchnormalization
-   *
-   * \param args Tensor T
-   * \return The name of the result tensor
-   *
-   */
 
   // The set of output from the batchNormalization test
   // Would have liked to use std::optional instead of pointers
@@ -752,11 +743,22 @@ public:
     TensorId savedVar;
   };
 
-  // @SL@ Q : the is a vector of tensors. This op only works on an single input
-  // tensor. Is it better to make it a single tensorid or be consistent?
-  // @SL@ Q : Should the mode be in this function (it is not in the onnx
-  // operator definition). Where can the mode be read from when building the
-  // graph?
+  /**
+   * Add a Batch Normalization operation to the model (for training models)
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#batchnormalization
+   *
+   * \param x the input tensor
+   * \param scale the scale tensor
+   * \param b the bias tensor
+   * \param mean the mean tenor
+   * \param var the variance tensor
+   * \param epsilon a small delta applied to avoid division by zero
+   * \param momentum the fraction used when updating the mean/variance tensors
+   * \param spatial see ONNX operation specificiation
+   * \param name Optional identifer for operation
+   * \return a struct containing all of the outputs of the batch-normalization
+   */
   BatchNormalizationTrainingOutputs
   batchnormalizationTraining(const TensorId x,
                              const TensorId scale,
@@ -768,6 +770,22 @@ public:
                              const int spatial       = 1,
                              const std::string &name = {});
 
+  /**
+   * Add a Batch Normalization operation to the model (for non-training)
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#batchnormalization
+   *
+   * \param x the input tensor
+   * \param scale the scale tensor
+   * \param b the bias tensor
+   * \param mean the mean tensor
+   * \param var the variance tensor
+   * \param epsilon a small value added to prevent division by zero
+   * \param momentum the update fraction for changing the mean/variance
+   * \param spatial see ONNX operator specification
+   * \param name Optional identifer for operation
+   * \return The normalized input tensor
+   */
   TensorId batchnormalizationTesting(const TensorId x,
                                      const TensorId scale,
                                      const TensorId b,
@@ -788,26 +806,50 @@ public:
            const std::string &name = "");
 
   /**
-   * Add an attribute to the ONNX mode to recompute the output in the backwards
-   * pass
+   * Enable/disable recomputation of the output of the node in the backward
+   * pass.
    *
    * \param nodeOutputName Name of the output tensor of the ONNX node
    * \param value If the recompute is enabled/disabled
    */
   void recomputeOutputInBackwardPass(const TensorId &nodeOutputName,
                                      bool value = true) {
-    addNodeAttribute(sRecomputeOutputInBackwardPass, value, {nodeOutputName});
+    addNodeAttribute(sRecomputeOutputAttribute, value, {nodeOutputName});
   }
+
   /**
-   * Add an attribute to the ONNX mode to recompute the output in the backwards
-   * pass
+   * Enable/disable recomputation of the output of the node in the backward
+   * pass.
    *
    * \param nodeOutputNames Names of the output tensors of the ONNX node
    * \param value If the recompute is enabled/disabled
    */
   void recomputeOutputInBackwardPass(const std::set<TensorId> &nodeOutputNames,
                                      bool value = true) {
-    addNodeAttribute(sRecomputeOutputInBackwardPass, value, nodeOutputNames);
+    addNodeAttribute(sRecomputeOutputAttribute, value, nodeOutputNames);
+  }
+
+  /**
+   * Set the virtual graph that computes the given node.  Applies when creating
+   * a graph for a multi-IPU configuration.
+   *
+   * \param nodeOutputName Name of the output tensor of the ONNX node
+   * \param value If the recompute is enabled/disabled
+   */
+  void virtualGraph(const TensorId &nodeOutputName, int64_t value = 0) {
+    addNodeAttribute(sVirtualGraphAttribute, value, {nodeOutputName});
+  }
+
+  /**
+   * Set the virtual graph that computes the given node.  Applies when creating
+   * a graph for a multi-IPU configuration.
+   *
+   * \param nodeOutputNames Names of the output tensors of the ONNX node
+   * \param value If the recompute is enabled/disabled
+   */
+  void virtualGraph(const std::set<TensorId> &nodeOutputNames,
+                    int64_t value = 0) {
+    addNodeAttribute(sVirtualGraphAttribute, value, nodeOutputNames);
   }
 
   /**
@@ -1045,30 +1087,48 @@ public:
   getAllNodeAttributeNames(const std::set<TensorId> &nodeOutputNames);
 
   /**
-   * Get the recompute output in backwards pass attribute names from the ONNX
-   * node. This functions will throw an exception if it can't find the unique
-   * node.
+   * Get whether the given node will have its output recomputed in the backward
+   * pass.
    *
    * \param nodeOutputName Name of the output tensor of the ONNX node used to
    *                        find the node in the ONNX model.
    */
   bool getRecomputeOutputInBackwardPass(const TensorId &nodeOutputName) {
-    return getBoolNodeAttribute(sRecomputeOutputInBackwardPass,
-                                {nodeOutputName});
+    return getBoolNodeAttribute(sRecomputeOutputAttribute, {nodeOutputName});
   }
 
   /**
-   * Get the recompute output in backwards pass attribute names from the ONNX
-   * node. This functions will throw an exception if it can't find the unique
-   * node.
+   * Get whether the given node will have its output recomputed in the backward
+   * pass.
    *
    * \param nodeOutputNames Names of the output tensors of the ONNX node used to
    *                        find the node in the ONNX model.
    */
   bool
   getRecomputeOutputInBackwardPass(const std::set<TensorId> &nodeOutputNames) {
-    return getBoolNodeAttribute(sRecomputeOutputInBackwardPass,
-                                nodeOutputNames);
+    return getBoolNodeAttribute(sRecomputeOutputAttribute, nodeOutputNames);
+  }
+
+  /**
+   * Get the index of the virtual graph that computes this node. This applies
+   * in a multi IPU system.
+   *
+   * \param nodeOutputName Name of the output tensor of the ONNX node used to
+   *                       find the node in the ONNX model.
+   */
+  int64_t getVirtualGraph(const TensorId &nodeOutputName) {
+    return getInt64NodeAttribute(sVirtualGraphAttribute, {nodeOutputName});
+  }
+
+  /**
+   * Get the index of the virtual graph that computes this node. This applies
+   * in a multi IPU system.
+   *
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  int64_t getVirtualGraph(const std::set<TensorId> &nodeOutputNames) {
+    return getInt64NodeAttribute(sVirtualGraphAttribute, nodeOutputNames);
   }
 
   /**
