@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_MAXPOOLX_HPP
 
 #include <poponnx/names.hpp>
+#include <poponnx/popx/op/poolx.hpp>
 #include <poponnx/popx/opx.hpp>
 
 namespace poponnx {
@@ -11,13 +12,13 @@ class MaxPoolGradOp;
 
 namespace popx {
 
-class MaxPoolOpx : public Opx {
+class MaxPoolOpx : public PoolOpx {
 public:
   MaxPoolOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 
-class MaxPoolGradOpx : public Opx {
+class MaxPoolGradOpx : public PoolOpx {
 public:
   MaxPoolGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

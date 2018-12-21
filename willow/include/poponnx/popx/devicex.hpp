@@ -146,6 +146,7 @@ public:
   ConvOptions fwdConvOptions, bwdConvOptions, wuConvOptions;
   poplar::OptionFlags fwdMmOptions, bwdMmLhsOptions, bwdMmRhsOptions;
   poplar::OptionFlags engineOptions, reportOptions;
+  poplar::OptionFlags pooling_options;
 
   PopTensors tensors;
 
