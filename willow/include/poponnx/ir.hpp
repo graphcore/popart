@@ -269,6 +269,9 @@ public:
   // This is true when there are losses and an optimizer.
   bool canTrain() const;
 
+  // returns true if there are initializers in the onnx model
+  bool containsInitialisers();
+
 private:
   // called from growFromNode and many other places where Ops created
   // T requires functions input(int) and input_size()

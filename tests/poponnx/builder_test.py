@@ -646,6 +646,46 @@ def test_set_virtual_graph():
     assert (res == val)
 
 
+def test_set_weights_from_host():
+
+    # Run the first builder
+    builder = poponnx.Builder()
+
+    shape = poponnx.TensorInfo("FLOAT", [2])
+
+    i1 = builder.addInputTensor(shape)
+
+    data = np.array([1, 2], dtype=np.float32)
+
+    i2 = builder.addInitializedInputTensor(data)
+    o = builder.add([i1, i2])
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+
+    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+
+    session.setDevice(getDevice())
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    inputs = {i1: np.array([1, 2], dtype=np.float32)}
+    stepio = poponnx.PyStepIO(inputs, anchors)
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        session.infer(stepio)
+        assert (e_info.value.args[0].find(
+            "Must call weightFromHost before infer as the model has initializers"
+        ))
+
+    session.weightsFromHost()
+
+    session.infer(stepio)
+
+
 def test_add_int_attribute():
 
     builder = poponnx.Builder()

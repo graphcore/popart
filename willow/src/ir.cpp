@@ -1463,4 +1463,8 @@ bool Ir::canTrain() const {
   return getExecutionMode() == ExecutionMode::TRAINING;
 }
 
+bool Ir::containsInitialisers() {
+  return !(onnxModel->graph().initializer().empty());
+}
+
 } // namespace poponnx

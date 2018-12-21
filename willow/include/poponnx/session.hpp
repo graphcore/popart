@@ -178,6 +178,11 @@ private:
    */
   std::unique_ptr<Device> device_;
 
+  /**
+   * Flag to indicate if weightsFromHost has been called
+   */
+  bool weightsFromHostCalled = false;
+
   void configureFromOnnx(const std::string &model,
                          const DataFlow &dataFlow,
                          const InputShapeInfo &inputShapeInfo,

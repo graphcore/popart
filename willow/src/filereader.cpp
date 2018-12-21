@@ -71,6 +71,35 @@ static bool getModelFromStream(std::istream &istream,
   return modelProto.ParseFromIstream(&istream);
 }
 
+static void logModelInfo(onnx::ModelProto &modelProto) {
+  logging::info("Onnx Model Info ir_version:{}, producer:{}.{}, domain:\"{}\", "
+                "model_version:{} num_opsets:{}",
+                modelProto.ir_version(),
+                modelProto.producer_name(),
+                modelProto.producer_version(),
+                modelProto.domain(),
+                modelProto.model_version(),
+                modelProto.opset_import_size());
+
+  for (auto opset : modelProto.opset_import()) {
+    logging::info("Onnx Model OpSet domain:\"{}\" version:{}",
+                  opset.domain(),
+                  opset.version());
+  }
+
+  if (modelProto.has_graph()) {
+    logging::info(
+        "Onnx Graph Info name:\"{}\" num_nodes:{} num_initializers:{} "
+        "num_inputs:{} num_outputs:{} num_value_infos:{}",
+        modelProto.graph().name(),
+        modelProto.graph().node_size(),
+        modelProto.graph().initializer_size(),
+        modelProto.graph().input_size(),
+        modelProto.graph().output_size(),
+        modelProto.graph().value_info_size());
+  }
+}
+
 onnx::ModelProto getModelFromFile(const std::string &filename) {
   // Verify that the version of the library that we linked against is
   // compatible with the version of the headers we compiled against.
@@ -94,6 +123,8 @@ onnx::ModelProto getModelFromFile(const std::string &filename) {
     throw error(ss.str());
   }
 
+  logModelInfo(modelProto);
+
   return modelProto;
 }
 
@@ -110,6 +141,8 @@ onnx::ModelProto getModelFromString(const std::string &stringProto) {
   if (!getModelFromStream(input, modelProto)) {
     throw error("Failed to parse ModelProto from string");
   }
+
+  logModelInfo(modelProto);
 
   return modelProto;
 }

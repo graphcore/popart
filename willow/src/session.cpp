@@ -97,6 +97,7 @@ void Session::prepareDevice() {
 void Session::weightsFromHost() {
   logging::session::trace("Sessions::weightsFromHost");
   device_->weightsFromHost();
+  weightsFromHostCalled = true;
 }
 
 // write whatever optimizer tensors (learning rates,
@@ -112,6 +113,11 @@ void Session::train(const IStepIO &stepio) {
     throw error("Trying to train when not in training mode");
   }
 
+  if (ir.containsInitialisers() && weightsFromHostCalled == false) {
+    throw error(
+        "Must call weightFromHost before train as the model has initializers");
+  }
+
   device_->train(stepio);
 }
 
@@ -121,6 +127,11 @@ void Session::evaluate(const IStepIO &stepio) {
     throw error("Trying to evaluate when not in evaluation mode");
   }
 
+  if (ir.containsInitialisers() && weightsFromHostCalled == false) {
+    throw error("Must call weightFromHost before evaluate as the model has "
+                "initializers");
+  }
+
   device_->evaluate(stepio);
 }
 
@@ -128,6 +139,11 @@ void Session::infer(const IStepIO &stepio) {
   logging::session::trace("Session::infer");
   if (!ir.canInfer()) {
     throw error("Trying to infer when not in inference mode");
+  }
+
+  if (ir.containsInitialisers() && weightsFromHostCalled == false) {
+    throw error(
+        "Must call weightFromHost before infer as the model has initializers");
   }
 
   device_->infer(stepio);
@@ -169,9 +185,12 @@ std::string Session::getExecutionReport() const {
 }
 
 void Session::resetHostWeights(const std::string &modelProtoOrFilename) {
-  logging::session::trace("Session::updateModel");
+  logging::session::trace("Session::resetHostWeights");
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
   ir.resetWeights(modelProto);
+
+  // After the weights has been reset they must be rewritten to the target
+  weightsFromHostCalled = false;
 }
 
 } // namespace poponnx
