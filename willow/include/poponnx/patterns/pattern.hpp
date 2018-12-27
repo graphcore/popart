@@ -6,7 +6,6 @@
 
 namespace poponnx {
 
-
 enum class PatternType {
   // Before the inplace Patterns:
   PREUNIREPL = 0,

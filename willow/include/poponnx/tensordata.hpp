@@ -7,9 +7,12 @@
 
 #include <ostream>
 
-namespace poponnx {
+// TODO T5992:
+// Consider merging NDIndices functionality into class Array,
+// move Array out of this header, consider also the template class
+// NDArray in ces/addce.cpp
 
-// TODO: This API should change when T5207 is done
+namespace poponnx {
 
 // A class to hold data, used
 // within the poponnx::Tensor class.
@@ -59,9 +62,8 @@ public:
   virtual MutableVoidData out(TensorId) const = 0;
 };
 
-// Not sure where to put this....
 // TODO : Rename Array to ArrayWrapper and then have template versions for the
-// type inforamtion
+// type information. See also T5992
 
 class Array {
   std::vector<unsigned> shape;

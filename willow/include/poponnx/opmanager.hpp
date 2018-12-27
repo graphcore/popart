@@ -21,6 +21,7 @@ public:
 
   struct OpInfo {
     OpInfo() : isPublic(false), f1(nullptr) {}
+    // Does poponnx expose the Op in its public API ?
     bool isPublic;
     OpFactoryFunc f1;
     // TBD could hold meta information about input/ouput/attributes expected

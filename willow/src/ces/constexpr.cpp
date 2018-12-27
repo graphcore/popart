@@ -51,8 +51,8 @@ void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
 
   OperatorIdentifier opid(node.domain(), node.op_type(), version);
 
-  // TODO :  Consider moving this into the op and register a constexprutil
-  // function
+  // TODO: Consider moving this into the op and register a constexprutil
+  // function. See T5993
 
   if (opid == Onnx::Operators::Cast) {
     CastCe caster(node, ir);

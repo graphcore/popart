@@ -7,10 +7,6 @@
 
 namespace poponnx {
 
-// using OpDomain = std::string;
-using OpType    = std::string;
-using OpVersion = unsigned;
-
 namespace Domain {
 const static char *ai_onnx      = "ai.onnx";
 const static char *ai_graphcore = "ai.graphcore";
@@ -84,7 +80,7 @@ struct AiGrapcoreOpIdV1 : public OperatorIdentifier {
 
 std::ostream &operator<<(std::ostream &os, const OperatorIdentifier &opid);
 
-// FFS There should be a way of generated this list of operators from the md
+// FFS There should be a way of generating this list of operators from the md
 // files
 namespace Onnx {
 

@@ -96,13 +96,13 @@ public:
     return *d_op;
   }
 
-  // Generic function to test that op is of the right type and onnx operators
+  // TODO: Reconsider the names of these two verifyOp functions
+
+  // Generic function to test that op is of a given type
   template <class OP> void verifyOp(Op *op, const OperatorIdentifier &opid) {
+    // compare domain, type (Relu, etc.) and version
     if (op->opid != opid) {
       throw error("Cannot create opx for {} from {}", opid, op->opid);
-    }
-    if (!op->isConvertibleTo<OP>()) {
-      throw error("Cannot create opx type for {} from {}", opid, op->opid);
     }
   }
 

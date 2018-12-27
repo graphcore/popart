@@ -1601,10 +1601,9 @@ def op_tester(tmpdir):
                         print('Torch : {}', ref_out[index])
                         print('{}', np.subtract(anchor_map[key],
                                                 ref_out[index]))
-                        print(
-                            '{}',
-                            np.isclose(anchor_map[key], ref_out[index],
-                                       self.rtol, self.atol))
+                        print('{}',
+                              np.isclose(anchor_map[key], ref_out[index],
+                                         self.rtol, self.atol))
 
                     assert np.allclose(anchor_map[key], ref_out[index],
                                        self.rtol, self.atol)
