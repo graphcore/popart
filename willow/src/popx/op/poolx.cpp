@@ -48,7 +48,7 @@ PoolOpx::GetPoolingParameters(const popnn::PoolingType &pooling_type,
           padding_upper,
           num_channels,
           batch_size,
-          popType(input_tensor)};
+          poplar::FLOAT};
 }
 
 } // namespace popx
