@@ -115,7 +115,7 @@ void Session::train(const IStepIO &stepio) {
 
   if (ir.containsInitialisers() && weightsFromHostCalled == false) {
     throw error(
-        "Must call weightFromHost before train as the model has initializers");
+        "Must call weightsFromHost before train as the model has initializers");
   }
 
   device_->train(stepio);
@@ -128,7 +128,7 @@ void Session::evaluate(const IStepIO &stepio) {
   }
 
   if (ir.containsInitialisers() && weightsFromHostCalled == false) {
-    throw error("Must call weightFromHost before evaluate as the model has "
+    throw error("Must call weightsFromHost before evaluate as the model has "
                 "initializers");
   }
 
@@ -143,7 +143,7 @@ void Session::infer(const IStepIO &stepio) {
 
   if (ir.containsInitialisers() && weightsFromHostCalled == false) {
     throw error(
-        "Must call weightFromHost before infer as the model has initializers");
+        "Must call weightsFromHost before infer as the model has initializers");
   }
 
   device_->infer(stepio);
