@@ -49,13 +49,11 @@ void AveragePoolGradOpx::grow(poplar::program::Sequence &prog) const {
                                           aOp->lowerPads(),
                                           aOp->upperPads());
 
-  // The poplibs API includes the concept of channels-per-group
-  unsigned fwdChansPerGroup = static_cast<unsigned>(aOp->nInChans);
-
   insert(outId(0),
          popnn::pooling::poolInputGradient(graph(),
                                            pool_params,
-                                           fwdChansPerGroup,
+                                           get(prePooledId),
+                                           get(pooledId),
                                            get(gradPooledId),
                                            prog,
                                            idStr(),
