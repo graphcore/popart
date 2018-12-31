@@ -18,7 +18,7 @@ onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename);
 
 // functions for translating between poponnx's enum class and onnx's enum
 onnx::TensorProto_DataType getTPDataType(DataType);
-DataType getDataType(onnx::TensorProto_DataType);
+DataType getDataType(int);
 
 } // namespace onnxutil
 } // namespace poponnx

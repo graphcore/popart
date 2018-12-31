@@ -65,7 +65,7 @@ onnx::TensorProto_DataType getTPDataType(DataType data_type) {
   }
 }
 
-DataType getDataType(onnx::TensorProto_DataType tpd) {
+DataType getDataType(int tpd) {
 
   switch (tpd) {
   case onnx::TensorProto_DataType_UINT8: {

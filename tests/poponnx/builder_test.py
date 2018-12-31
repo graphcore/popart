@@ -21,165 +21,206 @@ def test_basic():
 
     o = builder.abs([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.acos([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.acosh([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.add([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.logical_and([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.asin([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.asinh([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.atan([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.atanh([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.ceil([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.cos([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.cosh([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.div([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.elu([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.equal([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.exp([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.floor([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.greater([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.identity([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.less([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.log([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.max([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.mean([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.min([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.mul([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.neg([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.logical_not([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.logical_or([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.pow([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.reciprocal([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.relu([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.sigmoid([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.sin([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.sinh([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.softsign([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.sqrt([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.sub([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.sum([i1, i2])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.tan([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.tanh([i1])
     assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
     o = builder.logical_xor([i1, i2])
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     assert (old_o != o)
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
@@ -678,7 +719,7 @@ def test_set_weights_from_host():
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         session.infer(stepio)
         assert (e_info.value.args[0].find(
-            "Must call weightFromHost before infer as the model has initializers"
+            "Must call weightsFromHost before infer as the model has initializers"
         ))
 
     session.weightsFromHost()
