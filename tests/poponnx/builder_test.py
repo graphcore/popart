@@ -425,6 +425,21 @@ def test_add_pad():
     assert (e_info.value.args[0].startswith("Padding vector (length 4) "))
 
 
+def test_add_constant():
+
+    builder = poponnx.Builder()
+
+    c = builder.constant(np.array([[1, 6], [4, 5]], dtype=np.float32))
+
+    builder.addOutputTensor(c)
+
+    proto = builder.getModelProto()
+
+    assert (len(proto) > 0)
+
+    assert (builder.getTensorShape(c) == [2, 2])
+
+
 def test_add_conv():
 
     builder = poponnx.Builder()

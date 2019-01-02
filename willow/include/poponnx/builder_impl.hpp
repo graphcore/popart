@@ -33,6 +33,8 @@ public:
 
   void addOutputTensor(const TensorId &arg0);
 
+  TensorId constant(const ConstVoidData &initData, const std::string &name);
+
   // Operations requiring only tensor inputs
   TensorId abs(const std::vector<TensorId> &args, const std::string &name);
   TensorId acos(const std::vector<TensorId> &args, const std::string &name);
@@ -200,6 +202,10 @@ public:
 
   void addNodeAttribute(const std::string &attributeName,
                         const int &attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  void addNodeAttribute(const std::string &attributeName,
+                        const ConstVoidData &attributeValue,
                         const std::set<TensorId> &nodeOutputNames);
 
   bool nodeHasAttribute(const std::string &attributeName,

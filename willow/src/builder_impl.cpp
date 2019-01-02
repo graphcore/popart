@@ -145,23 +145,16 @@ TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo) {
   return id;
 }
 
-TensorId BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData) {
-  auto id             = getNextId();
+static void populateTenorProtoFromConstVoidData(const ConstVoidData &initData,
+                                                const std::string &id,
+                                                onnx::TensorProto *tp) {
   auto onnxTensorType = initData.info.getOnnxTypeProto();
 
-  auto *graph = model_.mutable_graph();
-  auto *input = graph->add_input();
-  input->set_name(id);
-
-  auto *type = input->mutable_type();
-  *type      = onnxTensorType;
-
-  auto *initializer = graph->add_initializer();
-  initializer->set_data_type(onnxutil::getTPDataType(initData.info.dataType()));
-  initializer->set_name(id);
+  tp->set_data_type(onnxutil::getTPDataType(initData.info.dataType()));
+  tp->set_name(id);
 
   for (auto d : initData.info.shape()) {
-    initializer->add_dims(d);
+    tp->add_dims(d);
   }
 
   int element_count = static_cast<int>(initData.info.nelms());
@@ -169,35 +162,35 @@ TensorId BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData) {
   switch (initData.info.dataType()) {
   case DataType::FLOAT: {
     auto src = static_cast<const float *>(initData.data);
-    auto dst = initializer->mutable_float_data();
+    auto dst = tp->mutable_float_data();
     dst->Resize(element_count, 0.0f);
     memcpy(dst->mutable_data(), src, initData.info.nbytes());
     break;
   }
   case DataType::INT32: {
     auto src = static_cast<const int32_t *>(initData.data);
-    auto dst = initializer->mutable_int32_data();
+    auto dst = tp->mutable_int32_data();
     dst->Resize(element_count, 0);
     memcpy(dst->mutable_data(), src, initData.info.nbytes());
     break;
   }
   case DataType::INT64: {
     auto src = static_cast<const int64_t *>(initData.data);
-    auto dst = initializer->mutable_int64_data();
+    auto dst = tp->mutable_int64_data();
     dst->Resize(element_count, 0);
     memcpy(dst->mutable_data(), src, initData.info.nbytes());
     break;
   }
   case DataType::BOOL: {
     auto src = static_cast<const int32_t *>(initData.data);
-    auto dst = initializer->mutable_int32_data();
+    auto dst = tp->mutable_int32_data();
     dst->Resize(element_count, 0);
     memcpy(dst->mutable_data(), src, initData.info.nbytes());
     break;
   }
   case DataType::FLOAT16: {
     auto src = static_cast<const int32_t *>(initData.data);
-    auto dst = initializer->mutable_int32_data();
+    auto dst = tp->mutable_int32_data();
     dst->Resize((element_count + 1) / 2, 0);
     memcpy(dst->mutable_data(), src, initData.info.nbytes());
     break;
@@ -214,8 +207,22 @@ TensorId BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData) {
   case DataType::COMPLEX64:
   case DataType::COMPLEX128:
   case DataType::BFLOAT16:
-    throw error("Unsupported data type in initializer");
+    throw error("Unsupported data type for initialized data");
   }
+}
+
+TensorId BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData) {
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *input = graph->add_input();
+  input->set_name(id);
+
+  auto *type = input->mutable_type();
+  *type      = initData.info.getOnnxTypeProto();
+
+  auto *initializer = graph->add_initializer();
+  populateTenorProtoFromConstVoidData(initData, id, initializer);
 
   return id;
 }
@@ -235,6 +242,25 @@ void BuilderImpl::addOutputTensor(const TensorId &arg0) {
   if (!found) {
     output->set_name(arg0);
   }
+}
+
+TensorId BuilderImpl::constant(const ConstVoidData &initData,
+                               const std::string &name) {
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type(Onnx::Operators::Constant.type);
+  node->add_output(id);
+
+  addNodeAttribute("value", initData, {id});
+
+  if (!name.empty())
+    node->set_name(name);
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return id;
 }
 
 TensorId BuilderImpl::abs(const std::vector<TensorId> &args,
@@ -712,7 +738,7 @@ TensorId BuilderImpl::reshape_const(const std::vector<TensorId> &args,
                                     const std::string &name) {
   Shape s = {static_cast<int64_t>(shape.size())};
   TensorInfo tensorInfo("INT64", s);
-  auto newShape = addInitializedInputTensor({shape.data(), tensorInfo});
+  auto newShape = constant({shape.data(), tensorInfo}, name + "_const");
   return reshape({args[0], newShape}, name);
 }
 
@@ -1037,6 +1063,17 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
       addNewAttributeToNode(attributeName, nodeOutputNames);
   attr.set_type(onnx::AttributeProto::INT);
   attr.set_i(static_cast<int>(attributeValue));
+}
+
+void BuilderImpl::addNodeAttribute(const std::string &attributeName,
+                                   const ConstVoidData &attributeValue,
+                                   const std::set<TensorId> &nodeOutputNames) {
+  onnx::AttributeProto &attr =
+      addNewAttributeToNode(attributeName, nodeOutputNames);
+  attr.set_type(onnx::AttributeProto::TENSOR);
+
+  auto *t = attr.mutable_t();
+  populateTenorProtoFromConstVoidData(attributeValue, attributeName, t);
 }
 
 onnx::AttributeProto &

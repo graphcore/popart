@@ -37,6 +37,11 @@ void Builder::addOutputTensor(const TensorId &arg0) {
   return impl_->addOutputTensor(arg0);
 }
 
+TensorId Builder::constant(const ConstVoidData &initData,
+                           const std::string &name) {
+  return impl_->constant(initData, name);
+}
+
 TensorId Builder::abs(const std::vector<TensorId> &args,
                       const std::string &name) {
   return impl_->abs(args, name);
@@ -405,6 +410,12 @@ void Builder::addNodeAttribute(const std::string &attributeName,
 
 void Builder::addNodeAttribute(const std::string &attributeName,
                                const bool attributeValue,
+                               const std::set<TensorId> &nodeOutputNames) {
+  impl_->addNodeAttribute(attributeName, attributeValue, nodeOutputNames);
+}
+
+void Builder::addNodeAttribute(const std::string &attributeName,
+                               const ConstVoidData &attributeValue,
                                const std::set<TensorId> &nodeOutputNames) {
   impl_->addNodeAttribute(attributeName, attributeValue, nodeOutputNames);
 }

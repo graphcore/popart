@@ -64,6 +64,17 @@ public:
   void addOutputTensor(const TensorId &arg0);
 
   /**
+   * Add a constant to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Constant
+   *
+   * \param initData The initial data of the input tensor
+   * \param name Optional identifer for operation
+   * \return The unique name of the constant's output tensor
+   */
+  TensorId constant(const ConstVoidData &initData, const std::string &name);
+
+  /**
    * Add the absolute value operator to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Abs
@@ -977,6 +988,21 @@ public:
    */
   void addNodeAttribute(const std::string &attributeName,
                         const bool attributeValue,
+                        const std::set<TensorId> &nodeOutputNames);
+
+  /**
+   * Add an attribute to the ONNX node which is uniquely identified by the
+   * outputs.
+   * This functions will throw an exception if it can't find the unique
+   * node or the attribute already exists.
+   *
+   * \param attributeName The name of the attribute to add.
+   * \param attributeValue An constant tensor initializer
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  void addNodeAttribute(const std::string &attributeName,
+                        const ConstVoidData &attributeValue,
                         const std::set<TensorId> &nodeOutputNames);
 
   /**

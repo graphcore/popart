@@ -323,6 +323,15 @@ PYBIND11_MODULE(poponnx_core, m) {
            },
            py::arg("initVal"))
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
+      .def("constant",
+           [](Builder &builder, py::array array, const std::string &name) {
+             ConstVoidData initData;
+             initData.data = array.request().ptr;
+             initData.info = getTensorInfo(array);
+             return builder.constant(initData, name);
+           },
+           py::arg("initVal"),
+           py::arg("debugPrefix") = std::string())
       .def("abs",
            &Builder::abs,
            py::arg("args"),
