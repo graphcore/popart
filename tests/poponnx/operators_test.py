@@ -186,6 +186,24 @@ def test_maxpool_3(op_tester):
     op_tester.run(init_builder, reference, step_type='infer')
 
 
+def test_maxpool_4(op_tester):
+    d1 = np.random.rand(1, 1, 16, 16).astype(np.float16)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.maxpool([i1], [5, 5], [2, 2], [2, 2, 2, 2])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        t1 = torch.tensor(d1.astype(np.float32), requires_grad=True)
+        avgpool = torch.nn.MaxPool2d(kernel_size=5, stride=2, padding=2)
+        out = avgpool(t1).data.numpy().astype(np.float16)
+        return [out]
+
+    op_tester.run(init_builder, reference, step_type='infer')
+
+
 def test_maxpool_grad(op_tester):
     d1 = np.random.rand(1, 1, 6, 6).astype(np.float32)
 
@@ -1601,9 +1619,10 @@ def op_tester(tmpdir):
                         print('Torch : {}', ref_out[index])
                         print('{}', np.subtract(anchor_map[key],
                                                 ref_out[index]))
-                        print('{}',
-                              np.isclose(anchor_map[key], ref_out[index],
-                                         self.rtol, self.atol))
+                        print(
+                            '{}',
+                            np.isclose(anchor_map[key], ref_out[index],
+                                       self.rtol, self.atol))
 
                     assert np.allclose(anchor_map[key], ref_out[index],
                                        self.rtol, self.atol)

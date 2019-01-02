@@ -11,6 +11,17 @@ namespace popx {
 
 PoolOpx::PoolOpx(Op *op, Devicex *device) : Opx(op, device) {}
 
+static poplar::Type getReductionType(const popnn::PoolingType &pooling_type,
+                                     const poplar::Type &input_type) {
+  switch (pooling_type) {
+  case popnn::PoolingType::AVG:
+  case popnn::PoolingType::SUM:
+    return poplar::FLOAT;
+  case popnn::PoolingType::MAX:
+    return input_type;
+  }
+}
+
 popnn::pooling::PoolParams
 PoolOpx::GetPoolingParameters(const popnn::PoolingType &pooling_type,
                               const TensorInfo &input_tensor,
@@ -40,6 +51,8 @@ PoolOpx::GetPoolingParameters(const popnn::PoolingType &pooling_type,
     padding_upper.push_back(static_cast<int>(upperPads[d]));
   }
 
+  auto data_type = getReductionType(pooling_type, popType(input_tensor));
+
   return {pooling_type,
           field_shape,
           kernel_shape,
@@ -48,7 +61,7 @@ PoolOpx::GetPoolingParameters(const popnn::PoolingType &pooling_type,
           padding_upper,
           num_channels,
           batch_size,
-          poplar::FLOAT};
+          data_type};
 }
 
 } // namespace popx
