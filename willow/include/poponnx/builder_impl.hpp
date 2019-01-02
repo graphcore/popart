@@ -106,6 +106,9 @@ public:
                    const std::vector<int64_t> padding,
                    const std::string &name);
 
+  std::tuple<TensorId, TensorId, TensorId>
+  lstm(const std::vector<TensorId> &args, const std::string &name);
+
   TensorId gemm(const std::vector<TensorId> &args,
                 float alpha,
                 float beta,

@@ -519,6 +519,10 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("strides"),
            py::arg("padding"),
            py::arg("debugPrefix") = std::string())
+      .def("lstm",
+           &Builder::lstm,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
       .def("subsample",
            &Builder::subsample,
            py::arg("args"),

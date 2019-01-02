@@ -280,6 +280,11 @@ TensorId Builder::maxpool(const std::vector<TensorId> &args,
   return impl_->maxpool(args, kernel_shape, strides, padding, name);
 }
 
+std::tuple<TensorId, TensorId, TensorId>
+Builder::lstm(const std::vector<TensorId> &args, const std::string &name) {
+  return impl_->lstm(args, name);
+}
+
 TensorId Builder::gemm(const std::vector<TensorId> &args,
                        float alpha,
                        float beta,

@@ -179,8 +179,8 @@ public:
   TensorInfo &outInfo(OutIndex index);
   const TensorInfo &outInfo(OutIndex index) const;
 
-  const Shape &inShape(InIndex index);
-  const Shape &outShape(OutIndex index);
+  const Shape &inShape(InIndex index) const;
+  const Shape &outShape(OutIndex index) const;
 
   Rank inRank(InIndex index);
   Rank outRank(OutIndex index);

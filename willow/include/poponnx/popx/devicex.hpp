@@ -147,6 +147,7 @@ public:
   poplar::OptionFlags fwdMmOptions, bwdMmLhsOptions, bwdMmRhsOptions;
   poplar::OptionFlags engineOptions, reportOptions;
   poplar::OptionFlags pooling_options;
+  poplar::OptionFlags lstmOptions;
 
   PopTensors tensors;
 

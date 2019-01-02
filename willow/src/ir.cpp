@@ -1401,10 +1401,11 @@ const Tensor *Op::outTensor(OutIndex index) const {
   return output->tensor(index);
 }
 
-const Shape &Op::inShape(InIndex index) {
+const Shape &Op::inShape(InIndex index) const {
   return inTensor(index)->info.shape();
 }
-const Shape &Op::outShape(OutIndex index) {
+
+const Shape &Op::outShape(OutIndex index) const {
   return outTensor(index)->info.shape();
 }
 

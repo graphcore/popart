@@ -638,6 +638,18 @@ public:
                    const std::string &name = {});
 
   /**
+   * Add a LSTM operation to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#LSTM
+   *
+   * \param args Tensor X, W, R, B, sequence_lens, initial_h and initial_c
+   * \param name Optional identifer for operation
+   * \return The name of the result tensor
+   */
+  std::tuple<TensorId, TensorId, TensorId>
+  lstm(const std::vector<TensorId> &args, const std::string &name = {});
+
+  /**
    * Add a GEMM operation to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Gemm

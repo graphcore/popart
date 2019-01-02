@@ -570,6 +570,30 @@ TensorId BuilderImpl::maxpool(const std::vector<TensorId> &args,
   return id;
 }
 
+std::tuple<TensorId, TensorId, TensorId>
+BuilderImpl::lstm(const std::vector<TensorId> &args, const std::string &name) {
+  check_arg_range(args, 3, 8, Onnx::Operators::LSTM.type);
+
+  auto out_y  = getNextId();
+  auto out_yh = getNextId();
+  auto out_yc = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type("LSTM");
+  add_args(node, args);
+  node->add_output(out_y);
+  node->add_output(out_yh);
+  node->add_output(out_yc);
+
+  if (!name.empty())
+    node->set_name(name);
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return {out_y, out_yh, out_yc};
+}
+
 TensorId BuilderImpl::gemm(const std::vector<TensorId> &args,
                            float alpha,
                            float beta,
