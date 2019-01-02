@@ -108,13 +108,26 @@ TensorId BuilderImpl::getNextId() {
   return std::to_string(next_id_);
 }
 
+void BuilderImpl::addOpsetRequirement(const std::string &domain, int version) {
+  for (auto &o : model_.opset_import()) {
+    if (o.domain() == domain && o.version() == version) {
+      return;
+    }
+  }
+
+  auto *opset = model_.add_opset_import();
+  opset->set_domain(domain);
+  opset->set_version(version);
+}
+
 BuilderImpl::BuilderImpl() {}
 
 void BuilderImpl::configure() {
   next_id_ = 0;
   model_.set_ir_version(irVersion);
-  auto *opset_import = model_.add_opset_import();
-  opset_import->set_version(operatorSetVersion);
+
+  addOpsetRequirement(ONNX_NAMESPACE::ONNX_DOMAIN, operatorSetVersion);
+
   model_.mutable_graph()->set_name("BuilderGraph");
 }
 
@@ -662,6 +675,8 @@ TensorId BuilderImpl::subsample(const std::vector<TensorId> &args,
     node->set_name(name);
 
   addNodeAttribute("strides", strides, {id});
+
+  addOpsetRequirement(Domain::ai_graphcore, 1);
 
   onnx::shape_inference::InferShapes(model_);
 

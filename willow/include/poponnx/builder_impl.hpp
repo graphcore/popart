@@ -254,6 +254,8 @@ private:
                            const OperatorIdentifier &opid,
                            const std::string &name);
 
+  void addOpsetRequirement(const std::string &domain, int version);
+
   TensorId getNextId();
 
   void uniquifyNames(onnx::GraphProto &graph);
