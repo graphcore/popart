@@ -75,18 +75,6 @@ public:
   TensorId abs(const std::vector<TensorId> &args, const std::string &name = {});
 
   /**
-   * Add the reshape operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Reshape
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the output, reshaped tensor
-   */
-  TensorId reshape(const std::vector<TensorId> &args,
-                   const std::string &name = {});
-
-  /**
    * Add the arc-cosine operator to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ACos
@@ -732,6 +720,34 @@ public:
   TensorId transpose(const std::vector<TensorId> &args,
                      const std::vector<int64_t> &perm,
                      const std::string &name = {});
+
+  /**
+   * Add the reshape operator to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Reshape
+   *
+   * \param args The tensor arguments
+   * \param name Optional identifer for operation
+   * \return The name of the output, reshaped tensor
+   */
+  TensorId reshape(const std::vector<TensorId> &args,
+                   const std::string &name = {});
+
+  /**
+   * Add the reshape operator to the model
+   *
+   * The new shape is given as a parameter of the function
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Reshape
+   *
+   * \param args The tensor arguments
+   * \param shape The new shape for the tensor
+   * \param name Optional identifer for operation
+   * \return The name of the output, reshaped tensor
+   */
+  TensorId reshape_const(const std::vector<TensorId> &args,
+                         const std::vector<int64_t> &shape,
+                         const std::string &name = {});
 
   // The set of output from the batchNormalization test
   // Would have liked to use std::optional instead of pointers

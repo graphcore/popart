@@ -72,7 +72,6 @@ public:
   TensorId reciprocal(const std::vector<TensorId> &args,
                       const std::string &name);
   TensorId relu(const std::vector<TensorId> &args, const std::string &name);
-  TensorId reshape(const std::vector<TensorId> &args, const std::string &name);
   TensorId sigmoid(const std::vector<TensorId> &args, const std::string &name);
   TensorId sin(const std::vector<TensorId> &args, const std::string &name);
   TensorId sinh(const std::vector<TensorId> &args, const std::string &name);
@@ -150,6 +149,12 @@ public:
   TensorId transpose(const std::vector<TensorId> &args,
                      const std::vector<int64_t> &perm,
                      const std::string &name);
+
+  TensorId reshape(const std::vector<TensorId> &args, const std::string &name);
+
+  TensorId reshape_const(const std::vector<TensorId> &args,
+                         const std::vector<int64_t> &shape,
+                         const std::string &name);
 
   // Add a custom op to the model
   std::vector<TensorId>

@@ -47,11 +47,6 @@ TensorId Builder::acos(const std::vector<TensorId> &args,
   return impl_->acos(args, name);
 }
 
-TensorId Builder::reshape(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return impl_->reshape(args, name);
-}
-
 TensorId Builder::acosh(const std::vector<TensorId> &args,
                         const std::string &name) {
   return impl_->acosh(args, name);
@@ -344,6 +339,17 @@ TensorId Builder::transpose(const std::vector<TensorId> &args,
                             const std::vector<int64_t> &perm,
                             const std::string &name) {
   return impl_->transpose(args, perm, name);
+}
+
+TensorId Builder::reshape(const std::vector<TensorId> &args,
+                          const std::string &name) {
+  return impl_->reshape(args, name);
+}
+
+TensorId Builder::reshape_const(const std::vector<TensorId> &args,
+                                const std::vector<int64_t> &shape,
+                                const std::string &name) {
+  return impl_->reshape_const(args, shape, name);
 }
 
 std::vector<TensorId> Builder::customOp(

@@ -535,6 +535,15 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("args"),
            py::arg("perm"),
            py::arg("debugPrefix") = std::string())
+      .def("reshape",
+           &Builder::reshape,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
+      .def("reshape_const",
+           &Builder::reshape_const,
+           py::arg("args"),
+           py::arg("shape"),
+           py::arg("debugPrefix") = std::string())
       .def("matmul",
            &Builder::matmul,
            py::arg("args"),

@@ -184,7 +184,7 @@ TensorId BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData) {
   case DataType::INT64: {
     auto src = static_cast<const int64_t *>(initData.data);
     auto dst = initializer->mutable_int64_data();
-    dst->Resize(2 * element_count, 0);
+    dst->Resize(element_count, 0);
     memcpy(dst->mutable_data(), src, initData.info.nbytes());
     break;
   }
@@ -245,11 +245,6 @@ TensorId BuilderImpl::abs(const std::vector<TensorId> &args,
 TensorId BuilderImpl::acos(const std::vector<TensorId> &args,
                            const std::string &name) {
   return add_simple_op(args, Onnx::Operators::Acos, 1, name);
-}
-
-TensorId BuilderImpl::reshape(const std::vector<TensorId> &args,
-                              const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Reshape, 2, name);
 }
 
 TensorId BuilderImpl::acosh(const std::vector<TensorId> &args,
@@ -705,6 +700,20 @@ TensorId BuilderImpl::transpose(const std::vector<TensorId> &args,
   onnx::shape_inference::InferShapes(model_);
 
   return id;
+}
+
+TensorId BuilderImpl::reshape(const std::vector<TensorId> &args,
+                              const std::string &name) {
+  return add_simple_op(args, Onnx::Operators::Reshape, 2, name);
+}
+
+TensorId BuilderImpl::reshape_const(const std::vector<TensorId> &args,
+                                    const std::vector<int64_t> &shape,
+                                    const std::string &name) {
+  Shape s = {static_cast<int64_t>(shape.size())};
+  TensorInfo tensorInfo("INT64", s);
+  auto newShape = addInitializedInputTensor({shape.data(), tensorInfo});
+  return reshape({args[0], newShape}, name);
 }
 
 Builder::BatchNormalizationTrainingOutputs

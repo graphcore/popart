@@ -559,6 +559,33 @@ def test_add_matmul():
     assert (e_info.value.args[0].startswith("matmul(): incompatible function"))
 
 
+def test_add_reshape():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 3]))
+    i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+
+    o = builder.reshape([i1, i2])
+
+    builder.addOutputTensor(o)
+
+    assert (builder.getTensorShape(o) == [1, 6])
+
+
+def test_add_reshape_const():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 3]))
+
+    o = builder.reshape_const([i1], [1, 6])
+
+    builder.addOutputTensor(o)
+
+    assert (builder.getTensorShape(o) == [1, 6])
+
+
 def test_initialized_input_fp32():
 
     builder1 = poponnx.Builder()
