@@ -245,7 +245,7 @@ const static AiGraphcoreOpIdV1 BatchNormalizationGrad("BatchNormalizationGrad");
 // constexpr static char Ceil[] = "Ceil";
 // constexpr static char Clip[] = "Clip";
 // constexpr static char Compress[] = "Compress";
-// constexpr static char Concat[] = "Concat";
+const static AiGraphcoreOpIdV1 ConcatGrad("ConcatGrad");
 // constexpr static char Constant[] = "Constant";
 // constexpr static char ConstantLike[] = "ConstantLike";
 const static AiGraphcoreOpIdV1 ConvDataGrad("ConvDataGrad");
@@ -369,6 +369,8 @@ const static AiGraphcoreOpIdV1 ScaleGrad("ScaleGrad");
 
 namespace CustomOperators {
 const static AiGraphcoreOpIdV1 AddBias("AddBias");
+const static AiGraphcoreOpIdV1 ConcatInplace("ConcatInplace");
+const static AiGraphcoreOpIdV1 ConcatGradInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 Subsample("Subsample");
 const static AiGraphcoreOpIdV1 Square("Square");
 

@@ -24,10 +24,13 @@ bool OpToIdentityPattern::matches(Op *op) const {
           (op->opid == Onnx::Operators::Pad &&
            dynamic_cast<const PadOp *>(op)->padSizeZero()) ||
           // A subsample with all strides being 1
-          //(op->opType == OpType::SUBSAMPLE && dynamic_cast<const SubsampleOp
-          //*>(op)->strideSizeOne()));
           (op->opid == Onnx::CustomOperators::Subsample &&
-           dynamic_cast<const SubsampleOp *>(op)->strideSizeOne()));
+           dynamic_cast<const SubsampleOp *>(op)->strideSizeOne()) ||
+          // Concat a single tensor
+          (op->opid == Onnx::Operators::Concat && op->input->n() == 1) ||
+          // Inplace concat a single tensor
+          (op->opid == Onnx::CustomOperators::ConcatInplace &&
+           op->input->n() == 1));
 }
 
 std::vector<const Tensor *> OpToIdentityPattern::touches(Op *) const {

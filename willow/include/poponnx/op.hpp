@@ -124,8 +124,17 @@ public:
   // or topological order violations
   virtual bool hasInplaceVariant(InIndex) const;
 
+  // Can the inputs at inIndices be modified inplace to
+  // become the output at index 0?
+  // This function doesn't check for anchor violations
+  // or topological order violations
+  virtual bool hasInplaceVariant(const std::vector<InIndex> &) const;
+
   // get the inplace Op described above
   virtual std::unique_ptr<Op> getInplaceVariant(InIndex);
+
+  // get the inplace Op described above
+  virtual std::unique_ptr<Op> getInplaceVariant(const std::vector<InIndex> &);
 
   // Does this Op modify the input at index InIndex? Default: No.
   virtual bool modifies(InIndex) const;

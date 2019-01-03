@@ -98,6 +98,12 @@ TensorId Builder::ceil(const std::vector<TensorId> &args,
   return impl_->ceil(args, name);
 }
 
+TensorId Builder::concat(const std::vector<TensorId> &args,
+                         int64_t dimension,
+                         const std::string &name) {
+  return impl_->concat(args, dimension, name);
+}
+
 TensorId Builder::cos(const std::vector<TensorId> &args,
                       const std::string &name) {
   return impl_->cos(args, name);

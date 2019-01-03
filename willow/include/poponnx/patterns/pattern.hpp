@@ -26,7 +26,8 @@ enum class PatternType {
   COSHOP,
   GEMMDECOMPOSITION,
   // The patterns which can handle topological constraints:
-  INPLACE0
+  INPLACE0,
+  INPLACEALL
 };
 
 enum class PatternPhase {

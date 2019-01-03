@@ -34,6 +34,8 @@ void ReluInplaceOpx::grow(poplar::program::Sequence &prog) const {
   // apply the inplace relu,
   popnn::nonLinearityInPlace(
       graph(), popnn::NonLinearityType::RELU, get(inId(0)), prog, inId(0));
+
+  insert(outId(0), get(inId(0)));
 }
 
 ReluGradOpx::ReluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {

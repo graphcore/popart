@@ -52,3 +52,7 @@ An example model that uses implicit broadcasting on the addition and subtraction
 model_matmul
 ------
 An example model that uses a stacked matmul
+
+model_cat
+------
+An example model that uses a concat operation

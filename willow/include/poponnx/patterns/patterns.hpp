@@ -140,6 +140,9 @@ public:
     return isPatternEnabled(PatternType::TANTOSINOVERCOS);
   }
   bool isInPlace0Enabled() { return isPatternEnabled(PatternType::INPLACE0); }
+  bool isInPlaceAllEnabled() {
+    return isPatternEnabled(PatternType::INPLACEALL);
+  }
   bool isSqrtGradOpEnabled() {
     return isPatternEnabled(PatternType::SQRTGRADOP);
   }
@@ -189,6 +192,9 @@ public:
   }
   Patterns &enableTanToSinOverCos(bool v) {
     return enablePattern(PatternType::TANTOSINOVERCOS, v);
+  }
+  Patterns &enableInPlaceAll(bool v) {
+    return enablePattern(PatternType::INPLACEALL, v);
   }
   Patterns &enableInPlace0(bool v) {
     return enablePattern(PatternType::INPLACE0, v);

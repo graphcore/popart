@@ -111,7 +111,13 @@ const std::map<int, int> &Op::gradOutToNonGradIn() const {
 
 bool Op::hasInplaceVariant(InIndex) const { return false; }
 
+bool Op::hasInplaceVariant(const std::vector<InIndex> &) const { return false; }
+
 std::unique_ptr<Op> Op::getInplaceVariant(InIndex) {
+  throw error("Op {} cannot get an inplace Op", opid);
+}
+
+std::unique_ptr<Op> Op::getInplaceVariant(const std::vector<InIndex> &) {
   throw error("Op {} cannot get an inplace Op", opid);
 }
 

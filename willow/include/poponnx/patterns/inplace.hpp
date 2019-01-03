@@ -19,6 +19,14 @@ public:
   PatternPhase phase() const final { return PatternPhase::WITHTOPOCONS; }
 };
 
+class InplaceAll : public Pattern {
+public:
+  bool matches(Op *op) const final;
+  std::vector<const Tensor *> touches(Op *op) const final;
+  bool apply(Op *op) const final;
+  PatternPhase phase() const final { return PatternPhase::WITHTOPOCONS; }
+};
+
 } // namespace poponnx
 
 #endif

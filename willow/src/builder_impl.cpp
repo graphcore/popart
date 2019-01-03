@@ -321,6 +321,26 @@ TensorId BuilderImpl::ceil(const std::vector<TensorId> &args,
   return add_simple_op(args, Onnx::Operators::Ceil, 1, name);
 }
 
+TensorId BuilderImpl::concat(const std::vector<TensorId> &args,
+                             int64_t dimension,
+                             const std::string &name) {
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type("Concat");
+  add_args(node, args);
+  node->add_output(id);
+
+  if (!name.empty())
+    node->set_name(name);
+
+  addNodeAttribute("axis", dimension, {id});
+  onnx::shape_inference::InferShapes(model_);
+
+  return id;
+}
+
 TensorId BuilderImpl::cos(const std::vector<TensorId> &args,
                           const std::string &name) {
   return add_simple_op(args, Onnx::Operators::Cos, 1, name);

@@ -207,6 +207,22 @@ public:
                 const std::string &name = {});
 
   /**
+   * Concatenate several tensors. The tensors are concatenated along the
+   * specified dimension.
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#concat
+   *
+   *  \param args       The tensors
+   *  \param dimension  The dimensions to concatenate on
+   *  \param name Optional identifer for operation
+   *
+   *  \return The name of the result tensor
+   */
+  TensorId concat(const std::vector<TensorId> &args,
+                  int64_t dimension,
+                  const std::string &name = {});
+
+  /**
    * Add the cosine operator to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cos

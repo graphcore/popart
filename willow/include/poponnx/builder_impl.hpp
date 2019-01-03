@@ -50,6 +50,9 @@ public:
                 onnx::TensorProto_DataType to,
                 const std::string &name);
   TensorId ceil(const std::vector<TensorId> &args, const std::string &name);
+  TensorId concat(const std::vector<TensorId> &args,
+                  int64_t dimension,
+                  const std::string &name);
   TensorId cos(const std::vector<TensorId> &args, const std::string &name);
   TensorId cosh(const std::vector<TensorId> &args, const std::string &name);
   TensorId div(const std::vector<TensorId> &args, const std::string &name);

@@ -17,6 +17,7 @@ ReluInplaceOp::ReluInplaceOp(ReluOp *relu_op)
 
 void ReluInplaceOp::setup() {
   // no output, nothing to setup
+  outInfo(ReluOp::getOutIndex()) = inInfo(ReluOp::getInIndex());
 }
 
 // we do not check that the InIndex is 0, we could

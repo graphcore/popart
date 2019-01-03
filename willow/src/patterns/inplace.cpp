@@ -62,55 +62,37 @@ std::vector<const Tensor *> Inplace0::touches(Op *op) const {
 }
 
 bool Inplace0::apply(Op *op) const {
+  auto input_tensor  = op->input->tensor(0);
+  auto output_tensor = op->output->tensor(0);
+  auto ir            = op->pir;
 
-  // (1) create the inplace replacement for op
+  // Create the inplace op variant
   std::unique_ptr<Op> up_inplaceOp = op->getInplaceVariant(0);
   Op *inplaceOp                    = up_inplaceOp.get();
-  OpId inplaceId = op->pir->moveIntoIr(std::move(up_inplaceOp));
+  ir->moveIntoIr(std::move(up_inplaceOp));
 
-  // (2) connect the inputs of op to inplaceOp
-  op->pir->connectInputsFromInputMapWrapper(
-      InputMapWrapper(op->input->tensorIdMap()), inplaceId);
-
+  // Remap the tensors from `op` to `inplaceOp`
   for (auto index_tensor : op->input->tensorMap()) {
     Tensor *in_tensor = index_tensor.second;
 
-    // (3) all tensors which have op as a consumer,
-    //     transfer topo cons involving op to inplaceOp
+    in_tensor->consumers.increment(inplaceOp);
     in_tensor->consumers.takeTopoCons(op, inplaceOp);
-
-    // (4) all tensors which have op as a consumer,
-    //     disconnect op as a consumer (replaced with inplaceOp)
     in_tensor->consumers.decrement(op);
   }
 
-  // The tensor which will be updated in-place:
-  Tensor *in0 = inplaceOp->input->tensor(0);
+  input_tensor->consumers.setTopoLast(inplaceOp);
+  output_tensor->resetProducer(inplaceOp);
 
-  // The tensor which will be removed:
-  Tensor *out = op->output->tensor(0);
+  inplaceOp->input->insert(0, input_tensor);
+  inplaceOp->output->insert(0, output_tensor);
 
-  // (5) Make sure that all consumers of in0 run before inplaceOp
-  in0->consumers.setTopoLast(inplaceOp);
+  logging::info("Inplace0::apply : replace {}({}) with {}({})",
+                op->id,
+                op->opid,
+                inplaceOp->id,
+                inplaceOp->opid);
 
-  // (6,7) connect the consumers of out to in0,
-  //       both consumers_m and topoCons.
-  //       Note that we are guaranteed at this point
-  //       to not have an Op which consumes both Tensors,
-  //       as if that were the case we could not perform the
-  //       inplacing (not schedulable). This function also resets
-  //       the inputs of the ops to in0.
-  in0->consumers.takeFrom(out->consumers);
-
-  // (8) add the constraint that all ops which were
-  //     consumers of out run after inplaceOp
-  for (auto &after : out->consumers.getOps()) {
-    in0->consumers.insertTopoCon(inplaceOp, after);
-  }
-
-  inplaceOp->pir->eraseOp(op->id);
-  inplaceOp->pir->getTensors().remove(out->id);
-
+  ir->eraseOp(op->id);
   return true;
 }
 
@@ -170,9 +152,113 @@ bool Inplace0::matches(Op *op) const {
   return true;
 }
 
+bool InplaceAll::matches(Op *op) const {
+  std::vector<InIndex> inIndices;
+
+  for (auto pair : op->input->tensorMap()) {
+    inIndices.push_back(pair.first);
+  }
+
+  if (!op->hasInplaceVariant(inIndices)) {
+    return false;
+  }
+
+  for (auto pair : op->input->tensorMap()) {
+    const Tensor *t = op->input->tensor(pair.first);
+
+    if (t->consumers.n(op) > 1) {
+      logging::info(
+          "InplaceAll::matches : inplace candidate {} rejected due to "
+          "aliasing input {}",
+          op->name(),
+          pair.first);
+      return false;
+    }
+
+    if (t->consumers.getOps().size() != 1) {
+      OpsBeforeKey gCons;
+      gCons[op] = {};
+
+      for (auto before : t->consumers.getOps()) {
+        if (before != op) {
+          gCons[op].push_back(before);
+        }
+      }
+
+      if (!op->pir->isSchedulable(gCons)) {
+        logging::pattern::debug(
+            "InplaceAll::matches : inplace candidate {} rejected due to "
+            "schedulable conflict",
+            op->name());
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+std::vector<const Tensor *> InplaceAll::touches(Op *op) const {
+  std::vector<const Tensor *> result = {op->output->tensor(0)};
+  result.reserve(op->input->n() + 1);
+
+  for (auto pair : op->input->tensorMap()) {
+    const Tensor *t = op->input->tensor(pair.first);
+
+    result.push_back(t);
+  }
+
+  return result;
+}
+
+bool InplaceAll::apply(Op *op) const {
+  auto output_tensor = op->output->tensor(0);
+  auto ir            = op->pir;
+
+  std::vector<InIndex> inIndices;
+  for (auto pair : op->input->tensorMap()) {
+    inIndices.push_back(pair.first);
+  }
+
+  // Create the inplace op variant
+  std::unique_ptr<Op> up_inplaceOp = op->getInplaceVariant(inIndices);
+  Op *inplaceOp                    = up_inplaceOp.get();
+  ir->moveIntoIr(std::move(up_inplaceOp));
+
+  // Remap the tensors from `op` to `inplaceOp`
+  for (auto index : inIndices) {
+    Tensor *in_tensor = op->input->tensor(index);
+    in_tensor->consumers.increment(inplaceOp);
+    in_tensor->consumers.takeTopoCons(op, inplaceOp);
+    in_tensor->consumers.decrement(op);
+  }
+
+  output_tensor->resetProducer(inplaceOp);
+  inplaceOp->output->insert(0, output_tensor);
+
+  for (auto index : inIndices) {
+    Tensor *input_tensor = op->input->tensor(index);
+
+    input_tensor->consumers.setTopoLast(inplaceOp);
+    inplaceOp->input->insert(index, input_tensor);
+  }
+
+  logging::pattern::debug("InplaceAll::apply : replace {}({}) with {}({})",
+                          op->id,
+                          op->opid,
+                          inplaceOp->id,
+                          inplaceOp->opid);
+
+  inplaceOp->pir->eraseOp(op->id);
+
+  return true;
+}
+
 namespace {
 static PatternCreator<Inplace0> inplace0Pattern(PatternType::INPLACE0,
                                                 "InPlace0");
-}
+static PatternCreator<InplaceAll> inplaceAllPattern(PatternType::INPLACEALL,
+                                                    "InPlaceAll");
+} // namespace
 
 } // namespace poponnx

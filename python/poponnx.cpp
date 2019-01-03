@@ -277,6 +277,9 @@ PYBIND11_MODULE(poponnx_core, m) {
                     &Patterns::enableMulArgGradOp)
       .def_property(
           "InPlace0", &Patterns::isInPlace0Enabled, &Patterns::enableInPlace0)
+      .def_property("InPlaceAll",
+                    &Patterns::isInPlaceAllEnabled,
+                    &Patterns::enableInPlaceAll)
       .def("__repr__", [](const Patterns &p) {
         std::stringstream ss;
         ss << p;

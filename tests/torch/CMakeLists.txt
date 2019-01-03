@@ -13,7 +13,7 @@ add_test(NAME model0_train_ipumodel
 
 add_test(NAME model0_evaluate
 		 WORKING_DIRECTORY ${INSTALL_TESTS}
-		 COMMAND python3 torch/cifar10/model0_evaluate.py) 
+		 COMMAND python3 torch/cifar10/model0_evaluate.py)
 
 add_test(NAME model0_infer
 		 WORKING_DIRECTORY ${INSTALL_TESTS}
@@ -55,7 +55,10 @@ add_test(NAME reset_weights
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/reset_weights.py)
 
-
 add_test(NAME model_reshape
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model_reshape.py)
+
+add_test(NAME model_cat
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/model_cat.py)
