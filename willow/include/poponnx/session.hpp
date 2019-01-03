@@ -51,7 +51,7 @@ public:
    * the constructor. For example, you cannot update to an Optimizer which uses
    * momentum here, if the Optimizer passed to the constructor did not have
    * momentum. Reason: The Ir would need to change to incorporate momentum, but
-   * the Ir is frozen once constructed. NB: Must call optimizerToDevice for this
+   * the Ir is frozen once constructed. NB: Must call optimizerFromHost for this
    * update to take effect on the device.
    *
    * \param optimizer A pointer to a poponnx::Optimizer

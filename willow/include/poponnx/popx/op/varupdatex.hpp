@@ -14,6 +14,7 @@ namespace popx {
 class SGDVarUpdateOpx : public Opx {
 public:
   SGDVarUpdateOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class ConstSGDVarUpdateOpx : public Opx {

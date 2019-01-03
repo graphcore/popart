@@ -27,6 +27,14 @@ void TensorData::resetData(const onnx::TensorProto &tp) {
   std::memcpy(data_.data(), cv_data.data, cv_data.info.nbytes());
 }
 
+void TensorData::resetData(const TensorInfo &info, const void *from) {
+  if (data_.size() != info.nbytes()) {
+    throw error("can not reset tensor data with data of non-matching size");
+  }
+  data_.resize(info.nbytes());
+  std::memcpy(data_.data(), from, info.nbytes());
+}
+
 template <> DataType ArrayWrapper<float>::getDtype() { return DataType::FLOAT; }
 
 template <>

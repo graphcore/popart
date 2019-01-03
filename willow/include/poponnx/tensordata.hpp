@@ -26,8 +26,12 @@ public:
   TensorData(const onnx::TensorProto &);
   void *data();
 
-  // reset the data in the TensorData input data must
-  // be the same size as the existing data_
+  // reset the data in the TensorData by copying from src.
+  // Input data must be the same size as the existing data_
+  void resetData(const TensorInfo &, const void *src);
+
+  // reset the data in the TensorData bt copying from onnx::TensorProto.
+  // Input data must be the same size as the existing data_
   void resetData(const onnx::TensorProto &);
 
 private:

@@ -49,8 +49,10 @@ void SGD::setTensorData(Tensor *t) const {
   }
 }
 
-void SGD::resetTensorDatas(Ir *) const {
-  throw error("Request to reset tensor datas for SGD, not implemented");
+void SGD::resetTensorDatas(Ir *pir) const {
+  Tensor *lrTensor = pir->getTensors().get(getLearningRateId());
+  float lRate      = learnRate();
+  lrTensor->tensorData()->resetData(lrTensor->info, &lRate);
 }
 
 void ConstSGD::setTensorData(Tensor *) const {

@@ -271,13 +271,6 @@ void Ir::prepare(const IrBundle &gb) {
   }
 
   if (gb.optimizer) {
-    optimizer = gb.optimizer->clone();
-    for (auto &id_info : optimizer->tensorInfos()) {
-      TensorId id     = id_info.first;
-      TensorInfo info = id_info.second;
-      tensors.addStream(id, info);
-      optimizer->setTensorData(tensors.get(id));
-    }
     executionMode = ExecutionMode::TRAINING;
   } else if (gb.losses.empty()) {
     executionMode = ExecutionMode::INFERENCE;
@@ -319,6 +312,16 @@ void Ir::prepare(const IrBundle &gb) {
   // tensors with no producer and no consumers are removed
   // at this point. We may want something more subtle.
   tensors.removeIsolated();
+
+  if (gb.optimizer) {
+    optimizer = gb.optimizer->clone();
+    for (auto &id_info : optimizer->tensorInfos()) {
+      TensorId id     = id_info.first;
+      TensorInfo info = id_info.second;
+      tensors.addStream(id, info);
+      optimizer->setTensorData(tensors.get(id));
+    }
+  }
 
   if (canTrain()) {
     constructBackwards();
@@ -1235,6 +1238,7 @@ Op *Ir::growVarUpdateOp(TensorId varId) {
   auto inputs = optimizer->getInputIds(varId);
 
   Op *op = ops[opId].get();
+
   connectInputs(InputVecWrapper(inputs), opId);
 
   // there are no outputs of var-op
