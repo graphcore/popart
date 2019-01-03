@@ -73,8 +73,8 @@ struct AiOnnxOperatorIdentifierV9 : public OperatorIdentifier {
       : OperatorIdentifier(Domain::ai_onnx, _type, 9) {}
 };
 
-struct AiGrapcoreOpIdV1 : public OperatorIdentifier {
-  AiGrapcoreOpIdV1(const OpType &_type)
+struct AiGraphcoreOpIdV1 : public OperatorIdentifier {
+  AiGraphcoreOpIdV1(const OpType &_type)
       : OperatorIdentifier(Domain::ai_graphcore, _type, 1) {}
 };
 
@@ -230,8 +230,8 @@ namespace GradOperators {
 // constexpr static char Abs[] = "Abs";
 // constexpr static char Acos[] = "Acos";
 // constexpr static char Acosh[] = "Acosh";
-const static AiGrapcoreOpIdV1 AddArg0Grad("AddArg0Grad");
-const static AiGrapcoreOpIdV1 AddArg1Grad("AddArg1Grad");
+const static AiGraphcoreOpIdV1 AddArg0Grad("AddArg0Grad");
+const static AiGraphcoreOpIdV1 AddArg1Grad("AddArg1Grad");
 // constexpr static char And[] = "And";
 // constexpr static char ArgMax[] = "ArgMax";
 // constexpr static char ArgMin[] = "ArgMin";
@@ -239,8 +239,8 @@ const static AiGrapcoreOpIdV1 AddArg1Grad("AddArg1Grad");
 // constexpr static char Asinh[] = "Asinh";
 // constexpr static char Atan[] = "Atan";
 // constexpr static char Atanh[] = "Atanh";
-const static AiGrapcoreOpIdV1 AveragePoolGrad("AveragePoolGrad");
-const static AiGrapcoreOpIdV1 BatchNormalizationGrad("BatchNormalizationGrad");
+const static AiGraphcoreOpIdV1 AveragePoolGrad("AveragePoolGrad");
+const static AiGraphcoreOpIdV1 BatchNormalizationGrad("BatchNormalizationGrad");
 // constexpr static char Cast[] = "Cast";
 // constexpr static char Ceil[] = "Ceil";
 // constexpr static char Clip[] = "Clip";
@@ -248,19 +248,19 @@ const static AiGrapcoreOpIdV1 BatchNormalizationGrad("BatchNormalizationGrad");
 // constexpr static char Concat[] = "Concat";
 // constexpr static char Constant[] = "Constant";
 // constexpr static char ConstantLike[] = "ConstantLike";
-const static AiGrapcoreOpIdV1 ConvDataGrad("ConvDataGrad");
-const static AiGrapcoreOpIdV1 ConvWeightsGrad("ConvWeightsGrad");
+const static AiGraphcoreOpIdV1 ConvDataGrad("ConvDataGrad");
+const static AiGraphcoreOpIdV1 ConvWeightsGrad("ConvWeightsGrad");
 // constexpr static char ConvTranspose[] = "ConvTranspose";
-const static AiGrapcoreOpIdV1 CosGrad("CosGrad");
+const static AiGraphcoreOpIdV1 CosGrad("CosGrad");
 // constexpr static char Cosh[] = "Cosh"
 // constexpr static char DepthToSpace[] = "DepthToSpace";
-const static AiGrapcoreOpIdV1 DivArg0Grad("DivArg0Grad");
-const static AiGrapcoreOpIdV1 DivArg1Grad("DivArg1Grad");
+const static AiGraphcoreOpIdV1 DivArg0Grad("DivArg0Grad");
+const static AiGraphcoreOpIdV1 DivArg1Grad("DivArg1Grad");
 // constexpr static char Dropout[] = "DropOut";
 // constexpr static char Elu[] = "Elu";
 // constexpr static char Equal[] = "Equal";
 // constexpr static char Erf[] = "Erf";
-const static AiGrapcoreOpIdV1 ExpGrad("ExpGrad");
+const static AiGraphcoreOpIdV1 ExpGrad("ExpGrad");
 // constexpr static char Expand[] = "Expand";
 // constexpr static char EyeLike[] = "EyeLike";
 // constexpr static char Flatten[] = "Flatten";
@@ -274,7 +274,7 @@ const static AiGrapcoreOpIdV1 ExpGrad("ExpGrad");
 // constexpr static char Greater[] = "Greater";
 // constexpr static char HardSigmoid[] = "HardSigmoid";
 // constexpr static char Hardmax[] = "Hardmax";
-const static AiGrapcoreOpIdV1 IdentityGrad("IdentityGrad");
+const static AiGraphcoreOpIdV1 IdentityGrad("IdentityGrad");
 // constexpr static char If[] = "If";
 // constexpr static char InstanceNormalization[] = "InstanceNormalization";
 // constexpr static char IsNaN[] = "IsNan";
@@ -287,18 +287,18 @@ const static AiGrapcoreOpIdV1 IdentityGrad("IdentityGrad");
 // constexpr static char Loop[] = "Loop";
 // constexpr static char LpNormalization[] = "LpNormalization";
 // constexpr static char LpPool[] = "LpPool";
-const static AiGrapcoreOpIdV1 MatMulLhsGrad("MatMulLhsGrad");
-const static AiGrapcoreOpIdV1 MatMulRhsGrad("MatMulRhsGrad");
+const static AiGraphcoreOpIdV1 MatMulLhsGrad("MatMulLhsGrad");
+const static AiGraphcoreOpIdV1 MatMulRhsGrad("MatMulRhsGrad");
 // constexpr static char Max[] = "Max";
-const static AiGrapcoreOpIdV1 MaxPoolGrad("MaxPoolGrad");
+const static AiGraphcoreOpIdV1 MaxPoolGrad("MaxPoolGrad");
 // constexpr static char MaxRoiPool[] = "MaxRoiPooL";
 // constexpr static char MaxUnpool[] = "MaxUnpool";
 // constexpr static char Mean[] = "Mean";
 // constexpr static char Min[] = "Min";
-const static AiGrapcoreOpIdV1 MulArg0Grad("MulArg0Grad");
-const static AiGrapcoreOpIdV1 MulArg1Grad("MulArg1Grad");
+const static AiGraphcoreOpIdV1 MulArg0Grad("MulArg0Grad");
+const static AiGraphcoreOpIdV1 MulArg1Grad("MulArg1Grad");
 // constexpr static char Multinomial[] = "Multinomial";
-const static AiGrapcoreOpIdV1 NegGrad("NegGrad");
+const static AiGraphcoreOpIdV1 NegGrad("NegGrad");
 // constexpr static char Not[] = "Not";
 // constexpr static char OneHot[] = "OneHot";
 // constexpr static char Or[] = "Or";
@@ -310,7 +310,7 @@ const static AiGrapcoreOpIdV1 NegGrad("NegGrad");
 // constexpr static char RandomNormalLike[] = "RandomNormalLike";
 // constexpr static char RandomUniform[] = "RandomUniform";
 // constexpr static char RandomUniformLike[] = "RandomUniformLike";
-const static AiGrapcoreOpIdV1 ReciprocalGrad("ReciprocalGrad");
+const static AiGraphcoreOpIdV1 ReciprocalGrad("ReciprocalGrad");
 // constexpr static char ReduceL1[] = "ReduceL1";
 // constexpr static char ReduceL2[] = "ReduceL2";
 // constexpr static char ReduceLogSum[] = "ReduceLogSum";
@@ -319,35 +319,35 @@ const static AiGrapcoreOpIdV1 ReciprocalGrad("ReciprocalGrad");
 // constexpr static char ReduceMean[] = "ReduceMean";
 // constexpr static char ReduceMin[] = "ReduceMin";
 // constexpr static char ReduceProd[] = "ReduceProd";
-const static AiGrapcoreOpIdV1 ReduceSumGrad("ReduceSumGrad");
+const static AiGraphcoreOpIdV1 ReduceSumGrad("ReduceSumGrad");
 // constexpr static char ReduceSumSquare[] = "ReduceSumSquare";
-const static AiGrapcoreOpIdV1 ReluGrad("ReluGrad");
-const static AiGrapcoreOpIdV1 ReshapeGrad("ReshapeGrad");
+const static AiGraphcoreOpIdV1 ReluGrad("ReluGrad");
+const static AiGraphcoreOpIdV1 ReshapeGrad("ReshapeGrad");
 // constexpr static char Scan[] = "Scan";
 // constexpr static char Scatter[] = "Scatter";
 // constexpr static char Selu[] = "Selu";
 // constexpr static char Shape[] = "Shape";
-const static AiGrapcoreOpIdV1 SigmoidGrad("SigmoidGrad");
+const static AiGraphcoreOpIdV1 SigmoidGrad("SigmoidGrad");
 // constexpr static char Sign[] = "Sign";
-const static AiGrapcoreOpIdV1 SinGrad("SinGrad");
+const static AiGraphcoreOpIdV1 SinGrad("SinGrad");
 // constexpr static char Sinh[] = "Sinh";
 // constexpr static char Size[] = "Size";
 // constexpr static char Slice[] = "Slice";
-const static AiGrapcoreOpIdV1 SoftmaxGrad("SoftmaxGrad");
+const static AiGraphcoreOpIdV1 SoftmaxGrad("SoftmaxGrad");
 // constexpr static char Softplus[] = "Softplus";
 // constexpr static char Softsign[] = "Softsign";
 // constexpr static char SpaceToDepth[] = "SpaceToDepth";
 // constexpr static char Split[] = "Split";
-const static AiGrapcoreOpIdV1 SqrtGrad("SqrtGrad");
-const static AiGrapcoreOpIdV1 SqueezeGrad("SqueezeGrad");
-const static AiGrapcoreOpIdV1 SubArg0Grad("SubArg0Grad");
-const static AiGrapcoreOpIdV1 SubArg1Grad("SubArg1Grad");
+const static AiGraphcoreOpIdV1 SqrtGrad("SqrtGrad");
+const static AiGraphcoreOpIdV1 SqueezeGrad("SqueezeGrad");
+const static AiGraphcoreOpIdV1 SubArg0Grad("SubArg0Grad");
+const static AiGraphcoreOpIdV1 SubArg1Grad("SubArg1Grad");
 // constexpr static char Sum[] = "Sum";
 // constexpr static char Tan[] = "Tan";
-const static AiGrapcoreOpIdV1 TanhGrad("TanhGrad");
+const static AiGraphcoreOpIdV1 TanhGrad("TanhGrad");
 // constexpr static char Tile[] = "Tile";
 // constexpr static char TopK[] = "TopK";
-const static AiGrapcoreOpIdV1 TransposeGrad("TransposeGrad");
+const static AiGraphcoreOpIdV1 TransposeGrad("TransposeGrad");
 // constexpr static char Unsqueeze[] = "Unsqueeze";
 // constexpr static char Upsample[] = "Upsample";
 // constexpr static char Xor[] = "Xor";
@@ -361,32 +361,32 @@ const static AiGrapcoreOpIdV1 TransposeGrad("TransposeGrad");
 // constexpr static char GivenTensorFill[] = "GivenTensorFill";
 // constexpr static char ImageScaler[] = "ImageScaler";
 // constexpr static char ParametricSoftplus[] = "ParametricSoftplus";
-const static AiGrapcoreOpIdV1 ScaleGrad("ScaleGrad");
+const static AiGraphcoreOpIdV1 ScaleGrad("ScaleGrad");
 // constexpr static char ScaledTanh[] = "ScaledTanh";
 // constexpr static char ThresholdedRelu[] = "ThresholdedRelu";
 
 } // namespace GradOperators
 
 namespace CustomOperators {
-const static AiGrapcoreOpIdV1 AddBias("AddBias");
-const static AiGrapcoreOpIdV1 Subsample("Subsample");
-const static AiGrapcoreOpIdV1 Square("Square");
+const static AiGraphcoreOpIdV1 AddBias("AddBias");
+const static AiGraphcoreOpIdV1 Subsample("Subsample");
+const static AiGraphcoreOpIdV1 Square("Square");
 
-const static AiGrapcoreOpIdV1 ReluInplace("ReluInplace");
-const static AiGrapcoreOpIdV1 L1("L1");
-const static AiGrapcoreOpIdV1 Nll("Nll");
+const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
+const static AiGraphcoreOpIdV1 L1("L1");
+const static AiGraphcoreOpIdV1 Nll("Nll");
 
-const static AiGrapcoreOpIdV1 SgdVarUpdate("SGDVarUpdate");
-const static AiGrapcoreOpIdV1 ConstSgdVarUpdate("ConstSGDVarUpdate");
+const static AiGraphcoreOpIdV1 SgdVarUpdate("SGDVarUpdate");
+const static AiGraphcoreOpIdV1 ConstSgdVarUpdate("ConstSGDVarUpdate");
 } // namespace CustomOperators
 
 namespace CustomGradOperators {
-const static AiGrapcoreOpIdV1 AddBiasBiasGrad("AddBiasBiasGrad");
-const static AiGrapcoreOpIdV1 AddBiasDataGrad("AddBiasDataGrad");
-const static AiGrapcoreOpIdV1 SoftmaxGradDirect("SoftmaxGradDirect");
-const static AiGrapcoreOpIdV1 SubsampleGrad("SubsampleGrad");
-const static AiGrapcoreOpIdV1 L1Grad("L1Grad");
-const static AiGrapcoreOpIdV1 NllGrad("NllGrad");
+const static AiGraphcoreOpIdV1 AddBiasBiasGrad("AddBiasBiasGrad");
+const static AiGraphcoreOpIdV1 AddBiasDataGrad("AddBiasDataGrad");
+const static AiGraphcoreOpIdV1 SoftmaxGradDirect("SoftmaxGradDirect");
+const static AiGraphcoreOpIdV1 SubsampleGrad("SubsampleGrad");
+const static AiGraphcoreOpIdV1 L1Grad("L1Grad");
+const static AiGraphcoreOpIdV1 NllGrad("NllGrad");
 } // namespace CustomGradOperators
 } // namespace Onnx
 
