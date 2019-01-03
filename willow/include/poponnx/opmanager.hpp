@@ -41,7 +41,7 @@ public:
                                       const Attributes &_attr = {});
 
   // Get the list of registered op's, should this return an OperatorIdentifier
-  static const std::vector<std::pair<std::string, std::string>>
+  static const std::vector<OperatorIdentifier>
   getSupportedOperations(bool includePrivate);
 
 private:
@@ -49,9 +49,6 @@ private:
   static OpManager &getInstance();
 
   // Map of registered ops
-  // strange, this crashs but works for opx?
-  // std::map<std::reference_wrapper<const OperatorIdentifier>, OpInfo,
-  // OperatorIdentifierLess> opMap;
   std::map<OperatorIdentifier, OpInfo, OperatorIdentifierLess> opMap;
 };
 

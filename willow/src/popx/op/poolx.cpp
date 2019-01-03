@@ -20,6 +20,9 @@ static poplar::Type getReductionType(const popnn::PoolingType &pooling_type,
   case popnn::PoolingType::MAX:
     return input_type;
   }
+
+  // TODO : Add stream operator for pooling_type
+  throw error("Unknown pooling type");
 }
 
 popnn::pooling::PoolParams

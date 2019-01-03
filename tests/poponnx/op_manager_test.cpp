@@ -48,9 +48,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test1) {
   // test that we can query for the new operation
   auto ops = OpManager::getSupportedOperations(true);
   auto it  = std::find(
-      ops.begin(),
-      ops.end(),
-      std::pair<std::string, std::string>(std::make_pair("MyAdd", "ai_simon")));
+      ops.begin(), ops.end(), OperatorIdentifier("ai_simon", "MyAdd", 2));
   BOOST_CHECK(it != ops.end());
 }
 

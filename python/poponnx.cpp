@@ -114,6 +114,15 @@ PYBIND11_MODULE(poponnx_core, m) {
 
   m.def("getTensorInfo", &getTensorInfo);
 
+  py::class_<OperatorIdentifier>(m, "OperatorIdentifier")
+      .def(py::init<const std::string &, const std::string &, unsigned>(),
+           py::arg("domain"),
+           py::arg("type"),
+           py::arg("version"))
+      .def_readonly("domain", &OperatorIdentifier::domain)
+      .def_readonly("type", &OperatorIdentifier::type)
+      .def_readonly("version", &OperatorIdentifier::version);
+
   m.def("getSupportedOperations",
         &OpManager::getSupportedOperations,
         py::arg("includeInternal"));

@@ -21,20 +21,17 @@ void OpManager::registerOp(const OperatorIdentifier &opid,
   info.isPublic = isPublic;
   info.f1       = func;
 
-  //  getInstance().opMap.insert(std::pair<std::reference_wrapper<const
-  //  OperatorIdentifier>, OpInfo>(std::make_pair(opid, info)));
   getInstance().opMap.emplace(
-      std::pair<OperatorIdentifier, OpInfo>(std::make_pair(opid, info)));
+      std::pair<OperatorIdentifier, OpInfo>(opid, info));
 }
 
-const std::vector<std::pair<std::string, std::string>>
+const std::vector<OperatorIdentifier>
 OpManager::getSupportedOperations(bool includePrivate) {
-  std::vector<std::pair<std::string, std::string>> list;
+  std::vector<OperatorIdentifier> list;
 
   for (auto &op : OpManager::getInstance().opMap) {
     if (op.second.isPublic || includePrivate) {
-      list.push_back(std::pair<std::string, std::string>(
-          std::make_pair(op.first.type, op.first.domain)));
+      list.push_back(op.first);
     }
   }
 
