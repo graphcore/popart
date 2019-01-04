@@ -700,6 +700,33 @@ TensorId BuilderImpl::matmul(const std::vector<TensorId> &args,
   return id;
 }
 
+TensorId BuilderImpl::slice(const std::vector<TensorId> &args,
+                            const std::vector<int64_t> &axes,
+                            const std::vector<int64_t> &starts,
+                            const std::vector<int64_t> &ends,
+                            const std::string &name) {
+  check_arg_count(args, 1, Onnx::Operators::Slice.type);
+
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type(Onnx::Operators::Slice.type);
+  add_args(node, args);
+  node->add_output(id);
+
+  if (!name.empty())
+    node->set_name(name);
+
+  addNodeAttribute("axes", axes, {id});
+  addNodeAttribute("starts", starts, {id});
+  addNodeAttribute("ends", ends, {id});
+
+  onnx::shape_inference::InferShapes(model_);
+
+  return id;
+}
+
 TensorId BuilderImpl::softmax(const std::vector<TensorId> &args,
                               const std::string &name) {
   check_arg_count(args, 1, Onnx::Operators::Softmax.type);

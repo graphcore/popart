@@ -127,6 +127,12 @@ public:
 
   TensorId matmul(const std::vector<TensorId> &args, const std::string &name);
 
+  TensorId slice(const std::vector<TensorId> &args,
+                 const std::vector<int64_t> &axes,
+                 const std::vector<int64_t> &starts,
+                 const std::vector<int64_t> &ends,
+                 const std::string &name);
+
   TensorId softmax(const std::vector<TensorId> &args, const std::string &name);
 
   TensorId subsample(const std::vector<TensorId> &args,

@@ -332,7 +332,7 @@ const static AiGraphcoreOpIdV1 SigmoidGrad("SigmoidGrad");
 const static AiGraphcoreOpIdV1 SinGrad("SinGrad");
 // constexpr static char Sinh[] = "Sinh";
 // constexpr static char Size[] = "Size";
-// constexpr static char Slice[] = "Slice";
+const static AiGraphcoreOpIdV1 SliceGrad("SliceGrad");
 const static AiGraphcoreOpIdV1 SoftmaxGrad("SoftmaxGrad");
 // constexpr static char Softplus[] = "Softplus";
 // constexpr static char Softsign[] = "Softsign";

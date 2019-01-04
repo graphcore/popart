@@ -1670,6 +1670,142 @@ def test_lstm_initial_hc(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
+def test_slice(op_tester):
+    d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.slice([i1], [0, 1], [1, 0], [2, 3])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        o = d1[1:2, 0:3]
+
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_slice_default_axes(op_tester):
+    d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.slice([i1], [], [1, 0], [2, 3])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        o = d1[1:2, 0:3]
+
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_slice_neg(op_tester):
+    d1 = np.array([1., 2., 3., 4., 5., 6., 7., 8.]).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.slice([i1], [0], [-5], [-3])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        o = d1[-5:-3]
+
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_slice_grad(op_tester):
+    d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.slice([i1], [0, 1], [1, 0], [2, 3])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        o = a[1:2, 0:3]
+
+        d__o = ref_data.getOutputTensorGrad(0)
+
+        o.backward(torch.tensor(d__o))
+
+        return [o, a.grad, None]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_pad(op_tester):
+    data = np.array([[[1., 2.], [3., 4.]]]).astype(np.float32)
+    _test_pad(
+        op_tester,
+        data,
+        lower_padding=(2, 1, 1),
+        upper_padding=(1, 0, 2),
+        mode='constant')
+
+
+def test_pad_with_value(op_tester):
+    data = np.array([[[1., 2.], [3., 4.]]]).astype(np.float32)
+    _test_pad(
+        op_tester,
+        data,
+        lower_padding=(2, 1, 1),
+        upper_padding=(1, 0, 2),
+        mode='constant',
+        pad_value=0.3)
+
+
+def test_pad_type_edge(op_tester):
+    data = np.array([[[1., 2.], [3., 4.]]]).astype(np.float32)
+    _test_pad(
+        op_tester,
+        data,
+        lower_padding=(2, 1, 1),
+        upper_padding=(1, 0, 2),
+        mode='edge')
+
+
+def test_pad_type_reflect(op_tester):
+    data = np.array([[1., 2., 3.], [4., 5., 6.]]).astype(np.float32)
+    _test_pad(
+        op_tester,
+        data,
+        lower_padding=(1, 0),
+        upper_padding=(0, 2),
+        mode='reflect')
+
+
+def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
+              pad_value=0):
+    def init_builder(builder):
+        i1 = builder.addInputTensor(data)
+        o = builder.pad([i1], mode, lower_padding + upper_padding, pad_value)
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        padding = tuple(zip(lower_padding, upper_padding))
+        if mode == 'constant':
+            o = np.pad(data, padding, mode, constant_values=pad_value)
+        else:
+            o = np.pad(data, padding, mode)
+
+        return [o]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'infer')
+
+
 # Usage:
 #   Add `op_tester` as an argument to a test function
 #   In the test function:

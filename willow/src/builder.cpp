@@ -313,6 +313,14 @@ TensorId Builder::matmul(const std::vector<TensorId> &args,
   return impl_->matmul(args, name);
 }
 
+TensorId Builder::slice(const std::vector<TensorId> &args,
+                        const std::vector<int64_t> &axes,
+                        const std::vector<int64_t> &starts,
+                        const std::vector<int64_t> &ends,
+                        const std::string &name) {
+  return impl_->slice(args, axes, starts, ends, name);
+}
+
 TensorId Builder::softmax(const std::vector<TensorId> &args,
                           const std::string &name) {
   return impl_->softmax(args, name);

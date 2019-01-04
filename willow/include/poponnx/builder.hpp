@@ -717,6 +717,24 @@ public:
                   const std::string &name = {});
 
   /**
+   * Add a Slice operation to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Slice
+   *
+   * \param args Tensor T
+   * \param axes Axes that `starts` and `ends` apply to.
+   * \param starts Starting indices of corresponding axis in `axes`
+   * \param ends Ending indices (exclusive) of corresponding axis in `axes`
+   * \return The name of the result tensor
+   *
+   */
+  TensorId slice(const std::vector<TensorId> &args,
+                 const std::vector<int64_t> &axes,
+                 const std::vector<int64_t> &starts,
+                 const std::vector<int64_t> &ends,
+                 const std::string &name = {});
+
+  /**
    * Add a Softmax operation to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softmax
