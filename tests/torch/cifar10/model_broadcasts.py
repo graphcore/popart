@@ -49,6 +49,10 @@ class Module0(torch.nn.Module):
         return x + y
 
 
+# Set arbitrary seed so model weights are initialized to the
+# same values each time the test is run
+torch.manual_seed(1)
+
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
