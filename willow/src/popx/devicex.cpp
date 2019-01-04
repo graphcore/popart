@@ -35,11 +35,17 @@ void Devicex::weightsToHost(
     logging::devicex::debug("Writing weights to ONNX ModelProto");
     // copy from the host stream memory points to the
     // addresses on onnxModelData
+    auto &&constIds = ir().getTensors().getConstIds();
     for (auto initId : ir().getTensors().getInitIds()) {
+      if (constIds.contains(initId)) {
+        continue;
+      }
+
       auto found = onnxModelData.find(initId);
       if (found == onnxModelData.end()) {
         throw error("No TensorId " + initId + " in final host destination map");
       }
+
       MutableVoidData mv_data = found->second;
       hostStreamToHost(mv_data, initId);
     }
