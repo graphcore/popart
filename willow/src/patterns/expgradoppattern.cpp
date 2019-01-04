@@ -20,10 +20,12 @@ bool ExpGradOpPattern::apply(Op *op) const {
   auto fwd_out  = op->inTensor(ExpGradOp::getFwdOutInIndex());
   auto grad_out = op->outTensor(ExpGradOp::getOutIndex());
 
-  auto ir = op->pir;
+  auto ir   = op->pir;
+  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
 
   // create the new ops
-  auto mul_op = make_unique<MulOp>(Onnx::Operators::Mul, ir);
+  auto mul_op =
+      make_unique<MulOp>(Onnx::Operators::Mul, ir, std::string{}, attr);
 
   // move ops into ir
   auto mul = mul_op.get();

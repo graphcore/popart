@@ -10,8 +10,9 @@ namespace poponnx {
 ReduceSumOp::ReduceSumOp(const OperatorIdentifier &_opid,
                          Ir *_ir,
                          const std::vector<int64_t> &axes_,
-                         int64_t keepdims_)
-    : Op(_opid, _ir), axes(axes_), keepdims(keepdims_) {
+                         int64_t keepdims_,
+                         const Attributes &_attr)
+    : Op(_opid, _ir, {}, _attr), axes(axes_), keepdims(keepdims_) {
 
   // Sorting the axes for general backend compatibility
   std::sort(axes.begin(), axes.end());

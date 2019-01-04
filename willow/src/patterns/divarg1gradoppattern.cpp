@@ -26,19 +26,24 @@ bool DivArg1GradOpPattern::apply(Op *op) const {
   auto fwd_in1  = op->inTensor(DivArg1GradOp::getFwdArg1InIndex());
   auto grad_out = op->outTensor(DivArg1GradOp::getOutIndex());
 
-  auto ir = op->pir;
+  auto ir   = op->pir;
+  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
 
   // we assume this dynamic_cast call has been confirmed
   // to be valid via a previous call to DivArg1GradOpPattern::matches
   auto axes = dynamic_cast<DivArg1GradOp *>(op)->getReductionAxes();
 
   // create the new ops
-  auto square_op = make_unique<SquareOp>(Onnx::CustomOperators::Square, ir);
-  auto div_op    = make_unique<DivOp>(Onnx::Operators::Div, ir);
-  auto mul_op    = make_unique<MulOp>(Onnx::Operators::Mul, ir);
-  auto negate_op = make_unique<NegateOp>(Onnx::Operators::Neg, ir);
-  auto reduce_op =
-      make_unique<ReduceSumOp>(Onnx::Operators::ReduceSum, ir, axes, false);
+  auto square_op = make_unique<SquareOp>(
+      Onnx::CustomOperators::Square, ir, std::string{}, attr);
+  auto div_op =
+      make_unique<DivOp>(Onnx::Operators::Div, ir, std::string{}, attr);
+  auto mul_op =
+      make_unique<MulOp>(Onnx::Operators::Mul, ir, std::string{}, attr);
+  auto negate_op =
+      make_unique<NegateOp>(Onnx::Operators::Neg, ir, std::string{}, attr);
+  auto reduce_op = make_unique<ReduceSumOp>(
+      Onnx::Operators::ReduceSum, ir, axes, false, attr);
 
   // move ops into ir
   auto square = square_op.get();

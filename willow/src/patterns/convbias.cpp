@@ -1,4 +1,5 @@
 #include <poponnx/ir.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/addbias.hpp>
 #include <poponnx/op/conv.hpp>
 #include <poponnx/patterns/convbias.hpp>
@@ -16,8 +17,9 @@ std::vector<const Tensor *> ConvBiasPattern::touches(Op *) const { return {}; }
 bool ConvBiasPattern::apply(Op *op) const {
   const auto conv = dynamic_cast<ConvOp *>(op);
 
-  std::unique_ptr<Op> add_bias_op(new AddBiasOp(conv));
-  const auto tmp_tensor_id = "prebias" + conv->output->id(0);
+  auto attr                       = op->nAtts.filter(sVirtualGraphAttribute);
+  std::unique_ptr<Op> add_bias_op = make_unique<AddBiasOp>(conv, attr);
+  const auto tmp_tensor_id        = "prebias" + conv->output->id(0);
 
   op->pir->getTensors().addActGrad(tmp_tensor_id);
 
@@ -25,7 +27,7 @@ bool ConvBiasPattern::apply(Op *op) const {
   const auto t  = op->pir->getTensors().get(tmp_tensor_id);
   const auto a1 = conv->output->tensor(ConvOp::getDataInIndex());
 
-  const auto add_bias = add_bias_op.get();
+  auto add_bias = add_bias_op.get();
 
   op->pir->moveIntoIr(std::move(add_bias_op));
 

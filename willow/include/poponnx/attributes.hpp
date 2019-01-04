@@ -22,10 +22,30 @@ public:
   template <typename T> void set(T &, const std::string &key) const;
   bool hasAttribute(const std::string &key) const;
 
+  // Take an attribute identified by `key` from the given `Attributes` object
+  void takeAttribute(const std::string &key, const Attributes &attributes);
+
+  // Take the set of attributes that match the given predicate
+  template <typename UnaryPredicate> Attributes filter(UnaryPredicate p) const {
+    Attributes result;
+
+    for (auto &name : names) {
+      if (p(name)) {
+        result.takeAttribute(name, *this);
+      }
+    }
+
+    return result;
+  }
+
 private:
   std::map<std::string, onnxAttPtr> att_map;
   std::vector<std::string> names;
 };
+
+// Template specialisation that allows a string to be used like a predicate
+template <> Attributes Attributes::filter(const char *key) const;
+template <> Attributes Attributes::filter(std::string key) const;
 
 template <>
 void Attributes::setIfPresent(std::vector<int64_t> &,

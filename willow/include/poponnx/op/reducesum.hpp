@@ -14,7 +14,8 @@ public:
   ReduceSumOp(const OperatorIdentifier &_opid,
               Ir *_ir,
               const std::vector<int64_t> &axes,
-              int64_t keepdims);
+              int64_t keepdims,
+              const Attributes &_attr = {});
 
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;

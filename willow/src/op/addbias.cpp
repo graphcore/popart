@@ -8,8 +8,8 @@
 
 namespace poponnx {
 
-AddBiasOp::AddBiasOp(ConvOp *op_)
-    : Op(Onnx::CustomOperators::AddBias, op_->pir) {}
+AddBiasOp::AddBiasOp(ConvOp *op_, Attributes attr)
+    : Op(Onnx::CustomOperators::AddBias, op_->pir, "", attr) {}
 
 std::unique_ptr<Op> AddBiasOp::clone() const {
   return make_unique<AddBiasOp>(*this);

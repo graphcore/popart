@@ -25,13 +25,17 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
   auto fwd_input     = op->inTensor(1);
   auto output_tensor = op->outTensor(0);
   auto ir            = op->pir;
+  auto attr          = op->nAtts.filter(sVirtualGraphAttribute);
 
   // create the new ops
-  auto square_op = make_unique<SquareOp>(Onnx::CustomOperators::Square, ir);
-  auto reciprocal_op =
-      make_unique<ReciprocalOp>(Onnx::Operators::Reciprocal, ir);
-  auto negate_op = make_unique<NegateOp>(Onnx::Operators::Neg, ir);
-  auto mul_op    = make_unique<MulOp>(Onnx::Operators::Mul, ir);
+  auto square_op = make_unique<SquareOp>(
+      Onnx::CustomOperators::Square, ir, std::string{}, attr);
+  auto reciprocal_op = make_unique<ReciprocalOp>(
+      Onnx::Operators::Reciprocal, ir, std::string{}, attr);
+  auto negate_op =
+      make_unique<NegateOp>(Onnx::Operators::Neg, ir, std::string{}, attr);
+  auto mul_op =
+      make_unique<MulOp>(Onnx::Operators::Mul, ir, std::string{}, attr);
 
   // move ops into ir
   auto square     = square_op.get();

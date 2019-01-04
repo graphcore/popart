@@ -99,6 +99,22 @@ bool Attributes::hasAttribute(const std::string &key) const {
   return att_map.count(key) > 0;
 }
 
+void Attributes::takeAttribute(const std::string &key,
+                               const Attributes &attributes) {
+  if (attributes.hasAttribute(key)) {
+    names.push_back(key);
+    att_map[key] = attributes.att_map.at(key);
+  }
+}
+
+template <> Attributes Attributes::filter(const char *key) const {
+  return filter(std::string(key));
+}
+
+template <> Attributes Attributes::filter(std::string key) const {
+  return filter([&](const std::string &name) { return name == key; });
+}
+
 Attributes::Attributes(const NodeAttributes &attributes) {
   for (auto &attribute : attributes) {
     auto name = attribute.name();

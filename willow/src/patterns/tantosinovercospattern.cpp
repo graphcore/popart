@@ -23,12 +23,16 @@ bool TanToSinOverCosPattern::apply(Op *op) const {
   auto fwd_in  = op->inTensor(TanOp::getInIndex());
   auto fwd_out = op->outTensor(TanOp::getOutIndex());
 
-  auto ir = op->pir;
+  auto ir   = op->pir;
+  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
 
   // create the new ops
-  auto sin_op = make_unique<SinOp>(Onnx::Operators::Sin, ir);
-  auto cos_op = make_unique<CosOp>(Onnx::Operators::Cos, ir);
-  auto div_op = make_unique<DivOp>(Onnx::Operators::Div, ir);
+  auto sin_op =
+      make_unique<SinOp>(Onnx::Operators::Sin, ir, std::string{}, attr);
+  auto cos_op =
+      make_unique<CosOp>(Onnx::Operators::Cos, ir, std::string{}, attr);
+  auto div_op =
+      make_unique<DivOp>(Onnx::Operators::Div, ir, std::string{}, attr);
 
   // move ops into ir
   auto sin = sin_op.get();

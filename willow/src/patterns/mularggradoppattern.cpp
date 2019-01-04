@@ -24,12 +24,14 @@ bool MulArgGradOpPattern::apply(Op *op) const {
   // to be valid via a previous call to MulArgGradOpPattern::matches
   auto axes = dynamic_cast<MulArgGradOp *>(op)->getReductionAxes();
 
-  auto ir = op->pir;
+  auto ir   = op->pir;
+  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
 
   // create the new ops
-  auto mul_op = make_unique<MulOp>(Onnx::Operators::Mul, ir);
-  auto reduce_sum_op =
-      make_unique<ReduceSumOp>(Onnx::Operators::ReduceSum, ir, axes, false);
+  auto mul_op =
+      make_unique<MulOp>(Onnx::Operators::Mul, ir, std::string{}, attr);
+  auto reduce_sum_op = make_unique<ReduceSumOp>(
+      Onnx::Operators::ReduceSum, ir, axes, false, attr);
 
   // move ops into ir
   auto mul        = mul_op.get();

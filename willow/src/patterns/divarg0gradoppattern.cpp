@@ -22,16 +22,18 @@ bool DivArg0GradOpPattern::apply(Op *op) const {
   auto fwd_in1  = op->inTensor(DivArg0GradOp::getFwdArg0InIndex());
   auto grad_out = op->outTensor(DivArg0GradOp::getOutIndex());
 
-  auto ir = op->pir;
+  auto ir   = op->pir;
+  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
 
   // we assume this dynamic_cast call has been confirmed
   // to be valid via a previous call to DivArg0GradOpPattern::matches
   auto axes = dynamic_cast<DivArg0GradOp *>(op)->getReductionAxes();
 
   // create the new ops
-  auto div_op = make_unique<DivOp>(Onnx::Operators::Div, ir);
-  auto reduce_op =
-      make_unique<ReduceSumOp>(Onnx::Operators::ReduceSum, ir, axes, false);
+  auto div_op =
+      make_unique<DivOp>(Onnx::Operators::Div, ir, std::string{}, attr);
+  auto reduce_op = make_unique<ReduceSumOp>(
+      Onnx::Operators::ReduceSum, ir, axes, false, attr);
 
   // move ops into ir
   auto div    = div_op.get();

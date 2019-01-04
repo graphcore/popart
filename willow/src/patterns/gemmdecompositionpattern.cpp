@@ -11,12 +11,15 @@
 
 namespace poponnx {
 
-static void
-transposeTensor(const TensorId &input, const TensorId &output, Ir *ir);
+static void transposeTensor(const TensorId &input,
+                            const TensorId &output,
+                            Ir *ir,
+                            Attributes attr);
 static void scaleTensor(const TensorId &input,
                         const TensorId &output,
                         float scale_factor,
-                        Ir *ir);
+                        Ir *ir,
+                        Attributes attr);
 
 bool GemmDecompositionPattern::matches(Op *op) const {
   return op->isConvertibleTo<GemmOp>();
@@ -41,11 +44,14 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   auto transA  = gemm_op->getTransA();
   auto transB  = gemm_op->getTransB();
 
-  auto ir = op->pir;
+  auto ir   = op->pir;
+  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
 
   // create the new ops
-  auto matmul_op = make_unique<MatMulOp>(Onnx::Operators::MatMul, ir);
-  auto add_op    = make_unique<AddOp>(Onnx::Operators::Add, ir);
+  auto matmul_op =
+      make_unique<MatMulOp>(Onnx::Operators::MatMul, ir, std::string{}, attr);
+  auto add_op =
+      make_unique<AddOp>(Onnx::Operators::Add, ir, std::string{}, attr);
 
   // move ops into ir
   auto matmul = matmul_op.get();
@@ -61,14 +67,14 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   auto A = in_a->id;
   if (transA) {
     auto tA = createImtermediateTensorId(A);
-    transposeTensor(A, tA, ir);
+    transposeTensor(A, tA, ir, attr);
     A = tA;
   }
 
   auto B = in_b->id;
   if (transB) {
     auto tB = createImtermediateTensorId(B);
-    transposeTensor(B, tB, ir);
+    transposeTensor(B, tB, ir, attr);
     B = tB;
   }
 
@@ -80,11 +86,14 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   matmul->setup();
 
   auto scale1_out = createImtermediateTensorId(in_a->id);
-  scaleTensor(
-      matmul->outTensor(MatMulOp::getOutIndex())->id, scale1_out, alpha, ir);
+  scaleTensor(matmul->outTensor(MatMulOp::getOutIndex())->id,
+              scale1_out,
+              alpha,
+              ir,
+              attr);
 
   auto scale2_out = createImtermediateTensorId(in_a->id);
-  scaleTensor(in_c->id, scale2_out, beta, ir);
+  scaleTensor(in_c->id, scale2_out, beta, ir, attr);
 
   add->connectInTensor(AddOp::getArg0InIndex(), scale1_out);
   add->connectInTensor(AddOp::getArg1InIndex(), scale2_out);
@@ -96,8 +105,10 @@ bool GemmDecompositionPattern::apply(Op *op) const {
 static void scaleTensor(const TensorId &input,
                         const TensorId &output,
                         float scale_factor,
-                        Ir *ir) {
-  auto scale_op = make_unique<ScaleOp>(Onnx::Operators::Scale, ir);
+                        Ir *ir,
+                        Attributes attr) {
+  auto scale_op =
+      make_unique<ScaleOp>(Onnx::Operators::Scale, ir, std::string{}, attr);
   scale_op->setScaleFactor(scale_factor);
 
   auto scale = scale_op.get();
@@ -108,11 +119,14 @@ static void scaleTensor(const TensorId &input,
   scale->setup();
 }
 
-static void
-transposeTensor(const TensorId &input, const TensorId &output, Ir *ir) {
+static void transposeTensor(const TensorId &input,
+                            const TensorId &output,
+                            Ir *ir,
+                            Attributes attr) {
   std::vector<int64_t> perm{1, 0};
 
-  auto transpose_op = make_unique<TransposeOp>(Onnx::Operators::Transpose, ir);
+  auto transpose_op = make_unique<TransposeOp>(
+      Onnx::Operators::Transpose, ir, std::string{}, attr);
   transpose_op->setPerm(perm);
 
   auto transpose = transpose_op.get();

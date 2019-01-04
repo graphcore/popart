@@ -13,7 +13,7 @@ class ConvOp;
 // convolution operation.
 class AddBiasOp : public Op {
 public:
-  AddBiasOp(ConvOp *);
+  AddBiasOp(ConvOp *, Attributes attr = {});
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;

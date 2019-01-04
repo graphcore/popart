@@ -22,13 +22,16 @@ bool SqrtGradOpPattern::apply(Op *op) const {
   auto fwd_out  = op->inTensor(SqrtGradOp::getFwdOutInIndex());
   auto grad_out = op->outTensor(SqrtGradOp::getOutIndex());
 
-  auto ir = op->pir;
+  auto ir   = op->pir;
+  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
 
   // create the new ops
-  auto scale_op = make_unique<ScaleOp>(Onnx::Operators::Scale, ir);
+  auto scale_op =
+      make_unique<ScaleOp>(Onnx::Operators::Scale, ir, std::string{}, attr);
   scale_op->setScaleFactor(2.0f);
 
-  auto div_op = make_unique<DivOp>(Onnx::Operators::Div, ir);
+  auto div_op =
+      make_unique<DivOp>(Onnx::Operators::Div, ir, std::string{}, attr);
 
   // move ops into ir
   auto scale = scale_op.get();

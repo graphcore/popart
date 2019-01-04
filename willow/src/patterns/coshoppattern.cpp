@@ -22,15 +22,21 @@ bool CoshOpPattern::apply(Op *op) const {
   auto input  = op->inTensor(CoshOp::getInIndex());
   auto output = op->outTensor(CoshOp::getOutIndex());
 
-  auto ir = op->pir;
+  auto ir   = op->pir;
+  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
 
   // create the new ops
-  auto negate_op = make_unique<NegateOp>(Onnx::Operators::Neg, ir);
-  auto exp1_op   = make_unique<ExpOp>(Onnx::Operators::Exp, ir);
-  auto exp2_op   = make_unique<ExpOp>(Onnx::Operators::Exp, ir);
-  auto add_op    = make_unique<AddOp>(Onnx::Operators::Add, ir);
+  auto negate_op =
+      make_unique<NegateOp>(Onnx::Operators::Neg, ir, std::string{}, attr);
+  auto exp1_op =
+      make_unique<ExpOp>(Onnx::Operators::Exp, ir, std::string{}, attr);
+  auto exp2_op =
+      make_unique<ExpOp>(Onnx::Operators::Exp, ir, std::string{}, attr);
+  auto add_op =
+      make_unique<AddOp>(Onnx::Operators::Add, ir, std::string{}, attr);
 
-  auto scale_op = make_unique<ScaleOp>(Onnx::Operators::Scale, ir);
+  auto scale_op =
+      make_unique<ScaleOp>(Onnx::Operators::Scale, ir, std::string{}, attr);
   scale_op->setScaleFactor(0.5f);
 
   // move ops into ir
