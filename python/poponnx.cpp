@@ -219,6 +219,10 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("ignoreData", &SessionOptions::ignoreData)
       .def_readwrite("enableConvolutionGraphCaching",
                      &SessionOptions::enableConvolutionGraphCaching)
+      .def_readwrite("enableRecomputation",
+                     &SessionOptions::enableRecomputation)
+      .def_readwrite("enableVirtualGraphs",
+                     &SessionOptions::enableVirtualGraphs)
       .def_readwrite("engineOptions", &SessionOptions::engineOptions)
       .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
       .def_readwrite("reportOptions", &SessionOptions::reportOptions)

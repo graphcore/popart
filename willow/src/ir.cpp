@@ -27,6 +27,7 @@
 // The transformations
 #include <poponnx/transforms/prune.hpp>
 #include <poponnx/transforms/recompute.hpp>
+#include <poponnx/transforms/virtual_graph_check.hpp>
 
 // The layers required to construct the backwards pass
 #include <poponnx/op/sum.hpp>
@@ -397,6 +398,8 @@ void Ir::prepare(const IrBundle &gb) {
   applyPatterns(PatternPhase::WITHTOPOCONS);
 
   updateVertices();
+
+  applyTransform(VirtualGraphCheck::id());
 
   isPrepared = true;
 

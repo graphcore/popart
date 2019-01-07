@@ -55,7 +55,7 @@ void Devicex::weightsToHost(
 poplar::Tensor Devicex::getConst(const poplar::Type &type,
                                  const std::vector<size_t> &shape,
                                  double val) {
-  auto tensor = graph().addConstant(type, shape, val);
+  auto tensor = masterGraph().addConstant(type, shape, val);
   return tensor;
 }
 
@@ -179,7 +179,15 @@ PopPrograms::programFragment(PopPrograms::ProgramFragmentIndex index) {
   return seqs[static_cast<int>(index)];
 }
 
-poplar::Graph &Devicex::graph() { return *pGraph; }
+poplar::Graph &Devicex::masterGraph() { return *pMasterGraph; }
+poplar::Graph &Devicex::graph(int64_t virtualGraphIndex) {
+  if (virtualGraphIndex < 0 || virtualGraphIndex >= virtualGraphs.size()) {
+    throw error("Invalid virtual graph index {} ({} available)",
+                virtualGraphIndex,
+                virtualGraphs.size());
+  }
+  return virtualGraphs[virtualGraphIndex];
+}
 
 Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
     : poponnx::Device(ir),
@@ -510,9 +518,12 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
          << "depth search to find a candidate. " << std::endl;
       logging::devicex::warn(ss.str());
 
-      auto newTensor = graph().addVariable(
+      // auto &graph = getOpx(tensor->consumers.getOps()[0]->id)->graph();
+      auto &graph = masterGraph();
+
+      auto newTensor = graph.addVariable(
           popType(tensor->info), tensor->info.shape_szt(), tensor->id);
-      poputil::mapTensorLinearly(graph(), newTensor);
+      poputil::mapTensorLinearly(graph, newTensor);
       tensors.insert(tensor->id, newTensor);
     };
 
@@ -523,10 +534,14 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 PriTask Devicex::streamFromHostTask(Tensor *tensor) {
   auto f = [this, tensor]() {
     logging::devicex::debug("Creating host-to-device FIFO " + tensor->id);
+
+    // auto &graph = getOpx(tensor->consumers.getOps()[0]->id)->graph();
+    auto &graph = masterGraph();
+
     fromHostStreams.emplace(tensor->id,
-                            graph().addHostToDeviceFIFO(h2dId(tensor->id),
-                                                        popType(tensor->info),
-                                                        tensor->info.nelms()));
+                            graph.addHostToDeviceFIFO(h2dId(tensor->id),
+                                                      popType(tensor->info),
+                                                      tensor->info.nelms()));
   };
 
   return {
@@ -540,10 +555,15 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
 PriTask Devicex::streamToHostTask(Tensor *tensor) {
   auto f = [this, tensor]() {
     logging::devicex::debug("Creating device-to-host FIFO " + tensor->id);
+
+    // TODO - figure out which graph the stream copy comes from
+    // auto &graph = getOpx(tensor->getProducer()->id)->graph();
+    auto &graph = masterGraph();
+
     toHostStreams.emplace(tensor->id,
-                          graph().addDeviceToHostFIFO(d2hId(tensor->id),
-                                                      popType(tensor->info),
-                                                      tensor->info.nelms()));
+                          graph.addDeviceToHostFIFO(d2hId(tensor->id),
+                                                    popType(tensor->info),
+                                                    tensor->info.nelms()));
   };
 
   return {
@@ -618,10 +638,24 @@ OpxAndInIndex::OpxAndInIndex(int conIndex_, Opx *opx_)
 // go all the way to creating the engine and connecting streams
 void Devicex::prepare() {
 
-  pGraph.reset(new poplar::Graph(popDevice));
-  popops::addCodelets(graph());
-  poplin::addCodelets(graph());
-  popnn::addCodelets(graph());
+  pMasterGraph.reset(new poplar::Graph(popDevice));
+
+  if (ir().getSessionOptions().enableVirtualGraphs) {
+    auto numIPUs     = masterGraph().getTarget().getNumIPUs();
+    auto tilesPerIPU = masterGraph().getTarget().getTilesPerIPU();
+    for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
+      unsigned startTile = ipu * tilesPerIPU;
+      unsigned endTile   = (ipu + 1) * tilesPerIPU;
+      virtualGraphs.emplace_back(
+          masterGraph().createVirtualGraph(startTile, endTile));
+      logging::devicex::info(
+          "Created virtual graph {} from {} to {}", ipu, startTile, endTile);
+    }
+  }
+
+  popops::addCodelets(masterGraph());
+  poplin::addCodelets(masterGraph());
+  popnn::addCodelets(masterGraph());
 
   // create an Opx for every Op
   for (Op *op : ir().getOpSchedule({})) {
@@ -730,7 +764,8 @@ void Devicex::prepare() {
 
   logging::devicex::info("All tasks complete");
 
-  pEngine.reset(new poplar::Engine(graph(), progs.progs(), engineOptions));
+  pEngine.reset(
+      new poplar::Engine(masterGraph(), progs.progs(), engineOptions));
   logging::devicex::info("Engine created");
 
   pEngine->load(popDevice);
@@ -895,13 +930,14 @@ PriTask Devicex::initBatchCounterTensorsTask() {
     // Id and decide when to execute the copy to the host
     for (ReturnPeriod N : ir().getDataFlow().rps()) {
       // Add to map so copy task can access
-      batchCountingTensors[N]      = graph().addVariable(poplar::INT, {});
-      batchCountCheckingTensors[N] = graph().addVariable(poplar::BOOL, {});
+      batchCountingTensors[N] = masterGraph().addVariable(poplar::INT, {});
+      batchCountCheckingTensors[N] =
+          masterGraph().addVariable(poplar::BOOL, {});
 
       getConst(poplar::INT, {}, N);
 
-      poputil::mapTensorLinearly(graph(), batchCountingTensors[N]);
-      poputil::mapTensorLinearly(graph(), batchCountCheckingTensors[N]);
+      poputil::mapTensorLinearly(masterGraph(), batchCountingTensors[N]);
+      poputil::mapTensorLinearly(masterGraph(), batchCountCheckingTensors[N]);
     }
 
     // Make sure const 1 tensor exists
@@ -926,11 +962,15 @@ PriTask Devicex::updateBatchCoutTask(poplar::program::Sequence &sq) {
     // the anchor tensor is required, and check if it is a
     // copy batch
     for (ReturnPeriod N : ir().getDataFlow().rps()) {
-      popops::addInPlace(
-          graph(), batchCountingTensors[N], getConst(poplar::INT, {}, 1), sq);
+      popops::addInPlace(masterGraph(),
+                         batchCountingTensors[N],
+                         getConst(poplar::INT, {}, 1),
+                         sq);
 
-      batchCountCheckingTensors[N] = popops::eq(
-          graph(), batchCountingTensors[N], getConst(poplar::INT, {}, N), sq);
+      batchCountCheckingTensors[N] = popops::eq(masterGraph(),
+                                                batchCountingTensors[N],
+                                                getConst(poplar::INT, {}, N),
+                                                sq);
 
       // Reset batch count once it has reached N
       sq.add(poplar::program::If(

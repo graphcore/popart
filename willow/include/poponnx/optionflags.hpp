@@ -24,8 +24,12 @@ struct SessionOptions {
   ///  the convolutions will be cached.
   bool enableConvolutionGraphCaching = true;
 
-  /// Enable recomputation
+  /// Enable recomputation of marked operations in the graph
   bool enableRecomputation = false;
+
+  /// Enable placement of operations on individual IPUs by creating a 'virtual
+  /// graph' for each IPU
+  bool enableVirtualGraphs = false;
 
   /// Use synthetic data i.e. disable data transfer to/from the host
   /// Set to 'true' to use synthetic data, 'false' to use real data

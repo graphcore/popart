@@ -1,4 +1,5 @@
 #include <poponnx/error.hpp>
+#include <poponnx/ir.hpp>
 #include <poponnx/op/conv.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/opx.hpp>
@@ -34,7 +35,20 @@ void Opx::grow(poplar::program::Sequence &) const {
 
 bool Opx::canCreateInput(int) const { return false; }
 
-poplar::Graph &Opx::graph() const { return dv_p->graph(); }
+poplar::Graph &Opx::graph() const {
+  if (op_p->pir->getSessionOptions().enableVirtualGraphs) {
+    if (op_p->nAtts.hasAttribute(sVirtualGraphAttribute)) {
+      int64_t index;
+      op_p->nAtts.setIfPresent(index, sVirtualGraphAttribute);
+      return dv_p->graph(index);
+    } else {
+      throw error("Operation {} does not have a virtual graph attribute",
+                  op_p->str());
+    }
+  } else {
+    return dv_p->masterGraph();
+  }
+}
 
 const poplar::Tensor &Opx::get(TensorId id) const {
   return dv_p->tensors.get(id);

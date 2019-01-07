@@ -130,7 +130,8 @@ public:
   PopPrograms progs;
 
   Opx *getOpx(OpId);
-  poplar::Graph &graph();
+  poplar::Graph &masterGraph();
+  poplar::Graph &graph(int64_t virtualGraphIndex);
 
   // return the name of the task which creates a poplar::Tensor
   // This function is mostly string manipulation
@@ -156,9 +157,12 @@ public:
                           double val);
 
 private:
-  std::unique_ptr<poplar::Graph> pGraph{nullptr};
+  std::unique_ptr<poplar::Graph> pMasterGraph{nullptr};
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
   std::unique_ptr<poplar::Target> pTarget{nullptr};
+
+  std::vector<poplar::Graph> virtualGraphs;
+
   poplar::Device popDevice;
 
   // Non-const tensors used to keep track of batch count, modulo the return
