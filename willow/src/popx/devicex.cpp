@@ -638,6 +638,9 @@ OpxAndInIndex::OpxAndInIndex(int conIndex_, Opx *opx_)
 // go all the way to creating the engine and connecting streams
 void Devicex::prepare() {
 
+  logging::devicex::info("Poplar version: {}", poplar::versionString());
+  logging::devicex::info("Poplar release githash: {}", poplar::packageHash());
+
   pMasterGraph.reset(new poplar::Graph(popDevice));
 
   if (ir().getSessionOptions().enableVirtualGraphs) {
