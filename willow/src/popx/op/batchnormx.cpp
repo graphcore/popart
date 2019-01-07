@@ -158,6 +158,9 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
       auto y         = graph().addConstant(x.elementType(), x.shape(), 0);
       auto batchMean = graph().addConstant(x.elementType(), {1}, NAN);
       auto batchVar  = graph().addConstant(x.elementType(), {1}, NAN);
+      graph().setTileMapping(y, 0);
+      graph().setTileMapping(batchMean, 0);
+      graph().setTileMapping(batchVar, 0);
       insert(outId(BatchNormOp::getYOutIndex()), y);
       insert(outId(BatchNormOp::getMeanOutIndex()), batchMean);
       insert(outId(BatchNormOp::getVarOutIndex()), batchVar);
@@ -227,6 +230,7 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
     // Special case - zero sized array
     if (isZeroElementArray(x.shape())) {
       auto y = graph().addConstant(x.elementType(), x.shape(), 0);
+      graph().setTileMapping(y, 0);
       insert(outId(BatchNormOp::getYOutIndex()), y);
     } else {
       // Convert input shape to poplar rules
@@ -304,6 +308,9 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
     auto xGrad     = graph().addConstant(x.elementType(), x.shape(), 0);
     auto scaleGrad = graph().addConstant(x.elementType(), {1}, 0);
     auto bGrad     = graph().addConstant(x.elementType(), {1}, 0);
+    graph().setTileMapping(xGrad, 0);
+    graph().setTileMapping(scaleGrad, 0);
+    graph().setTileMapping(bGrad, 0);
     insert(outId(BatchNormGradOp::getXOutIndex()), xGrad);
     insert(outId(BatchNormGradOp::getScaleOutIndex()), scaleGrad);
     insert(outId(BatchNormGradOp::getBOutIndex()), bGrad);

@@ -56,6 +56,7 @@ poplar::Tensor Devicex::getConst(const poplar::Type &type,
                                  const std::vector<size_t> &shape,
                                  double val) {
   auto tensor = masterGraph().addConstant(type, shape, val);
+  masterGraph().setTileMapping(tensor, 0);
   return tensor;
 }
 
