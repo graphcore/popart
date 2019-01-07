@@ -45,6 +45,7 @@ public:
                       const std::vector<std::string> &cTens = {},
                       const SessionOptions &userOptions     = SessionOptions(),
                       const Patterns &patterns              = Patterns());
+
   /** Update the optimizer.
    *
    * Note that the optimizer passed in must be compatible with that passed to
@@ -168,12 +169,12 @@ private:
   /**
    * abstraction of the computation, the Ir is where
    * all the compute graph optimisations, backwards pass construction,
-   * recomputation growing etc. happens.
+   * re-computation growing etc. happens.
    */
   Ir ir;
 
   /**
-   * Implementation of the computation, for IPU backend this is
+   * Implementation of the computation, for IPU back-end this is
    * where calls to poplar are made.
    */
   std::unique_ptr<Device> device_;

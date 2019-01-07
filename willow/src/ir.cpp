@@ -246,22 +246,68 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
       dataFlow(dataFlow_), losses(losses_), optimizer(optimizer_),
       cTens(cTens_), userOptions(userOptions_), patterns(patterns_) {}
 
-Ir::Ir() : tensors(*this), onnxModel(nullptr) {}
+Ir::Ir() : tensors(*this), onnxModel(nullptr) {
+  scheduler.reset(new Scheduler(this));
+}
+
+void Ir::setOnnxModel(const onnx::ModelProto &model) {
+  onnxModel.reset(new onnx::ModelProto(model));
+}
+
+void Ir::setDataFlow(const DataFlow &df) { dataFlow = df; }
+
+void Ir::setUserOptions(const SessionOptions &flags) { userOptions = flags; }
+void Ir::setInputShapeInfo(const InputShapeInfo &info) {
+  inputShapeInfo = info;
+}
+void Ir::setPatterns(const Patterns &p) { patterns = p; }
+
+void Ir::setConstantTensorIds(const std::vector<std::string> &ids) {
+  tensors.setConstIds(ids);
+}
+
+void Ir::removeIsolatedTensors() { tensors.removeIsolated(); }
+
+void Ir::setExecutionMode(const ExecutionMode &mode) { executionMode = mode; }
+
+void Ir::setLosses(const std::vector<Loss *> &_losses) {
+  losses.clear();
+  for (auto &l : _losses) {
+    losses.emplace_back(l->clone());
+  }
+}
+
+void Ir::setOptimizer(const Optimizer *o) {
+  if (o) {
+    optimizer = o->clone();
+
+    for (auto &id_info : optimizer->tensorInfos()) {
+      TensorId id     = id_info.first;
+      TensorInfo info = id_info.second;
+      tensors.addStream(id, info);
+      optimizer->setTensorData(tensors.get(id));
+    }
+  }
+}
+
+void Ir::logIr() {
+  std::stringstream ss2;
+  append(ss2);
+  logging::ir::info(ss2.str());
+}
 
 void Ir::prepare(const IrBundle &gb) {
+
   if (isPrepared) {
     throw error("Ir::prepare called more than once");
   }
 
-  scheduler.reset(new Scheduler(this));
-
-  tensors.setConstIds(gb.cTens);
-  dataFlow       = gb.dataFlow;
-  userOptions    = gb.userOptions;
-  inputShapeInfo = gb.inputShapeInfo;
-  patterns       = gb.patterns;
-
-  onnxModel.reset(new onnx::ModelProto(gb.modelProto));
+  setConstantTensorIds(gb.cTens);
+  setDataFlow(gb.dataFlow);
+  setUserOptions(gb.userOptions);
+  setInputShapeInfo(gb.inputShapeInfo);
+  setPatterns(gb.patterns);
+  setOnnxModel(gb.modelProto);
 
   enableTransform(Recompute::id(), userOptions.enableRecomputation);
 
@@ -271,16 +317,14 @@ void Ir::prepare(const IrBundle &gb) {
   }
 
   if (gb.optimizer) {
-    executionMode = ExecutionMode::TRAINING;
+    setExecutionMode(ExecutionMode::TRAINING);
   } else if (gb.losses.empty()) {
-    executionMode = ExecutionMode::INFERENCE;
+    setExecutionMode(ExecutionMode::INFERENCE);
   } else {
-    executionMode = ExecutionMode::EVALUATION;
+    setExecutionMode(ExecutionMode::EVALUATION);
   }
 
-  for (auto &l : gb.losses) {
-    losses.emplace_back(l->clone());
-  }
+  setLosses(gb.losses);
 
   confirmNoReservedIds();
 
@@ -311,17 +355,9 @@ void Ir::prepare(const IrBundle &gb) {
 
   // tensors with no producer and no consumers are removed
   // at this point. We may want something more subtle.
-  tensors.removeIsolated();
+  removeIsolatedTensors();
 
-  if (gb.optimizer) {
-    optimizer = gb.optimizer->clone();
-    for (auto &id_info : optimizer->tensorInfos()) {
-      TensorId id     = id_info.first;
-      TensorInfo info = id_info.second;
-      tensors.addStream(id, info);
-      optimizer->setTensorData(tensors.get(id));
-    }
-  }
+  setOptimizer(gb.optimizer);
 
   if (canTrain()) {
     constructBackwards();
@@ -356,7 +392,7 @@ void Ir::prepare(const IrBundle &gb) {
   applyTransform(Prune::id());
 
   // Now, we apply the Patterns which can handle and create
-  // topological constaints. Currently, this is only one
+  // topological constraints. Currently, this is only one
   // in-placing Pattern.
   applyPatterns(PatternPhase::WITHTOPOCONS);
 
@@ -368,9 +404,7 @@ void Ir::prepare(const IrBundle &gb) {
     exportDot(io::appendDirFn(userOptions.logDir, "fwdBwd1.dot"));
   }
 
-  std::stringstream ss2;
-  append(ss2);
-  logging::ir::info(ss2.str());
+  logIr();
 }
 
 void Ir::resetWeights(const onnx::ModelProto &modelProto) {

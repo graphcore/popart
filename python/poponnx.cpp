@@ -712,7 +712,7 @@ PYBIND11_MODULE(poponnx_core, m) {
                &Builder::getRecomputeOutputInBackwardPass),
            py::arg("nodeOutputNames"));
 
-  // PyBinding to a singlton
+  // PyBinding to a singleton
   py::class_<DeviceManager, std::unique_ptr<DeviceManager, py::nodelete>>(
       m, "DeviceManager")
       .def(py::init([]() {

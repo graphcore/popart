@@ -68,7 +68,7 @@ Session::createFromOnnxModel(const std::string &model,
 }
 
 void Session::updateOptimizer(const Optimizer *optimizer) {
-  logging::session::trace("Session::updateOptimzier");
+  logging::session::trace("Session::updateOptimizer");
   ir.updateOptimizer(optimizer);
 }
 

@@ -158,9 +158,47 @@ public:
 // ie. static std::unique_ptr<Ir> create(const IrBundle&);
 
 class Ir {
+
 public:
+  enum class ExecutionMode { INFERENCE, EVALUATION, TRAINING };
+
   Ir();
   ~Ir();
+
+  // Set the onnxModel.
+  void setOnnxModel(const onnx::ModelProto &model);
+
+  // Set the dataflow
+  void setDataFlow(const DataFlow &df);
+
+  // Set the user options
+  void setUserOptions(const SessionOptions &flags);
+
+  // Set the input shape information
+  void setInputShapeInfo(const InputShapeInfo &info);
+
+  // Set the optimizer and add optimizer tensors
+  // FFS could this be combined with updateOptimizer?
+  void setOptimizer(const Optimizer *o);
+
+  // Set the optimization patterns
+  void setPatterns(const Patterns &p);
+
+  // Set the constant tensors
+  void setConstantTensorIds(const std::vector<std::string> &ids);
+
+  // Remove from the IR any tensors which are unconnected, i.e.
+  // the have no producers or consumers
+  void removeIsolatedTensors();
+
+  // Set which execution mode we are using
+  void setExecutionMode(const ExecutionMode &mode);
+
+  // Set the losses, will clear any previous losses
+  void setLosses(const std::vector<Loss *> &l);
+
+  // Log the IR in a human readable format.
+  void logIr();
 
   // Prepare the IR based on the IrBundle configuration
   void prepare(const IrBundle &);
@@ -254,8 +292,6 @@ public:
   // be caught here.
   void validateAnchors() const;
 
-  enum class ExecutionMode { INFERENCE, EVALUATION, TRAINING };
-
   ExecutionMode getExecutionMode() const;
 
   // Can the IR be used for inference.
@@ -271,14 +307,6 @@ public:
 
   // returns true if there are initializers in the onnx model
   bool containsInitialisers();
-
-private:
-  // called from growFromNode and many other places where Ops created
-  // T requires functions input(int) and input_size()
-  template <typename T> void connectInputs(const T &, OpId opId);
-
-  // T requires functions output(int) and output_size()
-  template <typename T> void connectOutputs(const T &, OpId opId);
 
   // Convert the ONNX graph into the forwards pass of the IR
   void constructForwards();
@@ -305,10 +333,6 @@ private:
   // there is a path to vertex in whose phase is BWD.
   void updateVertices();
 
-  // modify the Ir using with pattern matching
-  // Returns true if a change to the Ir was made.
-  bool applyPattern(const Pattern *);
-
   // modify the Ir using all the registered patterns.
   // Returns true if a change to the Ir was made.
   void applyPatterns(PatternPhase);
@@ -319,18 +343,34 @@ private:
   // constructed
   void confirmConstIds() const;
 
-  // gradients are named automatically. To prevent them
-  // getting names already taken by non-gradiet tensors,
-  // we check that a reserved pattern is not present.
-  void confirmNonReservedId(TensorId tenId) const;
-
-  // cofirm that no tensors in input(), nodes() or preRunKnowlede()
+  // confirm that no tensors in input(), nodes() or preRunKnowledge()
   // use reserved naming conventions. A note on design: The decision
   // to NOT add an independent dimension to TensorId, used exclusively
   // by automatically named tensors, was that when printing TensorIds
   // there would still be the possibility of conflict (i.e. projection
   // to single string might result in conflict).
   void confirmNoReservedIds() const;
+
+  // starting from losses, construct the individual loss ops
+  // as well as an op which sums them to get the final op
+  void growFinalLoss();
+
+private:
+  // called from growFromNode and many other places where Ops created
+  // T requires functions input(int) and input_size()
+  template <typename T> void connectInputs(const T &, OpId opId);
+
+  // T requires functions output(int) and output_size()
+  template <typename T> void connectOutputs(const T &, OpId opId);
+
+  // modify the Ir using with pattern matching
+  // Returns true if a change to the Ir was made.
+  bool applyPattern(const Pattern *);
+
+  // gradients are named automatically. To prevent them
+  // getting names already taken by non-gradient tensors,
+  // we check that a reserved pattern is not present.
+  void confirmNonReservedId(TensorId tenId) const;
 
   // create an Op from Node (if not Constant Node), wire it to
   // correct input Tensors and create the activation output Tensors
@@ -343,10 +383,6 @@ private:
   Op *growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum);
 
   std::vector<Op *> growGradOps(Op *forwardOp);
-
-  // starting from losses, construct the individual loss ops
-  // as well as an op which sums them to get the final op
-  void growFinalLoss();
 
   // for each of the losses described by loss,
   // create a grad-op. Return a vector of {gradop, lossop} pairs
