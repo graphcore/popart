@@ -66,14 +66,14 @@ bool GemmDecompositionPattern::apply(Op *op) const {
 
   auto A = in_a->id;
   if (transA) {
-    auto tA = createImtermediateTensorId(A);
+    auto tA = createIntermediateTensorId(A);
     transposeTensor(A, tA, ir, attr);
     A = tA;
   }
 
   auto B = in_b->id;
   if (transB) {
-    auto tB = createImtermediateTensorId(B);
+    auto tB = createIntermediateTensorId(B);
     transposeTensor(B, tB, ir, attr);
     B = tB;
   }
@@ -82,17 +82,17 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   matmul->connectInTensor(MatMulOp::getLhsInIndex(), A);
   matmul->connectInTensor(MatMulOp::getRhsInIndex(), B);
   matmul->createAndConnectOutTensor(MatMulOp::getOutIndex(),
-                                    createImtermediateTensorId(in_a->id));
+                                    createIntermediateTensorId(in_a->id));
   matmul->setup();
 
-  auto scale1_out = createImtermediateTensorId(in_a->id);
+  auto scale1_out = createIntermediateTensorId(in_a->id);
   scaleTensor(matmul->outTensor(MatMulOp::getOutIndex())->id,
               scale1_out,
               alpha,
               ir,
               attr);
 
-  auto scale2_out = createImtermediateTensorId(in_a->id);
+  auto scale2_out = createIntermediateTensorId(in_a->id);
   scaleTensor(in_c->id, scale2_out, beta, ir, attr);
 
   add->connectInTensor(AddOp::getArg0InIndex(), scale1_out);

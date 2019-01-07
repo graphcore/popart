@@ -30,7 +30,7 @@ bool SubtractArg1GradOpPattern::apply(Op *op) const {
   auto reducesum_op = make_unique<ReduceSumOp>(
       Onnx::Operators::ReduceSum, ir, axes, false, attr);
 
-  const auto tmp_tensor_id = createImtermediateTensorId(op->output->id(0));
+  const auto tmp_tensor_id = createIntermediateTensorId(op->output->id(0));
   op->pir->getTensors().addActGrad(tmp_tensor_id);
   const auto tmp_tensor = ir->getTensors().get(tmp_tensor_id);
   tmp_tensor->info      = input_tensor->info;

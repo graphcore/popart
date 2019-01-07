@@ -72,7 +72,7 @@ public:
   // What phase will this Pattern be run at?
   virtual PatternPhase phase() const = 0;
 
-  static TensorId createImtermediateTensorId(TensorId base_id);
+  static TensorId createIntermediateTensorId(TensorId base_id);
 
   void initialise(std::string pattern_name);
 
