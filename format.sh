@@ -19,9 +19,9 @@ clang-format -i willow/include/poponnx/transforms/*hpp
 clang-format -i tests/poponnx/*cpp
 
 echo "inplace yapfing all .py files in listed directories,"
-python -m yapf -i tests/torch/cifar10/*py
-python -m yapf -i tests/poponnx/*py
-python -m yapf -i python/poponnx/torch/*py
-python -m yapf -i python/poponnx/*py
+python3 -m yapf -i tests/torch/cifar10/*py
+python3 -m yapf -i tests/poponnx/*py
+python3 -m yapf -i python/poponnx/torch/*py
+python3 -m yapf -i python/poponnx/*py
 
 echo "formatting complete."

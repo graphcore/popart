@@ -274,6 +274,7 @@ void Devicex::hostToHostStream(
   }
 
   else if (srcType == DataType::INT64 && dstType == DataType::INT32) {
+    logging::devicex::debug("Copying (host) tensor {} from INT64 to INT32", id);
     auto dst_int32 = static_cast<int *>(dst);
     auto src_int64 = static_cast<const int64_t *>(src);
     for (auto i = 0; i < dstInfo.nelms(); ++i) {
@@ -287,7 +288,7 @@ void Devicex::hostToHostStream(
 
   else {
     std::stringstream ss;
-    ss << "Type disrcepency for tensor " << id
+    ss << "Type discrepency for tensor " << id
        << ". User provided : " << srcInfo.data_type()
        << " and expected : " << dstInfo.data_type()
        << ". Consider a custom copy here (as memcpy cannot be used)";

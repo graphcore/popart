@@ -408,6 +408,18 @@ void Ir::prepare(const IrBundle &gb) {
   }
 
   logIr();
+  // some checks, now that prepare is complete
+  for (auto &id_op : ops) {
+    if (id_op.second->opid == Onnx::CustomGradOperators::NllGrad) {
+      logging::ir::warn("Computing gradient of the probabilities to Nll "
+                        "might be less efficient than computing "
+                        "pre-probability gradients directly with Pattern "
+                        "SoftMaxGradDirect");
+    }
+  }
+  // TODO : test described in T5690 will go here
+
+  // end of checks
 }
 
 void Ir::resetWeights(const onnx::ModelProto &modelProto) {

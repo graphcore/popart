@@ -31,7 +31,6 @@ public:
   static OutIndex getOutIndex() { return 0; }
 };
 
-// not a gradient of a single Op, so not inheriting from GradOp
 class SoftmaxGradDirectOp : public Op {
 public:
   // where Op in this constructor must be a SoftmaxOp
@@ -39,8 +38,6 @@ public:
   // and an NllGradOp
   SoftmaxGradDirectOp(Ir *, const NllLoss *);
   std::unique_ptr<Op> clone() const final;
-  // this Op has no Grad Ops: throws error if called
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
   const NllLoss *nlll() const;
 

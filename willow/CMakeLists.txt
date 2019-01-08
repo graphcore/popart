@@ -81,9 +81,11 @@ install(DIRECTORY "include/poponnx"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
         COMPONENT poponnx)
 
-add_custom_target(
-        python_ver_check
-        COMMAND python -c "import sys; sys.exit(sys.version_info.major <= 2)"
-        VERBATIM
-)
-add_dependencies(poponnx python_ver_check)
+# See T6089: to use python3 where strictly required, and 
+# then remove this commented out code:
+#> add_custom_target(
+#>         python_ver_check
+#>         COMMAND python -c "import sys; sys.exit(sys.version_info.major <= 2)"
+#>         VERBATIM
+#> )
+#> add_dependencies(poponnx python_ver_check)

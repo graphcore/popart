@@ -54,10 +54,6 @@ SoftmaxGradDirectOp::SoftmaxGradDirectOp(Ir *ir, const NllLoss *nls)
 
 const NllLoss *SoftmaxGradDirectOp::nlll() const { return nllloss_; }
 
-std::vector<std::unique_ptr<Op>> SoftmaxGradDirectOp::getGradOps() {
-  throw error("SoftmaxGradDirectOp is not a true non-grad op, no getGradOps");
-}
-
 std::unique_ptr<Op> SoftmaxGradDirectOp::clone() const {
   throw error("Unexpected (but valid) request to clone SoftmaxGradDirectOp");
 }

@@ -20,6 +20,7 @@ public:
 class NllGradOpx : public Opx {
 public:
   NllGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

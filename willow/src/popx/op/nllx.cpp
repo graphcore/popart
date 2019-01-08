@@ -54,6 +54,48 @@ NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<NllGradOp>(op, Onnx::CustomGradOperators::NllGrad);
 }
 
+// loss         = -ln (p_l), where p_l is the probability at "label" so
+//
+//                 0     if i != l
+// d_loss / d_p = -1/p_i if i == l
+//                 ...............
+
+void NllGradOpx::grow(poplar::program::Sequence &prog) const {
+  const NllLoss *nllloss      = getOp<NllGradOp>().nlll();
+  TensorId labelId            = nllloss->labelTensorId();
+  TensorId probsId            = nllloss->probsTensorId();
+  const poplar::Tensor &probs = get(probsId);
+
+  // inverse probabilities, we take max(eps, p) to make division safe
+  float eps       = 1e-7f;
+  auto smallConst = graph().addConstant(probs.elementType(), {1}, eps);
+  auto safeProbs  = popops::map(graph(),
+                               popops::expr::BinaryOpType::MAXIMUM,
+                               smallConst,
+                               probs,
+                               prog,
+                               idStr());
+
+  // oneHot: initialised to be 1 at position "label", 0 elsewhere.
+  auto oneHot =
+      graph().clone(get(probsId).elementType(), get(probsId), "..OneHot");
+  popops::encodeOneHot(graph(), get(labelId), oneHot, prog, "..Nll");
+
+  // oneHot: becomes -1 at position "label", 0 elsewhere.
+  popops::mapInPlace(
+      graph(), popops::expr::UnaryOpType::NEGATE, oneHot, prog, "..neg");
+
+  // oneHot: set to -1/p at position "label", 0 elsewhere.
+  popops::mapInPlace(graph(),
+                     popops::expr::BinaryOpType::DIVIDE,
+                     oneHot,
+                     safeProbs,
+                     prog,
+                     idStr());
+
+  insert(outId(0), oneHot);
+}
+
 namespace {
 static OpxCreator<NllOpx> nllOpxCreator(Onnx::CustomOperators::Nll);
 static OpxCreator<NllGradOpx>
