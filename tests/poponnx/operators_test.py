@@ -1483,6 +1483,45 @@ def test_transpose_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_log(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.log([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.log(a)
+        return [b]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_log_grad(op_tester):
+    # create test data
+    d1 = np.random.rand(4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.log([i1])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.log(a)
+        d__o = ref_data.getOutputTensorGrad(0)
+        b.backward(torch.tensor(d__o))
+        return [b, a.grad, None]
+
+    op_tester.passes = ['PreUniRepl', 'LogGradOp']
+    op_tester.run(init_builder, reference, 'train')
+
+
 class LSTM_Helper():
     def __init__(self, **params):  # type: (*Any) -> None
         # LSTM Input Names
@@ -1953,10 +1992,9 @@ def op_tester(tmpdir):
                         print('Torch : {}', ref_out[index])
                         print('{}', np.subtract(anchor_map[key],
                                                 ref_out[index]))
-                        print(
-                            '{}',
-                            np.isclose(anchor_map[key], ref_out[index],
-                                       self.rtol, self.atol))
+                        print('{}',
+                              np.isclose(anchor_map[key], ref_out[index],
+                                         self.rtol, self.atol))
 
                     assert np.allclose(anchor_map[key], ref_out[index],
                                        self.rtol, self.atol)

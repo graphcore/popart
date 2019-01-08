@@ -282,7 +282,7 @@ const static AiGraphcoreOpIdV1 IdentityGrad("IdentityGrad");
 // constexpr static char LSTM[] = "LSTM";
 // constexpr static char LeakyRelu[] = "LeakyRely";
 // constexpr static char Less[] = "Less";
-// constexpr static char Log[] = "Log";
+const static AiGraphcoreOpIdV1 LogGrad("LogGrad");
 // constexpr static char LogSoftmax[] = "LogSoftmax";
 // constexpr static char Loop[] = "Loop";
 // constexpr static char LpNormalization[] = "LpNormalization";
