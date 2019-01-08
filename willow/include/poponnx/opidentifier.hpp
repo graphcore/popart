@@ -378,6 +378,8 @@ const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
 const static AiGraphcoreOpIdV1 L1("L1");
 const static AiGraphcoreOpIdV1 Nll("Nll");
 
+const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
+
 const static AiGraphcoreOpIdV1 SgdVarUpdate("SGDVarUpdate");
 const static AiGraphcoreOpIdV1 ConstSgdVarUpdate("ConstSGDVarUpdate");
 } // namespace CustomOperators

@@ -16,7 +16,7 @@ public:
   Attributes() = default;
   const std::vector<std::string> &getNames() const;
   onnxAttPtr at(const std::string &name) const;
-  void append(std::stringstream &ss) const;
+  void append(std::stringstream &ss, std::string prefix = "") const;
   template <typename T> void setIfPresent(T &, const std::string &key) const;
   // as above, but throws an error if key not present
   template <typename T> void set(T &, const std::string &key) const;

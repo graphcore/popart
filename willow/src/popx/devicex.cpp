@@ -520,13 +520,27 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
          << "depth search to find a candidate. " << std::endl;
       logging::devicex::warn(ss.str());
 
-      // auto &graph = getOpx(tensor->consumers.getOps()[0]->id)->graph();
-      auto &graph = masterGraph();
+      // Find the ipu the op that consumes with tensor is on and create the
+      // tensor on that graph
+      std::vector<int64_t> ipus;
+      for (auto *op : tensor->consumers.getOps()) {
+        auto &graph = getOpx(op->id)->graph();
 
-      auto newTensor = graph.addVariable(
-          popType(tensor->info), tensor->info.shape_szt(), tensor->id);
-      poputil::mapTensorLinearly(graph, newTensor);
-      tensors.insert(tensor->id, newTensor);
+        int64_t index = 0;
+        op->nAtts.setIfPresent(index, sVirtualGraphAttribute);
+
+        if (ipus.end() == std::find(ipus.begin(), ipus.end(), index)) {
+
+          auto newTensor = graph.addVariable(
+              popType(tensor->info), tensor->info.shape_szt(), tensor->id);
+          poputil::mapTensorLinearly(graph, newTensor);
+
+          // TODO : This line causes a problem when the same tensor is copied to
+          // multiple ipu's
+          tensors.insert(tensor->id, newTensor);
+          ipus.push_back(index);
+        }
+      }
     };
 
     return {1e6, initTensorTaskId(tensor->id), {}, f};
@@ -535,15 +549,30 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
 PriTask Devicex::streamFromHostTask(Tensor *tensor) {
   auto f = [this, tensor]() {
-    logging::devicex::debug("Creating host-to-device FIFO " + tensor->id);
+    std::vector<int64_t> ipus;
+    for (auto *op : tensor->consumers.getOps()) {
+      auto &graph = getOpx(op->id)->graph();
+      
+      int64_t index = 0;
+      op->nAtts.setIfPresent(index, sVirtualGraphAttribute);
 
-    // auto &graph = getOpx(tensor->consumers.getOps()[0]->id)->graph();
-    auto &graph = masterGraph();
+      // Only stream the tensor once for all op's that consume it on an ipu
+      if (std::find(ipus.begin(), ipus.end(), index) == ipus.end()) {
 
-    fromHostStreams.emplace(tensor->id,
-                            graph.addHostToDeviceFIFO(h2dId(tensor->id),
-                                                      popType(tensor->info),
-                                                      tensor->info.nelms()));
+        logging::devicex::debug(
+            "Creating host-to-device FIFO {} copied to ipu:{}",
+            tensor->id,
+            index);
+
+        fromHostStreams.emplace(
+            tensor->id,
+            graph.addHostToDeviceFIFO(h2dId(tensor->id),
+                                      popType(tensor->info),
+                                      tensor->info.nelms()));
+
+        ipus.push_back(index);
+      }
+    }
   };
 
   return {
@@ -879,8 +908,6 @@ TaskId Devicex::opTaskId(Op *op) const {
   std::stringstream ss;
   ss << "fromOpTask_" << op->id << '_' << op->opid;
   return ss.str();
-
-  // return "fromOpTask_" + std::to_string(op->id) + '_' + op->opid;
 }
 
 PopStreamId Devicex::h2dId(TensorId id) const { return "h2d_" + id; }

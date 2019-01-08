@@ -25,6 +25,7 @@
 #include <poponnx/util.hpp>
 
 // The transformations
+#include <poponnx/transforms/interipucopy.hpp>
 #include <poponnx/transforms/prune.hpp>
 #include <poponnx/transforms/recompute.hpp>
 #include <poponnx/transforms/virtual_graph_check.hpp>
@@ -399,7 +400,13 @@ void Ir::prepare(const IrBundle &gb) {
 
   updateVertices();
 
+  // Check to make sure that all or none have assigned to an ipu
   applyTransform(VirtualGraphCheck::id());
+
+  // Add internal ops to copy tensors between ipu's as needed
+  applyTransform(InterIpuCopy::id());
+
+  updateVertices();
 
   isPrepared = true;
 

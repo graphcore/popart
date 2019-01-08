@@ -55,6 +55,8 @@ public:
   // shape.
   poplar::Tensor broadcast(const std::vector<int64_t> &, poplar::Tensor) const;
 
+  // shortcut for dv_p->masterGraph
+  poplar::Graph &masterGraph() const;
   // shortcut for dv_p->graph
   poplar::Graph &graph() const;
   // shortcut for dv_p->tensors.get

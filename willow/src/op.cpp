@@ -68,6 +68,12 @@ void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
   ptensor->setProducer(this);
 }
 
+void Op::disconnectInTensor(InIndex inIndex, Tensor *tensor) {
+  tensor->consumers.decrement(this);
+
+  input->erase(inIndex);
+}
+
 void Op::disconnectAllInputs() {
   for (auto entry : input->tensorMap()) {
     auto tensor = entry.second;
@@ -136,12 +142,17 @@ int64_t Op::memOfOutputs() const {
 void Op::appendIO(std::stringstream &ss) const {
   static std::string tab = "    ";
   ss << '\n' << "Op " << id << " of type " << opid << '\n';
-  ss << tab << "inputs" << '\n';
 
   int max_id_length = std::max(input->maxIdLength(), output->maxIdLength());
+
+  ss << tab << "inputs" << '\n';
   input->append(ss, tab + tab, max_id_length);
+
   ss << '\n' << tab << "outputs" << '\n';
   output->append(ss, tab + tab, max_id_length);
+
+  ss << '\n' << tab << "attributes" << '\n';
+  nAtts.append(ss, tab + tab);
 }
 
 const std::string &Op::name() const { return _name; }

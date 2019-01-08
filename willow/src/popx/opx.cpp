@@ -35,6 +35,8 @@ void Opx::grow(poplar::program::Sequence &) const {
 
 bool Opx::canCreateInput(int) const { return false; }
 
+poplar::Graph &Opx::masterGraph() const { return dv_p->masterGraph(); }
+
 poplar::Graph &Opx::graph() const {
   if (op_p->pir->getSessionOptions().enableVirtualGraphs) {
     if (op_p->nAtts.hasAttribute(sVirtualGraphAttribute)) {

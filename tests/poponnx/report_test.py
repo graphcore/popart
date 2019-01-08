@@ -89,7 +89,7 @@ def test_summary_report_with_cpu_device(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = poponnx.DataFlow(1, {})
+    dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
 
@@ -116,7 +116,7 @@ def test_graph_report_with_cpu_device(tmpdir):
 
     proto = builder.getModelProto()
 
-    dataFlow = poponnx.DataFlow(1, {})
+    dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
 

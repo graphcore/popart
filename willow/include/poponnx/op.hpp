@@ -99,7 +99,13 @@ public:
 
   void connectOutTensor(OutIndex, TensorId);
 
+  // Disconnect an input test from the op
+  void disconnectInTensor(InIndex, Tensor *tensor);
+
+  // Disconnect all input tensors
   void disconnectAllInputs();
+
+  // Disconnect all output tensors
   void disconnectAllOutputs();
 
   // might the input tensors be modified?

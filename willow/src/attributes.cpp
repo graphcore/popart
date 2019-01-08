@@ -123,11 +123,11 @@ Attributes::Attributes(const NodeAttributes &attributes) {
   }
 }
 
-void Attributes::append(std::stringstream &ss) const {
+void Attributes::append(std::stringstream &ss, std::string prefix) const {
   using AttPro = onnx::AttributeProto;
   for (auto &name : names) {
-    ss << '\n';
-    ss << "  " << name << "  ";
+    ss << prefix;
+    ss << "'" << name << "' ";
     auto attptr = att_map.at(name);
     switch (attptr->type()) {
     case AttPro::UNDEFINED: {

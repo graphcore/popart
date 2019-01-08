@@ -129,15 +129,15 @@ std::vector<std::unique_ptr<Op>> ConcatOp::getGradOps() {
   return result;
 }
 
-ConcatGradOp::ConcatGradOp(ConcatOp *fwd, InIndex input)
+ConcatGradOp::ConcatGradOp(ConcatOp *fwd, InIndex inputIndex)
     : Op({Onnx::GradOperators::ConcatGrad, fwd->pir, {}}), axis(fwd->getAxis()),
-      start(0), end(0), fwdInput(input) {
-  for (int i = 0; i < input; ++i) {
+      start(0), end(0), fwdInput(inputIndex) {
+  for (int i = 0; i < inputIndex; ++i) {
     auto shape = fwd->inShape(ConcatOp::getInIndex(i));
     start += shape[axis];
   }
 
-  for (int i = 0; i <= input; ++i) {
+  for (int i = 0; i <= inputIndex; ++i) {
     auto shape = fwd->inShape(ConcatOp::getInIndex(i));
     end += shape[axis];
   }
