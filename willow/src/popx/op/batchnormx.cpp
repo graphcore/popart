@@ -6,6 +6,7 @@
 #include <poponnx/popx/opxmanager.hpp>
 
 #include <poplar/Tensor.hpp>
+#include <poplin/Norms.hpp>
 #include <popnn/BatchNorm.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
@@ -171,7 +172,7 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
       std::tie(xP, nonBroadcastDims) = convertOnnxInputToPoplarInput(x);
 
       poplar::Tensor batchMean, invSd;
-      std::tie(batchMean, invSd) = popnn::bn::batchNormEstimates(
+      std::tie(batchMean, invSd) = popnn::bn::batchNormStatistics(
           graph(), xP, epsilon, prog, false, poplar::FLOAT, idStr());
 
       // batch normalise
@@ -266,21 +267,24 @@ BatchNormGradOpx::batchNormaliseGrad(poplar::program::Sequence &prog,
   poplar::Tensor xWhitened = popnn::bn::batchNormWhiten(
       graph(), x, mean, invSd, prog, idStr() + "/WhitenedActs");
 
-  // Compute the deltas for scaled and offset
-  std::tie(scaleGrad, bGrad) = popnn::bn::batchNormDeltas(
-      graph(), xWhitened, yGrad, prog, poplar::FLOAT, idStr() + "/Deltas");
-
-  // Compute the delta for the x grad
+  // Compute the delta for the operand
   xGrad = popnn::bn::batchNormGradients(graph(),
                                         xWhitened,
                                         yGrad,
-                                        scaleGrad,
-                                        bGrad,
                                         invSd,
                                         scale,
                                         prog,
                                         poplar::FLOAT,
-                                        idStr() + "/Grad");
+                                        idStr() + "/OperandGrad");
+
+  // Compute the deltas for scaled and offset
+  std::tie(scaleGrad, bGrad) =
+      popnn::bn::batchNormParamGradients(graph(),
+                                         xWhitened,
+                                         yGrad,
+                                         prog,
+                                         poplar::FLOAT,
+                                         idStr() + "/ScaleOffsetGrads");
 
   return std::make_tuple(xGrad, scaleGrad, bGrad);
 }
