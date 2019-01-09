@@ -57,6 +57,13 @@ static void add_args(Node *node, const std::vector<TensorId> &args) {
   }
 }
 
+void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
+  if (!name.empty())
+    node->set_name(name);
+
+  onnx::shape_inference::InferShapes(model_);
+}
+
 TensorId BuilderImpl::add_simple_op(const std::vector<TensorId> &args,
                                     const OperatorIdentifier &opid,
                                     int arg_count,
@@ -73,10 +80,7 @@ TensorId BuilderImpl::add_simple_op(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  if (!name.empty())
-    node->set_name(name);
-
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return id;
 }
@@ -96,10 +100,7 @@ TensorId BuilderImpl::add_variadic_op(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  if (!name.empty())
-    node->set_name(name);
-
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return id;
 }
@@ -256,10 +257,7 @@ TensorId BuilderImpl::constant(const ConstVoidData &initData,
 
   addNodeAttribute("value", initData, {id});
 
-  if (!name.empty())
-    node->set_name(name);
-
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return id;
 }
@@ -333,11 +331,9 @@ TensorId BuilderImpl::concat(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  if (!name.empty())
-    node->set_name(name);
-
   addNodeAttribute("axis", dimension, {id});
-  onnx::shape_inference::InferShapes(model_);
+
+  finalizeOp(node, name);
 
   return id;
 }
@@ -516,9 +512,6 @@ TensorId BuilderImpl::convolution(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  if (!name.empty())
-    node->set_name(name);
-
   addNodeAttribute("dilations", dilation, {id});
   addNodeAttribute("group", groups, {id});
   addNodeAttribute("pads", padding, {id});
@@ -526,7 +519,7 @@ TensorId BuilderImpl::convolution(const std::vector<TensorId> &args,
   addNodeAttribute(
       "__cache_operation", static_cast<int64_t>(cacheOperation), {id});
 
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return id;
 }
@@ -548,15 +541,12 @@ TensorId BuilderImpl::averagepool(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  if (!name.empty())
-    node->set_name(name);
-
   addNodeAttribute("count_include_pad", static_cast<int64_t>(0), {id});
   addNodeAttribute("kernel_shape", kernel_shape, {id});
   addNodeAttribute("pads", padding, {id});
   addNodeAttribute("strides", strides, {id});
 
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return id;
 }
@@ -578,15 +568,12 @@ TensorId BuilderImpl::maxpool(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  if (!name.empty())
-    node->set_name(name);
-
   addNodeAttribute("storage_order", static_cast<int64_t>(0), {id});
   addNodeAttribute("kernel_shape", kernel_shape, {id});
   addNodeAttribute("pads", padding, {id});
   addNodeAttribute("strides", strides, {id});
 
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return id;
 }
@@ -607,10 +594,7 @@ BuilderImpl::lstm(const std::vector<TensorId> &args, const std::string &name) {
   node->add_output(out_yh);
   node->add_output(out_yc);
 
-  if (!name.empty())
-    node->set_name(name);
-
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return {out_y, out_yh, out_yc};
 }
@@ -631,15 +615,12 @@ TensorId BuilderImpl::gemm(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  if (!name.empty())
-    node->set_name(name);
-
   addNodeAttribute("alpha", alpha, {id});
   addNodeAttribute("beta", beta, {id});
   addNodeAttribute("transA", transA, {id});
   addNodeAttribute("transB", transB, {id});
 
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return id;
 }
@@ -668,14 +649,11 @@ TensorId BuilderImpl::pad(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  if (!name.empty())
-    node->set_name(name);
-
   addNodeAttribute("mode", mode, {id});
   addNodeAttribute("pads", pads, {id});
   addNodeAttribute("value", value, {id});
 
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return id;
 }
@@ -693,10 +671,7 @@ TensorId BuilderImpl::matmul(const std::vector<TensorId> &args,
   node->add_input(args[1]);
   node->add_output(id);
 
-  if (!name.empty())
-    node->set_name(name);
-
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return id;
 }
@@ -716,14 +691,11 @@ TensorId BuilderImpl::slice(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  if (!name.empty())
-    node->set_name(name);
-
   addNodeAttribute("axes", axes, {id});
   addNodeAttribute("starts", starts, {id});
   addNodeAttribute("ends", ends, {id});
 
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return id;
 }
@@ -740,13 +712,10 @@ TensorId BuilderImpl::softmax(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  if (!name.empty())
-    node->set_name(name);
-
   int64_t axis = 1;
   addNodeAttribute("axis", axis, {id});
 
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return id;
 }
@@ -769,14 +738,11 @@ TensorId BuilderImpl::subsample(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  if (!name.empty())
-    node->set_name(name);
-
   addNodeAttribute("strides", strides, {id});
 
   addOpsetRequirement(Domain::ai_graphcore, 1);
 
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return id;
 }
@@ -795,12 +761,9 @@ TensorId BuilderImpl::transpose(const std::vector<TensorId> &args,
   add_args(node, args);
   node->add_output(id);
 
-  if (!name.empty())
-    node->set_name(name);
-
   addNodeAttribute("perm", perm, {id});
 
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return id;
 }
@@ -854,14 +817,11 @@ BuilderImpl::batchnormalizationTraining(const TensorId x,
   node->add_output(outputs.savedMean);
   node->add_output(outputs.savedVar);
 
-  if (!name.empty())
-    node->set_name(name);
-
   addNodeAttribute("epsilon", epsilon, *node);
   addNodeAttribute("momentum", momentum, *node);
   addNodeAttribute("spatial", spatial, *node);
 
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return outputs;
 }
@@ -891,14 +851,11 @@ TensorId BuilderImpl::batchnormalizationTesting(const TensorId x,
 
   node->add_output(y);
 
-  if (!name.empty())
-    node->set_name(name);
-
   addNodeAttribute("epsilon", epsilon, *node);
   addNodeAttribute("momentum", momentum, *node);
   addNodeAttribute("spatial", spatial, *node);
 
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return y;
 }
@@ -935,10 +892,6 @@ std::vector<TensorId> BuilderImpl::customOp(
     node->add_output(outputTensors[i]);
   }
 
-  // Set the name
-  if (!name.empty())
-    node->set_name(name);
-
   // Set the attributes
   for (auto attribute : attributes) {
     if (attribute.second.type() == typeid(int)) {
@@ -949,7 +902,7 @@ std::vector<TensorId> BuilderImpl::customOp(
     }
   }
 
-  onnx::shape_inference::InferShapes(model_);
+  finalizeOp(node, name);
 
   return outputTensors;
 }

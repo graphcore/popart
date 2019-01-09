@@ -268,6 +268,8 @@ public:
   std::vector<int64_t> getTensorShape(const TensorId id);
 
 private:
+  void finalizeOp(onnx::NodeProto *node, const std::string &name);
+
   TensorId add_simple_op(const std::vector<TensorId> &args,
                          const OperatorIdentifier &opid,
                          int arg_count,
