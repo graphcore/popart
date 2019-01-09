@@ -1,6 +1,7 @@
 # for more useful warnings
 include(EnableCompilerWarnings)
 
+
 # expansion of pybind macro, impossible to declare name 
 # of certain classes in headers
 add_compile_options("-Wno-missing-prototypes")
@@ -29,6 +30,7 @@ target_compile_definitions(poponnx_core
   PRIVATE PYBIND11_HAS_OPTIONAL=0
   PRIVATE PYBIND11_HAS_EXP_OPTIONAL=0
   PRIVATE PYBIND11_HAS_VARIANT=0
+#  PRIVATE PYBIND11_PYTHON_VERSION=3.6
 )
 
 target_link_libraries(poponnx_core PRIVATE

@@ -1,5 +1,5 @@
 Supported operations
-----------
+--------------------
 
 Poponnx is compatible with ONNX [1.3] (onnx-versioning_).
 

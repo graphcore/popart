@@ -18,7 +18,7 @@ if (BUILD_DOCS)
 
   add_custom_command(
     OUTPUT ${SUPPORTED_OPS_GEN}
-    COMMAND python gen_supported_ops.py ${CMAKE_BINARY_DIR}/python ${SUPPORTED_OPS_GEN}
+    COMMAND python3 gen_supported_ops.py ${CMAKE_BINARY_DIR}/python ${SUPPORTED_OPS_GEN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Creating supported ops"
   )
@@ -44,24 +44,31 @@ if (BUILD_DOCS)
   )
 
   add_custom_command(
-    OUTPUT ${CMAKE_BINARY_DIR}/docs/user_guide
+    OUTPUT ${CMAKE_BINARY_DIR}/docs/pdf_user_guide
     COMMAND cp -R ${CMAKE_CURRENT_SOURCE_DIR}/user_guide
-                  ${CMAKE_BINARY_DIR}/docs
+                  ${CMAKE_BINARY_DIR}/docs/pdf_user_guide
     DEPENDS ${CMAKE_BINARY_DIR}/docs
   )
+
+  add_custom_command(
+    OUTPUT ${CMAKE_BINARY_DIR}/docs/html_user_guide
+    COMMAND cp -R ${CMAKE_CURRENT_SOURCE_DIR}/user_guide
+                  ${CMAKE_BINARY_DIR}/docs/html_user_guide
+    DEPENDS ${CMAKE_BINARY_DIR}/docs
+  )  
 
   add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/docs/pdfgen
     COMMAND ${GCDOC} -v -x ${CMAKE_BINARY_DIR}/docs/Doxyfile
                      -r ${RELEASE}
 		     -b pdf
-		     ${CMAKE_BINARY_DIR}/docs/user_guide
+		     ${CMAKE_BINARY_DIR}/docs/pdf_user_guide
 		     ${CMAKE_BINARY_DIR}/docs/latex/poponnx.pdf
     COMMENT "Building PDF documentation from 'user_guide' directory"
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/docs
     DEPENDS ${CMAKE_BINARY_DIR}/docs/latex
             ${CMAKE_BINARY_DIR}/docs/Doxyfile
-	    ${CMAKE_BINARY_DIR}/docs/user_guide
+	    ${CMAKE_BINARY_DIR}/docs/pdf_user_guide
 	    ${SUPPORTED_OPS_GEN}
 	    poponnx_examples
             poponnx_core
@@ -72,13 +79,13 @@ if (BUILD_DOCS)
     COMMAND ${GCDOC} -v -x ${CMAKE_BINARY_DIR}/docs/Doxyfile
                      -r ${RELEASE}
 		     -b html
-		     ${CMAKE_BINARY_DIR}/docs/user_guide
+		     ${CMAKE_BINARY_DIR}/docs/html_user_guide
 		     ${CMAKE_BINARY_DIR}/docs/html
     COMMENT "Building html documentation from 'user_guide' directory"
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/docs
     DEPENDS ${CMAKE_BINARY_DIR}/docs/Doxyfile
             ${CMAKE_BINARY_DIR}/docs/html/doxygen/latex
-	    ${CMAKE_BINARY_DIR}/docs/user_guide
+	    ${CMAKE_BINARY_DIR}/docs/html_user_guide
 	    ${SUPPORTED_OPS_GEN}
 	    poponnx_examples
             poponnx_core

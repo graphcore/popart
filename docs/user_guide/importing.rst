@@ -1,5 +1,5 @@
 Importing graphs
---------------
+----------------
 
 The Session class is the runtime environment for executing graphs on the IPU
 hardware. It can read an ONNX graph from a serialized ONNX model protobuf
