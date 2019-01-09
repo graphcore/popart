@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <onnx/defs/schema.h>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/subsample.hpp>
 #include <poponnx/opmanager.hpp>

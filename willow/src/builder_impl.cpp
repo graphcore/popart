@@ -17,8 +17,9 @@ namespace poponnx {
 
 // Supported IR version
 const static uint64_t irVersion = 3;
-// Supported operator set version
-const static int64_t operatorSetVersion = 9;
+// Supported operator set versions
+const static int64_t onnxOperatorSetVersion      = 9;
+const static int64_t graphcoreOperatorSetVersion = 1;
 
 static void check_arg_range(const std::vector<TensorId> &args,
                             int min,
@@ -126,7 +127,7 @@ void BuilderImpl::configure() {
   next_id_ = 0;
   model_.set_ir_version(irVersion);
 
-  addOpsetRequirement(ONNX_NAMESPACE::ONNX_DOMAIN, operatorSetVersion);
+  addOpsetRequirement(ONNX_NAMESPACE::ONNX_DOMAIN, onnxOperatorSetVersion);
 
   model_.mutable_graph()->set_name("BuilderGraph");
 }
@@ -754,6 +755,11 @@ TensorId BuilderImpl::subsample(const std::vector<TensorId> &args,
                                 const std::vector<int64_t> &strides,
                                 const std::string &name) {
 
+  for (int i = 0; i < strides.size(); ++i) {
+    if (strides[i] == 0)
+      throw error("Strides invalid. 0 stride at index {}", i);
+  }
+
   auto id = getNextId();
 
   auto *graph = model_.mutable_graph();
@@ -1356,9 +1362,15 @@ void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
 
   // Check the opset versions.
   for (auto opset : model_.opset_import()) {
-    if (opset.version() != operatorSetVersion) {
+    if (opset.domain() == "" && opset.version() != onnxOperatorSetVersion) {
       throw error("Expecting ONNX opset version {}, but got {}.",
-                  operatorSetVersion,
+                  onnxOperatorSetVersion,
+                  opset.version());
+    }
+    if (opset.domain() == Domain::ai_graphcore &&
+        opset.version() != graphcoreOperatorSetVersion) {
+      throw error("Expecting GC opset version {}, but got {}.",
+                  graphcoreOperatorSetVersion,
                   opset.version());
     }
   }
