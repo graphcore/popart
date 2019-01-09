@@ -139,6 +139,12 @@ TensorId Builder::floor(const std::vector<TensorId> &args,
   return impl_->floor(args, name);
 }
 
+TensorId Builder::gather(const std::vector<TensorId> &args,
+                         int64_t axis,
+                         const std::string &name) {
+  return impl_->gather(args, axis, name);
+}
+
 TensorId Builder::greater(const std::vector<TensorId> &args,
                           const std::string &name) {
   return impl_->greater(args, name);

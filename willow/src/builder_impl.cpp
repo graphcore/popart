@@ -373,6 +373,24 @@ TensorId BuilderImpl::floor(const std::vector<TensorId> &args,
   return add_simple_op(args, Onnx::Operators::Floor, 1, name);
 }
 
+TensorId BuilderImpl::gather(const std::vector<TensorId> &args,
+                             int64_t axis,
+                             const std::string &name) {
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type(Onnx::Operators::Gather.type);
+  add_args(node, args);
+  node->add_output(id);
+
+  addNodeAttribute("axis", axis, {id});
+
+  finalizeOp(node, name);
+
+  return id;
+}
+
 TensorId BuilderImpl::greater(const std::vector<TensorId> &args,
                               const std::string &name) {
   return add_simple_op(args, Onnx::Operators::Greater, 2, name);

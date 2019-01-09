@@ -303,6 +303,19 @@ public:
                  const std::string &name = {});
 
   /**
+   * Add the gather operator to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Gather
+   *
+   * \param args The tensor argument
+   * \param name Optional identifer for operation
+   * \return The name of the result tensor
+   */
+  TensorId gather(const std::vector<TensorId> &args,
+                  int64_t axis            = 0,
+                  const std::string &name = {});
+
+  /**
    * Add the greater-than operator to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Greater

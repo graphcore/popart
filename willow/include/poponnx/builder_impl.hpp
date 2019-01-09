@@ -60,6 +60,9 @@ public:
   TensorId equal(const std::vector<TensorId> &args, const std::string &name);
   TensorId exp(const std::vector<TensorId> &args, const std::string &name);
   TensorId floor(const std::vector<TensorId> &args, const std::string &name);
+  TensorId gather(const std::vector<TensorId> &args,
+                  int64_t axis,
+                  const std::string &name);
   TensorId greater(const std::vector<TensorId> &args, const std::string &name);
   TensorId identity(const std::vector<TensorId> &args, const std::string &name);
   TensorId less(const std::vector<TensorId> &args, const std::string &name);

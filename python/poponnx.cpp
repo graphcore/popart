@@ -416,6 +416,11 @@ PYBIND11_MODULE(poponnx_core, m) {
            &Builder::floor,
            py::arg("args"),
            py::arg("debugPrefix") = std::string())
+      .def("gather",
+           &Builder::gather,
+           py::arg("args"),
+           py::arg("axis"),
+           py::arg("debugPrefix") = std::string())
       .def("greater",
            &Builder::greater,
            py::arg("args"),
