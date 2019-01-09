@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_ATTRIBUTES_HPP
 
 #include <map>
+#include <string>
 #include <vector>
 #include <poponnx/names.hpp>
 
