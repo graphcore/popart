@@ -5,6 +5,10 @@
 
 namespace poponnx {
 
+using IpuNumber = int64_t;
+
+IpuNumber getIpuNumber(const Op *op);
+
 class InterIpuCopy : public Transform {
 public:
   static std::size_t id();
