@@ -56,8 +56,8 @@ IpuNumber getIpuNumber(const Op *op) {
 
 bool InterIpuCopy::apply(Ir &ir) const {
 
-  // If the first op does not have an ipuNumber attribute, assume that no op's have
-  // the ipuNumber set and so there is no inter ipu copy required.
+  // If the first op does not have an ipuNumber attribute, assume that no op's
+  // have the ipuNumber set and so there is no inter ipu copy required.
   if (ir.getOps().size() > 0 && ir.getOps().begin()->second->nAtts.hasAttribute(
                                     sVirtualGraphAttribute) == false) {
     return false;
@@ -101,7 +101,7 @@ bool InterIpuCopy::apply(Ir &ir) const {
               bool alreadyCopied = copiedTensors.find(tensor->id, toIpu);
 
               if (alreadyCopied == true) {
-                // We have already copied this tensor but we still need to 
+                // We have already copied this tensor but we still need to
                 // update the 'to' op to use the copied tensor
                 logging::ir::debug("Already copied output tensor of {}:{} from "
                                    "ipu {} to ipu {}",

@@ -552,7 +552,7 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
     std::vector<int64_t> ipus;
     for (auto *op : tensor->consumers.getOps()) {
       auto &graph = getOpx(op->id)->graph();
-      
+
       int64_t index = 0;
       op->nAtts.setIfPresent(index, sVirtualGraphAttribute);
 

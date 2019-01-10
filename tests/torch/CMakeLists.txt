@@ -62,3 +62,12 @@ add_test(NAME model_reshape
 add_test(NAME model_cat
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model_cat.py)
+
+add_test(NAME model_softmax
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/model_softmax.py)
+
+
+add_test(NAME model_nll
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/model_nll.py)

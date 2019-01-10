@@ -4,8 +4,8 @@
 #include <poponnx/popx/op/nllx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
 
-#include "popops/Encoding.hpp"
 #include <popops/ElementWise.hpp>
+#include <popops/Encoding.hpp>
 #include <popops/Reduce.hpp>
 
 namespace poponnx {
@@ -67,7 +67,7 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   const poplar::Tensor &probs = get(probsId);
 
   // inverse probabilities, we take max(eps, p) to make division safe
-  float eps       = 1e-7f;
+  float eps       = 1e-10f;
   auto smallConst = graph().addConstant(probs.elementType(), {1}, eps);
   auto safeProbs  = popops::map(graph(),
                                popops::expr::BinaryOpType::MAXIMUM,

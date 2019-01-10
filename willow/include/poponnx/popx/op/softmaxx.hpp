@@ -18,11 +18,14 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
+// compute dL/dv from v and dp, where p = softmax(v)
 class SoftmaxGradOpx : public Opx {
 public:
   SoftmaxGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
 };
 
+// compute dL/dv from lab and p, where p = softmax(v), L = nll(p, lab)
 class SoftmaxGradDirectOpx : public Opx {
 public:
   SoftmaxGradDirectOpx(Op *, Devicex *);
