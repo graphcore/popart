@@ -1,8 +1,11 @@
 #ifndef GUARD_NEURALNET_TENSORINFO_HPP
 #define GUARD_NEURALNET_TENSORINFO_HPP
 
+#include <algorithm>
+#include <boost/range/algorithm.hpp>
 #include <sstream>
 #include <vector>
+#include <poponnx/error.hpp>
 #include <poponnx/names.hpp>
 
 namespace poponnx {
@@ -56,6 +59,42 @@ template <typename T> std::vector<T> squeeze(const std::vector<T> &v) {
     }
   }
   return w;
+}
+
+template <typename T>
+std::vector<T> squeeze(const std::vector<T> &v, const std::vector<T> &axes) {
+  std::vector<T> new_shape;
+  new_shape.reserve(v.size());
+  for (int i = 0; i < v.size(); i++) {
+    if (boost::find(axes, i) == axes.end()) {
+      new_shape.push_back(v[i]);
+    }
+  }
+
+  return new_shape;
+}
+
+template <typename T>
+std::vector<T> unsqueeze(const std::vector<T> &v, const std::vector<T> &axes) {
+  if (!std::is_sorted(axes.begin(), axes.end())) {
+    throw error("`axes' input to `unsqueeze' function must be sorted");
+  }
+
+  std::vector<T> new_shape;
+  new_shape.reserve(v.size() + axes.size());
+
+  auto it = v.begin();
+
+  for (int i = 0; i < v.size() + axes.size(); i++) {
+    if (boost::find(axes, i) == axes.end()) {
+      new_shape.push_back(*it);
+      it++;
+    } else {
+      new_shape.push_back(1);
+    }
+  }
+
+  return new_shape;
 }
 
 // Calculate the numpy broadcast shape as described in

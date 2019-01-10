@@ -85,6 +85,12 @@ public:
   TensorId sinh(const std::vector<TensorId> &args, const std::string &name);
   TensorId softsign(const std::vector<TensorId> &args, const std::string &name);
   TensorId sqrt(const std::vector<TensorId> &args, const std::string &name);
+  TensorId squeeze(const std::vector<TensorId> &args,
+                   const std::vector<int64_t> axes,
+                   const std::string &name);
+  TensorId unsqueeze(const std::vector<TensorId> &args,
+                     const std::vector<int64_t> axes,
+                     const std::string &name);
   TensorId sub(const std::vector<TensorId> &args, const std::string &name);
   TensorId sum(const std::vector<TensorId> &args, const std::string &name);
   TensorId tan(const std::vector<TensorId> &args, const std::string &name);

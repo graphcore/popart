@@ -240,6 +240,18 @@ TensorId Builder::sqrt(const std::vector<TensorId> &args,
   return impl_->sqrt(args, name);
 }
 
+TensorId Builder::squeeze(const std::vector<TensorId> &args,
+                          const std::vector<int64_t> axes,
+                          const std::string &name) {
+  return impl_->squeeze(args, axes, name);
+}
+
+TensorId Builder::unsqueeze(const std::vector<TensorId> &args,
+                            const std::vector<int64_t> axes,
+                            const std::string &name) {
+  return impl_->unsqueeze(args, axes, name);
+}
+
 TensorId Builder::sub(const std::vector<TensorId> &args,
                       const std::string &name) {
   return impl_->sub(args, name);

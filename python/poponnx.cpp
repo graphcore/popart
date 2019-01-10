@@ -501,6 +501,16 @@ PYBIND11_MODULE(poponnx_core, m) {
            &Builder::sqrt,
            py::arg("args"),
            py::arg("debugPrefix") = std::string())
+      .def("squeeze",
+           &Builder::squeeze,
+           py::arg("args"),
+           py::arg("axes"),
+           py::arg("debugPrefix") = std::string())
+      .def("unsqueeze",
+           &Builder::unsqueeze,
+           py::arg("args"),
+           py::arg("axes"),
+           py::arg("debugPrefix") = std::string())
       .def("sub",
            &Builder::sub,
            py::arg("args"),

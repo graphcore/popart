@@ -486,6 +486,46 @@ TensorId BuilderImpl::sqrt(const std::vector<TensorId> &args,
   return add_simple_op(args, Onnx::Operators::Sqrt, 1, name);
 }
 
+TensorId BuilderImpl::squeeze(const std::vector<TensorId> &args,
+                              const std::vector<int64_t> axes,
+                              const std::string &name) {
+  check_arg_count(args, 1, Onnx::Operators::Squeeze.type);
+
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type(Onnx::Operators::Squeeze.type);
+  add_args(node, args);
+  node->add_output(id);
+
+  addNodeAttribute("axes", axes, {id});
+
+  finalizeOp(node, name);
+
+  return id;
+}
+
+TensorId BuilderImpl::unsqueeze(const std::vector<TensorId> &args,
+                                const std::vector<int64_t> axes,
+                                const std::string &name) {
+  check_arg_count(args, 1, Onnx::Operators::Unsqueeze.type);
+
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type(Onnx::Operators::Unsqueeze.type);
+  add_args(node, args);
+  node->add_output(id);
+
+  addNodeAttribute("axes", axes, {id});
+
+  finalizeOp(node, name);
+
+  return id;
+}
+
 TensorId BuilderImpl::sub(const std::vector<TensorId> &args,
                           const std::string &name) {
   return add_simple_op(args, Onnx::Operators::Sub, 2, name);

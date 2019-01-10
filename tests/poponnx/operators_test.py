@@ -1325,6 +1325,7 @@ def test_batchnorm_test_3(op_tester):
         return [_input]
 
     op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.check_shapes = False
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -1519,6 +1520,134 @@ def test_log_grad(op_tester):
         return [b, a.grad, None]
 
     op_tester.passes = ['PreUniRepl', 'LogGradOp']
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_squeeze(op_tester):
+    d1 = np.random.rand(2, 1, 3, 4, 1).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.squeeze([i1], axes=[])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        o = np.squeeze(d1)
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_squeeze_limited(op_tester):
+    d1 = np.random.rand(2, 1, 3, 4, 1).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.squeeze([i1], axes=[1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        o = np.squeeze(d1, axis=1)
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_squeeze_unsorted_axes(op_tester):
+    d1 = np.random.rand(2, 1, 3, 1, 4, 1).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.squeeze([i1], axes=[5, 1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        o = np.squeeze(d1, axis=5)
+        o = np.squeeze(o, axis=1)
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_squeeze_grad(op_tester):
+    d1 = np.random.rand(2, 1, 3, 4, 1).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.squeeze([i1], axes=[])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        i1 = torch.tensor(d1, requires_grad=True)
+        o = torch.squeeze(i1)
+        d__o = ref_data.getOutputTensorGrad(0)
+        o.backward(torch.tensor(d__o))
+        return [o, i1.grad, None]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_squeeze_limited_grad(op_tester):
+    d1 = np.random.rand(2, 1, 3, 4, 1).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.squeeze([i1], axes=[1])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        i1 = torch.tensor(d1, requires_grad=True)
+        o = torch.squeeze(i1, dim=1)
+        d__o = ref_data.getOutputTensorGrad(0)
+        o.backward(torch.tensor(d__o))
+        return [o, i1.grad, None]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_unsqueeze(op_tester):
+    d1 = np.random.rand(3, 4, 5).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.unsqueeze([i1], axes=[0, 4])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        o = d1
+        for i in (0, 4):
+            o = np.expand_dims(o, axis=i)
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_unsqueeze_grad(op_tester):
+    d1 = np.random.rand(3, 4, 5).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.unsqueeze([i1], axes=[0, 4])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        o = torch.unsqueeze(a, 0)
+        o = torch.unsqueeze(o, 4)
+        d__o = ref_data.getOutputTensorGrad(0)
+        o.backward(torch.tensor(d__o))
+        return [o, a.grad, None]
+
+    op_tester.passes = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -2060,6 +2189,7 @@ def op_tester(tmpdir):
             self.logging_dir = logging_dir
             self.rtol = 1e-05
             self.atol = 1e-08
+            self.check_shapes = True
 
         def run(self, init_builder, reference, step_type='infer'):
             assert step_type in ('infer', 'train')
@@ -2126,6 +2256,10 @@ def op_tester(tmpdir):
             for index, key in enumerate(anchors):
                 if ref_out[index] is not None:
                     print('Testing anchor "{}"...'.format(key))
+
+                    if self.check_shapes:
+                        assert anchor_map[key].shape == ref_out[index].shape
+
                     if (np.allclose(anchor_map[key], ref_out[index], self.rtol,
                                     self.atol) == False):
                         print('rtol:{} atol:{}'.format(self.rtol, self.atol))
@@ -2133,9 +2267,10 @@ def op_tester(tmpdir):
                         print('Torch : {}', ref_out[index])
                         print('{}', np.subtract(anchor_map[key],
                                                 ref_out[index]))
-                        print('{}',
-                              np.isclose(anchor_map[key], ref_out[index],
-                                         self.rtol, self.atol))
+                        print(
+                            '{}',
+                            np.isclose(anchor_map[key], ref_out[index],
+                                       self.rtol, self.atol))
 
                     assert np.allclose(anchor_map[key], ref_out[index],
                                        self.rtol, self.atol)

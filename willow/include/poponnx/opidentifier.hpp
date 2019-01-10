@@ -348,7 +348,7 @@ const static AiGraphcoreOpIdV1 TanhGrad("TanhGrad");
 // constexpr static char Tile[] = "Tile";
 // constexpr static char TopK[] = "TopK";
 const static AiGraphcoreOpIdV1 TransposeGrad("TransposeGrad");
-// constexpr static char Unsqueeze[] = "Unsqueeze";
+const static AiGraphcoreOpIdV1 UnsqueezeGrad("UnsqueezeGrad");
 // constexpr static char Upsample[] = "Upsample";
 // constexpr static char Xor[] = "Xor";
 // // experimental

@@ -1,16 +1,16 @@
-#ifndef GUARD_NEURALNET_SQUEEZE_HPP
-#define GUARD_NEURALNET_SQUEEZE_HPP
+#ifndef GUARD_NEURALNET_UNSQUEEZE_HPP
+#define GUARD_NEURALNET_UNSQUEEZE_HPP
 
 #include <poponnx/op.hpp>
 
 namespace poponnx {
 
-class SqueezeOp : public Op {
+class UnsqueezeOp : public Op {
 public:
-  SqueezeOp(const OperatorIdentifier &_opid,
-            Ir *_ir,
-            const std::string &name = "",
-            const Attributes &_attr = {});
+  UnsqueezeOp(const OperatorIdentifier &_opid,
+              Ir *_ir,
+              const std::string &name = "",
+              const Attributes &_attr = {});
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
   std::unique_ptr<Op> clone() const final;
@@ -20,13 +20,11 @@ public:
 
 private:
   std::vector<int64_t> axes;
-
-  void setAxesToDefault();
 };
 
-class SqueezeGradOp : public Op {
+class UnsqueezeGradOp : public Op {
 public:
-  SqueezeGradOp(SqueezeOp *);
+  UnsqueezeGradOp(UnsqueezeOp *);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
@@ -36,7 +34,7 @@ public:
 
 private:
   // The shape and type of the input to the constructing forward op
-  TensorInfo unsqueezedInfo;
+  TensorInfo squeezedInfo;
 };
 
 } // namespace poponnx

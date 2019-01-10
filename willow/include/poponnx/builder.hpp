@@ -537,6 +537,34 @@ public:
                 const std::string &name = {});
 
   /**
+   * Add the squeeze operator to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Squeeze
+   *
+   * \param args The tensor argument
+   * \param axes The dimensions to squeeze
+   * \param name Optional identifer for operation
+   * \return The name of the result tensor
+   */
+  TensorId squeeze(const std::vector<TensorId> &args,
+                   const std::vector<int64_t> axes,
+                   const std::string &name = {});
+
+  /**
+   * Add the unsqueeze operator to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Unsqueeze
+   *
+   * \param args The tensor argument
+   * \param axes The dimensions to insert
+   * \param name Optional identifer for operation
+   * \return The name of the result tensor
+   */
+  TensorId unsqueeze(const std::vector<TensorId> &args,
+                     const std::vector<int64_t> axes,
+                     const std::string &name = {});
+
+  /**
    * Add the subtract operator to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sub
