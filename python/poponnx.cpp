@@ -313,6 +313,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("getSummaryReport", &Session::getSummaryReport)
       .def("getGraphReport", &Session::getGraphReport)
       .def("getExecutionReport", &Session::getExecutionReport)
+      .def("getTensorTileMap", &Session::getTensorTileMap)
       .def("resetHostWeights", &Session::resetHostWeights);
 
   py::class_<Builder::BatchNormalizationTrainingOutputs>(

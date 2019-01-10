@@ -64,6 +64,11 @@ class OutputMapWrapper;
 class Vertex;
 enum class TensorType;
 
+// A mapping from tensor name to the layout on each tile
+using TensorInterval     = std::pair<size_t, size_t>;
+using TensorIntervalList = std::vector<TensorInterval>;
+using TensorTileMap = std::map<std::string, std::vector<TensorIntervalList>>;
+
 // equivalent to decltype(&onnx::NodeProto().attribute(0))
 using onnxAttPtr     = const onnx::AttributeProto *;
 using NodeAttributes = google::protobuf::RepeatedPtrField<onnx::AttributeProto>;

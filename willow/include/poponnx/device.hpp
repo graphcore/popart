@@ -25,6 +25,7 @@ public:
   virtual std::string getSummaryReport() const   = 0;
   virtual std::string getGraphReport() const     = 0;
   virtual std::string getExecutionReport() const = 0;
+  virtual TensorTileMap getTensorTileMap() const = 0;
 
 private:
   const Ir &_ir;

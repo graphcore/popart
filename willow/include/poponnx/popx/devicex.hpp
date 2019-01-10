@@ -102,12 +102,10 @@ public:
   void insert(TensorId, const poplar::Tensor &);
   const poplar::Tensor &get(TensorId) const;
   bool contains(TensorId) const;
+  const std::map<TensorId, poplar::Tensor> &getTensors() const;
 
 private:
   std::map<TensorId, poplar::Tensor> tensors_;
-  // This Ir is used to compare the shape
-  // of a poplar::Tensor added with `insert',
-  // with the corresponding poponnx::Tensor's
   const Ir &ir;
 };
 
@@ -126,6 +124,7 @@ public:
   virtual std::string getSummaryReport() const override final;
   virtual std::string getGraphReport() const override final;
   virtual std::string getExecutionReport() const override final;
+  virtual TensorTileMap getTensorTileMap() const override final;
 
   PopPrograms progs;
 

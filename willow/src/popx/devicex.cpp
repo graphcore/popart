@@ -97,6 +97,10 @@ const poplar::Tensor &PopTensors::get(TensorId id) const {
   return found->second;
 }
 
+const std::map<TensorId, poplar::Tensor> &PopTensors::getTensors() const {
+  return tensors_;
+}
+
 PopPrograms::PopPrograms(const int repeatCount_) : repeatCount(repeatCount_) {
   if (repeatCount_ <= 0) {
     throw error("Program repeat count must be greater than zero");
@@ -187,7 +191,7 @@ poplar::Graph &Devicex::graph(int64_t virtualGraphIndex) {
                 virtualGraphIndex,
                 virtualGraphs.size());
   }
-  return virtualGraphs[virtualGraphIndex];
+  return virtualGraphs.at(virtualGraphIndex);
 }
 
 Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
@@ -1082,6 +1086,25 @@ std::string Devicex::getExecutionReport() const {
   auto report = pEngine->getExecutionReport(reportOptions);
   report.serialize(ss, poplar::SerializationFormat::JSON);
   return ss.str();
+}
+
+TensorTileMap Devicex::getTensorTileMap() const {
+  TensorTileMap map;
+  for (const auto &t : tensors.getTensors()) {
+    std::vector<TensorIntervalList> mapping;
+    for (auto tile : pMasterGraph->getTileMapping(t.second)) {
+      TensorIntervalList intervalList;
+      std::transform(tile.begin(),
+                     tile.end(),
+                     std::back_inserter(intervalList),
+                     [](poplar::Interval i) {
+                       return std::pair<size_t, size_t>(i.begin(), i.end());
+                     });
+      mapping.emplace_back(intervalList);
+    }
+    map.insert(std::make_pair(t.first, mapping));
+  }
+  return map;
 }
 
 poplar::Type popType(const TensorInfo &info) {

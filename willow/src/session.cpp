@@ -184,6 +184,11 @@ std::string Session::getExecutionReport() const {
   return device_->getExecutionReport();
 }
 
+TensorTileMap Session::getTensorTileMap() const {
+  logging::session::trace("Session::getTensorTileMap");
+  return device_->getTensorTileMap();
+}
+
 void Session::resetHostWeights(const std::string &modelProtoOrFilename) {
   logging::session::trace("Session::resetHostWeights");
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);

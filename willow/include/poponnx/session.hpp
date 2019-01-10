@@ -130,6 +130,8 @@ public:
    * The options which were given to the constructor will influence the
    * information in the report.
    *
+   * This may only be called after the `prepareDevice()` call has been made.
+   *
    * \return a string containing the report
    */
   std::string getSummaryReport() const;
@@ -139,6 +141,8 @@ public:
    *
    * The options which were given to the constructor will influence the
    * information in the report.
+   *
+   * This may only be called after the `prepareDevice()` call has been made.
    *
    * \return a string containing the graph (compilation) report
    */
@@ -150,9 +154,20 @@ public:
    * The options which were given to the constructor will influence the
    * information in the report.
    *
+   * This may only be called after the `prepareDevice()` call has been made.
+   *
    * \return a string containing the execution report
    */
   std::string getExecutionReport() const;
+
+  /**
+   * Retrieve the tensor tile mapping from the poplar::Graph
+   *
+   * This may only be called after the `prepareDevice()` call has been made.
+   *
+   *  \return a TensorTileMap object for all tensors in the graph
+   */
+  TensorTileMap getTensorTileMap() const;
 
   /**
    * Reset the weights with the weights in a ONNX model that differs to the
