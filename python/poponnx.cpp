@@ -437,6 +437,10 @@ PYBIND11_MODULE(poponnx_core, m) {
            &Builder::log,
            py::arg("args"),
            py::arg("debugPrefix") = std::string())
+      .def("logsoftmax",
+           &Builder::logsoftmax,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
       .def("max",
            &Builder::max,
            py::arg("args"),

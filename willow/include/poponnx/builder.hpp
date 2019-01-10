@@ -363,6 +363,19 @@ public:
   TensorId log(const std::vector<TensorId> &args, const std::string &name = {});
 
   /**
+   * Add a LogSoftmax operation to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#LogSoftmax
+   *
+   * \param args Tensor T
+   * \param name Optional identifer for operation
+   * \return The name of the result tensor
+   *
+   */
+  TensorId logsoftmax(const std::vector<TensorId> &args,
+                      const std::string &name = {});
+
+  /**
    * Add the maximum operator to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Max

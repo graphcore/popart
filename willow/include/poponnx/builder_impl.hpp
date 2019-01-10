@@ -67,6 +67,8 @@ public:
   TensorId identity(const std::vector<TensorId> &args, const std::string &name);
   TensorId less(const std::vector<TensorId> &args, const std::string &name);
   TensorId log(const std::vector<TensorId> &args, const std::string &name);
+  TensorId logsoftmax(const std::vector<TensorId> &args,
+                      const std::string &name);
   TensorId max(const std::vector<TensorId> &args, const std::string &name);
   TensorId mean(const std::vector<TensorId> &args, const std::string &name);
   TensorId min(const std::vector<TensorId> &args, const std::string &name);

@@ -124,6 +124,11 @@ def test_basic():
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
+    o = builder.logsoftmax([i1])
+    assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
+    old_o = o
+
     o = builder.max([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
@@ -190,6 +195,11 @@ def test_basic():
     old_o = o
 
     o = builder.softsign([i1])
+    assert (old_o != o)
+    assert (builder.getTensorShape(o) == [1, 2, 32, 32])
+    old_o = o
+
+    o = builder.softmax([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o

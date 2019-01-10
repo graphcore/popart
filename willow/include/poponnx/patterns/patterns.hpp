@@ -148,6 +148,9 @@ public:
   }
   bool isExpGradOpEnabled() { return isPatternEnabled(PatternType::EXPGRADOP); }
   bool isLogGradOpEnabled() { return isPatternEnabled(PatternType::LOGGRADOP); }
+  bool isLogSoftmaxOpEnabled() {
+    return isPatternEnabled(PatternType::LOGSOFTMAXOP);
+  }
   bool isGemmDecompositionEnabled() {
     return isPatternEnabled(PatternType::GEMMDECOMPOSITION);
   }
@@ -208,6 +211,9 @@ public:
   }
   Patterns &enableLogGradOp(bool v) {
     return enablePattern(PatternType::LOGGRADOP, v);
+  }
+  Patterns &enableLogSoftmaxOp(bool v) {
+    return enablePattern(PatternType::LOGSOFTMAXOP, v);
   }
   Patterns &enableGemmDecomposition(bool v) {
     return enablePattern(PatternType::GEMMDECOMPOSITION, v);

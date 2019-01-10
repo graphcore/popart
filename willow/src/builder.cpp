@@ -165,6 +165,11 @@ TensorId Builder::log(const std::vector<TensorId> &args,
   return impl_->log(args, name);
 }
 
+TensorId Builder::logsoftmax(const std::vector<TensorId> &args,
+                             const std::string &name) {
+  return impl_->logsoftmax(args, name);
+}
+
 TensorId Builder::max(const std::vector<TensorId> &args,
                       const std::string &name) {
   return impl_->max(args, name);

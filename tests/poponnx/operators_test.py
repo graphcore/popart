@@ -697,6 +697,51 @@ def test_sigmoid_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_softmax(op_tester):
+    # create test data
+    # Note: poplar implementation of softmax
+    # requires outer 'batch' dimension
+    d1 = np.random.rand(1, 4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.softmax([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        # 'dim' corresponds to dim index over which
+        # to perform softmax
+        lsm = torch.nn.Softmax(dim=1)
+        b = lsm(a)
+        return [b]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_softmax_grad(op_tester):
+    # create test data
+    d1 = np.random.rand(1, 4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.softmax([i1])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        sm = torch.nn.Softmax(dim=1)
+        b = sm(a)
+        d__o = ref_data.getOutputTensorGrad(0)
+        b.backward(torch.tensor(d__o))
+        return [b, a.grad, None]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
+
+
 def subsample_helper(op_tester, input, strides, output, grad_ouput):
     # create test data
     d1 = input
@@ -1523,6 +1568,52 @@ def test_log_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_logsoftmax(op_tester):
+    # create test data
+    # Note: poplar implementation of softmax
+    # requires outer 'batch' dimension
+    d1 = np.random.rand(1, 4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.logsoftmax([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        # 'dim' corresponds to dim index over which
+        # to perform softmax
+        lsm = torch.nn.LogSoftmax(dim=1)
+        b = lsm(a)
+        return [b]
+
+    op_tester.passes = ['LogSoftmaxOp', 'LogGradOp']
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_logsoftmax_grad(op_tester):
+    # create test data
+    d1 = np.random.rand(1, 4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.logsoftmax([i1])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        lsm = torch.nn.LogSoftmax(dim=1)
+        b = lsm(a)
+        d__o = ref_data.getOutputTensorGrad(0)
+        b.backward(torch.tensor(d__o))
+        return [b, a.grad, None]
+
+    op_tester.passes = ['PreUniRepl', 'LogSoftmaxOp', 'LogGradOp']
+    op_tester.run(init_builder, reference, 'train')
+
+
 def test_squeeze(op_tester):
     d1 = np.random.rand(2, 1, 3, 4, 1).astype(np.float32)
 
@@ -2267,10 +2358,9 @@ def op_tester(tmpdir):
                         print('Torch : {}', ref_out[index])
                         print('{}', np.subtract(anchor_map[key],
                                                 ref_out[index]))
-                        print(
-                            '{}',
-                            np.isclose(anchor_map[key], ref_out[index],
-                                       self.rtol, self.atol))
+                        print('{}',
+                              np.isclose(anchor_map[key], ref_out[index],
+                                         self.rtol, self.atol))
 
                     assert np.allclose(anchor_map[key], ref_out[index],
                                        self.rtol, self.atol)

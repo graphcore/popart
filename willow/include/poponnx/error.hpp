@@ -56,7 +56,7 @@ public:
   }
 };
 
-enum ErrorSource {
+enum class ErrorSource {
   poponnx = 0,
   poplar  = 1,
   poplibs = 2,

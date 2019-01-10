@@ -17,7 +17,7 @@ const OperatorIdentifier &SoftmaxGradDirect::get1() const {
 
 OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
   // The root of the pattern is an NLLGrad,
-  // we need to move from it th the SoftmaxOp
+  // we need to move from it to the SoftmaxOp
   Ir *pir     = opRoot->pir;
   Op *nllgrad = opRoot;
 

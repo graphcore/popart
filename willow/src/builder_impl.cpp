@@ -411,6 +411,28 @@ TensorId BuilderImpl::log(const std::vector<TensorId> &args,
   return add_simple_op(args, Onnx::Operators::Log, 1, name);
 }
 
+TensorId BuilderImpl::logsoftmax(const std::vector<TensorId> &args,
+                                 const std::string &name) {
+  check_arg_count(args, 1, Onnx::Operators::LogSoftmax.type);
+
+  auto id = getNextId();
+
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+  node->set_op_type(Onnx::Operators::LogSoftmax.type);
+  add_args(node, args);
+  node->add_output(id);
+
+  int64_t axis = 1;
+  addNodeAttribute("axis", axis, {id});
+
+  onnx::shape_inference::InferShapes(model_);
+
+  finalizeOp(node, name);
+
+  return id;
+}
+
 TensorId BuilderImpl::max(const std::vector<TensorId> &args,
                           const std::string &name) {
   return add_simple_op(args, Onnx::Operators::Max, 2, name);
