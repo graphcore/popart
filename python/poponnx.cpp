@@ -109,6 +109,21 @@ private:
   std::map<TensorId, py::array> outputs;
 };
 
+class AttributeContextManager {
+  Builder &builder;
+  std::string attribute;
+  uint64_t index;
+
+public:
+  AttributeContextManager(Builder &_builder,
+                          const std::string &_attribute,
+                          int64_t _i)
+      : builder(_builder), attribute(_attribute), index(_i) {}
+
+  void enter() { builder.setAttribute(sVirtualGraphAttribute, index); }
+  void exit() { builder.clearAttribute(sVirtualGraphAttribute); }
+};
+
 PYBIND11_MODULE(poponnx_core, m) {
   m.doc() = "binding for C++ poponnx library";
 
@@ -726,6 +741,13 @@ PYBIND11_MODULE(poponnx_core, m) {
                &Builder::virtualGraph),
            py::arg("nodeOutputNames"),
            py::arg("value") = 0)
+      .def("virtualGraph",
+           [](Builder &self, int64_t index) -> AttributeContextManager {
+             AttributeContextManager acm(self, sVirtualGraphAttribute, index);
+             return acm;
+           },
+           py::arg("value"))
+
       .def("getVirtualGraph",
            static_cast<int64_t (Builder::*)(const TensorId &)>(
                &Builder::getVirtualGraph),
@@ -739,6 +761,13 @@ PYBIND11_MODULE(poponnx_core, m) {
            static_cast<bool (Builder::*)(const TensorId &)>(
                &Builder::getRecomputeOutputInBackwardPass),
            py::arg("nodeOutputNames"));
+
+  py::class_<AttributeContextManager>(m, "AttributeContextManager")
+      .def("__enter__", &AttributeContextManager::enter)
+      .def("__exit__",
+           [](AttributeContextManager &self, void *, void *, void *) {
+             self.exit();
+           });
 
   // PyBinding to a singleton
   py::class_<DeviceManager, std::unique_ptr<DeviceManager, py::nodelete>>(

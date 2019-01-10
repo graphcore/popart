@@ -323,7 +323,7 @@ def test_basic():
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.mean([])
-    assert (e_info.value.args[0].startswith("Mean has no arguments"))
+    assert (e_info.value.args[0].startswith("Mean has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.min([])
@@ -384,7 +384,7 @@ def test_basic():
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.sum([])
-    assert (e_info.value.args[0].startswith("Sum has no arguments"))
+    assert (e_info.value.args[0].startswith("Sum has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.tan([])

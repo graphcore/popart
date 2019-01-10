@@ -35,148 +35,6 @@ public:
 
   TensorId constant(const ConstVoidData &initData, const std::string &name);
 
-  // Operations requiring only tensor inputs
-  TensorId abs(const std::vector<TensorId> &args, const std::string &name);
-  TensorId acos(const std::vector<TensorId> &args, const std::string &name);
-  TensorId acosh(const std::vector<TensorId> &args, const std::string &name);
-  TensorId add(const std::vector<TensorId> &args, const std::string &name);
-  TensorId logical_and(const std::vector<TensorId> &args,
-                       const std::string &name);
-  TensorId asin(const std::vector<TensorId> &args, const std::string &name);
-  TensorId asinh(const std::vector<TensorId> &args, const std::string &name);
-  TensorId atan(const std::vector<TensorId> &args, const std::string &name);
-  TensorId atanh(const std::vector<TensorId> &args, const std::string &name);
-  TensorId cast(const std::vector<TensorId> &args,
-                onnx::TensorProto_DataType to,
-                const std::string &name);
-  TensorId ceil(const std::vector<TensorId> &args, const std::string &name);
-  TensorId concat(const std::vector<TensorId> &args,
-                  int64_t dimension,
-                  const std::string &name);
-  TensorId cos(const std::vector<TensorId> &args, const std::string &name);
-  TensorId cosh(const std::vector<TensorId> &args, const std::string &name);
-  TensorId div(const std::vector<TensorId> &args, const std::string &name);
-  TensorId elu(const std::vector<TensorId> &args, const std::string &name);
-  TensorId equal(const std::vector<TensorId> &args, const std::string &name);
-  TensorId exp(const std::vector<TensorId> &args, const std::string &name);
-  TensorId floor(const std::vector<TensorId> &args, const std::string &name);
-  TensorId gather(const std::vector<TensorId> &args,
-                  int64_t axis,
-                  const std::string &name);
-  TensorId greater(const std::vector<TensorId> &args, const std::string &name);
-  TensorId identity(const std::vector<TensorId> &args, const std::string &name);
-  TensorId less(const std::vector<TensorId> &args, const std::string &name);
-  TensorId log(const std::vector<TensorId> &args, const std::string &name);
-  TensorId logsoftmax(const std::vector<TensorId> &args,
-                      const std::string &name);
-  TensorId max(const std::vector<TensorId> &args, const std::string &name);
-  TensorId mean(const std::vector<TensorId> &args, const std::string &name);
-  TensorId min(const std::vector<TensorId> &args, const std::string &name);
-  TensorId mul(const std::vector<TensorId> &args, const std::string &name);
-  TensorId neg(const std::vector<TensorId> &args, const std::string &name);
-  TensorId logical_not(const std::vector<TensorId> &args,
-                       const std::string &name);
-  TensorId logical_or(const std::vector<TensorId> &args,
-                      const std::string &name);
-  TensorId pow(const std::vector<TensorId> &args, const std::string &name);
-  TensorId reciprocal(const std::vector<TensorId> &args,
-                      const std::string &name);
-  TensorId relu(const std::vector<TensorId> &args, const std::string &name);
-  TensorId sigmoid(const std::vector<TensorId> &args, const std::string &name);
-  TensorId sin(const std::vector<TensorId> &args, const std::string &name);
-  TensorId sinh(const std::vector<TensorId> &args, const std::string &name);
-  TensorId softsign(const std::vector<TensorId> &args, const std::string &name);
-  TensorId sqrt(const std::vector<TensorId> &args, const std::string &name);
-  TensorId squeeze(const std::vector<TensorId> &args,
-                   const std::vector<int64_t> axes,
-                   const std::string &name);
-  TensorId unsqueeze(const std::vector<TensorId> &args,
-                     const std::vector<int64_t> axes,
-                     const std::string &name);
-  TensorId sub(const std::vector<TensorId> &args, const std::string &name);
-  TensorId sum(const std::vector<TensorId> &args, const std::string &name);
-  TensorId tan(const std::vector<TensorId> &args, const std::string &name);
-  TensorId tanh(const std::vector<TensorId> &args, const std::string &name);
-  TensorId logical_xor(const std::vector<TensorId> &args,
-                       const std::string &name);
-
-  TensorId convolution(const std::vector<TensorId> &args,
-                       const std::vector<int64_t> strides,
-                       const std::vector<int64_t> padding,
-                       const std::vector<int64_t> dilation,
-                       int64_t groups,
-                       bool cacheOperation,
-                       const std::string &name);
-
-  TensorId averagepool(const std::vector<TensorId> &args,
-                       const std::vector<int64_t> kernel_shape,
-                       const std::vector<int64_t> strides,
-                       const std::vector<int64_t> padding,
-                       const std::string &name);
-
-  TensorId maxpool(const std::vector<TensorId> &args,
-                   const std::vector<int64_t> kernel_shape,
-                   const std::vector<int64_t> strides,
-                   const std::vector<int64_t> padding,
-                   const std::string &name);
-
-  std::tuple<TensorId, TensorId, TensorId>
-  lstm(const std::vector<TensorId> &args, const std::string &name);
-
-  TensorId gemm(const std::vector<TensorId> &args,
-                float alpha,
-                float beta,
-                int64_t transA,
-                int64_t transB,
-                const std::string &name);
-
-  TensorId pad(const std::vector<TensorId> &args,
-               std::string mode,
-               const std::vector<int64_t> pads,
-               float value,
-               const std::string &name);
-
-  TensorId matmul(const std::vector<TensorId> &args, const std::string &name);
-
-  TensorId slice(const std::vector<TensorId> &args,
-                 const std::vector<int64_t> &axes,
-                 const std::vector<int64_t> &starts,
-                 const std::vector<int64_t> &ends,
-                 const std::string &name);
-
-  TensorId softmax(const std::vector<TensorId> &args, const std::string &name);
-
-  TensorId subsample(const std::vector<TensorId> &args,
-                     const std::vector<int64_t> &strides,
-                     const std::string &name);
-
-  Builder::BatchNormalizationTrainingOutputs
-  batchnormalizationTraining(const TensorId x,
-                             const TensorId scale,
-                             const TensorId b,
-                             const TensorId mean,
-                             const TensorId var,
-                             const float epsilon,
-                             const float momentum,
-                             const int spatial,
-                             const std::string &name);
-
-  TensorId batchnormalizationTesting(const TensorId x,
-                                     const TensorId scale,
-                                     const TensorId b,
-                                     const TensorId mean,
-                                     const TensorId var,
-                                     const float epsilon,
-                                     const float momentum,
-                                     const int spatial,
-                                     const std::string &name);
-
-  TensorId transpose(const std::vector<TensorId> &args,
-                     const std::vector<int64_t> &perm,
-                     const std::string &name);
-
-  TensorId reshape(const std::vector<TensorId> &args, const std::string &name);
-
   TensorId reshape_const(const std::vector<TensorId> &args,
                          const std::vector<int64_t> &shape,
                          const std::string &name);
@@ -188,6 +46,40 @@ public:
            const unsigned numOutputs,
            const std::vector<std::pair<std::string, boost::any>> &attributes,
            const std::string &name);
+
+  /**
+   * Add an op to the model
+   *
+   *
+   * \param opid The operator identifier
+   * \param inputs The input tensor ids
+   * \param numberOfOutputs The number if output tensors
+   * \param opAttributes The attributes of the op
+   * \param name Debug name
+   * \param validateInput Callback function to validate the inputs & attributes
+   * \return A list of output tensor ids. Size is given by opid.numOuputs
+   */
+
+  std::vector<TensorId>
+  op(const OperatorIdentifier &opid,
+     const std::vector<TensorId> &inputs,
+     int numberOfOutputs,
+     const std::map<std::string, boost::any> &opAttributes,
+     const std::string &name,
+     std::function<void(std::vector<TensorId>,
+                        std::map<std::string, boost::any>)> validateInput =
+         nullptr);
+
+  std::vector<TensorId>
+  op(const OperatorIdentifier &opid,
+     const std::vector<TensorId> &inputs,
+     const std::map<std::string, boost::any> &opAttributes,
+     const std::string &name,
+     std::function<void(std::vector<TensorId>,
+                        std::map<std::string, boost::any>)> validateInput =
+         nullptr) {
+    return op(opid, inputs, opid.numOutputs, opAttributes, name, validateInput);
+  }
 
   // The following do seem to be ripe for a template
 
@@ -278,17 +170,11 @@ public:
 
   std::vector<int64_t> getTensorShape(const TensorId id);
 
+  void setAttribute(const std::string &attribute, boost::any value);
+  void clearAttribute(const std::string &attribute);
+
 private:
   void finalizeOp(onnx::NodeProto *node, const std::string &name);
-
-  TensorId add_simple_op(const std::vector<TensorId> &args,
-                         const OperatorIdentifier &opid,
-                         int arg_count,
-                         const std::string &name);
-
-  TensorId add_variadic_op(const std::vector<TensorId> &args,
-                           const OperatorIdentifier &opid,
-                           const std::string &name);
 
   void addOpsetRequirement(const std::string &domain, int version);
 
@@ -312,10 +198,6 @@ private:
 
   const onnx::ValueInfoProto &getValueInfoProto(TensorId id) const;
 
-  void VerifyWindowParameters(TensorId input,
-                              const std::vector<int64_t> strides  = {},
-                              const std::vector<int64_t> padding  = {},
-                              const std::vector<int64_t> dilation = {});
   bool
   findNodeProtoByOutputNamesImpl(onnx::NodeProto *&out,
                                  const std::set<TensorId> &nodeOutputNames);
@@ -339,14 +221,6 @@ private:
                    const std::set<TensorId> &nodeOutputNames);
 
   void addNodeAttribute(const std::string &attributeName,
-                        const float &attributeValue,
-                        onnx::NodeProto &node);
-
-  void addNodeAttribute(const std::string &attributeName,
-                        const int &attributeValue,
-                        onnx::NodeProto &node);
-
-  void addNodeAttribute(const std::string &attributeName,
                         const boost::any &attributeValue,
                         onnx::NodeProto &node);
 
@@ -355,6 +229,8 @@ private:
   onnx::ModelProto model_;
 
   std::map<std::string, TensorId> tensorTranslation_;
+
+  std::map<std::string, boost::any> attributes;
 };
 
 } // namespace poponnx

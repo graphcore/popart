@@ -968,6 +968,16 @@ public:
   }
 
   /**
+   * Set an attribute that will be set on all subsequent operations
+   */
+  void setAttribute(const std::string &attribute, boost::any value);
+
+  /**
+   * Unset an attribute that will be set on all subsequent operations
+   */
+  void clearAttribute(const std::string &attribute);
+
+  /**
    * Set the virtual graph that computes the given node.  Applies when creating
    * a graph for a multi-IPU configuration.
    *
@@ -1335,6 +1345,11 @@ private:
   void loadModelProto(const std::string &modelProtoOrFilename);
 
   std::unique_ptr<BuilderImpl> impl_;
+
+  void verifyWindowParameters(TensorId input,
+                              const std::vector<int64_t> strides,
+                              const std::vector<int64_t> padding,
+                              const std::vector<int64_t> dilation = {});
 };
 
 } // namespace poponnx

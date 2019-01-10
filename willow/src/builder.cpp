@@ -44,242 +44,276 @@ TensorId Builder::constant(const ConstVoidData &initData,
 
 TensorId Builder::abs(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->abs(args, name);
+  return impl_->op(Onnx::Operators::Abs, args, {}, name)[0];
 }
 
 TensorId Builder::acos(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->acos(args, name);
+  return impl_->op(Onnx::Operators::Acos, args, {}, name)[0];
 }
 
 TensorId Builder::acosh(const std::vector<TensorId> &args,
                         const std::string &name) {
-  return impl_->acosh(args, name);
+  return impl_->op(Onnx::Operators::Acosh, args, {}, name)[0];
 }
 
 TensorId Builder::add(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->add(args, name);
+  return impl_->op(Onnx::Operators::Add, args, {}, name)[0];
 }
 
 TensorId Builder::logical_and(const std::vector<TensorId> &args,
                               const std::string &name) {
-  return impl_->logical_and(args, name);
+  return impl_->op(Onnx::Operators::And, args, {}, name)[0];
 }
 
 TensorId Builder::asin(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->asin(args, name);
+  return impl_->op(Onnx::Operators::Asin, args, {}, name)[0];
 }
 
 TensorId Builder::asinh(const std::vector<TensorId> &args,
                         const std::string &name) {
-  return impl_->asinh(args, name);
+  return impl_->op(Onnx::Operators::Asinh, args, {}, name)[0];
+  // return impl_->asinh(args, name);
 }
 
 TensorId Builder::atan(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->atan(args, name);
+  return impl_->op(Onnx::Operators::Atan, args, {}, name)[0];
 }
 
 TensorId Builder::atanh(const std::vector<TensorId> &args,
                         const std::string &name) {
-  return impl_->atanh(args, name);
+  return impl_->op(Onnx::Operators::Atanh, args, {}, name)[0];
 }
 
 TensorId Builder::cast(const std::vector<TensorId> &args,
                        DataType to,
                        const std::string &name) {
-  return impl_->cast(args, onnxutil::getTPDataType(to), name);
+  // getTPDataType returns an enum which needs casting to a int attribute
+  return impl_->op(Onnx::Operators::Cast,
+                   args,
+                   {{"to", static_cast<int>(onnxutil::getTPDataType(to))}},
+                   name)[0];
 }
 
 TensorId Builder::ceil(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->ceil(args, name);
+  return impl_->op(Onnx::Operators::Ceil, args, {}, name)[0];
 }
 
 TensorId Builder::concat(const std::vector<TensorId> &args,
                          int64_t dimension,
                          const std::string &name) {
-  return impl_->concat(args, dimension, name);
+  return impl_->op(
+      Onnx::Operators::Concat, args, {{"axis", dimension}}, name)[0];
 }
 
 TensorId Builder::cos(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->cos(args, name);
+  return impl_->op(Onnx::Operators::Cos, args, {}, name)[0];
 }
 
 TensorId Builder::cosh(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->cosh(args, name);
+  return impl_->op(Onnx::Operators::Cosh, args, {}, name)[0];
 }
 
 TensorId Builder::div(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->div(args, name);
+  return impl_->op(Onnx::Operators::Div, args, {}, name)[0];
 }
 
 TensorId Builder::elu(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->elu(args, name);
+  return impl_->op(Onnx::Operators::Elu, args, {}, name)[0];
 }
 
 TensorId Builder::equal(const std::vector<TensorId> &args,
                         const std::string &name) {
-  return impl_->equal(args, name);
+  return impl_->op(Onnx::Operators::Equal, args, {}, name)[0];
 }
 
 TensorId Builder::exp(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->exp(args, name);
+  return impl_->op(Onnx::Operators::Exp, args, {}, name)[0];
 }
 
 TensorId Builder::floor(const std::vector<TensorId> &args,
                         const std::string &name) {
-  return impl_->floor(args, name);
+  return impl_->op(Onnx::Operators::Floor, args, {}, name)[0];
 }
 
 TensorId Builder::gather(const std::vector<TensorId> &args,
                          int64_t axis,
                          const std::string &name) {
-  return impl_->gather(args, axis, name);
+  return impl_->op(Onnx::Operators::Gather, args, {{"axis", axis}}, name)[0];
 }
 
 TensorId Builder::greater(const std::vector<TensorId> &args,
                           const std::string &name) {
-  return impl_->greater(args, name);
+  return impl_->op(Onnx::Operators::Greater, args, {}, name)[0];
 }
 
 TensorId Builder::identity(const std::vector<TensorId> &args,
                            const std::string &name) {
-  return impl_->identity(args, name);
+  return impl_->op(Onnx::Operators::Identity, args, {}, name)[0];
 }
 
 TensorId Builder::less(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->less(args, name);
+  return impl_->op(Onnx::Operators::Less, args, {}, name)[0];
 }
 
 TensorId Builder::log(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->log(args, name);
+  return impl_->op(Onnx::Operators::Log, args, {}, name)[0];
 }
 
 TensorId Builder::logsoftmax(const std::vector<TensorId> &args,
                              const std::string &name) {
-  return impl_->logsoftmax(args, name);
+  return impl_->op(Onnx::Operators::LogSoftmax, args, {{"axis", 1}}, name)[0];
 }
 
 TensorId Builder::max(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->max(args, name);
+  return impl_->op(Onnx::Operators::Max, args, {}, name)[0];
 }
 
 TensorId Builder::mean(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->mean(args, name);
+  return impl_->op(Onnx::Operators::Mean, args, {}, name)[0];
 }
 
 TensorId Builder::min(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->min(args, name);
+  return impl_->op(Onnx::Operators::Min, args, {}, name)[0];
 }
 
 TensorId Builder::mul(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->mul(args, name);
+  return impl_->op(Onnx::Operators::Mul, args, {}, name)[0];
 }
 
 TensorId Builder::neg(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->neg(args, name);
+  return impl_->op(Onnx::Operators::Neg, args, {}, name)[0];
 }
 
 TensorId Builder::logical_not(const std::vector<TensorId> &args,
                               const std::string &name) {
-  return impl_->logical_not(args, name);
+  return impl_->op(Onnx::Operators::Not, args, {}, name)[0];
 }
 
 TensorId Builder::logical_or(const std::vector<TensorId> &args,
                              const std::string &name) {
-  return impl_->logical_or(args, name);
+  return impl_->op(Onnx::Operators::Or, args, {}, name)[0];
 }
 
 TensorId Builder::pow(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->pow(args, name);
+  return impl_->op(Onnx::Operators::Pow, args, {}, name)[0];
 }
 
 TensorId Builder::reciprocal(const std::vector<TensorId> &args,
                              const std::string &name) {
-  return impl_->reciprocal(args, name);
+  return impl_->op(Onnx::Operators::Reciprocal, args, {}, name)[0];
 }
 
 TensorId Builder::relu(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->relu(args, name);
+  return impl_->op(Onnx::Operators::Relu, args, {}, name)[0];
 }
 
 TensorId Builder::sigmoid(const std::vector<TensorId> &args,
                           const std::string &name) {
-  return impl_->sigmoid(args, name);
+  return impl_->op(Onnx::Operators::Sigmoid, args, {}, name)[0];
 }
 
 TensorId Builder::sin(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->sin(args, name);
+  return impl_->op(Onnx::Operators::Sin, args, {}, name)[0];
 }
 
 TensorId Builder::sinh(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->sinh(args, name);
+  return impl_->op(Onnx::Operators::Sinh, args, {}, name)[0];
 }
 
 TensorId Builder::softsign(const std::vector<TensorId> &args,
                            const std::string &name) {
-  return impl_->softsign(args, name);
+  return impl_->op(Onnx::Operators::Softsign, args, {}, name)[0];
 }
 
 TensorId Builder::sqrt(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->sqrt(args, name);
+  return impl_->op(Onnx::Operators::Sqrt, args, {}, name)[0];
 }
 
 TensorId Builder::squeeze(const std::vector<TensorId> &args,
                           const std::vector<int64_t> axes,
                           const std::string &name) {
-  return impl_->squeeze(args, axes, name);
+  return impl_->op(Onnx::Operators::Squeeze, args, {{"axes", axes}}, name)[0];
 }
 
 TensorId Builder::unsqueeze(const std::vector<TensorId> &args,
                             const std::vector<int64_t> axes,
                             const std::string &name) {
-  return impl_->unsqueeze(args, axes, name);
+  return impl_->op(Onnx::Operators::Unsqueeze, args, {{"axes", axes}}, name)[0];
 }
 
 TensorId Builder::sub(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->sub(args, name);
+  return impl_->op(Onnx::Operators::Sub, args, {}, name)[0];
 }
 
 TensorId Builder::sum(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->sum(args, name);
+  return impl_->op(Onnx::Operators::Sum, args, {}, name)[0];
 }
 
 TensorId Builder::tan(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->tan(args, name);
+  return impl_->op(Onnx::Operators::Tan, args, {}, name)[0];
 }
 
 TensorId Builder::tanh(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->tanh(args, name);
+  return impl_->op(Onnx::Operators::Tanh, args, {}, name)[0];
 }
 
 TensorId Builder::logical_xor(const std::vector<TensorId> &args,
                               const std::string &name) {
-  return impl_->logical_xor(args, name);
+  return impl_->op(Onnx::Operators::Xor, args, {}, name)[0];
+}
+
+void Builder::verifyWindowParameters(TensorId input,
+                                     const std::vector<int64_t> strides,
+                                     const std::vector<int64_t> padding,
+                                     const std::vector<int64_t> dilation) {
+  auto num_spatial_dims = getTensorShape(input).size() - 2;
+  if (num_spatial_dims < 1) {
+    throw error("Input tensor has no spatial dimensions");
+  }
+  if (strides.size() != num_spatial_dims) {
+    throw error(
+        "Length of strides vector {} != number of spatial dimensions {}",
+        strides.size(),
+        num_spatial_dims);
+  }
+  if (padding.size() != num_spatial_dims * 2) {
+    throw error("Padding vector (length {}) does not have 2 values for each "
+                "spatial dimension {}",
+                strides.size(),
+                num_spatial_dims);
+  }
+  if (dilation.size() != 0 && dilation.size() != num_spatial_dims) {
+    throw error(
+        "Length of dilations vector {} != number of spatial dimensions {}",
+        strides.size(),
+        num_spatial_dims);
+  }
 }
 
 TensorId Builder::convolution(const std::vector<TensorId> &args,
@@ -289,8 +323,25 @@ TensorId Builder::convolution(const std::vector<TensorId> &args,
                               int64_t groups,
                               bool cacheOperation,
                               const std::string &name) {
-  return impl_->convolution(
-      args, strides, padding, dilation, groups, cacheOperation, name);
+  return impl_->op(
+      Onnx::Operators::Conv,
+      args,
+      {{"dilations", dilation},
+       {"group", groups},
+       {"pads", padding},
+       {"strides", strides},
+       {"__cache_operation", cacheOperation}},
+      name,
+      [this](std::vector<TensorId> inputs,
+             std::map<std::string, boost::any> attributes) {
+        this->verifyWindowParameters(
+            inputs[0],
+            boost::any_cast<const std::vector<int64_t> &>(
+                attributes["strides"]),
+            boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]),
+            boost::any_cast<const std::vector<int64_t> &>(
+                attributes["dilations"]));
+      })[0];
 }
 
 TensorId Builder::averagepool(const std::vector<TensorId> &args,
@@ -298,7 +349,23 @@ TensorId Builder::averagepool(const std::vector<TensorId> &args,
                               const std::vector<int64_t> strides,
                               const std::vector<int64_t> padding,
                               const std::string &name) {
-  return impl_->averagepool(args, kernel_shape, strides, padding, name);
+
+  return impl_->op(
+      Onnx::Operators::AveragePool,
+      args,
+      {{"count_include_pad", 0},
+       {"kernel_shape", kernel_shape},
+       {"pads", padding},
+       {"strides", strides}},
+      name,
+      [this](std::vector<TensorId> inputs,
+             std::map<std::string, boost::any> attributes) {
+        this->verifyWindowParameters(
+            inputs[0],
+            boost::any_cast<const std::vector<int64_t> &>(
+                attributes["strides"]),
+            boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]));
+      })[0];
 }
 
 TensorId Builder::maxpool(const std::vector<TensorId> &args,
@@ -306,12 +373,30 @@ TensorId Builder::maxpool(const std::vector<TensorId> &args,
                           const std::vector<int64_t> strides,
                           const std::vector<int64_t> padding,
                           const std::string &name) {
-  return impl_->maxpool(args, kernel_shape, strides, padding, name);
+  return impl_->op(
+      Onnx::Operators::MaxPool,
+      args,
+      {{"storage_order", 0},
+       {"kernel_shape", kernel_shape},
+       {"pads", padding},
+       {"strides", strides}},
+      name,
+      [this](std::vector<TensorId> inputs,
+             std::map<std::string, boost::any> attributes) {
+        this->verifyWindowParameters(
+            inputs[0],
+            boost::any_cast<const std::vector<int64_t> &>(
+                attributes["strides"]),
+            boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]));
+      })[0];
 }
 
 std::tuple<TensorId, TensorId, TensorId>
 Builder::lstm(const std::vector<TensorId> &args, const std::string &name) {
-  return impl_->lstm(args, name);
+
+  std::vector<TensorId> outputs =
+      impl_->op(Onnx::Operators::LSTM, args, {}, name);
+  return {outputs[0], outputs[1], outputs[2]};
 }
 
 TensorId Builder::gemm(const std::vector<TensorId> &args,
@@ -320,7 +405,13 @@ TensorId Builder::gemm(const std::vector<TensorId> &args,
                        int64_t transA,
                        int64_t transB,
                        const std::string &name) {
-  return impl_->gemm(args, alpha, beta, transA, transB, name);
+  return impl_->op(Onnx::Operators::Gemm,
+                   args,
+                   {{"alpha", alpha},
+                    {"beta", beta},
+                    {"transA", transA},
+                    {"transB", transB}},
+                   name)[0];
 }
 
 TensorId Builder::pad(const std::vector<TensorId> &args,
@@ -328,12 +419,28 @@ TensorId Builder::pad(const std::vector<TensorId> &args,
                       const std::vector<int64_t> pads,
                       float value,
                       const std::string &name) {
-  return impl_->pad(args, mode, pads, value, name);
+
+  return impl_->op(
+      Onnx::Operators::Pad,
+      args,
+      {{"mode", mode}, {"pads", pads}, {"value", value}},
+      name,
+      [this, pads](std::vector<TensorId> inputs,
+                   std::map<std::string, boost::any>) {
+        auto rank = getTensorShape(inputs[0]).size();
+        if (pads.size() != rank * 2) {
+          throw error(
+              "Padding vector (length {}) doesn't contain 2 entries per input "
+              "dimension {}",
+              pads.size(),
+              rank);
+        }
+      })[0];
 }
 
 TensorId Builder::matmul(const std::vector<TensorId> &args,
                          const std::string &name) {
-  return impl_->matmul(args, name);
+  return impl_->op(Onnx::Operators::MatMul, args, {}, name)[0];
 }
 
 TensorId Builder::slice(const std::vector<TensorId> &args,
@@ -341,18 +448,29 @@ TensorId Builder::slice(const std::vector<TensorId> &args,
                         const std::vector<int64_t> &starts,
                         const std::vector<int64_t> &ends,
                         const std::string &name) {
-  return impl_->slice(args, axes, starts, ends, name);
+
+  return impl_->op(Onnx::Operators::Slice,
+                   args,
+                   {{"axes", axes}, {"starts", starts}, {"ends", ends}},
+                   name)[0];
 }
 
 TensorId Builder::softmax(const std::vector<TensorId> &args,
                           const std::string &name) {
-  return impl_->softmax(args, name);
+  return impl_->op(Onnx::Operators::Softmax, args, {{"axes", 1}}, name)[0];
 }
 
 TensorId Builder::subsample(const std::vector<TensorId> &args,
                             const std::vector<int64_t> &strides,
                             const std::string &name) {
-  return impl_->subsample(args, strides, name);
+
+  for (int i = 0; i < strides.size(); ++i) {
+    if (strides[i] == 0)
+      throw error("Strides invalid. 0 stride at index {}", i);
+  }
+
+  return impl_->op(
+      Onnx::CustomOperators::Subsample, args, {{"strides", strides}}, name)[0];
 }
 
 Builder::BatchNormalizationTrainingOutputs
@@ -365,8 +483,22 @@ Builder::batchnormalizationTraining(const TensorId x,
                                     const float momentum,
                                     const int spatial,
                                     const std::string &name) {
-  return impl_->batchnormalizationTraining(
-      x, scale, b, mean, var, epsilon, momentum, spatial, name);
+
+  Builder::BatchNormalizationTrainingOutputs bnOuputs;
+
+  std::vector<TensorId> outputs = impl_->op(
+      Onnx::Operators::BatchNormalization,
+      {x, scale, b, mean, var},
+      {{"epsilon", epsilon}, {"momentum", momentum}, {"spatial", spatial}},
+      name);
+
+  bnOuputs.y         = outputs[0];
+  bnOuputs.mean      = outputs[1];
+  bnOuputs.var       = outputs[2];
+  bnOuputs.savedMean = outputs[3];
+  bnOuputs.savedVar  = outputs[4];
+
+  return bnOuputs;
 }
 
 TensorId Builder::batchnormalizationTesting(const TensorId x,
@@ -378,19 +510,24 @@ TensorId Builder::batchnormalizationTesting(const TensorId x,
                                             const float momentum,
                                             const int spatial,
                                             const std::string &name) {
-  return impl_->batchnormalizationTesting(
-      x, scale, b, mean, var, epsilon, momentum, spatial, name);
+
+  return impl_->op(
+      Onnx::Operators::BatchNormalization,
+      {x, scale, b, mean, var},
+      1,
+      {{"epsilon", epsilon}, {"momentum", momentum}, {"spatial", spatial}},
+      name)[0];
 }
 
 TensorId Builder::transpose(const std::vector<TensorId> &args,
                             const std::vector<int64_t> &perm,
                             const std::string &name) {
-  return impl_->transpose(args, perm, name);
+  return impl_->op(Onnx::Operators::Transpose, args, {{"perm", perm}}, name)[0];
 }
 
 TensorId Builder::reshape(const std::vector<TensorId> &args,
                           const std::string &name) {
-  return impl_->reshape(args, name);
+  return impl_->op(Onnx::Operators::Reshape, args, {}, name)[0];
 }
 
 TensorId Builder::reshape_const(const std::vector<TensorId> &args,
@@ -542,6 +679,14 @@ std::vector<TensorId> Builder::getValueTensorIds() const {
 
 std::vector<int64_t> Builder::getTensorShape(const TensorId id) {
   return impl_->getTensorShape(id);
+}
+
+void Builder::setAttribute(const std::string &attribute, boost::any value) {
+  impl_->setAttribute(attribute, value);
+}
+
+void Builder::clearAttribute(const std::string &attribute) {
+  impl_->clearAttribute(attribute);
 }
 
 } // namespace poponnx

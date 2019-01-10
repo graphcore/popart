@@ -21,88 +21,16 @@ const static uint64_t irVersion = 3;
 const static int64_t onnxOperatorSetVersion      = 9;
 const static int64_t graphcoreOperatorSetVersion = 1;
 
-static void check_arg_range(const std::vector<TensorId> &args,
-                            int min,
-                            int max,
-                            const std::string &name) {
-  auto len = args.size();
-  if (len < min || len > max) {
-    throw error("{}  has invalid number of args. Must be between {} and {}",
-                name,
-                min,
-                max);
-  }
-}
-
-static void check_arg_count(const std::vector<TensorId> &args,
-                            int count,
-                            const std::string &name) {
-  auto len = args.size();
-  if (len != count) {
-    throw error("{} has invalid number of args. Must be {}", name, count);
-  }
-}
-
-static void check_arg_exists(const std::vector<TensorId> &args,
-                             const char *name) {
-  auto len = args.size();
-  if (len == 0) {
-    throw error("{} has no arguments", name);
-  }
-}
-
-static void add_args(Node *node, const std::vector<TensorId> &args) {
-  for (const auto &arg : args) {
-    node->add_input(arg);
-  }
-}
-
 void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
+
   if (!name.empty())
     node->set_name(name);
 
+  for (auto attribute : attributes) {
+    addNodeAttribute(attribute.first, attribute.second, *node);
+  }
+
   onnx::shape_inference::InferShapes(model_);
-}
-
-TensorId BuilderImpl::add_simple_op(const std::vector<TensorId> &args,
-                                    const OperatorIdentifier &opid,
-                                    int arg_count,
-                                    const std::string &name) {
-  auto op_type = opid.type.c_str();
-
-  check_arg_count(args, arg_count, op_type);
-
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(op_type);
-  add_args(node, args);
-  node->add_output(id);
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::add_variadic_op(const std::vector<TensorId> &args,
-                                      const OperatorIdentifier &opid,
-                                      const std::string &name) {
-  auto op_type = opid.type.c_str();
-
-  check_arg_exists(args, op_type);
-
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(op_type);
-  add_args(node, args);
-  node->add_output(id);
-
-  finalizeOp(node, name);
-
-  return id;
 }
 
 TensorId BuilderImpl::getNextId() {
@@ -248,609 +176,7 @@ void BuilderImpl::addOutputTensor(const TensorId &arg0) {
 
 TensorId BuilderImpl::constant(const ConstVoidData &initData,
                                const std::string &name) {
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::Constant.type);
-  node->add_output(id);
-
-  addNodeAttribute("value", initData, {id});
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::abs(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Abs, 1, name);
-}
-
-TensorId BuilderImpl::acos(const std::vector<TensorId> &args,
-                           const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Acos, 1, name);
-}
-
-TensorId BuilderImpl::acosh(const std::vector<TensorId> &args,
-                            const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Acosh, 1, name);
-}
-
-TensorId BuilderImpl::add(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Add, 2, name);
-}
-
-TensorId BuilderImpl::logical_and(const std::vector<TensorId> &args,
-                                  const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::And, 2, name);
-}
-
-TensorId BuilderImpl::asin(const std::vector<TensorId> &args,
-                           const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Asin, 1, name);
-}
-
-TensorId BuilderImpl::asinh(const std::vector<TensorId> &args,
-                            const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Asinh, 1, name);
-}
-
-TensorId BuilderImpl::atan(const std::vector<TensorId> &args,
-                           const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Atan, 1, name);
-}
-
-TensorId BuilderImpl::atanh(const std::vector<TensorId> &args,
-                            const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Atanh, 1, name);
-}
-
-TensorId BuilderImpl::cast(const std::vector<TensorId> &args,
-                           onnx::TensorProto_DataType to,
-                           const std::string &name) {
-  TensorId id = add_simple_op(args, Onnx::Operators::Cast, 1, name);
-  addNodeAttribute("to", to, {id});
-  return id;
-}
-
-TensorId BuilderImpl::ceil(const std::vector<TensorId> &args,
-                           const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Ceil, 1, name);
-}
-
-TensorId BuilderImpl::concat(const std::vector<TensorId> &args,
-                             int64_t dimension,
-                             const std::string &name) {
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type("Concat");
-  add_args(node, args);
-  node->add_output(id);
-
-  addNodeAttribute("axis", dimension, {id});
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::cos(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Cos, 1, name);
-}
-
-TensorId BuilderImpl::cosh(const std::vector<TensorId> &args,
-                           const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Cosh, 1, name);
-}
-
-TensorId BuilderImpl::div(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Div, 2, name);
-}
-
-TensorId BuilderImpl::elu(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Elu, 1, name);
-}
-
-TensorId BuilderImpl::equal(const std::vector<TensorId> &args,
-                            const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Equal, 2, name);
-}
-
-TensorId BuilderImpl::exp(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Exp, 1, name);
-}
-
-TensorId BuilderImpl::floor(const std::vector<TensorId> &args,
-                            const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Floor, 1, name);
-}
-
-TensorId BuilderImpl::gather(const std::vector<TensorId> &args,
-                             int64_t axis,
-                             const std::string &name) {
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::Gather.type);
-  add_args(node, args);
-  node->add_output(id);
-
-  addNodeAttribute("axis", axis, {id});
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::greater(const std::vector<TensorId> &args,
-                              const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Greater, 2, name);
-}
-
-TensorId BuilderImpl::identity(const std::vector<TensorId> &args,
-                               const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Identity, 1, name);
-}
-
-TensorId BuilderImpl::less(const std::vector<TensorId> &args,
-                           const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Less, 2, name);
-}
-
-TensorId BuilderImpl::log(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Log, 1, name);
-}
-
-TensorId BuilderImpl::logsoftmax(const std::vector<TensorId> &args,
-                                 const std::string &name) {
-  check_arg_count(args, 1, Onnx::Operators::LogSoftmax.type);
-
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::LogSoftmax.type);
-  add_args(node, args);
-  node->add_output(id);
-
-  int64_t axis = 1;
-  addNodeAttribute("axis", axis, {id});
-
-  onnx::shape_inference::InferShapes(model_);
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::max(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Max, 2, name);
-}
-
-TensorId BuilderImpl::mean(const std::vector<TensorId> &args,
-                           const std::string &name) {
-  return add_variadic_op(args, Onnx::Operators::Mean, name);
-}
-
-TensorId BuilderImpl::min(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Min, 2, name);
-}
-
-TensorId BuilderImpl::mul(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Mul, 2, name);
-}
-
-TensorId BuilderImpl::neg(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Neg, 1, name);
-}
-
-TensorId BuilderImpl::logical_not(const std::vector<TensorId> &args,
-                                  const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Not, 1, name);
-}
-
-TensorId BuilderImpl::logical_or(const std::vector<TensorId> &args,
-                                 const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Or, 2, name);
-}
-
-TensorId BuilderImpl::pow(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Pow, 2, name);
-}
-
-TensorId BuilderImpl::reciprocal(const std::vector<TensorId> &args,
-                                 const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Reciprocal, 1, name);
-}
-
-TensorId BuilderImpl::relu(const std::vector<TensorId> &args,
-                           const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Relu, 1, name);
-}
-
-TensorId BuilderImpl::sigmoid(const std::vector<TensorId> &args,
-                              const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Sigmoid, 1, name);
-}
-
-TensorId BuilderImpl::sin(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Sin, 1, name);
-}
-
-TensorId BuilderImpl::sinh(const std::vector<TensorId> &args,
-                           const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Sinh, 1, name);
-}
-
-TensorId BuilderImpl::softsign(const std::vector<TensorId> &args,
-                               const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Softsign, 1, name);
-}
-
-TensorId BuilderImpl::sqrt(const std::vector<TensorId> &args,
-                           const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Sqrt, 1, name);
-}
-
-TensorId BuilderImpl::squeeze(const std::vector<TensorId> &args,
-                              const std::vector<int64_t> axes,
-                              const std::string &name) {
-  check_arg_count(args, 1, Onnx::Operators::Squeeze.type);
-
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::Squeeze.type);
-  add_args(node, args);
-  node->add_output(id);
-
-  addNodeAttribute("axes", axes, {id});
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::unsqueeze(const std::vector<TensorId> &args,
-                                const std::vector<int64_t> axes,
-                                const std::string &name) {
-  check_arg_count(args, 1, Onnx::Operators::Unsqueeze.type);
-
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::Unsqueeze.type);
-  add_args(node, args);
-  node->add_output(id);
-
-  addNodeAttribute("axes", axes, {id});
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::sub(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Sub, 2, name);
-}
-
-TensorId BuilderImpl::sum(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_variadic_op(args, Onnx::Operators::Sum, name);
-}
-
-TensorId BuilderImpl::tan(const std::vector<TensorId> &args,
-                          const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Tan, 1, name);
-}
-
-TensorId BuilderImpl::tanh(const std::vector<TensorId> &args,
-                           const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Tanh, 1, name);
-}
-
-TensorId BuilderImpl::logical_xor(const std::vector<TensorId> &args,
-                                  const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Xor, 2, name);
-}
-
-TensorId BuilderImpl::convolution(const std::vector<TensorId> &args,
-                                  const std::vector<int64_t> strides,
-                                  const std::vector<int64_t> padding,
-                                  const std::vector<int64_t> dilation,
-                                  int64_t groups,
-                                  bool cacheOperation,
-                                  const std::string &name) {
-  check_arg_range(args, 2, 3, Onnx::Operators::Conv.type);
-
-  auto id = getNextId();
-
-  VerifyWindowParameters(args[0], strides, padding, dilation);
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::Conv.type);
-  add_args(node, args);
-  node->add_output(id);
-
-  addNodeAttribute("dilations", dilation, {id});
-  addNodeAttribute("group", groups, {id});
-  addNodeAttribute("pads", padding, {id});
-  addNodeAttribute("strides", strides, {id});
-  addNodeAttribute(
-      "__cache_operation", static_cast<int64_t>(cacheOperation), {id});
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::averagepool(const std::vector<TensorId> &args,
-                                  const std::vector<int64_t> kernel_shape,
-                                  const std::vector<int64_t> strides,
-                                  const std::vector<int64_t> padding,
-                                  const std::string &name) {
-  check_arg_count(args, 1, Onnx::Operators::AveragePool.type);
-
-  auto id = getNextId();
-
-  VerifyWindowParameters(args[0], strides, padding);
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::AveragePool.type);
-  add_args(node, args);
-  node->add_output(id);
-
-  addNodeAttribute("count_include_pad", static_cast<int64_t>(0), {id});
-  addNodeAttribute("kernel_shape", kernel_shape, {id});
-  addNodeAttribute("pads", padding, {id});
-  addNodeAttribute("strides", strides, {id});
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::maxpool(const std::vector<TensorId> &args,
-                              const std::vector<int64_t> kernel_shape,
-                              const std::vector<int64_t> strides,
-                              const std::vector<int64_t> padding,
-                              const std::string &name) {
-  check_arg_count(args, 1, Onnx::Operators::MaxPool.type);
-
-  auto id = getNextId();
-
-  VerifyWindowParameters(args[0], strides, padding);
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::MaxPool.type);
-  add_args(node, args);
-  node->add_output(id);
-
-  addNodeAttribute("storage_order", static_cast<int64_t>(0), {id});
-  addNodeAttribute("kernel_shape", kernel_shape, {id});
-  addNodeAttribute("pads", padding, {id});
-  addNodeAttribute("strides", strides, {id});
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-std::tuple<TensorId, TensorId, TensorId>
-BuilderImpl::lstm(const std::vector<TensorId> &args, const std::string &name) {
-  check_arg_range(args, 3, 8, Onnx::Operators::LSTM.type);
-
-  auto out_y  = getNextId();
-  auto out_yh = getNextId();
-  auto out_yc = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type("LSTM");
-  add_args(node, args);
-  node->add_output(out_y);
-  node->add_output(out_yh);
-  node->add_output(out_yc);
-
-  finalizeOp(node, name);
-
-  return {out_y, out_yh, out_yc};
-}
-
-TensorId BuilderImpl::gemm(const std::vector<TensorId> &args,
-                           float alpha,
-                           float beta,
-                           int64_t transA,
-                           int64_t transB,
-                           const std::string &name) {
-  check_arg_count(args, 3, Onnx::Operators::Gemm.type);
-
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::Gemm.type);
-  add_args(node, args);
-  node->add_output(id);
-
-  addNodeAttribute("alpha", alpha, {id});
-  addNodeAttribute("beta", beta, {id});
-  addNodeAttribute("transA", transA, {id});
-  addNodeAttribute("transB", transB, {id});
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::pad(const std::vector<TensorId> &args,
-                          std::string mode,
-                          const std::vector<int64_t> pads,
-                          float value,
-                          const std::string &name) {
-  check_arg_count(args, 1, Onnx::Operators::Pad.type);
-
-  auto id = getNextId();
-
-  auto rank = getTensorShape(args[0]).size();
-  if (pads.size() != rank * 2) {
-    throw error(
-        "Padding vector (length {}) doesn't contain 2 entries per input "
-        "dimension {}",
-        pads.size(),
-        rank);
-  }
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::Pad.type);
-  add_args(node, args);
-  node->add_output(id);
-
-  addNodeAttribute("mode", mode, {id});
-  addNodeAttribute("pads", pads, {id});
-  addNodeAttribute("value", value, {id});
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::matmul(const std::vector<TensorId> &args,
-                             const std::string &name) {
-  check_arg_count(args, 2, Onnx::Operators::MatMul.type);
-
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::MatMul.type);
-  node->add_input(args[0]);
-  node->add_input(args[1]);
-  node->add_output(id);
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::slice(const std::vector<TensorId> &args,
-                            const std::vector<int64_t> &axes,
-                            const std::vector<int64_t> &starts,
-                            const std::vector<int64_t> &ends,
-                            const std::string &name) {
-  check_arg_count(args, 1, Onnx::Operators::Slice.type);
-
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::Slice.type);
-  add_args(node, args);
-  node->add_output(id);
-
-  addNodeAttribute("axes", axes, {id});
-  addNodeAttribute("starts", starts, {id});
-  addNodeAttribute("ends", ends, {id});
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::softmax(const std::vector<TensorId> &args,
-                              const std::string &name) {
-  check_arg_count(args, 1, Onnx::Operators::Softmax.type);
-
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::Softmax.type);
-  add_args(node, args);
-  node->add_output(id);
-
-  int64_t axis = 1;
-  addNodeAttribute("axis", axis, {id});
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::subsample(const std::vector<TensorId> &args,
-                                const std::vector<int64_t> &strides,
-                                const std::string &name) {
-
-  for (int i = 0; i < strides.size(); ++i) {
-    if (strides[i] == 0)
-      throw error("Strides invalid. 0 stride at index {}", i);
-  }
-
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::CustomOperators::Subsample.type);
-  node->set_domain(Onnx::CustomOperators::Subsample.domain);
-  add_args(node, args);
-  node->add_output(id);
-
-  addNodeAttribute("strides", strides, {id});
-
-  addOpsetRequirement(Domain::ai_graphcore, 1);
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::transpose(const std::vector<TensorId> &args,
-                                const std::vector<int64_t> &perm,
-                                const std::string &name) {
-  check_arg_count(args, 1, Onnx::Operators::Transpose.type);
-  auto id = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-
-  node->set_op_type(Onnx::Operators::Transpose.type);
-
-  add_args(node, args);
-  node->add_output(id);
-
-  addNodeAttribute("perm", perm, {id});
-
-  finalizeOp(node, name);
-
-  return id;
-}
-
-TensorId BuilderImpl::reshape(const std::vector<TensorId> &args,
-                              const std::string &name) {
-  return add_simple_op(args, Onnx::Operators::Reshape, 2, name);
+  return op(Onnx::Operators::Constant, {}, {{"value", initData}}, name)[0];
 }
 
 TensorId BuilderImpl::reshape_const(const std::vector<TensorId> &args,
@@ -859,92 +185,14 @@ TensorId BuilderImpl::reshape_const(const std::vector<TensorId> &args,
   Shape s = {static_cast<int64_t>(shape.size())};
   TensorInfo tensorInfo("INT64", s);
   auto newShape = constant({shape.data(), tensorInfo}, name + "_const");
-  return reshape({args[0], newShape}, name);
-}
-
-Builder::BatchNormalizationTrainingOutputs
-BuilderImpl::batchnormalizationTraining(const TensorId x,
-                                        const TensorId scale,
-                                        const TensorId b,
-                                        const TensorId mean,
-                                        const TensorId var,
-                                        const float epsilon,
-                                        const float momentum,
-                                        const int spatial,
-                                        const std::string &name) {
-  Builder::BatchNormalizationTrainingOutputs outputs;
-
-  // Give each output tensor an id
-  outputs.y         = getNextId();
-  outputs.mean      = getNextId();
-  outputs.var       = getNextId();
-  outputs.savedMean = getNextId();
-  outputs.savedVar  = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::BatchNormalization.type);
-
-  node->add_input(x);
-  node->add_input(scale);
-  node->add_input(b);
-  node->add_input(mean);
-  node->add_input(var);
-
-  node->add_output(outputs.y);
-  node->add_output(outputs.mean);
-  node->add_output(outputs.var);
-  node->add_output(outputs.savedMean);
-  node->add_output(outputs.savedVar);
-
-  addNodeAttribute("epsilon", epsilon, *node);
-  addNodeAttribute("momentum", momentum, *node);
-  addNodeAttribute("spatial", spatial, *node);
-
-  finalizeOp(node, name);
-
-  return outputs;
-}
-
-TensorId BuilderImpl::batchnormalizationTesting(const TensorId x,
-                                                const TensorId scale,
-                                                const TensorId b,
-                                                const TensorId mean,
-                                                const TensorId var,
-                                                const float epsilon,
-                                                const float momentum,
-                                                const int spatial,
-                                                const std::string &name) {
-
-  // Give each output tensor an id
-  auto y = getNextId();
-
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-  node->set_op_type(Onnx::Operators::BatchNormalization.type);
-
-  node->add_input(x);
-  node->add_input(scale);
-  node->add_input(b);
-  node->add_input(mean);
-  node->add_input(var);
-
-  node->add_output(y);
-
-  addNodeAttribute("epsilon", epsilon, *node);
-  addNodeAttribute("momentum", momentum, *node);
-  addNodeAttribute("spatial", spatial, *node);
-
-  finalizeOp(node, name);
-
-  return y;
+  return op(Onnx::Operators::Reshape, {args[0], newShape}, {}, name)[0];
 }
 
 std::vector<TensorId> BuilderImpl::customOp(
     const OperatorIdentifier &opid,
     const std::vector<boost::any> &inputs,
     const unsigned numOutputs,
-    const std::vector<std::pair<std::string, boost::any>> &attributes,
+    const std::vector<std::pair<std::string, boost::any>> &opAttributes,
     const std::string &name) {
 
   std::vector<TensorId> outputTensors(numOutputs);
@@ -973,13 +221,70 @@ std::vector<TensorId> BuilderImpl::customOp(
   }
 
   // Set the attributes
-  for (auto attribute : attributes) {
-    if (attribute.second.type() == typeid(int)) {
-      addNodeAttribute(
-          attribute.first, boost::any_cast<int>(attribute.second), *node);
-    } else {
-      throw error("Unknown input type {}", attribute.second.type().name());
+  for (auto attribute : opAttributes) {
+    addNodeAttribute(attribute.first, attribute.second, *node);
+  }
+
+  finalizeOp(node, name);
+
+  return outputTensors;
+}
+
+std::vector<TensorId> BuilderImpl::op(
+    const OperatorIdentifier &opid,
+    const std::vector<TensorId> &inputs,
+    int numberOfOutputs,
+    const std::map<std::string, boost::any> &opAttributes,
+    const std::string &name,
+    std::function<void(std::vector<TensorId>,
+                       std::map<std::string, boost::any>)> validateInput) {
+
+  if (opid.numInputs.min > 0) {
+    // inputs.size  >= min inputs AND
+    // if max != infinite then inputs <= max
+    if (inputs.size() < opid.numInputs.min ||
+        (opid.numInputs.max > 0 ? inputs.size() > opid.numInputs.max : false)) {
+      throw error("{} has invalid number of inputs {}. Must be between {}..{}",
+                  opid.type,
+                  inputs.size(),
+                  opid.numInputs.min,
+                  ((opid.numInputs.max > 0) ? std::to_string(opid.numInputs.max)
+                                            : "inf"));
     }
+  }
+
+  if (validateInput)
+    validateInput(inputs, opAttributes);
+
+  std::vector<TensorId> outputTensors(opid.numOutputs);
+
+  // Create the node
+  auto *graph = model_.mutable_graph();
+  auto *node  = graph->add_node();
+
+  // Set the domain/type
+  node->set_op_type(opid.type);
+
+  // This is brittle, consider how to improve
+  if (opid.domain != Domain::ai_onnx) {
+    node->set_domain(opid.domain);
+    addOpsetRequirement(Domain::ai_graphcore, 1);
+  }
+
+  // Set the inputs
+  for (const auto &input : inputs) {
+    node->add_input(input);
+  }
+
+  // Set the outputs
+  for (int i = 0; i < numberOfOutputs; ++i) {
+    outputTensors[i] = getNextId();
+    node->add_output(outputTensors[i]);
+  }
+
+  // Set the attributes
+  for (auto attribute : opAttributes) {
+    addNodeAttribute(attribute.first, attribute.second, *node);
   }
 
   finalizeOp(node, name);
@@ -1090,14 +395,6 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
 }
 
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
-                                   const int &attributeValue,
-                                   onnx::NodeProto &node) {
-  onnx::AttributeProto &attr = addNewAttributeToNode(attributeName, node);
-  attr.set_type(onnx::AttributeProto::INT);
-  attr.set_i(attributeValue);
-}
-
-void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const std::vector<int64_t> &attributeValue,
                                    const std::set<TensorId> &nodeOutputNames) {
   onnx::AttributeProto &attr =
@@ -1113,14 +410,6 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
                                    const std::set<TensorId> &nodeOutputNames) {
   onnx::AttributeProto &attr =
       addNewAttributeToNode(attributeName, nodeOutputNames);
-  attr.set_type(onnx::AttributeProto::FLOAT);
-  attr.set_f(attributeValue);
-}
-
-void BuilderImpl::addNodeAttribute(const std::string &attributeName,
-                                   const float &attributeValue,
-                                   onnx::NodeProto &node) {
-  onnx::AttributeProto &attr = addNewAttributeToNode(attributeName, node);
   attr.set_type(onnx::AttributeProto::FLOAT);
   attr.set_f(attributeValue);
 }
@@ -1173,6 +462,66 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
       addNewAttributeToNode(attributeName, nodeOutputNames);
   attr.set_type(onnx::AttributeProto::INT);
   attr.set_i(static_cast<int>(attributeValue));
+}
+
+// TODO change any to variant
+void BuilderImpl::addNodeAttribute(const std::string &attributeName,
+                                   const boost::any &attributeValue,
+                                   onnx::NodeProto &node) {
+
+  onnx::AttributeProto &attr = addNewAttributeToNode(attributeName, node);
+
+  const std::type_info &tinfo = attributeValue.type();
+  if (tinfo == typeid(int)) {
+    attr.set_type(onnx::AttributeProto::INT);
+    attr.set_i(boost::any_cast<int>(attributeValue));
+  } else if (tinfo == typeid(int64_t)) {
+    attr.set_type(onnx::AttributeProto::INT);
+    attr.set_i(static_cast<int>(boost::any_cast<int64_t>(attributeValue)));
+  } else if (tinfo == typeid(uint64_t)) {
+    attr.set_type(onnx::AttributeProto::INT);
+    attr.set_i(static_cast<int>(boost::any_cast<uint64_t>(attributeValue)));
+  } else if (tinfo == typeid(std::vector<int64_t>)) {
+    attr.set_type(onnx::AttributeProto::INTS);
+    const std::vector<int64_t> &values =
+        boost::any_cast<const std::vector<int64_t> &>(attributeValue);
+    for (auto i : values) {
+      attr.add_ints(i);
+    }
+  } else if (tinfo == typeid(float)) {
+    attr.set_type(onnx::AttributeProto::FLOAT);
+    attr.set_f(boost::any_cast<float>(attributeValue));
+  } else if (tinfo == typeid(std::vector<float>)) {
+    attr.set_type(onnx::AttributeProto::FLOAT);
+    const std::vector<float> &values =
+        boost::any_cast<const std::vector<float> &>(attributeValue);
+    for (auto f : values) {
+      attr.add_floats(f);
+    }
+  } else if (tinfo == typeid(std::string)) {
+    attr.set_type(onnx::AttributeProto::STRING);
+    attr.set_s(boost::any_cast<std::string>(attributeValue));
+  } else if (tinfo == typeid(char *)) {
+    attr.set_type(onnx::AttributeProto::STRING);
+    attr.set_s(boost::any_cast<char *>(attributeValue));
+  } else if (tinfo == typeid(std::vector<std::string>)) {
+    attr.set_type(onnx::AttributeProto::STRINGS);
+    const std::vector<std::string> &values =
+        boost::any_cast<const std::vector<std::string> &>(attributeValue);
+    for (auto &s : values) {
+      attr.add_strings(s);
+    }
+  } else if (tinfo == typeid(bool)) {
+    attr.set_type(onnx::AttributeProto::INT);
+    attr.set_i(static_cast<int>(boost::any_cast<bool>(attributeValue)));
+  } else if (tinfo == typeid(ConstVoidData)) {
+    attr.set_type(onnx::AttributeProto::TENSOR);
+    auto *t = attr.mutable_t();
+    populateTenorProtoFromConstVoidData(
+        boost::any_cast<ConstVoidData>(attributeValue), attributeName, t);
+  } else {
+    throw error("Unsupported attribute value type {}", tinfo.name());
+  }
 }
 
 void BuilderImpl::addNodeAttribute(const std::string &attributeName,
@@ -1562,32 +911,12 @@ std::vector<int64_t> BuilderImpl::getTensorShape(const TensorId id) {
   return shape;
 }
 
-void BuilderImpl::VerifyWindowParameters(TensorId input,
-                                         const std::vector<int64_t> strides,
-                                         const std::vector<int64_t> padding,
-                                         const std::vector<int64_t> dilation) {
-  auto num_spatial_dims = getTensorShape(input).size() - 2;
-  if (num_spatial_dims < 1) {
-    throw error("Input tensor has no spatial dimensions");
-  }
-  if (strides.size() != num_spatial_dims) {
-    throw error(
-        "Length of strides vector {} != number of spatial dimensions {}",
-        strides.size(),
-        num_spatial_dims);
-  }
-  if (padding.size() != num_spatial_dims * 2) {
-    throw error("Padding vector (length {}) does not have 2 values for each "
-                "spatial dimension {}",
-                strides.size(),
-                num_spatial_dims);
-  }
-  if (dilation.size() != 0 && dilation.size() != num_spatial_dims) {
-    throw error(
-        "Length of dilations vector {} != number of spatial dimensions {}",
-        strides.size(),
-        num_spatial_dims);
-  }
+void BuilderImpl::setAttribute(const std::string &attribute, boost::any value) {
+  attributes.insert(std::make_pair(attribute, value));
+}
+
+void BuilderImpl::clearAttribute(const std::string &attribute) {
+  attributes.erase(attribute);
 }
 
 } // namespace poponnx
