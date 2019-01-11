@@ -31,6 +31,41 @@ def test_ipu_copy_bca1():
     s.prepareDevice()
 
 
+# Will fail due to an invalid virtual graph
+def test_ipu_copy_aca1():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
+    o1 = builder.add([i1, i2])
+    o2 = builder.add([i1, i2])
+    o = builder.add([o1, o2])
+    builder.addOutputTensor(o)
+
+    builder.virtualGraph(o1, 0)
+    builder.virtualGraph(o2, 0)
+    builder.virtualGraph(o, 10)  # << Invalid virtual graph
+
+    proto = builder.getModelProto()
+
+    dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+
+    opts = poponnx.SessionOptionsCore()
+    opts.logging = {'all': 'TRACE'}
+    opts.enableVirtualGraphs = True
+
+    s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+    s.setDevice(tu.get_ipu_model(numIPUs=3))
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        s.prepareDevice()
+
+    assert (e_info.value.args[0].startswith(
+        "Op 102(ai.onnx.Add:9) has been assigned to an invalid virtual graph 10"
+    ))
+
+
 # Not supported as the same input tensors can not currently be copied to different ipus
 # def test_ipu_copy_bca4():
 

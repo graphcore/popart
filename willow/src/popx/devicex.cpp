@@ -689,6 +689,19 @@ void Devicex::prepare() {
       logging::devicex::info(
           "Created virtual graph {} from {} to {}", ipu, startTile, endTile);
     }
+
+    // Make sure that the virtual graph information is valid
+    for (Op *op : ir().getOpSchedule({})) {
+      if (op->nAtts.hasAttribute(sVirtualGraphAttribute)) {
+        int64_t index = 0;
+        op->nAtts.set(index, sVirtualGraphAttribute);
+        if (index < 0 || index >= numIPUs) {
+          throw error("Op {} has been assigned to an invalid virtual graph {}",
+                      op->str(),
+                      index);
+        }
+      }
+    }
   }
 
   popops::addCodelets(masterGraph());
