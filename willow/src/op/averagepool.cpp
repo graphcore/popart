@@ -22,6 +22,11 @@ void AveragePoolOp::setSpatialK() {
     throw error(
         "invalid kernel_shape, not same rank as the tensor operated on");
   }
+  bool count_include_pad = false;
+  nAtts.setIfPresent(count_include_pad, "count_include_pad");
+  if (count_include_pad) {
+    throw error("`count_include_pad` is not supported");
+  }
   for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
     spatialK[spDim] = kernel_shape[spDim];
   }

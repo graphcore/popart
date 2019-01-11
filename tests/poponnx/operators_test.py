@@ -132,6 +132,37 @@ def test_average_pool_3(op_tester):
     op_tester.run(init_builder, reference)
 
 
+def test_average_pool_with_count_include_pad(op_tester):
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 1, 14, 14]))
+    o = builder.averagepool([i1], [3, 3], [2, 2], [0, 0, 0, 0])
+    builder.addOutputTensor(o)
+
+    builder.removeNodeAttribute("count_include_pad", set(o))
+    builder.addNodeAttribute("count_include_pad", 1, set(o))
+
+    dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+    optimizer = poponnx.ConstSGD(0.01)
+    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
+    proto = builder.getModelProto()
+
+    opts = poponnx.SessionOptionsCore()
+    opts.logging = {'all': 'TRACE'}
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        session = poponnx.Session(
+            fnModel=proto,
+            dataFeed=dataFlow,
+            losses=losses,
+            optimizer=optimizer,
+            userOptions=opts)
+
+    assert (e_info.value.args[0].startswith(
+        "`count_include_pad` is not supported"))
+
+
 def test_maxpool_1(op_tester):
     d1 = np.random.rand(1, 1, 16, 16).astype(np.float32)
 
@@ -2358,9 +2389,10 @@ def op_tester(tmpdir):
                         print('Torch : {}', ref_out[index])
                         print('{}', np.subtract(anchor_map[key],
                                                 ref_out[index]))
-                        print('{}',
-                              np.isclose(anchor_map[key], ref_out[index],
-                                         self.rtol, self.atol))
+                        print(
+                            '{}',
+                            np.isclose(anchor_map[key], ref_out[index],
+                                       self.rtol, self.atol))
 
                     assert np.allclose(anchor_map[key], ref_out[index],
                                        self.rtol, self.atol)
