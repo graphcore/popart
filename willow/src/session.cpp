@@ -20,7 +20,6 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
                                 const InputShapeInfo &perk,
                                 const std::vector<Loss *> &lossesIn,
                                 const Optimizer *optimizerIn,
-                                const std::vector<TensorId> &cTens,
                                 const SessionOptions &userOptions,
                                 const Patterns &patterns) {
 
@@ -28,14 +27,8 @@ void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
 
-  ir.prepare({modelProto,
-              perk,
-              df,
-              lossesIn,
-              optimizerIn,
-              cTens,
-              userOptions,
-              patterns});
+  ir.prepare(
+      {modelProto, perk, df, lossesIn, optimizerIn, userOptions, patterns});
 }
 
 std::unique_ptr<Session>
@@ -44,7 +37,6 @@ Session::createFromOnnxModel(const std::string &model,
                              const InputShapeInfo &inputShapeInfo,
                              const std::vector<Loss *> &losses,
                              const Optimizer *optimizer,
-                             const std::vector<std::string> &cTens,
                              const SessionOptions &userOptions,
                              const Patterns &patterns) {
 
@@ -61,7 +53,6 @@ Session::createFromOnnxModel(const std::string &model,
                              inputShapeInfo,
                              losses,
                              optimizer,
-                             cTens,
                              userOptions,
                              patterns);
   return session;

@@ -153,7 +153,6 @@ auto main(int argc, char **argv) -> int {
       losses,
       &optimizer,
       {},
-      {},
       poponnx::Patterns({poponnx::PatternType::PREUNIREPL}));
 
   auto cpuDevice = poponnx::DeviceManager::getDeviceManager().createCpuDevice();

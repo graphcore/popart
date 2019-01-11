@@ -12,15 +12,13 @@ class Session(poponnx.SessionCore):
                  losses=[],
                  optimizer=None,
                  passes=poponnx.Patterns(),
-                 cTens=[],
                  userOptions=poponnx.SessionOptionsCore()):
 
         if passes == None:
             passes = poponnx.Patterns()
 
-        super(Session,
-              self).__init__(fnModel, dataFeed, inputShapeInfo, losses,
-                             optimizer, cTens, userOptions, passes)
+        super(Session, self).__init__(fnModel, dataFeed, inputShapeInfo,
+                                      losses, optimizer, userOptions, passes)
         self.dataFeed = dataFeed
 
     def initAnchorArrays(self):

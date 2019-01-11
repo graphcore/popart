@@ -35,19 +35,13 @@ void Devicex::weightsToHost(
     logging::devicex::debug("Writing weights to ONNX ModelProto");
     // copy from the host stream memory points to the
     // addresses on onnxModelData
-    auto &&constIds = ir().getTensors().getConstIds();
-    for (auto initId : ir().getTensors().getInitIds()) {
-      if (constIds.contains(initId)) {
-        continue;
-      }
-
-      auto found = onnxModelData.find(initId);
+    for (auto id : ir().getTensors().getIds(TensorType::Variable)) {
+      auto found = onnxModelData.find(id);
       if (found == onnxModelData.end()) {
-        throw error("No TensorId " + initId + " in final host destination map");
+        throw error("No TensorId " + id + " in final host destination map");
       }
-
       MutableVoidData mv_data = found->second;
-      hostStreamToHost(mv_data, initId);
+      hostStreamToHost(mv_data, id);
     }
   }
 }
@@ -551,6 +545,65 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   }
 }
 
+template <typename T> void Devicex::setInitVal(Tensor *tensor) {
+  masterGraph().setInitialValue<T>(
+      tensors.get(tensor->id),
+      poplar::ArrayRef<T>(static_cast<const T *>(tensor->tensorData()->data()),
+                          tensor->info.nelms()));
+}
+
+PriTask Devicex::setInitTensorValTask(Tensor *tensor) {
+  // See T6254. Currently we just use setInitialValue for all constant tensors
+  auto f = [this, tensor]() {
+    // see T5925 for making a more compact way of matching
+    // types than using this switch statement
+    switch (tensor->info.dataType()) {
+    case DataType::FLOAT: {
+      setInitVal<float>(tensor);
+      break;
+    }
+    case DataType::INT32: {
+      setInitVal<int>(tensor);
+      break;
+    }
+    case DataType::FLOAT16: {
+      throw error("setInitTensorValTask not implemented for FLOAT16. To "
+                  "implement, use Graph::setInitialValueHalf");
+    }
+
+    case DataType::UNDEFINED:
+    case DataType::UINT8:
+    case DataType::INT8:
+    case DataType::INT64:
+    case DataType::BOOL:
+    case DataType::UINT16:
+    case DataType::INT16:
+    case DataType::STRING:
+    case DataType::DOUBLE:
+    case DataType::UINT32:
+    case DataType::UINT64:
+    case DataType::COMPLEX64:
+    case DataType::COMPLEX128:
+    case DataType::BFLOAT16:
+    default: {
+      throw error(
+          "setInitTensorValTask not implemented for Tensor {} of Type {}. ",
+          tensor->id,
+          tensor->info.data_type());
+    }
+    }
+  };
+
+  return {// priority unimportant
+          0,
+          // name of this task
+          setInitTensorValTaskId(tensor->id),
+          // poplar::Tensor must exist. Other that this, this task can be
+          // performed any time
+          {initTensorTaskId(tensor->id)},
+          f};
+}
+
 PriTask Devicex::streamFromHostTask(Tensor *tensor) {
   auto f = [this, tensor]() {
     std::vector<int64_t> ipus;
@@ -715,13 +768,13 @@ void Devicex::prepare() {
 
   PriTasks tasks;
 
-  // initializers :
+  // weights (variables):
   // 1) make tensor,
   // 2) make stream from host,
   // 3) create write prog,
   // 4) make stream to host,
   // 5) create read prog.
-  for (auto id : ir().getTensors().getInitIds()) {
+  for (auto id : ir().getTensors().getIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensors().get(id);
     // 1
     tasks.add(initTensorTask(tensor));
@@ -736,6 +789,17 @@ void Devicex::prepare() {
       // 5
       tasks.add(toHostTask(tensor, progs.weightsToHostFragment()));
     }
+  }
+
+  // constants:
+  // 1) make tensor,
+  // 2) set initial value.
+  for (auto id : ir().getTensors().getIds(TensorType::Const)) {
+    Tensor *tensor = ir().getTensors().get(id);
+    // 1
+    tasks.add(initTensorTask(tensor));
+    // 2
+    tasks.add(setInitTensorValTask(tensor));
   }
 
   // stream-to-device tensors : 1)  make tensor 2) make stream
@@ -824,7 +888,7 @@ void Devicex::prepare() {
 
   if (useSyntheticData() == false) {
     logging::devicex::debug("Connecting initializer streams");
-    for (auto id : ir().getTensors().getInitIds()) {
+    for (auto id : ir().getTensors().getIds(TensorType::Variable)) {
       Tensor *tensor = ir().getTensors().get(id);
       pEngine->connectStream(h2dId(id), tensor->tensorData()->data());
     }
@@ -885,7 +949,7 @@ void Devicex::prepare() {
     logging::devicex::debug(
         "Creating host buffers for weight d2h streams, connecting");
 
-    for (auto initId : ir().getTensors().getInitIds()) {
+    for (auto initId : ir().getTensors().getIds(TensorType::Variable)) {
       PopStreamId streamId = d2hId(initId);
       Tensor *tensor       = ir().getTensors().get(initId);
       int64_t n_bytes      = tensor->info.nbytes();
@@ -898,6 +962,10 @@ void Devicex::prepare() {
 
 TaskId Devicex::streamFromHostTaskId(TensorId id) const {
   return "streamFromHostTask_" + id;
+}
+
+TaskId Devicex::setInitTensorValTaskId(TensorId id) {
+  return "setInitTensorValTask_" + id;
 }
 
 TaskId Devicex::streamToHostTaskId(TensorId id) const {

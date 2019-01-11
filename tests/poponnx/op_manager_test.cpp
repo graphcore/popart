@@ -107,7 +107,6 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
               losses,
               &optimizer,
               {},
-              {},
               Patterns({PatternType::PREUNIREPL})});
 
   // Check the ir

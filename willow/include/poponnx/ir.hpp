@@ -91,22 +91,24 @@ private:
 class Tensors {
 public:
   Tensors(Ir &pg);
-  Tensors(const std::vector<TensorId> &vals1, Ir &pg);
   ~Tensors() = default;
 
   Tensor *get(TensorId) const;
   void remove(TensorId);
   bool contains(TensorId) const;
-  // create a Tensor, either of type Const or Variable,
-  // depending on whether "id" is in constIds
-  void addInit(TensorId id, const onnx::TensorProto *);
+
+  // create a Variable Tensor
+  void addVarInit(const TensorId &, const onnx::TensorProto *);
+
+  // create a Constant Tensor
+  void addConstInit(const TensorId &, const onnx::TensorProto *);
   void addConstInit(const TensorId &, const TensorInfo &, const void *);
+
   // create a Tensor of type Stream
   void addStream(TensorId, const TensorInfo &);
   // create a Tensor of type ActGrad (basically any tensor which is
   // the output of an Op)
   void addActGrad(TensorId);
-  std::vector<TensorId> getInitIds() const;
   std::vector<TensorId> getIds(TensorType) const;
   std::vector<TensorId> getAllTensorIds() const;
   std::vector<TensorId> getNoProducerIds() const;
@@ -114,7 +116,6 @@ public:
   void append(std::stringstream &) const;
 
   const VectorAndSet &getConstIds() const { return constIds; }
-  void setConstIds(const std::vector<TensorId> &vals);
   void insertConstId(const std::string &);
   // remove all Tensors which have no producer and no consumers
   void removeIsolated();
@@ -127,6 +128,8 @@ private:
   // adds to M, but first confirms that TensorId not already in
   void insert(TensorId, std::unique_ptr<Tensor>);
 
+  void addInit(const TensorId &, const onnx::TensorProto *, TensorType);
+
   Ir &ir;
 };
 
@@ -138,7 +141,6 @@ public:
            const DataFlow &dataFlow,
            const std::vector<Loss *> &losses,
            const Optimizer *optimizer,
-           const std::vector<std::string> &cTens,
            const SessionOptions &userOptions,
            const Patterns &patterns);
 
@@ -147,8 +149,6 @@ public:
   const DataFlow &dataFlow;
   const std::vector<Loss *> &losses;
   const Optimizer *optimizer;
-  // Weights tensors which are not to be updated
-  const std::vector<std::string> &cTens;
   const SessionOptions &userOptions;
   const Patterns &patterns;
 };
@@ -166,6 +166,10 @@ public:
   ~Ir();
 
   // Set the onnxModel.
+  // A note on constant tensors: The outputs of ONNX Constant Operators
+  // will always be treated as constants, so left unchanged if in training mode
+  // Weights for training should always therefore rather appear in the ONNX
+  // initializer list, and in the ONNX input list.
   void setOnnxModel(const onnx::ModelProto &model);
 
   // Set the dataflow
@@ -183,9 +187,6 @@ public:
 
   // Set the optimization patterns
   void setPatterns(const Patterns &p);
-
-  // Set the constant tensors
-  void setConstantTensorIds(const std::vector<std::string> &ids);
 
   // Remove from the IR any tensors which are unconnected, i.e.
   // the have no producers or consumers

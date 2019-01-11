@@ -171,17 +171,20 @@ private:
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
-  PriTask initTensorTask(Tensor *tensor);
+  PriTask initTensorTask(Tensor *);
   TaskId initTensorTaskId(TensorId) const;
+
+  PriTask setInitTensorValTask(Tensor *);
+  TaskId setInitTensorValTaskId(TensorId);
 
   // Task to create a poplar::Stream to write to poplar::Tensor
   // C++ Note: if a lambda function which modifies `this' is created
   // it must be const w.r.t this, even if it not run
-  PriTask streamFromHostTask(Tensor *tensor);
+  PriTask streamFromHostTask(Tensor *);
   TaskId streamFromHostTaskId(TensorId) const;
 
   // Task to create a poplar::Stream to write from poplar::Tensor
-  PriTask streamToHostTask(Tensor *tensor);
+  PriTask streamToHostTask(Tensor *);
   TaskId streamToHostTaskId(TensorId) const;
 
   // Task to append a Copy from poplar::Stream to poplar::Tensor
@@ -259,6 +262,8 @@ private:
   // Returns true if using synthetic data, false if using real data
   // This will return the options.ignoreData flag
   bool useSyntheticData();
+
+  template <typename T> void setInitVal(Tensor *tensor);
 };
 
 } // namespace popx

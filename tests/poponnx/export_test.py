@@ -2,6 +2,16 @@ import numpy as np
 import poponnx
 import test_util as tu
 
+# model:
+#
+#  i1 --|
+#       |-- Add --|
+#  i2 --|         |
+#                 |---> o2
+#  c -------------|
+#
+#  where i1, i2 are streamed and c is constant
+
 
 def test_constants_preserved():
     # Check that `session.modelToHost` can be called when using a
@@ -10,21 +20,20 @@ def test_constants_preserved():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 2]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 2]))
-    c = builder.constant(np.array([[1., 6.], [4., 5.]], dtype=np.float32))
+    c = builder.constant(np.array([[1, 2], [3, 4]], dtype=np.float32))
     o1 = builder.add([i1, i2])
     o2 = builder.add([o1, c])
-    o = o2
-    builder.addOutputTensor(o)
+    builder.addOutputTensor(o2)
 
     proto = builder.getModelProto()
 
-    anchors = {o: poponnx.AnchorReturnType("ALL")}
+    anchors = {o2: poponnx.AnchorReturnType("ALL")}
 
     dataFlow = poponnx.DataFlow(1, anchors)
 
     optimizer = poponnx.ConstSGD(0.01)
 
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
+    losses = [poponnx.L1Loss(o2, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
     opts.logging = {'all': 'TRACE'}
@@ -42,8 +51,8 @@ def test_constants_preserved():
     session.prepareDevice()
 
     inputs = {
-        i1: np.random.rand(2, 2).astype(np.float32),
-        i2: np.random.rand(2, 2).astype(np.float32),
+        i1: np.array([[2, 2], [2, 2]]).astype(np.float32),
+        i2: np.array([[4, 4], [4, 4]]).astype(np.float32),
     }
     pystepio = poponnx.PyStepIO(inputs, anchorArrays)
     session.train(pystepio)
@@ -55,3 +64,7 @@ def test_constants_preserved():
     with open('session_proto.onnx', 'rb') as f:
         session_proto = f.read()
     assert proto == session_proto
+
+    # confirm that the output is correct. See T6186, which this tests
+    assert (np.sum(np.abs(anchorArrays[o2] - np.array([[7, 8], [9, 10]]))) <
+            1e-8)

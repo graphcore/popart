@@ -79,7 +79,6 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
               dataFlow,
               losses,
               &optimizer,
-              {},
               opts,
               Patterns({PatternType::OPTOIDENTITY, PatternType::POSTNREPL})});
 
@@ -151,7 +150,6 @@ BOOST_AUTO_TEST_CASE(RecomputeTest) {
               dataFlow,
               losses,
               &optimizer,
-              {},
               opts,
               Patterns({PatternType::OPTOIDENTITY, PatternType::POSTNREPL})});
 

@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
 
   // Build an onnx model
   auto builder    = Builder::create();
-  auto newShapeId = builder->addInitializedInputTensor(outShapeData);
+  auto newShapeId = builder->constant(outShapeData, "outShapeData");
   auto inId       = builder->addInputTensor(inInfo);
   auto outId      = builder->reshape({inId, newShapeId});
   builder->addOutputTensor(outId);
@@ -50,8 +50,7 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
               dataFlow,
               losses,
               &optimizer,
-              {newShapeId}, // constant tensors
-              {},           // no SessionOptions
+              {}, // no SessionOptions
               Patterns({PatternType::POSTNREPL})});
 
   // Check the ir

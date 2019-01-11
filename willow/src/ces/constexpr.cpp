@@ -61,9 +61,10 @@ void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
     TensorId name = node.output(0);
     // We assume that a tensor coming from a Constant Node should
     // not have a gradient computed for it or be updated during training
-    // We may need to change this assumption for some ONNX Model exporters
-    ir->getTensors().insertConstId(name);
-    ir->getTensors().addInit(name, &node.attribute(0).t());
+    // We will implement a seperate tool to convert between
+    // Constant Operator output and initializer in ONNX models (T6213)
+    ir->getTensors().addConstInit(name, &node.attribute(0).t());
+
   } else if (opid == Onnx::Operators::Add) {
     ConstExprAdd adder(node, ir);
     adder.insertOutput();

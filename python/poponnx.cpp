@@ -312,7 +312,6 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("inputShapeInfo"),
            py::arg("losses"),
            py::arg("optimizer").none(),
-           py::arg("cTens"),
            py::arg("userOptions"),
            py::arg("patterns"))
       .def("updateOptimizer", &Session::updateOptimizer)

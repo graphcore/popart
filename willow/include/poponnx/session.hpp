@@ -31,7 +31,6 @@ public:
    * \param dataFlow Configuration for the data feeds and fetches
    * \param losses A list of loss layers to use when training
    * \param optimizer The name of an optimizer to use when training
-   * \param cTens List of weight tensors which are not to be updated
    * \param userOptions String to configure session options
    * \param patterns Optimization patterns to apply
    */
@@ -39,12 +38,11 @@ public:
   static std::unique_ptr<Session>
   createFromOnnxModel(const std::string &model,
                       const DataFlow &dataFlow,
-                      const InputShapeInfo &inputShapeInfo  = InputShapeInfo(),
-                      const std::vector<Loss *> &losses     = {},
-                      const Optimizer *optimizer            = nullptr,
-                      const std::vector<std::string> &cTens = {},
-                      const SessionOptions &userOptions     = SessionOptions(),
-                      const Patterns &patterns              = Patterns());
+                      const InputShapeInfo &inputShapeInfo = InputShapeInfo(),
+                      const std::vector<Loss *> &losses    = {},
+                      const Optimizer *optimizer           = nullptr,
+                      const SessionOptions &userOptions    = SessionOptions(),
+                      const Patterns &patterns             = Patterns());
 
   /** Update the optimizer.
    *
@@ -204,7 +202,6 @@ private:
                          const InputShapeInfo &inputShapeInfo,
                          const std::vector<Loss *> &losses,
                          const Optimizer *optimizer,
-                         const std::vector<std::string> &cTens,
                          const SessionOptions &userOptions,
                          const Patterns &patterns);
 };

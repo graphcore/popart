@@ -50,9 +50,10 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
   ConstVoidData out1ShapeData = {shape1.data(), {"INT64", outShapeSize}};
 
   // Build an onnx model
-  auto builder    = Builder::create();
-  auto shape0Id   = builder->addInitializedInputTensor(out0ShapeData);
-  auto shape1Id   = builder->addInitializedInputTensor(out1ShapeData);
+  auto builder = Builder::create();
+  // The two fixed-point tensors which are Constants
+  auto shape0Id   = builder->constant(out0ShapeData, "out0ShapeData");
+  auto shape1Id   = builder->constant(out1ShapeData, "out1ShapeData");
   auto inId       = builder->addInputTensor(inInfo);
   auto outShapeId = builder->add({shape0Id, shape1Id});
   auto outId      = builder->reshape({inId, outShapeId});
@@ -73,9 +74,6 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
               dataFlow,
               losses,
               &optimizer,
-              // Labeling the two fixed-point tensors which
-              // are added together as Constant.
-              {shape0Id, shape1Id},
               {}, // no SessionOptions
               Patterns({PatternType::POSTNREPL})});
 
@@ -127,12 +125,13 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
   ConstVoidData i0cv = {i0.data(), {"INT32", std::vector<int64_t>{K, 1}}};
   ConstVoidData i1cv = {i1.data(), {"INT32", std::vector<int64_t>{1, N}}};
   auto builder       = Builder::create();
-  auto i0Id          = builder->addInitializedInputTensor(i0cv);
-  auto i1Id          = builder->addInitializedInputTensor(i1cv);
-  auto dataId        = builder->addInputTensor(dataInfo);
-  auto i01Id         = builder->add({i0Id, i1Id});
-  auto castId        = builder->cast({i01Id}, DataType::FLOAT);
-  auto outId         = builder->matmul({dataId, castId});
+  // The two fixed-point tensors which are added together are Constants
+  auto i0Id   = builder->constant(i0cv, "i0cv");
+  auto i1Id   = builder->constant(i1cv, "i1cv");
+  auto dataId = builder->addInputTensor(dataInfo);
+  auto i01Id  = builder->add({i0Id, i1Id});
+  auto castId = builder->cast({i01Id}, DataType::FLOAT);
+  auto outId  = builder->matmul({dataId, castId});
   builder->addOutputTensor(outId);
 
   auto proto      = builder->getModelProto();
@@ -150,9 +149,6 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
               dataFlow,
               losses,
               &optimizer,
-              // Labeling the two fixed-point tensors which
-              // are added together as Constant.
-              {i0Id, i1Id},
               {}, // no SessionOptions
               Patterns({PatternType::POSTNREPL})});
 
