@@ -1,3 +1,4 @@
+#include <numeric>
 #include <onnx/onnx_pb.h>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
@@ -12,7 +13,9 @@ namespace poponnx {
 ReshapeOp::ReshapeOp(const OperatorIdentifier &_opid,
                      Ir *_ir,
                      const std::vector<int64_t> &ots)
-    : Op(_opid, _ir), outShape(ots) {}
+    : Op(_opid, _ir), outShape(ots) {
+  finaliseShape();
+}
 
 ReshapeOp::ReshapeOp(const OperatorIdentifier &_opid,
                      Ir *_pir,
@@ -21,6 +24,30 @@ ReshapeOp::ReshapeOp(const OperatorIdentifier &_opid,
     : Op(_opid, _pir, name, _attr) {}
 
 const Shape &ReshapeOp::getOutShape() { return outShape; }
+
+void ReshapeOp::finaliseShape() {
+  // replace zeros with size of input dimension
+  for (int i = 0; i < outShape.size(); i++) {
+    if (outShape[i] == 0) {
+      outShape[i] = inShape(getInIndex())[i];
+    }
+  }
+
+  // a single dimension set to -1 may be inferred
+  auto infer_dim = std::find(outShape.begin(), outShape.end(), -1);
+  if (infer_dim != outShape.end()) {
+    auto in_size  = inInfo(getInIndex()).nelms();
+    auto out_size = -std::accumulate(
+        outShape.begin(), outShape.end(), 1, std::multiplies<int64_t>());
+    *infer_dim = in_size / out_size;
+
+    // search the remaining elements of outShape for another -1
+    if (std::find(++infer_dim, outShape.end(), -1) != outShape.end()) {
+      throw error("shape input to ReshapeOp can only use -1 to specify one "
+                  "unknown dimension");
+    }
+  }
+}
 
 std::vector<std::unique_ptr<Op>> ReshapeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -33,7 +60,6 @@ std::unique_ptr<Op> ReshapeOp::clone() const {
 }
 
 void ReshapeOp::setup() {
-
   // output type  : same as input type;
   // output shape : outShape, determined in the constructor
   outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), outShape};
@@ -95,6 +121,7 @@ void ReshapeOp::connectInTensor(InIndex inIndex, TensorId tenId) {
       outShape.push_back(data[i]);
     }
 
+    finaliseShape();
   } else {
     throw error("Unexpected index " + std::to_string(inIndex) +
                 " in ReshapeOp::connectInTensor");

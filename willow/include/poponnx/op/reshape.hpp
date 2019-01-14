@@ -37,6 +37,8 @@ public:
 private:
   // The shape of the data output tensor
   Shape outShape;
+
+  void finaliseShape();
 };
 
 // The gradient of reshape is the reverse of the
