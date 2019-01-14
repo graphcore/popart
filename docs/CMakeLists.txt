@@ -12,7 +12,7 @@ if (BUILD_DOCS)
   string(REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT0}")
   configure_file(user_guide/Doxyfile.in Doxyfile @ONLY)
 
-  set(RELEASE "1.0.0")
+  set(RELEASE "0.2.1")
 
   set(SUPPORTED_OPS_GEN ${CMAKE_BINARY_DIR}/docs/supported_ops_gen.rst)
 
