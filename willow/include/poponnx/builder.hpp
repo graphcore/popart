@@ -1338,11 +1338,16 @@ public:
   std::vector<int64_t> getTensorShape(const TensorId id);
 
   /**
-   * Convert the given list of initializers into ONNX constant nodes
+   * Convert the given list of initializers into ONNX Constant Nodes
    *
    * \param ids A list of initializer names
    */
   void convertInitializersToConstants(const std::vector<TensorId> &ids);
+
+  /**
+   * Convert all of the fixed-point initializers into ONNX Constant Nodes
+   */
+  void convertAllFixedPointInitializersToConstants();
 
 private:
   void configure();

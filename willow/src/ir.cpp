@@ -683,9 +683,11 @@ void Tensors::addVarInit(const TensorId &name, const onnx::TensorProto *pt) {
   if (get(name)->info.getDataTypeInfo()->isFixedPoint()) {
     if (!constIds.contains(name)) {
       std::stringstream ss;
-      ss << "A fixed point Variable tensor `" << name
-         << ". Currently only floating point tensors can be Variable, "
-         << " please set this this tensor to be the output of a Constant Op";
+      ss << "A fixed-point Variable tensor `" << name
+         << "'. Currently only floating-point tensors can be Variable. "
+         << " Consider setting fixed-point tensors to be outputs of Constant "
+         << "Ops, using (for example) "
+         << "convertAllFixedPointInitializersToConstants().";
       throw error(ss.str());
     }
   }

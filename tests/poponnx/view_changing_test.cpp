@@ -59,3 +59,39 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
   // 2) that the shape of the output tensor is as specified.
   BOOST_CHECK(ir.getTensors().get(outId)->info.shape() == outShape);
 }
+
+// as in ViewChangingTest_Reshape0, but uses an
+// initializer instead of a constant for the shape
+BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape_Initializer) {
+  Shape inShape      = {2, 5, 3, 4};
+  Shape outShape     = {10, 12};
+  Shape outShapeSize = {static_cast<int64_t>(outShape.size())};
+  TensorInfo inInfo{"FLOAT", inShape};
+  ConstVoidData outShapeData = {outShape.data(), {"INT64", outShapeSize}};
+  auto builder               = Builder::create();
+  auto newShapeId            = builder->addInitializedInputTensor(outShapeData);
+
+  // The new Shape Tensor is not a weight initializer, and should
+  // therefore be converted to the output of an ONNX Constant.
+  // We use this convert-all-non-float function to do the conversion.
+  builder->convertAllFixedPointInitializersToConstants();
+  auto inId  = builder->addInputTensor(inInfo);
+  auto outId = builder->reshape({inId, newShapeId});
+  builder->addOutputTensor(outId);
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+  auto art        = AnchorReturnType("ALL");
+  auto dataFlow   = DataFlow(1, {{outId, art}});
+  auto optimizer  = ConstSGD(0.01);
+  std::vector<Loss *> losses{new L1Loss(outId, "l1LossVal", 0.1)};
+  Ir ir;
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              losses,
+              &optimizer,
+              {},
+              Patterns({PatternType::POSTNREPL})});
+  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Reshape).size() == 1);
+  BOOST_CHECK(ir.getTensors().get(outId)->info.shape() == outShape);
+}

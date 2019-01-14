@@ -16,9 +16,11 @@ void IpuCopyOpx::grow(poplar::program::Sequence &prog) const {
 
   IpuCopyOp &op = getOp<IpuCopyOp>();
 
-  insert(
-      outId(0),
-      poputil::copyToIpu(masterGraph(), get(inId(0)), prog, static_cast<int>(op.getDestIpu())));
+  insert(outId(0),
+         poputil::copyToIpu(masterGraph(),
+                            get(inId(0)),
+                            prog,
+                            static_cast<int>(op.getDestIpu())));
 }
 
 namespace {

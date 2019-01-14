@@ -845,6 +845,19 @@ std::vector<int64_t> BuilderImpl::getTensorShape(const TensorId id) {
   return shape;
 }
 
+void BuilderImpl::convertAllFixedPointInitializersToConstants() {
+  auto graph = model_.graph();
+  std::vector<TensorId> to_const;
+  for (auto &initializer : graph.initializer()) {
+    if (getDataTypeInfoMap()
+            .at(onnxutil::getDataType(initializer.data_type()))
+            .isFixedPoint()) {
+      to_const.push_back(initializer.name());
+    }
+  }
+  convertInitializersToConstants(to_const);
+}
+
 void BuilderImpl::convertInitializersToConstants(
     const std::vector<TensorId> &ids) {
   auto *graph = model_.mutable_graph();

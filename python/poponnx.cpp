@@ -742,6 +742,8 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("convertInitializersToConstants",
            &Builder::convertInitializersToConstants,
            py::arg("ids"))
+      .def("convertAllFixedPointInitializersToConstants",
+           &Builder::convertAllFixedPointInitializersToConstants)
       .def("virtualGraph",
            static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
                &Builder::virtualGraph),

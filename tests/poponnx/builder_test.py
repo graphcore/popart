@@ -1257,3 +1257,27 @@ def test_convert_initializers_to_constants(tmpdir):
     ids = builder.getInputTensorIds()
     assert (i1 in ids)
     assert (i2 not in ids)
+
+
+def test_convert_all_fixed_point_initializers_to_constants(tmpdir):
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 3]))
+    i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+    o1 = builder.reshape([i1, i2])
+
+    i3 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [3, 2]))
+    i4 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+    o2 = builder.reshape([i3, i4])
+
+    o = builder.add([o1, o2])
+    builder.addOutputTensor(o)
+
+    builder.convertAllFixedPointInitializersToConstants()
+
+    ids = builder.getInputTensorIds()
+    assert (i1 in ids)
+    assert (i2 not in ids)
+
+    assert (i3 in ids)
+    assert (i4 not in ids)
