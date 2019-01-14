@@ -1951,6 +1951,7 @@ def test_lstm_torch_grad(op_tester):
         return [Y2, a.grad, wig, whg, None]
 
     op_tester.passes = ['PreUniRepl']
+    op_tester.atol = 1e-07
     op_tester.run(init_builder, reference, 'train')
 
 
@@ -2143,6 +2144,7 @@ def test_lstm_torch_grad_all_inputs(op_tester):
         return [Y2, a.grad, wig, whg, b_grad, h0.grad, c0.grad, None]
 
     op_tester.passes = ['PreUniRepl']
+    op_tester.atol = 1e-07
     op_tester.run(init_builder, reference, 'train')
 
 
