@@ -2283,103 +2283,111 @@ def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
 
 
 def test_gather_rank2_1(op_tester):
-    d1 = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]).astype(np.float32)
-    d2 = np.arange(2, dtype=np.int32)
+    d1 = np.array([[-1, -2, -3], [4, 5, 6], [7, 8, 9]]).astype(np.float32)
+    d2 = np.array([0, 2]).astype(np.int32)
+    d_d1 = np.array([[-0.1, -0.1, -0.1], [0, 0, 0], [0.1, 0.1,
+                                                     0.1]]).astype(np.float32)
     axis = 0
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        np.random.shuffle(d2)
         i2 = builder.addInputTensor(d2)
         o = builder.gather([i1, i2], axis)
         builder.addOutputTensor(o)
-        return [o]
+        return [o, 'd__' + i1]
 
     def reference(ref_data):
         out = np.take(d1, d2, axis=axis)
-        return [out]
+        return [out, d_d1]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
 
 
 def test_gather_rank2_2(op_tester):
-    d1 = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]]).astype(np.float32)
+    d1 = np.array([[-1, -2, -3], [4, 5, 6], [7, 8, 9]]).astype(np.float32)
     d2 = np.arange(2, dtype=np.int32).reshape(1, 2)
+    d_d1 = np.array([[-0.1, -0.1, 0], [0.1, 0.1, 0], [0.1, 0.1,
+                                                      0]]).astype(np.float32)
     axis = 1
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        np.random.shuffle(d2)
         i2 = builder.addInputTensor(d2)
         o = builder.gather([i1, i2], axis)
         builder.addOutputTensor(o)
-        return [o]
+        return [o, 'd__' + i1]
 
     def reference(ref_data):
         out = np.take(d1, d2, axis=axis)
-        return [out]
+        return [out, d_d1]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
 
 
 def test_gather_rank3_1(op_tester):
-    d1 = np.array([[[1, 2, 3], [4, 5, 6], [7, 8, 9]]]).astype(np.float32)
+    d1 = np.array([[[-1, -2, -3], [4, 5, 6], [7, 8, 9]]]).astype(np.float32)
     d2 = np.arange(2, dtype=np.int32)
+    d_d1 = np.array([[[-0.1, -0.1, 0], [0.1, 0.1, 0], [0.1, 0.1,
+                                                       0]]]).astype(np.float32)
     axis = 2
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        np.random.shuffle(d2)
         i2 = builder.addInputTensor(d2)
         o = builder.gather([i1, i2], axis)
         builder.addOutputTensor(o)
-        return [o]
+        return [o, 'd__' + i1]
 
     def reference(ref_data):
         out = np.take(d1, d2, axis=axis)
-        return [out]
+        return [out, d_d1]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
 
 
 def test_gather_rank1_1(op_tester):
     d1 = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]).astype(np.float32)
     d2 = np.arange(2, dtype=np.int32)
+    d_d1 = np.array([0.1, 0.1, 0, 0, 0, 0, 0, 0, 0]).astype(np.float32)
     axis = 0
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        np.random.shuffle(d2)
         i2 = builder.addInputTensor(d2)
         o = builder.gather([i1, i2], axis)
         builder.addOutputTensor(o)
-        return [o]
+        return [o, 'd__' + i1]
 
     def reference(ref_data):
         out = np.take(d1, d2, axis=axis)
-        return [out]
+        return [out, d_d1]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
 
 
 def test_gather_rank1_0(op_tester):
     d1 = np.array([1, 2, 3, 4, 5, 6, 7, 8, 9]).astype(np.float32)
     d2 = np.array([]).astype(np.int32)
+    d_d1 = np.array([0, 0, 0, 0, 0, 0, 0, 0, 0]).astype(np.float32)
     axis = 0
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        np.random.shuffle(d2)
         i2 = builder.addInputTensor(d2)
         o = builder.gather([i1, i2], axis)
         builder.addOutputTensor(o)
-        return [o]
+        return [o, 'd__' + i1]
 
     def reference(ref_data):
         out = np.take(d1, d2, axis=axis)
-        return [out]
+        return [out, d_d1]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
 
 
 def test_gather_example1(op_tester):
@@ -2389,7 +2397,6 @@ def test_gather_example1(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        np.random.shuffle(d2)
         i2 = builder.addInputTensor(d2)
         o = builder.gather([i1, i2], axis)
         builder.addOutputTensor(o)
@@ -2399,6 +2406,7 @@ def test_gather_example1(op_tester):
         out = np.take(d1, d2, axis=axis)
         return [out]
 
+    op_tester.passes = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -2406,21 +2414,96 @@ def test_gather_example2(op_tester):
     d1 = np.array([[1.0, 1.2, 1.9], [2.3, 3.4, 3.9], [4.5, 5.7,
                                                       5.9]]).astype(np.float32)
     d2 = np.array([[0, 2]]).astype(np.int32)
+    d_d1 = np.array([[0.1, 0, 0.1], [0.1, 0, 0.1], [0.1, 0,
+                                                    0.1]]).astype(np.float32)
     axis = 1
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        np.random.shuffle(d2)
         i2 = builder.addInputTensor(d2)
         o = builder.gather([i1, i2], axis)
         builder.addOutputTensor(o)
-        return [o]
+        return [o, 'd__' + i1]
 
     def reference(ref_data):
         out = np.take(d1, d2, axis=axis)
-        return [out]
+        return [out, d_d1]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_scatter_0(op_tester):
+    data = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0],
+                     [0.0, 0.0, 0.0]]).astype(np.float32)
+    indices = np.array([[1, 0, 2], [0, 2, 1]]).astype(np.int32)
+    updates = np.array([[-1.0, -1.1, -1.2], [2.0, 2.1,
+                                             2.2]]).astype(np.float32)
+    output = np.array([[2.0, -1.1, 0.0], [-1.0, 0.0, 2.2],
+                       [0.0, 2.1, -1.2]]).astype(np.float32)
+    axis = 0
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(data)
+        i2 = builder.addInputTensor(indices)
+        i3 = builder.addInputTensor(updates)
+        o = builder.scatter([i1, i2, i3], axis)
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + i3]
+
+    def reference(ref_data):
+        return [output, data, np.sign(updates) * 0.1]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_scatter_1(op_tester):
+    data = np.array([[1.0, 2.0, 3.0, 4.0, 5.0]]).astype(np.float32)
+    indices = np.array([[1, 3]]).astype(np.int32)
+    updates = np.array([[-1.1, 2.1]]).astype(np.float32)
+    output = np.array([[1.0, -1.1, 3.0, 2.1, 5.0]]).astype(np.float32)
+    d_data = np.array([[0.1, 0, 0.1, 0, 0.1]]).astype(np.float32)
+    axis = 1
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(data)
+        i2 = builder.addInputTensor(indices)
+        i3 = builder.addInputTensor(updates)
+        o = builder.scatter([i1, i2, i3], axis)
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + i3]
+
+    def reference(ref_data):
+        return [output, d_data, np.sign(updates) * 0.1]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
+
+
+def test_scatter_2(op_tester):
+    data = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0],
+                     [0.0, 0.0, 0.0]]).astype(np.float32)
+    indices = np.array([[1, 0, 2], [0, 2, 1]]).astype(np.int32)
+    updates = np.array([[-1.0, -1.1, -1.2], [2.0, 2.1,
+                                             2.2]]).astype(np.float32)
+    output = np.array([[-1.1, -1, -1.2], [2, 2.2, 2.1],
+                       [0.0, 0.0, 0.0]]).astype(np.float32)
+    axis = 1
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(data)
+        i2 = builder.addInputTensor(indices)
+        i3 = builder.addInputTensor(updates)
+        o = builder.scatter([i1, i2, i3], axis)
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + i3]
+
+    def reference(ref_data):
+        return [output, data, np.sign(updates) * 0.1]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
 
 
 def test_reshape(op_tester):
@@ -2703,10 +2786,9 @@ def op_tester(tmpdir):
                         print('Torch : {}', ref_out[index])
                         print('{}', np.subtract(anchor_map[key],
                                                 ref_out[index]))
-                        print(
-                            '{}',
-                            np.isclose(anchor_map[key], ref_out[index],
-                                       self.rtol, self.atol))
+                        print('{}',
+                              np.isclose(anchor_map[key], ref_out[index],
+                                         self.rtol, self.atol))
 
                     assert np.allclose(anchor_map[key], ref_out[index],
                                        self.rtol, self.atol)

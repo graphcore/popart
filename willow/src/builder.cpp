@@ -226,6 +226,12 @@ TensorId Builder::relu(const std::vector<TensorId> &args,
   return impl_->op(Onnx::Operators::Relu, args, {}, name)[0];
 }
 
+TensorId Builder::scatter(const std::vector<TensorId> args,
+                          int64_t axis,
+                          const std::string &name) {
+  return impl_->op(Onnx::Operators::Scatter, args, {{"axis", axis}}, name)[0];
+}
+
 TensorId Builder::sigmoid(const std::vector<TensorId> &args,
                           const std::string &name) {
   return impl_->op(Onnx::Operators::Sigmoid, args, {}, name)[0];

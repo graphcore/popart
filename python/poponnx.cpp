@@ -496,6 +496,11 @@ PYBIND11_MODULE(poponnx_core, m) {
            &Builder::relu,
            py::arg("args"),
            py::arg("debugPrefix") = std::string())
+      .def("scatter",
+           &Builder::scatter,
+           py::arg("args"),
+           py::arg("axis"),
+           py::arg("debugPrefix") = std::string())
       .def("sigmoid",
            &Builder::sigmoid,
            py::arg("args"),

@@ -16,6 +16,15 @@ private:
   int64_t axis;
 };
 
+class GatherGradOpx : public Opx {
+public:
+  GatherGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+
+private:
+  int64_t axis;
+};
+
 } // namespace popx
 } // namespace poponnx
 

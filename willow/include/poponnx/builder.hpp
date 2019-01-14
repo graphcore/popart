@@ -491,6 +491,20 @@ public:
                 const std::string &name = {});
 
   /**
+   * Add the scatter operator to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Scatter
+   *
+   * \param args The tensor argument
+   * \param name Optional identifer for operation
+   * \param axis The axis to scatter on
+   * \return The name of the result tensor
+   */
+  TensorId scatter(const std::vector<TensorId> args,
+                   int64_t axis,
+                   const std::string &name = {});
+
+  /**
    * Add the sigmoid operator to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sigmoid
