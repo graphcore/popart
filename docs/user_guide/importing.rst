@@ -18,10 +18,10 @@ contains an entry to fetch that anchor.
   import torch.onnx
   import torchvision
 
-  in = Variable(torch.randn(4, 3, 224, 224))
+  i = torch.FloatTensor(torch.randn(4, 3, 224, 224))
   model = torchvision.models.alexnet(pretrained=True)
 
-  torch.onnx.export(model, in, "alexnet.onnx")
+  torch.onnx.export(model, i, "alexnet.onnx")
 
   # Create a runtime environment
   anchors = {"out" : poponnx.AnchorReturnType("ALL")}

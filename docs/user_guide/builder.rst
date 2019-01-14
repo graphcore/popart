@@ -10,11 +10,13 @@ In this example, a simple addition is prepared for execution.
 
   import poponnx
 
+  builder = poponnx.Builder()
+
   # Build a simple graph
   i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
   i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
-  o = builder.add(i1, i2)
+  o = builder.add([i1, i2])
 
   builder.addOutputTensor(o)
 
@@ -22,7 +24,7 @@ In this example, a simple addition is prepared for execution.
 
   # Create a runtime environment
   anchors = {o : poponnx.AnchorReturnType("ALL")}
-  dataFeed = poponnx.DataFlow(500, 4, anchors)
+  dataFeed = poponnx.DataFlow(1, anchors)
 
   session = poponnx.Session(proto, dataFeed)
 
