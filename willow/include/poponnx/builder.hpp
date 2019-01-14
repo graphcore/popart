@@ -1323,6 +1323,13 @@ public:
    */
   std::vector<int64_t> getTensorShape(const TensorId id);
 
+  /**
+   * Convert the given list of initializers into ONNX constant nodes
+   *
+   * \param ids A list of initializer names
+   */
+  void convertInitializersToConstants(const std::vector<TensorId> &ids);
+
 private:
   void configure();
   void configure(const std::string &modelProtoOrFilename);

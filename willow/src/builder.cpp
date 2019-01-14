@@ -659,7 +659,6 @@ void Builder::loadModelProto(const std::string &modelProtoOrFilename) {
   impl_->loadModelProto(modelProtoOrFilename);
 }
 
-
 std::string Builder::getModelProto() const { return impl_->getModelProto(); }
 
 std::vector<TensorId> Builder::getInputTensorIds() const {
@@ -676,6 +675,10 @@ std::vector<TensorId> Builder::getValueTensorIds() const {
 
 std::vector<int64_t> Builder::getTensorShape(const TensorId id) {
   return impl_->getTensorShape(id);
+}
+
+void Builder::convertInitializersToConstants(const std::vector<TensorId> &ids) {
+  impl_->convertInitializersToConstants(ids);
 }
 
 void Builder::setAttribute(const std::string &attribute, boost::any value) {

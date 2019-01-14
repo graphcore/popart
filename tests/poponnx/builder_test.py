@@ -787,13 +787,9 @@ def test_set_weights_from_host():
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         session.infer(stepio)
-        assert (e_info.value.args[0].find(
-            "Must call weightsFromHost before infer as the model has initializers"
-        ))
 
-    session.weightsFromHost()
-
-    session.infer(stepio)
+    assert (e_info.value.args[0].startswith(
+        "Must call weightsFromHost before infer as the"))
 
 
 def test_add_int_attribute():
@@ -904,8 +900,9 @@ def test_add_attribute_missing_node():
     val = 100
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.addNodeAttribute("test", val, set(("i", "j")))
-        assert (e_info.value.args[0].find(
-            "Could not find a node with outputs i, j."))
+
+    assert (
+        e_info.value.args[0].find("Could not find a node with outputs i, j."))
 
 
 def test_has_attribute():
@@ -979,7 +976,8 @@ def test_dont_override_attribute():
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.addNodeAttribute("test", 100, set(o))
-        assert (e_info.value.args[0].find("Node already has attribute test."))
+
+    assert (e_info.value.args[0] == "Node already has attribute test.")
 
 
 def test_get_attribute_doesnt_exist():
@@ -994,8 +992,8 @@ def test_get_attribute_doesnt_exist():
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.getFloatNodeAttribute("test1", set(o))
-        assert (
-            e_info.value.args[0].find("Node does not have an attribute test1"))
+
+    assert (e_info.value.args[0] == "Node does not have an attribute test1.")
 
 
 def test_remove_attribute():
@@ -1035,8 +1033,9 @@ def test_remove_attribute_doesnt_exist():
     assert (res)
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.removeNodeAttribute("test1", set(o))
-        assert (e_info.value.args[0].find(
-            "Cannot remove attribute test1 as it does not exist."))
+
+    assert (e_info.value.args[0] ==
+            "Cannot remove attribute test1 as it does not exist.")
 
 
 def test_get_attribute_wrong_type_int():
@@ -1051,7 +1050,8 @@ def test_get_attribute_wrong_type_int():
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.getInt64NodeAttribute("test", set(o))
-        assert (e_info.value.args[0].find("Node test is not an integer."))
+
+    assert (e_info.value.args[0].find("Node test is not an integer."))
 
 
 def test_get_attribute_wrong_type_int_vector():
@@ -1066,8 +1066,8 @@ def test_get_attribute_wrong_type_int_vector():
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.getInt64VectorNodeAttribute("test", set(o))
-        assert (
-            e_info.value.args[0].find("Node test is not an integer vector."))
+
+    assert (e_info.value.args[0].find("Node test is not an integer vector."))
 
 
 def test_get_attribute_wrong_type_float():
@@ -1082,7 +1082,8 @@ def test_get_attribute_wrong_type_float():
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.getFloatNodeAttribute("test", set(o))
-        assert (e_info.value.args[0].find("Node test is not a float."))
+
+    assert (e_info.value.args[0].find("Node test is not a float."))
 
 
 def test_get_attribute_wrong_type_float_vector():
@@ -1097,7 +1098,8 @@ def test_get_attribute_wrong_type_float_vector():
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.getFloatVectorNodeAttribute("test", set(o))
-        assert (e_info.value.args[0].find("Node test is not a float vector."))
+
+    assert (e_info.value.args[0].find("Node test is not a float vector."))
 
 
 def test_get_attribute_wrong_type_string():
@@ -1112,7 +1114,8 @@ def test_get_attribute_wrong_type_string():
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.getStringNodeAttribute("test", set(o))
-        assert (e_info.value.args[0].find("Node test is not a string."))
+
+    assert (e_info.value.args[0].find("Node test is not a string."))
 
 
 def test_get_attribute_wrong_type_string_vector():
@@ -1127,7 +1130,8 @@ def test_get_attribute_wrong_type_string_vector():
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         builder.getStringVectorNodeAttribute("test", set(o))
-        assert (e_info.value.args[0].find("Node test is not a string vector."))
+
+    assert (e_info.value.args[0].find("Node test is not a string vector."))
 
 
 def test_load_onnx_model_from_other_builder(tmpdir):
@@ -1231,3 +1235,25 @@ def test_load_onnx_model_from_file(tmpdir):
     session.infer(stepio)
 
     assert (np.array_equal(anchors[o], [4, 6]))
+
+
+def test_convert_initializers_to_constants(tmpdir):
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 3]))
+    i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+
+    o = builder.reshape([i1, i2])
+
+    builder.addOutputTensor(o)
+
+    builder.convertInitializersToConstants([i2])
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        builder.convertInitializersToConstants(["unknown"])
+    assert (e_info.value.args[0] ==
+            "TensorId unknown not in the model initalizers")
+
+    ids = builder.getInputTensorIds()
+    assert (i1 in ids)
+    assert (i2 not in ids)

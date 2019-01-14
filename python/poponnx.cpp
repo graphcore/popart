@@ -734,6 +734,9 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("getOutputTensorIds", &Builder::getOutputTensorIds)
       .def("getValueTensorIds", &Builder::getValueTensorIds)
       .def("getTensorShape", &Builder::getTensorShape, py::arg("id"))
+      .def("convertInitializersToConstants",
+           &Builder::convertInitializersToConstants,
+           py::arg("ids"))
       .def("virtualGraph",
            static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
                &Builder::virtualGraph),

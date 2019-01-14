@@ -83,9 +83,9 @@ TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo) {
   return id;
 }
 
-static void populateTenorProtoFromConstVoidData(const ConstVoidData &initData,
-                                                const std::string &id,
-                                                onnx::TensorProto *tp) {
+static void populateTensorProtoFromConstVoidData(const ConstVoidData &initData,
+                                                 const std::string &id,
+                                                 onnx::TensorProto *tp) {
   auto onnxTensorType = initData.info.getOnnxTypeProto();
 
   tp->set_data_type(onnxutil::getTPDataType(initData.info.dataType()));
@@ -160,7 +160,7 @@ TensorId BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData) {
   *type      = initData.info.getOnnxTypeProto();
 
   auto *initializer = graph->add_initializer();
-  populateTenorProtoFromConstVoidData(initData, id, initializer);
+  populateTensorProtoFromConstVoidData(initData, id, initializer);
 
   return id;
 }
@@ -525,7 +525,7 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
   } else if (tinfo == typeid(ConstVoidData)) {
     attr.set_type(onnx::AttributeProto::TENSOR);
     auto *t = attr.mutable_t();
-    populateTenorProtoFromConstVoidData(
+    populateTensorProtoFromConstVoidData(
         boost::any_cast<ConstVoidData>(attributeValue), attributeName, t);
   } else {
     throw error("Unsupported attribute value type {}", tinfo.name());
@@ -540,7 +540,7 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
   attr.set_type(onnx::AttributeProto::TENSOR);
 
   auto *t = attr.mutable_t();
-  populateTenorProtoFromConstVoidData(attributeValue, attributeName, t);
+  populateTensorProtoFromConstVoidData(attributeValue, attributeName, t);
 }
 
 onnx::AttributeProto &
@@ -843,6 +843,77 @@ std::vector<int64_t> BuilderImpl::getTensorShape(const TensorId id) {
     shape.push_back(dim.dim_value());
   }
   return shape;
+}
+
+void BuilderImpl::convertInitializersToConstants(
+    const std::vector<TensorId> &ids) {
+  auto *graph = model_.mutable_graph();
+
+  std::set<TensorId> initializer_names;
+  for (auto &initializer : graph->initializer()) {
+    initializer_names.insert(initializer.name());
+  }
+
+  for (auto &id : ids) {
+    if (initializer_names.count(id) == 0) {
+      throw error("TensorId {} not in the model initalizers", id);
+    }
+  }
+
+  // The constants need to be before any consumers, so make a new list and then
+  // append the existing list to it.
+  google::protobuf::RepeatedPtrField<onnx::NodeProto> new_nodes;
+
+  // First add in constants
+  for (auto &id : ids) {
+    auto *initializers = graph->mutable_initializer();
+    for (auto initializer = initializers->begin();
+         initializer != initializers->end();
+         ++initializer) {
+      if (initializer->name() == id) {
+        auto *node = new_nodes.Add();
+        node->set_name(id);
+        node->set_op_type(Onnx::Operators::Constant.type);
+        node->set_domain("");
+        node->add_output(id);
+
+        auto *attr = node->add_attribute();
+        attr->set_name("value");
+        attr->set_type(onnx::AttributeProto::TENSOR);
+        auto *t = attr->mutable_t();
+        *t      = *initializer;
+        break;
+      }
+    }
+  }
+
+  // Append the previous nodes
+  new_nodes.MergeFrom(graph->node());
+  graph->mutable_node()->Swap(&new_nodes);
+
+  // Now remove the initializers and inputs
+  for (auto &id : ids) {
+    auto *initializers = graph->mutable_initializer();
+    for (auto initializer = initializers->begin();
+         initializer != initializers->end();
+         ++initializer) {
+      if (initializer->name() == id) {
+        initializers->erase(initializer);
+        break;
+      }
+    }
+
+    auto *inputs = graph->mutable_input();
+    for (auto input = inputs->begin(); input != inputs->end(); ++input) {
+      if (input->name() == id) {
+        inputs->erase(input);
+        break;
+      }
+    }
+  }
+
+  onnx::checker::check_model(model_);
+  return;
 }
 
 void BuilderImpl::setAttribute(const std::string &attribute, boost::any value) {
