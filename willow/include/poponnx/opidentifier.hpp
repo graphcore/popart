@@ -306,7 +306,7 @@ const static AiGraphcoreOpIdV1 IdentityGrad("IdentityGrad");
 // constexpr static char InstanceNormalization[] = "InstanceNormalization";
 // constexpr static char IsNaN[] = "IsNan";
 // constexpr static char LRN[] = "LRN";
-// constexpr static char LSTM[] = "LSTM";
+const static AiGraphcoreOpIdV1 LSTMGrad("LSTMGrad");
 // constexpr static char LeakyRelu[] = "LeakyRely";
 // constexpr static char Less[] = "Less";
 const static AiGraphcoreOpIdV1 LogGrad("LogGrad");

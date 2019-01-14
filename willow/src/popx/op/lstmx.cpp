@@ -44,47 +44,55 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
 
   auto intermediate = createIntermediate();
   poplar::Tensor output, cell_state;
-  std::tie(output, cell_state) =
-      popnn::lstm::lstmFwd(graph(),
-                           createLSTMParams(),
-                           init_state,
-                           get(inId(LSTMOp::getInputInIndex())),
-                           *weights,
-                           intermediate.get(),
-                           prog,
-                           idStr(),
-                           dv_p->lstmOptions,
-                           &dv_p->matmulCache);
-
-  auto lstm_op            = getLSTMOp();
-  auto batch_size         = static_cast<unsigned>(lstm_op->getBatchSize());
-  unsigned hidden_size    = static_cast<unsigned>(lstm_op->getHiddenSize());
-  unsigned num_directions = static_cast<unsigned>(lstm_op->getNumDirections());
+  auto input                   = get(inId(LSTMOp::getInputInIndex()));
+  std::tie(output, cell_state) = popnn::lstm::lstmFwd(graph(),
+                                                      createLSTMParams(),
+                                                      init_state,
+                                                      input,
+                                                      *weights,
+                                                      intermediate.get(),
+                                                      prog,
+                                                      idStr(),
+                                                      dv_p->lstmOptions,
+                                                      &dv_p->matmulCache);
 
   if (intermediate) {
-    unsigned num_fwd_intermediates =
-        static_cast<unsigned>(intermediate->shape()[1]);
-
-    insert(outId(LSTMOp::getOutputOutIndex()),
-           intermediate->slice(
-               num_fwd_intermediates - 1, num_fwd_intermediates, 1));
+    insert(outId(LSTMOp::getIntermediatesPassThroughIndex()), *intermediate);
   }
 
-  insert(outId(LSTMOp::getHiddenStateOutIndex()),
-         output.reshape({num_directions, batch_size, hidden_size}));
-  insert(outId(LSTMOp::getCellStateOutIndex()),
-         cell_state.reshape({num_directions, batch_size, hidden_size}));
+  reshapeAndInsert(LSTMOp::getOutputOutIndex(), output);
+
+  auto output_h_state = output[createLSTMParams().timeSteps - 1];
+  reshapeAndInsert(LSTMOp::getHiddenStateOutIndex(), output_h_state);
+  reshapeAndInsert(LSTMOp::getCellStateOutIndex(), cell_state);
+
+  insert(outId(LSTMOp::getInitStateOutputPassThroughIndex()),
+         init_state.output);
+  insert(outId(LSTMOp::getInitStateCellStatePassThroughIndex()),
+         init_state.cellState);
+  insert(outId(LSTMOp::getInputWeightsPassThroughIndex()),
+         weights->inputWeights);
+  insert(outId(LSTMOp::getOutputWeightsPassThroughIndex()),
+         weights->outputWeights);
+  insert(outId(LSTMOp::getBiasesPassThroughIndex()), weights->biases);
+  insert(outId(LSTMOp::getInputPassThroughIndex()), input);
+  insert(outId(LSTMOp::getOutputPassThroughIndex()), output);
+}
+
+void LSTMOpx::reshapeAndInsert(OutIndex index,
+                               const poplar::Tensor &tensor) const {
+  insert(outId(index), tensor.reshape(outInfo(index).shape_szt()));
 }
 
 void LSTMOpx::growBias(poplar::program::Sequence &prog) const {
   // bias in onnx is shape [num_directions, 8 * hidden_size]
   // bias in poplibs is [4, hidden_size]
-  auto lstm_op         = getLSTMOp();
-  unsigned hidden_size = static_cast<unsigned>(lstm_op->getHiddenSize());
+  auto &lstm_op        = getOp<LSTMOp>();
+  unsigned hidden_size = static_cast<unsigned>(lstm_op.getHiddenSize());
 
   auto biases = reshapePoplibWeightsForOnnx(getLSTMWeights().biases, false);
 
-  if (lstm_op->hasBiasInput()) {
+  if (lstm_op.hasBiasInput()) {
     auto bias_input = get(inId(LSTMOp::getBiasInIndex()));
 
     poplar::program::Copy copyProg(bias_input.slice(0, 4 * hidden_size, 1),
@@ -124,12 +132,11 @@ poplar::Tensor LSTMOpx::createInput(InIndex index) const {
     auto outputWeights = getLSTMWeights().outputWeights;
     return reshapePoplibWeightsForOnnx(outputWeights, true);
   } else if (index == LSTMOp::getInitialCInIndex()) {
-    auto lstm_op = getLSTMOp();
+    auto &lstm_op = getOp<LSTMOp>();
 
-    unsigned batch_size  = static_cast<unsigned>(lstm_op->getBatchSize());
-    unsigned hidden_size = static_cast<unsigned>(lstm_op->getHiddenSize());
-    unsigned num_directions =
-        static_cast<unsigned>(lstm_op->getNumDirections());
+    unsigned batch_size     = static_cast<unsigned>(lstm_op.getBatchSize());
+    unsigned hidden_size    = static_cast<unsigned>(lstm_op.getHiddenSize());
+    unsigned num_directions = static_cast<unsigned>(lstm_op.getNumDirections());
 
     auto init_c = getInitialState().cellState;
     return init_c.reshape({num_directions, batch_size, hidden_size});
@@ -205,19 +212,21 @@ popnn::lstm::LstmWeights LSTMOpx::getLSTMWeights() const {
   return *weights;
 }
 
-popnn::lstm::LstmParams LSTMOpx::createLSTMParams() const {
-  auto lstm_op = getLSTMOp();
-
-  auto in_info         = inInfo(LSTMOp::getInputInIndex());
-  auto seq_length      = static_cast<unsigned>(lstm_op->getSeqLength());
-  auto batch_size      = static_cast<unsigned>(lstm_op->getBatchSize());
-  unsigned input_size  = static_cast<unsigned>(lstm_op->getInputSize());
-  unsigned hidden_size = static_cast<unsigned>(lstm_op->getHiddenSize());
+popnn::lstm::LstmParams LSTMOpx::createLSTMParams(const LSTMOp &lstm_op) {
+  auto in_info         = lstm_op.inInfo(LSTMOp::getInputInIndex());
+  auto seq_length      = static_cast<unsigned>(lstm_op.getSeqLength());
+  auto batch_size      = static_cast<unsigned>(lstm_op.getBatchSize());
+  unsigned input_size  = static_cast<unsigned>(lstm_op.getInputSize());
+  unsigned hidden_size = static_cast<unsigned>(lstm_op.getHiddenSize());
 
   auto params = popnn::lstm::LstmParams(
       popType(in_info), batch_size, seq_length, {input_size, hidden_size});
-  params.outputFullSequence = false;
   return params;
+}
+
+popnn::lstm::LstmParams LSTMOpx::createLSTMParams() const {
+  auto &lstm_op = getOp<LSTMOp>();
+  return createLSTMParams(lstm_op);
 }
 
 std::vector<TensorId> LSTMOpx::mustExistBeforeCreate(InIndex) const {
@@ -238,10 +247,94 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
   }
 }
 
-LSTMOp *LSTMOpx::getLSTMOp() const { return dynamic_cast<LSTMOp *>(op_p); }
+LSTMGradOpx::LSTMGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  verifyOp<LSTMGradOp>(op, Onnx::GradOperators::LSTMGrad);
+}
+
+void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
+  popnn::lstm::LstmState init_state;
+  init_state.output    = get(inId(LSTMGradOp::getInitStateOutputInIndex()));
+  init_state.cellState = get(inId(LSTMGradOp::getInitStateCellStateInIndex()));
+
+  popnn::lstm::LstmWeights weights;
+  weights.inputWeights  = get(inId(LSTMGradOp::getInputWeightsInIndex()));
+  weights.outputWeights = get(inId(LSTMGradOp::getOutputWeightsInIndex()));
+  weights.biases        = get(inId(LSTMGradOp::getBiasesInIndex()));
+
+  auto intermediates  = get(inId(LSTMGradOp::getIntermediatesInIndex()));
+  auto forward_input  = get(inId(LSTMGradOp::getInputInIndex()));
+  auto forward_output = get(inId(LSTMGradOp::getOutputInIndex()));
+
+  auto &lstm_grad_op = getOp<LSTMGradOp>();
+  auto &lstm_op      = lstm_grad_op.getForwardOp();
+  auto batch_size    = static_cast<unsigned>(lstm_op.getBatchSize());
+  auto hidden_size   = static_cast<unsigned>(lstm_op.getHiddenSize());
+  auto seq_length    = static_cast<unsigned>(lstm_op.getSeqLength());
+  auto lstm_params   = createLSTMParams();
+
+  auto output_grad = get(inId(LSTMGradOp::getOutputGradInIndex()))
+                         .reshape({seq_length, batch_size, hidden_size});
+  auto output_c_grad = get(inId(LSTMGradOp::getCellStateOutputGradInIndex()))
+                           .reshape({batch_size, hidden_size});
+  auto output_h_grad = get(inId(LSTMGradOp::getHiddenStateOutputGradInIndex()))
+                           .reshape({batch_size, hidden_size});
+
+  // TODO find out what this is for
+  // it's done in tensorflow and enigma
+  auto output_grad_copy = cloneNcopy(prog, output_grad);
+  popops::addInPlace(graph(),
+                     output_grad_copy[output_grad_copy.dim(0) - 1],
+                     output_h_grad,
+                     prog,
+                     idStr());
+
+  poplar::Tensor input_grad;
+  popnn::lstm::LstmWeights weights_grad;
+
+  auto init_state_grad = lstmBwdWithWU(graph(),
+                                       lstm_params,
+                                       prog,
+                                       init_state,
+                                       intermediates,
+                                       weights,
+                                       forward_input,
+                                       forward_output,
+                                       output_grad_copy,
+                                       &output_c_grad,
+                                       &input_grad,
+                                       weights_grad,
+                                       idStr(),
+                                       dv_p->lstmOptions,
+                                       &dv_p->matmulCache);
+
+  insert(outId(LSTMGradOp::getInputOutIndex()), input_grad);
+  insert(outId(LSTMGradOp::getWeightsOutIndex()),
+         LSTMOpx::reshapePoplibWeightsForOnnx(weights_grad.inputWeights, true));
+  insert(
+      outId(LSTMGradOp::getRecurrenceOutIndex()),
+      LSTMOpx::reshapePoplibWeightsForOnnx(weights_grad.outputWeights, true));
+
+  if (lstm_op.hasBiasInput()) {
+    auto b_grad = poplar::concat({weights_grad.biases, weights_grad.biases}, 1);
+    insert(outId(LSTMGradOp::getBiasOutIndex()),
+           LSTMOpx::reshapePoplibWeightsForOnnx(b_grad, false));
+  }
+  if (lstm_op.hasInitialHInput()) {
+    insert(outId(LSTMGradOp::getInitialHOutIndex()), init_state_grad.output);
+  }
+  if (lstm_op.hasInitialCInput()) {
+    insert(outId(LSTMGradOp::getInitialCOutIndex()), init_state_grad.cellState);
+  }
+}
+
+popnn::lstm::LstmParams LSTMGradOpx::createLSTMParams() const {
+  auto &lstm_grad_op = getOp<LSTMGradOp>();
+  return LSTMOpx::createLSTMParams(lstm_grad_op.getForwardOp());
+}
 
 namespace {
 OpxCreator<LSTMOpx> lstmOpxCreator(Onnx::Operators::LSTM);
+OpxCreator<LSTMGradOpx> lstmGradOpxCreator(Onnx::GradOperators::LSTMGrad);
 } // namespace
 
 } // namespace popx
