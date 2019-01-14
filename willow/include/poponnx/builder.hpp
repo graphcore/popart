@@ -1284,15 +1284,6 @@ public:
   }
 
   /**
-   * When an ONNX model is loaded, all the tensor names are made unique. This
-   * function returns the translation table from the original tensor names to
-   * the unique names for all the tensors which were translated.
-   *
-   * \return Translation table
-   */
-  const std::map<std::string, TensorId> getTensorTranslation() const;
-
-  /**
    * Retrieve the ONNX serialized ModelProto
    *
    * \return A serialized ONNX ModelProto

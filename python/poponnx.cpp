@@ -726,7 +726,6 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("getAllNodeAttributeNames",
            &Builder::getAllNodeAttributeNames,
            py::arg("nodeOutputNames"))
-      .def("getTensorTranslation", &Builder::getTensorTranslation)
       .def("getModelProto",
            [](const Builder &builder) {
              return py::bytes(builder.getModelProto());

@@ -659,9 +659,6 @@ void Builder::loadModelProto(const std::string &modelProtoOrFilename) {
   impl_->loadModelProto(modelProtoOrFilename);
 }
 
-const std::map<std::string, TensorId> Builder::getTensorTranslation() const {
-  return impl_->getTensorTranslation();
-}
 
 std::string Builder::getModelProto() const { return impl_->getModelProto(); }
 

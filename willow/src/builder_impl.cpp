@@ -17,9 +17,17 @@ namespace poponnx {
 
 // Supported IR version
 const static uint64_t irVersion = 3;
-// Supported operator set versions
+
+// Generated opset versions
 const static int64_t onnxOperatorSetVersion      = 9;
 const static int64_t graphcoreOperatorSetVersion = 1;
+
+// Supported opset versions
+const static int64_t minOnnxOperatorSetVersion = 6;
+const static int64_t maxOnnxOperatorSetVersion = 9;
+
+const static int64_t minGraphcoreOperatorSetVersion = 1;
+const static int64_t maxGraphcoreOperatorSetVersion = 1;
 
 void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
 
@@ -664,70 +672,6 @@ std::vector<std::string> BuilderImpl::getAllNodeAttributeNames(
   return out;
 }
 
-// We need to make sure the name translation is unique between different model
-// imports.
-inline static void
-checkUnique(const std::string &name,
-            const std::map<std::string, TensorId> &tensorTranslation) {
-  if (tensorTranslation.count(name)) {
-    throw error("Tensor translation not unique. The name {}  already appeared "
-                "in a previously imported model.",
-                name);
-  }
-}
-
-inline static const TensorId
-getTranslation(const std::string &name,
-               const std::map<std::string, TensorId> &tensorTranslation) {
-  auto it = tensorTranslation.find(name);
-  if (it == tensorTranslation.end()) {
-    throw error("Tensor {} has not been translated.", name);
-  }
-  return it->second;
-}
-
-void BuilderImpl::uniquifyNames(onnx::GraphProto &graph) {
-  std::map<std::string, TensorId> currentTensorTranslation;
-  // First go through all the inputs.
-  for (onnx::ValueInfoProto &vip : *graph.mutable_input()) {
-    std::string oldName = vip.name();
-    checkUnique(oldName, tensorTranslation_);
-    auto newId                        = getNextId();
-    currentTensorTranslation[oldName] = newId;
-    vip.set_name(newId);
-  }
-
-  // Go through all the nodes.
-  for (onnx::NodeProto &node : *graph.mutable_node()) {
-    // Translates all the inputs - NodeProto should be topologically sorted, so
-    // we all node inputs have already been defined.
-    for (std::string &name : *node.mutable_input()) {
-      name = getTranslation(name, currentTensorTranslation);
-    }
-
-    // Translate all the outputs
-    for (std::string &name : *node.mutable_output()) {
-      auto newId                     = getNextId();
-      currentTensorTranslation[name] = newId;
-      name                           = newId;
-    }
-  }
-
-  // Go through all the graph outputs.
-  for (onnx::ValueInfoProto &vip : *graph.mutable_output()) {
-    std::string oldName = vip.name();
-    auto newId          = getTranslation(oldName, currentTensorTranslation);
-    vip.set_name(newId);
-  }
-
-  // Check the model is still valid after translation.
-  onnx::checker::check_model(model_);
-
-  // Merge currentTensorTranslation into tensorTranslation_.
-  tensorTranslation_.insert(currentTensorTranslation.begin(),
-                            currentTensorTranslation.end());
-}
-
 void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
   // TODO T5564 - merge the models rather than override the existing one.
   model_ = onnxutil::getModelProto(modelProtoOrFilename);
@@ -744,30 +688,20 @@ void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
 
   // Check the opset versions.
   for (auto opset : model_.opset_import()) {
-    if (opset.domain() == "" && opset.version() != onnxOperatorSetVersion) {
+    if (opset.domain() == "" && (opset.version() < minOnnxOperatorSetVersion ||
+                                 opset.version() > maxOnnxOperatorSetVersion)) {
       throw error("Expecting ONNX opset version {}, but got {}.",
                   onnxOperatorSetVersion,
                   opset.version());
     }
     if (opset.domain() == Domain::ai_graphcore &&
-        opset.version() != graphcoreOperatorSetVersion) {
+        (opset.version() < minGraphcoreOperatorSetVersion ||
+         opset.version() < maxGraphcoreOperatorSetVersion)) {
       throw error("Expecting GC opset version {}, but got {}.",
                   graphcoreOperatorSetVersion,
                   opset.version());
     }
   }
-
-  if (model_.has_graph()) {
-    // We need to make sure all the names are and will be unique - translate
-    // them into TensorIDs.
-    onnx::GraphProto &graph = *model_.mutable_graph();
-    uniquifyNames(graph);
-  }
-}
-
-const std::map<std::string, TensorId>
-BuilderImpl::getTensorTranslation() const {
-  return tensorTranslation_;
 }
 
 std::string BuilderImpl::getModelProto() const {

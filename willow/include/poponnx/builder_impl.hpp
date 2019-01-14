@@ -158,8 +158,6 @@ public:
 
   void loadModelProto(const std::string &modelProtoOrFilename);
 
-  const std::map<std::string, TensorId> getTensorTranslation() const;
-
   std::string getModelProto() const;
 
   std::vector<TensorId> getInputTensorIds() const;
@@ -179,8 +177,6 @@ private:
   void addOpsetRequirement(const std::string &domain, int version);
 
   TensorId getNextId();
-
-  void uniquifyNames(onnx::GraphProto &graph);
 
   bool isInputTensor(TensorId id) const;
 
@@ -227,8 +223,6 @@ private:
   uint64_t next_id_ = 0;
 
   onnx::ModelProto model_;
-
-  std::map<std::string, TensorId> tensorTranslation_;
 
   std::map<std::string, boost::any> attributes;
 };

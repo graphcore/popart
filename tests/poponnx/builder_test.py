@@ -1165,12 +1165,10 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     # Run a builder that imports the model of the other builder and check the
     # output is still the same
     builder2 = poponnx.Builder(proto)
-    translation = builder2.getTensorTranslation()
 
-    dataFlow = poponnx.DataFlow(
-        1, {translation[o]: poponnx.AnchorReturnType("ALL")})
+    dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
     optimizer = poponnx.ConstSGD(0.01)
-    losses = [poponnx.L1Loss(translation[o], "l1LossVal", 0.1)]
+    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     proto2 = builder.getModelProto()
     session = poponnx.Session(
@@ -1182,14 +1180,14 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     session.prepareDevice()
 
     inputs = {
-        translation[i1]: np.array([1, 2], dtype=np.float32),
-        translation[i2]: np.array([3, 4], dtype=np.float32)
+        i1: np.array([1, 2], dtype=np.float32),
+        i2: np.array([3, 4], dtype=np.float32)
     }
     stepio = poponnx.PyStepIO(inputs, anchors)
 
     session.infer(stepio)
 
-    assert (np.array_equal(anchors[translation[o]], [4, 6]))
+    assert (np.array_equal(anchors[o], [4, 6]))
 
 
 def test_load_onnx_model_from_file(tmpdir):
@@ -1209,12 +1207,10 @@ def test_load_onnx_model_from_file(tmpdir):
         out.write(builder.getModelProto())
 
     builder2 = poponnx.Builder(str(filename))
-    translation = builder2.getTensorTranslation()
 
-    dataFlow = poponnx.DataFlow(
-        1, {translation[o]: poponnx.AnchorReturnType("ALL")})
+    dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
     optimizer = poponnx.ConstSGD(0.01)
-    losses = [poponnx.L1Loss(translation[o], "l1LossVal", 0.1)]
+    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     proto = builder2.getModelProto()
 
@@ -1227,11 +1223,11 @@ def test_load_onnx_model_from_file(tmpdir):
     session.prepareDevice()
 
     inputs = {
-        translation[i1]: np.array([1, 2], dtype=np.float32),
-        translation[i2]: np.array([3, 4], dtype=np.float32)
+        i1: np.array([1, 2], dtype=np.float32),
+        i2: np.array([3, 4], dtype=np.float32)
     }
     stepio = poponnx.PyStepIO(inputs, anchors)
 
     session.infer(stepio)
 
-    assert (np.array_equal(anchors[translation[o]], [4, 6]))
+    assert (np.array_equal(anchors[o], [4, 6]))
