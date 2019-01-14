@@ -1,14 +1,24 @@
 #define BOOST_ERROR_CODE_HEADER_ONLY
+
 #include <boost/filesystem.hpp>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <vector>
+
+#include <google/protobuf/io/coded_stream.h>
+#include <google/protobuf/io/zero_copy_stream_impl.h>
+
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
 #include <poponnx/names.hpp>
 
 namespace poponnx {
 namespace io {
+
+// 2GB total_bytes_limit for reading protobuf coded input streams
+// see google.protobuf.io.coded_stream#CodedInputStream
+static const int protobufByteLimit = std::numeric_limits<int>::max();
 
 std::string getCanonicalDirName(const std::string &dirName0) {
   namespace bf = boost::filesystem;
@@ -66,9 +76,18 @@ OnnxTensors getOutputTensors(const onnx::GraphProto &g,
   return getAndMatchTensors(fns, names);
 }
 
+template <typename T>
+static bool getProtobufFromStream(std::istream &istream, T &proto) {
+  google::protobuf::io::IstreamInputStream inputStream(&istream);
+  google::protobuf::io::CodedInputStream codedInputStream(&inputStream);
+
+  codedInputStream.SetTotalBytesLimit(protobufByteLimit, -1);
+  return proto.ParseFromCodedStream(&codedInputStream);
+}
+
 static bool getModelFromStream(std::istream &istream,
                                onnx::ModelProto &modelProto) {
-  return modelProto.ParseFromIstream(&istream);
+  return getProtobufFromStream(istream, modelProto);
 }
 
 static void logModelInfo(onnx::ModelProto &modelProto) {
@@ -174,7 +193,7 @@ onnx::TensorProto getTensor(const std::string &filename) {
   }
 
   onnx::TensorProto tensor;
-  if (!tensor.ParseFromIstream(&fs)) {
+  if (!getProtobufFromStream(fs, tensor)) {
     std::stringstream ss;
     ss << "Failed to parse TensorProto from " << filename;
     throw error(ss.str());
