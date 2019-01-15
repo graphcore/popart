@@ -8,6 +8,8 @@
 #include <popops/Gather.hpp>
 #include <popops/Scatter.hpp>
 
+#include <poputil/TileMapping.hpp>
+
 namespace poponnx {
 namespace popx {
 
