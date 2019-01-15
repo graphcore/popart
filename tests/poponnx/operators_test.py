@@ -2727,6 +2727,7 @@ def op_tester(tmpdir):
 
     class OpTester:
         def __init__(self, logging_dir):
+            np.random.seed(0)
             self.passes = []
             self.logging_dir = logging_dir
             self.rtol = 1e-05
