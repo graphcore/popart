@@ -95,63 +95,42 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
 
     insert(outId(GatherOp::outIndex()), result);
   } else {
-    // Build the implicit index coordinates
-    //
-    // Create a grid of linspaced indices
-    // Start by creating 1D linspaced constant tensors
-    std::vector<poplar::Tensor> indices_mapped(data.rank());
-    for (int i = 0; i < data.rank(); ++i) {
-      indices_mapped[i] = linspace(graph(), 0, static_cast<int>(data.dim(i)));
-    }
+    // Flatten the scalar indices
+    indices                     = indices.flatten();
+    const auto index_vector_dim = indices.rank();
 
-    // Replace the axis indices with the user provided indices
-    indices_mapped[axis] = indices;
+    // Each slice is the shape of the data tensor
+    // with the axis dimension set to 1
+    std::vector<std::size_t> sliceSizes = data.shape();
+    sliceSizes[axis]                    = 1;
 
-    // Match the rank of the indices to the update tensor
-    for (int i = 0; i <= axis; ++i) {
-      indices_mapped[i] = matchRank(outputShape, indices_mapped[i], i);
-    }
-
-    // Offset the dimensions after `axis` by the rank of the user indices
-    for (auto i = axis + 1; i < data.rank(); ++i) {
-      indices_mapped[i] =
-          matchRank(outputShape,
-                    indices_mapped[i],
-                    static_cast<unsigned>(indices.rank() - 1 + i));
-    }
-
-    for (auto &index : indices_mapped) {
-      // Match the shape of update
-      index = broadcastShape(outputShape, index);
-    }
-
-    for (auto &index : indices_mapped) {
-      // Add a degenerate dimension for concatenation
-      index = index.expand({index.rank()});
-    }
-
-    // Concat the indices on the degenerate dimension
-    indices = poplar::concat(indices_mapped, static_cast<unsigned>(outputRank));
-
-    const auto index_vector_dim = indices.rank() - 1;
-    std::vector<std::size_t> sliceSizes(data.rank(), 1);
-
-    std::vector<std::size_t> collapsedSliceDims(data.rank());
-    std::iota(collapsedSliceDims.begin(), collapsedSliceDims.end(), 0);
-
-    std::vector<unsigned> startIndexMap(indices.rank() - 1);
-    std::iota(startIndexMap.begin(), startIndexMap.end(), 0);
+    // All of the dimensions in the output, except the axis dimension are
+    // offsets into the data tensor
+    std::vector<std::size_t> offsetDims(data.rank());
+    std::iota(offsetDims.begin(), offsetDims.begin() + axis, 0);
+    std::iota(offsetDims.begin(), offsetDims.end(), axis + 1);
+    std::vector<unsigned> startIndexMap = {static_cast<unsigned>(axis)};
 
     // Gather the slices
     auto result = popops::gather(graph(),
                                  data,
                                  indices,
                                  index_vector_dim,
-                                 {},
+                                 offsetDims,
                                  sliceSizes,
-                                 collapsedSliceDims,
+                                 {},
                                  startIndexMap,
                                  prog);
+
+    // Shuffle and reshape into the expected ONNX shape
+    std::vector<unsigned> result_shuffle(result.rank());
+    std::iota(result_shuffle.begin(), result_shuffle.end(), 0);
+    std::rotate(result_shuffle.begin(),
+                result_shuffle.begin() + axis,
+                result_shuffle.end());
+
+    result = result.dimShuffle(result_shuffle);
+    result = result.reshape(outputShape);
 
     // Reshape to the ONNX shape and insert the tensor
     insert(outId(GatherOp::outIndex()), result);
