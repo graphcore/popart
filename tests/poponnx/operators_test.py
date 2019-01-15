@@ -1951,7 +1951,9 @@ def test_lstm_torch_grad(op_tester):
         return [Y2, a.grad, wig, whg, None]
 
     op_tester.passes = ['PreUniRepl']
+    # relaxing the numerical precision required for this test:
     op_tester.atol = 1e-07
+    op_tester.rtol = 1e-04
     op_tester.run(init_builder, reference, 'train')
 
 
