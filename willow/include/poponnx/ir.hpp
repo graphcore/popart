@@ -389,6 +389,13 @@ private:
   // create a grad-op. Return a vector of {gradop, lossop} pairs
   std::vector<GradNonGradPair> growLossGradients();
 
+  // Verify the connectivity of the graph
+  void verifyConnectivity() const;
+  void verifyOpInputConnectivity() const;
+  void verifyOpOutputConnectivity() const;
+  void verifyTensorProducerConnectivity() const;
+  void verifyTensorConsumerConnectivity() const;
+
 private:
   Tensors tensors;
   DataFlow dataFlow;

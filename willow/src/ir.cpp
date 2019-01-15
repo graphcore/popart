@@ -275,6 +275,159 @@ void Ir::logIr() {
   logging::ir::info(ss2.str());
 }
 
+void Ir::verifyOpOutputConnectivity() const {
+  logging::ir::info("Checking op output tensor producers");
+
+  // Check op output tensor producers
+  for (auto &op_pair : ops) {
+    auto &op = op_pair.second;
+
+    for (auto &tensor_pair : op->output->tensorMap()) {
+      auto t = tensor_pair.second;
+
+      if (!t->hasProducer()) {
+        throw error("Tensor {} should have a producer", t->str());
+      }
+
+      if (t->getProducer() != op.get()) {
+        throw error(
+            "Op {} should produce {}, but it's not the assigned producer",
+            op->str(),
+            t->str());
+      }
+    }
+  }
+}
+
+void Ir::verifyOpInputConnectivity() const {
+  logging::ir::info("Checking op input tensor consumers");
+
+  // Count the number of times an op consumes its input tensors
+  std::map<std::pair<Tensor *, Op *>, int> consumption_count;
+  for (auto &op_pair : ops) {
+    auto &op = op_pair.second;
+
+    for (auto &tensor_pair : op->input->tensorMap()) {
+      auto t = tensor_pair.second;
+
+      consumption_count[{t, op.get()}]++;
+    }
+  }
+
+  // Check that the consumption count matches the value reported by Consumers::n
+  for (auto &cons_count : consumption_count) {
+    auto tensor = cons_count.first.first;
+    auto op     = cons_count.first.second;
+    auto count  = cons_count.second;
+
+    if (tensor->consumers.n(op) != count) {
+      throw error("Op {} should consume {} {} times, but it "
+                  "consumes it {} times",
+                  op->str(),
+                  tensor->str(),
+                  count,
+                  tensor->consumers.n(op));
+    }
+  }
+}
+
+void Ir::verifyTensorProducerConnectivity() const {
+  logging::ir::info("Checking tensor producer outputs");
+
+  for (auto &tid : tensors.getAllTensorIds()) {
+    auto tensor = tensors.get(tid);
+
+    if (tensor->hasProducer() && tensor->tensorType() == TensorType::Stream) {
+      auto op = tensor->getProducer();
+      throw error("Tensor {} is a stream tensor, but has op {} as a producer",
+                  tensor->str(),
+                  op->str());
+    }
+
+    if (tensor->hasProducer() && tensor->tensorType() == TensorType::Const) {
+      auto op = tensor->getProducer();
+      throw error("Tensor {} is a const tensor, but has op {} as a producer",
+                  tensor->str(),
+                  op->str());
+    }
+
+    if (tensor->hasProducer() && tensor->tensorType() == TensorType::Variable) {
+      auto op = tensor->getProducer();
+      throw error("Tensor {} is a variable tensor, but has op {} as a producer",
+                  tensor->str(),
+                  op->str());
+    }
+
+    if (!tensor->hasProducer() && tensor->tensorType() == TensorType::ActGrad) {
+      throw error("Tensor {} is an actgrad tensor, but doesn't have a producer",
+                  tensor->str());
+    }
+
+    // Check that the producer op has the tensor as an output
+    if (tensor->hasProducer()) {
+      auto op = tensor->getProducer();
+
+      if (op->output->indices(tensor).empty()) {
+        throw error(
+            "Tensor {} has op {} as a producer, but it doesn't appear in "
+            "the op's outputs",
+            tensor->str(),
+            op->str());
+      }
+
+      if (op->output->indices(tensor).size() > 1) {
+        throw error("Tensor {} has op {} as a producer, but it appears in "
+                    "the op's outputs {} times",
+                    tensor->str(),
+                    op->str(),
+                    op->output->indices(tensor).size());
+      }
+    }
+  }
+}
+
+void Ir::verifyTensorConsumerConnectivity() const {
+  logging::ir::info("Checking tensor consumer inputs");
+
+  // Count the number of times a tensor is consumed by an op
+  std::map<std::pair<Tensor *, Op *>, int> consumption_count;
+  for (auto &tid : tensors.getAllTensorIds()) {
+    auto tensor = tensors.get(tid);
+
+    for (auto op : tensor->consumers.getOps()) {
+      consumption_count[{tensor, op}] += tensor->consumers.n(op);
+    }
+  }
+
+  // Check that the consumption count matches the value reported by
+  // op->input->indices(tensor).size()
+  for (auto &cons_count : consumption_count) {
+    auto tensor = cons_count.first.first;
+    auto op     = cons_count.first.second;
+    auto count  = cons_count.second;
+
+    if (op->input->indices(tensor).size() != count) {
+      throw error("Tensor {} should have op {} as a consumer {} times, but it "
+                  "consumes it {} times",
+                  tensor->str(),
+                  op->str(),
+                  op->input->indices(tensor).size(),
+                  count);
+    }
+  }
+}
+
+void Ir::verifyConnectivity() const {
+  logging::ir::info("Checking IR connectivity");
+
+  verifyOpInputConnectivity();
+  verifyOpOutputConnectivity();
+  verifyTensorProducerConnectivity();
+  verifyTensorConsumerConnectivity();
+
+  logging::ir::info("IR connectivity check passed");
+}
+
 void Ir::prepare(const IrBundle &gb) {
 
   if (isPrepared) {
@@ -395,7 +548,8 @@ void Ir::prepare(const IrBundle &gb) {
                         "SoftMaxGradDirect");
     }
   }
-  // TODO : test described in T5690 will go here
+
+  verifyConnectivity();
 
   // end of checks
 }
