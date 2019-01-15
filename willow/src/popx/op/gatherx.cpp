@@ -23,7 +23,12 @@ linspace(poplar::Graph &graph, int left, int right, int increment = 1) {
                  values.begin(),
                  [left, increment](int v) { return left + v * increment; });
 
-  return graph.addConstant(poplar::INT, {count}, poplar::ArrayRef<int>(values));
+  auto result =
+      graph.addConstant(poplar::INT, {count}, poplar::ArrayRef<int>(values));
+
+  graph.setTileMapping(result, 0);
+
+  return result;
 }
 
 // Make b's rank match a.
