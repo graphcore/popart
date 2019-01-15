@@ -2638,6 +2638,25 @@ def test_reshape_neg_one_and_zeros_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_shape(op_tester):
+    d1 = np.random.rand(2, 4, 3).astype(np.float32)
+    d2 = np.zeros((4, 6), dtype=np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        i2 = builder.addInputTensor(d2)
+        c = builder.shape([i2])
+        o = builder.reshape([i1, c])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.reshape(d1, d2.shape)
+        return [out]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
 # Usage:
 #   Add `op_tester` as an argument to a test function
 #   In the test function:
@@ -2790,9 +2809,10 @@ def op_tester(tmpdir):
                         print('Torch : {}', ref_out[index])
                         print('{}', np.subtract(anchor_map[key],
                                                 ref_out[index]))
-                        print('{}',
-                              np.isclose(anchor_map[key], ref_out[index],
-                                         self.rtol, self.atol))
+                        print(
+                            '{}',
+                            np.isclose(anchor_map[key], ref_out[index],
+                                       self.rtol, self.atol))
 
                     assert np.allclose(anchor_map[key], ref_out[index],
                                        self.rtol, self.atol)

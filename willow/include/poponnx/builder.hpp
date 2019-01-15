@@ -785,6 +785,19 @@ public:
                   const std::string &name = {});
 
   /**
+   * Add a Shape operation to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Shape
+   *
+   * \param args Tensor T
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   *
+   */
+  TensorId shape(const std::vector<TensorId> &args,
+                 const std::string &name = {});
+
+  /**
    * Add a Slice operation to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Slice

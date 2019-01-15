@@ -61,6 +61,10 @@ public:
 
   // process a ConstExprNode "node", modfying the Ir pointed to by "ir"
   void processNode(const onnx::NodeProto &node, Ir *ir);
+
+private:
+  static int getOutIndex(const onnx::NodeProto &, const TensorId &);
+  static bool isNodeOutputAlwaysConstExpr(const OpType &, OutIndex);
 };
 
 } // namespace poponnx

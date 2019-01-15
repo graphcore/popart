@@ -3,6 +3,7 @@
 #include <poponnx/ces/addce.hpp>
 #include <poponnx/ces/castce.hpp>
 #include <poponnx/ces/constexpr.hpp>
+#include <poponnx/ces/shapece.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/onnxutil.hpp>
@@ -68,7 +69,9 @@ void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
   } else if (opid == Onnx::Operators::Add) {
     ConstExprAdd adder(node, ir);
     adder.insertOutput();
-
+  } else if (opid == Onnx::Operators::Shape) {
+    ConstExprShape expr(node, ir);
+    expr.insertOutput();
   } else {
     throw error("No ConstExpr implementation of {}. "
                 "Consider what OpType::ADD does (creates a Const Tensor) "
@@ -124,7 +127,10 @@ ConstExprUtil::getClassifier(const onnx::GraphProto &graph,
     if (found != consumers.end()) {
       for (auto consumer : found->second) {
         for (auto out : outputs.at(consumer)) {
-          if (M.at(out) == true) {
+          auto node = graph.node(consumer);
+          if (M.at(out) == true &&
+              !isNodeOutputAlwaysConstExpr(node.op_type(),
+                                           getOutIndex(node, out))) {
             M[out] = false;
             activeFront.push_back(out);
           }
@@ -133,6 +139,27 @@ ConstExprUtil::getClassifier(const onnx::GraphProto &graph,
     }
   }
   return ConstExprClassifier(std::move(M));
+}
+
+int ConstExprUtil::getOutIndex(const onnx::NodeProto &node,
+                               const TensorId &tensor) {
+  for (int i = 0; i < node.output_size(); i++) {
+    if (tensor == node.output(i)) {
+      return i;
+    }
+  }
+
+  throw error("tensor {} is not an output of node {}", tensor, node.op_type());
+}
+
+bool ConstExprUtil::isNodeOutputAlwaysConstExpr(const OpType &op_type,
+                                                OutIndex) {
+  if (op_type == "Shape") {
+    return true;
+  }
+  // here : any Operator whose output at OutIndex index is ALWAYS
+  // computable at compile time should be added here
+  return false;
 }
 
 } // namespace poponnx

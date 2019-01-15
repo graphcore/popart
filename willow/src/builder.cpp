@@ -449,6 +449,11 @@ TensorId Builder::matmul(const std::vector<TensorId> &args,
   return impl_->op(Onnx::Operators::MatMul, args, {}, name)[0];
 }
 
+TensorId Builder::shape(const std::vector<TensorId> &args,
+                        const std::string &name) {
+  return impl_->op(Onnx::Operators::Shape, args, {}, name)[0];
+}
+
 TensorId Builder::slice(const std::vector<TensorId> &args,
                         const std::vector<int64_t> &axes,
                         const std::vector<int64_t> &starts,

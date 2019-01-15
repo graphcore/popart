@@ -602,6 +602,10 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("transA"),
            py::arg("transB"),
            py::arg("debugPrefix") = std::string())
+      .def("shape",
+           &Builder::shape,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
       .def("slice",
            &Builder::slice,
            py::arg("args"),
