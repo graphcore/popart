@@ -66,13 +66,16 @@ given number of IPUs and a given number of tiles per IPU.
 ::
 
   # Acquire IPU configuration 5
-  dev = session.acquireAvaliableDevice(5)
+  dev = poponnx.DeviceManager().acquireAvaliableDevice(5)
 
 ::
 
   # Acquire a 2 IPU pair
-  dev = session.session.acquireAvaliableDevice(2, 1216)
+  dev = poponnx.DeviceManager().acquireAvaliableDevice(2, 1216)
 
+The method `createIpuModelDevice` is used to create a Poplar software emulation
+of an IPU device.  See the API documentation for details.  Similarly, the method
+`createCpuDevice` creates a simple Poplar CPU backend.
 
 
 Compiling the graph and preparing the hardware for execution

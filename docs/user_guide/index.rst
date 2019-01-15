@@ -11,7 +11,9 @@ ONNX for the IPU
     importing
     builder
     executing
+    training_ops
+    custom_ops
     examples
     supported_ops
-    refereces
+    references
 
