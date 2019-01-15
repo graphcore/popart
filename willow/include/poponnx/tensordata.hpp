@@ -5,6 +5,8 @@
 #include <poponnx/names.hpp>
 #include <poponnx/tensorinfo.hpp>
 
+#include <functional>
+#include <numeric>
 #include <ostream>
 
 // TODO T5992:
@@ -80,8 +82,12 @@ public:
   virtual void *getPtr()      = 0;
   virtual DataType getDtype() = 0;
 
-  std::size_t getNdim() { return shape.size(); }
+  std::size_t getNdim() const { return shape.size(); }
   unsigned getShape(unsigned index) const { return shape[index]; }
+  std::size_t numElements() const {
+    return std::accumulate(
+        shape.begin(), shape.end(), 1, std::multiplies<int>());
+  }
 };
 
 template <typename TYPE> class ArrayWrapper : public Array {
@@ -93,6 +99,7 @@ public:
   friend std::ostream &operator<<(std::ostream &os,
                                   const ArrayWrapper<T> &array);
 
+  // TODO : Fix it so ArrayWrapper can take a poponnx::Shape
   ArrayWrapper(std::vector<unsigned> _shape, TYPE *_data)
       : Array(_shape), data(_data) {}
 

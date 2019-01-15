@@ -36,6 +36,7 @@ void TensorData::resetData(const TensorInfo &info, const void *from) {
 }
 
 template <> DataType ArrayWrapper<float>::getDtype() { return DataType::FLOAT; }
+template <> DataType ArrayWrapper<int>::getDtype() { return DataType::INT32; }
 
 template <>
 std::ostream &operator<<(std::ostream &os, const ArrayWrapper<float> &array) {
@@ -46,6 +47,20 @@ std::ostream &operator<<(std::ostream &os, const ArrayWrapper<float> &array) {
     }
 
     os << (static_cast<float *>(array.data))[i];
+  }
+  os << "}";
+  return os;
+}
+
+template <>
+std::ostream &operator<<(std::ostream &os, const ArrayWrapper<int> &array) {
+
+  os << "{";
+  for (int n = 0; n < array.numElements(); ++n) {
+    if (n != 0) {
+      os << ", ";
+    }
+    os << array.data[n];
   }
   os << "}";
   return os;

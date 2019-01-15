@@ -7,6 +7,7 @@
 #include <popops/Cast.hpp>
 #include <popops/Gather.hpp>
 #include <popops/Scatter.hpp>
+#include <poputil/TileMapping.hpp>
 
 #include <poputil/TileMapping.hpp>
 
