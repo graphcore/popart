@@ -39,19 +39,6 @@ matchRank(poplar::Tensor a, poplar::Tensor b, unsigned dim) {
   return b.reshape(shape);
 }
 
-// Make b's rank match a.
-//
-// Assumes b.rank() <= a.rank() - dim
-static poplar::Tensor
-matchRank(std::vector<std::size_t> a_shape, poplar::Tensor b, unsigned dim) {
-  std::vector<std::size_t> shape(a_shape.size(), 1);
-  const auto b_shape = b.shape();
-
-  std::copy(b_shape.begin(), b_shape.end(), shape.begin() + dim);
-
-  return b.reshape(shape);
-}
-
 // Make b's shape match a.
 //
 // Assumes b is broadcastable into a
@@ -83,7 +70,6 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
   const auto indicesShape = inShape(GatherOp::indicesInIndex());
   const auto outputShape =
       vXtoY<int64_t, std::size_t>(outShape(GatherOp::outIndex()));
-  const auto outputRank = outputShape.size();
 
   auto indices = get(inId(GatherOp::indicesInIndex()));
   auto data    = get(inId(GatherOp::dataInIndex()));
