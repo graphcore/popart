@@ -55,7 +55,7 @@ The `setDevice` method is used to set the device within the session.
   session.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
 
 The device manager can enumerate the available devices with the `enumerateDevices`
-method. With no parameters the  `acquireAvaliableDevice` method will acquire the
+method. With no parameters the  `acquireAvailableDevice` method will acquire the
 next available device.  With one parameter, it will select a device from the list
 of IPU configurations, as given by the enumerate function, or by the `gc-info`
 application.
@@ -66,12 +66,12 @@ given number of IPUs and a given number of tiles per IPU.
 ::
 
   # Acquire IPU configuration 5
-  dev = poponnx.DeviceManager().acquireAvaliableDevice(5)
+  dev = poponnx.DeviceManager().acquireAvailableDevice(5)
 
 ::
 
   # Acquire a 2 IPU pair
-  dev = poponnx.DeviceManager().acquireAvaliableDevice(2, 1216)
+  dev = poponnx.DeviceManager().acquireAvailableDevice(2, 1216)
 
 The method `createIpuModelDevice` is used to create a Poplar software emulation
 of an IPU device.  See the API documentation for details.  Similarly, the method

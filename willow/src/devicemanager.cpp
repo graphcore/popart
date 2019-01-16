@@ -53,7 +53,7 @@ DeviceManager::createSimDevice(std::map<std::string, std::string> &options) {
   return nullptr;
 }
 
-std::unique_ptr<DeviceInfo> DeviceManager::acquireAvaliableDevice() {
+std::unique_ptr<DeviceInfo> DeviceManager::acquireAvailableDevice() {
 
   auto devices = enumerateDevices();
 
@@ -66,7 +66,7 @@ std::unique_ptr<DeviceInfo> DeviceManager::acquireAvaliableDevice() {
 }
 
 std::unique_ptr<DeviceInfo>
-DeviceManager::acquireAvaliableDevice(int numIpus, int tilesPerIpu) {
+DeviceManager::acquireAvailableDevice(int numIpus, int tilesPerIpu) {
 
   auto devices = enumerateDevices();
 
@@ -74,7 +74,7 @@ DeviceManager::acquireAvaliableDevice(int numIpus, int tilesPerIpu) {
     if (numIpus == device->getNumIpus() &&
         tilesPerIpu == device->getTilesPerIpu()) {
 
-      // Attach to the device. Will succeed if avaliable
+      // Attach to the device. Will succeed if available
       if (device->attach()) {
         return std::move(device);
       }

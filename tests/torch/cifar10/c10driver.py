@@ -93,12 +93,12 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
 
     # Get a Hardware Device
     elif device == "hw":
-        # Get a hardware device that meets the reqirements, may throw if none are avaliable
+        # Get a hardware device that meets the reqirements, may throw if none are available
         # Will attach to the device
         if device_hw_id:
             device = deviceManager.acquireDeviceById(device_hw_id)
         else:
-            device = deviceManager.acquireAvaliableDevice()
+            device = deviceManager.acquireAvailableDevice()
 
     # Enumerate a use an items from the list
     if True:

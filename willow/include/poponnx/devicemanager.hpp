@@ -98,27 +98,27 @@ public:
    */
   std::vector<std::unique_ptr<DeviceInfo>> enumerateDevices();
 
-  /** Finds the first avalible hardware device. This method will attach to the
+  /** Finds the first available hardware device. This method will attach to the
    * device.
    * \return A device, which can be used with a session. Will return nullptr if
-   *         no device is avaliable
+   *         no device is available
    */
-  std::unique_ptr<DeviceInfo> acquireAvaliableDevice();
+  std::unique_ptr<DeviceInfo> acquireAvailableDevice();
 
-  /** Finds the first avalible hardware device, that a certain number of IPUs.
+  /** Finds the first available hardware device, that a certain number of IPUs.
    * This method will attach to the device.
    * \param numIpus The number of IPUs on the device
    * \param tilesPerIpu The number of tiles on the IPU
    * \return A device, which can be used with a session. Will return nullptr if
-   *         no device is avaliable
+   *         no device is available
    */
-  std::unique_ptr<DeviceInfo> acquireAvaliableDevice(int numIpus,
+  std::unique_ptr<DeviceInfo> acquireAvailableDevice(int numIpus,
                                                      int tilesPerIpu);
 
   /** Allocates the hardware device by id. This id can be found running 'gc-info
    *  -l' This method will attache to the device
    * \param id The index of the IPU to be used
-   * \return A device. Will return nullptr if the device is not  avaliable
+   * \return A device. Will return nullptr if the device is not  available
    */
   std::unique_ptr<DeviceInfo> acquireDeviceById(int id);
 
