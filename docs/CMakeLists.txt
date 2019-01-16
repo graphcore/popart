@@ -12,7 +12,7 @@ if (BUILD_DOCS)
   string(REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT0}")
   configure_file(user_guide/Doxyfile.in Doxyfile @ONLY)
 
-  set(RELEASE "0.2.1")
+  set(RELEASE "0.2.2")
 
   set(SUPPORTED_OPS_GEN ${CMAKE_BINARY_DIR}/docs/supported_ops_gen.rst)
 
@@ -55,7 +55,7 @@ if (BUILD_DOCS)
     COMMAND cp -R ${CMAKE_CURRENT_SOURCE_DIR}/user_guide
                   ${CMAKE_BINARY_DIR}/docs/html_user_guide
     DEPENDS ${CMAKE_BINARY_DIR}/docs
-  )  
+  )
 
   add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/docs/pdfgen
@@ -120,4 +120,3 @@ if (BUILD_DOCS)
 else()
   install(FILES)
 endif()
-
