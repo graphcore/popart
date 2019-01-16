@@ -20,26 +20,20 @@ std::vector<const Tensor *> SubtractArg1GradOpPattern::touches(Op *) const {
 bool SubtractArg1GradOpPattern::apply(Op *op) const {
   auto input_tensor  = op->input->tensor(0);
   auto output_tensor = op->output->tensor(0);
-  auto ir            = op->pir;
-  auto attr          = op->nAtts.filter(sVirtualGraphAttribute);
 
-  auto negate_op =
-      make_unique<NegateOp>(Onnx::AiOnnx::OpSet9::Neg, ir, std::string{}, attr);
-  auto axes =
-      npReductionAxis(output_tensor->info.shape(), input_tensor->info.shape());
-  auto reducesum_op = make_unique<ReduceSumOp>(
-      Onnx::AiOnnx::OpSet9::ReduceSum, ir, axes, false, attr);
+  auto reducesum = dynamic_cast<ReduceSumOp *>(
+      makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::ReduceSum, op));
+  reducesum->setAxes(
+      npReductionAxis(output_tensor->info.shape(), input_tensor->info.shape()));
+  // do not keep reduced dims
+  reducesum->setKeepDims(0l);
+
+  auto negate = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Neg, op);
 
   const auto tmp_tensor_id = createIntermediateTensorId(op->output->id(0));
   op->pir->getTensors().addActGrad(tmp_tensor_id);
-  const auto tmp_tensor = ir->getTensors().get(tmp_tensor_id);
+  const auto tmp_tensor = op->pir->getTensors().get(tmp_tensor_id);
   tmp_tensor->info      = input_tensor->info;
-
-  auto negate = negate_op.get();
-  ir->moveIntoIr(std::move(negate_op));
-
-  auto reducesum = reducesum_op.get();
-  ir->moveIntoIr(std::move(reducesum_op));
 
   // Remap the tensor-to-op relationships
   input_tensor->consumers.increment(negate);
@@ -55,7 +49,7 @@ bool SubtractArg1GradOpPattern::apply(Op *op) const {
   reducesum->output->insert(0, output_tensor);
 
   // Remove the reducesum op
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   return true;
 }

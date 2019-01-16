@@ -21,25 +21,14 @@ bool SinGradOpPattern::apply(Op *op) const {
   auto fwd_in   = op->inTensor(SinGradOp::getFwdArgInIndex());
   auto grad_out = op->outTensor(SinGradOp::getOutIndex());
 
-  auto ir   = op->pir;
-  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
-
   // create the new ops
-  auto cos_op =
-      make_unique<CosOp>(Onnx::AiOnnx::OpSet9::Cos, ir, std::string{}, attr);
-  auto mul_op =
-      make_unique<MulOp>(Onnx::AiOnnx::OpSet9::Mul, ir, std::string{}, attr);
-
-  // move ops into ir
-  auto cos = cos_op.get();
-  auto mul = mul_op.get();
-  ir->moveIntoIr(std::move(cos_op));
-  ir->moveIntoIr(std::move(mul_op));
+  auto cos = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Cos, op);
+  auto mul = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
 
   // Remove the SinGradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   // Connect up the new ops
   cos->connectInTensor(CosOp::getInIndex(), fwd_in->id);

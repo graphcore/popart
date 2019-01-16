@@ -24,25 +24,18 @@ bool MulArgGradOpPattern::apply(Op *op) const {
   // to be valid via a previous call to MulArgGradOpPattern::matches
   auto axes = dynamic_cast<MulArgGradOp *>(op)->getReductionAxes();
 
-  auto ir   = op->pir;
-  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
+  auto reduce_sum = dynamic_cast<ReduceSumOp *>(
+      makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::ReduceSum, op));
+  reduce_sum->setAxes(axes);
+  // do not keep reduced dims
+  reduce_sum->setKeepDims(0l);
 
-  // create the new ops
-  auto mul_op =
-      make_unique<MulOp>(Onnx::AiOnnx::OpSet9::Mul, ir, std::string{}, attr);
-  auto reduce_sum_op = make_unique<ReduceSumOp>(
-      Onnx::AiOnnx::OpSet9::ReduceSum, ir, axes, false, attr);
-
-  // move ops into ir
-  auto mul        = mul_op.get();
-  auto reduce_sum = reduce_sum_op.get();
-  ir->moveIntoIr(std::move(mul_op));
-  ir->moveIntoIr(std::move(reduce_sum_op));
+  auto mul = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
 
   // create a tensor to connect the multiply and reducesum ops
   const auto tmp_tensor_id = createIntermediateTensorId(op->output->id(0));
   op->pir->getTensors().addActGrad(tmp_tensor_id);
-  const auto tmp_tensor = ir->getTensors().get(tmp_tensor_id);
+  const auto tmp_tensor = op->pir->getTensors().get(tmp_tensor_id);
   tmp_tensor->info      = npOut(input_0->info, input_1->info);
 
   // Remap the tensor-to-op relationships
@@ -65,7 +58,7 @@ bool MulArgGradOpPattern::apply(Op *op) const {
   reduce_sum->output->insert(0, output);
 
   // Remove the reducesum op
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   return true;
 }

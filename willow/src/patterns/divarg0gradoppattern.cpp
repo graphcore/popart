@@ -22,29 +22,22 @@ bool DivArg0GradOpPattern::apply(Op *op) const {
   auto fwd_in1  = op->inTensor(DivArg0GradOp::getFwdArg0InIndex());
   auto grad_out = op->outTensor(DivArg0GradOp::getOutIndex());
 
-  auto ir   = op->pir;
-  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
-
   // we assume this dynamic_cast call has been confirmed
   // to be valid via a previous call to DivArg0GradOpPattern::matches
   auto axes = dynamic_cast<DivArg0GradOp *>(op)->getReductionAxes();
 
   // create the new ops
-  auto div_op =
-      make_unique<DivOp>(Onnx::AiOnnx::OpSet9::Div, ir, std::string{}, attr);
-  auto reduce_op = make_unique<ReduceSumOp>(
-      Onnx::AiOnnx::OpSet9::ReduceSum, ir, axes, false, attr);
-
-  // move ops into ir
-  auto div    = div_op.get();
-  auto reduce = reduce_op.get();
-  ir->moveIntoIr(std::move(div_op));
-  ir->moveIntoIr(std::move(reduce_op));
+  auto div    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Div, op);
+  auto reduce = dynamic_cast<ReduceSumOp *>(
+      makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::ReduceSum, op));
+  reduce->setAxes(axes);
+  // do not keep reduced dims
+  reduce->setKeepDims(0l);
 
   // Remove the DivArg0GradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   // Connect up the new ops
   div->connectInTensor(0, grad_in->id);

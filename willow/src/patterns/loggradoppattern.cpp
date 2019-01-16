@@ -20,21 +20,13 @@ bool LogGradOpPattern::apply(Op *op) const {
   auto fwd_in   = op->inTensor(LogGradOp::getFwdArgInIndex());
   auto grad_out = op->outTensor(LogGradOp::getOutIndex());
 
-  auto ir   = op->pir;
-  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
-
   // create the new ops
-  auto div_op =
-      make_unique<DivOp>(Onnx::AiOnnx::OpSet9::Div, ir, std::string{}, attr);
-
-  // move ops into ir
-  auto div = div_op.get();
-  ir->moveIntoIr(std::move(div_op));
+  auto div = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Div, op);
 
   // Remove the LogGradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   // Connect up the new ops
   div->connectInTensor(DivOp::getArg0InIndex(), grad_in->id);

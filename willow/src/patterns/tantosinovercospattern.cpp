@@ -23,29 +23,15 @@ bool TanToSinOverCosPattern::apply(Op *op) const {
   auto fwd_in  = op->inTensor(TanOp::getInIndex());
   auto fwd_out = op->outTensor(TanOp::getOutIndex());
 
-  auto ir   = op->pir;
-  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
-
   // create the new ops
-  auto sin_op =
-      make_unique<SinOp>(Onnx::AiOnnx::OpSet9::Sin, ir, std::string{}, attr);
-  auto cos_op =
-      make_unique<CosOp>(Onnx::AiOnnx::OpSet9::Cos, ir, std::string{}, attr);
-  auto div_op =
-      make_unique<DivOp>(Onnx::AiOnnx::OpSet9::Div, ir, std::string{}, attr);
-
-  // move ops into ir
-  auto sin = sin_op.get();
-  auto cos = cos_op.get();
-  auto div = div_op.get();
-  ir->moveIntoIr(std::move(sin_op));
-  ir->moveIntoIr(std::move(cos_op));
-  ir->moveIntoIr(std::move(div_op));
+  auto sin = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Sin, op);
+  auto cos = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Cos, op);
+  auto div = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Div, op);
 
   // Remove the TanOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   // Connect up the new ops
   sin->connectInTensor(SinOp::getInIndex(), fwd_in->id);

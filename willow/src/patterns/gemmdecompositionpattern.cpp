@@ -11,16 +11,6 @@
 
 namespace poponnx {
 
-static void transposeTensor(const TensorId &input,
-                            const TensorId &output,
-                            Ir *ir,
-                            Attributes attr);
-static void scaleTensor(const TensorId &input,
-                        const TensorId &output,
-                        float scale_factor,
-                        Ir *ir,
-                        Attributes attr);
-
 bool GemmDecompositionPattern::matches(Op *op) const {
   return op->isConvertibleTo<GemmOp>();
 }
@@ -44,37 +34,26 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   auto transA  = gemm_op->getTransA();
   auto transB  = gemm_op->getTransB();
 
-  auto ir   = op->pir;
-  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
-
   // create the new ops
-  auto matmul_op = make_unique<MatMulOp>(
-      Onnx::AiOnnx::OpSet9::MatMul, ir, std::string{}, attr);
-  auto add_op =
-      make_unique<AddOp>(Onnx::AiOnnx::OpSet9::Add, ir, std::string{}, attr);
-
-  // move ops into ir
-  auto matmul = matmul_op.get();
-  auto add    = add_op.get();
-  ir->moveIntoIr(std::move(matmul_op));
-  ir->moveIntoIr(std::move(add_op));
+  auto matmul = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::MatMul, op);
+  auto add    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Add, op);
 
   // Remove the GemmOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   auto A = in_a->id;
   if (transA) {
     auto tA = createIntermediateTensorId(A);
-    transposeTensor(A, tA, ir, attr);
+    transposeTensor(A, tA, op);
     A = tA;
   }
 
   auto B = in_b->id;
   if (transB) {
     auto tB = createIntermediateTensorId(B);
-    transposeTensor(B, tB, ir, attr);
+    transposeTensor(B, tB, op);
     B = tB;
   }
 
@@ -86,14 +65,11 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   matmul->setup();
 
   auto scale1_out = createIntermediateTensorId(in_a->id);
-  scaleTensor(matmul->outTensor(MatMulOp::getOutIndex())->id,
-              scale1_out,
-              alpha,
-              ir,
-              attr);
+  scaleTensor(
+      matmul->outTensor(MatMulOp::getOutIndex())->id, scale1_out, alpha, op);
 
   auto scale2_out = createIntermediateTensorId(in_a->id);
-  scaleTensor(in_c->id, scale2_out, beta, ir, attr);
+  scaleTensor(in_c->id, scale2_out, beta, op);
 
   add->connectInTensor(AddOp::getArg0InIndex(), scale1_out);
   add->connectInTensor(AddOp::getArg1InIndex(), scale2_out);
@@ -102,35 +78,27 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   return true;
 }
 
-static void scaleTensor(const TensorId &input,
-                        const TensorId &output,
-                        float scale_factor,
-                        Ir *ir,
-                        Attributes attr) {
-  auto scale_op =
-      make_unique<ScaleOp>(Onnx::Operators::Scale, ir, std::string{}, attr);
-  scale_op->setScaleFactor(scale_factor);
-
-  auto scale = scale_op.get();
-  ir->moveIntoIr(std::move(scale_op));
+void GemmDecompositionPattern::scaleTensor(const TensorId &input,
+                                           const TensorId &output,
+                                           float scale_factor,
+                                           Op *op) const {
+  auto scale = dynamic_cast<ScaleOp *>(
+      makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Scale, op));
+  scale->setScaleFactor(scale_factor);
 
   scale->connectInTensor(ScaleOp::getInIndex(), input);
   scale->createAndConnectOutTensor(ScaleOp::getOutIndex(), output);
   scale->setup();
 }
 
-static void transposeTensor(const TensorId &input,
-                            const TensorId &output,
-                            Ir *ir,
-                            Attributes attr) {
+void GemmDecompositionPattern::transposeTensor(const TensorId &input,
+                                               const TensorId &output,
+                                               Op *op) const {
   std::vector<int64_t> perm{1, 0};
 
-  auto transpose_op = make_unique<TransposeOp>(
-      Onnx::AiOnnx::OpSet9::Transpose, ir, std::string{}, attr);
-  transpose_op->setPerm(perm);
-
-  auto transpose = transpose_op.get();
-  ir->moveIntoIr(std::move(transpose_op));
+  auto transpose = dynamic_cast<TransposeOp *>(
+      makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Transpose, op));
+  transpose->setPerm(perm);
 
   transpose->connectInTensor(TransposeOp::getInIndex(), input);
   transpose->createAndConnectOutTensor(TransposeOp::getOutIndex(), output);

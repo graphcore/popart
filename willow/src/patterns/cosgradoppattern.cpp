@@ -22,29 +22,15 @@ bool CosGradOpPattern::apply(Op *op) const {
   auto fwd_in   = op->inTensor(CosGradOp::getFwdArgInIndex());
   auto grad_out = op->outTensor(CosGradOp::getOutIndex());
 
-  auto ir   = op->pir;
-  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
-
   // create the new ops
-  auto sin_op =
-      make_unique<SinOp>(Onnx::AiOnnx::OpSet9::Sin, ir, std::string{}, attr);
-  auto mul_op =
-      make_unique<MulOp>(Onnx::AiOnnx::OpSet9::Mul, ir, std::string{}, attr);
-  auto negate_op =
-      make_unique<NegateOp>(Onnx::AiOnnx::OpSet9::Neg, ir, std::string{}, attr);
-
-  // move ops into ir
-  auto sin    = sin_op.get();
-  auto mul    = mul_op.get();
-  auto negate = negate_op.get();
-  ir->moveIntoIr(std::move(sin_op));
-  ir->moveIntoIr(std::move(mul_op));
-  ir->moveIntoIr(std::move(negate_op));
+  auto sin    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Sin, op);
+  auto mul    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
+  auto negate = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Neg, op);
 
   // Remove the CosGradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   // Connect up the new ops
   sin->connectInTensor(SinOp::getInIndex(), fwd_in->id);

@@ -20,21 +20,13 @@ bool ExpGradOpPattern::apply(Op *op) const {
   auto fwd_out  = op->inTensor(ExpGradOp::getFwdOutInIndex());
   auto grad_out = op->outTensor(ExpGradOp::getOutIndex());
 
-  auto ir   = op->pir;
-  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
-
   // create the new ops
-  auto mul_op =
-      make_unique<MulOp>(Onnx::AiOnnx::OpSet9::Mul, ir, std::string{}, attr);
-
-  // move ops into ir
-  auto mul = mul_op.get();
-  ir->moveIntoIr(std::move(mul_op));
+  auto mul = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
 
   // Remove the ExpGradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   // Connect up the new ops
   mul->connectInTensor(MulOp::getArg0InIndex(), grad_in->id);

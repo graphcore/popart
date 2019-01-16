@@ -8,6 +8,12 @@
 
 namespace poponnx {
 
+AddBiasOp::AddBiasOp(const OperatorIdentifier &_opid,
+                     Ir *_ir,
+                     const std::string &name,
+                     const Attributes &_attr)
+    : Op(_opid, _ir, name, _attr) {}
+
 AddBiasOp::AddBiasOp(ConvOp *op_, Attributes attr)
     : Op(Onnx::CustomOperators::AddBias, op_->pir, "", attr) {}
 
@@ -70,8 +76,7 @@ const std::map<int, int> &AddBiasDataGradOp::gradOutToNonGradIn() const {
 namespace {
 
 // The AddBiasOp should not be created from the onnx graph
-static OpCreator<AddBiasOp>
-    addOpCreator(Onnx::CustomOperators::AddBias, nullptr, false);
+static OpCreator<AddBiasOp> addOpCreator(Onnx::CustomOperators::AddBias, false);
 static GradOpCreator<AddBiasBiasGradOp>
     addBiasBiasGradOpCreator(Onnx::CustomGradOperators::AddBiasBiasGrad);
 static GradOpCreator<AddBiasDataGradOp>

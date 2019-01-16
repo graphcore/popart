@@ -3,6 +3,7 @@
 #include <poponnx/op/div.hpp>
 #include <poponnx/op/scale.hpp>
 #include <poponnx/op/sqrt.hpp>
+#include <poponnx/patterns/pattern.hpp>
 #include <poponnx/patterns/sqrtgradoppattern.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorinfo.hpp>
@@ -22,27 +23,16 @@ bool SqrtGradOpPattern::apply(Op *op) const {
   auto fwd_out  = op->inTensor(SqrtGradOp::getFwdOutInIndex());
   auto grad_out = op->outTensor(SqrtGradOp::getOutIndex());
 
-  auto ir   = op->pir;
-  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
-
   // create the new ops
-  auto scale_op = make_unique<ScaleOp>(
-      Onnx::AiOnnx::OpSet9::Scale, ir, std::string{}, attr);
-  scale_op->setScaleFactor(2.0f);
-
-  auto div_op =
-      make_unique<DivOp>(Onnx::AiOnnx::OpSet9::Div, ir, std::string{}, attr);
-
-  // move ops into ir
-  auto scale = scale_op.get();
-  auto div   = div_op.get();
-  ir->moveIntoIr(std::move(scale_op));
-  ir->moveIntoIr(std::move(div_op));
+  auto scale = dynamic_cast<ScaleOp *>(
+      makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Scale, op));
+  scale->setScaleFactor(2.0f);
+  auto div = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Div, op);
 
   // Remove the DivArg0GradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   // Connect up the new ops
   scale->connectInTensor(ScaleOp::getInIndex(), fwd_out->id);

@@ -3,6 +3,7 @@
 
 #include <map>
 #include <poponnx/names.hpp>
+#include <poponnx/opidentifier.hpp>
 
 namespace poponnx {
 
@@ -74,11 +75,21 @@ public:
   // What phase will this Pattern be run at?
   virtual PatternPhase phase() const = 0;
 
+  // New op(s) created in replacement of old op will
+  // inherit name and attributes of op they replace
+  Op *makeReplacementOpInIr(const OperatorIdentifier &,
+                            Op *oldOp,
+                            const Attributes &attr = {}) const;
+
   static TensorId createIntermediateTensorId(TensorId base_id);
 
   void initialise(std::string pattern_name);
 
   const std::string &getPatternName() const;
+
+  std::string getReplacementOpName(Op *op) const;
+
+  Op *getOpInIr(std::unique_ptr<Op> op) const;
 
 private:
   static int tensor_counter;

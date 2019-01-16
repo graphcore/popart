@@ -1,7 +1,9 @@
+#include <onnx/onnx_pb.h>
 #include <spdlog/fmt/fmt.h>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/op.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/patterns/pattern.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
@@ -29,6 +31,43 @@ void Pattern::initialise(std::string pattern_name_) {
   pattern_name = pattern_name_;
 }
 
+Op *Pattern::makeReplacementOpInIr(const OperatorIdentifier &opid,
+                                   Op *oldOp,
+                                   const Attributes &attr) const {
+  // Context from original op to be transfered to replacement ops
+  auto ir   = oldOp->pir;
+  auto name = getReplacementOpName(oldOp);
+
+  // Inherit some attributes from the op that the new op is replacing
+  std::vector<std::string> inheritedAttributes = {sVirtualGraphAttribute,
+                                                  sRecomputeOutputAttribute};
+
+  Attributes newAttrs = attr;
+  for (auto attr_name : inheritedAttributes) {
+    auto _attr = oldOp->nAtts.filter(attr_name);
+    newAttrs.takeAttribute(attr_name, _attr);
+  }
+
+  // Create replacement Op with new attributes and
+  // move into Ir
+  std::unique_ptr<Op> newOpUp = OpManager::createOp(opid, ir, name, newAttrs);
+  Op *newOp                   = newOpUp.get();
+  ir->moveIntoIr(std::move(newOpUp));
+
+  return newOp;
+}
+
 const std::string &Pattern::getPatternName() const { return pattern_name; }
+
+std::string Pattern::getReplacementOpName(Op *op) const {
+  std::string replacementName;
+  if (op->name() == "") {
+    replacementName = "";
+  } else {
+    replacementName = op->name() + "_from_" + getPatternName();
+  }
+
+  return replacementName;
+}
 
 } // namespace poponnx

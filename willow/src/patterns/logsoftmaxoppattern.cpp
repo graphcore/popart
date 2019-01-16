@@ -18,25 +18,14 @@ bool LogSoftmaxOpPattern::apply(Op *op) const {
   auto input  = op->inTensor(LogSoftmaxOp::getInIndex());
   auto output = op->outTensor(LogSoftmaxOp::getOutIndex());
 
-  auto ir   = op->pir;
-  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
-
   // create the new ops
-  auto softmax_op = make_unique<SoftmaxOp>(
-      Onnx::AiOnnx::OpSet9::Softmax, ir, std::string{}, attr);
-  auto log_op =
-      make_unique<LogOp>(Onnx::AiOnnx::OpSet9::Log, ir, std::string{}, attr);
-
-  // move ops into ir
-  auto softmax = softmax_op.get();
-  auto log     = log_op.get();
-  ir->moveIntoIr(std::move(softmax_op));
-  ir->moveIntoIr(std::move(log_op));
+  auto softmax = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Softmax, op);
+  auto log     = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Log, op);
 
   // Remove the LogSoftmaxOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   // Connect up the new ops
   softmax->connectInTensor(SoftmaxOp::getInIndex(), input->id);

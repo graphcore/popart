@@ -4,6 +4,7 @@
 #include <poponnx/op/pad.hpp>
 #include <poponnx/op/reducesum.hpp>
 #include <poponnx/op/subsample.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/patterns/optoidentitypattern.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
@@ -41,15 +42,8 @@ std::vector<const Tensor *> OpToIdentityPattern::touches(Op *) const {
 bool OpToIdentityPattern::apply(Op *op) const {
   auto input_tensor  = op->input->tensor(0);
   auto output_tensor = op->output->tensor(0);
-  auto ir            = op->pir;
-  auto attr          = op->nAtts.filter(sVirtualGraphAttribute);
 
-  auto identity_op = make_unique<IdentityOp>(
-      Onnx::AiOnnx::OpSet9::Identity, ir, std::string{}, attr);
-
-  // Add the identity op to the IR
-  auto identity = identity_op.get();
-  ir->moveIntoIr(std::move(identity_op));
+  auto identity = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Identity, op);
 
   // Remap the tensor-to-op relationships
   input_tensor->consumers.increment(identity);
@@ -61,7 +55,7 @@ bool OpToIdentityPattern::apply(Op *op) const {
   identity->output->insert(0, output_tensor);
 
   // Remove the op
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   return true;
 }

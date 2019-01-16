@@ -66,6 +66,15 @@ const std::vector<int64_t> &ReduceSumOp::getAxes() const { return axes; }
 
 bool ReduceSumOp::getKeepDims() const { return keepdims; }
 
+void ReduceSumOp::setAxes(std::vector<int64_t> value) {
+  axes = value;
+
+  // Sorting the axes for general backend compatibility
+  std::sort(axes.begin(), axes.end());
+}
+
+void ReduceSumOp::setKeepDims(int64_t value) { keepdims = value; }
+
 ReduceSumGradOp::ReduceSumGradOp(ReduceSumOp *fwdOp,
                                  const Shape &backward_shape_)
     : Op(Onnx::GradOperators::ReduceSumGrad, fwdOp->pir),

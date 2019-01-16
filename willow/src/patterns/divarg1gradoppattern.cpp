@@ -26,41 +26,25 @@ bool DivArg1GradOpPattern::apply(Op *op) const {
   auto fwd_in1  = op->inTensor(DivArg1GradOp::getFwdArg1InIndex());
   auto grad_out = op->outTensor(DivArg1GradOp::getOutIndex());
 
-  auto ir   = op->pir;
-  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
-
   // we assume this dynamic_cast call has been confirmed
   // to be valid via a previous call to DivArg1GradOpPattern::matches
   auto axes = dynamic_cast<DivArg1GradOp *>(op)->getReductionAxes();
 
   // create the new ops
-  auto square_op = make_unique<SquareOp>(
-      Onnx::CustomOperators::Square, ir, std::string{}, attr);
-  auto div_op =
-      make_unique<DivOp>(Onnx::AiOnnx::OpSet9::Div, ir, std::string{}, attr);
-  auto mul_op =
-      make_unique<MulOp>(Onnx::AiOnnx::OpSet9::Mul, ir, std::string{}, attr);
-  auto negate_op =
-      make_unique<NegateOp>(Onnx::AiOnnx::OpSet9::Neg, ir, std::string{}, attr);
-  auto reduce_op = make_unique<ReduceSumOp>(
-      Onnx::AiOnnx::OpSet9::ReduceSum, ir, axes, false, attr);
-
-  // move ops into ir
-  auto square = square_op.get();
-  auto div    = div_op.get();
-  auto mul    = mul_op.get();
-  auto negate = negate_op.get();
-  auto reduce = reduce_op.get();
-  ir->moveIntoIr(std::move(square_op));
-  ir->moveIntoIr(std::move(div_op));
-  ir->moveIntoIr(std::move(mul_op));
-  ir->moveIntoIr(std::move(negate_op));
-  ir->moveIntoIr(std::move(reduce_op));
+  auto square = makeReplacementOpInIr(Onnx::CustomOperators::Square, op);
+  auto div    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Div, op);
+  auto mul    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
+  auto negate = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Neg, op);
+  auto reduce = dynamic_cast<ReduceSumOp *>(
+      makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::ReduceSum, op));
+  reduce->setAxes(axes);
+  // do not keep reduced dims
+  reduce->setKeepDims(0l);
 
   // Remove the DivArg1GradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   // Connect up the new ops
   square->connectInTensor(0, fwd_in1->id);

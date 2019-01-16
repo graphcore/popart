@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
 
   // Check the ir
   // the PadOp should have been removed
-  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Pad_2).size() == 0);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 0);
   // padIn should have been removed
   BOOST_CHECK(ir.getTensors().contains(padIn) == false);
 }
@@ -491,4 +491,74 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Reciprocal).size() == 2);
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Neg).size() == 1);
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Mul).size() == 1);
+}
+
+// When a pattern replaces an op with another op
+// it should copy any debug context to it
+BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
+  // {(i1), (i2)} -> [Add] -> () -> [Pad] -> () -> [Identity] -> (identOut)
+  //
+  // should become
+  //
+  // {(i1), (i2)} -> [Add] -> () -> [Identity] -> () -> [Identity] -> (identOut)
+
+  // Build an onnx model
+  auto builder = Builder::create();
+
+  TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
+
+  auto input1 = builder->addInputTensor(shape);
+  auto input2 = builder->addInputTensor(shape);
+
+  int64_t vgNumber   = 20;
+  bool recompute     = true;
+  std::string opName = "MyPadOp";
+
+  auto padIn = builder->add({input1, input2});
+  builder->virtualGraph(padIn, vgNumber);
+
+  // Op to be replaced by pattern
+  auto padOut = builder->pad({padIn}, "constant", {0, 0}, 0.0, opName);
+  builder->virtualGraph(padOut, vgNumber);
+  builder->recomputeOutputInBackwardPass(padOut, recompute);
+
+  auto identOut = builder->identity({padOut});
+  builder->recomputeOutputInBackwardPass(identOut, recompute);
+  builder->virtualGraph(identOut, vgNumber);
+
+  builder->addOutputTensor(identOut);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR
+  // Add the last tensor, and the 3rd tensor as anchors
+  auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
+  auto optimizer = ConstSGD(0.01);
+  std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
+
+  Ir ir;
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              losses,
+              &optimizer,
+              {},
+              Patterns({PatternType::OPTOIDENTITY})});
+
+  // Check the PadOp has been removed
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 0);
+
+  // Check attributes of the replaced op:
+  auto tensor = ir.getTensors().get(padOut);
+  auto op     = tensor->getProducer();
+
+  // name
+  BOOST_CHECK(op->name().find(opName) == 0);
+
+  // virtual graph id
+  BOOST_CHECK(op->nAtts.at(sVirtualGraphAttribute)->i() == vgNumber);
+
+  // recomputation
+  BOOST_CHECK(op->nAtts.at(sRecomputeOutputAttribute)->i() == recompute);
 }

@@ -24,33 +24,17 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
   auto grad_input    = op->inTensor(0);
   auto fwd_input     = op->inTensor(1);
   auto output_tensor = op->outTensor(0);
-  auto ir            = op->pir;
-  auto attr          = op->nAtts.filter(sVirtualGraphAttribute);
 
   // create the new ops
-  auto square_op = make_unique<SquareOp>(
-      Onnx::CustomOperators::Square, ir, std::string{}, attr);
-  auto reciprocal_op = make_unique<ReciprocalOp>(
-      Onnx::AiOnnx::OpSet9::Reciprocal, ir, std::string{}, attr);
-  auto negate_op =
-      make_unique<NegateOp>(Onnx::AiOnnx::OpSet9::Neg, ir, std::string{}, attr);
-  auto mul_op =
-      make_unique<MulOp>(Onnx::AiOnnx::OpSet9::Mul, ir, std::string{}, attr);
-
-  // move ops into ir
-  auto square     = square_op.get();
-  auto reciprocal = reciprocal_op.get();
-  auto negate     = negate_op.get();
-  auto mul        = mul_op.get();
-  ir->moveIntoIr(std::move(square_op));
-  ir->moveIntoIr(std::move(reciprocal_op));
-  ir->moveIntoIr(std::move(negate_op));
-  ir->moveIntoIr(std::move(mul_op));
+  auto square     = makeReplacementOpInIr(Onnx::CustomOperators::Square, op);
+  auto reciprocal = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Reciprocal, op);
+  auto negate     = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Neg, op);
+  auto mul        = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Mul, op);
 
   // Remove the ReciprocalGradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   // Connect up the new ops
   square->connectInTensor(0, fwd_input->id);

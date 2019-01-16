@@ -29,6 +29,9 @@ public:
   // preserve the rank of the input tensor, inserting 1 at reduced axes
   bool getKeepDims() const;
 
+  void setAxes(std::vector<int64_t> value);
+  void setKeepDims(int64_t value);
+
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 

@@ -6,6 +6,7 @@
 #include <poponnx/op/negate.hpp>
 #include <poponnx/op/scale.hpp>
 #include <poponnx/patterns/coshoppattern.hpp>
+#include <poponnx/patterns/pattern.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorinfo.hpp>
 
@@ -22,39 +23,20 @@ bool CoshOpPattern::apply(Op *op) const {
   auto input  = op->inTensor(CoshOp::getInIndex());
   auto output = op->outTensor(CoshOp::getOutIndex());
 
-  auto ir   = op->pir;
-  auto attr = op->nAtts.filter(sVirtualGraphAttribute);
-
   // create the new ops
-  auto negate_op =
-      make_unique<NegateOp>(Onnx::AiOnnx::OpSet9::Neg, ir, std::string{}, attr);
-  auto exp1_op =
-      make_unique<ExpOp>(Onnx::AiOnnx::OpSet9::Exp, ir, std::string{}, attr);
-  auto exp2_op =
-      make_unique<ExpOp>(Onnx::AiOnnx::OpSet9::Exp, ir, std::string{}, attr);
-  auto add_op =
-      make_unique<AddOp>(Onnx::AiOnnx::OpSet9::Add, ir, std::string{}, attr);
+  auto negate = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Neg, op);
+  auto exp1   = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Exp, op);
+  auto exp2   = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Exp, op);
+  auto add    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Add, op);
 
-  auto scale_op = make_unique<ScaleOp>(
-      Onnx::AiOnnx::OpSet9::Scale, ir, std::string{}, attr);
-  scale_op->setScaleFactor(0.5f);
-
-  // move ops into ir
-  auto negate = negate_op.get();
-  auto exp1   = exp1_op.get();
-  auto exp2   = exp2_op.get();
-  auto add    = add_op.get();
-  auto scale  = scale_op.get();
-  ir->moveIntoIr(std::move(negate_op));
-  ir->moveIntoIr(std::move(exp1_op));
-  ir->moveIntoIr(std::move(exp2_op));
-  ir->moveIntoIr(std::move(add_op));
-  ir->moveIntoIr(std::move(scale_op));
+  auto scale = dynamic_cast<ScaleOp *>(
+      makeReplacementOpInIr(Onnx::Operators::Scale, op));
+  scale->setScaleFactor(0.5f);
 
   // Remove the CoshOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  ir->eraseOp(op->id);
+  op->pir->eraseOp(op->id);
 
   // Connect up the new ops
   exp1->connectInTensor(ExpOp::getInIndex(), input->id);
