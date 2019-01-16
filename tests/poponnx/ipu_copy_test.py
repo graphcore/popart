@@ -62,8 +62,8 @@ def test_ipu_copy_aca1():
         s.prepareDevice()
 
     assert (e_info.value.args[0].startswith(
-        "Op 102(ai.onnx.Add:7) has been assigned to an invalid virtual graph 10"
-    ))
+        "Op(ai.onnx.Add:7, outputs=[{}]) has been assigned to an invalid virtual graph 10"
+        .format(o)))
 
 
 # Not supported as the same input tensors can not currently be copied to different ipus

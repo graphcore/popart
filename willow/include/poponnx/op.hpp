@@ -80,6 +80,7 @@ public:
   virtual ~Op();
 
   std::string str() const final;
+  std::string debugName() const;
 
   // create an ActGrad (output) tensor
   // and wire it to this Op's output

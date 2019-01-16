@@ -69,7 +69,7 @@ void ReshapeOp::setup() {
   auto nIn  = inInfo(getInIndex()).nelms();
   if (nOut != nIn) {
     std::stringstream ss;
-    ss << "Failure in ReshapeOp::setup() for Op " << str() << ". "
+    ss << "Failure in ReshapeOp::setup() for " << debugName() << ". "
        << "The number of elements of the input is " << nIn
        << ", while the number of elements of the output is " << nOut
        << ". The number of elements cannot change for a ReshapeOp";

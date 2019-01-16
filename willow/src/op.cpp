@@ -1,4 +1,5 @@
 #include <onnx/onnx_pb.h>
+#include <spdlog/fmt/fmt.h>
 #include <poponnx/ir.hpp>
 #include <poponnx/tensor.hpp>
 
@@ -141,7 +142,12 @@ int64_t Op::memOfOutputs() const {
 
 void Op::appendIO(std::stringstream &ss) const {
   static std::string tab = "    ";
-  ss << '\n' << "Op " << id << " of type " << opid << '\n';
+
+  ss << '\n' << "Op ";
+  if (!_name.empty()) {
+    ss << '"' << _name << "\", ";
+  }
+  ss << id << " of type " << opid << '\n';
 
   int max_id_length = std::max(input->maxIdLength(), output->maxIdLength());
 
@@ -242,6 +248,26 @@ std::string Op::str() const {
   std::stringstream ss;
   ss << id << "(" << opid << ")";
   return ss.str();
+}
+
+std::string Op::debugName() const {
+  std::string debug_id;
+  if (!_name.empty()) {
+    debug_id = _name;
+  } else {
+    std::stringstream ss;
+    ss << opid;
+    debug_id = ss.str();
+  }
+
+  std::vector<TensorId> out_ids;
+  for (auto i : output->tensorIdMap()) {
+    out_ids.push_back(i.second);
+  }
+
+  return fmt::format("Op({}, outputs=[{}])",
+                     debug_id,
+                     fmt::join(out_ids.begin(), out_ids.end(), ", "));
 }
 
 } // namespace poponnx

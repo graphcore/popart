@@ -103,7 +103,7 @@ bool InterIpuCopy::apply(Ir &ir) const {
                 // update the 'to' op to use the copied tensor
                 logging::ir::debug("Already copied output tensor of {}:{} from "
                                    "ipu {} to ipu {}",
-                                   from->str(),
+                                   from->debugName(),
                                    tensor->id,
                                    fromIpu,
                                    toIpu);
@@ -115,7 +115,7 @@ bool InterIpuCopy::apply(Ir &ir) const {
                 for (auto i : indices) {
                   logging::ir::debug("Disconnecting out {} from {}:{}",
                                      tensor->id,
-                                     to->str(),
+                                     to->debugName(),
                                      i);
                   to->disconnectInTensor(i, tensor);
                 }
@@ -126,7 +126,7 @@ bool InterIpuCopy::apply(Ir &ir) const {
                 for (auto i : indices) {
                   logging::ir::debug("Connecting in {} from {}:{}",
                                      copiedTensor,
-                                     to->str(),
+                                     to->debugName(),
                                      i);
                   to->connectInTensor(i, copiedTensor);
                 }
@@ -135,7 +135,7 @@ bool InterIpuCopy::apply(Ir &ir) const {
                 // Need to copy the tensor between ipu's
                 logging::ir::debug(
                     "Need to copy output tensor of {}:{} from ipu {} to ipu {}",
-                    from->str(),
+                    from->debugName(),
                     tensor->id,
                     fromIpu,
                     toIpu);
@@ -153,7 +153,7 @@ bool InterIpuCopy::apply(Ir &ir) const {
                 for (auto i : indices) {
                   logging::ir::debug("Disconnecting out {} from {}:{}",
                                      tensor->id,
-                                     to->str(),
+                                     to->debugName(),
                                      i);
                   to->disconnectInTensor(i, tensor);
                 }
@@ -170,7 +170,7 @@ bool InterIpuCopy::apply(Ir &ir) const {
                 for (auto i : indices) {
                   logging::ir::debug("Connecting in {} from {}:{}",
                                      copiedTensor,
-                                     to->str(),
+                                     to->debugName(),
                                      i);
                   to->connectInTensor(i, copiedTensor);
                 }

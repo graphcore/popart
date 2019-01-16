@@ -166,7 +166,7 @@ poplar::Tensor ConvOpx::createInput(InIndex index) const {
     return poplin::createWeights(
         graph(),                              // graph
         fwdParams,                            // params
-        op_p->str(),                          // name
+        op_p->debugName(),                    // name
         dv_p->fwdConvOptions.toOptionFlags(), // options
         &dv_p->convCache                      // cache
     );

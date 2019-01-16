@@ -44,8 +44,8 @@ poplar::Graph &Opx::graph() const {
       op_p->nAtts.setIfPresent(index, sVirtualGraphAttribute);
       return dv_p->graph(index);
     } else {
-      throw error("Operation {} does not have a virtual graph attribute",
-                  op_p->str());
+      throw error("{} does not have a virtual graph attribute",
+                  op_p->debugName());
     }
   } else {
     return dv_p->masterGraph();

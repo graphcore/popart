@@ -19,7 +19,7 @@ void Consumers::takeFrom(Consumers &giver) {
       if (op_taker == op_giver) {
         throw error("Cannot transfer consumers from " +
                     giver.tensorConsumed->id + " to " + tensorConsumed->id +
-                    " as they have " + op_taker->str() + " in common");
+                    " as they have " + op_taker->debugName() + " in common");
       }
     }
   }
@@ -109,15 +109,15 @@ void Consumers::insertTopoCon(Op *before, Op *after) {
   // if the topo con is already present, bail
   if (std::find(topoCons[after].begin(), topoCons[after].end(), before) !=
       topoCons[after].end()) {
-    throw error("Already registered constraint [" + before->str() + " before " +
-                after->str() + "]");
+    throw error("Already registered constraint [" + before->debugName() +
+                " before " + after->debugName() + "]");
   }
   topoCons[after].push_back(before);
 }
 
 void Consumers::setTopoLast(Op *last) {
   if (n(last) == 0) {
-    throw error("Cannot set " + last->str() + " as last consumer of " +
+    throw error("Cannot set " + last->debugName() + " as last consumer of " +
                 tensorConsumed->id + " as it not a consumer.");
   }
   topoCons[last] = {};
@@ -131,8 +131,8 @@ void Consumers::setTopoLast(Op *last) {
     if (op != last) {
       if (std::find(topoCons[op].begin(), topoCons[op].end(), last) !=
           topoCons[op].end()) {
-        throw error("Failure setting " + last->str() +
-                    " to last: " + op->str() +
+        throw error("Failure setting " + last->debugName() +
+                    " to last: " + op->debugName() +
                     " is constrained to be before. setTopoLast does not " +
                     "remove existing constraints.");
       }
@@ -143,7 +143,7 @@ void Consumers::setTopoLast(Op *last) {
 std::vector<Op *> Consumers::consumersWhichTopoBefore(Op *op) const {
   auto found0 = consumers_m.find(op);
   if (found0 == consumers_m.end()) {
-    throw error("Op " + op->str() + " is not a consumer of " +
+    throw error(op->debugName() + " is not a consumer of " +
                 tensorConsumed->id);
   }
 
@@ -240,7 +240,7 @@ Tensor::Tensor(TensorId n, TensorType t, Ir &g)
 void Consumers::decrement(Op *op) {
   auto found = consumers_m.find(op);
   if (found == consumers_m.end()) {
-    throw error("cannot decrement non-existant consumer, " + op->str());
+    throw error("cannot decrement non-existant consumer, " + op->debugName());
   }
   --(found->second);
   if (found->second == 0) {

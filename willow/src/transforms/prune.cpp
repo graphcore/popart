@@ -102,7 +102,7 @@ bool Prune::apply(Ir &ir) const {
   }
 
   for (Op *op : opsToDelete) {
-    logging::transform::debug("Pruning op {}", op->str());
+    logging::transform::debug("Pruning {}", op->debugName());
     // unwire the inputs
     for (auto index_tensor : op->input->tensorMap()) {
       Tensor *tensor = index_tensor.second;

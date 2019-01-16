@@ -716,9 +716,9 @@ bool Ir::applyPattern(const Pattern *pattern) {
 
       if (pattern->matches(op)) {
         if (!pattern->touchesAnchored(op)) {
-          logging::pattern::debug("Applying pattern {} to op {}",
+          logging::pattern::debug("Applying pattern {} to {}",
                                   pattern->getPatternName(),
-                                  op->str());
+                                  op->debugName());
           result |= pattern->apply(op);
         }
       }
@@ -974,7 +974,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         case GradOpInType::GRADOUT: {
           if (!nonGradOp->output->hasIndex(indexFwd)) {
             std::stringstream ss;
-            ss << "No gradient for non-grad-op " << nonGradOp->str()
+            ss << "No gradient for non-grad-op " << nonGradOp->debugName()
                << " at index " << indexFwd << '.'
                << " Could it be that the path along that index "
                << "did not lead to final loss, "
@@ -1152,7 +1152,7 @@ void Ir::updateVertices() {
       for (auto phase : suggestions) {
         if (phase != suggestions[0]) {
           std::stringstream ss;
-          ss << "failed to determine phase of " + op->str() +
+          ss << "failed to determine phase of " + op->debugName() +
                     ", which has suggested phases: ";
           std::vector<std::string> suggestions_s;
           for (auto &x : suggestions) {

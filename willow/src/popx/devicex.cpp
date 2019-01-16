@@ -715,7 +715,8 @@ PriTask Devicex::opTask(Op *op, double priority) {
   }
 
   auto f = [op, opx, this]() {
-    logging::devicex::debug("Creating output tensors for " + opx->op_p->str());
+    logging::devicex::debug("Creating output tensors for " +
+                            opx->op_p->debugName());
     opx->grow(programFragment(op));
   };
   return {priority, opTaskId(op), deps, f};
@@ -750,8 +751,8 @@ void Devicex::prepare() {
         int64_t index = 0;
         op->nAtts.set(index, sVirtualGraphAttribute);
         if (index < 0 || index >= numIPUs) {
-          throw error("Op {} has been assigned to an invalid virtual graph {}",
-                      op->str(),
+          throw error("{} has been assigned to an invalid virtual graph {}",
+                      op->debugName(),
                       index);
         }
       }
