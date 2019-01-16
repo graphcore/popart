@@ -62,7 +62,7 @@ def test_ipu_copy_aca1():
         s.prepareDevice()
 
     assert (e_info.value.args[0].startswith(
-        "Op 102(ai.onnx.Add:9) has been assigned to an invalid virtual graph 10"
+        "Op 102(ai.onnx.Add:7) has been assigned to an invalid virtual graph 10"
     ))
 
 

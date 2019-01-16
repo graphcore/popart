@@ -62,7 +62,7 @@ const std::map<int, int> &SqueezeGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<SqueezeOp> squeezeOpCreator(Onnx::Operators::Squeeze);
+static OpCreator<SqueezeOp> squeezeOpCreator(Onnx::Operators::Squeeze_1);
 static GradOpCreator<SqueezeGradOp>
     squeezeGradOpCreator(Onnx::GradOperators::SqueezeGrad);
 } // namespace

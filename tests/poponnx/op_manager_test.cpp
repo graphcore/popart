@@ -23,7 +23,7 @@ using namespace poponnx;
 BOOST_AUTO_TEST_CASE(OpManager_Test1) {
 
   poponnx::Ir ir;
-  auto a = OpManager::createOp(Onnx::Operators::Add, &ir);
+  auto a = OpManager::createOp(Onnx::Operators::Add_7, &ir);
   BOOST_CHECK(a != nullptr);
 
   // This will fail as we do not have the custom op
@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test1) {
 BOOST_AUTO_TEST_CASE(OpxManager_Test1) {
 
   poponnx::Ir ir;
-  auto a = OpManager::createOp(Onnx::Operators::Add, &ir);
+  auto a = OpManager::createOp(Onnx::Operators::Add_7, &ir);
   BOOST_CHECK(a != nullptr);
 
   auto aX = popx::OpxManager::createOpx(a.get(), nullptr);

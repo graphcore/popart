@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
 
   // Check the ir
   // All but one of the identityOps should have been removed from the ir
-  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Identity).size() == 2);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Identity).size() == 2);
 
   // All but the 1st, 3rd and last tensors should have been removed
   for (int i = 0; i < tensorIds.size(); i++) {
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
 
   // Check the ir
   // the PadOp should have been removed
-  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Pad).size() == 0);
+  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Pad_2).size() == 0);
   // padIn should have been removed
   BOOST_CHECK(ir.getTensors().contains(padIn) == false);
 }
@@ -161,8 +161,8 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
 
   // Check the ir
   // the PadOp should have been replaced with an IdentityOp
-  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Pad).size() == 0);
-  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Identity).size() == 2);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 0);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Identity).size() == 2);
 }
 
 BOOST_AUTO_TEST_CASE(SplitConvBias) {
@@ -266,8 +266,8 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
   // Check the ir
   // SubtractArg1Grad should have been replaced with Negate and ReduceSum
   BOOST_CHECK(ir.opsOfType(Onnx::GradOperators::SubArg1Grad).size() == 0);
-  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Neg).size() == 1);
-  BOOST_CHECK(ir.opsOfType(Onnx::Operators::ReduceSum).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Neg).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::ReduceSum).size() == 1);
 }
 
 BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
@@ -373,7 +373,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_series) {
 
   // Check the ir
   // All the Relus have been optimised out,
-  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Relu).size() == 0);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu).size() == 0);
   // and have been replaced with ReluInplace.
   BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ReluInplace).size() == 3);
 }
@@ -435,7 +435,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_parallel) {
 
   // Check the ir
   // All the Relus have been optimised out,
-  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Relu).size() == 3 - 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu).size() == 3 - 1);
   // and have been replaced with ReluInplace.
   BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ReluInplace).size() == 1);
 }
@@ -488,7 +488,7 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
   // NegateOp, and a MulOp
   BOOST_CHECK(ir.opsOfType(Onnx::GradOperators::ReciprocalGrad).size() == 0);
   BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::Square).size() == 1);
-  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Reciprocal).size() == 2);
-  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Neg).size() == 1);
-  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Mul).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Reciprocal).size() == 2);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Neg).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Mul).size() == 1);
 }

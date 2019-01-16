@@ -27,11 +27,11 @@ bool CosGradOpPattern::apply(Op *op) const {
 
   // create the new ops
   auto sin_op =
-      make_unique<SinOp>(Onnx::Operators::Sin, ir, std::string{}, attr);
+      make_unique<SinOp>(Onnx::AiOnnx::OpSet9::Sin, ir, std::string{}, attr);
   auto mul_op =
-      make_unique<MulOp>(Onnx::Operators::Mul, ir, std::string{}, attr);
+      make_unique<MulOp>(Onnx::AiOnnx::OpSet9::Mul, ir, std::string{}, attr);
   auto negate_op =
-      make_unique<NegateOp>(Onnx::Operators::Neg, ir, std::string{}, attr);
+      make_unique<NegateOp>(Onnx::AiOnnx::OpSet9::Neg, ir, std::string{}, attr);
 
   // move ops into ir
   auto sin    = sin_op.get();

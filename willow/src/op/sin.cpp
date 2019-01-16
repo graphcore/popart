@@ -27,7 +27,7 @@ std::unique_ptr<Op> SinGradOp::clone() const {
 }
 
 namespace {
-static OpCreator<SinOp> sinOpCreator(Onnx::Operators::Sin);
+static OpCreator<SinOp> sinOpCreator(Onnx::Operators::Sin_7);
 static GradOpCreator<SinGradOp> sinGradOpCreator(Onnx::GradOperators::SinGrad);
 } // namespace
 

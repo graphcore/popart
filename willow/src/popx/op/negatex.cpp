@@ -8,7 +8,7 @@ namespace poponnx {
 namespace popx {
 
 NegateOpx::NegateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<NegateOp>(op, Onnx::Operators::Neg);
+  verifyOp<NegateOp>(op, Onnx::Operators::Neg_6);
 }
 
 void NegateOpx::grow(poplar::program::Sequence &prog) const {
@@ -34,7 +34,7 @@ void NegateGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-static OpxCreator<NegateOpx> negOpxCreator(Onnx::Operators::Neg);
+static OpxCreator<NegateOpx> negOpxCreator(Onnx::Operators::Neg_6);
 static OpxCreator<NegateGradOpx>
     negGradOpxCreator(Onnx::GradOperators::NegGrad);
 } // namespace

@@ -90,7 +90,7 @@ const std::map<int, int> &SubsampleGradOp::gradOutToNonGradIn() const {
 
 namespace {
 static OpCreator<SubsampleOp>
-    subsampleOpCreator(Onnx::CustomOperators::Subsample, false);
+    subsampleOpCreator(Onnx::CustomOperators::Subsample_1, false);
 static GradOpCreator<SubsampleGradOp>
     subsamplGradeOpCreator(Onnx::CustomGradOperators::SubsampleGrad);
 } // namespace

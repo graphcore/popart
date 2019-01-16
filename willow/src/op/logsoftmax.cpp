@@ -22,7 +22,8 @@ std::vector<std::unique_ptr<Op>> LogSoftmaxOp::getGradOps() {
 }
 
 namespace {
-static OpCreator<LogSoftmaxOp> logSoftmaxOpCreator(Onnx::Operators::LogSoftmax);
+static OpCreator<LogSoftmaxOp>
+    logSoftmaxOpCreator(Onnx::Operators::LogSoftmax_1);
 } // namespace
 
 } // namespace poponnx

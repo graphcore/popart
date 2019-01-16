@@ -46,7 +46,7 @@ const std::map<int, int> &ExpGradOp::gradOutToNonGradIn() const {
 void ExpGradOp::setup() { outInfo(getOutIndex()) = inInfo(getFwdOutInIndex()); }
 
 namespace {
-static OpCreator<ExpOp> expOpCreator(Onnx::Operators::Exp);
+static OpCreator<ExpOp> expOpCreator(Onnx::Operators::Exp_6);
 static GradOpCreator<ExpGradOp> expGradOpCreator(Onnx::GradOperators::ExpGrad);
 } // namespace
 

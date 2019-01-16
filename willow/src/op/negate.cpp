@@ -44,7 +44,7 @@ const std::map<int, int> &NegateGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<NegateOp> negateOpCreator(Onnx::Operators::Neg);
+static OpCreator<NegateOp> negateOpCreator(Onnx::Operators::Neg_6);
 static GradOpCreator<NegateGradOp>
     negateGradOpCreator(Onnx::GradOperators::NegGrad);
 } // namespace

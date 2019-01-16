@@ -11,7 +11,7 @@ namespace poponnx {
 namespace popx {
 
 SubsampleOpx::SubsampleOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<SubsampleOp>(op, Onnx::CustomOperators::Subsample);
+  verifyOp<SubsampleOp>(op, {Onnx::CustomOperators::Subsample_1});
 }
 
 void SubsampleOpx::grow(poplar::program::Sequence &prog) const {
@@ -85,7 +85,8 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<SubsampleOpx> subsampleOpxCreator(Onnx::CustomOperators::Subsample);
+OpxCreator<SubsampleOpx>
+    subsampleOpxCreator(Onnx::CustomOperators::Subsample_1);
 OpxCreator<SubsampleGradOpx>
     subsampleGradOpxCreator(Onnx::CustomGradOperators::SubsampleGrad);
 } // namespace

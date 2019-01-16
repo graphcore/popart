@@ -10,7 +10,7 @@ namespace popx {
 
 ConcatOpx::ConcatOpx(Op *op_, Devicex *devicex)
     : Opx(op_, devicex), op(static_cast<ConcatOp *>(op_)) {
-  verifyOp<ConcatOp>(op_);
+  verifyOp<ConcatOp>(op_, Onnx::Operators::Concat_4);
 }
 
 void ConcatOpx::grow(poplar::program::Sequence &prog) const {
@@ -61,7 +61,7 @@ void ConcatGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<ConcatOpx> concatOpxCreator(Onnx::Operators::Concat);
+OpxCreator<ConcatOpx> concatOpxCreator(Onnx::Operators::Concat_4);
 OpxCreator<ConcatInplaceOpx>
     concatInplaceOpxCreator(Onnx::CustomOperators::ConcatInplace);
 OpxCreator<ConcatGradOpx> concatGradOpxCreator(Onnx::GradOperators::ConcatGrad);

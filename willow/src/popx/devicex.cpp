@@ -407,8 +407,9 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
   auto opx = OpxManager::createOpx(op, this);
 
   if (!opx) {
-    if (op->opid == Onnx::Operators::Constant) {
-      throw error("ILE: No Opx for CONSTANT");
+    if (op->opid == Onnx::Operators::Constant_1 ||
+        op->opid == Onnx::Operators::Constant_9) {
+      throw error("ILE: No Opx for {}", op->opid);
     } else {
       throw error("Could not create opx for '{}'", op->opid);
     }

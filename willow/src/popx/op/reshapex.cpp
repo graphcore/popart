@@ -25,7 +25,7 @@ ReshapeGradOpx::ReshapeGradOpx(Op *op, Devicex *devicex)
 }
 
 namespace {
-OpxCreator<ReshapeOpx> reshapeOpxCreator(Onnx::Operators::Reshape);
+OpxCreator<ReshapeOpx> reshapeOpxCreator(Onnx::Operators::Reshape_5);
 OpxCreator<ReshapeGradOpx>
     reshapeGradOpxCreator(Onnx::GradOperators::ReshapeGrad);
 } // namespace

@@ -28,7 +28,7 @@ std::unique_ptr<Op> LogGradOp::clone() const {
 }
 
 namespace {
-static OpCreator<LogOp> logOpCreator(Onnx::Operators::Log);
+static OpCreator<LogOp> logOpCreator_6(Onnx::Operators::Log_6);
 static GradOpCreator<LogGradOp> logGradOpCreator(Onnx::GradOperators::LogGrad);
 } // namespace
 

@@ -9,6 +9,7 @@
 #include <poponnx/ir.hpp>
 #include <poponnx/onnxutil.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/opmanager.hpp>
 
 namespace poponnx {
 
@@ -44,45 +45,35 @@ bool ConstExprClassifier::isConstExprTensor(TensorId id) const {
 
 void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
 
-  // For now we need to look at the domain and set the version. We really should
-  // get the version from the model
-  unsigned version = 9;
-  if (node.domain() == Domain::ai_graphcore) {
-    version = 1;
-  }
-
-  OperatorIdentifier opid(node.domain(), node.op_type(), version);
-
   // TODO: Consider moving this into the op and register a constexprutil
   // function. See T5993
-
-  if (opid == Onnx::Operators::Cast) {
+  
+  if(node.op_type() == "Constant") {
+     TensorId name = node.output(0);
+      // We assume that a tensor coming from a Constant Node should
+      // not have a gradient computed for it or be updated during training
+      // We will implement a seperate tool to convert between
+      // Constant Operator output and initializer in ONNX models (T6213)
+      ir->getTensors().addConstInit(name, &node.attribute(0).t());
+  } else if(node.op_type() == "Cast")  {
     CastCe caster(node, ir);
     caster.insertOutput();
-  } else if (opid == Onnx::Operators::Constant) {
-    TensorId name = node.output(0);
-    // We assume that a tensor coming from a Constant Node should
-    // not have a gradient computed for it or be updated during training
-    // We will implement a seperate tool to convert between
-    // Constant Operator output and initializer in ONNX models (T6213)
-    ir->getTensors().addConstInit(name, &node.attribute(0).t());
-
-  } else if (opid == Onnx::Operators::Add) {
+  } else if (node.op_type() == "Add") {
     ConstExprAdd adder(node, ir);
     adder.insertOutput();
-  } else if (opid == Onnx::Operators::Shape) {
+  } else if (node.op_type() == "Shape") {
     ConstExprShape expr(node, ir);
     expr.insertOutput();
-
-  } else if (opid == Onnx::Operators::Transpose) {
+  } else if (node.op_type() == "Transpose") {
     ConstExprTranspose transposer(node, ir);
     transposer.insertOutput();
   } else {
     throw error("No ConstExpr implementation of {}. "
                 "Consider what OpType::ADD does (creates a Const Tensor) "
                 "if you would like to implement a ConstExpr",
-                opid);
+                node.op_type());
   }
+
 }
 
 ConstExprClassifier

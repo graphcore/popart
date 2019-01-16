@@ -176,26 +176,64 @@ Op::Op(const OperatorIdentifier &_opid,
       // the Attributes
       nAtts(_attributes), _name(_name_) {}
 
-std::unique_ptr<Op> Ir::addOp(const Node &node) {
+int Ir::getOpSetVersionFromModel(const std::string &node_domain) {
 
-  // For now we need to look at the domain and set the version. We really should
-  // get the version from the model
-  unsigned version = 9;
-  if (node.domain() == Domain::ai_graphcore) {
-    version = 1;
+  // If the node.domain is blank it means the default ai.onnx
+  auto domain = node_domain;
+  if (domain == "") {
+    domain = Domain::ai_onnx;
   }
 
-  OperatorIdentifier opid(node.domain(), node.op_type(), version);
+  // Get the version of the opset from the model based on the domain
+  int version    = 0;
+  auto opsetList = getModel().opset_import();
+  for (auto &opset : opsetList) {
 
-  std::unique_ptr<Op> p =
-      OpManager::createOp(opid, this, node.name(), node.attribute());
+    std::string opset_domain;
+    if (opset.has_domain() == false || opset.domain() == "") {
+      opset_domain = Domain::ai_onnx;
+    } else {
+      opset_domain = opset.domain();
+    }
+
+    if (domain == opset_domain) {
+
+      auto opset_version = static_cast<int>(opset.version());
+
+      // If the same domain is mentioned multiple times find the largest
+      if (opset_version > version)
+        version = opset_version;
+    }
+  }
+
+  // If the version has not be set throw an exception
+  if (version == 0) {
+    throw error("No opset version defined for domain \'{}\'", domain);
+  }
+
+  return version;
+}
+
+std::unique_ptr<Op> Ir::addOp(const Node &node) {
+
+  int version = getOpSetVersionFromModel(node.domain());
+
+  std::unique_ptr<Op> p = OpManager::createOp(node.domain(),
+                                              node.op_type(),
+                                              version,
+                                              this,
+                                              node.name(),
+                                              node.attribute());
   if (p != nullptr)
     return p;
   else {
-    if (opid == Onnx::Operators::Constant) {
+    if (node.op_type() == Onnx::AiOnnx::OpSet9::Constant.type) {
       throw error("ILE. Constant Ops are not to be added");
     } else {
-      throw error("No class for {}", opid);
+      throw error("No class for {}.{}:{}",
+                  (node.domain() == "" ? Domain::ai_onnx : node.domain()),
+                  node.op_type(),
+                  version);
     }
   }
 }

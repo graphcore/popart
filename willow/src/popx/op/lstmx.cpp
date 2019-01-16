@@ -17,7 +17,7 @@ namespace poponnx {
 namespace popx {
 
 LSTMOpx::LSTMOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<LSTMOp>(op, Onnx::Operators::LSTM);
+  verifyOp<LSTMOp>(op, {Onnx::Operators::LSTM_1, Onnx::Operators::LSTM_7});
 }
 
 // Only create an intermediate tensor if it is consumed or used as a anchor
@@ -333,7 +333,8 @@ popnn::lstm::LstmParams LSTMGradOpx::createLSTMParams() const {
 }
 
 namespace {
-OpxCreator<LSTMOpx> lstmOpxCreator(Onnx::Operators::LSTM);
+OpxCreator<LSTMOpx> lstmOpxCreator({Onnx::Operators::LSTM_1,
+                                    Onnx::Operators::LSTM_7});
 OpxCreator<LSTMGradOpx> lstmGradOpxCreator(Onnx::GradOperators::LSTMGrad);
 } // namespace
 

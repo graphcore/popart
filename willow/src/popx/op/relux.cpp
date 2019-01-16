@@ -11,7 +11,7 @@ namespace poponnx {
 namespace popx {
 
 ReluOpx::ReluOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<ReluOp>(op, Onnx::Operators::Relu);
+  verifyOp<ReluOp>(op, Onnx::Operators::Relu_6);
 }
 
 ReluInplaceOpx::ReluInplaceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -59,7 +59,7 @@ void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<ReluOpx> reluxOpxCreator(Onnx::Operators::Relu);
+OpxCreator<ReluOpx> reluxOpxCreator(Onnx::Operators::Relu_6);
 OpxCreator<ReluInplaceOpx>
     reluxInplaceOpxCreator(Onnx::CustomOperators::ReluInplace);
 OpxCreator<ReluGradOpx> reluxGradOpxCreator(Onnx::GradOperators::ReluGrad);

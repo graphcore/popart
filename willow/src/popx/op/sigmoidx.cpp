@@ -8,7 +8,7 @@ namespace poponnx {
 namespace popx {
 
 SigmoidOpx::SigmoidOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<SigmoidOp>(op, Onnx::Operators::Sigmoid);
+  verifyOp<SigmoidOp>(op, Onnx::Operators::Sigmoid_6);
 }
 
 void SigmoidOpx::grow(poplar::program::Sequence &prog) const {
@@ -43,7 +43,7 @@ void SigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<SigmoidOpx> sigmoidOpxCreator(Onnx::Operators::Sigmoid);
+OpxCreator<SigmoidOpx> sigmoidOpxCreator(Onnx::Operators::Sigmoid_6);
 OpxCreator<SigmoidGradOpx>
     sigmoidGradOpxCreator(Onnx::GradOperators::SigmoidGrad);
 } // namespace

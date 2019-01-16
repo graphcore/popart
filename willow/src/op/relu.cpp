@@ -71,7 +71,7 @@ const std::map<int, int> &ReluGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<ReluOp> reluOpCreator(Onnx::Operators::Relu);
+static OpCreator<ReluOp> reluOpCreator(Onnx::Operators::Relu_6);
 static GradOpCreator<ReluInplaceOp>
     reluInPlaceOpCreator(Onnx::CustomOperators::ReluInplace);
 static GradOpCreator<ReluGradOp>

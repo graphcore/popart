@@ -27,16 +27,16 @@ bool CoshOpPattern::apply(Op *op) const {
 
   // create the new ops
   auto negate_op =
-      make_unique<NegateOp>(Onnx::Operators::Neg, ir, std::string{}, attr);
+      make_unique<NegateOp>(Onnx::AiOnnx::OpSet9::Neg, ir, std::string{}, attr);
   auto exp1_op =
-      make_unique<ExpOp>(Onnx::Operators::Exp, ir, std::string{}, attr);
+      make_unique<ExpOp>(Onnx::AiOnnx::OpSet9::Exp, ir, std::string{}, attr);
   auto exp2_op =
-      make_unique<ExpOp>(Onnx::Operators::Exp, ir, std::string{}, attr);
+      make_unique<ExpOp>(Onnx::AiOnnx::OpSet9::Exp, ir, std::string{}, attr);
   auto add_op =
-      make_unique<AddOp>(Onnx::Operators::Add, ir, std::string{}, attr);
+      make_unique<AddOp>(Onnx::AiOnnx::OpSet9::Add, ir, std::string{}, attr);
 
-  auto scale_op =
-      make_unique<ScaleOp>(Onnx::Operators::Scale, ir, std::string{}, attr);
+  auto scale_op = make_unique<ScaleOp>(
+      Onnx::AiOnnx::OpSet9::Scale, ir, std::string{}, attr);
   scale_op->setScaleFactor(0.5f);
 
   // move ops into ir

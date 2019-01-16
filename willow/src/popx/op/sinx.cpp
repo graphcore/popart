@@ -8,7 +8,7 @@ namespace poponnx {
 namespace popx {
 
 SinOpx::SinOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<SinOp>(op, Onnx::Operators::Sin);
+  verifyOp<SinOp>(op, Onnx::Operators::Sin_7);
 }
 
 void SinOpx::grow(poplar::program::Sequence &prog) const {
@@ -21,7 +21,7 @@ void SinOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<SinOpx> sinOpxCreator(Onnx::Operators::Sin);
+OpxCreator<SinOpx> sinOpxCreator(Onnx::Operators::Sin_7);
 OpxCreator<Opx> sinGradOpxCreator(
     Onnx::GradOperators::SinGrad,
     "SinGradOp should be optimised out, \"SinGradOp\" pattern is required");

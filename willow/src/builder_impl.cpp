@@ -184,7 +184,7 @@ void BuilderImpl::addOutputTensor(const TensorId &arg0) {
 
 TensorId BuilderImpl::constant(const ConstVoidData &initData,
                                const std::string &name) {
-  return op(Onnx::Operators::Constant, {}, {{"value", initData}}, name)[0];
+  return op(Onnx::AiOnnx::OpSet9::Constant, {}, {{"value", initData}}, name)[0];
 }
 
 TensorId BuilderImpl::reshape_const(const std::vector<TensorId> &args,
@@ -193,7 +193,7 @@ TensorId BuilderImpl::reshape_const(const std::vector<TensorId> &args,
   Shape s = {static_cast<int64_t>(shape.size())};
   TensorInfo tensorInfo("INT64", s);
   auto newShape = constant({shape.data(), tensorInfo}, name + "_const");
-  return op(Onnx::Operators::Reshape, {args[0], newShape}, {}, name)[0];
+  return op(Onnx::AiOnnx::OpSet9::Reshape, {args[0], newShape}, {}, name)[0];
 }
 
 std::vector<TensorId> BuilderImpl::customOp(
@@ -212,6 +212,9 @@ std::vector<TensorId> BuilderImpl::customOp(
   // Set the domain/type
   node->set_op_type(opid.type);
   node->set_domain(opid.domain);
+
+  // Add to the opset list
+  addOpsetRequirement(opid.domain, opid.version);
 
   // Set the inputs
   for (auto input : inputs) {
@@ -886,7 +889,7 @@ void BuilderImpl::convertInitializersToConstants(
       if (initializer->name() == id) {
         auto *node = new_nodes.Add();
         node->set_name(id);
-        node->set_op_type(Onnx::Operators::Constant.type);
+        node->set_op_type(Onnx::Operators::Constant_9.type);
         node->set_domain("");
         node->add_output(id);
 

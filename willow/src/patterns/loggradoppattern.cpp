@@ -25,7 +25,7 @@ bool LogGradOpPattern::apply(Op *op) const {
 
   // create the new ops
   auto div_op =
-      make_unique<DivOp>(Onnx::Operators::Div, ir, std::string{}, attr);
+      make_unique<DivOp>(Onnx::AiOnnx::OpSet9::Div, ir, std::string{}, attr);
 
   // move ops into ir
   auto div = div_op.get();

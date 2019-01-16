@@ -53,7 +53,7 @@ void PadOpx::grow(poplar::program::Sequence &) const {
 PadOp *PadOpx::getPadOp() const { return dynamic_cast<PadOp *>(op_p); }
 
 namespace {
-OpxCreator<PadOpx> padOpxCreator(Onnx::Operators::Pad);
+OpxCreator<PadOpx> padOpxCreator(Onnx::Operators::Pad_2);
 }
 
 } // namespace popx

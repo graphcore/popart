@@ -356,6 +356,9 @@ public:
   // as well as an op which sums them to get the final op
   void growFinalLoss();
 
+  // Return the opset version for a domain
+  int getOpSetVersionFromModel(const std::string &domain);
+
 private:
   // called from growFromNode and many other places where Ops created
   // T requires functions input(int) and input_size()

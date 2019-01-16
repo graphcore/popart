@@ -9,7 +9,9 @@ SubtractOp::SubtractOp(const OperatorIdentifier &_opid,
                        Ir *_ir,
                        const std::string &name,
                        const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+    : Op(_opid, _ir, name, _attr) {
+  // TODO : Do not broadcast in version 6
+}
 
 std::unique_ptr<Op> SubtractOp::clone() const {
   return make_unique<SubtractOp>(*this);
@@ -83,7 +85,8 @@ void SubtractArg1GradOp::setup() {
 }
 
 namespace {
-static OpCreator<SubtractOp> subtractOpCreator(Onnx::Operators::Sub);
+static OpCreator<SubtractOp> subtractOpCreator({Onnx::Operators::Sub_6,
+                                                Onnx::Operators::Sub_7});
 static GradOpCreator<SubtractArg0GradOp>
     subtractArg0GradOpCreator(Onnx::GradOperators::SubArg0Grad);
 static GradOpCreator<SubtractArg1GradOp>

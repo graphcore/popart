@@ -21,7 +21,9 @@ namespace poponnx {
 namespace popx {
 
 BatchNormOpx::BatchNormOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<BatchNormOp>(op, Onnx::Operators::BatchNormalization);
+  verifyOp<BatchNormOp>(op,
+                        {Onnx::Operators::BatchNormalization_6,
+                         Onnx::Operators::BatchNormalization_7});
 }
 
 // convert variant to inverse standard deviation
@@ -345,7 +347,8 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<BatchNormOpx>
-    batchNormOpxCreator(Onnx::Operators::BatchNormalization);
+    batchNormOpxCreator({Onnx::Operators::BatchNormalization_6,
+                         Onnx::Operators::BatchNormalization_7});
 OpxCreator<BatchNormGradOpx>
     batchNormGradOpxCreator(Onnx::GradOperators::BatchNormalizationGrad);
 } // namespace

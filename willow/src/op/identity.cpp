@@ -43,7 +43,7 @@ const std::map<int, int> &IdentityGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<IdentityOp> identityOpCreator(Onnx::Operators::Identity);
+static OpCreator<IdentityOp> identityOpCreator(Onnx::Operators::Identity_1);
 static GradOpCreator<IdentityGradOp>
     identityGradOpCreator(Onnx::GradOperators::IdentityGrad);
 } // namespace

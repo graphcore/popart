@@ -11,7 +11,10 @@ LSTMOp::LSTMOp(const OperatorIdentifier &_opid,
                Ir *_ir,
                const std::string &name,
                const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+    : Op(_opid, _ir, name, _attr) {
+
+  // TODO : Use the output_sequence attribute in version 1
+}
 
 std::unique_ptr<Op> LSTMOp::clone() const { return make_unique<LSTMOp>(*this); }
 
@@ -197,7 +200,8 @@ const LSTMOp &LSTMGradOp::getForwardOp() const { return forward_op; }
 
 namespace {
 
-static OpCreator<LSTMOp> lstmOpCreator(Onnx::Operators::LSTM);
+static OpCreator<LSTMOp> lstmOpCreator({Onnx::Operators::LSTM_1,
+                                        Onnx::Operators::LSTM_7});
 static GradOpCreator<LSTMGradOp>
     lstmGradOpCreator(Onnx::GradOperators::LSTMGrad);
 

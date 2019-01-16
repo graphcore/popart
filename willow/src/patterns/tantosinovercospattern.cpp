@@ -28,11 +28,11 @@ bool TanToSinOverCosPattern::apply(Op *op) const {
 
   // create the new ops
   auto sin_op =
-      make_unique<SinOp>(Onnx::Operators::Sin, ir, std::string{}, attr);
+      make_unique<SinOp>(Onnx::AiOnnx::OpSet9::Sin, ir, std::string{}, attr);
   auto cos_op =
-      make_unique<CosOp>(Onnx::Operators::Cos, ir, std::string{}, attr);
+      make_unique<CosOp>(Onnx::AiOnnx::OpSet9::Cos, ir, std::string{}, attr);
   auto div_op =
-      make_unique<DivOp>(Onnx::Operators::Div, ir, std::string{}, attr);
+      make_unique<DivOp>(Onnx::AiOnnx::OpSet9::Div, ir, std::string{}, attr);
 
   // move ops into ir
   auto sin = sin_op.get();

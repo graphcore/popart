@@ -7,7 +7,7 @@ namespace poponnx {
 namespace popx {
 
 IdentityOpx::IdentityOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<IdentityOp>(op, Onnx::Operators::Identity);
+  verifyOp<IdentityOp>(op, Onnx::Operators::Identity_1);
 }
 
 void IdentityOpx::grow(poplar::program::Sequence &prog) const {
@@ -20,7 +20,7 @@ IdentityGradOpx::IdentityGradOpx(Op *op, Devicex *devicex)
 }
 
 namespace {
-OpxCreator<IdentityOpx> identityOpxCreator(Onnx::Operators::Identity);
+OpxCreator<IdentityOpx> identityOpxCreator(Onnx::Operators::Identity_1);
 OpxCreator<IdentityGradOpx>
     identityGradOpxCreator(Onnx::GradOperators::IdentityGrad);
 } // namespace

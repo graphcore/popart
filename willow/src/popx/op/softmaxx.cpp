@@ -14,7 +14,7 @@ namespace poponnx {
 namespace popx {
 
 SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<SoftmaxOp>(op, Onnx::Operators::Softmax);
+  verifyOp<SoftmaxOp>(op, Onnx::Operators::Softmax_1);
 }
 
 void SoftmaxOpx::grow(poplar::program::Sequence &prog) const {
@@ -134,7 +134,7 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<SoftmaxOpx> softmaxOpxCreator(Onnx::Operators::Softmax);
+OpxCreator<SoftmaxOpx> softmaxOpxCreator(Onnx::Operators::Softmax_1);
 OpxCreator<SoftmaxGradOpx>
     softmaxGradOpxCreator(Onnx::GradOperators::SoftmaxGrad);
 OpxCreator<SoftmaxGradDirectOpx>

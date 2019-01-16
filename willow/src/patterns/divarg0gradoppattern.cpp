@@ -31,9 +31,9 @@ bool DivArg0GradOpPattern::apply(Op *op) const {
 
   // create the new ops
   auto div_op =
-      make_unique<DivOp>(Onnx::Operators::Div, ir, std::string{}, attr);
+      make_unique<DivOp>(Onnx::AiOnnx::OpSet9::Div, ir, std::string{}, attr);
   auto reduce_op = make_unique<ReduceSumOp>(
-      Onnx::Operators::ReduceSum, ir, axes, false, attr);
+      Onnx::AiOnnx::OpSet9::ReduceSum, ir, axes, false, attr);
 
   // move ops into ir
   auto div    = div_op.get();

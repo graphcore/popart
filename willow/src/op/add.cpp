@@ -8,11 +8,16 @@
 
 namespace poponnx {
 
+// TODO : T6250 : Add support for V6 axis & broadcast attributes
+
 AddOp::AddOp(const OperatorIdentifier &_opid,
              Ir *_ir,
              const std::string &name,
              const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+    : Op(_opid, _ir, name, _attr) {
+
+  // TODO : Use the attributes in Add-6
+}
 
 std::unique_ptr<Op> AddOp::clone() const { return make_unique<AddOp>(*this); }
 
@@ -76,18 +81,8 @@ const std::vector<GradInOutMapper> &AddArg1GradOp::gradInputInfo() const {
 void AddArg1GradOp::setup() { outInfo(getOutIndex()) = forward_op_arg_info; }
 
 namespace {
-
-// Example of how to define the creation method, this will allow you to
-// create a more general op that is passed control parameters
-static OpCreator<AddOp> addOpCreator(
-    Onnx::Operators::Add,
-    [](const OperatorIdentifier &opid,
-       Ir *ir,
-       const std::string &name = "",
-       const Attributes &attr  = {}) -> std::unique_ptr<Op> {
-      return std::unique_ptr<AddOp>(new AddOp(opid, ir, name, attr));
-    },
-    true);
+static OpCreator<AddOp> addOpCreator({Onnx::Operators::Add_6,
+                                      Onnx::Operators::Add_7});
 static GradOpCreator<AddArg0GradOp>
     addArg0GradOpCreator(Onnx::GradOperators::AddArg0Grad);
 static GradOpCreator<AddArg1GradOp>

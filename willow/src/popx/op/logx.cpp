@@ -9,7 +9,7 @@ namespace poponnx {
 namespace popx {
 
 LogOpx::LogOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<LogOp>(op, Onnx::Operators::Log);
+  verifyOp<LogOp>(op, Onnx::Operators::Log_6);
 }
 
 void LogOpx::grow(poplar::program::Sequence &prog) const {
@@ -23,7 +23,7 @@ void LogOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<LogOpx> logOpxCreator(Onnx::Operators::Log);
+OpxCreator<LogOpx> logOpxCreator(Onnx::Operators::Log_6);
 OpxCreator<Opx> logGradOpxCreator(
     Onnx::GradOperators::LogGrad,
     "LogGradOp should be optimised out, \"LogGradOp\" pattern is required");

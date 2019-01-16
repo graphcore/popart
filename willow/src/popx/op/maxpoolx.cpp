@@ -11,7 +11,8 @@ namespace poponnx {
 namespace popx {
 
 MaxPoolOpx::MaxPoolOpx(Op *op, Devicex *devicex) : PoolOpx(op, devicex) {
-  verifyOp<MaxPoolOp>(op, Onnx::Operators::MaxPool);
+  verifyOp<MaxPoolOp>(op,
+                      {Onnx::Operators::MaxPool_1, Onnx::Operators::MaxPool_8});
 }
 
 void MaxPoolOpx::grow(poplar::program::Sequence &prog) const {
@@ -65,7 +66,8 @@ MaxPoolGradOpx::MaxPoolGradOpx(Op *op, Devicex *devicex)
 }
 
 namespace {
-OpxCreator<MaxPoolOpx> maxpoolOpxCreator(Onnx::Operators::MaxPool);
+OpxCreator<MaxPoolOpx> maxpoolOpxCreator({Onnx::Operators::MaxPool_1,
+                                          Onnx::Operators::MaxPool_8});
 OpxCreator<MaxPoolGradOpx>
     maxpoolGradOpxCreator(Onnx::GradOperators::MaxPoolGrad);
 } // namespace

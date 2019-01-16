@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <onnx/onnx_pb.h>
 #include <sstream>
 #include <poponnx/attributes.hpp>
@@ -125,9 +126,15 @@ Attributes::Attributes(const NodeAttributes &attributes) {
 
 void Attributes::append(std::stringstream &ss, std::string prefix) const {
   using AttPro = onnx::AttributeProto;
+
+  std::size_t max_attr_length = 0;
+  for (auto &name : names) {
+    max_attr_length = std::max(max_attr_length, name.length());
+  }
+
   for (auto &name : names) {
     ss << prefix;
-    ss << "'" << name << "' ";
+    ss << padded(name, static_cast<int>(max_attr_length + 1));
     auto attptr = att_map.at(name);
     switch (attptr->type()) {
     case AttPro::UNDEFINED: {
@@ -170,6 +177,8 @@ void Attributes::append(std::stringstream &ss, std::string prefix) const {
       break;
     }
     }
+
+    ss << "\n";
   }
 }
 

@@ -26,12 +26,12 @@ bool SqrtGradOpPattern::apply(Op *op) const {
   auto attr = op->nAtts.filter(sVirtualGraphAttribute);
 
   // create the new ops
-  auto scale_op =
-      make_unique<ScaleOp>(Onnx::Operators::Scale, ir, std::string{}, attr);
+  auto scale_op = make_unique<ScaleOp>(
+      Onnx::AiOnnx::OpSet9::Scale, ir, std::string{}, attr);
   scale_op->setScaleFactor(2.0f);
 
   auto div_op =
-      make_unique<DivOp>(Onnx::Operators::Div, ir, std::string{}, attr);
+      make_unique<DivOp>(Onnx::AiOnnx::OpSet9::Div, ir, std::string{}, attr);
 
   // move ops into ir
   auto scale = scale_op.get();

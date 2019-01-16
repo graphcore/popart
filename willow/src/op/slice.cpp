@@ -113,7 +113,7 @@ std::vector<int64_t> SliceGradOp::calculatePadding(SliceOp *slice_op) {
 }
 
 namespace {
-static OpCreator<SliceOp> sliceOpCreator(Onnx::Operators::Slice);
+static OpCreator<SliceOp> sliceOpCreator(Onnx::Operators::Slice_1);
 static GradOpCreator<SliceGradOp>
     sliceGradOpCreator(Onnx::GradOperators::SliceGrad);
 } // namespace

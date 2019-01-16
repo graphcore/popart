@@ -127,7 +127,7 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<ConvOp>(op, Onnx::Operators::Conv);
+  verifyOp<ConvOp>(op, Onnx::Operators::Conv_1);
 
   ConvOp &cOp = getOp<ConvOp>();
   if (cOp.dataIn()->info.rank() != 4 || cOp.weightsIn()->info.rank() != 4) {
@@ -139,7 +139,7 @@ ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 bool ConvOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
   // if opx1 is not a ConvOpx, it does not create the same poplar::Tensor
-  if (opx1->op_p->opid != Onnx::Operators::Conv) {
+  if (opx1->op_p->opid != Onnx::Operators::Conv_1) {
     return false;
   }
 
@@ -193,7 +193,7 @@ ConvWeightsGradOpx::ConvWeightsGradOpx(Op *op, Devicex *devicex)
 }
 
 namespace {
-OpxCreator<ConvOpx> convpxCreator(Onnx::Operators::Conv);
+OpxCreator<ConvOpx> convpxCreator(Onnx::Operators::Conv_1);
 OpxCreator<ConvDataGradOpx>
     convDataGradOpxCreator(Onnx::GradOperators::ConvDataGrad);
 OpxCreator<ConvWeightsGradOpx>

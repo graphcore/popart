@@ -94,7 +94,7 @@ const Shape &ReduceSumGradOp::backwardShape() const { return backward_shape; }
 void ReduceSumGradOp::setup() { outInfo(getOutIndex()) = outputTensorInfo; }
 
 namespace {
-static OpCreator<ReduceSumOp> reduceSumOpCreator(Onnx::Operators::ReduceSum);
+static OpCreator<ReduceSumOp> reduceSumOpCreator(Onnx::Operators::ReduceSum_1);
 static GradOpCreator<ReduceSumGradOp>
     reduceSumGradOpCreator(Onnx::GradOperators::ReduceSumGrad);
 } // namespace

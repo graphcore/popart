@@ -25,10 +25,7 @@ public:
   static std::unique_ptr<Opx> createOpx(Op *op, Devicex *devicex);
 
 private:
-  std::map<std::reference_wrapper<const OperatorIdentifier>,
-           OpxFactoryFunc,
-           OperatorIdentifierLess>
-      factory;
+  std::map<OperatorIdentifier, OpxFactoryFunc, OperatorIdentifierLess> factory;
 };
 
 template <class OPX> class OpxCreator {
@@ -38,6 +35,15 @@ public:
         opid, [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
           return std::unique_ptr<OPX>(new OPX(op, devicex));
         });
+  }
+
+  OpxCreator(const std::vector<OperatorIdentifier> &opids) {
+    for (const auto &opid : opids) {
+      OpxManager::registerOpx(
+          opid, [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
+            return std::unique_ptr<OPX>(new OPX(op, devicex));
+          });
+    }
   }
 
   OpxCreator(const OperatorIdentifier &opid, std::string errMsg) {

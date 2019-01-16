@@ -44,55 +44,54 @@ TensorId Builder::constant(const ConstVoidData &initData,
 
 TensorId Builder::abs(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Abs, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Abs, args, {}, name)[0];
 }
 
 TensorId Builder::acos(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->op(Onnx::Operators::Acos, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Acos, args, {}, name)[0];
 }
 
 TensorId Builder::acosh(const std::vector<TensorId> &args,
                         const std::string &name) {
-  return impl_->op(Onnx::Operators::Acosh, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Acosh, args, {}, name)[0];
 }
 
 TensorId Builder::add(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Add, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Add, args, {}, name)[0];
 }
 
 TensorId Builder::logical_and(const std::vector<TensorId> &args,
                               const std::string &name) {
-  return impl_->op(Onnx::Operators::And, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::And, args, {}, name)[0];
 }
 
 TensorId Builder::asin(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->op(Onnx::Operators::Asin, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Asin, args, {}, name)[0];
 }
 
 TensorId Builder::asinh(const std::vector<TensorId> &args,
                         const std::string &name) {
-  return impl_->op(Onnx::Operators::Asinh, args, {}, name)[0];
-  // return impl_->asinh(args, name);
+  return impl_->op(Onnx::AiOnnx::OpSet9::Asinh, args, {}, name)[0];
 }
 
 TensorId Builder::atan(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->op(Onnx::Operators::Atan, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Atan, args, {}, name)[0];
 }
 
 TensorId Builder::atanh(const std::vector<TensorId> &args,
                         const std::string &name) {
-  return impl_->op(Onnx::Operators::Atanh, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Atanh, args, {}, name)[0];
 }
 
 TensorId Builder::cast(const std::vector<TensorId> &args,
                        DataType to,
                        const std::string &name) {
   // getTPDataType returns an enum which needs casting to a int attribute
-  return impl_->op(Onnx::Operators::Cast,
+  return impl_->op(Onnx::AiOnnx::OpSet9::Cast,
                    args,
                    {{"to", static_cast<int>(onnxutil::getTPDataType(to))}},
                    name)[0];
@@ -100,198 +99,203 @@ TensorId Builder::cast(const std::vector<TensorId> &args,
 
 TensorId Builder::ceil(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->op(Onnx::Operators::Ceil, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Ceil, args, {}, name)[0];
 }
 
 TensorId Builder::concat(const std::vector<TensorId> &args,
                          int64_t dimension,
                          const std::string &name) {
   return impl_->op(
-      Onnx::Operators::Concat, args, {{"axis", dimension}}, name)[0];
+      Onnx::AiOnnx::OpSet9::Concat, args, {{"axis", dimension}}, name)[0];
 }
 
 TensorId Builder::cos(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Cos, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Cos, args, {}, name)[0];
 }
 
 TensorId Builder::cosh(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->op(Onnx::Operators::Cosh, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Cosh, args, {}, name)[0];
 }
 
 TensorId Builder::div(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Div, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Div, args, {}, name)[0];
 }
 
 TensorId Builder::elu(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Elu, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Elu, args, {}, name)[0];
 }
 
 TensorId Builder::equal(const std::vector<TensorId> &args,
                         const std::string &name) {
-  return impl_->op(Onnx::Operators::Equal, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Equal, args, {}, name)[0];
 }
 
 TensorId Builder::exp(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Exp, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Exp, args, {}, name)[0];
 }
 
 TensorId Builder::floor(const std::vector<TensorId> &args,
                         const std::string &name) {
-  return impl_->op(Onnx::Operators::Floor, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Floor, args, {}, name)[0];
 }
 
 TensorId Builder::gather(const std::vector<TensorId> &args,
                          int64_t axis,
                          const std::string &name) {
-  return impl_->op(Onnx::Operators::Gather, args, {{"axis", axis}}, name)[0];
+  return impl_->op(
+      Onnx::AiOnnx::OpSet9::Gather, args, {{"axis", axis}}, name)[0];
 }
 
 TensorId Builder::greater(const std::vector<TensorId> &args,
                           const std::string &name) {
-  return impl_->op(Onnx::Operators::Greater, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Greater, args, {}, name)[0];
 }
 
 TensorId Builder::identity(const std::vector<TensorId> &args,
                            const std::string &name) {
-  return impl_->op(Onnx::Operators::Identity, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Identity, args, {}, name)[0];
 }
 
 TensorId Builder::less(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->op(Onnx::Operators::Less, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Less, args, {}, name)[0];
 }
 
 TensorId Builder::log(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Log, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Log, args, {}, name)[0];
 }
 
 TensorId Builder::logsoftmax(const std::vector<TensorId> &args,
                              const std::string &name) {
-  return impl_->op(Onnx::Operators::LogSoftmax, args, {{"axis", 1}}, name)[0];
+  return impl_->op(
+      Onnx::AiOnnx::OpSet9::LogSoftmax, args, {{"axis", 1}}, name)[0];
 }
 
 TensorId Builder::max(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Max, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Max, args, {}, name)[0];
 }
 
 TensorId Builder::mean(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->op(Onnx::Operators::Mean, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Mean, args, {}, name)[0];
 }
 
 TensorId Builder::min(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Min, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Min, args, {}, name)[0];
 }
 
 TensorId Builder::mul(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Mul, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Mul, args, {}, name)[0];
 }
 
 TensorId Builder::neg(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Neg, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Neg, args, {}, name)[0];
 }
 
 TensorId Builder::logical_not(const std::vector<TensorId> &args,
                               const std::string &name) {
-  return impl_->op(Onnx::Operators::Not, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Not, args, {}, name)[0];
 }
 
 TensorId Builder::logical_or(const std::vector<TensorId> &args,
                              const std::string &name) {
-  return impl_->op(Onnx::Operators::Or, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Or, args, {}, name)[0];
 }
 
 TensorId Builder::pow(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Pow, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Pow, args, {}, name)[0];
 }
 
 TensorId Builder::reciprocal(const std::vector<TensorId> &args,
                              const std::string &name) {
-  return impl_->op(Onnx::Operators::Reciprocal, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Reciprocal, args, {}, name)[0];
 }
 
 TensorId Builder::relu(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->op(Onnx::Operators::Relu, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Relu, args, {}, name)[0];
 }
 
 TensorId Builder::scatter(const std::vector<TensorId> args,
                           int64_t axis,
                           const std::string &name) {
-  return impl_->op(Onnx::Operators::Scatter, args, {{"axis", axis}}, name)[0];
+  return impl_->op(
+      Onnx::AiOnnx::OpSet9::Scatter, args, {{"axis", axis}}, name)[0];
 }
 
 TensorId Builder::sigmoid(const std::vector<TensorId> &args,
                           const std::string &name) {
-  return impl_->op(Onnx::Operators::Sigmoid, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Sigmoid, args, {}, name)[0];
 }
 
 TensorId Builder::sin(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Sin, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Sin, args, {}, name)[0];
 }
 
 TensorId Builder::sinh(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->op(Onnx::Operators::Sinh, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Sinh, args, {}, name)[0];
 }
 
 TensorId Builder::softsign(const std::vector<TensorId> &args,
                            const std::string &name) {
-  return impl_->op(Onnx::Operators::Softsign, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Softsign, args, {}, name)[0];
 }
 
 TensorId Builder::sqrt(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->op(Onnx::Operators::Sqrt, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Sqrt, args, {}, name)[0];
 }
 
 TensorId Builder::squeeze(const std::vector<TensorId> &args,
                           const std::vector<int64_t> axes,
                           const std::string &name) {
-  return impl_->op(Onnx::Operators::Squeeze, args, {{"axes", axes}}, name)[0];
+  return impl_->op(
+      Onnx::AiOnnx::OpSet9::Squeeze, args, {{"axes", axes}}, name)[0];
 }
 
 TensorId Builder::unsqueeze(const std::vector<TensorId> &args,
                             const std::vector<int64_t> axes,
                             const std::string &name) {
-  return impl_->op(Onnx::Operators::Unsqueeze, args, {{"axes", axes}}, name)[0];
+  return impl_->op(
+      Onnx::AiOnnx::OpSet9::Unsqueeze, args, {{"axes", axes}}, name)[0];
 }
 
 TensorId Builder::sub(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Sub, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Sub, args, {}, name)[0];
 }
 
 TensorId Builder::sum(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Sum, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Sum, args, {}, name)[0];
 }
 
 TensorId Builder::tan(const std::vector<TensorId> &args,
                       const std::string &name) {
-  return impl_->op(Onnx::Operators::Tan, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Tan, args, {}, name)[0];
 }
 
 TensorId Builder::tanh(const std::vector<TensorId> &args,
                        const std::string &name) {
-  return impl_->op(Onnx::Operators::Tanh, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Tanh, args, {}, name)[0];
 }
 
 TensorId Builder::logical_xor(const std::vector<TensorId> &args,
                               const std::string &name) {
-  return impl_->op(Onnx::Operators::Xor, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Xor, args, {}, name)[0];
 }
 
 void Builder::verifyWindowParameters(TensorId input,
@@ -330,7 +334,7 @@ TensorId Builder::convolution(const std::vector<TensorId> &args,
                               bool cacheOperation,
                               const std::string &name) {
   return impl_->op(
-      Onnx::Operators::Conv,
+      Onnx::AiOnnx::OpSet9::Conv,
       args,
       {{"dilations", dilation},
        {"group", groups},
@@ -357,7 +361,7 @@ TensorId Builder::averagepool(const std::vector<TensorId> &args,
                               const std::string &name) {
 
   return impl_->op(
-      Onnx::Operators::AveragePool,
+      Onnx::AiOnnx::OpSet9::AveragePool,
       args,
       {{"count_include_pad", 0},
        {"kernel_shape", kernel_shape},
@@ -380,7 +384,7 @@ TensorId Builder::maxpool(const std::vector<TensorId> &args,
                           const std::vector<int64_t> padding,
                           const std::string &name) {
   return impl_->op(
-      Onnx::Operators::MaxPool,
+      Onnx::AiOnnx::OpSet9::MaxPool,
       args,
       {{"storage_order", 0},
        {"kernel_shape", kernel_shape},
@@ -401,7 +405,7 @@ std::tuple<TensorId, TensorId, TensorId>
 Builder::lstm(const std::vector<TensorId> &args, const std::string &name) {
 
   std::vector<TensorId> outputs =
-      impl_->op(Onnx::Operators::LSTM, args, {}, name);
+      impl_->op(Onnx::AiOnnx::OpSet9::LSTM, args, {}, name);
   return {outputs[0], outputs[1], outputs[2]};
 }
 
@@ -411,7 +415,7 @@ TensorId Builder::gemm(const std::vector<TensorId> &args,
                        int64_t transA,
                        int64_t transB,
                        const std::string &name) {
-  return impl_->op(Onnx::Operators::Gemm,
+  return impl_->op(Onnx::AiOnnx::OpSet9::Gemm,
                    args,
                    {{"alpha", alpha},
                     {"beta", beta},
@@ -427,7 +431,7 @@ TensorId Builder::pad(const std::vector<TensorId> &args,
                       const std::string &name) {
 
   return impl_->op(
-      Onnx::Operators::Pad,
+      Onnx::AiOnnx::OpSet9::Pad,
       args,
       {{"mode", mode}, {"pads", pads}, {"value", value}},
       name,
@@ -446,12 +450,12 @@ TensorId Builder::pad(const std::vector<TensorId> &args,
 
 TensorId Builder::matmul(const std::vector<TensorId> &args,
                          const std::string &name) {
-  return impl_->op(Onnx::Operators::MatMul, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::MatMul, args, {}, name)[0];
 }
 
 TensorId Builder::shape(const std::vector<TensorId> &args,
                         const std::string &name) {
-  return impl_->op(Onnx::Operators::Shape, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Shape, args, {}, name)[0];
 }
 
 TensorId Builder::slice(const std::vector<TensorId> &args,
@@ -460,7 +464,7 @@ TensorId Builder::slice(const std::vector<TensorId> &args,
                         const std::vector<int64_t> &ends,
                         const std::string &name) {
 
-  return impl_->op(Onnx::Operators::Slice,
+  return impl_->op(Onnx::AiOnnx::OpSet9::Slice,
                    args,
                    {{"axes", axes}, {"starts", starts}, {"ends", ends}},
                    name)[0];
@@ -468,7 +472,7 @@ TensorId Builder::slice(const std::vector<TensorId> &args,
 
 TensorId Builder::softmax(const std::vector<TensorId> &args,
                           const std::string &name) {
-  return impl_->op(Onnx::Operators::Softmax, args, {{"axes", 1}}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Softmax, args, {{"axes", 1}}, name)[0];
 }
 
 TensorId Builder::subsample(const std::vector<TensorId> &args,
@@ -480,8 +484,10 @@ TensorId Builder::subsample(const std::vector<TensorId> &args,
       throw error("Strides invalid. 0 stride at index {}", i);
   }
 
-  return impl_->op(
-      Onnx::CustomOperators::Subsample, args, {{"strides", strides}}, name)[0];
+  return impl_->op(Onnx::AiGraphcore::OpSet1::Subsample,
+                   args,
+                   {{"strides", strides}},
+                   name)[0];
 }
 
 Builder::BatchNormalizationTrainingOutputs
@@ -498,7 +504,7 @@ Builder::batchnormalizationTraining(const TensorId x,
   Builder::BatchNormalizationTrainingOutputs bnOuputs;
 
   std::vector<TensorId> outputs = impl_->op(
-      Onnx::Operators::BatchNormalization,
+      Onnx::AiOnnx::OpSet9::BatchNormalization,
       {x, scale, b, mean, var},
       {{"epsilon", epsilon}, {"momentum", momentum}, {"spatial", spatial}},
       name);
@@ -523,7 +529,7 @@ TensorId Builder::batchnormalizationTesting(const TensorId x,
                                             const std::string &name) {
 
   return impl_->op(
-      Onnx::Operators::BatchNormalization,
+      Onnx::AiOnnx::OpSet9::BatchNormalization,
       {x, scale, b, mean, var},
       1,
       {{"epsilon", epsilon}, {"momentum", momentum}, {"spatial", spatial}},
@@ -533,12 +539,13 @@ TensorId Builder::batchnormalizationTesting(const TensorId x,
 TensorId Builder::transpose(const std::vector<TensorId> &args,
                             const std::vector<int64_t> &perm,
                             const std::string &name) {
-  return impl_->op(Onnx::Operators::Transpose, args, {{"perm", perm}}, name)[0];
+  return impl_->op(
+      Onnx::AiOnnx::OpSet9::Transpose, args, {{"perm", perm}}, name)[0];
 }
 
 TensorId Builder::reshape(const std::vector<TensorId> &args,
                           const std::string &name) {
-  return impl_->op(Onnx::Operators::Reshape, args, {}, name)[0];
+  return impl_->op(Onnx::AiOnnx::OpSet9::Reshape, args, {}, name)[0];
 }
 
 TensorId Builder::reshape_const(const std::vector<TensorId> &args,

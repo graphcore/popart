@@ -74,5 +74,5 @@ def test_mixed_virtual_graph():
         poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
 
     assert (e_info.value.args[0].startswith(
-        "Operation 100(ai.onnx.Add:9) has different virtual graph attribute "
-        "to 102(ai.onnx.Add:9)"))
+        "Operation 100(ai.onnx.Add:7) has different virtual graph attribute "
+        "to 102(ai.onnx.Add:7)"))

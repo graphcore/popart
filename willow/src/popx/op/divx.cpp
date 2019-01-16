@@ -9,7 +9,7 @@ namespace poponnx {
 namespace popx {
 
 DivOpx::DivOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<DivOp>(op, Onnx::Operators::Div);
+  verifyOp<DivOp>(op, {Onnx::Operators::Div_6, Onnx::Operators::Div_7});
 }
 
 void DivOpx::grow(poplar::program::Sequence &prog) const {
@@ -23,7 +23,8 @@ void DivOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<DivOpx> divOpxCreator(Onnx::Operators::Div);
+OpxCreator<DivOpx> divOpxCreator({Onnx::Operators::Div_6,
+                                  Onnx::Operators::Div_7});
 OpxCreator<Opx> divArg0OpxCreator(
     Onnx::GradOperators::DivArg0Grad,
     "DivArg0Grad should be optimised out, \"DivArg0Grad\" pattern is required");

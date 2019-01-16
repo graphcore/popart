@@ -88,7 +88,7 @@ void GatherGradOp::setup() { outInfo(gradOutIndex()) = fwdDataInfo; }
 int64_t GatherGradOp::getAxis() const { return axis; }
 
 namespace {
-static OpCreator<GatherOp> gatherOpCreator(Onnx::Operators::Gather);
+static OpCreator<GatherOp> gatherOpCreator(Onnx::Operators::Gather_1);
 static GradOpCreator<GatherGradOp>
     gatherGradOpCreator(Onnx::GradOperators::GatherGrad);
 } // namespace

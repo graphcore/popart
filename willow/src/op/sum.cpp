@@ -9,7 +9,9 @@ SumOp::SumOp(const OperatorIdentifier &_opid,
              Ir *_ir,
              const std::string &name,
              const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+    : Op(_opid, _ir, name, _attr) {
+  // TODO : Do not broadcast in version 6
+}
 
 std::unique_ptr<Op> SumOp::clone() const { return make_unique<SumOp>(*this); }
 
@@ -19,7 +21,8 @@ std::unique_ptr<Op> SumOp::clone() const { return make_unique<SumOp>(*this); }
 void SumOp::setup() { outInfo(getOutIndex()) = inInfo(0); }
 
 namespace {
-static OpCreator<SumOp> sumOpCreator(Onnx::Operators::Sum);
-}
+static OpCreator<SumOp> sumOpCreator({Onnx::Operators::Sum_6,
+                                      Onnx::Operators::Sum_8});
+} // namespace
 
 } // namespace poponnx

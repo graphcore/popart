@@ -19,7 +19,7 @@ std::vector<std::unique_ptr<Op>> TanOp::getGradOps() {
 }
 
 namespace {
-static OpCreator<TanOp> tanOpCreator(Onnx::Operators::Tan);
+static OpCreator<TanOp> tanOpCreator(Onnx::Operators::Tan_7);
 }
 
 } // namespace poponnx

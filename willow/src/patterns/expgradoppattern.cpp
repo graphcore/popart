@@ -25,7 +25,7 @@ bool ExpGradOpPattern::apply(Op *op) const {
 
   // create the new ops
   auto mul_op =
-      make_unique<MulOp>(Onnx::Operators::Mul, ir, std::string{}, attr);
+      make_unique<MulOp>(Onnx::AiOnnx::OpSet9::Mul, ir, std::string{}, attr);
 
   // move ops into ir
   auto mul = mul_op.get();

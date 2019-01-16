@@ -12,7 +12,8 @@ namespace popx {
 
 AveragePoolOpx::AveragePoolOpx(Op *op, Devicex *devicex)
     : PoolOpx(op, devicex) {
-  verifyOp<AveragePoolOp>(op, Onnx::Operators::AveragePool);
+  verifyOp<AveragePoolOp>(
+      op, {Onnx::Operators::AveragePool_1, Onnx::Operators::AveragePool_7});
 }
 
 void AveragePoolOpx::grow(poplar::program::Sequence &prog) const {
@@ -66,7 +67,8 @@ AveragePoolGradOpx::AveragePoolGradOpx(Op *op, Devicex *devicex)
 }
 
 namespace {
-OpxCreator<AveragePoolOpx> averagePoolOpxCreator(Onnx::Operators::AveragePool);
+OpxCreator<AveragePoolOpx> averagePoolOpxCreator(
+    {Onnx::Operators::AveragePool_1, Onnx::Operators::AveragePool_7});
 OpxCreator<AveragePoolGradOpx>
     averagePoolGradOpxCreator(Onnx::GradOperators::AveragePoolGrad);
 } // namespace

@@ -37,13 +37,13 @@ bool DivArg1GradOpPattern::apply(Op *op) const {
   auto square_op = make_unique<SquareOp>(
       Onnx::CustomOperators::Square, ir, std::string{}, attr);
   auto div_op =
-      make_unique<DivOp>(Onnx::Operators::Div, ir, std::string{}, attr);
+      make_unique<DivOp>(Onnx::AiOnnx::OpSet9::Div, ir, std::string{}, attr);
   auto mul_op =
-      make_unique<MulOp>(Onnx::Operators::Mul, ir, std::string{}, attr);
+      make_unique<MulOp>(Onnx::AiOnnx::OpSet9::Mul, ir, std::string{}, attr);
   auto negate_op =
-      make_unique<NegateOp>(Onnx::Operators::Neg, ir, std::string{}, attr);
+      make_unique<NegateOp>(Onnx::AiOnnx::OpSet9::Neg, ir, std::string{}, attr);
   auto reduce_op = make_unique<ReduceSumOp>(
-      Onnx::Operators::ReduceSum, ir, axes, false, attr);
+      Onnx::AiOnnx::OpSet9::ReduceSum, ir, axes, false, attr);
 
   // move ops into ir
   auto square = square_op.get();

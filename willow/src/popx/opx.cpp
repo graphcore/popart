@@ -146,9 +146,17 @@ poplar::Tensor Opx::broadcast(const std::vector<int64_t> &desired_shape,
 // TODO : Find a better place to put these, ops that will be optimized out
 // before creating opx's
 namespace {
-OpxCreator<Opx> gemmOpxCreator(Onnx::Operators::Gemm,
-                               "GemmOp should be removed by pattern 'GemmOp'");
-OpxCreator<Opx> tanGradOpxCreator(Onnx::Operators::Tan,
+OpxCreator<Opx>
+    gemmOpxCreator_6(Onnx::Operators::Gemm_6,
+                     "GemmOp should be removed by pattern 'GemmOp'");
+OpxCreator<Opx>
+    gemmOpxCreator_7(Onnx::Operators::Gemm_7,
+                     "GemmOp should be removed by pattern 'GemmOp'");
+OpxCreator<Opx>
+    gemmOpxCreator_9(Onnx::Operators::Gemm_9,
+                     "GemmOp should be removed by pattern 'GemmOp'");
+
+OpxCreator<Opx> tanGradOpxCreator(Onnx::Operators::Tan_7,
                                   "TanOp should be removed by pattern 'TanOp'");
 } // namespace
 

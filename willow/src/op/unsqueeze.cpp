@@ -49,7 +49,7 @@ const std::map<int, int> &UnsqueezeGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<UnsqueezeOp> unsqueezeOpCreator(Onnx::Operators::Unsqueeze);
+static OpCreator<UnsqueezeOp> unsqueezeOpCreator(Onnx::Operators::Unsqueeze_1);
 static GradOpCreator<UnsqueezeGradOp>
     unsqueezeGradOpCreator(Onnx::GradOperators::UnsqueezeGrad);
 } // namespace

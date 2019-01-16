@@ -6,11 +6,16 @@
 
 namespace poponnx {
 
+// TODO : Support "count_include_pad" T6249
+
 AveragePoolOp::AveragePoolOp(const OperatorIdentifier &_opid,
                              Ir *_ir,
                              const std::string &name,
                              const Attributes &_attr)
-    : HasReceptiveFieldOp(_opid, _ir, name, _attr) {}
+    : HasReceptiveFieldOp(_opid, _ir, name, _attr) {
+
+  // TODO : Use the count_include_pad for AveragePool-1
+}
 
 void AveragePoolOp::setup0() {}
 
@@ -86,8 +91,9 @@ const std::map<int, int> &AveragePoolGradOp::gradOutToNonGradIn() const {
 void AveragePoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
 namespace {
-static OpCreator<AveragePoolOp>
-    averagePoolOpCreator(Onnx::Operators::AveragePool);
+static OpCreator<AveragePoolOp> averagePoolOpCreator(
+    {Onnx::Operators::AveragePool_1, Onnx::Operators::AveragePool_7});
+
 static GradOpCreator<AveragePoolGradOp>
     averagePoolGradOpCreator(Onnx::GradOperators::AveragePoolGrad);
 } // namespace

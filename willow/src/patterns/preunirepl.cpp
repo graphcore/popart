@@ -16,10 +16,11 @@ bool PreUniRepl::matches(Op *op) const {
   }
 
   // A sum with only one input
-  else if (op->opid == Onnx::Operators::Sum) {
+  else if (op->opid == Onnx::Operators::Sum_6 ||
+           op->opid == Onnx::Operators::Sum_8) {
     return true;
     // A pad with zero-padding
-  } else if (op->opid == Onnx::Operators::Pad &&
+  } else if (op->opid == Onnx::Operators::Pad_2 &&
              dynamic_cast<const PadOp *>(op)->padSizeZero()) {
     return true;
   } else {

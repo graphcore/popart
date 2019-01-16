@@ -64,7 +64,7 @@ void SoftmaxGradDirectOp::setup() {
 }
 
 namespace {
-static OpCreator<SoftmaxOp> softmaxOpCreator(Onnx::Operators::Softmax);
+static OpCreator<SoftmaxOp> softmaxOpCreator(Onnx::Operators::Softmax_1);
 static GradOpCreator<SoftmaxGradOp>
     softmaxGradOpCreator(Onnx::GradOperators::SoftmaxGrad);
 static GradOpCreator<SoftmaxGradDirectOp>

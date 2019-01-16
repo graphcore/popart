@@ -48,10 +48,10 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   auto attr = op->nAtts.filter(sVirtualGraphAttribute);
 
   // create the new ops
-  auto matmul_op =
-      make_unique<MatMulOp>(Onnx::Operators::MatMul, ir, std::string{}, attr);
+  auto matmul_op = make_unique<MatMulOp>(
+      Onnx::AiOnnx::OpSet9::MatMul, ir, std::string{}, attr);
   auto add_op =
-      make_unique<AddOp>(Onnx::Operators::Add, ir, std::string{}, attr);
+      make_unique<AddOp>(Onnx::AiOnnx::OpSet9::Add, ir, std::string{}, attr);
 
   // move ops into ir
   auto matmul = matmul_op.get();
@@ -126,7 +126,7 @@ static void transposeTensor(const TensorId &input,
   std::vector<int64_t> perm{1, 0};
 
   auto transpose_op = make_unique<TransposeOp>(
-      Onnx::Operators::Transpose, ir, std::string{}, attr);
+      Onnx::AiOnnx::OpSet9::Transpose, ir, std::string{}, attr);
   transpose_op->setPerm(perm);
 
   auto transpose = transpose_op.get();

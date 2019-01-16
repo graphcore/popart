@@ -52,7 +52,9 @@ bool GemmOp::getTransA() const { return transA; }
 bool GemmOp::getTransB() const { return transB; }
 
 namespace {
-static OpCreator<GemmOp> gemmOpCreator(Onnx::Operators::Gemm);
-}
+static OpCreator<GemmOp> gemmOpCreator({Onnx::Operators::Gemm_6,
+                                        Onnx::Operators::Gemm_7,
+                                        Onnx::Operators::Gemm_9});
+} // namespace
 
 } // namespace poponnx

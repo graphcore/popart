@@ -14,7 +14,7 @@ void SqueezeOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 SqueezeOpx::SqueezeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<SqueezeOp>(op, Onnx::Operators::Squeeze);
+  verifyOp<SqueezeOp>(op, {Onnx::Operators::Squeeze_1});
 }
 
 SqueezeGradOpx::SqueezeGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -28,7 +28,7 @@ void SqueezeGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<SqueezeOpx> squeezeOpxCreator(Onnx::Operators::Squeeze);
+OpxCreator<SqueezeOpx> squeezeOpxCreator(Onnx::Operators::Squeeze_1);
 OpxCreator<SqueezeGradOpx>
     squeezeGradOpxCreator(Onnx::GradOperators::SqueezeGrad);
 } // namespace

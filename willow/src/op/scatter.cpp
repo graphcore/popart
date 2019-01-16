@@ -108,7 +108,7 @@ void ScatterUpdateGradOp::setup() {
 int64_t ScatterUpdateGradOp::getAxis() const { return axis; }
 
 namespace {
-static OpCreator<ScatterOp> ScatterOpCreator(Onnx::Operators::Scatter);
+static OpCreator<ScatterOp> ScatterOpCreator(Onnx::Operators::Scatter_9);
 static GradOpCreator<ScatterDataGradOp>
     scatterDataGradOpCreator(Onnx::GradOperators::ScatterDataGrad);
 static GradOpCreator<ScatterUpdateGradOp>

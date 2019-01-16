@@ -48,7 +48,7 @@ void SigmoidGradOp::setup() {
 }
 
 namespace {
-static OpCreator<SigmoidOp> sigmoidOpCreator(Onnx::Operators::Sigmoid);
+static OpCreator<SigmoidOp> sigmoidOpCreator(Onnx::Operators::Sigmoid_6);
 static GradOpCreator<SigmoidGradOp>
     sigmoidGradOpCreator(Onnx::GradOperators::SigmoidGrad);
 } // namespace

@@ -13,8 +13,7 @@ OpxManager &OpxManager::getInstance() {
 void OpxManager::registerOpx(const OperatorIdentifier &opid,
                              OpxFactoryFunc func) {
   getInstance().factory.emplace(
-      std::pair<std::reference_wrapper<const OperatorIdentifier>,
-                OpxFactoryFunc>(opid, func));
+      std::pair<OperatorIdentifier, OpxFactoryFunc>(opid, func));
 }
 
 std::unique_ptr<Opx> OpxManager::createOpx(Op *op, Devicex *devicex) {

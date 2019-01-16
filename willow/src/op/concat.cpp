@@ -183,15 +183,7 @@ int64_t ConcatGradOp::getEnd() const { return end; }
 
 namespace {
 
-static OpCreator<ConcatOp>
-    concatOpCreator(Onnx::Operators::Concat,
-                    [](const OperatorIdentifier &opid,
-                       Ir *ir,
-                       const std::string &name = "",
-                       const Attributes &attr  = {}) -> std::unique_ptr<Op> {
-                      return make_unique<ConcatOp>(opid, ir, name, attr);
-                    },
-                    true);
+static OpCreator<ConcatOp> concatOpCreator(Onnx::Operators::Concat_1);
 
 static GradOpCreator<ConcatInplaceOp>
     concatInplaceOpCreator(Onnx::CustomOperators::ConcatInplace);

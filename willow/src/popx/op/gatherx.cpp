@@ -66,7 +66,7 @@ static poplar::Tensor broadcastShape(poplar::Tensor a, poplar::Tensor b) {
 }
 
 GatherOpx::GatherOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<GatherOp>(op, Onnx::Operators::Gather);
+  verifyOp<GatherOp>(op, Onnx::Operators::Gather_1);
 
   axis = dynamic_cast<GatherOp *>(op)->getAxis();
 }
@@ -196,7 +196,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<GatherOpx> gatherOpxCreator(Onnx::Operators::Gather);
+OpxCreator<GatherOpx> gatherOpxCreator(Onnx::Operators::Gather_1);
 OpxCreator<GatherGradOpx> gatherGradOpxCreator(Onnx::GradOperators::GatherGrad);
 } // namespace
 

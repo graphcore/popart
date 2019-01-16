@@ -20,11 +20,12 @@ public:
                                         const Attributes &_attr)>;
 
   struct OpInfo {
-    OpInfo() : isPublic(false), f1(nullptr) {}
+    OpInfo(const OperatorIdentifier &_id)
+        : isPublic(false), id(_id), f1(nullptr) {}
     // Does poponnx expose the Op in its public API ?
     bool isPublic;
+    const OperatorIdentifier id;
     OpFactoryFunc f1;
-    // TBD could hold meta information about input/ouput/attributes expected
   };
 
   OpManager() = default;
@@ -35,6 +36,16 @@ public:
   registerOp(const OperatorIdentifier &opid, bool isPublic, OpFactoryFunc func);
 
   // Factory creation method
+  // creates a op with matches the domain/type and has the largest version <=
+  // opsetVersion
+  static std::unique_ptr<Op> createOp(const OpDomain &domain,
+                                      const OpType &type,
+                                      const int opsetVersion,
+                                      Ir *ir,
+                                      const std::string &name = "",
+                                      const Attributes &_attr = {});
+
+  // creates a op with matches the opid
   static std::unique_ptr<Op> createOp(const OperatorIdentifier &opid,
                                       Ir *ir,
                                       const std::string &name = "",
@@ -44,12 +55,16 @@ public:
   static const std::vector<OperatorIdentifier>
   getSupportedOperations(bool includePrivate);
 
+  static OpVersion getOpVersionFromOpSet(const OpDomain &opDomain,
+                                         const OpType &type,
+                                         const int opsetVersion);
+
 private:
   // Singleton
   static OpManager &getInstance();
 
-  // Map of registered ops
-  std::map<OperatorIdentifier, OpInfo, OperatorIdentifierLess> opMap;
+  // Map of domain/type to the list of supported versions and the opInfo
+  std::map<std::pair<OpDomain, OpType>, std::map<int, OpInfo>> opMap;
 };
 
 // This class registers a lambda function to create a op with the
@@ -66,6 +81,21 @@ public:
            const Attributes &attr   = {}) -> std::unique_ptr<Op> {
           return std::unique_ptr<OP>(new OP(_opid, ir, _name, attr));
         });
+  }
+
+  OpCreator(const std::vector<OperatorIdentifier> &opids,
+            bool isPublic = true) {
+    for (const auto &opid : opids) {
+      OpManager::registerOp(
+          opid,
+          isPublic,
+          [](const OperatorIdentifier &_opid,
+             Ir *ir,
+             const std::string &_name = "",
+             const Attributes &attr   = {}) -> std::unique_ptr<Op> {
+            return std::unique_ptr<OP>(new OP(_opid, ir, _name, attr));
+          });
+    }
   }
 
   OpCreator(const OperatorIdentifier &opid,

@@ -48,7 +48,7 @@ void TanhGradOp::setup() {
 }
 
 namespace {
-static OpCreator<TanhOp> tanhOpCreator(Onnx::Operators::Tanh);
+static OpCreator<TanhOp> tanhOpCreator(Onnx::Operators::Tanh_6);
 static GradOpCreator<TanhGradOp>
     tanhGradOpCreator(Onnx::GradOperators::TanhGrad);
 } // namespace

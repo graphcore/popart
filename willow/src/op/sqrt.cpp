@@ -44,7 +44,7 @@ const std::map<int, int> &SqrtGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<SqrtOp> sqrtOpCreator(Onnx::Operators::Sqrt);
+static OpCreator<SqrtOp> sqrtOpCreator(Onnx::Operators::Sqrt_6);
 static GradOpCreator<SqrtGradOp>
     sqrtGradOpCreator(Onnx::GradOperators::SqrtGrad);
 } // namespace

@@ -31,11 +31,11 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
   auto square_op = make_unique<SquareOp>(
       Onnx::CustomOperators::Square, ir, std::string{}, attr);
   auto reciprocal_op = make_unique<ReciprocalOp>(
-      Onnx::Operators::Reciprocal, ir, std::string{}, attr);
+      Onnx::AiOnnx::OpSet9::Reciprocal, ir, std::string{}, attr);
   auto negate_op =
-      make_unique<NegateOp>(Onnx::Operators::Neg, ir, std::string{}, attr);
+      make_unique<NegateOp>(Onnx::AiOnnx::OpSet9::Neg, ir, std::string{}, attr);
   auto mul_op =
-      make_unique<MulOp>(Onnx::Operators::Mul, ir, std::string{}, attr);
+      make_unique<MulOp>(Onnx::AiOnnx::OpSet9::Mul, ir, std::string{}, attr);
 
   // move ops into ir
   auto square     = square_op.get();

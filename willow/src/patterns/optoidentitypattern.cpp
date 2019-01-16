@@ -17,17 +17,18 @@ bool OpToIdentityPattern::matches(Op *op) const {
             op->output->tensor(0)->info.shape())) ||
           // A sum op with only one input
           //(op->opType == OpType::SUM && op->input->n() == 1) ||
-          (op->opid == Onnx::Operators::Sum && op->input->n() == 1) ||
+          (op->opid == Onnx::Operators::Sum_6 && op->input->n() == 1) ||
+          (op->opid == Onnx::Operators::Sum_8 && op->input->n() == 1) ||
           // A pad op with no padding
           //(op->opType == OpType::PAD && dynamic_cast<const PadOp
           //*>(op)->padSizeZero()) ||
-          (op->opid == Onnx::Operators::Pad &&
+          (op->opid == Onnx::Operators::Pad_2 &&
            dynamic_cast<const PadOp *>(op)->padSizeZero()) ||
           // A subsample with all strides being 1
-          (op->opid == Onnx::CustomOperators::Subsample &&
+          (op->opid == Onnx::CustomOperators::Subsample_1 &&
            dynamic_cast<const SubsampleOp *>(op)->strideSizeOne()) ||
           // Concat a single tensor
-          (op->opid == Onnx::Operators::Concat && op->input->n() == 1) ||
+          (op->opid == Onnx::Operators::Concat_4 && op->input->n() == 1) ||
           // Inplace concat a single tensor
           (op->opid == Onnx::CustomOperators::ConcatInplace &&
            op->input->n() == 1));
@@ -44,7 +45,7 @@ bool OpToIdentityPattern::apply(Op *op) const {
   auto attr          = op->nAtts.filter(sVirtualGraphAttribute);
 
   auto identity_op = make_unique<IdentityOp>(
-      Onnx::Operators::Identity, ir, std::string{}, attr);
+      Onnx::AiOnnx::OpSet9::Identity, ir, std::string{}, attr);
 
   // Add the identity op to the IR
   auto identity = identity_op.get();

@@ -151,7 +151,7 @@ const std::map<int, int> &ReshapeGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<ReshapeOp> reshapeOpCreator(Onnx::Operators::Reshape);
+static OpCreator<ReshapeOp> reshapeOpCreator(Onnx::Operators::Reshape_5);
 static GradOpCreator<ReshapeGradOp>
     reshapeGradOpCreator(Onnx::GradOperators::ReshapeGrad);
 } // namespace

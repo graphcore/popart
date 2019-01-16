@@ -9,7 +9,7 @@ namespace poponnx {
 namespace popx {
 
 MulOpx::MulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<MulOp>(op, Onnx::Operators::Mul);
+  verifyOp<MulOp>(op, {Onnx::Operators::Mul_6, Onnx::Operators::Mul_7});
 }
 
 void MulOpx::grow(poplar::program::Sequence &prog) const {
@@ -23,7 +23,9 @@ void MulOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-static OpxCreator<MulOpx> mulOpxCreator(Onnx::Operators::Mul);
+static OpxCreator<MulOpx> mulOpxCreator({Onnx::Operators::Mul_6,
+                                         Onnx::Operators::Mul_7});
+
 static OpxCreator<Opx>
     mulArg0GradOpxCreator(Onnx::GradOperators::MulArg0Grad,
                           "MulArg0GradOp should be optimised out, "

@@ -24,11 +24,11 @@ bool SubtractArg1GradOpPattern::apply(Op *op) const {
   auto attr          = op->nAtts.filter(sVirtualGraphAttribute);
 
   auto negate_op =
-      make_unique<NegateOp>(Onnx::Operators::Neg, ir, std::string{}, attr);
+      make_unique<NegateOp>(Onnx::AiOnnx::OpSet9::Neg, ir, std::string{}, attr);
   auto axes =
       npReductionAxis(output_tensor->info.shape(), input_tensor->info.shape());
   auto reducesum_op = make_unique<ReduceSumOp>(
-      Onnx::Operators::ReduceSum, ir, axes, false, attr);
+      Onnx::AiOnnx::OpSet9::ReduceSum, ir, axes, false, attr);
 
   const auto tmp_tensor_id = createIntermediateTensorId(op->output->id(0));
   op->pir->getTensors().addActGrad(tmp_tensor_id);

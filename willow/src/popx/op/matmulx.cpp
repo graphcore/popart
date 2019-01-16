@@ -16,7 +16,8 @@ namespace poponnx {
 namespace popx {
 
 MatMulOpx::MatMulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<MatMulOp>(op, Onnx::Operators::MatMul);
+  verifyOp<MatMulOp>(op,
+                     {Onnx::Operators::MatMul_1, Onnx::Operators::MatMul_9});
 }
 
 std::vector<std::size_t> MatMulOpx::onnxShapeToPoplar(const Shape &shape) {
@@ -152,7 +153,8 @@ poplar::Tensor MatMulOpx::createInput(int index) const {
 
 bool MatMulOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
 
-  if (opx1->op_p->opid != Onnx::Operators::MatMul)
+  if (opx1->op_p->opid != Onnx::Operators::MatMul_1 &&
+      opx1->op_p->opid != Onnx::Operators::MatMul_9)
     return false;
 
   if (ind0 != ind1)
@@ -342,7 +344,9 @@ std::vector<std::size_t> MatMulRhsGradOpx::getOutputReductionAxes() const {
 }
 
 namespace {
-OpxCreator<MatMulOpx> matmulOpxCreator(Onnx::Operators::MatMul);
+OpxCreator<MatMulOpx> matmulOpxCreator({Onnx::Operators::MatMul_1,
+                                        Onnx::Operators::MatMul_9});
+
 OpxCreator<MatMulLhsGradOpx>
     matmulLhsGradOpxCreator(Onnx::GradOperators::MatMulLhsGrad);
 OpxCreator<MatMulRhsGradOpx>

@@ -8,7 +8,7 @@ namespace poponnx {
 namespace popx {
 
 ExpOpx::ExpOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<ExpOp>(op, Onnx::Operators::Exp);
+  verifyOp<ExpOp>(op, Onnx::Operators::Exp_6);
 }
 
 void ExpOpx::grow(poplar::program::Sequence &prog) const {
@@ -21,7 +21,7 @@ void ExpOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<ExpOpx> expOpxCreator(Onnx::Operators::Exp);
+OpxCreator<ExpOpx> expOpxCreator(Onnx::Operators::Exp_6);
 OpxCreator<Opx>
     expGradOpxCreator(Onnx::GradOperators::ExpGrad,
                       "ExpGradOp should be removed by pattern 'ExpGradOp'");

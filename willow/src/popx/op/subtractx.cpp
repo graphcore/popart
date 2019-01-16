@@ -9,7 +9,7 @@ namespace poponnx {
 namespace popx {
 
 SubtractOpx::SubtractOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<SubtractOp>(op, Onnx::Operators::Sub);
+  verifyOp<SubtractOp>(op, {Onnx::Operators::Sub_6, Onnx::Operators::Sub_7});
 }
 
 void SubtractOpx::grow(poplar::program::Sequence &prog) const {
@@ -28,7 +28,8 @@ SubtractArg0GradOpx::SubtractArg0GradOpx(Op *op, Devicex *devicex)
 }
 
 namespace {
-OpxCreator<SubtractOpx> subtractOpxCreator(Onnx::Operators::Sub);
+OpxCreator<SubtractOpx> subtractOpxCreator({Onnx::Operators::Sub_6,
+                                            Onnx::Operators::Sub_7});
 OpxCreator<SubtractArg0GradOpx>
     subtractArg0GradOpxCreator(Onnx::GradOperators::SubArg0Grad);
 OpxCreator<Opx> subtractArg1GradOpxCreator(

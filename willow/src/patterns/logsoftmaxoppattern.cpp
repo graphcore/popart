@@ -22,10 +22,10 @@ bool LogSoftmaxOpPattern::apply(Op *op) const {
   auto attr = op->nAtts.filter(sVirtualGraphAttribute);
 
   // create the new ops
-  auto softmax_op =
-      make_unique<SoftmaxOp>(Onnx::Operators::Softmax, ir, std::string{}, attr);
+  auto softmax_op = make_unique<SoftmaxOp>(
+      Onnx::AiOnnx::OpSet9::Softmax, ir, std::string{}, attr);
   auto log_op =
-      make_unique<LogOp>(Onnx::Operators::Log, ir, std::string{}, attr);
+      make_unique<LogOp>(Onnx::AiOnnx::OpSet9::Log, ir, std::string{}, attr);
 
   // move ops into ir
   auto softmax = softmax_op.get();

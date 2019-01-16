@@ -21,7 +21,7 @@ std::vector<std::unique_ptr<Op>> CoshOp::getGradOps() {
 void CoshOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 namespace {
-static OpCreator<CoshOp> coshOpCreator(Onnx::Operators::Cosh);
+static OpCreator<CoshOp> coshOpCreator(Onnx::Operators::Cosh_9);
 }
 
 } // namespace poponnx

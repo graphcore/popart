@@ -9,7 +9,9 @@ MulOp::MulOp(const OperatorIdentifier &_opid,
              Ir *_ir,
              const std::string &name,
              const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+    : Op(_opid, _ir, name, _attr) {
+  // TODO : Use the attributes in Mul-6
+}
 
 std::unique_ptr<Op> MulOp::clone() const { return make_unique<MulOp>(*this); }
 
@@ -86,7 +88,9 @@ const std::vector<GradInOutMapper> &MulArg1GradOp::gradInputInfo() const {
 }
 
 namespace {
-static OpCreator<MulOp> mulOpCreator(Onnx::Operators::Mul);
+static OpCreator<MulOp> mulOpCreator({Onnx::Operators::Mul_6,
+                                      Onnx::Operators::Mul_7});
+
 static GradOpCreator<MulArg0GradOp>
     mulArg0GradOpCreator(Onnx::GradOperators::MulArg0Grad);
 static GradOpCreator<MulArg1GradOp>

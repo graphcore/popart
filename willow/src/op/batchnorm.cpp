@@ -12,7 +12,10 @@ BatchNormOp::BatchNormOp(const OperatorIdentifier &_opid,
                          Ir *_ir,
                          const std::string &name,
                          const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+    : Op(_opid, _ir, name, _attr) {
+
+  // TODO : T6322 Use the is_training attribute of Version 6
+}
 
 std::unique_ptr<Op> BatchNormOp::clone() const {
   return make_unique<BatchNormOp>(*this);
@@ -119,7 +122,8 @@ void BatchNormGradOp::setup() {
 
 namespace {
 static OpCreator<BatchNormOp>
-    batchNormOpCreator(Onnx::Operators::BatchNormalization);
+    batchNormOpCreator({Onnx::Operators::BatchNormalization_6,
+                        Onnx::Operators::BatchNormalization_7});
 static GradOpCreator<BatchNormGradOp>
     batchNormGradOpCreator(Onnx::GradOperators::BatchNormalizationGrad);
 } // namespace

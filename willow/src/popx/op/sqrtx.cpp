@@ -8,7 +8,7 @@ namespace poponnx {
 namespace popx {
 
 SqrtOpx::SqrtOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<SqrtOp>(op, Onnx::Operators::Sqrt);
+  verifyOp<SqrtOp>(op, Onnx::Operators::Sqrt_6);
 }
 
 void SqrtOpx::grow(poplar::program::Sequence &prog) const {
@@ -21,7 +21,7 @@ void SqrtOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<SqrtOpx> sqrtOpxCreator(Onnx::Operators::Sqrt);
+OpxCreator<SqrtOpx> sqrtOpxCreator(Onnx::Operators::Sqrt_6);
 OpxCreator<Opx> softmaxGradOpxCreator(
     Onnx::GradOperators::SqrtGrad,
     "SqrtGradOp should be removed by pattern 'SqrtGradOp'");

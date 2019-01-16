@@ -29,9 +29,9 @@ bool MulArgGradOpPattern::apply(Op *op) const {
 
   // create the new ops
   auto mul_op =
-      make_unique<MulOp>(Onnx::Operators::Mul, ir, std::string{}, attr);
+      make_unique<MulOp>(Onnx::AiOnnx::OpSet9::Mul, ir, std::string{}, attr);
   auto reduce_sum_op = make_unique<ReduceSumOp>(
-      Onnx::Operators::ReduceSum, ir, axes, false, attr);
+      Onnx::AiOnnx::OpSet9::ReduceSum, ir, axes, false, attr);
 
   // move ops into ir
   auto mul        = mul_op.get();

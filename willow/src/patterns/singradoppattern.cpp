@@ -26,9 +26,9 @@ bool SinGradOpPattern::apply(Op *op) const {
 
   // create the new ops
   auto cos_op =
-      make_unique<CosOp>(Onnx::Operators::Cos, ir, std::string{}, attr);
+      make_unique<CosOp>(Onnx::AiOnnx::OpSet9::Cos, ir, std::string{}, attr);
   auto mul_op =
-      make_unique<MulOp>(Onnx::Operators::Mul, ir, std::string{}, attr);
+      make_unique<MulOp>(Onnx::AiOnnx::OpSet9::Mul, ir, std::string{}, attr);
 
   // move ops into ir
   auto cos = cos_op.get();

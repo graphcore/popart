@@ -7,7 +7,7 @@ namespace poponnx {
 namespace popx {
 
 SliceOpx::SliceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<SliceOp>(op, Onnx::Operators::Slice);
+  verifyOp<SliceOp>(op, Onnx::Operators::Slice_1);
 }
 
 void SliceOpx::grow(poplar::program::Sequence &) const {
@@ -28,7 +28,7 @@ SliceGradOpx::SliceGradOpx(Op *op, Devicex *devicex) : PadOpx(op, devicex) {
 }
 
 namespace {
-OpxCreator<SliceOpx> sliceOpxCreator(Onnx::Operators::Slice);
+OpxCreator<SliceOpx> sliceOpxCreator(Onnx::Operators::Slice_1);
 OpxCreator<SliceGradOpx> sliceGradOpxCreator(Onnx::GradOperators::SliceGrad);
 } // namespace
 

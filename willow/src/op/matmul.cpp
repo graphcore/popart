@@ -179,7 +179,9 @@ Shape MatMulRhsGradOp::getLhsInputShape() const { return fwdOpLhsInfo.shape(); }
 Shape MatMulRhsGradOp::getOutputShape() const { return fwdOpRhsInfo.shape(); }
 
 namespace {
-static OpCreator<MatMulOp> matMulOpCreator(Onnx::Operators::MatMul);
+static OpCreator<MatMulOp> matMulOpCreator({Onnx::Operators::MatMul_1,
+                                            Onnx::Operators::MatMul_9});
+
 static GradOpCreator<MatMulLhsGradOp>
     matmulLhsGradOpCreator(Onnx::GradOperators::MatMulLhsGrad);
 static GradOpCreator<MatMulRhsGradOp>

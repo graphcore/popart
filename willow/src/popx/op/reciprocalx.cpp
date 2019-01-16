@@ -10,7 +10,7 @@ namespace poponnx {
 namespace popx {
 
 ReciprocalOpx::ReciprocalOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<ReciprocalOp>(op, Onnx::Operators::Reciprocal);
+  verifyOp<ReciprocalOp>(op, Onnx::Operators::Reciprocal_6);
 }
 
 void ReciprocalOpx::grow(poplar::program::Sequence &prog) const {
@@ -26,7 +26,7 @@ void ReciprocalOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<ReciprocalOpx> reciprocalOpxCreator(Onnx::Operators::Reciprocal);
+OpxCreator<ReciprocalOpx> reciprocalOpxCreator(Onnx::Operators::Reciprocal_6);
 OpxCreator<Opx> reciprocalGradGradOpxCreator(
     Onnx::GradOperators::ReciprocalGrad,
     "ReciprocalGradOpx should be removed by pattern 'ReciprocalGradOpx'");

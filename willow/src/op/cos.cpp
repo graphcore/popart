@@ -28,7 +28,7 @@ std::unique_ptr<Op> CosGradOp::clone() const {
 }
 
 namespace {
-static OpCreator<CosOp> cosOpCreator(Onnx::Operators::Cos);
+static OpCreator<CosOp> cosOpCreator(Onnx::Operators::Cos_7);
 static GradOpCreator<CosGradOp> cosGradOpCreator(Onnx::GradOperators::CosGrad);
 } // namespace
 

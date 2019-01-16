@@ -32,7 +32,7 @@ std::unique_ptr<Op> ReciprocalGradOp::clone() const {
 
 namespace {
 static OpCreator<ReciprocalOp>
-    receiprocalOpCreator(Onnx::Operators::Reciprocal);
+    receiprocalOpCreator(Onnx::Operators::Reciprocal_6);
 static GradOpCreator<ReciprocalGradOp>
     receiprocalGradOpCreator(Onnx::GradOperators::ReciprocalGrad);
 } // namespace

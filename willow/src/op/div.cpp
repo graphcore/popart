@@ -9,7 +9,9 @@ DivOp::DivOp(const OperatorIdentifier &_opid,
              Ir *_ir,
              const std::string &name,
              const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+    : Op(_opid, _ir, name, _attr) {
+  // TODO : Use the attributes in Div-6
+}
 
 std::unique_ptr<Op> DivOp::clone() const { return make_unique<DivOp>(*this); }
 
@@ -87,7 +89,8 @@ const std::vector<GradInOutMapper> &DivArg1GradOp::gradInputInfo() const {
 }
 
 namespace {
-static OpCreator<DivOp> divOpCreator(Onnx::Operators::Div);
+static OpCreator<DivOp> divOpCreator({Onnx::Operators::Div_6,
+                                      Onnx::Operators::Div_7});
 static GradOpCreator<DivArg0GradOp>
     divArg0GradOpCreator(Onnx::GradOperators::DivArg0Grad);
 static GradOpCreator<DivArg1GradOp>

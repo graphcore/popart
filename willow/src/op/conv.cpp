@@ -120,7 +120,7 @@ const std::map<int, int> &ConvDataGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<ConvOp> convOpCreator(Onnx::Operators::Conv);
+static OpCreator<ConvOp> convOpCreator(Onnx::Operators::Conv_1);
 static GradOpCreator<ConvDataGradOp>
     convDataGradOpCreator(Onnx::GradOperators::ConvDataGrad);
 static GradOpCreator<ConvWeightsGradOp>

@@ -87,7 +87,7 @@ const std::map<int, int> &TransposeGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<TransposeOp> transposeOpCreator(Onnx::Operators::Transpose);
+static OpCreator<TransposeOp> transposeOpCreator(Onnx::Operators::Transpose_1);
 static GradOpCreator<TransposeGradOp>
     transposeGradOpCreator(Onnx::GradOperators::TransposeGrad);
 } // namespace

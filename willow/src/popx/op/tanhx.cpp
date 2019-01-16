@@ -8,7 +8,7 @@ namespace poponnx {
 namespace popx {
 
 TanhOpx::TanhOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<TanhOp>(op, Onnx::Operators::Tanh);
+  verifyOp<TanhOp>(op, {Onnx::Operators::Tanh_6});
 }
 
 void TanhOpx::grow(poplar::program::Sequence &prog) const {
@@ -33,7 +33,7 @@ void TanhGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<TanhOpx> tanhOpxCreator(Onnx::Operators::Tanh);
+OpxCreator<TanhOpx> tanhOpxCreator(Onnx::Operators::Tanh_6);
 OpxCreator<TanhGradOpx> tanhGradOpxCreator(Onnx::GradOperators::TanhGrad);
 } // namespace
 

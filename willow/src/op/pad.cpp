@@ -57,7 +57,7 @@ float PadOp::getPadValue() const { return pad_value; }
 const std::string &PadOp::getMode() const { return mode; }
 
 namespace {
-static OpCreator<PadOp> padCreator(Onnx::Operators::Pad);
+static OpCreator<PadOp> padCreator(Onnx::Operators::Pad_2);
 }
 
 } // namespace poponnx

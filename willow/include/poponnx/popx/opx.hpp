@@ -102,10 +102,25 @@ public:
 
   // Generic function to test that op is of a given type
   template <class OP> void verifyOp(Op *op, const OperatorIdentifier &opid) {
-    // compare domain, type (Relu, etc.) and version
-    if (op->opid != opid) {
+    // compare domain, type (Relu, etc.), but not version as an op can support
+    // multiple versions
+    // TODO : Consider passing in a list of support opid's (for each version)
+    if (op->opid.domain != opid.domain || op->opid.type != opid.type) {
       throw error("Cannot create opx for {} from {}", opid, op->opid);
     }
+  }
+
+  template <class OP>
+  void verifyOp(Op *op, std::vector<OperatorIdentifier> opids) {
+
+    for (auto &opid : opids) {
+      if (op->opid == opid) {
+        return;
+      }
+    }
+
+    // TODO : Improve error
+    throw error("Cannot create opx from {}", op->opid);
   }
 
   template <class OP> void verifyOp(Op *op) {

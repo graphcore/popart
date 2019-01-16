@@ -9,7 +9,7 @@ namespace poponnx {
 namespace popx {
 
 SumOpx::SumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<SumOp>(op, Onnx::Operators::Sum);
+  verifyOp<SumOp>(op, {Onnx::Operators::Sum_6, Onnx::Operators::Sum_8});
 }
 
 void SumOpx::grow(poplar::program::Sequence &prog) const {
@@ -47,8 +47,9 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<SumOpx> sumOpxCreator(Onnx::Operators::Sum);
-}
+OpxCreator<SumOpx> sumOpxCreator({Onnx::Operators::Sum_6,
+                                  Onnx::Operators::Sum_8});
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

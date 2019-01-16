@@ -30,7 +30,7 @@ TransposeGradOpx::TransposeGradOpx(Op *op, Devicex *devicex)
 }
 
 namespace {
-OpxCreator<TransposeOpx> transposeOpxCreator(Onnx::Operators::Transpose);
+OpxCreator<TransposeOpx> transposeOpxCreator(Onnx::Operators::Transpose_1);
 OpxCreator<TransposeGradOpx>
     transposeGradOpxCreator(Onnx::GradOperators::TransposeGrad);
 } // namespace
