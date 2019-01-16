@@ -826,6 +826,7 @@ public:
    *
    */
   TensorId softmax(const std::vector<TensorId> &args,
+                   int64_t axis            = 1,
                    const std::string &name = {});
 
   /**

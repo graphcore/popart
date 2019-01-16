@@ -516,6 +516,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("softmax",
            &Builder::softmax,
            py::arg("args"),
+           py::arg("axis")        = 1,
            py::arg("debugPrefix") = std::string())
       .def("softsign",
            &Builder::softsign,

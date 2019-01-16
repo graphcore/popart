@@ -16,6 +16,8 @@ class SoftmaxOpx : public Opx {
 public:
   SoftmaxOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+
+  static poplar::Tensor coerceTo2D(const poplar::Tensor &t, int64_t axis);
 };
 
 // compute dL/dv from v and dp, where p = softmax(v)

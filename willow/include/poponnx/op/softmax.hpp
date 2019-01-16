@@ -15,6 +15,10 @@ public:
             const Attributes &_attr = {});
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
+  int64_t getAxis() const;
+
+private:
+  int64_t axis;
 };
 
 class SoftmaxGradOp : public Op {
@@ -25,10 +29,14 @@ public:
   void setup() final;
   int gradProbsIn() const;
   int actsIn() const;
+  int64_t getAxis() const;
 
   static InIndex getGradProbsInIndex() { return 0; }
   static InIndex getActsInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
+
+private:
+  int64_t axis;
 };
 
 class SoftmaxGradDirectOp : public Op {

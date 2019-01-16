@@ -9,8 +9,11 @@ namespace poponnx {
 SoftmaxOp::SoftmaxOp(const OperatorIdentifier &_opid,
                      Ir *_ir,
                      const std::string &name,
-                     const Attributes &_attr)
-    : ElementWiseUnaryOp(_opid, _ir, name, _attr) {}
+                     const Attributes &attr)
+    : ElementWiseUnaryOp(_opid, _ir, name, attr) {
+  axis = 1;
+  attr.setIfPresent(axis, "axis");
+}
 
 std::vector<std::unique_ptr<Op>> SoftmaxOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -22,12 +25,14 @@ std::unique_ptr<Op> SoftmaxOp::clone() const {
   return make_unique<SoftmaxOp>(*this);
 }
 
+int64_t SoftmaxOp::getAxis() const { return axis; }
+
 void SoftmaxGradOp::setup() {
   outInfo(getOutIndex()) = inInfo(getGradProbsInIndex());
 }
 
 SoftmaxGradOp::SoftmaxGradOp(SoftmaxOp *op_)
-    : Op(Onnx::GradOperators::SoftmaxGrad, op_->pir) {}
+    : Op(Onnx::GradOperators::SoftmaxGrad, op_->pir), axis(op_->getAxis()) {}
 
 const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
   // input at index 0 (probGradInputIndex()) : gradient of output of softmax
@@ -46,6 +51,8 @@ const std::map<int, int> &SoftmaxGradOp::gradOutToNonGradIn() const {
       {getOutIndex(), SoftmaxOp::getInIndex()}};
   return outInfo;
 }
+
+int64_t SoftmaxGradOp::getAxis() const { return axis; }
 
 SoftmaxGradDirectOp::SoftmaxGradDirectOp(Ir *ir, const NllLoss *nls)
     : Op(Onnx::CustomGradOperators::SoftmaxGradDirect, ir) {

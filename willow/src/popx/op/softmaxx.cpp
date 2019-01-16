@@ -1,3 +1,4 @@
+#include <iterator>
 #include <poponnx/error.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/nll.hpp>
@@ -17,11 +18,28 @@ SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<SoftmaxOp>(op, Onnx::Operators::Softmax_1);
 }
 
+poplar::Tensor SoftmaxOpx::coerceTo2D(const poplar::Tensor &t, int64_t axis) {
+  const auto in_shape = t.shape();
+  auto k              = in_shape.begin();
+  std::advance(k, axis);
+
+  auto n = std::accumulate(
+      in_shape.begin(), k, std::size_t{1}, std::multiplies<std::size_t>());
+  auto d = std::accumulate(
+      k, in_shape.end(), std::size_t{1}, std::multiplies<std::size_t>());
+  return t.reshape({n, d});
+}
+
 void SoftmaxOpx::grow(poplar::program::Sequence &prog) const {
+  auto input = get(inId(SoftmaxOp::getInIndex()));
+
+  const auto axis = getOp<SoftmaxOp>().getAxis();
+  input           = coerceTo2D(input, axis);
 
   auto outTensor = popnn::nonLinearity(
-      graph(), popnn::NonLinearityType::SOFTMAX, get(inId(0)), prog, outId(0));
+      graph(), popnn::NonLinearityType::SOFTMAX, input, prog, outId(0));
 
+  outTensor = outTensor.reshape(inInfo(SoftmaxOp::getInIndex()).shape_szt());
   insert(outId(0), outTensor);
 }
 
@@ -83,12 +101,15 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
 //             = p_i g_i - p_i * sum_j ( p_j g_j)
 
 void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
+  const auto axis = getOp<SoftmaxGradOp>().getAxis();
 
   // The gradient of the loss w.r.t. the probabilities (g in above description)
-  const auto &d_probs = get(inId(SoftmaxGradOp::getGradProbsInIndex()));
+  auto d_probs = get(inId(SoftmaxGradOp::getGradProbsInIndex()));
+  d_probs      = SoftmaxOpx::coerceTo2D(d_probs, axis);
 
   // The input to the softmax (which we are computing the gradient of here)
-  const auto &pre_probs = get(inId(SoftmaxGradOp::getActsInIndex()));
+  auto pre_probs = get(inId(SoftmaxGradOp::getActsInIndex()));
+  pre_probs      = SoftmaxOpx::coerceTo2D(pre_probs, axis);
 
   // recomputing the probabilities (p in the above description)
   auto probs = popnn::nonLinearity(graph(),
@@ -130,6 +151,7 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
                         prog,
                         "..SoftmaxGrad(3)");
 
+  dv = dv.reshape(inInfo(SoftmaxGradOp::getActsInIndex()).shape_szt());
   insert(outId(0), dv);
 }
 

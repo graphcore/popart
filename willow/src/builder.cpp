@@ -471,8 +471,10 @@ TensorId Builder::slice(const std::vector<TensorId> &args,
 }
 
 TensorId Builder::softmax(const std::vector<TensorId> &args,
+                          int64_t axis,
                           const std::string &name) {
-  return impl_->op(Onnx::AiOnnx::OpSet9::Softmax, args, {{"axes", 1}}, name)[0];
+  return impl_->op(
+      Onnx::AiOnnx::OpSet9::Softmax, args, {{"axis", axis}}, name)[0];
 }
 
 TensorId Builder::subsample(const std::vector<TensorId> &args,
