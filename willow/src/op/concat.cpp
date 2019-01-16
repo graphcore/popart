@@ -17,10 +17,11 @@ ConcatOp::ConcatOp(const OperatorIdentifier &_opid,
 }
 
 ConcatOp::ConcatOp(const OperatorIdentifier &_opid, ConcatOp *concat_op)
-    : Op(_opid, concat_op->pir), axis(concat_op->getAxis()) {}
+    : Op(_opid, concat_op->pir, {}, concat_op->nAtts),
+      axis(concat_op->getAxis()) {}
 
 ConcatInplaceOp::ConcatInplaceOp(ConcatOp *concat_op)
-    : ConcatOp(Onnx::CustomOperators::ConcatInplace, concat_op->pir) {}
+    : ConcatOp(Onnx::CustomOperators::ConcatInplace, concat_op) {}
 
 std::unique_ptr<Op> ConcatOp::clone() const {
   return make_unique<ConcatOp>(*this);
