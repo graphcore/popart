@@ -35,16 +35,13 @@ class Module0(torch.nn.Module):
     def __init__(self):
         torch.nn.Module.__init__(self)
         self.conv1 = torchwriter.conv3x3(nInChans, nOutChans)
-        self.relu = torch.nn.functional.relu
         # for softmax dim -1 is correct for [sample][class],
         # gives class probabilities for each sample.
         self.softmax = torch.nn.Softmax(dim=-1)
-        # self.prebrobs = None
 
     def forward(self, inputs):
         image0 = inputs[0]
         x = self.conv1(image0)
-        #  x = self.relu(x)
         window_size = (int(x.size()[2]), int(x.size()[3]))
         x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
         preprobs = torch.squeeze(x)
