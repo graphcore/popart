@@ -38,6 +38,9 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   auto matmul = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::MatMul, op);
   auto add    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Add, op);
 
+  op->disconnectAllInputs();
+  op->disconnectAllOutputs();
+
   auto A = in_a->id;
   if (transA) {
     auto tA = createIntermediateTensorId(A);
@@ -71,8 +74,6 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   add->connectOutTensor(AddOp::getOutIndex(), output->id);
 
   // Remove the GemmOp
-  op->disconnectAllInputs();
-  op->disconnectAllOutputs();
   op->pir->eraseOp(op->id);
 
   return true;

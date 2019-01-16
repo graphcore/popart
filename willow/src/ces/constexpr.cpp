@@ -8,8 +8,8 @@
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/onnxutil.hpp>
-#include <poponnx/tensor.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
@@ -47,15 +47,15 @@ void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
 
   // TODO: Consider moving this into the op and register a constexprutil
   // function. See T5993
-  
-  if(node.op_type() == "Constant") {
-     TensorId name = node.output(0);
-      // We assume that a tensor coming from a Constant Node should
-      // not have a gradient computed for it or be updated during training
-      // We will implement a seperate tool to convert between
-      // Constant Operator output and initializer in ONNX models (T6213)
-      ir->getTensors().addConstInit(name, &node.attribute(0).t());
-  } else if(node.op_type() == "Cast")  {
+
+  if (node.op_type() == "Constant") {
+    TensorId name = node.output(0);
+    // We assume that a tensor coming from a Constant Node should
+    // not have a gradient computed for it or be updated during training
+    // We will implement a seperate tool to convert between
+    // Constant Operator output and initializer in ONNX models (T6213)
+    ir->getTensors().addConstInit(name, &node.attribute(0).t());
+  } else if (node.op_type() == "Cast") {
     CastCe caster(node, ir);
     caster.insertOutput();
   } else if (node.op_type() == "Add") {
@@ -73,7 +73,6 @@ void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
                 "if you would like to implement a ConstExpr",
                 node.op_type());
   }
-
 }
 
 ConstExprClassifier

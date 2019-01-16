@@ -67,7 +67,7 @@ std::unique_ptr<Op> OpManager::createOp(const OpDomain &opDomain,
 
   // First find the domain/type
   auto it2 = self.opMap.find(std::make_pair(domain, type));
-  if(it2 != self.opMap.end()) {
+  if (it2 != self.opMap.end()) {
     for (auto &it3 : it2->second) {
 
       // Then find the op with the largest version that is less than the opset
@@ -115,11 +115,11 @@ OpVersion OpManager::getOpVersionFromOpSet(const OpDomain &opDomain,
   if (domain == "")
     domain = Domain::ai_onnx;
 
-  int version    = 0;
+  int version = 0;
 
   // First find the domain/type
   auto it2 = self.opMap.find(std::make_pair(domain, type));
-  if(it2 != self.opMap.end()) {
+  if (it2 != self.opMap.end()) {
     for (auto &it3 : it2->second) {
 
       // Then find the op with the largest version that is less than the opset
@@ -130,9 +130,7 @@ OpVersion OpManager::getOpVersionFromOpSet(const OpDomain &opDomain,
     }
   }
 
- 
   return version;
 }
-
 
 } // namespace poponnx
