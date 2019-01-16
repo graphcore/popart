@@ -237,7 +237,9 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         return ss_err / (math.sqrt(ss_pA * ss_tA) + 1.0e-8)
 
     def checkResult(result, margin):
-        if (result > margin):
+        if np.isnan(result):
+            raise TestFailureError(str(result) + " is NaN")
+        elif (result > margin):
             raise TestFailureError(
                 str(result) + " is greater than " + str(margin))
 
