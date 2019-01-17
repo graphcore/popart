@@ -64,6 +64,12 @@ class Module0(torch.nn.Module):
         window_size = (int(x.size()[2]), int(x.size()[3]))
         x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
         x = torch.squeeze(x)
+        # if batchSize == 1, the above sqeeze removes too many dimensions
+        if batchSize == 1:
+            # mapping x.shape to int prevents pytorch tracking it
+            # and trying to insert ops we don't support into the graph
+            x_shape = map(int, x.shape)
+            x = x.view(batchSize, *x_shape)
         # probabilities:
         # Note that for Nll, Pytorch requires logsoftmax input.
         # We do this separately the framework dependant section,

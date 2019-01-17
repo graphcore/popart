@@ -107,6 +107,10 @@ class PytorchNetWriter(NetWriter):
         torchOptimizer = self.getTorchOptimizer()
         self.module.train()
 
+        # if batchesPerStep is 1, a dimension will be missing
+        if self.dataFeed.batchesPerStep() == 1:
+            inMap = _add_dimension(inMap)
+
         # perform forwards - backwards - update
         # for each of the substeps (substep = batch)
 
@@ -154,6 +158,10 @@ class PytorchNetWriter(NetWriter):
         """
         self.module.eval()
 
+        # if batchesPerStep is 1, a dimension will be missing
+        if self.dataFeed.batchesPerStep() == 1:
+            inMap = _add_dimension(inMap)
+
         # perform forwards pass for each batch
         losses = []
         for substepi in range(self.dataFeed.batchesPerStep()):
@@ -196,6 +204,10 @@ class PytorchNetWriter(NetWriter):
         """
         self.module.eval()
 
+        # if batchesPerStep is 1, a dimension will be missing
+        if self.dataFeed.batchesPerStep() == 1:
+            inMap = _add_dimension(inMap)
+
         # perform forwards pass for each substep
         stepOutMap = {}
         for outName in self.outNames:
@@ -223,3 +235,8 @@ class PytorchNetWriter(NetWriter):
         # returning: list with one entry per substep, each containing
         # one entry per sample
         return stepOutMap
+
+
+# add an extra dimension to each item in the input dict
+def _add_dimension(inMap):
+    return {k: np.expand_dims(v, axis=0) for k, v in inMap.items()}
