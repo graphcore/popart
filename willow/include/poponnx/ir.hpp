@@ -246,7 +246,7 @@ public:
   void exportDot(std::string dotfn) const;
   void eraseOp(OpId);
   Op *getOp(OpId);
-  onnx::ModelProto getModel() const;
+  const onnx::ModelProto &getModel() const;
 
   const SessionOptions &getSessionOptions() const { return userOptions; }
 

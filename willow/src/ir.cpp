@@ -61,7 +61,7 @@ GradNonGradPair::GradNonGradPair(Op *g_, Op *ng_) : grad(g_), nongrad(ng_) {}
 
 GradNonGradPair::GradNonGradPair() : GradNonGradPair(nullptr, nullptr) {}
 
-onnx::ModelProto Ir::getModel() const { return *onnxModel; }
+const onnx::ModelProto &Ir::getModel() const { return *onnxModel; }
 
 std::vector<Tensor *> Ir::optimizerTensors() const {
   std::vector<Tensor *> optTensors;
