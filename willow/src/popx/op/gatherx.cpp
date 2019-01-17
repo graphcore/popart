@@ -4,9 +4,12 @@
 #include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/util.hpp>
 
+#include <popops/ElementWise.hpp>
 #include <popops/Gather.hpp>
 #include <popops/Scatter.hpp>
 #include <poputil/TileMapping.hpp>
+
+#include <boost/range/algorithm.hpp>
 
 namespace poponnx {
 namespace popx {
@@ -71,6 +74,188 @@ GatherOpx::GatherOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   axis = dynamic_cast<GatherOp *>(op)->getAxis();
 }
 
+// Given a tensor with a dimension that has an odd size, pad it with zeros to
+// make it even
+static poplar::Tensor
+pad(poplar::Graph &graph, poplar::Tensor t, unsigned dim) {
+  if (t.dim(dim) % 2) {
+    auto shape = t.shape();
+    shape[dim] = 1;
+
+    auto zero_slice = graph.addConstant(t.elementType(), shape, 0);
+    graph.setTileMapping(zero_slice, 0);
+
+    return poplar::concat(t, zero_slice, dim);
+  } else {
+    return t;
+  }
+}
+
+// Split a tensors dimension in half
+//
+// Assumes the given dimension has even size
+static poplar::Tensor splitOperand(poplar::Tensor t, unsigned dim) {
+  if (t.dim(dim) % 2) {
+    throw error("Cannot evenly split tensor on dimension {} with size {}",
+                dim,
+                t.dim(dim));
+  }
+
+  auto shape = t.shape();
+
+  shape[dim] = t.dim(dim) / 2;
+  shape.insert(shape.begin() + dim, 2);
+
+  return t.reshape(shape);
+}
+
+// Given a tensor that has been split with `splitOperand`, update the indices to
+// correct map into the new tensor
+static poplar::Tensor splitIndices(poplar::Graph &graph,
+                                   poplar::program::Sequence &prog,
+                                   poplar::Tensor t,
+                                   unsigned dim,
+                                   poplar::Tensor i,
+                                   std::size_t idx) {
+  if (i.rank() == 1) {
+    return splitIndices(graph, prog, t, dim, i.expand({1}), idx);
+  } else if (i.rank() == 2) {
+    auto one = graph.addConstant(i.elementType(), {}, 1);
+    graph.setTileMapping(one, 0);
+
+    i        = i.transpose();
+    auto i_d = i[idx];
+
+    auto i_m = popops::bitwiseAnd(graph, i_d, one, prog); // i_m = i_d mod 2
+    popops::shiftRightInPlace(graph, i_d, one, prog);     // i_d /= 2
+
+    i_m = i_m.expand({0});
+
+    auto prefix = i.slice(0, idx + 1, 0);
+    auto suffix = i.slice(idx + 1, i.dim(0), 0);
+
+    return poplar::concat({prefix, i_m, suffix}, 0).transpose();
+  } else {
+    throw error("Cannot split indices with rank greater than 2, the split "
+                "dimension is ambiguous");
+  }
+}
+
+// The offset dimensions after the given dimension need to be increment so that
+// they still correct refer to the output shape
+static std::vector<std::size_t>
+splitOffsetDims(std::vector<std::size_t> offsetDims, unsigned dim) {
+  for (auto &offset_dim : offsetDims) {
+    if (offset_dim > dim) {
+      offset_dim += 1;
+    }
+  }
+
+  return offsetDims;
+}
+
+// We will be slicing on the new dimension, so it's size will be 1
+static std::vector<std::size_t>
+splitSliceSizes(std::vector<std::size_t> sliceSizes, unsigned dim) {
+  sliceSizes.insert(sliceSizes.begin() + dim + 1, 1);
+
+  return sliceSizes;
+}
+
+// The new dimension will be slice on, collapsing it will keep the output shape
+// unchanged
+static std::vector<std::size_t>
+splitCollapsedSliceDims(std::vector<std::size_t> collapsedSliceDims,
+                        unsigned dim) {
+  for (auto &collapsed_dim : collapsedSliceDims) {
+    if (collapsed_dim > dim) {
+      collapsed_dim += 1;
+    }
+  }
+
+  collapsedSliceDims.push_back(dim + 1);
+  return collapsedSliceDims;
+}
+
+// The starting indices now need to point at the changed dimensions.
+// Also need to insert a new index for the split indices tensor.
+static std::vector<unsigned>
+splitStartIndexMap(std::vector<unsigned> startIndexMap,
+                   unsigned dim,
+                   std::size_t idx) {
+  for (auto &start_index : startIndexMap) {
+    if (start_index > dim) {
+      start_index += 1;
+    }
+  }
+
+  startIndexMap.insert(startIndexMap.begin() + idx + 1, dim + 1);
+
+  return startIndexMap;
+}
+
+// Adapt a general gather into a poplar compatible gather.
+//
+// This means none of the startIndexMap dimensions can be larger than 2^16
+//
+// A brief overview of what I think the algorithm to solve this should be.
+//
+// Step 1. Pad the tensor in the axis dimension to have even length.
+// Step 2. Split the axis dimension into two and recompute the indices
+// Step 3. Repeat until all axis dimensions fit
+static poplar::Tensor gatherWrapper(poplar::Graph &graph,
+                                    poplar::Tensor operand,
+                                    poplar::Tensor indices,
+                                    std::size_t indexVectorDim,
+                                    std::vector<std::size_t> offsetDims,
+                                    std::vector<std::size_t> sliceSizes,
+                                    std::vector<std::size_t> collapsedSliceDims,
+                                    std::vector<unsigned> startIndexMap,
+                                    poplar::program::Sequence &prog,
+                                    const std::string &debugPrefix = "") {
+  const auto too_big_dim = boost::range::find_if(
+      startIndexMap, [&](unsigned dim) { return operand.dim(dim) > 0xFFFF; });
+
+  if (too_big_dim == startIndexMap.end()) {
+    return popops::gather(graph,
+                          operand,
+                          indices,
+                          indexVectorDim,
+                          offsetDims,
+                          sliceSizes,
+                          collapsedSliceDims,
+                          startIndexMap,
+                          prog,
+                          debugPrefix);
+  } else {
+    const auto index = std::distance(startIndexMap.begin(), too_big_dim);
+
+    // Step 1. Pad the tensor in the axis dimension to have even length
+    operand = pad(graph, operand, *too_big_dim);
+
+    // Step 2. Split the axis dimension into two and recompute the indices
+    operand = splitOperand(operand, *too_big_dim);
+    indices = splitIndices(graph, prog, operand, *too_big_dim, indices, index);
+    offsetDims = splitOffsetDims(offsetDims, *too_big_dim);
+    sliceSizes = splitSliceSizes(sliceSizes, *too_big_dim);
+    collapsedSliceDims =
+        splitCollapsedSliceDims(collapsedSliceDims, *too_big_dim);
+    startIndexMap = splitStartIndexMap(startIndexMap, *too_big_dim, index);
+
+    // Step 3. Repeat until all axis dimensions fit
+    return gatherWrapper(graph,
+                         operand,
+                         indices,
+                         indexVectorDim,
+                         offsetDims,
+                         sliceSizes,
+                         collapsedSliceDims,
+                         startIndexMap,
+                         prog,
+                         debugPrefix);
+  }
+}
+
 void GatherOpx::grow(poplar::program::Sequence &prog) const {
   const auto indicesShape = inShape(GatherOp::indicesInIndex());
   const auto outputShape =
@@ -99,31 +284,23 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
     // offsets into the data tensor
     std::vector<std::size_t> offsetDims(data.rank());
     std::iota(offsetDims.begin(), offsetDims.begin() + axis, 0);
-    std::iota(offsetDims.begin(), offsetDims.end(), axis + 1);
+    std::iota(offsetDims.begin() + axis, offsetDims.end(), axis + 1);
     std::vector<unsigned> startIndexMap = {static_cast<unsigned>(axis)};
 
     // Gather the slices
-    auto result = popops::gather(graph(),
-                                 data,
-                                 indices,
-                                 index_vector_dim,
-                                 offsetDims,
-                                 sliceSizes,
-                                 {},
-                                 startIndexMap,
-                                 prog);
+    auto result = gatherWrapper(graph(),
+                                data,
+                                cloneNcopy(prog, indices),
+                                index_vector_dim,
+                                offsetDims,
+                                sliceSizes,
+                                {},
+                                startIndexMap,
+                                prog);
 
-    // Shuffle and reshape into the expected ONNX shape
-    std::vector<unsigned> result_shuffle(result.rank());
-    std::iota(result_shuffle.begin(), result_shuffle.end(), 0);
-    std::rotate(result_shuffle.begin(),
-                result_shuffle.begin() + axis,
-                result_shuffle.end());
-
-    result = result.dimShuffle(result_shuffle);
+    // Reshape into the expected ONNX shape
     result = result.reshape(outputShape);
 
-    // Reshape to the ONNX shape and insert the tensor
     insert(outId(GatherOp::outIndex()), result);
   }
 }
