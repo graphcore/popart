@@ -22,6 +22,7 @@
 #include <poponnx/tensorindex.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/tensornames.hpp>
+#include <poponnx/topocons.hpp>
 #include <poponnx/util.hpp>
 
 // The transformations
@@ -231,6 +232,7 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
 
 Ir::Ir() : tensors(*this), onnxModel(nullptr) {
   scheduler.reset(new Scheduler(this));
+  topoCons.reset(new TopoCons());
 }
 
 void Ir::setOnnxModel(const onnx::ModelProto &model) {
@@ -1461,7 +1463,7 @@ void Ir::setVarUpdateCons() {
     // set the constraints
     for (Op *consumer : var->consumers.getOps()) {
       if (consumer != varupdater) {
-        var->consumers.insertTopoCon(consumer, varupdater);
+        topoCons->insert(consumer, varupdater);
       }
     }
   }
@@ -1576,24 +1578,67 @@ void Ir::append(std::stringstream &ss) {
   }
 }
 
-Tensor *Op::inTensor(InIndex index) { return input->tensor(index); }
-const Tensor *Op::inTensor(InIndex index) const { return input->tensor(index); }
-Tensor *Op::outTensor(OutIndex index) { return output->tensor(index); }
-const Tensor *Op::outTensor(OutIndex index) const {
-  return output->tensor(index);
+int Ir::getOpSetVersionFromModel(const std::string &node_domain) {
+
+  // If the node.domain is blank it means the default ai.onnx
+  auto domain = node_domain;
+  if (domain == "") {
+    domain = Domain::ai_onnx;
+  }
+
+  // Get the version of the opset from the model based on the domain
+  int version    = 0;
+  auto opsetList = getModel().opset_import();
+  for (auto &opset : opsetList) {
+
+    std::string opset_domain;
+    if (opset.has_domain() == false || opset.domain() == "") {
+      opset_domain = Domain::ai_onnx;
+    } else {
+      opset_domain = opset.domain();
+    }
+
+    if (domain == opset_domain) {
+
+      auto opset_version = static_cast<int>(opset.version());
+
+      // If the same domain is mentioned multiple times find the largest
+      if (opset_version > version)
+        version = opset_version;
+    }
+  }
+
+  // If the version has not be set throw an exception
+  if (version == 0) {
+    throw error("No opset version defined for domain \'{}\'", domain);
+  }
+
+  return version;
 }
 
-const Shape &Op::inShape(InIndex index) const {
-  return inTensor(index)->info.shape();
+std::unique_ptr<Op> Ir::addOp(const Node &node) {
+
+  int version = getOpSetVersionFromModel(node.domain());
+
+  std::unique_ptr<Op> p = OpManager::createOp(node.domain(),
+                                              node.op_type(),
+                                              version,
+                                              this,
+                                              node.name(),
+                                              node.attribute());
+  if (p != nullptr)
+    return p;
+  else {
+    if (node.op_type() == Onnx::AiOnnx::OpSet9::Constant.type) {
+      throw error("ILE. Constant Ops are not to be added");
+    } else {
+      throw error("No class for {}.{}:{}",
+                  (node.domain() == "" ? Domain::ai_onnx : node.domain()),
+                  node.op_type(),
+                  version);
+    }
+  }
 }
-
-const Shape &Op::outShape(OutIndex index) const {
-  return outTensor(index)->info.shape();
-}
-
-int Op::inRank(InIndex index) { return inTensor(index)->info.rank(); }
-
-int Op::outRank(InIndex index) { return outTensor(index)->info.rank(); }
 
 std::vector<GradNonGradPair> Ir::growLossGradients() {
   std::vector<GradNonGradPair> pairs;

@@ -62,6 +62,7 @@ class GradInOutMapper;
 class InputMapWrapper;
 class OutputMapWrapper;
 class Vertex;
+class TopoCons;
 enum class TensorType;
 
 // A mapping from tensor name to the layout on each tile

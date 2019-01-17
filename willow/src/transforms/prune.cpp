@@ -3,6 +3,7 @@
 #include <poponnx/names.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/topocons.hpp>
 
 #include <poponnx/transforms/prune.hpp>
 
@@ -109,11 +110,7 @@ bool Prune::apply(Ir &ir) const {
       tensor->consumers.decrement(op);
     }
     // remove the topo cons which might exist
-    for (auto tensor_indices : op->input->indicesMap()) {
-      Tensor *tensor = tensor_indices.first;
-      tensor->consumers.removeTopoCons(op);
-    }
-    // and delete the Op
+    ir.topoCons->remove(op);
     ir.eraseOp(op->id);
   }
 

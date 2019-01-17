@@ -5,6 +5,7 @@
 #include <poponnx/op.hpp>
 #include <poponnx/scheduler.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/topocons.hpp>
 
 namespace poponnx {
 
@@ -77,15 +78,11 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons) const {
     // constraints which have the op as "after"
     Op *after = id_op.second.get();
 
-    // we first check the local constraints on the consumers of "after"
-    for (auto &tensor_indices : after->input->indicesMap()) {
-      Tensor *inTen = tensor_indices.first;
-      // which consumer(s) of inTens must appear before op?
-      for (Op *before : inTen->consumers.consumersWhichTopoBefore(after)) {
-        if (!registered(before, after)) {
-          opsAfterKey[before].push_back(after);
-          ++nBeforeKey[after];
-        }
+    // we first check the existing constraints on "after"
+    for (Op *before : pir->topoCons->getBefores(after)) {
+      if (!registered(before, after)) {
+        opsAfterKey[before].push_back(after);
+        ++nBeforeKey[after];
       }
     }
 

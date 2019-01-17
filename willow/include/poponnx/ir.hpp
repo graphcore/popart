@@ -434,6 +434,9 @@ private:
   ExecutionMode executionMode = ExecutionMode::TRAINING;
 
   bool isPrepared = false;
+
+public:
+  std::unique_ptr<TopoCons> topoCons;
 };
 
 } // namespace poponnx

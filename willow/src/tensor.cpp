@@ -11,83 +11,6 @@
 
 namespace poponnx {
 
-void Consumers::takeFrom(Consumers &giver) {
-  // we first confirm that no consumers are shared,
-  // Using O(N^2) algorithm, could be O(N.log(N)).
-  for (Op *op_taker : getOps()) {
-    for (Op *op_giver : giver.getOps()) {
-      if (op_taker == op_giver) {
-        throw error("Cannot transfer consumers from " +
-                    giver.tensorConsumed->id + " to " + tensorConsumed->id +
-                    " as they have " + op_taker->debugName() + " in common");
-      }
-    }
-  }
-
-  for (Op *op : giver.getOps()) {
-    consumers_m[op] = giver.consumers_m[op];
-    topoCons[op]    = giver.topoCons[op];
-
-    // set the input of op to be this->tensorConsumed
-    for (auto index_tensor : op->input->tensorMap()) {
-      InIndex inIndex = index_tensor.first;
-      Tensor *tensor  = index_tensor.second;
-      if (tensor == giver.tensorConsumed) {
-        op->input->reset(inIndex, tensorConsumed);
-      }
-    }
-  }
-}
-
-void Consumers::takeTopoCons(Op *beforeTransfer, Op *afterTransfer) {
-
-  // collect all the map keys
-  std::vector<Op *> keys;
-  for (auto key_vals : topoCons) {
-    keys.push_back(key_vals.first);
-  }
-
-  // vals: replace all occurrences of beforeTransfer with afterTrasfer
-  for (Op *key : keys) {
-    for (Op *&val : topoCons[key]) {
-      if (val == beforeTransfer) {
-        val = afterTransfer;
-      }
-    }
-  }
-
-  // keys: replace all occurrences of beforeTransfer with afterTrasfer
-  for (Op *key : keys) {
-    if (key == beforeTransfer) {
-      topoCons[afterTransfer] = topoCons[beforeTransfer];
-      topoCons.erase(beforeTransfer);
-    }
-  }
-}
-
-void Consumers::removeTopoCons(Op *op) {
-  // if op is a key erase.
-  if (topoCons.find(op) == topoCons.end()) {
-    topoCons.erase(op);
-  }
-
-  // for all keys, remove op from the values vector, if present.
-  // if after removing op the vector is empty. erase the key.
-  for (Op *op2 : getOps()) {
-    std::vector<Op *> newCons;
-    for (Op *op3 : topoCons[op2]) {
-      if (op3 != op) {
-        newCons.push_back(op3);
-      }
-    }
-    if (newCons.size() == 0) {
-      topoCons.erase(op2);
-    } else {
-      topoCons[op2] = newCons;
-    }
-  }
-}
-
 Consumers::Consumers(Tensor *tensorConsumed_)
     : tensorConsumed(tensorConsumed_) {}
 
@@ -95,61 +18,6 @@ int Consumers::n(Op *op) const {
   auto found = consumers_m.find(op);
   if (found == consumers_m.end()) {
     return 0;
-  } else {
-    return found->second;
-  }
-}
-
-void Consumers::insertTopoCon(Op *before, Op *after) {
-  // topoCons is of type "OpsBeforeKey"
-  if (topoCons.find(after) == topoCons.end()) {
-    topoCons[after] = {};
-  }
-
-  // if the topo con is already present, bail
-  if (std::find(topoCons[after].begin(), topoCons[after].end(), before) !=
-      topoCons[after].end()) {
-    throw error("Already registered constraint [" + before->debugName() +
-                " before " + after->debugName() + "]");
-  }
-  topoCons[after].push_back(before);
-}
-
-void Consumers::setTopoLast(Op *last) {
-  if (n(last) == 0) {
-    throw error("Cannot set " + last->debugName() + " as last consumer of " +
-                tensorConsumed->id + " as it not a consumer.");
-  }
-  topoCons[last] = {};
-  for (Op *op : getOps()) {
-    if (op != last) {
-      topoCons[last].push_back(op);
-    }
-  }
-
-  for (Op *op : getOps()) {
-    if (op != last) {
-      if (std::find(topoCons[op].begin(), topoCons[op].end(), last) !=
-          topoCons[op].end()) {
-        throw error("Failure setting " + last->debugName() +
-                    " to last: " + op->debugName() +
-                    " is constrained to be before. setTopoLast does not " +
-                    "remove existing constraints.");
-      }
-    }
-  }
-}
-
-std::vector<Op *> Consumers::consumersWhichTopoBefore(Op *op) const {
-  auto found0 = consumers_m.find(op);
-  if (found0 == consumers_m.end()) {
-    throw error(op->debugName() + " is not a consumer of " +
-                tensorConsumed->id);
-  }
-
-  auto found = topoCons.find(op);
-  if (found == topoCons.end()) {
-    return {};
   } else {
     return found->second;
   }
@@ -186,8 +54,6 @@ void Consumers::append(std::stringstream &ss) {
   }
   ss << "Total number of consumptions: " << getTotal();
 }
-
-bool Consumers::hasTopoCons() const { return topoCons.size() != 0; }
 
 const std::map<Op *, int> &Consumers::getMap() const { return consumers_m; }
 

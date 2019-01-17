@@ -3,6 +3,7 @@
 #include <poponnx/patterns/inplace.hpp>
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/topocons.hpp>
 #include <poponnx/util.hpp>
 
 namespace poponnx {
@@ -76,11 +77,11 @@ bool Inplace0::apply(Op *op) const {
     Tensor *in_tensor = index_tensor.second;
 
     in_tensor->consumers.increment(inplaceOp);
-    in_tensor->consumers.takeTopoCons(op, inplaceOp);
+    ir->topoCons->transfer(op, inplaceOp);
     in_tensor->consumers.decrement(op);
   }
 
-  input_tensor->consumers.setTopoLast(inplaceOp);
+  ir->topoCons->setFinalConsumer(input_tensor, inplaceOp);
   output_tensor->resetProducer(inplaceOp);
 
   inplaceOp->input->insert(0, input_tensor);
@@ -229,7 +230,7 @@ bool InplaceAll::apply(Op *op) const {
   for (auto index : inIndices) {
     Tensor *in_tensor = op->input->tensor(index);
     in_tensor->consumers.increment(inplaceOp);
-    in_tensor->consumers.takeTopoCons(op, inplaceOp);
+    ir->topoCons->transfer(op, inplaceOp);
     in_tensor->consumers.decrement(op);
   }
 
@@ -238,8 +239,7 @@ bool InplaceAll::apply(Op *op) const {
 
   for (auto index : inIndices) {
     Tensor *input_tensor = op->input->tensor(index);
-
-    input_tensor->consumers.setTopoLast(inplaceOp);
+    ir->topoCons->setFinalConsumer(input_tensor, inplaceOp);
     inplaceOp->input->insert(index, input_tensor);
   }
 
