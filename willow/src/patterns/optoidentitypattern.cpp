@@ -35,29 +35,12 @@ bool OpToIdentityPattern::matches(Op *op) const {
            op->input->n() == 1));
 }
 
-std::vector<const Tensor *> OpToIdentityPattern::touches(Op *) const {
-  return {};
-}
+std::vector<std::unique_ptr<Op>> OpToIdentityPattern::sequence(Op *op) const {
+  std::vector<std::unique_ptr<Op>> seq;
 
-bool OpToIdentityPattern::apply(Op *op) const {
-  auto input_tensor  = op->input->tensor(0);
-  auto output_tensor = op->output->tensor(0);
+  seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Identity, op, {}));
 
-  auto identity = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Identity, op);
-
-  // Remap the tensor-to-op relationships
-  input_tensor->consumers.increment(identity);
-  input_tensor->consumers.decrement(op);
-  output_tensor->resetProducer(identity);
-
-  // Remap the op-to-tensor relationships
-  identity->input->insert(0, input_tensor);
-  identity->output->insert(0, output_tensor);
-
-  // Remove the op
-  op->pir->eraseOp(op->id);
-
-  return true;
+  return seq;
 }
 
 namespace {

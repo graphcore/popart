@@ -77,6 +77,12 @@ public:
 
   // New op(s) created in replacement of old op will
   // inherit name and attributes of op they replace
+  std::unique_ptr<Op> makeReplacementOp(const OperatorIdentifier &,
+                                        Op *oldOp,
+                                        const Attributes &attr = {}) const;
+
+  // New op(s) created in replacement of old op will
+  // inherit name and attributes of op they replace
   Op *makeReplacementOpInIr(const OperatorIdentifier &,
                             Op *oldOp,
                             const Attributes &attr = {}) const;

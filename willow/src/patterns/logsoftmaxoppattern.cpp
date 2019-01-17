@@ -14,30 +14,13 @@ bool LogSoftmaxOpPattern::matches(Op *op) const {
 }
 
 // output = log(softmax(x))
-bool LogSoftmaxOpPattern::apply(Op *op) const {
-  auto input  = op->inTensor(LogSoftmaxOp::getInIndex());
-  auto output = op->outTensor(LogSoftmaxOp::getOutIndex());
+std::vector<std::unique_ptr<Op>> LogSoftmaxOpPattern::sequence(Op *op) const {
+  std::vector<std::unique_ptr<Op>> seq;
 
-  // create the new ops
-  auto softmax = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Softmax, op);
-  auto log     = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Log, op);
+  seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Softmax, op, {}));
+  seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Log, op, {}));
 
-  // Remove the LogSoftmaxOp
-  op->disconnectAllInputs();
-  op->disconnectAllOutputs();
-  op->pir->eraseOp(op->id);
-
-  // Connect up the new ops
-  softmax->connectInTensor(SoftmaxOp::getInIndex(), input->id);
-  auto softmax_out = createIntermediateTensorId(output->id);
-  softmax->createAndConnectOutTensor(SoftmaxOp::getOutIndex(), softmax_out);
-  softmax->setup();
-
-  log->connectInTensor(LogOp::getInIndex(), softmax_out);
-  log->connectOutTensor(LogOp::getOutIndex(), output->id);
-  log->setup();
-
-  return true;
+  return seq;
 }
 
 namespace {
