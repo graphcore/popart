@@ -82,9 +82,9 @@ Module moduleFromString(const std::string &module) {
   if (module == "ir")
     return Module::ir;
   if (module == "devicex")
-    return Module::ir;
+    return Module::devicex;
   if (module == "poponnx")
-    return Module::ir;
+    return Module::poponnx;
   if (module == "transform")
     return Module::transform;
   if (module == "pattern")
