@@ -787,7 +787,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       m, "DeviceManager")
       .def(py::init([]() {
         return std::unique_ptr<DeviceManager, py::nodelete>(
-            &DeviceManager::getDeviceManager());
+            &DeviceManager::createDeviceManager());
       }))
       .def("acquireAvailableDevice",
            static_cast<std::unique_ptr<DeviceInfo> (DeviceManager::*)()>(
