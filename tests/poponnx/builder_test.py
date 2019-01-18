@@ -1281,3 +1281,43 @@ def test_convert_all_fixed_point_initializers_to_constants(tmpdir):
 
     assert (i3 in ids)
     assert (i4 not in ids)
+
+
+def test_builder_list_const_expr_nodes_infr(tmpdir):
+    builder = poponnx.Builder()
+
+    i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+    i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+    o1 = builder.reshape([i1, i2], 'a')
+
+    i3 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [3, 2]))
+    i4 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+    o2 = builder.reshape([i3, i4], 'b')
+
+    o = builder.add([o1, o2])
+    builder.addOutputTensor(o)
+    ce = builder.listConstExprNodes(poponnx.ExecutionMode.INFERENCE)
+    nce = builder.listNonConstExprNodes(poponnx.ExecutionMode.INFERENCE)
+    assert (o1 in ce)
+    assert (o2 in nce)
+    assert (o in nce)
+
+
+def test_builder_list_const_expr_nodes_train(tmpdir):
+    builder = poponnx.Builder()
+
+    i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+    i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+    o1 = builder.reshape([i1, i2], 'a')
+
+    i3 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [3, 2]))
+    i4 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+    o2 = builder.reshape([i3, i4], 'b')
+
+    o = builder.add([o1, o2])
+    builder.addOutputTensor(o)
+    ce = builder.listConstExprNodes(poponnx.ExecutionMode.TRAINING)
+    nce = builder.listNonConstExprNodes(poponnx.ExecutionMode.TRAINING)
+    assert (o1 in nce)
+    assert (o2 in nce)
+    assert (o in nce)

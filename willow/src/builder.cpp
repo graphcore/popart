@@ -23,6 +23,36 @@ Builder::createFromOnnxModel(const std::string &modelProtoOrFilename) {
   return builder;
 }
 
+/**
+ * Retrieve the set of constexpr nodes
+ *
+ * \param model The model to get the nodes from
+ * \param mode The intended execution mode
+ *
+ * \return A vector of node names
+ */
+std::vector<std::string>
+Builder::listConstExprNodesModel(const onnx::ModelProto &model,
+                                 ExecutionMode mode) {
+  return BuilderImpl::listConstExprNodesModel(
+      model, static_cast<BuilderImpl::ExecutionMode>(mode));
+}
+
+/**
+ * Retrieve the set of non-constexpr nodes
+ *
+ * \param model The model to get the nodes from
+ * \param mode The intended execution mode
+ *
+ * \return A vector of node names
+ */
+std::vector<std::string>
+Builder::listNonConstExprNodesModel(const onnx::ModelProto &model,
+                                    ExecutionMode mode) {
+  return BuilderImpl::listNonConstExprNodesModel(
+      model, static_cast<BuilderImpl::ExecutionMode>(mode));
+}
+
 Builder::~Builder() {}
 
 TensorId Builder::addInputTensor(const TensorInfo &tensorInfo) {
@@ -680,6 +710,17 @@ void Builder::loadModelProto(const std::string &modelProtoOrFilename) {
 }
 
 std::string Builder::getModelProto() const { return impl_->getModelProto(); }
+
+std::vector<std::string> Builder::listConstExprNodes(ExecutionMode mode) const {
+  return impl_->listConstExprNodes(
+      static_cast<BuilderImpl::ExecutionMode>(mode));
+}
+
+std::vector<std::string>
+Builder::listNonConstExprNodes(ExecutionMode mode) const {
+  return impl_->listNonConstExprNodes(
+      static_cast<BuilderImpl::ExecutionMode>(mode));
+}
 
 std::vector<TensorId> Builder::getInputTensorIds() const {
   return impl_->getInputTensorIds();

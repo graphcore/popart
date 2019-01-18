@@ -4,8 +4,10 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
+#include <poponnx/builder.hpp>
 #include <poponnx/ces/constexpr.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
@@ -783,25 +785,22 @@ bool Ir::isAnchored(TensorId tenId) { return dataFlow.isAnchored(tenId); }
 const std::vector<std::string> &VectorAndSet::v() const { return v_vals; }
 
 void Ir::constructForwards() {
+  const auto mode = executionMode == ExecutionMode::TRAINING
+                        ? Builder::ExecutionMode::TRAINING
+                        : Builder::ExecutionMode::INFERENCE;
+
+  auto ceNodes = Builder::listConstExprNodesModel(*onnxModel, mode);
+
+  std::unordered_set<std::string> ceNodesHT;
+  ceNodesHT.reserve(ceNodes.size());
+  ceNodesHT.insert(ceNodes.begin(), ceNodes.end());
 
   ConstExprUtil ce_util;
-  // Select the relevant input tensors
-  // see constexpr.hpp for details
-  std::vector<TensorId> nonConstExprIn = tensors.getIds(TensorType::Stream);
-  if (executionMode == ExecutionMode::TRAINING) {
-    auto varIds = tensors.getIds(TensorType::Variable);
-    nonConstExprIn.insert(nonConstExprIn.end(), varIds.begin(), varIds.end());
-  }
-  auto constExprClassifier =
-      ce_util.getClassifier(onnxModel->graph(), nonConstExprIn);
 
-  auto &onnxGraph = onnxModel->graph();
-  auto &onnxNodes = onnxGraph.node();
-  for (const auto &node : onnxNodes) {
+  for (const auto &node : onnxModel->graph().node()) {
     // if a node has multiple outputs, we assume it is not const-expr.
     // we may want to relax this assumption at a later point.
-    if (node.output_size() == 1 &&
-        constExprClassifier.isConstExprTensor(node.output(0))) {
+    if (ceNodesHT.count(node.output(0)) > 0) {
       // the Node must be processed now, it is a ConstExprNode
       ce_util.processNode(node, this);
     } else {

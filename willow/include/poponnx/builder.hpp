@@ -39,6 +39,30 @@ public:
   static std::unique_ptr<Builder>
   createFromOnnxModel(const std::string &modelProtoOrFilename);
 
+  enum class ExecutionMode { INFERENCE = 0, TRAINING };
+
+  /**
+   * Retrieve the set of constexpr nodes
+   *
+   * \param model The model to get the nodes from
+   * \param mode The intended execution mode
+   *
+   * \return A vector of node names
+   */
+  static std::vector<std::string>
+  listConstExprNodesModel(const onnx::ModelProto &model, ExecutionMode mode);
+
+  /**
+   * Retrieve the set of non-constexpr nodes
+   *
+   * \param model The model to get the nodes from
+   * \param mode The intended execution mode
+   *
+   * \return A vector of node names
+   */
+  static std::vector<std::string>
+  listNonConstExprNodesModel(const onnx::ModelProto &model, ExecutionMode mode);
+
   ~Builder();
 
   /**
@@ -1317,6 +1341,24 @@ public:
    * \return A serialized ONNX ModelProto
    */
   std::string getModelProto() const;
+
+  /**
+   * Retrieve the set of constexpr nodes
+   *
+   * \param mode The intended execution mode
+   *
+   * \return A vector of node names
+   */
+  std::vector<std::string> listConstExprNodes(ExecutionMode mode) const;
+
+  /**
+   * Retrieve the set of non-constexpr nodes
+   *
+   * \param mode The intended execution mode
+   *
+   * \return A vector of node names
+   */
+  std::vector<std::string> listNonConstExprNodes(ExecutionMode mode) const;
 
   /**
    * Return a list of ONNX graph input tensor ids

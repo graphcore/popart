@@ -340,6 +340,10 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readonly("savedvar",
                     &Builder::BatchNormalizationTrainingOutputs::savedVar);
 
+  py::enum_<Builder::ExecutionMode>(m, "ExecutionMode")
+      .value("INFERENCE", Builder::ExecutionMode::INFERENCE)
+      .value("TRAINING", Builder::ExecutionMode::TRAINING);
+
   py::class_<Builder>(m, "BuilderCore")
       .def(py::init(&Builder::create))
       .def(py::init(&Builder::createFromOnnxModel),
@@ -773,7 +777,11 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("getRecomputeOutputInBackwardPass",
            static_cast<bool (Builder::*)(const TensorId &)>(
                &Builder::getRecomputeOutputInBackwardPass),
-           py::arg("nodeOutputNames"));
+           py::arg("nodeOutputNames"))
+      .def("listConstExprNodes", &Builder::listConstExprNodes, py::arg("mode"))
+      .def("listNonConstExprNodes",
+           &Builder::listNonConstExprNodes,
+           py::arg("mode"));
 
   py::class_<AttributeContextManager>(m, "AttributeContextManager")
       .def("__enter__", &AttributeContextManager::enter)
