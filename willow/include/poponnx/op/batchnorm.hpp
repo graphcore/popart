@@ -38,8 +38,8 @@ public:
 
 private:
   bool training   = false;
-  float epsilon   = 1e-05;
-  float momentum  = 0.9;
+  float epsilon   = 1e-05f;
+  float momentum  = 0.9f;
   int64_t spatial = 1;
 };
 
