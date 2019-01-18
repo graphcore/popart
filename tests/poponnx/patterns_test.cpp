@@ -19,8 +19,8 @@ using namespace poponnx;
 BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
   // clang-format off
   //
-  // (*) -> [Identity] -> () -> [Identity] -> (*) 
-  //     -> [Identity] -> () -> [Identity] ->  () 
+  // (*) -> [Identity] -> () -> [Identity] -> (*)
+  //     -> [Identity] -> () -> [Identity] ->  ()
   //     -> [Identity] -> () -> [Identity] ->  () -> [Identity] -> (*)
   //
   // where (*) are Anchors should become
@@ -163,6 +163,49 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
   // the PadOp should have been replaced with an IdentityOp
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 0);
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Identity).size() == 2);
+}
+
+BOOST_AUTO_TEST_CASE(GatherToIdentity) {
+  // {(i1), (i2)} -> [Gather] -> ()
+  //
+  // should become
+  //
+  // (i1) -> [Identity] -> ()
+
+  // Build an onnx model
+  auto builder = Builder::create();
+
+  TensorInfo shape1{"FLOAT", std::vector<int64_t>{2, 1, 2}};
+  TensorInfo shape2{"INT32", std::vector<int64_t>{1}};
+
+  auto input1 = builder->addInputTensor(shape1);
+  auto input2 = builder->addInputTensor(shape2);
+
+  auto out = builder->gather({input1, input2}, 1);
+
+  builder->addOutputTensor(out);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR
+  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto optimizer = ConstSGD(0.01);
+  std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
+
+  Ir ir;
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              losses,
+              &optimizer,
+              {},
+              Patterns({PatternType::OPTOIDENTITY})});
+
+  // Check the ir
+  // the GatherOp should have been replaced with an IdentityOp
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Gather).size() == 0);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Identity).size() == 1);
 }
 
 BOOST_AUTO_TEST_CASE(SplitConvBias) {

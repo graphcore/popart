@@ -2379,6 +2379,26 @@ def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
     op_tester.run(init_builder, reference, 'infer')
 
 
+def test_gather_id_pattern(op_tester):
+    d1 = np.array([[-1, -2, -3]]).astype(np.float32)
+    d2 = np.array([0]).astype(np.int32)
+    axis = 0
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        i2 = builder.addInputTensor(d2)
+        o = builder.gather([i1, i2], axis)
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.take(d1, d2, axis=axis)
+        return [out]
+
+    op_tester.passes = ['OpToIdentity']
+    op_tester.run(init_builder, reference, 'infer')
+
+
 def test_gather_rank2_1(op_tester):
     d1 = np.array([[-1, -2, -3], [4, 5, 6], [7, 8, 9]]).astype(np.float32)
     d2 = np.array([0, 2]).astype(np.int32)
