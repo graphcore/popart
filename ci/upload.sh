@@ -39,5 +39,8 @@ echo "======================"
 
 swdb_api/swdb_upload.py $1 build/pkg
 
+echo "== Uploading docs to doc server =="
+python ./docs_api/buildbot_update_latest_snapshot.py  https://swdb.sourcevertex.net/ build/pkg/
+
 echo "Done"
 
