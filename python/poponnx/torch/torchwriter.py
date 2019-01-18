@@ -88,7 +88,8 @@ class PytorchNetWriter(NetWriter):
 
         inputDataInfos = [self.inputShapeInfo.get(tid) for tid in self.inNames]
         inputData = [
-            torch.Tensor(np.ones(shape=x.shape(), dtype=x.data_type_lcase()))
+            torch.from_numpy(
+                np.ones(shape=x.shape(), dtype=x.data_type_lcase()))
             for x in inputDataInfos
         ]
 
