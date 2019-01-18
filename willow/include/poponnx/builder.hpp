@@ -332,6 +332,7 @@ public:
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Gather
    *
    * \param args The tensor argument
+   * \param axis Which axis to gather on
    * \param name Optional identifer for operation
    * \return The name of the result tensor
    */
@@ -830,6 +831,7 @@ public:
    * \param axes Axes that `starts` and `ends` apply to.
    * \param starts Starting indices of corresponding axis in `axes`
    * \param ends Ending indices (exclusive) of corresponding axis in `axes`
+   * \param name Optional identifer for operation
    * \return The name of the result tensor
    *
    */
@@ -845,6 +847,7 @@ public:
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softmax
    *
    * \param args Tensor T
+   * \param axis Describes the axis of the inputs when coerced to 2D
    * \param name Optional identifer for operation
    * \return The name of the result tensor
    *

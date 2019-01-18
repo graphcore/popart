@@ -46,8 +46,10 @@ namespace util {
 
 /// Zip a pair of sequences with a given function into a third sequence.
 ///
-/// \param begin1 end1  - The first sequence of elements.
-/// \param begin2 end2  - The second sequence of elements.
+/// \param begin1       - The start of the first sequence of elements.
+/// \param end1         - The end of the first sequence of elements.
+/// \param begin2       - The start of the second sequence of elements.
+/// \param end2         - The end of the second sequence of elements.
 /// \param obegin       - The beginning of the output sequence.
 /// \param f            - The binary operation function object that will be
 ///                       applied. This function takes one value from each input
@@ -80,8 +82,10 @@ void zipWith(IIter1 begin1,
 
 /// Count the number of differences between a pair of sequences.
 ///
-/// \param begin1 end1  - The first sequence of elements.
-/// \param begin2 end2  - The second sequence of elements.
+/// \param begin1 - The start of the first sequence of elements.
+/// \param end1   - The end of the first sequence of elements.
+/// \param begin2 - The start of the second sequence of elements.
+/// \param end2   - The end of the second sequence of elements.
 ///
 /// \note The IIter1 and IIter2 types must satisfy the `InputIterator` concept.
 template <typename IIter1, typename IIter2>

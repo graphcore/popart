@@ -8,32 +8,37 @@
 #include <spdlog/fmt/ostr.h>
 #include <string>
 
-/// This is a simple logging system for Poponnx based on Poplar based on spdlog.
-/// The easiest way to use it is to simply call `logging::<module>::<level>()`
-/// <module> is one of the modules & <level> is one of trace, debug, info,
-/// warn, err or critical. For example:
-///
-///   #include <poponnx/logging.hpp>
-///
-///   void foo(int i) {
-///     logging::session::info("foo({}) called", i);
-///   }
-///
-/// logging can be configured by the methods below, or by environment
-/// variables, eg
-/// POPONNX_LOG_LEVEL=ERR
-/// POPONNX_LOG_DEST=Mylog.txt
-/// POPONNX_LOG_CONFIG=log.cfg
-///
-/// Formatting is done using the `fmt` library. It supports {}-style and %-style
-/// format specification strings. See https://github.com/fmtlib/fmt for details.
+/** \verbatim
+ *
+ *  This is a simple logging system for Poponnx based on Poplar based on spdlog.
+ * The easiest way to use it is to simply call `logging::<module>::<level>()`
+ * <module> is one of the modules & <level> is one of trace, debug, info,
+ * warn, err or critical. For example:
+ *
+ *   #include <poponnx/logging.hpp>
+ *
+ *   void foo(int i) {
+ *     logging::session::info("foo({}) called", i);
+ *   }
+ *
+ * logging can be configured by the methods below, or by environment
+ * variables, eg
+ * POPONNX_LOG_LEVEL=ERR
+ * POPONNX_LOG_DEST=Mylog.txt
+ * POPONNX_LOG_CONFIG=log.cfg
+ *
+ * Formatting is done using the `fmt` library. It supports {}-style and %-style
+ * format specification strings. See https://github.com/fmtlib/fmt for details.
 
-/// To add a new logging module
-/// 1. Add an entry to the Module enum
-/// 2. Add a MAKE_MODULE_TEMPLATE macro call
-/// 3. Add the entry to the string conversion functions in the .cpp file
-/// 4. Update the ONNX webpage to describe the new module
-///    (https://phabricator.sourcevertex.net/w/onnx/)
+ * To add a new logging module
+ * 1. Add an entry to the Module enum
+ * 2. Add a MAKE_MODULE_TEMPLATE macro call
+ * 3. Add the entry to the string conversion functions in the .cpp file
+ * 4. Update the ONNX webpage to describe the new module
+ *    (https://phabricator.sourcevertex.net/w/onnx/)
+ *
+ * \endverbatim
+ */
 
 namespace poponnx {
 namespace logging {
