@@ -128,6 +128,8 @@ const static OperatorIdentifier
     BatchNormalization_6(Domain::ai_onnx, "BatchNormalization", 6, 5, 5);
 const static OperatorIdentifier
     BatchNormalization_7(Domain::ai_onnx, "BatchNormalization", 7, 5, 5);
+const static OperatorIdentifier
+    BatchNormalization_9(Domain::ai_onnx, "BatchNormalization", 9, 5, 5);
 const static OperatorIdentifier Cast_1(Domain::ai_onnx, "Cast", 1, 1, 1);
 const static OperatorIdentifier Cast_6(Domain::ai_onnx, "Cast", 6, 1, 1);
 const static OperatorIdentifier Ceil_1(Domain::ai_onnx, "Ceil", 1, 1, 1);
@@ -391,7 +393,7 @@ const static OperatorIdentifier Atan        = Operators::Atan_7;
 const static OperatorIdentifier Atanh       = Operators::Atanh_9;
 const static OperatorIdentifier AveragePool = Operators::AveragePool_7;
 const static OperatorIdentifier BatchNormalization =
-    Operators::BatchNormalization_7;
+    Operators::BatchNormalization_9;
 const static OperatorIdentifier Cast            = Operators::Cast_6;
 const static OperatorIdentifier Ceil            = Operators::Ceil_6;
 const static OperatorIdentifier Clip            = Operators::Clip_6;

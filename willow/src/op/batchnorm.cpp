@@ -35,12 +35,17 @@ void BatchNormOp::setup() {
   }
 
   // Set the attributes
-  nAtts.set(epsilon, "epsilon");
-  nAtts.set(momentum, "momentum");
-  nAtts.set(spatial, "spatial");
+  nAtts.setIfPresent(epsilon, "epsilon");
+  nAtts.setIfPresent(momentum, "momentum");
 
-  if (spatial == 0) {
-    throw error("batch norm does not currently support spatial set to 0");
+  // In version 9 the spatial argument is removed
+  if (opid.version < 9) {
+
+    nAtts.setIfPresent(spatial, "spatial");
+
+    if (spatial == 0) {
+      throw error("batch norm does not currently support spatial set to 0");
+    }
   }
 
   if (spatial == 1) {
@@ -123,7 +128,8 @@ void BatchNormGradOp::setup() {
 namespace {
 static OpCreator<BatchNormOp>
     batchNormOpCreator({Onnx::Operators::BatchNormalization_6,
-                        Onnx::Operators::BatchNormalization_7});
+                        Onnx::Operators::BatchNormalization_7,
+                        Onnx::Operators::BatchNormalization_9});
 static GradOpCreator<BatchNormGradOp>
     batchNormGradOpCreator(Onnx::GradOperators::BatchNormalizationGrad);
 } // namespace

@@ -37,10 +37,10 @@ public:
   bool isTraining() { return training; }
 
 private:
-  bool training = false;
-  float epsilon;
-  float momentum;
-  int64_t spatial;
+  bool training   = false;
+  float epsilon   = 1e-05;
+  float momentum  = 0.9;
+  int64_t spatial = 1;
 };
 
 class BatchNormGradOp : public Op {
