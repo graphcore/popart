@@ -27,13 +27,13 @@ poponnx::DeviceType convertDeviceType(poplar::TargetType targetType) {
 }
 
 DevicexManager::DevicexManager() {
-  DeviceManager::getDeviceManager().registerDeviceProvider(this);
+  DeviceManager::createDeviceManager().registerDeviceProvider(this);
 }
 
 void DevicexManager::enumerate(
     std::vector<std::unique_ptr<poponnx::DeviceInfo>> &devices) {
 
-  auto deviceManager = poplar::DeviceManager::getDeviceManager();
+  auto deviceManager = poplar::DeviceManager::createDeviceManager();
   std::vector<poplar::Device> popdevices = deviceManager.getDevices();
 
   for (auto &device : popdevices) {

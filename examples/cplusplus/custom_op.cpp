@@ -155,7 +155,8 @@ auto main(int argc, char **argv) -> int {
       {},
       poponnx::Patterns({poponnx::PatternType::PREUNIREPL}));
 
-  auto cpuDevice = poponnx::DeviceManager::getDeviceManager().createCpuDevice();
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
   session->setDevice(*cpuDevice);
 
   // prepare the anchors

@@ -4,7 +4,7 @@
 
 namespace poponnx {
 
-DeviceManager &DeviceManager::getDeviceManager() {
+DeviceManager &DeviceManager::createDeviceManager() {
   static DeviceManager deviceManager;
   return deviceManager;
 }

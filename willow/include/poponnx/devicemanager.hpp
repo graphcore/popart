@@ -85,7 +85,7 @@ public:
   /** Accessor for the device manager
    * \return A reference to the DeviceManager
    */
-  static DeviceManager &getDeviceManager();
+  static DeviceManager &createDeviceManager();
 
   /** Used to register a device provider
    * \param provider A provider

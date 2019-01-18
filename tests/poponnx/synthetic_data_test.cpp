@@ -59,7 +59,8 @@ BOOST_AUTO_TEST_CASE(SytheticData_False) {
       {},
       Patterns({poponnx::PatternType::POSTNREPL}));
 
-  auto cpuDevice = poponnx::DeviceManager::getDeviceManager().createCpuDevice();
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
 
   session->setDevice(*cpuDevice);
   session->prepareDevice();
@@ -113,7 +114,8 @@ BOOST_AUTO_TEST_CASE(SytheticData_True) {
       options,
       Patterns({poponnx::PatternType::POSTNREPL}));
 
-  auto cpuDevice = poponnx::DeviceManager::getDeviceManager().createCpuDevice();
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
 
   session->setDevice(*cpuDevice);
   session->prepareDevice();

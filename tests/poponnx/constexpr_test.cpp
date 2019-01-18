@@ -218,7 +218,8 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
       {},
       poponnx::Patterns({poponnx::PatternType::POSTNREPL}));
 
-  auto cpuDevice = poponnx::DeviceManager::getDeviceManager().createCpuDevice();
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
   session->setDevice(*cpuDevice);
 
   // prepare the anchors
@@ -293,7 +294,8 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
       {},
       poponnx::Patterns({poponnx::PatternType::POSTNREPL}));
 
-  auto cpuDevice = poponnx::DeviceManager::getDeviceManager().createCpuDevice();
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
   session->setDevice(*cpuDevice);
 
   // prepare the anchors
