@@ -206,12 +206,22 @@ Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
     wuConvOptions.options[it.first]  = it.second;
   }
 
-  fwdConvOptions.options["pass"] = "TRAINING_FWD";
+  if (ir.getExecutionMode() == Ir::ExecutionMode::TRAINING) {
+    fwdConvOptions.options["pass"] = "TRAINING_FWD";
+  } else {
+    fwdConvOptions.options["pass"] = "INFERENCE_FWD";
+  }
+
   bwdConvOptions.options["pass"] = "TRAINING_BWD";
   wuConvOptions.options["pass"]  = "TRAINING_WU";
 
   // Not sure what these options should be
-  fwdMmOptions.set("fullyConnectedPass", "TRAINING_FWD");
+  if (ir.getExecutionMode() == Ir::ExecutionMode::TRAINING) {
+    fwdMmOptions.set("fullyConnectedPass", "TRAINING_FWD");
+  } else {
+    fwdMmOptions.set("fullyConnectedPass", "INFERENCE_FWD");
+  }
+
   bwdMmLhsOptions.set("fullyConnectedPass", "TRAINING_BWD");
   bwdMmRhsOptions.set("fullyConnectedPass", "TRAINING_WU");
 
