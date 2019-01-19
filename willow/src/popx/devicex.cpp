@@ -563,6 +563,15 @@ template <typename T> void Devicex::setInitVal(Tensor *tensor) {
                           tensor->info.nelms()));
 }
 
+// Using specialised poplar function for setting init val for FLOAT16
+void Devicex::setInitValHalf(Tensor *tensor) {
+  masterGraph().setInitialValueHalf(
+      tensors.get(tensor->id),
+      poplar::ArrayRef<uint16_t>(
+          static_cast<const uint16_t *>(tensor->tensorData()->data()),
+          tensor->info.nelms()));
+}
+
 PriTask Devicex::setInitTensorValTask(Tensor *tensor) {
   // See T6254. Currently we just use setInitialValue for all constant tensors
   auto f = [this, tensor]() {
@@ -578,8 +587,8 @@ PriTask Devicex::setInitTensorValTask(Tensor *tensor) {
       break;
     }
     case DataType::FLOAT16: {
-      throw error("setInitTensorValTask not implemented for FLOAT16. To "
-                  "implement, use Graph::setInitialValueHalf");
+      setInitValHalf(tensor);
+      break;
     }
 
     case DataType::UNDEFINED:

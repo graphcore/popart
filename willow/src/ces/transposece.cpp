@@ -43,7 +43,7 @@ std::vector<char> transpose(Tensor *in0, const Shape &perm) {
     }
 
     // Move the value
-    output.at(output.ndindices.flatten(pindices)) = data0.at(i);
+    output.at(i) = data0.at(output.ndindices.flatten(pindices));
   }
 
   return v_out;
@@ -58,9 +58,21 @@ void ConstExprTranspose::insertOutput() {
 
   if (perm.empty()) {
     // Default is to reverse the input shape
-    for (int64_t i = in0->info.shape().size() - 1; i >= 0; i--) {
+    for (int64_t i = in0->info.rank() - 1; i >= 0; i--) {
       perm.push_back(i);
     }
+  }
+
+  // verify that perm is a valid permutation
+  std::vector<int> present(in0->info.rank(), 0);
+  for (auto &x : perm) {
+    if (x >= 0 && x < in0->info.rank()) {
+      present[x] = 1;
+    }
+  }
+  if (!std::accumulate(
+          present.begin(), present.end(), 1, std::multiplies<int>())) {
+    throw error("invalid permutation in ConstExprTranspose");
   }
 
   // Determine the output shape
@@ -76,6 +88,9 @@ void ConstExprTranspose::insertOutput() {
     data_ = transpose<int>(in0, perm);
   } else if (in0->info.dataType() == DataType::FLOAT) {
     data_ = transpose<float>(in0, perm);
+  } else if (in0->info.dataType() == DataType::FLOAT16) {
+    // any type which is 16-bits will suffice here, using uint16_t
+    data_ = transpose<uint16_t>(in0, perm);
   } else {
     throw error("Currently ConstExprTranspose does not support type {}",
                 in0->info.data_type());

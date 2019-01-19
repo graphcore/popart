@@ -264,6 +264,7 @@ private:
   bool useSyntheticData();
 
   template <typename T> void setInitVal(Tensor *tensor);
+  void setInitValHalf(Tensor *tensor);
 };
 
 } // namespace popx

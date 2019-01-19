@@ -48,6 +48,9 @@ void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
   // TODO: Consider moving this into the op and register a constexprutil
   // function. See T5993
 
+  std::string nodeInfoStr = '`' + node.name() + "' (" + node.op_type() + ')';
+  logging::ir::debug("Processing Node " + nodeInfoStr + " in ConstExprUtil");
+
   if (node.op_type() == "Constant") {
     TensorId name = node.output(0);
     // We assume that a tensor coming from a Constant Node should

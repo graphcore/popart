@@ -176,6 +176,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
   BOOST_CHECK(floatWData[K * N - 1] == static_cast<float>(K + N));
 }
 
+// more constexpr transpose tests in fp16_test.py
 BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
 
   Shape inShape = {2, 5};
@@ -246,7 +247,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
   poponnx::logging::ir::err("input : {}", inData);
   poponnx::logging::ir::err("output : {}", outData);
 
-  int expectedOutput[10] = {1, 6, 2, 7, 3, 8, 4, 9, 5, 10};
+  int expectedOutput[10] = {1, 3, 5, 7, 9, 2, 4, 6, 8, 10};
   BOOST_CHECK(std::equal(&expectedOutput[0],
                          &expectedOutput[10],
                          &rawOutputData[0]) == true);
@@ -323,8 +324,9 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
   poponnx::logging::ir::err("input : {}", inData);
   poponnx::logging::ir::err("output : {}", outData);
 
-  int expectedOutput[24] = {1, 7,  13, 19, 2, 8,  14, 20, 3, 9,  15, 21,
-                            4, 10, 16, 22, 5, 11, 17, 23, 6, 12, 18, 24};
+  int expectedOutput[24] = {1, 5, 9,  13, 17, 21, 2, 6, 10, 14, 18, 22,
+                            3, 7, 11, 15, 19, 23, 4, 8, 12, 16, 20, 24};
+
   BOOST_CHECK(std::equal(&expectedOutput[0],
                          &expectedOutput[24],
                          &rawOutputData[0]) == true);
