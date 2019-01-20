@@ -125,26 +125,31 @@ public:
   // Why is this not constant? For one, nOps counter increments.
   virtual std::vector<std::unique_ptr<Op>> getGradOps();
 
-  // Can the input at inIndex be modified inplace to
-  // become the output at index 0?
+  // What are the variants of this Op (if any) which can
+  // modify / alias the inputs at the given indices?
   // This function doesn't check for anchor violations
   // or topological order violations
-  virtual bool hasInplaceVariant(InIndex) const;
+  virtual std::vector<OperatorIdentifier>
+  inplaceVariants(const std::vector<InIndex> &) const;
 
-  // Can the inputs at inIndices be modified inplace to
-  // become the output at index 0?
-  // This function doesn't check for anchor violations
-  // or topological order violations
-  virtual bool hasInplaceVariant(const std::vector<InIndex> &) const;
+  virtual std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &,
+                                                const std::vector<InIndex> &);
 
-  // get the inplace Op described above
-  virtual std::unique_ptr<Op> getInplaceVariant(InIndex);
+  // for each InIndex, between what Region of the input and
+  // what Region of the output will there be an aliasing?
+  virtual std::unique_ptr<RegionIOMap>
+  aliases(const std::map<InIndex, Shape> &) const;
 
-  // get the inplace Op described above
-  virtual std::unique_ptr<Op> getInplaceVariant(const std::vector<InIndex> &);
+  // for each InIndex, what Region of the input will
+  // be modified? In general, this is a subset of regions
+  // returned by "aliases". Note that this function does not
+  // use its own input tensor shapes.
+  virtual std::map<InIndex, Region>
+  modifies(const std::map<InIndex, Shape> &) const;
 
-  // Does this Op modify the input at index InIndex? Default: No.
-  virtual bool modifies(InIndex) const;
+  // Does this Op modify any of the input at index InIndex? This
+  // function uses shape of its input tensor at index InIndex
+  bool modifies(InIndex) const;
 
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
   // dT is the edge-gradient of a tensor T which was the input

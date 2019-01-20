@@ -54,176 +54,39 @@ namespace poponnx {
 // consumers of the tensor it in-places.
 // Partial success in-placing :|
 
-std::vector<const Tensor *> Inplace0::touches(Op *op) const {
+// what is touched? The output, and all the inputs at the target indices
+std::vector<const Tensor *> Inplace::touches(Op *op) const {
+
   // Should reconsider this. If we ensure that all returns
   // to host will be done after all inplace consumers of a tensor have
   // run, we can set this up such that the output tensor is not
   // touched (where the defn of touched would then be slightly different)
-  return {op->input->tensor(0), op->output->tensor(0)};
+
+  std::vector<const Tensor *> touched = {op->output->tensor(0)};
+  auto inIndices                      = targetInIndices(op);
+  touched.reserve(inIndices.size() + 1);
+  for (auto index : inIndices) {
+    touched.push_back(op->input->tensor(index));
+  }
+  return touched;
 }
 
-bool Inplace0::apply(Op *op) const {
-  auto input_tensor  = op->input->tensor(0);
-  auto output_tensor = op->output->tensor(0);
-  auto ir            = op->pir;
+bool Inplace::apply(Op *op) const {
+  auto output_tensor             = op->output->tensor(0);
+  auto ir                        = op->pir;
+  std::vector<InIndex> inIndices = targetInIndices(op);
 
-  // Create the inplace op variant
-  std::unique_ptr<Op> up_inplaceOp = op->getInplaceVariant(0);
-  Op *inplaceOp                    = up_inplaceOp.get();
-  ir->moveIntoIr(std::move(up_inplaceOp));
-
-  // Remap the tensors from `op` to `inplaceOp`
-  for (auto index_tensor : op->input->tensorMap()) {
-    Tensor *in_tensor = index_tensor.second;
-
-    in_tensor->consumers.increment(inplaceOp);
-    ir->topoCons->transfer(op, inplaceOp);
-    in_tensor->consumers.decrement(op);
+  if (op->inplaceVariants(inIndices).size() == 0) {
+    throw error("Cannot call Inplace::apply for {} as no good variants",
+                op->str());
   }
 
-  ir->topoCons->setFinalConsumer(input_tensor, inplaceOp);
-  output_tensor->resetProducer(inplaceOp);
+  // Create the inplace op variant, using the first one for now TODO
+  auto identifier = op->inplaceVariants(inIndices)[0];
+  std::unique_ptr<Op> up_inplaceOp =
+      op->getInplaceVariant(identifier, inIndices);
 
-  inplaceOp->input->insert(0, input_tensor);
-  inplaceOp->output->insert(0, output_tensor);
-
-  logging::info("Inplace0::apply : replace {}({}) with {}({})",
-                op->id,
-                op->opid,
-                inplaceOp->id,
-                inplaceOp->opid);
-
-  ir->eraseOp(op->id);
-  return true;
-}
-
-bool Inplace0::matches(Op *op) const {
-
-  if (!op->input->hasIndex(0)) {
-    return false;
-  }
-
-  if (!op->output->hasIndex(0)) {
-    return false;
-  }
-
-  if (!op->hasInplaceVariant(0)) {
-    return false;
-  }
-
-  // the tensor which we're proposing
-  // to perform an in-place modification on
-  const Tensor *t_inplace = op->input->tensor(0);
-
-  // Consider an Op which does
-  // C <- gamma*A + B
-  // and inplace version,
-  // C *= gamma and then C += B.
-  // if A = B, then the inplace is not valid, as A <- 2*gamma*A
-  // For certain ops it is fine if the input is repeated (Add),
-  // but for now we will just say that this is not in-placeable.
-  if (t_inplace->consumers.n(op) > 1) {
-    return false;
-  }
-
-  // if it's not topologically possible to perform the proposed in-place
-  // op after all current ops consuming the tensor, we cannot proceed.
-  // see Example 2 above.
-
-  // if the tensor to be inplaced only has 1 consumer, we're good
-  std::vector<Op *> allConsumers = t_inplace->consumers.getOps();
-  if (allConsumers.size() == 1) {
-    return true;
-  }
-
-  // if we are going to in-place the tensor, these are
-  // the additional topological constraints we need:
-  OpsBeforeKey gCons;
-  gCons[op] = {};
-  for (auto before : t_inplace->consumers.getOps()) {
-    if (before != op) {
-      gCons[op].push_back(before);
-    }
-  }
-
-  if (!op->pir->isSchedulable(gCons)) {
-    return false;
-  }
-
-  return true;
-}
-
-bool InplaceAll::matches(Op *op) const {
-  std::vector<InIndex> inIndices;
-
-  for (auto pair : op->input->tensorMap()) {
-    inIndices.push_back(pair.first);
-  }
-
-  if (!op->hasInplaceVariant(inIndices)) {
-    return false;
-  }
-
-  for (auto pair : op->input->tensorMap()) {
-    const Tensor *t = op->input->tensor(pair.first);
-
-    if (t->consumers.n(op) > 1) {
-      logging::info(
-          "InplaceAll::matches : inplace candidate {} rejected due to "
-          "aliasing input {}",
-          op->name(),
-          pair.first);
-      return false;
-    }
-
-    if (t->consumers.getOps().size() != 1) {
-      OpsBeforeKey gCons;
-      gCons[op] = {};
-
-      for (auto before : t->consumers.getOps()) {
-        if (before != op) {
-          gCons[op].push_back(before);
-        }
-      }
-
-      if (!op->pir->isSchedulable(gCons)) {
-        logging::pattern::debug(
-            "InplaceAll::matches : inplace candidate {} rejected due to "
-            "schedulable conflict",
-            op->name());
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
-std::vector<const Tensor *> InplaceAll::touches(Op *op) const {
-  std::vector<const Tensor *> result = {op->output->tensor(0)};
-  result.reserve(op->input->n() + 1);
-
-  for (auto pair : op->input->tensorMap()) {
-    const Tensor *t = op->input->tensor(pair.first);
-
-    result.push_back(t);
-  }
-
-  return result;
-}
-
-bool InplaceAll::apply(Op *op) const {
-  auto output_tensor = op->output->tensor(0);
-  auto ir            = op->pir;
-
-  std::vector<InIndex> inIndices;
-  for (auto pair : op->input->tensorMap()) {
-    inIndices.push_back(pair.first);
-  }
-
-  // Create the inplace op variant
-  std::unique_ptr<Op> up_inplaceOp = op->getInplaceVariant(inIndices);
-  Op *inplaceOp                    = up_inplaceOp.get();
+  Op *inplaceOp = up_inplaceOp.get();
   ir->moveIntoIr(std::move(up_inplaceOp));
 
   // Remap the tensors from `op` to `inplaceOp`
@@ -239,7 +102,8 @@ bool InplaceAll::apply(Op *op) const {
 
   for (auto index : inIndices) {
     Tensor *input_tensor = op->input->tensor(index);
-    ir->topoCons->setFinalConsumer(input_tensor, inplaceOp);
+    auto newCons = ir->topoCons->finalConsumerCons(input_tensor, inplaceOp);
+    ir->topoCons->insert(newCons);
     inplaceOp->input->insert(index, input_tensor);
   }
 
@@ -250,6 +114,67 @@ bool InplaceAll::apply(Op *op) const {
                           inplaceOp->opid);
 
   inplaceOp->pir->eraseOp(op->id);
+  return true;
+}
+
+bool Inplace::matches(Op *op) const {
+  std::vector<InIndex> inIndices = targetInIndices(op);
+
+  if (op->inplaceVariants(inIndices).size() == 0) {
+    return false;
+  }
+
+  if (!op->output->hasIndex(0)) {
+    return false;
+  }
+
+  // if it's not topologically possible to perform the proposed in-place
+  // op after all current ops consuming the tensor, we cannot proceed.
+  // see Example 2 above.
+  for (InIndex index : inIndices) {
+
+    const Tensor *t = op->input->tensor(index);
+
+    // Consider an Op which does
+    // C <- gamma*A + B
+    // and inplace version,
+    // C *= gamma and then C += B.
+    // if A = B, then the inplace is not valid, as A <- 2*gamma*A
+    // For certain ops it is fine if the input is repeated (Add),
+    // but for now we will just say that this is not in-placeable.
+    if (t->consumers.n(op) > 1) {
+      logging::info(
+          "InplaceAll::matches : inplace candidate {} rejected due to "
+          "aliasing input {}",
+          op->name(),
+          t->str());
+      return false;
+    }
+
+    if (t->consumers.getOps().size() != 1) {
+      OpsBeforeKey gCons;
+      gCons[op] = {};
+
+      for (auto before : t->consumers.getOps()) {
+        if (before != op) {
+          gCons[op].push_back(before);
+        }
+      }
+
+      // we here are using the fact that if
+      // 1) is a sorting with A->C
+      // 2) is a sorting with B->C
+      // then there is either a sorting with A->B->C or one with B->A->C
+
+      if (!op->pir->isSchedulable(gCons)) {
+        logging::pattern::debug(
+            "InplaceAll::matches : inplace candidate {} rejected due to "
+            "scheduling conflict",
+            op->name());
+        return false;
+      }
+    }
+  }
 
   return true;
 }

@@ -1,7 +1,9 @@
 #include <onnx/onnx_pb.h>
 #include <spdlog/fmt/fmt.h>
 #include <poponnx/ir.hpp>
+#include <poponnx/region.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/util.hpp>
 
 // The layers:
 #include <poponnx/op.hpp>
@@ -29,9 +31,21 @@ const TensorInfo &Op::outInfo(OutIndex index) const {
   return output->tensor(index)->info;
 }
 
-bool Op::modifies(InIndex) const {
-  // default for ops is: No, it does not modify the input
-  return false;
+// default : no input region is aliased. Modifying
+// inplace ops need to override this function
+std::map<InIndex, Region> Op::modifies(const std::map<InIndex, Shape> &) const {
+  return {};
+}
+
+// default : no aliasing between input and output
+std::unique_ptr<RegionIOMap>
+Op::aliases(const std::map<InIndex, Shape> &) const {
+  return std::unique_ptr<RegionIOMap>(new RegionIOMap({}));
+}
+
+bool Op::modifies(InIndex inIndex) const {
+  auto M = modifies(input->getIndexShapeMap());
+  return M.find(inIndex) != M.end();
 }
 
 bool Op::isLossOp() const { return false; }
@@ -120,16 +134,20 @@ const std::map<int, int> &Op::gradOutToNonGradIn() const {
   throw error("Op {} cannot get `grad out to non grad in'", opid);
 }
 
-bool Op::hasInplaceVariant(InIndex) const { return false; }
-
-bool Op::hasInplaceVariant(const std::vector<InIndex> &) const { return false; }
-
-std::unique_ptr<Op> Op::getInplaceVariant(InIndex) {
-  throw error("Op {} cannot get an inplace Op", opid);
+std::vector<OperatorIdentifier>
+Op::inplaceVariants(const std::vector<InIndex> &) const {
+  return {};
 }
 
-std::unique_ptr<Op> Op::getInplaceVariant(const std::vector<InIndex> &) {
-  throw error("Op {} cannot get an inplace Op", opid);
+std::unique_ptr<Op> Op::getInplaceVariant(const OperatorIdentifier &operator_id,
+                                          const std::vector<InIndex> &indices) {
+
+  std::stringstream ss;
+  appendSequence(ss, indices);
+  throw error("Op {} cannot return inplace variant {} for InIndices {}",
+              opid,
+              operator_id,
+              ss.str());
 }
 
 bool Op::readyToCreateGradients(std::set<int> &s) const {

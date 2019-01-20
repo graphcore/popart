@@ -19,11 +19,12 @@ public:
 
   int64_t getAxis() const;
 
-  bool hasInplaceVariant(InIndex) const override;
-  bool hasInplaceVariant(const std::vector<InIndex> &inIndices) const override;
+  // note that this is not final, ConcatInplaceOp overrides it
+  std::vector<OperatorIdentifier>
+  inplaceVariants(const std::vector<InIndex> &) const override;
 
-  std::unique_ptr<Op> getInplaceVariant(InIndex) override;
-  std::unique_ptr<Op> getInplaceVariant(const std::vector<InIndex> &) override;
+  std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &,
+                                        const std::vector<InIndex> &) override;
 
   static InIndex getInIndex(InIndex index) { return index; }
   static OutIndex getOutIndex() { return 0; }
@@ -40,11 +41,21 @@ private:
 class ConcatInplaceOp : public ConcatOp {
 public:
   ConcatInplaceOp(ConcatOp *concat_op);
-
   std::unique_ptr<Op> clone() const override;
 
-  bool hasInplaceVariant(InIndex) const override;
-  bool hasInplaceVariant(const std::vector<InIndex> &) const override;
+  std::vector<OperatorIdentifier>
+  inplaceVariants(const std::vector<InIndex> &) const final {
+    return {};
+  }
+
+  std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &o,
+                                        const std::vector<InIndex> &i) final {
+    // this throws an error
+    return Op::getInplaceVariant(o, i);
+  }
+
+  std::unique_ptr<RegionIOMap>
+  aliases(const std::map<InIndex, Shape> &) const final;
 };
 
 class ConcatGradOp : public Op {

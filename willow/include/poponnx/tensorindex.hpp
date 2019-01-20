@@ -22,7 +22,7 @@ public:
   // indicesMap.
   void erase(int);
   void clear();
-  // get the Tensor at at index
+  // get the Tensor at index
   Tensor *tensor(int);
   const Tensor *tensor(int) const;
   // The id of the Tensor at an index
@@ -43,6 +43,8 @@ public:
   std::vector<TensorId> getSerialised() const;
   // returns the longest TensorId of all Tensors in indices_map
   int maxIdLength() const;
+  // returns the shapes of the tensors at the indices
+  std::map<int, Shape> getIndexShapeMap();
 
 private:
   std::map<int, Tensor *> tensor_map;

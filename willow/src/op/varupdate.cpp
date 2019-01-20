@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/varupdate.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/region.hpp>
 #include <poponnx/tensornames.hpp>
 
 namespace poponnx {
@@ -18,8 +19,10 @@ void VarUpdateOp::setup() {
   // no output tensors to set shapes for
 }
 
-bool VarUpdateOp::modifies(InIndex in_index) const {
-  return in_index == getVarInIndex();
+std::map<InIndex, Region>
+VarUpdateOp::modifies(const std::map<InIndex, Shape> &) const {
+  // Modifies the whole of the Var Tensor
+  return {{getVarInIndex(), {true}}};
 }
 
 SGDVarUpdateOp::SGDVarUpdateOp(TensorId varId_, Ir *_pir)

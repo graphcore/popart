@@ -16,17 +16,13 @@ namespace poponnx {
 
 class TopoCons {
 public:
-  // insert topological constraints such that "last"
-  // is guaranteed to run after all other consumers
-  // of Tensor "consumed"
-  void setFinalConsumer(const Tensor *consumed, Op *last);
-
   // remove all topological constraints with op in it
   void remove(Op *op);
 
   // insert the constraint "before -> after"
   // if already present, do nothing
   void insert(Op *before, Op *after);
+  void insert(const OpsBeforeKey &);
 
   // replace all topological constraints involving "beforeTransfer"
   // with "afterTransfer", on both ends of topological constraints
@@ -35,6 +31,11 @@ public:
   bool contains(Op *before, Op *after) const;
   std::vector<Op *> getAfters(Op *before) const;
   std::vector<Op *> getBefores(Op *after) const;
+
+  // required topological constraints such that "last"
+  // is guaranteed to run after all other consumers
+  // of Tensor "consumed"
+  OpsBeforeKey finalConsumerCons(const Tensor *consumed, Op *last) const;
 
 private:
   // for all val : set, "key -> val"

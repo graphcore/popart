@@ -31,9 +31,10 @@ void Pattern::initialise(std::string pattern_name_) {
   pattern_name = pattern_name_;
 }
 
-std::unique_ptr<Op> Pattern::makeReplacementOp(const OperatorIdentifier &opid,
-                                               Op *oldOp,
-                                               const Attributes &attr) const {
+std::unique_ptr<Op>
+Pattern::makeReplacementOp(const OperatorIdentifier &operator_id,
+                           Op *oldOp,
+                           const Attributes &attr) const {
   // Context from original op to be transfered to replacement ops
   auto ir   = oldOp->pir;
   auto name = getReplacementOpName(oldOp);
@@ -49,17 +50,17 @@ std::unique_ptr<Op> Pattern::makeReplacementOp(const OperatorIdentifier &opid,
   }
 
   // Create replacement Op with new attributes
-  return OpManager::createOp(opid, ir, name, newAttrs);
+  return OpManager::createOp(operator_id, ir, name, newAttrs);
 }
 
-Op *Pattern::makeReplacementOpInIr(const OperatorIdentifier &opid,
+Op *Pattern::makeReplacementOpInIr(const OperatorIdentifier &operator_id,
                                    Op *oldOp,
                                    const Attributes &attr) const {
   auto ir = oldOp->pir;
 
   // Create replacement Op with new attributes and
   // move into Ir
-  std::unique_ptr<Op> newOpUp = makeReplacementOp(opid, oldOp, attr);
+  std::unique_ptr<Op> newOpUp = makeReplacementOp(operator_id, oldOp, attr);
   Op *newOp                   = newOpUp.get();
   ir->moveIntoIr(std::move(newOpUp));
 

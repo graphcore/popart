@@ -63,6 +63,9 @@ class InputMapWrapper;
 class OutputMapWrapper;
 class Vertex;
 class TopoCons;
+class Region;
+class RegionIO;
+class RegionIOMap;
 enum class TensorType;
 
 // A mapping from tensor name to the layout on each tile

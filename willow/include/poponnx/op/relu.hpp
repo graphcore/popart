@@ -18,8 +18,11 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
-  bool hasInplaceVariant(InIndex) const final;
-  std::unique_ptr<Op> getInplaceVariant(InIndex) final;
+  std::vector<OperatorIdentifier>
+  inplaceVariants(const std::vector<InIndex> &) const final;
+
+  std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &,
+                                        const std::vector<InIndex> &) override;
 };
 
 class ReluInplaceOp : public Op {
@@ -27,7 +30,10 @@ public:
   ReluInplaceOp(ReluOp *);
   void setup() final;
   // This in-place Op modifies its unique input at InIndex 0
-  bool modifies(InIndex) const final;
+  std::map<InIndex, Region>
+  modifies(const std::map<InIndex, Shape> &) const final;
+  std::unique_ptr<RegionIOMap>
+  aliases(const std::map<InIndex, Shape> &) const final;
 };
 
 // takes output of ReluOp as input and not the input of ReluOp

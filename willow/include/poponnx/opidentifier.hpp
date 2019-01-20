@@ -48,11 +48,13 @@ struct OperatorIdentifier {
   NumInputs numInputs;
   int numOutputs;
 
-  bool operator==(const OperatorIdentifier &rhs) {
+  bool operator==(const OperatorIdentifier &rhs) const {
     return (domain == rhs.domain && type == rhs.type && version == rhs.version);
   }
 
-  bool operator!=(const OperatorIdentifier &rhs) { return !(*this == rhs); }
+  bool operator!=(const OperatorIdentifier &rhs) const {
+    return !(*this == rhs);
+  }
 };
 
 // The following does not work as we are in the poponnx namesapace >>

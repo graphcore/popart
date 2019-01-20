@@ -4,27 +4,31 @@
 
 namespace poponnx {
 
-void TopoCons::setFinalConsumer(const Tensor *tensor, Op *last) {
+OpsBeforeKey TopoCons::finalConsumerCons(const Tensor *tensor, Op *last) const {
 
   if (tensor->consumers.n(last) == 0) {
     throw error("Cannot set " + last->str() + " as last consumer of " +
                 tensor->id + ", as it is not a consumer.");
   }
 
-  for (Op *op : tensor->consumers.getOps()) {
-    if (op != last) {
-      // insert the topological constraint, op -> last
-      insert(op, last);
-    }
-  }
+  OpsBeforeKey ops;
+  ops[last] = {};
+  ops[last].reserve(tensor->consumers.getMap().size());
 
   for (Op *op : tensor->consumers.getOps()) {
     if (op != last) {
-      if (contains(last, op)) {
-        throw error("Failure setting " + last->str() + " to last: " +
-                    op->str() + " is constrained to be before. " +
-                    "setTopoLast does not " + "remove existing constraints.");
-      }
+      ops[last].push_back(op);
+    }
+  }
+  return ops;
+}
+
+void TopoCons::insert(const OpsBeforeKey &ops) {
+  for (auto &after_befores : ops) {
+    Op *after                        = after_befores.first;
+    const std::vector<Op *> &befores = after_befores.second;
+    for (auto &before : befores) {
+      insert(before, after);
     }
   }
 }
@@ -96,7 +100,24 @@ void TopoCons::remove(Op *op) {
 
 // insert the topological constraint before -> after
 void TopoCons::insert(Op *before, Op *after) {
-  auto found = valsAfter.find(before);
+  if (before == after) {
+    throw error("Cannot have \"a -> a\" topological constraint");
+  }
+
+  // check that there is no edge "after -> before"
+  auto found = valsAfter.find(after);
+  if (found != valsAfter.end()) {
+    if (found->second.find(before) != found->second.end()) {
+      throw error(
+          "Constraint \"{}->{}\" already present, cannot add \"{}->{}\"",
+          after->str(),
+          before->str(),
+          before->str(),
+          after->str());
+    }
+  }
+
+  found = valsAfter.find(before);
   if (found != valsAfter.end()) {
     found->second.insert(after);
   } else {

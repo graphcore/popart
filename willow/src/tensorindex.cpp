@@ -7,6 +7,20 @@ namespace poponnx {
 
 TensorId TensorIndexMap::id(int index) const { return tensor(index)->id; }
 
+std::map<int, Shape> TensorIndexMap::getIndexShapeMap() {
+  auto &M = tensorMap();
+  std::map<int, Shape> outMap;
+  for (auto index_tensor : M) {
+    auto index  = index_tensor.first;
+    auto tensor = index_tensor.second;
+    if (!tensor->info.isSet()) {
+      throw error("Tensor info not set in TensorIndexMap::getIndexShapeMap()");
+    }
+    outMap[index] = tensor->info.shape();
+  }
+  return outMap;
+}
+
 TensorIndexMap::~TensorIndexMap() = default;
 
 std::vector<TensorId> TensorIndexMap::getSerialised() const {

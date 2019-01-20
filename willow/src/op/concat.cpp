@@ -3,10 +3,34 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/concat.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/region.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
 
 namespace poponnx {
+
+std::unique_ptr<RegionIOMap>
+ConcatInplaceOp::aliases(const std::map<InIndex, Shape> &shapesToConcat) const {
+
+  // we should do a test here that the
+  // shapes above can be concatenated
+  // and a test that the indices are contiguous from 0
+
+  std::map<InIndex, RegionIO> aliases;
+  for (auto index_shape : shapesToConcat) {
+    auto index = index_shape.first;
+
+    // the whole region of the input will be aliased,
+    Region inRegion{true};
+
+    // and for now we'll say that the whole of the output is aliased to
+    // the input slice, although we can improve this in the future
+    Region outRegion{true};
+
+    aliases.emplace(std::pair<InIndex, RegionIO>(index, {inRegion, outRegion}));
+  }
+  return std::unique_ptr<RegionIOMap>(new RegionIOMap(std::move(aliases)));
+}
 
 ConcatOp::ConcatOp(const OperatorIdentifier &_opid,
                    Ir *_ir,
@@ -27,51 +51,41 @@ std::unique_ptr<Op> ConcatOp::clone() const {
   return make_unique<ConcatOp>(*this);
 }
 
+std::unique_ptr<Op>
+ConcatOp::getInplaceVariant(const OperatorIdentifier &operator_id,
+                            const std::vector<InIndex> &inIndices) {
+
+  auto validVariants = inplaceVariants(inIndices);
+
+  if (std::find(validVariants.begin(),
+                validVariants.end(),
+                Onnx::CustomOperators::ConcatInplace) != validVariants.end()) {
+    return make_unique<ConcatInplaceOp>(this);
+  }
+
+  // catch remaining cases and throw an error
+  return Op::getInplaceVariant(operator_id, inIndices);
+}
+
 std::unique_ptr<Op> ConcatInplaceOp::clone() const {
   return make_unique<ConcatInplaceOp>(*this);
 }
 
 int64_t ConcatOp::getAxis() const { return axis; }
 
-bool ConcatOp::hasInplaceVariant(InIndex index) const {
-  const std::vector<InIndex> inIndices = {index};
-
-  return hasInplaceVariant(inIndices);
-}
-
-bool ConcatOp::hasInplaceVariant(const std::vector<InIndex> &inIndices) const {
+std::vector<OperatorIdentifier>
+ConcatOp::inplaceVariants(const std::vector<InIndex> &inIndices) const {
   if (inIndices.size() != input->n()) {
-    return false;
+    return {};
   }
 
   for (auto index : inIndices) {
     if (!input->hasIndex(index)) {
-      return false;
+      return {};
     }
   }
 
-  return true;
-}
-
-bool ConcatInplaceOp::hasInplaceVariant(InIndex) const { return false; }
-bool ConcatInplaceOp::hasInplaceVariant(const std::vector<InIndex> &) const {
-  return false;
-}
-
-std::unique_ptr<Op> ConcatOp::getInplaceVariant(InIndex index) {
-  const std::vector<InIndex> inIndices = {index};
-
-  return getInplaceVariant(inIndices);
-}
-
-std::unique_ptr<Op>
-ConcatOp::getInplaceVariant(const std::vector<InIndex> &inIndices) {
-  if (!hasInplaceVariant(inIndices)) {
-    throw error("ConcatOp::getInplaceVariant : Given indices cannot be used to "
-                "create the inplace op");
-  }
-
-  return make_unique<ConcatInplaceOp>(this);
+  return {Onnx::CustomOperators::ConcatInplace};
 }
 
 void ConcatOp::setup() {
