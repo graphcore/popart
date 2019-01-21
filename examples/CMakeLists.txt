@@ -19,6 +19,7 @@ add_custom_command(TARGET poponnx_run_examples
                    ${CMAKE_BINARY_DIR}/examples/
 )
 
+## python examples
 function(add_poponnx_py_example name)
   message(STATUS
     "Adding example '${name}'")
@@ -28,8 +29,32 @@ function(add_poponnx_py_example name)
                      WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 endfunction()
 
+function(add_poponnx_py_modelzoo_example name urlbase)
+  message(STATUS
+    "Adding example '${name}'")
+  add_custom_command(TARGET poponnx_run_examples
+                     COMMAND bash ${CMAKE_BINARY_DIR}/examples/run_example.sh
+                      ${CMAKE_CURRENT_SOURCE_DIR}/python/model_zoo_import.py
+                      ${urlbase}/${name}.tar.gz
+                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+endfunction()
+
 add_poponnx_py_example(simple_addition)
 
+set(urlbase "https://s3.amazonaws.com/download.onnx/models/opset_9")
+#add_poponnx_py_modelzoo_example(bvlc_googlenet               ${urlbase})
+#add_poponnx_py_modelzoo_example(bvlc_alexnet                 ${urlbase})
+#add_poponnx_py_modelzoo_example(bvlc_reference_caffenet      ${urlbase})
+#add_poponnx_py_modelzoo_example(bvlc_reference_rcnn_ilsvrc13 ${urlbase})
+#add_poponnx_py_modelzoo_example(densenet121                  ${urlbase})
+#add_poponnx_py_modelzoo_example(inception_v2                 ${urlbase})
+#add_poponnx_py_modelzoo_example(resnet50                     ${urlbase})
+#add_poponnx_py_modelzoo_example(shufflenet                   ${urlbase})
+#add_poponnx_py_modelzoo_example(squeezenet                   ${urlbase})
+#add_poponnx_py_modelzoo_example(vgg19                        ${urlbase})
+
+
+## cpp examples
 set (CMAKE_CXX_STANDARD 11)
 
 function(add_poponnx_cpp_example name)
