@@ -180,10 +180,6 @@ public:
 
   std::vector<int64_t> getTensorShape(const TensorId id);
 
-  void convertInitializersToConstants(const std::vector<TensorId> &ids);
-
-  void convertAllFixedPointInitializersToConstants();
-
   void setAttribute(const std::string &attribute, boost::any value);
   void clearAttribute(const std::string &attribute);
 

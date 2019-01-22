@@ -738,14 +738,6 @@ std::vector<int64_t> Builder::getTensorShape(const TensorId id) {
   return impl_->getTensorShape(id);
 }
 
-void Builder::convertInitializersToConstants(const std::vector<TensorId> &ids) {
-  impl_->convertInitializersToConstants(ids);
-}
-
-void Builder::convertAllFixedPointInitializersToConstants() {
-  impl_->convertAllFixedPointInitializersToConstants();
-}
-
 void Builder::setAttribute(const std::string &attribute, boost::any value) {
   impl_->setAttribute(attribute, value);
 }

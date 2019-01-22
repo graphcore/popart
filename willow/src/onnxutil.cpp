@@ -233,5 +233,36 @@ onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename) {
   return modelProto;
 }
 
+void visitModelNodes(onnx::ModelProto &model,
+                     std::function<void(onnx::NodeProto &)> f) {
+  onnx::GraphProto &g = *model.mutable_graph();
+
+  for (unsigned node_i = 0; node_i < g.node_size(); ++node_i) {
+    auto ptr_node         = g.mutable_node(node_i);
+    onnx::NodeProto &node = *ptr_node;
+    f(node);
+  }
+}
+
+void visitModelInitializers(onnx::ModelProto &model,
+                            std::function<void(onnx::TensorProto &)> f) {
+  onnx::GraphProto &g = *model.mutable_graph();
+
+  for (unsigned ii = 0; ii < g.initializer_size(); ++ii) {
+    onnx::TensorProto &init = *g.mutable_initializer(ii);
+    f(init);
+  }
+}
+
+void visitModelValueInfos(onnx::ModelProto &model,
+                          std::function<void(onnx::ValueInfoProto &)> f) {
+  for (auto &vip : *model.mutable_graph()->mutable_output()) {
+    f(vip);
+  }
+  for (auto &vip : *model.mutable_graph()->mutable_input()) {
+    f(vip);
+  }
+}
+
 } // namespace onnxutil
 } // namespace poponnx

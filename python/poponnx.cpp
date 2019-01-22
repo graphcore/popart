@@ -5,6 +5,7 @@
 #include <poponnx/device.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/graphtransformer.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/numerics.hpp>
 #include <poponnx/op/l1.hpp>
@@ -343,6 +344,19 @@ PYBIND11_MODULE(poponnx_core, m) {
   py::enum_<Builder::ExecutionMode>(m, "ExecutionMode")
       .value("INFERENCE", Builder::ExecutionMode::INFERENCE)
       .value("TRAINING", Builder::ExecutionMode::TRAINING);
+
+  py::class_<GraphTransformer>(m, "GraphTransformer")
+      .def(py::init<const py::bytes &>(), py::arg("modelProtoOrFilename"))
+      .def("getModelProto",
+           [](const GraphTransformer &graphtransformer) {
+             return py::bytes(graphtransformer.getModelProto());
+           })
+      .def("convertFloatsToHalfs", &GraphTransformer::convertFloatsToHalfs)
+      .def("convertInitializersToConstants",
+           &GraphTransformer::convertInitializersToConstants,
+           py::arg("ids"))
+      .def("convertAllFixedPointInitializersToConstants",
+           &GraphTransformer::convertAllFixedPointInitializersToConstants);
 
   py::class_<Builder>(m, "BuilderCore")
       .def(py::init(&Builder::create))
@@ -748,11 +762,6 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("getOutputTensorIds", &Builder::getOutputTensorIds)
       .def("getValueTensorIds", &Builder::getValueTensorIds)
       .def("getTensorShape", &Builder::getTensorShape, py::arg("id"))
-      .def("convertInitializersToConstants",
-           &Builder::convertInitializersToConstants,
-           py::arg("ids"))
-      .def("convertAllFixedPointInitializersToConstants",
-           &Builder::convertAllFixedPointInitializersToConstants)
       .def("virtualGraph",
            static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
                &Builder::virtualGraph),

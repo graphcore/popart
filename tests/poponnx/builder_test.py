@@ -1247,12 +1247,15 @@ def test_convert_initializers_to_constants(tmpdir):
 
     builder.addOutputTensor(o)
 
-    builder.convertInitializersToConstants([i2])
+    graph_transformer = poponnx.GraphTransformer(builder.getModelProto())
+    graph_transformer.convertInitializersToConstants([i2])
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.convertInitializersToConstants(["unknown"])
+        graph_transformer.convertInitializersToConstants(["unknown"])
     assert (e_info.value.args[0] ==
             "TensorId unknown not in the model initalizers")
+
+    builder = poponnx.Builder(graph_transformer.getModelProto())
 
     ids = builder.getInputTensorIds()
     assert (i1 in ids)
@@ -1273,7 +1276,10 @@ def test_convert_all_fixed_point_initializers_to_constants(tmpdir):
     o = builder.add([o1, o2])
     builder.addOutputTensor(o)
 
-    builder.convertAllFixedPointInitializersToConstants()
+    graph_transformer = poponnx.GraphTransformer(builder.getModelProto())
+    graph_transformer.convertAllFixedPointInitializersToConstants()
+
+    builder = poponnx.Builder(graph_transformer.getModelProto())
 
     ids = builder.getInputTensorIds()
     assert (i1 in ids)

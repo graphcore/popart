@@ -20,6 +20,13 @@ onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename);
 onnx::TensorProto_DataType getTPDataType(DataType);
 DataType getDataType(int);
 
+void visitModelNodes(onnx::ModelProto &model,
+                     std::function<void(onnx::NodeProto &)> f);
+void visitModelInitializers(onnx::ModelProto &model,
+                            std::function<void(onnx::TensorProto &)> f);
+void visitModelValueInfos(onnx::ModelProto &model,
+                          std::function<void(onnx::ValueInfoProto &)> f);
+
 } // namespace onnxutil
 } // namespace poponnx
 

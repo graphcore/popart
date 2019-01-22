@@ -4,6 +4,7 @@
 #include <vector>
 #include <poponnx/builder.hpp>
 #include <poponnx/dataflow.hpp>
+#include <poponnx/graphtransformer.hpp>
 // needed for getting model from string
 #include <poponnx/filereader.hpp>
 #include <poponnx/ir.hpp>
@@ -71,14 +72,18 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape_Initializer) {
   auto builder               = Builder::create();
   auto newShapeId            = builder->addInitializedInputTensor(outShapeData);
 
-  // The new Shape Tensor is not a weight initializer, and should
-  // therefore be converted to the output of an ONNX Constant.
-  // We use this convert-all-non-float function to do the conversion.
-  builder->convertAllFixedPointInitializersToConstants();
   auto inId  = builder->addInputTensor(inInfo);
   auto outId = builder->reshape({inId, newShapeId});
   builder->addOutputTensor(outId);
-  auto proto      = builder->getModelProto();
+  auto proto = builder->getModelProto();
+
+  // The new Shape Tensor is not a weight initializer, and should
+  // therefore be converted to the output of an ONNX Constant.
+  // We use this convert-all-non-float function to do the conversion.
+  GraphTransformer graph_transformer(proto);
+  graph_transformer.convertAllFixedPointInitializersToConstants();
+  proto = graph_transformer.getModelProto();
+
   auto modelProto = io::getModelFromString(proto);
   auto art        = AnchorReturnType("ALL");
   auto dataFlow   = DataFlow(1, {{outId, art}});
