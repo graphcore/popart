@@ -6,7 +6,8 @@
 namespace poponnx {
 namespace popx {
 
-IdentityOpx::IdentityOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+IdentityOpx::IdentityOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<IdentityOp>(op, Onnx::Operators::Identity_1);
 }
 

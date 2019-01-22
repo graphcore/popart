@@ -7,7 +7,7 @@
 namespace poponnx {
 namespace popx {
 
-SinOpx::SinOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+SinOpx::SinOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<SinOp>(op, Onnx::Operators::Sin_7);
 }
 

@@ -8,7 +8,8 @@
 namespace poponnx {
 namespace popx {
 
-ScaleOpx::ScaleOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ScaleOpx::ScaleOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<ScaleOp>(op);
 }
 

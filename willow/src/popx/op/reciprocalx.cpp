@@ -9,7 +9,8 @@
 namespace poponnx {
 namespace popx {
 
-ReciprocalOpx::ReciprocalOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ReciprocalOpx::ReciprocalOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<ReciprocalOp>(op, Onnx::Operators::Reciprocal_6);
 }
 

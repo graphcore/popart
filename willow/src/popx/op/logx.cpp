@@ -8,7 +8,7 @@
 namespace poponnx {
 namespace popx {
 
-LogOpx::LogOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+LogOpx::LogOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<LogOp>(op, Onnx::Operators::Log_6);
 }
 

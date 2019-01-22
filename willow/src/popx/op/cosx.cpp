@@ -7,7 +7,7 @@
 namespace poponnx {
 namespace popx {
 
-CosOpx::CosOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+CosOpx::CosOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<CosOp>(op, Onnx::Operators::Cos_7);
 }
 

@@ -7,7 +7,8 @@
 namespace poponnx {
 namespace popx {
 
-SigmoidOpx::SigmoidOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+SigmoidOpx::SigmoidOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<SigmoidOp>(op, Onnx::Operators::Sigmoid_6);
 }
 
@@ -25,7 +26,8 @@ void SigmoidOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(SigmoidOp::getOutIndex()), outTensor);
 }
 
-SigmoidGradOpx::SigmoidGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+SigmoidGradOpx::SigmoidGradOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<SigmoidGradOp>(op, Onnx::GradOperators::SigmoidGrad);
 }
 

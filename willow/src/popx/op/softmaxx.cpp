@@ -14,7 +14,8 @@
 namespace poponnx {
 namespace popx {
 
-SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<SoftmaxOp>(op, Onnx::Operators::Softmax_1);
 }
 
@@ -43,12 +44,13 @@ void SoftmaxOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(0), outTensor);
 }
 
-SoftmaxGradOpx::SoftmaxGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+SoftmaxGradOpx::SoftmaxGradOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<SoftmaxGradOp>(op, Onnx::GradOperators::SoftmaxGrad);
 }
 
 SoftmaxGradDirectOpx::SoftmaxGradDirectOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<SoftmaxGradDirectOp>(op,
                                 Onnx::CustomGradOperators::SoftmaxGradDirect);
 }

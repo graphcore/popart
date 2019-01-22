@@ -7,7 +7,8 @@
 namespace poponnx {
 namespace popx {
 
-SquareOpx::SquareOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+SquareOpx::SquareOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<SquareOp>(op, Onnx::CustomOperators::Square);
 }
 

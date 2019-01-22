@@ -7,7 +7,7 @@
 namespace poponnx {
 namespace popx {
 
-SqrtOpx::SqrtOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+SqrtOpx::SqrtOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<SqrtOp>(op, Onnx::Operators::Sqrt_6);
 }
 

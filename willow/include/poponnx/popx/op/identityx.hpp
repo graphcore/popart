@@ -2,13 +2,13 @@
 #define GUARD_NEURALNET_IDENTITYX_HPP
 
 #include <poponnx/names.hpp>
-#include <poponnx/popx/opx.hpp>
+#include <poponnx/popx/op/elementwisex.hpp>
 
 namespace poponnx {
 
 namespace popx {
 
-class IdentityOpx : public Opx {
+class IdentityOpx : public ElementWiseUnaryOpx {
 public:
   IdentityOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

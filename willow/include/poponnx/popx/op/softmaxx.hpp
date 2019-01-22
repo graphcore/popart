@@ -2,7 +2,7 @@
 #define GUARD_NEURALNET_SOFTMAXXXXX_HPP
 
 #include <poponnx/names.hpp>
-#include <poponnx/popx/opx.hpp>
+#include <poponnx/popx/op/elementwisex.hpp>
 
 namespace poponnx {
 
@@ -12,7 +12,7 @@ class SoftmaxGradDirectOp;
 
 namespace popx {
 
-class SoftmaxOpx : public Opx {
+class SoftmaxOpx : public ElementWiseUnaryOpx {
 public:
   SoftmaxOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -21,14 +21,14 @@ public:
 };
 
 // compute dL/dv from v and dp, where p = softmax(v)
-class SoftmaxGradOpx : public Opx {
+class SoftmaxGradOpx : public ElementWiseUnaryOpx {
 public:
   SoftmaxGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 
 // compute dL/dv from lab and p, where p = softmax(v), L = nll(p, lab)
-class SoftmaxGradDirectOpx : public Opx {
+class SoftmaxGradDirectOpx : public ElementWiseUnaryOpx {
 public:
   SoftmaxGradDirectOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

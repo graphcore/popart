@@ -2,13 +2,13 @@
 #define GUARD_NEURALNET_RECIPROCALX_HPP
 
 #include <poponnx/names.hpp>
-#include <poponnx/popx/opx.hpp>
+#include <poponnx/popx/op/elementwisex.hpp>
 
 namespace poponnx {
 
 namespace popx {
 
-class ReciprocalOpx : public Opx {
+class ReciprocalOpx : public ElementWiseUnaryOpx {
 public:
   ReciprocalOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
