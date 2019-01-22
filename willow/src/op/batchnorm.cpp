@@ -9,10 +9,12 @@
 namespace poponnx {
 
 BatchNormOp::BatchNormOp(const OperatorIdentifier &_opid,
-                         Ir *_ir,
-                         const std::string &name,
-                         const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {
+                         float _epsilon,
+                         float _momentum,
+                         int64_t _spatial,
+                         const Op::Settings &settings_)
+    : Op(_opid, settings_), epsilon(_epsilon), momentum(_momentum),
+      spatial(_spatial) {
 
   // TODO : T6322 Use the is_training attribute of Version 6
 }
@@ -23,7 +25,7 @@ std::unique_ptr<Op> BatchNormOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> BatchNormOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<BatchNormGradOp>(this));
+  upops.emplace_back(make_unique<BatchNormGradOp>(*this));
   return upops;
 }
 
@@ -34,18 +36,8 @@ void BatchNormOp::setup() {
                 inRank(getXInIndex()));
   }
 
-  // Set the attributes
-  nAtts.setIfPresent(epsilon, "epsilon");
-  nAtts.setIfPresent(momentum, "momentum");
-
-  // In version 9 the spatial argument is removed
-  if (opid.version < 9) {
-
-    nAtts.setIfPresent(spatial, "spatial");
-
-    if (spatial == 0) {
-      throw error("batch norm does not currently support spatial set to 0");
-    }
+  if (spatial == 0) {
+    throw error("batch norm does not currently support spatial set to 0");
   }
 
   if (spatial == 1) {
@@ -94,8 +86,17 @@ void BatchNormOp::setup() {
   }
 }
 
-BatchNormGradOp::BatchNormGradOp(BatchNormOp *op_)
-    : Op(Onnx::GradOperators::BatchNormalizationGrad, op_->pir), fwdOp(op_) {}
+void BatchNormOp::appendAttributes(std::stringstream &ss,
+                                   const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "epsilon", epsilon);
+  appendAttribute(ss, tab, "momentum", momentum);
+  appendAttribute(ss, tab, "spatial", spatial);
+}
+
+BatchNormGradOp::BatchNormGradOp(const BatchNormOp &op_)
+    : Op(Onnx::GradOperators::BatchNormalizationGrad, op_.getSettings()),
+      fwdOp(op_) {}
 
 const std::map<int, int> &BatchNormGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
@@ -120,18 +121,28 @@ const std::vector<GradInOutMapper> &BatchNormGradOp::gradInputInfo() const {
 
 void BatchNormGradOp::setup() {
 
-  outInfo(getXOutIndex())     = fwdOp->inInfo(BatchNormOp::getXInIndex());
-  outInfo(getScaleOutIndex()) = fwdOp->inInfo(BatchNormOp::getScaleInIndex());
-  outInfo(getBOutIndex())     = fwdOp->inInfo(BatchNormOp::getBInIndex());
+  outInfo(getXOutIndex())     = fwdOp.inInfo(BatchNormOp::getXInIndex());
+  outInfo(getScaleOutIndex()) = fwdOp.inInfo(BatchNormOp::getScaleInIndex());
+  outInfo(getBOutIndex())     = fwdOp.inInfo(BatchNormOp::getBInIndex());
 }
 
 namespace {
-static OpCreator<BatchNormOp>
-    batchNormOpCreator({Onnx::Operators::BatchNormalization_6,
-                        Onnx::Operators::BatchNormalization_7,
-                        Onnx::Operators::BatchNormalization_9});
-static GradOpCreator<BatchNormGradOp>
-    batchNormGradOpCreator(Onnx::GradOperators::BatchNormalizationGrad);
+static OpCreator<BatchNormOp> batchNormOpCreator(
+    {Onnx::Operators::BatchNormalization_6,
+     Onnx::Operators::BatchNormalization_7,
+     Onnx::Operators::BatchNormalization_9},
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      float epsilon   = attr.getAttribute<Attributes::Float>("epsilon", 1e05);
+      float momentum  = attr.getAttribute<Attributes::Float>("momentum", 0.9);
+      int64_t spatial = attr.getAttribute<Attributes::Int>("spatial", 1);
+
+      return std::unique_ptr<Op>(
+          new BatchNormOp(_opid, epsilon, momentum, spatial, settings));
+    },
+    true);
+
 } // namespace
 
 } // namespace poponnx

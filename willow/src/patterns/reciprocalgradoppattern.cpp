@@ -34,7 +34,7 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
   // Remove the ReciprocalGradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->pir->eraseOp(op->id);
+  op->getIr().eraseOp(op->id);
 
   // Connect up the new ops
   square->connectInTensor(0, fwd_input->id);

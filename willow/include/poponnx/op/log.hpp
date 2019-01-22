@@ -7,17 +7,14 @@ namespace poponnx {
 
 class LogOp : public ElementWiseUnaryOp {
 public:
-  LogOp(const OperatorIdentifier &_opid,
-        Ir *_ir,
-        const std::string &name = "",
-        const Attributes &_attr = {});
+  LogOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 };
 
 class LogGradOp : public ElementWiseNonLinearUnaryGradOp {
 public:
-  LogGradOp(LogOp *fwdOp);
+  LogGradOp(const LogOp &fwdOp);
   std::unique_ptr<Op> clone() const final;
 };
 

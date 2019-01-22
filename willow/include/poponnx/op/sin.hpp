@@ -7,17 +7,14 @@ namespace poponnx {
 
 class SinOp : public ElementWiseUnaryOp {
 public:
-  SinOp(const OperatorIdentifier &_opid,
-        Ir *_ir,
-        const std::string &name = "",
-        const Attributes &_attr = {});
+  SinOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 };
 
 class SinGradOp : public ElementWiseNonLinearUnaryGradOp {
 public:
-  SinGradOp(SinOp *fwdOp);
+  SinGradOp(const SinOp &fwdOp);
   std::unique_ptr<Op> clone() const final;
 };
 

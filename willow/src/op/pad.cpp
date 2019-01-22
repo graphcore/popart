@@ -7,26 +7,11 @@
 namespace poponnx {
 
 PadOp::PadOp(const OperatorIdentifier &_opid,
-             Ir *_ir,
-             const std::string &name,
-             const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {
-  pad_value = 0.0;
-  nAtts.setIfPresent(pad_value, "value");
-  nAtts.set(pads, "pads");
-
-  nAtts.setIfPresent(mode, "mode");
-  if (mode.empty()) {
-    mode = "constant";
-  }
-}
-
-PadOp::PadOp(const OperatorIdentifier &_opid,
-             Ir *_ir,
-             const std::vector<int64_t> _pads,
-             float _pad_value,
-             std::string _mode)
-    : Op(_opid, _ir), pads(_pads), pad_value(_pad_value), mode(_mode) {}
+             const std::vector<int64_t> &_pads,
+             float value_,
+             const std::string &_mode,
+             const Op::Settings &settings_)
+    : Op(_opid, settings_), pads(_pads), pad_value(value_), mode(_mode) {}
 
 std::unique_ptr<Op> PadOp::clone() const { return make_unique<PadOp>(*this); }
 
@@ -56,8 +41,28 @@ float PadOp::getPadValue() const { return pad_value; }
 
 const std::string &PadOp::getMode() const { return mode; }
 
+void PadOp::appendAttributes(std::stringstream &ss,
+                             const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+
+  appendAttribute(ss, tab, "pads", pads);
+  appendAttribute(ss, tab, "value", pad_value);
+  appendAttribute(ss, tab, "mode", mode);
+}
 namespace {
-static OpCreator<PadOp> padCreator(Onnx::Operators::Pad_2);
+static OpCreator<PadOp> padCreator(
+    Onnx::Operators::Pad_2,
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      std::vector<int64_t> pads = attr.getAttribute<Attributes::Ints>("pads");
+      float value = attr.getAttribute<Attributes::Float>("value", 0.0);
+      std::string mode =
+          attr.getAttribute<Attributes::String>("mode", "constant");
+
+      return std::unique_ptr<Op>(new PadOp(_opid, pads, value, mode, settings));
+    },
+    true);
 }
 
 } // namespace poponnx

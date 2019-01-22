@@ -13,11 +13,8 @@ class ConvOp;
 // convolution operation.
 class AddBiasOp : public Op {
 public:
-  AddBiasOp(const OperatorIdentifier &_opid,
-            Ir *_ir,
-            const std::string &name = "",
-            const Attributes &_attr = {});
-  AddBiasOp(ConvOp *, Attributes attr = {});
+  AddBiasOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
+
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -33,7 +30,7 @@ public:
 // Based on the identity op
 class AddBiasDataGradOp : public IdentityOp {
 public:
-  AddBiasDataGradOp(AddBiasOp *);
+  AddBiasDataGradOp(const AddBiasOp &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
@@ -45,7 +42,7 @@ public:
 // Based on the reduce sum op.
 class AddBiasBiasGradOp : public ReduceSumOp {
 public:
-  AddBiasBiasGradOp(AddBiasOp *, const std::vector<int64_t> &axes);
+  AddBiasBiasGradOp(const AddBiasOp &, const std::vector<int64_t> &axes);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 

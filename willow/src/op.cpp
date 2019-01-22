@@ -68,7 +68,7 @@ std::vector<std::unique_ptr<Op>> Op::getGradOps() {
 void Op::setup() { throw error("No setup() for {}", opid); }
 
 void Op::defaultConnectInTensor(InIndex inIndex, TensorId tenId) {
-  Tensor *ptensor = pir->getTensors().get(tenId);
+  Tensor *ptensor = getIr().getTensors().get(tenId);
   input->insert(inIndex, ptensor);
   ptensor->consumers.increment(this);
 }
@@ -78,7 +78,7 @@ void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
 }
 
 void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
-  Tensor *ptensor = pir->getTensors().get(tenId);
+  Tensor *ptensor = getIr().getTensors().get(tenId);
   output->insert(outIndex, ptensor);
   if (ptensor->hasProducer()) {
     ptensor->resetProducer(this);
@@ -110,8 +110,8 @@ void Op::disconnectAllOutputs() {
 }
 
 void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
-  pir->getTensors().addActGrad(tenId);
-  Tensor *ptensor = pir->getTensors().get(tenId);
+  getIr().getTensors().addActGrad(tenId);
+  Tensor *ptensor = getIr().getTensors().get(tenId);
   output->insert(outIndex, ptensor);
   ptensor->setProducer(this);
 }
@@ -166,8 +166,8 @@ void Op::appendIO(std::stringstream &ss) const {
   static std::string tab = "    ";
 
   ss << '\n' << "Op ";
-  if (!_name.empty()) {
-    ss << '"' << _name << "\", ";
+  if (!getName().empty()) {
+    ss << '"' << getName() << "\", ";
   }
   ss << id << " of type " << opid << '\n';
 
@@ -180,35 +180,55 @@ void Op::appendIO(std::stringstream &ss) const {
   output->append(ss, tab + tab, max_id_length);
 
   ss << '\n' << tab << "attributes" << '\n';
-  nAtts.append(ss, tab + tab);
+  appendAttributes(ss, tab + "    ");
 }
 
-const std::string &Op::name() const { return _name; }
+void Op::appendAttributes(std::stringstream &ss, const std::string &tab) const {
+  if (getRecomputeOutput())
+    ss << tab << sRecomputeOutputAttribute << ":" << *(getRecomputeOutput())
+       << '\n';
+
+  if (getVirtualGraphId())
+    ss << tab << sVirtualGraphAttribute << ":" << *(getVirtualGraphId())
+       << '\n';
+}
+
+const std::string &Op::name() const { return getName(); }
 
 Op::Op(const Op &op)
     : Vertex(op), input(new TensorIndexMap), output(new TensorIndexMap),
-      priority(op.priority), pir(op.pir), id(pir->getAndIncrOpsCounter()),
-      opid(op.opid), nAtts(op.nAtts), _name(op._name) {
+      priority(op.priority), id(op.settings.ir.getAndIncrOpsCounter()),
+      opid(op.opid), settings(op.settings) {
   // input, output: empty.
 }
-
-Op::Op(const OperatorIdentifier &_opid,
-       Ir *_ir,
-       const std::string &_name_,
-       const Attributes &_attributes)
-    : input(new TensorIndexMap), output(new TensorIndexMap), priority(0.0),
-      // the Ir
-      pir(_ir),
-      // the id
-      id(_ir->getAndIncrOpsCounter()), opid(_opid),
-      // the Attributes
-      nAtts(_attributes), _name(_name_) {}
 
 Tensor *Op::inTensor(InIndex index) { return input->tensor(index); }
 const Tensor *Op::inTensor(InIndex index) const { return input->tensor(index); }
 Tensor *Op::outTensor(OutIndex index) { return output->tensor(index); }
 const Tensor *Op::outTensor(OutIndex index) const {
   return output->tensor(index);
+}
+
+Op::Op(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+    : input(new TensorIndexMap), output(new TensorIndexMap), priority(0.0),
+      // the id
+      id(settings_.ir.getAndIncrOpsCounter()), opid(_opid),
+      // the Attributes
+      settings(settings_) {}
+
+void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
+
+  if (attributes.hasAttribute(sVirtualGraphAttribute)) {
+    int64_t value;
+    attributes.set(value, sVirtualGraphAttribute);
+    vgraphId = value;
+  }
+
+  if (attributes.hasAttribute(sRecomputeOutputAttribute)) {
+    int64_t value;
+    attributes.set(value, sRecomputeOutputAttribute);
+    recomputeOutput = value;
+  }
 }
 
 const Shape &Op::inShape(InIndex index) const {
@@ -231,8 +251,8 @@ std::string Op::str() const {
 
 std::string Op::debugName() const {
   std::string debug_id;
-  if (!_name.empty()) {
-    debug_id = _name;
+  if (!getName().empty()) {
+    debug_id = getName();
   } else {
     std::stringstream ss;
     ss << opid;

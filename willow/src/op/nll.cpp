@@ -15,12 +15,13 @@ std::unique_ptr<Loss> NllLoss::clone() const {
 
 std::vector<std::unique_ptr<Op>> NllOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<NllGradOp>(this));
+  upops.emplace_back(make_unique<NllGradOp>(*this));
   return upops;
 }
 
-std::unique_ptr<Op> NllLoss::getOp(Ir *gp) const {
-  return std::unique_ptr<Op>(new NllOp(Onnx::CustomOperators::Nll, gp, this));
+std::unique_ptr<Op> NllLoss::getOp(const Op::Settings &settings_) const {
+  return std::unique_ptr<Op>(
+      new NllOp(Onnx::CustomOperators::Nll, this, settings_));
 }
 
 const OperatorIdentifier &NllLoss::op_type() const {
@@ -54,8 +55,10 @@ void NllOp::setup() {
 const NllLoss *NllOp::nlll() const { return nllloss_; }
 const NllLoss *NllGradOp::nlll() const { return nllloss_; }
 
-NllOp::NllOp(const OperatorIdentifier &_opid, Ir *_ir, const NllLoss *n)
-    : LossOp(_opid, _ir), nllloss_(n) {}
+NllOp::NllOp(const OperatorIdentifier &_opid,
+             const NllLoss *n,
+             const Op::Settings &settings_)
+    : LossOp(_opid, settings_), nllloss_(n) {}
 
 void NllGradOp::setup() {
   // gradient of probs has same shape as probs
@@ -63,8 +66,9 @@ void NllGradOp::setup() {
   outInfo(0)    = out_info;
 }
 
-NllGradOp::NllGradOp(NllOp *op_)
-    : Op(Onnx::CustomGradOperators::NllGrad, op_->pir), nllloss_(op_->nlll()) {}
+NllGradOp::NllGradOp(const NllOp &op_)
+    : Op(Onnx::CustomGradOperators::NllGrad, op_.getSettings()),
+      nllloss_(op_.nlll()) {}
 
 const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
   // input at index 0 : labelIn()
@@ -86,10 +90,6 @@ const std::map<int, int> &NllGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-namespace {
-static LossOpCreator<NllLoss> nllOpCreator(Onnx::CustomOperators::Nll);
-static GradOpCreator<NllGradOp>
-    nllGradOpCreator(Onnx::CustomGradOperators::NllGrad);
-} // namespace
+namespace {} // namespace
 
 } // namespace poponnx

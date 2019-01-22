@@ -8,9 +8,8 @@ namespace poponnx {
 class ConcatOp : public Op {
 public:
   ConcatOp(const OperatorIdentifier &_opid,
-           Ir *_ir,
-           const std::string &name = "",
-           const Attributes &_attr = {});
+           int64_t axis_,
+           const Op::Settings &settings);
 
   std::unique_ptr<Op> clone() const override;
   void setup() override;
@@ -29,9 +28,8 @@ public:
   static InIndex getInIndex(InIndex index) { return index; }
   static OutIndex getOutIndex() { return 0; }
 
-protected:
-  // An unsafe constructor that allows using any OperatorIdentifier
-  ConcatOp(const OperatorIdentifier &_opid, ConcatOp *concat_op);
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
 
 private:
   int64_t axis = 0;
@@ -40,7 +38,8 @@ private:
 // An inplace variant of the concat op
 class ConcatInplaceOp : public ConcatOp {
 public:
-  ConcatInplaceOp(ConcatOp *concat_op);
+  ConcatInplaceOp(const ConcatOp &concatOp, int64_t axis_);
+
   std::unique_ptr<Op> clone() const override;
 
   std::vector<OperatorIdentifier>
@@ -60,8 +59,8 @@ public:
 
 class ConcatGradOp : public Op {
 public:
-  ConcatGradOp(ConcatOp *op, InIndex input);
-  ConcatGradOp(ConcatInplaceOp *op, InIndex input);
+  ConcatGradOp(const ConcatOp &op, InIndex input);
+  ConcatGradOp(const ConcatInplaceOp &op, InIndex input);
 
   std::unique_ptr<Op> clone() const override;
   void setup() override;
@@ -78,7 +77,8 @@ public:
 
 protected:
   // An unsafe constructor that allows using any OperatorIdentifier
-  ConcatGradOp(const OperatorIdentifier &_opid, ConcatGradOp *concat_grad_op);
+  ConcatGradOp(const OperatorIdentifier &_opid,
+               const ConcatGradOp &concat_grad_op);
 
 private:
   int64_t axis;

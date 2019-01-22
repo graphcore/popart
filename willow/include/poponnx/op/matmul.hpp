@@ -7,10 +7,7 @@ namespace poponnx {
 
 class MatMulOp : public Op {
 public:
-  MatMulOp(const OperatorIdentifier &_opid,
-           Ir *_ir,
-           const std::string &name = "",
-           const Attributes &_attr = {});
+  MatMulOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   MatMulOp(const MatMulOp &) = default;
   MatMulOp &operator=(const MatMulOp &) = delete;
   ~MatMulOp() override                  = default;

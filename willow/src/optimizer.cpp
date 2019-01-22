@@ -28,7 +28,7 @@ std::map<TensorId, TensorInfo> SGD::tensorInfos() const {
 }
 
 std::unique_ptr<Op> SGD::createOp(TensorId varId, Ir *pir) const {
-  return std::unique_ptr<Op>(new SGDVarUpdateOp(varId, pir));
+  return std::unique_ptr<Op>(new SGDVarUpdateOp(varId, {*pir, ""}));
 }
 
 std::vector<TensorId> SGD::getInputIds(TensorId varId) const {
@@ -64,7 +64,8 @@ void ConstSGD::resetTensorDatas(Ir *) const {
 }
 
 std::unique_ptr<Op> ConstSGD::createOp(TensorId varId, Ir *pir) const {
-  return std::unique_ptr<Op>(new ConstSGDVarUpdateOp(varId, pir, learnRate()));
+  return std::unique_ptr<Op>(
+      new ConstSGDVarUpdateOp(varId, learnRate(), {*pir, ""}));
 }
 
 std::vector<TensorId> ConstSGD::getInputIds(TensorId varId) const {

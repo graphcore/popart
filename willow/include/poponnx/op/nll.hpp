@@ -11,7 +11,7 @@ public:
   NllLoss(TensorId probs, TensorId label, TensorId output);
   // label is the only streamed input tensor to this loss
   std::vector<TensorId> getStreamTensorNames() const final;
-  std::unique_ptr<Op> getOp(Ir *) const final;
+  std::unique_ptr<Op> getOp(const Op::Settings &settings_) const final;
   const OperatorIdentifier &op_type() const final;
 
   static InIndex getProbsInIndex() { return 0; }
@@ -25,7 +25,9 @@ public:
 
 class NllOp : public LossOp {
 public:
-  NllOp(const OperatorIdentifier &_opid, Ir *_ir, const NllLoss *nllloss);
+  NllOp(const OperatorIdentifier &_opid,
+        const NllLoss *nllloss,
+        const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -40,7 +42,7 @@ private:
 
 class NllGradOp : public Op {
 public:
-  NllGradOp(NllOp *);
+  NllGradOp(const NllOp &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;

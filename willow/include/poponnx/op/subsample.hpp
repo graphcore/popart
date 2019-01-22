@@ -8,9 +8,8 @@ namespace poponnx {
 class SubsampleOp : public Op {
 public:
   SubsampleOp(const OperatorIdentifier &_opid,
-              Ir *_ir,
-              const std::string &name = "",
-              const Attributes &_attr = {});
+              const std::vector<int64_t> &strides_,
+              const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() override;
@@ -25,13 +24,16 @@ public:
   // Returns true if all the strides at 1
   bool strideSizeOne() const;
 
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
+
 public:
   std::vector<int64_t> strides;
 };
 
 class SubsampleGradOp : public Op {
 public:
-  SubsampleGradOp(SubsampleOp *fwdOp);
+  SubsampleGradOp(const SubsampleOp &fwdOp);
   std::unique_ptr<Op> clone() const final;
   void setup() override;
 
@@ -41,10 +43,10 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
-  SubsampleOp *getFwdOp() { return fwdOp; }
+  const SubsampleOp &getFwdOp() const { return fwdOp; }
 
 private:
-  SubsampleOp *fwdOp;
+  const SubsampleOp &fwdOp;
   TensorInfo fwdOpInfo;
 };
 

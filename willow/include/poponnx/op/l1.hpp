@@ -13,7 +13,7 @@ public:
   // There are no tensors streamed into this loss layer (unlike NLL for
   // example which has a label streamed in)
   std::vector<TensorId> getStreamTensorNames() const final;
-  std::unique_ptr<Op> getOp(Ir *) const final;
+  std::unique_ptr<Op> getOp(const Op::Settings &settings_) const final;
   const OperatorIdentifier &op_type() const final;
   TensorId getInputId() const;
 
@@ -28,7 +28,9 @@ private:
 
 class L1Op : public LossOp {
 public:
-  L1Op(const OperatorIdentifier &_opid, Ir *_ir, const L1Loss *l1loss);
+  L1Op(const OperatorIdentifier &_opid,
+       const L1Loss *l1loss,
+       const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -44,7 +46,7 @@ private:
 class L1GradOp : public Op {
 
 public:
-  L1GradOp(L1Op *);
+  L1GradOp(const L1Op &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;

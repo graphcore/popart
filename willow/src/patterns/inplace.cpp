@@ -73,7 +73,7 @@ std::vector<const Tensor *> Inplace::touches(Op *op) const {
 
 bool Inplace::apply(Op *op) const {
   auto output_tensor             = op->output->tensor(0);
-  auto ir                        = op->pir;
+  auto &ir                       = op->getIr();
   std::vector<InIndex> inIndices = targetInIndices(op);
 
   if (op->inplaceVariants(inIndices).size() == 0) {
@@ -87,13 +87,13 @@ bool Inplace::apply(Op *op) const {
       op->getInplaceVariant(identifier, inIndices);
 
   Op *inplaceOp = up_inplaceOp.get();
-  ir->moveIntoIr(std::move(up_inplaceOp));
+  ir.moveIntoIr(std::move(up_inplaceOp));
 
   // Remap the tensors from `op` to `inplaceOp`
   for (auto index : inIndices) {
     Tensor *in_tensor = op->input->tensor(index);
     in_tensor->consumers.increment(inplaceOp);
-    ir->topoCons->transfer(op, inplaceOp);
+    ir.topoCons->transfer(op, inplaceOp);
     in_tensor->consumers.decrement(op);
   }
 
@@ -102,8 +102,8 @@ bool Inplace::apply(Op *op) const {
 
   for (auto index : inIndices) {
     Tensor *input_tensor = op->input->tensor(index);
-    auto newCons = ir->topoCons->finalConsumerCons(input_tensor, inplaceOp);
-    ir->topoCons->insert(newCons);
+    auto newCons = ir.topoCons->finalConsumerCons(input_tensor, inplaceOp);
+    ir.topoCons->insert(newCons);
     inplaceOp->input->insert(index, input_tensor);
   }
 
@@ -113,7 +113,7 @@ bool Inplace::apply(Op *op) const {
                           inplaceOp->id,
                           inplaceOp->opid);
 
-  inplaceOp->pir->eraseOp(op->id);
+  inplaceOp->getIr().eraseOp(op->id);
   return true;
 }
 
@@ -166,7 +166,7 @@ bool Inplace::matches(Op *op) const {
       // 2) is a sorting with B->C
       // then there is either a sorting with A->B->C or one with B->A->C
 
-      if (!op->pir->isSchedulable(gCons)) {
+      if (!op->getIr().isSchedulable(gCons)) {
         logging::pattern::debug(
             "InplaceAll::matches : inplace candidate {} rejected due to "
             "scheduling conflict",

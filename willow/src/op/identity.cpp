@@ -6,10 +6,8 @@
 namespace poponnx {
 
 IdentityOp::IdentityOp(const OperatorIdentifier &_opid,
-                       Ir *_ir,
-                       const std::string &name,
-                       const Attributes &_attr)
-    : ElementWiseUnaryOp(_opid, _ir, name, _attr) {}
+                       const Op::Settings &settings_)
+    : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> IdentityOp::clone() const {
   return make_unique<IdentityOp>(*this);
@@ -17,12 +15,12 @@ std::unique_ptr<Op> IdentityOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> IdentityOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<IdentityGradOp>(this));
+  upops.emplace_back(make_unique<IdentityGradOp>(*this));
   return upops;
 }
 
-IdentityGradOp::IdentityGradOp(IdentityOp *fwdOp)
-    : IdentityOp(Onnx::GradOperators::IdentityGrad, fwdOp->pir) {}
+IdentityGradOp::IdentityGradOp(const IdentityOp &fwdOp)
+    : IdentityOp(Onnx::GradOperators::IdentityGrad, fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> IdentityGradOp::clone() const {
   return make_unique<IdentityGradOp>(*this);
@@ -44,8 +42,6 @@ const std::map<int, int> &IdentityGradOp::gradOutToNonGradIn() const {
 
 namespace {
 static OpCreator<IdentityOp> identityOpCreator(Onnx::Operators::Identity_1);
-static GradOpCreator<IdentityGradOp>
-    identityGradOpCreator(Onnx::GradOperators::IdentityGrad);
 } // namespace
 
 } // namespace poponnx

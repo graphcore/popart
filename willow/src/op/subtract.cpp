@@ -6,10 +6,8 @@
 namespace poponnx {
 
 SubtractOp::SubtractOp(const OperatorIdentifier &_opid,
-                       Ir *_ir,
-                       const std::string &name,
-                       const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {
+                       const Op::Settings &settings_)
+    : Op(_opid, settings_) {
   // TODO : Do not broadcast in version 6
 }
 
@@ -24,8 +22,8 @@ std::vector<std::unique_ptr<Op>> SubtractOp::getGradOps() {
   const auto &shape_o0 = outShape(SubtractOp::getOutIndex());
 
   upops.emplace_back(make_unique<SubtractArg0GradOp>(
-      this, npReductionAxis(shape_a0, shape_o0)));
-  upops.emplace_back(make_unique<SubtractArg1GradOp>(this));
+      *this, npReductionAxis(shape_a0, shape_o0)));
+  upops.emplace_back(make_unique<SubtractArg1GradOp>(*this));
 
   return upops;
 }
@@ -35,10 +33,13 @@ void SubtractOp::setup() {
       npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
 }
 
-SubtractArg0GradOp::SubtractArg0GradOp(SubtractOp *op_,
+SubtractArg0GradOp::SubtractArg0GradOp(const SubtractOp &op_,
                                        const std::vector<int64_t> &_axes)
-    : ReduceSumOp(Onnx::GradOperators::SubArg0Grad, op_->pir, _axes, false),
-      forward_op_arg_info(op_->inInfo(SubtractOp::getArg0InIndex())) {}
+    : ReduceSumOp(Onnx::GradOperators::SubArg0Grad,
+                  _axes,
+                  false,
+                  op_.getSettings()),
+      forward_op_arg_info(op_.inInfo(SubtractOp::getArg0InIndex())) {}
 
 const std::map<int, int> &SubtractArg0GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
@@ -58,9 +59,9 @@ void SubtractArg0GradOp::setup() {
   outInfo(getOutIndex()) = forward_op_arg_info;
 }
 
-SubtractArg1GradOp::SubtractArg1GradOp(SubtractOp *op_)
-    : Op(Onnx::GradOperators::SubArg1Grad, op_->pir),
-      forward_op_arg_info(op_->inInfo(SubtractOp::getArg1InIndex())) {}
+SubtractArg1GradOp::SubtractArg1GradOp(const SubtractOp &op_)
+    : Op(Onnx::GradOperators::SubArg1Grad, op_.getSettings()),
+      forward_op_arg_info(op_.inInfo(SubtractOp::getArg1InIndex())) {}
 
 const std::map<int, int> &SubtractArg1GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
@@ -87,10 +88,7 @@ void SubtractArg1GradOp::setup() {
 namespace {
 static OpCreator<SubtractOp> subtractOpCreator({Onnx::Operators::Sub_6,
                                                 Onnx::Operators::Sub_7});
-static GradOpCreator<SubtractArg0GradOp>
-    subtractArg0GradOpCreator(Onnx::GradOperators::SubArg0Grad);
-static GradOpCreator<SubtractArg1GradOp>
-    subtractArg1GradOpCreator(Onnx::GradOperators::SubArg1Grad);
+
 } // namespace
 
 } // namespace poponnx

@@ -7,7 +7,9 @@ namespace poponnx {
 
 class VarUpdateOp : public Op {
 public:
-  VarUpdateOp(const OperatorIdentifier &opid, TensorId, Ir *);
+  VarUpdateOp(const OperatorIdentifier &opid,
+              TensorId,
+              const Op::Settings &settings_);
   void setup() final;
 
   static InIndex getVarInIndex() { return 0; }
@@ -26,7 +28,7 @@ private:
 
 class SGDVarUpdateOp : public VarUpdateOp {
 public:
-  SGDVarUpdateOp(TensorId, Ir *);
+  SGDVarUpdateOp(TensorId, const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
 
   static InIndex getLearnRateInIndex() { return 2; }
@@ -34,7 +36,7 @@ public:
 
 class ConstSGDVarUpdateOp : public VarUpdateOp {
 public:
-  ConstSGDVarUpdateOp(TensorId, Ir *, float learnRate);
+  ConstSGDVarUpdateOp(TensorId, float learnRate, const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
   float getLearnRate() const;
 

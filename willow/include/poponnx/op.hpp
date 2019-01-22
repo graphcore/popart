@@ -1,12 +1,14 @@
 #ifndef GUARD_NEURALNET_OP_HPP
 #define GUARD_NEURALNET_OP_HPP
 
+#include <boost/optional.hpp>
 #include <memory>
 #include <set>
 #include <poponnx/attributes.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/opidentifier.hpp>
 #include <poponnx/tensorinfo.hpp>
+#include <poponnx/util.hpp>
 #include <poponnx/vertex.hpp>
 
 namespace poponnx {
@@ -48,9 +50,6 @@ public:
   // default : 0.0
   double priority{0.0};
 
-  // the Ir to which the Op belongs
-  Ir *pir;
-
   // The unique identifier of the Op (will always be set in Op::Op)
   OpId id{-1};
 
@@ -61,14 +60,53 @@ public:
   //   three-part identifier.
   OperatorIdentifier opid;
 
-  // attributes from the Node, if it was created from ONNX
-  const Attributes nAtts;
+  struct Settings {
+
+    Settings(Ir &ir_, const std::string &name_) : ir(ir_), name(name_) {}
+
+    Ir &ir;
+
+    std::string name = "";
+
+    // The virtual graph this op has been assigned to if set
+    boost::optional<int64_t> vgraphId;
+
+    // If the output should be recomputed if set
+    boost::optional<int64_t> recomputeOutput;
+
+    // This method will attempt the optional attributes (vgraphId,
+    // recomputeOutput) depending on whether the attribute has been
+    // set in the onnx model.
+    virtual void setFromAttributes(const Attributes &attributes);
+  };
+
+  Settings settings;
+
+  Settings &getSettings() { return settings; }
+  const Settings &getSettings() const { return settings; }
+
+  const boost::optional<int64_t> getVirtualGraphId() const {
+    return settings.vgraphId;
+  }
+  void setVirtualGraphId(const boost::optional<int64_t> value) {
+    settings.vgraphId = value;
+  }
+
+  const boost::optional<int64_t> getRecomputeOutput() const {
+    return settings.recomputeOutput;
+  }
+  void setRecomputeOutput(const boost::optional<int64_t> value) {
+    settings.recomputeOutput = value;
+  }
+
+  const std::string &getName() const { return settings.name; }
+
+  Ir &getIr() { return settings.ir; }
+  const Ir &getIr() const { return settings.ir; }
 
 public:
-  Op(const OperatorIdentifier &_opid,
-     Ir *_ir,
-     const std::string &name = {},
-     const Attributes &_attr = {});
+  Op(const OperatorIdentifier &_opid, const Op::Settings &settings);
+
   // Note: copy constructor does NOT copy input and output
   Op(const Op &);
   Op &operator=(const Op &) = delete;
@@ -206,12 +244,23 @@ public:
   Rank inRank(InIndex index);
   Rank outRank(OutIndex index);
 
+protected:
+  // Virtual method to append the op attributes to the stream. This method
+  // should be overridden if the derived class has additional attributes.
+  virtual void appendAttributes(std::stringstream &,
+                                const std::string &tab) const;
+
+  template <typename T>
+  void appendAttribute(std::stringstream &ss,
+                       const std::string &tab,
+                       const std::string &name,
+                       const T &value) const {
+    ss << tab << name << ":" << value << '\n';
+  }
+
 private:
   void appendIO(std::stringstream &) const;
   virtual void appendMore(std::stringstream &) const {}
-
-  // A user supplied name
-  std::string _name;
 };
 
 } // namespace poponnx

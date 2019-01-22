@@ -13,8 +13,15 @@ namespace poponnx {
 // from keys (strings) than onnx::AttributesProto
 class Attributes {
 public:
+  // The types of attributes as defined in the onnx spec
+  using Ints   = std::vector<int64_t>;
+  using Int    = int64_t;
+  using Float  = float;
+  using String = std::string;
+
   Attributes(const NodeAttributes &);
   Attributes() = default;
+
   const std::vector<std::string> &getNames() const;
   onnxAttPtr at(const std::string &name) const;
   void append(std::stringstream &ss, std::string prefix = "") const;
@@ -38,6 +45,15 @@ public:
 
     return result;
   }
+
+  // Attempt to get the value of attribute assigned to the key, else return the
+  // the default value
+  template <typename T>
+  T getAttribute(const std::string &key, const T &defaultValue) const;
+
+  // Attempt to get the value of attribute assigned to the key, else throw an
+  // exception
+  template <typename T> T getAttribute(const std::string &key) const;
 
 private:
   std::map<std::string, onnxAttPtr> att_map;
@@ -64,6 +80,32 @@ template <>
 void Attributes::set(std::vector<int64_t> &vs, const std::string &key) const;
 template <> void Attributes::set(float &v, const std::string &key) const;
 template <> void Attributes::set(int64_t &v, const std::string &key) const;
+
+template <>
+Attributes::Ints
+Attributes::getAttribute(const std::string &key,
+                         const Attributes::Ints &defaultValue) const;
+template <>
+Attributes::Int
+Attributes::getAttribute(const std::string &key,
+                         const Attributes::Int &defaultValue) const;
+template <>
+Attributes::String
+Attributes::getAttribute(const std::string &key,
+                         const Attributes::String &defaultValue) const;
+template <>
+Attributes::Float
+Attributes::getAttribute(const std::string &key,
+                         const Attributes::Float &defaultValue) const;
+
+template <>
+Attributes::Ints Attributes::getAttribute(const std::string &key) const;
+template <>
+Attributes::Int Attributes::getAttribute(const std::string &key) const;
+template <>
+Attributes::String Attributes::getAttribute(const std::string &key) const;
+template <>
+Attributes::Float Attributes::getAttribute(const std::string &key) const;
 
 } // namespace poponnx
 

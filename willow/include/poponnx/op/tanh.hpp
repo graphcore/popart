@@ -7,10 +7,7 @@ namespace poponnx {
 
 class TanhOp : public Op {
 public:
-  TanhOp(const OperatorIdentifier &_opid,
-         Ir *_ir,
-         const std::string &name = "",
-         const Attributes &_attr = {});
+  TanhOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -21,7 +18,7 @@ public:
 
 class TanhGradOp : public Op {
 public:
-  TanhGradOp(TanhOp *fwdOp);
+  TanhGradOp(const TanhOp &fwdOp);
   std::unique_ptr<Op> clone() const final;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;

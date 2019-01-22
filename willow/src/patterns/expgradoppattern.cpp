@@ -26,7 +26,7 @@ bool ExpGradOpPattern::apply(Op *op) const {
   // Remove the ExpGradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->pir->eraseOp(op->id);
+  op->getIr().eraseOp(op->id);
 
   // Connect up the new ops
   mul->connectInTensor(MulOp::getArg0InIndex(), grad_in->id);

@@ -8,9 +8,8 @@ namespace poponnx {
 class ScatterOp : public Op {
 public:
   ScatterOp(const OperatorIdentifier &_opid,
-            Ir *_ir,
-            const std::string &name = "",
-            const Attributes &_attr = {});
+            int64_t axis_,
+            const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -24,6 +23,9 @@ public:
   static InIndex updatesInIndex() { return 2; }
   static InIndex outIndex() { return 0; }
 
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
+
 private:
   int64_t axis = 0;
 };
@@ -32,7 +34,7 @@ private:
 // elements are replaced in the forward op by the update input tensor.
 class ScatterDataGradOp : public Op {
 public:
-  ScatterDataGradOp(ScatterOp *op, int64_t axis);
+  ScatterDataGradOp(const ScatterOp &op, int64_t axis);
 
   std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
@@ -54,7 +56,7 @@ private:
 // the forward op.
 class ScatterUpdateGradOp : public Op {
 public:
-  ScatterUpdateGradOp(ScatterOp *op, int64_t axis);
+  ScatterUpdateGradOp(const ScatterOp &op, int64_t axis);
 
   std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;

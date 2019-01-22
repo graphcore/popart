@@ -7,10 +7,7 @@ namespace poponnx {
 
 class LSTMOp : public Op {
 public:
-  LSTMOp(const OperatorIdentifier &_opid,
-         Ir *_ir,
-         const std::string &name = "",
-         const Attributes &_attr = {});
+  LSTMOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -58,7 +55,7 @@ private:
 
 class LSTMGradOp : public Op {
 public:
-  LSTMGradOp(LSTMOp &);
+  LSTMGradOp(const LSTMOp &);
   void setup() final;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
@@ -86,7 +83,7 @@ public:
   static OutIndex getInitialCOutIndex() { return 5; }
 
 private:
-  LSTMOp &forward_op;
+  const LSTMOp &forward_op;
   mutable std::map<int, int> out_info;
 };
 

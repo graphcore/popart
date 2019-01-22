@@ -6,25 +6,11 @@
 
 namespace poponnx {
 
-// TODO : See if we can get rid of this one
 ReduceSumOp::ReduceSumOp(const OperatorIdentifier &_opid,
-                         Ir *_ir,
                          const std::vector<int64_t> &axes_,
-                         int64_t keepdims_,
-                         const Attributes &_attr)
-    : Op(_opid, _ir, {}, _attr), axes(axes_), keepdims(keepdims_) {
-
-  // Sorting the axes for general backend compatibility
-  std::sort(axes.begin(), axes.end());
-}
-
-ReduceSumOp::ReduceSumOp(const OperatorIdentifier &_opid,
-                         Ir *_ir,
-                         const std::string &name,
-                         const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr), keepdims(0) {
-  nAtts.setIfPresent(axes, "axes");
-  nAtts.setIfPresent(keepdims, "keepdims");
+                         const int64_t keepdims_,
+                         const Op::Settings &settings_)
+    : Op(_opid, settings_), axes(axes_), keepdims(keepdims_) {
 
   // Sorting the axes for general backend compatibility
   std::sort(axes.begin(), axes.end());
@@ -36,7 +22,7 @@ std::unique_ptr<Op> ReduceSumOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> ReduceSumOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
-  result.emplace_back(make_unique<ReduceSumGradOp>(this, backward_shape));
+  result.emplace_back(make_unique<ReduceSumGradOp>(*this, backward_shape));
   return result;
 }
 
@@ -75,10 +61,17 @@ void ReduceSumOp::setAxes(std::vector<int64_t> value) {
 
 void ReduceSumOp::setKeepDims(int64_t value) { keepdims = value; }
 
-ReduceSumGradOp::ReduceSumGradOp(ReduceSumOp *fwdOp,
+void ReduceSumOp::appendAttributes(std::stringstream &ss,
+                                   const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "keepdims", keepdims);
+  appendAttribute(ss, tab, "axes", axes);
+}
+
+ReduceSumGradOp::ReduceSumGradOp(const ReduceSumOp &fwdOp,
                                  const Shape &backward_shape_)
-    : Op(Onnx::GradOperators::ReduceSumGrad, fwdOp->pir),
-      outputTensorInfo(fwdOp->inInfo(ReduceSumOp::getInIndex())),
+    : Op(Onnx::GradOperators::ReduceSumGrad, fwdOp.getSettings()),
+      outputTensorInfo(fwdOp.inInfo(ReduceSumOp::getInIndex())),
       backward_shape(backward_shape_) {}
 
 std::unique_ptr<Op> ReduceSumGradOp::clone() const {
@@ -103,9 +96,22 @@ const Shape &ReduceSumGradOp::backwardShape() const { return backward_shape; }
 void ReduceSumGradOp::setup() { outInfo(getOutIndex()) = outputTensorInfo; }
 
 namespace {
-static OpCreator<ReduceSumOp> reduceSumOpCreator(Onnx::Operators::ReduceSum_1);
-static GradOpCreator<ReduceSumGradOp>
-    reduceSumGradOpCreator(Onnx::GradOperators::ReduceSumGrad);
+// @SL@ the new factory method for the reduceSum op will get the attributes from
+// the model and pass them to the constructor of the OP
+static OpCreator<ReduceSumOp>
+    reduceSumOpCreator(Onnx::Operators::ReduceSum_1,
+                       [](const OperatorIdentifier &_opid,
+                          const Op::Settings &settings,
+                          const Attributes &attr) -> std::unique_ptr<Op> {
+                         int64_t keepdims =
+                             attr.getAttribute<Attributes::Int>("keepdims", 1);
+                         std::vector<int64_t> axes =
+                             attr.getAttribute<Attributes::Ints>("axes", {});
+
+                         return std::unique_ptr<Op>(
+                             new ReduceSumOp(_opid, axes, keepdims, settings));
+                       },
+                       true);
 } // namespace
 
 } // namespace poponnx

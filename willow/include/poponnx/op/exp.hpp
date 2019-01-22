@@ -7,10 +7,7 @@ namespace poponnx {
 
 class ExpOp : public Op {
 public:
-  ExpOp(const OperatorIdentifier &_opid,
-        Ir *_ir,
-        const std::string &name = "",
-        const Attributes &_attr = {});
+  ExpOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -21,7 +18,7 @@ public:
 
 class ExpGradOp : public Op {
 public:
-  ExpGradOp(ExpOp *fwdOp);
+  ExpGradOp(const ExpOp &fwdOp);
   std::unique_ptr<Op> clone() const final;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;

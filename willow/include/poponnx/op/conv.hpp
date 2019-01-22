@@ -8,9 +8,8 @@ namespace poponnx {
 class ConvOp : public HasReceptiveFieldOp {
 public:
   ConvOp(const OperatorIdentifier &_opid,
-         Ir *_ir,
-         const std::string &name = "",
-         const Attributes &_attr = {});
+         bool cacheOperation_,
+         const HasReceptiveFieldOp::Settings &settings_);
   int64_t nOutChans;
   int64_t group;
   bool cacheOperation = true;
@@ -30,6 +29,9 @@ public:
   static InIndex getBiasInIndex() { return 2; }
   static OutIndex getOutIndex() { return 0; }
 
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
+
 private:
   void setup0() final;
   void setSpatialK() final;
@@ -37,7 +39,7 @@ private:
 
 class ConvWeightsGradOp : public Op {
 public:
-  ConvWeightsGradOp(ConvOp *);
+  ConvWeightsGradOp(const ConvOp &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
@@ -61,7 +63,7 @@ private:
 
 class ConvDataGradOp : public Op {
 public:
-  ConvDataGradOp(ConvOp *);
+  ConvDataGradOp(const ConvOp &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;

@@ -11,12 +11,12 @@ std::unique_ptr<Op> L1Op::clone() const { return make_unique<L1Op>(*this); }
 
 std::vector<std::unique_ptr<Op>> L1Op::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<L1GradOp>(this));
+  upops.emplace_back(make_unique<L1GradOp>(*this));
   return upops;
 }
 
-std::unique_ptr<Op> L1Loss::getOp(Ir *gp) const {
-  return std::unique_ptr<Op>(new L1Op(op_type(), gp, this));
+std::unique_ptr<Op> L1Loss::getOp(const Op::Settings &settings_) const {
+  return std::unique_ptr<Op>(new L1Op(op_type(), this, settings_));
 }
 
 const OperatorIdentifier &L1Loss::op_type() const {
@@ -35,8 +35,10 @@ float L1Loss::getLambda() const { return lambda; }
 const L1Loss *L1Op::l1l() const { return l1loss_; }
 const L1Loss *L1GradOp::l1l() const { return l1loss_; }
 
-L1Op::L1Op(const OperatorIdentifier &_opid, Ir *_ir, const L1Loss *n)
-    : LossOp(_opid, _ir), l1loss_(n) {}
+L1Op::L1Op(const OperatorIdentifier &_opid,
+           const L1Loss *n,
+           const Op::Settings &settings_)
+    : LossOp(_opid, settings_), l1loss_(n) {}
 
 void L1GradOp::setup() {
   // gradient of input has same shape as input to L1
@@ -53,8 +55,9 @@ void L1Op::setup() {
   outInfo(getOutIndex()).set(info0.dataType(), {batchsize});
 }
 
-L1GradOp::L1GradOp(L1Op *op_)
-    : Op(Onnx::CustomGradOperators::L1Grad, op_->pir), l1loss_(op_->l1l()) {}
+L1GradOp::L1GradOp(const L1Op &op_)
+    : Op(Onnx::CustomGradOperators::L1Grad, op_.getSettings()),
+      l1loss_(op_.l1l()) {}
 
 const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {
   // input at index 0 of this grad op is the input at index 0 of the L1
@@ -71,10 +74,6 @@ const std::map<int, int> &L1GradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-namespace {
-static LossOpCreator<L1Op> l1OpCreator(Onnx::CustomOperators::L1);
-static GradOpCreator<L1GradOp>
-    l1GradOpCreator(Onnx::CustomGradOperators::L1Grad);
-} // namespace
+namespace {} // namespace
 
 } // namespace poponnx

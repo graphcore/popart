@@ -15,8 +15,7 @@ class OpManager {
 public:
   using OpFactoryFunc =
       std::function<std::unique_ptr<Op>(const OperatorIdentifier &_opid,
-                                        Ir *_ir,
-                                        const std::string &name,
+                                        const Op::Settings &settings,
                                         const Attributes &_attr)>;
 
   struct OpInfo {
@@ -41,13 +40,13 @@ public:
   static std::unique_ptr<Op> createOp(const OpDomain &domain,
                                       const OpType &type,
                                       const int opsetVersion,
-                                      Ir *ir,
+                                      Ir &ir,
                                       const std::string &name = "",
                                       const Attributes &_attr = {});
 
   // creates a op with matches the opid
   static std::unique_ptr<Op> createOp(const OperatorIdentifier &opid,
-                                      Ir *ir,
+                                      Ir &ir,
                                       const std::string &name = "",
                                       const Attributes &_attr = {});
 
@@ -60,6 +59,11 @@ public:
                                          const int opsetVersion);
 
 private:
+  std::unique_ptr<Op> create(const OperatorIdentifier &opid,
+                             Ir &ir,
+                             const std::string &name,
+                             const Attributes &_attr,
+                             OpFactoryFunc func);
   // Singleton
   static OpManager &getInstance();
 
@@ -69,32 +73,28 @@ private:
 
 // This class registers a lambda function to create a op with the
 // OpManager
+
 template <class OP> class OpCreator {
+
+  void registerOp(const OperatorIdentifier &opid, bool isPublic) {
+    OpManager::registerOp(opid,
+                          isPublic,
+                          [](const OperatorIdentifier &_opid,
+                             const Op::Settings &settings,
+                             const Attributes &) -> std::unique_ptr<Op> {
+                            return std::unique_ptr<OP>(new OP(_opid, settings));
+                          });
+  }
+
 public:
   OpCreator(const OperatorIdentifier &opid, bool isPublic = true) {
-    OpManager::registerOp(
-        opid,
-        isPublic,
-        [](const OperatorIdentifier &_opid,
-           Ir *ir,
-           const std::string &_name = "",
-           const Attributes &attr   = {}) -> std::unique_ptr<Op> {
-          return std::unique_ptr<OP>(new OP(_opid, ir, _name, attr));
-        });
+    registerOp(opid, isPublic);
   }
 
   OpCreator(const std::vector<OperatorIdentifier> &opids,
             bool isPublic = true) {
     for (const auto &opid : opids) {
-      OpManager::registerOp(
-          opid,
-          isPublic,
-          [](const OperatorIdentifier &_opid,
-             Ir *ir,
-             const std::string &_name = "",
-             const Attributes &attr   = {}) -> std::unique_ptr<Op> {
-            return std::unique_ptr<OP>(new OP(_opid, ir, _name, attr));
-          });
+      registerOp(opid, isPublic);
     }
   }
 
@@ -103,19 +103,13 @@ public:
             bool isPublic = true) {
     OpManager::registerOp(opid, isPublic, func);
   }
-};
 
-template <class OP> class LossOpCreator {
-public:
-  LossOpCreator(const OperatorIdentifier &opid, bool isPublic = false) {
-    OpManager::registerOp(opid, isPublic, nullptr);
-  }
-};
-
-template <class GRADOP> class GradOpCreator {
-public:
-  GradOpCreator(const OperatorIdentifier &opid, bool isPublic = false) {
-    OpManager::registerOp(opid, isPublic, nullptr);
+  OpCreator(const std::vector<OperatorIdentifier> &opids,
+            OpManager::OpFactoryFunc func,
+            bool isPublic = true) {
+    for (const auto &opid : opids) {
+      OpManager::registerOp(opid, isPublic, func);
+    }
   }
 };
 

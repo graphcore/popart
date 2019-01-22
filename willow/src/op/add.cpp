@@ -10,11 +10,8 @@ namespace poponnx {
 
 // TODO : T6250 : Add support for V6 axis & broadcast attributes
 
-AddOp::AddOp(const OperatorIdentifier &_opid,
-             Ir *_ir,
-             const std::string &name,
-             const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {
+AddOp::AddOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+    : Op(_opid, settings_) {
 
   // TODO : Use the attributes in Add-6
 }
@@ -29,9 +26,9 @@ std::vector<std::unique_ptr<Op>> AddOp::getGradOps() {
   const auto &shape_o0 = outShape(getOutIndex());
 
   upops.emplace_back(
-      make_unique<AddArg0GradOp>(this, npReductionAxis(shape_a0, shape_o0)));
+      make_unique<AddArg0GradOp>(*this, npReductionAxis(shape_a0, shape_o0)));
   upops.emplace_back(
-      make_unique<AddArg1GradOp>(this, npReductionAxis(shape_a1, shape_o0)));
+      make_unique<AddArg1GradOp>(*this, npReductionAxis(shape_a1, shape_o0)));
 
   return upops;
 }
@@ -41,9 +38,13 @@ void AddOp::setup() {
       npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
 }
 
-AddArg0GradOp::AddArg0GradOp(AddOp *op_, const std::vector<int64_t> &_axes)
-    : ReduceSumOp(Onnx::GradOperators::AddArg0Grad, op_->pir, _axes, false),
-      forward_op_arg_info(op_->inInfo(AddOp::getArg0InIndex())) {}
+AddArg0GradOp::AddArg0GradOp(const AddOp &op_,
+                             const std::vector<int64_t> &axes_)
+    : ReduceSumOp(Onnx::GradOperators::AddArg0Grad,
+                  axes_,
+                  false,
+                  op_.getSettings()),
+      forward_op_arg_info(op_.inInfo(AddOp::getArg0InIndex())) {}
 
 const std::map<int, int> &AddArg0GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
@@ -59,9 +60,13 @@ const std::vector<GradInOutMapper> &AddArg0GradOp::gradInputInfo() const {
 
 void AddArg0GradOp::setup() { outInfo(getOutIndex()) = forward_op_arg_info; }
 
-AddArg1GradOp::AddArg1GradOp(AddOp *op_, const std::vector<int64_t> &_axes)
-    : ReduceSumOp(Onnx::GradOperators::AddArg1Grad, op_->pir, _axes, false),
-      forward_op_arg_info(op_->inInfo(AddOp::getArg1InIndex())) {}
+AddArg1GradOp::AddArg1GradOp(const AddOp &op_,
+                             const std::vector<int64_t> &axes_)
+    : ReduceSumOp(Onnx::GradOperators::AddArg1Grad,
+                  axes_,
+                  false,
+                  op_.getSettings()),
+      forward_op_arg_info(op_.inInfo(AddOp::getArg1InIndex())) {}
 
 const std::map<int, int> &AddArg1GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
@@ -83,10 +88,6 @@ void AddArg1GradOp::setup() { outInfo(getOutIndex()) = forward_op_arg_info; }
 namespace {
 static OpCreator<AddOp> addOpCreator({Onnx::Operators::Add_6,
                                       Onnx::Operators::Add_7});
-static GradOpCreator<AddArg0GradOp>
-    addArg0GradOpCreator(Onnx::GradOperators::AddArg0Grad);
-static GradOpCreator<AddArg1GradOp>
-    addArg1GradOpCreator(Onnx::GradOperators::AddArg1Grad);
 } // namespace
 
 } // namespace poponnx

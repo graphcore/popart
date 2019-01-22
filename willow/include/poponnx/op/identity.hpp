@@ -8,17 +8,15 @@ namespace poponnx {
 
 class IdentityOp : public ElementWiseUnaryOp {
 public:
-  IdentityOp(const OperatorIdentifier &_opid,
-             Ir *_ir,
-             const std::string &name = "",
-             const Attributes &_attr = {});
+  IdentityOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
+
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 };
 
 class IdentityGradOp : public IdentityOp {
 public:
-  IdentityGradOp(IdentityOp *fwdOp);
+  IdentityGradOp(const IdentityOp &fwdOp);
   std::unique_ptr<Op> clone() const final;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;

@@ -8,29 +8,28 @@
 namespace poponnx {
 
 MaxPoolOp::MaxPoolOp(const OperatorIdentifier &_opid,
-                     Ir *_ir,
-                     const std::string &name,
-                     const Attributes &_attr)
-    : HasReceptiveFieldOp(_opid, _ir, name, _attr) {}
+                     const std::vector<int64_t> &kernelShape_,
+                     int64_t storageOrder_,
+                     const HasReceptiveFieldOp::Settings &settings_)
+    : HasReceptiveFieldOp(_opid, settings_), storageOrder(storageOrder_),
+      kernelShape(kernelShape_) {}
 
 void MaxPoolOp::setup0() {
-  int64_t storage_order = 0;
-  nAtts.setIfPresent(storage_order, "storage_order");
-  if (storage_order != 0) {
+
+  if (storageOrder != 0) {
     throw error("storage_order != 0, not supported");
   }
 }
 
 void MaxPoolOp::setSpatialK() {
   spatialK.resize(nSpatialDims);
-  std::vector<int64_t> kernel_shape;
-  nAtts.setIfPresent(kernel_shape, "kernel_shape");
-  if (kernel_shape.size() != inRank(getInIndex()) - 2) {
+
+  if (kernelShape.size() != inRank(getInIndex()) - 2) {
     throw error(
         "invalid kernel_shape, not same rank as the tensor operated on");
   }
   for (int spDim = 0; spDim < nSpatialDims; ++spDim) {
-    spatialK[spDim] = kernel_shape[spDim];
+    spatialK[spDim] = kernelShape[spDim];
   }
 }
 
@@ -48,14 +47,21 @@ int64_t MaxPoolOp::getNOutChans() const { return nInChans; }
 
 std::vector<std::unique_ptr<Op>> MaxPoolOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<MaxPoolGradOp>(this));
+  upops.emplace_back(make_unique<MaxPoolGradOp>(*this));
   return upops;
 }
 
-MaxPoolGradOp::MaxPoolGradOp(MaxPoolOp *op_)
-    : Op(Onnx::GradOperators::MaxPoolGrad, op_->pir),
-      unpooledInfo(op_->inInfo(MaxPoolOp::getInIndex())),
-      cloneOfCreator(op_->clone()) {}
+void MaxPoolOp::appendAttributes(std::stringstream &ss,
+                                 const std::string &tab) const {
+  HasReceptiveFieldOp::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "storage_order", storageOrder);
+  appendAttribute(ss, tab, "kernel_shape", kernelShape);
+}
+
+MaxPoolGradOp::MaxPoolGradOp(const MaxPoolOp &op_)
+    : Op(Onnx::GradOperators::MaxPoolGrad, op_.getSettings()),
+      unpooledInfo(op_.inInfo(MaxPoolOp::getInIndex())),
+      cloneOfCreator(op_.clone()) {}
 
 const std::vector<GradInOutMapper> &MaxPoolGradOp::gradInputInfo() const {
 
@@ -86,9 +92,24 @@ const std::map<int, int> &MaxPoolGradOp::gradOutToNonGradIn() const {
 void MaxPoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
 namespace {
-static OpCreator<MaxPoolOp> maxPoolOpxCreator(Onnx::Operators::MaxPool_8);
-static GradOpCreator<MaxPoolGradOp>
-    maxPoolGradOpxCreator(Onnx::GradOperators::MaxPoolGrad);
+static OpCreator<MaxPoolOp> maxPoolOpxCreator(
+    Onnx::Operators::MaxPool_8,
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      HasReceptiveFieldOp::Settings receptiveSettings(settings.ir,
+                                                      settings.name);
+      receptiveSettings.setFromAttributes(attr);
+
+      int64_t storageOrder =
+          attr.getAttribute<Attributes::Int>("storage_order", 0);
+      std::vector<int64_t> kernelShape =
+          attr.getAttribute<Attributes::Ints>("kernel_shape", {});
+
+      return std::unique_ptr<Op>(
+          new MaxPoolOp(_opid, kernelShape, storageOrder, receptiveSettings));
+    },
+    true);
 } // namespace
 
 } // namespace poponnx

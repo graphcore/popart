@@ -12,13 +12,12 @@ namespace poponnx {
 // but it is slightly different: this Op is static w.r.t. shape
 class ReshapeOp : public Op {
 public:
-  ReshapeOp(const OperatorIdentifier &_opid,
-            Ir *_ir,
-            const std::string &name = "",
-            const Attributes &_attr = {});
+  ReshapeOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
 
   // This will be used by ReshapeGradOp
-  ReshapeOp(const OperatorIdentifier &_opid, Ir *_ir, const Shape &outShape_);
+  ReshapeOp(const OperatorIdentifier &_opid,
+            const Shape &outShape_,
+            const Op::Settings &settings_);
 
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   std::unique_ptr<Op> clone() const final;
@@ -45,7 +44,7 @@ private:
 // reshape (which is a reshape)
 class ReshapeGradOp : public ReshapeOp {
 public:
-  ReshapeGradOp(ReshapeOp *);
+  ReshapeGradOp(const ReshapeOp &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 };

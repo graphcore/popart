@@ -11,17 +11,15 @@ namespace poponnx {
 
 // This will be used by ReshapeGradOp
 ReshapeOp::ReshapeOp(const OperatorIdentifier &_opid,
-                     Ir *_ir,
-                     const std::vector<int64_t> &ots)
-    : Op(_opid, _ir), outShape(ots) {
+                     const std::vector<int64_t> &ots,
+                     const Op::Settings &settings_)
+    : Op(_opid, settings_), outShape(ots) {
   finaliseShape();
 }
 
 ReshapeOp::ReshapeOp(const OperatorIdentifier &_opid,
-                     Ir *_pir,
-                     const std::string &name,
-                     const Attributes &_attr)
-    : Op(_opid, _pir, name, _attr) {}
+                     const Op::Settings &settings_)
+    : Op(_opid, settings_) {}
 
 const Shape &ReshapeOp::getOutShape() { return outShape; }
 
@@ -51,7 +49,7 @@ void ReshapeOp::finaliseShape() {
 
 std::vector<std::unique_ptr<Op>> ReshapeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<ReshapeGradOp>(this));
+  upops.emplace_back(make_unique<ReshapeGradOp>(*this));
   return upops;
 }
 
@@ -90,11 +88,11 @@ void ReshapeOp::connectInTensor(InIndex inIndex, TensorId tenId) {
     TensorId shapeId = tenId;
 
     // check 2 : that there is already a tensor with the shape tensor's name
-    if (!pir->getTensors().contains(shapeId)) {
+    if (!getIr().getTensors().contains(shapeId)) {
       throw error("no Tensor named `" + shapeId + "' recorded in Ir. " +
                   " This is the second input in the ReshapeOp constructor. ");
     }
-    Tensor *shapeTensor = pir->getTensors().get(shapeId);
+    Tensor *shapeTensor = getIr().getTensors().get(shapeId);
 
     // check 3 : that the tensor has data
     if (!shapeTensor->hasTensorData()) {
@@ -128,12 +126,12 @@ void ReshapeOp::connectInTensor(InIndex inIndex, TensorId tenId) {
   }
 }
 
-ReshapeGradOp::ReshapeGradOp(ReshapeOp *op_)
+ReshapeGradOp::ReshapeGradOp(const ReshapeOp &op_)
     : ReshapeOp(
           Onnx::GradOperators::ReshapeGrad,
-          op_->pir,
           // the output shape of this bwd op is the input shape of the fwd op
-          op_->inInfo(ReshapeOp::getInIndex()).shape()) {}
+          op_.inInfo(ReshapeOp::getInIndex()).shape(),
+          op_.getSettings()) {}
 
 const std::vector<GradInOutMapper> &ReshapeGradOp::gradInputInfo() const {
   // input at index 0 : gradient of output of reshape
@@ -152,8 +150,6 @@ const std::map<int, int> &ReshapeGradOp::gradOutToNonGradIn() const {
 
 namespace {
 static OpCreator<ReshapeOp> reshapeOpCreator(Onnx::Operators::Reshape_5);
-static GradOpCreator<ReshapeGradOp>
-    reshapeGradOpCreator(Onnx::GradOperators::ReshapeGrad);
 } // namespace
 
 } // namespace poponnx

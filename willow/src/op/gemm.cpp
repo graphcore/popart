@@ -8,10 +8,14 @@
 namespace poponnx {
 
 GemmOp::GemmOp(const OperatorIdentifier &_opid,
-               Ir *_ir,
-               const std::string &name,
-               const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+               float alpha_,
+               float beta_,
+               bool transA_,
+               bool transB_,
+               bool broadcast_,
+               const Op::Settings &settings_)
+    : Op(_opid, settings_), alpha(alpha_), beta(beta_), transA(transA_),
+      transB(transB_), broadcast(broadcast_) {}
 
 std::unique_ptr<Op> GemmOp::clone() const { return make_unique<GemmOp>(*this); }
 
@@ -21,11 +25,6 @@ std::vector<std::unique_ptr<Op>> GemmOp::getGradOps() {
 }
 
 void GemmOp::setup() {
-  // override defaults if present
-  nAtts.setIfPresent(alpha, "alpha");
-  nAtts.setIfPresent(beta, "beta");
-  nAtts.setIfPresent(transA, "transA");
-  nAtts.setIfPresent(transB, "transB");
 
   outInfo(getOutIndex()) = {inInfo(getAInIndex()).dataType(), getOutputShape()};
 }
@@ -51,10 +50,37 @@ float GemmOp::getBeta() const { return beta; }
 bool GemmOp::getTransA() const { return transA; }
 bool GemmOp::getTransB() const { return transB; }
 
+void GemmOp::appendAttributes(std::stringstream &ss,
+                              const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+
+  appendAttribute(ss, tab, "alpha", alpha);
+  appendAttribute(ss, tab, "beta", beta);
+  appendAttribute(ss, tab, "transA", transA);
+  appendAttribute(ss, tab, "transB", transB);
+
+  if (opid.version == 6)
+    appendAttribute(ss, tab, "broadcast", broadcast);
+}
 namespace {
-static OpCreator<GemmOp> gemmOpCreator({Onnx::Operators::Gemm_6,
-                                        Onnx::Operators::Gemm_7,
-                                        Onnx::Operators::Gemm_9});
+static OpCreator<GemmOp> gemmOpCreator(
+    {Onnx::Operators::Gemm_6, Onnx::Operators::Gemm_7, Onnx::Operators::Gemm_9},
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      float alpha = attr.getAttribute<Attributes::Float>("alpha", 1.0);
+      float beta  = attr.getAttribute<Attributes::Float>("beta", 1.0);
+      bool transA = attr.getAttribute<Attributes::Int>("transA", false);
+      bool transB = attr.getAttribute<Attributes::Int>("transB", false);
+
+      // broadcast is only valid for version 6
+      bool broadcast = attr.getAttribute<Attributes::Int>("broadcast", false);
+
+      return std::unique_ptr<Op>(
+          new GemmOp(_opid, alpha, beta, transA, transB, broadcast, settings));
+    },
+    true);
+
 } // namespace
 
 } // namespace poponnx

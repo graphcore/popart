@@ -45,19 +45,12 @@ public:
 
 std::size_t InterIpuCopy::id() { return typeid(InterIpuCopy).hash_code(); }
 
-// This function will throw an exception if the attribute is not set
-IpuNumber getIpuNumber(const Op *op) {
-  IpuNumber num = 0;
-  op->nAtts.set(num, sVirtualGraphAttribute);
-  return num;
-}
-
 bool InterIpuCopy::apply(Ir &ir) const {
 
   // If the first op does not have an ipuNumber attribute, assume that no op's
   // have the ipuNumber set and so there is no inter ipu copy required.
-  if (ir.getOps().size() > 0 && ir.getOps().begin()->second->nAtts.hasAttribute(
-                                    sVirtualGraphAttribute) == false) {
+  if (ir.getOps().size() > 0 &&
+      !(ir.getOps().begin()->second->getVirtualGraphId())) {
     return false;
   }
 
@@ -73,7 +66,10 @@ bool InterIpuCopy::apply(Ir &ir) const {
     if (from->opid != Onnx::CustomOperators::IpuCopy) {
 
       // Get which ipu the from op is on
-      int64_t fromIpu = getIpuNumber(from);
+      int64_t fromIpu = -1;
+      if (from->getVirtualGraphId()) {
+        fromIpu = *(from->getVirtualGraphId());
+      }
 
       // For each output tensor
       auto &output = from->output;
@@ -91,7 +87,10 @@ bool InterIpuCopy::apply(Ir &ir) const {
           if (to->opid != Onnx::CustomOperators::IpuCopy) {
 
             // Get which ipu the to op is on
-            int64_t toIpu = getIpuNumber(to);
+            int64_t toIpu = -1;
+            if (to->getVirtualGraphId()) {
+              toIpu = *(to->getVirtualGraphId());
+            }
 
             // If the ops are not on the same ipu
             if (fromIpu != toIpu) {
@@ -140,8 +139,10 @@ bool InterIpuCopy::apply(Ir &ir) const {
                     fromIpu,
                     toIpu);
 
+                Op::Settings settings(ir, "");
+
                 auto ipuCopy_op = make_unique<IpuCopyOp>(
-                    Onnx::CustomOperators::IpuCopy, &ir, toIpu);
+                    Onnx::CustomOperators::IpuCopy, toIpu, settings);
 
                 auto ipuCopy = ipuCopy_op.get();
                 ir.moveIntoIr(std::move(ipuCopy_op));

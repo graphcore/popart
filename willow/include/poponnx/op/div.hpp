@@ -10,10 +10,7 @@ namespace poponnx {
 // arg_0 / arg_1
 class DivOp : public Op {
 public:
-  DivOp(const OperatorIdentifier &_opid,
-        Ir *_ir,
-        const std::string &name = "",
-        const Attributes &_attr = {});
+  DivOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -29,9 +26,9 @@ public:
 class DivArgGradOp : public Op {
 public:
   DivArgGradOp(const OperatorIdentifier &_opid,
-               Ir *_ir,
                const std::vector<int64_t> &reduction_axes,
-               const TensorInfo &forward_op_arg_info);
+               const TensorInfo &forward_op_arg_info,
+               const Op::Settings &settings_);
   void setup() final;
   static OutIndex getOutIndex() { return 0; }
   // In C = div(A,B) with numpy-style broadcasting,
@@ -50,7 +47,7 @@ private:
 // gradOut / arg_1
 class DivArg0GradOp : public DivArgGradOp {
 public:
-  DivArg0GradOp(DivOp *, const std::vector<int64_t> &reduction_axes);
+  DivArg0GradOp(const DivOp &, const std::vector<int64_t> &reduction_axes);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
@@ -62,7 +59,7 @@ public:
 // - (gradOut * arg_0) / arg_1^2
 class DivArg1GradOp : public DivArgGradOp {
 public:
-  DivArg1GradOp(DivOp *, const std::vector<int64_t> &reduction_axes);
+  DivArg1GradOp(const DivOp &, const std::vector<int64_t> &reduction_axes);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 

@@ -9,9 +9,8 @@ namespace poponnx {
 class ScaleOp : public ElementWiseUnaryOp {
 public:
   ScaleOp(const OperatorIdentifier &_opid,
-          Ir *_ir,
-          const std::string &name = "",
-          const Attributes &_attr = {});
+          float scale_,
+          const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -19,13 +18,16 @@ public:
   void setScaleFactor(float value) { scale_factor = value; }
   float getScaleFactor() const;
 
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
+
 private:
   float scale_factor;
 };
 
 class ScaleGradOp : public ScaleOp {
 public:
-  ScaleGradOp(ScaleOp *fwdOp);
+  ScaleGradOp(const ScaleOp &fwdOp);
   std::unique_ptr<Op> clone() const final;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;

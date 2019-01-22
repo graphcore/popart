@@ -7,17 +7,13 @@
 namespace poponnx {
 
 SoftmaxOp::SoftmaxOp(const OperatorIdentifier &_opid,
-                     Ir *_ir,
-                     const std::string &name,
-                     const Attributes &attr)
-    : ElementWiseUnaryOp(_opid, _ir, name, attr) {
-  axis = 1;
-  attr.setIfPresent(axis, "axis");
-}
+                     int64_t axis_,
+                     const Op::Settings &settings_)
+    : ElementWiseUnaryOp(_opid, settings_), axis(axis_) {}
 
 std::vector<std::unique_ptr<Op>> SoftmaxOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SoftmaxGradOp>(this));
+  upops.emplace_back(make_unique<SoftmaxGradOp>(*this));
   return upops;
 }
 
@@ -27,12 +23,19 @@ std::unique_ptr<Op> SoftmaxOp::clone() const {
 
 int64_t SoftmaxOp::getAxis() const { return axis; }
 
+void SoftmaxOp::appendAttributes(std::stringstream &ss,
+                                 const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "axis", axis);
+}
+
 void SoftmaxGradOp::setup() {
   outInfo(getOutIndex()) = inInfo(getGradProbsInIndex());
 }
 
-SoftmaxGradOp::SoftmaxGradOp(SoftmaxOp *op_)
-    : Op(Onnx::GradOperators::SoftmaxGrad, op_->pir), axis(op_->getAxis()) {}
+SoftmaxGradOp::SoftmaxGradOp(const SoftmaxOp &op_)
+    : Op(Onnx::GradOperators::SoftmaxGrad, op_.getSettings()),
+      axis(op_.getAxis()) {}
 
 const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
   // input at index 0 (probGradInputIndex()) : gradient of output of softmax
@@ -54,8 +57,9 @@ const std::map<int, int> &SoftmaxGradOp::gradOutToNonGradIn() const {
 
 int64_t SoftmaxGradOp::getAxis() const { return axis; }
 
-SoftmaxGradDirectOp::SoftmaxGradDirectOp(Ir *ir, const NllLoss *nls)
-    : Op(Onnx::CustomGradOperators::SoftmaxGradDirect, ir) {
+SoftmaxGradDirectOp::SoftmaxGradDirectOp(const NllLoss *nls,
+                                         const Op::Settings &settings_)
+    : Op(Onnx::CustomGradOperators::SoftmaxGradDirect, settings_) {
   nllloss_ = nls;
 }
 
@@ -71,11 +75,21 @@ void SoftmaxGradDirectOp::setup() {
 }
 
 namespace {
-static OpCreator<SoftmaxOp> softmaxOpCreator(Onnx::Operators::Softmax_1);
-static GradOpCreator<SoftmaxGradOp>
-    softmaxGradOpCreator(Onnx::GradOperators::SoftmaxGrad);
-static GradOpCreator<SoftmaxGradDirectOp>
-    softmaxGradDirectOpCreator(Onnx::CustomGradOperators::SoftmaxGradDirect);
+static OpCreator<SoftmaxOp> softmaxOpCreator(
+    Onnx::Operators::Softmax_1,
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      int64_t axis = attr.getAttribute<Attributes::Int>("axis", 1);
+
+      return std::unique_ptr<Op>(new SoftmaxOp(_opid, axis, settings));
+    },
+    true);
+
+// static GradOpCreator<SoftmaxGradOp>
+//    softmaxGradOpCreator(Onnx::GradOperators::SoftmaxGrad);
+// static GradOpCreator<SoftmaxGradDirectOp>
+//    softmaxGradDirectOpCreator(Onnx::CustomGradOperators::SoftmaxGradDirect);
 } // namespace
 
 } // namespace poponnx

@@ -8,8 +8,8 @@
 namespace poponnx {
 VarUpdateOp::VarUpdateOp(const OperatorIdentifier &_opid,
                          TensorId varId_,
-                         Ir *_pir)
-    : Op(_opid, _pir), varId(varId_), varGradId(getGradId(varId)) {
+                         const Op::Settings &settings_)
+    : Op(_opid, settings_), varId(varId_), varGradId(getGradId(varId)) {
   // very high priority, so that performed as early as possible
   priority = std::numeric_limits<double>::max();
 }
@@ -25,15 +25,17 @@ VarUpdateOp::modifies(const std::map<InIndex, Shape> &) const {
   return {{getVarInIndex(), {true}}};
 }
 
-SGDVarUpdateOp::SGDVarUpdateOp(TensorId varId_, Ir *_pir)
-    : VarUpdateOp(Onnx::CustomOperators::SgdVarUpdate, varId_, _pir) {}
+SGDVarUpdateOp::SGDVarUpdateOp(TensorId varId_, const Op::Settings &settings_)
+    : VarUpdateOp(Onnx::CustomOperators::SgdVarUpdate, varId_, settings_) {}
 
 std::unique_ptr<Op> SGDVarUpdateOp::clone() const {
   return make_unique<SGDVarUpdateOp>(*this);
 }
 
-ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_, Ir *_pir, float lr_)
-    : VarUpdateOp(Onnx::CustomOperators::ConstSgdVarUpdate, varId_, _pir),
+ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_,
+                                         float lr_,
+                                         const Op::Settings &settings_)
+    : VarUpdateOp(Onnx::CustomOperators::ConstSgdVarUpdate, varId_, settings_),
       learnRate(lr_) {}
 
 float ConstSGDVarUpdateOp::getLearnRate() const { return learnRate; }
@@ -42,12 +44,6 @@ std::unique_ptr<Op> ConstSGDVarUpdateOp::clone() const {
   return make_unique<ConstSGDVarUpdateOp>(*this);
 }
 
-namespace {
-static GradOpCreator<SGDVarUpdateOp>
-    sgdVarUpdateOpCreator(Onnx::CustomOperators::SgdVarUpdate);
-static GradOpCreator<ConstSGDVarUpdateOp>
-    constSgdVarUpdateOpCreator(Onnx::CustomOperators::ConstSgdVarUpdate);
-
-} // namespace
+namespace {} // namespace
 
 } // namespace poponnx

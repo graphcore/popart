@@ -23,7 +23,6 @@ static void connectPair(TensorId baseId,
 
 bool SequenceExpander::expand(std::vector<std::unique_ptr<Op>> &seq,
                               Op *op) const {
-  auto ir = op->pir;
 
   // Connect the input tensors to the front of the sequence
   auto &front = seq.front();
@@ -46,14 +45,14 @@ bool SequenceExpander::expand(std::vector<std::unique_ptr<Op>> &seq,
   for (auto &step : seq) {
     logging::pattern::info("Inserting op {}", step->str());
     step->setup();
-    ir->moveIntoIr(std::move(step));
+    op->getIr().moveIntoIr(std::move(step));
   }
 
   // Delete the matched op
   logging::pattern::info("Removing op {}", op->str());
 
   op->disconnectAllInputs();
-  ir->eraseOp(op->id);
+  op->getIr().eraseOp(op->id);
 
   return true;
 }

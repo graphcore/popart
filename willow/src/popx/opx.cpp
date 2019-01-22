@@ -38,10 +38,9 @@ bool Opx::canCreateInput(int) const { return false; }
 poplar::Graph &Opx::masterGraph() const { return dv_p->masterGraph(); }
 
 poplar::Graph &Opx::graph() const {
-  if (op_p->pir->getSessionOptions().enableVirtualGraphs) {
-    if (op_p->nAtts.hasAttribute(sVirtualGraphAttribute)) {
-      int64_t index;
-      op_p->nAtts.setIfPresent(index, sVirtualGraphAttribute);
+  if (op_p->getIr().getSessionOptions().enableVirtualGraphs) {
+    if (op_p->getVirtualGraphId()) {
+      int64_t index = *(op_p->getVirtualGraphId());
       return dv_p->graph(index);
     } else {
       throw error("{} does not have a virtual graph attribute",

@@ -11,10 +11,8 @@ class IpuCopyOp : public Op {
 
 public:
   IpuCopyOp(const OperatorIdentifier &_opid,
-            Ir *_ir,
             uint64_t _destIpu,
-            const std::string &name = "",
-            const Attributes &_attr = {});
+            const Op::Settings &settings_);
   void setup() final;
 
   uint64_t getDestIpu() { return destIpu; }

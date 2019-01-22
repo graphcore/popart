@@ -8,9 +8,8 @@ namespace poponnx {
 class UnsqueezeOp : public Op {
 public:
   UnsqueezeOp(const OperatorIdentifier &_opid,
-              Ir *_ir,
-              const std::string &name = "",
-              const Attributes &_attr = {});
+              const std::vector<int64_t> &axes_,
+              const Op::Settings &settings_);
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
   std::unique_ptr<Op> clone() const final;
@@ -18,13 +17,16 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
+
 private:
   std::vector<int64_t> axes;
 };
 
 class UnsqueezeGradOp : public Op {
 public:
-  UnsqueezeGradOp(UnsqueezeOp *);
+  UnsqueezeGradOp(const UnsqueezeOp &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;

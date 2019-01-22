@@ -9,10 +9,7 @@ class NllLoss;
 
 class LogSoftmaxOp : public ElementWiseUnaryOp {
 public:
-  LogSoftmaxOp(const OperatorIdentifier &_opid,
-               Ir *_ir,
-               const std::string &name = "",
-               const Attributes &_attr = {});
+  LogSoftmaxOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   std::unique_ptr<Op> clone() const final;
 };

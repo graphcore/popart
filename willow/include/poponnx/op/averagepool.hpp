@@ -13,9 +13,9 @@ namespace poponnx {
 class AveragePoolOp : public HasReceptiveFieldOp {
 public:
   AveragePoolOp(const OperatorIdentifier &_opid,
-                Ir *_ir,
-                const std::string &name = "",
-                const Attributes &_attr = {});
+                int _countIncludePad,
+                const std::vector<int64_t> &_kernelShape,
+                const HasReceptiveFieldOp::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   int64_t getNOutChans() const final;
@@ -23,14 +23,20 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
+
 private:
   void setup0() final;
   void setSpatialK() final;
+
+  std::vector<int64_t> kernelShape;
+  int countIncludePad;
 };
 
 class AveragePoolGradOp : public Op {
 public:
-  AveragePoolGradOp(AveragePoolOp *);
+  AveragePoolGradOp(const AveragePoolOp &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;

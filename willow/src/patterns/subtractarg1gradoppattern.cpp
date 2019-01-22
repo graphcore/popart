@@ -15,8 +15,7 @@ bool SubtractArg1GradOpPattern::matches(Op *op) const {
 
 std::vector<std::unique_ptr<Op>>
 SubtractArg1GradOpPattern::sequence(Op *op) const {
-  auto ir            = op->pir;
-  auto attr          = op->nAtts.filter(sVirtualGraphAttribute);
+
   auto input_tensor  = op->input->tensor(0);
   auto output_tensor = op->output->tensor(0);
   auto axes =
@@ -26,7 +25,7 @@ SubtractArg1GradOpPattern::sequence(Op *op) const {
 
   seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Neg, op, {}));
   seq.push_back(make_unique<ReduceSumOp>(
-      Onnx::AiOnnx::OpSet9::ReduceSum, ir, axes, false, attr));
+      Onnx::AiOnnx::OpSet9::ReduceSum, axes, false, op->getSettings()));
 
   return seq;
 }

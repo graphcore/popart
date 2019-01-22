@@ -5,23 +5,19 @@
 
 namespace poponnx {
 
-CosOp::CosOp(const OperatorIdentifier &_opid,
-             Ir *_ir,
-             const std::string &name,
-             const Attributes &_attr)
-    : ElementWiseUnaryOp(_opid, _ir, name, _attr) {}
+CosOp::CosOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+    : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> CosOp::clone() const { return make_unique<CosOp>(*this); }
 
 std::vector<std::unique_ptr<Op>> CosOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<CosGradOp>(this));
+  upops.emplace_back(make_unique<CosGradOp>(*this));
   return upops;
 }
 
-CosGradOp::CosGradOp(CosOp *fwdOp)
-    : ElementWiseNonLinearUnaryGradOp(Onnx::GradOperators::CosGrad,
-                                      fwdOp->pir) {}
+CosGradOp::CosGradOp(const CosOp &fwdOp)
+    : ElementWiseNonLinearUnaryGradOp(Onnx::GradOperators::CosGrad, fwdOp) {}
 
 std::unique_ptr<Op> CosGradOp::clone() const {
   return make_unique<CosGradOp>(*this);
@@ -29,7 +25,6 @@ std::unique_ptr<Op> CosGradOp::clone() const {
 
 namespace {
 static OpCreator<CosOp> cosOpCreator(Onnx::Operators::Cos_7);
-static GradOpCreator<CosGradOp> cosGradOpCreator(Onnx::GradOperators::CosGrad);
 } // namespace
 
 } // namespace poponnx

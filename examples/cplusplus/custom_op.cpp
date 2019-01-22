@@ -34,8 +34,8 @@ const poponnx::OperatorIdentifier CubeGrad = {"com.acme", "CubeGrad", 9};
 
 class CubeGradOp : public poponnx::Op {
 public:
-  CubeGradOp(poponnx::Op *fwdOp)
-      : poponnx::Op(Onnx::CustomGradOperators::CubeGrad, fwdOp->pir) {}
+  CubeGradOp(const poponnx::Op &fwdOp)
+      : poponnx::Op(Onnx::CustomGradOperators::CubeGrad, fwdOp.getSettings()) {}
 
   virtual void setup() { outInfo(0) = inInfo(0); }
 
@@ -55,23 +55,19 @@ public:
 class CubeOp : public poponnx::Op {
 public:
   CubeOp(const poponnx::OperatorIdentifier &_opid,
-         poponnx::Ir *ir,
-         const std::string &name,
-         const poponnx::Attributes &attr)
-      : poponnx::Op(_opid, ir, name, attr) {}
+         const poponnx::Op::Settings &settings_)
+      : poponnx::Op(_opid, settings_) {}
 
   virtual void setup() { outInfo(0) = inInfo(0); }
 
   std::vector<std::unique_ptr<poponnx::Op>> getGradOps() {
     std::vector<std::unique_ptr<Op>> upops;
-    upops.emplace_back(new CubeGradOp(this));
+    upops.emplace_back(new CubeGradOp(*this));
     return upops;
   }
 };
 
 static poponnx::OpCreator<CubeOp> cubeOpCreator(Onnx::CustomOperators::Cube);
-static poponnx::GradOpCreator<CubeGradOp>
-    cubeGradOpCreator(Onnx::CustomGradOperators::CubeGrad);
 
 class CubeOpx : public poponnx::popx::Opx {
 public:

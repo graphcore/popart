@@ -535,8 +535,9 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
       for (auto *op : tensor->consumers.getOps()) {
         auto &graph = getOpx(op->id)->graph();
 
-        int64_t index = 0;
-        op->nAtts.setIfPresent(index, sVirtualGraphAttribute);
+        int64_t index = -1;
+        if (op->getVirtualGraphId())
+          index = *(op->getVirtualGraphId());
 
         if (ipus.end() == std::find(ipus.begin(), ipus.end(), index)) {
 
@@ -630,8 +631,9 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
     for (auto *op : tensor->consumers.getOps()) {
       auto &graph = getOpx(op->id)->graph();
 
-      int64_t index = 0;
-      op->nAtts.setIfPresent(index, sVirtualGraphAttribute);
+      int64_t index = -1;
+      if (op->getVirtualGraphId())
+        index = *(op->getVirtualGraphId());
 
       // Only stream the tensor once for all op's that consume it on an ipu
       if (std::find(ipus.begin(), ipus.end(), index) == ipus.end()) {
@@ -766,9 +768,8 @@ void Devicex::prepare() {
 
     // Make sure that the virtual graph information is valid
     for (Op *op : ir().getOpSchedule({})) {
-      if (op->nAtts.hasAttribute(sVirtualGraphAttribute)) {
-        int64_t index = 0;
-        op->nAtts.set(index, sVirtualGraphAttribute);
+      if (op->getVirtualGraphId()) {
+        int64_t index = *(op->getVirtualGraphId());
         if (index < 0 || index >= numIPUs) {
           throw error("{} has been assigned to an invalid virtual graph {}",
                       op->debugName(),

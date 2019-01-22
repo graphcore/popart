@@ -23,26 +23,25 @@ using namespace poponnx;
 BOOST_AUTO_TEST_CASE(OpManager_Test1) {
 
   poponnx::Ir ir;
-  auto a = OpManager::createOp(Onnx::Operators::Add_7, &ir);
+  auto a = OpManager::createOp(Onnx::Operators::Add_7, ir);
   BOOST_CHECK(a != nullptr);
 
   // This will fail as we do not have the custom op
-  auto c = OpManager::createOp({"ai_simon", "MyAdd", 2}, &ir);
+  auto c = OpManager::createOp({"ai_simon", "MyAdd", 2}, ir);
   BOOST_CHECK(c == nullptr);
 
   // register the new op, (but it is just an AddOp)
   OpManager::registerOp({"ai_simon", "MyAdd", 2},
                         false,
                         [](const OperatorIdentifier &_opid,
-                           Ir *ir,
-                           const std::string &_name = "",
+                           const Op::Settings &settings,
                            const Attributes &attr = {}) -> std::unique_ptr<Op> {
                           return std::unique_ptr<AddOp>(
-                              new AddOp(_opid, ir, _name, attr));
+                              new AddOp(_opid, settings));
                         });
 
   // Now we do...
-  auto b = OpManager::createOp({"ai_simon", "MyAdd", 2}, &ir);
+  auto b = OpManager::createOp({"ai_simon", "MyAdd", 2}, ir);
   BOOST_CHECK(b != nullptr);
 
   // test that we can query for the new operation
@@ -55,7 +54,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test1) {
 BOOST_AUTO_TEST_CASE(OpxManager_Test1) {
 
   poponnx::Ir ir;
-  auto a = OpManager::createOp(Onnx::Operators::Add_7, &ir);
+  auto a = OpManager::createOp(Onnx::Operators::Add_7, ir);
   BOOST_CHECK(a != nullptr);
 
   auto aX = popx::OpxManager::createOpx(a.get(), nullptr);
@@ -68,11 +67,10 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
   OpManager::registerOp({"ai_simon", "MyAdd2", 9},
                         false,
                         [](const OperatorIdentifier &_opid,
-                           Ir *ir,
-                           const std::string &_name = "",
+                           const Op::Settings &settings,
                            const Attributes &attr = {}) -> std::unique_ptr<Op> {
                           return std::unique_ptr<AddOp>(
-                              new AddOp(_opid, ir, _name, attr));
+                              new AddOp(_opid, settings));
                         });
 
   auto builder = Builder::create();

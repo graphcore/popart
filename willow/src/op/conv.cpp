@@ -11,10 +11,9 @@
 namespace poponnx {
 
 ConvOp::ConvOp(const OperatorIdentifier &_opid,
-               Ir *_ir,
-               const std::string &name,
-               const Attributes &_attr)
-    : HasReceptiveFieldOp(_opid, _ir, name, _attr) {}
+               bool cacheOperation_,
+               const HasReceptiveFieldOp::Settings &settings_)
+    : HasReceptiveFieldOp(_opid, settings_), cacheOperation(cacheOperation_) {}
 
 const Tensor *ConvOp::dataIn() const { return inTensor(getDataInIndex()); }
 
@@ -24,8 +23,8 @@ const Tensor *ConvOp::weightsIn() const {
 
 std::vector<std::unique_ptr<Op>> ConvOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<ConvDataGradOp>(this));
-  upops.emplace_back(make_unique<ConvWeightsGradOp>(this));
+  upops.emplace_back(make_unique<ConvDataGradOp>(*this));
+  upops.emplace_back(make_unique<ConvWeightsGradOp>(*this));
   return upops;
 }
 
@@ -42,10 +41,8 @@ void ConvOp::setup0() {
   // "group" is required property of the ONNX conv op
   group = nInChans / weightsIn()->info.dim(1);
 
-  // Get the attribute wether we should do graph caching for this convolution.
-  nAtts.setIfPresent(cacheOperation, "__cache_operation");
   // Override if caching has been disabled for the whole graph.
-  const auto &sessionOptions = pir->getSessionOptions();
+  const auto &sessionOptions = getIr().getSessionOptions();
   cacheOperation &= sessionOptions.enableConvolutionGraphCaching;
 }
 
@@ -70,10 +67,16 @@ const ConvOp *ConvDataGradOp::getCloneOfCreator() const {
 
 int64_t ConvOp::getNOutChans() const { return nOutChans; }
 
-ConvWeightsGradOp::ConvWeightsGradOp(ConvOp *op_)
-    : Op(Onnx::GradOperators::ConvWeightsGrad, op_->pir),
-      cloneOfCreator(op_->clone()),
-      weightsInfo(op_->inInfo(ConvOp::getWeightsInIndex())) {
+void ConvOp::appendAttributes(std::stringstream &ss,
+                              const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, sCacheOperation, cacheOperation);
+}
+
+ConvWeightsGradOp::ConvWeightsGradOp(const ConvOp &op_)
+    : Op(Onnx::GradOperators::ConvWeightsGrad, op_.getSettings()),
+      cloneOfCreator(op_.clone()),
+      weightsInfo(op_.inInfo(ConvOp::getWeightsInIndex())) {
   // we want this Op to be executed early, so that the weight
   // update can be performed as early as possible, thus making
   // weight gradient tensors non-live. TODO : same for matmul
@@ -97,10 +100,10 @@ const std::map<int, int> &ConvWeightsGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-ConvDataGradOp::ConvDataGradOp(ConvOp *op_)
-    : Op(Onnx::GradOperators::ConvDataGrad, op_->pir),
-      cloneOfCreator(op_->clone()),
-      dataInfo(op_->inInfo(ConvOp::getDataInIndex())) {}
+ConvDataGradOp::ConvDataGradOp(const ConvOp &op_)
+    : Op(Onnx::GradOperators::ConvDataGrad, op_.getSettings()),
+      cloneOfCreator(op_.clone()),
+      dataInfo(op_.inInfo(ConvOp::getDataInIndex())) {}
 
 const std::vector<GradInOutMapper> &ConvDataGradOp::gradInputInfo() const {
   // input at index getGradConvolvedIn() : gradient of output of conv
@@ -120,11 +123,22 @@ const std::map<int, int> &ConvDataGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<ConvOp> convOpCreator(Onnx::Operators::Conv_1);
-static GradOpCreator<ConvDataGradOp>
-    convDataGradOpCreator(Onnx::GradOperators::ConvDataGrad);
-static GradOpCreator<ConvWeightsGradOp>
-    convWeightsGradOpCreator(Onnx::GradOperators::ConvWeightsGrad);
+static OpCreator<ConvOp>
+    convOpCreator(Onnx::Operators::Conv_1,
+                  [](const OperatorIdentifier &_opid,
+                     const Op::Settings &settings,
+                     const Attributes &attr) -> std::unique_ptr<Op> {
+                    HasReceptiveFieldOp::Settings receptiveSettings(
+                        settings.ir, settings.name);
+                    receptiveSettings.setFromAttributes(attr);
+
+                    int64_t cacheOperation =
+                        attr.getAttribute<Attributes::Int>(sCacheOperation, 0);
+
+                    return std::unique_ptr<Op>(
+                        new ConvOp(_opid, cacheOperation, receptiveSettings));
+                  },
+                  true);
 } // namespace
 
 } // namespace poponnx

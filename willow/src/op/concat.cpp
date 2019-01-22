@@ -33,19 +33,12 @@ ConcatInplaceOp::aliases(const std::map<InIndex, Shape> &shapesToConcat) const {
 }
 
 ConcatOp::ConcatOp(const OperatorIdentifier &_opid,
-                   Ir *_ir,
-                   const std::string &name,
-                   const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {
-  _attr.setIfPresent(axis, "axis");
-}
+                   int64_t axis_,
+                   const Op::Settings &settings_)
+    : Op(_opid, settings_), axis(axis_) {}
 
-ConcatOp::ConcatOp(const OperatorIdentifier &_opid, ConcatOp *concat_op)
-    : Op(_opid, concat_op->pir, {}, concat_op->nAtts),
-      axis(concat_op->getAxis()) {}
-
-ConcatInplaceOp::ConcatInplaceOp(ConcatOp *concat_op)
-    : ConcatOp(Onnx::CustomOperators::ConcatInplace, concat_op) {}
+ConcatInplaceOp::ConcatInplaceOp(const ConcatOp &op, int64_t axis_)
+    : ConcatOp(Onnx::CustomOperators::ConcatInplace, axis_, op.getSettings()) {}
 
 std::unique_ptr<Op> ConcatOp::clone() const {
   return make_unique<ConcatOp>(*this);
@@ -60,7 +53,7 @@ ConcatOp::getInplaceVariant(const OperatorIdentifier &operator_id,
   if (std::find(validVariants.begin(),
                 validVariants.end(),
                 Onnx::CustomOperators::ConcatInplace) != validVariants.end()) {
-    return make_unique<ConcatInplaceOp>(this);
+    return make_unique<ConcatInplaceOp>(*this, axis);
   }
 
   // catch remaining cases and throw an error
@@ -138,40 +131,46 @@ std::vector<std::unique_ptr<Op>> ConcatOp::getGradOps() {
   result.reserve(input->n());
 
   for (int i = 0; i < input->n(); ++i) {
-    result.push_back(make_unique<ConcatGradOp>(this, i));
+    result.push_back(make_unique<ConcatGradOp>(*this, i));
   }
 
   return result;
 }
 
-ConcatGradOp::ConcatGradOp(ConcatOp *fwd, InIndex inputIndex)
-    : Op({Onnx::GradOperators::ConcatGrad, fwd->pir, {}}), axis(fwd->getAxis()),
-      start(0), end(0), fwdInput(inputIndex) {
+ConcatGradOp::ConcatGradOp(const ConcatOp &fwd, InIndex inputIndex)
+    : Op(Onnx::GradOperators::ConcatGrad, fwd.getSettings()),
+      axis(fwd.getAxis()), start(0), end(0), fwdInput(inputIndex) {
   for (int i = 0; i < inputIndex; ++i) {
-    auto shape = fwd->inShape(ConcatOp::getInIndex(i));
+    auto shape = fwd.inShape(ConcatOp::getInIndex(i));
     start += shape[axis];
   }
 
   for (int i = 0; i <= inputIndex; ++i) {
-    auto shape = fwd->inShape(ConcatOp::getInIndex(i));
+    auto shape = fwd.inShape(ConcatOp::getInIndex(i));
     end += shape[axis];
   }
 
   const DataType outType =
-      fwd->inInfo(ConcatOp::getInIndex(fwdInput)).dataType();
-  Shape outShape = fwd->inShape(ConcatOp::getInIndex(fwdInput));
+      fwd.inInfo(ConcatOp::getInIndex(fwdInput)).dataType();
+  Shape outShape = fwd.inShape(ConcatOp::getInIndex(fwdInput));
   outShape[axis] = end - start;
 
   gradInfo               = TensorInfo(outType, outShape);
   gradOutToNonGradInInfo = {{getOutIndex(), ConcatOp::getInIndex(fwdInput)}};
 }
 
+void ConcatOp::appendAttributes(std::stringstream &ss,
+                                const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "axis", axis);
+}
+
 ConcatGradOp::ConcatGradOp(const OperatorIdentifier &_opid,
-                           ConcatGradOp *concat_grad_op)
-    : Op({_opid, concat_grad_op->pir, {}}), axis(concat_grad_op->axis),
-      start(concat_grad_op->start), end(concat_grad_op->end),
-      fwdInput(concat_grad_op->fwdInput), gradInfo(concat_grad_op->gradInfo),
-      gradOutToNonGradInInfo(concat_grad_op->gradOutToNonGradInInfo) {}
+                           const ConcatGradOp &concat_grad_op)
+    : Op(_opid, concat_grad_op.getSettings()), axis(concat_grad_op.axis),
+      start(concat_grad_op.start), end(concat_grad_op.end),
+      fwdInput(concat_grad_op.fwdInput), gradInfo(concat_grad_op.gradInfo),
+      gradOutToNonGradInInfo(concat_grad_op.gradOutToNonGradInInfo) {}
 
 std::unique_ptr<Op> ConcatGradOp::clone() const {
   return make_unique<ConcatGradOp>(*this);
@@ -198,12 +197,17 @@ int64_t ConcatGradOp::getEnd() const { return end; }
 
 namespace {
 
-static OpCreator<ConcatOp> concatOpCreator(Onnx::Operators::Concat_1);
+static OpCreator<ConcatOp> concatOpCreator(
+    Onnx::Operators::Concat_1,
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      int64_t axis = attr.getAttribute<Attributes::Int>("axis");
 
-static GradOpCreator<ConcatInplaceOp>
-    concatInplaceOpCreator(Onnx::CustomOperators::ConcatInplace);
-static GradOpCreator<ConcatGradOp>
-    concatArgGradOpCreator(Onnx::GradOperators::ConcatGrad);
+      return std::unique_ptr<Op>(new ConcatOp(_opid, axis, settings));
+    },
+    true);
+
 } // namespace
 
 } // namespace poponnx

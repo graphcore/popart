@@ -7,10 +7,7 @@ namespace poponnx {
 
 class CoshOp : public Op {
 public:
-  CoshOp(const OperatorIdentifier &_opid,
-         Ir *_ir,
-         const std::string &name = "",
-         const Attributes &_attr = {});
+  CoshOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;

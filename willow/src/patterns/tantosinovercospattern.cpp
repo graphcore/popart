@@ -31,7 +31,7 @@ bool TanToSinOverCosPattern::apply(Op *op) const {
   // Remove the TanOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->pir->eraseOp(op->id);
+  op->getIr().eraseOp(op->id);
 
   // Connect up the new ops
   sin->connectInTensor(SinOp::getInIndex(), fwd_in->id);

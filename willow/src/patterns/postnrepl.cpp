@@ -10,7 +10,7 @@ namespace poponnx {
 // (see .hpp for ascii picture definitions)
 bool PostNRepl::apply(Op *op) const {
 
-  Ir *pir = op->pir;
+  Ir &ir = op->getIr();
 
   // op is [*]
   Tensor *ori = op->input->tensor(0);
@@ -38,11 +38,11 @@ bool PostNRepl::apply(Op *op) const {
   ori->consumers.decrement(op);
   // delete replicates
   for (auto repl : replicates) {
-    pir->getTensors().remove(repl->id);
+    ir.getTensors().remove(repl->id);
   }
 
   // delete [*]
-  pir->eraseOp(op->id);
+  ir.eraseOp(op->id);
 
   return true;
 }

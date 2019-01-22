@@ -18,11 +18,11 @@ const OperatorIdentifier &SoftmaxGradDirect::get1() const {
 OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
   // The root of the pattern is an NLLGrad,
   // we need to move from it to the SoftmaxOp
-  Ir *pir     = opRoot->pir;
+  Ir &ir      = opRoot->getIr();
   Op *nllgrad = opRoot;
 
-  return pir->moveIntoIr(std::unique_ptr<Op>(new SoftmaxGradDirectOp(
-      pir, dynamic_cast<NllGradOp *>(nllgrad)->nlll())));
+  return ir.moveIntoIr(std::unique_ptr<Op>(new SoftmaxGradDirectOp(
+      dynamic_cast<NllGradOp *>(nllgrad)->nlll(), nllgrad->getSettings())));
 }
 
 namespace {

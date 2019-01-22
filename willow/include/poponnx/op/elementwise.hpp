@@ -9,9 +9,7 @@ namespace poponnx {
 class ElementWiseUnaryOp : public Op {
 public:
   ElementWiseUnaryOp(const OperatorIdentifier &_opid,
-                     Ir *_ir,
-                     const std::string &name = "",
-                     const Attributes &_attr = {});
+                     const Op::Settings &settings);
   void setup() final;
 
   static InIndex getInIndex() { return 0; }
@@ -23,7 +21,8 @@ public:
 // output of the corresponding forward operation as inputs.
 class ElementWiseNonLinearUnaryGradOp : public Op {
 public:
-  ElementWiseNonLinearUnaryGradOp(const OperatorIdentifier &_opid, Ir *_ir);
+  ElementWiseNonLinearUnaryGradOp(const OperatorIdentifier &_opid,
+                                  const ElementWiseUnaryOp &fwdOp);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;

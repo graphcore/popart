@@ -5,24 +5,21 @@
 
 namespace poponnx {
 
-ExpOp::ExpOp(const OperatorIdentifier &_opid,
-             Ir *_ir,
-             const std::string &name,
-             const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+ExpOp::ExpOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+    : Op(_opid, settings_) {}
 
 std::unique_ptr<Op> ExpOp::clone() const { return make_unique<ExpOp>(*this); }
 
 std::vector<std::unique_ptr<Op>> ExpOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<ExpGradOp>(this));
+  upops.emplace_back(make_unique<ExpGradOp>(*this));
   return upops;
 }
 
 void ExpOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
-ExpGradOp::ExpGradOp(ExpOp *fwdOp)
-    : Op(Onnx::GradOperators::ExpGrad, fwdOp->pir) {}
+ExpGradOp::ExpGradOp(const ExpOp &fwdOp)
+    : Op(Onnx::GradOperators::ExpGrad, fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> ExpGradOp::clone() const {
   return make_unique<ExpGradOp>(*this);
@@ -47,7 +44,7 @@ void ExpGradOp::setup() { outInfo(getOutIndex()) = inInfo(getFwdOutInIndex()); }
 
 namespace {
 static OpCreator<ExpOp> expOpCreator(Onnx::Operators::Exp_6);
-static GradOpCreator<ExpGradOp> expGradOpCreator(Onnx::GradOperators::ExpGrad);
+
 } // namespace
 
 } // namespace poponnx

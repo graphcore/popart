@@ -5,24 +5,21 @@
 
 namespace poponnx {
 
-TanhOp::TanhOp(const OperatorIdentifier &_opid,
-               Ir *_ir,
-               const std::string &name,
-               const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+TanhOp::TanhOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+    : Op(_opid, settings_) {}
 
 std::unique_ptr<Op> TanhOp::clone() const { return make_unique<TanhOp>(*this); }
 
 std::vector<std::unique_ptr<Op>> TanhOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<TanhGradOp>(this));
+  upops.emplace_back(make_unique<TanhGradOp>(*this));
   return upops;
 }
 
 void TanhOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
-TanhGradOp::TanhGradOp(TanhOp *fwdOp)
-    : Op(Onnx::GradOperators::TanhGrad, fwdOp->pir) {}
+TanhGradOp::TanhGradOp(const TanhOp &fwdOp)
+    : Op(Onnx::GradOperators::TanhGrad, fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> TanhGradOp::clone() const {
   return make_unique<TanhGradOp>(*this);
@@ -49,8 +46,7 @@ void TanhGradOp::setup() {
 
 namespace {
 static OpCreator<TanhOp> tanhOpCreator(Onnx::Operators::Tanh_6);
-static GradOpCreator<TanhGradOp>
-    tanhGradOpCreator(Onnx::GradOperators::TanhGrad);
+
 } // namespace
 
 } // namespace poponnx

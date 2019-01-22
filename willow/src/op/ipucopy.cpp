@@ -5,11 +5,9 @@
 namespace poponnx {
 
 IpuCopyOp::IpuCopyOp(const OperatorIdentifier &_opid,
-                     Ir *_ir,
                      uint64_t _destIpu,
-                     const std::string &name,
-                     const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr), destIpu(_destIpu) {}
+                     const Op::Settings &settings_)
+    : Op(_opid, settings_), destIpu(_destIpu) {}
 
 void IpuCopyOp::setup() { outInfo(0) = inInfo(0); }
 

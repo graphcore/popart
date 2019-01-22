@@ -26,7 +26,7 @@ std::unique_ptr<poplar::Tensor> LSTMOpx::createIntermediate() const {
     return make_unique<poplar::Tensor>();
   }
 
-  auto anchors = op_p->pir->getDataFlow().anchors();
+  auto anchors = op_p->getIr().getDataFlow().anchors();
   if (std::find(anchors.begin(),
                 anchors.end(),
                 outId(LSTMOp::getOutputOutIndex())) != anchors.end()) {

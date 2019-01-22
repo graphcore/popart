@@ -8,9 +8,8 @@ namespace poponnx {
 class GatherOp : public Op {
 public:
   GatherOp(const OperatorIdentifier &_opid,
-           Ir *_ir,
-           const std::string &name = "",
-           const Attributes &_attr = {});
+           int64_t axis_,
+           const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -23,13 +22,16 @@ public:
   static InIndex indicesInIndex() { return 1; }
   static InIndex outIndex() { return 0; }
 
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
+
 private:
   int64_t axis = 0;
 };
 
 class GatherGradOp : public Op {
 public:
-  GatherGradOp(GatherOp *op, int64_t axis);
+  GatherGradOp(const GatherOp &op, int64_t axis);
 
   std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;

@@ -14,7 +14,7 @@ int Pattern::tensor_counter = 0;
 
 bool Pattern::touchesAnchored(Op *op) const {
   for (auto &tensor : touches(op)) {
-    if (op->pir->isAnchored(tensor->id)) {
+    if (op->getIr().isAnchored(tensor->id)) {
       return true;
     }
   }
@@ -34,35 +34,29 @@ void Pattern::initialise(std::string pattern_name_) {
 std::unique_ptr<Op>
 Pattern::makeReplacementOp(const OperatorIdentifier &operator_id,
                            Op *oldOp,
-                           const Attributes &attr) const {
-  // Context from original op to be transfered to replacement ops
-  auto ir   = oldOp->pir;
-  auto name = getReplacementOpName(oldOp);
-
-  // Inherit some attributes from the op that the new op is replacing
-  std::vector<std::string> inheritedAttributes = {sVirtualGraphAttribute,
-                                                  sRecomputeOutputAttribute};
-
-  Attributes newAttrs = attr;
-  for (auto attr_name : inheritedAttributes) {
-    auto _attr = oldOp->nAtts.filter(attr_name);
-    newAttrs.takeAttribute(attr_name, _attr);
-  }
+                           const Attributes &) const {
 
   // Create replacement Op with new attributes
-  return OpManager::createOp(operator_id, ir, name, newAttrs);
+  std::unique_ptr<Op> newOp = OpManager::createOp(
+      operator_id, oldOp->getIr(), getReplacementOpName(oldOp));
+
+  if (oldOp->getVirtualGraphId())
+    newOp->setVirtualGraphId(oldOp->getVirtualGraphId());
+
+  if (oldOp->getRecomputeOutput())
+    newOp->setRecomputeOutput(oldOp->getRecomputeOutput());
+
+  return newOp;
 }
 
 Op *Pattern::makeReplacementOpInIr(const OperatorIdentifier &operator_id,
                                    Op *oldOp,
                                    const Attributes &attr) const {
-  auto ir = oldOp->pir;
-
   // Create replacement Op with new attributes and
   // move into Ir
   std::unique_ptr<Op> newOpUp = makeReplacementOp(operator_id, oldOp, attr);
   Op *newOp                   = newOpUp.get();
-  ir->moveIntoIr(std::move(newOpUp));
+  oldOp->getIr().moveIntoIr(std::move(newOpUp));
 
   return newOp;
 }

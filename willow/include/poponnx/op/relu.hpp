@@ -7,10 +7,7 @@ namespace poponnx {
 
 class ReluOp : public Op {
 public:
-  ReluOp(const OperatorIdentifier &_opid,
-         Ir *_ir,
-         const std::string &name = "",
-         const Attributes &_attr = {});
+  ReluOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -27,7 +24,7 @@ public:
 
 class ReluInplaceOp : public Op {
 public:
-  ReluInplaceOp(ReluOp *);
+  ReluInplaceOp(const ReluOp &);
   void setup() final;
   // This in-place Op modifies its unique input at InIndex 0
   std::map<InIndex, Region>
@@ -42,7 +39,7 @@ public:
 // of ReluOp in to do this (or a boolean tensor).
 class ReluGradOp : public Op {
 public:
-  ReluGradOp(ReluOp *);
+  ReluGradOp(const ReluOp &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;

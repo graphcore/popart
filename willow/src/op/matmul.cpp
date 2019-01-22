@@ -8,10 +8,8 @@
 namespace poponnx {
 
 MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
-                   Ir *_ir,
-                   const std::string &name,
-                   const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+                   const Op::Settings &settings_)
+    : Op(_opid, settings_) {}
 
 std::unique_ptr<Op> MatMulOp::clone() const {
   return make_unique<MatMulOp>(*this);
@@ -116,7 +114,7 @@ void MatMulOp::setup() {
 }
 
 MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)
-    : Op(Onnx::GradOperators::MatMulLhsGrad, fwdOp.pir),
+    : Op(Onnx::GradOperators::MatMulLhsGrad, fwdOp.getSettings()),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
       fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
 
@@ -149,7 +147,7 @@ Shape MatMulLhsGradOp::getRhsInputShape() const { return fwdOpRhsInfo.shape(); }
 Shape MatMulLhsGradOp::getOutputShape() const { return fwdOpLhsInfo.shape(); }
 
 MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
-    : Op(Onnx::GradOperators::MatMulRhsGrad, fwdOp.pir),
+    : Op(Onnx::GradOperators::MatMulRhsGrad, fwdOp.getSettings()),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
       fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
 
@@ -181,11 +179,6 @@ Shape MatMulRhsGradOp::getOutputShape() const { return fwdOpRhsInfo.shape(); }
 namespace {
 static OpCreator<MatMulOp> matMulOpCreator({Onnx::Operators::MatMul_1,
                                             Onnx::Operators::MatMul_9});
-
-static GradOpCreator<MatMulLhsGradOp>
-    matmulLhsGradOpCreator(Onnx::GradOperators::MatMulLhsGrad);
-static GradOpCreator<MatMulRhsGradOp>
-    matmulRhsGradOpCreator(Onnx::GradOperators::MatMulRhsGrad);
 } // namespace
 
 } // namespace poponnx

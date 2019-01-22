@@ -5,11 +5,8 @@
 
 namespace poponnx {
 
-SumOp::SumOp(const OperatorIdentifier &_opid,
-             Ir *_ir,
-             const std::string &name,
-             const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {
+SumOp::SumOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+    : Op(_opid, settings_) {
   // TODO : Do not broadcast in version 6
 }
 

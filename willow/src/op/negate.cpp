@@ -7,10 +7,8 @@
 namespace poponnx {
 
 NegateOp::NegateOp(const OperatorIdentifier &_opid,
-                   Ir *_ir,
-                   const std::string &name,
-                   const Attributes &_attr)
-    : ElementWiseUnaryOp(_opid, _ir, name, _attr) {}
+                   const Op::Settings &settings_)
+    : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> NegateOp::clone() const {
   return make_unique<NegateOp>(*this);
@@ -18,12 +16,12 @@ std::unique_ptr<Op> NegateOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> NegateOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<NegateGradOp>(this));
+  upops.emplace_back(make_unique<NegateGradOp>(*this));
   return upops;
 }
 
-NegateGradOp::NegateGradOp(NegateOp *fwdOp)
-    : NegateOp(Onnx::GradOperators::NegGrad, fwdOp->pir) {}
+NegateGradOp::NegateGradOp(const NegateOp &fwdOp)
+    : NegateOp(Onnx::GradOperators::NegGrad, fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> NegateGradOp::clone() const {
   return make_unique<NegateGradOp>(*this);
@@ -45,8 +43,7 @@ const std::map<int, int> &NegateGradOp::gradOutToNonGradIn() const {
 
 namespace {
 static OpCreator<NegateOp> negateOpCreator(Onnx::Operators::Neg_6);
-static GradOpCreator<NegateGradOp>
-    negateGradOpCreator(Onnx::GradOperators::NegGrad);
+
 } // namespace
 
 } // namespace poponnx

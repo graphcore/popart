@@ -5,22 +5,19 @@
 
 namespace poponnx {
 
-SqrtOp::SqrtOp(const OperatorIdentifier &_opid,
-               Ir *_ir,
-               const std::string &name,
-               const Attributes &_attr)
-    : ElementWiseUnaryOp(_opid, _ir, name, _attr) {}
+SqrtOp::SqrtOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+    : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> SqrtOp::clone() const { return make_unique<SqrtOp>(*this); }
 
 std::vector<std::unique_ptr<Op>> SqrtOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SqrtGradOp>(this));
+  upops.emplace_back(make_unique<SqrtGradOp>(*this));
   return upops;
 }
 
-SqrtGradOp::SqrtGradOp(SqrtOp *fwdOp)
-    : Op(Onnx::GradOperators::SqrtGrad, fwdOp->pir) {}
+SqrtGradOp::SqrtGradOp(const SqrtOp &fwdOp)
+    : Op(Onnx::GradOperators::SqrtGrad, fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> SqrtGradOp::clone() const {
   return make_unique<SqrtGradOp>(*this);
@@ -45,8 +42,6 @@ const std::map<int, int> &SqrtGradOp::gradOutToNonGradIn() const {
 
 namespace {
 static OpCreator<SqrtOp> sqrtOpCreator(Onnx::Operators::Sqrt_6);
-static GradOpCreator<SqrtGradOp>
-    sqrtGradOpCreator(Onnx::GradOperators::SqrtGrad);
 } // namespace
 
 } // namespace poponnx

@@ -32,7 +32,7 @@ bool SqrtGradOpPattern::apply(Op *op) const {
   // Remove the DivArg0GradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->pir->eraseOp(op->id);
+  op->getIr().eraseOp(op->id);
 
   // Connect up the new ops
   scale->connectInTensor(ScaleOp::getInIndex(), fwd_out->id);

@@ -306,7 +306,7 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
   auto yGrad = get(inId(BatchNormGradOp::getYGradInIndex()));
 
   // Attributes
-  float epsilon = getOp<BatchNormGradOp>().getFwdOp()->getEpsilon();
+  float epsilon = getOp<BatchNormGradOp>().getFwdOp().getEpsilon();
   // float momentum = getOp<BatchNormGradOp>().getFwdOp()->getMomentum();
   // int spatial = getOp<BatchNormGradOp>().getFwdOp()->getSpatial();
 

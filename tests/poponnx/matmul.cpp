@@ -17,7 +17,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
 
   poponnx::Ir ir;
 
-  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, &ir);
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {ir, ""});
 
   poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
   lhs.info.set(poponnx::DataType::FLOAT, {2, 2});
@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
 
   poponnx::Ir ir;
 
-  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, &ir);
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {ir, ""});
 
   poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
   lhs.info.set(poponnx::DataType::FLOAT, {3, 2});
@@ -218,7 +218,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case3) {
 
   poponnx::Ir ir;
 
-  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, &ir);
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {ir, ""});
 
   poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
   lhs.info.set(poponnx::DataType::FLOAT, {2, 1, 4, 3, 2});
@@ -271,7 +271,7 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase1) {
 
   poponnx::Ir ir;
 
-  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, &ir);
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {ir, ""});
 
   poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
   lhs.info.set(poponnx::DataType::FLOAT, {2, 2, 3});
@@ -295,7 +295,7 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase3) {
 
   poponnx::Ir ir;
 
-  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, &ir);
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {ir, ""});
 
   poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
   lhs.info.set(poponnx::DataType::FLOAT, {2, 3});
@@ -319,7 +319,7 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase4) {
 
   poponnx::Ir ir;
 
-  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, &ir);
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {ir, ""});
 
   poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
   lhs.info.set(poponnx::DataType::FLOAT, {});

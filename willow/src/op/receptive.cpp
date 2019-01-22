@@ -7,11 +7,11 @@
 
 namespace poponnx {
 
-HasReceptiveFieldOp::HasReceptiveFieldOp(const OperatorIdentifier &_opid,
-                                         Ir *_ir,
-                                         const std::string &name,
-                                         const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+HasReceptiveFieldOp::HasReceptiveFieldOp(
+    const OperatorIdentifier &_opid,
+    const HasReceptiveFieldOp::Settings &settings_)
+    : Op(_opid, settings_), pads(settings_.pads), strides(settings_.strides),
+      dilations(settings_.dilations) {}
 
 void HasReceptiveFieldOp::setup() {
 
@@ -29,16 +29,6 @@ void HasReceptiveFieldOp::setup() {
   pads.resize(nSpatialDims * 2, 0);
   strides.resize(nSpatialDims, 1);
   dilations.resize(nSpatialDims, 1);
-
-  // override defaults if onnx node stipulates:
-  nAtts.setIfPresent(pads, "pads");
-  nAtts.setIfPresent(strides, "strides");
-  nAtts.setIfPresent(dilations, "dilations");
-
-  if (nAtts.hasAttribute("auto_pad")) {
-    throw error(
-        "auto_pad is set, but is deprecated and unsupported by poponnx");
-  }
 
   setSpatialK();
 
@@ -110,6 +100,30 @@ std::vector<uint32_t> HasReceptiveFieldOp::dilations_u32() const {
 
 std::vector<uint32_t> HasReceptiveFieldOp::strides_u32() const {
   return vXtoY<int64_t, uint32_t>(strides);
+}
+
+void HasReceptiveFieldOp::appendAttributes(std::stringstream &ss,
+                                           const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "pads", pads);
+  appendAttribute(ss, tab, "strides", strides);
+  appendAttribute(ss, tab, "dilations", dilations);
+
+  // ss << "auto_pad" << ":" << autoPad << '\n';
+}
+
+void HasReceptiveFieldOp::Settings::setFromAttributes(
+    const Attributes &attributes) {
+  Op::Settings::setFromAttributes(attributes);
+
+  attributes.setIfPresent(pads, "pads");
+  attributes.setIfPresent(strides, "strides");
+  attributes.setIfPresent(dilations, "dilations");
+
+  if (attributes.hasAttribute("auto_pad")) {
+    throw error(
+        "auto_pad is set, but is deprecated and unsupported by poponnx");
+  }
 }
 
 } // namespace poponnx

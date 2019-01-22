@@ -10,12 +10,9 @@
 namespace poponnx {
 
 GatherOp::GatherOp(const OperatorIdentifier &_opid,
-                   Ir *_ir,
-                   const std::string &name,
-                   const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {
-  nAtts.setIfPresent(axis, "axis");
-}
+                   int64_t axis_,
+                   const Op::Settings &settings_)
+    : Op(_opid, settings_), axis(axis_) {}
 
 std::unique_ptr<Op> GatherOp::clone() const {
   return make_unique<GatherOp>(*this);
@@ -23,9 +20,7 @@ std::unique_ptr<Op> GatherOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> GatherOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
-
-  result.push_back(make_unique<GatherGradOp>(this, axis));
-
+  result.push_back(make_unique<GatherGradOp>(*this, axis));
   return result;
 }
 
@@ -60,9 +55,15 @@ void GatherOp::setup() {
       TensorInfo(inInfo(dataInIndex()).dataType(), data_shape);
 }
 
-GatherGradOp::GatherGradOp(GatherOp *op, int64_t axis_)
-    : Op({Onnx::GradOperators::GatherGrad, op->pir, {}}), axis(axis_),
-      fwdDataInfo(op->inInfo(GatherOp::dataInIndex())) {}
+void GatherOp::appendAttributes(std::stringstream &ss,
+                                const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "axis", axis);
+}
+
+GatherGradOp::GatherGradOp(const GatherOp &op, int64_t axis_)
+    : Op(Onnx::GradOperators::GatherGrad, op.getSettings()), axis(axis_),
+      fwdDataInfo(op.inInfo(GatherOp::dataInIndex())) {}
 
 std::unique_ptr<Op> GatherGradOp::clone() const {
   return make_unique<GatherGradOp>(*this);
@@ -88,9 +89,16 @@ void GatherGradOp::setup() { outInfo(gradOutIndex()) = fwdDataInfo; }
 int64_t GatherGradOp::getAxis() const { return axis; }
 
 namespace {
-static OpCreator<GatherOp> gatherOpCreator(Onnx::Operators::Gather_1);
-static GradOpCreator<GatherGradOp>
-    gatherGradOpCreator(Onnx::GradOperators::GatherGrad);
+static OpCreator<GatherOp> gatherOpCreator(
+    Onnx::Operators::Gather_1,
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      int64_t axis = attr.getAttribute<Attributes::Int>("axis");
+
+      return std::unique_ptr<Op>(new GatherOp(_opid, axis, settings));
+    },
+    true);
 } // namespace
 
 } // namespace poponnx

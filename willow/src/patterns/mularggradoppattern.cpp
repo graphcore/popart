@@ -34,8 +34,8 @@ bool MulArgGradOpPattern::apply(Op *op) const {
 
   // create a tensor to connect the multiply and reducesum ops
   const auto tmp_tensor_id = createIntermediateTensorId(op->output->id(0));
-  op->pir->getTensors().addActGrad(tmp_tensor_id);
-  const auto tmp_tensor = op->pir->getTensors().get(tmp_tensor_id);
+  op->getIr().getTensors().addActGrad(tmp_tensor_id);
+  const auto tmp_tensor = op->getIr().getTensors().get(tmp_tensor_id);
   tmp_tensor->info      = npOut(input_0->info, input_1->info);
 
   // Remap the tensor-to-op relationships
@@ -58,7 +58,7 @@ bool MulArgGradOpPattern::apply(Op *op) const {
   reduce_sum->output->insert(0, output);
 
   // Remove the reducesum op
-  op->pir->eraseOp(op->id);
+  op->getIr().eraseOp(op->id);
 
   return true;
 }

@@ -9,14 +9,16 @@ Slice::Slice(int64_t start_, int64_t end_, int64_t axis_)
     : start(start_), end(end_), axis(axis_) {}
 
 SliceOp::SliceOp(const OperatorIdentifier &_opid,
-                 Ir *_ir,
-                 const std::string &name,
-                 const Attributes &attr)
-    : Op(_opid, _ir, name, attr) {
-  attr.set(starts, "starts");
-  attr.set(ends, "ends");
+                 const std::vector<int64_t> &starts_,
+                 const std::vector<int64_t> &ends_,
+                 const std::vector<int64_t> &axes_,
+                 const Op::Settings &settings_)
+    : Op(_opid, settings_), starts(starts_), ends(ends_), axes(axes_) {
 
-  attr.setIfPresent(axes, "axes");
+  // attr.set(starts, "starts");
+  // attr.set(ends, "ends");
+  // attr.setIfPresent(axes, "axes");
+
   if (axes.size() == 0) {
     for (int i = 0; i < starts.size(); i++) {
       axes.push_back(i);
@@ -30,7 +32,7 @@ std::unique_ptr<Op> SliceOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> SliceOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SliceGradOp>(this));
+  upops.emplace_back(make_unique<SliceGradOp>(*this));
   return upops;
 }
 
@@ -80,12 +82,20 @@ int64_t SliceOp::normalizeIndex(int64_t index, int64_t dim_size) {
   return index;
 }
 
-SliceGradOp::SliceGradOp(SliceOp *op_)
+void SliceOp::appendAttributes(std::stringstream &ss,
+                               const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "starts", starts);
+  appendAttribute(ss, tab, "ends", ends);
+  appendAttribute(ss, tab, "axes", axes);
+}
+
+SliceGradOp::SliceGradOp(const SliceOp &op_)
     : PadOp(Onnx::GradOperators::SliceGrad,
-            op_->pir,
             calculatePadding(op_),
             0,
-            "constant") {}
+            "constant",
+            op_.getSettings()) {}
 
 const std::vector<GradInOutMapper> &SliceGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
@@ -99,12 +109,12 @@ const std::map<int, int> &SliceGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-std::vector<int64_t> SliceGradOp::calculatePadding(SliceOp *slice_op) {
-  auto t_rank   = slice_op->inInfo(SliceOp::getInIndex()).rank();
-  auto in_shape = slice_op->inInfo(SliceOp::getInIndex()).shape();
+std::vector<int64_t> SliceGradOp::calculatePadding(const SliceOp &slice_op) {
+  auto t_rank   = slice_op.inInfo(SliceOp::getInIndex()).rank();
+  auto in_shape = slice_op.inInfo(SliceOp::getInIndex()).shape();
   std::vector<int64_t> pads(t_rank * 2, 0);
 
-  for (auto slice : slice_op->getSlices()) {
+  for (auto slice : slice_op.getSlices()) {
     pads[slice.axis]          = slice.start;
     pads[slice.axis + t_rank] = in_shape[slice.axis] - slice.end;
   }
@@ -113,9 +123,22 @@ std::vector<int64_t> SliceGradOp::calculatePadding(SliceOp *slice_op) {
 }
 
 namespace {
-static OpCreator<SliceOp> sliceOpCreator(Onnx::Operators::Slice_1);
-static GradOpCreator<SliceGradOp>
-    sliceGradOpCreator(Onnx::GradOperators::SliceGrad);
+static OpCreator<SliceOp>
+    sliceOpCreator(Onnx::Operators::Slice_1,
+                   [](const OperatorIdentifier &_opid,
+                      const Op::Settings &settings,
+                      const Attributes &attr) -> std::unique_ptr<Op> {
+                     std::vector<int64_t> starts =
+                         attr.getAttribute<Attributes::Ints>("starts", {});
+                     std::vector<int64_t> ends =
+                         attr.getAttribute<Attributes::Ints>("ends", {});
+                     std::vector<int64_t> axes =
+                         attr.getAttribute<Attributes::Ints>("axes", {});
+
+                     return std::unique_ptr<Op>(
+                         new SliceOp(_opid, starts, ends, axes, settings));
+                   },
+                   true);
 } // namespace
 
 } // namespace poponnx

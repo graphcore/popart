@@ -8,9 +8,11 @@ namespace poponnx {
 class BatchNormOp : public Op {
 public:
   BatchNormOp(const OperatorIdentifier &_opid,
-              Ir *_ir,
-              const std::string &name = "",
-              const Attributes &_attr = {});
+              float _epsilon,
+              float _momentum,
+              int64_t _spatial,
+              const Op::Settings &settings);
+
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -30,27 +32,31 @@ public:
   static OutIndex getSavedVarOutIndex() { return 4; }
 
   // Attributes
-  float getEpsilon() { return epsilon; }
-  float getMomentum() { return momentum; }
-  int64_t getSpatial() { return spatial; }
+  float getEpsilon() const { return epsilon; }
+  float getMomentum() const { return momentum; }
+  int64_t getSpatial() const { return spatial; }
 
-  bool isTraining() { return training; }
+  bool isTraining() const { return training; }
+
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
 
 private:
-  bool training   = false;
-  float epsilon   = 1e-05f;
-  float momentum  = 0.9f;
-  int64_t spatial = 1;
+  bool training = false;
+  bool isTest;
+  float epsilon;
+  float momentum;
+  int64_t spatial;
 };
 
 class BatchNormGradOp : public Op {
 public:
-  BatchNormGradOp(BatchNormOp *);
+  BatchNormGradOp(const BatchNormOp &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
 
-  BatchNormOp *getFwdOp() { return fwdOp; }
+  const BatchNormOp &getFwdOp() { return fwdOp; }
 
   static InIndex getXInIndex() { return 0; }
   static InIndex getScaleInIndex() { return 1; }
@@ -63,7 +69,7 @@ public:
   static OutIndex getBOutIndex() { return 2; }
 
 private:
-  BatchNormOp *fwdOp;
+  const BatchNormOp &fwdOp;
   // TensorInfo forward_op_arg_info;
 };
 

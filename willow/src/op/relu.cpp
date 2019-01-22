@@ -21,15 +21,15 @@ ReluOp::getInplaceVariant(const OperatorIdentifier &operator_id,
 
   if (operator_id == Onnx::CustomOperators::ReluInplace &&
       inIndices.size() == 1 && inIndices[0] == 0) {
-    return make_unique<ReluInplaceOp>(this);
+    return make_unique<ReluInplaceOp>(*this);
   }
 
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id, inIndices);
 }
 
-ReluInplaceOp::ReluInplaceOp(ReluOp *relu_op)
-    : Op(Onnx::CustomOperators::ReluInplace, relu_op->pir) {}
+ReluInplaceOp::ReluInplaceOp(const ReluOp &relu_op)
+    : Op(Onnx::CustomOperators::ReluInplace, relu_op.getSettings()) {}
 
 void ReluInplaceOp::setup() {
   // no output, nothing to setup
@@ -62,15 +62,12 @@ ReluInplaceOp::aliases(const std::map<InIndex, Shape> &M) const {
 
 std::unique_ptr<Op> ReluOp::clone() const { return make_unique<ReluOp>(*this); }
 
-ReluOp::ReluOp(const OperatorIdentifier &_opid,
-               Ir *_ir,
-               const std::string &name,
-               const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+ReluOp::ReluOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+    : Op(_opid, settings_) {}
 
 std::vector<std::unique_ptr<Op>> ReluOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<ReluGradOp>(this));
+  upops.emplace_back(make_unique<ReluGradOp>(*this));
   return upops;
 }
 
@@ -80,8 +77,8 @@ void ReluGradOp::setup() {
   outInfo(getOutIndex()) = inInfo(getGradReludInIndex());
 }
 
-ReluGradOp::ReluGradOp(ReluOp *op_)
-    : Op(Onnx::GradOperators::ReluGrad, op_->pir) {}
+ReluGradOp::ReluGradOp(const ReluOp &op_)
+    : Op(Onnx::GradOperators::ReluGrad, op_.getSettings()) {}
 
 const std::vector<GradInOutMapper> &ReluGradOp::gradInputInfo() const {
   // input at index getGradReludIn() (=0) : gradient of output of relu
@@ -105,10 +102,6 @@ const std::map<int, int> &ReluGradOp::gradOutToNonGradIn() const {
 
 namespace {
 static OpCreator<ReluOp> reluOpCreator(Onnx::Operators::Relu_6);
-static GradOpCreator<ReluInplaceOp>
-    reluInPlaceOpCreator(Onnx::CustomOperators::ReluInplace);
-static GradOpCreator<ReluGradOp>
-    reluGradOpCreator(Onnx::GradOperators::ReluGrad);
 } // namespace
 
 } // namespace poponnx

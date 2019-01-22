@@ -8,14 +8,9 @@ namespace poponnx {
 class ReduceSumOp : public Op {
 public:
   ReduceSumOp(const OperatorIdentifier &_opid,
-              Ir *_ir,
-              const std::string &name = "",
-              const Attributes &_attr = {});
-  ReduceSumOp(const OperatorIdentifier &_opid,
-              Ir *_ir,
               const std::vector<int64_t> &axes,
-              int64_t keepdims,
-              const Attributes &_attr = {});
+              const int64_t keepdims,
+              const Op::Settings &settings);
 
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -35,6 +30,9 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
+
 private:
   // The input shape, with '1' inserted in reduction axes.
   // This is the same as the output shape if keepdims is true.
@@ -45,7 +43,7 @@ private:
 
 class ReduceSumGradOp : public Op {
 public:
-  ReduceSumGradOp(ReduceSumOp *fwdOp, const Shape &backward_shape);
+  ReduceSumGradOp(const ReduceSumOp &fwdOp, const Shape &backward_shape);
   std::unique_ptr<Op> clone() const final;
   void setup() final;
 

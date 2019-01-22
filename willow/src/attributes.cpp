@@ -3,6 +3,7 @@
 #include <sstream>
 #include <poponnx/attributes.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/util.hpp>
 
 namespace poponnx {
@@ -39,7 +40,11 @@ template <>
 void Attributes::setIfPresent(std::string &v, const std::string &s) const {
   auto found = att_map.find(s);
   if (found != att_map.end()) {
-    v = found->second->s();
+
+    // An empty string is treated as not present
+    if (found->second->s() != "") {
+      v = found->second->s();
+    }
   }
 }
 
@@ -182,4 +187,104 @@ void Attributes::append(std::stringstream &ss, std::string prefix) const {
   }
 }
 
+template <>
+Attributes::Ints
+Attributes::getAttribute(const std::string &key,
+                         const Attributes::Ints &defaultValue) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    Attributes::Ints vs;
+    vs.resize(0);
+    vs.reserve(found->second->ints_size());
+    for (auto &v : found->second->ints()) {
+      vs.push_back(v);
+    }
+    return vs;
+  }
+  return defaultValue;
+}
+template <>
+Attributes::Int
+Attributes::getAttribute(const std::string &key,
+                         const Attributes::Int &defaultValue) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    return found->second->i();
+  }
+
+  return defaultValue;
+}
+template <>
+Attributes::String
+Attributes::getAttribute(const std::string &key,
+                         const Attributes::String &defaultValue) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+
+    // An empty string is treated as not present
+    if (found->second->s() != "") {
+      return found->second->s();
+    }
+  }
+
+  return defaultValue;
+}
+template <>
+Attributes::Float
+Attributes::getAttribute(const std::string &key,
+                         const Attributes::Float &defaultValue) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    return found->second->f();
+  }
+
+  return defaultValue;
+}
+
+template <>
+Attributes::Ints Attributes::getAttribute(const std::string &key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    Attributes::Ints vs;
+    vs.resize(0);
+    vs.reserve(found->second->ints_size());
+    for (auto &v : found->second->ints()) {
+      vs.push_back(v);
+    }
+    return vs;
+  }
+
+  throw error("no attribute key {}", key);
+}
+template <>
+Attributes::Int Attributes::getAttribute(const std::string &key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    return found->second->i();
+  }
+
+  throw error("no attribute key {}", key);
+}
+template <>
+Attributes::String Attributes::getAttribute(const std::string &key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+
+    // An empty string is treated as not present
+    if (found->second->s() != "") {
+      return found->second->s();
+    }
+  }
+
+  throw error("no attribute key {}", key);
+}
+template <>
+Attributes::Float Attributes::getAttribute(const std::string &key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    return found->second->f();
+  }
+
+  throw error("no attribute key {}", key);
+}
 } // namespace poponnx

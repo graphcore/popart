@@ -7,17 +7,14 @@ namespace poponnx {
 
 class CosOp : public ElementWiseUnaryOp {
 public:
-  CosOp(const OperatorIdentifier &_opid,
-        Ir *_ir,
-        const std::string &name = "",
-        const Attributes &_attr = {});
+  CosOp(const OperatorIdentifier &_opid, const Op::Settings &);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 };
 
 class CosGradOp : public ElementWiseNonLinearUnaryGradOp {
 public:
-  CosGradOp(CosOp *fwdOp);
+  CosGradOp(const CosOp &fwdOp);
   std::unique_ptr<Op> clone() const final;
 };
 

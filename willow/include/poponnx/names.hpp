@@ -85,6 +85,7 @@ using OpsBeforeKey   = std::map<Op *, std::vector<Op *>>;
 static constexpr const char *sRecomputeOutputAttribute =
     "__recomputeOutputInBackwardPass";
 static constexpr const char *sVirtualGraphAttribute = "__ipuNumber";
+static constexpr const char *sCacheOperation        = "__cache_operation";
 
 } // namespace poponnx
 

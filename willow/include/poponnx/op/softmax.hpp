@@ -10,12 +10,14 @@ class NllLoss;
 class SoftmaxOp : public ElementWiseUnaryOp {
 public:
   SoftmaxOp(const OperatorIdentifier &_opid,
-            Ir *_ir,
-            const std::string &name = "",
-            const Attributes &_attr = {});
+            int64_t axis_,
+            const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   int64_t getAxis() const;
+
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
 
 private:
   int64_t axis;
@@ -23,7 +25,7 @@ private:
 
 class SoftmaxGradOp : public Op {
 public:
-  SoftmaxGradOp(SoftmaxOp *);
+  SoftmaxGradOp(const SoftmaxOp &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
@@ -44,7 +46,7 @@ public:
   // where Op in this constructor must be a SoftmaxOp
   // where this is created by a merger between the Op
   // and an NllGradOp
-  SoftmaxGradDirectOp(Ir *, const NllLoss *);
+  SoftmaxGradDirectOp(const NllLoss *, const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
   void setup() final;
   const NllLoss *nlll() const;

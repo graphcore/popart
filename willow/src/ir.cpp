@@ -917,7 +917,7 @@ OpId Ir::moveIntoIr(std::unique_ptr<Op> op) {
 
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
-  OpId opId = moveIntoIr(OpManager::createOp(Onnx::AiOnnx::OpSet9::Sum, this));
+  OpId opId = moveIntoIr(OpManager::createOp(Onnx::AiOnnx::OpSet9::Sum, *this));
 
   std::vector<TensorId> inputs;
   inputs.reserve(toSum.size());
@@ -1493,7 +1493,7 @@ void Ir::growFinalLoss() {
   std::vector<Op *> lossOps;
   // first, grow each of the individual losses from the user
   for (auto &loss : losses) {
-    OpId opId = moveIntoIr(loss->getOp(this));
+    OpId opId = moveIntoIr(loss->getOp({*this, ""}));
     connectInputs(*loss, opId);
     connectOutputs(*loss, opId);
     Op *lossOp = ops[opId].get();
@@ -1507,7 +1507,7 @@ void Ir::growFinalLoss() {
   }
 
   // now growing the FINAL loss (sum of individual losses)
-  OpId opId = moveIntoIr(OpManager::createOp(Onnx::AiOnnx::OpSet9::Sum, this));
+  OpId opId = moveIntoIr(OpManager::createOp(Onnx::AiOnnx::OpSet9::Sum, *this));
 
   std::vector<TensorId> inputs;
   inputs.reserve(lossOps.size());
@@ -1622,7 +1622,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
   std::unique_ptr<Op> p = OpManager::createOp(node.domain(),
                                               node.op_type(),
                                               version,
-                                              this,
+                                              *this,
                                               node.name(),
                                               node.attribute());
   if (p != nullptr)

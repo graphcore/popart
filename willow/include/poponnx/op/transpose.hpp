@@ -11,9 +11,9 @@ namespace poponnx {
 class TransposeOp : public Op {
 public:
   TransposeOp(const OperatorIdentifier &_opid,
-              Ir *_ir,
-              const std::string &name = "",
-              const Attributes &_attr = {});
+
+              const std::vector<int64_t> &perm_,
+              const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
@@ -28,6 +28,9 @@ public:
   // Get the permutation required to reverse the Transpose operation
   std::vector<int64_t> generateReversePermutation() const;
 
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
+
 private:
   // the new permutation of the tensor axes
   std::vector<int64_t> perm;
@@ -37,7 +40,7 @@ private:
 // TransposeGrad is a reverse transposition
 class TransposeGradOp : public TransposeOp {
 public:
-  TransposeGradOp(TransposeOp *fwdOp);
+  TransposeGradOp(const TransposeOp &fwdOp);
   std::unique_ptr<Op> clone() const final;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;

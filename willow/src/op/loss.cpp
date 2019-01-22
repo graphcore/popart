@@ -28,11 +28,8 @@ const TensorId &Loss::output(OutIndex i) const {
 Loss::Loss(const std::vector<TensorId> &in_, TensorId out_)
     : input_(in_), output_(out_) {}
 
-LossOp::LossOp(const OperatorIdentifier &_opid,
-               Ir *_ir,
-               const std::string &name,
-               const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+LossOp::LossOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+    : Op(_opid, settings_) {}
 
 LossOp::LossOp(const Op &op) : Op(op) {}
 

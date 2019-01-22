@@ -8,15 +8,10 @@ namespace poponnx {
 class PadOp : public Op {
 public:
   PadOp(const OperatorIdentifier &_opid,
-        Ir *_ir,
-        const std::string &name = "",
-        const Attributes &_attr = {});
-
-  PadOp(const OperatorIdentifier &_opid,
-        Ir *_ir,
-        const std::vector<int64_t> pads,
-        float pad_value,
-        std::string mode);
+        const std::vector<int64_t> &_pads,
+        float value_,
+        const std::string &_mode,
+        const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const final;
   // returns true of all pad size in all dimensions
@@ -30,6 +25,9 @@ public:
   const std::vector<int64_t> &getPads() const;
   float getPadValue() const;
   const std::string &getMode() const;
+
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
 
 private:
   std::vector<int64_t> pads;

@@ -7,12 +7,11 @@
 namespace poponnx {
 
 TransposeOp::TransposeOp(const OperatorIdentifier &_opid,
-                         Ir *_ir,
-                         const std::string &name,
-                         const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {
+                         const std::vector<int64_t> &perm_,
+                         const Op::Settings &settings_)
+    : Op(_opid, settings_), perm(perm_) {
 
-  nAtts.setIfPresent(perm, "perm");
+  //  nAtts.setIfPresent(perm, "perm");
 }
 
 std::unique_ptr<Op> TransposeOp::clone() const {
@@ -21,7 +20,7 @@ std::unique_ptr<Op> TransposeOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> TransposeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<TransposeGradOp>(this));
+  upops.emplace_back(make_unique<TransposeGradOp>(*this));
   return upops;
 }
 
@@ -63,10 +62,16 @@ void TransposeOp::setDefaultPerm() {
   }
 }
 
-TransposeGradOp::TransposeGradOp(TransposeOp *fwdOp)
-    : TransposeOp(Onnx::GradOperators::TransposeGrad, fwdOp->pir) {
-  setPerm(fwdOp->generateReversePermutation());
+void TransposeOp::appendAttributes(std::stringstream &ss,
+                                   const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "perm", perm);
 }
+
+TransposeGradOp::TransposeGradOp(const TransposeOp &fwdOp)
+    : TransposeOp(Onnx::GradOperators::TransposeGrad,
+                  fwdOp.generateReversePermutation(),
+                  fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> TransposeGradOp::clone() const {
   return make_unique<TransposeGradOp>(*this);
@@ -87,9 +92,17 @@ const std::map<int, int> &TransposeGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<TransposeOp> transposeOpCreator(Onnx::Operators::Transpose_1);
-static GradOpCreator<TransposeGradOp>
-    transposeGradOpCreator(Onnx::GradOperators::TransposeGrad);
+static OpCreator<TransposeOp> transposeOpCreator(
+    Onnx::Operators::Transpose_1,
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      std::vector<int64_t> perm =
+          attr.getAttribute<Attributes::Ints>("perm", {});
+
+      return std::unique_ptr<Op>(new TransposeOp(_opid, perm, settings));
+    },
+    true);
 } // namespace
 
 } // namespace poponnx

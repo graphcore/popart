@@ -28,7 +28,7 @@ bool SinGradOpPattern::apply(Op *op) const {
   // Remove the SinGradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->pir->eraseOp(op->id);
+  op->getIr().eraseOp(op->id);
 
   // Connect up the new ops
   cos->connectInTensor(CosOp::getInIndex(), fwd_in->id);

@@ -5,12 +5,9 @@
 namespace poponnx {
 
 SqueezeOp::SqueezeOp(const OperatorIdentifier &_opid,
-                     Ir *_ir,
-                     const std::string &name,
-                     const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {
-  _attr.setIfPresent(axes, "axes");
-}
+                     const std::vector<int64_t> &axes_,
+                     const Op::Settings &settings_)
+    : Op(_opid, settings_), axes(axes_) {}
 
 void SqueezeOp::setAxesToDefault() {
   auto in_shape = inShape(getInIndex());
@@ -23,7 +20,7 @@ void SqueezeOp::setAxesToDefault() {
 
 std::vector<std::unique_ptr<Op>> SqueezeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SqueezeGradOp>(this));
+  upops.emplace_back(make_unique<SqueezeGradOp>(*this));
   return upops;
 }
 
@@ -40,11 +37,17 @@ void SqueezeOp::setup() {
                             squeeze(inShape(getInIndex()), axes)};
 }
 
+void SqueezeOp::appendAttributes(std::stringstream &ss,
+                                 const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "axes", axes);
+}
+
 void SqueezeGradOp::setup() { outInfo(getOutIndex()) = unsqueezedInfo; }
 
-SqueezeGradOp::SqueezeGradOp(SqueezeOp *op_)
-    : Op(Onnx::GradOperators::SqueezeGrad, op_->pir),
-      unsqueezedInfo(op_->inInfo(SqueezeOp::getInIndex())) {}
+SqueezeGradOp::SqueezeGradOp(const SqueezeOp &op_)
+    : Op(Onnx::GradOperators::SqueezeGrad, op_.getSettings()),
+      unsqueezedInfo(op_.inInfo(SqueezeOp::getInIndex())) {}
 
 const std::vector<GradInOutMapper> &SqueezeGradOp::gradInputInfo() const {
   // input at index 0 : gradient of output of squeeze
@@ -62,9 +65,17 @@ const std::map<int, int> &SqueezeGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<SqueezeOp> squeezeOpCreator(Onnx::Operators::Squeeze_1);
-static GradOpCreator<SqueezeGradOp>
-    squeezeGradOpCreator(Onnx::GradOperators::SqueezeGrad);
+static OpCreator<SqueezeOp> squeezeOpCreator(
+    Onnx::Operators::Squeeze_1,
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      std::vector<int64_t> axes =
+          attr.getAttribute<Attributes::Ints>("axes", {});
+
+      return std::unique_ptr<Op>(new SqueezeOp(_opid, axes, settings));
+    },
+    true);
 } // namespace
 
 } // namespace poponnx

@@ -7,11 +7,8 @@
 
 namespace poponnx {
 
-LSTMOp::LSTMOp(const OperatorIdentifier &_opid,
-               Ir *_ir,
-               const std::string &name,
-               const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {
+LSTMOp::LSTMOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+    : Op(_opid, settings_) {
 
   // TODO : Use the output_sequence attribute in version 1
 }
@@ -109,8 +106,9 @@ bool LSTMOp::hasInitialCInput() const {
   return input->hasIndex(getInitialCInIndex());
 }
 
-LSTMGradOp::LSTMGradOp(LSTMOp &fwd_op)
-    : Op(Onnx::GradOperators::LSTMGrad, fwd_op.pir), forward_op(fwd_op) {}
+LSTMGradOp::LSTMGradOp(const LSTMOp &fwd_op)
+    : Op(Onnx::GradOperators::LSTMGrad, fwd_op.getSettings()),
+      forward_op(fwd_op) {}
 
 void LSTMGradOp::setup() {
   outInfo(getInputOutIndex()) = forward_op.inInfo(LSTMOp::getInputInIndex());
@@ -202,8 +200,6 @@ namespace {
 
 static OpCreator<LSTMOp> lstmOpCreator({Onnx::Operators::LSTM_1,
                                         Onnx::Operators::LSTM_7});
-static GradOpCreator<LSTMGradOp>
-    lstmGradOpCreator(Onnx::GradOperators::LSTMGrad);
 
 } // namespace
 

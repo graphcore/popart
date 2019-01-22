@@ -37,7 +37,7 @@ bool DivArg0GradOpPattern::apply(Op *op) const {
   // Remove the DivArg0GradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->pir->eraseOp(op->id);
+  op->getIr().eraseOp(op->id);
 
   // Connect up the new ops
   div->connectInTensor(0, grad_in->id);

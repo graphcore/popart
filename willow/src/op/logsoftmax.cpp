@@ -7,10 +7,8 @@
 namespace poponnx {
 
 LogSoftmaxOp::LogSoftmaxOp(const OperatorIdentifier &_opid,
-                           Ir *_ir,
-                           const std::string &name,
-                           const Attributes &_attr)
-    : ElementWiseUnaryOp(_opid, _ir, name, _attr) {}
+                           const Op::Settings &settings_)
+    : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> LogSoftmaxOp::clone() const {
   return make_unique<LogSoftmaxOp>(*this);

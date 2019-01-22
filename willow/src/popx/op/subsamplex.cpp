@@ -39,10 +39,10 @@ SubsampleGradOpx::SubsampleGradOpx(Op *op, Devicex *devicex)
 void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
 
   SubsampleGradOp &gradOp = getOp<SubsampleGradOp>();
-  SubsampleOp *op         = gradOp.getFwdOp();
+  const SubsampleOp &op   = gradOp.getFwdOp();
 
-  std::vector<unsigned int> strides = op->strides_u32();
-  Shape fwdOpInputShape             = op->inShape(0);
+  std::vector<unsigned int> strides = op.strides_u32();
+  Shape fwdOpInputShape             = op.inShape(0);
 
   auto outTensor = get(inId(0));
 

@@ -9,17 +9,14 @@ namespace poponnx {
 // y = sqrt(x)
 class SqrtOp : public ElementWiseUnaryOp {
 public:
-  SqrtOp(const OperatorIdentifier &_opid,
-         Ir *_ir,
-         const std::string &name = "",
-         const Attributes &_attr = {});
+  SqrtOp(const OperatorIdentifier &_opid, const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 };
 
 class SqrtGradOp : public Op {
 public:
-  SqrtGradOp(SqrtOp *fwdOp);
+  SqrtGradOp(const SqrtOp &fwdOp);
   std::unique_ptr<Op> clone() const final;
   void setup() final;
 

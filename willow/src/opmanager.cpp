@@ -52,7 +52,7 @@ OpManager::getSupportedOperations(bool includePrivate) {
 std::unique_ptr<Op> OpManager::createOp(const OpDomain &opDomain,
                                         const OpType &type,
                                         const int opsetVersion,
-                                        Ir *ir,
+                                        Ir &ir,
                                         const std::string &name,
                                         const Attributes &attr) {
 
@@ -80,13 +80,13 @@ std::unique_ptr<Op> OpManager::createOp(const OpDomain &opDomain,
   }
 
   if (opInfo != nullptr) {
-    return opInfo->f1(opInfo->id, ir, name, attr);
+    return self.create(opInfo->id, ir, name, attr, opInfo->f1);
   }
   return nullptr;
 }
 
 std::unique_ptr<Op> OpManager::createOp(const OperatorIdentifier &opid,
-                                        Ir *ir,
+                                        Ir &ir,
                                         const std::string &name,
                                         const Attributes &attr) {
 
@@ -100,10 +100,22 @@ std::unique_ptr<Op> OpManager::createOp(const OperatorIdentifier &opid,
     const auto &it3 = it2->second.find(opid.version);
 
     if (it3 != it2->second.end()) {
-      return it3->second.f1(opid, ir, name, attr);
+      return self.create(opid, ir, name, attr, it3->second.f1);
     }
   }
   return nullptr;
+}
+
+std::unique_ptr<Op> OpManager::create(const OperatorIdentifier &opid,
+                                      Ir &ir,
+                                      const std::string &name,
+                                      const Attributes &attr,
+                                      OpFactoryFunc func) {
+
+  Op::Settings settings(ir, name);
+  settings.setFromAttributes(attr);
+
+  return func(opid, settings, attr);
 }
 
 OpVersion OpManager::getOpVersionFromOpSet(const OpDomain &opDomain,

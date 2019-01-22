@@ -10,12 +10,9 @@
 namespace poponnx {
 
 ScatterOp::ScatterOp(const OperatorIdentifier &_opid,
-                     Ir *_ir,
-                     const std::string &name,
-                     const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {
-  nAtts.setIfPresent(axis, "axis");
-}
+                     int64_t axis_,
+                     const Op::Settings &settings_)
+    : Op(_opid, settings_), axis(axis_) {}
 
 std::unique_ptr<Op> ScatterOp::clone() const {
   return make_unique<ScatterOp>(*this);
@@ -24,8 +21,8 @@ std::unique_ptr<Op> ScatterOp::clone() const {
 std::vector<std::unique_ptr<Op>> ScatterOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
 
-  result.push_back(make_unique<ScatterDataGradOp>(this, axis));
-  result.push_back(make_unique<ScatterUpdateGradOp>(this, axis));
+  result.push_back(make_unique<ScatterDataGradOp>(*this, axis));
+  result.push_back(make_unique<ScatterUpdateGradOp>(*this, axis));
 
   return result;
 }
@@ -50,8 +47,14 @@ void ScatterOp::setup() {
   outInfo(outIndex()) = inInfo(dataInIndex());
 }
 
-ScatterDataGradOp::ScatterDataGradOp(ScatterOp *op, int64_t axis_)
-    : Op({Onnx::GradOperators::ScatterDataGrad, op->pir, {}}), axis(axis_) {}
+void ScatterOp::appendAttributes(std::stringstream &ss,
+                                 const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "axis", axis);
+}
+
+ScatterDataGradOp::ScatterDataGradOp(const ScatterOp &op, int64_t axis_)
+    : Op(Onnx::GradOperators::ScatterDataGrad, op.getSettings()), axis(axis_) {}
 
 std::unique_ptr<Op> ScatterDataGradOp::clone() const {
   return make_unique<ScatterDataGradOp>(*this);
@@ -78,8 +81,9 @@ void ScatterDataGradOp::setup() {
 
 int64_t ScatterDataGradOp::getAxis() const { return axis; }
 
-ScatterUpdateGradOp::ScatterUpdateGradOp(ScatterOp *op, int64_t axis_)
-    : Op({Onnx::GradOperators::ScatterUpdateGrad, op->pir, {}}), axis(axis_) {}
+ScatterUpdateGradOp::ScatterUpdateGradOp(const ScatterOp &op, int64_t axis_)
+    : Op(Onnx::GradOperators::ScatterUpdateGrad, op.getSettings()),
+      axis(axis_) {}
 
 std::unique_ptr<Op> ScatterUpdateGradOp::clone() const {
   return make_unique<ScatterUpdateGradOp>(*this);
@@ -108,11 +112,16 @@ void ScatterUpdateGradOp::setup() {
 int64_t ScatterUpdateGradOp::getAxis() const { return axis; }
 
 namespace {
-static OpCreator<ScatterOp> ScatterOpCreator(Onnx::Operators::Scatter_9);
-static GradOpCreator<ScatterDataGradOp>
-    scatterDataGradOpCreator(Onnx::GradOperators::ScatterDataGrad);
-static GradOpCreator<ScatterUpdateGradOp>
-    scatterUpdateGradOpCreator(Onnx::GradOperators::ScatterUpdateGrad);
+static OpCreator<ScatterOp> ScatterOpCreator(
+    Onnx::Operators::Scatter_9,
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      int64_t axis = attr.getAttribute<Attributes::Int>("axis", 0);
+
+      return std::unique_ptr<Op>(new ScatterOp(_opid, axis, settings));
+    },
+    true);
 } // namespace
 
 } // namespace poponnx

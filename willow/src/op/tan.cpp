@@ -5,11 +5,8 @@
 
 namespace poponnx {
 
-TanOp::TanOp(const OperatorIdentifier &_opid,
-             Ir *_ir,
-             const std::string &name,
-             const Attributes &_attr)
-    : ElementWiseUnaryOp(_opid, _ir, name, _attr) {}
+TanOp::TanOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+    : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> TanOp::clone() const { return make_unique<TanOp>(*this); }
 

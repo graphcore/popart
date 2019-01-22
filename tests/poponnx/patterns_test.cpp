@@ -600,8 +600,8 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   BOOST_CHECK(op->name().find(opName) == 0);
 
   // virtual graph id
-  BOOST_CHECK(op->nAtts.at(sVirtualGraphAttribute)->i() == vgNumber);
+  BOOST_CHECK(*(op->getVirtualGraphId()) == vgNumber);
 
   // recomputation
-  BOOST_CHECK(op->nAtts.at(sRecomputeOutputAttribute)->i() == recompute);
+  BOOST_CHECK(*(op->getRecomputeOutput()) == recompute);
 }

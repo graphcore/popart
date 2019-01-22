@@ -4,10 +4,8 @@
 namespace poponnx {
 
 ElementWiseUnaryOp::ElementWiseUnaryOp(const OperatorIdentifier &_opid,
-                                       Ir *_ir,
-                                       const std::string &name,
-                                       const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+                                       const Op::Settings &settings_)
+    : Op(_opid, settings_) {}
 
 void ElementWiseUnaryOp::setup() {
   outInfo(getOutIndex()) = inInfo(getInIndex());
@@ -15,8 +13,8 @@ void ElementWiseUnaryOp::setup() {
 
 ElementWiseNonLinearUnaryGradOp::ElementWiseNonLinearUnaryGradOp(
     const OperatorIdentifier &_opid,
-    Ir *_ir)
-    : Op(_opid, _ir) {}
+    const ElementWiseUnaryOp &op)
+    : Op(_opid, op.getSettings()) {}
 
 const std::vector<GradInOutMapper> &
 ElementWiseNonLinearUnaryGradOp::gradInputInfo() const {

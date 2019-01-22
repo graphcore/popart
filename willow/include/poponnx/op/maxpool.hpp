@@ -13,9 +13,9 @@ namespace poponnx {
 class MaxPoolOp : public HasReceptiveFieldOp {
 public:
   MaxPoolOp(const OperatorIdentifier &_opid,
-            Ir *_ir,
-            const std::string &name = "",
-            const Attributes &_attr = {});
+            const std::vector<int64_t> &kernelShape_,
+            int64_t storageOrder,
+            const HasReceptiveFieldOp::Settings &settings);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   int64_t getNOutChans() const final;
@@ -23,14 +23,20 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
+
 private:
   void setup0() final;
   void setSpatialK() final;
+
+  int64_t storageOrder;
+  std::vector<int64_t> kernelShape;
 };
 
 class MaxPoolGradOp : public Op {
 public:
-  MaxPoolGradOp(MaxPoolOp *);
+  MaxPoolGradOp(const MaxPoolOp &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;

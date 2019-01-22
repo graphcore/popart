@@ -10,10 +10,7 @@ namespace poponnx {
 
 class MulOp : public Op {
 public:
-  MulOp(const OperatorIdentifier &_opid,
-        Ir *_ir,
-        const std::string &name = "",
-        const Attributes &_attr = {});
+  MulOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -28,9 +25,9 @@ public:
 class MulArgGradOp : public Op {
 public:
   MulArgGradOp(const OperatorIdentifier &_opid,
-               Ir *_ir,
                const std::vector<int64_t> &reduction_axes,
-               const TensorInfo &forward_op_arg_info);
+               const TensorInfo &forward_op_arg_info,
+               const Op::Settings &settings_);
   // MulArgGradOp(const OpConstructorBundle &,
   // const std::vector<int64_t> &reduction_axes,
   // const TensorInfo &forward_op_arg_info);
@@ -49,7 +46,7 @@ private:
 
 class MulArg0GradOp : public MulArgGradOp {
 public:
-  MulArg0GradOp(MulOp *, const std::vector<int64_t> &reduction_axes);
+  MulArg0GradOp(const MulOp &, const std::vector<int64_t> &reduction_axes);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   static OutIndex getOutIndex() { return 0; }
@@ -57,7 +54,7 @@ public:
 
 class MulArg1GradOp : public MulArgGradOp {
 public:
-  MulArg1GradOp(MulOp *, const std::vector<int64_t> &reduction_axes);
+  MulArg1GradOp(const MulOp &, const std::vector<int64_t> &reduction_axes);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 };

@@ -16,9 +16,10 @@ struct Slice {
 class SliceOp : public Op {
 public:
   SliceOp(const OperatorIdentifier &_opid,
-          Ir *_ir,
-          const std::string &name = "",
-          const Attributes &_attr = {});
+          const std::vector<int64_t> &starts_,
+          const std::vector<int64_t> &ends_,
+          const std::vector<int64_t> &axes_,
+          const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -28,10 +29,13 @@ public:
 
   std::vector<Slice> getSlices() const;
 
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
+
 private:
-  std::vector<int64_t> axes;
   std::vector<int64_t> starts;
   std::vector<int64_t> ends;
+  std::vector<int64_t> axes;
 
   // In the ONNX Slice Operator
   // If `index > dim_size` it is treated as `index == dim_size`
@@ -41,13 +45,13 @@ private:
 
 class SliceGradOp : public PadOp {
 public:
-  SliceGradOp(SliceOp *);
+  SliceGradOp(const SliceOp &);
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
 private:
-  static std::vector<int64_t> calculatePadding(SliceOp *);
+  static std::vector<int64_t> calculatePadding(const SliceOp &);
 };
 
 } // namespace poponnx

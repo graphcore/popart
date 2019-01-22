@@ -20,9 +20,9 @@ bool ConvBiasPattern::apply(Op *op) const {
   auto add_bias = makeReplacementOpInIr(Onnx::CustomOperators::AddBias, op);
 
   const auto tmp_tensor_id = "prebias" + conv->output->id(0);
-  op->pir->getTensors().addActGrad(tmp_tensor_id);
+  op->getIr().getTensors().addActGrad(tmp_tensor_id);
   const auto b  = conv->input->tensor(ConvOp::getBiasInIndex());
-  const auto t  = op->pir->getTensors().get(tmp_tensor_id);
+  const auto t  = op->getIr().getTensors().get(tmp_tensor_id);
   const auto a1 = conv->output->tensor(ConvOp::getDataInIndex());
 
   t->info = a1->info;

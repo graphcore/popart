@@ -9,18 +9,29 @@ namespace poponnx {
 // ConvOp and AveragePoolOp
 class HasReceptiveFieldOp : public Op {
 public:
+  struct Settings : public Op::Settings {
+
+    Settings(Ir &ir_, const std::string &name_) : Op::Settings(ir_, name_) {}
+
+    std::vector<int64_t> pads;
+    std::vector<int64_t> strides;
+    std::vector<int64_t> dilations;
+
+    void setFromAttributes(const Attributes &attributes) override;
+  };
+
   HasReceptiveFieldOp(const OperatorIdentifier &_opid,
-                      Ir *_ir,
-                      const std::string &name = "",
-                      const Attributes &_attr = {});
+                      const HasReceptiveFieldOp::Settings &settings);
+
   // C++ rule of 3 for destructor, copy con, assignment op.
 
   int nSpatialDims;
   int64_t batchSize;
   int64_t nInChans;
-  std::vector<int64_t> dilations;
+
   std::vector<int64_t> pads;
   std::vector<int64_t> strides;
+  std::vector<int64_t> dilations;
   // the spatial dimensions of the operator
   //   : kernel size for convolution
   //   : window size for pooling
@@ -50,6 +61,9 @@ public:
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
+
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
 
 private:
   Shape getOutShape() const;

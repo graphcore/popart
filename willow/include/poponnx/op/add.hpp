@@ -8,10 +8,7 @@ namespace poponnx {
 
 class AddOp : public Op {
 public:
-  AddOp(const OperatorIdentifier &_opid,
-        Ir *_ir,
-        const std::string &name = "",
-        const Attributes &_attr = {});
+  AddOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -25,7 +22,8 @@ public:
 
 class AddArg0GradOp : public ReduceSumOp {
 public:
-  AddArg0GradOp(AddOp *, const std::vector<int64_t> &axes);
+  AddArg0GradOp(const AddOp &, const std::vector<int64_t> &axes);
+
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
@@ -39,7 +37,7 @@ private:
 
 class AddArg1GradOp : public ReduceSumOp {
 public:
-  AddArg1GradOp(AddOp *, const std::vector<int64_t> &axes);
+  AddArg1GradOp(const AddOp &, const std::vector<int64_t> &axes);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;

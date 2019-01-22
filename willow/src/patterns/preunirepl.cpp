@@ -48,11 +48,11 @@ bool PreUniRepl::apply(Op *op) const {
   int index = op0->output->indices(tensorIn)[0];
   op0->output->reset(index, tensorOut);
   tensorOut->resetProducer(op0);
-  Ir *pir = op->pir;
+  Ir &ir = op->getIr();
   // delete ()
-  pir->getTensors().remove(tensorIn->id); // name);
+  ir.getTensors().remove(tensorIn->id); // name);
   // delete [.]
-  pir->eraseOp(op->id);
+  ir.eraseOp(op->id);
 
   return true;
 }

@@ -8,7 +8,7 @@ namespace poponnx {
 
 bool Fuser::apply(Op *op) const {
 
-  Ir *pir = op->pir;
+  Ir &ir = op->getIr();
 
   Op *op0      = op;
   Tensor *out0 = op0->output->tensor(0);
@@ -19,11 +19,11 @@ bool Fuser::apply(Op *op) const {
   // - the inputs of op0
   // - the outputs of op1
   OpId id01 = moveMergedIntoIr(op);
-  Op *op01  = pir->getOp(id01);
+  Op *op01  = ir.getOp(id01);
 
   // wire-up the inputs.
   // 1) connect the inputs of op0 to op01
-  pir->connectInputsFromInputMapWrapper(
+  ir.connectInputsFromInputMapWrapper(
       InputMapWrapper(op0->input->tensorIdMap()), id01);
   // 2) disconnect the inputs of op0 from op0
   for (auto index_tensor : op0->input->tensorMap()) {
@@ -47,10 +47,10 @@ bool Fuser::apply(Op *op) const {
     Tensor *tensor = index_tensor.second;
     tensor->consumers.decrement(op1);
   }
-  pir->eraseOp(op1->id);
+  ir.eraseOp(op1->id);
 
-  pir->getTensors().remove(out0->id);
-  pir->eraseOp(op0->id);
+  ir.getTensors().remove(out0->id);
+  ir.eraseOp(op0->id);
 
   return true;
 }

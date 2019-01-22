@@ -7,10 +7,7 @@ namespace poponnx {
 
 class SumOp : public Op {
 public:
-  SumOp(const OperatorIdentifier &_opid,
-        Ir *_ir,
-        const std::string &name = "",
-        const Attributes &_attr = {});
+  SumOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   void setup() final;
   std::unique_ptr<Op> clone() const final;
 

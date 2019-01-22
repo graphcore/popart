@@ -74,7 +74,7 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   add->connectOutTensor(AddOp::getOutIndex(), output->id);
 
   // Remove the GemmOp
-  op->pir->eraseOp(op->id);
+  op->getIr().eraseOp(op->id);
 
   return true;
 }

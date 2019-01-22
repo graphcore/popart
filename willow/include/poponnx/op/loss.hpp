@@ -19,8 +19,8 @@ public:
   Loss(const Loss &) = default;
   Loss &operator=(const Loss &) = delete;
   Loss(const std::vector<TensorId> &input, TensorId output);
-  virtual std::vector<TensorId> getStreamTensorNames() const = 0;
-  virtual std::unique_ptr<Op> getOp(Ir *) const              = 0;
+  virtual std::vector<TensorId> getStreamTensorNames() const             = 0;
+  virtual std::unique_ptr<Op> getOp(const Op::Settings &settings_) const = 0;
   const TensorId &input(InIndex i) const;
   int input_size() const;
   // takes in an int arg to conform
@@ -40,10 +40,7 @@ private:
 
 class LossOp : public Op {
 public:
-  LossOp(const OperatorIdentifier &_opid,
-         Ir *_ir,
-         const std::string &name = "",
-         const Attributes &_attr = {});
+  LossOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   LossOp(const Op &);
 
   bool isLossOp() const override;

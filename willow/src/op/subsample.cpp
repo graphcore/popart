@@ -10,10 +10,9 @@
 namespace poponnx {
 
 SubsampleOp::SubsampleOp(const OperatorIdentifier &_opid,
-                         Ir *_ir,
-                         const std::string &name,
-                         const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+                         const std::vector<int64_t> &strides_,
+                         const Op::Settings &settings_)
+    : Op(_opid, settings_), strides(strides_) {}
 
 std::unique_ptr<Op> SubsampleOp::clone() const {
   return make_unique<SubsampleOp>(*this);
@@ -21,7 +20,7 @@ std::unique_ptr<Op> SubsampleOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> SubsampleOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SubsampleGradOp>(this));
+  upops.emplace_back(make_unique<SubsampleGradOp>(*this));
   return upops;
 }
 
@@ -29,7 +28,7 @@ std::vector<std::unique_ptr<Op>> SubsampleOp::getGradOps() {
 void SubsampleOp::setup() {
 
   // Get the stride attribute
-  nAtts.set(strides, "strides");
+  // nAtts.set(strides, "strides");
 
   // Verify that a stride of 0 has not be used
   for (int i = 0; i < strides.size(); ++i) {
@@ -64,9 +63,15 @@ bool SubsampleOp::strideSizeOne() const {
       strides.cbegin(), strides.cend(), [](int64_t p) { return p == 1; });
 }
 
-SubsampleGradOp::SubsampleGradOp(SubsampleOp *_fwdOp)
-    : Op(Onnx::CustomGradOperators::SubsampleGrad, _fwdOp->pir), fwdOp(_fwdOp),
-      fwdOpInfo(_fwdOp->inInfo(0)) {}
+void SubsampleOp::appendAttributes(std::stringstream &ss,
+                                   const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "strides", strides);
+}
+
+SubsampleGradOp::SubsampleGradOp(const SubsampleOp &_fwdOp)
+    : Op(Onnx::CustomGradOperators::SubsampleGrad, _fwdOp.getSettings()),
+      fwdOp(_fwdOp), fwdOpInfo(_fwdOp.inInfo(0)) {}
 
 std::unique_ptr<Op> SubsampleGradOp::clone() const {
   return make_unique<SubsampleGradOp>(*this);
@@ -89,10 +94,17 @@ const std::map<int, int> &SubsampleGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<SubsampleOp>
-    subsampleOpCreator(Onnx::CustomOperators::Subsample_1, true);
-static GradOpCreator<SubsampleGradOp>
-    subsamplGradeOpCreator(Onnx::CustomGradOperators::SubsampleGrad);
+static OpCreator<SubsampleOp> subsampleOpCreator(
+    Onnx::CustomOperators::Subsample_1,
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      std::vector<int64_t> strides =
+          attr.getAttribute<Attributes::Ints>("strides", {});
+
+      return std::unique_ptr<Op>(new SubsampleOp(_opid, strides, settings));
+    },
+    true);
 } // namespace
 
 } // namespace poponnx

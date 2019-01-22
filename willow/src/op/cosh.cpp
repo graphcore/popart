@@ -5,11 +5,8 @@
 
 namespace poponnx {
 
-CoshOp::CoshOp(const OperatorIdentifier &_opid,
-               Ir *_ir,
-               const std::string &name,
-               const Attributes &_attr)
-    : Op(_opid, _ir, name, _attr) {}
+CoshOp::CoshOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+    : Op(_opid, settings_) {}
 
 std::unique_ptr<Op> CoshOp::clone() const { return make_unique<CoshOp>(*this); }
 
