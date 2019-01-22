@@ -36,7 +36,10 @@ public:
   float getMomentum() const { return momentum; }
   int64_t getSpatial() const { return spatial; }
 
-  bool isTraining() const { return training; }
+  bool isTraining() const {
+    (void)isTest;
+    return training;
+  }
 
   void appendAttributes(std::stringstream &ss,
                         const std::string &tab) const override;

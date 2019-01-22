@@ -13,7 +13,7 @@ namespace poponnx {
 class AveragePoolOp : public HasReceptiveFieldOp {
 public:
   AveragePoolOp(const OperatorIdentifier &_opid,
-                int _countIncludePad,
+                int64_t _countIncludePad,
                 const std::vector<int64_t> &_kernelShape,
                 const HasReceptiveFieldOp::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
@@ -31,7 +31,7 @@ private:
   void setSpatialK() final;
 
   std::vector<int64_t> kernelShape;
-  int countIncludePad;
+  int64_t countIncludePad;
 };
 
 class AveragePoolGradOp : public Op {

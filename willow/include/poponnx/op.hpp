@@ -63,6 +63,8 @@ public:
   struct Settings {
 
     Settings(Ir &ir_, const std::string &name_) : ir(ir_), name(name_) {}
+    virtual ~Settings()        = default;
+    Settings(const Settings &) = default;
 
     Ir &ir;
 

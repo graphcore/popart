@@ -136,8 +136,9 @@ static OpCreator<BatchNormOp> batchNormOpCreator(
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
-      float epsilon   = attr.getAttribute<Attributes::Float>("epsilon", 1e05);
-      float momentum  = attr.getAttribute<Attributes::Float>("momentum", 0.9);
+      // default epsilon is 10**(-5)
+      float epsilon   = attr.getAttribute<Attributes::Float>("epsilon", 1e-5f);
+      float momentum  = attr.getAttribute<Attributes::Float>("momentum", 0.9f);
       int64_t spatial = attr.getAttribute<Attributes::Int>("spatial", 1);
 
       return std::unique_ptr<Op>(

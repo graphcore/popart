@@ -9,7 +9,7 @@ namespace poponnx {
 // TODO : Support "count_include_pad" T6249
 
 AveragePoolOp::AveragePoolOp(const OperatorIdentifier &_opid,
-                             int _countIncludePad,
+                             int64_t _countIncludePad,
                              const std::vector<int64_t> &_kernelShape,
                              const HasReceptiveFieldOp::Settings &settings_)
     : HasReceptiveFieldOp(_opid, settings_), kernelShape(_kernelShape),
