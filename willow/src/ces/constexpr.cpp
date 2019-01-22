@@ -10,6 +10,7 @@
 #include <poponnx/onnxutil.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensors.hpp>
 
 namespace poponnx {
 

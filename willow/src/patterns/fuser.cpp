@@ -3,6 +3,7 @@
 #include <poponnx/patterns/fuser.hpp>
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensors.hpp>
 
 namespace poponnx {
 

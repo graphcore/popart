@@ -19,6 +19,7 @@
 #include <poponnx/pritask.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
+#include <poponnx/tensors.hpp>
 
 namespace poponnx {
 namespace popx {

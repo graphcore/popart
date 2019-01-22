@@ -16,6 +16,7 @@
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/session.hpp>
 #include <poponnx/tensordata.hpp>
+#include <poponnx/tensors.hpp>
 
 using namespace poponnx;
 

@@ -5,6 +5,7 @@
 #include <poponnx/op.hpp>
 #include <poponnx/scheduler.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensors.hpp>
 #include <poponnx/topocons.hpp>
 
 namespace poponnx {

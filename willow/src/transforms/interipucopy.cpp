@@ -5,6 +5,7 @@
 #include <poponnx/op.hpp>
 #include <poponnx/op/ipucopy.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensors.hpp>
 
 #include <poponnx/transforms/interipucopy.hpp>
 

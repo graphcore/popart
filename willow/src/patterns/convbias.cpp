@@ -5,6 +5,7 @@
 #include <poponnx/patterns/convbias.hpp>
 #include <poponnx/patterns/patterns.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensors.hpp>
 
 namespace poponnx {
 

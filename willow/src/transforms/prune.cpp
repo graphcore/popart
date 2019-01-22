@@ -3,6 +3,7 @@
 #include <poponnx/names.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensors.hpp>
 #include <poponnx/topocons.hpp>
 
 #include <poponnx/transforms/prune.hpp>

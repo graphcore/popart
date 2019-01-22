@@ -9,6 +9,7 @@
 #include <poponnx/session.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
+#include <poponnx/tensors.hpp>
 #include <poponnx/util.hpp>
 
 namespace poponnx {

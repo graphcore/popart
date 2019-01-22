@@ -4,6 +4,7 @@
 #include <poponnx/op/pad.hpp>
 #include <poponnx/patterns/postnrepl.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensors.hpp>
 
 namespace poponnx {
 

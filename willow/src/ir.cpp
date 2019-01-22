@@ -24,6 +24,7 @@
 #include <poponnx/tensorindex.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/tensornames.hpp>
+#include <poponnx/tensors.hpp>
 #include <poponnx/topocons.hpp>
 #include <poponnx/util.hpp>
 
@@ -39,22 +40,14 @@
 
 namespace poponnx {
 
-std::vector<TensorId> Tensors::getAllTensorIds() const {
-  std::vector<TensorId> allIds;
-  allIds.reserve(M.size());
-  for (auto &id_tensor : M) {
-    allIds.push_back(id_tensor.first);
-  }
-  return allIds;
-}
+Ir::~Ir() = default;
 
-// remove all Tensors with no producer and no consumers
-void Tensors::removeIsolated() {
-  for (auto &id : getAllTensorIds()) {
-    Tensor *tensor = M[id].get();
-    if (tensor->hasProducer() == false && tensor->consumers.getTotal() == 0) {
-      M.erase(id);
-      logging::ir::info("Removing isolated Tensor {}", id);
+void Ir::confirmNonReservedId(TensorId tenId) const {
+  for (auto reservedPrefix : reservedPrefixes()) {
+    if (tenId.find(reservedPrefix) != std::string::npos) {
+      throw error("Provided tensor " + tenId +
+                  " has an invalid name: clash with reserved prefix " +
+                  reservedPrefix);
     }
   }
 }
@@ -69,7 +62,7 @@ std::vector<Tensor *> Ir::optimizerTensors() const {
   std::vector<Tensor *> optTensors;
   if (optimizer.get() != nullptr) {
     for (auto &id_info : optimizer->tensorInfos()) {
-      optTensors.push_back(tensors.get(id_info.first));
+      optTensors.push_back(getTensors().get(id_info.first));
     }
   }
   return optTensors;
@@ -83,9 +76,9 @@ std::vector<Tensor *> Ir::dataStreamTensors() const {
   if (optimizer != nullptr) {
     optTensorInfo = optimizer->tensorInfos();
   }
-  for (TensorId id : tensors.getIds(TensorType::Stream)) {
+  for (TensorId id : getTensors().getIds(TensorType::Stream)) {
     if (optTensorInfo.find(id) == optTensorInfo.end()) {
-      dsTensors.push_back(tensors.get(id));
+      dsTensors.push_back(getTensors().get(id));
     }
   }
   return dsTensors;
@@ -142,66 +135,13 @@ void Ir::exportDot(const std::string dotfn) const {
       auto tenId = ind_ten.second->id;
       strm << "n_" << n->id << " -> " << tenId << ';' << '\n';
       TensorId possibleGradId = getGradId(tenId);
-      if (tensors.contains(possibleGradId)) {
+      if (getTensors().contains(possibleGradId)) {
         // strm << "{rank=same; " << tenId << "; " << possibleGradId << ";}\n";
       }
     }
   }
   strm << '}' << '\n';
   strm.flush();
-}
-
-std::vector<TensorId> Tensors::getIds(TensorType type) const {
-  std::vector<TensorId> ids;
-  for (auto &id_pt : M) {
-    if (id_pt.second->tensorType() == type) {
-      ids.push_back(id_pt.first);
-    }
-  }
-  return ids;
-}
-
-Tensors::Tensors(Ir &pg) : ir(pg) {}
-
-VectorAndSet::~VectorAndSet() = default;
-Ir::~Ir()                     = default;
-
-Tensor *Tensors::get(TensorId tenId) const {
-  auto found = M.find(tenId);
-  if (found == M.end()) {
-    throw error("no tensor with id " + tenId);
-  }
-  return found->second.get();
-}
-
-// poponnx streams and prints are "impolite" (will not add new line at end)
-
-VectorAndSet::VectorAndSet() {}
-
-VectorAndSet::VectorAndSet(const std::vector<std::string> &vals)
-    : v_vals(vals) {
-  for (auto &v : v_vals) {
-    m_vals.insert(v);
-  }
-}
-
-void VectorAndSet::reset(const std::vector<std::string> &vals) {
-
-  // Replace the old with the new
-  v_vals = vals;
-
-  // Clear and initialise the m_vals set
-  m_vals.clear();
-  for (auto &v : v_vals) {
-    m_vals.insert(v);
-  }
-}
-
-void VectorAndSet::insert(const std::string &id) {
-  if (m_vals.find(id) == m_vals.end()) {
-    v_vals.push_back(id);
-    m_vals.insert(id);
-  }
 }
 
 void Ir::confirmNoReservedIds() const {
@@ -232,7 +172,8 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
       dataFlow(dataFlow_), losses(losses_), optimizer(optimizer_),
       userOptions(userOptions_), patterns(patterns_) {}
 
-Ir::Ir() : tensors(*this), onnxModel(nullptr) {
+Ir::Ir() : onnxModel(nullptr) {
+  up_tensors.reset(new Tensors(*this));
   scheduler.reset(new Scheduler(this));
   topoCons.reset(new TopoCons());
 }
@@ -249,7 +190,7 @@ void Ir::setInputShapeInfo(const InputShapeInfo &info) {
 }
 void Ir::setPatterns(const Patterns &p) { patterns = p; }
 
-void Ir::removeIsolatedTensors() { tensors.removeIsolated(); }
+void Ir::removeIsolatedTensors() { getTensors().removeIsolated(); }
 
 void Ir::setExecutionMode(const ExecutionMode &mode) { executionMode = mode; }
 
@@ -267,8 +208,8 @@ void Ir::setOptimizer(const Optimizer *o) {
     for (auto &id_info : optimizer->tensorInfos()) {
       TensorId id     = id_info.first;
       TensorInfo info = id_info.second;
-      tensors.addStream(id, info);
-      optimizer->setTensorData(tensors.get(id));
+      getTensors().addStream(id, info);
+      optimizer->setTensorData(getTensors().get(id));
     }
   }
 }
@@ -338,8 +279,8 @@ void Ir::verifyOpInputConnectivity() const {
 void Ir::verifyTensorProducerConnectivity() const {
   logging::ir::info("Checking tensor producer outputs");
 
-  for (auto &tid : tensors.getAllTensorIds()) {
-    auto tensor = tensors.get(tid);
+  for (auto &tid : getTensors().getAllTensorIds()) {
+    auto tensor = getTensors().get(tid);
 
     if (tensor->hasProducer() && tensor->tensorType() == TensorType::Stream) {
       auto op = tensor->getProducer();
@@ -395,8 +336,8 @@ void Ir::verifyTensorConsumerConnectivity() const {
 
   // Count the number of times a tensor is consumed by an op
   std::map<std::pair<Tensor *, Op *>, int> consumption_count;
-  for (auto &tid : tensors.getAllTensorIds()) {
-    auto tensor = tensors.get(tid);
+  for (auto &tid : getTensors().getAllTensorIds()) {
+    auto tensor = getTensors().get(tid);
 
     for (auto op : tensor->consumers.getOps()) {
       consumption_count[{tensor, op}] += tensor->consumers.n(op);
@@ -563,10 +504,10 @@ void Ir::resetWeights(const onnx::ModelProto &modelProto) {
 
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();
-    if (!tensors.contains(tenId)) {
+    if (!getTensors().contains(tenId)) {
       throw error("no tensor " + tenId + " in tensors");
     }
-    auto tensor = tensors.get(tenId);
+    auto tensor = getTensors().get(tenId);
     if (tensor->info != TensorInfo(initializer)) {
       throw error(
           "trying to reset weights using tensor with non matching tensor info");
@@ -582,7 +523,7 @@ void Ir::registerInputTensors() {
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();
     logging::info("Init tensor is {}", tenId);
-    tensors.addVarInit(tenId, &initializer);
+    getTensors().addVarInit(tenId, &initializer);
     onnxInitializers.emplace(tenId);
   }
 
@@ -591,9 +532,9 @@ void Ir::registerInputTensors() {
     TensorId id = valueInfo.name();
     if (onnxInitializers.count(id) == 0) {
       if (valueInfo.has_type() && valueInfo.type().tensor_type().has_shape()) {
-        tensors.addStream(id, TensorInfo(valueInfo.type()));
+        getTensors().addStream(id, TensorInfo(valueInfo.type()));
       } else {
-        tensors.addStream(id, inputShapeInfo.get(id));
+        getTensors().addStream(id, inputShapeInfo.get(id));
       }
     }
   }
@@ -602,10 +543,10 @@ void Ir::registerInputTensors() {
   for (const auto &loss : losses) {
     for (const auto &tenId : loss->getStreamTensorNames()) {
       // another loss might have already registered this tensor
-      if (!tensors.contains(tenId)) {
-        tensors.addStream(tenId, inputShapeInfo.get(tenId));
+      if (!getTensors().contains(tenId)) {
+        getTensors().addStream(tenId, inputShapeInfo.get(tenId));
       } else {
-        Tensor *tensorAlreadyPresent = tensors.get(tenId);
+        Tensor *tensorAlreadyPresent = getTensors().get(tenId);
         if (tensorAlreadyPresent->tensorType() != TensorType::Stream) {
           throw error("type mismatch for tensor " + tenId);
         }
@@ -665,28 +606,15 @@ Ir::getLiveSets(const std::vector<Op *> &topoOps) const {
   return liveSets;
 }
 
-void Tensors::append(std::stringstream &ss) const {
-  bool frst = true;
-  ss << '[';
-  for (auto &id_ptr : M) {
-    if (!frst) {
-      ss << ' ';
-    }
-    frst = false;
-    ss << id_ptr.first;
-  }
-  ss << ']';
-}
-
 void Ir::validateAnchors() const {
   for (TensorId id : dataFlow.anchors()) {
-    if (!tensors.contains(id)) {
+    if (!getTensors().contains(id)) {
       std::stringstream ss;
       ss << "Anchor tensor `" << id << "' not in tensors. ";
       // add some trouble-shooting for a case I stumbled upon:
       if (id.find(reservedGradientPrefix()) != std::string::npos) {
         std::string degrad = id.substr(reservedGradientPrefix().size());
-        if (tensors.contains(degrad)) {
+        if (getTensors().contains(degrad)) {
           ss << "\nInterestingly, `" << degrad << '\'' << " IS in tensors.\n";
           ss << "Note that not all tensors can have their gradients "
              << "anchored:\nif an activation tensor does not lead "
@@ -694,7 +622,7 @@ void Ir::validateAnchors() const {
         }
       } else {
         ss << "The tensors are:\n";
-        tensors.append(ss);
+        getTensors().append(ss);
       }
       throw error(ss.str());
     }
@@ -760,16 +688,6 @@ void Ir::enableTransform(std::size_t transformId, bool enable) {
   transformEnableMap[transformId] = enable;
 }
 
-std::vector<TensorId> Tensors::getNoProducerIds() const {
-  // the tensors which are not generated by an Op
-  std::vector<TensorId> t0 = getIds(TensorType::Stream);
-  std::vector<TensorId> t1 = getIds(TensorType::Const);
-  std::vector<TensorId> t2 = getIds(TensorType::Variable);
-  t0.insert(t0.end(), t1.begin(), t1.end());
-  t0.insert(t0.end(), t2.begin(), t2.end());
-  return t0;
-}
-
 std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) {
   std::vector<Op *> typedOps;
   for (auto &id_op : ops) {
@@ -781,8 +699,6 @@ std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) {
 }
 
 bool Ir::isAnchored(TensorId tenId) { return dataFlow.isAnchored(tenId); }
-
-const std::vector<std::string> &VectorAndSet::v() const { return v_vals; }
 
 void Ir::constructForwards() {
   const auto mode = executionMode == ExecutionMode::TRAINING
@@ -815,91 +731,11 @@ void Ir::constructForwards() {
   }
 }
 
-bool VectorAndSet::contains(std::string name) const {
-  return m_vals.count(name) == 1;
-}
-
-void Tensors::insert(TensorId name, std::unique_ptr<Tensor> t) {
-  if (M.find(name) != M.end()) {
-    throw error("ILE : tensor " + name + " already in M");
-  }
-  M[name] = std::move(t);
-}
-
-void Tensors::addConstInit(const TensorId &name, const onnx::TensorProto *pt) {
-  addInit(name, pt, TensorType::Const);
-  insertConstId(name);
-}
-
-void Tensors::addVarInit(const TensorId &name, const onnx::TensorProto *pt) {
-  addInit(name, pt, TensorType::Variable);
-
-  // A sanity check: if the tensor is fixed point, it is Const
-  if (get(name)->info.getDataTypeInfo()->isFixedPoint()) {
-    if (!constIds.contains(name)) {
-      std::stringstream ss;
-      ss << "A fixed-point Variable tensor `" << name
-         << "'. Currently only floating-point tensors can be Variable. "
-         << " Consider setting fixed-point tensors to be outputs of Constant "
-         << "Ops, using (for example) "
-         << "convertAllFixedPointInitializersToConstants().";
-      throw error(ss.str());
-    }
-  }
-}
-void Tensors::addConstInit(const TensorId &name,
-                           const TensorInfo &info,
-                           const void *src) {
-  insert(name,
-         std::unique_ptr<Tensor>(new Tensor(name, TensorType::Const, ir)));
-
-  insertConstId(name);
-
-  Tensor *init = get(name);
-  init->info   = info;
-  init->setTensorData(info, src);
-}
-
-void Tensors::addInit(const TensorId &name,
-                      const onnx::TensorProto *pt,
-                      TensorType tt) {
-
-  insert(name, std::unique_ptr<Tensor>(new Tensor(name, tt, ir)));
-  Tensor *init = get(name);
-  init->info   = TensorInfo(*pt);
-  init->setTensorData(*pt);
-}
-
-void Tensors::addStream(TensorId tenId, const TensorInfo &info) {
-  insert(tenId,
-         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, ir)));
-  get(tenId)->info = info;
-}
-
 std::string reservedGradientPrefix() { return "d__"; }
 std::string reservedRecomputePrefix() { return "r__"; }
 std::vector<std::string> reservedPrefixes() {
   return {reservedGradientPrefix(), reservedRecomputePrefix()};
 }
-
-void Tensors::addActGrad(TensorId tenId) {
-  insert(tenId,
-         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::ActGrad, ir)));
-}
-
-void Ir::confirmNonReservedId(TensorId tenId) const {
-  for (auto reservedPrefix : reservedPrefixes()) {
-    if (tenId.find(reservedPrefix) != std::string::npos) {
-      throw error("Provided tensor " + tenId +
-                  " has an invalid name: clash with reserved prefix " +
-                  reservedPrefix);
-    }
-  }
-}
-
-void Tensors::remove(TensorId id) { M.erase(id); }
-
-bool Tensors::contains(TensorId id) const { return M.find(id) != M.end(); }
 
 OpId Ir::getAndIncrOpsCounter() {
   OpId nOps0 = opsCounter;
@@ -1332,7 +1168,7 @@ void Ir::constructBackwards() {
   // communicate that a new gradient tensor
   // (which is a sum along edges) is ready
   auto registerTensorGrad = [this, &op_grad_registry](Tensor *sum) {
-    Tensor *nonGrad = tensors.get(getNonGradId(sum->id));
+    Tensor *nonGrad = getTensors().get(getNonGradId(sum->id));
     if (nonGrad->hasProducer()) {
       Op *producer = nonGrad->getProducer();
       // the index at which nonGrad was produced
@@ -1405,7 +1241,7 @@ void Ir::constructBackwards() {
   }
 
   // add weight update ops (we are ignoring momentums for now)
-  for (auto &varId : tensors.getIds(TensorType::Variable)) {
+  for (auto &varId : getTensors().getIds(TensorType::Variable)) {
     growVarUpdateOp(varId);
   }
 }
@@ -1413,7 +1249,7 @@ void Ir::constructBackwards() {
 Op *Ir::growVarUpdateOp(TensorId varId) {
 
   // A sanity check that the Tensor is not fixed point type
-  if (tensors.get(varId)->info.getDataTypeInfo()->isFixedPoint()) {
+  if (getTensors().get(varId)->info.getDataTypeInfo()->isFixedPoint()) {
     throw error("Currently only floating point variable tensors are updatable");
   }
 
@@ -1441,10 +1277,10 @@ Op *Ir::growVarUpdateOp(TensorId varId) {
 
 void Ir::setVarUpdateCons() {
 
-  for (auto &varId : tensors.getIds(TensorType::Variable)) {
+  for (auto &varId : getTensors().getIds(TensorType::Variable)) {
     // impose the constraint that the varupdates
     // are the last consumers of the vars
-    Tensor *var = tensors.get(varId);
+    Tensor *var = getTensors().get(varId);
 
     // we first determine which consumer
     // is the updater. It is the void Op
@@ -1467,8 +1303,6 @@ void Ir::setVarUpdateCons() {
     }
   }
 }
-
-void Tensors::insertConstId(const std::string &id) { constIds.insert(id); }
 
 Op *Ir::growFromNode(const Node &node) {
 
@@ -1535,7 +1369,7 @@ template <typename T> void Ir::connectInputs(const T &inContainer, OpId opId) {
     if (inName == "") {
       // no input at this position
     } else {
-      if (!tensors.contains(inName)) {
+      if (!getTensors().contains(inName)) {
         throw error("input " + inName + " should already be in tensor map");
       } else {
         // default: connects tensor <-> op, in both directions.

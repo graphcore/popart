@@ -13,6 +13,7 @@
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/tensornames.hpp>
+#include <poponnx/tensors.hpp>
 
 using namespace poponnx;
 

@@ -3,6 +3,7 @@
 #include <poponnx/ir.hpp>
 #include <poponnx/region.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensors.hpp>
 #include <poponnx/util.hpp>
 
 // The layers:

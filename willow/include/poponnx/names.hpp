@@ -52,6 +52,7 @@ class Op;
 class Optimizer;
 class Pattern;
 class Tensor;
+class Tensors;
 class Scheduler;
 class TensorIndexMap;
 class TensorInfo;

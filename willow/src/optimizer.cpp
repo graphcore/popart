@@ -4,6 +4,7 @@
 #include <poponnx/optimizer.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensornames.hpp>
+#include <poponnx/tensors.hpp>
 
 namespace poponnx {
 

@@ -4,6 +4,7 @@
 #include <poponnx/patterns/mularggradoppattern.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorinfo.hpp>
+#include <poponnx/tensors.hpp>
 
 namespace poponnx {
 

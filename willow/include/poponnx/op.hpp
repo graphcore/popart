@@ -189,6 +189,13 @@ public:
   // function uses shape of its input tensor at index InIndex
   bool modifies(InIndex) const;
 
+  //   TO BE USED LATER IN T6127
+  //   Region modifies(InIndex);
+  //   Region uses(InIndex);
+  //   Region aliases(InIndex);
+  //   Region fwdRegionAliasMapped(InIndex);
+  //   Region bwdRegionAliasMapped(OutIndex);
+
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
   // dT is the edge-gradient of a tensor T which was the input
   // to grad-op's non-grad partner. At what index was T the input

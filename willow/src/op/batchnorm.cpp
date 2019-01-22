@@ -31,8 +31,10 @@ std::vector<std::unique_ptr<Op>> BatchNormOp::getGradOps() {
 
 void BatchNormOp::setup() {
 
-  if (inRank(getXInIndex()) < 4) {
-    throw error("batch norm requires a rank > 4. x has rank {}",
+  // The input tensor according to the ONNX spec mush be (N, C, SPATIAL)
+  // where SPATIAL is {H, W} for image data
+  if (inRank(getXInIndex()) < 3) {
+    throw error("batch norm requires X to have a rank >= 3.  x has rank {}",
                 inRank(getXInIndex()));
   }
 

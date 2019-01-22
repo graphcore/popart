@@ -3,6 +3,7 @@
 #include <poponnx/op/pad.hpp>
 #include <poponnx/patterns/preunirepl.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensors.hpp>
 
 namespace poponnx {
 

@@ -69,70 +69,6 @@ private:
   std::vector<Op *> complete;
 };
 
-// Stores string elements in both a std::vector and a std::set
-// The elements in the std::vector will be unique
-class VectorAndSet {
-public:
-  VectorAndSet();
-  VectorAndSet(const std::vector<std::string> &vals);
-  ~VectorAndSet();
-  VectorAndSet &operator=(const VectorAndSet &rhs) = default;
-  bool contains(std::string) const;
-  const std::vector<std::string> &v() const;
-  // insert string if not present, otherwise do nothing
-  void insert(const std::string &);
-  void reset(const std::vector<std::string> &vals);
-
-private:
-  std::vector<std::string> v_vals;
-  std::set<std::string> m_vals;
-};
-
-class Tensors {
-public:
-  Tensors(Ir &pg);
-  ~Tensors() = default;
-
-  Tensor *get(TensorId) const;
-  void remove(TensorId);
-  bool contains(TensorId) const;
-
-  // create a Variable Tensor
-  void addVarInit(const TensorId &, const onnx::TensorProto *);
-
-  // create a Constant Tensor
-  void addConstInit(const TensorId &, const onnx::TensorProto *);
-  void addConstInit(const TensorId &, const TensorInfo &, const void *);
-
-  // create a Tensor of type Stream
-  void addStream(TensorId, const TensorInfo &);
-  // create a Tensor of type ActGrad (basically any tensor which is
-  // the output of an Op)
-  void addActGrad(TensorId);
-  std::vector<TensorId> getIds(TensorType) const;
-  std::vector<TensorId> getAllTensorIds() const;
-  std::vector<TensorId> getNoProducerIds() const;
-  const onnx::TensorProto *getOnnxInit(TensorId) const;
-  void append(std::stringstream &) const;
-
-  const VectorAndSet &getConstIds() const { return constIds; }
-  void insertConstId(const std::string &);
-  // remove all Tensors which have no producer and no consumers
-  void removeIsolated();
-
-private:
-  // Store the Tensors of type Const
-  VectorAndSet constIds;
-
-  std::map<TensorId, std::unique_ptr<Tensor>> M;
-  // adds to M, but first confirms that TensorId not already in
-  void insert(TensorId, std::unique_ptr<Tensor>);
-
-  void addInit(const TensorId &, const onnx::TensorProto *, TensorType);
-
-  Ir &ir;
-};
-
 // Ir Constructor inputs
 class IrBundle {
 public:
@@ -258,8 +194,8 @@ public:
   OpId moveIntoIr(std::unique_ptr<Op> op);
 
   // Accessors for the tensors
-  const Tensors &getTensors() const { return tensors; }
-  Tensors &getTensors() { return tensors; }
+  const Tensors &getTensors() const { return *(up_tensors.get()); }
+  Tensors &getTensors() { return *(up_tensors.get()); }
 
   const std::map<OpId, std::unique_ptr<Op>> &getOps() const { return ops; }
 
@@ -400,7 +336,7 @@ private:
   void verifyTensorConsumerConnectivity() const;
 
 private:
-  Tensors tensors;
+  std::unique_ptr<Tensors> up_tensors;
   DataFlow dataFlow;
 
   std::unique_ptr<onnx::ModelProto> onnxModel;

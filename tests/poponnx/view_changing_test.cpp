@@ -4,16 +4,15 @@
 #include <vector>
 #include <poponnx/builder.hpp>
 #include <poponnx/dataflow.hpp>
-#include <poponnx/graphtransformer.hpp>
-// needed for getting model from string
 #include <poponnx/filereader.hpp>
+#include <poponnx/graphtransformer.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/op/l1.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/tensor.hpp>
-// needed for ConstVoidData
 #include <poponnx/tensordata.hpp>
+#include <poponnx/tensors.hpp>
 
 using namespace poponnx;
 
