@@ -7,9 +7,10 @@
 
 namespace poponnx {
 
-LSTMOp::LSTMOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : Op(_opid, settings_) {
-
+LSTMOp::LSTMOp(const OperatorIdentifier &_opid,
+               boost::optional<int64_t> hidden_size,
+               const Op::Settings &settings_)
+    : Op(_opid, settings_), hidden_size_attribute(hidden_size) {
   // TODO : Use the output_sequence attribute in version 1
 }
 
@@ -27,6 +28,12 @@ void LSTMOp::setup() {
   }
   if (input->hasIndex(getSequenceLensInIndex())) {
     logging::ir::warn("Lstm optional input `sequence_lens' will be ignored");
+  }
+  if (hidden_size_attribute && *hidden_size_attribute != getHiddenSize()) {
+    throw error("LSTMOp hidden_size attribute, {}, does not match calculated "
+                "hidden size, {}.",
+                *hidden_size_attribute,
+                getHiddenSize());
   }
 
   auto seq_length     = getSeqLength();
@@ -104,6 +111,15 @@ bool LSTMOp::hasInitialHInput() const {
 
 bool LSTMOp::hasInitialCInput() const {
   return input->hasIndex(getInitialCInIndex());
+}
+
+void LSTMOp::appendAttributes(std::stringstream &ss,
+                              const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+
+  if (hidden_size_attribute) {
+    appendAttribute(ss, tab, "hidden_size", *hidden_size);
+  }
 }
 
 LSTMGradOp::LSTMGradOp(const LSTMOp &fwd_op)
@@ -198,9 +214,43 @@ const LSTMOp &LSTMGradOp::getForwardOp() const { return forward_op; }
 
 namespace {
 
-static OpCreator<LSTMOp> lstmOpCreator({Onnx::Operators::LSTM_1,
-                                        Onnx::Operators::LSTM_7});
+static OpCreator<LSTMOp> lstmOpCreator(
+    {Onnx::Operators::LSTM_1, Onnx::Operators::LSTM_7},
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      if (attr.hasAttribute("activations")) {
+        throw error("LSTMOp attribute `activations' is not supported");
+      }
+      if (attr.hasAttribute("activation_alpha")) {
+        throw error("LSTMOp attribute `activation_alpha' is not supported");
+      }
+      if (attr.hasAttribute("activation_beta")) {
+        throw error("LSTMOp attribute `activation_alpha' is not supported");
+      }
 
+      if (attr.hasAttribute("clip")) {
+        throw error("LSTMOp attribute `clip' is not supported");
+      }
+
+      if (attr.getAttribute<Attributes::String>("direction", "forward") !=
+          "forward") {
+        throw error("LSTMOp attribute `direction' must be unset or `forward'");
+      }
+
+      if (attr.getAttribute<Attributes::Int>("input_forget", 0) != 0) {
+        throw error("LSTMOp attribute `input_forget' must be set to 0");
+      }
+
+      // can not check hidden_size till inputs are connected
+      boost::optional<int64_t> hidden_size;
+      if (attr.hasAttribute("hidden_size")) {
+        hidden_size = attr.getAttribute<Attributes::Int>("hidden_size");
+      }
+
+      return std::unique_ptr<Op>(new LSTMOp(_opid, hidden_size, settings));
+    },
+    true);
 } // namespace
 
 } // namespace poponnx

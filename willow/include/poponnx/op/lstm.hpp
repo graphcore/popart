@@ -3,11 +3,15 @@
 
 #include <poponnx/op.hpp>
 
+#include <boost/optional.hpp>
+
 namespace poponnx {
 
 class LSTMOp : public Op {
 public:
-  LSTMOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
+  LSTMOp(const OperatorIdentifier &_opid,
+         boost::optional<int64_t> hidden_size,
+         const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -51,6 +55,8 @@ private:
                                OutIndex pass_through_index,
                                const TensorInfo &out_info);
   static int getNumIntermediates() { return 6; }
+
+  boost::optional<int64_t> hidden_size_attribute;
 };
 
 class LSTMGradOp : public Op {
