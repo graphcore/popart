@@ -12,6 +12,7 @@ class ExpOpx : public Opx {
 public:
   ExpOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+  InputCreatorType getInputCreatorType(InIndex) const final;
 };
 
 } // namespace popx

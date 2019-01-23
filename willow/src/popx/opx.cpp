@@ -33,7 +33,9 @@ void Opx::grow(poplar::program::Sequence &) const {
   throw error("adding poplar::Tensors not implemented for {}", op_p->opid);
 }
 
-bool Opx::canCreateInput(int) const { return false; }
+InputCreatorType Opx::getInputCreatorType(int) const {
+  return InputCreatorType::DEADEND;
+}
 
 poplar::Graph &Opx::masterGraph() const { return dv_p->masterGraph(); }
 

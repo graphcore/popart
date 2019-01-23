@@ -22,6 +22,22 @@ void DivOpx::grow(poplar::program::Sequence &prog) const {
                      idStr()));
 }
 
+InputCreatorType DivOpx::getInputCreatorType(InIndex index) const {
+  // Check shape doesn't change due to numpy-style broadcasting.
+  // Design choice: even without broadcasting, it is possible for the
+  // two inputs (of same shape) have different layout.
+  // The poplar binary op can choose the layout of the output to take
+  // the layout of either input.
+  // However, let's layout both inputs in the same way. That way we can
+  // definitely unwind through this opx, and it will also be efficient
+  // when performing the op.
+  if (op_p->inInfo(index) == op_p->outInfo(DivOp::getOutIndex())) {
+    return InputCreatorType::AGNOSTICTOLAYOUT;
+  } else {
+    return InputCreatorType::DEADEND;
+  }
+}
+
 namespace {
 OpxCreator<DivOpx> divOpxCreator({Onnx::Operators::Div_6,
                                   Onnx::Operators::Div_7});

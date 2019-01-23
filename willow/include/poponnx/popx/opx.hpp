@@ -17,6 +17,19 @@ namespace popx {
 
 class Devicex;
 
+enum class InputCreatorType {
+  // Opx has a poplar call to a function that can
+  // lay out the input tensor on the device
+  CANCREATE = 0,
+  // Cannot create the input tensor, but can
+  // allow an Opx downstream in the graph to
+  // create it
+  AGNOSTICTOLAYOUT,
+  // Cannot create tensor, nor can it allow a
+  // a downstream Opx to create the tensor
+  DEADEND
+};
+
 class Opx {
 
 public:
@@ -28,8 +41,10 @@ public:
   // create the input poplar::Tensor for input at index
   // default : throw error (not all Opxs can createInput)
   virtual poplar::Tensor createInput(int index) const;
-  // default return false
-  virtual bool canCreateInput(int index0) const;
+  // default return DEADEND, i.e. unable to create input tensor, and
+  // cannot use downstream opxs as candidates to create input
+  // tensor
+  virtual InputCreatorType getInputCreatorType(int index0) const;
   // If this Opx creates a poplar::Tensor at index0 (via createInput),
   // does it create the same poplar::Tensor as if opx1 creates one at
   // index1?. default behaviour : throws error

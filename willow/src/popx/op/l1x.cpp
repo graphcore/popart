@@ -42,6 +42,10 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(0), gradTensor);
 }
 
+InputCreatorType L1Opx::getInputCreatorType(InIndex) const {
+  return InputCreatorType::AGNOSTICTOLAYOUT;
+}
+
 // lambda * sum_{0,..rank-1} |v|
 void L1Opx::grow(poplar::program::Sequence &prog) const {
   L1Op &l1op               = getOp<L1Op>();

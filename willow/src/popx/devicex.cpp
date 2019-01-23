@@ -445,6 +445,48 @@ TaskId Devicex::taskWhichCreates(TensorId id) const {
   }
 }
 
+// Do any of the consumers know how to create a poplar::Tensor?
+// If so, collect those that do, and the index at which consumed.
+// Note that an Opx may appear several times, with different
+// consumption indices.
+std::vector<OpxAndInIndex> Devicex::getCreatorCandidates(Tensor *tensor) {
+  std::vector<OpxAndInIndex> candidates;
+  for (Op *op : tensor->consumers.getOps()) {
+    auto conOpId = op->id;
+    Opx *opx     = getOpx(conOpId);
+    for (int index : op->input->indices(tensor)) {
+      switch (opx->getInputCreatorType(index)) {
+      // Opx has poplar call to layout tensor at this
+      // index
+      case InputCreatorType::CANCREATE: {
+        candidates.push_back({index, opx});
+        break;
+      }
+      // Recursively search the DAG downstream of the op until we
+      // have set of candidates that can create the tensor
+      case InputCreatorType::AGNOSTICTOLAYOUT: {
+        for (auto &ind_ten : op->output->tensorMap()) {
+          auto nextOutputTensor = ind_ten.second;
+          for (auto candidate : getCreatorCandidates(nextOutputTensor)) {
+            candidates.push_back(candidate);
+          }
+        }
+        break;
+      }
+      // Consuming op can't create tensor. Do nothing here
+      case InputCreatorType::DEADEND: {
+        break;
+      }
+      default: {
+        throw error("InputCreatorType not implemented for Opx of OpId {}",
+                    op->id);
+      }
+      }
+    }
+  }
+  return candidates;
+}
+
 // Design decision : leave the option for a Tensor to be
 // created based on complex global criteria open.
 PriTask Devicex::initTensorTask(Tensor *tensor) {
@@ -456,20 +498,9 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     return ss.str();
   };
 
-  // Do any of the consumers know how to create a poplar::Tensor?
-  // If so, collect those that do, and the index at which consumed.
-  // Note that an Opx may appear several times, with different
-  // consumption indices.
-  std::vector<OpxAndInIndex> candidates;
-  for (Op *op : tensor->consumers.getOps()) {
-    for (int index : op->input->indices(tensor)) {
-      auto conOpId = op->id;
-      Opx *opx     = getOpx(conOpId);
-      if (opx->canCreateInput(index)) {
-        candidates.push_back({index, opx});
-      }
-    }
-  }
+  // Perform a recursive search of the graph to get the candidate
+  // Opxs that know how to create this tensor
+  std::vector<OpxAndInIndex> candidates = getCreatorCandidates(tensor);
 
   if (candidates.size() > 1) {
     // check that all creators are in agreement on how
@@ -525,9 +556,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     auto f = [this, tensor]() {
       std::stringstream ss;
       ss << "Creating " << tensor->id << " linearly. "
-         << "WARNING :  "
-         << "No creator candidates. We should perform a "
-         << "depth search to find a candidate. " << std::endl;
+         << "WARNING : No creator candidates" << std::endl;
       logging::devicex::warn(ss.str());
 
       // Find the ipu the op that consumes with tensor is on and create the

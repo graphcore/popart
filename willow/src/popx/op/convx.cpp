@@ -158,7 +158,9 @@ bool ConvOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
   return true;
 }
 
-bool ConvOpx::canCreateInput(InIndex) const { return true; }
+InputCreatorType ConvOpx::getInputCreatorType(InIndex) const {
+  return InputCreatorType::CANCREATE;
+}
 
 poplar::Tensor ConvOpx::createInput(InIndex index) const {
 

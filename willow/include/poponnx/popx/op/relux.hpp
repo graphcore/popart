@@ -16,12 +16,14 @@ class ReluOpx : public Opx {
 public:
   ReluOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+  InputCreatorType getInputCreatorType(InIndex) const final;
 };
 
 class ReluInplaceOpx : public Opx {
 public:
   ReluInplaceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+  InputCreatorType getInputCreatorType(InIndex) const final;
 };
 
 class ReluGradOpx : public Opx {

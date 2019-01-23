@@ -12,6 +12,7 @@ class TanhOpx : public Opx {
 public:
   TanhOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+  InputCreatorType getInputCreatorType(InIndex) const final;
 };
 
 class TanhGradOpx : public Opx {

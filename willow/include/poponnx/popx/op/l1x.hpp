@@ -15,6 +15,7 @@ class L1Opx : public Opx {
 public:
   L1Opx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+  InputCreatorType getInputCreatorType(InIndex) const final;
 };
 
 class L1GradOpx : public Opx {

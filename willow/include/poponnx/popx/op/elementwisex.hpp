@@ -10,6 +10,7 @@ namespace popx {
 class ElementWiseUnaryOpx : public Opx {
 public:
   ElementWiseUnaryOpx(Op *, Devicex *);
+  InputCreatorType getInputCreatorType(int index0) const override;
 };
 
 } // namespace popx

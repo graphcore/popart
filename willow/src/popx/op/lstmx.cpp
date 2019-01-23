@@ -110,15 +110,15 @@ void LSTMOpx::growBias(poplar::program::Sequence &prog) const {
   }
 }
 
-bool LSTMOpx::canCreateInput(InIndex index) const {
+InputCreatorType LSTMOpx::getInputCreatorType(InIndex index) const {
   if (index == LSTMOp::getInputInIndex() ||
       index == LSTMOp::getWeightsInIndex() ||
       index == LSTMOp::getRecurrenceInIndex() ||
       index == LSTMOp::getInitialHInIndex() ||
       index == LSTMOp::getInitialCInIndex()) {
-    return true;
+    return InputCreatorType::CANCREATE;
   } else {
-    return false;
+    return InputCreatorType::DEADEND;
   }
 }
 

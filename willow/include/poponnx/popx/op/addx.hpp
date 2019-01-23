@@ -15,6 +15,7 @@ class AddOpx : public Opx {
 public:
   AddOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+  InputCreatorType getInputCreatorType(InIndex) const final;
 };
 
 class AddArg0GradOpx : public ReduceSumOpx {

@@ -50,6 +50,10 @@ void PadOpx::grow(poplar::program::Sequence &) const {
   insert(outId(PadOp::getOutIndex()), out_tensor);
 }
 
+InputCreatorType PadOpx::getInputCreatorType(InIndex) const {
+  return InputCreatorType::AGNOSTICTOLAYOUT;
+}
+
 PadOp *PadOpx::getPadOp() const { return dynamic_cast<PadOp *>(op_p); }
 
 namespace {

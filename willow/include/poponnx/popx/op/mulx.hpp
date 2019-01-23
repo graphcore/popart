@@ -15,6 +15,7 @@ class MulOpx : public Opx {
 public:
   MulOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+  InputCreatorType getInputCreatorType(InIndex) const final;
 };
 
 } // namespace popx

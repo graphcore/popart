@@ -19,6 +19,10 @@ void TanhOpx::grow(poplar::program::Sequence &prog) const {
   insert(out_id, out_tensor);
 }
 
+InputCreatorType TanhOpx::getInputCreatorType(InIndex) const {
+  return InputCreatorType::AGNOSTICTOLAYOUT;
+}
+
 TanhGradOpx::TanhGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<TanhGradOp>(op, Onnx::GradOperators::TanhGrad);
 }

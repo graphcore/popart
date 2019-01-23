@@ -46,6 +46,30 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
   }
 }
 
+InputCreatorType SumOpx::getInputCreatorType(InIndex index) const {
+  SumOp &sumOp = getOp<SumOp>();
+  // if the total number of tensors is less than
+  // "5", then perform a series of adds.
+  if (sumOp.input->n() < 5) {
+    // Check shape doesn't change due to numpy-style broadcasting.
+    // Design choice: even without broadcasting, it is possible for the
+    // two inputs (of same shape) have different layout.
+    // The poplar binary op can choose the layout of the output to take
+    // the layout of either input.
+    // However, let's layout both inputs in the same way. That way we can
+    // definitely unwind through this opx, and it will also be efficient
+    // when performing the op.
+    if (sumOp.inInfo(index) == sumOp.outInfo(SumOp::getOutIndex())) {
+      return InputCreatorType::AGNOSTICTOLAYOUT;
+    } else {
+      return InputCreatorType::DEADEND;
+    }
+  } else {
+    throw error("Must implemented SumOpx::getInputCreatorType() for greater "
+                "than 4 inputs");
+  }
+}
+
 namespace {
 OpxCreator<SumOpx> sumOpxCreator({Onnx::Operators::Sum_6,
                                   Onnx::Operators::Sum_8});

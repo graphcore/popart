@@ -7,5 +7,9 @@ namespace popx {
 ElementWiseUnaryOpx::ElementWiseUnaryOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {}
 
+InputCreatorType ElementWiseUnaryOpx::getInputCreatorType(InIndex) const {
+  return InputCreatorType::AGNOSTICTOLAYOUT;
+}
+
 } // namespace popx
 } // namespace poponnx

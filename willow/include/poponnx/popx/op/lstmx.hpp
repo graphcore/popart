@@ -16,7 +16,7 @@ class LSTMOpx : public Opx {
 public:
   LSTMOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
-  bool canCreateInput(InIndex index) const final;
+  InputCreatorType getInputCreatorType(InIndex) const final;
   poplar::Tensor createInput(InIndex index) const final;
   std::vector<TensorId> mustExistBeforeCreate(InIndex) const;
 

@@ -169,6 +169,10 @@ private:
   std::map<ReturnPeriod, poplar::Tensor> batchCountingTensors;
   std::map<ReturnPeriod, poplar::Tensor> batchCountCheckingTensors;
 
+  // When creating the tensor on device, find candidate opxs with
+  // optimized poplar calls to create the tensor
+  std::vector<OpxAndInIndex> getCreatorCandidates(Tensor *tensor);
+
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
   PriTask initTensorTask(Tensor *);

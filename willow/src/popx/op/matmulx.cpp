@@ -121,7 +121,9 @@ MatMulOp *MatMulOpx::getMatMulOp() const {
   return dynamic_cast<MatMulOp *>(op_p);
 }
 
-bool MatMulOpx::canCreateInput(InIndex) const { return true; }
+InputCreatorType MatMulOpx::getInputCreatorType(InIndex) const {
+  return InputCreatorType::CANCREATE;
+}
 
 poplar::Tensor MatMulOpx::createInput(int index) const {
   auto matmul = getMatMulOp();

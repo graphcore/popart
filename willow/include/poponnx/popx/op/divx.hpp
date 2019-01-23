@@ -14,6 +14,7 @@ class DivOpx : public Opx {
 public:
   DivOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+  InputCreatorType getInputCreatorType(InIndex) const final;
 };
 
 } // namespace popx
