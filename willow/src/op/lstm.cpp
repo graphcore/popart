@@ -118,7 +118,7 @@ void LSTMOp::appendAttributes(std::stringstream &ss,
   Op::appendAttributes(ss, tab);
 
   if (hidden_size_attribute) {
-    appendAttribute(ss, tab, "hidden_size", *hidden_size);
+    appendAttribute(ss, tab, "hidden_size", *hidden_size_attribute);
   }
 }
 
