@@ -120,12 +120,15 @@ matDimshuffle(poplar::Tensor lhs, poplar::Tensor rhs) {
 static std::vector<std::size_t>
 lhsReshapeGroups(std::vector<std::size_t> lhsShape,
                  std::vector<std::size_t> rhsShape) {
-  auto begin        = lhsShape.begin();
-  auto groupEnd     = boost::mismatch(lhsShape, rhsShape).first;
+  auto begin = lhsShape.begin();
+  auto groupEnd =
+      std::mismatch(lhsShape.begin(), lhsShape.end() - 2, rhsShape.begin())
+          .first;
   auto broadcastEnd = lhsShape.end() - 2;
 
   unsigned groupSize =
       std::accumulate(begin, groupEnd, 1, std::multiplies<std::size_t>());
+
   unsigned broadcastSize = std::accumulate(
       groupEnd, broadcastEnd, 1, std::multiplies<std::size_t>());
 
@@ -183,7 +186,8 @@ static poplar::Tensor matExpandBroadcastDims(poplar::Tensor result,
   const auto rhsShape = rhs.shape();
   const auto outShape = result.shape();
 
-  const auto itrs = boost::mismatch(lhsShape, rhsShape);
+  const auto itrs =
+      std::mismatch(lhsShape.begin(), lhsShape.end() - 2, rhsShape.begin());
 
   std::vector<std::size_t> newShape;
   newShape.reserve(lhs.rank() + rhs.rank());
