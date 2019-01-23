@@ -796,12 +796,26 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         switch (type) {
         //  (1) the INPUT at index 'indexFwd' of nonGradOp
         case GradOpInType::IN: {
+          if (!nonGradOp->input->hasIndex(indexFwd)) {
+            throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
+                        "OUTPUT {} is not defined ",
+                        gradOp->debugName(),
+                        nonGradOp->debugName(),
+                        indexFwd);
+          }
           m_inputs[indexGrad] = nonGradOp->input->tensor(indexFwd)->id;
           break;
         }
 
         //  (2) the OUTPUT at index 'indexFwd' of nonGradOp
         case GradOpInType::OUT: {
+          if (!nonGradOp->output->hasIndex(indexFwd)) {
+            throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
+                        "OUTPUT {} is not defined ",
+                        gradOp->debugName(),
+                        nonGradOp->debugName(),
+                        indexFwd);
+          }
           m_inputs[indexGrad] = nonGradOp->output->tensor(indexFwd)->id;
           break;
         }
@@ -832,8 +846,17 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     {
       std::vector<TensorId> v_outputs;
       for (auto out_in : gradOp->gradOutToNonGradIn()) {
-        int gradOut    = out_in.first;
-        int nonGradIn  = out_in.second;
+        int gradOut   = out_in.first;
+        int nonGradIn = out_in.second;
+
+        if (!nonGradOp->input->tensor(nonGradIn)) {
+          throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
+                      "OUTPUT {} is not defined ",
+                      gradOp->debugName(),
+                      nonGradOp->debugName(),
+                      nonGradIn);
+        }
+
         TensorId inId  = nonGradOp->input->tensor(nonGradIn)->id;
         TensorId outId = getEdgeGradId(inId, nonGradOpId, nonGradIn);
         if (v_outputs.size() < gradOut + 1) {
@@ -1346,6 +1369,7 @@ void Ir::growFinalLoss() {
   std::vector<TensorId> inputs;
   inputs.reserve(lossOps.size());
   for (auto &op : lossOps) {
+    // Assume that tensor(0) is always valid
     inputs.push_back(op->output->tensor(0)->id);
   }
   std::vector<TensorId> outputs{getFinalLossId()};

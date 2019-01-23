@@ -304,6 +304,67 @@ def test_batchnorm_train_2(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+# This test is a error case where the batch norm in the model is defined as testing but
+# the user has performed a train on the model
+def test_batchnorm_train_3(op_tester):
+    # create test data
+    d1 = np.random.rand(2, 2, 2, 2).astype(np.float32)
+    scale = np.random.rand(2).astype(np.float32)
+    b = np.random.rand(2).astype(np.float32)
+    mean = np.zeros(2).astype(np.float32)
+    var = np.ones(2).astype(np.float32)
+    epsilon = 1e-05
+    momentum = 0.1
+
+    # Relax the relative tolerance as small numbers lose precison
+    op_tester.rtol = 1e-04
+
+    def init_builder(builder):
+
+        i1 = builder.addInputTensor(d1)
+        iScale = builder.addInputTensor(scale)
+        iB = builder.addInputTensor(b)
+        iMean = builder.addInputTensor(mean)
+        iVar = builder.addInputTensor(var)
+        o = builder.batchnormalizationTesting(i1, iScale, iB, iMean, iVar,
+                                              epsilon, momentum)
+
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        _input = torch.tensor(d1, requires_grad=False)
+        _weight = torch.tensor(scale, requires_grad=False)
+        _bias = torch.tensor(b, requires_grad=False)
+        _mean = torch.tensor(mean, requires_grad=False)
+        _var = torch.tensor(var, requires_grad=False)
+
+        m = torch.nn.BatchNorm2d(
+            2, eps=epsilon, momentum=momentum, track_running_stats=True)
+        m.state_dict()['weight'].copy_(_weight)
+        m.state_dict()['bias'].copy_(_bias)
+        m.state_dict()['running_mean'].copy_(_mean)
+        m.state_dict()['running_var'].copy_(_var)
+
+        m.train()
+        _y = m(_input)
+
+        _mean = m.state_dict()['running_mean']
+        _var = m.state_dict()['running_var']
+
+        d__o = ref_data.getOutputTensorGrad(0)
+        _y.backward(torch.tensor(d__o))
+
+        return [_y, _input.grad, d__o]
+
+    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        op_tester.run(init_builder, reference, 'train')
+
+    assert ("Invalid configuration of gradOp" in e_info.value.args[0])
+
+
 # This test does not work as the inputs are now
 # rejects as the mean/var do not match
 # input.{C}
