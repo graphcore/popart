@@ -65,24 +65,6 @@ def test_convolution(op_tester):
     op_tester.run(init_builder, reference, step_type='infer')
 
 
-def test_matmul(op_tester):
-    d1 = np.random.rand(2, 3).astype(np.float32)
-    d2 = np.random.rand(3, 4).astype(np.float32)
-
-    def init_builder(builder):
-        i1 = builder.addInputTensor(d1)
-        i2 = builder.addInputTensor(d2)
-        o = builder.matmul([i1, i2])
-        builder.addOutputTensor(o)
-        return [o]
-
-    def reference(ref_data):
-        out = np.matmul(d1, d2)
-        return [out]
-
-    op_tester.run(init_builder, reference)
-
-
 def test_mul(op_tester):
     d1 = np.random.rand(2).astype(np.float32)
     d2 = np.random.rand(2).astype(np.float32)

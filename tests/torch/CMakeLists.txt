@@ -38,7 +38,7 @@ add_test(NAME model6
 add_test(NAME model_reduce_sum
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model_reduce_sum.py)
-		
+
 add_test(NAME model7
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model7.py)
@@ -67,7 +67,10 @@ add_test(NAME model_softmax
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model_softmax.py)
 
-
 add_test(NAME model_nll
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model_nll.py)
+
+add_test(NAME model_matmul_bcast
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/model_matmul_bcast.py)

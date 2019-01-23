@@ -56,3 +56,7 @@ An example model that uses a stacked matmul
 model_cat
 ------
 An example model that uses a concat operation
+
+model_matmul_bcast
+------
+An example model that uses a matmul with a broadcast operation

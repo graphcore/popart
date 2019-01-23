@@ -18,7 +18,7 @@ public:
   ~MatMulOpx() override = default;
 
   poplar::Tensor createInput(InIndex index) const final;
-  InputCreatorType getInputCreatorType(InIndex) const final;
+  InputCreatorType getInputCreatorType(InIndex index) const final;
   bool createsEquiv(int, Opx *, int) const final;
   std::vector<TensorId> mustExistBeforeCreate(InIndex index0) const final;
 
@@ -32,17 +32,6 @@ private:
   std::vector<std::size_t> getLhsInputShape() const;
   std::vector<std::size_t> getRhsInputShape() const;
   std::vector<std::size_t> getOutputShape() const;
-
-  // The Poplar allocation shape
-  // Must be a 3D tensor where the first dimension is interpreted as being the
-  // stack size.
-  std::vector<std::size_t> getLhsInputAllocShape() const;
-  std::vector<std::size_t> getRhsInputAllocShape() const;
-
-  // The Poplar allocation shape of the opposite operand, with a matching stack
-  // size.
-  std::vector<std::size_t> getLhsInputCoallocShape() const;
-  std::vector<std::size_t> getRhsInputCoallocShape() const;
 };
 
 class MatMulLhsGradOpx : public Opx {
