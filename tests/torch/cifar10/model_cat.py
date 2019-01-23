@@ -74,7 +74,7 @@ class Module0(torch.nn.Module):
 
 # Set arbitrary seed so model weights are initialized to the
 # same values each time the test is run
-torch.manual_seed(1)
+torch.manual_seed(2)
 
 torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
@@ -87,5 +87,6 @@ torchWriter = torchwriter.PytorchNetWriter(
     module=Module0(),
     samplesPerBatch=batchSize)
 
-c10driver.run(torchWriter, None, args.outputdir, cifarInIndices, args.device,
-              args.hw_id)
+willowOptPasses = None
+c10driver.run(torchWriter, willowOptPasses, args.outputdir, cifarInIndices,
+              args.device, args.hw_id)

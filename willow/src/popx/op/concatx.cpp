@@ -61,7 +61,8 @@ void ConcatGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<ConcatOpx> concatOpxCreator(Onnx::Operators::Concat_4);
+OpxCreator<ConcatOpx> concatOpxCreator({Onnx::Operators::Concat_1,
+                                        Onnx::Operators::Concat_4});
 OpxCreator<ConcatInplaceOpx>
     concatInplaceOpxCreator(Onnx::CustomOperators::ConcatInplace);
 OpxCreator<ConcatGradOpx> concatGradOpxCreator(Onnx::GradOperators::ConcatGrad);
