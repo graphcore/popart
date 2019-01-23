@@ -57,6 +57,8 @@ if (BUILD_DOCS)
     DEPENDS ${CMAKE_BINARY_DIR}/docs
   )
 
+  # Note : To keep the temporay files add the '-save-temps' option to the GCDOC command
+
   add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/docs/pdfgen
     COMMAND ${GCDOC} -v -x ${CMAKE_BINARY_DIR}/docs/Doxyfile
@@ -112,10 +114,6 @@ if (BUILD_DOCS)
   install(DIRECTORY ${CMAKE_BINARY_DIR}/docs/html/doxygen/html
           DESTINATION docs/doxygen
           COMPONENT poponnx-docs)
-
-  add_custom_target(docs_user_guide ALL
-                    DEPENDS ${CMAKE_BINARY_DIR}/docs/pdfgen
-                    ${GEN_FILES} ${CMAKE_BINARY_DIR}/docs/html)
 
 else()
   install(FILES)
