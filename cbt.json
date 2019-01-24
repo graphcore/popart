@@ -4,7 +4,8 @@
     "pybind11",
     "gcdoc",
     "spdlog",
-    "boost"
+    "boost",
+    "protobuf"
   ],
   "superproject_cmake_includes" : [ "SuperProjectConfig.cmake" ]
 }

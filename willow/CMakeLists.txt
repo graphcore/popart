@@ -38,12 +38,15 @@ message(STATUS "Spdlog include dir is " ${SPDLOG_INCLUDE_DIRS})
 
 add_library(poponnx SHARED ${sources})
 
+# Then need position indepenent code enabled to make dyanamic library with static libs
+set_property(TARGET poponnx PROPERTY POSITION_INDEPENDENT_CODE ON)
+
 target_include_directories (poponnx SYSTEM PUBLIC
     # if the model checker is used: ${ONNX_UTILS_INCLUDE_DIR}
     ${ONNX_PB_INCLUDE_DIR}
     ${ONNX_CHECKER_INCLUDE_DIR}
     ${ONNX_INCLUDE_DIRS}
-    ${Protobuf_INCLUDE_DIR}
+    ${PROTOBUF_INCLUDE_DIR}
     ${Boost_INCLUDE_DIRS}
     ${SPDLOG_INCLUDE_DIRS}
     ${CBLAS_INCLUDE_DIRS}
@@ -55,7 +58,7 @@ target_link_libraries(poponnx
   # if the onnx mode checker is incorporated, this will be needed: ${ONNX_LIB}
   ${ONNX_LIB}
   ${ONNX_PROTO_LIB}
-  ${Protobuf_LIBRARIES}
+  ${PROTOBUF_LIB}
   ${CBLAS_LIBRARIES}
   ${Boost_LIBRARIES}
   ${SPDLOG_LIBRARIES}

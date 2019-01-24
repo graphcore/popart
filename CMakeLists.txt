@@ -46,11 +46,13 @@ add_definitions(-DONNX_NAMESPACE=onnx)
 #Where to find Findxxxx.cmake files
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/Modules ${PROJECT_SOURCE_DIR}/cmake)
 
+# Prefer to find static libraries
+set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+
+
 find_package(Threads REQUIRED)
 
-# There is a FindProtobuf.cmake file on my computer at
-# /usr/local/share/cmake/Modules/FindProtobuf.cmake
-find_package(Protobuf REQUIRED) 
+find_package(PROTOBUF REQUIRED) 
 
 # Using installed cmake find (ONNX must be installed)
 # For a hand-crafted Findonnx script, see a very early commit
