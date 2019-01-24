@@ -554,10 +554,9 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   else {
 
     auto f = [this, tensor]() {
-      std::stringstream ss;
-      ss << "Creating " << tensor->id << " linearly. "
-         << "WARNING : No creator candidates" << std::endl;
-      logging::devicex::warn(ss.str());
+      logging::devicex::warn("Creating input tensor '{}' linearly. No "
+                             "operator specific allocator found",
+                             tensor->id);
 
       // Find the ipu the op that consumes with tensor is on and create the
       // tensor on that graph
@@ -929,11 +928,11 @@ void Devicex::prepare() {
     task.f();
   }
 
-  logging::devicex::info("All tasks complete");
+  logging::devicex::info("Starting Engine compilation");
 
   pEngine.reset(
       new poplar::Engine(masterGraph(), progs.progs(), engineOptions));
-  logging::devicex::info("Engine created");
+  logging::devicex::info("Engine compiled");
 
   pEngine->load(popDevice);
   logging::devicex::info("Engine loaded");
