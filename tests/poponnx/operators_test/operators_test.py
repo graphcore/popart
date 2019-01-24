@@ -42,6 +42,27 @@ def test_add(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_sum(op_tester):
+    d1 = np.random.rand(1, 2, 1).astype(np.float32)
+    d2 = np.random.rand(1, 1, 2).astype(np.float32)
+    d3 = np.random.rand(2, 1, 1).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        i2 = builder.addInputTensor(d2)
+        i3 = builder.addInputTensor(d3)
+        o = builder.sum([i1, i2, i3], "test_sum")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = d1 + d2 + d3
+        return [out]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'infer')
+
+
 def test_convolution(op_tester):
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)

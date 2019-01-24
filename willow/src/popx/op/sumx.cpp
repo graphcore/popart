@@ -1,9 +1,13 @@
 #include <popops/ElementWise.hpp>
+#include <popops/Expr.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/sum.hpp>
 #include <poponnx/popx/op/sumx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensorindex.hpp>
+
+#include <queue>
 
 namespace poponnx {
 namespace popx {
@@ -16,58 +20,53 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
 
   SumOp &sumOp = getOp<SumOp>();
 
-  if (sumOp.input->n() == 1) {
-    throw error(
-        "SumOpx with one input should be removed by pattern 'PreUniRepl'");
-  }
-  // if the total number of tensors is less than or equal to
-  // N, then perform a series of adds.
-  else if (sumOp.input->n() <= getTensorLimitForAddSeries()) {
-    poplar::Tensor sum = popops::map(graph(),
-                                     popops::expr::BinaryOpType::ADD,
-                                     get(inId(0)),
-                                     get(inId(1)),
-                                     prog,
-                                     idStr());
+  // The input tensors
+  std::vector<poplar::Tensor> inputs;
 
-    for (InIndex i = 2; i < sumOp.input->n(); ++i) {
-      popops::mapInPlace(graph(),
-                         popops::expr::BinaryOpType::ADD,
-                         sum,
-                         get(inId(i)),
-                         prog,
-                         idStr());
-    }
-    insert(outId(SumOp::getOutIndex()), sum);
+  // The "owner" of all expr nodes
+  std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
+
+  // The queue of expr nodes to be reduced
+  std::queue<popops::expr::Expr *> expr;
+
+  // Add the input tensors as placeholders to the expression
+  for (int i = 0; i < sumOp.input->n(); ++i) {
+    inputs.push_back(get(inId(i)));
+    exprs.push_back(make_unique<popops::expr::PlaceHolder>(i + 1));
+    expr.push(exprs.back().get());
   }
 
-  else {
-    throw error("Must implemented SumOpx::grow() for greater than {} inputs",
-                getTensorLimitForAddSeries());
+  // Build a fairly balanced binary tree
+  while (expr.size() > 1) {
+    auto &a = *expr.front();
+    expr.pop();
+    auto &b = *expr.front();
+    expr.pop();
+
+    exprs.push_back(make_unique<popops::expr::Add>(a, b));
+    expr.push(exprs.back().get());
   }
+
+  // Compute the sum
+  auto sum = popops::map(graph(), *expr.front(), inputs, prog);
+
+  insert(outId(SumOp::getOutIndex()), sum);
 }
 
 InputCreatorType SumOpx::getInputCreatorType(InIndex index) const {
-  SumOp &sumOp = getOp<SumOp>();
   // CANUNWIND if doing a series of adds.
-  if (sumOp.input->n() <= getTensorLimitForAddSeries()) {
-    // Check shape doesn't change due to numpy-style broadcasting.
-    // Design choice: even without broadcasting, it is possible for the
-    // two inputs (of same shape) have different layout.
-    // The poplar binary op can choose the layout of the output to take
-    // the layout of either input.
-    // However, let's layout both inputs in the same way. That way we can
-    // definitely unwind through this opx, and it will also be efficient
-    // when performing the op.
-    if (sumOp.inInfo(index) == sumOp.outInfo(SumOp::getOutIndex())) {
-      return InputCreatorType::CANUNWIND;
-    } else {
-      return InputCreatorType::DEADEND;
-    }
+  // Check shape doesn't change due to numpy-style broadcasting.
+  // Design choice: even without broadcasting, it is possible for the
+  // two inputs (of same shape) have different layout.
+  // The poplar binary op can choose the layout of the output to take
+  // the layout of either input.
+  // However, let's layout both inputs in the same way. That way we can
+  // definitely unwind through this opx, and it will also be efficient
+  // when performing the op.
+  if (op_p->inInfo(index) == op_p->outInfo(SumOp::getOutIndex())) {
+    return InputCreatorType::CANUNWIND;
   } else {
-    throw error("Must implemented SumOpx::getInputCreatorType() for greater "
-                "than {} inputs",
-                getTensorLimitForAddSeries());
+    return InputCreatorType::DEADEND;
   }
 }
 
