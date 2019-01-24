@@ -50,10 +50,6 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(0), reduction);
 }
 
-InputCreatorType NllOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::AGNOSTICTOLAYOUT;
-}
-
 NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<NllGradOp>(op, Onnx::CustomGradOperators::NllGrad);
 }

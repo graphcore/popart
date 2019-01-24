@@ -87,13 +87,18 @@ private:
 poplar::Type popType(const TensorInfo &);
 poplar::Type popType(DataType);
 
-// A bundle class for an int and an Opx.
-class OpxAndInIndex {
+// A bundle class to represent candidate Opxs
+// for allocating an input tensor
+class InputCreatorCandidate {
 public:
-  OpxAndInIndex(int, Opx *);
-  OpxAndInIndex() = default;
+  InputCreatorCandidate(int, Opx *, std::vector<Opx *>);
+  InputCreatorCandidate() = default;
   int index;
   Opx *opx;
+  std::vector<Opx *> getPathFromInput();
+
+private:
+  std::vector<Opx *> pathFromInput;
 };
 
 class PopTensors {
@@ -171,7 +176,8 @@ private:
 
   // When creating the tensor on device, find candidate opxs with
   // optimized poplar calls to create the tensor
-  std::vector<OpxAndInIndex> getCreatorCandidates(Tensor *tensor);
+  std::vector<InputCreatorCandidate>
+  getCreatorCandidates(Tensor *tensor, std::vector<Opx *> pathFromInput);
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)

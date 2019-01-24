@@ -8,7 +8,12 @@ ElementWiseUnaryOpx::ElementWiseUnaryOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {}
 
 InputCreatorType ElementWiseUnaryOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::AGNOSTICTOLAYOUT;
+  return InputCreatorType::CANUNWIND;
+}
+
+poplar::Tensor
+ElementWiseUnaryOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+  return tensor;
 }
 
 } // namespace popx

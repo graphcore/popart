@@ -14,7 +14,6 @@ class PadOpx : public Opx {
 public:
   PadOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
-  InputCreatorType getInputCreatorType(InIndex) const final;
 
 private:
   PadOp *getPadOp() const;

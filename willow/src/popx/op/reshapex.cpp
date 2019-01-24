@@ -19,6 +19,14 @@ ReshapeOpx::ReshapeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ReshapeOp>(op);
 }
 
+InputCreatorType ReshapeOpx::getInputCreatorType(InIndex) const {
+  return InputCreatorType::CANUNWIND;
+}
+
+poplar::Tensor ReshapeOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+  return tensor.reshape(inInfo(ReshapeOp::getInIndex()).shape_szt());
+}
+
 ReshapeGradOpx::ReshapeGradOpx(Op *op, Devicex *devicex)
     : ReshapeOpx(op, devicex) {
   verifyOp<ReshapeGradOp>(op, Onnx::GradOperators::ReshapeGrad);

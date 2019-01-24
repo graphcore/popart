@@ -15,6 +15,10 @@ public:
   SumOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
+  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor) const final;
+
+private:
+  static int getTensorLimitForAddSeries() { return 4; }
 };
 
 } // namespace popx

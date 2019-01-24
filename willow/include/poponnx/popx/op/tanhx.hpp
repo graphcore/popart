@@ -13,6 +13,7 @@ public:
   TanhOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
+  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor) const final;
 };
 
 class TanhGradOpx : public Opx {

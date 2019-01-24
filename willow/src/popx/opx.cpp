@@ -37,6 +37,12 @@ InputCreatorType Opx::getInputCreatorType(int) const {
   return InputCreatorType::DEADEND;
 }
 
+poplar::Tensor Opx::unwindTensorLayout(poplar::Tensor) const {
+  throw error("Opx for {} cannot unwind the tensor layout change between input "
+              "and output",
+              op_p->opid);
+}
+
 poplar::Graph &Opx::masterGraph() const { return dv_p->masterGraph(); }
 
 poplar::Graph &Opx::graph() const {

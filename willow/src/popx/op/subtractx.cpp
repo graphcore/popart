@@ -37,10 +37,14 @@ InputCreatorType SubtractOpx::getInputCreatorType(InIndex index) const {
   // definitely unwind through this opx, and it will also be efficient
   // when performing the op.
   if (op_p->inInfo(index) == op_p->outInfo(SubtractOp::getOutIndex())) {
-    return InputCreatorType::AGNOSTICTOLAYOUT;
+    return InputCreatorType::CANUNWIND;
   } else {
     return InputCreatorType::DEADEND;
   }
+}
+
+poplar::Tensor SubtractOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+  return tensor;
 }
 
 namespace {

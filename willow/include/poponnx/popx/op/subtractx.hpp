@@ -17,6 +17,7 @@ public:
   SubtractOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
+  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor) const final;
 };
 
 // TODO (task T5432) should inherit from ReduceSum when we have numpy

@@ -32,10 +32,14 @@ InputCreatorType AddOpx::getInputCreatorType(InIndex index) const {
   // definitely unwind through this opx, and it will also be efficient
   // when performing the op.
   if (op_p->inInfo(index) == op_p->outInfo(AddOp::getOutIndex())) {
-    return InputCreatorType::AGNOSTICTOLAYOUT;
+    return InputCreatorType::CANUNWIND;
   } else {
     return InputCreatorType::DEADEND;
   }
+}
+
+poplar::Tensor AddOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+  return tensor;
 }
 
 AddArg0GradOpx::AddArg0GradOpx(Op *op, Devicex *devicex)

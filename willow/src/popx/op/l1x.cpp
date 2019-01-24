@@ -43,7 +43,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 InputCreatorType L1Opx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::AGNOSTICTOLAYOUT;
+  return InputCreatorType::CANUNWIND;
 }
 
 // lambda * sum_{0,..rank-1} |v|

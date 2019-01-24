@@ -24,7 +24,7 @@ enum class InputCreatorType {
   // Cannot create the input tensor, but can
   // allow an Opx downstream in the graph to
   // create it
-  AGNOSTICTOLAYOUT,
+  CANUNWIND,
   // Cannot create tensor, nor can it allow a
   // a downstream Opx to create the tensor
   DEADEND
@@ -49,6 +49,8 @@ public:
   // does it create the same poplar::Tensor as if opx1 creates one at
   // index1?. default behaviour : throws error
   virtual bool createsEquiv(int index0, Opx *opx1, int index1) const;
+  // Reverses the layout change to an input tensor
+  virtual poplar::Tensor unwindTensorLayout(poplar::Tensor tensor) const;
   // To create a poplar::Tensor for input index index0, which
   // poplar::Tensors must already exist?
   virtual std::vector<TensorId> mustExistBeforeCreate(int index0) const;

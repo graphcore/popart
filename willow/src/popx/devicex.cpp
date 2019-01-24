@@ -449,8 +449,10 @@ TaskId Devicex::taskWhichCreates(TensorId id) const {
 // If so, collect those that do, and the index at which consumed.
 // Note that an Opx may appear several times, with different
 // consumption indices.
-std::vector<OpxAndInIndex> Devicex::getCreatorCandidates(Tensor *tensor) {
-  std::vector<OpxAndInIndex> candidates;
+std::vector<InputCreatorCandidate>
+Devicex::getCreatorCandidates(Tensor *tensor,
+                              std::vector<Opx *> pathFromInput) {
+  std::vector<InputCreatorCandidate> candidates;
   for (Op *op : tensor->consumers.getOps()) {
     auto conOpId = op->id;
     Opx *opx     = getOpx(conOpId);
@@ -459,15 +461,17 @@ std::vector<OpxAndInIndex> Devicex::getCreatorCandidates(Tensor *tensor) {
       // Opx has poplar call to layout tensor at this
       // index
       case InputCreatorType::CANCREATE: {
-        candidates.push_back({index, opx});
+        candidates.push_back({index, opx, pathFromInput});
         break;
       }
       // Recursively search the DAG downstream of the op until we
       // have set of candidates that can create the tensor
-      case InputCreatorType::AGNOSTICTOLAYOUT: {
+      case InputCreatorType::CANUNWIND: {
+        pathFromInput.push_back(opx);
         for (auto &ind_ten : op->output->tensorMap()) {
           auto nextOutputTensor = ind_ten.second;
-          for (auto candidate : getCreatorCandidates(nextOutputTensor)) {
+          for (auto candidate :
+               getCreatorCandidates(nextOutputTensor, pathFromInput)) {
             candidates.push_back(candidate);
           }
         }
@@ -498,9 +502,12 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     return ss.str();
   };
 
-  // Perform a recursive search of the graph to get the candidate
-  // Opxs that know how to create this tensor
-  std::vector<OpxAndInIndex> candidates = getCreatorCandidates(tensor);
+  // Search of the graph to get the candidate Opxs that
+  // know how to create this tensor.
+  // The pathFromInput argument is an empty vector, as
+  // we are starting the search from the root (input)
+  std::vector<InputCreatorCandidate> candidates =
+      getCreatorCandidates(tensor, {});
 
   if (candidates.size() > 1) {
     // check that all creators are in agreement on how
@@ -522,13 +529,30 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     }
   }
 
-  // a unique candidate creator will create the tensor
+  // 1. A unique candidate creator will create the tensor
+  // 2. The tensor will be unwound (have its layout modified)
+  //    by view-changing opxs on the path from the input to
+  //    the candidate candidate
   if (candidates.size() == 1) {
-    Opx *creator = candidates[0].opx;
-    int inIndex  = candidates[0].index;
-    auto f       = [this, creator, inIndex, tensor]() {
+    Opx *creator                     = candidates[0].opx;
+    int inIndex                      = candidates[0].index;
+    std::vector<Opx *> pathFromInput = candidates[0].getPathFromInput();
+    auto f = [this, creator, inIndex, pathFromInput, tensor]() {
       logging::devicex::debug("Creating poplar::Tensor " + tensor->id);
-      tensors.insert(tensor->id, creator->createInput(inIndex));
+      // tensors.insert(tensor->id, creator->createInput(inIndex));
+      poplar::Tensor input = creator->createInput(inIndex);
+
+      // Reverse the path,
+      // The first element is now the Opx producing a tensor consumed by
+      // the candidate.
+      // The last element is now the Opx consuming the input we are mapping.
+      std::vector<Opx *> pathToInput = pathFromInput;
+      std::reverse(pathToInput.begin(), pathToInput.end());
+
+      for (auto opxOnPath : pathToInput) {
+        input = opxOnPath->unwindTensorLayout(input);
+      }
+      tensors.insert(tensor->id, input);
     };
     // the inputs of creator which must have poplar::Tensors
     // before creator creates input tensor at index inIndex.
@@ -772,8 +796,14 @@ PriTask Devicex::opTask(Op *op, double priority) {
   return {priority, opTaskId(op), deps, f};
 }
 
-OpxAndInIndex::OpxAndInIndex(int conIndex_, Opx *opx_)
-    : index(conIndex_), opx(opx_) {}
+InputCreatorCandidate::InputCreatorCandidate(int conIndex_,
+                                             Opx *opx_,
+                                             std::vector<Opx *> pathFromInput_)
+    : index(conIndex_), opx(opx_), pathFromInput(pathFromInput_) {}
+
+std::vector<Opx *> InputCreatorCandidate::getPathFromInput() {
+  return pathFromInput;
+}
 
 // go all the way to creating the engine and connecting streams
 void Devicex::prepare() {

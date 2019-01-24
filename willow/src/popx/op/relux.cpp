@@ -31,7 +31,11 @@ void ReluOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 InputCreatorType ReluOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::AGNOSTICTOLAYOUT;
+  return InputCreatorType::CANUNWIND;
+}
+
+poplar::Tensor ReluOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+  return tensor;
 }
 
 void ReluInplaceOpx::grow(poplar::program::Sequence &prog) const {
@@ -43,7 +47,11 @@ void ReluInplaceOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 InputCreatorType ReluInplaceOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::AGNOSTICTOLAYOUT;
+  return InputCreatorType::CANUNWIND;
+}
+
+poplar::Tensor ReluInplaceOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+  return tensor;
 }
 
 ReluGradOpx::ReluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {

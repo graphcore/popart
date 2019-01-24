@@ -20,7 +20,11 @@ void TanhOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 InputCreatorType TanhOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::AGNOSTICTOLAYOUT;
+  return InputCreatorType::CANUNWIND;
+}
+
+poplar::Tensor TanhOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+  return tensor;
 }
 
 TanhGradOpx::TanhGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
