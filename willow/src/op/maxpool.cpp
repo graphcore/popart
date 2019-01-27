@@ -93,7 +93,7 @@ void MaxPoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
 namespace {
 static OpCreator<MaxPoolOp> maxPoolOpxCreator(
-    Onnx::Operators::MaxPool_8,
+    {Onnx::Operators::MaxPool_8, Onnx::Operators::MaxPool_1},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

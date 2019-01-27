@@ -44,17 +44,25 @@ class Context:
 
         inputmap = {}
         i = 0
-        for inp in self.model.graph.input:
-            print(inp.name)
-            inputmap[str(inp.name)] = inputs[i]
-            i = i + 1
 
-        #stepio = poponnx.PyStepIO({'x': inputs[0], 'y': inputs[1]}, anchors)
+        for inp in self.model.graph.input:
+
+            isInitializer = False
+            for init in self.model.graph.initializer:
+                if inp.name == init.name:
+                    isInitializer = True
+                    break
+
+            if isInitializer == False:
+                inputmap[str(inp.name)] = inputs[i]
+                i = i + 1
+
+        self.session.weightsFromHost()
+
         stepio = poponnx.PyStepIO(inputmap, anchors)
         self.session.infer(stepio)
 
         output_tensor = self.model.graph.output[0].name
-        #outputs = [anchors['sum']]
         outputs = [anchors[output_tensor]]
         return outputs
 
@@ -225,6 +233,18 @@ backend_test.exclude('tile')
 backend_test.exclude('top_k')
 backend_test.exclude('upsample')
 backend_test.exclude('xor')
+backend_test.exclude('ConvTranspose2d')
+backend_test.exclude('ConvTranspose2d_no_bias')
+backend_test.exclude('ELU')
+backend_test.exclude('Embedding')
+backend_test.exclude('Embedding_sparse')
+backend_test.exclude('GLU_dim')
+backend_test.exclude('GLU')
+backend_test.exclude('LeakyReLU')
+backend_test.exclude('LeakyReLU_with_negval')
+backend_test.exclude('Linear')
+backend_test.exclude('Linear_no_bias')
+backend_test.exclude('SELU')
 
 # high level models
 backend_test.exclude('bvlc_alexnet')
@@ -242,30 +262,41 @@ backend_test.exclude('lstm')
 backend_test.exclude('gemm_broadcast')
 
 # Test that do not work for ops we have implemented
+
+# T6601
 backend_test.exclude('averagepool_1d_default')
+backend_test.exclude('averagepool_3d_default')
+backend_test.exclude('AvgPool3d')
+backend_test.exclude('AvgPool3d_stride1_pad0_gpu_input')
+backend_test.exclude('AvgPool3d_stride')
+backend_test.exclude('MaxPool1d')
+backend_test.exclude('MaxPool1d_stride')
+backend_test.exclude('MaxPool3d')
+backend_test.exclude('MaxPool3d_stride')
+backend_test.exclude('MaxPool3d_stride_padding')
+
+# T6602
 backend_test.exclude('averagepool_2d_pads_count_include_pad')
 backend_test.exclude('averagepool_2d_precomputed_pads_count_include_pad')
+
+# T6603
 backend_test.exclude('averagepool_2d_precomputed_same_upper')
 backend_test.exclude('averagepool_2d_same_lower')
 backend_test.exclude('averagepool_2d_same_upper')
-backend_test.exclude('averagepool_3d_default')
-backend_test.exclude('concat_1d_axis_0')
-backend_test.exclude('concat_2d_axis_0')
-backend_test.exclude('concat_2d_axis_1')
-backend_test.exclude('concat_3d_axis_0')
-backend_test.exclude('concat_3d_axis_1')
-backend_test.exclude('concat_3d_axis_2')
+
+# T6604
 backend_test.exclude('constant')
+
+# T6605
 backend_test.exclude('gather_0')
 backend_test.exclude('gather_1')
 backend_test.exclude('scatter_with_axis')
 backend_test.exclude('scatter_without_axis')
-backend_test.exclude('sum_one_input')
+
+# T6606
 backend_test.exclude('sum_one_input')
 
-backend_test.exclude('AvgPool3d')
-backend_test.exclude('AvgPool3d_stride1_pad0_gpu_input')
-backend_test.exclude('AvgPool3d_stride')
+# T6607
 backend_test.exclude('Conv1d_dilated')
 backend_test.exclude('Conv1d_groups')
 backend_test.exclude('Conv1d')
@@ -273,41 +304,20 @@ backend_test.exclude('Conv1d_pad1')
 backend_test.exclude('Conv1d_pad2')
 backend_test.exclude('Conv1d_stride')
 backend_test.exclude('Conv2d_depthwise')
-backend_test.exclude('Conv2d_depthwise_padded')
-backend_test.exclude('Conv2d_depthwise_strided')
-backend_test.exclude('Conv2d_depthwise_with_multiplier')
-backend_test.exclude('Conv2d_dilated')
-backend_test.exclude('Conv2d_groups')
-backend_test.exclude('Conv2d_groups_thnn')
-backend_test.exclude('Conv2d')
-backend_test.exclude('Conv2d_no_bias')
-backend_test.exclude('Conv2d_padding')
-backend_test.exclude('Conv2d_strided')
 backend_test.exclude('Conv3d_dilated')
 backend_test.exclude('Conv3d_dilated_strided')
 backend_test.exclude('Conv3d_groups')
-backend_test.exclude('Conv3d')
 backend_test.exclude('Conv3d_no_bias')
 backend_test.exclude('Conv3d_stride')
 backend_test.exclude('Conv3d_stride_padding')
-backend_test.exclude('ConvTranspose2d')
-backend_test.exclude('ConvTranspose2d_no_bias')
-backend_test.exclude('ELU')
-backend_test.exclude('Embedding')
-backend_test.exclude('Embedding_sparse')
-backend_test.exclude('GLU_dim')
-backend_test.exclude('GLU')
-backend_test.exclude('LeakyReLU')
-backend_test.exclude('LeakyReLU_with_negval')
-backend_test.exclude('Linear')
-backend_test.exclude('Linear_no_bias')
-backend_test.exclude('MaxPool1d')
-backend_test.exclude('MaxPool1d_stride')
-backend_test.exclude('MaxPool2d')
-backend_test.exclude('MaxPool3d')
-backend_test.exclude('MaxPool3d_stride')
-backend_test.exclude('MaxPool3d_stride_padding')
-backend_test.exclude('SELU')
+backend_test.exclude('Conv3d')
+
+# T6608
+backend_test.exclude('Conv2d_depthwise_padded')
+backend_test.exclude('Conv2d_depthwise_strided')
+backend_test.exclude('Conv2d_depthwise_with_multiplier')
+backend_test.exclude('Conv2d_groups')
+backend_test.exclude('Conv2d_groups_thnn')
 
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.test_cases)
