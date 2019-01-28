@@ -65,6 +65,7 @@ pip install yapf
 pip install torchvision
 pip install pyyaml
 pip install requests
+pip install protobuf
 
 # Create a directory for building
 rm -rf build
