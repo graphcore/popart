@@ -124,8 +124,8 @@ std::string moduleName(const Module m) {
   return prefix + module;
 }
 
-const char *defaultLoggerDestination = "stdout";
-const char *defaultLoggerLevel       = "INFO";
+const char *defaultLoggerDestination = "stderr";
+const char *defaultLoggerLevel       = "OFF";
 
 LoggingContext::LoggingContext() {
   auto POPONNX_LOG_DEST   = std::getenv("POPONNX_LOG_DEST");
