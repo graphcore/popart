@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <poponnx/op/slice.hpp>
+#include <poponnx/op/slicegrad.hpp>
+#include <poponnx/popx/op/slicegradx.hpp>
 #include <poponnx/popx/op/slicex.hpp>
 #include <poponnx/popx/opxmanager.hpp>
 
@@ -7,7 +9,7 @@ namespace poponnx {
 namespace popx {
 
 SliceOpx::SliceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<SliceOp>(op, Onnx::Operators::Slice_1);
+  verifyOp<SliceOp>(op);
 }
 
 void SliceOpx::grow(poplar::program::Sequence &) const {

@@ -47,6 +47,7 @@ class Module0(torch.nn.Module):
         self.conv1 = torchwriter.conv3x3(nInChans, nOutChans)
         self.conv2 = torchwriter.conv3x3(nOutChans, nOutChans)
         self.relu = torch.nn.functional.relu
+        self.pad = torch.nn.functional.pad
         # for softmax dim -1 is correct for [sample][class],
         # gives class probabilities for each sample.
         self.softmax = torch.nn.Softmax(dim=-1)
@@ -58,6 +59,7 @@ class Module0(torch.nn.Module):
 
         x = self.conv1(x)
         x = self.relu(x)
+        x = self.pad(x, pad=(1, 0, 1, 0), mode='constant', value=0)
         x = self.conv2(x)
         preProbSquared = x + x
 

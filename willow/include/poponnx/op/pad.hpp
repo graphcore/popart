@@ -14,6 +14,7 @@ public:
         const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
   // returns true of all pad size in all dimensions
   // and on both sides, are zero
   bool padSizeZero() const;

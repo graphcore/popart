@@ -1,6 +1,7 @@
 #include <popops/Pad.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/op/pad.hpp>
+#include <poponnx/popx/op/padgradx.hpp>
 #include <poponnx/popx/op/padx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
 
@@ -52,9 +53,14 @@ void PadOpx::grow(poplar::program::Sequence &) const {
 
 PadOp *PadOpx::getPadOp() const { return dynamic_cast<PadOp *>(op_p); }
 
+PadGradOpx::PadGradOpx(Op *op, Devicex *devicex) : SliceOpx(op, devicex) {
+  verifyOp<PadGradOpx>(op, Onnx::GradOperators::PadGrad);
+}
+
 namespace {
 OpxCreator<PadOpx> padOpxCreator(Onnx::Operators::Pad_2);
-}
+OpxCreator<PadGradOpx> padGradOpxCreator(Onnx::GradOperators::PadGrad);
+} // namespace
 
 } // namespace popx
 } // namespace poponnx

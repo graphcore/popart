@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/pad.hpp>
+#include <poponnx/op/padgrad.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
@@ -14,6 +15,19 @@ PadOp::PadOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_), pads(_pads), pad_value(value_), mode(_mode) {}
 
 std::unique_ptr<Op> PadOp::clone() const { return make_unique<PadOp>(*this); }
+
+std::vector<std::unique_ptr<Op>> PadOp::getGradOps() {
+  std::vector<std::unique_ptr<Op>> upops;
+
+  if (mode == "constant") {
+    upops.emplace_back(make_unique<PadGradOp>(*this));
+  } else {
+    // TODO : T6631 Add support for other grad op when mode is "Reflect" &
+    // "Edge". May define different pad grad op classes for the different modes
+    throw error("Do not support PadGradOp when mode is not \"constant\"");
+  }
+  return upops;
+}
 
 void PadOp::setup() {
 
@@ -49,6 +63,63 @@ void PadOp::appendAttributes(std::stringstream &ss,
   appendAttribute(ss, tab, "value", pad_value);
   appendAttribute(ss, tab, "mode", mode);
 }
+
+PadGradOp::PadGradOp(const PadOp &fwdOp)
+    : SliceOp(Onnx::GradOperators::PadGrad,
+              calculateStarts(fwdOp),
+              calculateEnds(fwdOp),
+              calculateAxes(fwdOp),
+              fwdOp.getSettings()) {}
+
+std::unique_ptr<Op> PadGradOp::clone() const {
+  return make_unique<PadGradOp>(*this);
+}
+
+const std::vector<GradInOutMapper> &PadGradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {getInIndex(), PadOp::getOutIndex(), GradOpInType::GRADOUT}};
+
+  return inInfo;
+}
+
+const std::map<int, int> &PadGradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), PadOp::getInIndex()}};
+
+  return outInfo;
+}
+
+std::vector<int64_t> PadGradOp::calculateStarts(const PadOp &padOp) {
+
+  std::vector<int64_t> starts(padOp.getPads().size() / 2);
+
+  // Set the starts to the 'index' after the 'begin' padding
+  for (int i = 0; i < padOp.getPads().size() / 2; ++i) {
+    starts[i] = (padOp.getPads()[i]);
+  }
+
+  return starts;
+}
+
+std::vector<int64_t> PadGradOp::calculateEnds(const PadOp &padOp) {
+  std::vector<int64_t> ends(padOp.getPads().size() / 2);
+
+  // Set the ends to the 'index' where the original input would have ended
+  for (int i = 0; i < padOp.getPads().size() / 2; ++i) {
+    ends[i] = padOp.getPads()[i] + padOp.inShape(padOp.getInIndex())[i];
+  }
+
+  return ends;
+}
+
+// The PadOp provides pad information for each axis.
+// The default of the SliceOp when axes is blank is to assume start & end
+// for all axes
+std::vector<int64_t> PadGradOp::calculateAxes(const PadOp &) {
+  std::vector<int64_t> axes = {};
+  return axes;
+}
+
 namespace {
 static OpCreator<PadOp> padCreator(
     Onnx::Operators::Pad_2,

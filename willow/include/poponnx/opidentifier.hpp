@@ -609,7 +609,7 @@ const static AiGraphcoreOpIdV1 NegGrad("NegGrad");
 // constexpr static char OneHot[] = "OneHot";
 // constexpr static char Or[] = "Or";
 // constexpr static char PRelu[] = "PRelu";
-// constexpr static char Pad[] = "Pad";
+const static AiGraphcoreOpIdV1 PadGrad("PadGrad");
 // constexpr static char Pow[] = "Pow";
 // constexpr static char RNN[] = "RNN";
 // constexpr static char RandomNormal[] = "RandomNormal";

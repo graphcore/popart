@@ -2,6 +2,7 @@ import numpy as np
 import poponnx
 import torch
 import pytest
+import torch.nn.functional as F
 from op_tester import op_tester
 
 # `import test_util` requires adding to sys.path
@@ -655,6 +656,30 @@ def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
 
     op_tester.passes = ['PreUniRepl']
     op_tester.run(init_builder, reference, 'infer')
+
+
+def test_pad_grad(op_tester):
+    d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.pad([i1], "constant", [0, 2, 1, 1], 0)
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+
+        a = torch.tensor(d1, requires_grad=True)
+        o = F.pad(input=a, pad=(2, 1, 0, 1), mode='constant', value=0)
+
+        d__o = ref_data.getOutputTensorGrad(0)
+
+        o.backward(torch.tensor(d__o))
+
+        return [o, a.grad, d__o]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
 
 
 def test_scatter_0(op_tester):

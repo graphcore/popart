@@ -1,6 +1,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/pad.hpp>
 #include <poponnx/op/slice.hpp>
+#include <poponnx/op/slicegrad.hpp>
 #include <poponnx/opmanager.hpp>
 
 namespace poponnx {
@@ -14,10 +15,6 @@ SliceOp::SliceOp(const OperatorIdentifier &_opid,
                  const std::vector<int64_t> &axes_,
                  const Op::Settings &settings_)
     : Op(_opid, settings_), starts(starts_), ends(ends_), axes(axes_) {
-
-  // attr.set(starts, "starts");
-  // attr.set(ends, "ends");
-  // attr.setIfPresent(axes, "axes");
 
   if (axes.size() == 0) {
     for (int i = 0; i < starts.size(); i++) {
