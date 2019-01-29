@@ -131,6 +131,12 @@ public:
   // Set which execution mode we are using
   void setExecutionMode(const ExecutionMode &mode);
 
+  // Convenience methods to query the mode of the model. 
+  // Onnx refers to Inference as testing.
+  bool isTraining() { return executionMode == ExecutionMode::TRAINING; }
+  bool isTesting() { return executionMode == ExecutionMode::INFERENCE; }
+  bool isEvaulation() { return executionMode == ExecutionMode::EVALUATION; }
+
   // Set the losses, will clear any previous losses
   void setLosses(const std::vector<Loss *> &l);
 

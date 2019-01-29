@@ -13,6 +13,9 @@
 namespace poponnx {
 
 bool OpToIdentityPattern::matches(Op *op) const {
+  // TODO : T6634  Replace the if statements with a virtual call to the op to determine if it
+  // can be replaced by the identity op
+
   // A reduce op that doesn't reduce anything
 
   if (op->isConvertibleTo<ReduceSumOp>() &&
@@ -22,7 +25,6 @@ bool OpToIdentityPattern::matches(Op *op) const {
   }
 
   // A sum op with only one input
-  //(op->opType == OpType::SUM && op->input->n() == 1) ||
   if (op->opid == Onnx::Operators::Sum_6 && op->input->n() == 1) {
     return true;
   }
@@ -31,8 +33,6 @@ bool OpToIdentityPattern::matches(Op *op) const {
     return true;
   }
   // A pad op with no padding
-  //(op->opType == OpType::PAD && dynamic_cast<const PadOp
-  //*>(op)->padSizeZero()) ||
   auto pad = dynamic_cast<const PadOp *>(op);
   if (op->opid == Onnx::Operators::Pad_2 && pad->padSizeZero()) {
     return true;
@@ -53,6 +53,14 @@ bool OpToIdentityPattern::matches(Op *op) const {
   // Inplace concat a single tensor
   if (op->opid == Onnx::CustomOperators::ConcatInplace && op->input->n() == 1) {
     return true;
+  }
+
+  // Dropout in testing mode can be replaced by the identity 
+  if(!op->getIr().isTraining()) {
+    if (op->opid == Onnx::Operators::Dropout_6 ||
+        op->opid == Onnx::Operators::Dropout_7) {
+      return true;
+    }
   }
 
   // A gather on a degenerate dimension with a rank 1 index tensor with a single

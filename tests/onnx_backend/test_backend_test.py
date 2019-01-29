@@ -96,25 +96,18 @@ class IpuBackend(onnx.backend.base.Backend):
         #             for dim in tt.shape.dim:
         #                 assert dim.WhichOneof('value') == 'dim_value'
 
-        onnxData = model.SerializeToString()
-
-        print(model)
-
-        f = open("test.onnx", "wb")
-        f.write(onnxData)
-        f.close()
-
         opts = poponnx.SessionOptions()
         opts.logging = {'all': 'DEBUG'}
 
-        # TODO: This need to be changed to allow multple outputs from the model
-        output_tensor = model.graph.output[0].name
+        anchors = {}
+        for output in model.graph.output:
+            anchors[output.name] = poponnx.AnchorReturnType("ALL")
 
         session = poponnx.Session(
-            fnModel="test.onnx",
-            dataFeed=poponnx.DataFlow(
-                1, {output_tensor: poponnx.AnchorReturnType("ALL")}),
+            fnModel=model.SerializeToString(),
+            dataFeed=poponnx.DataFlow(1, anchors),
             userOptions=opts)
+
         #session.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
         session.setDevice(poponnx.DeviceManager().createCpuDevice())
         session.prepareDevice()
@@ -132,7 +125,7 @@ class IpuBackend(onnx.backend.base.Backend):
             outputs_info=None,  # type: Optional[Sequence[Tuple[numpy.dtype, Tuple[int, ...]]]]
             **kwargs  # type: Any
     ):  # type: (...) -> Optional[Tuple[Any, ...]]
-        super(IPUBackend, cls).run_node(
+        super(IpuBackend, cls).run_node(
             node, inputs, device=device, outputs_info=outputs_info)
 
         raise BackendIsNotSupposedToImplementIt(
@@ -147,26 +140,12 @@ class IpuBackend(onnx.backend.base.Backend):
         return False
 
 
-# test_coverage_whitelist = set([
-#     'bvlc_alexnet', 'densenet121', 'inception_v1', 'inception_v2', 'resnet50',
-#     'shufflenet', 'SingleRelu', 'squeezenet_old', 'vgg19', 'zfnet'
-# ])
-
-# def do_enforce_test_coverage_whitelist(model):  # type: (ModelProto) -> bool
-#     if model.graph.name not in test_coverage_whitelist:
-#         return False
-#     for node in model.graph.node:
-#         if node.op_type in set(['RNN', 'LSTM', 'GRU']):
-#             return False
-#     return True
-
 backend_test = onnx.backend.test.BackendTest(IpuBackend, __name__)
 
 # Operations we do not support
 backend_test.exclude('abs')
 backend_test.exclude('acos')
-backend_test.exclude('and')
-backend_test.exclude('and')
+backend_test.exclude('test_and')
 backend_test.exclude('argmax')
 backend_test.exclude('argmin')
 backend_test.exclude('asin')
@@ -178,7 +157,6 @@ backend_test.exclude('compress')
 backend_test.exclude('constantlike')
 backend_test.exclude('convtranspose')
 backend_test.exclude('depthtospace')
-backend_test.exclude('dropout')
 backend_test.exclude('dynamic_slice')
 backend_test.exclude('elu')
 backend_test.exclude('equal')

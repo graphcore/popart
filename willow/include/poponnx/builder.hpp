@@ -270,6 +270,18 @@ public:
                 const std::string &name = {});
 
   /**
+   * Add the dropout operator to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Dropout
+   *
+   * \param args The tensor arguments
+   * \param name Optional identifer for operation
+   * \return The name of the result tensor
+   */
+  TensorId dropout(const std::vector<TensorId> &args,
+                   const std::string &name = {});
+
+  /**
    * Add the divide operator to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Div

@@ -154,6 +154,11 @@ TensorId Builder::div(const std::vector<TensorId> &args,
   return impl_->op(Onnx::AiOnnx::OpSet9::Div, args, {}, name)[0];
 }
 
+TensorId Builder::dropout(const std::vector<TensorId> &args,
+                          const std::string &name) {
+  return impl_->op(Onnx::AiOnnx::OpSet9::Dropout, args, {}, name)[0];
+}
+
 TensorId Builder::elu(const std::vector<TensorId> &args,
                       const std::string &name) {
   return impl_->op(Onnx::AiOnnx::OpSet9::Elu, args, {}, name)[0];

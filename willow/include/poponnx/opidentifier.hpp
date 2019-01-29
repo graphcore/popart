@@ -160,9 +160,9 @@ const static OperatorIdentifier
 const static OperatorIdentifier Div_1(Domain::ai_onnx, "Div", 1, 2, 1);
 const static OperatorIdentifier Div_6(Domain::ai_onnx, "Div", 6, 2, 1);
 const static OperatorIdentifier Div_7(Domain::ai_onnx, "Div", 7, 2, 1);
-const static OperatorIdentifier Dropout_1(Domain::ai_onnx, "DropOut", 1, 1, 2);
-const static OperatorIdentifier Dropout_6(Domain::ai_onnx, "DropOut", 6, 1, 2);
-const static OperatorIdentifier Dropout_7(Domain::ai_onnx, "DropOut", 7, 1, 2);
+const static OperatorIdentifier Dropout_1(Domain::ai_onnx, "Dropout", 1, 1, 2);
+const static OperatorIdentifier Dropout_6(Domain::ai_onnx, "Dropout", 6, 1, 2);
+const static OperatorIdentifier Dropout_7(Domain::ai_onnx, "Dropout", 7, 1, 2);
 const static OperatorIdentifier Elu_1(Domain::ai_onnx, "Elu", 1, 1, 1);
 const static OperatorIdentifier Elu_6(Domain::ai_onnx, "Elu", 6, 1, 1);
 const static OperatorIdentifier Equal_1(Domain::ai_onnx, "Equal", 1, 2, 1);

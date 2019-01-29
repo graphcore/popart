@@ -429,6 +429,10 @@ PYBIND11_MODULE(poponnx_core, m) {
            &Builder::cosh,
            py::arg("args"),
            py::arg("debugPrefix") = std::string())
+      .def("dropout",
+           &Builder::dropout,
+           py::arg("args"),
+           py::arg("debugPrefix") = std::string())
       .def("div",
            &Builder::div,
            py::arg("args"),
