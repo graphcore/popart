@@ -21,6 +21,27 @@ public:
   virtual std::size_t getId() const override final { return id(); }
 
   virtual std::string getName() const override final { return "InterIpuCopy"; }
+
+private:
+  // Generate a name for the new tensor on the toIpu
+  TensorId generateCopiedTensorId(Tensor *tensor, int64_t toIpu) const;
+
+  // Used to add an insert IpuCopy op between ops that are on different IPUs
+  void insertIpuCopy(Ir &ir,
+                     Tensor *tensor,
+                     Op *fromOp,
+                     int64_t fromIpu,
+                     Op *toOp,
+                     int64_t toIpu) const;
+
+  // Used to connect an tensor has already been copied between ipus by a
+  // previous IpuCopy op
+  void connectIpuCopy(Ir &ir,
+                      Tensor *tensor,
+                      Op *fromOp,
+                      int64_t fromIpu,
+                      Op *toOp,
+                      int64_t toIpu) const;
 };
 
 } // namespace poponnx

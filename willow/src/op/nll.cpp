@@ -20,8 +20,10 @@ std::vector<std::unique_ptr<Op>> NllOp::getGradOps() {
 }
 
 std::unique_ptr<Op> NllLoss::getOp(const Op::Settings &settings_) const {
+  Op::Settings copiedSettings = settings_;
+  copiedSettings.vgraphId     = vgraphId;
   return std::unique_ptr<Op>(
-      new NllOp(Onnx::CustomOperators::Nll, this, settings_));
+      new NllOp(Onnx::CustomOperators::Nll, this, copiedSettings));
 }
 
 const OperatorIdentifier &NllLoss::op_type() const {

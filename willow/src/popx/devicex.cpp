@@ -586,22 +586,26 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
       // tensor on that graph
       std::vector<int64_t> ipus;
       for (auto *op : tensor->consumers.getOps()) {
-        auto &graph = getOpx(op->id)->graph();
 
         int64_t index = -1;
         if (op->getVirtualGraphId())
           index = *(op->getVirtualGraphId());
 
-        if (ipus.end() == std::find(ipus.begin(), ipus.end(), index)) {
+        // The copyToIpu op assume that the tensor will already
+        // have been copied to the ipu from another op
+        if (op->opid != Onnx::CustomOperators::IpuCopy) {
 
-          auto newTensor = graph.addVariable(
-              popType(tensor->info), tensor->info.shape_szt(), tensor->id);
-          poputil::mapTensorLinearly(graph, newTensor);
+          auto &graph = getOpx(op->id)->graph();
 
-          // TODO : This line causes a problem when the same tensor is copied to
-          // multiple ipu's
-          tensors.insert(tensor->id, newTensor);
-          ipus.push_back(index);
+          if (ipus.end() == std::find(ipus.begin(), ipus.end(), index)) {
+
+            auto newTensor = graph.addVariable(
+                popType(tensor->info), tensor->info.shape_szt(), tensor->id);
+            poputil::mapTensorLinearly(graph, newTensor);
+
+            tensors.insert(tensor->id, newTensor);
+            ipus.push_back(index);
+          }
         }
       }
     };
@@ -682,27 +686,31 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
   auto f = [this, tensor]() {
     std::vector<int64_t> ipus;
     for (auto *op : tensor->consumers.getOps()) {
-      auto &graph = getOpx(op->id)->graph();
 
-      int64_t index = -1;
-      if (op->getVirtualGraphId())
-        index = *(op->getVirtualGraphId());
+      // Assume another op will copy the tensor for an ipucopy
+      if (op->opid != Onnx::CustomOperators::IpuCopy) {
+        auto &graph = getOpx(op->id)->graph();
 
-      // Only stream the tensor once for all op's that consume it on an ipu
-      if (std::find(ipus.begin(), ipus.end(), index) == ipus.end()) {
+        int64_t index = -1;
+        if (op->getVirtualGraphId())
+          index = *(op->getVirtualGraphId());
 
-        logging::devicex::debug(
-            "Creating host-to-device FIFO {} copied to ipu:{}",
-            tensor->id,
-            index);
+        // Only stream the tensor once for all op's that consume it on an ipu
+        if (std::find(ipus.begin(), ipus.end(), index) == ipus.end()) {
 
-        fromHostStreams.emplace(
-            tensor->id,
-            graph.addHostToDeviceFIFO(h2dId(tensor->id),
-                                      popType(tensor->info),
-                                      tensor->info.nelms()));
+          logging::devicex::debug(
+              "Creating host-to-device FIFO {} copied to ipu:{}",
+              tensor->id,
+              index);
 
-        ipus.push_back(index);
+          fromHostStreams.emplace(
+              tensor->id,
+              graph.addHostToDeviceFIFO(h2dId(tensor->id),
+                                        popType(tensor->info),
+                                        tensor->info.nelms()));
+
+          ipus.push_back(index);
+        }
       }
     }
   };

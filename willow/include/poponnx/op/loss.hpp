@@ -1,6 +1,7 @@
 #ifndef GUARD_NEURALNET_LOSS_HPP
 #define GUARD_NEURALNET_LOSS_HPP
 
+#include <boost/optional.hpp>
 #include <map>
 #include <poponnx/error.hpp>
 #include <poponnx/names.hpp>
@@ -29,6 +30,14 @@ public:
   int output_size() const;
   virtual const OperatorIdentifier &op_type() const = 0;
   virtual std::unique_ptr<Loss> clone() const       = 0;
+
+  void setVirtualGraphId(int64_t value) { vgraphId = value; }
+
+protected:
+  // Identify on which vgraph the loss should be executed. This is
+  // an optional setting and may not be valid when virtual graph's are not
+  // enabled
+  boost::optional<int64_t> vgraphId;
 
 private:
   // The names of the input tensors, same

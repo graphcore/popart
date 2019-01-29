@@ -24,9 +24,11 @@ bool VirtualGraphCheck::apply(Ir &ir) const {
     Op *op       = id_op.second.get();
     bool sharded = static_cast<bool>(op->getVirtualGraphId());
     if (sharded != has_sharding) {
-      throw error("{} has different virtual graph attribute to {}",
+      throw error("{} {} virtual graph attribute but {} {}",
                   first_op->debugName(),
-                  op->debugName());
+                  has_sharding ? "has" : "does not have",
+                  op->debugName(),
+                  sharded ? "does" : "does not");
     }
   }
 

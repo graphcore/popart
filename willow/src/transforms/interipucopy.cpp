@@ -42,9 +42,106 @@ public:
       tensorMap.insert(std::make_pair(id, std::vector<IpuNumber>({ipuNumber})));
     }
   }
+
+  void clear() { tensorMap.clear(); }
 };
 
 std::size_t InterIpuCopy::id() { return typeid(InterIpuCopy).hash_code(); }
+
+TensorId InterIpuCopy::generateCopiedTensorId(Tensor *tensor,
+                                              int64_t toIpu) const {
+  // The copiedTensor id needs to be unique as the same tensor may be copied to
+  // multiple ipus's
+  TensorId copiedTensor = tensor->id + "_c" + std::to_string(toIpu);
+  return copiedTensor;
+}
+
+void InterIpuCopy::connectIpuCopy(Ir &,
+                                  Tensor *tensor,
+                                  Op *fromOp,
+                                  int64_t fromIpu,
+                                  Op *toOp,
+                                  int64_t toIpu) const {
+
+  // We have already copied this tensor but we still need to
+  // update the 'to' op to use the copied tensor
+  logging::ir::debug("Already copied output tensor of {}:{} from "
+                     "ipu {} to ipu {}",
+                     fromOp->debugName(),
+                     tensor->id,
+                     fromIpu,
+                     toIpu);
+
+  // Copy the list of index's this input tensor is mapped
+  auto indices = toOp->input->indices(tensor);
+
+  // Remove this input tensor from the to op for each index
+  for (auto i : indices) {
+    logging::ir::debug(
+        "Disconnecting out {} from {}:{}", tensor->id, toOp->debugName(), i);
+    toOp->disconnectInTensor(i, tensor);
+  }
+
+  // The copiedTensor id needs to be unique as the same tensor may be copied to
+  // multiple ipus's
+  TensorId copiedTensor = generateCopiedTensorId(tensor, toIpu);
+
+  // Add the copied input tensor to the to op for each index
+  for (auto i : indices) {
+    logging::ir::debug(
+        "Connecting in {} from {}:{}", copiedTensor, toOp->debugName(), i);
+    toOp->connectInTensor(i, copiedTensor);
+  }
+}
+
+void InterIpuCopy::insertIpuCopy(Ir &ir,
+                                 Tensor *tensor,
+                                 Op *fromOp,
+                                 int64_t fromIpu,
+                                 Op *toOp,
+                                 int64_t toIpu) const {
+  // Need to copy the tensor between ipu's
+  logging::ir::debug(
+      "Adding copy of output tensor of {}:{} from ipu {} to ipu {}",
+      fromOp->debugName(),
+      tensor->id,
+      fromIpu,
+      toIpu);
+
+  Op::Settings settings(ir, "");
+
+  auto ipuCopy_op = make_unique<IpuCopyOp>(
+      Onnx::CustomOperators::IpuCopy, fromIpu, toIpu, settings);
+
+  auto ipuCopy = ipuCopy_op.get();
+  ir.moveIntoIr(std::move(ipuCopy_op));
+
+  // Copy the list of index's this input tensor is mapped
+  auto indices = toOp->input->indices(tensor);
+
+  // Remove this input tensor from the to op for each index
+  for (auto i : indices) {
+    logging::ir::debug(
+        "Disconnecting in {} from {}:{}", tensor->id, toOp->debugName(), i);
+    toOp->disconnectInTensor(i, tensor);
+  }
+
+  ipuCopy->connectInTensor(0, tensor->id);
+
+  // The copiedTensor id needs to be unique as the same tensor may be copied to
+  // multiple ipus's
+  TensorId copiedTensor = generateCopiedTensorId(tensor, toIpu);
+
+  ipuCopy->createAndConnectOutTensor(0, copiedTensor);
+  ipuCopy->setup();
+
+  // Add the copied input tensor to the to op for each index
+  for (auto i : indices) {
+    logging::ir::debug(
+        "Connecting in {} to {}:{}", copiedTensor, toOp->debugName(), i);
+    toOp->connectInTensor(i, copiedTensor);
+  }
+}
 
 bool InterIpuCopy::apply(Ir &ir) const {
 
@@ -59,6 +156,9 @@ bool InterIpuCopy::apply(Ir &ir) const {
   // duplicate a copy of a tensor between ipus
   CopiedTensors copiedTensors;
 
+  // Keep a record of which stream tensors are going to which ops
+  std::map<TensorId, std::vector<Op *>> streamsMap;
+
   // For each op
   for (auto &entry : ir.getOps()) {
 
@@ -70,6 +170,26 @@ bool InterIpuCopy::apply(Ir &ir) const {
       int64_t fromIpu = -1;
       if (from->getVirtualGraphId()) {
         fromIpu = *(from->getVirtualGraphId());
+      }
+
+      // For each input tensor
+      auto &input = from->input;
+      for (auto &t : input->tensorMap()) {
+        Tensor *tensor = t.second;
+
+        // Record the tensors so we can later work out if any input
+        // tensor is going to two ipus
+        if (tensor->tensorType() == TensorType::Stream ||
+            tensor->tensorType() == TensorType::Const ||
+            tensor->tensorType() == TensorType::Variable) {
+          auto it = streamsMap.find(tensor->id);
+          if (it == streamsMap.end()) {
+            std::vector<Op *> streams = {from};
+            streamsMap.insert(std::make_pair(tensor->id, streams));
+          } else {
+            streamsMap[tensor->id].push_back(from);
+          }
+        }
       }
 
       // For each output tensor
@@ -99,88 +219,62 @@ bool InterIpuCopy::apply(Ir &ir) const {
               bool alreadyCopied = copiedTensors.find(tensor->id, toIpu);
 
               if (alreadyCopied == true) {
-                // We have already copied this tensor but we still need to
-                // update the 'to' op to use the copied tensor
-                logging::ir::debug("Already copied output tensor of {}:{} from "
-                                   "ipu {} to ipu {}",
-                                   from->debugName(),
-                                   tensor->id,
-                                   fromIpu,
-                                   toIpu);
-
-                // Copy the list of index's this input tensor is mapped
-                auto indices = to->input->indices(tensor);
-
-                // Remove this input tensor from the to op for each index
-                for (auto i : indices) {
-                  logging::ir::debug("Disconnecting out {} from {}:{}",
-                                     tensor->id,
-                                     to->debugName(),
-                                     i);
-                  to->disconnectInTensor(i, tensor);
-                }
-
-                TensorId copiedTensor = tensor->id + "_c";
-
-                // Add the copied input tensor to the to op for each index
-                for (auto i : indices) {
-                  logging::ir::debug("Connecting in {} from {}:{}",
-                                     copiedTensor,
-                                     to->debugName(),
-                                     i);
-                  to->connectInTensor(i, copiedTensor);
-                }
-
+                connectIpuCopy(ir, tensor, from, fromIpu, to, toIpu);
               } else {
-                // Need to copy the tensor between ipu's
-                logging::ir::debug(
-                    "Need to copy output tensor of {}:{} from ipu {} to ipu {}",
-                    from->debugName(),
-                    tensor->id,
-                    fromIpu,
-                    toIpu);
-
-                Op::Settings settings(ir, "");
-
-                auto ipuCopy_op = make_unique<IpuCopyOp>(
-                    Onnx::CustomOperators::IpuCopy, toIpu, settings);
-
-                auto ipuCopy = ipuCopy_op.get();
-                ir.moveIntoIr(std::move(ipuCopy_op));
-
-                // Copy the list of index's this input tensor is mapped
-                auto indices = to->input->indices(tensor);
-
-                // Remove this input tensor from the to op for each index
-                for (auto i : indices) {
-                  logging::ir::debug("Disconnecting out {} from {}:{}",
-                                     tensor->id,
-                                     to->debugName(),
-                                     i);
-                  to->disconnectInTensor(i, tensor);
-                }
-
-                ipuCopy->connectInTensor(0, tensor->id);
-
-                TensorId copiedTensor = tensor->id + "_c";
-
-                if (ir.getTensors().contains(copiedTensor) == false) {
-                  ipuCopy->createAndConnectOutTensor(0, copiedTensor);
-                }
-
-                // Add the copied input tensor to the to op for each index
-                for (auto i : indices) {
-                  logging::ir::debug("Connecting in {} from {}:{}",
-                                     copiedTensor,
-                                     to->debugName(),
-                                     i);
-                  to->connectInTensor(i, copiedTensor);
-                }
+                insertIpuCopy(ir, tensor, from, fromIpu, to, toIpu);
 
                 // Record the copy
                 copiedTensors.add(tensor->id, toIpu);
               }
             }
+          }
+        }
+      }
+    }
+  }
+
+  // For any stream tensors that are mapped to multiple ipus we will
+  // use the first ipu the list as the input from the host and then
+  // add ops in copy that tensor to other ipus
+  copiedTensors.clear();
+  for (auto &s : streamsMap) {
+
+    if (s.second.size() > 1) {
+
+      auto sourceOp = s.second[0];
+
+      // Get which ipu the to op is on
+      int64_t sourceIpu = -1;
+      if (sourceOp->getVirtualGraphId()) {
+        sourceIpu = *(sourceOp->getVirtualGraphId());
+      }
+
+      for (auto &op : s.second) {
+
+        int64_t toIpu = -1;
+        if (op->getVirtualGraphId()) {
+          toIpu = *(op->getVirtualGraphId());
+        }
+
+        // It the case of the first op the ipu will be the same so nothing to do
+        if (sourceIpu != toIpu) {
+
+          logging::ir::debug(
+              "Adding op to copy streaming tensor {} from ipu {} to ipu {}",
+              s.first,
+              sourceIpu,
+              toIpu);
+
+          Tensor *tensor = ir.getTensors().get(s.first);
+
+          bool alreadyCopied = copiedTensors.find(tensor->id, toIpu);
+          if (alreadyCopied == true) {
+            connectIpuCopy(ir, tensor, sourceOp, sourceIpu, op, toIpu);
+          } else {
+            insertIpuCopy(ir, tensor, sourceOp, sourceIpu, op, toIpu);
+
+            // Record the copy
+            copiedTensors.add(tensor->id, toIpu);
           }
         }
       }

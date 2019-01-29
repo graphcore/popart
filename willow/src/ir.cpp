@@ -753,7 +753,15 @@ OpId Ir::moveIntoIr(std::unique_ptr<Op> op) {
 
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
-  OpId opId = moveIntoIr(OpManager::createOp(Onnx::AiOnnx::OpSet9::Sum, *this));
+  std::unique_ptr<poponnx::Op> gradSum =
+      OpManager::createOp(Onnx::AiOnnx::OpSet9::Sum, *this, "GradSum");
+
+  if (getSessionOptions().enableVirtualGraphs) {
+    // How do we know were this op should execute? T6587
+    gradSum->setVirtualGraphId(0);
+  }
+
+  OpId opId = moveIntoIr(std::move(gradSum));
 
   std::vector<TensorId> inputs;
   inputs.reserve(toSum.size());
@@ -1364,7 +1372,15 @@ void Ir::growFinalLoss() {
   }
 
   // now growing the FINAL loss (sum of individual losses)
-  OpId opId = moveIntoIr(OpManager::createOp(Onnx::AiOnnx::OpSet9::Sum, *this));
+  std::unique_ptr<poponnx::Op> finalLossSum =
+      OpManager::createOp(Onnx::AiOnnx::OpSet9::Sum, *this, "FinalLoss");
+
+  if (getSessionOptions().enableVirtualGraphs) {
+    // How do we know were this op should execute T6587
+    finalLossSum->setVirtualGraphId(0);
+  }
+
+  OpId opId = moveIntoIr(std::move(finalLossSum));
 
   std::vector<TensorId> inputs;
   inputs.reserve(lossOps.size());

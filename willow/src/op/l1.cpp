@@ -16,7 +16,9 @@ std::vector<std::unique_ptr<Op>> L1Op::getGradOps() {
 }
 
 std::unique_ptr<Op> L1Loss::getOp(const Op::Settings &settings_) const {
-  return std::unique_ptr<Op>(new L1Op(op_type(), this, settings_));
+  Op::Settings copiedSettings = settings_;
+  copiedSettings.vgraphId     = vgraphId;
+  return std::unique_ptr<Op>(new L1Op(op_type(), this, copiedSettings));
 }
 
 const OperatorIdentifier &L1Loss::op_type() const {

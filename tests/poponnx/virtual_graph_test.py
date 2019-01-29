@@ -1,6 +1,7 @@
 import poponnx
 import pytest
 import test_util as tu
+import numpy as np
 
 
 def test_virtual_graph():
@@ -64,6 +65,69 @@ def test_virtual_graph2():
     s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
     s.setDevice(tu.get_ipu_model(numIPUs=2))
     s.prepareDevice()
+
+
+def test_virtual_graph3():
+
+    builder = poponnx.Builder()
+
+    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
+    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
+    i3 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
+    i4 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
+
+    with builder.virtualGraph(3):
+        o1 = builder.add([i1, i2])
+        o2 = builder.add([i3, i4])
+
+    with builder.virtualGraph(2):
+        o3 = builder.add([o1, o2])
+        o = builder.add([i1, o3])
+
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    # Need to anchor the output of the backward pass to stop it being pruned
+    dataFlow = poponnx.DataFlow(
+        1, {
+            o: poponnx.AnchorReturnType("ALL"),
+            'd__' + i1: poponnx.AnchorReturnType("ALL"),
+            'd__' + i2: poponnx.AnchorReturnType("ALL"),
+            'd__' + i3: poponnx.AnchorReturnType("ALL"),
+            'd__' + i4: poponnx.AnchorReturnType("ALL")
+        })
+
+    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
+    #Make sure that the loss is also assigned to a virtual graph
+    losses[0].setVirtualGraph(1)
+    optimizer = poponnx.ConstSGD(0.01)
+
+    opts = poponnx.SessionOptionsCore()
+    opts.logging = {'all': 'TRACE'}
+    opts.enableVirtualGraphs = True
+
+    s = poponnx.Session(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        userOptions=opts)
+    s.setDevice(tu.get_ipu_model(numIPUs=4))
+    s.prepareDevice()
+
+    anchors = s.initAnchorArrays()
+
+    data1 = np.ones([1], dtype=np.float32)
+    data2 = np.ones([1], dtype=np.float32)
+    data3 = np.ones([1], dtype=np.float32)
+    data4 = np.ones([1], dtype=np.float32)
+
+    inputs = {i1: data1, i2: data2, i3: data3, i4: data4}
+    stepio = poponnx.PyStepIO(inputs, anchors)
+
+    s.train(stepio)
+    s.weightsFromHost()
 
 
 def test_virtual_graph_bad_index():
