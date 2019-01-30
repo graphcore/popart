@@ -1,5 +1,6 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/gather.hpp>
+#include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/gatherx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/util.hpp>
@@ -10,6 +11,8 @@
 #include <poputil/TileMapping.hpp>
 
 #include <boost/range/algorithm.hpp>
+#include <boost/range/algorithm_ext.hpp>
+#include <boost/range/numeric.hpp>
 
 namespace poponnx {
 namespace popx {
@@ -304,6 +307,89 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
     insert(outId(GatherOp::outIndex()), result);
   }
 }
+
+static std::size_t findG(std::size_t d, std::size_t t) {
+  for (auto g = (d + t - 1) / t; g <= d; ++g) {
+    if (d % g == 0) {
+      return g;
+    }
+  }
+
+  throw error("Cannot find a value of G that is both a factor of D and "
+              "satisfies D / G <= T");
+}
+
+static std::size_t quotCeil(std::size_t a, std::size_t b) {
+  return (a + b - 1) / b;
+}
+
+static std::size_t findH(std::size_t d, std::size_t t) {
+  return std::max<std::size_t>(1, t / d);
+}
+
+poplar::Tensor GatherOpx::createInput(int index) const {
+  if (index != GatherOp::dataInIndex()) {
+    throw error("GatherOpx::createInput Cannot create input {}", index);
+  }
+
+  auto info = inInfo(GatherOp::dataInIndex());
+
+  const auto shape = info.shape_szt();
+  const auto volume =
+      boost::accumulate(shape, 1, std::multiplies<std::size_t>());
+
+  // Number of tiles
+  const auto t = graph().getTarget().getNumTiles();
+
+  // Size of the "sequence" dimension
+  const auto s = shape[axis];
+
+  // Product of other n-1 dimensions
+  const auto d = volume / s;
+
+  // Grouping factor
+  const auto g = findG(d, t);
+
+  // Balance factor
+  const auto h = (g == 1) ? findH(d, t) : 1;
+
+  // We will allocate and map so that each tile gets s*g/h elements
+  // The rounding in s/h will introduce some padding
+  const std::vector<std::size_t> allocShape = {d / g, h, quotCeil(s, h), g};
+
+  auto result = graph().addVariable(
+      popType(info), allocShape, op_p->str() + "input" + std::to_string(index));
+
+  result = result.reshape({h * d / g, quotCeil(s, h), g});
+  for (std::size_t i = 0; i < result.dim(0); ++i) {
+    graph().setTileMapping(result[i], static_cast<unsigned>(i));
+  }
+  result = result.reshape(allocShape);
+  result = result.dimShuffle({0, 3, 1, 2});
+
+  // Reshape back into the desired shape
+  auto tmp_shape  = shape;
+  tmp_shape[axis] = h * quotCeil(s, h);
+  std::swap(tmp_shape[axis], tmp_shape.back());
+  result = result.reshape(tmp_shape);
+
+  std::vector<unsigned> permutation(result.rank());
+  boost::iota(permutation, 0);
+  std::swap(permutation[axis], permutation.back());
+  result = result.dimShuffle(permutation);
+
+  // Slice away any padding
+  return result.slice(0, shape[axis], static_cast<unsigned>(axis));
+}
+
+InputCreatorType GatherOpx::getInputCreatorType(int index0) const {
+  return index0 == GatherOp::dataInIndex() ? InputCreatorType::CANCREATE
+                                           : Opx::getInputCreatorType(index0);
+}
+
+bool GatherOpx::createsEquiv(int, Opx *, int) const { return false; }
+
+std::vector<TensorId> GatherOpx::mustExistBeforeCreate(int) const { return {}; }
 
 GatherGradOpx::GatherGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<GatherGradOp>(op, Onnx::GradOperators::GatherGrad);
