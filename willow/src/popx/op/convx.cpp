@@ -123,6 +123,24 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
       dv_p->wuConvOptions,                         // options
       &dv_p->convCache);                           // cache
 
+  // Shape of weights Poponnx Tensor of forward Op
+  // auto fwdShape = convOp->inInfo(convOp->getWeightsInIndex()).shape_szt(); //
+  // segfault
+  auto fwdShape = gradOp.outInfo(ConvWeightsGradOp::getOutIndex()).shape_szt();
+
+  // If shapes disagree only on first (grouping) dimension, as in
+  //   IR shape:             [   a, b, c, d]
+  //   poplar::Tensor shape: [1, a, b, c, d]
+  // then squeeze grouping dimension from poplar::Tensor
+  if (wGrad.rank() == 5 && fwdShape.size() == 4) {
+    auto wGradShape = wGrad.shape();
+    if (std::equal(
+            wGradShape.begin() + 1, wGradShape.end(), fwdShape.begin()) &&
+        wGradShape[0] == 1) {
+      wGrad = wGrad.squeeze({0});
+    }
+  }
+
   insert(outId(0), wGrad);
 }
 
@@ -165,13 +183,36 @@ InputCreatorType ConvOpx::getInputCreatorType(InIndex) const {
 poplar::Tensor ConvOpx::createInput(InIndex index) const {
 
   if (index == ConvOp::getWeightsInIndex()) {
-    return poplin::createWeights(
-        graph(),                              // graph
-        fwdParams,                            // params
-        op_p->debugName(),                    // name
-        dv_p->fwdConvOptions.toOptionFlags(), // options
-        &dv_p->convCache                      // cache
-    );
+    poplar::Tensor input =
+        poplin::createWeights(graph(),                              // graph
+                              fwdParams,                            // params
+                              op_p->debugName(),                    // name
+                              dv_p->fwdConvOptions.toOptionFlags(), // options
+                              &dv_p->convCache                      // cache
+        );
+
+    // If the user supplies a 4D weights tensor as input to conv,
+    // createWeights returns 5D tensor, with outer 'group' dim = 1
+    //
+    // This is not robust in the case where we unwind the weights tensor
+    // to the input. The unwind functions shouldn't all have to support
+    // this particular case where the allocator candidate is conv.
+    //
+    // So if we want to support the case where the user's input shape results
+    // in a 4D weight tensor, then we need to squeeze the 0th dimension from
+    // the tensor returned from createWeights:
+    if (input.rank() == 5 && op_p->inRank(index) == 4) {
+      // If shapes disagree only on first dimension, as in
+      //   IR shape :            [   a, b, c, d]
+      //   poplar::Tensor shape: [1, a, b, c, d]
+      auto ptshape = input.shape();
+      auto irshape = op_p->inInfo(index).shape_szt();
+      if (std::equal(ptshape.begin() + 1, ptshape.end(), irshape.begin()) &&
+          ptshape[0] == 1) {
+        input = input.squeeze({0});
+      }
+    }
+    return input;
   } else if (index == ConvOp::getDataInIndex()) {
     return poplin::createInput(graph(),                              // graph
                                fwdParams,                            // params

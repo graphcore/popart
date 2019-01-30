@@ -23,7 +23,8 @@ def get_compute_sets_from_report(report):
 
     lines = report.split('\n')
     cs = [x for x in lines if re.search(r'  Step #\d+:', x)]
-    cs = [x.split(":")[1].strip() for x in cs]
+    cs = [":".join(x.split(":")[1:]) for x in cs]
+    cs = [x.strip() for x in cs]
     cs = [re.sub(r' \(\d+ executions?\)$', '', x) for x in cs]
     return cs
 

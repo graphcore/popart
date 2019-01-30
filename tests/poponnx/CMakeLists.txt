@@ -64,5 +64,6 @@ add_poponnx_py_unit_test(optimizer_test)
 add_poponnx_py_unit_test(export_test)
 add_poponnx_py_unit_test(ipu_copy_test)
 add_poponnx_py_unit_test(float_to_half_conversion_test)
+add_poponnx_py_unit_test(allocator_test)
 
 add_subdirectory(operators_test)

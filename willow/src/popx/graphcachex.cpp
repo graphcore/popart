@@ -188,8 +188,16 @@ poplar::Tensor GraphCachex::convolution(poplar::Graph &graph,
                                         const std::string &debugPrefix,
                                         const ConvOptions &options,
                                         poplin::PlanningCache *cache) {
-  ConvOptions convOptions            = options;
-  poplar::Tensor convWeights         = weights;
+  ConvOptions convOptions    = options;
+  poplar::Tensor convWeights = weights;
+
+  // If user provides 4D weights (missing 'group' dimension), add
+  // an outer dimension, size 1
+  poplar::Tensor weights5D = weights;
+  if (weights.rank() == 4) {
+    weights5D = weights.expand({0});
+  }
+
   bool needToTransposeAndFlipWeights = transposeAndFlipWeights;
   // If we are doing a bwd pass convolution, check if we can split it into a
   // weight weightsTransposeChansFlipXY and a fwd convolution.
@@ -205,7 +213,8 @@ poplar::Tensor GraphCachex::convolution(poplar::Graph &graph,
       const auto bwdWeightsName = debugPrefix + "bwdWeights";
       convWeights               = poplin::createWeights(
           graph, params, bwdWeightsName, fwdOptions.toOptionFlags(), cache);
-      createCachedBwdWeights(graph, weights, convWeights, prog, bwdWeightsName);
+      createCachedBwdWeights(
+          graph, weights5D, convWeights, prog, bwdWeightsName);
       needToTransposeAndFlipWeights = false;
       convOptions                   = fwdOptions;
     }
