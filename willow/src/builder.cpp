@@ -237,6 +237,13 @@ TensorId Builder::neg(const std::vector<TensorId> &args,
   return impl_->op(Onnx::AiOnnx::OpSet9::Neg, args, {}, name)[0];
 }
 
+TensorId Builder::onehot(const std::vector<TensorId> &args,
+                         int64_t axis,
+                         const std::string &name) {
+  return impl_->op(
+      Onnx::AiOnnx::OpSet9::OneHot, args, {{"axis", axis}}, name)[0];
+}
+
 TensorId Builder::logical_not(const std::vector<TensorId> &args,
                               const std::string &name) {
   return impl_->op(Onnx::AiOnnx::OpSet9::Not, args, {}, name)[0];

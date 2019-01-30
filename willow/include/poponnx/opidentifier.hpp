@@ -606,7 +606,7 @@ const static AiGraphcoreOpIdV1 MulArg1Grad("MulArg1Grad");
 // constexpr static char Multinomial[] = "Multinomial";
 const static AiGraphcoreOpIdV1 NegGrad("NegGrad");
 // constexpr static char Not[] = "Not";
-// constexpr static char OneHot[] = "OneHot";
+const static AiGraphcoreOpIdV1 OneHotGrad("OneHot");
 // constexpr static char Or[] = "Or";
 // constexpr static char PRelu[] = "PRelu";
 const static AiGraphcoreOpIdV1 PadGrad("PadGrad");

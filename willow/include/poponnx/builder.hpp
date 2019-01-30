@@ -469,6 +469,21 @@ public:
   TensorId neg(const std::vector<TensorId> &args, const std::string &name = {});
 
   /**
+   * Add the onehot operator to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Oneshot
+   *
+   * \param args The tensor arguments, indices, depth & values
+   *             Depth has to be a constant tensor
+   * \param axis Optional axis along which one-hot representation is added
+   * \param name Optional identifier for operation
+   * \return The name of the output, reshaped tensor
+   */
+  TensorId onehot(const std::vector<TensorId> &args,
+                  int64_t axis            = -1,
+                  const std::string &name = {});
+
+  /**
    * Add the logical NOT operator to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Not

@@ -154,6 +154,9 @@ def op_tester(tmpdir):
                     print('Testing anchor "{}"...'.format(key))
 
                     if self.check_shapes:
+                        if anchor_map[key].shape != ref_out[index].shape:
+                            print('shape mismatch {} != {}'.format(
+                                anchor_map[key].shape, ref_out[index].shape))
                         assert anchor_map[key].shape == ref_out[index].shape
 
                     if not np.allclose(anchor_map[key], ref_out[index],

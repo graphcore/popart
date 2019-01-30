@@ -619,6 +619,11 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("pads"),
            py::arg("value"),
            py::arg("debugPrefix") = std::string())
+      .def("onehot",
+           &Builder::onehot,
+           py::arg("args"),
+           py::arg("axis"),
+           py::arg("debugPrefix") = std::string())
       .def("gemm",
            &Builder::gemm,
            py::arg("args"),
