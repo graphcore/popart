@@ -44,6 +44,8 @@ void ConstExprAdd::insertOutput() {
     data_ = add<int64_t>(in0, in1);
   } else if (in0->info.dataType() == DataType::INT32) {
     data_ = add<int>(in0, in1);
+  } else if (in0->info.dataType() == DataType::FLOAT) {
+    data_ = add<float>(in0, in1);
   } else {
     throw error("Currently ConstExprAdd does not support type {}",
                 in0->info.data_type());

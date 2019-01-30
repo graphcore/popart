@@ -1,6 +1,7 @@
 #define BOOST_TEST_MODULE ViewChangingTest
 
 #include <boost/test/unit_test.hpp>
+#include <map>
 #include <numeric>
 #include <vector>
 #include <poponnx/builder.hpp>
@@ -331,4 +332,83 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
   BOOST_CHECK(std::equal(&expectedOutput[0],
                          &expectedOutput[24],
                          &rawOutputData[0]) == true);
+}
+
+BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
+  // Testing ConstExpr folding on broadcast adds of
+  // initializers and constants
+
+  // The compute graph :
+  //
+  // w0 --|
+  //      |--[bc-add]-- a0 --|
+  // w1 --|                  |
+  //                         |--[bc-add]-- a2 -|
+  // c0 --|                  |                 |
+  //      |--[bc-add]-- a1 --|                 |-- [matmul] -- o
+  // c1 --|                                    |
+  //                                           |
+  // i1 ---------------------------------------|
+  //
+
+  // weights
+  TensorInfo w0Shape{"FLOAT", std::vector<int64_t>{1, 3}};
+  float w0Vals[1 * 3]  = {0};
+  ConstVoidData w0Data = {w0Vals, w0Shape};
+
+  TensorInfo w1Shape{"FLOAT", std::vector<int64_t>{3, 3}};
+  float w1Vals[3 * 3]  = {1};
+  ConstVoidData w1Data = {w1Vals, w1Shape};
+
+  // consts
+  TensorInfo c0Shape{"FLOAT", std::vector<int64_t>{1, 3}};
+  float c0Vals[1 * 3]  = {2};
+  ConstVoidData c0Data = {c0Vals, c0Shape};
+
+  TensorInfo c1Shape{"FLOAT", std::vector<int64_t>{1}};
+  float c1Vals[1]      = {3};
+  ConstVoidData c1Data = {c1Vals, c1Shape};
+
+  // input
+  TensorInfo inputInfo{"FLOAT", std::vector<int64_t>{3, 4}};
+
+  // Build an onnx model
+  auto builder = Builder::create();
+
+  auto w0Id = builder->addInitializedInputTensor(w0Data);
+  auto w1Id = builder->addInitializedInputTensor(w1Data);
+  auto a0   = builder->add({w0Id, w1Id}, "a0");
+
+  auto c0Id = builder->constant(c0Data, "c0Data");
+  auto c1Id = builder->constant(c1Data, "c1Data");
+  auto a1   = builder->add({c0Id, c1Id}, "a1");
+
+  auto a2      = builder->add({a0, a1}, "a2");
+  auto inputId = builder->addInputTensor(inputInfo);
+  auto outId   = builder->matmul({a2, inputId});
+  builder->addOutputTensor(outId);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR, adding outId as an anchor
+  auto art       = AnchorReturnType("ALL");
+  auto dataFlow  = DataFlow(1, {{outId, art}});
+  auto optimizer = ConstSGD(0.01);
+  std::vector<Loss *> losses{new L1Loss(outId, "l1LossVal", 0.1)};
+
+  Ir ir;
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              {}, // no loss
+              {}, // no optimizer
+              {}, // no SessionOptions
+              Patterns({PatternType::POSTNREPL})});
+
+  // Check that the Add Op is has been removed from the IR
+  // by ConstExpr folding
+  // TODO: this test will give a false pass if the model is using
+  // a newer opset. Fix when T6274 is complete
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Add).size() == 0);
 }
