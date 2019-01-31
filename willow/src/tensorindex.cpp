@@ -165,4 +165,13 @@ const std::vector<int> &TensorIndexMap::indices(Tensor *ptensor) const {
   return indices_map.at(ptensor);
 }
 
+const std::vector<Tensor *> TensorIndexMap::tensors() const {
+  std::vector<Tensor *> tensors;
+  for (const auto &tensor_indices : indicesMap()) {
+    tensors.push_back(tensor_indices.first);
+  }
+
+  return tensors;
+}
+
 } // namespace poponnx

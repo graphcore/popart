@@ -373,6 +373,86 @@ void Ir::verifyConnectivity() const {
   logging::ir::info("IR connectivity check passed");
 }
 
+bool Ir::isCandidateForConstExprFolding(const Tensor &tensor) const {
+  auto tt = tensor.tensorType();
+
+  if (canTrain()) {
+    if (tt != TensorType::Const) {
+      return false;
+    }
+  } else {
+    // evalulation or inference
+    if (tt != TensorType::Const && tt != TensorType::Variable) {
+      return false;
+    }
+  }
+  return true;
+}
+
+std::vector<Tensor *> Ir::getRootInputsToOp(Op *op) const {
+  std::vector<Tensor *> rootInputs;
+
+  // Get input tensors Ids
+  std::vector<TensorId> inputIds = getTensors().getNoProducerIds();
+  for (Tensor *tensor : op->input->tensors()) {
+    if (std::find(inputIds.begin(), inputIds.end(), tensor->id) !=
+        inputIds.end()) {
+      // Tensor is a root input
+      rootInputs.push_back(tensor);
+    } else {
+      for (auto rootInputTensor : getRootInputsToOp(tensor->getProducer())) {
+        rootInputs.push_back(rootInputTensor);
+      }
+    }
+  }
+  return rootInputs;
+}
+
+// Verify ConstExpr folding has removed input tensors that should
+// been removed:
+//  - that initializer inputs are removed when possible in
+//    inference and eval modes
+//  - that constant inputs are removed when possible in all modes
+//
+// 1. Get only the tensors we care about checking
+// 2. For each tensor, get consumers
+// 3. For each consumer, find its root input tensors
+// 4. Confirm that at least on root input is not a candidate for
+//    ConstExpr folding
+//
+// Note: this doesn't check that ConstExpr folding has removed
+// tenosors that it shouldn't have
+void Ir::verifyConstExprFolding() const {
+  for (auto id : getTensors().getNoProducerIds()) {
+    Tensor *tensor = getTensors().get(id);
+
+    // 1
+    if (!isCandidateForConstExprFolding(*tensor)) {
+      continue;
+    }
+
+    // 2 & 3
+    std::vector<Tensor *> rootInputs;
+    for (auto consumingOp : tensor->consumers.getOps()) {
+      for (auto rootInput : getRootInputsToOp(consumingOp)) {
+        rootInputs.push_back(rootInput);
+      }
+    }
+
+    // 4
+    bool shouldHaveFoldedTensor = true;
+    for (auto rootInput : rootInputs) {
+      if (!isCandidateForConstExprFolding(*rootInput)) {
+        shouldHaveFoldedTensor = false;
+      }
+    }
+    if (shouldHaveFoldedTensor) {
+      throw error("ConstExpr folding has failed to remove input tensor {}",
+                  tensor->id);
+    }
+  }
+}
+
 void Ir::prepare(const IrBundle &gb) {
 
   if (isPrepared) {
@@ -493,6 +573,8 @@ void Ir::prepare(const IrBundle &gb) {
                         "SoftMaxGradDirect");
     }
   }
+
+  verifyConstExprFolding();
 
   verifyConnectivity();
 

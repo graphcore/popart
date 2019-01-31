@@ -131,7 +131,7 @@ public:
   // Set which execution mode we are using
   void setExecutionMode(const ExecutionMode &mode);
 
-  // Convenience methods to query the mode of the model. 
+  // Convenience methods to query the mode of the model.
   // Onnx refers to Inference as testing.
   bool isTraining() { return executionMode == ExecutionMode::TRAINING; }
   bool isTesting() { return executionMode == ExecutionMode::INFERENCE; }
@@ -340,6 +340,12 @@ private:
   void verifyOpOutputConnectivity() const;
   void verifyTensorProducerConnectivity() const;
   void verifyTensorConsumerConnectivity() const;
+
+  // Verify ConstExpr folding has removed input tensors
+  // as expected
+  void verifyConstExprFolding() const;
+  bool isCandidateForConstExprFolding(const Tensor &tensor) const;
+  std::vector<Tensor *> getRootInputsToOp(Op *op) const;
 
 private:
   std::unique_ptr<Tensors> up_tensors;

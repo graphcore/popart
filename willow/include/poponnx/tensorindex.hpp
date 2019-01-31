@@ -32,6 +32,8 @@ public:
   const std::vector<int> &indices(Tensor *) const;
   const std::map<Tensor *, std::vector<int>> &indicesMap() const;
   const std::map<int, Tensor *> &tensorMap() const;
+  // Unique list of tensors in the TensorIndexMap
+  const std::vector<Tensor *> tensors() const;
   std::map<int, TensorId> tensorIdMap() const;
   // the number or indices. Exactly the number of keys of tensor_map
   int n() const;
