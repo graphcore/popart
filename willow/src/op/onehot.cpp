@@ -55,18 +55,52 @@ void OnehotOp::connectInTensor(InIndex inIndex, TensorId tenId) {
       throw error("The depth Tensor `" + depthId + "' does not have data");
     }
 
-    TensorData *tensorData = depthTensor->tensorData();
+    TensorData *depthTensorData = depthTensor->tensorData();
 
     // check 5 : that is is rank 0 i.e. a scalar
-    if (depthTensor->info.rank() != 1) {
-      throw error("The depth tensor should be rank 1 in OneHot");
+    if (depthTensor->info.rank() != 0) {
+      throw error("The depth tensor should be rank 0 in OneHot");
     }
 
-    int64_t *data = static_cast<int64_t *>(tensorData->data());
-    onehotAxisDim = data[0] + 1;
-  }
+    switch (depthTensor->info.dataType()) {
 
-  defaultConnectInTensor(inIndex, tenId);
+    case DataType::UINT32:
+      onehotAxisDim = static_cast<uint32_t *>(depthTensorData->data())[0];
+      break;
+    case DataType::UINT64:
+      onehotAxisDim = static_cast<uint64_t *>(depthTensorData->data())[0];
+      break;
+    case DataType::INT32:
+      onehotAxisDim = static_cast<int32_t *>(depthTensorData->data())[0];
+      break;
+    case DataType::INT16:
+      onehotAxisDim = static_cast<int16_t *>(depthTensorData->data())[0];
+      break;
+    case DataType::INT8:
+      onehotAxisDim = static_cast<int8_t *>(depthTensorData->data())[0];
+      break;
+    case DataType::UINT8:
+      onehotAxisDim = static_cast<uint8_t *>(depthTensorData->data())[0];
+      break;
+    case DataType::UINT16:
+      onehotAxisDim = static_cast<uint16_t *>(depthTensorData->data())[0];
+      break;
+    case DataType::INT64:
+      onehotAxisDim = static_cast<int64_t *>(depthTensorData->data())[0];
+      break;
+    case DataType::FLOAT:
+      onehotAxisDim = reinterpret_cast<float *>(depthTensorData->data())[0];
+      break;
+    case DataType::DOUBLE:
+      onehotAxisDim = reinterpret_cast<double *>(depthTensorData->data())[0];
+      break;
+    case DataType::FLOAT16:
+    default:
+      throw error("Unsupported type for depth ({})", depthTensor->info);
+    }
+  } else {
+    defaultConnectInTensor(inIndex, tenId);
+  }
 }
 
 std::vector<std::unique_ptr<Op>> OnehotOp::getGradOps() {
@@ -79,6 +113,7 @@ void OnehotOp::appendAttributes(std::stringstream &ss,
                                 const std::string &tab) const {
   Op::appendAttributes(ss, tab);
   appendAttribute(ss, tab, "axis", axis);
+  appendAttribute(ss, tab, "depth", onehotAxisDim);
 }
 
 OnehotGradOp::OnehotGradOp(const OnehotOp &fwdOp_)

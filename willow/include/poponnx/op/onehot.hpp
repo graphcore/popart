@@ -5,6 +5,9 @@
 
 namespace poponnx {
 
+// This Op is based on the ONNX Operator described at
+// github.com/onnx/onnx/blob/master/docs/Operators.md#Onehot
+// but it is slightly different: this Op is static w.r.t. depth
 class OnehotOp : public Op {
 public:
   OnehotOp(const OperatorIdentifier &_opid,
@@ -19,8 +22,11 @@ public:
   void appendAttributes(std::stringstream &ss,
                         const std::string &tab) const override;
 
+  // The depth input is not connected to Onehot as an input
+  // but rather is read in the connectInTensor method and used
+  // to set the onehotAxisDim member variable
+
   static InIndex getIndicesInIndex() { return 0; }
-  static InIndex getDepthInIndex() { return 1; }
   static InIndex getValuesInIndex() { return 2; }
 
   static OutIndex getOutIndex() { return 0; }

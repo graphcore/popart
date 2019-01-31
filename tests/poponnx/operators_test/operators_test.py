@@ -825,7 +825,7 @@ def test_dropout_training(op_tester):
 
 def test_onehot_2d_with_axis_testing(op_tester):
     indices = np.array([1, 5]).astype(np.int32)
-    depth = np.array([5]).astype(np.int32)
+    depth = np.array(6).astype(np.int32)
     values = np.array([0, 1]).astype(np.int32)
 
     output = np.array([[0, 0], [1, 0], [0, 0], [0, 0], [0, 0],
@@ -849,7 +849,7 @@ def test_onehot_2d_with_axis_testing(op_tester):
 
 def test_onehot_2d_without_axis_testing(op_tester):
     indices = np.array([1, 5]).astype(np.int32)
-    depth = np.array([5]).astype(np.int32)
+    depth = np.array(6).astype(np.int64)
     values = np.random.rand(2).astype(np.float32)
 
     output = np.array(
@@ -875,7 +875,7 @@ def test_onehot_2d_without_axis_testing(op_tester):
 
 def test_onehot_2d_with_axis_training(op_tester):
     indices = np.array([1, 5]).astype(np.int32)
-    depth = np.array([5]).astype(np.int32)
+    depth = np.array(6).astype(np.int16)
     values = np.array([-0.5, 0.5]).astype(np.float32)
 
     output = np.array([[values[0], values[0]], [values[1], values[0]],
@@ -906,7 +906,7 @@ def test_onehot_2d_with_axis_training(op_tester):
 
 def test_onehot_2d_without_axis_training(op_tester):
     indices = np.array([1, 5]).astype(np.int32)
-    depth = np.array([5]).astype(np.int32)
+    depth = np.array(6).astype(np.uint8)
 
     values = np.array([-0.5, 0.5]).astype(np.float32)
 
@@ -938,7 +938,7 @@ def test_onehot_2d_without_axis_training(op_tester):
 
 def test_onehot_3d_without_axis_testing(op_tester):
     indices = np.array([[1, 2], [2, 1]]).astype(np.int32)
-    depth = np.array([3]).astype(np.int32)
+    depth = np.array(4).astype(np.float32)
     values = np.array([0, 1]).astype(np.int32)
 
     output = np.array([[[0, 1, 0, 0], [0, 0, 1, 0]],
@@ -962,7 +962,7 @@ def test_onehot_3d_without_axis_testing(op_tester):
 
 def test_onehot_3d_with_axis_testing(op_tester):
     indices = np.array([[1, 2], [2, 1]]).astype(np.int32)
-    depth = np.array([3]).astype(np.int32)
+    depth = np.array(4).astype(np.int8)
     values = np.array([0, 1]).astype(np.int32)
 
     output = np.array([[[0, 0], [1, 0], [0, 1], [0, 0]],

@@ -31,6 +31,12 @@ std::map<std::string, DataType> initNpTypeMap() {
   // DataTypes (defined originally in ONNX)
   M["float16"] = DataType::FLOAT16;
   M["float32"] = DataType::FLOAT;
+  M["uint8"]   = DataType::UINT8;
+  M["uint16"]  = DataType::UINT16;
+  M["uint32"]  = DataType::UINT32;
+  M["uint64"]  = DataType::UINT64;
+  M["int8"]    = DataType::INT8;
+  M["int16"]   = DataType::INT16;
   M["int32"]   = DataType::INT32;
   M["int64"]   = DataType::INT64;
   M["bool"]    = DataType::BOOL;

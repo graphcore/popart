@@ -22,9 +22,8 @@ void OnehotOpx::grow(poplar::program::Sequence &prog) const {
 
   OnehotOp &onehotOp = getOp<OnehotOp>();
 
-  poplar::Tensor indices = get(inId(OnehotOp::getIndicesInIndex()));
-  poplar::Tensor depth   = get(inId(OnehotOp::getDepthInIndex()));
-  poplar::Tensor values  = get(inId(OnehotOp::getValuesInIndex()));
+  const poplar::Tensor &indices = get(inId(OnehotOp::getIndicesInIndex()));
+  const poplar::Tensor &values  = get(inId(OnehotOp::getValuesInIndex()));
 
   // Create a new output tensor with the type of the values
   const auto shape = vXtoY<int64_t, std::size_t>(
@@ -85,8 +84,8 @@ void OnehotGradOpx::grow(poplar::program::Sequence &prog) const {
 
   OnehotGradOp &onehotGradOp = getOp<OnehotGradOp>();
 
-  poplar::Tensor gradInput = get(inId(OnehotGradOp::getGradInIndex()));
-  poplar::Tensor indices   = get(inId(OnehotGradOp::getIndicesInIndex()));
+  const poplar::Tensor &indices = get(inId(OnehotGradOp::getIndicesInIndex()));
+  poplar::Tensor gradInput      = get(inId(OnehotGradOp::getGradInIndex()));
 
   // roll the one-hot dimension to the end, if needed
   if (onehotGradOp.getAxis() != -1) {
