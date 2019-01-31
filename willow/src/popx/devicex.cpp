@@ -445,40 +445,50 @@ TaskId Devicex::taskWhichCreates(TensorId id) const {
   }
 }
 
-// Do any of the consumers know how to create a poplar::Tensor?
-// If so, collect those that do, and the index at which consumed.
-// Note that an Opx may appear several times, with different
-// consumption indices.
 std::vector<InputCreatorCandidate>
-Devicex::getCreatorCandidates(Tensor *tensor,
-                              std::vector<Opx *> pathFromInput) {
-  std::vector<InputCreatorCandidate> candidates;
+Devicex::getCreatorEndpoints(Tensor *tensor,
+                             std::vector<Opx *> pathFromInput,
+                             bool excludeEndpointsFromPath,
+                             bool includeDeadends) {
+  std::vector<InputCreatorCandidate> endpoints;
   for (Op *op : tensor->consumers.getOps()) {
     auto conOpId = op->id;
     Opx *opx     = getOpx(conOpId);
+
     for (int index : op->input->indices(tensor)) {
+      std::vector<Opx *> updatedPath = pathFromInput;
+      updatedPath.push_back(opx);
+
       switch (opx->getInputCreatorType(index)) {
       // Opx has poplar call to layout tensor at this
       // index
       case InputCreatorType::CANCREATE: {
-        candidates.push_back({index, opx, pathFromInput});
+        if (excludeEndpointsFromPath) {
+          updatedPath.pop_back();
+        }
+        endpoints.push_back({index, opx, updatedPath});
         break;
       }
       // Recursively search the DAG downstream of the op until we
-      // have set of candidates that can create the tensor
+      // have set of endpoints that can create the tensor
       case InputCreatorType::CANUNWIND: {
-        pathFromInput.push_back(opx);
         for (auto &ind_ten : op->output->tensorMap()) {
           auto nextOutputTensor = ind_ten.second;
           for (auto candidate :
-               getCreatorCandidates(nextOutputTensor, pathFromInput)) {
-            candidates.push_back(candidate);
+               getCreatorEndpoints(nextOutputTensor, updatedPath)) {
+            endpoints.push_back(candidate);
           }
         }
         break;
       }
-      // Consuming op can't create tensor. Do nothing here
+      // Consuming op can't create tensor
       case InputCreatorType::DEADEND: {
+        if (includeDeadends) {
+          if (excludeEndpointsFromPath) {
+            updatedPath.pop_back();
+          }
+          endpoints.push_back({index, opx, updatedPath});
+        }
         break;
       }
       default: {
@@ -488,7 +498,7 @@ Devicex::getCreatorCandidates(Tensor *tensor,
       }
     }
   }
-  return candidates;
+  return endpoints;
 }
 
 // Design decision : leave the option for a Tensor to be
@@ -507,7 +517,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   // The pathFromInput argument is an empty vector, as
   // we are starting the search from the root (input)
   std::vector<InputCreatorCandidate> candidates =
-      getCreatorCandidates(tensor, {});
+      getCreatorEndpoints(tensor, {});
 
   if (candidates.size() > 1) {
     // check that all creators are in agreement on how
@@ -526,6 +536,10 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     // they're all equivalent, select the first candidate as the creator
     if (allEquivalent) {
       candidates.resize(1);
+    } else {
+      logging::devicex::warn("Input tensor '{}' has multiple creator "
+                             "candidates, but they are not in agreement",
+                             tensor->id);
     }
   }
 
@@ -581,6 +595,26 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
       logging::devicex::warn("Creating input tensor '{}' linearly. No "
                              "operator specific allocator found",
                              tensor->id);
+
+      // Get paths to both creator candidates and deadends, and print for debug
+      std::vector<InputCreatorCandidate> endpoints =
+          getCreatorEndpoints(tensor, {}, false, true);
+      int endpointId = 1;
+      logging::devicex::debug("Printing paths to {} endpoint(s) found when "
+                              "searching for a creator candidate for {}",
+                              endpoints.size(),
+                              tensor->id);
+      for (auto endpoint : endpoints) {
+        auto path = endpoint.getPathFromInput();
+        logging::devicex::debug("  Path to endpoint {}, starting from input",
+                                endpointId);
+        for (auto opxOnPath : path) {
+          Op *opOnPath = opxOnPath->op_p;
+          logging::devicex::debug(
+              "    Op {} : {}", opOnPath->str(), opOnPath->name());
+        }
+        endpointId += 1;
+      }
 
       // Find the ipu the op that consumes with tensor is on and create the
       // tensor on that graph

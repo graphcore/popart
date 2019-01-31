@@ -174,10 +174,23 @@ private:
   std::map<ReturnPeriod, poplar::Tensor> batchCountingTensors;
   std::map<ReturnPeriod, poplar::Tensor> batchCountCheckingTensors;
 
-  // When creating the tensor on device, find candidate opxs with
-  // optimized poplar calls to create the tensor
+  // A forward search of graph:
+  //   - from inputs of the graph
+  //   - to Opxs with optimized poplar calls to create the tensor,
+  //     or to Opxs that destroy layout information of the input
+  //     tensor on the output
+  //   - traversing through Opxs that cannot create the tenosr
+  //     themselves, but preserve layout information from input
+  //     to output tensor
+  //   - tracking the route taken through the graph to the endpoints
+  // Using the defualt arguments will return only creator candidates,
+  // with each candidate's path containing only Opxs that need to be
+  // 'unwound' to correctly lay out the input tensor
   std::vector<InputCreatorCandidate>
-  getCreatorCandidates(Tensor *tensor, std::vector<Opx *> pathFromInput);
+  getCreatorEndpoints(Tensor *tensor,
+                      std::vector<Opx *> pathFromInput,
+                      bool excludeEndpointsFromPath = true,
+                      bool includeDeadends          = false);
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
