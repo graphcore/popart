@@ -27,12 +27,12 @@ int64_t NDIndices::flatten(std::vector<int64_t> indices) {
   else if (indices.size() > info.rank()) {
     indices = std::vector<int64_t>(indices.end() - info.rank(), indices.end());
   }
-  int64_t stride = 1l;
+  int64_t stride = info.nelms();
   int64_t index  = 0l;
   for (int d = 0; d < info.rank(); ++d) {
+    stride /= info.dim(d);
     // 3) modulo arithmetic
     index += (indices[d] % info.dim(d)) * stride;
-    stride *= info.dim(d);
   }
   if (index > info.nelms()) {
     throw error("ILE in flatten : final index too large");

@@ -4,6 +4,7 @@
 #include <poponnx/ces/castce.hpp>
 #include <poponnx/ces/constexpr.hpp>
 #include <poponnx/ces/shapece.hpp>
+#include <poponnx/ces/slicece.hpp>
 #include <poponnx/ces/transposece.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
@@ -71,6 +72,9 @@ void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
   } else if (node.op_type() == "Transpose") {
     ConstExprTranspose transposer(node, ir);
     transposer.insertOutput();
+  } else if (node.op_type() == "Slice") {
+    ConstExprSlice slicer(node, ir);
+    slicer.insertOutput();
   } else {
     throw error("No ConstExpr implementation of {}. "
                 "Consider what OpType::ADD does (creates a Const Tensor) "

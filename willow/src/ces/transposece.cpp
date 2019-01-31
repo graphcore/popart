@@ -43,7 +43,7 @@ std::vector<char> transpose(Tensor *in0, const Shape &perm) {
     }
 
     // Move the value
-    output.at(i) = data0.at(output.ndindices.flatten(pindices));
+    output.at(pindices) = data0.at(indices);
   }
 
   return v_out;

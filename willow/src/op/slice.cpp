@@ -9,13 +9,10 @@ namespace poponnx {
 Slice::Slice(int64_t start_, int64_t end_, int64_t axis_)
     : start(start_), end(end_), axis(axis_) {}
 
-SliceOp::SliceOp(const OperatorIdentifier &_opid,
-                 const std::vector<int64_t> &starts_,
-                 const std::vector<int64_t> &ends_,
-                 const std::vector<int64_t> &axes_,
-                 const Op::Settings &settings_)
-    : Op(_opid, settings_), starts(starts_), ends(ends_), axes(axes_) {
-
+SliceImpl::SliceImpl(const std::vector<int64_t> &starts_,
+                     const std::vector<int64_t> &ends_,
+                     const std::vector<int64_t> &axes_)
+    : starts(starts_), ends(ends_), axes(axes_) {
   if (axes.size() == 0) {
     for (int i = 0; i < starts.size(); i++) {
       axes.push_back(i);
@@ -23,31 +20,21 @@ SliceOp::SliceOp(const OperatorIdentifier &_opid,
   }
 }
 
-std::unique_ptr<Op> SliceOp::clone() const {
-  return make_unique<SliceOp>(*this);
-}
+TensorInfo SliceImpl::createOutShape(const TensorInfo &in_info) const {
+  auto output_shape = in_info.shape();
 
-std::vector<std::unique_ptr<Op>> SliceOp::getGradOps() {
-  std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SliceGradOp>(*this));
-  return upops;
-}
-
-void SliceOp::setup() {
-  auto input_shape = inShape(getInIndex());
-
-  for (auto slice : getSlices()) {
-    auto new_size           = slice.end - slice.start;
-    input_shape[slice.axis] = new_size;
+  for (auto slice : getSlices(in_info.shape())) {
+    auto new_size            = slice.end - slice.start;
+    output_shape[slice.axis] = new_size;
   }
 
-  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), input_shape};
+  return {in_info.dataType(), output_shape};
 }
 
-std::vector<Slice> SliceOp::getSlices() const {
+std::vector<Slice>
+SliceImpl::getSlices(std::vector<int64_t> input_shape) const {
   std::vector<Slice> slices;
-
-  auto input_shape = inShape(getInIndex());
+  slices.reserve(axes.size());
 
   for (int i = 0; i < axes.size(); i++) {
     auto axis     = axes[i];
@@ -61,10 +48,10 @@ std::vector<Slice> SliceOp::getSlices() const {
   return slices;
 }
 
-// In the ONNX Slice Operator
+// In the ONNX Slice Implerator
 // If `index > dim_size` it is treated as `index == dim_size`
 // and negative indexing is also supported.
-int64_t SliceOp::normalizeIndex(int64_t index, int64_t dim_size) {
+int64_t SliceImpl::normalizeIndex(int64_t index, int64_t dim_size) {
   index = std::min(index, dim_size);
 
   if (index < 0) {
@@ -79,12 +66,41 @@ int64_t SliceOp::normalizeIndex(int64_t index, int64_t dim_size) {
   return index;
 }
 
+const std::vector<int64_t> &SliceImpl::getStarts() const { return starts; }
+const std::vector<int64_t> &SliceImpl::getEnds() const { return ends; }
+const std::vector<int64_t> &SliceImpl::getAxes() const { return axes; }
+
+SliceOp::SliceOp(const OperatorIdentifier &_opid,
+                 const std::vector<int64_t> &starts_,
+                 const std::vector<int64_t> &ends_,
+                 const std::vector<int64_t> &axes_,
+                 const Op::Settings &settings_)
+    : Op(_opid, settings_), impl(starts_, ends_, axes_) {}
+
+std::unique_ptr<Op> SliceOp::clone() const {
+  return make_unique<SliceOp>(*this);
+}
+
+std::vector<std::unique_ptr<Op>> SliceOp::getGradOps() {
+  std::vector<std::unique_ptr<Op>> upops;
+  upops.emplace_back(make_unique<SliceGradOp>(*this));
+  return upops;
+}
+
+void SliceOp::setup() {
+  outInfo(getOutIndex()) = impl.createOutShape(inInfo(getInIndex()));
+}
+
+std::vector<Slice> SliceOp::getSlices() const {
+  return impl.getSlices(inShape(getInIndex()));
+}
+
 void SliceOp::appendAttributes(std::stringstream &ss,
                                const std::string &tab) const {
   Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "starts", starts);
-  appendAttribute(ss, tab, "ends", ends);
-  appendAttribute(ss, tab, "axes", axes);
+  appendAttribute(ss, tab, "starts", impl.getStarts());
+  appendAttribute(ss, tab, "ends", impl.getEnds());
+  appendAttribute(ss, tab, "axes", impl.getAxes());
 }
 
 SliceGradOp::SliceGradOp(const SliceOp &op_)

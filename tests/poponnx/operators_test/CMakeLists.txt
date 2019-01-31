@@ -1,4 +1,5 @@
 add_poponnx_py_unit_test(operators_test)
+add_poponnx_py_unit_test(const_operators_test)
 add_poponnx_py_unit_test(gather_big_test)
 add_poponnx_py_unit_test(gather_bigger_test)
 add_poponnx_py_unit_test(gemm_test)
