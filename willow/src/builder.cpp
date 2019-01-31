@@ -196,6 +196,15 @@ TensorId Builder::identity(const std::vector<TensorId> &args,
   return impl_->op(Onnx::AiOnnx::OpSet9::Identity, args, {}, name)[0];
 }
 
+TensorId Builder::instanceNormalization(const std::vector<TensorId> &args,
+                                        const float epsilon,
+                                        const std::string &name) {
+  return impl_->op(Onnx::AiOnnx::OpSet9::InstanceNormalization,
+                   args,
+                   {{"epsilon", epsilon}},
+                   name)[0];
+}
+
 TensorId Builder::less(const std::vector<TensorId> &args,
                        const std::string &name) {
   return impl_->op(Onnx::AiOnnx::OpSet9::Less, args, {}, name)[0];

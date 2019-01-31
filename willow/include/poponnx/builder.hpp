@@ -377,6 +377,20 @@ public:
                     const std::string &name = {});
 
   /**
+   * Add the instance normalization operator to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#InstanceNormalization
+   *
+   * \param args The tensor argument
+   * \param epsilon a small delta applied to avoid division by zero
+   * \param name Optional identifer for operation
+   * \return The name of the result tensor
+   */
+  TensorId instanceNormalization(const std::vector<TensorId> &args,
+                                 const float epsilon     = 1e-5f,
+                                 const std::string &name = {});
+
+  /**
    * Add the less-than operator to the model
    *
    * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Less
