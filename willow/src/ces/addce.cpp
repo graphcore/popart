@@ -19,38 +19,31 @@ public:
 
 // add two Tensors together using numpy-broadcasting,
 // return the data as a vector<char>
-template <typename T> std::vector<char> add(Tensor *in0, Tensor *in1) {
-  TensorInfo outInfo = npOut(in0->info, in1->info);
-  std::vector<char> v_out(outInfo.nbytes());
-  NDArray<T> output(reinterpret_cast<T *>(v_out.data()), outInfo);
-  NDArray<T> data0(static_cast<T *>(in0->tensorData()->data()), in0->info);
-  NDArray<T> data1(static_cast<T *>(in1->tensorData()->data()), in1->info);
-  for (int64_t i = 0; i < outInfo.nelms(); ++i) {
-    // the N-dimensional indices in the output tensor
-    auto indices = output.ndindices.unflatten(i);
-    // perform the addition, where the broadcasting of the
-    // operands is implicitly taken care of by NDIndices
-    output.at(i) = data0.at(indices) + data1.at(indices);
+class AddFunctor {
+public:
+  template <typename T> std::vector<char> operator()(Tensor *in0, Tensor *in1) {
+    TensorInfo outInfo = npOut(in0->info, in1->info);
+    std::vector<char> v_out(outInfo.nbytes());
+    NDArray<T> output(reinterpret_cast<T *>(v_out.data()), outInfo);
+    NDArray<T> data0(static_cast<T *>(in0->tensorData()->data()), in0->info);
+    NDArray<T> data1(static_cast<T *>(in1->tensorData()->data()), in1->info);
+    for (int64_t i = 0; i < outInfo.nelms(); ++i) {
+      // the N-dimensional indices in the output tensor
+      auto indices = output.ndindices.unflatten(i);
+      // perform the addition, where the broadcasting of the
+      // operands is implicitly taken care of by NDIndices
+      output.at(i) = data0.at(indices) + data1.at(indices);
+    }
+    return v_out;
   }
-  return v_out;
-}
+};
 
 void ConstExprAdd::insertOutput() {
-  std::vector<char> data_;
   Tensor *in0        = atInIndex(0);
   Tensor *in1        = atInIndex(1);
   TensorInfo outInfo = npOut(in0->info, in1->info);
-  if (in0->info.dataType() == DataType::INT64) {
-    data_ = add<int64_t>(in0, in1);
-  } else if (in0->info.dataType() == DataType::INT32) {
-    data_ = add<int>(in0, in1);
-  } else if (in0->info.dataType() == DataType::FLOAT) {
-    data_ = add<float>(in0, in1);
-  } else {
-    throw error("Currently ConstExprAdd does not support type {}",
-                in0->info.data_type());
-  }
-  addConstInitTensor(atOutIndex0(), outInfo, data_.data());
+  auto data = callOpFunctor<AddFunctor>(in0->info.dataType(), in0, in1);
+  addConstInitTensor(atOutIndex0(), outInfo, data.data());
 }
 
 } // namespace poponnx

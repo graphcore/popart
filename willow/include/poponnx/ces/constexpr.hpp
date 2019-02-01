@@ -5,6 +5,7 @@
 #include <poponnx/attributes.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/tensorinfo.hpp>
 
 namespace poponnx {
 
@@ -19,6 +20,9 @@ public:
   TensorId atOutIndex0() const;
   void
   addConstInitTensor(const TensorId &, const TensorInfo &, const void *) const;
+
+  template <typename OpFunctor, typename... Args>
+  static std::vector<char> callOpFunctor(DataType dtype, Args &&... args);
 
 protected:
   // The NodeProto to process as a constant expression
@@ -66,6 +70,50 @@ private:
   static int getOutIndex(const onnx::NodeProto &, const TensorId &);
   static bool isNodeOutputAlwaysConstExpr(const OpType &, OutIndex);
 };
+
+template <typename OpFunctor, typename... Args>
+std::vector<char> ConstExprOp::callOpFunctor(DataType dtype, Args &&... args) {
+  switch (dtype) {
+  case DataType::DOUBLE:
+    return OpFunctor().template operator()<double>(std::forward<Args>(args)...);
+  case DataType::FLOAT:
+    return OpFunctor().template operator()<float>(std::forward<Args>(args)...);
+  case DataType::INT64:
+    return OpFunctor().template operator()<int64_t>(
+        std::forward<Args>(args)...);
+  case DataType::INT32:
+    return OpFunctor().template operator()<int32_t>(
+        std::forward<Args>(args)...);
+  case DataType::INT16:
+    return OpFunctor().template operator()<int16_t>(
+        std::forward<Args>(args)...);
+  case DataType::INT8:
+    return OpFunctor().template operator()<int8_t>(std::forward<Args>(args)...);
+  case DataType::UINT64:
+    return OpFunctor().template operator()<uint64_t>(
+        std::forward<Args>(args)...);
+  case DataType::UINT32:
+    return OpFunctor().template operator()<uint32_t>(
+        std::forward<Args>(args)...);
+  case DataType::UINT16:
+    return OpFunctor().template operator()<uint16_t>(
+        std::forward<Args>(args)...);
+  case DataType::UINT8:
+    return OpFunctor().template operator()<uint8_t>(
+        std::forward<Args>(args)...);
+  case DataType::FLOAT16:
+  case DataType::BOOL:
+  case DataType::BFLOAT16:
+  case DataType::COMPLEX64:
+  case DataType::COMPLEX128:
+  case DataType::STRING:
+  case DataType::UNDEFINED:
+  default:
+    throw error("functor {} does not support DataType::{}",
+                typeid(OpFunctor).name(),
+                getDataTypeInfoMap().at(dtype).name());
+  }
+}
 
 } // namespace poponnx
 
