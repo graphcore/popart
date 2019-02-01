@@ -7,6 +7,7 @@
 #include <poponnx/attributes.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/opidentifier.hpp>
+#include <poponnx/region.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/util.hpp>
 #include <poponnx/vertex.hpp>
@@ -168,35 +169,25 @@ public:
   // What are the variants of this Op (if any) which can
   // modify / alias the inputs at the given indices?
   // This function doesn't check for anchor violations
-  // or topological order violations
+  // or topological order violations. When there are several,
+  // they should be returned in descending order of preference
   virtual std::vector<OperatorIdentifier>
   inplaceVariants(const std::vector<InIndex> &) const;
 
-  virtual std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &,
-                                                const std::vector<InIndex> &);
+  virtual std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &) const;
 
-  // for each InIndex, between what Region of the input and
-  // what Region of the output will there be an aliasing?
-  virtual std::unique_ptr<RegionIOMap>
-  aliases(const std::map<InIndex, Shape> &) const;
-
-  // for each InIndex, what Region of the input will
-  // be modified? In general, this is a subset of regions
-  // returned by "aliases". Note that this function does not
-  // use its own input tensor shapes.
-  virtual std::map<InIndex, Region>
-  modifies(const std::map<InIndex, Shape> &) const;
-
-  // Does this Op modify any of the input at index InIndex? This
-  // function uses shape of its input tensor at index InIndex
-  bool modifies(InIndex) const;
-
-  //   TO BE USED LATER IN T6127
-  //   Region modifies(InIndex);
-  //   Region uses(InIndex);
-  //   Region aliases(InIndex);
-  //   Region fwdRegionAliasMapped(InIndex);
-  //   Region bwdRegionAliasMapped(OutIndex);
+  // The input Region which this Op modifies (for inplace ops)
+  virtual view::Region modifies(InIndex) const;
+  // The input Region which this Op uses
+  virtual view::Region uses(InIndex) const;
+  // The input Region which the output will alias (for inplace and view-changing
+  // ops)
+  virtual view::Region aliases(InIndex) const;
+  // Map used regions of the input to/from the output (we assume the same for
+  // modifies, aliases, uses)
+  virtual view::RegMap fwdRegMap(InIndex) const;
+  virtual view::RegMap bwdRegMap(InIndex) const;
 
   // A grad-op outputs an edge-gradient tensor dT at gradOpOutIndex.
   // dT is the edge-gradient of a tensor T which was the input
@@ -250,8 +241,8 @@ public:
   const Shape &inShape(InIndex index) const;
   const Shape &outShape(OutIndex index) const;
 
-  Rank inRank(InIndex index);
-  Rank outRank(OutIndex index);
+  Rank inRank(InIndex index) const;
+  Rank outRank(OutIndex index) const;
 
 protected:
   // Virtual method to append the op attributes to the stream. This method

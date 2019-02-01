@@ -112,7 +112,8 @@ void ConvDataGradOpx::grow(poplar::program::Sequence &prog) const {
 void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
   ConvWeightsGradOp &gradOp = getOp<ConvWeightsGradOp>();
   const ConvOp *convOp      = gradOp.getCloneOfCreator();
-  poplar::Tensor wGrad      = dv_p->graphCache.calculateWeightDeltas(
+
+  poplar::Tensor wGrad = dv_p->graphCache.calculateWeightDeltas(
       graph(),                                     // graph
       get(inId(gradOp.getGradConvolvedInIndex())), // zDeltas,
       get(inId(gradOp.getPreConvolvedInIndex())),  // activations,

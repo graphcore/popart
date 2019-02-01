@@ -18,8 +18,8 @@ public:
   std::vector<OperatorIdentifier>
   inplaceVariants(const std::vector<InIndex> &) const final;
 
-  std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &,
-                                        const std::vector<InIndex> &) override;
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &) const override;
 };
 
 class ReluInplaceOp : public Op {
@@ -27,10 +27,11 @@ public:
   ReluInplaceOp(const ReluOp &);
   void setup() final;
   // This in-place Op modifies its unique input at InIndex 0
-  std::map<InIndex, Region>
-  modifies(const std::map<InIndex, Shape> &) const final;
-  std::unique_ptr<RegionIOMap>
-  aliases(const std::map<InIndex, Shape> &) const final;
+
+  view::Region modifies(InIndex index) const final { return uses(index); }
+  view::Region aliases(InIndex index) const final { return uses(index); }
+  // "uses" is still the full region
+  // "fwdRegMap" and "bwdRegMap" are still the identity
 };
 
 // takes output of ReluOp as input and not the input of ReluOp

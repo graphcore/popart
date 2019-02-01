@@ -32,21 +32,41 @@ const TensorInfo &Op::outInfo(OutIndex index) const {
   return output->tensor(index)->info;
 }
 
-// default : no input region is aliased. Modifying
-// inplace ops need to override this function
-std::map<InIndex, Region> Op::modifies(const std::map<InIndex, Shape> &) const {
-  return {};
+view::Region Op::uses(InIndex index) const {
+  return view::Region::getFull(inShape(index));
 }
 
-// default : no aliasing between input and output
-std::unique_ptr<RegionIOMap>
-Op::aliases(const std::map<InIndex, Shape> &) const {
-  return std::unique_ptr<RegionIOMap>(new RegionIOMap({}));
+view::Region Op::modifies(InIndex index) const {
+  return view::Region::getEmpty(inRank(index));
+};
+
+view::Region Op::aliases(InIndex index) const {
+  return view::Region::getEmpty(inRank(index));
+};
+
+view::RegMap Op::fwdRegMap(InIndex i) const {
+  // TODO : merge these errors with those in bwdRegMap (T6707)
+  if (!input->hasIndex(i)) {
+    throw error("invalid index in fwdRegMap");
+  } else if (!output->hasIndex(0)) {
+    throw error("fwdMapReg called for op with no zero output");
+  } else if (inShape(i) != outShape(0)) {
+    throw error("default fwdRegMap not valid : should be specialised");
+  }
+
+  return [](const view::Region &r) { return r; };
 }
 
-bool Op::modifies(InIndex inIndex) const {
-  auto M = modifies(input->getIndexShapeMap());
-  return M.find(inIndex) != M.end();
+view::RegMap Op::bwdRegMap(InIndex i) const {
+  if (!input->hasIndex(i)) {
+    throw error("invalid index in fwdRegMap");
+  } else if (!output->hasIndex(0)) {
+    throw error("fwdMapReg called for op with no zero output");
+  } else if (inShape(i) != outShape(0)) {
+    throw error("default fwdRegMap not valid : should be specialised");
+  }
+
+  return [](const view::Region &r) { return r; };
 }
 
 bool Op::isLossOp() const { return false; }
@@ -140,15 +160,10 @@ Op::inplaceVariants(const std::vector<InIndex> &) const {
   return {};
 }
 
-std::unique_ptr<Op> Op::getInplaceVariant(const OperatorIdentifier &operator_id,
-                                          const std::vector<InIndex> &indices) {
-
+std::unique_ptr<Op>
+Op::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   std::stringstream ss;
-  appendSequence(ss, indices);
-  throw error("Op {} cannot return inplace variant {} for InIndices {}",
-              opid,
-              operator_id,
-              ss.str());
+  throw error("Op {} cannot return inplace variant {} ", opid, operator_id);
 }
 
 bool Op::readyToCreateGradients(std::set<int> &s) const {
@@ -240,9 +255,9 @@ const Shape &Op::outShape(OutIndex index) const {
   return outTensor(index)->info.shape();
 }
 
-int Op::inRank(InIndex index) { return inTensor(index)->info.rank(); }
+int Op::inRank(InIndex index) const { return inTensor(index)->info.rank(); }
 
-int Op::outRank(InIndex index) { return outTensor(index)->info.rank(); }
+int Op::outRank(InIndex index) const { return outTensor(index)->info.rank(); }
 
 std::string Op::str() const {
   std::stringstream ss;

@@ -9,6 +9,7 @@
 
 #include <poponnx/builder.hpp>
 #include <poponnx/ces/constexpr.hpp>
+#include <poponnx/chains.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
 #include <poponnx/intervals.hpp>
@@ -729,7 +730,6 @@ bool Ir::applyPattern(const Pattern *pattern) {
     // If the op still exists
     if (itr != ops.end()) {
       Op *op = itr->second.get();
-
       if (pattern->matches(op)) {
         if (!pattern->touchesAnchored(op)) {
           logging::pattern::debug("Applying pattern {} to {}",

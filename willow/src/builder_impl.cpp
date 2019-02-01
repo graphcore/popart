@@ -12,7 +12,6 @@
 #include <poponnx/tensordata.hpp>
 #include <poponnx/tensorinfo.hpp>
 
-#include <iostream>
 #include <onnx/checker.h>
 #include <onnx/shape_inference/implementation.h>
 

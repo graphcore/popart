@@ -78,6 +78,9 @@ public:
   TensorId id;
   std::string str() const final { return id; }
 
+  // a copy of this, but with no consumers or producer
+  std::unique_ptr<Tensor> clone() const;
+
   // ActGrad, Variable, etc:
   TensorType tensorType() const;
   const std::string &tensor_type() const;

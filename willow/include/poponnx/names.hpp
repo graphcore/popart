@@ -1,6 +1,9 @@
 #ifndef GUARD_NEURALNET_NAMES_HPP
 #define GUARD_NEURALNET_NAMES_HPP
 
+// TODO T6707 : determine what the cost of including these
+// in every compilation unit is, consider moving to another header
+#include <functional>
 #include <map>
 #include <vector>
 
@@ -64,10 +67,17 @@ class InputMapWrapper;
 class OutputMapWrapper;
 class Vertex;
 class TopoCons;
-class Region;
-class RegionIO;
-class RegionIOMap;
 enum class TensorType;
+
+namespace view {
+class Region;
+using RegMap  = std::function<Region(const Region &)>;
+using Regions = std::vector<Region>;
+class Link;
+class Chains;
+using LowBounds = std::vector<int64_t>;
+using UppBounds = std::vector<int64_t>;
+} // namespace view
 
 // A mapping from tensor name to the layout on each tile
 using TensorInterval     = std::pair<size_t, size_t>;

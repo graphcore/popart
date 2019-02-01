@@ -6,7 +6,6 @@
 #include <poplin/Convolution.hpp>
 #include <poputil/GraphFunction.hpp>
 
-#include <iostream>
 #include <map>
 
 namespace poponnx {

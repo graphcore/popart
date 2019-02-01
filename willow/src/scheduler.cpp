@@ -32,6 +32,9 @@ public:
 std::vector<Op *>
 Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons) const {
 
+  // note that if gCons has constraints
+  // of the form A -> A, the sorting is not complete
+
   auto &ops     = pir->getOps();
   auto &tensors = pir->getTensors();
 

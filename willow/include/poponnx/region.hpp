@@ -1,47 +1,46 @@
 #ifndef GUARD_NEURALNET_REGIONIOMAP_HPP
 #define GUARD_NEURALNET_REGIONIOMAP_HPP
 
+#include <vector>
 #include <poponnx/names.hpp>
 
 // we currently only consider inplacing ops with 1 output. this can be
 // generalised in the future if we decide it is necessary
 
 namespace poponnx {
+namespace view {
 
-// a class describing a subset of a tensor obtained through slices, concats,
-// unions, differences, etc. Currently, we assume that ALL operations on the
-// tensor have no effect, so that this Region always a superset of the true
-// region.
+// a rectangular sub-region of a Shape
 class Region {
-public:
-  Region(bool x_) : x(x_) {}
-  bool x;
-};
 
-class RegionIO {
 public:
-  // TODO how big do we expect these Region objects to be in the future?
-  // Might consider a move constructor
-  RegionIO(const Region &i, const Region &o) : region_in(i), region_out(o) {}
-  const Region &in() { return region_in; }
-  const Region &out() { return region_out; }
+  Region(const std::vector<int64_t> &lower_,
+         const std::vector<int64_t> &upper_);
+  int64_t rank() const;
+  int64_t nelms() const;
+  bool isEmpty() const;
+  Region intersect(const Region &rhs) const;
+  void checks() const;
+  static Region getEmpty(int64_t r);
+  static Region getFull(const Shape &s);
+  bool operator==(const Region &) const;
+  const std::vector<int64_t> &getLower() const { return lower; }
+  const std::vector<int64_t> &getUpper() const { return upper; }
 
 private:
-  Region region_in;
-  Region region_out;
+  std::vector<int64_t> lower;
+  std::vector<int64_t> upper;
+  // rank-0 tensors have no lower and upper bounds,
+  // so it is not possible to determine if they are empty
+  // by looking for equal lower and upper bounds
+  bool isEmptyRank0{false};
+
+  Region(const std::vector<int64_t> &lower_,
+         const std::vector<int64_t> &upper_,
+         bool isEmpty_r0_);
 };
 
-class RegionIOMap {
-
-public:
-  RegionIOMap(std::map<InIndex, RegionIO> &&m_) : m(m_) {}
-  const Region &in(InIndex i) { return m.at(i).in(); }
-  const Region &out(InIndex i) { return m.at(i).out(); }
-
-private:
-  std::map<InIndex, RegionIO> m;
-};
-
+} // namespace view
 } // namespace poponnx
 
 #endif

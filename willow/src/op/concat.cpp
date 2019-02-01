@@ -9,29 +9,6 @@
 
 namespace poponnx {
 
-std::unique_ptr<RegionIOMap>
-ConcatInplaceOp::aliases(const std::map<InIndex, Shape> &shapesToConcat) const {
-
-  // we should do a test here that the
-  // shapes above can be concatenated
-  // and a test that the indices are contiguous from 0
-
-  std::map<InIndex, RegionIO> aliases;
-  for (auto index_shape : shapesToConcat) {
-    auto index = index_shape.first;
-
-    // the whole region of the input will be aliased,
-    Region inRegion{true};
-
-    // and for now we'll say that the whole of the output is aliased to
-    // the input slice, although we can improve this in the future
-    Region outRegion{true};
-
-    aliases.emplace(std::pair<InIndex, RegionIO>(index, {inRegion, outRegion}));
-  }
-  return std::unique_ptr<RegionIOMap>(new RegionIOMap(std::move(aliases)));
-}
-
 ConcatOp::ConcatOp(const OperatorIdentifier &_opid,
                    int64_t axis_,
                    const Op::Settings &settings_)
@@ -44,20 +21,54 @@ std::unique_ptr<Op> ConcatOp::clone() const {
   return make_unique<ConcatOp>(*this);
 }
 
+void ConcatOp::regMapPreChecks(InIndex inIndex) const {
+  if (outOffsets.size() != input->tensorMap().size() + 1) {
+    throw error(
+        "ILE in ConcatOp::fwdRegMap, outOffsets not set correctly. It "
+        "has size {} and the input tensorMap has size {}, this for Op {}",
+        outOffsets.size(),
+        input->tensorMap().size(),
+        str());
+  }
+  if (inIndex >= input->tensorMap().size() || inIndex < 0) {
+    throw error("invalid index in ConcatOp::fwdRegMap");
+  }
+}
+
+view::RegMap ConcatOp::fwdRegMap(InIndex inIndex) const {
+  regMapPreChecks(inIndex);
+  int64_t offset = outOffsets[inIndex];
+  int64_t axisIn = getAxis();
+  return [axisIn, offset](const view::Region &r_in) {
+    view::LowBounds lower = r_in.getLower();
+    view::UppBounds upper = r_in.getUpper();
+    lower[axisIn] += offset;
+    upper[axisIn] += offset;
+    return view::Region(lower, upper);
+  };
+}
+
+view::RegMap ConcatOp::bwdRegMap(InIndex inIndex) const {
+  regMapPreChecks(inIndex);
+  int64_t offset = outOffsets[inIndex];
+  int64_t axisIn = getAxis();
+  return [axisIn, offset](const view::Region &r_out) {
+    view::LowBounds lower = r_out.getLower();
+    view::UppBounds upper = r_out.getUpper();
+    lower[axisIn] -= offset;
+    upper[axisIn] -= offset;
+    return view::Region(lower, upper);
+  };
+}
+
 std::unique_ptr<Op>
-ConcatOp::getInplaceVariant(const OperatorIdentifier &operator_id,
-                            const std::vector<InIndex> &inIndices) {
-
-  auto validVariants = inplaceVariants(inIndices);
-
-  if (std::find(validVariants.begin(),
-                validVariants.end(),
-                Onnx::CustomOperators::ConcatInplace) != validVariants.end()) {
+ConcatOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
+  if (operator_id == Onnx::CustomOperators::ConcatInplace) {
     return make_unique<ConcatInplaceOp>(*this, axis);
   }
 
   // catch remaining cases and throw an error
-  return Op::getInplaceVariant(operator_id, inIndices);
+  return Op::getInplaceVariant(operator_id);
 }
 
 std::unique_ptr<Op> ConcatInplaceOp::clone() const {
@@ -92,6 +103,7 @@ void ConcatOp::setup() {
   Shape outShape         = inShape(getInIndex(0));
   outShape[axis]         = 0;
 
+  outOffsets = {0};
   for (int i = 0; i < input_count; ++i) {
     const auto shape = inShape(getInIndex(i));
 
@@ -121,6 +133,7 @@ void ConcatOp::setup() {
     }
 
     outShape[axis] += shape[axis];
+    outOffsets.push_back(outOffsets.back() + shape[axis]);
   }
 
   outInfo(getOutIndex()) = TensorInfo(outType, outShape);

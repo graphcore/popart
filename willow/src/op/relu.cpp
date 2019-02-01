@@ -16,16 +16,12 @@ ReluOp::inplaceVariants(const std::vector<InIndex> &indices) const {
 }
 
 std::unique_ptr<Op>
-ReluOp::getInplaceVariant(const OperatorIdentifier &operator_id,
-                          const std::vector<InIndex> &inIndices) {
-
-  if (operator_id == Onnx::CustomOperators::ReluInplace &&
-      inIndices.size() == 1 && inIndices[0] == 0) {
+ReluOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
+  if (operator_id == Onnx::CustomOperators::ReluInplace) {
     return make_unique<ReluInplaceOp>(*this);
   }
-
   // catch remaining cases and throw an error
-  return Op::getInplaceVariant(operator_id, inIndices);
+  return Op::getInplaceVariant(operator_id);
 }
 
 ReluInplaceOp::ReluInplaceOp(const ReluOp &relu_op)
@@ -34,30 +30,6 @@ ReluInplaceOp::ReluInplaceOp(const ReluOp &relu_op)
 void ReluInplaceOp::setup() {
   // no output, nothing to setup
   outInfo(ReluOp::getOutIndex()) = inInfo(ReluOp::getInIndex());
-}
-
-// we do not check that the InIndex is 0, we could
-std::map<InIndex, Region>
-ReluInplaceOp::modifies(const std::map<InIndex, Shape> &M) const {
-  if (M.size() != 1 || M.find(0) == M.end()) {
-    throw error("Invalid map in ReluInplaceOp::modifies");
-  }
-  // the whole of the input region is potentially modified
-  Region inRegion{true};
-  return {{0, std::move(inRegion)}};
-}
-
-std::unique_ptr<RegionIOMap>
-ReluInplaceOp::aliases(const std::map<InIndex, Shape> &M) const {
-  if (M.size() != 1 || M.find(0) == M.end()) {
-    throw error("Invalid map in ReluInplaceOp::modifies");
-  }
-  // the whole region of the input,
-  Region inRegion{true};
-  // becomes an alias of the whole of the output,
-  Region outRegion{true};
-  return std::unique_ptr<RegionIOMap>(
-      new RegionIOMap({{0, {std::move(inRegion), std::move(outRegion)}}}));
 }
 
 std::unique_ptr<Op> ReluOp::clone() const { return make_unique<ReluOp>(*this); }

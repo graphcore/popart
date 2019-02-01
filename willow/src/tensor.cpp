@@ -11,6 +11,12 @@
 
 namespace poponnx {
 
+std::unique_ptr<Tensor> Tensor::clone() const {
+  std::unique_ptr<Tensor> theClone(new Tensor("clone_" + id, tensorType(), ir));
+  theClone->info = info;
+  return theClone;
+}
+
 Consumers::Consumers(Tensor *tensorConsumed_)
     : tensorConsumed(tensorConsumed_) {}
 

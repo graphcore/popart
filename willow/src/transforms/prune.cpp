@@ -61,7 +61,7 @@ bool Prune::apply(Ir &ir) const {
         // at any of the indices which op consumes t,
         // does it modify t?
         for (InIndex index : consumer->input->indices(t)) {
-          if (consumer->modifies(index)) {
+          if (!consumer->modifies(index).isEmpty()) {
             newRequired.insert(consumer);
           }
         }

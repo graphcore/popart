@@ -1,8 +1,85 @@
+#include <poponnx/chains.hpp>
+#include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensors.hpp>
 
 namespace poponnx {
+
+std::map<Tensor *, view::Chains> Tensors::aliasChainsTo(Tensor *to) const {
+
+  auto found = aliases.find(to);
+  if (found == aliases.end()) {
+    return {{to, view::Chains::getIdentity(to->info.shape())}};
+  }
+
+  else {
+    auto retM = found->second;
+    retM[to]  = view::Chains::getIdentity(to->info.shape());
+    return retM;
+  }
+}
+
+std::map<Tensor *, view::Chains> Tensors::aliasChainsFrom(Tensor *) const {
+  throw error("Tensors::aliasChainsFrom needs implementing");
+}
+
+void Tensors::updateAliases(Op *op) {
+
+  // there is no aliasing for ops with more than 1 output,
+  if (op->output->n() == 1 && op->output->hasIndex(0)) {
+
+    Tensor *t2 = op->output->tensor(0);
+
+    for (auto i1_t1 : op->input->tensorMap()) {
+
+      InIndex i1 = i1_t1.first;
+      Tensor *t1 = i1_t1.second;
+
+      auto fwdMap = op->fwdRegMap(i1);
+      auto bwdMap = op->bwdRegMap(i1);
+
+      view::Region inRegion  = op->aliases(i1);
+      view::Region outRegion = fwdMap(inRegion);
+
+      view::Link fwdLink(inRegion, fwdMap);
+      view::Link bwdLink(outRegion, bwdMap);
+
+      if (!outRegion.isEmpty()) {
+
+        auto chainsIn  = aliasChainsTo(t1);
+        auto chainsOut = aliasChainsFrom(t2);
+
+        for (auto &inwards : chainsIn) {
+          Tensor *t0            = inwards.first;
+          view::Chains inChains = inwards.second;
+
+          for (auto &outwards : chainsOut) {
+            Tensor *t3             = outwards.first;
+            view::Chains outChains = outwards.second;
+
+            // we now have,
+            // t0 ------> t1 -> op -> t2 -----> t3
+            // and we want to update aliases[t3][t0]
+            // with and new chains that pass through op.
+
+            if (aliases.find(t3) == aliases.end()) {
+              aliases[t3] = {};
+            }
+            if (aliases.at(t3).find(t0) == aliases.at(t3).end()) {
+              aliases[t3][t0] = {}; // empty Chains
+            }
+            // add the new Chains. This needs implementation
+            aliases[t3][t0] = aliases[t3][t0].parallel(
+                inChains.series(fwdLink).series(outChains));
+          }
+        }
+      }
+    }
+  }
+}
+
 std::vector<TensorId> Tensors::getAllTensorIds() const {
   std::vector<TensorId> allIds;
   allIds.reserve(M.size());

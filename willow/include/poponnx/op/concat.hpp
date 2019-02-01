@@ -12,7 +12,7 @@ public:
            const Op::Settings &settings);
 
   std::unique_ptr<Op> clone() const override;
-  void setup() override;
+  void setup() final;
 
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
@@ -22,17 +22,40 @@ public:
   std::vector<OperatorIdentifier>
   inplaceVariants(const std::vector<InIndex> &) const override;
 
-  std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &,
-                                        const std::vector<InIndex> &) override;
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &) const override;
 
   static InIndex getInIndex(InIndex index) { return index; }
   static OutIndex getOutIndex() { return 0; }
+
+  view::RegMap fwdRegMap(InIndex) const final;
+  view::RegMap bwdRegMap(OutIndex) const final;
+  // "uses" is still the full input region
+  // "aliases" is still the empty region
+  // "modifies" is still the empty region
 
   void appendAttributes(std::stringstream &ss,
                         const std::string &tab) const override;
 
 private:
   int64_t axis = 0;
+
+  // suppose input tensors have shapes,
+  // 0: [2,5,3]
+  // 1: [2,6,3]
+  // 2: [2,1,3]
+  // and axis = 1.
+  // then the output tensor has shape [2,12,3], and
+  // the regions in the output that inputs corresponds
+  // to are,
+  // 0: [0:2,  0:5,  0:3]
+  // 1: [0:2,  5:11, 0:3]
+  // 2: [0:2, 11:12, 0:3]
+  // outOffests are where these regions start/end along "axis", so
+  // in this case {0,5,11,12}
+  std::vector<int64_t> outOffsets;
+
+  void regMapPreChecks(InIndex inIndex) const;
 };
 
 // An inplace variant of the concat op
@@ -47,14 +70,14 @@ public:
     return {};
   }
 
-  std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &o,
-                                        const std::vector<InIndex> &i) final {
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &o) const final {
     // this throws an error
-    return Op::getInplaceVariant(o, i);
+    return Op::getInplaceVariant(o);
   }
 
-  std::unique_ptr<RegionIOMap>
-  aliases(const std::map<InIndex, Shape> &) const final;
+  // The whole of the used area is aliased. "modifies" is still empty
+  view::Region aliases(InIndex index) const final { return uses(index); }
 };
 
 class ConcatGradOp : public Op {

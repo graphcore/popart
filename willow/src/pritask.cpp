@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <iostream>
+
 #include <queue> // we use a priority_queue
 #include <sstream>
 #include <poponnx/error.hpp>

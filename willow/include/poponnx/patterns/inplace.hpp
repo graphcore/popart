@@ -5,6 +5,25 @@
 
 namespace poponnx {
 
+// A class for creating an Op and Tensors without inserting them
+// into the Ir. It is useful for testing what the effects of an
+// Inplace Op are before applying the Pattern
+class ExternOpTensorBundle {
+
+public:
+  // copyOp : the op whose inputs and outputs will be cloned
+  // testOp : the op which will have the cloned tensors connected to it
+  //          ownership of opNew is given to this new object
+  ExternOpTensorBundle(Op *copyOp, std::unique_ptr<Op> testOp);
+
+  // return the "test" Op
+  Op *getOp();
+
+private:
+  std::unique_ptr<Op> up_op;
+  std::map<TensorId, std::unique_ptr<Tensor>> tensors;
+};
+
 // for all cases with 0 outputs
 class Inplace : public Pattern {
 public:
@@ -13,6 +32,10 @@ public:
   virtual std::vector<InIndex> targetInIndices(Op *) const = 0;
   std::vector<const Tensor *> touches(Op *op) const final;
   bool apply(Op *op) const final;
+  std::tuple<bool, OperatorIdentifier> firstGoodVariant(Op *op) const;
+  // What are the additional topological constraints
+  // required if oldOp is replaced by newOp?
+  OpsBeforeKey getNewTopoCons(Op *oldOp, Op *newOp) const;
   PatternPhase phase() const final { return PatternPhase::WITHTOPOCONS; }
 };
 

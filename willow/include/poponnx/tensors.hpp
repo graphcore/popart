@@ -39,6 +39,20 @@ public:
   // remove all Tensors which have no producer and no consumers
   void removeIsolated();
 
+  void updateAliases(Op *op);
+
+  // all non-empty alias Chains to "to"
+  // returned map M will always have M[to] = "the identity chain"
+  //......"from"...."chains"............................"to"
+  //       ^         ^                                   ^
+  std::map<Tensor *, view::Chains> aliasChainsTo(Tensor *to) const;
+
+  // all non-empty alias Chains from "from"
+  // returned map M will always have M[from] = "the identity chain"
+  //......"to"......"chains".............................."from"
+  //       ^         ^                                     ^
+  std::map<Tensor *, view::Chains> aliasChainsFrom(Tensor *from) const;
+
 private:
   // Store the Tensors of type Const
   VectorAndSet constIds;
@@ -50,6 +64,11 @@ private:
   void addInit(const TensorId &, const onnx::TensorProto *, TensorType);
 
   Ir &ir;
+
+  // all non-empty Chains
+  //      "to"..............."from"...."chains"
+  //       ^                  ^         ^
+  std::map<Tensor *, std::map<Tensor *, view::Chains>> aliases;
 };
 
 } // namespace poponnx

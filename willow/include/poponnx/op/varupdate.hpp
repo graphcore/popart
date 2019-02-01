@@ -16,10 +16,7 @@ public:
   static InIndex getVarGradInIndex() { return 1; }
 
   // This Op modifies the input at index getVarIndex()
-  std::map<InIndex, Region>
-  modifies(const std::map<InIndex, Shape> &) const final;
-
-  // there are no aliases created, VarUpdateOp has no output
+  view::Region modifies(InIndex) const final;
 
 private:
   TensorId varId;

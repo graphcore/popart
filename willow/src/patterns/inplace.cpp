@@ -1,12 +1,41 @@
+#include <poponnx/chains.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/patterns/inplace.hpp>
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensors.hpp>
 #include <poponnx/topocons.hpp>
 #include <poponnx/util.hpp>
 
 namespace poponnx {
+
+ExternOpTensorBundle::ExternOpTensorBundle(Op *opCopy,
+                                           std::unique_ptr<Op> opNew)
+    : up_op(std::move(opNew)) {
+
+  // dummy inputs
+  for (auto &index_tensor : opCopy->input->tensorMap()) {
+    std::unique_ptr<Tensor> up_t_clone = index_tensor.second->clone();
+    Tensor *t_clone                    = up_t_clone.get();
+    tensors[t_clone->id]               = std::move(up_t_clone);
+    up_op->input->insert(index_tensor.first, t_clone);
+    t_clone->consumers.increment(up_op.get());
+  }
+
+  // dummy outputs
+  for (auto &index_tensor : opCopy->output->tensorMap()) {
+    std::unique_ptr<Tensor> up_t_clone = index_tensor.second->clone();
+    Tensor *t_clone                    = up_t_clone.get();
+    tensors[t_clone->id]               = std::move(up_t_clone);
+    up_op->output->insert(index_tensor.first, t_clone);
+    t_clone->setProducer(up_op.get());
+  }
+
+  up_op->setup();
+}
+
+Op *ExternOpTensorBundle::getOp() { return up_op.get(); }
 
 // Example 1:
 // Consider the following SERIES of non-linearity ops:
@@ -63,49 +92,60 @@ std::vector<const Tensor *> Inplace::touches(Op *op) const {
   // touched (where the defn of touched would then be slightly different)
 
   std::vector<const Tensor *> touched = {op->output->tensor(0)};
-  auto inIndices                      = targetInIndices(op);
-  touched.reserve(inIndices.size() + 1);
-  for (auto index : inIndices) {
+  // touched.reserve(inIndices.size() + 1);
+  // TODO : it is actually  sub-set of targetInIndces,
+  // only those which are aliased (T6707)
+  for (auto index : targetInIndices(op)) {
     touched.push_back(op->input->tensor(index));
   }
   return touched;
 }
 
 bool Inplace::apply(Op *op) const {
-  auto output_tensor             = op->output->tensor(0);
-  auto &ir                       = op->getIr();
-  std::vector<InIndex> inIndices = targetInIndices(op);
+  auto output_tensor = op->output->tensor(0);
+  auto &ir           = op->getIr();
 
-  if (op->inplaceVariants(inIndices).size() == 0) {
-    throw error("Cannot call Inplace::apply for {} as no good variants",
-                op->str());
+  if (op->inplaceVariants(targetInIndices(op)).size() == 0) {
+    throw error(
+        "Cannot call Inplace::apply for {} as no valid inplace op candidate",
+        op->str());
+  }
+  auto identifier = std::get<1>(firstGoodVariant(op));
+
+  auto newCons = getNewTopoCons(
+      op, ExternOpTensorBundle(op, op->getInplaceVariant(identifier)).getOp());
+
+  std::unique_ptr<Op> up_inplaceOp = op->getInplaceVariant(identifier);
+  Op *inplaceOp                    = up_inplaceOp.get();
+  ir.moveIntoIr(std::move(up_inplaceOp));
+  // replace op with inplaceOp everywhere in newCons
+  if (newCons.find(op) != newCons.end()) {
+    newCons[inplaceOp] = newCons[op];
+    newCons.erase(op);
+  }
+  for (auto &key_vals : newCons) {
+    auto &vals = key_vals.second;
+    for (auto &v : vals) {
+      if (v == op) {
+        v = inplaceOp;
+      }
+    }
   }
 
-  // Create the inplace op variant, using the first one for now TODO
-  auto identifier = op->inplaceVariants(inIndices)[0];
-  std::unique_ptr<Op> up_inplaceOp =
-      op->getInplaceVariant(identifier, inIndices);
-
-  Op *inplaceOp = up_inplaceOp.get();
-  ir.moveIntoIr(std::move(up_inplaceOp));
-
   // Remap the tensors from `op` to `inplaceOp`
-  for (auto index : inIndices) {
-    Tensor *in_tensor = op->input->tensor(index);
+  for (auto index_tensor : op->input->tensorMap()) {
+    Tensor *in_tensor = index_tensor.second;
+    InIndex in_index  = index_tensor.first;
     in_tensor->consumers.increment(inplaceOp);
     ir.topoCons->transfer(op, inplaceOp);
     in_tensor->consumers.decrement(op);
+    inplaceOp->input->insert(in_index, in_tensor);
   }
-
   output_tensor->resetProducer(inplaceOp);
   inplaceOp->output->insert(0, output_tensor);
 
-  for (auto index : inIndices) {
-    Tensor *input_tensor = op->input->tensor(index);
-    auto newCons = ir.topoCons->finalConsumerCons(input_tensor, inplaceOp);
-    ir.topoCons->insert(newCons);
-    inplaceOp->input->insert(index, input_tensor);
-  }
+  ir.getTensors().updateAliases(op);
+  ir.topoCons->insert(newCons);
 
   logging::pattern::debug("InplaceAll::apply : replace {}({}) with {}({})",
                           op->id,
@@ -117,67 +157,214 @@ bool Inplace::apply(Op *op) const {
   return true;
 }
 
-bool Inplace::matches(Op *op) const {
-  std::vector<InIndex> inIndices = targetInIndices(op);
+std::tuple<bool, OperatorIdentifier> Inplace::firstGoodVariant(Op *op) const {
 
-  if (op->inplaceVariants(inIndices).size() == 0) {
-    return false;
-  }
-
-  if (!op->output->hasIndex(0)) {
-    return false;
-  }
-
-  // if it's not topologically possible to perform the proposed in-place
-  // op after all current ops consuming the tensor, we cannot proceed.
-  // see Example 2 above.
-  for (InIndex index : inIndices) {
-
-    const Tensor *t = op->input->tensor(index);
-
-    // Consider an Op which does
-    // C <- gamma*A + B
-    // and inplace version,
-    // C *= gamma and then C += B.
-    // if A = B, then the inplace is not valid, as A <- 2*gamma*A
-    // For certain ops it is fine if the input is repeated (Add),
-    // but for now we will just say that this is not in-placeable.
-    if (t->consumers.n(op) > 1) {
-      logging::info(
-          "InplaceAll::matches : inplace candidate {} rejected due to "
-          "aliasing input {}",
-          op->name(),
-          t->str());
-      return false;
+  // We go through all inplace variants to see if there are any valid ones.
+  for (auto identifier : op->inplaceVariants(targetInIndices(op))) {
+    if (op->getIr().isSchedulable(getNewTopoCons(
+            op,
+            ExternOpTensorBundle(op, op->getInplaceVariant(identifier))
+                .getOp()))) {
+      return std::tuple<bool, OperatorIdentifier>(true, identifier);
     }
+  }
 
-    if (t->consumers.getOps().size() != 1) {
-      OpsBeforeKey gCons;
-      gCons[op] = {};
+  // Returning false (and a randomly chosen Identifier).
+  // TODO: improve design (T6707)
+  return std::tuple<bool, OperatorIdentifier>(
+      false, Onnx::CustomOperators::ConcatInplace);
+}
 
-      for (auto before : t->consumers.getOps()) {
-        if (before != op) {
-          gCons[op].push_back(before);
+bool Inplace::matches(Op *op) const {
+
+  if (op->inplaceVariants(targetInIndices(op)).size() == 0) {
+    return false;
+  }
+
+  // only ops with exactly one output,
+  // at index 0, are considered inplace-able
+  if (op->output->n() != 1 || !op->output->hasIndex(0)) {
+    return false;
+  }
+
+  bool isGoodVariant = std::get<0>(firstGoodVariant(op));
+
+  if (!isGoodVariant) {
+    logging::pattern::debug("InplaceAll::matches : inplace candidate {} "
+                            "rejected due to scheduling conflict",
+                            op->name());
+  }
+
+  return isGoodVariant;
+}
+
+OpsBeforeKey Inplace::getNewTopoCons(Op *op, Op *inOp) const {
+  logging::pattern::debug(
+      "Getting new topological constraints if {} replacing {}",
+      inOp->str(),
+      op->str());
+
+  auto populate = [](std::map<Op *, view::Regions> &M,
+                     Op *key,
+                     const view::Regions &newRegs) {
+    if (newRegs.size() != 0) {
+      auto found = M.find(key);
+      if (found == M.end()) {
+        M[key] = {};
+      }
+      view::Regions &regions = M[key];
+      for (auto &region : newRegs) {
+        // TODO : check that region is not
+        // a sub-region of one already in (T6707)
+        regions.push_back(region);
+      }
+    }
+  };
+
+  // this is what we populate here
+  OpsBeforeKey gCons;
+
+  // tensor naming plan,
+  // t0 ------------> t1 ----> op ----> t2 -------------> t3
+  //
+  // can we instead have,
+  // t0 ------------> t1 ---> inOp ---> t2 -------------> t3
+  //        |             |          |           |
+  //        |             ------------           |
+  //        |                  |                 |
+  //       chsI            bottleLink           chsO
+  //
+  // ?
+  // Roughly speaking,
+  //  we will look for all t0 which are an alias of t1,
+  //  and all t3 which are modified AND an alias of t2,
+  //  and add the constraint that consumers of t0
+  //  run before consumers of t3, if the modified aliased region
+  //  of t3 overlaps with the used (consumed) aliased region of t0
+
+  auto &tensors = op->getIr().getTensors();
+  Tensor *t2    = op->output->tensor(0);
+
+  // for each consumer of t0, pass the region consumed (used)
+  // through chainsTo, then through the bottleLink, to a region
+  // in t2, creating a map;
+  // of (op):(regions in t2)
+  std::map<Op *, view::Regions> consumer_regions;
+  for (InIndex index : targetInIndices(op)) {
+    view::Link bottleLink(inOp->aliases(index), inOp->fwdRegMap(index));
+    Tensor *t1 = op->input->tensor(index);
+    for (auto t0_chsI : tensors.aliasChainsTo(t1)) {
+      auto t0   = t0_chsI.first;
+      auto chsI = t0_chsI.second;
+      for (auto c : t0->consumers.getOps()) {
+        // the indices at which the tensor is consumed:
+        for (InIndex t0in : c->input->indices(t0)) {
+          auto serialChains = chsI.series(bottleLink);
+          auto r2           = serialChains.apply(c->uses(t0in));
+          populate(consumer_regions, c, r2);
         }
       }
+    }
+  }
 
-      // we here are using the fact that if
-      // 1) is a sorting with A->C
-      // 2) is a sorting with B->C
-      // then there is either a sorting with A->B->C or one with B->A->C
+  std::map<Op *, view::Regions> modifier_regions;
+  // first, all ops downstream of op which modify t2, and the modified regions
+  for (auto t3_chsO : tensors.aliasChainsTo(t2)) {
+    auto t3   = t3_chsO.first;
+    auto chsO = t3_chsO.second;
+    for (auto consumer : t3->consumers.getOps()) {
+      for (InIndex t3_in : consumer->input->indices(t3)) {
+        view::Regions r2 = chsO.apply(consumer->modifies(t3_in));
+        populate(modifier_regions, consumer, r2);
+      }
+    }
+  }
+  // second, what in t2 would inOp modify?
+  view::Regions opModRegs;
+  for (InIndex index : targetInIndices(op)) {
+    opModRegs.push_back(inOp->fwdRegMap(index)(inOp->modifies(index)));
+  }
+  populate(modifier_regions, op, opModRegs);
 
-      if (!op->getIr().isSchedulable(gCons)) {
-        logging::pattern::debug(
-            "InplaceAll::matches : inplace candidate {} rejected due to "
-            "scheduling conflict",
-            op->name());
-        return false;
+  // modifer_regions X consumer_regions, the match-up
+  for (const auto &op_regs0 : consumer_regions) {
+    for (const auto &op_regs1 : modifier_regions) {
+      Op *before = op_regs0.first;
+      Op *after  = op_regs1.first;
+      for (const auto &reg0 : op_regs0.second) {
+        for (const auto &reg1 : op_regs1.second) {
+          // TODO : more efficient way of testing whether Regions
+          // (set of Regions) intersect (T6707)
+          if (!reg0.intersect(reg1).isEmpty()) {
+            if (gCons.find(after) == gCons.end()) {
+              gCons[after] = {before};
+            } else {
+              gCons[after].push_back(before);
+            }
+          }
+        }
       }
     }
   }
 
-  return true;
-}
+  // handle the prickly case of gCons[op] containing op.
+  // op must run before itself? Needs special attention.
+
+  // Consider an Op which does
+  // C <- gamma*A + B
+  // and inplace version,
+  // C *= gamma and then C += B.
+  // if A = B, then the inplace is not valid, as A <- 2*gamma*A
+  // For certain ops it is fine if the input is repeated (Add),
+  // but for others this could be very bad
+
+  bool pricklyCase = false;
+  if (gCons.find(op) != gCons.end()) {
+    for (auto &before : gCons.at(op)) {
+      if (before == op) {
+        // the prickly A -> A constraint case, where A = op
+        pricklyCase = true;
+      }
+    }
+  }
+
+  bool schedFail = false;
+  if (pricklyCase) {
+    for (auto index_tensor : op->input->tensorMap()) {
+      if (!inOp->modifies(index_tensor.first).isEmpty()) {
+        InIndex modifyingIndex = index_tensor.first;
+        Tensor *modifiedTensor = index_tensor.second;
+        // we check if any of the inputs are aliased to modifiedTensor
+        auto aliasedTensorMap = tensors.aliasChainsTo(modifiedTensor);
+        for (auto &aliasedTensor_chain : aliasedTensorMap) {
+          Tensor *aliasedTensor = aliasedTensor_chain.first;
+          for (auto &index2_tensor2 : op->input->tensorMap()) {
+            if (index2_tensor2.first != modifyingIndex &&
+                aliasedTensor == index2_tensor2.second) {
+              schedFail = true;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (pricklyCase && !schedFail) {
+    std::vector<Op *> newAfters;
+    for (auto after : gCons.at(op)) {
+      if (after != op) {
+        newAfters.push_back(after);
+      }
+    }
+    if (newAfters.size() == 0) {
+      gCons.erase(op);
+    } else {
+      gCons[op] = newAfters;
+    }
+  }
+
+  return gCons;
+} // namespace poponnx
 
 namespace {
 static PatternCreator<Inplace0> inplace0Pattern(PatternType::INPLACE0,

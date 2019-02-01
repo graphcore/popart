@@ -19,10 +19,13 @@ void VarUpdateOp::setup() {
   // no output tensors to set shapes for
 }
 
-std::map<InIndex, Region>
-VarUpdateOp::modifies(const std::map<InIndex, Shape> &) const {
-  // Modifies the whole of the Var Tensor
-  return {{getVarInIndex(), {true}}};
+// Modifies the whole of the Var Tensor
+view::Region VarUpdateOp::modifies(InIndex index) const {
+  if (index == getVarInIndex()) {
+    return view::Region::getFull(inShape(index));
+  } else {
+    return view::Region::getEmpty(inRank(index));
+  }
 }
 
 SGDVarUpdateOp::SGDVarUpdateOp(TensorId varId_, const Op::Settings &settings_)
