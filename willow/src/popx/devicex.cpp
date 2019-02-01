@@ -1128,8 +1128,8 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
   auto f = [&sq, tensor, this]() {
     logging::devicex::debug("Adding poplar::program::Copy from host " +
                             tensor->id);
-    sq.add(poplar::program::Copy(fromHostStreams.at(tensor->id),
-                                 tensors.get(tensor->id)));
+    sq.add(poplar::program::Copy(
+        fromHostStreams.at(tensor->id), tensors.get(tensor->id), true));
   };
 
   return {-1e6, // writes to device: always as late as possible
