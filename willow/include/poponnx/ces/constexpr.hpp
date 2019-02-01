@@ -4,6 +4,7 @@
 #include <map>
 #include <poponnx/attributes.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/half.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/tensorinfo.hpp>
 
@@ -102,6 +103,7 @@ std::vector<char> ConstExprOp::callOpFunctor(DataType dtype, Args &&... args) {
     return OpFunctor().template operator()<uint8_t>(
         std::forward<Args>(args)...);
   case DataType::FLOAT16:
+    return OpFunctor().template operator()<Half>(std::forward<Args>(args)...);
   case DataType::BOOL:
   case DataType::BFLOAT16:
   case DataType::COMPLEX64:

@@ -13,7 +13,6 @@ public:
   void insertOutput() final;
 
 private:
-  template <typename T> std::vector<char> slice();
   static SliceImpl createSliceImpl(const onnx::NodeProto &n);
   std::vector<Slice> getAllSlices();
 

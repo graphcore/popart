@@ -88,40 +88,34 @@ std::vector<Slice> ConstExprSlice::getAllSlices() {
   return slices;
 }
 
-template <typename T> std::vector<char> ConstExprSlice::slice() {
-  auto input   = atInIndex(0);
-  auto outInfo = impl.createOutShape(atInIndex(0)->info);
+class SliceFunctor {
+public:
+  template <typename T>
+  std::vector<char> operator()(Tensor &input,
+                               const TensorInfo &outInfo,
+                               const std::vector<Slice> &slices) {
+    std::vector<char> v_out(outInfo.nbytes());
+    T *output = reinterpret_cast<T *>(v_out.data());
+    NDArray<T> data0(reinterpret_cast<T *>(input.tensorData()->data()),
+                     input.info);
 
-  std::vector<char> v_out(outInfo.nbytes());
-  T *output = reinterpret_cast<T *>(v_out.data());
-  NDArray<T> data0(reinterpret_cast<T *>(input->tensorData()->data()),
-                   input->info);
+    auto indices = IndicesIter(slices);
+    for (int64_t i = 0; i < outInfo.nelms(); i++) {
+      output[i] = data0.at(*indices);
+      indices++;
+    }
 
-  auto slices = getAllSlices();
-
-  auto indices = IndicesIter(slices);
-  for (int64_t i = 0; i < outInfo.nelms(); i++) {
-    output[i] = data0.at(*indices);
-    indices++;
+    return v_out;
   }
-
-  return v_out;
-}
+};
 
 void ConstExprSlice::insertOutput() {
   auto outInfo = impl.createOutShape(atInIndex(0)->info);
+  Tensor *in0  = atInIndex(0);
 
-  std::vector<char> data_;
-  Tensor *in0 = atInIndex(0);
-
-  if (in0->info.dataType() == DataType::FLOAT) {
-    data_ = slice<float>();
-  } else {
-    throw error("Currently ConstExprSlice does not support type {}",
-                in0->info.data_type());
-  }
-
-  addConstInitTensor(atOutIndex0(), outInfo, data_.data());
+  auto data = callOpFunctor<SliceFunctor>(
+      in0->info.dataType(), *in0, outInfo, getAllSlices());
+  addConstInitTensor(atOutIndex0(), outInfo, data.data());
 }
 
 } // namespace poponnx

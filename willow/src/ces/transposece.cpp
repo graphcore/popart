@@ -17,37 +17,40 @@ public:
   NDIndices ndindices;
 };
 
-// transpose a tensor
-template <typename T>
-std::vector<char> transpose(Tensor *in0, const Shape &perm) {
+class TransposeFunctor {
+public:
+  // transpose a tensor
+  template <typename T>
+  std::vector<char> operator()(Tensor *in0, const Shape &perm) {
 
-  Shape shape;
-  for (auto d : perm) {
-    shape.push_back(in0->info.shape()[d]);
-  }
-
-  TensorInfo outInfo(in0->info.data_type(), shape);
-  std::vector<char> v_out(outInfo.nbytes());
-  NDArray<T> output(reinterpret_cast<T *>(v_out.data()), outInfo);
-
-  NDArray<T> data0(static_cast<T *>(in0->tensorData()->data()), in0->info);
-
-  for (int64_t i = 0; i < outInfo.nelms(); ++i) {
-    // the N-dimensional indices in the output tensor
-    auto indices = data0.ndindices.unflatten(i);
-
-    // re-arrange the indices according to perm
-    Shape pindices;
+    Shape shape;
     for (auto d : perm) {
-      pindices.push_back(indices[d]);
+      shape.push_back(in0->info.shape()[d]);
     }
 
-    // Move the value
-    output.at(pindices) = data0.at(indices);
-  }
+    TensorInfo outInfo(in0->info.data_type(), shape);
+    std::vector<char> v_out(outInfo.nbytes());
+    NDArray<T> output(reinterpret_cast<T *>(v_out.data()), outInfo);
 
-  return v_out;
-}
+    NDArray<T> data0(static_cast<T *>(in0->tensorData()->data()), in0->info);
+
+    for (int64_t i = 0; i < outInfo.nelms(); ++i) {
+      // the N-dimensional indices in the output tensor
+      auto indices = data0.ndindices.unflatten(i);
+
+      // re-arrange the indices according to perm
+      Shape pindices;
+      for (auto d : perm) {
+        pindices.push_back(indices[d]);
+      }
+
+      // Move the value
+      output.at(pindices) = data0.at(indices);
+    }
+
+    return v_out;
+  }
+};
 
 void ConstExprTranspose::insertOutput() {
   std::vector<char> data_;
@@ -82,21 +85,8 @@ void ConstExprTranspose::insertOutput() {
   }
 
   TensorInfo outInfo(in0->info.data_type(), outShape);
-  if (in0->info.dataType() == DataType::INT64) {
-    data_ = transpose<int64_t>(in0, perm);
-  } else if (in0->info.dataType() == DataType::INT32) {
-    data_ = transpose<int>(in0, perm);
-  } else if (in0->info.dataType() == DataType::FLOAT) {
-    data_ = transpose<float>(in0, perm);
-  } else if (in0->info.dataType() == DataType::FLOAT16) {
-    // any type which is 16-bits will suffice here, using uint16_t
-    data_ = transpose<uint16_t>(in0, perm);
-  } else {
-    throw error("Currently ConstExprTranspose does not support type {}",
-                in0->info.data_type());
-  }
-
-  addConstInitTensor(atOutIndex0(), outInfo, data_.data());
+  auto data = callOpFunctor<TransposeFunctor>(in0->info.dataType(), in0, perm);
+  addConstInitTensor(atOutIndex0(), outInfo, data.data());
 }
 
 } // namespace poponnx
