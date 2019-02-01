@@ -413,6 +413,75 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Add).size() == 0);
 }
 
+BOOST_AUTO_TEST_CASE(ConstExprTest_Add2) {
+  // Testing ConstExpr folding on an input tensor whose consumer
+  // has another input that cannot be removed by ConstExpr folding
+
+  // Model from the builder:
+  //
+  // v0 ----|
+  //        |--[add]-- a0 --|
+  //        |               |
+  // c0 --|-|               |--[add]-- o
+  //      |                 |
+  //      |--[add]---- a1 --|
+  // c1 --|
+  //
+  // Expected outcome after ConstExpr folding :
+  //
+  // v0 ---|
+  //       |--[add]-- a0 --|
+  // c0 ---|               |--[add]-- o
+  //                       |
+  // a1 -------------------|
+  //
+
+  // consts
+  TensorInfo c0Shape{"FLOAT", std::vector<int64_t>{2, 2}};
+  float c0Vals[2 * 2]  = {2};
+  ConstVoidData c0Data = {c0Vals, c0Shape};
+
+  TensorInfo c1Shape{"FLOAT", std::vector<int64_t>{2, 2}};
+  float c1Vals[2 * 2]  = {3};
+  ConstVoidData c1Data = {c1Vals, c1Shape};
+
+  // input
+  TensorInfo inputInfo{"FLOAT", std::vector<int64_t>{2, 2}};
+
+  // Build an onnx model
+  auto builder = Builder::create();
+
+  auto v0Id = builder->addInputTensor(inputInfo);
+  auto c0Id = builder->constant(c0Data, "c0Data");
+  auto c1Id = builder->constant(c1Data, "c1Data");
+
+  auto a0 = builder->add({v0Id, c0Id}, "a0");
+  auto a1 = builder->add({c0Id, c1Id}, "a1");
+
+  auto o = builder->add({a0, a1}, "o");
+  builder->addOutputTensor(o);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR, adding outId as an anchor
+  auto art      = AnchorReturnType("ALL");
+  auto dataFlow = DataFlow(1, {{o, art}});
+
+  Ir ir;
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              {}, // no loss
+              {}, // no optimizer
+              {}, // no SessionOptions
+              Patterns({PatternType::POSTNREPL})});
+
+  // Check that the producer of a1 Add Op is has been removed from the IR
+  // by ConstExpr folding
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Add).size() == 2);
+}
+
 BOOST_AUTO_TEST_CASE(ConstExprTest_Slice0) {
   // clang-format off
   //

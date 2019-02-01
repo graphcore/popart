@@ -447,8 +447,10 @@ void Ir::verifyConstExprFolding() const {
       }
     }
     if (shouldHaveFoldedTensor) {
-      throw error("ConstExpr folding has failed to remove input tensor {}",
-                  tensor->id);
+      logging::ir::warn(
+          "ConstExpr folding has failed to remove input tensor {}, even though "
+          "none of the root inputs to its consumers are variable tensors",
+          tensor->id);
     }
   }
 }
