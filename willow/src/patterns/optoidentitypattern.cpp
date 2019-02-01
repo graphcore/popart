@@ -13,8 +13,8 @@
 namespace poponnx {
 
 bool OpToIdentityPattern::matches(Op *op) const {
-  // TODO : T6634  Replace the if statements with a virtual call to the op to determine if it
-  // can be replaced by the identity op
+  // TODO : T6634  Replace the if statements with a virtual call to the op to
+  // determine if it can be replaced by the identity op
 
   // A reduce op that doesn't reduce anything
 
@@ -55,8 +55,8 @@ bool OpToIdentityPattern::matches(Op *op) const {
     return true;
   }
 
-  // Dropout in testing mode can be replaced by the identity 
-  if(!op->getIr().isTraining()) {
+  // Dropout in testing mode can be replaced by the identity
+  if (!op->getIr().isTraining()) {
     if (op->opid == Onnx::Operators::Dropout_6 ||
         op->opid == Onnx::Operators::Dropout_7) {
       return true;

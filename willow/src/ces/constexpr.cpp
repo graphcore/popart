@@ -3,6 +3,7 @@
 #include <poponnx/ces/addce.hpp>
 #include <poponnx/ces/castce.hpp>
 #include <poponnx/ces/constexpr.hpp>
+#include <poponnx/ces/scalece.hpp>
 #include <poponnx/ces/shapece.hpp>
 #include <poponnx/ces/slicece.hpp>
 #include <poponnx/ces/transposece.hpp>
@@ -61,7 +62,7 @@ void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
     // Constant Operator output and initializer in ONNX models (T6213)
     ir->getTensors().addConstInit(name, &node.attribute(0).t());
   } else if (node.op_type() == "Cast") {
-    CastCe caster(node, ir);
+    ConstExprCast caster(node, ir);
     caster.insertOutput();
   } else if (node.op_type() == "Add") {
     ConstExprAdd adder(node, ir);
@@ -75,7 +76,12 @@ void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
   } else if (node.op_type() == "Slice") {
     ConstExprSlice slicer(node, ir);
     slicer.insertOutput();
-  } else {
+  } else if (node.op_type() == "Scale") {
+    ConstExprScale scaler(node, ir);
+    scaler.insertOutput();
+  }
+
+  else {
     throw error("No ConstExpr implementation of {}. "
                 "Consider what OpType::ADD does (creates a Const Tensor) "
                 "if you would like to implement a ConstExpr",

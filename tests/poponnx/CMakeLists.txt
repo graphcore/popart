@@ -37,7 +37,6 @@ add_poponnx_cpp_unit_test(recomputetest recompute_test.cpp)
 add_poponnx_cpp_unit_test(transformtest transform_test.cpp)
 add_poponnx_cpp_unit_test(syntheticdatatest synthetic_data_test.cpp)
 add_poponnx_cpp_unit_test(viewchangingtest view_changing_test.cpp)
-add_poponnx_cpp_unit_test(constexprtest constexpr_test.cpp)
 add_poponnx_cpp_unit_test(opmanagertest op_manager_test.cpp)
 
 function(add_poponnx_py_unit_test name)
@@ -68,3 +67,4 @@ add_poponnx_py_unit_test(float_to_half_conversion_test)
 #add_poponnx_py_unit_test(allocator_test)
 
 add_subdirectory(operators_test)
+add_subdirectory(constexpr_tests)

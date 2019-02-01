@@ -4,7 +4,7 @@
 
 namespace poponnx {
 
-void CastCe::insertOutput() {
+void ConstExprCast::insertOutput() {
 
   // Obtain the output type
   int64_t i64_to;
@@ -17,10 +17,16 @@ void CastCe::insertOutput() {
   // initialize a container for the output data
   std::vector<char> v_out(outInfo.nbytes());
 
-  // We handle one case here as a proof of concept : INT32 -> FLOAT.
+  if (in0->info.dataType() == dt_to) {
+    std::memcpy(v_out.data(), in0->tensorData()->data(), in0->info.nbytes());
+  }
+
+  // We handle one  interesting case as a proof of concept : INT32 -> FLOAT.
   // To scale this to all possible pairs, we will need a different approach.
   // see T5925
-  if (in0->info.dataType() == DataType::INT32 && dt_to == DataType::FLOAT) {
+  //
+  else if (in0->info.dataType() == DataType::INT32 &&
+           dt_to == DataType::FLOAT) {
     auto input  = static_cast<int *>(in0->tensorData()->data());
     auto output = reinterpret_cast<float *>(v_out.data());
     for (int i = 0; i < outInfo.nelms(); ++i) {
@@ -32,7 +38,8 @@ void CastCe::insertOutput() {
     throw error("Currently no support for casting from " +
                 in0->info.data_type() + " to " + outInfo.data_type());
   }
-  addConstInitTensor(atOutIndex0(), in0->info, v_out.data());
+
+  addConstInitTensor(atOutIndex0(), outInfo, v_out.data());
 }
 
 } // namespace poponnx

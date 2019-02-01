@@ -72,7 +72,7 @@ std::unique_ptr<Op> OpManager::createOp(const OpDomain &opDomain,
 
       // Then find the op with the largest version that is less than the opset
       // version
-      if (it3.first > version && it3.first <= opsetVersion) {
+      if (it3.first >= version && it3.first <= opsetVersion) {
         version = it3.first;
         opInfo  = &it3.second;
       }

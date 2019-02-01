@@ -56,7 +56,7 @@ static OpCreator<ScaleOp> scaleOpCreator(
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t scale = attr.getAttribute<Attributes::Int>("scale", 1);
+      float scale = attr.getAttribute<Attributes::Float>("scale", 1.0f);
 
       return std::unique_ptr<Op>(new ScaleOp(_opid, scale, settings));
     },

@@ -553,8 +553,24 @@ public:
    * \param name Optional identifer for operation
    * \return The name of the result tensor
    */
+
   TensorId relu(const std::vector<TensorId> &args,
                 const std::string &name = {});
+
+  /**
+   * Add the scale operator to the model
+   *
+   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Scale
+   *
+   * \param args The tensor argument
+   * \param factor The factor by which to scale the tensor
+   * \param name Optional identifer for operation
+   * \return The name of the result tensor
+   */
+
+  TensorId scale(const std::vector<TensorId> &args,
+                 float factor,
+                 const std::string &name = {});
 
   /**
    * Add the scatter operator to the model

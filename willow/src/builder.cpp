@@ -278,6 +278,13 @@ TensorId Builder::relu(const std::vector<TensorId> &args,
   return impl_->op(Onnx::AiOnnx::OpSet9::Relu, args, {}, name)[0];
 }
 
+TensorId Builder::scale(const std::vector<TensorId> &args,
+                        float factor,
+                        const std::string &name) {
+  return impl_->op(
+      Onnx::AiOnnx::OpSet9::Scale, args, {{"scale", factor}}, name)[0];
+}
+
 TensorId Builder::scatter(const std::vector<TensorId> args,
                           int64_t axis,
                           const std::string &name) {

@@ -5,9 +5,9 @@
 
 namespace poponnx {
 
-class CastCe : public ConstExprOp {
+class ConstExprCast : public ConstExprOp {
 public:
-  CastCe(const onnx::NodeProto &n, Ir *i) : ConstExprOp(n, i) {}
+  ConstExprCast(const onnx::NodeProto &n, Ir *i) : ConstExprOp(n, i) {}
   void insertOutput() final;
 };
 } // namespace poponnx
