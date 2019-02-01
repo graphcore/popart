@@ -53,8 +53,15 @@ try:
 except ValueError:
     print("Onnx model path: ", onnx_model, " doesn't exist")
 
+# TODO: change to not use builder when T6675 is complete
+builder = poponnx.Builder(onnx_model)
+graph_transformer = poponnx.GraphTransformer(builder.getModelProto())
+graph_transformer.convertAllFixedPointInitializersToConstants()
+
 # Create forward pass session
-session = poponnx.Session(fnModel=onnx_model, dataFeed=poponnx.DataFlow(1, {}))
+session = poponnx.Session(
+    fnModel=graph_transformer.getModelProto(),
+    dataFeed=poponnx.DataFlow(1, {}))
 
 session.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
 
