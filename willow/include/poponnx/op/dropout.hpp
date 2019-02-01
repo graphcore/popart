@@ -19,7 +19,7 @@ public:
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
-  void setup();
+  void setup() override;
 
   void appendAttributes(std::stringstream &ss,
                         const std::string &tab) const override;

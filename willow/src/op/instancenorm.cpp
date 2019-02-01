@@ -20,7 +20,6 @@ std::unique_ptr<Op> InstanceNormOp::clone() const {
 std::vector<std::unique_ptr<Op>> InstanceNormOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
   throw error("GradOps not support for InstanceNorm");
-  return upops;
 }
 
 void InstanceNormOp::setup() {
