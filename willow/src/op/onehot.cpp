@@ -4,6 +4,7 @@
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensors.hpp>
+#include <poponnx/typefunctor.hpp>
 
 namespace poponnx {
 
@@ -62,42 +63,8 @@ void OnehotOp::connectInTensor(InIndex inIndex, TensorId tenId) {
       throw error("The depth tensor should be rank 0 in OneHot");
     }
 
-    switch (depthTensor->info.dataType()) {
-
-    case DataType::UINT32:
-      onehotAxisDim = static_cast<uint32_t *>(depthTensorData->data())[0];
-      break;
-    case DataType::UINT64:
-      onehotAxisDim = static_cast<uint64_t *>(depthTensorData->data())[0];
-      break;
-    case DataType::INT32:
-      onehotAxisDim = static_cast<int32_t *>(depthTensorData->data())[0];
-      break;
-    case DataType::INT16:
-      onehotAxisDim = static_cast<int16_t *>(depthTensorData->data())[0];
-      break;
-    case DataType::INT8:
-      onehotAxisDim = static_cast<int8_t *>(depthTensorData->data())[0];
-      break;
-    case DataType::UINT8:
-      onehotAxisDim = static_cast<uint8_t *>(depthTensorData->data())[0];
-      break;
-    case DataType::UINT16:
-      onehotAxisDim = static_cast<uint16_t *>(depthTensorData->data())[0];
-      break;
-    case DataType::INT64:
-      onehotAxisDim = static_cast<int64_t *>(depthTensorData->data())[0];
-      break;
-    case DataType::FLOAT:
-      onehotAxisDim = reinterpret_cast<float *>(depthTensorData->data())[0];
-      break;
-    case DataType::DOUBLE:
-      onehotAxisDim = reinterpret_cast<double *>(depthTensorData->data())[0];
-      break;
-    case DataType::FLOAT16:
-    default:
-      throw error("Unsupported type for depth ({})", depthTensor->info);
-    }
+    onehotAxisDim = typefunctor::get<typefunctor::Int64FromVoid, int64_t>(
+        depthTensor->info.dataType(), depthTensorData->data());
   } else {
     defaultConnectInTensor(inIndex, tenId);
   }
@@ -151,7 +118,7 @@ static OpCreator<OnehotOp> onehotOpCreator(
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
-      float axis = attr.getAttribute<Attributes::Int>("axis", -1);
+      int64_t axis = attr.getAttribute<Attributes::Int>("axis", -1);
 
       return std::unique_ptr<Op>(new OnehotOp(_opid, axis, settings));
     },

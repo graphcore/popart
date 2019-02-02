@@ -32,7 +32,8 @@ void OnehotOpx::grow(poplar::program::Sequence &prog) const {
 
   // roll the one-hot dimension to the end, if needed
   if (onehotOp.getAxis() != -1) {
-    output = output.dimRoll(onehotOp.getAxis(), output.rank() - 1);
+    output = output.dimRoll(static_cast<unsigned>(onehotOp.getAxis()),
+                            output.rank() - 1);
   }
 
   // flatten all but one-hot dimension so we are left with a 2d tensor
@@ -69,7 +70,8 @@ void OnehotOpx::grow(poplar::program::Sequence &prog) const {
 
   // roll the one-hot dimension back to axis, if needed
   if (onehotOp.getAxis() != -1) {
-    output = output.dimRoll(output.rank() - 1, onehotOp.getAxis());
+    output = output.dimRoll(output.rank() - 1,
+                            static_cast<unsigned>(onehotOp.getAxis()));
   }
 
   // Done
@@ -89,7 +91,8 @@ void OnehotGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // roll the one-hot dimension to the end, if needed
   if (onehotGradOp.getAxis() != -1) {
-    gradInput = gradInput.dimRoll(onehotGradOp.getAxis(), gradInput.rank() - 1);
+    gradInput = gradInput.dimRoll(static_cast<unsigned>(onehotGradOp.getAxis()),
+                                  gradInput.rank() - 1);
   }
 
   // flatten all but one-hot axis

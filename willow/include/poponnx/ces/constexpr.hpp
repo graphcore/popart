@@ -4,9 +4,9 @@
 #include <map>
 #include <poponnx/attributes.hpp>
 #include <poponnx/error.hpp>
-#include <poponnx/half.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/tensorinfo.hpp>
+#include <poponnx/typefunctor.hpp>
 
 namespace poponnx {
 
@@ -74,47 +74,8 @@ private:
 
 template <typename OpFunctor, typename... Args>
 std::vector<char> ConstExprOp::callOpFunctor(DataType dtype, Args &&... args) {
-  switch (dtype) {
-  case DataType::DOUBLE:
-    return OpFunctor().template operator()<double>(std::forward<Args>(args)...);
-  case DataType::FLOAT:
-    return OpFunctor().template operator()<float>(std::forward<Args>(args)...);
-  case DataType::INT64:
-    return OpFunctor().template operator()<int64_t>(
-        std::forward<Args>(args)...);
-  case DataType::INT32:
-    return OpFunctor().template operator()<int32_t>(
-        std::forward<Args>(args)...);
-  case DataType::INT16:
-    return OpFunctor().template operator()<int16_t>(
-        std::forward<Args>(args)...);
-  case DataType::INT8:
-    return OpFunctor().template operator()<int8_t>(std::forward<Args>(args)...);
-  case DataType::UINT64:
-    return OpFunctor().template operator()<uint64_t>(
-        std::forward<Args>(args)...);
-  case DataType::UINT32:
-    return OpFunctor().template operator()<uint32_t>(
-        std::forward<Args>(args)...);
-  case DataType::UINT16:
-    return OpFunctor().template operator()<uint16_t>(
-        std::forward<Args>(args)...);
-  case DataType::UINT8:
-    return OpFunctor().template operator()<uint8_t>(
-        std::forward<Args>(args)...);
-  case DataType::FLOAT16:
-    return OpFunctor().template operator()<Half>(std::forward<Args>(args)...);
-  case DataType::BOOL:
-  case DataType::BFLOAT16:
-  case DataType::COMPLEX64:
-  case DataType::COMPLEX128:
-  case DataType::STRING:
-  case DataType::UNDEFINED:
-  default:
-    throw error("functor {} does not support DataType::{}",
-                typeid(OpFunctor).name(),
-                getDataTypeInfoMap().at(dtype).name());
-  }
+  return typefunctor::get<OpFunctor, std::vector<char>>(
+      dtype, std::forward<Args>(args)...);
 }
 
 } // namespace poponnx
