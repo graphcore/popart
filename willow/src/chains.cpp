@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <poponnx/chains.hpp>
 #include <poponnx/error.hpp>
 
