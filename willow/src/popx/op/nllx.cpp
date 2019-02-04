@@ -69,7 +69,8 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   // inverse probabilities, we take max(eps, p) to make division safe
   float eps       = 1e-10f;
   auto smallConst = graph().addConstant(probs.elementType(), {1}, eps);
-  auto safeProbs  = popops::map(graph(),
+  graph().setTileMapping(smallConst, 0);
+  auto safeProbs = popops::map(graph(),
                                popops::expr::BinaryOpType::MAXIMUM,
                                smallConst,
                                probs,
