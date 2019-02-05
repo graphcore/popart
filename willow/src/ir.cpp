@@ -183,7 +183,15 @@ void Ir::setOnnxModel(const onnx::ModelProto &model) {
   onnxModel.reset(new onnx::ModelProto(model));
 }
 
-void Ir::setDataFlow(const DataFlow &df) { dataFlow = df; }
+void Ir::setDataFlow(const DataFlow &df) {
+  // Inference and evaluation modes require an anchor
+  if (!canTrain() && df.nAnchors() == 0) {
+    throw error("User must specify an anchor tensor when doing inference or "
+                "evalulation.");
+  } else {
+    dataFlow = df;
+  }
+}
 
 void Ir::setUserOptions(const SessionOptions &flags) { userOptions = flags; }
 void Ir::setInputShapeInfo(const InputShapeInfo &info) {
@@ -462,14 +470,6 @@ void Ir::prepare(const IrBundle &gb) {
     throw error("Ir::prepare called more than once");
   }
 
-  setDataFlow(gb.dataFlow);
-  setUserOptions(gb.userOptions);
-  setInputShapeInfo(gb.inputShapeInfo);
-  setPatterns(gb.patterns);
-  setOnnxModel(gb.modelProto);
-
-  enableTransform(Recompute::id(), userOptions.enableRecomputation);
-
   // Require gb.losses.empty() => !gb.optimizer
   if (gb.losses.empty() && gb.optimizer) {
     throw error("An optimizer is set without any losses");
@@ -482,6 +482,14 @@ void Ir::prepare(const IrBundle &gb) {
   } else {
     setExecutionMode(ExecutionMode::EVALUATION);
   }
+
+  setDataFlow(gb.dataFlow);
+  setUserOptions(gb.userOptions);
+  setInputShapeInfo(gb.inputShapeInfo);
+  setPatterns(gb.patterns);
+  setOnnxModel(gb.modelProto);
+
+  enableTransform(Recompute::id(), userOptions.enableRecomputation);
 
   setLosses(gb.losses);
 

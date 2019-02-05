@@ -55,13 +55,14 @@ except ValueError:
 
 # TODO: change to not use builder when T6675 is complete
 builder = poponnx.Builder(onnx_model)
+output = builder.getOutputTensorIds()[0]
 graph_transformer = poponnx.GraphTransformer(builder.getModelProto())
 graph_transformer.convertAllFixedPointInitializersToConstants()
 
 # Create forward pass session
 session = poponnx.Session(
     fnModel=graph_transformer.getModelProto(),
-    dataFeed=poponnx.DataFlow(1, {}))
+    dataFeed=poponnx.DataFlow(1, {output: poponnx.AnchorReturnType("ALL")}))
 
 session.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
 
