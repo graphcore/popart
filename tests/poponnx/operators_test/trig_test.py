@@ -9,7 +9,7 @@ def test_sin(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.sin([i1])
+        o = builder.aiOnnx.sin([i1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -27,7 +27,7 @@ def test_sin_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.sin([i1])
+        o = builder.aiOnnx.sin([i1])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -48,7 +48,7 @@ def test_cos(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.cos([i1])
+        o = builder.aiOnnx.cos([i1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -66,7 +66,7 @@ def test_cos_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.cos([i1])
+        o = builder.aiOnnx.cos([i1])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -87,7 +87,7 @@ def test_tan(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.tan([i1])
+        o = builder.aiOnnx.tan([i1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -106,7 +106,7 @@ def test_tan_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.tan([i1])
+        o = builder.aiOnnx.tan([i1])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -130,7 +130,7 @@ def test_cosh(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.cosh([i1])
+        o = builder.aiOnnx.cosh([i1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -149,7 +149,7 @@ def test_cosh_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.cosh([i1])
+        o = builder.aiOnnx.cosh([i1])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -170,7 +170,7 @@ def test_tanh(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.tanh([i1])
+        o = builder.aiOnnx.tanh([i1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -188,7 +188,7 @@ def test_tanh_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.tanh([i1])
+        o = builder.aiOnnx.tanh([i1])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 

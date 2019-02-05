@@ -94,7 +94,7 @@ static OpCreator<GatherOp> gatherOpCreator(
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t axis = attr.getAttribute<Attributes::Int>("axis");
+      int64_t axis = attr.getAttribute<Attributes::Int>("axis", 0);
 
       return std::unique_ptr<Op>(new GatherOp(_opid, axis, settings));
     },

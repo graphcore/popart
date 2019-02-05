@@ -52,13 +52,14 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
   ConstVoidData i0cv = {i0.data(), {"INT32", std::vector<int64_t>{K, 1}}};
   ConstVoidData i1cv = {i1.data(), {"INT32", std::vector<int64_t>{1, N}}};
   auto builder       = Builder::create();
+  auto aiOnnx        = builder->aiOnnxOpset9();
   // The two fixed-point tensors which are added together are Constants
-  auto i0Id   = builder->constant(i0cv, "i0cv");
-  auto i1Id   = builder->constant(i1cv, "i1cv");
+  auto i0Id   = aiOnnx.constant(i0cv, "i0cv");
+  auto i1Id   = aiOnnx.constant(i1cv, "i1cv");
   auto dataId = builder->addInputTensor(dataInfo);
-  auto i01Id  = builder->add({i0Id, i1Id});
-  auto castId = builder->cast({i01Id}, DataType::FLOAT);
-  auto outId  = builder->matmul({dataId, castId});
+  auto i01Id  = aiOnnx.add({i0Id, i1Id});
+  auto castId = aiOnnx.cast({i01Id}, DataType::FLOAT);
+  auto outId  = aiOnnx.matmul({dataId, castId});
   builder->addOutputTensor(outId);
 
   auto proto      = builder->getModelProto();

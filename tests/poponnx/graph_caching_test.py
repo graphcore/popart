@@ -17,8 +17,14 @@ def test_convolution_cached_by_default():
 
     i1 = builder.addInputTensor(data_shape)
     i2 = builder.addInputTensor(filt_shape)
-    c1 = builder.convolution([i1, i2], [1, 1], [1, 1, 1, 1], [1, 1], 1)
-    o = builder.convolution([c1, i2], [1, 1], [1, 1, 1, 1], [1, 1], 1)
+    c1 = builder.aiOnnx.conv([i1, i2],
+                             dilations=[1, 1],
+                             pads=[1, 1, 1, 1],
+                             strides=[1, 1])
+    o = builder.aiOnnx.conv([c1, i2],
+                            dilations=[1, 1],
+                            pads=[1, 1, 1, 1],
+                            strides=[1, 1])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -82,12 +88,12 @@ def test_convolution_cached_set_to_true():
 
     i1 = builder.addInputTensor(data_shape)
     i2 = builder.addInputTensor(filt_shape)
-    c1 = builder.convolution([i1, i2], [1, 1], [1, 1, 1, 1], [1, 1],
-                             1,
-                             cacheOperation=True)
-    o = builder.convolution([c1, i2], [1, 1], [1, 1, 1, 1], [1, 1],
-                            1,
-                            cacheOperation=True)
+    c1 = builder.aiOnnx.conv([i1, i2], [1, 1], 1, [], [1, 1, 1, 1], [1, 1])
+    builder.addNodeAttribute("__cache_operation", True, set(c1))
+
+    o = builder.aiOnnx.conv([c1, i2], [1, 1], 1, [], [1, 1, 1, 1], [1, 1])
+    builder.addNodeAttribute("__cache_operation", True, set(o))
+
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -151,12 +157,12 @@ def test_convolution_cached_set_to_false():
 
     i1 = builder.addInputTensor(data_shape)
     i2 = builder.addInputTensor(filt_shape)
-    c1 = builder.convolution([i1, i2], [1, 1], [1, 1, 1, 1], [1, 1],
-                             1,
-                             cacheOperation=False)
-    o = builder.convolution([c1, i2], [1, 1], [1, 1, 1, 1], [1, 1],
-                            1,
-                            cacheOperation=False)
+    c1 = builder.aiOnnx.conv([i1, i2], [1, 1], 1, [], [1, 1, 1, 1], [1, 1])
+    builder.addNodeAttribute("__cache_operation", False, set(c1))
+
+    o = builder.aiOnnx.conv([c1, i2], [1, 1], 1, [], [1, 1, 1, 1], [1, 1])
+    builder.addNodeAttribute("__cache_operation", False, set(o))
+
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -221,11 +227,13 @@ def test_convolution_some_convolutions_cached():
 
     i1 = builder.addInputTensor(data_shape)
     i2 = builder.addInputTensor(filt_shape)
-    c1 = builder.convolution([i1, i2], [1, 1], [1, 1, 1, 1], [1, 1], 1)
-    c2 = builder.convolution([c1, i2], [1, 1], [1, 1, 1, 1], [1, 1],
-                             1,
-                             cacheOperation=False)
-    o = builder.convolution([c2, i2], [1, 1], [1, 1, 1, 1], [1, 1], 1)
+    c1 = builder.aiOnnx.conv([i1, i2], [1, 1], 1, [], [1, 1, 1, 1], [1, 1])
+    c2 = builder.aiOnnx.conv([c1, i2], [1, 1], 1, [], [1, 1, 1, 1], [1, 1])
+    builder.addNodeAttribute("__cache_operation", False, set(c2))
+    o = builder.aiOnnx.conv([c2, i2],
+                            dilations=[1, 1],
+                            pads=[1, 1, 1, 1],
+                            strides=[1, 1])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -290,15 +298,18 @@ def test_convolution_disable_all():
 
     i1 = builder.addInputTensor(data_shape)
     i2 = builder.addInputTensor(filt_shape)
-    c1 = builder.convolution([i1, i2], [1, 1], [1, 1, 1, 1], [1, 1],
-                             1,
-                             cacheOperation=True)
-    c2 = builder.convolution([c1, i2], [1, 1], [1, 1, 1, 1], [1, 1],
-                             1,
-                             cacheOperation=True)
-    o = builder.convolution([c2, i2], [1, 1], [1, 1, 1, 1], [1, 1],
-                            1,
-                            cacheOperation=True)
+    c1 = builder.aiOnnx.conv([i1, i2],
+                             dilations=[1, 1],
+                             pads=[1, 1, 1, 1],
+                             strides=[1, 1])
+    c2 = builder.aiOnnx.conv([c1, i2],
+                             dilations=[1, 1],
+                             pads=[1, 1, 1, 1],
+                             strides=[1, 1])
+    o = builder.aiOnnx.conv([c2, i2],
+                            dilations=[1, 1],
+                            pads=[1, 1, 1, 1],
+                            strides=[1, 1])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()

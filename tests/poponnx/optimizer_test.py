@@ -14,8 +14,14 @@ def trainSession(anchors, optimizer, stepSize):
     filtInit = np.ones([2, 2, 3, 3], dtype=np.float32)
     i2 = builder.addInitializedInputTensor(filtInit)
 
-    c1 = builder.convolution([i1, i2], [1, 1], [1, 1, 1, 1], [1, 1], 1)
-    o = builder.convolution([c1, i2], [1, 1], [1, 1, 1, 1], [1, 1], 1)
+    c1 = builder.aiOnnx.conv([i1, i2],
+                             dilations=[1, 1],
+                             pads=[1, 1, 1, 1],
+                             strides=[1, 1])
+    o = builder.aiOnnx.conv([c1, i2],
+                            dilations=[1, 1],
+                            pads=[1, 1, 1, 1],
+                            strides=[1, 1])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()

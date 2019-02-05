@@ -39,10 +39,10 @@ def test_batchnorm_train_0_errorcases(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var)
-        o = builder.batchnormalizationTraining(i1, iScale, iB, iMean, iVar,
-                                               epsilon, momentum)
+        (o_y, ) = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], 1, epsilon, momentum)
 
-        return [o.y]
+        return [o_y]
 
     def init_builder_case1(builder):
 
@@ -51,10 +51,10 @@ def test_batchnorm_train_0_errorcases(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var)
-        o = builder.batchnormalizationTraining(i1, iScale, iB, iMean, iVar,
-                                               epsilon, momentum)
+        (o_y, ) = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], 1, epsilon, momentum)
 
-        return [o.y]
+        return [o_y]
 
     def init_builder_case2(builder):
 
@@ -63,10 +63,10 @@ def test_batchnorm_train_0_errorcases(op_tester):
         iB = builder.addInputTensor(b_2)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var)
-        o = builder.batchnormalizationTraining(i1, iScale, iB, iMean, iVar,
-                                               epsilon, momentum)
+        (o_y, ) = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], 1, epsilon, momentum)
 
-        return [o.y]
+        return [o_y]
 
     def init_builder_case3(builder):
 
@@ -75,10 +75,10 @@ def test_batchnorm_train_0_errorcases(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean_2)
         iVar = builder.addInputTensor(var)
-        o = builder.batchnormalizationTraining(i1, iScale, iB, iMean, iVar,
-                                               epsilon, momentum)
+        (o_y, ) = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], 1, epsilon, momentum)
 
-        return [o.y]
+        return [o_y]
 
     def init_builder_case4(builder):
 
@@ -87,10 +87,10 @@ def test_batchnorm_train_0_errorcases(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var_2)
-        o = builder.batchnormalizationTraining(i1, iScale, iB, iMean, iVar,
-                                               epsilon, momentum)
+        (o_y, ) = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], 1, epsilon, momentum)
 
-        return [o.y]
+        return [o_y]
 
     op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
 
@@ -150,14 +150,14 @@ def test_batchnorm_train_0(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var)
-        o = builder.batchnormalizationTraining(i1, iScale, iB, iMean, iVar,
-                                               epsilon, momentum)
+        o_y, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
 
-        builder.addOutputTensor(o.y)
-        builder.addOutputTensor(o.mean)
-        builder.addOutputTensor(o.var)
+        builder.addOutputTensor(o_y)
+        builder.addOutputTensor(o_mean)
+        builder.addOutputTensor(o_var)
 
-        return [o.y, 'd__' + i1, 'd__' + o.y]
+        return [o_y, 'd__' + i1, 'd__' + o_y]
 
     def reference(ref_data):
         _input = torch.tensor(d1, requires_grad=True)
@@ -205,13 +205,13 @@ def test_batchnorm_train_1(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var)
-        o = builder.batchnormalizationTraining(i1, iScale, iB, iMean, iVar,
-                                               epsilon, momentum)
+        o_y, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
 
-        builder.addOutputTensor(o.y)
-        builder.addOutputTensor(o.mean)
-        builder.addOutputTensor(o.var)
-        return [o.y, 'd__' + i1, 'd__' + o.y]
+        builder.addOutputTensor(o_y)
+        builder.addOutputTensor(o_mean)
+        builder.addOutputTensor(o_var)
+        return [o_y, 'd__' + i1, 'd__' + o_y]
 
     def reference(ref_data):
         _input = torch.tensor(d1, requires_grad=False)
@@ -263,17 +263,17 @@ def test_batchnorm_train_2(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var)
-        o = builder.batchnormalizationTraining(i1, iScale, iB, iMean, iVar,
-                                               epsilon, momentum)
+        o_y, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
 
         for x in range(15):
-            o = builder.batchnormalizationTraining(o.y, iScale, iB, o.mean,
-                                                   o.var, epsilon, momentum)
+            o_y, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
+                [o_y, iScale, iB, o_mean, o_var], 5, epsilon, momentum)
 
-        builder.addOutputTensor(o.y)
-        builder.addOutputTensor(o.mean)
-        builder.addOutputTensor(o.var)
-        return [o.y, o.mean, o.var]
+        builder.addOutputTensor(o_y)
+        builder.addOutputTensor(o_mean)
+        builder.addOutputTensor(o_var)
+        return [o_y, o_mean, o_var]
 
     def reference(ref_data):
         _input = torch.tensor(d1, requires_grad=False)
@@ -326,11 +326,11 @@ def test_batchnorm_train_3(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var)
-        o = builder.batchnormalizationTesting(i1, iScale, iB, iMean, iVar,
-                                              epsilon, momentum)
+        o_y, = builder.aiOnnx.batchnormalization([i1, iScale, iB, iMean, iVar],
+                                                 1, epsilon, momentum)
 
-        builder.addOutputTensor(o)
-        return [o]
+        builder.addOutputTensor(o_y)
+        return [o_y]
 
     def reference(ref_data):
         _input = torch.tensor(d1, requires_grad=False)
@@ -421,10 +421,10 @@ def test_batchnorm_test_0(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var)
-        y = builder.batchnormalizationTesting(i1, iScale, iB, iMean, iVar,
-                                              epsilon, momentum)
-        builder.addOutputTensor(y)
-        return [y]
+        (o_y, ) = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], 1, epsilon, momentum)
+        builder.addOutputTensor(o_y)
+        return [o_y]
 
     def reference(ref_data):
         _input = torch.tensor(d1, requires_grad=False)
@@ -467,10 +467,10 @@ def test_batchnorm_test_1(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var)
-        y = builder.batchnormalizationTesting(i1, iScale, iB, iMean, iVar,
-                                              epsilon, momentum)
-        builder.addOutputTensor(y)
-        return [y]
+        (o_y, ) = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], 1, epsilon, momentum)
+        builder.addOutputTensor(o_y)
+        return [o_y]
 
     def reference(ref_data):
         _input = torch.tensor(d1, requires_grad=False)
@@ -513,10 +513,10 @@ def test_batchnorm_test_2(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var)
-        y = builder.batchnormalizationTesting(i1, iScale, iB, iMean, iVar,
-                                              epsilon, momentum)
-        builder.addOutputTensor(y)
-        return [y]
+        (o_y, ) = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], 1, epsilon, momentum)
+        builder.addOutputTensor(o_y)
+        return [o_y]
 
     def reference(ref_data):
         _input = torch.tensor(d1, requires_grad=False)
@@ -558,10 +558,10 @@ def test_batchnorm_test_3(op_tester):
         iB = builder.addInputTensor(b)
         iMean = builder.addInputTensor(mean)
         iVar = builder.addInputTensor(var)
-        y = builder.batchnormalizationTesting(i1, iScale, iB, iMean, iVar,
-                                              epsilon, momentum)
-        builder.addOutputTensor(y)
-        return [y]
+        (o_y, ) = builder.aiOnnx.batchnormalization(
+            [i1, iScale, iB, iMean, iVar], 1, epsilon, momentum)
+        builder.addOutputTensor(o_y)
+        return [o_y]
 
     def reference(ref_data):
         # In the case the output should match in the input,

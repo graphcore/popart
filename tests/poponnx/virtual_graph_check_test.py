@@ -9,9 +9,9 @@ def test_no_virtual_graph():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
-    o1 = builder.add([i1, i2])
-    o2 = builder.add([i1, i2])
-    o = builder.add([o1, o2])
+    o1 = builder.aiOnnx.add([i1, i2])
+    o2 = builder.aiOnnx.add([i1, i2])
+    o = builder.aiOnnx.add([o1, o2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -30,9 +30,9 @@ def test_all_virtual_graph():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
-    o1 = builder.add([i1, i2])
-    o2 = builder.add([i1, i2])
-    o = builder.add([o1, o2])
+    o1 = builder.aiOnnx.add([i1, i2])
+    o2 = builder.aiOnnx.add([i1, i2])
+    o = builder.aiOnnx.add([o1, o2])
     builder.addOutputTensor(o)
 
     builder.virtualGraph(o1, 0)
@@ -55,9 +55,9 @@ def test_mixed_virtual_graph():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
-    o1 = builder.add([i1, i2])
-    o2 = builder.add([i1, i2])
-    o = builder.add([o1, o2])
+    o1 = builder.aiOnnx.add([i1, i2])
+    o2 = builder.aiOnnx.add([i1, i2])
+    o = builder.aiOnnx.add([o1, o2])
     builder.addOutputTensor(o)
 
     builder.virtualGraph(o1, 0)

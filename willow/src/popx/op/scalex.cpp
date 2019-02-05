@@ -33,7 +33,7 @@ ScaleGradOpx::ScaleGradOpx(Op *op, Devicex *devicex) : ScaleOpx(op, devicex) {
 }
 
 namespace {
-OpxCreator<ScaleOpx> scaleOpxCreator(Onnx::Operators::Scale);
+OpxCreator<ScaleOpx> scaleOpxCreator(Onnx::Operators::Scale_1);
 OpxCreator<ScaleGradOpx> scaleGradOpxCreator(Onnx::GradOperators::ScaleGrad);
 } // namespace
 

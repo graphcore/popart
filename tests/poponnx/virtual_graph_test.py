@@ -12,9 +12,9 @@ def test_virtual_graph():
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
     i3 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
     i4 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
-    o1 = builder.add([i1, i2])
-    o2 = builder.add([i3, i4])
-    o = builder.add([o1, o2])
+    o1 = builder.aiOnnx.add([i1, i2])
+    o2 = builder.aiOnnx.add([i3, i4])
+    o = builder.aiOnnx.add([o1, o2])
     builder.addOutputTensor(o)
 
     builder.virtualGraph(o1, 1)
@@ -46,11 +46,11 @@ def test_virtual_graph2():
     i4 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
 
     with builder.virtualGraph(0):
-        o1 = builder.add([i1, i2])
-        o2 = builder.add([i3, i4])
+        o1 = builder.aiOnnx.add([i1, i2])
+        o2 = builder.aiOnnx.add([i3, i4])
 
     with builder.virtualGraph(1):
-        o = builder.add([o1, o2])
+        o = builder.aiOnnx.add([o1, o2])
 
     builder.addOutputTensor(o)
 
@@ -77,12 +77,12 @@ def test_virtual_graph3():
     i4 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
 
     with builder.virtualGraph(3):
-        o1 = builder.add([i1, i2])
-        o2 = builder.add([i3, i4])
+        o1 = builder.aiOnnx.add([i1, i2])
+        o2 = builder.aiOnnx.add([i3, i4])
 
     with builder.virtualGraph(2):
-        o3 = builder.add([o1, o2])
-        o = builder.add([i1, o3])
+        o3 = builder.aiOnnx.add([o1, o2])
+        o = builder.aiOnnx.add([i1, o3])
 
     builder.addOutputTensor(o)
 

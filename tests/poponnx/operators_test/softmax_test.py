@@ -9,7 +9,7 @@ def test_softmax(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.softmax([i1])
+        o = builder.aiOnnx.softmax([i1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -30,7 +30,7 @@ def test_softmax_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.softmax([i1])
+        o = builder.aiOnnx.softmax([i1])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -89,7 +89,7 @@ def test_softmax_rank3_axis2_grad(op_tester):
 def _test_softmax(op_tester, data, axis):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
-        o = builder.softmax([i1], axis)
+        o = builder.aiOnnx.softmax([i1], axis)
         builder.addOutputTensor(o)
         return [o]
 
@@ -114,7 +114,7 @@ def _test_softmax(op_tester, data, axis):
 def _test_softmax_grad(op_tester, data, axis):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
-        o = builder.softmax([i1], axis)
+        o = builder.aiOnnx.softmax([i1], axis)
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 

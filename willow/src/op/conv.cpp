@@ -69,7 +69,7 @@ int64_t ConvOp::getNOutChans() const { return nOutChans; }
 
 void ConvOp::appendAttributes(std::stringstream &ss,
                               const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
+  HasReceptiveFieldOp::appendAttributes(ss, tab);
   appendAttribute(ss, tab, sCacheOperation, cacheOperation);
 }
 
@@ -133,7 +133,7 @@ static OpCreator<ConvOp>
                     receptiveSettings.setFromAttributes(attr);
 
                     int64_t cacheOperation =
-                        attr.getAttribute<Attributes::Int>(sCacheOperation, 0);
+                        attr.getAttribute<Attributes::Int>(sCacheOperation, 1);
 
                     return std::unique_ptr<Op>(
                         new ConvOp(_opid, cacheOperation, receptiveSettings));

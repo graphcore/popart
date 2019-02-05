@@ -10,11 +10,11 @@ def test_slice_basic(op_tester):
     dummy = np.asarray([[0, 0, 0]], dtype=np.float32)
 
     def init_builder(builder):
-        c = builder.constant(data)
-        s = builder.slice([c], [0, 1], [1, 0], [2, 3])
+        c = builder.aiOnnx.constant(data)
+        s = builder.aiOnnx.slice([c], axes=[0, 1], starts=[1, 0], ends=[2, 3])
 
         i1 = builder.addInputTensor(dummy)
-        o = builder.add([i1, s])
+        o = builder.aiOnnx.add([i1, s])
         builder.addOutputTensor(o)
         return [o]
 
@@ -31,11 +31,14 @@ def test_slice_complex(op_tester):
     dummy = np.zeros((2, 2, 4, 4, 2, 7), dtype=np.float32)
 
     def init_builder(builder):
-        c = builder.constant(data)
-        s = builder.slice([c], [1, 3, 4], [1, 0, 2], [3, 4, 4])
+        c = builder.aiOnnx.constant(data)
+        s = builder.aiOnnx.slice([c],
+                                 axes=[1, 3, 4],
+                                 starts=[1, 0, 2],
+                                 ends=[3, 4, 4])
 
         i1 = builder.addInputTensor(dummy)
-        o = builder.add([i1, s])
+        o = builder.aiOnnx.add([i1, s])
         builder.addOutputTensor(o)
         return [o]
 

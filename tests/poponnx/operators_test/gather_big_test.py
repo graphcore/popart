@@ -10,7 +10,7 @@ def test_gather_big(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.gather([i1, i2], axis)
+        o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
         return [o]
 

@@ -32,14 +32,14 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
 
   // Build an onnx model
   auto builder = Builder::create();
-
+  auto aiOnnx  = builder->aiOnnxOpset9();
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
 
   auto i1 = builder->addInputTensor(shape);
   std::vector<TensorId> tensorIds{i1};
   // Create a chain of identity ops
   for (int i = 0; i < 6; i++) {
-    auto x = builder->identity({tensorIds[tensorIds.size() - 1]});
+    auto x = aiOnnx.identity({tensorIds[tensorIds.size() - 1]});
     tensorIds.push_back(x);
   }
   builder->addOutputTensor(tensorIds.back());
@@ -84,15 +84,16 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
 
   auto input1 = builder->addInputTensor(shape);
   auto input2 = builder->addInputTensor(shape);
 
-  auto padIn    = builder->add({input1, input2});
-  auto padOut   = builder->pad({padIn}, "constant", {0, 0}, 0.0);
-  auto identOut = builder->identity({padOut});
+  auto padIn    = aiOnnx.add({input1, input2});
+  auto padOut   = aiOnnx.pad({padIn}, {0, 0}, "constant", 0.0);
+  auto identOut = aiOnnx.identity({padOut});
 
   builder->addOutputTensor(identOut);
 
@@ -130,15 +131,16 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
 
   auto input1 = builder->addInputTensor(shape);
   auto input2 = builder->addInputTensor(shape);
 
-  auto padIn    = builder->add({input1, input2});
-  auto padOut   = builder->pad({padIn}, "constant", {0, 0}, 0.0);
-  auto identOut = builder->identity({padOut});
+  auto padIn    = aiOnnx.add({input1, input2});
+  auto padOut   = aiOnnx.pad({padIn}, {0, 0}, "constant", 0.0);
+  auto identOut = aiOnnx.identity({padOut});
 
   builder->addOutputTensor(identOut);
 
@@ -175,6 +177,7 @@ BOOST_AUTO_TEST_CASE(GatherToIdentity) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape1{"FLOAT", std::vector<int64_t>{2, 1, 2}};
   TensorInfo shape2{"INT32", std::vector<int64_t>{1}};
@@ -182,7 +185,7 @@ BOOST_AUTO_TEST_CASE(GatherToIdentity) {
   auto input1 = builder->addInputTensor(shape1);
   auto input2 = builder->addInputTensor(shape2);
 
-  auto out = builder->gather({input1, input2}, 1);
+  auto out = aiOnnx.gather({input1, input2}, 1);
 
   builder->addOutputTensor(out);
 
@@ -219,6 +222,7 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{1, 2, 2, 2}};
 
@@ -226,9 +230,9 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
   auto input2 = builder->addInputTensor(shape);
   auto input3 = builder->addInputTensor(shape);
 
-  auto convOut = builder->convolution(
-      {input1, input2, input3}, {1, 1}, {0, 0, 0, 0}, {1, 1}, 1, false);
-  auto identOut = builder->identity({convOut});
+  auto convOut = aiOnnx.conv(
+      {input1, input2, input3}, {1, 1}, 1, {}, {0, 0, 0, 0}, {1, 1});
+  auto identOut = aiOnnx.identity({convOut});
 
   builder->addOutputTensor(identOut);
 
@@ -274,14 +278,15 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
   // () -> [Negate] -> () -> [ReduceSum] -> ()
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
 
   auto input1 = builder->addInputTensor(shape);
   auto input2 = builder->addInputTensor(shape);
 
-  auto subtractOut = builder->sub({input1, input2});
-  auto identOut    = builder->identity({subtractOut});
+  auto subtractOut = aiOnnx.sub({input1, input2});
+  auto identOut    = aiOnnx.identity({subtractOut});
 
   builder->addOutputTensor(identOut);
 
@@ -325,14 +330,15 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
 
   auto input1 = builder->addInputTensor(shape);
   auto input2 = builder->addInputTensor(shape);
 
-  auto identOut   = builder->identity({input1});
-  auto softmaxOut = builder->softmax({identOut});
+  auto identOut   = aiOnnx.identity({input1});
+  auto softmaxOut = aiOnnx.softmax({identOut});
 
   builder->addOutputTensor(softmaxOut);
 
@@ -380,12 +386,13 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
 
   // Build an onnnx model
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
 
   auto input = builder->addInputTensor(shape);
 
-  auto output = builder->reciprocal({input});
+  auto output = aiOnnx.reciprocal({input});
 
   builder->addOutputTensor(output);
 
@@ -435,6 +442,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
 
@@ -445,15 +453,15 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   bool recompute     = true;
   std::string opName = "MyPadOp";
 
-  auto padIn = builder->add({input1, input2});
+  auto padIn = aiOnnx.add({input1, input2});
   builder->virtualGraph(padIn, vgNumber);
 
   // Op to be replaced by pattern
-  auto padOut = builder->pad({padIn}, "constant", {0, 0}, 0.0, opName);
+  auto padOut = aiOnnx.pad({padIn}, {0, 0}, "constant", 0.0, opName);
   builder->virtualGraph(padOut, vgNumber);
   builder->recomputeOutputInBackwardPass(padOut, recompute);
 
-  auto identOut = builder->identity({padOut});
+  auto identOut = aiOnnx.identity({padOut});
   builder->recomputeOutputInBackwardPass(identOut, recompute);
   builder->virtualGraph(identOut, vgNumber);
 

@@ -12,7 +12,7 @@ def inference_add_to_variable(tmpdir, type, np_type):
 
     i1 = builder.addInputTensor(shape)
     i2 = builder.addInitializedInputTensor(np.array([2., 4.], dtype=np_type))
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()

@@ -13,7 +13,7 @@ def test_conversion_basic():
     inInfo = poponnx.TensorInfo("FLOAT", data.shape)
 
     i1 = builder.addInputTensor(inInfo)
-    o = builder.identity([i1])
+    o = builder.aiOnnx.identity([i1])
     builder.addOutputTensor(o)
 
     float_proto = builder.getModelProto()
@@ -34,7 +34,7 @@ def test_conversion_with_mul():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", d1.shape))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", d2.shape))
-    o = builder.mul([i1, i2])
+    o = builder.aiOnnx.mul([i1, i2])
     builder.addOutputTensor(o)
 
     float_proto = builder.getModelProto()
@@ -59,8 +59,8 @@ def test_conversion_with_initializers():
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", d2.shape))
-    c = builder.constant(d1.astype(np.float32))
-    o = builder.add([i1, c])
+    c = builder.aiOnnx.constant(d1.astype(np.float32))
+    o = builder.aiOnnx.add([i1, c])
     builder.addOutputTensor(o)
 
     float_proto = builder.getModelProto()
@@ -88,7 +88,7 @@ def test_conversions_with_mul_numpy():
 
 def _check_anchors(float_anchors, half_anchors):
     for key in float_anchors.keys():
-        print(f"Testing anchor '{key}'")
+        print("Testing anchor '{key}'")
         # using rtol 1e-03 because of the comparison of float32 and float16
         # see `test_conversion_with_mul_numpy`
         assert np.allclose(float_anchors[key], half_anchors[key], rtol=1e-03)

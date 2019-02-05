@@ -13,7 +13,7 @@ def test_add_fp16(tmpdir):
 
     i1 = builder.addInputTensor(shape)
     i2 = builder.addInputTensor(shape)
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -48,7 +48,7 @@ def test_add_variable_fp16(tmpdir):
     i1 = builder.addInputTensor(shape)
     i2 = builder.addInitializedInputTensor(
         np.array([2., 4.], dtype=np.float16))
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -90,13 +90,13 @@ def test_fp16transpose(tmpdir):
     d0_info = poponnx.TensorInfo("FLOAT16", [1, 6])
 
     builder = poponnx.Builder()
-    c0 = builder.constant(c0_data, "c0")
+    c0 = builder.aiOnnx.constant(c0_data, "c0")
     d0 = builder.addInputTensor(d0_info)
 
-    c0_t = builder.transpose([c0], [], "c0_transpose")
-    d0_t = builder.transpose([d0], [], "d0_transpose")
+    c0_t = builder.aiOnnx.transpose([c0], [], "c0_transpose")
+    d0_t = builder.aiOnnx.transpose([d0], [], "d0_transpose")
 
-    o = builder.add([d0_t, c0_t], "add")
+    o = builder.aiOnnx.add([d0_t, c0_t], "add")
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()

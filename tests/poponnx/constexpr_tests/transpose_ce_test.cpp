@@ -32,12 +32,13 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx = builder->aiOnnxOpset9();
 
-  auto constId = builder->constant(constShapeData, "out0ShapeData");
+  auto constId = aiOnnx.constant(constShapeData, "out0ShapeData");
   auto inId    = builder->addInputTensor(inInfo);
 
-  auto outShapeId = builder->transpose({constId}, {});
-  auto out        = builder->add({outShapeId, inId});
+  auto outShapeId = aiOnnx.transpose({constId}, {});
+  auto out        = aiOnnx.add({outShapeId, inId});
   builder->addOutputTensor(out);
 
   auto proto      = builder->getModelProto();
@@ -108,12 +109,13 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx = builder->aiOnnxOpset9();
 
-  auto constId = builder->constant(constShapeData, "constShapeData");
+  auto constId = aiOnnx.constant(constShapeData, "constShapeData");
   auto inId    = builder->addInputTensor(inInfo);
 
-  auto outShapeId = builder->transpose({constId}, {2, 0, 1});
-  auto out        = builder->add({outShapeId, inId});
+  auto outShapeId = aiOnnx.transpose({constId}, {2, 0, 1});
+  auto out        = aiOnnx.add({outShapeId, inId});
   builder->addOutputTensor(out);
 
   auto proto      = builder->getModelProto();

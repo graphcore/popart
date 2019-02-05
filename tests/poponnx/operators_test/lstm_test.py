@@ -17,7 +17,7 @@ def test_lstm(op_tester):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
         i3 = builder.addInputTensor(d3)
-        Y, Y_h, Y_c = builder.lstm([i1, i2, i3])
+        Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3], 3, clip=None)
         builder.addOutputTensor(Y_h)
         return [Y, Y_h, Y_c]
 
@@ -57,10 +57,10 @@ def test_lstm_torch_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
         i3 = builder.addInputTensor(d3)
-        Y, Y_h, Y_c = builder.lstm([i1, i2, i3])
-        Ys = builder.squeeze([Y], [])
-        Y1 = builder.add([Ys, Y_h])
-        Y2 = builder.add([Y1, Y_c])
+        Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3], 3)
+        Ys = builder.aiOnnx.squeeze([Y], [])
+        Y1 = builder.aiOnnx.add([Ys, Y_h])
+        Y2 = builder.aiOnnx.add([Y1, Y_c])
         builder.addOutputTensor(Y2)
         return [Y2, 'd__' + i1, 'd__' + i2, 'd__' + i3, 'd__' + Y2]
 
@@ -124,7 +124,7 @@ def test_lstm_biases(op_tester):
         i2 = builder.addInputTensor(d2)
         i3 = builder.addInputTensor(d3)
         i4 = builder.addInputTensor(d4)
-        Y, Y_h, Y_c = builder.lstm([i1, i2, i3, i4])
+        Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3, i4], 3)
         builder.addOutputTensor(Y_h)
         return [Y, Y_h, Y_c]
 
@@ -167,7 +167,7 @@ def test_lstm_initial_hc(op_tester):
         i5 = builder.addInputTensor(seq_lens)
         i6 = builder.addInputTensor(initial_h)
         i7 = builder.addInputTensor(initial_c)
-        Y, Y_h, Y_c = builder.lstm([i1, i2, i3, i4, i5, i6, i7])
+        Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3, i4, i5, i6, i7], 3)
         builder.addOutputTensor(Y_h)
         return [Y, Y_h, Y_c]
 
@@ -236,10 +236,10 @@ def test_lstm_torch_grad_all_inputs(op_tester):
         i5 = builder.addInputTensor(seq_lens)
         i6 = builder.addInputTensor(initial_h)
         i7 = builder.addInputTensor(initial_c)
-        Y, Y_h, Y_c = builder.lstm([i1, i2, i3, i4, i5, i6, i7])
-        Ys = builder.squeeze([Y], [])
-        Y1 = builder.add([Ys, Y_h])
-        Y2 = builder.add([Y1, Y_c])
+        Y, Y_h, Y_c = builder.aiOnnx.lstm([i1, i2, i3, i4, i5, i6, i7], 3)
+        Ys = builder.aiOnnx.squeeze([Y], [])
+        Y1 = builder.aiOnnx.add([Ys, Y_h])
+        Y2 = builder.aiOnnx.add([Y1, Y_c])
         builder.addOutputTensor(Y2)
         return [
             Y2, 'd__' + i1, 'd__' + i2, 'd__' + i3, 'd__' + i4, 'd__' + i6,

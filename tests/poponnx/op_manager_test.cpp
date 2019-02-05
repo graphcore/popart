@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(OpxManager_Test1) {
 BOOST_AUTO_TEST_CASE(OpManager_Test2) {
 
   // register the new op, (but it is just an AddOp)
-  OpManager::registerOp({"ai_simon", "MyAdd2", 9},
+  OpManager::registerOp({"ai_simon", "MyAdd2", 1},
                         false,
                         [](const OperatorIdentifier &_opid,
                            const Op::Settings &settings,
@@ -74,18 +74,19 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
                         });
 
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
 
   auto input1 = builder->addInputTensor(shape);
   auto input2 = builder->addInputTensor(shape);
 
-  auto customOut = builder->customOp({"ai_simon", "MyAdd2", 9},
+  auto customOut = builder->customOp({"ai_simon", "MyAdd2", 1}, 1,
                                      {input1, input2},
                                      1,
                                      {{"attr1", 42}},
                                      "customOp");
-  auto padOut    = builder->add({input1, input2});
+  auto padOut    = aiOnnx.add({input1, input2});
 
   builder->addOutputTensor(customOut[0]);
 
@@ -108,5 +109,5 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
               Patterns({PatternType::PREUNIREPL})});
 
   // Check the ir
-  BOOST_CHECK(ir.opsOfType({"ai_simon", "MyAdd2", 9}).size() == 1);
+  BOOST_CHECK(ir.opsOfType({"ai_simon", "MyAdd2", 1}).size() == 1);
 }

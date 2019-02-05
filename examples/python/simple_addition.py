@@ -9,7 +9,7 @@ data_shape = poponnx.TensorInfo("FLOAT", [1])
 a = builder.addInputTensor(data_shape)
 b = builder.addInputTensor(data_shape)
 
-o = builder.add([a, b])
+o = builder.aiOnnx.add([a, b])
 
 builder.addOutputTensor(o)
 

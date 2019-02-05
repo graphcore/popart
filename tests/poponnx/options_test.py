@@ -73,7 +73,7 @@ def test_engine_options_passed_to_engine(tmpdir):
     i1 = builder.addInputTensor(shape)
     i2 = builder.addInputTensor(shape)
 
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
 
     builder.addOutputTensor(o)
 
@@ -106,7 +106,10 @@ def test_convolution_options(tmpdir):
 
     i1 = builder.addInputTensor(data_shape)
     i2 = builder.addInputTensor(filt_shape)
-    o = builder.convolution([i1, i2], [1, 1], [1, 1, 1, 1], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[1, 1, 1, 1],
+                            strides=[1, 1])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()

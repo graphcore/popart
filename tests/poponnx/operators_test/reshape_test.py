@@ -11,8 +11,8 @@ def test_reshape(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        c = builder.constant(d2)
-        o = builder.reshape([i1, c])
+        c = builder.aiOnnx.constant(d2)
+        o = builder.aiOnnx.reshape([i1, c])
         builder.addOutputTensor(o)
         return [o]
 
@@ -29,8 +29,8 @@ def test_reshape_neg_one(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        c = builder.constant(d2)
-        o = builder.reshape([i1, c])
+        c = builder.aiOnnx.constant(d2)
+        o = builder.aiOnnx.reshape([i1, c])
         builder.addOutputTensor(o)
         return [o]
 
@@ -47,8 +47,8 @@ def test_reshape_neg_one_error(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        c = builder.constant(d2)
-        o = builder.reshape([i1, c])
+        c = builder.aiOnnx.constant(d2)
+        o = builder.aiOnnx.reshape([i1, c])
         builder.addOutputTensor(o)
         return [o]
 
@@ -65,8 +65,8 @@ def test_reshape_zeros(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        c = builder.constant(d2)
-        o = builder.reshape([i1, c])
+        c = builder.aiOnnx.constant(d2)
+        o = builder.aiOnnx.reshape([i1, c])
         builder.addOutputTensor(o)
         return [o]
 
@@ -87,8 +87,8 @@ def test_reshape_neg_one_and_zeros(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        c = builder.constant(d2)
-        o = builder.reshape([i1, c])
+        c = builder.aiOnnx.constant(d2)
+        o = builder.aiOnnx.reshape([i1, c])
         builder.addOutputTensor(o)
         return [o]
 
@@ -109,8 +109,8 @@ def test_reshape_neg_one_and_zeros_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        c = builder.constant(d2)
-        o = builder.reshape([i1, c])
+        c = builder.aiOnnx.constant(d2)
+        o = builder.aiOnnx.reshape([i1, c])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 

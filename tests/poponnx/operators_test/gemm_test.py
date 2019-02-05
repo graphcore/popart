@@ -68,7 +68,7 @@ def _test_gemm(op_tester, A, B, C, alpha, beta, transA, transB):
         i1 = builder.addInputTensor(A)
         i2 = builder.addInputTensor(B)
         i3 = builder.addInputTensor(C)
-        o = builder.gemm([i1, i2, i3], alpha, beta, transA, transB)
+        o = builder.aiOnnx.gemm([i1, i2, i3], alpha, beta, transA, transB)
         builder.addOutputTensor(o)
         return [o]
 
@@ -97,7 +97,7 @@ def _test_gemm_grad(op_tester, A, B, C, alpha, beta, transA, transB):
         i1 = builder.addInputTensor(A)
         i2 = builder.addInputTensor(B)
         i3 = builder.addInputTensor(C)
-        o = builder.gemm([i1, i2, i3], alpha, beta, transA, transB)
+        o = builder.aiOnnx.gemm([i1, i2, i3], alpha, beta, transA, transB)
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + i2, 'd__' + i3, 'd__' + o]
 

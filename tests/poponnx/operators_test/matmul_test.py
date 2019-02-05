@@ -17,7 +17,7 @@ def test_matmul(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.matmul([i1, i2])
+        o = builder.aiOnnx.matmul([i1, i2])
         builder.addOutputTensor(o)
         return [o]
 
@@ -35,7 +35,7 @@ def test_matmul_grouped_1(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.matmul([i1, i2])
+        o = builder.aiOnnx.matmul([i1, i2])
         builder.addOutputTensor(o)
         return [o]
 
@@ -53,7 +53,7 @@ def test_matmul_grouped_2(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.matmul([i1, i2])
+        o = builder.aiOnnx.matmul([i1, i2])
         builder.addOutputTensor(o)
         return [o]
 
@@ -71,7 +71,7 @@ def test_matmul_grouped_3(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.matmul([i1, i2])
+        o = builder.aiOnnx.matmul([i1, i2])
         builder.addOutputTensor(o)
         return [o]
 
@@ -89,7 +89,7 @@ def test_matmul_grouped_4(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.matmul([i1, i2])
+        o = builder.aiOnnx.matmul([i1, i2])
         builder.addOutputTensor(o)
         return [o]
 
@@ -107,7 +107,7 @@ def test_matmul_grouped_5(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.matmul([i1, i2])
+        o = builder.aiOnnx.matmul([i1, i2])
         builder.addOutputTensor(o)
         return [o]
 

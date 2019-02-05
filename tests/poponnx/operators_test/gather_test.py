@@ -10,7 +10,7 @@ def test_gather_id_pattern(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.gather([i1, i2], axis)
+        o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
         return [o]
 
@@ -32,7 +32,7 @@ def test_gather_rank2_1(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.gather([i1, i2], axis)
+        o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
         return [o, 'd__' + i1]
 
@@ -54,7 +54,7 @@ def test_gather_rank2_2(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.gather([i1, i2], axis)
+        o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
         return [o, 'd__' + i1]
 
@@ -76,7 +76,7 @@ def test_gather_rank3_1(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.gather([i1, i2], axis)
+        o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
         return [o, 'd__' + i1]
 
@@ -97,7 +97,7 @@ def test_gather_rank1_1(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.gather([i1, i2], axis)
+        o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
         return [o, 'd__' + i1]
 
@@ -118,7 +118,7 @@ def test_gather_rank1_0(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.gather([i1, i2], axis)
+        o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
         return [o, 'd__' + i1]
 
@@ -138,7 +138,7 @@ def test_gather_example1(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.gather([i1, i2], axis)
+        o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
         return [o]
 
@@ -161,7 +161,7 @@ def test_gather_example2(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.gather([i1, i2], axis)
+        o = builder.aiOnnx.gather([i1, i2], axis)
         builder.addOutputTensor(o)
         return [o, 'd__' + i1]
 

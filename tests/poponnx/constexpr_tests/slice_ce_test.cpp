@@ -33,10 +33,11 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Slice0) {
   TensorInfo in_info{"FLOAT", Shape{1}};
 
   auto builder    = Builder::create();
-  auto const_node = builder->constant(const_data, "const_data");
-  auto slice_node = builder->slice({const_node}, {0, 1}, {1, 0}, {2, 3});
+  auto aiOnnx     = builder->aiOnnxOpset9();
+  auto const_node = aiOnnx.constant(const_data, "const_data");
+  auto slice_node = aiOnnx.slice({const_node}, {2, 3}, {1, 0}, {0, 1});
   auto in_id      = builder->addInputTensor(in_info);
-  auto out_id     = builder->add({slice_node, in_id});
+  auto out_id     = aiOnnx.add({slice_node, in_id});
   builder->addOutputTensor(out_id);
 
   auto proto       = builder->getModelProto();

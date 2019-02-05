@@ -10,7 +10,7 @@ def test_summary_report_before_execution(tmpdir):
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -35,7 +35,7 @@ def test_graph_report_before_execution(tmpdir):
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -60,7 +60,7 @@ def test_execution_report_before_execution(tmpdir):
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -85,7 +85,7 @@ def test_summary_report_with_cpu_device(tmpdir):
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -112,7 +112,7 @@ def test_graph_report_with_cpu_device(tmpdir):
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -141,7 +141,7 @@ def test_execution_report_with_cpu_device(tmpdir):
 
     i1 = builder.addInputTensor(shape)
     i2 = builder.addInputTensor(shape)
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -170,7 +170,7 @@ def test_compilation_report(tmpdir):
 
     i1 = builder.addInputTensor(shape)
     i2 = builder.addInputTensor(shape)
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -195,7 +195,7 @@ def test_execution_report(tmpdir):
 
     i1 = builder.addInputTensor(shape)
     i2 = builder.addInputTensor(shape)
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -226,7 +226,7 @@ def test_tensor_tile_mapping(tmpdir):
 
     i1 = builder.addInputTensor(shape)
     i2 = builder.addInputTensor(shape)
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()

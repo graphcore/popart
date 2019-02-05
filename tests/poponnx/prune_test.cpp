@@ -18,6 +18,7 @@ using namespace poponnx;
 BOOST_AUTO_TEST_CASE(PruneTest) {
   // Build an onnnx model
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
 
@@ -25,23 +26,23 @@ BOOST_AUTO_TEST_CASE(PruneTest) {
   std::vector<TensorId> tensorIds{i1};
   // Create some ops which are used
   for (int i = 0; i < 6; i++) {
-    auto x = builder->identity({tensorIds[tensorIds.size() - 1]});
+    auto x = aiOnnx.identity({tensorIds[tensorIds.size() - 1]});
     tensorIds.push_back(x);
   }
   builder->addOutputTensor(tensorIds.back());
 
   // Add some operations which should be pruned
-  builder->add({i1, i1});
-  builder->add({i1, i1});
-  builder->add({i1, i1});
-  builder->add({i1, i1});
-  builder->add({i1, i1});
-  auto i2 = builder->add({i1, i1});
-  builder->add({i2, i2});
-  builder->add({i2, i2}, "test_add");
-  builder->add({i2, i2});
-  builder->add({i2, i2});
-  builder->add({i2, i2});
+  aiOnnx.add({i1, i1});
+  aiOnnx.add({i1, i1});
+  aiOnnx.add({i1, i1});
+  aiOnnx.add({i1, i1});
+  aiOnnx.add({i1, i1});
+  auto i2 = aiOnnx.add({i1, i1});
+  aiOnnx.add({i2, i2});
+  aiOnnx.add({i2, i2}, "test_add");
+  aiOnnx.add({i2, i2});
+  aiOnnx.add({i2, i2});
+  aiOnnx.add({i2, i2});
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);

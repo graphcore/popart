@@ -105,6 +105,10 @@ std::ostream &operator<<(std::ostream &os, const OperatorIdentifier &opid);
 namespace Onnx {
 
 namespace Operators {
+
+const static OperatorIdentifier
+    ConstantLike_9(Domain::ai_onnx, "ConstantLike", 1, 1, 1);
+
 const static OperatorIdentifier Abs_1(Domain::ai_onnx, "Abs", 1, 1, 1);
 const static OperatorIdentifier Abs_6(Domain::ai_onnx, "Abs", 6, 1, 1);
 const static OperatorIdentifier Acos_7(Domain::ai_onnx, "Acos", 7, 1, 1);
@@ -134,6 +138,7 @@ const static OperatorIdentifier
     BatchNormalization_9(Domain::ai_onnx, "BatchNormalization", 9, 5, 5);
 const static OperatorIdentifier Cast_1(Domain::ai_onnx, "Cast", 1, 1, 1);
 const static OperatorIdentifier Cast_6(Domain::ai_onnx, "Cast", 6, 1, 1);
+const static OperatorIdentifier Cast_9(Domain::ai_onnx, "Cast", 9, 1, 1);
 const static OperatorIdentifier Ceil_1(Domain::ai_onnx, "Ceil", 1, 1, 1);
 const static OperatorIdentifier Ceil_6(Domain::ai_onnx, "Ceil", 6, 1, 1);
 const static OperatorIdentifier Clip_1(Domain::ai_onnx, "Clip", 1, 1, 1);
@@ -180,6 +185,7 @@ const static OperatorIdentifier GRU_1(Domain::ai_onnx, "GRU", 7, {3, 6}, 2);
 const static OperatorIdentifier GRU_3(Domain::ai_onnx, "GRU", 7, {3, 6}, 2);
 const static OperatorIdentifier GRU_7(Domain::ai_onnx, "GRU", 7, {3, 6}, 2);
 const static OperatorIdentifier Gather_1(Domain::ai_onnx, "Gather", 1, 2, 1);
+const static OperatorIdentifier Gemm_1(Domain::ai_onnx, "Gemm", 6, 3, 1);
 const static OperatorIdentifier Gemm_6(Domain::ai_onnx, "Gemm", 6, 3, 1);
 const static OperatorIdentifier Gemm_7(Domain::ai_onnx, "Gemm", 7, 3, 1);
 const static OperatorIdentifier Gemm_9(Domain::ai_onnx, "Gemm", 9, 3, 1);
@@ -210,6 +216,8 @@ const static OperatorIdentifier IsNaN_9(Domain::ai_onnx, "IsNan", 9, 1, 1);
 const static OperatorIdentifier LRN_1(Domain::ai_onnx, "LRN", 1, 1, 1);
 const static OperatorIdentifier LSTM_1(Domain::ai_onnx, "LSTM", 1, {3, 8}, 3);
 const static OperatorIdentifier LSTM_7(Domain::ai_onnx, "LSTM", 7, {3, 8}, 3);
+const static OperatorIdentifier
+    LeakyRelu_1(Domain::ai_onnx, "LeakyRely", 6, 1, 1);
 const static OperatorIdentifier
     LeakyRelu_6(Domain::ai_onnx, "LeakyRely", 6, 1, 1);
 const static OperatorIdentifier Less_1(Domain::ai_onnx, "Less", 1, 2, 1);
@@ -342,31 +350,33 @@ const static OperatorIdentifier
 const static OperatorIdentifier
     Unsqueeze_1(Domain::ai_onnx, "Unsqueeze", 1, 1, 1);
 const static OperatorIdentifier
+    Upsample_1(Domain::ai_onnx, "Upsample", 7, 2, 1);
+const static OperatorIdentifier
     Upsample_7(Domain::ai_onnx, "Upsample", 7, 2, 1);
 const static OperatorIdentifier
     Upsample_9(Domain::ai_onnx, "Upsample", 9, 2, 1);
 const static OperatorIdentifier Xor_1(Domain::ai_onnx, "Xor", 7, 2, 1);
 const static OperatorIdentifier Xor_7(Domain::ai_onnx, "Xor", 7, 2, 1);
 // experimental
-const static OperatorIdentifier ATen(Domain::ai_onnx, "ATen", 0, {1, -1}, -1);
-const static OperatorIdentifier Affine(Domain::ai_onnx, "Affine", 0, 1, 1);
+const static OperatorIdentifier ATen_1(Domain::ai_onnx, "ATen", 0, {1, -1}, -1);
+const static OperatorIdentifier Affine_1(Domain::ai_onnx, "Affine", 0, 1, 1);
 const static OperatorIdentifier
-    ConstantFill(Domain::ai_onnx, "ConstantFill", 0, {0, 1}, 1);
-const static OperatorIdentifier Crop(Domain::ai_onnx, "Crop", 0, 1, 1);
+    ConstantFill_1(Domain::ai_onnx, "ConstantFill", 0, {0, 1}, 1);
+const static OperatorIdentifier Crop_1(Domain::ai_onnx, "Crop", 0, 1, 1);
 const static OperatorIdentifier
-    DynamicSlice(Domain::ai_onnx, "DynamicSlice", 0, {3, 4}, 1);
-const static OperatorIdentifier GRUUnit(Domain::ai_onnx, "GRUUnit", 0, 4, 1);
+    DynamicSlice_1(Domain::ai_onnx, "DynamicSlice", 0, {3, 4}, 1);
+const static OperatorIdentifier GRUUnit_1(Domain::ai_onnx, "GRUUnit", 0, 4, 1);
 const static OperatorIdentifier
-    GivenTensorFill(Domain::ai_onnx, "GivenTensorFill", 0, {0, 1}, 1);
+    GivenTensorFill_1(Domain::ai_onnx, "GivenTensorFill", 0, {0, 1}, 1);
 const static OperatorIdentifier
-    ImageScaler(Domain::ai_onnx, "ImageScaler", 0, 1, 1);
+    ImageScaler_1(Domain::ai_onnx, "ImageScaler", 0, 1, 1);
 const static OperatorIdentifier
-    ParametricSoftplus(Domain::ai_onnx, "ParametricSoftplus", 0, 1, 1);
-const static OperatorIdentifier Scale(Domain::ai_onnx, "Scale", 0, 1, 1);
+    ParametricSoftplus_1(Domain::ai_onnx, "ParametricSoftplus", 0, 1, 1);
+const static OperatorIdentifier Scale_1(Domain::ai_onnx, "Scale", 0, 1, 1);
 const static OperatorIdentifier
-    ScaledTanh(Domain::ai_onnx, "ScaledTanh", 0, 1, 1);
+    ScaledTanh_1(Domain::ai_onnx, "ScaledTanh", 0, 1, 1);
 const static OperatorIdentifier
-    ThresholdedRelu(Domain::ai_onnx, "ThresholdedRelu", 0, 1, 1);
+    ThresholdedRelu_1(Domain::ai_onnx, "ThresholdedRelu", 0, 1, 1);
 
 const static OperatorIdentifier ArrayFeatureExtractor_1(Domain::ai_onnx_ml,
                                                         "ArrayFeatureExtractor",
@@ -508,19 +518,19 @@ const static OperatorIdentifier Upsample        = Operators::Upsample_9;
 const static OperatorIdentifier Xor             = Operators::Xor_7;
 
 // experimental - no specific version
-const static OperatorIdentifier ATen            = Operators::ATen;
-const static OperatorIdentifier Affine          = Operators::Affine;
-const static OperatorIdentifier ConstantFill    = Operators::ConstantFill;
-const static OperatorIdentifier Crop            = Operators::Crop;
-const static OperatorIdentifier DynamicSlice    = Operators::DynamicSlice;
-const static OperatorIdentifier GRUUnit         = Operators::GRUUnit;
-const static OperatorIdentifier GivenTensorFill = Operators::GivenTensorFill;
-const static OperatorIdentifier ImageScaler     = Operators::ImageScaler;
+const static OperatorIdentifier ATen            = Operators::ATen_1;
+const static OperatorIdentifier Affine          = Operators::Affine_1;
+const static OperatorIdentifier ConstantFill    = Operators::ConstantFill_1;
+const static OperatorIdentifier Crop            = Operators::Crop_1;
+const static OperatorIdentifier DynamicSlice    = Operators::DynamicSlice_1;
+const static OperatorIdentifier GRUUnit         = Operators::GRUUnit_1;
+const static OperatorIdentifier GivenTensorFill = Operators::GivenTensorFill_1;
+const static OperatorIdentifier ImageScaler     = Operators::ImageScaler_1;
 const static OperatorIdentifier ParametricSoftplus =
-    Operators::ParametricSoftplus;
-const static OperatorIdentifier Scale           = Operators::Scale;
-const static OperatorIdentifier ScaledTanh      = Operators::ScaledTanh;
-const static OperatorIdentifier ThresholdedRelu = Operators::ThresholdedRelu;
+    Operators::ParametricSoftplus_1;
+const static OperatorIdentifier Scale           = Operators::Scale_1;
+const static OperatorIdentifier ScaledTanh      = Operators::ScaledTanh_1;
+const static OperatorIdentifier ThresholdedRelu = Operators::ThresholdedRelu_1;
 
 } // namespace OpSet9
 } // namespace AiOnnx

@@ -18,6 +18,7 @@ using namespace poponnx;
 BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
   // Build an onnnx model
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo input_shape{"FLOAT", std::vector<int64_t>{1, 4, 32, 32}};
 
@@ -28,39 +29,32 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
   auto act = builder->addInputTensor(input_shape);
 
   auto weights = builder->addInitializedInputTensor(weight_data);
-  act          = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act = aiOnnx.relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  act     = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act     = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act     = aiOnnx.relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  act     = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act     = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act     = aiOnnx.relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  act     = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act     = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act     = aiOnnx.relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  act     = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act     = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act     = aiOnnx.relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  act     = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act     = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act     = aiOnnx.relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  act     = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act     = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act     = aiOnnx.relu({act});
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
@@ -89,6 +83,7 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
 BOOST_AUTO_TEST_CASE(RecomputeTest) {
   // Build an onnnx model
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo input_shape{"FLOAT", std::vector<int64_t>{1, 4, 32, 32}};
 
@@ -99,39 +94,32 @@ BOOST_AUTO_TEST_CASE(RecomputeTest) {
   auto act = builder->addInputTensor(input_shape);
 
   auto weights = builder->addInitializedInputTensor(weight_data);
-  act          = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act = aiOnnx.relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  act     = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act     = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act     = aiOnnx.relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  act     = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act     = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act     = aiOnnx.relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  act     = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act     = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act     = aiOnnx.relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  act     = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act     = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act     = aiOnnx.relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  act     = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act     = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act     = aiOnnx.relu({act});
 
   weights = builder->addInitializedInputTensor(weight_data);
-  act     = builder->convolution(
-      {act, weights}, {1, 1}, {1, 1, 1, 1}, {1, 1}, 1, false);
-  act = builder->relu({act});
+  act     = aiOnnx.conv({act, weights}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
+  act     = aiOnnx.relu({act});
 
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);

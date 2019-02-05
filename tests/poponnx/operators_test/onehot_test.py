@@ -16,9 +16,9 @@ def test_onehot_2d_with_axis_testing(op_tester):
     def init_builder(builder):
         print(depth)
         i1 = builder.addInputTensor(indices)
-        i2 = builder.constant(depth)  # depth has to be a constant
+        i2 = builder.aiOnnx.constant(depth)  # depth has to be a constant
         i3 = builder.addInputTensor(values)
-        o = builder.onehot([i1, i2, i3], 0, "test_onehot")
+        o = builder.aiOnnx.onehot([i1, i2, i3], 0, "test_onehot")
         builder.addOutputTensor(o)
         return [o]
 
@@ -42,9 +42,9 @@ def test_onehot_2d_without_axis_testing(op_tester):
     def init_builder(builder):
         print(depth)
         i1 = builder.addInputTensor(indices)
-        i2 = builder.constant(depth)  # depth has to be a constant
+        i2 = builder.aiOnnx.constant(depth)  # depth has to be a constant
         i3 = builder.addInputTensor(values)
-        o = builder.onehot([i1, i2, i3], -1, "test_onehot")
+        o = builder.aiOnnx.onehot([i1, i2, i3], -1, "test_onehot")
         builder.addOutputTensor(o)
         return [o]
 
@@ -73,9 +73,9 @@ def test_onehot_2d_with_axis_training(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(indices)
-        i2 = builder.constant(depth)  # depth has to be a constant
+        i2 = builder.aiOnnx.constant(depth)  # depth has to be a constant
         i3 = builder.addInputTensor(values)
-        o = builder.onehot([i1, i2, i3], 0, "test_onehot")
+        o = builder.aiOnnx.onehot([i1, i2, i3], 0, "test_onehot")
         builder.addOutputTensor(o)
         return [o, 'd__' + o, 'd__' + i3]
 
@@ -105,9 +105,9 @@ def test_onehot_2d_without_axis_training(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(indices)
-        i2 = builder.constant(depth)  # depth has to be a constant
+        i2 = builder.aiOnnx.constant(depth)  # depth has to be a constant
         i3 = builder.addInputTensor(values)
-        o = builder.onehot([i1, i2, i3], -1, "test_onehot")
+        o = builder.aiOnnx.onehot([i1, i2, i3], -1, "test_onehot")
         builder.addOutputTensor(o)
         return [o, 'd__' + o, 'd__' + i3]
 
@@ -129,9 +129,9 @@ def test_onehot_3d_without_axis_testing(op_tester):
     def init_builder(builder):
         print(depth)
         i1 = builder.addInputTensor(indices)
-        i2 = builder.constant(depth)  # depth has to be a constant
+        i2 = builder.aiOnnx.constant(depth)  # depth has to be a constant
         i3 = builder.addInputTensor(values)
-        o = builder.onehot([i1, i2, i3], -1, "test_onehot")
+        o = builder.aiOnnx.onehot([i1, i2, i3], -1, "test_onehot")
         builder.addOutputTensor(o)
         return [o]
 
@@ -153,9 +153,9 @@ def test_onehot_3d_with_axis_testing(op_tester):
     def init_builder(builder):
         print(depth)
         i1 = builder.addInputTensor(indices)
-        i2 = builder.constant(depth)  # depth has to be a constant
+        i2 = builder.aiOnnx.constant(depth)  # depth has to be a constant
         i3 = builder.addInputTensor(values)
-        o = builder.onehot([i1, i2, i3], 1, "test_onehot")
+        o = builder.aiOnnx.onehot([i1, i2, i3], 1, "test_onehot")
         builder.addOutputTensor(o)
         return [o]
 

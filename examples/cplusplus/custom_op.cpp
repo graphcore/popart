@@ -25,10 +25,10 @@
 
 namespace Onnx {
 namespace CustomOperators {
-const poponnx::OperatorIdentifier Cube = {"com.acme", "Cube", 9};
+const poponnx::OperatorIdentifier Cube = {"com.acme", "Cube", 1};
 }
 namespace CustomGradOperators {
-const poponnx::OperatorIdentifier CubeGrad = {"com.acme", "CubeGrad", 9};
+const poponnx::OperatorIdentifier CubeGrad = {"com.acme", "CubeGrad", 1};
 }
 } // namespace Onnx
 
@@ -127,7 +127,7 @@ auto main(int argc, char **argv) -> int {
 
   auto input = builder->addInputTensor(shape);
 
-  auto outputs = builder->customOp(Onnx::CustomOperators::Cube, {input}, 1, {});
+  auto outputs = builder->customOp(Onnx::CustomOperators::Cube, 1, {input}, 1, {});
 
   builder->addOutputTensor(outputs[0]);
 

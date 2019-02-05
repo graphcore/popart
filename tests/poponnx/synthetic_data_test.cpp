@@ -28,6 +28,7 @@ BOOST_AUTO_TEST_CASE(SytheticData_False) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
 
@@ -35,7 +36,7 @@ BOOST_AUTO_TEST_CASE(SytheticData_False) {
   std::vector<TensorId> tensorIds{i1};
   // Create a chain of identity ops
   for (int i = 0; i < 6; i++) {
-    auto x = builder->identity({tensorIds[tensorIds.size() - 1]});
+    auto x = aiOnnx.identity({tensorIds[tensorIds.size() - 1]});
     tensorIds.push_back(x);
   }
   builder->addOutputTensor(tensorIds.back());
@@ -80,6 +81,7 @@ BOOST_AUTO_TEST_CASE(SytheticData_True) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
 
@@ -87,7 +89,7 @@ BOOST_AUTO_TEST_CASE(SytheticData_True) {
   std::vector<TensorId> tensorIds{i1};
   // Create a chain of identity ops
   for (int i = 0; i < 6; i++) {
-    auto x = builder->identity({tensorIds[tensorIds.size() - 1]});
+    auto x = aiOnnx.identity({tensorIds[tensorIds.size() - 1]});
     tensorIds.push_back(x);
   }
   builder->addOutputTensor(tensorIds.back());

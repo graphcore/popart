@@ -8,7 +8,7 @@ def test_squeeze(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.squeeze([i1], axes=[])
+        o = builder.aiOnnx.squeeze([i1], axes=[])
         builder.addOutputTensor(o)
         return [o]
 
@@ -24,7 +24,7 @@ def test_squeeze_limited(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.squeeze([i1], axes=[1])
+        o = builder.aiOnnx.squeeze([i1], axes=[1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -40,7 +40,7 @@ def test_squeeze_unsorted_axes(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.squeeze([i1], axes=[5, 1])
+        o = builder.aiOnnx.squeeze([i1], axes=[5, 1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -57,7 +57,7 @@ def test_squeeze_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.squeeze([i1], axes=[])
+        o = builder.aiOnnx.squeeze([i1], axes=[])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -77,7 +77,7 @@ def test_squeeze_limited_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.squeeze([i1], axes=[1])
+        o = builder.aiOnnx.squeeze([i1], axes=[1])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 

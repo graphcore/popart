@@ -30,9 +30,10 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
 
   // Build an onnx model
   auto builder    = Builder::create();
-  auto newShapeId = builder->constant(outShapeData, "outShapeData");
+  auto aiOnnx     = builder->aiOnnxOpset9();
+  auto newShapeId = aiOnnx.constant(outShapeData, "outShapeData");
   auto inId       = builder->addInputTensor(inInfo);
-  auto outId      = builder->reshape({inId, newShapeId});
+  auto outId      = aiOnnx.reshape({inId, newShapeId});
   builder->addOutputTensor(outId);
 
   auto proto      = builder->getModelProto();
@@ -69,10 +70,11 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape_Initializer) {
   TensorInfo inInfo{"FLOAT", inShape};
   ConstVoidData outShapeData = {outShape.data(), {"INT64", outShapeSize}};
   auto builder               = Builder::create();
+  auto aiOnnx                = builder->aiOnnxOpset9();
   auto newShapeId            = builder->addInitializedInputTensor(outShapeData);
 
   auto inId  = builder->addInputTensor(inInfo);
-  auto outId = builder->reshape({inId, newShapeId});
+  auto outId = aiOnnx.reshape({inId, newShapeId});
   builder->addOutputTensor(outId);
   auto proto = builder->getModelProto();
 

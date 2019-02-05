@@ -8,14 +8,73 @@
 
 #include <poponnx/names.hpp>
 #include <poponnx/opidentifier.hpp>
+#include <poponnx/tensorinfo.hpp>
 
 #include <boost/any.hpp>
+#include <boost/optional.hpp>
 
 namespace poponnx {
 
 class BuilderImpl;
+class Builder;
 class TensorInfo;
 enum class DataType;
+
+class DomainOpSet {
+
+protected:
+  std::unique_ptr<BuilderImpl> &impl;
+
+  virtual int getOpsetVersion() const = 0;
+
+public:
+  DomainOpSet(std::unique_ptr<BuilderImpl> &impl_) : impl(impl_) {}
+  DomainOpSet(const DomainOpSet& other) = default;
+  virtual ~DomainOpSet() = default;
+};
+
+// Include the generated builder.h code
+#include "builder.h.gen"
+
+class AiOnnxMlOpset1 : public DomainOpSet {
+  
+protected:
+  using DomainOpSet::impl;
+
+  int getOpsetVersion() const override { return 1; }
+
+public:
+  AiOnnxMlOpset1(std::unique_ptr<BuilderImpl> &impl_) : DomainOpSet(impl_) {}
+};
+
+class AiGraphcoreOpset1 : public DomainOpSet {
+
+protected:
+  using DomainOpSet::impl;
+
+  int getOpsetVersion() const override { return 1; }
+
+public:
+  AiGraphcoreOpset1(std::unique_ptr<BuilderImpl> &impl_) : DomainOpSet(impl_) {}
+
+  /**
+   * Add a subsample operation to the model
+   *
+   * This is a poplar extention
+   *
+   * If multiple tensors are provided that strides will applied to them all
+   *
+   * \param args Tensor T
+   * \param strides The strides
+   * \param name Optional identifer for operation
+   * \return The name of the result tensor
+   */
+  TensorId subsample(const std::vector<TensorId> &args,
+                     const std::vector<int64_t> &strides,
+                     const std::string &name = {});
+
+
+};
 
 /**
  * An interface for a Builder, used for creating ONNX graphs.
@@ -88,961 +147,62 @@ public:
   void addOutputTensor(const TensorId &arg0);
 
   /**
-   * Add a constant to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Constant
-   *
-   * \param initData The initial data of the input tensor
-   * \param name Optional identifer for operation
-   * \return The unique name of the constant's output tensor
+   * Return the builder interface for ai.onnx opset 6
    */
-  TensorId constant(const ConstVoidData &initData, const std::string &name);
+  AiOnnxOpset6 aiOnnxOpset6() { return AiOnnxOpset6(this->impl_); }
 
   /**
-   * Add the absolute value operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Abs
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
+   * Return the builder interface for ai.onnx opset 7
    */
-  TensorId abs(const std::vector<TensorId> &args, const std::string &name = {});
+  AiOnnxOpset7 aiOnnxOpset7() { return AiOnnxOpset7(this->impl_); }
 
   /**
-   * Add the arc-cosine operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ACos
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
+   * Return the builder interface for ai.onnx opset 7
    */
-  TensorId acos(const std::vector<TensorId> &args,
-                const std::string &name = {});
+  AiOnnxOpset8 aiOnnxOpset8() { return AiOnnxOpset8(this->impl_); }
 
   /**
-   * Add the arc-hyperbolic-cosine operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Acosh
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
+   * Return the builder interface for ai.onnx opset 9
    */
-  TensorId acosh(const std::vector<TensorId> &args,
-                 const std::string &name = {});
+  AiOnnxOpset9 aiOnnxOpset9() { return AiOnnxOpset9(this->impl_); }
 
   /**
-   * Add the addition operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Add
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
+   * Return the builder interface for ai.onnx.ml opset 1
    */
-  TensorId add(const std::vector<TensorId> &args, const std::string &name = {});
+  AiOnnxMlOpset1 aiOnnxMlOpset1() { return AiOnnxMlOpset1(this->impl_); }
 
   /**
-   * Add the logical AND operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#And
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
+   * Return the builder interface for ai.graphcore opset 1
    */
-  TensorId logical_and(const std::vector<TensorId> &args,
-                       const std::string &name = {});
-
-  /**
-   * Add the arc sine operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Asin
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId asin(const std::vector<TensorId> &args,
-                const std::string &name = {});
-
-  /**
-   * Add the arc hyperbolic sine operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Asinh
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId asinh(const std::vector<TensorId> &args,
-                 const std::string &name = {});
-
-  /**
-   * Add the arc tangent operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Atan
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId atan(const std::vector<TensorId> &args,
-                const std::string &name = {});
-
-  /**
-   * Add the arc hyperbolic tangent operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Atanh
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId atanh(const std::vector<TensorId> &args,
-                 const std::string &name = {});
-
-  /**
-   * Add the cast operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cast
-   *
-   * \param args The tensor argument
-   * \param to   DataType of the output tensor
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId cast(const std::vector<TensorId> &args,
-                DataType to,
-                const std::string &name = {});
-
-  /**
-   * Add the ceil operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Ceil
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId ceil(const std::vector<TensorId> &args,
-                const std::string &name = {});
-
-  /**
-   * Concatenate several tensors. The tensors are concatenated along the
-   * specified dimension.
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#concat
-   *
-   *  \param args       The tensors
-   *  \param dimension  The dimensions to concatenate on
-   *  \param name Optional identifer for operation
-   *
-   *  \return The name of the result tensor
-   */
-  TensorId concat(const std::vector<TensorId> &args,
-                  int64_t dimension,
-                  const std::string &name = {});
-
-  /**
-   * Add the cosine operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cos
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId cos(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add the hyperbolic cosine operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cosh
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId cosh(const std::vector<TensorId> &args,
-                const std::string &name = {});
-
-  /**
-   * Add the dropout operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Dropout
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId dropout(const std::vector<TensorId> &args,
-                   const std::string &name = {});
-
-  /**
-   * Add the divide operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Div
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId div(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add the exponential linear operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Elu
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId elu(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add the equal-to operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Equal
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId equal(const std::vector<TensorId> &args,
-                 const std::string &name = {});
-
-  /**
-   * Add the exponent operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Exp
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId exp(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add the floor operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Floor
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId floor(const std::vector<TensorId> &args,
-                 const std::string &name = {});
-
-  /**
-   * Add the gather operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Gather
-   *
-   * \param args The tensor argument
-   * \param axis Which axis to gather on
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId gather(const std::vector<TensorId> &args,
-                  int64_t axis            = 0,
-                  const std::string &name = {});
-
-  /**
-   * Add the greater-than operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Greater
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId greater(const std::vector<TensorId> &args,
-                   const std::string &name = {});
-
-  /**
-   * Add the identity operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Identity
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId identity(const std::vector<TensorId> &args,
-                    const std::string &name = {});
-
-  /**
-   * Add the instance normalization operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#InstanceNormalization
-   *
-   * \param args The tensor argument
-   * \param epsilon a small delta applied to avoid division by zero
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId instanceNormalization(const std::vector<TensorId> &args,
-                                 const float epsilon     = 1e-5f,
-                                 const std::string &name = {});
-
-  /**
-   * Add the less-than operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Less
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId less(const std::vector<TensorId> &args,
-                const std::string &name = {});
-
-  /**
-   * Add the logarithm operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Log
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId log(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add a LogSoftmax operation to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#LogSoftmax
-   *
-   * \param args Tensor T
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   *
-   */
-  TensorId logsoftmax(const std::vector<TensorId> &args,
-                      const std::string &name = {});
-
-  /**
-   * Add the maximum operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Max
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId max(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add the mean operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Mean
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId mean(const std::vector<TensorId> &args,
-                const std::string &name = {});
-
-  /**
-   * Add the minimum operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Min
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId min(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add the multiply operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Mul
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId mul(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add the negate operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Neg
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId neg(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add the onehot operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Oneshot
-   *
-   * \param args The tensor arguments, indices, depth & values
-   *             Depth has to be a constant tensor
-   * \param axis Optional axis along which one-hot representation is added
-   * \param name Optional identifier for operation
-   * \return The name of the output, reshaped tensor
-   */
-  TensorId onehot(const std::vector<TensorId> &args,
-                  int64_t axis            = -1,
-                  const std::string &name = {});
-
-  /**
-   * Add the logical NOT operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Not
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId logical_not(const std::vector<TensorId> &args,
-                       const std::string &name = {});
-
-  /**
-   * Add the logical OR operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Or
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId logical_or(const std::vector<TensorId> &args,
-                      const std::string &name = {});
-
-  /**
-   * Add the power operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Pow
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId pow(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add the reciprocal operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Reciprocal
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId reciprocal(const std::vector<TensorId> &args,
-                      const std::string &name = {});
-
-  /**
-   * Add the rectified linear operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Relu
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-
-  TensorId relu(const std::vector<TensorId> &args,
-                const std::string &name = {});
-
-  /**
-   * Add the scale operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Scale
-   *
-   * \param args The tensor argument
-   * \param factor The factor by which to scale the tensor
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-
-  TensorId scale(const std::vector<TensorId> &args,
-                 float factor,
-                 const std::string &name = {});
-
-  /**
-   * Add the scatter operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Scatter
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \param axis The axis to scatter on
-   * \return The name of the result tensor
-   */
-  TensorId scatter(const std::vector<TensorId> args,
-                   int64_t axis,
-                   const std::string &name = {});
-
-  /**
-   * Add the sigmoid operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sigmoid
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId sigmoid(const std::vector<TensorId> &args,
-                   const std::string &name = {});
-
-  /**
-   * Add the sine operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sin
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId sin(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add the hyperbolic sine operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sinh
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId sinh(const std::vector<TensorId> &args,
-                const std::string &name = {});
-
-  /**
-   * Add the softsign operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softsign
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId softsign(const std::vector<TensorId> &args,
-                    const std::string &name = {});
-
-  /**
-   * Add the square root operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sqrt
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId sqrt(const std::vector<TensorId> &args,
-                const std::string &name = {});
-
-  /**
-   * Add the squeeze operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Squeeze
-   *
-   * \param args The tensor argument
-   * \param axes The dimensions to squeeze
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId squeeze(const std::vector<TensorId> &args,
-                   const std::vector<int64_t> axes,
-                   const std::string &name = {});
-
-  /**
-   * Add the unsqueeze operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Unsqueeze
-   *
-   * \param args The tensor argument
-   * \param axes The dimensions to insert
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId unsqueeze(const std::vector<TensorId> &args,
-                     const std::vector<int64_t> axes,
-                     const std::string &name = {});
-
-  /**
-   * Add the subtract operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sub
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId sub(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add the variadic summation operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sum
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId sum(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add the tangent operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Tan
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId tan(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add the hyperbolic tangent operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Tanh
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId tanh(const std::vector<TensorId> &args,
-                const std::string &name = {});
-
-  /**
-   * Add the logical XOR operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Xor
-   *
-   * \param args The tensor argument
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId logical_xor(const std::vector<TensorId> &args,
-                       const std::string &name = {});
-
-  /**
-   * Add a convolution to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Conv
-   *
-   * If the argument tensor can contain two tensors, they are the input and
-   * kernel.  If it contains three tensors then they are the input, kernel and
-   * bias tensors.
-   *
-   * \param args The data input, and the filter kernel, and optionally the bias
-   * \param strides The filter stride in each of the spatial dimensions
-   * \param padding The input padding in each of the spatial directions. This
-   *                has the same format as the ONNX node, where the values are
-   *                grouped [d1_begin, d2_begin, ..., d1_end, d2_end, ...]
-   * \param dilation The dilation value along each spatial axis of the filter
-   * \param groups The number of filter groups
-   * \param cacheOperation Whether to cache the part of the Poplar graph
-   *                              for this convolution (and any corresponding
-   *                              training pass convolutions). Caching of the
-   *                              Poplar graph will reduce the size of the
-   *                              program, but it will introduce extra copies
-   *                              to the execution program.
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId convolution(const std::vector<TensorId> &args,
-                       const std::vector<int64_t> strides,
-                       const std::vector<int64_t> padding,
-                       const std::vector<int64_t> dilation,
-                       int64_t groups          = 1,
-                       bool cacheOperation     = false,
-                       const std::string &name = {});
-
-  /**
-   * Add an averagepool to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#AveragePool
-   *
-   * \param args The data input
-   * \param kernel_shape The size of the kernel along each axis
-   * \param strides The filter stride in each of the spatial dimensions
-   * \param padding The input padding in each of the spatial directions. This
-   *                has the same format as the ONNX node, where the values are
-   *                grouped [d1_begin, d2_begin, ..., d1_end, d2_end, ...]
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId averagepool(const std::vector<TensorId> &args,
-                       const std::vector<int64_t> kernel_shape,
-                       const std::vector<int64_t> strides,
-                       const std::vector<int64_t> padding,
-                       const std::string &name = {});
-
-  /**
-   * Add a maxpool to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MaxPool
-   *
-   * \param args The data input
-   * \param kernel_shape The size of the kernel along each axis
-   * \param strides The filter stride in each of the spatial dimensions
-   * \param padding The input padding in each of the spatial directions. This
-   *                has the same format as the ONNX node, where the values are
-   *                grouped [d1_begin, d2_begin, ..., d1_end, d2_end, ...]
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId maxpool(const std::vector<TensorId> &args,
-                   const std::vector<int64_t> kernel_shape,
-                   const std::vector<int64_t> strides,
-                   const std::vector<int64_t> padding,
-                   const std::string &name = {});
-
-  /**
-   * Add a LSTM operation to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#LSTM
-   *
-   * \param args Tensor X, W, R, B, sequence_lens, initial_h and initial_c
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  std::tuple<TensorId, TensorId, TensorId>
-  lstm(const std::vector<TensorId> &args, const std::string &name = {});
-
-  /**
-   * Add a GEMM operation to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Gemm
-   *
-   * \param args Tensor A, B and C
-   * \param alpha Scalar multiplier for the product of input tensors A * B
-   * \param beta Scalar multiplier for input tensor C
-   * \param transA Whether A should be transposed
-   * \param transB Whether B should be transposed
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId gemm(const std::vector<TensorId> &args,
-                float alpha,
-                float beta,
-                int64_t transA,
-                int64_t transB,
-                const std::string &name = {});
-
-  /**
-   * Add a Pad operation to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Pad
-   *
-   * \param args Tensor T
-   * \param mode Three modes: constant, reflect, edge
-   * \param pads The input padding in each of the spatial directions. This
-   *                has the same format as the ONNX node, where the values are
-   *                grouped [d1_begin, d2_begin, ..., d1_end, d2_end, ...]
-   * \param value The value to be filled
-   * \param name Optional identifer for operation
-   */
-  TensorId pad(const std::vector<TensorId> &args,
-               std::string mode,
-               const std::vector<int64_t> pads,
-               float value,
-               const std::string &name = {});
-
-  /**
-   * Add a MatMul operation to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MatMul
-   *
-   * \param args N-dimensional matrix A, and N-dimensional matrix B
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId matmul(const std::vector<TensorId> &args,
-                  const std::string &name = {});
-
-  /**
-   * Add a Shape operation to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Shape
-   *
-   * \param args Tensor T
-   * \param name Optional identifier for operation
-   * \return The name of the result tensor
-   *
-   */
-  TensorId shape(const std::vector<TensorId> &args,
-                 const std::string &name = {});
-
-  /**
-   * Add a Slice operation to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Slice
-   *
-   * \param args Tensor T
-   * \param axes Axes that `starts` and `ends` apply to.
-   * \param starts Starting indices of corresponding axis in `axes`
-   * \param ends Ending indices (exclusive) of corresponding axis in `axes`
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   *
-   */
-  TensorId slice(const std::vector<TensorId> &args,
-                 const std::vector<int64_t> &axes,
-                 const std::vector<int64_t> &starts,
-                 const std::vector<int64_t> &ends,
-                 const std::string &name = {});
-
-  /**
-   * Add a Softmax operation to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softmax
-   *
-   * \param args Tensor T
-   * \param axis Describes the axis of the inputs when coerced to 2D
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   *
-   */
-  TensorId softmax(const std::vector<TensorId> &args,
-                   int64_t axis            = 1,
-                   const std::string &name = {});
-
-  /**
-   * Add a subsample operation to the model
-   *
-   * This is a poplar extention
-   *
-   * If multiple tensors are provided that strides will applied to them all
-   *
-   * \param args Tensor T
-   * \param strides The strides
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   */
-  TensorId subsample(const std::vector<TensorId> &args,
-                     const std::vector<int64_t> &strides,
-                     const std::string &name = {});
-
-  /**
-   * Add a Transpose operation to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Transpose
-   *
-   * \param args Tensor T
-   * \param perm The new axes permutation
-   * \param name Optional identifer for operation
-   * \return The name of the result tensor
-   *
-   */
-  TensorId transpose(const std::vector<TensorId> &args,
-                     const std::vector<int64_t> &perm,
-                     const std::string &name = {});
-
-  /**
-   * Add the reshape operator to the model
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Reshape
-   *
-   * \param args The tensor arguments
-   * \param name Optional identifer for operation
-   * \return The name of the output, reshaped tensor
-   */
-  TensorId reshape(const std::vector<TensorId> &args,
-                   const std::string &name = {});
-
-  /**
-   * Add the reshape operator to the model
-   *
-   * The new shape is given as a parameter of the function
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Reshape
-   *
-   * \param args The tensor arguments
-   * \param shape The new shape for the tensor
-   * \param name Optional identifer for operation
-   * \return The name of the output, reshaped tensor
-   */
-  TensorId reshape_const(const std::vector<TensorId> &args,
-                         const std::vector<int64_t> &shape,
-                         const std::string &name = {});
-
-  // The set of output from the batchNormalization test
-  // Would have liked to use std::optional instead of pointers
-  struct BatchNormalizationTrainingOutputs {
-    TensorId y;
-    TensorId mean;
-    TensorId var;
-    TensorId savedMean;
-    TensorId savedVar;
-  };
-
-  /**
-   * Add a Batch Normalization operation to the model (for training models)
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#batchnormalization
-   *
-   * \param x the input tensor
-   * \param scale the scale tensor
-   * \param b the bias tensor
-   * \param mean the mean tenor
-   * \param var the variance tensor
-   * \param epsilon a small delta applied to avoid division by zero
-   * \param momentum the fraction used when updating the mean/variance tensors
-   * \param spatial see ONNX operation specificiation
-   * \param name Optional identifer for operation
-   * \return a struct containing all of the outputs of the batch-normalization
-   */
-  BatchNormalizationTrainingOutputs
-  batchnormalizationTraining(const TensorId x,
-                             const TensorId scale,
-                             const TensorId b,
-                             const TensorId mean,
-                             const TensorId var,
-                             const float epsilon     = 1e-5f,
-                             const float momentum    = 0.9f,
-                             const int spatial       = 1,
-                             const std::string &name = {});
-
-  /**
-   * Add a Batch Normalization operation to the model (for non-training)
-   *
-   * https://github.com/onnx/onnx/blob/master/docs/Operators.md#batchnormalization
-   *
-   * \param x the input tensor
-   * \param scale the scale tensor
-   * \param b the bias tensor
-   * \param mean the mean tensor
-   * \param var the variance tensor
-   * \param epsilon a small value added to prevent division by zero
-   * \param momentum the update fraction for changing the mean/variance
-   * \param spatial see ONNX operator specification
-   * \param name Optional identifer for operation
-   * \return The normalized input tensor
-   */
-  TensorId batchnormalizationTesting(const TensorId x,
-                                     const TensorId scale,
-                                     const TensorId b,
-                                     const TensorId mean,
-                                     const TensorId var,
-                                     const float epsilon     = 1e-5f,
-                                     const float momentum    = 0.9f,
-                                     const int spatial       = 1,
-                                     const std::string &name = {});
+  AiGraphcoreOpset1 aiGraphcoreOpset1() {
+    return AiGraphcoreOpset1(this->impl_);
+  }
 
   // Add a custom op to the model
   // TODO : Think of a better name
   std::vector<TensorId>
   customOp(const OperatorIdentifier &opid,
-           const std::vector<boost::any> &inputs,
+           int opsetVersion,
+           const std::vector<TensorId> &inputs,
            const unsigned numOutputs,
-           const std::vector<std::pair<std::string, boost::any>> &attributes,
+           const std::map<std::string, boost::any> &attributes,
            const std::string &name = "");
+
+  /**
+   * This is a helper function that will add a constant and a reshape using the 
+   * provided domain. 
+   */
+  template<class T>
+  TensorId reshape_const(T& t,
+                         const std::vector<TensorId> &args,
+                         const std::vector<int64_t> &shape,
+                         const std::string &name = {})
+                         {
+    Shape s = {static_cast<int64_t>(shape.size())};
+    TensorInfo tensorInfo("INT64", s);
+    auto newShape = t.constant({shape.data(), tensorInfo}, name + "_const");
+    return t.reshape({args[0], newShape}, name);
+  }
 
   /**
    * Enable/disable recomputation of the output of the node in the backward

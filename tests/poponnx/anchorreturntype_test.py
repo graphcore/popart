@@ -12,7 +12,7 @@ def identity_inference_session(tmpdir, inputShape, inputArray, BPS, art):
     inInfo = poponnx.TensorInfo("FLOAT", inputShape)
 
     i1 = builder.addInputTensor(inInfo)
-    o = builder.identity([i1])
+    o = builder.aiOnnx.identity([i1])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()

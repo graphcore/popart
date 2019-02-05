@@ -49,12 +49,13 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx = builder->aiOnnxOpset9();
   // The two fixed-point tensors which are Constants
-  auto shape0Id   = builder->constant(out0ShapeData, "out0ShapeData");
-  auto shape1Id   = builder->constant(out1ShapeData, "out1ShapeData");
+  auto shape0Id   = aiOnnx.constant(out0ShapeData, "out0ShapeData");
+  auto shape1Id   = aiOnnx.constant(out1ShapeData, "out1ShapeData");
   auto inId       = builder->addInputTensor(inInfo);
-  auto outShapeId = builder->add({shape0Id, shape1Id});
-  auto outId      = builder->reshape({inId, outShapeId});
+  auto outShapeId = aiOnnx.add({shape0Id, shape1Id});
+  auto outId      = aiOnnx.reshape({inId, outShapeId});
   builder->addOutputTensor(outId);
 
   auto proto      = builder->getModelProto();
@@ -126,18 +127,19 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx = builder->aiOnnxOpset9();
 
   auto w0Id = builder->addInitializedInputTensor(w0Data);
   auto w1Id = builder->addInitializedInputTensor(w1Data);
-  auto a0   = builder->add({w0Id, w1Id}, "a0");
+  auto a0   = aiOnnx.add({w0Id, w1Id}, "a0");
 
-  auto c0Id = builder->constant(c0Data, "c0Data");
-  auto c1Id = builder->constant(c1Data, "c1Data");
-  auto a1   = builder->add({c0Id, c1Id}, "a1");
+  auto c0Id = aiOnnx.constant(c0Data, "c0Data");
+  auto c1Id = aiOnnx.constant(c1Data, "c1Data");
+  auto a1   = aiOnnx.add({c0Id, c1Id}, "a1");
 
-  auto a2      = builder->add({a0, a1}, "a2");
+  auto a2      = aiOnnx.add({a0, a1}, "a2");
   auto inputId = builder->addInputTensor(inputInfo);
-  auto outId   = builder->matmul({a2, inputId});
+  auto outId   = aiOnnx.matmul({a2, inputId});
   builder->addOutputTensor(outId);
 
   auto proto      = builder->getModelProto();
@@ -202,15 +204,16 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add2) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx = builder->aiOnnxOpset9();
 
   auto v0Id = builder->addInputTensor(inputInfo);
-  auto c0Id = builder->constant(c0Data, "c0Data");
-  auto c1Id = builder->constant(c1Data, "c1Data");
+  auto c0Id = aiOnnx.constant(c0Data, "c0Data");
+  auto c1Id = aiOnnx.constant(c1Data, "c1Data");
 
-  auto a0 = builder->add({v0Id, c0Id}, "a0");
-  auto a1 = builder->add({c0Id, c1Id}, "a1");
+  auto a0 = aiOnnx.add({v0Id, c0Id}, "a0");
+  auto a1 = aiOnnx.add({c0Id, c1Id}, "a1");
 
-  auto o = builder->add({a0, a1}, "o");
+  auto o = aiOnnx.add({a0, a1}, "o");
   builder->addOutputTensor(o);
 
   auto proto      = builder->getModelProto();

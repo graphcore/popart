@@ -71,15 +71,16 @@ std::string getTestModelProto(DataType type) {
   const_data            = {raw_const_data.data(), const_info};
 
   auto builder = Builder::create();
+  auto aiOnnx = builder->aiOnnxOpset9();
 
-  auto x4 = builder->constant(const_data, "x4");
+  auto x4 = aiOnnx.constant(const_data, "x4");
   auto x0 = builder->addInputTensor(in_info);
   auto x1 = builder->addInputTensor(in_info);
-  auto x2 = builder->matmul({x0, x1});
-  auto x3 = builder->scale({x2}, 0.5);
-  auto x5 = builder->scale({x4}, 0.5);
-  auto c0 = builder->cast({x5}, DataType::FLOAT);
-  auto x6 = builder->add({x3, c0});
+  auto x2 = aiOnnx.matmul({x0, x1});
+  auto x3 = aiOnnx.scale({x2}, 0.5);
+  auto x5 = aiOnnx.scale({x4}, 0.5);
+  auto c0 = aiOnnx.cast({x5}, DataType::FLOAT);
+  auto x6 = aiOnnx.add({x3, c0});
   builder->addOutputTensor(x6);
 
   auto proto = builder->getModelProto();

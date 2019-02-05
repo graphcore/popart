@@ -28,7 +28,7 @@ def test_add(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.add([i1, i2], "test_add")
+        o = builder.aiOnnx.add([i1, i2], "test_add")
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + i2, 'd__' + o]
 
@@ -53,7 +53,7 @@ def test_sum(op_tester):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
         i3 = builder.addInputTensor(d3)
-        o = builder.sum([i1, i2, i3], "test_sum")
+        o = builder.aiOnnx.sum([i1, i2, i3], "test_sum")
         builder.addOutputTensor(o)
         return [o]
 
@@ -71,7 +71,10 @@ def test_convolution(op_tester):
         filt = np.ones([3, 2, 3, 3], dtype=np.float32)
         d = builder.addInputTensor(data)
         f = builder.addInputTensor(filt)
-        o = builder.convolution([d, f], [1, 1], [1, 1, 1, 1], [1, 1], 1)
+        o = builder.aiOnnx.conv([d, f],
+                                dilations=[1, 1],
+                                pads=[1, 1, 1, 1],
+                                strides=[1, 1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -95,7 +98,7 @@ def test_mul(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.mul([i1, i2])
+        o = builder.aiOnnx.mul([i1, i2])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + i2, 'd__' + o]
 
@@ -118,7 +121,7 @@ def test_broadcast_mul(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        o = builder.mul([i1, i2])
+        o = builder.aiOnnx.mul([i1, i2])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + i2, 'd__' + o]
 
@@ -140,7 +143,7 @@ def test_reciprocal(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.reciprocal([i1])
+        o = builder.aiOnnx.reciprocal([i1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -161,7 +164,7 @@ def test_div(tmpdir):
     test = tu.BasicSession(tmpdir)
     i1 = test.add_input_tensor(d1)
     i2 = test.add_input_tensor(d2)
-    o = test.builder.div([i1, i2])
+    o = test.builder.aiOnnx.div([i1, i2])
     test.builder.addOutputTensor(o)
 
     test.passes.extend(["PreUniRepl"])
@@ -192,7 +195,7 @@ def test_div_grad(tmpdir):
     test = tu.BasicSession(tmpdir)
     i1 = test.add_input_tensor(d1)
     i2 = test.add_input_tensor(d2)
-    o = test.builder.div([i1, i2])
+    o = test.builder.aiOnnx.div([i1, i2])
     test.builder.addOutputTensor(o)
 
     test.passes.extend(["PreUniRepl", "DivArg0GradOp", "DivArg1GradOp"])
@@ -227,7 +230,7 @@ def test_reciprocal_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.reciprocal([i1])
+        o = builder.aiOnnx.reciprocal([i1])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -248,7 +251,7 @@ def test_sqrt(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.sqrt([i1])
+        o = builder.aiOnnx.sqrt([i1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -267,7 +270,7 @@ def test_sqrt_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.sqrt([i1])
+        o = builder.aiOnnx.sqrt([i1])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -288,7 +291,7 @@ def test_exp(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.exp([i1])
+        o = builder.aiOnnx.exp([i1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -306,7 +309,7 @@ def test_exp_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.exp([i1])
+        o = builder.aiOnnx.exp([i1])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -327,7 +330,7 @@ def test_sigmoid(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.sigmoid([i1])
+        o = builder.aiOnnx.sigmoid([i1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -345,7 +348,7 @@ def test_sigmoid_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.sigmoid([i1])
+        o = builder.aiOnnx.sigmoid([i1])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -365,7 +368,7 @@ def test_transpose(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.transpose([i1], [2, 0, 3, 1])
+        o = builder.aiOnnx.transpose([i1], [2, 0, 3, 1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -381,7 +384,7 @@ def test_transpose_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.transpose([i1], [1, 3, 0, 4, 2])
+        o = builder.aiOnnx.transpose([i1], [1, 3, 0, 4, 2])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -404,7 +407,7 @@ def test_log(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.log([i1])
+        o = builder.aiOnnx.log([i1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -422,7 +425,7 @@ def test_log_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.log([i1])
+        o = builder.aiOnnx.log([i1])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -445,7 +448,7 @@ def test_logsoftmax(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.logsoftmax([i1])
+        o = builder.aiOnnx.logsoftmax([i1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -467,7 +470,7 @@ def test_logsoftmax_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.logsoftmax([i1])
+        o = builder.aiOnnx.logsoftmax([i1])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -488,7 +491,7 @@ def test_unsqueeze(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.unsqueeze([i1], axes=[0, 4])
+        o = builder.aiOnnx.unsqueeze([i1], axes=[0, 4])
         builder.addOutputTensor(o)
         return [o]
 
@@ -506,7 +509,7 @@ def test_unsqueeze_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.unsqueeze([i1], axes=[0, 4])
+        o = builder.aiOnnx.unsqueeze([i1], axes=[0, 4])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -527,7 +530,7 @@ def test_slice(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.slice([i1], [0, 1], [1, 0], [2, 3])
+        o = builder.aiOnnx.slice([i1], axes=[0, 1], starts=[1, 0], ends=[2, 3])
         builder.addOutputTensor(o)
         return [o]
 
@@ -544,7 +547,7 @@ def test_slice_default_axes(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.slice([i1], [], [1, 0], [2, 3])
+        o = builder.aiOnnx.slice([i1], axes=[], starts=[1, 0], ends=[2, 3])
         builder.addOutputTensor(o)
         return [o]
 
@@ -561,7 +564,7 @@ def test_slice_neg(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.slice([i1], [0], [-5], [-3])
+        o = builder.aiOnnx.slice([i1], axes=[0], starts=[-5], ends=[-3])
         builder.addOutputTensor(o)
         return [o]
 
@@ -578,7 +581,7 @@ def test_slice_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.slice([i1], [0, 1], [1, 0], [2, 3])
+        o = builder.aiOnnx.slice([i1], axes=[0, 1], starts=[1, 0], ends=[2, 3])
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -641,7 +644,8 @@ def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
-        o = builder.pad([i1], mode, lower_padding + upper_padding, pad_value)
+        o = builder.aiOnnx.pad([i1], pads=(lower_padding + upper_padding), mode = mode,
+                               value=pad_value)
         builder.addOutputTensor(o)
         return [o]
 
@@ -663,7 +667,7 @@ def test_pad_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.pad([i1], "constant", [0, 2, 1, 1], 0)
+        o = builder.aiOnnx.pad([i1], [0, 2, 1, 1], "constant", 0)
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + o]
 
@@ -696,7 +700,7 @@ def test_scatter_0(op_tester):
         i1 = builder.addInputTensor(data)
         i2 = builder.addInputTensor(indices)
         i3 = builder.addInputTensor(updates)
-        o = builder.scatter([i1, i2, i3], axis)
+        o = builder.aiOnnx.scatter([i1, i2, i3], axis)
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + i3]
 
@@ -719,7 +723,7 @@ def test_scatter_1(op_tester):
         i1 = builder.addInputTensor(data)
         i2 = builder.addInputTensor(indices)
         i3 = builder.addInputTensor(updates)
-        o = builder.scatter([i1, i2, i3], axis)
+        o = builder.aiOnnx.scatter([i1, i2, i3], axis)
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + i3]
 
@@ -744,7 +748,7 @@ def test_scatter_2(op_tester):
         i1 = builder.addInputTensor(data)
         i2 = builder.addInputTensor(indices)
         i3 = builder.addInputTensor(updates)
-        o = builder.scatter([i1, i2, i3], axis)
+        o = builder.aiOnnx.scatter([i1, i2, i3], axis)
         builder.addOutputTensor(o)
         return [o, 'd__' + i1, 'd__' + i3]
 
@@ -762,8 +766,8 @@ def test_shape(op_tester):
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
         i2 = builder.addInputTensor(d2)
-        c = builder.shape([i2])
-        o = builder.reshape([i1, c])
+        c = builder.aiOnnx.shape([i2])
+        o = builder.aiOnnx.reshape([i1, c])
         builder.addOutputTensor(o)
         return [o]
 
@@ -780,7 +784,7 @@ def test_dropout_testing(op_tester):
     def init_builder(builder):
         print(d1)
         i1 = builder.addInputTensor(d1)
-        o = builder.dropout([i1], "test_dropout")
+        (o, ) = builder.aiOnnx.dropout([i1], 1, 0.5, "test_dropout")
         builder.addOutputTensor(o)
         return [o]
 
@@ -803,7 +807,7 @@ def test_dropout_training(op_tester):
     def init_builder(builder):
         print(d1)
         i1 = builder.addInputTensor(d1)
-        o = builder.dropout([i1], "test_dropout")
+        (o, ) = builder.aiOnnx.dropout([i1], 1, 0.5, "test_dropout")
         builder.addOutputTensor(o)
         return [o]
 
@@ -821,3 +825,4 @@ def test_dropout_training(op_tester):
         op_tester.run(init_builder, reference, 'train')
 
     assert (e_info.value.args[0] == "Dropout does not support training")
+

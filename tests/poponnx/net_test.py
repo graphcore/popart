@@ -9,7 +9,7 @@ def test_net_from_string(tmpdir):
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -25,7 +25,7 @@ def test_net_from_file(tmpdir):
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -45,7 +45,7 @@ def test_net_failure1(tmpdir):
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()

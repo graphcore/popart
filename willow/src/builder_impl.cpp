@@ -105,6 +105,9 @@ TensorId BuilderImpl::getNextId() {
 }
 
 void BuilderImpl::addOpsetRequirement(const std::string &domain, int version) {
+
+  logging::builder::info("Setting domain '{}' to opset version {}", domain, version);  
+
   for (auto &o : model_.opset_import()) {
     if (o.domain() == domain && o.version() == version) {
       return;
@@ -122,10 +125,10 @@ void BuilderImpl::configure() {
   next_id_ = 0;
   model_.set_ir_version(irVersion);
 
-  addOpsetRequirement(ONNX_NAMESPACE::ONNX_DOMAIN, onnxOperatorSetVersion);
-
   model_.mutable_graph()->set_name("BuilderGraph");
 }
+
+
 
 TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo) {
   auto id             = getNextId();
@@ -238,77 +241,23 @@ void BuilderImpl::addOutputTensor(const TensorId &arg0) {
   }
 
   if (!found) {
+    logging::builder::err("Failed to add output");
     output->set_name(arg0);
   }
 }
 
-TensorId BuilderImpl::constant(const ConstVoidData &initData,
-                               const std::string &name) {
-  return op(Onnx::AiOnnx::OpSet9::Constant, {}, {{"value", initData}}, name)[0];
-}
-
-TensorId BuilderImpl::reshape_const(const std::vector<TensorId> &args,
-                                    const std::vector<int64_t> &shape,
-                                    const std::string &name) {
-  Shape s = {static_cast<int64_t>(shape.size())};
-  TensorInfo tensorInfo("INT64", s);
-  auto newShape = constant({shape.data(), tensorInfo}, name + "_const");
-  return op(Onnx::AiOnnx::OpSet9::Reshape, {args[0], newShape}, {}, name)[0];
-}
-
-std::vector<TensorId> BuilderImpl::customOp(
-    const OperatorIdentifier &opid,
-    const std::vector<boost::any> &inputs,
-    const unsigned numOutputs,
-    const std::vector<std::pair<std::string, boost::any>> &opAttributes,
-    const std::string &name) {
-
-  std::vector<TensorId> outputTensors(numOutputs);
-
-  // Create the node
-  auto *graph = model_.mutable_graph();
-  auto *node  = graph->add_node();
-
-  // Set the domain/type
-  node->set_op_type(opid.type);
-  node->set_domain(opid.domain);
-
-  // Add to the opset list
-  addOpsetRequirement(opid.domain, opid.version);
-
-  // Set the inputs
-  for (auto input : inputs) {
-    if (input.type() == typeid(TensorId)) {
-      node->add_input(boost::any_cast<TensorId>(input));
-    } else {
-      throw error("Unknown input type {}", input.type().name());
-    }
-  }
-
-  // Set the outputs
-  for (int i = 0; i < numOutputs; ++i) {
-    outputTensors[i] = getNextId();
-    node->add_output(outputTensors[i]);
-  }
-
-  // Set the attributes
-  for (auto attribute : opAttributes) {
-    addNodeAttribute(attribute.first, attribute.second, *node);
-  }
-
-  finalizeOp(node, name);
-
-  return outputTensors;
-}
-
 std::vector<TensorId> BuilderImpl::op(
     const OperatorIdentifier &opid,
+    int opsetVersion,
     const std::vector<TensorId> &inputs,
-    int numberOfOutputs,
+    const unsigned numberOfOutputs,
     const std::map<std::string, boost::any> &opAttributes,
     const std::string &name,
     std::function<void(std::vector<TensorId>,
                        std::map<std::string, boost::any>)> validateInput) {
+
+  logging::builder::debug("Adding {} to builder opset:{}, numInputs:{} numOutputs:{} numAttributes:{} name:{}", 
+                           opid, opsetVersion, inputs.size(), numberOfOutputs, opAttributes.size(), name);
 
   if (opid.numInputs.min > 0) {
     // inputs.size  >= min inputs AND
@@ -327,7 +276,21 @@ std::vector<TensorId> BuilderImpl::op(
   if (validateInput)
     validateInput(inputs, opAttributes);
 
-  std::vector<TensorId> outputTensors(opid.numOutputs);
+  std::vector<TensorId> outputTensors(numberOfOutputs);
+  
+  // Set the opset version for this domain if this is the first op in the domain to
+  // be added else check that the opset is correct
+  if (opsetVersions.find(opid.domain) == opsetVersions.end()) {
+    // First op for this domain add the opset requirement  
+    addOpsetRequirement((opid.domain == Domain::ai_onnx ? "" : opid.domain) , opsetVersion);
+    opsetVersions[opid.domain] = opsetVersion;
+  }
+  else {
+    // For subsequent op's need to make sure it is the same version
+    if (opsetVersions[opid.domain] != opsetVersion) {
+      throw error("Invalid opset {} used to add an operation. Opset for domain {} already defined as {}", opsetVersion, opid.domain, opsetVersions[opid.domain]);
+    }
+  }
 
   // Create the node
   auto *graph = model_.mutable_graph();
@@ -336,10 +299,9 @@ std::vector<TensorId> BuilderImpl::op(
   // Set the domain/type
   node->set_op_type(opid.type);
 
-  // This is brittle, consider how to improve
+  // Set the domain if not ai.onnx
   if (opid.domain != Domain::ai_onnx) {
     node->set_domain(opid.domain);
-    addOpsetRequirement(Domain::ai_graphcore, 1);
   }
 
   // Set the inputs
@@ -764,6 +726,12 @@ void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
                   graphcoreOperatorSetVersion,
                   opset.version());
     }
+
+    // TODO : Need to check if we have already set the domain opsetversion
+    // Record which opset is defined in the model so that we can verify that we add
+    // op's from the same opset
+    opsetVersions[opset.domain() == "" ? Domain::ai_onnx : opset.domain()] = opset.version();
+
   }
 }
 

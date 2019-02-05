@@ -19,383 +19,383 @@ def test_basic():
 
     old_o = ""
 
-    o = builder.abs([i1])
+    o = builder.aiOnnx.abs([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.acos([i1])
+    o = builder.aiOnnx.acos([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.acosh([i1])
+    o = builder.aiOnnx.acosh([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.logical_and([i1, i2])
+    o = builder.aiOnnx.logical_and([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.asin([i1])
+    o = builder.aiOnnx.asin([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.asinh([i1])
+    o = builder.aiOnnx.asinh([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.atan([i1])
+    o = builder.aiOnnx.atan([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.atanh([i1])
+    o = builder.aiOnnx.atanh([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.ceil([i1])
+    o = builder.aiOnnx.ceil([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.cos([i1])
+    o = builder.aiOnnx.cos([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.cosh([i1])
+    o = builder.aiOnnx.cosh([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.div([i1, i2])
+    o = builder.aiOnnx.div([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.elu([i1])
+    o = builder.aiOnnx.elu([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.equal([i1, i2])
+    o = builder.aiOnnx.equal([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.exp([i1])
+    o = builder.aiOnnx.exp([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.floor([i1])
+    o = builder.aiOnnx.floor([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.greater([i1, i2])
+    o = builder.aiOnnx.greater([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.identity([i1])
+    o = builder.aiOnnx.identity([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.less([i1, i2])
+    o = builder.aiOnnx.less([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.log([i1])
+    o = builder.aiOnnx.log([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.logsoftmax([i1])
+    o = builder.aiOnnx.logsoftmax([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.max([i1, i2])
+    o = builder.aiOnnx.max([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.mean([i1, i2])
+    o = builder.aiOnnx.mean([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.min([i1, i2])
+    o = builder.aiOnnx.min([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.mul([i1, i2])
+    o = builder.aiOnnx.mul([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.neg([i1])
+    o = builder.aiOnnx.neg([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.logical_not([i1])
+    o = builder.aiOnnx.logical_not([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.logical_or([i1, i2])
+    o = builder.aiOnnx.logical_or([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.pow([i1, i2])
+    o = builder.aiOnnx.pow([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.reciprocal([i1])
+    o = builder.aiOnnx.reciprocal([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.relu([i1])
+    o = builder.aiOnnx.relu([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.sigmoid([i1])
+    o = builder.aiOnnx.sigmoid([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.sin([i1])
+    o = builder.aiOnnx.sin([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.sinh([i1])
+    o = builder.aiOnnx.sinh([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.softsign([i1])
+    o = builder.aiOnnx.softsign([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.softmax([i1])
+    o = builder.aiOnnx.softmax([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.sqrt([i1])
+    o = builder.aiOnnx.sqrt([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.sub([i1, i2])
+    o = builder.aiOnnx.sub([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.sum([i1, i2])
+    o = builder.aiOnnx.sum([i1, i2])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.tan([i1])
+    o = builder.aiOnnx.tan([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.tanh([i1])
+    o = builder.aiOnnx.tanh([i1])
     assert (old_o != o)
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     old_o = o
 
-    o = builder.logical_xor([i1, i2])
+    o = builder.aiOnnx.logical_xor([i1, i2])
     assert (builder.getTensorShape(o) == [1, 2, 32, 32])
     assert (old_o != o)
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.abs([])
+        builder.aiOnnx.abs([])
     assert (e_info.value.args[0].startswith("Abs has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.acos([])
+        builder.aiOnnx.acos([])
     assert (e_info.value.args[0].startswith("Acos has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.acosh([])
+        builder.aiOnnx.acosh([])
     assert (e_info.value.args[0].startswith("Acosh has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.add([])
+        builder.aiOnnx.add([])
     assert (e_info.value.args[0].startswith("Add has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.logical_and([])
+        builder.aiOnnx.logical_and([])
     assert (e_info.value.args[0].startswith("And has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.asin([])
+        builder.aiOnnx.asin([])
     assert (e_info.value.args[0].startswith("Asin has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.asinh([])
+        builder.aiOnnx.asinh([])
     assert (e_info.value.args[0].startswith("Asinh has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.atan([])
+        builder.aiOnnx.atan([])
     assert (e_info.value.args[0].startswith("Atan has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.atanh([])
+        builder.aiOnnx.atanh([])
     assert (e_info.value.args[0].startswith("Atanh has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.ceil([])
+        builder.aiOnnx.ceil([])
     assert (e_info.value.args[0].startswith("Ceil has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.cos([])
+        builder.aiOnnx.cos([])
     assert (e_info.value.args[0].startswith("Cos has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.cosh([])
+        builder.aiOnnx.cosh([])
     assert (e_info.value.args[0].startswith("Cosh has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.div([])
+        builder.aiOnnx.div([])
     assert (e_info.value.args[0].startswith("Div has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.elu([])
+        builder.aiOnnx.elu([])
     assert (e_info.value.args[0].startswith("Elu has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.equal([])
+        builder.aiOnnx.equal([])
     assert (e_info.value.args[0].startswith("Equal has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.exp([])
+        builder.aiOnnx.exp([])
     assert (e_info.value.args[0].startswith("Exp has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.floor([])
+        builder.aiOnnx.floor([])
     assert (e_info.value.args[0].startswith("Floor has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.greater([])
+        builder.aiOnnx.greater([])
     assert (e_info.value.args[0].startswith("Greater has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.identity([])
+        builder.aiOnnx.identity([])
     assert (e_info.value.args[0].startswith("Identity has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.less([])
+        builder.aiOnnx.less([])
     assert (e_info.value.args[0].startswith("Less has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.log([])
+        builder.aiOnnx.log([])
     assert (e_info.value.args[0].startswith("Log has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.max([])
+        builder.aiOnnx.max([])
     assert (e_info.value.args[0].startswith("Max has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.mean([])
+        builder.aiOnnx.mean([])
     assert (e_info.value.args[0].startswith("Mean has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.min([])
+        builder.aiOnnx.min([])
     assert (e_info.value.args[0].startswith("Min has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.mul([])
+        builder.aiOnnx.mul([])
     assert (e_info.value.args[0].startswith("Mul has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.neg([])
+        builder.aiOnnx.neg([])
     assert (e_info.value.args[0].startswith("Neg has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.logical_not([])
+        builder.aiOnnx.logical_not([])
     assert (e_info.value.args[0].startswith("Not has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.logical_or([])
+        builder.aiOnnx.logical_or([])
     assert (e_info.value.args[0].startswith("Or has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.pow([])
+        builder.aiOnnx.pow([])
     assert (e_info.value.args[0].startswith("Pow has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.reciprocal([])
+        builder.aiOnnx.reciprocal([])
     assert (
         e_info.value.args[0].startswith("Reciprocal has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.relu([])
+        builder.aiOnnx.relu([])
     assert (e_info.value.args[0].startswith("Relu has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.sigmoid([])
+        builder.aiOnnx.sigmoid([])
     assert (e_info.value.args[0].startswith("Sigmoid has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.sin([])
+        builder.aiOnnx.sin([])
     assert (e_info.value.args[0].startswith("Sin has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.sinh([])
+        builder.aiOnnx.sinh([])
     assert (e_info.value.args[0].startswith("Sinh has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.softsign([])
+        builder.aiOnnx.softsign([])
     assert (e_info.value.args[0].startswith("Softsign has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.sqrt([])
+        builder.aiOnnx.sqrt([])
     assert (e_info.value.args[0].startswith("Sqrt has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.sub([])
+        builder.aiOnnx.sub([])
     assert (e_info.value.args[0].startswith("Sub has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.sum([])
+        builder.aiOnnx.sum([])
     assert (e_info.value.args[0].startswith("Sum has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.tan([])
+        builder.aiOnnx.tan([])
     assert (e_info.value.args[0].startswith("Tan has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.tanh([])
+        builder.aiOnnx.tanh([])
     assert (e_info.value.args[0].startswith("Tanh has invalid number of"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.logical_xor([])
+        builder.aiOnnx.logical_xor([])
     assert (e_info.value.args[0].startswith("Xor has invalid number of"))
 
     proto = builder.getModelProto()
@@ -408,7 +408,7 @@ def test_basic():
     assert (i2 != o)
 
     with pytest.raises(TypeError) as e_info:
-        builder.add(0, 0)
+        builder.aiOnnx.add(0, 0)
 
     assert (e_info.value.args[0].startswith("add(): incompatible function"))
 
@@ -419,7 +419,7 @@ def test_add_pad():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [10]))
 
-    o = builder.pad([i1], "constant", [2, 3], 0.0)
+    o = builder.aiOnnx.pad([i1], [2, 3], "constant", 0.0)
 
     builder.addOutputTensor(o)
 
@@ -430,7 +430,7 @@ def test_add_pad():
     assert (builder.getTensorShape(o) == [15])
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.pad([i1], "constant", [2, 3, 4, 5], 0.0)
+        builder.aiOnnx.pad([i1], [2, 3, 4, 5], "constant", 0.0)
 
     assert (e_info.value.args[0].startswith("Padding vector (length 4) "))
 
@@ -441,7 +441,7 @@ def test_add_subsample():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [10, 9, 8, 7]))
 
-    o = builder.subsample([i1], strides=[2, 3, 4, 5])
+    o = builder.aiGraphcore.subsample([i1], strides=[2, 3, 4, 5])
 
     builder.addOutputTensor(o)
 
@@ -456,7 +456,7 @@ def test_add_constant():
 
     builder = poponnx.Builder()
 
-    c = builder.constant(np.array([[1, 6], [4, 5]], dtype=np.float32))
+    c = builder.aiOnnx.constant(np.array([[1, 6], [4, 5]], dtype=np.float32))
 
     builder.addOutputTensor(c)
 
@@ -474,7 +474,10 @@ def test_add_conv():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
 
     builder.addOutputTensor(o)
 
@@ -490,25 +493,33 @@ def test_add_conv():
     assert (builder.getTensorShape(o) == [1, 4, 30, 30])
 
     with pytest.raises(TypeError) as e_info:
-        builder.convolution()
+        builder.aiOnnx.conv()
 
-    assert (e_info.value.args[0].startswith(
-        "convolution(): incompatible function"))
+    assert (e_info.value.args[0].startswith("conv(): incompatible function"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.convolution([i1, i2], [1], [0, 0, 0, 0], [1, 1], 1)
+        builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1])
 
     assert (e_info.value.args[0].startswith(
         "Length of strides vector 1 != number"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.convolution([i1, i2], [1, 1], [0, 0], [1, 1], 1)
+        builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0],
+                            strides=[1, 1])
 
     assert (e_info.value.args[0].startswith(
         "Padding vector (length 2) does not have 2 values for each spatial"))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1], 1)
+        builder.aiOnnx.conv([i1, i2],
+                            dilations=[1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
 
     assert (e_info.value.args[0].startswith(
         "Length of dilations vector 2 != number of spatial d"))
@@ -522,7 +533,10 @@ def test_add_conv_and_bias():
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
     i3 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4]))
 
-    o = builder.convolution([i1, i2, i3], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2, i3],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
 
     builder.addOutputTensor(o)
 
@@ -539,9 +553,9 @@ def test_add_conv_and_bias():
     assert (builder.getTensorShape(o) == [1, 4, 30, 30])
 
     with pytest.raises(TypeError) as e_info:
-        builder.convolution()
+        builder.aiOnnx.conv()
 
-    assert (e_info.value.args[0].startswith("convolution(): incompatible"))
+    assert (e_info.value.args[0].startswith("conv(): incompatible"))
 
 
 def test_add_gemm():
@@ -552,7 +566,7 @@ def test_add_gemm():
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [8, 16]))
     i3 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [16]))
 
-    o = builder.gemm([i1, i2, i3], 1., 1., 0, 0)
+    o = builder.aiOnnx.gemm([i1, i2, i3], 1., 1., 0, 0)
 
     builder.addOutputTensor(o)
 
@@ -568,7 +582,7 @@ def test_add_gemm():
     assert (builder.getTensorShape(o) == [12, 16])
 
     with pytest.raises(TypeError) as e_info:
-        builder.gemm(0, 0, 0, 0, 0, 0, 0)
+        builder.aiOnnx.gemm(0, 0, 0, 0, 0, 0, 0)
 
     assert (e_info.value.args[0].startswith("gemm(): incompatible function"))
 
@@ -580,7 +594,7 @@ def test_add_matmul():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 3]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [3, 4]))
 
-    o = builder.matmul([i1, i2])
+    o = builder.aiOnnx.matmul([i1, i2])
 
     builder.addOutputTensor(o)
 
@@ -596,7 +610,7 @@ def test_add_matmul():
     assert (builder.getTensorShape(o) == [2, 4])
 
     with pytest.raises(TypeError) as e_info:
-        builder.matmul(0, 0, 0, 0, 0, 0, 0)
+        builder.aiOnnx.matmul(0, 0, 0, 0, 0, 0, 0)
 
     assert (e_info.value.args[0].startswith("matmul(): incompatible function"))
 
@@ -608,7 +622,7 @@ def test_add_reshape():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 3]))
     i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
 
-    o = builder.reshape([i1, i2])
+    o = builder.aiOnnx.reshape([i1, i2])
 
     builder.addOutputTensor(o)
 
@@ -621,7 +635,7 @@ def test_add_reshape_const():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 3]))
 
-    o = builder.reshape_const([i1], [1, 6])
+    o = builder.reshape_const(builder.aiOnnx, [i1], [1, 6])
 
     builder.addOutputTensor(o)
 
@@ -700,9 +714,15 @@ def test_inout_tensor_info():
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
     i3 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    x = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
-    y = builder.convolution([i1, i3], [1, 1], [0, 0, 0, 0], [1, 1], 1)
-    o = builder.add([x, y])
+    x = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
+    y = builder.aiOnnx.conv([i1, i3],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
+    o = builder.aiOnnx.add([x, y])
 
     builder.addOutputTensor(o)
 
@@ -729,7 +749,10 @@ def test_recompute_output_in_backward_pass():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
     builder.recomputeOutputInBackwardPass(o)
 
     builder.addOutputTensor(o)
@@ -746,7 +769,10 @@ def test_set_virtual_graph():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
     builder.virtualGraph(o, 1)
 
     builder.addOutputTensor(o)
@@ -768,7 +794,7 @@ def test_set_weights_from_host():
     data = np.array([1, 2], dtype=np.float32)
 
     i2 = builder.addInitializedInputTensor(data)
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -799,7 +825,10 @@ def test_add_int_attribute():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
 
     builder.addOutputTensor(o)
     # Set then get
@@ -816,7 +845,10 @@ def test_add_int_vector_attribute():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
 
     builder.addOutputTensor(o)
     # Set then get
@@ -833,7 +865,10 @@ def test_add_float_attribute():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
 
     builder.addOutputTensor(o)
     # Set then get
@@ -850,7 +885,10 @@ def test_add_float_vector_attribute():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
 
     builder.addOutputTensor(o)
     # Set then get
@@ -867,7 +905,10 @@ def test_add_string_attribute():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
 
     builder.addOutputTensor(o)
     # Set then get
@@ -884,7 +925,10 @@ def test_add_string_vector_attribute():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
 
     builder.addOutputTensor(o)
     # Set then get
@@ -912,7 +956,10 @@ def test_has_attribute():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
 
     builder.addOutputTensor(o)
     # Set then get
@@ -929,7 +976,7 @@ def test_get_all_attribute_names():
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add((i1, i1))
+    o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
     builder.addNodeAttribute("test", 100., set(o))
@@ -957,7 +1004,10 @@ def test_get_conv_strides_attribute():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], strides, [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=strides)
 
     builder.addOutputTensor(o)
     res = builder.getInt64VectorNodeAttribute("strides", set(o))
@@ -969,7 +1019,7 @@ def test_dont_override_attribute():
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add((i1, i1))
+    o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
     builder.addNodeAttribute("test", 100., set(o))
@@ -985,7 +1035,7 @@ def test_get_attribute_doesnt_exist():
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add((i1, i1))
+    o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
     builder.addNodeAttribute("test", 100., set(o))
@@ -1003,7 +1053,10 @@ def test_remove_attribute():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
 
     builder.addOutputTensor(o)
     # Set then get
@@ -1023,7 +1076,10 @@ def test_remove_attribute_doesnt_exist():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
 
-    o = builder.convolution([i1, i2], [1, 1], [0, 0, 0, 0], [1, 1], 1)
+    o = builder.aiOnnx.conv([i1, i2],
+                            dilations=[1, 1],
+                            pads=[0, 0, 0, 0],
+                            strides=[1, 1])
 
     builder.addOutputTensor(o)
     # Set then get
@@ -1043,7 +1099,7 @@ def test_get_attribute_wrong_type_int():
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add((i1, i1))
+    o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
     builder.addNodeAttribute("test", 100., set(o))
@@ -1059,7 +1115,7 @@ def test_get_attribute_wrong_type_int_vector():
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add((i1, i1))
+    o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
     builder.addNodeAttribute("test", 100., set(o))
@@ -1075,7 +1131,7 @@ def test_get_attribute_wrong_type_float():
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add((i1, i1))
+    o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
     builder.addNodeAttribute("test", 100, set(o))
@@ -1091,7 +1147,7 @@ def test_get_attribute_wrong_type_float_vector():
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add((i1, i1))
+    o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
     builder.addNodeAttribute("test", 100, set(o))
@@ -1107,7 +1163,7 @@ def test_get_attribute_wrong_type_string():
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add((i1, i1))
+    o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
     builder.addNodeAttribute("test", 100, set(o))
@@ -1123,7 +1179,7 @@ def test_get_attribute_wrong_type_string_vector():
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    o = builder.add((i1, i1))
+    o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
     builder.addNodeAttribute("test", 100, set(o))
@@ -1143,7 +1199,7 @@ def test_load_onnx_model_from_other_builder(tmpdir):
 
     i1 = builder.addInputTensor(shape)
     i2 = builder.addInputTensor(shape)
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
     proto = builder.getModelProto()
@@ -1204,13 +1260,13 @@ def test_load_onnx_model_from_file(tmpdir):
 
     i1 = builder.addInputTensor(shape)
     i2 = builder.addInputTensor(shape)
-    o = builder.add([i1, i2])
+    o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
     filename = tmpdir + "/model.onnx"
     with open(filename, 'wb') as out:
         out.write(builder.getModelProto())
 
-    builder2 = poponnx.Builder(str(filename))
+    builder2 = poponnx.Builder(None, str(filename))
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
     optimizer = poponnx.ConstSGD(0.01)
@@ -1243,7 +1299,7 @@ def test_convert_initializers_to_constants(tmpdir):
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 3]))
     i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
 
-    o = builder.reshape([i1, i2])
+    o = builder.aiOnnx.reshape([i1, i2])
 
     builder.addOutputTensor(o)
 
@@ -1255,7 +1311,7 @@ def test_convert_initializers_to_constants(tmpdir):
     assert (e_info.value.args[0] ==
             "TensorId unknown not in the model initalizers")
 
-    builder = poponnx.Builder(graph_transformer.getModelProto())
+    builder = poponnx.Builder(None, graph_transformer.getModelProto())
 
     ids = builder.getInputTensorIds()
     assert (i1 in ids)
@@ -1267,19 +1323,19 @@ def test_convert_all_fixed_point_initializers_to_constants(tmpdir):
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 3]))
     i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
-    o1 = builder.reshape([i1, i2])
+    o1 = builder.aiOnnx.reshape([i1, i2])
 
     i3 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [3, 2]))
     i4 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
-    o2 = builder.reshape([i3, i4])
+    o2 = builder.aiOnnx.reshape([i3, i4])
 
-    o = builder.add([o1, o2])
+    o = builder.aiOnnx.add([o1, o2])
     builder.addOutputTensor(o)
 
     graph_transformer = poponnx.GraphTransformer(builder.getModelProto())
     graph_transformer.convertAllFixedPointInitializersToConstants()
 
-    builder = poponnx.Builder(graph_transformer.getModelProto())
+    builder = poponnx.Builder(None, graph_transformer.getModelProto())
 
     ids = builder.getInputTensorIds()
     assert (i1 in ids)
@@ -1294,13 +1350,13 @@ def test_builder_list_const_expr_nodes_infr(tmpdir):
 
     i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
     i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
-    o1 = builder.reshape([i1, i2], 'a')
+    o1 = builder.aiOnnx.reshape([i1, i2], 'a')
 
     i3 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [3, 2]))
     i4 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
-    o2 = builder.reshape([i3, i4], 'b')
+    o2 = builder.aiOnnx.reshape([i3, i4], 'b')
 
-    o = builder.add([o1, o2])
+    o = builder.aiOnnx.add([o1, o2])
     builder.addOutputTensor(o)
     ce = builder.listConstExprNodes(poponnx.ExecutionMode.INFERENCE)
     nce = builder.listNonConstExprNodes(poponnx.ExecutionMode.INFERENCE)
@@ -1314,16 +1370,76 @@ def test_builder_list_const_expr_nodes_train(tmpdir):
 
     i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
     i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
-    o1 = builder.reshape([i1, i2], 'a')
+    o1 = builder.aiOnnx.reshape([i1, i2], 'a')
 
     i3 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [3, 2]))
     i4 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
-    o2 = builder.reshape([i3, i4], 'b')
+    o2 = builder.aiOnnx.reshape([i3, i4], 'b')
 
-    o = builder.add([o1, o2])
+    o = builder.aiOnnx.add([o1, o2])
     builder.addOutputTensor(o)
     ce = builder.listConstExprNodes(poponnx.ExecutionMode.TRAINING)
     nce = builder.listNonConstExprNodes(poponnx.ExecutionMode.TRAINING)
     assert (o1 in nce)
     assert (o2 in nce)
     assert (o in nce)
+
+
+def test_builder_opsetDefaultVersions(tmpdir):
+
+    # This will create a build with the default opsets
+    # This test may fail when we upgrade ops....
+    builder = poponnx.Builder()
+
+    i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+    i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+
+    # This will work as it will use opset 9 version of add
+    o1 = builder.aiOnnx.add([i1, i2], 'add_v9')
+
+    # This will not work as it will use opset 6 version of add
+    with pytest.raises(TypeError) as e_info:
+        o1 = builder.aiOnnx.add([i1, i2], 1, 0, 'add_v6')
+    assert (
+        "add(): incompatible function arguments. The following argument types are supported:"
+        in e_info.value.args[0])
+
+
+def test_builder_opsetDefinesVersions(tmpdir):
+
+    # This will create a build with the default opsets
+    # This test may fail when we upgrade ops....
+    builder = poponnx.Builder({"ai.onnx": 6, "ai.graphcore": 1})
+
+    i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+    i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+
+    # This will work as it will use opset 6 version of add
+    o1 = builder.aiOnnx.add([i1, i2], 1, 0, 'add_v6')
+
+    # This will not work as it will use opset 9 version of add
+    with pytest.raises(TypeError) as e_info:
+        o1 = builder.aiOnnx.add([i1, i2], 'add_v9')
+    assert (
+        "add(): incompatible function arguments. The following argument types are supported:"
+        in e_info.value.args[0])
+
+
+def test_builder_opsetVersioning(tmpdir):
+
+    builder = poponnx.Builder({"ai.onnx": 9, "ai.graphcore": 1})
+
+    i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+    i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+
+
+    o1 = builder.aiOnnx.add([i1, i2], 'b')
+
+    o1 = builder.aiOnnxOpset9.add([i1, i2], 'a')
+
+    # This will fail as we have already defined the opset as 9
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        o1 = builder.aiOnnxOpset6.add([i1, i2], 1, 0, 'a')
+    assert (
+        "Invalid opset 6 used to add an operation. Opset for domain ai.onnx already defined as 9"
+        in e_info.value.args[0])

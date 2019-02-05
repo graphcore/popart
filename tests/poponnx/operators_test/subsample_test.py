@@ -10,7 +10,7 @@ def _subsample_helper(op_tester, input, strides, output, grad_ouput):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.subsample([i1], strides)
+        o = builder.aiGraphcore.subsample([i1], strides)
         builder.addOutputTensor(o)
         return [o, 'd__' + i1]
 

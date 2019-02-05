@@ -41,37 +41,25 @@ public:
 
   void addOutputTensor(const TensorId &arg0);
 
-  TensorId constant(const ConstVoidData &initData, const std::string &name);
-
-  TensorId reshape_const(const std::vector<TensorId> &args,
-                         const std::vector<int64_t> &shape,
-                         const std::string &name);
-
-  // Add a custom op to the model
-  std::vector<TensorId>
-  customOp(const OperatorIdentifier &opid,
-           const std::vector<boost::any> &inputs,
-           const unsigned numOutputs,
-           const std::vector<std::pair<std::string, boost::any>> &attributes,
-           const std::string &name);
-
   /**
    * Add an op to the model
    *
    *
    * \param opid The operator identifier
+   * \param opsetVersion The opset for the domain of the op
    * \param inputs The input tensor ids
    * \param numberOfOutputs The number if output tensors
    * \param opAttributes The attributes of the op
    * \param name Debug name
    * \param validateInput Callback function to validate the inputs & attributes
-   * \return A list of output tensor ids. Size is given by opid.numOuputs
+   * \return A list of output tensor ids. Size is given by numberOfOutputs
    */
 
   std::vector<TensorId>
   op(const OperatorIdentifier &opid,
+     int opsetVersion,
      const std::vector<TensorId> &inputs,
-     int numberOfOutputs,
+     const unsigned numberOfOutputs,
      const std::map<std::string, boost::any> &opAttributes,
      const std::string &name,
      std::function<void(std::vector<TensorId>,
@@ -80,13 +68,14 @@ public:
 
   std::vector<TensorId>
   op(const OperatorIdentifier &opid,
+     int opsetVersion,
      const std::vector<TensorId> &inputs,
      const std::map<std::string, boost::any> &opAttributes,
      const std::string &name,
      std::function<void(std::vector<TensorId>,
                         std::map<std::string, boost::any>)> validateInput =
          nullptr) {
-    return op(opid, inputs, opid.numOutputs, opAttributes, name, validateInput);
+    return op(opid, opsetVersion, inputs, opid.numOutputs, opAttributes, name, validateInput);
   }
 
   // The following do seem to be ripe for a template
@@ -237,6 +226,9 @@ private:
   onnx::ModelProto model_;
 
   std::map<std::string, boost::any> attributes;
+
+  // Record which opset version we are using for each domain
+  std::map<std::string, int64_t> opsetVersions;
 };
 
 } // namespace poponnx

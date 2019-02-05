@@ -38,13 +38,14 @@ BOOST_AUTO_TEST_CASE(Inplace0_series) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
   auto in0   = builder->addInputTensor(shape);
-  auto h0    = builder->relu({in0});
-  auto h1    = builder->relu({h0});
-  auto preId = builder->relu({h1});
-  auto out   = builder->identity({preId});
+  auto h0    = aiOnnx.relu({in0});
+  auto h1    = aiOnnx.relu({h0});
+  auto preId = aiOnnx.relu({h1});
+  auto out   = aiOnnx.identity({preId});
   builder->addOutputTensor(out);
 
   auto proto      = builder->getModelProto();
@@ -98,14 +99,15 @@ BOOST_AUTO_TEST_CASE(Inplace0_parallel) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
   auto in0 = builder->addInputTensor(shape);
-  auto h0  = builder->relu({in0});
-  auto h1  = builder->relu({in0});
-  auto h2  = builder->relu({in0});
-  auto h3  = builder->add({h0, h1});
-  auto out = builder->add({h2, h3});
+  auto h0  = aiOnnx.relu({in0});
+  auto h1  = aiOnnx.relu({in0});
+  auto h2  = aiOnnx.relu({in0});
+  auto h3  = aiOnnx.add({h0, h1});
+  auto out = aiOnnx.add({h2, h3});
   builder->addOutputTensor(out);
 
   auto proto      = builder->getModelProto();
@@ -148,18 +150,19 @@ BOOST_AUTO_TEST_CASE(Inplace_test0) {
   //
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx = builder->aiOnnxOpset9();
 
   TensorInfo shape0{"FLOAT", std::vector<int64_t>{3, 1, 2}};
   TensorInfo shape1{"FLOAT", std::vector<int64_t>{3, 1, 1}};
   auto in0   = builder->addInputTensor(shape0);
   auto in1   = builder->addInputTensor(shape1);
-  auto inAdd = builder->add({in0, in1});
-  auto inSub = builder->sub({in0, in1});
-  auto radd  = builder->relu({inAdd});
-  auto rsub  = builder->relu({inSub});
-  auto cou   = builder->concat({radd, rsub}, 1);
-  auto rin1  = builder->relu({in1});
-  auto out   = builder->add({rin1, cou});
+  auto inAdd = aiOnnx.add({in0, in1});
+  auto inSub = aiOnnx.sub({in0, in1});
+  auto radd  = aiOnnx.relu({inAdd});
+  auto rsub  = aiOnnx.relu({inSub});
+  auto cou   = aiOnnx.concat({radd, rsub}, 1);
+  auto rin1  = aiOnnx.relu({in1});
+  auto out   = aiOnnx.add({rin1, cou});
   builder->addOutputTensor(out);
 
   auto proto      = builder->getModelProto();
@@ -210,6 +213,7 @@ BOOST_AUTO_TEST_CASE(Inplace_test1) {
 
   // Build an onnx model
   auto builder = Builder::create();
+  auto aiOnnx = builder->aiOnnxOpset9();
 
   TensorInfo shape0{"FLOAT", std::vector<int64_t>{3}};
   auto in0 = builder->addInputTensor(shape0);
@@ -217,15 +221,15 @@ BOOST_AUTO_TEST_CASE(Inplace_test1) {
   auto in2 = builder->addInputTensor(shape0);
   auto in3 = builder->addInputTensor(shape0);
 
-  auto x1 = builder->concat({in0, in1, in2}, 0);
-  auto x2 = builder->concat({in2, in3}, 0);
-  auto x3 = builder->concat({x1, x2}, 0);
-  auto o1 = builder->relu({x3});
+  auto x1 = aiOnnx.concat({in0, in1, in2}, 0);
+  auto x2 = aiOnnx.concat({in2, in3}, 0);
+  auto x3 = aiOnnx.concat({x1, x2}, 0);
+  auto o1 = aiOnnx.relu({x3});
 
   auto in4 = builder->addInputTensor(shape0);
-  auto c3  = builder->relu({in4});
-  auto o2  = builder->concat({o1, c3}, 0);
-  auto out = builder->tanh({o2});
+  auto c3  = aiOnnx.relu({in4});
+  auto o2  = aiOnnx.concat({o1, c3}, 0);
+  auto out = aiOnnx.tanh({o2});
 
   builder->addOutputTensor(out);
 

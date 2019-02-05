@@ -20,9 +20,9 @@ def test_constants_preserved():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 2]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 2]))
-    c = builder.constant(np.array([[1, 2], [3, 4]], dtype=np.float32))
-    o1 = builder.add([i1, i2])
-    o2 = builder.add([o1, c])
+    c = builder.aiOnnx.constant(np.array([[1, 2], [3, 4]], dtype=np.float32))
+    o1 = builder.aiOnnx.add([i1, i2])
+    o2 = builder.aiOnnx.add([o1, c])
     builder.addOutputTensor(o2)
 
     proto = builder.getModelProto()

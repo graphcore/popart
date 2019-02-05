@@ -10,9 +10,9 @@ def test_ipu_copy_bca1():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
-    o1 = builder.add([i1, i2])
-    o2 = builder.add([i1, i2])
-    o = builder.add([o1, o2])
+    o1 = builder.aiOnnx.add([i1, i2])
+    o2 = builder.aiOnnx.add([i1, i2])
+    o = builder.aiOnnx.add([o1, o2])
     builder.addOutputTensor(o)
 
     builder.virtualGraph(o1, 0)
@@ -39,9 +39,9 @@ def test_ipu_copy_aca1():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
-    o1 = builder.add([i1, i2])
-    o2 = builder.add([i1, i2])
-    o = builder.add([o1, o2])
+    o1 = builder.aiOnnx.add([i1, i2])
+    o2 = builder.aiOnnx.add([i1, i2])
+    o = builder.aiOnnx.add([o1, o2])
     builder.addOutputTensor(o)
 
     builder.virtualGraph(o1, 0)
@@ -74,11 +74,11 @@ def test_ipu_copy_bca4():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
-    o1 = builder.add([i1, i2])
-    o2 = builder.add([i1, i2])
-    t1 = builder.transpose([i1], [])
-    o3 = builder.add([o1, o2])
-    o = builder.add([o3, t1])
+    o1 = builder.aiOnnx.add([i1, i2])
+    o2 = builder.aiOnnx.add([i1, i2])
+    t1 = builder.aiOnnx.transpose([i1], [])
+    o3 = builder.aiOnnx.add([o1, o2])
+    o = builder.aiOnnx.add([o3, t1])
     builder.addOutputTensor(o)
 
     builder.virtualGraph(o1, 0)
@@ -107,13 +107,13 @@ def test_ipu_copy_bca2():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
-    o1 = builder.add([i1, i2])
-    o2 = builder.add([i1, i2])
+    o1 = builder.aiOnnx.add([i1, i2])
+    o2 = builder.aiOnnx.add([i1, i2])
 
-    o3 = builder.add([o1, o2])
-    o4 = builder.add([o1, o2])
+    o3 = builder.aiOnnx.add([o1, o2])
+    o4 = builder.aiOnnx.add([o1, o2])
 
-    o = builder.add([o3, o4])
+    o = builder.aiOnnx.add([o3, o4])
     builder.addOutputTensor(o)
 
     builder.virtualGraph(o1, 0)
@@ -144,8 +144,8 @@ def test_ipu_copy_bca3():
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
-    o1 = builder.add([i1, i2])
-    o = builder.add([o1, o1])
+    o1 = builder.aiOnnx.add([i1, i2])
+    o = builder.aiOnnx.add([o1, o1])
     builder.addOutputTensor(o)
 
     builder.virtualGraph(o1, 0)
@@ -168,13 +168,13 @@ def test_ipu_copy_bca5():
     builder = poponnx.Builder()
 
     constData = np.random.rand(2, 2).astype(np.float32)
-    c1 = builder.constant(constData, "constShapeData")
+    c1 = builder.aiOnnx.constant(constData, "constShapeData")
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 2]))
-    o1 = builder.add([c1, i2])
-    o2 = builder.add([c1, i2])
-    t1 = builder.transpose([c1], [])
-    o3 = builder.add([o1, o2])
-    o = builder.add([o3, t1])
+    o1 = builder.aiOnnx.add([c1, i2])
+    o2 = builder.aiOnnx.add([c1, i2])
+    t1 = builder.aiOnnx.transpose([c1], [])
+    o3 = builder.aiOnnx.add([o1, o2])
+    o = builder.aiOnnx.add([o3, t1])
     builder.addOutputTensor(o)
 
     builder.virtualGraph(o1, 0)

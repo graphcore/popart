@@ -30,7 +30,7 @@ bool CoshOpPattern::apply(Op *op) const {
   auto add    = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Add, op);
 
   auto scale = dynamic_cast<ScaleOp *>(
-      makeReplacementOpInIr(Onnx::Operators::Scale, op));
+      makeReplacementOpInIr(Onnx::Operators::Scale_1, op));
   scale->setScaleFactor(0.5f);
 
   // Remove the CoshOp
