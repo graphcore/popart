@@ -43,7 +43,9 @@ InputCreatorType SubtractOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
-poplar::Tensor SubtractOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+poplar::Tensor SubtractOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                               InIndex,
+                                               OutIndex) const {
   return tensor;
 }
 

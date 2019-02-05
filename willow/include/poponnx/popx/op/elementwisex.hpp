@@ -11,7 +11,8 @@ class ElementWiseUnaryOpx : public Opx {
 public:
   ElementWiseUnaryOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(int index0) const override;
-  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor) const override;
+  poplar::Tensor
+  unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const override;
 };
 
 } // namespace popx

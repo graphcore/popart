@@ -87,18 +87,31 @@ private:
 poplar::Type popType(const TensorInfo &);
 poplar::Type popType(DataType);
 
+// A bundle struct to represent the path a tensor
+// takes through an Opx
+struct OpxInAndOutIndex {
+  OpxInAndOutIndex(Opx *opx_, InIndex inIndex_, OutIndex outIndex_)
+      : opx(opx_), inIndex(inIndex_), outIndex(outIndex_) {}
+  OpxInAndOutIndex() = default;
+
+  Opx *opx;
+  InIndex inIndex;
+  OutIndex outIndex;
+};
+
 // A bundle class to represent candidate Opxs
 // for allocating an input tensor
 class InputCreatorCandidate {
 public:
-  InputCreatorCandidate(int, Opx *, std::vector<Opx *>);
+  InputCreatorCandidate(int, Opx *, std::vector<OpxInAndOutIndex>);
   InputCreatorCandidate() = default;
   int index;
   Opx *opx;
-  std::vector<Opx *> getPathFromInput();
+
+  std::vector<OpxInAndOutIndex> getPathFromInput();
 
 private:
-  std::vector<Opx *> pathFromInput;
+  std::vector<OpxInAndOutIndex> pathFromInput;
 };
 
 class PopTensors {
@@ -188,7 +201,7 @@ private:
   // 'unwound' to correctly lay out the input tensor
   std::vector<InputCreatorCandidate>
   getCreatorEndpoints(Tensor *tensor,
-                      std::vector<Opx *> pathFromInput,
+                      std::vector<OpxInAndOutIndex> pathFromInput,
                       bool excludeEndpointsFromPath = true,
                       bool includeDeadends          = false);
 

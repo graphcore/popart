@@ -38,7 +38,8 @@ InputCreatorType DivOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
-poplar::Tensor DivOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+poplar::Tensor
+DivOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 

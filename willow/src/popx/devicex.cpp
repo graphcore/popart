@@ -447,26 +447,26 @@ TaskId Devicex::taskWhichCreates(TensorId id) const {
 
 std::vector<InputCreatorCandidate>
 Devicex::getCreatorEndpoints(Tensor *tensor,
-                             std::vector<Opx *> pathFromInput,
+                             std::vector<OpxInAndOutIndex> pathFromInput,
                              bool excludeEndpointsFromPath,
                              bool includeDeadends) {
+
   std::vector<InputCreatorCandidate> endpoints;
   for (Op *op : tensor->consumers.getOps()) {
     auto conOpId = op->id;
     Opx *opx     = getOpx(conOpId);
 
-    for (int index : op->input->indices(tensor)) {
-      std::vector<Opx *> updatedPath = pathFromInput;
-      updatedPath.push_back(opx);
+    for (int inIndex : op->input->indices(tensor)) {
+      auto updatedPath = pathFromInput;
 
-      switch (opx->getInputCreatorType(index)) {
+      switch (opx->getInputCreatorType(inIndex)) {
       // Opx has poplar call to layout tensor at this
-      // index
+      // inIndex
       case InputCreatorType::CANCREATE: {
-        if (excludeEndpointsFromPath) {
-          updatedPath.pop_back();
+        if (!excludeEndpointsFromPath) {
+          updatedPath.push_back({opx, inIndex, -1}); // note: no valid outIndex
         }
-        endpoints.push_back({index, opx, updatedPath});
+        endpoints.push_back({inIndex, opx, updatedPath});
         break;
       }
       // Recursively search the DAG downstream of the op until we
@@ -474,6 +474,8 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
       case InputCreatorType::CANUNWIND: {
         for (auto &ind_ten : op->output->tensorMap()) {
           auto nextOutputTensor = ind_ten.second;
+          auto outIndex         = ind_ten.first;
+          updatedPath.push_back({opx, inIndex, outIndex});
           for (auto candidate :
                getCreatorEndpoints(nextOutputTensor, updatedPath)) {
             endpoints.push_back(candidate);
@@ -484,10 +486,11 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
       // Consuming op can't create tensor
       case InputCreatorType::DEADEND: {
         if (includeDeadends) {
-          if (excludeEndpointsFromPath) {
-            updatedPath.pop_back();
+          if (!excludeEndpointsFromPath) {
+            updatedPath.push_back(
+                {opx, inIndex, -1}); // note: no valid outIndex
           }
-          endpoints.push_back({index, opx, updatedPath});
+          endpoints.push_back({inIndex, opx, updatedPath});
         }
         break;
       }
@@ -548,9 +551,10 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   //    by view-changing opxs on the path from the input to
   //    the candidate candidate
   if (candidates.size() == 1) {
-    Opx *creator                     = candidates[0].opx;
-    int inIndex                      = candidates[0].index;
-    std::vector<Opx *> pathFromInput = candidates[0].getPathFromInput();
+    Opx *creator       = candidates[0].opx;
+    int inIndex        = candidates[0].index;
+    auto pathFromInput = candidates[0].getPathFromInput();
+
     auto f = [this, creator, inIndex, pathFromInput, tensor]() {
       logging::devicex::debug("Creating poplar::Tensor " + tensor->id);
       // tensors.insert(tensor->id, creator->createInput(inIndex));
@@ -560,11 +564,12 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
       // The first element is now the Opx producing a tensor consumed by
       // the candidate.
       // The last element is now the Opx consuming the input we are mapping.
-      std::vector<Opx *> pathToInput = pathFromInput;
+      auto pathToInput = pathFromInput;
       std::reverse(pathToInput.begin(), pathToInput.end());
 
       for (auto opxOnPath : pathToInput) {
-        input = opxOnPath->unwindTensorLayout(input);
+        input = opxOnPath.opx->unwindTensorLayout(
+            input, opxOnPath.inIndex, opxOnPath.outIndex);
       }
       tensors.insert(tensor->id, input);
     };
@@ -609,7 +614,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
         logging::devicex::debug("  Path to endpoint {}, starting from input",
                                 endpointId);
         for (auto opxOnPath : path) {
-          Op *opOnPath = opxOnPath->op_p;
+          Op *opOnPath = opxOnPath.opx->op_p;
           logging::devicex::debug(
               "    Op {} : {}", opOnPath->str(), opOnPath->name());
         }
@@ -838,12 +843,13 @@ PriTask Devicex::opTask(Op *op, double priority) {
   return {priority, opTaskId(op), deps, f};
 }
 
-InputCreatorCandidate::InputCreatorCandidate(int conIndex_,
-                                             Opx *opx_,
-                                             std::vector<Opx *> pathFromInput_)
+InputCreatorCandidate::InputCreatorCandidate(
+    int conIndex_,
+    Opx *opx_,
+    std::vector<OpxInAndOutIndex> pathFromInput_)
     : index(conIndex_), opx(opx_), pathFromInput(pathFromInput_) {}
 
-std::vector<Opx *> InputCreatorCandidate::getPathFromInput() {
+std::vector<OpxInAndOutIndex> InputCreatorCandidate::getPathFromInput() {
   return pathFromInput;
 }
 

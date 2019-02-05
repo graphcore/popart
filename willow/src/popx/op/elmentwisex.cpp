@@ -11,8 +11,9 @@ InputCreatorType ElementWiseUnaryOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CANUNWIND;
 }
 
-poplar::Tensor
-ElementWiseUnaryOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+poplar::Tensor ElementWiseUnaryOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                       InIndex,
+                                                       OutIndex) const {
   return tensor;
 }
 

@@ -16,7 +16,9 @@ public:
   ReshapeOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
-  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor) const final;
+  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
+                                    InIndex inIndex,
+                                    OutIndex outIndex) const final;
 };
 
 // The gradient of a reshape is the reshape in reverse

@@ -36,7 +36,8 @@ InputCreatorType ExpOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
-poplar::Tensor ExpOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+poplar::Tensor
+ExpOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 

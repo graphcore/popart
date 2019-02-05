@@ -23,7 +23,8 @@ InputCreatorType TanhOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CANUNWIND;
 }
 
-poplar::Tensor TanhOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+poplar::Tensor
+TanhOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 

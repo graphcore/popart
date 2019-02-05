@@ -28,7 +28,9 @@ InputCreatorType TransposeOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CANUNWIND;
 }
 
-poplar::Tensor TransposeOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+poplar::Tensor TransposeOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                InIndex,
+                                                OutIndex) const {
   auto perm = getOp<TransposeOp>().getPerm();
   std::vector<unsigned> reverse_perm;
 

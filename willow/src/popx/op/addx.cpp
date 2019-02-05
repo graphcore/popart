@@ -38,7 +38,8 @@ InputCreatorType AddOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
-poplar::Tensor AddOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+poplar::Tensor
+AddOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 

@@ -34,7 +34,8 @@ InputCreatorType ReluOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CANUNWIND;
 }
 
-poplar::Tensor ReluOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+poplar::Tensor
+ReluOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 
@@ -50,7 +51,9 @@ InputCreatorType ReluInplaceOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CANUNWIND;
 }
 
-poplar::Tensor ReluInplaceOpx::unwindTensorLayout(poplar::Tensor tensor) const {
+poplar::Tensor ReluInplaceOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                  InIndex,
+                                                  OutIndex) const {
   return tensor;
 }
 

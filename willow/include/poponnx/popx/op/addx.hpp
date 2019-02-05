@@ -16,7 +16,9 @@ public:
   AddOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
-  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor) const final;
+  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
+                                    InIndex inIndex,
+                                    OutIndex outIndex) const final;
 };
 
 class AddArg0GradOpx : public ReduceSumOpx {
