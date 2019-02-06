@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
               losses,
               &optimizer,
               {}, // no SessionOptions
-              Patterns({PatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::POSTNREPL})});
 
   // Check the ir
   // 1) The Matmul Op is present,

@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
               losses,
               &optimizer,
               {},
-              Patterns({PatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::POSTNREPL})});
 
   // Check the ir
   // All but one of the identityOps should have been removed from the ir
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
               losses,
               &optimizer,
               {},
-              Patterns({PatternType::PREUNIREPL})});
+              Patterns({PreAliasPatternType::PREUNIREPL})});
 
   // Check the ir
   // the PadOp should have been removed
@@ -160,7 +160,7 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
               losses,
               &optimizer,
               {},
-              Patterns({PatternType::OPTOIDENTITY})});
+              Patterns({PreAliasPatternType::OPTOIDENTITY})});
 
   // Check the ir
   // the PadOp should have been replaced with an IdentityOp
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(GatherToIdentity) {
               losses,
               &optimizer,
               {},
-              Patterns({PatternType::OPTOIDENTITY})});
+              Patterns({PreAliasPatternType::OPTOIDENTITY})});
 
   // Check the ir
   // the GatherOp should have been replaced with an IdentityOp
@@ -252,7 +252,7 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
               losses,
               &optimizer,
               {},
-              Patterns({PatternType::SPLITCONVBIAS})});
+              Patterns({PreAliasPatternType::SPLITCONVBIAS})});
 
   // Check the ir
   // Input 1 should connect to ConvOp
@@ -310,7 +310,7 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
               losses,
               &optimizer,
               {},
-              Patterns({PatternType::SUBTRACTARG1GRADOP})});
+              Patterns({PreAliasPatternType::SUBTRACTARG1GRADOP})});
 
   // Check the ir
   // SubtractArg1Grad should have been replaced with Negate and ReduceSum
@@ -359,14 +359,14 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
   opts.exportDot = true;
 
   Ir ir;
-  ir.prepare(
-      {modelProto,
-       InputShapeInfo(),
-       dataFlow,
-       losses,
-       &optimizer,
-       opts,
-       Patterns({PatternType::PREUNIREPL, PatternType::SOFTMAXGRADDIRECT})});
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              losses,
+              &optimizer,
+              opts,
+              Patterns({PreAliasPatternType::PREUNIREPL,
+                        PreAliasPatternType::SOFTMAXGRADDIRECT})});
 
   // Check the ir
   // NllGradOp and SoftmaxGradOp should have been replaced with
@@ -419,7 +419,7 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
               losses,
               &optimizer,
               opts,
-              Patterns({PatternType::RECIPROCALGRADOP})});
+              Patterns({PreAliasPatternType::RECIPROCALGRADOP})});
 
   // Check the ir
   // ReciprocalGradOp should have been replace with SquareOp, ReciprocalOp,
@@ -483,7 +483,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
               losses,
               &optimizer,
               {},
-              Patterns({PatternType::OPTOIDENTITY})});
+              Patterns({PreAliasPatternType::OPTOIDENTITY})});
 
   // Check the PadOp has been removed
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 0);

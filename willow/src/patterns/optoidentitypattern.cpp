@@ -86,7 +86,7 @@ std::vector<std::unique_ptr<Op>> OpToIdentityPattern::sequence(Op *op) const {
 
 namespace {
 static PatternCreator<OpToIdentityPattern>
-    opToIdentityPattern(PatternType::OPTOIDENTITY, "OpToIdentity");
+    opToIdentityPattern(PreAliasPatternType::OPTOIDENTITY, "OpToIdentity");
 }
 
 } // namespace poponnx

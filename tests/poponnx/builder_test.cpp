@@ -19,8 +19,10 @@
 using namespace poponnx;
 
 bool invalidOpsetId(const error &ex) {
-  BOOST_CHECK_EQUAL(ex.what(),
-                    std::string("Invalid opset 6 used to add an operation. Opset for domain ai.onnx already defined as 9"));
+  BOOST_CHECK_EQUAL(
+      ex.what(),
+      std::string("Invalid opset 6 used to add an operation. Opset for domain "
+                  "ai.onnx already defined as 9"));
   return true;
 }
 
@@ -36,11 +38,9 @@ BOOST_AUTO_TEST_CASE(Builder_MultiOpset) {
   TensorInfo shape0{"FLOAT", std::vector<int64_t>{3}};
   auto in0 = builder->addInputTensor(shape0);
   auto in1 = builder->addInputTensor(shape0);
-  auto t1 = aiOnnx9.concat({in0, in1}, 0);
+  auto t1  = aiOnnx9.concat({in0, in1}, 0);
 
   auto in2 = builder->addInputTensor(shape0);
 
-  BOOST_CHECK_EXCEPTION(aiOnnx6.concat({in2, t1}, 0),  error, invalidOpsetId);
-
-
+  BOOST_CHECK_EXCEPTION(aiOnnx6.concat({in2, t1}, 0), error, invalidOpsetId);
 }

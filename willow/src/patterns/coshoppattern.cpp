@@ -71,7 +71,7 @@ bool CoshOpPattern::apply(Op *op) const {
 }
 
 namespace {
-static PatternCreator<CoshOpPattern> CoshOpPattern(PatternType::COSHOP,
+static PatternCreator<CoshOpPattern> CoshOpPattern(PreAliasPatternType::COSHOP,
                                                    "CoshOp");
 }
 

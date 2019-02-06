@@ -7,12 +7,10 @@
 
 namespace poponnx {
 
-std::vector<OperatorIdentifier>
-ReluOp::inplaceVariants(const std::vector<InIndex> &indices) const {
-  if (indices.size() == 1 && indices[0] == 0) {
-    return {Onnx::CustomOperators::ReluInplace};
-  }
-  return {};
+std::vector<std::tuple<OperatorIdentifier, float>>
+ReluOp::inplacePriorityDefault() const {
+  // see T6768: choosing default inplace priorities
+  return {{Onnx::CustomOperators::ReluInplace, 10}};
 }
 
 std::unique_ptr<Op>

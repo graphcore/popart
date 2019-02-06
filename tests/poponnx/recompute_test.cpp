@@ -74,7 +74,8 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
               losses,
               &optimizer,
               opts,
-              Patterns({PatternType::OPTOIDENTITY, PatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::OPTOIDENTITY,
+                        PreAliasPatternType::POSTNREPL})});
 
   // All but the original 6 operations should be pruned
   BOOST_CHECK_EQUAL(ir.getOpSchedule({}).size(), 42);
@@ -139,7 +140,8 @@ BOOST_AUTO_TEST_CASE(RecomputeTest) {
               losses,
               &optimizer,
               opts,
-              Patterns({PatternType::OPTOIDENTITY, PatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::OPTOIDENTITY,
+                        PreAliasPatternType::POSTNREPL})});
 
   // All but the original 6 operations should be pruned
   BOOST_CHECK_EQUAL(ir.getOpSchedule({}).size(), 46);

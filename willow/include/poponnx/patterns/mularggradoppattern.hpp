@@ -6,7 +6,7 @@
 namespace poponnx {
 
 // Replace a MulArgGradOp with a multiply followed by a reduce sum
-class MulArgGradOpPattern : public Pattern {
+class MulArgGradOpPattern : public PreAliasPattern {
 public:
   // Does op at the root of the
   // pattern make a match?
@@ -20,7 +20,6 @@ public:
   bool apply(Op *) const override;
   // what phase should this Pattern run in? PRETOPOCONS, as it does not
   // handle topological constraints.
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 
 } // namespace poponnx

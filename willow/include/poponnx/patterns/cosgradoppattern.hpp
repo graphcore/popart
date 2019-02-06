@@ -8,7 +8,7 @@ namespace poponnx {
 // Replace a CosGradOp with
 // (fwd_in) -> [Sin] -> (tmp1)
 // {(tmp1), (grad_in)} -> [Mul] -> (tmp2) -> [Negate] -> (grad_out)
-class CosGradOpPattern : public Pattern {
+class CosGradOpPattern : public PreAliasPattern {
 public:
   // Does op at the root of the
   // pattern make a match?
@@ -22,7 +22,6 @@ public:
   bool apply(Op *) const override;
   // what phase should this Pattern run in? PRETOPOCONS, as it does not
   // handle topological constraints.
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 
 } // namespace poponnx

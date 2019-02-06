@@ -276,9 +276,10 @@ public:
   // there is a path to vertex in whose phase is BWD.
   void updateVertices();
 
-  // modify the Ir using all the registered patterns.
-  // Returns true if a change to the Ir was made.
-  void applyPatterns(PatternPhase);
+  // modify the Ir using all the registered pre-alias patterns
+  void applyPreAliasPatterns();
+
+  void applyInplacePattern();
 
   // confirm that the names of the Const tensors
   // from the user (constTensors) are in the onnx Model
@@ -311,7 +312,7 @@ private:
 
   // modify the Ir using with pattern matching
   // Returns true if a change to the Ir was made.
-  bool applyPattern(const Pattern *);
+  bool applyPreAliasPattern(const PreAliasPattern *);
 
   // gradients are named automatically. To prevent them
   // getting names already taken by non-gradient tensors,

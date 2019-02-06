@@ -58,7 +58,7 @@ BOOST_AUTO_TEST_CASE(SytheticData_False) {
       losses,
       &optimizer,
       {},
-      Patterns({poponnx::PatternType::POSTNREPL}));
+      Patterns({poponnx::PreAliasPatternType::POSTNREPL}));
 
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();
@@ -114,7 +114,7 @@ BOOST_AUTO_TEST_CASE(SytheticData_True) {
       losses,
       &optimizer,
       options,
-      Patterns({poponnx::PatternType::POSTNREPL}));
+      Patterns({poponnx::PreAliasPatternType::POSTNREPL}));
 
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();

@@ -39,6 +39,8 @@
 #include <poponnx/op/sum.hpp>
 #include <poponnx/op/varupdate.hpp>
 
+#include <poponnx/patterns/inplace.hpp>
+
 namespace poponnx {
 
 Ir::~Ir() = default;
@@ -197,6 +199,7 @@ void Ir::setUserOptions(const SessionOptions &flags) { userOptions = flags; }
 void Ir::setInputShapeInfo(const InputShapeInfo &info) {
   inputShapeInfo = info;
 }
+
 void Ir::setPatterns(const Patterns &p) { patterns = p; }
 
 void Ir::removeIsolatedTensors() { getTensors().removeIsolated(); }
@@ -507,7 +510,7 @@ void Ir::prepare(const IrBundle &gb) {
     exportDot(io::appendDirFn(userOptions.logDir, "fwd0.dot"));
   }
 
-  applyPatterns(PatternPhase::PRETOPOCONS);
+  applyPreAliasPatterns();
 
   if (canEvaluate()) {
     growFinalLoss();
@@ -533,7 +536,7 @@ void Ir::prepare(const IrBundle &gb) {
   validateAnchors();
   applyTransform(Prune::id());
 
-  applyPatterns(PatternPhase::PRETOPOCONS);
+  applyPreAliasPatterns();
   setNPathsToLoss();
 
   updateVertices();
@@ -556,7 +559,7 @@ void Ir::prepare(const IrBundle &gb) {
   // Now, we apply the Patterns which can handle and create
   // topological constraints. Currently, this is only one
   // in-placing Pattern.
-  applyPatterns(PatternPhase::WITHTOPOCONS);
+  applyInplacePattern();
 
   updateVertices();
 
@@ -722,8 +725,10 @@ void Ir::validateAnchors() const {
   }
 }
 
-bool Ir::applyPattern(const Pattern *pattern) {
+bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern) {
   bool result = false;
+
+  // the pattern chooses what order to go through the ops in
 
   std::vector<OpId> v_ops;
   v_ops.reserve(ops.size());
@@ -752,18 +757,16 @@ bool Ir::applyPattern(const Pattern *pattern) {
   return result;
 }
 
-void Ir::applyPatterns(PatternPhase phase) {
-  bool keepRunning = true;
+void Ir::applyPreAliasPatterns() {
 
-  std::vector<std::unique_ptr<Pattern>> patternList = patterns.getPatternList();
+  bool keepRunning = true;
+  std::vector<std::unique_ptr<PreAliasPattern>> pList =
+      patterns.getPreAliasList();
 
   while (keepRunning) {
     keepRunning = false;
-
-    for (auto &pattern : patternList) {
-      if (pattern->phase() == phase) {
-        keepRunning |= applyPattern(pattern.get());
-      }
+    for (auto &pattern : pList) {
+      keepRunning |= applyPreAliasPattern(pattern.get());
     }
   }
 }
@@ -1662,6 +1665,86 @@ bool Ir::canTrain() const {
 
 bool Ir::containsInitialisers() {
   return !(onnxModel->graph().initializer().empty());
+}
+
+void Ir::applyInplacePattern() {
+
+  Inplace inplace;
+
+  // <0> the id of the Op to inplace
+  // <1> the type of the inplace Op
+  // <2> the priority of this inplacing
+  using Triplet = std::tuple<OpId, OperatorIdentifier, float>;
+
+  std::vector<Triplet> priorities;
+  for (auto &id_op : ops) {
+    Op *op = id_op.second.get();
+
+    // first see if the user has overriden the default priorities
+    std::set<OpType> prioritized;
+    for (auto ip : op->settings.inplacePriorityVeto) {
+      OpType inplaceId = std::get<0>(ip);
+      priorities.push_back({
+          op->id,
+          {
+              Domain::ai_graphcore, // the domain (same for all inplace ops)
+              inplaceId,            // the name of the Operator (OpId)
+              1                     // version
+          },
+          std::get<1>(ip) // the priority value
+      });
+      prioritized.insert(inplaceId);
+    }
+
+    // for all the inplacers not in the user list, take the default
+    for (auto ip : op->inplacePriorityDefault()) {
+      OperatorIdentifier identifier = std::get<0>(ip);
+      if (prioritized.count(identifier.type) == 0) {
+        priorities.push_back({op->id, identifier, std::get<1>(ip)});
+      }
+    }
+  }
+
+  auto tripletComparitor = [](const Triplet &a, const Triplet &b) {
+    return std::get<2>(a) > std::get<2>(b);
+  };
+
+  if (priorities.size() != 0) {
+
+    // sort in decreasing order of priority,
+    std::sort(priorities.begin(), priorities.end(), tripletComparitor);
+
+    // removing all negative priorities. We use std::lower_bound
+    // instead of std::find_if, taking advantage of the fact that priorities
+    // are sorted at this point.
+
+    // (1) we create a "pivot" with priority 0
+    Triplet zeroPriority      = priorities[0];
+    std::get<2>(zeroPriority) = 0.;
+
+    // (2) we find the first elememts in priorities which is not less than the
+    // pivot, and erase all elements from there to the end. Note that
+    // priority 0 elements will be removed.
+    auto found = std::lower_bound(
+        priorities.begin(), priorities.end(), zeroPriority, tripletComparitor);
+    priorities.erase(found, priorities.end());
+
+    for (auto &ip : priorities) {
+      OpId id                       = std::get<0>(ip);
+      OperatorIdentifier identifier = std::get<1>(ip);
+      // first check that the op has not already been inplaced:
+      auto found2 = ops.find(id);
+      if (found2 == ops.end()) {
+        // the Op has already been inplaced
+      } else {
+        Op *op           = found2->second.get();
+        auto newTopoCons = inplace.getNewTopoCons(op, identifier);
+        if (isSchedulable(newTopoCons)) {
+          inplace.apply(op, identifier, newTopoCons);
+        }
+      }
+    }
+  }
 }
 
 } // namespace poponnx

@@ -7,7 +7,7 @@ namespace poponnx {
 
 // Replace reduce sum operations that reduce over no axes, or reduce on an axis
 // of size 1, with an identity operation
-class ReduceSumToIdentity : public Pattern {
+class ReduceSumToIdentity : public PreAliasPattern {
 public:
   // Does op at the root of the
   // pattern make a match?
@@ -19,7 +19,6 @@ public:
   // apply the pattern,
   // changes the graph of the op
   bool apply(Op *) const override;
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 } // namespace poponnx
 

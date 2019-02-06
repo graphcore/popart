@@ -32,7 +32,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
 
   // Build an onnx model
   auto builder = Builder::create();
-  auto aiOnnx = builder->aiOnnxOpset9();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   auto constId = aiOnnx.constant(constShapeData, "out0ShapeData");
   auto inId    = builder->addInputTensor(inInfo);
@@ -57,7 +57,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
       losses,
       &optimizer,
       {},
-      poponnx::Patterns({poponnx::PatternType::POSTNREPL}));
+      poponnx::Patterns({poponnx::PreAliasPatternType::POSTNREPL}));
 
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();
@@ -109,7 +109,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
 
   // Build an onnx model
   auto builder = Builder::create();
-  auto aiOnnx = builder->aiOnnxOpset9();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   auto constId = aiOnnx.constant(constShapeData, "constShapeData");
   auto inId    = builder->addInputTensor(inInfo);
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
       losses,
       &optimizer,
       {},
-      poponnx::Patterns({poponnx::PatternType::POSTNREPL}));
+      poponnx::Patterns({poponnx::PreAliasPatternType::POSTNREPL}));
 
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();

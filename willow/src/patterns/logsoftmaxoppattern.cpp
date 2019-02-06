@@ -25,7 +25,7 @@ std::vector<std::unique_ptr<Op>> LogSoftmaxOpPattern::sequence(Op *op) const {
 
 namespace {
 static PatternCreator<LogSoftmaxOpPattern>
-    LogSoftmaxOpPattern(PatternType::LOGSOFTMAXOP, "LogSoftmaxOp");
+    LogSoftmaxOpPattern(PreAliasPatternType::LOGSOFTMAXOP, "LogSoftmaxOp");
 }
 
 } // namespace poponnx

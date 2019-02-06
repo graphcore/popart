@@ -77,19 +77,10 @@ std::unique_ptr<Op> ConcatInplaceOp::clone() const {
 
 int64_t ConcatOp::getAxis() const { return axis; }
 
-std::vector<OperatorIdentifier>
-ConcatOp::inplaceVariants(const std::vector<InIndex> &inIndices) const {
-  if (inIndices.size() != input->n()) {
-    return {};
-  }
-
-  for (auto index : inIndices) {
-    if (!input->hasIndex(index)) {
-      return {};
-    }
-  }
-
-  return {Onnx::CustomOperators::ConcatInplace};
+std::vector<std::tuple<OperatorIdentifier, float>>
+ConcatOp::inplacePriorityDefault() const {
+  // see T6768: choosing default priorities
+  return {{Onnx::CustomOperators::ConcatInplace, 10.0f}};
 }
 
 void ConcatOp::setup() {

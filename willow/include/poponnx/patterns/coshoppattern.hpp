@@ -7,12 +7,11 @@ namespace poponnx {
 
 // Replace CoshOp
 // cosh(x) = (exp(x) + exp(-x))/2
-class CoshOpPattern : public Pattern {
+class CoshOpPattern : public PreAliasPattern {
 public:
   bool matches(Op *) const override;
   std::vector<const Tensor *> touches(Op *) const override;
   bool apply(Op *) const override;
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 
 } // namespace poponnx

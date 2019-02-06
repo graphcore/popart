@@ -83,6 +83,35 @@ void Attributes::set(std::vector<int64_t> &vs, const std::string &key) const {
   }
 }
 
+template <>
+void Attributes::set(std::vector<float> &vs, const std::string &key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    vs.resize(0);
+    vs.reserve(found->second->floats_size());
+    for (auto &v : found->second->floats()) {
+      vs.push_back(v);
+    }
+  } else {
+    throw error("no attribute key {}", key);
+  }
+}
+
+template <>
+void Attributes::set(std::vector<std::string> &vs,
+                     const std::string &key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    vs.resize(0);
+    vs.reserve(found->second->strings_size());
+    for (auto &v : found->second->strings()) {
+      vs.push_back(v);
+    }
+  } else {
+    throw error("no attribute key {}", key);
+  }
+}
+
 template <> void Attributes::set(int64_t &v, const std::string &key) const {
   auto found = att_map.find(key);
   if (found != att_map.end()) {

@@ -14,7 +14,6 @@ public:
   bool matches(Op *) const override;
   // what phase should this Pattern run in? PRETOPOCONS, as it does not
   // handle topological constraints.
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 
 private:
   // Replace the given op with the returned sequence of ops

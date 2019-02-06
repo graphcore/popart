@@ -8,7 +8,7 @@ namespace poponnx {
 // Expand convolution operations that take a bias variable into a convolution
 // operation followed by an add bias operation.
 // conv(a, w, b) becomes addbias(conv(a, w), b)
-class ConvBiasPattern : public Pattern {
+class ConvBiasPattern : public PreAliasPattern {
 public:
   // Does op at the root of the
   // pattern make a match?
@@ -22,7 +22,6 @@ public:
   bool apply(Op *) const override;
   // what phase should this Pattern run in? PRETOPOCONS, as it does not
   // handle topological constraints.
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 } // namespace poponnx
 

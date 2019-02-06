@@ -52,7 +52,7 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
               losses,
               &optimizer,
               {}, // no SessionOptions
-              Patterns({PatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::POSTNREPL})});
 
   // Check the ir
   // 1) that the Reshape Op is present,
@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape_Initializer) {
               losses,
               &optimizer,
               {},
-              Patterns({PatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::POSTNREPL})});
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Reshape_5).size() == 1);
   BOOST_CHECK(ir.getTensors().get(outId)->info.shape() == outShape);
 }

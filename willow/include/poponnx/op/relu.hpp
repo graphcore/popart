@@ -15,8 +15,8 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
-  std::vector<OperatorIdentifier>
-  inplaceVariants(const std::vector<InIndex> &) const final;
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final;
 
   std::unique_ptr<Op>
   getInplaceVariant(const OperatorIdentifier &) const override;

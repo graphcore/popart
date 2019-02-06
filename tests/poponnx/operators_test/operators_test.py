@@ -644,7 +644,9 @@ def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
               pad_value=0):
     def init_builder(builder):
         i1 = builder.addInputTensor(data)
-        o = builder.aiOnnx.pad([i1], pads=(lower_padding + upper_padding), mode = mode,
+        o = builder.aiOnnx.pad([i1],
+                               pads=(lower_padding + upper_padding),
+                               mode=mode,
                                value=pad_value)
         builder.addOutputTensor(o)
         return [o]
@@ -825,4 +827,3 @@ def test_dropout_training(op_tester):
         op_tester.run(init_builder, reference, 'train')
 
     assert (e_info.value.args[0] == "Dropout does not support training")
-

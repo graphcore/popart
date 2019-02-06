@@ -6,7 +6,7 @@
 namespace poponnx {
 
 // Replace a ReciprocalGradOp with [Square] -> [Reciprocal] -> [Negate]
-class ReciprocalGradOpPattern : public Pattern {
+class ReciprocalGradOpPattern : public PreAliasPattern {
 public:
   // Does op at the root of the
   // pattern make a match?
@@ -20,7 +20,6 @@ public:
   bool apply(Op *) const override;
   // what phase should this Pattern run in? PRETOPOCONS, as it does not
   // handle topological constraints.
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 
 } // namespace poponnx

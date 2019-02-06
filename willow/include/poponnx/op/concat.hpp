@@ -19,8 +19,8 @@ public:
   int64_t getAxis() const;
 
   // note that this is not final, ConcatInplaceOp overrides it
-  std::vector<OperatorIdentifier>
-  inplaceVariants(const std::vector<InIndex> &) const override;
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const override;
 
   std::unique_ptr<Op>
   getInplaceVariant(const OperatorIdentifier &) const override;
@@ -65,8 +65,8 @@ public:
 
   std::unique_ptr<Op> clone() const override;
 
-  std::vector<OperatorIdentifier>
-  inplaceVariants(const std::vector<InIndex> &) const final {
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final {
     return {};
   }
 

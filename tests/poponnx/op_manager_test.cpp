@@ -81,7 +81,8 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
   auto input1 = builder->addInputTensor(shape);
   auto input2 = builder->addInputTensor(shape);
 
-  auto customOut = builder->customOp({"ai_simon", "MyAdd2", 1}, 1,
+  auto customOut = builder->customOp({"ai_simon", "MyAdd2", 1},
+                                     1,
                                      {input1, input2},
                                      1,
                                      {{"attr1", 42}},
@@ -106,7 +107,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
               losses,
               &optimizer,
               {},
-              Patterns({PatternType::PREUNIREPL})});
+              Patterns({PreAliasPatternType::PREUNIREPL})});
 
   // Check the ir
   BOOST_CHECK(ir.opsOfType({"ai_simon", "MyAdd2", 1}).size() == 1);

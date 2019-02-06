@@ -32,7 +32,8 @@ SubtractArg1GradOpPattern::sequence(Op *op) const {
 
 namespace {
 static PatternCreator<SubtractArg1GradOpPattern>
-    PreUniReplPattern(PatternType::SUBTRACTARG1GRADOP, "SubtractArg1GradOp");
+    PreUniReplPattern(PreAliasPatternType::SUBTRACTARG1GRADOP,
+                      "SubtractArg1GradOp");
 }
 
 } // namespace poponnx

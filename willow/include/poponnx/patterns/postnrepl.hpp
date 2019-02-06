@@ -20,7 +20,7 @@ namespace poponnx {
 // [*] is the root of the pattern
 // there are checks that the consumer dependecices of
 // ori, rep1, rep2 and pre3 can be merged
-class PostNRepl : public Pattern {
+class PostNRepl : public PreAliasPattern {
 public:
   PostNRepl()           = default;
   ~PostNRepl() override = default;
@@ -34,7 +34,6 @@ public:
   // an inplace modification to it.
   std::vector<const Tensor *> touches(Op *) const final;
   bool apply(Op *) const final;
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 
   // *€ : this pattern matches and removes []->()
   // whereas PreUniRepl matches and removes ()->[].

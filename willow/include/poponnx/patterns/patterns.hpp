@@ -18,72 +18,82 @@ namespace poponnx {
 enum class PatternsLevel { NONE, DEFAULT, ALL };
 
 // This is a factory class which the patterns are registered with
-class PatternManager {
+class PreAliasPatternManager {
 
-  PatternManager() = default;
+  PreAliasPatternManager() = default;
 
   // List of all registered pattern types
-  std::vector<PatternType> patterns;
+  std::vector<PreAliasPatternType> patterns;
 
-  // Used to convert a string to a pattern type
-  std::map<std::string, PatternType> stringToPatternTypeMapping;
+  // Used to convert a string to a PreAliasPatternType (an enum class)
+  std::map<std::string, PreAliasPatternType> stringToPreAliasPatternTypeMapping;
 
   // Used to construct the Patterns
-  std::map<PatternType, std::function<std::unique_ptr<Pattern>()>> factory;
+  std::map<PreAliasPatternType,
+           std::function<std::unique_ptr<PreAliasPattern>()>>
+      factory;
 
   // Singleton
-  static PatternManager &getInstance() {
-    static PatternManager instance;
+  static PreAliasPatternManager &getInstance() {
+    static PreAliasPatternManager instance;
     return instance;
   }
 
 public:
   // could add another parameter to set which level this pattern is in.
-  static void registerPattern(PatternType type,
-                              std::string name,
-                              std::function<std::unique_ptr<Pattern>()> func) {
+  static void
+  registerPattern(PreAliasPatternType type,
+                  std::string name,
+                  std::function<std::unique_ptr<PreAliasPattern>()> func) {
     getInstance().patterns.push_back(type);
-    getInstance().stringToPatternTypeMapping.insert(
-        std::pair<std::string, PatternType>(name, type));
+    getInstance().stringToPreAliasPatternTypeMapping.insert(
+        std::pair<std::string, PreAliasPatternType>(name, type));
     getInstance().factory.insert(
-        std::pair<PatternType, std::function<std::unique_ptr<Pattern>()>>(
-            type, func));
+        std::pair<PreAliasPatternType,
+                  std::function<std::unique_ptr<PreAliasPattern>()>>(type,
+                                                                     func));
   }
 
-  static const std::vector<PatternType> &getPatternList() {
+  static const std::vector<PreAliasPatternType> &getPatternList() {
     return getInstance().patterns;
   }
 
-  static std::string getPatternName(PatternType type) {
-    for (auto i : getInstance().stringToPatternTypeMapping) {
-      if (i.second == type)
+  static std::string getPatternName(PreAliasPatternType type) {
+    // as there is no reverse mapping, we use the O(N) linear search here
+    for (auto i : getInstance().stringToPreAliasPatternTypeMapping) {
+      if (i.second == type) {
         return i.first;
+      }
     }
-    return "unknown";
+    throw error("No `name' string for PatterType provided in getPatternName");
   }
 
-  static boost::optional<PatternType> convertPatternType(std::string s) {
-    auto it = getInstance().stringToPatternTypeMapping.find(s);
-    return boost::optional<PatternType>{
-        it != getInstance().stringToPatternTypeMapping.end(), it->second};
+  static boost::optional<PreAliasPatternType>
+  convertPreAliasPatternType(std::string s) {
+    auto it = getInstance().stringToPreAliasPatternTypeMapping.find(s);
+    return boost::optional<PreAliasPatternType>{
+        it != getInstance().stringToPreAliasPatternTypeMapping.end(),
+        it->second};
   }
 
-  static std::unique_ptr<Pattern> createPattern(PatternType type) {
+  static std::unique_ptr<PreAliasPattern>
+  createPattern(PreAliasPatternType type) {
     auto it = getInstance().factory.find(type);
     if (it != getInstance().factory.end()) {
       return it->second();
-    } else
+    } else {
       return nullptr;
+    }
   }
 };
 
 // This class registers a lambda function to create a pattern with the
-// PatternManager
+// PreAliasPatternManager
 template <class PATTERN> class PatternCreator {
 public:
-  PatternCreator(PatternType type, std::string name) {
-    PatternManager::registerPattern(
-        type, name, [name]() -> std::unique_ptr<Pattern> {
+  PatternCreator(PreAliasPatternType type, std::string name) {
+    PreAliasPatternManager::registerPattern(
+        type, name, [name]() -> std::unique_ptr<PreAliasPattern> {
           auto pattern = std::unique_ptr<PATTERN>(new PATTERN());
           pattern->initialise(name);
           return pattern;
@@ -97,135 +107,143 @@ public:
 class Patterns {
 
 public:
-  Patterns(std::vector<PatternType> types);
+  Patterns(std::vector<PreAliasPatternType> types);
 
   Patterns(PatternsLevel level = PatternsLevel::DEFAULT);
 
   static Patterns create(std::vector<std::string> patterns);
 
-  bool isPatternEnabled(PatternType t);
-  Patterns &enablePattern(PatternType t, bool v);
+  bool isPatternEnabled(PreAliasPatternType t);
+  Patterns &enablePattern(PreAliasPatternType t, bool v);
 
   bool isPreUniReplEnabled() {
-    return isPatternEnabled(PatternType::PREUNIREPL);
+    return isPatternEnabled(PreAliasPatternType::PREUNIREPL);
   }
-  bool isPostNReplEnabled() { return isPatternEnabled(PatternType::POSTNREPL); }
+  bool isPostNReplEnabled() {
+    return isPatternEnabled(PreAliasPatternType::POSTNREPL);
+  }
   bool isSoftMaxGradDirectEnabled() {
-    return isPatternEnabled(PatternType::SOFTMAXGRADDIRECT);
+    return isPatternEnabled(PreAliasPatternType::SOFTMAXGRADDIRECT);
   }
   bool isSplitConvBiasEnabled() {
-    return isPatternEnabled(PatternType::SPLITCONVBIAS);
+    return isPatternEnabled(PreAliasPatternType::SPLITCONVBIAS);
   }
   bool isOpToIdentityEnabled() {
-    return isPatternEnabled(PatternType::OPTOIDENTITY);
+    return isPatternEnabled(PreAliasPatternType::OPTOIDENTITY);
   }
   bool isSubtractArg1GradOpEnabled() {
-    return isPatternEnabled(PatternType::SUBTRACTARG1GRADOP);
+    return isPatternEnabled(PreAliasPatternType::SUBTRACTARG1GRADOP);
   }
   bool isMulArgGradOpEnabled() {
-    return isPatternEnabled(PatternType::MULARGGRADOP);
+    return isPatternEnabled(PreAliasPatternType::MULARGGRADOP);
   }
   bool isReciprocalGradOpEnabled() {
-    return isPatternEnabled(PatternType::RECIPROCALGRADOP);
+    return isPatternEnabled(PreAliasPatternType::RECIPROCALGRADOP);
   }
   bool isDivArg0GradOpEnabled() {
-    return isPatternEnabled(PatternType::DIVARG0GRADOP);
+    return isPatternEnabled(PreAliasPatternType::DIVARG0GRADOP);
   }
   bool isDivArg1GradOpEnabled() {
-    return isPatternEnabled(PatternType::DIVARG1GRADOP);
+    return isPatternEnabled(PreAliasPatternType::DIVARG1GRADOP);
   }
-  bool isSinGradOpEnabled() { return isPatternEnabled(PatternType::SINGRADOP); }
-  bool isCosGradOpEnabled() { return isPatternEnabled(PatternType::COSGRADOP); }
+  bool isSinGradOpEnabled() {
+    return isPatternEnabled(PreAliasPatternType::SINGRADOP);
+  }
+  bool isCosGradOpEnabled() {
+    return isPatternEnabled(PreAliasPatternType::COSGRADOP);
+  }
   bool isTanToSinOverCosEnabled() {
-    return isPatternEnabled(PatternType::TANTOSINOVERCOS);
+    return isPatternEnabled(PreAliasPatternType::TANTOSINOVERCOS);
   }
-  bool isInPlace0Enabled() { return isPatternEnabled(PatternType::INPLACE0); }
-  bool isInPlaceAllEnabled() {
-    return isPatternEnabled(PatternType::INPLACEALL);
-  }
+  bool isInPlaceEnabled() { return inplaceEnabled; }
   bool isSqrtGradOpEnabled() {
-    return isPatternEnabled(PatternType::SQRTGRADOP);
+    return isPatternEnabled(PreAliasPatternType::SQRTGRADOP);
   }
-  bool isExpGradOpEnabled() { return isPatternEnabled(PatternType::EXPGRADOP); }
-  bool isLogGradOpEnabled() { return isPatternEnabled(PatternType::LOGGRADOP); }
+  bool isExpGradOpEnabled() {
+    return isPatternEnabled(PreAliasPatternType::EXPGRADOP);
+  }
+  bool isLogGradOpEnabled() {
+    return isPatternEnabled(PreAliasPatternType::LOGGRADOP);
+  }
   bool isLogSoftmaxOpEnabled() {
-    return isPatternEnabled(PatternType::LOGSOFTMAXOP);
+    return isPatternEnabled(PreAliasPatternType::LOGSOFTMAXOP);
   }
   bool isGemmDecompositionEnabled() {
-    return isPatternEnabled(PatternType::GEMMDECOMPOSITION);
+    return isPatternEnabled(PreAliasPatternType::GEMMDECOMPOSITION);
   }
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
   //           enablePreUniRepl(true);
   Patterns &enablePreUniRepl(bool v) {
-    return enablePattern(PatternType::PREUNIREPL, v);
+    return enablePattern(PreAliasPatternType::PREUNIREPL, v);
   }
   Patterns &enablePostNRepl(bool v) {
-    return enablePattern(PatternType::POSTNREPL, v);
+    return enablePattern(PreAliasPatternType::POSTNREPL, v);
   }
   Patterns &enableSoftMaxGradDirect(bool v) {
-    return enablePattern(PatternType::SOFTMAXGRADDIRECT, v);
+    return enablePattern(PreAliasPatternType::SOFTMAXGRADDIRECT, v);
   }
   Patterns &enableSplitConvBias(bool v) {
-    return enablePattern(PatternType::SPLITCONVBIAS, v);
+    return enablePattern(PreAliasPatternType::SPLITCONVBIAS, v);
   }
   Patterns &enableOpToIdentity(bool v) {
-    return enablePattern(PatternType::OPTOIDENTITY, v);
+    return enablePattern(PreAliasPatternType::OPTOIDENTITY, v);
   }
   Patterns &enableSubtractArg1GradOp(bool v) {
-    return enablePattern(PatternType::SUBTRACTARG1GRADOP, v);
+    return enablePattern(PreAliasPatternType::SUBTRACTARG1GRADOP, v);
   }
   Patterns &enableMulArgGradOp(bool v) {
-    return enablePattern(PatternType::MULARGGRADOP, v);
+    return enablePattern(PreAliasPatternType::MULARGGRADOP, v);
   }
   Patterns &enableReciprocalGradOp(bool v) {
-    return enablePattern(PatternType::RECIPROCALGRADOP, v);
+    return enablePattern(PreAliasPatternType::RECIPROCALGRADOP, v);
   }
   Patterns &enableDivArg0GradOp(bool v) {
-    return enablePattern(PatternType::DIVARG0GRADOP, v);
+    return enablePattern(PreAliasPatternType::DIVARG0GRADOP, v);
   }
   Patterns &enableDivArg1GradOp(bool v) {
-    return enablePattern(PatternType::DIVARG1GRADOP, v);
+    return enablePattern(PreAliasPatternType::DIVARG1GRADOP, v);
   }
   Patterns &enableSinGradOp(bool v) {
-    return enablePattern(PatternType::SINGRADOP, v);
+    return enablePattern(PreAliasPatternType::SINGRADOP, v);
   }
   Patterns &enableCosGradOp(bool v) {
-    return enablePattern(PatternType::COSGRADOP, v);
+    return enablePattern(PreAliasPatternType::COSGRADOP, v);
   }
   Patterns &enableTanToSinOverCos(bool v) {
-    return enablePattern(PatternType::TANTOSINOVERCOS, v);
+    return enablePattern(PreAliasPatternType::TANTOSINOVERCOS, v);
   }
-  Patterns &enableInPlaceAll(bool v) {
-    return enablePattern(PatternType::INPLACEALL, v);
-  }
-  Patterns &enableInPlace0(bool v) {
-    return enablePattern(PatternType::INPLACE0, v);
+  Patterns &enableInPlace(bool v) {
+    inplaceEnabled = v;
+    return *this;
   }
   Patterns &enableSqrtGradOp(bool v) {
-    return enablePattern(PatternType::SQRTGRADOP, v);
+    return enablePattern(PreAliasPatternType::SQRTGRADOP, v);
   }
   Patterns &enableExpGradOp(bool v) {
-    return enablePattern(PatternType::EXPGRADOP, v);
+    return enablePattern(PreAliasPatternType::EXPGRADOP, v);
   }
   Patterns &enableLogGradOp(bool v) {
-    return enablePattern(PatternType::LOGGRADOP, v);
+    return enablePattern(PreAliasPatternType::LOGGRADOP, v);
   }
   Patterns &enableLogSoftmaxOp(bool v) {
-    return enablePattern(PatternType::LOGSOFTMAXOP, v);
+    return enablePattern(PreAliasPatternType::LOGSOFTMAXOP, v);
   }
   Patterns &enableGemmDecomposition(bool v) {
-    return enablePattern(PatternType::GEMMDECOMPOSITION, v);
+    return enablePattern(PreAliasPatternType::GEMMDECOMPOSITION, v);
   }
 
-  std::vector<std::unique_ptr<Pattern>> getPatternList();
+  std::vector<std::unique_ptr<PreAliasPattern>> getPreAliasList();
 
   friend std::ostream &operator<<(std::ostream &os, const Patterns &patterns);
 
 private:
-  // Map of which settings are enabled, indexed by value of PatternType
-  std::map<PatternType, bool> settings;
+  // Map of which settings are enabled, indexed by value of PreAliasPatternType
+  std::map<PreAliasPatternType, bool> settings;
+
+  // the one pattern which is not a PreAliasPattern
+  bool inplaceEnabled{false};
 };
 
 std::ostream &operator<<(std::ostream &os, const Patterns &patterns);

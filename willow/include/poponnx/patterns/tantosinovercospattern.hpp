@@ -9,7 +9,7 @@ namespace poponnx {
 // (fwd_in) -> [Cos] -> (cos_out)
 // (fwd_in) -> [Sin] -> (sin_out)
 // {(sin_out), (cos_out) -> [Div] -> (fwd_out)
-class TanToSinOverCosPattern : public Pattern {
+class TanToSinOverCosPattern : public PreAliasPattern {
 public:
   // Does op at the root of the
   // pattern make a match?
@@ -23,7 +23,6 @@ public:
   bool apply(Op *) const override;
   // what phase should this Pattern run in? PRETOPOCONS, as it does not
   // handle topological constraints.
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 
 } // namespace poponnx

@@ -9,7 +9,7 @@ namespace poponnx {
 // (fwd_in1) -> [Square] -> (tmp1)
 // {(grad_in), (fwd_in0)} -> [Mul] -> (tmp2)
 // {(tmp2), (tmp1)} -> [Div] -> [Negate] -> [ReduceSum] -> (grad_out)
-class DivArg1GradOpPattern : public Pattern {
+class DivArg1GradOpPattern : public PreAliasPattern {
 public:
   // Does op at the root of the
   // pattern make a match?
@@ -23,7 +23,6 @@ public:
   bool apply(Op *) const override;
   // what phase should this Pattern run in? PRETOPOCONS, as it does not
   // handle topological constraints.
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 
 } // namespace poponnx

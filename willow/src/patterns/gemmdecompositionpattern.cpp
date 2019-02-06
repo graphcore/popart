@@ -108,7 +108,7 @@ void GemmDecompositionPattern::transposeTensor(const TensorId &input,
 
 namespace {
 static PatternCreator<GemmDecompositionPattern>
-    GemmDecompositionPattern(PatternType::GEMMDECOMPOSITION,
+    GemmDecompositionPattern(PreAliasPatternType::GEMMDECOMPOSITION,
                              "GemmDecomposition");
 }
 

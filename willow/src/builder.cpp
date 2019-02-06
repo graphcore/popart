@@ -183,20 +183,20 @@ TensorId AiGraphcoreOpset1::subsample(const std::vector<TensorId> &args,
       throw error("Strides invalid. 0 stride at index {}", i);
   }
 
-  return impl->op(Onnx::AiGraphcore::OpSet1::Subsample, 
+  return impl->op(Onnx::AiGraphcore::OpSet1::Subsample,
                   getOpsetVersion(),
                   args,
                   {{"strides", strides}},
                   name)[0];
 }
 
-std::vector<TensorId> Builder::customOp(
-    const OperatorIdentifier &opid,
-    int opsetVersion,
-    const std::vector<TensorId> &inputs,
-    const unsigned numOutputs,
-    const std::map<std::string, boost::any> &attributes,
-    const std::string &name) {
+std::vector<TensorId>
+Builder::customOp(const OperatorIdentifier &opid,
+                  int opsetVersion,
+                  const std::vector<TensorId> &inputs,
+                  const unsigned numOutputs,
+                  const std::map<std::string, boost::any> &attributes,
+                  const std::string &name) {
   return impl_->op(opid, opsetVersion, inputs, numOutputs, attributes, name);
 }
 

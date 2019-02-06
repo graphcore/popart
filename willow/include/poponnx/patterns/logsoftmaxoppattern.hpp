@@ -11,7 +11,6 @@ namespace poponnx {
 class LogSoftmaxOpPattern : public SequenceExpander {
 public:
   bool matches(Op *) const override;
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 
 private:
   // Replace the given op with the returned sequence of ops

@@ -38,7 +38,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_series) {
 
   // Build an onnx model
   auto builder = Builder::create();
-  auto aiOnnx = builder->aiOnnxOpset9();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
   auto in0   = builder->addInputTensor(shape);
@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_series) {
               losses,
               &optimizer,
               {},
-              Patterns({PatternType::INPLACE0})});
+              Patterns(PatternsLevel::NONE).enableInPlace(true)});
 
   // Check the ir
   // All the Relus have been optimised out,
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_parallel) {
 
   // Build an onnx model
   auto builder = Builder::create();
-  auto aiOnnx = builder->aiOnnxOpset9();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{1}};
   auto in0 = builder->addInputTensor(shape);
@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(Inplace0_parallel) {
               losses,
               &optimizer,
               {},
-              Patterns({PatternType::INPLACE0})});
+              Patterns(PatternsLevel::NONE).enableInPlace(true)});
 
   // Check the ir
   // All the Relus have been optimised out,
@@ -150,7 +150,7 @@ BOOST_AUTO_TEST_CASE(Inplace_test0) {
   //
   // Build an onnx model
   auto builder = Builder::create();
-  auto aiOnnx = builder->aiOnnxOpset9();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape0{"FLOAT", std::vector<int64_t>{3, 1, 2}};
   TensorInfo shape1{"FLOAT", std::vector<int64_t>{3, 1, 1}};
@@ -174,15 +174,13 @@ BOOST_AUTO_TEST_CASE(Inplace_test0) {
   std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
 
   Ir ir;
-  ir.prepare(
-      {modelProto,
-       InputShapeInfo(),
-       dataFlow,
-       losses,
-       &optimizer,
-       {},
-       Patterns({PatternType::INPLACEALL})}); // PatternType::INPLACE0,
-                                              // PatternType::INPLACEALL})});
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              losses,
+              &optimizer,
+              {},
+              Patterns(PatternsLevel::NONE).enableInPlace(true)});
 
   // Check the ir
   // All the Relus have been optimised out,
@@ -196,7 +194,7 @@ BOOST_AUTO_TEST_CASE(Inplace_test0) {
   BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size() == 1);
 }
 
-BOOST_AUTO_TEST_CASE(Inplace_test1) {
+BOOST_AUTO_TEST_CASE(Inplace_test1p0) {
 
   // in0 -|
   //      |
@@ -213,7 +211,7 @@ BOOST_AUTO_TEST_CASE(Inplace_test1) {
 
   // Build an onnx model
   auto builder = Builder::create();
-  auto aiOnnx = builder->aiOnnxOpset9();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   TensorInfo shape0{"FLOAT", std::vector<int64_t>{3}};
   auto in0 = builder->addInputTensor(shape0);
@@ -248,7 +246,7 @@ BOOST_AUTO_TEST_CASE(Inplace_test1) {
               losses,
               &optimizer,
               {},
-              Patterns({PatternType::INPLACEALL})});
+              Patterns(PatternsLevel::NONE).enableInPlace(true)});
 
   // Check the ir
   // All the Relus have been optimised out,
@@ -256,10 +254,85 @@ BOOST_AUTO_TEST_CASE(Inplace_test1) {
   // and have been replaced with ReluInplace.
   BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ReluInplace).size() == 2);
 
-  // All the Relus have been optimised out,
+  // All the Concat have been optimised out,
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Concat).size() == 0);
-  // and have been replaced with ReluInplace.
+  // and have been replaced with ConcatInplace.
   BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size() == 4);
+}
+
+BOOST_AUTO_TEST_CASE(Inplace_test1p1) {
+
+  // As test1p0, but now with two Ops with their inplacing priorities
+  // set negative (so they should NOT be inplaced)
+
+  //                        priority is -1 !
+  // in0 -|                    ^
+  //      |                    |
+  // in1 -|- [Concat] ----|    |
+  //      |               |    |
+  // in2 -|--|            |- [Concat] - [Relu] - o1 -|
+  //         |- [Concat] -|                          |
+  // in3 ----|                                       |- [Concat] - o2 - [Tanh] -
+  // out
+  //                                                 |
+  // in4 ---------- [Relu] -- c3 --------------------|
+  //                   ^
+  //                   |
+  //                   |
+  //                 priority is -1 !
+
+  // We expect all 2 [Relu] ops and all 4 [Concat] op to be inplaced
+
+  // Build an onnx model
+  auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
+
+  TensorInfo shape0{"FLOAT", std::vector<int64_t>{3}};
+  auto in0 = builder->addInputTensor(shape0);
+  auto in1 = builder->addInputTensor(shape0);
+  auto in2 = builder->addInputTensor(shape0);
+  auto in3 = builder->addInputTensor(shape0);
+
+  auto x1 = aiOnnx.concat({in0, in1, in2}, 0);
+  auto x2 = aiOnnx.concat({in2, in3}, 0);
+  auto x3 = aiOnnx.concat({x1, x2}, 0);
+  builder->setInplacePreferences(x3, {{"ConcatInplace", -1.0f}});
+
+  auto o1 = aiOnnx.relu({x3});
+
+  auto in4 = builder->addInputTensor(shape0);
+  auto c3  = aiOnnx.relu({in4});
+  builder->setInplacePreferences(c3, {{"ReluInplace", -1.0f}});
+  auto o2  = aiOnnx.concat({o1, c3}, 0);
+  auto out = aiOnnx.tanh({o2});
+
+  builder->addOutputTensor(out);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR
+  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto optimizer = ConstSGD(0.01);
+  std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
+
+  Ir ir;
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              losses,
+              &optimizer,
+              {},
+              Patterns(PatternsLevel::NONE).enableInPlace(true)});
+
+  // Check the ir
+  // All the Relus except the -1 priority one have been optimised out,
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ReluInplace).size() == 1);
+
+  // All the Concats except the -1 priority one have been optimised out,
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Concat).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size() == 3);
 }
 
 // next test:

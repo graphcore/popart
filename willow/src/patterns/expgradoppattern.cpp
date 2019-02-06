@@ -37,8 +37,8 @@ bool ExpGradOpPattern::apply(Op *op) const {
 }
 
 namespace {
-static PatternCreator<ExpGradOpPattern> ExpGradOpPattern(PatternType::EXPGRADOP,
-                                                         "ExpGradOp");
+static PatternCreator<ExpGradOpPattern>
+    ExpGradOpPattern(PreAliasPatternType::EXPGRADOP, "ExpGradOp");
 }
 
 } // namespace poponnx

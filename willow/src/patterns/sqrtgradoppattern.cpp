@@ -50,7 +50,7 @@ bool SqrtGradOpPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<SqrtGradOpPattern>
-    SqrtGradOpPattern(PatternType::SQRTGRADOP, "SqrtGradOp");
+    SqrtGradOpPattern(PreAliasPatternType::SQRTGRADOP, "SqrtGradOp");
 }
 
 } // namespace poponnx

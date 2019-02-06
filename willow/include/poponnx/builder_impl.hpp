@@ -75,7 +75,13 @@ public:
      std::function<void(std::vector<TensorId>,
                         std::map<std::string, boost::any>)> validateInput =
          nullptr) {
-    return op(opid, opsetVersion, inputs, opid.numOutputs, opAttributes, name, validateInput);
+    return op(opid,
+              opsetVersion,
+              inputs,
+              opid.numOutputs,
+              opAttributes,
+              name,
+              validateInput);
   }
 
   // The following do seem to be ripe for a template

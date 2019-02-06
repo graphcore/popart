@@ -15,7 +15,7 @@ namespace poponnx {
 //      grad_in
 //     ---------
 //     2 fwd_out
-class SqrtGradOpPattern : public Pattern {
+class SqrtGradOpPattern : public PreAliasPattern {
 public:
   // Does op at the root of the
   // pattern make a match?
@@ -29,7 +29,6 @@ public:
   bool apply(Op *) const override;
   // what phase should this Pattern run in? PRETOPOCONS, as it does not
   // handle topological constraints.
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 
 } // namespace poponnx

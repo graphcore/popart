@@ -5,7 +5,7 @@
 
 namespace poponnx {
 
-class SequenceExpander : public Pattern {
+class SequenceExpander : public PreAliasPattern {
 public:
   // If this Pattern were to be applied at op, which
   // Tensors in the subgraph centered (rooted) on op

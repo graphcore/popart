@@ -155,8 +155,8 @@ const std::map<int, int> &Op::gradOutToNonGradIn() const {
   throw error("Op {} cannot get `grad out to non grad in'", opid);
 }
 
-std::vector<OperatorIdentifier>
-Op::inplaceVariants(const std::vector<InIndex> &) const {
+std::vector<std::tuple<OperatorIdentifier, float>>
+Op::inplacePriorityDefault() const {
   return {};
 }
 
@@ -244,6 +244,37 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
     int64_t value;
     attributes.set(value, sRecomputeOutputAttribute);
     recomputeOutput = value;
+  }
+
+  bool hasNamesAtt = attributes.hasAttribute(sInplaceOpNames);
+  // either both or neither inplace attributes must be provided
+  if (hasNamesAtt != attributes.hasAttribute(sInplaceOpPriorities)) {
+    throw error("Either BOTH or NEITHER of the fields {} and {} must be set, "
+                "but only {} is set",
+                sInplaceOpNames,
+                sInplaceOpPriorities,
+                hasNamesAtt ? sInplaceOpNames : sInplaceOpPriorities);
+  }
+
+  // if both are provided,
+  if (hasNamesAtt) {
+    std::vector<std::string> names;
+    attributes.set(names, sInplaceOpNames);
+    std::vector<float> priorities;
+    attributes.set(priorities, sInplaceOpPriorities);
+
+    if (names.size() != priorities.size()) {
+      throw error("For fields {} and {}, the number of elements must be the "
+                  "same [ {} != {} ]",
+                  sInplaceOpPriorities,
+                  sInplaceOpNames,
+                  priorities.size(),
+                  names.size());
+    }
+
+    for (int i = 0; i < names.size(); ++i) {
+      inplacePriorityVeto.push_back({names[i], priorities[i]});
+    }
   }
 }
 

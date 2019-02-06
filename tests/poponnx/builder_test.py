@@ -1432,7 +1432,6 @@ def test_builder_opsetVersioning(tmpdir):
     i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
     i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
 
-
     o1 = builder.aiOnnx.add([i1, i2], 'b')
 
     o1 = builder.aiOnnxOpset9.add([i1, i2], 'a')

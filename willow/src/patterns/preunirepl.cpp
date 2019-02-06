@@ -59,8 +59,8 @@ bool PreUniRepl::apply(Op *op) const {
 }
 
 namespace {
-static PatternCreator<PreUniRepl> PreUniReplPattern(PatternType::PREUNIREPL,
-                                                    "PreUniRepl");
+static PatternCreator<PreUniRepl>
+    PreUniReplPattern(PreAliasPatternType::PREUNIREPL, "PreUniRepl");
 }
 
 } // namespace poponnx

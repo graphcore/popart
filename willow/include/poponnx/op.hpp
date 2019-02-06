@@ -4,6 +4,7 @@
 #include <boost/optional.hpp>
 #include <memory>
 #include <set>
+#include <vector>
 #include <poponnx/attributes.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/opidentifier.hpp>
@@ -71,6 +72,11 @@ public:
 
     std::string name = "";
 
+    // optional inplace priorities, to take precedence over the default
+    // priorities. A negative priority gurarantees no inplacing
+    // This should really be a map with "OperatorIdentifier" keys, see T6783
+    std::vector<std::tuple<std::string, float>> inplacePriorityVeto;
+
     // The virtual graph this op has been assigned to if set
     boost::optional<int64_t> vgraphId;
 
@@ -91,6 +97,7 @@ public:
   const boost::optional<int64_t> getVirtualGraphId() const {
     return settings.vgraphId;
   }
+
   void setVirtualGraphId(const boost::optional<int64_t> value) {
     settings.vgraphId = value;
   }
@@ -171,8 +178,9 @@ public:
   // This function doesn't check for anchor violations
   // or topological order violations. When there are several,
   // they should be returned in descending order of preference
-  virtual std::vector<OperatorIdentifier>
-  inplaceVariants(const std::vector<InIndex> &) const;
+
+  virtual std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const;
 
   virtual std::unique_ptr<Op>
   getInplaceVariant(const OperatorIdentifier &) const;

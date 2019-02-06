@@ -84,36 +84,30 @@ Op *ExternOpTensorBundle::getOp() { return up_op.get(); }
 // Partial success in-placing :|
 
 // what is touched? The output, and all the inputs at the target indices
-std::vector<const Tensor *> Inplace::touches(Op *op) const {
+std::vector<const Tensor *> Inplace::touches(Op *op, OperatorIdentifier) const {
 
   // Should reconsider this. If we ensure that all returns
   // to host will be done after all inplace consumers of a tensor have
   // run, we can set this up such that the output tensor is not
   // touched (where the defn of touched would then be slightly different)
 
-  std::vector<const Tensor *> touched = {op->output->tensor(0)};
-  // touched.reserve(inIndices.size() + 1);
-  // TODO : it is actually  sub-set of targetInIndces,
-  // only those which are aliased (T6707)
-  for (auto index : targetInIndices(op)) {
-    touched.push_back(op->input->tensor(index));
+  std::vector<const Tensor *> touched;
+  touched.reserve(op->input->n() + 1);
+  touched.push_back(op->output->tensor(0));
+  // TODO : it is actually  sub-set of the inputs, only those aliased (T6707)
+  for (auto &x : op->input->indicesMap()) {
+    touched.push_back(x.first);
   }
   return touched;
 }
 
-bool Inplace::apply(Op *op) const {
+bool Inplace::apply(Op *op,
+                    OperatorIdentifier identifier,
+                    const OpsBeforeKey &newConsIn) const {
   auto output_tensor = op->output->tensor(0);
   auto &ir           = op->getIr();
 
-  if (op->inplaceVariants(targetInIndices(op)).size() == 0) {
-    throw error(
-        "Cannot call Inplace::apply for {} as no valid inplace op candidate",
-        op->str());
-  }
-  auto identifier = std::get<1>(firstGoodVariant(op));
-
-  auto newCons = getNewTopoCons(
-      op, ExternOpTensorBundle(op, op->getInplaceVariant(identifier)).getOp());
+  auto newCons = newConsIn;
 
   std::unique_ptr<Op> up_inplaceOp = op->getInplaceVariant(identifier);
   Op *inplaceOp                    = up_inplaceOp.get();
@@ -157,48 +151,11 @@ bool Inplace::apply(Op *op) const {
   return true;
 }
 
-std::tuple<bool, OperatorIdentifier> Inplace::firstGoodVariant(Op *op) const {
+OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
 
-  // We go through all inplace variants to see if there are any valid ones.
-  for (auto identifier : op->inplaceVariants(targetInIndices(op))) {
-    if (op->getIr().isSchedulable(getNewTopoCons(
-            op,
-            ExternOpTensorBundle(op, op->getInplaceVariant(identifier))
-                .getOp()))) {
-      return std::tuple<bool, OperatorIdentifier>(true, identifier);
-    }
-  }
+  ExternOpTensorBundle eot_bun(op, op->getInplaceVariant(inpid));
+  Op *inOp = eot_bun.getOp();
 
-  // Returning false (and a randomly chosen Identifier).
-  // TODO: improve design (T6707)
-  return std::tuple<bool, OperatorIdentifier>(
-      false, Onnx::CustomOperators::ConcatInplace);
-}
-
-bool Inplace::matches(Op *op) const {
-
-  if (op->inplaceVariants(targetInIndices(op)).size() == 0) {
-    return false;
-  }
-
-  // only ops with exactly one output,
-  // at index 0, are considered inplace-able
-  if (op->output->n() != 1 || !op->output->hasIndex(0)) {
-    return false;
-  }
-
-  bool isGoodVariant = std::get<0>(firstGoodVariant(op));
-
-  if (!isGoodVariant) {
-    logging::pattern::debug("InplaceAll::matches : inplace candidate {} "
-                            "rejected due to scheduling conflict",
-                            op->name());
-  }
-
-  return isGoodVariant;
-}
-
-OpsBeforeKey Inplace::getNewTopoCons(Op *op, Op *inOp) const {
   logging::pattern::debug(
       "Getting new topological constraints if {} replacing {}",
       inOp->str(),
@@ -250,9 +207,10 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, Op *inOp) const {
   // in t2, creating a map;
   // of (op):(regions in t2)
   std::map<Op *, view::Regions> consumer_regions;
-  for (InIndex index : targetInIndices(op)) {
+  for (auto index_tensor : op->input->tensorMap()) {
+    InIndex index = index_tensor.first;
+    Tensor *t1    = index_tensor.second;
     view::Link bottleLink(inOp->aliases(index), inOp->fwdRegMap(index));
-    Tensor *t1 = op->input->tensor(index);
     for (auto t0_chsI : tensors.aliasChainsTo(t1)) {
       auto t0   = t0_chsI.first;
       auto chsI = t0_chsI.second;
@@ -281,7 +239,8 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, Op *inOp) const {
   }
   // second, what in t2 would inOp modify?
   view::Regions opModRegs;
-  for (InIndex index : targetInIndices(op)) {
+  for (auto index_tensor : op->input->tensorMap()) {
+    InIndex index = index_tensor.first;
     opModRegs.push_back(inOp->fwdRegMap(index)(inOp->modifies(index)));
   }
   populate(modifier_regions, op, opModRegs);
@@ -365,12 +324,5 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, Op *inOp) const {
 
   return gCons;
 } // namespace poponnx
-
-namespace {
-static PatternCreator<Inplace0> inplace0Pattern(PatternType::INPLACE0,
-                                                "InPlace0");
-static PatternCreator<InplaceAll> inplaceAllPattern(PatternType::INPLACEALL,
-                                                    "InPlaceAll");
-} // namespace
 
 } // namespace poponnx

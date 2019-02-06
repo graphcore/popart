@@ -45,7 +45,7 @@ bool ConvBiasPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<ConvBiasPattern>
-    convBiasPattern(PatternType::SPLITCONVBIAS, "SplitConvBias");
+    convBiasPattern(PreAliasPatternType::SPLITCONVBIAS, "SplitConvBias");
 }
 
 } // namespace poponnx

@@ -90,7 +90,7 @@ Module moduleFromString(const std::string &module) {
   if (module == "pattern")
     return Module::pattern;
   if (module == "builder")
-    return Module::builder;    
+    return Module::builder;
 
   return Module::none;
 }
@@ -119,7 +119,7 @@ std::string moduleName(const Module m) {
     break;
   case Module::builder:
     module = "builder";
-    break;    
+    break;
   case Module::none:
   default:
     module = "<unknown>";

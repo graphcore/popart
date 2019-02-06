@@ -38,8 +38,8 @@ bool LogGradOpPattern::apply(Op *op) const {
 }
 
 namespace {
-static PatternCreator<LogGradOpPattern> LogGradOpPattern(PatternType::LOGGRADOP,
-                                                         "LogGradOp");
+static PatternCreator<LogGradOpPattern>
+    LogGradOpPattern(PreAliasPatternType::LOGGRADOP, "LogGradOp");
 }
 
 } // namespace poponnx

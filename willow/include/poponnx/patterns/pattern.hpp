@@ -7,8 +7,8 @@
 
 namespace poponnx {
 
-enum class PatternType {
-  // Before the inplace Patterns:
+// All patterns which are run before any tensor aliasing has been performed
+enum class PreAliasPatternType {
   PREUNIREPL = 0,
   POSTNREPL,
   SOFTMAXGRADDIRECT,
@@ -28,16 +28,6 @@ enum class PatternType {
   LOGSOFTMAXOP,
   COSHOP,
   GEMMDECOMPOSITION,
-  // The patterns which can handle topological constraints:
-  INPLACE0,
-  INPLACEALL
-};
-
-enum class PatternPhase {
-  PRETOPOCONS = 0,
-  // To create a Pattern which correctly handles
-  // topological constraints requires caution!
-  WITHTOPOCONS
 };
 
 // Definition: A tensor is "touched" by a Pattern if
@@ -59,21 +49,24 @@ class Pattern {
 public:
   Pattern()          = default;
   virtual ~Pattern() = default;
-  // Does this Pattern match the
-  // sub-graph centered (rooted) on op?
-  virtual bool matches(Op *op) const = 0;
+
+  const std::string &getPatternName() const;
+
+  void initialise(std::string pattern_name);
+
+private:
+  std::string pattern_name;
+};
+
+class PreAliasPattern : public Pattern {
+public:
+  PreAliasPattern()          = default;
+  virtual ~PreAliasPattern() = default;
+
   // If this Pattern were to be applied at op, which
   // Tensors in the subgraph centered (rooted) on op
   // would be touched?
   virtual std::vector<const Tensor *> touches(Op *op) const = 0;
-  // Apply this Pattern, modifying the sub-graph
-  // centered (rooted) on op
-  virtual bool apply(Op *op) const = 0;
-  // if applied to op, would there
-  // be any anchored tensors touched?
-  bool touchesAnchored(Op *) const;
-  // What phase will this Pattern be run at?
-  virtual PatternPhase phase() const = 0;
 
   // New op(s) created in replacement of old op will
   // inherit name and attributes of op they replace
@@ -89,17 +82,24 @@ public:
 
   static TensorId createIntermediateTensorId(TensorId base_id);
 
-  void initialise(std::string pattern_name);
-
-  const std::string &getPatternName() const;
-
   std::string getReplacementOpName(Op *op) const;
 
   Op *getOpInIr(std::unique_ptr<Op> op) const;
 
+  // Does this Pattern match the
+  // sub-graph centered (rooted) on op?
+  virtual bool matches(Op *op) const = 0;
+
+  // Apply this Pattern, modifying the sub-graph
+  // centered (rooted) on op
+  virtual bool apply(Op *op) const = 0;
+
+  // if applied to op, would there
+  // be any anchored tensors touched?
+  bool touchesAnchored(Op *) const;
+
 private:
   static int tensor_counter;
-  std::string pattern_name;
 };
 
 } // namespace poponnx

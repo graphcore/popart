@@ -266,29 +266,28 @@ PYBIND11_MODULE(poponnx_core, m) {
       .value("DEFAULT", PatternsLevel::DEFAULT)
       .value("NONE", PatternsLevel::NONE);
 
-  py::enum_<PatternType>(m, "PatternType")
-      .value("PREUNIREPL", PatternType::PREUNIREPL)
-      .value("POSTNREPL", PatternType::POSTNREPL)
-      .value("SOFTMAXGRADDIRECT", PatternType::SOFTMAXGRADDIRECT)
-      .value("SPLITCONVBIAS", PatternType::SPLITCONVBIAS)
-      .value("OPTOIDENTITY", PatternType::OPTOIDENTITY)
-      .value("SUBTRACTARG1GRADOP", PatternType::SUBTRACTARG1GRADOP)
-      .value("MULARGGRADOP", PatternType::MULARGGRADOP)
-      .value("RECIPROCALGRADOP", PatternType::RECIPROCALGRADOP)
-      .value("SINGRADOP", PatternType::SINGRADOP)
-      .value("COSGRADOP", PatternType::COSGRADOP)
-      .value("TANTOSINOVERCOS", PatternType::TANTOSINOVERCOS)
-      .value("INPLACE0", PatternType::INPLACE0)
-      .value("DIVARG0GRADOP", PatternType::DIVARG0GRADOP)
-      .value("DIVARG1GRADOP", PatternType::DIVARG1GRADOP)
-      .value("SQRTGRADOP", PatternType::SQRTGRADOP)
-      .value("EXPGRADOP", PatternType::EXPGRADOP)
-      .value("GEMMDECOMPOSITION", PatternType::GEMMDECOMPOSITION);
+  py::enum_<PreAliasPatternType>(m, "PreAliasPatternType")
+      .value("PREUNIREPL", PreAliasPatternType::PREUNIREPL)
+      .value("POSTNREPL", PreAliasPatternType::POSTNREPL)
+      .value("SOFTMAXGRADDIRECT", PreAliasPatternType::SOFTMAXGRADDIRECT)
+      .value("SPLITCONVBIAS", PreAliasPatternType::SPLITCONVBIAS)
+      .value("OPTOIDENTITY", PreAliasPatternType::OPTOIDENTITY)
+      .value("SUBTRACTARG1GRADOP", PreAliasPatternType::SUBTRACTARG1GRADOP)
+      .value("MULARGGRADOP", PreAliasPatternType::MULARGGRADOP)
+      .value("RECIPROCALGRADOP", PreAliasPatternType::RECIPROCALGRADOP)
+      .value("SINGRADOP", PreAliasPatternType::SINGRADOP)
+      .value("COSGRADOP", PreAliasPatternType::COSGRADOP)
+      .value("TANTOSINOVERCOS", PreAliasPatternType::TANTOSINOVERCOS)
+      .value("DIVARG0GRADOP", PreAliasPatternType::DIVARG0GRADOP)
+      .value("DIVARG1GRADOP", PreAliasPatternType::DIVARG1GRADOP)
+      .value("SQRTGRADOP", PreAliasPatternType::SQRTGRADOP)
+      .value("EXPGRADOP", PreAliasPatternType::EXPGRADOP)
+      .value("GEMMDECOMPOSITION", PreAliasPatternType::GEMMDECOMPOSITION);
 
   py::class_<Patterns>(m, "Patterns")
       .def(py::init<>())
       .def(py::init<PatternsLevel>())
-      .def(py::init<std::vector<PatternType>>())
+      .def(py::init<std::vector<PreAliasPatternType>>())
       .def(py::init(
           [](std::vector<std::string> l) { return Patterns::create(l); }))
       .def_property("PreUniRepl",
@@ -313,10 +312,7 @@ PYBIND11_MODULE(poponnx_core, m) {
                     &Patterns::isMulArgGradOpEnabled,
                     &Patterns::enableMulArgGradOp)
       .def_property(
-          "InPlace0", &Patterns::isInPlace0Enabled, &Patterns::enableInPlace0)
-      .def_property("InPlaceAll",
-                    &Patterns::isInPlaceAllEnabled,
-                    &Patterns::enableInPlaceAll)
+          "InPlace", &Patterns::isInPlaceEnabled, &Patterns::enableInPlace)
       .def("__repr__", [](const Patterns &p) {
         std::stringstream ss;
         ss << p;

@@ -49,7 +49,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
 
   // Build an onnx model
   auto builder = Builder::create();
-  auto aiOnnx = builder->aiOnnxOpset9();
+  auto aiOnnx  = builder->aiOnnxOpset9();
   // The two fixed-point tensors which are Constants
   auto shape0Id   = aiOnnx.constant(out0ShapeData, "out0ShapeData");
   auto shape1Id   = aiOnnx.constant(out1ShapeData, "out1ShapeData");
@@ -74,7 +74,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
               losses,
               &optimizer,
               {}, // no SessionOptions
-              Patterns({PatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::POSTNREPL})});
 
   // Check the ir
   // 1) that the Reshape Op is present,
@@ -127,7 +127,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
 
   // Build an onnx model
   auto builder = Builder::create();
-  auto aiOnnx = builder->aiOnnxOpset9();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   auto w0Id = builder->addInitializedInputTensor(w0Data);
   auto w1Id = builder->addInitializedInputTensor(w1Data);
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
               {}, // no loss
               {}, // no optimizer
               {}, // no SessionOptions
-              Patterns({PatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::POSTNREPL})});
 
   // Check that the Add Op is has been removed from the IR
   // by ConstExpr folding
@@ -204,7 +204,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add2) {
 
   // Build an onnx model
   auto builder = Builder::create();
-  auto aiOnnx = builder->aiOnnxOpset9();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   auto v0Id = builder->addInputTensor(inputInfo);
   auto c0Id = aiOnnx.constant(c0Data, "c0Data");
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add2) {
               {}, // no loss
               {}, // no optimizer
               {}, // no SessionOptions
-              Patterns({PatternType::POSTNREPL})});
+              Patterns({PreAliasPatternType::POSTNREPL})});
 
   // Check that the producer of a1 Add Op is has been removed from the IR
   // by ConstExpr folding

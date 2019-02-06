@@ -10,7 +10,7 @@ namespace poponnx {
 //                     ==================>
 // {(a), (b), (c)} ->        [op01]         -> {(g), (h)}
 // where op1 is the only consumer of out0.
-class Fuser : public Pattern {
+class Fuser : public PreAliasPattern {
 public:
   bool matches(Op *) const final;
   // Only (d) is touched. Therefore, a Pattern where [op1] and
@@ -18,7 +18,6 @@ public:
   // not inherit from Fuser.
   std::vector<const Tensor *> touches(Op *) const final;
   bool apply(Op *) const final;
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 
 private:
   // OpType of op0 in schematic

@@ -12,7 +12,7 @@ namespace poponnx {
 // () must be consumed by only []. This constraint can be
 //    removed, shouldn't be too hard, although care needed
 //    with topo cons (as always)
-class PreUniRepl : public Pattern {
+class PreUniRepl : public PreAliasPattern {
 public:
   PreUniRepl()           = default;
   ~PreUniRepl() override = default;
@@ -23,7 +23,6 @@ public:
   //  Only tensor (), which is deleted, is touched
   std::vector<const Tensor *> touches(Op *) const final;
   bool apply(Op *) const final;
-  PatternPhase phase() const final { return PatternPhase::PRETOPOCONS; }
 };
 
 } // namespace poponnx

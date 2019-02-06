@@ -13,7 +13,7 @@ def test_patterns_default():
     assert (patterns.SplitConvBias == True)
     assert (patterns.OpToIdentity == True)
     assert (patterns.SubtractArg1GradOp == True)
-    assert (patterns.InPlace0 == True)
+    assert (patterns.InPlace == True)
 
     print(str(patterns))
 
@@ -28,7 +28,7 @@ def test_patterns_none():
     assert (patterns.SplitConvBias == False)
     assert (patterns.OpToIdentity == False)
     assert (patterns.SubtractArg1GradOp == False)
-    assert (patterns.InPlace0 == False)
+    assert (patterns.InPlace == False)
 
     print(str(patterns))
 
@@ -43,7 +43,7 @@ def test_patterns_all():
     assert (patterns.SplitConvBias == True)
     assert (patterns.OpToIdentity == True)
     assert (patterns.SubtractArg1GradOp == True)
-    assert (patterns.InPlace0 == True)
+    assert (patterns.InPlace == True)
 
     print(str(patterns))
 
@@ -60,7 +60,7 @@ def test_patterns_modify():
     assert (patterns.SplitConvBias == True)
     assert (patterns.OpToIdentity == True)
     assert (patterns.SubtractArg1GradOp == True)
-    assert (patterns.InPlace0 == True)
+    assert (patterns.InPlace == True)
 
     print(str(patterns))
 
@@ -68,17 +68,17 @@ def test_patterns_modify():
 def test_patterns_str():
     import poponnx
 
-    patterns = poponnx.Patterns(["PostNRepl", "InPlace0"])
+    patterns = poponnx.Patterns(["PostNRepl", "InPlace"])
     assert (patterns.PostNRepl == True)
-    assert (patterns.InPlace0 == True)
+    assert (patterns.InPlace == True)
     assert (patterns.SoftMaxGradDirect == False)
 
 
 def test_patterns_enum():
     import poponnx
 
-    patterns = poponnx.Patterns(
-        [poponnx.PatternType.POSTNREPL, poponnx.PatternType.INPLACE0])
+    patterns = poponnx.Patterns([poponnx.PreAliasPatternType.POSTNREPL])
+    patterns.InPlace = True
     assert (patterns.PostNRepl == True)
-    assert (patterns.InPlace0 == True)
+    assert (patterns.InPlace == True)
     assert (patterns.SoftMaxGradDirect == False)

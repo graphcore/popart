@@ -127,7 +127,8 @@ auto main(int argc, char **argv) -> int {
 
   auto input = builder->addInputTensor(shape);
 
-  auto outputs = builder->customOp(Onnx::CustomOperators::Cube, 1, {input}, 1, {});
+  auto outputs =
+      builder->customOp(Onnx::CustomOperators::Cube, 1, {input}, 1, {});
 
   builder->addOutputTensor(outputs[0]);
 
@@ -149,7 +150,7 @@ auto main(int argc, char **argv) -> int {
       losses,
       &optimizer,
       {},
-      poponnx::Patterns({poponnx::PatternType::PREUNIREPL}));
+      poponnx::Patterns({poponnx::PreAliasPatternType::PREUNIREPL}));
 
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();

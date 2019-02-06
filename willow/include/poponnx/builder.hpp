@@ -29,15 +29,15 @@ protected:
 
 public:
   DomainOpSet(std::unique_ptr<BuilderImpl> &impl_) : impl(impl_) {}
-  DomainOpSet(const DomainOpSet& other) = default;
-  virtual ~DomainOpSet() = default;
+  DomainOpSet(const DomainOpSet &other) = default;
+  virtual ~DomainOpSet()                = default;
 };
 
 // Include the generated builder.h code
 #include "builder.h.gen"
 
 class AiOnnxMlOpset1 : public DomainOpSet {
-  
+
 protected:
   using DomainOpSet::impl;
 
@@ -72,8 +72,6 @@ public:
   TensorId subsample(const std::vector<TensorId> &args,
                      const std::vector<int64_t> &strides,
                      const std::string &name = {});
-
-
 };
 
 /**
@@ -189,15 +187,14 @@ public:
            const std::string &name = "");
 
   /**
-   * This is a helper function that will add a constant and a reshape using the 
-   * provided domain. 
+   * This is a helper function that will add a constant and a reshape using the
+   * provided domain.
    */
-  template<class T>
-  TensorId reshape_const(T& t,
+  template <class T>
+  TensorId reshape_const(T &t,
                          const std::vector<TensorId> &args,
                          const std::vector<int64_t> &shape,
-                         const std::string &name = {})
-                         {
+                         const std::string &name = {}) {
     Shape s = {static_cast<int64_t>(shape.size())};
     TensorInfo tensorInfo("INT64", s);
     auto newShape = t.constant({shape.data(), tensorInfo}, name + "_const");
@@ -237,6 +234,19 @@ public:
    */
   void virtualGraph(const TensorId &nodeOutputName, int64_t value = 0) {
     addNodeAttribute(sVirtualGraphAttribute, value, {nodeOutputName});
+  }
+
+  void setInplacePreferences(const TensorId &nodeOutputName,
+                             const std::map<OpType, float> &prefs) {
+
+    std::vector<OpType> names;
+    std::vector<float> priorities;
+    for (auto &x : prefs) {
+      names.push_back(x.first);
+      priorities.push_back(x.second);
+    }
+    addNodeAttribute(sInplaceOpNames, names, {nodeOutputName});
+    addNodeAttribute(sInplaceOpPriorities, priorities, {nodeOutputName});
   }
 
   /**

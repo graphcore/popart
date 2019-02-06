@@ -73,7 +73,7 @@ bool DivArg1GradOpPattern::apply(Op *op) const {
 
 namespace {
 static PatternCreator<DivArg1GradOpPattern>
-    DivArg1GradOpPattern(PatternType::DIVARG1GRADOP, "DivArg1GradOp");
+    DivArg1GradOpPattern(PreAliasPatternType::DIVARG1GRADOP, "DivArg1GradOp");
 }
 
 } // namespace poponnx

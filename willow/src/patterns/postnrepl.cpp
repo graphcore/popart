@@ -85,8 +85,8 @@ std::vector<const Tensor *> PostNRepl::touches(Op *op) const {
 }
 
 namespace {
-static PatternCreator<PostNRepl> PostNReplPattern(PatternType::POSTNREPL,
-                                                  "PostNRepl");
+static PatternCreator<PostNRepl>
+    PostNReplPattern(PreAliasPatternType::POSTNREPL, "PostNRepl");
 }
 
 } // namespace poponnx

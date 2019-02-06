@@ -53,8 +53,8 @@ bool CosGradOpPattern::apply(Op *op) const {
 }
 
 namespace {
-static PatternCreator<CosGradOpPattern> CosGradOpPattern(PatternType::COSGRADOP,
-                                                         "CosGradOp");
+static PatternCreator<CosGradOpPattern>
+    CosGradOpPattern(PreAliasPatternType::COSGRADOP, "CosGradOp");
 }
 
 } // namespace poponnx

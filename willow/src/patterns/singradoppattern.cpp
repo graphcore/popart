@@ -45,8 +45,8 @@ bool SinGradOpPattern::apply(Op *op) const {
 }
 
 namespace {
-static PatternCreator<SinGradOpPattern> SinGradOpPattern(PatternType::SINGRADOP,
-                                                         "SinGradOp");
+static PatternCreator<SinGradOpPattern>
+    SinGradOpPattern(PreAliasPatternType::SINGRADOP, "SinGradOp");
 }
 
 } // namespace poponnx
