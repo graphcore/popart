@@ -349,7 +349,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .value("TRAINING", Builder::ExecutionMode::TRAINING);
 
   py::class_<GraphTransformer>(m, "GraphTransformer")
-      .def(py::init<const py::bytes &>(), py::arg("modelProtoOrFilename"))
+      .def(py::init<const std::string &>(), py::arg("modelProtoOrFilename"))
       .def("getModelProto",
            [](const GraphTransformer &graphtransformer) {
              return py::bytes(graphtransformer.getModelProto());
