@@ -588,7 +588,9 @@ void Ir::prepare(const IrBundle &gb) {
     }
   }
 
-  verifyConstExprFolding();
+  // Comment out until T6810 is done -- otherwise prohibitively slow
+  // for large graphs
+  // verifyConstExprFolding();
 
   verifyConnectivity();
 
