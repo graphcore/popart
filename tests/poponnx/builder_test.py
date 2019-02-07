@@ -1270,7 +1270,7 @@ def test_load_onnx_model_from_file(tmpdir):
     with open(filename, 'wb') as out:
         out.write(builder.getModelProto())
 
-    builder2 = poponnx.Builder(None, str(filename))
+    builder2 = poponnx.Builder(str(filename))
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
     optimizer = poponnx.ConstSGD(0.01)
@@ -1315,7 +1315,7 @@ def test_convert_initializers_to_constants(tmpdir):
     assert (e_info.value.args[0] ==
             "TensorId unknown not in the model initalizers")
 
-    builder = poponnx.Builder(None, graph_transformer.getModelProto())
+    builder = poponnx.Builder(graph_transformer.getModelProto())
 
     ids = builder.getInputTensorIds()
     assert (i1 in ids)
@@ -1339,7 +1339,7 @@ def test_convert_all_fixed_point_initializers_to_constants(tmpdir):
     graph_transformer = poponnx.GraphTransformer(builder.getModelProto())
     graph_transformer.convertAllFixedPointInitializersToConstants()
 
-    builder = poponnx.Builder(None, graph_transformer.getModelProto())
+    builder = poponnx.Builder(graph_transformer.getModelProto())
 
     ids = builder.getInputTensorIds()
     assert (i1 in ids)
@@ -1413,7 +1413,7 @@ def test_builder_opsetDefinesVersions(tmpdir):
 
     # This will create a build with the default opsets
     # This test may fail when we upgrade ops....
-    builder = poponnx.Builder({"ai.onnx": 6, "ai.graphcore": 1})
+    builder = poponnx.Builder(opsets={"ai.onnx": 6, "ai.graphcore": 1})
 
     i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
     i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
@@ -1431,7 +1431,7 @@ def test_builder_opsetDefinesVersions(tmpdir):
 
 def test_builder_opsetVersioning(tmpdir):
 
-    builder = poponnx.Builder({"ai.onnx": 9, "ai.graphcore": 1})
+    builder = poponnx.Builder(opsets={"ai.onnx": 9, "ai.graphcore": 1})
 
     i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
     i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
