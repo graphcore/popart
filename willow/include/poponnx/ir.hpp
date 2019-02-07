@@ -344,9 +344,9 @@ private:
 
   // Verify ConstExpr folding has removed input tensors
   // as expected
-  void verifyConstExprFolding() const;
+  void verifyConstExprFolding();
   bool isCandidateForConstExprFolding(const Tensor &tensor) const;
-  std::vector<Tensor *> getRootInputsToOp(Op *op) const;
+  std::vector<Tensor *> getRootInputsToOp(Op *op);
 
 private:
   std::unique_ptr<Tensors> up_tensors;
@@ -374,6 +374,9 @@ private:
 
   // Map of transform Id to enable flag
   std::map<std::size_t, bool> transformEnableMap;
+
+  // Map of ops and their root inputs
+  std::map<OpId, std::vector<Tensor *>> opAndRootInputs;
 
   // The update ops which must be run during a training pass
   std::set<Op *> trainTargetOps;

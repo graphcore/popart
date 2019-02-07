@@ -401,23 +401,34 @@ bool Ir::isCandidateForConstExprFolding(const Tensor &tensor) const {
   return true;
 }
 
-std::vector<Tensor *> Ir::getRootInputsToOp(Op *op) const {
-  std::vector<Tensor *> rootInputs;
+std::vector<Tensor *> Ir::getRootInputsToOp(Op *op) {
+  if (opAndRootInputs.find(op->id) != opAndRootInputs.end()) {
+    // We have already stored the root inputs for this op
+    // in a map. Retrieve here instead of performing search
+    return opAndRootInputs.at(op->id);
+  } else {
+    std::vector<Tensor *> rootInputs;
 
-  // Get input tensors Ids
-  std::vector<TensorId> inputIds = getTensors().getNoProducerIds();
-  for (Tensor *tensor : op->input->tensors()) {
-    if (std::find(inputIds.begin(), inputIds.end(), tensor->id) !=
-        inputIds.end()) {
-      // Tensor is a root input
-      rootInputs.push_back(tensor);
-    } else {
-      for (auto rootInputTensor : getRootInputsToOp(tensor->getProducer())) {
-        rootInputs.push_back(rootInputTensor);
+    // Get input tensors Ids
+    std::vector<TensorId> inputIds = getTensors().getNoProducerIds();
+    for (Tensor *tensor : op->input->tensors()) {
+      if (std::find(inputIds.begin(), inputIds.end(), tensor->id) !=
+          inputIds.end()) {
+        // Tensor is a root input
+        rootInputs.push_back(tensor);
+      } else {
+        for (auto rootInputTensor : getRootInputsToOp(tensor->getProducer())) {
+          rootInputs.push_back(rootInputTensor);
+        }
       }
     }
+
+    // Add what we've found to the IR's map to speed up
+    // future searches
+    opAndRootInputs.emplace(op->id, rootInputs);
+
+    return rootInputs;
   }
-  return rootInputs;
 }
 
 // Verify ConstExpr folding has removed input tensors that should
@@ -434,7 +445,7 @@ std::vector<Tensor *> Ir::getRootInputsToOp(Op *op) const {
 //
 // Note: this doesn't check that ConstExpr folding has removed
 // tenosors that it shouldn't have
-void Ir::verifyConstExprFolding() const {
+void Ir::verifyConstExprFolding() {
   for (auto id : getTensors().getNoProducerIds()) {
     Tensor *tensor = getTensors().get(id);
 
@@ -588,9 +599,7 @@ void Ir::prepare(const IrBundle &gb) {
     }
   }
 
-  // Comment out until T6810 is done -- otherwise prohibitively slow
-  // for large graphs
-  // verifyConstExprFolding();
+  verifyConstExprFolding();
 
   verifyConnectivity();
 
