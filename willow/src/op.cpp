@@ -292,7 +292,7 @@ int Op::outRank(InIndex index) const { return outTensor(index)->info.rank(); }
 
 std::string Op::str() const {
   std::stringstream ss;
-  ss << id << "(" << opid << ")";
+  ss << id << " (" << opid << ")";
   return ss.str();
 }
 

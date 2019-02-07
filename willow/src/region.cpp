@@ -1,6 +1,8 @@
 #include <poponnx/error.hpp>
 #include <poponnx/region.hpp>
 
+#include <boost/range/algorithm.hpp>
+
 namespace poponnx {
 namespace view {
 
@@ -77,8 +79,18 @@ Region Region::intersect(const Region &rhs) const {
   if (rhs.isEmpty() || isEmpty()) {
     return getEmpty(rhs.rank());
   }
+  Region result(lower, upper);
 
-  throw error("general intersect not implemented");
+  // Resolve templates and overload set
+  const auto min = [](int64_t a, int64_t b) { return std::min(a, b); };
+  const auto max = [](int64_t a, int64_t b) { return std::max(a, b); };
+
+  boost::transform(lower, rhs.lower, result.lower.begin(), max);
+  boost::transform(upper, rhs.upper, result.upper.begin(), min);
+  boost::transform(result.lower, result.upper, result.lower.begin(), min);
+  boost::transform(result.lower, result.upper, result.upper.begin(), max);
+
+  return result;
 }
 
 } // namespace view

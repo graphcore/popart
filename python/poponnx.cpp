@@ -513,6 +513,12 @@ PYBIND11_MODULE(poponnx_core, m) {
                &Builder::recomputeOutputInBackwardPass),
            py::arg("nodeOutputNames"),
            py::arg("value") = true)
+      .def("setInplacePreferences",
+           static_cast<void (Builder::*)(const TensorId &,
+                                         const std::map<OpType, float> &)>(
+               &Builder::setInplacePreferences),
+           py::arg("nodeOutputName"),
+           py::arg("prefs"))
       .def("getRecomputeOutputInBackwardPass",
            static_cast<bool (Builder::*)(const TensorId &)>(
                &Builder::getRecomputeOutputInBackwardPass),

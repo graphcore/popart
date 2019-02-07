@@ -71,7 +71,7 @@ std::string getTestModelProto(DataType type) {
   const_data            = {raw_const_data.data(), const_info};
 
   auto builder = Builder::create();
-  auto aiOnnx = builder->aiOnnxOpset9();
+  auto aiOnnx  = builder->aiOnnxOpset9();
 
   auto x4 = aiOnnx.constant(const_data, "x4");
   auto x0 = builder->addInputTensor(in_info);

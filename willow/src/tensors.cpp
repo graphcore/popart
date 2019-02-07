@@ -7,73 +7,123 @@
 
 namespace poponnx {
 
+view::Chains Tensors::getChainsFromTo(Tensor *from, Tensor *to) const {
+  auto allChainsFrom = aliasChainsFrom(from);
+  if (allChainsFrom.find(to) == allChainsFrom.end()) {
+    throw error("No chains {} -> {} found", from->str(), to->str());
+  }
+  return allChainsFrom.at(to);
+}
+
+std::map<Tensor *, view::Chains> Tensors::getAliasChains(
+    const std::map<Tensor *, std::map<Tensor *, view::Chains>> &fullM,
+    Tensor *t) const {
+  std::map<Tensor *, view::Chains> retM{};
+  auto found = fullM.find(t);
+  if (found != fullM.end()) {
+    retM = found->second;
+  }
+  retM[t] = view::Chains::getIdentity(t->info.shape());
+  return retM;
+}
+
 std::map<Tensor *, view::Chains> Tensors::aliasChainsTo(Tensor *to) const {
-
-  auto found = aliases.find(to);
-  if (found == aliases.end()) {
-    return {{to, view::Chains::getIdentity(to->info.shape())}};
-  }
-
-  else {
-    auto retM = found->second;
-    retM[to]  = view::Chains::getIdentity(to->info.shape());
-    return retM;
-  }
+  return getAliasChains(aliasChainsToKey, to);
 }
 
-std::map<Tensor *, view::Chains> Tensors::aliasChainsFrom(Tensor *) const {
-  throw error("Tensors::aliasChainsFrom needs implementing");
+std::map<Tensor *, view::Chains> Tensors::aliasChainsFrom(Tensor *from) const {
+  return getAliasChains(aliasChainsFromKey, from);
 }
 
+// Let the Chains flow through op (called on new inplace ops)
 void Tensors::updateAliases(Op *op) {
 
   // there is no aliasing for ops with more than 1 output,
-  if (op->output->n() == 1 && op->output->hasIndex(0)) {
+  if (!(op->output->n() == 1 && op->output->hasIndex(0))) {
+    throw error("No updateAliases for op which does not "
+                " have a unique output "
+                "at index 0, {}",
+                op->str());
+  }
 
-    Tensor *t2 = op->output->tensor(0);
+  // for the unique output of op t2,
+  Tensor *t2 = op->output->tensor(0);
 
-    for (auto i1_t1 : op->input->tensorMap()) {
+  // and for all of the inputs of op t1,
+  for (auto i1_t1 : op->input->tensorMap()) {
 
-      InIndex i1 = i1_t1.first;
-      Tensor *t1 = i1_t1.second;
+    InIndex i1 = i1_t1.first;
+    Tensor *t1 = i1_t1.second;
 
-      auto fwdMap = op->fwdRegMap(i1);
-      auto bwdMap = op->bwdRegMap(i1);
+    auto fwdMap = op->fwdRegMap(i1);
+    auto bwdMap = op->bwdRegMap(i1);
 
-      view::Region inRegion  = op->aliases(i1);
-      view::Region outRegion = fwdMap(inRegion);
+    view::Region inRegion  = op->aliases(i1);
+    view::Region outRegion = fwdMap(inRegion);
 
-      view::Link fwdLink(inRegion, fwdMap);
-      view::Link bwdLink(outRegion, bwdMap);
+    view::Link fwdLink(inRegion, fwdMap);
+    view::Link bwdLink(outRegion, bwdMap);
 
-      if (!outRegion.isEmpty()) {
+    // if there is an alias between the unique output
+    // t2 and the input t1, this opens new Chains
+    if (!outRegion.isEmpty()) {
 
-        auto chainsIn  = aliasChainsTo(t1);
-        auto chainsOut = aliasChainsFrom(t2);
+      // all chains t0 -> t1 for all t0
+      auto allInChains = aliasChainsTo(t1);
 
-        for (auto &inwards : chainsIn) {
-          Tensor *t0            = inwards.first;
-          view::Chains inChains = inwards.second;
+      // all chains t2 -> t3 for all t3
+      auto allOutChains = aliasChainsFrom(t2);
 
-          for (auto &outwards : chainsOut) {
-            Tensor *t3             = outwards.first;
-            view::Chains outChains = outwards.second;
+      for (auto &inwards : allInChains) {
+        Tensor *t0 = inwards.first;
+        // the chains t0 -> t1
+        view::Chains inChains = inwards.second;
 
-            // we now have,
-            // t0 ------> t1 -> op -> t2 -----> t3
-            // and we want to update aliases[t3][t0]
-            // with and new chains that pass through op.
+        // the chains t1 -> t0. There are such chains,
+        // guaranteed by the existance of chains t0 -> t1
+        view::Chains inChainsRev = getChainsFromTo(t1, t0);
 
-            if (aliases.find(t3) == aliases.end()) {
-              aliases[t3] = {};
-            }
-            if (aliases.at(t3).find(t0) == aliases.at(t3).end()) {
-              aliases[t3][t0] = {}; // empty Chains
-            }
-            // add the new Chains. This needs implementation
-            aliases[t3][t0] = aliases[t3][t0].parallel(
-                inChains.series(fwdLink).series(outChains));
+        for (auto &outwards : allOutChains) {
+          Tensor *t3 = outwards.first;
+
+          // the chains t2 -> t3
+          view::Chains outChains = outwards.second;
+
+          // the chains t3 -> t2 (which must exist by symmetry of aliasing)
+          view::Chains outChainsRev = getChainsFromTo(t3, t2);
+
+          // we now have,
+          // t0 ------> t1 -> op -> t2 -----> t3
+          // and we want to update aliasChainsToKey[t3][t0]
+          // with and new chains that pass through op, as
+          // well as aliasChainsToKey[t0][t3]
+
+          if (aliasChainsToKey.find(t3) == aliasChainsToKey.end()) {
+            aliasChainsToKey[t3] = {};
           }
+          if (aliasChainsToKey.at(t3).find(t0) ==
+              aliasChainsToKey.at(t3).end()) {
+            aliasChainsToKey[t3][t0] = {}; // empty Chains
+          }
+          // add the new Chains
+          aliasChainsToKey[t3][t0] = aliasChainsToKey[t3][t0].parallel(
+              inChains.series(fwdLink).series(outChains));
+
+          // same logic for t3 -> t0
+          if (aliasChainsToKey.find(t0) == aliasChainsToKey.end()) {
+            aliasChainsToKey[t0] = {};
+          }
+          if (aliasChainsToKey.at(t0).find(t3) ==
+              aliasChainsToKey.at(t0).end()) {
+            aliasChainsToKey[t0][t3] = {}; // empty Chains
+          }
+          // add the new Chains
+          aliasChainsToKey[t0][t3] = aliasChainsToKey[t0][t3].parallel(
+              outChainsRev.series(bwdLink).series(inChainsRev));
+
+          // insert the mirror image
+          aliasChainsFromKey[t0][t3] = aliasChainsToKey[t3][t0];
+          aliasChainsFromKey[t3][t0] = aliasChainsToKey[t0][t3];
         }
       }
     }

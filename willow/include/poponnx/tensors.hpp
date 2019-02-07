@@ -53,6 +53,8 @@ public:
   //       ^         ^                                     ^
   std::map<Tensor *, view::Chains> aliasChainsFrom(Tensor *from) const;
 
+  view::Chains getChainsFromTo(Tensor *from, Tensor *to) const;
+
 private:
   // Store the Tensors of type Const
   VectorAndSet constIds;
@@ -68,7 +70,15 @@ private:
   // all non-empty Chains
   //      "to"..............."from"...."chains"
   //       ^                  ^         ^
-  std::map<Tensor *, std::map<Tensor *, view::Chains>> aliases;
+  std::map<Tensor *, std::map<Tensor *, view::Chains>> aliasChainsToKey;
+
+  // the mirror of the above
+  std::map<Tensor *, std::map<Tensor *, view::Chains>> aliasChainsFromKey;
+
+  // return M[t], but with guaranteed identity Chains from t
+  std::map<Tensor *, view::Chains>
+  getAliasChains(const std::map<Tensor *, std::map<Tensor *, view::Chains>> &M,
+                 Tensor *t) const;
 };
 
 } // namespace poponnx

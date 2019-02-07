@@ -14,6 +14,20 @@ public:
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
+
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final;
+
+  std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
+};
+
+// TODO unify/compress elementwise op inplace classes (see T6801)
+class ExpInplaceOp : public Op {
+public:
+  ExpInplaceOp(const ExpOp &);
+  void setup() final;
+  view::Region modifies(InIndex index) const final { return uses(index); }
+  view::Region aliases(InIndex index) const final { return uses(index); }
 };
 
 class ExpGradOp : public Op {

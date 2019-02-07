@@ -692,6 +692,7 @@ const static AiGraphcoreOpIdV1 Subsample_1("Subsample", 1, 1);
 const static AiGraphcoreOpIdV1 Square("Square");
 
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
+const static AiGraphcoreOpIdV1 ExpInplace("ExpInplace");
 const static AiGraphcoreOpIdV1 L1("L1");
 const static AiGraphcoreOpIdV1 Nll("Nll");
 

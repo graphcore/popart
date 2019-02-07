@@ -570,7 +570,9 @@ void Ir::prepare(const IrBundle &gb) {
   // Now, we apply the Patterns which can handle and create
   // topological constraints. Currently, this is only one
   // in-placing Pattern.
-  applyInplacePattern();
+  if (patterns.isInPlaceEnabled()) {
+    applyInplacePattern();
+  }
 
   updateVertices();
 
@@ -1748,18 +1750,30 @@ void Ir::applyInplacePattern() {
         priorities.begin(), priorities.end(), zeroPriority, tripletComparitor);
     priorities.erase(found, priorities.end());
 
+    // we keep track of which ops have already been inplaced
+    std::set<OpId> inplacedAlready;
+
     for (auto &ip : priorities) {
       OpId id                       = std::get<0>(ip);
       OperatorIdentifier identifier = std::get<1>(ip);
       // first check that the op has not already been inplaced:
-      auto found2 = ops.find(id);
-      if (found2 == ops.end()) {
+      auto inplaced_already_it = inplacedAlready.find(id);
+      if (inplaced_already_it != inplacedAlready.end()) {
         // the Op has already been inplaced
       } else {
-        Op *op           = found2->second.get();
-        auto newTopoCons = inplace.getNewTopoCons(op, identifier);
-        if (isSchedulable(newTopoCons)) {
-          inplace.apply(op, identifier, newTopoCons);
+        Op *op              = ops.at(id).get();
+        bool touchesAnchors = false;
+        for (auto &tensor : inplace.touches(op, identifier)) {
+          if (op->getIr().isAnchored(tensor->id)) {
+            touchesAnchors = true;
+          }
+        }
+        if (!touchesAnchors) {
+          auto newTopoCons = inplace.getNewTopoCons(op, identifier);
+          if (isSchedulable(newTopoCons)) {
+            inplace.apply(op, identifier, newTopoCons);
+            inplacedAlready.insert(op->id);
+          }
         }
       }
     }

@@ -18,10 +18,10 @@ public:
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
 
-  std::unique_ptr<Op>
-  getInplaceVariant(const OperatorIdentifier &) const override;
+  std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
 };
 
+// TODO: unify inplace elementwise op class logic (T6801)
 class ReluInplaceOp : public Op {
 public:
   ReluInplaceOp(const ReluOp &);

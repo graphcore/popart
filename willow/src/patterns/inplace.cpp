@@ -138,7 +138,9 @@ bool Inplace::apply(Op *op,
   output_tensor->resetProducer(inplaceOp);
   inplaceOp->output->insert(0, output_tensor);
 
-  ir.getTensors().updateAliases(op);
+  inplaceOp->setup();
+
+  ir.getTensors().updateAliases(inplaceOp);
   ir.topoCons->insert(newCons);
 
   logging::pattern::debug("InplaceAll::apply : replace {}({}) with {}({})",
@@ -157,7 +159,7 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   Op *inOp = eot_bun.getOp();
 
   logging::pattern::debug(
-      "Getting new topological constraints if {} replacing {}",
+      "Getting new topological constraints if {} replaces {}",
       inOp->str(),
       op->str());
 
@@ -320,6 +322,39 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
     } else {
       gCons[op] = newAfters;
     }
+  }
+
+  // we're done, now collect a logging string
+  if (modifier_regions.size() != 0) {
+    std::stringstream ss;
+    ss << "Modifier regions for " << op->str() << ": [ ";
+    for (auto &x : modifier_regions) {
+      ss << x.first->str() << ' ';
+    }
+    ss << "]";
+    logging::pattern::debug(ss.str());
+  }
+
+  if (consumer_regions.size() != 0) {
+    std::stringstream ss;
+    ss << "Consumer regions for " << op->str() << ": [ ";
+    for (auto &x : consumer_regions) {
+      ss << x.first->str() << ' ';
+    }
+    ss << "]";
+    logging::pattern::debug(ss.str());
+  }
+
+  if (gCons.size() != 0) {
+    std::stringstream ss;
+    for (auto key_befores : gCons) {
+      Op *key      = key_befores.first;
+      auto befores = key_befores.second;
+      for (Op *before : befores) {
+        ss << "\n           " << before->str() << "-->" << key->str();
+      }
+    }
+    logging::pattern::debug("New constraints:" + ss.str());
   }
 
   return gCons;

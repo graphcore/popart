@@ -59,8 +59,13 @@ Chains Chains::series(const Chains &tail) const {
 Chains::Chains(const std::vector<Chain> &chains) : chain_union(chains) {}
 
 Chains Chains::parallel(const Chains &chains) const {
-  (void)chains;
-  throw error("need to implement Chains::parallel");
+  std::vector<Chain> new_chain_union = chain_union;
+  for (auto &chain : chains.chain_union) {
+    new_chain_union.push_back(chain);
+  }
+
+  // TODO : more checks for duplicates (T6707)
+  return Chains(new_chain_union);
 }
 
 Region Chain::apply(const Region &regIn) const {

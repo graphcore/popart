@@ -5,6 +5,29 @@
 
 namespace poponnx {
 
+std::vector<std::tuple<OperatorIdentifier, float>>
+ExpOp::inplacePriorityDefault() const {
+  // see T6768: choosing default inplace priorities
+  return {{Onnx::CustomOperators::ExpInplace, 10}};
+}
+
+std::unique_ptr<Op>
+ExpOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
+  if (operator_id == Onnx::CustomOperators::ExpInplace) {
+    return make_unique<ExpInplaceOp>(*this);
+  }
+  // catch remaining cases and throw an error
+  return Op::getInplaceVariant(operator_id);
+}
+
+ExpInplaceOp::ExpInplaceOp(const ExpOp &relu_op)
+    : Op(Onnx::CustomOperators::ExpInplace, relu_op.getSettings()) {}
+
+void ExpInplaceOp::setup() {
+  // no output, nothing to setup
+  outInfo(ExpOp::getOutIndex()) = inInfo(ExpOp::getInIndex());
+}
+
 ExpOp::ExpOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : Op(_opid, settings_) {}
 

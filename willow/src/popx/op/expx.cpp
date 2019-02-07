@@ -11,6 +11,31 @@ ExpOpx::ExpOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ExpOp>(op, Onnx::Operators::Exp_6);
 }
 
+ExpInplaceOpx::ExpInplaceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  verifyOp<ExpInplaceOp>(op, Onnx::CustomOperators::ExpInplace);
+}
+
+InputCreatorType ExpInplaceOpx::getInputCreatorType(InIndex) const {
+  return InputCreatorType::CANUNWIND;
+}
+
+poplar::Tensor ExpInplaceOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                 InIndex,
+                                                 OutIndex) const {
+  return tensor;
+}
+
+void ExpInplaceOpx::grow(poplar::program::Sequence &prog) const {
+
+  popops::mapInPlace(graph(),
+                     popops::expr::UnaryOpType::EXPONENT,
+                     get(inId(ExpOp::getInIndex())),
+                     prog,
+                     idStr());
+
+  insert(outId(0), get(inId(0)));
+}
+
 void ExpOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(ExpOp::getOutIndex()),
          popops::map(graph(),
@@ -43,6 +68,8 @@ ExpOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
 
 namespace {
 OpxCreator<ExpOpx> expOpxCreator(Onnx::Operators::Exp_6);
+OpxCreator<ExpInplaceOpx>
+    expxInplaceOpxCreator(Onnx::CustomOperators::ExpInplace);
 OpxCreator<Opx>
     expGradOpxCreator(Onnx::GradOperators::ExpGrad,
                       "ExpGradOp should be removed by pattern 'ExpGradOp'");
