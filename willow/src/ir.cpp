@@ -618,8 +618,16 @@ void Ir::registerInputTensors() {
   std::set<TensorId> onnxInitializers;
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();
-    logging::info("Init tensor is {}", tenId);
-    getTensors().addVarInit(tenId, &initializer);
+
+    // If inference or evaluation mode add initializers as constants
+    if (getExecutionMode() == ExecutionMode::INFERENCE ||
+        getExecutionMode() == ExecutionMode::EVALUATION) {
+      logging::info("Init tensor {} as constant", tenId);
+      getTensors().addConstInit(tenId, &initializer);
+    } else {
+      logging::info("Init tensor {} as variable", tenId);
+      getTensors().addVarInit(tenId, &initializer);
+    }
     onnxInitializers.emplace(tenId);
   }
 

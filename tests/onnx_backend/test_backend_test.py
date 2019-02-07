@@ -57,8 +57,6 @@ class Context:
                 inputmap[str(inp.name)] = inputs[i]
                 i = i + 1
 
-        self.session.weightsFromHost()
-
         stepio = poponnx.PyStepIO(inputmap, anchors)
         self.session.infer(stepio)
 

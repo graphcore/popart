@@ -801,7 +801,11 @@ def test_set_weights_from_host():
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    optimizer = poponnx.ConstSGD(0.01)
+    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
+
+    session = poponnx.Session(
+        fnModel=proto, dataFeed=dataFlow, losses=losses, optimizer=optimizer)
 
     session.setDevice(getDevice())
     anchors = session.initAnchorArrays()
@@ -812,10 +816,10 @@ def test_set_weights_from_host():
     stepio = poponnx.PyStepIO(inputs, anchors)
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        session.infer(stepio)
+        session.train(stepio)
 
     assert (e_info.value.args[0].startswith(
-        "Must call weightsFromHost before infer as the"))
+        "Must call weightsFromHost before train as the"))
 
 
 def test_add_int_attribute():

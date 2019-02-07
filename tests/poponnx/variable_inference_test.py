@@ -23,7 +23,6 @@ def inference_add_to_variable(tmpdir, type, np_type):
 
     session.setDevice(tu.get_poplar_cpu_device())
     session.prepareDevice()
-    session.weightsFromHost()
 
     anchors = session.initAnchorArrays()
 

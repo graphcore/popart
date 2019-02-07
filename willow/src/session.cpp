@@ -119,9 +119,11 @@ void Session::evaluate(const IStepIO &stepio) {
     throw error("Trying to evaluate when not in evaluation mode");
   }
 
-  if (ir.containsInitialisers() && weightsFromHostCalled == false) {
+  if (ir.containsInitialisers() && ir.isTraining() &&
+      weightsFromHostCalled == false) {
     throw error("Must call weightsFromHost before evaluate as the model has "
-                "initializers");
+                "initializers "
+                "and the session has been created in training mode");
   }
 
   device_->evaluate(stepio);
@@ -133,9 +135,11 @@ void Session::infer(const IStepIO &stepio) {
     throw error("Trying to infer when not in inference mode");
   }
 
-  if (ir.containsInitialisers() && weightsFromHostCalled == false) {
+  if (ir.containsInitialisers() && ir.isTraining() &&
+      weightsFromHostCalled == false) {
     throw error(
-        "Must call weightsFromHost before infer as the model has initializers");
+        "Must call weightsFromHost before infer as the model has initializers "
+        "and the session has been created in training mode");
   }
 
   device_->infer(stepio);

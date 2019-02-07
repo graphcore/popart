@@ -24,7 +24,6 @@ def test_add_fp16(tmpdir):
 
     session.setDevice(tu.get_poplar_cpu_device())
     session.prepareDevice()
-    session.weightsFromHost()
 
     anchors = session.initAnchorArrays()
 

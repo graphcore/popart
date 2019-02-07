@@ -152,8 +152,9 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     session.setDevice(device)
     session.prepareDevice()
 
-    print("Writing weights to device")
-    session.weightsFromHost()
+    if mode == "train":
+        print("Writing weights to device")
+        session.weightsFromHost()
 
     print("Writing Optimizer tensors to device, if there are any")
     session.optimizerFromHost()
