@@ -1,17 +1,19 @@
 #include <poponnx/error.hpp>
-#include <poponnx/popx/convoptionsx.hpp>
 #include <poponnx/popx/graphcachex.hpp>
+#include <poponnx/popx/poplaroptionsx.hpp>
 
 #include <poplin/ConvUtil.hpp>
 #include <poplin/Convolution.hpp>
+#include <poplin/MatMul.hpp>
 #include <poputil/GraphFunction.hpp>
+#include <poponnx/util.hpp>
 
 #include <map>
 
 namespace poponnx {
 namespace popx {
 namespace {
-bool isTrainingBwdPass(const ConvOptions &options) {
+bool isTrainingBwdPass(const PoplarOptions &options) {
   return options.options.at("pass").compare("TRAINING_BWD") == 0;
 }
 } // namespace
@@ -26,7 +28,7 @@ GraphCachex::getPoplarTensorSignature(const poplar::Tensor &tensor) {
 
 GraphCachex::ConvolutionCacheKey
 GraphCachex::getConvolutionCacheKey(const poplin::ConvParams &params,
-                                    const ConvOptions &options,
+                                    const PoplarOptions &options,
                                     const bool &transposeAndFlipWeights) {
   // Create signature for the convolution input
   std::vector<std::size_t> inShape = {params.getBatchSize(),
@@ -55,7 +57,7 @@ GraphCachex::CalculateWeightDeltasCacheKey
 GraphCachex::getCalculateWeightDeltasKey(const poplar::Tensor &zDeltas,
                                          const poplar::Tensor &activations,
                                          const poplin::ConvParams &params,
-                                         const ConvOptions &options) {
+                                         const PoplarOptions &options) {
   return std::make_tuple(getPoplarTensorSignature(zDeltas),
                          getPoplarTensorSignature(activations),
                          poplin::canonicalizeParams(params),
@@ -78,7 +80,7 @@ GraphCachex::createCachedConvolution(poplar::Graph &graph,
                                      poplar::program::Sequence &prog,
                                      bool cacheOperation,
                                      const std::string &debugPrefix,
-                                     const ConvOptions &options,
+                                     const PoplarOptions &options,
                                      poplin::PlanningCache *cache) {
   std::vector<poplar::Tensor> convArgs = {in, weights};
   auto cacheKey =
@@ -110,6 +112,52 @@ GraphCachex::createCachedConvolution(poplar::Graph &graph,
   return convFunction(convArgs, prog);
 }
 
+GraphCachex::MatMulCacheKey
+GraphCachex::getMatMulCacheKey(const poplar::Tensor &a,
+                               const poplar::Tensor &b,
+                               const PoplarOptions &options) {
+  return std::make_tuple(getPoplarTensorSignature(a),
+                         getPoplarTensorSignature(b),
+                         options.options);
+}
+
+poplar::Tensor
+GraphCachex::matMulGrouped(poplar::Graph &graph,
+                           const poplar::Tensor &a,
+                           const poplar::Tensor &b,
+                           poplar::program::Sequence &prog,
+                           bool cacheOperation,
+                           const std::string &debugPrefix,
+                           const PoplarOptions &options,
+                           poplin::matmul::PlanningCache *cache) {
+  std::vector<poplar::Tensor> matMulArgs = {a, b};
+  auto cacheKey                          = getMatMulCacheKey(a, b, options);
+
+  auto it = matmulGraphCache.find(cacheKey);
+  if (it != matmulGraphCache.end()) {
+    return it->second(matMulArgs, prog);
+  }
+
+  auto matmulFunction = TensorFunction(
+      graph,
+      {input(a, "a"), input(b, "b")},
+      [&](std::vector<poplar::Tensor> &args_,
+          poplar::program::Sequence &prog_) -> poplar::Tensor {
+        return poplin::matMulGrouped(graph,                   // graph
+                                     args_[0],                // A
+                                     args_[1],                // B
+                                     prog_,                   // prog
+                                     debugPrefix,             // debugPrefix
+                                     options.toOptionFlags(), // options
+                                     cache);                  // cache
+      });
+  if (cacheOperation) {
+    matmulGraphCache.emplace(cacheKey, matmulFunction);
+  }
+
+  return matmulFunction(matMulArgs, prog);
+}
+
 poplar::Tensor
 GraphCachex::cachedCalculateWeightDeltas(poplar::Graph &graph,
                                          const poplar::Tensor &zDeltas,
@@ -118,7 +166,7 @@ GraphCachex::cachedCalculateWeightDeltas(poplar::Graph &graph,
                                          poplar::program::Sequence &prog,
                                          bool cacheOperation,
                                          const std::string &debugPrefix,
-                                         const ConvOptions &options,
+                                         const PoplarOptions &options,
                                          poplin::PlanningCache *cache) {
   std::vector<poplar::Tensor> calculateWeightDeltasArgs = {zDeltas,
                                                            activations};
@@ -185,9 +233,9 @@ poplar::Tensor GraphCachex::convolution(poplar::Graph &graph,
                                         poplar::program::Sequence &prog,
                                         bool cacheOperation,
                                         const std::string &debugPrefix,
-                                        const ConvOptions &options,
+                                        const PoplarOptions &options,
                                         poplin::PlanningCache *cache) {
-  ConvOptions convOptions    = options;
+  PoplarOptions convOptions  = options;
   poplar::Tensor convWeights = weights;
 
   // If user provides 4D weights (missing 'group' dimension), add
@@ -239,7 +287,7 @@ GraphCachex::calculateWeightDeltas(poplar::Graph &graph,
                                    poplar::program::Sequence &prog,
                                    bool cacheOperation,
                                    const std::string &debugPrefix,
-                                   const ConvOptions &options,
+                                   const PoplarOptions &options,
                                    poplin::PlanningCache *cache) {
   return cachedCalculateWeightDeltas(graph,
                                      zDeltas,

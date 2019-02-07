@@ -11,11 +11,11 @@
 #include <poponnx/logging.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op.hpp>
-#include <poponnx/popx/convoptionsx.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/devicexmanager.hpp>
 #include <poponnx/popx/opx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
+#include <poponnx/popx/poplaroptionsx.hpp>
 #include <poponnx/pritask.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
@@ -218,13 +218,13 @@ Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
 
   // Not sure what these options should be
   if (ir.getExecutionMode() == Ir::ExecutionMode::TRAINING) {
-    fwdMmOptions.set("fullyConnectedPass", "TRAINING_FWD");
+    fwdMmOptions.options.insert({"fullyConnectedPass", "TRAINING_FWD"});
   } else {
-    fwdMmOptions.set("fullyConnectedPass", "INFERENCE_FWD");
+    fwdMmOptions.options.insert({"fullyConnectedPass", "INFERENCE_FWD"});
   }
 
-  bwdMmLhsOptions.set("fullyConnectedPass", "TRAINING_BWD");
-  bwdMmRhsOptions.set("fullyConnectedPass", "TRAINING_WU");
+  bwdMmLhsOptions.options.insert({"fullyConnectedPass", "TRAINING_BWD"});
+  bwdMmRhsOptions.options.insert({"fullyConnectedPass", "TRAINING_WU"});
 
   engineOptions.set("target.workerStackSizeInBytes", "0x200");
   for (auto it : ir.getSessionOptions().engineOptions) {

@@ -11,9 +11,9 @@
 
 #include <poponnx/device.hpp>
 #include <poponnx/devicemanager.hpp>
-#include <poponnx/popx/convoptionsx.hpp>
 #include <poponnx/popx/enigma.hpp>
 #include <poponnx/popx/graphcachex.hpp>
+#include <poponnx/popx/poplaroptionsx.hpp>
 #include <poponnx/pritask.hpp>
 
 namespace poponnx {
@@ -161,8 +161,8 @@ public:
   // Poplar level graph caching
   GraphCachex graphCache;
 
-  ConvOptions fwdConvOptions, bwdConvOptions, wuConvOptions;
-  poplar::OptionFlags fwdMmOptions, bwdMmLhsOptions, bwdMmRhsOptions;
+  PoplarOptions fwdConvOptions, bwdConvOptions, wuConvOptions;
+  PoplarOptions fwdMmOptions, bwdMmLhsOptions, bwdMmRhsOptions;
   poplar::OptionFlags engineOptions, reportOptions;
   poplar::OptionFlags pooling_options;
   poplar::OptionFlags lstmOptions;

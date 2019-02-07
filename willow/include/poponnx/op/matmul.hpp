@@ -7,10 +7,14 @@ namespace poponnx {
 
 class MatMulOp : public Op {
 public:
-  MatMulOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
+  MatMulOp(const OperatorIdentifier &_opid,
+           bool cacheOperation_,
+           const Op::Settings &settings_);
   MatMulOp(const MatMulOp &) = default;
   MatMulOp &operator=(const MatMulOp &) = delete;
   ~MatMulOp() override                  = default;
+
+  bool cacheOperation = true;
 
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
@@ -61,10 +65,15 @@ public:
   // The shape of the grad op's output
   Shape getOutputShape() const;
 
+  const MatMulOp *getCloneOfCreator() const;
+
 private:
   TensorInfo fwdOpOutputGrad;
   TensorInfo fwdOpLhsInfo;
   TensorInfo fwdOpRhsInfo;
+
+  // TODO : Would benefit from a MatMulGradOp class - T6830
+  std::unique_ptr<Op> cloneOfCreator;
 };
 
 class MatMulRhsGradOp : public Op {
@@ -90,10 +99,14 @@ public:
   // The shape of the grad op's output
   Shape getOutputShape() const;
 
+  const MatMulOp *getCloneOfCreator() const;
+
 private:
   TensorInfo fwdOpOutputGrad;
   TensorInfo fwdOpLhsInfo;
   TensorInfo fwdOpRhsInfo;
+
+  std::unique_ptr<Op> cloneOfCreator;
 };
 
 } // namespace poponnx

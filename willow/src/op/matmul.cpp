@@ -4,12 +4,14 @@
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
+#include <poponnx/util.hpp>
 
 namespace poponnx {
 
 MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
+                   bool cacheOperation_,
                    const Op::Settings &settings_)
-    : Op(_opid, settings_) {}
+    : Op(_opid, settings_), cacheOperation(cacheOperation_) {}
 
 std::unique_ptr<Op> MatMulOp::clone() const {
   return make_unique<MatMulOp>(*this);
@@ -100,7 +102,12 @@ Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) {
   }
 
   if (lhs[lhs.size() - 1] != rhs[rhs.size() - 2]) {
-    throw error("MatMulOp mismatched input sizes");
+
+    std::stringstream ss;
+    // TODO : Add the debug name of the op
+    ss << "MatMulOp mismatched input sizes  lhs:" << lhs << " != rhs:" << rhs;
+
+    throw error(ss.str());
   }
 
   return result;
@@ -116,7 +123,7 @@ void MatMulOp::setup() {
 MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)
     : Op(Onnx::GradOperators::MatMulLhsGrad, fwdOp.getSettings()),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
-      fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
+      fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
 
 void MatMulLhsGradOp::setup() { outInfo(0) = fwdOpLhsInfo; }
 
@@ -149,7 +156,7 @@ Shape MatMulLhsGradOp::getOutputShape() const { return fwdOpLhsInfo.shape(); }
 MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
     : Op(Onnx::GradOperators::MatMulRhsGrad, fwdOp.getSettings()),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
-      fwdOpRhsInfo(fwdOp.rhsIn()->info) {}
+      fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
 
 void MatMulRhsGradOp::setup() { outInfo(0) = fwdOpRhsInfo; }
 
@@ -176,9 +183,26 @@ Shape MatMulRhsGradOp::getLhsInputShape() const { return fwdOpLhsInfo.shape(); }
 
 Shape MatMulRhsGradOp::getOutputShape() const { return fwdOpRhsInfo.shape(); }
 
+const MatMulOp *MatMulLhsGradOp::getCloneOfCreator() const {
+  return dynamic_cast<const MatMulOp *>(cloneOfCreator.get());
+}
+
+const MatMulOp *MatMulRhsGradOp::getCloneOfCreator() const {
+  return dynamic_cast<const MatMulOp *>(cloneOfCreator.get());
+}
+
 namespace {
-static OpCreator<MatMulOp> matMulOpCreator({Onnx::Operators::MatMul_1,
-                                            Onnx::Operators::MatMul_9});
+static OpCreator<MatMulOp> matMulOpCreator(
+    {Onnx::Operators::MatMul_1, Onnx::Operators::MatMul_9},
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      int64_t cacheOperation =
+          attr.getAttribute<Attributes::Int>(sCacheOperation, 1);
+
+      return std::unique_ptr<Op>(new MatMulOp(_opid, cacheOperation, settings));
+    },
+    true);
 } // namespace
 
 } // namespace poponnx

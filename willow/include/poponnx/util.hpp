@@ -34,6 +34,7 @@ template <class T> void appendSequence(std::ostream &ss, const T &t) {
 }
 
 std::ostream &operator<<(std::ostream &ss, const std::vector<int64_t> &v);
+std::ostream &operator<<(std::ostream &ss, const std::vector<std::size_t> &v);
 
 template <typename X, typename Y>
 std::vector<Y> vXtoY(const std::vector<X> &c0) {

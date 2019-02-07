@@ -1,11 +1,10 @@
 #include <poponnx/error.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/matmul.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/matmulx.hpp>
-#include <poponnx/tensor.hpp>
-// #include <poponnx/tensorindex.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/popx/opxmanager.hpp>
+#include <poponnx/tensor.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/util.hpp>
 
@@ -393,14 +392,17 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   //     b = [10,  8, 162]
   //                        G |  M   N
   // o' := matmul(a, b) = [10 | 28, 162]
-  auto outTensor = poplin::matMulGrouped(graph(),                    // graph
-                                         combinedBroadcastTs.first,  // A
-                                         combinedBroadcastTs.second, // B
-                                         prog,                       // prog
-                                         idStr(),            // debugPrefix
-                                         dv_p->fwdMmOptions, // options
-                                         &dv_p->matmulCache  // cache
-  );
+
+  auto outTensor =
+      dv_p->graphCache.matMulGrouped(graph(),                    // graph
+                                     combinedBroadcastTs.first,  // A
+                                     combinedBroadcastTs.second, // B
+                                     prog,                       // prog
+                                     matmul->cacheOperation,
+                                     idStr(),            // debugPrefix
+                                     dv_p->fwdMmOptions, // options
+                                     &dv_p->matmulCache  // cache
+      );
 
   // Split the broadcast dimensions from the rows and columns
   //
@@ -431,7 +433,6 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   // o' := matExpandBroadcastDims(o, a, b) = [10 | 1, 4, 1 | 3, 1, 6 | 7, 9]
   outTensor = matExpandBroadcastDims(
       outTensor, dimShuffledTs.first, dimShuffledTs.second);
-
   // Interleave the broadcast dimensions that should be squeezed
   //
   // The shapes in the given example
@@ -529,7 +530,7 @@ poplar::Tensor MatMulOpx::createInput(InIndex index) const {
         lhsShape,
         rhsShape,
         idStr(),
-        dv_p->fwdMmOptions,
+        dv_p->fwdMmOptions.toOptionFlags(),
         &dv_p->matmulCache);
 
     result = result.reshape(lhsShapeP);
@@ -543,7 +544,7 @@ poplar::Tensor MatMulOpx::createInput(InIndex index) const {
         lhsShape,
         rhsShape,
         idStr(),
-        dv_p->fwdMmOptions,
+        dv_p->fwdMmOptions.toOptionFlags(),
         &dv_p->matmulCache);
 
     result = result.reshape(rhsShapeP);
@@ -624,6 +625,9 @@ static poplar::Tensor reduceResult(poplar::Graph &g,
 }
 
 void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
+  MatMulLhsGradOp &gradOp  = getOp<MatMulLhsGradOp>();
+  const MatMulOp *matmulOp = gradOp.getCloneOfCreator();
+
   auto a = get(inId(MatMulLhsGradOp::getGradInIndex()));
   auto b = get(inId(MatMulLhsGradOp::getRhsInIndex()));
 
@@ -642,14 +646,16 @@ void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
   auto combinedBroadcastTs =
       matCombineBroadcastDims(reshapedGroupsTs.first, reshapedGroupsTs.second);
 
-  auto outTensor = poplin::matMulGrouped(graph(),                    // graph
-                                         combinedBroadcastTs.first,  // A
-                                         combinedBroadcastTs.second, // B
-                                         prog,                       // prog
-                                         idStr(),               // debugPrefix
-                                         dv_p->bwdMmLhsOptions, // options
-                                         &dv_p->matmulCache     // cache
-  );
+  auto outTensor =
+      dv_p->graphCache.matMulGrouped(graph(),                    // graph
+                                     combinedBroadcastTs.first,  // A
+                                     combinedBroadcastTs.second, // B
+                                     prog,                       // prog
+                                     matmulOp->cacheOperation,
+                                     idStr(),               // debugPrefix
+                                     dv_p->bwdMmLhsOptions, // options
+                                     &dv_p->matmulCache     // cache
+      );
 
   outTensor = matSplitBroadcastDims(
       outTensor, reshapedGroupsTs.first, reshapedGroupsTs.second);
@@ -732,6 +738,9 @@ MatMulRhsGradOp *MatMulRhsGradOpx::getMatMulRhsGradOp() const {
 }
 
 void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
+  MatMulRhsGradOp &gradOp  = getOp<MatMulRhsGradOp>();
+  const MatMulOp *matmulOp = gradOp.getCloneOfCreator();
+
   auto a = get(inId(MatMulRhsGradOp::getLhsInIndex()));
   auto b = get(inId(MatMulRhsGradOp::getGradInIndex()));
 
@@ -750,14 +759,16 @@ void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
   auto combinedBroadcastTs =
       matCombineBroadcastDims(reshapedGroupsTs.first, reshapedGroupsTs.second);
 
-  auto outTensor = poplin::matMulGrouped(graph(),                    // graph
-                                         combinedBroadcastTs.first,  // A
-                                         combinedBroadcastTs.second, // B
-                                         prog,                       // prog
-                                         idStr(),               // debugPrefix
-                                         dv_p->bwdMmRhsOptions, // options
-                                         &dv_p->matmulCache     // cache
-  );
+  auto outTensor =
+      dv_p->graphCache.matMulGrouped(graph(),                    // graph
+                                     combinedBroadcastTs.first,  // A
+                                     combinedBroadcastTs.second, // B
+                                     prog,                       // prog
+                                     matmulOp->cacheOperation,
+                                     idStr(),               // debugPrefix
+                                     dv_p->bwdMmRhsOptions, // options
+                                     &dv_p->matmulCache     // cache
+      );
 
   outTensor = matSplitBroadcastDims(
       outTensor, reshapedGroupsTs.first, reshapedGroupsTs.second);
