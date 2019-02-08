@@ -1,5 +1,7 @@
 #include <algorithm>
 #include <cctype>
+#include <fstream>
+
 #include <poplin/codelets.hpp>
 #include <popnn/codelets.hpp>
 #include <popops/ElementWise.hpp>
@@ -1004,6 +1006,23 @@ void Devicex::prepare() {
 
   for (auto &task : tasks.getLinearised()) {
     task.f();
+  }
+
+  if (ir().getSessionOptions().exportPoplarVertexGraph) {
+    std::ofstream strm;
+    strm.open("poplar_vertex_graph.dot", std::ios::out);
+    masterGraph().outputVertexGraph(strm, progs.progs());
+  }
+
+  if (ir().getSessionOptions().exportPoplarComputationGraph) {
+    std::ofstream strm;
+    strm.open("poplar_compute_graph.dot", std::ios::out);
+    masterGraph().outputComputeGraph(strm, progs.progs());
+  }
+
+  if (!ir().getSessionOptions().compileEngine) {
+    logging::devicex::info("Not compiling engine by request");
+    return;
   }
 
   logging::devicex::info("Starting Engine compilation");

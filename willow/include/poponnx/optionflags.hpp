@@ -20,6 +20,12 @@ struct SessionOptions {
   /// Export 'dot' files of the forward and backward passes
   bool exportDot = false;
 
+  /// Export Poplar computation graph
+  bool exportPoplarComputationGraph = false;
+
+  /// Export Poplar vertex graph
+  bool exportPoplarVertexGraph = false;
+
   /// Controls caching of the convolution graphs. If set to false, then none of
   ///  the convolutions will be cached.
   bool enableConvolutionGraphCaching = true;
@@ -34,6 +40,12 @@ struct SessionOptions {
   /// Use synthetic data i.e. disable data transfer to/from the host
   /// Set to 'true' to use synthetic data, 'false' to use real data
   bool ignoreData = false;
+
+  /// when false, the backend will build the Poplar graph, but do not compile it
+  /// into an Engine.  When this option is set, no execution can be performed,
+  /// and nothing can be transferred to the device.  Functions which retrieve
+  /// information from the graph building stage will be ok (tile mapping).
+  bool compileEngine = true;
 
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;

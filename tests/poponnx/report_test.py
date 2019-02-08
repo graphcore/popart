@@ -255,3 +255,35 @@ def test_tensor_tile_mapping(tmpdir):
             assert (intervals[0] == (0, 1))
         else:
             assert (len(intervals) == 0)
+
+
+def test_no_compile(tmpdir):
+
+    builder = poponnx.Builder()
+
+    shape = poponnx.TensorInfo("FLOAT", [1])
+
+    i1 = builder.addInputTensor(shape)
+    i2 = builder.addInputTensor(shape)
+    o = builder.aiOnnx.add([i1, i2])
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    opts = poponnx.SessionOptions()
+    opts.compileEngine = False
+    opts.logging = {"devicex": "INFO"}
+
+    dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+
+    session = poponnx.Session(proto, dataFlow, userOptions=opts)
+
+    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
+
+    session.prepareDevice()
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        session.getGraphReport()
+
+    assert (e_info.value.args[0].endswith(
+        "Session must have been prepared before a report can be fetched"))
