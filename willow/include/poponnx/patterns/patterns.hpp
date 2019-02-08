@@ -171,6 +171,9 @@ public:
   bool isGemmDecompositionEnabled() {
     return isPatternEnabled(PreAliasPatternType::GEMMDECOMPOSITION);
   }
+  bool isNegativeOneScaleEnabled() {
+    return isPatternEnabled(PreAliasPatternType::NEGATIVEONESCALE);
+  }
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
@@ -232,6 +235,9 @@ public:
   }
   Patterns &enableGemmDecomposition(bool v) {
     return enablePattern(PreAliasPatternType::GEMMDECOMPOSITION, v);
+  }
+  Patterns &enableNegativeOneScale(bool v) {
+    return enablePattern(PreAliasPatternType::NEGATIVEONESCALE, v);
   }
 
   std::vector<std::unique_ptr<PreAliasPattern>> getPreAliasList();

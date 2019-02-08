@@ -4,6 +4,7 @@
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/pad.hpp>
 #include <poponnx/op/reducesum.hpp>
+#include <poponnx/op/scale.hpp>
 #include <poponnx/op/subsample.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/patterns/optoidentitypattern.hpp>
@@ -70,6 +71,13 @@ bool OpToIdentityPattern::matches(Op *op) const {
       gather->inShape(GatherOp::dataInIndex())[gather->getAxis()] == 1 &&
       gather->inInfo(GatherOp::indicesInIndex()).rank() == 1 &&
       gather->inInfo(GatherOp::indicesInIndex()).nelms() == 1) {
+    return true;
+  }
+
+  // A scale with a scale factor of +1
+  auto scale_op = dynamic_cast<const ScaleOp *>(op);
+  if (op->opid == Onnx::Operators::Scale_1 &&
+      scale_op->getScaleFactor() == 1.0f) {
     return true;
   }
 

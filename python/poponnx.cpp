@@ -299,7 +299,8 @@ PYBIND11_MODULE(poponnx_core, m) {
       .value("DIVARG1GRADOP", PreAliasPatternType::DIVARG1GRADOP)
       .value("SQRTGRADOP", PreAliasPatternType::SQRTGRADOP)
       .value("EXPGRADOP", PreAliasPatternType::EXPGRADOP)
-      .value("GEMMDECOMPOSITION", PreAliasPatternType::GEMMDECOMPOSITION);
+      .value("GEMMDECOMPOSITION", PreAliasPatternType::GEMMDECOMPOSITION)
+      .value("NEGATIVEONESCALE", PreAliasPatternType::NEGATIVEONESCALE);
 
   py::class_<Patterns>(m, "Patterns")
       .def(py::init<>())

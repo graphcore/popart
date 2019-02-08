@@ -270,6 +270,86 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
   BOOST_CHECK(bias == input3Tensor->consumers.getOps()[0]);
 }
 
+BOOST_AUTO_TEST_CASE(ScaleByOne) {
+  // () -> [Scale(by 1.0)] -> ()
+  //
+  // should become
+  //
+  // () -> [Identity] -> ()
+  // Build an onnx model
+  auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
+
+  TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
+
+  auto inp = builder->addInputTensor(shape);
+
+  auto scale = aiOnnx.scale({inp}, 1.0f);
+
+  builder->addOutputTensor(scale);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR
+  // Add the last tensor, and the 3rd tensor as anchors
+  auto art      = AnchorReturnType("ALL");
+  auto dataFlow = DataFlow(1, {{scale, art}});
+
+  Ir ir;
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              {},
+              nullptr,
+              {},
+              Patterns({PreAliasPatternType::OPTOIDENTITY})});
+
+  // Check the ir
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Identity).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Scale).size() == 0);
+}
+
+BOOST_AUTO_TEST_CASE(ScaleByNegativeOne) {
+  // () -> [Scale(by -1.0)] -> ()
+  //
+  // should become
+  //
+  // () -> [Negate] -> ()
+  // Build an onnx model
+  auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
+
+  TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
+
+  auto inp = builder->addInputTensor(shape);
+
+  auto scale = aiOnnx.scale({inp}, -1.0f);
+
+  builder->addOutputTensor(scale);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR
+  // Add the last tensor, and the 3rd tensor as anchors
+  auto art      = AnchorReturnType("ALL");
+  auto dataFlow = DataFlow(1, {{scale, art}});
+
+  Ir ir;
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              {},
+              nullptr,
+              {},
+              Patterns({PreAliasPatternType::NEGATIVEONESCALE})});
+
+  // Check the ir
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Neg).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Scale).size() == 0);
+}
+
 BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
   // () -> [SubtractGradArg1Op] -> ()
   //
