@@ -6,6 +6,12 @@
 #include <string>
 #include <vector>
 
+// As per https://github.com/gabime/spdlog/issues/39 the operator<< needs to
+// defined either before you include spdlog.h or placed in the srd namespace
+namespace std {
+std::ostream &operator<<(std::ostream &ss, const std::vector<int64_t> &v);
+}
+
 namespace poponnx {
 
 // turn input into a string, and pads
@@ -33,7 +39,6 @@ template <class T> void appendSequence(std::ostream &ss, const T &t) {
   ss << ']';
 }
 
-std::ostream &operator<<(std::ostream &ss, const std::vector<int64_t> &v);
 std::ostream &operator<<(std::ostream &ss, const std::vector<std::size_t> &v);
 
 template <typename X, typename Y>

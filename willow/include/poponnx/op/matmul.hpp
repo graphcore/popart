@@ -33,13 +33,17 @@ public:
   Shape rhsBroadcastShape() const;
 
   // Follow the numpy matmul broadcasting rules for the left operand shape
-  static Shape lhsNpBroadcastShape(Shape lhs, Shape rhs);
+  Shape lhsNpBroadcastShape(Shape lhs, Shape rhs) const;
 
   // Follow the numpy matmul broadcasting rules for the right operand shape
-  static Shape rhsNpBroadcastShape(Shape lhs, Shape rhs);
+  Shape rhsNpBroadcastShape(Shape lhs, Shape rhs) const;
 
   // Follow the numpy matmul broadcasting rules for the output shape
-  static Shape npMatMulOut(Shape lhs, Shape rhs);
+  Shape npMatMulOut(Shape lhs, Shape rhs) const;
+
+private:
+  // Verifies the input shapes are valid and throws and exception if not
+  void verifyInputShapes(const Shape &lhs, const Shape &rhs) const;
 };
 
 class MatMulLhsGradOp : public Op {
