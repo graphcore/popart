@@ -110,18 +110,12 @@ Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) const {
   }
 
   if (lhs[lhs.size() - 1] != rhs[rhs.size() - 2]) {
-    throw error(
-        "{} mismatched input sizes lhs tensor {} dimension {} ({}) does not "
-        "equal rhs tensor {} dimension {} ({}). (lhs:{}, rhs{})",
-        debugName(),
-        lhs.size() - 1,
-        lhsIn()->str(),
-        lhs[lhs.size() - 1],
-        rhs.size() - 2,
-        rhsIn()->str(),
-        rhs[rhs.size() - 2],
-        lhs,
-        rhs);
+    throw error("{} contracting dimensions unequal: lhs '{}' {}, rhs '{}' {}",
+                debugName(),
+                lhsIn()->str(),
+                lhs,
+                rhsIn()->str(),
+                rhs);
   }
 
   return result;
