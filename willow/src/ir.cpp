@@ -401,13 +401,13 @@ bool Ir::isCandidateForConstExprFolding(const Tensor &tensor) const {
   return true;
 }
 
-std::vector<Tensor *> Ir::getRootInputsToOp(Op *op) {
+std::set<Tensor *> Ir::getRootInputsToOp(Op *op) {
   if (opAndRootInputs.find(op->id) != opAndRootInputs.end()) {
     // We have already stored the root inputs for this op
     // in a map. Retrieve here instead of performing search
     return opAndRootInputs.at(op->id);
   } else {
-    std::vector<Tensor *> rootInputs;
+    std::set<Tensor *> rootInputs;
 
     // Get input tensors Ids
     std::vector<TensorId> inputIds = getTensors().getNoProducerIds();
@@ -415,10 +415,10 @@ std::vector<Tensor *> Ir::getRootInputsToOp(Op *op) {
       if (std::find(inputIds.begin(), inputIds.end(), tensor->id) !=
           inputIds.end()) {
         // Tensor is a root input
-        rootInputs.push_back(tensor);
+        rootInputs.insert(tensor);
       } else {
         for (auto rootInputTensor : getRootInputsToOp(tensor->getProducer())) {
-          rootInputs.push_back(rootInputTensor);
+          rootInputs.insert(rootInputTensor);
         }
       }
     }
@@ -455,10 +455,10 @@ void Ir::verifyConstExprFolding() {
     }
 
     // 2 & 3
-    std::vector<Tensor *> rootInputs;
+    std::set<Tensor *> rootInputs;
     for (auto consumingOp : tensor->consumers.getOps()) {
       for (auto rootInput : getRootInputsToOp(consumingOp)) {
-        rootInputs.push_back(rootInput);
+        rootInputs.insert(rootInput);
       }
     }
 

@@ -346,7 +346,7 @@ private:
   // as expected
   void verifyConstExprFolding();
   bool isCandidateForConstExprFolding(const Tensor &tensor) const;
-  std::vector<Tensor *> getRootInputsToOp(Op *op);
+  std::set<Tensor *> getRootInputsToOp(Op *op);
 
 private:
   std::unique_ptr<Tensors> up_tensors;
@@ -376,7 +376,7 @@ private:
   std::map<std::size_t, bool> transformEnableMap;
 
   // Map of ops and their root inputs
-  std::map<OpId, std::vector<Tensor *>> opAndRootInputs;
+  std::map<OpId, std::set<Tensor *>> opAndRootInputs;
 
   // The update ops which must be run during a training pass
   std::set<Op *> trainTargetOps;
