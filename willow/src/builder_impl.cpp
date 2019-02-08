@@ -89,8 +89,14 @@ BuilderImpl::listNonConstExprNodesModel(const onnx::ModelProto &model,
 
 void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
 
-  if (!name.empty())
-    node->set_name(name);
+  if (!name.empty()) {
+    std::stringstream fullname;
+    for (const auto &n : name_scope_stack_) {
+      fullname << n << ".";
+    }
+    fullname << name;
+    node->set_name(fullname.str());
+  }
 
   for (auto attribute : attributes) {
     addNodeAttribute(attribute.first, attribute.second, *node);
@@ -99,9 +105,20 @@ void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
   onnx::shape_inference::InferShapes(model_);
 }
 
-TensorId BuilderImpl::getNextId() {
-  next_id_++;
-  return std::to_string(next_id_);
+TensorId BuilderImpl::getNextId(const std::string &name, int n) {
+  std::stringstream base;
+  for (const auto &s : name_scope_stack_) {
+    base << s << ".";
+  }
+  base << name << "_";
+  std::string base_str = base.str();
+  for (int i = 0; true; i++) {
+    std::string id = base_str + std::to_string(i) + ":" + std::to_string(n);
+    if (tensor_ids_.count(id) == 0) {
+      tensor_ids_.insert(id);
+      return id;
+    }
+  }
 }
 
 void BuilderImpl::addOpsetRequirement(const std::string &domain, int version) {
@@ -123,14 +140,13 @@ void BuilderImpl::addOpsetRequirement(const std::string &domain, int version) {
 BuilderImpl::BuilderImpl() {}
 
 void BuilderImpl::configure() {
-  next_id_ = 0;
   model_.set_ir_version(irVersion);
 
   model_.mutable_graph()->set_name("BuilderGraph");
 }
 
 TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo) {
-  auto id             = getNextId();
+  auto id             = getNextId("input", 0);
   auto onnxTensorType = tensorInfo.getOnnxTypeProto();
 
   auto *graph = model_.mutable_graph();
@@ -212,7 +228,7 @@ static void populateTensorProtoFromConstVoidData(const ConstVoidData &initData,
 }
 
 TensorId BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData) {
-  auto id = getNextId();
+  auto id = getNextId("init_input", 0);
 
   auto *graph = model_.mutable_graph();
   auto *input = graph->add_input();
@@ -320,7 +336,7 @@ std::vector<TensorId> BuilderImpl::op(
 
   // Set the outputs
   for (int i = 0; i < numberOfOutputs; ++i) {
-    outputTensors[i] = getNextId();
+    outputTensors[i] = getNextId(opid.type, i);
     node->add_output(outputTensors[i]);
   }
 
@@ -902,5 +918,11 @@ void BuilderImpl::setAttribute(const std::string &attribute, boost::any value) {
 void BuilderImpl::clearAttribute(const std::string &attribute) {
   attributes.erase(attribute);
 }
+
+void BuilderImpl::pushNameScope(const std::string &name) {
+  name_scope_stack_.push_back(name);
+}
+
+void BuilderImpl::popNameScope() { name_scope_stack_.pop_back(); }
 
 } // namespace poponnx

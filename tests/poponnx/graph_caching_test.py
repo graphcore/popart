@@ -89,10 +89,10 @@ def test_convolution_cached_set_to_true():
     i1 = builder.addInputTensor(data_shape)
     i2 = builder.addInputTensor(filt_shape)
     c1 = builder.aiOnnx.conv([i1, i2], [1, 1], 1, [], [1, 1, 1, 1], [1, 1])
-    builder.addNodeAttribute("__cache_operation", True, set(c1))
+    builder.addNodeAttribute("__cache_operation", True, set([c1]))
 
     o = builder.aiOnnx.conv([c1, i2], [1, 1], 1, [], [1, 1, 1, 1], [1, 1])
-    builder.addNodeAttribute("__cache_operation", True, set(o))
+    builder.addNodeAttribute("__cache_operation", True, set([o]))
 
     builder.addOutputTensor(o)
 
@@ -158,10 +158,10 @@ def test_convolution_cached_set_to_false():
     i1 = builder.addInputTensor(data_shape)
     i2 = builder.addInputTensor(filt_shape)
     c1 = builder.aiOnnx.conv([i1, i2], [1, 1], 1, [], [1, 1, 1, 1], [1, 1])
-    builder.addNodeAttribute("__cache_operation", False, set(c1))
+    builder.addNodeAttribute("__cache_operation", False, set([c1]))
 
     o = builder.aiOnnx.conv([c1, i2], [1, 1], 1, [], [1, 1, 1, 1], [1, 1])
-    builder.addNodeAttribute("__cache_operation", False, set(o))
+    builder.addNodeAttribute("__cache_operation", False, set([o]))
 
     builder.addOutputTensor(o)
 
@@ -229,7 +229,7 @@ def test_convolution_some_convolutions_cached():
     i2 = builder.addInputTensor(filt_shape)
     c1 = builder.aiOnnx.conv([i1, i2], [1, 1], 1, [], [1, 1, 1, 1], [1, 1])
     c2 = builder.aiOnnx.conv([c1, i2], [1, 1], 1, [], [1, 1, 1, 1], [1, 1])
-    builder.addNodeAttribute("__cache_operation", False, set(c2))
+    builder.addNodeAttribute("__cache_operation", False, set([c2]))
     o = builder.aiOnnx.conv([c2, i2],
                             dilations=[1, 1],
                             pads=[1, 1, 1, 1],
@@ -444,9 +444,9 @@ def test_matmul_infer_not_cached():
     i4 = builder.addInputTensor(matmul_rhs_shape)
 
     c1 = builder.aiOnnx.matmul([i1, i2])
-    builder.addNodeAttribute("__cache_operation", False, set(c1))
+    builder.addNodeAttribute("__cache_operation", False, set([c1]))
     c2 = builder.aiOnnx.matmul([i3, i4])
-    builder.addNodeAttribute("__cache_operation", False, set(c2))
+    builder.addNodeAttribute("__cache_operation", False, set([c2]))
 
     o = builder.aiOnnx.add([c1, c2])
 

@@ -131,6 +131,18 @@ public:
   void exit() { builder.clearAttribute(sVirtualGraphAttribute); }
 };
 
+class NameContextManager {
+  Builder &builder;
+  std::string name;
+
+public:
+  NameContextManager(Builder &_builder, const std::string &_name)
+      : builder(_builder), name(_name) {}
+
+  void enter() { builder.pushNameScope(name); }
+  void exit() { builder.popNameScope(); }
+};
+
 // The following code allow boost optional to be used in the C++ interface and
 // map to python types
 namespace pybind11 {
@@ -399,7 +411,7 @@ PYBIND11_MODULE(poponnx_core, m) {
            &Builder::reshape_const<AiOnnxOpset9>,
            py::arg("T"),
            py::arg("args"),
-           py::arg("strides"),
+           py::arg("shape"),
            py::arg("debugPrefix") = std::string())
 
       .def("addNodeAttribute",
@@ -503,7 +515,12 @@ PYBIND11_MODULE(poponnx_core, m) {
              return acm;
            },
            py::arg("value"))
-
+      .def("nameScope",
+           [](Builder &self, const std::string &name) -> NameContextManager {
+             NameContextManager ncm(self, name);
+             return ncm;
+           },
+           py::arg("name"))
       .def("getVirtualGraph",
            static_cast<int64_t (Builder::*)(const TensorId &)>(
                &Builder::getVirtualGraph),
@@ -534,6 +551,12 @@ PYBIND11_MODULE(poponnx_core, m) {
            [](AttributeContextManager &self, void *, void *, void *) {
              self.exit();
            });
+
+  py::class_<NameContextManager>(m, "NameContextManager")
+      .def("__enter__", &NameContextManager::enter)
+      .def("__exit__", [](NameContextManager &self, void *, void *, void *) {
+        self.exit();
+      });
 
   // PyBinding to a singleton
   py::class_<DeviceManager, std::unique_ptr<DeviceManager, py::nodelete>>(

@@ -178,12 +178,15 @@ public:
   void setAttribute(const std::string &attribute, boost::any value);
   void clearAttribute(const std::string &attribute);
 
+  void pushNameScope(const std::string &name);
+  void popNameScope();
+
 private:
   void finalizeOp(onnx::NodeProto *node, const std::string &name);
 
   void addOpsetRequirement(const std::string &domain, int version);
 
-  TensorId getNextId();
+  TensorId getNextId(const std::string &name, int n);
 
   bool isInputTensor(TensorId id) const;
 
@@ -227,7 +230,9 @@ private:
                         const boost::any &attributeValue,
                         onnx::NodeProto &node);
 
-  uint64_t next_id_ = 0;
+  std::set<std::string> tensor_ids_;
+
+  std::vector<std::string> name_scope_stack_;
 
   onnx::ModelProto model_;
 

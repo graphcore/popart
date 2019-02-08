@@ -623,6 +623,19 @@ public:
    */
   std::vector<int64_t> getTensorShape(const TensorId id);
 
+  /**
+   * Push a name onto the name scope stack.
+   *
+   * The names of tensors and nodes added to the ONNX graph will be prefixed
+   * with a concatenation of the names in the name stack.
+   */
+  void pushNameScope(const std::string &name);
+
+  /**
+   * Remove the last entry in the name scope stack
+   */
+  void popNameScope();
+
 private:
   void configure();
   void configure(const std::string &modelProtoOrFilename);

@@ -67,8 +67,8 @@ def test_average_pool_with_count_include_pad(op_tester):
     o = builder.aiOnnx.averagepool([i1], [3, 3], 1, [0, 0, 0, 0], [2, 2])
     builder.addOutputTensor(o)
 
-    builder.removeNodeAttribute("count_include_pad", set(o))
-    builder.addNodeAttribute("count_include_pad", 1, set(o))
+    builder.removeNodeAttribute("count_include_pad", set([o]))
+    builder.addNodeAttribute("count_include_pad", 1, set([o]))
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
     optimizer = poponnx.ConstSGD(0.01)

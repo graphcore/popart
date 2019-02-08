@@ -351,4 +351,10 @@ void Builder::clearAttribute(const std::string &attribute) {
   impl_->clearAttribute(attribute);
 }
 
+void Builder::pushNameScope(const std::string &name) {
+  impl_->pushNameScope(name);
+}
+
+void Builder::popNameScope() { impl_->popNameScope(); }
+
 } // namespace poponnx

@@ -837,8 +837,8 @@ def test_add_int_attribute():
     builder.addOutputTensor(o)
     # Set then get
     val = 100
-    builder.addNodeAttribute("test", val, set(o))
-    res = builder.getInt64NodeAttribute("test", set(o))
+    builder.addNodeAttribute("test", val, set([o]))
+    res = builder.getInt64NodeAttribute("test", set([o]))
     assert (res == val)
 
 
@@ -857,8 +857,8 @@ def test_add_int_vector_attribute():
     builder.addOutputTensor(o)
     # Set then get
     val = [100, 200, -1]
-    builder.addNodeAttribute("test", val, set(o))
-    res = builder.getInt64VectorNodeAttribute("test", set(o))
+    builder.addNodeAttribute("test", val, set([o]))
+    res = builder.getInt64VectorNodeAttribute("test", set([o]))
     assert (res == val)
 
 
@@ -877,8 +877,8 @@ def test_add_float_attribute():
     builder.addOutputTensor(o)
     # Set then get
     val = .1
-    builder.addNodeAttribute("test", val, set(o))
-    res = builder.getFloatNodeAttribute("test", set(o))
+    builder.addNodeAttribute("test", val, set([o]))
+    res = builder.getFloatNodeAttribute("test", set([o]))
     assert (res == pytest.approx(val))
 
 
@@ -897,8 +897,8 @@ def test_add_float_vector_attribute():
     builder.addOutputTensor(o)
     # Set then get
     val = [100., -.1, 100.0, 10.0]
-    builder.addNodeAttribute("test", val, set(o))
-    res = builder.getFloatVectorNodeAttribute("test", set(o))
+    builder.addNodeAttribute("test", val, set([o]))
+    res = builder.getFloatVectorNodeAttribute("test", set([o]))
     assert (res == pytest.approx(val))
 
 
@@ -917,8 +917,8 @@ def test_add_string_attribute():
     builder.addOutputTensor(o)
     # Set then get
     val = "test"
-    builder.addNodeAttribute("test", val, set(o))
-    res = builder.getStringNodeAttribute("test", set(o))
+    builder.addNodeAttribute("test", val, set([o]))
+    res = builder.getStringNodeAttribute("test", set([o]))
     assert (res == val)
 
 
@@ -937,8 +937,8 @@ def test_add_string_vector_attribute():
     builder.addOutputTensor(o)
     # Set then get
     val = ["test", "test2", "test"]
-    builder.addNodeAttribute("test", val, set(o))
-    res = builder.getStringVectorNodeAttribute("test", set(o))
+    builder.addNodeAttribute("test", val, set([o]))
+    res = builder.getStringVectorNodeAttribute("test", set([o]))
     assert (res == val)
 
 
@@ -968,10 +968,10 @@ def test_has_attribute():
     builder.addOutputTensor(o)
     # Set then get
     val = 100
-    builder.addNodeAttribute("test", val, set(o))
-    res = builder.nodeHasAttribute("test", set(o))
+    builder.addNodeAttribute("test", val, set([o]))
+    res = builder.nodeHasAttribute("test", set([o]))
     assert (res)
-    res = builder.nodeHasAttribute("test2", set(o))
+    res = builder.nodeHasAttribute("test2", set([o]))
     assert (not res)
 
 
@@ -983,19 +983,19 @@ def test_get_all_attribute_names():
     o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
-    builder.addNodeAttribute("test", 100., set(o))
-    builder.addNodeAttribute("test2", -1, set(o))
-    builder.addNodeAttribute("test3", "abba", set(o))
-    res = builder.getAllNodeAttributeNames(set(o))
+    builder.addNodeAttribute("test", 100., set([o]))
+    builder.addNodeAttribute("test2", -1, set([o]))
+    builder.addNodeAttribute("test3", "abba", set([o]))
+    res = builder.getAllNodeAttributeNames(set([o]))
     assert (set(res) == set(("test", "test2", "test3")))
 
-    res = builder.getFloatNodeAttribute("test", set(o))
+    res = builder.getFloatNodeAttribute("test", set([o]))
     assert (res == pytest.approx(100.))
 
-    res = builder.getInt64NodeAttribute("test2", set(o))
+    res = builder.getInt64NodeAttribute("test2", set([o]))
     assert (res == -1)
 
-    res = builder.getStringNodeAttribute("test3", set(o))
+    res = builder.getStringNodeAttribute("test3", set([o]))
     assert (res == "abba")
 
 
@@ -1014,7 +1014,7 @@ def test_get_conv_strides_attribute():
                             strides=strides)
 
     builder.addOutputTensor(o)
-    res = builder.getInt64VectorNodeAttribute("strides", set(o))
+    res = builder.getInt64VectorNodeAttribute("strides", set([o]))
     assert (res == strides)
 
 
@@ -1026,10 +1026,10 @@ def test_dont_override_attribute():
     o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
-    builder.addNodeAttribute("test", 100., set(o))
+    builder.addNodeAttribute("test", 100., set([o]))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.addNodeAttribute("test", 100, set(o))
+        builder.addNodeAttribute("test", 100, set([o]))
 
     assert (e_info.value.args[0] == "Node already has attribute test.")
 
@@ -1042,10 +1042,10 @@ def test_get_attribute_doesnt_exist():
     o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
-    builder.addNodeAttribute("test", 100., set(o))
+    builder.addNodeAttribute("test", 100., set([o]))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.getFloatNodeAttribute("test1", set(o))
+        builder.getFloatNodeAttribute("test1", set([o]))
 
     assert (e_info.value.args[0] == "Node does not have an attribute test1.")
 
@@ -1065,11 +1065,11 @@ def test_remove_attribute():
     builder.addOutputTensor(o)
     # Set then get
     val = 100
-    builder.addNodeAttribute("test", val, set(o))
-    res = builder.nodeHasAttribute("test", set(o))
+    builder.addNodeAttribute("test", val, set([o]))
+    res = builder.nodeHasAttribute("test", set([o]))
     assert (res)
-    builder.removeNodeAttribute("test", set(o))
-    res = builder.nodeHasAttribute("test", set(o))
+    builder.removeNodeAttribute("test", set([o]))
+    res = builder.nodeHasAttribute("test", set([o]))
     assert (not res)
 
 
@@ -1088,11 +1088,11 @@ def test_remove_attribute_doesnt_exist():
     builder.addOutputTensor(o)
     # Set then get
     val = 100
-    builder.addNodeAttribute("test", val, set(o))
-    res = builder.nodeHasAttribute("test", set(o))
+    builder.addNodeAttribute("test", val, set([o]))
+    res = builder.nodeHasAttribute("test", set([o]))
     assert (res)
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.removeNodeAttribute("test1", set(o))
+        builder.removeNodeAttribute("test1", set([o]))
 
     assert (e_info.value.args[0] ==
             "Cannot remove attribute test1 as it does not exist.")
@@ -1106,10 +1106,10 @@ def test_get_attribute_wrong_type_int():
     o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
-    builder.addNodeAttribute("test", 100., set(o))
+    builder.addNodeAttribute("test", 100., set([o]))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.getInt64NodeAttribute("test", set(o))
+        builder.getInt64NodeAttribute("test", set([o]))
 
     assert (e_info.value.args[0].find("Node test is not an integer."))
 
@@ -1122,10 +1122,10 @@ def test_get_attribute_wrong_type_int_vector():
     o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
-    builder.addNodeAttribute("test", 100., set(o))
+    builder.addNodeAttribute("test", 100., set([o]))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.getInt64VectorNodeAttribute("test", set(o))
+        builder.getInt64VectorNodeAttribute("test", set([o]))
 
     assert (e_info.value.args[0].find("Node test is not an integer vector."))
 
@@ -1138,10 +1138,10 @@ def test_get_attribute_wrong_type_float():
     o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
-    builder.addNodeAttribute("test", 100, set(o))
+    builder.addNodeAttribute("test", 100, set([o]))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.getFloatNodeAttribute("test", set(o))
+        builder.getFloatNodeAttribute("test", set([o]))
 
     assert (e_info.value.args[0].find("Node test is not a float."))
 
@@ -1154,10 +1154,10 @@ def test_get_attribute_wrong_type_float_vector():
     o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
-    builder.addNodeAttribute("test", 100, set(o))
+    builder.addNodeAttribute("test", 100, set([o]))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.getFloatVectorNodeAttribute("test", set(o))
+        builder.getFloatVectorNodeAttribute("test", set([o]))
 
     assert (e_info.value.args[0].find("Node test is not a float vector."))
 
@@ -1170,10 +1170,10 @@ def test_get_attribute_wrong_type_string():
     o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
-    builder.addNodeAttribute("test", 100, set(o))
+    builder.addNodeAttribute("test", 100, set([o]))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.getStringNodeAttribute("test", set(o))
+        builder.getStringNodeAttribute("test", set([o]))
 
     assert (e_info.value.args[0].find("Node test is not a string."))
 
@@ -1186,10 +1186,10 @@ def test_get_attribute_wrong_type_string_vector():
     o = builder.aiOnnx.add((i1, i1))
 
     builder.addOutputTensor(o)
-    builder.addNodeAttribute("test", 100, set(o))
+    builder.addNodeAttribute("test", 100, set([o]))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        builder.getStringVectorNodeAttribute("test", set(o))
+        builder.getStringVectorNodeAttribute("test", set([o]))
 
     assert (e_info.value.args[0].find("Node test is not a string vector."))
 
@@ -1446,3 +1446,23 @@ def test_builder_opsetVersioning(tmpdir):
     assert (
         "Invalid opset 6 used to add an operation. Opset for domain ai.onnx already defined as 9"
         in e_info.value.args[0])
+
+
+def test_name_scope(tmpdir):
+    builder = poponnx.Builder(opsets={"ai.onnx": 9, "ai.graphcore": 1})
+
+    i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+    i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
+
+    with builder.nameScope('scope1'):
+        o1 = builder.aiOnnx.add([i1, i2], 'myop1')
+
+    with builder.nameScope('scope2'):
+        o2 = builder.aiOnnx.add([i1, i2], 'myop2')
+
+        with builder.nameScope('embedded_scope'):
+            o3 = builder.aiOnnx.add([o1, o2], 'myop3')
+
+    assert (o1.startswith('scope1'))
+    assert (o2.startswith('scope2'))
+    assert (o3.startswith('scope2.embedded_scope'))

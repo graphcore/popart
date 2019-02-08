@@ -243,12 +243,12 @@ def test_tensor_tile_mapping(tmpdir):
     m = session.getTensorTileMap()
 
     assert (len(m) == 3)
-    assert (sorted(list(m.keys())) == [i1, i2, o])
+    assert (sorted(list(m.keys())) == sorted([i1, i2, o]))
 
     # Assume a 1216 tile device, and mapping a scalar will put it on tile 0
-    assert (len(m['1']) == 1216)
+    assert (len(m[o]) == 1216)
 
-    for i in enumerate(m['1']):
+    for i in enumerate(m[o]):
         tile, intervals = i
         if tile == 0:
             assert (len(intervals) == 1)
