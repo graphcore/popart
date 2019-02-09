@@ -8,19 +8,21 @@ def test_create_empty_options():
 
     opts = poponnx.SessionOptions()
     assert (opts is not None)
-    assert (opts.exportDot == False)
+    # assert that the dotChecks set is empty:
+    assert (not opts.dotChecks)
     assert (len(opts.engineOptions) == 0)
     assert (len(opts.convolutionOptions) == 0)
     assert (len(opts.reportOptions) == 0)
     assert (opts.logDir == "")
 
 
-def test_set_exportDot_flag():
+def test_set_dotchecks():
 
     opts = poponnx.SessionOptions()
-    opts.exportDot = True
+    assert (len(opts.dotChecks) == 0)
 
-    assert (opts.exportDot == True)
+    opts.dotChecks = {poponnx.DotCheck.FINAL, poponnx.DotCheck.FWD0}
+    assert (len(opts.dotChecks) == 2)
 
 
 def test_set_enableConvolutionGraphCaching_flag():

@@ -109,7 +109,6 @@ def op_tester(tmpdir):
 
             opts = poponnx.SessionOptionsCore()
             opts.logging = {'all': 'TRACE'}
-            opts.exportDot = False
             opts.logDir = self.logging_dir
 
             session = poponnx.Session(

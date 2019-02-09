@@ -260,7 +260,6 @@ PYBIND11_MODULE(poponnx_core, m) {
   py::class_<SessionOptions>(m, "SessionOptionsCore")
       .def(py::init<>())
       .def_readwrite("logDir", &SessionOptions::logDir)
-      .def_readwrite("exportDot", &SessionOptions::exportDot)
       .def_readwrite("exportPoplarComputationGraph",
                      &SessionOptions::exportPoplarComputationGraph)
       .def_readwrite("exportPoplarVertexGraph",
@@ -276,12 +275,24 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("engineOptions", &SessionOptions::engineOptions)
       .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
       .def_readwrite("reportOptions", &SessionOptions::reportOptions)
-      .def_readwrite("logging", &SessionOptions::loggingOptions);
+      .def_readwrite("logging", &SessionOptions::loggingOptions)
+      .def_readwrite("dotOpNames", &SessionOptions::dotOpNames)
+      .def_readwrite("maxDotOps", &SessionOptions::maxDotOps)
+      // set in python use the python set constructor, so something like
+      // mySessionOptions.dotChecks = {poponnx.DotCheck.FINAL}
+      .def_readwrite("dotChecks", &SessionOptions::dotChecks);
 
   py::enum_<PatternsLevel>(m, "PatternsLevel")
       .value("ALL", PatternsLevel::ALL)
       .value("DEFAULT", PatternsLevel::DEFAULT)
       .value("NONE", PatternsLevel::NONE);
+
+  py::enum_<DotCheck>(m, "DotCheck")
+      .value("FWD0", DotCheck::FWD0)
+      .value("FWD1", DotCheck::FWD1)
+      .value("BWD0", DotCheck::BWD0)
+      .value("PREALIAS", DotCheck::PREALIAS)
+      .value("FINAL", DotCheck::FINAL);
 
   py::enum_<PreAliasPatternType>(m, "PreAliasPatternType")
       .value("PREUNIREPL", PreAliasPatternType::PREUNIREPL)

@@ -108,7 +108,21 @@ void Ir::eraseOp(OpId id) {
   ops.erase(id);
 }
 
-void Ir::exportDot(const std::string dotfn) const {
+void Ir::dotCheckpoint(DotCheck check) const {
+
+  if (userOptions.dotChecks.count(check) == 0) {
+    return;
+  }
+
+  // the full path to the .dot file to be written
+  std::string dotfn =
+      io::appendDirFn(userOptions.logDir, getDotCheckString(check) + ".dot");
+
+  // the name that an Op has in the .dot file
+  auto nodeDotId = [](OpId id) { return "\"n_" + std::to_string(id) + "\""; };
+
+  // the name that a Tensor has in the .dot file.
+  auto tensorDotId = [](const TensorId &id) { return '\"' + id + '\"'; };
 
   logging::ir::info("Writing dot file to {}", dotfn);
   std::ofstream strm;
@@ -116,30 +130,81 @@ void Ir::exportDot(const std::string dotfn) const {
   if (!strm.is_open()) {
     throw error("failed to open file `" + dotfn + '\'');
   }
+
   strm << "digraph net {\n";
   strm << "size=\"6,6\";\n";
+  auto scheduledOps = getOpSchedule({});
+
   // the position in the schedule at which an op runs
   int scheduleIndex = 0;
-  for (auto &n : getOpSchedule({})) {
-    strm << "n_" << n->id << " [shape= \"box\", label=\"" << scheduleIndex
-         << '.' << ' ' << n->opid;
 
-    // Add the debug name if present
-    if (!n->name().empty())
-      strm << "(" << n->name() << ")";
+  // we keep track of which tensors have been defined in the .dot file
+  std::set<TensorId> tensorsVisited{};
+
+  auto getNodeColor = [](TensorType type) {
+    switch (type) {
+    case TensorType::Stream:
+      return "\"red\"";
+    case TensorType::Const:
+      return "\"blue\"";
+    case TensorType::Variable:
+      return "\"green\"";
+    case TensorType::Momentum:
+    case TensorType::Unknown:
+    case TensorType::ActGrad:
+    case TensorType::N:
+    default:
+      return "\"black\"";
+    }
+  };
+
+  auto makeNodeIfRequired = [&getNodeColor,
+                             &tensorDotId,
+                             &strm,
+                             &tensorsVisited](const Tensor *tensor) {
+    if (tensorsVisited.count(tensor->id) == 0) {
+      tensorsVisited.insert(tensor->id);
+      strm << tensorDotId(tensor->id) << " [shape= \"egg\", label=\""
+           << tensor->info << " c:" << tensor->consumers.getTotal()
+           << "\", color = " << getNodeColor(tensor->tensorType()) << "];\n";
+    }
+  };
+
+  for (int i = 0; i < std::min<int>(userOptions.maxDotOps,
+                                    static_cast<int>(scheduledOps.size()));
+       ++i) {
+    auto &n = scheduledOps.at(i);
+
+    // add the .dot entry for a node [shape="box", label=...]
+    strm << nodeDotId(n->id) << " [shape= \"box\", label=\"" << scheduleIndex
+         << '.' << ' ' << n->opid.type;
+
+    // Add the debug name if present and requested
+    if (userOptions.dotOpNames) {
+      if (!n->name().empty()) {
+        strm << "(" << n->name() << ")";
+      }
+    }
 
     strm << "\"];\n";
     ++scheduleIndex;
+
+    // insert the input -> op edges into the .dot file
     for (auto &ind_ten : n->input->tensorMap()) {
-      strm << ind_ten.second->id << " -> n_" << n->id << ';' << '\n';
+      TensorId tenId = ind_ten.second->id;
+      makeNodeIfRequired(ind_ten.second);
+      strm << tensorDotId(tenId) << " -> " << nodeDotId(n->id) << ';' << '\n';
     }
 
+    // insert the op -> output edges into the .dot file
     for (auto &ind_ten : n->output->tensorMap()) {
       auto tenId = ind_ten.second->id;
-      strm << "n_" << n->id << " -> " << tenId << ';' << '\n';
+      makeNodeIfRequired(ind_ten.second);
+      strm << nodeDotId(n->id) << " -> " << tensorDotId(tenId) << ';' << '\n';
       TensorId possibleGradId = getGradId(tenId);
       if (getTensors().contains(possibleGradId)) {
-        // strm << "{rank=same; " << tenId << "; " << possibleGradId << ";}\n";
+        // strm << "{rank=same; " << tenId << "; " << possibleGradId <<
+        // ";}\n";
       }
     }
   }
@@ -516,12 +581,9 @@ void Ir::prepare(const IrBundle &gb) {
 
   // construct the forward pass from ONNX,
   constructForwards();
-
-  if (userOptions.exportDot) {
-    exportDot(io::appendDirFn(userOptions.logDir, "fwd0.dot"));
-  }
-
+  dotCheckpoint(DotCheck::FWD0);
   applyPreAliasPatterns();
+  dotCheckpoint(DotCheck::FWD1);
 
   if (canEvaluate()) {
     growFinalLoss();
@@ -539,6 +601,7 @@ void Ir::prepare(const IrBundle &gb) {
     constructBackwards();
   }
   updateVertices();
+  dotCheckpoint(DotCheck::BWD0);
 
   // confirm that all the anchor names provided
   // are indeed real tensor names. This is a check
@@ -561,18 +624,7 @@ void Ir::prepare(const IrBundle &gb) {
     setVarUpdateCons();
   }
 
-  if (userOptions.exportDot) {
-    exportDot(io::appendDirFn(userOptions.logDir, "fwdBwd0.dot"));
-  }
-
   applyTransform(Prune::id());
-
-  // Now, we apply the Patterns which can handle and create
-  // topological constraints. Currently, this is only one
-  // in-placing Pattern.
-  if (patterns.isInPlaceEnabled()) {
-    applyInplacePattern();
-  }
 
   updateVertices();
 
@@ -584,13 +636,20 @@ void Ir::prepare(const IrBundle &gb) {
 
   updateVertices();
 
-  isPrepared = true;
-
-  if (userOptions.exportDot) {
-    exportDot(io::appendDirFn(userOptions.logDir, "fwdBwd1.dot"));
+  dotCheckpoint(DotCheck::PREALIAS);
+  // Now, we apply the Patterns which can handle and create
+  // topological constraints. Currently, this is only one
+  // in-placing Pattern.
+  if (patterns.isInPlaceEnabled()) {
+    applyInplacePattern();
   }
 
+  updateVertices();
+
+  dotCheckpoint(DotCheck::FINAL);
+
   logIr();
+
   // some checks, now that prepare is complete
   for (auto &id_op : ops) {
     if (id_op.second->opid == Onnx::CustomGradOperators::NllGrad) {
@@ -600,12 +659,11 @@ void Ir::prepare(const IrBundle &gb) {
                         "SoftMaxGradDirect");
     }
   }
-
   verifyConstExprFolding();
-
   verifyConnectivity();
-
   // end of checks
+
+  isPrepared = true;
 }
 
 void Ir::resetWeights(const onnx::ModelProto &modelProto) {
@@ -1047,10 +1105,10 @@ std::vector<Op *> OpGradRegistry::popComplete() {
 
 // design choice: we could have an "irHasChanged"
 // flag which is set to true whenever the Ir changes,
-// and then if irHasModeified is false, calls
+// and then if irHasChanged is false, calls
 // to this (and other) functions can do nothing.
-// The cost of maintaining irHasModeified is non-trivial
-// and would require runtime overhead, for now I'm not
+// The cost of maintaining irHasChanged is non-trivial
+// and would require runtime overhead, for now not
 // going to implement it.
 
 void Ir::updateVertices() {

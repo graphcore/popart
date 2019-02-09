@@ -435,8 +435,9 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new NllLoss(softmaxOut, input2, "nllLossVal")};
 
-  auto opts      = SessionOptions();
-  opts.exportDot = true;
+  auto opts = SessionOptions();
+  // No .dot files will be written
+  opts.dotChecks = {};
 
   Ir ir;
   ir.prepare({modelProto,
@@ -489,8 +490,7 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(output, "l1LossVal", 0.1)};
 
-  auto opts      = SessionOptions();
-  opts.exportDot = true;
+  auto opts = SessionOptions();
 
   Ir ir;
   ir.prepare({modelProto,

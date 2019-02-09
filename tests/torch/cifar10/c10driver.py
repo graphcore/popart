@@ -113,7 +113,6 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     print('Selected Device : {0}'.format(device))
 
     opts = poponnx.SessionOptionsCore()
-    opts.exportDot = True
     opts.logging = {"all": "TRACE", "session": "WARN"}
     opts.ignoreData = syntheticData
     opts.logDir = outputdir

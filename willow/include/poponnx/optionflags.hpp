@@ -3,9 +3,22 @@
 
 #include <iterator>
 #include <map>
+#include <set>
 #include <string>
 
 namespace poponnx {
+
+// Stages of Ir construction where .dot files can be written
+enum class DotCheck {
+  FWD0 = 0, // after construction of the forward pass
+  FWD1,     // after running pre-aliasing patterns
+  BWD0,     // after backwards construction
+  PREALIAS, // after all transformations, patterns, except the aliasing
+  FINAL,    // after running aliasing patterns (the final Ir)
+  N         // the number of DotChecks, must appear as the final enum
+};
+
+std::string getDotCheckString(DotCheck);
 
 /**
  * A structure containing user configuration options for the Session class
@@ -17,8 +30,16 @@ struct SessionOptions {
   /// A directory for log traces to be written into
   std::string logDir;
 
-  /// Export 'dot' files of the forward and backward passes
-  bool exportDot = false;
+  /// When to write '.dot' files during Ir construction
+  std::set<DotCheck> dotChecks = {};
+
+  /// The maximum number of Ops to write to a .dot file
+  /// If the Ir has N Ops in it, the first min(N, maxDotOps) in
+  /// the scheduled list will be written to the .dot file.
+  int maxDotOps = 10000;
+
+  /// Include the Op name in the .dot file (the Op type is always exported)
+  bool dotOpNames = false;
 
   /// Export Poplar computation graph
   bool exportPoplarComputationGraph = false;

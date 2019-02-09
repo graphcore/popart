@@ -76,6 +76,8 @@ endfunction()
 
 add_poponnx_cpp_example(custom_operator ${CMAKE_CURRENT_SOURCE_DIR}/cplusplus/custom_op.cpp)
 add_poponnx_cpp_example(supported_operators ${CMAKE_CURRENT_SOURCE_DIR}/cplusplus/supported_ops.cpp)
+add_poponnx_cpp_example(dot_inference_graph 
+  ${CMAKE_CURRENT_SOURCE_DIR}/cplusplus/dot_inference_graph.cpp)
 
 
 

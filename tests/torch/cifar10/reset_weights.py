@@ -91,7 +91,6 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
         num_workers=3)
 
     opts = poponnx.SessionOptionsCore()
-    opts.exportDot = True
     opts.logging = {"all": "TRACE", "session": "TRACE"}
     opts.logDir = outputdir
 

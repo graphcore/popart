@@ -185,7 +185,9 @@ public:
   TensorId getFinalLossId() const;
   // The OpId if the Op which sums all loss values from the LossOps
   OpId getFinalLossOpId() const;
-  void exportDot(std::string dotfn) const;
+  // if check is in userOptions.dotChecks, then write the .dot file
+  // in userOptions.logDir
+  void dotCheckpoint(DotCheck check) const;
   void eraseOp(OpId);
   Op *getOp(OpId);
   const onnx::ModelProto &getModel() const;
