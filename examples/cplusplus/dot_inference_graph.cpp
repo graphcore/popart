@@ -1,6 +1,7 @@
 // A tool for visualising the Ir (PopONNX's Intermediate representation).
 // as a .dot file which can be compiled into a .pdf file.
 
+#include <iostream>
 #include <vector>
 #include <poponnx/builder.hpp>
 #include <poponnx/filereader.hpp>
@@ -40,7 +41,8 @@ int main(int argc, char **argv) {
     //
     // note for (4):
     // - the first min(number of Ops in Ir, (4)) will be written
-    throw error(ss.str());
+    std::cout << ss.str() << std::endl;
+    return 0;
   }
   std::string modelPath = argv[1];
   logging::ir::info("modelPath set to {}", modelPath);
@@ -104,4 +106,5 @@ int main(int argc, char **argv) {
       std::cout << command << " returned with status " << ran << std::endl;
     }
   }
+  return 0;
 }
