@@ -109,9 +109,14 @@ bool Inplace::apply(Op *op,
 
   auto newCons = newConsIn;
 
+  // it would be nice to use "makeReplacementOpInIr" but Inplace
+  // Op constructors don't have the required signature for that
   std::unique_ptr<Op> up_inplaceOp = op->getInplaceVariant(identifier);
   Op *inplaceOp                    = up_inplaceOp.get();
+  transferBaseProperties(op, inplaceOp);
+  inplaceOp->settings.name = getReplacementOpName(op);
   ir.moveIntoIr(std::move(up_inplaceOp));
+
   // replace op with inplaceOp everywhere in newCons
   if (newCons.find(op) != newCons.end()) {
     newCons[inplaceOp] = newCons[op];

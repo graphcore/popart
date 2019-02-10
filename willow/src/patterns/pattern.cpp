@@ -31,6 +31,16 @@ void Pattern::initialise(std::string pattern_name_) {
   pattern_name = pattern_name_;
 }
 
+void Pattern::transferBaseProperties(Op *from, Op *to) const {
+  if (from->getVirtualGraphId()) {
+    to->setVirtualGraphId(from->getVirtualGraphId());
+  }
+
+  if (from->getRecomputeOutput()) {
+    to->setRecomputeOutput(from->getRecomputeOutput());
+  }
+}
+
 std::unique_ptr<Op>
 PreAliasPattern::makeReplacementOp(const OperatorIdentifier &operator_id,
                                    Op *oldOp,
@@ -40,12 +50,15 @@ PreAliasPattern::makeReplacementOp(const OperatorIdentifier &operator_id,
   std::unique_ptr<Op> newOp = OpManager::createOp(
       operator_id, oldOp->getIr(), getReplacementOpName(oldOp));
 
-  if (oldOp->getVirtualGraphId())
-    newOp->setVirtualGraphId(oldOp->getVirtualGraphId());
+  if (newOp == nullptr) {
+    throw error(
+        "ILE : nullptr for newOp in makeReplacementOp, for op of type "
+        "{} trying to make {}. Possibly need to 'register' the replacement? ",
+        oldOp->str(),
+        operator_id);
+  }
 
-  if (oldOp->getRecomputeOutput())
-    newOp->setRecomputeOutput(oldOp->getRecomputeOutput());
-
+  transferBaseProperties(oldOp, newOp.get());
   return newOp;
 }
 
@@ -64,14 +77,13 @@ Op *PreAliasPattern::makeReplacementOpInIr(
 
 const std::string &Pattern::getPatternName() const { return pattern_name; }
 
-std::string PreAliasPattern::getReplacementOpName(Op *op) const {
+std::string Pattern::getReplacementOpName(Op *op) const {
   std::string replacementName;
   if (op->name() == "") {
     replacementName = "";
   } else {
     replacementName = op->name() + "_from_" + getPatternName();
   }
-
   return replacementName;
 }
 

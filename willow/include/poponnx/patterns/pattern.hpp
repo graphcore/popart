@@ -55,6 +55,11 @@ public:
 
   void initialise(std::string pattern_name);
 
+protected:
+  std::string getReplacementOpName(Op *op) const;
+
+  void transferBaseProperties(Op *from, Op *to) const;
+
 private:
   std::string pattern_name;
 };
@@ -69,12 +74,14 @@ public:
   // would be touched?
   virtual std::vector<const Tensor *> touches(Op *op) const = 0;
 
+protected:
   // New op(s) created in replacement of old op will
   // inherit name and attributes of op they replace
   std::unique_ptr<Op> makeReplacementOp(const OperatorIdentifier &,
                                         Op *oldOp,
                                         const Attributes &attr = {}) const;
 
+public:
   // New op(s) created in replacement of old op will
   // inherit name and attributes of op they replace
   Op *makeReplacementOpInIr(const OperatorIdentifier &,
@@ -82,10 +89,6 @@ public:
                             const Attributes &attr = {}) const;
 
   static TensorId createIntermediateTensorId(TensorId base_id);
-
-  std::string getReplacementOpName(Op *op) const;
-
-  Op *getOpInIr(std::unique_ptr<Op> op) const;
 
   // Does this Pattern match the
   // sub-graph centered (rooted) on op?

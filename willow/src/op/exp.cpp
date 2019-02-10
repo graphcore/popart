@@ -20,8 +20,8 @@ ExpOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   return Op::getInplaceVariant(operator_id);
 }
 
-ExpInplaceOp::ExpInplaceOp(const ExpOp &relu_op)
-    : Op(Onnx::CustomOperators::ExpInplace, relu_op.getSettings()) {}
+ExpInplaceOp::ExpInplaceOp(const ExpOp &exp_op)
+    : Op(Onnx::CustomOperators::ExpInplace, exp_op.getSettings()) {}
 
 void ExpInplaceOp::setup() {
   // no output, nothing to setup
@@ -67,7 +67,6 @@ void ExpGradOp::setup() { outInfo(getOutIndex()) = inInfo(getFwdOutInIndex()); }
 
 namespace {
 static OpCreator<ExpOp> expOpCreator(Onnx::Operators::Exp_6);
-
 } // namespace
 
 } // namespace poponnx
