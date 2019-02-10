@@ -1,6 +1,6 @@
-# These tests are to verify the output of constexpr.
+# These slice tests are to verify the output of constexpr.
 # To see that the const expr is actually being applied,
-# see the tests in `constexpr_test.cpp'
+# see the tests in constexpr_tests directory
 import numpy as np
 from op_tester import op_tester
 
