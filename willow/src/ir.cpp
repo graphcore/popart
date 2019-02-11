@@ -36,6 +36,7 @@
 #include <poponnx/transforms/virtual_graph_check.hpp>
 
 // The layers required to construct the backwards pass
+#include <poponnx/op/batchnorm.hpp>
 #include <poponnx/op/sum.hpp>
 #include <poponnx/op/varupdate.hpp>
 
@@ -183,6 +184,8 @@ void Ir::dotCheckpoint(DotCheck check) const {
     if (userOptions.dotOpNames) {
       if (!n->name().empty()) {
         strm << "(" << n->name() << ")";
+      } else {
+        strm << " (" << n->id << ")";
       }
     }
 
@@ -701,10 +704,10 @@ void Ir::registerInputTensors() {
     // If inference or evaluation mode add initializers as constants
     if (getExecutionMode() == ExecutionMode::INFERENCE ||
         getExecutionMode() == ExecutionMode::EVALUATION) {
-      logging::info("Init tensor {} as constant", tenId);
+      logging::info("Adding Constant Tensor {} to Ir", tenId);
       getTensors().addConstInit(tenId, &initializer);
     } else {
-      logging::info("Init tensor {} as variable", tenId);
+      logging::info("Adding Variable Tensor {} to Ir", tenId);
       getTensors().addVarInit(tenId, &initializer);
     }
     onnxInitializers.emplace(tenId);
@@ -1369,6 +1372,9 @@ void Ir::setNPathsToLoss() {
 }
 
 void Ir::constructBackwards() {
+
+  logging::ir::info("constructing backwards pass");
+
   // definition: edge-gradient. What is output by a grad-op,
   // and which will be summed with other edge-gradients to create
   // a gradient. It is possible that an edge-gradient has the same
@@ -1476,6 +1482,37 @@ void Ir::constructBackwards() {
 
   // add weight update ops (we are ignoring momentums for now)
   for (auto &varId : getTensors().getIds(TensorType::Variable)) {
+
+    // a temporary catch for batch normalization task: T6876
+    // /////////////////////////////////////////////////////
+    auto tensor = getTensors().get(varId);
+    std::stringstream consumer_list;
+    for (auto &consumer : tensor->consumers.getOps()) {
+      consumer_list << consumer->str() << " ";
+      if (consumer->opid.type == "BatchNormalization") {
+        auto inIndices = consumer->input->indices(tensor);
+        for (InIndex inIndex :
+             {BatchNormOp::getMeanInIndex(), BatchNormOp::getVarInIndex()}) {
+          if (std::find(inIndices.cbegin(), inIndices.cend(), inIndex) !=
+              inIndices.cend()) {
+
+            // curently, growVarUpdateOp called on mean or variance to batch
+            // normalization fails. we need to implement the updates for these
+            // variables. See T6876
+            throw error(
+                "BatchNormalization backwards pass Ops not completely "
+                "implemented in PopONNX. "
+                "Mean and Var update still need implementing (both at Ir "
+                "level and at popx level).");
+          }
+        }
+      }
+      logging::ir::debug(
+          "Creating Variable Update Op for Tensor {}, with consumers [ {}]",
+          varId,
+          consumer_list.str());
+      ////////////////////////////////////////////////
+    }
     growVarUpdateOp(varId);
   }
 }
@@ -1557,6 +1594,8 @@ void Ir::growFinalLoss() {
   if (losses.size() == 0) {
     return;
   }
+
+  logging::ir::info("growing final loss");
 
   std::vector<Op *> lossOps;
   // first, grow each of the individual losses from the user

@@ -17,14 +17,14 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
 
-  // Input's
+  // Inputs
   static InIndex getXInIndex() { return 0; }
   static InIndex getScaleInIndex() { return 1; }
   static InIndex getBInIndex() { return 2; }
   static InIndex getMeanInIndex() { return 3; }
   static InIndex getVarInIndex() { return 4; }
 
-  // Ouput's
+  // Ouputs
   static OutIndex getYOutIndex() { return 0; }
   static OutIndex getMeanOutIndex() { return 1; }
   static OutIndex getVarOutIndex() { return 2; }

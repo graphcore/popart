@@ -93,6 +93,7 @@ int main(int argc, char **argv) {
                 opts.logDir);
   }
 
+  // dot -Tpdf -o x.pdf x.dot
   if (compileDotsToPDF == true) {
     for (auto check : opts.dotChecks) {
       auto dot_string = getDotCheckString(check);
