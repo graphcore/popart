@@ -23,6 +23,11 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
+  // The region of the output tensors which is based on the input tensor value.
+  // The complement of this region is the padding region.
+  view::Region valueRegion() const;
+  std::vector<int64_t> padDimensions() const;
+
   const std::vector<int64_t> &getPads() const;
   float getPadValue() const;
   const std::string &getMode() const;

@@ -389,6 +389,10 @@ void Ir::verifyTensorProducerConnectivity() const {
     if (tensor->hasProducer()) {
       auto op = tensor->getProducer();
 
+      if (op->output == nullptr) {
+        throw error("Op {} output tensor index map is null", op->str());
+      }
+
       if (op->output->indices(tensor).empty()) {
         throw error(
             "Tensor {} has op {} as a producer, but it doesn't appear in "
@@ -427,6 +431,10 @@ void Ir::verifyTensorConsumerConnectivity() const {
     auto tensor = cons_count.first.first;
     auto op     = cons_count.first.second;
     auto count  = cons_count.second;
+
+    if (op->input == nullptr) {
+      throw error("Op {} input tensor index map is null", op->str());
+    }
 
     if (op->input->indices(tensor).size() != count) {
       throw error("Tensor {} should have op {} as a consumer {} times, but it "

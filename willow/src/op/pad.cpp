@@ -64,6 +64,42 @@ void PadOp::appendAttributes(std::stringstream &ss,
   appendAttribute(ss, tab, "mode", mode);
 }
 
+view::Region PadOp::valueRegion() const {
+  std::vector<int64_t> lower(pads.size() / 2);
+  std::vector<int64_t> upper(pads.size() / 2);
+
+  const auto shape = outShape(getOutIndex());
+
+  for (int i = 0; i < pads.size() / 2; ++i) {
+    lower[i] = std::max<int64_t>(pads[i], 0);
+  }
+
+  for (int i = 0; i < pads.size() / 2; ++i) {
+    auto idx = (pads.size() / 2) + i;
+    upper[i] = shape[i] - std::max<int64_t>(pads[idx], 0);
+  }
+
+  return {lower, upper};
+}
+
+std::vector<int64_t> PadOp::padDimensions() const {
+  std::set<int64_t> dimensions;
+
+  for (int i = 0; i < pads.size() / 2; ++i) {
+    if (pads[i] != 0) {
+      dimensions.insert(i);
+    }
+  }
+
+  for (int i = 0; i < pads.size() / 2; ++i) {
+    if (pads[(pads.size() / 2) + i] != 0) {
+      dimensions.insert(i);
+    }
+  }
+
+  return {dimensions.begin(), dimensions.end()};
+}
+
 PadGradOp::PadGradOp(const PadOp &fwdOp)
     : SliceOp(Onnx::GradOperators::PadGrad,
               calculateStarts(fwdOp),

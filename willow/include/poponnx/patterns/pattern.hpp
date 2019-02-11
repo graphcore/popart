@@ -29,6 +29,7 @@ enum class PreAliasPatternType {
   COSHOP,
   GEMMDECOMPOSITION,
   NEGATIVEONESCALE,
+  PADSUM,
 };
 
 // Definition: A tensor is "touched" by a Pattern if

@@ -124,8 +124,10 @@ Op *Tensor::getProducer() const {
   if (!hasProducer()) {
     throw error("No producer for tensor " + id + " to return");
   }
-  return producer;
+  return getProducerUnsafe();
 }
+
+Op *Tensor::getProducerUnsafe() const { return producer; }
 
 bool Tensor::hasProducer() const { return producer != nullptr; }
 

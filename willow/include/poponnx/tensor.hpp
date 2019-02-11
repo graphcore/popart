@@ -90,6 +90,8 @@ public:
   // shape and data type. Not to be used before inferShape of pir has run
   TensorInfo info;
 
+  // Similar to getProducer, but the user must handle the nullptr
+  Op *getProducerUnsafe() const;
   Op *getProducer() const;
   void setProducer(Op *);
   void resetProducer(Op *);
