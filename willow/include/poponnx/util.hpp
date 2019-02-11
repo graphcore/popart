@@ -6,12 +6,6 @@
 #include <string>
 #include <vector>
 
-// As per https://github.com/gabime/spdlog/issues/39 the operator<< needs to
-// defined either before you include spdlog.h or placed in the srd namespace
-namespace std {
-std::ostream &operator<<(std::ostream &ss, const std::vector<int64_t> &v);
-}
-
 namespace poponnx {
 
 // turn input into a string, and pads
@@ -115,5 +109,15 @@ count_mismatch(IIter1 begin1, IIter1 end1, IIter2 begin2, IIter2 end2) {
 
 } // namespace util
 } // namespace poponnx
+
+// As per https://github.com/gabime/spdlog/issues/39 the operator<< needs to
+// defined either before you include spdlog.h or placed in the srd namespace
+namespace std {
+template <typename T>
+std::ostream &operator<<(std::ostream &ss, const std::vector<T> &v) {
+  poponnx::appendSequence(ss, v);
+  return ss;
+}
+} // namespace std
 
 #endif
