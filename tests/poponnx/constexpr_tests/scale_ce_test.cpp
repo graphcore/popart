@@ -8,6 +8,7 @@
 #include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/ndarraywrapper.hpp>
 #include <poponnx/op/l1.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/session.hpp>
@@ -150,9 +151,9 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale1) {
 
     // prepare the anchors
     std::vector<float> rawOutputData(4);
-    poponnx::ArrayWrapper<float> outData({2, 2}, rawOutputData.data());
+    poponnx::NDArrayWrapper<float> outData(rawOutputData.data(), {2, 2});
 
-    std::map<poponnx::TensorId, poponnx::Array &> anchors = {
+    std::map<poponnx::TensorId, poponnx::IArray &> anchors = {
         {outId, outData},
     };
 
@@ -174,10 +175,10 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale1) {
 
     std::vector<float> baseline{10.5, 13, 24.5, 29};
 
-    poponnx::ArrayWrapper<float> inData0({2, 2}, rawInputData0.data());
-    poponnx::ArrayWrapper<float> inData1({2, 2}, rawInputData1.data());
+    poponnx::NDArrayWrapper<float> inData0(rawInputData0.data(), {2, 2});
+    poponnx::NDArrayWrapper<float> inData1(rawInputData1.data(), {2, 2});
 
-    std::map<poponnx::TensorId, poponnx::Array &> inputs = {
+    std::map<poponnx::TensorId, poponnx::IArray &> inputs = {
         {model_proto.graph().input(0).name(), inData0},
         {model_proto.graph().input(1).name(), inData1}};
 

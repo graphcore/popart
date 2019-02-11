@@ -10,6 +10,7 @@
 #include <poponnx/builder.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/logging.hpp>
+#include <poponnx/ndarraywrapper.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/op/l1.hpp>
 #include <poponnx/opmanager.hpp>
@@ -158,11 +159,11 @@ auto main(int argc, char **argv) -> int {
 
   // prepare the anchors
   float rawOutputData[2] = {0, 0};
-  poponnx::ArrayWrapper<float> outData({2}, rawOutputData);
+  poponnx::NDArrayWrapper<float> outData(rawOutputData, {2});
 
   float rawWeightData[2] = {0, 0};
-  poponnx::ArrayWrapper<float> outWeights({2}, rawWeightData);
-  std::map<poponnx::TensorId, poponnx::Array &> anchors = {
+  poponnx::NDArrayWrapper<float> outWeights(rawWeightData, {2});
+  std::map<poponnx::TensorId, poponnx::IArray &> anchors = {
       {outputs[0], outData},
       {std::string("d__") + input, outWeights},
   };
@@ -171,8 +172,8 @@ auto main(int argc, char **argv) -> int {
 
   // prepare the inputs
   float rawInputData[2] = {2.0f, 4.0f};
-  poponnx::ArrayWrapper<float> inData({2}, rawInputData);
-  std::map<poponnx::TensorId, poponnx::Array &> inputs = {{input, inData}};
+  poponnx::NDArrayWrapper<float> inData(rawInputData, {2});
+  std::map<poponnx::TensorId, poponnx::IArray &> inputs = {{input, inData}};
 
   poponnx::StepIO stepio(inputs, anchors);
 

@@ -6,6 +6,7 @@
 #include <sstream>
 #include <vector>
 #include <poponnx/error.hpp>
+#include <poponnx/half.hpp>
 #include <poponnx/names.hpp>
 
 namespace poponnx {
@@ -37,6 +38,21 @@ enum class DataType {
   STRING,
   UNDEFINED,
 };
+
+template <typename T> DataType getDataType();
+template <> DataType getDataType<int8_t>();
+template <> DataType getDataType<int16_t>();
+template <> DataType getDataType<int32_t>();
+template <> DataType getDataType<int64_t>();
+template <> DataType getDataType<uint8_t>();
+template <> DataType getDataType<uint16_t>();
+template <> DataType getDataType<uint32_t>();
+template <> DataType getDataType<uint64_t>();
+template <> DataType getDataType<bool>();
+template <> DataType getDataType<Half>();
+template <> DataType getDataType<float>();
+template <> DataType getDataType<double>();
+template <> DataType getDataType<std::string>();
 
 class TensorInfo;
 

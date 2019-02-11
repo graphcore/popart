@@ -8,6 +8,20 @@
 
 namespace poponnx {
 
+template <> DataType getDataType<int8_t>() { return DataType::INT8; }
+template <> DataType getDataType<int16_t>() { return DataType::INT16; }
+template <> DataType getDataType<int32_t>() { return DataType::INT32; }
+template <> DataType getDataType<int64_t>() { return DataType::INT64; }
+template <> DataType getDataType<uint8_t>() { return DataType::UINT8; }
+template <> DataType getDataType<uint16_t>() { return DataType::UINT16; }
+template <> DataType getDataType<uint32_t>() { return DataType::UINT32; }
+template <> DataType getDataType<uint64_t>() { return DataType::UINT64; }
+template <> DataType getDataType<bool>() { return DataType::BOOL; }
+template <> DataType getDataType<Half>() { return DataType::FLOAT16; }
+template <> DataType getDataType<float>() { return DataType::FLOAT; }
+template <> DataType getDataType<double>() { return DataType::DOUBLE; }
+template <> DataType getDataType<std::string>() { return DataType::STRING; }
+
 TensorInfo::TensorInfo(DataType t, const Shape &s)
     : dataTypeInfo(&getDataTypeInfoMap().at(t)), shape_v(s) {}
 

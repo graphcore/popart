@@ -35,35 +35,37 @@ void TensorData::resetData(const TensorInfo &info, const void *from) {
   std::memcpy(data_.data(), from, info.nbytes());
 }
 
-template <> DataType ArrayWrapper<float>::getDtype() { return DataType::FLOAT; }
-template <> DataType ArrayWrapper<int>::getDtype() { return DataType::INT32; }
-
-template <>
-std::ostream &operator<<(std::ostream &os, const ArrayWrapper<float> &array) {
-  os << "{";
-  for (int i = 0; i < array.getShape(0); ++i) {
-    if (i != 0) {
-      os << ", ";
-    }
-
-    os << (static_cast<float *>(array.data))[i];
+TensorInfo StepIO::getTensorInfo(IArray &array) const {
+  auto dtype = array.dataType();
+  auto tRank = array.rank();
+  std::vector<int64_t> shape;
+  for (int i = 0; i < tRank; ++i) {
+    shape.push_back(array.dim(i));
   }
-  os << "}";
-  return os;
+  return TensorInfo(dtype, shape);
 }
 
-template <>
-std::ostream &operator<<(std::ostream &os, const ArrayWrapper<int> &array) {
-
-  os << "{";
-  for (int n = 0; n < array.numElements(); ++n) {
-    if (n != 0) {
-      os << ", ";
-    }
-    os << array.data[n];
+template <typename T>
+T StepIO::get(TensorId id,
+              const std::map<TensorId, IArray &> &M,
+              std::string mapName) const {
+  auto found = M.find(id);
+  if (found == M.end()) {
+    throw error("No tensor {} provided in CppStepIO's {}", id, mapName);
   }
-  os << "}";
-  return os;
+  IArray &npArr = found->second;
+  T stepData;
+  stepData.data = npArr.data();
+  stepData.info = getTensorInfo(npArr);
+  return stepData;
+}
+
+ConstVoidData StepIO::in(TensorId id) const {
+  return get<ConstVoidData>(id, inputs, "inputs");
+}
+
+MutableVoidData StepIO::out(TensorId id) const {
+  return get<MutableVoidData>(id, outputs, "outputs");
 }
 
 } // namespace poponnx

@@ -2,7 +2,7 @@
 #include <onnx/onnx_pb.h>
 #include <vector>
 #include <poponnx/ces/slicece.hpp>
-#include <poponnx/ndindices.hpp>
+#include <poponnx/ndarraywrapper.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -42,18 +42,6 @@ public:
 private:
   const std::vector<Slice> slices;
   std::vector<int64_t> indices;
-};
-
-template <typename T> class NDArray {
-public:
-  NDArray(T *d, const TensorInfo &i) : data(d), info(i), ndindices(info) {}
-  T &at(int64_t i) { return data[i]; }
-  T &at(const std::vector<int64_t> &indices) {
-    return at(ndindices.flatten(indices));
-  }
-  T *data;
-  const TensorInfo &info;
-  NDIndices ndindices;
 };
 
 ConstExprSlice::ConstExprSlice(const onnx::NodeProto &n, Ir *i)
@@ -96,12 +84,11 @@ public:
                                const std::vector<Slice> &slices) {
     std::vector<char> v_out(outInfo.nbytes());
     T *output = reinterpret_cast<T *>(v_out.data());
-    NDArray<T> data0(reinterpret_cast<T *>(input.tensorData()->data()),
-                     input.info);
+    NDArrayWrapper<T> data0(input);
 
     auto indices = IndicesIter(slices);
     for (int64_t i = 0; i < outInfo.nelms(); i++) {
-      output[i] = data0.at(*indices);
+      output[i] = data0[*indices];
       indices++;
     }
 

@@ -8,6 +8,7 @@
 #include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/ndarraywrapper.hpp>
 #include <poponnx/op/l1.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/session.hpp>
@@ -25,7 +26,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
   std::vector<int> rawConstInputData(5 * 2);
   std::iota(rawConstInputData.begin(), rawConstInputData.end(), 1);
 
-  poponnx::ArrayWrapper<int> constData({5, 2}, rawConstInputData.data());
+  poponnx::NDArrayWrapper<int> constData(rawConstInputData.data(), {5, 2});
 
   ConstVoidData constShapeData = {rawConstInputData.data(),
                                   {"INT32", constShape}};
@@ -65,9 +66,9 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
 
   // prepare the anchors
   int rawOutputData[10];
-  poponnx::ArrayWrapper<int> outData({2, 5}, rawOutputData);
+  poponnx::NDArrayWrapper<int> outData(rawOutputData, {2, 5});
 
-  std::map<poponnx::TensorId, poponnx::Array &> anchors = {
+  std::map<poponnx::TensorId, poponnx::IArray &> anchors = {
       {out, outData},
   };
 
@@ -76,8 +77,8 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
   int rawInputData[10] = {
       0,
   };
-  poponnx::ArrayWrapper<int> inData({2, 5}, rawInputData);
-  std::map<poponnx::TensorId, poponnx::Array &> inputs = {{inId, inData}};
+  poponnx::NDArrayWrapper<int> inData(rawInputData, {2, 5});
+  std::map<poponnx::TensorId, poponnx::IArray &> inputs = {{inId, inData}};
 
   poponnx::StepIO stepio(inputs, anchors);
 
@@ -102,7 +103,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
   std::vector<int> rawConstInputData(4 * 2 * 3);
   std::iota(rawConstInputData.begin(), rawConstInputData.end(), 1);
 
-  poponnx::ArrayWrapper<int> constData({2, 3, 4}, rawConstInputData.data());
+  poponnx::NDArrayWrapper<int> constData(rawConstInputData.data(), {2, 3, 4});
 
   ConstVoidData constShapeData = {rawConstInputData.data(),
                                   {"INT32", constShape}};
@@ -142,9 +143,9 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
 
   // prepare the anchors
   int rawOutputData[24];
-  poponnx::ArrayWrapper<int> outData({4, 2, 3}, rawOutputData);
+  poponnx::NDArrayWrapper<int> outData(rawOutputData, {4, 2, 3});
 
-  std::map<poponnx::TensorId, poponnx::Array &> anchors = {
+  std::map<poponnx::TensorId, poponnx::IArray &> anchors = {
       {out, outData},
   };
 
@@ -154,8 +155,8 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
   int rawInputData[24] = {
       0,
   };
-  poponnx::ArrayWrapper<int> inData({4, 2, 3}, rawInputData);
-  std::map<poponnx::TensorId, poponnx::Array &> inputs = {{inId, inData}};
+  poponnx::NDArrayWrapper<int> inData(rawInputData, {4, 2, 3});
+  std::map<poponnx::TensorId, poponnx::IArray &> inputs = {{inId, inData}};
 
   poponnx::StepIO stepio(inputs, anchors);
 

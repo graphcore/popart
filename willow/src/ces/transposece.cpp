@@ -1,48 +1,36 @@
 #include <vector>
 #include <poponnx/ces/transposece.hpp>
-#include <poponnx/ndindices.hpp>
+#include <poponnx/ndarraywrapper.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
-
-template <typename T> class NDArray {
-public:
-  NDArray(T *d, const TensorInfo &i) : data(d), info(i), ndindices(info) {}
-  T &at(int64_t i) { return data[i]; }
-  T &at(const std::vector<int64_t> &indices) {
-    return at(ndindices.flatten(indices));
-  }
-  T *data;
-  const TensorInfo &info;
-  NDIndices ndindices;
-};
 
 class TransposeFunctor {
 public:
   // transpose a tensor
   template <typename T>
-  std::vector<char> operator()(Tensor *in0, const Shape &perm) {
+  std::vector<char> operator()(Tensor &in0, const Shape &perm) {
     Shape shape;
     for (auto d : perm) {
-      shape.push_back(in0->info.shape()[d]);
+      shape.push_back(in0.info.shape()[d]);
     }
 
-    TensorInfo outInfo(in0->info.data_type(), shape);
+    TensorInfo outInfo(in0.info.data_type(), shape);
     std::vector<char> v_out(outInfo.nbytes());
-    NDArray<T> output(reinterpret_cast<T *>(v_out.data()), outInfo);
+    NDArrayWrapper<T> output(reinterpret_cast<T *>(v_out.data()), outInfo);
 
-    NDArray<T> data0(static_cast<T *>(in0->tensorData()->data()), in0->info);
+    NDArrayWrapper<T> data0(in0);
 
     // in 2-d use a fast blocking algorithm for fewer cache misses
     // (this should be generalised to N-d, see T6847)
     if (perm.size() == 2 && perm[0] == 1 && perm[1] == 0) {
-      int64_t BS  = 16;               // block size (in all dimensions)
-      int64_t R0  = in0->info.dim(0); // number of   rows, dimension 0
-      int64_t R1  = in0->info.dim(1); // number of "rows", dimension 1
-      int64_t nB0 = R0 / BS;          // number of blocks, dimension 0
-      int64_t nB1 = R1 / BS;          // number of blocks, dimension 1
-      int64_t tB0 = R0 % BS;          // tail size, dimension 0
-      int64_t tB1 = R1 % BS;          // tail size, dimension 1
+      int64_t BS  = 16;              // block size (in all dimensions)
+      int64_t R0  = in0.info.dim(0); // number of   rows, dimension 0
+      int64_t R1  = in0.info.dim(1); // number of "rows", dimension 1
+      int64_t nB0 = R0 / BS;         // number of blocks, dimension 0
+      int64_t nB1 = R1 / BS;         // number of blocks, dimension 1
+      int64_t tB0 = R0 % BS;         // tail size, dimension 0
+      int64_t tB1 = R1 % BS;         // tail size, dimension 1
 
       // consider an example, where BS = 4 and the tensor is 5x7.
       // we first process the fully tiled region of the tensor,
@@ -55,7 +43,7 @@ public:
         for (int64_t b1 = 0; b1 < nB1; ++b1) {
           for (int64_t c0 = b0 * BS; c0 < b0 * BS + BS; ++c0) {
             for (int64_t c1 = b1 * BS; c1 < b1 * BS + BS; ++c1) {
-              output.at(c1 * R0 + c0) = data0.at(c0 * R1 + c1);
+              output[c1 * R0 + c0] = data0[c0 * R1 + c1];
             }
           }
         }
@@ -69,7 +57,7 @@ public:
       // *******
       for (int64_t c0 = 0; c0 < R0; ++c0) {
         for (int64_t c1 = BS * nB1; c1 < BS * nB1 + tB1; ++c1) {
-          output.at(c1 * R0 + c0) = data0.at(c0 * R1 + c1);
+          output[c1 * R0 + c0] = data0[c0 * R1 + c1];
         }
       }
 
@@ -80,7 +68,7 @@ public:
       // .......
       for (int64_t c0 = BS * nB0; c0 < BS * nB0 + tB0; ++c0) {
         for (int64_t c1 = 0; c1 < BS * nB1; ++c1) {
-          output.at(c1 * R0 + c0) = data0.at(c0 * R1 + c1);
+          output[c1 * R0 + c0] = data0[c0 * R1 + c1];
         }
       }
     }
@@ -90,7 +78,7 @@ public:
       for (int64_t i = 0; i < outInfo.nelms(); ++i) {
 
         // the N-dimensional indices in the output tensor
-        auto indices = data0.ndindices.unflatten(i);
+        auto indices = data0.unflatten(i);
 
         // re-arrange the indices according to perm
         Shape pindices;
@@ -101,7 +89,7 @@ public:
         }
 
         // Move the value
-        output.at(pindices) = data0.at(indices);
+        output[pindices] = data0[indices];
       }
     }
 
@@ -150,7 +138,7 @@ void ConstExprTranspose::insertOutput() {
   ss << " to Ir ";
   logging::ir::debug(ss.str());
 
-  auto data = callOpFunctor<TransposeFunctor>(in0->info.dataType(), in0, perm);
+  auto data = callOpFunctor<TransposeFunctor>(in0->info.dataType(), *in0, perm);
   addConstInitTensor(atOutIndex0(), outInfo, data.data());
 }
 
