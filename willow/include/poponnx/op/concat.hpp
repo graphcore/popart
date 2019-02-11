@@ -37,6 +37,9 @@ public:
   void appendAttributes(std::stringstream &ss,
                         const std::string &tab) const override;
 
+  static Shape getOutputShape(int64_t axis,
+                              const std::vector<const Shape *> inputs);
+
 private:
   int64_t axis = 0;
 

@@ -7,9 +7,10 @@ namespace poponnx {
 NDIndices::NDIndices(const TensorInfo &i) : info(i) {}
 
 std::vector<int64_t> NDIndices::unflatten(int64_t rem) const {
-  std::vector<int64_t> indices;
-  for (int64_t d : info.shape()) {
-    indices.push_back(rem % d);
+  std::vector<int64_t> indices(info.shape());
+  for (int i = info.rank() - 1; i >= 0; i--) {
+    auto d     = info.dim(i);
+    indices[i] = rem % d;
     rem /= d;
   }
   if (rem != 0) {

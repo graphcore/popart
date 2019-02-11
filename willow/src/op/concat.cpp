@@ -83,27 +83,16 @@ ConcatOp::inplacePriorityDefault() const {
   return {{Onnx::CustomOperators::ConcatInplace, 10.0f}};
 }
 
-void ConcatOp::setup() {
-  const auto input_count = input->n();
+Shape ConcatOp::getOutputShape(int64_t axis,
+                               const std::vector<const Shape *> inputs) {
+  Shape outShape(*inputs[0]);
+  outShape[axis] = 0;
 
-  if (input_count == 0) {
-    throw error("Cannot concat zero tensors");
-  }
-
-  const DataType outType = inInfo(getInIndex(0)).dataType();
-  Shape outShape         = inShape(getInIndex(0));
-  outShape[axis]         = 0;
-
-  outOffsets = {0};
-  for (int i = 0; i < input_count; ++i) {
-    const auto shape = inShape(getInIndex(i));
+  for (int i = 0; i < inputs.size(); i++) {
+    const auto &shape = *inputs[i];
 
     if (outShape.size() != shape.size()) {
-      throw error("Input {} to concat {}({}, {}) doesn't have matching rank",
-                  i,
-                  id,
-                  opid,
-                  name());
+      throw error("Input {} to concat does not have matching rank", i);
     }
 
     auto outShapePrefixBegin = std::begin(outShape);
@@ -116,14 +105,43 @@ void ConcatOp::setup() {
 
     if (!std::equal(outShapePrefixBegin, outShapePrefixEnd, shapePrefixBegin) ||
         !std::equal(outShapeSuffixBegin, outShapeSuffixEnd, shapeSuffixBegin)) {
-      throw error("Input {} to concat {}({}, {}) doesn't have matching shape",
-                  i,
-                  id,
-                  opid,
-                  name());
+      throw error("Input {} to concat does not have matching shape", i);
     }
 
     outShape[axis] += shape[axis];
+  }
+
+  return outShape;
+}
+
+void ConcatOp::setup() {
+  const auto input_count = input->n();
+
+  if (input_count == 0) {
+    throw error("Cannot concat zero tensors");
+  }
+
+  const DataType outType = inInfo(getInIndex(0)).dataType();
+  std::vector<const Shape *> inputs;
+  inputs.reserve(input_count);
+  for (int i = 0; i < input_count; i++) {
+    inputs.push_back(&inShape(getInIndex(i)));
+  }
+  Shape outShape;
+  try {
+    outShape = getOutputShape(axis, inputs);
+  } catch (const error &) {
+    logging::ir::err(
+        "Error trying to calculate output shape for concat {}({}, {})",
+        id,
+        opid,
+        name());
+    throw;
+  }
+
+  outOffsets = {0};
+  for (int i = 0; i < input_count; ++i) {
+    const auto shape = inShape(getInIndex(i));
     outOffsets.push_back(outOffsets.back() + shape[axis]);
   }
 

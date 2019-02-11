@@ -2,6 +2,7 @@
 #include <poponnx/attributes.hpp>
 #include <poponnx/ces/addce.hpp>
 #include <poponnx/ces/castce.hpp>
+#include <poponnx/ces/concatce.hpp>
 #include <poponnx/ces/constexpr.hpp>
 #include <poponnx/ces/scalece.hpp>
 #include <poponnx/ces/shapece.hpp>
@@ -79,9 +80,10 @@ void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
   } else if (node.op_type() == "Scale") {
     ConstExprScale scaler(node, ir);
     scaler.insertOutput();
-  }
-
-  else {
+  } else if (node.op_type() == "Concat") {
+    ConstExprConcat concatenator(node, ir);
+    concatenator.insertOutput();
+  } else {
     throw error("No ConstExpr implementation of {}. "
                 "Consider what OpType::ADD does (creates a Const Tensor) "
                 "if you would like to implement a ConstExpr",
