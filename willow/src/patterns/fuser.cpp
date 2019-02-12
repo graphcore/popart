@@ -63,7 +63,11 @@ bool Fuser::matches(Op *op0) const {
     if (out0->consumers.getTotal() == 1) {
       Op *op1 = out0->consumers.getOps()[0];
       if (op1->opid == get1()) {
-        return true;
+
+        // The fused ops must be on the same IPU
+        if (op0->getVirtualGraphId() == op1->getVirtualGraphId()) {
+          return true;
+        }
       }
     }
   }

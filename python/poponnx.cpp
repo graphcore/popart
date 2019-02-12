@@ -258,7 +258,7 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("output"))
       .def("probsTensorId", &NllLoss::probsTensorId)
       .def("labelTensorId", &NllLoss::labelTensorId)
-      .def("setVirtualGraph", &NllLoss::setVirtualGraphId);
+      .def("virtualGraph", &NllLoss::virtualGraph);
 
   py::class_<L1Loss>(m, "L1Loss", loss)
       .def(py::init<TensorId, TensorId, float>(),
@@ -267,7 +267,7 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("lambda"))
       .def("getInputId", &L1Loss::getInputId)
       .def("getLambda", &L1Loss::getLambda)
-      .def("setVirtualGraph", &L1Loss::setVirtualGraphId);
+      .def("virtualGraph", &L1Loss::virtualGraph);
 
   py::class_<Optimizer> optimizer(m, "Optimizer");
 

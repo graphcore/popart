@@ -104,7 +104,7 @@ def test_virtual_graph3():
 
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
     #Make sure that the loss is also assigned to a virtual graph
-    losses[0].setVirtualGraph(1)
+    losses[0].virtualGraph(1)
     optimizer = poponnx.ConstSGD(0.01)
 
     opts = poponnx.SessionOptionsCore()
@@ -170,9 +170,9 @@ def test_virtual_graph4():
         poponnx.L1Loss(o3, "l1LossVal_3", 0.1)
     ]
     #Make sure that the loss is also assigned to a virtual graph
-    losses[0].setVirtualGraph(3)
-    losses[1].setVirtualGraph(3)
-    losses[2].setVirtualGraph(2)
+    losses[0].virtualGraph(3)
+    losses[1].virtualGraph(3)
+    losses[2].virtualGraph(2)
     optimizer = poponnx.ConstSGD(0.01)
 
     opts = poponnx.SessionOptionsCore()
