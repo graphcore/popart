@@ -936,11 +936,32 @@ OpId Ir::moveIntoIr(std::unique_ptr<Op> op) {
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
   std::unique_ptr<poponnx::Op> gradSum =
-      OpManager::createOp(Onnx::AiOnnx::OpSet9::Sum, *this, "GradSum");
+      OpManager::createOp(Domain::ai_onnx,
+                          "Sum",
+                          getOpSetVersionFromModel(Domain::ai_onnx),
+                          *this,
+                          "GradSum");
 
   if (getSessionOptions().enableVirtualGraphs) {
-    // How do we know were this op should execute? T6587
-    gradSum->setVirtualGraphId(0);
+
+    // Count which vgraph's the producer ops are on.
+    std::map<int64_t, int64_t> vgraphIdMap;
+    for (auto &t : toSum) {
+      boost::optional<int64_t> vgraphId = t->getProducer()->getVirtualGraphId();
+      if (vgraphId) {
+        vgraphIdMap[*vgraphId]++;
+      }
+    }
+
+    // Find the vgraph id with the most occurrences.
+    auto it = std::max_element(vgraphIdMap.begin(),
+                               vgraphIdMap.end(),
+                               [](const std::pair<int64_t, int64_t> &p1,
+                                  const std::pair<int64_t, int64_t> &p2) {
+                                 return p1.second < p2.second;
+                               });
+
+    gradSum->setVirtualGraphId(it->first);
   }
 
   OpId opId = moveIntoIr(std::move(gradSum));
@@ -1555,11 +1576,32 @@ void Ir::growFinalLoss() {
 
   // now growing the FINAL loss (sum of individual losses)
   std::unique_ptr<poponnx::Op> finalLossSum =
-      OpManager::createOp(Onnx::AiOnnx::OpSet9::Sum, *this, "FinalLoss");
+      OpManager::createOp(Domain::ai_onnx,
+                          "Sum",
+                          getOpSetVersionFromModel(Domain::ai_onnx),
+                          *this,
+                          "FinalLoss");
 
   if (getSessionOptions().enableVirtualGraphs) {
-    // How do we know were this op should execute T6587
-    finalLossSum->setVirtualGraphId(0);
+
+    // Count which vgraph's the producer ops are on.
+    std::map<int64_t, int64_t> vgraphIdMap;
+    for (auto &l : lossOps) {
+      boost::optional<int64_t> vgraphId = l->getVirtualGraphId();
+      if (vgraphId) {
+        vgraphIdMap[*vgraphId]++;
+      }
+    }
+
+    // Find the vgraph id with the most occurrences.
+    auto it = std::max_element(vgraphIdMap.begin(),
+                               vgraphIdMap.end(),
+                               [](const std::pair<int64_t, int64_t> &p1,
+                                  const std::pair<int64_t, int64_t> &p2) {
+                                 return p1.second < p2.second;
+                               });
+
+    finalLossSum->setVirtualGraphId(it->first);
   }
 
   OpId opId = moveIntoIr(std::move(finalLossSum));
@@ -1633,6 +1675,18 @@ void Ir::append(std::stringstream &ss) {
   }
 }
 
+int Ir::getDefaultOpsetVersion(const std::string &domain) {
+  if (domain == Domain::ai_onnx) {
+    return defaultAiOnnxOpset;
+  } else if (domain == Domain::ai_onnx_ml) {
+    return defaultAiOnnxMlOpset;
+  } else if (domain == Domain::ai_graphcore) {
+    return defaultAiGraphcoreOpset;
+  } else {
+    throw error("No default opset version defined for domain \'{}\'", domain);
+  }
+}
+
 int Ir::getOpSetVersionFromModel(const std::string &node_domain) {
 
   // If the node.domain is blank it means the default ai.onnx
@@ -1663,9 +1717,9 @@ int Ir::getOpSetVersionFromModel(const std::string &node_domain) {
     }
   }
 
-  // If the version has not be set throw an exception
+  // If the version has not be set use the default
   if (version == 0) {
-    throw error("No opset version defined for domain \'{}\'", domain);
+    version = getDefaultOpsetVersion(domain);
   }
 
   return version;

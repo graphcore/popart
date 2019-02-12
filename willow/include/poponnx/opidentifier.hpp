@@ -13,6 +13,11 @@ const static char *ai_onnx_ml   = "ai.onnx.ml";
 const static char *ai_graphcore = "ai.graphcore";
 } // namespace Domain
 
+// Default opset versions for domains
+const static int64_t defaultAiOnnxOpset      = 9;
+const static int64_t defaultAiOnnxMlOpset    = 1;
+const static int64_t defaultAiGraphcoreOpset = 1;
+
 struct NumInputs {
 
   int min;

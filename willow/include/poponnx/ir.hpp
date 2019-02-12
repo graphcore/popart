@@ -301,7 +301,10 @@ public:
   // as well as an op which sums them to get the final op
   void growFinalLoss();
 
-  // Return the opset version for a domain
+  // Return the default opset version for a domain
+  int getDefaultOpsetVersion(const std::string &domain);
+
+  // Return the opset version in use for a domain
   int getOpSetVersionFromModel(const std::string &domain);
 
 private:

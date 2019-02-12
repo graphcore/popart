@@ -20,9 +20,9 @@ namespace poponnx {
 // Supported IR version
 const static uint64_t irVersion = 3;
 
-// Generated opset versions
-const static int64_t onnxOperatorSetVersion      = 9;
-const static int64_t graphcoreOperatorSetVersion = 1;
+// Default opset versions
+const static int64_t onnxOperatorSetVersion      = defaultAiOnnxOpset;
+const static int64_t graphcoreOperatorSetVersion = defaultAiGraphcoreOpset;
 
 // Supported opset versions
 const static int64_t minOnnxOperatorSetVersion = 6;
