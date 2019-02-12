@@ -8,6 +8,7 @@
 #include <poponnx/ces/shapece.hpp>
 #include <poponnx/ces/slicece.hpp>
 #include <poponnx/ces/transposece.hpp>
+#include <poponnx/ces/unsqueezece.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
@@ -185,6 +186,7 @@ void ConstExprOpManager::registerConstOps() {
   registerConstOp<ConstExprSlice>("Slice");
   registerConstOp<ConstExprTranspose>("Transpose");
   registerConstOp<ConstExprConcat>("Concat");
+  registerConstOp<ConstExprUnsqueeze>("Unsqueeze");
 }
 
 std::unique_ptr<ConstExprOp>
