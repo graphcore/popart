@@ -32,6 +32,20 @@ void ConstExprCast::insertOutput() {
     for (int i = 0; i < outInfo.nelms(); ++i) {
       output[i] = static_cast<float>(input[i]);
     }
+  } else if (in0->info.dataType() == DataType::INT32 &&
+             dt_to == DataType::FLOAT16) {
+    auto input  = static_cast<int *>(in0->tensorData()->data());
+    auto output = reinterpret_cast<float16_t *>(v_out.data());
+    for (int i = 0; i < outInfo.nelms(); ++i) {
+      output[i] = static_cast<float16_t>(input[i]);
+    }
+  } else if (in0->info.dataType() == DataType::FLOAT16 &&
+             dt_to == DataType::FLOAT) {
+    auto input  = static_cast<float16_t *>(in0->tensorData()->data());
+    auto output = reinterpret_cast<float_t *>(v_out.data());
+    for (int i = 0; i < outInfo.nelms(); ++i) {
+      output[i] = static_cast<float_t>(input[i]);
+    }
   }
 
   else {

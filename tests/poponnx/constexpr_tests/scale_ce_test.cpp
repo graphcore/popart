@@ -5,6 +5,7 @@
 #include <poponnx/dataflow.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/filereader.hpp>
+#include <poponnx/half.hpp>
 #include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
@@ -60,6 +61,11 @@ std::string getTestModelProto(DataType type) {
   else if (type == DataType::INT32) {
     raw_const_data = getRawConstData<int>();
     type_string    = "INT32";
+  }
+
+  else if (type == DataType::FLOAT16) {
+    raw_const_data = getRawConstData<float16_t>();
+    type_string    = "FLOAT16";
   }
 
   else {
@@ -193,4 +199,5 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale1) {
 
   numerical_accuracy_test(DataType::INT32);
   numerical_accuracy_test(DataType::FLOAT);
+  numerical_accuracy_test(DataType::FLOAT16);
 }

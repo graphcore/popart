@@ -1,4 +1,5 @@
 #include <poponnx/error.hpp>
+#include <poponnx/half.hpp>
 #include <poponnx/onnxutil.hpp>
 #include <poponnx/tensordata.hpp>
 

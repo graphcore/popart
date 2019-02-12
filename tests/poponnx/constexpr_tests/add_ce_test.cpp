@@ -3,12 +3,16 @@
 #include <boost/test/unit_test.hpp>
 #include <poponnx/builder.hpp>
 #include <poponnx/dataflow.hpp>
+#include <poponnx/devicemanager.hpp>
 #include <poponnx/filereader.hpp>
+#include <poponnx/half.hpp>
 #include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/ndarraywrapper.hpp>
 #include <poponnx/op/l1.hpp>
 #include <poponnx/optimizer.hpp>
+#include <poponnx/session.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
 #include <poponnx/tensors.hpp>
@@ -235,4 +239,96 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add2) {
   // Check that the producer of a1 Add Op is has been removed from the IR
   // by ConstExpr folding
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Add).size() == 2);
+}
+
+template <typename T> void ConstExprTest_Add_Type(std::string type) {
+
+  // The compute graph :
+  //
+  // data  -----------------------------|
+  //                                    |
+  //                                    |
+  //                                    |- ADD ---> output
+  //                                    |
+  // shape0 -------|                    |
+  //               |                    |
+  //               |- ADD - outshape ---|
+  //               |
+  // shape1 -------|
+
+  Shape inShape = {2, 2};
+
+  T input1_raw[] = {(T)1.2f, 2, 3, 4};
+  std::vector<T> input1(input1_raw, std::end(input1_raw));
+
+  T input2_raw[] = {(T)1.7f, 2, 3, 4};
+  std::vector<T> input2(input2_raw, std::end(input2_raw));
+
+  Shape outShapeSize = {2, 2};
+  TensorInfo inInfo{type, inShape};
+
+  ConstVoidData out0ShapeData = {input1.data(), {type, outShapeSize}};
+  ConstVoidData out1ShapeData = {input2.data(), {type, outShapeSize}};
+
+  T output_raw[4];
+  poponnx::NDArrayWrapper<T> output(output_raw, {2, 2});
+
+  // Build an onnx model
+  auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
+  // The two fixed-point tensors which are Constants
+  auto shape0Id   = aiOnnx.constant(out0ShapeData, "out0ShapeData");
+  auto shape1Id   = aiOnnx.constant(out1ShapeData, "out1ShapeData");
+  auto inId       = builder->addInputTensor(inInfo);
+  auto outShapeId = aiOnnx.add({shape0Id, shape1Id});
+  auto outId      = aiOnnx.add({inId, outShapeId});
+  builder->addOutputTensor(outId);
+
+  std::map<poponnx::TensorId, poponnx::IArray &> anchors = {{outId, output}};
+
+  auto proto = builder->getModelProto();
+
+  auto art       = AnchorReturnType("ALL");
+  auto dataFlow  = DataFlow(1, {{outId, art}});
+  auto optimizer = ConstSGD(0.01);
+  std::vector<Loss *> losses{new L1Loss(outId, "l1LossVal", 0.1)};
+
+  auto session = poponnx::Session::createFromOnnxModel(
+      proto,
+      dataFlow,
+      InputShapeInfo(),
+      losses,
+      &optimizer,
+      {}, // no SessionOptions
+      Patterns({PreAliasPatternType::POSTNREPL}));
+
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
+  session->setDevice(*cpuDevice);
+
+  T rawInputData[4] = {(T)1.1f, 2, 3, 4};
+  poponnx::NDArrayWrapper<T> inData(rawInputData, {2, 2});
+  std::map<poponnx::TensorId, poponnx::IArray &> inputs = {{inId, inData}};
+
+  session->prepareDevice();
+  poponnx::StepIO stepio(inputs, anchors);
+  session->infer(stepio);
+
+  // Check the ir
+  poponnx::logging::ir::err("input1 : {}", input1[0]);
+  poponnx::logging::ir::err("input2 : {}", input2[0]);
+  poponnx::logging::ir::err("indata : {}", inData[0]);
+  poponnx::logging::ir::err("output : {}", output[0]);
+
+  BOOST_CHECK((input1[0] + input2[0] + inData[0]) == output[0]);
+}
+
+BOOST_AUTO_TEST_CASE(ConstExprTest_Add_Types) {
+  // ConstExprTest_Add_Type<uint32_t>("UINT32");
+  // ConstExprTest_Add_Type<uint64_t>("UINT64");
+  ConstExprTest_Add_Type<int32_t>("INT32");
+  // ConstExprTest_Add_Type<int64_t>("INT64");
+  ConstExprTest_Add_Type<poponnx::float16_t>("FLOAT16");
+  ConstExprTest_Add_Type<float>("FLOAT");
+  // ConstExprTest_Add_Type("DOUBLE");
 }

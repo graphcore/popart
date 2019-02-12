@@ -185,7 +185,8 @@ static void populateTensorProtoFromConstVoidData(const ConstVoidData &initData,
   case DataType::INT8:
   case DataType::UINT16:
   case DataType::INT16:
-  case DataType::INT32: {
+  case DataType::INT32:
+  case DataType::UINT32: {
     auto src = static_cast<const int32_t *>(initData.data);
     auto dst = tp->mutable_int32_data();
     dst->Resize(element_count, 0);
@@ -213,11 +214,10 @@ static void populateTensorProtoFromConstVoidData(const ConstVoidData &initData,
     memcpy(dst->mutable_data(), src, initData.info.nbytes());
     break;
   }
-  case DataType::UNDEFINED:
 
+  case DataType::UNDEFINED:
   case DataType::STRING:
   case DataType::DOUBLE:
-  case DataType::UINT32:
   case DataType::UINT64:
   case DataType::COMPLEX64:
   case DataType::COMPLEX128:
@@ -256,7 +256,6 @@ void BuilderImpl::addOutputTensor(const TensorId &arg0) {
   }
 
   if (!found) {
-    logging::builder::err("Failed to add output");
     output->set_name(arg0);
   }
 }
@@ -530,9 +529,12 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
   onnx::AttributeProto &attr = addNewAttributeToNode(attributeName, node);
 
   const std::type_info &tinfo = attributeValue.type();
-  if (tinfo == typeid(int)) {
+  if (tinfo == typeid(int32_t)) {
     attr.set_type(onnx::AttributeProto::INT);
-    attr.set_i(boost::any_cast<int>(attributeValue));
+    attr.set_i(boost::any_cast<int32_t>(attributeValue));
+  } else if (tinfo == typeid(uint32_t)) {
+    attr.set_type(onnx::AttributeProto::INT);
+    attr.set_i(boost::any_cast<uint32_t>(attributeValue));
   } else if (tinfo == typeid(int64_t)) {
     attr.set_type(onnx::AttributeProto::INT);
     attr.set_i(static_cast<int>(boost::any_cast<int64_t>(attributeValue)));
