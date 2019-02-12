@@ -100,6 +100,9 @@ std::vector<int64_t> PadOp::padDimensions() const {
   return {dimensions.begin(), dimensions.end()};
 }
 
+// If pad has no padding it can be replaced by identity
+bool PadOp::canBeReplacedByIdentity() { return padSizeZero(); }
+
 PadGradOp::PadGradOp(const PadOp &fwdOp)
     : SliceOp(Onnx::GradOperators::PadGrad,
               calculateStarts(fwdOp),

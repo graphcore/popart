@@ -68,6 +68,12 @@ void ReduceSumOp::appendAttributes(std::stringstream &ss,
   appendAttribute(ss, tab, "axes", axes);
 }
 
+// A reducesum op that doesn't reduce anything can be replaced by
+// identity
+bool ReduceSumOp::canBeReplacedByIdentity() {
+  return (inInfo(getInIndex()).shape() == outInfo(getOutIndex()).shape());
+}
+
 ReduceSumGradOp::ReduceSumGradOp(const ReduceSumOp &fwdOp,
                                  const Shape &backward_shape_)
     : Op(Onnx::GradOperators::ReduceSumGrad, fwdOp.getSettings()),

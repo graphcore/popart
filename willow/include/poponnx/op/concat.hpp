@@ -40,6 +40,8 @@ public:
   static Shape getOutputShape(int64_t axis,
                               const std::vector<const Shape *> inputs);
 
+  bool canBeReplacedByIdentity() override;
+
 private:
   int64_t axis = 0;
 

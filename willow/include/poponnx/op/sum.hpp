@@ -15,6 +15,8 @@ public:
   // the fixed input index's
 
   static OutIndex getOutIndex() { return 0; }
+
+  bool canBeReplacedByIdentity() override;
 };
 } // namespace poponnx
 

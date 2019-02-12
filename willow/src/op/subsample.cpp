@@ -63,6 +63,9 @@ bool SubsampleOp::strideSizeOne() const {
       strides.cbegin(), strides.cend(), [](int64_t p) { return p == 1; });
 }
 
+// A subsample with all strides being  1 can be replaced by identity
+bool SubsampleOp::canBeReplacedByIdentity() { return strideSizeOne(); }
+
 void SubsampleOp::appendAttributes(std::stringstream &ss,
                                    const std::string &tab) const {
   Op::appendAttributes(ss, tab);

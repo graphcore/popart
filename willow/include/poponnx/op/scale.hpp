@@ -21,6 +21,8 @@ public:
   void appendAttributes(std::stringstream &ss,
                         const std::string &tab) const override;
 
+  bool canBeReplacedByIdentity() override;
+
 private:
   float scale_factor;
 };

@@ -27,6 +27,8 @@ public:
   void appendAttributes(std::stringstream &ss,
                         const std::string &tab) const override;
 
+  bool canBeReplacedByIdentity() override;
+
 public:
   std::vector<int64_t> strides;
 };

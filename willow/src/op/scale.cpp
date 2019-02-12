@@ -27,6 +27,10 @@ void ScaleOp::appendAttributes(std::stringstream &ss,
   Op::appendAttributes(ss, tab);
   appendAttribute(ss, tab, "scale", scale_factor);
 }
+
+// A scale with a scale factor of +1 can be replaced by identity
+bool ScaleOp::canBeReplacedByIdentity() { return getScaleFactor() == 1.0f; }
+
 ScaleGradOp::ScaleGradOp(const ScaleOp &fwdOp)
     : ScaleOp(Onnx::GradOperators::ScaleGrad,
               fwdOp.getScaleFactor(),

@@ -35,6 +35,8 @@ public:
   void appendAttributes(std::stringstream &ss,
                         const std::string &tab) const override;
 
+  bool canBeReplacedByIdentity() override;
+
 private:
   std::vector<int64_t> pads;
   float pad_value;

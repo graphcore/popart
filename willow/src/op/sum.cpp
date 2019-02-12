@@ -20,6 +20,9 @@ void SumOp::setup() {
   }
 }
 
+// A sum with only one input can be replaced by identity
+bool SumOp::canBeReplacedByIdentity() { return (input->n() == 1); }
+
 namespace {
 static OpCreator<SumOp> sumOpCreator({Onnx::Operators::Sum_6,
                                       Onnx::Operators::Sum_8});
