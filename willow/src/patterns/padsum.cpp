@@ -151,7 +151,7 @@ static int64_t findConcatAxis(const std::vector<PadOp *> &producers) {
   const auto findAxis   = [nonZeroDim](int64_t m, PadOp *pad) {
     auto &pads = pad->getPads();
     auto found = boost::find_if<boost::return_begin_found>(pads, nonZeroDim);
-    return std::min(m, boost::distance(found));
+    return std::min<int64_t>(m, boost::distance(found));
   };
 
   // Find the concat axis
