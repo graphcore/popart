@@ -32,6 +32,12 @@ protected:
   const Attributes nAtts;
 };
 
+class ConstExprConstant : public ConstExprOp {
+public:
+  ConstExprConstant(const onnx::NodeProto &n, Ir *i) : ConstExprOp(n, i) {}
+  void insertOutput() final;
+};
+
 class ConstExprClassifier {
 public:
   ConstExprClassifier(std::map<TensorId, bool> &&M_) : M(M_) {}
@@ -70,6 +76,52 @@ public:
 private:
   static int getOutIndex(const onnx::NodeProto &, const TensorId &);
   static bool isNodeOutputAlwaysConstExpr(const OpType &, OutIndex);
+};
+
+// Manager class for ConstExprOp's
+class ConstExprOpManager {
+public:
+  using ConstExprOpFactoryFunc =
+      std::function<std::unique_ptr<ConstExprOp>(const onnx::NodeProto &node,
+                                                 Ir *ir)>;
+
+  static void registerConstExprOp(const std::string &type,
+                                  ConstExprOpFactoryFunc func);
+
+  static std::unique_ptr<ConstExprOp>
+  createConstExprOp(const onnx::NodeProto &node, Ir *ir);
+
+private:
+  ConstExprOpManager();
+
+  // Private not static registration method
+  void registerConstExprOpImpl(const std::string &type,
+                               ConstExprOpFactoryFunc func);
+
+  // Register the constant ops
+  template <typename T> void registerConstOp(const std::string &type);
+  void registerConstOps();
+
+  // Singleton
+  static ConstExprOpManager &getInstance();
+
+  std::map<std::string, ConstExprOpFactoryFunc> constExprOpMap;
+};
+
+// Helper class to register the factor function for ConstExprOp
+template <class OP> class ConstExprOpCreator {
+
+  void registerOp(const std::string &type) {
+    ConstExprOpManager::registerConstExprOp(
+        type,
+        [](const onnx::NodeProto &node,
+           Ir *ir) -> std::unique_ptr<ConstExprOp> {
+          return std::unique_ptr<OP>(new OP(node, ir));
+        });
+  }
+
+public:
+  ConstExprOpCreator(const std::string &type) { registerOp(type); }
 };
 
 template <typename OpFunctor, typename... Args>
