@@ -4,5 +4,6 @@
     "../arcanist_linters/clang-format-linter",
     "../arcanist_linters/yapf_linter"
   ],
-  "arc.land.onto.default": "develop"
+  "arc.land.onto.default": "develop",
+  "base": "git:merge-base(origin/develop)"
 }
