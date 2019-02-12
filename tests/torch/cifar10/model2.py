@@ -36,15 +36,15 @@ class Module0(torch.nn.Module):
         torch.nn.Module.__init__(self)
         self.conv1 = torchwriter.conv3x3(nInChans, nOutChans)
         self.conv2 = torchwriter.conv3x3(nOutChans, nOutChans)
-        self.relu = torch.nn.functional.relu
+        self.sin = torch.sin
         # number of classes = nOutChans
         self.linear = x = torch.nn.Linear(nOutChans, nOutChans)
 
     def forward(self, inputs):
         image0 = inputs[0]
-        x = self.relu(image0)
+        x = self.sin(image0)
         x = self.conv1(x)
-        x = self.relu(x)
+        x = self.sin(x)
         x = self.conv2(x)
         window_size = (int(x.size()[2]), int(x.size()[3]))
         x = torch.nn.functional.avg_pool2d(x, kernel_size=window_size)
