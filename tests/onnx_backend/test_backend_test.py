@@ -94,8 +94,9 @@ class IpuBackend(onnx.backend.base.Backend):
         #             for dim in tt.shape.dim:
         #                 assert dim.WhichOneof('value') == 'dim_value'
 
+        poponnx.getLogger().setLevel("DEBUG")
+
         opts = poponnx.SessionOptions()
-        opts.logging = {'all': 'DEBUG'}
 
         anchors = {}
         for output in model.graph.output:

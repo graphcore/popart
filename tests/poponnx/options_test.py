@@ -2,6 +2,7 @@ import numpy as np
 import poponnx
 import pytest
 import test_util as tu
+import logging
 
 
 def test_create_empty_options():
@@ -68,6 +69,9 @@ def test_set_reportOptions():
 
 
 def test_engine_options_passed_to_engine(tmpdir):
+
+    poponnx.getLogger().setLevel("DEBUG")
+
     builder = poponnx.Builder()
 
     shape = poponnx.TensorInfo("FLOAT", [1, 2, 32, 32])

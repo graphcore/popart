@@ -214,7 +214,6 @@ std::shared_ptr<spdlog::logger> LoggingContext::getLogger(Module m) {
 
 void configure(const std::map<std::string, std::string> &config) {
   for (auto p : config) {
-
     std::string moduleName = p.first;
     if (moduleName == "all") {
       Level l = logLevelFromString(p.second);
@@ -225,6 +224,12 @@ void configure(const std::map<std::string, std::string> &config) {
       setLogLevel(m, l);
     }
   }
+
+  std::stringstream ss;
+  for (auto p : config) {
+    ss << p.first << "=" << p.second << " ";
+  }
+  logging::debug("Logging levels configured as {}", ss.str());
 }
 
 void log(Module m, Level l, std::string &&msg) {

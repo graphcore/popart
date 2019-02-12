@@ -143,6 +143,25 @@ public:
   void exit() { builder.popNameScope(); }
 };
 
+// Create a logging interface for poponnx that is similar to python logging
+// module
+
+class Logger {
+
+  std::string name;
+
+  Logger(const std::string &name_) : name(name_) {}
+
+public:
+  static Logger getLogger(const std::string &name = "all") {
+    return Logger(name);
+  }
+
+  void setLevel(const std::string &level) {
+    logging::configure({{name, level}});
+  }
+};
+
 // The following code allow boost optional to be used in the C++ interface and
 // map to python types
 namespace pybind11 {
@@ -156,6 +175,10 @@ PYBIND11_MODULE(poponnx_core, m) {
   m.doc() = "binding for C++ poponnx library";
 
   m.def("getTensorInfo", &getTensorInfo);
+
+  m.def("getLogger", &Logger::getLogger, py::arg("name") = "all");
+
+  py::class_<Logger>(m, "Logger").def("setLevel", &Logger::setLevel);
 
   py::class_<OperatorIdentifier>(m, "OperatorIdentifier")
       .def(py::init<const std::string &, const std::string &, unsigned>(),
@@ -275,7 +298,6 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("engineOptions", &SessionOptions::engineOptions)
       .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
       .def_readwrite("reportOptions", &SessionOptions::reportOptions)
-      .def_readwrite("logging", &SessionOptions::loggingOptions)
       .def_readwrite("dotOpNames", &SessionOptions::dotOpNames)
       .def_readwrite("maxDotOps", &SessionOptions::maxDotOps)
       // set in python use the python set constructor, so something like

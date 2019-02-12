@@ -6,6 +6,8 @@ import numpy as np
 
 def test_virtual_graph():
 
+    poponnx.getLogger().setLevel("TRACE")
+
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
@@ -26,7 +28,6 @@ def test_virtual_graph():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
     opts.enableVirtualGraphs = True
 
     s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
@@ -37,6 +38,8 @@ def test_virtual_graph():
 
 
 def test_virtual_graph2():
+
+    poponnx.getLogger().setLevel("TRACE")
 
     builder = poponnx.Builder()
 
@@ -59,7 +62,6 @@ def test_virtual_graph2():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
     opts.enableVirtualGraphs = True
 
     s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
@@ -68,6 +70,8 @@ def test_virtual_graph2():
 
 
 def test_virtual_graph3():
+
+    poponnx.getLogger().setLevel("TRACE")
 
     builder = poponnx.Builder()
 
@@ -104,7 +108,6 @@ def test_virtual_graph3():
     optimizer = poponnx.ConstSGD(0.01)
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
     opts.enableVirtualGraphs = True
 
     s = poponnx.Session(
@@ -132,6 +135,8 @@ def test_virtual_graph3():
 
 def test_virtual_graph_bad_index():
 
+    # poponnx.getLogger().setLevel("TRACE")
+    #
     # builder = poponnx.Builder()
     #
     # i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
@@ -150,7 +155,6 @@ def test_virtual_graph_bad_index():
     # dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
     #
     # opts = poponnx.SessionOptionsCore()
-    # opts.logging = {'all': 'TRACE'}
     # opts.enableVirtualGraphs = True
     #
     # s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)

@@ -41,9 +41,6 @@ Session::createFromOnnxModel(const std::string &model,
                              const SessionOptions &userOptions,
                              const Patterns &patterns) {
 
-  // Needs to be the first call to initialise the logging settings
-  logging::configure(userOptions.loggingOptions);
-
   logging::session::trace("Session::createFromOnnx");
 
   // Note : Can not use make_unique as the implementation can not acces the

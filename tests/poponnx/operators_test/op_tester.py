@@ -90,6 +90,8 @@ def op_tester(tmpdir):
         def run(self, init_builder, reference, step_type='infer'):
             assert step_type in ('infer', 'train')
 
+            poponnx.getLogger().setLevel("TRACE")
+
             bld = Builder()
 
             anchors = {}
@@ -108,7 +110,6 @@ def op_tester(tmpdir):
             proto = bld.getModelProto()
 
             opts = poponnx.SessionOptionsCore()
-            opts.logging = {'all': 'TRACE'}
             opts.logDir = self.logging_dir
 
             session = poponnx.Session(

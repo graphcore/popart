@@ -14,6 +14,9 @@ import test_util as tu
 
 
 def test_constants_preserved():
+
+    poponnx.getLogger().setLevel("TRACE")
+
     # Check that `session.modelToHost` can be called when using a
     # model with a constant node, without throwing an exceptions
     builder = poponnx.Builder()
@@ -36,7 +39,6 @@ def test_constants_preserved():
     losses = [poponnx.L1Loss(o2, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
 
     session = poponnx.Session(
         fnModel=proto,

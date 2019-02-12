@@ -25,6 +25,10 @@ def run(torchWriter,
         device_hw_id,
         mode="train",
         syntheticData=False):
+
+    poponnx.getLogger().setLevel("TRACE")
+    poponnx.getLogger("session").setLevel("WARN")
+
     if outputdir is None:
         with TemporaryDirectory() as outputdir:
             _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
@@ -113,7 +117,6 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     print('Selected Device : {0}'.format(device))
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {"all": "TRACE", "session": "WARN"}
     opts.ignoreData = syntheticData
     opts.logDir = outputdir
 

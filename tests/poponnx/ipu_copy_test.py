@@ -6,6 +6,8 @@ import test_util as tu
 
 def test_ipu_copy_bca1():
 
+    poponnx.getLogger().setLevel("TRACE")
+
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
@@ -24,7 +26,6 @@ def test_ipu_copy_bca1():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
     opts.enableVirtualGraphs = True
 
     s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
@@ -34,6 +35,8 @@ def test_ipu_copy_bca1():
 
 # Will fail due to an invalid virtual graph
 def test_ipu_copy_aca1():
+
+    poponnx.getLogger().setLevel("TRACE")
 
     builder = poponnx.Builder()
 
@@ -53,7 +56,6 @@ def test_ipu_copy_aca1():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
     opts.enableVirtualGraphs = True
 
     s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
@@ -69,6 +71,8 @@ def test_ipu_copy_aca1():
 
 # Test that an input stream tensor is correctly mapped to multiple ipus
 def test_ipu_copy_bca4():
+
+    poponnx.getLogger().setLevel("TRACE")
 
     builder = poponnx.Builder()
 
@@ -92,7 +96,6 @@ def test_ipu_copy_bca4():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
     opts.enableVirtualGraphs = True
 
     s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
@@ -102,6 +105,8 @@ def test_ipu_copy_bca4():
 
 # Test to ensure that same tensor it not copied multiple times to the same IPU
 def test_ipu_copy_bca2():
+
+    poponnx.getLogger().setLevel("TRACE")
 
     builder = poponnx.Builder()
 
@@ -128,7 +133,6 @@ def test_ipu_copy_bca2():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
     opts.enableVirtualGraphs = True
 
     s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
@@ -139,6 +143,8 @@ def test_ipu_copy_bca2():
 # Test to make sure that if a single op has multiple it mapped to multiple inputs then the copy does
 # the right thing
 def test_ipu_copy_bca3():
+
+    poponnx.getLogger().setLevel("TRACE")
 
     builder = poponnx.Builder()
 
@@ -156,7 +162,6 @@ def test_ipu_copy_bca3():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
     opts.enableVirtualGraphs = True
 
     s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
@@ -165,6 +170,9 @@ def test_ipu_copy_bca3():
 
 
 def test_ipu_copy_bca5():
+
+    poponnx.getLogger().setLevel("TRACE")
+
     builder = poponnx.Builder()
 
     constData = np.random.rand(2, 2).astype(np.float32)
@@ -188,7 +196,6 @@ def test_ipu_copy_bca5():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
     opts.enableVirtualGraphs = True
 
     s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
