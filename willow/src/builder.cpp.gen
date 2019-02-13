@@ -246,37 +246,6 @@ AiOnnxOpset6::constant(                       const ConstVoidData&  value,
 }
 
 TensorId
-AiOnnxOpset6::constantfill(const std::vector<TensorId>& args,
-                           int64_t dtype,
-                           const std::vector<int64_t>& extra_shape,
-                           boost::optional<int64_t> input_as_shape,
-                           const std::vector<int64_t>& shape,
-                           float value,
-                           const std::string& name) {
-  std::map<std::string, boost::any> attributes;
-  if (dtype != 1) {
-    attributes["dtype"] = dtype;
-  }
-  if (!extra_shape.empty()) {
-    attributes["extra_shape"] = extra_shape;
-  }
-  if (input_as_shape != boost::optional<int64_t>()) {
-    attributes["input_as_shape"] = *input_as_shape;
-  }
-  if (!shape.empty()) {
-    attributes["shape"] = shape;
-  }
-  if (std::abs(value - 0.0f) >  std::numeric_limits<float>::epsilon()) {
-    attributes["value"] = value;
-  }
-  return impl->op(Onnx::Operators::ConstantFill_1,
-                  getOpsetVersion(),
-                  args,
-                  attributes,
-                  name)[0];
-}
-
-TensorId
 AiOnnxOpset6::conv(const std::vector<TensorId>& args,
                    const std::vector<int64_t>& dilations,
                    int64_t group,
@@ -2519,6 +2488,41 @@ AiOnnxOpset9::atanh(const std::vector<TensorId>& args,
                   name)[0];
 }
 
+std::vector<TensorId>
+AiOnnxOpset9::batchnormalization(const std::vector<TensorId>& args,
+                                 unsigned num_outputs,
+                                 float epsilon,
+                                 float momentum,
+                                 const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (std::abs(epsilon - 1e-05f) >  std::numeric_limits<float>::epsilon()) {
+    attributes["epsilon"] = epsilon;
+  }
+  if (std::abs(momentum - 0.9f) >  std::numeric_limits<float>::epsilon()) {
+    attributes["momentum"] = momentum;
+  }
+  return impl->op(Onnx::Operators::BatchNormalization_9,
+                  getOpsetVersion(),
+                  args,
+                  num_outputs,
+                  attributes,
+                  name);
+}
+
+TensorId
+AiOnnxOpset9::cast(const std::vector<TensorId>& args,
+                   DataType to,
+                   const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  // Special case where we cast from DataType to int
+  attributes["to"] = static_cast<int>(onnxutil::getTPDataType(to));
+  return impl->op(Onnx::Operators::Cast_9,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
 TensorId
 AiOnnxOpset9::compress(const std::vector<TensorId>& args,
                        boost::optional<int64_t> axis,
@@ -2547,22 +2551,12 @@ AiOnnxOpset9::constant(                       const ConstVoidData&  value,
 }
 
 TensorId
-AiOnnxOpset9::constantlike(const std::vector<TensorId>& args,
-                           boost::optional<int64_t> dtype,
-                           const std::vector<int64_t>& shape,
-                           float value,
-                           const std::string& name) {
+AiOnnxOpset9::constantofshape(const std::vector<TensorId>& args,
+                              const ConstVoidData&  value,
+                              const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (dtype != boost::optional<int64_t>()) {
-    attributes["dtype"] = *dtype;
-  }
-  if (!shape.empty()) {
-    attributes["shape"] = shape;
-  }
-  if (std::abs(value - 0.0f) >  std::numeric_limits<float>::epsilon()) {
-    attributes["value"] = value;
-  }
-  return impl->op(Onnx::Operators::ConstantLike_9,
+  attributes["value"] = value;
+  return impl->op(Onnx::Operators::ConstantOfShape_9,
                   getOpsetVersion(),
                   args,
                   attributes,
@@ -2718,6 +2712,17 @@ AiOnnxOpset9::maxunpool(const std::vector<TensorId>& args,
 }
 
 TensorId
+AiOnnxOpset9::nonzero(const std::vector<TensorId>& args,
+                      const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::NonZero_9,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
 AiOnnxOpset9::onehot(const std::vector<TensorId>& args,
                      int64_t axis,
                      const std::string& name) {
@@ -2748,18 +2753,22 @@ AiOnnxOpset9::scan(const std::vector<TensorId>& args,
                    unsigned num_outputs,
                    int body,
                    int64_t num_scan_inputs,
-                   const std::vector<int64_t>& axes,
+                   const std::vector<int64_t>& scan_input_axes,
                    const std::vector<int64_t>& scan_input_directions,
+                   const std::vector<int64_t>& scan_output_axes,
                    const std::vector<int64_t>& scan_output_directions,
                    const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  if (!axes.empty()) {
-    attributes["axes"] = axes;
-  }
   attributes["body"] = body;
   attributes["num_scan_inputs"] = num_scan_inputs;
+  if (!scan_input_axes.empty()) {
+    attributes["scan_input_axes"] = scan_input_axes;
+  }
   if (!scan_input_directions.empty()) {
     attributes["scan_input_directions"] = scan_input_directions;
+  }
+  if (!scan_output_axes.empty()) {
+    attributes["scan_output_axes"] = scan_output_axes;
   }
   if (!scan_output_directions.empty()) {
     attributes["scan_output_directions"] = scan_output_directions;
@@ -2781,6 +2790,25 @@ AiOnnxOpset9::scatter(const std::vector<TensorId>& args,
     attributes["axis"] = axis;
   }
   return impl->op(Onnx::Operators::Scatter_9,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset9::shrink(const std::vector<TensorId>& args,
+                     float bias,
+                     float lambd,
+                     const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (std::abs(bias - 0.0f) >  std::numeric_limits<float>::epsilon()) {
+    attributes["bias"] = bias;
+  }
+  if (std::abs(lambd - 0.5f) >  std::numeric_limits<float>::epsilon()) {
+    attributes["lambd"] = lambd;
+  }
+  return impl->op(Onnx::Operators::Shrink_9,
                   getOpsetVersion(),
                   args,
                   attributes,
@@ -2810,6 +2838,41 @@ AiOnnxOpset9::sinh(const std::vector<TensorId>& args,
 }
 
 TensorId
+AiOnnxOpset9::tfidfvectorizer(const std::vector<TensorId>& args,
+                              int64_t max_gram_length,
+                              int64_t max_skip_count,
+                              int64_t min_gram_length,
+                              const std::string& mode,
+                              const std::vector<int64_t>& ngram_counts,
+                              const std::vector<int64_t>& ngram_indexes,
+                              const std::vector<int64_t>& pool_int64s,
+                              const std::vector<std::string>& pool_strings,
+                              const std::vector<float>& weights,
+                              const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  attributes["max_gram_length"] = max_gram_length;
+  attributes["max_skip_count"] = max_skip_count;
+  attributes["min_gram_length"] = min_gram_length;
+  attributes["mode"] = mode;
+  attributes["ngram_counts"] = ngram_counts;
+  attributes["ngram_indexes"] = ngram_indexes;
+  if (!pool_int64s.empty()) {
+    attributes["pool_int64s"] = pool_int64s;
+  }
+  if (!pool_strings.empty()) {
+    attributes["pool_strings"] = pool_strings;
+  }
+  if (!weights.empty()) {
+    attributes["weights"] = weights;
+  }
+  return impl->op(Onnx::Operators::TfIdfVectorizer_9,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
 AiOnnxOpset9::upsample(const std::vector<TensorId>& args,
                        const std::string& mode,
                        const std::string& name) {
@@ -2818,6 +2881,17 @@ AiOnnxOpset9::upsample(const std::vector<TensorId>& args,
     attributes["mode"] = mode;
   }
   return impl->op(Onnx::Operators::Upsample_9,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset9::where(const std::vector<TensorId>& args,
+                    const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::Where_9,
                   getOpsetVersion(),
                   args,
                   attributes,
