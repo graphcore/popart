@@ -1,7 +1,7 @@
 Supported operations
 --------------------
 
-Poponnx is compatible with ONNX [1.3] (onnx-versioning_).
+PopONNX is compatible with ONNX [1.3] (onnx-versioning_).
 
 It supports ONNX [ai.onnx] operator set versions 6 to 9 (onnx-operators_).
 

@@ -1,7 +1,7 @@
 Introduction
 ------------
 
-Poponnx is part of the Poplar SDK for designing and running algorithms on
+PopONNX is part of the Poplar SDK for designing and running algorithms on
 networks of Graphcore IPU processors.
 
 It has three main features:
@@ -13,7 +13,7 @@ It has three main features:
 3) It provides a simple interface for constructing ONNX graphs without needing
    a third party framework.
 
-APIs are available for C++ and python.
+APIs are available for C++ and Python.
 
 IPU specific annotations on ONNX operations allow the provider of the graph to
 control IPU specific features, such as mapping an algorithm across multiple
