@@ -130,6 +130,19 @@ class AiOnnxOpset6 : private DomainOpSet {
                  const std::string &name = "");
 
     /**
+     * Add the 'Softsign' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softsign
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    softsign(const std::vector<TensorId>& args,
+             const std::string &name = "");
+
+    /**
      * Add the 'Softmax' to the model
      *
      * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softmax
@@ -301,36 +314,6 @@ class AiOnnxOpset6 : private DomainOpSet {
               const std::string &name = "");
 
     /**
-     * Add the 'Reshape' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Reshape
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    reshape(const std::vector<TensorId>& args,
-            const std::string &name = "");
-
-    /**
-     * Add the 'ReduceProd' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceProd
-     *
-     * \param args List of input tensor ids
-     * \param axes The 'axes' attribute 
-     * \param keepdims The 'keepdims' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    reduceprod(const std::vector<TensorId>& args,
-               const std::vector<int64_t>& axes = std::vector<int64_t>(),
-               int64_t keepdims = 1,
-               const std::string &name = "");
-
-    /**
      * Add the 'GlobalAveragePool' to the model
      *
      * https://github.com/onnx/onnx/blob/master/docs/Operators.md#GlobalAveragePool
@@ -359,6 +342,36 @@ class AiOnnxOpset6 : private DomainOpSet {
              const std::vector<int64_t>& axes = std::vector<int64_t>(),
              int64_t keepdims = 1,
              const std::string &name = "");
+
+    /**
+     * Add the 'GRUUnit' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#GRUUnit
+     *
+     * \param args List of input tensor ids
+     * \param drop_states The 'drop_states' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    gruunit(const std::vector<TensorId>& args,
+            boost::optional<int64_t> drop_states = boost::optional<int64_t>(),
+            const std::string &name = "");
+
+    /**
+     * Add the 'DepthToSpace' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#DepthToSpace
+     *
+     * \param args List of input tensor ids
+     * \param blocksize The 'blocksize' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    depthtospace(const std::vector<TensorId>& args,
+                 int64_t blocksize,
+                 const std::string &name = "");
 
     /**
      * Add the 'GRU' to the model
@@ -510,36 +523,6 @@ class AiOnnxOpset6 : private DomainOpSet {
     TensorId
     prelu(const std::vector<TensorId>& args,
           const std::string &name = "");
-
-    /**
-     * Add the 'DepthToSpace' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#DepthToSpace
-     *
-     * \param args List of input tensor ids
-     * \param blocksize The 'blocksize' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    depthtospace(const std::vector<TensorId>& args,
-                 int64_t blocksize,
-                 const std::string &name = "");
-
-    /**
-     * Add the 'GRUUnit' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#GRUUnit
-     *
-     * \param args List of input tensor ids
-     * \param drop_states The 'drop_states' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    gruunit(const std::vector<TensorId>& args,
-            boost::optional<int64_t> drop_states = boost::optional<int64_t>(),
-            const std::string &name = "");
 
     /**
      * Add the 'ConvTranspose' to the model
@@ -1082,7 +1065,7 @@ class AiOnnxOpset6 : private DomainOpSet {
     /**
      * Add the 'Cast' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cast
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Cast-6
      *
      * \param args List of input tensor ids
      * \param to The 'to' attribute 
@@ -1136,42 +1119,6 @@ class AiOnnxOpset6 : private DomainOpSet {
     concat(const std::vector<TensorId>& args,
            int64_t axis,
            const std::string &name = "");
-
-    /**
-     * Add the 'Softsign' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softsign
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    softsign(const std::vector<TensorId>& args,
-             const std::string &name = "");
-
-    /**
-     * Add the 'ConstantFill' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ConstantFill
-     *
-     * \param args List of input tensor ids
-     * \param extra_shape The 'extra_shape' attribute 
-     * \param input_as_shape The 'input_as_shape' attribute 
-     * \param shape The 'shape' attribute 
-     * \param dtype The 'dtype' attribute 
-     * \param value The 'value' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    constantfill(const std::vector<TensorId>& args,
-                 int64_t dtype = 1,
-                 const std::vector<int64_t>& extra_shape = std::vector<int64_t>(),
-                 boost::optional<int64_t> input_as_shape = boost::optional<int64_t>(),
-                 const std::vector<int64_t>& shape = std::vector<int64_t>(),
-                 float value = 0.0f,
-                 const std::string &name = "");
 
     /**
      * Add the 'Hardmax' to the model
@@ -1699,6 +1646,23 @@ class AiOnnxOpset6 : private DomainOpSet {
                  const std::string &name = "");
 
     /**
+     * Add the 'HardSigmoid' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#HardSigmoid
+     *
+     * \param args List of input tensor ids
+     * \param alpha The 'alpha' attribute 
+     * \param beta The 'beta' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    hardsigmoid(const std::vector<TensorId>& args,
+                float alpha = 0.2f,
+                float beta = 0.5f,
+                const std::string &name = "");
+
+    /**
      * Add the 'DynamicSlice' to the model
      *
      * https://github.com/onnx/onnx/blob/master/docs/Operators.md#DynamicSlice
@@ -1727,23 +1691,6 @@ class AiOnnxOpset6 : private DomainOpSet {
          float max = 3.4028234663852886e+38f,
          float min = -3.4028234663852886e+38f,
          const std::string &name = "");
-
-    /**
-     * Add the 'HardSigmoid' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#HardSigmoid
-     *
-     * \param args List of input tensor ids
-     * \param alpha The 'alpha' attribute 
-     * \param beta The 'beta' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    hardsigmoid(const std::vector<TensorId>& args,
-                float alpha = 0.2f,
-                float beta = 0.5f,
-                const std::string &name = "");
 
     /**
      * Add the 'RandomUniformLike' to the model
@@ -1794,6 +1741,36 @@ class AiOnnxOpset6 : private DomainOpSet {
     reciprocal(const std::vector<TensorId>& args,
                const std::string &name = "");
 
+    /**
+     * Add the 'Reshape' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Reshape
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    reshape(const std::vector<TensorId>& args,
+            const std::string &name = "");
+
+    /**
+     * Add the 'ReduceProd' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceProd
+     *
+     * \param args List of input tensor ids
+     * \param axes The 'axes' attribute 
+     * \param keepdims The 'keepdims' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    reduceprod(const std::vector<TensorId>& args,
+               const std::vector<int64_t>& axes = std::vector<int64_t>(),
+               int64_t keepdims = 1,
+               const std::string &name = "");
+
 };
 
 class AiOnnxOpset7 : private AiOnnxOpset6 {
@@ -1814,6 +1791,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
     using AiOnnxOpset6::sum;
     using AiOnnxOpset6::squeeze;
     using AiOnnxOpset6::spacetodepth;
+    using AiOnnxOpset6::softsign;
     using AiOnnxOpset6::softmax;
     using AiOnnxOpset6::slice;
     using AiOnnxOpset6::size;
@@ -1825,18 +1803,16 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
     using AiOnnxOpset6::scale;
     using AiOnnxOpset6::reducesumsquare;
     using AiOnnxOpset6::reducesum;
-    using AiOnnxOpset6::reshape;
-    using AiOnnxOpset6::reduceprod;
     using AiOnnxOpset6::globalaveragepool;
     using AiOnnxOpset6::reducel2;
+    using AiOnnxOpset6::gruunit;
+    using AiOnnxOpset6::depthtospace;
     using AiOnnxOpset6::giventensorfill;
     using AiOnnxOpset6::flatten;
     using AiOnnxOpset6::exp;
     using AiOnnxOpset6::logical_not;
     using AiOnnxOpset6::sqrt;
     using AiOnnxOpset6::elu;
-    using AiOnnxOpset6::depthtospace;
-    using AiOnnxOpset6::gruunit;
     using AiOnnxOpset6::convtranspose;
     using AiOnnxOpset6::logsoftmax;
     using AiOnnxOpset6::reducelogsum;
@@ -1862,8 +1838,6 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
     using AiOnnxOpset6::gather;
     using AiOnnxOpset6::ceil;
     using AiOnnxOpset6::concat;
-    using AiOnnxOpset6::softsign;
-    using AiOnnxOpset6::constantfill;
     using AiOnnxOpset6::hardmax;
     using AiOnnxOpset6::identity;
     using AiOnnxOpset6::logical_if;
@@ -1887,12 +1861,14 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
     using AiOnnxOpset6::aten;
     using AiOnnxOpset6::constant;
     using AiOnnxOpset6::randomnormal;
+    using AiOnnxOpset6::hardsigmoid;
     using AiOnnxOpset6::dynamicslice;
     using AiOnnxOpset6::clip;
-    using AiOnnxOpset6::hardsigmoid;
     using AiOnnxOpset6::randomuniformlike;
     using AiOnnxOpset6::leakyrelu;
     using AiOnnxOpset6::reciprocal;
+    using AiOnnxOpset6::reshape;
+    using AiOnnxOpset6::reduceprod;
     /**
      * Add the 'Sin' to the model
      *
@@ -2090,7 +2066,7 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
     /**
      * Add the 'BatchNormalization' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#BatchNormalization
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#BatchNormalization-7
      *
      * \param args List of input tensor ids
      * \param num_outputs The number of output tensor ids
@@ -2351,6 +2327,7 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
     using AiOnnxOpset7::tanh;
     using AiOnnxOpset7::squeeze;
     using AiOnnxOpset7::spacetodepth;
+    using AiOnnxOpset7::softsign;
     using AiOnnxOpset7::softmax;
     using AiOnnxOpset7::slice;
     using AiOnnxOpset7::size;
@@ -2362,11 +2339,11 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
     using AiOnnxOpset7::scale;
     using AiOnnxOpset7::reducesumsquare;
     using AiOnnxOpset7::reducesum;
-    using AiOnnxOpset7::reshape;
-    using AiOnnxOpset7::reduceprod;
     using AiOnnxOpset7::tan;
     using AiOnnxOpset7::globalaveragepool;
     using AiOnnxOpset7::reducel2;
+    using AiOnnxOpset7::gruunit;
+    using AiOnnxOpset7::depthtospace;
     using AiOnnxOpset7::gru;
     using AiOnnxOpset7::giventensorfill;
     using AiOnnxOpset7::multinomial;
@@ -2377,8 +2354,6 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
     using AiOnnxOpset7::sqrt;
     using AiOnnxOpset7::elu;
     using AiOnnxOpset7::prelu;
-    using AiOnnxOpset7::depthtospace;
-    using AiOnnxOpset7::gruunit;
     using AiOnnxOpset7::convtranspose;
     using AiOnnxOpset7::logsoftmax;
     using AiOnnxOpset7::reducelogsum;
@@ -2412,8 +2387,6 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
     using AiOnnxOpset7::gather;
     using AiOnnxOpset7::ceil;
     using AiOnnxOpset7::concat;
-    using AiOnnxOpset7::softsign;
-    using AiOnnxOpset7::constantfill;
     using AiOnnxOpset7::hardmax;
     using AiOnnxOpset7::identity;
     using AiOnnxOpset7::logical_if;
@@ -2443,12 +2416,14 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
     using AiOnnxOpset7::aten;
     using AiOnnxOpset7::constant;
     using AiOnnxOpset7::randomnormal;
+    using AiOnnxOpset7::hardsigmoid;
     using AiOnnxOpset7::dynamicslice;
     using AiOnnxOpset7::clip;
-    using AiOnnxOpset7::hardsigmoid;
     using AiOnnxOpset7::randomuniformlike;
     using AiOnnxOpset7::leakyrelu;
     using AiOnnxOpset7::reciprocal;
+    using AiOnnxOpset7::reshape;
+    using AiOnnxOpset7::reduceprod;
     /**
      * Add the 'Scan' to the model
      *
@@ -2583,6 +2558,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     using AiOnnxOpset8::sum;
     using AiOnnxOpset8::squeeze;
     using AiOnnxOpset8::spacetodepth;
+    using AiOnnxOpset8::softsign;
     using AiOnnxOpset8::softmax;
     using AiOnnxOpset8::slice;
     using AiOnnxOpset8::size;
@@ -2594,11 +2570,11 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     using AiOnnxOpset8::scale;
     using AiOnnxOpset8::reducesumsquare;
     using AiOnnxOpset8::reducesum;
-    using AiOnnxOpset8::reshape;
-    using AiOnnxOpset8::reduceprod;
     using AiOnnxOpset8::tan;
     using AiOnnxOpset8::globalaveragepool;
     using AiOnnxOpset8::reducel2;
+    using AiOnnxOpset8::gruunit;
+    using AiOnnxOpset8::depthtospace;
     using AiOnnxOpset8::gru;
     using AiOnnxOpset8::giventensorfill;
     using AiOnnxOpset8::multinomial;
@@ -2607,8 +2583,6 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     using AiOnnxOpset8::logical_not;
     using AiOnnxOpset8::sqrt;
     using AiOnnxOpset8::elu;
-    using AiOnnxOpset8::depthtospace;
-    using AiOnnxOpset8::gruunit;
     using AiOnnxOpset8::convtranspose;
     using AiOnnxOpset8::logsoftmax;
     using AiOnnxOpset8::reducelogsum;
@@ -2628,7 +2602,6 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     using AiOnnxOpset8::lpnormalization;
     using AiOnnxOpset8::loop;
     using AiOnnxOpset8::split;
-    using AiOnnxOpset8::batchnormalization;
     using AiOnnxOpset8::globallppool;
     using AiOnnxOpset8::reducelogsumexp;
     using AiOnnxOpset8::sub;
@@ -2636,12 +2609,9 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     using AiOnnxOpset8::neg;
     using AiOnnxOpset8::logical_xor;
     using AiOnnxOpset8::dropout;
-    using AiOnnxOpset8::cast;
     using AiOnnxOpset8::gather;
     using AiOnnxOpset8::ceil;
     using AiOnnxOpset8::concat;
-    using AiOnnxOpset8::softsign;
-    using AiOnnxOpset8::constantfill;
     using AiOnnxOpset8::hardmax;
     using AiOnnxOpset8::identity;
     using AiOnnxOpset8::logical_if;
@@ -2671,12 +2641,58 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     using AiOnnxOpset8::pow;
     using AiOnnxOpset8::aten;
     using AiOnnxOpset8::randomnormal;
+    using AiOnnxOpset8::hardsigmoid;
     using AiOnnxOpset8::dynamicslice;
     using AiOnnxOpset8::clip;
-    using AiOnnxOpset8::hardsigmoid;
     using AiOnnxOpset8::randomuniformlike;
     using AiOnnxOpset8::leakyrelu;
     using AiOnnxOpset8::reciprocal;
+    using AiOnnxOpset8::reshape;
+    using AiOnnxOpset8::reduceprod;
+    /**
+     * Add the 'TfIdfVectorizer' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#TfIdfVectorizer
+     *
+     * \param args List of input tensor ids
+     * \param max_gram_length The 'max_gram_length' attribute 
+     * \param max_skip_count The 'max_skip_count' attribute 
+     * \param min_gram_length The 'min_gram_length' attribute 
+     * \param mode The 'mode' attribute 
+     * \param ngram_counts The 'ngram_counts' attribute 
+     * \param ngram_indexes The 'ngram_indexes' attribute 
+     * \param pool_int64s The 'pool_int64s' attribute 
+     * \param pool_strings The 'pool_strings' attribute 
+     * \param weights The 'weights' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    tfidfvectorizer(const std::vector<TensorId>& args,
+                    int64_t max_gram_length,
+                    int64_t max_skip_count,
+                    int64_t min_gram_length,
+                    const std::string& mode,
+                    const std::vector<int64_t>& ngram_counts,
+                    const std::vector<int64_t>& ngram_indexes,
+                    const std::vector<int64_t>& pool_int64s = std::vector<int64_t>(),
+                    const std::vector<std::string>& pool_strings = std::vector<std::string>(),
+                    const std::vector<float>& weights = std::vector<float>(),
+                    const std::string &name = "");
+
+    /**
+     * Add the 'NonZero' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#NonZero
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    nonzero(const std::vector<TensorId>& args,
+            const std::string &name = "");
+
     /**
      * Add the 'Erf' to the model
      *
@@ -2758,23 +2774,19 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
            const std::string &name = "");
 
     /**
-     * Add the 'ConstantLike' to the model
+     * Add the 'ConstantOfShape' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ConstantLike
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ConstantOfShape
      *
      * \param args List of input tensor ids
-     * \param dtype The 'dtype' attribute 
-     * \param shape The 'shape' attribute 
      * \param value The 'value' attribute 
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    constantlike(const std::vector<TensorId>& args,
-                 boost::optional<int64_t> dtype = boost::optional<int64_t>(),
-                 const std::vector<int64_t>& shape = std::vector<int64_t>(),
-                 float value = 0.0f,
-                 const std::string &name = "");
+    constantofshape(const std::vector<TensorId>& args,
+                    const ConstVoidData&  value,
+                    const std::string &name = "");
 
     /**
      * Add the 'Compress' to the model
@@ -2798,10 +2810,11 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      *
      * \param args List of input tensor ids
      * \param num_outputs The number of output tensor ids
-     * \param axes The 'axes' attribute 
      * \param body The 'body' attribute 
      * \param num_scan_inputs The 'num_scan_inputs' attribute 
+     * \param scan_input_axes The 'scan_input_axes' attribute 
      * \param scan_input_directions The 'scan_input_directions' attribute 
+     * \param scan_output_axes The 'scan_output_axes' attribute 
      * \param scan_output_directions The 'scan_output_directions' attribute 
      * \param name Optional identifier for the operation
      * \return A list of normalized output tensors
@@ -2811,10 +2824,28 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
          unsigned num_outputs,
          int body,
          int64_t num_scan_inputs,
-         const std::vector<int64_t>& axes = std::vector<int64_t>(),
+         const std::vector<int64_t>& scan_input_axes = std::vector<int64_t>(),
          const std::vector<int64_t>& scan_input_directions = std::vector<int64_t>(),
+         const std::vector<int64_t>& scan_output_axes = std::vector<int64_t>(),
          const std::vector<int64_t>& scan_output_directions = std::vector<int64_t>(),
          const std::string &name = "");
+
+    /**
+     * Add the 'Shrink' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Shrink
+     *
+     * \param args List of input tensor ids
+     * \param bias The 'bias' attribute 
+     * \param lambd The 'lambd' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    shrink(const std::vector<TensorId>& args,
+           float bias = 0.0f,
+           float lambd = 0.5f,
+           const std::string &name = "");
 
     /**
      * Add the 'Sign' to the model
@@ -2903,6 +2934,19 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
             const std::string &name = "");
 
     /**
+     * Add the 'Where' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Where
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    where(const std::vector<TensorId>& args,
+          const std::string &name = "");
+
+    /**
      * Add the 'MaxUnpool' to the model
      *
      * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MaxUnpool
@@ -2920,6 +2964,25 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
               const std::vector<int64_t>& pads = std::vector<int64_t>(),
               const std::vector<int64_t>& strides = std::vector<int64_t>(),
               const std::string &name = "");
+
+    /**
+     * Add the 'BatchNormalization' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#BatchNormalization
+     *
+     * \param args List of input tensor ids
+     * \param num_outputs The number of output tensor ids
+     * \param epsilon The 'epsilon' attribute 
+     * \param momentum The 'momentum' attribute 
+     * \param name Optional identifier for the operation
+     * \return A list of normalized output tensors
+     */
+    std::vector<TensorId>
+    batchnormalization(const std::vector<TensorId>& args,
+                       unsigned num_outputs,
+                       float epsilon = 1e-05f,
+                       float momentum = 0.9f,
+                       const std::string &name = "");
 
     /**
      * Add the 'Upsample' to the model
@@ -2961,6 +3024,21 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     TensorId
     greater(const std::vector<TensorId>& args,
             const std::string &name = "");
+
+    /**
+     * Add the 'Cast' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cast
+     *
+     * \param args List of input tensor ids
+     * \param to The 'to' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    cast(const std::vector<TensorId>& args,
+         DataType to,
+         const std::string &name = "");
 
     /**
      * Add the 'Gemm' to the model

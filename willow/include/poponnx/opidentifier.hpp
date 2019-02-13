@@ -262,6 +262,7 @@ const static OperatorIdentifier
 const static OperatorIdentifier Neg_1(Domain::ai_onnx, "Neg", 1, 1, 1);
 const static OperatorIdentifier Neg_6(Domain::ai_onnx, "Neg", 6, 1, 1);
 const static OperatorIdentifier Not_1(Domain::ai_onnx, "Not", 1, 1, 1);
+const static OperatorIdentifier NonZero_9(Domain::ai_onnx, "NonZero", 9, 1, 1);
 const static OperatorIdentifier OneHot_9(Domain::ai_onnx, "OneHot", 9, 3, 1);
 const static OperatorIdentifier Or_1(Domain::ai_onnx, "Or", 1, 2, 1);
 const static OperatorIdentifier Or_7(Domain::ai_onnx, "Or", 7, 2, 1);
@@ -350,6 +351,8 @@ const static OperatorIdentifier Tile_1(Domain::ai_onnx, "Tile", 1, 2, 1);
 const static OperatorIdentifier Tile_6(Domain::ai_onnx, "Tile", 6, 2, 1);
 const static OperatorIdentifier TopK_1(Domain::ai_onnx, "TopK", 1, 1, 2);
 const static OperatorIdentifier
+    TfIdfVectorizer_9(Domain::ai_onnx, "TfIdfVectorizer", 9, 1, 1);
+const static OperatorIdentifier
     Transpose_1(Domain::ai_onnx, "Transpose", 1, 1, 1);
 
 const static OperatorIdentifier
@@ -360,7 +363,8 @@ const static OperatorIdentifier
     Upsample_7(Domain::ai_onnx, "Upsample", 7, 2, 1);
 const static OperatorIdentifier
     Upsample_9(Domain::ai_onnx, "Upsample", 9, 2, 1);
-const static OperatorIdentifier Xor_1(Domain::ai_onnx, "Xor", 7, 2, 1);
+const static OperatorIdentifier Where_9(Domain::ai_onnx, "Where", 9, 3, 1);
+const static OperatorIdentifier Xor_1(Domain::ai_onnx, "Xor", 1, 2, 1);
 const static OperatorIdentifier Xor_7(Domain::ai_onnx, "Xor", 7, 2, 1);
 // experimental
 const static OperatorIdentifier ATen_1(Domain::ai_onnx, "ATen", 0, {1, -1}, -1);

@@ -125,13 +125,16 @@ class Attribute:
         else:
             return False
 
+    def isTensor(self):
+        return self.type == onnx.defs.OpSchema.AttrType.TENSOR
+
     def CppType(self):
         """
     Determine the C++ type for an attribute
     """
 
         # Special case of Cast where we replace int with DataType
-        if self.op.name == "Cast" and self.op.version == 6:
+        if self.op.name == "Cast":
             return "DataType"
         elif self.type == onnx.defs.OpSchema.AttrType.INT:
             if self.required:
@@ -186,13 +189,21 @@ class Attribute:
         if len(str(self.default)) == 0:
             return False
         else:
-            return True
+            if self.type == onnx.defs.OpSchema.AttrType.TENSOR:
+                # Not sure how to express a tensor as a default value
+                return False
+            else:
+                return True
 
     def hasDefaultValue(self):
         if self.required:
             return False
         if len(str(self.default)) == 0:
-            return True
+            if self.type == onnx.defs.OpSchema.AttrType.TENSOR:
+                # Not sure how to express a tensor as a default value
+                return False
+            else:
+                return True
 
         return True
 
@@ -218,6 +229,10 @@ class Attribute:
                 return 'std::vector<float>()'
             elif self.type == onnx.defs.OpSchema.AttrType.STRINGS:
                 return 'std::vector<std::string>()'
+            elif self.type == onnx.defs.OpSchema.AttrType.GRAPH:
+                return '0'
+            elif self.type == onnx.defs.OpSchema.AttrType.TENSOR:
+                return '0'
             else:
                 return 'UNKNOWN'
 
@@ -392,7 +407,7 @@ def genBuilderHpp(filename, schema):
                 f.write("\n")
                 f.write("  protected:\n")
                 f.write("    using {}::impl;\n".format(baseclass))
-                
+
                 f.write("  public:\n")
                 f.write(
                     "    {}(std::unique_ptr<BuilderImpl>& impl_) : {}(impl_) {{}} \n"
@@ -400,7 +415,9 @@ def genBuilderHpp(filename, schema):
                 f.write("\n")
 
                 f.write("    // return the opset version\n")
-                f.write("    int getOpsetVersion() const override {{ return {};}} \n".format(opset_version))
+                f.write(
+                    "    int getOpsetVersion() const override {{ return {};}} \n"
+                    .format(opset_version))
                 f.write("\n")
 
                 seen = []
@@ -431,9 +448,10 @@ def genBuilderHpp(filename, schema):
                             .format(op.name, op.version))
 
                     f.write("     *\n")
-                    
+
                     if op.inputs > 0:
-                        f.write("     * \param args List of input tensor ids\n")
+                        f.write(
+                            "     * \param args List of input tensor ids\n")
 
                     if op.min_output != op.max_output:
                         f.write(
@@ -543,12 +561,18 @@ def genBuilderCpp(filename, schema):
                                     f.write(
                                         "  attributes[\"{}\"] = {};\n".format(
                                             a.name, a.name))
+                            elif a.isTensor():
+                                f.write("  attributes[\"{}\"] = {};\n".format(
+                                    a.name, a.name))
                             else:
                                 if a.isList():
                                     f.write("  if (!{}.empty()) {{\n".format(
                                         a.name))
                                 elif a.isFloat() and not a.isBoostOptional():
-                                    f.write("  if (std::abs({} - {}) >  std::numeric_limits<{}>::epsilon()) {{\n".format(a.name, a.DefaultValue(), a.CppType()))
+                                    f.write(
+                                        "  if (std::abs({} - {}) >  std::numeric_limits<{}>::epsilon()) {{\n"
+                                        .format(a.name, a.DefaultValue(),
+                                                a.CppType()))
                                 else:
                                     f.write("  if ({} != {}) {{\n".format(
                                         a.name, a.DefaultValue()))
@@ -564,7 +588,7 @@ def genBuilderCpp(filename, schema):
                     f.write("  return impl->op(Onnx::Operators::{},\n".format(
                         op.CppId()))
 
-                    # Add the opset version    
+                    # Add the opset version
                     f.write("                  getOpsetVersion(),\n")
 
                     # Add the input tensors
