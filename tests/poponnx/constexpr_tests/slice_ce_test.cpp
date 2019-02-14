@@ -75,11 +75,6 @@ template <> std::string getTypeName<int32_t>() { return "INT32"; }
 template <> std::string getTypeName<float_t>() { return "FLOAT"; }
 template <> std::string getTypeName<float16_t>() { return "FLOAT16"; }
 
-template <typename T> DataType getDataType();
-
-template <> DataType getDataType<int32_t>() { return DataType::INT32; }
-template <> DataType getDataType<float_t>() { return DataType::FLOAT; }
-template <> DataType getDataType<float16_t>() { return DataType::FLOAT16; }
 
 template <typename T> void ConstExprTest_Slice0_Type() {
   // clang-format off

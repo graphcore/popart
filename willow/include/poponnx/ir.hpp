@@ -330,6 +330,10 @@ private:
 
   Op *growVarUpdateOp(TensorId varId);
 
+  // Special case for the Batchnorm mean & var
+  // TODO : See if this an the more general function can be refactored
+  Op *growBnVarUpdateOp(TensorId varId, TensorId from);
+
   Op *growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints);
 
   Op *growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum);

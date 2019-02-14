@@ -134,7 +134,15 @@ def op_tester(tmpdir):
                         format(k))
 
             stepio = poponnx.PyStepIO(bld._input_map, anchor_map)
+
+            if (step_type == 'train'):
+                session.weightsFromHost()
+
             getattr(session, step_type)(stepio)
+
+            #if (step_type == 'train'):
+            # TODO : Need someway for the user to secify this
+            #session.modelToHost("test.onnx")
 
             ref_out = reference(RefData(bld._outputs, anchor_map))
 

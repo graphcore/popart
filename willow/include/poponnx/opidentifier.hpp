@@ -705,6 +705,7 @@ const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 
 const static AiGraphcoreOpIdV1 SgdVarUpdate("SGDVarUpdate");
 const static AiGraphcoreOpIdV1 ConstSgdVarUpdate("ConstSGDVarUpdate");
+const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
 } // namespace CustomOperators
 
 namespace AiGraphcore {

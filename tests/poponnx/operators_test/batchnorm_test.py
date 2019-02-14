@@ -190,8 +190,8 @@ def test_batchnorm_train_1(op_tester):
     d1 = np.random.rand(2, 2, 2, 2).astype(np.float32)
     scale = np.random.rand(2).astype(np.float32)
     b = np.random.rand(2).astype(np.float32)
-    mean = np.zeros(2).astype(np.float32)
-    var = np.ones(2).astype(np.float32)
+    mean = np.array([5, 5]).astype(np.float32)
+    var = np.array([7, 7]).astype(np.float32)
     epsilon = 1e-05
     momentum = 0.1
 
@@ -203,8 +203,8 @@ def test_batchnorm_train_1(op_tester):
         i1 = builder.addInputTensor(d1)
         iScale = builder.addInputTensor(scale)
         iB = builder.addInputTensor(b)
-        iMean = builder.addInputTensor(mean)
-        iVar = builder.addInputTensor(var)
+        iMean = builder.addInitializedInputTensor(mean)
+        iVar = builder.addInitializedInputTensor(var)
         o_y, o_mean, o_var, o_smean, o_svar = builder.aiOnnx.batchnormalization(
             [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
 
@@ -240,6 +240,11 @@ def test_batchnorm_train_1(op_tester):
 
     op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
     op_tester.run(init_builder, reference, 'train')
+
+    # Importiing onnx module, cause test.sh to error
+    # TODO : Need to check the model not just print it
+    #onnx_model = onnx.load('test.onnx')
+    #print(onnx_model)
 
 
 def test_batchnorm_train_2(op_tester):
