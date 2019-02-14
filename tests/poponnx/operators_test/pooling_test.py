@@ -61,6 +61,8 @@ def test_average_pool_3(op_tester):
 
 def test_average_pool_with_count_include_pad(op_tester):
 
+    poponnx.getLogger().setLevel("TRACE")
+
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 1, 14, 14]))
@@ -76,7 +78,6 @@ def test_average_pool_with_count_include_pad(op_tester):
     proto = builder.getModelProto()
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         poponnx.Session(

@@ -1,7 +1,7 @@
 Building graphs without a third party framework
 -----------------------------------------------
 
-There is a Builder class for constructing ONNX graphs without needing a third
+There is a `Builder` class for constructing ONNX graphs without needing a third
 party framework.
 
 In this example, a simple addition is prepared for execution.
@@ -16,7 +16,7 @@ In this example, a simple addition is prepared for execution.
   i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
   i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
-  o = builder.add([i1, i2])
+  o = builder.aiOnnx.add([i1, i2])
 
   builder.addOutputTensor(o)
 
@@ -38,17 +38,17 @@ instance:
 
 ::
 
-  out = builder.acos([in], "debug-name")
+  output = builder.aiOnnx.acos([input], "debug-name")
 
 They take a list of arguments which are the input tensor names, and an optional
-to assign to the node.  This name is passed to the poplar nodes.  It returns
+string to assign to the node.  This name is passed to the Poplar nodes.  It returns
 the name of the tensor which is an output of the newly added node.
 
 In some cases other arguments are required, for instance:
 
 ::
 
-  out = builder.gather([input, indices], axis=[1], debugPrefix="My-Gather")
+  output = builder.aiOnnx.gather(['input', 'indices'], axis=1, debugPrefix="My-Gather")
 
 Adding parameters to the graph
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -70,7 +70,7 @@ The outputs of the graph should be marked appropriately, using the
 
 ::
 
-  builder.addOutputTensor(o)
+  builder.addOutputTensor(output)
 
 Setting the IPU number for operations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -82,12 +82,13 @@ For instance, to place a specific convolution onto IPU 1:
 
 ::
 
-  we = b.addInitializedInputTensor(np.zeros([32, 4, 3, 3], np.float16))
-  bi = b.addInitializedInputTensor(np.zeros([32], np.float16))
-  o = b.convolution([x, we, bi], [1, 1], [1, 1, 1, 1], [1, 1])
-  b.virtualGraph(o, 1)
+  we = builder.addInitializedInputTensor(np.zeros([32, 4, 3, 3], np.float16))
+  bi = builder.addInitializedInputTensor(np.zeros([32], np.float16))
+  o = builder.aiOnnx.conv([x, we, bi], [1, 1], [1, 1, 1, 1], [1, 1])
+  builder.virtualGraph(o, 1)
 
-A context manager is available for placing mutiple operations onto a
+
+A context manager is available for placing multiple operations onto a
 specific IPU together:
 
 ::
@@ -100,10 +101,10 @@ specific IPU together:
   i4 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
 
   with builder.virtualGraph(0):
-    o1 = builder.add([i1, i2])
-    o2 = builder.add([i3, i4])
+      o1 = builder.aiOnnx.add([i1, i2])
+      o2 = builder.aiOnnx.add([i3, i4])
 
   with builder.virtualGraph(1):
-    o = builder.add([o1, o2])
+      o = builder.aiOnnx.add([o1, o2])
 
 

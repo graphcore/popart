@@ -316,4 +316,7 @@ std::string Op::debugName() const {
                      fmt::join(out_ids.begin(), out_ids.end(), ", "));
 }
 
+// By default an operation can not be replaced
+bool Op::canBeReplacedByIdentity() { return false; }
+
 } // namespace poponnx

@@ -27,6 +27,8 @@ public:
   void appendAttributes(std::stringstream &ss,
                         const std::string &tab) const override;
 
+  bool canBeReplacedByIdentity() override;
+
 public:
   std::vector<int64_t> strides;
 };
@@ -34,7 +36,6 @@ public:
 class SubsampleGradOp : public Op {
 public:
   SubsampleGradOp(const SubsampleOp &fwdOp);
-  std::unique_ptr<Op> clone() const final;
   void setup() override;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
@@ -43,10 +44,12 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
-  const SubsampleOp &getFwdOp() const { return fwdOp; }
+  std::vector<uint32_t> getStrides() const { return strides; }
+
+  Shape getFwdInputShape() { return fwdOpInfo.shape(); }
 
 private:
-  const SubsampleOp &fwdOp;
+  std::vector<uint32_t> strides;
   TensorInfo fwdOpInfo;
 };
 

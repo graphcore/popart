@@ -36,6 +36,7 @@
 #include <poponnx/transforms/virtual_graph_check.hpp>
 
 // The layers required to construct the backwards pass
+#include <poponnx/op/batchnorm.hpp>
 #include <poponnx/op/sum.hpp>
 #include <poponnx/op/varupdate.hpp>
 
@@ -183,6 +184,8 @@ void Ir::dotCheckpoint(DotCheck check) const {
     if (userOptions.dotOpNames) {
       if (!n->name().empty()) {
         strm << "(" << n->name() << ")";
+      } else {
+        strm << " (" << n->id << ")";
       }
     }
 
@@ -701,10 +704,10 @@ void Ir::registerInputTensors() {
     // If inference or evaluation mode add initializers as constants
     if (getExecutionMode() == ExecutionMode::INFERENCE ||
         getExecutionMode() == ExecutionMode::EVALUATION) {
-      logging::info("Init tensor {} as constant", tenId);
+      logging::info("Adding Constant Tensor {} to Ir", tenId);
       getTensors().addConstInit(tenId, &initializer);
     } else {
-      logging::info("Init tensor {} as variable", tenId);
+      logging::info("Adding Variable Tensor {} to Ir", tenId);
       getTensors().addVarInit(tenId, &initializer);
     }
     onnxInitializers.emplace(tenId);
@@ -936,11 +939,32 @@ OpId Ir::moveIntoIr(std::unique_ptr<Op> op) {
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
   std::unique_ptr<poponnx::Op> gradSum =
-      OpManager::createOp(Onnx::AiOnnx::OpSet9::Sum, *this, "GradSum");
+      OpManager::createOp(Domain::ai_onnx,
+                          "Sum",
+                          getOpSetVersionFromModel(Domain::ai_onnx),
+                          *this,
+                          "GradSum");
 
   if (getSessionOptions().enableVirtualGraphs) {
-    // How do we know were this op should execute? T6587
-    gradSum->setVirtualGraphId(0);
+
+    // Count which vgraph's the producer ops are on.
+    std::map<int64_t, int64_t> vgraphIdMap;
+    for (auto &t : toSum) {
+      boost::optional<int64_t> vgraphId = t->getProducer()->getVirtualGraphId();
+      if (vgraphId) {
+        vgraphIdMap[*vgraphId]++;
+      }
+    }
+
+    // Find the vgraph id with the most occurrences.
+    auto it = std::max_element(vgraphIdMap.begin(),
+                               vgraphIdMap.end(),
+                               [](const std::pair<int64_t, int64_t> &p1,
+                                  const std::pair<int64_t, int64_t> &p2) {
+                                 return p1.second < p2.second;
+                               });
+
+    gradSum->setVirtualGraphId(it->first);
   }
 
   OpId opId = moveIntoIr(std::move(gradSum));
@@ -1348,6 +1372,9 @@ void Ir::setNPathsToLoss() {
 }
 
 void Ir::constructBackwards() {
+
+  logging::ir::info("constructing backwards pass");
+
   // definition: edge-gradient. What is output by a grad-op,
   // and which will be summed with other edge-gradients to create
   // a gradient. It is possible that an edge-gradient has the same
@@ -1455,8 +1482,66 @@ void Ir::constructBackwards() {
 
   // add weight update ops (we are ignoring momentums for now)
   for (auto &varId : getTensors().getIds(TensorType::Variable)) {
-    growVarUpdateOp(varId);
+
+    // TODO : This code needs to be refactored so that we do not
+    // have iterate over the ops looking for batch norm
+    TensorId from;
+    bool copyTensor = false;
+
+    // a temporary catch for batch normalization task: T6876
+    // /////////////////////////////////////////////////////
+    auto tensor = getTensors().get(varId);
+    std::stringstream consumer_list;
+    for (auto &consumer : tensor->consumers.getOps()) {
+      consumer_list << consumer->str() << " ";
+      if (consumer->opid.type == "BatchNormalization") {
+
+        if (tensor->id ==
+            consumer->inTensor(BatchNormOp::getMeanInIndex())->id) {
+          copyTensor = true;
+          from       = consumer->outTensor(BatchNormOp::getMeanOutIndex())->id;
+        } else if (tensor->id ==
+                   consumer->inTensor(BatchNormOp::getVarInIndex())->id) {
+          copyTensor = true;
+          from       = consumer->outTensor(BatchNormOp::getVarOutIndex())->id;
+        }
+      }
+      logging::ir::debug(
+          "Creating Variable Update Op for Tensor {}, with consumers [ {}]",
+          varId,
+          consumer_list.str());
+      ////////////////////////////////////////////////
+    }
+
+    if (copyTensor) {
+      growBnVarUpdateOp(varId, from);
+    } else {
+      growVarUpdateOp(varId);
+    }
   }
+}
+
+Op *Ir::growBnVarUpdateOp(TensorId varId, TensorId from) {
+  OpId opId =
+      moveIntoIr(std::unique_ptr<Op>(new CopyVarUpdateOp(varId, {*this, ""})));
+  Op *op = ops[opId].get();
+
+  std::vector<TensorId> inputs{varId, from};
+  connectInputs(InputVecWrapper(inputs), opId);
+
+  // there are no outputs of var-op
+  std::vector<TensorId> outputs{};
+  connectOutputs(OutputVecWrapper(outputs), opId);
+  op->setup();
+
+  // Not necessary to set the phase here (it will be done in
+  // updateVertices). To check our logic though, we do this here
+  // and then check that we agree in updateVertices()
+  op->setPhase(Phase::BWD);
+
+  trainTargetOps.insert(op);
+
+  return op;
 }
 
 Op *Ir::growVarUpdateOp(TensorId varId) {
@@ -1537,6 +1622,8 @@ void Ir::growFinalLoss() {
     return;
   }
 
+  logging::ir::info("growing final loss");
+
   std::vector<Op *> lossOps;
   // first, grow each of the individual losses from the user
   for (auto &loss : losses) {
@@ -1555,11 +1642,32 @@ void Ir::growFinalLoss() {
 
   // now growing the FINAL loss (sum of individual losses)
   std::unique_ptr<poponnx::Op> finalLossSum =
-      OpManager::createOp(Onnx::AiOnnx::OpSet9::Sum, *this, "FinalLoss");
+      OpManager::createOp(Domain::ai_onnx,
+                          "Sum",
+                          getOpSetVersionFromModel(Domain::ai_onnx),
+                          *this,
+                          "FinalLoss");
 
   if (getSessionOptions().enableVirtualGraphs) {
-    // How do we know were this op should execute T6587
-    finalLossSum->setVirtualGraphId(0);
+
+    // Count which vgraph's the producer ops are on.
+    std::map<int64_t, int64_t> vgraphIdMap;
+    for (auto &l : lossOps) {
+      boost::optional<int64_t> vgraphId = l->getVirtualGraphId();
+      if (vgraphId) {
+        vgraphIdMap[*vgraphId]++;
+      }
+    }
+
+    // Find the vgraph id with the most occurrences.
+    auto it = std::max_element(vgraphIdMap.begin(),
+                               vgraphIdMap.end(),
+                               [](const std::pair<int64_t, int64_t> &p1,
+                                  const std::pair<int64_t, int64_t> &p2) {
+                                 return p1.second < p2.second;
+                               });
+
+    finalLossSum->setVirtualGraphId(it->first);
   }
 
   OpId opId = moveIntoIr(std::move(finalLossSum));
@@ -1633,6 +1741,18 @@ void Ir::append(std::stringstream &ss) {
   }
 }
 
+int Ir::getDefaultOpsetVersion(const std::string &domain) {
+  if (domain == Domain::ai_onnx) {
+    return defaultAiOnnxOpset;
+  } else if (domain == Domain::ai_onnx_ml) {
+    return defaultAiOnnxMlOpset;
+  } else if (domain == Domain::ai_graphcore) {
+    return defaultAiGraphcoreOpset;
+  } else {
+    throw error("No default opset version defined for domain \'{}\'", domain);
+  }
+}
+
 int Ir::getOpSetVersionFromModel(const std::string &node_domain) {
 
   // If the node.domain is blank it means the default ai.onnx
@@ -1663,9 +1783,9 @@ int Ir::getOpSetVersionFromModel(const std::string &node_domain) {
     }
   }
 
-  // If the version has not be set throw an exception
+  // If the version has not be set use the default
   if (version == 0) {
-    throw error("No opset version defined for domain \'{}\'", domain);
+    version = getDefaultOpsetVersion(domain);
   }
 
   return version;

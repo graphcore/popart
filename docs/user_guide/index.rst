@@ -12,7 +12,6 @@ ONNX for the IPU
     builder
     executing
     training_ops
-    custom_ops
     examples
     supported_ops
     references

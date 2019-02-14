@@ -368,6 +368,8 @@ def test_matmul_infer_cached_by_default():
     cached.
     """
 
+    poponnx.getLogger().setLevel("TRACE")
+
     builder = poponnx.Builder()
 
     matmul_lhs_shape = poponnx.TensorInfo("FLOAT", [2, 3])
@@ -391,7 +393,6 @@ def test_matmul_infer_cached_by_default():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
     opts.reportOptions = {"doLayerWiseBreakdown": "true"}
 
     session = poponnx.Session(
@@ -433,6 +434,8 @@ def test_matmul_infer_not_cached():
     In this test we check that the we don't cache when the option is set
     """
 
+    poponnx.getLogger().setLevel("TRACE")
+
     builder = poponnx.Builder()
 
     matmul_lhs_shape = poponnx.TensorInfo("FLOAT", [2, 3])
@@ -458,7 +461,6 @@ def test_matmul_infer_not_cached():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
     opts.reportOptions = {"doLayerWiseBreakdown": "true"}
 
     session = poponnx.Session(
@@ -500,6 +502,8 @@ def test_matmul_train_cached_by_default():
     cached.
     """
 
+    poponnx.getLogger().setLevel("TRACE")
+
     builder = poponnx.Builder()
 
     matmul1_lhs_shape = poponnx.TensorInfo("FLOAT", [2, 3])
@@ -534,7 +538,6 @@ def test_matmul_train_cached_by_default():
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
     opts.reportOptions = {"doLayerWiseBreakdown": "true"}
 
     session = poponnx.Session(
@@ -583,6 +586,8 @@ def test_gemm_train_cached_by_default():
     cached.
     """
 
+    poponnx.getLogger().setLevel("TRACE")
+
     builder = poponnx.Builder()
 
     gemmA_shape = poponnx.TensorInfo("FLOAT", [2, 4])
@@ -622,7 +627,6 @@ def test_gemm_train_cached_by_default():
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
     opts.reportOptions = {"doLayerWiseBreakdown": "true"}
 
     session = poponnx.Session(

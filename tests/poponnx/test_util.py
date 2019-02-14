@@ -78,7 +78,6 @@ class BasicSession:
 
     def _setup_opts(self, logging_dir):
         self.opts = poponnx.SessionOptionsCore()
-        self.opts.logging = {'all': 'TRACE'}
         self.opts.logDir = str(logging_dir)
 
     def add_input_tensor(self, data):

@@ -77,8 +77,6 @@ struct SessionOptions {
   /// Poplar reporting options
   std::map<std::string, std::string> reportOptions;
 
-  /// Logging options for poponnx
-  std::map<std::string, std::string> loggingOptions;
 };
 
 } // namespace poponnx

@@ -41,9 +41,6 @@ Session::createFromOnnxModel(const std::string &model,
                              const SessionOptions &userOptions,
                              const Patterns &patterns) {
 
-  // Needs to be the first call to initialise the logging settings
-  logging::configure(userOptions.loggingOptions);
-
   logging::session::trace("Session::createFromOnnx");
 
   // Note : Can not use make_unique as the implementation can not acces the
@@ -83,11 +80,21 @@ Session::~Session() = default;
 
 void Session::prepareDevice() {
   logging::session::trace("Session::prepareDevice()");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
   device_->prepare();
 }
 
 void Session::weightsFromHost() {
   logging::session::trace("Sessions::weightsFromHost");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
   device_->weightsFromHost();
   weightsFromHostCalled = true;
 }
@@ -96,6 +103,11 @@ void Session::weightsFromHost() {
 // momentum, initial momentum tensors (zero)) there are to device
 void Session::optimizerFromHost() {
   logging::session::trace("Session::optimizerFromHost");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
   device_->optimizerFromHost();
 }
 
@@ -105,9 +117,14 @@ void Session::train(const IStepIO &stepio) {
     throw error("Trying to train when not in training mode");
   }
 
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
   if (ir.containsInitialisers() && weightsFromHostCalled == false) {
     throw error(
-        "Must call weightsFromHost before train as the model has initializers");
+        "Must call weightsFromHost before {} as the model has initializers",
+        __func__);
   }
 
   device_->train(stepio);
@@ -117,6 +134,10 @@ void Session::evaluate(const IStepIO &stepio) {
   logging::session::trace("Session::evaluate");
   if (!ir.canEvaluate()) {
     throw error("Trying to evaluate when not in evaluation mode");
+  }
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
   }
 
   if (ir.containsInitialisers() && ir.isTraining() &&
@@ -133,6 +154,10 @@ void Session::infer(const IStepIO &stepio) {
   logging::session::trace("Session::infer");
   if (!ir.canInfer()) {
     throw error("Trying to infer when not in inference mode");
+  }
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
   }
 
   if (ir.containsInitialisers() && ir.isTraining() &&
@@ -159,6 +184,9 @@ void Session::modelToHost(const std::string &fn) {
     TensorId tenId = tp.name();
     initMap[tenId] = onnxutil::getMutableData(tp);
   }
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
 
   device_->weightsToHost(initMap);
 
@@ -167,21 +195,41 @@ void Session::modelToHost(const std::string &fn) {
 
 std::string Session::getSummaryReport() const {
   logging::session::trace("Session::getSummaryReport");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
   return device_->getSummaryReport();
 }
 
 std::string Session::getGraphReport() const {
   logging::session::trace("Session::getGraphReport");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
   return device_->getGraphReport();
 }
 
 std::string Session::getExecutionReport() const {
   logging::session::trace("Session::getExecutionReport");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
   return device_->getExecutionReport();
 }
 
 TensorTileMap Session::getTensorTileMap() const {
   logging::session::trace("Session::getTensorTileMap");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
   return device_->getTensorTileMap();
 }
 

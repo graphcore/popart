@@ -90,6 +90,8 @@ def op_tester(tmpdir):
         def run(self, init_builder, reference, step_type='infer'):
             assert step_type in ('infer', 'train')
 
+            poponnx.getLogger().setLevel("TRACE")
+
             bld = Builder()
 
             anchors = {}
@@ -108,7 +110,6 @@ def op_tester(tmpdir):
             proto = bld.getModelProto()
 
             opts = poponnx.SessionOptionsCore()
-            opts.logging = {'all': 'TRACE'}
             opts.logDir = self.logging_dir
 
             session = poponnx.Session(
@@ -133,7 +134,15 @@ def op_tester(tmpdir):
                         format(k))
 
             stepio = poponnx.PyStepIO(bld._input_map, anchor_map)
+
+            if (step_type == 'train'):
+                session.weightsFromHost()
+
             getattr(session, step_type)(stepio)
+
+            #if (step_type == 'train'):
+            # TODO : Need someway for the user to secify this
+            #session.modelToHost("test.onnx")
 
             ref_out = reference(RefData(bld._outputs, anchor_map))
 

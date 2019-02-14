@@ -73,7 +73,7 @@ void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
   // confirm shapes agree (up to squeezing out the extra 1s)
   auto expectedShape = ir.getTensors().get(id)->info.shape_szt();
 
-  if (squeeze(pt.shape()) != squeeze(expectedShape)) {
+  if (pt.shape() != expectedShape) {
     std::stringstream ss;
     ss << "poplar::Tensor " << id << " of unexpected shape. "
        << "Poplar tensor shape: ";

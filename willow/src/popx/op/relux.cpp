@@ -10,7 +10,7 @@
 namespace poponnx {
 namespace popx {
 
-ReluOpx::ReluOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ReluOpx::ReluOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<ReluOp>(op, Onnx::Operators::Relu_6);
 }
 
@@ -28,15 +28,6 @@ void ReluOpx::grow(poplar::program::Sequence &prog) const {
       graph(), popnn::NonLinearityType::RELU, outTensor, prog, outId(0));
 
   insert(outId(0), outTensor);
-}
-
-InputCreatorType ReluOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANUNWIND;
-}
-
-poplar::Tensor
-ReluOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
-  return tensor;
 }
 
 void ReluInplaceOpx::grow(poplar::program::Sequence &prog) const {

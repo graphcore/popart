@@ -31,7 +31,7 @@ public:
   virtual const OperatorIdentifier &op_type() const = 0;
   virtual std::unique_ptr<Loss> clone() const       = 0;
 
-  void setVirtualGraphId(int64_t value) { vgraphId = value; }
+  void virtualGraph(int64_t value) { vgraphId = value; }
 
 protected:
   // Identify on which vgraph the loss should be executed. This is

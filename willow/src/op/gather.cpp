@@ -61,6 +61,14 @@ void GatherOp::appendAttributes(std::stringstream &ss,
   appendAttribute(ss, tab, "axis", axis);
 }
 
+// A gather on a degenerate dimension with a rank 1 index tensor with a single
+// element can be replaced by identity
+bool GatherOp::canBeReplacedByIdentity() {
+  return (inShape(dataInIndex())[getAxis()] == 1 &&
+          inInfo(indicesInIndex()).rank() == 1 &&
+          inInfo(indicesInIndex()).nelms() == 1);
+}
+
 GatherGradOp::GatherGradOp(const GatherOp &op, int64_t axis_)
     : Op(Onnx::GradOperators::GatherGrad, op.getSettings()), axis(axis_),
       fwdDataInfo(op.inInfo(GatherOp::dataInIndex())) {}

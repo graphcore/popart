@@ -25,11 +25,6 @@ public:
   }
 };
 
-template <>
-std::vector<char> ScaleFunctor::operator()<poponnx::Half>(Tensor *, double) {
-  throw error("cannot const expr scale half tensor for now");
-}
-
 ConstExprScale::ConstExprScale(const onnx::NodeProto &n, Ir *i)
     : ConstExprOp(n, i) {
   nAtts.set(factor32, "scale");

@@ -42,11 +42,27 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   // no poplar::Tensors to insert
 }
 
+CopyVarUpdateOpx::CopyVarUpdateOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {
+  verifyOp<CopyVarUpdateOp>(op, Onnx::CustomOperators::CopyVarUpdate);
+}
+
+void CopyVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
+  auto vu_op = getOp<CopyVarUpdateOp>();
+  poplar::program::Copy copy(get(inId(CopyVarUpdateOp::getVarFromInIndex())),
+                             get(inId(CopyVarUpdateOp::getVarToInIndex())));
+  prog.add(copy);
+
+  // no poplar::Tensors to insert
+}
+
 namespace {
 OpxCreator<SGDVarUpdateOpx>
     sgdVarUpdateOpxCreator(Onnx::CustomOperators::SgdVarUpdate);
 OpxCreator<ConstSGDVarUpdateOpx>
     constSgdVarUpdateOpxCreator(Onnx::CustomOperators::ConstSgdVarUpdate);
+OpxCreator<CopyVarUpdateOpx>
+    copyVarUpdateOpxCreator(Onnx::CustomOperators::CopyVarUpdate);
 } // namespace
 
 } // namespace popx

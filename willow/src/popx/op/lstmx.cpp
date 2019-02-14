@@ -8,6 +8,7 @@
 #include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
+#include <poponnx/util.hpp>
 
 #include <popnn/Lstm.hpp>
 #include <popops/ElementWise.hpp>
@@ -141,7 +142,14 @@ poplar::Tensor LSTMOpx::createInput(InIndex index) const {
     auto init_c = getInitialState().cellState;
     return init_c.reshape({num_directions, batch_size, hidden_size});
   } else if (index == LSTMOp::getInitialHInIndex()) {
-    return getInitialState().output;
+    auto &lstm_op = getOp<LSTMOp>();
+
+    unsigned batch_size     = static_cast<unsigned>(lstm_op.getBatchSize());
+    unsigned hidden_size    = static_cast<unsigned>(lstm_op.getHiddenSize());
+    unsigned num_directions = static_cast<unsigned>(lstm_op.getNumDirections());
+
+    auto init_h = getInitialState().output;
+    return init_h.reshape({num_directions, batch_size, hidden_size});
   } else {
     auto msg = fmt::format("LSTMOpx::createInput is not supported for index {}",
                            index);
@@ -265,12 +273,13 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   auto forward_input  = get(inId(LSTMGradOp::getInputInIndex()));
   auto forward_output = get(inId(LSTMGradOp::getOutputInIndex()));
 
-  auto &lstm_grad_op = getOp<LSTMGradOp>();
-  auto &lstm_op      = lstm_grad_op.getForwardOp();
-  auto batch_size    = static_cast<unsigned>(lstm_op.getBatchSize());
-  auto hidden_size   = static_cast<unsigned>(lstm_op.getHiddenSize());
-  auto seq_length    = static_cast<unsigned>(lstm_op.getSeqLength());
-  auto lstm_params   = createLSTMParams();
+  auto &lstm_grad_op  = getOp<LSTMGradOp>();
+  auto &lstm_op       = lstm_grad_op.getForwardOp();
+  auto batch_size     = static_cast<unsigned>(lstm_op.getBatchSize());
+  auto hidden_size    = static_cast<unsigned>(lstm_op.getHiddenSize());
+  auto seq_length     = static_cast<unsigned>(lstm_op.getSeqLength());
+  auto num_directions = static_cast<unsigned>(lstm_op.getNumDirections());
+  auto lstm_params    = createLSTMParams();
 
   auto output_grad = get(inId(LSTMGradOp::getOutputGradInIndex()))
                          .reshape({seq_length, batch_size, hidden_size});
@@ -320,10 +329,14 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
            LSTMOpx::reshapePoplibWeightsForOnnx(b_grad, false));
   }
   if (lstm_op.hasInitialHInput()) {
-    insert(outId(LSTMGradOp::getInitialHOutIndex()), init_state_grad.output);
+    auto init_h = init_state_grad.output;
+    insert(outId(LSTMGradOp::getInitialHOutIndex()),
+           init_h.reshape({num_directions, batch_size, hidden_size}));
   }
   if (lstm_op.hasInitialCInput()) {
-    insert(outId(LSTMGradOp::getInitialCOutIndex()), init_state_grad.cellState);
+    auto init_c = init_state_grad.cellState;
+    insert(outId(LSTMGradOp::getInitialCOutIndex()),
+           init_c.reshape({num_directions, batch_size, hidden_size}));
   }
 }
 

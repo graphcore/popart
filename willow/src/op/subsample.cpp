@@ -63,19 +63,18 @@ bool SubsampleOp::strideSizeOne() const {
       strides.cbegin(), strides.cend(), [](int64_t p) { return p == 1; });
 }
 
+// A subsample with all strides being  1 can be replaced by identity
+bool SubsampleOp::canBeReplacedByIdentity() { return strideSizeOne(); }
+
 void SubsampleOp::appendAttributes(std::stringstream &ss,
                                    const std::string &tab) const {
   Op::appendAttributes(ss, tab);
   appendAttribute(ss, tab, "strides", strides);
 }
 
-SubsampleGradOp::SubsampleGradOp(const SubsampleOp &_fwdOp)
-    : Op(Onnx::CustomGradOperators::SubsampleGrad, _fwdOp.getSettings()),
-      fwdOp(_fwdOp), fwdOpInfo(_fwdOp.inInfo(0)) {}
-
-std::unique_ptr<Op> SubsampleGradOp::clone() const {
-  return make_unique<SubsampleGradOp>(*this);
-}
+SubsampleGradOp::SubsampleGradOp(const SubsampleOp &fwdOp_)
+    : Op(Onnx::CustomGradOperators::SubsampleGrad, fwdOp_.getSettings()),
+      strides(fwdOp_.strides_u32()), fwdOpInfo(fwdOp_.inInfo(0)) {}
 
 void SubsampleGradOp::setup() { output->tensor(0)->info = fwdOpInfo; }
 

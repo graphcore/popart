@@ -35,6 +35,11 @@ void DropoutOp::appendAttributes(std::stringstream &ss,
   appendAttribute(ss, tab, "ratio", ratio);
 }
 
+// Dropout in testing mode can be replaced by the identity
+bool DropoutOp::canBeReplacedByIdentity() {
+  return (getIr().isTesting() || getIr().isEvaulation());
+}
+
 namespace {
 static OpCreator<DropoutOp> dropoutOpCreator(
     {Onnx::Operators::Dropout_6, Onnx::Operators::Dropout_7},

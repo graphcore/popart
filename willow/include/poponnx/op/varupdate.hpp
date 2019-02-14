@@ -41,6 +41,17 @@ private:
   float learnRate;
 };
 
+class CopyVarUpdateOp : public VarUpdateOp {
+public:
+  CopyVarUpdateOp(TensorId to, const Op::Settings &);
+  std::unique_ptr<Op> clone() const final;
+
+  static InIndex getVarToInIndex() { return 0; }
+  static InIndex getVarFromInIndex() { return 1; }
+
+private:
+};
+
 } // namespace poponnx
 
 #endif

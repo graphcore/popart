@@ -33,7 +33,8 @@ ReturnType get(DataType dtype, Args &&... args) {
   case DataType::UINT8:
     return Functor().template operator()<uint8_t>(std::forward<Args>(args)...);
   case DataType::FLOAT16:
-    return Functor().template operator()<Half>(std::forward<Args>(args)...);
+    return Functor().template operator()<float16_t>(
+        std::forward<Args>(args)...);
   case DataType::BOOL:
   case DataType::BFLOAT16:
   case DataType::COMPLEX64:

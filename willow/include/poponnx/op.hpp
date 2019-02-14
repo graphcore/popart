@@ -114,6 +114,14 @@ public:
   Ir &getIr() { return settings.ir; }
   const Ir &getIr() const { return settings.ir; }
 
+  //
+  // Methods used by patterns to determine if an op can be replaced by another
+  // op
+
+  // Return true if the op based on it's configuration can be replace by the
+  // identity operations, else false.
+  virtual bool canBeReplacedByIdentity();
+
 public:
   Op(const OperatorIdentifier &_opid, const Op::Settings &settings);
 

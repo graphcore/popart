@@ -5,6 +5,8 @@ import test_util as tu
 
 def test_no_virtual_graph():
 
+    poponnx.getLogger().setLevel("TRACE")
+
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
@@ -19,12 +21,13 @@ def test_no_virtual_graph():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
 
     poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
 
 
 def test_all_virtual_graph():
+
+    poponnx.getLogger().setLevel("TRACE")
 
     builder = poponnx.Builder()
 
@@ -44,12 +47,13 @@ def test_all_virtual_graph():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
 
     poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
 
 
 def test_mixed_virtual_graph():
+
+    poponnx.getLogger().setLevel("TRACE")
 
     builder = poponnx.Builder()
 
@@ -68,7 +72,6 @@ def test_mixed_virtual_graph():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {'all': 'TRACE'}
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)

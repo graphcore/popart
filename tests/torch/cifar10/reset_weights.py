@@ -90,8 +90,10 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
         shuffle=False,
         num_workers=3)
 
+    poponnx.getLogger().setLevel("TRACE")
+    poponnx.getLogger("session").setLevel("WARN")
+
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {"all": "TRACE", "session": "TRACE"}
     opts.logDir = outputdir
 
     session = get_session(fnModel0, inputShapeInfo, dataFeed, torchWriter,

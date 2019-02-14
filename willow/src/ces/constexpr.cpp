@@ -8,8 +8,10 @@
 #include <poponnx/ces/shapece.hpp>
 #include <poponnx/ces/slicece.hpp>
 #include <poponnx/ces/transposece.hpp>
+#include <poponnx/ces/unsqueezece.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/onnxutil.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -47,48 +49,23 @@ bool ConstExprClassifier::isConstExprTensor(TensorId id) const {
   return found->second;
 }
 
+void ConstExprConstant::insertOutput() {
+  TensorId name = node.output(0);
+  // We assume that a tensor coming from a Constant Node should
+  // not have a gradient computed for it or be updated during training
+  // We will implement a seperate tool to convert between
+  // Constant Operator output and initializer in ONNX models (T6213)
+  ir->getTensors().addConstInit(name, &node.attribute(0).t());
+}
+
 void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
 
-  // TODO: Consider moving this into the op and register a constexprutil
-  // function. See T5993
+  logging::ir::debug("Processing Node `{}` ({}) in ConstExprUtil",
+                     node.name(),
+                     node.op_type());
 
-  std::string nodeInfoStr = '`' + node.name() + "' (" + node.op_type() + ')';
-  logging::ir::debug("Processing Node " + nodeInfoStr + " in ConstExprUtil");
-
-  if (node.op_type() == "Constant") {
-    TensorId name = node.output(0);
-    // We assume that a tensor coming from a Constant Node should
-    // not have a gradient computed for it or be updated during training
-    // We will implement a seperate tool to convert between
-    // Constant Operator output and initializer in ONNX models (T6213)
-    ir->getTensors().addConstInit(name, &node.attribute(0).t());
-  } else if (node.op_type() == "Cast") {
-    ConstExprCast caster(node, ir);
-    caster.insertOutput();
-  } else if (node.op_type() == "Add") {
-    ConstExprAdd adder(node, ir);
-    adder.insertOutput();
-  } else if (node.op_type() == "Shape") {
-    ConstExprShape expr(node, ir);
-    expr.insertOutput();
-  } else if (node.op_type() == "Transpose") {
-    ConstExprTranspose transposer(node, ir);
-    transposer.insertOutput();
-  } else if (node.op_type() == "Slice") {
-    ConstExprSlice slicer(node, ir);
-    slicer.insertOutput();
-  } else if (node.op_type() == "Scale") {
-    ConstExprScale scaler(node, ir);
-    scaler.insertOutput();
-  } else if (node.op_type() == "Concat") {
-    ConstExprConcat concatenator(node, ir);
-    concatenator.insertOutput();
-  } else {
-    throw error("No ConstExpr implementation of {}. "
-                "Consider what OpType::ADD does (creates a Const Tensor) "
-                "if you would like to implement a ConstExpr",
-                node.op_type());
-  }
+  auto constOp = ConstExprOpManager::createConstExprOp(node, ir);
+  constOp->insertOutput();
 }
 
 ConstExprClassifier
@@ -171,6 +148,60 @@ bool ConstExprUtil::isNodeOutputAlwaysConstExpr(const OpType &op_type,
   // here : any Operator whose output at OutIndex index is ALWAYS
   // computable at compile time should be added here
   return false;
+}
+
+ConstExprOpManager::ConstExprOpManager() { registerConstOps(); }
+
+ConstExprOpManager &ConstExprOpManager::getInstance() {
+  static ConstExprOpManager instance;
+  return instance;
+}
+
+void ConstExprOpManager::registerConstExprOpImpl(const std::string &type,
+                                                 ConstExprOpFactoryFunc func) {
+  constExprOpMap.insert(std::make_pair(type, func));
+}
+
+void ConstExprOpManager::registerConstExprOp(const std::string &type,
+                                             ConstExprOpFactoryFunc func) {
+  getInstance().registerConstExprOpImpl(type, func);
+}
+
+template <typename T>
+void ConstExprOpManager::registerConstOp(const std::string &type) {
+  registerConstExprOpImpl(
+      type,
+      [](const onnx::NodeProto &node, Ir *ir) -> std::unique_ptr<ConstExprOp> {
+        return make_unique<T>(node, ir);
+      });
+}
+
+void ConstExprOpManager::registerConstOps() {
+
+  registerConstOp<ConstExprConstant>("Constant");
+  registerConstOp<ConstExprAdd>("Add");
+  registerConstOp<ConstExprCast>("Cast");
+  registerConstOp<ConstExprScale>("Scale");
+  registerConstOp<ConstExprShape>("Shape");
+  registerConstOp<ConstExprSlice>("Slice");
+  registerConstOp<ConstExprTranspose>("Transpose");
+  registerConstOp<ConstExprConcat>("Concat");
+  registerConstOp<ConstExprUnsqueeze>("Unsqueeze");
+}
+
+std::unique_ptr<ConstExprOp>
+ConstExprOpManager::createConstExprOp(const onnx::NodeProto &node, Ir *ir) {
+
+  auto &self = getInstance();
+  auto it2   = self.constExprOpMap.find(node.op_type());
+  if (it2 != self.constExprOpMap.end()) {
+    return it2->second(node, ir);
+  } else {
+    throw error("No ConstExpr implementation of {}. "
+                "Consider what OpType::ADD does (creates a Const Tensor) "
+                "if you would like to implement a ConstExpr",
+                node.op_type());
+  }
 }
 
 } // namespace poponnx

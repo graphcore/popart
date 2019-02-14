@@ -23,6 +23,12 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
+class CopyVarUpdateOpx : public Opx {
+public:
+  CopyVarUpdateOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
 } // namespace popx
 } // namespace poponnx
 

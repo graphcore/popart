@@ -33,6 +33,8 @@ public:
   void appendAttributes(std::stringstream &ss,
                         const std::string &tab) const override;
 
+  bool canBeReplacedByIdentity() override;
+
 private:
   // The input shape, with '1' inserted in reduction axes.
   // This is the same as the output shape if keepdims is true.

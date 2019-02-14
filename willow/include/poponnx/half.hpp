@@ -5,15 +5,30 @@
 namespace poponnx {
 
 class Half {
+
 public:
-  [[noreturn]] Half operator+(const Half &);
+  Half();
+  ~Half();
+
+  Half(const Half &other);
+  Half(float f);
+
+  Half &operator=(const Half &rhs);
+  Half &operator=(const float rhs);
+
+  bool operator==(const Half &rhs);
+
+  Half operator+(const Half &);
+
+  operator float() const;
 
 private:
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-private-field"
   uint16_t data;
-#pragma clang diagnostic pop
 };
+
+using float16_t = Half;
+
+std::ostream &operator<<(std::ostream &ss, const Half &v);
 
 } // namespace poponnx
 

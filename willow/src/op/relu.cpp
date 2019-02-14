@@ -33,15 +33,13 @@ void ReluInplaceOp::setup() {
 std::unique_ptr<Op> ReluOp::clone() const { return make_unique<ReluOp>(*this); }
 
 ReluOp::ReluOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : Op(_opid, settings_) {}
+    : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::vector<std::unique_ptr<Op>> ReluOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(make_unique<ReluGradOp>(*this));
   return upops;
 }
-
-void ReluOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 void ReluGradOp::setup() {
   outInfo(getOutIndex()) = inInfo(getGradReludInIndex());

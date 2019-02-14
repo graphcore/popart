@@ -6,6 +6,8 @@ import test_util as tu
 
 def trainSession(anchors, optimizer, stepSize):
 
+    poponnx.getLogger().setLevel("TRACE")
+
     builder = poponnx.Builder()
 
     dataShape = poponnx.TensorInfo("FLOAT", [1, 2, 4, 4])
@@ -29,7 +31,6 @@ def trainSession(anchors, optimizer, stepSize):
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
-    opts.logging = {"all": "TRACE", "session": "WARN"}
 
     session = poponnx.Session(
         fnModel=proto,

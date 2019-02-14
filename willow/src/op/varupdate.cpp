@@ -47,6 +47,13 @@ std::unique_ptr<Op> ConstSGDVarUpdateOp::clone() const {
   return make_unique<ConstSGDVarUpdateOp>(*this);
 }
 
+CopyVarUpdateOp::CopyVarUpdateOp(TensorId varId_, const Op::Settings &settings_)
+    : VarUpdateOp(Onnx::CustomOperators::CopyVarUpdate, varId_, settings_) {}
+
+std::unique_ptr<Op> CopyVarUpdateOp::clone() const {
+  return make_unique<CopyVarUpdateOp>(*this);
+}
+
 namespace {} // namespace
 
 } // namespace poponnx
