@@ -55,23 +55,24 @@ The `setDevice` method is used to set the device within the session.
   session.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
 
 The device manager can enumerate the available devices with the `enumerateDevices`
-method. With no parameters the  `acquireAvailableDevice` method will acquire the
-next available device.  With one parameter, it will select a device from the list
-of IPU configurations, as given by the `enumerateDevices` method, or by the `gc-info`
-application.
-
-With two parameters, it will select the first available configuration with a
-given number of IPUs and a given number of tiles per IPU.
-
-::
-
-  # Acquire IPU configuration 5
-  dev = poponnx.DeviceManager().acquireAvailableDevice(5)
+method. The  `acquireAvailableDevice` method will acquire the
+next available device. The first parameter specifies how many IPUs to acquire.
 
 ::
 
   # Acquire a 2 IPU pair
-  dev = poponnx.DeviceManager().acquireAvailableDevice(2, 1216)
+  dev = poponnx.DeviceManager().acquireAvailableDevice(2)
+
+Using `acquireDeviceById` will select a device from the list
+of IPU configurations, as given by the `enumerateDevices` method, or by the `gc-info`
+application.
+
+::
+
+  # Acquire IPU configuration 5
+  dev = poponnx.DeviceManager().acquireDeviceById(5)
+
+
 
 The method `createIpuModelDevice` is used to create a Poplar software emulation
 of an IPU device.  See the API documentation for details.  Similarly, the method
@@ -191,6 +192,3 @@ the graphs.
 the graph.  `getGraphReport` returns a JSON format report on the compilation of
 the graph and `getExecutionReport` returns a JSON format report on all executions
 of the graph since the last report was fetched.
-
-
-
