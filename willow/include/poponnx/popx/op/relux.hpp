@@ -2,7 +2,7 @@
 #define GUARD_NEURALNET_RELUX_HPP
 
 #include <poponnx/names.hpp>
-#include <poponnx/popx/opx.hpp>
+#include <poponnx/popx/op/elementwisex.hpp>
 
 namespace poponnx {
 
@@ -12,14 +12,10 @@ class ReluGradOp;
 
 namespace popx {
 
-class ReluOpx : public Opx {
+class ReluOpx : public ElementWiseUnaryOpx {
 public:
   ReluOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
-  InputCreatorType getInputCreatorType(InIndex) const final;
-  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
-                                    InIndex inIndex,
-                                    OutIndex outIndex) const final;
 };
 
 class ReluInplaceOpx : public Opx {
