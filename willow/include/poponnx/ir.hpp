@@ -328,11 +328,12 @@ private:
   // correct input Tensors and create the activation output Tensors
   Op *growFromNode(const Node &);
 
-  Op *growVarUpdateOp(TensorId varId);
+  Op *growGradientVarUpdateOp(TensorId varId);
 
-  // Special case for the Batchnorm mean & var
-  // TODO : See if this an the more general function can be refactored
-  Op *growBnVarUpdateOp(TensorId varId, TensorId from);
+  Op *growCopyVarUpdateOp(TensorId varId, TensorId from);
+
+  // Common code for the growGradient... and growCopy...
+  Op *growVarUpdateOpInternal(OpId opId);
 
   Op *growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints);
 

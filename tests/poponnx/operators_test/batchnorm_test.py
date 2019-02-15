@@ -1,7 +1,9 @@
 import numpy as np
 import pytest
+import onnx
 import poponnx
 import torch
+import os
 from op_tester import op_tester
 
 # The calculation for running_mean & running_variance is different
@@ -211,6 +213,7 @@ def test_batchnorm_train_1(op_tester):
         builder.addOutputTensor(o_y)
         builder.addOutputTensor(o_mean)
         builder.addOutputTensor(o_var)
+
         return [o_y, 'd__' + i1, 'd__' + o_y]
 
     def reference(ref_data):
@@ -239,12 +242,18 @@ def test_batchnorm_train_1(op_tester):
         return [_y, _input.grad, d__o]
 
     op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
-    op_tester.run(init_builder, reference, 'train')
+    session = op_tester.run(init_builder, reference, 'train')
 
-    # Importiing onnx module, cause test.sh to error
-    # TODO : Need to check the model not just print it
-    #onnx_model = onnx.load('test.onnx')
-    #print(onnx_model)
+    onnx_filename = "test_batchnorm_train_1.onnx"
+
+    session.modelToHost(onnx_filename)
+    onnx_model = onnx.load(onnx_filename)
+
+    # Verify that one of the initializers has been updated
+    assert onnx_model.graph.initializer[0].float_data[0] == 1.0714294910430908
+    assert onnx_model.graph.initializer[0].float_data[1] == 0.9557055234909058
+
+    os.remove(onnx_filename)
 
 
 def test_batchnorm_train_2(op_tester):

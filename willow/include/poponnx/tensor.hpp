@@ -21,6 +21,13 @@ enum class TensorType {
   N // number of tensor types
 };
 
+// Define how the variable tensor will be updated
+enum class VariableUpdateType {
+  None = 0, // Not updated
+  Gradient, // Is updated using it's gradient
+  Copy      // Is updated by copying another tensor
+};
+
 // The consumers (Ops) of a Tensor. Note that
 // one Op may consume a Tensor at multiple locations.
 class Consumers {
@@ -79,7 +86,7 @@ public:
   std::string str() const final { return id; }
 
   // a copy of this, but with no consumers or producer
-  std::unique_ptr<Tensor> clone() const;
+  virtual std::unique_ptr<Tensor> clone() const;
 
   // ActGrad, Variable, etc:
   TensorType tensorType() const;
@@ -113,13 +120,36 @@ public:
   // Get all consumer ops and the producer op
   std::vector<Op *> associatedOps() const;
 
-private:
+protected:
   Ir &ir;
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
   // c++ note : we cannot initialise this as {nullptr} with gcc
   // when using pimpl, it must be initialised in the .cpp constructor
   std::unique_ptr<TensorData> data_;
+};
+
+class VariableTensor : public Tensor {
+public:
+  VariableTensor(TensorId, Ir &);
+
+  std::unique_ptr<Tensor> clone() const override;
+
+  void setVariableUpdateType(VariableUpdateType type) {
+    variableUpdateType = type;
+  }
+  VariableUpdateType getVariableUpdateType() const {
+    return variableUpdateType;
+  }
+
+  void setCopyFromTensor(TensorId value) { copyFromTensor = value; }
+  TensorId getCopyFromTensor() { return copyFromTensor; }
+
+private:
+  VariableUpdateType variableUpdateType;
+
+  // If the type is copy, this will identity where to copy from
+  TensorId copyFromTensor;
 };
 
 } // namespace poponnx

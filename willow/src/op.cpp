@@ -225,6 +225,11 @@ const Tensor *Op::outTensor(OutIndex index) const {
   return output->tensor(index);
 }
 
+TensorId Op::inId(InIndex index) { return inTensor(index)->id; }
+const TensorId Op::inId(InIndex index) const { return inTensor(index)->id; }
+TensorId Op::outId(OutIndex index) { return outTensor(index)->id; }
+const TensorId Op::outId(OutIndex index) const { return outTensor(index)->id; }
+
 Op::Op(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : input(new TensorIndexMap), output(new TensorIndexMap), priority(0.0),
       // the id

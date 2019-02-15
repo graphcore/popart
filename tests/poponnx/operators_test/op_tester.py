@@ -50,6 +50,7 @@ def op_tester(tmpdir):
         def __init__(self):
             self._builder = poponnx.Builder()
             self._input_map = {}
+            self._init_input_map = {}
             self._outputs = []
 
         def addInputTensor(self, data):
@@ -58,6 +59,15 @@ def op_tester(tmpdir):
 
             tensor_id = self._builder.addInputTensor(shape)
             self._input_map[tensor_id] = data
+
+            return tensor_id
+
+        def addInitializedInputTensor(self, data):
+            dtype = convert_dtype(data.dtype)
+            shape = poponnx.TensorInfo(dtype, data.shape)
+
+            tensor_id = self._builder.addInitializedInputTensor(data)
+            self._init_input_map[tensor_id] = data
 
             return tensor_id
 
@@ -97,7 +107,8 @@ def op_tester(tmpdir):
             anchors = {}
             anchorIds = init_builder(bld)
             for anchorId in anchorIds:
-                anchors[anchorId] = poponnx.AnchorReturnType("ALL")
+                if anchorId not in bld._init_input_map:
+                    anchors[anchorId] = poponnx.AnchorReturnType("ALL")
 
             dataFlow = poponnx.DataFlow(1, anchors)
 
@@ -140,10 +151,6 @@ def op_tester(tmpdir):
 
             getattr(session, step_type)(stepio)
 
-            #if (step_type == 'train'):
-            # TODO : Need someway for the user to secify this
-            #session.modelToHost("test.onnx")
-
             ref_out = reference(RefData(bld._outputs, anchor_map))
 
             def fix_type(t):
@@ -182,5 +189,7 @@ def op_tester(tmpdir):
                                        self.rtol, self.atol)
                 else:
                     print('Not Testing anchor "{}" as it is None'.format(key))
+
+            return session
 
     return OpTester(str(tmpdir))

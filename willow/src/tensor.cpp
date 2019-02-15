@@ -195,4 +195,14 @@ std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
   return tensor_types_m;
 }
 
+VariableTensor::VariableTensor(TensorId n, Ir &g)
+    : Tensor(n, TensorType::Variable, g),
+      variableUpdateType(VariableUpdateType::Gradient) {}
+
+std::unique_ptr<Tensor> VariableTensor::clone() const {
+  std::unique_ptr<Tensor> theClone(new VariableTensor("clone_" + id, ir));
+  theClone->info = info;
+  return theClone;
+}
+
 } // namespace poponnx

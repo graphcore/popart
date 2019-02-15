@@ -1483,68 +1483,36 @@ void Ir::constructBackwards() {
   // add weight update ops (we are ignoring momentums for now)
   for (auto &varId : getTensors().getIds(TensorType::Variable)) {
 
-    // TODO : This code needs to be refactored so that we do not
-    // have iterate over the ops looking for batch norm
-    TensorId from;
-    bool copyTensor = false;
-
-    // a temporary catch for batch normalization task: T6876
-    // /////////////////////////////////////////////////////
-    auto tensor = getTensors().get(varId);
-    std::stringstream consumer_list;
-    for (auto &consumer : tensor->consumers.getOps()) {
-      consumer_list << consumer->str() << " ";
-      if (consumer->opid.type == "BatchNormalization") {
-
-        if (tensor->id ==
-            consumer->inTensor(BatchNormOp::getMeanInIndex())->id) {
-          copyTensor = true;
-          from       = consumer->outTensor(BatchNormOp::getMeanOutIndex())->id;
-        } else if (tensor->id ==
-                   consumer->inTensor(BatchNormOp::getVarInIndex())->id) {
-          copyTensor = true;
-          from       = consumer->outTensor(BatchNormOp::getVarOutIndex())->id;
-        }
-      }
-      logging::ir::debug(
-          "Creating Variable Update Op for Tensor {}, with consumers [ {}]",
-          varId,
-          consumer_list.str());
-      ////////////////////////////////////////////////
-    }
-
-    if (copyTensor) {
-      growBnVarUpdateOp(varId, from);
-    } else {
-      growVarUpdateOp(varId);
-    }
+    VariableTensor *tensor =
+        dynamic_cast<VariableTensor *>(getTensors().get(varId));
+    switch (tensor->getVariableUpdateType()) {
+    case VariableUpdateType::Copy:
+      // Updates the var by copying it from another tensor
+      growCopyVarUpdateOp(varId, tensor->getCopyFromTensor());
+      break;
+    case VariableUpdateType::Gradient:
+      // Updates the var by looking for the matching gradient
+      growGradientVarUpdateOp(varId);
+      break;
+    default:
+      throw error("Unknown variable update approach");
+      break;
+    };
   }
 }
 
-Op *Ir::growBnVarUpdateOp(TensorId varId, TensorId from) {
+Op *Ir::growCopyVarUpdateOp(TensorId varId, TensorId from) {
   OpId opId =
       moveIntoIr(std::unique_ptr<Op>(new CopyVarUpdateOp(varId, {*this, ""})));
-  Op *op = ops[opId].get();
 
+  // The order of inputs is important
   std::vector<TensorId> inputs{varId, from};
   connectInputs(InputVecWrapper(inputs), opId);
 
-  // there are no outputs of var-op
-  std::vector<TensorId> outputs{};
-  connectOutputs(OutputVecWrapper(outputs), opId);
-  op->setup();
-
-  // Not necessary to set the phase here (it will be done in
-  // updateVertices). To check our logic though, we do this here
-  // and then check that we agree in updateVertices()
-  op->setPhase(Phase::BWD);
-
-  trainTargetOps.insert(op);
-
-  return op;
+  return growVarUpdateOpInternal(opId);
 }
 
-Op *Ir::growVarUpdateOp(TensorId varId) {
+Op *Ir::growGradientVarUpdateOp(TensorId varId) {
 
   // A sanity check that the Tensor is not fixed point type
   if (getTensors().get(varId)->info.getDataTypeInfo()->isFixedPoint()) {
@@ -1553,10 +1521,14 @@ Op *Ir::growVarUpdateOp(TensorId varId) {
 
   OpId opId   = moveIntoIr(optimizer->createOp(varId, this));
   auto inputs = optimizer->getInputIds(varId);
+  connectInputs(InputVecWrapper(inputs), opId);
+
+  return growVarUpdateOpInternal(opId);
+}
+
+Op *Ir::growVarUpdateOpInternal(OpId opId) {
 
   Op *op = ops[opId].get();
-
-  connectInputs(InputVecWrapper(inputs), opId);
 
   // there are no outputs of var-op
   std::vector<TensorId> outputs{};

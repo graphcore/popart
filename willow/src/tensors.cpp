@@ -238,7 +238,12 @@ void Tensors::addInit(const TensorId &name,
                       const onnx::TensorProto *pt,
                       TensorType tt) {
 
-  insert(name, std::unique_ptr<Tensor>(new Tensor(name, tt, ir)));
+  if (tt == TensorType::Variable) {
+    insert(name, std::unique_ptr<VariableTensor>(new VariableTensor(name, ir)));
+  } else {
+    insert(name, std::unique_ptr<Tensor>(new Tensor(name, tt, ir)));
+  }
+
   Tensor *init = get(name);
   init->info   = TensorInfo(*pt);
   init->setTensorData(*pt);
