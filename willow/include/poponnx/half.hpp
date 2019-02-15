@@ -13,6 +13,12 @@ public:
   Half(const Half &other);
   Half(float f);
 
+  // Catch all arithmetic types and handle the explicit cast to float
+  template <
+      typename T,
+      typename = typename std::enable_if<std::is_arithmetic<T>::value, T>::type>
+  explicit Half(T f) : Half(static_cast<float>(f)) {}
+
   Half &operator=(const Half &rhs);
   Half &operator=(const float rhs);
 

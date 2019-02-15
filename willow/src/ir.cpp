@@ -1494,9 +1494,9 @@ void Ir::constructBackwards() {
       // Updates the var by looking for the matching gradient
       growGradientVarUpdateOp(varId);
       break;
+    case VariableUpdateType::None:
     default:
       throw error("Unknown variable update approach");
-      break;
     };
   }
 }
