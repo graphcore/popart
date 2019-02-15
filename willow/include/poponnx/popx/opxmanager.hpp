@@ -52,6 +52,17 @@ public:
                               throw error(errMsg);
                             });
   }
+
+  OpxCreator(const OperatorIdentifier &opid, OpxManager::OpxFactoryFunc func) {
+    OpxManager::registerOpx(opid, func);
+  }
+
+  OpxCreator(const std::vector<OperatorIdentifier> &opids,
+             OpxManager::OpxFactoryFunc func) {
+    for (const auto &opid : opids) {
+      OpxManager::registerOpx(opid, func);
+    }
+  }
 };
 
 } // namespace popx

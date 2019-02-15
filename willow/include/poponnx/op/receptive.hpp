@@ -29,6 +29,11 @@ public:
   int64_t batchSize;
   int64_t nInChans;
 
+  Shape getSpatialK() const { return spatialK; }
+  Shape getStrides() const { return strides; }
+  Shape getLowerPads() const { return lowerPads(); }
+  Shape getUpperPads() const { return upperPads(); }
+
   std::vector<int64_t> pads;
   std::vector<int64_t> strides;
   std::vector<int64_t> dilations;
