@@ -9,8 +9,11 @@ namespace poponnx {
 
 bool PreUniRepl::matches(Op *op) const {
   // op must have 1 input, and that input
+  // must have a producer and
   // must be consumed by only op (and only once)
   if (op->input->n() != 1) {
+    return false;
+  } else if (!op->inTensor(0)->hasProducer()) {
     return false;
   } else if (op->input->tensor(0)->consumers.getTotal() != 1) {
     return false;

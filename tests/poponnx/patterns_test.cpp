@@ -681,3 +681,39 @@ BOOST_AUTO_TEST_CASE(PadSumPatternTest) {
   BOOST_CHECK(ir.opsOfType(poponnx::Onnx::AiOnnx::OpSet9::Sum).size() == 0);
   BOOST_CHECK(ir.opsOfType(poponnx::Onnx::AiOnnx::OpSet9::Concat).size() == 1);
 }
+
+// Checking PreUniRepl doesn't throw an exception
+// when PadOp connects to graph input
+BOOST_AUTO_TEST_CASE(PreUniRepl_0) {
+  auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
+
+  TensorInfo shape{"FLOAT", std::vector<int64_t>{2, 2, 2}};
+
+  auto input1 = builder->addInputTensor(shape);
+  auto input2 = builder->addInputTensor(shape);
+
+  auto padded1 =
+      aiOnnx.pad({input1}, {0, 0, 0, 0, 0, 0}, "constant", 0, "pad1");
+  auto padded2 =
+      aiOnnx.pad({input2}, {0, 0, 0, 0, 0, 0}, "constant", 0, "pad2");
+
+  auto out = aiOnnx.concat({padded1, padded2}, 1, "concat");
+
+  builder->addOutputTensor(out);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR
+  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+
+  Ir ir;
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              {},
+              nullptr,
+              {},
+              Patterns({PreAliasPatternType::PREUNIREPL})});
+}
