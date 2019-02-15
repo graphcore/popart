@@ -249,6 +249,11 @@ public:
   Tensor *outTensor(OutIndex index);
   const Tensor *outTensor(OutIndex index) const;
 
+  TensorId inId(InIndex index);
+  const TensorId inId(InIndex index) const;
+  TensorId outId(OutIndex index);
+  const TensorId outId(OutIndex index) const;
+
   TensorInfo &inInfo(InIndex index);
   const TensorInfo &inInfo(InIndex index) const;
   TensorInfo &outInfo(OutIndex index);
