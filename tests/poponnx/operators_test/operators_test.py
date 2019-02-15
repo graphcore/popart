@@ -784,7 +784,6 @@ def test_dropout_testing(op_tester):
     d1 = np.random.rand(2).astype(np.float32)
 
     def init_builder(builder):
-        print(d1)
         i1 = builder.addInputTensor(d1)
         (o, ) = builder.aiOnnx.dropout([i1], 1, 0.5, "test_dropout")
         builder.addOutputTensor(o)
@@ -802,12 +801,32 @@ def test_dropout_testing(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
+def test_flatten_infer(op_tester):
+    d1 = np.random.rand(2, 3, 4, 5).astype(np.float32)
+    axis = 2
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.flatten([i1], axis, "test_flatten")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        shape = d1.shape
+        new_shape = (1,
+                     -1) if axis == 0 else (np.prod(shape[0:axis]).astype(int),
+                                            -1)
+        out = np.reshape(d1, new_shape)
+        return [out]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
 # Verify when in training mode that the exception is thrown
 def test_dropout_training(op_tester):
     d1 = np.random.rand(2).astype(np.float32)
 
     def init_builder(builder):
-        print(d1)
         i1 = builder.addInputTensor(d1)
         (o, ) = builder.aiOnnx.dropout([i1], 1, 0.5, "test_dropout")
         builder.addOutputTensor(o)
