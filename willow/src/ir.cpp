@@ -696,7 +696,32 @@ void Ir::resetWeights(const onnx::ModelProto &modelProto) {
 }
 
 void Ir::registerInputTensors() {
+
   auto &onnxGraph = onnxModel->graph();
+
+  // Log the input tensor names, catch the
+  // invalid case where they are repeated
+  std::stringstream ss;
+  std::set<TensorId> inputIds;
+  bool repeatedInput = false;
+  TensorId repeater  = "";
+  ss << "Registering Input Tensors. ONNX Graph Inputs : [ ";
+  for (auto &valueInfo : onnxGraph.input()) {
+    TensorId id = valueInfo.name();
+    ss << id << " ";
+    if (inputIds.count(id) != 0) {
+      // already seen, this is not valid. Will throw an error below.
+      repeatedInput = true;
+      repeater      = id;
+    }
+    inputIds.insert(id);
+  }
+  ss << "]";
+  logging::debug(ss.str());
+  if (repeatedInput) {
+    throw error("Invalid ONNX Model : repeated name: ({}) in input list",
+                repeater);
+  }
 
   std::set<TensorId> onnxInitializers;
   for (const auto &initializer : onnxGraph.initializer()) {
@@ -718,6 +743,7 @@ void Ir::registerInputTensors() {
   for (auto &valueInfo : onnxGraph.input()) {
     TensorId id = valueInfo.name();
     if (onnxInitializers.count(id) == 0) {
+      logging::info("Adding Stream Tensor {} to Ir", id);
       if (valueInfo.has_type() && valueInfo.type().tensor_type().has_shape()) {
         getTensors().addStream(id, TensorInfo(valueInfo.type()));
       } else {
