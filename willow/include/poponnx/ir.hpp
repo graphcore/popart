@@ -256,6 +256,8 @@ public:
   // Convert the ONNX graph into the forwards pass of the IR
   void constructForwards();
 
+  void foldConstants();
+
   // Construct the backwards pass of the IR by doing an autograd of the forward
   // pass
   void constructBackwards();

@@ -23,6 +23,9 @@ public:
   void addConstInit(const TensorId &, const onnx::TensorProto *);
   void addConstInit(const TensorId &, const TensorInfo &, const void *);
 
+  // make an existing tensor a const init tensor
+  void makeConstInit(const TensorId &, const void *);
+
   // create a Tensor of type Stream
   void addStream(TensorId, const TensorInfo &);
   // create a Tensor of type ActGrad (basically any tensor which is

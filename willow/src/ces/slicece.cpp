@@ -3,6 +3,7 @@
 #include <vector>
 #include <poponnx/ces/slicece.hpp>
 #include <poponnx/ndarraywrapper.hpp>
+#include <poponnx/op/slice.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -44,21 +45,10 @@ private:
   std::vector<int64_t> indices;
 };
 
-ConstExprSlice::ConstExprSlice(const onnx::NodeProto &n, Ir *i)
-    : ConstExprOp(n, i), impl(createSliceImpl(n)) {}
-
-SliceImpl ConstExprSlice::createSliceImpl(const onnx::NodeProto &n) {
-  auto atts = Attributes(n.attribute());
-
-  auto starts = atts.getAttribute<Attributes::Ints>("starts", {});
-  auto ends   = atts.getAttribute<Attributes::Ints>("ends", {});
-  auto axes   = atts.getAttribute<Attributes::Ints>("axes", {});
-
-  return SliceImpl(starts, ends, axes);
-}
+ConstExprSlice::ConstExprSlice(Op *op) : ConstExprOp(op) {}
 
 std::vector<Slice> ConstExprSlice::getAllSlices() {
-  auto in_info = atInIndex(0)->info;
+  auto in_info = inInfo(0);
   std::vector<Slice> slices;
   slices.reserve(in_info.rank());
 
@@ -67,9 +57,9 @@ std::vector<Slice> ConstExprSlice::getAllSlices() {
     slices.emplace_back(0, in_info.dim(i), i);
   }
 
-  // if there is a slice for an axis in impl
-  // replace the default slice with the impl slice
-  for (auto slice : impl.getSlices(in_info.shape())) {
+  // if there is a slice for an axis in slice_op
+  // replace the default slice with the slice_op slice
+  for (auto slice : getOp<SliceOp>().getSlices()) {
     slices[slice.axis] = slice;
   }
 
@@ -96,13 +86,11 @@ public:
   }
 };
 
-void ConstExprSlice::insertOutput() {
-  auto outInfo = impl.createOutShape(atInIndex(0)->info);
-  Tensor *in0  = atInIndex(0);
+std::vector<char> ConstExprSlice::compute() {
+  Tensor *in0 = inTensor(0);
 
-  auto data = callOpFunctor<SliceFunctor>(
-      in0->info.dataType(), *in0, outInfo, getAllSlices());
-  addConstInitTensor(atOutIndex0(), outInfo, data.data());
+  return callOpFunctor<SliceFunctor>(
+      in0->info.dataType(), *in0, outInfo0(), getAllSlices());
 }
 
 } // namespace poponnx

@@ -92,6 +92,7 @@ public:
   TensorType tensorType() const;
   const std::string &tensor_type() const;
   const TensorTypeInfo *getTensorTypeInfo() const { return tensorTypeInfo; }
+  void setTensorType(TensorType);
 
   Consumers consumers;
   // shape and data type. Not to be used before inferShape of pir has run

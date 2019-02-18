@@ -114,6 +114,13 @@ void Op::disconnectInTensor(InIndex inIndex, Tensor *tensor) {
   input->erase(inIndex);
 }
 
+void Op::disconnectOutTensor(Tensor *tensor) {
+  for (auto idx : output->indices(tensor)) {
+    tensor->resetProducer(nullptr);
+    output->erase(idx);
+  }
+}
+
 void Op::disconnectAllInputs() {
   for (auto entry : input->tensorMap()) {
     auto tensor = entry.second;

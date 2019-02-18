@@ -234,6 +234,17 @@ void Tensors::addConstInit(const TensorId &name,
   init->setTensorData(info, src);
 }
 
+void Tensors::makeConstInit(const TensorId &name, const void *src) {
+  insertConstId(name);
+
+  auto *tensor = get(name);
+  if (tensor->hasProducer()) {
+    throw error("can not make an existing tensor const if it has a producer");
+  }
+  tensor->setTensorType(TensorType::Const);
+  tensor->setTensorData(tensor->info, src);
+}
+
 void Tensors::addInit(const TensorId &name,
                       const onnx::TensorProto *pt,
                       TensorType tt) {

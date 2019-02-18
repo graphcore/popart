@@ -5,7 +5,6 @@
 #include <poponnx/ces/concatce.hpp>
 #include <poponnx/ces/constexpr.hpp>
 #include <poponnx/ces/scalece.hpp>
-#include <poponnx/ces/shapece.hpp>
 #include <poponnx/ces/slicece.hpp>
 #include <poponnx/ces/transposece.hpp>
 #include <poponnx/ces/unsqueezece.hpp>
@@ -19,135 +18,93 @@
 
 namespace poponnx {
 
-void ConstExprOp::addConstInitTensor(const TensorId &id,
-                                     const TensorInfo &info,
-                                     const void *data) const {
-  ir->getTensors().addConstInit(id, info, data);
+ConstExprOp::ConstExprOp(Op *_op) : op(_op) {}
+
+Tensor *ConstExprOp::inTensor(InIndex index) const {
+  return op->inTensor(index);
 }
 
-Tensor *ConstExprOp::atInIndex(InIndex index) const {
-  if (index >= node.input_size()) {
-    throw error("Index {} too large on ConstExprOp::atInIndex", index);
+const TensorInfo &ConstExprOp::inInfo(InIndex index) const {
+  return op->inInfo(index);
+}
+
+const Shape &ConstExprOp::inShape(InIndex index) const {
+  return op->inShape(index);
+}
+
+const TensorInfo &ConstExprOp::outInfo0() const { return op->outInfo(0); }
+
+void ConstExprUtil::processOp(Op *op, Ir *ir) {
+  logging::ir::debug(
+      "Processing Op `{}` ({}) in ConstExprUtil", op->id, op->opid.type);
+  auto constOp = ConstExprOpManager::createConstExprOp(op);
+
+  auto data = constOp->compute();
+  makeTensorConstInit(op->outTensor(0)->id, data.data(), ir);
+  op->disconnectAllInputs();
+
+  if (op->input->n() > 0 || op->output->n() > 0) {
+    throw error("processed op still has connected tensors");
   }
-  TensorId id = node.input(index);
-  if (!ir->getTensors().contains(id)) {
-    throw error("No Tensor {} from ConstExprOp::atInIndex", id);
-  }
-  return ir->getTensors().get(id);
+
+  ir->eraseOp(op->id);
+  op = nullptr;
 }
 
-TensorId ConstExprOp::atOutIndex0() const { return node.output(0); }
-
-ConstExprOp::ConstExprOp(const onnx::NodeProto &n, Ir *i)
-    : node(n), ir(i), nAtts(node.attribute()) {}
-
-bool ConstExprClassifier::isConstExprTensor(TensorId id) const {
-  auto found = M.find(id);
-  if (found == M.end()) {
-    throw error("ILE: No Tensor " + id + " in ConstExprClassifier::M");
-  }
-  return found->second;
-}
-
-void ConstExprConstant::insertOutput() {
-  TensorId name = node.output(0);
-  // We assume that a tensor coming from a Constant Node should
-  // not have a gradient computed for it or be updated during training
-  // We will implement a seperate tool to convert between
-  // Constant Operator output and initializer in ONNX models (T6213)
-  ir->getTensors().addConstInit(name, &node.attribute(0).t());
-}
-
-void ConstExprUtil::processNode(const onnx::NodeProto &node, Ir *ir) {
-
-  logging::ir::debug("Processing Node `{}` ({}) in ConstExprUtil",
-                     node.name(),
-                     node.op_type());
-
-  auto constOp = ConstExprOpManager::createConstExprOp(node, ir);
-  constOp->insertOutput();
-}
-
-ConstExprClassifier
-ConstExprUtil::getClassifier(const onnx::GraphProto &graph,
-                             const std::vector<TensorId> &sourceTensors) {
-
-  // build a rudimentary DAG from the onnxModel
-  using NodeId = int;
-  // use maps to connect Tensors <-> Nodes
-  std::map<NodeId, std::vector<TensorId>> outputs;
-  std::map<NodeId, std::vector<TensorId>> inputs;
-  std::map<TensorId, std::set<NodeId>> consumers;
-  std::map<TensorId, NodeId> producers;
-  // populate the edge maps above
-  for (NodeId nodeId = 0; nodeId < graph.node_size(); ++nodeId) {
-    auto &node      = graph.node(nodeId);
-    outputs[nodeId] = {};
-    inputs[nodeId]  = {};
-    for (auto o : node.output()) {
-      outputs[nodeId].push_back(o);
-      producers[o] = nodeId;
-    }
-    for (auto i : node.input()) {
-      inputs[nodeId].push_back(i);
-      if (consumers.find(i) == consumers.end()) {
-        consumers[i] = {};
-      }
-      consumers[i].insert(nodeId);
+void ConstExprUtil::foldConstants(Ir *ir) {
+  // get ops that may be computable
+  std::unordered_set<Op *> computable_ops;
+  for (auto &id_op : ir->getOps()) {
+    auto &op = id_op.second;
+    if (isComputable(op.get(), ir)) {
+      computable_ops.insert(op.get());
     }
   }
 
-  // we initialize all const-expr values to true, and then
-  // forward traverse the graph from relevant inputs, setting
-  // values to false as we discover they are not const-expr
-  std::map<TensorId, bool> M;
-  for (auto &tenId_nodeId : producers) {
-    TensorId tenId = tenId_nodeId.first;
-    M[tenId]       = true;
-  }
+  // try to fold ops, and where successful,
+  // add consumers of ops output to `computable_ops`
+  while (!computable_ops.empty()) {
+    auto op = *computable_ops.begin();
+    computable_ops.erase(op);
 
-  auto activeFront = sourceTensors;
-
-  while (activeFront.size() > 0) {
-    auto tenId = activeFront.back();
-    activeFront.resize(activeFront.size() - 1);
-    auto found = consumers.find(tenId);
-    if (found != consumers.end()) {
-      for (auto consumer : found->second) {
-        for (auto out : outputs.at(consumer)) {
-          auto node = graph.node(consumer);
-          if (M.at(out) == true &&
-              !isNodeOutputAlwaysConstExpr(node.op_type(),
-                                           getOutIndex(node, out))) {
-            M[out] = false;
-            activeFront.push_back(out);
-          }
-        }
+    // get the id here as if processOp is successful,
+    // the tensor will be replaced
+    auto out_id = op->outTensor(0)->id;
+    processOp(op, ir);
+    auto out_tensor = ir->getTensors().get(out_id);
+    for (auto consumer : out_tensor->consumers.getOps()) {
+      if (isComputable(consumer, ir)) {
+        computable_ops.insert(consumer);
       }
     }
   }
-  return ConstExprClassifier(std::move(M));
 }
 
-int ConstExprUtil::getOutIndex(const onnx::NodeProto &node,
-                               const TensorId &tensor) {
-  for (int i = 0; i < node.output_size(); i++) {
-    if (tensor == node.output(i)) {
-      return i;
-    }
-  }
+void ConstExprUtil::makeTensorConstInit(const TensorId name,
+                                        const void *data,
+                                        Ir *ir) {
+  // disconnect producer
+  auto current_tensor = ir->getTensors().get(name);
+  auto producer       = current_tensor->getProducer();
+  producer->disconnectOutTensor(current_tensor);
 
-  throw error("tensor {} is not an output of node {}", tensor, node.op_type());
+  ir->getTensors().makeConstInit(name, data);
 }
 
-bool ConstExprUtil::isNodeOutputAlwaysConstExpr(const OpType &op_type,
-                                                OutIndex) {
-  if (op_type == "Shape") {
-    return true;
+bool ConstExprUtil::isComputable(Op *op, Ir *ir) {
+  auto mode   = ir->getExecutionMode();
+  auto inputs = op->input->tensors();
+
+  if (mode == Ir::ExecutionMode::TRAINING) {
+    return std::all_of(inputs.begin(), inputs.end(), [](Tensor *t) {
+      return t->tensorType() == TensorType::Const;
+    });
+  } else {
+    return std::all_of(inputs.begin(), inputs.end(), [](Tensor *t) {
+      return t->tensorType() == TensorType::Const ||
+             t->tensorType() == TensorType::Variable;
+    });
   }
-  // here : any Operator whose output at OutIndex index is ALWAYS
-  // computable at compile time should be added here
-  return false;
 }
 
 ConstExprOpManager::ConstExprOpManager() { registerConstOps(); }
@@ -169,38 +126,32 @@ void ConstExprOpManager::registerConstExprOp(const std::string &type,
 
 template <typename T>
 void ConstExprOpManager::registerConstOp(const std::string &type) {
-  registerConstExprOpImpl(
-      type,
-      [](const onnx::NodeProto &node, Ir *ir) -> std::unique_ptr<ConstExprOp> {
-        return make_unique<T>(node, ir);
-      });
+  registerConstExprOpImpl(type, [](Op *op) -> std::unique_ptr<ConstExprOp> {
+    return make_unique<T>(op);
+  });
 }
 
 void ConstExprOpManager::registerConstOps() {
-
-  registerConstOp<ConstExprConstant>("Constant");
   registerConstOp<ConstExprAdd>("Add");
   registerConstOp<ConstExprCast>("Cast");
   registerConstOp<ConstExprScale>("Scale");
-  registerConstOp<ConstExprShape>("Shape");
   registerConstOp<ConstExprSlice>("Slice");
   registerConstOp<ConstExprTranspose>("Transpose");
   registerConstOp<ConstExprConcat>("Concat");
   registerConstOp<ConstExprUnsqueeze>("Unsqueeze");
 }
 
-std::unique_ptr<ConstExprOp>
-ConstExprOpManager::createConstExprOp(const onnx::NodeProto &node, Ir *ir) {
+std::unique_ptr<ConstExprOp> ConstExprOpManager::createConstExprOp(Op *op) {
 
   auto &self = getInstance();
-  auto it2   = self.constExprOpMap.find(node.op_type());
+  auto it2   = self.constExprOpMap.find(op->opid.type);
   if (it2 != self.constExprOpMap.end()) {
-    return it2->second(node, ir);
+    return it2->second(op);
   } else {
     throw error("No ConstExpr implementation of {}. "
                 "Consider what OpType::ADD does (creates a Const Tensor) "
                 "if you would like to implement a ConstExpr",
-                node.op_type());
+                op->opid.type);
   }
 }
 

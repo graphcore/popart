@@ -13,30 +13,6 @@ struct Slice {
   Slice(int64_t start_, int64_t end_, int64_t axis_);
 };
 
-class SliceImpl {
-public:
-  SliceImpl(const std::vector<int64_t> &starts_,
-            const std::vector<int64_t> &ends_,
-            const std::vector<int64_t> &axes_);
-
-  TensorInfo createOutShape(const TensorInfo &in_info) const;
-  std::vector<Slice> getSlices(std::vector<int64_t> input_shape) const;
-
-  const std::vector<int64_t> &getStarts() const;
-  const std::vector<int64_t> &getEnds() const;
-  const std::vector<int64_t> &getAxes() const;
-
-private:
-  std::vector<int64_t> starts;
-  std::vector<int64_t> ends;
-  std::vector<int64_t> axes;
-
-  // In the ONNX Slice description
-  // If `index > dim_size` it is treated as `index == dim_size`
-  // and negative indexing is also supported.
-  static int64_t normalizeIndex(int64_t index, int64_t dim_size);
-};
-
 class SliceOp : public Op {
 public:
   SliceOp(const OperatorIdentifier &_opid,
@@ -57,7 +33,21 @@ public:
                         const std::string &tab) const override;
 
 private:
-  SliceImpl impl;
+  const std::vector<int64_t> starts;
+  const std::vector<int64_t> ends;
+  const std::vector<int64_t> axes;
+
+  TensorInfo createOutShape() const;
+
+  // In the ONNX Slice description
+  // If `index > dim_size` it is treated as `index == dim_size`
+  // and negative indexing is also supported.
+  static int64_t normalizeIndex(int64_t index, int64_t dim_size);
+
+  // if axes is empty, return default axes
+  // else return axes
+  static std::vector<int64_t> sanitizeAxes(const std::vector<int64_t> starts,
+                                           std::vector<int64_t> axes);
 };
 
 } // namespace poponnx

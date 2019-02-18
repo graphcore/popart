@@ -164,6 +164,10 @@ const std::string &Tensor::tensor_type() const {
   return tensorTypeInfo->type_s();
 }
 
+void Tensor::setTensorType(TensorType t) {
+  tensorTypeInfo = &getTensorTypeInfoMap().at(t);
+}
+
 std::vector<Op *> Tensor::associatedOps() const {
   std::vector<Op *> result = consumers.getOps();
 

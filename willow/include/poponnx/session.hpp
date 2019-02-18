@@ -178,10 +178,6 @@ public:
    */
   void resetHostWeights(const std::string &model);
 
-  std::vector<const Node &> listConstExprNodes(const onnx::ModelProto &) const;
-  std::vector<const Node &>
-  listNonConstExprNodes(const onnx::ModelProto &) const;
-
 private:
   /**
    * abstraction of the computation, the Ir is where

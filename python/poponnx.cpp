@@ -395,10 +395,6 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("getTensorTileMap", &Session::getTensorTileMap)
       .def("resetHostWeights", &Session::resetHostWeights);
 
-  py::enum_<Builder::ExecutionMode>(m, "ExecutionMode")
-      .value("INFERENCE", Builder::ExecutionMode::INFERENCE)
-      .value("TRAINING", Builder::ExecutionMode::TRAINING);
-
   py::class_<GraphTransformer>(m, "GraphTransformer")
       .def(py::init<const std::string &>(), py::arg("modelProtoOrFilename"))
       .def("getModelProto",
@@ -578,11 +574,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("getRecomputeOutputInBackwardPass",
            static_cast<bool (Builder::*)(const TensorId &)>(
                &Builder::getRecomputeOutputInBackwardPass),
-           py::arg("nodeOutputNames"))
-      .def("listConstExprNodes", &Builder::listConstExprNodes, py::arg("mode"))
-      .def("listNonConstExprNodes",
-           &Builder::listNonConstExprNodes,
-           py::arg("mode"));
+           py::arg("nodeOutputNames"));
 
   py::class_<AttributeContextManager>(m, "AttributeContextManager")
       .def("__enter__", &AttributeContextManager::enter)

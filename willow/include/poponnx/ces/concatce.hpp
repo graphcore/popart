@@ -7,8 +7,8 @@ namespace poponnx {
 
 class ConstExprConcat : public ConstExprOp {
 public:
-  ConstExprConcat(const onnx::NodeProto &n, Ir *i);
-  void insertOutput() final;
+  ConstExprConcat(Op *);
+  std::vector<char> compute() final;
 
 private:
   int64_t input_count;

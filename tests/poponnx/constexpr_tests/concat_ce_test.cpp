@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Concat0) {
   TensorInfo in_info{"FLOAT", Shape{1, 1, 1}};
 
   auto builder      = Builder::create();
-  auto aiOnnx     = builder->aiOnnxOpset9();
+  auto aiOnnx       = builder->aiOnnxOpset9();
   auto const_node_0 = aiOnnx.constant(const_data_0, "const_data_0");
   auto const_node_1 = aiOnnx.constant(const_data_1, "const_data_1");
   auto concat_node  = aiOnnx.concat({const_node_0, const_node_1}, 1);
