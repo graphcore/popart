@@ -4,13 +4,13 @@
 #include <poponnx/ndindices.hpp>
 #include <poponnx/op/concat.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 
 namespace poponnx {
 
-ConstExprConcat::ConstExprConcat(const onnx::NodeProto &n, Ir *i)
-    : ConstExprOp(n, i) {
-  axis        = nAtts.getAttribute<Attributes::Int>("axis");
-  input_count = node.input_size();
+ConstExprConcat::ConstExprConcat(Op *op) : ConstExprOp(op) {
+  axis        = getOp<ConcatOp>().getAxis();
+  input_count = op->input->n();
 }
 
 class ConcatFunctor {
@@ -39,25 +39,24 @@ public:
   }
 };
 
-void ConstExprConcat::insertOutput() {
+std::vector<char> ConstExprConcat::compute() {
   std::vector<const Shape *> input_shapes;
   input_shapes.reserve(input_count);
   for (int i = 0; i < input_count; i++) {
-    input_shapes.push_back(&atInIndex(i)->info.shape());
+    input_shapes.push_back(&inShape(i));
   }
 
   auto out_shape = ConcatOp::getOutputShape(axis, input_shapes);
-  auto in0_info  = atInIndex(0)->info;
+  auto &in0_info = inInfo(0);
   TensorInfo out_info(in0_info.dataType(), out_shape);
 
   std::vector<Tensor *> inputs;
   for (int i = 0; i < input_count; i++) {
-    inputs.push_back(atInIndex(i));
+    inputs.push_back(inTensor(i));
   }
 
-  auto data =
-      callOpFunctor<ConcatFunctor>(in0_info.dataType(), out_info, inputs, axis);
-  addConstInitTensor(atOutIndex0(), out_info, data.data());
+  return callOpFunctor<ConcatFunctor>(
+      in0_info.dataType(), out_info, inputs, axis);
 }
 
 } // namespace poponnx

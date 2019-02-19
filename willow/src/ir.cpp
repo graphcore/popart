@@ -9,6 +9,7 @@
 
 #include <poponnx/builder.hpp>
 #include <poponnx/ces/constexpr.hpp>
+#include <poponnx/ces/onnxconstexpr.hpp>
 #include <poponnx/chains.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
@@ -695,7 +696,32 @@ void Ir::resetWeights(const onnx::ModelProto &modelProto) {
 }
 
 void Ir::registerInputTensors() {
+
   auto &onnxGraph = onnxModel->graph();
+
+  // Log the input tensor names, catch the
+  // invalid case where they are repeated
+  std::stringstream ss;
+  std::set<TensorId> inputIds;
+  bool repeatedInput = false;
+  TensorId repeater  = "";
+  ss << "Registering Input Tensors. ONNX Graph Inputs : [ ";
+  for (auto &valueInfo : onnxGraph.input()) {
+    TensorId id = valueInfo.name();
+    ss << id << " ";
+    if (inputIds.count(id) != 0) {
+      // already seen, this is not valid. Will throw an error below.
+      repeatedInput = true;
+      repeater      = id;
+    }
+    inputIds.insert(id);
+  }
+  ss << "]";
+  logging::debug(ss.str());
+  if (repeatedInput) {
+    throw error("Invalid ONNX Model : repeated name: ({}) in input list",
+                repeater);
+  }
 
   std::set<TensorId> onnxInitializers;
   for (const auto &initializer : onnxGraph.initializer()) {
@@ -717,6 +743,7 @@ void Ir::registerInputTensors() {
   for (auto &valueInfo : onnxGraph.input()) {
     TensorId id = valueInfo.name();
     if (onnxInitializers.count(id) == 0) {
+      logging::info("Adding Stream Tensor {} to Ir", id);
       if (valueInfo.has_type() && valueInfo.type().tensor_type().has_shape()) {
         getTensors().addStream(id, TensorInfo(valueInfo.type()));
       } else {
@@ -854,6 +881,8 @@ void Ir::applyPreAliasPatterns() {
       patterns.getPreAliasList();
 
   while (keepRunning) {
+    foldConstants();
+
     keepRunning = false;
     for (auto &pattern : pList) {
       keepRunning |= applyPreAliasPattern(pattern.get());
@@ -886,24 +915,9 @@ std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) {
 bool Ir::isAnchored(TensorId tenId) { return dataFlow.isAnchored(tenId); }
 
 void Ir::constructForwards() {
-  const auto mode = executionMode == ExecutionMode::TRAINING
-                        ? Builder::ExecutionMode::TRAINING
-                        : Builder::ExecutionMode::INFERENCE;
-
-  auto ceNodes = Builder::listConstExprNodesModel(*onnxModel, mode);
-
-  std::unordered_set<std::string> ceNodesHT;
-  ceNodesHT.reserve(ceNodes.size());
-  ceNodesHT.insert(ceNodes.begin(), ceNodes.end());
-
-  ConstExprUtil ce_util;
-
   for (const auto &node : onnxModel->graph().node()) {
-    // if a node has multiple outputs, we assume it is not const-expr.
-    // we may want to relax this assumption at a later point.
-    if (ceNodesHT.count(node.output(0)) > 0) {
-      // the Node must be processed now, it is a ConstExprNode
-      ce_util.processNode(node, this);
+    if (OnnxConstExprUtil::isConst(node)) {
+      OnnxConstExprUtil::processNode(node, this);
     } else {
       Op *op = growFromNode(node);
       // Not necessary to set the phase here (it will be done in
@@ -912,8 +926,21 @@ void Ir::constructForwards() {
       if (op) {
         op->setPhase(Phase::FWD);
       }
+
+      // process ops as they are created
+      // Reshape requires a const input tensor at creation time
+      // if const folding is left till after the ir is completly constructed
+      // then Reshape may not get a const input tensor at creation time
+      if (ConstExprUtil::isComputable(op, this)) {
+        ConstExprUtil::processOp(op, this);
+      }
     }
   }
+}
+
+void Ir::foldConstants() {
+  logging::ir::trace("Folding constants");
+  ConstExprUtil::foldConstants(this);
 }
 
 std::string reservedGradientPrefix() { return "d__"; }
@@ -1494,9 +1521,9 @@ void Ir::constructBackwards() {
       // Updates the var by looking for the matching gradient
       growGradientVarUpdateOp(varId);
       break;
+    case VariableUpdateType::None:
     default:
       throw error("Unknown variable update approach");
-      break;
     };
   }
 }

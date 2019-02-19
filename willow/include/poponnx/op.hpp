@@ -159,6 +159,9 @@ public:
   // Disconnect an input test from the op
   void disconnectInTensor(InIndex, Tensor *tensor);
 
+  // Disconnect an output tensor from the op
+  void disconnectOutTensor(Tensor *tensor);
+
   // Disconnect all input tensors
   void disconnectAllInputs();
 

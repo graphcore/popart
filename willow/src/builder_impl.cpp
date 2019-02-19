@@ -31,70 +31,16 @@ const static int64_t maxOnnxOperatorSetVersion = 9;
 const static int64_t minGraphcoreOperatorSetVersion = 1;
 const static int64_t maxGraphcoreOperatorSetVersion = 1;
 
-std::vector<std::string>
-BuilderImpl::listConstExprNodesModel(const onnx::ModelProto &model,
-                                     ExecutionMode mode) {
-  const auto &graph = model.graph();
-
-  std::unordered_set<std::string> initializers;
-  for (const auto &init : graph.initializer()) {
-    initializers.insert(init.name());
-  }
-
-  std::vector<std::string> nonConstExprIn;
-  for (const auto &input : graph.input()) {
-    if (initializers.count(input.name()) == 0) {
-      nonConstExprIn.push_back(input.name());
-    }
-  }
-
-  if (mode == ExecutionMode::TRAINING) {
-    std::copy(initializers.begin(),
-              initializers.end(),
-              std::back_inserter(nonConstExprIn));
-  }
-
-  ConstExprUtil ce_util;
-  auto constExprClassifier = ce_util.getClassifier(graph, nonConstExprIn);
-
-  std::vector<std::string> result;
-  for (const auto &node : graph.node()) {
-    if (node.output_size() == 1 &&
-        constExprClassifier.isConstExprTensor(node.output(0))) {
-      result.push_back(node.output(0));
-    }
-  }
-
-  return result;
-}
-
-std::vector<std::string>
-BuilderImpl::listNonConstExprNodesModel(const onnx::ModelProto &model,
-                                        ExecutionMode mode) {
-  const auto const_nodes = listConstExprNodesModel(model, mode);
-  std::unordered_set<std::string> const_nodes_ht;
-
-  const_nodes_ht.reserve(const_nodes.size());
-  const_nodes_ht.insert(const_nodes.begin(), const_nodes.end());
-
-  std::vector<std::string> result;
-  for (const auto &node : model.graph().node()) {
-    if (const_nodes_ht.count(node.output(0)) == 0) {
-      result.push_back(node.output(0));
-    }
-  }
-
-  return result;
-}
-
 void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
 
-  if (!name.empty()) {
-    std::stringstream fullname;
-    for (const auto &n : name_scope_stack_) {
-      fullname << n << ".";
-    }
-    fullname << name;
+  std::string debug_name = name.empty() ? node->op_type() : name;
+
+  std::stringstream fullname;
+  for (const auto &n : name_scope_stack_) {
+    fullname << n << ".";
+  }
+  fullname << debug_name;
+  if (!name.empty() || !name_scope_stack_.empty()) {
     node->set_name(fullname.str());
   }
 
@@ -766,16 +712,6 @@ std::string BuilderImpl::getModelProto() const {
   std::string output;
   model_.SerializeToString(&output);
   return output;
-}
-
-std::vector<std::string>
-BuilderImpl::listConstExprNodes(ExecutionMode mode) const {
-  return listConstExprNodesModel(model_, mode);
-}
-
-std::vector<std::string>
-BuilderImpl::listNonConstExprNodes(ExecutionMode mode) const {
-  return listNonConstExprNodesModel(model_, mode);
 }
 
 std::vector<TensorId> BuilderImpl::getInputTensorIds() const {

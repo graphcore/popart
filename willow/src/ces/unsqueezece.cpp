@@ -1,21 +1,16 @@
 #include <onnx/onnx_pb.h>
 #include <poponnx/ces/unsqueezece.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-ConstExprUnsqueeze::ConstExprUnsqueeze(const onnx::NodeProto &n, Ir *i)
-    : ConstExprOp(n, i) {}
+ConstExprUnsqueeze::ConstExprUnsqueeze(Op *op) : ConstExprOp(op) {}
 
-void ConstExprUnsqueeze::insertOutput() {
-  std::vector<int64_t> axes = nAtts.getAttribute<Attributes::Ints>("axes");
-  auto in_info              = atInIndex(0)->info;
-  auto out_shape            = unsqueeze(in_info.shape(), axes);
-
-  TensorInfo out_info{in_info.dataType(), out_shape};
-
-  addConstInitTensor(
-      atOutIndex0(), out_info, atInIndex(0)->tensorData()->data());
+std::vector<char> ConstExprUnsqueeze::compute() {
+  char *data  = reinterpret_cast<char *>(inTensor(0)->tensorData()->data());
+  auto nbytes = outInfo0().nbytes();
+  return std::vector<char>(data, data + nbytes);
 }
 
 } // namespace poponnx

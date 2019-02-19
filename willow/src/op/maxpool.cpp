@@ -92,7 +92,7 @@ const std::map<int, int> &MaxPoolGradOp::gradOutToNonGradIn() const {
 void MaxPoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
 namespace {
-static OpCreator<MaxPoolOp> maxPoolOpxCreator(
+static OpCreator<MaxPoolOp> maxPoolOpCreator(
     {Onnx::Operators::MaxPool_8, Onnx::Operators::MaxPool_1},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,

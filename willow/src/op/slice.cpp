@@ -9,21 +9,11 @@ namespace poponnx {
 Slice::Slice(int64_t start_, int64_t end_, int64_t axis_)
     : start(start_), end(end_), axis(axis_) {}
 
-SliceImpl::SliceImpl(const std::vector<int64_t> &starts_,
-                     const std::vector<int64_t> &ends_,
-                     const std::vector<int64_t> &axes_)
-    : starts(starts_), ends(ends_), axes(axes_) {
-  if (axes.size() == 0) {
-    for (int i = 0; i < starts.size(); i++) {
-      axes.push_back(i);
-    }
-  }
-}
-
-TensorInfo SliceImpl::createOutShape(const TensorInfo &in_info) const {
+TensorInfo SliceOp::createOutShape() const {
+  auto in_info      = inInfo(getInIndex());
   auto output_shape = in_info.shape();
 
-  for (auto slice : getSlices(in_info.shape())) {
+  for (auto slice : getSlices()) {
     auto new_size            = slice.end - slice.start;
     output_shape[slice.axis] = new_size;
   }
@@ -31,8 +21,57 @@ TensorInfo SliceImpl::createOutShape(const TensorInfo &in_info) const {
   return {in_info.dataType(), output_shape};
 }
 
-std::vector<Slice>
-SliceImpl::getSlices(std::vector<int64_t> input_shape) const {
+// In the ONNX Slice Implerator
+// If `index > dim_size` it is treated as `index == dim_size`
+// and negative indexing is also supported.
+int64_t SliceOp::normalizeIndex(int64_t index, int64_t dim_size) {
+  index = std::min(index, dim_size);
+
+  if (index < 0) {
+    if (dim_size + index < 0) {
+      throw error(
+          "index {} is out of bounds for axis with size {}", index, dim_size);
+    }
+
+    index = dim_size + index;
+  }
+
+  return index;
+}
+
+SliceOp::SliceOp(const OperatorIdentifier &_opid,
+                 const std::vector<int64_t> &starts_,
+                 const std::vector<int64_t> &ends_,
+                 const std::vector<int64_t> &axes_,
+                 const Op::Settings &settings_)
+    : Op(_opid, settings_), starts(starts_), ends(ends_),
+      axes(sanitizeAxes(starts_, axes_)) {}
+
+std::vector<int64_t> SliceOp::sanitizeAxes(const std::vector<int64_t> starts,
+                                           std::vector<int64_t> axes) {
+  if (axes.size() == 0) {
+    for (int i = 0; i < starts.size(); i++) {
+      axes.push_back(i);
+    }
+  }
+  return axes;
+}
+
+std::unique_ptr<Op> SliceOp::clone() const {
+  return make_unique<SliceOp>(*this);
+}
+
+std::vector<std::unique_ptr<Op>> SliceOp::getGradOps() {
+  std::vector<std::unique_ptr<Op>> upops;
+  upops.emplace_back(make_unique<SliceGradOp>(*this));
+  return upops;
+}
+
+void SliceOp::setup() { outInfo(getOutIndex()) = createOutShape(); }
+
+std::vector<Slice> SliceOp::getSlices() const {
+  auto input_shape = inShape(getInIndex());
+
   std::vector<Slice> slices;
   slices.reserve(axes.size());
 
@@ -48,59 +87,12 @@ SliceImpl::getSlices(std::vector<int64_t> input_shape) const {
   return slices;
 }
 
-// In the ONNX Slice Implerator
-// If `index > dim_size` it is treated as `index == dim_size`
-// and negative indexing is also supported.
-int64_t SliceImpl::normalizeIndex(int64_t index, int64_t dim_size) {
-  index = std::min(index, dim_size);
-
-  if (index < 0) {
-    if (dim_size + index < 0) {
-      throw error(
-          "index {} is out of bounds for axis with size {}", index, dim_size);
-    }
-
-    index = dim_size + index;
-  }
-
-  return index;
-}
-
-const std::vector<int64_t> &SliceImpl::getStarts() const { return starts; }
-const std::vector<int64_t> &SliceImpl::getEnds() const { return ends; }
-const std::vector<int64_t> &SliceImpl::getAxes() const { return axes; }
-
-SliceOp::SliceOp(const OperatorIdentifier &_opid,
-                 const std::vector<int64_t> &starts_,
-                 const std::vector<int64_t> &ends_,
-                 const std::vector<int64_t> &axes_,
-                 const Op::Settings &settings_)
-    : Op(_opid, settings_), impl(starts_, ends_, axes_) {}
-
-std::unique_ptr<Op> SliceOp::clone() const {
-  return make_unique<SliceOp>(*this);
-}
-
-std::vector<std::unique_ptr<Op>> SliceOp::getGradOps() {
-  std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SliceGradOp>(*this));
-  return upops;
-}
-
-void SliceOp::setup() {
-  outInfo(getOutIndex()) = impl.createOutShape(inInfo(getInIndex()));
-}
-
-std::vector<Slice> SliceOp::getSlices() const {
-  return impl.getSlices(inShape(getInIndex()));
-}
-
 void SliceOp::appendAttributes(std::stringstream &ss,
                                const std::string &tab) const {
   Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "starts", impl.getStarts());
-  appendAttribute(ss, tab, "ends", impl.getEnds());
-  appendAttribute(ss, tab, "axes", impl.getAxes());
+  appendAttribute(ss, tab, "starts", starts);
+  appendAttribute(ss, tab, "ends", ends);
+  appendAttribute(ss, tab, "axes", axes);
 }
 
 SliceGradOp::SliceGradOp(const SliceOp &op_)

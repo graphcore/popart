@@ -4,47 +4,36 @@
 #include <map>
 #include <poponnx/attributes.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/names.hpp>
+#include <poponnx/op.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/typefunctor.hpp>
 
 namespace poponnx {
 
-// Base class for processing NodeProtos as constant expressions
+// Base class for processing Ops as constant expressions
 class ConstExprOp {
 public:
-  ConstExprOp(const onnx::NodeProto &, Ir *);
+  ConstExprOp(Op *);
   virtual ~ConstExprOp() = default;
-  // insert the output of the Node as a constant tensor
-  virtual void insertOutput() = 0;
-  Tensor *atInIndex(InIndex) const;
-  TensorId atOutIndex0() const;
-  void
-  addConstInitTensor(const TensorId &, const TensorInfo &, const void *) const;
+  // compute the output data of the op
+  virtual std::vector<char> compute() = 0;
+
+protected:
+  Tensor *inTensor(InIndex) const;
+  const TensorInfo &inInfo(InIndex) const;
+  const Shape &inShape(InIndex) const;
+  const TensorInfo &outInfo0() const;
 
   template <typename OpFunctor, typename... Args>
   static std::vector<char> callOpFunctor(DataType dtype, Args &&... args);
 
-protected:
-  // The NodeProto to process as a constant expression
-  const onnx::NodeProto &node;
-  Ir *ir;
-  const Attributes nAtts;
-};
-
-class ConstExprConstant : public ConstExprOp {
-public:
-  ConstExprConstant(const onnx::NodeProto &n, Ir *i) : ConstExprOp(n, i) {}
-  void insertOutput() final;
-};
-
-class ConstExprClassifier {
-public:
-  ConstExprClassifier(std::map<TensorId, bool> &&M_) : M(M_) {}
-  bool isConstExprTensor(TensorId id) const;
+  // Generic function to safely dynamic_cast the op to the derived type
+  template <class OP> OP &getOp() const;
 
 private:
-  std::map<TensorId, bool> M;
+  Op *op;
 };
 
 // for every Tensor which is the output of a
@@ -57,39 +46,37 @@ private:
 // Tensors are ConstExprTensors, and another for processing
 // ConstExprNodes.
 class ConstExprUtil {
-
 public:
-  // Determine which Tensors are ConstExprTensors.
-  // The rule for determining if a tensor is a ConstExprTensor:
-  // For eval and infer, a tensor is NOT ConstExprTensor if:
-  //      1) there is a path from a Stream Tensor to it
-  // For training, a tensor is NOT ConstExprTensor if either:
-  //      1) there is a path from a Stream Tensor to it
-  //      2) there is a path from a Variable Tensor to it
-  // The initial Stream/Variable tensors are passed in as sourceTensors
-  ConstExprClassifier getClassifier(const onnx::GraphProto &,
-                                    const std::vector<TensorId> &sourceTensors);
+  // Determine if an op is computable as a ConstExprOp.
+  // The rule for determining if an op is computable:
+  // For eval and infer, an op is computable if:
+  //   1) all the inputs are either Const or Variable Tensors
+  // For training, a tensor is computable if:
+  //   1) all the inputs are Const Tensors
+  static bool isComputable(Op *op, Ir *ir);
 
-  // process a ConstExprNode "node", modfying the Ir pointed to by "ir"
-  void processNode(const onnx::NodeProto &node, Ir *ir);
+  // process a ConstExprOp "op", modfying the Ir pointed to by "ir"
+  static void processOp(Op *op, Ir *ir);
+
+  // Compute all ops possible
+  static void foldConstants(Ir *ir);
 
 private:
-  static int getOutIndex(const onnx::NodeProto &, const TensorId &);
-  static bool isNodeOutputAlwaysConstExpr(const OpType &, OutIndex);
+  // make the tensor `name` into a constInit tensor
+  static void
+  makeTensorConstInit(const TensorId name, const void *data, Ir *ir);
 };
 
 // Manager class for ConstExprOp's
 class ConstExprOpManager {
 public:
   using ConstExprOpFactoryFunc =
-      std::function<std::unique_ptr<ConstExprOp>(const onnx::NodeProto &node,
-                                                 Ir *ir)>;
+      std::function<std::unique_ptr<ConstExprOp>(Op *op)>;
 
   static void registerConstExprOp(const std::string &type,
                                   ConstExprOpFactoryFunc func);
 
-  static std::unique_ptr<ConstExprOp>
-  createConstExprOp(const onnx::NodeProto &node, Ir *ir);
+  static std::unique_ptr<ConstExprOp> createConstExprOp(Op *op);
 
 private:
   ConstExprOpManager();
@@ -113,10 +100,8 @@ template <class OP> class ConstExprOpCreator {
 
   void registerOp(const std::string &type) {
     ConstExprOpManager::registerConstExprOp(
-        type,
-        [](const onnx::NodeProto &node,
-           Ir *ir) -> std::unique_ptr<ConstExprOp> {
-          return std::unique_ptr<OP>(new OP(node, ir));
+        type, [](Op *op) -> std::unique_ptr<ConstExprOp> {
+          return make_unique<OP>(op);
         });
   }
 
@@ -128,6 +113,17 @@ template <typename OpFunctor, typename... Args>
 std::vector<char> ConstExprOp::callOpFunctor(DataType dtype, Args &&... args) {
   return typefunctor::get<OpFunctor, std::vector<char>>(
       dtype, std::forward<Args>(args)...);
+}
+
+template <class OP> OP &ConstExprOp::getOp() const {
+  OP *d_op = dynamic_cast<OP *>(op);
+  if (d_op == nullptr) {
+    throw error("Failed to cast to op ({}) derived op ({}), type:{} ",
+                typeid(op).name(),
+                typeid(d_op).name(),
+                op->opid);
+  }
+  return *d_op;
 }
 
 } // namespace poponnx

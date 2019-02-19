@@ -7,8 +7,8 @@ namespace poponnx {
 
 class ConstExprUnsqueeze : public ConstExprOp {
 public:
-  ConstExprUnsqueeze(const onnx::NodeProto &n, Ir *i);
-  void insertOutput() final;
+  ConstExprUnsqueeze(Op *);
+  std::vector<char> compute() final;
 };
 
 } // namespace poponnx

@@ -76,7 +76,6 @@ struct SessionOptions {
 
   /// Poplar reporting options
   std::map<std::string, std::string> reportOptions;
-
 };
 
 } // namespace poponnx

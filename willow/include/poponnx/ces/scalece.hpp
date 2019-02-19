@@ -7,8 +7,8 @@ namespace poponnx {
 
 class ConstExprScale : public ConstExprOp {
 public:
-  ConstExprScale(const onnx::NodeProto &n, Ir *i);
-  void insertOutput() final;
+  ConstExprScale(Op *);
+  std::vector<char> compute() final;
 
 private:
   // obtained from the onnx::NodeProto, the factor by which to scale the input

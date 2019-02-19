@@ -26,14 +26,6 @@ class BuilderImpl {
 public:
   BuilderImpl();
 
-  enum class ExecutionMode { INFERENCE = 0, TRAINING };
-
-  static std::vector<std::string>
-  listConstExprNodesModel(const onnx::ModelProto &model, ExecutionMode mode);
-
-  static std::vector<std::string>
-  listNonConstExprNodesModel(const onnx::ModelProto &model, ExecutionMode mode);
-
   void configure();
 
   TensorId addInputTensor(const TensorInfo &tensorInfo);
@@ -162,10 +154,6 @@ public:
   void loadModelProto(const std::string &modelProtoOrFilename);
 
   std::string getModelProto() const;
-
-  std::vector<std::string> listConstExprNodes(ExecutionMode mode) const;
-
-  std::vector<std::string> listNonConstExprNodes(ExecutionMode mode) const;
 
   std::vector<TensorId> getInputTensorIds() const;
 

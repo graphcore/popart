@@ -588,14 +588,14 @@ const static AiGraphcoreOpIdV1 DivArg1Grad("DivArg1Grad");
 const static AiGraphcoreOpIdV1 ExpGrad("ExpGrad");
 // constexpr static char Expand[] = "Expand";
 // constexpr static char EyeLike[] = "EyeLike";
-// constexpr static char Flatten[] = "Flatten";
+const static AiGraphcoreOpIdV1 FlattenGrad("FlattenGrad");
 // constexpr static char Floor[] = "Floor";
 // constexpr static char GRU[] = "GRU";
 const static AiGraphcoreOpIdV1 GatherGrad("GatherGrad");
 // constexpr static char Gemm[] = "Gemm";
-// constexpr static char GlobalAveragePool[] = "GlobalAveragePool";
+const static AiGraphcoreOpIdV1 GlobalAveragePoolGrad("GlobalAveragePoolGrad");
 // constexpr static char GlobalLpPool[] = "GlobalLpPool";
-// constexpr static char GlobalMaxPool[] = "GlobalMaxPool";
+const static AiGraphcoreOpIdV1 GlobalMaxPoolGrad("GlobalMaxPoolGrad");
 // constexpr static char Greater[] = "Greater";
 // constexpr static char HardSigmoid[] = "HardSigmoid";
 // constexpr static char Hardmax[] = "Hardmax";
@@ -710,6 +710,7 @@ const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 const static AiGraphcoreOpIdV1 SgdVarUpdate("SGDVarUpdate");
 const static AiGraphcoreOpIdV1 ConstSgdVarUpdate("ConstSGDVarUpdate");
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
+const static AiGraphcoreOpIdV1 FlattenAlias("FlattenAlias");
 } // namespace CustomOperators
 
 namespace AiGraphcore {

@@ -7,8 +7,8 @@ namespace poponnx {
 
 class ConstExprAdd : public ConstExprOp {
 public:
-  ConstExprAdd(const onnx::NodeProto &n, Ir *i) : ConstExprOp(n, i) {}
-  void insertOutput() final;
+  ConstExprAdd(Op *op);
+  std::vector<char> compute() final;
 };
 
 } // namespace poponnx

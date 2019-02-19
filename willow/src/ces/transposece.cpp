@@ -1,9 +1,12 @@
 #include <vector>
 #include <poponnx/ces/transposece.hpp>
 #include <poponnx/ndarraywrapper.hpp>
+#include <poponnx/op/transpose.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
+
+ConstExprTranspose::ConstExprTranspose(Op *op) : ConstExprOp(op) {}
 
 class TransposeFunctor {
 public:
@@ -97,12 +100,11 @@ public:
   }
 };
 
-void ConstExprTranspose::insertOutput() {
+std::vector<char> ConstExprTranspose::compute() {
   std::vector<char> data_;
-  Tensor *in0 = atInIndex(0);
+  Tensor *in0 = inTensor(0);
 
-  Shape perm;
-  nAtts.setIfPresent(perm, "perm");
+  auto perm = getOp<TransposeOp>().getPerm();
 
   if (perm.empty()) {
     // Default is to reverse the input shape
@@ -123,23 +125,7 @@ void ConstExprTranspose::insertOutput() {
     throw error("invalid permutation in ConstExprTranspose");
   }
 
-  // Determine the output shape
-  Shape outShape;
-  for (auto d : perm) {
-    outShape.push_back(in0->info.shape()[d]);
-  }
-
-  TensorInfo outInfo(in0->info.data_type(), outShape);
-
-  // Log the Tensor being constexpr'd away
-  std::stringstream ss;
-  ss << "Adding constexpr transpose output " << atOutIndex0() << " : ";
-  outInfo.append(ss);
-  ss << " to Ir ";
-  logging::ir::debug(ss.str());
-
-  auto data = callOpFunctor<TransposeFunctor>(in0->info.dataType(), *in0, perm);
-  addConstInitTensor(atOutIndex0(), outInfo, data.data());
+  return callOpFunctor<TransposeFunctor>(in0->info.dataType(), *in0, perm);
 }
 
 } // namespace poponnx

@@ -1,9 +1,12 @@
 #include <vector>
 #include <poponnx/ces/addce.hpp>
 #include <poponnx/ndarraywrapper.hpp>
+#include <poponnx/op/add.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
+
+ConstExprAdd::ConstExprAdd(Op *op) : ConstExprOp(op) {}
 
 // add two Tensors together using numpy-broadcasting,
 // return the data as a vector<char>
@@ -26,12 +29,10 @@ public:
   }
 };
 
-void ConstExprAdd::insertOutput() {
-  Tensor *in0        = atInIndex(0);
-  Tensor *in1        = atInIndex(1);
-  TensorInfo outInfo = npOut(in0->info, in1->info);
-  auto data = callOpFunctor<AddFunctor>(in0->info.dataType(), *in0, *in1);
-  addConstInitTensor(atOutIndex0(), outInfo, data.data());
+std::vector<char> ConstExprAdd::compute() {
+  Tensor *in0 = inTensor(AddOp::getArg0InIndex());
+  Tensor *in1 = inTensor(AddOp::getArg1InIndex());
+  return callOpFunctor<AddFunctor>(in0->info.dataType(), *in0, *in1);
 }
 
 } // namespace poponnx

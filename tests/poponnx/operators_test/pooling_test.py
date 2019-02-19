@@ -187,3 +187,109 @@ def test_maxpool_grad(op_tester):
 
     op_tester.passes = ['PreUniRepl']
     op_tester.run(init_builder, reference, step_type='train')
+
+
+def test_globalmaxpool_2d(op_tester):
+    d1 = np.random.rand(1, 1, 6, 6).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.globalmaxpool([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        t1 = torch.tensor(d1, requires_grad=True)
+        globalmaxpool = torch.nn.MaxPool2d(6, 6)
+        out = globalmaxpool(t1)
+        return [out]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, step_type='infer')
+
+
+def test_globalmaxpool_grad_2d(op_tester):
+    d1 = np.random.rand(1, 1, 6, 6).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.globalmaxpool([i1])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        t1 = torch.tensor(d1, requires_grad=True)
+        globalmaxpool = torch.nn.MaxPool2d(6, 6)
+        out = globalmaxpool(t1)
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, t1.grad, None]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, step_type='train')
+
+
+# This will fail at the poponnx layer T6966
+def test_globalmaxpool_3d(op_tester):
+    d1 = np.random.rand(1, 1, 6, 6, 4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.globalmaxpool([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        t1 = torch.tensor(d1, requires_grad=True)
+        globalmaxpool = torch.nn.MaxPool3d(6, 6, 4)
+        out = globalmaxpool(t1)
+        return [out]
+
+    op_tester.passes = ['PreUniRepl']
+
+    with pytest.raises(poponnx.poplibs_exception) as e_info:
+        op_tester.run(init_builder, reference, step_type='infer')
+
+    assert (e_info.value.args[0].startswith(
+        "Number of input dilation dimensions does not match the number of field dimensions"
+    ))
+
+
+def test_globalaveragepool_2d(op_tester):
+    d1 = np.random.rand(1, 1, 6, 6).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.globalaveragepool([i1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        t1 = torch.tensor(d1, requires_grad=True)
+        globalaveragepool = torch.nn.AvgPool2d(6, 6)
+        out = globalaveragepool(t1)
+        return [out]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, step_type='infer')
+
+
+def test_globalaveragepool_grad_2d(op_tester):
+    d1 = np.random.rand(1, 1, 6, 6).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.globalaveragepool([i1])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        t1 = torch.tensor(d1, requires_grad=True)
+        globalaveragepool = torch.nn.AvgPool2d(6, 6)
+        out = globalaveragepool(t1)
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+        return [out, t1.grad, None]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, step_type='train')
