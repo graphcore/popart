@@ -6,6 +6,7 @@
 namespace poponnx {
 
 class SliceOp;
+class SliceInplaceOp;
 
 namespace popx {
 
@@ -16,6 +17,15 @@ public:
 
 private:
   SliceOp *getSliceOp() const;
+};
+
+class SliceInplaceOpx : public Opx {
+public:
+  SliceInplaceOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+
+private:
+  SliceInplaceOp *getSliceInplaceOp() const;
 };
 
 } // namespace popx

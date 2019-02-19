@@ -24,8 +24,10 @@ public:
   static Region getEmpty(int64_t r);
   static Region getFull(const Shape &s);
   bool operator==(const Region &) const;
+  bool operator!=(const Region &) const;
   const std::vector<int64_t> &getLower() const { return lower; }
   const std::vector<int64_t> &getUpper() const { return upper; }
+  void append(std::ostream &ss) const;
 
 private:
   std::vector<int64_t> lower;
@@ -39,6 +41,8 @@ private:
          const std::vector<int64_t> &upper_,
          bool isEmpty_r0_);
 };
+
+std::ostream &operator<<(std::ostream &stream, const Region &r);
 
 } // namespace view
 } // namespace poponnx
