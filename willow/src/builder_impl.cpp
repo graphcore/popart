@@ -33,12 +33,14 @@ const static int64_t maxGraphcoreOperatorSetVersion = 1;
 
 void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
 
-  if (!name.empty()) {
-    std::stringstream fullname;
-    for (const auto &n : name_scope_stack_) {
-      fullname << n << ".";
-    }
-    fullname << name;
+  std::string debug_name = name.empty() ? node->op_type() : name;
+
+  std::stringstream fullname;
+  for (const auto &n : name_scope_stack_) {
+    fullname << n << ".";
+  }
+  fullname << debug_name;
+  if (!name.empty() || !name_scope_stack_.empty()) {
     node->set_name(fullname.str());
   }
 
