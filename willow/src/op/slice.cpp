@@ -48,10 +48,10 @@ view::Region BaseSliceOp::getFullInRegion() const {
 
 view::RegMap BaseSliceOp::fwdRegMap(InIndex inIndex) const {
   if (inIndex != 0) {
-    throw error("Internal Logic Error in BaseSliceOp::fwdRegMap.",
-                "Received input index {} but only 0 allowed, ",
-                inIndex,
+    throw error("Internal Logic Error in BaseSliceOp::fwdRegMap."
+                "Received input index {} but only 0 allowed, "
                 "This for Op {}, ",
+                inIndex,
                 str());
   }
 
@@ -72,10 +72,10 @@ view::RegMap BaseSliceOp::fwdRegMap(InIndex inIndex) const {
 
 view::Region BaseSliceOp::uses(InIndex inIndex) const {
   if (inIndex != 0) {
-    throw error("Internal Logic Error in BaseSliceOp::uses. ",
-                "BaseSliceOp has has input index {}, but only 0 permitted. ",
-                inIndex,
+    throw error("Internal Logic Error in BaseSliceOp::uses. "
+                "BaseSliceOp has has input index {}, but only 0 permitted. "
                 "This for op ",
+                inIndex,
                 str());
   }
   return getFullInRegion();
@@ -105,10 +105,10 @@ view::Region BaseSliceOp::getFullOutRegion() const {
 view::RegMap BaseSliceOp::bwdRegMap(InIndex inIndex) const {
   if (inIndex != 0) {
 
-    throw error("Internal Logic Error in BaseSliceOp::bwdRegMap. ",
-                "Received input index {} but only 0 allowed. ",
-                inIndex,
+    throw error("Internal Logic Error in BaseSliceOp::bwdRegMap. "
+                "Received input index {} but only 0 allowed. "
                 "This for Op {}. ",
+                inIndex,
                 str());
   }
 
@@ -136,12 +136,12 @@ BaseSliceOp::getSlices(std::vector<int64_t> input_shape) const {
     auto axis = axes[i];
 
     if (axis >= input_shape.size()) {
-      throw error("Invalid input shape in BaseSliceOp::getSlices. ",
-                  "The input shape has rank {}, but axis = {}. ",
+      throw error("Invalid input shape in BaseSliceOp::getSlices. "
+                  "The input shape has rank {}, but axis = {}. "
+                  "axis must be less than the input shape's rank. "
+                  "This error is for Op {}.",
                   input_shape.size(),
                   axis,
-                  "axis must be less than the input shape's rank. ",
-                  "This error is for Op {}.",
                   str());
     }
 
@@ -150,15 +150,15 @@ BaseSliceOp::getSlices(std::vector<int64_t> input_shape) const {
     auto end      = normalizeIndex(ends[i], dim_size);
 
     if (begin > end) {
-      throw error("BaseSliceOp::getSlices: begin = {} and end = {}. ",
+      throw error("BaseSliceOp::getSlices: begin = {} and end = {}. "
+                  "The input was starts[{}] = {}, end [{}] = {}. "
+                  "This error for Op {}",
                   begin,
                   end,
-                  "The input was starts[{}] = {}, end [{}] = {}. ",
                   i,
                   starts[i],
                   i,
                   ends[i],
-                  "This error for Op {}",
                   str());
     }
 
@@ -176,10 +176,10 @@ int64_t BaseSliceOp::normalizeIndex(int64_t index, int64_t dim_size) const {
 
   if (index < 0) {
     if (dim_size + index < 0) {
-      throw error("index {} is out of bounds for axis with size {}. ",
+      throw error("index {} is out of bounds for axis with size {}. "
+                  "This error for Op {} in BaseSliceOp::normalizeIndex",
                   index,
                   dim_size,
-                  "This error for Op {} in BaseSliceOp::normalizeIndex",
                   str());
     }
 
@@ -255,10 +255,10 @@ std::vector<std::unique_ptr<Op>> SliceInplaceOp::getGradOps() {
 
 view::Region SliceInplaceOp::aliases(InIndex inIndex) const {
   if (inIndex != 0) {
-    throw error("Internal Logic Error in SliceInplaceOp::aliases. ",
-                "BaseSliceOp has no input index {}, only 0 permitted. ",
-                inIndex,
+    throw error("Internal Logic Error in SliceInplaceOp::aliases. "
+                "BaseSliceOp has no input index {}, only 0 permitted. "
                 "This for Op {}",
+                inIndex,
                 str());
   }
   return getFullInRegion();
