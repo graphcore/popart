@@ -149,7 +149,7 @@ BaseSliceOp::getSlices(std::vector<int64_t> input_shape) const {
     auto begin    = normalizeIndex(starts[i], dim_size);
     auto end      = normalizeIndex(ends[i], dim_size);
 
-    if (begin >= end) {
+    if (begin > end) {
       throw error("BaseSliceOp::getSlices: begin = {} and end = {}. ",
                   begin,
                   end,
