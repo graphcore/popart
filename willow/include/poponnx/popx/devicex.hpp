@@ -144,6 +144,12 @@ public:
   virtual std::string getExecutionReport() const override final;
   virtual TensorTileMap getTensorTileMap() const override final;
 
+  // Return stored input tensors based on how they are allocated
+  virtual std::set<TensorId>
+  getLinearlyCreatedInputTensors() const override final;
+  virtual std::set<TensorId>
+  getEfficientlyCreatedInputTensors() const override final;
+
   PopPrograms progs;
 
   Opx *getOpx(OpId);
@@ -301,6 +307,10 @@ private:
 
   template <typename T> void setInitVal(Tensor *tensor);
   void setInitValHalf(Tensor *tensor);
+
+  // Store input tensors based on how they are allocated
+  std::set<TensorId> linearlyCreatedInputTensors;
+  std::set<TensorId> efficientlyCreatedInputTensors;
 };
 
 } // namespace popx

@@ -39,6 +39,7 @@ add_poponnx_cpp_unit_test(syntheticdatatest synthetic_data_test.cpp)
 add_poponnx_cpp_unit_test(viewchangingtest view_changing_test.cpp)
 add_poponnx_cpp_unit_test(opmanagertest op_manager_test.cpp)
 add_poponnx_cpp_unit_test(buildertest builder_test.cpp)
+add_poponnx_cpp_unit_test(allocatortest allocator_test.cpp)
 
 function(add_poponnx_py_unit_test name)
   message(STATUS
@@ -65,8 +66,6 @@ add_poponnx_py_unit_test(optimizer_test)
 add_poponnx_py_unit_test(export_test)
 add_poponnx_py_unit_test(ipu_copy_test)
 add_poponnx_py_unit_test(float_to_half_conversion_test)
-# Test broken since using poplar 0.8.9. See T6687
-#add_poponnx_py_unit_test(allocator_test)
 
 add_subdirectory(operators_test)
 add_subdirectory(constexpr_tests)

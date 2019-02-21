@@ -1,6 +1,7 @@
 #ifndef GUARD_NEURALNET_DEVICE_HPP
 #define GUARD_NEURALNET_DEVICE_HPP
 
+#include <set>
 #include <poponnx/names.hpp>
 // MutableVoidData is defined in here:
 #include <poponnx/tensordata.hpp>
@@ -22,10 +23,12 @@ public:
   virtual void evaluate(const IStepIO &) = 0;
   virtual void train(const IStepIO &)    = 0;
   const Ir &ir() const { return _ir; }
-  virtual std::string getSummaryReport() const   = 0;
-  virtual std::string getGraphReport() const     = 0;
-  virtual std::string getExecutionReport() const = 0;
-  virtual TensorTileMap getTensorTileMap() const = 0;
+  virtual std::string getSummaryReport() const                         = 0;
+  virtual std::string getGraphReport() const                           = 0;
+  virtual std::string getExecutionReport() const                       = 0;
+  virtual TensorTileMap getTensorTileMap() const                       = 0;
+  virtual std::set<TensorId> getLinearlyCreatedInputTensors() const    = 0;
+  virtual std::set<TensorId> getEfficientlyCreatedInputTensors() const = 0;
 
 private:
   const Ir &_ir;
