@@ -574,6 +574,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
             input, opxOnPath.inIndex, opxOnPath.outIndex);
       }
       tensors.insert(tensor->id, input);
+      efficientlyCreatedInputTensors.insert(tensor->id);
     };
     // the inputs of creator which must have poplar::Tensors
     // before creator creates input tensor at index inIndex.
@@ -645,6 +646,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
             poputil::mapTensorLinearly(graph, newTensor);
 
             tensors.insert(tensor->id, newTensor);
+            linearlyCreatedInputTensors.insert(tensor->id);
             ipus.push_back(index);
           }
         }
@@ -1373,6 +1375,13 @@ poplar::Type popType(const TensorInfo &info) {
 // piggy-backing on TensorInfo's data_type()
 // function to get a string of the DataType
 poplar::Type popType(DataType type) { return popType(TensorInfo(type, {1})); }
+
+std::set<TensorId> Devicex::getLinearlyCreatedInputTensors() const {
+  return linearlyCreatedInputTensors;
+}
+std::set<TensorId> Devicex::getEfficientlyCreatedInputTensors() const {
+  return efficientlyCreatedInputTensors;
+}
 
 bool Devicex::useSyntheticData() {
   return (ir().getSessionOptions().ignoreData);
