@@ -1,5 +1,6 @@
 #include <poponnx/error.hpp>
 #include <poponnx/region.hpp>
+#include <poponnx/util.hpp>
 
 #include <boost/range/algorithm.hpp>
 
@@ -9,6 +10,8 @@ namespace view {
 bool Region::operator==(const Region &r) const {
   return lower == r.lower && upper == r.upper && isEmptyRank0 == r.isEmptyRank0;
 }
+
+bool Region::operator!=(const Region &r) const { return !(r == *this); }
 
 Region::Region(const std::vector<int64_t> &l, const std::vector<int64_t> &u)
     : Region(l, u, false) {}
@@ -91,6 +94,18 @@ Region Region::intersect(const Region &rhs) const {
   boost::transform(result.lower, result.upper, result.upper.begin(), max);
 
   return result;
+}
+
+void Region::append(std::ostream &ss) const {
+  ss << "L:";
+  appendSequence(ss, lower);
+  ss << " U:";
+  appendSequence(ss, upper);
+}
+
+std::ostream &operator<<(std::ostream &stream, const Region &r) {
+  r.append(stream);
+  return stream;
 }
 
 } // namespace view

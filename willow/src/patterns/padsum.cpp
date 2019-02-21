@@ -15,6 +15,7 @@
 #include <boost/range/algorithm_ext.hpp>
 #include <boost/range/numeric.hpp>
 
+#include <algorithm>
 #include <iterator>
 
 namespace poponnx {

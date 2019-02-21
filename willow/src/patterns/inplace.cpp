@@ -158,6 +158,8 @@ bool Inplace::apply(Op *op,
   return true;
 }
 
+// if "op" is replaced with an inplace variant of type "inpid",
+// what additional topological constraints are needed?
 OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
 
   ExternOpTensorBundle eot_bun(op, op->getInplaceVariant(inpid));
@@ -185,9 +187,6 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
     }
   };
 
-  // this is what we populate here
-  OpsBeforeKey gCons;
-
   // tensor naming plan,
   // t0 ------------> t1 ----> op ----> t2 -------------> t3
   //
@@ -198,19 +197,25 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   //        |                  |                 |
   //       chsI            bottleLink           chsO
   //
-  // ?
-  // Roughly speaking,
-  //  we will look for all t0 which are an alias of t1,
+  //  ? Very briefly, we do the following
+  //
+  //  (1)
+  //  look for all t0 which are an alias of t1,
   //  and all t3 which are modified AND an alias of t2,
   //  and add the constraint that consumers of t0
-  //  run before consumers of t3, if the modified aliased region
-  //  of t3 overlaps with the used (consumed) aliased region of t0
+  //  run BEFORE consumers of t3, but only if the modified aliased
+  //  region of t3 overlaps with the used (consumed) aliased region of t0.
+  //
+  //  (2) if op (above) is constrained to run before otherOp,
+  //  we check if we need to add the constraint that consumer of t3
+  //  must run before otherOp too. Example: see slice_1_ip_test
 
   auto &tensors = op->getIr().getTensors();
   Tensor *t2    = op->output->tensor(0);
 
+  // (1.1) getting all consumers of t0-like tensors (see above diagram)
   // for each consumer of t0, pass the region consumed (used)
-  // through chainsTo, then through the bottleLink, to a region
+  // through chsI, then through the bottleLink, to a region
   // in t2, creating a map;
   // of (op):(regions in t2)
   std::map<Op *, view::Regions> consumer_regions;
@@ -232,46 +237,83 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
     }
   }
 
-  std::map<Op *, view::Regions> modifier_regions;
-  // first, all ops downstream of op which modify t2, and the modified regions
-  for (auto t3_chsO : tensors.aliasChainsTo(t2)) {
-    auto t3   = t3_chsO.first;
-    auto chsO = t3_chsO.second;
-    for (auto consumer : t3->consumers.getOps()) {
-      for (InIndex t3_in : consumer->input->indices(t3)) {
-        view::Regions r2 = chsO.apply(consumer->modifies(t3_in));
-        populate(modifier_regions, consumer, r2);
-      }
-    }
-  }
-  // second, what in t2 would inOp modify?
-  view::Regions opModRegs;
-  for (auto index_tensor : op->input->tensorMap()) {
-    InIndex index = index_tensor.first;
-    opModRegs.push_back(inOp->fwdRegMap(index)(inOp->modifies(index)));
-  }
-  populate(modifier_regions, op, opModRegs);
+  // return a map (Op* : Regions) of all Ops which use/modify an alias
+  // of t2. The argument getRegion is either uses(.) or modifies(.)
+  auto getPostRegions =
+      [op, &populate, &tensors, t2, inOp](
+          // where getRegion might be op->uses(.) or op->modifies(.)
+          std::function<view::Region(Op *, InIndex)> getRegion) {
+        // to be set and returned in this function
+        std::map<Op *, view::Regions> regions;
+
+        // first, all ops downstream of op which modify/use
+        // t2, and the modified/used regions
+        for (auto t3_chsO : tensors.aliasChainsTo(t2)) {
+          auto t3   = t3_chsO.first;
+          auto chsO = t3_chsO.second;
+          for (auto consumer : t3->consumers.getOps()) {
+            for (InIndex t3_in : consumer->input->indices(t3)) {
+              // where getRegion is the modified or used region
+              view::Regions r2 = chsO.apply(getRegion(consumer, t3_in));
+              populate(regions, consumer, r2);
+            }
+          }
+        }
+        // second, what in t2 would inOp modify/use?
+        view::Regions opModRegs;
+        for (auto index_tensor : op->input->tensorMap()) {
+          InIndex index = index_tensor.first;
+          opModRegs.push_back(inOp->fwdRegMap(index)(getRegion(inOp, index)));
+        }
+        populate(regions, op, opModRegs);
+        return regions;
+      };
+
+  // (1.2) getting all modifiers of t3-like tensors above
+  std::map<Op *, view::Regions> modifier_regions =
+      getPostRegions([](Op *o, InIndex i) { return o->modifies(i); });
+
+  // this is what we populate in this function
+  OpsBeforeKey gCons;
 
   // modifer_regions X consumer_regions, the match-up
-  for (const auto &op_regs0 : consumer_regions) {
-    for (const auto &op_regs1 : modifier_regions) {
-      Op *before = op_regs0.first;
-      Op *after  = op_regs1.first;
-      for (const auto &reg0 : op_regs0.second) {
-        for (const auto &reg1 : op_regs1.second) {
-          // TODO : more efficient way of testing whether Regions
-          // (set of Regions) intersect (T6707)
-          if (!reg0.intersect(reg1).isEmpty()) {
-            if (gCons.find(after) == gCons.end()) {
-              gCons[after] = {before};
-            } else {
-              gCons[after].push_back(before);
+  auto match_up = [&gCons](const std::map<Op *, view::Regions> &before_regions,
+                           const std::map<Op *, view::Regions> &after_regions) {
+    for (const auto &op_regs0 : before_regions) {
+      for (const auto &op_regs1 : after_regions) {
+        Op *before = op_regs0.first;
+        Op *after  = op_regs1.first;
+        for (const auto &reg0 : op_regs0.second) {
+          for (const auto &reg1 : op_regs1.second) {
+            // TODO : more efficient way of testing whether Regions
+            // (set of Regions) intersect (T6707)
+            if (!reg0.intersect(reg1).isEmpty()) {
+              if (gCons.find(after) == gCons.end()) {
+                gCons[after] = {before};
+              } else {
+                gCons[after].push_back(before);
+              }
             }
           }
         }
       }
     }
+  };
+  match_up(consumer_regions, modifier_regions);
+
+  // (2)
+  auto &ir      = op->getIr();
+  auto afterOps = ir.topoCons->getAfters(op);
+  std::map<Op *, view::Regions> after_op_regions;
+  for (auto &after : afterOps) {
+    auto found = consumer_regions.find(after);
+    if (found != consumer_regions.end()) {
+      after_op_regions[after] = found->second;
+    }
   }
+  std::map<Op *, view::Regions> post_uses_regions =
+      getPostRegions([](Op *o, InIndex i) { return o->uses(i); });
+  match_up(post_uses_regions, after_op_regions);
 
   // handle the prickly case of gCons[op] containing op.
   // op must run before itself? Needs special attention.
@@ -363,6 +405,6 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   }
 
   return gCons;
-} // namespace poponnx
+}
 
 } // namespace poponnx
