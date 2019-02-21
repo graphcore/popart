@@ -1295,8 +1295,13 @@ std::string Devicex::getSummaryReport() const {
     throw error(
         "Session must have been prepared before a report can be fetched");
   }
+  const auto &g_prof = pEngine->getGraphProfile();
+  const auto &e_prof = pEngine->getExecutionProfile();
+
   std::stringstream ss;
-  pEngine->printSummary(ss, reportOptions);
+  printProfileSummary(ss, g_prof, e_prof, reportOptions);
+
+  pEngine->resetExecutionProfile();
   return ss.str();
 }
 
@@ -1306,8 +1311,10 @@ std::string Devicex::getGraphReport() const {
         "Session must have been prepared before a report can be fetched");
   }
   std::stringstream ss;
-  auto report = pEngine->getGraphReport(reportOptions);
-  report.serialize(ss, poplar::SerializationFormat::JSON);
+  auto report = pEngine->getGraphProfile();
+  serializeToJSON(ss, report);
+
+  pEngine->resetExecutionProfile();
   return ss.str();
 }
 
@@ -1317,8 +1324,10 @@ std::string Devicex::getExecutionReport() const {
         "Session must have been prepared before a report can be fetched");
   }
   std::stringstream ss;
-  auto report = pEngine->getExecutionReport(reportOptions);
-  report.serialize(ss, poplar::SerializationFormat::JSON);
+  auto report = pEngine->getExecutionProfile();
+  serializeToJSON(ss, report);
+
+  pEngine->resetExecutionProfile();
   return ss.str();
 }
 

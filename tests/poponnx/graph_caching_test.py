@@ -38,7 +38,7 @@ def test_convolution_cached_by_default():
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
-    opts.reportOptions = {"doLayerWiseBreakdown": "true"}
+    opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = poponnx.Session(
         fnModel=proto,
@@ -107,7 +107,7 @@ def test_convolution_cached_set_to_true():
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
-    opts.reportOptions = {"doLayerWiseBreakdown": "true"}
+    opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = poponnx.Session(
         fnModel=proto,
@@ -176,7 +176,7 @@ def test_convolution_cached_set_to_false():
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
-    opts.reportOptions = {"doLayerWiseBreakdown": "true"}
+    opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = poponnx.Session(
         fnModel=proto,
@@ -247,7 +247,7 @@ def test_convolution_some_convolutions_cached():
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
-    opts.reportOptions = {"doLayerWiseBreakdown": "true"}
+    opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = poponnx.Session(
         fnModel=proto,
@@ -323,7 +323,7 @@ def test_convolution_disable_all():
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
-    opts.reportOptions = {"doLayerWiseBreakdown": "true"}
+    opts.reportOptions = {"showExecutionSteps": "true"}
     opts.enableConvolutionGraphCaching = False
 
     session = poponnx.Session(
@@ -393,7 +393,7 @@ def test_matmul_infer_cached_by_default():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.reportOptions = {"doLayerWiseBreakdown": "true"}
+    opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = poponnx.Session(
         fnModel=proto, dataFeed=dataFlow, userOptions=opts)
@@ -420,7 +420,6 @@ def test_matmul_infer_cached_by_default():
 
     # Check that there is only one convolution computation set.
     summaryReport = session.getSummaryReport()
-
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(r'^[0-9]+/Conv_1/Convolve$',
@@ -461,7 +460,7 @@ def test_matmul_infer_not_cached():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
-    opts.reportOptions = {"doLayerWiseBreakdown": "true"}
+    opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = poponnx.Session(
         fnModel=proto, dataFeed=dataFlow, userOptions=opts)
@@ -538,7 +537,7 @@ def test_matmul_train_cached_by_default():
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
-    opts.reportOptions = {"doLayerWiseBreakdown": "true"}
+    opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = poponnx.Session(
         fnModel=proto,
@@ -565,13 +564,12 @@ def test_matmul_train_cached_by_default():
     }
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.infer(stepio)
+    session.train(stepio)
     session.weightsFromHost()
     session.optimizerFromHost()
 
     # Check that there is only 3 matmul convs in computation set.
     summaryReport = session.getSummaryReport()
-
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(r'^[0-9]+/Conv_1/Convolve$',
@@ -627,7 +625,7 @@ def test_gemm_train_cached_by_default():
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     opts = poponnx.SessionOptionsCore()
-    opts.reportOptions = {"doLayerWiseBreakdown": "true"}
+    opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = poponnx.Session(
         fnModel=proto,
@@ -659,13 +657,12 @@ def test_gemm_train_cached_by_default():
     }
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.infer(stepio)
+    session.train(stepio)
     session.weightsFromHost()
     session.optimizerFromHost()
 
     # Check that there is only 2 matmul conv's computation set.
     summaryReport = session.getSummaryReport()
-
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(r'^[0-9]+/Conv_1/Convolve$',
