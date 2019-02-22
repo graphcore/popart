@@ -35,7 +35,7 @@ public:
   }
 };
 
-ConstExprScale::ConstExprScale(Op *op) : ConstExprOp(op) {
+ConstExprScale::ConstExprScale(Op *op_) : ConstExprOp(op_) {
   factor32 = getOp<ScaleOp>().getScaleFactor();
   factor64 = static_cast<double>(factor32);
 }

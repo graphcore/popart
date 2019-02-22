@@ -20,6 +20,8 @@ public:
   static InIndex getArg0InIndex() { return 0; }
   static InIndex getArg1InIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
+
+  static OperatorIdentifier getOpId(const Ir &ir);
 };
 
 class MulArgGradOp : public Op {

@@ -45,7 +45,7 @@ private:
   std::vector<int64_t> indices;
 };
 
-ConstExprSlice::ConstExprSlice(Op *op) : ConstExprOp(op) {}
+ConstExprSlice::ConstExprSlice(Op *op_) : ConstExprOp(op_) {}
 
 std::vector<Slice> ConstExprSlice::getAllSlices() {
   auto in_info = inInfo(0);

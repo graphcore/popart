@@ -304,10 +304,10 @@ public:
   void growFinalLoss();
 
   // Return the default opset version for a domain
-  int getDefaultOpsetVersion(const std::string &domain);
+  int getDefaultOpsetVersion(const std::string &domain) const;
 
   // Return the opset version in use for a domain
-  int getOpSetVersionFromModel(const std::string &domain);
+  int getOpSetVersionFromModel(const std::string &domain) const;
 
 private:
   // called from growFromNode and many other places where Ops created

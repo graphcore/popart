@@ -10,6 +10,8 @@ public:
   CosOp(const OperatorIdentifier &_opid, const Op::Settings &);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
+
+  static OperatorIdentifier getOpId(const Ir &ir);
 };
 
 class CosGradOp : public ElementWiseNonLinearUnaryGradOp {

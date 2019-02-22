@@ -5,7 +5,7 @@
 
 namespace poponnx {
 
-ConstExprUnsqueeze::ConstExprUnsqueeze(Op *op) : ConstExprOp(op) {}
+ConstExprUnsqueeze::ConstExprUnsqueeze(Op *op_) : ConstExprOp(op_) {}
 
 std::vector<char> ConstExprUnsqueeze::compute() {
   char *data  = reinterpret_cast<char *>(inTensor(0)->tensorData()->data());

@@ -552,7 +552,7 @@ const static OperatorIdentifier ArrayFeatureExtractor =
 } // namespace AiOnnxMl
 
 namespace GradOperators {
-// constexpr static char Abs[] = "Abs";
+const static AiGraphcoreOpIdV1 AbsGrad("AbsGrad");
 // constexpr static char Acos[] = "Acos";
 // constexpr static char Acosh[] = "Acosh";
 const static AiGraphcoreOpIdV1 AddArg0Grad("AddArg0Grad");
@@ -654,7 +654,7 @@ const static AiGraphcoreOpIdV1 ScatterUpdateGrad("ScatterUpdateGrad");
 // constexpr static char Selu[] = "Selu";
 // constexpr static char Shape[] = "Shape";
 const static AiGraphcoreOpIdV1 SigmoidGrad("SigmoidGrad");
-// constexpr static char Sign[] = "Sign";
+const static AiGraphcoreOpIdV1 SignGrad("SignGrad");
 const static AiGraphcoreOpIdV1 SinGrad("SinGrad");
 // constexpr static char Sinh[] = "Sinh";
 // constexpr static char Size[] = "Size";

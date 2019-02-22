@@ -6,7 +6,7 @@
 
 namespace poponnx {
 
-ConstExprAdd::ConstExprAdd(Op *op) : ConstExprOp(op) {}
+ConstExprAdd::ConstExprAdd(Op *op_) : ConstExprOp(op_) {}
 
 // add two Tensors together using numpy-broadcasting,
 // return the data as a vector<char>

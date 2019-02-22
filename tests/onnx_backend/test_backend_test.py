@@ -142,7 +142,6 @@ class IpuBackend(onnx.backend.base.Backend):
 backend_test = onnx.backend.test.BackendTest(IpuBackend, __name__)
 
 # Operations we do not support
-backend_test.exclude('test_abs')
 backend_test.exclude('test_acos')
 backend_test.exclude('test_and')
 backend_test.exclude('test_argmax')
@@ -196,7 +195,6 @@ backend_test.exclude('test_scan')
 backend_test.exclude('test_selu')
 backend_test.exclude('test_shape')
 backend_test.exclude('test_shrink')
-backend_test.exclude('test_sign')
 backend_test.exclude('test_simple_rnn')
 backend_test.exclude('test_sinh')
 backend_test.exclude('test_size')
