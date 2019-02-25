@@ -31,6 +31,7 @@
 #include <poponnx/util.hpp>
 
 // The transformations
+#include <poponnx/transforms/auto_virtual_graph.hpp>
 #include <poponnx/transforms/interipucopy.hpp>
 #include <poponnx/transforms/prune.hpp>
 #include <poponnx/transforms/recompute.hpp>
@@ -605,6 +606,11 @@ void Ir::prepare(const IrBundle &gb) {
   dotCheckpoint(DotCheck::FWD0);
   applyPreAliasPatterns();
   dotCheckpoint(DotCheck::FWD1);
+
+  enableTransform(AutoVirtualGraph::id(),
+                  userOptions.autoVirtualGraph &&
+                      userOptions.enableVirtualGraphs);
+  applyTransform(AutoVirtualGraph::id());
 
   if (canEvaluate()) {
     growFinalLoss();
@@ -1598,9 +1604,7 @@ void Ir::constructBackwards() {
         throw error("can't currently register gradient of " +
                     nongrad->tensor_type() + " tensor, " + nongrad->str());
 
-      default: {
-        throw error("only handling ActGrad and Variable for now");
-      }
+      default: { throw error("only handling ActGrad and Variable for now"); }
       }
     }
 
@@ -1660,6 +1664,30 @@ Op *Ir::growGradientVarUpdateOp(TensorId varId) {
 Op *Ir::growVarUpdateOpInternal(OpId opId) {
 
   Op *op = ops[opId].get();
+
+  if (getSessionOptions().enableVirtualGraphs) {
+
+    // Count which vgraph's the input's producer ops are on.
+    std::map<int64_t, int64_t> vgraphIdMap;
+    for (auto inputT : op->input->tensors()) {
+      Op *producer = inputT->getProducerUnsafe();
+      if (producer != nullptr) {
+        boost::optional<int64_t> vgraphId = producer->getVirtualGraphId();
+        if (vgraphId) {
+          vgraphIdMap[*vgraphId]++;
+        }
+      }
+    }
+    // Find the vgraph id with the most occurrences.
+    auto it = std::max_element(vgraphIdMap.begin(),
+                               vgraphIdMap.end(),
+                               [](const std::pair<int64_t, int64_t> &p1,
+                                  const std::pair<int64_t, int64_t> &p2) {
+                                 return p1.second < p2.second;
+                               });
+
+    op->setVirtualGraphId(it->first);
+  }
 
   // there are no outputs of var-op
   std::vector<TensorId> outputs{};

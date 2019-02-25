@@ -63,6 +63,10 @@ struct SessionOptions {
   // The minimum number of virtual graphs required to execute the graph
   int64_t minimumVirtualGraphCount = 1;
 
+  /// Enable transformation pass that attempts to automatically place ops on
+  /// virtual graphs to achieve model parallelism.
+  bool autoVirtualGraph = false;
+
   /// Use synthetic data i.e. disable data transfer to/from the host
   /// Set to 'true' to use synthetic data, 'false' to use real data
   bool ignoreData = false;
