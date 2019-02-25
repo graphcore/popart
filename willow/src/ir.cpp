@@ -1740,7 +1740,7 @@ void Ir::append(std::stringstream &ss) {
   }
 }
 
-int Ir::getDefaultOpsetVersion(const std::string &domain) {
+int Ir::getDefaultOpsetVersion(const std::string &domain) const {
   if (domain == Domain::ai_onnx) {
     return defaultAiOnnxOpset;
   } else if (domain == Domain::ai_onnx_ml) {
@@ -1752,7 +1752,7 @@ int Ir::getDefaultOpsetVersion(const std::string &domain) {
   }
 }
 
-int Ir::getOpSetVersionFromModel(const std::string &node_domain) {
+int Ir::getOpSetVersionFromModel(const std::string &node_domain) const {
 
   // If the node.domain is blank it means the default ai.onnx
   auto domain = node_domain;

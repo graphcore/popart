@@ -8,9 +8,9 @@
 
 namespace poponnx {
 
-ConstExprConcat::ConstExprConcat(Op *op) : ConstExprOp(op) {
+ConstExprConcat::ConstExprConcat(Op *op_) : ConstExprOp(op_) {
   axis        = getOp<ConcatOp>().getAxis();
-  input_count = op->input->n();
+  input_count = op_->input->n();
 }
 
 class ConcatFunctor {

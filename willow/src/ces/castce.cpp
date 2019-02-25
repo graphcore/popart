@@ -5,7 +5,7 @@
 
 namespace poponnx {
 
-ConstExprCast::ConstExprCast(Op *op) : ConstExprOp(op) {}
+ConstExprCast::ConstExprCast(Op *op_) : ConstExprOp(op_) {}
 
 std::vector<char> ConstExprCast::compute() {
   // Obtain the output type

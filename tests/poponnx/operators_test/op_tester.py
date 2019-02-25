@@ -6,7 +6,7 @@ import torch
 # `import test_util` requires adding to sys.path
 import sys
 from pathlib import Path
-sys.path.append(Path(__file__).resolve().parent.parent)
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
@@ -47,8 +47,8 @@ def op_tester(tmpdir):
             'bad dtype %s, (only float32 currently supported)' % (dtype, ))
 
     class Builder:
-        def __init__(self):
-            self._builder = poponnx.Builder()
+        def __init__(self, opsets=None):
+            self._builder = poponnx.Builder(opsets=opsets)
             self._input_map = {}
             self._init_input_map = {}
             self._outputs = []
@@ -97,12 +97,12 @@ def op_tester(tmpdir):
             self.atol = 1e-08
             self.check_shapes = True
 
-        def run(self, init_builder, reference, step_type='infer'):
+        def run(self, init_builder, reference, step_type='infer', opsets=None):
             assert step_type in ('infer', 'train')
 
             poponnx.getLogger().setLevel("TRACE")
 
-            bld = Builder()
+            bld = Builder(opsets=opsets)
 
             anchors = {}
             anchorIds = init_builder(bld)

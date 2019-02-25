@@ -6,7 +6,7 @@
 
 namespace poponnx {
 
-ConstExprTranspose::ConstExprTranspose(Op *op) : ConstExprOp(op) {}
+ConstExprTranspose::ConstExprTranspose(Op *op_) : ConstExprOp(op_) {}
 
 class TransposeFunctor {
 public:

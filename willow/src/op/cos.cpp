@@ -1,3 +1,4 @@
+#include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/cos.hpp>
 #include <poponnx/opmanager.hpp>
@@ -15,6 +16,8 @@ std::vector<std::unique_ptr<Op>> CosOp::getGradOps() {
   upops.emplace_back(make_unique<CosGradOp>(*this));
   return upops;
 }
+
+OperatorIdentifier CosOp::getOpId(const Ir &) { return Onnx::Operators::Cos_7; }
 
 CosGradOp::CosGradOp(const CosOp &fwdOp)
     : ElementWiseNonLinearUnaryGradOp(Onnx::GradOperators::CosGrad, fwdOp) {}

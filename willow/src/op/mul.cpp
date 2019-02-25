@@ -1,3 +1,4 @@
+#include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/mul.hpp>
 #include <poponnx/opmanager.hpp>
@@ -29,6 +30,14 @@ std::vector<std::unique_ptr<Op>> MulOp::getGradOps() {
 void MulOp::setup() {
   outInfo(getOutIndex()) =
       npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
+}
+
+OperatorIdentifier MulOp::getOpId(const Ir &ir) {
+  if (ir.getOpSetVersionFromModel(Domain::ai_onnx) >= 7) {
+    return Onnx::Operators::Mul_7;
+  } else {
+    return Onnx::Operators::Mul_6;
+  }
 }
 
 MulArgGradOp::MulArgGradOp(const OperatorIdentifier &_opid,

@@ -18,7 +18,7 @@
 
 namespace poponnx {
 
-ConstExprOp::ConstExprOp(Op *_op) : op(_op) {}
+ConstExprOp::ConstExprOp(Op *op_) : op(op_) {}
 
 Tensor *ConstExprOp::inTensor(InIndex index) const {
   return op->inTensor(index);

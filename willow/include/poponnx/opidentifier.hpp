@@ -552,7 +552,7 @@ const static OperatorIdentifier ArrayFeatureExtractor =
 } // namespace AiOnnxMl
 
 namespace GradOperators {
-// constexpr static char Abs[] = "Abs";
+const static AiGraphcoreOpIdV1 AbsGrad("AbsGrad");
 // constexpr static char Acos[] = "Acos";
 // constexpr static char Acosh[] = "Acosh";
 const static AiGraphcoreOpIdV1 AddArg0Grad("AddArg0Grad");
@@ -614,12 +614,12 @@ const static AiGraphcoreOpIdV1 LogGrad("LogGrad");
 // constexpr static char LpPool[] = "LpPool";
 const static AiGraphcoreOpIdV1 MatMulLhsGrad("MatMulLhsGrad");
 const static AiGraphcoreOpIdV1 MatMulRhsGrad("MatMulRhsGrad");
-// constexpr static char Max[] = "Max";
+const static AiGraphcoreOpIdV1 MaxGrad("MaxGrad");
 const static AiGraphcoreOpIdV1 MaxPoolGrad("MaxPoolGrad");
 // constexpr static char MaxRoiPool[] = "MaxRoiPooL";
 // constexpr static char MaxUnpool[] = "MaxUnpool";
-// constexpr static char Mean[] = "Mean";
-// constexpr static char Min[] = "Min";
+const static AiGraphcoreOpIdV1 MeanGrad("MeanGrad");
+const static AiGraphcoreOpIdV1 MinGrad("MinGrad");
 const static AiGraphcoreOpIdV1 MulArg0Grad("MulArg0Grad");
 const static AiGraphcoreOpIdV1 MulArg1Grad("MulArg1Grad");
 // constexpr static char Multinomial[] = "Multinomial";
@@ -654,7 +654,7 @@ const static AiGraphcoreOpIdV1 ScatterUpdateGrad("ScatterUpdateGrad");
 // constexpr static char Selu[] = "Selu";
 // constexpr static char Shape[] = "Shape";
 const static AiGraphcoreOpIdV1 SigmoidGrad("SigmoidGrad");
-// constexpr static char Sign[] = "Sign";
+const static AiGraphcoreOpIdV1 SignGrad("SignGrad");
 const static AiGraphcoreOpIdV1 SinGrad("SinGrad");
 // constexpr static char Sinh[] = "Sinh";
 // constexpr static char Size[] = "Size";
