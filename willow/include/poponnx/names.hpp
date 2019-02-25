@@ -1,7 +1,7 @@
 #ifndef GUARD_NEURALNET_NAMES_HPP
 #define GUARD_NEURALNET_NAMES_HPP
 
-// TODO T6707 : determine what the cost of including these
+// TODO T7106 : determine what the cost of including these
 // in every compilation unit is, consider moving to another header
 #include <functional>
 #include <map>

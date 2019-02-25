@@ -32,8 +32,57 @@ ScaleGradOpx::ScaleGradOpx(Op *op, Devicex *devicex) : ScaleOpx(op, devicex) {
   verifyOp<ScaleGradOp>(op, Onnx::GradOperators::ScaleGrad);
 }
 
+void ScaleInplaceOpx::grow(poplar::program::Sequence &prog) const {
+
+  auto scale_inplace_op = getOp<ScaleInplaceOp>();
+  auto scale_factor = static_cast<double>(scale_inplace_op.getScaleFactor());
+  auto scale_factor_const =
+      dv_p->getConst(popType(op_p->inInfo(0)), {1}, scale_factor);
+
+  auto t0 = get(inId(0));
+
+  // if all of the elements in the tensor are distinct in memory,
+  // them we can use the poplar inplace version. Otherwise, we must
+  // use a non-inplace version.  See T7110 for a possible improvement
+  if (t0.isParallelWriteable()) {
+    popops::mapInPlace(graph(),
+                       popops::expr::BinaryOpType::MULTIPLY,
+                       get(inId(0)),
+                       scale_factor_const,
+                       prog,
+                       idStr());
+    insert(outId(0), get(inId(0)));
+  }
+
+  else {
+    insert(outId(0),
+           popops::map(graph(),
+                       popops::expr::BinaryOpType::MULTIPLY,
+                       scale_factor_const,
+                       get(inId(0)),
+                       prog,
+                       idStr()));
+  }
+}
+
+InputCreatorType ScaleInplaceOpx::getInputCreatorType(InIndex) const {
+  return InputCreatorType::CANUNWIND;
+}
+
+poplar::Tensor ScaleInplaceOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                   InIndex,
+                                                   OutIndex) const {
+  return tensor;
+}
+
+ScaleInplaceOpx::ScaleInplaceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  verifyOp<ScaleInplaceOp>(op, Onnx::CustomOperators::ScaleInplace);
+}
+
 namespace {
 OpxCreator<ScaleOpx> scaleOpxCreator(Onnx::Operators::Scale_1);
+OpxCreator<ScaleInplaceOpx>
+    scalexInplaceOpxCreator(Onnx::CustomOperators::ScaleInplace);
 OpxCreator<ScaleGradOpx> scaleGradOpxCreator(Onnx::GradOperators::ScaleGrad);
 } // namespace
 

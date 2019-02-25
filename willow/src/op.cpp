@@ -45,7 +45,7 @@ view::Region Op::aliases(InIndex index) const {
 };
 
 view::RegMap Op::fwdRegMap(InIndex i) const {
-  // TODO : merge these errors with those in bwdRegMap (T6707)
+  // TODO : merge these errors with those in bwdRegMap (T7107)
   if (!input->hasIndex(i)) {
     throw error("invalid index in fwdRegMap");
   } else if (!output->hasIndex(0)) {

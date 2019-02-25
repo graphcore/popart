@@ -27,13 +27,29 @@ poplar::Tensor ExpInplaceOpx::unwindTensorLayout(poplar::Tensor tensor,
 
 void ExpInplaceOpx::grow(poplar::program::Sequence &prog) const {
 
-  popops::mapInPlace(graph(),
-                     popops::expr::UnaryOpType::EXPONENT,
-                     get(inId(ExpOp::getInIndex())),
-                     prog,
-                     idStr());
+  auto t0 = get(inId(0));
 
-  insert(outId(0), get(inId(0)));
+  // if all of the elements in the tensor are distinct in memory,
+  // them we can use the poplar inplace version. Otherwise, we must
+  // use a non-inplace version.  See T7110 for a possible improvement
+  if (t0.isParallelWriteable()) {
+    popops::mapInPlace(graph(),
+                       popops::expr::UnaryOpType::EXPONENT,
+                       get(inId(ExpOp::getInIndex())),
+                       prog,
+                       idStr());
+
+    insert(outId(0), get(inId(0)));
+  }
+
+  else {
+    insert(outId(ExpOp::getOutIndex()),
+           popops::map(graph(),
+                       popops::expr::UnaryOpType::EXPONENT,
+                       get(inId(ExpOp::getInIndex())),
+                       prog,
+                       idStr()));
+  }
 }
 
 void ExpOpx::grow(poplar::program::Sequence &prog) const {

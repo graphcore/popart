@@ -76,8 +76,8 @@ static int64_t broadcastableDimSize(int64_t a, int64_t b) {
   if (isBroadcastableDims(a, b)) {
     return std::max(a, b);
   } else {
-    // Incompatible dimensions found. Throw an exception, borrowing the same
-    // terminology as numpy.
+    // Incompatible dimensions found. Throw an exception,
+    // borrowing the same terminology as numpy.
     throw error("np broadcasting failed, frames are not aligned");
   }
 }
