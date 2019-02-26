@@ -5,6 +5,30 @@
 
 namespace poponnx {
 
+std::vector<std::tuple<OperatorIdentifier, float>>
+ScaleOp::inplacePriorityDefault() const {
+  // see T6768: choosing default inplace priorities
+  return {{Onnx::CustomOperators::ScaleInplace, 10}};
+}
+
+ScaleInplaceOp::ScaleInplaceOp(const ScaleOp &scale_op)
+    : Op(Onnx::CustomOperators::ScaleInplace, scale_op.getSettings()),
+      scale_factor(scale_op.getScaleFactor()) {}
+
+void ScaleInplaceOp::setup() {
+  // no output, nothing to setup
+  outInfo(ScaleOp::getOutIndex()) = inInfo(ScaleOp::getInIndex());
+}
+
+std::unique_ptr<Op>
+ScaleOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
+  if (operator_id == Onnx::CustomOperators::ScaleInplace) {
+    return make_unique<ScaleInplaceOp>(*this);
+  }
+  // catch remaining cases and throw an error
+  return Op::getInplaceVariant(operator_id);
+}
+
 ScaleOp::ScaleOp(const OperatorIdentifier &_opid,
                  float scale_,
                  const Op::Settings &settings_)
@@ -21,9 +45,16 @@ std::vector<std::unique_ptr<Op>> ScaleOp::getGradOps() {
 }
 
 float ScaleOp::getScaleFactor() const { return scale_factor; }
+float ScaleInplaceOp::getScaleFactor() const { return scale_factor; }
 
 void ScaleOp::appendAttributes(std::stringstream &ss,
                                const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "scale", scale_factor);
+}
+
+void ScaleInplaceOp::appendAttributes(std::stringstream &ss,
+                                      const std::string &tab) const {
   Op::appendAttributes(ss, tab);
   appendAttribute(ss, tab, "scale", scale_factor);
 }

@@ -18,7 +18,8 @@ ExternOpTensorBundle::ExternOpTensorBundle(Op *opCopy,
   for (auto &index_tensor : opCopy->input->tensorMap()) {
     std::unique_ptr<Tensor> up_t_clone = index_tensor.second->clone();
     Tensor *t_clone                    = up_t_clone.get();
-    tensors[t_clone->id]               = std::move(up_t_clone);
+    t_clone->id += std::to_string(index_tensor.first);
+    tensors[t_clone->id] = std::move(up_t_clone);
     up_op->input->insert(index_tensor.first, t_clone);
     t_clone->consumers.increment(up_op.get());
   }
@@ -37,52 +38,6 @@ ExternOpTensorBundle::ExternOpTensorBundle(Op *opCopy,
 
 Op *ExternOpTensorBundle::getOp() { return up_op.get(); }
 
-// Example 1:
-// Consider the following SERIES of non-linearity ops:
-// (0) -> [relu] -> (1) -> [sigmoid] -> (2) -> [exp] -> (3) -> [other]
-// 1.1: In-placing relu:
-//      (0) -> [relu-inplace]
-//      (0) -> [sigmoid] -> (2) -> [exp] -> (3) -> [other]
-//      with dependencies:
-//      [relu-inplace] before [sigmoid]
-// 1.2: In-placing sigmoid:
-//      (0) -> [relu-inplace]
-//      (0) -> [sigmoid-inplace]
-//      (0) -> [exp] -> (3) -> [other]
-//      with dependencies:
-//      [relu-inplace] before [sigmoid-inplace]
-//      [sigmoid-inplace] before [exp]
-// 1.3: In-placing exp:
-//      (0) -> [relu-inplace]
-//      (0) -> [sigmoid-inplace]
-//      (0) -> [exp-inplace]
-//      (0)->  [other]
-//      with dependencies:
-//      [relu-inplace] before [sigmoid-inplace]
-//      [sigmoid-inplace] before [exp-inplace]
-//      [exp-inplace] before [other].
-// All in-placed :)
-//
-// Example 2:
-// Consider the following non-linearity ops in PARALLEL:
-// (0) -> [relu] -> (1) -> [other]
-// (0) -> [sigmoid] -> (2)
-// (0) -> [exp] -> (3)
-// 2.1: In-placing relu:
-//      (0) -> [relu-inplace]
-//      (0) -> [other]
-//      (0) -> [sigmoid] -> (2)
-//      (0) -> [exp] -> (3)
-//      with dependencies:
-//      other after relu-inplace
-//      relu-inplace after sigmoid
-//      relu-inplace after exp
-// Good. Now can we make sigmoid inplace? No, because then what
-// would come first, relu-inplace or sigmoid-inplace. RULE:
-// An Op can only be in-placed if it can run after all existing
-// consumers of the tensor it in-places.
-// Partial success in-placing :|
-
 // what is touched? The output, and all the inputs at the target indices
 std::vector<const Tensor *> Inplace::touches(Op *op, OperatorIdentifier) const {
 
@@ -94,7 +49,7 @@ std::vector<const Tensor *> Inplace::touches(Op *op, OperatorIdentifier) const {
   std::vector<const Tensor *> touched;
   touched.reserve(op->input->n() + 1);
   touched.push_back(op->output->tensor(0));
-  // TODO : it is actually  sub-set of the inputs, only those aliased (T6707)
+  // TODO : it is actually a sub-set of the inputs, only those aliased (T7108)
   for (auto &x : op->input->indicesMap()) {
     touched.push_back(x.first);
   }
@@ -181,7 +136,7 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
       view::Regions &regions = M[key];
       for (auto &region : newRegs) {
         // TODO : check that region is not
-        // a sub-region of one already in (T6707)
+        // a sub-region of one already in (T7104)
         regions.push_back(region);
       }
     }
@@ -286,7 +241,7 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
         for (const auto &reg0 : op_regs0.second) {
           for (const auto &reg1 : op_regs1.second) {
             // TODO : more efficient way of testing whether Regions
-            // (set of Regions) intersect (T6707)
+            // (set of Regions) intersect (T7104)
             if (!reg0.intersect(reg1).isEmpty()) {
               if (gCons.find(after) == gCons.end()) {
                 gCons[after] = {before};

@@ -51,7 +51,7 @@ Chains Chains::series(const Chains &tail) const {
     }
   }
 
-  // TODO : more filtering of duplicate / subregion chains, ids, etc (T6707)
+  // TODO : more filtering of duplicate / subregion chains, ids, etc (T7104)
 
   return Chains(new_chain_union);
 }
@@ -64,7 +64,7 @@ Chains Chains::parallel(const Chains &chains) const {
     new_chain_union.push_back(chain);
   }
 
-  // TODO : more checks for duplicates (T6707)
+  // TODO : more checks for duplicates (T7104)
   return Chains(new_chain_union);
 }
 

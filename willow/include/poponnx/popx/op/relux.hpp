@@ -18,6 +18,7 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
+// See T7053 to unify the inplace opxs (TODO)
 class ReluInplaceOpx : public Opx {
 public:
   ReluInplaceOpx(Op *, Devicex *);

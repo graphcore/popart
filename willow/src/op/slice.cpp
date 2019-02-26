@@ -56,7 +56,7 @@ view::RegMap BaseSliceOp::fwdRegMap(InIndex inIndex) const {
   }
 
   return [this](const view::Region &r) {
-    auto &&fullInRegion = getFullInRegion();
+    auto fullInRegion = getFullInRegion();
     // (1) get intersection with maximal input region
     auto inRegion = r.intersect(fullInRegion);
     // (2) map to the output region by subtracting lower of maximal region
@@ -120,7 +120,7 @@ view::RegMap BaseSliceOp::bwdRegMap(InIndex inIndex) const {
     view::UppBounds in_ub = outRegion.getUpper();
     for (int i = 0; i < outRegion.rank(); ++i) {
       in_lb[i] += fullInRegion.getLower()[i];
-      in_ub[i] += fullInRegion.getUpper()[i];
+      in_ub[i] += fullInRegion.getLower()[i];
     }
     return view::Region(in_lb, in_ub);
   };

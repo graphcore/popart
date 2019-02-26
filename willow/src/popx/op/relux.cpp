@@ -31,11 +31,21 @@ void ReluOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 void ReluInplaceOpx::grow(poplar::program::Sequence &prog) const {
+
+  auto outTensor = get(inId(0));
+
+  // if all of the elements in the tensor are distinct in memory,
+  // them we can use the poplar inplace version. Otherwise, we must
+  // use a non-inplace version.  See T7110 for a possible improvement
+  if (!outTensor.isParallelWriteable()) {
+    outTensor = cloneNcopy(prog, outTensor);
+  }
+
   // apply the inplace relu,
   popnn::nonLinearityInPlace(
-      graph(), popnn::NonLinearityType::RELU, get(inId(0)), prog, inId(0));
+      graph(), popnn::NonLinearityType::RELU, outTensor, prog, outId(0));
 
-  insert(outId(0), get(inId(0)));
+  insert(outId(0), outTensor);
 }
 
 InputCreatorType ReluInplaceOpx::getInputCreatorType(InIndex) const {
@@ -59,8 +69,8 @@ void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
   auto outTensor = popnn::nonLinearityInputGradient(
       graph(),                               // graph,
       popnn::NonLinearityType::RELU,         // nonLinearityType,
-      get(inId(rgop.getReludInIndex())),     //  out,
-      get(inId(rgop.getGradReludInIndex())), //  outGradient,
+      get(inId(rgop.getReludInIndex())),     // out,
+      get(inId(rgop.getGradReludInIndex())), // outGradient,
       prog,                                  // prog,
       idStr()                                // debugPrefix
   );
