@@ -846,3 +846,77 @@ def test_dropout_training(op_tester):
         op_tester.run(init_builder, reference, 'train')
 
     assert (e_info.value.args[0] == "Dropout does not support training")
+
+
+def test_argmin_no_keepdims(op_tester):
+    d1 = np.random.rand(5, 7, 11, 13).astype(np.float32)
+    axis = 0
+    keepdims = 0
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.argmin([i1], axis, keepdims, "test_argmin")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = np.argmin(d1, axis=axis)
+        return [result.astype(np.int32)]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_argmin_keepdims(op_tester):
+    d1 = np.random.rand(5, 7, 11, 13).astype(np.float32)
+    axis = 0
+    keepdims = 1
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.argmin([i1], axis, keepdims, "test_argmin")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = np.argmin(d1, axis=axis)
+        result = np.expand_dims(result, axis)
+        return [result.astype(np.int32)]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_argmax_no_keepdims(op_tester):
+    d1 = np.random.rand(5, 7, 11, 13).astype(np.float32)
+    axis = 0
+    keepdims = 0
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.argmax([i1], axis, keepdims, "test_argmax")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = np.argmax(d1, axis=axis)
+        return [result.astype(np.int32)]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_argmax_keepdims(op_tester):
+    d1 = np.random.rand(5, 7, 11, 13).astype(np.float32)
+    axis = 0
+    keepdims = 1
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.argmax([i1], axis, keepdims, "test_argmax")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = np.argmax(d1, axis=axis)
+        result = np.expand_dims(result, axis)
+        return [result.astype(np.int32)]
+
+    op_tester.run(init_builder, reference, 'infer')
