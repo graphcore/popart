@@ -625,6 +625,10 @@ void Ir::prepare(const IrBundle &gb) {
   applyPreAliasPatterns();
   setNPathsToLoss();
 
+  // tensors with no producer and no
+  // consumers are removed at this point.
+  removeIsolatedTensors();
+
   updateVertices();
   applyTransform(Recompute::id());
   updateVertices();
