@@ -1173,7 +1173,7 @@ std::vector<Op *> OpGradRegistry::popComplete() {
 void Ir::updateVertices() {
 
   // for all vertices (Ops and Tensors),
-  // what phase is it is (FWD, BWD, LOSS) ?
+  // what phase is it in (FWD, BWD, LOSS) ?
 
   // for all vertices (Ops and Tensors),
   // is there a path to a BWD vertex? (YES, NO)

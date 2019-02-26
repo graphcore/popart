@@ -11,6 +11,9 @@ namespace poponnx {
 // This function is pure string manipulation
 TensorId getLearningRateId();
 
+// same for weight decay tensor id
+TensorId getWeightDecayId();
+
 enum class OptimizerType { SGD = 0, CONSTSGD };
 
 class Optimizer {
@@ -40,18 +43,21 @@ public:
 
 class BaseSGD : public Optimizer {
 public:
-  BaseSGD(float lr);
+  BaseSGD(float lr, float wd);
   float learnRate() const;
+  float weightDecay() const;
 
 private:
   float learnRate_;
+  float weightDecay_;
   // We will add momentum here
 };
 
-// learning rate and momentum may change during training
+// learning rate, weight decay and momentum may
+// change during training
 class SGD : public BaseSGD {
 public:
-  SGD(float lr);
+  SGD(float lr, float wd = 0); // weight decay is off by default
   std::unique_ptr<Optimizer> clone() const final;
   std::map<TensorId, TensorInfo> tensorInfos() const final;
   std::unique_ptr<Op> createOp(TensorId, Ir *) const final;
@@ -63,10 +69,11 @@ public:
   void resetTensorDatas(Ir *) const final;
 };
 
-// learning rate and momentum aren't allowed to change during training
+// learning rate, weight decay and momentum may not
+// change during training
 class ConstSGD : public BaseSGD {
 public:
-  ConstSGD(float lr);
+  ConstSGD(float lr, float wd = 0); // weight decay is off by default
   std::unique_ptr<Optimizer> clone() const final;
   std::map<TensorId, TensorInfo> tensorInfos() const final;
   std::unique_ptr<Op> createOp(TensorId, Ir *) const final;

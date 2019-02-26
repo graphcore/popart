@@ -246,7 +246,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             raise TestFailureError(
                 str(result) + " is greater than " + str(margin))
 
-    margin = 1.0e-8
+    margin = 1e-8
     numReports = []
 
     for epoch in range(4):  # loop over the dataset multiple times

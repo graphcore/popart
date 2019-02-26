@@ -37,11 +37,14 @@ std::unique_ptr<Op> SGDVarUpdateOp::clone() const {
 
 ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_,
                                          float lr_,
+                                         float wd_,
                                          const Op::Settings &settings_)
     : VarUpdateOp(Onnx::CustomOperators::ConstSgdVarUpdate, varId_, settings_),
-      learnRate(lr_) {}
+      learnRate(lr_), weightDecay(wd_) {}
 
 float ConstSGDVarUpdateOp::getLearnRate() const { return learnRate; }
+
+float ConstSGDVarUpdateOp::getWeightDecay() const { return weightDecay; }
 
 std::unique_ptr<Op> ConstSGDVarUpdateOp::clone() const {
   return make_unique<ConstSGDVarUpdateOp>(*this);

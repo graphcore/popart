@@ -273,12 +273,19 @@ PYBIND11_MODULE(poponnx_core, m) {
 
   py::class_<BaseSGD> basesgd(m, "BaseSGD", optimizer);
   basesgd.def("learnRate", &BaseSGD::learnRate);
+  basesgd.def("weightDecay", &BaseSGD::weightDecay);
 
   py::class_<SGD>(m, "SGD", basesgd)
-      .def(py::init<float>(), py::arg("learning_rate"));
+      .def(py::init<float>(), py::arg("learning_rate"))
+      .def(py::init<float, float>(),
+           py::arg("learning_rate"),
+           py::arg("weight_decay"));
 
   py::class_<ConstSGD>(m, "ConstSGD", basesgd)
-      .def(py::init<float>(), py::arg("learning_rate"));
+      .def(py::init<float>(), py::arg("learning_rate"))
+      .def(py::init<float, float>(),
+           py::arg("learning_rate"),
+           py::arg("weight_decay"));
 
   py::class_<SessionOptions>(m, "SessionOptionsCore")
       .def(py::init<>())

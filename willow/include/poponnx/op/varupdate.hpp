@@ -29,16 +29,22 @@ public:
   std::unique_ptr<Op> clone() const final;
 
   static InIndex getLearnRateInIndex() { return 2; }
+  static InIndex getWeightDecayInIndex() { return 3; }
 };
 
 class ConstSGDVarUpdateOp : public VarUpdateOp {
 public:
-  ConstSGDVarUpdateOp(TensorId, float learnRate, const Op::Settings &);
+  ConstSGDVarUpdateOp(TensorId,
+                      float learnRate,
+                      float weightDecay,
+                      const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
   float getLearnRate() const;
+  float getWeightDecay() const;
 
 private:
   float learnRate;
+  float weightDecay;
 };
 
 class CopyVarUpdateOp : public VarUpdateOp {
