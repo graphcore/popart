@@ -211,8 +211,10 @@ Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
 
   if (ir.getExecutionMode() == Ir::ExecutionMode::TRAINING) {
     fwdConvOptions.options["pass"] = "TRAINING_FWD";
+    lstmOptions.set("inferenceOnly", "false");
   } else {
     fwdConvOptions.options["pass"] = "INFERENCE_FWD";
+    lstmOptions.set("inferenceOnly", "true");
   }
 
   bwdConvOptions.options["pass"] = "TRAINING_BWD";

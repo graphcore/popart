@@ -32,11 +32,15 @@ private:
   poplar::Tensor createLSTMInput() const;
   void prepareInitialState(popnn::lstm::LstmState &,
                            poplar::program::Sequence &) const;
+  void prepareWeights(poplar::program::Sequence &) const;
+  poplar::Tensor getInput(poplar::program::Sequence &) const;
   std::unique_ptr<poplar::Tensor> createIntermediate() const;
   void reshapeAndInsert(OutIndex index, const poplar::Tensor &) const;
+  bool inputCreated(InIndex) const;
 
   mutable boost::optional<popnn::lstm::LstmWeights> weights;
   mutable boost::optional<popnn::lstm::LstmState> initial_state;
+  mutable std::set<InIndex> createdInputs;
 };
 
 class LSTMGradOpx : public Opx {

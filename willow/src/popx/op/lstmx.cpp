@@ -38,6 +38,7 @@ std::unique_ptr<poplar::Tensor> LSTMOpx::createIntermediate() const {
 }
 
 void LSTMOpx::grow(poplar::program::Sequence &prog) const {
+  prepareWeights(prog);
   growBias(prog);
 
   auto init_state = getInitialState();
@@ -45,7 +46,7 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
 
   auto intermediate = createIntermediate();
   poplar::Tensor output, cell_state;
-  auto input                   = get(inId(LSTMOp::getInputInIndex()));
+  auto input                   = getInput(prog);
   std::tie(output, cell_state) = popnn::lstm::lstmFwd(graph(),
                                                       createLSTMParams(),
                                                       init_state,
@@ -124,6 +125,8 @@ InputCreatorType LSTMOpx::getInputCreatorType(InIndex index) const {
 }
 
 poplar::Tensor LSTMOpx::createInput(InIndex index) const {
+  createdInputs.insert(index);
+
   if (index == LSTMOp::getInputInIndex()) {
     return createLSTMInput();
   } else if (index == LSTMOp::getWeightsInIndex()) {
@@ -155,6 +158,10 @@ poplar::Tensor LSTMOpx::createInput(InIndex index) const {
                            index);
     throw error(msg);
   }
+}
+
+bool LSTMOpx::inputCreated(InIndex index) const {
+  return createdInputs.count(index) > 0;
 }
 
 poplar::Tensor
@@ -241,10 +248,36 @@ std::vector<TensorId> LSTMOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }
 
+void LSTMOpx::prepareWeights(poplar::program::Sequence &prog) const {
+  // check to see if the weights were created
+  if (!inputCreated(LSTMOp::getWeightsInIndex())) {
+    prog.add(poplar::program::Copy(
+        get(inId(LSTMOp::getWeightsInIndex())),
+        reshapePoplibWeightsForOnnx(getLSTMWeights().inputWeights, true)));
+  }
+  if (!inputCreated(LSTMOp::getRecurrenceInIndex())) {
+    prog.add(poplar::program::Copy(
+        get(inId(LSTMOp::getRecurrenceInIndex())),
+        reshapePoplibWeightsForOnnx(getLSTMWeights().outputWeights, true)));
+  }
+}
+
+poplar::Tensor LSTMOpx::getInput(poplar::program::Sequence &prog) const {
+  if (!inputCreated(LSTMOp::getInputInIndex())) {
+    auto input     = createInput(LSTMOp::getInputInIndex());
+    auto raw_input = get(inId(LSTMOp::getInputInIndex()));
+    prog.add(poplar::program::Copy(raw_input, input));
+    return input;
+  } else {
+    return get(inId(LSTMOp::getInputInIndex()));
+  }
+}
+
 void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
                                   poplar::program::Sequence &prog) const {
-  auto hasInitC = op_p->input->hasIndex(LSTMOp::getInitialCInIndex());
-  auto hasInitH = op_p->input->hasIndex(LSTMOp::getInitialHInIndex());
+  auto &lstm_op = getOp<LSTMOp>();
+  auto hasInitC = lstm_op.hasInitialCInput();
+  auto hasInitH = lstm_op.hasInitialHInput();
 
   if (!hasInitC && !hasInitH) {
     zeroInitialState(graph(), init_state, prog, idStr());
@@ -252,6 +285,16 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
     popops::zero(graph(), init_state.cellState, prog, idStr());
   } else if (!hasInitH) {
     popops::zero(graph(), init_state.output, prog, idStr());
+  }
+
+  // Check the inputs have been created
+  if (hasInitC && !inputCreated(LSTMOp::getInitialCInIndex())) {
+    prog.add(poplar::program::Copy(get(inId(LSTMOp::getInitialCInIndex())),
+                                   createInput(LSTMOp::getInitialCInIndex())));
+  }
+  if (hasInitH && !inputCreated(LSTMOp::getInitialHInIndex())) {
+    prog.add(poplar::program::Copy(get(inId(LSTMOp::getInitialHInIndex())),
+                                   createInput(LSTMOp::getInitialHInIndex())));
   }
 }
 
@@ -324,9 +367,10 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
       LSTMOpx::reshapePoplibWeightsForOnnx(weights_grad.outputWeights, true));
 
   if (lstm_op.hasBiasInput()) {
-    auto b_grad = poplar::concat({weights_grad.biases, weights_grad.biases}, 1);
+    auto b_grad =
+        LSTMOpx::reshapePoplibWeightsForOnnx(weights_grad.biases, false);
     insert(outId(LSTMGradOp::getBiasOutIndex()),
-           LSTMOpx::reshapePoplibWeightsForOnnx(b_grad, false));
+           poplar::concat({b_grad, b_grad}, 1));
   }
   if (lstm_op.hasInitialHInput()) {
     auto init_h = init_state_grad.output;

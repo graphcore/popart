@@ -74,3 +74,7 @@ add_test(NAME model_nll
 add_test(NAME model_matmul_bcast
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model_matmul_bcast.py)
+
+add_test(NAME model_lstm
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/model_lstm.py)
