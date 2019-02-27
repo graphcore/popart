@@ -48,7 +48,8 @@ public:
                              bool cacheOperation,
                              const std::string &debugPrefix = "",
                              const PoplarOptions &options   = {},
-                             poplin::PlanningCache *cache   = nullptr);
+                             poplin::PlanningCache *cache   = nullptr,
+                             const int64_t &virtualGraphId  = 0);
 
   /** Wrapper for poplin::convolution, which tries to cache parts of the poplar
    *  graph.
@@ -74,7 +75,8 @@ public:
                                        bool cacheOperation,
                                        const std::string &debugPrefix = "",
                                        const PoplarOptions &options   = {},
-                                       poplin::PlanningCache *cache = nullptr);
+                                       poplin::PlanningCache *cache   = nullptr,
+                                       const int64_t &virtualGraphId  = 0);
 
   poplar::Tensor matMulGrouped(poplar::Graph &graph,
                                const poplar::Tensor &zDeltas,
@@ -83,7 +85,8 @@ public:
                                bool cacheOperation,
                                const std::string &debugPrefix,
                                const PoplarOptions &options,
-                               poplin::matmul::PlanningCache *cache);
+                               poplin::matmul::PlanningCache *cache,
+                               const int64_t &virtualGraphId);
 
 private:
   poplar::Tensor createCachedConvolution(poplar::Graph &graph,
@@ -95,7 +98,8 @@ private:
                                          bool cacheOperation,
                                          const std::string &debugPrefix,
                                          const PoplarOptions &options,
-                                         poplin::PlanningCache *cache);
+                                         poplin::PlanningCache *cache,
+                                         const int64_t &virtualGraphId);
 
   poplar::Tensor cachedCalculateWeightDeltas(poplar::Graph &graph,
                                              const poplar::Tensor &zDeltas,
@@ -105,13 +109,15 @@ private:
                                              bool cacheOperation,
                                              const std::string &debugPrefix,
                                              const PoplarOptions &options,
-                                             poplin::PlanningCache *cache);
+                                             poplin::PlanningCache *cache,
+                                             const int64_t &virtualGraphId);
 
   void createCachedBwdWeights(poplar::Graph &,
                               const poplar::Tensor &,
                               const poplar::Tensor &,
                               poplar::program::Sequence &,
-                              const std::string &);
+                              const std::string &,
+                              const int64_t &virtualGraphId);
 
   // Definitions for the cache:
   // TODO T5541 - Take poponnx node placement into account for cached graphs
@@ -123,21 +129,24 @@ private:
                                          PoplarTensorSignature,
                                          poplin::ConvParams,
                                          std::map<std::string, std::string>,
-                                         bool>;
+                                         bool,
+                                         int64_t>;
   // Key used for caching weight deltas calculations
   using CalculateWeightDeltasCacheKey =
       std::tuple<PoplarTensorSignature,
                  PoplarTensorSignature,
                  poplin::ConvParams,
-                 std::map<std::string, std::string>>;
+                 std::map<std::string, std::string>,
+                 int64_t>;
   // Key used for weightsTransposeChansFlipXY
   using BwdWeightCacheKey =
-      std::pair<PoplarTensorSignature, PoplarTensorSignature>;
+      std::tuple<PoplarTensorSignature, PoplarTensorSignature, int64_t>;
 
   // Key used for matmul
   using MatMulCacheKey = std::tuple<PoplarTensorSignature,
                                     PoplarTensorSignature,
-                                    std::map<std::string, std::string>>;
+                                    std::map<std::string, std::string>,
+                                    int64_t>;
 
   // Cache maps definitions
   using ConvolutionGraphCache =
@@ -159,20 +168,24 @@ private:
 
   static ConvolutionCacheKey getConvolutionCacheKey(const poplin::ConvParams &,
                                                     const PoplarOptions &,
-                                                    const bool &);
+                                                    const bool &,
+                                                    const int64_t &);
 
   static CalculateWeightDeltasCacheKey
   getCalculateWeightDeltasKey(const poplar::Tensor &,
                               const poplar::Tensor &,
                               const poplin::ConvParams &,
-                              const PoplarOptions &);
+                              const PoplarOptions &,
+                              const int64_t &);
 
   static BwdWeightCacheKey getBwdWeightCacheKey(const poplar::Tensor &,
-                                                const poplar::Tensor &);
+                                                const poplar::Tensor &,
+                                                const int64_t &);
 
   static MatMulCacheKey getMatMulCacheKey(const poplar::Tensor &,
                                           const poplar::Tensor &,
-                                          const PoplarOptions &);
+                                          const PoplarOptions &,
+                                          const int64_t &);
 };
 
 } // namespace popx
