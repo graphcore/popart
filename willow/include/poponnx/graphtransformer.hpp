@@ -35,6 +35,19 @@ public:
    */
   void convertAllFixedPointInitializersToConstants();
 
+  /**
+   * Some ONNX Operators are different between train and test modes
+   * An example is BatchNormalization, which has 1 output in test mode
+   * and 5 outputs in train mode
+   * This function changes the Nodes to be of the training variety
+   */
+  void prepareNodesForTraining();
+
+  /**
+   * Inputs which are not connected to any Node are removed
+   */
+  void removeUnusedInputs();
+
 private:
   std::unique_ptr<GraphTransformerImpl> impl;
 };

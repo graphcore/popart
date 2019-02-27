@@ -70,7 +70,10 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
     OpSchema()
         .SetDoc(groupnormalizationDoc)
         .Input(0, "X", "Input tensor", "T")
-        .Input(1, "Scale", "The input 1-dimensional scale tensor of size C.", "T")
+        .Input(1,
+               "Scale",
+               "The input 1-dimensional scale tensor of size C.",
+               "T")
         .Input(2, "Bias", "The input 1-dimensional bias tensor of size C.", "T")
         .Output(0, "Y", "Output tensor", "T")
         .Output(1, "Mean", "The mean after GroupNormalization operator", "T")
@@ -79,10 +82,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
             "T",
             {"tensor(float)", "tensor(int32)", "tensor(float16)"},
             "Constrain input and output types to signed numeric tensors.")
-        .Attr("num_groups",
-              "The number of groups",
-              AttributeProto::INT,
-              false)
+        .Attr("num_groups", "The number of groups", AttributeProto::INT, false)
         .Attr("epsilon",
               "The epsilon value to use to avoid division by zero.",
               AttributeProto::FLOAT,

@@ -24,7 +24,8 @@ def run(torchWriter,
         device,
         device_hw_id,
         mode="train",
-        syntheticData=False):
+        syntheticData=False,
+        transformations=[]):
 
     poponnx.getLogger().setLevel("TRACE")
     poponnx.getLogger("session").setLevel("WARN")
@@ -32,17 +33,17 @@ def run(torchWriter,
     if outputdir is None:
         with TemporaryDirectory() as outputdir:
             _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
-                      device_hw_id, mode, syntheticData)
+                      device_hw_id, mode, syntheticData, transformations)
     else:
         if not os.path.exists(outputdir):
             os.mkdir(outputdir)
 
         _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
-                  device_hw_id, mode, syntheticData)
+                  device_hw_id, mode, syntheticData, transformations)
 
 
 def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
-              device_hw_id, mode, syntheticData):
+              device_hw_id, mode, syntheticData, transformations):
     dataFeed = torchWriter.dataFeed
     inputShapeInfo = torchWriter.inputShapeInfo
     validModes = ["infer", "evaluate", "train"]
@@ -97,7 +98,8 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
 
     # Get a Hardware Device
     elif device == "hw":
-        # Get a hardware device that meets the reqirements, may throw if none are available
+        # Get a hardware device that meets the reqirements,
+        # may throw if none are available.
         # Will attach to the device
         if device_hw_id:
             device = deviceManager.acquireDeviceById(device_hw_id)
@@ -120,10 +122,27 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     opts.ignoreData = syntheticData
     opts.logDir = outputdir
 
+    modelProtoX = fnModel0
+    if transformations:
+        gc = poponnx.GraphTransformer(fnModel0)
+        for transformation in transformations:
+            print("Running %s transformation pass" % (transformation, ))
+            if transformation == "removeUnusedInputs":
+                gc.removeUnusedInputs()
+
+            elif transformation == "prepareNodesForTraining":
+                gc.prepareNodesForTraining()
+
+            else:
+                raise RuntimeError(
+                    "Unrecognised transformation %s" % (transformation, ))
+
+        modelProtoX = gc.getModelProto()
+
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
     session = poponnx.Session(
-        fnModel=fnModel0,
+        fnModel=modelProtoX,
         inputShapeInfo=inputShapeInfo,
         dataFeed=dataFeed,
         losses=torchWriter.losses,

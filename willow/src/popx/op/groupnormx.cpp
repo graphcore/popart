@@ -46,8 +46,13 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
   // Calculate the mean and the inverse standard deviation
   poplar::Tensor mean;
   poplar::Tensor invStdDev;
-  std::tie(mean, invStdDev) = popnn::gn::groupNormStatistics(
-      graph(), inputP, epsilon, prog, static_cast<unsigned int>(num_groups), false);
+  std::tie(mean, invStdDev) =
+      popnn::gn::groupNormStatistics(graph(),
+                                     inputP,
+                                     epsilon,
+                                     prog,
+                                     static_cast<unsigned int>(num_groups),
+                                     false);
 
   // Calculate the normalization
   auto result = popnn::gn::groupNormalise(

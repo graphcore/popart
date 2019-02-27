@@ -18,6 +18,8 @@ public:
   void convertFloatsToHalfs();
   void convertInitializersToConstants(const std::vector<TensorId> &ids);
   void convertAllFixedPointInitializersToConstants();
+  void prepareNodesForTraining();
+  void removeUnusedInputs();
 
 private:
   onnx::ModelProto model;

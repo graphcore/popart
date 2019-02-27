@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <vector>
+#include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/batchnorm.hpp>
 #include <poponnx/opmanager.hpp>
@@ -102,6 +103,17 @@ void BatchNormOp::setup() {
       variableTensor->setVariableUpdateType(VariableUpdateType::Copy);
       variableTensor->setCopyFromTensor(outId(getVarOutIndex()));
     }
+  }
+
+  if (settings.ir.isTraining() && output->n() != 5) {
+    throw error(
+        "The Ir is in training mode, yet this batch-normalization Op, \"{}\" "
+        "has only {} output(s) which means it is in inference mode. To be in "
+        "training mode, it should have 5 outputs. Consider using "
+        "GraphTransformer::prepareNodesForTraining() to modify the ONNX Model "
+        "to have all Nodes set to training mode.",
+        str(),
+        output->n());
   }
 }
 

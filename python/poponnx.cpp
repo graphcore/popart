@@ -408,6 +408,10 @@ PYBIND11_MODULE(poponnx_core, m) {
            [](const GraphTransformer &graphtransformer) {
              return py::bytes(graphtransformer.getModelProto());
            })
+
+      .def("removeUnusedInputs", &GraphTransformer::removeUnusedInputs)
+      .def("prepareNodesForTraining",
+           &GraphTransformer::prepareNodesForTraining)
       .def("convertFloatsToHalfs", &GraphTransformer::convertFloatsToHalfs)
       .def("convertInitializersToConstants",
            &GraphTransformer::convertInitializersToConstants,

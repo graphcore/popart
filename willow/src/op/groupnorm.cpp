@@ -27,7 +27,8 @@ void GroupNormOp::setup() {
   // The input and output are of shape (N x C x H x W). If 4D input
   outInfo(getYOutIndex()) = inInfo(getXInIndex());
 
-  // For each sample (dimension 0), and each group, there is a single mean and a single variance
+  // For each sample (dimension 0), and each group, there is a single mean and a
+  // single variance
   outInfo(getVarOutIndex())  = {inInfo(getXInIndex()).dataType(),
                                {inInfo(getXInIndex()).dim(0) * num_groups}};
   outInfo(getMeanOutIndex()) = {inInfo(getXInIndex()).dataType(),

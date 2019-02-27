@@ -399,65 +399,6 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::ReduceSum).size() == 1);
 }
 
-BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
-  // (label), (probs) -> [NLLGrad]
-  // [NllGrad] -> (d_probs)
-  // (d_probs), (probs) -> [SoftmaxGrad] -> (d_acts)
-  //
-  // should become
-  //
-  // (label), (probs) -> [SoftmaxGradDirect] -> (d_acts)
-
-  // Build an onnx model
-  auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset9();
-
-  TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
-
-  auto input1 = builder->addInputTensor(shape);
-  auto input2 = builder->addInputTensor(shape);
-
-  auto identOut   = aiOnnx.identity({input1});
-  auto softmaxOut = aiOnnx.softmax({identOut});
-
-  builder->addOutputTensor(softmaxOut);
-
-  auto proto      = builder->getModelProto();
-  auto modelProto = io::getModelFromString(proto);
-
-  // Create the IR
-  // Add the last tensor, and the 3rd tensor as anchors
-  auto art       = AnchorReturnType("ALL");
-  auto dataFlow  = DataFlow(1,
-                           {{softmaxOut, art},
-                            {reservedGradientPrefix() + input1, art},
-                            {"nllLossVal", art}});
-  auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new NllLoss(softmaxOut, input2, "nllLossVal")};
-
-  auto opts = SessionOptions();
-  // No .dot files will be written
-  opts.dotChecks = {};
-
-  Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              losses,
-              &optimizer,
-              opts,
-              Patterns({PreAliasPatternType::PREUNIREPL,
-                        PreAliasPatternType::SOFTMAXGRADDIRECT})});
-
-  // Check the ir
-  // NllGradOp and SoftmaxGradOp should have been replaced with
-  // SoftmaxGradDirectOp
-  BOOST_CHECK(ir.opsOfType(Onnx::CustomGradOperators::NllGrad).size() == 0);
-  BOOST_CHECK(ir.opsOfType(Onnx::GradOperators::SoftmaxGrad).size() == 0);
-  BOOST_CHECK(
-      ir.opsOfType(Onnx::CustomGradOperators::SoftmaxGradDirect).size() == 1);
-}
-
 BOOST_AUTO_TEST_CASE(SoftmaxGrad_Loss_DifferentIpus) {
   // (label), (probs)   -> [NLLGrad]     -> (d_probs)
   // (d_probs), (probs) -> [SoftmaxGrad] -> (d_acts)

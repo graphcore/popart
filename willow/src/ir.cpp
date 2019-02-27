@@ -726,28 +726,69 @@ void Ir::registerInputTensors() {
     throw error("Invalid ONNX Model : repeated name: ({}) in input list",
                 repeater);
   }
+  // we create a map of the tensors to their consumers' types
+  std::map<TensorId, std::vector<std::string>> consumerTypes;
 
-  std::set<TensorId> onnxInitializers;
-  for (const auto &initializer : onnxGraph.initializer()) {
-    TensorId tenId = initializer.name();
-
-    // If inference or evaluation mode add initializers as constants
-    if (getExecutionMode() == ExecutionMode::INFERENCE ||
-        getExecutionMode() == ExecutionMode::EVALUATION) {
-      logging::info("Adding Constant Tensor {} to Ir", tenId);
-      getTensors().addConstInit(tenId, &initializer);
-    } else {
-      logging::info("Adding Variable Tensor {} to Ir", tenId);
-      getTensors().addVarInit(tenId, &initializer);
+  // populate consumerTypes
+  for (auto &node : onnxGraph.node()) {
+    for (int i = 0; i < node.input_size(); ++i) {
+      auto found = consumerTypes.find(node.input(i));
+      if (found == consumerTypes.end()) {
+        consumerTypes[node.input(i)] = {node.op_type() + "@" +
+                                        std::to_string(i)};
+      } else {
+        found->second.push_back(node.op_type() + "@" + std::to_string(i));
+      }
     }
-    onnxInitializers.emplace(tenId);
   }
 
-  // onnx inputs which are not initializers are true inputs
+  auto logCreationInfo = [&consumerTypes](std::string tensor_type,
+                                          TensorId tensorId) {
+    std::string consumerString = "";
+    auto found                 = consumerTypes.find(tensorId);
+
+    if (found == consumerTypes.end()) {
+      throw error("ILE: Tensor {} not present", tensorId);
+    }
+
+    consumerString = "with consumers [ ";
+    for (auto &i : found->second) {
+      consumerString += i;
+      consumerString += " ";
+    }
+    consumerString += "]";
+    logging::info(
+        "Adding {} Tensor {} to Ir {}.", tensor_type, tensorId, consumerString);
+  };
+
+  std::set<TensorId> onnxInitializers;
+
+  std::set<TensorId> unusedInitializers;
+
+  for (const auto &initializer : onnxGraph.initializer()) {
+    TensorId tenId = initializer.name();
+    if (consumerTypes.find(tenId) == consumerTypes.end()) {
+      logging::info("Not creating Tensor for unused initializer, {}", tenId);
+      unusedInitializers.emplace(tenId);
+    } else {
+      // If inference or evaluation mode add initializers as constants
+      if (getExecutionMode() == ExecutionMode::INFERENCE ||
+          getExecutionMode() == ExecutionMode::EVALUATION) {
+        logCreationInfo("Constant", tenId);
+        getTensors().addConstInit(tenId, &initializer);
+      } else {
+        logCreationInfo("Variable", tenId);
+        getTensors().addVarInit(tenId, &initializer);
+      }
+      onnxInitializers.emplace(tenId);
+    }
+  }
+
+  // used onnx inputs which are not initializers are true inputs
   for (auto &valueInfo : onnxGraph.input()) {
     TensorId id = valueInfo.name();
-    if (onnxInitializers.count(id) == 0) {
-      logging::info("Adding Stream Tensor {} to Ir", id);
+    if (onnxInitializers.count(id) == 0 && unusedInitializers.count(id) == 0) {
+      logCreationInfo("Stream", id);
       if (valueInfo.has_type() && valueInfo.type().tensor_type().has_shape()) {
         getTensors().addStream(id, TensorInfo(valueInfo.type()));
       } else {

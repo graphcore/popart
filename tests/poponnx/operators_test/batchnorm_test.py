@@ -334,7 +334,8 @@ def test_batchnorm_train_2(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
-# This test is a error case where the batch norm in the model is defined as testing but
+# This test is a error case where the batch
+# norm in the model is defined as testing but
 # the user has performed a train on the model
 def test_batchnorm_train_3(op_tester):
     # create test data
@@ -392,7 +393,7 @@ def test_batchnorm_train_3(op_tester):
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         op_tester.run(init_builder, reference, 'train')
 
-    assert ("Invalid configuration of gradOp" in e_info.value.args[0])
+    assert ("The Ir is in training mode" in e_info.value.args[0])
 
 
 # This test does not work as the inputs are now

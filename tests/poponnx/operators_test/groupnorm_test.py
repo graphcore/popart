@@ -215,7 +215,7 @@ def test_groupnorm_3(op_tester):
 
         _input = torch.tensor(d1, requires_grad=True)
 
-        m = torch.nn.GroupNorm(num_groups, num_channels, eps = epsilon)
+        m = torch.nn.GroupNorm(num_groups, num_channels, eps=epsilon)
 
         m.train()
         _y = m(_input)
