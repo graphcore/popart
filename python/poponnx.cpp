@@ -419,6 +419,12 @@ PYBIND11_MODULE(poponnx_core, m) {
 #include "poponnx.cpp.gen"
 
   py::class_<AiGraphcoreOpset1>(m, "AiGraphcoreOpset1")
+      .def("groupnormalization",
+           &AiGraphcoreOpset1::groupnormalization,
+           py::arg("args"),
+           py::arg("num_groups"),
+           py::arg("epsilon")     = 1e-05f,
+           py::arg("debugPrefix") = std::string())
       .def("subsample",
            &AiGraphcoreOpset1::subsample,
            py::arg("args"),

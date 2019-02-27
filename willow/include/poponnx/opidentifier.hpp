@@ -597,6 +597,7 @@ const static AiGraphcoreOpIdV1 GlobalAveragePoolGrad("GlobalAveragePoolGrad");
 // constexpr static char GlobalLpPool[] = "GlobalLpPool";
 const static AiGraphcoreOpIdV1 GlobalMaxPoolGrad("GlobalMaxPoolGrad");
 // constexpr static char Greater[] = "Greater";
+const static AiGraphcoreOpIdV1 GroupNormalizationGrad("GroupNormalizationGrad");
 // constexpr static char HardSigmoid[] = "HardSigmoid";
 // constexpr static char Hardmax[] = "Hardmax";
 const static AiGraphcoreOpIdV1 IdentityGrad("IdentityGrad");
@@ -700,6 +701,7 @@ const static AiGraphcoreOpIdV1 SliceInplace("SliceInplace");
 const static AiGraphcoreOpIdV1 ConcatGradInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 Subsample_1("Subsample", 1, 1);
 const static AiGraphcoreOpIdV1 Square("Square");
+const static AiGraphcoreOpIdV1 GroupNormalization_1("GroupNormalization", 3, 3);
 
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
 const static AiGraphcoreOpIdV1 ScaleInplace("ScaleInplace");
@@ -718,7 +720,9 @@ const static AiGraphcoreOpIdV1 FlattenAlias("FlattenAlias");
 namespace AiGraphcore {
 namespace OpSet1 {
 const static OperatorIdentifier Subsample = CustomOperators::Subsample_1;
-}
+const static OperatorIdentifier GroupNormalization =
+    CustomOperators::GroupNormalization_1;
+} // namespace OpSet1
 } // namespace AiGraphcore
 
 namespace CustomGradOperators {

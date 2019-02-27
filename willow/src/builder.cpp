@@ -144,6 +144,26 @@ void Builder::addOutputTensor(const TensorId &arg0) {
   return impl_->addOutputTensor(arg0);
 }
 
+std::vector<TensorId>
+AiGraphcoreOpset1::groupnormalization(const std::vector<TensorId> &args,
+                                      int64_t num_groups,
+                                      float epsilon,
+                                      const std::string &name) {
+  std::map<std::string, boost::any> attributes;
+
+  if (std::abs(epsilon - 1e-05f) > std::numeric_limits<float>::epsilon()) {
+    attributes["epsilon"] = epsilon;
+  }
+
+  attributes["num_groups"] = num_groups;
+
+  return impl->op(Onnx::AiGraphcore::OpSet1::GroupNormalization,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name);
+}
+
 TensorId AiGraphcoreOpset1::subsample(const std::vector<TensorId> &args,
                                       const std::vector<int64_t> &strides,
                                       const std::string &name) {

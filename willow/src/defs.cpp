@@ -14,6 +14,7 @@
 namespace ONNX_NAMESPACE {
 
 void SubsampleShapeInference(InferenceContext &ctx);
+void GroupNormalizationShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -49,7 +50,44 @@ void SubsampleShapeInference(InferenceContext &ctx) {
   }
 }
 
+// Do the same as BatchNormalization & InstanceNormalization in onnx
+void GroupNormalizationShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
+extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
+
+static const char groupnormalizationDoc[] =
+    "GroupNormalization applies Group Normalization over a mini-batch of input";
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    GroupNormalization,
+    AiGraphcore,
+    poponnx::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc(groupnormalizationDoc)
+        .Input(0, "X", "Input tensor", "T")
+        .Input(1, "Scale", "The input 1-dimensional scale tensor of size C.", "T")
+        .Input(2, "Bias", "The input 1-dimensional bias tensor of size C.", "T")
+        .Output(0, "Y", "Output tensor", "T")
+        .Output(1, "Mean", "The mean after GroupNormalization operator", "T")
+        .Output(2, "Var", "The variance after GroupNormalization operator", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(float)", "tensor(int32)", "tensor(float16)"},
+            "Constrain input and output types to signed numeric tensors.")
+        .Attr("num_groups",
+              "The number of groups",
+              AttributeProto::INT,
+              false)
+        .Attr("epsilon",
+              "The epsilon value to use to avoid division by zero.",
+              AttributeProto::FLOAT,
+              1e-5f)
+        .TypeAndShapeInferenceFunction(GroupNormalizationShapeInference));
 
 static const char subsampleDoc[] =
     "Subsample takes every Nth element of a tensor.";
@@ -77,6 +115,10 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(poponnx::Domain::ai_graphcore, 1, 1);
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, GroupNormalization)>());
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(

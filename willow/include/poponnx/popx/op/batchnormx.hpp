@@ -2,7 +2,7 @@
 #define GUARD_NEURALNET_BATCHNORMX_HPP
 
 #include <poponnx/names.hpp>
-#include <poponnx/popx/opx.hpp>
+#include <poponnx/popx/op/normx.hpp>
 
 namespace poponnx {
 
@@ -11,7 +11,7 @@ class BatchNormGradOp;
 
 namespace popx {
 
-class BatchNormOpx : public Opx {
+class BatchNormOpx : public NormOpx {
 public:
   BatchNormOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -25,7 +25,7 @@ private:
                                 const poplar::Tensor &invSd) const;
 };
 
-class BatchNormGradOpx : public Opx {
+class BatchNormGradOpx : public NormOpx {
 public:
   BatchNormGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

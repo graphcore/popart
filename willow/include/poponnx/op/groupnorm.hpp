@@ -1,60 +1,46 @@
-#ifndef GUARD_NEURALNET_BATCHNORM_HPP
-#define GUARD_NEURALNET_BATCHNORM_HPP
+#ifndef GUARD_NEURALNET_GROUPNORM_HPP
+#define GUARD_NEURALNET_GROUPNORM_HPP
 
 #include <poponnx/op.hpp>
 
 namespace poponnx {
 
-class BatchNormOp : public Op {
+class GroupNormOp : public Op {
 public:
-  BatchNormOp(const OperatorIdentifier &_opid,
-              float _epsilon,
-              float _momentum,
-              int64_t _spatial,
+  GroupNormOp(const OperatorIdentifier &opid_,
+              int64_t num_groups_,
+              float epsilon_,
               const Op::Settings &settings);
 
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
 
-  // Inputs
+  // Input's
   static InIndex getXInIndex() { return 0; }
   static InIndex getScaleInIndex() { return 1; }
   static InIndex getBInIndex() { return 2; }
-  static InIndex getMeanInIndex() { return 3; }
-  static InIndex getVarInIndex() { return 4; }
 
-  // Ouputs
+  // Ouput's
   static OutIndex getYOutIndex() { return 0; }
   static OutIndex getMeanOutIndex() { return 1; }
   static OutIndex getVarOutIndex() { return 2; }
-  static OutIndex getSavedMeanOutIndex() { return 3; }
-  static OutIndex getSavedVarOutIndex() { return 4; }
 
   // Attributes
   float getEpsilon() const { return epsilon; }
-  float getMomentum() const { return momentum; }
-  int64_t getSpatial() const { return spatial; }
-
-  bool isTraining() const {
-    (void)isTest;
-    return training;
-  }
+  int64_t getNumGroups() const { return num_groups; }
 
   void appendAttributes(std::stringstream &ss,
                         const std::string &tab) const override;
 
 private:
-  bool training = false;
-  bool isTest;
+  int64_t num_groups;
   float epsilon;
-  float momentum;
-  int64_t spatial;
 };
 
-class BatchNormGradOp : public Op {
+class GroupNormGradOp : public Op {
 public:
-  BatchNormGradOp(const BatchNormOp &);
+  GroupNormGradOp(const GroupNormOp &);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
@@ -65,7 +51,7 @@ public:
   static InIndex getVarInIndex() { return 3; }
   static InIndex getYGradInIndex() { return 4; }
 
-  static OutIndex getXOutIndex() { return 0; }
+  static OutIndex getXGradOutIndex() { return 0; }
   static OutIndex getScaleOutIndex() { return 1; }
   static OutIndex getBOutIndex() { return 2; }
 

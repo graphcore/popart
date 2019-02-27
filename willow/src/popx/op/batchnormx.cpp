@@ -20,83 +20,11 @@ namespace pe = popops::expr;
 namespace poponnx {
 namespace popx {
 
-BatchNormOpx::BatchNormOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+BatchNormOpx::BatchNormOpx(Op *op, Devicex *devicex) : NormOpx(op, devicex) {
   verifyOp<BatchNormOp>(op,
                         {Onnx::Operators::BatchNormalization_6,
                          Onnx::Operators::BatchNormalization_7,
                          Onnx::Operators::BatchNormalization_9});
-}
-
-// convert variant to inverse standard deviation
-static poplar::Tensor convertVarToInvSd(poplar::program::Sequence &prog,
-                                        poplar::Graph &graph,
-                                        const poplar::Tensor &var,
-                                        float epsilon,
-                                        std::string idStr) {
-  // This will be replaced by the new operator Tim P is developing
-  return popops::map(
-      graph,
-      pe::Divide(pe::Const(1), pe::Sqrt(pe::Add(pe::_1, pe::Const(epsilon)))),
-      {var},
-      prog,
-      idStr + "/VarToInvSd");
-}
-
-// convert inverse standard deviation to variance
-static poplar::Tensor convertInvSdToVar(poplar::program::Sequence &prog,
-                                        poplar::Graph &graph,
-                                        const poplar::Tensor &invSd,
-                                        float epsilon,
-                                        std::string idStr) {
-  // This will be replaced by the new operator Tim P is developing
-  return popops::map(
-      graph,
-      pe::Sub(pe::Divide(pe::Const(1), pe::Square(pe::_1)), pe::Const(epsilon)),
-      {invSd},
-      prog,
-      idStr + "/InvSdToVar");
-}
-
-// Need to convert onnx input to poplar format. Poplar only excepts 2D or 4D
-// tensors with the feature index in dimension 1.
-// - For 4D tensors we are already in the right format
-// - For nD tensors we can flatten to a 2D {X, C}
-static std::pair<poplar::Tensor, poplar::Shape>
-convertOnnxInputToPoplarInput(const poplar::Tensor &onnxInput) {
-  poplar::Tensor poplarInput;
-  poplar::Shape nonBroadcastDimensions;
-  if (onnxInput.rank() == 4) {
-    // The channels are already in dim 1, nothing to do
-    poplarInput = onnxInput;
-  } else {
-    const unsigned finalDimension = onnxInput.rank() - 1;
-    poplarInput            = onnxInput.dimShufflePartial({1}, {finalDimension});
-    nonBroadcastDimensions = poplarInput.shape();
-    nonBroadcastDimensions.pop_back();
-
-    auto count  = onnxInput.numElements() / onnxInput.dim(1);
-    poplarInput = poplarInput.reshapePartial(0, finalDimension, {count});
-  }
-
-  return {poplarInput, nonBroadcastDimensions};
-}
-
-// Convert back from poplar format to onnx format
-static poplar::Tensor
-convertPoplarOutputToOnnxOutput(const poplar::Tensor &poplarOutput,
-                                const poplar::Shape &nonBroadcastDimensions) {
-  poplar::Tensor onnxOutput;
-
-  if (poplarOutput.rank() == 4) {
-    // The channels are already in dim 1, nothing to do
-    onnxOutput = poplarOutput;
-  } else {
-    onnxOutput = poplarOutput.reshapePartial(0, 1, {nonBroadcastDimensions});
-    const unsigned finalDimension = onnxOutput.rank() - 1;
-    onnxOutput = onnxOutput.dimShufflePartial({finalDimension}, {1});
-  }
-
-  return onnxOutput;
 }
 
 // Not clear to me if batchNormalise is meant update the mean/var then how can
@@ -136,6 +64,8 @@ static bool isZeroElementArray(const poplar::Shape &shape) {
 
 void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
 
+  auto op = getOp<BatchNormOp>();
+
   // OK. This is found more by trial and error. It appears that pytorch, is
   // using an unbiased running variance But the other question is what should we
   // do for onnx that does not state if the running_variance is biased or
@@ -151,11 +81,10 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
   auto var   = get(inId(BatchNormOp::getVarInIndex()));
 
   // Attributes
-  float epsilon  = getOp<BatchNormOp>().getEpsilon();
-  float momentum = getOp<BatchNormOp>().getMomentum();
-  // int spatial = getOp<BatchNormOp>().getSpatial();
+  float epsilon  = op.getEpsilon();
+  float momentum = op.getMomentum();
 
-  if (getOp<BatchNormOp>().isTraining()) {
+  if (op.isTraining()) {
 
     // Special case - zero sized array
     if (isZeroElementArray(x.shape())) {
@@ -198,7 +127,7 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
       */
 
       // Then convert the invSd to the variance
-      auto batchVar = convertInvSdToVar(prog, graph(), invSd, epsilon, idStr());
+      auto batchVar = convertInvSdToVar(prog, invSd, epsilon);
 
       // Convert the output back into the input format
       y = convertPoplarOutputToOnnxOutput(y, nonBroadcastDims);
@@ -243,7 +172,7 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
       std::tie(xP, nonBroadcastDims) = convertOnnxInputToPoplarInput(x);
 
       // convert variant to inverse standard deviation
-      auto invSd = convertVarToInvSd(prog, graph(), var, epsilon, idStr());
+      auto invSd = convertVarToInvSd(prog, var, epsilon);
 
       // batchnorm
       auto y = batchNormalise(prog, xP, scale, b, mean, invSd);
@@ -293,11 +222,14 @@ BatchNormGradOpx::batchNormaliseGrad(poplar::program::Sequence &prog,
 }
 
 BatchNormGradOpx::BatchNormGradOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : NormOpx(op, devicex) {
   verifyOp<BatchNormGradOp>(op, Onnx::GradOperators::BatchNormalizationGrad);
 }
 
 void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
+
+  auto op = getOp<BatchNormGradOp>();
+
   // Inputs
   auto x     = get(inId(BatchNormGradOp::getXInIndex()));
   auto scale = get(inId(BatchNormGradOp::getScaleInIndex()));
@@ -306,9 +238,7 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
   auto yGrad = get(inId(BatchNormGradOp::getYGradInIndex()));
 
   // Attributes
-  float epsilon = getOp<BatchNormGradOp>().getFwdOp().getEpsilon();
-  // float momentum = getOp<BatchNormGradOp>().getFwdOp()->getMomentum();
-  // int spatial = getOp<BatchNormGradOp>().getFwdOp()->getSpatial();
+  float epsilon = op.getEpsilon();
 
   // Special case - zero sized array
   if (isZeroElementArray(x.shape())) {
@@ -329,7 +259,7 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
     std::tie(xP, nonBroadcastDims)     = convertOnnxInputToPoplarInput(x);
     std::tie(yGradP, nonBroadcastDims) = convertOnnxInputToPoplarInput(yGrad);
 
-    auto invSd = convertVarToInvSd(prog, graph(), var, epsilon, idStr());
+    auto invSd = convertVarToInvSd(prog, var, epsilon);
 
     // batchnormgrad
     poplar::Tensor xGrad, scaleGrad, bGrad;

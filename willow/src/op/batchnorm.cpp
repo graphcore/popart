@@ -115,7 +115,10 @@ void BatchNormOp::appendAttributes(std::stringstream &ss,
 
 BatchNormGradOp::BatchNormGradOp(const BatchNormOp &op_)
     : Op(Onnx::GradOperators::BatchNormalizationGrad, op_.getSettings()),
-      fwdOp(op_) {}
+      epsilon(op_.getEpsilon()),
+      fwdInInfo(op_.inInfo(BatchNormOp::getXInIndex())),
+      fwdScaleInInfo(op_.inInfo(BatchNormOp::getScaleInIndex())),
+      fwdBInInfo(op_.inInfo(BatchNormOp::getBInIndex())) {}
 
 const std::map<int, int> &BatchNormGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
@@ -140,9 +143,9 @@ const std::vector<GradInOutMapper> &BatchNormGradOp::gradInputInfo() const {
 
 void BatchNormGradOp::setup() {
 
-  outInfo(getXOutIndex())     = fwdOp.inInfo(BatchNormOp::getXInIndex());
-  outInfo(getScaleOutIndex()) = fwdOp.inInfo(BatchNormOp::getScaleInIndex());
-  outInfo(getBOutIndex())     = fwdOp.inInfo(BatchNormOp::getBInIndex());
+  outInfo(getXOutIndex())     = fwdInInfo;
+  outInfo(getScaleOutIndex()) = fwdScaleInInfo;
+  outInfo(getBOutIndex())     = fwdBInInfo;
 }
 
 namespace {

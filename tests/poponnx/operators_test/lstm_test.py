@@ -1,7 +1,8 @@
 import numpy as np
+import poponnx
 import torch
 from op_tester import op_tester
-import poponnx
+
 from pathlib import Path
 
 
