@@ -6,61 +6,26 @@
 namespace poponnx {
 
 MeanOp::MeanOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : Op(_opid, settings_) {}
+    : VariadicOp(_opid, settings_) {}
 
 std::unique_ptr<Op> MeanOp::clone() const { return make_unique<MeanOp>(*this); }
 
-std::vector<std::unique_ptr<Op>> MeanOp::getGradOps() {
-  std::vector<std::unique_ptr<Op>> upops;
-
-  for (int i = 0; i < input->n(); ++i) {
-    upops.push_back(make_unique<MeanGradOp>(*this, i));
-  }
-
-  return upops;
+std::unique_ptr<Op> MeanOp::getIthGrad(int i) const {
+  return std::unique_ptr<MeanArgGradOp>(new MeanArgGradOp(*this, i));
 }
 
-void MeanOp::setup() {
-
-  outInfo(getOutIndex()) = inInfo(0);
-
-  if (opid.version == 6) {
-    // In version 6 all inputs must be the same shape
-    for (int i = 1; i < input->n(); ++i) {
-      if (inInfo(i) != outInfo(getOutIndex())) {
-        throw error("Inputs to {} do not all the same type & shape", opid);
-      }
-    }
-  } else {
-    // In version 8 inputs are broadcast
-    for (int i = 1; i < input->n(); ++i) {
-      outInfo(getOutIndex()) = npOut(outInfo(getOutIndex()), inInfo(i));
-    }
-  }
-}
-
-bool MeanOp::canBeReplacedByIdentity() { return (input->n() == 1); }
-
-MeanGradOp::MeanGradOp(const MeanOp &op_, InIndex inputIndex)
-    : Op(Onnx::GradOperators::MeanGrad, op_.getSettings()),
-      fwdIndex(inputIndex), numFwdOpInputs(op_.input->n()) {
-
-  gradOutToNonGradInInfo = {{getOutIndex(), fwdIndex}};
+MeanArgGradOp::MeanArgGradOp(const MeanOp &op_, InIndex inputIndex)
+    : LinearVariadicGradOp(Onnx::GradOperators::MeanArgGrad, op_, inputIndex) {
 
   gradInputInfoVec = {
-      {getGradInIndex(), MeanOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getFwdInIndex(), fwdIndex, GradOpInType::IN}};
+      {getGradInIndex(), VariadicOp::getOutIndex(), GradOpInType::GRADOUT}};
+
+  nInputs = op_.input->n();
 }
 
-const std::map<int, int> &MeanGradOp::gradOutToNonGradIn() const {
-  return gradOutToNonGradInInfo;
-}
-
-const std::vector<GradInOutMapper> &MeanGradOp::gradInputInfo() const {
+const std::vector<GradInOutMapper> &MeanArgGradOp::gradInputInfo() const {
   return gradInputInfoVec;
 }
-
-void MeanGradOp::setup() { outInfo(getOutIndex()) = inInfo(getFwdInIndex()); }
 
 namespace {
 static OpCreator<MeanOp> opCreator({Onnx::Operators::Mean_6,

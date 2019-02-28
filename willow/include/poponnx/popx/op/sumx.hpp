@@ -7,6 +7,7 @@
 namespace poponnx {
 
 class SumOp;
+class SumArgGradOp;
 
 namespace popx {
 
@@ -18,6 +19,12 @@ public:
   poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
                                     InIndex inIndex,
                                     OutIndex outIndex) const final;
+};
+
+class SumArgGradOpx : public Opx {
+public:
+  SumArgGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

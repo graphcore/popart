@@ -42,13 +42,14 @@ void MeanOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(MeanOp::getOutIndex()), outTensor);
 }
 
-MeanGradOpx::MeanGradOpx(Op *op_, Devicex *devicex_) : Opx(op_, devicex_) {}
+MeanArgGradOpx::MeanArgGradOpx(Op *op_, Devicex *devicex_)
+    : Opx(op_, devicex_) {}
 
-void MeanGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto gradOp = getOp<MeanGradOp>();
+void MeanArgGradOpx::grow(poplar::program::Sequence &prog) const {
+  auto gradOp = getOp<MeanArgGradOp>();
 
-  auto shapeOfInputToBwdOp = inInfo(MeanGradOp::getGradInIndex()).shape();
-  auto shapeOfInputToFwdOp = inInfo(MeanGradOp::getFwdInIndex()).shape();
+  auto shapeOfInputToBwdOp = inInfo(MeanArgGradOp::getGradInIndex()).shape();
+  auto shapeOfInputToFwdOp = gradOp.getFwdInputInfo().shape();
 
   // Create the axes to reduce along.
   std::vector<int64_t> axes =
@@ -57,30 +58,28 @@ void MeanGradOpx::grow(poplar::program::Sequence &prog) const {
   // Remove axes from the result that were not present ( or 1) in the input to
   // the fwd op
   auto out = popops::reduce(graph(),
-                            get(inId(MeanGradOp::getGradInIndex())),
+                            get(inId(MeanArgGradOp::getGradInIndex())),
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
                             prog,
                             idStr());
 
   // scale the grad input (reduced)
-  popops::mapInPlace(
-      graph(),
-      pe::Mul(pe::_1,
-              pe::Const(1.0f / static_cast<float>(gradOp.getNumFwdOpInputs()))),
-      {out},
-      prog,
-      idStr());
+  popops::mapInPlace(graph(),
+                     pe::Mul(pe::_1, pe::Const(gradOp.getScale())),
+                     {out},
+                     prog,
+                     idStr());
 
   // Reshape the output, to add 1's if needed
-  insert(outId(MeanGradOp::getOutIndex()),
-         out.reshape(outInfo(MeanGradOp::getOutIndex()).shape_szt()));
+  insert(outId(MeanArgGradOp::getOutIndex()),
+         out.reshape(outInfo(MeanArgGradOp::getOutIndex()).shape_szt()));
 }
 
 namespace {
 OpxCreator<MeanOpx> meanOpxCreator({Onnx::Operators::Mean_6,
                                     Onnx::Operators::Mean_8});
-OpxCreator<MeanGradOpx> meanGradOpxCreator(Onnx::GradOperators::MeanGrad);
+OpxCreator<MeanArgGradOpx> meanGradOpxCreator(Onnx::GradOperators::MeanArgGrad);
 } // namespace
 
 } // namespace popx

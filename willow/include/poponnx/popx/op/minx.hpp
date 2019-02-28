@@ -8,15 +8,16 @@ namespace poponnx {
 
 namespace popx {
 
+// Refactor needed, see T7199
 class MinOpx : public ElementWiseUnaryOpx {
 public:
   MinOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 
-class MinGradOpx : public Opx {
+class MinArgGradOpx : public Opx {
 public:
-  MinGradOpx(Op *, Devicex *);
+  MinArgGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 
