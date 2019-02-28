@@ -1,4 +1,4 @@
-#define BOOST_TEST_MODULE SoftmaxGradDirectTest
+#define BOOST_TEST_MODULE SoftmaxGradDirectTest0
 
 #include <boost/test/unit_test.hpp>
 #include <vector>
@@ -17,67 +17,92 @@
 
 using namespace poponnx;
 
-BOOST_AUTO_TEST_CASE(SoftmaxGradDirect) {
+BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
   // (label), (probs) -> [NLLGrad]
   // [NllGrad] -> (d_probs)
   // (d_probs), (probs) -> [SoftmaxGrad] -> (d_acts)
   //
   // should become
   // (label), (probs) -> [SoftmaxGradDirect] -> (d_acts)
+  //
+  // but ONLY if "they're" on the same IPUs
 
-  // Build an onnx model
-  auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset9();
+  auto test = [](bool sameIPU) {
+    // Build an onnx model
+    auto builder = Builder::create();
+    auto aiOnnx  = builder->aiOnnxOpset9();
 
-  TensorInfo inInfo{"FLOAT", std::vector<int64_t>{2, 2}};
-  TensorInfo labelInfo{"INT32", std::vector<int64_t>{2}};
+    TensorInfo inInfo{"FLOAT", std::vector<int64_t>{2, 2}};
+    TensorInfo labelInfo{"INT32", std::vector<int64_t>{2}};
 
-  auto input1 = builder->addInputTensor(inInfo);
+    auto input1 = builder->addInputTensor(inInfo);
 
-  // This tensor is NOT part of the ONNX model, losses
-  // are kept separate. It's shape is provided with InputShapeInfo
-  TensorId input2 = "labelId";
+    // This tensor is NOT part of the ONNX model, losses
+    // are kept separate. It's shape is provided with InputShapeInfo
+    TensorId input2 = "labelId";
 
-  auto identOut   = aiOnnx.identity({input1});
-  auto softmaxOut = aiOnnx.softmax({identOut});
+    auto identOut   = aiOnnx.identity({input1});
+    auto softmaxOut = aiOnnx.softmax({identOut});
 
-  builder->addOutputTensor(softmaxOut);
+    if (sameIPU == false) {
+      builder->virtualGraph(identOut, 2);
+      builder->virtualGraph(softmaxOut, 2);
+    }
 
-  auto proto      = builder->getModelProto();
-  auto modelProto = io::getModelFromString(proto);
+    builder->addOutputTensor(softmaxOut);
 
-  // Create the IR
-  // Add the last tensor, and the 3rd tensor as anchors
-  auto art       = AnchorReturnType("ALL");
-  auto dataFlow  = DataFlow(1,
-                           {{softmaxOut, art},
-                            {reservedGradientPrefix() + input1, art},
-                            {"nllLossVal", art}});
-  auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new NllLoss(softmaxOut, input2, "nllLossVal")};
+    auto proto      = builder->getModelProto();
+    auto modelProto = io::getModelFromString(proto);
 
-  auto opts = SessionOptions();
-  // No .dot files will be written
-  opts.dotChecks = {};
+    // Create the IR
+    // Add the last tensor, and the 3rd tensor as anchors
+    auto art       = AnchorReturnType("ALL");
+    auto dataFlow  = DataFlow(1,
+                             {{softmaxOut, art},
+                              {reservedGradientPrefix() + input1, art},
+                              {"nllLossVal", art}});
+    auto optimizer = ConstSGD(0.01);
+    std::vector<Loss *> losses{new NllLoss(softmaxOut, input2, "nllLossVal")};
 
-  InputShapeInfo inputInfo{};
-  inputInfo.add(input2, labelInfo);
+    if (sameIPU == false) {
+      losses[0]->virtualGraph(1);
+    }
 
-  Ir ir;
-  ir.prepare({modelProto,
-              inputInfo,
-              dataFlow,
-              losses,
-              &optimizer,
-              opts,
-              Patterns({PreAliasPatternType::PREUNIREPL,
-                        PreAliasPatternType::SOFTMAXGRADDIRECT})});
+    auto opts = SessionOptions();
+    // No .dot files will be written
+    opts.dotChecks = {};
 
-  // Check the ir
-  // NllGradOp and SoftmaxGradOp should have been replaced with
-  // SoftmaxGradDirectOp
-  BOOST_CHECK(ir.opsOfType(Onnx::CustomGradOperators::NllGrad).size() == 0);
-  BOOST_CHECK(ir.opsOfType(Onnx::GradOperators::SoftmaxGrad).size() == 0);
-  BOOST_CHECK(
-      ir.opsOfType(Onnx::CustomGradOperators::SoftmaxGradDirect).size() == 1);
+    InputShapeInfo inputInfo{};
+    inputInfo.add(input2, labelInfo);
+
+    Ir ir;
+    ir.prepare({modelProto,
+                inputInfo,
+                dataFlow,
+                losses,
+                &optimizer,
+                opts,
+                Patterns({PreAliasPatternType::PREUNIREPL,
+                          PreAliasPatternType::SOFTMAXGRADDIRECT})});
+
+    // Check the ir
+    // NllGradOp and SoftmaxGradOp should have been replaced with
+    // SoftmaxGradDirectOp, but ONLY if different IPUs
+
+    if (sameIPU == true) {
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomGradOperators::NllGrad).size() == 0);
+      BOOST_CHECK(ir.opsOfType(Onnx::GradOperators::SoftmaxGrad).size() == 0);
+      BOOST_CHECK(
+          ir.opsOfType(Onnx::CustomGradOperators::SoftmaxGradDirect).size() ==
+          1);
+    } else {
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomGradOperators::NllGrad).size() == 1);
+      BOOST_CHECK(ir.opsOfType(Onnx::GradOperators::SoftmaxGrad).size() == 1);
+      BOOST_CHECK(
+          ir.opsOfType(Onnx::CustomGradOperators::SoftmaxGradDirect).size() ==
+          0);
+    }
+  };
+  test(true);
+  test(false);
 }
