@@ -1,44 +1,30 @@
 #ifndef GUARD_NEURALNET_MEAN_HPP
 #define GUARD_NEURALNET_MEAN_HPP
 
-#include <poponnx/op.hpp>
+#include <poponnx/op/variadic.hpp>
 
 namespace poponnx {
 
-class MeanOp : public Op {
+class MeanOp : public VariadicOp {
 public:
-  MeanOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
+  MeanOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
-  void setup() final;
-
-  // Mean has a variable number of inputs
-  static OutIndex getOutIndex() { return 0; }
-
-  bool canBeReplacedByIdentity() override;
-};
-
-// A MeanGradOp will be created for each input to MeanOp i.e. it will compute
-// the gradient of a single input argument
-class MeanGradOp : public Op {
-public:
-  MeanGradOp(const MeanOp &, InIndex index);
-
-  const std::vector<GradInOutMapper> &gradInputInfo() const final;
-  const std::map<int, int> &gradOutToNonGradIn() const final;
-  void setup() final;
-
-  static InIndex getGradInIndex() { return 0; }
-  static InIndex getFwdInIndex() { return 1; }
-  static OutIndex getOutIndex() { return 0; }
-
-  unsigned getNumFwdOpInputs() { return numFwdOpInputs; }
 
 private:
-  InIndex fwdIndex;
-  unsigned numFwdOpInputs;
-  std::map<int, int> gradOutToNonGradInInfo;
+  virtual std::unique_ptr<Op> getIthGrad(int) const final;
+};
+
+class MeanArgGradOp : public LinearVariadicGradOp {
+public:
+  MeanArgGradOp(const MeanOp &, InIndex inIndex);
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+
+  bool hasScale() const final { return true; }
+  float getScale() const final { return 1.0f / static_cast<float>(nInputs); }
+
+private:
   std::vector<GradInOutMapper> gradInputInfoVec;
+  int nInputs;
 };
 
 } // namespace poponnx

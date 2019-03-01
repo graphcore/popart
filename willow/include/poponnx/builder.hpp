@@ -58,15 +58,33 @@ public:
   AiGraphcoreOpset1(std::unique_ptr<BuilderImpl> &impl_) : DomainOpSet(impl_) {}
 
   /**
+   * Add a groupnormalization operation to the model
+   *
+   * This is a poplar extension
+   *
+   * The group will be created from a strided input
+   *
+   * \param args A vector of input tensors (x, scale, bias)
+   * \param num_groups The number of groups to separate the channels into
+   * \param epsilon The epsilon value to use to avoid division by zero.
+   * \param name Optional identifier for operation
+   * \return A vector of tensors (y, mean, var)
+   */
+  std::vector<TensorId> groupnormalization(const std::vector<TensorId> &args,
+                                           int64_t num_groups,
+                                           float epsilon           = 1e-05f,
+                                           const std::string &name = {});
+
+  /**
    * Add a subsample operation to the model
    *
-   * This is a poplar extention
+   * This is a poplar extension
    *
    * If multiple tensors are provided that strides will applied to them all
    *
    * \param args Tensor T
    * \param strides The strides
-   * \param name Optional identifer for operation
+   * \param name Optional identifier for operation
    * \return The name of the result tensor
    */
   TensorId subsample(const std::vector<TensorId> &args,

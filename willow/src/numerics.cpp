@@ -73,8 +73,13 @@ NumericsReport::NumericsReport(std::string AStarts, // A starts
       reports[getTensor(AStarts).name()] = tracker.str();
     }
 
+    // For fixed point types, we do nothing
+    else if (cv_datas[AStarts].info.getDataTypeInfo()->isFixedPoint()) {
+      // we currently do nothing for integer types
+    }
+
     else {
-      throw error("Create report for type " +
+      throw error("Create report for floating-point type " +
                   cv_datas[AStarts].info.data_type());
     }
   }

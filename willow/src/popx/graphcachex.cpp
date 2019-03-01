@@ -29,7 +29,8 @@ GraphCachex::getPoplarTensorSignature(const poplar::Tensor &tensor) {
 GraphCachex::ConvolutionCacheKey
 GraphCachex::getConvolutionCacheKey(const poplin::ConvParams &params,
                                     const PoplarOptions &options,
-                                    const bool &transposeAndFlipWeights) {
+                                    const bool &transposeAndFlipWeights,
+                                    const int64_t &virtualGraphId) {
   // Create signature for the convolution input
   std::vector<std::size_t> inShape = {params.getBatchSize(),
                                       params.getNumInputChans()};
@@ -50,25 +51,30 @@ GraphCachex::getConvolutionCacheKey(const poplin::ConvParams &params,
                          weightsSignature,
                          poplin::canonicalizeParams(params),
                          options.options,
-                         transposeAndFlipWeights);
+                         transposeAndFlipWeights,
+                         virtualGraphId);
 }
 
 GraphCachex::CalculateWeightDeltasCacheKey
 GraphCachex::getCalculateWeightDeltasKey(const poplar::Tensor &zDeltas,
                                          const poplar::Tensor &activations,
                                          const poplin::ConvParams &params,
-                                         const PoplarOptions &options) {
+                                         const PoplarOptions &options,
+                                         const int64_t &virtualGraphId) {
   return std::make_tuple(getPoplarTensorSignature(zDeltas),
                          getPoplarTensorSignature(activations),
                          poplin::canonicalizeParams(params),
-                         options.options);
+                         options.options,
+                         virtualGraphId);
 }
 
 GraphCachex::BwdWeightCacheKey
 GraphCachex::getBwdWeightCacheKey(const poplar::Tensor &weights,
-                                  const poplar::Tensor &bwdWeights) {
-  return {getPoplarTensorSignature(weights),
-          getPoplarTensorSignature(bwdWeights)};
+                                  const poplar::Tensor &bwdWeights,
+                                  const int64_t &virtualGraphId) {
+  return std::make_tuple(getPoplarTensorSignature(weights),
+                         getPoplarTensorSignature(bwdWeights),
+                         virtualGraphId);
 }
 
 poplar::Tensor
@@ -81,10 +87,11 @@ GraphCachex::createCachedConvolution(poplar::Graph &graph,
                                      bool cacheOperation,
                                      const std::string &debugPrefix,
                                      const PoplarOptions &options,
-                                     poplin::PlanningCache *cache) {
+                                     poplin::PlanningCache *cache,
+                                     const int64_t &virtualGraphId) {
   std::vector<poplar::Tensor> convArgs = {in, weights};
-  auto cacheKey =
-      getConvolutionCacheKey(params, options, transposeAndFlipWeights);
+  auto cacheKey                        = getConvolutionCacheKey(
+      params, options, transposeAndFlipWeights, virtualGraphId);
   auto it = convolutionGraphCache.find(cacheKey);
   if (it != convolutionGraphCache.end() && cacheOperation) {
     auto &convFunction = it->second;
@@ -115,23 +122,25 @@ GraphCachex::createCachedConvolution(poplar::Graph &graph,
 GraphCachex::MatMulCacheKey
 GraphCachex::getMatMulCacheKey(const poplar::Tensor &a,
                                const poplar::Tensor &b,
-                               const PoplarOptions &options) {
+                               const PoplarOptions &options,
+                               const int64_t &virtualGraphId) {
   return std::make_tuple(getPoplarTensorSignature(a),
                          getPoplarTensorSignature(b),
-                         options.options);
+                         options.options,
+                         virtualGraphId);
 }
 
-poplar::Tensor
-GraphCachex::matMulGrouped(poplar::Graph &graph,
-                           const poplar::Tensor &a,
-                           const poplar::Tensor &b,
-                           poplar::program::Sequence &prog,
-                           bool cacheOperation,
-                           const std::string &debugPrefix,
-                           const PoplarOptions &options,
-                           poplin::matmul::PlanningCache *cache) {
+poplar::Tensor GraphCachex::matMulGrouped(poplar::Graph &graph,
+                                          const poplar::Tensor &a,
+                                          const poplar::Tensor &b,
+                                          poplar::program::Sequence &prog,
+                                          bool cacheOperation,
+                                          const std::string &debugPrefix,
+                                          const PoplarOptions &options,
+                                          poplin::matmul::PlanningCache *cache,
+                                          const int64_t &virtualGraphId) {
   std::vector<poplar::Tensor> matMulArgs = {a, b};
-  auto cacheKey                          = getMatMulCacheKey(a, b, options);
+  auto cacheKey = getMatMulCacheKey(a, b, options, virtualGraphId);
 
   auto it = matmulGraphCache.find(cacheKey);
   if (it != matmulGraphCache.end()) {
@@ -167,11 +176,12 @@ GraphCachex::cachedCalculateWeightDeltas(poplar::Graph &graph,
                                          bool cacheOperation,
                                          const std::string &debugPrefix,
                                          const PoplarOptions &options,
-                                         poplin::PlanningCache *cache) {
+                                         poplin::PlanningCache *cache,
+                                         const int64_t &virtualGraphId) {
   std::vector<poplar::Tensor> calculateWeightDeltasArgs = {zDeltas,
                                                            activations};
-  auto cacheKey =
-      getCalculateWeightDeltasKey(zDeltas, activations, params, options);
+  auto cacheKey = getCalculateWeightDeltasKey(
+      zDeltas, activations, params, options, virtualGraphId);
   auto it = calculateWeightDeltasGraphCache.find(cacheKey);
   if (it != calculateWeightDeltasGraphCache.end() && cacheOperation) {
     auto &calculateWeightDeltasFunction = it->second;
@@ -203,9 +213,10 @@ void GraphCachex::createCachedBwdWeights(poplar::Graph &graph,
                                          const poplar::Tensor &weights,
                                          const poplar::Tensor &bwdWeights,
                                          poplar::program::Sequence &prog,
-                                         const std::string &debug_prefix) {
+                                         const std::string &debug_prefix,
+                                         const int64_t &virtualGraphId) {
   std::vector<poplar::Tensor> bwdWeightsArgs = {weights, bwdWeights};
-  auto cacheKey = getBwdWeightCacheKey(weights, bwdWeights);
+  auto cacheKey = getBwdWeightCacheKey(weights, bwdWeights, virtualGraphId);
   auto it       = bwdWeightGraphCache.find(cacheKey);
   if (it != bwdWeightGraphCache.end()) {
     auto &bwdWeightsFunction = it->second;
@@ -234,7 +245,8 @@ poplar::Tensor GraphCachex::convolution(poplar::Graph &graph,
                                         bool cacheOperation,
                                         const std::string &debugPrefix,
                                         const PoplarOptions &options,
-                                        poplin::PlanningCache *cache) {
+                                        poplin::PlanningCache *cache,
+                                        const int64_t &virtualGraphId) {
   PoplarOptions convOptions  = options;
   poplar::Tensor convWeights = weights;
 
@@ -254,14 +266,15 @@ poplar::Tensor GraphCachex::convolution(poplar::Graph &graph,
     auto fwdOptions            = options;
     fwdOptions.options["pass"] = "TRAINING_FWD";
 
-    auto fwdCacheKey = getConvolutionCacheKey(params, fwdOptions, false);
+    auto fwdCacheKey =
+        getConvolutionCacheKey(params, fwdOptions, false, virtualGraphId);
     if (convolutionGraphCache.count(fwdCacheKey)) {
       // We found a match - adapt the weights and change the required options.
       const auto bwdWeightsName = debugPrefix + "bwdWeights";
       convWeights               = poplin::createWeights(
           graph, params, bwdWeightsName, fwdOptions.toOptionFlags(), cache);
       createCachedBwdWeights(
-          graph, weights5D, convWeights, prog, bwdWeightsName);
+          graph, weights5D, convWeights, prog, bwdWeightsName, virtualGraphId);
       needToTransposeAndFlipWeights = false;
       convOptions                   = fwdOptions;
     }
@@ -276,7 +289,8 @@ poplar::Tensor GraphCachex::convolution(poplar::Graph &graph,
                                  cacheOperation,
                                  debugPrefix,
                                  convOptions,
-                                 cache);
+                                 cache,
+                                 virtualGraphId);
 }
 
 poplar::Tensor
@@ -288,7 +302,8 @@ GraphCachex::calculateWeightDeltas(poplar::Graph &graph,
                                    bool cacheOperation,
                                    const std::string &debugPrefix,
                                    const PoplarOptions &options,
-                                   poplin::PlanningCache *cache) {
+                                   poplin::PlanningCache *cache,
+                                   const int64_t &virtualGraphId) {
   return cachedCalculateWeightDeltas(graph,
                                      zDeltas,
                                      activations,
@@ -297,7 +312,8 @@ GraphCachex::calculateWeightDeltas(poplar::Graph &graph,
                                      cacheOperation,
                                      debugPrefix,
                                      options,
-                                     cache);
+                                     cache,
+                                     virtualGraphId);
 }
 } // namespace popx
 } // namespace poponnx

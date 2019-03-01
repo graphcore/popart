@@ -401,7 +401,8 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
                                      matmul->cacheOperation,
                                      idStr(),            // debugPrefix
                                      dv_p->fwdMmOptions, // options
-                                     &dv_p->matmulCache  // cache
+                                     &dv_p->matmulCache, // cache
+                                     getVirtualGraphId() // virtualGraphId
       );
 
   // Split the broadcast dimensions from the rows and columns
@@ -654,7 +655,8 @@ void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
                                      matmulOp->cacheOperation,
                                      idStr(),               // debugPrefix
                                      dv_p->bwdMmLhsOptions, // options
-                                     &dv_p->matmulCache     // cache
+                                     &dv_p->matmulCache,    // cache
+                                     getVirtualGraphId()    // virtualGraphId
       );
 
   outTensor = matSplitBroadcastDims(
@@ -767,7 +769,8 @@ void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
                                      matmulOp->cacheOperation,
                                      idStr(),               // debugPrefix
                                      dv_p->bwdMmRhsOptions, // options
-                                     &dv_p->matmulCache     // cache
+                                     &dv_p->matmulCache,    // cache
+                                     getVirtualGraphId()    // virtualGraphId
       );
 
   outTensor = matSplitBroadcastDims(

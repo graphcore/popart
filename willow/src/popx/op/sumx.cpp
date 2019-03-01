@@ -1,5 +1,7 @@
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
+#include <popops/Reduce.hpp>
+
 #include <poponnx/error.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/sum.hpp>
@@ -8,6 +10,8 @@
 #include <poponnx/tensorindex.hpp>
 
 #include <queue>
+
+namespace pe = popops::expr;
 
 namespace poponnx {
 namespace popx {
@@ -75,9 +79,37 @@ SumOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
   return tensor;
 }
 
+SumArgGradOpx::SumArgGradOpx(Op *op_, Devicex *devicex_) : Opx(op_, devicex_) {}
+
+void SumArgGradOpx::grow(poplar::program::Sequence &prog) const {
+  auto gradOp = getOp<SumArgGradOp>();
+
+  auto shapeOfInputToBwdOp = inInfo(VariadicGradOp::getGradInIndex()).shape();
+  auto shapeOfInputToFwdOp = gradOp.getFwdInputInfo().shape();
+
+  // Create the axes to reduce along.
+  std::vector<int64_t> axes =
+      npReductionAxis(shapeOfInputToFwdOp, shapeOfInputToBwdOp);
+
+  // Remove axes from the result that were not present ( or 1) in the input to
+  // the fwd op
+  auto out = popops::reduce(graph(),
+                            get(inId(SumArgGradOp::getGradInIndex())),
+                            vXtoY<int64_t, std::size_t>(axes),
+                            {popops::Operation::ADD},
+                            prog,
+                            idStr());
+
+  // Reshape the output, to add 1's if needed
+  insert(outId(SumArgGradOp::getOutIndex()),
+         out.reshape(outInfo(SumArgGradOp::getOutIndex()).shape_szt()));
+}
+
 namespace {
 OpxCreator<SumOpx> sumOpxCreator({Onnx::Operators::Sum_6,
                                   Onnx::Operators::Sum_8});
+
+OpxCreator<SumArgGradOpx> sumGradOpxCreator(Onnx::GradOperators::SumArgGrad);
 } // namespace
 
 } // namespace popx

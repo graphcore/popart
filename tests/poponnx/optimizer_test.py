@@ -53,37 +53,47 @@ def trainSession(anchors, optimizer, stepSize):
     return session, inputs
 
 
-def test_sgd_learnrate_check():
+def test_sgd_param_check():
     """
-    In this test we check that learning rate tesnor, returned as an anchor,
+    In this test we check that learning rate tensor, returned as an anchor,
     matches the value supplied to the optimizer constructor
     """
-    anchorNames = {"learnRate": poponnx.AnchorReturnType("ALL")}
-    # Just a placeholder optimizer. We overwrite the lr in this test once
-    # the session is created
-    userSgd = poponnx.SGD(-1)
+    anchorNames = {
+        "learnRate": poponnx.AnchorReturnType("ALL"),
+        "weightDecay": poponnx.AnchorReturnType("ALL")
+    }
+
+    # Just a placeholder optimizer. We overwrite the hyper-parameters in this
+    # test once the session is created
+    userSgd = poponnx.SGD(learning_rate=-1, weight_decay=-1)
     stepSize = 2
+
     session, inputsUserSgd = trainSession(anchorNames, userSgd, stepSize)
     anchorsArrays = session.initAnchorArrays()
 
     # train
     numSteps = 3
     learningRate = np.random.rand(numSteps).astype('float32')
+    weightDecay = np.random.rand(numSteps).astype('float32')
+
     for step in range(numSteps):
 
         # Update learning rate parameter between training steps
         stepLr = learningRate[step]
-        session.updateOptimizer(poponnx.SGD(stepLr))
+        stepWd = weightDecay[step]
+        session.updateOptimizer(
+            poponnx.SGD(learning_rate=stepLr, weight_decay=stepWd))
         session.optimizerFromHost()
 
         stepio = poponnx.PyStepIO(inputsUserSgd, anchorsArrays)
 
         session.train(stepio)
 
-        print(anchorsArrays["learnRate"])
-        print(stepLr)
-
         assert (np.array_equal(anchorsArrays["learnRate"][0], stepLr))
+        # The weight decay tensor is scaled by lr on the host
+        # before training
+        assert (np.array_equal(anchorsArrays["weightDecay"][0],
+                               stepWd * stepLr))
 
 
 def test_constsgd_vs_sgd():
@@ -96,14 +106,15 @@ def test_constsgd_vs_sgd():
     """
     anchorNames = {"l1LossVal": poponnx.AnchorReturnType("ALL")}
     lr = 0.01
+    wd = 0.01
     stepSize = 2
 
-    constSgd = poponnx.ConstSGD(lr)
+    constSgd = poponnx.ConstSGD(learning_rate=lr, weight_decay=wd)
     sessionConstSgd, inputsConstSgd = trainSession(anchorNames, constSgd,
                                                    stepSize)
     anchorsArraysConstSgd = sessionConstSgd.initAnchorArrays()
 
-    userSgd = poponnx.SGD(lr)
+    userSgd = poponnx.SGD(learning_rate=lr, weight_decay=wd)
     sessionUserSgd, inputsUserSgd = trainSession(anchorNames, userSgd,
                                                  stepSize)
     anchorsArraysUserSgd = sessionUserSgd.initAnchorArrays()
@@ -121,7 +132,8 @@ def test_constsgd_vs_sgd():
         stepioUserSgd = poponnx.PyStepIO(inputsUserSgd, anchorsArraysUserSgd)
 
         if step == numSteps - 1:
-            sessionUserSgd.updateOptimizer(poponnx.SGD(2 * lr))
+            sessionUserSgd.updateOptimizer(
+                poponnx.SGD(learning_rate=2 * lr, weight_decay=2 * wd))
             sessionUserSgd.optimizerFromHost()
 
         sessionConstSgd.train(stepioConstSgd)

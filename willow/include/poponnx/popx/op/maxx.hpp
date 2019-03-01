@@ -8,15 +8,16 @@ namespace poponnx {
 
 namespace popx {
 
+// Refactor needed, see T7199
 class MaxOpx : public ElementWiseUnaryOpx {
 public:
   MaxOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 
-class MaxGradOpx : public Opx {
+class MaxArgGradOpx : public Opx {
 public:
-  MaxGradOpx(Op *, Devicex *);
+  MaxArgGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 

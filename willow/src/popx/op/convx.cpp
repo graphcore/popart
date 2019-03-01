@@ -74,6 +74,7 @@ std::vector<TensorId> ConvOpx::mustExistBeforeCreate(InIndex) const {
 
 void ConvOpx::grow(poplar::program::Sequence &prog) const {
   ConvOp &convOp = getOp<ConvOp>();
+
   auto outTensor =
       dv_p->graphCache.convolution(graph(),                     // graph
                                    get(convOp.dataIn()->id),    // in
@@ -84,7 +85,8 @@ void ConvOpx::grow(poplar::program::Sequence &prog) const {
                                    convOp.cacheOperation, // cacheOperation
                                    idStr(),               // debugPrefix
                                    dv_p->fwdConvOptions,  // options
-                                   &dv_p->convCache       // cache
+                                   &dv_p->convCache,      // cache
+                                   getVirtualGraphId()    // virtualGraphId
       );
 
   insert(outId(0), outTensor);
@@ -93,17 +95,19 @@ void ConvOpx::grow(poplar::program::Sequence &prog) const {
 void ConvDataGradOpx::grow(poplar::program::Sequence &prog) const {
   ConvDataGradOp &gradOp = getOp<ConvDataGradOp>();
   const ConvOp *convOp   = gradOp.getCloneOfCreator();
-  auto outTensor         = dv_p->graphCache.convolution(
+
+  auto outTensor = dv_p->graphCache.convolution(
       graph(),                                     // graph
       get(inId(gradOp.getGradConvolvedInIndex())), // in
       get(inId(gradOp.getWeightsInIndex())),       // weights
       dataGradParams,                              // params
-      true,                   // transposeAndFlipWeights,
-      prog,                   // prog
-      convOp->cacheOperation, // cacheOperation
-      idStr(),                // debugPrefix
-      dv_p->bwdConvOptions,   // options
-      &dv_p->convCache        // cache
+      true,                                        // transposeAndFlipWeights,
+      prog,                                        // prog
+      convOp->cacheOperation,                      // cacheOperation
+      idStr(),                                     // debugPrefix
+      dv_p->bwdConvOptions,                        // options
+      &dv_p->convCache,                            // cache
+      getVirtualGraphId()                          // virtualGraphId
   );
 
   insert(outId(0), outTensor);
@@ -122,7 +126,8 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
       convOp->cacheOperation,                      // cacheOperation
       idStr(),                                     // debugPrefix
       dv_p->wuConvOptions,                         // options
-      &dv_p->convCache);                           // cache
+      &dv_p->convCache,                            // cache
+      getVirtualGraphId());                        // virtualGraphId
 
   // Shape of weights Poponnx Tensor of forward Op
   // auto fwdShape = convOp->inInfo(convOp->getWeightsInIndex()).shape_szt(); //

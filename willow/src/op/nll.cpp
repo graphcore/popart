@@ -49,6 +49,16 @@ TensorId NllLoss::probsTensorId() const { return input(getProbsInIndex()); }
 TensorId NllLoss::labelTensorId() const { return input(getLabelInIndex()); }
 
 void NllOp::setup() {
+
+  const auto &labelsInInfo = inInfo(nlll()->getLabelInIndex());
+  if (!labelsInInfo.getDataTypeInfo()->isFixedPoint()) {
+    throw error(
+        "Expected the label tensor NllOp to be fixed point, not the case "
+        "for input with info: {}. This error for Op {}. ",
+        labelsInInfo,
+        str());
+  }
+
   const auto &probsInInfo = inInfo(nlll()->getProbsInIndex());
   // output is a 1-d tensor, dimension size : batchsize
   outInfo(0).set(probsInInfo.dataType(), {probsInInfo.dim(0)});

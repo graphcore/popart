@@ -273,12 +273,19 @@ PYBIND11_MODULE(poponnx_core, m) {
 
   py::class_<BaseSGD> basesgd(m, "BaseSGD", optimizer);
   basesgd.def("learnRate", &BaseSGD::learnRate);
+  basesgd.def("weightDecay", &BaseSGD::weightDecay);
 
   py::class_<SGD>(m, "SGD", basesgd)
-      .def(py::init<float>(), py::arg("learning_rate"));
+      .def(py::init<float>(), py::arg("learning_rate"))
+      .def(py::init<float, float>(),
+           py::arg("learning_rate"),
+           py::arg("weight_decay"));
 
   py::class_<ConstSGD>(m, "ConstSGD", basesgd)
-      .def(py::init<float>(), py::arg("learning_rate"));
+      .def(py::init<float>(), py::arg("learning_rate"))
+      .def(py::init<float, float>(),
+           py::arg("learning_rate"),
+           py::arg("weight_decay"));
 
   py::class_<SessionOptions>(m, "SessionOptionsCore")
       .def(py::init<>())
@@ -401,6 +408,10 @@ PYBIND11_MODULE(poponnx_core, m) {
            [](const GraphTransformer &graphtransformer) {
              return py::bytes(graphtransformer.getModelProto());
            })
+
+      .def("removeUnusedInputs", &GraphTransformer::removeUnusedInputs)
+      .def("prepareNodesForTraining",
+           &GraphTransformer::prepareNodesForTraining)
       .def("convertFloatsToHalfs", &GraphTransformer::convertFloatsToHalfs)
       .def("convertInitializersToConstants",
            &GraphTransformer::convertInitializersToConstants,
@@ -412,6 +423,12 @@ PYBIND11_MODULE(poponnx_core, m) {
 #include "poponnx.cpp.gen"
 
   py::class_<AiGraphcoreOpset1>(m, "AiGraphcoreOpset1")
+      .def("groupnormalization",
+           &AiGraphcoreOpset1::groupnormalization,
+           py::arg("args"),
+           py::arg("num_groups"),
+           py::arg("epsilon")     = 1e-05f,
+           py::arg("debugPrefix") = std::string())
       .def("subsample",
            &AiGraphcoreOpset1::subsample,
            py::arg("args"),

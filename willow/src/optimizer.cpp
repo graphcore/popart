@@ -13,19 +13,23 @@ Optimizer::Optimizer()                  = default;
 Optimizer::Optimizer(const Optimizer &) = default;
 
 TensorId getLearningRateId() { return "learnRate"; }
+TensorId getWeightDecayId() { return "weightDecay"; }
 
-BaseSGD::BaseSGD(float lr) : learnRate_(lr) {}
+BaseSGD::BaseSGD(float lr, float wd) : learnRate_(lr), weightDecay_(wd) {}
 
 float BaseSGD::learnRate() const { return learnRate_; }
 
-SGD::SGD(float l) : BaseSGD(l) {}
+float BaseSGD::weightDecay() const { return weightDecay_; }
+
+SGD::SGD(float lr, float wd) : BaseSGD(lr, wd) {}
 
 std::unique_ptr<Optimizer> SGD::clone() const {
   return std::unique_ptr<Optimizer>(new SGD(*this));
 }
 
 std::map<TensorId, TensorInfo> SGD::tensorInfos() const {
-  return {{getLearningRateId(), {DataType::FLOAT, {}}}};
+  return {{getLearningRateId(), {DataType::FLOAT, {}}},
+          {getWeightDecayId(), {DataType::FLOAT, {}}}};
 }
 
 std::unique_ptr<Op> SGD::createOp(TensorId varId, Ir *pir) const {
@@ -33,10 +37,11 @@ std::unique_ptr<Op> SGD::createOp(TensorId varId, Ir *pir) const {
 }
 
 std::vector<TensorId> SGD::getInputIds(TensorId varId) const {
-  std::vector<TensorId> inputs(3, "");
-  inputs[VarUpdateOp::getVarInIndex()]          = varId;
-  inputs[VarUpdateOp::getVarGradInIndex()]      = getGradId(varId);
-  inputs[SGDVarUpdateOp::getLearnRateInIndex()] = getLearningRateId();
+  std::vector<TensorId> inputs(4, "");
+  inputs[VarUpdateOp::getVarInIndex()]            = varId;
+  inputs[VarUpdateOp::getVarGradInIndex()]        = getGradId(varId);
+  inputs[SGDVarUpdateOp::getLearnRateInIndex()]   = getLearningRateId();
+  inputs[SGDVarUpdateOp::getWeightDecayInIndex()] = getWeightDecayId();
   return inputs;
 }
 
@@ -44,16 +49,27 @@ void SGD::setTensorData(Tensor *t) const {
   if (t->id == getLearningRateId()) {
     float lRate = learnRate();
     t->setTensorData(t->info, &lRate);
+  } else if (t->id == getWeightDecayId()) {
+    // Note: scaling weightDecay scalar by learnRate on host
+    // to allow for efficient implementation of weight update
+    // on the device
+    float wDecay = weightDecay() * learnRate();
+    t->setTensorData(t->info, &wDecay);
   } else {
-    throw error("SGD can only set the learning rate (" + getLearningRateId() +
-                ") and not (" + t->id + ") currently");
+    throw error("SGD cannot set the parameter (" + t->id + ") currently");
   }
 }
 
 void SGD::resetTensorDatas(Ir *pir) const {
   Tensor *lrTensor = pir->getTensors().get(getLearningRateId());
+  Tensor *wdTensor = pir->getTensors().get(getWeightDecayId());
   float lRate      = learnRate();
+  // Note: scaling weightDecay scalar by learnRate on host
+  // to allow for efficient implementation of weight update
+  // on the device
+  float wDecay = weightDecay() * learnRate();
   lrTensor->tensorData()->resetData(lrTensor->info, &lRate);
+  wdTensor->tensorData()->resetData(wdTensor->info, &wDecay);
 }
 
 void ConstSGD::setTensorData(Tensor *) const {
@@ -66,7 +82,7 @@ void ConstSGD::resetTensorDatas(Ir *) const {
 
 std::unique_ptr<Op> ConstSGD::createOp(TensorId varId, Ir *pir) const {
   return std::unique_ptr<Op>(
-      new ConstSGDVarUpdateOp(varId, learnRate(), {*pir, ""}));
+      new ConstSGDVarUpdateOp(varId, learnRate(), weightDecay(), {*pir, ""}));
 }
 
 std::vector<TensorId> ConstSGD::getInputIds(TensorId varId) const {
@@ -76,7 +92,7 @@ std::vector<TensorId> ConstSGD::getInputIds(TensorId varId) const {
   return inputs;
 }
 
-ConstSGD::ConstSGD(float l) : BaseSGD(l) {}
+ConstSGD::ConstSGD(float lr, float wd) : BaseSGD(lr, wd) {}
 
 std::unique_ptr<Optimizer> ConstSGD::clone() const {
   return std::unique_ptr<Optimizer>(new ConstSGD(*this));

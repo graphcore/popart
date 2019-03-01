@@ -37,9 +37,9 @@ void MaxOpx::grow(poplar::program::Sequence &prog) const {
   insert(outId(MaxOp::getOutIndex()), outTensor);
 }
 
-MaxGradOpx::MaxGradOpx(Op *op_, Devicex *devicex_) : Opx(op_, devicex_) {}
+MaxArgGradOpx::MaxArgGradOpx(Op *op_, Devicex *devicex_) : Opx(op_, devicex_) {}
 
-void MaxGradOpx::grow(poplar::program::Sequence &prog) const {
+void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
   // Create a mask of the max input tensor. Set a element to 1 if it is
   // the maximum element value of all inputs (i.e. is in the fwd output) else 0
   // 1. Subtract the input of the forward op tensor from the out of the
@@ -51,20 +51,20 @@ void MaxGradOpx::grow(poplar::program::Sequence &prog) const {
   auto mask =
       popops::map(graph(),
                   pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
-                  {get(inId(MaxGradOp::getFwdInIndex())),
-                   get(inId(MaxGradOp::getFwdOutInIndex()))},
+                  {get(inId(MaxArgGradOp::getFwdInIndex())),
+                   get(inId(MaxArgGradOp::getFwdOutInIndex()))},
                   prog,
                   idStr());
 
   // Multiple the mask by the grad
   auto result = popops::map(graph(),
                             pe::Mul(pe::_1, pe::_2),
-                            {mask, get(inId(MaxGradOp::getGradInIndex()))},
+                            {mask, get(inId(MaxArgGradOp::getGradInIndex()))},
                             prog,
                             idStr());
 
-  auto shapeOfOutputOfFwdOp = inInfo(MaxGradOp::getFwdOutInIndex()).shape();
-  auto shapeOfInputToFwdOp  = inInfo(MaxGradOp::getFwdInIndex()).shape();
+  auto shapeOfOutputOfFwdOp = inInfo(MaxArgGradOp::getFwdOutInIndex()).shape();
+  auto shapeOfInputToFwdOp  = inInfo(MaxArgGradOp::getFwdInIndex()).shape();
 
   // Create the axes to reduce along.
   std::vector<int64_t> axes =
@@ -80,14 +80,14 @@ void MaxGradOpx::grow(poplar::program::Sequence &prog) const {
                             idStr());
 
   // Reshape the output, to add 1's if needed
-  insert(outId(MaxGradOp::getOutIndex()),
-         out.reshape(outInfo(MaxGradOp::getOutIndex()).shape_szt()));
+  insert(outId(MaxArgGradOp::getOutIndex()),
+         out.reshape(outInfo(MaxArgGradOp::getOutIndex()).shape_szt()));
 }
 
 namespace {
 OpxCreator<MaxOpx> maxOpxCreator({Onnx::Operators::Max_6,
                                   Onnx::Operators::Max_8});
-OpxCreator<MaxGradOpx> maxGradOpxCreator(Onnx::GradOperators::MaxGrad);
+OpxCreator<MaxArgGradOpx> maxGradOpxCreator(Onnx::GradOperators::MaxArgGrad);
 } // namespace
 
 } // namespace popx

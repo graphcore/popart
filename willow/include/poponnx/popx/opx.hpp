@@ -73,6 +73,8 @@ public:
   // shape.
   poplar::Tensor broadcast(const std::vector<int64_t> &, poplar::Tensor) const;
 
+  // dv_p->getVirtualGraphId(). Defaults to 0 if virtualGraph is not enabled
+  int64_t getVirtualGraphId() const;
   // shortcut for dv_p->masterGraph
   poplar::Graph &masterGraph() const;
   // shortcut for dv_p->graph

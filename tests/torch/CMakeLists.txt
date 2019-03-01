@@ -7,6 +7,7 @@ add_test(NAME model0_train_cpu
 		 WORKING_DIRECTORY ${INSTALL_TESTS}
 		 COMMAND python3 torch/cifar10/model0.py --device=cpu)
 
+
 add_test(NAME model0_train_ipumodel
 		 WORKING_DIRECTORY ${INSTALL_TESTS}
 		 COMMAND python3 torch/cifar10/model0.py --device=ipu_model)
@@ -74,3 +75,12 @@ add_test(NAME model_nll
 add_test(NAME model_matmul_bcast
 		WORKING_DIRECTORY ${INSTALL_TESTS}
 		COMMAND python3 torch/cifar10/model_matmul_bcast.py)
+
+add_test(NAME model_lstm
+		WORKING_DIRECTORY ${INSTALL_TESTS}
+		COMMAND python3 torch/cifar10/model_lstm.py)
+
+# see T7159  
+# add_test(NAME model_batchnorm
+# 		 WORKING_DIRECTORY ${INSTALL_TESTS}
+# 		 COMMAND python3 torch/cifar10/model_batchnorm.py --device=cpu)

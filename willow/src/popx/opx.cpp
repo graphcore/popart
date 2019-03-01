@@ -44,17 +44,24 @@ Opx::unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const {
               op_p->opid);
 }
 
+int64_t Opx::getVirtualGraphId() const {
+  if (op_p->getVirtualGraphId())
+    return *(op_p->getVirtualGraphId());
+  else {
+    if (op_p->getIr().getSessionOptions().enableVirtualGraphs) {
+      throw error("{} does not have a virtual graph attribute",
+                  op_p->debugName());
+    } else {
+      return 0;
+    }
+  }
+}
+
 poplar::Graph &Opx::masterGraph() const { return dv_p->masterGraph(); }
 
 poplar::Graph &Opx::graph() const {
   if (op_p->getIr().getSessionOptions().enableVirtualGraphs) {
-    if (op_p->getVirtualGraphId()) {
-      int64_t index = *(op_p->getVirtualGraphId());
-      return dv_p->graph(index);
-    } else {
-      throw error("{} does not have a virtual graph attribute",
-                  op_p->debugName());
-    }
+    return dv_p->graph(getVirtualGraphId());
   } else {
     return dv_p->masterGraph();
   }

@@ -62,7 +62,8 @@ torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
     losses=losses,
-    optimizer=poponnx.ConstSGD(0.001),
+    # large weight_decay term to test that it is definitely working
+    optimizer=poponnx.ConstSGD(learning_rate=0.001, weight_decay=10),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:

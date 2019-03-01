@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <vector>
+#include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/batchnorm.hpp>
 #include <poponnx/opmanager.hpp>
@@ -103,6 +104,17 @@ void BatchNormOp::setup() {
       variableTensor->setCopyFromTensor(outId(getVarOutIndex()));
     }
   }
+
+  if (settings.ir.isTraining() && output->n() != 5) {
+    throw error(
+        "The Ir is in training mode, yet this batch-normalization Op, \"{}\" "
+        "has only {} output(s) which means it is in inference mode. To be in "
+        "training mode, it should have 5 outputs. Consider using "
+        "GraphTransformer::prepareNodesForTraining() to modify the ONNX Model "
+        "to have all Nodes set to training mode.",
+        str(),
+        output->n());
+  }
 }
 
 void BatchNormOp::appendAttributes(std::stringstream &ss,
@@ -115,7 +127,10 @@ void BatchNormOp::appendAttributes(std::stringstream &ss,
 
 BatchNormGradOp::BatchNormGradOp(const BatchNormOp &op_)
     : Op(Onnx::GradOperators::BatchNormalizationGrad, op_.getSettings()),
-      fwdOp(op_) {}
+      epsilon(op_.getEpsilon()),
+      fwdInInfo(op_.inInfo(BatchNormOp::getXInIndex())),
+      fwdScaleInInfo(op_.inInfo(BatchNormOp::getScaleInIndex())),
+      fwdBInInfo(op_.inInfo(BatchNormOp::getBInIndex())) {}
 
 const std::map<int, int> &BatchNormGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
@@ -140,9 +155,9 @@ const std::vector<GradInOutMapper> &BatchNormGradOp::gradInputInfo() const {
 
 void BatchNormGradOp::setup() {
 
-  outInfo(getXOutIndex())     = fwdOp.inInfo(BatchNormOp::getXInIndex());
-  outInfo(getScaleOutIndex()) = fwdOp.inInfo(BatchNormOp::getScaleInIndex());
-  outInfo(getBOutIndex())     = fwdOp.inInfo(BatchNormOp::getBInIndex());
+  outInfo(getXOutIndex())     = fwdInInfo;
+  outInfo(getScaleOutIndex()) = fwdScaleInInfo;
+  outInfo(getBOutIndex())     = fwdBInInfo;
 }
 
 namespace {

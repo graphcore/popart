@@ -48,6 +48,7 @@ class PytorchNetWriter(NetWriter):
             return torch.optim.SGD(
                 self.module.parameters(),
                 lr=self.optimizer.learnRate(),
+                weight_decay=self.optimizer.weightDecay(),
                 momentum=0.0)
         else:
             raise RuntimeError("unrecognised optimizer")

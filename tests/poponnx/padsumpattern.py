@@ -174,3 +174,35 @@ def test_pad_sum6(op_tester):
 
     op_tester.passes = ['PadSum']
     op_tester.run(init_builder, reference, 'infer')
+
+
+def test_pad_sum7(op_tester):
+    d1 = np.random.rand(2, 4).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        s1 = builder.aiOnnx.slice([i1], axes=[0], starts=[0], ends=[1])
+        s2 = builder.aiOnnx.slice([i1], axes=[0], starts=[3], ends=[4])
+        s3 = builder.aiOnnx.slice([i1], axes=[0], starts=[1], ends=[3])
+        c1 = builder.aiOnnx.concat([s1, s2, s3], 0)
+        u1 = builder.aiOnnx.unsqueeze([c1], axes=[0])
+
+        o = u1
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        i1 = torch.tensor(d1, requires_grad=True)
+        s1 = i1[0:1]
+        s2 = i1[3:4]
+        s3 = i1[1:3]
+        c1 = torch.cat((s1, s2, s3), 0)
+        u1 = torch.unsqueeze(c1, 0)
+        o = u1
+
+        d__o = ref_data.getOutputTensorGrad(0)
+        o.backward(torch.tensor(d__o))
+        return [o, i1.grad, None]
+
+    op_tester.passes = ['PadSum']
+    op_tester.run(init_builder, reference, 'train')

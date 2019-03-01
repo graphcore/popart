@@ -59,8 +59,6 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
 
-  const BatchNormOp &getFwdOp() { return fwdOp; }
-
   static InIndex getXInIndex() { return 0; }
   static InIndex getScaleInIndex() { return 1; }
   static InIndex getMeanInIndex() { return 2; }
@@ -71,9 +69,11 @@ public:
   static OutIndex getScaleOutIndex() { return 1; }
   static OutIndex getBOutIndex() { return 2; }
 
+  float getEpsilon() const { return epsilon; }
+
 private:
-  const BatchNormOp &fwdOp;
-  // TensorInfo forward_op_arg_info;
+  float epsilon;
+  TensorInfo fwdInInfo, fwdScaleInInfo, fwdBInInfo;
 };
 
 } // namespace poponnx

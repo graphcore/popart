@@ -24,4 +24,10 @@ void GraphTransformer::convertAllFixedPointInitializersToConstants() {
   impl->convertAllFixedPointInitializersToConstants();
 }
 
+void GraphTransformer::prepareNodesForTraining() {
+  impl->prepareNodesForTraining();
+}
+
+void GraphTransformer::removeUnusedInputs() { impl->removeUnusedInputs(); }
+
 } // namespace poponnx

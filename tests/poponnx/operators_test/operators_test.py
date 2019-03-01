@@ -44,27 +44,6 @@ def test_add(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
-def test_sum(op_tester):
-    d1 = np.random.rand(1, 2, 1).astype(np.float32)
-    d2 = np.random.rand(1, 1, 2).astype(np.float32)
-    d3 = np.random.rand(2, 1, 1).astype(np.float32)
-
-    def init_builder(builder):
-        i1 = builder.addInputTensor(d1)
-        i2 = builder.addInputTensor(d2)
-        i3 = builder.addInputTensor(d3)
-        o = builder.aiOnnx.sum([i1, i2, i3], "test_sum")
-        builder.addOutputTensor(o)
-        return [o]
-
-    def reference(ref_data):
-        out = d1 + d2 + d3
-        return [out]
-
-    op_tester.passes = ['PreUniRepl']
-    op_tester.run(init_builder, reference, 'infer')
-
-
 def test_convolution(op_tester):
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)
@@ -89,52 +68,6 @@ def test_convolution(op_tester):
         return [expected]
 
     op_tester.run(init_builder, reference, step_type='infer')
-
-
-def test_mul(op_tester):
-    d1 = np.random.rand(2).astype(np.float32)
-    d2 = np.random.rand(2).astype(np.float32)
-
-    def init_builder(builder):
-        i1 = builder.addInputTensor(d1)
-        i2 = builder.addInputTensor(d2)
-        o = builder.aiOnnx.mul([i1, i2])
-        builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + i2, 'd__' + o]
-
-    def reference(ref_data):
-        t1 = torch.tensor(d1, requires_grad=True)
-        t2 = torch.tensor(d2, requires_grad=True)
-        out = t1 * t2
-        d__o = ref_data.getOutputTensorGrad(0)
-        out.backward(torch.tensor(d__o))
-        return [out, t1.grad, t2.grad, None]
-
-    op_tester.passes = ['PreUniRepl', 'MulArgGradOp']
-    op_tester.run(init_builder, reference, step_type='train')
-
-
-def test_broadcast_mul(op_tester):
-    d1 = np.random.rand(2, 2).astype(np.float32)
-    d2 = np.random.rand(2).astype(np.float32)
-
-    def init_builder(builder):
-        i1 = builder.addInputTensor(d1)
-        i2 = builder.addInputTensor(d2)
-        o = builder.aiOnnx.mul([i1, i2])
-        builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + i2, 'd__' + o]
-
-    def reference(ref_data):
-        t1 = torch.tensor(d1, requires_grad=True)
-        t2 = torch.tensor(d2, requires_grad=True)
-        out = t1 * t2
-        d__o = ref_data.getOutputTensorGrad(0)
-        out.backward(torch.tensor(d__o))
-        return [out, t1.grad, t2.grad, None]
-
-    op_tester.passes = ['PreUniRepl', 'MulArgGradOp']
-    op_tester.run(init_builder, reference, step_type='train')
 
 
 def test_reciprocal(op_tester):

@@ -7,21 +7,26 @@
 namespace poponnx {
 
 SumOp::SumOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : Op(_opid, settings_) {
+    : VariadicOp(_opid, settings_) {
   // TODO : Do not broadcast in version 6
 }
 
 std::unique_ptr<Op> SumOp::clone() const { return make_unique<SumOp>(*this); }
 
-void SumOp::setup() {
-  outInfo(getOutIndex()) = inInfo(0);
-  for (int i = 1; i < input->n(); ++i) {
-    outInfo(getOutIndex()) = npOut(outInfo(getOutIndex()), inInfo(i));
-  }
+std::unique_ptr<Op> SumOp::getIthGrad(int i) const {
+  return std::unique_ptr<SumArgGradOp>(new SumArgGradOp(*this, i));
 }
 
-// A sum with only one input can be replaced by identity
-bool SumOp::canBeReplacedByIdentity() { return (input->n() == 1); }
+SumArgGradOp::SumArgGradOp(const SumOp &op_, InIndex inputIndex)
+    : LinearVariadicGradOp(Onnx::GradOperators::SumArgGrad, op_, inputIndex) {
+
+  gradInputInfoVec = {
+      {getGradInIndex(), VariadicOp::getOutIndex(), GradOpInType::GRADOUT}};
+}
+
+const std::vector<GradInOutMapper> &SumArgGradOp::gradInputInfo() const {
+  return gradInputInfoVec;
+}
 
 namespace {
 static OpCreator<SumOp> sumOpCreator({Onnx::Operators::Sum_6,
