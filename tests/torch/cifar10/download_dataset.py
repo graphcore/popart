@@ -11,6 +11,9 @@ if not c10datadir.exists():
     print(f'Creating directory {c10datadir}', flush=True)
     c10datadir.mkdir()
 
+else:
+    print(f'Using existing directory {c10datadir}', flush=True)
+
 transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))

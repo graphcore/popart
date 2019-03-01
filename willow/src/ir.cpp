@@ -172,9 +172,20 @@ void Ir::dotCheckpoint(DotCheck check) const {
     }
   };
 
-  for (int i = 0; i < std::min<int>(userOptions.maxDotOps,
-                                    static_cast<int>(scheduledOps.size()));
-       ++i) {
+  int start = std::max(0, userOptions.firstDotOp);
+  int end   = std::min<int>(userOptions.finalDotOp,
+                          static_cast<int>(scheduledOps.size()));
+
+  if (!(start < end) && scheduledOps.size() != 0) {
+    throw error("Invalid dot range {{}, {}} with schedule of size {}, "
+                "as no Ops will be exported to the .dot file",
+                userOptions.firstDotOp,
+                userOptions.finalDotOp,
+                scheduledOps.size());
+  }
+
+  for (int i = start; i < end; ++i) {
+
     auto &n = scheduledOps.at(i);
 
     // add the .dot entry for a node [shape="box", label=...]
@@ -788,6 +799,16 @@ void Ir::registerInputTensors() {
   for (auto &valueInfo : onnxGraph.input()) {
     TensorId id = valueInfo.name();
     if (onnxInitializers.count(id) == 0 && unusedInitializers.count(id) == 0) {
+      if (consumerTypes.find(id) == consumerTypes.end()) {
+        throw error(
+            "Request to create poponnx Stream Tensor {} failed, "
+            "as it has no consumers in the ONNX GraphProto. "
+            "If Tensor {} is only used as an input "
+            "to a Loss, then it should not be included in the ONNX Model, "
+            "but its TensorInfo should be in the InputShapeInfo object passed "
+            "to the Ir/Session constructor.",
+            id);
+      }
       logCreationInfo("Stream", id);
       if (valueInfo.has_type() && valueInfo.type().tensor_type().has_shape()) {
         getTensors().addStream(id, TensorInfo(valueInfo.type()));

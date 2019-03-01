@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
     throw error("Expected arg 4 to be a number, not {}", argv4);
   }
   SessionOptions opts;
-  opts.maxDotOps = std::stoi(argv4);
+  opts.finalDotOp = std::stoi(argv4);
 
   auto modelProto = onnxutil::getModelProto(modelPath);
   std::vector<std::string> dotStrings;
