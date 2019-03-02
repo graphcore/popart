@@ -11,7 +11,8 @@ void InputShapeInfo::add(TensorId id, const TensorInfo &info) {
 const TensorInfo &InputShapeInfo::get(TensorId id) const {
   auto found = infos.find(id);
   if (found == infos.end()) {
-    throw error("No input shape info for " + id);
+    throw error("No input shape info for Tensor `{}' in InputShapeInfo::get",
+                id);
   }
   return found->second;
 }

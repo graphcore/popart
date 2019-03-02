@@ -10,7 +10,7 @@ find tests/ -iname *.cpp | xargs clang-format -i
 echo "Inplace clang-formatting all .hpp files in willow directory"
 find willow/ -iname *.hpp | xargs clang-format -i
 
-echo "Inplace clang-formatting all python/poponnx.cpp"
+echo "Inplace clang-formatting python/poponnx.cpp"
 clang-format -i python/poponnx.cpp
 
 echo "inplace yapfing all .py files in listed directories"

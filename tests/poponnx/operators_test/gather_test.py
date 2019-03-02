@@ -153,8 +153,8 @@ def test_gather_example1(op_tester):
 def test_gather_example2(op_tester):
     d1 = np.array([[1.0, 1.2, 1.9], [2.3, 3.4, 3.9], [4.5, 5.7,
                                                       5.9]]).astype(np.float32)
-    d2 = np.array([[0, 2]]).astype(np.int32)
-    d_d1 = np.array([[0.1, 0, 0.1], [0.1, 0, 0.1], [0.1, 0,
+    d2 = np.array([[0, 2, 0]]).astype(np.int32)
+    d_d1 = np.array([[0.2, 0, 0.1], [0.2, 0, 0.1], [0.2, 0,
                                                     0.1]]).astype(np.float32)
     axis = 1
 

@@ -442,6 +442,14 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
   std::vector<unsigned> scatter_dims_to_op(update.rank());
   std::iota(scatter_dims_to_op.begin(), scatter_dims_to_op.end(), 0);
 
+  // Add overlapping gradients
+  popops::UpdateComputationFunc updateComp = [](poplar::Graph &g,
+                                                poplar::Tensor &a,
+                                                poplar::Tensor &b,
+                                                poplar::program::Sequence &p) {
+    return popops::add(g, a, b, p);
+  };
+
   // Scatter the grad input into the result
   popops::scatter(graph(),
                   result,
@@ -451,6 +459,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
                   update_window_dims,
                   inserted_window_dims,
                   scatter_dims_to_op,
+                  updateComp,
                   prog);
 
   result = result.reshape(outputShape);

@@ -33,10 +33,11 @@ struct SessionOptions {
   /// When to write '.dot' files during Ir construction
   std::set<DotCheck> dotChecks = {};
 
-  /// The maximum number of Ops to write to a .dot file
-  /// If the Ir has N Ops in it, the first min(N, maxDotOps) in
-  /// the scheduled list will be written to the .dot file.
-  int maxDotOps = 10000;
+  /// The ops to write to the .dot file will be a continous interval
+  /// of the schedule, controlled by firstDotOp and finalDotOp. In particular,
+  /// it will be [min(0, firstDotOp), max(N ops in Ir, finalDotOp))
+  int firstDotOp = 0;
+  int finalDotOp = 10000;
 
   /// Include the Op name in the .dot file (the Op type is always exported)
   bool dotOpNames = false;
