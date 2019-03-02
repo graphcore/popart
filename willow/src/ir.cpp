@@ -759,13 +759,15 @@ void Ir::registerInputTensors() {
     auto found                 = consumerTypes.find(tensorId);
 
     if (found == consumerTypes.end()) {
-      throw error("ILE: Tensor {} not present", tensorId);
+      consumerString = "with no consumers in the ONNX GraphProto";
     }
 
-    consumerString = "with consumers [ ";
-    for (auto &i : found->second) {
-      consumerString += i;
-      consumerString += " ";
+    else {
+      consumerString = "with consumers [ ";
+      for (auto &i : found->second) {
+        consumerString += i;
+        consumerString += " ";
+      }
     }
     consumerString += "]";
     logging::info(
@@ -799,7 +801,11 @@ void Ir::registerInputTensors() {
   for (auto &valueInfo : onnxGraph.input()) {
     TensorId id = valueInfo.name();
     if (onnxInitializers.count(id) == 0 && unusedInitializers.count(id) == 0) {
-      if (consumerTypes.find(id) == consumerTypes.end()) {
+
+      // Should we allow unused stream tensors in the ONNX Model? To be decided.
+      bool allowUnusedStreamTensors = true;
+      if (consumerTypes.find(id) == consumerTypes.end() &&
+          !allowUnusedStreamTensors) {
         throw error(
             "Request to create poponnx Stream Tensor {} failed, "
             "as it has no consumers in the ONNX GraphProto. "
