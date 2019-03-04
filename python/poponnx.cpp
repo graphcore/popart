@@ -63,7 +63,7 @@ TensorInfo getTensorInfo(py::array npArr) {
   return TensorInfo(getDataTypeFromNpType(typeString), shape);
 }
 
-// The follow code attempts to convert the python dictionary
+// The following code attempts to convert the python dictionary
 // (py::dict) into a map of strings for keys and values. The default
 // pybind will attempt to match types
 // TODO : This is not very elegant code is there a better way to do
