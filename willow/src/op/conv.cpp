@@ -123,22 +123,22 @@ const std::map<int, int> &ConvDataGradOp::gradOutToNonGradIn() const {
 }
 
 namespace {
-static OpCreator<ConvOp>
-    convOpCreator(Onnx::Operators::Conv_1,
-                  [](const OperatorIdentifier &_opid,
-                     const Op::Settings &settings,
-                     const Attributes &attr) -> std::unique_ptr<Op> {
-                    HasReceptiveFieldOp::Settings receptiveSettings(
-                        settings.ir, settings.name);
-                    receptiveSettings.setFromAttributes(attr);
+static OpCreator<ConvOp> convOpCreator(
+    Onnx::Operators::Conv_1,
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      HasReceptiveFieldOp::Settings receptiveSettings(settings.ir,
+                                                      settings.name);
+      receptiveSettings.setFromAttributes(attr);
 
-                    int64_t cacheOperation =
-                        attr.getAttribute<Attributes::Int>(sCacheOperation, 1);
+      int64_t cacheOperation =
+          attr.getAttribute<Attributes::Int>(sCacheOperation, 1);
 
-                    return std::unique_ptr<Op>(
-                        new ConvOp(_opid, cacheOperation, receptiveSettings));
-                  },
-                  true);
+      return std::unique_ptr<Op>(
+          new ConvOp(_opid, cacheOperation, receptiveSettings));
+    },
+    true);
 } // namespace
 
 } // namespace poponnx

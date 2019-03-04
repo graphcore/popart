@@ -305,22 +305,22 @@ std::vector<int64_t> SliceGradOp::calculatePadding(const SliceOp &slice_op) {
 }
 
 namespace {
-static OpCreator<SliceOp>
-    sliceOpCreator(Onnx::Operators::Slice_1,
-                   [](const OperatorIdentifier &_opid,
-                      const Op::Settings &settings,
-                      const Attributes &attr) -> std::unique_ptr<Op> {
-                     std::vector<int64_t> starts =
-                         attr.getAttribute<Attributes::Ints>("starts", {});
-                     std::vector<int64_t> ends =
-                         attr.getAttribute<Attributes::Ints>("ends", {});
-                     std::vector<int64_t> axes =
-                         attr.getAttribute<Attributes::Ints>("axes", {});
+static OpCreator<SliceOp> sliceOpCreator(
+    Onnx::Operators::Slice_1,
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      std::vector<int64_t> starts =
+          attr.getAttribute<Attributes::Ints>("starts", {});
+      std::vector<int64_t> ends =
+          attr.getAttribute<Attributes::Ints>("ends", {});
+      std::vector<int64_t> axes =
+          attr.getAttribute<Attributes::Ints>("axes", {});
 
-                     return std::unique_ptr<Op>(
-                         new SliceOp(_opid, starts, ends, axes, settings));
-                   },
-                   true);
+      return std::unique_ptr<Op>(
+          new SliceOp(_opid, starts, ends, axes, settings));
+    },
+    true);
 } // namespace
 
 } // namespace poponnx
