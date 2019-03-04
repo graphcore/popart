@@ -591,8 +591,6 @@ void Ir::prepare(const IrBundle &gb) {
   setPatterns(gb.patterns);
   setOnnxModel(gb.modelProto);
 
-  enableTransform(Recompute::id(), userOptions.enableRecomputation);
-
   setLosses(gb.losses);
 
   confirmNoReservedIds();
@@ -639,9 +637,24 @@ void Ir::prepare(const IrBundle &gb) {
   // tensors with no producer and no
   // consumers are removed at this point.
   removeIsolatedTensors();
-
   updateVertices();
-  applyTransform(Recompute::id());
+
+  // Explicitly set this transform to default (off),
+  // unless either
+  // 1. The option is switched on by the user, XOR
+  // 2. Ops in the ir have been annotated with the 'recompute'
+  //    attribute. At the moment this can only happen if
+  //    specified when building the onnx graph using the poponnx
+  //    Builder
+  if (userOptions.enableAutoRecomputation && hasUserRecomputeOps()) {
+    throw error(
+        "A mixture of auto and manual recomputaion is currently not supported");
+  } else {
+    enableTransform(Recompute::id(),
+                    userOptions.enableAutoRecomputation ||
+                        hasUserRecomputeOps());
+    applyTransform(Recompute::id());
+  }
   updateVertices();
 
   // we now start applying topological constraints between
@@ -1028,6 +1041,18 @@ OpId Ir::getAndIncrOpsCounter() {
 }
 
 OpId Ir::getOpsCounter() const { return opsCounter; }
+
+bool Ir::hasUserRecomputeOps() const {
+  bool hasUserRecomputeOps = false;
+  for (auto &id_op : ops) {
+    Op *op = id_op.second.get();
+    if (op->getRecomputeOutput()) {
+      hasUserRecomputeOps = true;
+      break;
+    }
+  }
+  return hasUserRecomputeOps;
+}
 
 OpId Ir::moveIntoIr(std::unique_ptr<Op> op) {
   OpId id = op->id;

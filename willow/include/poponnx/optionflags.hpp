@@ -52,8 +52,9 @@ struct SessionOptions {
   ///  the convolutions will be cached.
   bool enableConvolutionGraphCaching = true;
 
-  /// Enable recomputation of marked operations in the graph
-  bool enableRecomputation = false;
+  /// Enable recomputation of operations in the graph in the backwards pass to
+  /// reduce model size at the cost of computation cycles
+  bool enableAutoRecomputation = false;
 
   /// Enable placement of operations on individual IPUs by creating a 'virtual
   /// graph' for each IPU

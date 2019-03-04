@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
   std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
 
   SessionOptions opts;
-  opts.enableRecomputation = false;
+  opts.enableAutoRecomputation = false;
 
   Ir ir;
   ir.prepare({modelProto,
@@ -131,7 +131,7 @@ BOOST_AUTO_TEST_CASE(RecomputeTest) {
   std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
 
   SessionOptions opts;
-  opts.enableRecomputation = true;
+  opts.enableAutoRecomputation = true;
 
   Ir ir;
   ir.prepare({modelProto,

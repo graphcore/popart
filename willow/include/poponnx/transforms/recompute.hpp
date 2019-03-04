@@ -17,6 +17,8 @@ public:
   virtual std::size_t getId() const override final { return id(); }
 
   virtual std::string getName() const override final { return "Recompute"; }
+
+  std::set<Op *> getAutoCheckpointOps(const Ir &ir) const;
 };
 
 } // namespace poponnx

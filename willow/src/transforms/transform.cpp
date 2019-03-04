@@ -13,7 +13,7 @@ static TransformMap &getTransformMap() {
 
 void Transform::applyTransform(std::size_t transformId, Ir &ir) {
   auto &transform = getTransformMap().at(transformId);
-  logging::transform::debug("Applying transform {}", transform->getName());
+  logging::transform::info("Applying transform {}", transform->getName());
   transform->apply(ir);
 }
 
