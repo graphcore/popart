@@ -1117,6 +1117,11 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     Op *gradOp    = upop.get();
     OpId gradOpId = moveIntoIr(std::move(upop));
 
+    // grad op shouldn't inherit recomputeOutputSettings from forward op
+    if (nonGradOp->getRecomputeOutput()) {
+      gradOp->setRecomputeOutput(boost::none);
+    }
+
     // connect inputs of gradOp
     {
       // inputs to gradOp (to populate in this scope):
