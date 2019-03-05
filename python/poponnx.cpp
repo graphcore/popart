@@ -583,6 +583,12 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("recomputeOutputInBackwardPass",
            static_cast<void (Builder::*)(const TensorId &, bool value)>(
                &Builder::recomputeOutputInBackwardPass),
+           py::arg("nodeOutputName"),
+           py::arg("value") = true)
+      .def("recomputeOutputInBackwardPass",
+           static_cast<void (Builder::*)(const std::set<TensorId> &,
+                                         bool value)>(
+               &Builder::recomputeOutputInBackwardPass),
            py::arg("nodeOutputNames"),
            py::arg("value") = true)
       .def("setInplacePreferences",
@@ -593,6 +599,10 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("prefs"))
       .def("getRecomputeOutputInBackwardPass",
            static_cast<bool (Builder::*)(const TensorId &)>(
+               &Builder::getRecomputeOutputInBackwardPass),
+           py::arg("nodeOutputName"))
+      .def("getRecomputeOutputInBackwardPass",
+           static_cast<bool (Builder::*)(const std::set<TensorId> &)>(
                &Builder::getRecomputeOutputInBackwardPass),
            py::arg("nodeOutputNames"));
 

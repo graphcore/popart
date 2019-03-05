@@ -224,7 +224,7 @@ public:
    * a graph for a multi-IPU configuration.
    *
    * \param nodeOutputName Name of the output tensor of the ONNX node
-   * \param value If the recompute is enabled/disabled
+   * \param value The index of the virtual graph that computes this node
    */
   void virtualGraph(const TensorId &nodeOutputName, int64_t value = 0) {
     addNodeAttribute(sVirtualGraphAttribute, value, {nodeOutputName});
@@ -258,7 +258,7 @@ public:
    * a graph for a multi-IPU configuration.
    *
    * \param nodeOutputNames Names of the output tensors of the ONNX node
-   * \param value If the recompute is enabled/disabled
+   * \param value The index of the virtual graph that computes this node
    */
   void virtualGraph(const std::set<TensorId> &nodeOutputNames,
                     int64_t value = 0) {
