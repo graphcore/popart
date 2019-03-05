@@ -224,7 +224,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("anchors", &DataFlow::anchors, pybind11::return_value_policy::copy)
       .def("art", &DataFlow::art);
 
-  py::class_<TensorInfo>(m, "TensorInfo")
+  py::class_<TensorInfo>(m, "TensorInfoCore")
       .def(py::init<std::string, const std::vector<int64_t> &>(),
            py::arg("dataType"),
            py::arg("shape"))

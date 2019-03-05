@@ -23,11 +23,11 @@ anchors = {
 }
 dataFeed = poponnx_core.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = poponnx_core.InputShapeInfo()
-inputShapeInfo.add(
-    "image0", poponnx_core.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
-inputShapeInfo.add(
-    "image1", poponnx_core.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
-inputShapeInfo.add("label", poponnx_core.TensorInfo("INT32", [batchSize]))
+inputShapeInfo.add("image0",
+                   poponnx.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
+inputShapeInfo.add("image1",
+                   poponnx.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
+inputShapeInfo.add("label", poponnx.TensorInfo("INT32", [batchSize]))
 inNames = ["image0", "image1"]
 cifarInIndices = {"image0": 0, "image1": 0, "label": 1}
 outNames = ["preProbSquared", "probs"]

@@ -83,10 +83,10 @@ def test_fp16transpose(tmpdir):
     """
 
     c0_data = np.random.randn(5, 6).astype(np.float16) * 1
-    c0_info = poponnx.TensorInfo("FLOAT16", [5, 6])
+    c0_info = poponnx.TensorInfo(c0_data)
 
     d0_data = np.random.randn(1, 6).astype(np.float16) * 1
-    d0_info = poponnx.TensorInfo("FLOAT16", [1, 6])
+    d0_info = poponnx.TensorInfo(d0_data)
 
     builder = poponnx.Builder()
     c0 = builder.aiOnnx.constant(c0_data, "c0")

@@ -10,3 +10,4 @@ from poponnx_core import *
 from poponnx.builder import Builder
 from poponnx.session import Session
 from poponnx.options import SessionOptions
+from poponnx.tensorinfo import TensorInfo

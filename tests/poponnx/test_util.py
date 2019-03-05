@@ -80,22 +80,13 @@ class BasicSession:
         self.opts.logDir = str(logging_dir)
 
     def add_input_tensor(self, data):
-        dtype = self._convert_dtype(data.dtype)
-        shape = poponnx.TensorInfo(dtype, data.shape)
+        shape = poponnx.TensorInfo(data)
 
         tensor_id = self.builder.addInputTensor(shape)
         self.early_info.add(tensor_id, shape)
         self.inputs[tensor_id] = data
 
         return tensor_id
-
-    # take a numpy dtype and return a type suitable for TensorInfo
-    def _convert_dtype(self, dtype):
-        if dtype == np.dtype('float32'):
-            return 'FLOAT'
-
-        raise Exception(
-            'bad dtype %s, (only float32 currently supported)' % (dtype, ))
 
     def run(self, output, anchors, step_method):
         anchorDefs = {}
