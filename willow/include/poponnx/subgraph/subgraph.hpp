@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_SUBGRAPHS_HPP
 
 #include <algorithm>
+#include <functional>
 #include <map>
 #include <numeric>
 #include <sstream>
