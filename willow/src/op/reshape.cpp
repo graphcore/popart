@@ -149,6 +149,10 @@ const std::map<int, int> &ReshapeGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
+bool ReshapeOp::canBeReplacedByIdentity() {
+  return inShape(getInIndex()) == outShape;
+}
+
 namespace {
 static OpCreator<ReshapeOp> reshapeOpCreator(Onnx::Operators::Reshape_5);
 } // namespace

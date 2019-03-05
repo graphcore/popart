@@ -806,9 +806,7 @@ Devicex::programFragmentIndex(Vertex *vertex) {
     throw error("Failed to determine fragment of vertex " + vertex->str() +
                 " from UNDEFINED phase. ");
   }
-  default: {
-    throw error("Failed to determine fragment of vertex");
-  }
+  default: { throw error("Failed to determine fragment of vertex"); }
   }
 }
 
@@ -872,6 +870,13 @@ void Devicex::prepare() {
   if (ir().getSessionOptions().enableVirtualGraphs) {
     auto numIPUs     = masterGraph().getTarget().getNumIPUs();
     auto tilesPerIPU = masterGraph().getTarget().getTilesPerIPU();
+
+    if (numIPUs < ir().getSessionOptions().minimumVirtualGraphCount) {
+      throw error("minimumVirtualGraphCount is {}, but there are only {} IPUs",
+                  ir().getSessionOptions().minimumVirtualGraphCount,
+                  numIPUs);
+    }
+
     for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
       unsigned startTile = ipu * tilesPerIPU;
       unsigned endTile   = (ipu + 1) * tilesPerIPU;
@@ -892,6 +897,10 @@ void Devicex::prepare() {
         }
       }
     }
+  } else if (ir().getSessionOptions().minimumVirtualGraphCount > 1) {
+    throw error("minimumVirtualGraphCount is {}, but enableVirtualGraphs is {}",
+                ir().getSessionOptions().minimumVirtualGraphCount,
+                ir().getSessionOptions().enableVirtualGraphs);
   }
 
   popops::addCodelets(masterGraph());

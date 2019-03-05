@@ -31,6 +31,8 @@ public:
   void appendAttributes(std::stringstream &ss,
                         const std::string &tab) const override;
 
+  bool canBeReplacedByIdentity() override;
+
 private:
   // the new permutation of the tensor axes
   std::vector<int64_t> perm;

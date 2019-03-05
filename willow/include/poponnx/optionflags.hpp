@@ -60,6 +60,9 @@ struct SessionOptions {
   /// graph' for each IPU
   bool enableVirtualGraphs = false;
 
+  // The minimum number of virtual graphs required to execute the graph
+  int64_t minimumVirtualGraphCount = 1;
+
   /// Use synthetic data i.e. disable data transfer to/from the host
   /// Set to 'true' to use synthetic data, 'false' to use real data
   bool ignoreData = false;

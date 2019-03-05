@@ -33,6 +33,8 @@ public:
 
   const Shape &getOutShape();
 
+  bool canBeReplacedByIdentity() override;
+
 private:
   // The shape of the data output tensor
   Shape outShape;

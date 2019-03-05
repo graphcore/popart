@@ -31,6 +31,7 @@ enum class PreAliasPatternType {
   NEGATIVEONESCALE,
   PADSUM,
   ABSGRADOP,
+  SPLITGATHER,
 };
 
 // Definition: A tensor is "touched" by a Pattern if
