@@ -602,7 +602,8 @@ const static AiGraphcoreOpIdV1 GroupNormalizationGrad("GroupNormalizationGrad");
 // constexpr static char Hardmax[] = "Hardmax";
 const static AiGraphcoreOpIdV1 IdentityGrad("IdentityGrad");
 // constexpr static char If[] = "If";
-// constexpr static char InstanceNormalization[] = "InstanceNormalization";
+const static AiGraphcoreOpIdV1
+    InstanceNormalizationGrad("InstanceNormalizationGrad");
 // constexpr static char IsNaN[] = "IsNan";
 // constexpr static char LRN[] = "LRN";
 const static AiGraphcoreOpIdV1 LSTMGrad("LSTMGrad");

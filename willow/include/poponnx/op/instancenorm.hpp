@@ -22,6 +22,8 @@ public:
 
   // Ouput's
   static OutIndex getOutIndex() { return 0; }
+  static OutIndex getMeanOutIndex() { return 1; }
+  static OutIndex getInvStdDevOutIndex() { return 2; }
 
   // Attributes
   float getEpsilon() const { return epsilon; }
@@ -31,6 +33,25 @@ public:
 
 private:
   float epsilon;
+};
+
+class InstanceNormGradOp : public Op {
+public:
+  InstanceNormGradOp(const InstanceNormOp &fwd_op);
+
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
+
+  static InIndex getInputInIndex() { return 0; }
+  static InIndex getScaleInIndex() { return 1; }
+  static InIndex getOutGradInIndex() { return 2; }
+  static InIndex getMeanInIndex() { return 3; }
+  static InIndex getInvStdDevInIndex() { return 4; }
+
+  static OutIndex getInputOutIndex() { return 0; }
+  static OutIndex getScaleOutIndex() { return 1; }
+  static OutIndex getBOutIndex() { return 2; }
 };
 
 } // namespace poponnx

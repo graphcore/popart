@@ -16,6 +16,12 @@ public:
 private:
 };
 
+class InstanceNormGradOpx : public NormOpx {
+public:
+  InstanceNormGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
 } // namespace popx
 } // namespace poponnx
 
