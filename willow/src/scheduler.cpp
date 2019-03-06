@@ -25,7 +25,11 @@ struct POpCmp {
 class OpPriorityComparer {
 public:
   bool operator()(Op *const &op1, Op *const &op2) const {
-    return op1->priority < op2->priority;
+
+    return std::tuple<double, std::string, OpId>(
+               op1->priority, op1->opid.type, op1->id) <
+           std::tuple<double, std::string, OpId>(
+               op2->priority, op2->opid.type, op2->id);
   }
 };
 

@@ -100,26 +100,27 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     // 7  ReluInplace         |    X]         w]
     // 8  Identity            |
     // 9  L1Grad              |
-    // 10 ReluGrad            | %                    *
-    // 11 MatMulLhsGrad       | %      [@
-    // 12 MatMulRhsGrad       | %       @   [Q
-    // 13 ConstSGDVarUpdate   | %       @]   Q]
-    // 14 ReluGrad            | %                    *
-    // 15 MatMulLhsGrad       |        [@
-    // 16 MatMulRhsGrad       |         @   [Q
-    // 17 ConstSGDVarUpdate   |         @]   Q]
-    // 18 ReluGrad            | %                    *
-    // 19 MatMulLhsGrad       | %      [@
-    // 20 MatMulRhsGrad       | %       @   [Q
-    // 21 ConstSGDVarUpdate   | %       @]   Q]
-    // 22 ReluGrad            | %                    *
-    // 23 MatMulRhsGrad       |             [Q
-    // 24 ConstSGDVarUpdate   |              Q]
+    // 10 ReluGrad            | %                *
+    // 11 MatMulRhsGrad       | %      [@
+    // 12 MatMulLhsGrad       | %       @
+    // 13 ConstSGDVarUpdate   | %       @]
+    // 14 ReluGrad            | %                *
+    // 15 MatMulRhsGrad       |        [@
+    // 16 MatMulLhsGrad       |         @
+    // 17 ConstSGDVarUpdate   |         @]
+    // 18 ReluGrad            | %                *
+    // 19 MatMulRhsGrad       | %      [@
+    // 20 MatMulLhsGrad       | %       @
+    // 21 ConstSGDVarUpdate   | %       @]
+    // 22 ReluGrad            | %                *
+    // 23 MatMulRhsGrad       |
+    // 24 ConstSGDVarUpdate   |
     std::vector<Match> expected_train_matches = {{{10, 18}, 5},
                                                  {{0, 4}, 4},
                                                  {{11, 15, 19}, 3},
-                                                 {{12, 16, 20, 23}, 2},
                                                  {{0, 2, 4, 6}, 2},
+                                                 {{13, 17, 21, 24}, 1},
+                                                 {{11, 15, 19, 23}, 1},
                                                  {{10, 14, 18, 22}, 1}};
     Ir ir;
     ir.prepare({modelProto,
