@@ -148,15 +148,17 @@ public:
                             pool_params.numChannels,
                             pool_params.batchSize);
 
-    insert(outId(0),
-           popnn::pooling::poolInputGradient(graph(),
-                                             pool_params,
-                                             get(prePooledId),
-                                             get(pooledId),
-                                             get(gradPooledId),
-                                             prog,
-                                             idStr(),
-                                             dv_p->pooling_options));
+    insert(
+        outId(0),
+        popnn::pooling::poolInputGradient(graph(),
+                                          pool_params,
+                                          get(prePooledId),
+                                          get(pooledId),
+                                          get(gradPooledId),
+                                          false, // useScaledVariant TODO T7295
+                                          prog,
+                                          idStr(),
+                                          dv_p->pooling_options));
   }
 
   popnn::PoolingType pooling_type;
