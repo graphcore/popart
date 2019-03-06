@@ -24,12 +24,36 @@ struct POpCmp {
 
 class OpPriorityComparer {
 public:
+  // total memory of inputs "minus" total memory of outputs
+  // TODO T8279 : Op scheduling would be (I think significantly) faster
+  // if this value was not computed every time compared.
+  uint64_t memDiff(Op *const &op) const {
+    uint64_t diff = 0;
+    for (auto &t : op->input->tensors()) {
+      diff += t->info.nbytes();
+    }
+
+    for (auto &t : op->output->tensors()) {
+      diff -= t->info.nbytes();
+    }
+
+    return diff;
+  }
+
   bool operator()(Op *const &op1, Op *const &op2) const {
 
-    return std::tuple<double, std::string, OpId>(
-               op1->priority, op1->opid.type, op1->id) <
-           std::tuple<double, std::string, OpId>(
-               op2->priority, op2->opid.type, op2->id);
+    // lexicographic comparison by,
+    // 1) priority
+    // 2) n_inputs - n_ouputs
+    // 3) type (string)
+    // 4) unique id.
+    //
+    // Motivation for (2) above is minimization of tensor liveness
+
+    return std::tuple<double, int, std::string, OpId>(
+               op1->priority, memDiff(op1), op1->opid.type, op1->id) <
+           std::tuple<double, int, std::string, OpId>(
+               op2->priority, memDiff(op2), op2->opid.type, op2->id);
   }
 };
 
