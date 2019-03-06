@@ -1,6 +1,7 @@
 #ifndef GUARD_NEURALNET_SUBGRAPHS_HPP
 #define GUARD_NEURALNET_SUBGRAPHS_HPP
 
+#include "subgraphnames.hpp"
 #include <algorithm>
 #include <functional>
 #include <map>
@@ -12,16 +13,6 @@
 
 namespace fwtools {
 namespace subgraph {
-
-// To compare nodes in the graph for equivalence, use a std::string
-using EquivId = std::string;
-
-// The position in the schedule that a sequence (sub-graph) starts at
-using Start = int;
-
-// The input and output indices of a node
-using InIndex  = int;
-using OutIndex = int;
 
 class Match {
 public:
@@ -133,7 +124,7 @@ private:
   float getValue(const Match &match) const {
     float value = 0;
     for (int i = 0; i < match.length; ++i) {
-      value += schedule.at(match.starts[0] + i)->getValue();
+      value += schedule.at(match.starts[0] + i)->getSubgraphValue();
     }
     return value;
   }
@@ -419,7 +410,7 @@ std::vector<Match> RinseMatcher<T>::getRepeatedSequences() const {
       for (auto start : first_starts.second) {
         int end = start + current_length - 1;
         if (end < n_nodes) {
-          auto id    = schedule[end]->getEquivId();
+          auto id    = schedule[end]->getSubgraphEquivId();
           auto found = by_end_type.find(id);
           if (found == by_end_type.end()) {
             by_end_type[id] = {start};
@@ -467,28 +458,29 @@ bool RinseMatcher<T>::areIsomorphic(int seq_length, Start s0, Start s1) const {
   for (int delta = 0; delta < seq_length; ++delta) {
     auto &t0 = schedule[s0 + delta];
     auto &t1 = schedule[s1 + delta];
-    if (t0->getInIndices() != t1->getInIndices()) {
+    if (t0->getSubgraphInIndices() != t1->getSubgraphInIndices()) {
       // this should actually be an error, as they shouldn't have
       // been returned as equivalent
       return false;
     }
 
-    auto &ins0 = t0->getInputs();
-    auto &ins1 = t1->getInputs();
+    auto &&ins0 = t0->getSubgraphInputs();
+    auto &&ins1 = t1->getSubgraphInputs();
 
-    for (auto inIndex : t0->getInIndices()) {
+    for (auto inIndex : t0->getSubgraphInIndices()) {
       auto &in0 = ins0.at(inIndex);
       auto &in1 = ins1.at(inIndex);
 
       auto prod0 = std::get<0>(in0);
       auto out0  = std::get<1>(in0);
-      auto rel0  = relativeToStart(prod0, s0);
 
       auto prod1 = std::get<0>(in1);
       auto out1  = std::get<1>(in1);
-      auto rel1  = relativeToStart(prod1, s1);
 
-      if (rel0 < 0 && rel1 < 0) {
+      bool extern0 = (prod0 == nullptr || relativeToStart(prod0, s0) < 0);
+      bool extern1 = (prod1 == nullptr || relativeToStart(prod1, s1) < 0);
+
+      if (extern0 && extern1) {
         // both are external
         // 0
         auto found0 = externProds0.find(in0);
@@ -513,7 +505,9 @@ bool RinseMatcher<T>::areIsomorphic(int seq_length, Start s0, Start s1) const {
       }
 
       // both are internal
-      else if (rel0 >= 0 && rel1 >= 0) {
+      else if (!extern0 && !extern1) {
+        auto rel0 = relativeToStart(prod0, s0);
+        auto rel1 = relativeToStart(prod1, s1);
         if (rel0 != rel1 || out0 != out1) {
           return false;
         }

@@ -1593,7 +1593,9 @@ void Ir::constructBackwards() {
         throw error("can't currently register gradient of " +
                     nongrad->tensor_type() + " tensor, " + nongrad->str());
 
-      default: { throw error("only handling ActGrad and Variable for now"); }
+      default: {
+        throw error("only handling ActGrad and Variable for now");
+      }
       }
     }
 

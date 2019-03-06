@@ -331,4 +331,30 @@ std::string Op::debugName() const {
 // By default an operation can not be replaced
 bool Op::canBeReplacedByIdentity() { return false; }
 
+std::map<fwtools::subgraph::InIndex, Op::SubgraphInSig>
+Op::getSubgraphInputs() const {
+  std::map<fwtools::subgraph::InIndex, Op::SubgraphInSig> ins;
+  for (auto &index_tensor : input->tensorMap()) {
+    auto inIndex       = index_tensor.first;
+    auto tensor        = index_tensor.second;
+    Op *unsafeProducer = tensor->getProducerUnsafe();
+    // tensorflow will need some way if distinguishing
+    // between tensors without producers
+    fwtools::subgraph::OutIndex outIndex = -1;
+    if (unsafeProducer) {
+      outIndex = unsafeProducer->output->indicesMap().at(tensor).at(0);
+    }
+    ins[inIndex] = SubgraphInSig(unsafeProducer, outIndex, tensor->id);
+  }
+  return ins;
+}
+
+std::vector<fwtools::subgraph::InIndex> Op::getSubgraphInIndices() const {
+  std::vector<fwtools::subgraph::InIndex> in_indices;
+  for (auto &index_tensor : input->tensorMap()) {
+    in_indices.push_back(index_tensor.first);
+  }
+  return in_indices;
+}
+
 } // namespace poponnx

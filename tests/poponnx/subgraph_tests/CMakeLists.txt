@@ -28,3 +28,6 @@ add_poponnx_cpp_unit_test(getmatches_0_subgraph_test
 
 # a speed test (in development, see T7258)
 add_poponnx_cpp_unit_test(speed_0_subgraph_test speed_0_subgraph_test.cpp)
+
+# tests at the Op level
+add_poponnx_cpp_unit_test(op_0_subgraph_test op_0_subgraph_test.cpp)

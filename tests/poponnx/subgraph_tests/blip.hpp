@@ -36,22 +36,24 @@ public:
   // The core algorithm in substring.hpp
   // requires the identity to be a string.
   // We return the Type cast to a std::string
-  fwtools::subgraph::EquivId getEquivId() const { return std::to_string(t); }
+  fwtools::subgraph::EquivId getSubgraphEquivId() const {
+    return std::to_string(t);
+  }
 
   // 2) where Inputs is a tuple<T*, OutIndex, std::string>
-  const Inputs &getInputs() const { return ins; }
+  const Inputs &getSubgraphInputs() const { return ins; }
 
   // 3)
-  std::vector<InIndex> getInIndices() const {
+  std::vector<InIndex> getSubgraphInIndices() const {
     std::vector<InIndex> in_indices;
-    for (auto &x : getInputs()) {
+    for (auto &x : getSubgraphInputs()) {
       in_indices.push_back(x.first);
     }
     return in_indices;
   }
 
   // 4)
-  float getValue() const { return v; }
+  float getSubgraphValue() const { return v; }
 
   Inputs ins;
 

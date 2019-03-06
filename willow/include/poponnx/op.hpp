@@ -13,6 +13,8 @@
 #include <poponnx/util.hpp>
 #include <poponnx/vertex.hpp>
 
+#include <poponnx/subgraph/subgraphnames.hpp>
+
 namespace poponnx {
 
 // the input tensor of a grad-op has what kind of
@@ -285,6 +287,21 @@ protected:
 private:
   void appendIO(std::stringstream &) const;
   virtual void appendMore(std::stringstream &) const {}
+
+public:
+  // The functionality required for sub-graph matching
+  using SubgraphInSig =
+      std::tuple<Op *, fwtools::subgraph::OutIndex, std::string>;
+
+  // TODO see T7227 to specialise this function
+  virtual std::string getSubgraphEquivId() const { return opid.type; }
+
+  std::map<fwtools::subgraph::InIndex, SubgraphInSig> getSubgraphInputs() const;
+
+  std::vector<fwtools::subgraph::InIndex> getSubgraphInIndices() const;
+
+  // TODO see T7228 to specialise this function
+  virtual float getSubgraphValue() const { return 10.0; }
 };
 
 } // namespace poponnx
