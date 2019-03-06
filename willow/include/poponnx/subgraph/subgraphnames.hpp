@@ -1,6 +1,8 @@
 #ifndef GUARD_NEURALNET_SUBGRAPHSNAMES_HPP
 #define GUARD_NEURALNET_SUBGRAPHSNAMES_HPP
 
+#include <string>
+
 namespace fwtools {
 namespace subgraph {
 
