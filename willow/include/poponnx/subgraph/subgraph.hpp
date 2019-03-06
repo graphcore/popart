@@ -134,6 +134,9 @@ private:
   // how far ahead of start is node in the schedule?
   int relativeToStart(T *node, Start start) const;
 
+  std::vector<InIndex> getSubgraphInIndices(T *) const;
+  std::vector<OutIndex> getSubgraphOutIndices(T *) const;
+
   // identifying a connection (a tensor for neural nets)
   // poponnx : (Op * creator, output index of creator, TensorId)
   // tf : similar, but the string can be empty
@@ -439,6 +442,24 @@ std::vector<Match> RinseMatcher<T>::getRepeatedSequences() const {
 }
 
 template <typename T>
+std::vector<InIndex> RinseMatcher<T>::getSubgraphInIndices(T *t) const {
+  std::vector<InIndex> in_indices;
+  for (auto &x : t->getSubgraphInputs()) {
+    in_indices.push_back(x.first);
+  }
+  return in_indices;
+}
+
+template <typename T>
+std::vector<OutIndex> RinseMatcher<T>::getSubgraphOutIndices(T *t) const {
+  std::vector<InIndex> out_indices;
+  for (auto &x : t->getSubgraphOutputs()) {
+    out_indices.push_back(x.first);
+  }
+  return out_indices;
+}
+
+template <typename T>
 bool RinseMatcher<T>::areIsomorphic(int seq_length, Start s0, Start s1) const {
 
   // the producers of the inputs for a node in a sub-graph
@@ -450,6 +471,8 @@ bool RinseMatcher<T>::areIsomorphic(int seq_length, Start s0, Start s1) const {
   // 2) they aren't in the sub-graph, the corresponding consumers
   //    for the 2 sub-graphs must have identical consumers, at identical
   //    consumer InIndexs, for identical OutIndexs
+  // also, the 2 sub-graphs must have an identical pattern of which
+  // output indices are consumed externally (we might want to relax this)
 
   // case 2 : external producers. These maps should be identical
   std::map<Input, std::vector<InternalConsumer>> externProds0;
@@ -458,7 +481,8 @@ bool RinseMatcher<T>::areIsomorphic(int seq_length, Start s0, Start s1) const {
   for (int delta = 0; delta < seq_length; ++delta) {
     auto &t0 = schedule[s0 + delta];
     auto &t1 = schedule[s1 + delta];
-    if (t0->getSubgraphInIndices() != t1->getSubgraphInIndices()) {
+    if ((getSubgraphInIndices(t0) != getSubgraphInIndices(t1)) ||
+        getSubgraphOutIndices(t0) != getSubgraphOutIndices(t1)) {
       // this should actually be an error, as they shouldn't have
       // been returned as equivalent
       return false;
@@ -467,7 +491,7 @@ bool RinseMatcher<T>::areIsomorphic(int seq_length, Start s0, Start s1) const {
     auto &&ins0 = t0->getSubgraphInputs();
     auto &&ins1 = t1->getSubgraphInputs();
 
-    for (auto inIndex : t0->getSubgraphInIndices()) {
+    for (auto inIndex : getSubgraphInIndices(t0)) {
       auto &in0 = ins0.at(inIndex);
       auto &in1 = ins1.at(inIndex);
 
@@ -515,6 +539,30 @@ bool RinseMatcher<T>::areIsomorphic(int seq_length, Start s0, Start s1) const {
 
       // one is internal, one is external
       else {
+        return false;
+      }
+    }
+
+    // we check that the output indices which are consumed are identical
+    for (auto outIndex : getSubgraphOutIndices(t0)) {
+      bool externOut0         = false;
+      auto &&subgraphOutputs0 = t0->getSubgraphOutputs();
+      auto consumers0         = subgraphOutputs0.at(outIndex);
+      for (auto con0 : consumers0) {
+        if (relativeToStart(con0, s0) >= seq_length) {
+          externOut0 = true;
+        }
+      }
+
+      bool externOut1         = false;
+      auto &&subgraphOutputs1 = t1->getSubgraphOutputs();
+      auto consumers1         = subgraphOutputs1.at(outIndex);
+      for (auto con1 : consumers1) {
+        if (relativeToStart(con1, s1) >= seq_length) {
+          externOut1 = true;
+        }
+      }
+      if (externOut0 != externOut1) {
         return false;
       }
     }

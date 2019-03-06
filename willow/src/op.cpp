@@ -349,12 +349,20 @@ Op::getSubgraphInputs() const {
   return ins;
 }
 
-std::vector<fwtools::subgraph::InIndex> Op::getSubgraphInIndices() const {
-  std::vector<fwtools::subgraph::InIndex> in_indices;
-  for (auto &index_tensor : input->tensorMap()) {
-    in_indices.push_back(index_tensor.first);
+std::map<fwtools::subgraph::OutIndex, std::set<Op *>>
+Op::getSubgraphOutputs() const {
+
+  std::map<fwtools::subgraph::OutIndex, std::set<Op *>> cmap;
+  for (auto &index_tensor : output->tensorMap()) {
+    auto out_index  = index_tensor.first;
+    auto out_tensor = index_tensor.second;
+    std::set<Op *> consumers;
+    for (auto &op : out_tensor->consumers.getOps()) {
+      consumers.insert(op);
+    }
+    cmap[out_index] = consumers;
   }
-  return in_indices;
+  return cmap;
 }
 
 } // namespace poponnx

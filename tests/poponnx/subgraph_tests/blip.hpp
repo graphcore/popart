@@ -1,6 +1,8 @@
 #ifndef GUARD_NEURALNET_BLIP_HPP
 #define GUARD_NEURALNET_BLIP_HPP
 
+#include <map>
+#include <set>
 #include <vector>
 #include <poponnx/subgraph/subgraph.hpp>
 
@@ -22,9 +24,13 @@ using Value = float;
 using InIndex  = fwtools::subgraph::InIndex;
 using OutIndex = fwtools::subgraph::OutIndex;
 // We define the input of a Blip. Think neural net tensor:
-//                          producer      index     tensor's name
+//                        producer      index     tensor's name
 using Input  = std::tuple<const Blip *, OutIndex, std::string>;
 using Inputs = std::map<InIndex, Input>;
+
+// given all Inputs, we can infer all Outputs
+//                         consumers (unique)         output index
+using Outputs = std::map<OutIndex, std::set<const Blip *>>;
 
 // 4 functions are needed to use
 // the core algorithm in substring.hpp
@@ -44,20 +50,25 @@ public:
   const Inputs &getSubgraphInputs() const { return ins; }
 
   // 3)
-  std::vector<InIndex> getSubgraphInIndices() const {
-    std::vector<InIndex> in_indices;
-    for (auto &x : getSubgraphInputs()) {
-      in_indices.push_back(x.first);
-    }
-    return in_indices;
-  }
-
-  // 4)
   float getSubgraphValue() const { return v; }
 
-  Inputs ins;
+  // 4)
+  const Outputs &getSubgraphOutputs() const { return outs; }
+
+  void addIn(InIndex in_index, const Blip *source, OutIndex out_index) {
+    ins[in_index] = {source, out_index, ""};
+  }
+
+  void addOut(const Blip *dest, OutIndex out_index) {
+    if (outs.find(out_index) == outs.end()) {
+      outs[out_index] = {};
+    }
+    outs[out_index].insert(dest);
+  }
 
 private:
+  Inputs ins;
+  Outputs outs;
   Type t;
   Value v;
 };

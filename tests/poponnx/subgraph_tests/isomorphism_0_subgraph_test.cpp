@@ -24,8 +24,9 @@ BOOST_AUTO_TEST_CASE(Isomorphism0_Subgraph) {
       blips.emplace_back(std::unique_ptr<Blip>(new Blip(t, 10.0f, {})));
     }
     for (auto edge : edges) {
-      blips[edge.destId]->ins[edge.inIndex] = {
-          blips[edge.sourceId].get(), edge.outIndex, ""};
+      blips[edge.destId]->addIn(
+          edge.inIndex, blips[edge.sourceId].get(), edge.outIndex);
+      blips[edge.sourceId]->addOut(blips[edge.destId].get(), edge.outIndex);
     }
     for (int i = 0; i < blips.size(); ++i) {
       sched.push_back(blips[i].get());
@@ -119,7 +120,7 @@ BOOST_AUTO_TEST_CASE(Isomorphism0_Subgraph) {
   test(types, edges, expected_matches);
 
   // ----------------------------------------------------------
-  poponnx::logging::info("differing output indices test");
+  poponnx::logging::info("differing internal output indices test");
   // in this test, edges break isomorphism because of
   // differening internal output indices
 
@@ -132,11 +133,9 @@ BOOST_AUTO_TEST_CASE(Isomorphism0_Subgraph) {
 
   expected_matches = {
       {{0, 1, 2}, 1}, // 0
-      {{3, 6}, 1},    // 1
       {{4, 7}, 1},    // 2
       {{5, 8}, 1},    // 3
       {{0, 1}, 2},    // 0 0
-      {{3, 6}, 2},    // 1 2
       {{4, 7}, 2}     // 2 3
                       // no 1 2 3
   };
@@ -155,14 +154,11 @@ BOOST_AUTO_TEST_CASE(Isomorphism0_Subgraph) {
   edges = {{3, 5, 0, 0}, {2, 8, 0, 0}};
 
   expected_matches = {
-      {{0, 1, 2}, 1}, // 0
-      {{3, 6}, 1},    // 1
-      {{4, 7}, 1},    // 2
-      {{5, 8}, 1},    // 3
-      {{0, 1}, 2},    // 0 0
-      {{3, 6}, 2},    // 1 2
-      {{4, 7}, 2}     // 2 3
-                      // no 1 2 3
+      {{0, 1}, 1}, // 0
+      {{4, 7}, 1}, // 2
+      {{5, 8}, 1}, // 3
+      {{4, 7}, 2}  // 2 3
+                   // no 1 2 3
   };
   test(types, edges, expected_matches);
 
@@ -184,12 +180,7 @@ BOOST_AUTO_TEST_CASE(Isomorphism0_Subgraph) {
            {1, 4, 0, 0},
            {1, 5, 0, 0},
            {0, 6, 0, 0},
-           {
-               0,
-               7,
-               0,
-               0,
-           },
+           {0, 7, 0, 0},
            {2, 8, 0, 0}};
 
   expected_matches = {
@@ -205,8 +196,8 @@ BOOST_AUTO_TEST_CASE(Isomorphism0_Subgraph) {
   test(types, edges, expected_matches);
 
   // -------------------------------------------------------------------
-  poponnx::logging::info("isomorphically identical external input test");
-  // in this test, the [123]s are not isomporphic as one has
+  poponnx::logging::info("non-isomorphically identical external input test");
+  // in this test, the [123]s are not isomorphic as one has
   // an internal input to 3, the other has an external input
 
   //       0  1  2  3  4  5  6  7  8
@@ -226,14 +217,12 @@ BOOST_AUTO_TEST_CASE(Isomorphism0_Subgraph) {
            {0, 8, 1, 2}};
 
   expected_matches = {
-      {{0, 1, 2}, 1}, // 0
-      {{3, 6}, 1},    // 1
-      {{4, 7}, 1},    // 2
-      {{5, 8}, 1},    // 3
-      {{0, 1}, 2},    // 0 0
-      {{3, 6}, 2},    // 1 2
-      {{4, 7}, 2},    // 2 3
-      {{3, 6}, 3}     // 1 2 3
+      {{3, 6}, 1}, // 1
+      {{4, 7}, 1}, // 2
+      {{5, 8}, 1}, // 3
+      {{3, 6}, 2}, // 1 2
+      {{4, 7}, 2}, // 2 3
+      {{3, 6}, 3}  // 1 2 3
   };
   test(types, edges, expected_matches);
 
@@ -259,14 +248,12 @@ BOOST_AUTO_TEST_CASE(Isomorphism0_Subgraph) {
            {0, 8, 1, 2}};
 
   expected_matches = {
-      {{0, 1, 2}, 1}, // 0
-      {{3, 6}, 1},    // 1
-      {{4, 7}, 1},    // 2
-      {{5, 8}, 1},    // 3
-      {{0, 1}, 2}     // 0 0
-                      // no 1 2
-                      // no 2 3
-                      // no 1 2 3
+      {{3, 6}, 1}, // 1
+      {{4, 7}, 1}, // 2
+      {{5, 8}, 1}, // 3
+                   // no 1 2
+                   // no 2 3
+                   // no 1 2 3
   };
   test(types, edges, expected_matches);
 
@@ -322,40 +309,49 @@ BOOST_AUTO_TEST_CASE(Isomorphism0_Subgraph) {
   poponnx::logging::info("two isomorphically equivalent");
   //       0  1  2  3  4  5  6  7  8  9  10 11 12 13 14
   types = {0, 0, 0, 1, 2, 3, 1, 2, 3, 1, 2, 3, 1, 2, 3};
-  //                0-----0
   //                0-----1
-  //                         0-----0
+  //                1-----0
   //                         0-----1
+  //                         1-----0
   //                                  0-----0
   //                                  1-----1
   //                                           0-----0
   //                                           1-----1
   edges = {};
   for (int i = 0; i < 4; ++i) {
-    edges.push_back({3 + 3 * i, 5 + 3 * i, 0, 0});
-    int input_tensor_index = i < 2 ? 0 : 1;
-    edges.push_back({3 + 3 * i, 5 + 3 * i, input_tensor_index, 1});
+    int switch_up = i < 2 ? 1 : 0;
+    edges.push_back({3 + 3 * i, 5 + 3 * i, 1 - switch_up, 1});
+    edges.push_back({3 + 3 * i, 5 + 3 * i, switch_up, 0});
   }
 
   expected_matches = {
       {{0, 1, 2}, 1},      // 0
       {{3, 6, 9, 12}, 1},  // 1
       {{4, 7, 10, 13}, 1}, // 2
-      {{5, 8}, 1},         // 3 with same source tensors
-      {{11, 14}, 1},       // 3 with different source tensors
+      {{5, 8, 11, 14}, 1}, // 3 with different source tensors
       {{0, 1}, 2},         // 0 0
       {{3, 6, 9, 12}, 2},  // 1 2
-      {{4, 7}, 2},         // 2 3 with same source
-      {{10, 13}, 2},       // 2 3 with different source
-      {{5, 8}, 2},         // 3 1 with same source
-      {{3, 6}, 3},         // 1 2 3 with same source
-      {{9, 12}, 3},        // 1 2 3 with different source
-      {{4, 7}, 3},         // 2 3 1 with same source
-      {{5, 8}, 3},         // 3 1 2 with same source
-      {{3, 6}, 4},         // 1 2 3 1
-      {{4, 7}, 4},         // 2 3 1 2
-      {{3, 6}, 5}          // 1 2 3 1 2
+      {{4, 7, 10, 13}, 2}, // 2 3 with different source
+      {{5, 8, 11}, 2},
+      {{3, 6}, 3},     // 1 2 3
+      {{9, 12}, 3},    // 1 2 3 with different source
+      {{4, 7, 10}, 3}, // 2 3 1
+      {{5, 8, 11}, 3}, // 3 1 2
+      {{3, 6}, 4},     // 1 2 3 1
+      {{4, 7, 10}, 4}, // 2 3 1 2
+      {{8, 11}, 4},    // 3 1 2 3
+      {{3, 6}, 5},     // 1 2 3 1 2
+      {{7, 10}, 5}     // 2 3 1 2 3
   };
 
+  test(types, edges, expected_matches);
+
+  // --------------------------------------------------------------------------
+  poponnx::logging::info("iso different, because different output consumed");
+  //       0  1  2  3  4    5    6  7  8  9
+  types = {0, 1, 2, 3, 100, 101, 1, 2, 3, 102};
+  //          0--------1         1--------1
+  edges            = {{1, 4, 0, 1}, {6, 9, 1, 1}};
+  expected_matches = {{{2, 7}, 1}, {{3, 8}, 1}, {{2, 7}, 2}};
   test(types, edges, expected_matches);
 }

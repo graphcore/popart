@@ -25,9 +25,12 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
       blips.emplace_back(
           std::unique_ptr<Blip>(new Blip(t, value_map.at(t), {})));
     }
+
     for (auto edge : edges) {
-      blips[edge.destId]->ins[edge.inIndex] = {
-          blips[edge.sourceId].get(), edge.outIndex, ""};
+      blips[edge.destId]->addIn(
+          edge.inIndex, blips[edge.sourceId].get(), edge.outIndex);
+
+      blips[edge.sourceId]->addOut(blips[edge.destId].get(), edge.outIndex);
     }
     for (int i = 0; i < blips.size(); ++i) {
       sched.push_back(blips[i].get());
@@ -79,10 +82,10 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
   //       0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
   types = {6, 1, 2, 5, 1, 2, 6, 6, 1, 2, 7, 1, 2, 8, 1, 2};
   //       0--0
-  //       0----0
-  //          0--1
-  //          0--------------------0
-  //          0-----------------------0
+  //       0-----0
+  //       0-----1
+  //       0-----------------------0
+  //       0--------------------------0
   //                               0--1
   //       0-----------0
   //       0--------------1  note here this is 0->1, not 0->0
@@ -97,9 +100,9 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
 
   edges = {{0, 1, 0, 0}, // 0
            {0, 2, 0, 0}, // 0
-           {1, 2, 0, 1}, // 0
-           {1, 8, 0, 0},
-           {1, 9, 0, 0},
+           {0, 2, 0, 1}, // 0
+           {0, 8, 0, 0},
+           {0, 9, 0, 0},
            {8, 9, 0, 1},
            {0, 4, 0, 0}, // 0
            {0, 5, 0, 1}, // 1
@@ -124,11 +127,14 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
                {8, 1.0f}};
 
   expected_matches = {
-      {{4, 11, 14}, 2},       // 12 first isomorphic type
-      {{1, 8}, 2},            // 12 second isomorphic type
-      {{1, 4, 8, 11, 14}, 1}, // 1: it is not subsumed
-      {{2, 5, 9, 12, 15}, 1}, // 2: it is not subsumed
-      {{0, 6, 7}, 1}          // 6
-  };
+      // 12 first isomorphic type
+      // The other 2 isomorphic types (starting at 1 and 8) are singletons
+      {{4, 11, 14}, 2},
+      // 1: it is not subsumed
+      {{4, 8, 11, 14}, 1},
+      // 2: it is not subsumed. The 2 at index 2 has the same input tensor
+      {{5, 9, 12, 15}, 1},
+      // 6: index 0 has it's output consumed, so not isomorphic here
+      {{6, 7}, 1}};
   test(types, value_map, edges, expected_matches);
 }

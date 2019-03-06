@@ -298,7 +298,9 @@ public:
 
   std::map<fwtools::subgraph::InIndex, SubgraphInSig> getSubgraphInputs() const;
 
-  std::vector<fwtools::subgraph::InIndex> getSubgraphInIndices() const;
+  // all the consumers at a given output index
+  std::map<fwtools::subgraph::OutIndex, std::set<Op *>>
+  getSubgraphOutputs() const;
 
   // TODO see T7228 to specialise this function
   virtual float getSubgraphValue() const { return 10.0; }
