@@ -36,7 +36,7 @@ const Shape &ConstExprOp::inShape(InIndex index) const {
 const TensorInfo &ConstExprOp::outInfo0() const { return op->outInfo(0); }
 
 void ConstExprUtil::processOp(Op *op, Ir *ir) {
-  logging::ir::debug(
+  logging::ces::debug(
       "Processing Op `{}` ({}) in ConstExprUtil", op->id, op->opid.type);
   auto constOp = ConstExprOpManager::createConstExprOp(op);
 

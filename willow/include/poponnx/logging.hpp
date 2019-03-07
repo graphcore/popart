@@ -61,6 +61,9 @@ enum class Module {
   transform, /// Transform module
   pattern,   /// Pattern module
   builder,   /// Builder module
+  op,        /// Op module
+  opx,       /// Opx module
+  ces,       /// Const Expr module
   none       /// The undefined module
 };
 
@@ -151,6 +154,9 @@ MAKE_MODULE_TEMPLATE(devicex)
 MAKE_MODULE_TEMPLATE(transform)
 MAKE_MODULE_TEMPLATE(pattern)
 MAKE_MODULE_TEMPLATE(builder)
+MAKE_MODULE_TEMPLATE(op)
+MAKE_MODULE_TEMPLATE(opx)
+MAKE_MODULE_TEMPLATE(ces)
 
 // Convenience macro to create a log entry prefixed with function name e.g.:
 //    void someFunc(int i) {

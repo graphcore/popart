@@ -27,7 +27,7 @@ void LSTMOp::setup() {
     throw error("Poponnx does not support peephole connections");
   }
   if (input->hasIndex(getSequenceLensInIndex())) {
-    logging::ir::warn("Lstm optional input `sequence_lens' will be ignored");
+    logging::op::warn("Lstm optional input `sequence_lens' will be ignored");
   }
   if (hidden_size_attribute && *hidden_size_attribute != getHiddenSize()) {
     throw error("LSTMOp hidden_size attribute, {}, does not match calculated "

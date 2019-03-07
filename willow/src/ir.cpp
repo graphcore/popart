@@ -1030,7 +1030,7 @@ void Ir::constructForwards() {
 }
 
 void Ir::foldConstants() {
-  logging::ir::trace("Folding constants");
+  logging::ces::trace("Folding constants");
   ConstExprUtil::foldConstants(this);
 }
 

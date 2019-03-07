@@ -23,7 +23,7 @@ bool PreAliasPattern::touchesAnchored(Op *op) const {
 
 TensorId PreAliasPattern::createIntermediateTensorId(TensorId base_id) {
   auto temp_id = fmt::format("t{}__{}", tensor_counter++, base_id);
-  logging::ir::trace("Generating tensor id {}", temp_id);
+  logging::pattern::trace("Generating tensor id {}", temp_id);
   return temp_id;
 }
 

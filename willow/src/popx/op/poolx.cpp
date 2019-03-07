@@ -94,7 +94,7 @@ public:
                                             aOp.getLowerPads(),
                                             aOp.getUpperPads());
 
-    logging::devicex::debug(
+    logging::opx::debug(
         "Pooling InputField:{} Kernel:{} Strides:{} Pads L:{} U:{} C:{} Bs:{}",
         pool_params.inputFieldShape,
         pool_params.kernelShape,
@@ -138,15 +138,15 @@ public:
                                             aOp->getLowerPads(),
                                             aOp->getUpperPads());
 
-    logging::devicex::debug("Pooling Grad InputField:{} Kernel:{} Strides:{} "
-                            "Pads L:{} U:{} C:{} Bs:{}",
-                            pool_params.inputFieldShape,
-                            pool_params.kernelShape,
-                            pool_params.stride,
-                            pool_params.inputTruncationOrPaddingLower,
-                            pool_params.inputTruncationOrPaddingUpper,
-                            pool_params.numChannels,
-                            pool_params.batchSize);
+    logging::opx::debug("Pooling Grad InputField:{} Kernel:{} Strides:{} "
+                        "Pads L:{} U:{} C:{} Bs:{}",
+                        pool_params.inputFieldShape,
+                        pool_params.kernelShape,
+                        pool_params.stride,
+                        pool_params.inputTruncationOrPaddingLower,
+                        pool_params.inputTruncationOrPaddingUpper,
+                        pool_params.numChannels,
+                        pool_params.batchSize);
 
     insert(
         outId(0),

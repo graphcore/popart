@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <poponnx/logging.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/gemm.hpp>
 #include <poponnx/opmanager.hpp>

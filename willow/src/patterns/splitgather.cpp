@@ -180,11 +180,11 @@ bool SplitGatherPattern::apply(Op *op) const {
   const auto idxTensorId = op->input->id(GatherOp::indicesInIndex());
   const auto outTensorId = op->output->id(GatherOp::outIndex());
 
-  logging::trace("Splitting {} into {} gathers of size [{}, {}]",
-                 op->str(),
-                 split,
-                 inputShape[axis],
-                 (numElements / inputShape[axis]) / split);
+  logging::pattern::trace("Splitting {} into {} gathers of size [{}, {}]",
+                          op->str(),
+                          split,
+                          inputShape[axis],
+                          (numElements / inputShape[axis]) / split);
 
   auto t0        = inTensorId;
   auto transpose = canonicalizeTranspose(axis, inputShape, op->settings);
