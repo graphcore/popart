@@ -96,6 +96,12 @@ void GatherGradOp::setup() { outInfo(gradOutIndex()) = fwdDataInfo; }
 
 int64_t GatherGradOp::getAxis() const { return axis; }
 
+void GatherGradOp::appendAttributes(std::stringstream &ss,
+                                    const std::string &tab) const {
+  Op::appendAttributes(ss, tab);
+  appendAttribute(ss, tab, "axis", axis);
+}
+
 namespace {
 static OpCreator<GatherOp> gatherOpCreator(
     Onnx::Operators::Gather_1,

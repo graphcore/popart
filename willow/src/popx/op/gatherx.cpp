@@ -17,60 +17,6 @@
 namespace poponnx {
 namespace popx {
 
-// poplin::linspace only supports float or half :(
-static poplar::Tensor
-linspace(poplar::Graph &graph, int left, int right, int increment = 1) {
-  std::size_t count = right - left;
-
-  std::vector<int> values(count);
-  std::iota(values.begin(), values.end(), 0);
-  std::transform(values.begin(),
-                 values.end(),
-                 values.begin(),
-                 [left, increment](int v) { return left + v * increment; });
-
-  auto result =
-      graph.addConstant(poplar::INT, {count}, poplar::ArrayRef<int>(values));
-
-  graph.setTileMapping(result, 0);
-
-  return result;
-}
-
-// Make b's rank match a.
-//
-// Assumes b.rank() <= a.rank() - dim
-static poplar::Tensor
-matchRank(poplar::Tensor a, poplar::Tensor b, unsigned dim) {
-  std::vector<std::size_t> shape(a.rank(), 1);
-  const auto b_shape = b.shape();
-
-  std::copy(b_shape.begin(), b_shape.end(), shape.begin() + dim);
-
-  return b.reshape(shape);
-}
-
-// Make b's shape match a.
-//
-// Assumes b is broadcastable into a
-static poplar::Tensor broadcastShape(std::vector<std::size_t> a_shape,
-                                     poplar::Tensor b) {
-  for (int k = 0; k < a_shape.size(); ++k) {
-    if (b.dim(k) == 1 && a_shape[k] != b.dim(k)) {
-      b = b.broadcast(static_cast<unsigned>(a_shape[k]), k);
-    }
-  }
-
-  return b;
-}
-
-// Make b's shape match a.
-//
-// Assumes b is broadcastable into a
-static poplar::Tensor broadcastShape(poplar::Tensor a, poplar::Tensor b) {
-  return broadcastShape(a.shape(), b);
-}
-
 GatherOpx::GatherOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<GatherOp>(op, Onnx::Operators::Gather_1);
 
@@ -327,19 +273,16 @@ static std::size_t findH(std::size_t d, std::size_t t) {
   return std::max<std::size_t>(1, t / d);
 }
 
-poplar::Tensor GatherOpx::createInput(int index) const {
-  if (index != GatherOp::dataInIndex()) {
-    throw error("GatherOpx::createInput Cannot create input {}", index);
-  }
-
-  auto info = inInfo(GatherOp::dataInIndex());
-
-  const auto shape = info.shape_szt();
+static poplar::Tensor createGatherInput(poplar::Graph &graph,
+                                        int64_t axis,
+                                        const poplar::Type &type,
+                                        const std::vector<std::size_t> &shape,
+                                        const std::string debugName) {
   const auto volume =
       boost::accumulate(shape, 1, std::multiplies<std::size_t>());
 
   // Number of tiles
-  const auto t = graph().getTarget().getNumTiles();
+  const auto t = graph.getTarget().getNumTiles();
 
   // Size of the "sequence" dimension
   const auto s = shape[axis];
@@ -357,12 +300,11 @@ poplar::Tensor GatherOpx::createInput(int index) const {
   // The rounding in s/h will introduce some padding
   const std::vector<std::size_t> allocShape = {d / g, h, quotCeil(s, h), g};
 
-  auto result = graph().addVariable(
-      popType(info), allocShape, op_p->str() + "input" + std::to_string(index));
+  auto result = graph.addVariable(type, allocShape, debugName);
 
   result = result.reshape({h * d / g, quotCeil(s, h), g});
   for (std::size_t i = 0; i < result.dim(0); ++i) {
-    graph().setTileMapping(result[i], static_cast<unsigned>(i));
+    graph.setTileMapping(result[i], static_cast<unsigned>(i));
   }
   result = result.reshape(allocShape);
   result = result.dimShuffle({0, 3, 1, 2});
@@ -380,6 +322,22 @@ poplar::Tensor GatherOpx::createInput(int index) const {
 
   // Slice away any padding
   return result.slice(0, shape[axis], static_cast<unsigned>(axis));
+}
+
+poplar::Tensor GatherOpx::createInput(int index) const {
+  if (index != GatherOp::dataInIndex()) {
+    throw error("GatherOpx::createInput Cannot create input {}", index);
+  }
+
+  auto info = inInfo(GatherOp::dataInIndex());
+
+  const auto shape = info.shape_szt();
+
+  return createGatherInput(graph(),
+                           axis,
+                           popType(info),
+                           shape,
+                           op_p->str() + "input" + std::to_string(index));
 }
 
 InputCreatorType GatherOpx::getInputCreatorType(int index0) const {
@@ -402,52 +360,36 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
       vXtoY<int64_t, std::size_t>(outShape(GatherGradOp::gradOutIndex()));
 
   auto update = get(inId(GatherGradOp::gradInIndex()));
-  auto result = graph().addVariable(update.elementType(), outputShape);
-  poputil::mapTensorLinearly(graph(), result);
+  auto result = createGatherInput(
+      graph(),
+      axis,
+      update.elementType(),
+      outputShape,
+      op_p->str() + "output" + std::to_string(GatherGradOp::gradOutIndex()));
 
-  // Build the implicit index coordinates
-  //
-  // Create a grid of linspaced indices
-  // Start by creating 1D linspaced constant tensors
-  std::vector<poplar::Tensor> indices_mapped(result.rank());
-  for (int i = 0; i < result.rank(); ++i) {
-    indices_mapped[i] = linspace(graph(), 0, static_cast<int>(update.dim(i)));
-  }
+  auto indices = get(inId(GatherGradOp::indicesInIndex()));
 
-  // Insert the user provided indices
-  indices_mapped[axis] = get(inId(GatherGradOp::indicesInIndex()));
+  std::vector<unsigned> update_window_dims(update.rank() - indices.rank());
+  auto begin = update_window_dims.begin();
+  auto mid   = update_window_dims.begin() + axis;
+  auto end   = update_window_dims.end();
+  std::iota(begin, mid, 0);
+  std::iota(mid, end, axis + indices.rank());
 
-  // Match the rank of the indices to the update tensor
-  for (int i = 0; i < result.rank(); ++i) {
-    indices_mapped[i] = matchRank(update, indices_mapped[i], i);
-  }
+  std::vector<std::size_t> inserted_window_dims = {
+      static_cast<std::size_t>(axis)};
 
-  for (auto &index : indices_mapped) {
-    // Match the shape of update
-    index = broadcastShape(update, index);
-
-    // Add a degenerate dimension for concatenation
-    index = index.expand({index.rank()});
-  }
-
-  // Concat the grid of indices
-  auto indices = poplar::concat(indices_mapped, update.rank());
-
-  std::vector<unsigned> update_window_dims(update.rank());
-  std::iota(update_window_dims.begin(), update_window_dims.end(), 0);
-
-  std::vector<std::size_t> inserted_window_dims(result.rank());
-  std::iota(inserted_window_dims.begin(), inserted_window_dims.end(), 0);
-
-  std::vector<unsigned> scatter_dims_to_op(update.rank());
-  std::iota(scatter_dims_to_op.begin(), scatter_dims_to_op.end(), 0);
+  std::vector<unsigned> scatter_dims_to_op = {static_cast<unsigned>(axis)};
 
   // Add overlapping gradients
-  popops::UpdateComputationFunc updateComp = [](poplar::Graph &g,
-                                                poplar::Tensor &a,
-                                                poplar::Tensor &b,
-                                                poplar::program::Sequence &p) {
-    return popops::add(g, a, b, p);
+  popops::UpdateComputationFunc updateComp =
+      [](poplar::Graph &g,
+         poplar::Tensor &a,
+         poplar::Tensor &b,
+         poplar::program::Sequence &p) -> poplar::Tensor {
+    popops::addInPlace(g, b, a, p);
+
+    return b;
   };
 
   // Scatter the grad input into the result
@@ -455,7 +397,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
                   result,
                   indices,
                   update,
-                  indices.rank() - 1,
+                  indices.rank(),
                   update_window_dims,
                   inserted_window_dims,
                   scatter_dims_to_op,
