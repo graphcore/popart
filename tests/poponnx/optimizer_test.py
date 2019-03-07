@@ -59,8 +59,8 @@ def test_sgd_param_check():
     matches the value supplied to the optimizer constructor
     """
     anchorNames = {
-        "learnRate": poponnx.AnchorReturnType("ALL"),
-        "weightDecay": poponnx.AnchorReturnType("ALL")
+        "learnRate_FLOAT": poponnx.AnchorReturnType("ALL"),
+        "weightDecay_FLOAT": poponnx.AnchorReturnType("ALL")
     }
 
     # Just a placeholder optimizer. We overwrite the hyper-parameters in this
@@ -89,10 +89,10 @@ def test_sgd_param_check():
 
         session.train(stepio)
 
-        assert (np.array_equal(anchorsArrays["learnRate"][0], stepLr))
+        assert (np.array_equal(anchorsArrays["learnRate_FLOAT"][0], stepLr))
         # The weight decay tensor is scaled by lr on the host
         # before training
-        assert (np.array_equal(anchorsArrays["weightDecay"][0],
+        assert (np.array_equal(anchorsArrays["weightDecay_FLOAT"][0],
                                stepWd * stepLr))
 
 
@@ -127,7 +127,7 @@ def test_constsgd_vs_sgd():
                                           anchorsArraysConstSgd)
 
         # set scalar learnRate
-        inputsUserSgd["learningRate"] = np.ones(
+        inputsUserSgd["learningRate_FLOAT"] = np.ones(
             stepSize, dtype=np.float32) * lr
         stepioUserSgd = poponnx.PyStepIO(inputsUserSgd, anchorsArraysUserSgd)
 
@@ -150,3 +150,56 @@ def test_constsgd_vs_sgd():
         else:
             assert (np.array_equal(anchorsArraysUserSgd["l1LossVal"],
                                    anchorsArraysConstSgd["l1LossVal"]))
+
+
+def test_sgd_with_float16_model():
+    poponnx.getLogger().setLevel("TRACE")
+
+    input1 = np.zeros((2, 2, 4, 4), dtype=np.float16)
+    input2 = np.zeros((2, 2, 3, 3), dtype=np.float16)
+    input3 = np.zeros((2, 2, 3, 3), dtype=np.float16)
+
+    builder = poponnx.Builder()
+    inid1 = builder.addInputTensor(poponnx.TensorInfo(input1))
+    inid2 = builder.addInitializedInputTensor(input2)
+    inid3 = builder.addInitializedInputTensor(input2)
+
+    c1 = builder.aiOnnx.conv([inid1, inid2],
+                             dilations=[1, 1],
+                             pads=[1, 1, 1, 1],
+                             strides=[1, 1])
+    c2 = builder.aiOnnx.conv([c1, inid3],
+                             dilations=[1, 1],
+                             pads=[1, 1, 1, 1],
+                             strides=[1, 1])
+
+    out = c2
+    builder.addOutputTensor(out)
+
+    proto = builder.getModelProto()
+
+    optimizer = poponnx.SGD(learning_rate=0.1, weight_decay=0.1)
+    losses = [poponnx.L1Loss(out, "l1LossVal", 0.1)]
+
+    anchorNames = {
+        'd__' + inid1: poponnx.AnchorReturnType("ALL"),
+    }
+
+    opts = poponnx.SessionOptionsCore()
+
+    session = poponnx.Session(
+        fnModel=proto,
+        dataFeed=poponnx.DataFlow(1, anchorNames),
+        losses=losses,
+        optimizer=optimizer)
+
+    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
+
+    session.prepareDevice()
+    session.weightsFromHost()
+    session.optimizerFromHost()
+
+    anchorArrays = session.initAnchorArrays()
+
+    stepio = poponnx.PyStepIO({inid1: input1}, anchorArrays)
+    session.train(stepio)

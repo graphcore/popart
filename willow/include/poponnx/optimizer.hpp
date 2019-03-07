@@ -9,10 +9,10 @@ namespace poponnx {
 // get the learning rate Tensor's id.
 // Of course, the tensor is rank 0
 // This function is pure string manipulation
-TensorId getLearningRateId();
+TensorId getLearningRateId(DataType dtype);
 
 // same for weight decay tensor id
-TensorId getWeightDecayId();
+TensorId getWeightDecayId(DataType dtype);
 
 enum class OptimizerType { SGD = 0, CONSTSGD };
 
@@ -28,7 +28,8 @@ public:
   virtual std::unique_ptr<Op> createOp(TensorId varId, Ir *) const = 0;
   // what are the correct input names to the Op created above?
   // the names depend on the name of the Variable being updated.
-  virtual std::vector<TensorId> getInputIds(TensorId varId) const = 0;
+  virtual std::vector<TensorId> getInputIds(TensorId varId,
+                                            DataType varType) const = 0;
   // Can this optimizer be replaced by other? This is not true
   // if for example this has no momentum by other does, as the
   // graph structure would need to change.
@@ -61,7 +62,7 @@ public:
   std::unique_ptr<Optimizer> clone() const final;
   std::map<TensorId, TensorInfo> tensorInfos() const final;
   std::unique_ptr<Op> createOp(TensorId, Ir *) const final;
-  std::vector<TensorId> getInputIds(TensorId) const final;
+  std::vector<TensorId> getInputIds(TensorId, DataType) const final;
   bool validReplacement(const Optimizer *other) const final;
   OptimizerType type() const final;
   std::string type_s() const final;
@@ -77,7 +78,7 @@ public:
   std::unique_ptr<Optimizer> clone() const final;
   std::map<TensorId, TensorInfo> tensorInfos() const final;
   std::unique_ptr<Op> createOp(TensorId, Ir *) const final;
-  std::vector<TensorId> getInputIds(TensorId) const final;
+  std::vector<TensorId> getInputIds(TensorId, DataType) const final;
   bool validReplacement(const Optimizer *other) const final;
   OptimizerType type() const final;
   std::string type_s() const final;

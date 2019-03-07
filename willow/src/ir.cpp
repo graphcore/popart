@@ -68,7 +68,11 @@ std::vector<Tensor *> Ir::optimizerTensors() const {
   std::vector<Tensor *> optTensors;
   if (optimizer.get() != nullptr) {
     for (auto &id_info : optimizer->tensorInfos()) {
-      optTensors.push_back(getTensors().get(id_info.first));
+      // some tensors might have been removed,
+      // check they exist before calling getTensors().get(...)
+      if (getTensors().contains(id_info.first)) {
+        optTensors.push_back(getTensors().get(id_info.first));
+      }
     }
   }
   return optTensors;
@@ -1654,8 +1658,9 @@ Op *Ir::growGradientVarUpdateOp(TensorId varId) {
     throw error("Currently only floating point variable tensors are updatable");
   }
 
-  OpId opId   = moveIntoIr(optimizer->createOp(varId, this));
-  auto inputs = optimizer->getInputIds(varId);
+  OpId opId = moveIntoIr(optimizer->createOp(varId, this));
+  auto inputs =
+      optimizer->getInputIds(varId, getTensors().get(varId)->info.dataType());
   connectInputs(InputVecWrapper(inputs), opId);
 
   return growVarUpdateOpInternal(opId);
