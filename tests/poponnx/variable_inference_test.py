@@ -5,10 +5,10 @@ import torch
 import test_util as tu
 
 
-def inference_add_to_variable(tmpdir, type, np_type):
+def inference_add_to_variable(tmpdir, np_type):
     builder = poponnx.Builder()
 
-    shape = poponnx.TensorInfo(type, [2])
+    shape = poponnx.TensorInfo(np_type, [2])
 
     i1 = builder.addInputTensor(shape)
     i2 = builder.addInitializedInputTensor(np.array([2., 4.], dtype=np_type))
@@ -35,8 +35,8 @@ def inference_add_to_variable(tmpdir, type, np_type):
 
 
 def test_add_variable_fp32(tmpdir):
-    inference_add_to_variable(tmpdir, "FLOAT", np.float32)
+    inference_add_to_variable(tmpdir, np.float32)
 
 
 def test_add_variable_fp16(tmpdir):
-    inference_add_to_variable(tmpdir, "FLOAT16", np.float16)
+    inference_add_to_variable(tmpdir, np.float16)

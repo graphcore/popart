@@ -91,6 +91,12 @@ Module moduleFromString(const std::string &module) {
     return Module::pattern;
   if (module == "builder")
     return Module::builder;
+  if (module == "op")
+    return Module::op;
+  if (module == "opx")
+    return Module::opx;
+  if (module == "ces")
+    return Module::ces;
 
   return Module::none;
 }
@@ -119,6 +125,15 @@ std::string moduleName(const Module m) {
     break;
   case Module::builder:
     module = "builder";
+    break;
+  case Module::op:
+    module = "op";
+    break;
+  case Module::opx:
+    module = "opx";
+    break;
+  case Module::ces:
+    module = "ces";
     break;
   case Module::none:
   default:

@@ -94,7 +94,7 @@ public:
                                             aOp.getLowerPads(),
                                             aOp.getUpperPads());
 
-    logging::devicex::debug(
+    logging::opx::debug(
         "Pooling InputField:{} Kernel:{} Strides:{} Pads L:{} U:{} C:{} Bs:{}",
         pool_params.inputFieldShape,
         pool_params.kernelShape,
@@ -138,25 +138,27 @@ public:
                                             aOp->getLowerPads(),
                                             aOp->getUpperPads());
 
-    logging::devicex::debug("Pooling Grad InputField:{} Kernel:{} Strides:{} "
-                            "Pads L:{} U:{} C:{} Bs:{}",
-                            pool_params.inputFieldShape,
-                            pool_params.kernelShape,
-                            pool_params.stride,
-                            pool_params.inputTruncationOrPaddingLower,
-                            pool_params.inputTruncationOrPaddingUpper,
-                            pool_params.numChannels,
-                            pool_params.batchSize);
+    logging::opx::debug("Pooling Grad InputField:{} Kernel:{} Strides:{} "
+                        "Pads L:{} U:{} C:{} Bs:{}",
+                        pool_params.inputFieldShape,
+                        pool_params.kernelShape,
+                        pool_params.stride,
+                        pool_params.inputTruncationOrPaddingLower,
+                        pool_params.inputTruncationOrPaddingUpper,
+                        pool_params.numChannels,
+                        pool_params.batchSize);
 
-    insert(outId(0),
-           popnn::pooling::poolInputGradient(graph(),
-                                             pool_params,
-                                             get(prePooledId),
-                                             get(pooledId),
-                                             get(gradPooledId),
-                                             prog,
-                                             idStr(),
-                                             dv_p->pooling_options));
+    insert(
+        outId(0),
+        popnn::pooling::poolInputGradient(graph(),
+                                          pool_params,
+                                          get(prePooledId),
+                                          get(pooledId),
+                                          get(gradPooledId),
+                                          false, // useScaledVariant TODO T7295
+                                          prog,
+                                          idStr(),
+                                          dv_p->pooling_options));
   }
 
   popnn::PoolingType pooling_type;

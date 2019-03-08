@@ -309,6 +309,10 @@ public:
   // Return the opset version in use for a domain
   int getOpSetVersionFromModel(const std::string &domain) const;
 
+  // There are ops in the ir with the recompute attribute, derived
+  // from user-specified onnx node attribute
+  bool hasUserRecomputeOps() const;
+
 private:
   // called from growFromNode and many other places where Ops created
   // T requires functions input(int) and input_size()

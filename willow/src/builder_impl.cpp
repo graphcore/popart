@@ -334,7 +334,8 @@ onnx::NodeProto &BuilderImpl::findNodeProtoByOutputNames(
               std::ostream_iterator<TensorId>(stream, " ,"));
     std::string s = stream.str();
     s.erase(s.length() - 2);
-    throw error("Could not find a node with outputs " + s + ".");
+    throw error("Could not find a node with outputs " + s +
+                ". Must specify all outputs of a node");
   }
   return *node;
 }

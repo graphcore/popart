@@ -65,19 +65,19 @@ void InterIpuCopy::connectIpuCopy(Ir &,
 
   // We have already copied this tensor but we still need to
   // update the 'to' op to use the copied tensor
-  logging::ir::debug("Already copied output tensor of {}:{} from "
-                     "ipu {} to ipu {}",
-                     fromOp->debugName(),
-                     tensor->id,
-                     fromIpu,
-                     toIpu);
+  logging::transform::debug("Already copied output tensor of {}:{} from "
+                            "ipu {} to ipu {}",
+                            fromOp->debugName(),
+                            tensor->id,
+                            fromIpu,
+                            toIpu);
 
   // Copy the list of index's this input tensor is mapped
   auto indices = toOp->input->indices(tensor);
 
   // Remove this input tensor from the to op for each index
   for (auto i : indices) {
-    logging::ir::debug(
+    logging::transform::debug(
         "Disconnecting out {} from {}:{}", tensor->id, toOp->debugName(), i);
     toOp->disconnectInTensor(i, tensor);
   }
@@ -88,7 +88,7 @@ void InterIpuCopy::connectIpuCopy(Ir &,
 
   // Add the copied input tensor to the to op for each index
   for (auto i : indices) {
-    logging::ir::debug(
+    logging::transform::debug(
         "Connecting in {} from {}:{}", copiedTensor, toOp->debugName(), i);
     toOp->connectInTensor(i, copiedTensor);
   }
@@ -101,7 +101,7 @@ void InterIpuCopy::insertIpuCopy(Ir &ir,
                                  Op *toOp,
                                  int64_t toIpu) const {
   // Need to copy the tensor between ipu's
-  logging::ir::debug(
+  logging::transform::debug(
       "Adding copy of output tensor of {}:{} from ipu {} to ipu {}",
       fromOp->debugName(),
       tensor->id,
@@ -121,7 +121,7 @@ void InterIpuCopy::insertIpuCopy(Ir &ir,
 
   // Remove this input tensor from the to op for each index
   for (auto i : indices) {
-    logging::ir::debug(
+    logging::transform::debug(
         "Disconnecting in {} from {}:{}", tensor->id, toOp->debugName(), i);
     toOp->disconnectInTensor(i, tensor);
   }
@@ -137,7 +137,7 @@ void InterIpuCopy::insertIpuCopy(Ir &ir,
 
   // Add the copied input tensor to the to op for each index
   for (auto i : indices) {
-    logging::ir::debug(
+    logging::transform::debug(
         "Connecting in {} to {}:{}", copiedTensor, toOp->debugName(), i);
     toOp->connectInTensor(i, copiedTensor);
   }
@@ -259,7 +259,7 @@ bool InterIpuCopy::apply(Ir &ir) const {
         // It the case of the first op the ipu will be the same so nothing to do
         if (sourceIpu != toIpu) {
 
-          logging::ir::debug(
+          logging::transform::debug(
               "Adding op to copy streaming tensor {} from ipu {} to ipu {}",
               s.first,
               sourceIpu,

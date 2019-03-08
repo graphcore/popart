@@ -331,4 +331,38 @@ std::string Op::debugName() const {
 // By default an operation can not be replaced
 bool Op::canBeReplacedByIdentity() { return false; }
 
+std::map<fwtools::subgraph::InIndex, Op::SubgraphInSig>
+Op::getSubgraphInputs() const {
+  std::map<fwtools::subgraph::InIndex, Op::SubgraphInSig> ins;
+  for (auto &index_tensor : input->tensorMap()) {
+    auto inIndex       = index_tensor.first;
+    auto tensor        = index_tensor.second;
+    Op *unsafeProducer = tensor->getProducerUnsafe();
+    // tensorflow will need some way if distinguishing
+    // between tensors without producers
+    fwtools::subgraph::OutIndex outIndex = -1;
+    if (unsafeProducer) {
+      outIndex = unsafeProducer->output->indicesMap().at(tensor).at(0);
+    }
+    ins[inIndex] = SubgraphInSig(unsafeProducer, outIndex, tensor->id);
+  }
+  return ins;
+}
+
+std::map<fwtools::subgraph::OutIndex, std::set<Op *>>
+Op::getSubgraphOutputs() const {
+
+  std::map<fwtools::subgraph::OutIndex, std::set<Op *>> cmap;
+  for (auto &index_tensor : output->tensorMap()) {
+    auto out_index  = index_tensor.first;
+    auto out_tensor = index_tensor.second;
+    std::set<Op *> consumers;
+    for (auto &op : out_tensor->consumers.getOps()) {
+      consumers.insert(op);
+    }
+    cmap[out_index] = consumers;
+  }
+  return cmap;
+}
+
 } // namespace poponnx

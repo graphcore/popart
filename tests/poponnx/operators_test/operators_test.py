@@ -853,3 +853,54 @@ def test_argmax_keepdims(op_tester):
         return [result.astype(np.int32)]
 
     op_tester.run(init_builder, reference, 'infer')
+
+
+def test_instancenorm_grad(op_tester):
+    batch_size = 3
+    features = 3
+    width = 4
+    height = 4
+
+    data = np.random.rand(batch_size, features, width,
+                          height).astype(np.float32)
+
+    scale = np.random.rand(features).astype(np.float32)
+    bias = np.random.rand(features).astype(np.float32)
+
+    epsilon = 1e-05
+
+    def init_builder(builder):
+
+        i_data = builder.addInputTensor(data)
+        i_scale = builder.addInputTensor(scale)
+        i_bias = builder.addInputTensor(bias)
+        out = builder.aiOnnx.instancenormalization([i_data, i_scale, i_bias],
+                                                   epsilon)
+
+        builder.addOutputTensor(out)
+
+        return [
+            out, 'd__' + i_data, 'd__' + i_scale, 'd__' + i_bias, 'd__' + out
+        ]
+
+    def reference(ref_data):
+        i_data = torch.tensor(data, requires_grad=True)
+
+        m = torch.nn.InstanceNorm2d(
+            features, eps=epsilon, momentum=0, affine=True)
+        m.weight.data = torch.tensor(scale)
+        m.bias.data = torch.tensor(bias)
+        out = m(i_data)
+
+        d__o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d__o))
+
+        assert i_data.grad is not None
+        assert m.weight.grad is not None
+        assert m.bias.grad is not None
+
+        return [out, i_data.grad, m.weight.grad, m.bias.grad, None]
+
+    op_tester.atol *= 10
+    op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
+    op_tester.run(init_builder, reference, 'train')

@@ -80,6 +80,58 @@ Op *growRecomputeOp(Ir &ir, Op *oriOp, const std::set<Op *> &checkpoints) {
 std::size_t Recompute::id() { return typeid(Recompute).hash_code(); }
 
 bool Recompute::apply(Ir &ir) const {
+
+  // A vector, so that the op schedule
+  // order is preserved
+  std::vector<Op *> recomputeOps;
+
+  //   defn, checkpoints: Ops whose
+  //   outputs we guarantee will be available
+  //   at any time. This is the same as 'all
+  //   non-recompute pre-loss nodes'
+  std::set<Op *> checkpoints;
+
+  // For now, we assume we can only do manual OR auto-
+  // recomputation. We may want to change this in the future
+
+  // Recompute only the ops as specified by their attributes
+  if (ir.hasUserRecomputeOps()) {
+    logging::transform::info("Using node attributes to choose recompute ops");
+
+    for (auto op : ir.getOpSchedule({})) {
+      if (op->isFwdToBwd()) {
+        if (op->getRecomputeOutput()) {
+          recomputeOps.push_back(op);
+        } else {
+          checkpoints.insert(op);
+        }
+      }
+    }
+  }
+
+  // Pick ops to recompute (roughly) with the aim of
+  // minimizing max-liveness
+  else {
+    logging::transform::info("Using auto-recompute method");
+    checkpoints = getAutoCheckpointOps(ir);
+
+    for (auto op : ir.getOpSchedule({})) {
+      if (op->isFwdToBwd()) {
+        if (checkpoints.count(op) == 0) {
+          recomputeOps.push_back(op);
+        }
+      }
+    }
+  }
+
+  for (auto &op : recomputeOps) {
+    growRecomputeOp(ir, op, checkpoints);
+  }
+
+  return true;
+}
+
+std::set<Op *> Recompute::getAutoCheckpointOps(const Ir &ir) const {
   std::vector<Op *> fwdOps;
   for (auto op : ir.getOpSchedule({})) {
     if (op->isFwdToBwd()) {
@@ -141,19 +193,7 @@ bool Recompute::apply(Ir &ir) const {
     }
   }
 
-  // all non-checkpoint pre-loss nodes.
-  std::vector<Op *> nonCheckpoints;
-  for (auto &op : fwdOps) {
-    if (checkpoints.count(op) == 0) {
-      nonCheckpoints.push_back(op);
-    }
-  }
-
-  for (auto &op : nonCheckpoints) {
-    growRecomputeOp(ir, op, checkpoints);
-  }
-
-  return true;
+  return checkpoints;
 }
 
 namespace {

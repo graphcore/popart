@@ -138,7 +138,7 @@ void ConcatOp::setup() {
   try {
     outShape = getOutputShape(axis, inputs);
   } catch (const error &) {
-    logging::ir::err(
+    logging::op::err(
         "Error trying to calculate output shape for concat {}({}, {})",
         id,
         opid,

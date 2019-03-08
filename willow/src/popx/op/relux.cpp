@@ -31,7 +31,6 @@ void ReluOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 void ReluInplaceOpx::grow(poplar::program::Sequence &prog) const {
-
   auto outTensor = get(inId(0));
 
   // if all of the elements in the tensor are distinct in memory,

@@ -52,12 +52,20 @@ struct SessionOptions {
   ///  the convolutions will be cached.
   bool enableConvolutionGraphCaching = true;
 
-  /// Enable recomputation of marked operations in the graph
-  bool enableRecomputation = false;
+  /// Enable recomputation of operations in the graph in the backwards pass to
+  /// reduce model size at the cost of computation cycles
+  bool enableAutoRecomputation = false;
 
   /// Enable placement of operations on individual IPUs by creating a 'virtual
   /// graph' for each IPU
   bool enableVirtualGraphs = false;
+
+  // The minimum number of virtual graphs required to execute the graph
+  int64_t minimumVirtualGraphCount = 1;
+
+  /// Enable transformation pass that attempts to automatically place ops on
+  /// virtual graphs to achieve model parallelism.
+  bool autoVirtualGraph = false;
 
   /// Use synthetic data i.e. disable data transfer to/from the host
   /// Set to 'true' to use synthetic data, 'false' to use real data

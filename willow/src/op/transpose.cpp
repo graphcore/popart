@@ -91,6 +91,10 @@ const std::map<int, int> &TransposeGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
+bool TransposeOp::canBeReplacedByIdentity() {
+  return std::is_sorted(perm.begin(), perm.end());
+}
+
 namespace {
 static OpCreator<TransposeOp> transposeOpCreator(
     Onnx::Operators::Transpose_1,

@@ -65,7 +65,7 @@ bool Patterns::isPatternEnabled(PreAliasPatternType t) {
 }
 
 Patterns &Patterns::enablePattern(PreAliasPatternType t, bool v) {
-  logging::ir::warn("Pattern {} {}", static_cast<int>(t), v);
+  logging::pattern::warn("Pattern {} {}", static_cast<int>(t), v);
   settings[t] = v;
   return *this;
 }

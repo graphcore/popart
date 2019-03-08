@@ -19,17 +19,70 @@ std::unique_ptr<Op> InstanceNormOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> InstanceNormOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  throw error("GradOps not support for InstanceNorm");
+  upops.emplace_back(make_unique<InstanceNormGradOp>(*this));
+  return upops;
 }
 
 void InstanceNormOp::setup() {
-  outInfo(getOutIndex()) = inInfo(getInputInIndex());
+  auto input_info  = inInfo(getInputInIndex());
+  auto input_shape = input_info.shape();
+  auto batch_size  = input_shape[0];
+  auto features    = input_shape[1];
+
+  outInfo(getOutIndex()) = input_info;
+
+  createAndConnectOutTensor(getMeanOutIndex(),
+                            outTensor(getOutIndex())->id + "_mean");
+  outInfo(getMeanOutIndex()) = {input_info.dataType(), {batch_size * features}};
+
+  createAndConnectOutTensor(getInvStdDevOutIndex(),
+                            outTensor(getOutIndex())->id + "_invStdDev");
+  outInfo(getInvStdDevOutIndex()) = {input_info.dataType(),
+                                     Shape{batch_size * features}};
 }
 
 void InstanceNormOp::appendAttributes(std::stringstream &ss,
                                       const std::string &tab) const {
   Op::appendAttributes(ss, tab);
   appendAttribute(ss, tab, "epsilon", epsilon);
+}
+
+InstanceNormGradOp::InstanceNormGradOp(const InstanceNormOp &fwd_op)
+    : Op(Onnx::GradOperators::InstanceNormalizationGrad, fwd_op.getSettings()) {
+}
+
+const std::vector<GradInOutMapper> &InstanceNormGradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {getInputInIndex(), InstanceNormOp::getInputInIndex(), GradOpInType::IN},
+      {getScaleInIndex(), InstanceNormOp::getScaleInIndex(), GradOpInType::IN},
+      {getOutGradInIndex(),
+       InstanceNormOp::getInputInIndex(),
+       GradOpInType::GRADOUT},
+      {getMeanInIndex(), InstanceNormOp::getMeanOutIndex(), GradOpInType::OUT},
+      {getInvStdDevInIndex(),
+       InstanceNormOp::getInvStdDevOutIndex(),
+       GradOpInType::OUT},
+  };
+
+  return inInfo;
+}
+
+const std::map<int, int> &InstanceNormGradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {
+      {getInputOutIndex(), InstanceNormOp::getInputInIndex()},
+      {getScaleOutIndex(), InstanceNormOp::getScaleInIndex()},
+      {getBOutIndex(), InstanceNormOp::getBInIndex()}};
+  return outInfo;
+}
+
+void InstanceNormGradOp::setup() {
+  const auto in_info  = inInfo(getOutGradInIndex());
+  const auto in_type  = in_info.dataType();
+  const auto in_shape = in_info.shape();
+
+  outInfo(getInputOutIndex()) = in_info;
+  outInfo(getScaleOutIndex()) = {in_type, {in_shape[1]}};
+  outInfo(getBOutIndex())     = {in_type, {in_shape[1]}};
 }
 
 namespace {

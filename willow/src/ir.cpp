@@ -31,6 +31,7 @@
 #include <poponnx/util.hpp>
 
 // The transformations
+#include <poponnx/transforms/auto_virtual_graph.hpp>
 #include <poponnx/transforms/interipucopy.hpp>
 #include <poponnx/transforms/prune.hpp>
 #include <poponnx/transforms/recompute.hpp>
@@ -67,7 +68,11 @@ std::vector<Tensor *> Ir::optimizerTensors() const {
   std::vector<Tensor *> optTensors;
   if (optimizer.get() != nullptr) {
     for (auto &id_info : optimizer->tensorInfos()) {
-      optTensors.push_back(getTensors().get(id_info.first));
+      // some tensors might have been removed,
+      // check they exist before calling getTensors().get(...)
+      if (getTensors().contains(id_info.first)) {
+        optTensors.push_back(getTensors().get(id_info.first));
+      }
     }
   }
   return optTensors;
@@ -591,8 +596,6 @@ void Ir::prepare(const IrBundle &gb) {
   setPatterns(gb.patterns);
   setOnnxModel(gb.modelProto);
 
-  enableTransform(Recompute::id(), userOptions.enableRecomputation);
-
   setLosses(gb.losses);
 
   confirmNoReservedIds();
@@ -607,6 +610,11 @@ void Ir::prepare(const IrBundle &gb) {
   dotCheckpoint(DotCheck::FWD0);
   applyPreAliasPatterns();
   dotCheckpoint(DotCheck::FWD1);
+
+  enableTransform(AutoVirtualGraph::id(),
+                  userOptions.autoVirtualGraph &&
+                      userOptions.enableVirtualGraphs);
+  applyTransform(AutoVirtualGraph::id());
 
   if (canEvaluate()) {
     growFinalLoss();
@@ -639,9 +647,24 @@ void Ir::prepare(const IrBundle &gb) {
   // tensors with no producer and no
   // consumers are removed at this point.
   removeIsolatedTensors();
-
   updateVertices();
-  applyTransform(Recompute::id());
+
+  // Explicitly set this transform to default (off),
+  // unless either
+  // 1. The option is switched on by the user, XOR
+  // 2. Ops in the ir have been annotated with the 'recompute'
+  //    attribute. At the moment this can only happen if
+  //    specified when building the onnx graph using the poponnx
+  //    Builder
+  if (userOptions.enableAutoRecomputation && hasUserRecomputeOps()) {
+    throw error(
+        "A mixture of auto and manual recomputaion is currently not supported");
+  } else {
+    enableTransform(Recompute::id(),
+                    userOptions.enableAutoRecomputation ||
+                        hasUserRecomputeOps());
+    applyTransform(Recompute::id());
+  }
   updateVertices();
 
   // we now start applying topological constraints between
@@ -1011,7 +1034,7 @@ void Ir::constructForwards() {
 }
 
 void Ir::foldConstants() {
-  logging::ir::trace("Folding constants");
+  logging::ces::trace("Folding constants");
   ConstExprUtil::foldConstants(this);
 }
 
@@ -1028,6 +1051,18 @@ OpId Ir::getAndIncrOpsCounter() {
 }
 
 OpId Ir::getOpsCounter() const { return opsCounter; }
+
+bool Ir::hasUserRecomputeOps() const {
+  bool hasUserRecomputeOps = false;
+  for (auto &id_op : ops) {
+    Op *op = id_op.second.get();
+    if (op->getRecomputeOutput()) {
+      hasUserRecomputeOps = true;
+      break;
+    }
+  }
+  return hasUserRecomputeOps;
+}
 
 OpId Ir::moveIntoIr(std::unique_ptr<Op> op) {
   OpId id = op->id;
@@ -1091,6 +1126,11 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
   for (auto &upop : backOps) {
     Op *gradOp    = upop.get();
     OpId gradOpId = moveIntoIr(std::move(upop));
+
+    // grad op shouldn't inherit recomputeOutputSettings from forward op
+    if (nonGradOp->getRecomputeOutput()) {
+      gradOp->setRecomputeOutput(boost::none);
+    }
 
     // connect inputs of gradOp
     {
@@ -1618,8 +1658,9 @@ Op *Ir::growGradientVarUpdateOp(TensorId varId) {
     throw error("Currently only floating point variable tensors are updatable");
   }
 
-  OpId opId   = moveIntoIr(optimizer->createOp(varId, this));
-  auto inputs = optimizer->getInputIds(varId);
+  OpId opId = moveIntoIr(optimizer->createOp(varId, this));
+  auto inputs =
+      optimizer->getInputIds(varId, getTensors().get(varId)->info.dataType());
   connectInputs(InputVecWrapper(inputs), opId);
 
   return growVarUpdateOpInternal(opId);
@@ -1628,6 +1669,30 @@ Op *Ir::growGradientVarUpdateOp(TensorId varId) {
 Op *Ir::growVarUpdateOpInternal(OpId opId) {
 
   Op *op = ops[opId].get();
+
+  if (getSessionOptions().enableVirtualGraphs) {
+
+    // Count which vgraph's the input's producer ops are on.
+    std::map<int64_t, int64_t> vgraphIdMap;
+    for (auto inputT : op->input->tensors()) {
+      Op *producer = inputT->getProducerUnsafe();
+      if (producer != nullptr) {
+        boost::optional<int64_t> vgraphId = producer->getVirtualGraphId();
+        if (vgraphId) {
+          vgraphIdMap[*vgraphId]++;
+        }
+      }
+    }
+    // Find the vgraph id with the most occurrences.
+    auto it = std::max_element(vgraphIdMap.begin(),
+                               vgraphIdMap.end(),
+                               [](const std::pair<int64_t, int64_t> &p1,
+                                  const std::pair<int64_t, int64_t> &p2) {
+                                 return p1.second < p2.second;
+                               });
+
+    op->setVirtualGraphId(it->first);
+  }
 
   // there are no outputs of var-op
   std::vector<TensorId> outputs{};

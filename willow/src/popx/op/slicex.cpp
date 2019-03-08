@@ -13,7 +13,7 @@ SliceOpx::SliceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void SliceOpx::grow(poplar::program::Sequence &prog) const {
-  logging::devicex::trace("SliceOpx::grow");
+  logging::opx::trace("SliceOpx::grow");
   auto t = get(inId(SliceOp::getInIndex()));
   for (auto slice : getSliceOp()->getSlices()) {
     t = t.slice(slice.start, slice.end, static_cast<unsigned>(slice.axis));
@@ -23,7 +23,7 @@ void SliceOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 void SliceInplaceOpx::grow(poplar::program::Sequence &) const {
-  logging::devicex::trace("SliceInplaceOpx::grow");
+  logging::opx::trace("SliceInplaceOpx::grow");
   auto t = get(inId(SliceOp::getInIndex()));
   for (auto slice : getSliceInplaceOp()->getSlices()) {
     t = t.slice(slice.start, slice.end, static_cast<unsigned>(slice.axis));

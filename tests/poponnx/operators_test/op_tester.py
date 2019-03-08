@@ -32,20 +32,6 @@ import test_util as tu
 #   Call op_tester.run(init_builder, reference)
 @pytest.fixture
 def op_tester(tmpdir):
-    # take a numpy dtype and return a type suitable for TensorInfo
-    def convert_dtype(dtype):
-        if dtype == np.dtype('float32'):
-            return 'FLOAT'
-
-        if dtype == np.dtype('float16'):
-            return 'FLOAT16'
-
-        if dtype == np.dtype('int32'):
-            return 'INT32'
-
-        raise Exception(
-            'bad dtype %s, (only float32 currently supported)' % (dtype, ))
-
     class Builder:
         def __init__(self, opsets=None):
             self._builder = poponnx.Builder(opsets=opsets)
@@ -54,8 +40,7 @@ def op_tester(tmpdir):
             self._outputs = []
 
         def addInputTensor(self, data):
-            dtype = convert_dtype(data.dtype)
-            shape = poponnx.TensorInfo(dtype, data.shape)
+            shape = poponnx.TensorInfo(data)
 
             tensor_id = self._builder.addInputTensor(shape)
             self._input_map[tensor_id] = data
@@ -63,8 +48,7 @@ def op_tester(tmpdir):
             return tensor_id
 
         def addInitializedInputTensor(self, data):
-            dtype = convert_dtype(data.dtype)
-            shape = poponnx.TensorInfo(dtype, data.shape)
+            shape = poponnx.TensorInfo(data)
 
             tensor_id = self._builder.addInitializedInputTensor(data)
             self._init_input_map[tensor_id] = data

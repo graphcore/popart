@@ -47,6 +47,9 @@ public:
   static InIndex indicesInIndex() { return 1; }
   static InIndex gradOutIndex() { return 0; }
 
+  void appendAttributes(std::stringstream &ss,
+                        const std::string &tab) const override;
+
 private:
   int64_t axis;
   TensorInfo fwdDataInfo;

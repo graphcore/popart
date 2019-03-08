@@ -63,7 +63,7 @@ TensorInfo getTensorInfo(py::array npArr) {
   return TensorInfo(getDataTypeFromNpType(typeString), shape);
 }
 
-// The follow code attempts to convert the python dictionary
+// The following code attempts to convert the python dictionary
 // (py::dict) into a map of strings for keys and values. The default
 // pybind will attempt to match types
 // TODO : This is not very elegant code is there a better way to do
@@ -224,7 +224,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("anchors", &DataFlow::anchors, pybind11::return_value_policy::copy)
       .def("art", &DataFlow::art);
 
-  py::class_<TensorInfo>(m, "TensorInfo")
+  py::class_<TensorInfo>(m, "TensorInfoCore")
       .def(py::init<std::string, const std::vector<int64_t> &>(),
            py::arg("dataType"),
            py::arg("shape"))
@@ -297,10 +297,13 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("ignoreData", &SessionOptions::ignoreData)
       .def_readwrite("enableConvolutionGraphCaching",
                      &SessionOptions::enableConvolutionGraphCaching)
-      .def_readwrite("enableRecomputation",
-                     &SessionOptions::enableRecomputation)
+      .def_readwrite("enableAutoRecomputation",
+                     &SessionOptions::enableAutoRecomputation)
       .def_readwrite("enableVirtualGraphs",
                      &SessionOptions::enableVirtualGraphs)
+      .def_readwrite("minimumVirtualGraphCount",
+                     &SessionOptions::minimumVirtualGraphCount)
+      .def_readwrite("autoVirtualGraph", &SessionOptions::autoVirtualGraph)
       .def_readwrite("compileEngine", &SessionOptions::compileEngine)
       .def_readwrite("engineOptions", &SessionOptions::engineOptions)
       .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
@@ -581,6 +584,12 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("recomputeOutputInBackwardPass",
            static_cast<void (Builder::*)(const TensorId &, bool value)>(
                &Builder::recomputeOutputInBackwardPass),
+           py::arg("nodeOutputName"),
+           py::arg("value") = true)
+      .def("recomputeOutputInBackwardPass",
+           static_cast<void (Builder::*)(const std::set<TensorId> &,
+                                         bool value)>(
+               &Builder::recomputeOutputInBackwardPass),
            py::arg("nodeOutputNames"),
            py::arg("value") = true)
       .def("setInplacePreferences",
@@ -591,6 +600,10 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("prefs"))
       .def("getRecomputeOutputInBackwardPass",
            static_cast<bool (Builder::*)(const TensorId &)>(
+               &Builder::getRecomputeOutputInBackwardPass),
+           py::arg("nodeOutputName"))
+      .def("getRecomputeOutputInBackwardPass",
+           static_cast<bool (Builder::*)(const std::set<TensorId> &)>(
                &Builder::getRecomputeOutputInBackwardPass),
            py::arg("nodeOutputNames"));
 
