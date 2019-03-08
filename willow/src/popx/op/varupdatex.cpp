@@ -6,6 +6,8 @@
 #include <popops/ElementWise.hpp>
 #include <popops/ScaledAdd.hpp>
 
+namespace pe = popops::expr;
+
 namespace poponnx {
 namespace popx {
 
@@ -16,17 +18,15 @@ SGDVarUpdateOpx::SGDVarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   // Weight update (matching pytorch implementation):
-  //   w <- w - (w * wd + delta) * lr
+  //   w <- w * (1 - lr * wd) - lr * delta
 
   // First update weights with weight decay
-  popops::scaledSubtractFrom(
-      graph(),
-      get(inId(SGDVarUpdateOp::getVarInIndex())), // weights
-      get(inId(SGDVarUpdateOp::getVarInIndex())), // weights
-      // wd tensor has already been scaled by lr on the host
-      get(inId(SGDVarUpdateOp::getWeightDecayInIndex())),
-      prog,
-      idStr());
+  popops::mapInPlace(graph(),
+                     pe::Mul(pe::_1, pe::_2),
+                     {get(inId(SGDVarUpdateOp::getVarInIndex())),
+                      get(inId(SGDVarUpdateOp::getWeightDecayInIndex()))},
+                     prog,
+                     idStr());
 
   // Then subtract scaled gradients
   popops::scaledSubtractFrom(
@@ -49,32 +49,19 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto vu_op = getOp<ConstSGDVarUpdateOp>();
 
   // Weight update (matching pytorch implementation):
-  //   w <- w - (w * wd + delta) * lr
-  //  Or, equivalently:
   //   w <- w * (1 - lr * wd) - lr * delta
 
   // First update weights with weight decay (only if user has
   // specified non-zero weight decay)
   if (vu_op.getWeightDecay() != 0.0f) {
-    popops::scaledSubtractFrom(graph(),
-                               get(inId(vu_op.getVarInIndex())), // weights
-                               get(inId(vu_op.getVarInIndex())), // weights
-                               vu_op.getWeightDecay() * vu_op.getLearnRate(),
-                               prog,
-                               idStr());
+    float weightDecayScaleFactor =
+        1 - (vu_op.getWeightDecay() * vu_op.getLearnRate());
 
-    // TODO: Broadcasting bug in popops prevents the following implementation.
-    // when T7138 is complete, investigate whether it is more efficient
-
-    // float weightDecayScaleFactor = 1 - (vu_op.getWeightDecay() *
-    // vu_op.getLearnRate());
-
-    // popops::mapInPlace(
-    //     graph(),
-    //     pe::Mul(pe::_1, pe::Const(weightDecayScaleFactor)),
-    //     {get(inId(SGDVarUpdateOp::getVarInIndex()))},
-    //     prog,
-    //     idStr());
+    popops::mapInPlace(graph(),
+                       pe::Mul(pe::_1, pe::Const(weightDecayScaleFactor)),
+                       {get(inId(SGDVarUpdateOp::getVarInIndex()))},
+                       prog,
+                       idStr());
   }
 
   // Then subtract scaled gradients

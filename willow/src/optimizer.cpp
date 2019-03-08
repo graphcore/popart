@@ -80,11 +80,15 @@ void SGD::setTensorData(Tensor *t) const {
     t->setTensorData(t->info, converted_data.data());
   } else if (t->id == getWeightDecayId(DataType::FLOAT) ||
              t->id == getWeightDecayId(DataType::FLOAT16)) {
-    // Note: scaling weightDecay scalar by learnRate on host
-    // to allow for efficient implementation of weight update
-    // on the device
+    // Note:
+    // w <- w * (1 - lr * wd) - lr * delta
+    //          ^^^^^^^^^^^^^
+    // Calculating   this     term of the weight update formula
+    // on host to allow for efficient implementation of weight
+    // update on the device
+    float weightDecayScaleFactor = 1 - (weightDecay() * learnRate());
     auto converted_data =
-        convertFloatToDataType(t->info.dataType(), weightDecay() * learnRate());
+        convertFloatToDataType(t->info.dataType(), weightDecayScaleFactor);
     t->setTensorData(t->info, converted_data.data());
   } else {
     throw error("SGD cannot set the parameter (" + t->id + ") currently");
