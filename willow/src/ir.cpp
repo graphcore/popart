@@ -524,7 +524,7 @@ std::set<Tensor *> Ir::getRootInputsToOp(Op *op) {
   }
 }
 
-// Verify ConstExpr folding has removed input tensors that should
+// Verify ConstExpr folding has removed input tensors that should have
 // been removed:
 //  - that initializer inputs are removed when possible in
 //    inference and eval modes
@@ -1290,6 +1290,8 @@ void Ir::updateVertices() {
   // for all vertices (Ops and Tensors),
   // is there a path to a BWD vertex? (YES, NO)
 
+  logging::ir::trace("Determining the phase of all Ops");
+
   // determine the phase of all Ops
   for (auto &id_op : ops) {
     Op *op = id_op.second.get();
@@ -1422,8 +1424,9 @@ void Ir::updateVertices() {
 
   std::set<Op *> s_op_front;
   std::vector<Op *> v_op_front;
+  std::set<Op *> s_ops_visited;
 
-  // initialising all Ops and Vertices to NO
+  // initialising all Vertices to NO
   for (auto &id_op : ops) {
     Op *op = id_op.second.get();
     op->setPathToBwd(PathToBwd::NO);
@@ -1450,15 +1453,18 @@ void Ir::updateVertices() {
     Op *onPath = v_op_front.back();
     v_op_front.resize(v_op_front.size() - 1);
     s_op_front.erase(onPath);
-    for (auto &tensor_indices : onPath->input->indicesMap()) {
-      Tensor *tOnPath = tensor_indices.first;
-      tOnPath->setPathToBwd(PathToBwd::YES);
-      if (tOnPath->hasProducer()) {
-        Op *producer = tOnPath->getProducer();
-        producer->setPathToBwd(PathToBwd::YES);
-        if (s_op_front.count(producer) == 0) {
-          s_op_front.insert(producer);
-          v_op_front.push_back(producer);
+    if (s_ops_visited.count(onPath) == 0) {
+      s_ops_visited.emplace(onPath);
+      for (auto &tensor_indices : onPath->input->indicesMap()) {
+        Tensor *tOnPath = tensor_indices.first;
+        tOnPath->setPathToBwd(PathToBwd::YES);
+        if (tOnPath->hasProducer()) {
+          Op *producer = tOnPath->getProducer();
+          producer->setPathToBwd(PathToBwd::YES);
+          if (s_op_front.count(producer) == 0) {
+            s_op_front.insert(producer);
+            v_op_front.push_back(producer);
+          }
         }
       }
     }
@@ -1466,6 +1472,7 @@ void Ir::updateVertices() {
 }
 
 void Ir::setNPathsToLoss() {
+
   auto found = ops.find(finalLossId);
   if (found == ops.end()) {
     // There will be no losses at all for an inference
@@ -1512,7 +1519,7 @@ void Ir::setNPathsToLoss() {
 
 void Ir::constructBackwards() {
 
-  logging::ir::info("constructing backwards pass");
+  logging::ir::info("Constructing backwards pass");
 
   // definition: edge-gradient. What is output by a grad-op,
   // and which will be summed with other edge-gradients to create
@@ -1608,7 +1615,9 @@ void Ir::constructBackwards() {
         throw error("can't currently register gradient of " +
                     nongrad->tensor_type() + " tensor, " + nongrad->str());
 
-      default: { throw error("only handling ActGrad and Variable for now"); }
+      default: {
+        throw error("only handling ActGrad and Variable for now");
+      }
       }
     }
 
@@ -1619,6 +1628,7 @@ void Ir::constructBackwards() {
     }
   }
 
+  logging::ir::info("Creating Variable Tensor update Ops");
   // add weight update ops (we are ignoring momentums for now)
   for (auto &varId : getTensors().getIds(TensorType::Variable)) {
 
@@ -1763,10 +1773,12 @@ void Ir::growFinalLoss() {
   std::vector<Op *> lossOps;
   // first, grow each of the individual losses from the user
   for (auto &loss : losses) {
-    OpId opId = moveIntoIr(loss->getOp({*this, ""}));
+    OpId opId  = moveIntoIr(loss->getOp({*this, ""}));
+    Op *lossOp = ops[opId].get();
+    logging::ir::trace("Connecting inputs/outputs for Loss Op {}",
+                       lossOp->str());
     connectInputs(*loss, opId);
     connectOutputs(*loss, opId);
-    Op *lossOp = ops[opId].get();
     lossOps.push_back(lossOp);
     lossOp->setup();
 
@@ -1824,6 +1836,7 @@ void Ir::growFinalLoss() {
   // and then check that we agree in updateVertices()
   ops[opId]->setPhase(Phase::LOSS);
   finalLossId = opId;
+  logging::ir::trace("Final loss id set to {}", finalLossId);
 }
 
 TensorId Ir::getFinalLossId() const { return "finalLoss"; }

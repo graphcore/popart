@@ -139,7 +139,6 @@ int main(int argc, char **argv) {
 
     up_losses.emplace_back(
         std::unique_ptr<Loss>(new NllLoss(out, label, "nllLossVal")));
-    // new L1Loss(modelProto.graph().output(0).name(), "l1LossVal", 0.1f)));
   }
 
   std::vector<Loss *> losses;
