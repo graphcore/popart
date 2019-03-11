@@ -5,8 +5,11 @@ from urllib.request import urlretrieve
 from urllib.parse import urlparse
 import tarfile
 
-tmpdir = tempfile.gettempdir()
+# This is set from torch/CMakeLists.txt, its default is "tempfile.gettempdir()"
+tmpdir = @C10_PYSTRING_DIR@
+
 c10datadir = Path(tmpdir) / 'cifar10data'
+
 if not c10datadir.exists():
     print(f'Creating directory {c10datadir}', flush=True)
     c10datadir.mkdir()
