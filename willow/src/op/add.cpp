@@ -11,7 +11,7 @@ namespace poponnx {
 // TODO : T6250 : Add support for V6 axis & broadcast attributes
 
 AddOp::AddOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : Op(_opid, settings_) {
+    : ElementWiseBinaryOp(_opid, settings_) {
 
   // TODO : Use the attributes in Add-6
 }
@@ -31,11 +31,6 @@ std::vector<std::unique_ptr<Op>> AddOp::getGradOps() {
       make_unique<AddArg1GradOp>(*this, npReductionAxis(shape_a1, shape_o0)));
 
   return upops;
-}
-
-void AddOp::setup() {
-  outInfo(getOutIndex()) =
-      npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
 }
 
 AddArg0GradOp::AddArg0GradOp(const AddOp &op_,

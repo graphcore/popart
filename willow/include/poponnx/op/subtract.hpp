@@ -1,23 +1,16 @@
 #ifndef GUARD_NEURALNET_SUBTRACT_HPP
 #define GUARD_NEURALNET_SUBTRACT_HPP
 
-#include <poponnx/op.hpp>
+#include <poponnx/op/elementwise.hpp>
 #include <poponnx/op/reducesum.hpp>
 
 namespace poponnx {
 
-class SubtractOp : public Op {
+class SubtractOp : public ElementWiseBinaryOp {
 public:
   SubtractOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
-  void setup() final;
-
-  // Current implementation places arg0 input at index 0, and arg1 input
-  // at index 1.
-  static InIndex getArg0InIndex() { return 0; }
-  static InIndex getArg1InIndex() { return 1; }
-  static OutIndex getOutIndex() { return 0; }
 };
 
 class SubtractArg0GradOp : public ReduceSumOp {

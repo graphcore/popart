@@ -7,7 +7,7 @@ namespace poponnx {
 
 SubtractOp::SubtractOp(const OperatorIdentifier &_opid,
                        const Op::Settings &settings_)
-    : Op(_opid, settings_) {
+    : ElementWiseBinaryOp(_opid, settings_) {
   // TODO : Do not broadcast in version 6
 }
 
@@ -26,11 +26,6 @@ std::vector<std::unique_ptr<Op>> SubtractOp::getGradOps() {
   upops.emplace_back(make_unique<SubtractArg1GradOp>(*this));
 
   return upops;
-}
-
-void SubtractOp::setup() {
-  outInfo(SubtractOp::getOutIndex()) =
-      npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
 }
 
 SubtractArg0GradOp::SubtractArg0GradOp(const SubtractOp &op_,

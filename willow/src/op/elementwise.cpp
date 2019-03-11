@@ -39,4 +39,13 @@ void ElementWiseNonLinearUnaryGradOp::setup() {
   outInfo(getOutIndex()) = inInfo(getFwdArgInIndex());
 }
 
+ElementWiseBinaryOp::ElementWiseBinaryOp(const OperatorIdentifier &_opid,
+                                         const Op::Settings &settings_)
+    : Op(_opid, settings_) {}
+
+void ElementWiseBinaryOp::setup() {
+  outInfo(getOutIndex()) =
+      npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
+}
+
 } // namespace poponnx

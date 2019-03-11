@@ -37,6 +37,20 @@ public:
   static OutIndex getOutIndex() { return 0; }
 };
 
+// Base class for elementwise binary operations
+class ElementWiseBinaryOp : public Op {
+public:
+  ElementWiseBinaryOp(const OperatorIdentifier &_opid,
+                      const Op::Settings &settings);
+  void setup() final;
+
+  // Current implementation places arg0 input at index 0, and arg1 input
+  // at index 1.
+  static InIndex getArg0InIndex() { return 0; }
+  static InIndex getArg1InIndex() { return 1; }
+  static OutIndex getOutIndex() { return 0; }
+};
+
 } // namespace poponnx
 
 #endif

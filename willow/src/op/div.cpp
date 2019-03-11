@@ -6,7 +6,7 @@
 namespace poponnx {
 
 DivOp::DivOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : Op(_opid, settings_) {
+    : ElementWiseBinaryOp(_opid, settings_) {
   // TODO : Use the attributes in Div-6
 }
 
@@ -24,11 +24,6 @@ std::vector<std::unique_ptr<Op>> DivOp::getGradOps() {
   upops.emplace_back(make_unique<DivArg1GradOp>(
       *this, npReductionAxis(shape_in_1, shape_output)));
   return upops;
-}
-
-void DivOp::setup() {
-  outInfo(getOutIndex()) =
-      npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
 }
 
 DivArgGradOp::DivArgGradOp(const OperatorIdentifier &_opid,

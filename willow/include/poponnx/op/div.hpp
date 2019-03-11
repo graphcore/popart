@@ -3,23 +3,16 @@
 
 #include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
-#include <poponnx/op.hpp>
+#include <poponnx/op/elementwise.hpp>
 
 namespace poponnx {
 
 // arg_0 / arg_1
-class DivOp : public Op {
+class DivOp : public ElementWiseBinaryOp {
 public:
   DivOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
-  void setup() final;
-
-  // Current implementation places arg0 input at index 0, and arg1 input
-  // at index 1.
-  static InIndex getArg0InIndex() { return 0; }
-  static InIndex getArg1InIndex() { return 1; }
-  static OutIndex getOutIndex() { return 0; }
 };
 
 // Base class for DivArg grad ops
