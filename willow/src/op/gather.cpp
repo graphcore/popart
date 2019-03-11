@@ -5,6 +5,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/gather.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -55,10 +56,9 @@ void GatherOp::setup() {
       TensorInfo(inInfo(dataInIndex()).dataType(), data_shape);
 }
 
-void GatherOp::appendAttributes(std::stringstream &ss,
-                                const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "axis", axis);
+void GatherOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axis", axis);
 }
 
 // A gather on a degenerate dimension with a rank 1 index tensor with a single
@@ -96,10 +96,9 @@ void GatherGradOp::setup() { outInfo(gradOutIndex()) = fwdDataInfo; }
 
 int64_t GatherGradOp::getAxis() const { return axis; }
 
-void GatherGradOp::appendAttributes(std::stringstream &ss,
-                                    const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "axis", axis);
+void GatherGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axis", axis);
 }
 
 namespace {

@@ -34,8 +34,7 @@ public:
   // "aliases" is still the empty region
   // "modifies" is still the empty region
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
   static Shape getOutputShape(int64_t axis,
                               const std::vector<const Shape *> inputs);

@@ -23,8 +23,7 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   void setup0() final;
@@ -46,7 +45,9 @@ public:
   static InIndex getGradPooledInIndex() { return 2; }
   static OutIndex getOutIndex() { return 0; }
 
-  const MaxPoolOp *getCloneOfCreator();
+  const MaxPoolOp *getCloneOfCreator() const;
+
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   // The shape and type of the input to the

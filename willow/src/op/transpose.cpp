@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/transpose.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -62,10 +63,9 @@ void TransposeOp::setDefaultPerm() {
   }
 }
 
-void TransposeOp::appendAttributes(std::stringstream &ss,
-                                   const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "perm", perm);
+void TransposeOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("perm", perm);
 }
 
 TransposeGradOp::TransposeGradOp(const TransposeOp &fwdOp)

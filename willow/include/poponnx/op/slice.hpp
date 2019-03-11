@@ -27,8 +27,7 @@ public:
 
   void setup() final;
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
   view::RegMap fwdRegMap(InIndex) const final;
   view::RegMap bwdRegMap(OutIndex) const final;

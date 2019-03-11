@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/onehot.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensors.hpp>
 #include <poponnx/typefunctor.hpp>
@@ -76,11 +77,10 @@ std::vector<std::unique_ptr<Op>> OnehotOp::getGradOps() {
   return upops;
 }
 
-void OnehotOp::appendAttributes(std::stringstream &ss,
-                                const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "axis", axis);
-  appendAttribute(ss, tab, "depth", onehotAxisDim);
+void OnehotOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axis", axis);
+  os.appendAttribute("depth", onehotAxisDim);
 }
 
 OnehotGradOp::OnehotGradOp(const OnehotOp &fwdOp_)

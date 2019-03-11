@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/groupnorm.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
 
@@ -35,11 +36,10 @@ void GroupNormOp::setup() {
                                 {inInfo(getXInIndex()).dim(0) * num_groups}};
 }
 
-void GroupNormOp::appendAttributes(std::stringstream &ss,
-                                   const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "num_groups", num_groups);
-  appendAttribute(ss, tab, "epsilon", epsilon);
+void GroupNormOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("num_groups", num_groups);
+  os.appendAttribute("epsilon", epsilon);
 }
 
 GroupNormGradOp::GroupNormGradOp(const GroupNormOp &op_)

@@ -21,8 +21,7 @@ public:
 
   void setup() override;
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }

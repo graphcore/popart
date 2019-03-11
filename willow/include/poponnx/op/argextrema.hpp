@@ -19,8 +19,7 @@ public:
   int64_t getAxis() const;
   int64_t getKeepDims() const;
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const final;
+  void appendAttributes(OpSerialiserBase &) const final;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }

@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/reducesum.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -61,11 +62,10 @@ void ReduceSumOp::setAxes(std::vector<int64_t> value) {
 
 void ReduceSumOp::setKeepDims(int64_t value) { keepdims = value; }
 
-void ReduceSumOp::appendAttributes(std::stringstream &ss,
-                                   const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "keepdims", keepdims);
-  appendAttribute(ss, tab, "axes", axes);
+void ReduceSumOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("keepdims", keepdims);
+  os.appendAttribute("axes", axes);
 }
 
 // A reducesum op that doesn't reduce anything can be replaced by

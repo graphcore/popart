@@ -32,8 +32,7 @@ public:
   float getPadValue() const;
   const std::string &getMode() const;
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
   bool canBeReplacedByIdentity() override;
 

@@ -1,6 +1,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/unsqueeze.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 
 namespace poponnx {
 
@@ -24,10 +25,9 @@ void UnsqueezeOp::setup() {
                             unsqueeze(inShape(getInIndex()), axes)};
 }
 
-void UnsqueezeOp::appendAttributes(std::stringstream &ss,
-                                   const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "axes", axes);
+void UnsqueezeOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axes", axes);
 }
 
 void UnsqueezeGradOp::setup() { outInfo(getOutIndex()) = squeezedInfo; }

@@ -1,6 +1,7 @@
 #include <onnx/onnx_pb.h>
 #include <spdlog/fmt/fmt.h>
 #include <poponnx/ir.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/region.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensors.hpp>
@@ -144,10 +145,18 @@ void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
   ptensor->setProducer(this);
 }
 
+std::string Op::getSubgraphEquivId() const {
+  OpEquivIdCreator os(this);
+  appendAttributes(os);
+  return os.str();
+}
+
 void Op::append(std::stringstream &ss) const {
-  appendIO(ss);
+  OpSerialiser os(this, ss);
+
+  appendAttributes(os);
   ss << '\n';
-  appendMore(ss);
+  appendMore(os);
 }
 
 int Op::getNonGradInIndex(int gradOpOutIndex) const {
@@ -185,35 +194,9 @@ int64_t Op::memOfOutputs() const {
   return mem;
 }
 
-void Op::appendIO(std::stringstream &ss) const {
-  static std::string tab = "    ";
-
-  ss << '\n' << "Op ";
-  if (!getName().empty()) {
-    ss << '"' << getName() << "\", ";
-  }
-  ss << id << " of type " << opid << '\n';
-
-  int max_id_length = std::max(input->maxIdLength(), output->maxIdLength());
-
-  ss << tab << "inputs" << '\n';
-  input->append(ss, tab + tab, max_id_length);
-
-  ss << '\n' << tab << "outputs" << '\n';
-  output->append(ss, tab + tab, max_id_length);
-
-  ss << '\n' << tab << "attributes" << '\n';
-  appendAttributes(ss, tab + "    ");
-}
-
-void Op::appendAttributes(std::stringstream &ss, const std::string &tab) const {
-  if (getRecomputeOutput())
-    ss << tab << sRecomputeOutputAttribute << ":" << *(getRecomputeOutput())
-       << '\n';
-
-  if (getVirtualGraphId())
-    ss << tab << sVirtualGraphAttribute << ":" << *(getVirtualGraphId())
-       << '\n';
+void Op::appendAttributes(OpSerialiserBase &os) const {
+  os.appendAttribute(sRecomputeOutputAttribute, getRecomputeOutput());
+  os.appendAttribute(sVirtualGraphAttribute, getVirtualGraphId());
 }
 
 const std::string &Op::name() const { return getName(); }

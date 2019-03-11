@@ -4,6 +4,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/batchnorm.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
 
@@ -117,12 +118,11 @@ void BatchNormOp::setup() {
   }
 }
 
-void BatchNormOp::appendAttributes(std::stringstream &ss,
-                                   const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "epsilon", epsilon);
-  appendAttribute(ss, tab, "momentum", momentum);
-  appendAttribute(ss, tab, "spatial", spatial);
+void BatchNormOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("epsilon", epsilon);
+  os.appendAttribute("momentum", momentum);
+  os.appendAttribute("spatial", spatial);
 }
 
 BatchNormGradOp::BatchNormGradOp(const BatchNormOp &op_)

@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/receptive.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/util.hpp>
 
@@ -102,14 +103,11 @@ std::vector<uint32_t> HasReceptiveFieldOp::strides_u32() const {
   return vXtoY<int64_t, uint32_t>(strides);
 }
 
-void HasReceptiveFieldOp::appendAttributes(std::stringstream &ss,
-                                           const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "pads", pads);
-  appendAttribute(ss, tab, "strides", strides);
-  appendAttribute(ss, tab, "dilations", dilations);
-
-  // ss << "auto_pad" << ":" << autoPad << '\n';
+void HasReceptiveFieldOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("pads", pads);
+  os.appendAttribute("strides", strides);
+  os.appendAttribute("dilations", dilations);
 }
 
 void HasReceptiveFieldOp::Settings::setFromAttributes(

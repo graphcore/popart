@@ -28,8 +28,7 @@ public:
   // Get the permutation required to reverse the Transpose operation
   std::vector<int64_t> generateReversePermutation() const;
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
   bool canBeReplacedByIdentity() override;
 

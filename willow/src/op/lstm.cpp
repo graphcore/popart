@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/lstm.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
 
@@ -113,13 +114,9 @@ bool LSTMOp::hasInitialCInput() const {
   return input->hasIndex(getInitialCInIndex());
 }
 
-void LSTMOp::appendAttributes(std::stringstream &ss,
-                              const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-
-  if (hidden_size_attribute) {
-    appendAttribute(ss, tab, "hidden_size", *hidden_size_attribute);
-  }
+void LSTMOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("hidden_size", hidden_size_attribute);
 }
 
 LSTMGradOp::LSTMGradOp(const LSTMOp &fwd_op)

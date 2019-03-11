@@ -29,8 +29,7 @@ public:
   static InIndex getBiasInIndex() { return 2; }
   static OutIndex getOutIndex() { return 0; }
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   void setup0() final;
@@ -56,6 +55,8 @@ public:
 
   const ConvOp *getCloneOfCreator() const;
 
+  void appendAttributes(OpSerialiserBase &) const override;
+
 private:
   std::unique_ptr<Op> cloneOfCreator;
   TensorInfo weightsInfo;
@@ -74,6 +75,8 @@ public:
   // The input index where the gradient of the output is inserted
   static InIndex getGradConvolvedInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
+
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   std::unique_ptr<Op> cloneOfCreator;

@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/globalaveragepool.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -18,6 +19,11 @@ void GlobalAveragePoolOp::setup() {
 
   kernel =
       Shape(inShape(getInIndex()).begin() + 2, inShape(getInIndex()).end());
+}
+
+void GlobalAveragePoolOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("kernel", kernel);
 }
 
 Shape GlobalAveragePoolOp::getStrides() const {
@@ -50,6 +56,11 @@ GlobalAveragePoolGradOp::GlobalAveragePoolGradOp(const GlobalAveragePoolOp &op_)
     : Op(Onnx::GradOperators::GlobalAveragePoolGrad, op_.getSettings()),
       unpooledInfo(op_.inInfo(GlobalAveragePoolOp::getInIndex())),
       cloneOfCreator(op_.clone()) {}
+
+void GlobalAveragePoolGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendForwardOp(getCloneOfCreator());
+}
 
 const std::vector<GradInOutMapper> &
 GlobalAveragePoolGradOp::gradInputInfo() const {
@@ -86,7 +97,7 @@ const std::map<int, int> &GlobalAveragePoolGradOp::gradOutToNonGradIn() const {
 
 void GlobalAveragePoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
-const GlobalAveragePoolOp *GlobalAveragePoolGradOp::getCloneOfCreator() {
+const GlobalAveragePoolOp *GlobalAveragePoolGradOp::getCloneOfCreator() const {
   return dynamic_cast<GlobalAveragePoolOp *>(cloneOfCreator.get());
 }
 

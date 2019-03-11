@@ -41,8 +41,7 @@ public:
     return training;
   }
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   bool training = false;

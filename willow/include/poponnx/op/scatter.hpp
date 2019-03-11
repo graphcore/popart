@@ -23,8 +23,7 @@ public:
   static InIndex updatesInIndex() { return 2; }
   static InIndex outIndex() { return 0; }
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   int64_t axis = 0;

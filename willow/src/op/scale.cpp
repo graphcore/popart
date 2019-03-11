@@ -1,6 +1,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/scale.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -47,16 +48,14 @@ std::vector<std::unique_ptr<Op>> ScaleOp::getGradOps() {
 float ScaleOp::getScaleFactor() const { return scale_factor; }
 float ScaleInplaceOp::getScaleFactor() const { return scale_factor; }
 
-void ScaleOp::appendAttributes(std::stringstream &ss,
-                               const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "scale", scale_factor);
+void ScaleOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("scale", scale_factor);
 }
 
-void ScaleInplaceOp::appendAttributes(std::stringstream &ss,
-                                      const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "scale", scale_factor);
+void ScaleInplaceOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("scale", scale_factor);
 }
 
 // A scale with a scale factor of +1 can be replaced by identity

@@ -3,6 +3,7 @@
 #include <poponnx/op/pad.hpp>
 #include <poponnx/op/padgrad.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -55,13 +56,12 @@ float PadOp::getPadValue() const { return pad_value; }
 
 const std::string &PadOp::getMode() const { return mode; }
 
-void PadOp::appendAttributes(std::stringstream &ss,
-                             const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
+void PadOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
 
-  appendAttribute(ss, tab, "pads", pads);
-  appendAttribute(ss, tab, "value", pad_value);
-  appendAttribute(ss, tab, "mode", mode);
+  os.appendAttribute("pads", pads);
+  os.appendAttribute("value", pad_value);
+  os.appendAttribute("mode", mode);
 }
 
 view::Region PadOp::valueRegion() const {

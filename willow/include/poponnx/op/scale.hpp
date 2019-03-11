@@ -5,6 +5,8 @@
 
 namespace poponnx {
 
+class OpSerialiserBase;
+
 // y = scale_factor * x
 class ScaleOp : public ElementWiseUnaryOp {
 public:
@@ -17,8 +19,7 @@ public:
 
   void setScaleFactor(float value) { scale_factor = value; }
   float getScaleFactor() const;
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
@@ -43,8 +44,7 @@ public:
 
   // TODO T6801 : don't repeat scale_factor
   float getScaleFactor() const;
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   float scale_factor;

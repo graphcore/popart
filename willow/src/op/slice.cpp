@@ -3,6 +3,7 @@
 #include <poponnx/op/slice.hpp>
 #include <poponnx/op/slicegrad.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/region.hpp>
 #include <poponnx/tensor.hpp>
 
@@ -264,12 +265,11 @@ view::Region SliceInplaceOp::aliases(InIndex inIndex) const {
   return getFullInRegion();
 }
 
-void BaseSliceOp::appendAttributes(std::stringstream &ss,
-                                   const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "starts", starts);
-  appendAttribute(ss, tab, "ends", ends);
-  appendAttribute(ss, tab, "axes", axes);
+void BaseSliceOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("starts", starts);
+  os.appendAttribute("ends", ends);
+  os.appendAttribute("axes", axes);
 }
 
 SliceGradOp::SliceGradOp(const SliceOp &op_)

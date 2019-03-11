@@ -28,7 +28,7 @@ public:
   bool hasInitialHInput() const;
   bool hasInitialCInput() const;
 
-  void appendAttributes(std::stringstream &ss, const std::string &tab) const;
+  void appendAttributes(OpSerialiserBase &) const;
 
   static InIndex getInputInIndex() { return 0; }
   static InIndex getWeightsInIndex() { return 1; }

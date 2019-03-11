@@ -16,8 +16,7 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   int64_t getAxis() const;
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   int64_t axis;
