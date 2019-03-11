@@ -55,7 +55,7 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   // First update weights with weight decay (only if user has
   // specified non-zero weight decay)
-  if (vu_op.getWeightDecay() != 0) {
+  if (vu_op.getWeightDecay() != 0.0f) {
     popops::scaledSubtractFrom(graph(),
                                get(inId(vu_op.getVarInIndex())), // weights
                                get(inId(vu_op.getVarInIndex())), // weights

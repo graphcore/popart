@@ -200,7 +200,7 @@ bool AutoVirtualGraph::apply(Ir &ir) const {
               auto &conflict_subgraph =
                   subgraphs.at(insert_result.first->second);
               if (conflict_subgraph.candidates.size() == 1 &&
-                  conflict_subgraph.cost == 0) {
+                  conflict_subgraph.cost == 0.0f) {
                 // This subgraph is a single op and has no cost, so don't create
                 // a new subgraph Just move it into the current op's subgraph.
                 logging::transform::trace(
@@ -292,7 +292,7 @@ bool AutoVirtualGraph::apply(Ir &ir) const {
 
       // Split at the end of the subgraph
       // But not if it's the end of the graph
-      if (d == 0 && i != num_ipus && subgraph_id != subgraphs.size()) {
+      if (d == 0.0f && i != num_ipus && subgraph_id != subgraphs.size()) {
         logging::transform::info(
             "[AutoVirtualGraph] Split at end of subgraph: {}", subgraph_id - 1);
         virtual_graph_id++;
