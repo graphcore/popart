@@ -250,9 +250,7 @@ def test_globalmaxpool_3d(op_tester):
     with pytest.raises(poponnx.poplibs_exception) as e_info:
         op_tester.run(init_builder, reference, step_type='infer')
 
-    assert (e_info.value.args[0].startswith(
-        "Number of input dilation dimensions does not match the number of field dimensions"
-    ))
+    assert (e_info.value.args[0].startswith("Only 2D pooling supported"))
 
 
 def test_globalaveragepool_2d(op_tester):
