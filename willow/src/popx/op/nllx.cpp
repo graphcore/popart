@@ -16,22 +16,29 @@ NllOpx::NllOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void NllOpx::grow(poplar::program::Sequence &prog) const {
-  TensorId labelId     = getOp<NllOp>().nlll()->labelTensorId();
-  TensorId probsId     = getOp<NllOp>().nlll()->probsTensorId();
-  poplar::Tensor probs = get(probsId);
+  const NllLoss *nllloss      = getOp<NllOp>().nlll();
+  const poplar::Tensor &probs = get(nllloss->probsTensorId());
+  const poplar::Tensor &label = get(nllloss->labelTensorId());
+
+  // Expect an N-d Probs tensor and (N-1)-d Label tensor. If N=2:
+  // Probs - a tensor of shape [Batchsize, NumClasses]
+  // Label - a tensor of shape [Batchsize], where each element is a
+  //         class index
+  // If N > 2, then the inputs are flattened across all dimenions
+  // (except the outer Classes dim in the case of Probs)
+  auto probs2D = probs.flatten(0, probs.rank() - 1);
+  auto label1D = label.flatten();
 
   // Tensor taking one-hot encoded output must be 2 dimensional
-  // probs = probs.reshape({probs.dim(0), probs.numElements() / probs.dim(0)});
-  auto oneHot = graph().clone(probs.elementType(), probs, "..OneHot");
-
-  popops::encodeOneHot(graph(), get(labelId), oneHot, prog, "..Nll");
+  auto oneHot = graph().clone(probs2D.elementType(), probs2D, "..OneHot");
+  popops::encodeOneHot(graph(), label1D, oneHot, prog, "..Nll");
 
   // oneHot, from a tensor which is sparse with a single 1 per row,
   //           to a tensor which is sparse with a single p per row.
   popops::mapInPlace(graph(),
                      popops::expr::BinaryOpType::MULTIPLY,
                      oneHot,
-                     probs,
+                     probs2D,
                      prog,
                      "..mul");
 
@@ -46,6 +53,9 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
   // and negate it.
   popops::mapInPlace(
       graph(), popops::expr::UnaryOpType::NEGATE, reduction, prog, "..neg");
+
+  // One loss per class, so the output is reshaped to match label input shape
+  reduction = reduction.reshape(label.shape());
 
   insert(outId(0), reduction);
 }
@@ -62,9 +72,12 @@ NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   const NllLoss *nllloss      = getOp<NllGradOp>().nlll();
-  TensorId labelId            = nllloss->labelTensorId();
-  TensorId probsId            = nllloss->probsTensorId();
-  const poplar::Tensor &probs = get(probsId);
+  const poplar::Tensor &probs = get(nllloss->probsTensorId());
+  const poplar::Tensor &label = get(nllloss->labelTensorId());
+
+  // As for NllOpx, flatten outer dimenstions if rank(probs) > 2
+  auto probs2D = probs.flatten(0, probs.rank() - 1);
+  auto label1D = label.flatten();
 
   // inverse probabilities, we take max(eps, p) to make division safe
   float eps       = 1e-10f;
@@ -73,14 +86,14 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   auto safeProbs = popops::map(graph(),
                                popops::expr::BinaryOpType::MAXIMUM,
                                smallConst,
-                               probs,
+                               probs2D,
                                prog,
                                idStr());
 
   // oneHot: initialised to be 1 at position "label", 0 elsewhere.
-  auto oneHot =
-      graph().clone(get(probsId).elementType(), get(probsId), "..OneHot");
-  popops::encodeOneHot(graph(), get(labelId), oneHot, prog, "..Nll");
+  auto oneHot = graph().clone(probs2D.elementType(), probs2D, "..OneHot");
+
+  popops::encodeOneHot(graph(), label1D, oneHot, prog, "..Nll");
 
   // oneHot: becomes -1 at position "label", 0 elsewhere.
   popops::mapInPlace(
@@ -93,6 +106,9 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
                      safeProbs,
                      prog,
                      idStr());
+
+  // Output is reshaped to match probs input shape
+  oneHot = oneHot.reshape(probs.shape());
 
   insert(outId(0), oneHot);
 }
