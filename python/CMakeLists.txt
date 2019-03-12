@@ -65,8 +65,8 @@ install(DIRECTORY
   DESTINATION ${INSTALL_PYDIR})
 
 configure_file(__init__.py.in
-  ${CMAKE_BINARY_DIR}/__init__.py
+  ${CMAKE_BINARY_DIR}/python/poponnx/__init__.py
   @ONLY)
 
-install(FILES ${CMAKE_BINARY_DIR}/__init__.py
+install(FILES ${CMAKE_BINARY_DIR}/python/poponnx/__init__.py
   DESTINATION ${INSTALL_PYDIR}/poponnx)
