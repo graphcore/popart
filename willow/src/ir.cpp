@@ -44,6 +44,10 @@
 
 #include <poponnx/patterns/inplace.hpp>
 
+// Currently used only for graph visualization,
+// should not be included when TODO T7143 is complete.
+#include <poponnx/subgraph/subgraph.hpp>
+
 namespace poponnx {
 
 Ir::~Ir() = default;
@@ -117,6 +121,16 @@ void Ir::eraseOp(OpId id) {
 
 void Ir::dotCheckpoint(DotCheck check) const {
 
+  // a selection of colors from
+  // https://www.graphviz.org/doc/info/colors.html
+  std::vector<std::string> colors{
+      "aliceblue",     "azure",       "brown1",          "cadetblue1",
+      "chartreuse",    "coral",       "cornflowerblue",  "cornsilk1",
+      "cyan3",         "darkkhaki",   "darkolivegreen1", "deeppink",
+      "darkseagreen1", "gold",        "indianred",       "khaki1",
+      "lightcoral",    "limegreen",   "maroon1",         "orangered",
+      "salmon",        "springgreen", "tomato"};
+
   if (userOptions.dotChecks.count(check) == 0) {
     return;
   }
@@ -125,13 +139,14 @@ void Ir::dotCheckpoint(DotCheck check) const {
   std::string dotfn =
       io::appendDirFn(userOptions.logDir, getDotCheckString(check) + ".dot");
 
+  logging::ir::info("In function to write dot file {}", dotfn);
+
   // the name that an Op has in the .dot file
   auto nodeDotId = [](OpId id) { return "\"n_" + std::to_string(id) + "\""; };
 
   // the name that a Tensor has in the .dot file.
   auto tensorDotId = [](const TensorId &id) { return '\"' + id + '\"'; };
 
-  logging::ir::info("Writing dot file to {}", dotfn);
   std::ofstream strm;
   strm.open(dotfn, std::ios::out);
   if (!strm.is_open()) {
@@ -140,7 +155,30 @@ void Ir::dotCheckpoint(DotCheck check) const {
 
   strm << "digraph net {\n";
   strm << "size=\"6,6\";\n";
+
+  logging::ir::trace("Obtaining Op Schedule");
   auto scheduledOps = getOpSchedule({});
+
+  // For each Op, we collect a vector of tuples,
+  // 1) the match identifier
+  // 2) which occurence of the match it is in
+  std::vector<fwtools::subgraph::Match> matches;
+  if (userOptions.dotSubgraphAnnotation) {
+    logging::ir::trace("Getting matches from schedule of size {}",
+                       scheduledOps.size());
+    matches = fwtools::subgraph::getMatches<Op>(scheduledOps);
+  }
+  std::vector<std::vector<std::tuple<int, int>>> opToMatch(scheduledOps.size());
+  for (int match_i = 0; match_i < matches.size(); ++match_i) {
+    auto &match = matches[match_i];
+    for (int start_i = 0; start_i < match.starts.size(); ++start_i) {
+      auto start = match.starts[start_i];
+      for (int delta = 0; delta < match.length; ++delta) {
+        opToMatch[start + delta].push_back(
+            std::tuple<int, int>(match_i, start_i));
+      }
+    }
+  }
 
   // the position in the schedule at which an op runs
   int scheduleIndex = 0;
@@ -165,6 +203,7 @@ void Ir::dotCheckpoint(DotCheck check) const {
     }
   };
 
+  // Create a tensor node in the .dot file
   auto makeNodeIfRequired = [&getNodeColor,
                              &tensorDotId,
                              &strm,
@@ -182,7 +221,7 @@ void Ir::dotCheckpoint(DotCheck check) const {
                           static_cast<int>(scheduledOps.size()));
 
   if (!(start < end) && scheduledOps.size() != 0) {
-    throw error("Invalid dot range {{}, {}} with schedule of size {}, "
+    throw error("Invalid dot range ({}, {}) with schedule of size {}, "
                 "as no Ops will be exported to the .dot file",
                 userOptions.firstDotOp,
                 userOptions.finalDotOp,
@@ -190,23 +229,54 @@ void Ir::dotCheckpoint(DotCheck check) const {
   }
 
   for (int i = start; i < end; ++i) {
-
     auto &n = scheduledOps.at(i);
 
-    // add the .dot entry for a node [shape="box", label=...]
-    strm << nodeDotId(n->id) << " [shape= \"box\", label=\"" << scheduleIndex
-         << '.' << ' ' << n->opid.type;
-
+    // The string which will appear in the dot file to represent an Op
+    std::stringstream coreNameStream;
+    coreNameStream << scheduleIndex << '.' << ' ' << n->opid.type;
     // Add the debug name if present and requested
     if (userOptions.dotOpNames) {
       if (!n->name().empty()) {
-        strm << "(" << n->name() << ")";
+        coreNameStream << "(" << n->name() << ")";
       } else {
-        strm << " (" << n->id << ")";
+        coreNameStream << " (" << n->id << ")";
       }
     }
 
-    strm << "\"];\n";
+    if (!userOptions.dotSubgraphAnnotation) {
+      // add the .dot entry for a node [shape="box", label=...]
+      strm << nodeDotId(n->id) << " [shape= \"box\", label=\""
+           << coreNameStream.str();
+      strm << "\"];\n";
+    }
+
+    else {
+      auto &opMatches = opToMatch.at(i);
+      strm << nodeDotId(n->id) << " [shape= \"box\", label=<"
+           << "\n"
+           << "<TABLE BORDER=\"0\" CELLSPACING=\"3\"> \n"
+           << "<TR>\n"
+           << "<TD BGCOLOR=\"white\" COLSPAN=\""
+           << std::max(1ul, opMatches.size()) << "\" PORT=\"thisport\">"
+           << coreNameStream.str() << "</TD>\n"
+           << "</TR>\n";
+
+      // sub-graph annotation:
+      if (opMatches.size() > 0) {
+        strm << "<TR>\n";
+        for (auto &opMatch : opMatches) {
+          int matchId             = std::get<0>(opMatch);
+          int matchNumber         = std::get<1>(opMatch);
+          std::string colorString = colors[matchId % colors.size()];
+          strm << "<TD BGCOLOR=\"" << colorString << "\"> " << matchId << ':'
+               << matchNumber << "</TD>\n ";
+        }
+        strm << "</TR>\n";
+      }
+      strm << "</TABLE>>";
+      strm << "];\n";
+    }
+
     ++scheduleIndex;
 
     // insert the input -> op edges into the .dot file
@@ -223,13 +293,13 @@ void Ir::dotCheckpoint(DotCheck check) const {
       strm << nodeDotId(n->id) << " -> " << tensorDotId(tenId) << ';' << '\n';
       TensorId possibleGradId = getGradId(tenId);
       if (getTensors().contains(possibleGradId)) {
-        // strm << "{rank=same; " << tenId << "; " << possibleGradId <<
-        // ";}\n";
       }
     }
   }
   strm << '}' << '\n';
   strm.flush();
+
+  logging::ir::trace("Dot file written");
 }
 
 void Ir::confirmNoReservedIds() const {

@@ -1,5 +1,4 @@
 #include <algorithm>
-#include <numeric>
 #include <onnx/onnx_pb.h>
 #include <poponnx/error.hpp>
 #include <poponnx/onnxutil.hpp>

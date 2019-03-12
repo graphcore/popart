@@ -92,6 +92,10 @@ int main(int argc, char **argv) {
   opts.firstDotOp = std::stoi(argv5);
   opts.finalDotOp = std::stoi(argv6);
 
+  // Include sug-graph annotation. With TODO T7217,
+  // this can be made into a command-line option
+  opts.dotSubgraphAnnotation = true;
+
   GraphTransformer gt(modelPath);
   gt.convertAllFixedPointInitializersToConstants();
 

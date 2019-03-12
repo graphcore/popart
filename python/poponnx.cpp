@@ -309,6 +309,8 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
       .def_readwrite("reportOptions", &SessionOptions::reportOptions)
       .def_readwrite("dotOpNames", &SessionOptions::dotOpNames)
+      .def_readwrite("dotSubgraphAnnotation",
+                     &SessionOptions::dotSubgraphAnnotation)
       .def_readwrite("finalDotOp", &SessionOptions::finalDotOp)
       .def_readwrite("firstDotOp", &SessionOptions::firstDotOp)
       // set in python use the python set constructor, so something like
