@@ -1192,6 +1192,9 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
 
   OpId nonGradOpId = nonGradOp->id;
   auto backOps     = nonGradOp->getGradOps();
+  if (backOps.size() < 1) {
+    throw error("Cannot get gradients for {}", nonGradOp->debugName());
+  }
   std::vector<Op *> gradOps;
   for (auto &upop : backOps) {
     Op *gradOp    = upop.get();
@@ -1685,9 +1688,7 @@ void Ir::constructBackwards() {
         throw error("can't currently register gradient of " +
                     nongrad->tensor_type() + " tensor, " + nongrad->str());
 
-      default: {
-        throw error("only handling ActGrad and Variable for now");
-      }
+      default: { throw error("only handling ActGrad and Variable for now"); }
       }
     }
 

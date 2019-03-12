@@ -83,9 +83,7 @@ Op::~Op() = default;
 // The Op in the OpAndTensorIds is the gradient op, and
 // the TensorIds are the input indices of input of this
 // Op for which the gradient is computed
-std::vector<std::unique_ptr<Op>> Op::getGradOps() {
-  throw error("Cannot get gradients for {}", opid);
-}
+std::vector<std::unique_ptr<Op>> Op::getGradOps() { return {}; }
 
 void Op::setup() { throw error("No setup() for {}", opid); }
 
