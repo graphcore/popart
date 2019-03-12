@@ -28,16 +28,6 @@ public:
   const Tensor *rhsIn() const;
   const Tensor *out() const;
 
-  // The ONNX tensor shape
-  Shape lhsBroadcastShape() const;
-  Shape rhsBroadcastShape() const;
-
-  // Follow the numpy matmul broadcasting rules for the left operand shape
-  Shape lhsNpBroadcastShape(Shape lhs, Shape rhs) const;
-
-  // Follow the numpy matmul broadcasting rules for the right operand shape
-  Shape rhsNpBroadcastShape(Shape lhs, Shape rhs) const;
-
   // Follow the numpy matmul broadcasting rules for the output shape
   Shape npMatMulOut(Shape lhs, Shape rhs) const;
 

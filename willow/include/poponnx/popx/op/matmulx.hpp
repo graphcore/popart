@@ -29,8 +29,6 @@ public:
 
 private:
   // The ONNX tensor shape
-  std::vector<std::size_t> getLhsInputShape() const;
-  std::vector<std::size_t> getRhsInputShape() const;
   std::vector<std::size_t> getOutputShape() const;
 };
 

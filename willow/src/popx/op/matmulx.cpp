@@ -31,18 +31,6 @@ std::vector<std::size_t> MatMulOpx::onnxShapeToPoplar(const Shape &shape) {
   return {stacks, m, n};
 }
 
-std::vector<std::size_t> MatMulOpx::getLhsInputShape() const {
-  auto matmul = getMatMulOp();
-
-  return MatMulOpx::onnxShapeToPoplar(matmul->lhsBroadcastShape());
-}
-
-std::vector<std::size_t> MatMulOpx::getRhsInputShape() const {
-  auto matmul = getMatMulOp();
-
-  return MatMulOpx::onnxShapeToPoplar(matmul->rhsBroadcastShape());
-}
-
 std::vector<std::size_t> MatMulOpx::getOutputShape() const {
   auto matmul = getMatMulOp();
   return MatMulOpx::onnxShapeToPoplar(matmul->outInfo(0).shape());
