@@ -17,6 +17,8 @@
 
 namespace poponnx {
 
+class OpSerialiserBase;
+
 // the input tensor of a grad-op has what kind of
 // relationship with the corresponding non-grad-op?
 // design note: it's not possible for an input to a
@@ -270,31 +272,19 @@ public:
   Rank inRank(InIndex index) const;
   Rank outRank(OutIndex index) const;
 
-protected:
   // Virtual method to append the op attributes to the stream. This method
   // should be overridden if the derived class has additional attributes.
-  virtual void appendAttributes(std::stringstream &,
-                                const std::string &tab) const;
-
-  template <typename T>
-  void appendAttribute(std::stringstream &ss,
-                       const std::string &tab,
-                       const std::string &name,
-                       const T &value) const {
-    ss << tab << name << ":" << value << '\n';
-  }
+  virtual void appendAttributes(OpSerialiserBase &) const;
 
 private:
-  void appendIO(std::stringstream &) const;
-  virtual void appendMore(std::stringstream &) const {}
+  virtual void appendMore(OpSerialiserBase &) const {}
 
 public:
   // The functionality required for sub-graph matching
   using SubgraphInSig =
       std::tuple<Op *, fwtools::subgraph::OutIndex, std::string>;
 
-  // TODO see T7227 to specialise this function
-  virtual std::string getSubgraphEquivId() const { return opid.type; }
+  std::string getSubgraphEquivId() const;
 
   std::map<fwtools::subgraph::InIndex, SubgraphInSig> getSubgraphInputs() const;
 

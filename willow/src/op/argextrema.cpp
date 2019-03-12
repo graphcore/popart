@@ -4,6 +4,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/argextrema.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -40,11 +41,10 @@ void ArgExtremaOp::setup() {
   outInfo(getOutIndex()) = TensorInfo(DataType::INT32, shape);
 }
 
-void ArgExtremaOp::appendAttributes(std::stringstream &ss,
-                                    const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "axis", axis);
-  appendAttribute(ss, tab, "keepdims", keepdims);
+void ArgExtremaOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axis", axis);
+  os.appendAttribute("keepdims", keepdims);
 }
 
 int64_t ArgExtremaOp::getAxis() const { return axis; }

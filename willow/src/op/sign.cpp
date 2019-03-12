@@ -5,17 +5,13 @@
 namespace poponnx {
 
 SignOp::SignOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : Op(_opid, settings_) {}
-
-std::unique_ptr<Op> SignOp::clone() const { return make_unique<SignOp>(*this); }
+    : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::vector<std::unique_ptr<Op>> SignOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(make_unique<SignGradOp>(*this));
   return upops;
 }
-
-void SignOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 OperatorIdentifier SignOp::getOpId(const Ir &) {
   return Onnx::Operators::Sign_9;

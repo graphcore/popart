@@ -6,6 +6,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/conv.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -67,10 +68,9 @@ const ConvOp *ConvDataGradOp::getCloneOfCreator() const {
 
 int64_t ConvOp::getNOutChans() const { return nOutChans; }
 
-void ConvOp::appendAttributes(std::stringstream &ss,
-                              const std::string &tab) const {
-  HasReceptiveFieldOp::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, sCacheOperation, cacheOperation);
+void ConvOp::appendAttributes(OpSerialiserBase &os) const {
+  HasReceptiveFieldOp::appendAttributes(os);
+  os.appendAttribute(sCacheOperation, cacheOperation);
 }
 
 ConvWeightsGradOp::ConvWeightsGradOp(const ConvOp &op_)
@@ -81,6 +81,11 @@ ConvWeightsGradOp::ConvWeightsGradOp(const ConvOp &op_)
   // update can be performed as early as possible, thus making
   // weight gradient tensors non-live. TODO : same for matmul
   priority = std::numeric_limits<double>::max();
+}
+
+void ConvWeightsGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendForwardOp(getCloneOfCreator());
 }
 
 const std::vector<GradInOutMapper> &ConvWeightsGradOp::gradInputInfo() const {
@@ -104,6 +109,11 @@ ConvDataGradOp::ConvDataGradOp(const ConvOp &op_)
     : Op(Onnx::GradOperators::ConvDataGrad, op_.getSettings()),
       cloneOfCreator(op_.clone()),
       dataInfo(op_.inInfo(ConvOp::getDataInIndex())) {}
+
+void ConvDataGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendForwardOp(getCloneOfCreator());
+}
 
 const std::vector<GradInOutMapper> &ConvDataGradOp::gradInputInfo() const {
   // input at index getGradConvolvedIn() : gradient of output of conv

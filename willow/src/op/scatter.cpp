@@ -5,6 +5,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/scatter.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -47,10 +48,9 @@ void ScatterOp::setup() {
   outInfo(outIndex()) = inInfo(dataInIndex());
 }
 
-void ScatterOp::appendAttributes(std::stringstream &ss,
-                                 const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "axis", axis);
+void ScatterOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axis", axis);
 }
 
 ScatterDataGradOp::ScatterDataGradOp(const ScatterOp &op, int64_t axis_)

@@ -5,7 +5,7 @@
 namespace poponnx {
 
 AbsOp::AbsOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : Op(_opid, settings_) {}
+    : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> AbsOp::clone() const { return make_unique<AbsOp>(*this); }
 
@@ -14,8 +14,6 @@ std::vector<std::unique_ptr<Op>> AbsOp::getGradOps() {
   upops.emplace_back(make_unique<AbsGradOp>(*this));
   return upops;
 }
-
-void AbsOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 AbsGradOp::AbsGradOp(const AbsOp &op_)
     : Op(Onnx::GradOperators::AbsGrad, op_.getSettings()) {}

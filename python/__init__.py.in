@@ -1,5 +1,7 @@
 import os, sys
 
+__version__ = "@VERSION@"
+
 # Add the DSO library path
 lp = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../lib")
 lp = os.path.abspath(lp)

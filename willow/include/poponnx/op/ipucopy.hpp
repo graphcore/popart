@@ -19,8 +19,7 @@ public:
 
   uint64_t getDestIpu() { return destIpu; }
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 };
 } // namespace poponnx
 

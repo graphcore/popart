@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/dropout.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -29,10 +30,9 @@ std::vector<std::unique_ptr<Op>> DropoutOp::getGradOps() {
               "call to getGradOps");
 }
 
-void DropoutOp::appendAttributes(std::stringstream &ss,
-                                 const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "ratio", ratio);
+void DropoutOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("ratio", ratio);
 }
 
 // Dropout in testing mode can be replaced by the identity

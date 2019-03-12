@@ -35,7 +35,6 @@ else()
                 -Wno-c++98-compat-pedantic
                 -Wno-padded
                 -Wno-weak-vtables
-                -Wno-float-equal
                 # these require very clean coding with clean deps:
                 -Wno-sign-conversion
                 #  -Wno-shorten-64-to-32

@@ -84,8 +84,6 @@ def op_tester(tmpdir):
         def run(self, init_builder, reference, step_type='infer', opsets=None):
             assert step_type in ('infer', 'train')
 
-            poponnx.getLogger().setLevel("TRACE")
-
             bld = Builder(opsets=opsets)
 
             anchors = {}

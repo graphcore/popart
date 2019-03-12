@@ -7,7 +7,7 @@
 namespace poponnx {
 
 MulOp::MulOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : Op(_opid, settings_) {
+    : ElementWiseBinaryOp(_opid, settings_) {
   // TODO : Use the attributes in Mul-6
 }
 
@@ -25,11 +25,6 @@ std::vector<std::unique_ptr<Op>> MulOp::getGradOps() {
   upops.emplace_back(make_unique<MulArg1GradOp>(
       *this, npReductionAxis(shape_in_1, shape_output)));
   return upops;
-}
-
-void MulOp::setup() {
-  outInfo(getOutIndex()) =
-      npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
 }
 
 OperatorIdentifier MulOp::getOpId(const Ir &ir) {

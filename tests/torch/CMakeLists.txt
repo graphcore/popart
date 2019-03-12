@@ -1,5 +1,26 @@
 include(CPack)
 
+#------ download data script
+SET(C10_DIR "" CACHE PATH "Directory to install Cifar-10 dataset to")
+SET(C10_PYSTRING_DIR "tempfile.gettempdir()")
+IF(C10_DIR)
+  IF(IS_DIRECTORY ${C10_DIR})
+    SET(C10_PYSTRING_DIR "\"${C10_DIR}\"")
+  ELSE()
+    MESSAGE(FATAL_ERROR "Directory ${C10_DIR} does not exist, invalid C10_DIR")
+  ENDIF()
+ENDIF()
+MESSAGE(STATUS "C10_PYSTRING_DIR is ${C10_PYSTRING_DIR}")
+
+configure_file(cifar10/download_dataset.py.in
+  ${CMAKE_BINARY_DIR}/cifar10/download_dataset.py
+  @ONLY)
+
+install(FILES ${CMAKE_BINARY_DIR}/cifar10/download_dataset.py
+  DESTINATION ${INSTALL_TESTS}/torch/cifar10/)
+#------ end of download data script
+
+
 set(CPACK_SOURCE_IGNORE_FILES ${INSTALL_TESTS})
 
 # poponnx.torch tests (require pytorch and torchvision)

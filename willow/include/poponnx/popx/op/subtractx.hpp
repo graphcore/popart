@@ -2,9 +2,9 @@
 #define GUARD_NEURALNET_SUBTRACTX_HPP
 
 #include <poponnx/names.hpp>
+#include <poponnx/popx/op/elementwisex.hpp>
 #include <poponnx/popx/op/negatex.hpp>
 #include <poponnx/popx/op/reducesumx.hpp>
-#include <poponnx/popx/opx.hpp>
 
 namespace poponnx {
 
@@ -12,14 +12,10 @@ class SubtractOp;
 
 namespace popx {
 
-class SubtractOpx : public Opx {
+class SubtractOpx : public ElementWiseBinaryOpx {
 public:
   SubtractOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
-  InputCreatorType getInputCreatorType(InIndex) const final;
-  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
-                                    InIndex inIndex,
-                                    OutIndex outIndex) const final;
 };
 
 // TODO (task T5432) should inherit from ReduceSum when we have numpy

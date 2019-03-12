@@ -3,6 +3,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/instancenorm.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
 
@@ -41,10 +42,9 @@ void InstanceNormOp::setup() {
                                      Shape{batch_size * features}};
 }
 
-void InstanceNormOp::appendAttributes(std::stringstream &ss,
-                                      const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "epsilon", epsilon);
+void InstanceNormOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("epsilon", epsilon);
 }
 
 InstanceNormGradOp::InstanceNormGradOp(const InstanceNormOp &fwd_op)

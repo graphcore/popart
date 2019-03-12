@@ -22,8 +22,7 @@ public:
   static InIndex indicesInIndex() { return 1; }
   static InIndex outIndex() { return 0; }
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
   bool canBeReplacedByIdentity() override;
 
@@ -47,8 +46,7 @@ public:
   static InIndex indicesInIndex() { return 1; }
   static InIndex gradOutIndex() { return 0; }
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   int64_t axis;

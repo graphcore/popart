@@ -25,6 +25,8 @@ public:
   Shape getLowerPads() const;
   Shape getUpperPads() const;
 
+  void appendAttributes(OpSerialiserBase &) const override;
+
 private:
   Shape kernel;
 };
@@ -51,7 +53,9 @@ public:
   static InIndex getGradPooledInIndex() { return 2; }
   static OutIndex getOutIndex() { return 0; }
 
-  const GlobalAveragePoolOp *getCloneOfCreator();
+  const GlobalAveragePoolOp *getCloneOfCreator() const;
+
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   // The shape and type of the input to the

@@ -30,8 +30,7 @@ public:
   static InIndex getCInIndex() { return 2; }
   static OutIndex getOutIndex() { return 0; }
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   float alpha = 1.0;

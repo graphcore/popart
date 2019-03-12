@@ -28,8 +28,7 @@ public:
   // Attributes
   float getEpsilon() const { return epsilon; }
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   float epsilon;

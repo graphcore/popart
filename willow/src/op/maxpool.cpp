@@ -3,6 +3,7 @@
 
 #include <poponnx/makeunique.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -33,7 +34,7 @@ void MaxPoolOp::setSpatialK() {
   }
 }
 
-const MaxPoolOp *MaxPoolGradOp::getCloneOfCreator() {
+const MaxPoolOp *MaxPoolGradOp::getCloneOfCreator() const {
   return dynamic_cast<MaxPoolOp *>(cloneOfCreator.get());
 }
 
@@ -51,17 +52,21 @@ std::vector<std::unique_ptr<Op>> MaxPoolOp::getGradOps() {
   return upops;
 }
 
-void MaxPoolOp::appendAttributes(std::stringstream &ss,
-                                 const std::string &tab) const {
-  HasReceptiveFieldOp::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "storage_order", storageOrder);
-  appendAttribute(ss, tab, "kernel_shape", kernelShape);
+void MaxPoolOp::appendAttributes(OpSerialiserBase &os) const {
+  HasReceptiveFieldOp::appendAttributes(os);
+  os.appendAttribute("storage_order", storageOrder);
+  os.appendAttribute("kernel_shape", kernelShape);
 }
 
 MaxPoolGradOp::MaxPoolGradOp(const MaxPoolOp &op_)
     : Op(Onnx::GradOperators::MaxPoolGrad, op_.getSettings()),
       unpooledInfo(op_.inInfo(MaxPoolOp::getInIndex())),
       cloneOfCreator(op_.clone()) {}
+
+void MaxPoolGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendForwardOp(getCloneOfCreator());
+}
 
 const std::vector<GradInOutMapper> &MaxPoolGradOp::gradInputInfo() const {
 

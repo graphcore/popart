@@ -3,6 +3,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/concat.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/region.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
@@ -191,10 +192,9 @@ ConcatGradOp::ConcatGradOp(const ConcatOp &fwd, InIndex inputIndex)
   gradOutToNonGradInInfo = {{getOutIndex(), ConcatOp::getInIndex(fwdInput)}};
 }
 
-void ConcatOp::appendAttributes(std::stringstream &ss,
-                                const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "axis", axis);
+void ConcatOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axis", axis);
 }
 
 ConcatGradOp::ConcatGradOp(const OperatorIdentifier &_opid,

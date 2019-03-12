@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/flatten.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -49,10 +50,9 @@ int64_t FlattenAliasOp::getAxis() const { return axis; }
 
 void FlattenAliasOp::setAxis(int64_t value) { axis = value; }
 
-void FlattenAliasOp::appendAttributes(std::stringstream &ss,
-                                      const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "axis", axis);
+void FlattenAliasOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axis", axis);
 }
 
 FlattenGradOp::FlattenGradOp(const FlattenAliasOp &fwdOp)

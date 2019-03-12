@@ -30,8 +30,7 @@ public:
   float getEpsilon() const { return epsilon; }
   int64_t getNumGroups() const { return num_groups; }
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   int64_t num_groups;

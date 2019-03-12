@@ -3,6 +3,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/subsample.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
 #include <poponnx/util.hpp>
@@ -66,10 +67,9 @@ bool SubsampleOp::strideSizeOne() const {
 // A subsample with all strides being  1 can be replaced by identity
 bool SubsampleOp::canBeReplacedByIdentity() { return strideSizeOne(); }
 
-void SubsampleOp::appendAttributes(std::stringstream &ss,
-                                   const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "strides", strides);
+void SubsampleOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("strides", strides);
 }
 
 SubsampleGradOp::SubsampleGradOp(const SubsampleOp &fwdOp_)

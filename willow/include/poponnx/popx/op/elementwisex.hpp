@@ -10,7 +10,16 @@ namespace popx {
 class ElementWiseUnaryOpx : public Opx {
 public:
   ElementWiseUnaryOpx(Op *, Devicex *);
-  InputCreatorType getInputCreatorType(int index0) const override;
+  InputCreatorType getInputCreatorType(InIndex index0) const override;
+  poplar::Tensor
+  unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const override;
+};
+
+// Base class for elementwise binary operations
+class ElementWiseBinaryOpx : public Opx {
+public:
+  ElementWiseBinaryOpx(Op *, Devicex *);
+  InputCreatorType getInputCreatorType(InIndex) const override;
   poplar::Tensor
   unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const override;
 };

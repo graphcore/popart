@@ -173,7 +173,7 @@ BOOST_AUTO_TEST_CASE(DontInheritRecomputeTest) {
   std::vector<Loss *> losses{new L1Loss(relu_out, "l1LossVal", 0.1)};
 
   SessionOptions opts;
-  opts.dotChecks           = {DotCheck::FINAL};
+  opts.dotChecks = {DotCheck::FINAL};
 
   Ir ir;
   ir.prepare({modelProto,

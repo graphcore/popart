@@ -70,25 +70,27 @@ SoftmaxGradDirectOpx::SoftmaxGradDirectOpx(Op *op, Devicex *devicex)
 //   d(loss)/d(v_j) = p_j - 1
 
 void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
-  SoftmaxGradDirectOp &sfmgd = getOp<SoftmaxGradDirectOp>();
-  TensorId labelId           = sfmgd.nlll()->labelTensorId();
-  TensorId probsId           = sfmgd.nlll()->probsTensorId();
+  SoftmaxGradDirectOp &sfmgd  = getOp<SoftmaxGradDirectOp>();
+  const poplar::Tensor &probs = get(sfmgd.nlll()->probsTensorId());
+  const poplar::Tensor &label = get(sfmgd.nlll()->labelTensorId());
+
+  // As for NllOpx, flatten outer dimenstions if rank(probs) > 2
+  auto probs2D = probs.flatten(0, probs.rank() - 1);
+  auto label1D = label.flatten();
 
   // 1 at position "label", 0 elsewhere.
-  auto oneHot =
-      graph().clone(get(probsId).elementType(), get(probsId), "..OneHot");
-  popops::encodeOneHot(graph(), get(labelId), oneHot, prog, "..Nll");
+  auto oneHot = graph().clone(probs2D.elementType(), probs2D, "..OneHot");
+  popops::encodeOneHot(graph(), label1D, oneHot, prog, "..Nll");
   // -1 at position "label", 0 elsewhere.
   popops::mapInPlace(
       graph(), popops::expr::UnaryOpType::NEGATE, oneHot, prog, "..neg");
 
   // p - 1 at position "label" label, p elsewhere.
-  popops::mapInPlace(graph(),
-                     popops::expr::BinaryOpType::ADD,
-                     oneHot,
-                     get(probsId),
-                     prog,
-                     "..sub");
+  popops::mapInPlace(
+      graph(), popops::expr::BinaryOpType::ADD, oneHot, probs2D, prog, "..sub");
+
+  // Output is reshaped to match probs input shape
+  oneHot = oneHot.reshape(probs.shape());
 
   insert(outId(0), oneHot);
 }

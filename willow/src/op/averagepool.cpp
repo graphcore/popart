@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/averagepool.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -36,7 +37,7 @@ void AveragePoolOp::setSpatialK() {
   }
 }
 
-const AveragePoolOp *AveragePoolGradOp::getCloneOfCreator() {
+const AveragePoolOp *AveragePoolGradOp::getCloneOfCreator() const {
   return dynamic_cast<AveragePoolOp *>(cloneOfCreator.get());
 }
 
@@ -54,18 +55,21 @@ std::vector<std::unique_ptr<Op>> AveragePoolOp::getGradOps() {
   return upops;
 }
 
-void AveragePoolOp::appendAttributes(std::stringstream &ss,
-                                     const std::string &tab) const {
-
-  HasReceptiveFieldOp::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "kernel_shape", kernelShape);
-  appendAttribute(ss, tab, "count_include_pad", countIncludePad);
+void AveragePoolOp::appendAttributes(OpSerialiserBase &os) const {
+  HasReceptiveFieldOp::appendAttributes(os);
+  os.appendAttribute("kernel_shape", kernelShape);
+  os.appendAttribute("count_include_pad", countIncludePad);
 }
 
 AveragePoolGradOp::AveragePoolGradOp(const AveragePoolOp &op_)
     : Op(Onnx::GradOperators::AveragePoolGrad, op_.getSettings()),
       unpooledInfo(op_.inInfo(AveragePoolOp::getInIndex())),
       cloneOfCreator(op_.clone()) {}
+
+void AveragePoolGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendForwardOp(getCloneOfCreator());
+}
 
 const std::vector<GradInOutMapper> &AveragePoolGradOp::gradInputInfo() const {
 

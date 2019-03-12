@@ -1,5 +1,6 @@
 #include <poponnx/op/ipucopy.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -12,11 +13,10 @@ IpuCopyOp::IpuCopyOp(const OperatorIdentifier &_opid,
 
 void IpuCopyOp::setup() { outInfo(0) = inInfo(0); }
 
-void IpuCopyOp::appendAttributes(std::stringstream &ss,
-                                 const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
-  appendAttribute(ss, tab, "__sourceIpu", sourceIpu);
-  appendAttribute(ss, tab, "__destIpu", destIpu);
+void IpuCopyOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("__sourceIpu", sourceIpu);
+  os.appendAttribute("__destIpu", destIpu);
 }
 
 // Have intentionally not added the IpuCopyOp to the OpManager. This IpuCopyOp

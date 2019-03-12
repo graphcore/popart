@@ -1,7 +1,10 @@
+#include <boost/math/special_functions/relative_difference.hpp>
 #include <poponnx/op/scale.hpp>
 #include <poponnx/patterns/negativeonescalepattern.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorinfo.hpp>
+
+using boost::math::epsilon_difference;
 
 namespace poponnx {
 
@@ -10,7 +13,8 @@ bool NegativeOneScalePattern::matches(Op *op) const {
     return false;
   }
 
-  return dynamic_cast<ScaleOp *>(op)->getScaleFactor() == -1.0f;
+  float scale_factor = dynamic_cast<ScaleOp *>(op)->getScaleFactor();
+  return epsilon_difference(scale_factor, -1.0f) < 1.0f;
 }
 
 // output = neg(x)

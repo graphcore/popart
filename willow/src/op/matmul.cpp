@@ -30,20 +30,6 @@ const Tensor *MatMulOp::rhsIn() const { return inTensor(getRhsInIndex()); }
 
 const Tensor *MatMulOp::out() const { return outTensor(getOutIndex()); }
 
-std::vector<int64_t> MatMulOp::lhsBroadcastShape() const {
-  const Tensor *lhs = lhsIn();
-  const Tensor *rhs = rhsIn();
-
-  return lhsNpBroadcastShape(lhs->info.shape(), rhs->info.shape());
-}
-
-std::vector<int64_t> MatMulOp::rhsBroadcastShape() const {
-  const Tensor *lhs = lhsIn();
-  const Tensor *rhs = rhsIn();
-
-  return rhsNpBroadcastShape(lhs->info.shape(), rhs->info.shape());
-}
-
 void MatMulOp::verifyInputShapes(const Shape &lhs, const Shape &rhs) const {
   if (lhs.empty()) {
     throw error("{} doesn't support scalar tensor {} as the lhs input",
@@ -56,24 +42,6 @@ void MatMulOp::verifyInputShapes(const Shape &lhs, const Shape &rhs) const {
                 debugName(),
                 rhsIn()->str());
   }
-}
-
-Shape MatMulOp::lhsNpBroadcastShape(Shape lhs, Shape rhs) const {
-  verifyInputShapes(lhs, rhs);
-
-  Shape result = npMatMulOut(lhs, rhs);
-  std::copy(lhs.end() - 2, lhs.end(), result.end() - 2);
-
-  return result;
-}
-
-Shape MatMulOp::rhsNpBroadcastShape(Shape lhs, Shape rhs) const {
-  verifyInputShapes(lhs, rhs);
-
-  Shape result = npMatMulOut(lhs, rhs);
-  std::copy(rhs.end() - 2, rhs.end(), result.end() - 2);
-
-  return result;
 }
 
 Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) const {
@@ -124,7 +92,7 @@ Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) const {
 void MatMulOp::setup() {
   // Define the shape of the output tensor
   outInfo(0) = {lhsIn()->info.dataType(),
-                npMatMulOut(lhsBroadcastShape(), rhsBroadcastShape())};
+                npMatMulOut(lhsIn()->info.shape(), rhsIn()->info.shape())};
 }
 
 MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)

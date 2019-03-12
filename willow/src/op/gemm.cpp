@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/gemm.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -49,17 +50,16 @@ float GemmOp::getBeta() const { return beta; }
 bool GemmOp::getTransA() const { return transA; }
 bool GemmOp::getTransB() const { return transB; }
 
-void GemmOp::appendAttributes(std::stringstream &ss,
-                              const std::string &tab) const {
-  Op::appendAttributes(ss, tab);
+void GemmOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
 
-  appendAttribute(ss, tab, "alpha", alpha);
-  appendAttribute(ss, tab, "beta", beta);
-  appendAttribute(ss, tab, "transA", transA);
-  appendAttribute(ss, tab, "transB", transB);
+  os.appendAttribute("alpha", alpha);
+  os.appendAttribute("beta", beta);
+  os.appendAttribute("transA", transA);
+  os.appendAttribute("transB", transB);
 
   if (opid.version == 6)
-    appendAttribute(ss, tab, "broadcast", broadcast);
+    os.appendAttribute("broadcast", broadcast);
 }
 namespace {
 static OpCreator<GemmOp> gemmOpCreator(

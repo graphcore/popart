@@ -60,8 +60,11 @@ void NllOp::setup() {
   }
 
   const auto &probsInInfo = inInfo(nlll()->getProbsInIndex());
-  // output is a 1-d tensor, dimension size : batchsize
-  outInfo(0).set(probsInInfo.dataType(), {probsInInfo.dim(0)});
+  const auto &labelInInfo = inInfo(nlll()->getLabelInIndex());
+  // Outputs a loss for each label index.
+  // Same shape as label input, same datatype as probs input
+  outInfo(nlll()->getOutIndex())
+      .set(probsInInfo.dataType(), labelInInfo.shape());
 }
 
 const NllLoss *NllOp::nlll() const { return nllloss_; }
@@ -74,8 +77,7 @@ NllOp::NllOp(const OperatorIdentifier &_opid,
 
 void NllGradOp::setup() {
   // gradient of probs has same shape as probs
-  auto out_info = inInfo(nlll()->getProbsInIndex());
-  outInfo(0)    = out_info;
+  outInfo(nlll()->getOutIndex()) = inInfo(nlll()->getProbsInIndex());
 }
 
 NllGradOp::NllGradOp(const NllOp &op_)

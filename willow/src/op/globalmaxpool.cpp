@@ -3,6 +3,7 @@
 
 #include <poponnx/makeunique.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
@@ -20,6 +21,11 @@ void GlobalMaxPoolOp::setup() {
 
   kernel =
       Shape(inShape(getInIndex()).begin() + 2, inShape(getInIndex()).end());
+}
+
+void GlobalMaxPoolOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("kernel", kernel);
 }
 
 Shape GlobalMaxPoolOp::getStrides() const {
@@ -53,6 +59,11 @@ GlobalMaxPoolGradOp::GlobalMaxPoolGradOp(const GlobalMaxPoolOp &op_)
       unpooledInfo(op_.inInfo(GlobalMaxPoolOp::getInIndex())),
       cloneOfCreator(op_.clone()) {}
 
+void GlobalMaxPoolGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendForwardOp(getCloneOfCreator());
+}
+
 const std::vector<GradInOutMapper> &GlobalMaxPoolGradOp::gradInputInfo() const {
 
   // the input to the grad-op at index getGradPooledIn()
@@ -83,7 +94,7 @@ const std::map<int, int> &GlobalMaxPoolGradOp::gradOutToNonGradIn() const {
 
 void GlobalMaxPoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
-const GlobalMaxPoolOp *GlobalMaxPoolGradOp::getCloneOfCreator() {
+const GlobalMaxPoolOp *GlobalMaxPoolGradOp::getCloneOfCreator() const {
   return dynamic_cast<GlobalMaxPoolOp *>(cloneOfCreator.get());
 }
 

@@ -19,8 +19,7 @@ public:
 
   void setup() override;
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
   // The depth input is not connected to Onehot as an input
   // but rather is read in the connectInTensor method and used

@@ -24,8 +24,7 @@ public:
   // Returns true if all the strides at 1
   bool strideSizeOne() const;
 
-  void appendAttributes(std::stringstream &ss,
-                        const std::string &tab) const override;
+  void appendAttributes(OpSerialiserBase &) const override;
 
   bool canBeReplacedByIdentity() override;
 
