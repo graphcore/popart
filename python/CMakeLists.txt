@@ -64,3 +64,9 @@ install(DIRECTORY
   poponnx
   DESTINATION ${INSTALL_PYDIR})
 
+configure_file(__init__.py.in
+  ${CMAKE_BINARY_DIR}/__init__.py
+  @ONLY)
+
+install(FILES ${CMAKE_BINARY_DIR}/__init__.py
+  DESTINATION ${INSTALL_PYDIR}/poponnx)
