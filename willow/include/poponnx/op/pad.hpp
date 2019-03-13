@@ -36,6 +36,8 @@ public:
 
   bool canBeReplacedByIdentity() override;
 
+  float getSubgraphValue() const final { return 0.1f; }
+
 private:
   std::vector<int64_t> pads;
   float pad_value;

@@ -292,8 +292,9 @@ public:
   std::map<fwtools::subgraph::OutIndex, std::set<Op *>>
   getSubgraphOutputs() const;
 
-  // TODO see T7228 to specialise this function
-  virtual float getSubgraphValue() const { return 10.0; }
+  // default high value here means that sub-graphs
+  // of single Ops are cached by default
+  virtual float getSubgraphValue() const { return 1000.0f; }
 };
 
 } // namespace poponnx

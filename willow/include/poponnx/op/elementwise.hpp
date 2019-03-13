@@ -14,6 +14,8 @@ public:
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return 0.1f; }
 };
 
 // Base class for gradients of elementwise, non linear, unary operations
@@ -35,6 +37,8 @@ public:
   static InIndex getGradInIndex() { return 0; }
   static InIndex getFwdArgInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return 0.1f; }
 };
 
 // Base class for elementwise binary operations
@@ -49,6 +53,8 @@ public:
   static InIndex getArg0InIndex() { return 0; }
   static InIndex getArg1InIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return 0.1f; }
 };
 
 } // namespace poponnx
