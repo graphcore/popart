@@ -836,7 +836,7 @@ def test_set_weights_from_host():
     optimizer = poponnx.ConstSGD(0.01)
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
-    session = poponnx.Session(
+    session = poponnx.TrainingSession(
         fnModel=proto, dataFeed=dataFlow, losses=losses, optimizer=optimizer)
 
     session.setDevice(getDevice())
@@ -848,10 +848,10 @@ def test_set_weights_from_host():
     stepio = poponnx.PyStepIO(inputs, anchors)
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        session.train(stepio)
+        session.run(stepio)
 
     assert (e_info.value.args[0].startswith(
-        "Must call weightsFromHost before train as the"))
+        "Must call weightsFromHost before run as the"))
 
 
 def test_add_int_attribute():
@@ -1242,7 +1242,7 @@ def test_load_onnx_model_from_other_builder(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     session.setDevice(getDevice())
     anchors = session.initAnchorArrays()
@@ -1255,7 +1255,7 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     }
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.infer(stepio)
+    session.run(stepio)
     assert (np.array_equal(anchors[o], [4, 6]))
 
     # Run a builder that imports the model of the other builder and check the
@@ -1263,12 +1263,9 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     builder2 = poponnx.Builder(proto)
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
-    optimizer = poponnx.ConstSGD(0.01)
-    losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     proto2 = builder.getModelProto()
-    session = poponnx.Session(
-        fnModel=proto2, dataFeed=dataFlow, losses=losses, optimizer=optimizer)
+    session = poponnx.InferenceSession(fnModel=proto2, dataFeed=dataFlow)
 
     session.setDevice(getDevice())
     anchors = session.initAnchorArrays()
@@ -1281,7 +1278,7 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     }
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.infer(stepio)
+    session.run(stepio)
 
     assert (np.array_equal(anchors[o], [4, 6]))
 
@@ -1310,8 +1307,7 @@ def test_load_onnx_model_from_file(tmpdir):
 
     proto = builder2.getModelProto()
 
-    session = poponnx.Session(
-        fnModel=proto, dataFeed=dataFlow, losses=losses, optimizer=optimizer)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     session.setDevice(getDevice())
     anchors = session.initAnchorArrays()
@@ -1324,7 +1320,7 @@ def test_load_onnx_model_from_file(tmpdir):
     }
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.infer(stepio)
+    session.run(stepio)
 
     assert (np.array_equal(anchors[o], [4, 6]))
 

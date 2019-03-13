@@ -5,6 +5,7 @@
 
 // Hack to allow the test to view the private data of classes
 #define private public
+#define protected public
 
 #include <poponnx/builder.hpp>
 #include <poponnx/dataflow.hpp>
@@ -51,12 +52,12 @@ BOOST_AUTO_TEST_CASE(SytheticData_False) {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(tensorIds.back(), "l1LossVal", 0.1)};
 
-  auto session = poponnx::Session::createFromOnnxModel(
+  auto session = poponnx::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      InputShapeInfo(),
       losses,
-      &optimizer,
+      optimizer,
+      InputShapeInfo(),
       {},
       Patterns({poponnx::PreAliasPatternType::POSTNREPL}));
 
@@ -107,12 +108,12 @@ BOOST_AUTO_TEST_CASE(SytheticData_True) {
   SessionOptions options;
   options.ignoreData = true;
 
-  auto session = poponnx::Session::createFromOnnxModel(
+  auto session = poponnx::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      InputShapeInfo(),
       losses,
-      &optimizer,
+      optimizer,
+      InputShapeInfo(),
       options,
       Patterns({poponnx::PreAliasPatternType::POSTNREPL}));
 

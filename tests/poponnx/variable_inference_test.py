@@ -19,7 +19,7 @@ def inference_add_to_variable(tmpdir, np_type):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     session.setDevice(tu.get_poplar_cpu_device())
     session.prepareDevice()
@@ -29,7 +29,7 @@ def inference_add_to_variable(tmpdir, np_type):
     inputs = {i1: np.array([1., 3.], dtype=np_type)}
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.infer(stepio)
+    session.run(stepio)
 
     assert (np.allclose(anchors[o], np.array([3., 7.], dtype=np_type)))
 

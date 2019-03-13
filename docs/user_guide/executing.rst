@@ -11,13 +11,43 @@ Constructing the session
 The session constructor takes at least the ONNX graph parameter, and a
 parameter `dataFeed` which directs the basic data flow in the graph.
 
+The session can either be constructed for inference or training.
+
+To construct a session for inference you need to provide the model and input data feed. 
+A full forward pass will be constructed.
+
 ::
 
   df = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
-  s = poponnx.Session("onnx.pb", dataFeed=df)
+  s = poponnx.InferenceSession("onnx.pb", dataFeed=df)
+
+
+To construct a session for training, you need to provide the model, input data feed, loss and optimzier. 
+A full forward pass, loss calculation and backward pass will be
+constructed.  
+
+::
+
+  l = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
+  o = poponnx.ConstSGD(0.01)
+  df = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+  s = poponnx.TrainingSession("onnx.pb", dataFeed=df, losses=l, optimzier=o)
+
+
 
 Other parameters are required for constructing a session to train a
 graph, or to control more specific features of the compilation.
+
+Inference specific parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When a network is being prepared for inference, one or more loss function
+nodes can be appended to the graph.  These are provided by the `losses`
+parameter.  This is a list of loss operations.
+
+If the losses are provided the forward pass and the losses will be executed, and the
+final loss value will be returned.
+
 
 Training specific parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -138,38 +168,25 @@ specified in the `dataFlow` object during session construction.
   stepio = poponnx.PyStepIO({'a': data_a, 'b': data_b}, anchors)
 
 
-Inference
-~~~~~~~~~
+Running
+~~~~~~~
 
-In inference, only the forward pass will be executed. The user is
-responsible for ensuring that the forward graph finishes with the appropriate
-operation for an inference.
+To execute the session you need to call run. 
 
 ::
 
-  session.infer(stepio)
+  session.run(stepio)
 
 
-Evaluation
-~~~~~~~~~~
+If the session is created for inference, the user is responsible for ensuring 
+that the forward graph finishes with the appropriate operation for an inference. 
+If losses are provided to the inference session the forward pass and the losses 
+will be executed, and the final loss value will be returned.
 
-In evaluation, the forward pass and the losses will be executed, and the
-final loss value will be returned.
 
-::
+If the session is created for training, any pre-initialized parameters will be 
+updated to reflect changes to them that the optimizer has made.
 
-  session.evaluate(stepio)
-
-Training
-~~~~~~~~
-
-In training, a full forward pass, loss calculation and backward pass will be
-done.  Any pre-initialized parameters will be updated to reflect any changes
-to them which the optimizer has made.
-
-::
-
-  session.train(stepio)
 
 
 Fetching the trained parameters

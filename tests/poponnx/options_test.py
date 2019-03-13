@@ -91,7 +91,7 @@ def test_engine_options_passed_to_engine(tmpdir):
     opts.engineOptions = {'option': 'value'}
     opts.logging = {'all': 'DEBUG'}
 
-    session = poponnx.Session(
+    session = poponnx.InferenceSession(
         fnModel=proto, dataFeed=dataFlow, userOptions=opts)
 
     session.setDevice(tu.get_poplar_cpu_device())
@@ -126,7 +126,7 @@ def test_convolution_options(tmpdir):
     opts.convolutionOptions = {'startTileMultiplier': '3'}
     opts.logging = {'all': 'DEBUG'}
 
-    session = poponnx.Session(
+    session = poponnx.InferenceSession(
         fnModel=proto, dataFeed=dataFlow, userOptions=opts)
 
     session.setDevice(tu.get_poplar_cpu_device())

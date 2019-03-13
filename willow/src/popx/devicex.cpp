@@ -136,27 +136,14 @@ poplar::program::Sequence PopPrograms::optimizerFromHost() {
   return optimizerFromHostFragment();
 }
 
-poplar::program::Repeat PopPrograms::infer() {
-  return poplar::program::Repeat(repeatCount, forwardFragment());
-}
+poplar::program::Repeat PopPrograms::program() {
+  poplar::program::Sequence prog;
 
-poplar::program::Repeat PopPrograms::evaluate() {
-  poplar::program::Sequence eval;
+  prog.add(forwardFragment());
+  prog.add(lossFragment());
+  prog.add(backwardFragment());
 
-  eval.add(forwardFragment());
-  eval.add(lossFragment());
-
-  return poplar::program::Repeat(repeatCount, eval);
-}
-
-poplar::program::Repeat PopPrograms::train() {
-  poplar::program::Sequence trn;
-
-  trn.add(forwardFragment());
-  trn.add(lossFragment());
-  trn.add(backwardFragment());
-
-  return poplar::program::Repeat(repeatCount, trn);
+  return poplar::program::Repeat(repeatCount, prog);
 }
 
 poplar::program::Sequence PopPrograms::weightsToHost() {
@@ -168,9 +155,7 @@ std::vector<poplar::program::Program> PopPrograms::progs() {
 
   ps[ProgramIndex::WEIGHTSFROMHOST]   = weightsFromHost();
   ps[ProgramIndex::OPTIMIZERFROMHOST] = optimizerFromHost();
-  ps[ProgramIndex::INFER]             = infer();
-  ps[ProgramIndex::EVALUATE]          = evaluate();
-  ps[ProgramIndex::TRAIN]             = train();
+  ps[ProgramIndex::PROGRAM]           = program();
   ps[ProgramIndex::WEIGHTSTOHOST]     = weightsToHost();
 
   return ps;
@@ -384,35 +369,13 @@ void Devicex::anchorsHostFromHostStreams(const IStepIO &stepio) {
   }
 }
 
-void Devicex::infer(const IStepIO &stepio) {
+void Devicex::run(const IStepIO &stepio) {
   std::string prefix = "     ";
-  logging::debug("Performing one inference step: ");
+  logging::debug("Performing one step: ");
   anchorsHostToHostStreams(stepio);
 
-  logging::debug(prefix + "Running the inference program ");
-  pEngine->run(PopPrograms::ProgramIndex::INFER);
-
-  anchorsHostFromHostStreams(stepio);
-}
-
-void Devicex::evaluate(const IStepIO &stepio) {
-  std::string prefix = "     ";
-  logging::debug("Performing one evaluate step: ");
-  anchorsHostToHostStreams(stepio);
-
-  logging::debug(prefix + "Running the evaluate program ");
-  pEngine->run(PopPrograms::ProgramIndex::EVALUATE);
-
-  anchorsHostFromHostStreams(stepio);
-}
-
-void Devicex::train(const IStepIO &stepio) {
-  std::string prefix = "     ";
-  logging::debug("Performing one train step: ");
-  anchorsHostToHostStreams(stepio);
-
-  logging::debug(prefix + "Running the train program ");
-  pEngine->run(PopPrograms::ProgramIndex::TRAIN);
+  logging::debug(prefix + "Running the program ");
+  pEngine->run(PopPrograms::ProgramIndex::PROGRAM);
 
   anchorsHostFromHostStreams(stepio);
 }
@@ -806,9 +769,7 @@ Devicex::programFragmentIndex(Vertex *vertex) {
     throw error("Failed to determine fragment of vertex " + vertex->str() +
                 " from UNDEFINED phase. ");
   }
-  default: {
-    throw error("Failed to determine fragment of vertex");
-  }
+  default: { throw error("Failed to determine fragment of vertex"); }
   }
 }
 

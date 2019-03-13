@@ -20,7 +20,7 @@ def test_add_fp16(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     session.setDevice(tu.get_poplar_cpu_device())
     session.prepareDevice()
@@ -33,7 +33,7 @@ def test_add_fp16(tmpdir):
     }
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.infer(stepio)
+    session.run(stepio)
 
     assert (np.allclose(anchors[o], np.array([8., 11.], dtype=np.float16)))
 
@@ -54,7 +54,7 @@ def test_add_variable_fp16(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     session.setDevice(tu.get_poplar_cpu_device())
     session.prepareDevice()
@@ -65,7 +65,7 @@ def test_add_variable_fp16(tmpdir):
     inputs = {i1: np.array([1., 3.], dtype=np.float16)}
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.infer(stepio)
+    session.run(stepio)
 
     assert (np.allclose(anchors[o], np.array([3., 7.], dtype=np.float16)))
 
@@ -100,13 +100,13 @@ def test_fp16transpose(tmpdir):
 
     proto = builder.getModelProto()
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
     session.setDevice(tu.get_poplar_cpu_device())
     session.prepareDevice()
     anchors = session.initAnchorArrays()
     inputs = {d0: d0_data}
     stepio = poponnx.PyStepIO(inputs, anchors)
-    session.infer(stepio)
+    session.run(stepio)
 
     # numpy reference
     npout = np.transpose(c0_data) + np.transpose(d0_data)

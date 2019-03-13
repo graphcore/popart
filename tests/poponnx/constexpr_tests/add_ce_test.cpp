@@ -288,17 +288,14 @@ template <typename T> void ConstExprTest_Add_Type(std::string type) {
 
   auto proto = builder->getModelProto();
 
-  auto art       = AnchorReturnType("ALL");
-  auto dataFlow  = DataFlow(1, {{outId, art}});
-  auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(outId, "l1LossVal", 0.1)};
+  auto art      = AnchorReturnType("ALL");
+  auto dataFlow = DataFlow(1, {{outId, art}});
 
-  auto session = poponnx::Session::createFromOnnxModel(
+  auto session = poponnx::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
+      {}, // no losses
       InputShapeInfo(),
-      losses,
-      &optimizer,
       {}, // no SessionOptions
       Patterns({PreAliasPatternType::POSTNREPL}));
 
@@ -312,7 +309,7 @@ template <typename T> void ConstExprTest_Add_Type(std::string type) {
 
   session->prepareDevice();
   poponnx::StepIO stepio(inputs, anchors);
-  session->infer(stepio);
+  session->run(stepio);
 
   // Check the ir
   poponnx::logging::ir::err("input1 : {}", input1[0]);

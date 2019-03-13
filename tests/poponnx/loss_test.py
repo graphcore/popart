@@ -26,7 +26,7 @@ def test_3d_nll_loss_input():
     out = builder.aiOnnx.softmax([ip], axis=np.size(lshape))
     builder.addOutputTensor(out)
 
-    session = poponnx.Session(
+    session = poponnx.TrainingSession(
         fnModel=builder.getModelProto(),
         dataFeed=poponnx.DataFlow(
             1, {
@@ -43,7 +43,7 @@ def test_3d_nll_loss_input():
 
     anchors = session.initAnchorArrays()
     stepio = poponnx.PyStepIO({lb: lb_data.astype(np.int32)}, anchors)
-    session.evaluate(stepio)
+    session.run(stepio)
 
     ###
     # Pytorch

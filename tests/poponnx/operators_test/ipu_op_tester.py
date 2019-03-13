@@ -109,13 +109,20 @@ def ipu_op_tester(tmpdir):
             opts.enableVirtualGraphs = True
             opts.minimumVirtualGraphCount = 4
 
-            session = poponnx.Session(
-                fnModel=proto,
-                dataFeed=dataFlow,
-                losses=losses,
-                optimizer=optimizer,
-                passes=poponnx.Patterns(self.passes),
-                userOptions=opts)
+            if (step_type == 'infer'):
+                session = poponnx.InferenceSession(
+                    fnModel=proto,
+                    dataFeed=dataFlow,
+                    passes=poponnx.Patterns(self.passes),
+                    userOptions=opts)
+            elif (step_type == 'train'):
+                session = poponnx.Session(
+                    fnModel=proto,
+                    dataFeed=dataFlow,
+                    losses=losses,
+                    optimizer=optimizer,
+                    passes=poponnx.Patterns(self.passes),
+                    userOptions=opts)
 
             session.setDevice(
                 tu.get_ipu_model(numIPUs=opts.minimumVirtualGraphCount))
@@ -136,7 +143,7 @@ def ipu_op_tester(tmpdir):
             if (step_type == 'train'):
                 session.weightsFromHost()
 
-            getattr(session, step_type)(stepio)
+            session.run(stepio)
 
             ref_out = reference(RefData(bld._outputs, anchor_map))
 

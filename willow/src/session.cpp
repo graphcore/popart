@@ -16,51 +16,6 @@ namespace poponnx {
 
 Session::Session() {}
 
-void Session::configureFromOnnx(const std::string &modelProtoOrFilename,
-                                const DataFlow &df,
-                                const InputShapeInfo &perk,
-                                const std::vector<Loss *> &lossesIn,
-                                const Optimizer *optimizerIn,
-                                const SessionOptions &userOptions,
-                                const Patterns &patterns) {
-
-  logging::session::trace("Session::configureFromOnnx");
-
-  auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
-
-  ir.prepare(
-      {modelProto, perk, df, lossesIn, optimizerIn, userOptions, patterns});
-}
-
-std::unique_ptr<Session>
-Session::createFromOnnxModel(const std::string &model,
-                             const DataFlow &dataFlow,
-                             const InputShapeInfo &inputShapeInfo,
-                             const std::vector<Loss *> &losses,
-                             const Optimizer *optimizer,
-                             const SessionOptions &userOptions,
-                             const Patterns &patterns) {
-
-  logging::session::trace("Session::createFromOnnx");
-
-  // Note : Can not use make_unique as the implementation can not acces the
-  // private constructor
-  auto session = std::unique_ptr<Session>(new Session());
-  session->configureFromOnnx(model,
-                             dataFlow,
-                             inputShapeInfo,
-                             losses,
-                             optimizer,
-                             userOptions,
-                             patterns);
-  return session;
-}
-
-void Session::updateOptimizer(const Optimizer *optimizer) {
-  logging::session::trace("Session::updateOptimizer");
-  ir.updateOptimizer(optimizer);
-}
-
 void Session::setDevice(DeviceInfo &deviceInfo) {
   logging::session::trace("Session::setDevice({})", deviceInfo);
   device_.reset(new popx::Devicex(ir, deviceInfo));
@@ -99,59 +54,8 @@ void Session::weightsFromHost() {
   weightsFromHostCalled = true;
 }
 
-// write whatever optimizer tensors (learning rates,
-// momentum, initial momentum tensors (zero)) there are to device
-void Session::optimizerFromHost() {
-  logging::session::trace("Session::optimizerFromHost");
-
-  if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
-  }
-
-  device_->optimizerFromHost();
-}
-
-void Session::train(const IStepIO &stepio) {
-  logging::session::trace("Session::train");
-  if (!ir.canTrain()) {
-    throw error("Trying to train when not in training mode");
-  }
-
-  if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
-  }
-
-  if (ir.containsInitialisers() && weightsFromHostCalled == false) {
-    throw error(
-        "Must call weightsFromHost before {} as the model has initializers",
-        __func__);
-  }
-
-  device_->train(stepio);
-}
-
-void Session::evaluate(const IStepIO &stepio) {
-  logging::session::trace("Session::evaluate");
-  if (!ir.canEvaluate()) {
-    throw error("Trying to evaluate when not in evaluation mode");
-  }
-
-  if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
-  }
-
-  if (ir.containsInitialisers() && ir.isTraining() &&
-      weightsFromHostCalled == false) {
-    throw error("Must call weightsFromHost before evaluate as the model has "
-                "initializers "
-                "and the session has been created in training mode");
-  }
-
-  device_->evaluate(stepio);
-}
-
-void Session::infer(const IStepIO &stepio) {
-  logging::session::trace("Session::infer");
+void Session::run(const IStepIO &stepio) {
+  logging::session::trace("Session::run");
   if (!ir.canInfer()) {
     throw error("Trying to infer when not in inference mode");
   }
@@ -163,11 +67,11 @@ void Session::infer(const IStepIO &stepio) {
   if (ir.containsInitialisers() && ir.isTraining() &&
       weightsFromHostCalled == false) {
     throw error(
-        "Must call weightsFromHost before infer as the model has initializers "
+        "Must call weightsFromHost before run as the model has initializers "
         "and the session has been created in training mode");
   }
 
-  device_->infer(stepio);
+  device_->run(stepio);
 }
 
 // write current model to ONNX file
@@ -242,4 +146,97 @@ void Session::resetHostWeights(const std::string &modelProtoOrFilename) {
   weightsFromHostCalled = false;
 }
 
+InferenceSession::InferenceSession() : Session() {}
+
+InferenceSession::~InferenceSession() = default;
+
+void InferenceSession::configureFromOnnx(
+    const std::string &modelProtoOrFilename,
+    const DataFlow &df,
+    const std::vector<Loss *> &losses,
+    const InputShapeInfo &perk,
+    const SessionOptions &userOptions,
+    const Patterns &patterns) {
+
+  logging::session::trace("InferenceSession::configureFromOnnx");
+
+  auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
+
+  ir.prepare({modelProto, perk, df, losses, nullptr, userOptions, patterns});
+}
+
+std::unique_ptr<InferenceSession>
+InferenceSession::createFromOnnxModel(const std::string &model,
+                                      const DataFlow &dataFlow,
+                                      const std::vector<Loss *> &losses,
+                                      const InputShapeInfo &inputShapeInfo,
+                                      const SessionOptions &userOptions,
+                                      const Patterns &patterns) {
+
+  logging::session::trace("InferenceSession::createFromOnnx");
+
+  auto session = std::unique_ptr<InferenceSession>(new InferenceSession());
+  session->configureFromOnnx(
+      model, dataFlow, losses, inputShapeInfo, userOptions, patterns);
+  return session;
+}
+
+TrainingSession::TrainingSession() : Session() {}
+
+TrainingSession::~TrainingSession() = default;
+
+void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
+                                        const DataFlow &df,
+                                        const std::vector<Loss *> &lossesIn,
+                                        const Optimizer &optimizerIn,
+                                        const InputShapeInfo &perk,
+                                        const SessionOptions &userOptions,
+                                        const Patterns &patterns) {
+
+  logging::session::trace("TrainingSession::configureFromOnnx");
+
+  auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
+
+  ir.prepare(
+      {modelProto, perk, df, lossesIn, &optimizerIn, userOptions, patterns});
+}
+
+std::unique_ptr<TrainingSession>
+TrainingSession::createFromOnnxModel(const std::string &model,
+                                     const DataFlow &dataFlow,
+                                     const std::vector<Loss *> &losses,
+                                     const Optimizer &optimizer,
+                                     const InputShapeInfo &inputShapeInfo,
+                                     const SessionOptions &userOptions,
+                                     const Patterns &patterns) {
+
+  logging::session::trace("TrainingSession::createFromOnnx");
+
+  auto session = std::unique_ptr<TrainingSession>(new TrainingSession());
+  session->configureFromOnnx(model,
+                             dataFlow,
+                             losses,
+                             optimizer,
+                             inputShapeInfo,
+                             userOptions,
+                             patterns);
+  return session;
+}
+
+void TrainingSession::updateOptimizer(const Optimizer *optimizer) {
+  logging::session::trace("TrainingSession::updateOptimizer");
+  ir.updateOptimizer(optimizer);
+}
+
+// write whatever optimizer tensors (learning rates,
+// momentum, initial momentum tensors (zero)) there are to device
+void TrainingSession::optimizerFromHost() {
+  logging::session::trace("TrainingSession::optimizerFromHost");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
+  device_->optimizerFromHost();
+}
 } // namespace poponnx

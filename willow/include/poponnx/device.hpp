@@ -18,10 +18,8 @@ public:
   virtual void weightsFromHost()    = 0;
   virtual void weightsToHost(const std::map<TensorId, MutableVoidData> &) = 0;
   // write optimizer-specific tensors (learning rates, etc.) to Device
-  virtual void optimizerFromHost()       = 0;
-  virtual void infer(const IStepIO &)    = 0;
-  virtual void evaluate(const IStepIO &) = 0;
-  virtual void train(const IStepIO &)    = 0;
+  virtual void optimizerFromHost()  = 0;
+  virtual void run(const IStepIO &) = 0;
   const Ir &ir() const { return _ir; }
   virtual std::string getSummaryReport() const                         = 0;
   virtual std::string getGraphReport() const                           = 0;

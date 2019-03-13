@@ -141,15 +141,14 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale1) {
     auto optimizer = ConstSGD(0.01);
     std::vector<Loss *> losses{};
 
-    auto session =
-        poponnx::Session::createFromOnnxModel(proto,
-                                              data_flow,
-                                              poponnx::InputShapeInfo(),
-                                              {},        // no losses
-                                              nullptr,   // no optimizer
-                                              {},        // no session options
-                                              Patterns() // no patterns
-        );
+    auto session = poponnx::InferenceSession::createFromOnnxModel(
+        proto,
+        data_flow,
+        {}, // no losses
+        poponnx::InputShapeInfo(),
+        {},        // no session options
+        Patterns() // no patterns
+    );
 
     auto cpuDevice =
         poponnx::DeviceManager::createDeviceManager().createCpuDevice();
@@ -190,7 +189,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale1) {
 
     poponnx::StepIO stepio(inputs, anchors);
 
-    session->infer(stepio);
+    session->run(stepio);
 
     BOOST_CHECK(std::equal(baseline.data(),
                            baseline.data() + 4,

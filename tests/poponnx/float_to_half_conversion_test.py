@@ -97,14 +97,14 @@ def _check_anchors(float_anchors, half_anchors):
 def _run_model(model, inputs, output, batchesPerStep=1):
     dataFlow = poponnx.DataFlow(batchesPerStep,
                                 {output: poponnx.AnchorReturnType("ALL")})
-    session = poponnx.Session(fnModel=model, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=model, dataFeed=dataFlow)
 
     session.setDevice(tu.get_poplar_cpu_device())
     session.prepareDevice()
 
     anchors = session.initAnchorArrays()
     stepio = poponnx.PyStepIO(inputs, anchors)
-    session.infer(stepio)
+    session.run(stepio)
 
     return anchors
 

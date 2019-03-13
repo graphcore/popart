@@ -30,7 +30,8 @@ def test_virtual_graph():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+    s = poponnx.InferenceSession(
+        fnModel=proto, dataFeed=dataFlow, userOptions=opts)
     s.setDevice(tu.get_ipu_model(numIPUs=2))
     s.prepareDevice()
 
@@ -64,7 +65,8 @@ def test_virtual_graph2():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+    s = poponnx.InferenceSession(
+        fnModel=proto, dataFeed=dataFlow, userOptions=opts)
     s.setDevice(tu.get_ipu_model(numIPUs=2))
     s.prepareDevice()
 
@@ -110,7 +112,7 @@ def test_virtual_graph3():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.Session(
+    s = poponnx.TrainingSession(
         fnModel=proto,
         dataFeed=dataFlow,
         losses=losses,
@@ -129,7 +131,7 @@ def test_virtual_graph3():
     inputs = {i1: data1, i2: data2, i3: data3, i4: data4}
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    s.train(stepio)
+    s.run(stepio)
     s.weightsFromHost()
 
 
@@ -178,7 +180,7 @@ def test_virtual_graph4():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.Session(
+    s = poponnx.TrainingSession(
         fnModel=proto,
         dataFeed=dataFlow,
         losses=losses,
@@ -196,7 +198,7 @@ def test_virtual_graph4():
     inputs = {i1: data1, i2: data2, i3: data3}
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    s.train(stepio)
+    s.run(stepio)
     s.weightsFromHost()
 
 

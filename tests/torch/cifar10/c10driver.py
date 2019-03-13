@@ -141,14 +141,31 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
 
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
-    session = poponnx.Session(
-        fnModel=modelProtoX,
-        inputShapeInfo=inputShapeInfo,
-        dataFeed=dataFeed,
-        losses=torchWriter.losses,
-        optimizer=torchWriter.optimizer,
-        passes=passes,
-        userOptions=opts)
+
+    if mode == 'infer':
+        session = poponnx.InferenceSession(
+            fnModel=modelProtoX,
+            inputShapeInfo=inputShapeInfo,
+            dataFeed=dataFeed,
+            passes=passes,
+            userOptions=opts)
+    elif mode == 'evaluate':
+        session = poponnx.InferenceSession(
+            fnModel=modelProtoX,
+            inputShapeInfo=inputShapeInfo,
+            dataFeed=dataFeed,
+            losses=torchWriter.losses,
+            passes=passes,
+            userOptions=opts)
+    else:
+        session = poponnx.TrainingSession(
+            fnModel=modelProtoX,
+            inputShapeInfo=inputShapeInfo,
+            dataFeed=dataFeed,
+            losses=torchWriter.losses,
+            optimizer=torchWriter.optimizer,
+            passes=passes,
+            userOptions=opts)
 
     # get the tensor info for the anchors
     anchorArrays = session.initAnchorArrays()
@@ -177,8 +194,8 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         print("Writing weights to device")
         session.weightsFromHost()
 
-    print("Writing Optimizer tensors to device, if there are any")
-    session.optimizerFromHost()
+        print("Writing Optimizer tensors to device, if there are any")
+        session.optimizerFromHost()
 
     def addStepDimension(data, batchesPerStep):
         if batchesPerStep == 1:
@@ -291,7 +308,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
 
                 # take batchesPerStep passes (1 step), PopOnnx
                 pystepio = poponnx.PyStepIO(inputs, anchorArrays)
-                session.train(pystepio)
+                session.run(pystepio)
 
                 # write models to file
                 fnTorchModel = getFnTorch(stepi)
@@ -320,7 +337,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
 
                 # take batchesPerStep passes (1 step), PopOnnx
                 pystepio = poponnx.PyStepIO(inputs, anchorArrays)
-                session.evaluate(pystepio)
+                session.run(pystepio)
                 pLosses = getLossesFromAnchors(torchWriter, anchorArrays)
 
                 # Compare torch loss tensors with poponnx loss from
@@ -342,7 +359,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
 
                 # take batchesPerStep passes (1 step), PopOnnx
                 pystepio = poponnx.PyStepIO(inputs, anchorArrays)
-                session.infer(pystepio)
+                session.run(pystepio)
 
                 # Compare torch outputs tensors with poponnx output from
                 # anchor tensor maps

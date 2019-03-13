@@ -21,7 +21,7 @@ def test_valid_recompute_options():
     opts.enableAutoRecomputation = True
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        session = poponnx.Session(
+        session = poponnx.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFeed=poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")}),
             optimizer=poponnx.ConstSGD(0.001),
