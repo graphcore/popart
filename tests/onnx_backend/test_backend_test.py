@@ -58,7 +58,7 @@ class Context:
                 i = i + 1
 
         stepio = poponnx.PyStepIO(inputmap, anchors)
-        self.session.infer(stepio)
+        self.session.run(stepio)
 
         output_tensor = self.model.graph.output[0].name
         outputs = [anchors[output_tensor]]
@@ -79,8 +79,8 @@ class IpuBackend(onnx.backend.base.Backend):
         model = onnx.shape_inference.infer_shapes(model)
         value_infos = {
             vi.name: vi
-            for vi in itertools.chain(model.graph.value_info, model.graph.
-                                      output)
+            for vi in itertools.chain(model.graph.value_info,
+                                      model.graph.output)
         }
 
         # if do_enforce_test_coverage_whitelist(model):
@@ -102,7 +102,7 @@ class IpuBackend(onnx.backend.base.Backend):
         for output in model.graph.output:
             anchors[output.name] = poponnx.AnchorReturnType("ALL")
 
-        session = poponnx.Session(
+        session = poponnx.InferenceSession(
             fnModel=model.SerializeToString(),
             dataFeed=poponnx.DataFlow(1, anchors),
             userOptions=opts)

@@ -26,7 +26,7 @@ In this example, a simple addition is prepared for execution.
   anchors = {o : poponnx.AnchorReturnType("ALL")}
   dataFeed = poponnx.DataFlow(1, anchors)
 
-  session = poponnx.Session(proto, dataFeed)
+  session = poponnx.InferenceSession(proto, dataFeed)
 
 Adding operations to the graph
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

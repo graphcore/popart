@@ -491,7 +491,7 @@ def test_import_torch_lstm(tmpdir):
         dataFlow = poponnx.DataFlow(1, anchors)
         options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
         device = poponnx.DeviceManager().createIpuModelDevice(options)
-        s = poponnx.Session(fnModel=onnx_file_name, dataFeed=dataFlow)
+        s = poponnx.InferenceSession(fnModel=onnx_file_name, dataFeed=dataFlow)
         s.setDevice(device)
         anchor_map = s.initAnchorArrays()
         s.prepareDevice()
@@ -503,7 +503,7 @@ def test_import_torch_lstm(tmpdir):
             'initial_c': inputs[2]
         }
         stepio = poponnx.PyStepIO(input_map, anchor_map)
-        s.infer(stepio)
+        s.run(stepio)
 
         return (anchor_map['Y'], anchor_map['Y_h'], anchor_map['Y_c'])
 
@@ -523,7 +523,7 @@ def test_import_torch_lstm(tmpdir):
     assert len(poponnx_out) == 3 and len(torch_out) == 3
 
     for i, (po, to) in enumerate(zip(poponnx_out, torch_out)):
-        print(f'Checking output {i}')
+        print('Checking output {}'.format(i))
         assert np.allclose(po, to.data.numpy())
 
 
@@ -582,7 +582,7 @@ def test_import_torch_lstm_train(tmpdir):
 
         # manually update parameters
         for name, param in torch_lstm.named_parameters():
-            print(f'Updating lstm param {name}')
+            print('Updating lstm param {}'.format(name))
             param.data.sub_(0.1 * param.grad.data)
 
         outputs = {
@@ -622,7 +622,7 @@ def test_import_torch_lstm_train(tmpdir):
         options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
         device = poponnx.DeviceManager().createIpuModelDevice(options)
         print('Creating session')
-        s = poponnx.Session(
+        s = poponnx.TrainingSession(
             fnModel=onnx_file_name,
             dataFeed=dataFlow,
             optimizer=optimizer,
@@ -641,7 +641,7 @@ def test_import_torch_lstm_train(tmpdir):
         }
         stepio = poponnx.PyStepIO(input_map, anchor_map)
         s.weightsFromHost()
-        s.train(stepio)
+        s.run(stepio)
         s.modelToHost(get_poponnx_fname(onnx_file_name))
 
         anchor_map['d__W'] = anchor_map.pop('d__3')
@@ -677,17 +677,17 @@ def test_import_torch_lstm_train(tmpdir):
     for key in poponnx_out.keys():
         po = poponnx_out[key]
         to = torch_out[key]
-        print(f'Checking {key}')
+        print('Checking {}'.format(key))
         if po.shape != to.shape:
             errors += 1
-            print(f'tensors {key} are not matching shapes')
+            print('tensors {} are not matching shapes'.format(key))
             print()
         elif not np.allclose(po, to):
             errors += 1
-            print(f'tensors {key} are not close')
+            print('tensors {} are not close'.format(key))
             print('  poponnx')
-            print(f'    {po}')
+            print('    {}'.format(po))
             print('  torch')
-            print(f'    {to}')
+            print('    {}'.format(to))
             print()
     assert errors == 0

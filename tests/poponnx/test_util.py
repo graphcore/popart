@@ -97,14 +97,22 @@ class BasicSession:
         losses = [poponnx.L1Loss(output, "l1LossVal", 0.1)]
         proto = self.builder.getModelProto()
 
-        session = poponnx.Session(
-            fnModel=proto,
-            inputShapeInfo=self.early_info,
-            dataFeed=dataFlow,
-            losses=losses,
-            optimizer=optimizer,
-            passes=poponnx.Patterns(self.passes),
-            userOptions=self.opts)
+        if step_method == 'infer':
+            session = poponnx.InferenceSession(
+                fnModel=proto,
+                inputShapeInfo=self.early_info,
+                dataFeed=dataFlow,
+                passes=poponnx.Patterns(self.passes),
+                userOptions=self.opts)
+        elif step_method == 'train':
+            session = poponnx.TrainingSession(
+                fnModel=proto,
+                inputShapeInfo=self.early_info,
+                dataFeed=dataFlow,
+                losses=losses,
+                optimizer=optimizer,
+                passes=poponnx.Patterns(self.passes),
+                userOptions=self.opts)
 
         session.setDevice(get_poplar_cpu_device())
         anchors = session.initAnchorArrays()
@@ -113,6 +121,6 @@ class BasicSession:
 
         stepio = poponnx.PyStepIO(self.inputs, anchors)
         # step method should have a value of 'infer', 'train' or 'evaluate'
-        getattr(session, step_method)(stepio)
+        session.run(stepio)
 
         return anchors

@@ -46,6 +46,8 @@ template <typename T> std::vector<Match> getMatches(const std::vector<T *> &s);
 // (the RinseMatcher class is for power-users only)
 //-------------------------------------------------
 
+std::ostream &operator<<(std::ostream &stream, const Match &match);
+
 std::ostream &operator<<(std::ostream &stream, const Match &match) {
   stream << match.length << " | [";
   if (match.starts.size() != 0) {
@@ -250,9 +252,9 @@ std::vector<Match> RinseMatcher<T>::separate(
         local.push_back({{start}, seq_length});
       }
     }
-    for (auto &match : local) {
-      if (match.starts.size() > 1) {
-        repeateds.push_back(match);
+    for (auto &match_2 : local) {
+      if (match_2.starts.size() > 1) {
+        repeateds.push_back(match_2);
       }
     }
   }

@@ -46,17 +46,14 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
-  auto dataFlow  = DataFlow(1, {{out, art}});
-  auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
+  auto art      = AnchorReturnType("ALL");
+  auto dataFlow = DataFlow(1, {{out, art}});
 
-  auto session = poponnx::Session::createFromOnnxModel(
+  auto session = poponnx::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
+      {},
       poponnx::InputShapeInfo(),
-      losses,
-      &optimizer,
       {},
       poponnx::Patterns({poponnx::PreAliasPatternType::POSTNREPL}));
 
@@ -82,7 +79,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
 
   poponnx::StepIO stepio(inputs, anchors);
 
-  session->infer(stepio);
+  session->run(stepio);
 
   poponnx::logging::ir::err("const : {}", constData);
   poponnx::logging::ir::err("input : {}", inData);
@@ -123,17 +120,14 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art       = AnchorReturnType("ALL");
-  auto dataFlow  = DataFlow(1, {{out, art}});
-  auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
+  auto art      = AnchorReturnType("ALL");
+  auto dataFlow = DataFlow(1, {{out, art}});
 
-  auto session = poponnx::Session::createFromOnnxModel(
+  auto session = poponnx::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
+      {},
       poponnx::InputShapeInfo(),
-      losses,
-      &optimizer,
       {},
       poponnx::Patterns({poponnx::PreAliasPatternType::POSTNREPL}));
 
@@ -160,7 +154,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
 
   poponnx::StepIO stepio(inputs, anchors);
 
-  session->infer(stepio);
+  session->run(stepio);
 
   poponnx::logging::ir::err("const : {}", constData);
   poponnx::logging::ir::err("input : {}", inData);

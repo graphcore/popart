@@ -40,7 +40,7 @@ def test_constants_preserved():
 
     opts = poponnx.SessionOptionsCore()
 
-    session = poponnx.Session(
+    session = poponnx.TrainingSession(
         fnModel=proto,
         dataFeed=dataFlow,
         userOptions=opts,
@@ -57,7 +57,7 @@ def test_constants_preserved():
         i2: np.array([[4, 4], [4, 4]]).astype(np.float32),
     }
     pystepio = poponnx.PyStepIO(inputs, anchorArrays)
-    session.train(pystepio)
+    session.run(pystepio)
 
     session.modelToHost('session_proto.onnx')
 

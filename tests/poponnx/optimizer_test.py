@@ -32,7 +32,7 @@ def trainSession(anchors, optimizer, stepSize):
 
     opts = poponnx.SessionOptionsCore()
 
-    session = poponnx.Session(
+    session = poponnx.TrainingSession(
         fnModel=proto,
         dataFeed=poponnx.DataFlow(stepSize, anchors),
         losses=losses,
@@ -87,7 +87,7 @@ def test_sgd_param_check():
 
         stepio = poponnx.PyStepIO(inputsUserSgd, anchorsArrays)
 
-        session.train(stepio)
+        session.run(stepio)
 
         assert (np.array_equal(anchorsArrays["learnRate_FLOAT"][0], stepLr))
         # The weight decay tensor is scaled by lr on the host
@@ -136,8 +136,8 @@ def test_constsgd_vs_sgd():
                 poponnx.SGD(learning_rate=2 * lr, weight_decay=2 * wd))
             sessionUserSgd.optimizerFromHost()
 
-        sessionConstSgd.train(stepioConstSgd)
-        sessionUserSgd.train(stepioUserSgd)
+        sessionConstSgd.run(stepioConstSgd)
+        sessionUserSgd.run(stepioUserSgd)
 
         if step == numSteps - 1:
             # We expect to see the diverging losses on the second forward pass
@@ -187,7 +187,7 @@ def test_sgd_with_float16_model():
 
     opts = poponnx.SessionOptionsCore()
 
-    session = poponnx.Session(
+    session = poponnx.TrainingSession(
         fnModel=proto,
         dataFeed=poponnx.DataFlow(1, anchorNames),
         losses=losses,
@@ -202,4 +202,4 @@ def test_sgd_with_float16_model():
     anchorArrays = session.initAnchorArrays()
 
     stepio = poponnx.PyStepIO({inid1: input1}, anchorArrays)
-    session.train(stepio)
+    session.run(stepio)

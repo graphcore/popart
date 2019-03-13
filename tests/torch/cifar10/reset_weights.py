@@ -33,7 +33,7 @@ def get_trainset():
 def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, passes, opts):
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
-    session = poponnx.Session(
+    session = poponnx.TrainingSession(
         fnModel=fnModel,
         inputShapeInfo=inputShapeInfo,
         dataFeed=dataFeed,

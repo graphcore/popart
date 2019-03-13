@@ -18,6 +18,8 @@ public:
   // This Op modifies the input at index getVarIndex()
   view::Region modifies(InIndex) const final;
 
+  float getSubgraphValue() const final { return 0.1f; }
+
 private:
   TensorId varId;
   TensorId varGradId;

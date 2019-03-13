@@ -60,7 +60,7 @@ graph_transformer = poponnx.GraphTransformer(builder.getModelProto())
 graph_transformer.convertAllFixedPointInitializersToConstants()
 
 # Create forward pass session
-session = poponnx.Session(
+session = poponnx.InferenceSession(
     fnModel=graph_transformer.getModelProto(),
     dataFeed=poponnx.DataFlow(1, {output: poponnx.AnchorReturnType("ALL")}))
 
@@ -69,4 +69,3 @@ session.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
 session.prepareDevice()
 
 ## For now just forward pass only
-## Once working, create backward pass and run an inference/training step

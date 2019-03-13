@@ -20,6 +20,8 @@ public:
   uint64_t getDestIpu() { return destIpu; }
 
   void appendAttributes(OpSerialiserBase &) const override;
+
+  float getSubgraphValue() const final { return 0.1f; }
 };
 } // namespace poponnx
 

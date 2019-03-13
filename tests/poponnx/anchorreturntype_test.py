@@ -20,7 +20,7 @@ def identity_inference_session(tmpdir, inputShape, inputArray, BPS, art):
     batchesPerStep = BPS
     dataFlow = poponnx.DataFlow(batchesPerStep, {o: art})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     session.setDevice(tu.get_poplar_cpu_device())
     session.prepareDevice()
@@ -32,7 +32,7 @@ def identity_inference_session(tmpdir, inputShape, inputArray, BPS, art):
     }
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.infer(stepio)
+    session.run(stepio)
 
     return anchors[o]
 

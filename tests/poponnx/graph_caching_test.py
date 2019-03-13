@@ -40,7 +40,7 @@ def test_convolution_cached_by_default():
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = poponnx.Session(
+    session = poponnx.TrainingSession(
         fnModel=proto,
         dataFeed=dataFlow,
         losses=losses,
@@ -58,7 +58,7 @@ def test_convolution_cached_by_default():
     inputs = {i1: data, i2: filt}
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.train(stepio)
+    session.run(stepio)
     session.weightsFromHost()
     session.optimizerFromHost()
 
@@ -109,7 +109,7 @@ def test_convolution_cached_set_to_true():
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = poponnx.Session(
+    session = poponnx.TrainingSession(
         fnModel=proto,
         dataFeed=dataFlow,
         losses=losses,
@@ -127,7 +127,7 @@ def test_convolution_cached_set_to_true():
     inputs = {i1: data, i2: filt}
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.train(stepio)
+    session.run(stepio)
     session.weightsFromHost()
     session.optimizerFromHost()
 
@@ -178,7 +178,7 @@ def test_convolution_cached_set_to_false():
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = poponnx.Session(
+    session = poponnx.TrainingSession(
         fnModel=proto,
         dataFeed=dataFlow,
         losses=losses,
@@ -196,7 +196,7 @@ def test_convolution_cached_set_to_false():
     inputs = {i1: data, i2: filt}
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.train(stepio)
+    session.run(stepio)
     session.weightsFromHost()
     session.optimizerFromHost()
 
@@ -249,7 +249,7 @@ def test_convolution_some_convolutions_cached():
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = poponnx.Session(
+    session = poponnx.TrainingSession(
         fnModel=proto,
         dataFeed=dataFlow,
         losses=losses,
@@ -267,7 +267,7 @@ def test_convolution_some_convolutions_cached():
     inputs = {i1: data, i2: filt}
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.train(stepio)
+    session.run(stepio)
     session.weightsFromHost()
     session.optimizerFromHost()
 
@@ -326,7 +326,7 @@ def test_convolution_disable_all():
     opts.reportOptions = {"showExecutionSteps": "true"}
     opts.enableConvolutionGraphCaching = False
 
-    session = poponnx.Session(
+    session = poponnx.TrainingSession(
         fnModel=proto,
         dataFeed=dataFlow,
         losses=losses,
@@ -344,7 +344,7 @@ def test_convolution_disable_all():
     inputs = {i1: data, i2: filt}
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.train(stepio)
+    session.run(stepio)
     session.weightsFromHost()
     session.optimizerFromHost()
 
@@ -395,7 +395,7 @@ def test_matmul_infer_cached_by_default():
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = poponnx.Session(
+    session = poponnx.InferenceSession(
         fnModel=proto, dataFeed=dataFlow, userOptions=opts)
 
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
@@ -416,7 +416,7 @@ def test_matmul_infer_cached_by_default():
     }
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.infer(stepio)
+    session.run(stepio)
 
     # Check that there is only one convolution computation set.
     summaryReport = session.getSummaryReport()
@@ -462,7 +462,7 @@ def test_matmul_infer_not_cached():
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = poponnx.Session(
+    session = poponnx.InferenceSession(
         fnModel=proto, dataFeed=dataFlow, userOptions=opts)
 
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
@@ -483,7 +483,7 @@ def test_matmul_infer_not_cached():
     }
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.infer(stepio)
+    session.run(stepio)
 
     summaryReport = session.getSummaryReport()
 
@@ -539,7 +539,7 @@ def test_matmul_train_cached_by_default():
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = poponnx.Session(
+    session = poponnx.TrainingSession(
         fnModel=proto,
         dataFeed=dataFlow,
         losses=losses,
@@ -564,7 +564,7 @@ def test_matmul_train_cached_by_default():
     }
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.train(stepio)
+    session.run(stepio)
     session.weightsFromHost()
     session.optimizerFromHost()
 
@@ -627,7 +627,7 @@ def test_gemm_train_cached_by_default():
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
-    session = poponnx.Session(
+    session = poponnx.TrainingSession(
         fnModel=proto,
         dataFeed=dataFlow,
         losses=losses,
@@ -657,7 +657,7 @@ def test_gemm_train_cached_by_default():
     }
     stepio = poponnx.PyStepIO(inputs, anchors)
 
-    session.train(stepio)
+    session.run(stepio)
     session.weightsFromHost()
     session.optimizerFromHost()
 

@@ -16,46 +16,11 @@ class DeviceInfo;
  */
 class Session {
 
+protected:
   Session();
 
 public:
-  ~Session();
-
-  /** Create a runtime class for executing an ONNX graph on a set of IPU
-   *  hardware.
-   *
-   * \param model Either an ONNX model protobuf, or the name of a file
-   *              containing an ONNX model protobuf
-   * \param inputShapeInfo Information about the shapes of input and output
-   *                       tensors
-   * \param dataFlow Configuration for the data feeds and fetches
-   * \param losses A list of loss layers to use when training
-   * \param optimizer The name of an optimizer to use when training
-   * \param userOptions String to configure session options
-   * \param patterns Optimization patterns to apply
-   */
-
-  static std::unique_ptr<Session>
-  createFromOnnxModel(const std::string &model,
-                      const DataFlow &dataFlow,
-                      const InputShapeInfo &inputShapeInfo = InputShapeInfo(),
-                      const std::vector<Loss *> &losses    = {},
-                      const Optimizer *optimizer           = nullptr,
-                      const SessionOptions &userOptions    = SessionOptions(),
-                      const Patterns &patterns             = Patterns());
-
-  /** Update the optimizer.
-   *
-   * Note that the optimizer passed in must be compatible with that passed to
-   * the constructor. For example, you cannot update to an Optimizer which uses
-   * momentum here, if the Optimizer passed to the constructor did not have
-   * momentum. Reason: The Ir would need to change to incorporate momentum, but
-   * the Ir is frozen once constructed. NB: Must call optimizerFromHost for this
-   * update to take effect on the device.
-   *
-   * \param optimizer A pointer to a poponnx::Optimizer
-   */
-  void updateOptimizer(const Optimizer *optimizer);
+  virtual ~Session() = 0;
 
   /**
    * Select a device type.
@@ -83,34 +48,12 @@ public:
   void weightsFromHost();
 
   /**
-   * write whatever optimizer tensors (learning rates,
-   * momentum, initial momentum tensors (zero)) there are to device
-   */
-  void optimizerFromHost();
-
-  /**
-   * Perform one training step.
+   * Perform one step.
    *
    * input data  : from address in stepIO.in
    * output data : to addresses in stepIO.out
    */
-  void train(const IStepIO &stepIO);
-
-  /**
-   * Perform one evaluation step.
-   *
-   * input data  : from address in stepIO.in
-   * output data : to addresses in stepIO.out
-   */
-  void evaluate(const IStepIO &stepIO);
-
-  /**
-   * Perform one inference step.
-   *
-   * input data  : from address in stepIO.in
-   * output data : to addresses in stepIO.out
-   */
-  void infer(const IStepIO &stepIO);
+  void run(const IStepIO &stepIO);
 
   /**
    * Write current model to ONNX file
@@ -178,7 +121,7 @@ public:
    */
   void resetHostWeights(const std::string &model);
 
-private:
+protected:
   /**
    * abstraction of the computation, the Ir is where
    * all the compute graph optimisations, backwards pass construction,
@@ -196,15 +139,104 @@ private:
    * Flag to indicate if weightsFromHost has been called
    */
   bool weightsFromHostCalled = false;
+};
 
+class InferenceSession : public Session {
+
+  InferenceSession();
+
+public:
+  ~InferenceSession() override;
+
+  /** Create a runtime class for executing an ONNX graph on a set of IPU
+   *  hardware for inference
+   *
+   * \param model Either an ONNX model protobuf, or the name of a file
+   *              containing an ONNX model protobuf
+   * \param inputShapeInfo Information about the shapes of input and output
+   *                       tensors
+   * \param losses An optional list of loss layers to use after inference
+   * \param dataFlow Configuration for the data feeds and fetches
+   * \param userOptions String to configure session options
+   * \param patterns Optimization patterns to apply
+   */
+
+  static std::unique_ptr<InferenceSession>
+  createFromOnnxModel(const std::string &model,
+                      const DataFlow &dataFlow,
+                      const std::vector<Loss *> &losses    = {},
+                      const InputShapeInfo &inputShapeInfo = InputShapeInfo(),
+                      const SessionOptions &userOptions    = SessionOptions(),
+                      const Patterns &patterns             = Patterns());
+
+private:
   void configureFromOnnx(const std::string &model,
                          const DataFlow &dataFlow,
-                         const InputShapeInfo &inputShapeInfo,
                          const std::vector<Loss *> &losses,
-                         const Optimizer *optimizer,
+                         const InputShapeInfo &inputShapeInfo,
                          const SessionOptions &userOptions,
                          const Patterns &patterns);
 };
+
+class TrainingSession : public Session {
+
+  TrainingSession();
+
+public:
+  ~TrainingSession() override;
+
+  /** Create a runtime class for executing an ONNX graph on a set of IPU
+   *  hardware for training
+   *
+   * \param model Either an ONNX model protobuf, or the name of a file
+   *              containing an ONNX model protobuf
+   * \param inputShapeInfo Information about the shapes of input and output
+   *                       tensors
+   * \param dataFlow Configuration for the data feeds and fetches
+   * \param losses A list of loss layers to use when training
+   * \param optimizer The name of an optimizer to use when training
+   * \param userOptions String to configure session options
+   * \param patterns Optimization patterns to apply
+   */
+
+  static std::unique_ptr<TrainingSession>
+  createFromOnnxModel(const std::string &model,
+                      const DataFlow &dataFlow,
+                      const std::vector<Loss *> &losses,
+                      const Optimizer &optimizer,
+                      const InputShapeInfo &inputShapeInfo = InputShapeInfo(),
+                      const SessionOptions &userOptions    = SessionOptions(),
+                      const Patterns &patterns             = Patterns());
+
+  /** Update the optimizer.
+   *
+   * Note that the optimizer passed in must be compatible with that passed to
+   * the constructor. For example, you cannot update to an Optimizer which uses
+   * momentum here, if the Optimizer passed to the constructor did not have
+   * momentum. Reason: The Ir would need to change to incorporate momentum, but
+   * the Ir is frozen once constructed. NB: Must call optimizerFromHost for this
+   * update to take effect on the device.
+   *
+   * \param optimizer A pointer to a poponnx::Optimizer
+   */
+  void updateOptimizer(const Optimizer *optimizer);
+
+  /**
+   * write whatever optimizer tensors (learning rates,
+   * momentum, initial momentum tensors (zero)) there are to device
+   */
+  void optimizerFromHost();
+
+private:
+  void configureFromOnnx(const std::string &model,
+                         const DataFlow &dataFlow,
+                         const std::vector<Loss *> &losses,
+                         const Optimizer &optimizer,
+                         const InputShapeInfo &inputShapeInfo,
+                         const SessionOptions &userOptions,
+                         const Patterns &patterns);
+};
+
 } // namespace poponnx
 
 #endif

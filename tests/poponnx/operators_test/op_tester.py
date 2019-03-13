@@ -105,13 +105,20 @@ def op_tester(tmpdir):
             opts = poponnx.SessionOptionsCore()
             opts.logDir = self.logging_dir
 
-            session = poponnx.Session(
-                fnModel=proto,
-                dataFeed=dataFlow,
-                losses=losses,
-                optimizer=optimizer,
-                passes=poponnx.Patterns(self.passes),
-                userOptions=opts)
+            if step_type == 'infer':
+                session = poponnx.InferenceSession(
+                    fnModel=proto,
+                    dataFeed=dataFlow,
+                    passes=poponnx.Patterns(self.passes),
+                    userOptions=opts)
+            else:
+                session = poponnx.TrainingSession(
+                    fnModel=proto,
+                    dataFeed=dataFlow,
+                    losses=losses,
+                    optimizer=optimizer,
+                    passes=poponnx.Patterns(self.passes),
+                    userOptions=opts)
 
             session.setDevice(tu.get_poplar_cpu_device())
             anchor_map = session.initAnchorArrays()
@@ -131,7 +138,8 @@ def op_tester(tmpdir):
             if (step_type == 'train'):
                 session.weightsFromHost()
 
-            getattr(session, step_type)(stepio)
+            #getattr(session, step_type)(stepio)
+            session.run(stepio)
 
             ref_out = reference(RefData(bld._outputs, anchor_map))
 

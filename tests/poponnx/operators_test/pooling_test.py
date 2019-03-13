@@ -80,7 +80,7 @@ def test_average_pool_with_count_include_pad(op_tester):
     opts = poponnx.SessionOptionsCore()
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        poponnx.Session(
+        poponnx.TrainingSession(
             fnModel=proto,
             dataFeed=dataFlow,
             losses=losses,

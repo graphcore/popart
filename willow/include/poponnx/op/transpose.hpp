@@ -32,6 +32,8 @@ public:
 
   bool canBeReplacedByIdentity() override;
 
+  float getSubgraphValue() const final { return 0.1f; }
+
 private:
   // the new permutation of the tensor axes
   std::vector<int64_t> perm;

@@ -17,7 +17,7 @@ def test_summary_report_before_execution(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     session.initAnchorArrays()
     session.setDevice(tu.get_poplar_cpu_device())
@@ -42,7 +42,7 @@ def test_graph_report_before_execution(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     session.initAnchorArrays()
     session.setDevice(tu.get_poplar_cpu_device())
@@ -67,7 +67,7 @@ def test_execution_report_before_execution(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     session.initAnchorArrays()
     session.setDevice(tu.get_poplar_cpu_device())
@@ -92,7 +92,7 @@ def test_summary_report_with_cpu_device(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     session.initAnchorArrays()
     session.setDevice(tu.get_poplar_cpu_device())
@@ -119,7 +119,7 @@ def test_graph_report_with_cpu_device(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     session.initAnchorArrays()
     session.setDevice(tu.get_poplar_cpu_device())
@@ -148,7 +148,7 @@ def test_execution_report_with_cpu_device(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     session.initAnchorArrays()
     session.setDevice(tu.get_poplar_cpu_device())
@@ -177,7 +177,7 @@ def test_compilation_report(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     anchors = session.initAnchorArrays()
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
@@ -202,7 +202,7 @@ def test_execution_report(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     anchors = session.initAnchorArrays()
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
@@ -213,7 +213,7 @@ def test_execution_report(tmpdir):
     d2 = np.array([11.]).astype(np.float32)
     stepio = poponnx.PyStepIO({i1: d1, i2: d2}, anchors)
 
-    session.infer(stepio)
+    session.run(stepio)
 
     assert (len(session.getExecutionReport()) > 0)
 
@@ -233,7 +233,7 @@ def test_tensor_tile_mapping(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
     anchors = session.initAnchorArrays()
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
@@ -276,7 +276,7 @@ def test_no_compile(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.Session(proto, dataFlow, userOptions=opts)
+    session = poponnx.InferenceSession(proto, dataFlow, userOptions=opts)
 
     session.setDevice(tu.get_ipu_model(compileIPUCode=False))
 

@@ -19,7 +19,7 @@ proto = builder.getModelProto()
 dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
 # Create a session to compile and execute the graph
-session = poponnx.Session(fnModel=proto, dataFeed=dataFlow)
+session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
 
 # Select a device and compile graph
 session.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
@@ -33,7 +33,7 @@ data_a = np.random.rand(1).astype(np.float32)
 data_b = np.random.rand(1).astype(np.float32)
 
 stepio = poponnx.PyStepIO({a: data_a, b: data_b}, anchors)
-session.infer(stepio)
+session.run(stepio)
 
 print("Input a is " + str(data_a))
 print("Input b is " + str(data_b))

@@ -42,6 +42,9 @@ struct SessionOptions {
   /// Include the Op name in the .dot file (the Op type is always exported)
   bool dotOpNames = false;
 
+  /// Include annotation of sub-graphs in the .dot file
+  bool dotSubgraphAnnotation = false;
+
   /// Export Poplar computation graph
   bool exportPoplarComputationGraph = false;
 

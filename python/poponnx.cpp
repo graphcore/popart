@@ -309,6 +309,8 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
       .def_readwrite("reportOptions", &SessionOptions::reportOptions)
       .def_readwrite("dotOpNames", &SessionOptions::dotOpNames)
+      .def_readwrite("dotSubgraphAnnotation",
+                     &SessionOptions::dotSubgraphAnnotation)
       .def_readwrite("finalDotOp", &SessionOptions::finalDotOp)
       .def_readwrite("firstDotOp", &SessionOptions::firstDotOp)
       // set in python use the python set constructor, so something like
@@ -381,30 +383,48 @@ PYBIND11_MODULE(poponnx_core, m) {
         return ss.str();
       });
 
-  py::class_<Session>(m, "SessionCore")
-      .def(py::init(&Session::createFromOnnxModel),
+  py::class_<InferenceSession>(m, "InferenceSessionCore")
+      .def(py::init(&InferenceSession::createFromOnnxModel),
            py::arg("model"),
            py::arg("dataFlow").none(),
-           py::arg("inputShapeInfo"),
            py::arg("losses"),
-           py::arg("optimizer").none(),
+           py::arg("inputShapeInfo"),
            py::arg("userOptions"),
            py::arg("patterns"))
-      .def("updateOptimizer", &Session::updateOptimizer)
-      .def("setDevice", &Session::setDevice)
-      .def("prepareDevice", &Session::prepareDevice)
-      .def("weightsFromHost", &Session::weightsFromHost)
-      .def("optimizerFromHost", &Session::optimizerFromHost)
-      .def("train", &Session::train)
-      .def("evaluate", &Session::evaluate)
-      .def("infer", &Session::infer)
-      .def("modelToHost", &Session::modelToHost)
-      .def("getInfo", &Session::getInfo)
-      .def("getSummaryReport", &Session::getSummaryReport)
-      .def("getGraphReport", &Session::getGraphReport)
-      .def("getExecutionReport", &Session::getExecutionReport)
-      .def("getTensorTileMap", &Session::getTensorTileMap)
-      .def("resetHostWeights", &Session::resetHostWeights);
+      .def("setDevice", &InferenceSession::setDevice)
+      .def("prepareDevice", &InferenceSession::prepareDevice)
+      .def("weightsFromHost", &InferenceSession::weightsFromHost)
+      .def("run", &InferenceSession::run)
+      .def("modelToHost", &InferenceSession::modelToHost)
+      .def("getInfo", &InferenceSession::getInfo)
+      .def("getSummaryReport", &InferenceSession::getSummaryReport)
+      .def("getGraphReport", &InferenceSession::getGraphReport)
+      .def("getExecutionReport", &InferenceSession::getExecutionReport)
+      .def("getTensorTileMap", &InferenceSession::getTensorTileMap)
+      .def("resetHostWeights", &InferenceSession::resetHostWeights);
+
+  py::class_<TrainingSession>(m, "TrainingSessionCore")
+      .def(py::init(&TrainingSession::createFromOnnxModel),
+           py::arg("model"),
+           py::arg("dataFlow").none(),
+           py::arg("losses"),
+           py::arg("optimizer"),
+           py::arg("inputShapeInfo"),
+           py::arg("userOptions"),
+           py::arg("patterns"))
+      .def("updateOptimizer", &TrainingSession::updateOptimizer)
+      .def("setDevice", &TrainingSession::setDevice)
+      .def("prepareDevice", &TrainingSession::prepareDevice)
+      .def("weightsFromHost", &TrainingSession::weightsFromHost)
+      .def("optimizerFromHost", &TrainingSession::optimizerFromHost)
+      .def("run", &TrainingSession::run)
+      .def("modelToHost", &TrainingSession::modelToHost)
+      .def("getInfo", &TrainingSession::getInfo)
+      .def("getSummaryReport", &TrainingSession::getSummaryReport)
+      .def("getGraphReport", &TrainingSession::getGraphReport)
+      .def("getExecutionReport", &TrainingSession::getExecutionReport)
+      .def("getTensorTileMap", &TrainingSession::getTensorTileMap)
+      .def("resetHostWeights", &TrainingSession::resetHostWeights);
 
   py::class_<GraphTransformer>(m, "GraphTransformer")
       .def(py::init<const std::string &>(), py::arg("modelProtoOrFilename"))

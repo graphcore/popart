@@ -19,6 +19,8 @@ public:
   inplacePriorityDefault() const final;
 
   std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
+
+  float getSubgraphValue() const final { return 0.1f; }
 };
 
 // TODO unify/compress elementwise op inplace classes (see T6801)
@@ -28,6 +30,8 @@ public:
   void setup() final;
   view::Region modifies(InIndex index) const final { return uses(index); }
   view::Region aliases(InIndex index) const final { return uses(index); }
+
+  float getSubgraphValue() const final { return 0.1f; }
 };
 
 class ExpGradOp : public Op {
@@ -42,6 +46,8 @@ public:
   static InIndex getGradInIndex() { return 0; }
   static InIndex getFwdOutInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return 0.1f; }
 };
 
 } // namespace poponnx

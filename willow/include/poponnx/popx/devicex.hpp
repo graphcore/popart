@@ -36,9 +36,7 @@ public:
   enum ProgramIndex {
     WEIGHTSFROMHOST = 0,
     OPTIMIZERFROMHOST,
-    INFER,
-    EVALUATE,
-    TRAIN,
+    PROGRAM,
     WEIGHTSTOHOST,
     N // The number of programs
   };
@@ -78,9 +76,7 @@ private:
 
   poplar::program::Sequence weightsFromHost();
   poplar::program::Sequence optimizerFromHost();
-  poplar::program::Repeat infer();
-  poplar::program::Repeat evaluate();
-  poplar::program::Repeat train();
+  poplar::program::Repeat program();
   poplar::program::Sequence weightsToHost();
 };
 
@@ -134,9 +130,8 @@ public:
   void prepare() final;
   void weightsFromHost() final;
   void optimizerFromHost() final;
-  void infer(const IStepIO &) final;
-  void evaluate(const IStepIO &) final;
-  void train(const IStepIO &) final;
+
+  void run(const IStepIO &) final;
   void weightsToHost(const std::map<TensorId, MutableVoidData> &) final;
 
   virtual std::string getSummaryReport() const override final;

@@ -144,12 +144,12 @@ auto main(int argc, char **argv) -> int {
       new poponnx::L1Loss(outputs[0], "l1LossVal", 0.1f)};
 
   // Create the session
-  auto session = poponnx::Session::createFromOnnxModel(
+  auto session = poponnx::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
-      poponnx::InputShapeInfo(),
       losses,
-      &optimizer,
+      optimizer,
+      poponnx::InputShapeInfo(),
       {},
       poponnx::Patterns({poponnx::PreAliasPatternType::PREUNIREPL}));
 
@@ -177,9 +177,9 @@ auto main(int argc, char **argv) -> int {
 
   poponnx::StepIO stepio(inputs, anchors);
 
-  session->train(stepio);
   session->weightsFromHost();
   session->optimizerFromHost();
+  session->run(stepio);
 
   poponnx::logging::ir::err("input : {}", inData);
   poponnx::logging::ir::err("output : {}", outData);

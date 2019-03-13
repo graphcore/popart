@@ -167,12 +167,11 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     opts.logDir     = "./dotfiles";
     boost::filesystem::create_directory(opts.logDir);
 
-    auto session = poponnx::Session::createFromOnnxModel(
+    auto session = poponnx::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
-        poponnx::InputShapeInfo(),
         {},
-        nullptr,
+        poponnx::InputShapeInfo(),
         opts,
         poponnx::Patterns(PatternsLevel::NONE).enableInPlace(inp));
 
@@ -196,7 +195,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
 
     poponnx::StepIO stepio(inputs, anchors);
 
-    session->infer(stepio);
+    session->run(stepio);
 
     return rawOutputData;
   };
