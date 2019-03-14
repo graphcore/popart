@@ -2185,4 +2185,12 @@ void Ir::applyInplacePattern() {
   }
 }
 
+Op &Ir::getSubgraphAnchorPlaceholder() {
+  static std::unique_ptr<Op> subgraphAnchorPlaceholder =
+      std::unique_ptr<Op>(new Op({"TempAnchorDomain", "TempAnchorType", 1},
+                                 Op::Settings{*this, "TempAnchorName"}));
+
+  return *subgraphAnchorPlaceholder.get();
+}
+
 } // namespace poponnx

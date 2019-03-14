@@ -336,10 +336,14 @@ std::map<fwtools::subgraph::OutIndex, std::set<Op *>>
 Op::getSubgraphOutputs() const {
 
   std::map<fwtools::subgraph::OutIndex, std::set<Op *>> cmap;
+
   for (auto &index_tensor : output->tensorMap()) {
     auto out_index  = index_tensor.first;
     auto out_tensor = index_tensor.second;
     std::set<Op *> consumers;
+    if (settings.ir.isAnchored(out_tensor->id)) {
+      consumers.insert(&settings.ir.getSubgraphAnchorPlaceholder());
+    }
     for (auto &op : out_tensor->consumers.getOps()) {
       consumers.insert(op);
     }

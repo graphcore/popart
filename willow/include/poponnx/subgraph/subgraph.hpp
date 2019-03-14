@@ -551,7 +551,11 @@ bool RinseMatcher<T>::areIsomorphic(int seq_length, Start s0, Start s1) const {
       auto &&subgraphOutputs0 = t0->getSubgraphOutputs();
       auto consumers0         = subgraphOutputs0.at(outIndex);
       for (auto con0 : consumers0) {
-        if (relativeToStart(con0, s0) >= seq_length) {
+        // if con0 is not in schedule_index, then it is not 
+        // in the schedule, which means it is definitely external to 
+        // this subgraph (as this subgraph is contiguous in the schedule)
+        if (schedule_index.find(con0) == schedule_index.end() ||
+            relativeToStart(con0, s0) >= seq_length) {
           externOut0 = true;
         }
       }
@@ -560,7 +564,8 @@ bool RinseMatcher<T>::areIsomorphic(int seq_length, Start s0, Start s1) const {
       auto &&subgraphOutputs1 = t1->getSubgraphOutputs();
       auto consumers1         = subgraphOutputs1.at(outIndex);
       for (auto con1 : consumers1) {
-        if (relativeToStart(con1, s1) >= seq_length) {
+        if (schedule_index.find(con1) == schedule_index.end() ||
+            relativeToStart(con1, s1) >= seq_length) {
           externOut1 = true;
         }
       }

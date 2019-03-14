@@ -137,4 +137,15 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
       // 6: index 0 has it's output consumed, so not isomorphic here
       {{6, 7}, 1}};
   test(types, value_map, edges, expected_matches);
+
+  //       C  C L1G WG DG WG S  DG
+  //       0  1  2  3  4  5  6  7
+  types = {0, 0, 1, 2, 3, 2, 4, 3};
+
+  //            C           L1G        WG         DG          S
+  value_map = {{0, 12.0f}, {1, 1.0f}, {2, 11.0f}, {3, 10.0f}, {4, 1.0f}};
+
+  expected_matches = {{{0, 1}, 1}, {{3, 5}, 1}, {{4, 7}, 1}};
+  edges            = {};
+  test(types, value_map, edges, expected_matches);
 }
