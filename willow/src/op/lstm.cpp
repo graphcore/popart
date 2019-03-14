@@ -1,4 +1,5 @@
 #include <vector>
+#include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/lstm.hpp>
 #include <poponnx/opmanager.hpp>
@@ -21,6 +22,10 @@ std::vector<std::unique_ptr<Op>> LSTMOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(make_unique<LSTMGradOp>(*this));
   return upops;
+}
+
+bool LSTMOp::isTraining() const {
+  return settings.ir.getExecutionMode() == Ir::ExecutionMode::TRAINING;
 }
 
 void LSTMOp::setup() {

@@ -23,18 +23,11 @@ LSTMOpx::LSTMOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 // Only create an intermediate tensor if it is consumed or used as a anchor
 std::unique_ptr<poplar::Tensor> LSTMOpx::createIntermediate() const {
-  if (outTensor(LSTMOp::getOutputOutIndex())->consumers.getTotal() > 0) {
+  if (getOp<LSTMOp>().isTraining()) {
     return make_unique<poplar::Tensor>();
+  } else {
+    return std::unique_ptr<poplar::Tensor>(nullptr);
   }
-
-  auto anchors = op_p->getIr().getDataFlow().anchors();
-  if (std::find(anchors.begin(),
-                anchors.end(),
-                outId(LSTMOp::getOutputOutIndex())) != anchors.end()) {
-    return make_unique<poplar::Tensor>();
-  }
-
-  return std::unique_ptr<poplar::Tensor>(nullptr);
 }
 
 void LSTMOpx::grow(poplar::program::Sequence &prog) const {
