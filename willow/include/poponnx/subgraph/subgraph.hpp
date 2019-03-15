@@ -41,7 +41,8 @@ public:
 // -----------------------------------------------
 // The key function for sub-graph matching.
 //--------------------------------------------------------------
-template <typename T> std::vector<Match> getMatches(const std::vector<T *> &s);
+template <typename T>
+std::vector<Match> getMatches(const std::vector<T *> &s, float threshold);
 //--------------------------------------------------------------
 // (the RinseMatcher class is for power-users only)
 //-------------------------------------------------
@@ -104,9 +105,9 @@ public:
 
   // get the final Matches from the prioritised vector of Matches,
   // not taking Matches which are subsumed by, or those that cross over
-  // already accepted Matches
-  std::vector<Match>
-  getFinalMatches(const std::vector<Match> &prioritised) const;
+  // already accepted Matches. Also applies the threshold.
+  std::vector<Match> getFinalMatches(const std::vector<Match> &prioritised,
+                                     float threshold) const;
 
   // if matches within a Match intersect, divide the Match
   std::vector<Match>
@@ -297,13 +298,15 @@ RinseMatcher<T>::getPrioritized(const std::vector<Match> &matches) const {
 
 template <typename T>
 std::vector<Match>
-RinseMatcher<T>::getFinalMatches(const std::vector<Match> &matches) const {
-  std::vector<Match> final_matches{};
+RinseMatcher<T>::getFinalMatches(const std::vector<Match> &matches,
+                                 float threshold) const {
+  std::vector<Match> descending_filter_matches{};
 
-  auto isGoodMatch = [&final_matches](const Match &candidate_match) {
+  auto isGoodMatch = [threshold, this, &descending_filter_matches](
+                         const Match &candidate_match) {
     // does candidate_match overlap with any
-    // of the matches in final_matches so far?
-    for (auto &accepted_match : final_matches) {
+    // of the matches in descending_filter_matches so far?
+    for (auto &accepted_match : descending_filter_matches) {
       for (auto candidate_start : candidate_match.starts) {
         if (areCrossing(accepted_match.length,
                         candidate_match.length,
@@ -314,14 +317,14 @@ RinseMatcher<T>::getFinalMatches(const std::vector<Match> &matches) const {
       }
     }
 
-    // is candidate_match trivial (subsumed by a match in final_matches)?
-    // Example of subsuming:
+    // is candidate_match trivial (subsumed by a match in
+    // descending_filter_matches)? Example of subsuming:
     //   ++++      ++++     ++++
     // ******    ******   ******
     // --------------------------> schedule
     //
-    // if ****** has already been included in final_matches, we
-    // do not want ++++ in final_matches.
+    // if ****** has already been included in descending_filter_matches, we
+    // do not want ++++ in descending_filter_matches.
     // Another example, which is NOT subsuming:
     //
     //   ++  ++     ++  ++    ++  ++
@@ -331,7 +334,7 @@ RinseMatcher<T>::getFinalMatches(const std::vector<Match> &matches) const {
     // in the case above, we say that ++ is not subsumed by *******
     // as it appears more than once in *******.
 
-    for (auto &accepted_match : final_matches) {
+    for (auto &accepted_match : descending_filter_matches) {
       if (accepted_match.starts.size() == candidate_match.starts.size()) {
 
         auto candidate_starts = candidate_match.starts;
@@ -357,14 +360,67 @@ RinseMatcher<T>::getFinalMatches(const std::vector<Match> &matches) const {
         }
       }
     }
+
+    if (getValue(candidate_match) < threshold) {
+      return false;
+    }
+
     return true;
   };
 
   for (auto &candidate_match : matches) {
     if (isGoodMatch(candidate_match)) {
-      final_matches.push_back(candidate_match);
+      descending_filter_matches.push_back(candidate_match);
     }
   }
+
+  // Final removal of matches with low incremental value,
+  // done in increasing order of match values.
+  std::reverse(descending_filter_matches.begin(),
+               descending_filter_matches.end());
+
+  // descending_filter_matches is now in ascending order of value
+  const std::vector<Match> dfm(descending_filter_matches);
+
+  // pointers into dfm, this vector contains the starts
+  // of all covering Matches. Recall we start from the smallest, suppose
+  // we go from
+  // .....xx.......xx......www.......
+  // to
+  // ...aaaaa....aaaaa.....www..aaaaa
+  // the blanket goes from
+  // .....P........P.......Q.........
+  // to
+  // ...R........R.........Q....R....
+  // where . is the nullptr,
+  //       P, Q, R are pointers to matches
+
+  std::vector<const Match *> blanket(schedule.size(), nullptr);
+  std::vector<Match> final_matches;
+
+  for (int i = 0; i < dfm.size(); ++i) {
+    Start start0    = dfm[i].starts[0];
+    int len         = dfm[i].length;
+    float vChildren = 0.0f;
+    for (int j = start0; j < start0 + len; ++j) {
+      if (blanket[j]) {
+        vChildren += getValue(*blanket[j]);
+      }
+    }
+
+    if (getValue(dfm[i]) - vChildren > threshold) {
+      final_matches.push_back(dfm[i]);
+
+      for (Start start : dfm[i].starts) {
+        for (int j = start; j < start + len; ++j) {
+          blanket[j] = nullptr;
+        }
+        blanket[start] = &dfm[i];
+      }
+    }
+  }
+
+  std::reverse(final_matches.begin(), final_matches.end());
   return final_matches;
 }
 
@@ -551,8 +607,8 @@ bool RinseMatcher<T>::areIsomorphic(int seq_length, Start s0, Start s1) const {
       auto &&subgraphOutputs0 = t0->getSubgraphOutputs();
       auto consumers0         = subgraphOutputs0.at(outIndex);
       for (auto con0 : consumers0) {
-        // if con0 is not in schedule_index, then it is not 
-        // in the schedule, which means it is definitely external to 
+        // if con0 is not in schedule_index, then it is not
+        // in the schedule, which means it is definitely external to
         // this subgraph (as this subgraph is contiguous in the schedule)
         if (schedule_index.find(con0) == schedule_index.end() ||
             relativeToStart(con0, s0) >= seq_length) {
@@ -577,13 +633,14 @@ bool RinseMatcher<T>::areIsomorphic(int seq_length, Start s0, Start s1) const {
   return true;
 }
 
-template <typename T> std::vector<Match> getMatches(const std::vector<T *> &s) {
+template <typename T>
+std::vector<Match> getMatches(const std::vector<T *> &s, float threshold) {
   RinseMatcher<T> matcher(s);
   auto matches = matcher.getRepeatedSequences();
   matches      = matcher.separateByIsomorphism(matches);
   matches      = matcher.separateByOverlaps(matches);
   matches      = matcher.getPrioritized(matches);
-  matches      = matcher.getFinalMatches(matches);
+  matches      = matcher.getFinalMatches(matches, threshold);
   return matches;
 }
 

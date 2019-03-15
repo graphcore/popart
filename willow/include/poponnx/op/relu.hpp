@@ -28,6 +28,8 @@ public:
   view::Region aliases(InIndex index) const final { return uses(index); }
   // "uses" is still the full region
   // "fwdRegMap" and "bwdRegMap" are still the identity
+  //
+  float getSubgraphValue() const final { return 0.1f; }
 };
 
 // takes output of ReluOp as input and not the input of ReluOp
@@ -50,6 +52,8 @@ public:
   static InIndex getGradReludInIndex() { return 0; }
 
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return 0.1f; }
 };
 
 } // namespace poponnx

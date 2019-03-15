@@ -23,29 +23,35 @@ using namespace poponnx;
 BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
 
   auto test = [](const std::vector<Op *> &sched,
-                 const std::vector<Match> &expected_matches) {
+                 const std::vector<Match> &expected_matches,
+                 float threshold) {
     // get the matches
-    auto matches = getMatches<Op>(sched);
+    auto matches = getMatches<Op>(sched, threshold);
 
     // compare the final matches to those expected in this test
+    std::set<Match> s_expected_matches;
+    std::set<Match> s_matches;
+
     std::stringstream ss;
     ss << "\nExpected matches:";
     for (auto &x : expected_matches) {
       ss << "\n" << x;
+      s_expected_matches.insert(x);
     }
     ss << "\nComputed matches:";
     for (auto &x : matches) {
       ss << "\n" << x;
+      s_matches.insert(x);
     }
+
     poponnx::logging::debug(ss.str());
-    BOOST_CHECK(matches == expected_matches);
+    BOOST_CHECK(s_matches == s_expected_matches);
   };
 
   // ----------------------------------------------------
-  auto testWithTrain = [&test](bool train) {
-    poponnx::logging::info("simple case of an Op schedule. Is train ? {}",
-                           train);
-
+  auto testWithTrain = [&test](bool train,
+                               float threshold,
+                               std::vector<Match> expected_matches) {
     auto builder = Builder::create();
     auto aiOnnx  = builder->aiOnnxOpset9();
     TensorInfo info0{"FLOAT", std::vector<int64_t>{4, 4}};
@@ -81,48 +87,6 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
       losses = {up_losses[0].get()};
     }
 
-    // TODO : this test will fail if saturated sub-graphs are removed
-    // see T7255
-
-    // test mode:
-    // ---------/
-    // 0  1    2  3    4  5    6  7    8
-    // mm relu mm relu mm relu mm relu reduce
-    std::vector<Match> expected_test_matches = {{{0, 4}, 4}, {{0, 2, 4, 6}, 2}};
-
-    // train mode:
-    // 0  MatMul              |   [X         [w
-    // 1  ReluInplace         |    X          w]
-    // 2  MatMul              |    X         [w
-    // 3  ReluInplace         |    X]         w]
-    // 4  MatMul              |   [X         [w
-    // 5  ReluInplace         |    X          w]
-    // 6  MatMul              |    X         [w
-    // 7  ReluInplace         |    X]         w]
-    // 8  Identity            |
-    // 9  L1Grad              |
-    // 10 ReluGrad            | %                *
-    // 11 MatMulRhsGrad       | %      [@
-    // 12 MatMulLhsGrad       | %       @
-    // 13 ConstSGDVarUpdate   | %       @]
-    // 14 ReluGrad            | %                *
-    // 15 MatMulRhsGrad       |        [@
-    // 16 MatMulLhsGrad       |         @
-    // 17 ConstSGDVarUpdate   |         @]
-    // 18 ReluGrad            | %                *
-    // 19 MatMulRhsGrad       | %      [@
-    // 20 MatMulLhsGrad       | %       @
-    // 21 ConstSGDVarUpdate   | %       @]
-    // 22 ReluGrad            | %                *
-    // 23 MatMulRhsGrad       |
-    // 24 ConstSGDVarUpdate   |
-    std::vector<Match> expected_train_matches = {{{10, 18}, 5},
-                                                 {{0, 4}, 4},
-                                                 {{11, 15, 19}, 3},
-                                                 {{0, 2, 4, 6}, 2},
-                                                 {{11, 15, 19, 23}, 1},
-                                                 {{10, 14, 18, 22}, 1},
-                                                 {{13, 17, 21, 24}, 1}};
     Ir ir;
     ir.prepare({modelProto,
                 InputShapeInfo(),
@@ -132,18 +96,93 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
                 {},
                 Patterns(PatternsLevel::DEFAULT)});
 
-    std::vector<Match> expected_matches{};
     auto sched = ir.getOpSchedule({});
 
-    if (train) {
-      test(sched, expected_train_matches);
-    } else {
-      test(sched, expected_test_matches);
-    }
+    test(sched, expected_matches, threshold);
   };
 
-  testWithTrain(false);
-  testWithTrain(true);
+  // TODO : this test will fail if saturated sub-graphs are removed
+  // see T7255
+
+  // test mode:
+  // ---------/
+  // 0  1    2  3    4  5    6  7    8
+  // mm relu mm relu mm relu mm relu reduce
+  std::vector<Match> expected_test_matches = {{{0, 4}, 4}, {{0, 2, 4, 6}, 2}};
+
+  // train mode:
+  // 0  MatMul              |   [X         [w
+  // 1  ReluInplace         |    X          w]
+  // 2  MatMul              |    X         [w
+  // 3  ReluInplace         |    X]         w]
+  // 4  MatMul              |   [X         [w
+  // 5  ReluInplace         |    X          w]
+  // 6  MatMul              |    X         [w
+  // 7  ReluInplace         |    X]         w]
+  // 8  Identity            |
+  // 9  L1Grad              |
+  // 10 ReluGrad            | %                *
+  // 11 MatMulRhsGrad       | %      [@             ^
+  // 12 MatMulLhsGrad       | %       @
+  // 13 ConstSGDVarUpdate   | %       @]                $
+  // 14 ReluGrad            | %                *
+  // 15 MatMulRhsGrad       |        [@             ^
+  // 16 MatMulLhsGrad       |         @
+  // 17 ConstSGDVarUpdate   |         @]                $
+  // 18 ReluGrad            | %                *
+  // 19 MatMulRhsGrad       | %      [@             ^
+  // 20 MatMulLhsGrad       | %       @
+  // 21 ConstSGDVarUpdate   | %       @]                $
+  // 22 ReluGrad            | %                *
+  // 23 MatMulRhsGrad       |                       ^
+  // 24 ConstSGDVarUpdate   |                           $
+  std::vector<Match> expected_train_matches = {
+      //
+      {{10, 18}, 5}, // RR, MM, MM, RR,  VU
+                     //
+      {{0, 4}, 4},   // MM, RI, MM, RI
+      {{11, 15, 19}, 3},
+      {{0, 2, 4, 6}, 2},
+      {{11, 15, 19, 23}, 1},
+      {{10, 14, 18, 22}, 1},
+      {{13, 17, 21, 24}, 1}};
+
+  poponnx::logging::info(
+      "simple case of an Op schedule. Is TEST, threshold -1");
+  testWithTrain(false, -1.0, expected_test_matches);
+
+  poponnx::logging::info(
+      "simple case of an Op schedule. Is TRAIN, threshold -1");
+  testWithTrain(true, -1.0, expected_train_matches);
+
+  // remove completely saturated at threshold 0.0f
+  expected_test_matches = {{{0, 2, 4, 6}, 2}};
+  poponnx::logging::info("simple case of an Op schedule. Is TEST, threshold 0");
+  testWithTrain(false, 0.0, expected_test_matches);
+
+  expected_train_matches = {{{11, 15, 19}, 3},
+                            {{0, 2, 4, 6}, 2},
+                            {{11, 15, 19, 23}, 1},
+                            {{10, 14, 18, 22}, 1},
+                            {{13, 17, 21, 24}, 1}};
+  poponnx::logging::info(
+      "simple case of an Op schedule. Is TRAIN, threshold 0");
+  testWithTrain(true, 0.0, expected_train_matches);
+
+  // at threshold 1.0f, all matmul ops are always cached
+  expected_test_matches = {{{0, 2, 4, 6}, 2}};
+  poponnx::logging::info("simple case of an Op schedule. Is TEST, threshold 1");
+  testWithTrain(false, 1.0, expected_test_matches);
+
+  expected_train_matches = {
+      {{11, 15, 19}, 3},
+      {{0, 2, 4, 6}, 2},
+      {{11, 15, 19, 23}, 1},
+
+  };
+  poponnx::logging::info(
+      "simple case of an Op schedule. Is TRAIN, threshold 1");
+  testWithTrain(true, 1.0, expected_train_matches);
 }
 
 BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
@@ -151,9 +190,10 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   using namespace poponnx;
 
   auto test = [](const std::vector<Op *> &sched,
-                 const std::vector<Match> &expected_matches) {
+                 const std::vector<Match> &expected_matches,
+                 float threshold) {
     // get the matches
-    auto matches = getMatches<Op>(sched);
+    auto matches = getMatches<Op>(sched, threshold);
 
     // compare the final matches to those expected in this test
     std::stringstream ss;
@@ -243,5 +283,5 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   std::vector<Match> expected_matches{};
   auto sched = ir.getOpSchedule({});
 
-  test(sched, expected_train_matches);
+  test(sched, expected_train_matches, -1.0f);
 }

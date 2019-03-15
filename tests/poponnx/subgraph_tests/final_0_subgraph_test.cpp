@@ -15,7 +15,8 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
 
   auto test = [](const std::vector<blip::Type> &types,
                  const std::map<blip::Type, blip::Value> &value_map,
-                 const std::vector<Match> &expected_matches) {
+                 const std::vector<Match> &expected_matches,
+                 float threshold = 0.0f) {
     // prepare a schedule of Blips, given the input arguments
     std::vector<const Blip *> sched;
     std::vector<std::unique_ptr<Blip>> blips;
@@ -33,7 +34,7 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
     auto matches = rinseMatcher.getRepeatedSequences();
     matches      = rinseMatcher.separateByOverlaps(matches);
     matches      = rinseMatcher.getPrioritized(matches);
-    matches      = rinseMatcher.getFinalMatches(matches);
+    matches      = rinseMatcher.getFinalMatches(matches, threshold);
 
     // compare the final matches to those expected in this test
     std::stringstream ss;
@@ -92,22 +93,40 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
   test(types, value_map, expected_matches);
 
   // -----------------------------------------------------------
-  poponnx::logging::info("crossing in final means not included");
   //       0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
   types = {0, 1, 2, 0, 0, 1, 2, 0, 1, 2, 0, 0, 0, 0, 0, 0};
   //       x  x  x  x  x        x  x  x  x  x
   //          ~  ~        ~  ~     ~  ~
   //               [@  @]               [@  @][@  @][@  @]
-  //       +        +  +       +         +  +  +  +  +  +
+  //       +        +  +        +        +  +  +  +  +  +
 
-  value_map = {{0, 10.0f}, {1, 10.0f}, {2, 10.0f}};
+  value_map = {{0, 10.0f}, {1, 11.0f}, {2, 12.0f}};
 
   expected_matches = {
+      // first 2 matches are saturated at threshold = 0:
       {{0, 7}, 5},                              // 01200   : 50
-      {{3, 10, 12, 14}, 2},                     // 00      : 20
       {{1, 5, 8}, 2},                           // 12      : 20
-      {{0, 3, 4, 7, 10, 11, 12, 13, 14, 15}, 1} // 1       : 10
+      {{3, 10, 12, 14}, 2},                     // 00      : 20
+      {{0, 3, 4, 7, 10, 11, 12, 13, 14, 15}, 1} // 0       : 10
 
   };
-  test(types, value_map, expected_matches);
+
+  poponnx::logging::info(
+      "crossing in final means not included, threshold -1.0");
+  test(types, value_map, expected_matches, -1.0f);
+
+  expected_matches = {
+      {{1, 5, 8}, 2},                           // 12      : 20
+      {{0, 3, 4, 7, 10, 11, 12, 13, 14, 15}, 1} // 0       : 10
+  };
+  poponnx::logging::info("crossing in final means not included, threshold 0.0");
+  test(types, value_map, expected_matches, 0.0f);
+
+  expected_matches = {
+      {{1, 5, 8}, 2},       // 12      : 20
+      {{3, 10, 12, 14}, 2}, // 00      : 20
+  };
+  poponnx::logging::info(
+      "crossing in final means not included, threshold 15.0");
+  test(types, value_map, expected_matches, 15.0f);
 }

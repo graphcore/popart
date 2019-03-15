@@ -166,7 +166,9 @@ void Ir::dotCheckpoint(DotCheck check) const {
   if (userOptions.dotSubgraphAnnotation) {
     logging::ir::trace("Getting matches from schedule of size {}",
                        scheduledOps.size());
-    matches = fwtools::subgraph::getMatches<Op>(scheduledOps);
+
+    // TODO : create option for threshold T7482
+    matches = fwtools::subgraph::getMatches<Op>(scheduledOps, 0.0f);
   }
   std::vector<std::vector<std::tuple<int, int>>> opToMatch(scheduledOps.size());
   for (int match_i = 0; match_i < matches.size(); ++match_i) {
