@@ -35,6 +35,15 @@ def test_set_enableConvolutionGraphCaching_flag():
     assert (opts.enableConvolutionGraphCaching == False)
 
 
+def test_set_enabledOutlining_flag():
+
+    opts = poponnx.SessionOptions()
+    assert (opts.enableOutlining == True)
+
+    opts.enableOutlining = False
+    assert (opts.enableOutlining == False)
+
+
 def test_set_engineOptions():
 
     opts = poponnx.SessionOptions()

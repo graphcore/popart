@@ -45,7 +45,7 @@ public:
   std::vector<int64_t> spatialD;
   DataType outType;
 
-  void setup() final;
+  void setup() override;
   virtual int64_t getNOutChans() const = 0;
   // return the nSpatialDims lower pads (pads left, bottom)
   std::vector<int64_t> lowerPads() const;
@@ -69,8 +69,9 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  virtual Shape getOutShape() const;
+
 private:
-  Shape getOutShape() const;
   // set the public vector "spatialK"
   virtual void setSpatialK() = 0;
   // anything else that a sub-class needs to do should go here:

@@ -13,13 +13,14 @@ AddOpx::AddOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
 }
 
 void AddOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(AddOp::getOutIndex()),
-         popops::map(graph(),
-                     popops::expr::BinaryOpType::ADD,
-                     get(inId(AddOp::getArg0InIndex())),
-                     get(inId(AddOp::getArg1InIndex())),
-                     prog,
-                     idStr()));
+
+  setOutTensor(AddOp::getOutIndex(),
+               popops::map(graph(),
+                           popops::expr::BinaryOpType::ADD,
+                           getInTensor(AddOp::getArg0InIndex()),
+                           getInTensor(AddOp::getArg1InIndex()),
+                           prog,
+                           idStr()));
 }
 
 AddArg0GradOpx::AddArg0GradOpx(Op *op, Devicex *devicex)

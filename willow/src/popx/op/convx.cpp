@@ -2,7 +2,6 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/conv.hpp>
 #include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/graphcachex.hpp>
 #include <poponnx/popx/op/convx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/popx/poplaroptionsx.hpp>
@@ -12,58 +11,134 @@
 #include <poplin/Convolution.hpp>
 
 namespace poponnx {
+
 namespace popx {
 
-poplin::ConvParams getFwdConvParams(const ConvOp *cOp) {
+/*
+static void printPoplinConvParams(const poplin::ConvParams &params) {
+  logging::pattern::info(
+      "poplin::ConvParams t:{} bs:{} s:{} ks:{} c:{},{} g:{} i:({} {} {} {} {} "
+      "{}) k:({} {} {} {} {} {}) o:({} {} {} {} {})",
+      params.dType,
+      params.batchSize,
+      params.inputFieldShape,
+      params.kernelShape,
+      params.inputChannels,
+      params.outputChannels,
+      params.numConvGroups,
+      params.inputTransform.truncationLower,
+      params.inputTransform.truncationUpper,
+      params.inputTransform.dilation,
+      params.inputTransform.paddingLower,
+      params.inputTransform.paddingUpper,
+      vXtoY<bool, int>(params.inputTransform.flip),
+      params.kernelTransform.truncationLower,
+      params.kernelTransform.truncationUpper,
+      params.kernelTransform.dilation,
+      params.kernelTransform.paddingLower,
+      params.kernelTransform.paddingUpper,
+      vXtoY<bool, int>(params.kernelTransform.flip),
+      params.outputTransform.truncationLower,
+      params.outputTransform.truncationUpper,
+      params.outputTransform.stride,
+      params.outputTransform.paddingLower,
+      params.outputTransform.paddingUpper);
+}
+*/
 
-  std::vector<unsigned> zeros(cOp->nSpatialDims, 0);
-  std::vector<bool> falses(cOp->nSpatialDims, false);
-  std::vector<unsigned> ones(cOp->nSpatialDims, 1);
+static poplin::ConvParams getPoplarConvParams(const ConvParameters &param) {
+  return poplin::ConvParams(
+      popType(param.type),
+      param.batchSize,
+      vXtoY<int64_t, size_t>(param.inputShape),
+      vXtoY<int64_t, size_t>(param.kernelShape),
+      param.numInChannels,
+      param.numOutChannels,
+      param.numGroups,
 
-  // we assume that the output type is the same as the input
-  auto popOutType = cOp->outType;
+      vXtoY<int64_t, unsigned>(param.inputTransformation.lowerTruncation),
+      vXtoY<int64_t, unsigned>(param.inputTransformation.upperTruncation),
+      vXtoY<int64_t, unsigned>(param.inputTransformation.dilation),
+      vXtoY<int64_t, unsigned>(param.inputTransformation.lowerPadding),
+      vXtoY<int64_t, unsigned>(param.inputTransformation.upperPadding),
+      param.inputTransformation.flip,
 
-  return poplin::ConvParams(popType(popOutType), // dType,
-                            cOp->batchSize,      // batchSize,
-                            cOp->spatialD_szt(), // inputFieldShape,
-                            cOp->spatialK_szt(), // kernelShape,
+      vXtoY<int64_t, unsigned>(param.kernelTransformation.lowerTruncation),
+      vXtoY<int64_t, unsigned>(param.kernelTransformation.upperTruncation),
+      vXtoY<int64_t, unsigned>(param.kernelTransformation.dilation),
+      vXtoY<int64_t, unsigned>(param.kernelTransformation.lowerPadding),
+      vXtoY<int64_t, unsigned>(param.kernelTransformation.upperPadding),
+      param.kernelTransformation.flip,
 
-                            cOp->nInChans,       // inputChannels,
-                            cOp->getNOutChans(), // outputChannels,
-                            cOp->group,          // numConvGroups,
-
-                            zeros,                // inputTruncationLower,
-                            zeros,                // inputTruncationUpper,
-                            ones,                 // inputDilation,
-                            cOp->lowerPads_u32(), // inputPaddingLower,
-                            cOp->upperPads_u32(), // inputPaddingUpper
-                            falses,               // flipInput,
-
-                            zeros,                // kernelTruncationLower,
-                            zeros,                // kernelTruncationUpper,
-                            cOp->dilations_u32(), // kernelDilation,
-                            zeros,                // kernelPaddingLower,
-                            zeros,                // kernelPaddingUpper,
-                            falses,               // flipKernel,
-
-                            zeros,              // outputTruncationLower,
-                            zeros,              // outputTruncationUpper,
-                            cOp->strides_u32(), // stride,
-                            zeros,              // outputPaddingLower,
-                            zeros               // outputPaddingUpper.
-  );
+      vXtoY<int64_t, unsigned>(param.outputTransformation.lowerTruncation),
+      vXtoY<int64_t, unsigned>(param.outputTransformation.upperTruncation),
+      vXtoY<int64_t, unsigned>(param.outputTransformation.stride),
+      vXtoY<int64_t, unsigned>(param.outputTransformation.lowerPadding),
+      vXtoY<int64_t, unsigned>(param.outputTransformation.upperPadding));
 }
 
-poplin::ConvParams getDataGradParams(const ConvDataGradOp *convDataGradOp) {
-  // we get the fwd params, and then use a utility
-  // function to convert to bwd params.
-  auto fwdParams = getFwdConvParams(convDataGradOp->getCloneOfCreator());
-  // this utility function converts fwd params to bwd params.
-  // see poplin/ConvUtil.hpp
-  return poplin::getGradientParams(fwdParams);
+static ConvParameters
+convertPoplarConvParameters(const poplin::ConvParams &popParams) {
+
+  ConvParameters params;
+  params.batchSize     = popParams.batchSize;
+  params.inputShape    = vXtoY<std::size_t, int64_t>(popParams.inputFieldShape);
+  params.kernelShape   = vXtoY<std::size_t, int64_t>(popParams.kernelShape);
+  params.numInChannels = popParams.getNumInputChans();
+  params.numOutChannels = popParams.getNumOutputChans();
+  params.numGroups      = popParams.getNumConvGroups();
+
+  auto convertInput = [](ConvParameters::Input &input,
+                         const poplin::ConvParams::InputTransform &popInput) {
+    input.lowerTruncation = vXtoY<unsigned, int64_t>(popInput.truncationLower);
+    input.upperTruncation = vXtoY<unsigned, int64_t>(popInput.truncationUpper);
+    input.dilation        = vXtoY<unsigned, int64_t>(popInput.dilation);
+    input.lowerPadding    = vXtoY<unsigned, int64_t>(popInput.paddingLower);
+    input.upperPadding    = vXtoY<unsigned, int64_t>(popInput.paddingLower);
+    input.flip            = popInput.flip;
+  };
+
+  convertInput(params.inputTransformation, popParams.inputTransform);
+  convertInput(params.kernelTransformation, popParams.kernelTransform);
+
+  auto convertOutput =
+      [](ConvParameters::Output &output,
+         const poplin::ConvParams::OutputTransform &popOutput) {
+        output.lowerTruncation =
+            vXtoY<unsigned, int64_t>(popOutput.truncationLower);
+        output.upperTruncation =
+            vXtoY<unsigned, int64_t>(popOutput.truncationUpper);
+        output.stride       = vXtoY<unsigned, int64_t>(popOutput.stride);
+        output.lowerPadding = vXtoY<unsigned, int64_t>(popOutput.paddingLower);
+        output.upperPadding = vXtoY<unsigned, int64_t>(popOutput.paddingUpper);
+      };
+
+  convertOutput(params.outputTransformation, popParams.outputTransform);
+
+  return params;
 }
 
-const poplin::ConvParams &ConvOpx::getParams() const { return fwdParams; }
+ConvParameters getConvGradParameters(const ConvParameters &fwdParams) {
+
+  // Let us cheat for now use poplar
+  poplin::ConvParams popBwdParams =
+      poplin::getGradientParams(getPoplarConvParams(fwdParams));
+
+  ConvParameters bwdParams = convertPoplarConvParameters(popBwdParams);
+  bwdParams.type           = fwdParams.type;
+
+  return bwdParams;
+}
+
+ConvParameters canonicalizeConvParams(const ConvParameters &param) {
+  poplin::ConvParams popParams = popx::getPoplarConvParams(param);
+
+  auto canonicalizedPopParams = poplin::canonicalizeParams(popParams);
+
+  ConvParameters result = convertPoplarConvParameters(canonicalizedPopParams);
+  result.type           = param.type;
+  return result;
+}
 
 std::vector<TensorId> ConvOpx::mustExistBeforeCreate(InIndex) const {
   // creation of both weights and of input are done
@@ -72,62 +147,70 @@ std::vector<TensorId> ConvOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }
 
-void ConvOpx::grow(poplar::program::Sequence &prog) const {
-  ConvOp &convOp = getOp<ConvOp>();
-
-  auto outTensor =
-      dv_p->graphCache.convolution(graph(),                     // graph
-                                   get(convOp.dataIn()->id),    // in
-                                   get(convOp.weightsIn()->id), // weights
-                                   fwdParams,                   // params
-                                   false, // transposeAndFlipWeights,
-                                   prog,  // prog
-                                   convOp.cacheOperation, // cacheOperation
-                                   idStr(),               // debugPrefix
-                                   dv_p->fwdConvOptions,  // options
-                                   &dv_p->convCache,      // cache
-                                   getVirtualGraphId()    // virtualGraphId
-      );
-
-  insert(outId(0), outTensor);
+// If user provides 4D weights (missing 'group' dimension), add
+// an outer dimension, size 1
+static poplar::Tensor
+addGroupDimensionIfMissing(const poplar::Tensor &weights) {
+  poplar::Tensor weights5D = weights;
+  if (weights.rank() == 4) {
+    weights5D = weights.expand({0});
+  }
+  return weights5D;
 }
 
-void ConvDataGradOpx::grow(poplar::program::Sequence &prog) const {
-  ConvDataGradOp &gradOp = getOp<ConvDataGradOp>();
-  const ConvOp *convOp   = gradOp.getCloneOfCreator();
+void ConvOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto outTensor = dv_p->graphCache.convolution(
-      graph(),                                     // graph
-      get(inId(gradOp.getGradConvolvedInIndex())), // in
-      get(inId(gradOp.getWeightsInIndex())),       // weights
-      dataGradParams,                              // params
-      true,                                        // transposeAndFlipWeights,
-      prog,                                        // prog
-      convOp->cacheOperation,                      // cacheOperation
-      idStr(),                                     // debugPrefix
-      dv_p->bwdConvOptions,                        // options
-      &dv_p->convCache,                            // cache
-      getVirtualGraphId()                          // virtualGraphId
-  );
+  ConvOp &op          = getOp<ConvOp>();
+  const auto &in      = getInTensor(ConvOp::getDataInIndex());
+  const auto &weights = getInTensor(ConvOp::getWeightsInIndex());
 
-  insert(outId(0), outTensor);
+  poplar::Tensor weights5D = addGroupDimensionIfMissing(weights);
+
+  // Work out the option based on the phase of the op
+  // Conv can be bwd depending on the phase.
+  PoplarOptions *options = nullptr;
+  if (op.getPhase() == Phase::FWD) {
+    options = &dv_p->fwdConvOptions;
+  } else if (op.getPhase() == Phase::BWD) {
+    options = &dv_p->bwdConvOptions;
+  } else {
+    throw error("Unexpected phase {} for conv",
+                static_cast<int>(op.getPhase()));
+  }
+
+  poplin::ConvParams popConvParams = getPoplarConvParams(op.getParameters());
+
+  auto outTensor = poplin::convolution(graph(),
+                                       in,
+                                       weights5D,
+                                       popConvParams,
+                                       false,
+                                       prog,
+                                       idStr(),
+                                       options->toOptionFlags(),
+                                       &(dv_p->convCache));
+
+  setOutTensor(ConvOp::getOutIndex(), outTensor);
 }
 
 void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
   ConvWeightsGradOp &gradOp = getOp<ConvWeightsGradOp>();
   const ConvOp *convOp      = gradOp.getCloneOfCreator();
 
-  poplar::Tensor wGrad = dv_p->graphCache.calculateWeightDeltas(
-      graph(),                                     // graph
-      get(inId(gradOp.getGradConvolvedInIndex())), // zDeltas,
-      get(inId(gradOp.getPreConvolvedInIndex())),  // activations,
-      getFwdConvParams(convOp),                    // params
-      prog,                                        // prog
-      convOp->cacheOperation,                      // cacheOperation
-      idStr(),                                     // debugPrefix
-      dv_p->wuConvOptions,                         // options
-      &dv_p->convCache,                            // cache
-      getVirtualGraphId());                        // virtualGraphId
+  const poplar::Tensor &zDelta =
+      getInTensor(ConvWeightsGradOp::getGradConvolvedInIndex());
+  const poplar::Tensor &activations =
+      getInTensor(ConvWeightsGradOp::getPreConvolvedInIndex());
+
+  poplar::Tensor wGrad = poplin::calculateWeightDeltas(
+      graph(),
+      zDelta,
+      activations,
+      getPoplarConvParams(convOp->getParameters()),
+      prog,
+      idStr(),
+      dv_p->wuConvOptions.toOptionFlags(),
+      &dv_p->convCache);
 
   // Shape of weights Poponnx Tensor of forward Op
   // auto fwdShape = convOp->inInfo(convOp->getWeightsInIndex()).shape_szt(); //
@@ -147,7 +230,7 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  insert(outId(0), wGrad);
+  setOutTensor(ConvWeightsGradOp::getOutIndex(), wGrad);
 }
 
 ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -157,8 +240,6 @@ ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   if (cOp.dataIn()->info.rank() != 4 || cOp.weightsIn()->info.rank() != 4) {
     throw error("Poplar only supports convolutions with 2 spatial dimensions");
   }
-
-  fwdParams = getFwdConvParams(&cOp);
 }
 
 bool ConvOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
@@ -174,8 +255,11 @@ bool ConvOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
   }
 
   // finally, check that the convolution parameters are the same
+  auto &lhsOp = getOp<ConvOp>();
+
   ConvOpx *rhs = dynamic_cast<ConvOpx *>(opx1);
-  if (getParams() != rhs->getParams()) {
+  auto &rhsOp  = rhs->getOp<ConvOp>();
+  if (lhsOp.getParameters() != rhsOp.getParameters()) {
     return false;
   }
 
@@ -188,11 +272,13 @@ InputCreatorType ConvOpx::getInputCreatorType(InIndex) const {
 
 poplar::Tensor ConvOpx::createInput(InIndex index) const {
 
+  auto &op = getOp<ConvOp>();
+
   if (index == ConvOp::getWeightsInIndex()) {
     poplar::Tensor input =
-        poplin::createWeights(graph(),                              // graph
-                              fwdParams,                            // params
-                              op_p->debugName(),                    // name
+        poplin::createWeights(graph(),                                 // graph
+                              getPoplarConvParams(op.getParameters()), // params
+                              op_p->debugName(),                       // name
                               dv_p->fwdConvOptions.toOptionFlags(), // options
                               &dv_p->convCache                      // cache
         );
@@ -220,20 +306,16 @@ poplar::Tensor ConvOpx::createInput(InIndex index) const {
     }
     return input;
   } else if (index == ConvOp::getDataInIndex()) {
-    return poplin::createInput(graph(),                              // graph
-                               fwdParams,                            // params
-                               idStr(),                              // name
-                               dv_p->fwdConvOptions.toOptionFlags(), // options
-                               &dv_p->convCache                      // cache
+    return poplin::createInput(
+        graph(),                                 // graph
+        getPoplarConvParams(op.getParameters()), // params
+        idStr(),                                 // name
+        dv_p->fwdConvOptions.toOptionFlags(),    // options
+        &dv_p->convCache                         // cache
     );
   } else {
     throw error("conv opx cannot create tensor at this index yet");
   }
-}
-
-ConvDataGradOpx::ConvDataGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<ConvDataGradOp>(op, Onnx::GradOperators::ConvDataGrad);
-  dataGradParams = getDataGradParams(&(getOp<ConvDataGradOp>()));
 }
 
 ConvWeightsGradOpx::ConvWeightsGradOpx(Op *op, Devicex *devicex)
@@ -241,12 +323,47 @@ ConvWeightsGradOpx::ConvWeightsGradOpx(Op *op, Devicex *devicex)
   verifyOp<ConvWeightsGradOp>(op, Onnx::GradOperators::ConvWeightsGrad);
 }
 
+ConvFlipWeightsGradOpx::ConvFlipWeightsGradOpx(Op *op_, Devicex *devicex_)
+    : Opx(op_, devicex_) {
+  verifyOp<ConvFlipWeightsOp>(op_, Onnx::CustomOperators::ConvFlipWeights);
+}
+
+void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
+
+  auto &op = getOp<ConvFlipWeightsOp>();
+
+  poplar::Tensor weights   = getInTensor(ConvFlipWeightsOp::getInIndex());
+  poplar::Tensor weights5D = addGroupDimensionIfMissing(weights);
+
+  auto fwdOptions            = dv_p->bwdConvOptions;
+  fwdOptions.options["pass"] = "TRAINING_FWD";
+
+  poplin::ConvParams popConvParams = getPoplarConvParams(op.getParameters());
+
+  auto convWeights = poplin::createWeights(graph(),
+                                           popConvParams,
+                                           "flipedWeights",
+                                           fwdOptions.toOptionFlags(),
+                                           &dv_p->convCache);
+
+  poplin::weightsTransposeChansFlipXY(
+      graph(), weights5D, convWeights, seq, idStr() + "/flip");
+
+  // Taken the 1 off the front convWeights if it was added.
+  if (weights.rank() != weights5D.rank()) {
+    convWeights = convWeights.squeeze({0});
+  }
+
+  setOutTensor(ConvFlipWeightsOp::getOutIndex(), convWeights);
+}
+
 namespace {
 OpxCreator<ConvOpx> convpxCreator(Onnx::Operators::Conv_1);
-OpxCreator<ConvDataGradOpx>
-    convDataGradOpxCreator(Onnx::GradOperators::ConvDataGrad);
 OpxCreator<ConvWeightsGradOpx>
     convWeightsGradOpxCreator(Onnx::GradOperators::ConvWeightsGrad);
+OpxCreator<ConvFlipWeightsGradOpx>
+    convFlipWeightsGradOpxCreator(Onnx::CustomOperators::ConvFlipWeights);
+
 } // namespace
 
 } // namespace popx

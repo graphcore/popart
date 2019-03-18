@@ -8,13 +8,10 @@ namespace poponnx {
 class MatMulOp : public Op {
 public:
   MatMulOp(const OperatorIdentifier &_opid,
-           bool cacheOperation_,
            const Op::Settings &settings_);
   MatMulOp(const MatMulOp &) = default;
   MatMulOp &operator=(const MatMulOp &) = delete;
   ~MatMulOp() override                  = default;
-
-  bool cacheOperation = true;
 
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;

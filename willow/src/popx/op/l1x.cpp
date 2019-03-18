@@ -26,9 +26,9 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   // Signum : +1 of positive, -1 if negative, 0 if zero.
   poplar::Tensor signumTensor = popops::map(graph(),
                                             popops::expr::UnaryOpType::SIGNUM,
-                                            get(inId(0)),
+                                            getInTensor(0),
                                             prog,
-                                            "signum/" + inId(0));
+                                            idStr() + "/Signum");
 
   // scale the signum tensor by lambda,
   // so +lambda if positive, -lambda if negative, 0 if zero
@@ -37,9 +37,9 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                                           signumTensor,
                                           t_lambda,
                                           prog,
-                                          "multiply/" + inId(0));
+                                          idStr() + "/Multiply");
 
-  insert(outId(0), gradTensor);
+  setOutTensor(0, gradTensor);
 }
 
 InputCreatorType L1Opx::getInputCreatorType(InIndex) const {
@@ -51,9 +51,9 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
   L1Op &l1op               = getOp<L1Op>();
   poplar::Tensor absTensor = popops::map(graph(),
                                          popops::expr::UnaryOpType::ABSOLUTE,
-                                         get(inId(0)),
+                                         getInTensor(0),
                                          prog,
-                                         "abs/" + inId(0));
+                                         idStr() + "/abs");
 
   if (absTensor.rank() == 0) {
     throw error("invalid tensor (rank-0) in L1Opx");
@@ -72,7 +72,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
                      {popops::Operation::ADD, l1op.l1l()->getLambda()},
                      prog);
 
-  insert(outId(0), reduction);
+  setOutTensor(0, reduction);
 }
 
 L1GradOpx::L1GradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {

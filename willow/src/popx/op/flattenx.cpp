@@ -19,17 +19,17 @@ poplar::Tensor FlattenAliasOpx::grow(poplar::program::Sequence &prog,
 }
 
 void FlattenAliasOpx::grow(poplar::program::Sequence &prog) const {
-  auto input = get(inId(FlattenOp::getInIndex()));
+  auto input = getInTensor(FlattenOp::getInIndex());
 
-  insert(outId(FlattenOp::getOutIndex()), grow(prog, input));
+  setOutTensor(FlattenOp::getOutIndex(), grow(prog, input));
 }
 
 void FlattenOpx::grow(poplar::program::Sequence &prog) const {
-  auto input = get(inId(FlattenOp::getInIndex()));
+  auto input = getInTensor(FlattenOp::getInIndex());
 
   auto output = cloneNcopy(prog, FlattenAliasOpx::grow(prog, input));
 
-  insert(outId(FlattenOp::getOutIndex()), output);
+  setOutTensor(FlattenOp::getOutIndex(), output);
 }
 
 FlattenGradOpx::FlattenGradOpx(Op *op, Devicex *devicex)

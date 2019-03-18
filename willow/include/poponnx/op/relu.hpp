@@ -14,6 +14,8 @@ public:
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
 
+  bool supportsCaching() override { return true; }
+
   std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
 };
 
@@ -23,6 +25,8 @@ public:
   ReluInplaceOp(const ReluOp &);
   void setup() final;
   // This in-place Op modifies its unique input at InIndex 0
+
+  bool supportsCaching() override { return true; }
 
   view::Region modifies(InIndex index) const final { return uses(index); }
   view::Region aliases(InIndex index) const final { return uses(index); }
@@ -42,6 +46,8 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
+
+  bool supportsCaching() override { return true; }
 
   // The index at which the output of the Relu (the "relud" tensor)
   // is an input to this ReluGradOp

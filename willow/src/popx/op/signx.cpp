@@ -19,12 +19,12 @@ SignOpx::SignOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 
 void SignOpx::grow(poplar::program::Sequence &prog) const {
 
-  insert(outId(SignOp::getOutIndex()),
-         popops::map(graph(),
-                     popops::expr::UnaryOpType::SIGNUM,
-                     get(inId(SignOp::getInIndex())),
-                     prog,
-                     idStr()));
+  setOutTensor(SignOp::getOutIndex(),
+               popops::map(graph(),
+                           popops::expr::UnaryOpType::SIGNUM,
+                           getInTensor(SignOp::getInIndex()),
+                           prog,
+                           idStr()));
 }
 
 SignGradOpx::SignGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -39,7 +39,7 @@ void SignGradOpx::grow(poplar::program::Sequence &) const {
                           0,
                           idStr());
 
-  insert(outId(SignGradOp::getOutIndex()), outTensor);
+  setOutTensor(SignGradOp::getOutIndex(), outTensor);
 }
 
 namespace {

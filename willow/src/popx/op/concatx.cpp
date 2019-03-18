@@ -18,13 +18,13 @@ void ConcatOpx::grow(poplar::program::Sequence &prog) const {
   tensors.reserve(op->input->n());
 
   for (int i = 0; i < op->input->n(); ++i) {
-    tensors.push_back(get(inId(ConcatOp::getInIndex(i))));
+    tensors.push_back(getInTensor(ConcatOp::getInIndex(i)));
   }
 
   poplar::Tensor concat =
       poplar::concat(tensors, static_cast<unsigned>(op->getAxis()));
 
-  insert(outId(ConcatOp::getOutIndex()), cloneNcopy(prog, concat));
+  setOutTensor(ConcatOp::getOutIndex(), cloneNcopy(prog, concat));
 }
 
 ConcatInplaceOpx::ConcatInplaceOpx(Op *op_, Devicex *devicex)
@@ -37,13 +37,13 @@ void ConcatInplaceOpx::grow(poplar::program::Sequence &) const {
   tensors.reserve(op->input->n());
 
   for (int i = 0; i < op->input->n(); ++i) {
-    tensors.push_back(get(inId(ConcatOp::getInIndex(i))));
+    tensors.push_back(getInTensor(ConcatOp::getInIndex(i)));
   }
 
   poplar::Tensor concat =
       poplar::concat(tensors, static_cast<unsigned>(op->getAxis()));
 
-  insert(outId(ConcatOp::getOutIndex()), concat);
+  setOutTensor(ConcatOp::getOutIndex(), concat);
 }
 
 ConcatGradOpx::ConcatGradOpx(Op *op_, Devicex *devicex)
@@ -52,12 +52,12 @@ ConcatGradOpx::ConcatGradOpx(Op *op_, Devicex *devicex)
 }
 
 void ConcatGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto input = get(inId(ConcatGradOp::getInIndex()));
+  auto input = getInTensor(ConcatGradOp::getInIndex());
   auto out   = input.slice(static_cast<std::size_t>(op->getStart()),
                          static_cast<std::size_t>(op->getEnd()),
                          static_cast<unsigned>(op->getAxis()));
 
-  insert(outId(ConcatGradOp::getOutIndex()), cloneNcopy(prog, out));
+  setOutTensor(ConcatGradOp::getOutIndex(), cloneNcopy(prog, out));
 }
 
 namespace {

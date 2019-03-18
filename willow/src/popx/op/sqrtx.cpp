@@ -12,12 +12,12 @@ SqrtOpx::SqrtOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 }
 
 void SqrtOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(0),
-         popops::map(graph(),
-                     popops::expr::UnaryOpType::SQRT,
-                     get(inId(0)),
-                     prog,
-                     idStr()));
+  setOutTensor(0,
+               popops::map(graph(),
+                           popops::expr::UnaryOpType::SQRT,
+                           getInTensor(0),
+                           prog,
+                           idStr()));
 }
 
 namespace {

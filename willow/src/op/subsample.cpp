@@ -74,7 +74,7 @@ void SubsampleOp::appendAttributes(OpSerialiserBase &os) const {
 
 SubsampleGradOp::SubsampleGradOp(const SubsampleOp &fwdOp_)
     : Op(Onnx::CustomGradOperators::SubsampleGrad, fwdOp_.getSettings()),
-      strides(fwdOp_.strides_u32()), fwdOpInfo(fwdOp_.inInfo(0)) {}
+      strides(fwdOp_.getStrides()), fwdOpInfo(fwdOp_.inInfo(0)) {}
 
 void SubsampleGradOp::setup() { output->tensor(0)->info = fwdOpInfo; }
 
@@ -90,6 +90,11 @@ const std::map<int, int> &SubsampleGradOp::gradOutToNonGradIn() const {
       {getOutIndex(), SubsampleOp::getInIndex()}};
 
   return outInfo;
+}
+
+void SubsampleGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("strides", strides);
 }
 
 namespace {

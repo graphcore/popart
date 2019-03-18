@@ -70,6 +70,8 @@ public:
 
   float getEpsilon() const { return epsilon; }
 
+  void appendAttributes(OpSerialiserBase &) const override;
+
 private:
   float epsilon;
   TensorInfo fwdInInfo, fwdScaleInInfo, fwdBInInfo;

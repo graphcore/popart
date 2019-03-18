@@ -28,9 +28,9 @@ InstanceNormOpx::InstanceNormOpx(Op *op, Devicex *devicex)
 void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
 
   // Get the inputs
-  auto input = get(inId(InstanceNormOp::getInputInIndex()));
-  auto scale = get(inId(InstanceNormOp::getScaleInIndex()));
-  auto b     = get(inId(InstanceNormOp::getBInIndex()));
+  auto input = getInTensor(InstanceNormOp::getInputInIndex());
+  auto scale = getInTensor(InstanceNormOp::getScaleInIndex());
+  auto b     = getInTensor(InstanceNormOp::getBInIndex());
 
   // Get the attributes
   float epsilon = getOp<InstanceNormOp>().getEpsilon();
@@ -61,9 +61,9 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
       convertPoplarOutputToOnnxOutput(result.first, nonBroadcastDims);
 
   // Return the result
-  insert(outId(InstanceNormOp::getOutIndex()), y);
-  insert(outId(InstanceNormOp::getMeanOutIndex()), mean);
-  insert(outId(InstanceNormOp::getInvStdDevOutIndex()), invStdDev);
+  setOutTensor(InstanceNormOp::getOutIndex(), y);
+  setOutTensor(InstanceNormOp::getMeanOutIndex(), mean);
+  setOutTensor(InstanceNormOp::getInvStdDevOutIndex(), invStdDev);
 }
 
 InstanceNormGradOpx::InstanceNormGradOpx(Op *op, Devicex *devicex)
@@ -73,11 +73,11 @@ InstanceNormGradOpx::InstanceNormGradOpx(Op *op, Devicex *devicex)
 }
 
 void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto out_grad    = get(inId(InstanceNormGradOp::getOutGradInIndex()));
-  auto input       = get(inId(InstanceNormGradOp::getInputInIndex()));
-  auto scale       = get(inId(InstanceNormGradOp::getScaleInIndex()));
-  auto mean        = get(inId(InstanceNormGradOp::getMeanInIndex()));
-  auto inv_std_dev = get(inId(InstanceNormGradOp::getInvStdDevInIndex()));
+  auto out_grad    = getInTensor(InstanceNormGradOp::getOutGradInIndex());
+  auto input       = getInTensor(InstanceNormGradOp::getInputInIndex());
+  auto scale       = getInTensor(InstanceNormGradOp::getScaleInIndex());
+  auto mean        = getInTensor(InstanceNormGradOp::getMeanInIndex());
+  auto inv_std_dev = getInTensor(InstanceNormGradOp::getInvStdDevInIndex());
 
   auto input_whitened = popnn::in::instanceNormWhiten(
       graph(), input, mean, inv_std_dev, prog, idStr());
@@ -96,9 +96,9 @@ void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
   std::tie(scale_grad, b_grad) = popnn::in::instanceNormParamGradients(
       graph(), input_whitened, out_grad, prog, poplar::FLOAT, idStr());
 
-  insert(outId(InstanceNormGradOp::getInputOutIndex()), input_grad);
-  insert(outId(InstanceNormGradOp::getScaleOutIndex()), scale_grad);
-  insert(outId(InstanceNormGradOp::getBOutIndex()), b_grad);
+  setOutTensor(InstanceNormGradOp::getInputOutIndex(), input_grad);
+  setOutTensor(InstanceNormGradOp::getScaleOutIndex(), scale_grad);
+  setOutTensor(InstanceNormGradOp::getBOutIndex(), b_grad);
 }
 
 namespace {

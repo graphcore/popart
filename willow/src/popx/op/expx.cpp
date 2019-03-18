@@ -27,7 +27,7 @@ poplar::Tensor ExpInplaceOpx::unwindTensorLayout(poplar::Tensor tensor,
 
 void ExpInplaceOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto t0 = get(inId(0));
+  auto t0 = getInTensor(0);
 
   // if all of the elements in the tensor are distinct in memory,
   // them we can use the poplar inplace version. Otherwise, we must
@@ -35,30 +35,30 @@ void ExpInplaceOpx::grow(poplar::program::Sequence &prog) const {
   if (t0.isParallelWriteable()) {
     popops::mapInPlace(graph(),
                        popops::expr::UnaryOpType::EXPONENT,
-                       get(inId(ExpOp::getInIndex())),
+                       getInTensor(ExpOp::getInIndex()),
                        prog,
                        idStr());
 
-    insert(outId(0), get(inId(0)));
+    setOutTensor(0, getInTensor(0));
   }
 
   else {
-    insert(outId(ExpOp::getOutIndex()),
-           popops::map(graph(),
-                       popops::expr::UnaryOpType::EXPONENT,
-                       get(inId(ExpOp::getInIndex())),
-                       prog,
-                       idStr()));
+    setOutTensor(ExpOp::getOutIndex(),
+                 popops::map(graph(),
+                             popops::expr::UnaryOpType::EXPONENT,
+                             getInTensor(ExpOp::getInIndex()),
+                             prog,
+                             idStr()));
   }
 }
 
 void ExpOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(ExpOp::getOutIndex()),
-         popops::map(graph(),
-                     popops::expr::UnaryOpType::EXPONENT,
-                     get(inId(ExpOp::getInIndex())),
-                     prog,
-                     idStr()));
+  setOutTensor(ExpOp::getOutIndex(),
+               popops::map(graph(),
+                           popops::expr::UnaryOpType::EXPONENT,
+                           getInTensor(ExpOp::getInIndex()),
+                           prog,
+                           idStr()));
 }
 
 InputCreatorType ExpOpx::getInputCreatorType(InIndex index) const {

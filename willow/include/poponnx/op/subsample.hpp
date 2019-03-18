@@ -17,6 +17,8 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
+  std::vector<int64_t> getStrides() const { return strides; }
+
   // The stride is a vector whose length is the rank of the input tensor
   // If strides is defined as {1,..,1} the the input tensor will not be changed
   std::vector<uint32_t> strides_u32() const;
@@ -43,12 +45,14 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
-  std::vector<uint32_t> getStrides() const { return strides; }
+  std::vector<int64_t> getStrides() const { return strides; }
 
   Shape getFwdInputShape() { return fwdOpInfo.shape(); }
 
+  void appendAttributes(OpSerialiserBase &) const override;
+
 private:
-  std::vector<uint32_t> strides;
+  std::vector<int64_t> strides;
   TensorInfo fwdOpInfo;
 };
 

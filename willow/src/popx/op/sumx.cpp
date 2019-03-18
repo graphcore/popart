@@ -35,7 +35,7 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
 
   // Add the input tensors as placeholders to the expression
   for (int i = 0; i < sumOp.input->n(); ++i) {
-    inputs.push_back(get(inId(i)));
+    inputs.push_back(getInTensor(i));
     exprs.push_back(make_unique<popops::expr::PlaceHolder>(i + 1));
     expr.push(exprs.back().get());
   }
@@ -54,7 +54,7 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
   // Compute the sum
   auto sum = popops::map(graph(), *expr.front(), inputs, prog);
 
-  insert(outId(SumOp::getOutIndex()), sum);
+  setOutTensor(SumOp::getOutIndex(), sum);
 }
 
 InputCreatorType SumOpx::getInputCreatorType(InIndex index) const {
@@ -94,15 +94,20 @@ void SumArgGradOpx::grow(poplar::program::Sequence &prog) const {
   // Remove axes from the result that were not present ( or 1) in the input to
   // the fwd op
   auto out = popops::reduce(graph(),
-                            get(inId(SumArgGradOp::getGradInIndex())),
+                            getInTensor(SumArgGradOp::getGradInIndex()),
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
                             prog,
                             idStr());
 
+  logging::info("{} Shape of SumArgGradOpx output {} {}",
+                out,
+                out.shape(),
+                outInfo(SumArgGradOp::getOutIndex()).shape_szt());
+
   // Reshape the output, to add 1's if needed
-  insert(outId(SumArgGradOp::getOutIndex()),
-         out.reshape(outInfo(SumArgGradOp::getOutIndex()).shape_szt()));
+  setOutTensor(SumArgGradOp::getOutIndex(),
+               out.reshape(outInfo(SumArgGradOp::getOutIndex()).shape_szt()));
 }
 
 namespace {

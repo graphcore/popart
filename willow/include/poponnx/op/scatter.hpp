@@ -47,6 +47,8 @@ public:
   static InIndex indicesInIndex() { return 1; }
   static InIndex gradOutIndex() { return 0; }
 
+  void appendAttributes(OpSerialiserBase &) const override;
+
 private:
   int64_t axis;
 };
@@ -68,6 +70,8 @@ public:
   static InIndex gradInIndex() { return 0; }
   static InIndex indicesInIndex() { return 1; }
   static InIndex gradOutIndex() { return 0; }
+
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   int64_t axis;

@@ -96,7 +96,6 @@ using OpsBeforeKey   = std::map<Op *, std::vector<Op *>>;
 static constexpr const char *sRecomputeOutputAttribute =
     "__recompute_output_in_backward_pass";
 static constexpr const char *sVirtualGraphAttribute = "__ipu_number";
-static constexpr const char *sCacheOperation        = "__cache_operation";
 static constexpr const char *sInplaceOpNames        = "__inplace_op_names";
 static constexpr const char *sInplaceOpPriorities   = "__inplace_op_priorities";
 

@@ -1,6 +1,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/mean.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/tensorindex.hpp>
 
 namespace poponnx {
@@ -25,6 +26,11 @@ MeanArgGradOp::MeanArgGradOp(const MeanOp &op_, InIndex inputIndex)
 
 const std::vector<GradInOutMapper> &MeanArgGradOp::gradInputInfo() const {
   return gradInputInfoVec;
+}
+
+void MeanArgGradOp::appendAttributes(OpSerialiserBase &os) const {
+  LinearVariadicGradOp::appendAttributes(os);
+  os.appendAttribute("scale", getScale());
 }
 
 namespace {

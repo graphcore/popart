@@ -221,6 +221,13 @@ const std::map<int, int> &ConcatGradOp::gradOutToNonGradIn() const {
 
 void ConcatGradOp::setup() { outInfo(getOutIndex()) = gradInfo; }
 
+void ConcatGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axis", axis);
+  os.appendAttribute("start", start);
+  os.appendAttribute("end", end);
+}
+
 int64_t ConcatGradOp::getAxis() const { return axis; }
 
 int64_t ConcatGradOp::getStart() const { return start; }

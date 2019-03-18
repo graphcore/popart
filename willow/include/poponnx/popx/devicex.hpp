@@ -12,8 +12,8 @@
 #include <poponnx/device.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/popx/enigma.hpp>
-#include <poponnx/popx/graphcachex.hpp>
 #include <poponnx/popx/poplaroptionsx.hpp>
+#include <poponnx/popx/subgraphoutlinex.hpp>
 #include <poponnx/pritask.hpp>
 
 namespace poponnx {
@@ -159,9 +159,6 @@ public:
   poplin::PlanningCache convCache;
   poplin::matmul::PlanningCache matmulCache;
 
-  // Poplar level graph caching
-  GraphCachex graphCache;
-
   PoplarOptions fwdConvOptions, bwdConvOptions, wuConvOptions;
   PoplarOptions fwdMmOptions, bwdMmLhsOptions, bwdMmRhsOptions;
   poplar::OptionFlags engineOptions, reportOptions;
@@ -255,11 +252,14 @@ private:
   // and for device->host
   PopStreamId d2hId(TensorId) const;
 
+  // Hack need to for subgraph. do better
+public:
   std::unique_ptr<Opx> createOpx(Op *);
 
   // 1-to-1 mapping between Ops and Opxs
   std::map<OpId, std::unique_ptr<Opx>> opxs;
 
+private:
   // the poplar::Streams for poplar::Tensors,
   // from host to device:
   std::map<TensorId, poplar::DataStream> fromHostStreams;
@@ -306,6 +306,9 @@ private:
   // Store input tensors based on how they are allocated
   std::set<TensorId> linearlyCreatedInputTensors;
   std::set<TensorId> efficientlyCreatedInputTensors;
+
+  // The subgraph outliner
+  SubgraphOutlinex outline;
 };
 
 } // namespace popx

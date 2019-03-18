@@ -32,6 +32,7 @@ enum class PreAliasPatternType {
   PADSUM,
   ABSGRADOP,
   SPLITGATHER,
+  CONVDATAGRAD,
 };
 
 // Definition: A tensor is "touched" by a Pattern if

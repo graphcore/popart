@@ -15,9 +15,6 @@ class ConvDataGradOp;
 
 namespace popx {
 
-poplin::ConvParams getFwdConvParams(const ConvOp *cOp);
-poplin::ConvParams getDataGradParams(const ConvDataGradOp *convDataGradOp);
-
 class ConvOpx : public Opx {
 public:
   ConvOpx(Op *, Devicex *);
@@ -25,21 +22,9 @@ public:
   InputCreatorType getInputCreatorType(InIndex) const final;
   bool createsEquiv(int, Opx *, int) const final;
   std::vector<TensorId> mustExistBeforeCreate(InIndex index0) const final;
-  const poplin::ConvParams &getParams() const;
   void grow(poplar::program::Sequence &) const final;
 
 private:
-  poplin::ConvParams fwdParams;
-};
-
-class ConvDataGradOpx : public Opx {
-public:
-  ConvDataGradOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
-  const poplin::ConvParams &getParams() const;
-
-private:
-  poplin::ConvParams dataGradParams;
 };
 
 class ConvWeightsGradOpx : public Opx {
@@ -47,6 +32,23 @@ public:
   ConvWeightsGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
+
+class ConvFlipWeightsGradOpx : public Opx {
+public:
+  ConvFlipWeightsGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+
+private:
+};
+
+// Helper functions to convert the ConvParameter
+
+// Returned the canonicalized for of the conv parameters
+ConvParameters canonicalizeConvParams(const ConvParameters &param);
+
+// Convert the conv parameters from the fwd conv into the form that
+// can be used by the bwd conv
+ConvParameters getConvGradParameters(const ConvParameters &fwdParams);
 
 } // namespace popx
 } // namespace poponnx

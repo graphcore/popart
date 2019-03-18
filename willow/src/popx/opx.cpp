@@ -78,6 +78,23 @@ void Opx::insert(TensorId id, const poplar::Tensor &tensor) const {
 TensorId Opx::inId(InIndex index) const { return op_p->input->id(index); }
 TensorId Opx::outId(OutIndex index) const { return op_p->output->id(index); }
 
+const poplar::Tensor &Opx::getInTensor(InIndex index) const {
+  if (!cachedInputs.empty()) {
+    return cachedInputs[index];
+  } else {
+    return get(op_p->input->id(index));
+  }
+}
+
+void Opx::setOutTensor(OutIndex index, const poplar::Tensor &tensor) const {
+  // Assume that if we have cached inputs then we will use cached outputs
+  if (cachedOutputs) {
+    cachedOutputs->insert(cachedOutputs->begin() + index, tensor);
+  } else {
+    insert(op_p->output->id(index), tensor);
+  }
+}
+
 Tensor *Opx::inTensor(InIndex index) const {
   return op_p->input->tensor(index);
 }

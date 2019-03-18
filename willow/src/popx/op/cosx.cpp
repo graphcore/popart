@@ -12,12 +12,12 @@ CosOpx::CosOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 }
 
 void CosOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(CosOp::getOutIndex()),
-         popops::map(graph(),
-                     popops::expr::UnaryOpType::COS,
-                     get(inId(CosOp::getInIndex())),
-                     prog,
-                     idStr()));
+  setOutTensor(CosOp::getOutIndex(),
+               popops::map(graph(),
+                           popops::expr::UnaryOpType::COS,
+                           getInTensor(CosOp::getInIndex()),
+                           prog,
+                           idStr()));
 }
 
 namespace {

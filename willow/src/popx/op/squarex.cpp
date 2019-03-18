@@ -13,12 +13,12 @@ SquareOpx::SquareOpx(Op *op, Devicex *devicex)
 }
 
 void SquareOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(0),
-         popops::map(graph(),
-                     popops::expr::UnaryOpType::SQUARE,
-                     get(inId(0)),
-                     prog,
-                     idStr()));
+  setOutTensor(0,
+               popops::map(graph(),
+                           popops::expr::UnaryOpType::SQUARE,
+                           getInTensor(0),
+                           prog,
+                           idStr()));
 }
 
 namespace {

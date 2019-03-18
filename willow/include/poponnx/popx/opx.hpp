@@ -83,10 +83,7 @@ public:
   const poplar::Tensor &get(TensorId) const;
   // shortcut for dv_p->tensors.insert
   void insert(TensorId, const poplar::Tensor &) const;
-  // shortcut for op_p->input.id(int)
-  TensorId inId(InIndex) const;
-  // shortcut for op_p->output.id(int)
-  TensorId outId(OutIndex) const;
+
   // shortcut for op_p->input.id(int)
   Tensor *inTensor(InIndex) const;
   // shortcut for op_p->output.id(int)
@@ -151,6 +148,17 @@ public:
 
   // The Devicex to which this Opx belongs
   Devicex *dv_p;
+
+  const poplar::Tensor &getInTensor(InIndex index) const;
+
+  void setOutTensor(OutIndex index, const poplar::Tensor &tensor) const;
+
+  // Input & output tensors used by the opx when it is cached
+  std::vector<poplar::Tensor> cachedInputs;
+  std::vector<poplar::Tensor> *cachedOutputs = nullptr;
+
+  TensorId inId(InIndex index) const;
+  TensorId outId(OutIndex index) const;
 };
 
 } // namespace popx

@@ -57,7 +57,7 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
   // One loss per class, so the output is reshaped to match label input shape
   reduction = reduction.reshape(label.shape());
 
-  insert(outId(0), reduction);
+  setOutTensor(0, reduction);
 }
 
 NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -110,7 +110,7 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
 
-  insert(outId(0), oneHot);
+  setOutTensor(0, oneHot);
 }
 
 namespace {

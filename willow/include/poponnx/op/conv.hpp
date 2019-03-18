@@ -2,23 +2,119 @@
 #define GUARD_NEURALNET_CONV_HPP
 
 #include <poponnx/op/receptive.hpp>
+#include <poponnx/util.hpp>
 
 namespace poponnx {
+
+// The detailed conv parameters at the ir level
+struct ConvParameters {
+
+  DataType type;
+  int64_t batchSize;
+
+  int64_t numInChannels;
+  int64_t numOutChannels;
+  int64_t numGroups;
+
+  Shape inputShape;
+  Shape kernelShape;
+
+  struct Input {
+    std::vector<int64_t> lowerTruncation;
+    std::vector<int64_t> upperTruncation;
+    std::vector<int64_t> dilation;
+    std::vector<int64_t> lowerPadding;
+    std::vector<int64_t> upperPadding;
+    std::vector<bool> flip;
+  } inputTransformation, kernelTransformation;
+
+  struct Output {
+    std::vector<int64_t> lowerTruncation;
+    std::vector<int64_t> upperTruncation;
+    std::vector<int64_t> stride;
+    std::vector<int64_t> lowerPadding;
+    std::vector<int64_t> upperPadding;
+  } outputTransformation;
+};
+
+inline bool operator==(const ConvParameters::Input &a,
+                       const ConvParameters::Input &b) {
+  return std::tie(a.lowerTruncation,
+                  a.upperTruncation,
+                  a.dilation,
+                  a.lowerPadding,
+                  a.upperPadding,
+                  a.flip) == std::tie(b.lowerTruncation,
+                                      b.upperTruncation,
+                                      b.dilation,
+                                      b.lowerPadding,
+                                      b.upperPadding,
+                                      b.flip);
+}
+
+inline bool operator!=(const ConvParameters::Input &a,
+                       const ConvParameters::Input &b) {
+  return !(a == b);
+}
+
+inline bool operator==(const ConvParameters::Output &a,
+                       const ConvParameters::Output &b) {
+  return std::tie(a.lowerTruncation,
+                  a.upperTruncation,
+                  a.stride,
+                  a.lowerPadding,
+                  a.upperPadding) == std::tie(b.lowerTruncation,
+                                              b.upperTruncation,
+                                              b.stride,
+                                              b.lowerPadding,
+                                              b.upperPadding);
+}
+
+inline bool operator!=(const ConvParameters::Output &a,
+                       const ConvParameters::Output &b) {
+  return !(a == b);
+}
+
+inline bool operator==(const ConvParameters &a, const ConvParameters &b) {
+  return std::tie(a.type,
+                  a.batchSize,
+                  a.numInChannels,
+                  a.numOutChannels,
+                  a.numGroups,
+                  a.inputShape,
+                  a.kernelShape,
+                  a.inputTransformation,
+                  a.kernelTransformation,
+                  a.outputTransformation) == std::tie(b.type,
+                                                      b.batchSize,
+                                                      b.numInChannels,
+                                                      b.numOutChannels,
+                                                      b.numGroups,
+                                                      b.inputShape,
+                                                      b.kernelShape,
+                                                      b.inputTransformation,
+                                                      b.kernelTransformation,
+                                                      b.outputTransformation);
+}
+
+inline bool operator!=(const ConvParameters &a, const ConvParameters &b) {
+  return !(a == b);
+}
 
 class ConvOp : public HasReceptiveFieldOp {
 public:
   ConvOp(const OperatorIdentifier &_opid,
-         bool cacheOperation_,
          const HasReceptiveFieldOp::Settings &settings_);
   int64_t nOutChans;
   int64_t group;
-  bool cacheOperation = true;
   // convenience functions:
   const Tensor *dataIn() const;
   const Tensor *weightsIn() const;
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   int64_t getNOutChans() const final;
+
+  void setup() override;
 
   // from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv :
   // "data" at index 0, "weights" at index 1, "bias" as index 2.
@@ -31,7 +127,26 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  const ConvParameters &getParameters() const { return params; }
+  void setParameters(const ConvParameters &p) { params = p; }
+
+  // Rather than overrideing the outshape for the conv when used in the bwd pass
+  // it would be better to figureout the formula.
+  Shape getOutShape() const override;
+
+  void setOutputShape(const Shape &s) { outputShape = s; }
+
+  const Shape &getInputShape() const { return inputShape; }
+
 private:
+  ConvParameters params;
+
+  // Override the outputshape of the conv
+  Shape outputShape;
+
+  // Saved shape of the input data
+  Shape inputShape;
+
   void setup0() final;
   void setSpatialK() final;
 };
@@ -62,6 +177,23 @@ private:
   TensorInfo weightsInfo;
 };
 
+class ConvFlipWeightsOp : public Op {
+public:
+  ConvFlipWeightsOp(const OperatorIdentifier &_opid,
+                    const Op::Settings &settings_);
+  ~ConvFlipWeightsOp() override;
+  void setup() final;
+
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
+
+  const ConvParameters &getParameters() const { return params; }
+  void setParameters(const ConvParameters &p) { params = p; }
+
+private:
+  ConvParameters params;
+};
+
 class ConvDataGradOp : public Op {
 public:
   ConvDataGradOp(const ConvOp &);
@@ -78,7 +210,11 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  const ConvParameters &getParameters() const { return params; }
+  void setParameters(const ConvParameters &p) { params = p; }
+
 private:
+  ConvParameters params;
   std::unique_ptr<Op> cloneOfCreator;
   TensorInfo dataInfo;
 };

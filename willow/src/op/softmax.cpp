@@ -57,6 +57,11 @@ const std::map<int, int> &SoftmaxGradOp::gradOutToNonGradIn() const {
 
 int64_t SoftmaxGradOp::getAxis() const { return axis; }
 
+void SoftmaxGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axis", axis);
+}
+
 SoftmaxGradDirectOp::SoftmaxGradDirectOp(const NllLoss *nls,
                                          const Op::Settings &settings_)
     : Op(Onnx::CustomGradOperators::SoftmaxGradDirect, settings_) {

@@ -74,11 +74,11 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
   // Using the input/attribute names as per the onnx spec
 
   // Inputs
-  auto x     = get(inId(BatchNormOp::getXInIndex()));
-  auto scale = get(inId(BatchNormOp::getScaleInIndex()));
-  auto b     = get(inId(BatchNormOp::getBInIndex()));
-  auto mean  = get(inId(BatchNormOp::getMeanInIndex()));
-  auto var   = get(inId(BatchNormOp::getVarInIndex()));
+  auto x     = getInTensor(BatchNormOp::getXInIndex());
+  auto scale = getInTensor(BatchNormOp::getScaleInIndex());
+  auto b     = getInTensor(BatchNormOp::getBInIndex());
+  auto mean  = getInTensor(BatchNormOp::getMeanInIndex());
+  auto var   = getInTensor(BatchNormOp::getVarInIndex());
 
   // Attributes
   float epsilon  = op.getEpsilon();
@@ -94,9 +94,9 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
       graph().setTileMapping(y, 0);
       graph().setTileMapping(batchMean, 0);
       graph().setTileMapping(batchVar, 0);
-      insert(outId(BatchNormOp::getYOutIndex()), y);
-      insert(outId(BatchNormOp::getMeanOutIndex()), batchMean);
-      insert(outId(BatchNormOp::getVarOutIndex()), batchVar);
+      setOutTensor(BatchNormOp::getYOutIndex(), y);
+      setOutTensor(BatchNormOp::getMeanOutIndex(), batchMean);
+      setOutTensor(BatchNormOp::getVarOutIndex(), batchVar);
     } else {
       // Convert input shape to poplar rules
       poplar::Tensor xP;
@@ -151,11 +151,11 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
           idStr() + "/runningVar");
 
       // return the results
-      insert(outId(BatchNormOp::getYOutIndex()), y);
-      insert(outId(BatchNormOp::getMeanOutIndex()), runningMean);
-      insert(outId(BatchNormOp::getVarOutIndex()), runningVar);
-      insert(outId(BatchNormOp::getSavedMeanOutIndex()), batchMean);
-      insert(outId(BatchNormOp::getSavedVarOutIndex()), batchVar);
+      setOutTensor(BatchNormOp::getYOutIndex(), y);
+      setOutTensor(BatchNormOp::getMeanOutIndex(), runningMean);
+      setOutTensor(BatchNormOp::getVarOutIndex(), runningVar);
+      setOutTensor(BatchNormOp::getSavedMeanOutIndex(), batchMean);
+      setOutTensor(BatchNormOp::getSavedVarOutIndex(), batchVar);
     }
   } else {
     // When testing
@@ -164,7 +164,7 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
     if (isZeroElementArray(x.shape())) {
       auto y = graph().addConstant(x.elementType(), x.shape(), 0);
       graph().setTileMapping(y, 0);
-      insert(outId(BatchNormOp::getYOutIndex()), y);
+      setOutTensor(BatchNormOp::getYOutIndex(), y);
     } else {
       // Convert input shape to poplar rules
       poplar::Tensor xP;
@@ -181,7 +181,7 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
       y = convertPoplarOutputToOnnxOutput(y, nonBroadcastDims);
 
       // return the result
-      insert(outId(BatchNormOp::getYOutIndex()), y);
+      setOutTensor(BatchNormOp::getYOutIndex(), y);
     }
   }
 }
@@ -231,11 +231,11 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
   auto op = getOp<BatchNormGradOp>();
 
   // Inputs
-  auto x     = get(inId(BatchNormGradOp::getXInIndex()));
-  auto scale = get(inId(BatchNormGradOp::getScaleInIndex()));
-  auto mean  = get(inId(BatchNormGradOp::getMeanInIndex()));
-  auto var   = get(inId(BatchNormGradOp::getVarInIndex()));
-  auto yGrad = get(inId(BatchNormGradOp::getYGradInIndex()));
+  auto x     = getInTensor(BatchNormGradOp::getXInIndex());
+  auto scale = getInTensor(BatchNormGradOp::getScaleInIndex());
+  auto mean  = getInTensor(BatchNormGradOp::getMeanInIndex());
+  auto var   = getInTensor(BatchNormGradOp::getVarInIndex());
+  auto yGrad = getInTensor(BatchNormGradOp::getYGradInIndex());
 
   // Attributes
   float epsilon = op.getEpsilon();
@@ -248,9 +248,9 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
     graph().setTileMapping(xGrad, 0);
     graph().setTileMapping(scaleGrad, 0);
     graph().setTileMapping(bGrad, 0);
-    insert(outId(BatchNormGradOp::getXOutIndex()), xGrad);
-    insert(outId(BatchNormGradOp::getScaleOutIndex()), scaleGrad);
-    insert(outId(BatchNormGradOp::getBOutIndex()), bGrad);
+    setOutTensor(BatchNormGradOp::getXOutIndex(), xGrad);
+    setOutTensor(BatchNormGradOp::getScaleOutIndex(), scaleGrad);
+    setOutTensor(BatchNormGradOp::getBOutIndex(), bGrad);
   } else {
 
     // Convert input's shape to poplar rules
@@ -270,9 +270,9 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
     xGrad = convertPoplarOutputToOnnxOutput(xGrad, nonBroadcastDims);
 
     // return the results
-    insert(outId(BatchNormGradOp::getXOutIndex()), xGrad);
-    insert(outId(BatchNormGradOp::getScaleOutIndex()), scaleGrad);
-    insert(outId(BatchNormGradOp::getBOutIndex()), bGrad);
+    setOutTensor(BatchNormGradOp::getXOutIndex(), xGrad);
+    setOutTensor(BatchNormGradOp::getScaleOutIndex(), scaleGrad);
+    setOutTensor(BatchNormGradOp::getBOutIndex(), bGrad);
   }
 }
 

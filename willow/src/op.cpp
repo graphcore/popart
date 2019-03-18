@@ -350,4 +350,6 @@ Op::getSubgraphOutputs() const {
   return cmap;
 }
 
+bool Op::supportsCaching() { return true; }
+
 } // namespace poponnx

@@ -34,6 +34,8 @@ public:
 
   bool canBeReplacedByIdentity() override;
 
+  bool supportsCaching() override { return false; }
+
 private:
   // The input shape, with '1' inserted in reduction axes.
   // This is the same as the output shape if keepdims is true.

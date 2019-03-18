@@ -28,7 +28,7 @@ public:
   bool hasInitialHInput() const;
   bool hasInitialCInput() const;
 
-  void appendAttributes(OpSerialiserBase &) const;
+  void appendAttributes(OpSerialiserBase &) const override;
 
   bool isTraining() const;
 
@@ -53,6 +53,9 @@ public:
   static OutIndex getBiasesPassThroughIndex() { return 8; }
   static OutIndex getInputPassThroughIndex() { return 9; }
   static OutIndex getOutputPassThroughIndex() { return 10; }
+
+  // T7504
+  bool supportsCaching() override { return false; }
 
 private:
   void createPassThroughOutput(const TensorId &new_id,

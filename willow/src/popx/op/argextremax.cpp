@@ -57,7 +57,7 @@ static void AssignIota(poplar::Graph &graph,
 }
 
 void ArgExtremaOpx::grow(poplar::program::Sequence &prog) const {
-  auto input   = get(inId(ArgExtremaOp::getInIndex()));
+  auto input   = getInTensor(ArgExtremaOp::getInIndex());
   auto indices = graph().clone(poplar::INT, input);
 
   AssignIota(graph(), prog, indices, axis);
@@ -73,7 +73,7 @@ void ArgExtremaOpx::grow(poplar::program::Sequence &prog) const {
     result = result.squeeze({axis});
   }
 
-  insert(outId(ArgExtremaOp::getOutIndex()), result);
+  setOutTensor(ArgExtremaOp::getOutIndex(), result);
 }
 
 poplar::Tensor ArgExtremaOpx::createInput(InIndex) const {

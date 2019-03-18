@@ -116,6 +116,7 @@ void Ir::eraseOp(OpId id) {
   if (found == ops.end()) {
     throw error("ILE: no op " + std::to_string(id) + " to erase");
   }
+
   ops.erase(id);
 }
 
@@ -2064,7 +2065,9 @@ Op *Ir::getOp(OpId opId) {
 std::vector<Op *> Ir::getOpSchedule(const OpsBeforeKey &gCons) const {
   auto sorted = scheduler->getPartialOpSchedule(gCons);
   if (sorted.size() != ops.size()) {
-    throw error("failure to sort topologically in getOpSchedule");
+    throw error("failure to sort topologically in getOpSchedule ({} != {})",
+                sorted.size(),
+                ops.size());
   }
   return sorted;
 }
