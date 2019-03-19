@@ -17,8 +17,14 @@
 
 namespace poponnx {
 
-// Supported IR version
-const static uint64_t irVersion = 3;
+// Supported IR version - this is the file format version
+const static uint64_t minIrVersion = 3;
+const static uint64_t maxIrVersion = 4;
+
+// The Ir version will be set based on the version of the ai.onnx operator set.
+// However if a graph is created without any operators from this domain the
+// default Ir version will be as defined below.
+const static uint64_t defaultIrVersion = 4;
 
 // Default opset versions
 const static int64_t onnxOperatorSetVersion      = defaultAiOnnxOpset;
@@ -81,12 +87,21 @@ void BuilderImpl::addOpsetRequirement(const std::string &domain, int version) {
   auto *opset = model_.add_opset_import();
   opset->set_domain(domain);
   opset->set_version(version);
+
+  // Set the file format version based on the ai.onnx version
+  // as per https://github.com/onnx/onnx/blob/master/docs/Versioning.md
+  if (domain == Domain::ai_onnx) {
+    if (version <= 8)
+      model_.set_ir_version(3);
+    else // if (version >= 9)
+      model_.set_ir_version(4);
+  }
 }
 
 BuilderImpl::BuilderImpl() {}
 
 void BuilderImpl::configure() {
-  model_.set_ir_version(irVersion);
+  model_.set_ir_version(defaultIrVersion);
 
   model_.mutable_graph()->set_name("BuilderGraph");
 }
@@ -679,9 +694,11 @@ void BuilderImpl::loadModelProto(const std::string &modelProtoOrFilename) {
   onnx::checker::check_model(model_);
 
   // Check the IR version.
-  if (model_.ir_version() != irVersion) {
-    throw error("Expecting ONNX IR version {}, but got {}.",
-                irVersion,
+  if (model_.ir_version() < minIrVersion &&
+      model_.ir_version() > maxIrVersion) {
+    throw error("Expecting ONNX IR version {} to {}, but got {}.",
+                minIrVersion,
+                maxIrVersion,
                 model_.ir_version());
   }
 
