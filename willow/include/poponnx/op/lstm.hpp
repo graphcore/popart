@@ -30,6 +30,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const;
 
+  bool isTraining() const;
+
   static InIndex getInputInIndex() { return 0; }
   static InIndex getWeightsInIndex() { return 1; }
   static InIndex getRecurrenceInIndex() { return 2; }

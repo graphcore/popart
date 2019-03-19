@@ -166,7 +166,9 @@ void Ir::dotCheckpoint(DotCheck check) const {
   if (userOptions.dotSubgraphAnnotation) {
     logging::ir::trace("Getting matches from schedule of size {}",
                        scheduledOps.size());
-    matches = fwtools::subgraph::getMatches<Op>(scheduledOps);
+
+    // TODO : create option for threshold T7482
+    matches = fwtools::subgraph::getMatches<Op>(scheduledOps, 0.0f);
   }
   std::vector<std::vector<std::tuple<int, int>>> opToMatch(scheduledOps.size());
   for (int match_i = 0; match_i < matches.size(); ++match_i) {
@@ -1192,6 +1194,9 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
 
   OpId nonGradOpId = nonGradOp->id;
   auto backOps     = nonGradOp->getGradOps();
+  if (backOps.size() < 1) {
+    throw error("Cannot get gradients for {}", nonGradOp->debugName());
+  }
   std::vector<Op *> gradOps;
   for (auto &upop : backOps) {
     Op *gradOp    = upop.get();
@@ -1685,9 +1690,7 @@ void Ir::constructBackwards() {
         throw error("can't currently register gradient of " +
                     nongrad->tensor_type() + " tensor, " + nongrad->str());
 
-      default: {
-        throw error("only handling ActGrad and Variable for now");
-      }
+      default: { throw error("only handling ActGrad and Variable for now"); }
       }
     }
 
@@ -2183,6 +2186,14 @@ void Ir::applyInplacePattern() {
       }
     }
   }
+}
+
+Op &Ir::getSubgraphAnchorPlaceholder() {
+  static std::unique_ptr<Op> subgraphAnchorPlaceholder =
+      std::unique_ptr<Op>(new Op({"TempAnchorDomain", "TempAnchorType", 1},
+                                 Op::Settings{*this, "TempAnchorName"}));
+
+  return *subgraphAnchorPlaceholder.get();
 }
 
 } // namespace poponnx

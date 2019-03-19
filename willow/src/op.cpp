@@ -83,9 +83,7 @@ Op::~Op() = default;
 // The Op in the OpAndTensorIds is the gradient op, and
 // the TensorIds are the input indices of input of this
 // Op for which the gradient is computed
-std::vector<std::unique_ptr<Op>> Op::getGradOps() {
-  throw error("Cannot get gradients for {}", opid);
-}
+std::vector<std::unique_ptr<Op>> Op::getGradOps() { return {}; }
 
 void Op::setup() { throw error("No setup() for {}", opid); }
 
@@ -336,10 +334,14 @@ std::map<fwtools::subgraph::OutIndex, std::set<Op *>>
 Op::getSubgraphOutputs() const {
 
   std::map<fwtools::subgraph::OutIndex, std::set<Op *>> cmap;
+
   for (auto &index_tensor : output->tensorMap()) {
     auto out_index  = index_tensor.first;
     auto out_tensor = index_tensor.second;
     std::set<Op *> consumers;
+    if (settings.ir.isAnchored(out_tensor->id)) {
+      consumers.insert(&settings.ir.getSubgraphAnchorPlaceholder());
+    }
     for (auto &op : out_tensor->consumers.getOps()) {
       consumers.insert(op);
     }
