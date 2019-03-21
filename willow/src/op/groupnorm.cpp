@@ -73,6 +73,11 @@ void GroupNormGradOp::setup() {
   outInfo(getScaleOutIndex()) = fwdScaleInInfo;
   outInfo(getBOutIndex())     = fwdBInInfo;
 }
+
+void GroupNormGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("epsilon", epsilon);
+}
 namespace {
 static OpCreator<GroupNormOp> groupNormOpCreator(
     Onnx::CustomOperators::GroupNormalization_1,

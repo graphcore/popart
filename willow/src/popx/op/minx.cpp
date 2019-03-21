@@ -19,7 +19,7 @@ MinOpx::MinOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 }
 
 void MinOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = cloneNcopy(prog, get(inId(0)));
+  auto outTensor = cloneNcopy(prog, getInTensor(0));
 
   if (op_p->input->n() > 1) {
 
@@ -27,13 +27,13 @@ void MinOpx::grow(poplar::program::Sequence &prog) const {
       outTensor = popops::map(graph(),
                               popops::expr::BinaryOpType::MINIMUM,
                               outTensor,
-                              get(inId(i)),
+                              getInTensor(i),
                               prog,
                               idStr());
     }
   }
 
-  insert(outId(MinOp::getOutIndex()), outTensor);
+  setOutTensor(MinOp::getOutIndex(), outTensor);
 }
 
 MinArgGradOpx::MinArgGradOpx(Op *op_, Devicex *devicex_) : Opx(op_, devicex_) {}
@@ -51,15 +51,15 @@ void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
   auto mask =
       popops::map(graph(),
                   pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
-                  {get(inId(MinArgGradOp::getFwdOutInIndex())),
-                   get(inId(MinArgGradOp::getFwdInIndex()))},
+                  {getInTensor(MinArgGradOp::getFwdOutInIndex()),
+                   getInTensor(MinArgGradOp::getFwdInIndex())},
                   prog,
                   idStr());
 
   // Multiple the mask by the grad input
   auto result = popops::map(graph(),
                             pe::Mul(pe::_1, pe::_2),
-                            {mask, get(inId(MinArgGradOp::getGradInIndex()))},
+                            {mask, getInTensor(MinArgGradOp::getGradInIndex())},
                             prog,
                             idStr());
 
@@ -80,8 +80,8 @@ void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             idStr());
 
   // Reshape the output, to add 1's if needed
-  insert(outId(MinArgGradOp::getOutIndex()),
-         out.reshape(outInfo(MinArgGradOp::getOutIndex()).shape_szt()));
+  setOutTensor(MinArgGradOp::getOutIndex(),
+               out.reshape(outInfo(MinArgGradOp::getOutIndex()).shape_szt()));
 }
 
 namespace {

@@ -32,7 +32,7 @@ poplar::Tensor SoftmaxOpx::coerceTo2D(const poplar::Tensor &t, int64_t axis) {
 }
 
 void SoftmaxOpx::grow(poplar::program::Sequence &prog) const {
-  auto input = get(inId(SoftmaxOp::getInIndex()));
+  auto input = getInTensor(SoftmaxOp::getInIndex());
 
   const auto axis = getOp<SoftmaxOp>().getAxis();
   input           = coerceTo2D(input, axis);
@@ -41,7 +41,7 @@ void SoftmaxOpx::grow(poplar::program::Sequence &prog) const {
       graph(), popnn::NonLinearityType::SOFTMAX, input, prog, outId(0));
 
   outTensor = outTensor.reshape(inInfo(SoftmaxOp::getInIndex()).shape_szt());
-  insert(outId(0), outTensor);
+  setOutTensor(0, outTensor);
 }
 
 SoftmaxGradOpx::SoftmaxGradOpx(Op *op, Devicex *devicex)

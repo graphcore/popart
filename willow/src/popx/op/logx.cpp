@@ -15,11 +15,11 @@ LogOpx::LogOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 void LogOpx::grow(poplar::program::Sequence &prog) const {
   auto outTensor = popops::map(graph(),
                                popops::expr::UnaryOpType::LOGARITHM,
-                               get(inId(LogOp::getInIndex())),
+                               getInTensor(LogOp::getInIndex()),
                                prog,
                                idStr());
 
-  insert(outId(LogOp::getOutIndex()), outTensor);
+  setOutTensor(LogOp::getOutIndex(), outTensor);
 }
 
 namespace {

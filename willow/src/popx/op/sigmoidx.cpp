@@ -14,7 +14,7 @@ SigmoidOpx::SigmoidOpx(Op *op, Devicex *devicex)
 
 void SigmoidOpx::grow(poplar::program::Sequence &prog) const {
   // There is only an in-place popnn Tanh. We therefore clone first,
-  auto outTensor = cloneNcopy(prog, inId(SigmoidOp::getInIndex()));
+  auto outTensor = cloneNcopy(prog, getInTensor(SigmoidOp::getInIndex()));
 
   // and apply the inplace relu.
   popnn::nonLinearityInPlace(graph(),
@@ -23,7 +23,7 @@ void SigmoidOpx::grow(poplar::program::Sequence &prog) const {
                              prog,
                              outId(SigmoidOp::getOutIndex()));
 
-  insert(outId(SigmoidOp::getOutIndex()), outTensor);
+  setOutTensor(SigmoidOp::getOutIndex(), outTensor);
 }
 
 SigmoidGradOpx::SigmoidGradOpx(Op *op, Devicex *devicex)
@@ -33,15 +33,15 @@ SigmoidGradOpx::SigmoidGradOpx(Op *op, Devicex *devicex)
 
 void SigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
   auto outTensor = popnn::nonLinearityInputGradient(
-      graph(),                                      // graph,
-      popnn::NonLinearityType::SIGMOID,             // nonLinearityType,
-      get(inId(SigmoidGradOp::getFwdOutInIndex())), //  out,
-      get(inId(SigmoidGradOp::getGradInIndex())),   //  outGradient,
-      prog,                                         // prog,
-      idStr()                                       // debugPrefix
+      graph(),                                        // graph,
+      popnn::NonLinearityType::SIGMOID,               // nonLinearityType,
+      getInTensor(SigmoidGradOp::getFwdOutInIndex()), //  out,
+      getInTensor(SigmoidGradOp::getGradInIndex()),   //  outGradient,
+      prog,                                           // prog,
+      idStr()                                         // debugPrefix
   );
 
-  insert(outId(SigmoidOp::getOutIndex()), outTensor);
+  setOutTensor(SigmoidOp::getOutIndex(), outTensor);
 }
 
 namespace {

@@ -264,13 +264,11 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   losses = {up_losses[0].get()};
 
   std::vector<Match> expected_train_matches = {
-      // Conv, Conv, Conv
+      {{6, 13}, 6},
+      {{6, 9, 13, 16}, 3},
       {{0, 3}, 3},
-      // DataGrad, DataGrad, DataGrad
-      {{7, 10}, 3},
-      {{7, 8, 9, 10, 11, 12}, 1},
-      {{0, 1, 2, 3, 4, 5}, 1},
-  };
+      {{6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17, 18}, 1},
+      {{0, 1, 2, 3, 4, 5}, 1}};
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),

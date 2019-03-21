@@ -30,17 +30,17 @@ void PadOpx::grow(poplar::program::Sequence &) const {
 
   if (mode == "constant") {
     out_tensor = popops::pad(graph(),
-                             get(inId(PadOp::getInIndex())),
+                             getInTensor(PadOp::getInIndex()),
                              lower_padding,
                              upper_padding,
                              pad_value);
   } else if (mode == "edge") {
-    out_tensor = popops::pad(get(inId(PadOp::getInIndex())),
+    out_tensor = popops::pad(getInTensor(PadOp::getInIndex()),
                              lower_padding,
                              upper_padding,
                              popops::padding::Type::EDGE);
   } else if (mode == "reflect") {
-    out_tensor = popops::pad(get(inId(PadOp::getInIndex())),
+    out_tensor = popops::pad(getInTensor(PadOp::getInIndex()),
                              lower_padding,
                              upper_padding,
                              popops::padding::Type::REFLECT);
@@ -48,7 +48,7 @@ void PadOpx::grow(poplar::program::Sequence &) const {
     throw error("Bad mode type `{}' passed to pad op", mode);
   }
 
-  insert(outId(PadOp::getOutIndex()), out_tensor);
+  setOutTensor(PadOp::getOutIndex(), out_tensor);
 }
 
 PadOp *PadOpx::getPadOp() const { return dynamic_cast<PadOp *>(op_p); }

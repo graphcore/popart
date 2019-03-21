@@ -210,15 +210,15 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
   const auto outputShape =
       vXtoY<int64_t, std::size_t>(outShape(GatherOp::outIndex()));
 
-  auto indices = get(inId(GatherOp::indicesInIndex()));
-  auto data    = get(inId(GatherOp::dataInIndex()));
+  auto indices = getInTensor(GatherOp::indicesInIndex());
+  auto data    = getInTensor(GatherOp::dataInIndex());
 
   // If there are no indices, return an empty tensor of the appropriate
   // shape
   if (indices.numElements() == 0) {
     auto result = graph().addVariable(data.elementType(), outputShape);
 
-    insert(outId(GatherOp::outIndex()), result);
+    setOutTensor(GatherOp::outIndex(), result);
   } else {
     // Flatten the scalar indices
     indices                     = indices.flatten();
@@ -250,7 +250,7 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
     // Reshape into the expected ONNX shape
     result = result.reshape(outputShape);
 
-    insert(outId(GatherOp::outIndex()), result);
+    setOutTensor(GatherOp::outIndex(), result);
   }
 }
 
@@ -359,7 +359,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto outputShape =
       vXtoY<int64_t, std::size_t>(outShape(GatherGradOp::gradOutIndex()));
 
-  auto update = get(inId(GatherGradOp::gradInIndex()));
+  auto update = getInTensor(GatherGradOp::gradInIndex());
   auto result = createGatherInput(
       graph(),
       axis,
@@ -367,7 +367,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
       outputShape,
       op_p->str() + "output" + std::to_string(GatherGradOp::gradOutIndex()));
 
-  auto indices = get(inId(GatherGradOp::indicesInIndex()));
+  auto indices = getInTensor(GatherGradOp::indicesInIndex());
 
   std::vector<unsigned> update_window_dims(update.rank() - indices.rank());
   auto begin = update_window_dims.begin();
@@ -406,7 +406,7 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
 
   result = result.reshape(outputShape);
 
-  insert(outId(GatherGradOp::gradOutIndex()), result);
+  setOutTensor(GatherGradOp::gradOutIndex(), result);
 }
 
 namespace {

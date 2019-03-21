@@ -160,6 +160,11 @@ void BatchNormGradOp::setup() {
   outInfo(getBOutIndex())     = fwdBInInfo;
 }
 
+void BatchNormGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("epsilon", epsilon);
+}
+
 namespace {
 static OpCreator<BatchNormOp> batchNormOpCreator(
     {Onnx::Operators::BatchNormalization_6,

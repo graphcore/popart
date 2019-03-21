@@ -23,17 +23,17 @@ void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   // First update weights with weight decay
   popops::mapInPlace(graph(),
                      pe::Mul(pe::_1, pe::_2),
-                     {get(inId(SGDVarUpdateOp::getVarInIndex())),
-                      get(inId(SGDVarUpdateOp::getWeightDecayInIndex()))},
+                     {getInTensor(SGDVarUpdateOp::getVarInIndex()),
+                      getInTensor(SGDVarUpdateOp::getWeightDecayInIndex())},
                      prog,
                      idStr());
 
   // Then subtract scaled gradients
   popops::scaledSubtractFrom(
       graph(),
-      get(inId(SGDVarUpdateOp::getVarInIndex())),     // weights
-      get(inId(SGDVarUpdateOp::getVarGradInIndex())), // weightDeltas
-      get(inId(SGDVarUpdateOp::getLearnRateInIndex())),
+      getInTensor(SGDVarUpdateOp::getVarInIndex()),     // weights
+      getInTensor(SGDVarUpdateOp::getVarGradInIndex()), // weightDeltas
+      getInTensor(SGDVarUpdateOp::getLearnRateInIndex()),
       prog,
       idStr());
 
@@ -59,7 +59,7 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
     popops::mapInPlace(graph(),
                        pe::Mul(pe::_1, pe::Const(weightDecayScaleFactor)),
-                       {get(inId(SGDVarUpdateOp::getVarInIndex()))},
+                       {getInTensor(SGDVarUpdateOp::getVarInIndex())},
                        prog,
                        idStr());
   }
@@ -67,8 +67,8 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   // Then subtract scaled gradients
   popops::scaledSubtractFrom(
       graph(),
-      get(inId(vu_op.getVarInIndex())),     // weights
-      get(inId(vu_op.getVarGradInIndex())), // weightDeltas
+      getInTensor(vu_op.getVarInIndex()),     // weights
+      getInTensor(vu_op.getVarGradInIndex()), // weightDeltas
       vu_op.getLearnRate(),
       prog,
       idStr());
@@ -83,8 +83,8 @@ CopyVarUpdateOpx::CopyVarUpdateOpx(Op *op, Devicex *devicex)
 
 void CopyVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto vu_op = getOp<CopyVarUpdateOp>();
-  poplar::program::Copy copy(get(inId(CopyVarUpdateOp::getVarFromInIndex())),
-                             get(inId(CopyVarUpdateOp::getVarToInIndex())));
+  poplar::program::Copy copy(getInTensor(CopyVarUpdateOp::getVarFromInIndex()),
+                             getInTensor(CopyVarUpdateOp::getVarToInIndex()));
   prog.add(copy);
 
   // no poplar::Tensors to insert

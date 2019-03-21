@@ -36,6 +36,8 @@ public:
   static InIndex getActsInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 
+  void appendAttributes(OpSerialiserBase &) const override;
+
 private:
   int64_t axis;
 };

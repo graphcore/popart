@@ -17,12 +17,12 @@ AbsOpx::AbsOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 
 void AbsOpx::grow(poplar::program::Sequence &prog) const {
 
-  insert(outId(AbsOp::getOutIndex()),
-         popops::map(graph(),
-                     popops::expr::UnaryOpType::ABSOLUTE,
-                     get(inId(AbsOp::getInIndex())),
-                     prog,
-                     idStr()));
+  setOutTensor(AbsOp::getOutIndex(),
+               popops::map(graph(),
+                           popops::expr::UnaryOpType::ABSOLUTE,
+                           getInTensor(AbsOp::getInIndex()),
+                           prog,
+                           idStr()));
 }
 
 namespace {

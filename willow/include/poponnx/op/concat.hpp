@@ -92,6 +92,8 @@ public:
   std::unique_ptr<Op> clone() const override;
   void setup() override;
 
+  void appendAttributes(OpSerialiserBase &) const override;
+
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 

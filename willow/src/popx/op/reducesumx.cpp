@@ -31,7 +31,7 @@ static std::vector<T1> vector_cast(const std::vector<T2> &xs) {
 
 void ReduceSumOpx::grow(poplar::program::Sequence &prog) const {
   const auto op    = dynamic_cast<ReduceSumOp *>(op_p);
-  const auto input = get(inId(0));
+  const auto input = getInTensor(0);
 
   auto output_tensor = popops::reduce(graph(),
                                       input,
@@ -39,7 +39,7 @@ void ReduceSumOpx::grow(poplar::program::Sequence &prog) const {
                                       {popops::Operation::ADD},
                                       prog);
 
-  insert(outId(0), output_tensor.reshape(outInfo(0).shape_szt()));
+  setOutTensor(0, output_tensor.reshape(outInfo(0).shape_szt()));
 }
 
 ReduceSumGradOpx::ReduceSumGradOpx(Op *op, Devicex *devicex)
@@ -49,7 +49,7 @@ ReduceSumGradOpx::ReduceSumGradOpx(Op *op, Devicex *devicex)
 
 void ReduceSumGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto op        = dynamic_cast<ReduceSumGradOp *>(op_p);
-  auto output          = cloneNcopy(prog, inId(0));
+  auto output          = cloneNcopy(prog, getInTensor(0));
   auto input_shape     = inShape(0);
   auto output_shape    = outShape(0);
   const auto new_shape = vector_cast<std::size_t>(op->backwardShape());
@@ -64,7 +64,7 @@ void ReduceSumGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   // output now matches the shape of output_shape
-  insert(outId(0), output);
+  setOutTensor(0, output);
 }
 
 namespace {

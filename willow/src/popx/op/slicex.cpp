@@ -14,21 +14,21 @@ SliceOpx::SliceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 void SliceOpx::grow(poplar::program::Sequence &prog) const {
   logging::opx::trace("SliceOpx::grow");
-  auto t = get(inId(SliceOp::getInIndex()));
+  auto t = getInTensor(SliceOp::getInIndex());
   for (auto slice : getSliceOp()->getSlices()) {
     t = t.slice(slice.start, slice.end, static_cast<unsigned>(slice.axis));
   }
   // we clone and copy t, as this in not an inplace op
-  insert(outId(SliceOp::getOutIndex()), cloneNcopy(prog, t));
+  setOutTensor(SliceOp::getOutIndex(), cloneNcopy(prog, t));
 }
 
 void SliceInplaceOpx::grow(poplar::program::Sequence &) const {
   logging::opx::trace("SliceInplaceOpx::grow");
-  auto t = get(inId(SliceOp::getInIndex()));
+  auto t = getInTensor(SliceOp::getInIndex());
   for (auto slice : getSliceInplaceOp()->getSlices()) {
     t = t.slice(slice.start, slice.end, static_cast<unsigned>(slice.axis));
   }
-  insert(outId(SliceOp::getOutIndex()), t);
+  setOutTensor(SliceOp::getOutIndex(), t);
 }
 
 SliceOp *SliceOpx::getSliceOp() const { return dynamic_cast<SliceOp *>(op_p); }

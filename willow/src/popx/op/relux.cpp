@@ -21,17 +21,18 @@ ReluInplaceOpx::ReluInplaceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 void ReluOpx::grow(poplar::program::Sequence &prog) const {
 
   // There is only an in-place poplibs Relu. We therefore clone first,
-  auto outTensor = cloneNcopy(prog, inId(0));
+  auto outTensor = cloneNcopy(prog, getInTensor(0));
 
   // and apply the inplace relu.
   popnn::nonLinearityInPlace(
-      graph(), popnn::NonLinearityType::RELU, outTensor, prog, outId(0));
+      graph(), popnn::NonLinearityType::RELU, outTensor, prog, idStr());
 
-  insert(outId(0), outTensor);
+  setOutTensor(0, outTensor);
 }
 
 void ReluInplaceOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = get(inId(0));
+
+  auto outTensor = getInTensor(0);
 
   // if all of the elements in the tensor are distinct in memory,
   // them we can use the poplar inplace version. Otherwise, we must
@@ -42,9 +43,9 @@ void ReluInplaceOpx::grow(poplar::program::Sequence &prog) const {
 
   // apply the inplace relu,
   popnn::nonLinearityInPlace(
-      graph(), popnn::NonLinearityType::RELU, outTensor, prog, outId(0));
+      graph(), popnn::NonLinearityType::RELU, outTensor, prog, idStr());
 
-  insert(outId(0), outTensor);
+  setOutTensor(0, outTensor);
 }
 
 InputCreatorType ReluInplaceOpx::getInputCreatorType(InIndex) const {
@@ -66,15 +67,15 @@ void ReluGradOpx::grow(poplar::program::Sequence &prog) const {
   ReluGradOp &rgop = getOp<ReluGradOp>();
 
   auto outTensor = popnn::nonLinearityInputGradient(
-      graph(),                               // graph,
-      popnn::NonLinearityType::RELU,         // nonLinearityType,
-      get(inId(rgop.getReludInIndex())),     // out,
-      get(inId(rgop.getGradReludInIndex())), // outGradient,
-      prog,                                  // prog,
-      idStr()                                // debugPrefix
+      graph(),                                 // graph,
+      popnn::NonLinearityType::RELU,           // nonLinearityType,
+      getInTensor(rgop.getReludInIndex()),     // out,
+      getInTensor(rgop.getGradReludInIndex()), // outGradient,
+      prog,                                    // prog,
+      idStr()                                  // debugPrefix
   );
 
-  insert(op_p->output->id(0), outTensor);
+  setOutTensor(0, outTensor);
 }
 
 namespace {

@@ -45,6 +45,15 @@ std::vector<Y> vXtoY(const std::vector<X> &c0) {
   return c1;
 }
 
+template <typename Y> std::vector<Y> vBooltoY(const std::vector<bool> &c0) {
+  std::vector<Y> c1;
+  c1.reserve(c0.size());
+  for (const bool v0 : c0) {
+    c1.push_back(static_cast<Y>(v0));
+  }
+  return c1;
+}
+
 namespace util {
 
 /// Zip a pair of sequences with a given function into a third sequence.

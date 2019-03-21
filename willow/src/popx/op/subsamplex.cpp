@@ -18,14 +18,14 @@ void SubsampleOpx::grow(poplar::program::Sequence &prog) const {
 
   SubsampleOp &op = getOp<SubsampleOp>();
 
-  auto outTensor = get(inId(0));
+  auto outTensor = getInTensor(0);
   int dimension  = 0;
   for (auto stride : op.strides_u32()) {
     outTensor = outTensor.subSample(stride, dimension++);
   }
 
   // Need to clone/copy a new output tensor so is not in place
-  insert(outId(0), cloneNcopy(prog, outTensor));
+  setOutTensor(0, cloneNcopy(prog, outTensor));
 }
 
 SubsampleGradOpx::SubsampleGradOpx(Op *op, Devicex *devicex)
@@ -40,10 +40,11 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
 
   SubsampleGradOp &gradOp = getOp<SubsampleGradOp>();
 
-  std::vector<unsigned int> strides = gradOp.getStrides();
-  Shape fwdOpInputShape             = gradOp.getFwdInputShape();
+  std::vector<unsigned int> strides =
+      vXtoY<int64_t, unsigned int>(gradOp.getStrides());
+  Shape fwdOpInputShape = gradOp.getFwdInputShape();
 
-  auto outTensor = get(inId(0));
+  auto outTensor = getInTensor(0);
 
   // for each dimension of the input
   for (int d = 0; d < inInfo(0).rank(); ++d) {
@@ -80,7 +81,7 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
     outTensor = interleaved;
   }
 
-  insert(outId(0), cloneNcopy(prog, outTensor));
+  setOutTensor(0, cloneNcopy(prog, outTensor));
 }
 
 namespace {

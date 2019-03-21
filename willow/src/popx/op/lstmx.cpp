@@ -52,7 +52,7 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
                                                       &dv_p->matmulCache);
 
   if (intermediate) {
-    insert(outId(LSTMOp::getIntermediatesPassThroughIndex()), *intermediate);
+    setOutTensor(LSTMOp::getIntermediatesPassThroughIndex(), *intermediate);
   }
 
   reshapeAndInsert(LSTMOp::getOutputOutIndex(), output);
@@ -61,22 +61,21 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
   reshapeAndInsert(LSTMOp::getHiddenStateOutIndex(), output_h_state);
   reshapeAndInsert(LSTMOp::getCellStateOutIndex(), cell_state);
 
-  insert(outId(LSTMOp::getInitStateOutputPassThroughIndex()),
-         init_state.output);
-  insert(outId(LSTMOp::getInitStateCellStatePassThroughIndex()),
-         init_state.cellState);
-  insert(outId(LSTMOp::getInputWeightsPassThroughIndex()),
-         weights->inputWeights);
-  insert(outId(LSTMOp::getOutputWeightsPassThroughIndex()),
-         weights->outputWeights);
-  insert(outId(LSTMOp::getBiasesPassThroughIndex()), weights->biases);
-  insert(outId(LSTMOp::getInputPassThroughIndex()), input);
-  insert(outId(LSTMOp::getOutputPassThroughIndex()), output);
+  setOutTensor(LSTMOp::getInitStateOutputPassThroughIndex(), init_state.output);
+  setOutTensor(LSTMOp::getInitStateCellStatePassThroughIndex(),
+               init_state.cellState);
+  setOutTensor(LSTMOp::getInputWeightsPassThroughIndex(),
+               weights->inputWeights);
+  setOutTensor(LSTMOp::getOutputWeightsPassThroughIndex(),
+               weights->outputWeights);
+  setOutTensor(LSTMOp::getBiasesPassThroughIndex(), weights->biases);
+  setOutTensor(LSTMOp::getInputPassThroughIndex(), input);
+  setOutTensor(LSTMOp::getOutputPassThroughIndex(), output);
 }
 
 void LSTMOpx::reshapeAndInsert(OutIndex index,
                                const poplar::Tensor &tensor) const {
-  insert(outId(index), tensor.reshape(outInfo(index).shape_szt()));
+  setOutTensor(index, tensor.reshape(outInfo(index).shape_szt()));
 }
 
 void LSTMOpx::growBias(poplar::program::Sequence &prog) const {
@@ -88,7 +87,7 @@ void LSTMOpx::growBias(poplar::program::Sequence &prog) const {
   auto biases = reshapePoplibWeightsForOnnx(getLSTMWeights().biases, false);
 
   if (lstm_op.hasBiasInput()) {
-    auto bias_input = get(inId(LSTMOp::getBiasInIndex()));
+    auto bias_input = getInTensor(LSTMOp::getBiasInIndex());
 
     poplar::program::Copy copyProg(bias_input.slice(0, 4 * hidden_size, 1),
                                    biases);
@@ -245,12 +244,12 @@ void LSTMOpx::prepareWeights(poplar::program::Sequence &prog) const {
   // check to see if the weights were created
   if (!inputCreated(LSTMOp::getWeightsInIndex())) {
     prog.add(poplar::program::Copy(
-        get(inId(LSTMOp::getWeightsInIndex())),
+        getInTensor(LSTMOp::getWeightsInIndex()),
         reshapePoplibWeightsForOnnx(getLSTMWeights().inputWeights, true)));
   }
   if (!inputCreated(LSTMOp::getRecurrenceInIndex())) {
     prog.add(poplar::program::Copy(
-        get(inId(LSTMOp::getRecurrenceInIndex())),
+        getInTensor(LSTMOp::getRecurrenceInIndex()),
         reshapePoplibWeightsForOnnx(getLSTMWeights().outputWeights, true)));
   }
 }
@@ -258,11 +257,11 @@ void LSTMOpx::prepareWeights(poplar::program::Sequence &prog) const {
 poplar::Tensor LSTMOpx::getInput(poplar::program::Sequence &prog) const {
   if (!inputCreated(LSTMOp::getInputInIndex())) {
     auto input     = createInput(LSTMOp::getInputInIndex());
-    auto raw_input = get(inId(LSTMOp::getInputInIndex()));
+    auto raw_input = getInTensor(LSTMOp::getInputInIndex());
     prog.add(poplar::program::Copy(raw_input, input));
     return input;
   } else {
-    return get(inId(LSTMOp::getInputInIndex()));
+    return getInTensor(LSTMOp::getInputInIndex());
   }
 }
 
@@ -282,11 +281,11 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
 
   // Check the inputs have been created
   if (hasInitC && !inputCreated(LSTMOp::getInitialCInIndex())) {
-    prog.add(poplar::program::Copy(get(inId(LSTMOp::getInitialCInIndex())),
+    prog.add(poplar::program::Copy(getInTensor(LSTMOp::getInitialCInIndex()),
                                    createInput(LSTMOp::getInitialCInIndex())));
   }
   if (hasInitH && !inputCreated(LSTMOp::getInitialHInIndex())) {
-    prog.add(poplar::program::Copy(get(inId(LSTMOp::getInitialHInIndex())),
+    prog.add(poplar::program::Copy(getInTensor(LSTMOp::getInitialHInIndex()),
                                    createInput(LSTMOp::getInitialHInIndex())));
   }
 }
@@ -297,17 +296,18 @@ LSTMGradOpx::LSTMGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   popnn::lstm::LstmState init_state;
-  init_state.output    = get(inId(LSTMGradOp::getInitStateOutputInIndex()));
-  init_state.cellState = get(inId(LSTMGradOp::getInitStateCellStateInIndex()));
+  init_state.output = getInTensor(LSTMGradOp::getInitStateOutputInIndex());
+  init_state.cellState =
+      getInTensor(LSTMGradOp::getInitStateCellStateInIndex());
 
   popnn::lstm::LstmWeights weights;
-  weights.inputWeights  = get(inId(LSTMGradOp::getInputWeightsInIndex()));
-  weights.outputWeights = get(inId(LSTMGradOp::getOutputWeightsInIndex()));
-  weights.biases        = get(inId(LSTMGradOp::getBiasesInIndex()));
+  weights.inputWeights  = getInTensor(LSTMGradOp::getInputWeightsInIndex());
+  weights.outputWeights = getInTensor(LSTMGradOp::getOutputWeightsInIndex());
+  weights.biases        = getInTensor(LSTMGradOp::getBiasesInIndex());
 
-  auto intermediates  = get(inId(LSTMGradOp::getIntermediatesInIndex()));
-  auto forward_input  = get(inId(LSTMGradOp::getInputInIndex()));
-  auto forward_output = get(inId(LSTMGradOp::getOutputInIndex()));
+  auto intermediates  = getInTensor(LSTMGradOp::getIntermediatesInIndex());
+  auto forward_input  = getInTensor(LSTMGradOp::getInputInIndex());
+  auto forward_output = getInTensor(LSTMGradOp::getOutputInIndex());
 
   auto &lstm_grad_op  = getOp<LSTMGradOp>();
   auto &lstm_op       = lstm_grad_op.getForwardOp();
@@ -317,12 +317,13 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
   auto num_directions = static_cast<unsigned>(lstm_op.getNumDirections());
   auto lstm_params    = createLSTMParams();
 
-  auto output_grad = get(inId(LSTMGradOp::getOutputGradInIndex()))
+  auto output_grad = getInTensor(LSTMGradOp::getOutputGradInIndex())
                          .reshape({seq_length, batch_size, hidden_size});
-  auto output_c_grad = get(inId(LSTMGradOp::getCellStateOutputGradInIndex()))
+  auto output_c_grad = getInTensor(LSTMGradOp::getCellStateOutputGradInIndex())
                            .reshape({batch_size, hidden_size});
-  auto output_h_grad = get(inId(LSTMGradOp::getHiddenStateOutputGradInIndex()))
-                           .reshape({batch_size, hidden_size});
+  auto output_h_grad =
+      getInTensor(LSTMGradOp::getHiddenStateOutputGradInIndex())
+          .reshape({batch_size, hidden_size});
 
   // TODO find out what this is for
   // it's done in tensorflow and enigma
@@ -352,28 +353,29 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
                                        dv_p->lstmOptions,
                                        &dv_p->matmulCache);
 
-  insert(outId(LSTMGradOp::getInputOutIndex()), input_grad);
-  insert(outId(LSTMGradOp::getWeightsOutIndex()),
-         LSTMOpx::reshapePoplibWeightsForOnnx(weights_grad.inputWeights, true));
-  insert(
-      outId(LSTMGradOp::getRecurrenceOutIndex()),
+  setOutTensor(LSTMGradOp::getInputOutIndex(), input_grad);
+  setOutTensor(
+      LSTMGradOp::getWeightsOutIndex(),
+      LSTMOpx::reshapePoplibWeightsForOnnx(weights_grad.inputWeights, true));
+  setOutTensor(
+      LSTMGradOp::getRecurrenceOutIndex(),
       LSTMOpx::reshapePoplibWeightsForOnnx(weights_grad.outputWeights, true));
 
   if (lstm_op.hasBiasInput()) {
     auto b_grad =
         LSTMOpx::reshapePoplibWeightsForOnnx(weights_grad.biases, false);
-    insert(outId(LSTMGradOp::getBiasOutIndex()),
-           poplar::concat({b_grad, b_grad}, 1));
+    setOutTensor(LSTMGradOp::getBiasOutIndex(),
+                 poplar::concat({b_grad, b_grad}, 1));
   }
   if (lstm_op.hasInitialHInput()) {
     auto init_h = init_state_grad.output;
-    insert(outId(LSTMGradOp::getInitialHOutIndex()),
-           init_h.reshape({num_directions, batch_size, hidden_size}));
+    setOutTensor(LSTMGradOp::getInitialHOutIndex(),
+                 init_h.reshape({num_directions, batch_size, hidden_size}));
   }
   if (lstm_op.hasInitialCInput()) {
     auto init_c = init_state_grad.cellState;
-    insert(outId(LSTMGradOp::getInitialCOutIndex()),
-           init_c.reshape({num_directions, batch_size, hidden_size}));
+    setOutTensor(LSTMGradOp::getInitialCOutIndex(),
+                 init_c.reshape({num_directions, batch_size, hidden_size}));
   }
 }
 

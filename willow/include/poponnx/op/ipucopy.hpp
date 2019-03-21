@@ -22,6 +22,8 @@ public:
   void appendAttributes(OpSerialiserBase &) const override;
 
   float getSubgraphValue() const final { return 0.1f; }
+
+  bool supportsCaching() override { return false; }
 };
 } // namespace poponnx
 

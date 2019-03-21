@@ -9,9 +9,8 @@
 namespace poponnx {
 
 MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
-                   bool cacheOperation_,
                    const Op::Settings &settings_)
-    : Op(_opid, settings_), cacheOperation(cacheOperation_) {}
+    : Op(_opid, settings_) {}
 
 std::unique_ptr<Op> MatMulOp::clone() const {
   return make_unique<MatMulOp>(*this);
@@ -167,17 +166,8 @@ const MatMulOp *MatMulRhsGradOp::getCloneOfCreator() const {
 }
 
 namespace {
-static OpCreator<MatMulOp> matMulOpCreator(
-    {Onnx::Operators::MatMul_1, Onnx::Operators::MatMul_9},
-    [](const OperatorIdentifier &_opid,
-       const Op::Settings &settings,
-       const Attributes &attr) -> std::unique_ptr<Op> {
-      int64_t cacheOperation =
-          attr.getAttribute<Attributes::Int>(sCacheOperation, 1);
-
-      return std::unique_ptr<Op>(new MatMulOp(_opid, cacheOperation, settings));
-    },
-    true);
+static OpCreator<MatMulOp> matMulOpCreator({Onnx::Operators::MatMul_1,
+                                            Onnx::Operators::MatMul_9});
 } // namespace
 
 } // namespace poponnx

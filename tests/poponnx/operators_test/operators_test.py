@@ -70,6 +70,34 @@ def test_convolution(op_tester):
     op_tester.run(init_builder, reference, step_type='infer')
 
 
+def test_convolution_2(op_tester):
+    '''
+    Test the convolution when the conv in the bwd pass is not the same as the conv in the 
+    forward pass
+    '''
+
+    def init_builder(builder):
+        data = np.ones([1, 2, 4, 4], dtype=np.float32)
+        filt = np.ones([4, 2, 1, 1], dtype=np.float32)
+        d = builder.addInputTensor(data)
+        f = builder.addInputTensor(filt)
+        o = builder.aiOnnx.conv([d, f],
+                                dilations=[1, 1],
+                                pads=[0, 0, 0, 0],
+                                strides=[2, 2])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + d]
+
+    def reference(ref_data):
+        expected = np.array([[[[2., 2.], [2., 2.]], [[2., 2.], [2., 2.]],
+                              [[2., 2.], [2., 2.]], [[2., 2.], [2., 2.]]]],
+                            dtype=np.float32)
+        return [expected, None]
+
+    op_tester.passes = ["ConvDataGrad"]
+    op_tester.run(init_builder, reference, step_type='train')
+
+
 def test_reciprocal(op_tester):
     # create test data
     d1 = np.random.rand(4).astype(np.float32)
@@ -84,7 +112,6 @@ def test_reciprocal(op_tester):
     def reference(ref_data):
         return [1 / d1]
 
-    op_tester.passes = ["PreUniRepl"]
     op_tester.run(init_builder, reference)
 
 

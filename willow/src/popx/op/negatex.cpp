@@ -13,12 +13,12 @@ NegateOpx::NegateOpx(Op *op, Devicex *devicex)
 }
 
 void NegateOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(0),
-         popops::map(graph(),
-                     popops::expr::UnaryOpType::NEGATE,
-                     get(inId(0)),
-                     prog,
-                     idStr()));
+  setOutTensor(0,
+               popops::map(graph(),
+                           popops::expr::UnaryOpType::NEGATE,
+                           getInTensor(0),
+                           prog,
+                           idStr()));
 }
 
 NegateGradOpx::NegateGradOpx(Op *op, Devicex *devicex)
@@ -27,12 +27,12 @@ NegateGradOpx::NegateGradOpx(Op *op, Devicex *devicex)
 }
 
 void NegateGradOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(0),
-         popops::map(graph(),
-                     popops::expr::UnaryOpType::NEGATE,
-                     get(inId(0)),
-                     prog,
-                     idStr()));
+  setOutTensor(0,
+               popops::map(graph(),
+                           popops::expr::UnaryOpType::NEGATE,
+                           getInTensor(0),
+                           prog,
+                           idStr()));
 }
 
 namespace {

@@ -81,6 +81,11 @@ void ScatterDataGradOp::setup() {
 
 int64_t ScatterDataGradOp::getAxis() const { return axis; }
 
+void ScatterDataGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axis", axis);
+}
+
 ScatterUpdateGradOp::ScatterUpdateGradOp(const ScatterOp &op, int64_t axis_)
     : Op(Onnx::GradOperators::ScatterUpdateGrad, op.getSettings()),
       axis(axis_) {}
@@ -110,6 +115,11 @@ void ScatterUpdateGradOp::setup() {
 }
 
 int64_t ScatterUpdateGradOp::getAxis() const { return axis; }
+
+void ScatterUpdateGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axis", axis);
+}
 
 namespace {
 static OpCreator<ScatterOp> ScatterOpCreator(

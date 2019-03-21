@@ -104,13 +104,13 @@ public:
         pool_params.numChannels,
         pool_params.batchSize);
 
-    insert(outId(0),
-           popnn::pooling::pool(graph(),
-                                pool_params,
-                                get(inId(0)),
-                                prog,
-                                idStr(),
-                                dv_p->pooling_options));
+    setOutTensor(0,
+                 popnn::pooling::pool(graph(),
+                                      pool_params,
+                                      getInTensor(0),
+                                      prog,
+                                      idStr(),
+                                      dv_p->pooling_options));
   }
 
   popnn::PoolingType pooling_type;
@@ -126,10 +126,6 @@ public:
   void grow(poplar::program::Sequence &prog) const {
     GRADOP &agOp  = getOp<GRADOP>();
     const OP *aOp = agOp.getCloneOfCreator();
-
-    TensorId prePooledId  = inId(agOp.getPrePooledInIndex());
-    TensorId pooledId     = inId(agOp.getPooledInIndex());
-    TensorId gradPooledId = inId(agOp.getGradPooledInIndex());
 
     auto pool_params = GetPoolingParameters(pooling_type,
                                             op_p->inInfo(0),
@@ -148,17 +144,17 @@ public:
                         pool_params.numChannels,
                         pool_params.batchSize);
 
-    insert(
-        outId(0),
-        popnn::pooling::poolInputGradient(graph(),
-                                          pool_params,
-                                          get(prePooledId),
-                                          get(pooledId),
-                                          get(gradPooledId),
-                                          false, // useScaledVariant TODO T7295
-                                          prog,
-                                          idStr(),
-                                          dv_p->pooling_options));
+    setOutTensor(0,
+                 popnn::pooling::poolInputGradient(
+                     graph(),
+                     pool_params,
+                     getInTensor(GRADOP::getPrePooledInIndex()),
+                     getInTensor(GRADOP::getPooledInIndex()),
+                     getInTensor(GRADOP::getGradPooledInIndex()),
+                     false, // useScaledVariant TODO T7295
+                     prog,
+                     idStr(),
+                     dv_p->pooling_options));
   }
 
   popnn::PoolingType pooling_type;

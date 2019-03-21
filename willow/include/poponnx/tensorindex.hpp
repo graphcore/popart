@@ -22,6 +22,8 @@ public:
   // indicesMap.
   void erase(int);
   void clear();
+  bool contains(Tensor *) const;
+
   // get the Tensor at index
   Tensor *tensor(int);
   const Tensor *tensor(int) const;

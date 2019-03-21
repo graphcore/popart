@@ -13,13 +13,13 @@ MulOpx::MulOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
 }
 
 void MulOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(0),
-         popops::map(graph(),
-                     popops::expr::BinaryOpType::MULTIPLY,
-                     get(inId(0)),
-                     get(inId(1)),
-                     prog,
-                     idStr()));
+  setOutTensor(0,
+               popops::map(graph(),
+                           popops::expr::BinaryOpType::MULTIPLY,
+                           getInTensor(0),
+                           getInTensor(1),
+                           prog,
+                           idStr()));
 }
 
 namespace {

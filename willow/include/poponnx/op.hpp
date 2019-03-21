@@ -295,6 +295,11 @@ public:
   // default high value here means that sub-graphs
   // of single Ops are cached by default
   virtual float getSubgraphValue() const { return 1000.0f; }
+
+  // Allow an op to exclude itself from caching. If this method returns false
+  // it will mean that any possiable subgraph that this op is part of will
+  // not be cached. The default is enabled
+  virtual bool supportsCaching();
 };
 
 } // namespace poponnx

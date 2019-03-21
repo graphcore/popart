@@ -19,13 +19,13 @@ void ScaleOpx::grow(poplar::program::Sequence &prog) const {
   auto scale_factor_const =
       dv_p->getConst(popType(op_p->inInfo(0)), {1}, scale_factor);
 
-  insert(outId(0),
-         popops::map(graph(),
-                     popops::expr::BinaryOpType::MULTIPLY,
-                     scale_factor_const,
-                     get(inId(0)),
-                     prog,
-                     idStr()));
+  setOutTensor(0,
+               popops::map(graph(),
+                           popops::expr::BinaryOpType::MULTIPLY,
+                           scale_factor_const,
+                           getInTensor(0),
+                           prog,
+                           idStr()));
 }
 
 ScaleGradOpx::ScaleGradOpx(Op *op, Devicex *devicex) : ScaleOpx(op, devicex) {
@@ -39,7 +39,7 @@ void ScaleInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto scale_factor_const =
       dv_p->getConst(popType(op_p->inInfo(0)), {1}, scale_factor);
 
-  auto t0 = get(inId(0));
+  auto t0 = getInTensor(0);
 
   // if all of the elements in the tensor are distinct in memory,
   // them we can use the poplar inplace version. Otherwise, we must
@@ -47,21 +47,21 @@ void ScaleInplaceOpx::grow(poplar::program::Sequence &prog) const {
   if (t0.isParallelWriteable()) {
     popops::mapInPlace(graph(),
                        popops::expr::BinaryOpType::MULTIPLY,
-                       get(inId(0)),
+                       getInTensor(0),
                        scale_factor_const,
                        prog,
                        idStr());
-    insert(outId(0), get(inId(0)));
+    setOutTensor(0, getInTensor(0));
   }
 
   else {
-    insert(outId(0),
-           popops::map(graph(),
-                       popops::expr::BinaryOpType::MULTIPLY,
-                       scale_factor_const,
-                       get(inId(0)),
-                       prog,
-                       idStr()));
+    setOutTensor(0,
+                 popops::map(graph(),
+                             popops::expr::BinaryOpType::MULTIPLY,
+                             scale_factor_const,
+                             getInTensor(0),
+                             prog,
+                             idStr()));
   }
 }
 

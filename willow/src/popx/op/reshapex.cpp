@@ -10,9 +10,9 @@ namespace popx {
 // Test note : scale by 1.0001 in grad op makes the test fail. Good.
 void ReshapeOpx::grow(poplar::program::Sequence &prog) const {
   // not in-place, so cloning input
-  auto outTensor = cloneNcopy(prog, inId(ReshapeOp::getInIndex()));
+  auto outTensor = cloneNcopy(prog, getInTensor(ReshapeOp::getInIndex()));
   outTensor = outTensor.reshape(outInfo(ReshapeOp::getOutIndex()).shape_szt());
-  insert(outId(ReshapeOp::getOutIndex()), outTensor);
+  setOutTensor(ReshapeOp::getOutIndex(), outTensor);
 }
 
 ReshapeOpx::ReshapeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {

@@ -58,6 +58,8 @@ public:
 
   int64_t getAxis() const { return axis; }
 
+  void appendAttributes(OpSerialiserBase &) const override;
+
 private:
   int64_t axis;
   Shape outputShape;

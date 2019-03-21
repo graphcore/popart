@@ -13,13 +13,13 @@ DivOpx::DivOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
 }
 
 void DivOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(0),
-         popops::map(graph(),
-                     popops::expr::BinaryOpType::DIVIDE,
-                     get(inId(DivOp::getArg0InIndex())),
-                     get(inId(DivOp::getArg1InIndex())),
-                     prog,
-                     idStr()));
+  setOutTensor(0,
+               popops::map(graph(),
+                           popops::expr::BinaryOpType::DIVIDE,
+                           getInTensor(DivOp::getArg0InIndex()),
+                           getInTensor(DivOp::getArg1InIndex()),
+                           prog,
+                           idStr()));
 }
 
 namespace {

@@ -14,13 +14,13 @@ SubtractOpx::SubtractOpx(Op *op, Devicex *devicex)
 }
 
 void SubtractOpx::grow(poplar::program::Sequence &prog) const {
-  insert(outId(SubtractOp::getOutIndex()),
-         popops::map(graph(),
-                     popops::expr::BinaryOpType::SUBTRACT,
-                     get(inId(SubtractOp::getArg0InIndex())),
-                     get(inId(SubtractOp::getArg1InIndex())),
-                     prog,
-                     idStr()));
+  setOutTensor(SubtractOp::getOutIndex(),
+               popops::map(graph(),
+                           popops::expr::BinaryOpType::SUBTRACT,
+                           getInTensor(SubtractOp::getArg0InIndex()),
+                           getInTensor(SubtractOp::getArg1InIndex()),
+                           prog,
+                           idStr()));
 }
 
 SubtractArg0GradOpx::SubtractArg0GradOpx(Op *op, Devicex *devicex)

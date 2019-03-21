@@ -19,7 +19,7 @@ MeanOpx::MeanOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 }
 
 void MeanOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = cloneNcopy(prog, get(inId(0)));
+  auto outTensor = cloneNcopy(prog, getInTensor(0));
 
   if (op_p->input->n() > 1) {
 
@@ -27,7 +27,7 @@ void MeanOpx::grow(poplar::program::Sequence &prog) const {
       outTensor = popops::map(graph(),
                               popops::expr::BinaryOpType::ADD,
                               outTensor,
-                              get(inId(i)),
+                              getInTensor(i),
                               prog,
                               idStr());
     }
@@ -39,7 +39,7 @@ void MeanOpx::grow(poplar::program::Sequence &prog) const {
                             idStr());
   }
 
-  insert(outId(MeanOp::getOutIndex()), outTensor);
+  setOutTensor(MeanOp::getOutIndex(), outTensor);
 }
 
 MeanArgGradOpx::MeanArgGradOpx(Op *op_, Devicex *devicex_)
@@ -58,7 +58,7 @@ void MeanArgGradOpx::grow(poplar::program::Sequence &prog) const {
   // Remove axes from the result that were not present ( or 1) in the input to
   // the fwd op
   auto out = popops::reduce(graph(),
-                            get(inId(MeanArgGradOp::getGradInIndex())),
+                            getInTensor(MeanArgGradOp::getGradInIndex()),
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
                             prog,
@@ -72,8 +72,8 @@ void MeanArgGradOpx::grow(poplar::program::Sequence &prog) const {
                      idStr());
 
   // Reshape the output, to add 1's if needed
-  insert(outId(MeanArgGradOp::getOutIndex()),
-         out.reshape(outInfo(MeanArgGradOp::getOutIndex()).shape_szt()));
+  setOutTensor(MeanArgGradOp::getOutIndex(),
+               out.reshape(outInfo(MeanArgGradOp::getOutIndex()).shape_szt()));
 }
 
 namespace {

@@ -34,9 +34,9 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
   // int64_t num_channels = op.getNumChannels();
 
   // Get the inputs
-  auto input = get(inId(GroupNormOp::getXInIndex()));
-  auto scale = get(inId(GroupNormOp::getScaleInIndex()));
-  auto b     = get(inId(GroupNormOp::getBInIndex()));
+  auto input = getInTensor(GroupNormOp::getXInIndex());
+  auto scale = getInTensor(GroupNormOp::getScaleInIndex());
+  auto b     = getInTensor(GroupNormOp::getBInIndex());
 
   // Convert input shape to poplar rules
   poplar::Tensor inputP;
@@ -66,9 +66,9 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
       convertPoplarOutputToOnnxOutput(result.first, nonBroadcastDims);
 
   // Return the result
-  insert(outId(GroupNormOp::getYOutIndex()), y);
-  insert(outId(GroupNormOp::getMeanOutIndex()), mean);
-  insert(outId(GroupNormOp::getVarOutIndex()), var);
+  setOutTensor(GroupNormOp::getYOutIndex(), y);
+  setOutTensor(GroupNormOp::getMeanOutIndex(), mean);
+  setOutTensor(GroupNormOp::getVarOutIndex(), var);
 }
 
 GroupNormGradOpx::GroupNormGradOpx(Op *op, Devicex *devicex)
@@ -80,11 +80,11 @@ void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
 
   auto op = getOp<GroupNormGradOp>();
 
-  auto x     = get(inId(GroupNormGradOp::getXInIndex()));
-  auto yGrad = get(inId(GroupNormGradOp::getYGradInIndex()));
-  auto scale = get(inId(GroupNormGradOp::getScaleInIndex()));
-  auto mean  = get(inId(GroupNormGradOp::getMeanInIndex()));
-  auto var   = get(inId(GroupNormGradOp::getVarInIndex()));
+  auto x     = getInTensor(GroupNormGradOp::getXInIndex());
+  auto yGrad = getInTensor(GroupNormGradOp::getYGradInIndex());
+  auto scale = getInTensor(GroupNormGradOp::getScaleInIndex());
+  auto mean  = getInTensor(GroupNormGradOp::getMeanInIndex());
+  auto var   = getInTensor(GroupNormGradOp::getVarInIndex());
 
   float epsilon = op.getEpsilon();
 
@@ -126,9 +126,9 @@ void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
   xGrad = convertPoplarOutputToOnnxOutput(xGrad, nonBroadcastDims);
 
   // Return the result
-  insert(outId(GroupNormGradOp::getXGradOutIndex()), xGrad);
-  insert(outId(GroupNormGradOp::getScaleOutIndex()), scaleGrad);
-  insert(outId(GroupNormGradOp::getBOutIndex()), bGrad);
+  setOutTensor(GroupNormGradOp::getXGradOutIndex(), xGrad);
+  setOutTensor(GroupNormGradOp::getScaleOutIndex(), scaleGrad);
+  setOutTensor(GroupNormGradOp::getBOutIndex(), bGrad);
 }
 
 namespace {

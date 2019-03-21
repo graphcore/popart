@@ -55,6 +55,9 @@ struct SessionOptions {
   ///  the convolutions will be cached.
   bool enableConvolutionGraphCaching = true;
 
+  /// Controls caching of identifical sections of the graph.
+  bool enableOutlining = true;
+
   /// Enable recomputation of operations in the graph in the backwards pass to
   /// reduce model size at the cost of computation cycles
   bool enableAutoRecomputation = false;

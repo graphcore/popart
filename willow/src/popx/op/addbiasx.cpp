@@ -19,10 +19,11 @@ AddBiasDataGradOpx::AddBiasDataGradOpx(Op *op, Devicex *devicex)
 
 void AddBiasOpx::grow(poplar::program::Sequence &prog) const {
   // Clone & copy the input tensor because poplin::addBias is in-place.
-  const auto result = Opx::cloneNcopy(prog, inId(AddBiasOp::getDataInIndex()));
+  const auto result =
+      Opx::cloneNcopy(prog, getInTensor(AddBiasOp::getDataInIndex()));
   poplin::addBias(
-      graph(), result, get(inId(AddBiasOp::getBiasInIndex())), prog, idStr());
-  insert(outId(AddBiasOp::getOutIndex()), result);
+      graph(), result, getInTensor(AddBiasOp::getBiasInIndex()), prog, idStr());
+  setOutTensor(AddBiasOp::getOutIndex(), result);
 }
 
 std::vector<TensorId> AddBiasOpx::mustExistBeforeCreate(InIndex index) const {
@@ -46,8 +47,8 @@ poplar::Tensor AddBiasOpx::createInput(InIndex index) const {
   }
 
   return poplin::createBiases(graph(),
-                              get(inId(AddBiasOp::getDataInIndex())),
-                              inId(AddBiasOp::getBiasInIndex()));
+                              getInTensor(AddBiasOp::getDataInIndex()),
+                              idStr()); // << REVERT THIS./e
 }
 
 bool AddBiasOpx::createsEquiv(int, Opx *, int) const { return false; }

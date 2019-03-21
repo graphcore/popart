@@ -18,10 +18,10 @@ void TransposeOpx::grow(poplar::program::Sequence &prog) const {
     unsigned_perm.push_back(static_cast<unsigned>(i));
   }
 
-  auto input      = get(inId(TransposeOp::getInIndex()));
+  auto input      = getInTensor(TransposeOp::getInIndex());
   auto input_copy = cloneNcopy(prog, input);
   auto output     = input_copy.dimShuffle(unsigned_perm);
-  insert(outId(TransposeOp::getOutIndex()), output);
+  setOutTensor(TransposeOp::getOutIndex(), output);
 }
 
 InputCreatorType TransposeOpx::getInputCreatorType(InIndex) const {

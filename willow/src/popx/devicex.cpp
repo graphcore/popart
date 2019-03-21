@@ -769,9 +769,7 @@ Devicex::programFragmentIndex(Vertex *vertex) {
     throw error("Failed to determine fragment of vertex " + vertex->str() +
                 " from UNDEFINED phase. ");
   }
-  default: {
-    throw error("Failed to determine fragment of vertex");
-  }
+  default: { throw error("Failed to determine fragment of vertex"); }
   }
 }
 
@@ -872,8 +870,15 @@ void Devicex::prepare() {
   poplin::addCodelets(masterGraph());
   popnn::addCodelets(masterGraph());
 
-  // create an Opx for every Op
-  for (Op *op : ir().getOpSchedule({})) {
+  std::vector<Op *> ops = ir().getOpSchedule({});
+
+  // Outling the op's if the session options is enabled
+  if (ir().getSessionOptions().enableOutlining) {
+    ops = outline.getOutlineView(ops, ir());
+  }
+
+  // create an Opx for every Opbt
+  for (Op *op : ops) {
     opxs[op->id] = createOpx(op);
   }
 
@@ -976,8 +981,8 @@ void Devicex::prepare() {
     }
   }
 
-  std::vector<Op *> ops = ir().getOpSchedule({});
-  double priority       = 0.;
+  // std::vector<Op *> ops = ir().getOpSchedule({});
+  double priority = 0.;
   for (int i = 0; i < ops.size(); ++i) {
     Op *op = ops[i];
     tasks.add(opTask(op, priority));

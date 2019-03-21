@@ -67,7 +67,7 @@ static poplar::Tensor broadcastShape(poplar::Tensor a, poplar::Tensor b) {
 }
 
 void ScatterOpx::grow(poplar::program::Sequence &prog) const {
-  auto indices = get(inId(ScatterOp::indicesInIndex()));
+  auto indices = getInTensor(ScatterOp::indicesInIndex());
 
   // Build the implicit index coordinates
   //
@@ -101,20 +101,20 @@ void ScatterOpx::grow(poplar::program::Sequence &prog) const {
   std::vector<unsigned> scatter_dims_to_op(indices.rank());
   std::iota(scatter_dims_to_op.begin(), scatter_dims_to_op.end(), 0);
 
-  auto data = cloneNcopy(prog, get(inId(ScatterOp::dataInIndex())));
+  auto data = cloneNcopy(prog, getInTensor(ScatterOp::dataInIndex()));
   indices   = poplar::concat(indices_mapped, indices.rank());
 
   popops::scatter(graph(),
                   data,
                   indices,
-                  get(inId(ScatterOp::updatesInIndex())),
+                  getInTensor(ScatterOp::updatesInIndex()),
                   indices.rank() - 1,
                   update_window_dims,
                   inserted_window_dims,
                   scatter_dims_to_op,
                   prog);
 
-  insert(outId(ScatterOp::outIndex()), data);
+  setOutTensor(ScatterOp::outIndex(), data);
 }
 
 ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
@@ -125,8 +125,8 @@ ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
 }
 
 void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto data    = cloneNcopy(prog, get(inId(ScatterDataGradOp::gradInIndex())));
-  auto indices = get(inId(ScatterDataGradOp::indicesInIndex()));
+  auto data = cloneNcopy(prog, getInTensor(ScatterDataGradOp::gradInIndex()));
+  auto indices = getInTensor(ScatterDataGradOp::indicesInIndex());
   auto update  = graph().addConstant(data.elementType(), indices.shape(), 0);
   poputil::mapTensorLinearly(graph(), update);
 
@@ -176,7 +176,7 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
                   scatter_dims_to_op,
                   prog);
 
-  insert(outId(ScatterDataGradOp::gradOutIndex()), data);
+  setOutTensor(ScatterDataGradOp::gradOutIndex(), data);
 }
 
 ScatterUpdateGradOpx::ScatterUpdateGradOpx(Op *op, Devicex *devicex)
@@ -187,8 +187,8 @@ ScatterUpdateGradOpx::ScatterUpdateGradOpx(Op *op, Devicex *devicex)
 }
 
 void ScatterUpdateGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto gradIn = get(inId(ScatterUpdateGradOp::gradInIndex()));
-  auto indices      = get(inId(ScatterDataGradOp::indicesInIndex()));
+  const auto gradIn = getInTensor(ScatterUpdateGradOp::gradInIndex());
+  auto indices      = getInTensor(ScatterDataGradOp::indicesInIndex());
 
   // Build the implicit index coordinates
   //
@@ -240,7 +240,7 @@ void ScatterUpdateGradOpx::grow(poplar::program::Sequence &prog) const {
                                startIndexMap,
                                prog);
 
-  insert(outId(ScatterDataGradOp::gradOutIndex()), result);
+  setOutTensor(ScatterDataGradOp::gradOutIndex(), result);
 }
 
 namespace {

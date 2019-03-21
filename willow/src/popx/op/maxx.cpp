@@ -20,7 +20,7 @@ MaxOpx::MaxOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
 
 void MaxOpx::grow(poplar::program::Sequence &prog) const {
 
-  auto outTensor = cloneNcopy(prog, get(inId(0)));
+  auto outTensor = cloneNcopy(prog, getInTensor(0));
 
   if (op_p->input->n() > 1) {
 
@@ -28,13 +28,13 @@ void MaxOpx::grow(poplar::program::Sequence &prog) const {
       outTensor = popops::map(graph(),
                               popops::expr::BinaryOpType::MAXIMUM,
                               outTensor,
-                              get(inId(i)),
+                              getInTensor(i),
                               prog,
                               idStr());
     }
   }
 
-  insert(outId(MaxOp::getOutIndex()), outTensor);
+  setOutTensor(MaxOp::getOutIndex(), outTensor);
 }
 
 MaxArgGradOpx::MaxArgGradOpx(Op *op_, Devicex *devicex_) : Opx(op_, devicex_) {}
@@ -51,15 +51,15 @@ void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
   auto mask =
       popops::map(graph(),
                   pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
-                  {get(inId(MaxArgGradOp::getFwdInIndex())),
-                   get(inId(MaxArgGradOp::getFwdOutInIndex()))},
+                  {getInTensor(MaxArgGradOp::getFwdInIndex()),
+                   getInTensor(MaxArgGradOp::getFwdOutInIndex())},
                   prog,
                   idStr());
 
   // Multiple the mask by the grad
   auto result = popops::map(graph(),
                             pe::Mul(pe::_1, pe::_2),
-                            {mask, get(inId(MaxArgGradOp::getGradInIndex()))},
+                            {mask, getInTensor(MaxArgGradOp::getGradInIndex())},
                             prog,
                             idStr());
 
@@ -80,8 +80,8 @@ void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             idStr());
 
   // Reshape the output, to add 1's if needed
-  insert(outId(MaxArgGradOp::getOutIndex()),
-         out.reshape(outInfo(MaxArgGradOp::getOutIndex()).shape_szt()));
+  setOutTensor(MaxArgGradOp::getOutIndex(),
+               out.reshape(outInfo(MaxArgGradOp::getOutIndex()).shape_szt()));
 }
 
 namespace {

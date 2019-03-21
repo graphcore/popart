@@ -13,6 +13,7 @@ file(GLOB op_sources src/op/*cpp)
 file(GLOB ces_sources src/ces/*cpp)
 file(GLOB patterns_sources src/patterns/*cpp)
 file(GLOB transforms_sources src/transforms/*cpp)
+file(GLOB subgraph_sources src/subgraph/*cpp)
 # poplar backend op specifc:
 file(GLOB x_sources src/popx/*cpp)
 file(GLOB opx_sources src/popx/op/*cpp)
@@ -22,7 +23,8 @@ set(sources
   ${op_sources} 
   ${ces_sources} 
   ${patterns_sources} 
-  ${transforms_sources})
+  ${transforms_sources}
+  ${subgraph_sources})
 
 if (POPLAR_BACKEND)
 message( STATUS "Building WITH Poplar IPU backend")

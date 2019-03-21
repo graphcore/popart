@@ -126,6 +126,11 @@ void TensorIndexMap::reset(int index, Tensor *ptensor) {
   }
 }
 
+bool TensorIndexMap::contains(Tensor *t) const {
+  auto it = indices_map.find(t);
+  return it != indices_map.end();
+}
+
 void TensorIndexMap::erase(int index) {
   const auto tm_itr = tensor_map.find(index);
 

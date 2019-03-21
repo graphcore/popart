@@ -112,6 +112,11 @@ const std::map<int, int> &OnehotGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
+void OnehotGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axis", axis);
+}
+
 namespace {
 static OpCreator<OnehotOp> onehotOpCreator(
     {Onnx::Operators::OneHot_9},

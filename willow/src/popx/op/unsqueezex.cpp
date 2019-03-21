@@ -8,10 +8,10 @@ namespace poponnx {
 namespace popx {
 
 void UnsqueezeOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = cloneNcopy(prog, inId(UnsqueezeOp::getInIndex()));
+  auto outTensor = cloneNcopy(prog, getInTensor(UnsqueezeOp::getInIndex()));
   outTensor =
       outTensor.reshape(outInfo(UnsqueezeOp::getOutIndex()).shape_szt());
-  insert(outId(UnsqueezeOp::getOutIndex()), outTensor);
+  setOutTensor(UnsqueezeOp::getOutIndex(), outTensor);
 }
 
 UnsqueezeOpx::UnsqueezeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -24,10 +24,10 @@ UnsqueezeGradOpx::UnsqueezeGradOpx(Op *op, Devicex *devicex)
 }
 
 void UnsqueezeGradOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = cloneNcopy(prog, inId(UnsqueezeGradOp::getInIndex()));
+  auto outTensor = cloneNcopy(prog, getInTensor(UnsqueezeGradOp::getInIndex()));
   outTensor =
       outTensor.reshape(outInfo(UnsqueezeOp::getOutIndex()).shape_szt());
-  insert(outId(UnsqueezeGradOp::getOutIndex()), outTensor);
+  setOutTensor(UnsqueezeGradOp::getOutIndex(), outTensor);
 }
 
 namespace {
