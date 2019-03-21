@@ -9,6 +9,8 @@ namespace poponnx {
 class NllLoss : public Loss {
 public:
   NllLoss(TensorId probs, TensorId label, TensorId output);
+  NllLoss(TensorId probs, TensorId label, TensorId output, int ignoreIndex);
+
   // label is the only streamed input tensor to this loss
   std::vector<TensorId> getStreamTensorNames() const final;
   std::unique_ptr<Op> getOp(const Op::Settings &settings_) const final;
@@ -21,6 +23,16 @@ public:
   TensorId probsTensorId() const;
   TensorId labelTensorId() const;
   std::unique_ptr<Loss> clone() const final;
+  bool hasIgnoreIndex() const { return hasIgnoreIndex_; }
+  int getIgnoreIndex() const { return ignoreIndex_; }
+
+private:
+  // Specifies a target value that is masked when calculating the loss and
+  // input gradient
+  int ignoreIndex_;
+
+  // Has ignoreIndex_ been set?
+  bool hasIgnoreIndex_ = false;
 };
 
 class NllOp : public LossOp {

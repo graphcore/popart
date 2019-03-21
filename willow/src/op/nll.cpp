@@ -44,6 +44,18 @@ NllLoss::NllLoss(TensorId probs, TensorId label, TensorId output)
   }
 }
 
+NllLoss::NllLoss(TensorId probs,
+                 TensorId label,
+                 TensorId output,
+                 int ignoreIndex)
+    : NllLoss(probs, label, output) {
+
+  // An ignoreIndex has been supplied. This will influence the grow()
+  // function of the loss.
+  hasIgnoreIndex_ = true;
+  ignoreIndex_    = ignoreIndex;
+}
+
 TensorId NllLoss::probsTensorId() const { return input(getProbsInIndex()); }
 
 TensorId NllLoss::labelTensorId() const { return input(getLabelInIndex()); }
