@@ -15,6 +15,13 @@ class NllOpx : public Opx {
 public:
   NllOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+  // Mask the loss, or loss-grad of rows (i.e. samples) of tensor t
+  // whose corresponding target label is equal to ignoreIndex
+  static void applyMaskInPlaceForIgnoredIndex(poplar::Graph &graph,
+                                              poplar::Tensor t,
+                                              poplar::Tensor labels,
+                                              int ignoreIndex,
+                                              poplar::program::Sequence &prog);
 };
 
 class NllGradOpx : public Opx {

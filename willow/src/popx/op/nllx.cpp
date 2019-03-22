@@ -4,6 +4,7 @@
 #include <poponnx/popx/op/nllx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
 
+#include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Encoding.hpp>
 #include <popops/Reduce.hpp>
@@ -50,14 +51,54 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
   popops::mapInPlace(
       graph(), popops::expr::UnaryOpType::LOGARITHM, reduction, prog, "..log");
 
+  if (nllloss->hasIgnoreIndex()) {
+    applyMaskInPlaceForIgnoredIndex(
+        graph(), reduction, label1D, nllloss->getIgnoreIndex(), prog);
+  }
+
   // and negate it.
   popops::mapInPlace(
       graph(), popops::expr::UnaryOpType::NEGATE, reduction, prog, "..neg");
 
-  // One loss per class, so the output is reshaped to match label input shape
+  // One loss per sample, so the output is reshaped to match label input shape
   reduction = reduction.reshape(label.shape());
 
   setOutTensor(0, reduction);
+}
+
+void NllOpx::applyMaskInPlaceForIgnoredIndex(poplar::Graph &graph,
+                                             poplar::Tensor t,
+                                             poplar::Tensor labels,
+                                             int ignoreIndex,
+                                             poplar::program::Sequence &prog) {
+  // Get the scalar ignoreIndex tensor. If it doens't already
+  // exist, create it
+  auto ignoreIndexTensor =
+      graph.addConstant(labels.elementType(), {}, ignoreIndex);
+  graph.setTileMapping(ignoreIndexTensor, 0);
+
+  // Create the mask
+  auto lossMaskBool = popops::map(graph,
+                                  popops::expr::BinaryOpType::NOT_EQUAL,
+                                  labels,
+                                  ignoreIndexTensor,
+                                  prog,
+                                  "..neq");
+  auto lossMask =
+      popops::cast(graph, lossMaskBool, t.elementType(), prog, "..cast");
+
+  // Expand, if required, for valid broadcasting of mul
+  if (t.rank() == 2) {
+    lossMask = lossMask.expand({1});
+  }
+
+  // Apply the mask
+  popops::mapInPlace(graph,
+                     popops::expr::BinaryOpType::MULTIPLY,
+                     t,
+                     lossMask,
+                     prog,
+                     "..masked");
 }
 
 NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -106,6 +147,13 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
                      safeProbs,
                      prog,
                      idStr());
+
+  // Apply mask before reduction, so that ignored class doesn't
+  // contribute to the loss gradient
+  if (nllloss->hasIgnoreIndex()) {
+    NllOpx::applyMaskInPlaceForIgnoredIndex(
+        graph(), oneHot, label1D, nllloss->getIgnoreIndex(), prog);
+  }
 
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());

@@ -256,6 +256,11 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("probabilities"),
            py::arg("labels"),
            py::arg("output"))
+      .def(py::init<TensorId, TensorId, TensorId, int>(),
+           py::arg("probabilities"),
+           py::arg("labels"),
+           py::arg("output"),
+           py::arg("ignore_index"))
       .def("probsTensorId", &NllLoss::probsTensorId)
       .def("labelTensorId", &NllLoss::labelTensorId)
       .def("virtualGraph", &NllLoss::virtualGraph);
@@ -465,7 +470,8 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def(py::init(&Builder::createFromOnnxModel),
            py::arg("modelProtoOrFilename"))
       .def("addInputTensor", &Builder::addInputTensor, py::arg("tensorInfo"))
-      .def("addInitializedInputTensor",
+      .def(
+           "addInitializedInputTensor",
            [](Builder &builder, py::array array) {
              ConstVoidData initData;
              initData.data = array.request().ptr;
@@ -586,13 +592,15 @@ PYBIND11_MODULE(poponnx_core, m) {
                &Builder::virtualGraph),
            py::arg("nodeOutputNames"),
            py::arg("value") = 0)
-      .def("virtualGraph",
+      .def(
+           "virtualGraph",
            [](Builder &self, int64_t index) -> AttributeContextManager {
              AttributeContextManager acm(self, sVirtualGraphAttribute, index);
              return acm;
            },
            py::arg("value"))
-      .def("nameScope",
+      .def(
+           "nameScope",
            [](Builder &self, const std::string &name) -> NameContextManager {
              NameContextManager ncm(self, name);
              return ncm;

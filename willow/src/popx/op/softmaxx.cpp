@@ -3,6 +3,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/nll.hpp>
 #include <poponnx/op/softmax.hpp>
+#include <poponnx/popx/op/nllx.hpp>
 #include <poponnx/popx/op/softmaxx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
 
@@ -50,7 +51,7 @@ SoftmaxGradOpx::SoftmaxGradOpx(Op *op, Devicex *devicex)
 }
 
 SoftmaxGradDirectOpx::SoftmaxGradDirectOpx(Op *op, Devicex *devicex)
-    : ElementWiseUnaryOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<SoftmaxGradDirectOp>(op,
                                 Onnx::CustomGradOperators::SoftmaxGradDirect);
 }
@@ -81,6 +82,7 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   // 1 at position "label", 0 elsewhere.
   auto oneHot = graph().clone(probs2D.elementType(), probs2D, "..OneHot");
   popops::encodeOneHot(graph(), label1D, oneHot, prog, "..Nll");
+
   // -1 at position "label", 0 elsewhere.
   popops::mapInPlace(
       graph(), popops::expr::UnaryOpType::NEGATE, oneHot, prog, "..neg");
@@ -88,6 +90,11 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   // p - 1 at position "label" label, p elsewhere.
   popops::mapInPlace(
       graph(), popops::expr::BinaryOpType::ADD, oneHot, probs2D, prog, "..sub");
+
+  if (sfmgd.nlll()->hasIgnoreIndex()) {
+    NllOpx::applyMaskInPlaceForIgnoredIndex(
+        graph(), oneHot, label1D, sfmgd.nlll()->getIgnoreIndex(), prog);
+  }
 
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());

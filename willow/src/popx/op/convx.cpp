@@ -94,7 +94,7 @@ convertPoplarConvParameters(const poplin::ConvParams &popParams) {
     input.upperTruncation = vXtoY<unsigned, int64_t>(popInput.truncationUpper);
     input.dilation        = vXtoY<unsigned, int64_t>(popInput.dilation);
     input.lowerPadding    = vXtoY<unsigned, int64_t>(popInput.paddingLower);
-    input.upperPadding    = vXtoY<unsigned, int64_t>(popInput.paddingLower);
+    input.upperPadding    = vXtoY<unsigned, int64_t>(popInput.paddingUpper);
     input.flip            = popInput.flip;
   };
 
