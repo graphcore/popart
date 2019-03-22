@@ -106,17 +106,12 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         else:
             device = deviceManager.acquireAvailableDevice()
 
-    # Enumerate a use an items from the list
-    if True:
-
-        print("Enumerating devices")
-        print("-------------------------------------")
-        for idx, d in enumerate(deviceManager.enumerateDevices()):
-            print('{0}. {1}'.format(idx, d))
-        print("")
-
-    # Print details of the selected device
-    print('Selected Device : {0}'.format(device))
+    # Enumerate available devices
+    print("Enumerating devices")
+    print("-------------------------------------")
+    for idx, d in enumerate(deviceManager.enumerateDevices()):
+        print('{0}. {1}'.format(idx, d))
+    print("")
 
     opts = poponnx.SessionOptionsCore()
     opts.ignoreData = syntheticData

@@ -180,9 +180,10 @@ Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
     : poponnx::Device(ir),
       progs(PopPrograms(ir.getDataFlow().batchesPerStep())), tensors(ir) {
 
+  logging::devicex::info("Setting selected device: {}", deviceInfo);
+
   // do not like the dynamic cast, is there a better way....
   popDevice = dynamic_cast<DevicexInfo &>(deviceInfo).getDevice();
-
   if (!popDevice.attach()) {
     throw error("failed to attach to popDevice");
   }
