@@ -51,7 +51,7 @@ SoftmaxGradOpx::SoftmaxGradOpx(Op *op, Devicex *devicex)
 }
 
 SoftmaxGradDirectOpx::SoftmaxGradDirectOpx(Op *op, Devicex *devicex)
-    : ElementWiseUnaryOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<SoftmaxGradDirectOp>(op,
                                 Onnx::CustomGradOperators::SoftmaxGradDirect);
 }
