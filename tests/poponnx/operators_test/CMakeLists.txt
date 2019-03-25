@@ -1,6 +1,6 @@
 add_poponnx_py_unit_test(operators_test)
 add_poponnx_py_unit_test(gather_big_test)
-add_poponnx_py_unit_test(gather_bigger_test)
+# T7662 add_poponnx_py_unit_test(gather_bigger_test)
 add_poponnx_py_unit_test(gemm_test)
 add_poponnx_py_unit_test(gather_test)
 add_poponnx_py_unit_test(lstm_test)
