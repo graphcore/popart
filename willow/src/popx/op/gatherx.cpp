@@ -90,19 +90,6 @@ static poplar::Tensor splitIndices(poplar::Graph &graph,
   }
 }
 
-// The offset dimensions after the given dimension need to be increment so that
-// they still correct refer to the output shape
-static std::vector<std::size_t>
-splitOffsetDims(std::vector<std::size_t> offsetDims, unsigned dim) {
-  for (auto &offset_dim : offsetDims) {
-    if (offset_dim > dim) {
-      offset_dim += 1;
-    }
-  }
-
-  return offsetDims;
-}
-
 // We will be slicing on the new dimension, so it's size will be 1
 static std::vector<std::size_t>
 splitSliceSizes(std::vector<std::size_t> sliceSizes, unsigned dim) {
@@ -185,7 +172,6 @@ static poplar::Tensor gatherWrapper(poplar::Graph &graph,
     // Step 2. Split the axis dimension into two and recompute the indices
     operand = splitOperand(operand, *too_big_dim);
     indices = splitIndices(graph, prog, operand, *too_big_dim, indices, index);
-    offsetDims = splitOffsetDims(offsetDims, *too_big_dim);
     sliceSizes = splitSliceSizes(sliceSizes, *too_big_dim);
     collapsedSliceDims =
         splitCollapsedSliceDims(collapsedSliceDims, *too_big_dim);
