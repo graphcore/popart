@@ -155,7 +155,7 @@ auto main(int argc, char **argv) -> int {
 
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-  session->setDevice(*cpuDevice);
+  session->setDevice(cpuDevice);
 
   // prepare the anchors
   float rawOutputData[2] = {0, 0};

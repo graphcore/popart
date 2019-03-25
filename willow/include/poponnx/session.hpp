@@ -29,7 +29,7 @@ public:
    *
    * /param deviceInfo which defines the type of device to work on
    */
-  void setDevice(DeviceInfo &deviceInfo);
+  void setDevice(std::shared_ptr<DeviceInfo> deviceInfo);
 
   /**
    * Prepare the network for execution.

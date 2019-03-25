@@ -67,10 +67,10 @@ public:
   virtual ~DeviceProvider() {}
 
   /// Get a list of ipu devices
-  virtual void enumerate(std::vector<std::unique_ptr<DeviceInfo>> &devices) = 0;
+  virtual void enumerate(std::vector<std::shared_ptr<DeviceInfo>> &devices) = 0;
 
   /// Create a host device for testing
-  virtual std::unique_ptr<DeviceInfo>
+  virtual std::shared_ptr<DeviceInfo>
   createHostDevice(DeviceType type,
                    const std::map<std::string, std::string> &options) = 0;
 };
@@ -96,14 +96,14 @@ public:
    * attach the device before you can set it on the Session
    * \return A list of devices.
    */
-  std::vector<std::unique_ptr<DeviceInfo>> enumerateDevices();
+  std::vector<std::shared_ptr<DeviceInfo>> enumerateDevices();
 
   /** Finds the first available hardware device. This method will attach to the
    * device.
    * \return A device, which can be used with a session. Will return nullptr if
    *         no device is available
    */
-  std::unique_ptr<DeviceInfo> acquireAvailableDevice();
+  std::shared_ptr<DeviceInfo> acquireAvailableDevice();
 
   /** Finds the first available hardware device, that a certain number of IPUs.
    * This method will attach to the device.
@@ -112,7 +112,7 @@ public:
    * \return A device, which can be used with a session. Will return nullptr if
    *         no device is available
    */
-  std::unique_ptr<DeviceInfo> acquireAvailableDevice(int numIpus,
+  std::shared_ptr<DeviceInfo> acquireAvailableDevice(int numIpus,
                                                      int tilesPerIpu);
 
   /** Allocates the hardware device by id. This id can be found running 'gc-info
@@ -120,12 +120,12 @@ public:
    * \param id The index of the IPU to be used
    * \return A device. Will return nullptr if the device is not  available
    */
-  std::unique_ptr<DeviceInfo> acquireDeviceById(int id);
+  std::shared_ptr<DeviceInfo> acquireDeviceById(int id);
 
   /** Create a 'simulated' CPU device
    * \return A device
    */
-  std::unique_ptr<DeviceInfo> createCpuDevice();
+  std::shared_ptr<DeviceInfo> createCpuDevice();
 
   /** Create a 'simulated' IPU Model device
    * The following options are supported :
@@ -135,7 +135,7 @@ public:
    * \param options Configuration settings for the IPU Model
    * \return A device
    */
-  std::unique_ptr<DeviceInfo>
+  std::shared_ptr<DeviceInfo>
   createIpuModelDevice(std::map<std::string, std::string> &options);
 
   /** Create a 'simulated' Sim device
@@ -145,7 +145,7 @@ public:
    * \param options Configuration settings for the Sim
    * \return A device
    */
-  std::unique_ptr<DeviceInfo>
+  std::shared_ptr<DeviceInfo>
   createSimDevice(std::map<std::string, std::string> &options);
 };
 

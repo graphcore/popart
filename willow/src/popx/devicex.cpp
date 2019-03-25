@@ -212,16 +212,14 @@ poplar::Graph &Devicex::graph(int64_t virtualGraphIndex) {
   return virtualGraphs.at(virtualGraphIndex);
 }
 
-Devicex::Devicex(const Ir &ir, DeviceInfo &deviceInfo)
-    : poponnx::Device(ir),
+Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
+    : poponnx::Device(ir), deviceInfo(deviceInfo_),
       progs(PopPrograms(ir.getDataFlow().batchesPerStep())), tensors(ir) {
 
-  logging::devicex::info("Setting selected device: {}", deviceInfo);
+  logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
-  // do not like the dynamic cast, is there a better way....
-  popDevice = dynamic_cast<DevicexInfo &>(deviceInfo).getDevice();
-  if (!popDevice.attach()) {
-    throw error("failed to attach to popDevice");
+  if (!deviceInfo->attach()) {
+    throw error("failed to attach to device");
   }
 
   // TODO (see T5100) : if inference, forward should be INFERENCE_FWD
@@ -900,12 +898,16 @@ void Devicex::prepare() {
   logging::devicex::info("Poplar version: {}", poplar::versionString());
   logging::devicex::info("Poplar release githash: {}", poplar::packageHash());
 
+  // Do not like the dynamic_cast is there a better way to handle this?
+  auto &popDevice = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
+
   // Create the top level graph
   pRootGraph.reset(new poplar::Graph(popDevice));
 
   // Create the master graph
   logging::devicex::debug("Creating master graph with replication factor {}",
                           getReplicationFactor());
+
   pMasterGraph.reset(new poplar::Graph(
       pRootGraph->createReplicatedGraph(getReplicationFactor())));
 

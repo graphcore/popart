@@ -359,6 +359,7 @@ PYBIND11_MODULE(poponnx_core, m) {
                      &SessionOptions::dotSubgraphAnnotation)
       .def_readwrite("finalDotOp", &SessionOptions::finalDotOp)
       .def_readwrite("firstDotOp", &SessionOptions::firstDotOp)
+      .def_readwrite("constantWeights", &SessionOptions::constantWeights)
       // set in python use the python set constructor, so something like
       // mySessionOptions.dotChecks = {poponnx.DotCheck.FINAL}
       .def_readwrite("dotChecks", &SessionOptions::dotChecks);
@@ -699,7 +700,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       }))
       .def(
           "acquireAvailableDevice",
-          static_cast<std::unique_ptr<DeviceInfo> (DeviceManager::*)(int, int)>(
+          static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(int, int)>(
               &DeviceManager::acquireAvailableDevice),
           py::arg("numIpus")     = 1,
           py::arg("tilesPerIpu") = 0)
@@ -724,7 +725,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .value("Ipu", DeviceType::Ipu)
       .value("Sim", DeviceType::Sim);
 
-  py::class_<DeviceInfo>(m, "DeviceInfo")
+  py::class_<DeviceInfo, std::shared_ptr<DeviceInfo>>(m, "DeviceInfo")
       .def("attach", &DeviceInfo::attach)
       .def("detach", &DeviceInfo::detach)
       .def_property_readonly("type", &DeviceInfo::getType)

@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
 
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-  session->setDevice(*cpuDevice);
+  session->setDevice(cpuDevice);
 
   // prepare the anchors
   int rawOutputData[10];
@@ -133,7 +133,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
 
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-  session->setDevice(*cpuDevice);
+  session->setDevice(cpuDevice);
 
   // prepare the anchors
   int rawOutputData[24];

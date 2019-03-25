@@ -152,7 +152,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale1) {
 
     auto cpuDevice =
         poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-    session->setDevice(*cpuDevice);
+    session->setDevice(cpuDevice);
 
     // prepare the anchors
     std::vector<float> rawOutputData(4);

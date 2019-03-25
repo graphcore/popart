@@ -301,7 +301,7 @@ template <typename T> void ConstExprTest_Add_Type(std::string type) {
 
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-  session->setDevice(*cpuDevice);
+  session->setDevice(cpuDevice);
 
   T rawInputData[4] = {(T)1.1f, 2, 3, 4};
   poponnx::NDArrayWrapper<T> inData(rawInputData, {2, 2});

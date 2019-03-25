@@ -16,8 +16,8 @@ namespace poponnx {
 
 Session::Session() {}
 
-void Session::setDevice(DeviceInfo &deviceInfo) {
-  logging::session::trace("Session::setDevice({})", deviceInfo);
+void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
+  logging::session::trace("Session::setDevice({})", *deviceInfo);
   device_.reset(new popx::Devicex(ir, deviceInfo));
 }
 

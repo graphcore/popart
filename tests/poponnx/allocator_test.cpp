@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(allocator_conv_control) {
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();
   std::unique_ptr<Device> device;
-  device.reset(new popx::Devicex(ir, *cpuDevice));
+  device.reset(new popx::Devicex(ir, cpuDevice));
   device->prepare();
 
   BOOST_CHECK(device->getLinearlyCreatedInputTensors().count(i1) == 1);
@@ -113,7 +113,7 @@ BOOST_AUTO_TEST_CASE(allocator_single_input_viewchanging_conv) {
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();
   std::unique_ptr<Device> device;
-  device.reset(new popx::Devicex(ir, *cpuDevice));
+  device.reset(new popx::Devicex(ir, cpuDevice));
   device->prepare();
 
   BOOST_CHECK(device->getEfficientlyCreatedInputTensors().count(i1) == 1);

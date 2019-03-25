@@ -177,7 +177,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
 
     auto cpuDevice =
         poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-    session->setDevice(*cpuDevice);
+    session->setDevice(cpuDevice);
 
     // prepare the anchors
     float rawOutputData;

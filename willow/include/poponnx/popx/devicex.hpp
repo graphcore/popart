@@ -126,7 +126,7 @@ private:
 class Devicex : public poponnx::Device {
 
 public:
-  Devicex(const Ir &, DeviceInfo &deviceInfo);
+  Devicex(const Ir &, std::shared_ptr<DeviceInfo> deviceInfo);
   void prepare() final;
   void weightsFromHost() final;
   void optimizerFromHost() final;
@@ -198,7 +198,7 @@ private:
 
   std::vector<poplar::Graph> virtualGraphs;
 
-  poplar::Device popDevice;
+  std::shared_ptr<DeviceInfo> deviceInfo;
 
   // Non-const tensors used to keep track of batch count, modulo the return
   // period

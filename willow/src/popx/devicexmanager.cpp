@@ -31,7 +31,7 @@ DevicexManager::DevicexManager() {
 }
 
 void DevicexManager::enumerate(
-    std::vector<std::unique_ptr<poponnx::DeviceInfo>> &devices) {
+    std::vector<std::shared_ptr<poponnx::DeviceInfo>> &devices) {
 
   auto deviceManager = poplar::DeviceManager::createDeviceManager();
   std::vector<poplar::Device> popdevices = deviceManager.getDevices();
@@ -42,9 +42,9 @@ void DevicexManager::enumerate(
         convertDeviceType(device.getTarget().getTargetType());
     switch (type) {
     case DeviceType::Ipu: {
-      std::unique_ptr<poponnx::DeviceInfo> ipu =
-          make_unique<DevicexIpuInfo>(*this, device.getId(), device);
-      devices.push_back(std::move(ipu));
+      std::shared_ptr<poponnx::DeviceInfo> ipu =
+          std::make_shared<DevicexIpuInfo>(*this, device.getId(), device);
+      devices.push_back(ipu);
     } break;
     case DeviceType::IpuModel:
     case DeviceType::Cpu:
@@ -93,14 +93,14 @@ bool mapFind<bool>(const std::map<std::string, std::string> &map,
   }
 }
 
-std::unique_ptr<poponnx::DeviceInfo> DevicexManager::createHostDevice(
+std::shared_ptr<poponnx::DeviceInfo> DevicexManager::createHostDevice(
     poponnx::DeviceType type,
     const std::map<std::string, std::string> &options) {
 
   switch (type) {
   case DeviceType::Cpu: {
     poplar::Device device = poplar::Device::createCPUDevice();
-    return make_unique<DevicexCpuInfo>(*this, device);
+    return std::make_shared<DevicexCpuInfo>(*this, device);
   }
   case DeviceType::IpuModel: {
 
@@ -112,7 +112,7 @@ std::unique_ptr<poponnx::DeviceInfo> DevicexManager::createHostDevice(
     ipuModel.compileIPUCode = mapFind(options, "compileIPUCode", true);
 
     poplar::Device device = ipuModel.createDevice();
-    return make_unique<DevicexIpuModelInfo>(*this, device);
+    return std::make_shared<DevicexIpuModelInfo>(*this, device);
   }
   case DeviceType::Sim: {
     try {
@@ -125,7 +125,7 @@ std::unique_ptr<poponnx::DeviceInfo> DevicexManager::createHostDevice(
           poplar::Target::createIPUTarget(numIPUs, tilesPerIPU, "_TEST_SYSTEM");
 
       poplar::Device device = poplar::Device::createSimulatorDevice(target);
-      return make_unique<DevicexSimInfo>(*this, device);
+      return std::make_shared<DevicexSimInfo>(*this, device);
     } catch (const poplar::poplar_error &e) {
       throw error("Simulator not supported. " + std::string(e.what()));
     }
