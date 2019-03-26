@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
   auto i1Id   = aiOnnx.constant(i1cv, "i1cv");
   auto dataId = builder->addInputTensor(dataInfo);
   auto i01Id  = aiOnnx.add({i0Id, i1Id});
-  auto castId = aiOnnx.cast({i01Id}, DataType::FLOAT);
+  auto castId = aiOnnx.cast({i01Id}, "FLOAT");
   auto outId  = aiOnnx.matmul({dataId, castId});
   builder->addOutputTensor(outId);
 
@@ -155,8 +155,9 @@ template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
   auto i1Id   = aiOnnx.constant(i1cv, "i1cv");
   auto dataId = builder->addInputTensor(dataInfo);
   auto i01Id  = aiOnnx.add({i0Id, i1Id});
-  auto castId = aiOnnx.cast({i01Id}, getDataType<TO>()); // DataType::FLOAT);
-  auto outId  = aiOnnx.matmul({dataId, castId});
+  auto castId = aiOnnx.cast(
+      {i01Id}, dataInfo.getDataTypeInfo()->name()); // DataType::FLOAT);
+  auto outId = aiOnnx.matmul({dataId, castId});
   builder->addOutputTensor(outId);
 
   auto proto      = builder->getModelProto();

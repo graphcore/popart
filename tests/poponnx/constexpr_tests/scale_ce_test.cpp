@@ -86,7 +86,7 @@ std::string getTestModelProto(DataType type) {
   auto x2 = aiOnnx.matmul({x0, x1});
   auto x3 = aiOnnx.scale({x2}, 0.5);
   auto x5 = aiOnnx.scale({x4}, 0.5);
-  auto c0 = aiOnnx.cast({x5}, DataType::FLOAT);
+  auto c0 = aiOnnx.cast({x5}, "FLOAT");
   auto x6 = aiOnnx.add({x3, c0});
   builder->addOutputTensor(x6);
 

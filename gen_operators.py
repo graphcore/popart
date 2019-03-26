@@ -135,7 +135,7 @@ class Attribute:
 
         # Special case of Cast where we replace int with DataType
         if self.op.name == "Cast":
-            return "DataType"
+            return "const std::string&"
         elif self.type == onnx.defs.OpSchema.AttrType.INT:
             if self.required:
                 return 'int64_t'
@@ -555,7 +555,10 @@ def genBuilderCpp(filename, schema):
                                         "  // Special case where we cast from DataType to int\n"
                                     )
                                     f.write(
-                                        "  attributes[\"{}\"] = static_cast<int>(onnxutil::getTPDataType({}));\n"
+                                        "  DataType toDataType = dataTypeFromString({});\n"
+                                        .format(a.name))
+                                    f.write(
+                                        "  attributes[\"{}\"] = static_cast<int>(onnxutil::getTPDataType(toDataType));\n"
                                         .format(a.name, a.name))
                                 else:
                                     f.write(

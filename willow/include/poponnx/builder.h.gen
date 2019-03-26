@@ -1074,7 +1074,7 @@ class AiOnnxOpset6 : private DomainOpSet {
      */
     TensorId
     cast(const std::vector<TensorId>& args,
-         DataType to,
+         const std::string& to,
          const std::string &name = "");
 
     /**
@@ -3037,7 +3037,7 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     cast(const std::vector<TensorId>& args,
-         DataType to,
+         const std::string& to,
          const std::string &name = "");
 
     /**

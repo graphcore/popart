@@ -178,11 +178,12 @@ AiOnnxOpset6::batchnormalization(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset6::cast(const std::vector<TensorId>& args,
-                   DataType to,
+                   const std::string& to,
                    const std::string& name) {
   std::map<std::string, boost::any> attributes;
   // Special case where we cast from DataType to int
-  attributes["to"] = static_cast<int>(onnxutil::getTPDataType(to));
+  DataType toDataType = dataTypeFromString(to);
+  attributes["to"] = static_cast<int>(onnxutil::getTPDataType(toDataType));
   return impl->op(Onnx::Operators::Cast_6,
                   getOpsetVersion(),
                   args,
@@ -2511,11 +2512,12 @@ AiOnnxOpset9::batchnormalization(const std::vector<TensorId>& args,
 
 TensorId
 AiOnnxOpset9::cast(const std::vector<TensorId>& args,
-                   DataType to,
+                   const std::string& to,
                    const std::string& name) {
   std::map<std::string, boost::any> attributes;
   // Special case where we cast from DataType to int
-  attributes["to"] = static_cast<int>(onnxutil::getTPDataType(to));
+  DataType toDataType = dataTypeFromString(to);
+  attributes["to"] = static_cast<int>(onnxutil::getTPDataType(toDataType));
   return impl->op(Onnx::Operators::Cast_9,
                   getOpsetVersion(),
                   args,
