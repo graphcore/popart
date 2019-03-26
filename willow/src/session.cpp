@@ -54,6 +54,36 @@ void Session::weightsFromHost() {
   weightsFromHostCalled = true;
 }
 
+void Session::weightsToHost() {
+  logging::session::trace("Session::weightsToHost");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
+  device_->weightsToHost();
+}
+
+void Session::readWeights(const IWeightsIO &weightsIo) {
+  logging::session::trace("Session::readWeights");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
+  device_->readWeights(weightsIo);
+}
+
+void Session::writeWeights(const IWeightsIO &weightsIo) {
+  logging::session::trace("Session::writeWeights");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
+  device_->writeWeights(weightsIo);
+}
+
 void Session::run(const IStepIO &stepio) {
   logging::session::trace("Session::run");
   if (!ir.canInfer()) {

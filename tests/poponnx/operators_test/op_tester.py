@@ -76,10 +76,30 @@ def op_tester(tmpdir):
         def __init__(self, logging_dir):
             np.random.seed(0)
             self.passes = []
+            self.options = poponnx.SessionOptionsCore()
             self.logging_dir = logging_dir
+            self.device = "cpu"
+            self.numIPUs = 2
             self.rtol = 1e-05
             self.atol = 1e-08
             self.check_shapes = True
+
+        def verifyTensor(self, t1, ref):
+            if self.check_shapes:
+                if t1.shape != ref.shape:
+                    print('shape mismatch {} != {}'.format(
+                        t1.shape, ref.shape))
+                assert t1.shape == ref.shape
+
+            if not np.allclose(t1, ref, self.rtol, self.atol):
+                print('rtol:{} atol:{}'.format(self.rtol, self.atol))
+                print('Poponnx:\n{}'.format(t1))
+                print('Torch:\n{}'.format(ref))
+                print('Diff:\n{}'.format(np.subtract(t1, ref)))
+                print('IsClose:\n{}'.format(
+                    np.isclose(t1, ref, self.rtol, self.atol)))
+
+            assert np.allclose(t1, ref, self.rtol, self.atol)
 
         def run(self, init_builder, reference, step_type='infer', opsets=None):
             assert step_type in ('infer', 'train')
@@ -89,6 +109,7 @@ def op_tester(tmpdir):
             anchors = {}
             anchorIds = init_builder(bld)
             for anchorId in anchorIds:
+
                 if anchorId not in bld._init_input_map:
                     anchors[anchorId] = poponnx.AnchorReturnType("ALL")
 
@@ -102,15 +123,14 @@ def op_tester(tmpdir):
             losses = [poponnx.L1Loss(anchorIds[0], "l1LossVal", 0.1)]
             proto = bld.getModelProto()
 
-            opts = poponnx.SessionOptionsCore()
-            opts.logDir = self.logging_dir
+            self.options.logDir = self.logging_dir
 
             if step_type == 'infer':
                 session = poponnx.InferenceSession(
                     fnModel=proto,
                     dataFeed=dataFlow,
                     passes=poponnx.Patterns(self.passes),
-                    userOptions=opts)
+                    userOptions=self.options)
             else:
                 session = poponnx.TrainingSession(
                     fnModel=proto,
@@ -118,9 +138,13 @@ def op_tester(tmpdir):
                     losses=losses,
                     optimizer=optimizer,
                     passes=poponnx.Patterns(self.passes),
-                    userOptions=opts)
+                    userOptions=self.options)
 
-            session.setDevice(tu.get_poplar_cpu_device())
+            if self.device == "cpu":
+                session.setDevice(tu.get_poplar_cpu_device())
+            elif self.device == "ipu_model":
+                session.setDevice(tu.get_ipu_model(numIPUs=self.numIPUs))
+
             anchor_map = session.initAnchorArrays()
 
             session.prepareDevice()
@@ -141,6 +165,9 @@ def op_tester(tmpdir):
             #getattr(session, step_type)(stepio)
             session.run(stepio)
 
+            if (step_type == 'train'):
+                session.weightsToHost()
+
             ref_out = reference(RefData(bld._outputs, anchor_map))
 
             def fix_type(t):
@@ -154,31 +181,32 @@ def op_tester(tmpdir):
                     raise Exception('unexpected type', type(t))
 
             ref_out = [fix_type(i) for i in ref_out]
-            for index, key in enumerate(anchors):
-                if ref_out[index] is not None:
-                    print('Testing anchor "{}"...'.format(key))
+            for index, key in enumerate(anchorIds):
+                if key in anchors:
+                    if ref_out[index] is not None:
+                        print('Testing anchor "{}"...'.format(key))
+                        self.verifyTensor(anchor_map[key], ref_out[index])
+                    else:
+                        print('Not Testing anchor "{}" as it is None'.format(
+                            key))
+                elif key in bld._init_input_map:
+                    if ref_out[index] is not None:
+                        print('Testing weight "{}"...'.format(key))
+                        weightInfo = session.getInfo(key)
+                        print('Weight info shape:{} type:{}',
+                              weightInfo.shape(), weightInfo.data_type_lcase())
+                        weights = {}
+                        weights[key] = np.empty(
+                            shape=weightInfo.shape(),
+                            dtype=weightInfo.data_type_lcase())
+                        weightsIo = poponnx.PyWeightsIO(weights)
+                        session.readWeights(weightsIo)
 
-                    if self.check_shapes:
-                        if anchor_map[key].shape != ref_out[index].shape:
-                            print('shape mismatch {} != {}'.format(
-                                anchor_map[key].shape, ref_out[index].shape))
-                        assert anchor_map[key].shape == ref_out[index].shape
+                        self.verifyTensor(weights[key], ref_out[index])
 
-                    if not np.allclose(anchor_map[key], ref_out[index],
-                                       self.rtol, self.atol):
-                        print('rtol:{} atol:{}'.format(self.rtol, self.atol))
-                        print('Poponnx:\n{}'.format(anchor_map[key]))
-                        print('Torch:\n{}'.format(ref_out[index]))
-                        print('Diff:\n{}'.format(
-                            np.subtract(anchor_map[key], ref_out[index])))
-                        print('IsClose:\n{}'.format(
-                            np.isclose(anchor_map[key], ref_out[index],
-                                       self.rtol, self.atol)))
-
-                    assert np.allclose(anchor_map[key], ref_out[index],
-                                       self.rtol, self.atol)
-                else:
-                    print('Not Testing anchor "{}" as it is None'.format(key))
+                    else:
+                        print('Not Testing weight "{}" as it is None'.format(
+                            key))
 
             return session
 

@@ -62,6 +62,7 @@ class TensorInfo;
 class ConstVoidData;
 class MutableOutData;
 class IStepIO;
+class IWeightsIO;
 class GradInOutMapper;
 class InputMapWrapper;
 class OutputMapWrapper;

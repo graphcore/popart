@@ -48,6 +48,11 @@ public:
   void weightsFromHost();
 
   /**
+   * Copy the weights to host from the device
+   */
+  void weightsToHost();
+
+  /**
    * Perform one step.
    *
    * input data  : from address in stepIO.in
@@ -120,6 +125,20 @@ public:
    *              containing an ONNX model protobuf
    */
   void resetHostWeights(const std::string &model);
+
+  /**
+   * Read the weights. Must have called weightsToHost first
+   *
+   * weight data : to addresses in weightsIo.out
+   */
+  void readWeights(const IWeightsIO &weightsIo);
+
+  /**
+   * Write the weights. Must call weightsFromHost after
+   *
+   * weight data : to addresses in weightsIo.out
+   */
+  void writeWeights(const IWeightsIO &weightsIo);
 
 protected:
   /**

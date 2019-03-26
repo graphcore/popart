@@ -132,7 +132,10 @@ public:
   void optimizerFromHost() final;
 
   void run(const IStepIO &) final;
+  void weightsToHost() final;
   void weightsToHost(const std::map<TensorId, MutableVoidData> &) final;
+  void readWeights(const IWeightsIO &weights) final;
+  void writeWeights(const IWeightsIO &weights) final;
 
   virtual std::string getSummaryReport() const override final;
   virtual std::string getGraphReport() const override final;
@@ -148,6 +151,11 @@ public:
   PopPrograms progs;
 
   Opx *getOpx(OpId);
+
+  // Get the root graph
+  poplar::Graph &rootGraph();
+  const poplar::Graph &rootGraph() const;
+
   poplar::Graph &masterGraph();
   poplar::Graph &graph(int64_t virtualGraphIndex);
 
@@ -171,8 +179,20 @@ public:
                           const std::vector<size_t> &shape,
                           double val);
 
+  // Helper method to get the replication factor based on the user options
+  unsigned getReplicationFactor() const;
+
 private:
+  // The root graph. Operations that span the boundaries between
+  // replicated subgraphs (e.g. all-reduce of weight deltas) should be added
+  // here
+  std::unique_ptr<poplar::Graph> pRootGraph{nullptr};
+
+  // Operations that are not mapped to a specific IPU should be added to
+  // this graph. This will be a replicated graph if the options specify a
+  // replication factor greater than one.
   std::unique_ptr<poplar::Graph> pMasterGraph{nullptr};
+
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
   std::unique_ptr<poplar::Target> pTarget{nullptr};
 

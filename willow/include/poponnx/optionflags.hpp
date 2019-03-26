@@ -69,6 +69,14 @@ struct SessionOptions {
   // The minimum number of virtual graphs required to execute the graph
   int64_t minimumVirtualGraphCount = 1;
 
+  /// Enable replication of graphs
+  bool enableReplicatedGraphs = false;
+
+  /// If enableReplicatedGraphs is true, replicatedGraphCount will set the
+  /// number of replicated graphs - must be a factor of the number of IPU's
+  /// (CHECK)
+  int64_t replicatedGraphCount = 1;
+
   /// Enable transformation pass that attempts to automatically place ops on
   /// virtual graphs to achieve model parallelism.
   bool autoVirtualGraph = false;

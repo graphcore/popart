@@ -22,8 +22,8 @@ void ScaleOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0,
                popops::map(graph(),
                            popops::expr::BinaryOpType::MULTIPLY,
-                           scale_factor_const,
                            getInTensor(0),
+                           scale_factor_const,
                            prog,
                            idStr()));
 }
