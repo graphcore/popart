@@ -46,8 +46,8 @@ bool SplitGatherPattern::matches(Op *op) const {
 
   const auto inputShape = gather->inShape(GatherOp::dataInIndex());
   const auto axis       = gather->getAxis();
-  const auto virtualGraphCount =
-      op->getIr().getSessionOptions().minimumVirtualGraphCount;
+
+  const int64_t virtualGraphCount = op->getIr().getDeviceInfo()->getNumIpus();
 
   // We aren't using vgraphs
   if (!op->getIr().getSessionOptions().enableVirtualGraphs) {
@@ -165,10 +165,9 @@ decanonicalizeTranspose(const int64_t axis,
 bool SplitGatherPattern::apply(Op *op) const {
   auto gather = dynamic_cast<GatherOp *>(op);
 
-  const auto inputShape = gather->inShape(GatherOp::dataInIndex());
-  const auto axis       = gather->getAxis();
-  const auto virtualGraphCount =
-      op->getIr().getSessionOptions().minimumVirtualGraphCount;
+  const auto inputShape           = gather->inShape(GatherOp::dataInIndex());
+  const auto axis                 = gather->getAxis();
+  const int64_t virtualGraphCount = op->getIr().getDeviceInfo()->getNumIpus();
 
   const auto numElements = std::accumulate(
       inputShape.begin(), inputShape.end(), 1, std::multiplies<int64_t>());

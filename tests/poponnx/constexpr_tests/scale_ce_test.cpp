@@ -107,6 +107,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale0) {
   auto data_flow = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(outId, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({model_proto,
@@ -114,6 +115,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale0) {
               data_flow,
               losses,
               &optimizer,
+              *cpuDevice,
               {}, // no SessionOptions
               Patterns({})});
 
@@ -141,18 +143,18 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale1) {
     auto optimizer = ConstSGD(0.01);
     std::vector<Loss *> losses{};
 
+    auto cpuDevice =
+        poponnx::DeviceManager::createDeviceManager().createCpuDevice();
+
     auto session = poponnx::InferenceSession::createFromOnnxModel(
         proto,
         data_flow,
+        cpuDevice,
         {}, // no losses
         poponnx::InputShapeInfo(),
         {},        // no session options
         Patterns() // no patterns
     );
-
-    auto cpuDevice =
-        poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-    session->setDevice(cpuDevice);
 
     // prepare the anchors
     std::vector<float> rawOutputData(4);

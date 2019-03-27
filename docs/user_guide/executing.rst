@@ -8,21 +8,25 @@ configure the session as a whole.
 Constructing the session
 ========================
 
-The session constructor takes at least the ONNX graph parameter, and a
-parameter `dataFeed` which directs the basic data flow in the graph.
+The session constructor takes at least the ONNX graph parameter, a
+parameter `dataFeed` which directs the basic data flow in the graph,
+and a deviceInfo.
 
 The session can either be constructed for inference or training.
 
-To construct a session for inference you need to provide the model and input data feed. 
+To construct a session for inference you need to provide the model,
+the input data feed, and a deviceInfo. 
 A full forward pass will be constructed.
 
 ::
 
   df = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
-  s = poponnx.InferenceSession("onnx.pb", dataFeed=df)
+  device = poponnx.DeviceManager().createCpuDevice()
+  s = poponnx.InferenceSession("onnx.pb", deviceInfo=device, dataFeed=df)
 
 
-To construct a session for training, you need to provide the model, input data feed, loss and optimzier. 
+To construct a session for training, you need to provide the model,
+input data feed, loss, optimzier, and a deviceInfo 
 A full forward pass, loss calculation and backward pass will be
 constructed.  
 
@@ -31,7 +35,8 @@ constructed.
   l = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
   o = poponnx.ConstSGD(0.01)
   df = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
-  s = poponnx.TrainingSession("onnx.pb", dataFeed=df, losses=l, optimzier=o)
+  device = poponnx.DeviceManager().createCpuDevice()
+  s = poponnx.TrainingSession("onnx.pb", deviceInfo=device, dataFeed=df, losses=l, optimzier=o)
 
 
 
@@ -78,11 +83,13 @@ Selecting a device for execution
 ================================
 
 The device manager allows the selection of an IPU configuration for the execution.
-The `setDevice` method is used to set the device within the session.
+The device must be passed into the sessions constructor.
 
 ::
 
-  session.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
+  df = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+  device = poponnx.DeviceManager().createCpuDevice()
+  s = poponnx.InferenceSession("onnx.pb", deviceInfo=device, dataFeed=df)
 
 The device manager can enumerate the available devices with the `enumerateDevices`
 method. The  `acquireAvailableDevice` method will acquire the

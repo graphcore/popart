@@ -47,17 +47,19 @@ BOOST_AUTO_TEST_CASE(allocator_conv_control) {
   auto o = aiOnnx.conv({s1, s2}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
   builder->addOutputTensor(o);
 
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
+
   Ir ir;
   ir.prepare({io::getModelFromString(builder->getModelProto()),
               InputShapeInfo(),
               DataFlow(1, {{o, AnchorReturnType("ALL")}}),
-              {}, // no losses
-              {}, // no optimizer
-              {}, // no SessionOptions
+              {},         // no losses
+              {},         // no optimizer
+              *cpuDevice, // no deviceInfo
+              {},         // no SessionOptions
               Patterns({})});
 
-  auto cpuDevice =
-      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
   std::unique_ptr<Device> device;
   device.reset(new popx::Devicex(ir, cpuDevice));
   device->prepare();
@@ -101,17 +103,19 @@ BOOST_AUTO_TEST_CASE(allocator_single_input_viewchanging_conv) {
   auto o = aiOnnx.conv({t1, t2}, {1, 1}, 1, {}, {1, 1, 1, 1}, {1, 1});
   builder->addOutputTensor(o);
 
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
+
   Ir ir;
   ir.prepare({io::getModelFromString(builder->getModelProto()),
               InputShapeInfo(),
               DataFlow(1, {{o, AnchorReturnType("ALL")}}),
-              {}, // no losses
-              {}, // no optimizer
-              {}, // no SessionOptions
+              {},         // no losses
+              {},         // no optimizer
+              *cpuDevice, // noDeviceInfo
+              {},         // no SessionOptions
               Patterns({})});
 
-  auto cpuDevice =
-      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
   std::unique_ptr<Device> device;
   device.reset(new popx::Devicex(ir, cpuDevice));
   device->prepare();

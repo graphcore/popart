@@ -3,6 +3,7 @@ import pytest
 import poponnx
 import torch
 from op_tester import op_tester
+import test_util as tu
 
 
 def test_average_pool_1(op_tester):
@@ -85,7 +86,8 @@ def test_average_pool_with_count_include_pad(op_tester):
             dataFeed=dataFlow,
             losses=losses,
             optimizer=optimizer,
-            userOptions=opts)
+            userOptions=opts,
+            deviceInfo=tu.get_poplar_cpu_device())
 
     assert (e_info.value.args[0].startswith(
         "`count_include_pad` is not supported"))

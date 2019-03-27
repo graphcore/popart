@@ -65,6 +65,7 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
   auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   SessionOptions opts;
   opts.enableAutoRecomputation = false;
@@ -75,6 +76,7 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               opts,
               Patterns({PreAliasPatternType::OPTOIDENTITY,
                         PreAliasPatternType::POSTNREPL})});
@@ -131,6 +133,7 @@ BOOST_AUTO_TEST_CASE(RecomputeTest) {
   auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   SessionOptions opts;
   opts.enableAutoRecomputation = true;
@@ -141,6 +144,7 @@ BOOST_AUTO_TEST_CASE(RecomputeTest) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               opts,
               Patterns({PreAliasPatternType::OPTOIDENTITY,
                         PreAliasPatternType::POSTNREPL})});
@@ -171,6 +175,7 @@ BOOST_AUTO_TEST_CASE(DontInheritRecomputeTest) {
                             {"d__" + act, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(relu_out, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   SessionOptions opts;
   opts.dotChecks = {DotCheck::FINAL};
@@ -181,6 +186,7 @@ BOOST_AUTO_TEST_CASE(DontInheritRecomputeTest) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               opts,
               Patterns()});
 

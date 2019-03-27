@@ -50,9 +50,9 @@ def test_3d_nll_loss_input():
             }),
         optimizer=poponnx.ConstSGD(0.001, 0.01),
         losses=[poponnx.NllLoss(out, lb, "loss")],
-        passes=poponnx.Patterns(poponnx.PatternsLevel.ALL))
+        passes=poponnx.Patterns(poponnx.PatternsLevel.ALL),
+        deviceInfo=poponnx.DeviceManager().createCpuDevice())
 
-    session.setDevice(poponnx.DeviceManager().createCpuDevice())
     session.prepareDevice()
     session.weightsFromHost()
 
@@ -120,9 +120,9 @@ def test_nll_loss_with_ignored_index():
                                   {"loss": poponnx.AnchorReturnType("ALL")}),
         optimizer=poponnx.ConstSGD(0.001, 0.01),
         losses=[poponnx.NllLoss(out, lb, "loss", ignore_index=ignoreInd)],
-        passes=poponnx.Patterns(poponnx.PatternsLevel.ALL))
+        passes=poponnx.Patterns(poponnx.PatternsLevel.ALL),
+        deviceInfo=poponnx.DeviceManager().createCpuDevice())
 
-    session.setDevice(poponnx.DeviceManager().createCpuDevice())
     session.prepareDevice()
     session.weightsFromHost()
 
@@ -192,9 +192,9 @@ def test_nll_loss_grad_with_ignored_index():
                 1, {"d__" + ip: poponnx.AnchorReturnType("ALL")}),
             optimizer=poponnx.ConstSGD(0.001, 0.01),
             losses=[poponnx.NllLoss(out, lb, "loss", ignore_index=ignoreInd)],
-            passes=poponnx.Patterns(patterns))
+            passes=poponnx.Patterns(patterns),
+            deviceInfo=poponnx.DeviceManager().createCpuDevice())
 
-        session.setDevice(poponnx.DeviceManager().createCpuDevice())
         session.prepareDevice()
         session.weightsFromHost()
         session.optimizerFromHost()

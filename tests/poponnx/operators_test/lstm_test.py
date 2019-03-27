@@ -491,8 +491,9 @@ def test_import_torch_lstm(tmpdir):
         dataFlow = poponnx.DataFlow(1, anchors)
         options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
         device = poponnx.DeviceManager().createIpuModelDevice(options)
-        s = poponnx.InferenceSession(fnModel=onnx_file_name, dataFeed=dataFlow)
-        s.setDevice(device)
+        s = poponnx.InferenceSession(
+            fnModel=onnx_file_name, dataFeed=dataFlow, deviceInfo=device)
+
         anchor_map = s.initAnchorArrays()
         s.prepareDevice()
 
@@ -627,9 +628,10 @@ def test_import_torch_lstm_train(tmpdir):
             dataFeed=dataFlow,
             optimizer=optimizer,
             losses=losses,
-            passes=poponnx.Patterns(["PreUniRepl"]))
+            passes=poponnx.Patterns(["PreUniRepl"]),
+            deviceInfo=device)
         print('setting device')
-        s.setDevice(device)
+
         anchor_map = s.initAnchorArrays()
         s.prepareDevice()
 

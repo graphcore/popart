@@ -69,8 +69,9 @@ BOOST_AUTO_TEST_CASE(Dot_basic0) {
   auto proto      = builder->getModelProto();
   auto modelProto = io::getModelFromString(proto);
 
-  out           = modelProto.graph().output(0).name();
-  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  out            = modelProto.graph().output(0).name();
+  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -78,6 +79,7 @@ BOOST_AUTO_TEST_CASE(Dot_basic0) {
               dataFlow,
               {},      // in inference mode, so no losses,
               nullptr, // and no optimizer
+              *cpuDevice,
               opts,
               Patterns(PatternsLevel::NONE).enableInPlace(true)});
 
@@ -118,6 +120,7 @@ BOOST_AUTO_TEST_CASE(Dot_dotOpNames0) {
     out             = modelProto.graph().output(0).name();
     auto dataFlow   = DataFlow(1, {{out, AnchorReturnType("ALL")}});
     Ir ir;
+    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
     // note that we are not in training mode,
     // but BWD0 is still a valid checkpoint
@@ -126,6 +129,7 @@ BOOST_AUTO_TEST_CASE(Dot_dotOpNames0) {
                 dataFlow,
                 {},      // in inference mode, so no losses,
                 nullptr, // and no optimizer
+                *cpuDevice,
                 opts,
                 Patterns(PatternsLevel::NONE)});
 
@@ -200,6 +204,7 @@ BOOST_AUTO_TEST_CASE(Dot_dotStartEnd) {
         auto modelProto = io::getModelFromString(proto);
         out             = modelProto.graph().output(0).name();
         auto dataFlow   = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+        auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
         Ir ir;
 
         // note that we are not in training mode,
@@ -209,6 +214,7 @@ BOOST_AUTO_TEST_CASE(Dot_dotStartEnd) {
                     dataFlow,
                     {},      // in inference mode, so no losses,
                     nullptr, // and no optimizer
+                    *cpuDevice,
                     opts,
                     Patterns(PatternsLevel::NONE)});
 

@@ -99,6 +99,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
   auto dataFlow  = DataFlow(1, {{customOut[0], AnchorReturnType("ALL")}});
   auto optimizer = SGD(0.01);
   std::vector<Loss *> losses{new L1Loss(customOut[0], "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -106,6 +107,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               {},
               Patterns({PreAliasPatternType::PREUNIREPL})});
 

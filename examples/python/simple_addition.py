@@ -19,10 +19,12 @@ proto = builder.getModelProto()
 dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
 # Create a session to compile and execute the graph
-session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+session = poponnx.InferenceSession(
+    fnModel=proto,
+    dataFeed=dataFlow,
+    deviceInfo=poponnx.DeviceManager().createIpuModelDevice({}))
 
-# Select a device and compile graph
-session.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
+# Compile graph
 session.prepareDevice()
 
 # Create buffers to receive results from the execution

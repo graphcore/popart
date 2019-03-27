@@ -1,6 +1,7 @@
 import numpy as np
 import poponnx
 import pytest
+import test_util as tu
 
 
 def test_auto_virtual_graph_subgraphs_2():
@@ -43,9 +44,11 @@ def test_auto_virtual_graph_subgraphs_2():
     opts = poponnx.SessionOptions()
     opts.enableVirtualGraphs = True
     opts.autoVirtualGraph = True
-    opts.minimumVirtualGraphCount = ipus
 
-    poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+    device = tu.get_ipu_model(numIPUs=ipus)
+
+    poponnx.Session(
+        fnModel=proto, dataFeed=dataFlow, userOptions=opts, deviceInfo=device)
 
 
 def test_auto_virtual_graph_subgraphs_4():
@@ -88,9 +91,11 @@ def test_auto_virtual_graph_subgraphs_4():
     opts = poponnx.SessionOptions()
     opts.enableVirtualGraphs = True
     opts.autoVirtualGraph = True
-    opts.minimumVirtualGraphCount = ipus
 
-    poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+    device = tu.get_ipu_model(numIPUs=ipus)
+
+    poponnx.Session(
+        fnModel=proto, dataFeed=dataFlow, userOptions=opts, deviceInfo=device)
 
 
 def test_auto_virtual_graph_inf_2():
@@ -118,9 +123,11 @@ def test_auto_virtual_graph_inf_2():
     opts = poponnx.SessionOptions()
     opts.enableVirtualGraphs = True
     opts.autoVirtualGraph = True
-    opts.minimumVirtualGraphCount = ipus
 
-    poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+    device = tu.get_ipu_model(numIPUs=ipus)
+
+    poponnx.Session(
+        fnModel=proto, dataFeed=dataFlow, userOptions=opts, deviceInfo=device)
 
 
 def test_auto_virtual_graph_inf_many():
@@ -148,9 +155,11 @@ def test_auto_virtual_graph_inf_many():
     opts = poponnx.SessionOptions()
     opts.enableVirtualGraphs = True
     opts.autoVirtualGraph = True
-    opts.minimumVirtualGraphCount = ipus
 
-    poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+    device = tu.get_ipu_model(numIPUs=ipus)
+
+    poponnx.Session(
+        fnModel=proto, dataFeed=dataFlow, userOptions=opts, deviceInfo=device)
 
 
 def test_auto_virtual_graph_train():
@@ -183,14 +192,16 @@ def test_auto_virtual_graph_train():
     opts = poponnx.SessionOptions()
     opts.enableVirtualGraphs = True
     opts.autoVirtualGraph = True
-    opts.minimumVirtualGraphCount = ipus
+
+    device = tu.get_ipu_model(numIPUs=ipus)
 
     poponnx.Session(
         fnModel=proto,
         dataFeed=dataFlow,
         userOptions=opts,
         losses=[loss],
-        optimizer=poponnx.SGD(0.01))
+        optimizer=poponnx.SGD(0.01),
+        deviceInfo=device)
 
 
 def test_auto_virtual_graph_not_enough_splits():
@@ -217,10 +228,15 @@ def test_auto_virtual_graph_not_enough_splits():
     opts = poponnx.SessionOptions()
     opts.enableVirtualGraphs = True
     opts.autoVirtualGraph = True
-    opts.minimumVirtualGraphCount = ipus
+
+    device = tu.get_ipu_model(numIPUs=ipus)
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+        poponnx.Session(
+            fnModel=proto,
+            dataFeed=dataFlow,
+            userOptions=opts,
+            deviceInfo=device)
 
     assert (e_info.value.args[0].startswith(
         "[AutoVirtualGraph] Couldn't find enough splits"))

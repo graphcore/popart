@@ -97,9 +97,11 @@ def _check_anchors(float_anchors, half_anchors):
 def _run_model(model, inputs, output, batchesPerStep=1):
     dataFlow = poponnx.DataFlow(batchesPerStep,
                                 {output: poponnx.AnchorReturnType("ALL")})
-    session = poponnx.InferenceSession(fnModel=model, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=model,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_poplar_cpu_device())
 
-    session.setDevice(tu.get_poplar_cpu_device())
     session.prepareDevice()
 
     anchors = session.initAnchorArrays()

@@ -20,9 +20,11 @@ def test_add_fp16(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_poplar_cpu_device())
 
-    session.setDevice(tu.get_poplar_cpu_device())
     session.prepareDevice()
 
     anchors = session.initAnchorArrays()
@@ -54,9 +56,11 @@ def test_add_variable_fp16(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_poplar_cpu_device())
 
-    session.setDevice(tu.get_poplar_cpu_device())
     session.prepareDevice()
     session.weightsFromHost()
 
@@ -100,8 +104,11 @@ def test_fp16transpose(tmpdir):
 
     proto = builder.getModelProto()
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
-    session.setDevice(tu.get_poplar_cpu_device())
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_poplar_cpu_device())
+
     session.prepareDevice()
     anchors = session.initAnchorArrays()
     inputs = {d0: d0_data}

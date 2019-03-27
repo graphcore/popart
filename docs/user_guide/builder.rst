@@ -25,8 +25,9 @@ In this example, a simple addition is prepared for execution.
   # Create a runtime environment
   anchors = {o : poponnx.AnchorReturnType("ALL")}
   dataFeed = poponnx.DataFlow(1, anchors)
+  device = poponnx.DeviceManager().createCpuDevice()
 
-  session = poponnx.InferenceSession(proto, dataFeed)
+  session = poponnx.InferenceSession(proto, dataFeed, device)
 
 Adding operations to the graph
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

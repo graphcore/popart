@@ -36,10 +36,10 @@ inferenceOptions.constantWeights = False
 inferenceSession = poponnx.InferenceSession(
     fnModel=builder.getModelProto(),
     dataFeed=dataFlow,
-    userOptions=inferenceOptions)
+    userOptions=inferenceOptions,
+    deviceInfo=poponnx.DeviceManager().createIpuModelDevice({}))
 
-# Select a device and compile graph
-inferenceSession.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
+# Compile graph
 inferenceSession.prepareDevice()
 
 # Create buffers to receive results from the execution
@@ -53,10 +53,10 @@ trainingSession = poponnx.TrainingSession(
     dataFeed=dataFlow,
     losses=[poponnx.NllLoss(o, lb, "loss")],
     optimizer=poponnx.ConstSGD(0.001),
-    userOptions=trainingOptions)
+    userOptions=trainingOptions,
+    deviceInfo=poponnx.DeviceManager().createIpuModelDevice({}))
 
-# Select a device and compile graph
-trainingSession.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
+# Compile graph
 trainingSession.prepareDevice()
 
 # Execute the training graph

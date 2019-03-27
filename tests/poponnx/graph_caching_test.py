@@ -45,9 +45,9 @@ def test_convolution_cached_by_default():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        userOptions=opts)
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -121,9 +121,9 @@ def test_convolution_disable_all():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        userOptions=opts)
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -193,9 +193,11 @@ def test_matmul_infer_cached_by_default():
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = poponnx.InferenceSession(
-        fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+        fnModel=proto,
+        dataFeed=dataFlow,
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -282,9 +284,9 @@ def test_matmul_train_cached_by_default():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        userOptions=opts)
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -370,9 +372,9 @@ def test_gemm_train_cached_by_default():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        userOptions=opts)
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -450,9 +452,11 @@ def test_outlining_bca1():
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = poponnx.InferenceSession(
-        fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+        fnModel=proto,
+        dataFeed=dataFlow,
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -530,9 +534,11 @@ def test_outlining_bca2():
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = poponnx.InferenceSession(
-        fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+        fnModel=proto,
+        dataFeed=dataFlow,
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -618,9 +624,9 @@ def test_outlining_bca3():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        userOptions=opts)
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()

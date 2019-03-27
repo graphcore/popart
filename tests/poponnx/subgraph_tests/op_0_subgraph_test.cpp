@@ -78,7 +78,8 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     std::unique_ptr<Optimizer> optimizer;
     std::vector<std::unique_ptr<L1Loss>> up_losses;
     std::vector<Loss *> losses{};
-    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+    auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
     if (train) {
       optimizer.reset(new ConstSGD(0.01));
@@ -93,6 +94,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
                 dataFlow,
                 losses,
                 optimizer.get(),
+                *cpuDevice,
                 {},
                 Patterns(PatternsLevel::DEFAULT)});
 
@@ -257,6 +259,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
                 {reservedGradientPrefix() + o2, AnchorReturnType("ALL")},
                 {reservedGradientPrefix() + out, AnchorReturnType("ALL")},
                 {o2, AnchorReturnType("ALL")}});
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   optimizer.reset(new ConstSGD(0.01));
   up_losses.push_back(
@@ -275,6 +278,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
               dataFlow,
               losses,
               optimizer.get(),
+              *cpuDevice,
               {},
               Patterns(PatternsLevel::DEFAULT)});
 

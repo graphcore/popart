@@ -70,6 +70,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(outId, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -77,6 +78,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               {}, // no SessionOptions
               Patterns({PreAliasPatternType::POSTNREPL})});
 
@@ -154,6 +156,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(outId, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -161,6 +164,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
               dataFlow,
               {}, // no loss
               {}, // no optimizer
+              *cpuDevice,
               {}, // no SessionOptions
               Patterns({PreAliasPatternType::POSTNREPL})});
 
@@ -224,8 +228,9 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add2) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR, adding outId as an anchor
-  auto art      = AnchorReturnType("ALL");
-  auto dataFlow = DataFlow(1, {{o, art}});
+  auto art       = AnchorReturnType("ALL");
+  auto dataFlow  = DataFlow(1, {{o, art}});
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -233,6 +238,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add2) {
               dataFlow,
               {}, // no loss
               {}, // no optimizer
+              *cpuDevice,
               {}, // no SessionOptions
               Patterns({PreAliasPatternType::POSTNREPL})});
 
@@ -291,17 +297,17 @@ template <typename T> void ConstExprTest_Add_Type(std::string type) {
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(1, {{outId, art}});
 
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
+
   auto session = poponnx::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
+      cpuDevice,
       {}, // no losses
       InputShapeInfo(),
       {}, // no SessionOptions
       Patterns({PreAliasPatternType::POSTNREPL}));
-
-  auto cpuDevice =
-      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-  session->setDevice(cpuDevice);
 
   T rawInputData[4] = {(T)1.1f, 2, 3, 4};
   poponnx::NDArrayWrapper<T> inData(rawInputData, {2, 2});

@@ -1,6 +1,7 @@
 import pytest
 
 import poponnx
+import test_util as tu
 
 
 def test_net_from_string(tmpdir):
@@ -16,7 +17,10 @@ def test_net_from_string(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_poplar_cpu_device())
 
 
 def test_net_from_file(tmpdir):
@@ -35,7 +39,10 @@ def test_net_from_file(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    poponnx.InferenceSession(fnModel="test.onnx", dataFeed=dataFlow)
+    poponnx.InferenceSession(
+        fnModel="test.onnx",
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_poplar_cpu_device())
 
 
 def test_net_failure1(tmpdir):
@@ -53,7 +60,10 @@ def test_net_failure1(tmpdir):
     dataFlow = poponnx.DataFlow(1, {})
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+        poponnx.InferenceSession(
+            fnModel=proto,
+            dataFeed=dataFlow,
+            deviceInfo=tu.get_poplar_cpu_device())
 
     assert (e_info.type == poponnx.poponnx_exception)
     assert (
@@ -67,7 +77,10 @@ def test_net_failure2(tmpdir):
     dataFlow = poponnx.DataFlow(1, {})
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        poponnx.InferenceSession(fnModel="nothing", dataFeed=dataFlow)
+        poponnx.InferenceSession(
+            fnModel="nothing",
+            dataFeed=dataFlow,
+            deviceInfo=tu.get_poplar_cpu_device())
 
     assert (e_info.type == poponnx.poponnx_exception)
     assert (e_info.value.args[0] == "Failed to parse ModelProto from string")

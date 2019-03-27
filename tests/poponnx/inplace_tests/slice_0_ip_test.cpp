@@ -45,12 +45,15 @@ BOOST_AUTO_TEST_CASE(Inplace_slice0) {
     // Create the IR
     auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
 
+    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+
     Ir ir;
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,
                 {},
                 nullptr,
+                *cpuDevice,
                 {},
                 Patterns(PatternsLevel::NONE).enableInPlace(enable_inplace)});
 

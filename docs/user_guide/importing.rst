@@ -27,8 +27,9 @@ contains an entry to fetch that anchor.
   # Create a runtime environment
   anchors = {"output" : poponnx.AnchorReturnType("ALL")}
   dataFeed = poponnx.DataFlow(100, anchors)
+  device = poponnx.DeviceManager().createCpuDevice()
 
-  session = poponnx.InferenceSession("alexnet.onnx", dataFeed)
+  session = poponnx.InferenceSession("alexnet.onnx", dataFeed, device)
 
 
 The `Session` class takes the name of a protobuf file, or the protobuf
@@ -62,8 +63,10 @@ network instead of performing inference.
   # We need to describe the labels input shape
   inputShapeInfo = poponnx.InputShapeInfo()
   inputShapeInfo.add("labels", poponnx.TensorInfo("INT32", [4]))
+  device = poponnx.DeviceManager().createCpuDevice()
 
   session = poponnx.TrainingSession("alexnet.onnx",
+                                    deviceInfo=device,
                                     dataFeed=dataFeed,
                                     losses=losses,
                                     optimizer=optimizer,

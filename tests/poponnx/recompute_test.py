@@ -1,5 +1,6 @@
 import poponnx
 import pytest
+import test_util as tu
 
 
 # Both manual and auto recomputation are not supported
@@ -27,7 +28,8 @@ def test_valid_recompute_options():
             optimizer=poponnx.ConstSGD(0.001),
             losses=[poponnx.L1Loss(o, "l1LossVal", 0.1)],
             passes=poponnx.Patterns([]),
-            userOptions=opts)
+            userOptions=opts,
+            deviceInfo=tu.get_poplar_cpu_device())
     assert (
         e_info.value.args[0] ==
         "A mixture of auto and manual recomputaion is currently not supported")

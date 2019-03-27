@@ -11,6 +11,7 @@
 #include <poponnx/ces/constexpr.hpp>
 #include <poponnx/ces/onnxconstexpr.hpp>
 #include <poponnx/chains.hpp>
+#include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
 #include <poponnx/intervals.hpp>
@@ -327,11 +328,12 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
                    const DataFlow &dataFlow_,
                    const std::vector<Loss *> &losses_,
                    const Optimizer *optimizer_,
+                   DeviceInfo &deviceInfo_,
                    const SessionOptions &userOptions_,
                    const Patterns &patterns_)
     : modelProto(modelProto_), inputShapeInfo(inputShapeInfo_),
       dataFlow(dataFlow_), losses(losses_), optimizer(optimizer_),
-      userOptions(userOptions_), patterns(patterns_) {}
+      deviceInfo(deviceInfo_), userOptions(userOptions_), patterns(patterns_) {}
 
 Ir::Ir() : onnxModel(nullptr) {
   up_tensors.reset(new Tensors(*this));
@@ -383,6 +385,10 @@ void Ir::setOptimizer(const Optimizer *o) {
     }
   }
 }
+
+void Ir::setDeviceInfo(DeviceInfo &di) { deviceInfo = &di; }
+
+const DeviceInfo *Ir::getDeviceInfo() { return deviceInfo; }
 
 void Ir::logIr() {
   std::stringstream ss2;
@@ -645,6 +651,7 @@ void Ir::verifyConstExprFolding() {
 }
 
 void Ir::prepare(const IrBundle &gb) {
+  setDeviceInfo(gb.deviceInfo);
 
   if (isPrepared) {
     throw error("Ir::prepare called more than once");
@@ -1693,7 +1700,9 @@ void Ir::constructBackwards() {
         throw error("can't currently register gradient of " +
                     nongrad->tensor_type() + " tensor, " + nongrad->str());
 
-      default: { throw error("only handling ActGrad and Variable for now"); }
+      default: {
+        throw error("only handling ActGrad and Variable for now");
+      }
       }
     }
 

@@ -42,6 +42,7 @@ class InferenceSession(poponnx.InferenceSessionCore):
     def __init__(self,
                  fnModel,
                  dataFeed,
+                 deviceInfo,
                  losses=[],
                  inputShapeInfo=poponnx.InputShapeInfo(),
                  passes=poponnx.Patterns(),
@@ -50,8 +51,9 @@ class InferenceSession(poponnx.InferenceSessionCore):
         if passes == None:
             passes = poponnx.Patterns()
 
-        super(InferenceSession, self).__init__(
-            fnModel, dataFeed, losses, inputShapeInfo, userOptions, passes)
+        super(InferenceSession,
+              self).__init__(fnModel, dataFeed, deviceInfo, losses,
+                             inputShapeInfo, userOptions, passes)
         self.dataFeed = dataFeed
 
     def initAnchorArrays(self):
@@ -64,6 +66,7 @@ class TrainingSession(poponnx.TrainingSessionCore):
                  dataFeed,
                  losses,
                  optimizer,
+                 deviceInfo,
                  inputShapeInfo=poponnx.InputShapeInfo(),
                  passes=poponnx.Patterns(),
                  userOptions=poponnx.SessionOptionsCore()):
@@ -72,7 +75,7 @@ class TrainingSession(poponnx.TrainingSessionCore):
             passes = poponnx.Patterns()
 
         super(TrainingSession,
-              self).__init__(fnModel, dataFeed, losses, optimizer,
+              self).__init__(fnModel, dataFeed, losses, optimizer, deviceInfo,
                              inputShapeInfo, userOptions, passes)
         self.dataFeed = dataFeed
 

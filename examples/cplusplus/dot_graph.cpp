@@ -149,6 +149,7 @@ int main(int argc, char **argv) {
   for (auto &x : up_losses) {
     losses.push_back(x.get());
   }
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -156,6 +157,7 @@ int main(int argc, char **argv) {
               dataFlow,
               losses,
               optimizer.get(),
+              *cpuDevice,
               opts,
               Patterns(PatternsLevel::DEFAULT).enableInPlace(true)});
 

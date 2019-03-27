@@ -343,8 +343,6 @@ PYBIND11_MODULE(poponnx_core, m) {
                      &SessionOptions::enableAutoRecomputation)
       .def_readwrite("enableVirtualGraphs",
                      &SessionOptions::enableVirtualGraphs)
-      .def_readwrite("minimumVirtualGraphCount",
-                     &SessionOptions::minimumVirtualGraphCount)
       .def_readwrite("autoVirtualGraph", &SessionOptions::autoVirtualGraph)
       .def_readwrite("enableReplicatedGraphs",
                      &SessionOptions::enableReplicatedGraphs)
@@ -434,11 +432,11 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def(py::init(&InferenceSession::createFromOnnxModel),
            py::arg("model"),
            py::arg("dataFlow").none(),
+           py::arg("deviceInfo"),
            py::arg("losses"),
            py::arg("inputShapeInfo"),
            py::arg("userOptions"),
            py::arg("patterns"))
-      .def("setDevice", &InferenceSession::setDevice)
       .def("prepareDevice", &InferenceSession::prepareDevice)
       .def("weightsFromHost", &InferenceSession::weightsFromHost)
       .def("writeWeights", &TrainingSession::writeWeights)
@@ -457,11 +455,11 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("dataFlow").none(),
            py::arg("losses"),
            py::arg("optimizer"),
+           py::arg("deviceInfo"),
            py::arg("inputShapeInfo"),
            py::arg("userOptions"),
            py::arg("patterns"))
       .def("updateOptimizer", &TrainingSession::updateOptimizer)
-      .def("setDevice", &TrainingSession::setDevice)
       .def("prepareDevice", &TrainingSession::prepareDevice)
       .def("weightsToHost", &TrainingSession::weightsToHost)
       .def("weightsFromHost", &TrainingSession::weightsFromHost)
@@ -515,14 +513,15 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def(py::init(&Builder::createFromOnnxModel),
            py::arg("modelProtoOrFilename"))
       .def("addInputTensor", &Builder::addInputTensor, py::arg("tensorInfo"))
-      .def("addInitializedInputTensor",
-           [](Builder &builder, py::array array) {
-             ConstVoidData initData;
-             initData.data = array.request().ptr;
-             initData.info = getTensorInfo(array);
-             return builder.addInitializedInputTensor(initData);
-           },
-           py::arg("initVal"))
+      .def(
+          "addInitializedInputTensor",
+          [](Builder &builder, py::array array) {
+            ConstVoidData initData;
+            initData.data = array.request().ptr;
+            initData.info = getTensorInfo(array);
+            return builder.addInitializedInputTensor(initData);
+          },
+          py::arg("initVal"))
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
 
       // Accessors for the ai.onnx domain builder interfac
@@ -636,18 +635,20 @@ PYBIND11_MODULE(poponnx_core, m) {
                &Builder::virtualGraph),
            py::arg("nodeOutputNames"),
            py::arg("value") = 0)
-      .def("virtualGraph",
-           [](Builder &self, int64_t index) -> AttributeContextManager {
-             AttributeContextManager acm(self, sVirtualGraphAttribute, index);
-             return acm;
-           },
-           py::arg("value"))
-      .def("nameScope",
-           [](Builder &self, const std::string &name) -> NameContextManager {
-             NameContextManager ncm(self, name);
-             return ncm;
-           },
-           py::arg("name"))
+      .def(
+          "virtualGraph",
+          [](Builder &self, int64_t index) -> AttributeContextManager {
+            AttributeContextManager acm(self, sVirtualGraphAttribute, index);
+            return acm;
+          },
+          py::arg("value"))
+      .def(
+          "nameScope",
+          [](Builder &self, const std::string &name) -> NameContextManager {
+            NameContextManager ncm(self, name);
+            return ncm;
+          },
+          py::arg("name"))
       .def("getVirtualGraph",
            static_cast<int64_t (Builder::*)(const TensorId &)>(
                &Builder::getVirtualGraph),

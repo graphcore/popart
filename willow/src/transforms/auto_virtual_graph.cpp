@@ -132,7 +132,7 @@ float AutoVirtualGraph::costFn(Op *op, bool training) const {
 //     proportion of the total cost on a single IPU, find an split in the
 //     subgraph and place subsequent ops on the next virtualGraph.
 bool AutoVirtualGraph::apply(Ir &ir) const {
-  const auto num_ipus = ir.getSessionOptions().minimumVirtualGraphCount;
+  const auto num_ipus = ir.getDeviceInfo()->getNumIpus();
   const auto training = ir.canTrain();
 
   if (ir.getOps().size() == 0 || num_ipus < 2) {

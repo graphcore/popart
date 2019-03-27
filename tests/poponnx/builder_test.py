@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 import poponnx
 import pytest
+import test_util as tu
 
 
 def getDevice():
@@ -837,9 +838,12 @@ def test_set_weights_from_host():
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
     session = poponnx.TrainingSession(
-        fnModel=proto, dataFeed=dataFlow, losses=losses, optimizer=optimizer)
+        fnModel=proto,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        deviceInfo=getDevice())
 
-    session.setDevice(getDevice())
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -1242,9 +1246,9 @@ def test_load_onnx_model_from_other_builder(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto, dataFeed=dataFlow, deviceInfo=getDevice())
 
-    session.setDevice(getDevice())
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -1265,9 +1269,9 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     proto2 = builder.getModelProto()
-    session = poponnx.InferenceSession(fnModel=proto2, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto2, dataFeed=dataFlow, deviceInfo=getDevice())
 
-    session.setDevice(getDevice())
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()
@@ -1307,9 +1311,9 @@ def test_load_onnx_model_from_file(tmpdir):
 
     proto = builder2.getModelProto()
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto, dataFeed=dataFlow, deviceInfo=getDevice())
 
-    session.setDevice(getDevice())
     anchors = session.initAnchorArrays()
 
     session.prepareDevice()

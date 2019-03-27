@@ -23,7 +23,10 @@ def test_no_virtual_graph():
     opts = poponnx.SessionOptionsCore()
 
     poponnx.InferenceSession(
-        fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+        fnModel=proto,
+        dataFeed=dataFlow,
+        userOptions=opts,
+        deviceInfo=tu.get_poplar_cpu_device())
 
 
 def test_all_virtual_graph():
@@ -50,7 +53,10 @@ def test_all_virtual_graph():
     opts = poponnx.SessionOptionsCore()
 
     poponnx.InferenceSession(
-        fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+        fnModel=proto,
+        dataFeed=dataFlow,
+        userOptions=opts,
+        deviceInfo=tu.get_poplar_cpu_device())
 
 
 def test_mixed_virtual_graph():
@@ -77,7 +83,10 @@ def test_mixed_virtual_graph():
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         poponnx.InferenceSession(
-            fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+            fnModel=proto,
+            dataFeed=dataFlow,
+            userOptions=opts,
+            deviceInfo=tu.get_poplar_cpu_device())
 
     assert (e_info.value.args[0].startswith(
         ("Op(ai.onnx.Add:7, outputs=[{}]) has virtual graph attribute but "

@@ -167,17 +167,17 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     opts.logDir     = "./dotfiles";
     boost::filesystem::create_directory(opts.logDir);
 
+    auto cpuDevice =
+        poponnx::DeviceManager::createDeviceManager().createCpuDevice();
+
     auto session = poponnx::InferenceSession::createFromOnnxModel(
         proto,
         dataFlow,
+        cpuDevice,
         {},
         poponnx::InputShapeInfo(),
         opts,
         poponnx::Patterns(PatternsLevel::NONE).enableInPlace(inp));
-
-    auto cpuDevice =
-        poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-    session->setDevice(cpuDevice);
 
     // prepare the anchors
     float rawOutputData;

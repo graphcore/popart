@@ -53,6 +53,7 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(tensorIds.back(), "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -60,6 +61,7 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               {},
               Patterns({PreAliasPatternType::POSTNREPL})});
 
@@ -105,6 +107,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -112,6 +115,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               {},
               Patterns({PreAliasPatternType::PREUNIREPL})});
 
@@ -152,6 +156,7 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -159,6 +164,7 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               {},
               Patterns({PreAliasPatternType::OPTOIDENTITY})});
 
@@ -196,6 +202,7 @@ BOOST_AUTO_TEST_CASE(GatherToIdentity) {
   auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -203,6 +210,7 @@ BOOST_AUTO_TEST_CASE(GatherToIdentity) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               {},
               Patterns({PreAliasPatternType::OPTOIDENTITY})});
 
@@ -244,6 +252,7 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -251,6 +260,7 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               {},
               Patterns({PreAliasPatternType::SPLITCONVBIAS})});
 
@@ -293,8 +303,9 @@ BOOST_AUTO_TEST_CASE(ScaleByOne) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto art      = AnchorReturnType("ALL");
-  auto dataFlow = DataFlow(1, {{scale, art}});
+  auto art       = AnchorReturnType("ALL");
+  auto dataFlow  = DataFlow(1, {{scale, art}});
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -302,6 +313,7 @@ BOOST_AUTO_TEST_CASE(ScaleByOne) {
               dataFlow,
               {},
               nullptr,
+              *cpuDevice,
               {},
               Patterns({PreAliasPatternType::OPTOIDENTITY})});
 
@@ -333,8 +345,9 @@ BOOST_AUTO_TEST_CASE(ScaleByNegativeOne) {
 
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
-  auto art      = AnchorReturnType("ALL");
-  auto dataFlow = DataFlow(1, {{scale, art}});
+  auto art       = AnchorReturnType("ALL");
+  auto dataFlow  = DataFlow(1, {{scale, art}});
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -342,6 +355,7 @@ BOOST_AUTO_TEST_CASE(ScaleByNegativeOne) {
               dataFlow,
               {},
               nullptr,
+              *cpuDevice,
               {},
               Patterns({PreAliasPatternType::NEGATIVEONESCALE})});
 
@@ -382,6 +396,7 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
                             {reservedGradientPrefix() + input2, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -389,6 +404,7 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               {},
               Patterns({PreAliasPatternType::SUBTRACTARG1GRADOP})});
 
@@ -431,7 +447,8 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(output, "l1LossVal", 0.1)};
 
-  auto opts = SessionOptions();
+  auto opts      = SessionOptions();
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -439,6 +456,7 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               opts,
               Patterns({PreAliasPatternType::RECIPROCALGRADOP})});
 
@@ -496,6 +514,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -503,6 +522,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               {},
               Patterns({PreAliasPatternType::OPTOIDENTITY})});
 
@@ -545,7 +565,8 @@ BOOST_AUTO_TEST_CASE(PadSumPatternTest) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -553,6 +574,7 @@ BOOST_AUTO_TEST_CASE(PadSumPatternTest) {
               dataFlow,
               {},
               nullptr,
+              *cpuDevice,
               {},
               Patterns({PreAliasPatternType::PADSUM})});
 
@@ -586,7 +608,8 @@ BOOST_AUTO_TEST_CASE(PreUniRepl_0) {
   auto modelProto = io::getModelFromString(proto);
 
   // Create the IR
-  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -594,6 +617,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl_0) {
               dataFlow,
               {},
               nullptr,
+              *cpuDevice,
               {},
               Patterns({PreAliasPatternType::PREUNIREPL})});
 }
@@ -622,8 +646,11 @@ BOOST_AUTO_TEST_CASE(SplitGatherTest) {
   auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
 
   SessionOptions userOptions;
-  userOptions.enableVirtualGraphs      = true;
-  userOptions.minimumVirtualGraphCount = 2;
+  userOptions.enableVirtualGraphs = true;
+
+  std::map<std::string, std::string> deviceOpts{{"numIPUs", "2"}};
+  auto device =
+      DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
 
   Ir ir;
   ir.prepare({modelProto,
@@ -631,6 +658,7 @@ BOOST_AUTO_TEST_CASE(SplitGatherTest) {
               dataFlow,
               {},
               nullptr,
+              *device,
               userOptions,
               Patterns({PreAliasPatternType::SPLITGATHER})});
 

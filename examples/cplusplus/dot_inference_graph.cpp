@@ -73,8 +73,9 @@ int main(int argc, char **argv) {
     throw error("Cannot generate dot for ONNX graph with no output");
   }
 
-  auto out      = modelProto.graph().output(0).name();
-  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto out       = modelProto.graph().output(0).name();
+  auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -82,6 +83,7 @@ int main(int argc, char **argv) {
               dataFlow,
               {},      // in inference mode, so no losses,
               nullptr, // and no optimizer.
+              *cpuDevice,
               opts,
               Patterns(PatternsLevel::NONE).enableInPlace(true)});
 

@@ -36,19 +36,11 @@ Session::~Session() = default;
 void Session::prepareDevice() {
   logging::session::trace("Session::prepareDevice()");
 
-  if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
-  }
-
   device_->prepare();
 }
 
 void Session::weightsFromHost() {
   logging::session::trace("Sessions::weightsFromHost");
-
-  if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
-  }
 
   device_->weightsFromHost();
   weightsFromHostCalled = true;
@@ -90,10 +82,6 @@ void Session::run(const IStepIO &stepio) {
     throw error("Trying to infer when not in inference mode");
   }
 
-  if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
-  }
-
   if (ir.containsInitialisers() && ir.isTraining() &&
       weightsFromHostCalled == false) {
     throw error(
@@ -118,9 +106,6 @@ void Session::modelToHost(const std::string &fn) {
     TensorId tenId = tp.name();
     initMap[tenId] = onnxutil::getMutableData(tp);
   }
-  if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
-  }
 
   device_->weightsToHost(initMap);
 
@@ -130,19 +115,11 @@ void Session::modelToHost(const std::string &fn) {
 std::string Session::getSummaryReport() const {
   logging::session::trace("Session::getSummaryReport");
 
-  if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
-  }
-
   return device_->getSummaryReport();
 }
 
 std::string Session::getGraphReport() const {
   logging::session::trace("Session::getGraphReport");
-
-  if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
-  }
 
   return device_->getGraphReport();
 }
@@ -150,19 +127,11 @@ std::string Session::getGraphReport() const {
 std::string Session::getExecutionReport() const {
   logging::session::trace("Session::getExecutionReport");
 
-  if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
-  }
-
   return device_->getExecutionReport();
 }
 
 TensorTileMap Session::getTensorTileMap() const {
   logging::session::trace("Session::getTensorTileMap");
-
-  if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
-  }
 
   return device_->getTensorTileMap();
 }
@@ -185,6 +154,7 @@ void InferenceSession::configureFromOnnx(
     const DataFlow &df,
     const std::vector<Loss *> &losses,
     const InputShapeInfo &perk,
+    std::shared_ptr<DeviceInfo> deviceInfo,
     const SessionOptions &userOptions,
     const Patterns &patterns) {
 
@@ -192,12 +162,20 @@ void InferenceSession::configureFromOnnx(
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
 
-  ir.prepare({modelProto, perk, df, losses, nullptr, userOptions, patterns});
+  ir.prepare({modelProto,
+              perk,
+              df,
+              losses,
+              nullptr,
+              *deviceInfo,
+              userOptions,
+              patterns});
 }
 
 std::unique_ptr<InferenceSession>
 InferenceSession::createFromOnnxModel(const std::string &model,
                                       const DataFlow &dataFlow,
+                                      std::shared_ptr<DeviceInfo> deviceInfo,
                                       const std::vector<Loss *> &losses,
                                       const InputShapeInfo &inputShapeInfo,
                                       const SessionOptions &userOptions,
@@ -205,9 +183,22 @@ InferenceSession::createFromOnnxModel(const std::string &model,
 
   logging::session::trace("InferenceSession::createFromOnnx");
 
+  if (!deviceInfo) {
+    throw error("Must pass a valid deviceInfo to "
+                "InferenceSession::createFromOnnxModel");
+  }
+
   auto session = std::unique_ptr<InferenceSession>(new InferenceSession());
-  session->configureFromOnnx(
-      model, dataFlow, losses, inputShapeInfo, userOptions, patterns);
+  session->configureFromOnnx(model,
+                             dataFlow,
+                             losses,
+                             inputShapeInfo,
+                             deviceInfo,
+                             userOptions,
+                             patterns);
+
+  session->setDevice(deviceInfo);
+
   return session;
 }
 
@@ -220,6 +211,7 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
                                         const std::vector<Loss *> &lossesIn,
                                         const Optimizer &optimizerIn,
                                         const InputShapeInfo &perk,
+                                        std::shared_ptr<DeviceInfo> deviceInfo,
                                         const SessionOptions &userOptions,
                                         const Patterns &patterns) {
 
@@ -227,8 +219,14 @@ void TrainingSession::configureFromOnnx(const std::string &modelProtoOrFilename,
 
   auto modelProto = onnxutil::getModelProto(modelProtoOrFilename);
 
-  ir.prepare(
-      {modelProto, perk, df, lossesIn, &optimizerIn, userOptions, patterns});
+  ir.prepare({modelProto,
+              perk,
+              df,
+              lossesIn,
+              &optimizerIn,
+              *deviceInfo,
+              userOptions,
+              patterns});
 }
 
 std::unique_ptr<TrainingSession>
@@ -236,11 +234,17 @@ TrainingSession::createFromOnnxModel(const std::string &model,
                                      const DataFlow &dataFlow,
                                      const std::vector<Loss *> &losses,
                                      const Optimizer &optimizer,
+                                     std::shared_ptr<DeviceInfo> deviceInfo,
                                      const InputShapeInfo &inputShapeInfo,
                                      const SessionOptions &userOptions,
                                      const Patterns &patterns) {
 
   logging::session::trace("TrainingSession::createFromOnnx");
+
+  if (!deviceInfo) {
+    throw error(
+        "Must pass a valid deviceInfo to TrainingSession::createFromOnnxModel");
+  }
 
   auto session = std::unique_ptr<TrainingSession>(new TrainingSession());
   session->configureFromOnnx(model,
@@ -248,8 +252,12 @@ TrainingSession::createFromOnnxModel(const std::string &model,
                              losses,
                              optimizer,
                              inputShapeInfo,
+                             deviceInfo,
                              userOptions,
                              patterns);
+
+  session->setDevice(deviceInfo);
+
   return session;
 }
 
@@ -262,10 +270,6 @@ void TrainingSession::updateOptimizer(const Optimizer *optimizer) {
 // momentum, initial momentum tensors (zero)) there are to device
 void TrainingSession::optimizerFromHost() {
   logging::session::trace("TrainingSession::optimizerFromHost");
-
-  if (!device_) {
-    throw error("Must call setDevice before {}", __func__);
-  }
 
   device_->optimizerFromHost();
 }

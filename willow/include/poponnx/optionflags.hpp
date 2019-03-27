@@ -66,9 +66,6 @@ struct SessionOptions {
   /// graph' for each IPU
   bool enableVirtualGraphs = false;
 
-  // The minimum number of virtual graphs required to execute the graph
-  int64_t minimumVirtualGraphCount = 1;
-
   /// Enable replication of graphs
   bool enableReplicatedGraphs = false;
 

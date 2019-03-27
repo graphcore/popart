@@ -3,6 +3,7 @@
 
 #include <map>
 #include <poponnx/dataflow.hpp>
+#include <poponnx/devicemanager.hpp>
 #include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/opidentifier.hpp>
@@ -77,6 +78,7 @@ public:
            const DataFlow &dataFlow,
            const std::vector<Loss *> &losses,
            const Optimizer *optimizer,
+           DeviceInfo &deviceInfo,
            const SessionOptions &userOptions,
            const Patterns &patterns);
 
@@ -85,6 +87,7 @@ public:
   const DataFlow &dataFlow;
   const std::vector<Loss *> &losses;
   const Optimizer *optimizer;
+  DeviceInfo &deviceInfo;
   const SessionOptions &userOptions;
   const Patterns &patterns;
 };
@@ -120,6 +123,11 @@ public:
   // Set the optimizer and add optimizer tensors
   // FFS could this be combined with updateOptimizer?
   void setOptimizer(const Optimizer *o);
+
+  // Set the device info
+  void setDeviceInfo(DeviceInfo &);
+
+  const DeviceInfo *getDeviceInfo();
 
   // Set the optimization patterns
   void setPatterns(const Patterns &p);
@@ -374,6 +382,7 @@ private:
   // Optimizer needed to construct backwards pass:
   // if momentum the Ir is different
   std::unique_ptr<Optimizer> optimizer;
+  DeviceInfo *deviceInfo = nullptr;
   SessionOptions userOptions;
   InputShapeInfo inputShapeInfo;
 
