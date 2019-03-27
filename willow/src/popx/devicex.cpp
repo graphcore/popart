@@ -675,21 +675,23 @@ PriTask Devicex::initRandomSeed() {
         masterGraph().addVariable(poplar::UNSIGNED_INT, {2}, randomSeedId);
     masterGraph().setTileMapping(seedTensor, 0);
 
-    auto dataStream = rootGraph().addHostToDeviceFIFO(
-        h2dId(randomSeedId),
-        seedTensor.elementType(),
-        seedTensor.numElements() *
-            std::max(static_cast<int>(getReplicationFactor()), 1));
-
     auto &sq = progs.setRandomSeedFragment();
-    if (getReplicationFactor() > 1) {
-      sq.add(poplar::program::Copy(
-          dataStream, rootGraph().getNonReplicatedTensor(seedTensor)));
-    } else {
-      sq.add(poplar::program::Copy(dataStream, seedTensor));
+
+    if (!useSyntheticData()) {
+      auto dataStream = rootGraph().addHostToDeviceFIFO(
+          h2dId(randomSeedId),
+          seedTensor.elementType(),
+          seedTensor.numElements() *
+              std::max(static_cast<int>(getReplicationFactor()), 1));
+
+      if (getReplicationFactor() > 1) {
+        sq.add(poplar::program::Copy(
+            dataStream, rootGraph().getNonReplicatedTensor(seedTensor)));
+      } else {
+        sq.add(poplar::program::Copy(dataStream, seedTensor));
+      }
     }
 
-    logging::devicex::debug("Adding call to poprand::setSeed");
     poprand::setSeed(
         masterGraph(), seedTensor, 0, sq, fmt::format("{}/set", randomSeedId));
   };
