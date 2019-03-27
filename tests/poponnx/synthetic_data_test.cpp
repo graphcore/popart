@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(SytheticData_False) {
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();
 
-  session->setDevice(*cpuDevice);
+  session->setDevice(cpuDevice);
   session->prepareDevice();
 
   poponnx::popx::Devicex *devicex =
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(SytheticData_True) {
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();
 
-  session->setDevice(*cpuDevice);
+  session->setDevice(cpuDevice);
   session->prepareDevice();
 
   poponnx::popx::Devicex *devicex =

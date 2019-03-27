@@ -145,7 +145,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
   .def("cast",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
-          DataType to,
+          const std::string& to,
           const std::string &name) -> TensorId{
            return opset.cast(args,
                              to,
@@ -1686,7 +1686,7 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
   .def("cast",
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
-          DataType to,
+          const std::string& to,
           const std::string &name) -> TensorId{
            return opset.cast(args,
                              to,
@@ -3200,7 +3200,7 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
   .def("cast",
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
-          DataType to,
+          const std::string& to,
           const std::string &name) -> TensorId{
            return opset.cast(args,
                              to,
@@ -4774,7 +4774,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
   .def("cast",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          DataType to,
+          const std::string& to,
           const std::string &name) -> TensorId{
            return opset.cast(args,
                              to,

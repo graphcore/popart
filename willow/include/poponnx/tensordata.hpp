@@ -85,6 +85,17 @@ private:
   std::map<TensorId, IArray &> outputs;
 };
 
+// A virtual class for accessing pointers to
+// the data required to perform a training step
+class IWeightsIO {
+public:
+  virtual ~IWeightsIO() = default;
+
+  virtual bool contains(TensorId) const = 0;
+
+  virtual MutableVoidData weight(TensorId) const = 0;
+};
+
 } // namespace poponnx
 
 #endif

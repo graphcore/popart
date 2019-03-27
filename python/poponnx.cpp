@@ -116,6 +116,37 @@ private:
   std::map<TensorId, py::array> outputs;
 };
 
+class PyWeightsIO : public IWeightsIO {
+public:
+  PyWeightsIO(std::map<TensorId, py::array> weights_) : weights(weights_) {}
+
+  template <typename T>
+  T get(TensorId id,
+        const std::map<TensorId, py::array> &M,
+        std::string mapName) const {
+    auto found = M.find(id);
+    if (found == M.end()) {
+      throw error("No tensor {} provided in PyWeightsIO's {}", id, mapName);
+    }
+    py::array npArr = found->second;
+    T stepData;
+    stepData.data = npArr.request().ptr;
+    stepData.info = getTensorInfo(npArr);
+    return stepData;
+  }
+
+  bool contains(TensorId id) const final {
+    return weights.find(id) != weights.end();
+  }
+
+  MutableVoidData weight(TensorId id) const final {
+    return get<MutableVoidData>(id, weights, "weights");
+  }
+
+private:
+  std::map<TensorId, py::array> weights;
+};
+
 class AttributeContextManager {
   Builder &builder;
   std::string attribute;
@@ -195,6 +226,8 @@ PYBIND11_MODULE(poponnx_core, m) {
 
   py::class_<IStepIO> stepio(m, "IStepIO");
 
+  py::class_<IWeightsIO> weightsio(m, "IWeightsIO");
+
   py::enum_<AnchorReturnTypeId>(m, "AnchorReturnTypeId")
       .value("FINAL", AnchorReturnTypeId::FINAL)
       .value("EVERYN", AnchorReturnTypeId::EVERYN)
@@ -205,6 +238,9 @@ PYBIND11_MODULE(poponnx_core, m) {
                     std::map<TensorId, py::array>>(),
            py::arg("inputs"),
            py::arg("outputs"));
+
+  py::class_<PyWeightsIO>(m, "PyWeightsIO", weightsio)
+      .def(py::init<std::map<TensorId, py::array>>(), py::arg("weights"));
 
   py::class_<AnchorReturnType>(m, "AnchorReturnType")
       .def(py::init<std::string>(), py::arg("anchorReturnTypeString"))
@@ -310,6 +346,10 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("minimumVirtualGraphCount",
                      &SessionOptions::minimumVirtualGraphCount)
       .def_readwrite("autoVirtualGraph", &SessionOptions::autoVirtualGraph)
+      .def_readwrite("enableReplicatedGraphs",
+                     &SessionOptions::enableReplicatedGraphs)
+      .def_readwrite("replicatedGraphCount",
+                     &SessionOptions::replicatedGraphCount)
       .def_readwrite("compileEngine", &SessionOptions::compileEngine)
       .def_readwrite("engineOptions", &SessionOptions::engineOptions)
       .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
@@ -319,6 +359,7 @@ PYBIND11_MODULE(poponnx_core, m) {
                      &SessionOptions::dotSubgraphAnnotation)
       .def_readwrite("finalDotOp", &SessionOptions::finalDotOp)
       .def_readwrite("firstDotOp", &SessionOptions::firstDotOp)
+      .def_readwrite("constantWeights", &SessionOptions::constantWeights)
       // set in python use the python set constructor, so something like
       // mySessionOptions.dotChecks = {poponnx.DotCheck.FINAL}
       .def_readwrite("dotChecks", &SessionOptions::dotChecks);
@@ -400,6 +441,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("setDevice", &InferenceSession::setDevice)
       .def("prepareDevice", &InferenceSession::prepareDevice)
       .def("weightsFromHost", &InferenceSession::weightsFromHost)
+      .def("writeWeights", &TrainingSession::writeWeights)
       .def("run", &InferenceSession::run)
       .def("modelToHost", &InferenceSession::modelToHost)
       .def("getInfo", &InferenceSession::getInfo)
@@ -421,7 +463,10 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("updateOptimizer", &TrainingSession::updateOptimizer)
       .def("setDevice", &TrainingSession::setDevice)
       .def("prepareDevice", &TrainingSession::prepareDevice)
+      .def("weightsToHost", &TrainingSession::weightsToHost)
       .def("weightsFromHost", &TrainingSession::weightsFromHost)
+      .def("readWeights", &TrainingSession::readWeights)
+      .def("writeWeights", &TrainingSession::writeWeights)
       .def("optimizerFromHost", &TrainingSession::optimizerFromHost)
       .def("run", &TrainingSession::run)
       .def("modelToHost", &TrainingSession::modelToHost)
@@ -470,8 +515,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def(py::init(&Builder::createFromOnnxModel),
            py::arg("modelProtoOrFilename"))
       .def("addInputTensor", &Builder::addInputTensor, py::arg("tensorInfo"))
-      .def(
-           "addInitializedInputTensor",
+      .def("addInitializedInputTensor",
            [](Builder &builder, py::array array) {
              ConstVoidData initData;
              initData.data = array.request().ptr;
@@ -592,15 +636,13 @@ PYBIND11_MODULE(poponnx_core, m) {
                &Builder::virtualGraph),
            py::arg("nodeOutputNames"),
            py::arg("value") = 0)
-      .def(
-           "virtualGraph",
+      .def("virtualGraph",
            [](Builder &self, int64_t index) -> AttributeContextManager {
              AttributeContextManager acm(self, sVirtualGraphAttribute, index);
              return acm;
            },
            py::arg("value"))
-      .def(
-           "nameScope",
+      .def("nameScope",
            [](Builder &self, const std::string &name) -> NameContextManager {
              NameContextManager ncm(self, name);
              return ncm;
@@ -658,7 +700,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       }))
       .def(
           "acquireAvailableDevice",
-          static_cast<std::unique_ptr<DeviceInfo> (DeviceManager::*)(int, int)>(
+          static_cast<std::shared_ptr<DeviceInfo> (DeviceManager::*)(int, int)>(
               &DeviceManager::acquireAvailableDevice),
           py::arg("numIpus")     = 1,
           py::arg("tilesPerIpu") = 0)
@@ -683,7 +725,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .value("Ipu", DeviceType::Ipu)
       .value("Sim", DeviceType::Sim);
 
-  py::class_<DeviceInfo>(m, "DeviceInfo")
+  py::class_<DeviceInfo, std::shared_ptr<DeviceInfo>>(m, "DeviceInfo")
       .def("attach", &DeviceInfo::attach)
       .def("detach", &DeviceInfo::detach)
       .def_property_readonly("type", &DeviceInfo::getType)

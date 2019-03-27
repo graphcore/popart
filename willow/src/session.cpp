@@ -16,8 +16,8 @@ namespace poponnx {
 
 Session::Session() {}
 
-void Session::setDevice(DeviceInfo &deviceInfo) {
-  logging::session::trace("Session::setDevice({})", deviceInfo);
+void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
+  logging::session::trace("Session::setDevice({})", *deviceInfo);
   device_.reset(new popx::Devicex(ir, deviceInfo));
 }
 
@@ -52,6 +52,36 @@ void Session::weightsFromHost() {
 
   device_->weightsFromHost();
   weightsFromHostCalled = true;
+}
+
+void Session::weightsToHost() {
+  logging::session::trace("Session::weightsToHost");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
+  device_->weightsToHost();
+}
+
+void Session::readWeights(const IWeightsIO &weightsIo) {
+  logging::session::trace("Session::readWeights");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
+  device_->readWeights(weightsIo);
+}
+
+void Session::writeWeights(const IWeightsIO &weightsIo) {
+  logging::session::trace("Session::writeWeights");
+
+  if (!device_) {
+    throw error("Must call setDevice before {}", __func__);
+  }
+
+  device_->writeWeights(weightsIo);
 }
 
 void Session::run(const IStepIO &stepio) {

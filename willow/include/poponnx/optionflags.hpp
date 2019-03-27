@@ -69,6 +69,14 @@ struct SessionOptions {
   // The minimum number of virtual graphs required to execute the graph
   int64_t minimumVirtualGraphCount = 1;
 
+  /// Enable replication of graphs
+  bool enableReplicatedGraphs = false;
+
+  /// If enableReplicatedGraphs is true, replicatedGraphCount will set the
+  /// number of replicated graphs - must be a factor of the number of IPU's
+  /// (CHECK)
+  int64_t replicatedGraphCount = 1;
+
   /// Enable transformation pass that attempts to automatically place ops on
   /// virtual graphs to achieve model parallelism.
   bool autoVirtualGraph = false;
@@ -82,6 +90,12 @@ struct SessionOptions {
   /// and nothing can be transferred to the device.  Functions which retrieve
   /// information from the graph building stage will be ok (tile mapping).
   bool compileEngine = true;
+
+  // An optimization for an inference session to have constant weights, true by
+  // default Set this option to false if you are going to want to change the
+  // weights with a call to resetHostWeights after the session has been
+  // prepared. This option has no effect on a training session
+  bool constantWeights = true;
 
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;

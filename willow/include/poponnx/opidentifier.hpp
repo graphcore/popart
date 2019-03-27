@@ -566,7 +566,7 @@ const static AiGraphcoreOpIdV1 AddArg1Grad("AddArg1Grad");
 // constexpr static char Atanh[] = "Atanh";
 const static AiGraphcoreOpIdV1 AveragePoolGrad("AveragePoolGrad");
 const static AiGraphcoreOpIdV1 BatchNormalizationGrad("BatchNormalizationGrad");
-// constexpr static char Cast[] = "Cast";
+const static AiGraphcoreOpIdV1 CastGrad("CastGrad");
 // constexpr static char Ceil[] = "Ceil";
 // constexpr static char Clip[] = "Clip";
 // constexpr static char Compress[] = "Compress";

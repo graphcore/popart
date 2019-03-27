@@ -99,7 +99,7 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
 
-  insert(outId(0), oneHot);
+  setOutTensor(0, oneHot);
 }
 
 // The maths for SoftmaxGradOp:
@@ -115,11 +115,11 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto axis = getOp<SoftmaxGradOp>().getAxis();
 
   // The gradient of the loss w.r.t. the probabilities (g in above description)
-  auto d_probs = get(inId(SoftmaxGradOp::getGradProbsInIndex()));
+  auto d_probs = getInTensor(SoftmaxGradOp::getGradProbsInIndex());
   d_probs      = SoftmaxOpx::coerceTo2D(d_probs, axis);
 
   // The input to the softmax (which we are computing the gradient of here)
-  auto pre_probs = get(inId(SoftmaxGradOp::getActsInIndex()));
+  auto pre_probs = getInTensor(SoftmaxGradOp::getActsInIndex());
   pre_probs      = SoftmaxOpx::coerceTo2D(pre_probs, axis);
 
   // recomputing the probabilities (p in the above description)
@@ -163,7 +163,7 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
                         "..SoftmaxGrad(3)");
 
   dv = dv.reshape(inInfo(SoftmaxGradOp::getActsInIndex()).shape_szt());
-  insert(outId(0), dv);
+  setOutTensor(0, dv);
 }
 
 namespace {

@@ -29,7 +29,7 @@ public:
    *
    * /param deviceInfo which defines the type of device to work on
    */
-  void setDevice(DeviceInfo &deviceInfo);
+  void setDevice(std::shared_ptr<DeviceInfo> deviceInfo);
 
   /**
    * Prepare the network for execution.
@@ -46,6 +46,11 @@ public:
    * come from any Model
    */
   void weightsFromHost();
+
+  /**
+   * Copy the weights to host from the device
+   */
+  void weightsToHost();
 
   /**
    * Perform one step.
@@ -120,6 +125,20 @@ public:
    *              containing an ONNX model protobuf
    */
   void resetHostWeights(const std::string &model);
+
+  /**
+   * Read the weights. Must have called weightsToHost first
+   *
+   * weight data : to addresses in weightsIo.out
+   */
+  void readWeights(const IWeightsIO &weightsIo);
+
+  /**
+   * Write the weights. Must call weightsFromHost after
+   *
+   * weight data : to addresses in weightsIo.out
+   */
+  void writeWeights(const IWeightsIO &weightsIo);
 
 protected:
   /**

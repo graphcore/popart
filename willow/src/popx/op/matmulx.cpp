@@ -598,9 +598,32 @@ static poplar::Tensor reduceResult(poplar::Graph &g,
                                    poplar::program::Sequence &prog) {
   std::vector<std::size_t> axes;
 
+  auto t_shape = t.shape();
+  auto r_shape = shape;
+
   if (shape != t.shape()) {
-    auto t_shape = t.shape();
-    auto r_shape = shape;
+
+    // First remove any leading '1' dimension with a squeeze
+    std::vector<std::size_t> squeezeDims;
+    for (auto i = 0; i < t_shape.size() - r_shape.size(); ++i) {
+      if (t_shape[i] == 1) {
+        squeezeDims.push_back(i);
+      } else {
+        break;
+      }
+    }
+
+    if (squeezeDims.size() > 0) {
+      logging::opx::debug(
+          "Reducing {} {} to {}. (dims {})", t, t_shape, r_shape, squeezeDims);
+      t = t.squeeze(squeezeDims);
+    }
+  }
+
+  // If the shapes are still not the same then use the reduce
+  if (shape != t.shape()) {
+
+    t_shape = t.shape();
 
     while (t_shape.size() < r_shape.size()) {
       t_shape.insert(t_shape.begin(), 1);

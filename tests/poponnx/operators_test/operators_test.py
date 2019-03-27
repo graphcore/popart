@@ -44,6 +44,45 @@ def test_add(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_cast(op_tester):
+    d1 = np.random.uniform(0, 20, 5).astype(np.int32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.cast([i1], "FLOAT")
+
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        return [d1.astype(np.float32)]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_cast_grad(op_tester):
+    d1 = np.random.uniform(0, 10, 10).astype(np.int32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        c = builder.aiOnnx.cast([i1], "FLOAT")
+        # Add an op that produces a gradient so we can test CastGrad properly
+        o = builder.aiOnnx.sqrt([c])
+        builder.addOutputTensor(o)
+        return [o, 'd__' + i1, 'd__' + o]
+
+    def reference(ref_data):
+        c = torch.tensor(d1, dtype=torch.float32, requires_grad=True)
+        out = torch.sqrt(c)
+        d_o = ref_data.getOutputTensorGrad(0)
+        out.backward(torch.tensor(d_o))
+        d_i1 = c.grad.numpy().astype(np.int32)
+        return [out, d_i1, d_o]
+
+    op_tester.passes = ['PreUniRepl', 'PostNRepl', 'SqrtGradOp']
+    op_tester.run(init_builder, reference, 'train')
+
+
 def test_convolution(op_tester):
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)

@@ -880,9 +880,11 @@ void Ir::registerInputTensors() {
       logging::info("Not creating Tensor for unused initializer, {}", tenId);
       unusedInitializers.emplace(tenId);
     } else {
-      // If inference or evaluation mode add initializers as constants
-      if (getExecutionMode() == ExecutionMode::INFERENCE ||
-          getExecutionMode() == ExecutionMode::EVALUATION) {
+      // If inference or evaluation mode add initializers as constants if option
+      // enabled
+      if ((getExecutionMode() == ExecutionMode::INFERENCE ||
+           getExecutionMode() == ExecutionMode::EVALUATION) &&
+          getSessionOptions().constantWeights == true) {
         logCreationInfo("Constant", tenId);
         getTensors().addConstInit(tenId, &initializer);
       } else {

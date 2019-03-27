@@ -13,17 +13,17 @@ void DeviceManager::registerDeviceProvider(DeviceProvider *provider) {
   providers.push_back(provider);
 }
 
-std::vector<std::unique_ptr<DeviceInfo>> DeviceManager::enumerateDevices() {
-  std::vector<std::unique_ptr<DeviceInfo>> devices;
+std::vector<std::shared_ptr<DeviceInfo>> DeviceManager::enumerateDevices() {
+  std::vector<std::shared_ptr<DeviceInfo>> devices;
   for (auto p : providers) {
     p->enumerate(devices);
   }
   return devices;
 }
 
-std::unique_ptr<DeviceInfo> DeviceManager::createCpuDevice() {
+std::shared_ptr<DeviceInfo> DeviceManager::createCpuDevice() {
   for (auto p : providers) {
-    std::unique_ptr<DeviceInfo> device =
+    std::shared_ptr<DeviceInfo> device =
         p->createHostDevice(DeviceType::Cpu, {});
     if (device != nullptr)
       return device;
@@ -31,10 +31,10 @@ std::unique_ptr<DeviceInfo> DeviceManager::createCpuDevice() {
   return nullptr;
 }
 
-std::unique_ptr<DeviceInfo> DeviceManager::createIpuModelDevice(
+std::shared_ptr<DeviceInfo> DeviceManager::createIpuModelDevice(
     std::map<std::string, std::string> &options) {
   for (auto p : providers) {
-    std::unique_ptr<DeviceInfo> device =
+    std::shared_ptr<DeviceInfo> device =
         p->createHostDevice(DeviceType::IpuModel, options);
     if (device != nullptr)
       return device;
@@ -42,10 +42,10 @@ std::unique_ptr<DeviceInfo> DeviceManager::createIpuModelDevice(
   return nullptr;
 }
 
-std::unique_ptr<DeviceInfo>
+std::shared_ptr<DeviceInfo>
 DeviceManager::createSimDevice(std::map<std::string, std::string> &options) {
   for (auto p : providers) {
-    std::unique_ptr<DeviceInfo> device =
+    std::shared_ptr<DeviceInfo> device =
         p->createHostDevice(DeviceType::Sim, options);
     if (device != nullptr)
       return device;
@@ -53,7 +53,7 @@ DeviceManager::createSimDevice(std::map<std::string, std::string> &options) {
   return nullptr;
 }
 
-std::unique_ptr<DeviceInfo>
+std::shared_ptr<DeviceInfo>
 DeviceManager::acquireAvailableDevice(int numIpus = 1, int tilesPerIpu = 0) {
 
   auto devices = enumerateDevices();
@@ -64,7 +64,7 @@ DeviceManager::acquireAvailableDevice(int numIpus = 1, int tilesPerIpu = 0) {
 
       // Attach to the device. Will succeed if available
       if (device->attach()) {
-        return std::move(device);
+        return device;
       }
     }
   }
@@ -72,14 +72,14 @@ DeviceManager::acquireAvailableDevice(int numIpus = 1, int tilesPerIpu = 0) {
   return nullptr;
 }
 
-std::unique_ptr<DeviceInfo> DeviceManager::acquireDeviceById(int id) {
+std::shared_ptr<DeviceInfo> DeviceManager::acquireDeviceById(int id) {
 
   auto devices = enumerateDevices();
 
   for (auto &device : devices) {
     if (device->getId() == id) {
       if (device->attach())
-        return std::move(device);
+        return device;
     }
   }
 

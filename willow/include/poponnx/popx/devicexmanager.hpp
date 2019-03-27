@@ -13,9 +13,9 @@ public:
   DevicexManager();
 
   virtual void enumerate(
-      std::vector<std::unique_ptr<poponnx::DeviceInfo>> &devices) override;
+      std::vector<std::shared_ptr<poponnx::DeviceInfo>> &devices) override;
 
-  virtual std::unique_ptr<poponnx::DeviceInfo>
+  virtual std::shared_ptr<poponnx::DeviceInfo>
   createHostDevice(poponnx::DeviceType type,
                    const std::map<std::string, std::string> &options) override;
 
@@ -46,7 +46,7 @@ public:
     return device.getDriverIDs();
   }
 
-  poplar::Device getDevice() { return std::move(device); }
+  poplar::Device &getDevice() { return device; }
 
 protected:
   poplar::Device device;

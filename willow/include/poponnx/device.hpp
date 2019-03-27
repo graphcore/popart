@@ -13,9 +13,12 @@ public:
   Device(const Ir &g) : _ir(g) {}
   virtual ~Device()      = default;
   Device(const Device &) = delete;
-  Device &operator=(const Device &) = delete;
-  virtual void prepare()            = 0;
-  virtual void weightsFromHost()    = 0;
+  Device &operator=(const Device &)                    = delete;
+  virtual void prepare()                               = 0;
+  virtual void weightsFromHost()                       = 0;
+  virtual void readWeights(const IWeightsIO &weights)  = 0;
+  virtual void writeWeights(const IWeightsIO &weights) = 0;
+  virtual void weightsToHost()                         = 0;
   virtual void weightsToHost(const std::map<TensorId, MutableVoidData> &) = 0;
   // write optimizer-specific tensors (learning rates, etc.) to Device
   virtual void optimizerFromHost()  = 0;

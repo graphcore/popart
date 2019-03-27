@@ -68,6 +68,7 @@ target_link_libraries(poponnx
   ${POPLIN_LIB}
   ${POPNN_LIB}
   ${POPOPS_LIB}
+  ${POPRAND_LIB}
   ${POPUTIL_LIB}
 )
 

@@ -13,10 +13,35 @@ CastOp::CastOp(const OperatorIdentifier &_opid,
 std::unique_ptr<Op> CastOp::clone() const { return make_unique<CastOp>(*this); }
 
 std::vector<std::unique_ptr<Op>> CastOp::getGradOps() {
-  throw error("CastOp should be removed by const folding");
+  std::vector<std::unique_ptr<Op>> upops;
+  upops.emplace_back(make_unique<CastGradOp>(*this));
+  return upops;
 }
 
 void CastOp::setup() { outInfo(getOutIndex()) = {to, inShape(getInIndex())}; }
+
+CastGradOp::CastGradOp(const CastOp &fwdOp)
+    : CastOp(Onnx::GradOperators::CastGrad,
+             fwdOp.inInfo(getInIndex()).dataType(),
+             fwdOp.getSettings()) {}
+
+std::unique_ptr<Op> CastGradOp::clone() const {
+  return make_unique<CastGradOp>(*this);
+}
+
+const std::vector<GradInOutMapper> &CastGradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {getInIndex(), CastOp::getOutIndex(), GradOpInType::GRADOUT}};
+
+  return inInfo;
+}
+
+const std::map<int, int> &CastGradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {
+      {getOutIndex(), CastOp::getInIndex()}};
+
+  return outInfo;
+}
 
 namespace {
 static OpCreator<CastOp> castOpCreator(

@@ -149,6 +149,8 @@ std::map<std::string, DataType> initStrToDataTypeMap();
 const std::string &getAllONNXTypesString();
 std::string initAllONNXTypesString();
 
+DataType dataTypeFromString(const std::string &s);
+
 class TensorInfo {
 public:
   TensorInfo(DataType, const Shape &);
@@ -176,7 +178,6 @@ public:
   bool isSet() const;
   bool operator==(const TensorInfo &) const;
   bool operator!=(const TensorInfo &) const;
-  DataType dataTypeFromString(const std::string &s) const;
   Shape shapeFromString(const std::string &s) const;
   onnx::TypeProto getOnnxTypeProto() const;
   const DataTypeInfo *getDataTypeInfo() const;

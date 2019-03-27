@@ -32,7 +32,38 @@ def test_train_then_infer_via_file():
         })
 
     opts = poponnx.SessionOptions()
+    opts.constantWeights = False  # Allow the weights to be updated
 
+    # ----------------------------------------------
+
+    # Create the device
+    options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
+    device = poponnx.DeviceManager().createIpuModelDevice(options)
+    device.attach()
+
+    # ----------------------------------------------
+
+    # Prepare the input data
+    input_data = np.ones(input_shape.shape(), dtype=np.float32)
+
+    # ----------------------------------------------
+
+    # Prepare the Inference session
+    inference_dataFlow = poponnx.DataFlow(1,
+                                          {o: poponnx.AnchorReturnType("ALL")})
+
+    inference_session = poponnx.InferenceSession(
+        fnModel=builder.getModelProto(),
+        dataFeed=inference_dataFlow,
+        userOptions=opts)
+
+    # Compile the inference graph
+    inference_session.setDevice(device)
+    inference_session.prepareDevice()
+
+    # ----------------------------------------------
+
+    # Prepare the Training session
     training_session = poponnx.TrainingSession(
         fnModel=builder.getModelProto(),
         dataFeed=training_dataFlow,
@@ -40,41 +71,35 @@ def test_train_then_infer_via_file():
         optimizer=poponnx.ConstSGD(0.01),
         userOptions=opts)
 
-    training_anchors = training_session.initAnchorArrays()
+    # Compile the training graph
+    training_session.setDevice(device)
+    training_session.prepareDevice()
 
-    options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
-
-    input_data = np.ones(input_shape.shape(), dtype=np.float32)
-
-    training_inputs = {input: input_data}
+    # ----------------------------------------------
 
     # Run the training session
-    training_session.setDevice(
-        poponnx.DeviceManager().createIpuModelDevice(options))
-    training_session.prepareDevice()
     training_session.weightsFromHost()
     training_session.optimizerFromHost()
+
+    training_anchors = training_session.initAnchorArrays()
+    training_inputs = {input: input_data}
+
     for i in range(4):
         training_session.run(
             poponnx.PyStepIO(training_inputs, training_anchors))
 
+    # Save the trained weights
     training_session.modelToHost("test.onnx")
 
-    inference_dataFlow = poponnx.DataFlow(1,
-                                          {o: poponnx.AnchorReturnType("ALL")})
-
-    inference_session = poponnx.InferenceSession(
-        fnModel="test.onnx", dataFeed=inference_dataFlow, userOptions=opts)
-
-    inference_anchors = inference_session.initAnchorArrays()
-
-    # Get the output for the train session to use for the inference run
-    inference_inputs = {input: input_data}
+    # ----------------------------------------------
 
     # Run the inference session
-    inference_session.setDevice(
-        poponnx.DeviceManager().createIpuModelDevice(options))
-    inference_session.prepareDevice()
+    ## Load the updated weights from the training session
+    inference_session.resetHostWeights("test.onnx")
     inference_session.weightsFromHost()
+
+    inference_anchors = inference_session.initAnchorArrays()
+    inference_inputs = {input: input_data}
+
     inference_session.run(
         poponnx.PyStepIO(inference_inputs, inference_anchors))

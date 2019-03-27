@@ -1,8 +1,10 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/varupdate.hpp>
+#include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/varupdatex.hpp>
 #include <poponnx/popx/opxmanager.hpp>
 
+#include <popops/Collectives.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/ScaledAdd.hpp>
 
@@ -28,11 +30,24 @@ void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                      prog,
                      idStr());
 
+  poplar::Tensor weightDeltas =
+      getInTensor(SGDVarUpdateOp::getVarGradInIndex());
+
+  if (dv_p->getReplicationFactor() > 1) {
+
+    weightDeltas = popops::replicatedAllReduce(graph(),
+                                               dv_p->rootGraph(),
+                                               weightDeltas,
+                                               popops::Operation::ADD,
+                                               prog,
+                                               "/allReduce");
+  }
+
   // Then subtract scaled gradients
   popops::scaledSubtractFrom(
       graph(),
-      getInTensor(SGDVarUpdateOp::getVarInIndex()),     // weights
-      getInTensor(SGDVarUpdateOp::getVarGradInIndex()), // weightDeltas
+      getInTensor(SGDVarUpdateOp::getVarInIndex()), // weights
+      weightDeltas,                                 // weightDeltas
       getInTensor(SGDVarUpdateOp::getLearnRateInIndex()),
       prog,
       idStr());
@@ -64,14 +79,25 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                        idStr());
   }
 
+  poplar::Tensor weightDeltas = getInTensor(vu_op.getVarGradInIndex());
+
+  if (dv_p->getReplicationFactor() > 1) {
+
+    weightDeltas = popops::replicatedAllReduce(graph(),
+                                               dv_p->rootGraph(),
+                                               weightDeltas,
+                                               popops::Operation::ADD,
+                                               prog,
+                                               "/allReduce");
+  }
+
   // Then subtract scaled gradients
-  popops::scaledSubtractFrom(
-      graph(),
-      getInTensor(vu_op.getVarInIndex()),     // weights
-      getInTensor(vu_op.getVarGradInIndex()), // weightDeltas
-      vu_op.getLearnRate(),
-      prog,
-      idStr());
+  popops::scaledSubtractFrom(graph(),
+                             getInTensor(vu_op.getVarInIndex()), // weights
+                             weightDeltas,                       // weightDeltas
+                             vu_op.getLearnRate(),
+                             prog,
+                             idStr() + "/scaledSubtract");
 
   // no poplar::Tensors to insert
 }
