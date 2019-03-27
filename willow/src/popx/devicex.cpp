@@ -1,11 +1,14 @@
 #include <algorithm>
 #include <cctype>
 #include <fstream>
+#include <random>
 
 #include <poplin/codelets.hpp>
 #include <popnn/codelets.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/codelets.hpp>
+#include <poprand/RandomGen.hpp>
+#include <poprand/codelets.hpp>
 #include <poputil/exceptions.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
@@ -25,6 +28,8 @@
 
 namespace poponnx {
 namespace popx {
+
+const std::string randomSeedId = "randomSeed";
 
 void Devicex::weightsToHost() {
 
@@ -147,6 +152,10 @@ poplar::program::Sequence &PopPrograms::forwardFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::FORWARD)];
 }
 
+poplar::program::Sequence &PopPrograms::setRandomSeedFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEED)];
+}
+
 poplar::program::Sequence &PopPrograms::lossFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::LOSS)];
 }
@@ -170,6 +179,7 @@ poplar::program::Sequence PopPrograms::optimizerFromHost() {
 poplar::program::Repeat PopPrograms::program() {
   poplar::program::Sequence prog;
 
+  prog.add(setRandomSeedFragment());
   prog.add(forwardFragment());
   prog.add(lossFragment());
   prog.add(backwardFragment());
@@ -657,6 +667,59 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   }
 }
 
+PriTask Devicex::initRandomSeed() {
+  auto streamFromHostTask = [this]() {
+    logging::devicex::debug("Initializing random seed.", randomSeedId);
+
+    auto seedTensor =
+        masterGraph().addVariable(poplar::UNSIGNED_INT, {2}, randomSeedId);
+    masterGraph().setTileMapping(seedTensor, 0);
+
+    auto dataStream = rootGraph().addHostToDeviceFIFO(
+        h2dId(randomSeedId),
+        seedTensor.elementType(),
+        seedTensor.numElements() *
+            std::max(static_cast<int>(getReplicationFactor()), 1));
+
+    auto &sq = progs.setRandomSeedFragment();
+    if (getReplicationFactor() > 1) {
+      sq.add(poplar::program::Copy(
+          dataStream, rootGraph().getNonReplicatedTensor(seedTensor)));
+    } else {
+      sq.add(poplar::program::Copy(dataStream, seedTensor));
+    }
+
+    logging::devicex::debug("Adding call to poprand::setSeed");
+    poprand::setSeed(
+        masterGraph(), seedTensor, 0, sq, fmt::format("{}/set", randomSeedId));
+  };
+
+  return {
+      +1e6,              // high priority
+      "initRandomSeed",  // name of this task
+      {},                // depends on
+      streamFromHostTask // what to run when the task is executed
+  };
+}
+
+void Devicex::connectRandomSeedStream() {
+  std::default_random_engine randomGenerator;
+  auto replicationFactor = getReplicationFactor();
+
+  auto callback = [randomGenerator, replicationFactor](void *ptr) mutable {
+    std::uniform_int_distribution<uint64_t> distribution;
+    uint64_t *data = reinterpret_cast<uint64_t *>(ptr);
+
+    logging::debug("     Updating random seed");
+    for (int i = 0; i < replicationFactor; i++) {
+      data[i] = distribution(randomGenerator);
+      logging::debug("       {}", data[i]);
+    }
+  };
+
+  pEngine->connectStreamToCallback(h2dId(randomSeedId), callback);
+}
+
 template <typename T> void Devicex::setInitVal(Tensor *tensor) {
 
   auto nonReplicatedTensor =
@@ -829,7 +892,9 @@ Devicex::programFragmentIndex(Vertex *vertex) {
     throw error("Failed to determine fragment of vertex " + vertex->str() +
                 " from UNDEFINED phase. ");
   }
-  default: { throw error("Failed to determine fragment of vertex"); }
+  default: {
+    throw error("Failed to determine fragment of vertex");
+  }
   }
 }
 
@@ -950,6 +1015,7 @@ void Devicex::prepare() {
   popops::addCodelets(rootGraph());
   poplin::addCodelets(rootGraph());
   popnn::addCodelets(rootGraph());
+  poprand::addCodelets(rootGraph());
 
   std::vector<Op *> ops = ir().getOpSchedule({});
 
@@ -1010,6 +1076,9 @@ void Devicex::prepare() {
       tasks.add(streamFromHostTask(tensor));
     }
   }
+
+  // Init the random seed
+  tasks.add(initRandomSeed());
 
   // Depending on anchor return types specified by the user, some
   // tensors may need to be added to the graph to keep track of
@@ -1107,6 +1176,9 @@ void Devicex::prepare() {
       Tensor *tensor = ir().getTensors().get(id);
       pEngine->connectStream(h2dId(id), tensor->tensorData()->data());
     }
+
+    // Random seed
+    connectRandomSeedStream();
 
     logging::devicex::debug("Connecting optimizer streams");
     for (Tensor *tensor : ir().optimizerTensors()) {

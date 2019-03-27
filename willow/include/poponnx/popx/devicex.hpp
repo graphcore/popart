@@ -49,6 +49,7 @@ public:
     LOSS,
     BACKWARD,
     WEIGHTSTOHOST,
+    SETRANDOMSEED,
     N // The number of program fragments
   };
 
@@ -57,6 +58,7 @@ public:
   poplar::program::Sequence &weightsFromHostFragment();
   poplar::program::Sequence &optimizerFromHostFragment();
   poplar::program::Sequence &forwardFragment();
+  poplar::program::Sequence &setRandomSeedFragment();
   poplar::program::Sequence &lossFragment();
   poplar::program::Sequence &backwardFragment();
   poplar::program::Sequence &weightsToHostFragment();
@@ -227,6 +229,9 @@ private:
   // the correct create call (createWeights, addLinearly, etc)
   PriTask initTensorTask(Tensor *);
   TaskId initTensorTaskId(TensorId) const;
+
+  PriTask initRandomSeed();
+  void connectRandomSeedStream();
 
   PriTask setInitTensorValTask(Tensor *);
   TaskId setInitTensorValTaskId(TensorId);
