@@ -165,7 +165,9 @@ std::vector<Op *> SubgraphOutlinex::getOutlineView(const std::vector<Op *> &ops,
           // Remove consumer ops that are in the subgraph
           for (int j = 0; j < currentMatch.length; ++j) {
             Op *so2 = *(outlinedOps.begin() + *it + 1 + j);
-            std::remove(consumers.begin(), consumers.end(), so2);
+            consumers.erase(
+                std::remove(consumers.begin(), consumers.end(), so2),
+                consumers.end());
           }
 
           // If all consumers of the output are removed then the output in not

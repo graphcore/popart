@@ -24,6 +24,9 @@ public:
   static InIndex getDataInIndex() { return 0; }
   static InIndex getBiasInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
+
+  // T7721
+  bool supportsCaching() override { return false; }
 };
 
 // The gradient op for the data input of the add bias op.
