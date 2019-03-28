@@ -2,6 +2,7 @@
 // as a .dot file which can be compiled into a .pdf file.
 // This tool supports training and as well as inference.
 
+#include <boost/program_options.hpp>
 #include <iostream>
 #include <vector>
 #include <poponnx/builder.hpp>
@@ -14,6 +15,7 @@
 #include <poponnx/optionflags.hpp>
 
 using namespace poponnx;
+namespace po = boost::program_options;
 
 // https://stackoverflow.com/questions/4654636
 namespace {
@@ -27,76 +29,40 @@ bool is_number(const std::string &s) {
 // TODO: improved visualization (T5144)
 // TODO: use boost program options (T7217)
 
+class Options {
+public:
+  Options(int argc, char **argv);
+
+  std::string modelPath() const { return vm["model-path"].as<std::string>(); }
+  std::string outputDir() const { return vm["output"].as<std::string>(); }
+  bool compileDotsToPDF() const { return vm.count("compile-pdf"); }
+  bool trainWithNll() const { return vm.count("nll"); }
+  int startOp() const { return vm["start-op"].as<int>(); }
+  int endOp() const { return vm["end-op"].as<int>(); }
+
+private:
+  void printHelp(const po::options_description &desc) const;
+
+  po::variables_map vm;
+};
+
 int main(int argc, char **argv) {
+  const auto opts = Options(argc, argv);
 
-  logging::ir::info("{} user command-line parameters received", argc - 1);
+  logging::ir::info("modelPath set to {}", opts.modelPath());
+  logging::ir::info("outputDir set to {}", opts.outputDir());
+  logging::ir::info("compileDotsToPDF set to {}", opts.compileDotsToPDF());
+  logging::ir::info("trainWithNll set to {}", opts.trainWithNll());
 
-  int nArgsExpected = 6;
-  if (argc - 1 != nArgsExpected) {
-    std::stringstream ss;
-    // The command-line parameters:
-    ss << "\nExpected " << nArgsExpected << " command-line parameters:"
-       << "\n\t (1) path of the ONNX model file"
-       << "\n\t (2) path of the output directory"
-       << "\n\t (3) compile dot->pdf(s) (0/1)"
-       << "\n\t (4) train with NLL on output (0/1)"
-       << "\n\t (5) the first op in the schedule to export will be min(0, (5))"
-       << "\n\t (6) the final op in the schedule to export will be "
-       << "max(n-ops in the schedule, (6))"
-       << "\n\t Example usage : "
-       << "./dot_inference_graph /path/to/model.onnx . 1 1 10 100 "
-       << "\n\t will generate a pdf for model.onnx in the current directory, "
-       << "all Ops 10->100.";
-
-    // note for (3):
-    // - unix only, uses std::system
-    // - requires the dot program to be installed "./dot --help"
-    std::cout << ss.str() << std::endl;
-    return 0;
-  }
-
-  std::string modelPath = argv[1];
-  logging::ir::info("modelPath set to {}", modelPath);
-  std::string outputDir = argv[2];
-  logging::ir::info("outputDir set to {}", modelPath);
-
-  // compile to PDF?
-  std::string argv3 = std::string(argv[3]);
-  if (argv3 != "0" && argv3 != "1") {
-    throw error("Expected arg 3 to be '0' or '1', not {}", argv3);
-  }
-  bool compileDotsToPDF = std::stoi(argv3);
-  logging::ir::info("compileDotsToPDF set to {}", compileDotsToPDF);
-
-  // train?
-  std::string argv4 = std::string(argv[4]);
-  if (argv4 != "0" && argv4 != "1") {
-    throw error("Expected arg 4 to be '0' or '1', not {}", argv4);
-  }
-  bool trainWithNll = std::stoi(argv4);
-  logging::ir::info("trainWithNll set to {}", trainWithNll);
-
-  // the first op in the schedule to visualize
-  std::string argv5 = std::string(argv[5]);
-  if (!is_number(argv5)) {
-    throw error("Expected arg 5 to be a number, not {}", argv5);
-  }
-
-  // the final op in the schedule to visualize
-  std::string argv6 = std::string(argv[6]);
-  if (!is_number(argv6)) {
-    throw error("Expected arg 6 to be a number, not {}", argv6);
-  }
-
-  SessionOptions opts;
-  opts.firstDotOp = std::stoi(argv5);
-  opts.finalDotOp = std::stoi(argv6);
+  SessionOptions session_opts;
+  session_opts.firstDotOp = opts.startOp();
+  session_opts.finalDotOp = opts.endOp();
 
   // Include sug-graph annotation. With TODO T7217,
   // this can be made into a command-line option
-  opts.dotSubgraphAnnotation = true;
+  session_opts.dotSubgraphAnnotation = true;
 
-  GraphTransformer gt(modelPath);
+  GraphTransformer gt(opts.modelPath());
   gt.convertAllFixedPointInitializersToConstants();
 
   // The ONNX Model might have been exported with inference in mind.
@@ -104,7 +70,7 @@ int main(int argc, char **argv) {
   // (and potentially other Operator types) the number of outputs
   // is 5 for training and 1 for inference. This call appends dummy
   // output names to BatchNormalization (and possibly makes other adjustments)
-  if (trainWithNll) {
+  if (opts.trainWithNll()) {
     gt.prepareNodesForTraining();
   }
   auto modelProtoString = gt.getModelProto();
@@ -113,9 +79,9 @@ int main(int argc, char **argv) {
   std::vector<std::string> dotStrings;
 
   // Currently only the FINAL .dot file. Append others here as required.
-  opts.dotChecks.insert(DotCheck::FINAL);
+  session_opts.dotChecks.insert(DotCheck::FINAL);
 
-  opts.logDir = outputDir;
+  session_opts.logDir = opts.outputDir();
 
   if (modelProto.graph().output_size() == 0) {
     throw error("Cannot generate dot for ONNX graph with no output");
@@ -130,7 +96,7 @@ int main(int argc, char **argv) {
   TensorId label = "label";
   InputShapeInfo isi;
 
-  if (trainWithNll) {
+  if (opts.trainWithNll()) {
     optimizer.reset(new ConstSGD(0.01f));
 
     if (modelProto.graph().output_size() != 1) {
@@ -158,30 +124,96 @@ int main(int argc, char **argv) {
               losses,
               optimizer.get(),
               *cpuDevice,
-              opts,
+              session_opts,
               Patterns(PatternsLevel::DEFAULT).enableInPlace(true)});
 
   // verify that the dot files have been created
   auto dotFileNames =
-      io::getMatchFns(io::getCanonicalDirName(opts.logDir), ".dot");
+      io::getMatchFns(io::getCanonicalDirName(session_opts.logDir), ".dot");
   if (dotFileNames.size() == 0) {
-    throw error("Error in dot_inference_graph, no .dot files in {}",
-                opts.logDir);
+    throw error("Error in dot_graph, no .dot files in {}", session_opts.logDir);
   }
 
   // dot -Tpdf -o x.pdf x.dot
-  if (compileDotsToPDF == true) {
-    for (auto check : opts.dotChecks) {
+  if (opts.compileDotsToPDF() == true) {
+    for (auto check : session_opts.dotChecks) {
       auto dot_string = getDotCheckString(check);
       std::stringstream command_ss;
       command_ss << "dot "
                  << " -Tpdf "
-                 << " -o " << io::appendDirFn(opts.logDir, dot_string + ".pdf")
-                 << " " << io::appendDirFn(opts.logDir, dot_string + ".dot");
+                 << " -o "
+                 << io::appendDirFn(session_opts.logDir, dot_string + ".pdf")
+                 << " "
+                 << io::appendDirFn(session_opts.logDir, dot_string + ".dot");
       std::string command = command_ss.str();
       int ran             = std::system(command.c_str());
       std::cout << command << " returned with status " << ran << std::endl;
     }
   }
   return 0;
+}
+
+Options::Options(int argc, char **argv) {
+  po::options_description desc("dot_graph");
+  // clang-format off
+    desc.add_options()
+      ("help", "print this message")
+      ("output,o",
+       po::value<std::string>()->default_value("."),
+       "path of the output directory")
+      ("compile-pdf", "compile dot->pdf(s)")
+      ("nll", "train with NLL on output")
+      ("start-op,s",
+       po::value<int>()->default_value(0),
+       "the index of the first op in the schedule to export")
+      ("end-op,e",
+       po::value<int>()->default_value(10000),
+       "the index of the final op in the schedule to export")
+    ;
+  // clang-format on
+
+  po::positional_options_description p;
+  p.add("model-path", 1);
+
+  po::options_description hidden("");
+  hidden.add_options()(
+      "model-path", po::value<std::string>(), "path to ONNX model file");
+
+  po::options_description cmdline_options;
+  cmdline_options.add(desc).add(hidden);
+
+  try {
+
+    po::store(po::command_line_parser(argc, argv)
+                  .options(cmdline_options)
+                  .positional(p)
+                  .run(),
+              vm);
+    po::notify(vm);
+
+  } catch (std::exception &e) {
+    std::cerr << "dot_graph: " << e.what() << ". See 'dot_graph --help'\n";
+    exit(1);
+  }
+
+  if (vm.count("help")) {
+    printHelp(desc);
+    exit(0);
+  }
+
+  if (!vm.count("model-path")) {
+    std::cout << "dot_graph error: no model\n";
+    printHelp(desc);
+    exit(0);
+  }
+}
+
+void Options::printHelp(const po::options_description &desc) const {
+  std::stringstream ss;
+  ss << desc
+     << "\n  Example usage : ./dot_graph /path/to/model.onnx -o . --nll "
+        "--compile-pdf -s 10 -e 100 "
+        "\n    will generate a pdf for model.onnx in the current directory, "
+        "all Ops 10->100.";
+  std::cout << ss.str() << std::endl;
 }

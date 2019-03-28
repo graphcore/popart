@@ -66,7 +66,7 @@ find_package(Spdlog REQUIRED)
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-find_package(Boost REQUIRED COMPONENTS filesystem system)
+find_package(Boost REQUIRED COMPONENTS filesystem system program_options)
 # find_package(CBLAS REQUIRED)
 
 set(POPONNX_PYTHON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/python)

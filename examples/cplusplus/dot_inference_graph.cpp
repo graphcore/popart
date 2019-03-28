@@ -1,6 +1,7 @@
 // A tool for visualising the Ir (PopONNX's Intermediate representation).
 // as a .dot file which can be compiled into a .pdf file.
 
+#include <boost/program_options.hpp>
 #include <iostream>
 #include <vector>
 #include <poponnx/builder.hpp>
@@ -10,6 +11,7 @@
 #include <poponnx/optionflags.hpp>
 
 using namespace poponnx;
+namespace po = boost::program_options;
 
 // https://stackoverflow.com/questions/4654636
 namespace {
@@ -20,54 +22,36 @@ bool is_number(const std::string &s) {
 }
 } // namespace
 
+class Options {
+public:
+  Options(int argc, char **argv);
+
+  std::string modelPath() const { return vm["model-path"].as<std::string>(); }
+  std::string outputDir() const { return vm["output"].as<std::string>(); }
+  bool compileDotsToPDF() const { return vm.count("compile-pdf"); }
+  int opCount() const { return vm["op-count"].as<int>(); }
+
+private:
+  void printHelp(const po::options_description &desc) const;
+
+  po::variables_map vm;
+};
+
 int main(int argc, char **argv) {
+  const auto opts = Options(argc, argv);
 
   logging::ir::info("{} user command-line parameters received", argc - 1);
 
-  int nArgsExpected = 4;
-  if (argc - 1 != nArgsExpected) {
-    std::stringstream ss;
-    // The command-line parameters:
-    ss << "\nExpected " << nArgsExpected << " command-line parameters:"
-       << "\n\t (1) path of the ONNX model file"
-       << "\n\t (2) path of the output directory"
-       << "\n\t (3) compile dot->pdf(s) (0/1)"
-       << "\n\t (4) maximum number of Ops to write to the .dot file"
-       << "\n\t Example usage : ./dot_inference_graph /path/to/model.onnx . 1 "
-          "121";
-    // note for (3):
-    // - unix only, uses std::system
-    // - requires the dot program to be installed "./dot --help"
-    //
-    // note for (4):
-    // - the first min(number of Ops in Ir, (4)) will be written
-    std::cout << ss.str() << std::endl;
-    return 0;
-  }
-  std::string modelPath = argv[1];
-  logging::ir::info("modelPath set to {}", modelPath);
-  std::string outputDir = argv[2];
-  logging::ir::info("outputDir set to {}", modelPath);
-  std::string argv3 = std::string(argv[3]);
-  if (argv3 != "0" && argv3 != "1") {
-    throw error("Expected arg 3 to be '0' or '1', not {}", argv3);
-  }
-  bool compileDotsToPDF = std::stoi(argv3);
-  logging::ir::info("compileDotsToPDF set to {}", compileDotsToPDF);
-  std::string argv4 = std::string(argv[4]);
-  if (!is_number(argv4)) {
-    throw error("Expected arg 4 to be a number, not {}", argv4);
-  }
-  SessionOptions opts;
-  opts.finalDotOp = std::stoi(argv4);
+  SessionOptions sessionOpts;
+  sessionOpts.finalDotOp = opts.opCount();
 
-  auto modelProto = onnxutil::getModelProto(modelPath);
+  auto modelProto = onnxutil::getModelProto(opts.modelPath());
   std::vector<std::string> dotStrings;
 
   // Only the FINAL .dot file. Append others here as required.
-  opts.dotChecks.insert(DotCheck::FINAL);
+  sessionOpts.dotChecks.insert(DotCheck::FINAL);
 
-  opts.logDir = outputDir;
+  sessionOpts.logDir = opts.outputDir();
 
   if (modelProto.graph().output_size() == 0) {
     throw error("Cannot generate dot for ONNX graph with no output");
@@ -84,30 +68,93 @@ int main(int argc, char **argv) {
               {},      // in inference mode, so no losses,
               nullptr, // and no optimizer.
               *cpuDevice,
-              opts,
+              sessionOpts,
               Patterns(PatternsLevel::NONE).enableInPlace(true)});
 
   // verify that the dot files have been created
   auto dotFileNames =
-      io::getMatchFns(io::getCanonicalDirName(opts.logDir), ".dot");
+      io::getMatchFns(io::getCanonicalDirName(sessionOpts.logDir), ".dot");
   if (dotFileNames.size() == 0) {
     throw error("Error in dot_inference_graph, no .dot files in {}",
-                opts.logDir);
+                sessionOpts.logDir);
   }
 
   // dot -Tpdf -o x.pdf x.dot
-  if (compileDotsToPDF == true) {
-    for (auto check : opts.dotChecks) {
+  if (opts.compileDotsToPDF() == true) {
+    for (auto check : sessionOpts.dotChecks) {
       auto dot_string = getDotCheckString(check);
       std::stringstream command_ss;
       command_ss << "dot "
                  << " -Tpdf "
-                 << " -o " << io::appendDirFn(opts.logDir, dot_string + ".pdf")
-                 << " " << io::appendDirFn(opts.logDir, dot_string + ".dot");
+                 << " -o "
+                 << io::appendDirFn(sessionOpts.logDir, dot_string + ".pdf")
+                 << " "
+                 << io::appendDirFn(sessionOpts.logDir, dot_string + ".dot");
       std::string command = command_ss.str();
       int ran             = std::system(command.c_str());
       std::cout << command << " returned with status " << ran << std::endl;
     }
   }
   return 0;
+}
+
+Options::Options(int argc, char **argv) {
+  po::options_description desc("dot_inference_graph");
+  // clang-format off
+    desc.add_options()
+      ("help", "print this message")
+      ("output,o",
+       po::value<std::string>()->default_value("."),
+       "path of the output directory")
+      ("compile-pdf", "compile dot->pdf(s)")
+      ("op-count,c",
+       po::value<int>()->default_value(10000),
+       "the number of Ops to write to the .dot file")
+    ;
+  // clang-format on
+
+  po::positional_options_description p;
+  p.add("model-path", 1);
+
+  po::options_description hidden("");
+  hidden.add_options()(
+      "model-path", po::value<std::string>(), "path to ONNX model file");
+
+  po::options_description cmdline_options;
+  cmdline_options.add(desc).add(hidden);
+
+  try {
+
+    po::store(po::command_line_parser(argc, argv)
+                  .options(cmdline_options)
+                  .positional(p)
+                  .run(),
+              vm);
+    po::notify(vm);
+
+  } catch (std::exception &e) {
+    std::cerr << "dot_inference_graph: " << e.what()
+              << ". See 'dot_inference_graph --help'\n";
+    exit(1);
+  }
+
+  if (vm.count("help")) {
+    printHelp(desc);
+    exit(0);
+  }
+
+  if (!vm.count("model-path")) {
+    std::cout << "dot_inference_graph error: no model\n";
+    printHelp(desc);
+    exit(0);
+  }
+}
+
+void Options::printHelp(const po::options_description &desc) const {
+  std::stringstream ss;
+  ss << desc
+     << "\n  Example usage : ./dot_inference_graph /path/to/model.onnx -o . "
+        "--compile-pdf -c 121"
+        "\n    will generate a pdf for model.onnx in the current directory.";
+  std::cout << ss.str() << std::endl;
 }
