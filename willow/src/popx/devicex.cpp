@@ -176,15 +176,17 @@ poplar::program::Sequence PopPrograms::optimizerFromHost() {
   return optimizerFromHostFragment();
 }
 
-poplar::program::Repeat PopPrograms::program() {
+poplar::program::Sequence PopPrograms::program() {
   poplar::program::Sequence prog;
-
-  prog.add(setRandomSeedFragment());
   prog.add(forwardFragment());
   prog.add(lossFragment());
   prog.add(backwardFragment());
 
-  return poplar::program::Repeat(repeatCount, prog);
+  poplar::program::Sequence outer;
+  outer.add(setRandomSeedFragment());
+  outer.add(poplar::program::Repeat(repeatCount, prog));
+
+  return outer;
 }
 
 poplar::program::Sequence PopPrograms::weightsToHost() {
@@ -223,8 +225,9 @@ poplar::Graph &Devicex::graph(int64_t virtualGraphIndex) {
 }
 
 Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
-    : poponnx::Device(ir), deviceInfo(deviceInfo_),
-      progs(PopPrograms(ir.getDataFlow().batchesPerStep())), tensors(ir) {
+    : poponnx::Device(ir),
+      progs(PopPrograms(ir.getDataFlow().batchesPerStep())), tensors(ir),
+      deviceInfo(deviceInfo_) {
 
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
@@ -894,9 +897,7 @@ Devicex::programFragmentIndex(Vertex *vertex) {
     throw error("Failed to determine fragment of vertex " + vertex->str() +
                 " from UNDEFINED phase. ");
   }
-  default: {
-    throw error("Failed to determine fragment of vertex");
-  }
+  default: { throw error("Failed to determine fragment of vertex"); }
   }
 }
 

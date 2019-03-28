@@ -78,7 +78,7 @@ private:
 
   poplar::program::Sequence weightsFromHost();
   poplar::program::Sequence optimizerFromHost();
-  poplar::program::Repeat program();
+  poplar::program::Sequence program();
   poplar::program::Sequence weightsToHost();
 };
 
