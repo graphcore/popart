@@ -35,6 +35,7 @@ void Devicex::weightsToHost() {
 
   if (useSyntheticData() == false) {
     logging::devicex::debug("Writing weights to host, ");
+    pEngine->disableExecutionProfiling();
     pEngine->run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
     logging::devicex::debug("done.");
   }
@@ -69,6 +70,7 @@ void Devicex::weightsToHost(
     logging::devicex::debug("Writing weights to host");
     // write weights from IPU to host stream memory points
 
+    pEngine->disableExecutionProfiling();
     pEngine->run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
 
     logging::devicex::debug("Writing weights to ONNX ModelProto");
@@ -276,6 +278,7 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
 void Devicex::weightsFromHost() {
   if (useSyntheticData() == false) {
     logging::devicex::debug("Writing weights from host, ");
+    pEngine->disableExecutionProfiling();
     pEngine->run(PopPrograms::ProgramIndex::WEIGHTSFROMHOST);
     logging::devicex::debug("done.");
   }
@@ -284,6 +287,7 @@ void Devicex::weightsFromHost() {
 void Devicex::optimizerFromHost() {
   if (useSyntheticData() == false) {
     logging::devicex::debug("Writing optimizer from host, ");
+    pEngine->disableExecutionProfiling();
     pEngine->run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
     logging::devicex::debug("done.");
   }
@@ -423,6 +427,7 @@ void Devicex::run(const IStepIO &stepio) {
   anchorsHostToHostStreams(stepio);
 
   logging::debug(prefix + "Running the program ");
+  pEngine->enableExecutionProfiling();
   pEngine->run(PopPrograms::ProgramIndex::PROGRAM);
 
   anchorsHostFromHostStreams(stepio);
