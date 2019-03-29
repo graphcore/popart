@@ -62,6 +62,14 @@ struct SessionOptions {
   /// reduce model size at the cost of computation cycles
   bool enableAutoRecomputation = false;
 
+  /// By default, we use the stable-softmax poplar function. This input tensor
+  /// to softmax, _x_, is preprocessed by subtracting max(_x_) to each element
+  /// before computing the exponentials, ensuring numerical stability. If you
+  /// are sure the inputs to your softmax operations are small enough to not
+  /// cause overflow when computing the exponential, you can enable the
+  /// non-stable version instead for speedup
+  bool enableNonStableSoftmax = false;
+
   /// Enable placement of operations on individual IPUs by creating a 'virtual
   /// graph' for each IPU
   bool enableVirtualGraphs = false;

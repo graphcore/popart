@@ -341,6 +341,8 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("enableOutlining", &SessionOptions::enableOutlining)
       .def_readwrite("enableAutoRecomputation",
                      &SessionOptions::enableAutoRecomputation)
+      .def_readwrite("enableNonStableSoftmax",
+                     &SessionOptions::enableNonStableSoftmax)
       .def_readwrite("enableVirtualGraphs",
                      &SessionOptions::enableVirtualGraphs)
       .def_readwrite("autoVirtualGraph", &SessionOptions::autoVirtualGraph)
