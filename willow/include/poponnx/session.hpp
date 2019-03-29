@@ -77,25 +77,27 @@ public:
    * Retrieve the graph report from the poplar::Engine
    *
    * The options which were given to the constructor will influence the
-   * information in the report.
+   * information in the report.  By default a JSON format report is produced.
    *
    * This may only be called after the `prepareDevice()` call has been made.
    *
+   * \arg use_cbor Produce a CBOR formatted report
    * \return a string containing the graph (compilation) report
    */
-  std::string getGraphReport() const;
+  std::string getGraphReport(bool use_cbor = false) const;
 
   /**
    * Retrieve the execution report from the poplar::Engine
    *
    * The options which were given to the constructor will influence the
-   * information in the report.
+   * information in the report.  By default a JSON format report is produced.
    *
    * This may only be called after the `prepareDevice()` call has been made.
    *
+   * \arg use_cbor Produce a CBOR formatted report
    * \return a string containing the execution report
    */
-  std::string getExecutionReport() const;
+  std::string getExecutionReport(bool use_cbor = false) const;
 
   /**
    * Retrieve the tensor tile mapping from the poplar::Graph

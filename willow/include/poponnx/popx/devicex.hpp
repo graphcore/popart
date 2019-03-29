@@ -140,8 +140,10 @@ public:
   void writeWeights(const IWeightsIO &weights) final;
 
   virtual std::string getSummaryReport() const override final;
-  virtual std::string getGraphReport() const override final;
-  virtual std::string getExecutionReport() const override final;
+  virtual std::string
+  getGraphReport(bool use_cbor = false) const override final;
+  virtual std::string
+  getExecutionReport(bool use_cbor = false) const override final;
   virtual TensorTileMap getTensorTileMap() const override final;
 
   // Return stored input tensors based on how they are allocated

@@ -216,3 +216,6 @@ the graphs.
 the graph.  `getGraphReport` returns a JSON format report on the compilation of
 the graph and `getExecutionReport` returns a JSON format report on all executions
 of the graph since the last report was fetched.
+
+Both `getGraphReport` and `getExecutionReport` can optionally return a CBOR
+formatted report.

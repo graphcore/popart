@@ -1503,27 +1503,36 @@ std::string Devicex::getSummaryReport() const {
   return ss.str();
 }
 
-std::string Devicex::getGraphReport() const {
+std::string Devicex::getGraphReport(bool use_cbor) const {
   if (pEngine == nullptr) {
     throw error(
         "Session must have been prepared before a report can be fetched");
   }
   std::stringstream ss;
   auto report = pEngine->getGraphProfile();
-  serializeToJSON(ss, report);
+  if (use_cbor) {
+    serializeToCBOR(ss, report);
+  } else {
+    serializeToJSON(ss, report);
+  }
 
   pEngine->resetExecutionProfile();
   return ss.str();
 }
 
-std::string Devicex::getExecutionReport() const {
+std::string Devicex::getExecutionReport(bool use_cbor) const {
   if (pEngine == nullptr) {
     throw error(
         "Session must have been prepared before a report can be fetched");
   }
   std::stringstream ss;
   auto report = pEngine->getExecutionProfile();
-  serializeToJSON(ss, report);
+
+  if (use_cbor) {
+    serializeToCBOR(ss, report);
+  } else {
+    serializeToJSON(ss, report);
+  }
 
   pEngine->resetExecutionProfile();
   return ss.str();

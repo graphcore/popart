@@ -118,16 +118,14 @@ std::string Session::getSummaryReport() const {
   return device_->getSummaryReport();
 }
 
-std::string Session::getGraphReport() const {
+std::string Session::getGraphReport(bool use_cbor) const {
   logging::session::trace("Session::getGraphReport");
-
-  return device_->getGraphReport();
+  return device_->getGraphReport(use_cbor);
 }
 
-std::string Session::getExecutionReport() const {
+std::string Session::getExecutionReport(bool use_cbor) const {
   logging::session::trace("Session::getExecutionReport");
-
-  return device_->getExecutionReport();
+  return device_->getExecutionReport(use_cbor);
 }
 
 TensorTileMap Session::getTensorTileMap() const {

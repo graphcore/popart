@@ -201,6 +201,31 @@ def test_compilation_report(tmpdir):
     assert (len(session.getGraphReport()) > 0)
 
 
+def test_compilation_report_cbor(tmpdir):
+
+    builder = poponnx.Builder()
+
+    shape = poponnx.TensorInfo("FLOAT", [1])
+
+    i1 = builder.addInputTensor(shape)
+    i2 = builder.addInputTensor(shape)
+    o = builder.aiOnnx.add([i1, i2])
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+
+    anchors = session.initAnchorArrays()
+    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
+
+    session.prepareDevice()
+
+    assert (len(session.getGraphReport(True)) > 0)
+
+
 def test_execution_report(tmpdir):
 
     builder = poponnx.Builder()
@@ -231,7 +256,38 @@ def test_execution_report(tmpdir):
 
     session.run(stepio)
 
-    assert (len(session.getExecutionReport()) > 0)
+    rep = session.getExecutionReport()
+
+
+def test_execution_report_cbor(tmpdir):
+
+    builder = poponnx.Builder()
+
+    shape = poponnx.TensorInfo("FLOAT", [1])
+
+    i1 = builder.addInputTensor(shape)
+    i2 = builder.addInputTensor(shape)
+    o = builder.aiOnnx.add([i1, i2])
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+
+    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+
+    anchors = session.initAnchorArrays()
+    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
+
+    session.prepareDevice()
+
+    d1 = np.array([10.]).astype(np.float32)
+    d2 = np.array([11.]).astype(np.float32)
+    stepio = poponnx.PyStepIO({i1: d1, i2: d2}, anchors)
+
+    session.run(stepio)
+
+    rep = session.getExecutionReport(True)
 
 
 def test_tensor_tile_mapping(tmpdir):
