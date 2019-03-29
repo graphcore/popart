@@ -216,10 +216,12 @@ def test_compilation_report_cbor(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
     anchors = session.initAnchorArrays()
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
 
     session.prepareDevice()
 
@@ -274,10 +276,12 @@ def test_execution_report_cbor(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
     anchors = session.initAnchorArrays()
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
 
     session.prepareDevice()
 
