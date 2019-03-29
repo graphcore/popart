@@ -39,6 +39,7 @@ add_poponnx_cpp_unit_test(viewchangingtest view_changing_test.cpp)
 add_poponnx_cpp_unit_test(opmanagertest op_manager_test.cpp)
 add_poponnx_cpp_unit_test(buildertest builder_test.cpp)
 add_poponnx_cpp_unit_test(allocatortest allocator_test.cpp)
+add_poponnx_cpp_unit_test(mergecopiestest mergecopies_test.cpp)
 
 function(add_poponnx_py_unit_test name)
   message(STATUS

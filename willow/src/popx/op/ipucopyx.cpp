@@ -2,6 +2,7 @@
 #include <poponnx/op/ipucopy.hpp>
 #include <poponnx/popx/op/ipucopyx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
+#include <poponnx/tensorindex.hpp>
 
 #include <poputil/TileMapping.hpp>
 
@@ -16,11 +17,14 @@ void IpuCopyOpx::grow(poplar::program::Sequence &prog) const {
 
   IpuCopyOp &op = getOp<IpuCopyOp>();
 
-  setOutTensor(0,
-               poputil::copyToIpu(masterGraph(),
-                                  getInTensor(0),
-                                  prog,
-                                  static_cast<int>(op.getDestIpu())));
+  for (auto &idx_tensor : op.input->tensorMap()) {
+    auto idx = idx_tensor.first;
+    auto t   = poputil::copyToIpu(masterGraph(),
+                                getInTensor(idx),
+                                prog,
+                                static_cast<int>(op.getDestIpu()));
+    setOutTensor(idx, t);
+  }
 }
 
 namespace {

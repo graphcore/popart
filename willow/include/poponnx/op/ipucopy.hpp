@@ -17,7 +17,8 @@ public:
             const Op::Settings &settings_);
   void setup() final;
 
-  uint64_t getDestIpu() { return destIpu; }
+  uint64_t getDestIpu() const { return destIpu; }
+  uint64_t getSourceIpu() const { return sourceIpu; }
 
   void appendAttributes(OpSerialiserBase &) const override;
 
