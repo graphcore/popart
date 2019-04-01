@@ -2193,8 +2193,8 @@ void Ir::applyInplacePattern() {
         if (!touchesAnchors) {
           auto newTopoCons = inplace.getNewTopoCons(op, identifier);
           if (isSchedulable(newTopoCons)) {
-            inplace.apply(op, identifier, newTopoCons);
             inplacedAlready.insert(op->id);
+            inplace.apply(op, identifier, newTopoCons);
           }
         }
       }
