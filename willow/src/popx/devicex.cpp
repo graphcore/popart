@@ -1163,8 +1163,17 @@ void Devicex::prepare() {
 
   logging::devicex::info("Starting Engine compilation");
 
+  auto progressLogger = [](int progress, int total) {
+    if (total != 0) {
+      float percentage = std::floor(100.0f * static_cast<float>(progress) /
+                                    static_cast<float>(total));
+      logging::devicex::debug("Engine compilation {}% complete", percentage);
+    }
+  };
+
   // Enigma moves the graph into the engine and then set the graphs to 0
-  pEngine.reset(new poplar::Engine(rootGraph(), progs.progs(), engineOptions));
+  pEngine.reset(new poplar::Engine(
+      rootGraph(), progs.progs(), engineOptions, progressLogger));
   logging::devicex::info("Engine compiled");
 
   pEngine->load(popDevice);
