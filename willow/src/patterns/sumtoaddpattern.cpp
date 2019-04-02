@@ -20,13 +20,11 @@ bool SumToAddPattern::apply(Op *op) const {
   auto inputs = op->input->tensors();
   auto out    = op->outTensor(SumOp::getOutIndex());
 
-  // Remove SumOp
+  // create the new op and erase the old op
+  auto add_op = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Add, op);
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
   op->getIr().eraseOp(op->id);
-
-  // create the new op
-  auto add_op = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Add, op);
 
   // connect the new op
   add_op->connectInTensor(AddOp::getArg0InIndex(), inputs[0]->id);
