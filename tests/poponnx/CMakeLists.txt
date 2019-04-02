@@ -68,6 +68,7 @@ add_poponnx_py_unit_test(float_to_half_conversion_test)
 add_poponnx_py_unit_test(recompute_test)
 add_poponnx_py_unit_test(ipu_gather_test)
 add_poponnx_py_unit_test(loss_test)
+add_poponnx_py_unit_test(all_constexpr)
 
 add_subdirectory(operators_test)
 add_subdirectory(constexpr_tests)
