@@ -10,6 +10,7 @@ public:
   SigmoidOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
+  bool isNonlinearity() const override { return true; }
 };
 
 class SigmoidGradOp : public Op {

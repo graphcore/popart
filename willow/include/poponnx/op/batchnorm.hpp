@@ -43,6 +43,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  bool isNorm() const override { return true; }
+
 private:
   bool training = false;
   bool isTest;

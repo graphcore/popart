@@ -6,7 +6,6 @@ import test_util as tu
 # Both manual and auto recomputation are not supported
 # concurrently
 def test_valid_recompute_options():
-
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
@@ -19,7 +18,7 @@ def test_valid_recompute_options():
 
     # specify auto recomputation as well
     opts = poponnx.SessionOptions()
-    opts.enableAutoRecomputation = True
+    opts.autoRecomputation = poponnx.RecomputationType.Standard
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         session = poponnx.TrainingSession(
@@ -29,7 +28,7 @@ def test_valid_recompute_options():
             losses=[poponnx.L1Loss(o, "l1LossVal", 0.1)],
             passes=poponnx.Patterns([]),
             userOptions=opts,
-            deviceInfo=tu.get_poplar_cpu_device())
+            deviceInfo=poponnx.DeviceManager().createCpuDevice())
     assert (
         e_info.value.args[0] ==
         "A mixture of auto and manual recomputaion is currently not supported")

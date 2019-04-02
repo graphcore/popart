@@ -309,6 +309,10 @@ std::string Op::debugName() const {
                      fmt::join(out_ids.begin(), out_ids.end(), ", "));
 }
 
+// Ops are not norms or non-linearities unless otherwise specified
+bool Op::isNonlinearity() const { return false; }
+bool Op::isNorm() const { return false; }
+
 // By default an operation can not be replaced
 bool Op::canBeReplacedByIdentity() { return false; }
 

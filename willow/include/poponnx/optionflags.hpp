@@ -20,6 +20,15 @@ enum class DotCheck {
 
 std::string getDotCheckString(DotCheck);
 
+// If doing auto-recomputation, how should we decide which ops to recompute
+// in the backwards pass?
+enum class RecomputationType {
+  None = 0, // No ops should be recomputed
+  Standard, // Algorithm to pick checkpoint to try an minimize max liveness
+  NormOnly, // Only Norm ops (+ non-linearities, if following) are recomputed
+  N         // the number of RecomputationTypes, must appear as the final enum
+};
+
 /**
  * A structure containing user configuration options for the Session class
  */
@@ -60,7 +69,7 @@ struct SessionOptions {
 
   /// Enable recomputation of operations in the graph in the backwards pass to
   /// reduce model size at the cost of computation cycles
-  bool enableAutoRecomputation = false;
+  RecomputationType autoRecomputation = RecomputationType::None;
 
   /// By default, we use the stable-softmax poplar function. This input tensor
   /// to softmax, _x_, is preprocessed by subtracting max(_x_) to each element

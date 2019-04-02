@@ -321,6 +321,10 @@ public:
   // from user-specified onnx node attribute
   bool hasUserRecomputeOps() const;
 
+  bool hasAutoRecomputationEnabled() const {
+    return userOptions.autoRecomputation != RecomputationType::None;
+  }
+
 private:
   // called from growFromNode and many other places where Ops created
   // T requires functions input(int) and input_size()

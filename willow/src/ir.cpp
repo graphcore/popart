@@ -737,13 +737,12 @@ void Ir::prepare(const IrBundle &gb) {
   //    attribute. At the moment this can only happen if
   //    specified when building the onnx graph using the poponnx
   //    Builder
-  if (userOptions.enableAutoRecomputation && hasUserRecomputeOps()) {
+  if (hasAutoRecomputationEnabled() && hasUserRecomputeOps()) {
     throw error(
         "A mixture of auto and manual recomputaion is currently not supported");
   } else {
     enableTransform(Recompute::id(),
-                    userOptions.enableAutoRecomputation ||
-                        hasUserRecomputeOps());
+                    hasAutoRecomputationEnabled() || hasUserRecomputeOps());
     applyTransform(Recompute::id());
   }
   updateVertices();

@@ -109,16 +109,39 @@ bool Recompute::apply(Ir &ir) const {
     }
   }
 
-  // Pick ops to recompute (roughly) with the aim of
-  // minimizing max-liveness
+  // Auto recomputation: type depends on user-option
   else {
-    logging::transform::info("Using auto-recompute method");
-    checkpoints = getAutoCheckpointOps(ir);
+    RecomputationType type = ir.getSessionOptions().autoRecomputation;
 
-    for (auto op : ir.getOpSchedule({})) {
-      if (op->isFwdToBwd()) {
-        if (checkpoints.count(op) == 0) {
-          recomputeOps.push_back(op);
+    if (type == RecomputationType::Standard) {
+      logging::transform::info("Using 'Standard' auto-recompute method");
+      checkpoints = getStandardCheckpointOps(ir);
+
+      for (auto op : ir.getOpSchedule({})) {
+        if (op->isFwdToBwd()) {
+          if (checkpoints.count(op) == 0) {
+            recomputeOps.push_back(op);
+          }
+        }
+      }
+    } else if (type == RecomputationType::NormOnly) {
+      logging::transform::info("Using 'NormOnly' auto-recompute method");
+
+      bool prevWasNorm = false;
+      for (auto op : ir.getOpSchedule({})) {
+        if (op->isFwdToBwd()) {
+          if (op->isNorm()) {
+            // don't checkpoint Norms as their outputs are large and
+            // relatively cheap to recompute
+            recomputeOps.push_back(op);
+            prevWasNorm = true;
+          } else if (prevWasNorm && op->isNonlinearity()) {
+            // don't checkpoint nonlinearities following Norms
+            recomputeOps.push_back(op);
+          } else {
+            checkpoints.insert(op);
+            prevWasNorm = false;
+          }
         }
       }
     }
@@ -131,7 +154,7 @@ bool Recompute::apply(Ir &ir) const {
   return true;
 }
 
-std::set<Op *> Recompute::getAutoCheckpointOps(const Ir &ir) const {
+std::set<Op *> Recompute::getStandardCheckpointOps(const Ir &ir) const {
   std::vector<Op *> fwdOps;
   for (auto op : ir.getOpSchedule({})) {
     if (op->isFwdToBwd()) {

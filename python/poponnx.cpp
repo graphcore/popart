@@ -339,10 +339,9 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("enableConvolutionGraphCaching",
                      &SessionOptions::enableConvolutionGraphCaching)
       .def_readwrite("enableOutlining", &SessionOptions::enableOutlining)
-      .def_readwrite("enableAutoRecomputation",
-                     &SessionOptions::enableAutoRecomputation)
       .def_readwrite("enableNonStableSoftmax",
                      &SessionOptions::enableNonStableSoftmax)
+      .def_readwrite("autoRecomputation", &SessionOptions::autoRecomputation)
       .def_readwrite("enableVirtualGraphs",
                      &SessionOptions::enableVirtualGraphs)
       .def_readwrite("autoVirtualGraph", &SessionOptions::autoVirtualGraph)
@@ -375,6 +374,11 @@ PYBIND11_MODULE(poponnx_core, m) {
       .value("BWD0", DotCheck::BWD0)
       .value("PREALIAS", DotCheck::PREALIAS)
       .value("FINAL", DotCheck::FINAL);
+
+  py::enum_<RecomputationType>(m, "RecomputationType")
+      .value("None", RecomputationType::None)
+      .value("Standard", RecomputationType::Standard)
+      .value("NormOnly", RecomputationType::NormOnly);
 
   py::enum_<PreAliasPatternType>(m, "PreAliasPatternType")
       .value("PREUNIREPL", PreAliasPatternType::PREUNIREPL)
