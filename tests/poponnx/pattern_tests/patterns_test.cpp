@@ -664,3 +664,41 @@ BOOST_AUTO_TEST_CASE(SplitGatherTest) {
 
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Gather_1).size() == 2);
 }
+
+BOOST_AUTO_TEST_CASE(SumToAddTest) {
+  auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
+
+  TensorInfo shape{"FLOAT", std::vector<int64_t>{2, 2}};
+
+  auto input1 = builder->addInputTensor(shape);
+  auto input2 = builder->addInputTensor(shape);
+
+  auto out = aiOnnx.sum({input1, input2});
+
+  builder->addOutputTensor(out);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR
+  auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+
+  SessionOptions userOptions;
+
+  std::map<std::string, std::string> deviceOpts{{"numIPUs", "2"}};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+
+  Ir ir;
+  ir.prepare({modelProto,
+              InputShapeInfo(),
+              dataFlow,
+              {},
+              nullptr,
+              *cpuDevice,
+              userOptions,
+              Patterns({PreAliasPatternType::SUMTOADD})});
+
+  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Sum_8).size() == 0);
+  BOOST_CHECK(ir.opsOfType(Onnx::Operators::Add_7).size() == 1);
+}
