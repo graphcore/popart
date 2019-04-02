@@ -198,7 +198,7 @@ bool Match::fitsCleanly(const Match &rhs) const {
     return false;
   }
 
-  std::vector<std::vector<int>> interDeltas(starts.size(), {});
+  std::vector<std::vector<int>> interDeltas(starts.size());
 
   int currentSelfIndex = 0;
   for (int i = 0; i < rhs.starts.size(); ++i) {

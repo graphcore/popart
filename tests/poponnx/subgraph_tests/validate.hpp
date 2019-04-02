@@ -43,7 +43,7 @@ bool isValid(const std::vector<fwtools::subgraph::Match> &matches,
   std::sort(revMatches.begin(),
             revMatches.end(),
             [](const Match &a, const Match &b) { return a.length < b.length; });
-  std::vector<std::vector<const Match *>> blanket(schedule_size, {});
+  std::vector<std::vector<const Match *>> blanket(schedule_size);
 
   for (int i = 0; i < revMatches.size(); ++i) {
     for (int j = 0; j < revMatches[i].starts.size(); ++j) {

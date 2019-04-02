@@ -5,6 +5,7 @@
 
 #include <limits>
 #include <map>
+#include <memory>
 #include <sstream>
 #include <tuple>
 #include <vector>
@@ -54,7 +55,7 @@ private:
   int leafEndIdx = std::numeric_limits<int>::max();
 
   struct ActiveState {
-    Node *Node;
+    Node *node;
     int Idx = emptyIdx;
     int Len = 0;
   };
@@ -139,25 +140,25 @@ private:
         Active.Idx = endIdx;
       }
       int FirstChar = sequence[Active.Idx];
-      if (Active.Node->children.count(FirstChar) == 0) {
-        insertLeaf(*Active.Node, endIdx, FirstChar);
+      if (Active.node->children.count(FirstChar) == 0) {
+        insertLeaf(*Active.node, endIdx, FirstChar);
         if (Needslink) {
-          Needslink->link = Active.Node;
+          Needslink->link = Active.node;
           Needslink       = nullptr;
         }
       } else {
-        Node *NextNode   = Active.Node->children[FirstChar];
+        Node *NextNode   = Active.node->children[FirstChar];
         int SubstringLen = static_cast<int>(NextNode->size());
         if (Active.Len >= SubstringLen) {
           Active.Idx += SubstringLen;
           Active.Len -= SubstringLen;
-          Active.Node = NextNode;
+          Active.node = NextNode;
           continue;
         }
         int LastChar = sequence[endIdx];
         if (sequence[NextNode->startIdx + Active.Len] == LastChar) {
-          if (Needslink && !Active.Node->isRoot()) {
-            Needslink->link = Active.Node;
+          if (Needslink && !Active.node->isRoot()) {
+            Needslink->link = Active.node;
             Needslink       = nullptr;
           }
 
@@ -165,7 +166,7 @@ private:
           break;
         }
         Node *SplitNode =
-            insertInternalNode(Active.Node,
+            insertInternalNode(Active.node,
                                NextNode->startIdx,
                                NextNode->startIdx + Active.Len - 1,
                                FirstChar);
@@ -178,13 +179,13 @@ private:
         Needslink = SplitNode;
       }
       nSuffixesToAdd--;
-      if (Active.Node->isRoot()) {
+      if (Active.node->isRoot()) {
         if (Active.Len > 0) {
           Active.Len--;
           Active.Idx = endIdx - nSuffixesToAdd + 1;
         }
       } else {
-        Active.Node = Active.Node->link;
+        Active.node = Active.node->link;
       }
     }
 
@@ -194,7 +195,7 @@ private:
 public:
   SuffixTree(const std::vector<int> &seq0) : sequence(seq0) {
     root               = insertInternalNode(nullptr, emptyIdx, emptyIdx, 0);
-    Active.Node        = root;
+    Active.node        = root;
     int nSuffixesToAdd = 0;
     for (int PfxendIdx = 0, End = static_cast<int>(sequence.size());
          PfxendIdx < End;
@@ -214,7 +215,7 @@ std::vector<Match> getInternal(const std::vector<int> &s) {
   SuffixTree tree(s);
 
   // matches[i] will be be all internal nodes with concatLen = i
-  std::vector<std::vector<Match>> matches(s.size() + 1, {});
+  std::vector<std::vector<Match>> matches(s.size() + 1);
 
   for (auto &x : tree.nodeMap) {
     auto node = x.second.get();
