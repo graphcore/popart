@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE(Substring0_Subgraph) {
     }
 
     // perform the repeated sub-string matching step
-    RinseMatcher<const Blip> rinseMatcher(sched);
+    algo0::RinseMatcherAlgo0<const Blip> rinseMatcher(sched);
     auto matches = rinseMatcher.getRepeatedSequences();
     std::sort(matches.begin(), matches.end());
     std::sort(expected_matches.begin(), expected_matches.end());

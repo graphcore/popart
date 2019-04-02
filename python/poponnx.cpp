@@ -446,18 +446,20 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("modelToHost", &InferenceSession::modelToHost)
       .def("getInfo", &InferenceSession::getInfo)
       .def("getSummaryReport", &InferenceSession::getSummaryReport)
-      .def("getGraphReport",
-           [](const InferenceSession &session, bool use_cbor) {
-             auto report = session.getGraphReport(use_cbor);
-             return py::bytes(report);
-           },
-           py::arg("use_cbor") = false)
-      .def("getExecutionReport",
-           [](const InferenceSession &session, bool use_cbor) {
-             auto report = session.getExecutionReport(use_cbor);
-             return py::bytes(report);
-           },
-           py::arg("use_cbor") = false)
+      .def(
+          "getGraphReport",
+          [](const InferenceSession &session, bool use_cbor) {
+            auto report = session.getGraphReport(use_cbor);
+            return py::bytes(report);
+          },
+          py::arg("use_cbor") = false)
+      .def(
+          "getExecutionReport",
+          [](const InferenceSession &session, bool use_cbor) {
+            auto report = session.getExecutionReport(use_cbor);
+            return py::bytes(report);
+          },
+          py::arg("use_cbor") = false)
       .def("getTensorTileMap", &InferenceSession::getTensorTileMap)
       .def("resetHostWeights", &InferenceSession::resetHostWeights);
 
@@ -482,18 +484,20 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("modelToHost", &TrainingSession::modelToHost)
       .def("getInfo", &TrainingSession::getInfo)
       .def("getSummaryReport", &TrainingSession::getSummaryReport)
-      .def("getGraphReport",
-           [](const TrainingSession &session, bool use_cbor) {
-             auto report = session.getGraphReport(use_cbor);
-             return py::bytes(report);
-           },
-           py::arg("use_cbor") = false)
-      .def("getExecutionReport",
-           [](const TrainingSession &session, bool use_cbor) {
-             auto report = session.getExecutionReport(use_cbor);
-             return py::bytes(report);
-           },
-           py::arg("use_cbor") = false)
+      .def(
+          "getGraphReport",
+          [](const TrainingSession &session, bool use_cbor) {
+            auto report = session.getGraphReport(use_cbor);
+            return py::bytes(report);
+          },
+          py::arg("use_cbor") = false)
+      .def(
+          "getExecutionReport",
+          [](const TrainingSession &session, bool use_cbor) {
+            auto report = session.getExecutionReport(use_cbor);
+            return py::bytes(report);
+          },
+          py::arg("use_cbor") = false)
       .def("getTensorTileMap", &TrainingSession::getTensorTileMap)
       .def("resetHostWeights", &TrainingSession::resetHostWeights);
 

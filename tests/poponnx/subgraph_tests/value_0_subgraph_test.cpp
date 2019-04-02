@@ -27,9 +27,12 @@ BOOST_AUTO_TEST_CASE(Value0_Subgraph) {
       sched.push_back(blips[i].get());
     }
 
-    RinseMatcher<const Blip> rinseMatcher(sched);
+    algo0::RinseMatcherAlgo0<const Blip> rinseMatcher(sched);
     auto matches = rinseMatcher.getRepeatedSequences();
-    matches      = rinseMatcher.getPrioritized(matches);
+
+    setValues(matches, sched);
+  std:
+    sort(matches.rbegin(), matches.rend());
 
     std::stringstream ss;
     ss << "\nExpected matches:";

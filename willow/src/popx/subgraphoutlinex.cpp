@@ -9,6 +9,8 @@
 
 #include <poponnx/popx/subgraphoutlinex.hpp>
 
+#include <poponnx/subgraph/outliner.hpp>
+
 #include <sstream>
 
 namespace poponnx {
@@ -93,7 +95,8 @@ std::vector<Op *> SubgraphOutlinex::getOutlineView(const std::vector<Op *> &ops,
       "SubgraphOutlinex::getOutlineView Op list before outlining");
   printOps(outlinedOps);
 
-  auto matches = fwtools::subgraph::getMatches(outlinedOps, 1.0f);
+  auto matches = fwtools::subgraph::getRinseMatches(
+      outlinedOps, 1.0f, fwtools::subgraph::getDefaultOutlinerAlgorithm());
 
   // Sort the matches so we do the smallest subgraphs first
   std::sort(matches.begin(),

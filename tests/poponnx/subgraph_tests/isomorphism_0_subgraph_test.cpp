@@ -33,9 +33,9 @@ BOOST_AUTO_TEST_CASE(Isomorphism0_Subgraph) {
     }
 
     // get the matches
-    RinseMatcher<const Blip> rinseMatcher(sched);
+    algo0::RinseMatcherAlgo0<const Blip> rinseMatcher(sched);
     auto matches0 = rinseMatcher.getRepeatedSequences();
-    auto matches1 = rinseMatcher.separateByIsomorphism(matches0);
+    auto matches1 = rinseMatcher.separateMultipleMatchesByIsomorphism(matches0);
 
     // as this test has does not include the match priority functionality
     // we sort the matches (and the expected matches) to make comparing

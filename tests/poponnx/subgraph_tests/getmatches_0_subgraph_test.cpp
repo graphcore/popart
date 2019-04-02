@@ -18,7 +18,8 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
                  const std::map<blip::Type, blip::Value> &value_map,
                  const std::vector<Edge> &edges,
                  std::vector<Match> expected_matches,
-                 float threshold = 0.0f) {
+                 int algo,
+                 float threshold) {
     // prepare the schedule from the input parameters
     std::vector<const Blip *> sched;
     std::vector<std::unique_ptr<Blip>> blips;
@@ -38,7 +39,16 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
     }
 
     // get the matches
-    auto matches = getMatches<const Blip>(sched, threshold);
+    std::vector<Match> matches;
+    if (algo == 1) {
+      matches = getRinseMatches<const Blip>(
+          sched, threshold, OutlinerAlgorithm::ALGO1);
+    } else if (algo == 0) {
+      matches = getRinseMatches<const Blip>(
+          sched, threshold, OutlinerAlgorithm::ALGO0);
+    } else {
+      throw std::runtime_error("invalid algo");
+    }
 
     // compare to the expected matches
     std::stringstream ss;
@@ -50,6 +60,7 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
     for (auto &x : matches) {
       ss << "\n" << x;
     }
+    ss << "\n\n\n";
     poponnx::logging::debug(ss.str());
     BOOST_CHECK(matches == expected_matches);
   };
@@ -76,15 +87,22 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
   };
   std::vector<Edge> edges;
 
-  poponnx::logging::info("full test, saturated large sequence, threshold -1.0");
-  test(types, value_map, edges, expected_matches, -1.0);
+  for (int algo : {0, 1}) {
+    poponnx::logging::info(
+        "full test, saturated large sequence, threshold -1.0, algo {}", algo);
+    test(types, value_map, edges, expected_matches, algo, -1.0);
+  }
 
   expected_matches = {
       {{1, 2, 4, 5, 7, 8}, 1}, // 1
       {{0, 3, 6, 9}, 1}        // 0
   };
-  poponnx::logging::info("full test, saturated large sequence, threshold 5.0");
-  test(types, value_map, edges, expected_matches, 5.0);
+
+  for (int algo : {0, 1}) {
+    poponnx::logging::info(
+        "full test, saturated large sequence, threshold 5.0, algo {}", algo);
+    test(types, value_map, edges, expected_matches, algo, 5.0);
+  }
 
   // -------------------------------------------
   //       0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15
@@ -136,7 +154,9 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
 
   auto metatest = [types, value_map, edges, &test](
                       float threshold, std::vector<Match> expected_matches) {
-    test(types, value_map, edges, expected_matches, threshold);
+    for (int algo : {0, 1}) {
+      test(types, value_map, edges, expected_matches, algo, threshold);
+    }
   };
 
   expected_matches = {

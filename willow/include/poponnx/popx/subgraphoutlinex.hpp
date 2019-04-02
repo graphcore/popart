@@ -4,7 +4,11 @@
 #include <vector>
 #include <poponnx/op.hpp>
 
-#include <poponnx/subgraph/subgraph.hpp>
+namespace fwtools {
+namespace subgraph {
+class Match;
+}
+} // namespace fwtools
 
 namespace poponnx {
 

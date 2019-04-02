@@ -4,7 +4,9 @@
 #include <map>
 #include <set>
 #include <vector>
-#include <poponnx/subgraph/subgraph.hpp>
+#include <poponnx/subgraph/algo0.hpp>
+#include <poponnx/subgraph/algo1.hpp>
+#include <poponnx/subgraph/outliner.hpp>
 
 namespace blip {
 

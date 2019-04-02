@@ -47,7 +47,7 @@
 
 // Currently used only for graph visualization,
 // should not be included when TODO T7143 is complete.
-#include <poponnx/subgraph/subgraph.hpp>
+#include <poponnx/subgraph/outliner.hpp>
 
 namespace poponnx {
 
@@ -170,7 +170,8 @@ void Ir::dotCheckpoint(DotCheck check) const {
                        scheduledOps.size());
 
     // TODO : create option for threshold T7482
-    matches = fwtools::subgraph::getMatches<Op>(scheduledOps, 0.0f);
+    matches = fwtools::subgraph::getRinseMatches<Op>(
+        scheduledOps, 0.0f, fwtools::subgraph::getDefaultOutlinerAlgorithm());
   }
   std::vector<std::vector<std::tuple<int, int>>> opToMatch(scheduledOps.size());
   for (int match_i = 0; match_i < matches.size(); ++match_i) {

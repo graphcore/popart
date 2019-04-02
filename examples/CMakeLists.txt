@@ -85,14 +85,7 @@ add_poponnx_cpp_example(dot_inference_graph
 add_poponnx_cpp_example(dot_graph 
    ${CMAKE_CURRENT_SOURCE_DIR}/cplusplus/dot_graph.cpp)
 
-
-
-
 install(DIRECTORY
   python
   DESTINATION ${INSTALL_EXAMPLES})
-
-#install(DIRECTORY
-#  cpp
-#  DESTINATION ${INSTALL_EXAMPLES})
 
