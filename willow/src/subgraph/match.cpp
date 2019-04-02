@@ -1,8 +1,13 @@
+#include <algorithm>
 #include <poponnx/subgraph/match.hpp>
 #include <poponnx/subgraph/subgraphnames.hpp>
 
 namespace fwtools {
 namespace subgraph {
+
+Match::Match(const std::vector<Start> &s, int l) : starts(s), length(l) {
+  std::sort(starts.begin(), starts.end());
+}
 
 std::ostream &operator<<(std::ostream &stream, const Match &match) {
 

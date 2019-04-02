@@ -10,9 +10,7 @@ namespace subgraph {
 
 class Match {
 public:
-  Match(const std::vector<Start> &s, int l) : starts(s), length(l) {
-    std::sort(starts.begin(), starts.end());
-  }
+  Match(const std::vector<Start> &s, int l);
 
   // the length of the sequence (sub-graph) takes
   // highest priority in the comparison, after values
