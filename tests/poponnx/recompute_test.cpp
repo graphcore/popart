@@ -259,7 +259,7 @@ BOOST_AUTO_TEST_CASE(DontInheritRecomputeTest) {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(relu_out, "l1LossVal", 0.1)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
-  
+
   SessionOptions opts;
   opts.dotChecks = {DotCheck::FINAL};
 

@@ -171,7 +171,9 @@ void Ir::dotCheckpoint(DotCheck check) const {
 
     // TODO : create option for threshold T7482
     matches = fwtools::subgraph::getRinseMatches<Op>(
-        scheduledOps, 0.0f, fwtools::subgraph::getDefaultOutlinerAlgorithm());
+        scheduledOps,
+        userOptions.outlineThreshold,
+        fwtools::subgraph::getDefaultOutlinerAlgorithm());
   }
   std::vector<std::vector<std::tuple<int, int>>> opToMatch(scheduledOps.size());
   for (int match_i = 0; match_i < matches.size(); ++match_i) {

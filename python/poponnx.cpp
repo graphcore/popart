@@ -339,6 +339,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("enableConvolutionGraphCaching",
                      &SessionOptions::enableConvolutionGraphCaching)
       .def_readwrite("enableOutlining", &SessionOptions::enableOutlining)
+      .def_readwrite("outlineThreshold", &SessionOptions::outlineThreshold)
       .def_readwrite("enableNonStableSoftmax",
                      &SessionOptions::enableNonStableSoftmax)
       .def_readwrite("autoRecomputation", &SessionOptions::autoRecomputation)

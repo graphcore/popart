@@ -67,6 +67,17 @@ struct SessionOptions {
   /// Controls caching of identifical sections of the graph.
   bool enableOutlining = true;
 
+  /// The incremental value that a sub-graph requires, relative to its nested
+  /// sub-graphs (if any), to be eligible for outlining. A high threshold
+  /// results in fewer sub-graphs being outlined, a negative value results in
+  /// all being outlined. The gross value of a sub-graph is the sum of its
+  /// constituent Ops' getSubgraphValue() values. To disable outlining, it is
+  /// better to set enableOutlining to false than to set this value to infinity.
+  /// The default value of 1.0f results in all high Value operations such as
+  /// convolution being cached, but standalone low Value operations such as Relu
+  /// will not be.
+  float outlineThreshold = 1.0f;
+
   /// Enable recomputation of operations in the graph in the backwards pass to
   /// reduce model size at the cost of computation cycles
   RecomputationType autoRecomputation = RecomputationType::None;
