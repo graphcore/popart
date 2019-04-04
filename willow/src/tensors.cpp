@@ -19,10 +19,11 @@ view::Chains Tensors::getChainsFromTo(Tensor *from, Tensor *to) const {
   return allChainsFrom.at(to);
 }
 
-std::map<Tensor *, view::Chains> Tensors::getAliasChains(
-    const std::map<Tensor *, std::map<Tensor *, view::Chains>> &fullM,
+std::unordered_map<Tensor *, view::Chains> Tensors::getAliasChains(
+    const std::unordered_map<Tensor *,
+                             std::unordered_map<Tensor *, view::Chains>> &fullM,
     Tensor *t) const {
-  std::map<Tensor *, view::Chains> retM{};
+  std::unordered_map<Tensor *, view::Chains> retM{};
   auto found = fullM.find(t);
   if (found != fullM.end()) {
     retM = found->second;
@@ -31,11 +32,13 @@ std::map<Tensor *, view::Chains> Tensors::getAliasChains(
   return retM;
 }
 
-std::map<Tensor *, view::Chains> Tensors::aliasChainsTo(Tensor *to) const {
+std::unordered_map<Tensor *, view::Chains>
+Tensors::aliasChainsTo(Tensor *to) const {
   return getAliasChains(aliasChainsToKey, to);
 }
 
-std::map<Tensor *, view::Chains> Tensors::aliasChainsFrom(Tensor *from) const {
+std::unordered_map<Tensor *, view::Chains>
+Tensors::aliasChainsFrom(Tensor *from) const {
   return getAliasChains(aliasChainsFromKey, from);
 }
 
