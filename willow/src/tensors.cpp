@@ -84,7 +84,8 @@ void Tensors::updateAliases(Op *op) {
       for (auto &inwards : allInChains) {
         Tensor *t0 = inwards.first;
         // the chains t0 -> t1
-        view::Chains inChains = inwards.second;
+        view::Chains inChains      = inwards.second;
+        auto inChainsFwdLinkSeries = inChains.series(fwdLink);
 
         // the chains t1 -> t0. There are such chains,
         // guaranteed by the existance of chains t0 -> t1
@@ -114,7 +115,7 @@ void Tensors::updateAliases(Op *op) {
           }
           // add the new Chains
           aliasChainsToKey[t3][t0] = aliasChainsToKey[t3][t0].parallel(
-              inChains.series(fwdLink).series(outChains));
+              inChainsFwdLinkSeries.series(outChains));
 
           // same logic for t3 -> t0
           if (aliasChainsToKey.find(t0) == aliasChainsToKey.end()) {
