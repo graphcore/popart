@@ -36,9 +36,8 @@ def trainSession(anchors, optimizer, stepSize):
         fnModel=proto,
         dataFeed=poponnx.DataFlow(stepSize, anchors),
         losses=losses,
-        optimizer=optimizer)
-
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
+        optimizer=optimizer,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
     session.prepareDevice()
     session.weightsFromHost()
@@ -191,9 +190,8 @@ def test_sgd_with_float16_model():
         fnModel=proto,
         dataFeed=poponnx.DataFlow(1, anchorNames),
         losses=losses,
-        optimizer=optimizer)
-
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
+        optimizer=optimizer,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
     session.prepareDevice()
     session.weightsFromHost()

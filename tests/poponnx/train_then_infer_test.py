@@ -55,10 +55,10 @@ def test_train_then_infer_via_file():
     inference_session = poponnx.InferenceSession(
         fnModel=builder.getModelProto(),
         dataFeed=inference_dataFlow,
-        userOptions=opts)
+        userOptions=opts,
+        deviceInfo=device)
 
     # Compile the inference graph
-    inference_session.setDevice(device)
     inference_session.prepareDevice()
 
     # ----------------------------------------------
@@ -69,10 +69,10 @@ def test_train_then_infer_via_file():
         dataFeed=training_dataFlow,
         losses=[poponnx.L1Loss(o, "l1LossVal", 0.1)],
         optimizer=poponnx.ConstSGD(0.01),
-        userOptions=opts)
+        userOptions=opts,
+        deviceInfo=device)
 
     # Compile the training graph
-    training_session.setDevice(device)
     training_session.prepareDevice()
 
     # ----------------------------------------------

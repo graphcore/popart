@@ -32,6 +32,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  bool isNorm() const override { return true; }
+
 private:
   int64_t num_groups;
   float epsilon;

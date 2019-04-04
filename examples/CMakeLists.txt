@@ -64,8 +64,11 @@ function(add_poponnx_cpp_example name)
   target_include_directories(${name}
       PRIVATE
       ${CMAKE_CURRENT_SOURCE_DIR}
+      ${Boost_INCLUDE_DIRS}
       $<TARGET_PROPERTY:poponnx,INCLUDE_DIRECTORIES>)  
-  target_link_libraries(${name} poponnx)
+  target_link_libraries(${name}
+    ${Boost_LIBRARIES}
+    poponnx)
   set(executable_name "${name}")
   add_custom_command(TARGET poponnx_run_examples
                      COMMAND ${CMAKE_BINARY_DIR}/examples/${name}
@@ -82,14 +85,7 @@ add_poponnx_cpp_example(dot_inference_graph
 add_poponnx_cpp_example(dot_graph 
    ${CMAKE_CURRENT_SOURCE_DIR}/cplusplus/dot_graph.cpp)
 
-
-
-
 install(DIRECTORY
   python
   DESTINATION ${INSTALL_EXAMPLES})
-
-#install(DIRECTORY
-#  cpp
-#  DESTINATION ${INSTALL_EXAMPLES})
 

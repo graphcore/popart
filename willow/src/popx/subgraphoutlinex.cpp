@@ -3,11 +3,12 @@
 #include <poponnx/names.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/op/subgraph.hpp>
+#include <poponnx/popx/subgraphoutlinex.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensors.hpp>
 #include <poponnx/topocons.hpp>
 
-#include <poponnx/popx/subgraphoutlinex.hpp>
+#include <poponnx/subgraph/outliner.hpp>
 
 #include <sstream>
 
@@ -93,7 +94,10 @@ std::vector<Op *> SubgraphOutlinex::getOutlineView(const std::vector<Op *> &ops,
       "SubgraphOutlinex::getOutlineView Op list before outlining");
   printOps(outlinedOps);
 
-  auto matches = fwtools::subgraph::getMatches(outlinedOps, 1.0f);
+  auto matches = fwtools::subgraph::getRinseMatches(
+      outlinedOps,
+      ir.getSessionOptions().outlineThreshold,
+      fwtools::subgraph::getDefaultOutlinerAlgorithm());
 
   // Sort the matches so we do the smallest subgraphs first
   std::sort(matches.begin(),

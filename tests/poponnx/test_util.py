@@ -103,7 +103,8 @@ class BasicSession:
                 inputShapeInfo=self.early_info,
                 dataFeed=dataFlow,
                 passes=poponnx.Patterns(self.passes),
-                userOptions=self.opts)
+                userOptions=self.opts,
+                deviceInfo=get_poplar_cpu_device())
         elif step_method == 'train':
             session = poponnx.TrainingSession(
                 fnModel=proto,
@@ -112,9 +113,9 @@ class BasicSession:
                 losses=losses,
                 optimizer=optimizer,
                 passes=poponnx.Patterns(self.passes),
-                userOptions=self.opts)
+                userOptions=self.opts,
+                deviceInfo=get_poplar_cpu_device())
 
-        session.setDevice(get_poplar_cpu_device())
         anchors = session.initAnchorArrays()
 
         session.prepareDevice()

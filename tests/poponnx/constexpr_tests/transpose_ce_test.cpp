@@ -49,17 +49,17 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose1) {
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(1, {{out, art}});
 
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
+
   auto session = poponnx::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
+      cpuDevice,
       {},
       poponnx::InputShapeInfo(),
       {},
       poponnx::Patterns({poponnx::PreAliasPatternType::POSTNREPL}));
-
-  auto cpuDevice =
-      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-  session->setDevice(cpuDevice);
 
   // prepare the anchors
   int rawOutputData[10];
@@ -123,17 +123,17 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Transpose2) {
   auto art      = AnchorReturnType("ALL");
   auto dataFlow = DataFlow(1, {{out, art}});
 
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
+
   auto session = poponnx::InferenceSession::createFromOnnxModel(
       proto,
       dataFlow,
+      cpuDevice,
       {},
       poponnx::InputShapeInfo(),
       {},
       poponnx::Patterns({poponnx::PreAliasPatternType::POSTNREPL}));
-
-  auto cpuDevice =
-      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-  session->setDevice(cpuDevice);
 
   // prepare the anchors
   int rawOutputData[24];

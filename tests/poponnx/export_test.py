@@ -45,8 +45,8 @@ def test_constants_preserved():
         dataFeed=dataFlow,
         userOptions=opts,
         losses=losses,
-        optimizer=optimizer)
-    session.setDevice(tu.get_poplar_cpu_device())
+        optimizer=optimizer,
+        deviceInfo=tu.get_poplar_cpu_device())
 
     anchorArrays = session.initAnchorArrays()
 

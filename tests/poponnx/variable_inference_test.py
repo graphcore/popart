@@ -19,9 +19,11 @@ def inference_add_to_variable(tmpdir, np_type):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_poplar_cpu_device())
 
-    session.setDevice(tu.get_poplar_cpu_device())
     session.prepareDevice()
 
     anchors = session.initAnchorArrays()

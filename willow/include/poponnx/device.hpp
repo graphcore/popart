@@ -25,8 +25,8 @@ public:
   virtual void run(const IStepIO &) = 0;
   const Ir &ir() const { return _ir; }
   virtual std::string getSummaryReport() const                         = 0;
-  virtual std::string getGraphReport() const                           = 0;
-  virtual std::string getExecutionReport() const                       = 0;
+  virtual std::string getGraphReport(bool use_cbor) const              = 0;
+  virtual std::string getExecutionReport(bool use_cbor) const          = 0;
   virtual TensorTileMap getTensorTileMap() const                       = 0;
   virtual std::set<TensorId> getLinearlyCreatedInputTensors() const    = 0;
   virtual std::set<TensorId> getEfficientlyCreatedInputTensors() const = 0;

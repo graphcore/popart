@@ -17,10 +17,12 @@ def test_summary_report_before_execution(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_poplar_cpu_device())
 
     session.initAnchorArrays()
-    session.setDevice(tu.get_poplar_cpu_device())
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         session.getSummaryReport()
@@ -42,10 +44,12 @@ def test_graph_report_before_execution(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_poplar_cpu_device())
 
     session.initAnchorArrays()
-    session.setDevice(tu.get_poplar_cpu_device())
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         session.getGraphReport()
@@ -67,10 +71,12 @@ def test_execution_report_before_execution(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_poplar_cpu_device())
 
     session.initAnchorArrays()
-    session.setDevice(tu.get_poplar_cpu_device())
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         session.getExecutionReport()
@@ -92,10 +98,12 @@ def test_summary_report_with_cpu_device(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_poplar_cpu_device())
 
     session.initAnchorArrays()
-    session.setDevice(tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 
@@ -119,10 +127,12 @@ def test_graph_report_with_cpu_device(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_poplar_cpu_device())
 
     session.initAnchorArrays()
-    session.setDevice(tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 
@@ -148,10 +158,12 @@ def test_execution_report_with_cpu_device(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_poplar_cpu_device())
 
     session.initAnchorArrays()
-    session.setDevice(tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 
@@ -177,14 +189,43 @@ def test_compilation_report(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
     anchors = session.initAnchorArrays()
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
 
     session.prepareDevice()
 
     assert (len(session.getGraphReport()) > 0)
+
+
+def test_compilation_report_cbor(tmpdir):
+
+    builder = poponnx.Builder()
+
+    shape = poponnx.TensorInfo("FLOAT", [1])
+
+    i1 = builder.addInputTensor(shape)
+    i2 = builder.addInputTensor(shape)
+    o = builder.aiOnnx.add([i1, i2])
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    assert (len(session.getGraphReport(True)) > 0)
 
 
 def test_execution_report(tmpdir):
@@ -202,10 +243,12 @@ def test_execution_report(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
     anchors = session.initAnchorArrays()
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
 
     session.prepareDevice()
 
@@ -215,7 +258,40 @@ def test_execution_report(tmpdir):
 
     session.run(stepio)
 
-    assert (len(session.getExecutionReport()) > 0)
+    rep = session.getExecutionReport()
+
+
+def test_execution_report_cbor(tmpdir):
+
+    builder = poponnx.Builder()
+
+    shape = poponnx.TensorInfo("FLOAT", [1])
+
+    i1 = builder.addInputTensor(shape)
+    i2 = builder.addInputTensor(shape)
+    o = builder.aiOnnx.add([i1, i2])
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    d1 = np.array([10.]).astype(np.float32)
+    d2 = np.array([11.]).astype(np.float32)
+    stepio = poponnx.PyStepIO({i1: d1, i2: d2}, anchors)
+
+    session.run(stepio)
+
+    rep = session.getExecutionReport(True)
 
 
 def test_tensor_tile_mapping(tmpdir):
@@ -233,10 +309,12 @@ def test_tensor_tile_mapping(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(fnModel=proto, dataFeed=dataFlow)
+    session = poponnx.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
     anchors = session.initAnchorArrays()
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
 
     session.prepareDevice()
 
@@ -276,9 +354,11 @@ def test_no_compile(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(proto, dataFlow, userOptions=opts)
-
-    session.setDevice(tu.get_ipu_model(compileIPUCode=False))
+    session = poponnx.InferenceSession(
+        proto,
+        dataFlow,
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
     session.prepareDevice()
 

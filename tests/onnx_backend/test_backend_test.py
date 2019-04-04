@@ -79,8 +79,8 @@ class IpuBackend(onnx.backend.base.Backend):
         model = onnx.shape_inference.infer_shapes(model)
         value_infos = {
             vi.name: vi
-            for vi in itertools.chain(model.graph.value_info,
-                                      model.graph.output)
+            for vi in itertools.chain(model.graph.value_info, model.graph.
+                                      output)
         }
 
         # if do_enforce_test_coverage_whitelist(model):
@@ -105,10 +105,10 @@ class IpuBackend(onnx.backend.base.Backend):
         session = poponnx.InferenceSession(
             fnModel=model.SerializeToString(),
             dataFeed=poponnx.DataFlow(1, anchors),
+            deviceInfo=poponnx.DeviceManager().createCpuDevice(),
+            # deviceInfo=poponnx.DeviceManager().createIpuModelDevice({}),
             userOptions=opts)
 
-        #session.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
-        session.setDevice(poponnx.DeviceManager().createCpuDevice())
         session.prepareDevice()
 
         context = Context(session, model)

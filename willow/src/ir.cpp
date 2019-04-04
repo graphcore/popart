@@ -11,6 +11,7 @@
 #include <poponnx/ces/constexpr.hpp>
 #include <poponnx/ces/onnxconstexpr.hpp>
 #include <poponnx/chains.hpp>
+#include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
 #include <poponnx/intervals.hpp>
@@ -46,7 +47,7 @@
 
 // Currently used only for graph visualization,
 // should not be included when TODO T7143 is complete.
-#include <poponnx/subgraph/subgraph.hpp>
+#include <poponnx/subgraph/outliner.hpp>
 
 namespace poponnx {
 
@@ -169,7 +170,10 @@ void Ir::dotCheckpoint(DotCheck check) const {
                        scheduledOps.size());
 
     // TODO : create option for threshold T7482
-    matches = fwtools::subgraph::getMatches<Op>(scheduledOps, 0.0f);
+    matches = fwtools::subgraph::getRinseMatches<Op>(
+        scheduledOps,
+        userOptions.outlineThreshold,
+        fwtools::subgraph::getDefaultOutlinerAlgorithm());
   }
   std::vector<std::vector<std::tuple<int, int>>> opToMatch(scheduledOps.size());
   for (int match_i = 0; match_i < matches.size(); ++match_i) {
@@ -327,11 +331,12 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
                    const DataFlow &dataFlow_,
                    const std::vector<Loss *> &losses_,
                    const Optimizer *optimizer_,
+                   DeviceInfo &deviceInfo_,
                    const SessionOptions &userOptions_,
                    const Patterns &patterns_)
     : modelProto(modelProto_), inputShapeInfo(inputShapeInfo_),
       dataFlow(dataFlow_), losses(losses_), optimizer(optimizer_),
-      userOptions(userOptions_), patterns(patterns_) {}
+      deviceInfo(deviceInfo_), userOptions(userOptions_), patterns(patterns_) {}
 
 Ir::Ir() : onnxModel(nullptr) {
   up_tensors.reset(new Tensors(*this));
@@ -383,6 +388,10 @@ void Ir::setOptimizer(const Optimizer *o) {
     }
   }
 }
+
+void Ir::setDeviceInfo(DeviceInfo &di) { deviceInfo = &di; }
+
+const DeviceInfo *Ir::getDeviceInfo() { return deviceInfo; }
 
 void Ir::logIr() {
   std::stringstream ss2;
@@ -645,6 +654,7 @@ void Ir::verifyConstExprFolding() {
 }
 
 void Ir::prepare(const IrBundle &gb) {
+  setDeviceInfo(gb.deviceInfo);
 
   if (isPrepared) {
     throw error("Ir::prepare called more than once");
@@ -729,13 +739,12 @@ void Ir::prepare(const IrBundle &gb) {
   //    attribute. At the moment this can only happen if
   //    specified when building the onnx graph using the poponnx
   //    Builder
-  if (userOptions.enableAutoRecomputation && hasUserRecomputeOps()) {
+  if (hasAutoRecomputationEnabled() && hasUserRecomputeOps()) {
     throw error(
         "A mixture of auto and manual recomputaion is currently not supported");
   } else {
     enableTransform(Recompute::id(),
-                    userOptions.enableAutoRecomputation ||
-                        hasUserRecomputeOps());
+                    hasAutoRecomputationEnabled() || hasUserRecomputeOps());
     applyTransform(Recompute::id());
   }
   updateVertices();
@@ -1693,7 +1702,9 @@ void Ir::constructBackwards() {
         throw error("can't currently register gradient of " +
                     nongrad->tensor_type() + " tensor, " + nongrad->str());
 
-      default: { throw error("only handling ActGrad and Variable for now"); }
+      default: {
+        throw error("only handling ActGrad and Variable for now");
+      }
       }
     }
 
@@ -2184,8 +2195,8 @@ void Ir::applyInplacePattern() {
         if (!touchesAnchors) {
           auto newTopoCons = inplace.getNewTopoCons(op, identifier);
           if (isSchedulable(newTopoCons)) {
-            inplace.apply(op, identifier, newTopoCons);
             inplacedAlready.insert(op->id);
+            inplace.apply(op, identifier, newTopoCons);
           }
         }
       }

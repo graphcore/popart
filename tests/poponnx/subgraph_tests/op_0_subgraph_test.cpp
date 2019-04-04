@@ -9,7 +9,7 @@
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
 #include <poponnx/op.hpp>
-#include <poponnx/subgraph/subgraph.hpp>
+#include <poponnx/subgraph/outliner.hpp>
 #include <poponnx/tensornames.hpp>
 
 #include <poponnx/filereader.hpp>
@@ -17,35 +17,64 @@
 #include <poponnx/optimizer.hpp>
 #include <poponnx/tensordata.hpp>
 
+namespace {
+
 using namespace fwtools::subgraph;
 using namespace poponnx;
 
+std::vector<std::set<Match>> getSets(const std::vector<Op *> &sched,
+                                     const std::vector<Match> &expected_matches,
+                                     float threshold,
+                                     int algo) {
+
+  // get the matches
+  //
+  std::vector<Match> matches;
+  if (algo == 0) {
+    matches = getRinseMatches<Op>(sched, threshold, OutlinerAlgorithm::ALGO0);
+  } else if (algo == 1) {
+    matches = getRinseMatches<Op>(sched, threshold, OutlinerAlgorithm::ALGO1);
+  } else {
+    throw std::runtime_error("invalid algo number");
+  }
+
+  std::set<Match> s_expected_matches;
+  std::set<Match> s_matches;
+
+  std::stringstream ss;
+  ss << "\nExpected matches:";
+  for (auto x : expected_matches) {
+    ss << "\n" << x;
+    setValue(x, sched);
+    s_expected_matches.emplace(x);
+  }
+
+  ss << "\nComputed matches using subgraph outlining algo " << algo << ":";
+  for (auto x : matches) {
+    ss << "\n" << x;
+    setValue(x, sched);
+    s_matches.insert(x);
+  }
+
+  poponnx::logging::debug(ss.str());
+
+  std::vector<std::set<Match>> sets = {s_expected_matches, s_matches};
+  return sets;
+}
+
+} // namespace
+
 BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
+
+  using namespace fwtools::subgraph;
+  using namespace poponnx;
 
   auto test = [](const std::vector<Op *> &sched,
                  const std::vector<Match> &expected_matches,
-                 float threshold) {
-    // get the matches
-    auto matches = getMatches<Op>(sched, threshold);
-
-    // compare the final matches to those expected in this test
-    std::set<Match> s_expected_matches;
-    std::set<Match> s_matches;
-
-    std::stringstream ss;
-    ss << "\nExpected matches:";
-    for (auto &x : expected_matches) {
-      ss << "\n" << x;
-      s_expected_matches.insert(x);
-    }
-    ss << "\nComputed matches:";
-    for (auto &x : matches) {
-      ss << "\n" << x;
-      s_matches.insert(x);
-    }
-
-    poponnx::logging::debug(ss.str());
-    BOOST_CHECK(s_matches == s_expected_matches);
+                 float threshold,
+                 int algo) {
+    auto sets = getSets(sched, expected_matches, threshold, algo);
+    BOOST_CHECK(sets[0] == sets[1]);
   };
 
   // ----------------------------------------------------
@@ -78,7 +107,8 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     std::unique_ptr<Optimizer> optimizer;
     std::vector<std::unique_ptr<L1Loss>> up_losses;
     std::vector<Loss *> losses{};
-    auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+    auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
     if (train) {
       optimizer.reset(new ConstSGD(0.01));
@@ -93,16 +123,15 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
                 dataFlow,
                 losses,
                 optimizer.get(),
+                *cpuDevice,
                 {},
                 Patterns(PatternsLevel::DEFAULT)});
 
     auto sched = ir.getOpSchedule({});
 
-    test(sched, expected_matches, threshold);
+    test(sched, expected_matches, threshold, 0);
+    test(sched, expected_matches, threshold, 1);
   };
-
-  // TODO : this test will fail if saturated sub-graphs are removed
-  // see T7255
 
   // test mode:
   // ---------/
@@ -187,37 +216,15 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
 
 BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
 
+  using namespace fwtools::subgraph;
   using namespace poponnx;
 
   auto test = [](const std::vector<Op *> &sched,
                  const std::vector<Match> &expected_matches,
-                 float threshold) {
-    // get the matches
-    auto matches = getMatches<Op>(sched, threshold);
-
-    // compare the final matches to those expected in this test
-    std::stringstream ss;
-    ss << "\nExpected matches:";
-    for (auto &x : expected_matches) {
-      ss << "\n" << x;
-    }
-    ss << "\nComputed matches:";
-    for (auto &x : matches) {
-      ss << "\n" << x;
-    }
-    poponnx::logging::debug(ss.str());
-
-    // we convert to sets, so that order does not matter
-    std::set<Match> s_matches;
-    for (auto &m : matches) {
-      s_matches.insert(m);
-    }
-
-    std::set<Match> s_expected_matches;
-    for (auto &m : expected_matches) {
-      s_expected_matches.insert(m);
-    }
-    BOOST_CHECK(s_matches == s_expected_matches);
+                 float threshold,
+                 int algo) {
+    auto sets = getSets(sched, expected_matches, threshold, algo);
+    BOOST_CHECK(sets[0] == sets[1]);
   };
 
   auto builder = Builder::create();
@@ -257,6 +264,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
                 {reservedGradientPrefix() + o2, AnchorReturnType("ALL")},
                 {reservedGradientPrefix() + out, AnchorReturnType("ALL")},
                 {o2, AnchorReturnType("ALL")}});
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   optimizer.reset(new ConstSGD(0.01));
   up_losses.push_back(
@@ -275,11 +283,22 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
               dataFlow,
               losses,
               optimizer.get(),
+              *cpuDevice,
               {},
               Patterns(PatternsLevel::DEFAULT)});
 
   std::vector<Match> expected_matches{};
   auto sched = ir.getOpSchedule({});
 
-  test(sched, expected_train_matches, -1.0f);
+  poponnx::logging::debug("Testing Anchor0_Subgraph, algo 0, threshold -1");
+  test(sched, expected_train_matches, -1.0f, 0);
+
+  poponnx::logging::debug("Testing Anchor0_Subgraph, algo 1, threshold -1");
+  test(sched, expected_train_matches, -1.0f, 1);
+
+  for (int i = 0; i < sched.size(); ++i) {
+    auto x = sched[i];
+    std::cout << i << " : " << x->getSubgraphValue() << " : "
+              << x->getSubgraphEquivId() << std::endl;
+  }
 }

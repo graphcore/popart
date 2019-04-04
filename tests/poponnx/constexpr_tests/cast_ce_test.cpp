@@ -71,6 +71,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(outId, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -78,6 +79,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               {}, // no SessionOptions
               Patterns({PreAliasPatternType::POSTNREPL})});
 
@@ -168,6 +170,7 @@ template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(outId, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -175,6 +178,7 @@ template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               {}, // no SessionOptions
               Patterns({PreAliasPatternType::POSTNREPL})});
 

@@ -143,7 +143,8 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             inputShapeInfo=inputShapeInfo,
             dataFeed=dataFeed,
             passes=passes,
-            userOptions=opts)
+            userOptions=opts,
+            deviceInfo=device)
     elif mode == 'evaluate':
         session = poponnx.InferenceSession(
             fnModel=modelProtoX,
@@ -151,7 +152,8 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             dataFeed=dataFeed,
             losses=torchWriter.losses,
             passes=passes,
-            userOptions=opts)
+            userOptions=opts,
+            deviceInfo=device)
     else:
         session = poponnx.TrainingSession(
             fnModel=modelProtoX,
@@ -160,7 +162,8 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             losses=torchWriter.losses,
             optimizer=torchWriter.optimizer,
             passes=passes,
-            userOptions=opts)
+            userOptions=opts,
+            deviceInfo=device)
 
     # get the tensor info for the anchors
     anchorArrays = session.initAnchorArrays()
@@ -182,7 +185,6 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             print("Exit status on `%s' was: %s" % (name, log))
 
     print("Setting device to IPU, and preparing it")
-    session.setDevice(device)
     session.prepareDevice()
 
     if mode == "train":

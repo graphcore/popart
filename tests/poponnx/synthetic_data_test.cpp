@@ -52,19 +52,19 @@ BOOST_AUTO_TEST_CASE(SytheticData_False) {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(tensorIds.back(), "l1LossVal", 0.1)};
 
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
+
   auto session = poponnx::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
       losses,
       optimizer,
+      cpuDevice,
       InputShapeInfo(),
       {},
       Patterns({poponnx::PreAliasPatternType::POSTNREPL}));
 
-  auto cpuDevice =
-      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-
-  session->setDevice(cpuDevice);
   session->prepareDevice();
 
   poponnx::popx::Devicex *devicex =
@@ -108,19 +108,19 @@ BOOST_AUTO_TEST_CASE(SytheticData_True) {
   SessionOptions options;
   options.ignoreData = true;
 
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
+
   auto session = poponnx::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
       losses,
       optimizer,
+      cpuDevice,
       InputShapeInfo(),
       options,
       Patterns({poponnx::PreAliasPatternType::POSTNREPL}));
 
-  auto cpuDevice =
-      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-
-  session->setDevice(cpuDevice);
   session->prepareDevice();
 
   poponnx::popx::Devicex *devicex =

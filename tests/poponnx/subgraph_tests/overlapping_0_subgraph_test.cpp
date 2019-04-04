@@ -5,7 +5,7 @@
 //
 // Note: we are testing a pure substring algorithm here,
 // sub-graph isomorphisms come later. That said, in the final
-// getMatches function in subgraph.hpp, isomorphism partitioning
+// getRinseMatches function in subgraph.hpp, isomorphism partitioning
 // is run before overlap partitioning. The reason for this is that
 // splitting non-isomorphic matches might eliminate overlaps before
 // matches are (unnecessarily) split for containing overlapping sequences
@@ -34,10 +34,10 @@ BOOST_AUTO_TEST_CASE(Overlapping0_Subgraph) {
     }
 
     // get matches, and compare to the expected matches
-    RinseMatcher<const Blip> rinseMatcher(sched);
+    algo0::RinseMatcherAlgo0<const Blip> rinseMatcher(sched);
     auto matches = rinseMatcher.getRepeatedSequences();
     std::sort(matches.begin(), matches.end());
-    matches = rinseMatcher.separateByOverlaps(matches);
+    matches = separateByOverlaps(matches);
     std::sort(matches.begin(), matches.end());
     std::sort(expected_matches.begin(), expected_matches.end());
 

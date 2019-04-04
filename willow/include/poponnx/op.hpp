@@ -118,6 +118,9 @@ public:
   Ir &getIr() { return settings.ir; }
   const Ir &getIr() const { return settings.ir; }
 
+  virtual bool isNonlinearity() const;
+  virtual bool isNorm() const;
+
   //
   // Methods used by patterns to determine if an op can be replaced by another
   // op

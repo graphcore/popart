@@ -23,15 +23,6 @@ public:
   virtual ~Session() = 0;
 
   /**
-   * Select a device type.
-   *  TODO : This function should return a new class on which you can perform
-   * operations which need the device
-   *
-   * /param deviceInfo which defines the type of device to work on
-   */
-  void setDevice(std::shared_ptr<DeviceInfo> deviceInfo);
-
-  /**
    * Prepare the network for execution.
    *
    * This will create the poplar::Graph, poplar::Engine, and setting up
@@ -86,25 +77,27 @@ public:
    * Retrieve the graph report from the poplar::Engine
    *
    * The options which were given to the constructor will influence the
-   * information in the report.
+   * information in the report.  By default a JSON format report is produced.
    *
    * This may only be called after the `prepareDevice()` call has been made.
    *
+   * \arg use_cbor Produce a CBOR formatted report
    * \return a string containing the graph (compilation) report
    */
-  std::string getGraphReport() const;
+  std::string getGraphReport(bool use_cbor = false) const;
 
   /**
    * Retrieve the execution report from the poplar::Engine
    *
    * The options which were given to the constructor will influence the
-   * information in the report.
+   * information in the report.  By default a JSON format report is produced.
    *
    * This may only be called after the `prepareDevice()` call has been made.
    *
+   * \arg use_cbor Produce a CBOR formatted report
    * \return a string containing the execution report
    */
-  std::string getExecutionReport() const;
+  std::string getExecutionReport(bool use_cbor = false) const;
 
   /**
    * Retrieve the tensor tile mapping from the poplar::Graph
@@ -141,6 +134,13 @@ public:
   void writeWeights(const IWeightsIO &weightsIo);
 
 protected:
+  /**
+   * Select a device type.
+   *
+   * /param deviceInfo which defines the type of device to work on
+   */
+  void setDevice(std::shared_ptr<DeviceInfo> deviceInfo);
+
   /**
    * abstraction of the computation, the Ir is where
    * all the compute graph optimisations, backwards pass construction,
@@ -183,6 +183,7 @@ public:
   static std::unique_ptr<InferenceSession>
   createFromOnnxModel(const std::string &model,
                       const DataFlow &dataFlow,
+                      std::shared_ptr<DeviceInfo> deviceInfo,
                       const std::vector<Loss *> &losses    = {},
                       const InputShapeInfo &inputShapeInfo = InputShapeInfo(),
                       const SessionOptions &userOptions    = SessionOptions(),
@@ -193,6 +194,7 @@ private:
                          const DataFlow &dataFlow,
                          const std::vector<Loss *> &losses,
                          const InputShapeInfo &inputShapeInfo,
+                         std::shared_ptr<DeviceInfo> deviceInfo,
                          const SessionOptions &userOptions,
                          const Patterns &patterns);
 };
@@ -223,6 +225,7 @@ public:
                       const DataFlow &dataFlow,
                       const std::vector<Loss *> &losses,
                       const Optimizer &optimizer,
+                      std::shared_ptr<DeviceInfo> deviceInfo,
                       const InputShapeInfo &inputShapeInfo = InputShapeInfo(),
                       const SessionOptions &userOptions    = SessionOptions(),
                       const Patterns &patterns             = Patterns());
@@ -252,6 +255,7 @@ private:
                          const std::vector<Loss *> &losses,
                          const Optimizer &optimizer,
                          const InputShapeInfo &inputShapeInfo,
+                         std::shared_ptr<DeviceInfo> deviceInfo,
                          const SessionOptions &userOptions,
                          const Patterns &patterns);
 };

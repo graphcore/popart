@@ -62,9 +62,8 @@ graph_transformer.convertAllFixedPointInitializersToConstants()
 # Create forward pass session
 session = poponnx.InferenceSession(
     fnModel=graph_transformer.getModelProto(),
-    dataFeed=poponnx.DataFlow(1, {output: poponnx.AnchorReturnType("ALL")}))
-
-session.setDevice(poponnx.DeviceManager().createIpuModelDevice({}))
+    dataFeed=poponnx.DataFlow(1, {output: poponnx.AnchorReturnType("ALL")}),
+    deviceInfo=poponnx.DeviceManager().createIpuModelDevice({}))
 
 session.prepareDevice()
 

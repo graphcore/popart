@@ -1,8 +1,10 @@
 #include <iterator>
 #include <poponnx/error.hpp>
+#include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/nll.hpp>
 #include <poponnx/op/softmax.hpp>
+#include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/nllx.hpp>
 #include <poponnx/popx/op/softmaxx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
@@ -38,8 +40,17 @@ void SoftmaxOpx::grow(poplar::program::Sequence &prog) const {
   const auto axis = getOp<SoftmaxOp>().getAxis();
   input           = coerceTo2D(input, axis);
 
-  auto outTensor = popnn::nonLinearity(
-      graph(), popnn::NonLinearityType::SOFTMAX, input, prog, outId(0));
+  // By default use stable softmax (prevent overflow by subtracting max
+  // input value from input tensor before computing the exponentials).
+  // Optionally override.
+  popnn::NonLinearityType nlType;
+  if (dv_p->ir().getSessionOptions().enableNonStableSoftmax) {
+    nlType = popnn::NonLinearityType::SOFTMAX;
+  } else {
+    nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
+  }
+
+  auto outTensor = popnn::nonLinearity(graph(), nlType, input, prog, outId(0));
 
   outTensor = outTensor.reshape(inInfo(SoftmaxOp::getInIndex()).shape_szt());
   setOutTensor(0, outTensor);
@@ -123,11 +134,14 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   pre_probs      = SoftmaxOpx::coerceTo2D(pre_probs, axis);
 
   // recomputing the probabilities (p in the above description)
-  auto probs = popnn::nonLinearity(graph(),
-                                   popnn::NonLinearityType::SOFTMAX,
-                                   pre_probs,
-                                   prog,
-                                   "..SoftmaxGrad(0)");
+  popnn::NonLinearityType nlType;
+  if (dv_p->ir().getSessionOptions().enableNonStableSoftmax) {
+    nlType = popnn::NonLinearityType::SOFTMAX;
+  } else {
+    nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
+  }
+  auto probs =
+      popnn::nonLinearity(graph(), nlType, pre_probs, prog, "..SoftmaxGrad(0)");
 
   // sum_j (p_j . g_j)
   // multiply probs by input gradient

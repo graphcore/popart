@@ -143,19 +143,19 @@ auto main(int argc, char **argv) -> int {
   std::vector<poponnx::Loss *> losses{
       new poponnx::L1Loss(outputs[0], "l1LossVal", 0.1f)};
 
+  auto cpuDevice =
+      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
+
   // Create the session
   auto session = poponnx::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
       losses,
       optimizer,
+      cpuDevice,
       poponnx::InputShapeInfo(),
       {},
       poponnx::Patterns({poponnx::PreAliasPatternType::PREUNIREPL}));
-
-  auto cpuDevice =
-      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
-  session->setDevice(cpuDevice);
 
   // prepare the anchors
   float rawOutputData[2] = {0, 0};

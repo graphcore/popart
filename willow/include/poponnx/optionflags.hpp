@@ -20,6 +20,15 @@ enum class DotCheck {
 
 std::string getDotCheckString(DotCheck);
 
+// If doing auto-recomputation, how should we decide which ops to recompute
+// in the backwards pass?
+enum class RecomputationType {
+  None = 0, // No ops should be recomputed
+  Standard, // Algorithm to pick checkpoint to try an minimize max liveness
+  NormOnly, // Only Norm ops (+ non-linearities, if following) are recomputed
+  N         // the number of RecomputationTypes, must appear as the final enum
+};
+
 /**
  * A structure containing user configuration options for the Session class
  */
@@ -58,16 +67,32 @@ struct SessionOptions {
   /// Controls caching of identifical sections of the graph.
   bool enableOutlining = true;
 
+  /// The incremental value that a sub-graph requires, relative to its nested
+  /// sub-graphs (if any), to be eligible for outlining. A high threshold
+  /// results in fewer sub-graphs being outlined, a negative value results in
+  /// all being outlined. The gross value of a sub-graph is the sum of its
+  /// constituent Ops' getSubgraphValue() values. To disable outlining, it is
+  /// better to set enableOutlining to false than to set this value to infinity.
+  /// The default value of 1.0f results in all high Value operations such as
+  /// convolution being cached, but standalone low Value operations such as Relu
+  /// will not be.
+  float outlineThreshold = 1.0f;
+
   /// Enable recomputation of operations in the graph in the backwards pass to
   /// reduce model size at the cost of computation cycles
-  bool enableAutoRecomputation = false;
+  RecomputationType autoRecomputation = RecomputationType::None;
+
+  /// By default, we use the stable-softmax poplar function. This input tensor
+  /// to softmax, _x_, is preprocessed by subtracting max(_x_) to each element
+  /// before computing the exponentials, ensuring numerical stability. If you
+  /// are sure the inputs to your softmax operations are small enough to not
+  /// cause overflow when computing the exponential, you can enable the
+  /// non-stable version instead for speedup
+  bool enableNonStableSoftmax = false;
 
   /// Enable placement of operations on individual IPUs by creating a 'virtual
   /// graph' for each IPU
   bool enableVirtualGraphs = false;
-
-  // The minimum number of virtual graphs required to execute the graph
-  int64_t minimumVirtualGraphCount = 1;
 
   /// Enable replication of graphs
   bool enableReplicatedGraphs = false;

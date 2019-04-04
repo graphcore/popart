@@ -107,12 +107,14 @@ def ipu_op_tester(tmpdir):
             opts = poponnx.SessionOptionsCore()
             opts.logDir = self.logging_dir
             opts.enableVirtualGraphs = True
-            opts.minimumVirtualGraphCount = 4
+
+            device = tu.get_ipu_model(numIPUs=4)
 
             if (step_type == 'infer'):
                 session = poponnx.InferenceSession(
                     fnModel=proto,
                     dataFeed=dataFlow,
+                    deviceInfo=device,
                     passes=poponnx.Patterns(self.passes),
                     userOptions=opts)
             elif (step_type == 'train'):
@@ -121,11 +123,10 @@ def ipu_op_tester(tmpdir):
                     dataFeed=dataFlow,
                     losses=losses,
                     optimizer=optimizer,
+                    deviceInfo=device,
                     passes=poponnx.Patterns(self.passes),
                     userOptions=opts)
 
-            session.setDevice(
-                tu.get_ipu_model(numIPUs=opts.minimumVirtualGraphCount))
             anchor_map = session.initAnchorArrays()
 
             session.prepareDevice()

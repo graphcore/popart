@@ -8,7 +8,11 @@
 namespace poponnx {
 
 view::Chains Tensors::getChainsFromTo(Tensor *from, Tensor *to) const {
-  auto allChainsFrom = aliasChainsFrom(from);
+  if (from == to) {
+    return view::Chains::getIdentity(from->info.shape());
+  }
+
+  auto &allChainsFrom = aliasChainsFromKey.at(from);
   if (allChainsFrom.find(to) == allChainsFrom.end()) {
     throw error("No chains {} -> {} found", from->str(), to->str());
   }

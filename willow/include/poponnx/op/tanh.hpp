@@ -14,6 +14,8 @@ public:
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
+
+  bool isNonlinearity() const override { return true; }
 };
 
 class TanhGradOp : public Op {

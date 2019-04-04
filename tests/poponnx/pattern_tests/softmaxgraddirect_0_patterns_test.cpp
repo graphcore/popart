@@ -75,12 +75,15 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
     InputShapeInfo inputInfo{};
     inputInfo.add(input2, labelInfo);
 
+    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+
     Ir ir;
     ir.prepare({modelProto,
                 inputInfo,
                 dataFlow,
                 losses,
                 &optimizer,
+                *cpuDevice,
                 opts,
                 Patterns({PreAliasPatternType::PREUNIREPL,
                           PreAliasPatternType::SOFTMAXGRADDIRECT})});

@@ -129,6 +129,7 @@ def op_tester(tmpdir):
                 session = poponnx.InferenceSession(
                     fnModel=proto,
                     dataFeed=dataFlow,
+                    deviceInfo=tu.get_poplar_cpu_device(),
                     passes=poponnx.Patterns(self.passes),
                     userOptions=self.options)
             else:
@@ -137,13 +138,9 @@ def op_tester(tmpdir):
                     dataFeed=dataFlow,
                     losses=losses,
                     optimizer=optimizer,
+                    deviceInfo=tu.get_poplar_cpu_device(),
                     passes=poponnx.Patterns(self.passes),
                     userOptions=self.options)
-
-            if self.device == "cpu":
-                session.setDevice(tu.get_poplar_cpu_device())
-            elif self.device == "ipu_model":
-                session.setDevice(tu.get_ipu_model(numIPUs=self.numIPUs))
 
             anchor_map = session.initAnchorArrays()
 

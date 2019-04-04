@@ -45,6 +45,7 @@ BOOST_AUTO_TEST_CASE(Inplace_replConcat) {
   auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
   ir.prepare({modelProto,
@@ -52,6 +53,7 @@ BOOST_AUTO_TEST_CASE(Inplace_replConcat) {
               dataFlow,
               losses,
               &optimizer,
+              *cpuDevice,
               {},
               Patterns(PatternsLevel::NONE).enableInPlace(true)});
 

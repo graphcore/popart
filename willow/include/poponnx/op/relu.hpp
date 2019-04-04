@@ -17,6 +17,8 @@ public:
   bool supportsCaching() override { return true; }
 
   std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
+
+  bool isNonlinearity() const override { return true; }
 };
 
 // TODO: unify inplace elementwise op class logic (T6801)
@@ -34,6 +36,8 @@ public:
   // "fwdRegMap" and "bwdRegMap" are still the identity
   //
   float getSubgraphValue() const final { return 0.1f; }
+
+  bool isNonlinearity() const override { return true; }
 };
 
 // takes output of ReluOp as input and not the input of ReluOp

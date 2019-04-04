@@ -30,11 +30,13 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
     }
 
     // get the final matches
-    RinseMatcher<const Blip> rinseMatcher(sched);
+    algo0::RinseMatcherAlgo0<const Blip> rinseMatcher(sched);
     auto matches = rinseMatcher.getRepeatedSequences();
-    matches      = rinseMatcher.separateByOverlaps(matches);
-    matches      = rinseMatcher.getPrioritized(matches);
-    matches      = rinseMatcher.getFinalMatches(matches, threshold);
+    matches      = separateByOverlaps(matches);
+
+    setValues(matches, sched);
+    std::sort(matches.rbegin(), matches.rend());
+    matches = algo0::getFinalMatches(matches, threshold, sched.size());
 
     // compare the final matches to those expected in this test
     std::stringstream ss;

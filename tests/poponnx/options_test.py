@@ -101,9 +101,11 @@ def test_engine_options_passed_to_engine(tmpdir):
     opts.logging = {'all': 'DEBUG'}
 
     session = poponnx.InferenceSession(
-        fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+        fnModel=proto,
+        dataFeed=dataFlow,
+        userOptions=opts,
+        deviceInfo=tu.get_poplar_cpu_device())
 
-    session.setDevice(tu.get_poplar_cpu_device())
     session.initAnchorArrays()
 
     with pytest.raises(poponnx.poplar_exception) as e_info:
@@ -136,9 +138,11 @@ def test_convolution_options(tmpdir):
     opts.logging = {'all': 'DEBUG'}
 
     session = poponnx.InferenceSession(
-        fnModel=proto, dataFeed=dataFlow, userOptions=opts)
+        fnModel=proto,
+        dataFeed=dataFlow,
+        userOptions=opts,
+        deviceInfo=tu.get_poplar_cpu_device())
 
-    session.setDevice(tu.get_poplar_cpu_device())
     anchors = session.initAnchorArrays()
 
     with pytest.raises(poponnx.poplibs_exception) as e_info:

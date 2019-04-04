@@ -35,6 +35,7 @@ void Devicex::weightsToHost() {
 
   if (useSyntheticData() == false) {
     logging::devicex::debug("Writing weights to host, ");
+    pEngine->disableExecutionProfiling();
     pEngine->run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
     logging::devicex::debug("done.");
   }
@@ -69,6 +70,7 @@ void Devicex::weightsToHost(
     logging::devicex::debug("Writing weights to host");
     // write weights from IPU to host stream memory points
 
+    pEngine->disableExecutionProfiling();
     pEngine->run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
 
     logging::devicex::debug("Writing weights to ONNX ModelProto");
@@ -276,6 +278,7 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
 void Devicex::weightsFromHost() {
   if (useSyntheticData() == false) {
     logging::devicex::debug("Writing weights from host, ");
+    pEngine->disableExecutionProfiling();
     pEngine->run(PopPrograms::ProgramIndex::WEIGHTSFROMHOST);
     logging::devicex::debug("done.");
   }
@@ -284,6 +287,7 @@ void Devicex::weightsFromHost() {
 void Devicex::optimizerFromHost() {
   if (useSyntheticData() == false) {
     logging::devicex::debug("Writing optimizer from host, ");
+    pEngine->disableExecutionProfiling();
     pEngine->run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
     logging::devicex::debug("done.");
   }
@@ -423,6 +427,7 @@ void Devicex::run(const IStepIO &stepio) {
   anchorsHostToHostStreams(stepio);
 
   logging::debug(prefix + "Running the program ");
+  pEngine->enableExecutionProfiling();
   pEngine->run(PopPrograms::ProgramIndex::PROGRAM);
 
   anchorsHostFromHostStreams(stepio);
@@ -897,7 +902,9 @@ Devicex::programFragmentIndex(Vertex *vertex) {
     throw error("Failed to determine fragment of vertex " + vertex->str() +
                 " from UNDEFINED phase. ");
   }
-  default: { throw error("Failed to determine fragment of vertex"); }
+  default: {
+    throw error("Failed to determine fragment of vertex");
+  }
   }
 }
 
@@ -983,12 +990,6 @@ void Devicex::prepare() {
     auto numIPUs     = masterGraph().getTarget().getNumIPUs();
     auto tilesPerIPU = masterGraph().getTarget().getTilesPerIPU();
 
-    if (numIPUs < ir().getSessionOptions().minimumVirtualGraphCount) {
-      throw error("minimumVirtualGraphCount is {}, but there are only {} IPUs",
-                  ir().getSessionOptions().minimumVirtualGraphCount,
-                  numIPUs);
-    }
-
     for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
       unsigned startTile = ipu * tilesPerIPU;
       unsigned endTile   = (ipu + 1) * tilesPerIPU;
@@ -1009,10 +1010,6 @@ void Devicex::prepare() {
         }
       }
     }
-  } else if (ir().getSessionOptions().minimumVirtualGraphCount > 1) {
-    throw error("minimumVirtualGraphCount is {}, but enableVirtualGraphs is {}",
-                ir().getSessionOptions().minimumVirtualGraphCount,
-                ir().getSessionOptions().enableVirtualGraphs);
   }
 
   popops::addCodelets(rootGraph());
@@ -1166,8 +1163,17 @@ void Devicex::prepare() {
 
   logging::devicex::info("Starting Engine compilation");
 
+  auto progressLogger = [](int progress, int total) {
+    if (total != 0) {
+      float percentage = std::floor(100.0f * static_cast<float>(progress) /
+                                    static_cast<float>(total));
+      logging::devicex::debug("Engine compilation {}% complete", percentage);
+    }
+  };
+
   // Enigma moves the graph into the engine and then set the graphs to 0
-  pEngine.reset(new poplar::Engine(rootGraph(), progs.progs(), engineOptions));
+  pEngine.reset(new poplar::Engine(
+      rootGraph(), progs.progs(), engineOptions, progressLogger));
   logging::devicex::info("Engine compiled");
 
   pEngine->load(popDevice);
@@ -1508,27 +1514,36 @@ std::string Devicex::getSummaryReport() const {
   return ss.str();
 }
 
-std::string Devicex::getGraphReport() const {
+std::string Devicex::getGraphReport(bool use_cbor) const {
   if (pEngine == nullptr) {
     throw error(
         "Session must have been prepared before a report can be fetched");
   }
   std::stringstream ss;
   auto report = pEngine->getGraphProfile();
-  serializeToJSON(ss, report);
+  if (use_cbor) {
+    serializeToCBOR(ss, report);
+  } else {
+    serializeToJSON(ss, report);
+  }
 
   pEngine->resetExecutionProfile();
   return ss.str();
 }
 
-std::string Devicex::getExecutionReport() const {
+std::string Devicex::getExecutionReport(bool use_cbor) const {
   if (pEngine == nullptr) {
     throw error(
         "Session must have been prepared before a report can be fetched");
   }
   std::stringstream ss;
   auto report = pEngine->getExecutionProfile();
-  serializeToJSON(ss, report);
+
+  if (use_cbor) {
+    serializeToCBOR(ss, report);
+  } else {
+    serializeToJSON(ss, report);
+  }
 
   pEngine->resetExecutionProfile();
   return ss.str();

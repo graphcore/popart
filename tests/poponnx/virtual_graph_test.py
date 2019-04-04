@@ -31,8 +31,11 @@ def test_virtual_graph():
     opts.enableVirtualGraphs = True
 
     s = poponnx.InferenceSession(
-        fnModel=proto, dataFeed=dataFlow, userOptions=opts)
-    s.setDevice(tu.get_ipu_model(numIPUs=2))
+        fnModel=proto,
+        dataFeed=dataFlow,
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(numIPUs=2))
+
     s.prepareDevice()
 
     pass
@@ -66,8 +69,11 @@ def test_virtual_graph2():
     opts.enableVirtualGraphs = True
 
     s = poponnx.InferenceSession(
-        fnModel=proto, dataFeed=dataFlow, userOptions=opts)
-    s.setDevice(tu.get_ipu_model(numIPUs=2))
+        fnModel=proto,
+        dataFeed=dataFlow,
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(numIPUs=2))
+
     s.prepareDevice()
 
 
@@ -117,8 +123,9 @@ def test_virtual_graph3():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        userOptions=opts)
-    s.setDevice(tu.get_ipu_model(numIPUs=4))
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(numIPUs=4))
+
     s.prepareDevice()
 
     anchors = s.initAnchorArrays()
@@ -185,8 +192,9 @@ def test_virtual_graph4():
         dataFeed=dataFlow,
         losses=losses,
         optimizer=optimizer,
-        userOptions=opts)
-    s.setDevice(tu.get_ipu_model(numIPUs=4))
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(numIPUs=4))
+
     s.prepareDevice()
 
     anchors = s.initAnchorArrays()
@@ -226,8 +234,7 @@ def test_virtual_graph_bad_index():
     # opts = poponnx.SessionOptionsCore()
     # opts.enableVirtualGraphs = True
     #
-    # s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts)
-    # s.setDevice(tu.get_ipu_model(numIPUs = 2))
+    # s = poponnx.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts, deviceInfo=tu.get_ipu_model(numIPUs = 2))
     # s.prepareDevice()
 
     pass
