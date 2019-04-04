@@ -902,9 +902,7 @@ Devicex::programFragmentIndex(Vertex *vertex) {
     throw error("Failed to determine fragment of vertex " + vertex->str() +
                 " from UNDEFINED phase. ");
   }
-  default: {
-    throw error("Failed to determine fragment of vertex");
-  }
+  default: { throw error("Failed to determine fragment of vertex"); }
   }
 }
 
@@ -1351,6 +1349,8 @@ PriTask Devicex::toHostTask(Tensor *tensor,
     logging::devicex::debug("Adding poplar::program::Copy to host " +
                             tensor->id);
 
+    bool rearrange_on_host = tensor->tensorType() != TensorType::Stream;
+
     if (getReplicationFactor() > 1) {
 
       // getNonReplicatedTensor is not a const method
@@ -1367,12 +1367,14 @@ PriTask Devicex::toHostTask(Tensor *tensor,
         // Copy from the each of the replicated graphs
         for (unsigned i = 0; i < getReplicationFactor(); ++i) {
           sq.add(poplar::program::Copy(nonReplicatedTensor[i],
-                                       toHostStreams.at(tensor->id)));
+                                       toHostStreams.at(tensor->id),
+                                       rearrange_on_host));
         }
       }
     } else {
       sq.add(poplar::program::Copy(tensors.get(tensor->id),
-                                   toHostStreams.at(tensor->id)));
+                                   toHostStreams.at(tensor->id),
+                                   rearrange_on_host));
     }
   };
 
