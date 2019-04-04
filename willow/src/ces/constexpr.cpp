@@ -93,8 +93,16 @@ void ConstExprUtil::makeTensorConstInit(const TensorId name,
 }
 
 bool ConstExprUtil::isComputable(Op *op, Ir *ir) {
-  auto mode   = ir->getExecutionMode();
-  auto inputs = op->input->tensors();
+  auto mode    = ir->getExecutionMode();
+  auto inputs  = op->input->tensors();
+  auto outputs = op->output->tensors();
+
+  // Op is not computable if any of the outputs are anchors
+  if (std::any_of(outputs.begin(), outputs.end(), [&ir](Tensor *t) {
+        return ir->isAnchored(t->id);
+      })) {
+    return false;
+  }
 
   if (mode == Ir::ExecutionMode::TRAINING) {
     return std::all_of(inputs.begin(), inputs.end(), [](Tensor *t) {

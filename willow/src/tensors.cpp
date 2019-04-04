@@ -19,10 +19,11 @@ view::Chains Tensors::getChainsFromTo(Tensor *from, Tensor *to) const {
   return allChainsFrom.at(to);
 }
 
-std::map<Tensor *, view::Chains> Tensors::getAliasChains(
-    const std::map<Tensor *, std::map<Tensor *, view::Chains>> &fullM,
+std::unordered_map<Tensor *, view::Chains> Tensors::getAliasChains(
+    const std::unordered_map<Tensor *,
+                             std::unordered_map<Tensor *, view::Chains>> &fullM,
     Tensor *t) const {
-  std::map<Tensor *, view::Chains> retM{};
+  std::unordered_map<Tensor *, view::Chains> retM{};
   auto found = fullM.find(t);
   if (found != fullM.end()) {
     retM = found->second;
@@ -31,11 +32,13 @@ std::map<Tensor *, view::Chains> Tensors::getAliasChains(
   return retM;
 }
 
-std::map<Tensor *, view::Chains> Tensors::aliasChainsTo(Tensor *to) const {
+std::unordered_map<Tensor *, view::Chains>
+Tensors::aliasChainsTo(Tensor *to) const {
   return getAliasChains(aliasChainsToKey, to);
 }
 
-std::map<Tensor *, view::Chains> Tensors::aliasChainsFrom(Tensor *from) const {
+std::unordered_map<Tensor *, view::Chains>
+Tensors::aliasChainsFrom(Tensor *from) const {
   return getAliasChains(aliasChainsFromKey, from);
 }
 
@@ -81,7 +84,8 @@ void Tensors::updateAliases(Op *op) {
       for (auto &inwards : allInChains) {
         Tensor *t0 = inwards.first;
         // the chains t0 -> t1
-        view::Chains inChains = inwards.second;
+        view::Chains inChains      = inwards.second;
+        auto inChainsFwdLinkSeries = inChains.series(fwdLink);
 
         // the chains t1 -> t0. There are such chains,
         // guaranteed by the existance of chains t0 -> t1
@@ -111,7 +115,7 @@ void Tensors::updateAliases(Op *op) {
           }
           // add the new Chains
           aliasChainsToKey[t3][t0] = aliasChainsToKey[t3][t0].parallel(
-              inChains.series(fwdLink).series(outChains));
+              inChainsFwdLinkSeries.series(outChains));
 
           // same logic for t3 -> t0
           if (aliasChainsToKey.find(t0) == aliasChainsToKey.end()) {

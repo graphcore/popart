@@ -1,7 +1,9 @@
 #ifndef GUARD_NEURALNET_WILLOWTENSORS_HPP
 #define GUARD_NEURALNET_WILLOWTENSORS_HPP
 
+#include <unordered_map>
 #include <vector>
+#include <poponnx/chains.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/vectorandset.hpp>
 
@@ -48,13 +50,14 @@ public:
   // returned map M will always have M[to] = "the identity chain"
   //......"from"...."chains"............................"to"
   //       ^         ^                                   ^
-  std::map<Tensor *, view::Chains> aliasChainsTo(Tensor *to) const;
+  std::unordered_map<Tensor *, view::Chains> aliasChainsTo(Tensor *to) const;
 
   // all non-empty alias Chains from "from"
   // returned map M will always have M[from] = "the identity chain"
   //......"to"......"chains".............................."from"
   //       ^         ^                                     ^
-  std::map<Tensor *, view::Chains> aliasChainsFrom(Tensor *from) const;
+  std::unordered_map<Tensor *, view::Chains>
+  aliasChainsFrom(Tensor *from) const;
 
   view::Chains getChainsFromTo(Tensor *from, Tensor *to) const;
 
@@ -62,7 +65,7 @@ private:
   // Store the Tensors of type Const
   VectorAndSet constIds;
 
-  std::map<TensorId, std::unique_ptr<Tensor>> M;
+  std::unordered_map<TensorId, std::unique_ptr<Tensor>> M;
   // adds to M, but first confirms that TensorId not already in
   void insert(TensorId, std::unique_ptr<Tensor>);
 
@@ -73,15 +76,18 @@ private:
   // all non-empty Chains
   //      "to"..............."from"...."chains"
   //       ^                  ^         ^
-  std::map<Tensor *, std::map<Tensor *, view::Chains>> aliasChainsToKey;
+  std::unordered_map<Tensor *, std::unordered_map<Tensor *, view::Chains>>
+      aliasChainsToKey;
 
   // the mirror of the above
-  std::map<Tensor *, std::map<Tensor *, view::Chains>> aliasChainsFromKey;
+  std::unordered_map<Tensor *, std::unordered_map<Tensor *, view::Chains>>
+      aliasChainsFromKey;
 
   // return M[t], but with guaranteed identity Chains from t
-  std::map<Tensor *, view::Chains>
-  getAliasChains(const std::map<Tensor *, std::map<Tensor *, view::Chains>> &M,
-                 Tensor *t) const;
+  std::unordered_map<Tensor *, view::Chains> getAliasChains(
+      const std::unordered_map<Tensor *,
+                               std::unordered_map<Tensor *, view::Chains>> &M,
+      Tensor *t) const;
 };
 
 } // namespace poponnx
