@@ -3,6 +3,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include <poponnx/chains.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/vectorandset.hpp>
 
