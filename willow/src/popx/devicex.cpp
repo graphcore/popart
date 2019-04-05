@@ -902,7 +902,9 @@ Devicex::programFragmentIndex(Vertex *vertex) {
     throw error("Failed to determine fragment of vertex " + vertex->str() +
                 " from UNDEFINED phase. ");
   }
-  default: { throw error("Failed to determine fragment of vertex"); }
+  default: {
+    throw error("Failed to determine fragment of vertex");
+  }
   }
 }
 
