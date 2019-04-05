@@ -46,14 +46,27 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
 
   auto outTensor = getInTensor(0);
 
+  // Design decision: make a scalar zero variable that we expand to create
+  // the padding used in the upsampling of the grad-op's input tensor.
+  // Do this instead of creating padding as large constant tensors upfront
+  // to save memory at the cost of additional cycles.
+  auto pad = graph().addVariable(outTensor.elementType(), {}, "subsample/pad");
+  graph().setTileMapping(pad, 0);
+  graph().setInitialValue(pad, 0);
+
   // for each dimension of the input
   for (int d = 0; d < inInfo(0).rank(); ++d) {
 
     // The out of the shape keeps changing
     std::vector<size_t> shape = outTensor.shape();
 
-    // Create a padding tensor the same dimension as the out shape
-    auto padded = dv_p->getConst(outTensor.elementType(), shape, 0);
+    auto padded = pad;
+    for (int i = 0; i < shape.size(); ++i) {
+      padded = padded.expand({0});
+    }
+    for (int i = 0; i < shape.size(); ++i) {
+      padded = padded.broadcast(shape[i], i);
+    }
 
     // Slice the out and padding so we can concatenate them
     auto sliced_padding = padded.slice(0, 1, d);
