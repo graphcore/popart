@@ -34,6 +34,7 @@
 // The transformations
 #include <poponnx/transforms/auto_virtual_graph.hpp>
 #include <poponnx/transforms/interipucopy.hpp>
+#include <poponnx/transforms/mergecopies.hpp>
 #include <poponnx/transforms/prune.hpp>
 #include <poponnx/transforms/recompute.hpp>
 #include <poponnx/transforms/virtual_graph_check.hpp>
@@ -765,6 +766,7 @@ void Ir::prepare(const IrBundle &gb) {
 
   // Add internal ops to copy tensors between ipu's as needed
   applyTransform(InterIpuCopy::id());
+  applyTransform(MergeCopies::id());
 
   updateVertices();
 

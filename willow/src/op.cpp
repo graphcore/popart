@@ -107,6 +107,12 @@ void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
   }
 }
 
+void Op::disconnectInTensor(Tensor *tensor) {
+  for (auto i : input->indicesMap().at(tensor)) {
+    disconnectInTensor(i, tensor);
+  }
+}
+
 void Op::disconnectInTensor(InIndex inIndex, Tensor *tensor) {
   tensor->consumers.decrement(this);
 

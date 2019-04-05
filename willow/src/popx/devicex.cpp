@@ -1529,7 +1529,6 @@ std::string Devicex::getGraphReport(bool use_cbor) const {
     serializeToJSON(ss, report);
   }
 
-  pEngine->resetExecutionProfile();
   return ss.str();
 }
 
