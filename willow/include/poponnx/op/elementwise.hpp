@@ -15,10 +15,29 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
-  float getSubgraphValue() const final { return 0.1f; }
+  // Making this function override and not final, as there
+  // may be a more / less expensive to compute non-linearity.
+  float getSubgraphValue() const override { return 0.1f; }
+
+  // The default for ElementWise Ops is that they can
+  // appear in sub-graphs.
+  bool supportsCaching() const override { return true; }
 };
 
-// Base class for gradients of elementwise, non linear, unary operations
+class ElementWiseInplaceUnaryOp : public ElementWiseUnaryOp {
+public:
+  ElementWiseInplaceUnaryOp(const OperatorIdentifier &_opid,
+                            const Op::Settings &settings)
+      : ElementWiseUnaryOp(_opid, settings) {}
+
+  view::Region modifies(InIndex index) const final { return uses(index); }
+  view::Region aliases(InIndex index) const final { return uses(index); }
+  // "uses" is still the full region
+  // "fwdRegMap" is still the identity
+  // "bwdRegMap" is still the identity
+};
+
+// Base class for gradients of element-wise, non-linear, unary operations
 // Non-linear elementwise ops gradients take both the input, and gradient
 // output of the corresponding forward operation as inputs.
 class ElementWiseNonLinearUnaryGradOp : public Op {

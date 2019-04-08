@@ -118,10 +118,9 @@ public:
   Ir &getIr() { return settings.ir; }
   const Ir &getIr() const { return settings.ir; }
 
-  virtual bool isNonlinearity() const;
   virtual bool isNorm() const;
+  bool isElementWiseUnary() const;
 
-  //
   // Methods used by patterns to determine if an op can be replaced by another
   // op
 
@@ -303,7 +302,7 @@ public:
   // Allow an op to exclude itself from caching. If this method returns false
   // it will mean that any possiable subgraph that this op is part of will
   // not be cached. The default is enabled
-  virtual bool supportsCaching();
+  virtual bool supportsCaching() const;
 };
 
 } // namespace poponnx

@@ -55,7 +55,7 @@ public:
   static OutIndex getOutputPassThroughIndex() { return 10; }
 
   // T7504
-  bool supportsCaching() override { return false; }
+  bool supportsCaching() const override { return false; }
 
 private:
   void createPassThroughOutput(const TensorId &new_id,

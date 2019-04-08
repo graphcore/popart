@@ -24,7 +24,7 @@ public:
 
   float getSubgraphValue() const final { return 0.1f; }
 
-  bool supportsCaching() override { return false; }
+  bool supportsCaching() const override { return false; }
 };
 } // namespace poponnx
 

@@ -12,21 +12,32 @@ class ReluGradOp;
 
 namespace popx {
 
-class ReluOpx : public ElementWiseUnaryOpx {
+class ReluComputex : public EwuComputex {
+
 public:
-  ReluOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  ReluComputex() = default;
+
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &) const final;
+
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &) const final;
+
+  static std::unique_ptr<EwuComputex> get() {
+    return std::unique_ptr<EwuComputex>(new ReluComputex);
+  }
 };
 
-// See T7053 to unify the inplace opxs (TODO)
-class ReluInplaceOpx : public Opx {
+class ReluOpx : public ElementWiseUnaryOutplaceOpx {
+public:
+  ReluOpx(Op *, Devicex *);
+};
+
+class ReluInplaceOpx : public ElementWiseUnaryInplaceOpx {
 public:
   ReluInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
-  InputCreatorType getInputCreatorType(InIndex) const final;
-  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
-                                    InIndex inIndex,
-                                    OutIndex outIndex) const final;
 };
 
 class ReluGradOpx : public Opx {

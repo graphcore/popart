@@ -6,13 +6,58 @@
 namespace poponnx {
 namespace popx {
 
+// A base class with functions for computing in-place and
+// out-of place element-wise unary operations
+class EwuComputex {
+public:
+  EwuComputex()          = default;
+  virtual ~EwuComputex() = default;
+
+  virtual poplar::Tensor outplace(poplar::program::Sequence &,
+                                  poplar::Graph &,
+                                  const poplar::Tensor &) const = 0;
+
+  virtual void inplace(poplar::program::Sequence &,
+                       poplar::Graph &,
+                       const poplar::Tensor &t) const = 0;
+
+  poplar::Tensor cloneNcopy(poplar::program::Sequence &,
+                            poplar::Graph &,
+                            const poplar::Tensor &) const;
+};
+
 // Base class for elementwise unary operations
 class ElementWiseUnaryOpx : public Opx {
 public:
   ElementWiseUnaryOpx(Op *, Devicex *);
-  InputCreatorType getInputCreatorType(InIndex index0) const override;
+  InputCreatorType getInputCreatorType(InIndex) const override;
   poplar::Tensor
-  unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const override;
+      unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const override;
+};
+
+// non-inplace
+class ElementWiseUnaryOutplaceOpx : public ElementWiseUnaryOpx {
+public:
+  ElementWiseUnaryOutplaceOpx(Op *,
+                              Devicex *,
+                              std::unique_ptr<EwuComputex> cx_);
+  void grow(poplar::program::Sequence &) const final;
+
+private:
+  std::unique_ptr<EwuComputex> cx;
+};
+
+// inplace
+class ElementWiseUnaryInplaceOpx : public ElementWiseUnaryOpx {
+public:
+  ElementWiseUnaryInplaceOpx(Op *op,
+                             Devicex *devx,
+                             std::unique_ptr<EwuComputex> cx_)
+      : ElementWiseUnaryOpx(op, devx), cx(std::move(cx_)) {}
+  void grow(poplar::program::Sequence &prog) const final;
+
+private:
+  std::unique_ptr<EwuComputex> cx;
 };
 
 // Base class for elementwise binary operations

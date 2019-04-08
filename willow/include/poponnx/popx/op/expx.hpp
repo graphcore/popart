@@ -2,30 +2,38 @@
 #define GUARD_NEURALNET_EXPX_HPP
 
 #include <poponnx/names.hpp>
-#include <poponnx/popx/opx.hpp>
+#include <poponnx/popx/op/elementwisex.hpp>
 
 namespace poponnx {
 
 namespace popx {
 
-class ExpOpx : public Opx {
+class ExpComputex : public EwuComputex {
+
 public:
-  ExpOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
-  InputCreatorType getInputCreatorType(InIndex) const final;
-  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
-                                    InIndex inIndex,
-                                    OutIndex outIndex) const final;
+  ExpComputex() = default;
+
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &) const final;
+
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &) const final;
+
+  static std::unique_ptr<EwuComputex> get() {
+    return std::unique_ptr<EwuComputex>(new ExpComputex);
+  }
 };
 
-class ExpInplaceOpx : public Opx {
+class ExpOpx : public ElementWiseUnaryOutplaceOpx {
+public:
+  ExpOpx(Op *, Devicex *);
+};
+
+class ExpInplaceOpx : public ElementWiseUnaryInplaceOpx {
 public:
   ExpInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
-  InputCreatorType getInputCreatorType(InIndex) const final;
-  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
-                                    InIndex inIndex,
-                                    OutIndex outIndex) const final;
 };
 
 } // namespace popx

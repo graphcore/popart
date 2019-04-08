@@ -46,6 +46,9 @@ else()
                 -Wno-covered-switch-default
                 # This warning seems unavoidable for non-trivial static construction.
                 -Wno-global-constructors
+                # Seems like best practise is to always return by value,
+                # c11-rvalues-and-move-semantics-confusion-return-statement
+                -Wno-return-std-move-in-c++11
             )
             
         else()

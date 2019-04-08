@@ -135,7 +135,7 @@ bool Recompute::apply(Ir &ir) const {
             // relatively cheap to recompute
             recomputeOps.push_back(op);
             prevWasNorm = true;
-          } else if (prevWasNorm && op->isNonlinearity()) {
+          } else if (prevWasNorm && op->isElementWiseUnary()) {
             // don't checkpoint nonlinearities following Norms
             recomputeOps.push_back(op);
           } else {

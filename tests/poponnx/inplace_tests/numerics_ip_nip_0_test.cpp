@@ -15,6 +15,7 @@
 #include <poponnx/session.hpp>
 #include <poponnx/tensordata.hpp>
 
+#include <chrono>
 #include <iostream>
 #include <random>
 
@@ -22,7 +23,9 @@ using namespace poponnx;
 
 // Module:      |  .           -|
 //              |- slice [1,2] -|
-//              |- slice [1,2] -|-- top half: i :slice 2*i + slice 2*i+1 -|
+//              |- slice [1,2] -|-- top half: i : sigmoid(
+//              |  .            |        slice 2*i + slice 2*i+1)  -------|
+//              |  .            |                                         |
 //              |  .            |                                         /
 // in [2^N,2] --|  .            |                                        /
 //              |  .            |                                       /
@@ -55,11 +58,8 @@ using namespace poponnx;
 //  in [2^N,2] -- Module -- Module -- Module -- ReduceSum
 
 BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
-  auto getValue = [](bool inp, int seed) {
-    int N = 2;
-    int J = 5;
-
-    // The input is of shape (4^N, 2)
+  auto getValue = [](bool inp, int seed, int N, int J) {
+    // The input is of shape (2^N, 2)
     Shape inShape{static_cast<int64_t>(std::pow(2, N)), 2};
     TensorInfo inInfo{"FLOAT", inShape};
 
@@ -81,28 +81,31 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     auto appendModule = [N, &builder, &eng, &fdis, &aiOnnx, &idis](
                             std::vector<TensorId> tensorsIn) {
       std::vector<TensorId> tensorsOut;
-      // the top half:
+      // the top half: add, sigmoid.
       for (int i = 0; i < std::pow(2, N - 1); ++i) {
         auto sum        = aiOnnx.add({tensorsIn[2 * i], tensorsIn[2 * i + 1]});
         auto sigmoidOut = aiOnnx.sigmoid({sum});
+        builder->setInplacePreferences(
+            sigmoidOut, {{"SigmoidInplace", 100.0f + fdis(eng)}});
         tensorsOut.push_back(sigmoidOut);
       }
 
-      // the bottom half:
+      // the bottom half: scale.
       for (int i = 0; i < std::pow(2, N - 1); ++i) {
-        TensorId concatId0 = tensorsIn[idis(eng) % tensorsIn.size()];
-        TensorId concatId1 = tensorsIn[idis(eng) % tensorsIn.size()];
-        auto concatOut     = aiOnnx.concat({concatId0, concatId1}, 0);
-        builder->setInplacePreferences(concatOut,
-                                       {{"ConcatInplace", 100.0f + fdis(eng)}});
-        auto scaleOut = aiOnnx.scale({concatOut}, fdis(eng));
+        TensorId id0  = tensorsIn[idis(eng) % tensorsIn.size()];
+        auto scaleOut = aiOnnx.scale({id0}, fdis(eng));
         builder->setInplacePreferences(scaleOut,
                                        {{"ScaleInplace", 100.0f + fdis(eng)}});
         tensorsOut.push_back(scaleOut);
       }
+
       int start0 = 0;
       int start1 = std::pow(2, N - 2) + 1;
       int start2 = start1 + std::pow(2, N - 2);
+
+      // for example :
+      //   N = 2 : [0, 2), [2, 3) [3, 4)
+      //   N = 3 : [0, 3), [3, 5) [5, 8)
 
       std::vector<TensorId> tensorIds0{tensorsOut.begin() + start0,
                                        tensorsOut.begin() + start1};
@@ -159,12 +162,12 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     auto dataFlow = DataFlow(1, {{out, art}});
 
     auto opts = SessionOptions();
-    // just the one .dot file will be written
     opts.dotChecks.insert(DotCheck::BWD0);
     opts.dotChecks.insert(DotCheck::FWD0);
     opts.dotChecks.insert(DotCheck::FINAL);
-    opts.dotOpNames = false;
-    opts.logDir     = "./dotfiles";
+    opts.dotOpNames      = false;
+    opts.logDir          = "./dotfiles";
+    opts.enableOutlining = false;
     boost::filesystem::create_directory(opts.logDir);
 
     auto cpuDevice =
@@ -200,15 +203,38 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     return rawOutputData;
   };
 
-  auto vFalse  = getValue(false, 1013);
-  auto vTrue   = getValue(true, 1013);
-  auto absDiff = std::abs<float>(vFalse - vTrue);
+  auto runTest = [&getValue](int seed, int N, int J) {
+    using namespace std::chrono;
 
-  logging::ir::debug(
-      "Network output wih Inplace ON : {} and OFF {}, absDiff {}",
-      vTrue,
-      vFalse,
-      absDiff);
+    // without in-placing
+    auto t0     = steady_clock::now();
+    auto vFalse = getValue(false, seed, N, J);
+    auto t1     = steady_clock::now();
+    auto dFalse = duration<double, std::milli>(t1 - t0).count();
+    std::cout << "seed=" << seed << " N=" << N << " J=" << J << " inplace=OFF "
+              << "time = " << dFalse << " [ms]" << std::endl;
 
-  BOOST_CHECK(absDiff < 1e-6);
+    // with in-placing
+    auto vTrue = getValue(true, seed, N, J);
+    auto t2    = steady_clock::now();
+    auto dTrue = duration<double, std::milli>(t2 - t1).count();
+    std::cout << "seed=" << seed << " N=" << N << " J=" << J << " inplace=ON  "
+              << "time = " << dTrue << " [ms]\n"
+              << std::endl;
+
+    // numerical difference
+    auto absDiff = std::abs<float>(vFalse - vTrue);
+    logging::ir::debug(
+        "Network output wih Inplace ON : {} and OFF {}, absDiff {}",
+        vTrue,
+        vFalse,
+        absDiff);
+
+    BOOST_CHECK(absDiff < 1e-6);
+  };
+
+  int seed = 1013;
+  int J    = 3;
+  int N    = 3;
+  runTest(seed, N, J);
 }

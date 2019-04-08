@@ -30,17 +30,9 @@ private:
   float scale_factor;
 };
 
-// TODO: unify inplace elementwise op class logic (T6801)
-class ScaleInplaceOp : public Op {
+class ScaleInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   ScaleInplaceOp(const ScaleOp &);
-  void setup() final;
-  // This in-place Op modifies its unique input at InIndex 0
-
-  view::Region modifies(InIndex index) const final { return uses(index); }
-  view::Region aliases(InIndex index) const final { return uses(index); }
-  // "uses" is still the full region
-  // "fwdRegMap" and "bwdRegMap" are still the identity
 
   // TODO T6801 : don't repeat scale_factor
   float getScaleFactor() const;

@@ -5,6 +5,25 @@
 
 namespace poponnx {
 
+std::vector<std::tuple<OperatorIdentifier, float>>
+SigmoidOp::inplacePriorityDefault() const {
+  // see T6768: choosing default inplace priorities
+  return {{Onnx::CustomOperators::SigmoidInplace, 10}};
+}
+
+std::unique_ptr<Op>
+SigmoidOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
+  if (operator_id == Onnx::CustomOperators::SigmoidInplace) {
+    return make_unique<SigmoidInplaceOp>(*this);
+  }
+  // catch remaining cases and throw an error
+  return Op::getInplaceVariant(operator_id);
+}
+
+SigmoidInplaceOp::SigmoidInplaceOp(const SigmoidOp &sigm_op)
+    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::SigmoidInplace,
+                                sigm_op.getSettings()) {}
+
 SigmoidOp::SigmoidOp(const OperatorIdentifier &_opid,
                      const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}

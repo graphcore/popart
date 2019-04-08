@@ -6,7 +6,7 @@
 namespace poponnx {
 
 TanhOp::TanhOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : Op(_opid, settings_) {}
+    : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> TanhOp::clone() const { return make_unique<TanhOp>(*this); }
 
@@ -15,8 +15,6 @@ std::vector<std::unique_ptr<Op>> TanhOp::getGradOps() {
   upops.emplace_back(make_unique<TanhGradOp>(*this));
   return upops;
 }
-
-void TanhOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 TanhGradOp::TanhGradOp(const TanhOp &fwdOp)
     : Op(Onnx::GradOperators::TanhGrad, fwdOp.getSettings()) {}

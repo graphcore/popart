@@ -4,6 +4,12 @@
 namespace poponnx {
 namespace popx {
 
+ElementWiseUnaryOutplaceOpx::ElementWiseUnaryOutplaceOpx(
+    Op *op,
+    Devicex *devx,
+    std::unique_ptr<EwuComputex> cx_)
+    : ElementWiseUnaryOpx(op, devx), cx(std::move(cx_)) {}
+
 ElementWiseUnaryOpx::ElementWiseUnaryOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {}
 
@@ -38,10 +44,41 @@ ElementWiseBinaryOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
+void ElementWiseUnaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
+  auto outTensor = getInTensor(ElementWiseUnaryOp::getInIndex());
+
+  // if all of the elements in the tensor are distinct in memory,
+  // them we can use the poplar inplace version. Otherwise, we must
+  // use a non-inplace version.  See T7110 for a possible improvement
+  if (!outTensor.isParallelWriteable()) {
+    outTensor = cx->outplace(prog, graph(), outTensor);
+  } else {
+    cx->inplace(prog, graph(), outTensor);
+  }
+  setOutTensor(ElementWiseUnaryOp::getOutIndex(), outTensor);
+}
+
+void ElementWiseUnaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
+  auto outTensor = cx->outplace(
+      prog, graph(), getInTensor(ElementWiseUnaryOp::getInIndex()));
+
+  setOutTensor(ElementWiseUnaryOp::getOutIndex(), outTensor);
+}
+
 poplar::Tensor ElementWiseBinaryOpx::unwindTensorLayout(poplar::Tensor tensor,
                                                         InIndex,
                                                         OutIndex) const {
   return tensor;
+}
+
+poplar::Tensor EwuComputex::cloneNcopy(poplar::program::Sequence &prog,
+                                       poplar::Graph &graph,
+                                       const poplar::Tensor &tensor) const {
+
+  auto outTensor = graph.clone(tensor);
+  poplar::program::Copy copyProg(tensor, outTensor);
+  prog.add(copyProg);
+  return outTensor;
 }
 
 } // namespace popx
