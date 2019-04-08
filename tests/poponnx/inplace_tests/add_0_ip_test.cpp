@@ -1,9 +1,5 @@
 #define BOOST_TEST_MODULE Add0InplaceTest
 
-// Hack to allow the test to view the private data of classes
-#define private public
-#define protected public
-
 #include <boost/test/unit_test.hpp>
 #include <inplace_util.hpp>
 #include <poponnx/op/add.hpp>

@@ -9,7 +9,13 @@
 #include <poponnx/filereader.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/ndarraywrapper.hpp>
+
+// Hack to see the internals of Session
+#define private public
+#define protected public
 #include <poponnx/session.hpp>
+#undef private
+#undef protected
 
 using namespace poponnx;
 
