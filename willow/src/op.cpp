@@ -66,11 +66,11 @@ view::RegMap Op::fwdRegMap(InIndex i) const {
 
 view::RegMap Op::bwdRegMap(InIndex i) const {
   if (!input->hasIndex(i)) {
-    throw error("invalid index in fwdRegMap");
+    throw error("invalid index in bwdRegMap");
   } else if (!output->hasIndex(0)) {
-    throw error("fwdMapReg called for op with no zero output");
+    throw error("bwdMapReg called for op with no zero output");
   } else if (inShape(i) != outShape(0)) {
-    throw error("default fwdRegMap not valid : should be specialised");
+    throw error("default bwdRegMap not valid : should be specialised");
   }
 
   return [](const view::Region &r) { return r; };

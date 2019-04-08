@@ -17,6 +17,18 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
+class AddLhsInplaceOpx : public Opx {
+public:
+  AddLhsInplaceOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
+class AddRhsInplaceOpx : public Opx {
+public:
+  AddRhsInplaceOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
 class AddArg0GradOpx : public ReduceSumOpx {
 public:
   AddArg0GradOpx(Op *, Devicex *);
