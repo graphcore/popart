@@ -4,25 +4,39 @@
 #include <poponnx/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
+#include <poputil/TileMapping.hpp>
 
 namespace poponnx {
 namespace popx {
+
+const unsigned max_tile_imbalance = 150000;
 
 static poplar::Tensor addInplace(poplar::Graph &graph,
                                  const poplar::Tensor &t_inout,
                                  const poplar::Tensor &t_in,
                                  poplar::program::Sequence &prog,
                                  const std::string debug_id) {
+  bool can_do_inplace = true;
   if (!t_inout.isParallelWriteable()) {
     logging::debug(
         "Unable to inplace add operation {}, tensor is not parallel writeable",
         debug_id);
-    return popops::map(
-        graph, popops::expr::BinaryOpType::ADD, t_inout, t_in, prog, debug_id);
-  } else {
+    can_do_inplace = false;
+  } else if (poputil::getTileImbalance(graph, t_inout) > max_tile_imbalance) {
+    logging::debug("Unable to inplace add operation {}, tensor tile imbalance "
+                   "({}) is too high",
+                   debug_id,
+                   poputil::getTileImbalance(graph, t_inout));
+    can_do_inplace = false;
+  }
+
+  if (can_do_inplace) {
     popops::mapInPlace(
         graph, popops::expr::BinaryOpType::ADD, t_inout, t_in, prog, debug_id);
     return t_inout;
+  } else {
+    return popops::map(
+        graph, popops::expr::BinaryOpType::ADD, t_inout, t_in, prog, debug_id);
   }
 }
 
