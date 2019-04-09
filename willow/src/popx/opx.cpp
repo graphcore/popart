@@ -14,8 +14,11 @@ Opx::Opx(Op *op_p_, Devicex *dv_p_) : op_p(op_p_), dv_p(dv_p_) {}
 
 Opx::~Opx() = default;
 
-poplar::Tensor Opx::createInput(int) const {
-  throw error("Opx for {} cannot create Input", op_p->opid);
+poplar::Tensor Opx::createInput(InIndex index, const std::string &name) const {
+  throw error("Opx for {} cannot create Input index:{} name:{}",
+              op_p->opid,
+              index,
+              name);
 }
 
 bool Opx::createsEquiv(int, Opx *, int) const {
@@ -116,14 +119,18 @@ const Shape &Opx::outShape(OutIndex index) const {
   return outInfo(index).shape();
 }
 
-// If the operator has been named return the name, (i.e. "my_add.23")
+// If the operator has been named return the name, (i.e. "my_add/23")
 // else return the id (i.e "23")
 std::string Opx::idStr() const {
   if (!op_p->name().empty()) {
-    return op_p->name() + std::string(".") + std::to_string(op_p->id);
+    return op_p->name() + sNameDelimiter + std::to_string(op_p->id);
   } else {
     return std::to_string(op_p->id);
   }
+}
+
+std::string Opx::debugPrefix(const std::string &prefix) const {
+  return idStr() + sNameDelimiter + prefix;
 }
 
 poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,

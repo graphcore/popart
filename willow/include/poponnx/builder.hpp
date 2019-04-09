@@ -120,9 +120,11 @@ public:
    * Add a new input tensor to the model
    *
    * \param tensorInfo The shape and type of the input tensor
+   * \param debugPrefix A string to prepend to the name of the tensor
    * \return The unique name of the input tensor
    */
-  TensorId addInputTensor(const TensorInfo &tensorInfo);
+  TensorId addInputTensor(const TensorInfo &tensorInfo,
+                          const std::string &debugPrefix = "");
 
   /**
    * Add a new named input tensor to the model
@@ -139,9 +141,11 @@ public:
    * Add a new preinitialized input tensor to the model
    *
    * \param initData The initial data of the input tensor
+   * \param debugPrefix A string to prepend to the name of the tensor
    * \return The unique name of the input tensor
    */
-  TensorId addInitializedInputTensor(const ConstVoidData &initData);
+  TensorId addInitializedInputTensor(const ConstVoidData &initData,
+                                     const std::string &debugPrefix = "");
 
   /**
    * Adds one of the outputs from a node in the graph into the list of output

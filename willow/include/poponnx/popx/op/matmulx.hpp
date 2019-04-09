@@ -17,7 +17,8 @@ public:
   MatMulOpx(Op *, Devicex *);
   ~MatMulOpx() override = default;
 
-  poplar::Tensor createInput(InIndex index) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const std::string &name) const final;
   InputCreatorType getInputCreatorType(InIndex index) const final;
   bool createsEquiv(int, Opx *, int) const final;
   std::vector<TensorId> mustExistBeforeCreate(InIndex index0) const final;

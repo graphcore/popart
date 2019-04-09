@@ -38,9 +38,10 @@ public:
   Opx(Op *, Devicex *);
   virtual ~Opx();
 
-  // create the input poplar::Tensor for input at index
+  // create the input poplar::Tensor for input at index with name
   // default : throw error (not all Opxs can createInput)
-  virtual poplar::Tensor createInput(int index) const;
+  virtual poplar::Tensor createInput(InIndex index,
+                                     const std::string &name) const;
   // default return DEADEND, i.e. unable to create input tensor, and
   // cannot use downstream opxs as candidates to create input
   // tensor
@@ -90,6 +91,7 @@ public:
   Tensor *outTensor(OutIndex) const;
   // shortcut for std::to_string(op_p->id)
   std::string idStr() const;
+  std::string debugPrefix(const std::string &prefix) const;
   // shortcut for op_p->input.tensor(int)->info
   const TensorInfo &inInfo(InIndex) const;
   // shortcut for op_p->input.tensor(int)->info.shape()

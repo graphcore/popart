@@ -53,7 +53,7 @@ def test_matmul_mismatched_inputs(op_tester):
 
     assert (
         e_info.value.args[0] ==
-        "Op(ai.onnx.MatMul:9, outputs=[MatMul_0:0]) contracting dimensions unequal: lhs 'input_0:0' [3 4], rhs 'input_1:0' [3 4]"
+        "Op(ai.onnx.MatMul:9, outputs=[MatMul:0]) contracting dimensions unequal: lhs 'input' [3 4], rhs 'input/1' [3 4]"
     )
 
 
@@ -81,7 +81,7 @@ def test_matmul_scalar_input(op_tester):
 
     assert (
         e_info.value.args[0] ==
-        "Op(ai.onnx.MatMul:9, outputs=[MatMul_0:0]) doesn't support scalar tensor input_0:0 as the lhs input"
+        "Op(ai.onnx.MatMul:9, outputs=[MatMul:0]) doesn't support scalar tensor input as the lhs input"
     )
 
 
@@ -285,7 +285,7 @@ def test_matmul_broadcasting(op_tester):
         return np.zeros(args, dtype=np.float32)
 
     for lhs, rhs in shapes:
-        print(f'Trying matmul with input shapes {lhs} and {rhs}')
+
         d1 = np.random.rand(*lhs).astype(np.float32)
         d2 = np.random.rand(*rhs).astype(np.float32)
 

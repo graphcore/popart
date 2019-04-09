@@ -44,9 +44,11 @@ void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
 
   std::stringstream fullname;
   for (const auto &n : name_scope_stack_) {
-    fullname << n << ".";
+    fullname << n << sNameDelimiter;
   }
+
   fullname << debug_name;
+
   if (!name.empty() || !name_scope_stack_.empty()) {
     node->set_name(fullname.str());
   }
@@ -67,8 +69,9 @@ TensorId BuilderImpl::getNextId(const std::string &name, OutIndex n) {
   // obtain the stack state string
   std::stringstream stack_ss;
   for (const auto &s : name_scope_stack_) {
-    stack_ss << s << '.';
+    stack_ss << s << sNameDelimiter;
   }
+
   std::string stack_str = stack_ss.str();
 
   // search for the count in the global map
@@ -76,15 +79,21 @@ TensorId BuilderImpl::getNextId(const std::string &name, OutIndex n) {
 
   // generate the unique id string
   std::stringstream id_ss;
-  id_ss << stack_str << name << '_';
+  id_ss << stack_str << name;
+
+  // Add ':n' if the index n is >= 0
+  if (n >= 0) {
+    id_ss << ':' << std::to_string(n);
+  }
+
   if (iter == tensorIdCounter.end()) {
-    id_ss << 0;
     tensorIdCounter[NameStackIndex(name, stack_str, n)] = 1;
   } else {
-    id_ss << iter->second;
+    // Add a '/x' to make unique
+    id_ss << sNameDelimiter << iter->second;
     ++(iter->second);
   }
-  id_ss << ':' << std::to_string(n);
+
   std::string id = id_ss.str();
   return id;
 }
@@ -120,9 +129,11 @@ void BuilderImpl::configure() {
   model_.mutable_graph()->set_name("BuilderGraph");
 }
 
-TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo) {
+TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
+                                     const std::string &debugPrefix) {
 
-  auto id = getNextId("input", 0);
+  std::string name = debugPrefix.empty() ? "input" : debugPrefix;
+  auto id          = getNextId(name);
   addInputTensorFromParentGraph(tensorInfo, id);
   return id;
 }
@@ -208,8 +219,13 @@ static void populateTensorProtoFromConstVoidData(const ConstVoidData &initData,
   }
 }
 
-TensorId BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData) {
-  auto id = getNextId("init_input", 0);
+TensorId
+BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData,
+                                       const std::string &debugPrefix) {
+
+  std::string name = debugPrefix.empty() ? "init_input" : debugPrefix;
+
+  auto id = getNextId(name);
 
   auto *graph = model_.mutable_graph();
   auto *input = graph->add_input();

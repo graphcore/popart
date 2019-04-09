@@ -270,7 +270,8 @@ InputCreatorType ConvOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CANCREATE;
 }
 
-poplar::Tensor ConvOpx::createInput(InIndex index) const {
+poplar::Tensor ConvOpx::createInput(InIndex index,
+                                    const std::string &name) const {
 
   auto &op = getOp<ConvOp>();
 
@@ -278,7 +279,7 @@ poplar::Tensor ConvOpx::createInput(InIndex index) const {
     poplar::Tensor input =
         poplin::createWeights(graph(),                                 // graph
                               getPoplarConvParams(op.getParameters()), // params
-                              op_p->debugName(),                       // name
+                              name,                                    // name
                               dv_p->fwdConvOptions.toOptionFlags(), // options
                               &dv_p->convCache                      // cache
         );
@@ -309,7 +310,7 @@ poplar::Tensor ConvOpx::createInput(InIndex index) const {
     return poplin::createInput(
         graph(),                                 // graph
         getPoplarConvParams(op.getParameters()), // params
-        idStr(),                                 // name
+        name,                                    // name
         dv_p->fwdConvOptions.toOptionFlags(),    // options
         &dv_p->convCache                         // cache
     );
@@ -340,14 +341,16 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
 
   poplin::ConvParams popConvParams = getPoplarConvParams(op.getParameters());
 
-  auto convWeights = poplin::createWeights(graph(),
-                                           popConvParams,
-                                           "flipedWeights",
-                                           fwdOptions.toOptionFlags(),
-                                           &dv_p->convCache);
+  auto convWeights =
+      poplin::createWeights(graph(),
+                            popConvParams,
+                            inTensor(ConvFlipWeightsOp::getInIndex())->str() +
+                                sNameDelimiter + "flipped",
+                            fwdOptions.toOptionFlags(),
+                            &dv_p->convCache);
 
   poplin::weightsTransposeChansFlipXY(
-      graph(), weights5D, convWeights, seq, idStr() + "/flip");
+      graph(), weights5D, convWeights, seq, debugPrefix("transposeXY"));
 
   // Taken the 1 off the front convWeights if it was added.
   if (weights.rank() != weights5D.rank()) {

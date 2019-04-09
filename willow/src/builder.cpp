@@ -132,8 +132,9 @@ Builder::createFromOnnxModel(const std::string &modelProtoOrFilename) {
 
 Builder::~Builder() {}
 
-TensorId Builder::addInputTensor(const TensorInfo &tensorInfo) {
-  return impl_->addInputTensor(tensorInfo);
+TensorId Builder::addInputTensor(const TensorInfo &tensorInfo,
+                                 const std::string &debugPrefix) {
+  return impl_->addInputTensor(tensorInfo, debugPrefix);
 }
 
 void Builder::addInputTensorFromParentGraph(const TensorInfo &tensorInfo,
@@ -141,8 +142,9 @@ void Builder::addInputTensorFromParentGraph(const TensorInfo &tensorInfo,
   impl_->addInputTensorFromParentGraph(tensorInfo, tensorId);
 }
 
-TensorId Builder::addInitializedInputTensor(const ConstVoidData &initData) {
-  return impl_->addInitializedInputTensor(initData);
+TensorId Builder::addInitializedInputTensor(const ConstVoidData &initData,
+                                            const std::string &debugPrefix) {
+  return impl_->addInitializedInputTensor(initData, debugPrefix);
 }
 
 void Builder::addOutputTensor(const TensorId &arg0) {

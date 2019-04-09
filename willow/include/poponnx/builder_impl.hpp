@@ -28,12 +28,14 @@ public:
 
   void configure();
 
-  TensorId addInputTensor(const TensorInfo &tensorInfo);
+  TensorId addInputTensor(const TensorInfo &tensorInfo,
+                          const std::string &debugPrefix = "");
 
   void addInputTensorFromParentGraph(const TensorInfo &tensorInfo,
                                      const TensorId &tensorId);
 
-  TensorId addInitializedInputTensor(const ConstVoidData &initData);
+  TensorId addInitializedInputTensor(const ConstVoidData &initData,
+                                     const std::string &debugPrefix = "");
 
   void addOutputTensor(const TensorId &arg0);
 
@@ -179,7 +181,7 @@ private:
 
   void addOpsetRequirement(const std::string &domain, int version);
 
-  TensorId getNextId(const std::string &name, int n);
+  TensorId getNextId(const std::string &name, int n = -1);
 
   bool isInputTensor(TensorId id) const;
 

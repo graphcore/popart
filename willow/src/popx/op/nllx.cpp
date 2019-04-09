@@ -31,8 +31,9 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
   auto label1D = label.flatten();
 
   // Tensor taking one-hot encoded output must be 2 dimensional
-  auto oneHot = graph().clone(probs2D.elementType(), probs2D, "..OneHot");
-  popops::encodeOneHot(graph(), label1D, oneHot, prog, "..Nll");
+  auto oneHot =
+      graph().clone(probs2D.elementType(), probs2D, debugPrefix("OneHot"));
+  popops::encodeOneHot(graph(), label1D, oneHot, prog, debugPrefix("Nll"));
 
   // oneHot, from a tensor which is sparse with a single 1 per row,
   //           to a tensor which is sparse with a single p per row.
@@ -41,24 +42,30 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
                      oneHot,
                      probs2D,
                      prog,
-                     "..mul");
+                     debugPrefix("Mul"));
 
   // sum rows, so that just the p corresponding to the label remains
   poplar::Tensor reduction =
       popops::reduce(graph(), oneHot, {1}, {popops::Operation::ADD}, prog);
 
   // and log it,
-  popops::mapInPlace(
-      graph(), popops::expr::UnaryOpType::LOGARITHM, reduction, prog, "..log");
+  popops::mapInPlace(graph(),
+                     popops::expr::UnaryOpType::LOGARITHM,
+                     reduction,
+                     prog,
+                     debugPrefix("Log"));
 
   if (nllloss->hasIgnoreIndex()) {
     applyMaskInPlaceForIgnoredIndex(
-        graph(), reduction, label1D, nllloss->getIgnoreIndex(), prog);
+        *this, graph(), reduction, label1D, nllloss->getIgnoreIndex(), prog);
   }
 
   // and negate it.
-  popops::mapInPlace(
-      graph(), popops::expr::UnaryOpType::NEGATE, reduction, prog, "..neg");
+  popops::mapInPlace(graph(),
+                     popops::expr::UnaryOpType::NEGATE,
+                     reduction,
+                     prog,
+                     debugPrefix("Neg"));
 
   // One loss per sample, so the output is reshaped to match label input shape
   reduction = reduction.reshape(label.shape());
@@ -66,7 +73,8 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0, reduction);
 }
 
-void NllOpx::applyMaskInPlaceForIgnoredIndex(poplar::Graph &graph,
+void NllOpx::applyMaskInPlaceForIgnoredIndex(const Opx &opx,
+                                             poplar::Graph &graph,
                                              poplar::Tensor t,
                                              poplar::Tensor labels,
                                              int ignoreIndex,
@@ -83,9 +91,9 @@ void NllOpx::applyMaskInPlaceForIgnoredIndex(poplar::Graph &graph,
                                   labels,
                                   ignoreIndexTensor,
                                   prog,
-                                  "..neq");
-  auto lossMask =
-      popops::cast(graph, lossMaskBool, t.elementType(), prog, "..cast");
+                                  opx.debugPrefix("NotEqual"));
+  auto lossMask     = popops::cast(
+      graph, lossMaskBool, t.elementType(), prog, opx.debugPrefix("Cast"));
 
   // Expand, if required, for valid broadcasting of mul
   if (t.rank() == 2) {
@@ -98,7 +106,7 @@ void NllOpx::applyMaskInPlaceForIgnoredIndex(poplar::Graph &graph,
                      t,
                      lossMask,
                      prog,
-                     "..masked");
+                     opx.debugPrefix("masked"));
 }
 
 NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -129,16 +137,20 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
                                smallConst,
                                probs2D,
                                prog,
-                               idStr());
+                               debugPrefix("Max"));
 
   // oneHot: initialised to be 1 at position "label", 0 elsewhere.
-  auto oneHot = graph().clone(probs2D.elementType(), probs2D, "..OneHot");
+  auto oneHot =
+      graph().clone(probs2D.elementType(), probs2D, debugPrefix("OneHot"));
 
-  popops::encodeOneHot(graph(), label1D, oneHot, prog, "..Nll");
+  popops::encodeOneHot(graph(), label1D, oneHot, prog, debugPrefix("Nll"));
 
   // oneHot: becomes -1 at position "label", 0 elsewhere.
-  popops::mapInPlace(
-      graph(), popops::expr::UnaryOpType::NEGATE, oneHot, prog, "..neg");
+  popops::mapInPlace(graph(),
+                     popops::expr::UnaryOpType::NEGATE,
+                     oneHot,
+                     prog,
+                     debugPrefix("Neg"));
 
   // oneHot: set to -1/p at position "label", 0 elsewhere.
   popops::mapInPlace(graph(),
@@ -146,13 +158,13 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
                      oneHot,
                      safeProbs,
                      prog,
-                     idStr());
+                     debugPrefix("Div"));
 
   // Apply mask before reduction, so that ignored class doesn't
   // contribute to the loss gradient
   if (nllloss->hasIgnoreIndex()) {
     NllOpx::applyMaskInPlaceForIgnoredIndex(
-        graph(), oneHot, label1D, nllloss->getIgnoreIndex(), prog);
+        *this, graph(), oneHot, label1D, nllloss->getIgnoreIndex(), prog);
   }
 
   // Output is reshaped to match probs input shape

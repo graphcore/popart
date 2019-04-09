@@ -50,7 +50,8 @@ void SoftmaxOpx::grow(poplar::program::Sequence &prog) const {
     nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
   }
 
-  auto outTensor = popnn::nonLinearity(graph(), nlType, input, prog, outId(0));
+  auto outTensor = popnn::nonLinearity(
+      graph(), nlType, input, prog, debugPrefix("nonLinearity"));
 
   outTensor = outTensor.reshape(inInfo(SoftmaxOp::getInIndex()).shape_szt());
   setOutTensor(0, outTensor);
@@ -91,20 +92,28 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   auto label1D = label.flatten();
 
   // 1 at position "label", 0 elsewhere.
-  auto oneHot = graph().clone(probs2D.elementType(), probs2D, "..OneHot");
-  popops::encodeOneHot(graph(), label1D, oneHot, prog, "..Nll");
+  auto oneHot =
+      graph().clone(probs2D.elementType(), probs2D, debugPrefix("OneHot"));
+  popops::encodeOneHot(graph(), label1D, oneHot, prog, debugPrefix("Nll"));
 
   // -1 at position "label", 0 elsewhere.
-  popops::mapInPlace(
-      graph(), popops::expr::UnaryOpType::NEGATE, oneHot, prog, "..neg");
+  popops::mapInPlace(graph(),
+                     popops::expr::UnaryOpType::NEGATE,
+                     oneHot,
+                     prog,
+                     debugPrefix("Neg"));
 
   // p - 1 at position "label" label, p elsewhere.
-  popops::mapInPlace(
-      graph(), popops::expr::BinaryOpType::ADD, oneHot, probs2D, prog, "..sub");
+  popops::mapInPlace(graph(),
+                     popops::expr::BinaryOpType::ADD,
+                     oneHot,
+                     probs2D,
+                     prog,
+                     debugPrefix("Sub"));
 
   if (sfmgd.nlll()->hasIgnoreIndex()) {
     NllOpx::applyMaskInPlaceForIgnoredIndex(
-        graph(), oneHot, label1D, sfmgd.nlll()->getIgnoreIndex(), prog);
+        *this, graph(), oneHot, label1D, sfmgd.nlll()->getIgnoreIndex(), prog);
   }
 
   // Output is reshaped to match probs input shape
@@ -140,8 +149,8 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
   } else {
     nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
   }
-  auto probs =
-      popnn::nonLinearity(graph(), nlType, pre_probs, prog, "..SoftmaxGrad(0)");
+  auto probs = popnn::nonLinearity(
+      graph(), nlType, pre_probs, prog, debugPrefix("nonLinearity"));
 
   // sum_j (p_j . g_j)
   // multiply probs by input gradient
@@ -150,7 +159,7 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
                         probs,
                         d_probs,
                         prog,
-                        "..SoftmaxGrad(1)");
+                        debugPrefix("Mul"));
 
   // reduce along all dimensions except 0 (0 is the sample index)
   std::vector<size_t> redDims(probs.rank() - 1);
@@ -158,23 +167,27 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
 
   std::vector<size_t> upRanked(probs.rank(), 1);
   upRanked[0] = probs.dim(0);
-  auto sum_pg =
-      popops::reduce(graph(), pg, redDims, {popops::Operation::ADD}, prog)
-          .reshape(upRanked);
+  auto sum_pg = popops::reduce(graph(),
+                               pg,
+                               redDims,
+                               {popops::Operation::ADD},
+                               prog,
+                               debugPrefix("Reduce"))
+                    .reshape(upRanked);
 
   auto g_minus_sum_pg = popops::map(graph(),
                                     popops::expr::BinaryOpType::SUBTRACT,
                                     d_probs,
                                     sum_pg,
                                     prog,
-                                    "..SoftmaxGrad(2)");
+                                    debugPrefix("Sub"));
 
   auto dv = popops::map(graph(),
                         popops::expr::BinaryOpType::MULTIPLY,
                         probs,
                         g_minus_sum_pg,
                         prog,
-                        "..SoftmaxGrad(3)");
+                        debugPrefix("Mul"));
 
   dv = dv.reshape(inInfo(SoftmaxGradOp::getActsInIndex()).shape_szt());
   setOutTensor(0, dv);

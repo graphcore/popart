@@ -116,7 +116,7 @@ InputCreatorType LSTMOpx::getInputCreatorType(InIndex index) const {
   }
 }
 
-poplar::Tensor LSTMOpx::createInput(InIndex index) const {
+poplar::Tensor LSTMOpx::createInput(InIndex index, const std::string &) const {
   createdInputs.insert(index);
 
   if (index == LSTMOp::getInputInIndex()) {
@@ -256,7 +256,7 @@ void LSTMOpx::prepareWeights(poplar::program::Sequence &prog) const {
 
 poplar::Tensor LSTMOpx::getInput(poplar::program::Sequence &prog) const {
   if (!inputCreated(LSTMOp::getInputInIndex())) {
-    auto input     = createInput(LSTMOp::getInputInIndex());
+    auto input     = createInput(LSTMOp::getInputInIndex(), "input");
     auto raw_input = getInTensor(LSTMOp::getInputInIndex());
     prog.add(poplar::program::Copy(raw_input, input));
     return input;
@@ -281,12 +281,14 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
 
   // Check the inputs have been created
   if (hasInitC && !inputCreated(LSTMOp::getInitialCInIndex())) {
-    prog.add(poplar::program::Copy(getInTensor(LSTMOp::getInitialCInIndex()),
-                                   createInput(LSTMOp::getInitialCInIndex())));
+    prog.add(poplar::program::Copy(
+        getInTensor(LSTMOp::getInitialCInIndex()),
+        createInput(LSTMOp::getInitialCInIndex(), "initC")));
   }
   if (hasInitH && !inputCreated(LSTMOp::getInitialHInIndex())) {
-    prog.add(poplar::program::Copy(getInTensor(LSTMOp::getInitialHInIndex()),
-                                   createInput(LSTMOp::getInitialHInIndex())));
+    prog.add(poplar::program::Copy(
+        getInTensor(LSTMOp::getInitialHInIndex()),
+        createInput(LSTMOp::getInitialHInIndex(), "initH")));
   }
 }
 
