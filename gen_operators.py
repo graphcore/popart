@@ -167,7 +167,7 @@ class Attribute:
         elif self.type == onnx.defs.OpSchema.AttrType.STRINGS:
             return 'const std::vector<std::string>&'
         elif self.type == onnx.defs.OpSchema.AttrType.GRAPH:
-            return 'int'
+            return 'const onnx::GraphProto &'
         elif self.type == onnx.defs.OpSchema.AttrType.TENSOR:
             return 'const ConstVoidData& '
         else:
@@ -230,7 +230,7 @@ class Attribute:
             elif self.type == onnx.defs.OpSchema.AttrType.STRINGS:
                 return 'std::vector<std::string>()'
             elif self.type == onnx.defs.OpSchema.AttrType.GRAPH:
-                return '0'
+                return 'onnx::GraphProto()'
             elif self.type == onnx.defs.OpSchema.AttrType.TENSOR:
                 return '0'
             else:
@@ -252,7 +252,7 @@ class Attribute:
             elif self.type == onnx.defs.OpSchema.AttrType.STRINGS:
                 return 'std::vector<std::string>()'
             elif self.type == onnx.defs.OpSchema.AttrType.GRAPH:
-                return '0'
+                return 'onnx::GraphProto()'
             elif self.type == onnx.defs.OpSchema.AttrType.TENSOR:
                 return '0'
             else:

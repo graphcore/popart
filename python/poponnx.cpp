@@ -22,6 +22,8 @@
 #include <poputil/exceptions.hpp>
 #include <stdexcept>
 
+#include <onnx/onnx_pb.h>
+
 namespace py = pybind11;
 using namespace poponnx;
 
@@ -544,6 +546,10 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def(py::init(&Builder::createFromOnnxModel),
            py::arg("modelProtoOrFilename"))
       .def("addInputTensor", &Builder::addInputTensor, py::arg("tensorInfo"))
+      .def("addInputTensorFromParentGraph",
+           &Builder::addInputTensorFromParentGraph,
+           py::arg("tensorInfo"),
+           py::arg("tensorId"))
       .def(
           "addInitializedInputTensor",
           [](Builder &builder, py::array array) {
@@ -705,6 +711,9 @@ PYBIND11_MODULE(poponnx_core, m) {
            static_cast<bool (Builder::*)(const TensorId &)>(
                &Builder::getRecomputeOutputInBackwardPass),
            py::arg("nodeOutputName"))
+
+      .def("resetTensorIdCounter", &Builder::resetTensorIdCounter)
+
       .def("getRecomputeOutputInBackwardPass",
            static_cast<bool (Builder::*)(const std::set<TensorId> &)>(
                &Builder::getRecomputeOutputInBackwardPass),

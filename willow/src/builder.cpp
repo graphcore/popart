@@ -136,6 +136,11 @@ TensorId Builder::addInputTensor(const TensorInfo &tensorInfo) {
   return impl_->addInputTensor(tensorInfo);
 }
 
+void Builder::addInputTensorFromParentGraph(const TensorInfo &tensorInfo,
+                                            const TensorId &tensorId) {
+  impl_->addInputTensorFromParentGraph(tensorInfo, tensorId);
+}
+
 TensorId Builder::addInitializedInputTensor(const ConstVoidData &initData) {
   return impl_->addInitializedInputTensor(initData);
 }
@@ -333,6 +338,8 @@ void Builder::clearAttribute(const std::string &attribute) {
 void Builder::pushNameScope(const std::string &name) {
   impl_->pushNameScope(name);
 }
+
+void Builder::resetTensorIdCounter() { impl_->resetTensorIdCounter(); }
 
 void Builder::popNameScope() { impl_->popNameScope(); }
 

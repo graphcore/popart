@@ -125,6 +125,17 @@ public:
   TensorId addInputTensor(const TensorInfo &tensorInfo);
 
   /**
+   * Add a new named input tensor to the model
+   *
+   * \param tensorInfo The shape and type of the input tensor
+   * \param tensorId The identifier string of the input tensor. This identifier
+   * must already exist in the parent GraphProto's name scope and must appear
+   * topologically before this sub-graph.
+   */
+  void addInputTensorFromParentGraph(const TensorInfo &tensorInfo,
+                                     const TensorId &tensorId);
+
+  /**
    * Add a new preinitialized input tensor to the model
    *
    * \param initData The initial data of the input tensor
@@ -612,6 +623,11 @@ public:
    */
   void popNameScope();
 
+  /**
+   * Reset the static counter of generated TensorIds
+   */
+  void resetTensorIdCounter();
+
 private:
   void configure();
   void configure(const std::string &modelProtoOrFilename);
@@ -624,12 +640,12 @@ private:
    */
   void loadModelProto(const std::string &modelProtoOrFilename);
 
-  std::unique_ptr<BuilderImpl> impl_;
-
   void verifyWindowParameters(TensorId input,
                               const std::vector<int64_t> strides,
                               const std::vector<int64_t> padding,
                               const std::vector<int64_t> dilation = {});
+
+  std::unique_ptr<BuilderImpl> impl_;
 };
 
 } // namespace poponnx

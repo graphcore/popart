@@ -24,11 +24,15 @@ namespace poponnx {
  */
 class BuilderImpl {
 public:
-  BuilderImpl();
+  BuilderImpl() = default;
 
   void configure();
 
   TensorId addInputTensor(const TensorInfo &tensorInfo);
+
+  void addInputTensorFromParentGraph(const TensorInfo &tensorInfo,
+                                     const TensorId &tensorId);
+
   TensorId addInitializedInputTensor(const ConstVoidData &initData);
 
   void addOutputTensor(const TensorId &arg0);
@@ -168,6 +172,7 @@ public:
 
   void pushNameScope(const std::string &name);
   void popNameScope();
+  void resetTensorIdCounter();
 
 private:
   void finalizeOp(onnx::NodeProto *node, const std::string &name);
@@ -218,9 +223,16 @@ private:
                         const boost::any &attributeValue,
                         onnx::NodeProto &node);
 
-  std::set<std::string> tensor_ids_;
-
   std::vector<std::string> name_scope_stack_;
+
+  // Global counter of TensorIds
+  // generated with same
+  //  1) name,
+  //  2) name_scope_stack_ state, and
+  //  3) OutIndex (or 0 if an input tensor to the graph).
+  //  ..............................1)...........2)...........3)
+  using NameStackIndex = std::tuple<std::string, std::string, OutIndex>;
+  static std::map<NameStackIndex, int> tensorIdCounter;
 
   onnx::ModelProto model_;
 
