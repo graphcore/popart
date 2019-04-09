@@ -26,21 +26,29 @@ static void printOps(const std::vector<Op *> &ops, std::string indent = "") {
 
     std::stringstream inputss;
     int j = 0;
-    for (auto &in : o->input->tensors()) {
+    for (auto &in : o->input->tensorMap()) {
       if (j++ > 0) {
         inputss << ", ";
       }
 
-      inputss << in->str();
+      inputss << in.first << ":";
+
+      // If this is input is modified by the op then identify it with '&'
+      if (o->aliases(in.first).isEmpty() == false ||
+          o->modifies(in.first).isEmpty() == false) {
+        inputss << "&";
+      }
+
+      inputss << in.second->str();
     }
     std::stringstream outputss;
     j = 0;
-    for (auto &out : o->output->tensors()) {
+    for (auto &out : o->output->tensorMap()) {
       if (j++ > 0) {
         outputss << ", ";
       }
 
-      outputss << out->str();
+      outputss << out.first << ":" << out.second->str();
     }
 
     logging::devicex::debug("{} {} : {} k:{} i:{} [{}] o:{} [{}]",
