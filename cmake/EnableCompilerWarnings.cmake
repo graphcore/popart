@@ -46,10 +46,9 @@ else()
                 -Wno-covered-switch-default
                 # This warning seems unavoidable for non-trivial static construction.
                 -Wno-global-constructors
-                # Seems like best practise is to always return by value,
-                # c11-rvalues-and-move-semantics-confusion-return-statement
-                -Wno-return-std-move-in-c++11
             )
+
+
             
         else()
             list(APPEND CMAKE_COMPILER_WARNINGS
@@ -57,6 +56,15 @@ else()
                 -Wno-deprecated-declarations
             )
         endif()
+
+        if (CMAKE_${COMPILER}_COMPILER_ID MATCHES "AppleClang")
+            list(APPEND CMAKE_COMPILER_WARNINGS 
+                # Seems like best practise is to always return by value,
+                # c11-rvalues-and-move-semantics-confusion-return-statement
+                -Wno-return-std-move-in-c++11
+              )
+        endif()
+            
         add_compile_options(${CMAKE_COMPILER_WARNINGS})
     endforeach()
 endif ()
