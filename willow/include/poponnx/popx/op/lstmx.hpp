@@ -17,7 +17,8 @@ public:
   LSTMOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
-  poplar::Tensor createInput(InIndex index) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const std::string &name) const final;
   std::vector<TensorId> mustExistBeforeCreate(InIndex) const;
 
   static popnn::lstm::LstmParams createLSTMParams(const LSTMOp &);

@@ -711,8 +711,8 @@ AiOnnxOpset6::identity(const std::vector<TensorId>& args,
 std::vector<TensorId>
 AiOnnxOpset6::logical_if(const std::vector<TensorId>& args,
                          unsigned num_outputs,
-                         int else_branch,
-                         int then_branch,
+                         const onnx::GraphProto & else_branch,
+                         const onnx::GraphProto & then_branch,
                          const std::string& name) {
   std::map<std::string, boost::any> attributes;
   attributes["else_branch"] = else_branch;
@@ -892,7 +892,7 @@ AiOnnxOpset6::logsoftmax(const std::vector<TensorId>& args,
 std::vector<TensorId>
 AiOnnxOpset6::loop(const std::vector<TensorId>& args,
                    unsigned num_outputs,
-                   int body,
+                   const onnx::GraphProto & body,
                    const std::string& name) {
   std::map<std::string, boost::any> attributes;
   attributes["body"] = body;
@@ -2427,7 +2427,7 @@ AiOnnxOpset8::min(const std::vector<TensorId>& args,
 std::vector<TensorId>
 AiOnnxOpset8::scan(const std::vector<TensorId>& args,
                    unsigned num_outputs,
-                   int body,
+                   const onnx::GraphProto & body,
                    int64_t num_scan_inputs,
                    const std::vector<int64_t>& directions,
                    const std::string& name) {
@@ -2753,7 +2753,7 @@ AiOnnxOpset9::prelu(const std::vector<TensorId>& args,
 std::vector<TensorId>
 AiOnnxOpset9::scan(const std::vector<TensorId>& args,
                    unsigned num_outputs,
-                   int body,
+                   const onnx::GraphProto & body,
                    int64_t num_scan_inputs,
                    const std::vector<int64_t>& scan_input_axes,
                    const std::vector<int64_t>& scan_input_directions,

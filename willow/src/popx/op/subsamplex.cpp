@@ -65,7 +65,7 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
       padded = padded.expand({0});
     }
     for (int i = 0; i < shape.size(); ++i) {
-      padded = padded.broadcast(shape[i], i);
+      padded = padded.broadcast(static_cast<unsigned>(shape[i]), i);
     }
 
     // Slice the out and padding so we can concatenate them

@@ -18,7 +18,8 @@ namespace popx {
 class ConvOpx : public Opx {
 public:
   ConvOpx(Op *, Devicex *);
-  poplar::Tensor createInput(InIndex index) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const std::string &name) const final;
   InputCreatorType getInputCreatorType(InIndex) const final;
   bool createsEquiv(int, Opx *, int) const final;
   std::vector<TensorId> mustExistBeforeCreate(InIndex index0) const final;

@@ -1,39 +1,29 @@
 #ifndef GUARD_NEURALNET_EXP_HPP
 #define GUARD_NEURALNET_EXP_HPP
 
-#include <poponnx/op.hpp>
+#include <poponnx/op/elementwise.hpp>
 
 namespace poponnx {
 
-class ExpOp : public Op {
+class ExpOp : public ElementWiseUnaryOp {
 public:
-  ExpOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
+  ExpOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
-  void setup() final;
-
-  static InIndex getInIndex() { return 0; }
-  static OutIndex getOutIndex() { return 0; }
-
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
-
   std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
-
-  float getSubgraphValue() const final { return 0.1f; }
 };
 
-// TODO unify/compress elementwise op inplace classes (see T6801)
-class ExpInplaceOp : public Op {
+class ExpInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   ExpInplaceOp(const ExpOp &);
-  void setup() final;
-  view::Region modifies(InIndex index) const final { return uses(index); }
-  view::Region aliases(InIndex index) const final { return uses(index); }
-
-  float getSubgraphValue() const final { return 0.1f; }
 };
 
+// Note that ExpGradOp does NOT
+// follow the pattern of ElementWiseNonLinearUnaryGradOp
+// because it takes the output of Exp as an input, and does
+// not take the input of Exp as an input.
 class ExpGradOp : public Op {
 public:
   ExpGradOp(const ExpOp &fwdOp);
@@ -44,6 +34,8 @@ public:
   void setup() final;
 
   static InIndex getGradInIndex() { return 0; }
+
+  // The input index to this Op of the output of the Exp
   static InIndex getFwdOutInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 

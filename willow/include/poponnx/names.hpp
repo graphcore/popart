@@ -100,6 +100,9 @@ static constexpr const char *sVirtualGraphAttribute = "__ipu_number";
 static constexpr const char *sInplaceOpNames        = "__inplace_op_names";
 static constexpr const char *sInplaceOpPriorities   = "__inplace_op_priorities";
 
+// The deliminator used in poponnx tensor names
+static constexpr const char *sNameDelimiter = "/";
+
 } // namespace poponnx
 
 #endif

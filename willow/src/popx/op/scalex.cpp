@@ -8,75 +8,67 @@
 namespace poponnx {
 namespace popx {
 
-ScaleOpx::ScaleOpx(Op *op, Devicex *devicex)
-    : ElementWiseUnaryOpx(op, devicex) {
-  verifyOp<ScaleOp>(op);
-}
-
-void ScaleOpx::grow(poplar::program::Sequence &prog) const {
-  auto scale_op     = getOp<ScaleOp>();
-  auto scale_factor = static_cast<double>(scale_op.getScaleFactor());
-  auto scale_factor_const =
-      dv_p->getConst(popType(op_p->inInfo(0)), {1}, scale_factor);
-
-  setOutTensor(0,
-               popops::map(graph(),
-                           popops::expr::BinaryOpType::MULTIPLY,
-                           getInTensor(0),
-                           scale_factor_const,
-                           prog,
-                           idStr()));
-}
-
-ScaleGradOpx::ScaleGradOpx(Op *op, Devicex *devicex) : ScaleOpx(op, devicex) {
-  verifyOp<ScaleGradOp>(op, Onnx::GradOperators::ScaleGrad);
-}
-
-void ScaleInplaceOpx::grow(poplar::program::Sequence &prog) const {
-
-  auto scale_inplace_op = getOp<ScaleInplaceOp>();
-  auto scale_factor = static_cast<double>(scale_inplace_op.getScaleFactor());
-  auto scale_factor_const =
-      dv_p->getConst(popType(op_p->inInfo(0)), {1}, scale_factor);
-
-  auto t0 = getInTensor(0);
-
-  // if all of the elements in the tensor are distinct in memory,
-  // them we can use the poplar inplace version. Otherwise, we must
-  // use a non-inplace version.  See T7110 for a possible improvement
-  if (t0.isParallelWriteable()) {
-    popops::mapInPlace(graph(),
-                       popops::expr::BinaryOpType::MULTIPLY,
-                       getInTensor(0),
-                       scale_factor_const,
-                       prog,
-                       idStr());
-    setOutTensor(0, getInTensor(0));
-  }
-
-  else {
-    setOutTensor(0,
-                 popops::map(graph(),
-                             popops::expr::BinaryOpType::MULTIPLY,
-                             scale_factor_const,
-                             getInTensor(0),
-                             prog,
-                             idStr()));
-  }
-}
-
-InputCreatorType ScaleInplaceOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANUNWIND;
-}
-
-poplar::Tensor ScaleInplaceOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                   InIndex,
-                                                   OutIndex) const {
+poplar::Tensor ScaleComputex::getScaleTensor(const poplar::Type &type,
+                                             poplar::Graph &graph) const {
+  auto tensor = graph.addConstant(type, {1}, scale_factor);
+  // graph.setTileMapping(tensor, 0);
   return tensor;
 }
 
-ScaleInplaceOpx::ScaleInplaceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<ScaleInplaceOp>(op, Onnx::CustomOperators::ScaleInplace);
+poplar::Tensor ScaleComputex::outplace(poplar::program::Sequence &prog,
+                                       poplar::Graph &graph,
+                                       const poplar::Tensor &tensor) const {
+
+  return popops::map(graph,
+                     popops::expr::BinaryOpType::MULTIPLY,
+                     tensor,
+                     getScaleTensor(tensor.elementType(), graph),
+                     prog,
+                     "");
+}
+
+float ScaleComputex::getFromScaleOp(Op *op) {
+  auto scaleOp = dynamic_cast<ScaleOp *>(op);
+  if (scaleOp == nullptr) {
+    throw error("Not a valid ScaleOp : {}", op->str());
+  }
+  return scaleOp->getScaleFactor();
+}
+
+float ScaleComputex::getFromScaleInplaceOp(Op *op) {
+  auto scaleInOp = dynamic_cast<ScaleInplaceOp *>(op);
+  if (scaleInOp == nullptr) {
+    throw error("Not a valid ScaleOp : {}", op->str());
+  }
+  return scaleInOp->getScaleFactor();
+}
+
+void ScaleComputex::inplace(poplar::program::Sequence &prog,
+                            poplar::Graph &graph,
+                            const poplar::Tensor &tensor) const {
+
+  popops::mapInPlace(graph,
+                     popops::expr::BinaryOpType::MULTIPLY,
+                     tensor,
+                     getScaleTensor(tensor.elementType(), graph),
+                     prog,
+                     "");
+}
+
+ScaleOpx::ScaleOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryOutplaceOpx(
+          op,
+          devicex,
+          ScaleComputex::get(ScaleComputex::getFromScaleOp(op))) {}
+
+ScaleInplaceOpx::ScaleInplaceOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryInplaceOpx(
+          op,
+          devicex,
+          ScaleComputex::get(ScaleComputex::getFromScaleInplaceOp(op))) {}
+
+ScaleGradOpx::ScaleGradOpx(Op *op, Devicex *devicex) : ScaleOpx(op, devicex) {
+  verifyOp<ScaleGradOp>(op, Onnx::GradOperators::ScaleGrad);
 }
 
 namespace {

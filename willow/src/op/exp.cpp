@@ -21,15 +21,11 @@ ExpOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 }
 
 ExpInplaceOp::ExpInplaceOp(const ExpOp &exp_op)
-    : Op(Onnx::CustomOperators::ExpInplace, exp_op.getSettings()) {}
-
-void ExpInplaceOp::setup() {
-  // no output, nothing to setup
-  outInfo(ExpOp::getOutIndex()) = inInfo(ExpOp::getInIndex());
-}
+    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::ExpInplace,
+                                exp_op.getSettings()) {}
 
 ExpOp::ExpOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : Op(_opid, settings_) {}
+    : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> ExpOp::clone() const { return make_unique<ExpOp>(*this); }
 
@@ -38,8 +34,6 @@ std::vector<std::unique_ptr<Op>> ExpOp::getGradOps() {
   upops.emplace_back(make_unique<ExpGradOp>(*this));
   return upops;
 }
-
-void ExpOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 ExpGradOp::ExpGradOp(const ExpOp &fwdOp)
     : Op(Onnx::GradOperators::ExpGrad, fwdOp.getSettings()) {}

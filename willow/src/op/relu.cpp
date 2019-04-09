@@ -23,12 +23,8 @@ ReluOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 }
 
 ReluInplaceOp::ReluInplaceOp(const ReluOp &relu_op)
-    : Op(Onnx::CustomOperators::ReluInplace, relu_op.getSettings()) {}
-
-void ReluInplaceOp::setup() {
-  // no output, nothing to setup
-  outInfo(ReluOp::getOutIndex()) = inInfo(ReluOp::getInIndex());
-}
+    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::ReluInplace,
+                                relu_op.getSettings()) {}
 
 std::unique_ptr<Op> ReluOp::clone() const { return make_unique<ReluOp>(*this); }
 

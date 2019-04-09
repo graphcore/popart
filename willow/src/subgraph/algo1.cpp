@@ -21,25 +21,24 @@ void Algo1Base::emplace(Match match) {
   }
 
   // Check:
-  // Is there a currently enqueued Match which is
-  // 1) same subsequence
-  // 2) contains all of this Match's starts.
-
+  // Is there a currently enqueued Match which is has the same key (length +
+  // first 5 chars) and contains all of this Match's starts.
   auto currentEnqueueKey = getCurrentEnqueueKey(match.starts[0], match.length);
   if (isDominatingEnqueued(currentEnqueueKey, match.starts)) {
     return;
   }
 
+  // Check:
+  // Is this Match subsumed by an accepted Match
   for (auto &acc : accepted) {
     if (acc.subsumes(match)) {
-      // subsumed by an accepted match
       return;
     }
   }
 
+  // Checks passed, will enqueue this Match
   matchQueue.emplace(match);
   everEnqueued.emplace(match);
-
   auto found = currentlyEnqueued.find(currentEnqueueKey);
   if (found == currentlyEnqueued.end()) {
     currentlyEnqueued[currentEnqueueKey] = {match.starts};
@@ -87,7 +86,7 @@ std::vector<Match> Algo1Base::getPreThresholded() {
 
   while (!matchQueue.empty()) {
     auto match = matchQueue.top();
-    // remove match from queue
+    // remove Match from queue
     matchQueue.pop();
 
     auto currentEnqueueKey =
@@ -98,7 +97,7 @@ std::vector<Match> Algo1Base::getPreThresholded() {
       currentlyEnqueued.erase(currentEnqueueKey);
     }
 
-    // Check if it is a valid addition to accepted,
+    // Check if this Match is a valid addition to accepted,
     // generating smaller Matches where appropriate
     // if not a valid addition.
     process(match);
@@ -301,6 +300,8 @@ bool Algo1Base::isDominatingEnqueued(const CurrentEnqueueKey &key,
 bool Algo1Base::noOverlapping(const Match &match) {
 
   // If overlapping, try emplacing smaller sub-Matches.
+
+  // all distances between overlapping Matches:
   std::set<int> interStartDistances;
   for (int i = 1; i < match.starts.size(); ++i) {
     for (int j = i - 1; j >= 0; --j) {
@@ -317,13 +318,12 @@ bool Algo1Base::noOverlapping(const Match &match) {
     return true;
   }
 
-  // We will be creating non-overlapping Matches for each of the lengths
-  // in interStartDistances. But first, we check for an early exit:
-  // Is there an enqueued Match which is not-shorter than
-  // maxInterStartDistance, and contains all the starts of this Match?
-
   int maxInterStartDistance = *interStartDistances.rbegin();
 
+  // We will be creating non-overlapping Matches for each of the lengths
+  // in interStartDistances. But first, we check for an early exit option:
+  // Is there an enqueued Match which is not-shorter than
+  // maxInterStartDistance, and contains all the starts of this Match?
   auto cekey = getCurrentEnqueueKey(match.starts[0], maxInterStartDistance);
 
   // Is an early exit
@@ -335,8 +335,11 @@ bool Algo1Base::noOverlapping(const Match &match) {
   else {
   }
 
-  // Irrespective of the early exit clause, process this case:
-  interStartDistances.emplace(match.length);
+  // Irrespective of the early exit clause, process the case
+  // of retaining the full match length
+  if (match.starts.back() - match.starts[0] >= match.length) {
+    interStartDistances.emplace(match.length);
+  }
 
   // Of all the accepted matches whose intervals contain
   // all of the starts in match, which one has
@@ -350,6 +353,7 @@ bool Algo1Base::noOverlapping(const Match &match) {
       best_accepted = acc;
     }
   }
+
   // Before emplacing a new Match below, we will check that
   // it contains more than 2X - 1 starts than this:
   int containment_factor = static_cast<int>(best_accepted.starts.size());
@@ -364,60 +368,98 @@ bool Algo1Base::noOverlapping(const Match &match) {
 
   for (auto sub_length : interStartDistances) {
 
-    std::set<Match> sub_matches;
+    // for each firstSetter, what do the matches
+    // (up to index nFirstSetters) look like? We use
+    // a std::set, to remove duplicates
+    std::set<std::vector<Match>> initial_locals;
 
-    std::vector<Start> otherStarts =
-        std::vector<int>(match.starts.begin() + 1, match.starts.end());
-
+    std::vector<Start> initialOtherStarts = std::vector<int>(
+        match.starts.begin() + 1, match.starts.begin() + nFirstSetters);
     for (int firstSetter = 0; firstSetter < nFirstSetters; ++firstSetter) {
       if (firstSetter > 0) {
-        otherStarts[firstSetter - 1] = match.starts[firstSetter - 1];
-        otherStarts[firstSetter]     = match.starts[firstSetter + 1];
+        initialOtherStarts[firstSetter - 1] = match.starts[firstSetter - 1];
+        initialOtherStarts[firstSetter]     = match.starts[firstSetter + 1];
       }
-
       std::vector<Match> local = {{{match.starts[firstSetter]}, sub_length}};
-
-      for (auto &s : otherStarts) {
-        bool matchFound = false;
-        for (auto &m : local) {
-          bool withinDistance = false;
-          for (auto s0 : m.starts) {
-            if (std::abs(s - s0) < sub_length) {
-              withinDistance = true;
-              // break from loop over m.starts
-              break;
-            }
-          }
-          if (!withinDistance) {
-            matchFound = true;
-            m.starts.push_back(s);
-            // break from loop over local
-            break;
-          }
-        }
-        if (matchFound == false) {
-          local.push_back({{s}, sub_length});
-        }
-      }
-
-      for (auto &m : local) {
-        if (m.starts.size() > 1) {
-          sub_matches.emplace(m);
-        }
-      }
+      completeLocalUnsorted(local, initialOtherStarts, sub_length);
+      initial_locals.emplace(local);
     }
 
-    for (auto m : sub_matches) {
-      if (m.starts.size() >= 2 * containment_factor) {
-        std::sort(m.starts.begin(), m.starts.end());
-        emplace(m);
-      } else {
-        // not emplacing, as it is dominated by best_accepted
+    std::vector<int> otherStarts = std::vector<int>(
+        match.starts.begin() + nFirstSetters, match.starts.end());
+
+    for (auto &match_set : initial_locals) {
+      std::vector<Match> sub_matches;
+      for (auto m : match_set) {
+        sub_matches.push_back(m);
+      }
+      completeLocalSorted(sub_matches, otherStarts, sub_length);
+
+      for (auto m : sub_matches) {
+        if (m.starts.size() >= 2 * std::max(1, containment_factor)) {
+          emplace(m);
+        } else {
+          // not emplacing, as it is dominated by best_accepted
+        }
       }
     }
   }
 
   return false;
+}
+
+void Algo1Base::completeLocalSorted(std::vector<Match> &local,
+                                    const std::vector<Start> &otherStarts,
+                                    int sub_length) const {
+  for (auto &s : otherStarts) {
+    bool matchFound = false;
+    for (auto &m : local) {
+      bool withinDistance = (s - m.starts.back()) < sub_length;
+      if (!withinDistance) {
+        matchFound = true;
+        m.starts.push_back(s);
+        // break from loop over local
+        break;
+      }
+    }
+    if (matchFound == false) {
+      local.push_back({{s}, sub_length});
+    }
+  }
+}
+
+void Algo1Base::completeLocalUnsorted(std::vector<Match> &local,
+                                      const std::vector<Start> &otherStarts,
+                                      int sub_length) const {
+
+  for (auto &s : otherStarts) {
+    bool matchFound = false;
+    for (auto &m : local) {
+      bool withinDistance = false;
+      for (auto s0 : m.starts) {
+        int d0 = std::abs(s - s0);
+        if (d0 < sub_length) {
+          withinDistance = true;
+          // break from loop over m.starts
+          break;
+        }
+      }
+      if (!withinDistance) {
+        matchFound = true;
+        m.starts.push_back(s);
+        // break from loop over local
+        break;
+      }
+    }
+    if (matchFound == false) {
+      local.push_back({{s}, sub_length});
+    }
+  }
+
+  for (auto &m : local) {
+    std::sort(m.starts.begin(), m.starts.end());
+    // local.push_back(m);
+  }
 }
 
 // how to process the top of the priority queue

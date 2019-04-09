@@ -150,6 +150,15 @@ void Ir::dotCheckpoint(DotCheck check) const {
   // the name that a Tensor has in the .dot file.
   auto tensorDotId = [](const TensorId &id) { return '\"' + id + '\"'; };
 
+  // inplace Ops will have a green edge, others will have a black edge
+  auto getOpNodeColor = [](const std::string &id) {
+    auto found = id.find("Inplace");
+    if (found != std::string::npos) {
+      return "\"green\"";
+    }
+    return "\"black\"";
+  };
+
   std::ofstream strm;
   strm.open(dotfn, std::ios::out);
   if (!strm.is_open()) {
@@ -194,7 +203,7 @@ void Ir::dotCheckpoint(DotCheck check) const {
   // we keep track of which tensors have been defined in the .dot file
   std::set<TensorId> tensorsVisited{};
 
-  auto getNodeColor = [](TensorType type) {
+  auto getTensorNodeColor = [](TensorType type) {
     switch (type) {
     case TensorType::Stream:
       return "\"red\"";
@@ -212,7 +221,7 @@ void Ir::dotCheckpoint(DotCheck check) const {
   };
 
   // Create a tensor node in the .dot file
-  auto makeNodeIfRequired = [&getNodeColor,
+  auto makeNodeIfRequired = [&getTensorNodeColor,
                              &tensorDotId,
                              &strm,
                              &tensorsVisited](const Tensor *tensor) {
@@ -220,7 +229,8 @@ void Ir::dotCheckpoint(DotCheck check) const {
       tensorsVisited.insert(tensor->id);
       strm << tensorDotId(tensor->id) << " [shape= \"egg\", label=\""
            << tensor->info << " c:" << tensor->consumers.getTotal()
-           << "\", color = " << getNodeColor(tensor->tensorType()) << "];\n";
+           << "\", color = " << getTensorNodeColor(tensor->tensorType())
+           << "];\n";
     }
   };
 
@@ -255,12 +265,14 @@ void Ir::dotCheckpoint(DotCheck check) const {
       // add the .dot entry for a node [shape="box", label=...]
       strm << nodeDotId(n->id) << " [shape= \"box\", label=\""
            << coreNameStream.str();
-      strm << "\"];\n";
+      strm << "\", color = " << getOpNodeColor(n->str()) << "];\n";
     }
 
     else {
       auto &opMatches = opToMatch.at(i);
-      strm << nodeDotId(n->id) << " [shape= \"box\", label=<"
+      strm << nodeDotId(n->id)
+           << " [shape= \"box\", color = " << getOpNodeColor(n->str())
+           << ", label=<"
            << "\n"
            << "<TABLE BORDER=\"0\" CELLSPACING=\"3\"> \n"
            << "<TR>\n"

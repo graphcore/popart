@@ -310,7 +310,8 @@ static poplar::Tensor createGatherInput(poplar::Graph &graph,
   return result.slice(0, shape[axis], static_cast<unsigned>(axis));
 }
 
-poplar::Tensor GatherOpx::createInput(int index) const {
+poplar::Tensor GatherOpx::createInput(int index,
+                                      const std::string &name) const {
   if (index != GatherOp::dataInIndex()) {
     throw error("GatherOpx::createInput Cannot create input {}", index);
   }
@@ -319,11 +320,7 @@ poplar::Tensor GatherOpx::createInput(int index) const {
 
   const auto shape = info.shape_szt();
 
-  return createGatherInput(graph(),
-                           axis,
-                           popType(info),
-                           shape,
-                           op_p->str() + "input" + std::to_string(index));
+  return createGatherInput(graph(), axis, popType(info), shape, name);
 }
 
 InputCreatorType GatherOpx::getInputCreatorType(int index0) const {

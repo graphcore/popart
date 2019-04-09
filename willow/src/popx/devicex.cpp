@@ -578,7 +578,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     auto f = [this, creator, inIndex, pathFromInput, tensor]() {
       logging::devicex::debug("Creating poplar::Tensor {}", tensor->id);
       // tensors.insert(tensor->id, creator->createInput(inIndex));
-      poplar::Tensor input = creator->createInput(inIndex);
+      poplar::Tensor input = creator->createInput(inIndex, tensor->str());
 
       // Reverse the path,
       // The first element is now the Opx producing a tensor consumed by
@@ -660,7 +660,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
           if (ipus.end() == std::find(ipus.begin(), ipus.end(), index)) {
 
             auto newTensor = graph.addVariable(
-                popType(tensor->info), tensor->info.shape_szt(), tensor->id);
+                popType(tensor->info), tensor->info.shape_szt(), tensor->str());
             poputil::mapTensorLinearly(graph, newTensor);
 
             tensors.insert(tensor->id, newTensor);

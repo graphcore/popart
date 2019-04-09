@@ -106,6 +106,14 @@ private:
   bool noOverlapping(const Match &match);
   void emplace(Match match);
 
+  void completeLocalSorted(std::vector<Match> &local,
+                           const std::vector<Start> &otherStarts,
+                           int sub_length) const;
+
+  void completeLocalUnsorted(std::vector<Match> &local,
+                             const std::vector<Start> &otherStarts,
+                             int sub_length) const;
+
   virtual void setVal(Match &)                                       = 0;
   virtual void setVals(std::vector<Match> &)                         = 0;
   virtual int isoTil(int, Start, Start)                              = 0;
@@ -116,10 +124,16 @@ template <typename T> class Algo1 : public Algo1Base {
 public:
   Algo1(const std::vector<T *> &sched)
       : Algo1Base(getIntSchedule(sched), static_cast<int>(sched.size())),
-        rmb(sched) {}
+        rmb(sched), cumVals(getCumVals(sched)) {}
 
 private:
-  void setVal(Match &match) final { setValue<T>(match, rmb.schedule); }
+  // Using cumulative to accelerate to make this O(1)
+  void setVal(Match &match) final {
+    match.setValue(cumVals[match.starts[0] + match.length] -
+                   cumVals[match.starts[0]]);
+  }
+
+  // This function should use the cumulative in the same way as setVal
   void setVals(std::vector<Match> &matches) final {
     setValues<T>(matches, rmb.schedule);
   }
@@ -132,6 +146,7 @@ private:
   }
 
   RinseMatcherBase<T> rmb;
+  std::vector<float> cumVals;
 };
 
 } // namespace algo1

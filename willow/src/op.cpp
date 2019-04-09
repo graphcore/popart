@@ -11,6 +11,8 @@
 #include <poponnx/op.hpp>
 #include <poponnx/opmanager.hpp>
 
+#include <poponnx/op/elementwise.hpp>
+
 namespace poponnx {
 
 GradInOutMapper::GradInOutMapper(int iG, int iNG, GradOpInType t)
@@ -31,6 +33,10 @@ TensorInfo &Op::inInfo(InIndex index) { return input->tensor(index)->info; }
 
 const TensorInfo &Op::outInfo(OutIndex index) const {
   return output->tensor(index)->info;
+}
+
+bool Op::isElementWiseUnary() const {
+  return isConvertibleTo<ElementWiseUnaryOp>();
 }
 
 view::Region Op::uses(InIndex index) const {
@@ -60,11 +66,11 @@ view::RegMap Op::fwdRegMap(InIndex i) const {
 
 view::RegMap Op::bwdRegMap(InIndex i) const {
   if (!input->hasIndex(i)) {
-    throw error("invalid index in fwdRegMap");
+    throw error("invalid index in bwdRegMap");
   } else if (!output->hasIndex(0)) {
-    throw error("fwdMapReg called for op with no zero output");
+    throw error("bwdMapReg called for op with no zero output");
   } else if (inShape(i) != outShape(0)) {
-    throw error("default fwdRegMap not valid : should be specialised");
+    throw error("default bwdRegMap not valid : should be specialised");
   }
 
   return [](const view::Region &r) { return r; };
@@ -315,8 +321,6 @@ std::string Op::debugName() const {
                      fmt::join(out_ids.begin(), out_ids.end(), ", "));
 }
 
-// Ops are not norms or non-linearities unless otherwise specified
-bool Op::isNonlinearity() const { return false; }
 bool Op::isNorm() const { return false; }
 
 // By default an operation can not be replaced
@@ -360,6 +364,6 @@ Op::getSubgraphOutputs() const {
   return cmap;
 }
 
-bool Op::supportsCaching() { return true; }
+bool Op::supportsCaching() const { return true; }
 
 } // namespace poponnx

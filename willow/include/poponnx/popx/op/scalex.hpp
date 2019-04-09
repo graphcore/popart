@@ -8,21 +8,42 @@ namespace poponnx {
 
 namespace popx {
 
-class ScaleOpx : public ElementWiseUnaryOpx {
+class ScaleComputex : public EwuComputex {
+
 public:
-  ScaleOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  ScaleComputex(double x) : scale_factor(x) {}
+
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &tensor) const final;
+
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &) const final;
+
+  static std::unique_ptr<EwuComputex> get(float x) {
+    return std::unique_ptr<EwuComputex>(
+        new ScaleComputex(static_cast<double>(x)));
+  }
+
+  poplar::Tensor getScaleTensor(const poplar::Type &type,
+                                poplar::Graph &graph) const;
+
+  static float getFromScaleOp(Op *op);
+  static float getFromScaleInplaceOp(Op *op);
+
+private:
+  double scale_factor;
 };
 
-// See T7053 to unify the inplace opxs (TODO)
-class ScaleInplaceOpx : public Opx {
+class ScaleOpx : public ElementWiseUnaryOutplaceOpx {
+public:
+  ScaleOpx(Op *, Devicex *);
+};
+
+class ScaleInplaceOpx : public ElementWiseUnaryInplaceOpx {
 public:
   ScaleInplaceOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
-  InputCreatorType getInputCreatorType(InIndex) const final;
-  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
-                                    InIndex inIndex,
-                                    OutIndex outIndex) const final;
 };
 
 class ScaleGradOpx : public ScaleOpx {

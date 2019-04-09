@@ -132,12 +132,19 @@ Builder::createFromOnnxModel(const std::string &modelProtoOrFilename) {
 
 Builder::~Builder() {}
 
-TensorId Builder::addInputTensor(const TensorInfo &tensorInfo) {
-  return impl_->addInputTensor(tensorInfo);
+TensorId Builder::addInputTensor(const TensorInfo &tensorInfo,
+                                 const std::string &debugPrefix) {
+  return impl_->addInputTensor(tensorInfo, debugPrefix);
 }
 
-TensorId Builder::addInitializedInputTensor(const ConstVoidData &initData) {
-  return impl_->addInitializedInputTensor(initData);
+void Builder::addInputTensorFromParentGraph(const TensorInfo &tensorInfo,
+                                            const TensorId &tensorId) {
+  impl_->addInputTensorFromParentGraph(tensorInfo, tensorId);
+}
+
+TensorId Builder::addInitializedInputTensor(const ConstVoidData &initData,
+                                            const std::string &debugPrefix) {
+  return impl_->addInitializedInputTensor(initData, debugPrefix);
 }
 
 void Builder::addOutputTensor(const TensorId &arg0) {
@@ -333,6 +340,8 @@ void Builder::clearAttribute(const std::string &attribute) {
 void Builder::pushNameScope(const std::string &name) {
   impl_->pushNameScope(name);
 }
+
+void Builder::resetTensorIdCounter() { impl_->resetTensorIdCounter(); }
 
 void Builder::popNameScope() { impl_->popNameScope(); }
 

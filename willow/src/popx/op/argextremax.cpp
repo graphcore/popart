@@ -76,7 +76,8 @@ void ArgExtremaOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(ArgExtremaOp::getOutIndex(), result);
 }
 
-poplar::Tensor ArgExtremaOpx::createInput(InIndex) const {
+poplar::Tensor ArgExtremaOpx::createInput(InIndex,
+                                          const std::string &name) const {
   // Create an input that will minimise the amount of exchange in sort. This
   // means minimising the number of tile boundaries on the given axis.
 
@@ -87,7 +88,7 @@ poplar::Tensor ArgExtremaOpx::createInput(InIndex) const {
   std::swap(shape[axis], shape.back());
 
   // Create a new variable of the modified shape
-  auto t = graph().addVariable(popType(info), shape);
+  auto t = graph().addVariable(popType(info), shape, name);
 
   // Map it linearly
   poputil::mapTensorLinearly(graph(), t);

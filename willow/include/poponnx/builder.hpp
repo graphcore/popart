@@ -120,17 +120,32 @@ public:
    * Add a new input tensor to the model
    *
    * \param tensorInfo The shape and type of the input tensor
+   * \param debugPrefix A string to prepend to the name of the tensor
    * \return The unique name of the input tensor
    */
-  TensorId addInputTensor(const TensorInfo &tensorInfo);
+  TensorId addInputTensor(const TensorInfo &tensorInfo,
+                          const std::string &debugPrefix = "");
+
+  /**
+   * Add a new named input tensor to the model
+   *
+   * \param tensorInfo The shape and type of the input tensor
+   * \param tensorId The identifier string of the input tensor. This identifier
+   * must already exist in the parent GraphProto's name scope and must appear
+   * topologically before this sub-graph.
+   */
+  void addInputTensorFromParentGraph(const TensorInfo &tensorInfo,
+                                     const TensorId &tensorId);
 
   /**
    * Add a new preinitialized input tensor to the model
    *
    * \param initData The initial data of the input tensor
+   * \param debugPrefix A string to prepend to the name of the tensor
    * \return The unique name of the input tensor
    */
-  TensorId addInitializedInputTensor(const ConstVoidData &initData);
+  TensorId addInitializedInputTensor(const ConstVoidData &initData,
+                                     const std::string &debugPrefix = "");
 
   /**
    * Adds one of the outputs from a node in the graph into the list of output
@@ -612,6 +627,11 @@ public:
    */
   void popNameScope();
 
+  /**
+   * Reset the static counter of generated TensorIds
+   */
+  void resetTensorIdCounter();
+
 private:
   void configure();
   void configure(const std::string &modelProtoOrFilename);
@@ -624,12 +644,12 @@ private:
    */
   void loadModelProto(const std::string &modelProtoOrFilename);
 
-  std::unique_ptr<BuilderImpl> impl_;
-
   void verifyWindowParameters(TensorId input,
                               const std::vector<int64_t> strides,
                               const std::vector<int64_t> padding,
                               const std::vector<int64_t> dilation = {});
+
+  std::unique_ptr<BuilderImpl> impl_;
 };
 
 } // namespace poponnx

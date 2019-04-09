@@ -34,7 +34,7 @@ public:
 
   bool canBeReplacedByIdentity() override;
 
-  bool supportsCaching() override { return false; }
+  bool supportsCaching() const final { return false; }
 
 private:
   // The input shape, with '1' inserted in reduction axes.

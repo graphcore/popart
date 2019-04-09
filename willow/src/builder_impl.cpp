@@ -7,6 +7,7 @@
 #include <poponnx/builder_impl.hpp>
 #include <poponnx/ces/constexpr.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/filereader.hpp>
 #include <poponnx/onnxutil.hpp>
 #include <poponnx/opidentifier.hpp>
 #include <poponnx/tensordata.hpp>
@@ -43,9 +44,11 @@ void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
 
   std::stringstream fullname;
   for (const auto &n : name_scope_stack_) {
-    fullname << n << ".";
+    fullname << n << sNameDelimiter;
   }
+
   fullname << debug_name;
+
   if (!name.empty() || !name_scope_stack_.empty()) {
     node->set_name(fullname.str());
   }
@@ -57,20 +60,42 @@ void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
   onnx::shape_inference::InferShapes(model_);
 }
 
-TensorId BuilderImpl::getNextId(const std::string &name, int n) {
-  std::stringstream base;
+std::map<BuilderImpl::NameStackIndex, int> BuilderImpl::tensorIdCounter = {};
+
+void BuilderImpl::resetTensorIdCounter() { tensorIdCounter = {}; }
+
+TensorId BuilderImpl::getNextId(const std::string &name, OutIndex n) {
+
+  // obtain the stack state string
+  std::stringstream stack_ss;
   for (const auto &s : name_scope_stack_) {
-    base << s << ".";
+    stack_ss << s << sNameDelimiter;
   }
-  base << name << "_";
-  std::string base_str = base.str();
-  for (int i = 0; true; i++) {
-    std::string id = base_str + std::to_string(i) + ":" + std::to_string(n);
-    if (tensor_ids_.count(id) == 0) {
-      tensor_ids_.insert(id);
-      return id;
-    }
+
+  std::string stack_str = stack_ss.str();
+
+  // search for the count in the global map
+  auto iter = tensorIdCounter.find(NameStackIndex(name, stack_str, n));
+
+  // generate the unique id string
+  std::stringstream id_ss;
+  id_ss << stack_str << name;
+
+  // Add ':n' if the index n is >= 0
+  if (n >= 0) {
+    id_ss << ':' << std::to_string(n);
   }
+
+  if (iter == tensorIdCounter.end()) {
+    tensorIdCounter[NameStackIndex(name, stack_str, n)] = 1;
+  } else {
+    // Add a '/x' to make unique
+    id_ss << sNameDelimiter << iter->second;
+    ++(iter->second);
+  }
+
+  std::string id = id_ss.str();
+  return id;
 }
 
 void BuilderImpl::addOpsetRequirement(const std::string &domain, int version) {
@@ -98,26 +123,32 @@ void BuilderImpl::addOpsetRequirement(const std::string &domain, int version) {
   }
 }
 
-BuilderImpl::BuilderImpl() {}
-
 void BuilderImpl::configure() {
   model_.set_ir_version(defaultIrVersion);
 
   model_.mutable_graph()->set_name("BuilderGraph");
 }
 
-TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo) {
-  auto id             = getNextId("input", 0);
+TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
+                                     const std::string &debugPrefix) {
+
+  std::string name = debugPrefix.empty() ? "input" : debugPrefix;
+  auto id          = getNextId(name);
+  addInputTensorFromParentGraph(tensorInfo, id);
+  return id;
+}
+
+void BuilderImpl::addInputTensorFromParentGraph(const TensorInfo &tensorInfo,
+                                                const TensorId &tensorId) {
+
   auto onnxTensorType = tensorInfo.getOnnxTypeProto();
 
   auto *graph = model_.mutable_graph();
   auto *input = graph->add_input();
-  input->set_name(id);
+  input->set_name(tensorId);
 
   auto *type = input->mutable_type();
   *type      = onnxTensorType;
-
-  return id;
 }
 
 static void populateTensorProtoFromConstVoidData(const ConstVoidData &initData,
@@ -188,8 +219,13 @@ static void populateTensorProtoFromConstVoidData(const ConstVoidData &initData,
   }
 }
 
-TensorId BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData) {
-  auto id = getNextId("init_input", 0);
+TensorId
+BuilderImpl::addInitializedInputTensor(const ConstVoidData &initData,
+                                       const std::string &debugPrefix) {
+
+  std::string name = debugPrefix.empty() ? "init_input" : debugPrefix;
+
+  auto id = getNextId(name);
 
   auto *graph = model_.mutable_graph();
   auto *input = graph->add_input();
@@ -491,6 +527,7 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
   onnx::AttributeProto &attr = addNewAttributeToNode(attributeName, node);
 
   const std::type_info &tinfo = attributeValue.type();
+
   if (tinfo == typeid(int32_t)) {
     attr.set_type(onnx::AttributeProto::INT);
     attr.set_i(boost::any_cast<int32_t>(attributeValue));
@@ -541,6 +578,12 @@ void BuilderImpl::addNodeAttribute(const std::string &attributeName,
     auto *t = attr.mutable_t();
     populateTensorProtoFromConstVoidData(
         boost::any_cast<ConstVoidData>(attributeValue), attributeName, t);
+  } else if (tinfo == typeid(onnx::GraphProto)) {
+    attr.set_type(onnx::AttributeProto::GRAPH);
+    const onnx::GraphProto &graph =
+        boost::any_cast<const onnx::GraphProto &>(attributeValue);
+    auto *g = attr.mutable_g();
+    *g      = graph;
   } else {
     throw error("Unsupported attribute value type {}", tinfo.name());
   }

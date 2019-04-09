@@ -13,13 +13,9 @@ ScaleOp::inplacePriorityDefault() const {
 }
 
 ScaleInplaceOp::ScaleInplaceOp(const ScaleOp &scale_op)
-    : Op(Onnx::CustomOperators::ScaleInplace, scale_op.getSettings()),
+    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::ScaleInplace,
+                                scale_op.getSettings()),
       scale_factor(scale_op.getScaleFactor()) {}
-
-void ScaleInplaceOp::setup() {
-  // no output, nothing to setup
-  outInfo(ScaleOp::getOutIndex()) = inInfo(ScaleOp::getInIndex());
-}
 
 std::unique_ptr<Op>
 ScaleOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {

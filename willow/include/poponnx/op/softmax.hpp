@@ -18,8 +18,6 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
-  bool isNonlinearity() const override { return true; }
-
 private:
   int64_t axis;
 };

@@ -17,7 +17,8 @@ public:
   void grow(poplar::program::Sequence &) const final;
   // Mask the loss, or loss-grad of rows (i.e. samples) of tensor t
   // whose corresponding target label is equal to ignoreIndex
-  static void applyMaskInPlaceForIgnoredIndex(poplar::Graph &graph,
+  static void applyMaskInPlaceForIgnoredIndex(const Opx &opx,
+                                              poplar::Graph &graph,
                                               poplar::Tensor t,
                                               poplar::Tensor labels,
                                               int ignoreIndex,

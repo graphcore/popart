@@ -1,21 +1,15 @@
 #ifndef GUARD_NEURALNET_TANH_HPP
 #define GUARD_NEURALNET_TANH_HPP
 
-#include <poponnx/op.hpp>
+#include <poponnx/op/elementwise.hpp>
 
 namespace poponnx {
 
-class TanhOp : public Op {
+class TanhOp : public ElementWiseUnaryOp {
 public:
   TanhOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
-  void setup() final;
-
-  static InIndex getInIndex() { return 0; }
-  static OutIndex getOutIndex() { return 0; }
-
-  bool isNonlinearity() const override { return true; }
 };
 
 class TanhGradOp : public Op {

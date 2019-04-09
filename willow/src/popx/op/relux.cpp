@@ -10,52 +10,30 @@
 namespace poponnx {
 namespace popx {
 
-ReluOpx::ReluOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
-  verifyOp<ReluOp>(op, Onnx::Operators::Relu_6);
-}
-
-ReluInplaceOpx::ReluInplaceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+ReluInplaceOpx::ReluInplaceOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryInplaceOpx(op, devicex, ReluComputex::get()) {
   verifyOp<ReluInplaceOp>(op, Onnx::CustomOperators::ReluInplace);
 }
 
-void ReluOpx::grow(poplar::program::Sequence &prog) const {
-
-  // There is only an in-place poplibs Relu. We therefore clone first,
-  auto outTensor = cloneNcopy(prog, getInTensor(0));
-
-  // and apply the inplace relu.
-  popnn::nonLinearityInPlace(
-      graph(), popnn::NonLinearityType::RELU, outTensor, prog, idStr());
-
-  setOutTensor(0, outTensor);
+ReluOpx::ReluOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryOutplaceOpx(op, devicex, ReluComputex::get()) {
+  verifyOp<ReluOp>(op, Onnx::Operators::Relu_6);
 }
 
-void ReluInplaceOpx::grow(poplar::program::Sequence &prog) const {
-
-  auto outTensor = getInTensor(0);
-
-  // if all of the elements in the tensor are distinct in memory,
-  // them we can use the poplar inplace version. Otherwise, we must
-  // use a non-inplace version.  See T7110 for a possible improvement
-  if (!outTensor.isParallelWriteable()) {
-    outTensor = cloneNcopy(prog, outTensor);
-  }
-
-  // apply the inplace relu,
-  popnn::nonLinearityInPlace(
-      graph(), popnn::NonLinearityType::RELU, outTensor, prog, idStr());
-
-  setOutTensor(0, outTensor);
+poplar::Tensor ReluComputex::outplace(poplar::program::Sequence &p,
+                                      poplar::Graph &g,
+                                      const poplar::Tensor &t) const {
+  auto outTensor = cloneNcopy(p, g, t);
+  inplace(p, g, outTensor);
+  return outTensor;
 }
 
-InputCreatorType ReluInplaceOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANUNWIND;
-}
+void ReluComputex::inplace(poplar::program::Sequence &p,
+                           poplar::Graph &g,
+                           const poplar::Tensor &t) const {
 
-poplar::Tensor ReluInplaceOpx::unwindTensorLayout(poplar::Tensor tensor,
-                                                  InIndex,
-                                                  OutIndex) const {
-  return tensor;
+  // apply the inplace RELU
+  popnn::nonLinearityInPlace(g, popnn::NonLinearityType::RELU, t, p, "");
 }
 
 ReluGradOpx::ReluGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {

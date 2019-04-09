@@ -35,6 +35,7 @@ def op_tester(tmpdir):
     class Builder:
         def __init__(self, opsets=None):
             self._builder = poponnx.Builder(opsets=opsets)
+
             self._input_map = {}
             self._init_input_map = {}
             self._outputs = []
@@ -105,6 +106,11 @@ def op_tester(tmpdir):
             assert step_type in ('infer', 'train')
 
             bld = Builder(opsets=opsets)
+
+            # reset the static counter of generated TensorIds to zero:
+            # start this test with no memory of the names of tensors
+            # generated in previous tests.
+            bld.resetTensorIdCounter()
 
             anchors = {}
             anchorIds = init_builder(bld)

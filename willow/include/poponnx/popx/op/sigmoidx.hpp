@@ -8,10 +8,32 @@ namespace poponnx {
 
 namespace popx {
 
-class SigmoidOpx : public ElementWiseUnaryOpx {
+class SigmoidComputex : public EwuComputex {
+
+public:
+  SigmoidComputex() = default;
+
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &) const final;
+
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &) const final;
+
+  static std::unique_ptr<EwuComputex> get() {
+    return std::unique_ptr<EwuComputex>(new SigmoidComputex);
+  }
+};
+
+class SigmoidOpx : public ElementWiseUnaryOutplaceOpx {
 public:
   SigmoidOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+};
+
+class SigmoidInplaceOpx : public ElementWiseUnaryInplaceOpx {
+public:
+  SigmoidInplaceOpx(Op *, Devicex *);
 };
 
 class SigmoidGradOpx : public ElementWiseUnaryOpx {
