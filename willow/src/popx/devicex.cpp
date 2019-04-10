@@ -880,7 +880,7 @@ poplar::program::Sequence &Devicex::programFragment() {
   return progs.programFragment(PopPrograms::ProgramFragmentIndex::PROGRAM);
 }
 
-PriTask Devicex::opTask(Op *op, double priority) {
+PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
 
   OpId id  = op->id;
   Opx *opx = getOpx(id);
@@ -904,6 +904,15 @@ PriTask Devicex::opTask(Op *op, double priority) {
     if (tensor->tensorType() == TensorType::Stream) {
       if (useSyntheticData() == false)
         deps.push_back(fromHostTaskId(tensor->id));
+    }
+  }
+
+  // Depends on previous op task. This preserves op ordering from ir.
+  // Note: the first opTask has no previous opTask
+  if (prevOpTaskId != "") {
+    // Add dependency only if not already added
+    if (std::find(deps.begin(), deps.end(), prevOpTaskId) == deps.end()) {
+      deps.push_back(prevOpTaskId);
     }
   }
 
@@ -1098,11 +1107,14 @@ void Devicex::prepare() {
     }
   }
 
-  // std::vector<Op *> ops = ir().getOpSchedule({});
-  double priority = 0.;
+  double priority     = 0.;
+  TaskId prevOpTaskId = "";
+  // 'ops' are in the order of the Ir's schedule
   for (int i = 0; i < ops.size(); ++i) {
-    Op *op = ops[i];
-    tasks.add(opTask(op, priority));
+    Op *op    = ops[i];
+    auto task = opTask(op, priority, prevOpTaskId);
+    tasks.add(task);
+    prevOpTaskId = task.name;
     priority -= 1.;
   }
 

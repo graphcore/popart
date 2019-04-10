@@ -81,6 +81,7 @@ bool ConvDataGradPattern::apply(Op *op) const {
 
   flip->setup();
   flip->setParameters(bwdConvParams);
+  flip->setPhase(Phase::BWD);
 
   // Configure the conv op for the bwd pass
   conv->connectInTensor(ConvOp::getWeightsInIndex(),
@@ -101,6 +102,7 @@ bool ConvDataGradPattern::apply(Op *op) const {
   conv->setOutputShape(fwdConvInputShape);
   conv->setup();
   conv->setParameters(bwdConvParams);
+  conv->setPhase(Phase::BWD);
 
   return true;
 }

@@ -267,7 +267,7 @@ private:
                                   ReturnPeriod N,
                                   poplar::program::Sequence &);
 
-  PriTask opTask(Op *, double priority);
+  PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
   TaskId opTaskId(Op *) const;
 
   // The ID of the poplar::Stream host->device for poplar::Tensor
