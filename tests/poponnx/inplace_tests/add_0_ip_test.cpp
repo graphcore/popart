@@ -1,7 +1,7 @@
 #define BOOST_TEST_MODULE Add0InplaceTest
 
+#include <../test_runner.hpp>
 #include <boost/test/unit_test.hpp>
-#include <inplace_util.hpp>
 #include <poponnx/op/add.hpp>
 #include <poponnx/tensors.hpp>
 

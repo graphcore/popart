@@ -45,9 +45,7 @@ public:
   enum class ProgramFragmentIndex {
     WEIGHTSFROMHOST = 0,
     OPTIMIZERFROMHOST,
-    FORWARD,
-    LOSS,
-    BACKWARD,
+    PROGRAM,
     WEIGHTSTOHOST,
     SETRANDOMSEED,
     N // The number of program fragments
@@ -57,10 +55,8 @@ public:
   // a poplar engine.
   poplar::program::Sequence &weightsFromHostFragment();
   poplar::program::Sequence &optimizerFromHostFragment();
-  poplar::program::Sequence &forwardFragment();
   poplar::program::Sequence &setRandomSeedFragment();
-  poplar::program::Sequence &lossFragment();
-  poplar::program::Sequence &backwardFragment();
+  poplar::program::Sequence &programFragment();
   poplar::program::Sequence &weightsToHostFragment();
 
   // A list of programs that can be run by the Poplar engine.
@@ -271,7 +267,7 @@ private:
                                   ReturnPeriod N,
                                   poplar::program::Sequence &);
 
-  PriTask opTask(Op *, double priority);
+  PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
   TaskId opTaskId(Op *) const;
 
   // The ID of the poplar::Stream host->device for poplar::Tensor
@@ -317,11 +313,7 @@ private:
   // Call hostStreamToHost in all the Tensors in pir->dataFlow.anchors()
   void anchorsHostFromHostStreams(const IStepIO &stepio);
 
-  // Helper function to find the program fragment index an op/tensor belongs in
-  static PopPrograms::ProgramFragmentIndex programFragmentIndex(Vertex *vertex);
-
-  // Helper function to find the program fragment an op/tensor belongs in
-  poplar::program::Sequence &programFragment(Vertex *);
+  poplar::program::Sequence &programFragment();
 
   // Returns true if using synthetic data, false if using real data
   // This will return the options.ignoreData flag

@@ -316,4 +316,13 @@ Attributes::Float Attributes::getAttribute(const std::string &key) const {
 
   throw error("no attribute key {}", key);
 }
+template <>
+Attributes::Graph Attributes::getAttribute(const std::string &key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    return found->second->g();
+  }
+
+  throw error("no attribute key {}", key);
+}
 } // namespace poponnx

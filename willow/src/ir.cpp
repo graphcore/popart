@@ -1108,17 +1108,23 @@ std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) {
 bool Ir::isAnchored(TensorId tenId) { return dataFlow.isAnchored(tenId); }
 
 void Ir::constructForwards() {
-  for (const auto &node : onnxModel->graph().node()) {
+  constructFromOnnxGraph(onnxModel->graph());
+
+  // Not necessary to set the phase here (it will be done in
+  // updateVertices). To check our logic though, we do this here
+  // and then check that we agree in updateVertices()
+  for (auto &id_op : ops) {
+    auto op = id_op.second.get();
+    op->setPhase(Phase::FWD);
+  }
+}
+
+void Ir::constructFromOnnxGraph(const onnx::GraphProto &graph) {
+  for (const auto &node : graph.node()) {
     if (OnnxConstExprUtil::isConst(node)) {
       OnnxConstExprUtil::processNode(node, this);
     } else {
       Op *op = growFromNode(node);
-      // Not necessary to set the phase here (it will be done in
-      // updateVertices). To check our logic though, we do this here
-      // and then check that we agree in updateVertices()
-      if (op) {
-        op->setPhase(Phase::FWD);
-      }
 
       // process ops as they are created
       // Reshape requires a const input tensor at creation time
