@@ -902,7 +902,11 @@ Devicex::programFragmentIndex(Vertex *vertex) {
     throw error("Failed to determine fragment of vertex " + vertex->str() +
                 " from UNDEFINED phase. ");
   }
-  default: { throw error("Failed to determine fragment of vertex"); }
+  // clang-format off
+  default: {
+    throw error("Failed to determine fragment of vertex");
+  }
+    // clang-format on
   }
 }
 
@@ -1580,6 +1584,9 @@ poplar::Type popType(const TensorInfo &info) {
   case DataType::FLOAT16: {
     return poplar::HALF;
   }
+  case DataType::BOOL: {
+    return poplar::BOOL;
+  }
 
   case DataType::UNDEFINED:
   case DataType::UINT8:
@@ -1588,7 +1595,6 @@ poplar::Type popType(const TensorInfo &info) {
   case DataType::INT16:
   case DataType::INT64:
   case DataType::STRING:
-  case DataType::BOOL:
   case DataType::BFLOAT16:
   case DataType::DOUBLE:
   case DataType::UINT32:

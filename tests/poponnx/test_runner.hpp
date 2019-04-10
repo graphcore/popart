@@ -1,5 +1,5 @@
-#ifndef GUARD_INPLACE_UTIL_HPP
-#define GUARD_INPLACE_UTIL_HPP
+#ifndef GUARD_TEST_RUNNER_HPP
+#define GUARD_TEST_RUNNER_HPP
 
 #include <memory>
 #include <vector>
@@ -32,6 +32,7 @@ public:
   template <typename T>
   static TestTensor create(const TensorId &id,
                            const std::vector<int64_t> &shape);
+
   IArray &getIArray() { return *dataWrapper.get(); }
   template <typename T> void setData(const std::vector<T> &data_);
   template <typename T> const T *getDataPtr();
@@ -48,14 +49,14 @@ private:
 
 class TestRunner {
 public:
-  template <typename ModelBuilder> void buildModel(ModelBuilder &modelBuilder) {
+  template <typename ModelBuilder> void buildModel(ModelBuilder &&modelBuilder) {
     // Build an onnx model
     auto builder = Builder::create();
     outId        = modelBuilder(*builder);
     proto        = builder->getModelProto();
   }
 
-  template <typename IrChecker> void checkIr(IrChecker &irChecker) {
+  template <typename IrChecker> void checkIr(IrChecker &&irChecker) {
     auto modelProto = io::getModelFromString(proto);
 
     // Create the IR
@@ -72,12 +73,18 @@ public:
         Patterns(PatternsLevel::NONE).enableInPlace(enableInPlace));
 
     irChecker(session->ir);
+
+    ran_checkIr = true;
   }
 
   template <typename ResultsChecker>
-  void checkResult(ResultsChecker &resultsChecker,
+  void checkResult(ResultsChecker &&resultsChecker,
                    std::vector<TestTensor> &inputs,
                    std::vector<TestTensor> &outputs) {
+    if (!ran_checkIr) {
+      checkIr([](Ir &){});
+    }
+
     std::map<TensorId, IArray &> output_map;
     for (auto &output : outputs) {
       output_map.insert({output.id, output.getIArray()});
@@ -88,7 +95,11 @@ public:
       input_map.insert({input.id, input.getIArray()});
     }
 
-    session->prepareDevice();
+    if (!device_prepared) {
+      session->prepareDevice();
+      device_prepared = true;
+    }
+
     StepIO stepio(input_map, output_map);
     session->run(stepio);
 
@@ -101,6 +112,8 @@ private:
   std::string proto;
   TensorId outId;
   std::unique_ptr<InferenceSession> session;
+  bool ran_checkIr = false;
+  bool device_prepared = false;
 };
 
 template <typename T>
@@ -111,6 +124,12 @@ template <>
 TensorInfo createTensorInfo(const std::vector<float> &data,
                             const std::vector<int64_t> &shape) {
   return TensorInfo{DataType::FLOAT, shape};
+}
+
+template <>
+TensorInfo createTensorInfo(const std::vector<bool> &data,
+                            const std::vector<int64_t> &shape) {
+  return TensorInfo{DataType::BOOL, shape};
 }
 
 template <typename T>

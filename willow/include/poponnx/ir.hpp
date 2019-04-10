@@ -264,6 +264,9 @@ public:
   // Convert the ONNX graph into the forwards pass of the IR
   void constructForwards();
 
+  // Convert an ONNX graph into IR
+  void constructFromOnnxGraph(const onnx::GraphProto &graph);
+
   void foldConstants();
 
   // Construct the backwards pass of the IR by doing an autograd of the forward

@@ -18,6 +18,7 @@ public:
   using Int    = int64_t;
   using Float  = float;
   using String = std::string;
+  using Graph  = onnx::GraphProto;
 
   Attributes(const NodeAttributes &);
   Attributes() = default;
@@ -114,6 +115,8 @@ template <>
 Attributes::String Attributes::getAttribute(const std::string &key) const;
 template <>
 Attributes::Float Attributes::getAttribute(const std::string &key) const;
+template <>
+Attributes::Graph Attributes::getAttribute(const std::string &key) const;
 
 } // namespace poponnx
 
