@@ -150,20 +150,12 @@ poplar::program::Sequence &PopPrograms::optimizerFromHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::OPTIMIZERFROMHOST)];
 }
 
-poplar::program::Sequence &PopPrograms::forwardFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::FORWARD)];
+poplar::program::Sequence &PopPrograms::programFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::PROGRAM)];
 }
 
 poplar::program::Sequence &PopPrograms::setRandomSeedFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEED)];
-}
-
-poplar::program::Sequence &PopPrograms::lossFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::LOSS)];
-}
-
-poplar::program::Sequence &PopPrograms::backwardFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::BACKWARD)];
 }
 
 poplar::program::Sequence &PopPrograms::weightsToHostFragment() {
@@ -180,9 +172,7 @@ poplar::program::Sequence PopPrograms::optimizerFromHost() {
 
 poplar::program::Sequence PopPrograms::program() {
   poplar::program::Sequence prog;
-  prog.add(forwardFragment());
-  prog.add(lossFragment());
-  prog.add(backwardFragment());
+  prog.add(programFragment());
 
   poplar::program::Sequence outer;
   outer.add(setRandomSeedFragment());
@@ -886,32 +876,8 @@ PriTask Devicex::streamToHostTask(Tensor *tensor) {
   };
 }
 
-PopPrograms::ProgramFragmentIndex
-Devicex::programFragmentIndex(Vertex *vertex) {
-  switch (vertex->getPhase()) {
-  case Phase::BWD: {
-    return PopPrograms::ProgramFragmentIndex::BACKWARD;
-  }
-  case Phase::LOSS: {
-    return PopPrograms::ProgramFragmentIndex::LOSS;
-  }
-  case Phase::FWD: {
-    return PopPrograms::ProgramFragmentIndex::FORWARD;
-  }
-  case Phase::UNDEFINED: {
-    throw error("Failed to determine fragment of vertex " + vertex->str() +
-                " from UNDEFINED phase. ");
-  }
-  // clang-format off
-  default: {
-    throw error("Failed to determine fragment of vertex");
-  }
-    // clang-format on
-  }
-}
-
-poplar::program::Sequence &Devicex::programFragment(Vertex *vertex) {
-  return progs.programFragment(programFragmentIndex(vertex));
+poplar::program::Sequence &Devicex::programFragment() {
+  return progs.programFragment(PopPrograms::ProgramFragmentIndex::PROGRAM);
 }
 
 PriTask Devicex::opTask(Op *op, double priority) {
@@ -944,7 +910,7 @@ PriTask Devicex::opTask(Op *op, double priority) {
   auto f = [op, opx, this]() {
     logging::devicex::debug("Creating output tensors for " +
                             opx->op_p->debugName());
-    opx->grow(programFragment(op));
+    opx->grow(programFragment());
   };
   return {priority, opTaskId(op), deps, f};
 }
@@ -1087,7 +1053,7 @@ void Devicex::prepare() {
   // batch count.
   if (ir().getDataFlow().isBatchCountingRequired()) {
     tasks.add(initBatchCounterTensorsTask());
-    tasks.add(updateBatchCoutTask(progs.forwardFragment()));
+    tasks.add(updateBatchCoutTask(progs.programFragment()));
   }
 
   // stream-to-host tensors : 1) make streams 2) make copy programs
@@ -1103,21 +1069,19 @@ void Devicex::prepare() {
       switch (ir().getDataFlow().art(anchorId).id()) {
       // Copy program runs after every batch
       case (AnchorReturnTypeId::ALL): {
-        tasks.add(toHostTask(tensor, programFragment(tensor)));
+        tasks.add(toHostTask(tensor, programFragment()));
         break;
       }
       // Copy program runs at the end of the step
       case (AnchorReturnTypeId::FINAL): {
-        tasks.add(toHostEveryNBatchesTask(tensor,
-                                          ir().getDataFlow().batchesPerStep(),
-                                          programFragment(tensor)));
+        tasks.add(toHostEveryNBatchesTask(
+            tensor, ir().getDataFlow().batchesPerStep(), programFragment()));
         break;
       }
       // Copy program runs at the end of every N batches
       case (AnchorReturnTypeId::EVERYN): {
-        tasks.add(toHostEveryNBatchesTask(tensor,
-                                          ir().getDataFlow().art(anchorId).rp(),
-                                          programFragment(tensor)));
+        tasks.add(toHostEveryNBatchesTask(
+            tensor, ir().getDataFlow().art(anchorId).rp(), programFragment()));
         break;
       }
       }
@@ -1130,7 +1094,7 @@ void Devicex::prepare() {
 
     // making the network!
     for (Tensor *tensor : ir().dataStreamTensors()) {
-      tasks.add(fromHostTask(tensor, programFragment(tensor)));
+      tasks.add(fromHostTask(tensor, programFragment()));
     }
   }
 
