@@ -92,6 +92,10 @@ const std::map<int, int> &SubsampleGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
+std::vector<uint32_t> SubsampleGradOp::strides_u32() const {
+  return vXtoY<int64_t, uint32_t>(strides);
+}
+
 void SubsampleGradOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
   os.appendAttribute("strides", strides);
