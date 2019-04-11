@@ -21,38 +21,43 @@
 
 using namespace poponnx;
 
-// Module:      |  .           -|
-//              |- slice [1,2] -|
-//              |- slice [1,2] -|-- top half: i : sigmoid(
-//              |  .            |        slice 2*i + slice 2*i+1)  -------|
-//              |  .            |                                         |
-//              |  .            |                                         /
-// in [2^N,2] --|  .            |                                        /
-//              |  .            |                                       /
-//              |  .            |=-=-=-=-                              /-
-//              |  .            |                                     /  |
-//              |  .            |                                    /   |
-//              |  .            |-- bottom half: scale random slice /    |
-//              |- slice [1,2] -|                                       /
-//              |- slice [1,2] -|                                      /
-//              |  .           -|                                     /
-//              |  .           -|                         contig concats into
-//                                                        3 regions of sizes
-//                                                           (2^N)/4+1
-//                                                          (2^N)/4
-//                                                         (2^N)/2-1.
-//                                                            /
-//                                                   concat the above 3
-//                                                       [2,0,1]
-//                                                         /
-//                                                        /
-//                                                       /
-//                                               output is [2^N,2]
+// Module :
+//
+//
+//   input :             [2^N, 2]
+//                          |
+//                      [Sigmoid] -------------------------------
+//                          |                                    |
+//           slice into 2^N slices of size [1,2]                 |
+//                          |                                    |
+//             [Random shuffle of indices]                       |   |
+//                          |                                    |   |
+//                          .                                    |   |
+//            --------------------------------                   |   |
+//            |  |  |                   |  |  |                  |   | Submod
+//        for i = 0:(2^N)/2         for i = 0:(2^N)/2            |   | 3X
+//          add slices 2*i           choose a slice              |   |
+//           and 2*i + 1               at random                 |   |
+//            |  |  |                   |  |  |                  |   |
+//           [Sigmoid]               [Random Scale]              |   |
+//           |   |  |                  |   |  |                  |   |
+//           ----------------------------------                  |   |
+//                           .                                   |
+//                           |                                   |
+//                       Tree Concat                             |
+//                           |                                [Scale]
+//                           |                                   |
+//                           |                                   |
+//                   ---------------------------------------------
+//                                 |
+//                               [Add]
+//
+//
 //
 // The Module is repeated J times, then there is a sum reduce:
 //
 //                    J repeats of the Module
-//                          |
+//                             |
 //                   ------------------
 //                   |          |      |
 //  in [2^N,2] -- Module -- Module -- Module -- ReduceSum
@@ -65,7 +70,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
 
     // generate random input data
     std::default_random_engine eng(seed);
-    std::uniform_real_distribution<float> fdis(-4, 4);
+    std::uniform_real_distribution<float> fdis(0, 5);
     std::uniform_int_distribution<uint64_t> idis(
         0, std::numeric_limits<uint64_t>::max());
 
@@ -78,12 +83,19 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     auto builder = Builder::create();
     auto aiOnnx  = builder->aiOnnxOpset9();
 
-    auto appendModule = [N, &builder, &eng, &fdis, &aiOnnx, &idis](
+    auto getSubmodule = [N, &builder, &eng, &aiOnnx, &fdis, &idis](
                             std::vector<TensorId> tensorsIn) {
+      std::shuffle(tensorsIn.begin(), tensorsIn.end(), eng);
       std::vector<TensorId> tensorsOut;
+
       // the top half: add, sigmoid.
       for (int i = 0; i < std::pow(2, N - 1); ++i) {
-        auto sum        = aiOnnx.add({tensorsIn[2 * i], tensorsIn[2 * i + 1]});
+        auto sum = aiOnnx.add({tensorsIn[2 * i], tensorsIn[2 * i + 1]});
+
+        builder->setInplacePreferences(sum,
+                                       {{"AddLhsInplace", 100.0f + fdis(eng)},
+                                        {"AddRhsInplace", 100.0f + fdis(eng)}});
+
         auto sigmoidOut = aiOnnx.sigmoid({sum});
         builder->setInplacePreferences(
             sigmoidOut, {{"SigmoidInplace", 100.0f + fdis(eng)}});
@@ -98,42 +110,37 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
                                        {{"ScaleInplace", 100.0f + fdis(eng)}});
         tensorsOut.push_back(scaleOut);
       }
-
-      int start0 = 0;
-      int start1 = std::pow(2, N - 2) + 1;
-      int start2 = start1 + std::pow(2, N - 2);
-
-      // for example :
-      //   N = 2 : [0, 2), [2, 3) [3, 4)
-      //   N = 3 : [0, 3), [3, 5) [5, 8)
-
-      std::vector<TensorId> tensorIds0{tensorsOut.begin() + start0,
-                                       tensorsOut.begin() + start1};
-      std::vector<TensorId> tensorIds1{tensorsOut.begin() + start1,
-                                       tensorsOut.begin() + start2};
-      std::vector<TensorId> tensorIds2{tensorsOut.begin() + start2,
-                                       tensorsOut.begin() + std::pow(2, N)};
-
-      auto concat0 = aiOnnx.concat(tensorIds0, 0);
-      builder->setInplacePreferences(concat0,
-                                     {{"ConcatInplace", 100.0f + fdis(eng)}});
-      auto concat1 = aiOnnx.concat(tensorIds1, 0);
-      builder->setInplacePreferences(concat1,
-                                     {{"ConcatInplace", 100.0f + fdis(eng)}});
-      auto concat2 = aiOnnx.concat(tensorIds2, 0);
-      builder->setInplacePreferences(concat2,
-                                     {{"ConcatInplace", 100.0f + fdis(eng)}});
-
-      auto outcon = aiOnnx.concat({concat2, concat0, concat1}, 0);
-      builder->setInplacePreferences(outcon,
-                                     {{"ConcatInplace", 100.0f + fdis(eng)}});
-
-      return outcon;
+      return tensorsOut;
     };
+
+    auto appendModule =
+        [N, &builder, &eng, &fdis, &aiOnnx, &idis, &getSubmodule](
+            std::vector<TensorId> tensorsIn) {
+          auto tensorsOut = tensorsIn;
+          for (int i = 0; i < 3; ++i) {
+            tensorsOut = getSubmodule(tensorsOut);
+          }
+
+          while (tensorsOut.size() != 1) {
+            tensorsIn  = tensorsOut;
+            tensorsOut = {};
+            for (int i = 0; i < tensorsIn.size() / 2; ++i) {
+              auto concat0 =
+                  aiOnnx.concat({tensorsIn[2 * i], tensorsIn[2 * i + 1]}, 0);
+              builder->setInplacePreferences(
+                  concat0, {{"ConcatInplace", 100.0f + fdis(eng)}});
+              tensorsOut.push_back(concat0);
+            }
+          }
+          auto outCon = tensorsOut[0];
+
+          return outCon;
+        };
 
     auto getSliced = [N, &builder, &aiOnnx, &fdis, &eng](TensorId in) {
       std::vector<TensorId> slicedIds;
       for (int i = 0; i < std::pow(2, N); ++i) {
+
         auto sliceOut = aiOnnx.slice({in}, {i + 1, 2}, {i, 0}, {0, 1});
         builder->setInplacePreferences(sliceOut,
                                        {{"SliceInplace", 100.0f + fdis(eng)}});
@@ -145,10 +152,27 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     auto inId = builder->addInputTensor(inInfo);
 
     auto singleTensor = aiOnnx.sigmoid({inId});
+
+    builder->setInplacePreferences(singleTensor,
+                                   {{"SigmoidInplace", 100.0f + fdis(eng)}});
+
     for (int i = 0; i < J; ++i) {
       // break the input into many [1,2] tensors:
-      auto slicedTensors = getSliced(singleTensor);
-      singleTensor       = appendModule(slicedTensors);
+      auto slicedTensors  = getSliced(singleTensor);
+      auto residualTensor = appendModule(slicedTensors);
+
+      // the skip connect. We alternate between highest
+      // priority and lowest priority
+      auto skipTensor = aiOnnx.scale({singleTensor}, fdis(eng));
+      builder->setInplacePreferences(
+          skipTensor,
+          {{"ScaleInplace", 10.0f + 200.0f * (i % 2 == 1) + fdis(eng)}});
+
+      singleTensor = aiOnnx.add({skipTensor, residualTensor});
+
+      builder->setInplacePreferences(singleTensor,
+                                     {{"AddLhsInplace", 100.0f + fdis(eng)},
+                                      {"AddRhsInplace", 100.0f + fdis(eng)}});
     }
 
     auto out = aiOnnx.reducesum({singleTensor}, {0, 1}, false);
@@ -234,7 +258,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
   };
 
   int seed = 1013;
-  int J    = 3;
+  int J    = 2;
   int N    = 3;
   runTest(seed, N, J);
 }

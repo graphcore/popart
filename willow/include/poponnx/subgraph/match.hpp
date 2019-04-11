@@ -2,7 +2,6 @@
 #define GUARD_NEURALNET_SUBGRAPH_MATCH_HPP
 
 #include "subgraphnames.hpp"
-#include <iostream>
 #include <vector>
 
 namespace fwtools {
@@ -24,7 +23,6 @@ public:
     return starts < b.starts;
   }
 
-  // bool valCompari(const Match &b) const {
   bool operator<(const Match &b) const {
     if (getValue() < b.getValue() || getValue() > b.getValue()) {
       return getValue() < b.getValue();

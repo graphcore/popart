@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <sstream>
 #include <poponnx/subgraph/match.hpp>
 #include <poponnx/subgraph/subgraphnames.hpp>
 

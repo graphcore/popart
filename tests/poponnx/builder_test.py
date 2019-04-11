@@ -1467,9 +1467,7 @@ def test_tensor_names(tmpdir):
     i2 = builder.addInitializedInputTensor(
         np.array([1, 6], dtype=np.int64), "weights")
 
-    # Warning : the value 21 is based on how many un-name tensors are created
-    # before this one.
-    assert (i1 == "init_input/21")
+    assert (i1 == "init_input")
     assert (i2 == "weights")
 
     with builder.nameScope("layer1"):
@@ -1488,16 +1486,12 @@ def test_tensor_names(tmpdir):
         i7 = builder.addInputTensor(
             poponnx.TensorInfo("FLOAT", [2, 3]), "label")
 
-    # Warning : the value 65 is based on how many un-name tensors are created
-    # before this one.
-    assert (i5 == "input/65")
+    assert (i5 == "input")
     assert (i6 == "data")
     assert (i7 == "layer2/label")
 
     i10 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 3]))
     i11 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 3]), "data")
 
-    # Warning : the value 65 is based on how many un-name tensors are created
-    # before this one.
-    assert (i10 == "input/66")
+    assert (i10 == "input/1")
     assert (i11 == "data/1")

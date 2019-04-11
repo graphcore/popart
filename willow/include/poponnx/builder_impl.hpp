@@ -1,5 +1,5 @@
-#ifndef GUARD_BUILDER_IMPL_H
-#define GUARD_BUILDER_IMPL_H
+#ifndef GUARD_BUILDER_IMPL_HPP
+#define GUARD_BUILDER_IMPL_HPP
 
 #include <map>
 #include <string>
@@ -31,7 +31,7 @@ public:
   TensorId addInputTensor(const TensorInfo &tensorInfo,
                           const std::string &debugPrefix = "");
 
-  void addInputTensorFromParentGraph(const TensorInfo &tensorInfo,
+  void addInputTensorFromHigherScope(const TensorInfo &tensorInfo,
                                      const TensorId &tensorId);
 
   TensorId addInitializedInputTensor(const ConstVoidData &initData,
@@ -174,7 +174,10 @@ public:
 
   void pushNameScope(const std::string &name);
   void popNameScope();
-  void resetTensorIdCounter();
+
+  const BuilderImpl *getParent() const;
+  bool hasParent() const { return nullptr != parent; }
+  std::vector<const BuilderImpl *> getChildren() const;
 
 private:
   void finalizeOp(onnx::NodeProto *node, const std::string &name);
@@ -227,14 +230,24 @@ private:
 
   std::vector<std::string> name_scope_stack_;
 
-  // Global counter of TensorIds
-  // generated with same
+  // Local counter of TensorIds created in the
+  // scope of this Builder generated with same
   //  1) name,
   //  2) name_scope_stack_ state, and
   //  3) OutIndex (or 0 if an input tensor to the graph).
   //  ..............................1)...........2)...........3)
   using NameStackIndex = std::tuple<std::string, std::string, OutIndex>;
-  static std::map<NameStackIndex, int> tensorIdCounter;
+  std::map<NameStackIndex, std::set<int>> tensorIdCounter;
+
+  int getLowestValidSuffix(const NameStackIndex &) const;
+
+  bool inCurrentScope(const NameStackIndex &, int index) const;
+
+  // in parent's scope, or higher
+  bool inHigherScope(const NameStackIndex &, int index) const;
+
+  // in a child's scope, or lower
+  bool inLowerScope(const NameStackIndex &, int index) const;
 
   onnx::ModelProto model_;
 
@@ -242,7 +255,16 @@ private:
 
   // Record which opset version we are using for each domain
   std::map<std::string, int64_t> opsetVersions;
+
+  const BuilderImpl *parent{nullptr};
+  std::vector<const BuilderImpl *> children;
+
+public:
+  void addChild(const BuilderImpl *child) { children.push_back(child); }
+
+  void setParent(const BuilderImpl *parent_) { parent = parent_; }
 };
 
 } // namespace poponnx
-#endif // GUARD_BUILDER_IMPL_H
+
+#endif // GUARD_BUILDER_IMPL_HPP

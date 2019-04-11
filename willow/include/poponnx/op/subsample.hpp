@@ -47,7 +47,9 @@ public:
 
   std::vector<int64_t> getStrides() const { return strides; }
 
-  Shape getFwdInputShape() { return fwdOpInfo.shape(); }
+  std::vector<uint32_t> strides_u32() const;
+
+  const Shape &getFwdInputShape() const { return fwdOpInfo.shape(); }
 
   void appendAttributes(OpSerialiserBase &) const override;
 

@@ -150,13 +150,13 @@ void Ir::dotCheckpoint(DotCheck check) const {
   // the name that a Tensor has in the .dot file.
   auto tensorDotId = [](const TensorId &id) { return '\"' + id + '\"'; };
 
-  // inplace Ops will have a green edge, others will have a black edge
+  // inplace Ops will have a olive green edge, others will have a red edge
   auto getOpNodeColor = [](const std::string &id) {
     auto found = id.find("Inplace");
     if (found != std::string::npos) {
-      return "\"green\"";
+      return "\"#6B8E23\"";
     }
-    return "\"black\"";
+    return "\"#cc3300\"";
   };
 
   std::ofstream strm;

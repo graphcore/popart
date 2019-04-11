@@ -10,6 +10,17 @@
 namespace poponnx {
 namespace popx {
 
+static poplar::Tensor subsample(poplar::Tensor &t,
+                                const std::vector<uint32_t> &strides) {
+
+  auto result   = t;
+  int dimension = 0;
+  for (auto stride : strides) {
+    result = result.subSample(stride, dimension++);
+  }
+  return result;
+}
+
 SubsampleOpx::SubsampleOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<SubsampleOp>(op, {Onnx::CustomOperators::Subsample_1});
 }
@@ -18,14 +29,11 @@ void SubsampleOpx::grow(poplar::program::Sequence &prog) const {
 
   SubsampleOp &op = getOp<SubsampleOp>();
 
-  auto outTensor = getInTensor(0);
-  int dimension  = 0;
-  for (auto stride : op.strides_u32()) {
-    outTensor = outTensor.subSample(stride, dimension++);
-  }
+  auto outTensor = getInTensor(SubsampleOp::getInIndex());
+  outTensor      = subsample(outTensor, op.strides_u32());
 
   // Need to clone/copy a new output tensor so is not in place
-  setOutTensor(0, cloneNcopy(prog, outTensor));
+  setOutTensor(SubsampleOp::getOutIndex(), cloneNcopy(prog, outTensor));
 }
 
 SubsampleGradOpx::SubsampleGradOpx(Op *op, Devicex *devicex)
@@ -33,68 +41,43 @@ SubsampleGradOpx::SubsampleGradOpx(Op *op, Devicex *devicex)
   verifyOp<SubsampleGradOp>(op, Onnx::CustomGradOperators::SubsampleGrad);
 }
 
-// Starting from the gradient of the output of Subsample, we iteratively expand
-// the tensor by inserting zeros in the positions which were not sampled by
-// Subsample.
+// 1. Create an output tensor all 0's
+// 2. Create a subsample of that tensor that matches what we did in the fwd pass
+// 3. Copy the input gradients onto the subsample view of the output
+// 4. Return the output tensor
 void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
 
   SubsampleGradOp &gradOp = getOp<SubsampleGradOp>();
-
-  std::vector<unsigned int> strides =
-      vXtoY<int64_t, unsigned int>(gradOp.getStrides());
-  Shape fwdOpInputShape = gradOp.getFwdInputShape();
-
-  auto outTensor = getInTensor(0);
+  auto &in                = getInTensor(SubsampleGradOp::getInIndex());
 
   // Design decision: make a scalar zero variable that we expand to create
-  // the padding used in the upsampling of the grad-op's input tensor.
-  // Do this instead of creating padding as large constant tensors upfront
-  // to save memory at the cost of additional cycles.
-  auto pad = graph().addVariable(outTensor.elementType(), {}, "subsample/pad");
-  graph().setTileMapping(pad, 0);
-  graph().setInitialValue(pad, 0);
+  // a tensor of the same size as the output
+  auto zero = graph().addVariable(in.elementType(), {}, "subsample/zero");
+  graph().setTileMapping(zero, 0);
+  graph().setInitialValue(zero, 0);
 
-  // for each dimension of the input
-  for (int d = 0; d < inInfo(0).rank(); ++d) {
-
-    // The out of the shape keeps changing
-    std::vector<size_t> shape = outTensor.shape();
-
-    auto padded = pad;
-    for (int i = 0; i < shape.size(); ++i) {
-      padded = padded.expand({0});
-    }
-    for (int i = 0; i < shape.size(); ++i) {
-      padded = padded.broadcast(static_cast<unsigned>(shape[i]), i);
-    }
-
-    // Slice the out and padding so we can concatenate them
-    auto sliced_padding = padded.slice(0, 1, d);
-
-    // First iteration
-    auto interleaved = outTensor.slice(0, 1, d);
-    for (int p = 1; p < strides[d]; ++p) {
-      interleaved = poplar::concat(interleaved, sliced_padding, d);
-    }
-
-    // Subsequent iterations
-    for (int s = 1; s < outTensor.dim(d); ++s) {
-
-      interleaved =
-          poplar::concat(interleaved, outTensor.slice(s, s + 1, d), d);
-      for (int p = 1; p < strides[d]; ++p) {
-
-        // while we are smaller than the original input to the fwd op
-        if (interleaved.dim(d) < fwdOpInputShape[d]) {
-          interleaved = poplar::concat(interleaved, sliced_padding, d);
-        }
-      }
-    }
-
-    outTensor = interleaved;
+  // Create an 0'ed tensor to be a tensor of the right size
+  auto output = zero;
+  for (int i = 0; i < gradOp.getFwdInputShape().size(); ++i) {
+    output = output.expand({0});
+  }
+  for (int i = 0; i < gradOp.getFwdInputShape().size(); ++i) {
+    output = output.broadcast(
+        static_cast<unsigned>(gradOp.getFwdInputShape()[i]), i);
   }
 
-  setOutTensor(0, cloneNcopy(prog, outTensor));
+  // Copy the zero-view tensor into a new tensor and remap
+  auto outTensor = cloneNcopy(prog, output);
+  poputil::mapTensorLinearly(graph(), outTensor);
+
+  // Create a subsample view of the output
+  auto ss_output = subsample(outTensor, gradOp.strides_u32());
+
+  // Copy the input tensor into the subsampled view of the output
+  prog.add(poplar::program::Copy(in, ss_output));
+
+  // Return the output
+  setOutTensor(SubsampleGradOp::getOutIndex(), outTensor);
 }
 
 namespace {
