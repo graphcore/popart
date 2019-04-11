@@ -550,7 +550,7 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("tensorInfo"),
            py::arg("debugPrefix") = std::string())
       .def("addInputTensorFromParentGraph",
-           &Builder::addInputTensorFromParentGraph,
+           &Builder::addInputTensorFromHigherScope,
            py::arg("tensorInfo"),
            py::arg("tensorId"))
       .def(
@@ -715,8 +715,6 @@ PYBIND11_MODULE(poponnx_core, m) {
            static_cast<bool (Builder::*)(const TensorId &)>(
                &Builder::getRecomputeOutputInBackwardPass),
            py::arg("nodeOutputName"))
-
-      .def("resetTensorIdCounter", &Builder::resetTensorIdCounter)
 
       .def("getRecomputeOutputInBackwardPass",
            static_cast<bool (Builder::*)(const std::set<TensorId> &)>(

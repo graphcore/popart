@@ -1,5 +1,5 @@
-#ifndef GUARD_BUILDER_H
-#define GUARD_BUILDER_H
+#ifndef GUARD_BUILDER_HPP
+#define GUARD_BUILDER_HPP
 
 #include <memory>
 #include <set>
@@ -100,6 +100,12 @@ class Builder {
 
 public:
   /**
+   * Return a Builder for a graph which is nested inside this Builder's graph.
+   */
+
+  Builder &createSubgraphBuilder();
+
+  /**
    * Create a builder for an ONNX model.
    */
   static std::unique_ptr<Builder> create();
@@ -134,7 +140,7 @@ public:
    * must already exist in the parent GraphProto's name scope and must appear
    * topologically before this sub-graph.
    */
-  void addInputTensorFromParentGraph(const TensorInfo &tensorInfo,
+  void addInputTensorFromHigherScope(const TensorInfo &tensorInfo,
                                      const TensorId &tensorId);
 
   /**
@@ -627,11 +633,6 @@ public:
    */
   void popNameScope();
 
-  /**
-   * Reset the static counter of generated TensorIds
-   */
-  void resetTensorIdCounter();
-
 private:
   void configure();
   void configure(const std::string &modelProtoOrFilename);
@@ -650,7 +651,10 @@ private:
                               const std::vector<int64_t> dilation = {});
 
   std::unique_ptr<BuilderImpl> impl_;
+  std::map<int, std::unique_ptr<Builder>> children;
+  int nChildren{0};
 };
 
 } // namespace poponnx
-#endif // GUARD_BUILDER_H
+
+#endif // GUARD_BUILDER_HPP

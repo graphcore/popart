@@ -38,6 +38,17 @@ const static int64_t maxOnnxOperatorSetVersion = 9;
 const static int64_t minGraphcoreOperatorSetVersion = 1;
 const static int64_t maxGraphcoreOperatorSetVersion = 1;
 
+const BuilderImpl *BuilderImpl::getParent() const {
+  if (!hasParent()) {
+    throw error("ILE: No Parent Builder");
+  }
+  return parent;
+}
+
+std::vector<const BuilderImpl *> BuilderImpl::getChildren() const {
+  return children;
+}
+
 void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
 
   std::string debug_name = name.empty() ? node->op_type() : name;
@@ -60,9 +71,59 @@ void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
   onnx::shape_inference::InferShapes(model_);
 }
 
-std::map<BuilderImpl::NameStackIndex, int> BuilderImpl::tensorIdCounter = {};
+bool BuilderImpl::inHigherScope(const BuilderImpl::NameStackIndex &nsi,
+                                int counter) const {
 
-void BuilderImpl::resetTensorIdCounter() { tensorIdCounter = {}; }
+  if (hasParent()) {
+    return getParent()->inCurrentScope(nsi, counter) ||
+           getParent()->inHigherScope(nsi, counter);
+  }
+  return false;
+}
+
+bool BuilderImpl::inLowerScope(const BuilderImpl::NameStackIndex &nsi,
+                               int counter) const {
+
+  for (auto &child : getChildren()) {
+    if (child->inCurrentScope(nsi, counter) ||
+        child->inLowerScope(nsi, counter)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool BuilderImpl::inCurrentScope(const BuilderImpl::NameStackIndex &nsi,
+                                 int counter) const {
+
+  auto iter0 = tensorIdCounter.find(nsi);
+
+  if (iter0 == tensorIdCounter.end()) {
+    return false;
+  } else {
+    const auto &counterSet = iter0->second;
+    if (counterSet.count(counter) != 0) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+}
+
+int BuilderImpl::getLowestValidSuffix(
+    const BuilderImpl::NameStackIndex &nsi) const {
+
+  int counter = -1;
+  bool valid  = false;
+  while (!valid) {
+    ++counter;
+    valid = ((!inCurrentScope(nsi, counter)) && (!inLowerScope(nsi, counter)) &&
+             (!inHigherScope(nsi, counter)));
+  }
+
+  return counter;
+}
 
 TensorId BuilderImpl::getNextId(const std::string &name, OutIndex n) {
 
@@ -74,9 +135,6 @@ TensorId BuilderImpl::getNextId(const std::string &name, OutIndex n) {
 
   std::string stack_str = stack_ss.str();
 
-  // search for the count in the global map
-  auto iter = tensorIdCounter.find(NameStackIndex(name, stack_str, n));
-
   // generate the unique id string
   std::stringstream id_ss;
   id_ss << stack_str << name;
@@ -86,15 +144,27 @@ TensorId BuilderImpl::getNextId(const std::string &name, OutIndex n) {
     id_ss << ':' << std::to_string(n);
   }
 
-  if (iter == tensorIdCounter.end()) {
-    tensorIdCounter[NameStackIndex(name, stack_str, n)] = 1;
+  auto nsi = NameStackIndex(name, stack_str, n);
+
+  // the lowest suffix which uniquely identifies this
+  // from all names in this scope, higher scopes, lower scopes
+  auto lowestValidSuffix = getLowestValidSuffix(nsi);
+
+  // record this index in current scope
+  auto iter0 = tensorIdCounter.find(nsi);
+  if (iter0 == tensorIdCounter.end()) {
+    tensorIdCounter[nsi] = {lowestValidSuffix};
   } else {
-    // Add a '/x' to make unique
-    id_ss << sNameDelimiter << iter->second;
-    ++(iter->second);
+    iter0->second.emplace(lowestValidSuffix);
+  }
+
+  if (lowestValidSuffix != 0) {
+    // Add a '/x' to make unique within scope
+    id_ss << sNameDelimiter << lowestValidSuffix;
   }
 
   std::string id = id_ss.str();
+
   return id;
 }
 
@@ -125,7 +195,6 @@ void BuilderImpl::addOpsetRequirement(const std::string &domain, int version) {
 
 void BuilderImpl::configure() {
   model_.set_ir_version(defaultIrVersion);
-
   model_.mutable_graph()->set_name("BuilderGraph");
 }
 
@@ -134,11 +203,11 @@ TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
 
   std::string name = debugPrefix.empty() ? "input" : debugPrefix;
   auto id          = getNextId(name);
-  addInputTensorFromParentGraph(tensorInfo, id);
+  addInputTensorFromHigherScope(tensorInfo, id);
   return id;
 }
 
-void BuilderImpl::addInputTensorFromParentGraph(const TensorInfo &tensorInfo,
+void BuilderImpl::addInputTensorFromHigherScope(const TensorInfo &tensorInfo,
                                                 const TensorId &tensorId) {
 
   auto onnxTensorType = tensorInfo.getOnnxTypeProto();

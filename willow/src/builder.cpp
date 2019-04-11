@@ -123,6 +123,20 @@ std::unique_ptr<Builder> Builder::create() {
   return builder;
 }
 
+Builder &Builder::createSubgraphBuilder() {
+  children[nChildren] = create();
+  auto child          = children[nChildren].get();
+  ++nChildren;
+
+  // point this to child
+  impl_->addChild(child->impl_.get());
+
+  // point child to this
+  child->impl_->setParent(this->impl_.get());
+
+  return *child;
+}
+
 std::unique_ptr<Builder>
 Builder::createFromOnnxModel(const std::string &modelProtoOrFilename) {
   auto builder = create();
@@ -137,9 +151,9 @@ TensorId Builder::addInputTensor(const TensorInfo &tensorInfo,
   return impl_->addInputTensor(tensorInfo, debugPrefix);
 }
 
-void Builder::addInputTensorFromParentGraph(const TensorInfo &tensorInfo,
+void Builder::addInputTensorFromHigherScope(const TensorInfo &tensorInfo,
                                             const TensorId &tensorId) {
-  impl_->addInputTensorFromParentGraph(tensorInfo, tensorId);
+  impl_->addInputTensorFromHigherScope(tensorInfo, tensorId);
 }
 
 TensorId Builder::addInitializedInputTensor(const ConstVoidData &initData,
@@ -340,8 +354,6 @@ void Builder::clearAttribute(const std::string &attribute) {
 void Builder::pushNameScope(const std::string &name) {
   impl_->pushNameScope(name);
 }
-
-void Builder::resetTensorIdCounter() { impl_->resetTensorIdCounter(); }
 
 void Builder::popNameScope() { impl_->popNameScope(); }
 

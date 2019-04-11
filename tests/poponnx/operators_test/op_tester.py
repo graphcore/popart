@@ -107,11 +107,6 @@ def op_tester(tmpdir):
 
             bld = Builder(opsets=opsets)
 
-            # reset the static counter of generated TensorIds to zero:
-            # start this test with no memory of the names of tensors
-            # generated in previous tests.
-            bld.resetTensorIdCounter()
-
             anchors = {}
             anchorIds = init_builder(bld)
             for anchorId in anchorIds:
