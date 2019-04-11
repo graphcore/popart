@@ -20,6 +20,8 @@ Warnings with g++ are being worked on (an open task)
 CONFIGURE and BUILD
 -------------------
 
+Python 2 is not supported, only Python 3 is supported. 
+
 These are directions for building directly from the poponnx repository, 
 not from the poponnx_iew repo, which is the suggested way to build.
 To build from the poponnx_view directory, see the instructions in the wiki:
