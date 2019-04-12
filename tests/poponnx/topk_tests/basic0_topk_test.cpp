@@ -12,6 +12,7 @@
 #include <poponnx/tensornames.hpp>
 
 #include <random>
+#include <vector>
 
 BOOST_AUTO_TEST_CASE(Basic0TopK) {
 
