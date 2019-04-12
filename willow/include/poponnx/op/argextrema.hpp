@@ -1,13 +1,13 @@
 #ifndef GUARD_NEURALNET_ARGEXTREMA_HPP
 #define GUARD_NEURALNET_ARGEXTREMA_HPP
 
-#include <poponnx/op.hpp>
+#include <poponnx/op/basesort.hpp>
 
 namespace poponnx {
 
 // The base class for an op that wants to choose some extreme values from an
 // input tensor.
-class ArgExtremaOp : public Op {
+class ArgExtremaOp : public BaseSortOp {
 public:
   ArgExtremaOp(const OperatorIdentifier &_opid,
                int64_t axis,
@@ -16,16 +16,15 @@ public:
   std::unique_ptr<Op> clone() const override;
   void setup() final;
 
-  int64_t getAxis() const;
   int64_t getKeepDims() const;
 
   void appendAttributes(OpSerialiserBase &) const final;
 
-  static InIndex getInIndex() { return 0; }
+  // getInIndex is defined in parent class, BaseSortOp
+
   static OutIndex getOutIndex() { return 0; }
 
 private:
-  const int64_t axis;
   const int64_t keepdims;
 };
 
