@@ -19,9 +19,6 @@ fi
 
 source ./poponnx/ci/utils.sh
 
-# Update this as necessary
-SOURCE_ID=`cat poponnx/poplar_version`
-
 # Get the current directory
 VIEW_DIR=${PWD}
 
@@ -30,9 +27,18 @@ rm -rf ../external
 mkdir -p ../external
 cd ../external
 
+# The element name
+if [ $(uname) == 'Linux' ] ; then
+  ELEMENT_NAME='Poplar ubuntu 18 04 installer'
+else
+  ELEMENT_NAME='Poplar osx installer'
+fi
+
 # Download
-python ${VIEW_DIR}/swdb_api/swdb_download_latest.py \
-       $1 ${SOURCE_ID} $2 poplar_installer.tar.gz > download.log
+python ${VIEW_DIR}/swdb_api/swdb_download_element.py \
+       --product_name poplar \
+       --element_name "${ELEMENT_NAME}" \
+       --swdb_url $1 poplar_installer.tar.gz
 
 # Extract
 tar xvzf poplar_installer.tar.gz
