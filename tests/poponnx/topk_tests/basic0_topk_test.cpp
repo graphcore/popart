@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(Basic0TopK) {
   std::vector<float> expectedOutputValues(outValuesInfo.nelms(), -1.0f);
   for (int i = 0; i < D0; ++i) {
     for (int j = 0; j < D2; ++j) {
-      std::vector<std::tuple<float, int>> oneD2Sort(D1, {});
+      std::vector<std::tuple<float, int>> oneD2Sort(D1);
       for (int k_ = 0; k_ < D1; ++k_) {
         oneD2Sort[k_] =
             std::tuple<float, int>(vXData[i * D1 * D2 + D2 * k_ + j], k_);
