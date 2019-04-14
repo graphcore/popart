@@ -1,8 +1,11 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/topk.hpp>
 #include <poponnx/popx/devicex.hpp>
+#include <poponnx/popx/op/scatterutilx.hpp>
 #include <poponnx/popx/op/topkx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
+
+#include <popops/Zero.hpp>
 
 namespace poponnx {
 namespace popx {
@@ -10,6 +13,37 @@ namespace popx {
 TopKOpx::TopKOpx(Op *op, Devicex *devicex) : BaseSortOpx(op, devicex) {
   verifyOp<TopKOp>(op);
   K = static_cast<unsigned>(dynamic_cast<TopKOp *>(op)->getK());
+}
+
+TopKGradOpx::TopKGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  verifyOp<TopKGradOp>(op, Onnx::GradOperators::TopKGrad);
+  axis        = dynamic_cast<TopKGradOp *>(op)->getAxis();
+  gradOutInfo = dynamic_cast<TopKGradOp *>(op)->getGradOutInfo();
+  gradOutShape.reserve(gradOutInfo.rank());
+  for (auto &x : gradOutInfo.shape()) {
+    gradOutShape.push_back(static_cast<size_t>(x));
+  }
+}
+
+const std::vector<size_t> &TopKGradOpx::getGradOutShape() const {
+  return gradOutShape;
+}
+
+void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
+  auto indices = getInTensor(TopKGradOp::indicesInIndex());
+
+  auto gradIn = getInTensor(TopKGradOp::gradInIndex());
+
+  poplar::Tensor dataGrad =
+      graph().addVariable(gradIn.elementType(), getGradOutShape());
+
+  poputil::mapTensorLinearly(graph(), dataGrad);
+
+  popops::zero(graph(), dataGrad, prog);
+
+  scatterutilx::growScatter(prog, graph(), indices, gradIn, dataGrad, axis);
+
+  setOutTensor(TopKGradOp::gradOutIndex(), dataGrad);
 }
 
 void TopKOpx::grow(poplar::program::Sequence &prog) const {
@@ -30,6 +64,7 @@ void TopKOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<TopKOpx> TopKOpxCreator(Onnx::Operators::TopK_1);
+OpxCreator<TopKGradOpx> topkGradOpxCreator(Onnx::GradOperators::TopKGrad);
 } // namespace
 
 } // namespace popx

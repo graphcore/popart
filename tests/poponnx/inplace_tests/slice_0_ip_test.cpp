@@ -7,9 +7,6 @@
 #include <poponnx/filereader.hpp>
 #include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/op/l1.hpp>
-#include <poponnx/op/nll.hpp>
-#include <poponnx/optimizer.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/tensornames.hpp>
