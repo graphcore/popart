@@ -49,7 +49,8 @@ private:
 
 class TestRunner {
 public:
-  template <typename ModelBuilder> void buildModel(ModelBuilder &&modelBuilder) {
+  template <typename ModelBuilder>
+  void buildModel(ModelBuilder &&modelBuilder) {
     // Build an onnx model
     auto builder = Builder::create();
     outId        = modelBuilder(*builder);
@@ -82,7 +83,7 @@ public:
                    std::vector<TestTensor> &inputs,
                    std::vector<TestTensor> &outputs) {
     if (!ran_checkIr) {
-      checkIr([](Ir &){});
+      checkIr([](Ir &) {});
     }
 
     std::map<TensorId, IArray &> output_map;
@@ -112,7 +113,7 @@ private:
   std::string proto;
   TensorId outId;
   std::unique_ptr<InferenceSession> session;
-  bool ran_checkIr = false;
+  bool ran_checkIr     = false;
   bool device_prepared = false;
 };
 
@@ -124,6 +125,12 @@ template <>
 TensorInfo createTensorInfo(const std::vector<float> &data,
                             const std::vector<int64_t> &shape) {
   return TensorInfo{DataType::FLOAT, shape};
+}
+
+template <>
+TensorInfo createTensorInfo(const std::vector<int64_t> &data,
+                            const std::vector<int64_t> &shape) {
+  return TensorInfo{DataType::INT64, shape};
 }
 
 template <>

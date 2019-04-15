@@ -109,6 +109,7 @@ void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
   }
 
   // confirm shapes agree (up to squeezing out the extra 1s)
+  auto irTensorStr   = ir.getTensors().get(id)->str();
   auto expectedShape = ir.getTensors().get(id)->info.shape_szt();
 
   if (pt.shape() != expectedShape) {
@@ -118,6 +119,18 @@ void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
     appendSequence(ss, pt.shape());
     ss << ". Expected (Ir) tensor shape: ";
     appendSequence(ss, expectedShape);
+    ss << ". This for tensor " << irTensorStr;
+    throw error(ss.str());
+  }
+
+  // confirm types agree
+  auto expectedType = popType(ir.getTensors().get(id)->info);
+  if (pt.elementType() != expectedType) {
+    std::stringstream ss;
+    ss << "poplar::Tensor " << id << " of unexpected Type. "
+       << "Poplar tensor type : " << pt.elementType();
+    ss << ". Expected (Ir) tensor type : " << expectedType;
+    ss << ". This for tensor " << irTensorStr;
     throw error(ss.str());
   }
 
