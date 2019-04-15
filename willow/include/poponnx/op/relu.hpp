@@ -33,8 +33,6 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
 
-  bool supportsCaching() const override { return true; }
-
   // The index at which the output of the Relu (the "relud" tensor)
   // is an input to this ReluGradOp
   static InIndex getReludInIndex() { return 1; }

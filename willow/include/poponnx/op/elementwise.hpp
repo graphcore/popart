@@ -18,10 +18,6 @@ public:
   // Making this function override and not final, as there
   // may be a more / less expensive to compute non-linearity.
   float getSubgraphValue() const override { return 0.1f; }
-
-  // The default for ElementWise Ops is that they can
-  // appear in sub-graphs.
-  bool supportsCaching() const override { return true; }
 };
 
 class ElementWiseInplaceUnaryOp : public ElementWiseUnaryOp {

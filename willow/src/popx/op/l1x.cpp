@@ -66,7 +66,8 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
   std::iota(dims.begin(), dims.end(), 1);
 
   // Turn the scale into a tensor
-  auto scale = dv_p->getConst(poplar::FLOAT, {}, static_cast<double>(l1op.l1l()->getLambda()));
+  auto scale = dv_p->getConst(
+      poplar::FLOAT, {}, static_cast<double>(l1op.l1l()->getLambda()));
 
   poplar::Tensor reduction = popops::reduce(
       graph(), absTensor, dims, {popops::Operation::ADD, false, scale}, prog);

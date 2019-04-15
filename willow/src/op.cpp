@@ -158,9 +158,18 @@ void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
 }
 
 std::string Op::getSubgraphEquivId() const {
-  OpEquivIdCreator os(this);
-  appendAttributes(os);
-  return os.str();
+
+  if (isOutlineable()) {
+    OpEquivIdCreator os(this);
+    appendAttributes(os);
+    return os.str();
+  }
+
+  // in the case where the op is not outlineable, we return a unique string
+  // to guarantee that it does not appear in any outline matches.
+  std::stringstream ss;
+  ss << str() << "_uid_" << id;
+  return ss.str();
 }
 
 void Op::append(std::stringstream &ss) const {
@@ -367,6 +376,6 @@ Op::getSubgraphOutputs() const {
   return cmap;
 }
 
-bool Op::supportsCaching() const { return true; }
+bool Op::isOutlineable() const { return true; }
 
 } // namespace poponnx

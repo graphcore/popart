@@ -309,8 +309,8 @@ public:
 
   // Allow an op to exclude itself from caching. If this method returns false
   // it will mean that any possiable subgraph that this op is part of will
-  // not be cached. The default is enabled
-  virtual bool supportsCaching() const;
+  // not be cached. The default is enabled (return true)
+  virtual bool isOutlineable() const;
 };
 
 } // namespace poponnx
