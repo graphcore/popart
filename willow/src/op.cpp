@@ -149,6 +149,8 @@ void Op::disconnectAllOutputs() {
 }
 
 void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
+  tenId = (getScope() / tenId).str();
+
   getIr().getTensors().addActGrad(tenId);
   Tensor *ptensor = getIr().getTensors().get(tenId);
   output->insert(outIndex, ptensor);
@@ -207,6 +209,7 @@ int64_t Op::memOfOutputs() const {
 void Op::appendAttributes(OpSerialiserBase &os) const {
   os.appendAttribute(sRecomputeOutputAttribute, getRecomputeOutput());
   os.appendAttribute(sVirtualGraphAttribute, getVirtualGraphId());
+  os.appendAttribute("scope", getScope());
 }
 
 const std::string &Op::name() const { return getName(); }

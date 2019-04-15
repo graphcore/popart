@@ -265,7 +265,8 @@ public:
   void constructForwards();
 
   // Convert an ONNX graph into IR
-  void constructFromOnnxGraph(const onnx::GraphProto &graph);
+  void constructFromOnnxGraph(const onnx::GraphProto &graph,
+                              const Scope &scope);
 
   void foldConstants();
 
@@ -290,6 +291,9 @@ public:
   // For all vertices set the phase, and whether or not
   // there is a path to vertex in whose phase is BWD.
   void updateVertices();
+
+  // Capture as many ops in higher scopes as possible
+  void extendScopes();
 
   // modify the Ir using all the registered pre-alias patterns
   void applyPreAliasPatterns();
@@ -347,7 +351,7 @@ private:
 
   // create an Op from Node (if not Constant Node), wire it to
   // correct input Tensors and create the activation output Tensors
-  Op *growFromNode(const Node &);
+  Op *growFromNode(const Node &, const Scope &);
 
   Op *growGradientVarUpdateOp(TensorId varId);
 
@@ -398,7 +402,7 @@ private:
   Patterns patterns;
 
   // create an Op from a Node
-  std::unique_ptr<Op> addOp(const Node &);
+  std::unique_ptr<Op> addOp(const Node &, const Scope &);
   std::map<OpId, std::unique_ptr<Op>> ops;
 
   // total number of ops ever created

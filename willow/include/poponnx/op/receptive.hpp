@@ -11,7 +11,8 @@ class HasReceptiveFieldOp : public Op {
 public:
   struct Settings : public Op::Settings {
 
-    Settings(Ir &ir_, const std::string &name_) : Op::Settings(ir_, name_) {}
+    Settings(Ir &ir_, const std::string &name_, const Scope &scope_)
+        : Op::Settings(ir_, name_, scope_) {}
 
     std::vector<int64_t> pads;
     std::vector<int64_t> strides;

@@ -275,8 +275,8 @@ static OpCreator<ConvOp> convOpCreator(
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
-      HasReceptiveFieldOp::Settings receptiveSettings(settings.ir,
-                                                      settings.name);
+      HasReceptiveFieldOp::Settings receptiveSettings(
+          settings.ir, settings.name, settings.scope);
       receptiveSettings.setFromAttributes(attr);
 
       return std::unique_ptr<Op>(new ConvOp(_opid, receptiveSettings));

@@ -21,6 +21,7 @@ public:
   virtual void appendAttribute(const std::string &,
                                boost::optional<int64_t>)                 = 0;
   virtual void appendAttribute(const std::string &, bool)                = 0;
+  virtual void appendAttribute(const std::string &, const Scope &)       = 0;
 
   virtual void appendForwardOp(const Op *) = 0;
 };
@@ -37,6 +38,7 @@ public:
   void appendAttribute(const std::string &, const std::string &) override;
   void appendAttribute(const std::string &, boost::optional<int64_t>) override;
   void appendAttribute(const std::string &, bool) override;
+  void appendAttribute(const std::string &, const Scope &) override;
 
   virtual void appendForwardOp(const Op *) override;
 
@@ -62,6 +64,7 @@ public:
   void appendAttribute(const std::string &, const std::string &) override;
   void appendAttribute(const std::string &, boost::optional<int64_t>) override;
   void appendAttribute(const std::string &, bool) override;
+  void appendAttribute(const std::string &, const Scope &) override;
 
   virtual void appendForwardOp(const Op *) override;
 

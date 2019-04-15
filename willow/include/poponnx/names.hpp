@@ -68,6 +68,7 @@ class InputMapWrapper;
 class OutputMapWrapper;
 class Vertex;
 class TopoCons;
+class Scope;
 enum class TensorType;
 
 namespace view {

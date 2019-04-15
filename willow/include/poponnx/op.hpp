@@ -9,6 +9,7 @@
 #include <poponnx/names.hpp>
 #include <poponnx/opidentifier.hpp>
 #include <poponnx/region.hpp>
+#include <poponnx/scope.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/util.hpp>
 #include <poponnx/vertex.hpp>
@@ -69,12 +70,16 @@ public:
   struct Settings {
 
     Settings(Ir &ir_, const std::string &name_) : ir(ir_), name(name_) {}
+    Settings(Ir &ir_, const std::string &name_, const Scope &scope_)
+        : ir(ir_), name(name_), scope(scope_) {}
     virtual ~Settings()        = default;
     Settings(const Settings &) = default;
 
     Ir &ir;
 
     std::string name = "";
+
+    Scope scope;
 
     // optional inplace priorities, to take precedence over the default
     // priorities. A negative priority gurarantees no inplacing
@@ -117,6 +122,9 @@ public:
 
   Ir &getIr() { return settings.ir; }
   const Ir &getIr() const { return settings.ir; }
+
+  const Scope &getScope() const { return settings.scope; }
+  void setScope(const Scope &scope) { settings.scope = scope; }
 
   virtual bool isNorm() const;
   bool isElementWiseUnary() const;

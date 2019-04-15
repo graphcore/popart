@@ -186,6 +186,25 @@ Tensor *Tensors::get(TensorId tenId) const {
   return found->second.get();
 }
 
+TensorId Tensors::find(TensorId tenId, const Scope &scope) const {
+  Scope s = scope;
+
+  while (!s.empty()) {
+    auto id = (s / tenId).str();
+    if (M.find(id) != M.end()) {
+      return id;
+    } else {
+      s.pop();
+    }
+  }
+
+  if (M.find(tenId) != M.end()) {
+    return tenId;
+  } else {
+    throw error("Could not find tensor with id {} in scope {}", tenId, scope);
+  }
+}
+
 void Tensors::append(std::stringstream &ss) const {
   bool frst = true;
   ss << '[';
@@ -283,6 +302,7 @@ void Tensors::addStream(TensorId tenId, const TensorInfo &info) {
 }
 
 void Tensors::addActGrad(TensorId tenId) {
+  logging::debug("Adding ActGrad Tensor {}", tenId);
   insert(tenId,
          std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::ActGrad, ir)));
 }

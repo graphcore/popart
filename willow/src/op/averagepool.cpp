@@ -107,8 +107,8 @@ static OpCreator<AveragePoolOp> averagePoolOpCreator(
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
-      HasReceptiveFieldOp::Settings receptiveSettings(settings.ir,
-                                                      settings.name);
+      HasReceptiveFieldOp::Settings receptiveSettings(
+          settings.ir, settings.name, settings.scope);
       receptiveSettings.setFromAttributes(attr);
 
       std::vector<int64_t> kernelShape =

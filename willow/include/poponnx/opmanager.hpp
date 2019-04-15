@@ -42,6 +42,7 @@ public:
                                       const int opsetVersion,
                                       Ir &ir,
                                       const std::string &name = "",
+                                      const Scope &scope      = {},
                                       const Attributes &_attr = {});
 
   // creates a op with matches the opid
@@ -62,6 +63,7 @@ private:
   std::unique_ptr<Op> create(const OperatorIdentifier &opid,
                              Ir &ir,
                              const std::string &name,
+                             const Scope &scope,
                              const Attributes &_attr,
                              OpFactoryFunc func);
   // Singleton
