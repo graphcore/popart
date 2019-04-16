@@ -1587,16 +1587,16 @@ void Ir::extendScopes() {
   auto getConsumers = [](const std::vector<Tensor *> tensors) {
     std::vector<Op *> consumers;
     for (auto t : tensors) {
-      auto ops = t->consumers.getOps();
-      consumers.insert(consumers.end(), ops.begin(), ops.end());
+      auto operations = t->consumers.getOps();
+      consumers.insert(consumers.end(), operations.begin(), operations.end());
     }
     return consumers;
   };
 
   // Get all the inputs of the arg ops
-  auto getInputs = [](const std::set<Op *> &ops) {
+  auto getInputs = [](const std::set<Op *> &operations) {
     std::set<Tensor *> inputs;
-    for (auto op : ops) {
+    for (auto op : operations) {
       for (auto t : op->input->tensors()) {
         inputs.insert(t);
       }

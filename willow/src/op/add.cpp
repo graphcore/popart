@@ -136,7 +136,7 @@ view::Region AddRhsInplaceOp::aliases(InIndex index) const {
 view::RegMap AddOp::fwdRegMap(InIndex argIndex) const {
   return [this, argIndex](const view::Region &r) {
     auto out_shape = outShape(AddOp::getOutIndex());
-    auto out_size  = out_shape.size();
+    auto out_size  = static_cast<int>(out_shape.size());
 
     auto arg_shape = padShape(inShape(argIndex), out_size, int64_t{1});
     auto lower     = padShape(r.getLower(), out_size, int64_t{0});
@@ -156,7 +156,7 @@ view::RegMap AddOp::fwdRegMap(InIndex argIndex) const {
 view::RegMap AddOp::bwdRegMap(InIndex argIndex) const {
   return [this, argIndex](const view::Region &r) {
     auto arg_shape = inShape(argIndex);
-    auto arg_size  = arg_shape.size();
+    auto arg_size  = static_cast<int>(arg_shape.size());
 
     auto out_shape = unpadShape(outShape(AddOp::getOutIndex()), arg_size);
     auto lower     = unpadShape(r.getLower(), arg_size);
