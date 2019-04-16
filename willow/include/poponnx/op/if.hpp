@@ -27,8 +27,11 @@ public:
     return i + inputsPerBranch() + 1;
   }
 
+  Scope getThenScope();
+  Scope getElseScope();
+
 private:
-  void appendInputs(const std::vector<TensorId> input_ids);
+  void appendInputs(const std::vector<TensorId> &input_ids, const Scope &);
 
   const std::vector<TensorId> then_input_ids;
   const std::vector<TensorId> else_input_ids;

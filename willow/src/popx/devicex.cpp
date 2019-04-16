@@ -34,10 +34,10 @@ const std::string randomSeedId = "randomSeed";
 void Devicex::weightsToHost() {
 
   if (useSyntheticData() == false) {
-    logging::devicex::debug("Writing weights to host, ");
+    logging::devicex::debug("Writing weights to host");
     pEngine->disableExecutionProfiling();
     pEngine->run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
-    logging::devicex::debug("done.");
+    logging::devicex::debug("Writing weights to host complete.");
   }
 }
 
@@ -929,7 +929,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     }
   }
 
-  auto f = [op, opx, this]() {
+  auto f = [opx, this]() {
     logging::devicex::debug("Creating output tensors for " +
                             opx->op_p->debugName());
     opx->grow(programFragment());
@@ -1014,7 +1014,7 @@ void Devicex::prepare() {
     ops = outline.getOutlineView(ops, ir());
   }
 
-  // create an Opx for every Opbt
+  // create an Opx for every Op
   for (Op *op : ops) {
     opxs[op->id] = createOpx(op);
   }
@@ -1114,7 +1114,6 @@ void Devicex::prepare() {
       tasks.add(fromHostTask(tensor, progs.optimizerFromHostFragment()));
     }
 
-    // making the network!
     for (Tensor *tensor : ir().dataStreamTensors()) {
       tasks.add(fromHostTask(tensor, programFragment()));
     }
@@ -1251,7 +1250,7 @@ TaskId Devicex::streamFromHostTaskId(TensorId id) const {
   return "streamFromHostTask_" + id;
 }
 
-TaskId Devicex::setInitTensorValTaskId(TensorId id) {
+TaskId Devicex::setInitTensorValTaskId(TensorId id) const {
   return "setInitTensorValTask_" + id;
 }
 

@@ -3,3 +3,4 @@
 # `ctest -R topk -j5 -VV'.
 
 add_poponnx_cpp_unit_test(basic0_topk_test basic0_topk_test.cpp)
+add_poponnx_cpp_unit_test(train0_topk_test train0_topk_test.cpp)

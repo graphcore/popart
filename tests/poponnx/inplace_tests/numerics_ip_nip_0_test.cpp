@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
   };
 
   int seed = 1013;
-  int J    = 2;
+  int J    = 3;
   int N    = 3;
   runTest(seed, N, J);
 }

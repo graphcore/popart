@@ -130,8 +130,15 @@ public:
   void optimizerFromHost() final;
 
   void run(const IStepIO &) final;
+
+  // device -> host stream
   void weightsToHost() final;
+  // device ->host stream -> specified host addresses
   void weightsToHost(const std::map<TensorId, MutableVoidData> &) final;
+
+  // TODO T8229 : change these names to disambiguate
+  // the source and destination
+  // (is this writing to or from the device?)
   void readWeights(const IWeightsIO &weights) final;
   void writeWeights(const IWeightsIO &weights) final;
 
@@ -175,6 +182,7 @@ public:
 
   PopTensors tensors;
 
+  // TODO T8008 : is this still used and/or needed?
   poplar::Tensor getConst(const poplar::Type &type,
                           const std::vector<size_t> &shape,
                           double val);
@@ -232,7 +240,7 @@ private:
   void connectRandomSeedStream();
 
   PriTask setInitTensorValTask(Tensor *);
-  TaskId setInitTensorValTaskId(TensorId);
+  TaskId setInitTensorValTaskId(TensorId) const;
 
   // Task to create a poplar::Stream to write to poplar::Tensor
   // C++ Note: if a lambda function which modifies `this' is created

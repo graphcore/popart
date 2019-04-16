@@ -70,24 +70,6 @@ static void printOps(const std::vector<Op *> &ops, std::string indent = "") {
 
 SubgraphOutlinex::SubgraphOutlinex() {}
 
-bool SubgraphOutlinex::canApplyMatch(const std::vector<Op *> &ops,
-                                     fwtools::subgraph::Match &m) {
-
-  for (auto &start : m.starts) {
-    for (int i = 0; i < m.length; ++i) {
-      int index = start + i;
-
-      // Reject any match that has a op that does not support caching
-      if (ops[index]->supportsCaching() == false) {
-        logging::err("{} does not support caching", ops[index]->str());
-        return false;
-      }
-    }
-  }
-
-  return true;
-}
-
 int64_t SubgraphOutlinex::getNextSubgraphId() {
   static int64_t counter = 1;
   return counter++;
@@ -123,13 +105,7 @@ std::vector<Op *> SubgraphOutlinex::getOutlineView(const std::vector<Op *> &ops,
   for (int matchIndex = 0; matchIndex < matches.size(); ++matchIndex) {
     auto &currentMatch = matches[matchIndex];
 
-    // Check that we can apply this match, skip if we can not
-    if (canApplyMatch(outlinedOps, currentMatch) == false) {
-      logging::devicex::info("Not outline match ({})", currentMatch);
-      continue;
-    } else {
-      logging::devicex::debug("Appying outline match ({})", currentMatch);
-    }
+    logging::devicex::debug("Appying outline match ({})", currentMatch);
 
     // Get a unique id for this outline
     int64_t subgraphId = getNextSubgraphId();

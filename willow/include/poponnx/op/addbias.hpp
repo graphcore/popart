@@ -26,7 +26,7 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   // T7721: make add bias cachable
-  bool supportsCaching() const override { return false; }
+  bool isOutlineable() const override { return false; }
 };
 
 // The gradient op for the data input of the add bias op.

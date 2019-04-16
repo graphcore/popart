@@ -17,6 +17,19 @@ private:
   unsigned K;
 };
 
+class TopKGradOpx : public Opx {
+public:
+  TopKGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+  // The info of the output of this Op
+  const std::vector<size_t> &getGradOutShape() const;
+
+private:
+  int64_t axis;
+  TensorInfo gradOutInfo;
+  std::vector<size_t> gradOutShape;
+};
+
 } // namespace popx
 } // namespace poponnx
 

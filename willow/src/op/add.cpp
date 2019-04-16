@@ -57,15 +57,12 @@ AddOp::inplacePriorityDefault() const {
   auto arg1Size = inInfo(AddOp::getArg1InIndex()).nelms();
 
   std::vector<std::tuple<OperatorIdentifier, float>> result;
-  /*
-  T8072
   if (outSize == arg0Size) {
     result.push_back({Onnx::CustomOperators::AddLhsInplace, 10.0f});
   }
   if (outSize == arg1Size) {
     result.push_back({Onnx::CustomOperators::AddRhsInplace, 10.0f});
   }
-  */
 
   return result;
 }

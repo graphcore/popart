@@ -41,6 +41,49 @@ void TopKOp::appendAttributes(OpSerialiserBase &os) const {
 
 int64_t TopKOp::getK() const { return K; }
 
+std::vector<std::unique_ptr<Op>> TopKOp::getGradOps() {
+  std::vector<std::unique_ptr<Op>> result;
+  result.push_back(make_unique<TopKGradOp>(*this));
+  return result;
+}
+
+TopKGradOp::TopKGradOp(const TopKOp &topk)
+    : Op(Onnx::GradOperators::TopKGrad, topk.getSettings()),
+      axis(topk.getAxis()), gradOutInfo(topk.inInfo(BaseSortOp::getInIndex())) {
+}
+
+std::unique_ptr<Op> TopKGradOp::clone() const {
+  return make_unique<TopKGradOp>(*this);
+}
+
+const std::vector<GradInOutMapper> &TopKGradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      // gradient of the TopK values output:
+      {gradInIndex(), TopKOp::getValuesOutIndex(), GradOpInType::GRADOUT},
+      // The indices output of the TopK Op:
+      {indicesInIndex(), TopKOp::getIndicesOutIndex(), GradOpInType::OUT}};
+  return inInfo;
+}
+
+const std::map<int, int> &TopKGradOp::gradOutToNonGradIn() const {
+
+  static const std::map<int, int> outInfo = {
+      {gradOutIndex(), BaseSortOp::getInIndex()}};
+
+  return outInfo;
+}
+
+void TopKGradOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axis", axis);
+}
+
+int64_t TopKGradOp::getAxis() const { return axis; }
+
+const TensorInfo &TopKGradOp::getGradOutInfo() const { return gradOutInfo; }
+
+void TopKGradOp::setup() { outInfo(gradOutIndex()) = gradOutInfo; }
+
 namespace {
 std::unique_ptr<Op> topKFactory(const OperatorIdentifier &_opid,
                                 const Op::Settings &settings,

@@ -70,7 +70,7 @@ public:
         cpuDevice,
         {},
         {},
-        {},
+        opts,
         Patterns(PatternsLevel::NONE).enableInPlace(enableInPlace));
 
     irChecker(session->ir);
@@ -108,6 +108,7 @@ public:
   }
 
   bool enableInPlace = true;
+  SessionOptions opts;
 
 private:
   std::string proto;

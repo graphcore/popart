@@ -56,24 +56,24 @@ void Tensors::updateAliases(Op *op) {
   // for the unique output of op t2,
   Tensor *t2 = op->output->tensor(0);
 
-  // and for all of the inputs of op t1,
+  // and for all of the inputs of op, t1,
   for (auto i1_t1 : op->input->tensorMap()) {
 
     InIndex i1 = i1_t1.first;
     Tensor *t1 = i1_t1.second;
 
-    auto fwdMap = op->fwdRegMap(i1);
-    auto bwdMap = op->bwdRegMap(i1);
-
+    auto fwdMap            = op->fwdRegMap(i1);
     view::Region inRegion  = op->aliases(i1);
     view::Region outRegion = fwdMap(inRegion);
-
-    view::Link fwdLink(inRegion, fwdMap);
-    view::Link bwdLink(outRegion, bwdMap);
 
     // if there is an alias between the unique output
     // t2 and the input t1, this opens new Chains
     if (!outRegion.isEmpty()) {
+
+      auto bwdMap = op->bwdRegMap(i1);
+
+      view::Link fwdLink(inRegion, fwdMap);
+      view::Link bwdLink(outRegion, bwdMap);
 
       // all chains t0 -> t1 for all t0
       auto allInChains = aliasChainsTo(t1);
@@ -103,35 +103,43 @@ void Tensors::updateAliases(Op *op) {
           // we now have,
           // t0 ------> t1 -> op -> t2 -----> t3
           // and we want to update aliasChainsToKey[t3][t0]
-          // with and new chains that pass through op, as
+          // with all new chains that pass through op, as
           // well as aliasChainsToKey[t0][t3]
 
-          if (aliasChainsToKey.find(t3) == aliasChainsToKey.end()) {
-            aliasChainsToKey[t3] = {};
+          auto newChains = inChainsFwdLinkSeries.series(outChains);
+          if (!newChains.isEmpty()) {
+            if (aliasChainsToKey.find(t3) == aliasChainsToKey.end()) {
+              aliasChainsToKey[t3] = {};
+            }
+            if (aliasChainsToKey.at(t3).find(t0) ==
+                aliasChainsToKey.at(t3).end()) {
+              aliasChainsToKey[t3][t0] = {}; // empty Chains
+            }
+            // add the new Chains
+            aliasChainsToKey[t3][t0] =
+                aliasChainsToKey[t3][t0].parallel(newChains);
+
+            // insert the mirror image
+            aliasChainsFromKey[t0][t3] = aliasChainsToKey[t3][t0];
           }
-          if (aliasChainsToKey.at(t3).find(t0) ==
-              aliasChainsToKey.at(t3).end()) {
-            aliasChainsToKey[t3][t0] = {}; // empty Chains
-          }
-          // add the new Chains
-          aliasChainsToKey[t3][t0] = aliasChainsToKey[t3][t0].parallel(
-              inChainsFwdLinkSeries.series(outChains));
 
           // same logic for t3 -> t0
-          if (aliasChainsToKey.find(t0) == aliasChainsToKey.end()) {
-            aliasChainsToKey[t0] = {};
-          }
-          if (aliasChainsToKey.at(t0).find(t3) ==
-              aliasChainsToKey.at(t0).end()) {
-            aliasChainsToKey[t0][t3] = {}; // empty Chains
-          }
-          // add the new Chains
-          aliasChainsToKey[t0][t3] = aliasChainsToKey[t0][t3].parallel(
-              outChainsRev.series(bwdLink).series(inChainsRev));
+          newChains = outChainsRev.series(bwdLink).series(inChainsRev);
+          if (!newChains.isEmpty()) {
+            if (aliasChainsToKey.find(t0) == aliasChainsToKey.end()) {
+              aliasChainsToKey[t0] = {};
+            }
+            if (aliasChainsToKey.at(t0).find(t3) ==
+                aliasChainsToKey.at(t0).end()) {
+              aliasChainsToKey[t0][t3] = {}; // empty Chains
+            }
+            // add the new Chains
+            aliasChainsToKey[t0][t3] =
+                aliasChainsToKey[t0][t3].parallel(newChains);
 
-          // insert the mirror image
-          aliasChainsFromKey[t0][t3] = aliasChainsToKey[t3][t0];
-          aliasChainsFromKey[t3][t0] = aliasChainsToKey[t0][t3];
+            // insert the mirror image
+            aliasChainsFromKey[t3][t0] = aliasChainsToKey[t0][t3];
+          }
         }
       }
     }
@@ -176,6 +184,25 @@ Tensor *Tensors::get(TensorId tenId) const {
     throw error("no tensor with id " + tenId);
   }
   return found->second.get();
+}
+
+TensorId Tensors::find(TensorId tenId, const Scope &scope) const {
+  Scope s = scope;
+
+  while (!s.empty()) {
+    auto id = (s / tenId).str();
+    if (M.find(id) != M.end()) {
+      return id;
+    } else {
+      s.pop();
+    }
+  }
+
+  if (M.find(tenId) != M.end()) {
+    return tenId;
+  } else {
+    throw error("Could not find tensor with id {} in scope {}", tenId, scope);
+  }
 }
 
 void Tensors::append(std::stringstream &ss) const {
@@ -275,6 +302,7 @@ void Tensors::addStream(TensorId tenId, const TensorInfo &info) {
 }
 
 void Tensors::addActGrad(TensorId tenId) {
+  logging::debug("Adding ActGrad Tensor {}", tenId);
   insert(tenId,
          std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::ActGrad, ir)));
 }

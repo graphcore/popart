@@ -674,7 +674,7 @@ const static AiGraphcoreOpIdV1 SumArgGrad("SumArgGrad");
 // constexpr static char Tan[] = "Tan";
 const static AiGraphcoreOpIdV1 TanhGrad("TanhGrad");
 // constexpr static char Tile[] = "Tile";
-// constexpr static char TopK[] = "TopK";
+const static AiGraphcoreOpIdV1 TopKGrad("TopKGrad");
 const static AiGraphcoreOpIdV1 TransposeGrad("TransposeGrad");
 const static AiGraphcoreOpIdV1 UnsqueezeGrad("UnsqueezeGrad");
 // constexpr static char Upsample[] = "Upsample";

@@ -58,6 +58,11 @@ void OpSerialiser::appendAttribute(const std::string &name, bool value) {
   appendAttr(name, value ? "true" : "false");
 }
 
+void OpSerialiser::appendAttribute(const std::string &name,
+                                   const Scope &scope) {
+  appendAttr(name, scope);
+}
+
 template <typename T>
 void OpSerialiser::appendAttr(const std::string &name, const T &value) {
   ss << tab << tab << name << ": " << value << "\n";
@@ -109,6 +114,11 @@ void OpEquivIdCreator::appendAttribute(const std::string &,
 
 void OpEquivIdCreator::appendAttribute(const std::string &, bool value) {
   appendAttr(value);
+}
+
+void OpEquivIdCreator::appendAttribute(const std::string &,
+                                       const Scope &scope) {
+  appendAttr(scope);
 }
 
 void OpEquivIdCreator::appendForwardOp(const Op *op) {

@@ -791,6 +791,7 @@ void Ir::prepare(const IrBundle &gb) {
   }
 
   updateVertices();
+  extendScopes();
 
   dotCheckpoint(DotCheck::FINAL);
 
@@ -1108,7 +1109,7 @@ std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) {
 bool Ir::isAnchored(TensorId tenId) { return dataFlow.isAnchored(tenId); }
 
 void Ir::constructForwards() {
-  constructFromOnnxGraph(onnxModel->graph());
+  constructFromOnnxGraph(onnxModel->graph(), {});
 
   // Not necessary to set the phase here (it will be done in
   // updateVertices). To check our logic though, we do this here
@@ -1119,12 +1120,13 @@ void Ir::constructForwards() {
   }
 }
 
-void Ir::constructFromOnnxGraph(const onnx::GraphProto &graph) {
+void Ir::constructFromOnnxGraph(const onnx::GraphProto &graph,
+                                const Scope &scope) {
   for (const auto &node : graph.node()) {
     if (OnnxConstExprUtil::isConst(node)) {
       OnnxConstExprUtil::processNode(node, this);
     } else {
-      Op *op = growFromNode(node);
+      Op *op = growFromNode(node, scope);
 
       // process ops as they are created
       // Reshape requires a const input tensor at creation time
@@ -1578,6 +1580,80 @@ void Ir::updateVertices() {
   }
 }
 
+void Ir::extendScopes() {
+  logging::ir::debug("Extending scopes");
+
+  // Get all the consumers of arg tensors
+  auto getConsumers = [](const std::vector<Tensor *> tensors) {
+    std::vector<Op *> consumers;
+    for (auto t : tensors) {
+      auto ops = t->consumers.getOps();
+      consumers.insert(consumers.end(), ops.begin(), ops.end());
+    }
+    return consumers;
+  };
+
+  // Get all the inputs of the arg ops
+  auto getInputs = [](const std::set<Op *> &ops) {
+    std::set<Tensor *> inputs;
+    for (auto op : ops) {
+      for (auto t : op->input->tensors()) {
+        inputs.insert(t);
+      }
+    }
+    return inputs;
+  };
+
+  // Get all the producers of the arg tensors
+  auto getProducers = [](const std::set<Tensor *> &tensors) {
+    std::vector<Op *> producers;
+    for (auto t : tensors) {
+      if (t->hasProducer()) {
+        producers.push_back(t->getProducer());
+      }
+    }
+    return producers;
+  };
+
+  // Attempt to extend the scope of an op
+  // return whether it was successful or not
+  auto tryExtendScope = [&getConsumers](Op *op) {
+    auto consumers = getConsumers(op->output->tensors());
+    auto new_scope = Scope::getCommonParent(consumers);
+    if (new_scope.isSubscope(op->getScope())) {
+      op->setScope(new_scope);
+      return true;
+    } else {
+      return false;
+    }
+  };
+
+  // Initial set of ops that have scope
+  std::set<Op *> scoped_ops;
+  for (auto &id_op : ops) {
+    Op *op = id_op.second.get();
+    if (!op->getScope().empty()) {
+      scoped_ops.insert(op);
+    }
+  }
+
+  // Iterativly extend the scopes
+  while (!scoped_ops.empty()) {
+    auto inputs    = getInputs(scoped_ops);
+    auto producers = getProducers(inputs);
+    scoped_ops.clear();
+
+    for (auto producer : producers) {
+      if (tryExtendScope(producer)) {
+        logging::ir::debug("added {} to scope {}",
+                           producer->debugName(),
+                           producer->getScope());
+        scoped_ops.insert(producer);
+      }
+    }
+  }
+}
+
 void Ir::setNPathsToLoss() {
 
   auto found = ops.find(finalLossId);
@@ -1855,9 +1931,9 @@ void Ir::setVarUpdateCons() {
   }
 }
 
-Op *Ir::growFromNode(const Node &node) {
+Op *Ir::growFromNode(const Node &node, const Scope &scope) {
 
-  OpId opId = moveIntoIr(addOp(node));
+  OpId opId = moveIntoIr(addOp(node, scope));
 
   connectInputs(node, opId);
   connectOutputs(node, opId);
@@ -1955,14 +2031,11 @@ template <typename T> void Ir::connectInputs(const T &inContainer, OpId opId) {
     if (inName == "") {
       // no input at this position
     } else {
-      if (!getTensors().contains(inName)) {
-        throw error("input " + inName + " should already be in tensor map");
-      } else {
-        // default: connects tensor <-> op, in both directions.
-        // Note that this is a virtual function, and so specific Ops
-        // may to do something different to the default here.
-        op->connectInTensor(inIndex, inName);
-      }
+      auto scopedName = getTensors().find(inName, op->getScope());
+      // default: connects tensor <-> op, in both directions.
+      // Note that this is a virtual function, and so specific Ops
+      // may to do something different to the default here.
+      op->connectInTensor(inIndex, scopedName);
     }
   }
 }
@@ -2047,7 +2120,7 @@ int Ir::getOpSetVersionFromModel(const std::string &node_domain) const {
   return version;
 }
 
-std::unique_ptr<Op> Ir::addOp(const Node &node) {
+std::unique_ptr<Op> Ir::addOp(const Node &node, const Scope &scope) {
 
   int version = getOpSetVersionFromModel(node.domain());
 
@@ -2056,6 +2129,7 @@ std::unique_ptr<Op> Ir::addOp(const Node &node) {
                                               version,
                                               *this,
                                               node.name(),
+                                              scope,
                                               node.attribute());
   if (p != nullptr)
     return p;

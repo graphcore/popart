@@ -54,6 +54,7 @@ std::unique_ptr<Op> OpManager::createOp(const OpDomain &opDomain,
                                         const int opsetVersion,
                                         Ir &ir,
                                         const std::string &name,
+                                        const Scope &scope,
                                         const Attributes &attr) {
 
   OpManager &self = getInstance();
@@ -80,7 +81,7 @@ std::unique_ptr<Op> OpManager::createOp(const OpDomain &opDomain,
   }
 
   if (opInfo != nullptr) {
-    return self.create(opInfo->id, ir, name, attr, opInfo->f1);
+    return self.create(opInfo->id, ir, name, scope, attr, opInfo->f1);
   }
   return nullptr;
 }
@@ -100,7 +101,7 @@ std::unique_ptr<Op> OpManager::createOp(const OperatorIdentifier &opid,
     const auto &it3 = it2->second.find(opid.version);
 
     if (it3 != it2->second.end()) {
-      return self.create(opid, ir, name, attr, it3->second.f1);
+      return self.create(opid, ir, name, {}, attr, it3->second.f1);
     }
   }
   return nullptr;
@@ -109,10 +110,11 @@ std::unique_ptr<Op> OpManager::createOp(const OperatorIdentifier &opid,
 std::unique_ptr<Op> OpManager::create(const OperatorIdentifier &opid,
                                       Ir &ir,
                                       const std::string &name,
+                                      const Scope &scope,
                                       const Attributes &attr,
                                       OpFactoryFunc func) {
 
-  Op::Settings settings(ir, name);
+  Op::Settings settings(ir, name, scope);
   settings.setFromAttributes(attr);
 
   return func(opid, settings, attr);
