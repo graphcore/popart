@@ -1432,9 +1432,10 @@ PriTask Devicex::updateBatchCoutTask(poplar::program::Sequence &sq) {
                                                 sq);
 
       // Reset batch count once it has reached N
+      auto zero = getConst(poplar::INT, {}, 0);
       sq.add(poplar::program::If(
           batchCountCheckingTensors[N],
-          poplar::program::Assign(batchCountingTensors[N], 0),
+          poplar::program::Copy(zero, batchCountingTensors[N]),
           emptyseq));
     }
   };
