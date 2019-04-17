@@ -214,6 +214,26 @@ PopPrograms::programFragment(PopPrograms::ProgramFragmentIndex index) {
   return seqs[static_cast<int>(index)];
 }
 
+poplar::program::Sequence &PopPrograms::programFragment(const Scope &scope) {
+  if (scope.empty()) {
+    return programFragment();
+  } else {
+    return scopeSeqs.at(scope.str());
+  }
+}
+
+bool PopPrograms::containsFragment(const Scope &scope) {
+  if (scope.empty()) {
+    return true;
+  } else {
+    return scopeSeqs.find(scope.str()) != scopeSeqs.end();
+  }
+}
+
+void PopPrograms::createFragment(const Scope &scope) {
+  scopeSeqs.insert({scope.str(), {}});
+}
+
 poplar::Graph &Devicex::rootGraph() { return *pRootGraph; }
 
 const poplar::Graph &Devicex::rootGraph() const { return *pRootGraph; }
@@ -893,6 +913,10 @@ poplar::program::Sequence &Devicex::programFragment() {
   return progs.programFragment(PopPrograms::ProgramFragmentIndex::PROGRAM);
 }
 
+poplar::program::Sequence &Devicex::programFragment(const Scope &scope) {
+  return progs.programFragment(scope);
+}
+
 PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
 
   OpId id  = op->id;
@@ -932,7 +956,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   auto f = [opx, this]() {
     logging::devicex::debug("Creating output tensors for " +
                             opx->op_p->debugName());
-    opx->grow(programFragment());
+    opx->grow(programFragment(opx->op_p->getScope()));
   };
   return {priority, opTaskId(op), deps, f};
 }
@@ -1008,6 +1032,13 @@ void Devicex::prepare() {
   poprand::addCodelets(rootGraph());
 
   std::vector<Op *> ops = ir().getOpSchedule({});
+
+  // create the scope programs
+  for (auto op : ops) {
+    if (!progs.containsFragment(op->getScope())) {
+      progs.createFragment(op->getScope());
+    }
+  }
 
   // Outling the op's if the session options is enabled
   if (ir().getSessionOptions().enableOutlining) {
