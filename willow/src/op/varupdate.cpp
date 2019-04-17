@@ -15,17 +15,21 @@ VarUpdateOp::VarUpdateOp(const OperatorIdentifier &_opid,
 }
 
 void VarUpdateOp::setup() {
-  // void functions (like VarUpdateOp) have
-  // no output tensors to set shapes for
+  outInfo(getUpdatedVarOutIndex()) = inInfo(getVarInIndex());
 }
 
-// Modifies the whole of the Var Tensor
-view::Region VarUpdateOp::modifies(InIndex index) const {
+//
+view::Region VarUpdateOp::aliases(InIndex index) const {
   if (index == getVarInIndex()) {
     return view::Region::getFull(inShape(index));
   } else {
     return view::Region::getEmpty(inRank(index));
   }
+}
+
+// Modifies is the same as aliases
+view::Region VarUpdateOp::modifies(InIndex index) const {
+  return aliases(index);
 }
 
 SGDVarUpdateOp::SGDVarUpdateOp(TensorId varId_, const Op::Settings &settings_)

@@ -20,7 +20,7 @@ template <typename T>
 static std::vector<T> unpadShape(const std::vector<T> &shape,
                                  int unpadded_size) {
   std::vector<T> result;
-  int offset = shape.size() - unpadded_size;
+  auto offset = shape.size() - unpadded_size;
   result.insert(result.begin(), shape.begin() + offset, shape.end());
   return result;
 }

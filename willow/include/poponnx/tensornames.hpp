@@ -14,16 +14,21 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index);
 
 // the name of the tensor which is the
 // total gradient of a forward tensor
-TensorId getGradId(TensorId tenId);
+TensorId getGradId(const TensorId &tenId);
 
 // inverse of previous function (non-grad name of grad tensor)
-TensorId getNonGradId(TensorId tenId);
+TensorId getNonGradId(const TensorId &tenId);
 
 // get a recomputed tensor's name, based on original tensor
-TensorId getRecompId(TensorId tenId);
+TensorId getRecompId(const TensorId &tenId);
 
-std::string reservedGradientPrefix();
-std::string reservedRecomputePrefix();
+// get an variable tensor's post-update name, based on original name
+TensorId getUpdatedVarId(const TensorId &id);
+
+constexpr const char *reservedGradientPrefix() { return "d__"; }
+constexpr const char *reservedRecomputePrefix() { return "r__"; }
+constexpr const char *reservedUpdatedVarPrefix() { return "uv__"; }
+
 std::vector<std::string> reservedPrefixes();
 
 } // namespace poponnx
