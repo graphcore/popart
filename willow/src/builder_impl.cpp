@@ -71,22 +71,18 @@ void BuilderImpl::finalizeOp(onnx::NodeProto *node, const std::string &name) {
   onnx::shape_inference::InferShapes(model_);
 }
 
-bool BuilderImpl::inHigherScope(const BuilderImpl::NameStackIndex &nsi,
-                                int counter) const {
+bool BuilderImpl::inHigherScope(const TensorId &id) const {
 
   if (hasParent()) {
-    return getParent()->inCurrentScope(nsi, counter) ||
-           getParent()->inHigherScope(nsi, counter);
+    return getParent()->inCurrentScope(id) || getParent()->inHigherScope(id);
   }
   return false;
 }
 
-bool BuilderImpl::inLowerScope(const BuilderImpl::NameStackIndex &nsi,
-                               int counter) const {
+bool BuilderImpl::inLowerScope(const TensorId &id) const {
 
   for (auto &child : getChildren()) {
-    if (child->inCurrentScope(nsi, counter) ||
-        child->inLowerScope(nsi, counter)) {
+    if (child->inCurrentScope(id) || child->inLowerScope(id)) {
       return true;
     }
   }
@@ -94,35 +90,12 @@ bool BuilderImpl::inLowerScope(const BuilderImpl::NameStackIndex &nsi,
   return false;
 }
 
-bool BuilderImpl::inCurrentScope(const BuilderImpl::NameStackIndex &nsi,
-                                 int counter) const {
+bool BuilderImpl::inCurrentScope(const TensorId &id) const {
 
-  auto iter0 = tensorIdCounter.find(nsi);
-
-  if (iter0 == tensorIdCounter.end()) {
+  if (tensorIds.count(id) == 0) {
     return false;
-  } else {
-    const auto &counterSet = iter0->second;
-    if (counterSet.count(counter) != 0) {
-      return true;
-    } else {
-      return false;
-    }
   }
-}
-
-int BuilderImpl::getLowestValidSuffix(
-    const BuilderImpl::NameStackIndex &nsi) const {
-
-  int counter = -1;
-  bool valid  = false;
-  while (!valid) {
-    ++counter;
-    valid = ((!inCurrentScope(nsi, counter)) && (!inLowerScope(nsi, counter)) &&
-             (!inHigherScope(nsi, counter)));
-  }
-
-  return counter;
+  return true;
 }
 
 TensorId BuilderImpl::getNextId(const std::string &name, OutIndex n) {
@@ -144,28 +117,21 @@ TensorId BuilderImpl::getNextId(const std::string &name, OutIndex n) {
     id_ss << ':' << std::to_string(n);
   }
 
-  auto nsi = NameStackIndex(name, stack_str, n);
+  int counter = -1;
+  bool valid  = false;
 
-  // the lowest suffix which uniquely identifies this
-  // from all names in this scope, higher scopes, lower scopes
-  auto lowestValidSuffix = getLowestValidSuffix(nsi);
-
-  // record this index in current scope
-  auto iter0 = tensorIdCounter.find(nsi);
-  if (iter0 == tensorIdCounter.end()) {
-    tensorIdCounter[nsi] = {lowestValidSuffix};
-  } else {
-    iter0->second.emplace(lowestValidSuffix);
+  std::string baseId  = id_ss.str();
+  TensorId proposedId = baseId;
+  while (!valid) {
+    ++counter;
+    if (counter != 0) {
+      proposedId = baseId + sNameDelimiter + std::to_string(counter);
+    }
+    valid = (!inCurrentScope(proposedId) && !inLowerScope(proposedId) &&
+             !inHigherScope(proposedId));
   }
-
-  if (lowestValidSuffix != 0) {
-    // Add a '/x' to make unique within scope
-    id_ss << sNameDelimiter << lowestValidSuffix;
-  }
-
-  std::string id = id_ss.str();
-
-  return id;
+  tensorIds.emplace(proposedId);
+  return proposedId;
 }
 
 void BuilderImpl::addOpsetRequirement(const std::string &domain, int version) {
@@ -201,23 +167,46 @@ void BuilderImpl::configure() {
 TensorId BuilderImpl::addInputTensor(const TensorInfo &tensorInfo,
                                      const std::string &debugPrefix) {
 
+  // Should we check for uniqueness of name? TODO T8278
   std::string name = debugPrefix.empty() ? "input" : debugPrefix;
   auto id          = getNextId(name);
-  addInputTensorFromHigherScope(tensorInfo, id);
+
+  // note that a TypeProto contains both shape and numerical type
+  onnx::TypeProto onnxTensorType = tensorInfo.getOnnxTypeProto();
+
+  // set name
+  auto *graph = model_.mutable_graph();
+  auto *input = graph->add_input();
+  input->set_name(id);
+
+  // set type
+  auto *type = input->mutable_type();
+  *type      = onnxTensorType;
+
   return id;
 }
 
-void BuilderImpl::addInputTensorFromHigherScope(const TensorInfo &tensorInfo,
-                                                const TensorId &tensorId) {
+void BuilderImpl::addInputTensorFromHigherScope(const TensorId &tensorId) {
 
-  auto onnxTensorType = tensorInfo.getOnnxTypeProto();
+  // Should we check for uniqueness of name? TODO T8278
 
+  if (!inHigherScope(tensorId)) {
+    throw error(
+        "Failed to add unrecognised Tensor {} from higher scope, "
+        "Currently, a Tensor must already exist in a higher (parent) scope "
+        "to add it as an input in a lower scope.",
+        tensorId);
+  }
+
+  // set name
   auto *graph = model_.mutable_graph();
   auto *input = graph->add_input();
   input->set_name(tensorId);
 
-  auto *type = input->mutable_type();
-  *type      = onnxTensorType;
+  // set type
+  // We need to run type inference to determine the DataType
+  // According to the spec the type (input->mutable_type()) is NOT optional
+  // TODO : get the type. T8276
 }
 
 static void populateTensorProtoFromConstVoidData(const ConstVoidData &initData,

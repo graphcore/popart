@@ -552,7 +552,6 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("debugPrefix") = std::string())
       .def("addInputTensorFromParentGraph",
            &Builder::addInputTensorFromHigherScope,
-           py::arg("tensorInfo"),
            py::arg("tensorId"))
       .def(
           "addInitializedInputTensor",
