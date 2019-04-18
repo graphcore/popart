@@ -128,6 +128,9 @@ public:
   bool isSplitConvBiasEnabled() {
     return isPatternEnabled(PreAliasPatternType::SPLITCONVBIAS);
   }
+  bool isSplitGatherEnabled() {
+    return isPatternEnabled(PreAliasPatternType::SPLITGATHER);
+  }
   bool isOpToIdentityEnabled() {
     return isPatternEnabled(PreAliasPatternType::OPTOIDENTITY);
   }
@@ -189,6 +192,9 @@ public:
   }
   Patterns &enableSplitConvBias(bool v) {
     return enablePattern(PreAliasPatternType::SPLITCONVBIAS, v);
+  }
+  Patterns &enableSplitGather(bool v) {
+    return enablePattern(PreAliasPatternType::SPLITGATHER, v);
   }
   Patterns &enableOpToIdentity(bool v) {
     return enablePattern(PreAliasPatternType::OPTOIDENTITY, v);

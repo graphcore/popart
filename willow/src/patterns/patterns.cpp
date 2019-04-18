@@ -5,21 +5,37 @@ namespace poponnx {
 
 Patterns::Patterns(PatternsLevel level) {
 
+  // step 1 : adding patterns to run
   switch (level) {
-  case PatternsLevel::NONE: {
-  } break;
 
-  // The default set of patterns
+  // add all of the patterns
   case PatternsLevel::DEFAULT:
   case PatternsLevel::ALL: {
-    // right now we will enable all the options, maybe later there will be a
-    // subset
     auto patternList = PreAliasPatternManager::getPatternList();
     for (auto pattern : patternList) {
       settings.insert(std::pair<PreAliasPatternType, bool>(pattern, true));
     }
     inplaceEnabled = true;
-  } break;
+    break;
+  }
+
+    // add none of the patterns
+  case PatternsLevel::NONE: {
+    break;
+  }
+  }
+
+  // step 2 : removing patterns to run
+  switch (level) {
+  case PatternsLevel::DEFAULT: {
+    enableSplitGather(false);
+    break;
+  }
+
+  case PatternsLevel::ALL:
+  case PatternsLevel::NONE: {
+    break;
+  }
   }
 }
 
