@@ -21,6 +21,7 @@
 #include <poponnx/session.hpp>
 #include <poponnx/tensordata.hpp>
 #include <poponnx/tensorinfo.hpp>
+#include <poponnx/tensornames.hpp>
 
 #include <popops/ElementWise.hpp>
 
