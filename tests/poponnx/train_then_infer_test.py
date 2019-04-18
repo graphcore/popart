@@ -23,7 +23,11 @@ def test_train_then_infer_via_file():
 
     builder.addOutputTensor(o)
 
-    anchor_names = [o, 'd__' + input, 'd__' + weights]
+    anchor_names = [
+        o,
+        poponnx.reservedGradientPrefix() + input,
+        poponnx.reservedGradientPrefix() + weights
+    ]
     training_dataFlow = poponnx.DataFlow(
         1, {
             anchor_names[0]: poponnx.AnchorReturnType("ALL"),

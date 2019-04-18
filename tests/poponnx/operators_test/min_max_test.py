@@ -22,8 +22,13 @@ def test_max_training(op_tester):
         o = builder.aiOnnx.max([i1, i2, i3, i4, i5], "test_max")
         builder.addOutputTensor(o)
         return [
-            o, 'd__' + i1, 'd__' + i2, 'd__' + i3, 'd__' + i4, 'd__' + i5,
-            'd__' + o
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i2,
+            poponnx.reservedGradientPrefix() + i3,
+            poponnx.reservedGradientPrefix() + i4,
+            poponnx.reservedGradientPrefix() + i5,
+            poponnx.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -56,7 +61,12 @@ def test_min_training_0(op_tester):
         i2 = builder.addInputTensor(d2)
         o = builder.aiOnnx.min([i1, i2], "test_min")
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + i2, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i2,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)
@@ -89,8 +99,13 @@ def test_min_training_1(op_tester):
         o = builder.aiOnnx.min([i1, i2, i3, i4, i5], "test_min")
         builder.addOutputTensor(o)
         return [
-            o, 'd__' + i1, 'd__' + i2, 'd__' + i3, 'd__' + i4, 'd__' + i5,
-            'd__' + o
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i2,
+            poponnx.reservedGradientPrefix() + i3,
+            poponnx.reservedGradientPrefix() + i4,
+            poponnx.reservedGradientPrefix() + i5,
+            poponnx.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):

@@ -189,7 +189,10 @@ def test_nll_loss_grad_with_ignored_index():
         session = poponnx.TrainingSession(
             fnModel=builder.getModelProto(),
             dataFeed=poponnx.DataFlow(
-                1, {"d__" + ip: poponnx.AnchorReturnType("ALL")}),
+                1, {
+                    poponnx.reservedGradientPrefix() + ip:
+                    poponnx.AnchorReturnType("ALL")
+                }),
             optimizer=poponnx.ConstSGD(0.001, 0.01),
             losses=[poponnx.NllLoss(out, lb, "loss", ignore_index=ignoreInd)],
             passes=poponnx.Patterns(patterns),
@@ -239,8 +242,8 @@ def test_nll_loss_grad_with_ignored_index():
     # Compare
     ###
     torch_ip_grad = input.grad.numpy()
-    px_smd_ip_grad = anchors_SMD["d__" + ip]
-    px_no_smd_ip_grad = anchors_NoSMD["d__" + ip]
+    px_smd_ip_grad = anchors_SMD[poponnx.reservedGradientPrefix() + ip]
+    px_no_smd_ip_grad = anchors_NoSMD[poponnx.reservedGradientPrefix() + ip]
 
     for sampleInd, labelInd in enumerate(lb_data):
         if labelInd == ignoreInd:

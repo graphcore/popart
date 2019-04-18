@@ -24,6 +24,7 @@
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
 #include <poponnx/tensorinfo.hpp>
+#include <poponnx/tensornames.hpp>
 #include <poponnx/tensors.hpp>
 #include <poponnx/transforms/recompute.hpp>
 
@@ -253,9 +254,10 @@ BOOST_AUTO_TEST_CASE(DontInheritRecomputeTest) {
   auto modelProto = io::getModelFromString(proto);
 
   // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1,
-                           {{relu_out, AnchorReturnType("ALL")},
-                            {"d__" + act, AnchorReturnType("ALL")}});
+  auto dataFlow =
+      DataFlow(1,
+               {{relu_out, AnchorReturnType("ALL")},
+                {reservedGradientPrefix() + act, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{new L1Loss(relu_out, "l1LossVal", 0.1)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
@@ -282,7 +284,7 @@ BOOST_AUTO_TEST_CASE(DontInheritRecomputeTest) {
               *op->getRecomputeOutput() == true);
 
   // Check the grad op has not inherited the recomputation
-  auto grad_tensor = ir.getTensors().get("d__" + act);
+  auto grad_tensor = ir.getTensors().get(reservedGradientPrefix() + act);
   auto grad_op     = grad_tensor->getProducer();
   // check we have the correct op
   BOOST_CHECK(grad_op->opid.type == "ReluGrad");

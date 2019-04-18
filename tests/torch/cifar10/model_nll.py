@@ -25,8 +25,10 @@ batchesPerStep = 3
 anchors = {
     # setting these as anchors guarantees that the softmax-grad-direct
     # pattern is not run
-    "d__probs": poponnx.AnchorReturnType("FINAL"),
-    "d__pre_probs": poponnx.AnchorReturnType("FINAL"),
+    poponnx.reservedGradientPrefix() + "probs":
+    poponnx.AnchorReturnType("FINAL"),
+    poponnx.reservedGradientPrefix() + "pre_probs":
+    poponnx.AnchorReturnType("FINAL"),
 }
 dataFeed = poponnx.DataFlow(batchesPerStep, anchors)
 inputShapeInfo = poponnx.InputShapeInfo()

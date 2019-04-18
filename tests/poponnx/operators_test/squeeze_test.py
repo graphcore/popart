@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from op_tester import op_tester
+import poponnx
 
 
 def test_squeeze(op_tester):
@@ -59,7 +60,11 @@ def test_squeeze_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.squeeze([i1], axes=[])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         i1 = torch.tensor(d1, requires_grad=True)
@@ -79,7 +84,11 @@ def test_squeeze_limited_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.squeeze([i1], axes=[1])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         i1 = torch.tensor(d1, requires_grad=True)

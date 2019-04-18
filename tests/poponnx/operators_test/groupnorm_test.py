@@ -29,8 +29,11 @@ def test_groupnorm_0(op_tester):
             [i1, iScale, iB], num_groups, epsilon)
         builder.addOutputTensor(o_y)
         return [
-            o_y, o_mean, o_var, 'd__' + i1, 'd__' + iB, 'd__' + iScale,
-            'd__' + o_y
+            o_y, o_mean, o_var,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + iB,
+            poponnx.reservedGradientPrefix() + iScale,
+            poponnx.reservedGradientPrefix() + o_y
         ]
 
     def reference(ref_data):
@@ -95,8 +98,11 @@ def test_groupnorm_1(op_tester):
         builder.addOutputTensor(o_mean)
         builder.addOutputTensor(o_var)
         return [
-            o_y, o_mean, o_var, 'd__' + i1, 'd__' + iScale, 'd__' + iB,
-            'd__' + o_y
+            o_y, o_mean, o_var,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + iScale,
+            poponnx.reservedGradientPrefix() + iB,
+            poponnx.reservedGradientPrefix() + o_y
         ]
 
     def reference(ref_data):
@@ -148,8 +154,11 @@ def test_groupnorm_2(op_tester):
         builder.addOutputTensor(o_mean)
         builder.addOutputTensor(o_var)
         return [
-            o_y, o_mean, o_var, 'd__' + i1, 'd__' + iScale, 'd__' + iB,
-            'd__' + o_y
+            o_y, o_mean, o_var,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + iScale,
+            poponnx.reservedGradientPrefix() + iB,
+            poponnx.reservedGradientPrefix() + o_y
         ]
 
     def reference(ref_data):
@@ -207,8 +216,11 @@ def test_groupnorm_3(op_tester):
         builder.addOutputTensor(o_mean)
         builder.addOutputTensor(o_var)
         return [
-            o_y, o_mean, o_var, 'd__' + i1, 'd__' + iScale, 'd__' + iB,
-            'd__' + o_y
+            o_y, o_mean, o_var,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + iScale,
+            poponnx.reservedGradientPrefix() + iB,
+            poponnx.reservedGradientPrefix() + o_y
         ]
 
     def reference(ref_data):

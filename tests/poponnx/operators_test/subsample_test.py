@@ -12,7 +12,7 @@ def _subsample_helper(op_tester, input, strides, output, grad_ouput):
         i1 = builder.addInputTensor(d1)
         o = builder.aiGraphcore.subsample([i1], strides)
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1]
+        return [o, poponnx.reservedGradientPrefix() + i1]
 
     def reference(ref_data):
         return [output, grad_ouput]

@@ -29,7 +29,10 @@ def test_convolution_cached_by_default():
 
     proto = builder.getModelProto()
 
-    anchor_names = ['d__' + i1, 'd__' + i2]
+    anchor_names = [
+        poponnx.reservedGradientPrefix() + i1,
+        poponnx.reservedGradientPrefix() + i2
+    ]
     dataFlow = \
         poponnx.DataFlow(1,
                          {anchor_names[0] : poponnx.AnchorReturnType("ALL"),
@@ -104,7 +107,10 @@ def test_convolution_disable_all():
 
     proto = builder.getModelProto()
 
-    anchor_names = ['d__' + i1, 'd__' + i2]
+    anchor_names = [
+        poponnx.reservedGradientPrefix() + i1,
+        poponnx.reservedGradientPrefix() + i2
+    ]
     dataFlow = \
         poponnx.DataFlow(1,
                          {anchor_names[0] : poponnx.AnchorReturnType("ALL"),
@@ -265,7 +271,12 @@ def test_matmul_train_cached_by_default():
 
     proto = builder.getModelProto()
 
-    anchor_names = ['d__' + i1, 'd__' + i2, 'd__' + i3, 'd__' + i4]
+    anchor_names = [
+        poponnx.reservedGradientPrefix() + i1,
+        poponnx.reservedGradientPrefix() + i2,
+        poponnx.reservedGradientPrefix() + i3,
+        poponnx.reservedGradientPrefix() + i4
+    ]
     dataFlow = poponnx.DataFlow(
         1, {
             anchor_names[0]: poponnx.AnchorReturnType("ALL"),
@@ -350,7 +361,12 @@ def test_gemm_train_cached_by_default():
     proto = builder.getModelProto()
 
     anchor_names = [
-        'd__' + i1, 'd__' + i2, 'd__' + i3, 'd__' + i4, 'd__' + i5, 'd__' + i6
+        poponnx.reservedGradientPrefix() + i1,
+        poponnx.reservedGradientPrefix() + i2,
+        poponnx.reservedGradientPrefix() + i3,
+        poponnx.reservedGradientPrefix() + i4,
+        poponnx.reservedGradientPrefix() + i5,
+        poponnx.reservedGradientPrefix() + i6
     ]
     dataFlow = poponnx.DataFlow(
         1, {
@@ -606,11 +622,16 @@ def test_outlining_bca3():
     anchor_names = [o]
     dataFlow = poponnx.DataFlow(
         1, {
-            o: poponnx.AnchorReturnType("ALL"),
-            'd__' + i1: poponnx.AnchorReturnType("ALL"),
-            'd__' + i2: poponnx.AnchorReturnType("ALL"),
-            'd__' + i3: poponnx.AnchorReturnType("ALL"),
-            'd__' + i4: poponnx.AnchorReturnType("ALL")
+            o:
+            poponnx.AnchorReturnType("ALL"),
+            poponnx.reservedGradientPrefix() + i1:
+            poponnx.AnchorReturnType("ALL"),
+            poponnx.reservedGradientPrefix() + i2:
+            poponnx.AnchorReturnType("ALL"),
+            poponnx.reservedGradientPrefix() + i3:
+            poponnx.AnchorReturnType("ALL"),
+            poponnx.reservedGradientPrefix() + i4:
+            poponnx.AnchorReturnType("ALL")
         })
 
     opts = poponnx.SessionOptionsCore()

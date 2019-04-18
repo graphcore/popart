@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from op_tester import op_tester
+import poponnx
 
 
 def test_softmax(op_tester):
@@ -32,7 +33,11 @@ def test_softmax_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.softmax([i1])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         a = torch.tensor(d1, requires_grad=True)
@@ -116,7 +121,11 @@ def _test_softmax_grad(op_tester, data, axis):
         i1 = builder.addInputTensor(data)
         o = builder.aiOnnx.softmax([i1], axis)
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         n = 1

@@ -181,7 +181,8 @@ def test_sgd_with_float16_model():
     losses = [poponnx.L1Loss(out, "l1LossVal", 0.1)]
 
     anchorNames = {
-        'd__' + inid1: poponnx.AnchorReturnType("ALL"),
+        poponnx.reservedGradientPrefix() + inid1:
+        poponnx.AnchorReturnType("ALL"),
     }
 
     opts = poponnx.SessionOptionsCore()

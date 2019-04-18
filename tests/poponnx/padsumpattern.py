@@ -189,7 +189,11 @@ def test_pad_sum7(op_tester):
 
         o = u1
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         i1 = torch.tensor(d1, requires_grad=True)

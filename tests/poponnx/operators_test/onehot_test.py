@@ -77,7 +77,11 @@ def test_onehot_2d_with_axis_training(op_tester):
         i3 = builder.addInputTensor(values)
         o = builder.aiOnnx.onehot([i1, i2, i3], 0, "test_onehot")
         builder.addOutputTensor(o)
-        return [o, 'd__' + o, 'd__' + i3]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + o,
+            poponnx.reservedGradientPrefix() + i3
+        ]
 
     def reference(ref_data):
         return [output, output_grad, values_grad]
@@ -109,7 +113,11 @@ def test_onehot_2d_without_axis_training(op_tester):
         i3 = builder.addInputTensor(values)
         o = builder.aiOnnx.onehot([i1, i2, i3], -1, "test_onehot")
         builder.addOutputTensor(o)
-        return [o, 'd__' + o, 'd__' + i3]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + o,
+            poponnx.reservedGradientPrefix() + i3
+        ]
 
     def reference(ref_data):
         return [output, output_grad, values_grad]

@@ -30,7 +30,12 @@ def test_add(op_tester):
         i2 = builder.addInputTensor(d2)
         o = builder.aiOnnx.add([i1, i2], "test_add")
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + i2, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i2,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)
@@ -69,7 +74,11 @@ def test_cast_grad(op_tester):
         # Add an op that produces a gradient so we can test CastGrad properly
         o = builder.aiOnnx.sqrt([c])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         c = torch.tensor(d1, dtype=torch.float32, requires_grad=True)
@@ -125,7 +134,7 @@ def test_convolution_2(op_tester):
                                 pads=[0, 0, 0, 0],
                                 strides=[2, 2])
         builder.addOutputTensor(o)
-        return [o, 'd__' + d]
+        return [o, poponnx.reservedGradientPrefix() + d]
 
     def reference(ref_data):
         expected = np.array([[[[2., 2.], [2., 2.]], [[2., 2.], [2., 2.]],
@@ -200,7 +209,12 @@ def test_div_grad(tmpdir):
     test.passes.extend(["PreUniRepl", "DivArg0GradOp", "DivArg1GradOp"])
 
     # run the poponnx session
-    anchors = test.run(o, [o, 'd__' + o, 'd__' + i1, 'd__' + i2], 'train')
+    anchors = test.run(o, [
+        o,
+        poponnx.reservedGradientPrefix() + o,
+        poponnx.reservedGradientPrefix() + i1,
+        poponnx.reservedGradientPrefix() + i2
+    ], 'train')
 
     # create and run torch reference
     def torch_reference(d__o):
@@ -211,14 +225,19 @@ def test_div_grad(tmpdir):
 
         outputs = {}
         outputs[o] = out.data.numpy()
-        outputs['d__' + i1] = t1.grad.data.numpy()
-        outputs['d__' + i2] = t2.grad.data.numpy()
+        outputs[poponnx.reservedGradientPrefix() + i1] = t1.grad.data.numpy()
+        outputs[poponnx.reservedGradientPrefix() + i2] = t2.grad.data.numpy()
         return outputs
 
-    reference_results = torch_reference(anchors['d__' + o])
+    reference_results = torch_reference(
+        anchors[poponnx.reservedGradientPrefix() + o])
 
     # compare results
-    for key in [o, 'd__' + i1, 'd__' + i2]:
+    for key in [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i2
+    ]:
         print('Checking anchor %s ...' % (key, ))
         assert np.allclose(anchors[key], reference_results[key])
 
@@ -231,7 +250,11 @@ def test_reciprocal_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.reciprocal([i1])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         a = torch.tensor(d1, requires_grad=True)
@@ -271,7 +294,11 @@ def test_sqrt_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.sqrt([i1])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         a = torch.tensor(d1, requires_grad=True)
@@ -310,7 +337,11 @@ def test_exp_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.exp([i1])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         a = torch.tensor(d1, requires_grad=True)
@@ -349,7 +380,11 @@ def test_sigmoid_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.sigmoid([i1])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         a = torch.tensor(d1, requires_grad=True)
@@ -385,7 +420,11 @@ def test_transpose_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.transpose([i1], [1, 3, 0, 4, 2])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         a = torch.tensor(d1, requires_grad=True)
@@ -426,7 +465,11 @@ def test_log_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.log([i1])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         a = torch.tensor(d1, requires_grad=True)
@@ -471,7 +514,11 @@ def test_logsoftmax_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.logsoftmax([i1])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         a = torch.tensor(d1, requires_grad=True)
@@ -510,7 +557,11 @@ def test_unsqueeze_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.unsqueeze([i1], axes=[0, 4])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         a = torch.tensor(d1, requires_grad=True)
@@ -582,7 +633,11 @@ def test_slice_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.slice([i1], axes=[0, 1], starts=[1, 0], ends=[2, 3])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         a = torch.tensor(d1, requires_grad=True)
@@ -670,7 +725,11 @@ def test_pad_grad(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.pad([i1], [0, 2, 1, 1], "constant", 0)
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
 
@@ -703,7 +762,11 @@ def test_scatter_0(op_tester):
         i3 = builder.addInputTensor(updates)
         o = builder.aiOnnx.scatter([i1, i2, i3], axis)
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + i3]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i3
+        ]
 
     def reference(ref_data):
         return [output, data, np.sign(updates) * 0.1]
@@ -726,7 +789,11 @@ def test_scatter_1(op_tester):
         i3 = builder.addInputTensor(updates)
         o = builder.aiOnnx.scatter([i1, i2, i3], axis)
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + i3]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i3
+        ]
 
     def reference(ref_data):
         return [output, d_data, np.sign(updates) * 0.1]
@@ -751,7 +818,11 @@ def test_scatter_2(op_tester):
         i3 = builder.addInputTensor(updates)
         o = builder.aiOnnx.scatter([i1, i2, i3], axis)
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + i3]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i3
+        ]
 
     def reference(ref_data):
         return [output, data, np.sign(updates) * 0.1]
@@ -946,7 +1017,11 @@ def test_instancenorm_grad(op_tester):
         builder.addOutputTensor(out)
 
         return [
-            out, 'd__' + i_data, 'd__' + i_scale, 'd__' + i_bias, 'd__' + out
+            out,
+            poponnx.reservedGradientPrefix() + i_data,
+            poponnx.reservedGradientPrefix() + i_scale,
+            poponnx.reservedGradientPrefix() + i_bias,
+            poponnx.reservedGradientPrefix() + out
         ]
 
     def reference(ref_data):

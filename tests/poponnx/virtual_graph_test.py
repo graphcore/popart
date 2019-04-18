@@ -103,11 +103,16 @@ def test_virtual_graph3():
     # Need to anchor the output of the backward pass to stop it being pruned
     dataFlow = poponnx.DataFlow(
         1, {
-            o: poponnx.AnchorReturnType("ALL"),
-            'd__' + i1: poponnx.AnchorReturnType("ALL"),
-            'd__' + i2: poponnx.AnchorReturnType("ALL"),
-            'd__' + i3: poponnx.AnchorReturnType("ALL"),
-            'd__' + i4: poponnx.AnchorReturnType("ALL")
+            o:
+            poponnx.AnchorReturnType("ALL"),
+            poponnx.reservedGradientPrefix() + i1:
+            poponnx.AnchorReturnType("ALL"),
+            poponnx.reservedGradientPrefix() + i2:
+            poponnx.AnchorReturnType("ALL"),
+            poponnx.reservedGradientPrefix() + i3:
+            poponnx.AnchorReturnType("ALL"),
+            poponnx.reservedGradientPrefix() + i4:
+            poponnx.AnchorReturnType("ALL")
         })
 
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
@@ -165,12 +170,18 @@ def test_virtual_graph4():
     # Need to anchor the output of the backward pass to stop it being pruned
     dataFlow = poponnx.DataFlow(
         1, {
-            o1: poponnx.AnchorReturnType("ALL"),
-            o2: poponnx.AnchorReturnType("ALL"),
-            o3: poponnx.AnchorReturnType("ALL"),
-            'd__' + i1: poponnx.AnchorReturnType("ALL"),
-            'd__' + i2: poponnx.AnchorReturnType("ALL"),
-            'd__' + i3: poponnx.AnchorReturnType("ALL")
+            o1:
+            poponnx.AnchorReturnType("ALL"),
+            o2:
+            poponnx.AnchorReturnType("ALL"),
+            o3:
+            poponnx.AnchorReturnType("ALL"),
+            poponnx.reservedGradientPrefix() + i1:
+            poponnx.AnchorReturnType("ALL"),
+            poponnx.reservedGradientPrefix() + i2:
+            poponnx.AnchorReturnType("ALL"),
+            poponnx.reservedGradientPrefix() + i3:
+            poponnx.AnchorReturnType("ALL")
         })
 
     losses = [

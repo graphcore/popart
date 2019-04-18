@@ -19,8 +19,8 @@ def test_abs_training(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            'd__' + o,
-            'd__' + i1,
+            poponnx.reservedGradientPrefix() + o,
+            poponnx.reservedGradientPrefix() + i1,
         ]
 
     def reference(ref_data):
@@ -50,8 +50,8 @@ def test_sign_training(op_tester):
         builder.addOutputTensor(o)
         return [
             o,
-            'd__' + o,
-            'd__' + i1,
+            poponnx.reservedGradientPrefix() + o,
+            poponnx.reservedGradientPrefix() + i1,
         ]
 
     def reference(ref_data):

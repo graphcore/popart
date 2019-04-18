@@ -25,9 +25,9 @@ TensorId getRecompId(const TensorId &tenId);
 // get an variable tensor's post-update name, based on original name
 TensorId getUpdatedVarId(const TensorId &id);
 
-constexpr const char *reservedGradientPrefix() { return "d__"; }
-constexpr const char *reservedRecomputePrefix() { return "r__"; }
-constexpr const char *reservedUpdatedVarPrefix() { return "uv__"; }
+constexpr const char *reservedGradientPrefix() { return "D___"; }
+constexpr const char *reservedRecomputePrefix() { return "R___"; }
+constexpr const char *reservedUpdatedVarPrefix() { return "UV___"; }
 
 std::vector<std::string> reservedPrefixes();
 

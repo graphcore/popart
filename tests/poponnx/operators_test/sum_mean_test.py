@@ -57,8 +57,13 @@ def test_X_training(op_tester, X="mean"):
 
         builder.addOutputTensor(o)
         return [
-            o, 'd__' + i1, 'd__' + i2, 'd__' + i3, 'd__' + i4, 'd__' + i5,
-            'd__' + o
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i2,
+            poponnx.reservedGradientPrefix() + i3,
+            poponnx.reservedGradientPrefix() + i4,
+            poponnx.reservedGradientPrefix() + i5,
+            poponnx.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -115,8 +120,13 @@ def test_mean_training_2(op_tester):
         o = builder.aiOnnx.mean([i1, i2, i3, i4, i5], "test_max")
         builder.addOutputTensor(o)
         return [
-            o, 'd__' + i1, 'd__' + i2, 'd__' + i3, 'd__' + i4, 'd__' + i5,
-            'd__' + o
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i2,
+            poponnx.reservedGradientPrefix() + i3,
+            poponnx.reservedGradientPrefix() + i4,
+            poponnx.reservedGradientPrefix() + i5,
+            poponnx.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):
@@ -162,8 +172,13 @@ def test_mean_training_3(op_tester):
         o = builder.aiOnnx.mean([i1, i2, i3, i4, i5], "test_max")
         builder.addOutputTensor(o)
         return [
-            o, 'd__' + i1, 'd__' + i2, 'd__' + i3, 'd__' + i4, 'd__' + i5,
-            'd__' + o
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i2,
+            poponnx.reservedGradientPrefix() + i3,
+            poponnx.reservedGradientPrefix() + i4,
+            poponnx.reservedGradientPrefix() + i5,
+            poponnx.reservedGradientPrefix() + o
         ]
 
     def reference(ref_data):

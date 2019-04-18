@@ -20,7 +20,12 @@ def test_mul(op_tester):
         i2 = builder.addInputTensor(d2)
         o = builder.aiOnnx.mul([i1, i2])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + i2, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i2,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)
@@ -43,7 +48,12 @@ def test_broadcast_mul(op_tester):
         i2 = builder.addInputTensor(d2)
         o = builder.aiOnnx.mul([i1, i2])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + i2, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i2,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)

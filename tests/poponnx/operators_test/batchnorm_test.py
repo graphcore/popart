@@ -162,7 +162,11 @@ def test_batchnorm_train_0(op_tester):
         builder.addOutputTensor(o_mean)
         builder.addOutputTensor(o_var)
 
-        return [o_y, 'd__' + i1, 'd__' + o_y]
+        return [
+            o_y,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o_y
+        ]
 
     def reference(ref_data):
         _input = torch.tensor(d1, requires_grad=True)
@@ -228,7 +232,11 @@ def test_batchnorm_train_1(op_tester):
             builder.addOutputTensor(o_mean)
             builder.addOutputTensor(o_var)
 
-            return [o_y, 'd__' + i1, 'd__' + o_y]
+            return [
+                o_y,
+                poponnx.reservedGradientPrefix() + i1,
+                poponnx.reservedGradientPrefix() + o_y
+            ]
 
         def reference(ref_data):
             _input = torch.tensor(d1, requires_grad=False)

@@ -118,7 +118,13 @@ def test_lstm_torch_grad(op_tester):
         Y1 = builder.aiOnnx.add([Ys, Y_h])
         Y2 = builder.aiOnnx.add([Y1, Y_c])
         builder.addOutputTensor(Y2)
-        return [Y2, 'd__' + i1, 'd__' + i2, 'd__' + i3, 'd__' + Y2]
+        return [
+            Y2,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i2,
+            poponnx.reservedGradientPrefix() + i3,
+            poponnx.reservedGradientPrefix() + Y2
+        ]
 
     def reference(ref_data):
         lstm = torch.nn.LSTM(input_size, hidden_size, 1)
@@ -298,8 +304,14 @@ def test_lstm_torch_grad_all_inputs(op_tester):
         Y2 = builder.aiOnnx.add([Y1, Y_c])
         builder.addOutputTensor(Y2)
         return [
-            Y2, 'd__' + i1, 'd__' + i2, 'd__' + i3, 'd__' + i4, 'd__' + i6,
-            'd__' + i7, 'd__' + Y2
+            Y2,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i2,
+            poponnx.reservedGradientPrefix() + i3,
+            poponnx.reservedGradientPrefix() + i4,
+            poponnx.reservedGradientPrefix() + i6,
+            poponnx.reservedGradientPrefix() + i7,
+            poponnx.reservedGradientPrefix() + Y2
         ]
 
     def reference(ref_data):
@@ -587,14 +599,22 @@ def test_import_torch_lstm_train(tmpdir):
             param.data.sub_(0.1 * param.grad.data)
 
         outputs = {
-            'out': out,
-            'd__X': x.grad,
-            'd__initial_h': h0.grad,
-            'd__initial_c': c0.grad,
-            'd__W': torch_lstm.lstm.weight_ih_l0.grad,
-            'd__R': torch_lstm.lstm.weight_hh_l0.grad,
-            'd__WB': torch_lstm.lstm.bias_ih_l0.grad,
-            'd__RB': torch_lstm.lstm.bias_hh_l0.grad,
+            'out':
+            out,
+            poponnx.reservedGradientPrefix() + 'X':
+            x.grad,
+            poponnx.reservedGradientPrefix() + 'initial_h':
+            h0.grad,
+            poponnx.reservedGradientPrefix() + 'initial_c':
+            c0.grad,
+            poponnx.reservedGradientPrefix() + 'W':
+            torch_lstm.lstm.weight_ih_l0.grad,
+            poponnx.reservedGradientPrefix() + 'R':
+            torch_lstm.lstm.weight_hh_l0.grad,
+            poponnx.reservedGradientPrefix() + 'WB':
+            torch_lstm.lstm.bias_ih_l0.grad,
+            poponnx.reservedGradientPrefix() + 'RB':
+            torch_lstm.lstm.bias_hh_l0.grad,
         }
         return {key: value.data.numpy() for key, value in outputs.items()}
 
@@ -613,8 +633,14 @@ def test_import_torch_lstm_train(tmpdir):
         builder = poponnx.Builder(onnx_file_name)
         outputs = builder.getOutputTensorIds()
         anchors = outputs + [
-            'd__out', 'd__X', 'd__initial_h', 'd__initial_c', 'd__3', 'd__4',
-            'd__5', 'd__6'
+            poponnx.reservedGradientPrefix() + 'out',
+            poponnx.reservedGradientPrefix() + 'X',
+            poponnx.reservedGradientPrefix() + 'initial_h',
+            poponnx.reservedGradientPrefix() + 'initial_c',
+            poponnx.reservedGradientPrefix() + '3',
+            poponnx.reservedGradientPrefix() + '4',
+            poponnx.reservedGradientPrefix() + '5',
+            poponnx.reservedGradientPrefix() + '6'
         ]
         anchors = {o: poponnx.AnchorReturnType('ALL') for o in anchors}
         dataFlow = poponnx.DataFlow(1, anchors)
@@ -646,10 +672,14 @@ def test_import_torch_lstm_train(tmpdir):
         s.run(stepio)
         s.modelToHost(get_poponnx_fname(onnx_file_name))
 
-        anchor_map['d__W'] = anchor_map.pop('d__3')
-        anchor_map['d__R'] = anchor_map.pop('d__4')
-        anchor_map['d__WB'] = anchor_map.pop('d__5')
-        anchor_map['d__RB'] = anchor_map.pop('d__6')
+        anchor_map[poponnx.reservedGradientPrefix() + 'W'] = anchor_map.pop(
+            poponnx.reservedGradientPrefix() + '3')
+        anchor_map[poponnx.reservedGradientPrefix() + 'R'] = anchor_map.pop(
+            poponnx.reservedGradientPrefix() + '4')
+        anchor_map[poponnx.reservedGradientPrefix() + 'WB'] = anchor_map.pop(
+            poponnx.reservedGradientPrefix() + '5')
+        anchor_map[poponnx.reservedGradientPrefix() + 'RB'] = anchor_map.pop(
+            poponnx.reservedGradientPrefix() + '6')
         return anchor_map
 
     input_size = 2
@@ -664,8 +694,9 @@ def test_import_torch_lstm_train(tmpdir):
     torch_lstm = torch_create_lstm(input_size, hidden_size)
     torch_export_lstm(fname, torch_lstm, (x, h0, c0))
     poponnx_out = run_lstm_poponnx(fname, (x, h0, c0))
-    torch_out = run_lstm_torch(torch_lstm, (x, h0, c0),
-                               poponnx_out.pop('d__out'))
+    torch_out = run_lstm_torch(
+        torch_lstm, (x, h0, c0),
+        poponnx_out.pop(poponnx.reservedGradientPrefix() + 'out'))
     torch_export_lstm(get_torch_fname(fname), torch_lstm, (x, h0, c0))
 
     nr = poponnx.NumericsReport(fname, get_torch_fname(fname), fname,

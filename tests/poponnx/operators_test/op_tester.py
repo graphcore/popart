@@ -70,7 +70,7 @@ def op_tester(tmpdir):
 
         def getOutputTensorGrad(self, index):
             tensorId = self._outputs[index]
-            gradId = 'd__' + tensorId
+            gradId = poponnx.reservedGradientPrefix() + tensorId
             return self._anchor_map[gradId]
 
     class OpTester:

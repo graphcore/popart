@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from op_tester import op_tester
+import poponnx
 
 
 def test_gemm_basic(op_tester):
@@ -99,7 +100,13 @@ def _test_gemm_grad(op_tester, A, B, C, alpha, beta, transA, transB):
         i3 = builder.addInputTensor(C)
         o = builder.aiOnnx.gemm([i1, i2, i3], alpha, beta, transA, transB)
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + i2, 'd__' + i3, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + i2,
+            poponnx.reservedGradientPrefix() + i3,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         a = torch.tensor(A, requires_grad=True)

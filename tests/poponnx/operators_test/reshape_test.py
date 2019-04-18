@@ -112,7 +112,11 @@ def test_reshape_neg_one_and_zeros_grad(op_tester):
         c = builder.aiOnnx.constant(d2)
         o = builder.aiOnnx.reshape([i1, c])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         s = [i for i in d2]

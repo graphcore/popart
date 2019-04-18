@@ -177,7 +177,11 @@ def test_maxpool_grad(op_tester):
         (o, ) = builder.aiOnnx.maxpool([i1], 1, [2, 2], [0, 0, 0, 0], 0,
                                        [2, 2])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)
@@ -217,7 +221,11 @@ def test_globalmaxpool_grad_2d(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.globalmaxpool([i1])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)
@@ -281,7 +289,11 @@ def test_globalaveragepool_grad_2d(op_tester):
         i1 = builder.addInputTensor(d1)
         o = builder.aiOnnx.globalaveragepool([i1])
         builder.addOutputTensor(o)
-        return [o, 'd__' + i1, 'd__' + o]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
 
     def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)
