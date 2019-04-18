@@ -26,8 +26,13 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
   // (label), (probs) -> [SoftmaxGradDirect] -> (d_acts)
   //
   // but ONLY if "they're" on the same IPUs
+  //
+  // If NlllWithSoftmaxGradDirect pattern is enabled,
+  // and since the loss is anchored, this should become
+  //
+  // (label), (probs) -> [NlllWithSoftmaxGradDirect] -> (loss), (d_acts)
 
-  auto test = [](bool sameIPU) {
+  auto test = [](bool sameIPU, bool enableNlllWithSoftmaxGradDirect) {
     // Build an onnx model
     auto builder = Builder::create();
     auto aiOnnx  = builder->aiOnnxOpset9();
@@ -56,11 +61,9 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
 
     // Create the IR
     // Add the last tensor, and the 3rd tensor as anchors
-    auto art       = AnchorReturnType("ALL");
-    auto dataFlow  = DataFlow(1,
-                             {{softmaxOut, art},
-                              {reservedGradientPrefix() + input1, art},
-                              {"nllLossVal", art}});
+    auto art      = AnchorReturnType("ALL");
+    auto dataFlow = DataFlow(
+        1, {{reservedGradientPrefix() + input1, art}, {"nllLossVal", art}});
     auto optimizer = ConstSGD(0.01);
     std::vector<Loss *> losses{new NllLoss(softmaxOut, input2, "nllLossVal")};
 
@@ -77,6 +80,10 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
 
     auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
+    auto patterns = Patterns({PreAliasPatternType::PREUNIREPL,
+                              PreAliasPatternType::SOFTMAXGRADDIRECT});
+    patterns.enableNlllWithSoftMaxGradDirect(enableNlllWithSoftmaxGradDirect);
+
     Ir ir;
     ir.prepare({modelProto,
                 inputInfo,
@@ -85,27 +92,62 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
                 &optimizer,
                 *cpuDevice,
                 opts,
-                Patterns({PreAliasPatternType::PREUNIREPL,
-                          PreAliasPatternType::SOFTMAXGRADDIRECT})});
+                patterns});
 
     // Check the ir
-    // NllGradOp and SoftmaxGradOp should have been replaced with
-    // SoftmaxGradDirectOp, but ONLY if different IPUs
 
-    if (sameIPU == true) {
+    // NllGradOp and SoftmaxGradOp should have been replaced with
+    // SoftmaxGradDirectOp, but ONLY if same IPUs
+    if (sameIPU == true && enableNlllWithSoftmaxGradDirect == false) {
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::Nll).size() == 1);
       BOOST_CHECK(ir.opsOfType(Onnx::CustomGradOperators::NllGrad).size() == 0);
       BOOST_CHECK(ir.opsOfType(Onnx::GradOperators::SoftmaxGrad).size() == 0);
       BOOST_CHECK(
           ir.opsOfType(Onnx::CustomGradOperators::SoftmaxGradDirect).size() ==
           1);
-    } else {
+      BOOST_CHECK(
+          ir.opsOfType(Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect)
+              .size() == 0);
+    } else if (sameIPU == false && enableNlllWithSoftmaxGradDirect == false) {
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::Nll).size() == 1);
       BOOST_CHECK(ir.opsOfType(Onnx::CustomGradOperators::NllGrad).size() == 1);
       BOOST_CHECK(ir.opsOfType(Onnx::GradOperators::SoftmaxGrad).size() == 1);
       BOOST_CHECK(
           ir.opsOfType(Onnx::CustomGradOperators::SoftmaxGradDirect).size() ==
           0);
+      BOOST_CHECK(
+          ir.opsOfType(Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect)
+              .size() == 0);
+    }
+
+    // NllLoss, NllGradOp and SoftmaxGradOp should have been replaced with
+    // NlllWithSoftmaxGradDirectOp, but ONLY if same IPUs
+    if (sameIPU == true && enableNlllWithSoftmaxGradDirect == true) {
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::Nll).size() == 0);
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomGradOperators::NllGrad).size() == 0);
+      BOOST_CHECK(ir.opsOfType(Onnx::GradOperators::SoftmaxGrad).size() == 0);
+      BOOST_CHECK(
+          ir.opsOfType(Onnx::CustomGradOperators::SoftmaxGradDirect).size() ==
+          0);
+      BOOST_CHECK(
+          ir.opsOfType(Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect)
+              .size() == 1);
+    } else if (sameIPU == false && enableNlllWithSoftmaxGradDirect == true) {
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::Nll).size() == 1);
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomGradOperators::NllGrad).size() == 1);
+      BOOST_CHECK(ir.opsOfType(Onnx::GradOperators::SoftmaxGrad).size() == 1);
+      BOOST_CHECK(
+          ir.opsOfType(Onnx::CustomGradOperators::SoftmaxGradDirect).size() ==
+          0);
+      BOOST_CHECK(
+          ir.opsOfType(Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect)
+              .size() == 0);
     }
   };
-  test(true);
-  test(false);
+
+  test(true, false);
+  test(false, false);
+
+  test(true, true);
+  test(false, true);
 }

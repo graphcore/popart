@@ -388,6 +388,8 @@ PYBIND11_MODULE(poponnx_core, m) {
       .value("PREUNIREPL", PreAliasPatternType::PREUNIREPL)
       .value("POSTNREPL", PreAliasPatternType::POSTNREPL)
       .value("SOFTMAXGRADDIRECT", PreAliasPatternType::SOFTMAXGRADDIRECT)
+      .value("NLLLWITHSOFTMAXGRADDIRECT",
+             PreAliasPatternType::NLLLWITHSOFTMAXGRADDIRECT)
       .value("SPLITCONVBIAS", PreAliasPatternType::SPLITCONVBIAS)
       .value("OPTOIDENTITY", PreAliasPatternType::OPTOIDENTITY)
       .value("SUBTRACTARG1GRADOP", PreAliasPatternType::SUBTRACTARG1GRADOP)
@@ -418,6 +420,9 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_property("SoftMaxGradDirect",
                     &Patterns::isSoftMaxGradDirectEnabled,
                     &Patterns::enableSoftMaxGradDirect)
+      .def_property("NlllWithSoftMaxGradDirect",
+                    &Patterns::isNlllWithSoftMaxGradDirectEnabled,
+                    &Patterns::enableNlllWithSoftMaxGradDirect)
       .def_property("SplitConvBias",
                     &Patterns::isSplitConvBiasEnabled,
                     &Patterns::enableSplitConvBias)

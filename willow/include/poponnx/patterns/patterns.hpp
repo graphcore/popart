@@ -125,6 +125,9 @@ public:
   bool isSoftMaxGradDirectEnabled() {
     return isPatternEnabled(PreAliasPatternType::SOFTMAXGRADDIRECT);
   }
+  bool isNlllWithSoftMaxGradDirectEnabled() {
+    return isPatternEnabled(PreAliasPatternType::NLLLWITHSOFTMAXGRADDIRECT);
+  }
   bool isSplitConvBiasEnabled() {
     return isPatternEnabled(PreAliasPatternType::SPLITCONVBIAS);
   }
@@ -189,6 +192,9 @@ public:
   }
   Patterns &enableSoftMaxGradDirect(bool v) {
     return enablePattern(PreAliasPatternType::SOFTMAXGRADDIRECT, v);
+  }
+  Patterns &enableNlllWithSoftMaxGradDirect(bool v) {
+    return enablePattern(PreAliasPatternType::NLLLWITHSOFTMAXGRADDIRECT, v);
   }
   Patterns &enableSplitConvBias(bool v) {
     return enablePattern(PreAliasPatternType::SPLITCONVBIAS, v);

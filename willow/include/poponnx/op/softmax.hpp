@@ -51,9 +51,31 @@ public:
   std::unique_ptr<Op> clone() const final;
   void setup() final;
   const NllLoss *nlll() const;
+  bool hasNlllFwdOp() const;
+  Op *nlllFwdOp() const;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
+
+private:
+  const NllLoss *nllloss_;
+};
+
+class NlllWithSoftmaxGradDirectOp : public Op {
+public:
+  // where Op in this constructor must be a SoftmaxOp
+  // where this is created by a merger between the Op
+  // and an NllGradOp
+  NlllWithSoftmaxGradDirectOp(const NllLoss *, const Op::Settings &);
+  std::unique_ptr<Op> clone() const final;
+  void setup() final;
+  const NllLoss *nlll() const;
+  Op *nlllFwdOp() const;
+
+  static InIndex getProbsInIndex() { return 0; }
+  static InIndex getLabelInIndex() { return 1; }
+  static OutIndex getLossOutIndex() { return 0; }
+  static OutIndex getGradOutIndex() { return 1; }
 
 private:
   const NllLoss *nllloss_;

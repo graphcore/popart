@@ -1,9 +1,12 @@
 #include <poponnx/error.hpp>
+#include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
+#include <poponnx/op/nll.hpp>
 #include <poponnx/op/softmax.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensors.hpp>
 
 namespace poponnx {
 
@@ -77,6 +80,61 @@ std::unique_ptr<Op> SoftmaxGradDirectOp::clone() const {
 void SoftmaxGradDirectOp::setup() {
   // gradient of activations has same shape as probabilities
   outInfo(getOutIndex()) = inInfo(getInIndex());
+}
+
+bool SoftmaxGradDirectOp::hasNlllFwdOp() const {
+  TensorId lossTensorName = nlll()->output(NllLoss::getOutIndex());
+  if (getIr().getTensors().contains(lossTensorName)) {
+    auto t = getIr().getTensors().get(lossTensorName);
+    return t->hasProducer();
+  }
+  return false;
+}
+
+Op *SoftmaxGradDirectOp::nlllFwdOp() const {
+
+  // First check that the forward Nll loss op exists
+  // in the ir
+  if (!hasNlllFwdOp()) {
+    throw error("The forward loss op corresponding to the SoftmaxGradDirectOp "
+                "{} does not exist in the Ir",
+                id);
+  }
+
+  TensorId lossTensorName = nlll()->output(NllLoss::getOutIndex());
+
+  // Find the op producing the loss tensor, i.e. the
+  // corresponding fwd loss op whose bwd op has merged
+  // with the SoftmaxGradOp
+  Tensor *lossTensor = getIr().getTensors().get(lossTensorName);
+  Op *fwdLossOp      = lossTensor->getProducer();
+
+  return fwdLossOp;
+}
+
+NlllWithSoftmaxGradDirectOp::NlllWithSoftmaxGradDirectOp(
+    const NllLoss *nls,
+    const Op::Settings &settings_)
+    : Op(Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect, settings_) {
+  nllloss_ = nls;
+}
+
+const NllLoss *NlllWithSoftmaxGradDirectOp::nlll() const { return nllloss_; }
+
+std::unique_ptr<Op> NlllWithSoftmaxGradDirectOp::clone() const {
+  throw error(
+      "Unexpected (but valid) request to clone NlllWithSoftmaxGradDirectOp");
+}
+
+void NlllWithSoftmaxGradDirectOp::setup() {
+  // gradient of activations has same shape as probabilities
+  outInfo(getGradOutIndex()) = inInfo(getProbsInIndex());
+
+  // Outputs a loss for each label index.
+  // Same shape as label input, same datatype as probs input
+  outInfo(getLossOutIndex())
+      .set(inInfo(getProbsInIndex()).dataType(),
+           inInfo(getLabelInIndex()).shape());
 }
 
 namespace {

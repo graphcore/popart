@@ -742,6 +742,8 @@ const static AiGraphcoreOpIdV1 SoftmaxGradDirect("SoftmaxGradDirect");
 const static AiGraphcoreOpIdV1 SubsampleGrad("SubsampleGrad");
 const static AiGraphcoreOpIdV1 L1Grad("L1Grad");
 const static AiGraphcoreOpIdV1 NllGrad("NllGrad");
+const static AiGraphcoreOpIdV1
+    NlllWithSoftmaxGradDirect("NlllWithSoftmaxGradDirect");
 } // namespace CustomGradOperators
 } // namespace Onnx
 

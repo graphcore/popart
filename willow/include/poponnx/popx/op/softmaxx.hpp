@@ -9,6 +9,7 @@ namespace poponnx {
 class SoftmaxOp;
 class SoftmaxGradOp;
 class SoftmaxGradDirectOp;
+class NlllWithSoftmaxGradDirectOp;
 
 namespace popx {
 
@@ -31,6 +32,13 @@ public:
 class SoftmaxGradDirectOpx : public Opx {
 public:
   SoftmaxGradDirectOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
+// As above, but combines the loss calculation to reduce redundancy
+class NlllWithSoftmaxGradDirectOpx : public Opx {
+public:
+  NlllWithSoftmaxGradDirectOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 };
 
