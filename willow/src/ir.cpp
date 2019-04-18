@@ -1020,7 +1020,7 @@ void Ir::validateAnchors() const {
       ss << "Anchor tensor `" << id << "' not in tensors. ";
       // add some trouble-shooting for a case I stumbled upon:
       if (id.find(reservedGradientPrefix()) != std::string::npos) {
-        std::string degrad = id.substr(reservedGradientPrefix().size());
+        std::string degrad = getNonGradId(id);
         if (getTensors().contains(degrad)) {
           ss << "\nInterestingly, `" << degrad << '\'' << " IS in tensors.\n";
           ss << "Note that not all tensors can have their gradients "
@@ -1142,12 +1142,6 @@ void Ir::constructFromOnnxGraph(const onnx::GraphProto &graph,
 void Ir::foldConstants() {
   logging::ces::trace("Folding constants");
   ConstExprUtil::foldConstants(this);
-}
-
-std::string reservedGradientPrefix() { return "d__"; }
-std::string reservedRecomputePrefix() { return "r__"; }
-std::vector<std::string> reservedPrefixes() {
-  return {reservedGradientPrefix(), reservedRecomputePrefix()};
 }
 
 OpId Ir::getAndIncrOpsCounter() {
@@ -1587,16 +1581,16 @@ void Ir::extendScopes() {
   auto getConsumers = [](const std::vector<Tensor *> tensors) {
     std::vector<Op *> consumers;
     for (auto t : tensors) {
-      auto ops = t->consumers.getOps();
-      consumers.insert(consumers.end(), ops.begin(), ops.end());
+      auto operations = t->consumers.getOps();
+      consumers.insert(consumers.end(), operations.begin(), operations.end());
     }
     return consumers;
   };
 
   // Get all the inputs of the arg ops
-  auto getInputs = [](const std::set<Op *> &ops) {
+  auto getInputs = [](const std::set<Op *> &operations) {
     std::set<Tensor *> inputs;
-    for (auto op : ops) {
+    for (auto op : operations) {
       for (auto t : op->input->tensors()) {
         inputs.insert(t);
       }
@@ -1850,12 +1844,10 @@ Op *Ir::growGradientVarUpdateOp(TensorId varId) {
   if (getTensors().get(varId)->info.getDataTypeInfo()->isFixedPoint()) {
     throw error("Currently only floating point variable tensors are updatable");
   }
-
   OpId opId = moveIntoIr(optimizer->createOp(varId, this));
   auto inputs =
       optimizer->getInputIds(varId, getTensors().get(varId)->info.dataType());
   connectInputs(InputVecWrapper(inputs), opId);
-
   return growVarUpdateOpInternal(opId);
 }
 
@@ -1887,8 +1879,13 @@ Op *Ir::growVarUpdateOpInternal(OpId opId) {
     op->setVirtualGraphId(it->first);
   }
 
-  // there are no outputs of var-op
-  std::vector<TensorId> outputs{};
+  auto varUpdateOp = dynamic_cast<VarUpdateOp *>(op);
+  if (varUpdateOp == nullptr) {
+    throw error("Internal Logic Error (ILE) Op {} expected to be a VarUpdateOp",
+                op->str());
+  }
+  TensorId updatedVarId = getUpdatedVarId(varUpdateOp->getVarId());
+  std::vector<TensorId> outputs{updatedVarId};
   connectOutputs(OutputVecWrapper(outputs), opId);
   op->setup();
 
@@ -1898,31 +1895,36 @@ Op *Ir::growVarUpdateOpInternal(OpId opId) {
   op->setPhase(Phase::BWD);
 
   trainTargetOps.insert(op);
-
   return op;
 }
 
 void Ir::setVarUpdateCons() {
 
+  // impose the constraint that the varupdates
+  // are the last consumers of the vars
   for (auto &varId : getTensors().getIds(TensorType::Variable)) {
-    // impose the constraint that the varupdates
-    // are the last consumers of the vars
+
     Tensor *var = getTensors().get(varId);
 
-    // we first determine which consumer
-    // is the updater. It is the void Op
-    Op *varupdater = nullptr;
+    // First, determine which consumer is the updater
+    std::vector<VarUpdateOp *> varUpdaters;
     for (Op *consumer : var->consumers.getOps()) {
-      if (consumer->output->n() == 0) {
-        varupdater = consumer;
+      auto varUpdateOp = dynamic_cast<VarUpdateOp *>(consumer);
+      if (varUpdateOp != nullptr) {
+        varUpdaters.push_back(varUpdateOp);
         break;
       }
     }
-    if (varupdater == nullptr) {
-      throw error("Failed to determine updater of " + var->id);
+    if (varUpdaters.size() == 0) {
+      throw error("Failed to find any updaters of {}, bailing" + var->str());
+    } else if (varUpdaters.size() > 1) {
+      throw error("Found more than 1 potential updater of {}, bailing",
+                  var->str());
     }
+    // Good, there is a unique consumer which is a VarUpdateOp
+    VarUpdateOp *varupdater = varUpdaters.back();
 
-    // set the constraints
+    // Set the constraints
     for (Op *consumer : var->consumers.getOps()) {
       if (consumer != varupdater) {
         topoCons->insert(consumer, varupdater);

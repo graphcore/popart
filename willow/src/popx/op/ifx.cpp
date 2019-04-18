@@ -1,4 +1,5 @@
 #include <poponnx/op/if.hpp>
+#include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/ifx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
 
@@ -14,8 +15,8 @@ void IfOpx::grow(poplar::program::Sequence &prog) const {
 
   auto condition = getInTensor(IfOp::getConditionInIndex());
 
-  poplar::program::Sequence then_prog;
-  poplar::program::Sequence else_prog;
+  auto &then_prog = dv_p->programFragment(ifop.getThenScope());
+  auto &else_prog = dv_p->programFragment(ifop.getElseScope());
 
   std::vector<poplar::Tensor> outputs;
 

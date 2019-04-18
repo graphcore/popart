@@ -3,12 +3,19 @@
 
 namespace poponnx {
 
-TensorId getGradId(TensorId id) { return reservedGradientPrefix() + id; }
+TensorId getGradId(const TensorId &id) { return reservedGradientPrefix() + id; }
 
-TensorId getRecompId(TensorId id) { return reservedRecomputePrefix() + id; }
+TensorId getRecompId(const TensorId &id) {
+  return reservedRecomputePrefix() + id;
+}
 
-TensorId getNonGradId(TensorId id) {
-  return id.substr(reservedGradientPrefix().size());
+TensorId getUpdatedVarId(const TensorId &id) {
+  return reservedUpdatedVarPrefix() + id;
+}
+
+TensorId getNonGradId(const TensorId &id) {
+  // TODO : constexpr the size of this string T8265
+  return id.substr(std::string(reservedGradientPrefix()).size());
 }
 
 TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
@@ -20,6 +27,12 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
   ss << reservedGradientPrefix() << opId << '_' << index;
   TensorId edgeGradId = ss.str();
   return edgeGradId;
+}
+
+std::vector<std::string> reservedPrefixes() {
+  return {reservedGradientPrefix(),
+          reservedRecomputePrefix(),
+          reservedUpdatedVarPrefix()};
 }
 
 } // namespace poponnx

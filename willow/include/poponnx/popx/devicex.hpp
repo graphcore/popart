@@ -63,6 +63,9 @@ public:
   std::vector<poplar::program::Program> progs();
 
   poplar::program::Sequence &programFragment(PopPrograms::ProgramFragmentIndex);
+  poplar::program::Sequence &programFragment(const Scope &);
+  bool containsFragment(const Scope &);
+  void createFragment(const Scope &);
 
 private:
   // Specify how many times to loop the 'repeatable' programs
@@ -71,6 +74,8 @@ private:
 
   static constexpr int seqs_size = static_cast<int>(ProgramFragmentIndex::N);
   std::array<poplar::program::Sequence, seqs_size> seqs;
+
+  std::unordered_map<std::string, poplar::program::Sequence> scopeSeqs;
 
   poplar::program::Sequence weightsFromHost();
   poplar::program::Sequence optimizerFromHost();
@@ -189,6 +194,8 @@ public:
 
   // Helper method to get the replication factor based on the user options
   unsigned getReplicationFactor() const;
+
+  poplar::program::Sequence &programFragment(const Scope &scope);
 
 private:
   // The root graph. Operations that span the boundaries between

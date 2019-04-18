@@ -32,8 +32,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_basic0) {
       Builder &builder = parent_builder.createSubgraphBuilder();
       // auto builder = Builder::create();
       auto aiOnnx = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(info, in0);
-      builder.addInputTensorFromHigherScope(info, in1);
+      builder.addInputTensorFromHigherScope(in0);
+      builder.addInputTensorFromHigherScope(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return io::getModelFromString(builder.getModelProto()).graph();
@@ -43,8 +43,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_basic0) {
       Builder &builder = parent_builder.createSubgraphBuilder();
       // auto builder = Builder::create();
       auto aiOnnx = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(info, in0);
-      builder.addInputTensorFromHigherScope(info, in1);
+      builder.addInputTensorFromHigherScope(in0);
+      builder.addInputTensorFromHigherScope(in1);
       auto out = aiOnnx.sub({in0, in1});
       builder.addOutputTensor(out);
       return io::getModelFromString(builder.getModelProto()).graph();
@@ -105,8 +105,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes0) {
     auto then_branch = [&info, in0, in1](Builder &parent_builder) {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(info, in0);
-      builder.addInputTensorFromHigherScope(info, in1);
+      builder.addInputTensorFromHigherScope(in0);
+      builder.addInputTensorFromHigherScope(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return io::getModelFromString(builder.getModelProto()).graph();
@@ -115,8 +115,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes0) {
     auto else_branch = [&info, in0, in1](Builder &parent_builder) {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(info, in0);
-      builder.addInputTensorFromHigherScope(info, in1);
+      builder.addInputTensorFromHigherScope(in0);
+      builder.addInputTensorFromHigherScope(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return io::getModelFromString(builder.getModelProto()).graph();
@@ -181,8 +181,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes1) {
     auto then_branch = [&info, in0, in1](Builder &parent_builder) {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(info, in0);
-      builder.addInputTensorFromHigherScope(info, in1);
+      builder.addInputTensorFromHigherScope(in0);
+      builder.addInputTensorFromHigherScope(in1);
       auto out = aiOnnx.add({in0, in1});
       out      = aiOnnx.add({out, out});
       builder.addOutputTensor(out);
@@ -192,8 +192,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes1) {
     auto else_branch = [&info, in0, in1](Builder &parent_builder) {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
-      builder.addInputTensorFromHigherScope(info, in0);
-      builder.addInputTensorFromHigherScope(info, in1);
+      builder.addInputTensorFromHigherScope(in0);
+      builder.addInputTensorFromHigherScope(in1);
       auto out = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out);
       return io::getModelFromString(builder.getModelProto()).graph();
@@ -289,8 +289,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes2) {
                              std::string &rhs) {
     auto &builder = parent_builder.createSubgraphBuilder();
     auto aiOnnx   = builder.aiOnnxOpset9();
-    builder.addInputTensorFromHigherScope(lhs_info, lhs);
-    builder.addInputTensorFromHigherScope(rhs_info, rhs);
+    builder.addInputTensorFromHigherScope(lhs);
+    builder.addInputTensorFromHigherScope(rhs);
     auto out = aiOnnx.add({lhs, rhs});
     builder.addOutputTensor(out);
     return io::getModelFromString(builder.getModelProto()).graph();
@@ -303,8 +303,8 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes2) {
                              std::string &rhs) {
     auto &builder = parent_builder.createSubgraphBuilder();
     auto aiOnnx   = builder.aiOnnxOpset9();
-    builder.addInputTensorFromHigherScope(lhs_info, lhs);
-    builder.addInputTensorFromHigherScope(rhs_info, rhs);
+    builder.addInputTensorFromHigherScope(lhs);
+    builder.addInputTensorFromHigherScope(rhs);
     auto out = aiOnnx.sub({lhs, rhs});
     builder.addOutputTensor(out);
     return io::getModelFromString(builder.getModelProto()).graph();
@@ -325,10 +325,10 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes2) {
     auto then_branch = [&]() {
       auto &sub_builder = builder.createSubgraphBuilder();
       auto aiOnnx       = sub_builder.aiOnnxOpset9();
-      sub_builder.addInputTensorFromHigherScope(info, in0);
-      sub_builder.addInputTensorFromHigherScope(info, in1);
-      sub_builder.addInputTensorFromHigherScope(info, in3);
-      sub_builder.addInputTensorFromHigherScope(info, t1);
+      sub_builder.addInputTensorFromHigherScope(in0);
+      sub_builder.addInputTensorFromHigherScope(in1);
+      sub_builder.addInputTensorFromHigherScope(in3);
+      sub_builder.addInputTensorFromHigherScope(t1);
 
       auto then_branch = create_add_model(sub_builder, info, in0, info, t1);
       auto else_branch = create_add_model(sub_builder, info, in1, info, t1);
@@ -421,15 +421,15 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes3) {
     auto then_branch = [&]() {
       auto &sub_builder = builder.createSubgraphBuilder();
       auto aiOnnx       = sub_builder.aiOnnxOpset9();
-      sub_builder.addInputTensorFromHigherScope(info, t0);
-      sub_builder.addInputTensorFromHigherScope(info, c1);
+      sub_builder.addInputTensorFromHigherScope(t0);
+      sub_builder.addInputTensorFromHigherScope(c1);
 
       auto t1 = aiOnnx.add({t0, t0});
 
       auto then_branch = [&]() {
         auto &sub_sub_builder = sub_builder.createSubgraphBuilder();
         auto aiOnnx           = sub_sub_builder.aiOnnxOpset9();
-        sub_sub_builder.addInputTensorFromHigherScope(info, t1);
+        sub_sub_builder.addInputTensorFromHigherScope(t1);
         auto out = aiOnnx.add({t1, t1});
         sub_sub_builder.addOutputTensor(out);
         return io::getModelFromString(sub_sub_builder.getModelProto()).graph();
@@ -438,7 +438,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes3) {
       auto else_branch = [&]() {
         auto &sub_sub_builder = sub_builder.createSubgraphBuilder();
         auto aiOnnx           = sub_sub_builder.aiOnnxOpset9();
-        sub_sub_builder.addInputTensorFromHigherScope(info, t0);
+        sub_sub_builder.addInputTensorFromHigherScope(t0);
         auto out = aiOnnx.sub({t0, t0});
         sub_sub_builder.addOutputTensor(out);
         return io::getModelFromString(sub_sub_builder.getModelProto()).graph();
@@ -453,7 +453,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes3) {
     auto else_branch = [&]() {
       auto &sub_builder = builder.createSubgraphBuilder();
       auto aiOnnx       = sub_builder.aiOnnxOpset9();
-      sub_builder.addInputTensorFromHigherScope(info, in0);
+      sub_builder.addInputTensorFromHigherScope(in0);
       auto out = aiOnnx.sub({in0, in0});
       sub_builder.addOutputTensor(out);
       return io::getModelFromString(sub_builder.getModelProto()).graph();

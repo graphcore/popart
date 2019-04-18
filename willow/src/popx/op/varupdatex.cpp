@@ -52,7 +52,9 @@ void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
       prog,
       idStr());
 
-  // no poplar::Tensors to insert
+  // output is a reference to the updated input
+  setOutTensor(SGDVarUpdateOp::getUpdatedVarOutIndex(),
+               getInTensor(SGDVarUpdateOp::getVarInIndex()));
 }
 
 ConstSGDVarUpdateOpx::ConstSGDVarUpdateOpx(Op *op, Devicex *devicex)
@@ -113,7 +115,9 @@ void CopyVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                              getInTensor(CopyVarUpdateOp::getVarToInIndex()));
   prog.add(copy);
 
-  // no poplar::Tensors to insert
+  // output is a reference to destination of the copy
+  setOutTensor(SGDVarUpdateOp::getUpdatedVarOutIndex(),
+               getInTensor(CopyVarUpdateOp::getVarToInIndex()));
 }
 
 namespace {

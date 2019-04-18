@@ -31,8 +31,7 @@ public:
   TensorId addInputTensor(const TensorInfo &tensorInfo,
                           const std::string &debugPrefix = "");
 
-  void addInputTensorFromHigherScope(const TensorInfo &tensorInfo,
-                                     const TensorId &tensorId);
+  void addInputTensorFromHigherScope(const TensorId &tensorId);
 
   TensorId addInitializedInputTensor(const ConstVoidData &initData,
                                      const std::string &debugPrefix = "");
@@ -230,24 +229,17 @@ private:
 
   std::vector<std::string> name_scope_stack_;
 
-  // Local counter of TensorIds created in the
-  // scope of this Builder generated with same
-  //  1) name,
-  //  2) name_scope_stack_ state, and
-  //  3) OutIndex (or 0 if an input tensor to the graph).
-  //  ..............................1)...........2)...........3)
-  using NameStackIndex = std::tuple<std::string, std::string, OutIndex>;
-  std::map<NameStackIndex, std::set<int>> tensorIdCounter;
+  // Local set of TensorIds created in the
+  // scope of this Builder
+  std::set<TensorId> tensorIds;
 
-  int getLowestValidSuffix(const NameStackIndex &) const;
-
-  bool inCurrentScope(const NameStackIndex &, int index) const;
+  bool inCurrentScope(const TensorId &) const;
 
   // in parent's scope, or higher
-  bool inHigherScope(const NameStackIndex &, int index) const;
+  bool inHigherScope(const TensorId &) const;
 
   // in a child's scope, or lower
-  bool inLowerScope(const NameStackIndex &, int index) const;
+  bool inLowerScope(const TensorId &) const;
 
   onnx::ModelProto model_;
 

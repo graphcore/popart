@@ -4,6 +4,5 @@
 
 add_poponnx_cpp_unit_test(builder_0_logical_if_test builder_0_logical_if_test.cpp)
 add_poponnx_cpp_unit_test(basic_0_logical_if_test basic_0_logical_if_test.cpp)
-
-# This test requires scopes to appear in Ir Tensor identification
-# add_poponnx_cpp_unit_test(namescope_0_logical_if_test namescope_0_logical_if_test.cpp)
+add_poponnx_cpp_unit_test(namescope_0_logical_if_test namescope_0_logical_if_test.cpp)
+add_poponnx_cpp_unit_test(namescope_1_logical_if_test namescope_1_logical_if_test.cpp)

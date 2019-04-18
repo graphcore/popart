@@ -15,8 +15,15 @@ public:
   static InIndex getVarInIndex() { return 0; }
   static InIndex getVarGradInIndex() { return 1; }
 
-  // This Op modifies the input at index getVarIndex()
+  // Returns a reference to the updated Var. Note that this
+  // is the only Op which modifies an input AND does not
+  // have "Inplace"  in its name (16.04.2019).
+  static OutIndex getUpdatedVarOutIndex() { return 0; }
+
+  // This Op aliases and modifies the input at index getVarIndex()
+  view::Region aliases(InIndex) const final;
   view::Region modifies(InIndex) const final;
+  const TensorId &getVarId() const { return varId; }
 
   float getSubgraphValue() const final { return 0.1f; }
 

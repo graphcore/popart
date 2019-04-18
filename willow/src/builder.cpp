@@ -151,9 +151,8 @@ TensorId Builder::addInputTensor(const TensorInfo &tensorInfo,
   return impl_->addInputTensor(tensorInfo, debugPrefix);
 }
 
-void Builder::addInputTensorFromHigherScope(const TensorInfo &tensorInfo,
-                                            const TensorId &tensorId) {
-  impl_->addInputTensorFromHigherScope(tensorInfo, tensorId);
+void Builder::addInputTensorFromHigherScope(const TensorId &tensorId) {
+  impl_->addInputTensorFromHigherScope(tensorId);
 }
 
 TensorId Builder::addInitializedInputTensor(const ConstVoidData &initData,

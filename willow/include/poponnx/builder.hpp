@@ -135,13 +135,11 @@ public:
   /**
    * Add a new named input tensor to the model
    *
-   * \param tensorInfo The shape and type of the input tensor
    * \param tensorId The identifier string of the input tensor. This identifier
    * must already exist in the parent GraphProto's name scope and must appear
    * topologically before this sub-graph.
    */
-  void addInputTensorFromHigherScope(const TensorInfo &tensorInfo,
-                                     const TensorId &tensorId);
+  void addInputTensorFromHigherScope(const TensorId &tensorId);
 
   /**
    * Add a new preinitialized input tensor to the model

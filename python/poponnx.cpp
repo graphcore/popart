@@ -17,6 +17,7 @@
 #include <poponnx/patterns/patterns.hpp>
 #include <poponnx/session.hpp>
 #include <poponnx/tensordata.hpp>
+#include <poponnx/tensornames.hpp>
 
 #include <poplar/exceptions.hpp>
 #include <poputil/exceptions.hpp>
@@ -551,7 +552,6 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("debugPrefix") = std::string())
       .def("addInputTensorFromParentGraph",
            &Builder::addInputTensorFromHigherScope,
-           py::arg("tensorInfo"),
            py::arg("tensorId"))
       .def(
           "addInitializedInputTensor",
@@ -783,6 +783,10 @@ PYBIND11_MODULE(poponnx_core, m) {
         ss << di;
         return ss.str();
       });
+
+  m.def("reservedGradientPrefix", &reservedGradientPrefix);
+  m.def("reservedRecomputePrefix", &reservedRecomputePrefix);
+  m.def("reservedUpdatedVarPrefix", &reservedUpdatedVarPrefix);
 
   // Exceptions are processed explicitly to allow the main dynamic library
   // to do the type inference.  This prevents some inter dynamic library type

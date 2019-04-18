@@ -36,15 +36,15 @@ BOOST_AUTO_TEST_CASE(LogicalIf_builder0) {
   Builder &builder10 = builder0->createSubgraphBuilder();
   auto aiOnnx10      = builder10.aiOnnxOpset9();
   // the name comes from the parent graph
-  builder10.addInputTensorFromHigherScope(infoData, A);
-  builder10.addInputTensorFromHigherScope(infoData, B);
+  builder10.addInputTensorFromHigherScope(A);
+  builder10.addInputTensorFromHigherScope(B);
   auto out10 = aiOnnx10.add({A, B});
   builder10.addOutputTensor(out10);
 
   // Graph, level 1, true branch : relu(B)
   Builder &builder11 = builder0->createSubgraphBuilder();
   auto aiOnnx11      = builder11.aiOnnxOpset9();
-  builder11.addInputTensorFromHigherScope(infoData, B);
+  builder11.addInputTensorFromHigherScope(B);
   auto out11 = aiOnnx11.relu({B});
   builder11.addOutputTensor(out11);
 
