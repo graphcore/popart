@@ -252,7 +252,7 @@ poplar::Graph &Devicex::graph(int64_t virtualGraphIndex) {
 Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
     : poponnx::Device(ir),
       progs(PopPrograms(ir.getDataFlow().batchesPerStep())), tensors(ir),
-      deviceInfo(deviceInfo_) {
+      deviceInfo(deviceInfo_), prepareHasBeenCalled(false) {
 
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
@@ -445,6 +445,10 @@ void Devicex::anchorsHostFromHostStreams(const IStepIO &stepio) {
 }
 
 void Devicex::run(const IStepIO &stepio) {
+  if (!prepareHasBeenCalled) {
+    throw error("Devicex::prepare() must be called before" +
+                " Devicex::run(const IStepIO &) is called.");
+  }
   std::string prefix = "     ";
   logging::debug("Performing one step: ");
   anchorsHostToHostStreams(stepio);
@@ -1275,6 +1279,8 @@ void Devicex::prepare() {
       engineToStream(data0, n_bytes, streamId);
     }
   }
+
+  prepareHasBeenCalled = true;
 }
 
 TaskId Devicex::streamFromHostTaskId(TensorId id) const {

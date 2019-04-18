@@ -343,6 +343,8 @@ private:
 
   // The subgraph outliner
   SubgraphOutlinex outline;
+
+  bool prepareHasBeenCalled;
 };
 
 } // namespace popx
