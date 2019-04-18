@@ -135,10 +135,11 @@ auto main(int argc, char **argv) -> int {
 
   auto proto = builder->getModelProto();
 
-  auto dataFlow = poponnx::DataFlow(
-      1,
-      {{outputs[0], poponnx::AnchorReturnType("ALL")},
-       {std::string("d__") + input, poponnx::AnchorReturnType("ALL")}});
+  auto dataFlow =
+      poponnx::DataFlow(1,
+                        {{outputs[0], poponnx::AnchorReturnType("ALL")},
+                         {poponnx::reservedGradientPrefix() + input,
+                          poponnx::AnchorReturnType("ALL")}});
   auto optimizer = poponnx::ConstSGD(0.01f);
   std::vector<poponnx::Loss *> losses{
       new poponnx::L1Loss(outputs[0], "l1LossVal", 0.1f)};
@@ -165,7 +166,7 @@ auto main(int argc, char **argv) -> int {
   poponnx::NDArrayWrapper<float> outWeights(rawWeightData, {2});
   std::map<poponnx::TensorId, poponnx::IArray &> anchors = {
       {outputs[0], outData},
-      {std::string("d__") + input, outWeights},
+      {poponnx::reservedGradientPrefix() + input, outWeights},
   };
 
   session->prepareDevice();
