@@ -12,7 +12,7 @@ PadOpx::PadOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<PadOp>(op);
 }
 
-void PadOpx::grow(poplar::program::Sequence &) const {
+void PadOpx::grow(poplar::program::Sequence &prog) const {
   auto pad_op    = getPadOp();
   auto &&pads    = pad_op->getPads();
   auto pad_value = pad_op->getPadValue();
@@ -47,6 +47,12 @@ void PadOpx::grow(poplar::program::Sequence &) const {
   } else {
     throw error("Bad mode type `{}' passed to pad op", mode);
   }
+
+  // As this is not an inplace op, and everything til here has just been view
+  // changing, we clone and copy. Indeed we have a test showing that without
+  // this cloneNcopy, the result is incorrect.
+
+  out_tensor = cloneNcopy(prog, out_tensor);
 
   setOutTensor(PadOp::getOutIndex(), out_tensor);
 }
