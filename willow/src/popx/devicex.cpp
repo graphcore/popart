@@ -446,7 +446,7 @@ void Devicex::anchorsHostFromHostStreams(const IStepIO &stepio) {
 
 void Devicex::run(const IStepIO &stepio) {
   if (!prepareHasBeenCalled) {
-    throw error("Devicex::prepare() must be called before" +
+    throw error("Devicex::prepare() must be called before"
                 " Devicex::run(const IStepIO &) is called.");
   }
   std::string prefix = "     ";
