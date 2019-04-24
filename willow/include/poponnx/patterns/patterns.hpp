@@ -162,6 +162,9 @@ public:
     return isPatternEnabled(PreAliasPatternType::TANTOSINOVERCOS);
   }
   bool isInPlaceEnabled() { return inplaceEnabled; }
+  bool isUpdateInplacePrioritiesForIpuEnabled() {
+    return updateInplacePrioritiesForIpuEnabled;
+  }
   bool isSqrtGradOpEnabled() {
     return isPatternEnabled(PreAliasPatternType::SQRTGRADOP);
   }
@@ -233,6 +236,10 @@ public:
     inplaceEnabled = v;
     return *this;
   }
+  Patterns &enableUpdateInplacePrioritiesForIpu(bool v) {
+    updateInplacePrioritiesForIpuEnabled = v;
+    return *this;
+  }
   Patterns &enableSqrtGradOp(bool v) {
     return enablePattern(PreAliasPatternType::SQRTGRADOP, v);
   }
@@ -262,6 +269,7 @@ private:
 
   // the one pattern which is not a PreAliasPattern
   bool inplaceEnabled{false};
+  bool updateInplacePrioritiesForIpuEnabled{false};
 };
 
 std::ostream &operator<<(std::ostream &os, const Patterns &patterns);

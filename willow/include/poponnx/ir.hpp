@@ -298,6 +298,8 @@ public:
   // modify the Ir using all the registered pre-alias patterns
   void applyPreAliasPatterns();
 
+  void applyUpdateInplacePrioritiesForIpu();
+
   void applyInplacePattern();
 
   // confirm that the names of the Const tensors

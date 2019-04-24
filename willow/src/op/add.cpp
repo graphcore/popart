@@ -57,11 +57,16 @@ AddOp::inplacePriorityDefault() const {
   auto arg1Size = inInfo(AddOp::getArg1InIndex()).nelms();
 
   std::vector<std::tuple<OperatorIdentifier, float>> result;
+
   if (outSize == arg0Size) {
-    result.push_back({Onnx::CustomOperators::AddLhsInplace, 10.0f});
+    auto priority =
+        defaultInplacePriorities.at(Onnx::CustomOperators::AddLhsInplace);
+    result.push_back({Onnx::CustomOperators::AddLhsInplace, priority});
   }
   if (outSize == arg1Size) {
-    result.push_back({Onnx::CustomOperators::AddRhsInplace, 10.0f});
+    auto priority =
+        defaultInplacePriorities.at(Onnx::CustomOperators::AddRhsInplace);
+    result.push_back({Onnx::CustomOperators::AddRhsInplace, priority});
   }
 
   return result;
@@ -77,6 +82,10 @@ AddOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
+}
+
+void AddOp::setInplacePriority(const OperatorIdentifier &id, float priority) {
+  defaultInplacePriorities[id] = priority;
 }
 
 AddLhsInplaceOp::AddLhsInplaceOp(const AddOp &op)

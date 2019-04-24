@@ -60,6 +60,11 @@ struct OperatorIdentifier {
   bool operator!=(const OperatorIdentifier &rhs) const {
     return !(*this == rhs);
   }
+
+  bool operator<(const OperatorIdentifier &rhs) const {
+    return domain < rhs.domain || (domain == rhs.domain && type < rhs.type) ||
+           (domain == rhs.domain && type == rhs.type && version < rhs.version);
+  }
 };
 
 // The following does not work as we are in the poponnx namesapace >>

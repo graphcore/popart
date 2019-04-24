@@ -20,7 +20,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_basic0) {
   std::vector<TestTensor> outputs;
 
   TestRunner runner;
-  runner.enableInPlace = false;
+  runner.patterns.enableInPlace(false);
 
   runner.buildModel([&inputs, &outputs, info, infoBool](Builder &builder) {
     auto aiOnnx       = builder.aiOnnxOpset9();
@@ -94,7 +94,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes0) {
   std::vector<TestTensor> outputs;
 
   TestRunner runner;
-  runner.enableInPlace = false;
+  runner.patterns.enableInPlace(false);
 
   runner.buildModel([&inputs, &outputs, info, infoBool](Builder &builder) {
     auto aiOnnx       = builder.aiOnnxOpset9();
@@ -170,7 +170,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes1) {
   std::vector<TestTensor> outputs;
 
   TestRunner runner;
-  runner.enableInPlace = false;
+  runner.patterns.enableInPlace(false);
 
   runner.buildModel([&inputs, &outputs, info, infoBool](Builder &builder) {
     auto aiOnnx       = builder.aiOnnxOpset9();
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes2) {
   std::vector<TestTensor> outputs;
 
   TestRunner runner;
-  runner.enableInPlace = false;
+  runner.patterns.enableInPlace(false);
 
   TensorId if_out;
 
@@ -404,7 +404,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes3) {
   std::vector<TestTensor> outputs;
 
   TestRunner runner;
-  runner.enableInPlace = false;
+  runner.patterns.enableInPlace(false);
 
   TensorId if_out;
 

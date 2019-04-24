@@ -20,6 +20,13 @@ public:
 
   view::RegMap fwdRegMap(InIndex i) const override;
   view::RegMap bwdRegMap(InIndex i) const override;
+
+  void setInplacePriority(const OperatorIdentifier &, float);
+
+private:
+  std::map<OperatorIdentifier, float> defaultInplacePriorities{
+      {Onnx::CustomOperators::AddLhsInplace, 10.0f},
+      {Onnx::CustomOperators::AddRhsInplace, 10.0f}};
 };
 
 class AddLhsInplaceOp : public AddOp {

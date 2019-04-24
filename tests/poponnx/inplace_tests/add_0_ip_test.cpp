@@ -3,6 +3,7 @@
 #include <../test_runner.hpp>
 #include <boost/test/unit_test.hpp>
 #include <poponnx/op/add.hpp>
+#include <poponnx/patterns/pattern.hpp>
 #include <poponnx/tensors.hpp>
 
 using namespace poponnx;
@@ -49,7 +50,7 @@ BOOST_AUTO_TEST_CASE(Inplace_add0) {
   };
 
   TestRunner runner;
-  runner.enableInPlace = true;
+  runner.patterns.enableInPlace(true);
   runner.buildModel(buildModel);
   runner.checkIr(checkIr);
   runner.checkResult(checkResult, inputs, outputs);
@@ -94,7 +95,7 @@ BOOST_AUTO_TEST_CASE(Inplace_add1) {
   };
 
   TestRunner runner;
-  runner.enableInPlace = true;
+  runner.patterns.enableInPlace(true);
   runner.buildModel(buildModel);
   runner.checkIr(checkIr);
   runner.checkResult(checkResult, inputs, outputs);
@@ -139,7 +140,7 @@ BOOST_AUTO_TEST_CASE(Inplace_add2) {
   };
 
   TestRunner runner;
-  runner.enableInPlace = true;
+  runner.patterns.enableInPlace(true);
   runner.buildModel(buildModel);
   runner.checkIr(checkIr);
   runner.checkResult(checkResult, inputs, outputs);
@@ -184,7 +185,7 @@ BOOST_AUTO_TEST_CASE(Inplace_add3) {
   };
 
   TestRunner runner;
-  runner.enableInPlace = true;
+  runner.patterns.enableInPlace(true);
   runner.buildModel(buildModel);
   runner.checkIr(checkIr);
   runner.checkResult(checkResult, inputs, outputs);
@@ -230,7 +231,7 @@ BOOST_AUTO_TEST_CASE(Inplace_add4) {
   };
 
   TestRunner runner;
-  runner.enableInPlace = true;
+  runner.patterns.enableInPlace(true);
   runner.buildModel(buildModel);
   runner.checkIr(checkIr);
   runner.checkResult(checkResult, inputs, outputs);
@@ -266,7 +267,7 @@ BOOST_AUTO_TEST_CASE(Add_fwdRegMap0) {
   };
 
   TestRunner runner;
-  runner.enableInPlace = false;
+  runner.patterns.enableInPlace(false);
   runner.buildModel(buildModel);
   runner.checkIr(checkIr);
 }
@@ -300,7 +301,61 @@ BOOST_AUTO_TEST_CASE(Add_bwdRegMap0) {
   };
 
   TestRunner runner;
-  runner.enableInPlace = false;
+  runner.patterns.enableInPlace(false);
   runner.buildModel(buildModel);
   runner.checkIr(checkIr);
+}
+
+// Check AddOp::inplacePriorityDefault priorities
+// sides that connect two convolutions
+BOOST_AUTO_TEST_CASE(Inplace_add5) {
+  auto run_test = [&](OperatorIdentifier opid, bool include_relu) {
+    TensorInfo info_1188{"FLOAT", std::vector<int64_t>{1, 1, 8, 8}};
+    TensorInfo info_1144{"FLOAT", std::vector<int64_t>{1, 1, 4, 4}};
+    TensorInfo info_1122{"FLOAT", std::vector<int64_t>{1, 1, 2, 2}};
+
+    TestRunner runner;
+    runner.patterns.enableInPlace(true);
+    runner.patterns.enableUpdateInplacePrioritiesForIpu(true);
+
+    runner.buildModel([&](Builder &builder) {
+      auto aiOnnx = builder.aiOnnxOpset9();
+      auto in0    = builder.addInputTensor(info_1188);
+      auto w0     = builder.addInputTensor(info_1122);
+      auto i1     = aiOnnx.identity({builder.addInputTensor(info_1144)});
+      auto w1     = aiOnnx.identity({builder.addInputTensor(info_1122)});
+      auto c0 = aiOnnx.conv({in0, w0}, {1, 1}, 1, {1, 1}, {0, 0, 0, 0}, {2, 2});
+
+      // Order the inputs depending on whether we want the lhs inplace or rhs
+      // inplace version
+      auto a0 = [&]() {
+        if (opid == Onnx::CustomOperators::AddLhsInplace) {
+          return aiOnnx.add({c0, i1});
+        } else {
+          return aiOnnx.add({i1, c0});
+        }
+      }();
+
+      if (include_relu) {
+        a0 = aiOnnx.relu({a0});
+      }
+
+      auto c1 = aiOnnx.conv({a0, w1}, {1, 1}, 1, {1, 1}, {0, 0, 0, 0}, {2, 2});
+
+      auto out = aiOnnx.identity({c1});
+      builder.addOutputTensor(out);
+
+      return out;
+    });
+
+    runner.checkIr([&](Ir &ir) {
+      BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Add).size() == 0);
+      BOOST_CHECK(ir.opsOfType(opid).size() == 1);
+    });
+  };
+
+  run_test(Onnx::CustomOperators::AddLhsInplace, false);
+  run_test(Onnx::CustomOperators::AddRhsInplace, false);
+  run_test(Onnx::CustomOperators::AddLhsInplace, true);
+  run_test(Onnx::CustomOperators::AddRhsInplace, true);
 }

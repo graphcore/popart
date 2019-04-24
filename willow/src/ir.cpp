@@ -45,6 +45,7 @@
 #include <poponnx/op/varupdate.hpp>
 
 #include <poponnx/patterns/inplace.hpp>
+#include <poponnx/patterns/updateinplaceprioritiesforipu.hpp>
 
 // Currently used only for graph visualization,
 // should not be included when TODO T7143 is complete.
@@ -783,10 +784,16 @@ void Ir::prepare(const IrBundle &gb) {
   updateVertices();
 
   dotCheckpoint(DotCheck::PREALIAS);
+
   // Now, we apply the Patterns which can handle and create
   // topological constraints. Currently, this is only one
   // in-placing Pattern.
   if (patterns.isInPlaceEnabled()) {
+    // Update the inplace priorities of ops before inplacing
+    if (patterns.isUpdateInplacePrioritiesForIpuEnabled()) {
+      applyUpdateInplacePrioritiesForIpu();
+    }
+
     applyInplacePattern();
   }
 
@@ -2206,6 +2213,15 @@ bool Ir::canTrain() const {
 
 bool Ir::containsInitialisers() {
   return !(onnxModel->graph().initializer().empty());
+}
+
+void Ir::applyUpdateInplacePrioritiesForIpu() {
+  UpdateInplacePrioritiesForIpu pattern;
+
+  for (auto &id_op : ops) {
+    Op *op = id_op.second.get();
+    pattern.apply(op);
+  }
 }
 
 void Ir::applyInplacePattern() {

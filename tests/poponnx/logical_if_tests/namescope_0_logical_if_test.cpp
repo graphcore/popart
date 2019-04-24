@@ -17,7 +17,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_namescope0) {
   std::vector<TestTensor> outputs;
 
   TestRunner runner;
-  runner.enableInPlace = false;
+  runner.patterns.enableInPlace(false);
 
   runner.buildModel([&](Builder &builder) {
     auto aiOnnx       = builder.aiOnnxOpset9();
