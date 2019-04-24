@@ -49,6 +49,8 @@ private:
 
 class TestRunner {
 public:
+  TestRunner() : patterns(PatternsLevel::NONE) {}
+
   template <typename ModelBuilder>
   void buildModel(ModelBuilder &&modelBuilder) {
     // Build an onnx model
@@ -65,13 +67,7 @@ public:
     auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
     session = InferenceSession::createFromOnnxModel(
-        proto,
-        dataFlow,
-        cpuDevice,
-        {},
-        {},
-        opts,
-        Patterns(PatternsLevel::NONE).enableInPlace(enableInPlace));
+        proto, dataFlow, cpuDevice, {}, {}, opts, patterns);
 
     irChecker(session->ir);
 
@@ -107,8 +103,8 @@ public:
     resultsChecker(outputs.front());
   }
 
-  bool enableInPlace = true;
   SessionOptions opts;
+  Patterns patterns;
 
 private:
   std::string proto;
