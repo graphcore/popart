@@ -6,16 +6,6 @@
 
 namespace poponnx {
 
-bool UpdateInplacePrioritiesForIpuPattern::matches(Op *op) const {
-  // Currently the only op this pattern supports is the add op
-  return op->isConvertibleTo<AddOp>();
-}
-
-std::vector<const Tensor *>
-UpdateInplacePrioritiesForIpuPattern::touches(Op *) const {
-  return {};
-}
-
 // Check for sequence:
 //
 // [Conv] -+
@@ -46,6 +36,7 @@ template <typename OP> bool connectsConvs(const OP &op, InIndex argIndex) {
         return true;
       }
     }
+    return false;
   };
 
   auto outT = op.outTensor(op.getOutIndex());
@@ -66,7 +57,7 @@ template <typename OP> bool connectsConvs(const OP &op, InIndex argIndex) {
   return false;
 }
 
-bool UpdateInplacePrioritiesForIpuPattern::applyImpl(AddOp &op) const {
+void UpdateInplacePrioritiesForIpu::applyImpl(AddOp &op) const {
   for (auto &id_p : op.inplacePriorityDefault()) {
     OperatorIdentifier id = std::get<0>(id_p);
     float priority        = std::get<1>(id_p);
@@ -88,19 +79,10 @@ bool UpdateInplacePrioritiesForIpuPattern::applyImpl(AddOp &op) const {
   }
 }
 
-bool UpdateInplacePrioritiesForIpuPattern::apply(Op *op) const {
+void UpdateInplacePrioritiesForIpu::apply(Op *op) const {
   if (op->isConvertibleTo<AddOp>()) {
-    return applyImpl(*dynamic_cast<AddOp *>(op));
-  } else {
-    throw error("Unsupported op type {}", op->opid);
+    applyImpl(*dynamic_cast<AddOp *>(op));
   }
-}
-
-namespace {
-static PatternCreator<UpdateInplacePrioritiesForIpuPattern>
-    updateInplacePrioritiesForIpuPattern(
-        PreAliasPatternType::UPDATEINPLACEPRIORITIESFORIPU,
-        "UpdateInplacePrioritiesForIpuPattern");
 }
 
 } // namespace poponnx
