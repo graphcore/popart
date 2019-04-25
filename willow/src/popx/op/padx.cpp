@@ -52,7 +52,8 @@ void PadOpx::grow(poplar::program::Sequence &prog) const {
   // changing, we clone and copy. Indeed we have a test showing that without
   // this cloneNcopy, the result is incorrect.
 
-  out_tensor = cloneNcopy(prog, out_tensor);
+  // T8354 Do in-placing here until the PadInPlace op/pattern is implemented
+  // out_tensor = cloneNcopy(prog, out_tensor);
 
   setOutTensor(PadOp::getOutIndex(), out_tensor);
 }
