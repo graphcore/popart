@@ -50,6 +50,9 @@ public:
   void grow(poplar::program::Sequence &) const final;
 
 private:
+  poplar::Tensor getCellStateGrad() const;
+  poplar::Tensor getHiddenStateGrad() const;
+
   popnn::lstm::LstmParams createLSTMParams() const;
 };
 

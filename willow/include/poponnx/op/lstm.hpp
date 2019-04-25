@@ -27,6 +27,7 @@ public:
   bool hasBiasInput() const;
   bool hasInitialHInput() const;
   bool hasInitialCInput() const;
+  bool hasOutput(OutIndex) const;
 
   void appendAttributes(OpSerialiserBase &) const override;
 
@@ -62,6 +63,7 @@ private:
                                OutIndex pass_through_index,
                                const TensorInfo &out_info);
   static int getNumIntermediates() { return 6; }
+  void trySetOutInfo(OutIndex, const TensorInfo &);
 
   boost::optional<int64_t> hidden_size_attribute;
 };
@@ -74,6 +76,9 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   const LSTMOp &getForwardOp() const;
+
+  bool hasCellStateGradInput() const;
+  bool hasHiddenStateGradInput() const;
 
   static InIndex getInitStateOutputInIndex() { return 0; }
   static InIndex getInitStateCellStateInIndex() { return 1; }
@@ -96,6 +101,9 @@ public:
   static OutIndex getInitialCOutIndex() { return 5; }
 
 private:
+  void tryConnectCellStateGrad();
+  void tryConnectHiddenStateGrad();
+
   const LSTMOp &forward_op;
   mutable std::map<int, int> out_info;
 };
