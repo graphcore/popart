@@ -89,3 +89,7 @@ install(DIRECTORY
   python
   DESTINATION ${INSTALL_EXAMPLES})
 
+install(DIRECTORY
+  cplusplus
+  DESTINATION ${INSTALL_EXAMPLES})
+
