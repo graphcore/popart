@@ -81,7 +81,7 @@ class Tensor : public Vertex {
 public:
   // note : producer (if there is one)
   // must be set after construction
-  Tensor(TensorId, TensorType, Ir &);
+  Tensor(TensorId, TensorType, Graph &);
   TensorId id;
   std::string str() const final { return id; }
 
@@ -121,8 +121,11 @@ public:
   // Get all consumer ops and the producer op
   std::vector<Op *> associatedOps() const;
 
+  Graph &getGraph() { return graph; }
+  const Graph &getGraph() const { return graph; }
+
 protected:
-  Ir &ir;
+  Graph &graph;
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
   // c++ note : we cannot initialise this as {nullptr} with gcc
@@ -132,7 +135,7 @@ protected:
 
 class VariableTensor : public Tensor {
 public:
-  VariableTensor(TensorId, Ir &);
+  VariableTensor(TensorId, Graph &);
 
   std::unique_ptr<Tensor> clone() const override;
 

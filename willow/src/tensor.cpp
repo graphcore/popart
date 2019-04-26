@@ -12,7 +12,8 @@
 namespace poponnx {
 
 std::unique_ptr<Tensor> Tensor::clone() const {
-  std::unique_ptr<Tensor> theClone(new Tensor("clone_" + id, tensorType(), ir));
+  std::unique_ptr<Tensor> theClone(
+      new Tensor("clone_" + id, tensorType(), graph));
   theClone->info = info;
   return theClone;
 }
@@ -102,11 +103,11 @@ int Consumers::getTotal() const {
 
 // using 'this' in a constructor list? Be careful.
 // https://stackoverflow.com/questions/5058349
-Tensor::Tensor(TensorId n, TensorType t, Ir &g)
-    : Vertex(), id(n), consumers(this), ir(g), producer(nullptr),
+Tensor::Tensor(TensorId n, TensorType t, Graph &g)
+    : Vertex(), id(n), consumers(this), graph(g), producer(nullptr),
       tensorTypeInfo(&getTensorTypeInfoMap().at(t)), data_(nullptr) {
-  // ir is currently unused - this removes the compiler warning
-  (void)ir;
+  // graph is currently unused - this removes the compiler warning
+  (void)graph;
 }
 
 void Consumers::decrement(Op *op) {
@@ -199,12 +200,12 @@ std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap() {
   return tensor_types_m;
 }
 
-VariableTensor::VariableTensor(TensorId n, Ir &g)
+VariableTensor::VariableTensor(TensorId n, Graph &g)
     : Tensor(n, TensorType::Variable, g),
       variableUpdateType(VariableUpdateType::Gradient) {}
 
 std::unique_ptr<Tensor> VariableTensor::clone() const {
-  std::unique_ptr<Tensor> theClone(new VariableTensor("clone_" + id, ir));
+  std::unique_ptr<Tensor> theClone(new VariableTensor("clone_" + id, graph));
   theClone->info = info;
   return theClone;
 }

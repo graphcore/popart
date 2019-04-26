@@ -1,11 +1,14 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/abs.hpp>
 #include <poponnx/op/cos.hpp>
 #include <poponnx/op/mul.hpp>
 #include <poponnx/op/sign.hpp>
 #include <poponnx/op/sin.hpp>
+#include <poponnx/patterns/pattern.hpp>
+#include <poponnx/patterns/patterns.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/tensorinfo.hpp>
 
 namespace poponnx {
@@ -29,7 +32,7 @@ public:
     // Remove the GRADOP
     op->disconnectAllInputs();
     op->disconnectAllOutputs();
-    op->getIr().eraseOp(op->id);
+    op->getGraph().eraseOp(op->id);
 
     // Connect up the new ops
     d->connectInTensor(DOP::getInIndex(), fwd_in->id);

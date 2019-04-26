@@ -1,4 +1,5 @@
 
+#include <poponnx/graph.hpp>
 #include <poponnx/opmanager.hpp>
 
 namespace poponnx {
@@ -52,7 +53,7 @@ OpManager::getSupportedOperations(bool includePrivate) {
 std::unique_ptr<Op> OpManager::createOp(const OpDomain &opDomain,
                                         const OpType &type,
                                         const int opsetVersion,
-                                        Ir &ir,
+                                        Graph &graph,
                                         const std::string &name,
                                         const Scope &scope,
                                         const Attributes &attr) {
@@ -81,13 +82,13 @@ std::unique_ptr<Op> OpManager::createOp(const OpDomain &opDomain,
   }
 
   if (opInfo != nullptr) {
-    return self.create(opInfo->id, ir, name, scope, attr, opInfo->f1);
+    return self.create(opInfo->id, graph, name, scope, attr, opInfo->f1);
   }
   return nullptr;
 }
 
 std::unique_ptr<Op> OpManager::createOp(const OperatorIdentifier &opid,
-                                        Ir &ir,
+                                        Graph &graph,
                                         const std::string &name,
                                         const Attributes &attr) {
 
@@ -101,20 +102,20 @@ std::unique_ptr<Op> OpManager::createOp(const OperatorIdentifier &opid,
     const auto &it3 = it2->second.find(opid.version);
 
     if (it3 != it2->second.end()) {
-      return self.create(opid, ir, name, {}, attr, it3->second.f1);
+      return self.create(opid, graph, name, {}, attr, it3->second.f1);
     }
   }
   return nullptr;
 }
 
 std::unique_ptr<Op> OpManager::create(const OperatorIdentifier &opid,
-                                      Ir &ir,
+                                      Graph &graph,
                                       const std::string &name,
                                       const Scope &scope,
                                       const Attributes &attr,
                                       OpFactoryFunc func) {
 
-  Op::Settings settings(ir, name, scope);
+  Op::Settings settings(graph, name, scope);
   settings.setFromAttributes(attr);
 
   return func(opid, settings, attr);

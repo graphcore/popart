@@ -25,7 +25,7 @@ public:
   virtual std::map<TensorId, TensorInfo> tensorInfos() const = 0;
   virtual std::unique_ptr<Optimizer> clone() const           = 0;
   // create an Op of the relevant type
-  virtual std::unique_ptr<Op> createOp(TensorId varId, Ir *) const = 0;
+  virtual std::unique_ptr<Op> createOp(TensorId varId, Graph &) const = 0;
   // what are the correct input names to the Op created above?
   // the names depend on the name of the Variable being updated.
   virtual std::vector<TensorId> getInputIds(TensorId varId,
@@ -37,9 +37,9 @@ public:
   virtual OptimizerType type() const                          = 0;
   virtual std::string type_s() const                          = 0;
   // for all Tensors in tensorInfos, find the tensor in
-  // the Ir and reset its TensorData accordingly.
-  virtual void resetTensorDatas(Ir *) const  = 0;
-  virtual void setTensorData(Tensor *) const = 0;
+  // the Graph and reset its TensorData accordingly.
+  virtual void resetTensorDatas(Graph &) const = 0;
+  virtual void setTensorData(Tensor *) const   = 0;
 };
 
 class BaseSGD : public Optimizer {
@@ -61,13 +61,13 @@ public:
   SGD(float lr, float wd = 0); // weight decay is off by default
   std::unique_ptr<Optimizer> clone() const final;
   std::map<TensorId, TensorInfo> tensorInfos() const final;
-  std::unique_ptr<Op> createOp(TensorId, Ir *) const final;
+  std::unique_ptr<Op> createOp(TensorId, Graph &) const final;
   std::vector<TensorId> getInputIds(TensorId, DataType) const final;
   bool validReplacement(const Optimizer *other) const final;
   OptimizerType type() const final;
   std::string type_s() const final;
   void setTensorData(Tensor *) const final;
-  void resetTensorDatas(Ir *) const final;
+  void resetTensorDatas(Graph &) const final;
 };
 
 // learning rate, weight decay and momentum may not
@@ -77,13 +77,13 @@ public:
   ConstSGD(float lr, float wd = 0); // weight decay is off by default
   std::unique_ptr<Optimizer> clone() const final;
   std::map<TensorId, TensorInfo> tensorInfos() const final;
-  std::unique_ptr<Op> createOp(TensorId, Ir *) const final;
+  std::unique_ptr<Op> createOp(TensorId, Graph &) const final;
   std::vector<TensorId> getInputIds(TensorId, DataType) const final;
   bool validReplacement(const Optimizer *other) const final;
   OptimizerType type() const final;
   std::string type_s() const final;
   void setTensorData(Tensor *) const final;
-  void resetTensorDatas(Ir *) const final;
+  void resetTensorDatas(Graph &) const final;
 };
 
 } // namespace poponnx

@@ -16,7 +16,7 @@ public:
   InterIpuCopy() : Transform() {}
   virtual ~InterIpuCopy() override {}
 
-  virtual bool apply(Ir &ir) const override final;
+  virtual bool apply(Graph &graph) const override final;
 
   virtual std::size_t getId() const override final { return id(); }
 
@@ -27,7 +27,7 @@ private:
   TensorId generateCopiedTensorId(Tensor *tensor, int64_t toIpu) const;
 
   // Used to add an insert IpuCopy op between ops that are on different IPUs
-  void insertIpuCopy(Ir &ir,
+  void insertIpuCopy(Graph &graph,
                      Tensor *tensor,
                      Op *fromOp,
                      int64_t fromIpu,
@@ -36,7 +36,7 @@ private:
 
   // Used to connect an tensor has already been copied between ipus by a
   // previous IpuCopy op
-  void connectIpuCopy(Ir &ir,
+  void connectIpuCopy(Graph &graph,
                       Tensor *tensor,
                       Op *fromOp,
                       int64_t fromIpu,

@@ -1,4 +1,4 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/add.hpp>
 #include <poponnx/op/cosh.hpp>
@@ -36,7 +36,7 @@ bool CoshOpPattern::apply(Op *op) const {
   // Remove the CoshOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->getIr().eraseOp(op->id);
+  op->getGraph().eraseOp(op->id);
 
   // Connect up the new ops
   exp1->connectInTensor(ExpOp::getInIndex(), input->id);

@@ -16,18 +16,19 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
   // Setup
 
   poponnx::Ir ir;
+  auto &graph = ir.getMainGraph();
 
-  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {ir, ""});
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""});
 
-  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, graph);
   lhs.info.set(poponnx::DataType::FLOAT, {2, 2});
   mm.input->insert(0, &lhs);
 
-  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, graph);
   rhs.info.set(poponnx::DataType::FLOAT, {2, 2});
   mm.input->insert(1, &rhs);
 
-  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, graph);
   mm.output->insert(0, &out);
 
   // Test the setup is correct
@@ -58,7 +59,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
       poponnx::MatMulLhsGradOp *lhsGradOp =
           dynamic_cast<poponnx::MatMulLhsGradOp *>(op);
 
-      poponnx::Tensor lhsOut("out", poponnx::TensorType::ActGrad, ir);
+      poponnx::Tensor lhsOut("out", poponnx::TensorType::ActGrad, graph);
       lhsGradOp->output->insert(0, &lhsOut);
 
       BOOST_CHECK(lhsGradOp->getGradInIndex() == 0);
@@ -82,7 +83,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
       poponnx::MatMulRhsGradOp *rhsGradOp =
           dynamic_cast<poponnx::MatMulRhsGradOp *>(op);
 
-      poponnx::Tensor rhsOut("out", poponnx::TensorType::ActGrad, ir);
+      poponnx::Tensor rhsOut("out", poponnx::TensorType::ActGrad, graph);
       rhsGradOp->output->insert(0, &rhsOut);
 
       BOOST_CHECK(rhsGradOp->getGradInIndex() == 0);
@@ -117,18 +118,19 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
   // Setup
 
   poponnx::Ir ir;
+  auto &graph = ir.getMainGraph();
 
-  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {ir, ""});
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""});
 
-  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, graph);
   lhs.info.set(poponnx::DataType::FLOAT, {3, 2});
   mm.input->insert(0, &lhs);
 
-  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, graph);
   rhs.info.set(poponnx::DataType::FLOAT, {2, 6});
   mm.input->insert(1, &rhs);
 
-  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, graph);
   mm.output->insert(0, &out);
 
   // Test the setup is correct
@@ -159,7 +161,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
       poponnx::MatMulLhsGradOp *lhsGradOp =
           dynamic_cast<poponnx::MatMulLhsGradOp *>(op);
 
-      poponnx::Tensor lhsOut("out", poponnx::TensorType::ActGrad, ir);
+      poponnx::Tensor lhsOut("out", poponnx::TensorType::ActGrad, graph);
       lhsGradOp->output->insert(0, &lhsOut);
 
       BOOST_CHECK(lhsGradOp->getGradInIndex() == 0);
@@ -183,7 +185,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
       poponnx::MatMulRhsGradOp *rhsGradOp =
           dynamic_cast<poponnx::MatMulRhsGradOp *>(op);
 
-      poponnx::Tensor rhsOut("out", poponnx::TensorType::ActGrad, ir);
+      poponnx::Tensor rhsOut("out", poponnx::TensorType::ActGrad, graph);
       rhsGradOp->output->insert(0, &rhsOut);
 
       BOOST_CHECK(rhsGradOp->getGradInIndex() == 0);
@@ -217,18 +219,19 @@ BOOST_AUTO_TEST_CASE(MatMul_Case3) {
   // Setup
 
   poponnx::Ir ir;
+  auto &graph = ir.getMainGraph();
 
-  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {ir, ""});
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""});
 
-  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, graph);
   lhs.info.set(poponnx::DataType::FLOAT, {2, 1, 4, 3, 2});
   mm.input->insert(0, &lhs);
 
-  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, graph);
   rhs.info.set(poponnx::DataType::FLOAT, {3, 1, 2, 6});
   mm.input->insert(1, &rhs);
 
-  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, graph);
   mm.output->insert(0, &out);
 
   // Test the setup is correct
@@ -253,7 +256,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case3) {
   for (auto &op : gradOps) {
     // Danger: Can cause a realloc which invalidates pointers. This won't happen
     // if the vector has space reserved.
-    tensors.emplace_back("out", poponnx::TensorType::ActGrad, ir);
+    tensors.emplace_back("out", poponnx::TensorType::ActGrad, graph);
     op->output->reset(0, &tensors.back());
     op->setup();
   }
@@ -270,18 +273,19 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase1) {
   // Setup
 
   poponnx::Ir ir;
+  auto &graph = ir.getMainGraph();
 
-  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {ir, ""});
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""});
 
-  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, graph);
   lhs.info.set(poponnx::DataType::FLOAT, {2, 2, 3});
   mm.input->insert(0, &lhs);
 
-  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, graph);
   rhs.info.set(poponnx::DataType::FLOAT, {2, 2});
   mm.input->insert(1, &rhs);
 
-  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, graph);
   mm.output->insert(0, &out);
 
   // Test the setup is correct
@@ -294,18 +298,19 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase3) {
   // Setup
 
   poponnx::Ir ir;
+  auto &graph = ir.getMainGraph();
 
-  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {ir, ""});
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""});
 
-  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, graph);
   lhs.info.set(poponnx::DataType::FLOAT, {2, 3});
   mm.input->insert(0, &lhs);
 
-  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, graph);
   rhs.info.set(poponnx::DataType::FLOAT, {10, 2});
   mm.input->insert(1, &rhs);
 
-  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, graph);
   mm.output->insert(0, &out);
 
   // Test the setup is correct
@@ -318,18 +323,19 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase4) {
   // Setup
 
   poponnx::Ir ir;
+  auto &graph = ir.getMainGraph();
 
-  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {ir, ""});
+  poponnx::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""});
 
-  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor lhs("lhs", poponnx::TensorType::ActGrad, graph);
   lhs.info.set(poponnx::DataType::FLOAT, {});
   mm.input->insert(0, &lhs);
 
-  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor rhs("rhs", poponnx::TensorType::ActGrad, graph);
   rhs.info.set(poponnx::DataType::FLOAT, {10, 2});
   mm.input->insert(1, &rhs);
 
-  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, ir);
+  poponnx::Tensor out("out", poponnx::TensorType::ActGrad, graph);
   mm.output->insert(0, &out);
 
   // Test the setup is correct

@@ -184,9 +184,6 @@ public:
   // Do all the Ops with all their dependencies form a DAG?
   bool isSchedulable(const OpsBeforeKey &) const;
 
-private:
-  std::unique_ptr<Scheduler> scheduler;
-
 public:
   OpId getOpsCounter() const;
   OpId getAndIncrOpsCounter();
@@ -196,44 +193,32 @@ public:
   // if check is in userOptions.dotChecks, then write the .dot file
   // in userOptions.logDir
   void dotCheckpoint(DotCheck check) const;
-  void eraseOp(OpId);
-  Op *getOp(OpId);
+
   const onnx::ModelProto &getModel() const;
 
   const SessionOptions &getSessionOptions() const { return userOptions; }
 
-  void connectInputsFromInputMapWrapper(const InputMapWrapper &, OpId opId);
-  void connectOutputsFromOutputMapWrapper(const OutputMapWrapper &, OpId opId);
-
-  // moves ownership of created Op into the Ir,
-  // and returns the Op's OpId
-  OpId moveIntoIr(std::unique_ptr<Op> op);
-
   // Accessors for the tensors
-  const Tensors &getTensors() const { return *(up_tensors.get()); }
-  Tensors &getTensors() { return *(up_tensors.get()); }
+  const Tensors &getTensors() const;
+  Tensors &getTensors();
 
-  const std::map<OpId, std::unique_ptr<Op>> &getOps() const { return ops; }
+  const Graph &getMainGraph() const;
+  Graph &getMainGraph();
+
+  std::map<OpId, std::unique_ptr<Op>> &getMainGraphOps();
+  const std::map<OpId, std::unique_ptr<Op>> &getMainGraphOps() const;
+
+  Tensors &getMainGraphTensors();
+  const Tensors &getMainGraphTensors() const;
 
   // Accessors for the dataFlow
   const DataFlow &getDataFlow() const { return dataFlow; }
 
   const std::set<Op *> &getTrainTargetOps() { return trainTargetOps; }
 
-  // For every Op "op" in topoOps, there is a set of Ops "ops"
-  // defined as the union of
-  // 1) "op" and
-  // 2)  all Ops appearing before "op" which
-  // have output tensors for which there are Ops appearing after
-  // "op" in topoOps which will consume them.
-  // Note : if topoOps is just the forward pass, the grad-op
-  // consumers of a tensor do not appear in "ops". This agrees
-  // with the definition.
-  std::vector<std::set<Op *>>
-  getLiveSets(const std::vector<Op *> &topoOps) const;
-
-  // modify the Ir using a graph transformation (public for unit testing only)
-  void applyTransform(std::size_t transformId);
+  // modify a Graph using a graph transformation
+  // (public for unit testing only)
+  void applyTransform(std::size_t transformId, Graph &graph);
 
   // enable/disable a transform stage (public for unit testing only)
   void enableTransform(std::size_t transformId, bool enable);
@@ -265,18 +250,14 @@ public:
   void constructForwards();
 
   // Convert an ONNX graph into IR
-  void constructFromOnnxGraph(const onnx::GraphProto &graph,
-                              const Scope &scope);
+  Graph &constructFromOnnxGraph(const onnx::GraphProto &graph,
+                                const Scope &scope);
 
-  void foldConstants();
+  void foldConstants(Graph &);
 
   // Construct the backwards pass of the IR by doing an autograd of the forward
   // pass
   void constructBackwards();
-
-  // The variable update ops must be final consumers of the
-  // input variable tensor. This function imposes these constraints
-  void setVarUpdateCons();
 
   // Register the input tensors of the ONNX graph,
   // and the inputs to the losses. For the ONNX input tensors,
@@ -296,7 +277,7 @@ public:
   void extendScopes();
 
   // modify the Ir using all the registered pre-alias patterns
-  void applyPreAliasPatterns();
+  void applyPreAliasPatterns(Graph &);
 
   void applyUpdateInplacePrioritiesForIpu();
 
@@ -335,16 +316,9 @@ public:
   }
 
 private:
-  // called from growFromNode and many other places where Ops created
-  // T requires functions input(int) and input_size()
-  template <typename T> void connectInputs(const T &, OpId opId);
-
-  // T requires functions output(int) and output_size()
-  template <typename T> void connectOutputs(const T &, OpId opId);
-
   // modify the Ir using with pattern matching
   // Returns true if a change to the Ir was made.
-  bool applyPreAliasPattern(const PreAliasPattern *);
+  bool applyPreAliasPattern(const PreAliasPattern *, Graph &);
 
   // gradients are named automatically. To prevent them
   // getting names already taken by non-gradient tensors,
@@ -386,7 +360,6 @@ private:
   std::set<Tensor *> getRootInputsToOp(Op *op);
 
 private:
-  std::unique_ptr<Tensors> up_tensors;
   DataFlow dataFlow;
 
   std::unique_ptr<onnx::ModelProto> onnxModel;
@@ -405,7 +378,8 @@ private:
 
   // create an Op from a Node
   std::unique_ptr<Op> addOp(const Node &, const Scope &);
-  std::map<OpId, std::unique_ptr<Op>> ops;
+
+  std::map<GraphId, std::unique_ptr<Graph>> graphs;
 
   // total number of ops ever created
   OpId opsCounter{100};
@@ -426,8 +400,6 @@ private:
   bool isPrepared = false;
 
 public:
-  std::unique_ptr<TopoCons> topoCons;
-
   // A "dummy" Op used to ensure that anchor tensors
   // will be copied out of sub-graphs, even if they
   // have no consumers external to the sub-graph.

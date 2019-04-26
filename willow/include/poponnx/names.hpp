@@ -69,6 +69,8 @@ class OutputMapWrapper;
 class Vertex;
 class TopoCons;
 class Scope;
+class Graph;
+class GraphId;
 enum class TensorType;
 
 namespace view {

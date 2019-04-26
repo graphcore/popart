@@ -1,4 +1,5 @@
 #include <poponnx/error.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/op.hpp>
@@ -12,7 +13,8 @@ namespace poponnx {
 
 std::size_t Prune::id() { return typeid(Prune).hash_code(); }
 
-bool Prune::apply(Ir &ir) const {
+bool Prune::apply(Graph &graph) const {
+  auto &ir = graph.getIr();
 
   // initialise with all the var
   // update ops for training,
@@ -30,7 +32,7 @@ bool Prune::apply(Ir &ir) const {
 
   // the "front" is initialsed with (1) anchor tensors,
   for (auto &tensorId : ir.getDataFlow().anchors()) {
-    Tensor *t = ir.getTensors().get(tensorId);
+    Tensor *t = graph.getTensors().get(tensorId);
     // we have this check here as we allow
     // duplicated names from the (careless!) user
     if (tensorsVisited.count(t) == 0) {
@@ -93,7 +95,7 @@ bool Prune::apply(Ir &ir) const {
   // all outputs of opsToDelete
   std::vector<Tensor *> tensorsToDelete;
 
-  for (auto &id_op : ir.getOps()) {
+  for (auto &id_op : graph.getOps()) {
     Op *op = id_op.second.get();
     if (required.count(op) == 0) {
       opsToDelete.push_back(op);
@@ -111,12 +113,12 @@ bool Prune::apply(Ir &ir) const {
       tensor->consumers.decrement(op);
     }
     // remove the topo cons which might exist
-    ir.topoCons->remove(op);
-    ir.eraseOp(op->id);
+    graph.topoCons->remove(op);
+    graph.eraseOp(op->id);
   }
 
   for (Tensor *tensor : tensorsToDelete) {
-    ir.getTensors().remove(tensor->id);
+    graph.getTensors().remove(tensor->id);
   }
 
   return true;

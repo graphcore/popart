@@ -1,5 +1,5 @@
 #include <utility>
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/mul.hpp>
 #include <poponnx/op/negate.hpp>
@@ -34,7 +34,7 @@ bool ReciprocalGradOpPattern::apply(Op *op) const {
   // Remove the ReciprocalGradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->getIr().eraseOp(op->id);
+  op->getGraph().eraseOp(op->id);
 
   // Connect up the new ops
   square->connectInTensor(0, fwd_input->id);

@@ -109,22 +109,23 @@ BOOST_AUTO_TEST_CASE(NegPriorities_concat0) {
     }
 
     for (TensorId id : inplaceConcatIds) {
-      BOOST_CHECK(ir.getTensors().get(id)->getProducer()->opid.type ==
+      BOOST_CHECK(ir.getMainGraphTensors().get(id)->getProducer()->opid.type ==
                   "ConcatInplace");
     }
 
     for (TensorId id : inplaceReluIds) {
-      BOOST_CHECK(ir.getTensors().get(id)->getProducer()->opid.type ==
+      BOOST_CHECK(ir.getMainGraphTensors().get(id)->getProducer()->opid.type ==
                   "ReluInplace");
     }
 
     for (TensorId id : notInplaceConcatIds) {
-      BOOST_CHECK(ir.getTensors().get(id)->getProducer()->opid.type ==
+      BOOST_CHECK(ir.getMainGraphTensors().get(id)->getProducer()->opid.type ==
                   "Concat");
     }
 
     for (TensorId id : notInplaceReluIds) {
-      BOOST_CHECK(ir.getTensors().get(id)->getProducer()->opid.type == "Relu");
+      BOOST_CHECK(ir.getMainGraphTensors().get(id)->getProducer()->opid.type ==
+                  "Relu");
     }
   };
 

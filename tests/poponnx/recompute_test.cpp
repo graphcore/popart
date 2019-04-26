@@ -276,7 +276,7 @@ BOOST_AUTO_TEST_CASE(DontInheritRecomputeTest) {
               Patterns()});
 
   // Check the relu op has recomputation enabled
-  auto tensor = ir.getTensors().get(relu_out);
+  auto tensor = ir.getMainGraphTensors().get(relu_out);
   auto op     = tensor->getProducer();
   // check we have the correct op
   BOOST_CHECK(op->opid.type == "Relu");
@@ -284,8 +284,9 @@ BOOST_AUTO_TEST_CASE(DontInheritRecomputeTest) {
               *op->getRecomputeOutput() == true);
 
   // Check the grad op has not inherited the recomputation
-  auto grad_tensor = ir.getTensors().get(reservedGradientPrefix() + act);
-  auto grad_op     = grad_tensor->getProducer();
+  auto grad_tensor =
+      ir.getMainGraphTensors().get(reservedGradientPrefix() + act);
+  auto grad_op = grad_tensor->getProducer();
   // check we have the correct op
   BOOST_CHECK(grad_op->opid.type == "ReluGrad");
   BOOST_CHECK(grad_op->getRecomputeOutput() == boost::none);
@@ -295,12 +296,13 @@ BOOST_AUTO_TEST_CASE(IsNormTest) {
   poponnx::Ir ir;
 
   // Is 'add' a norm? - No
-  std::unique_ptr<Op> add = OpManager::createOp(Onnx::Operators::Add_7, ir);
+  std::unique_ptr<Op> add =
+      OpManager::createOp(Onnx::Operators::Add_7, ir.getMainGraph());
   BOOST_CHECK(!add.get()->isNorm());
 
   // Is 'batchnorm' a norm? - Yes
-  std::unique_ptr<Op> bn =
-      OpManager::createOp(Onnx::Operators::BatchNormalization_9, ir);
+  std::unique_ptr<Op> bn = OpManager::createOp(
+      Onnx::Operators::BatchNormalization_9, ir.getMainGraph());
   BOOST_CHECK(bn.get()->isNorm());
 
   // Is 'groupnorm' a norm? - Yes
@@ -311,12 +313,12 @@ BOOST_AUTO_TEST_CASE(IsNormTest) {
   NodeAttributes nodeAttr = node.attribute();
   Attributes attr(nodeAttr);
   std::unique_ptr<Op> gn = OpManager::createOp(
-      Onnx::CustomOperators::GroupNormalization_1, ir, "", attr);
+      Onnx::CustomOperators::GroupNormalization_1, ir.getMainGraph(), "", attr);
   BOOST_CHECK(gn.get()->isNorm());
 
   // Is 'instancenorm' a norm? - Yes
-  std::unique_ptr<Op> in =
-      OpManager::createOp(Onnx::Operators::InstanceNormalization_6, ir);
+  std::unique_ptr<Op> in = OpManager::createOp(
+      Onnx::Operators::InstanceNormalization_6, ir.getMainGraph());
   BOOST_CHECK(in.get()->isNorm());
 }
 
@@ -324,22 +326,27 @@ BOOST_AUTO_TEST_CASE(IsNonLinearityTest) {
   poponnx::Ir ir;
 
   // Is 'div' a non-linearity? - No
-  std::unique_ptr<Op> div = OpManager::createOp(Onnx::Operators::Div_7, ir);
+  std::unique_ptr<Op> div =
+      OpManager::createOp(Onnx::Operators::Div_7, ir.getMainGraph());
   BOOST_CHECK(!div.get()->isElementWiseUnary());
 
   // Is 'tanh' a non-linearity? - Yes
-  std::unique_ptr<Op> tanh = OpManager::createOp(Onnx::Operators::Tanh_6, ir);
+  std::unique_ptr<Op> tanh =
+      OpManager::createOp(Onnx::Operators::Tanh_6, ir.getMainGraph());
   BOOST_CHECK(tanh.get()->isElementWiseUnary());
 
   // Is 'softmax' a non-linearity? - Yes
-  std::unique_ptr<Op> sfm = OpManager::createOp(Onnx::Operators::Softmax_1, ir);
+  std::unique_ptr<Op> sfm =
+      OpManager::createOp(Onnx::Operators::Softmax_1, ir.getMainGraph());
   BOOST_CHECK(sfm.get()->isElementWiseUnary());
 
   // Is 'relu' a non-linearity? - Yes
-  std::unique_ptr<Op> relu = OpManager::createOp(Onnx::Operators::Relu_6, ir);
+  std::unique_ptr<Op> relu =
+      OpManager::createOp(Onnx::Operators::Relu_6, ir.getMainGraph());
   BOOST_CHECK(relu.get()->isElementWiseUnary());
 
   // Is 'sigmoid' a non-linearity? - Yes
-  std::unique_ptr<Op> sgm = OpManager::createOp(Onnx::Operators::Sigmoid_6, ir);
+  std::unique_ptr<Op> sgm =
+      OpManager::createOp(Onnx::Operators::Sigmoid_6, ir.getMainGraph());
   BOOST_CHECK(sgm.get()->isElementWiseUnary());
 }

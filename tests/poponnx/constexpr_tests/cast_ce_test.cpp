@@ -91,7 +91,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {
   auto weights = matmuls[0]->input->tensor(1);
 
   // 2) The shape of the output is correct
-  BOOST_CHECK(ir.getTensors().get(outId)->info.shape() == outshape);
+  BOOST_CHECK(ir.getMainGraphTensors().get(outId)->info.shape() == outshape);
 
   // 3) The weights inputs to the matmul are correct,
   BOOST_CHECK(weights->info.shape() == weights_shape);
@@ -190,7 +190,7 @@ template <typename FROM, typename TO> void ConstExprTest_AddCastMatMul_Type() {
   auto weights = matmuls[0]->input->tensor(1);
 
   // 2) The shape of the output is correct
-  BOOST_CHECK(ir.getTensors().get(outId)->info.shape() == outshape);
+  BOOST_CHECK(ir.getMainGraphTensors().get(outId)->info.shape() == outshape);
 
   // 3) The weights inputs to the matmul are correct,
   BOOST_CHECK(weights->info.shape() == weights_shape);

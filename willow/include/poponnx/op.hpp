@@ -69,13 +69,14 @@ public:
 
   struct Settings {
 
-    Settings(Ir &ir_, const std::string &name_) : ir(ir_), name(name_) {}
-    Settings(Ir &ir_, const std::string &name_, const Scope &scope_)
-        : ir(ir_), name(name_), scope(scope_) {}
+    Settings(Graph &graph_, const std::string &name_)
+        : graph(graph_), name(name_) {}
+    Settings(Graph &graph_, const std::string &name_, const Scope &scope_)
+        : graph(graph_), name(name_), scope(scope_) {}
     virtual ~Settings()        = default;
     Settings(const Settings &) = default;
 
-    Ir &ir;
+    Graph &graph;
 
     std::string name = "";
 
@@ -120,8 +121,11 @@ public:
 
   const std::string &getName() const { return settings.name; }
 
-  Ir &getIr() { return settings.ir; }
-  const Ir &getIr() const { return settings.ir; }
+  Ir &getIr();
+  const Ir &getIr() const;
+
+  Graph &getGraph() { return settings.graph; }
+  const Graph &getGraph() const { return settings.graph; }
 
   const Scope &getScope() const { return settings.scope; }
   void setScope(const Scope &scope) { settings.scope = scope; }

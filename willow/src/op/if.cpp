@@ -1,4 +1,5 @@
 #include <onnx/onnx_pb.h>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/if.hpp>
@@ -82,8 +83,8 @@ static OpCreator<IfOp> ifOpCreator(
                                   settings_);
 
       // Create the then and else branchs inplace
-      settings_.ir.constructFromOnnxGraph(then_branch, op->getThenScope());
-      settings_.ir.constructFromOnnxGraph(else_branch, op->getElseScope());
+      settings_.graph.constructFromOnnxGraph(then_branch, op->getThenScope());
+      settings_.graph.constructFromOnnxGraph(else_branch, op->getElseScope());
 
       return std::move(op);
     },

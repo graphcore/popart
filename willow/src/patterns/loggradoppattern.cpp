@@ -1,4 +1,4 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/div.hpp>
 #include <poponnx/op/log.hpp>
@@ -26,7 +26,7 @@ bool LogGradOpPattern::apply(Op *op) const {
   // Remove the LogGradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->getIr().eraseOp(op->id);
+  op->getGraph().eraseOp(op->id);
 
   // Connect up the new ops
   div->connectInTensor(DivOp::getArg0InIndex(), grad_in->id);

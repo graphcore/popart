@@ -40,14 +40,14 @@ public:
   static std::unique_ptr<Op> createOp(const OpDomain &domain,
                                       const OpType &type,
                                       const int opsetVersion,
-                                      Ir &ir,
+                                      Graph &graph,
                                       const std::string &name = "",
                                       const Scope &scope      = {},
                                       const Attributes &_attr = {});
 
   // creates a op with matches the opid
   static std::unique_ptr<Op> createOp(const OperatorIdentifier &opid,
-                                      Ir &ir,
+                                      Graph &graph,
                                       const std::string &name = "",
                                       const Attributes &_attr = {});
 
@@ -61,7 +61,7 @@ public:
 
 private:
   std::unique_ptr<Op> create(const OperatorIdentifier &opid,
-                             Ir &ir,
+                             Graph &graph,
                              const std::string &name,
                              const Scope &scope,
                              const Attributes &_attr,

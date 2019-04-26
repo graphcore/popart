@@ -14,6 +14,7 @@
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/intervals.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
@@ -111,16 +112,7 @@ void Ir::updateOptimizer(const Optimizer *newOptimizer) {
                 optimizer->type_s());
   }
   optimizer = newOptimizer->clone();
-  optimizer->resetTensorDatas(this);
-}
-
-void Ir::eraseOp(OpId id) {
-  auto found = ops.find(id);
-  if (found == ops.end()) {
-    throw error("ILE: no op " + std::to_string(id) + " to erase");
-  }
-
-  ops.erase(id);
+  optimizer->resetTensorDatas(getMainGraph());
 }
 
 void Ir::dotCheckpoint(DotCheck check) const {
@@ -353,9 +345,7 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
       deviceInfo(deviceInfo_), userOptions(userOptions_), patterns(patterns_) {}
 
 Ir::Ir() : onnxModel(nullptr) {
-  up_tensors.reset(new Tensors(*this));
-  scheduler.reset(new Scheduler(this));
-  topoCons.reset(new TopoCons());
+  graphs.insert({GraphId::root(), make_unique<Graph>(*this, GraphId::root())});
 }
 
 void Ir::setOnnxModel(const onnx::ModelProto &model) {
@@ -417,7 +407,7 @@ void Ir::verifyOpOutputConnectivity() const {
   logging::ir::info("Checking op output tensor producers");
 
   // Check op output tensor producers
-  for (auto &op_pair : ops) {
+  for (auto &op_pair : getMainGraph().getOps()) {
     auto &op = op_pair.second;
 
     for (auto &tensor_pair : op->output->tensorMap()) {
@@ -442,7 +432,7 @@ void Ir::verifyOpInputConnectivity() const {
 
   // Count the number of times an op consumes its input tensors
   std::map<std::pair<Tensor *, Op *>, int> consumption_count;
-  for (auto &op_pair : ops) {
+  for (auto &op_pair : getMainGraph().getOps()) {
     auto &op = op_pair.second;
 
     for (auto &tensor_pair : op->input->tensorMap()) {
@@ -705,13 +695,13 @@ void Ir::prepare(const IrBundle &gb) {
   // construct the forward pass from ONNX,
   constructForwards();
   dotCheckpoint(DotCheck::FWD0);
-  applyPreAliasPatterns();
+  applyPreAliasPatterns(getMainGraph());
   dotCheckpoint(DotCheck::FWD1);
 
   enableTransform(AutoVirtualGraph::id(),
                   userOptions.autoVirtualGraph &&
                       userOptions.enableVirtualGraphs);
-  applyTransform(AutoVirtualGraph::id());
+  applyTransform(AutoVirtualGraph::id(), getMainGraph());
 
   if (canEvaluate()) {
     growFinalLoss();
@@ -736,9 +726,9 @@ void Ir::prepare(const IrBundle &gb) {
   // that the user has not provided incorrect names.
   // We allow duplicates.
   validateAnchors();
-  applyTransform(Prune::id());
+  applyTransform(Prune::id(), getMainGraph());
 
-  applyPreAliasPatterns();
+  applyPreAliasPatterns(getMainGraph());
   setNPathsToLoss();
 
   // tensors with no producer and no
@@ -759,7 +749,7 @@ void Ir::prepare(const IrBundle &gb) {
   } else {
     enableTransform(Recompute::id(),
                     hasAutoRecomputationEnabled() || hasUserRecomputeOps());
-    applyTransform(Recompute::id());
+    applyTransform(Recompute::id(), getMainGraph());
   }
   updateVertices();
 
@@ -767,19 +757,19 @@ void Ir::prepare(const IrBundle &gb) {
   // Ops directly. First, we ensure that the VarUpdate Ops
   // are the final consumers of the Variable tensors
   if (canTrain()) {
-    setVarUpdateCons();
+    getMainGraph().setVarUpdateCons();
   }
 
-  applyTransform(Prune::id());
+  applyTransform(Prune::id(), getMainGraph());
 
   updateVertices();
 
   // Check to make sure that all or none have assigned to an ipu
-  applyTransform(VirtualGraphCheck::id());
+  applyTransform(VirtualGraphCheck::id(), getMainGraph());
 
   // Add internal ops to copy tensors between ipu's as needed
-  applyTransform(InterIpuCopy::id());
-  applyTransform(MergeCopies::id());
+  applyTransform(InterIpuCopy::id(), getMainGraph());
+  applyTransform(MergeCopies::id(), getMainGraph());
 
   updateVertices();
 
@@ -805,7 +795,7 @@ void Ir::prepare(const IrBundle &gb) {
   logIr();
 
   // some checks, now that prepare is complete
-  for (auto &id_op : ops) {
+  for (auto &id_op : getMainGraph().getOps()) {
     if (id_op.second->opid == Onnx::CustomGradOperators::NllGrad) {
       logging::ir::warn("Computing gradient of the probabilities to Nll "
                         "might be less efficient than computing "
@@ -969,57 +959,6 @@ void Ir::registerInputTensors() {
   }
 }
 
-std::vector<std::set<Op *>>
-Ir::getLiveSets(const std::vector<Op *> &topoOps) const {
-
-  // the key op waits for the ops in val
-  // so the key op is later in the sort.
-  std::map<Op *, std::vector<Op *>> waiting;
-
-  // the number of ops that are waiting for key
-  // this is NOT the size of the values of is_waiting_for
-  std::map<Op *, int> nWaiting;
-
-  for (Op *op : topoOps) {
-    nWaiting[op] = 0;
-    waiting[op]  = {};
-  }
-  for (Op *op : topoOps) {
-    for (auto t_inds : op->input->indicesMap()) {
-      Tensor *tensor = t_inds.first;
-      if (tensor->hasProducer()) {
-        Op *prod = tensor->getProducer();
-        // have we noted that op is waiting for prod yet? if not,
-        if (std::find(waiting[op].begin(), waiting[op].end(), prod) ==
-            waiting[op].end()) {
-          // make note
-          waiting[op].push_back(prod);
-          // increase the number of ops waiting for prod
-          ++nWaiting[prod];
-        }
-      }
-    }
-  }
-
-  std::set<Op *> live = {};
-  std::vector<std::set<Op *>> liveSets;
-  for (Op *newOp : topoOps) {
-    for (Op *isEarlier : waiting[newOp]) {
-      if (live.count(isEarlier) == 0) {
-        throw error(
-            "ILE: op should still be live (newOp waits for its output)");
-      }
-      --nWaiting[isEarlier];
-      if (nWaiting[isEarlier] == 0) {
-        live.erase(isEarlier);
-      }
-    }
-    live.insert(newOp);
-    liveSets.push_back(live);
-  }
-  return liveSets;
-}
-
 void Ir::validateAnchors() const {
   for (TensorId id : dataFlow.anchors()) {
     if (!getTensors().contains(id)) {
@@ -1043,23 +982,23 @@ void Ir::validateAnchors() const {
   }
 }
 
-bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern) {
+bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
   bool result = false;
 
   // the pattern chooses what order to go through the ops in
 
   std::vector<OpId> v_ops;
-  v_ops.reserve(ops.size());
+  v_ops.reserve(graph.getOps().size());
 
-  for (auto &id_op : ops) {
+  for (auto &id_op : graph.getOps()) {
     v_ops.push_back(id_op.first);
   }
 
   for (auto opId : v_ops) {
-    auto itr = ops.find(opId);
+    auto itr = graph.getOps().find(opId);
 
     // If the op still exists
-    if (itr != ops.end()) {
+    if (itr != graph.getOps().end()) {
       Op *op = itr->second.get();
       if (pattern->matches(op)) {
         if (!pattern->touchesAnchored(op)) {
@@ -1075,27 +1014,27 @@ bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern) {
   return result;
 }
 
-void Ir::applyPreAliasPatterns() {
+void Ir::applyPreAliasPatterns(Graph &graph) {
 
   bool keepRunning = true;
   std::vector<std::unique_ptr<PreAliasPattern>> pList =
       patterns.getPreAliasList();
 
   while (keepRunning) {
-    foldConstants();
+    foldConstants(graph);
 
     keepRunning = false;
     for (auto &pattern : pList) {
-      keepRunning |= applyPreAliasPattern(pattern.get());
+      keepRunning |= applyPreAliasPattern(pattern.get(), graph);
     }
   }
 }
 
-void Ir::applyTransform(std::size_t transformId) {
+void Ir::applyTransform(std::size_t transformId, Graph &graph) {
   // Unless explictly set, a transform is enabled
   if (transformEnableMap.count(transformId) == 0 ||
       transformEnableMap.at(transformId)) {
-    Transform::applyTransform(transformId, *this);
+    Transform::applyTransform(transformId, graph);
   }
 }
 
@@ -1105,7 +1044,7 @@ void Ir::enableTransform(std::size_t transformId, bool enable) {
 
 std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) {
   std::vector<Op *> typedOps;
-  for (auto &id_op : ops) {
+  for (auto &id_op : getMainGraph().getOps()) {
     if (id_op.second->opid == opid) {
       typedOps.push_back(id_op.second.get());
     }
@@ -1121,34 +1060,28 @@ void Ir::constructForwards() {
   // Not necessary to set the phase here (it will be done in
   // updateVertices). To check our logic though, we do this here
   // and then check that we agree in updateVertices()
-  for (auto &id_op : ops) {
+  for (auto &id_op : getMainGraph().getOps()) {
     auto op = id_op.second.get();
     op->setPhase(Phase::FWD);
   }
 }
 
-void Ir::constructFromOnnxGraph(const onnx::GraphProto &graph,
-                                const Scope &scope) {
-  for (const auto &node : graph.node()) {
-    if (OnnxConstExprUtil::isConst(node)) {
-      OnnxConstExprUtil::processNode(node, this);
-    } else {
-      Op *op = growFromNode(node, scope);
-
-      // process ops as they are created
-      // Reshape requires a const input tensor at creation time
-      // if const folding is left till after the ir is completly constructed
-      // then Reshape may not get a const input tensor at creation time
-      if (ConstExprUtil::isComputable(op, this)) {
-        ConstExprUtil::processOp(op, this);
-      }
-    }
+Graph &Ir::constructFromOnnxGraph(const onnx::GraphProto &graph,
+                                  const Scope &scope) {
+  auto scope_id = scope.str();
+  if (graphs.find(scope_id) == graphs.end()) {
+    logging::ir::debug("Adding new graph for scope {}", scope_id);
+    graphs.insert({scope_id, make_unique<Graph>(*this, scope_id)});
   }
+
+  graphs.at(scope_id)->constructFromOnnxGraph(graph, scope);
+
+  return *graphs.at(scope_id);
 }
 
-void Ir::foldConstants() {
+void Ir::foldConstants(Graph &graph) {
   logging::ces::trace("Folding constants");
-  ConstExprUtil::foldConstants(this);
+  ConstExprUtil::foldConstants(graph);
 }
 
 OpId Ir::getAndIncrOpsCounter() {
@@ -1161,7 +1094,7 @@ OpId Ir::getOpsCounter() const { return opsCounter; }
 
 bool Ir::hasUserRecomputeOps() const {
   bool hasUserRecomputeOps = false;
-  for (auto &id_op : ops) {
+  for (auto &id_op : getMainGraph().getOps()) {
     Op *op = id_op.second.get();
     if (op->getRecomputeOutput()) {
       hasUserRecomputeOps = true;
@@ -1171,19 +1104,13 @@ bool Ir::hasUserRecomputeOps() const {
   return hasUserRecomputeOps;
 }
 
-OpId Ir::moveIntoIr(std::unique_ptr<Op> op) {
-  OpId id = op->id;
-  ops[id] = std::move(op);
-  return id;
-}
-
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
   std::unique_ptr<poponnx::Op> gradSum =
       OpManager::createOp(Domain::ai_onnx,
                           "Sum",
                           getOpSetVersionFromModel(Domain::ai_onnx),
-                          *this,
+                          getMainGraph(),
                           "GradSum");
 
   if (getSessionOptions().enableVirtualGraphs) {
@@ -1208,7 +1135,7 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
     gradSum->setVirtualGraphId(it->first);
   }
 
-  OpId opId = moveIntoIr(std::move(gradSum));
+  OpId opId = getMainGraph().moveIntoGraph(std::move(gradSum));
 
   std::vector<TensorId> inputs;
   inputs.reserve(toSum.size());
@@ -1218,9 +1145,9 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   TensorId gradientId = getGradId(target->id);
   std::vector<TensorId> outputs{gradientId};
 
-  connectInputs(InputVecWrapper(inputs), opId);
-  connectOutputs(OutputVecWrapper(outputs), opId);
-  Op *op = ops[opId].get();
+  getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
+  getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
+  Op *op = getMainGraph().getOps()[opId].get();
   op->setup();
   return op;
 }
@@ -1235,7 +1162,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
   std::vector<Op *> gradOps;
   for (auto &upop : backOps) {
     Op *gradOp    = upop.get();
-    OpId gradOpId = moveIntoIr(std::move(upop));
+    OpId gradOpId = getMainGraph().moveIntoGraph(std::move(upop));
 
     // grad op shouldn't inherit recomputeOutputSettings from forward op
     if (nonGradOp->getRecomputeOutput()) {
@@ -1302,7 +1229,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         }
       }
 
-      connectInputs(InputMapWrapper(m_inputs), gradOpId);
+      getMainGraph().connectInputs(InputMapWrapper(m_inputs), gradOpId);
     }
 
     // connect outputs of gradOp
@@ -1327,7 +1254,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         }
         v_outputs[gradOut] = outId;
       }
-      connectOutputs(OutputVecWrapper(v_outputs), gradOpId);
+      getMainGraph().connectOutputs(OutputVecWrapper(v_outputs), gradOpId);
     }
     gradOp->setup();
 
@@ -1403,7 +1330,7 @@ void Ir::updateVertices() {
   logging::ir::trace("Determining the phase of all Ops");
 
   // determine the phase of all Ops
-  for (auto &id_op : ops) {
+  for (auto &id_op : getMainGraph().getOps()) {
     Op *op = id_op.second.get();
 
     // There are several potential sources of information
@@ -1494,7 +1421,7 @@ void Ir::updateVertices() {
   // now we set the tensor phases,
   // as the phase of the earliest
   // consumer or producer
-  for (auto &id_op : ops) {
+  for (auto &id_op : getMainGraph().getOps()) {
     Op *op = id_op.second.get();
     std::vector<Tensor *> associated_tensors;
 
@@ -1537,7 +1464,7 @@ void Ir::updateVertices() {
   std::set<Op *> s_ops_visited;
 
   // initialising all Vertices to NO
-  for (auto &id_op : ops) {
+  for (auto &id_op : getMainGraph().getOps()) {
     Op *op = id_op.second.get();
     op->setPathToBwd(PathToBwd::NO);
     for (auto &tensor_indices : op->input->indicesMap()) {
@@ -1550,7 +1477,7 @@ void Ir::updateVertices() {
 
   // initialising all backward and loss
   // Ops to YES, adding them to the front
-  for (auto &id_op : ops) {
+  for (auto &id_op : getMainGraph().getOps()) {
     Op *op = id_op.second.get();
     if (op->getPhase() == Phase::BWD || op->getPhase() == Phase::LOSS) {
       op->setPathToBwd(PathToBwd::YES);
@@ -1631,7 +1558,7 @@ void Ir::extendScopes() {
 
   // Initial set of ops that have scope
   std::set<Op *> scoped_ops;
-  for (auto &id_op : ops) {
+  for (auto &id_op : getMainGraph().getOps()) {
     Op *op = id_op.second.get();
     if (!op->getScope().empty()) {
       scoped_ops.insert(op);
@@ -1657,8 +1584,8 @@ void Ir::extendScopes() {
 
 void Ir::setNPathsToLoss() {
 
-  auto found = ops.find(finalLossId);
-  if (found == ops.end()) {
+  auto found = getMainGraph().getOps().find(finalLossId);
+  if (found == getMainGraph().getOps().end()) {
     // There will be no losses at all for an inference
     return;
   }
@@ -1666,7 +1593,7 @@ void Ir::setNPathsToLoss() {
 
   // initialize number of paths for
   // all Ops and Tensors to loss to be zero
-  for (auto &id_op : ops) {
+  for (auto &id_op : getMainGraph().getOps()) {
     Op *op = id_op.second.get();
     op->setNPathsToLossToZero();
     for (auto t_inds : op->input->indicesMap()) {
@@ -1835,12 +1762,12 @@ void Ir::constructBackwards() {
 }
 
 Op *Ir::growCopyVarUpdateOp(TensorId varId, TensorId from) {
-  OpId opId =
-      moveIntoIr(std::unique_ptr<Op>(new CopyVarUpdateOp(varId, {*this, ""})));
+  OpId opId = getMainGraph().moveIntoGraph(
+      std::unique_ptr<Op>(new CopyVarUpdateOp(varId, {getMainGraph(), ""})));
 
   // The order of inputs is important
   std::vector<TensorId> inputs{varId, from};
-  connectInputs(InputVecWrapper(inputs), opId);
+  getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
 
   return growVarUpdateOpInternal(opId);
 }
@@ -1851,16 +1778,17 @@ Op *Ir::growGradientVarUpdateOp(TensorId varId) {
   if (getTensors().get(varId)->info.getDataTypeInfo()->isFixedPoint()) {
     throw error("Currently only floating point variable tensors are updatable");
   }
-  OpId opId = moveIntoIr(optimizer->createOp(varId, this));
+  OpId opId =
+      getMainGraph().moveIntoGraph(optimizer->createOp(varId, getMainGraph()));
   auto inputs =
       optimizer->getInputIds(varId, getTensors().get(varId)->info.dataType());
-  connectInputs(InputVecWrapper(inputs), opId);
+  getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
   return growVarUpdateOpInternal(opId);
 }
 
 Op *Ir::growVarUpdateOpInternal(OpId opId) {
 
-  Op *op = ops[opId].get();
+  Op *op = getMainGraph().getOps()[opId].get();
 
   if (getSessionOptions().enableVirtualGraphs) {
 
@@ -1893,7 +1821,7 @@ Op *Ir::growVarUpdateOpInternal(OpId opId) {
   }
   TensorId updatedVarId = getUpdatedVarId(varUpdateOp->getVarId());
   std::vector<TensorId> outputs{updatedVarId};
-  connectOutputs(OutputVecWrapper(outputs), opId);
+  getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
   op->setup();
 
   // Not necessary to set the phase here (it will be done in
@@ -1903,55 +1831,6 @@ Op *Ir::growVarUpdateOpInternal(OpId opId) {
 
   trainTargetOps.insert(op);
   return op;
-}
-
-void Ir::setVarUpdateCons() {
-
-  // impose the constraint that the varupdates
-  // are the last consumers of the vars
-  for (auto &varId : getTensors().getIds(TensorType::Variable)) {
-
-    Tensor *var = getTensors().get(varId);
-
-    // First, determine which consumer is the updater
-    std::vector<VarUpdateOp *> varUpdaters;
-    for (Op *consumer : var->consumers.getOps()) {
-      auto varUpdateOp = dynamic_cast<VarUpdateOp *>(consumer);
-      if (varUpdateOp != nullptr) {
-        varUpdaters.push_back(varUpdateOp);
-        break;
-      }
-    }
-    if (varUpdaters.size() == 0) {
-      throw error("Failed to find any updaters of {}, bailing" + var->str());
-    } else if (varUpdaters.size() > 1) {
-      throw error("Found more than 1 potential updater of {}, bailing",
-                  var->str());
-    }
-    // Good, there is a unique consumer which is a VarUpdateOp
-    VarUpdateOp *varupdater = varUpdaters.back();
-
-    // Set the constraints
-    for (Op *consumer : var->consumers.getOps()) {
-      if (consumer != varupdater) {
-        topoCons->insert(consumer, varupdater);
-      }
-    }
-  }
-}
-
-Op *Ir::growFromNode(const Node &node, const Scope &scope) {
-
-  OpId opId = moveIntoIr(addOp(node, scope));
-
-  connectInputs(node, opId);
-  connectOutputs(node, opId);
-
-  // finally, set the output tensor info for the output
-  // tensors, and any other Op specific class variables
-  Op *fromNodeOp = ops[opId].get();
-  fromNodeOp->setup();
-  return fromNodeOp;
 }
 
 void Ir::growFinalLoss() {
@@ -1965,12 +1844,12 @@ void Ir::growFinalLoss() {
   std::vector<Op *> lossOps;
   // first, grow each of the individual losses from the user
   for (auto &loss : losses) {
-    OpId opId  = moveIntoIr(loss->getOp({*this, ""}));
-    Op *lossOp = ops[opId].get();
+    OpId opId = getMainGraph().moveIntoGraph(loss->getOp({getMainGraph(), ""}));
+    Op *lossOp = getMainGraph().getOps()[opId].get();
     logging::ir::trace("Connecting inputs/outputs for Loss Op {}",
                        lossOp->str());
-    connectInputs(*loss, opId);
-    connectOutputs(*loss, opId);
+    getMainGraph().connectInputs(*loss, opId);
+    getMainGraph().connectOutputs(*loss, opId);
     lossOps.push_back(lossOp);
     lossOp->setup();
 
@@ -1985,7 +1864,7 @@ void Ir::growFinalLoss() {
       OpManager::createOp(Domain::ai_onnx,
                           "Sum",
                           getOpSetVersionFromModel(Domain::ai_onnx),
-                          *this,
+                          getMainGraph(),
                           "FinalLoss");
 
   if (getSessionOptions().enableVirtualGraphs) {
@@ -2010,7 +1889,7 @@ void Ir::growFinalLoss() {
     finalLossSum->setVirtualGraphId(it->first);
   }
 
-  OpId opId = moveIntoIr(std::move(finalLossSum));
+  OpId opId = getMainGraph().moveIntoGraph(std::move(finalLossSum));
 
   std::vector<TensorId> inputs;
   inputs.reserve(lossOps.size());
@@ -2019,62 +1898,32 @@ void Ir::growFinalLoss() {
     inputs.push_back(op->output->tensor(0)->id);
   }
   std::vector<TensorId> outputs{getFinalLossId()};
-  connectInputs(InputVecWrapper(inputs), opId);
-  connectOutputs(OutputVecWrapper(outputs), opId);
-  ops[opId]->setup();
+  getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
+  getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
+  getMainGraph().getOps()[opId]->setup();
 
   // Not necessary to set the phase here (it will be done in
   // updateVertices). To check our logic though, we do this here
   // and then check that we agree in updateVertices()
-  ops[opId]->setPhase(Phase::LOSS);
+  getMainGraph().getOps()[opId]->setPhase(Phase::LOSS);
   finalLossId = opId;
   logging::ir::trace("Final loss id set to {}", finalLossId);
 }
 
 TensorId Ir::getFinalLossId() const { return "finalLoss"; }
 
-template <typename T> void Ir::connectInputs(const T &inContainer, OpId opId) {
-  Op *op = ops[opId].get();
-  for (int inIndex = 0; inIndex < inContainer.input_size(); ++inIndex) {
-    auto &inName = inContainer.input(inIndex);
-    if (inName == "") {
-      // no input at this position
-    } else {
-      auto scopedName = getTensors().find(inName, op->getScope());
-      // default: connects tensor <-> op, in both directions.
-      // Note that this is a virtual function, and so specific Ops
-      // may to do something different to the default here.
-      op->connectInTensor(inIndex, scopedName);
-    }
-  }
-}
-
-void Ir::connectInputsFromInputMapWrapper(const InputMapWrapper &in, OpId id) {
-  connectInputs(in, id);
-}
-
-void Ir::connectOutputsFromOutputMapWrapper(const OutputMapWrapper &out,
-                                            OpId id) {
-  connectOutputs(out, id);
-}
-
-template <typename T>
-void Ir::connectOutputs(const T &outContainer, OpId opId) {
-  for (int outIndex = 0; outIndex < outContainer.output_size(); ++outIndex) {
-    auto &outName = outContainer.output(outIndex);
-    if (outName == "") {
-      // no output at this position
-    } else {
-      // ONNX specifies that a tensor is the output of at most 1 node.
-      // here we create the Output (activation or gradient) Tensor and
-      // connect it to the Op.
-      ops[opId]->createAndConnectOutTensor(outIndex, outName);
-    }
-  }
-}
-
 void Ir::append(std::stringstream &ss) {
+  auto schedule = getOpSchedule({});
+  if (schedule.size() == 0) {
+    return;
+  }
+
+  auto scope = schedule.front()->getScope();
   for (auto &op : getOpSchedule({})) {
+    if (scope != op->getScope()) {
+      ss << "----------------------------------------\n";
+      scope = op->getScope();
+    }
     op->append(ss);
   }
 }
@@ -2129,35 +1978,12 @@ int Ir::getOpSetVersionFromModel(const std::string &node_domain) const {
   return version;
 }
 
-std::unique_ptr<Op> Ir::addOp(const Node &node, const Scope &scope) {
-
-  int version = getOpSetVersionFromModel(node.domain());
-
-  std::unique_ptr<Op> p = OpManager::createOp(node.domain(),
-                                              node.op_type(),
-                                              version,
-                                              *this,
-                                              node.name(),
-                                              scope,
-                                              node.attribute());
-  if (p != nullptr)
-    return p;
-  else {
-    if (node.op_type() == Onnx::AiOnnx::OpSet9::Constant.type) {
-      throw error("ILE. Constant Ops are not to be added");
-    } else {
-      throw error("No class for {}.{}:{}",
-                  (node.domain() == "" ? Domain::ai_onnx : node.domain()),
-                  node.op_type(),
-                  version);
-    }
-  }
-}
-
 std::vector<GradNonGradPair> Ir::growLossGradients() {
   std::vector<GradNonGradPair> pairs;
-  if (ops.find(finalLossId) != ops.end()) {
-    for (auto &t_inds : getOp(finalLossId)->input->indicesMap()) {
+  if (getMainGraph().getOps().find(finalLossId) !=
+      getMainGraph().getOps().end()) {
+    for (auto &t_inds :
+         getMainGraph().getOp(finalLossId)->input->indicesMap()) {
       Tensor *t  = t_inds.first;
       Op *lossOp = t->getProducer();
       for (Op *gradOp : growGradOps(lossOp)) {
@@ -2170,29 +1996,16 @@ std::vector<GradNonGradPair> Ir::growLossGradients() {
 
 OpId Ir::getFinalLossOpId() const { return finalLossId; }
 
-Op *Ir::getOp(OpId opId) {
-  auto found = ops.find(opId);
-  if (found == ops.end()) {
-    throw error("No Op `" + std::to_string(opId) + "'");
-  }
-  return found->second.get();
-}
-
 std::vector<Op *> Ir::getOpSchedule(const OpsBeforeKey &gCons) const {
-  auto sorted = scheduler->getPartialOpSchedule(gCons);
-  if (sorted.size() != ops.size()) {
-    throw error("failure to sort topologically in getOpSchedule ({} != {})",
-                sorted.size(),
-                ops.size());
-  }
-  return sorted;
+  return getMainGraph().getOpSchedule(gCons);
 }
 
 // Are the Ops with all the dependencies a DAG?
 bool Ir::isSchedulable(const OpsBeforeKey &gCons) const {
-  auto sorted = scheduler->getPartialOpSchedule(gCons);
-  if (sorted.size() != ops.size()) {
-    return false;
+  for (auto &id_graph : graphs) {
+    if (!id_graph.second->isSchedulable(gCons)) {
+      return false;
+    }
   }
   return true;
 }
@@ -2218,9 +2031,12 @@ bool Ir::containsInitialisers() {
 void Ir::applyUpdateInplacePrioritiesForIpu() {
   UpdateInplacePrioritiesForIpu pattern;
 
-  for (auto &id_op : ops) {
-    Op *op = id_op.second.get();
-    pattern.apply(op);
+  for (auto &id_graph : graphs) {
+    auto graph = id_graph.second.get();
+    for (auto &id_op : graph->getOps()) {
+      Op *op = id_op.second.get();
+      pattern.apply(op);
+    }
   }
 }
 
@@ -2234,7 +2050,7 @@ void Ir::applyInplacePattern() {
   using Triplet = std::tuple<OpId, OperatorIdentifier, float>;
 
   std::vector<Triplet> priorities;
-  for (auto &id_op : ops) {
+  for (auto &id_op : getMainGraph().getOps()) {
     Op *op = id_op.second.get();
 
     // first see if the user has overriden the default priorities
@@ -2297,10 +2113,10 @@ void Ir::applyInplacePattern() {
       if (inplaced_already_it != inplacedAlready.end()) {
         // the Op has already been inplaced
       } else {
-        Op *op              = ops.at(id).get();
+        Op *op              = getMainGraph().getOps().at(id).get();
         bool touchesAnchors = false;
         for (auto &tensor : inplace.touches(op, identifier)) {
-          if (op->getIr().isAnchored(tensor->id)) {
+          if (isAnchored(tensor->id)) {
             touchesAnchors = true;
           }
         }
@@ -2317,11 +2133,31 @@ void Ir::applyInplacePattern() {
 }
 
 Op &Ir::getSubgraphAnchorPlaceholder() {
-  static std::unique_ptr<Op> subgraphAnchorPlaceholder =
-      std::unique_ptr<Op>(new Op({"TempAnchorDomain", "TempAnchorType", 1},
-                                 Op::Settings{*this, "TempAnchorName"}));
+  static std::unique_ptr<Op> subgraphAnchorPlaceholder = std::unique_ptr<Op>(
+      new Op({"TempAnchorDomain", "TempAnchorType", 1},
+             Op::Settings{getMainGraph(), "TempAnchorName"}));
 
   return *subgraphAnchorPlaceholder.get();
+}
+
+const Tensors &Ir::getTensors() const { return getMainGraph().getTensors(); }
+Tensors &Ir::getTensors() { return getMainGraph().getTensors(); }
+
+const Graph &Ir::getMainGraph() const { return *graphs.at(GraphId::root()); }
+Graph &Ir::getMainGraph() { return *graphs.at(GraphId::root()); }
+
+std::map<OpId, std::unique_ptr<Op>> &Ir::getMainGraphOps() {
+  return getMainGraph().getOps();
+}
+
+const std::map<OpId, std::unique_ptr<Op>> &Ir::getMainGraphOps() const {
+  return getMainGraph().getOps();
+}
+
+Tensors &Ir::getMainGraphTensors() { return getMainGraph().getTensors(); }
+
+const Tensors &Ir::getMainGraphTensors() const {
+  return getMainGraph().getTensors();
 }
 
 } // namespace poponnx

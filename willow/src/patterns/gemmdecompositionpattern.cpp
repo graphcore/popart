@@ -1,4 +1,4 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/add.hpp>
 #include <poponnx/op/gemm.hpp>
@@ -74,7 +74,7 @@ bool GemmDecompositionPattern::apply(Op *op) const {
   add->connectOutTensor(AddOp::getOutIndex(), output->id);
 
   // Remove the GemmOp
-  op->getIr().eraseOp(op->id);
+  op->getGraph().eraseOp(op->id);
 
   return true;
 }

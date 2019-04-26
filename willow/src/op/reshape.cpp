@@ -1,7 +1,7 @@
 #include <numeric>
 #include <onnx/onnx_pb.h>
 #include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/reshape.hpp>
 #include <poponnx/opmanager.hpp>
@@ -89,11 +89,11 @@ void ReshapeOp::connectInTensor(InIndex inIndex, TensorId tenId) {
     TensorId shapeId = tenId;
 
     // check 2 : that there is already a tensor with the shape tensor's name
-    if (!getIr().getTensors().contains(shapeId)) {
+    if (!getGraph().getTensors().contains(shapeId)) {
       throw error("no Tensor named `" + shapeId + "' recorded in Ir. " +
                   " This is the second input in the ReshapeOp constructor. ");
     }
-    Tensor *shapeTensor = getIr().getTensors().get(shapeId);
+    Tensor *shapeTensor = getGraph().getTensors().get(shapeId);
 
     // check 3 : that the tensor has data
     if (!shapeTensor->hasTensorData()) {

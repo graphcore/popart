@@ -1,4 +1,5 @@
 #include <vector>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/lstm.hpp>
@@ -27,7 +28,7 @@ std::vector<std::unique_ptr<Op>> LSTMOp::getGradOps() {
 }
 
 bool LSTMOp::isTraining() const {
-  return settings.ir.getExecutionMode() == Ir::ExecutionMode::TRAINING;
+  return getGraph().getIr().getExecutionMode() == Ir::ExecutionMode::TRAINING;
 }
 
 void LSTMOp::trySetOutInfo(OutIndex index, const TensorInfo &info) {
@@ -172,7 +173,7 @@ bool LSTMGradOp::hasHiddenStateGradInput() const {
 void LSTMGradOp::tryConnectCellStateGrad() {
   auto cell_state_id      = forward_op.outId(LSTMOp::getCellStateOutIndex());
   auto cell_state_grad_id = getGradId(cell_state_id);
-  if (getIr().getTensors().contains(cell_state_grad_id)) {
+  if (getGraph().getTensors().contains(cell_state_grad_id)) {
     connectInTensor(getCellStateOutputGradInIndex(), cell_state_grad_id);
   } else {
     logging::op::debug("Could not find cell state grad tensor {}",
@@ -183,7 +184,7 @@ void LSTMGradOp::tryConnectCellStateGrad() {
 void LSTMGradOp::tryConnectHiddenStateGrad() {
   auto hidden_state_id = forward_op.outId(LSTMOp::getHiddenStateOutIndex());
   auto hidden_state_grad_id = getGradId(hidden_state_id);
-  if (getIr().getTensors().contains(hidden_state_grad_id)) {
+  if (getGraph().getTensors().contains(hidden_state_grad_id)) {
     connectInTensor(getHiddenStateOutputGradInIndex(), hidden_state_grad_id);
   } else {
     logging::op::debug("Could not find hidden state grad tensor {}",

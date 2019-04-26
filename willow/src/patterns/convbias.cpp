@@ -1,10 +1,11 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/addbias.hpp>
 #include <poponnx/op/conv.hpp>
 #include <poponnx/patterns/convbias.hpp>
 #include <poponnx/patterns/patterns.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/tensors.hpp>
 
 namespace poponnx {
@@ -21,9 +22,9 @@ bool ConvBiasPattern::apply(Op *op) const {
   auto add_bias = makeReplacementOpInIr(Onnx::CustomOperators::AddBias, op);
 
   const auto tmp_tensor_id = "prebias" + conv->output->id(0);
-  op->getIr().getTensors().addActGrad(tmp_tensor_id);
+  op->getGraph().getTensors().addActGrad(tmp_tensor_id);
   const auto b  = conv->input->tensor(ConvOp::getBiasInIndex());
-  const auto t  = op->getIr().getTensors().get(tmp_tensor_id);
+  const auto t  = op->getGraph().getTensors().get(tmp_tensor_id);
   const auto a1 = conv->output->tensor(ConvOp::getDataInIndex());
 
   t->info = a1->info;

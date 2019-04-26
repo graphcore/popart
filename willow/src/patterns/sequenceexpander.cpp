@@ -1,8 +1,9 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/patterns/sequenceexpander.hpp>
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 
 #include <algorithm>
 #include <numeric>
@@ -45,14 +46,14 @@ bool SequenceExpander::expand(std::vector<std::unique_ptr<Op>> &seq,
   for (auto &step : seq) {
     logging::pattern::info("Inserting op {}", step->str());
     step->setup();
-    op->getIr().moveIntoIr(std::move(step));
+    op->getGraph().moveIntoGraph(std::move(step));
   }
 
   // Delete the matched op
   logging::pattern::info("Removing op {}", op->str());
 
   op->disconnectAllInputs();
-  op->getIr().eraseOp(op->id);
+  op->getGraph().eraseOp(op->id);
 
   return true;
 }

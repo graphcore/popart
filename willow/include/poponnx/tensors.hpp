@@ -11,7 +11,7 @@ namespace poponnx {
 
 class Tensors {
 public:
-  Tensors(Ir &pg);
+  Tensors(Graph &pg);
   ~Tensors() = default;
 
   Tensor *get(TensorId) const;
@@ -75,7 +75,7 @@ private:
 
   void addInit(const TensorId &, const onnx::TensorProto *, TensorType);
 
-  Ir &ir;
+  Graph &graph;
 
   // all non-empty Chains
   //      "to"..............."from"...."chains"

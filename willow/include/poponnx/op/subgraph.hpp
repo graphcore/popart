@@ -8,7 +8,7 @@ namespace poponnx {
 class SubgraphOp : public Op {
 
 public:
-  SubgraphOp(Ir &ir_, int64_t cacheId_);
+  SubgraphOp(Graph &graph_, int64_t cacheId_);
 
   // Book keeping structure to understand the mapping of input/outs of the child
   // op

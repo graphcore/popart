@@ -1,4 +1,5 @@
 #include <poponnx/error.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/nll.hpp>
@@ -84,8 +85,8 @@ void SoftmaxGradDirectOp::setup() {
 
 bool SoftmaxGradDirectOp::hasNlllFwdOp() const {
   TensorId lossTensorName = nlll()->output(NllLoss::getOutIndex());
-  if (getIr().getTensors().contains(lossTensorName)) {
-    auto t = getIr().getTensors().get(lossTensorName);
+  if (getGraph().getTensors().contains(lossTensorName)) {
+    auto t = getGraph().getTensors().get(lossTensorName);
     return t->hasProducer();
   }
   return false;
@@ -106,7 +107,7 @@ Op *SoftmaxGradDirectOp::nlllFwdOp() const {
   // Find the op producing the loss tensor, i.e. the
   // corresponding fwd loss op whose bwd op has merged
   // with the SoftmaxGradOp
-  Tensor *lossTensor = getIr().getTensors().get(lossTensorName);
+  Tensor *lossTensor = getGraph().getTensors().get(lossTensorName);
   Op *fwdLossOp      = lossTensor->getProducer();
 
   return fwdLossOp;

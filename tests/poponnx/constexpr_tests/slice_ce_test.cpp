@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Slice0) {
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Slice).size() == 0);
   // 3) that the shape of the output tensor is as specified.
   Shape ref_shape{1, 3};
-  BOOST_CHECK(ir.getTensors().get(out_id)->info.shape() == ref_shape);
+  BOOST_CHECK(ir.getMainGraphTensors().get(out_id)->info.shape() == ref_shape);
 }
 
 template <typename T> std::string getTypeName();
@@ -131,7 +131,7 @@ template <typename T> void ConstExprTest_Slice0_Type() {
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Slice).size() == 0);
   // 3) that the shape of the output tensor is as specified.
   Shape ref_shape{1, 3};
-  BOOST_CHECK(ir.getTensors().get(out_id)->info.shape() == ref_shape);
+  BOOST_CHECK(ir.getMainGraphTensors().get(out_id)->info.shape() == ref_shape);
 }
 
 BOOST_AUTO_TEST_CASE(ConstExprTest_Slice0_Types) {

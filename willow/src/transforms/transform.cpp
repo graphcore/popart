@@ -11,10 +11,10 @@ static TransformMap &getTransformMap() {
   return transform_map;
 }
 
-void Transform::applyTransform(std::size_t transformId, Ir &ir) {
+void Transform::applyTransform(std::size_t transformId, Graph &graph) {
   auto &transform = getTransformMap().at(transformId);
-  logging::transform::info("Applying transform {}", transform->getName());
-  transform->apply(ir);
+  logging::transform::info("Applying Graph transform {}", transform->getName());
+  transform->apply(graph);
 }
 
 bool Transform::registerTransform(Transform *transform) {

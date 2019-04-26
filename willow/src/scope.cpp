@@ -40,6 +40,8 @@ bool Scope::operator==(const Scope &other) const {
   return true;
 }
 
+bool Scope::operator!=(const Scope &other) const { return !(*this == other); }
+
 std::string Scope::str() const {
   if (names.size() == 0) {
     return "";

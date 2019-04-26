@@ -1,15 +1,16 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/patterns/fuser.hpp>
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/tensors.hpp>
 
 namespace poponnx {
 
 bool Fuser::apply(Op *op) const {
 
-  Ir &ir = op->getIr();
+  Graph &graph = op->getGraph();
 
   Op *op0      = op;
   Tensor *out0 = op0->output->tensor(0);
@@ -20,11 +21,11 @@ bool Fuser::apply(Op *op) const {
   // - the inputs of op0
   // - the outputs of op1
   OpId id01 = moveMergedIntoIr(op);
-  Op *op01  = ir.getOp(id01);
+  Op *op01  = graph.getOp(id01);
 
   // wire-up the inputs.
   // 1) connect the inputs of op0 to op01
-  ir.connectInputsFromInputMapWrapper(
+  graph.connectInputsFromInputMapWrapper(
       InputMapWrapper(op0->input->tensorIdMap()), id01);
   // 2) disconnect the inputs of op0 from op0
   for (auto index_tensor : op0->input->tensorMap()) {
@@ -48,10 +49,10 @@ bool Fuser::apply(Op *op) const {
     Tensor *tensor = index_tensor.second;
     tensor->consumers.decrement(op1);
   }
-  ir.eraseOp(op1->id);
+  graph.eraseOp(op1->id);
 
-  ir.getTensors().remove(out0->id);
-  ir.eraseOp(op0->id);
+  graph.getTensors().remove(out0->id);
+  graph.eraseOp(op0->id);
 
   return true;
 }

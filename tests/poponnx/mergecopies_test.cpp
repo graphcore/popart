@@ -18,7 +18,7 @@ using namespace poponnx;
 
 template <class T> std::vector<T *> getOpsOfType(Ir &ir) {
   std::vector<T *> ops;
-  for (auto &id_op : ir.getOps()) {
+  for (auto &id_op : ir.getMainGraphOps()) {
     auto op = id_op.second.get();
     if (op->isConvertibleTo<T>()) {
       ops.push_back(dynamic_cast<T *>(op));

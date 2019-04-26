@@ -23,11 +23,11 @@ using namespace poponnx;
 BOOST_AUTO_TEST_CASE(OpManager_Test1) {
 
   poponnx::Ir ir;
-  auto a = OpManager::createOp(Onnx::Operators::Add_7, ir);
+  auto a = OpManager::createOp(Onnx::Operators::Add_7, ir.getMainGraph());
   BOOST_CHECK(a != nullptr);
 
   // This will fail as we do not have the custom op
-  auto c = OpManager::createOp({"ai_simon", "MyAdd", 2}, ir);
+  auto c = OpManager::createOp({"ai_simon", "MyAdd", 2}, ir.getMainGraph());
   BOOST_CHECK(c == nullptr);
 
   // register the new op, (but it is just an AddOp)
@@ -41,7 +41,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test1) {
                         });
 
   // Now we do...
-  auto b = OpManager::createOp({"ai_simon", "MyAdd", 2}, ir);
+  auto b = OpManager::createOp({"ai_simon", "MyAdd", 2}, ir.getMainGraph());
   BOOST_CHECK(b != nullptr);
 
   // test that we can query for the new operation
@@ -54,7 +54,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test1) {
 BOOST_AUTO_TEST_CASE(OpxManager_Test1) {
 
   poponnx::Ir ir;
-  auto a = OpManager::createOp(Onnx::Operators::Add_7, ir);
+  auto a = OpManager::createOp(Onnx::Operators::Add_7, ir.getMainGraph());
   BOOST_CHECK(a != nullptr);
 
   auto aX = popx::OpxManager::createOpx(a.get(), nullptr);

@@ -1,11 +1,12 @@
 
+#include <poponnx/ir.hpp>
 #include <poponnx/op/subgraph.hpp>
 #include <poponnx/opserialiser.hpp>
 
 namespace poponnx {
 
-SubgraphOp::SubgraphOp(Ir &ir_, int64_t cacheId_)
-    : Op(Onnx::CustomOperators::Subgraph, {ir_, ""}), cacheId(cacheId_) {}
+SubgraphOp::SubgraphOp(Graph &graph_, int64_t cacheId_)
+    : Op(Onnx::CustomOperators::Subgraph, {graph_, ""}), cacheId(cacheId_) {}
 
 std::vector<Op *> SubgraphOp::getOps() {
   std::vector<Op *> o;

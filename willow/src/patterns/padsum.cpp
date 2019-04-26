@@ -1,4 +1,4 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/add.hpp>
 #include <poponnx/op/concat.hpp>
@@ -7,6 +7,7 @@
 #include <poponnx/patterns/padsum.hpp>
 #include <poponnx/patterns/patterns.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/tensors.hpp>
 
 #include <boost/numeric/interval.hpp>
@@ -300,35 +301,37 @@ createConcatOp(int64_t axis,
   return concat;
 }
 
-static void insertPadOps(Ir &ir, std::vector<std::unique_ptr<PadOp>> &padOps) {
+static void insertPadOps(Graph &graph,
+                         std::vector<std::unique_ptr<PadOp>> &padOps) {
   for (auto &pad : padOps) {
     pad->setup();
-    ir.moveIntoIr(std::move(pad));
+    graph.moveIntoGraph(std::move(pad));
   }
   padOps.clear();
 }
 
-static void insertConcat(Ir &ir, std::unique_ptr<ConcatOp> &concat) {
+static void insertConcat(Graph &graph, std::unique_ptr<ConcatOp> &concat) {
   concat->setup();
-  ir.moveIntoIr(std::move(concat));
+  graph.moveIntoGraph(std::move(concat));
 }
 
-static void removeProducers(Ir &ir, const std::vector<PadOp *> &producers) {
+static void removeProducers(Graph &graph,
+                            const std::vector<PadOp *> &producers) {
   for (auto &producer : producers) {
     producer->disconnectAllInputs();
     producer->disconnectAllOutputs();
-    ir.eraseOp(producer->id);
+    graph.eraseOp(producer->id);
   }
 }
 
-static void removeOp(Ir &ir, Op *op) {
+static void removeOp(Graph &graph, Op *op) {
   op->disconnectAllInputs();
   op->output->clear();
-  ir.eraseOp(op->id);
+  graph.eraseOp(op->id);
 }
 
 bool PadSumPattern::apply(Op *op) const {
-  auto &ir                     = op->getIr();
+  auto &graph                  = op->getGraph();
   const std::vector<int> order = computeConcatOrder(op);
 
   // For the purposes of this pattern, we assume that add and sum use the same
@@ -365,12 +368,12 @@ bool PadSumPattern::apply(Op *op) const {
       axis, padTensorOps, op->output->tensor(outputIndex)->id, op->settings);
 
   // Insert the new ops into the IR
-  insertPadOps(ir, padTensorOps);
-  insertConcat(ir, concat);
+  insertPadOps(graph, padTensorOps);
+  insertConcat(graph, concat);
 
   // Remove the old ops from the IR
-  removeProducers(ir, producers);
-  removeOp(ir, op);
+  removeProducers(graph, producers);
+  removeOp(graph, op);
 
   return true;
 }

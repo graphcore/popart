@@ -60,7 +60,7 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape0) {
   // 1) that the Reshape Op is present,
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Reshape).size() == 1);
   // 2) that the shape of the output tensor is as specified.
-  BOOST_CHECK(ir.getTensors().get(outId)->info.shape() == outShape);
+  BOOST_CHECK(ir.getMainGraphTensors().get(outId)->info.shape() == outShape);
 }
 
 // as in ViewChangingTest_Reshape0, but uses an
@@ -104,5 +104,5 @@ BOOST_AUTO_TEST_CASE(ViewChangingTest_Reshape_Initializer) {
               {},
               Patterns({PreAliasPatternType::POSTNREPL})});
   BOOST_CHECK(ir.opsOfType(Onnx::Operators::Reshape_5).size() == 1);
-  BOOST_CHECK(ir.getTensors().get(outId)->info.shape() == outShape);
+  BOOST_CHECK(ir.getMainGraphTensors().get(outId)->info.shape() == outShape);
 }

@@ -123,7 +123,8 @@ std::vector<Op *> SubgraphOutlinex::getOutlineView(const std::vector<Op *> &ops,
       // not suppose to change the ir but we need a new op id for the subgraph
       // op which requires const casting the ir
       //
-      SubgraphOp *sgop = new SubgraphOp(const_cast<Ir &>(ir), subgraphId);
+      SubgraphOp *sgop =
+          new SubgraphOp(const_cast<Ir &>(ir).getMainGraph(), subgraphId);
       subgraphOps.push_back(std::unique_ptr<Op>(sgop));
 
       // Push the subgraph op in t the list of ops at the start of the match,

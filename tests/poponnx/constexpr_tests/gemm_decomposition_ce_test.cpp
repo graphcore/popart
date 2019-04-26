@@ -82,5 +82,5 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Gemm_Decomposition0) {
   // 3) there should only be 1 add op,
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Add).size() == 1);
   // 4) there should only be 3 ops total
-  BOOST_CHECK(ir.getOps().size() == 3);
+  BOOST_CHECK(ir.getMainGraphOps().size() == 3);
 }

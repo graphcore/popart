@@ -474,7 +474,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_scopes3) {
   runner.checkIr([&](Ir &ir) {
     // There should be 3 AddOps
     std::vector<Op *> add_ops;
-    for (auto &id_op : ir.getOps()) {
+    for (auto &id_op : ir.getMainGraphOps()) {
       auto op = id_op.second.get();
       if (op->isConvertibleTo<AddOp>()) {
         add_ops.push_back(op);

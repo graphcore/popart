@@ -1,4 +1,4 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/addbias.hpp>
 #include <poponnx/op/conv.hpp>
@@ -72,7 +72,7 @@ bool ConvDataGradPattern::apply(Op *op) const {
   // Remove the ConvGradOp
   convdatagrad->disconnectAllInputs();
   convdatagrad->disconnectAllOutputs();
-  convdatagrad->getIr().eraseOp(convdatagrad->id);
+  convdatagrad->getGraph().eraseOp(convdatagrad->id);
 
   // Configure the flip weight op
   flip->connectInTensor(ConvFlipWeightsOp::getInIndex(), weights_in->id);

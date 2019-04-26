@@ -1,10 +1,11 @@
 #include <algorithm>
 #include <queue>
 
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/scheduler.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/tensors.hpp>
 #include <poponnx/topocons.hpp>
 
@@ -57,14 +58,14 @@ public:
   }
 };
 
-std::vector<Op *>
-Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons) const {
+std::vector<Op *> Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
+                                                  const Graph &graph) const {
 
   // note that if gCons has constraints
   // of the form A -> A, the sorting is not complete
 
-  auto &ops     = pir->getOps();
-  auto &tensors = pir->getTensors();
+  auto &ops     = graph.getOps();
+  auto &tensors = graph.getTensors();
 
   // the topological sorting (to construct in this function)
   std::vector<Op *> sorted;
@@ -111,7 +112,7 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons) const {
     Op *after = id_op.second.get();
 
     // we first check the existing constraints on "after"
-    for (Op *before : pir->topoCons->getBefores(after)) {
+    for (Op *before : graph.topoCons->getBefores(after)) {
       if (!registered(before, after)) {
         opsAfterKey[before].push_back(after);
         ++nBeforeKey[after];
@@ -154,6 +155,10 @@ Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons) const {
   // the tensors which have no producers
   auto t0 = tensors.getNoProducerIds();
   for (auto &id : t0) {
+    processTensor(tensors.get(id));
+  }
+  // also process the graph inputs
+  for (auto &id : graph.getInputIds()) {
     processTensor(tensors.get(id));
   }
 
