@@ -32,6 +32,11 @@ def _initAnchorArrays(self):
             if arp != batchesPerStep:
                 anchorArrayShape.insert(0, batchesPerStep // arp)
 
+        # If the graph replication is enabled and greater than 1 then add
+        # an extra dimension for the replication
+        if self.replicationFactor > 1:
+            anchorArrayShape.insert(0, self.replicationFactor)
+
         anchorArrays[anchor] = np.empty(
             shape=anchorArrayShape, dtype=anchorInfo.data_type_lcase())
 
@@ -54,7 +59,9 @@ class InferenceSession(poponnx.InferenceSessionCore):
         super(InferenceSession,
               self).__init__(fnModel, dataFeed, deviceInfo, losses,
                              inputShapeInfo, userOptions, passes)
+
         self.dataFeed = dataFeed
+        self.replicationFactor = userOptions.replicatedGraphCount if userOptions.enableReplicatedGraphs else 1
 
     def initAnchorArrays(self):
         return _initAnchorArrays(self)
@@ -77,7 +84,9 @@ class TrainingSession(poponnx.TrainingSessionCore):
         super(TrainingSession,
               self).__init__(fnModel, dataFeed, losses, optimizer, deviceInfo,
                              inputShapeInfo, userOptions, passes)
+
         self.dataFeed = dataFeed
+        self.replicationFactor = userOptions.replicatedGraphCount if userOptions.enableReplicatedGraphs else 1
 
     def initAnchorArrays(self):
         return _initAnchorArrays(self)

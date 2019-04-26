@@ -337,6 +337,9 @@ void Devicex::hostToHostStream(
     throw error(ss.str());
   }
 
+  // Log the name and shape of the tensor
+  logging::devicex::debug("       {} {}", id, srcInfo.shape());
+
   auto srcType = srcInfo.dataType();
   auto dstType = dstInfo.dataType();
 
@@ -389,6 +392,10 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
   // number of bytes of the destination.
   int64_t nbytes_dst = mv_data.info.nbytes();
 
+  // display which tensors are being copied
+  logging::devicex::debug(
+      "       {} {}", id, ir().getTensors().get(id)->info.shape());
+
   // We confirm that the sizes of src and dst are the same
   if (nbytes_src != nbytes_dst) {
     std::stringstream errms;
@@ -422,6 +429,13 @@ void Devicex::anchorsHostToHostStreams(const IStepIO &stepio) {
         stepDstShape.insert(stepDstShape.begin(),
                             ir().getDataFlow().batchesPerStep());
       }
+      // if the replicationFactor is greater than 1 then add an extra
+      // dimension of size replicationFactor so we can report mutliple
+      // copies of the tensor
+      // Q: Should replicated tensors be combined before returning?
+      if (getReplicationFactor() > 1) {
+        stepDstShape.insert(stepDstShape.begin(), getReplicationFactor());
+      }
       TensorInfo dstInfo{tensor->info.dataType(), stepDstShape};
 
       // the info of the user provided src step tensor
@@ -449,11 +463,9 @@ void Devicex::run(const IStepIO &stepio) {
     throw error("Devicex::prepare() must be called before"
                 " Devicex::run(const IStepIO &) is called.");
   }
-  std::string prefix = "     ";
-  logging::debug("Performing one step: ");
+  logging::devicex::debug("Performing one step: ");
   anchorsHostToHostStreams(stepio);
 
-  logging::debug(prefix + "Running the program ");
   pEngine->enableExecutionProfiling();
   pEngine->run(PopPrograms::ProgramIndex::PROGRAM);
 
@@ -716,15 +728,10 @@ PriTask Devicex::initRandomSeed() {
       auto dataStream = rootGraph().addHostToDeviceFIFO(
           h2dId(randomSeedId),
           seedTensor.elementType(),
-          seedTensor.numElements() *
-              std::max(static_cast<int>(getReplicationFactor()), 1));
+          seedTensor.numElements() * getReplicationFactor());
 
-      if (getReplicationFactor() > 1) {
-        sq.add(poplar::program::Copy(
-            dataStream, rootGraph().getNonReplicatedTensor(seedTensor)));
-      } else {
-        sq.add(poplar::program::Copy(dataStream, seedTensor));
-      }
+      sq.add(poplar::program::Copy(
+          dataStream, rootGraph().getNonReplicatedTensor(seedTensor)));
     }
 
     poprand::setSeed(
@@ -747,10 +754,10 @@ void Devicex::connectRandomSeedStream() {
     std::uniform_int_distribution<uint64_t> distribution;
     uint64_t *data = reinterpret_cast<uint64_t *>(ptr);
 
-    logging::debug("     Updating random seed");
+    logging::devicex::debug("     Updating random seed");
     for (int i = 0; i < replicationFactor; i++) {
       data[i] = distribution(randomGenerator);
-      logging::debug("       {}", data[i]);
+      logging::devicex::debug("       {}", data[i]);
     }
   };
 
@@ -1233,8 +1240,8 @@ void Devicex::prepare() {
     for (Tensor *tensor : ir().dataStreamTensors()) {
       PopStreamId streamId = h2dId(tensor->id);
       // allocate host memory, where the poplar::Stream will read data from
-      int64_t n_bytes =
-          ir().getDataFlow().batchesPerStep() * tensor->info.nbytes();
+      int64_t n_bytes = ir().getDataFlow().batchesPerStep() *
+                        tensor->info.nbytes() * getReplicationFactor();
       h2dBuffers[tensor->id] = std::vector<char>(n_bytes);
       char *data0            = h2dBuffers[tensor->id].data();
       engineToStream(data0, n_bytes, streamId);
@@ -1249,16 +1256,19 @@ void Devicex::prepare() {
       int64_t n_bytes;
       switch (ir().getDataFlow().art(anchorId).id()) {
       case (AnchorReturnTypeId::FINAL): {
-        n_bytes = batch_bytes;
+        n_bytes = batch_bytes * getReplicationFactor();
         break;
       }
       case (AnchorReturnTypeId::EVERYN): {
-        n_bytes = batch_bytes * (ir().getDataFlow().batchesPerStep() /
-                                 ir().getDataFlow().art(anchorId).rp());
+        n_bytes = batch_bytes *
+                  (ir().getDataFlow().batchesPerStep() /
+                   ir().getDataFlow().art(anchorId).rp()) *
+                  getReplicationFactor();
         break;
       }
       case (AnchorReturnTypeId::ALL): {
-        n_bytes = batch_bytes * ir().getDataFlow().batchesPerStep();
+        n_bytes = batch_bytes * ir().getDataFlow().batchesPerStep() *
+                  getReplicationFactor();
         break;
       }
       }
@@ -1331,34 +1341,32 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
     logging::devicex::debug("Adding poplar::program::Copy from host " +
                             tensor->id);
 
-    if (getReplicationFactor() > 1) {
+    // getNonReplicatedTensor is not a const method so have to have a const_cast
+    // T8378
+    auto nonReplicatedTensor =
+        const_cast<poplar::Graph &>(rootGraph())
+            .getNonReplicatedTensor(tensors.get(tensor->id));
 
-      // getNonReplicatedTensor is not a const method
-      auto nonReplicatedTensor =
-          const_cast<poplar::Graph &>(rootGraph())
-              .getNonReplicatedTensor(tensors.get(tensor->id));
+    if (tensor->tensorType() == TensorType::Variable) {
 
-      if (tensor->tensorType() == TensorType::Variable) {
+      // Copy the variable from the stream into the non replicated tensor index
+      // 0 then copy it to the the other indices
+      sq.add(poplar::program::Copy(
+          fromHostStreams.at(tensor->id), nonReplicatedTensor[0], true));
 
-        sq.add(poplar::program::Copy(
-            fromHostStreams.at(tensor->id), nonReplicatedTensor[0], true));
-
-        for (unsigned i = 1; i < getReplicationFactor(); ++i) {
-          sq.add(poplar::program::Copy(nonReplicatedTensor[0],
-                                       nonReplicatedTensor[i]));
-        }
-      } else {
-        for (unsigned i = 0; i < getReplicationFactor(); ++i) {
-          sq.add(poplar::program::Copy(fromHostStreams.at(tensor->id),
-                                       nonReplicatedTensor[i],
-                                       rearrange_on_host));
-        }
+      for (unsigned i = 1; i < getReplicationFactor(); ++i) {
+        sq.add(poplar::program::Copy(nonReplicatedTensor[0],
+                                     nonReplicatedTensor[i]));
       }
-
     } else {
-      sq.add(poplar::program::Copy(fromHostStreams.at(tensor->id),
-                                   tensors.get(tensor->id),
-                                   rearrange_on_host));
+
+      // For a stream we copy 'n' lots of data from the stream into each index
+      // for the replicated tensor
+      for (unsigned i = 0; i < getReplicationFactor(); ++i) {
+        sq.add(poplar::program::Copy(fromHostStreams.at(tensor->id),
+                                     nonReplicatedTensor[i],
+                                     rearrange_on_host));
+      }
     }
   };
 
@@ -1380,30 +1388,24 @@ PriTask Devicex::toHostTask(Tensor *tensor,
 
     bool rearrange_on_host = tensor->tensorType() != TensorType::Stream;
 
-    if (getReplicationFactor() > 1) {
+    // getNonReplicatedTensor is not a const method
+    // T8378
+    auto nonReplicatedTensor =
+        const_cast<poplar::Graph &>(rootGraph())
+            .getNonReplicatedTensor(tensors.get(tensor->id));
 
-      // getNonReplicatedTensor is not a const method
-      auto nonReplicatedTensor =
-          const_cast<poplar::Graph &>(rootGraph())
-              .getNonReplicatedTensor(tensors.get(tensor->id));
-
-      if (tensor->tensorType() == TensorType::Variable) {
-        // Copy from the first replicated graph (all graphs should be in sync
-        // and therefore have similar values).
-        sq.add(poplar::program::Copy(nonReplicatedTensor[0],
-                                     toHostStreams.at(tensor->id)));
-      } else {
-        // Copy from the each of the replicated graphs
-        for (unsigned i = 0; i < getReplicationFactor(); ++i) {
-          sq.add(poplar::program::Copy(nonReplicatedTensor[i],
-                                       toHostStreams.at(tensor->id),
-                                       rearrange_on_host));
-        }
-      }
+    if (tensor->tensorType() == TensorType::Variable) {
+      // Copy from the first replicated graph (all graphs should be in sync
+      // and therefore have similar values).
+      sq.add(poplar::program::Copy(
+          nonReplicatedTensor[0], toHostStreams.at(tensor->id), true));
     } else {
-      sq.add(poplar::program::Copy(tensors.get(tensor->id),
-                                   toHostStreams.at(tensor->id),
-                                   rearrange_on_host));
+      // Copy from the each of the replicated graphs
+      for (unsigned i = 0; i < getReplicationFactor(); ++i) {
+        sq.add(poplar::program::Copy(nonReplicatedTensor[i],
+                                     toHostStreams.at(tensor->id),
+                                     rearrange_on_host));
+      }
     }
   };
 
@@ -1496,22 +1498,27 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
     poplar::Tensor isNthBatch = batchCountCheckingTensors.at(N);
 
     poplar::program::Sequence copyseq;
-    if (getReplicationFactor() > 1) {
-      auto nonReplicatedTensor =
-          rootGraph().getNonReplicatedTensor(tensors.get(tensor->id));
 
-      // Program to copy the anchor tensor and reset batch count
-      // Copy from the first replicated graph (all graphs should be in sync and
-      // therefore have similar values).
+    bool rearrange_on_host = tensor->tensorType() != TensorType::Stream;
 
-      // Q : In this case we should be able to copy out the stanard replicated
-      // tensor?
+    auto nonReplicatedTensor =
+        rootGraph().getNonReplicatedTensor(tensors.get(tensor->id));
 
-      copyseq.add(poplar::program::Copy(nonReplicatedTensor[0],
-                                        toHostStreams.at(tensor->id)));
+    // Program to copy the anchor tensor and reset batch count
+
+    if (tensor->tensorType() == TensorType::Variable) {
+      // Copy from the first replicated graph (all graphs should be in sync
+      // and therefore have similar values).
+      copyseq.add(poplar::program::Copy(
+          nonReplicatedTensor[0], toHostStreams.at(tensor->id), true));
     } else {
-      copyseq.add(poplar::program::Copy(tensors.get(tensor->id),
-                                        toHostStreams.at(tensor->id)));
+
+      // Copy from the each of the replicated graphs
+      for (unsigned i = 0; i < getReplicationFactor(); ++i) {
+        copyseq.add(poplar::program::Copy(nonReplicatedTensor[i],
+                                          toHostStreams.at(tensor->id),
+                                          rearrange_on_host));
+      }
     }
 
     // Placeholder 'do nothing' branch if not running copy program
