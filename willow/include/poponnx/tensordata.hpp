@@ -96,6 +96,17 @@ public:
   virtual MutableVoidData weight(TensorId) const = 0;
 };
 
+class WeightsIO : public IWeightsIO {
+public:
+  virtual ~WeightsIO() override = default;
+  virtual bool contains(TensorId) const final;
+  virtual MutableVoidData weight(TensorId) const final;
+  void insert(TensorId, MutableVoidData);
+
+private:
+  std::map<TensorId, MutableVoidData> weights;
+};
+
 } // namespace poponnx
 
 #endif
