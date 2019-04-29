@@ -190,7 +190,8 @@ public:
   // TODO T8008 : is this still used and/or needed?
   poplar::Tensor getConst(const poplar::Type &type,
                           const std::vector<size_t> &shape,
-                          double val);
+                          double val,
+                          const std::string &name);
 
   // Helper method to get the replication factor based on the user options
   unsigned getReplicationFactor() const;

@@ -10,7 +10,7 @@ namespace popx {
 
 poplar::Tensor ScaleComputex::getScaleTensor(const poplar::Type &type,
                                              poplar::Graph &graph) const {
-  auto tensor = graph.addConstant(type, {1}, scale_factor, "/scale");
+  auto tensor = graph.addConstant(type, {1}, scale_factor, "/scale_factor");
   graph.setTileMapping(tensor, 0);
   return tensor;
 }

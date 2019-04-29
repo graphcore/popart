@@ -37,7 +37,7 @@ void SignGradOpx::grow(poplar::program::Sequence &) const {
       graph().addConstant(popType(outInfo(SignGradOp::getOutIndex())),
                           outInfo(SignGradOp::getOutIndex()).shape_szt(),
                           0,
-                          idStr());
+                          debugPrefix("zeros"));
 
   setOutTensor(SignGradOp::getOutIndex(), outTensor);
 }

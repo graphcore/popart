@@ -29,8 +29,10 @@ BaseSortOpx::getIotaTensor(poplar::program::Sequence &prog) const {
   std::vector<int> iotaVals(sortSize);
   std::iota(iotaVals.begin(), iotaVals.end(), 0);
 
-  auto c = graph().addConstant(
-      poplar::INT, {sortSize}, poplar::ArrayRef<int>(iotaVals));
+  auto c = graph().addConstant(poplar::INT,
+                               {sortSize},
+                               poplar::ArrayRef<int>(iotaVals),
+                               debugPrefix("sortSize"));
   poputil::mapTensorLinearly(graph(), c);
 
   // Fill a tensor with [0, 1, 2, ... nToSort-1] along "axis"

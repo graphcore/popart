@@ -88,8 +88,9 @@ void Devicex::weightsToHost(
 
 poplar::Tensor Devicex::getConst(const poplar::Type &type,
                                  const std::vector<size_t> &shape,
-                                 double val) {
-  auto tensor = masterGraph().addConstant(type, shape, val);
+                                 double val,
+                                 const std::string &name) {
+  auto tensor = masterGraph().addConstant(type, shape, val, name);
   masterGraph().setTileMapping(tensor, 0);
   return tensor;
 }
@@ -1437,14 +1438,14 @@ PriTask Devicex::initBatchCounterTensorsTask() {
       batchCountCheckingTensors[N] =
           masterGraph().addVariable(poplar::BOOL, {});
 
-      getConst(poplar::INT, {}, N);
+      getConst(poplar::INT, {}, N, "batchCounter");
 
       poputil::mapTensorLinearly(masterGraph(), batchCountingTensors[N]);
       poputil::mapTensorLinearly(masterGraph(), batchCountCheckingTensors[N]);
     }
 
     // Make sure const 1 tensor exists
-    getConst(poplar::INT, {}, 1);
+    getConst(poplar::INT, {}, 1, "one");
   };
 
   return {+1e6, // followed by writes to host: always as early as possible
@@ -1467,16 +1468,17 @@ PriTask Devicex::updateBatchCoutTask(poplar::program::Sequence &sq) {
     for (ReturnPeriod N : ir().getDataFlow().rps()) {
       popops::addInPlace(masterGraph(),
                          batchCountingTensors[N],
-                         getConst(poplar::INT, {}, 1),
+                         getConst(poplar::INT, {}, 1, "batchCount/one"),
                          sq);
 
-      batchCountCheckingTensors[N] = popops::eq(masterGraph(),
-                                                batchCountingTensors[N],
-                                                getConst(poplar::INT, {}, N),
-                                                sq);
+      batchCountCheckingTensors[N] =
+          popops::eq(masterGraph(),
+                     batchCountingTensors[N],
+                     getConst(poplar::INT, {}, N, "batchCount/n"),
+                     sq);
 
       // Reset batch count once it has reached N
-      auto zero = getConst(poplar::INT, {}, 0);
+      auto zero = getConst(poplar::INT, {}, 0, "batchCount/zero");
       sq.add(poplar::program::If(
           batchCountCheckingTensors[N],
           poplar::program::Copy(zero, batchCountingTensors[N]),
