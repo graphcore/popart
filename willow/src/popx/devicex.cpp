@@ -392,8 +392,7 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
   int64_t nbytes_dst = mv_data.info.nbytes();
 
   // display which tensors are being copied
-  logging::devicex::debug(
-      "       {} {}", id, ir().getTensors().get(id)->info.shape());
+  logging::devicex::debug("       {} {}", id, ir().getTensor(id)->info.shape());
 
   // We confirm that the sizes of src and dst are the same
   if (nbytes_src != nbytes_dst) {
