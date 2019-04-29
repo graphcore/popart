@@ -8,19 +8,26 @@
 
 namespace poponnx {
 
+BasePadOp::BasePadOp(const OperatorIdentifier &_opid,
+                     const std::vector<int64_t> &_pads,
+                     float value_,
+                     const std::string &_mode,
+                     const Op::Settings &settings_)
+    : Op(_opid, settings_), pads(_pads), pad_value(value_), mode(_mode) {}
+
 PadOp::PadOp(const OperatorIdentifier &_opid,
              const std::vector<int64_t> &_pads,
              float value_,
              const std::string &_mode,
              const Op::Settings &settings_)
-    : Op(_opid, settings_), pads(_pads), pad_value(value_), mode(_mode) {}
+    : BasePadOp(_opid, _pads, value_, _mode, settings_) {}
 
 std::unique_ptr<Op> PadOp::clone() const { return make_unique<PadOp>(*this); }
 
 std::vector<std::unique_ptr<Op>> PadOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
 
-  if (mode == "constant") {
+  if (getMode() == "constant") {
     upops.emplace_back(make_unique<PadGradOp>(*this));
   } else {
     // TODO : T6631 Add support for other grad op when mode is "Reflect" &
@@ -30,10 +37,89 @@ std::vector<std::unique_ptr<Op>> PadOp::getGradOps() {
   return upops;
 }
 
-void PadOp::setup() {
+std::unique_ptr<Op>
+PadOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
+  if (operator_id == Onnx::CustomOperators::PadInplace) {
+    return make_unique<PadInplaceOp>(*this);
+  }
+  // catch remaining cases and throw an error
+  return Op::getInplaceVariant(operator_id);
+}
+
+view::RegMap BasePadOp::fwdRegMap(InIndex inIndex) const {
+  if (inIndex != 0) {
+    throw error("Internal Logic Error in BasePadOp::fwdRegMap."
+                "Received input index {} but only 0 allowed, "
+                "This for Op {}, ",
+                inIndex,
+                str());
+  }
+
+  // add the lower padding dimensions
+  return [this](const view::Region &r) {
+    view::LowBounds out_lb = r.getLower();
+    view::UppBounds out_ub = r.getUpper();
+    for (int i = 0; i < pads.size() / 2; ++i) {
+      out_lb[i] += std::max<int64_t>(pads[i], 0);
+      out_ub[i] += std::max<int64_t>(pads[i], 0);
+    }
+    return view::Region(out_lb, out_ub);
+  };
+}
+
+view::RegMap BasePadOp::bwdRegMap(InIndex inIndex) const {
+
+  if (inIndex != 0) {
+    throw error("Internal Logic Error in BasePadOp::bwdRegMap."
+                "Received input index {} but only 0 allowed, "
+                "This for Op {}, ",
+                inIndex,
+                str());
+  }
+
+  // add the lower padding dimensions
+  return [this](const view::Region &rIn) {
+    auto r                 = rIn.intersect(valueRegion());
+    view::LowBounds out_lb = r.getLower();
+    view::UppBounds out_ub = r.getUpper();
+    for (int i = 0; i < pads.size() / 2; ++i) {
+      out_lb[i] -= std::max<int64_t>(pads[i], 0);
+      out_ub[i] -= std::max<int64_t>(pads[i], 0);
+    }
+    return view::Region(out_lb, out_ub);
+  };
+}
+
+PadInplaceOp::PadInplaceOp(const PadOp &padOp)
+    : BasePadOp(Onnx::CustomOperators::PadInplace,
+                padOp.getPads(),
+                padOp.getPadValue(),
+                padOp.getMode(),
+                padOp.getSettings()) {}
+
+view::Region PadInplaceOp::modifies(InIndex index) const { return uses(index); }
+view::Region PadInplaceOp::aliases(InIndex index) const { return uses(index); }
+view::Region PadInplaceOp::uses(InIndex index) const {
+  if (index == 0) {
+    return view::Region::getFull(inShape(index));
+  }
+  throw error("ILE : invalid InIndex to PadInplaceOp::uses");
+}
+
+std::unique_ptr<Op> PadInplaceOp::clone() const {
+  return make_unique<PadInplaceOp>(*this);
+}
+
+std::vector<std::tuple<OperatorIdentifier, float>>
+PadOp::inplacePriorityDefault() const {
+  // see T6768: choosing default inplace priorities
+  return {{Onnx::CustomOperators::PadInplace, 20}};
+}
+
+void BasePadOp::setup() {
 
   int tRank = inRank(getInIndex());
-  if (pads.size() != 2 * tRank) {
+  if (getPads().size() != 2 * tRank) {
     throw error("Tensor rank not half padding size");
   }
 
@@ -45,18 +131,18 @@ void PadOp::setup() {
   outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), outShape};
 }
 
-bool PadOp::padSizeZero() const {
+bool BasePadOp::padSizeZero() const {
   return std::all_of(
       pads.cbegin(), pads.cend(), [](int64_t p) { return p == 0; });
 }
 
-const std::vector<int64_t> &PadOp::getPads() const { return pads; }
+const std::vector<int64_t> &BasePadOp::getPads() const { return pads; }
 
-float PadOp::getPadValue() const { return pad_value; }
+float BasePadOp::getPadValue() const { return pad_value; }
 
-const std::string &PadOp::getMode() const { return mode; }
+const std::string &BasePadOp::getMode() const { return mode; }
 
-void PadOp::appendAttributes(OpSerialiserBase &os) const {
+void BasePadOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
 
   os.appendAttribute("pads", pads);
@@ -64,7 +150,7 @@ void PadOp::appendAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("mode", mode);
 }
 
-view::Region PadOp::valueRegion() const {
+view::Region BasePadOp::valueRegion() const {
   std::vector<int64_t> lower(pads.size() / 2);
   std::vector<int64_t> upper(pads.size() / 2);
 
@@ -82,7 +168,7 @@ view::Region PadOp::valueRegion() const {
   return {lower, upper};
 }
 
-std::vector<int64_t> PadOp::padDimensions() const {
+std::vector<int64_t> BasePadOp::padDimensions() const {
   std::set<int64_t> dimensions;
 
   for (int i = 0; i < pads.size() / 2; ++i) {
@@ -116,14 +202,14 @@ std::unique_ptr<Op> PadGradOp::clone() const {
 
 const std::vector<GradInOutMapper> &PadGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      {getInIndex(), PadOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getInIndex(), BasePadOp::getOutIndex(), GradOpInType::GRADOUT}};
 
   return inInfo;
 }
 
 const std::map<int, int> &PadGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
-      {getOutIndex(), PadOp::getInIndex()}};
+      {getOutIndex(), BasePadOp::getInIndex()}};
 
   return outInfo;
 }
@@ -151,7 +237,7 @@ std::vector<int64_t> PadGradOp::calculateEnds(const PadOp &padOp) {
   return ends;
 }
 
-// The PadOp provides pad information for each axis.
+// The BasePadOp provides pad information for each axis.
 // The default of the SliceOp when axes is blank is to assume start & end
 // for all axes
 std::vector<int64_t> PadGradOp::calculateAxes(const PadOp &) {

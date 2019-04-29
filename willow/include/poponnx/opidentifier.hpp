@@ -706,6 +706,7 @@ const static AiGraphcoreOpIdV1 AddLhsInplace("AddLhsInplace");
 const static AiGraphcoreOpIdV1 AddRhsInplace("AddRhsInplace");
 const static AiGraphcoreOpIdV1 ConcatInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 SliceInplace("SliceInplace");
+const static AiGraphcoreOpIdV1 PadInplace("PadInplace");
 const static AiGraphcoreOpIdV1 ConcatGradInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 Subsample_1("Subsample", 1, 1);
 const static AiGraphcoreOpIdV1 Square("Square");
