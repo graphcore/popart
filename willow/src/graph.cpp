@@ -10,6 +10,9 @@
 #include <poponnx/tensors.hpp>
 #include <poponnx/topocons.hpp>
 
+// Ops required for Graph::getCalledOps
+#include <poponnx/op/if.hpp>
+
 // The layers required to construct the backwards pass
 #include <poponnx/op/varupdate.hpp>
 
@@ -34,6 +37,32 @@ Op *Graph::getOp(OpId opId) {
 
 const Tensors &Graph::getTensors() const { return *(up_tensors.get()); }
 Tensors &Graph::getTensors() { return *(up_tensors.get()); }
+
+void Graph::addInput(const TensorId &tensorId, const TensorInfo &tensorInfo) {
+  getTensors().addActGrad(tensorId);
+  auto tensor  = getTensors().get(tensorId);
+  tensor->info = tensorInfo;
+  graph_inputs.push_back(tensorId);
+}
+
+std::vector<Graph *> Graph::getCalledGraphs() const {
+  std::vector<Graph *> called;
+
+  for (auto &id_op : getOps()) {
+    auto op = id_op.second.get();
+    if (op->isConvertibleTo<IfOp>()) {
+      auto ifop = dynamic_cast<IfOp *>(op);
+
+      auto then_id = GraphId(ifop->getThenScope().str());
+      called.push_back(&ir.getGraph(then_id));
+
+      auto else_id = GraphId(ifop->getElseScope().str());
+      called.push_back(&ir.getGraph(else_id));
+    }
+  }
+
+  return called;
+}
 
 void Graph::constructFromOnnxGraph(const onnx::GraphProto &onnx_graph,
                                    const Scope &scope) {

@@ -13,9 +13,13 @@ public:
 
   static const GraphId &root();
 
+  std::string str() const;
+
 private:
   std::string id;
 };
+
+std::ostream &operator<<(std::ostream &, const GraphId &);
 
 } // namespace poponnx
 

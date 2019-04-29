@@ -174,6 +174,9 @@ public:
 
   std::vector<Op *> opsOfType(const OperatorIdentifier &opid);
 
+  // Simple recursive depth first search
+  std::vector<const Graph *> getGraphSchedule() const;
+
   // Essentially Kahn's algorithm (1962),
   // https://en.wikipedia.org/wiki/Topological_sorting
   // with additional constrains imposed through the input paramater.
@@ -198,12 +201,18 @@ public:
 
   const SessionOptions &getSessionOptions() const { return userOptions; }
 
-  // Accessors for the tensors
-  const Tensors &getTensors() const;
-  Tensors &getTensors();
+  std::vector<TensorId> getTensorIds(TensorType) const;
+  Tensor *getTensor(const TensorId &) const;
+  bool containsTensor(const TensorId &) const;
+  std::vector<TensorId> getGraphInputIds() const;
 
   const Graph &getMainGraph() const;
   Graph &getMainGraph();
+
+  const Graph &getGraph(const GraphId &) const;
+  Graph &getGraph(const GraphId &);
+
+  Graph &createGraph(const GraphId &);
 
   std::map<OpId, std::unique_ptr<Op>> &getMainGraphOps();
   const std::map<OpId, std::unique_ptr<Op>> &getMainGraphOps() const;
@@ -273,9 +282,6 @@ public:
   // there is a path to vertex in whose phase is BWD.
   void updateVertices();
 
-  // Capture as many ops in higher scopes as possible
-  void extendScopes();
-
   // modify the Ir using all the registered pre-alias patterns
   void applyPreAliasPatterns(Graph &);
 
@@ -316,6 +322,10 @@ public:
   }
 
 private:
+  // Accessors for the tensors
+  const Tensors &getTensors() const;
+  Tensors &getTensors();
+
   // modify the Ir using with pattern matching
   // Returns true if a change to the Ir was made.
   bool applyPreAliasPattern(const PreAliasPattern *, Graph &);
@@ -352,6 +362,7 @@ private:
   void verifyOpOutputConnectivity() const;
   void verifyTensorProducerConnectivity() const;
   void verifyTensorConsumerConnectivity() const;
+  void verifyTensorIds() const;
 
   // Verify ConstExpr folding has removed input tensors
   // as expected

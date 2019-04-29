@@ -36,6 +36,8 @@ public:
   // and returns the Op's OpId
   OpId moveIntoGraph(std::unique_ptr<Op> op);
 
+  std::vector<Graph *> getCalledGraphs() const;
+
   // called from growFromNode and many other places where Ops created
   // T requires functions input(int) and input_size()
   template <typename T> void connectInputs(const T &inContainer, OpId opId);
@@ -81,6 +83,7 @@ public:
   getLiveSets(const std::vector<Op *> &topoOps) const;
 
   const std::vector<TensorId> &getInputIds() const { return graph_inputs; }
+  void addInput(const TensorId &, const TensorInfo &);
 
 public:
   std::unique_ptr<TopoCons> topoCons;

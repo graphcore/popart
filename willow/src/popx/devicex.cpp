@@ -24,7 +24,6 @@
 #include <poponnx/pritask.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
-#include <poponnx/tensors.hpp>
 
 namespace poponnx {
 namespace popx {
@@ -44,7 +43,7 @@ void Devicex::weightsToHost() {
 void Devicex::readWeights(const IWeightsIO &weights) {
 
   // Better to do this the otherway round
-  for (auto id : ir().getTensors().getIds(TensorType::Variable)) {
+  for (auto id : ir().getTensorIds(TensorType::Variable)) {
     if (weights.contains(id)) {
       MutableVoidData stepout = weights.weight(id);
       hostStreamToHost(stepout, id);
@@ -54,9 +53,9 @@ void Devicex::readWeights(const IWeightsIO &weights) {
 
 void Devicex::writeWeights(const IWeightsIO &weights) {
   // Better to do this the otherway round
-  for (auto id : ir().getTensors().getIds(TensorType::Variable)) {
+  for (auto id : ir().getTensorIds(TensorType::Variable)) {
     if (weights.contains(id)) {
-      auto tensor             = ir().getTensors().get(id);
+      auto tensor             = ir().getTensor(id);
       MutableVoidData stepout = weights.weight(id);
       tensor->tensorData()->resetData(stepout.info, stepout.data);
     }
@@ -76,7 +75,7 @@ void Devicex::weightsToHost(
     logging::devicex::debug("Writing weights to ONNX ModelProto");
     // copy from the host stream memory points to the
     // addresses on onnxModelData
-    for (auto id : ir().getTensors().getIds(TensorType::Variable)) {
+    for (auto id : ir().getTensorIds(TensorType::Variable)) {
       auto found = onnxModelData.find(id);
       if (found == onnxModelData.end()) {
         throw error("No TensorId " + id + " in final host destination map");
@@ -103,14 +102,14 @@ void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
     throw error("ILE: poplar::Tensor " + id + " already in map");
   }
 
-  if (!ir.getTensors().contains(id)) {
+  if (!ir.containsTensor(id)) {
     throw error("ILE: no tensor named " + id +
                 " in ir, is this a valid poplar::Tensor?");
   }
 
   // confirm shapes agree (up to squeezing out the extra 1s)
-  auto irTensorStr   = ir.getTensors().get(id)->str();
-  auto expectedShape = ir.getTensors().get(id)->info.shape_szt();
+  auto irTensorStr   = ir.getTensor(id)->str();
+  auto expectedShape = ir.getTensor(id)->info.shape_szt();
 
   if (pt.shape() != expectedShape) {
     std::stringstream ss;
@@ -124,7 +123,7 @@ void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
   }
 
   // confirm types agree
-  auto expectedType = popType(ir.getTensors().get(id)->info);
+  auto expectedType = popType(ir.getTensor(id)->info);
   if (pt.elementType() != expectedType) {
     std::stringstream ss;
     ss << "poplar::Tensor " << id << " of unexpected Type. "
@@ -491,7 +490,7 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 Opx *Devicex::getOpx(OpId id) { return opxs.at(id).get(); }
 
 TaskId Devicex::taskWhichCreates(TensorId id) const {
-  Tensor *tensor = ir().getTensors().get(id);
+  Tensor *tensor = ir().getTensor(id);
   // streamed and init tensors are created with
   // tasks with names from initTensorTaskId
   // These tensors are recognisable as having no producing Op.
@@ -1069,8 +1068,8 @@ void Devicex::prepare() {
   // 3) create write prog,
   // 4) make stream to host,
   // 5) create read prog.
-  for (auto id : ir().getTensors().getIds(TensorType::Variable)) {
-    Tensor *tensor = ir().getTensors().get(id);
+  for (auto id : ir().getTensorIds(TensorType::Variable)) {
+    Tensor *tensor = ir().getTensor(id);
     // 1
     tasks.add(initTensorTask(tensor));
 
@@ -1089,8 +1088,8 @@ void Devicex::prepare() {
   // constants:
   // 1) make tensor,
   // 2) set initial value.
-  for (auto id : ir().getTensors().getIds(TensorType::Const)) {
-    Tensor *tensor = ir().getTensors().get(id);
+  for (auto id : ir().getTensorIds(TensorType::Const)) {
+    Tensor *tensor = ir().getTensor(id);
     // 1
     tasks.add(initTensorTask(tensor));
     // 2
@@ -1098,8 +1097,8 @@ void Devicex::prepare() {
   }
 
   // stream-to-device tensors : 1)  make tensor 2) make stream
-  for (auto id : ir().getTensors().getIds(TensorType::Stream)) {
-    Tensor *tensor = ir().getTensors().get(id);
+  for (auto id : ir().getTensorIds(TensorType::Stream)) {
+    Tensor *tensor = ir().getTensor(id);
     // 1
     tasks.add(initTensorTask(tensor));
 
@@ -1107,6 +1106,13 @@ void Devicex::prepare() {
       // 2
       tasks.add(streamFromHostTask(tensor));
     }
+  }
+
+  // graph inputs : 1) make tensor
+  for (auto id : ir().getGraphInputIds()) {
+    Tensor *tensor = ir().getTensor(id);
+    // 1
+    tasks.add(initTensorTask(tensor));
   }
 
   // Init the random seed
@@ -1125,7 +1131,7 @@ void Devicex::prepare() {
   // they will be topologically sorted before running
   if (useSyntheticData() == false) {
     for (auto anchorId : ir().getDataFlow().anchors()) {
-      Tensor *tensor = ir().getTensors().get(anchorId);
+      Tensor *tensor = ir().getTensor(anchorId);
 
       // 1
       tasks.add(streamToHostTask(tensor));
@@ -1213,8 +1219,8 @@ void Devicex::prepare() {
 
   if (useSyntheticData() == false) {
     logging::devicex::debug("Connecting initializer streams");
-    for (auto id : ir().getTensors().getIds(TensorType::Variable)) {
-      Tensor *tensor = ir().getTensors().get(id);
+    for (auto id : ir().getTensorIds(TensorType::Variable)) {
+      Tensor *tensor = ir().getTensor(id);
       pEngine->connectStream(h2dId(id), tensor->tensorData()->data());
     }
 
@@ -1251,7 +1257,7 @@ void Devicex::prepare() {
         "Creating host buffers for anchor d2h streams, connecting");
     for (TensorId anchorId : ir().getDataFlow().anchors()) {
       PopStreamId streamId = d2hId(anchorId);
-      Tensor *tensor       = ir().getTensors().get(anchorId);
+      Tensor *tensor       = ir().getTensor(anchorId);
       int64_t batch_bytes  = tensor->info.nbytes();
       int64_t n_bytes;
       switch (ir().getDataFlow().art(anchorId).id()) {
@@ -1280,9 +1286,9 @@ void Devicex::prepare() {
     logging::devicex::debug(
         "Creating host buffers for weight d2h streams, connecting");
 
-    for (auto initId : ir().getTensors().getIds(TensorType::Variable)) {
+    for (auto initId : ir().getTensorIds(TensorType::Variable)) {
       PopStreamId streamId = d2hId(initId);
-      Tensor *tensor       = ir().getTensors().get(initId);
+      Tensor *tensor       = ir().getTensor(initId);
       int64_t n_bytes      = tensor->info.nbytes();
       d2hBuffers[initId]   = std::vector<char>(n_bytes);
       char *data0          = d2hBuffers[initId].data();

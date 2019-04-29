@@ -564,6 +564,26 @@ void Ir::verifyConnectivity() const {
   logging::ir::info("IR connectivity check passed");
 }
 
+void Ir::verifyTensorIds() const {
+  logging::ir::info("Checking TensorIds are unique");
+
+  // Check that all TensorIds are unique
+  std::set<TensorId> seen;
+
+  for (auto &id_graph : graphs) {
+    auto graph = id_graph.second.get();
+    for (auto &id : graph->getTensors().getAllTensorIds()) {
+      if (seen.find(id) != seen.end()) {
+        throw error("TensorId '{}' is not unique", id);
+      } else {
+        seen.insert(id);
+      }
+    }
+  }
+
+  logging::ir::info("TensorId check passed");
+}
+
 bool Ir::isCandidateForConstExprFolding(const Tensor &tensor) const {
   auto tt = tensor.tensorType();
 
@@ -788,7 +808,6 @@ void Ir::prepare(const IrBundle &gb) {
   }
 
   updateVertices();
-  extendScopes();
 
   dotCheckpoint(DotCheck::FINAL);
 
@@ -805,6 +824,7 @@ void Ir::prepare(const IrBundle &gb) {
   }
   verifyConstExprFolding();
   verifyConnectivity();
+  verifyTensorIds();
   // end of checks
 
   isPrepared = true;
@@ -1508,80 +1528,6 @@ void Ir::updateVertices() {
   }
 }
 
-void Ir::extendScopes() {
-  logging::ir::debug("Extending scopes");
-
-  // Get all the consumers of arg tensors
-  auto getConsumers = [](const std::vector<Tensor *> tensors) {
-    std::vector<Op *> consumers;
-    for (auto t : tensors) {
-      auto operations = t->consumers.getOps();
-      consumers.insert(consumers.end(), operations.begin(), operations.end());
-    }
-    return consumers;
-  };
-
-  // Get all the inputs of the arg ops
-  auto getInputs = [](const std::set<Op *> &operations) {
-    std::set<Tensor *> inputs;
-    for (auto op : operations) {
-      for (auto t : op->input->tensors()) {
-        inputs.insert(t);
-      }
-    }
-    return inputs;
-  };
-
-  // Get all the producers of the arg tensors
-  auto getProducers = [](const std::set<Tensor *> &tensors) {
-    std::vector<Op *> producers;
-    for (auto t : tensors) {
-      if (t->hasProducer()) {
-        producers.push_back(t->getProducer());
-      }
-    }
-    return producers;
-  };
-
-  // Attempt to extend the scope of an op
-  // return whether it was successful or not
-  auto tryExtendScope = [&getConsumers](Op *op) {
-    auto consumers = getConsumers(op->output->tensors());
-    auto new_scope = Scope::getCommonParent(consumers);
-    if (new_scope.isSubscope(op->getScope())) {
-      op->setScope(new_scope);
-      return true;
-    } else {
-      return false;
-    }
-  };
-
-  // Initial set of ops that have scope
-  std::set<Op *> scoped_ops;
-  for (auto &id_op : getMainGraph().getOps()) {
-    Op *op = id_op.second.get();
-    if (!op->getScope().empty()) {
-      scoped_ops.insert(op);
-    }
-  }
-
-  // Iterativly extend the scopes
-  while (!scoped_ops.empty()) {
-    auto inputs    = getInputs(scoped_ops);
-    auto producers = getProducers(inputs);
-    scoped_ops.clear();
-
-    for (auto producer : producers) {
-      if (tryExtendScope(producer)) {
-        logging::ir::debug("added {} to scope {}",
-                           producer->debugName(),
-                           producer->getScope());
-        scoped_ops.insert(producer);
-      }
-    }
-  }
-}
-
 void Ir::setNPathsToLoss() {
 
   auto found = getMainGraph().getOps().find(finalLossId);
@@ -1913,17 +1859,7 @@ void Ir::growFinalLoss() {
 TensorId Ir::getFinalLossId() const { return "finalLoss"; }
 
 void Ir::append(std::stringstream &ss) {
-  auto schedule = getOpSchedule({});
-  if (schedule.size() == 0) {
-    return;
-  }
-
-  auto scope = schedule.front()->getScope();
   for (auto &op : getOpSchedule({})) {
-    if (scope != op->getScope()) {
-      ss << "----------------------------------------\n";
-      scope = op->getScope();
-    }
     op->append(ss);
   }
 }
@@ -1996,8 +1932,46 @@ std::vector<GradNonGradPair> Ir::growLossGradients() {
 
 OpId Ir::getFinalLossOpId() const { return finalLossId; }
 
+std::vector<const Graph *> Ir::getGraphSchedule() const {
+  std::vector<const Graph *> sorted;
+  std::set<const Graph *> seen;
+
+  std::function<void(const Graph *)> scheduleGraph;
+  scheduleGraph = [&](const Graph *graph) {
+    // only try schedule a graph once
+    if (seen.find(graph) == seen.end()) {
+      seen.insert(graph);
+    } else {
+      return;
+    }
+
+    // schedule all called graphs first
+    for (auto g : graph->getCalledGraphs()) {
+      scheduleGraph(g);
+    }
+
+    // add graph to schedule
+    sorted.push_back(graph);
+  };
+
+  scheduleGraph(&getMainGraph());
+
+  if (sorted.size() != graphs.size()) {
+    throw error("Unable to schedule all graphs. {} != {}",
+                sorted.size(),
+                graphs.size());
+  }
+
+  return sorted;
+}
+
 std::vector<Op *> Ir::getOpSchedule(const OpsBeforeKey &gCons) const {
-  return getMainGraph().getOpSchedule(gCons);
+  std::vector<Op *> sorted;
+  for (auto graph : getGraphSchedule()) {
+    auto sorted_graph = graph->getOpSchedule(gCons);
+    sorted.insert(sorted.end(), sorted_graph.begin(), sorted_graph.end());
+  }
+  return sorted;
 }
 
 // Are the Ops with all the dependencies a DAG?
@@ -2140,11 +2114,73 @@ Op &Ir::getSubgraphAnchorPlaceholder() {
   return *subgraphAnchorPlaceholder.get();
 }
 
+std::vector<TensorId> Ir::getTensorIds(TensorType tensor_type) const {
+  std::vector<TensorId> result;
+
+  for (auto &id_graph : graphs) {
+    auto graph = id_graph.second.get();
+    auto ids   = graph->getTensors().getIds(tensor_type);
+    result.reserve(result.size() + ids.size());
+    result.insert(result.end(), ids.begin(), ids.end());
+  }
+
+  return result;
+}
+
+Tensor *Ir::getTensor(const TensorId &tensor_id) const {
+  for (auto &id_graph : graphs) {
+    auto graph = id_graph.second.get();
+    if (graph->getTensors().contains(tensor_id)) {
+      return graph->getTensors().get(tensor_id);
+    }
+  }
+
+  throw error("no tensor with id " + tensor_id);
+}
+
+bool Ir::containsTensor(const TensorId &tensor_id) const {
+  for (auto &id_graph : graphs) {
+    auto graph = id_graph.second.get();
+    if (graph->getTensors().contains(tensor_id)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+std::vector<TensorId> Ir::getGraphInputIds() const {
+  std::vector<TensorId> result;
+
+  for (auto &id_graph : graphs) {
+    auto graph = id_graph.second.get();
+    auto &ids  = graph->getInputIds();
+    result.reserve(result.size() + ids.size());
+    result.insert(result.end(), ids.begin(), ids.end());
+  }
+
+  return result;
+}
+
 const Tensors &Ir::getTensors() const { return getMainGraph().getTensors(); }
 Tensors &Ir::getTensors() { return getMainGraph().getTensors(); }
 
-const Graph &Ir::getMainGraph() const { return *graphs.at(GraphId::root()); }
-Graph &Ir::getMainGraph() { return *graphs.at(GraphId::root()); }
+const Graph &Ir::getMainGraph() const { return getGraph(GraphId::root()); }
+Graph &Ir::getMainGraph() { return getGraph(GraphId::root()); }
+
+const Graph &Ir::getGraph(const GraphId &graphId) const {
+  return *graphs.at(graphId);
+}
+Graph &Ir::getGraph(const GraphId &graphId) { return *graphs.at(graphId); }
+
+Graph &Ir::createGraph(const GraphId &graphId) {
+  auto found = graphs.find(graphId);
+  if (found != graphs.end()) {
+    throw error("Graph({}) is already in Ir", graphId);
+  }
+
+  graphs.insert({graphId, make_unique<Graph>(*this, graphId)});
+  return getGraph(graphId);
+}
 
 std::map<OpId, std::unique_ptr<Op>> &Ir::getMainGraphOps() {
   return getMainGraph().getOps();

@@ -12,9 +12,12 @@ namespace poponnx {
 IfOp::IfOp(const OperatorIdentifier &opid_,
            const std::vector<TensorId> &then_input_ids_,
            const std::vector<TensorId> &else_input_ids_,
+           const std::vector<TensorId> &then_output_ids_,
+           const std::vector<TensorId> &else_output_ids_,
            const Op::Settings &settings_)
     : Op(opid_, settings_), then_input_ids(then_input_ids_),
-      else_input_ids(else_input_ids_) {}
+      else_input_ids(else_input_ids_), then_output_ids(then_output_ids_),
+      else_output_ids(else_output_ids_) {}
 
 std::unique_ptr<Op> IfOp::clone() const { return make_unique<IfOp>(*this); }
 
@@ -24,34 +27,44 @@ std::vector<std::unique_ptr<Op>> IfOp::getGradOps() {
 }
 
 void IfOp::setup() {
-  // Connect all the inputs from branch
-  // Inputs 1 to (1 + inputsPerBranch()) are the outputs of then_branch
-  appendInputs(then_input_ids, getThenScope());
-  // Inputs (1 + inputsPerBranch()) to (1 + 2 * inputsPerBranch()) are the
-  // outputs of else_branch
-  appendInputs(else_input_ids, getElseScope());
+  std::set<TensorId> input_ids;
+  input_ids.insert(then_input_ids.begin(), then_input_ids.end());
+  input_ids.insert(else_input_ids.begin(), else_input_ids.end());
 
-  for (int i = 0; i < inputsPerBranch(); i++) {
-    outInfo(i) = inInfo(getThenBranchInIndex(i));
-  }
-}
-
-void IfOp::appendInputs(const std::vector<TensorId> &input_ids,
-                        const Scope &scope) {
   for (auto &input_id : input_ids) {
-    auto scoped_id = getIr().getTensors().find(input_id, scope);
-    connectInTensor(input->n(), scoped_id);
+    connectInTensor(input->n(), input_id);
+  }
+
+  auto &then_graph = getThenGraph();
+  // using the then branch to set output info
+  // (guaranteed same output for then and else)
+  for (int i = 0; i < then_output_ids.size(); i++) {
+    auto &id       = then_output_ids[i];
+    auto scoped_id = then_graph.getTensors().find(id, getThenScope());
+    auto tensor    = then_graph.getTensors().get(scoped_id);
+    outInfo(i)     = tensor->info;
   }
 }
 
-// clang-format off
-// ((Total # inputs to IfOp) - (one for boolean tensor)) / (2 for number of branches)
-// clang-format on
-int IfOp::inputsPerBranch() const { return (input->n() - 1) / 2; }
+Scope IfOp::getThenScope() const {
+  return getScope() / fmt::format("{}_then", id);
+}
 
-Scope IfOp::getThenScope() { return getScope() / fmt::format("{}_then", id); }
+Scope IfOp::getElseScope() const {
+  return getScope() / fmt::format("{}_else", id);
+}
 
-Scope IfOp::getElseScope() { return getScope() / fmt::format("{}_else", id); }
+const Graph &IfOp::getThenGraph() const {
+  auto id  = getThenScope().str();
+  auto gid = GraphId(id);
+  return getGraph().getIr().getGraph(gid);
+}
+
+const Graph &IfOp::getElseGraph() const {
+  auto id  = getElseScope().str();
+  auto gid = GraphId(id);
+  return getGraph().getIr().getGraph(gid);
+}
 
 namespace {
 
@@ -67,24 +80,52 @@ static OpCreator<IfOp> ifOpCreator(
         throw error("IfOp: else_branch and then_branch have different outputs");
       }
 
+      auto &tensors = settings_.graph.getTensors();
+      std::map<TensorId, TensorInfo> input_infos;
+
       // Collect all input names
       std::vector<TensorId> then_input_ids;
-      for (auto &output : then_branch.output()) {
-        then_input_ids.push_back(output.name());
+      for (auto &input : then_branch.input()) {
+        then_input_ids.push_back(input.name());
+        input_infos[input.name()] = tensors.get(input.name())->info;
       }
       std::vector<TensorId> else_input_ids;
+      for (auto &input : else_branch.input()) {
+        else_input_ids.push_back(input.name());
+        input_infos[input.name()] = tensors.get(input.name())->info;
+      }
+
+      // Collect all output names
+      std::vector<TensorId> then_output_ids;
+      for (auto &output : then_branch.output()) {
+        then_output_ids.push_back(output.name());
+      }
+      std::vector<TensorId> else_output_ids;
       for (auto &output : else_branch.output()) {
-        else_input_ids.push_back(output.name());
+        else_output_ids.push_back(output.name());
       }
 
       auto op = make_unique<IfOp>(opid_,
                                   std::move(then_input_ids),
                                   std::move(else_input_ids),
+                                  std::move(then_output_ids),
+                                  std::move(else_output_ids),
                                   settings_);
 
-      // Create the then and else branchs inplace
-      settings_.graph.constructFromOnnxGraph(then_branch, op->getThenScope());
-      settings_.graph.constructFromOnnxGraph(else_branch, op->getElseScope());
+      auto &ir         = settings_.graph.getIr();
+      auto &then_graph = ir.createGraph(GraphId(op->getThenScope().str()));
+      for (auto id : then_input_ids) {
+        auto scoped_id = (op->getThenScope() / id).str();
+        then_graph.addInput(scoped_id, input_infos.at(id));
+      }
+      then_graph.constructFromOnnxGraph(then_branch, op->getThenScope());
+
+      auto &else_graph = ir.createGraph(GraphId(op->getElseScope().str()));
+      for (auto id : else_input_ids) {
+        auto scoped_id = (op->getElseScope() / id).str();
+        else_graph.addInput(scoped_id, input_infos.at(id));
+      }
+      else_graph.constructFromOnnxGraph(else_branch, op->getElseScope());
 
       return std::move(op);
     },
