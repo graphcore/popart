@@ -87,7 +87,7 @@ bool mapFind<bool>(const std::map<std::string, std::string> &map,
                    [](unsigned char c) -> unsigned char {
                      return static_cast<unsigned char>(std::tolower(c));
                    });
-    return ((it->second == "true") ? true : false);
+    return ((value == "true") ? true : false);
   } else {
     return defaultValue;
   }
