@@ -155,12 +155,20 @@ PopPrograms::PopPrograms(const int repeatCount_) : repeatCount(repeatCount_) {
   }
 }
 
-poplar::program::Sequence &PopPrograms::weightsFromHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::WEIGHTSFROMHOST)];
+poplar::program::Sequence &PopPrograms::streamWeightsFromHostFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::STREAMWEIGHTSFROMHOST)];
 }
 
-poplar::program::Sequence &PopPrograms::optimizerFromHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::OPTIMIZERFROMHOST)];
+poplar::program::Sequence &PopPrograms::copyWeightsBetweenIpusFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::COPYWEIGHTSBETWEENIPUS)];
+}
+
+poplar::program::Sequence &PopPrograms::streamOptimizerFromHostFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::STREAMOPTIMIZERFROMHOST)];
+}
+
+poplar::program::Sequence &PopPrograms::copyOptimizerBetweenIpusFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::COPYOPTIMIZERBETWEENIPUS)];
 }
 
 poplar::program::Sequence &PopPrograms::programFragment() {
@@ -176,11 +184,21 @@ poplar::program::Sequence &PopPrograms::weightsToHostFragment() {
 }
 
 poplar::program::Sequence PopPrograms::weightsFromHost() {
-  return weightsFromHostFragment();
+  poplar::program::Sequence prog;
+  prog.add(streamWeightsFromHostFragment());
+  if (!copyWeightsBetweenIpusFragment().isEmpty()) {
+    prog.add(copyWeightsBetweenIpusFragment());
+  }
+  return prog;
 }
 
 poplar::program::Sequence PopPrograms::optimizerFromHost() {
-  return optimizerFromHostFragment();
+  poplar::program::Sequence prog;
+  prog.add(streamOptimizerFromHostFragment());
+  if (!copyOptimizerBetweenIpusFragment().isEmpty()) {
+    prog.add(copyOptimizerBetweenIpusFragment());
+  }
+  return prog;
 }
 
 poplar::program::Sequence PopPrograms::program() {
@@ -1077,7 +1095,9 @@ void Devicex::prepare() {
       // 2
       tasks.add(streamFromHostTask(tensor));
       // 3
-      tasks.add(fromHostTask(tensor, progs.weightsFromHostFragment()));
+      tasks.add(fromHostTask(tensor,
+                             progs.streamWeightsFromHostFragment(),
+                             progs.copyWeightsBetweenIpusFragment()));
       // 4
       tasks.add(streamToHostTask(tensor));
       // 5
@@ -1159,11 +1179,13 @@ void Devicex::prepare() {
 
     // create Program to write optimizer tensors to device
     for (Tensor *tensor : ir().optimizerTensors()) {
-      tasks.add(fromHostTask(tensor, progs.optimizerFromHostFragment()));
+      tasks.add(fromHostTask(tensor,
+                             progs.streamOptimizerFromHostFragment(),
+                             progs.copyOptimizerBetweenIpusFragment()));
     }
 
     for (Tensor *tensor : ir().dataStreamTensors()) {
-      tasks.add(fromHostTask(tensor, programFragment()));
+      tasks.add(fromHostTask(tensor, programFragment(), programFragment()));
     }
   }
 
@@ -1338,10 +1360,20 @@ PopStreamId Devicex::h2dId(TensorId id) const { return "h2d_" + id; }
 
 PopStreamId Devicex::d2hId(TensorId id) const { return "d2h_" + id; }
 
-PriTask Devicex::fromHostTask(Tensor *tensor,
-                              poplar::program::Sequence &sq) const {
+// For a replicated tensor we stream the tensor into the first replicated
+// graph (0) and then copy that tensor to the other replicated graphs
+//
+// We also want all the stream'ed copies to be contigous and all the
+// inter-replicated graphs copied to be contigous so that poplar can combine
+// them together. It does not combine if we interleave them. So we pass the
+// streamSq and the copySq seperately so collected together and executed one
+// after the other.
 
-  auto f = [&sq, tensor, this]() {
+PriTask Devicex::fromHostTask(Tensor *tensor,
+                              poplar::program::Sequence &streamSq,
+                              poplar::program::Sequence &copySq) const {
+
+  auto f = [&streamSq, &copySq, tensor, this]() {
     bool rearrange_on_host = tensor->tensorType() != TensorType::Stream;
 
     logging::devicex::debug("Adding poplar::program::Copy from host " +
@@ -1357,21 +1389,21 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
 
       // Copy the variable from the stream into the non replicated tensor index
       // 0 then copy it to the the other indices
-      sq.add(poplar::program::Copy(
+      streamSq.add(poplar::program::Copy(
           fromHostStreams.at(tensor->id), nonReplicatedTensor[0], true));
 
       for (unsigned i = 1; i < getReplicationFactor(); ++i) {
-        sq.add(poplar::program::Copy(nonReplicatedTensor[0],
-                                     nonReplicatedTensor[i]));
+        copySq.add(poplar::program::Copy(nonReplicatedTensor[0],
+                                         nonReplicatedTensor[i]));
       }
     } else {
 
       // For a stream we copy 'n' lots of data from the stream into each index
       // for the replicated tensor
       for (unsigned i = 0; i < getReplicationFactor(); ++i) {
-        sq.add(poplar::program::Copy(fromHostStreams.at(tensor->id),
-                                     nonReplicatedTensor[i],
-                                     rearrange_on_host));
+        streamSq.add(poplar::program::Copy(fromHostStreams.at(tensor->id),
+                                           nonReplicatedTensor[i],
+                                           rearrange_on_host));
       }
     }
   };
