@@ -7,5 +7,6 @@ data
 *.pyc
 *.so
 *.dylib
+*.html
 experimental
 .vscode/*

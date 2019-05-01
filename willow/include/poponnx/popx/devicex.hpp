@@ -43,8 +43,10 @@ public:
 
   // Order of these enums is used for scheduling
   enum class ProgramFragmentIndex {
-    WEIGHTSFROMHOST = 0,
-    OPTIMIZERFROMHOST,
+    STREAMWEIGHTSFROMHOST = 0,
+    COPYWEIGHTSBETWEENIPUS,
+    STREAMOPTIMIZERFROMHOST,
+    COPYOPTIMIZERBETWEENIPUS,
     PROGRAM,
     WEIGHTSTOHOST,
     SETRANDOMSEED,
@@ -53,8 +55,10 @@ public:
 
   // Program fragments are not necessarily complete program that can be given to
   // a poplar engine.
-  poplar::program::Sequence &weightsFromHostFragment();
-  poplar::program::Sequence &optimizerFromHostFragment();
+  poplar::program::Sequence &streamWeightsFromHostFragment();
+  poplar::program::Sequence &copyWeightsBetweenIpusFragment();
+  poplar::program::Sequence &streamOptimizerFromHostFragment();
+  poplar::program::Sequence &copyOptimizerBetweenIpusFragment();
   poplar::program::Sequence &setRandomSeedFragment();
   poplar::program::Sequence &programFragment();
   poplar::program::Sequence &weightsToHostFragment();
@@ -68,8 +72,7 @@ public:
   void createFragment(const Scope &);
 
 private:
-  // Specify how many times to loop the 'repeatable' programs
-  // (infer, eval, train)
+  // Specify how many times to loop the 'repeatable' program
   int repeatCount;
 
   static constexpr int seqs_size = static_cast<int>(ProgramFragmentIndex::N);
@@ -261,7 +264,9 @@ private:
   TaskId streamToHostTaskId(TensorId) const;
 
   // Task to append a Copy from poplar::Stream to poplar::Tensor
-  PriTask fromHostTask(Tensor *tensor, poplar::program::Sequence &) const;
+  PriTask fromHostTask(Tensor *tensor,
+                       poplar::program::Sequence &streamSq,
+                       poplar::program::Sequence &copySq) const;
   TaskId fromHostTaskId(TensorId) const;
 
   // Task to append a Copy to poplar::Stream from poplar::Tensor
