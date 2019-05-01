@@ -774,10 +774,15 @@ void Ir::prepare(const IrBundle &gb) {
   updateVertices();
 
   // we now start applying topological constraints between
-  // Ops directly. First, we ensure that the VarUpdate Ops
-  // are the final consumers of the Variable tensors
+  // Ops directly.
   if (canTrain()) {
-    getMainGraph().setVarUpdateCons();
+    // 1. Ensure that the VarUpdate Ops are the final consumers
+    //    of the Variable tensors
+    getMainGraph().setVarUpdateConstraints();
+
+    // 2. Ensure that ConvFlipWeights ops produce the transposed
+    //    variable tensors only just before they are needed
+    getMainGraph().setConvFlipWeightConstraints();
   }
 
   applyTransform(Prune::id(), getMainGraph());

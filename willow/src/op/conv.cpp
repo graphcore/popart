@@ -238,19 +238,7 @@ const std::map<int, int> &ConvDataGradOp::gradOutToNonGradIn() const {
 
 ConvFlipWeightsOp::ConvFlipWeightsOp(const OperatorIdentifier &opid_,
                                      const Op::Settings &settings_)
-    : Op(opid_, settings_) {
-
-  // This op is used exclusively in the backwards pass as an input to the
-  // ConvDataGradOp. Since it acts only on an input to the graph, it has no
-  // dependencies. Demote its priority to ensure this is scheduled after
-  // all forwards pass operations (where liveness is typically greatess).
-
-  // Priorty should be more negative for ops further into the backwards pass
-  // (i.e. not all the same value) to ensure all ConvFlipWeightsOps don't
-  // execute right at the start of the backwards pass.
-
-  priority = -id;
-}
+    : Op(opid_, settings_) {}
 
 ConvFlipWeightsOp::~ConvFlipWeightsOp() {}
 

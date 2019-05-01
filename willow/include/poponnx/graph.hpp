@@ -54,7 +54,11 @@ public:
 
   // The variable update ops must be final consumers of the
   // input variable tensor. This function imposes these constraints
-  void setVarUpdateCons();
+  void setVarUpdateConstraints();
+
+  // All other ops producing tensors consumed by the bwd conv
+  // must happen before the flipweights
+  void setConvFlipWeightConstraints();
 
   // Essentially Kahn's algorithm (1962),
   // https://en.wikipedia.org/wiki/Topological_sorting

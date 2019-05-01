@@ -14,6 +14,7 @@
 #include <poponnx/op/if.hpp>
 
 // The layers required to construct the backwards pass
+#include <poponnx/op/conv.hpp>
 #include <poponnx/op/varupdate.hpp>
 
 namespace poponnx {
@@ -147,7 +148,7 @@ void Graph::eraseOp(OpId opid) {
   ops.erase(opid);
 }
 
-void Graph::setVarUpdateCons() {
+void Graph::setVarUpdateConstraints() {
   // impose the constraint that the varupdates
   // are the last consumers of the vars
   for (auto &varId : getTensors().getIds(TensorType::Variable)) {
@@ -176,6 +177,43 @@ void Graph::setVarUpdateCons() {
     for (Op *consumer : var->consumers.getOps()) {
       if (consumer != varupdater) {
         topoCons->insert(consumer, varupdater);
+      }
+    }
+  }
+}
+
+void Graph::setConvFlipWeightConstraints() {
+  // The ConvFlipWeights op is used exclusively in the backwards pass as an
+  // input to the bwd conv op. Since it acts only on an input to the graph,
+  // it has no dependencies. Constrain it to schedule after all other ops
+  // producing tensors consumed by the bwd conv.
+  for (auto &id_op : getOps()) {
+    auto op = id_op.second.get();
+    if (op->isConvertibleTo<ConvFlipWeightsOp>()) {
+      for (Tensor *wT : op->output->tensors()) {
+        if (wT->consumers.getTotal() == 1) {
+          Op *bwConv = wT->consumers.getOps().at(0);
+          for (Tensor *consumedByBwdConvT : bwConv->input->tensors()) {
+            if (consumedByBwdConvT->id == wT->id) {
+              continue;
+            } else {
+              // Apply constraint: All other ops producing tensors
+              // consumed by the bwd conv must happen before the
+              // flipweights
+              Op *producerToBwdConvOp = consumedByBwdConvT->getProducer();
+              topoCons->insert(producerToBwdConvOp, op);
+            }
+          }
+        } else {
+          // Multiple (i.e. unexpected number of) consumers of flipweights
+          // op. Do not apply constraints, so might schedule of these ops
+          // might not be optimized for liveness
+          logging::ir::warn(
+              "ConvFlipWeightsOp, {}, has an unexpected number of consumers. "
+              "Not constraining its schedule. This may result in a schedule "
+              "not optimized for minimum max-liveness.",
+              op->str());
+        }
       }
     }
   }
