@@ -1,12 +1,13 @@
 #include <boost/range/algorithm.hpp>
 
 #include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/op/ipucopy.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/tensors.hpp>
 
 #include <poponnx/transforms/mergecopies.hpp>
@@ -19,16 +20,17 @@ static bool isCopyTensor(const Tensor *t) {
   return t->hasProducer() && t->getProducer()->isConvertibleTo<IpuCopyOp>();
 }
 
-static IpuCopyOp *createCopyOp(Ir &ir, uint64_t from_ipu, uint64_t to_ipu) {
-  Op::Settings settings(ir, "");
+static IpuCopyOp *
+createCopyOp(Graph &graph, uint64_t from_ipu, uint64_t to_ipu) {
+  Op::Settings settings(graph, "");
   auto ipuCopy_op = make_unique<IpuCopyOp>(
       Onnx::CustomOperators::IpuCopy, from_ipu, to_ipu, settings);
   auto ipuCopy = ipuCopy_op.get();
-  ir.moveIntoIr(std::move(ipuCopy_op));
+  graph.moveIntoGraph(std::move(ipuCopy_op));
   return ipuCopy;
 }
 
-static void mergeCopies(const std::vector<Tensor *> &copy_group, Ir &ir) {
+static void mergeCopies(const std::vector<Tensor *> &copy_group, Graph &graph) {
   std::set<IpuCopyOp *> producers;
   for (auto t : copy_group) {
     auto p = dynamic_cast<IpuCopyOp *>(t->getProducer());
@@ -44,7 +46,7 @@ static void mergeCopies(const std::vector<Tensor *> &copy_group, Ir &ir) {
   // create a new copy op
   auto source_ipu = (*producers.begin())->getSourceIpu();
   auto dest_ipu   = (*producers.begin())->getDestIpu();
-  auto copy_op    = createCopyOp(ir, source_ipu, dest_ipu);
+  auto copy_op    = createCopyOp(graph, source_ipu, dest_ipu);
 
   // move the copies
   for (auto t : copy_group) {
@@ -58,16 +60,16 @@ static void mergeCopies(const std::vector<Tensor *> &copy_group, Ir &ir) {
     copy_op->connectInTensor(idx, source->id);
     copy_op->connectOutTensor(idx, t->id);
 
-    ir.eraseOp(producer->id);
+    graph.eraseOp(producer->id);
   }
 
   copy_op->setup();
 }
 
-static std::vector<Op *> getOpsThatConsumeMultipleCopies(Ir &ir) {
+static std::vector<Op *> getOpsThatConsumeMultipleCopies(Graph &graph) {
   std::vector<Op *> ops;
 
-  for (auto &id_op : ir.getOps()) {
+  for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
     if (boost::count_if(op->input->tensors(), isCopyTensor) > 1) {
       ops.push_back(op);
@@ -115,15 +117,15 @@ createCopyGroup(Op *op, const std::vector<Op *> &op_schedule) {
   return group;
 }
 
-bool MergeCopies::apply(Ir &ir) const {
-  const auto multiple_copy_consumers = getOpsThatConsumeMultipleCopies(ir);
+bool MergeCopies::apply(Graph &graph) const {
+  const auto multiple_copy_consumers = getOpsThatConsumeMultipleCopies(graph);
 
-  const auto op_schedule = ir.getOpSchedule({});
+  const auto op_schedule = graph.getOpSchedule({});
 
   for (auto op : multiple_copy_consumers) {
     const auto copy_group = createCopyGroup(op, op_schedule);
     if (copy_group.size() > 1) {
-      mergeCopies(copy_group, ir);
+      mergeCopies(copy_group, graph);
     }
   }
 

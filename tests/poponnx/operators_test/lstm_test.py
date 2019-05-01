@@ -637,10 +637,10 @@ def test_import_torch_lstm_train(tmpdir):
             poponnx.reservedGradientPrefix() + 'X',
             poponnx.reservedGradientPrefix() + 'initial_h',
             poponnx.reservedGradientPrefix() + 'initial_c',
-            poponnx.reservedGradientPrefix() + '3',
-            poponnx.reservedGradientPrefix() + '4',
-            poponnx.reservedGradientPrefix() + '5',
-            poponnx.reservedGradientPrefix() + '6'
+            poponnx.reservedGradientPrefix() + 'lstm.weight_ih_l0',
+            poponnx.reservedGradientPrefix() + 'lstm.weight_hh_l0',
+            poponnx.reservedGradientPrefix() + 'lstm.bias_ih_l0',
+            poponnx.reservedGradientPrefix() + 'lstm.bias_hh_l0'
         ]
         anchors = {o: poponnx.AnchorReturnType('ALL') for o in anchors}
         dataFlow = poponnx.DataFlow(1, anchors)
@@ -673,13 +673,13 @@ def test_import_torch_lstm_train(tmpdir):
         s.modelToHost(get_poponnx_fname(onnx_file_name))
 
         anchor_map[poponnx.reservedGradientPrefix() + 'W'] = anchor_map.pop(
-            poponnx.reservedGradientPrefix() + '3')
+            poponnx.reservedGradientPrefix() + 'lstm.weight_ih_l0')
         anchor_map[poponnx.reservedGradientPrefix() + 'R'] = anchor_map.pop(
-            poponnx.reservedGradientPrefix() + '4')
+            poponnx.reservedGradientPrefix() + 'lstm.weight_hh_l0')
         anchor_map[poponnx.reservedGradientPrefix() + 'WB'] = anchor_map.pop(
-            poponnx.reservedGradientPrefix() + '5')
+            poponnx.reservedGradientPrefix() + 'lstm.bias_ih_l0')
         anchor_map[poponnx.reservedGradientPrefix() + 'RB'] = anchor_map.pop(
-            poponnx.reservedGradientPrefix() + '6')
+            poponnx.reservedGradientPrefix() + 'lstm.bias_hh_l0')
         return anchor_map
 
     input_size = 2
@@ -724,3 +724,122 @@ def test_import_torch_lstm_train(tmpdir):
             print('    {}'.format(to))
             print()
     assert errors == 0
+
+
+def test_import_torch_lstm_multi_run(tmpdir):
+    torch.manual_seed(0)
+    np.random.seed(0)
+
+    seq_length = 5
+    batch_size = 2
+    layers = 1
+
+    # create an lstm module with defined input and hidden sizes
+    def torch_create_lstm(input_size, hidden_size):
+        class Module0(torch.nn.Module):
+            def __init__(self):
+                torch.nn.Module.__init__(self)
+                self.lstm = torch.nn.LSTM(input_size, hidden_size, layers)
+
+            def forward(self, inputs):
+                x = self.lstm(inputs[0], inputs[1])
+                return x
+
+        return Module0()
+
+    # export model created by `torch_create_lstm`
+    def torch_export_lstm(onnx_file_name, model, inputs):
+        print('pytorch exporting lstm')
+        tt = [torch.tensor(i) for i in inputs]
+        dummy_input = [tt[0], (tt[1], tt[2])]
+
+        torch.onnx.export(
+            model,
+            dummy_input,
+            onnx_file_name,
+            input_names=['X', 'initial_h', 'initial_c'],
+            output_names=['Y', 'Y_h', 'Y_c'])
+
+    # create a random np array of shape `*shape` and type np.float32
+    def np_rand(*shape):
+        return np.random.rand(*shape).astype(np.float32)
+
+    # run the torch lstm
+    # also generate the onnx file
+    def run_lstm_torch(input_size, hidden_size, onnx_file_name, inputs):
+        export_inputs = [i for i in inputs]
+        export_inputs[0] = export_inputs[0][0]
+        export_inputs[0] = export_inputs[0].reshape(1, *export_inputs[0].shape)
+
+        # create torch lstm and export
+        torch_lstm = torch_create_lstm(input_size, hidden_size)
+        torch_export_lstm(onnx_file_name, torch_lstm, export_inputs)
+
+        # run the torch session
+        x = torch.tensor(inputs[0])
+        h0 = torch.tensor(inputs[1])
+        c0 = torch.tensor(inputs[2])
+        hidden = (h0, c0)
+
+        # calculate the lstm step by step
+        outs = []
+        for i in range(x.shape[0]):
+            i = x[i]
+            i = i.view(1, *i.shape)
+            (o, hidden) = torch_lstm.forward((i, hidden))
+            outs.append(o)
+        outs = torch.cat(outs)
+
+        return (outs, hidden[0], hidden[1])
+
+    def run_lstm_poponnx(onnx_file_name, inputs):
+        # generate a poponnx session
+        builder = poponnx.Builder(onnx_file_name)
+        outputs = builder.getOutputTensorIds()
+        anchors = {o: poponnx.AnchorReturnType('ALL') for o in outputs}
+        dataFlow = poponnx.DataFlow(1, anchors)
+        options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
+        device = poponnx.DeviceManager().createIpuModelDevice(options)
+        s = poponnx.InferenceSession(
+            fnModel=onnx_file_name, dataFeed=dataFlow, deviceInfo=device)
+
+        anchor_map = s.initAnchorArrays()
+        s.prepareDevice()
+
+        h0 = inputs[1]
+        c0 = inputs[2]
+
+        outs = []
+        for i in range(inputs[0].shape[0]):
+            input_data = inputs[0][i]
+            input_data = input_data.reshape(1, *input_data.shape)
+            input_map = {'X': input_data, 'initial_h': h0, 'initial_c': c0}
+            stepio = poponnx.PyStepIO(input_map, anchor_map)
+            s.run(stepio)
+
+            h0 = anchor_map['Y_h']
+            c0 = anchor_map['Y_c']
+            outs.append(np.copy(anchor_map['Y']))
+
+        outs = np.concatenate(outs)
+
+        return (outs, anchor_map['Y_h'], anchor_map['Y_c'])
+
+    input_size = 2
+    hidden_size = 7
+    fname = str(tmpdir / 'bar.onnx')
+
+    # create inputs
+    x = np_rand(seq_length, batch_size, input_size)
+    h0 = np_rand(layers, batch_size, hidden_size)
+    c0 = np_rand(layers, batch_size, hidden_size)
+
+    torch_out = run_lstm_torch(input_size, hidden_size, fname, (x, h0, c0))
+    poponnx_out = run_lstm_poponnx(fname, (x, h0, c0))
+
+    # check the outputs
+    assert len(poponnx_out) == 3 and len(torch_out) == 3
+
+    for i, (po, to) in enumerate(zip(poponnx_out, torch_out)):
+        print('Checking output {}'.format(i))
+        assert np.allclose(po, to.data.numpy())

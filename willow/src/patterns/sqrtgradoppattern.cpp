@@ -1,4 +1,4 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/div.hpp>
 #include <poponnx/op/scale.hpp>
@@ -32,7 +32,7 @@ bool SqrtGradOpPattern::apply(Op *op) const {
   // Remove the DivArg0GradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->getIr().eraseOp(op->id);
+  op->getGraph().eraseOp(op->id);
 
   // Connect up the new ops
   scale->connectInTensor(ScaleOp::getInIndex(), fwd_out->id);

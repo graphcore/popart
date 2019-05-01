@@ -30,7 +30,7 @@ public:
   AutoVirtualGraph() : Transform() {}
   virtual ~AutoVirtualGraph() override {}
 
-  bool apply(Ir &ir) const final;
+  bool apply(Graph &graph) const final;
 
   virtual std::size_t getId() const override final { return id(); }
 

@@ -44,6 +44,7 @@ def op_tester(tmpdir):
             shape = poponnx.TensorInfo(data)
 
             tensor_id = self._builder.addInputTensor(shape)
+
             self._input_map[tensor_id] = data
 
             return tensor_id
@@ -126,11 +127,16 @@ def op_tester(tmpdir):
 
             self.options.logDir = self.logging_dir
 
+            if self.device == "cpu":
+                device = tu.get_poplar_cpu_device()
+            elif self.device == "ipu_model":
+                device = tu.get_ipu_model(numIPUs=self.numIPUs)
+
             if step_type == 'infer':
                 session = poponnx.InferenceSession(
                     fnModel=proto,
                     dataFeed=dataFlow,
-                    deviceInfo=tu.get_poplar_cpu_device(),
+                    deviceInfo=device,
                     passes=poponnx.Patterns(self.passes),
                     userOptions=self.options)
             else:
@@ -139,7 +145,7 @@ def op_tester(tmpdir):
                     dataFeed=dataFlow,
                     losses=losses,
                     optimizer=optimizer,
-                    deviceInfo=tu.get_poplar_cpu_device(),
+                    deviceInfo=device,
                     passes=poponnx.Patterns(self.passes),
                     userOptions=self.options)
 
@@ -154,13 +160,11 @@ def op_tester(tmpdir):
                     raise Exception(
                         'Input "{}" to poponnx.PyStepIO is not C_CONTIGUOS'.
                         format(k))
-
             stepio = poponnx.PyStepIO(bld._input_map, anchor_map)
 
             if (step_type == 'train'):
                 session.weightsFromHost()
 
-            #getattr(session, step_type)(stepio)
             session.run(stepio)
 
             if (step_type == 'train'):

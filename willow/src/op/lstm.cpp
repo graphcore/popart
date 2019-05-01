@@ -1,4 +1,5 @@
 #include <vector>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/lstm.hpp>
@@ -6,6 +7,8 @@
 #include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorindex.hpp>
+#include <poponnx/tensornames.hpp>
+#include <poponnx/tensors.hpp>
 
 namespace poponnx {
 
@@ -25,7 +28,13 @@ std::vector<std::unique_ptr<Op>> LSTMOp::getGradOps() {
 }
 
 bool LSTMOp::isTraining() const {
-  return settings.ir.getExecutionMode() == Ir::ExecutionMode::TRAINING;
+  return getGraph().getIr().getExecutionMode() == Ir::ExecutionMode::TRAINING;
+}
+
+void LSTMOp::trySetOutInfo(OutIndex index, const TensorInfo &info) {
+  if (output->hasIndex(index)) {
+    outInfo(index) = info;
+  }
 }
 
 void LSTMOp::setup() {
@@ -51,38 +60,38 @@ void LSTMOp::setup() {
 
   Shape y_shape{seq_length, num_directions, batch_size, hidden_size};
 
-  outInfo(getOutputOutIndex()) = {data_type, y_shape};
+  trySetOutInfo(getOutputOutIndex(), {data_type, y_shape});
 
   Shape yhc_shape{num_directions, batch_size, hidden_size};
-  outInfo(getHiddenStateOutIndex()) = {data_type, yhc_shape};
-  outInfo(getCellStateOutIndex())   = {data_type, yhc_shape};
+  trySetOutInfo(getHiddenStateOutIndex(), {data_type, yhc_shape});
+  trySetOutInfo(getCellStateOutIndex(), {data_type, yhc_shape});
 
-  createPassThroughOutput("_initstateoutput",
+  createPassThroughOutput("initstateoutput",
                           getInitStateOutputPassThroughIndex(),
                           {data_type, Shape{batch_size, hidden_size}});
-  createPassThroughOutput("_initstatecellstate",
+  createPassThroughOutput("initstatecellstate",
                           getInitStateCellStatePassThroughIndex(),
                           {data_type, Shape{batch_size, hidden_size}});
   createPassThroughOutput(
-      "_intermediates",
+      "intermediates",
       getIntermediatesPassThroughIndex(),
       {data_type,
        Shape{seq_length, getNumIntermediates(), batch_size, hidden_size}});
-  createPassThroughOutput("_inputweights",
+  createPassThroughOutput("inputweights",
                           getInputWeightsPassThroughIndex(),
                           {data_type, Shape{4, input_size, hidden_size}});
-  createPassThroughOutput("_outputweights",
+  createPassThroughOutput("outputweights",
                           getOutputWeightsPassThroughIndex(),
                           {data_type, Shape{4, hidden_size, hidden_size}});
-  createPassThroughOutput("_biases",
+  createPassThroughOutput("biases",
                           getBiasesPassThroughIndex(),
                           {data_type, Shape{4, hidden_size}});
   createPassThroughOutput(
-      "_input",
+      "input",
       getInputPassThroughIndex(),
       {data_type, Shape{seq_length, batch_size, input_size}});
   createPassThroughOutput(
-      "_output",
+      "output",
       getOutputPassThroughIndex(),
       {data_type, Shape{seq_length, batch_size, hidden_size}});
 }
@@ -90,7 +99,7 @@ void LSTMOp::setup() {
 void LSTMOp::createPassThroughOutput(const TensorId &new_id,
                                      OutIndex pass_through_index,
                                      const TensorInfo &out_info) {
-  auto tensor_id = outTensor(getOutputOutIndex())->id + new_id;
+  auto tensor_id = fmt::format("lstm({})_{}", id, new_id);
   createAndConnectOutTensor(pass_through_index, tensor_id);
   outInfo(pass_through_index) = out_info;
 }
@@ -119,6 +128,8 @@ bool LSTMOp::hasInitialCInput() const {
   return input->hasIndex(getInitialCInIndex());
 }
 
+bool LSTMOp::hasOutput(OutIndex index) const { return output->hasIndex(index); }
+
 void LSTMOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
   os.appendAttribute("hidden_size", hidden_size_attribute);
@@ -129,6 +140,9 @@ LSTMGradOp::LSTMGradOp(const LSTMOp &fwd_op)
       forward_op(fwd_op) {}
 
 void LSTMGradOp::setup() {
+  tryConnectCellStateGrad();
+  tryConnectHiddenStateGrad();
+
   outInfo(getInputOutIndex()) = forward_op.inInfo(LSTMOp::getInputInIndex());
   outInfo(getWeightsOutIndex()) =
       forward_op.inInfo(LSTMOp::getWeightsInIndex());
@@ -145,6 +159,36 @@ void LSTMGradOp::setup() {
   if (forward_op.hasInitialCInput()) {
     outInfo(getInitialCOutIndex()) =
         forward_op.inInfo(LSTMOp::getInitialCInIndex());
+  }
+}
+
+bool LSTMGradOp::hasCellStateGradInput() const {
+  return input->hasIndex(getCellStateOutputGradInIndex());
+}
+
+bool LSTMGradOp::hasHiddenStateGradInput() const {
+  return input->hasIndex(getHiddenStateOutputGradInIndex());
+}
+
+void LSTMGradOp::tryConnectCellStateGrad() {
+  auto cell_state_id      = forward_op.outId(LSTMOp::getCellStateOutIndex());
+  auto cell_state_grad_id = getGradId(cell_state_id);
+  if (getGraph().getTensors().contains(cell_state_grad_id)) {
+    connectInTensor(getCellStateOutputGradInIndex(), cell_state_grad_id);
+  } else {
+    logging::op::debug("Could not find cell state grad tensor {}",
+                       cell_state_grad_id);
+  }
+}
+
+void LSTMGradOp::tryConnectHiddenStateGrad() {
+  auto hidden_state_id = forward_op.outId(LSTMOp::getHiddenStateOutIndex());
+  auto hidden_state_grad_id = getGradId(hidden_state_id);
+  if (getGraph().getTensors().contains(hidden_state_grad_id)) {
+    connectInTensor(getHiddenStateOutputGradInIndex(), hidden_state_grad_id);
+  } else {
+    logging::op::debug("Could not find hidden state grad tensor {}",
+                       hidden_state_grad_id);
   }
 }
 
@@ -175,12 +219,6 @@ const std::vector<GradInOutMapper> &LSTMGradOp::gradInputInfo() const {
        LSTMOp::getOutputPassThroughIndex(),
        GradOpInType::OUT},
 
-      {getCellStateOutputGradInIndex(),
-       LSTMOp::getCellStateOutIndex(),
-       GradOpInType::GRADOUT},
-      {getHiddenStateOutputGradInIndex(),
-       LSTMOp::getHiddenStateOutIndex(),
-       GradOpInType::GRADOUT},
       {getOutputGradInIndex(),
        LSTMOp::getOutputOutIndex(),
        GradOpInType::GRADOUT}};

@@ -58,8 +58,8 @@ BOOST_AUTO_TEST_CASE(PruneTest) {
   ir.setDataFlow(dataFlow);
   ir.registerInputTensors();
   ir.constructForwards();
-  ir.applyTransform(Prune::id());
+  ir.applyTransform(Prune::id(), ir.getMainGraph());
 
   // All but the original 6 operations should be pruned
-  BOOST_CHECK(ir.getOps().size() == 6);
+  BOOST_CHECK(ir.getMainGraphOps().size() == 6);
 }

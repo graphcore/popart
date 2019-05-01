@@ -5,6 +5,7 @@
 #include <poponnx/builder.hpp>
 #include <poponnx/dataflow.hpp>
 #include <poponnx/filereader.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/op/l1.hpp>
@@ -157,7 +158,7 @@ BOOST_AUTO_TEST_CASE(Inplace_SlicesOverlap) {
       auto reluOp = ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu).back();
       auto expInplaceOp =
           ir.opsOfType(Onnx::CustomOperators::ExpInplace).back();
-      auto afterRelu = ir.topoCons->getAfters(reluOp);
+      auto afterRelu = ir.getMainGraph().topoCons->getAfters(reluOp);
       BOOST_CHECK(std::find(afterRelu.cbegin(),
                             afterRelu.cend(),
                             expInplaceOp) != afterRelu.cend());
@@ -184,7 +185,7 @@ BOOST_AUTO_TEST_CASE(Inplace_SlicesOverlap) {
       auto expOp = ir.opsOfType(Onnx::AiOnnx::OpSet9::Exp).back();
       auto reluInplaceOp =
           ir.opsOfType(Onnx::CustomOperators::ReluInplace).back();
-      auto afterExp = ir.topoCons->getAfters(expOp);
+      auto afterExp = ir.getMainGraph().topoCons->getAfters(expOp);
       BOOST_CHECK(std::find(afterExp.cbegin(),
                             afterExp.cend(),
                             reluInplaceOp) != afterExp.cend());

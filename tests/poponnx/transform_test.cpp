@@ -13,7 +13,7 @@ public:
   TestTransform() : Transform() {}
   virtual ~TestTransform() override {}
 
-  virtual bool apply(Ir &ir) const override final {
+  virtual bool apply(Graph &) const override final {
     executedCount++;
     return true;
   }
@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(TransformDefault) {
 
   int initialCount = TestTransform::executedCount;
 
-  ir.applyTransform(TestTransform::id());
+  ir.applyTransform(TestTransform::id(), ir.getMainGraph());
 
   BOOST_CHECK_EQUAL(TestTransform::executedCount, initialCount + 1);
 }
@@ -48,7 +48,7 @@ BOOST_AUTO_TEST_CASE(TransformEnabled) {
   int initialCount = TestTransform::executedCount;
 
   ir.enableTransform(TestTransform::id(), true);
-  ir.applyTransform(TestTransform::id());
+  ir.applyTransform(TestTransform::id(), ir.getMainGraph());
 
   BOOST_CHECK_EQUAL(TestTransform::executedCount, initialCount + 1);
 }
@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(TransformDisabled) {
   int initialCount = TestTransform::executedCount;
 
   ir.enableTransform(TestTransform::id(), false);
-  ir.applyTransform(TestTransform::id());
+  ir.applyTransform(TestTransform::id(), ir.getMainGraph());
 
   BOOST_CHECK_EQUAL(TestTransform::executedCount, initialCount);
 }

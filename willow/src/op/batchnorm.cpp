@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <vector>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/batchnorm.hpp>
@@ -106,7 +107,7 @@ void BatchNormOp::setup() {
     }
   }
 
-  if (settings.ir.isTraining() && output->n() != 5) {
+  if (settings.graph.getIr().isTraining() && output->n() != 5) {
     throw error(
         "The Ir is in training mode, yet this batch-normalization Op, \"{}\" "
         "has only {} output(s) which means it is in inference mode. To be in "

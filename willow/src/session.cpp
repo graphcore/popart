@@ -1,6 +1,7 @@
 #include <poponnx/device.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
 #include <poponnx/onnxutil.hpp>
@@ -24,7 +25,7 @@ void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
 // get the TensorInfo on a Tensor
 TensorInfo Session::getInfo(TensorId id) const {
   logging::session::trace("Session::getInfo({})", id);
-  TensorInfo info = ir.getTensors().get(id)->info;
+  TensorInfo info = ir.getMainGraph().getTensors().get(id)->info;
   if (!info.isSet()) {
     throw error("TensorInfo for `" + id + "' not set");
   }

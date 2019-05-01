@@ -5,20 +5,17 @@
 
 namespace poponnx {
 
-class PadOp : public Op {
+class BasePadOp : public Op {
 public:
-  PadOp(const OperatorIdentifier &_opid,
-        const std::vector<int64_t> &_pads,
-        float value_,
-        const std::string &_mode,
-        const Op::Settings &settings_);
+  BasePadOp(const OperatorIdentifier &_opid,
+            const std::vector<int64_t> &_pads,
+            float value_,
+            const std::string &_mode,
+            const Op::Settings &settings_);
 
-  std::unique_ptr<Op> clone() const final;
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
-  // returns true of all pad size in all dimensions
-  // and on both sides, are zero
+  // returns true if all pad sizes in all dimensions
+  // and on all sides, are zero
   bool padSizeZero() const;
-  void setup() final;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
@@ -34,15 +31,54 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
-  bool canBeReplacedByIdentity() override;
-
   float getSubgraphValue() const final { return 0.1f; }
+
+  void setup() final;
+
+  view::RegMap fwdRegMap(InIndex i) const final;
+  view::RegMap bwdRegMap(InIndex i) const final;
 
 private:
   std::vector<int64_t> pads;
   float pad_value;
   std::string mode;
 };
+
+class PadOp : public BasePadOp {
+public:
+  PadOp(const OperatorIdentifier &_opid,
+        const std::vector<int64_t> &_pads,
+        float value_,
+        const std::string &_mode,
+        const Op::Settings &settings_);
+
+  std::unique_ptr<Op> clone() const final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  bool canBeReplacedByIdentity() override;
+
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const override;
+
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &) const override;
+};
+
+class PadInplaceOp : public BasePadOp {
+public:
+  PadInplaceOp(const PadOp &);
+  std::unique_ptr<Op> clone() const final;
+
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &o) const final {
+    // this throws an error
+    return Op::getInplaceVariant(o);
+  }
+
+  view::Region modifies(InIndex index) const override;
+  view::Region aliases(InIndex index) const override;
+  view::Region uses(InIndex index) const override;
+};
+
 } // namespace poponnx
 
 #endif

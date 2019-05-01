@@ -69,4 +69,25 @@ MutableVoidData StepIO::out(TensorId id) const {
   return get<MutableVoidData>(id, outputs, "outputs");
 }
 
+bool WeightsIO::contains(TensorId id) const {
+  return weights.find(id) != weights.end();
+}
+
+MutableVoidData WeightsIO::weight(TensorId id) const {
+  auto iter = weights.find(id);
+  if (iter == weights.end()) {
+    throw error("No TensorId {} in WeightsIO object", id);
+  }
+  return iter->second;
+}
+
+void WeightsIO::insert(TensorId id, MutableVoidData mvd) {
+
+  auto iter = weights.find(id);
+  if (iter != weights.end()) {
+    throw error("TensorId {} already present in WeightsIO, cannot insert");
+  }
+  weights.insert({id, mvd});
+}
+
 } // namespace poponnx

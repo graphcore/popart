@@ -8,7 +8,11 @@
 #include <poponnx/filereader.hpp>
 #include <poponnx/inputshapeinfo.hpp>
 #include <poponnx/ndarraywrapper.hpp>
+
+#define protected public
 #include <poponnx/session.hpp>
+#undef protected
+
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/tensornames.hpp>
@@ -16,80 +20,115 @@
 
 using namespace poponnx;
 
-BOOST_AUTO_TEST_CASE(Inplace_concat0) {
+BOOST_AUTO_TEST_CASE(Inplace_pad0) {
 
-  //           in [1,1]
-  //          /  \
-  //         /    \
-  //       pad    scale-3
-  //        |       |
-  //       scale-2 pad
-  //         \     /
-  //           add   [5,5]
-  //            |
-  //
-  //  where pad above is null padding
+  auto test = [](float padInplacePriority) {
+    //           in [1,1]
+    //          /  \
+    //         /    \
+    //       pad    scale-3.0 (s1)
+    //        |         |
+    // (s0) scale-2.0  pad
+    //         \       /
+    //          \     /
+    //            add   [5,5]
+    //             |
+    //
+    //  where pad above is null padding
 
-  // Build an onnx model
-  auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset9();
+    // Build an onnx model
+    auto builder = Builder::create();
+    auto aiOnnx  = builder->aiOnnxOpset9();
 
-  // input and output:
-  TensorInfo info0{"FLOAT", std::vector<int64_t>{2}};
-  auto in0 = builder->addInputTensor(info0);
+    // input and output:
+    int64_t nElmsIn   = 2;
+    int64_t nPadLeft  = 3;
+    int64_t nPadRight = 6;
+    TensorInfo info0{"FLOAT", std::vector<int64_t>{nElmsIn}};
+    TensorInfo infoOut{"FLOAT",
+                       std::vector<int64_t>{nElmsIn + nPadLeft + nPadRight}};
 
-  auto p0 = aiOnnx.pad({in0}, {0, 0});
-  auto s0 = aiOnnx.scale({p0}, 2.0f);
+    auto in0 = builder->addInputTensor(info0);
 
-  auto s1 = aiOnnx.scale({in0}, 3.0f);
-  auto p1 = aiOnnx.pad({s1}, {0, 0});
+    auto p0 = aiOnnx.pad({in0}, {nPadLeft, nPadRight});
+    auto s0 = aiOnnx.scale({p0}, 2.0f);
 
-  auto sum = aiOnnx.add({p1, s0});
-  builder->addOutputTensor(sum);
+    auto s1 = aiOnnx.scale({in0}, 3.0f);
+    auto p1 = aiOnnx.pad({s1}, {nPadLeft, nPadRight});
 
-  builder->setInplacePreferences(s0, {{"ScaleInplace", 100.0f}});
+    auto sum = aiOnnx.add({p1, s0});
+    builder->addOutputTensor(sum);
 
-  builder->setInplacePreferences(s1, {{"ScaleInplace", 444.0f}});
+    float s0priority = 100.0f;
+    float s1priority = 444.0f;
+    builder->setInplacePreferences(s0, {{"ScaleInplace", s0priority}});
+    builder->setInplacePreferences(s1, {{"ScaleInplace", s1priority}});
 
-  builder->setInplacePreferences(
-      sum, {{"AddLhsInplace", -10.0f}, {"AddRhsInplace", -10.0f}});
+    builder->setInplacePreferences(p0, {{"PadInplace", padInplacePriority}});
+    builder->setInplacePreferences(p1, {{"PadInplace", padInplacePriority}});
 
-  auto proto      = builder->getModelProto();
-  auto modelProto = io::getModelFromString(proto);
+    // don't inplace the sum
+    builder->setInplacePreferences(
+        sum, {{"AddLhsInplace", -10.0f}, {"AddRhsInplace", -10.0f}});
 
-  // Create the IR
-  auto dataFlow  = DataFlow(1, {{sum, AnchorReturnType("ALL")}});
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+    auto proto      = builder->getModelProto();
+    auto modelProto = io::getModelFromString(proto);
 
-  auto opts = SessionOptions();
+    // Create the IR
+    auto dataFlow  = DataFlow(1, {{sum, AnchorReturnType("ALL")}});
+    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
-  auto session = poponnx::InferenceSession::createFromOnnxModel(
-      proto,
-      dataFlow,
-      cpuDevice,
-      {},
-      poponnx::InputShapeInfo(),
-      opts,
-      poponnx::Patterns(PatternsLevel::NONE).enableInPlace(true));
+    auto opts = SessionOptions();
 
-  std::vector<float> vdata0{1.0, 1.0};
-  poponnx::NDArrayWrapper<float> data0(vdata0.data(), info0);
-  std::map<poponnx::TensorId, poponnx::IArray &> inputs = {{in0, data0}};
+    auto session = poponnx::InferenceSession::createFromOnnxModel(
+        proto,
+        dataFlow,
+        cpuDevice,
+        {},
+        poponnx::InputShapeInfo(),
+        opts,
+        poponnx::Patterns(PatternsLevel::NONE).enableInPlace(true));
 
-  std::vector<float> rawOut(info0.nelms());
-  poponnx::NDArrayWrapper<float> outValues(rawOut.data(), info0);
-  std::map<poponnx::TensorId, poponnx::IArray &> anchors = {{sum, outValues}};
+    std::vector<float> vdata0{1.0, 1.0};
+    poponnx::NDArrayWrapper<float> data0(vdata0.data(), info0);
+    std::map<poponnx::TensorId, poponnx::IArray &> inputs = {{in0, data0}};
 
-  // session->prepareDevice();
-  poponnx::StepIO stepio(inputs, anchors);
+    std::vector<float> rawOut(infoOut.nelms());
+    poponnx::NDArrayWrapper<float> outValues(rawOut.data(), infoOut);
+    std::map<poponnx::TensorId, poponnx::IArray &> anchors = {{sum, outValues}};
 
-  session->prepareDevice();
+    // session->prepareDevice();
+    poponnx::StepIO stepio(inputs, anchors);
 
-  session->run(stepio);
-  std::vector<float> expectedOut{5, 5};
-  // if the Pad is incorrectly inplace when it claims to to out of place,
-  // this is [12, 12]
+    session->prepareDevice();
 
-  BOOST_CHECK_EQUAL_COLLECTIONS(
-      rawOut.begin(), rawOut.end(), expectedOut.begin(), expectedOut.end());
+    session->run(stepio);
+    std::vector<float> padLeft(nPadLeft, 0);
+    std::vector<float> padRight(nPadRight, 0);
+    std::vector<float> expectedInternal{5, 5};
+    std::vector<float> expectedOut = padLeft;
+    expectedOut.insert(
+        expectedOut.end(), expectedInternal.begin(), expectedInternal.end());
+    expectedOut.insert(expectedOut.end(), padRight.begin(), padRight.end());
+
+    // if the Pad is incorrectly inplace when it claims to to out of place,
+    // this is [12, 12]
+
+    if (padInplacePriority < 0) {
+      BOOST_CHECK(session->ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 2);
+    } else if (padInplacePriority > std::max(s0priority, s1priority)) {
+      BOOST_CHECK(session->ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 0);
+    } else {
+      BOOST_CHECK(session->ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 1);
+    }
+
+    BOOST_CHECK_EQUAL_COLLECTIONS(
+        rawOut.begin(), rawOut.end(), expectedOut.begin(), expectedOut.end());
+  };
+  std::cout << "Testing, pad inplace HIGH priority" << std::endl;
+  test(100000.0f);
+  std::cout << "Testing, pad inplace LOW priority" << std::endl;
+  test(0.1f);
+  std::cout << "Testing, pad inplace NEGATIVE priority" << std::endl;
+  test(-10000.0f);
 }

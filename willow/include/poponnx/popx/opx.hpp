@@ -148,6 +148,7 @@ public:
     }
   }
 
+  // TODO : Make dv_p private T8449
   // The Devicex to which this Opx belongs
   Devicex *dv_p;
 

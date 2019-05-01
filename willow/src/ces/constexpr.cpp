@@ -10,6 +10,7 @@
 #include <poponnx/ces/transposece.hpp>
 #include <poponnx/ces/unsqueezece.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/onnxutil.hpp>
@@ -35,29 +36,29 @@ const Shape &ConstExprOp::inShape(InIndex index) const {
 
 const TensorInfo &ConstExprOp::outInfo0() const { return op->outInfo(0); }
 
-void ConstExprUtil::processOp(Op *op, Ir *ir) {
+void ConstExprUtil::processOp(Op *op, Graph &graph) {
   logging::ces::debug(
       "Processing Op `{}` ({}) in ConstExprUtil", op->id, op->opid.type);
   auto constOp = ConstExprOpManager::createConstExprOp(op);
 
   auto data = constOp->compute();
-  makeTensorConstInit(op->outTensor(0)->id, data.data(), ir);
+  makeTensorConstInit(op->outTensor(0)->id, data.data(), graph);
   op->disconnectAllInputs();
 
   if (op->input->n() > 0 || op->output->n() > 0) {
     throw error("processed op still has connected tensors");
   }
 
-  ir->eraseOp(op->id);
+  graph.eraseOp(op->id);
   op = nullptr;
 }
 
-void ConstExprUtil::foldConstants(Ir *ir) {
+void ConstExprUtil::foldConstants(Graph &graph) {
   // get ops that may be computable
   std::unordered_set<Op *> computable_ops;
-  for (auto &id_op : ir->getOps()) {
+  for (auto &id_op : graph.getOps()) {
     auto &op = id_op.second;
-    if (isComputable(op.get(), ir)) {
+    if (isComputable(op.get(), graph)) {
       computable_ops.insert(op.get());
     }
   }
@@ -71,10 +72,10 @@ void ConstExprUtil::foldConstants(Ir *ir) {
     // get the id here as if processOp is successful,
     // the tensor will be replaced
     auto out_id = op->outTensor(0)->id;
-    processOp(op, ir);
-    auto out_tensor = ir->getTensors().get(out_id);
+    processOp(op, graph);
+    auto out_tensor = graph.getTensors().get(out_id);
     for (auto consumer : out_tensor->consumers.getOps()) {
-      if (isComputable(consumer, ir)) {
+      if (isComputable(consumer, graph)) {
         computable_ops.insert(consumer);
       }
     }
@@ -83,23 +84,23 @@ void ConstExprUtil::foldConstants(Ir *ir) {
 
 void ConstExprUtil::makeTensorConstInit(const TensorId name,
                                         const void *data,
-                                        Ir *ir) {
+                                        Graph &graph) {
   // disconnect producer
-  auto current_tensor = ir->getTensors().get(name);
+  auto current_tensor = graph.getTensors().get(name);
   auto producer       = current_tensor->getProducer();
   producer->disconnectOutTensor(current_tensor);
 
-  ir->getTensors().makeConstInit(name, data);
+  graph.getTensors().makeConstInit(name, data);
 }
 
-bool ConstExprUtil::isComputable(Op *op, Ir *ir) {
-  auto mode    = ir->getExecutionMode();
+bool ConstExprUtil::isComputable(Op *op, Graph &graph) {
+  auto mode    = graph.getIr().getExecutionMode();
   auto inputs  = op->input->tensors();
   auto outputs = op->output->tensors();
 
   // Op is not computable if any of the outputs are anchors
-  if (std::any_of(outputs.begin(), outputs.end(), [&ir](Tensor *t) {
-        return ir->isAnchored(t->id);
+  if (std::any_of(outputs.begin(), outputs.end(), [&graph](Tensor *t) {
+        return graph.getIr().isAnchored(t->id);
       })) {
     return false;
   }

@@ -1,4 +1,5 @@
 #include <poponnx/error.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/pad.hpp>
@@ -11,7 +12,7 @@ namespace poponnx {
 // (see .hpp for ascii picture definitions)
 bool PostNRepl::apply(Op *op) const {
 
-  Ir &ir = op->getIr();
+  Graph &graph = op->getGraph();
 
   // op is [*]
   Tensor *ori = op->input->tensor(0);
@@ -39,11 +40,11 @@ bool PostNRepl::apply(Op *op) const {
   ori->consumers.decrement(op);
   // delete replicates
   for (auto repl : replicates) {
-    ir.getTensors().remove(repl->id);
+    graph.getTensors().remove(repl->id);
   }
 
   // delete [*]
-  ir.eraseOp(op->id);
+  graph.eraseOp(op->id);
 
   return true;
 }

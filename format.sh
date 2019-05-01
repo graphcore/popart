@@ -10,25 +10,33 @@ echo "Clang-format version should be 8.0.0 or greater. On OS/X this is the defau
 exit
 fi
 
-echo "Inplace clang-formatting all .cpp files in willow directory"
-find willow/ -iname *.cpp | xargs clang-format -i
+printf "  -->  Inplace clang-formatting all .cpp files in willow directory\n"
+find willow -iname *.cpp | xargs clang-format -i -verbose
 
-echo "Inplace clang-formatting all .cpp files in tests directory"
-find tests/ -iname *.cpp | xargs clang-format -i
+printf "\n  -->  Inplace clang-formatting all .hpp files in willow directory\n"
+find willow -iname *.hpp | xargs clang-format -i -verbose
 
-echo "Inplace clang-formatting all .hpp files in willow directory"
-find willow/ -iname *.hpp | xargs clang-format -i
+printf "\n  -->  Inplace clang-formatting all .cpp/.hpp files in tests directory\n"
+find tests -iname *.cpp | xargs clang-format -i -verbose
+find tests -iname *.hpp | xargs clang-format -i -verbose
 
-echo "Inplace clang-formatting python/poponnx.cpp"
-clang-format -i python/poponnx.cpp
+printf "\n  -->  Inplace clang-formatting all .cpp files in python directory\n"
+find python -iname *.cpp | xargs clang-format -i -verbose
 
-echo "inplace yapfing all .py files in listed directories"
-python3 -m yapf -i tests/torch/cifar10/*py
-python3 -m yapf -i tests/poponnx/*py
-python3 -m yapf -i scripts/*py
-python3 -m yapf -i tests/poponnx/operators_test/*py
-python3 -m yapf -i python/poponnx/torch/*py
+printf "\n  -->  Inplace yapfing all .py files in python/poponnx\n"
 python3 -m yapf -i python/poponnx/*py
 
-echo "formatting complete."
 
+echo "  -->  Inplace yapfing all .py test files"
+python3 -m yapf -i tests/torch/cifar10/*py
+python3 -m yapf -i tests/poponnx/*py
+python3 -m yapf -i tests/poponnx/operators_test/*py
+
+echo "  -->  Inplace yapfing all .py scripts"
+python3 -m yapf -i scripts/*py
+
+echo "  -->  Inplace yapfing all .py files in python/poponnx/torch"
+python3 -m yapf -i python/poponnx/torch/*py
+
+
+printf "\nFormatting complete.\n"

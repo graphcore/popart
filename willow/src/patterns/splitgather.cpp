@@ -1,3 +1,4 @@
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/concat.hpp>
@@ -7,6 +8,7 @@
 #include <poponnx/op/transpose.hpp>
 #include <poponnx/patterns/splitgather.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/tensors.hpp>
 
 #include <boost/math/common_factor.hpp>
@@ -254,22 +256,22 @@ bool SplitGatherPattern::apply(Op *op) const {
   untranspose->setup();
 
   // Insert the ops into the IR
-  auto &ir = op->getIr();
-  ir.moveIntoIr(std::move(transpose));
-  ir.moveIntoIr(std::move(reshape));
+  auto &graph = op->getGraph();
+  graph.moveIntoGraph(std::move(transpose));
+  graph.moveIntoGraph(std::move(reshape));
   for (auto &s : slices) {
-    ir.moveIntoIr(std::move(s));
+    graph.moveIntoGraph(std::move(s));
   }
   for (auto &g : gathers) {
-    ir.moveIntoIr(std::move(g));
+    graph.moveIntoGraph(std::move(g));
   }
-  ir.moveIntoIr(std::move(concat));
-  ir.moveIntoIr(std::move(unreshape));
-  ir.moveIntoIr(std::move(untranspose));
+  graph.moveIntoGraph(std::move(concat));
+  graph.moveIntoGraph(std::move(unreshape));
+  graph.moveIntoGraph(std::move(untranspose));
 
   // Remove the old op
   op->disconnectAllInputs();
-  ir.eraseOp(op->id);
+  op->getGraph().eraseOp(op->id);
 
   return true;
 }

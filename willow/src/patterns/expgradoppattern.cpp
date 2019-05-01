@@ -1,4 +1,4 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/exp.hpp>
 #include <poponnx/op/mul.hpp>
@@ -26,7 +26,7 @@ bool ExpGradOpPattern::apply(Op *op) const {
   // Remove the ExpGradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->getIr().eraseOp(op->id);
+  op->getGraph().eraseOp(op->id);
 
   // Connect up the new ops
   mul->connectInTensor(MulOp::getArg0InIndex(), grad_in->id);

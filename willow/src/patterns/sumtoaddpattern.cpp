@@ -1,9 +1,10 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/add.hpp>
 #include <poponnx/op/sum.hpp>
 #include <poponnx/patterns/sumtoaddpattern.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/tensorinfo.hpp>
 
 namespace poponnx {
@@ -24,7 +25,7 @@ bool SumToAddPattern::apply(Op *op) const {
   auto add_op = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Add, op);
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->getIr().eraseOp(op->id);
+  op->getGraph().eraseOp(op->id);
 
   // connect the new op
   add_op->connectInTensor(AddOp::getArg0InIndex(), inputs[0]->id);

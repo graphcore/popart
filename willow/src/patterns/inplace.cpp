@@ -1,9 +1,10 @@
 #include <poponnx/chains.hpp>
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/patterns/inplace.hpp>
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/tensors.hpp>
 #include <poponnx/topocons.hpp>
 #include <poponnx/util.hpp>
@@ -60,7 +61,7 @@ bool Inplace::apply(Op *op,
                     OperatorIdentifier identifier,
                     const OpsBeforeKey &newConsIn) const {
   auto output_tensor = op->output->tensor(0);
-  auto &ir           = op->getIr();
+  auto &graph        = op->getGraph();
 
   auto newCons = newConsIn;
 
@@ -70,7 +71,7 @@ bool Inplace::apply(Op *op,
   Op *inplaceOp                    = up_inplaceOp.get();
   transferBaseProperties(op, inplaceOp);
   inplaceOp->settings.name = getReplacementOpName(op);
-  ir.moveIntoIr(std::move(up_inplaceOp));
+  graph.moveIntoGraph(std::move(up_inplaceOp));
 
   // replace op with inplaceOp everywhere in newCons
   if (newCons.find(op) != newCons.end()) {
@@ -91,7 +92,7 @@ bool Inplace::apply(Op *op,
     Tensor *in_tensor = index_tensor.second;
     InIndex in_index  = index_tensor.first;
     in_tensor->consumers.increment(inplaceOp);
-    ir.topoCons->transfer(op, inplaceOp);
+    graph.topoCons->transfer(op, inplaceOp);
     in_tensor->consumers.decrement(op);
     inplaceOp->input->insert(in_index, in_tensor);
   }
@@ -100,8 +101,8 @@ bool Inplace::apply(Op *op,
 
   inplaceOp->setup();
 
-  ir.getTensors().updateAliases(inplaceOp);
-  ir.topoCons->insert(newCons);
+  graph.getTensors().updateAliases(inplaceOp);
+  graph.topoCons->insert(newCons);
 
   logging::pattern::debug("InplaceAll::apply : replace {}({}) with {}({})",
                           op->id,
@@ -109,7 +110,7 @@ bool Inplace::apply(Op *op,
                           inplaceOp->id,
                           inplaceOp->opid);
 
-  inplaceOp->getIr().eraseOp(op->id);
+  inplaceOp->getGraph().eraseOp(op->id);
   return true;
 }
 
@@ -165,7 +166,7 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   //  we check if we need to add the constraint that consumer of t3
   //  must run before otherOp too. Example: see slice_1_ip_test
 
-  auto &tensors = op->getIr().getTensors();
+  auto &tensors = op->getGraph().getTensors();
   Tensor *t2    = op->output->tensor(0);
 
   // (1.1) getting all consumers of t0-like tensors (see above diagram)
@@ -257,8 +258,8 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   match_up(consumer_regions, modifier_regions);
 
   // (2)
-  auto &ir      = op->getIr();
-  auto afterOps = ir.topoCons->getAfters(op);
+  auto &graph   = op->getGraph();
+  auto afterOps = graph.topoCons->getAfters(op);
   std::map<Op *, view::Regions> after_op_regions;
   for (auto &after : afterOps) {
     auto found = consumer_regions.find(after);

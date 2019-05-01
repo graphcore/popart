@@ -1,6 +1,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/nll.hpp>
+#include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/nllx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
 
@@ -81,8 +82,8 @@ void NllOpx::applyMaskInPlaceForIgnoredIndex(const Opx &opx,
                                              poplar::program::Sequence &prog) {
   // Get the scalar ignoreIndex tensor. If it doens't already
   // exist, create it
-  auto ignoreIndexTensor =
-      graph.addConstant(labels.elementType(), {}, ignoreIndex);
+  auto ignoreIndexTensor = graph.addConstant(
+      labels.elementType(), {}, ignoreIndex, opx.debugPrefix("ignoreIndex"));
   graph.setTileMapping(ignoreIndexTensor, 0);
 
   // Create the mask
@@ -129,8 +130,9 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   auto label1D = label.flatten();
 
   // inverse probabilities, we take max(eps, p) to make division safe
-  float eps       = 1e-10f;
-  auto smallConst = graph().addConstant(probs.elementType(), {1}, eps);
+  float eps = 1e-10f;
+  auto smallConst =
+      graph().addConstant(probs.elementType(), {1}, eps, debugPrefix("eps"));
   graph().setTileMapping(smallConst, 0);
   auto safeProbs = popops::map(graph(),
                                popops::expr::BinaryOpType::MAXIMUM,

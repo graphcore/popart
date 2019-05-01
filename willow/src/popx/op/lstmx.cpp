@@ -75,7 +75,9 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
 
 void LSTMOpx::reshapeAndInsert(OutIndex index,
                                const poplar::Tensor &tensor) const {
-  setOutTensor(index, tensor.reshape(outInfo(index).shape_szt()));
+  if (getOp<LSTMOp>().hasOutput(index)) {
+    setOutTensor(index, tensor.reshape(outInfo(index).shape_szt()));
+  }
 }
 
 void LSTMOpx::growBias(poplar::program::Sequence &prog) const {
@@ -321,11 +323,9 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
 
   auto output_grad = getInTensor(LSTMGradOp::getOutputGradInIndex())
                          .reshape({seq_length, batch_size, hidden_size});
-  auto output_c_grad = getInTensor(LSTMGradOp::getCellStateOutputGradInIndex())
-                           .reshape({batch_size, hidden_size});
-  auto output_h_grad =
-      getInTensor(LSTMGradOp::getHiddenStateOutputGradInIndex())
-          .reshape({batch_size, hidden_size});
+
+  auto output_c_grad = getCellStateGrad();
+  auto output_h_grad = getHiddenStateGrad();
 
   // TODO find out what this is for
   // it's done in tensorflow and enigma
@@ -378,6 +378,54 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
     auto init_c = init_state_grad.cellState;
     setOutTensor(LSTMGradOp::getInitialCOutIndex(),
                  init_c.reshape({num_directions, batch_size, hidden_size}));
+  }
+}
+
+poplar::Tensor LSTMGradOpx::getCellStateGrad() const {
+  auto &lstm_grad_op = getOp<LSTMGradOp>();
+  auto &lstm_op      = lstm_grad_op.getForwardOp();
+
+  unsigned batch_size  = static_cast<unsigned>(lstm_op.getBatchSize());
+  unsigned hidden_size = static_cast<unsigned>(lstm_op.getHiddenSize());
+
+  auto elem_type =
+      getInTensor(LSTMGradOp::getOutputGradInIndex()).elementType();
+
+  if (lstm_grad_op.hasCellStateGradInput()) {
+    return getInTensor(LSTMGradOp::getCellStateOutputGradInIndex())
+        .reshape({batch_size, hidden_size});
+  } else {
+    auto zero = graph().addVariable(elem_type, {}, "lstm/zero_cell_state");
+    graph().setTileMapping(zero, 0);
+    graph().setInitialValue(zero, 0);
+    zero = zero.expand({0, 0});
+    zero = zero.broadcast(batch_size, 0);
+    zero = zero.broadcast(hidden_size, 1);
+    return zero;
+  }
+}
+
+poplar::Tensor LSTMGradOpx::getHiddenStateGrad() const {
+  auto &lstm_grad_op = getOp<LSTMGradOp>();
+  auto &lstm_op      = lstm_grad_op.getForwardOp();
+
+  unsigned batch_size  = static_cast<unsigned>(lstm_op.getBatchSize());
+  unsigned hidden_size = static_cast<unsigned>(lstm_op.getHiddenSize());
+
+  auto elem_type =
+      getInTensor(LSTMGradOp::getOutputGradInIndex()).elementType();
+
+  if (lstm_grad_op.hasHiddenStateGradInput()) {
+    return getInTensor(LSTMGradOp::getHiddenStateOutputGradInIndex())
+        .reshape({batch_size, hidden_size});
+  } else {
+    auto zero = graph().addVariable(elem_type, {}, "lstm/zero_hidden_state");
+    graph().setTileMapping(zero, 0);
+    graph().setInitialValue(zero, 0);
+    zero = zero.expand({0, 0});
+    zero = zero.broadcast(batch_size, 0);
+    zero = zero.broadcast(hidden_size, 1);
+    return zero;
   }
 }
 

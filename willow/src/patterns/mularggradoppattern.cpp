@@ -1,8 +1,9 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/mul.hpp>
 #include <poponnx/patterns/mularggradoppattern.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/tensorinfo.hpp>
 #include <poponnx/tensors.hpp>
 
@@ -35,8 +36,8 @@ bool MulArgGradOpPattern::apply(Op *op) const {
 
   // create a tensor to connect the multiply and reducesum ops
   const auto tmp_tensor_id = createIntermediateTensorId(op->output->id(0));
-  op->getIr().getTensors().addActGrad(tmp_tensor_id);
-  const auto tmp_tensor = op->getIr().getTensors().get(tmp_tensor_id);
+  op->getGraph().getTensors().addActGrad(tmp_tensor_id);
+  const auto tmp_tensor = op->getGraph().getTensors().get(tmp_tensor_id);
   tmp_tensor->info      = npOut(input_0->info, input_1->info);
 
   // Remap the tensor-to-op relationships
@@ -59,7 +60,7 @@ bool MulArgGradOpPattern::apply(Op *op) const {
   reduce_sum->output->insert(0, output);
 
   // Remove the reducesum op
-  op->getIr().eraseOp(op->id);
+  op->getGraph().eraseOp(op->id);
 
   return true;
 }

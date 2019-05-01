@@ -1,4 +1,5 @@
 #include <poponnx/error.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/intervals.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/names.hpp>
@@ -14,12 +15,14 @@ namespace poponnx {
 
 namespace {
 
-Op *growRecomputeOp(Ir &ir, Op *oriOp, const std::set<Op *> &checkpoints) {
+Op *growRecomputeOp(Graph &graph,
+                    Op *oriOp,
+                    const std::set<Op *> &checkpoints) {
 
   // the recompute op:
-  OpId rcId = ir.moveIntoIr(oriOp->clone());
+  OpId rcId = graph.moveIntoGraph(oriOp->clone());
 
-  Op *rcOp = ir.getOps().at(rcId).get();
+  Op *rcOp = graph.getOps().at(rcId).get();
 
   // set inputs and outputs of  the new Op.
   std::map<int, TensorId> inputs;
@@ -35,7 +38,7 @@ Op *growRecomputeOp(Ir &ir, Op *oriOp, const std::set<Op *> &checkpoints) {
       inputs[index] = tensor->id;
     }
   }
-  ir.connectInputsFromInputMapWrapper(InputMapWrapper(inputs), rcId);
+  graph.connectInputsFromInputMapWrapper(InputMapWrapper(inputs), rcId);
 
   std::map<int, TensorId> outputs;
   for (auto &index_tensor : oriOp->output->tensorMap()) {
@@ -43,7 +46,7 @@ Op *growRecomputeOp(Ir &ir, Op *oriOp, const std::set<Op *> &checkpoints) {
     const Tensor *tensor = index_tensor.second;
     outputs[index]       = getRecompId(tensor->id);
   }
-  ir.connectOutputsFromOutputMapWrapper(OutputMapWrapper(outputs), rcId);
+  graph.connectOutputsFromOutputMapWrapper(OutputMapWrapper(outputs), rcId);
   rcOp->setup();
 
   // yank down the priority of the new Op
@@ -53,7 +56,7 @@ Op *growRecomputeOp(Ir &ir, Op *oriOp, const std::set<Op *> &checkpoints) {
   // oriOp's outputs should not be consumed by grad op:
   for (auto &ind_ten : oriOp->output->tensorMap()) {
     Tensor *oriTen = ind_ten.second;
-    Tensor *recTen = ir.getTensors().get(getRecompId(oriTen->id));
+    Tensor *recTen = graph.getTensors().get(getRecompId(oriTen->id));
     for (auto &con : oriTen->consumers.getOps()) {
       if (con->getPhase() == Phase::BWD) {
         for (auto &con_ind_ten : con->input->tensorMap()) {
@@ -79,8 +82,7 @@ Op *growRecomputeOp(Ir &ir, Op *oriOp, const std::set<Op *> &checkpoints) {
 
 std::size_t Recompute::id() { return typeid(Recompute).hash_code(); }
 
-bool Recompute::apply(Ir &ir) const {
-
+bool Recompute::apply(Graph &graph) const {
   // A vector, so that the op schedule
   // order is preserved
   std::vector<Op *> recomputeOps;
@@ -95,10 +97,10 @@ bool Recompute::apply(Ir &ir) const {
   // recomputation. We may want to change this in the future
 
   // Recompute only the ops as specified by their attributes
-  if (ir.hasUserRecomputeOps()) {
+  if (graph.hasUserRecomputeOps()) {
     logging::transform::info("Using node attributes to choose recompute ops");
 
-    for (auto op : ir.getOpSchedule({})) {
+    for (auto op : graph.getOpSchedule({})) {
       if (op->isFwdToBwd()) {
         if (op->getRecomputeOutput()) {
           recomputeOps.push_back(op);
@@ -111,13 +113,14 @@ bool Recompute::apply(Ir &ir) const {
 
   // Auto recomputation: type depends on user-option
   else {
-    RecomputationType type = ir.getSessionOptions().autoRecomputation;
+    RecomputationType type =
+        graph.getIr().getSessionOptions().autoRecomputation;
 
     if (type == RecomputationType::Standard) {
       logging::transform::info("Using 'Standard' auto-recompute method");
-      checkpoints = getStandardCheckpointOps(ir);
+      checkpoints = getStandardCheckpointOps(graph);
 
-      for (auto op : ir.getOpSchedule({})) {
+      for (auto op : graph.getOpSchedule({})) {
         if (op->isFwdToBwd()) {
           if (checkpoints.count(op) == 0) {
             recomputeOps.push_back(op);
@@ -128,7 +131,7 @@ bool Recompute::apply(Ir &ir) const {
       logging::transform::info("Using 'NormOnly' auto-recompute method");
 
       bool prevWasNorm = false;
-      for (auto op : ir.getOpSchedule({})) {
+      for (auto op : graph.getOpSchedule({})) {
         if (op->isFwdToBwd()) {
           if (op->isNorm()) {
             // don't checkpoint Norms as their outputs are large and
@@ -148,15 +151,15 @@ bool Recompute::apply(Ir &ir) const {
   }
 
   for (auto &op : recomputeOps) {
-    growRecomputeOp(ir, op, checkpoints);
+    growRecomputeOp(graph, op, checkpoints);
   }
 
   return true;
 }
 
-std::set<Op *> Recompute::getStandardCheckpointOps(const Ir &ir) const {
+std::set<Op *> Recompute::getStandardCheckpointOps(const Graph &graph) const {
   std::vector<Op *> fwdOps;
-  for (auto op : ir.getOpSchedule({})) {
+  for (auto op : graph.getOpSchedule({})) {
     if (op->isFwdToBwd()) {
       fwdOps.push_back(op);
     }
@@ -166,7 +169,7 @@ std::set<Op *> Recompute::getStandardCheckpointOps(const Ir &ir) const {
   // been consumed by their (non-grad) consumers just after
   // linearised[i] has run. By this defn,
   // linearised[i] \in live[i]
-  std::vector<std::set<Op *>> liveSets = ir.getLiveSets(fwdOps);
+  std::vector<std::set<Op *>> liveSets = graph.getLiveSets(fwdOps);
 
   // The memory (bytes) which will be needed to
   // store all the output tensors in a liveness set.

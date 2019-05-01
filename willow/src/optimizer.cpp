@@ -1,5 +1,5 @@
 #include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/op/varupdate.hpp>
 #include <poponnx/optimizer.hpp>
 #include <poponnx/tensor.hpp>
@@ -59,8 +59,8 @@ std::map<TensorId, TensorInfo> SGD::tensorInfos() const {
           {getWeightDecayId(DataType::FLOAT16), {DataType::FLOAT16, {}}}};
 }
 
-std::unique_ptr<Op> SGD::createOp(TensorId varId, Ir *pir) const {
-  return std::unique_ptr<Op>(new SGDVarUpdateOp(varId, {*pir, ""}));
+std::unique_ptr<Op> SGD::createOp(TensorId varId, Graph &graph) const {
+  return std::unique_ptr<Op>(new SGDVarUpdateOp(varId, {graph, ""}));
 }
 
 std::vector<TensorId> SGD::getInputIds(TensorId varId, DataType varType) const {
@@ -95,10 +95,10 @@ void SGD::setTensorData(Tensor *t) const {
   }
 }
 
-void SGD::resetTensorDatas(Ir *pir) const {
+void SGD::resetTensorDatas(Graph &graph) const {
   // Check the tensor exists before resetting data
   auto resetTensor = [&](TensorId id, float data) {
-    auto &tensors = pir->getTensors();
+    auto &tensors = graph.getTensors();
     if (tensors.contains(id)) {
       auto t              = tensors.get(id);
       auto converted_data = convertFloatToDataType(t->info.dataType(), data);
@@ -120,13 +120,13 @@ void ConstSGD::setTensorData(Tensor *) const {
   throw error("ILE : ConstSGD does not set tensor data");
 }
 
-void ConstSGD::resetTensorDatas(Ir *) const {
+void ConstSGD::resetTensorDatas(Graph &) const {
   throw error("ConstSGD does not have any tensors to reset");
 }
 
-std::unique_ptr<Op> ConstSGD::createOp(TensorId varId, Ir *pir) const {
+std::unique_ptr<Op> ConstSGD::createOp(TensorId varId, Graph &graph) const {
   return std::unique_ptr<Op>(
-      new ConstSGDVarUpdateOp(varId, learnRate(), weightDecay(), {*pir, ""}));
+      new ConstSGDVarUpdateOp(varId, learnRate(), weightDecay(), {graph, ""}));
 }
 
 std::vector<TensorId> ConstSGD::getInputIds(TensorId varId, DataType) const {

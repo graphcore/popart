@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
   for (int i = 0; i < outShapeSize[0]; ++i) {
     outShape.push_back(shape0[i] + shape1[i]);
   }
-  BOOST_CHECK(ir.getTensors().get(outId)->info.shape() == outShape);
+  BOOST_CHECK(ir.getMainGraphTensors().get(outId)->info.shape() == outShape);
 }
 
 BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {

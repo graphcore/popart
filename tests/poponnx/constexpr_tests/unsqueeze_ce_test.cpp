@@ -67,5 +67,5 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Unsqueeze0) {
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Unsqueeze).size() == 0);
   // 3) that the shape of the output tensor is as specified.
   Shape ref_shape{2, 3, 1, 4, 1};
-  BOOST_CHECK(ir.getTensors().get(out_id)->info.shape() == ref_shape);
+  BOOST_CHECK(ir.getMainGraphTensors().get(out_id)->info.shape() == ref_shape);
 }

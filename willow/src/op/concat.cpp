@@ -58,6 +58,7 @@ view::RegMap ConcatOp::bwdRegMap(InIndex inIndex) const {
     view::UppBounds upper = r_out.getUpper();
     lower[axisIn] -= offset;
     upper[axisIn] -= offset;
+    // TODO T8446 : check intersect?
     return view::Region(lower, upper);
   };
 }

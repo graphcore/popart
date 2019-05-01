@@ -1,8 +1,9 @@
 #include <poponnx/chains.hpp>
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/tensors.hpp>
 
 namespace poponnx {
@@ -176,7 +177,7 @@ std::vector<TensorId> Tensors::getIds(TensorType type) const {
   return ids;
 }
 
-Tensors::Tensors(Ir &pg) : ir(pg) {}
+Tensors::Tensors(Graph &pg) : graph(pg) {}
 
 Tensor *Tensors::get(TensorId tenId) const {
   auto found = M.find(tenId);
@@ -260,7 +261,7 @@ void Tensors::addConstInit(const TensorId &name,
                            const TensorInfo &info,
                            const void *src) {
   insert(name,
-         std::unique_ptr<Tensor>(new Tensor(name, TensorType::Const, ir)));
+         std::unique_ptr<Tensor>(new Tensor(name, TensorType::Const, graph)));
 
   insertConstId(name);
 
@@ -285,9 +286,10 @@ void Tensors::addInit(const TensorId &name,
                       TensorType tt) {
 
   if (tt == TensorType::Variable) {
-    insert(name, std::unique_ptr<VariableTensor>(new VariableTensor(name, ir)));
+    insert(name,
+           std::unique_ptr<VariableTensor>(new VariableTensor(name, graph)));
   } else {
-    insert(name, std::unique_ptr<Tensor>(new Tensor(name, tt, ir)));
+    insert(name, std::unique_ptr<Tensor>(new Tensor(name, tt, graph)));
   }
 
   Tensor *init = get(name);
@@ -297,14 +299,15 @@ void Tensors::addInit(const TensorId &name,
 
 void Tensors::addStream(TensorId tenId, const TensorInfo &info) {
   insert(tenId,
-         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, ir)));
+         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::Stream, graph)));
   get(tenId)->info = info;
 }
 
 void Tensors::addActGrad(TensorId tenId) {
   logging::debug("Adding ActGrad Tensor {}", tenId);
-  insert(tenId,
-         std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::ActGrad, ir)));
+  insert(
+      tenId,
+      std::unique_ptr<Tensor>(new Tensor(tenId, TensorType::ActGrad, graph)));
 }
 
 void Tensors::remove(TensorId id) { M.erase(id); }

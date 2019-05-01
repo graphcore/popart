@@ -1,4 +1,5 @@
 #include <poponnx/error.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/names.hpp>
@@ -56,7 +57,7 @@ TensorId InterIpuCopy::generateCopiedTensorId(Tensor *tensor,
   return copiedTensor;
 }
 
-void InterIpuCopy::connectIpuCopy(Ir &,
+void InterIpuCopy::connectIpuCopy(Graph &,
                                   Tensor *tensor,
                                   Op *fromOp,
                                   int64_t fromIpu,
@@ -94,7 +95,7 @@ void InterIpuCopy::connectIpuCopy(Ir &,
   }
 }
 
-void InterIpuCopy::insertIpuCopy(Ir &ir,
+void InterIpuCopy::insertIpuCopy(Graph &graph,
                                  Tensor *tensor,
                                  Op *fromOp,
                                  int64_t fromIpu,
@@ -108,13 +109,13 @@ void InterIpuCopy::insertIpuCopy(Ir &ir,
       fromIpu,
       toIpu);
 
-  Op::Settings settings(ir, "");
+  Op::Settings settings(graph, "");
 
   auto ipuCopy_op = make_unique<IpuCopyOp>(
       Onnx::CustomOperators::IpuCopy, fromIpu, toIpu, settings);
 
   auto ipuCopy = ipuCopy_op.get();
-  ir.moveIntoIr(std::move(ipuCopy_op));
+  graph.moveIntoGraph(std::move(ipuCopy_op));
 
   // Copy the list of index's this input tensor is mapped
   auto indices = toOp->input->indices(tensor);
@@ -143,12 +144,11 @@ void InterIpuCopy::insertIpuCopy(Ir &ir,
   }
 }
 
-bool InterIpuCopy::apply(Ir &ir) const {
-
+bool InterIpuCopy::apply(Graph &graph) const {
   // If the first op does not have an ipuNumber attribute, assume that no op's
   // have the ipuNumber set and so there is no inter ipu copy required.
-  if (ir.getOps().size() > 0 &&
-      !(ir.getOps().begin()->second->getVirtualGraphId())) {
+  if (graph.getOps().size() > 0 &&
+      !(graph.getOps().begin()->second->getVirtualGraphId())) {
     return false;
   }
 
@@ -160,7 +160,7 @@ bool InterIpuCopy::apply(Ir &ir) const {
   std::map<TensorId, std::vector<Op *>> streamsMap;
 
   // For each op
-  for (auto &entry : ir.getOps()) {
+  for (auto &entry : graph.getOps()) {
 
     Op *from = entry.second.get();
 
@@ -219,9 +219,9 @@ bool InterIpuCopy::apply(Ir &ir) const {
               bool alreadyCopied = copiedTensors.find(tensor->id, toIpu);
 
               if (alreadyCopied == true) {
-                connectIpuCopy(ir, tensor, from, fromIpu, to, toIpu);
+                connectIpuCopy(graph, tensor, from, fromIpu, to, toIpu);
               } else {
-                insertIpuCopy(ir, tensor, from, fromIpu, to, toIpu);
+                insertIpuCopy(graph, tensor, from, fromIpu, to, toIpu);
 
                 // Record the copy
                 copiedTensors.add(tensor->id, toIpu);
@@ -265,13 +265,13 @@ bool InterIpuCopy::apply(Ir &ir) const {
               sourceIpu,
               toIpu);
 
-          Tensor *tensor = ir.getTensors().get(s.first);
+          Tensor *tensor = graph.getTensors().get(s.first);
 
           bool alreadyCopied = copiedTensors.find(tensor->id, toIpu);
           if (alreadyCopied == true) {
-            connectIpuCopy(ir, tensor, sourceOp, sourceIpu, op, toIpu);
+            connectIpuCopy(graph, tensor, sourceOp, sourceIpu, op, toIpu);
           } else {
-            insertIpuCopy(ir, tensor, sourceOp, sourceIpu, op, toIpu);
+            insertIpuCopy(graph, tensor, sourceOp, sourceIpu, op, toIpu);
 
             // Record the copy
             copiedTensors.add(tensor->id, toIpu);

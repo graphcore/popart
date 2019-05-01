@@ -1,4 +1,4 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/cos.hpp>
 #include <poponnx/op/mul.hpp>
@@ -30,7 +30,7 @@ bool CosGradOpPattern::apply(Op *op) const {
   // Remove the CosGradOp
   op->disconnectAllInputs();
   op->disconnectAllOutputs();
-  op->getIr().eraseOp(op->id);
+  op->getGraph().eraseOp(op->id);
 
   // Connect up the new ops
   sin->connectInTensor(SinOp::getInIndex(), fwd_in->id);

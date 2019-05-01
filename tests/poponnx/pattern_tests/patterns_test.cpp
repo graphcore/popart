@@ -71,7 +71,7 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
 
   // All but the 1st, 3rd and last tensors should have been removed
   for (int i = 0; i < tensorIds.size(); i++) {
-    bool tensorExists = ir.getTensors().contains(tensorIds[i]);
+    bool tensorExists = ir.getMainGraphTensors().contains(tensorIds[i]);
     bool shouldExist  = i == 0 | i == 2 | i == 6;
     BOOST_CHECK(tensorExists == shouldExist);
   }
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
   // the PadOp should have been removed
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 0);
   // padIn should have been removed
-  BOOST_CHECK(ir.getTensors().contains(padIn) == false);
+  BOOST_CHECK(ir.getMainGraphTensors().contains(padIn) == false);
 }
 
 BOOST_AUTO_TEST_CASE(OpToIdentity) {
@@ -267,7 +267,7 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
   // Check the ir
   // Input 1 should connect to ConvOp
   // ConvOp should only have 2 inputs
-  auto input1Tensor = ir.getTensors().get(input1);
+  auto input1Tensor = ir.getMainGraphTensors().get(input1);
   auto convOp       = input1Tensor->consumers.getOps()[0];
   BOOST_CHECK(convOp->input->n() == 2);
 
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
   BOOST_CHECK(bias->opid == Onnx::CustomOperators::AddBias);
 
   // Input3 should be consumed only by the AddBiasOp
-  auto input3Tensor = ir.getTensors().get(input3);
+  auto input3Tensor = ir.getMainGraphTensors().get(input3);
   BOOST_CHECK(input3Tensor->consumers.getTotal() == 1);
   BOOST_CHECK(bias == input3Tensor->consumers.getOps()[0]);
 }
@@ -530,7 +530,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Pad).size() == 0);
 
   // Check attributes of the replaced op:
-  auto tensor = ir.getTensors().get(padOut);
+  auto tensor = ir.getMainGraphTensors().get(padOut);
   auto op     = tensor->getProducer();
 
   // name

@@ -21,14 +21,15 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor t_lambda =
       dv_p->getConst(popType(op_p->inInfo(0)),
                      {1},
-                     static_cast<double>(l1gradop.l1l()->getLambda()));
+                     static_cast<double>(l1gradop.l1l()->getLambda()),
+                     debugPrefix("lamda"));
 
   // Signum : +1 of positive, -1 if negative, 0 if zero.
   poplar::Tensor signumTensor = popops::map(graph(),
                                             popops::expr::UnaryOpType::SIGNUM,
                                             getInTensor(0),
                                             prog,
-                                            idStr() + "/Signum");
+                                            debugPrefix("Signum"));
 
   // scale the signum tensor by lambda,
   // so +lambda if positive, -lambda if negative, 0 if zero
@@ -37,7 +38,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                                           signumTensor,
                                           t_lambda,
                                           prog,
-                                          idStr() + "/Multiply");
+                                          debugPrefix("Multiply"));
 
   setOutTensor(0, gradTensor);
 }
@@ -53,7 +54,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
                                          popops::expr::UnaryOpType::ABSOLUTE,
                                          getInTensor(0),
                                          prog,
-                                         idStr() + "/abs");
+                                         debugPrefix("abs"));
 
   if (absTensor.rank() == 0) {
     throw error("invalid tensor (rank-0) in L1Opx");
@@ -65,11 +66,18 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
   // over dimension 0, which is batch id
   std::iota(dims.begin(), dims.end(), 1);
 
-  auto scale = dv_p->getConst(
-      poplar::FLOAT, {}, static_cast<double>(l1op.l1l()->getLambda()));
+  auto scale = dv_p->getConst(poplar::FLOAT,
+                              {},
+                              static_cast<double>(l1op.l1l()->getLambda()),
+                              debugPrefix("lambda"));
 
-  poplar::Tensor reduction = popops::reduce(
-      graph(), absTensor, dims, {popops::Operation::ADD, false, scale}, prog);
+  poplar::Tensor reduction =
+      popops::reduce(graph(),
+                     absTensor,
+                     dims,
+                     {popops::Operation::ADD, false, scale},
+                     prog,
+                     debugPrefix("add"));
 
   setOutTensor(0, reduction);
 }

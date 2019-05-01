@@ -1,6 +1,7 @@
 #include <onnx/onnx_pb.h>
 #include <spdlog/fmt/fmt.h>
 #include <poponnx/error.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/opmanager.hpp>
@@ -48,7 +49,7 @@ PreAliasPattern::makeReplacementOp(const OperatorIdentifier &operator_id,
 
   // Create replacement Op with new attributes
   std::unique_ptr<Op> newOp = OpManager::createOp(
-      operator_id, oldOp->getIr(), getReplacementOpName(oldOp));
+      operator_id, oldOp->getGraph(), getReplacementOpName(oldOp));
 
   if (newOp == nullptr) {
     throw error(
@@ -70,7 +71,7 @@ Op *PreAliasPattern::makeReplacementOpInIr(
   // move into Ir
   std::unique_ptr<Op> newOpUp = makeReplacementOp(operator_id, oldOp, attr);
   Op *newOp                   = newOpUp.get();
-  oldOp->getIr().moveIntoIr(std::move(newOpUp));
+  oldOp->getGraph().moveIntoGraph(std::move(newOpUp));
 
   return newOp;
 }

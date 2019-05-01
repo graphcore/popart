@@ -1,7 +1,9 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/op/nll.hpp>
 #include <poponnx/op/softmax.hpp>
+#include <poponnx/patterns/patterns.hpp>
 #include <poponnx/patterns/softmaxgraddirect.hpp>
+#include <poponnx/tensorindex.hpp>
 
 namespace poponnx {
 
@@ -18,10 +20,10 @@ const OperatorIdentifier &SoftmaxGradDirect::get1() const {
 OpId SoftmaxGradDirect::moveMergedIntoIr(Op *opRoot) const {
   // The root of the pattern is an NLLGrad,
   // we need to move from it to the SoftmaxOp
-  Ir &ir      = opRoot->getIr();
-  Op *nllgrad = opRoot;
+  Graph &graph = opRoot->getGraph();
+  Op *nllgrad  = opRoot;
 
-  return ir.moveIntoIr(std::unique_ptr<Op>(new SoftmaxGradDirectOp(
+  return graph.moveIntoGraph(std::unique_ptr<Op>(new SoftmaxGradDirectOp(
       dynamic_cast<NllGradOp *>(nllgrad)->nlll(), nllgrad->getSettings())));
 }
 

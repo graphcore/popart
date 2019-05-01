@@ -88,9 +88,12 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
 
     // Special case - zero sized array
     if (isZeroElementArray(x.shape())) {
-      auto y         = graph().addConstant(x.elementType(), x.shape(), 0);
-      auto batchMean = graph().addConstant(x.elementType(), {1}, NAN);
-      auto batchVar  = graph().addConstant(x.elementType(), {1}, NAN);
+      auto y =
+          graph().addConstant(x.elementType(), x.shape(), 0, debugPrefix("y"));
+      auto batchMean =
+          graph().addConstant(x.elementType(), {1}, NAN, debugPrefix("mean"));
+      auto batchVar =
+          graph().addConstant(x.elementType(), {1}, NAN, debugPrefix("var"));
       graph().setTileMapping(y, 0);
       graph().setTileMapping(batchMean, 0);
       graph().setTileMapping(batchVar, 0);
@@ -162,7 +165,8 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
 
     // Special case - zero sized array
     if (isZeroElementArray(x.shape())) {
-      auto y = graph().addConstant(x.elementType(), x.shape(), 0);
+      auto y =
+          graph().addConstant(x.elementType(), x.shape(), 0, debugPrefix("y"));
       graph().setTileMapping(y, 0);
       setOutTensor(BatchNormOp::getYOutIndex(), y);
     } else {
@@ -242,9 +246,12 @@ void BatchNormGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Special case - zero sized array
   if (isZeroElementArray(x.shape())) {
-    auto xGrad     = graph().addConstant(x.elementType(), x.shape(), 0);
-    auto scaleGrad = graph().addConstant(x.elementType(), {1}, 0);
-    auto bGrad     = graph().addConstant(x.elementType(), {1}, 0);
+    auto xGrad = graph().addConstant(
+        x.elementType(), x.shape(), 0, debugPrefix("xGrad"));
+    auto scaleGrad =
+        graph().addConstant(x.elementType(), {1}, 0, debugPrefix("scaleGrad"));
+    auto bGrad =
+        graph().addConstant(x.elementType(), {1}, 0, debugPrefix("bGrad"));
     graph().setTileMapping(xGrad, 0);
     graph().setTileMapping(scaleGrad, 0);
     graph().setTileMapping(bGrad, 0);

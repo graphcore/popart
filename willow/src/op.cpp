@@ -1,5 +1,6 @@
 #include <onnx/onnx_pb.h>
 #include <spdlog/fmt/fmt.h>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/opserialiser.hpp>
 #include <poponnx/region.hpp>
@@ -34,6 +35,9 @@ TensorInfo &Op::inInfo(InIndex index) { return input->tensor(index)->info; }
 const TensorInfo &Op::outInfo(OutIndex index) const {
   return output->tensor(index)->info;
 }
+
+Ir &Op::getIr() { return settings.graph.getIr(); }
+const Ir &Op::getIr() const { return settings.graph.getIr(); }
 
 bool Op::isElementWiseUnary() const {
   return isConvertibleTo<ElementWiseUnaryOp>();
@@ -94,7 +98,7 @@ std::vector<std::unique_ptr<Op>> Op::getGradOps() { return {}; }
 void Op::setup() { throw error("No setup() for {}", opid); }
 
 void Op::defaultConnectInTensor(InIndex inIndex, TensorId tenId) {
-  Tensor *ptensor = getIr().getTensors().get(tenId);
+  Tensor *ptensor = getGraph().getTensors().get(tenId);
   input->insert(inIndex, ptensor);
   ptensor->consumers.increment(this);
 }
@@ -104,7 +108,7 @@ void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
 }
 
 void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
-  Tensor *ptensor = getIr().getTensors().get(tenId);
+  Tensor *ptensor = getGraph().getTensors().get(tenId);
   output->insert(outIndex, ptensor);
   if (ptensor->hasProducer()) {
     ptensor->resetProducer(this);
@@ -151,8 +155,8 @@ void Op::disconnectAllOutputs() {
 void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
   tenId = (getScope() / tenId).str();
 
-  getIr().getTensors().addActGrad(tenId);
-  Tensor *ptensor = getIr().getTensors().get(tenId);
+  getGraph().getTensors().addActGrad(tenId);
+  Tensor *ptensor = getGraph().getTensors().get(tenId);
   output->insert(outIndex, ptensor);
   ptensor->setProducer(this);
 }
@@ -225,8 +229,9 @@ const std::string &Op::name() const { return getName(); }
 
 Op::Op(const Op &op)
     : Vertex(op), input(new TensorIndexMap), output(new TensorIndexMap),
-      priority(op.priority), id(op.settings.ir.getAndIncrOpsCounter()),
-      opid(op.opid), settings(op.settings) {
+      priority(op.priority),
+      id(op.settings.graph.getIr().getAndIncrOpsCounter()), opid(op.opid),
+      settings(op.settings) {
   // input, output: empty.
 }
 
@@ -245,7 +250,7 @@ const TensorId Op::outId(OutIndex index) const { return outTensor(index)->id; }
 Op::Op(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : input(new TensorIndexMap), output(new TensorIndexMap), priority(0.0),
       // the id
-      id(settings_.ir.getAndIncrOpsCounter()), opid(_opid),
+      id(settings_.graph.getIr().getAndIncrOpsCounter()), opid(_opid),
       // the Attributes
       settings(settings_) {}
 
@@ -365,8 +370,8 @@ Op::getSubgraphOutputs() const {
     auto out_index  = index_tensor.first;
     auto out_tensor = index_tensor.second;
     std::set<Op *> consumers;
-    if (settings.ir.isAnchored(out_tensor->id)) {
-      consumers.insert(&settings.ir.getSubgraphAnchorPlaceholder());
+    if (settings.graph.getIr().isAnchored(out_tensor->id)) {
+      consumers.insert(&settings.graph.getIr().getSubgraphAnchorPlaceholder());
     }
     for (auto &op : out_tensor->consumers.getOps()) {
       consumers.insert(op);

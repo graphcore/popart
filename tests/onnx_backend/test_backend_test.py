@@ -79,8 +79,8 @@ class IpuBackend(onnx.backend.base.Backend):
         model = onnx.shape_inference.infer_shapes(model)
         value_infos = {
             vi.name: vi
-            for vi in itertools.chain(model.graph.value_info, model.graph.
-                                      output)
+            for vi in itertools.chain(model.graph.value_info,
+                                      model.graph.output)
         }
 
         # if do_enforce_test_coverage_whitelist(model):
@@ -231,10 +231,12 @@ backend_test.exclude('vgg19')
 backend_test.exclude('zfnet512')
 
 # The following tests cause a seg fault
-backend_test.exclude('lstm')
 backend_test.exclude('gemm_broadcast')
 
 # Test that do not work for ops we have implemented
+
+# poplar lstm does not support peepholes
+backend_test.exclude('test_lstm_with_peepholes_ipu')
 
 # T6601
 backend_test.exclude('averagepool_1d_default')

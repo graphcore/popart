@@ -19,6 +19,7 @@ public:
   size_t depth() const { return names.size(); }
 
   bool operator==(const Scope &) const;
+  bool operator!=(const Scope &) const;
 
   std::string str() const;
 

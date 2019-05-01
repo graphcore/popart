@@ -31,7 +31,7 @@ pad(poplar::Graph &graph, poplar::Tensor t, unsigned dim) {
     auto shape = t.shape();
     shape[dim] = 1;
 
-    auto zero_slice = graph.addConstant(t.elementType(), shape, 0);
+    auto zero_slice = graph.addConstant(t.elementType(), shape, 0, "/zero");
     graph.setTileMapping(zero_slice, 0);
 
     return poplar::concat(t, zero_slice, dim);
@@ -69,7 +69,7 @@ static poplar::Tensor splitIndices(poplar::Graph &graph,
   if (i.rank() == 1) {
     return splitIndices(graph, prog, t, dim, i.expand({1}), idx);
   } else if (i.rank() == 2) {
-    auto one = graph.addConstant(i.elementType(), {}, 1);
+    auto one = graph.addConstant(i.elementType(), {}, 1, "/one");
     graph.setTileMapping(one, 0);
 
     i        = i.transpose();

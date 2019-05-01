@@ -53,18 +53,18 @@ public:
   //   1) all the inputs are either Const or Variable Tensors
   // For training, a tensor is computable if:
   //   1) all the inputs are Const Tensors
-  static bool isComputable(Op *op, Ir *ir);
+  static bool isComputable(Op *, Graph &);
 
   // process a ConstExprOp "op", modfying the Ir pointed to by "ir"
-  static void processOp(Op *op, Ir *ir);
+  static void processOp(Op *op, Graph &);
 
   // Compute all ops possible
-  static void foldConstants(Ir *ir);
+  static void foldConstants(Graph &);
 
 private:
   // make the tensor `name` into a constInit tensor
   static void
-  makeTensorConstInit(const TensorId name, const void *data, Ir *ir);
+  makeTensorConstInit(const TensorId name, const void *data, Graph &);
 };
 
 // Manager class for ConstExprOp's

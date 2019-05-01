@@ -103,7 +103,7 @@ static OpCreator<MaxPoolOp> maxPoolOpCreator(
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
       HasReceptiveFieldOp::Settings receptiveSettings(
-          settings.ir, settings.name, settings.scope);
+          settings.graph, settings.name, settings.scope);
       receptiveSettings.setFromAttributes(attr);
 
       int64_t storageOrder =

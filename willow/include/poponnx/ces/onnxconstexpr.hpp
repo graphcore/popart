@@ -3,16 +3,16 @@
 
 namespace poponnx {
 
-class Ir;
+class Graph;
 
 class OnnxConstExprUtil {
 public:
   static bool isConst(const onnx::NodeProto &);
-  static void processNode(const onnx::NodeProto &, Ir *);
+  static void processNode(const onnx::NodeProto &, Graph *);
 
 private:
-  static void processConstantNode(const onnx::NodeProto &, Ir *);
-  static void processShapeNode(const onnx::NodeProto &, Ir *);
+  static void processConstantNode(const onnx::NodeProto &, Graph *);
+  static void processShapeNode(const onnx::NodeProto &, Graph *);
 };
 
 } // namespace poponnx

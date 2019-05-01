@@ -12,7 +12,7 @@ public:
   VirtualGraphCheck() : Transform() {}
   virtual ~VirtualGraphCheck() override {}
 
-  virtual bool apply(Ir &ir) const override final;
+  virtual bool apply(Graph &graph) const override final;
 
   virtual std::size_t getId() const override final { return id(); }
 

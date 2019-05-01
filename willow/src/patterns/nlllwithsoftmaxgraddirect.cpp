@@ -1,7 +1,8 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/op/nll.hpp>
 #include <poponnx/op/softmax.hpp>
 #include <poponnx/patterns/nlllwithsoftmaxgraddirect.hpp>
+#include <poponnx/patterns/patterns.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensors.hpp>
 
@@ -20,7 +21,6 @@ bool NlllWithSoftmaxGradDirect::matches(Op *op) const {
   }
 
   // 2.
-  Ir &ir = op->getIr();
   if (!sfmgdOp->hasNlllFwdOp()) {
     return false;
   }
@@ -42,7 +42,7 @@ bool NlllWithSoftmaxGradDirect::apply(Op *op) const {
   auto sfmgdOp   = dynamic_cast<SoftmaxGradDirectOp *>(op);
   auto fwdLossOp = sfmgdOp->nlllFwdOp();
   auto nlll      = sfmgdOp->nlll();
-  Ir &ir         = fwdLossOp->getIr();
+  auto &graph    = op->getGraph();
 
   auto label    = sfmgdOp->inTensor(nlll->getLabelInIndex());
   auto probs    = sfmgdOp->inTensor(nlll->getProbsInIndex());
@@ -50,9 +50,9 @@ bool NlllWithSoftmaxGradDirect::apply(Op *op) const {
   auto loss     = fwdLossOp->outTensor(0);
 
   // create the new op
-  auto nlllsfmgdId = ir.moveIntoIr(std::unique_ptr<Op>(
+  auto nlllsfmgdId = graph.moveIntoGraph(std::unique_ptr<Op>(
       new NlllWithSoftmaxGradDirectOp(nlll, sfmgdOp->getSettings())));
-  Op *nlllsfmgd    = ir.getOp(nlllsfmgdId);
+  Op *nlllsfmgd    = graph.getOp(nlllsfmgdId);
 
   // Remove the SoftmaxGradDirectOp connections
   sfmgdOp->disconnectAllInputs();
@@ -74,8 +74,8 @@ bool NlllWithSoftmaxGradDirect::apply(Op *op) const {
   nlllsfmgd->setup();
 
   // Remove old ops
-  ir.eraseOp(sfmgdOp->id);
-  ir.eraseOp(fwdLossOp->id);
+  sfmgdOp->getGraph().eraseOp(sfmgdOp->id);
+  fwdLossOp->getGraph().eraseOp(fwdLossOp->id);
 
   return true;
 }

@@ -1,8 +1,10 @@
 #include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/op/pad.hpp>
+#include <poponnx/patterns/patterns.hpp>
 #include <poponnx/patterns/preunirepl.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensorindex.hpp>
 #include <poponnx/tensors.hpp>
 
 namespace poponnx {
@@ -52,11 +54,11 @@ bool PreUniRepl::apply(Op *op) const {
   int index = op0->output->indices(tensorIn)[0];
   op0->output->reset(index, tensorOut);
   tensorOut->resetProducer(op0);
-  Ir &ir = op->getIr();
+  Graph &graph = op->getGraph();
   // delete ()
-  ir.getTensors().remove(tensorIn->id); // name);
+  graph.getTensors().remove(tensorIn->id); // name);
   // delete [.]
-  ir.eraseOp(op->id);
+  graph.eraseOp(op->id);
 
   return true;
 }

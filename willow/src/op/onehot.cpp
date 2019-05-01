@@ -1,4 +1,4 @@
-#include <poponnx/ir.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/onehot.hpp>
 #include <poponnx/opmanager.hpp>
@@ -45,12 +45,12 @@ void OnehotOp::connectInTensor(InIndex inIndex, TensorId tenId) {
     TensorId depthId = tenId;
 
     // check 2 : that there is already a tensor with the shape tensor's name
-    if (!getIr().getTensors().contains(depthId)) {
+    if (!getGraph().getTensors().contains(depthId)) {
       throw error("no Tensor named `" + depthId + "' recorded in Ir. " +
                   " This is the second input in the OneHot constructor. ");
     }
 
-    Tensor *depthTensor = getIr().getTensors().get(depthId);
+    Tensor *depthTensor = getGraph().getTensors().get(depthId);
 
     // check 3 : that the tensor has data
     if (!depthTensor->hasTensorData()) {

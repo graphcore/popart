@@ -39,7 +39,8 @@ ScatterDataGradOpx::ScatterDataGradOpx(Op *op, Devicex *devicex)
 void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
   auto data = cloneNcopy(prog, getInTensor(ScatterDataGradOp::gradInIndex()));
   auto indices = getInTensor(ScatterDataGradOp::indicesInIndex());
-  auto update  = graph().addConstant(data.elementType(), indices.shape(), 0);
+  auto update  = graph().addConstant(
+      data.elementType(), indices.shape(), 0, debugPrefix("zeros"));
   poputil::mapTensorLinearly(graph(), update);
 
   // Build the implicit index coordinates

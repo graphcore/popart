@@ -1,4 +1,5 @@
 #include <poponnx/error.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
 #include <poponnx/names.hpp>
@@ -131,11 +132,12 @@ float AutoVirtualGraph::costFn(Op *op, bool training) const {
 //   - If the total cost of a subgraph is more than the desired
 //     proportion of the total cost on a single IPU, find an split in the
 //     subgraph and place subsequent ops on the next virtualGraph.
-bool AutoVirtualGraph::apply(Ir &ir) const {
+bool AutoVirtualGraph::apply(Graph &graph) const {
+  auto &ir            = graph.getIr();
   const auto num_ipus = ir.getDeviceInfo()->getNumIpus();
   const auto training = ir.canTrain();
 
-  if (ir.getOps().size() == 0 || num_ipus < 2) {
+  if (graph.getOps().size() == 0 || num_ipus < 2) {
     return true;
   }
 
@@ -161,7 +163,7 @@ bool AutoVirtualGraph::apply(Ir &ir) const {
     }
   }
   // In topological order...
-  for (Op *op : ir.getOpSchedule({})) {
+  for (Op *op : graph.getOpSchedule({})) {
     // Find potential split nodes in the FWD graph.
     if (op->getPhase() == Phase::FWD || op->getPhase() == Phase::UNDEFINED) {
       float op_cost = costFn(op, training);
@@ -262,7 +264,7 @@ bool AutoVirtualGraph::apply(Ir &ir) const {
           subgraph.split_nodes.erase(split.second);
           subgraph.final_splits.insert(split.second);
           logging::transform::info("[AutoVirtualGraph] Split node: {}",
-                                   ir.getOp(split.second)->debugName());
+                                   graph.getOp(split.second)->debugName());
 
           // Does the virtual_graph_id need setting?
           if (!subgraph_has_been_split) {
@@ -309,7 +311,7 @@ bool AutoVirtualGraph::apply(Ir &ir) const {
   }
 
   // Add sharding information to graph.
-  for (Op *op : ir.getOpSchedule({})) {
+  for (Op *op : graph.getOpSchedule({})) {
     // Find potential split nodes in the FWD graph.
     if (op->getPhase() == Phase::FWD || op->getPhase() == Phase::UNDEFINED) {
       auto &subgraph = subgraphs.at(node_subgraph_map.find(op->id)->second);
