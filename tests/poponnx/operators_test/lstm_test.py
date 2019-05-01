@@ -637,10 +637,10 @@ def test_import_torch_lstm_train(tmpdir):
             poponnx.reservedGradientPrefix() + 'X',
             poponnx.reservedGradientPrefix() + 'initial_h',
             poponnx.reservedGradientPrefix() + 'initial_c',
-            poponnx.reservedGradientPrefix() + '3',
-            poponnx.reservedGradientPrefix() + '4',
-            poponnx.reservedGradientPrefix() + '5',
-            poponnx.reservedGradientPrefix() + '6'
+            poponnx.reservedGradientPrefix() + 'lstm.weight_ih_l0',
+            poponnx.reservedGradientPrefix() + 'lstm.weight_hh_l0',
+            poponnx.reservedGradientPrefix() + 'lstm.bias_ih_l0',
+            poponnx.reservedGradientPrefix() + 'lstm.bias_hh_l0'
         ]
         anchors = {o: poponnx.AnchorReturnType('ALL') for o in anchors}
         dataFlow = poponnx.DataFlow(1, anchors)
@@ -673,13 +673,13 @@ def test_import_torch_lstm_train(tmpdir):
         s.modelToHost(get_poponnx_fname(onnx_file_name))
 
         anchor_map[poponnx.reservedGradientPrefix() + 'W'] = anchor_map.pop(
-            poponnx.reservedGradientPrefix() + '3')
+            poponnx.reservedGradientPrefix() + 'lstm.weight_ih_l0')
         anchor_map[poponnx.reservedGradientPrefix() + 'R'] = anchor_map.pop(
-            poponnx.reservedGradientPrefix() + '4')
+            poponnx.reservedGradientPrefix() + 'lstm.weight_hh_l0')
         anchor_map[poponnx.reservedGradientPrefix() + 'WB'] = anchor_map.pop(
-            poponnx.reservedGradientPrefix() + '5')
+            poponnx.reservedGradientPrefix() + 'lstm.bias_ih_l0')
         anchor_map[poponnx.reservedGradientPrefix() + 'RB'] = anchor_map.pop(
-            poponnx.reservedGradientPrefix() + '6')
+            poponnx.reservedGradientPrefix() + 'lstm.bias_hh_l0')
         return anchor_map
 
     input_size = 2
