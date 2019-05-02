@@ -6,14 +6,11 @@
 
 namespace poponnx {
 
-// An aliasing variant of FlattenOp
-// This can't be created by the inplace pattern at the moment.
-class FlattenAliasOp : public Op {
+class FlattenBaseOp : public Op {
 public:
-  FlattenAliasOp(const OperatorIdentifier &_opid,
-                 int64_t axis_,
-                 const Op::Settings &settings_);
-  std::unique_ptr<Op> clone() const override;
+  FlattenBaseOp(const OperatorIdentifier &_opid,
+                int64_t axis_,
+                const Op::Settings &settings_);
 
   void setup() final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -26,7 +23,9 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
-  view::Region aliases(InIndex index) const final { return uses(index); }
+  // currently these are conservative TODO T6973
+  view::RegMap fwdRegMap(InIndex) const final;
+  view::RegMap bwdRegMap(InIndex) const final;
 
 private:
   int64_t axis;
@@ -34,20 +33,40 @@ private:
 
 // Corresponds to the ONNX Flatten op for N-dimensional tensors.
 // https://github.com/onnx/onnx/blob/master/docs/Operators.md#flatten
-//
-// This derives from FlattenAliasOp because it's more convenient to reuse
-// FlattenAliasOp's implementation plus a copy than the other way around.
-class FlattenOp : public FlattenAliasOp {
+class FlattenOp : public FlattenBaseOp {
 public:
-  using FlattenAliasOp::FlattenAliasOp;
+  FlattenOp(const OperatorIdentifier &_opid,
+            int64_t axis_,
+            const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const override;
+
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &o) const final;
+};
+
+class FlattenInplaceOp : public FlattenBaseOp {
+public:
+  FlattenInplaceOp(const OperatorIdentifier &_opid,
+                   int64_t axis_,
+                   const Op::Settings &settings_);
+  FlattenInplaceOp(const FlattenOp &);
+  std::unique_ptr<Op> clone() const final;
+
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &o) const final {
+    // this throws an error
+    return Op::getInplaceVariant(o);
+  }
+
+  // modifies and uses are still the defaults, but aliases changes
+  // to be the same as uses (the full out region)
+  view::Region aliases(InIndex index) const final;
 };
 
 // The gradient of a flatten is a reshape back to the original shape
 class FlattenGradOp : public ReshapeOp {
 public:
-  FlattenGradOp(const FlattenAliasOp &fwdOp);
-
+  FlattenGradOp(const FlattenBaseOp &fwdOp);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 };

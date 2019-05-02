@@ -7,29 +7,27 @@
 namespace poponnx {
 namespace popx {
 
-FlattenAliasOpx::FlattenAliasOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<FlattenAliasOp>(op);
+FlattenInplaceOpx::FlattenInplaceOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex),
+      outShape(op->outInfo(FlattenBaseOp::getOutIndex()).shape_szt()) {
+  verifyOp<FlattenInplaceOp>(op);
 }
 
-poplar::Tensor FlattenAliasOpx::grow(poplar::program::Sequence &prog,
-                                     poplar::Tensor &input) const {
-  auto input_copy = cloneNcopy(prog, input);
-
-  return input_copy.reshape(outInfo(FlattenOp::getOutIndex()).shape_szt());
-}
-
-void FlattenAliasOpx::grow(poplar::program::Sequence &prog) const {
-  auto input = getInTensor(FlattenOp::getInIndex());
-
-  setOutTensor(FlattenOp::getOutIndex(), grow(prog, input));
+FlattenOpx::FlattenOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex),
+      outShape(op->outInfo(FlattenBaseOp::getOutIndex()).shape_szt()) {
+  verifyOp<FlattenOp>(op);
 }
 
 void FlattenOpx::grow(poplar::program::Sequence &prog) const {
-  auto input = getInTensor(FlattenOp::getInIndex());
+  auto input     = getInTensor(FlattenBaseOp::getInIndex());
+  auto inputCopy = cloneNcopy(prog, input);
+  setOutTensor(FlattenBaseOp::getOutIndex(), inputCopy.reshape(outShape));
+}
 
-  auto output = cloneNcopy(prog, FlattenAliasOpx::grow(prog, input));
-
-  setOutTensor(FlattenOp::getOutIndex(), output);
+void FlattenInplaceOpx::grow(poplar::program::Sequence &) const {
+  auto input = getInTensor(FlattenBaseOp::getInIndex());
+  setOutTensor(FlattenBaseOp::getOutIndex(), input.reshape(outShape));
 }
 
 FlattenGradOpx::FlattenGradOpx(Op *op, Devicex *devicex)
@@ -40,10 +38,10 @@ FlattenGradOpx::FlattenGradOpx(Op *op, Devicex *devicex)
 namespace {
 OpxCreator<FlattenOpx> flattenOpxCreator({Onnx::Operators::Flatten_1,
                                           Onnx::Operators::Flatten_9});
-OpxCreator<FlattenAliasOpx>
-    flattenAliasOpxCreator(Onnx::CustomOperators::FlattenAlias);
+OpxCreator<FlattenInplaceOpx>
+    flattenInplaceOpxCreator(Onnx::CustomOperators::FlattenInplace);
 OpxCreator<FlattenGradOpx>
-    reshapeGradOpxCreator(Onnx::GradOperators::FlattenGrad);
+    flattenGradOpxCreator(Onnx::GradOperators::FlattenGrad);
 } // namespace
 
 } // namespace popx
