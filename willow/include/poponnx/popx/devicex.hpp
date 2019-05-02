@@ -49,6 +49,7 @@ public:
     COPYOPTIMIZERBETWEENIPUS,
     PROGRAM,
     WEIGHTSTOHOST,
+    TOHOSTFINALCOPY,
     SETRANDOMSEED,
     N // The number of program fragments
   };
@@ -60,6 +61,7 @@ public:
   poplar::program::Sequence &streamOptimizerFromHostFragment();
   poplar::program::Sequence &copyOptimizerBetweenIpusFragment();
   poplar::program::Sequence &setRandomSeedFragment();
+  poplar::program::Sequence &toHostFinalCopyFragment();
   poplar::program::Sequence &programFragment();
   poplar::program::Sequence &weightsToHostFragment();
 
@@ -279,8 +281,8 @@ private:
   TaskId initBatchCounterTensorsTaskId() const;
 
   // Task to add a program to increment and check the batch count
-  PriTask updateBatchCoutTask(poplar::program::Sequence &sq);
-  TaskId updateBatchCoutTaskId() const;
+  PriTask updateBatchCountTask(poplar::program::Sequence &sq);
+  TaskId updateBatchCountTaskId() const;
 
   // Task to append a Copy to poplar::Stream from poplar::Tensor every
   // N batches

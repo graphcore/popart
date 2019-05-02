@@ -179,6 +179,10 @@ poplar::program::Sequence &PopPrograms::setRandomSeedFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEED)];
 }
 
+poplar::program::Sequence &PopPrograms::toHostFinalCopyFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::TOHOSTFINALCOPY)];
+}
+
 poplar::program::Sequence &PopPrograms::weightsToHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::WEIGHTSTOHOST)];
 }
@@ -208,6 +212,7 @@ poplar::program::Sequence PopPrograms::program() {
   poplar::program::Sequence outer;
   outer.add(setRandomSeedFragment());
   outer.add(poplar::program::Repeat(repeatCount, prog));
+  outer.add(toHostFinalCopyFragment());
 
   return outer;
 }
@@ -1143,7 +1148,7 @@ void Devicex::prepare() {
   // batch count.
   if (ir().getDataFlow().isBatchCountingRequired()) {
     tasks.add(initBatchCounterTensorsTask());
-    tasks.add(updateBatchCoutTask(progs.programFragment()));
+    tasks.add(updateBatchCountTask(progs.programFragment()));
   }
 
   // stream-to-host tensors : 1) make streams 2) make copy programs
@@ -1164,8 +1169,7 @@ void Devicex::prepare() {
       }
       // Copy program runs at the end of the step
       case (AnchorReturnTypeId::FINAL): {
-        tasks.add(toHostEveryNBatchesTask(
-            tensor, ir().getDataFlow().batchesPerStep(), programFragment()));
+        tasks.add(toHostTask(tensor, progs.toHostFinalCopyFragment()));
         break;
       }
       // Copy program runs at the end of every N batches
@@ -1363,7 +1367,9 @@ TaskId Devicex::initBatchCounterTensorsTaskId() const {
   return "initBatchCounterTensorsTask";
 }
 
-TaskId Devicex::updateBatchCoutTaskId() const { return "updateBatchCoutTask"; }
+TaskId Devicex::updateBatchCountTaskId() const {
+  return "updateBatchCountTask";
+}
 
 TaskId Devicex::initTensorTaskId(TensorId id) const {
   return "initTensorTaskId_" + id;
@@ -1506,7 +1512,7 @@ PriTask Devicex::initBatchCounterTensorsTask() {
           f};
 }
 
-PriTask Devicex::updateBatchCoutTask(poplar::program::Sequence &sq) {
+PriTask Devicex::updateBatchCountTask(poplar::program::Sequence &sq) {
 
   auto f = [&sq, this]() {
     logging::devicex::debug("Adding batch count checker program");
@@ -1539,7 +1545,7 @@ PriTask Devicex::updateBatchCoutTask(poplar::program::Sequence &sq) {
   };
 
   return {+1e6, // followed by writes to host: always as early as possible
-          updateBatchCoutTaskId(),
+          updateBatchCountTaskId(),
           {
               initBatchCounterTensorsTaskId() // poplar::Tensor creation task
           },
@@ -1590,7 +1596,7 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
           toHostTaskId(tensor->id),
           {
               // the dependencies:
-              updateBatchCoutTaskId(),        // updating poplar::Tensor task,
+              updateBatchCountTaskId(),       // updating poplar::Tensor task,
               streamToHostTaskId(tensor->id), // poplar::Stream creation task,
               taskWhichCreates(tensor->id)    // poplar::Tensor creation task.
           },
