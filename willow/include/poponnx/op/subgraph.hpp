@@ -40,7 +40,8 @@ public:
 private:
   // Helper function for getting the OpInfo and InIndex of that op, for a
   // subgraphOp inputIndex
-  std::pair<OpInfo *, InIndex> getOpInfo(InIndex inIndex) const;
+  std::pair<SubgraphOp::OpInfo const &, InIndex>
+  getOpInfo(InIndex inIndex) const;
 
   std::vector<OpInfo> childOpsInfo;
   int64_t cacheId;

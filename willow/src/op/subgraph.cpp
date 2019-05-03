@@ -21,19 +21,19 @@ void SubgraphOp::appendAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("cacheId", cacheId);
 }
 
-std::pair<SubgraphOp::OpInfo *, InIndex>
+std::pair<SubgraphOp::OpInfo const &, InIndex>
 SubgraphOp::getOpInfo(InIndex inIndex) const {
 
   InIndex counter = 0;
   InIndex delta   = 0;
-  for (auto child : childOpsInfo) {
+  for (auto &child : childOpsInfo) {
 
     delta = counter;
 
     for (auto input : child.inputs) {
 
       if (counter++ == inIndex) {
-        return std::make_pair(&child, inIndex - delta);
+        return std::make_pair(std::ref(child), inIndex - delta);
       }
     }
   }
@@ -42,16 +42,16 @@ SubgraphOp::getOpInfo(InIndex inIndex) const {
 }
 
 view::Region SubgraphOp::modifies(InIndex inIndex) const {
-  std::pair<SubgraphOp::OpInfo *, InIndex> op = getOpInfo(inIndex);
-  return op.first->op->modifies(op.second);
+  auto op = getOpInfo(inIndex);
+  return op.first.op->modifies(op.second);
 }
 view::Region SubgraphOp::uses(InIndex inIndex) const {
-  std::pair<SubgraphOp::OpInfo *, InIndex> op = getOpInfo(inIndex);
-  return op.first->op->uses(op.second);
+  auto op = getOpInfo(inIndex);
+  return op.first.op->uses(op.second);
 }
 view::Region SubgraphOp::aliases(InIndex inIndex) const {
-  std::pair<SubgraphOp::OpInfo *, InIndex> op = getOpInfo(inIndex);
-  return op.first->op->aliases(op.second);
+  auto op = getOpInfo(inIndex);
+  return op.first.op->aliases(op.second);
 }
 
 } // namespace poponnx
