@@ -1231,9 +1231,28 @@ void Devicex::prepare() {
     }
   };
 
-  // Enigma moves the graph into the engine and then set the graphs to 0
-  pEngine.reset(new poplar::Engine(
-      rootGraph(), progs.progs(), engineOptions, progressLogger));
+  try {
+    // Enigma moves the graph into the engine and then set the graphs to 0
+    pEngine.reset(new poplar::Engine(
+        rootGraph(), progs.progs(), engineOptions, progressLogger));
+  } catch (const poplar::graph_memory_allocation_error &e) {
+    // If the creation of the engine throw an exception due to memory allocation
+    // i.e. the program does not fit show graph profile and re-throw the
+    // exception In certain cases poplar will throw the error without a graph
+    // profile. The following engine option needs to be set to enable the graph
+    // profile in this case "debug.allowOutOfMemory":"true"
+
+    if (e.graphProfile.type() == poplar::ProfileValue::Type::MAP &&
+        e.graphProfile.size() != 0) {
+
+      std::stringstream ss;
+      poplar::printProfileSummary(ss, e.graphProfile, {}, reportOptions);
+      logging::log(logging::Module::devicex, logging::Level::Err, ss.str());
+
+      throw;
+    }
+  }
+
   logging::devicex::info("Engine compiled");
 
   pEngine->load(popDevice);
