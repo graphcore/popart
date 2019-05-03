@@ -1232,9 +1232,10 @@ void Devicex::prepare() {
   };
 
   try {
-    // Enigma moves the graph into the engine and then set the graphs to 0
-    pEngine.reset(new poplar::Engine(
-        rootGraph(), progs.progs(), engineOptions, progressLogger));
+    poplar::Executable executable = poplar::compileGraph(
+        rootGraph(), progs.progs(), engineOptions, progressLogger);
+
+    pEngine.reset(new poplar::Engine(std::move(executable), engineOptions));
   } catch (const poplar::graph_memory_allocation_error &e) {
     // If the creation of the engine throw an exception due to memory allocation
     // i.e. the program does not fit show graph profile and re-throw the
