@@ -34,6 +34,8 @@ public:
 
   bool isNorm() const override { return true; }
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
 private:
   int64_t num_groups;
   float epsilon;
@@ -59,6 +61,8 @@ public:
   float getEpsilon() const { return epsilon; }
 
   void appendAttributes(OpSerialiserBase &) const override;
+
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
 private:
   float epsilon;

@@ -25,6 +25,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   void setup0() final;
   void setSpatialK() final;
@@ -54,6 +56,8 @@ public:
   static InIndex getPooledInIndex() { return 1; }
   static InIndex getGradPooledInIndex() { return 2; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
   const AveragePoolOp *getCloneOfCreator() const;
 

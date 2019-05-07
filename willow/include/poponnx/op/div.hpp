@@ -30,6 +30,8 @@ public:
   // this function returns the axes along which to perform the reduction.
   const std::vector<int64_t> &getReductionAxes() const;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   // Used to set the outputs TensorInfo
   TensorInfo forward_op_arg_info;

@@ -46,6 +46,8 @@ public:
   // assume input_shape is the shape of the input to this op:
   std::vector<Slice> getSlices() const;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   const std::vector<int64_t> starts;
   const std::vector<int64_t> ends;

@@ -22,7 +22,7 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
-  float getSubgraphValue() const final { return 0.1f; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
   bool isOutlineable() const override { return false; }
 };

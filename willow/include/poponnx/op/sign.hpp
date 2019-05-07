@@ -11,6 +11,8 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
   static OperatorIdentifier getOpId(const Ir &ir);
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 // We use the tensorflow convention of defining the gradient to be 0 everywhere
@@ -27,6 +29,8 @@ public:
   // TODO : T7052. SignGradOp does not need any inputs
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 } // namespace poponnx

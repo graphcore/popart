@@ -41,6 +41,8 @@ public:
 
   bool canBeReplacedByIdentity() override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   int64_t axis = 0;
 
@@ -103,6 +105,8 @@ public:
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 protected:
   // An unsafe constructor that allows using any OperatorIdentifier

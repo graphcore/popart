@@ -39,6 +39,8 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   const L1Loss *l1loss_;
 };
@@ -54,6 +56,8 @@ public:
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   const L1Loss *l1loss_;

@@ -35,6 +35,8 @@ public:
 
   bool canBeReplacedByIdentity() override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   // The shape of the data output tensor
   Shape outShape;

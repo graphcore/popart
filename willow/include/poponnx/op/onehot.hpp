@@ -34,6 +34,8 @@ public:
 
   int64_t getAxis() const { return axis; }
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   int64_t axis;
   int64_t onehotAxisDim;
@@ -59,6 +61,8 @@ public:
   int64_t getAxis() const { return axis; }
 
   void appendAttributes(OpSerialiserBase &) const override;
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   int64_t axis;

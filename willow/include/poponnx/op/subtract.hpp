@@ -41,6 +41,8 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   TensorInfo forward_op_arg_info;
 };

@@ -20,6 +20,8 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
   // The region of the output tensors which is based on the input tensor value.
   // The complement of this region is the padding region.
   view::Region valueRegion() const;
@@ -30,8 +32,6 @@ public:
   const std::string &getMode() const;
 
   void appendAttributes(OpSerialiserBase &) const override;
-
-  float getSubgraphValue() const final { return 0.1f; }
 
   void setup() final;
 

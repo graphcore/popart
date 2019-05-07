@@ -38,6 +38,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   int64_t axis;
 };
@@ -56,6 +58,8 @@ public:
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   const NllLoss *nllloss_;
@@ -76,6 +80,8 @@ public:
   static InIndex getLabelInIndex() { return 1; }
   static OutIndex getLossOutIndex() { return 0; }
   static OutIndex getGradOutIndex() { return 1; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   const NllLoss *nllloss_;

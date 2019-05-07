@@ -43,7 +43,7 @@ public:
 
   static OutIndex getOutIndex() { return 0; }
 
-  float getSubgraphValue() const final { return 0.1f; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 } // namespace poponnx

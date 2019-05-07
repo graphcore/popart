@@ -27,6 +27,8 @@ public:
 
   // T7721: make add bias cachable
   bool isOutlineable() const override { return false; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 // The gradient op for the data input of the add bias op.

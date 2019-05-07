@@ -27,6 +27,8 @@ public:
   view::RegMap fwdRegMap(InIndex) const final;
   view::RegMap bwdRegMap(InIndex) const final;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   int64_t axis;
 };

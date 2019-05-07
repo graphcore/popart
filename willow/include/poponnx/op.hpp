@@ -309,7 +309,12 @@ public:
 
   // default high value here means that sub-graphs
   // of single Ops are cached by default
-  virtual float getSubgraphValue() const { return 1000.0f; }
+  virtual float getSubgraphValue() const = 0;
+
+  // for example, conv has this value in getSubgraphValue(),
+  constexpr float getHighSubgraphValue() const { return 1000.0f; }
+  // and relu has this value.
+  constexpr float getLowSubgraphValue() const { return 0.1f; }
 
   // Allow an op to exclude itself from caching. If this method returns false
   // it will mean that any possiable subgraph that this op is part of will

@@ -622,7 +622,8 @@ def test_outlining_bca3():
     anchor_names = [o]
     dataFlow = poponnx.DataFlow(
         1, {
-            o: poponnx.AnchorReturnType("ALL"),
+            o:
+            poponnx.AnchorReturnType("ALL"),
             poponnx.reservedGradientPrefix() + i1:
             poponnx.AnchorReturnType("ALL"),
             poponnx.reservedGradientPrefix() + i2:

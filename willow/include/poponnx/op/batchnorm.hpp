@@ -31,6 +31,8 @@ public:
   static OutIndex getSavedMeanOutIndex() { return 3; }
   static OutIndex getSavedVarOutIndex() { return 4; }
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
   // Attributes
   float getEpsilon() const { return epsilon; }
   float getMomentum() const { return momentum; }
@@ -73,6 +75,8 @@ public:
   float getEpsilon() const { return epsilon; }
 
   void appendAttributes(OpSerialiserBase &) const override;
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   float epsilon;

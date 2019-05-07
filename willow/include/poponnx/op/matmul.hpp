@@ -24,6 +24,8 @@ public:
   const Tensor *rhsIn() const;
   const Tensor *out() const;
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
   // Follow the numpy matmul broadcasting rules for the output shape
   Shape npMatMulOut(Shape lhs, Shape rhs) const;
 
@@ -56,6 +58,8 @@ public:
   Shape getOutputShape() const;
 
   const MatMulOp *getCloneOfCreator() const;
+
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
 private:
   TensorInfo fwdOpOutputGrad;
@@ -90,6 +94,8 @@ public:
   Shape getOutputShape() const;
 
   const MatMulOp *getCloneOfCreator() const;
+
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
 private:
   TensorInfo fwdOpOutputGrad;

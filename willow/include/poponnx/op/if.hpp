@@ -33,6 +33,8 @@ public:
 
   bool isOutlineable() const override { return false; }
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   void appendInputs(const std::vector<TensorId> &input_ids, const Scope &);
 

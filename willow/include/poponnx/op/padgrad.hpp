@@ -17,8 +17,6 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
-  float getSubgraphValue() const final { return 0.1f; }
-
 private:
   static std::vector<int64_t> calculateStarts(const PadOp &);
   static std::vector<int64_t> calculateEnds(const PadOp &);

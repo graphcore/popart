@@ -34,6 +34,8 @@ public:
   const std::vector<int64_t> &getReductionAxes();
   static OutIndex getOutIndex() { return 0; }
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   std::vector<int64_t> reduction_axes;
   TensorInfo forward_op_arg_info;

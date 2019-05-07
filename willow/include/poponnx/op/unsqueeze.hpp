@@ -19,6 +19,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   std::vector<int64_t> axes;
 };
@@ -32,6 +34,8 @@ public:
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   // The shape and type of the input to the constructing forward op

@@ -25,7 +25,7 @@ public:
   view::Region modifies(InIndex) const final;
   const TensorId &getVarId() const { return varId; }
 
-  float getSubgraphValue() const final { return 0.1f; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   TensorId varId;

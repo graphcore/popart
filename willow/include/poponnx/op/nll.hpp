@@ -48,6 +48,8 @@ public:
 
   const NllLoss *nlll() const;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   const NllLoss *nllloss_;
 };
@@ -62,6 +64,8 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   const NllLoss *nlll() const;
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   const NllLoss *nllloss_;

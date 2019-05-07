@@ -37,6 +37,8 @@ public:
   virtual view::Region uses(InIndex inIndex) const override;
   virtual view::Region aliases(InIndex inIndex) const override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   // Helper function for getting the OpInfo and InIndex of that op, for a
   // subgraphOp inputIndex

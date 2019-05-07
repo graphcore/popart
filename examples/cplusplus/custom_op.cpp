@@ -51,30 +51,6 @@ class CubeGradOp;
 class CubeOpx;
 class CubeGradOpx;
 
-// The forward Op
-class CubeOp : public poponnx::Op {
-public:
-  CubeOp(const poponnx::OperatorIdentifier &_opid,
-         const poponnx::Op::Settings &settings_)
-      : poponnx::Op(_opid, settings_) {}
-
-  // The output poponnx Tensor has the same inputInfo and numerical type
-  // (i.e. the same TensorInfo) as the input Tensor. This function is
-  // required for inputInfo/type inference
-  //
-  virtual void setup() { outInfo(0) = inInfo(0); }
-
-  // There is only one Gradient Op for CubeOp, a CubeGradOp
-  // It is possible to have multiple Gradient Ops
-  // (Conv has 2 in poponnx, one for weights and one for activations)
-  //
-  std::vector<std::unique_ptr<poponnx::Op>> getGradOps() {
-    std::vector<std::unique_ptr<Op>> upops;
-    upops.emplace_back(new CubeGradOp(*this));
-    return upops;
-  }
-};
-
 // The gradient Op
 class CubeGradOp : public poponnx::Op {
 public:
@@ -123,6 +99,36 @@ public:
     static const std::map<int, int> outInfo = {{0, 0}};
     return outInfo;
   }
+
+  // an estimate of how valuable sub-graph matching will be
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+};
+
+// The forward Op
+class CubeOp : public poponnx::Op {
+public:
+  CubeOp(const poponnx::OperatorIdentifier &_opid,
+         const poponnx::Op::Settings &settings_)
+      : poponnx::Op(_opid, settings_) {}
+
+  // The output poponnx Tensor has the same inputInfo and numerical type
+  // (i.e. the same TensorInfo) as the input Tensor. This function is
+  // required for inputInfo/type inference
+  //
+  virtual void setup() { outInfo(0) = inInfo(0); }
+
+  // There is only one Gradient Op for CubeOp, a CubeGradOp
+  // It is possible to have multiple Gradient Ops
+  // (Conv has 2 in poponnx, one for weights and one for activations)
+  //
+  std::vector<std::unique_ptr<poponnx::Op>> getGradOps() {
+    std::vector<std::unique_ptr<Op>> upops;
+    upops.emplace_back(new CubeGradOp(*this));
+    return upops;
+  }
+
+  // an estimate of how valuable sub-graph matching will be
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 static poponnx::OpCreator<CubeOp> cubeOpCreator(Onnx::CustomOperators::Cube);
@@ -210,8 +216,8 @@ auto main(int argc, char **argv) -> int {
 
   // 2.2 Loss(es).
   // 2.2.1 l1 loss : 0.1 * |output|_1
-  std::unique_ptr<L1Loss> l1Loss(
-      new popoonnx::L1Loss(outputs[0], "l1LossVal", 0.1f));
+  std::unique_ptr<poponnx::L1Loss> l1Loss(
+      new poponnx::L1Loss(outputs[0], "l1LossVal", 0.1f));
   std::vector<poponnx::Loss *> losses{l1Loss.get()};
 
   // 2.3 Data streaming.

@@ -62,6 +62,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   int64_t axis;
   TensorInfo gradOutInfo;

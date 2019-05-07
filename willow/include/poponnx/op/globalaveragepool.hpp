@@ -27,6 +27,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   Shape kernel;
 };
@@ -56,6 +58,8 @@ public:
   const GlobalAveragePoolOp *getCloneOfCreator() const;
 
   void appendAttributes(OpSerialiserBase &) const override;
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   // The shape and type of the input to the

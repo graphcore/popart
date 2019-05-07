@@ -24,6 +24,8 @@ public:
   static InIndex getGradInIndex() { return 0; }
   static InIndex getFwdOutInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 } // namespace poponnx

@@ -114,6 +114,8 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   int64_t getNOutChans() const final;
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
   void setup() override;
 
   // from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv :
@@ -172,6 +174,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
 private:
   std::unique_ptr<Op> cloneOfCreator;
   TensorInfo weightsInfo;
@@ -189,6 +193,8 @@ public:
 
   const ConvParameters &getParameters() const { return params; }
   void setParameters(const ConvParameters &p) { params = p; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   ConvParameters params;
@@ -212,6 +218,8 @@ public:
 
   const ConvParameters &getParameters() const { return params; }
   void setParameters(const ConvParameters &p) { params = p; }
+
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
 private:
   ConvParameters params;

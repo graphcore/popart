@@ -103,7 +103,8 @@ def test_virtual_graph3():
     # Need to anchor the output of the backward pass to stop it being pruned
     dataFlow = poponnx.DataFlow(
         1, {
-            o: poponnx.AnchorReturnType("ALL"),
+            o:
+            poponnx.AnchorReturnType("ALL"),
             poponnx.reservedGradientPrefix() + i1:
             poponnx.AnchorReturnType("ALL"),
             poponnx.reservedGradientPrefix() + i2:
@@ -169,9 +170,12 @@ def test_virtual_graph4():
     # Need to anchor the output of the backward pass to stop it being pruned
     dataFlow = poponnx.DataFlow(
         1, {
-            o1: poponnx.AnchorReturnType("ALL"),
-            o2: poponnx.AnchorReturnType("ALL"),
-            o3: poponnx.AnchorReturnType("ALL"),
+            o1:
+            poponnx.AnchorReturnType("ALL"),
+            o2:
+            poponnx.AnchorReturnType("ALL"),
+            o3:
+            poponnx.AnchorReturnType("ALL"),
             poponnx.reservedGradientPrefix() + i1:
             poponnx.AnchorReturnType("ALL"),
             poponnx.reservedGradientPrefix() + i2:

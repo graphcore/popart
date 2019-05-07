@@ -23,6 +23,7 @@ public:
   static InIndex getGradInIndex() { return 0; }
   static InIndex getFwdArgInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
+  virtual float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 } // namespace poponnx

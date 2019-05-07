@@ -30,6 +30,8 @@ public:
 
   bool canBeReplacedByIdentity() override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 public:
   std::vector<int64_t> strides;
 };
@@ -52,6 +54,8 @@ public:
   const Shape &getFwdInputShape() const { return fwdOpInfo.shape(); }
 
   void appendAttributes(OpSerialiserBase &) const override;
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   std::vector<int64_t> strides;
