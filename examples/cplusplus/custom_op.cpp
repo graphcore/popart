@@ -28,40 +28,46 @@
 namespace Onnx {
 namespace CustomOperators {
 const poponnx::OperatorIdentifier Cube = {"com.acme", "Cube", 1};
-}
+} // namespace CustomOperators
 namespace CustomGradOperators {
 const poponnx::OperatorIdentifier CubeGrad = {"com.acme", "CubeGrad", 1};
-}
+} // namespace CustomGradOperators
 } // namespace Onnx
 
-class CubeGradOp : public poponnx::Op {
-public:
-  CubeGradOp(const poponnx::Op &fwdOp)
-      : poponnx::Op(Onnx::CustomGradOperators::CubeGrad, fwdOp.getSettings()) {}
+// For training with a custom Op, four classes need to be implemented,
+// one for each of:
+// {forward, gradient} x {Op, Opx}.
+//
+// If only inference is required, then two classes need to be implemented:
+// {forward} x {Op, Opx}.
+//
+// The Op is a poplar/hardware agnostic description of the computation.
+// the Opx is the poplar implementation of the Op.
+//
+// We do training in this example, so the four classes implemented are:
+//
+class CubeOp;
+class CubeGradOp;
+class CubeOpx;
+class CubeGradOpx;
 
-  virtual void setup() { outInfo(0) = inInfo(0); }
-
-  virtual const std::vector<poponnx::GradInOutMapper> &gradInputInfo() const {
-    static const std::vector<poponnx::GradInOutMapper> inInfo = {
-        {0, 0, poponnx::GradOpInType::GRADOUT},
-        {1, 0, poponnx::GradOpInType::OUT}};
-    return inInfo;
-  }
-
-  const std::map<int, int> &gradOutToNonGradIn() const {
-    static const std::map<int, int> outInfo = {{0, 0}};
-    return outInfo;
-  }
-};
-
+// The forward Op
 class CubeOp : public poponnx::Op {
 public:
   CubeOp(const poponnx::OperatorIdentifier &_opid,
          const poponnx::Op::Settings &settings_)
       : poponnx::Op(_opid, settings_) {}
 
+  // The output poponnx Tensor has the same inputInfo and numerical type
+  // (i.e. the same TensorInfo) as the input Tensor. This function is
+  // required for inputInfo/type inference
+  //
   virtual void setup() { outInfo(0) = inInfo(0); }
 
+  // There is only one Gradient Op for CubeOp, a CubeGradOp
+  // It is possible to have multiple Gradient Ops
+  // (Conv has 2 in poponnx, one for weights and one for activations)
+  //
   std::vector<std::unique_ptr<poponnx::Op>> getGradOps() {
     std::vector<std::unique_ptr<Op>> upops;
     upops.emplace_back(new CubeGradOp(*this));
@@ -69,16 +75,69 @@ public:
   }
 };
 
+// The gradient Op
+class CubeGradOp : public poponnx::Op {
+public:
+  CubeGradOp(const poponnx::Op &fwdOp)
+      : poponnx::Op(Onnx::CustomGradOperators::CubeGrad, fwdOp.getSettings()) {}
+
+  // same comment as for CubeOp, for running shape/type inference "statically"
+  virtual void setup() { outInfo(0) = inInfo(0); }
+
+  // function describing the inputs and output(s) of CubeGradOp
+  // The Gradient Op which we are implementing (CubeGradOp) has 2 inputs.
+  // The input at index 0 is:
+  // the gradient of the 0'th output Tensor of the CubeOp.
+  // The input at index 1 is :
+  // the 0'th output Tensor of the CubeOp.
+  // Supposing the CubeOp has input Tensor T0 and output Tensor T1,
+  //
+  //   input at index 0 (T0)
+  //          |
+  //        CubeOp
+  //          |
+  //   output at index 0 (T1)
+  //
+  // Then the picture described by the map below looks like,
+  //
+  //
+  //    input at index 0 (gradient of T1)
+  //         |   input at index 1 (T1)
+  //         |     |
+  //         |     |
+  //        CubeGradOp
+  //            |
+  //            |
+  //   output at index 0 (gradient of T0)
+  //
+  virtual const std::vector<poponnx::GradInOutMapper> &gradInputInfo() const {
+    static const std::vector<poponnx::GradInOutMapper> inInfo = {
+        {0, 0, poponnx::GradOpInType::GRADOUT},
+        {1, 0, poponnx::GradOpInType::OUT}};
+    return inInfo;
+  }
+
+  // The Grad Op only has one output, at index 0. The output at index 0
+  // is the gradient of the input at index 0 of the CubeOp
+  const std::map<int, int> &gradOutToNonGradIn() const {
+    static const std::map<int, int> outInfo = {{0, 0}};
+    return outInfo;
+  }
+};
+
 static poponnx::OpCreator<CubeOp> cubeOpCreator(Onnx::CustomOperators::Cube);
 
+// forward Opx (poplar implementation of the forward Op)
 class CubeOpx : public poponnx::popx::Opx {
 public:
   CubeOpx(poponnx::Op *op, poponnx::popx::Devicex *devicex)
       : poponnx::popx::Opx(op, devicex) {
+    // not strictly necessary, we check that op is castable to a CubeOp *.
     verifyOp<CubeOp>(op, Onnx::CustomOperators::Cube);
   }
+
   void grow(poplar::program::Sequence &prog) const final {
-    // Cube the input
+    // Cube the input. We create a poplar::Tensor of name outId(0)
     insert(outId(0),
            popops::map(graph(),
                        popops::expr::Mul(popops::expr::Mul(popops::expr::_1,
@@ -96,6 +155,9 @@ public:
       : poponnx::popx::Opx(op, devicex) {
     verifyOp<CubeGradOp>(op, Onnx::CustomGradOperators::CubeGrad);
   }
+
+  // Create the gradient poplar::Tensor, which is
+  // 3 * input_to_cube**2 * gradient_of_cube_output
   void grow(poplar::program::Sequence &prog) const final {
 
     insert(
@@ -123,11 +185,16 @@ auto main(int argc, char **argv) -> int {
   (void)argc;
   (void)argv;
 
+  // step 1 : generate an ONNX inference Model which uses Cube.
+  // The simple mode will be : input->Cube->output
+  //
   auto builder = poponnx::Builder::create();
 
-  poponnx::TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
+  // The input Tensor will be of type FLOAT, and will
+  // be a rank-1 tensor with 2 elements
+  poponnx::TensorInfo inputInfo{"FLOAT", std::vector<int64_t>{2}};
 
-  auto input = builder->addInputTensor(shape);
+  auto input = builder->addInputTensor(inputInfo);
 
   auto outputs =
       builder->customOp(Onnx::CustomOperators::Cube, 1, {input}, 1, {});
@@ -136,14 +203,29 @@ auto main(int argc, char **argv) -> int {
 
   auto proto = builder->getModelProto();
 
-  auto dataFlow =
-      poponnx::DataFlow(1,
-                        {{outputs[0], poponnx::AnchorReturnType("ALL")},
-                         {poponnx::reservedGradientPrefix() + input,
-                          poponnx::AnchorReturnType("ALL")}});
+  // step 2 : add additional information for training, currently not part of
+  // the ONNX specification:
+  // 2.1 an Optimiser.
   auto optimizer = poponnx::ConstSGD(0.01f);
-  std::vector<poponnx::Loss *> losses{
-      new poponnx::L1Loss(outputs[0], "l1LossVal", 0.1f)};
+
+  // 2.2 Loss(es).
+  // 2.2.1 l1 loss : 0.1 * |output|_1
+  std::unique_ptr<L1Loss> l1Loss(
+      new popoonnx::L1Loss(outputs[0], "l1LossVal", 0.1f));
+  std::vector<poponnx::Loss *> losses{l1Loss.get()};
+
+  // 2.3 Data streaming.
+  // We will stream
+  // 1) the output tensor back to host every iteration
+  // 2) the gradient of input tensor back to host every iteration
+  auto dataFlow = poponnx::DataFlow(
+      1, // this is the number of batches per step. It does not have an
+         // equivalent in other standard frameworks like Tensorflow. It is the
+         // number of batches to process when session->run(.) is called.
+         // (see below)
+      {{outputs[0], poponnx::AnchorReturnType("ALL")},
+       {poponnx::reservedGradientPrefix() + input,
+        poponnx::AnchorReturnType("ALL")}});
 
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();
@@ -159,20 +241,24 @@ auto main(int argc, char **argv) -> int {
       {},
       poponnx::Patterns({poponnx::PreAliasPatternType::PREUNIREPL}));
 
-  // prepare the anchors
+  // prepare the anchors buffers. The anchors are what were specified in 2.3
+  // for data streaming: the tensors which will be returned from the device
+  // to the host. We specified 2 such tensors in 2.3,
+  // 1) the output tensor (i.e. the output of the forward pass)
   float rawOutputData[2] = {0, 0};
   poponnx::NDArrayWrapper<float> outData(rawOutputData, {2});
 
-  float rawWeightData[2] = {0, 0};
-  poponnx::NDArrayWrapper<float> outWeights(rawWeightData, {2});
+  // 2) and the gradient of input tensor
+  float rawGradInputData[2] = {0, 0};
+  poponnx::NDArrayWrapper<float> gradInData(rawGradInputData, {2});
   std::map<poponnx::TensorId, poponnx::IArray &> anchors = {
       {outputs[0], outData},
-      {poponnx::reservedGradientPrefix() + input, outWeights},
+      {poponnx::reservedGradientPrefix() + input, gradInData},
   };
 
   session->prepareDevice();
 
-  // prepare the inputs
+  // prepare the input tensor for this example
   float rawInputData[2] = {2.0f, 4.0f};
   poponnx::NDArrayWrapper<float> inData(rawInputData, {2});
   std::map<poponnx::TensorId, poponnx::IArray &> inputs = {{input, inData}};
@@ -185,5 +271,5 @@ auto main(int argc, char **argv) -> int {
 
   poponnx::logging::ir::err("input : {}", inData);
   poponnx::logging::ir::err("output : {}", outData);
-  poponnx::logging::ir::err("dInput : {}", outWeights);
+  poponnx::logging::ir::err("dInput : {}", gradInData);
 }
