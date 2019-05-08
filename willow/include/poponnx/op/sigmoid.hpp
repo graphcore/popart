@@ -18,6 +18,7 @@ public:
 class SigmoidInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   SigmoidInplaceOp(const SigmoidOp &);
+  std::unique_ptr<Op> clone() const final;
 };
 
 class SigmoidGradOp : public Op {

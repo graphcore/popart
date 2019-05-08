@@ -101,6 +101,10 @@ const std::map<int, int> &AveragePoolGradOp::gradOutToNonGradIn() const {
 
 void AveragePoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
+std::unique_ptr<Op> AveragePoolGradOp::clone() const {
+  return make_unique<AveragePoolGradOp>(*this);
+}
+
 namespace {
 static OpCreator<AveragePoolOp> averagePoolOpCreator(
     {Onnx::Operators::AveragePool_1, Onnx::Operators::AveragePool_7},

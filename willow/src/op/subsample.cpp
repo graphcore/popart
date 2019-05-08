@@ -76,6 +76,10 @@ SubsampleGradOp::SubsampleGradOp(const SubsampleOp &fwdOp_)
     : Op(Onnx::CustomGradOperators::SubsampleGrad, fwdOp_.getSettings()),
       strides(fwdOp_.getStrides()), fwdOpInfo(fwdOp_.inInfo(0)) {}
 
+std::unique_ptr<Op> SubsampleGradOp::clone() const {
+  return make_unique<SubsampleGradOp>(*this);
+}
+
 void SubsampleGradOp::setup() { output->tensor(0)->info = fwdOpInfo; }
 
 const std::vector<GradInOutMapper> &SubsampleGradOp::gradInputInfo() const {

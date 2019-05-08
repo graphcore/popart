@@ -42,7 +42,7 @@
 
 // The layers required to construct the backwards pass
 #include <poponnx/op/batchnorm.hpp>
-#include <poponnx/op/relu.hpp>
+#include <poponnx/op/placeholder.hpp>
 #include <poponnx/op/sum.hpp>
 #include <poponnx/op/varupdate.hpp>
 
@@ -2114,8 +2114,8 @@ void Ir::applyInplacePattern() {
 
 Op &Ir::getSubgraphAnchorPlaceholder() {
   static std::unique_ptr<Op> subgraphAnchorPlaceholder = std::unique_ptr<Op>(
-      new ReluOp({"TempAnchorDomain", "TempAnchorType", 1},
-                 Op::Settings{getMainGraph(), "TempAnchorName"}));
+      new PlaceholderOp({"TempAnchorDomain", "TempAnchorType", 1},
+                        Op::Settings{getMainGraph(), "TempAnchorName"}));
 
   return *subgraphAnchorPlaceholder.get();
 }

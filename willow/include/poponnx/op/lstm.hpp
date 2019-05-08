@@ -73,6 +73,7 @@ private:
 class LSTMGradOp : public Op {
 public:
   LSTMGradOp(const LSTMOp &);
+  std::unique_ptr<Op> clone() const final;
   void setup() final;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;

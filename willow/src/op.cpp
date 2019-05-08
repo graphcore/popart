@@ -82,10 +82,6 @@ view::RegMap Op::bwdRegMap(InIndex i) const {
 
 bool Op::isLossOp() const { return false; }
 
-std::unique_ptr<Op> Op::clone() const {
-  throw error("No clone implemented for {}", opid);
-}
-
 Op::~Op() = default;
 
 // return a vector of 1 or several OpAndTensorIds for

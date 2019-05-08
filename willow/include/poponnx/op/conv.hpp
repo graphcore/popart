@@ -156,6 +156,7 @@ private:
 class ConvWeightsGradOp : public Op {
 public:
   ConvWeightsGradOp(const ConvOp &);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
@@ -177,7 +178,7 @@ public:
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
 private:
-  std::unique_ptr<Op> cloneOfCreator;
+  std::shared_ptr<Op> cloneOfCreator;
   TensorInfo weightsInfo;
 };
 
@@ -185,7 +186,9 @@ class ConvFlipWeightsOp : public Op {
 public:
   ConvFlipWeightsOp(const OperatorIdentifier &_opid,
                     const Op::Settings &settings_);
+  ConvFlipWeightsOp(const ConvFlipWeightsOp &) = default;
   ~ConvFlipWeightsOp() override;
+  std::unique_ptr<Op> clone() const final;
   void setup() final;
 
   static InIndex getInIndex() { return 0; }
@@ -203,6 +206,7 @@ private:
 class ConvDataGradOp : public Op {
 public:
   ConvDataGradOp(const ConvOp &);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
@@ -223,7 +227,7 @@ public:
 
 private:
   ConvParameters params;
-  std::unique_ptr<Op> cloneOfCreator;
+  std::shared_ptr<Op> cloneOfCreator;
   TensorInfo dataInfo;
 };
 

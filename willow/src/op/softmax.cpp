@@ -41,6 +41,10 @@ SoftmaxGradOp::SoftmaxGradOp(const SoftmaxOp &op_)
     : Op(Onnx::GradOperators::SoftmaxGrad, op_.getSettings()),
       axis(op_.getAxis()) {}
 
+std::unique_ptr<Op> SoftmaxGradOp::clone() const {
+  return make_unique<SoftmaxGradOp>(*this);
+}
+
 const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {
   // input at index 0 (probGradInputIndex()) : gradient of output of softmax
   // input at index 1 (actsIn()): input of softmax (activations before p)

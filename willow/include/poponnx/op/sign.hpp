@@ -9,6 +9,7 @@ class SignOp : public ElementWiseUnaryOp {
 public:
   SignOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
   std::vector<std::unique_ptr<Op>> getGradOps() final;
+  std::unique_ptr<Op> clone() const final;
 
   static OperatorIdentifier getOpId(const Ir &ir);
 
@@ -25,6 +26,7 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
+  std::unique_ptr<Op> clone() const final;
 
   // TODO : T7052. SignGradOp does not need any inputs
   static InIndex getInIndex() { return 0; }

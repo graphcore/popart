@@ -46,6 +46,7 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   void setup() final;
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
@@ -67,7 +68,7 @@ private:
   TensorInfo fwdOpRhsInfo;
 
   // TODO : Would benefit from a MatMulGradOp class - T6830
-  std::unique_ptr<Op> cloneOfCreator;
+  std::shared_ptr<Op> cloneOfCreator;
 };
 
 class MatMulRhsGradOp : public Op {
@@ -82,6 +83,7 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   void setup() final;
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
@@ -102,7 +104,7 @@ private:
   TensorInfo fwdOpLhsInfo;
   TensorInfo fwdOpRhsInfo;
 
-  std::unique_ptr<Op> cloneOfCreator;
+  std::shared_ptr<Op> cloneOfCreator;
 };
 
 } // namespace poponnx

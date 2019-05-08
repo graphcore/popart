@@ -11,13 +11,17 @@ MinOp::MinOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
 std::unique_ptr<Op> MinOp::clone() const { return make_unique<MinOp>(*this); }
 
 std::unique_ptr<Op> MinOp::getIthGrad(int i) const {
-  return std::unique_ptr<MinArgGradOp>(new MinArgGradOp(*this, i));
+  return make_unique<MinArgGradOp>(*this, i);
 }
 
 MinArgGradOp::MinArgGradOp(const MinOp &op_, InIndex inputIndex)
     : NonLinearVariadicGradOp(Onnx::GradOperators::MinArgGrad,
                               op_,
                               inputIndex) {}
+
+std::unique_ptr<Op> MinArgGradOp::clone() const {
+  return make_unique<MinArgGradOp>(*this);
+}
 
 namespace {
 static OpCreator<MinOp> minOpCreator({Onnx::Operators::Min_6,

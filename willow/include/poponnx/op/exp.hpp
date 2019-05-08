@@ -18,6 +18,7 @@ public:
 class ExpInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   ExpInplaceOp(const ExpOp &);
+  std::unique_ptr<Op> clone() const final;
 };
 
 // Note that ExpGradOp does NOT

@@ -1,5 +1,6 @@
 
 #include <poponnx/ir.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/subgraph.hpp>
 #include <poponnx/opserialiser.hpp>
 
@@ -7,6 +8,10 @@ namespace poponnx {
 
 SubgraphOp::SubgraphOp(Graph &graph_, int64_t cacheId_)
     : Op(Onnx::CustomOperators::Subgraph, {graph_, ""}), cacheId(cacheId_) {}
+
+std::unique_ptr<Op> SubgraphOp::clone() const {
+  return make_unique<SubgraphOp>(*this);
+}
 
 std::vector<Op *> SubgraphOp::getOps() {
   std::vector<Op *> o;

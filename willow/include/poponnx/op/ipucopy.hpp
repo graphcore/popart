@@ -15,6 +15,7 @@ public:
             uint64_t _sourceIpu,
             uint64_t _destIpu,
             const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const final;
   void setup() final;
 
   uint64_t getDestIpu() const { return destIpu; }

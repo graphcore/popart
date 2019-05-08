@@ -1,3 +1,4 @@
+#include <poponnx/makeunique.hpp>
 #include <poponnx/op/ipucopy.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -13,6 +14,10 @@ IpuCopyOp::IpuCopyOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_), sourceIpu(_sourceIpu), destIpu(_destIpu) {
   // very high priority, so that performed as early as possible
   priority = std::numeric_limits<double>::max();
+}
+
+std::unique_ptr<Op> IpuCopyOp::clone() const {
+  return make_unique<IpuCopyOp>(*this);
 }
 
 void IpuCopyOp::setup() {

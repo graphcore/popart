@@ -43,6 +43,7 @@ private:
 class DivArg0GradOp : public DivArgGradOp {
 public:
   DivArg0GradOp(const DivOp &, const std::vector<int64_t> &reduction_axes);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
@@ -55,6 +56,7 @@ public:
 class DivArg1GradOp : public DivArgGradOp {
 public:
   DivArg1GradOp(const DivOp &, const std::vector<int64_t> &reduction_axes);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 

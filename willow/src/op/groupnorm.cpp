@@ -74,6 +74,10 @@ void GroupNormGradOp::setup() {
   outInfo(getBOutIndex())     = fwdBInInfo;
 }
 
+std::unique_ptr<Op> GroupNormGradOp::clone() const {
+  return make_unique<GroupNormGradOp>(*this);
+}
+
 void GroupNormGradOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
   os.appendAttribute("epsilon", epsilon);

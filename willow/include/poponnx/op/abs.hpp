@@ -19,6 +19,7 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
+  std::unique_ptr<Op> clone() const final;
 
   static InIndex getGradInIndex() { return 0; }
   static InIndex getFwdArgInIndex() { return 1; }

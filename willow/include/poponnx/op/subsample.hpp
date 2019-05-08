@@ -39,6 +39,7 @@ public:
 class SubsampleGradOp : public Op {
 public:
   SubsampleGradOp(const SubsampleOp &fwdOp);
+  std::unique_ptr<Op> clone() const final;
   void setup() override;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;

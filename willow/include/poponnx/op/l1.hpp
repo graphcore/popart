@@ -53,6 +53,7 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
   const L1Loss *l1l() const;
+  std::unique_ptr<Op> clone() const final;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }

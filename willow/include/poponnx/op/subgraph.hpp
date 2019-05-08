@@ -9,6 +9,7 @@ class SubgraphOp : public Op {
 
 public:
   SubgraphOp(Graph &graph_, int64_t cacheId_);
+  std::unique_ptr<Op> clone() const final;
 
   // Book keeping structure to understand the mapping of input/outs of the child
   // op

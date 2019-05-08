@@ -33,6 +33,10 @@ const std::vector<GradInOutMapper> &AbsGradOp::gradInputInfo() const {
 
 void AbsGradOp::setup() { outInfo(getOutIndex()) = inInfo(getGradInIndex()); }
 
+std::unique_ptr<Op> AbsGradOp::clone() const {
+  return make_unique<AbsGradOp>(*this);
+}
+
 namespace {
 static OpCreator<AbsOp> absOpCreator({Onnx::Operators::Abs_6});
 } // namespace

@@ -133,6 +133,10 @@ BatchNormGradOp::BatchNormGradOp(const BatchNormOp &op_)
       fwdScaleInInfo(op_.inInfo(BatchNormOp::getScaleInIndex())),
       fwdBInInfo(op_.inInfo(BatchNormOp::getBInIndex())) {}
 
+std::unique_ptr<Op> BatchNormGradOp::clone() const {
+  return make_unique<BatchNormGradOp>(*this);
+}
+
 const std::map<int, int> &BatchNormGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
       {getXOutIndex(), BatchNormOp::getXInIndex()},

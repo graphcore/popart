@@ -10,6 +10,7 @@
 #include <poponnx/builder.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/logging.hpp>
+#include <poponnx/makeunique.hpp>
 #include <poponnx/ndarraywrapper.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/op/l1.hpp>
@@ -56,6 +57,10 @@ class CubeGradOp : public poponnx::Op {
 public:
   CubeGradOp(const poponnx::Op &fwdOp)
       : poponnx::Op(Onnx::CustomGradOperators::CubeGrad, fwdOp.getSettings()) {}
+
+  std::unique_ptr<Op> clone() const final {
+    return poponnx::make_unique<CubeGradOp>(*this);
+  }
 
   // same comment as for CubeOp, for running shape/type inference "statically"
   virtual void setup() { outInfo(0) = inInfo(0); }
@@ -116,6 +121,10 @@ public:
   // required for inputInfo/type inference
   //
   virtual void setup() { outInfo(0) = inInfo(0); }
+
+  std::unique_ptr<Op> clone() const final {
+    return poponnx::make_unique<CubeOp>(*this);
+  }
 
   // There is only one Gradient Op for CubeOp, a CubeGradOp
   // It is possible to have multiple Gradient Ops

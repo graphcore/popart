@@ -254,7 +254,7 @@ public:
   // cpppatterns.com/patterns/virtual-constructor.html
   // some people call it "covariant return type"
   // Throws error from this class if not implemented
-  virtual std::unique_ptr<Op> clone() const;
+  virtual std::unique_ptr<Op> clone() const = 0;
 
   template <typename T> bool isConvertibleTo() const {
     return dynamic_cast<const T *>(this) != nullptr;

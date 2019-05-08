@@ -101,6 +101,10 @@ MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)
 
 void MatMulLhsGradOp::setup() { outInfo(0) = fwdOpLhsInfo; }
 
+std::unique_ptr<Op> MatMulLhsGradOp::clone() const {
+  return make_unique<MatMulLhsGradOp>(*this);
+}
+
 const std::vector<GradInOutMapper> &MatMulLhsGradOp::gradInputInfo() const {
   // The gradient of the fwd-op is input at index 0.
   // The index at which the rhs tensor is the input to the grad-op
@@ -133,6 +137,10 @@ MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
       fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
 
 void MatMulRhsGradOp::setup() { outInfo(0) = fwdOpRhsInfo; }
+
+std::unique_ptr<Op> MatMulRhsGradOp::clone() const {
+  return make_unique<MatMulRhsGradOp>(*this);
+}
 
 const std::vector<GradInOutMapper> &MatMulRhsGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {

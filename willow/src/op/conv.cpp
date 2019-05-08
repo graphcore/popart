@@ -182,6 +182,10 @@ ConvWeightsGradOp::ConvWeightsGradOp(const ConvOp &op_)
   priority = std::numeric_limits<double>::max();
 }
 
+std::unique_ptr<Op> ConvWeightsGradOp::clone() const {
+  return make_unique<ConvWeightsGradOp>(*this);
+}
+
 void ConvWeightsGradOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
   os.appendForwardOp(getCloneOfCreator());
@@ -213,6 +217,10 @@ ConvDataGradOp::ConvDataGradOp(const ConvOp &op_)
   params = popx::getConvGradParameters(getCloneOfCreator()->getParameters());
 }
 
+std::unique_ptr<Op> ConvDataGradOp::clone() const {
+  return make_unique<ConvDataGradOp>(*this);
+}
+
 void ConvDataGradOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
   os.appendForwardOp(getCloneOfCreator());
@@ -239,6 +247,10 @@ const std::map<int, int> &ConvDataGradOp::gradOutToNonGradIn() const {
 ConvFlipWeightsOp::ConvFlipWeightsOp(const OperatorIdentifier &opid_,
                                      const Op::Settings &settings_)
     : Op(opid_, settings_) {}
+
+std::unique_ptr<Op> ConvFlipWeightsOp::clone() const {
+  return make_unique<ConvFlipWeightsOp>(*this);
+}
 
 ConvFlipWeightsOp::~ConvFlipWeightsOp() {}
 

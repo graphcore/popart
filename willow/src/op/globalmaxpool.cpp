@@ -94,6 +94,10 @@ const std::map<int, int> &GlobalMaxPoolGradOp::gradOutToNonGradIn() const {
 
 void GlobalMaxPoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
+std::unique_ptr<Op> GlobalMaxPoolGradOp::clone() const {
+  return make_unique<GlobalMaxPoolGradOp>(*this);
+}
+
 const GlobalMaxPoolOp *GlobalMaxPoolGradOp::getCloneOfCreator() const {
   return dynamic_cast<GlobalMaxPoolOp *>(cloneOfCreator.get());
 }
