@@ -49,7 +49,7 @@ public:
   // If this Opx creates a poplar::Tensor at index0 (via createInput),
   // does it create the same poplar::Tensor as if opx1 creates one at
   // index1?. default behaviour : throws error
-  virtual bool createsEquiv(int index0, Opx *opx1, int index1) const;
+  virtual bool createsEquiv(int index0, const Opx *opx1, int index1) const;
   // Reverses the layout change to an input tensor
   virtual poplar::Tensor
   unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const;

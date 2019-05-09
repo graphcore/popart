@@ -76,7 +76,7 @@ public:
     virtual ~Settings()        = default;
     Settings(const Settings &) = default;
 
-    Graph &graph;
+    std::reference_wrapper<Graph> graph;
 
     std::string name = "";
 
@@ -124,8 +124,8 @@ public:
   Ir &getIr();
   const Ir &getIr() const;
 
-  Graph &getGraph() { return settings.graph; }
-  const Graph &getGraph() const { return settings.graph; }
+  Graph &getGraph() { return settings.graph.get(); }
+  const Graph &getGraph() const { return settings.graph.get(); }
 
   const Scope &getScope() const { return settings.scope; }
   void setScope(const Scope &scope) { settings.scope = scope; }

@@ -22,7 +22,7 @@ public:
   InputCreatorType getInputCreatorType(InIndex) const final;
   poplar::Tensor createInput(InIndex index,
                              const std::string &name) const final;
-  bool createsEquiv(int index0, Opx *opx1, int index1) const final;
+  bool createsEquiv(int index0, const Opx *opx1, int index1) const final;
 };
 
 class AddBiasDataGradOpx : public IdentityOpx {

@@ -14,20 +14,15 @@ public:
 
 private:
   void copyInputs(poplar::program::Sequence &prog,
-                  const Scope &scope,
+                  const Graph &graph,
                   const std::vector<TensorId> &input_ids) const;
 
   void copyOutputs(poplar::program::Sequence &prog,
-                   const Scope &scope,
+                   const Graph &graph,
                    const std::vector<TensorId> &output_ids,
                    const std::vector<poplar::Tensor> &outputs) const;
 
-  poplar::program::Sequence
-  prepareBranch(const Scope &scope,
-                const std::vector<TensorId> &input_ids,
-                const std::vector<TensorId> &output_ids,
-                const std::vector<poplar::Tensor> &outputs) const;
-
+  void callBranch(poplar::program::Sequence &, const Graph &) const;
   std::vector<poplar::Tensor> prepareOutputs() const;
 };
 

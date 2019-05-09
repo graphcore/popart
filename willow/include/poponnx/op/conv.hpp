@@ -157,6 +157,7 @@ class ConvWeightsGradOp : public Op {
 public:
   ConvWeightsGradOp(const ConvOp &);
   std::unique_ptr<Op> clone() const final;
+  ConvWeightsGradOp(const ConvWeightsGradOp &) = default;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;

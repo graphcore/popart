@@ -51,7 +51,7 @@ poplar::Tensor AddBiasOpx::createInput(InIndex index,
       graph(), getInTensor(AddBiasOp::getDataInIndex()), name);
 }
 
-bool AddBiasOpx::createsEquiv(int, Opx *, int) const { return false; }
+bool AddBiasOpx::createsEquiv(int, const Opx *, int) const { return false; }
 
 AddBiasBiasGradOpx::AddBiasBiasGradOpx(Op *op, Devicex *devicex)
     : ReduceSumOpx(op, devicex) {

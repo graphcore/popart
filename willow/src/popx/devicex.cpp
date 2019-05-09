@@ -12,6 +12,7 @@
 #include <poputil/exceptions.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
 #include <poponnx/makeunique.hpp>
@@ -137,6 +138,10 @@ void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
   tensors_[id] = pt;
 }
 
+bool PopTensors::contains(TensorId id) const {
+  return tensors_.find(id) != tensors_.end();
+}
+
 const poplar::Tensor &PopTensors::get(TensorId id) const {
   auto found = tensors_.find(id);
   if (found == tensors_.end()) {
@@ -237,24 +242,24 @@ PopPrograms::programFragment(PopPrograms::ProgramFragmentIndex index) {
   return seqs[static_cast<int>(index)];
 }
 
-poplar::program::Sequence &PopPrograms::programFragment(const Scope &scope) {
-  if (scope.empty()) {
+poplar::program::Sequence &PopPrograms::programFragment(const Graph &graph) {
+  if (graph.id.str().empty()) {
     return programFragment();
   } else {
-    return scopeSeqs.at(scope.str());
+    return scopeSeqs.at(graph.id.str());
   }
 }
 
-bool PopPrograms::containsFragment(const Scope &scope) {
-  if (scope.empty()) {
+bool PopPrograms::containsFragment(const Graph &graph) const {
+  if (graph.id.str().empty()) {
     return true;
   } else {
-    return scopeSeqs.find(scope.str()) != scopeSeqs.end();
+    return scopeSeqs.find(graph.id.str()) != scopeSeqs.end();
   }
 }
 
-void PopPrograms::createFragment(const Scope &scope) {
-  scopeSeqs.insert({scope.str(), {}});
+void PopPrograms::createFragment(const Graph &graph) {
+  scopeSeqs.insert({graph.id.str(), {}});
 }
 
 poplar::Graph &Devicex::rootGraph() { return *pRootGraph; }
@@ -512,6 +517,8 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
 Opx *Devicex::getOpx(OpId id) { return opxs.at(id).get(); }
 
+const Opx *Devicex::getOpx(OpId id) const { return opxs.at(id).get(); }
+
 TaskId Devicex::taskWhichCreates(TensorId id) const {
   Tensor *tensor = ir().getTensor(id);
   // streamed and init tensors are created with
@@ -530,12 +537,12 @@ std::vector<InputCreatorCandidate>
 Devicex::getCreatorEndpoints(Tensor *tensor,
                              std::vector<OpxInAndOutIndex> pathFromInput,
                              bool excludeEndpointsFromPath,
-                             bool includeDeadends) {
+                             bool includeDeadends) const {
 
   std::vector<InputCreatorCandidate> endpoints;
   for (Op *op : tensor->consumers.getOps()) {
-    auto conOpId = op->id;
-    Opx *opx     = getOpx(conOpId);
+    auto conOpId   = op->id;
+    const Opx *opx = getOpx(conOpId);
 
     for (int inIndex : op->input->indices(tensor)) {
       auto updatedPath = pathFromInput;
@@ -585,9 +592,8 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
   return endpoints;
 }
 
-// Design decision : leave the option for a Tensor to be
-// created based on complex global criteria open.
-PriTask Devicex::initTensorTask(Tensor *tensor) {
+optional<InputCreatorCandidate>
+Devicex::getTensorCreator(Tensor *tensor) const {
 
   auto errorbase = [&tensor]() {
     std::stringstream ss;
@@ -627,14 +633,28 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     }
   }
 
+  if (candidates.size() > 1) {
+    throw error(errorbase() + "\nConflicting creator candidates.");
+  } else if (candidates.size() == 1) {
+    return candidates.front();
+  } else {
+    return boost::none;
+  }
+}
+
+// Design decision : leave the option for a Tensor to be
+// created based on complex global criteria open.
+PriTask Devicex::initTensorTask(Tensor *tensor) {
+  auto candidate = getTensorCreator(tensor);
+
   // 1. A unique candidate creator will create the tensor
   // 2. The tensor will be unwound (have its layout modified)
   //    by view-changing opxs on the path from the input to
   //    the candidate candidate
-  if (candidates.size() == 1) {
-    Opx *creator       = candidates[0].opx;
-    int inIndex        = candidates[0].index;
-    auto pathFromInput = candidates[0].getPathFromInput();
+  if (candidate) {
+    const Opx *creator = candidate->opx;
+    int inIndex        = candidate->index;
+    auto pathFromInput = candidate->getPathFromInput();
 
     auto f = [this, creator, inIndex, pathFromInput, tensor]() {
       logging::devicex::debug("Creating poplar::Tensor {}", tensor->id);
@@ -670,13 +690,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
             initTensorTaskId(tensor->id), // the task name
             deps,
             f};
-  }
-
-  else if (candidates.size() > 1) {
-    throw error(errorbase() + "\nConflicting creator candidates.");
-  }
-
-  else {
+  } else {
 
     auto f = [this, tensor]() {
       logging::devicex::warn("Creating input tensor '{}' linearly. No "
@@ -733,6 +747,17 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     };
 
     return {1e6, initTensorTaskId(tensor->id), {}, f};
+  }
+}
+
+void Devicex::createFragmentAndGrow(const Graph &graph) {
+  createFragment(graph);
+  auto &graph_prog = programFragment(graph);
+
+  // Grow opxs
+  for (auto op : graph.getOpSchedule({})) {
+    auto opx = getOpx(op->id);
+    opx->grow(graph_prog);
   }
 }
 
@@ -946,8 +971,16 @@ poplar::program::Sequence &Devicex::programFragment() {
   return progs.programFragment(PopPrograms::ProgramFragmentIndex::PROGRAM);
 }
 
-poplar::program::Sequence &Devicex::programFragment(const Scope &scope) {
-  return progs.programFragment(scope);
+bool Devicex::containsFragment(const Graph &graph) const {
+  return progs.containsFragment(graph);
+}
+
+void Devicex::createFragment(const Graph &graph) {
+  return progs.createFragment(graph);
+}
+
+poplar::program::Sequence &Devicex::programFragment(const Graph &graph) {
+  return progs.programFragment(graph);
 }
 
 PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
@@ -989,14 +1022,14 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   auto f = [opx, this]() {
     logging::devicex::debug("Creating output tensors for " +
                             opx->op_p->debugName());
-    opx->grow(programFragment(opx->op_p->getScope()));
+    opx->grow(programFragment(opx->op_p->getGraph()));
   };
   return {priority, opTaskId(op), deps, f};
 }
 
 InputCreatorCandidate::InputCreatorCandidate(
     int conIndex_,
-    Opx *opx_,
+    const Opx *opx_,
     std::vector<OpxInAndOutIndex> pathFromInput_)
     : index(conIndex_), opx(opx_), pathFromInput(pathFromInput_) {}
 
@@ -1064,24 +1097,13 @@ void Devicex::prepare() {
   popnn::addCodelets(rootGraph());
   poprand::addCodelets(rootGraph());
 
-  std::vector<Op *> ops = ir().getOpSchedule({});
-
-  // create the scope programs
-  for (auto op : ops) {
-    if (!progs.containsFragment(op->getScope())) {
-      progs.createFragment(op->getScope());
-    }
-  }
-
-  // Outling the op's if the session options is enabled
-  if (ir().getSessionOptions().enableOutlining) {
-    ops = outline.getOutlineView(ops, ir());
-  }
-
   // create an Opx for every Op
-  for (Op *op : ops) {
+  for (Op *op : ir().getOpSchedule({})) {
     opxs[op->id] = createOpx(op);
   }
+
+  // Only the ops on the main graph should be added to tasks
+  std::vector<Op *> ops = ir().getMainGraph().getOpSchedule({});
 
   PriTasks tasks;
 
@@ -1131,13 +1153,6 @@ void Devicex::prepare() {
       // 2
       tasks.add(streamFromHostTask(tensor));
     }
-  }
-
-  // graph inputs : 1) make tensor
-  for (auto id : ir().getGraphInputIds()) {
-    Tensor *tensor = ir().getTensor(id);
-    // 1
-    tasks.add(initTensorTask(tensor));
   }
 
   // Init the random seed

@@ -20,6 +20,12 @@ view::Chains Tensors::getChainsFromTo(Tensor *from, Tensor *to) const {
   return allChainsFrom.at(to);
 }
 
+TensorId Tensors::moveIntoTensors(std::unique_ptr<Tensor> tensor) {
+  auto id = tensor->id;
+  insert(id, std::move(tensor));
+  return id;
+}
+
 std::unordered_map<Tensor *, view::Chains> Tensors::getAliasChains(
     const std::unordered_map<Tensor *,
                              std::unordered_map<Tensor *, view::Chains>> &fullM,

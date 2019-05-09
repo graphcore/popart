@@ -88,6 +88,13 @@ public:
 
   const std::vector<TensorId> &getInputIds() const { return graph_inputs; }
   void addInput(const TensorId &, const TensorInfo &);
+  // Add new graph input with auto generated name
+  TensorId addInput(const TensorInfo &);
+  TensorId getInputId(InIndex idx) const { return graph_inputs.at(idx); }
+
+  const std::vector<TensorId> &getOutputIds() const { return graph_outputs; }
+  void addOutput(const TensorId &);
+  TensorId getOutputId(OutIndex idx) const { return graph_outputs.at(idx); }
 
 public:
   std::unique_ptr<TopoCons> topoCons;
@@ -97,6 +104,7 @@ private:
   std::unique_ptr<Tensors> up_tensors;
   std::map<OpId, std::unique_ptr<Op>> ops;
   std::vector<TensorId> graph_inputs;
+  std::vector<TensorId> graph_outputs;
   std::unique_ptr<Scheduler> scheduler;
 
   Ir &ir;

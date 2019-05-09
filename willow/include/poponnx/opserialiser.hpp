@@ -7,6 +7,7 @@ namespace poponnx {
 
 class Op;
 class TensorIndexMap;
+class Scope;
 
 class OpSerialiserBase {
 public:

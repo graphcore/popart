@@ -728,7 +728,7 @@ const static AiGraphcoreOpIdV1 FlattenInplace("FlattenInplace");
 
 const static AiGraphcoreOpIdV1 ConvFlipWeights("ConvFlipWeights");
 
-const static AiGraphcoreOpIdV1 Subgraph("Subgraph");
+const static AiGraphcoreOpIdV1 Call("Call");
 
 } // namespace CustomOperators
 

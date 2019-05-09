@@ -136,11 +136,11 @@ MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
       fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
 
-void MatMulRhsGradOp::setup() { outInfo(0) = fwdOpRhsInfo; }
-
 std::unique_ptr<Op> MatMulRhsGradOp::clone() const {
   return make_unique<MatMulRhsGradOp>(*this);
 }
+
+void MatMulRhsGradOp::setup() { outInfo(0) = fwdOpRhsInfo; }
 
 const std::vector<GradInOutMapper> &MatMulRhsGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {

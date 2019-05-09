@@ -11,6 +11,7 @@
 #include <poponnx/topocons.hpp>
 
 // Ops required for Graph::getCalledOps
+#include <poponnx/op/call.hpp>
 #include <poponnx/op/if.hpp>
 
 // The layers required to construct the backwards pass
@@ -46,6 +47,17 @@ void Graph::addInput(const TensorId &tensorId, const TensorInfo &tensorInfo) {
   graph_inputs.push_back(tensorId);
 }
 
+TensorId Graph::addInput(const TensorInfo &tinfo) {
+  auto tenid    = fmt::format("input_{}", graph_inputs.size());
+  auto scopedid = (Scope() / id.str() / tenid).str();
+  addInput(scopedid, tinfo);
+  return scopedid;
+}
+
+void Graph::addOutput(const TensorId &tensorId) {
+  graph_outputs.push_back(tensorId);
+}
+
 std::vector<Graph *> Graph::getCalledGraphs() const {
   std::vector<Graph *> called;
 
@@ -59,6 +71,9 @@ std::vector<Graph *> Graph::getCalledGraphs() const {
 
       auto else_id = GraphId(ifop->getElseScope().str());
       called.push_back(&ir.getGraph(else_id));
+    } else if (op->isConvertibleTo<CallOp>()) {
+      auto callop = dynamic_cast<CallOp *>(op);
+      called.push_back(&callop->getCalledGraph());
     }
   }
 
@@ -99,6 +114,9 @@ Op *Graph::growFromNode(const Node &node, const Scope &scope) {
 }
 
 OpId Graph::moveIntoGraph(std::unique_ptr<Op> op) {
+  // Op may be moved in from a different graph
+  op->settings.graph = *this;
+
   OpId opid = op->id;
   ops[opid] = std::move(op);
   return opid;

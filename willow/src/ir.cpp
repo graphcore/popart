@@ -38,6 +38,7 @@
 #include <poponnx/transforms/mergecopies.hpp>
 #include <poponnx/transforms/prune.hpp>
 #include <poponnx/transforms/recompute.hpp>
+#include <poponnx/transforms/subgraphoutline.hpp>
 #include <poponnx/transforms/virtual_graph_check.hpp>
 
 // The layers required to construct the backwards pass
@@ -815,6 +816,10 @@ void Ir::prepare(const IrBundle &gb) {
 
   updateVertices();
 
+  if (getSessionOptions().enableOutlining) {
+    applyTransform(SubgraphOutline::id(), getMainGraph());
+  }
+
   dotCheckpoint(DotCheck::FINAL);
 
   logIr();
@@ -1078,7 +1083,7 @@ std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) {
   return typedOps;
 }
 
-bool Ir::isAnchored(TensorId tenId) { return dataFlow.isAnchored(tenId); }
+bool Ir::isAnchored(TensorId tenId) const { return dataFlow.isAnchored(tenId); }
 
 void Ir::constructForwards() {
   constructFromOnnxGraph(onnxModel->graph(), {});
@@ -1865,8 +1870,23 @@ void Ir::growFinalLoss() {
 TensorId Ir::getFinalLossId() const { return "finalLoss"; }
 
 void Ir::append(std::stringstream &ss) {
-  for (auto &op : getOpSchedule({})) {
-    op->append(ss);
+  ss << "\n";
+
+  int i = 0;
+  for (auto graph : getGraphSchedule()) {
+    if (i > 0) {
+      ss << "============================================================\n";
+    }
+    i += 1;
+
+    if (graph->id.str() != "") {
+      ss << graph->id.str() << ":"
+         << "\n";
+    }
+
+    for (auto &op : graph->getOpSchedule({})) {
+      op->append(ss);
+    }
   }
 }
 
