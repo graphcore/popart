@@ -229,9 +229,6 @@ public:
   // (public for unit testing only)
   void applyTransform(std::size_t transformId, Graph &graph);
 
-  // enable/disable a transform stage (public for unit testing only)
-  void enableTransform(std::size_t transformId, bool enable);
-
   // run after creating the backwards pass, checks that
   // the user provided anchor tensors actually exist.
   // the user may have not used the correct gradient
@@ -409,6 +406,9 @@ private:
   ExecutionMode executionMode = ExecutionMode::TRAINING;
 
   bool isPrepared = false;
+
+  // enable/disable a transform stage
+  void enableTransform(std::size_t transformId, bool enable);
 
 public:
   // A "dummy" Op used to ensure that anchor tensors

@@ -1,8 +1,11 @@
 #define BOOST_TEST_MODULE TransformTest
 
 #include <boost/test/unit_test.hpp>
-#include <poponnx/ir.hpp>
 #include <poponnx/transforms/transform.hpp>
+
+#define private public
+#include <poponnx/ir.hpp>
+#undef private
 
 using namespace poponnx;
 
