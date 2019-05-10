@@ -55,6 +55,10 @@ MulArg0GradOp::MulArg0GradOp(const MulOp &op_,
                    op_.inInfo(MulOp::getArg0InIndex()),
                    op_.getSettings()) {}
 
+std::unique_ptr<Op> MulArg0GradOp::clone() const {
+  return make_unique<MulArg0GradOp>(*this);
+}
+
 const std::map<int, int> &MulArg0GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
       {getOutIndex(), MulOp::getArg0InIndex()}};
@@ -74,6 +78,10 @@ MulArg1GradOp::MulArg1GradOp(const MulOp &op_,
                    _reduction_axes,
                    op_.inInfo(MulOp::getArg1InIndex()),
                    op_.getSettings()) {}
+
+std::unique_ptr<Op> MulArg1GradOp::clone() const {
+  return make_unique<MulArg1GradOp>(*this);
+}
 
 const std::map<int, int> &MulArg1GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {

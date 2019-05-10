@@ -25,6 +25,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   int64_t axis = 0;
 };
@@ -49,6 +51,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   int64_t axis;
 };
@@ -72,6 +76,8 @@ public:
   static InIndex gradOutIndex() { return 0; }
 
   void appendAttributes(OpSerialiserBase &) const override;
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   int64_t axis;

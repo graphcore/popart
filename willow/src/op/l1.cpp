@@ -61,6 +61,10 @@ L1GradOp::L1GradOp(const L1Op &op_)
     : Op(Onnx::CustomGradOperators::L1Grad, op_.getSettings()),
       l1loss_(op_.l1l()) {}
 
+std::unique_ptr<Op> L1GradOp::clone() const {
+  return make_unique<L1GradOp>(*this);
+}
+
 const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {
   // input at index 0 of this grad op is the input at index 0 of the L1
   // non-grad op.

@@ -79,8 +79,8 @@ class IpuBackend(onnx.backend.base.Backend):
         model = onnx.shape_inference.infer_shapes(model)
         value_infos = {
             vi.name: vi
-            for vi in itertools.chain(model.graph.value_info,
-                                      model.graph.output)
+            for vi in itertools.chain(model.graph.value_info, model.graph.
+                                      output)
         }
 
         # if do_enforce_test_coverage_whitelist(model):

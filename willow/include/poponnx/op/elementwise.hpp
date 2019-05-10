@@ -17,7 +17,7 @@ public:
 
   // Making this function override and not final, as there
   // may be a more / less expensive to compute non-linearity.
-  float getSubgraphValue() const override { return 0.1f; }
+  float getSubgraphValue() const override { return getLowSubgraphValue(); }
 };
 
 class ElementWiseInplaceUnaryOp : public ElementWiseUnaryOp {
@@ -53,7 +53,7 @@ public:
   static InIndex getFwdArgInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 
-  float getSubgraphValue() const final { return 0.1f; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 // Base class for elementwise binary operations
@@ -69,7 +69,7 @@ public:
   static InIndex getArg1InIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 
-  float getSubgraphValue() const final { return 0.1f; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 } // namespace poponnx

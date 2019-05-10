@@ -54,26 +54,12 @@ DataFlow::DataFlow(int BpR, const std::map<TensorId, AnchorReturnType> &m)
 
     // Compile unique list of return periods for all anchors,
     // used when building the graph so that a minimum of Tensors
-    // are added to track batch count
-    int rf;
-    switch (id_rt.second.id()) {
-    case AnchorReturnTypeId::FINAL: {
-      rf = batchesPerStep();
-      break;
-    }
-    case AnchorReturnTypeId::EVERYN: {
-      rf = id_rt.second.rp();
-      break;
-    }
-    case AnchorReturnTypeId::ALL: {
-      // Don't track batch count for this return type
-      rf = 0;
-      break;
-    }
-    }
-    if (rf) {
-      if (std::find(v_rps.begin(), v_rps.end(), rf) == v_rps.end()) {
-        v_rps.push_back(rf);
+    // are added to track batch count.
+    // Don't track batch count for 'ALL' or 'FINAL' return types
+    if (id_rt.second.id() == AnchorReturnTypeId::EVERYN) {
+      int rp = id_rt.second.rp();
+      if (std::find(v_rps.begin(), v_rps.end(), rp) == v_rps.end()) {
+        v_rps.push_back(rp);
       }
     }
   }

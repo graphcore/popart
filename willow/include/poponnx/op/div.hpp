@@ -30,6 +30,8 @@ public:
   // this function returns the axes along which to perform the reduction.
   const std::vector<int64_t> &getReductionAxes() const;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   // Used to set the outputs TensorInfo
   TensorInfo forward_op_arg_info;
@@ -41,6 +43,7 @@ private:
 class DivArg0GradOp : public DivArgGradOp {
 public:
   DivArg0GradOp(const DivOp &, const std::vector<int64_t> &reduction_axes);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
@@ -53,6 +56,7 @@ public:
 class DivArg1GradOp : public DivArgGradOp {
 public:
   DivArg1GradOp(const DivOp &, const std::vector<int64_t> &reduction_axes);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 

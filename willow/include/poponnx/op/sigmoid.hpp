@@ -18,6 +18,7 @@ public:
 class SigmoidInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   SigmoidInplaceOp(const SigmoidOp &);
+  std::unique_ptr<Op> clone() const final;
 };
 
 class SigmoidGradOp : public Op {
@@ -32,6 +33,8 @@ public:
   static InIndex getGradInIndex() { return 0; }
   static InIndex getFwdOutInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 } // namespace poponnx

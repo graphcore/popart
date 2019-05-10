@@ -62,4 +62,25 @@ bool Vertex::isFwdToBwd() const {
   return hasPathToBwd() && (getPhase() == Phase::FWD);
 }
 
+std::ostream &operator<<(std::ostream &ss, const Phase &phase) {
+  switch (phase) {
+  case Phase::FWD:
+    ss << "Phase::FWD";
+    break;
+  case Phase::BWD:
+    ss << "Phase::BWD";
+    break;
+  case Phase::LOSS:
+    ss << "Phase::LOSS";
+    break;
+  case Phase::UNDEFINED:
+    ss << "Phase::UNDEFINED";
+    break;
+  default:
+    throw error("Unknown phase {}", static_cast<int>(phase));
+  }
+
+  return ss;
+}
+
 }; // namespace poponnx

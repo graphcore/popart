@@ -97,6 +97,10 @@ const std::map<int, int> &GlobalAveragePoolGradOp::gradOutToNonGradIn() const {
 
 void GlobalAveragePoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
+std::unique_ptr<Op> GlobalAveragePoolGradOp::clone() const {
+  return make_unique<GlobalAveragePoolGradOp>(*this);
+}
+
 const GlobalAveragePoolOp *GlobalAveragePoolGradOp::getCloneOfCreator() const {
   return dynamic_cast<GlobalAveragePoolOp *>(cloneOfCreator.get());
 }

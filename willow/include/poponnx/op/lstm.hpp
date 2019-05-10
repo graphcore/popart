@@ -58,6 +58,8 @@ public:
   // T7504
   bool isOutlineable() const override { return false; }
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
 private:
   void createPassThroughOutput(const TensorId &new_id,
                                OutIndex pass_through_index,
@@ -71,6 +73,7 @@ private:
 class LSTMGradOp : public Op {
 public:
   LSTMGradOp(const LSTMOp &);
+  std::unique_ptr<Op> clone() const final;
   void setup() final;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
@@ -99,6 +102,8 @@ public:
   static OutIndex getBiasOutIndex() { return 3; }
   static OutIndex getInitialHOutIndex() { return 4; }
   static OutIndex getInitialCOutIndex() { return 5; }
+
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
 private:
   void tryConnectCellStateGrad();

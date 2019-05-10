@@ -33,6 +33,7 @@ private:
 class ScaleInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   ScaleInplaceOp(const ScaleOp &);
+  std::unique_ptr<Op> clone() const final;
 
   // TODO T6801 : don't repeat scale_factor
   float getScaleFactor() const;

@@ -563,7 +563,7 @@ InputCreatorType MatMulOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CANCREATE;
 }
 
-bool MatMulOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
+bool MatMulOpx::createsEquiv(int ind0, const Opx *opx1, int ind1) const {
   if (opx1->op_p->opid != Onnx::Operators::MatMul_1 &&
       opx1->op_p->opid != Onnx::Operators::MatMul_9)
     return false;
@@ -574,7 +574,7 @@ bool MatMulOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
   // Test that the shapes and types of inputs and outputs of the two ops are the
   // same
   // TODO : Could optimzie this to not use the either lhs or rhs
-  MatMulOpx *rhs = dynamic_cast<MatMulOpx *>(opx1);
+  const MatMulOpx *rhs = dynamic_cast<const MatMulOpx *>(opx1);
   if (getMatMulOp()->lhsIn()->info != rhs->getMatMulOp()->lhsIn()->info ||
       getMatMulOp()->rhsIn()->info != rhs->getMatMulOp()->rhsIn()->info ||
       getMatMulOp()->out()->info != rhs->getMatMulOp()->out()->info) {

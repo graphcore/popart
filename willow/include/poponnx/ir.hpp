@@ -161,7 +161,7 @@ public:
   // take training steps
   onnx::ModelProto step(int n);
   // if the tensor is returned to user (passes call to DataFlow).
-  bool isAnchored(TensorId);
+  bool isAnchored(TensorId) const;
   void append(std::stringstream &);
   std::vector<std::unique_ptr<Loss>> losses;
 

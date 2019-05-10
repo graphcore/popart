@@ -76,7 +76,7 @@ public:
     virtual ~Settings()        = default;
     Settings(const Settings &) = default;
 
-    Graph &graph;
+    std::reference_wrapper<Graph> graph;
 
     std::string name = "";
 
@@ -124,8 +124,8 @@ public:
   Ir &getIr();
   const Ir &getIr() const;
 
-  Graph &getGraph() { return settings.graph; }
-  const Graph &getGraph() const { return settings.graph; }
+  Graph &getGraph() { return settings.graph.get(); }
+  const Graph &getGraph() const { return settings.graph.get(); }
 
   const Scope &getScope() const { return settings.scope; }
   void setScope(const Scope &scope) { settings.scope = scope; }
@@ -254,7 +254,7 @@ public:
   // cpppatterns.com/patterns/virtual-constructor.html
   // some people call it "covariant return type"
   // Throws error from this class if not implemented
-  virtual std::unique_ptr<Op> clone() const;
+  virtual std::unique_ptr<Op> clone() const = 0;
 
   template <typename T> bool isConvertibleTo() const {
     return dynamic_cast<const T *>(this) != nullptr;
@@ -309,7 +309,12 @@ public:
 
   // default high value here means that sub-graphs
   // of single Ops are cached by default
-  virtual float getSubgraphValue() const { return 1000.0f; }
+  virtual float getSubgraphValue() const = 0;
+
+  // for example, conv has this value in getSubgraphValue(),
+  constexpr float getHighSubgraphValue() const { return 1000.0f; }
+  // and relu has this value.
+  constexpr float getLowSubgraphValue() const { return 0.1f; }
 
   // Allow an op to exclude itself from caching. If this method returns false
   // it will mean that any possiable subgraph that this op is part of will

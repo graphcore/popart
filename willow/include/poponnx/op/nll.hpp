@@ -48,6 +48,8 @@ public:
 
   const NllLoss *nlll() const;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   const NllLoss *nllloss_;
 };
@@ -58,10 +60,13 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
+  std::unique_ptr<Op> clone() const final;
 
   static OutIndex getOutIndex() { return 0; }
 
   const NllLoss *nlll() const;
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   const NllLoss *nllloss_;

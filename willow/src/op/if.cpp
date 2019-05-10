@@ -80,7 +80,7 @@ static OpCreator<IfOp> ifOpCreator(
         throw error("IfOp: else_branch and then_branch have different outputs");
       }
 
-      auto &tensors = settings_.graph.getTensors();
+      auto &tensors = settings_.graph.get().getTensors();
       std::map<TensorId, TensorInfo> input_infos;
 
       // Collect all input names
@@ -112,7 +112,7 @@ static OpCreator<IfOp> ifOpCreator(
                                   std::move(else_output_ids),
                                   settings_);
 
-      auto &ir         = settings_.graph.getIr();
+      auto &ir         = settings_.graph.get().getIr();
       auto &then_graph = ir.createGraph(GraphId(op->getThenScope().str()));
       for (auto id : then_input_ids) {
         auto scoped_id = (op->getThenScope() / id).str();

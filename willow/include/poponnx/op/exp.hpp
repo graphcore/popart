@@ -18,6 +18,7 @@ public:
 class ExpInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   ExpInplaceOp(const ExpOp &);
+  std::unique_ptr<Op> clone() const final;
 };
 
 // Note that ExpGradOp does NOT
@@ -39,7 +40,7 @@ public:
   static InIndex getFwdOutInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 
-  float getSubgraphValue() const final { return 0.1f; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 } // namespace poponnx

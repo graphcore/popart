@@ -21,7 +21,7 @@ poplar::Tensor Opx::createInput(InIndex index, const std::string &name) const {
               name);
 }
 
-bool Opx::createsEquiv(int, Opx *, int) const {
+bool Opx::createsEquiv(int, const Opx *, int) const {
   throw error("No check for equivalent tensor create for type {}", op_p->opid);
 }
 

@@ -8,7 +8,7 @@ namespace poponnx {
 // Currently only support dropout in testing mode in which case it
 // becomes an identity, so this op does not have any grad op's
 
-// TODO : T6625 Add support for Dropout  in training
+// TODO : T8559 Add support for Dropout in training
 
 class DropoutOp : public Op {
 public:
@@ -27,6 +27,10 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   bool canBeReplacedByIdentity() override;
+
+  // T8559 : disable outlining by default? TODO
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   float ratio;

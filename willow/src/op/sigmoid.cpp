@@ -24,6 +24,10 @@ SigmoidInplaceOp::SigmoidInplaceOp(const SigmoidOp &sigm_op)
     : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::SigmoidInplace,
                                 sigm_op.getSettings()) {}
 
+std::unique_ptr<Op> SigmoidInplaceOp::clone() const {
+  return make_unique<SigmoidInplaceOp>(*this);
+}
+
 SigmoidOp::SigmoidOp(const OperatorIdentifier &_opid,
                      const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}

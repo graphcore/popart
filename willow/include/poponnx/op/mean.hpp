@@ -18,6 +18,7 @@ class MeanArgGradOp : public LinearVariadicGradOp {
 public:
   MeanArgGradOp(const MeanOp &, InIndex inIndex);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  std::unique_ptr<Op> clone() const final;
 
   bool hasScale() const final { return true; }
   float getScale() const final { return 1.0f / static_cast<float>(nInputs); }

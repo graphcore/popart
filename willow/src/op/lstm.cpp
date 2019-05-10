@@ -139,6 +139,10 @@ LSTMGradOp::LSTMGradOp(const LSTMOp &fwd_op)
     : Op(Onnx::GradOperators::LSTMGrad, fwd_op.getSettings()),
       forward_op(fwd_op) {}
 
+std::unique_ptr<Op> LSTMGradOp::clone() const {
+  return make_unique<LSTMGradOp>(*this);
+}
+
 void LSTMGradOp::setup() {
   tryConnectCellStateGrad();
   tryConnectHiddenStateGrad();

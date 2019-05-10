@@ -39,6 +39,8 @@ public:
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   const L1Loss *l1loss_;
 };
@@ -51,9 +53,12 @@ public:
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
   const L1Loss *l1l() const;
+  std::unique_ptr<Op> clone() const final;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   const L1Loss *l1loss_;

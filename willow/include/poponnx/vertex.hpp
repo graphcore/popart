@@ -9,6 +9,8 @@ namespace poponnx {
 // and the final sum over losses are LOSS
 enum class Phase { FWD = 0, BWD, LOSS, UNDEFINED };
 
+std::ostream &operator<<(std::ostream &, const Phase &);
+
 std::map<Phase, std::string> init_phase_names();
 const std::map<Phase, std::string> &phase_names();
 

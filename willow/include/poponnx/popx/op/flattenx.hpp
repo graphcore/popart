@@ -9,19 +9,22 @@ namespace poponnx {
 
 namespace popx {
 
-class FlattenAliasOpx : public Opx {
+class FlattenInplaceOpx : public Opx {
 public:
-  FlattenAliasOpx(Op *, Devicex *);
+  FlattenInplaceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const override;
 
-protected:
-  poplar::Tensor grow(poplar::program::Sequence &, poplar::Tensor &) const;
+private:
+  std::vector<size_t> outShape;
 };
 
-class FlattenOpx : public FlattenAliasOpx {
+class FlattenOpx : public Opx {
 public:
-  using FlattenAliasOpx::FlattenAliasOpx;
+  FlattenOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+
+private:
+  std::vector<size_t> outShape;
 };
 
 class FlattenGradOpx : public ReshapeOpx {

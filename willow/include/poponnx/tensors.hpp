@@ -65,6 +65,8 @@ public:
 
   view::Chains getChainsFromTo(Tensor *from, Tensor *to) const;
 
+  TensorId moveIntoTensors(std::unique_ptr<Tensor> tensor);
+
 private:
   // Store the Tensors of type Const
   VectorAndSet constIds;

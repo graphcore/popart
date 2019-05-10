@@ -17,6 +17,7 @@ private:
 class MinArgGradOp : public NonLinearVariadicGradOp {
 public:
   MinArgGradOp(const MinOp &, InIndex);
+  std::unique_ptr<Op> clone() const final;
 };
 
 } // namespace poponnx

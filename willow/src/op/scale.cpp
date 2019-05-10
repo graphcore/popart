@@ -54,6 +54,10 @@ void ScaleInplaceOp::appendAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("scale", scale_factor);
 }
 
+std::unique_ptr<Op> ScaleInplaceOp::clone() const {
+  return make_unique<ScaleInplaceOp>(*this);
+}
+
 // A scale with a scale factor of +1 can be replaced by identity
 bool ScaleOp::canBeReplacedByIdentity() { return getScaleFactor() == 1.0f; }
 

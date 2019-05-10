@@ -27,6 +27,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   Shape kernel;
 };
@@ -37,6 +39,7 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
+  std::unique_ptr<Op> clone() const final;
   // Op for computing the gradient of the pre-pooled activations.
   // In theory, all we need to do this is the gradient of the
   // pooled activations. But we are requiring that all 3 of,
@@ -57,6 +60,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   // The shape and type of the input to the
   // forward op which creates this backwards op
@@ -67,7 +72,7 @@ private:
   //    how to do the backwards pass (padding, striding, etc)
   // 2) we DON'T store a pointer to the creating forward op,
   //    which might be optimised out and deleted
-  std::unique_ptr<Op> cloneOfCreator;
+  std::shared_ptr<Op> cloneOfCreator;
 };
 
 } // namespace poponnx

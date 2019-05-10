@@ -30,6 +30,8 @@ public:
 
   bool canBeReplacedByIdentity() override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 public:
   std::vector<int64_t> strides;
 };
@@ -37,6 +39,7 @@ public:
 class SubsampleGradOp : public Op {
 public:
   SubsampleGradOp(const SubsampleOp &fwdOp);
+  std::unique_ptr<Op> clone() const final;
   void setup() override;
 
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
@@ -52,6 +55,8 @@ public:
   const Shape &getFwdInputShape() const { return fwdOpInfo.shape(); }
 
   void appendAttributes(OpSerialiserBase &) const override;
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   std::vector<int64_t> strides;

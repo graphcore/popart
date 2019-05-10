@@ -36,8 +36,8 @@ const TensorInfo &Op::outInfo(OutIndex index) const {
   return output->tensor(index)->info;
 }
 
-Ir &Op::getIr() { return settings.graph.getIr(); }
-const Ir &Op::getIr() const { return settings.graph.getIr(); }
+Ir &Op::getIr() { return getGraph().getIr(); }
+const Ir &Op::getIr() const { return getGraph().getIr(); }
 
 bool Op::isElementWiseUnary() const {
   return isConvertibleTo<ElementWiseUnaryOp>();
@@ -81,10 +81,6 @@ view::RegMap Op::bwdRegMap(InIndex i) const {
 }
 
 bool Op::isLossOp() const { return false; }
-
-std::unique_ptr<Op> Op::clone() const {
-  throw error("No clone implemented for {}", opid);
-}
 
 Op::~Op() = default;
 
@@ -131,7 +127,11 @@ void Op::disconnectInTensor(InIndex inIndex, Tensor *tensor) {
 
 void Op::disconnectOutTensor(Tensor *tensor) {
   for (auto idx : output->indices(tensor)) {
-    tensor->resetProducer(nullptr);
+    // Trying to reset the producer here when the producer is not `this' should
+    // probably be an error
+    if (tensor->hasProducer() || tensor->getProducer() == this) {
+      tensor->resetProducer(nullptr);
+    }
     output->erase(idx);
   }
 }
@@ -230,7 +230,7 @@ const std::string &Op::name() const { return getName(); }
 Op::Op(const Op &op)
     : Vertex(op), input(new TensorIndexMap), output(new TensorIndexMap),
       priority(op.priority),
-      id(op.settings.graph.getIr().getAndIncrOpsCounter()), opid(op.opid),
+      id(op.settings.graph.get().getIr().getAndIncrOpsCounter()), opid(op.opid),
       settings(op.settings) {
   // input, output: empty.
 }
@@ -250,7 +250,7 @@ const TensorId Op::outId(OutIndex index) const { return outTensor(index)->id; }
 Op::Op(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : input(new TensorIndexMap), output(new TensorIndexMap), priority(0.0),
       // the id
-      id(settings_.graph.getIr().getAndIncrOpsCounter()), opid(_opid),
+      id(settings_.graph.get().getIr().getAndIncrOpsCounter()), opid(_opid),
       // the Attributes
       settings(settings_) {}
 
@@ -370,8 +370,9 @@ Op::getSubgraphOutputs() const {
     auto out_index  = index_tensor.first;
     auto out_tensor = index_tensor.second;
     std::set<Op *> consumers;
-    if (settings.graph.getIr().isAnchored(out_tensor->id)) {
-      consumers.insert(&settings.graph.getIr().getSubgraphAnchorPlaceholder());
+    if (settings.graph.get().getIr().isAnchored(out_tensor->id)) {
+      consumers.insert(
+          &settings.graph.get().getIr().getSubgraphAnchorPlaceholder());
     }
     for (auto &op : out_tensor->consumers.getOps()) {
       consumers.insert(op);

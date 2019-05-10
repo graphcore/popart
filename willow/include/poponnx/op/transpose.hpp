@@ -32,7 +32,7 @@ public:
 
   bool canBeReplacedByIdentity() override;
 
-  float getSubgraphValue() const final { return 0.1f; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   // the new permutation of the tensor axes

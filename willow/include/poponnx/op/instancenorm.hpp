@@ -32,6 +32,8 @@ public:
 
   bool isNorm() const override { return true; }
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
 private:
   float epsilon;
 };
@@ -43,6 +45,9 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
+  std::unique_ptr<Op> clone() const final;
+
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
   static InIndex getInputInIndex() { return 0; }
   static InIndex getScaleInIndex() { return 1; }

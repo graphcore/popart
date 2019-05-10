@@ -261,7 +261,7 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   auto &graph   = op->getGraph();
   auto afterOps = graph.topoCons->getAfters(op);
   std::map<Op *, view::Regions> after_op_regions;
-  for (auto &after : afterOps) {
+  for (auto after : afterOps) {
     auto found = consumer_regions.find(after);
     if (found != consumer_regions.end()) {
       after_op_regions[after] = found->second;

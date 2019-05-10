@@ -32,6 +32,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
 private:
   float alpha = 1.0;
   float beta  = 1.0;

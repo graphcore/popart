@@ -26,6 +26,10 @@ ReluInplaceOp::ReluInplaceOp(const ReluOp &relu_op)
     : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::ReluInplace,
                                 relu_op.getSettings()) {}
 
+std::unique_ptr<Op> ReluInplaceOp::clone() const {
+  return make_unique<ReluInplaceOp>(*this);
+}
+
 std::unique_ptr<Op> ReluOp::clone() const { return make_unique<ReluOp>(*this); }
 
 ReluOp::ReluOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
@@ -39,6 +43,10 @@ std::vector<std::unique_ptr<Op>> ReluOp::getGradOps() {
 
 void ReluGradOp::setup() {
   outInfo(getOutIndex()) = inInfo(getGradReludInIndex());
+}
+
+std::unique_ptr<Op> ReluGradOp::clone() const {
+  return make_unique<ReluGradOp>(*this);
 }
 
 ReluGradOp::ReluGradOp(const ReluOp &op_)

@@ -34,6 +34,8 @@ public:
   const std::vector<int64_t> &getReductionAxes();
   static OutIndex getOutIndex() { return 0; }
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   std::vector<int64_t> reduction_axes;
   TensorInfo forward_op_arg_info;
@@ -42,6 +44,7 @@ private:
 class MulArg0GradOp : public MulArgGradOp {
 public:
   MulArg0GradOp(const MulOp &, const std::vector<int64_t> &reduction_axes);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   static OutIndex getOutIndex() { return 0; }
@@ -50,6 +53,7 @@ public:
 class MulArg1GradOp : public MulArgGradOp {
 public:
   MulArg1GradOp(const MulOp &, const std::vector<int64_t> &reduction_axes);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 };

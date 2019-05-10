@@ -36,6 +36,8 @@ public:
 
   bool isOutlineable() const final { return false; }
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   // The input shape, with '1' inserted in reduction axes.
   // This is the same as the output shape if keepdims is true.
@@ -56,6 +58,8 @@ public:
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   TensorInfo outputTensorInfo;

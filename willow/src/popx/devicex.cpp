@@ -12,6 +12,7 @@
 #include <poputil/exceptions.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
 #include <poponnx/makeunique.hpp>
@@ -30,12 +31,19 @@ namespace popx {
 
 const std::string randomSeedId = "randomSeed";
 
+void Devicex::run(PopPrograms::ProgramIndex ind) {
+  if (isEngineLoaded() == false) {
+    loadEngineAndConnectStreams();
+  }
+  pEngine->run(ind);
+}
+
 void Devicex::weightsToHost() {
 
   if (useSyntheticData() == false) {
     logging::devicex::debug("Writing weights to host");
     pEngine->disableExecutionProfiling();
-    pEngine->run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
+    run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
     logging::devicex::debug("Writing weights to host complete.");
   }
 }
@@ -70,7 +78,7 @@ void Devicex::weightsToHost(
     // write weights from IPU to host stream memory points
 
     pEngine->disableExecutionProfiling();
-    pEngine->run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
+    run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
 
     logging::devicex::debug("Writing weights to ONNX ModelProto");
     // copy from the host stream memory points to the
@@ -137,6 +145,10 @@ void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
   tensors_[id] = pt;
 }
 
+bool PopTensors::contains(TensorId id) const {
+  return tensors_.find(id) != tensors_.end();
+}
+
 const poplar::Tensor &PopTensors::get(TensorId id) const {
   auto found = tensors_.find(id);
   if (found == tensors_.end()) {
@@ -179,6 +191,10 @@ poplar::program::Sequence &PopPrograms::setRandomSeedFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEED)];
 }
 
+poplar::program::Sequence &PopPrograms::toHostFinalCopyFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::TOHOSTFINALCOPY)];
+}
+
 poplar::program::Sequence &PopPrograms::weightsToHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::WEIGHTSTOHOST)];
 }
@@ -208,6 +224,7 @@ poplar::program::Sequence PopPrograms::program() {
   poplar::program::Sequence outer;
   outer.add(setRandomSeedFragment());
   outer.add(poplar::program::Repeat(repeatCount, prog));
+  outer.add(toHostFinalCopyFragment());
 
   return outer;
 }
@@ -232,24 +249,24 @@ PopPrograms::programFragment(PopPrograms::ProgramFragmentIndex index) {
   return seqs[static_cast<int>(index)];
 }
 
-poplar::program::Sequence &PopPrograms::programFragment(const Scope &scope) {
-  if (scope.empty()) {
+poplar::program::Sequence &PopPrograms::programFragment(const Graph &graph) {
+  if (graph.id.str().empty()) {
     return programFragment();
   } else {
-    return scopeSeqs.at(scope.str());
+    return scopeSeqs.at(graph.id.str());
   }
 }
 
-bool PopPrograms::containsFragment(const Scope &scope) {
-  if (scope.empty()) {
+bool PopPrograms::containsFragment(const Graph &graph) const {
+  if (graph.id.str().empty()) {
     return true;
   } else {
-    return scopeSeqs.find(scope.str()) != scopeSeqs.end();
+    return scopeSeqs.find(graph.id.str()) != scopeSeqs.end();
   }
 }
 
-void PopPrograms::createFragment(const Scope &scope) {
-  scopeSeqs.insert({scope.str(), {}});
+void PopPrograms::createFragment(const Graph &graph) {
+  scopeSeqs.insert({graph.id.str(), {}});
 }
 
 poplar::Graph &Devicex::rootGraph() { return *pRootGraph; }
@@ -320,7 +337,7 @@ void Devicex::weightsFromHost() {
   if (useSyntheticData() == false) {
     logging::devicex::debug("Writing weights from host, ");
     pEngine->disableExecutionProfiling();
-    pEngine->run(PopPrograms::ProgramIndex::WEIGHTSFROMHOST);
+    run(PopPrograms::ProgramIndex::WEIGHTSFROMHOST);
     logging::devicex::debug("done.");
   }
 }
@@ -329,7 +346,7 @@ void Devicex::optimizerFromHost() {
   if (useSyntheticData() == false) {
     logging::devicex::debug("Writing optimizer from host, ");
     pEngine->disableExecutionProfiling();
-    pEngine->run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
+    run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
     logging::devicex::debug("done.");
   }
 }
@@ -484,7 +501,7 @@ void Devicex::run(const IStepIO &stepio) {
   anchorsHostToHostStreams(stepio);
 
   pEngine->enableExecutionProfiling();
-  pEngine->run(PopPrograms::ProgramIndex::PROGRAM);
+  run(PopPrograms::ProgramIndex::PROGRAM);
 
   anchorsHostFromHostStreams(stepio);
 }
@@ -507,6 +524,8 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
 
 Opx *Devicex::getOpx(OpId id) { return opxs.at(id).get(); }
 
+const Opx *Devicex::getOpx(OpId id) const { return opxs.at(id).get(); }
+
 TaskId Devicex::taskWhichCreates(TensorId id) const {
   Tensor *tensor = ir().getTensor(id);
   // streamed and init tensors are created with
@@ -525,12 +544,12 @@ std::vector<InputCreatorCandidate>
 Devicex::getCreatorEndpoints(Tensor *tensor,
                              std::vector<OpxInAndOutIndex> pathFromInput,
                              bool excludeEndpointsFromPath,
-                             bool includeDeadends) {
+                             bool includeDeadends) const {
 
   std::vector<InputCreatorCandidate> endpoints;
   for (Op *op : tensor->consumers.getOps()) {
-    auto conOpId = op->id;
-    Opx *opx     = getOpx(conOpId);
+    auto conOpId   = op->id;
+    const Opx *opx = getOpx(conOpId);
 
     for (int inIndex : op->input->indices(tensor)) {
       auto updatedPath = pathFromInput;
@@ -580,9 +599,8 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
   return endpoints;
 }
 
-// Design decision : leave the option for a Tensor to be
-// created based on complex global criteria open.
-PriTask Devicex::initTensorTask(Tensor *tensor) {
+optional<InputCreatorCandidate>
+Devicex::getTensorCreator(Tensor *tensor) const {
 
   auto errorbase = [&tensor]() {
     std::stringstream ss;
@@ -622,14 +640,28 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     }
   }
 
+  if (candidates.size() > 1) {
+    throw error(errorbase() + "\nConflicting creator candidates.");
+  } else if (candidates.size() == 1) {
+    return candidates.front();
+  } else {
+    return boost::none;
+  }
+}
+
+// Design decision : leave the option for a Tensor to be
+// created based on complex global criteria open.
+PriTask Devicex::initTensorTask(Tensor *tensor) {
+  auto candidate = getTensorCreator(tensor);
+
   // 1. A unique candidate creator will create the tensor
   // 2. The tensor will be unwound (have its layout modified)
   //    by view-changing opxs on the path from the input to
   //    the candidate candidate
-  if (candidates.size() == 1) {
-    Opx *creator       = candidates[0].opx;
-    int inIndex        = candidates[0].index;
-    auto pathFromInput = candidates[0].getPathFromInput();
+  if (candidate) {
+    const Opx *creator = candidate->opx;
+    int inIndex        = candidate->index;
+    auto pathFromInput = candidate->getPathFromInput();
 
     auto f = [this, creator, inIndex, pathFromInput, tensor]() {
       logging::devicex::debug("Creating poplar::Tensor {}", tensor->id);
@@ -665,13 +697,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
             initTensorTaskId(tensor->id), // the task name
             deps,
             f};
-  }
-
-  else if (candidates.size() > 1) {
-    throw error(errorbase() + "\nConflicting creator candidates.");
-  }
-
-  else {
+  } else {
 
     auto f = [this, tensor]() {
       logging::devicex::warn("Creating input tensor '{}' linearly. No "
@@ -728,6 +754,17 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     };
 
     return {1e6, initTensorTaskId(tensor->id), {}, f};
+  }
+}
+
+void Devicex::createFragmentAndGrow(const Graph &graph) {
+  createFragment(graph);
+  auto &graph_prog = programFragment(graph);
+
+  // Grow opxs
+  for (auto op : graph.getOpSchedule({})) {
+    auto opx = getOpx(op->id);
+    opx->grow(graph_prog);
   }
 }
 
@@ -941,8 +978,16 @@ poplar::program::Sequence &Devicex::programFragment() {
   return progs.programFragment(PopPrograms::ProgramFragmentIndex::PROGRAM);
 }
 
-poplar::program::Sequence &Devicex::programFragment(const Scope &scope) {
-  return progs.programFragment(scope);
+bool Devicex::containsFragment(const Graph &graph) const {
+  return progs.containsFragment(graph);
+}
+
+void Devicex::createFragment(const Graph &graph) {
+  return progs.createFragment(graph);
+}
+
+poplar::program::Sequence &Devicex::programFragment(const Graph &graph) {
+  return progs.programFragment(graph);
 }
 
 PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
@@ -984,14 +1029,14 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   auto f = [opx, this]() {
     logging::devicex::debug("Creating output tensors for " +
                             opx->op_p->debugName());
-    opx->grow(programFragment(opx->op_p->getScope()));
+    opx->grow(programFragment(opx->op_p->getGraph()));
   };
   return {priority, opTaskId(op), deps, f};
 }
 
 InputCreatorCandidate::InputCreatorCandidate(
     int conIndex_,
-    Opx *opx_,
+    const Opx *opx_,
     std::vector<OpxInAndOutIndex> pathFromInput_)
     : index(conIndex_), opx(opx_), pathFromInput(pathFromInput_) {}
 
@@ -1009,234 +1054,23 @@ unsigned Devicex::getReplicationFactor() const {
   return replicationFactor;
 }
 
-// go all the way to creating the engine and connecting streams
-void Devicex::prepare() {
+bool Devicex::isEngineLoaded() const { return engineIsLoaded; }
 
-  logging::devicex::info("Poplar version: {}", poplar::versionString());
-  logging::devicex::info("Poplar release githash: {}", poplar::packageHash());
+void Devicex::setEngineIsLoaded(bool isLoaded) { engineIsLoaded = isLoaded; }
 
-  // Do not like the dynamic_cast is there a better way to handle this?
-  auto &popDevice = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
+void Devicex::loadEngineAndConnectStreams() {
+  DevicexInfo &di = dynamic_cast<DevicexInfo &>(*deviceInfo);
 
-  // Create the top level graph
-  pRootGraph.reset(new poplar::Graph(popDevice));
-
-  // Create the master graph
-  logging::devicex::debug("Creating master graph with replication factor {}",
-                          getReplicationFactor());
-
-  pMasterGraph.reset(new poplar::Graph(
-      pRootGraph->createReplicatedGraph(getReplicationFactor())));
-
-  if (ir().getSessionOptions().enableVirtualGraphs) {
-    auto numIPUs     = masterGraph().getTarget().getNumIPUs();
-    auto tilesPerIPU = masterGraph().getTarget().getTilesPerIPU();
-
-    for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
-      unsigned startTile = ipu * tilesPerIPU;
-      unsigned endTile   = (ipu + 1) * tilesPerIPU;
-      virtualGraphs.emplace_back(
-          masterGraph().createVirtualGraph(startTile, endTile));
-      logging::devicex::info(
-          "Created virtual graph {} from {} to {}", ipu, startTile, endTile);
-    }
-
-    // Make sure that the virtual graph information is valid
-    for (Op *op : ir().getOpSchedule({})) {
-      if (op->getVirtualGraphId()) {
-        int64_t index = *(op->getVirtualGraphId());
-        if (index < 0 || index >= numIPUs) {
-          throw error("{} has been assigned to an invalid virtual graph {}",
-                      op->debugName(),
-                      index);
-        }
-      }
-    }
+  // Let the device info know that this devicex's engine
+  // has most recently loaded its engine onto the poplar
+  // device
+  for (auto d : di.previouslyLoadedDevicexs) {
+    d->setEngineIsLoaded(false);
   }
+  di.previouslyLoadedDevicexs.insert(this);
+  setEngineIsLoaded(true);
 
-  popops::addCodelets(rootGraph());
-  poplin::addCodelets(rootGraph());
-  popnn::addCodelets(rootGraph());
-  poprand::addCodelets(rootGraph());
-
-  std::vector<Op *> ops = ir().getOpSchedule({});
-
-  // create the scope programs
-  for (auto op : ops) {
-    if (!progs.containsFragment(op->getScope())) {
-      progs.createFragment(op->getScope());
-    }
-  }
-
-  // Outling the op's if the session options is enabled
-  if (ir().getSessionOptions().enableOutlining) {
-    ops = outline.getOutlineView(ops, ir());
-  }
-
-  // create an Opx for every Op
-  for (Op *op : ops) {
-    opxs[op->id] = createOpx(op);
-  }
-
-  PriTasks tasks;
-
-  // weights (variables):
-  // 1) make tensor,
-  // 2) make stream from host,
-  // 3) create write prog,
-  // 4) make stream to host,
-  // 5) create read prog.
-  for (auto id : ir().getTensorIds(TensorType::Variable)) {
-    Tensor *tensor = ir().getTensor(id);
-    // 1
-    tasks.add(initTensorTask(tensor));
-
-    if (useSyntheticData() == false) {
-      // 2
-      tasks.add(streamFromHostTask(tensor));
-      // 3
-      tasks.add(fromHostTask(tensor,
-                             progs.streamWeightsFromHostFragment(),
-                             progs.copyWeightsBetweenIpusFragment()));
-      // 4
-      tasks.add(streamToHostTask(tensor));
-      // 5
-      tasks.add(toHostTask(tensor, progs.weightsToHostFragment()));
-    }
-  }
-
-  // constants:
-  // 1) make tensor,
-  // 2) set initial value.
-  for (auto id : ir().getTensorIds(TensorType::Const)) {
-    Tensor *tensor = ir().getTensor(id);
-    // 1
-    tasks.add(initTensorTask(tensor));
-    // 2
-    tasks.add(setInitTensorValTask(tensor));
-  }
-
-  // stream-to-device tensors : 1)  make tensor 2) make stream
-  for (auto id : ir().getTensorIds(TensorType::Stream)) {
-    Tensor *tensor = ir().getTensor(id);
-    // 1
-    tasks.add(initTensorTask(tensor));
-
-    if (useSyntheticData() == false) {
-      // 2
-      tasks.add(streamFromHostTask(tensor));
-    }
-  }
-
-  // graph inputs : 1) make tensor
-  for (auto id : ir().getGraphInputIds()) {
-    Tensor *tensor = ir().getTensor(id);
-    // 1
-    tasks.add(initTensorTask(tensor));
-  }
-
-  // Init the random seed
-  tasks.add(initRandomSeed());
-
-  // Depending on anchor return types specified by the user, some
-  // tensors may need to be added to the graph to keep track of
-  // batch count.
-  if (ir().getDataFlow().isBatchCountingRequired()) {
-    tasks.add(initBatchCounterTensorsTask());
-    tasks.add(updateBatchCoutTask(progs.programFragment()));
-  }
-
-  // stream-to-host tensors : 1) make streams 2) make copy programs
-  // note that the order in which tasks are added does not matter,
-  // they will be topologically sorted before running
-  if (useSyntheticData() == false) {
-    for (auto anchorId : ir().getDataFlow().anchors()) {
-      Tensor *tensor = ir().getTensor(anchorId);
-
-      // 1
-      tasks.add(streamToHostTask(tensor));
-      // 2
-      switch (ir().getDataFlow().art(anchorId).id()) {
-      // Copy program runs after every batch
-      case (AnchorReturnTypeId::ALL): {
-        tasks.add(toHostTask(tensor, programFragment()));
-        break;
-      }
-      // Copy program runs at the end of the step
-      case (AnchorReturnTypeId::FINAL): {
-        tasks.add(toHostEveryNBatchesTask(
-            tensor, ir().getDataFlow().batchesPerStep(), programFragment()));
-        break;
-      }
-      // Copy program runs at the end of every N batches
-      case (AnchorReturnTypeId::EVERYN): {
-        tasks.add(toHostEveryNBatchesTask(
-            tensor, ir().getDataFlow().art(anchorId).rp(), programFragment()));
-        break;
-      }
-      }
-    }
-
-    // create Program to write optimizer tensors to device
-    for (Tensor *tensor : ir().optimizerTensors()) {
-      tasks.add(fromHostTask(tensor,
-                             progs.streamOptimizerFromHostFragment(),
-                             progs.copyOptimizerBetweenIpusFragment()));
-    }
-
-    for (Tensor *tensor : ir().dataStreamTensors()) {
-      tasks.add(fromHostTask(tensor, programFragment(), programFragment()));
-    }
-  }
-
-  double priority     = 0.;
-  TaskId prevOpTaskId = "";
-  // 'ops' are in the order of the Ir's schedule
-  for (int i = 0; i < ops.size(); ++i) {
-    Op *op    = ops[i];
-    auto task = opTask(op, priority, prevOpTaskId);
-    tasks.add(task);
-    prevOpTaskId = task.name;
-    priority -= 1.;
-  }
-
-  for (auto &task : tasks.getLinearised()) {
-    task.f();
-  }
-
-  if (ir().getSessionOptions().exportPoplarVertexGraph) {
-    std::ofstream strm;
-    strm.open("poplar_vertex_graph.dot", std::ios::out);
-    masterGraph().outputVertexGraph(strm, progs.progs());
-  }
-
-  if (ir().getSessionOptions().exportPoplarComputationGraph) {
-    std::ofstream strm;
-    strm.open("poplar_compute_graph.dot", std::ios::out);
-    masterGraph().outputComputeGraph(strm, progs.progs());
-  }
-
-  if (!ir().getSessionOptions().compileEngine) {
-    logging::devicex::info("Not compiling engine by request");
-    return;
-  }
-
-  logging::devicex::info("Starting Engine compilation");
-
-  auto progressLogger = [](int progress, int total) {
-    if (total != 0) {
-      float percentage = std::floor(100.0f * static_cast<float>(progress) /
-                                    static_cast<float>(total));
-      logging::devicex::debug("Engine compilation {}% complete", percentage);
-    }
-  };
-
-  // Enigma moves the graph into the engine and then set the graphs to 0
-  pEngine.reset(new poplar::Engine(
-      rootGraph(), progs.progs(), engineOptions, progressLogger));
-  logging::devicex::info("Engine compiled");
-
-  pEngine->load(popDevice);
+  pEngine->load(di.getDevice());
   logging::devicex::info("Engine loaded");
 
   if (useSyntheticData() == false) {
@@ -1317,6 +1151,237 @@ void Devicex::prepare() {
       engineToStream(data0, n_bytes, streamId);
     }
   }
+}
+
+// go all the way to creating the engine and connecting streams
+void Devicex::prepare() {
+
+  logging::devicex::info("Poplar version: {}", poplar::versionString());
+  logging::devicex::info("Poplar release githash: {}", poplar::packageHash());
+
+  // Do not like the dynamic_cast is there a better way to handle this?
+  auto &popDevice = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
+
+  // Create the top level graph
+  pRootGraph.reset(new poplar::Graph(popDevice));
+
+  // Create the master graph
+  logging::devicex::debug("Creating master graph with replication factor {}",
+                          getReplicationFactor());
+
+  pMasterGraph.reset(new poplar::Graph(
+      pRootGraph->createReplicatedGraph(getReplicationFactor())));
+
+  if (ir().getSessionOptions().enableVirtualGraphs) {
+    auto numIPUs     = masterGraph().getTarget().getNumIPUs();
+    auto tilesPerIPU = masterGraph().getTarget().getTilesPerIPU();
+
+    for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
+      unsigned startTile = ipu * tilesPerIPU;
+      unsigned endTile   = (ipu + 1) * tilesPerIPU;
+      virtualGraphs.emplace_back(
+          masterGraph().createVirtualGraph(startTile, endTile));
+      logging::devicex::info(
+          "Created virtual graph {} from {} to {}", ipu, startTile, endTile);
+    }
+
+    // Make sure that the virtual graph information is valid
+    for (Op *op : ir().getOpSchedule({})) {
+      if (op->getVirtualGraphId()) {
+        int64_t index = *(op->getVirtualGraphId());
+        if (index < 0 || index >= numIPUs) {
+          throw error("{} has been assigned to an invalid virtual graph {}",
+                      op->debugName(),
+                      index);
+        }
+      }
+    }
+  }
+
+  popops::addCodelets(rootGraph());
+  poplin::addCodelets(rootGraph());
+  popnn::addCodelets(rootGraph());
+  poprand::addCodelets(rootGraph());
+
+  // create an Opx for every Op
+  for (Op *op : ir().getOpSchedule({})) {
+    opxs[op->id] = createOpx(op);
+  }
+
+  // Only the ops on the main graph should be added to tasks
+  std::vector<Op *> ops = ir().getMainGraph().getOpSchedule({});
+
+  PriTasks tasks;
+
+  // weights (variables):
+  // 1) make tensor,
+  // 2) make stream from host,
+  // 3) create write prog,
+  // 4) make stream to host,
+  // 5) create read prog.
+  for (auto id : ir().getTensorIds(TensorType::Variable)) {
+    Tensor *tensor = ir().getTensor(id);
+    // 1
+    tasks.add(initTensorTask(tensor));
+
+    if (useSyntheticData() == false) {
+      // 2
+      tasks.add(streamFromHostTask(tensor));
+      // 3
+      tasks.add(fromHostTask(tensor,
+                             progs.streamWeightsFromHostFragment(),
+                             progs.copyWeightsBetweenIpusFragment()));
+      // 4
+      tasks.add(streamToHostTask(tensor));
+      // 5
+      tasks.add(toHostTask(tensor, progs.weightsToHostFragment()));
+    }
+  }
+
+  // constants:
+  // 1) make tensor,
+  // 2) set initial value.
+  for (auto id : ir().getTensorIds(TensorType::Const)) {
+    Tensor *tensor = ir().getTensor(id);
+    // 1
+    tasks.add(initTensorTask(tensor));
+    // 2
+    tasks.add(setInitTensorValTask(tensor));
+  }
+
+  // stream-to-device tensors : 1)  make tensor 2) make stream
+  for (auto id : ir().getTensorIds(TensorType::Stream)) {
+    Tensor *tensor = ir().getTensor(id);
+    // 1
+    tasks.add(initTensorTask(tensor));
+
+    if (useSyntheticData() == false) {
+      // 2
+      tasks.add(streamFromHostTask(tensor));
+    }
+  }
+
+  // Init the random seed
+  tasks.add(initRandomSeed());
+
+  // Depending on anchor return types specified by the user, some
+  // tensors may need to be added to the graph to keep track of
+  // batch count.
+  if (ir().getDataFlow().isBatchCountingRequired()) {
+    tasks.add(initBatchCounterTensorsTask());
+    tasks.add(updateBatchCountTask(progs.programFragment()));
+  }
+
+  // stream-to-host tensors : 1) make streams 2) make copy programs
+  // note that the order in which tasks are added does not matter,
+  // they will be topologically sorted before running
+  if (useSyntheticData() == false) {
+    for (auto anchorId : ir().getDataFlow().anchors()) {
+      Tensor *tensor = ir().getTensor(anchorId);
+
+      // 1
+      tasks.add(streamToHostTask(tensor));
+      // 2
+      switch (ir().getDataFlow().art(anchorId).id()) {
+      // Copy program runs after every batch
+      case (AnchorReturnTypeId::ALL): {
+        tasks.add(toHostTask(tensor, programFragment()));
+        break;
+      }
+      // Copy program runs at the end of the step
+      case (AnchorReturnTypeId::FINAL): {
+        tasks.add(toHostTask(tensor, progs.toHostFinalCopyFragment()));
+        break;
+      }
+      // Copy program runs at the end of every N batches
+      case (AnchorReturnTypeId::EVERYN): {
+        tasks.add(toHostEveryNBatchesTask(
+            tensor, ir().getDataFlow().art(anchorId).rp(), programFragment()));
+        break;
+      }
+      }
+    }
+
+    // create Program to write optimizer tensors to device
+    for (Tensor *tensor : ir().optimizerTensors()) {
+      tasks.add(fromHostTask(tensor,
+                             progs.streamOptimizerFromHostFragment(),
+                             progs.copyOptimizerBetweenIpusFragment()));
+    }
+
+    for (Tensor *tensor : ir().dataStreamTensors()) {
+      tasks.add(fromHostTask(tensor, programFragment(), programFragment()));
+    }
+  }
+
+  double priority     = 0.;
+  TaskId prevOpTaskId = "";
+  // 'ops' are in the order of the Ir's schedule
+  for (int i = 0; i < ops.size(); ++i) {
+    Op *op    = ops[i];
+    auto task = opTask(op, priority, prevOpTaskId);
+    tasks.add(task);
+    prevOpTaskId = task.name;
+    priority -= 1.;
+  }
+
+  for (auto &task : tasks.getLinearised()) {
+    task.f();
+  }
+
+  if (ir().getSessionOptions().exportPoplarVertexGraph) {
+    std::ofstream strm;
+    strm.open("poplar_vertex_graph.dot", std::ios::out);
+    masterGraph().outputVertexGraph(strm, progs.progs());
+  }
+
+  if (ir().getSessionOptions().exportPoplarComputationGraph) {
+    std::ofstream strm;
+    strm.open("poplar_compute_graph.dot", std::ios::out);
+    masterGraph().outputComputeGraph(strm, progs.progs());
+  }
+
+  if (!ir().getSessionOptions().compileEngine) {
+    logging::devicex::info("Not compiling engine by request");
+    return;
+  }
+
+  logging::devicex::info("Starting Engine compilation");
+
+  auto progressLogger = [](int progress, int total) {
+    if (total != 0) {
+      float percentage = std::floor(100.0f * static_cast<float>(progress) /
+                                    static_cast<float>(total));
+      logging::devicex::debug("Engine compilation {}% complete", percentage);
+    }
+  };
+
+  try {
+    poplar::Executable executable = poplar::compileGraph(
+        rootGraph(), progs.progs(), engineOptions, progressLogger);
+
+    pEngine.reset(new poplar::Engine(std::move(executable), engineOptions));
+  } catch (const poplar::graph_memory_allocation_error &e) {
+    // If the creation of the engine throw an exception due to memory allocation
+    // i.e. the program does not fit show graph profile and re-throw the
+    // exception In certain cases poplar will throw the error without a graph
+    // profile. The following engine option needs to be set to enable the graph
+    // profile in this case "debug.allowOutOfMemory":"true"
+
+    if (e.graphProfile.type() == poplar::ProfileValue::Type::MAP &&
+        e.graphProfile.size() != 0) {
+
+      std::stringstream ss;
+      poplar::printProfileSummary(ss, e.graphProfile, {}, reportOptions);
+      logging::log(logging::Module::devicex, logging::Level::Err, ss.str());
+
+      throw;
+    }
+  }
+
+  logging::devicex::info("Engine compiled");
+
+  loadEngineAndConnectStreams();
 
   prepareHasBeenCalled = true;
 }
@@ -1343,7 +1408,9 @@ TaskId Devicex::initBatchCounterTensorsTaskId() const {
   return "initBatchCounterTensorsTask";
 }
 
-TaskId Devicex::updateBatchCoutTaskId() const { return "updateBatchCoutTask"; }
+TaskId Devicex::updateBatchCountTaskId() const {
+  return "updateBatchCountTask";
+}
 
 TaskId Devicex::initTensorTaskId(TensorId id) const {
   return "initTensorTaskId_" + id;
@@ -1486,7 +1553,7 @@ PriTask Devicex::initBatchCounterTensorsTask() {
           f};
 }
 
-PriTask Devicex::updateBatchCoutTask(poplar::program::Sequence &sq) {
+PriTask Devicex::updateBatchCountTask(poplar::program::Sequence &sq) {
 
   auto f = [&sq, this]() {
     logging::devicex::debug("Adding batch count checker program");
@@ -1519,7 +1586,7 @@ PriTask Devicex::updateBatchCoutTask(poplar::program::Sequence &sq) {
   };
 
   return {+1e6, // followed by writes to host: always as early as possible
-          updateBatchCoutTaskId(),
+          updateBatchCountTaskId(),
           {
               initBatchCounterTensorsTaskId() // poplar::Tensor creation task
           },
@@ -1570,7 +1637,7 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
           toHostTaskId(tensor->id),
           {
               // the dependencies:
-              updateBatchCoutTaskId(),        // updating poplar::Tensor task,
+              updateBatchCountTaskId(),       // updating poplar::Tensor task,
               streamToHostTaskId(tensor->id), // poplar::Stream creation task,
               taskWhichCreates(tensor->id)    // poplar::Tensor creation task.
           },

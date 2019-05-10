@@ -85,6 +85,10 @@ void InstanceNormGradOp::setup() {
   outInfo(getBOutIndex())     = {in_type, {in_shape[1]}};
 }
 
+std::unique_ptr<Op> InstanceNormGradOp::clone() const {
+  return make_unique<InstanceNormGradOp>(*this);
+}
+
 namespace {
 static OpCreator<InstanceNormOp> instanceNormOpCreator(
     Onnx::Operators::InstanceNormalization_6,

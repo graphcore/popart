@@ -11,13 +11,17 @@ MaxOp::MaxOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
 std::unique_ptr<Op> MaxOp::clone() const { return make_unique<MaxOp>(*this); }
 
 std::unique_ptr<Op> MaxOp::getIthGrad(int i) const {
-  return std::unique_ptr<MaxArgGradOp>(new MaxArgGradOp(*this, i));
+  return make_unique<MaxArgGradOp>(*this, i);
 }
 
 MaxArgGradOp::MaxArgGradOp(const MaxOp &op_, InIndex inputIndex)
     : NonLinearVariadicGradOp(Onnx::GradOperators::MaxArgGrad,
                               op_,
                               inputIndex) {}
+
+std::unique_ptr<Op> MaxArgGradOp::clone() const {
+  return make_unique<MaxArgGradOp>(*this);
+}
 
 namespace {
 static OpCreator<MaxOp> maxOpCreator({Onnx::Operators::Max_6,

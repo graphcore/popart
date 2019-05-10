@@ -46,6 +46,10 @@ DivArg0GradOp::DivArg0GradOp(const DivOp &op,
                    op.inInfo(DivOp::getArg0InIndex()),
                    op.getSettings()) {}
 
+std::unique_ptr<Op> DivArg0GradOp::clone() const {
+  return make_unique<DivArg0GradOp>(*this);
+}
+
 const std::map<int, int> &DivArg0GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
       {getOutIndex(), DivOp::getArg0InIndex()}};
@@ -65,6 +69,10 @@ DivArg1GradOp::DivArg1GradOp(const DivOp &op,
                    reduction_axes_,
                    op.inInfo(DivOp::getArg1InIndex()),
                    op.getSettings()) {}
+
+std::unique_ptr<Op> DivArg1GradOp::clone() const {
+  return make_unique<DivArg1GradOp>(*this);
+}
 
 const std::map<int, int> &DivArg1GradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {

@@ -17,6 +17,8 @@ public:
 
   static int getInIndex() { return 0; }
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 protected:
   // confirm that the axis is within the input tensor's rank
   void validateAxis() const;

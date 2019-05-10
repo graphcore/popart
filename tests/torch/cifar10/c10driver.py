@@ -10,6 +10,7 @@ from tempfile import TemporaryDirectory
 from torchvision import transforms, datasets
 from poponnx.torch import torchwriter
 from poponnx import NllLoss, L1Loss
+import tempfile
 
 
 class TestFailureError(Exception):
@@ -55,14 +56,27 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
-    tmpdir = tempfile.gettempdir()
-    c10datadir = os.path.abspath(os.path.join(tmpdir, 'cifar10data'))
-    if (not os.path.exists(c10datadir)):
-        print("Creating directory %s" % (c10datadir))
-        os.mkdir(c10datadir)
+    # determine what the data directory is
+    datadir = "unset"
 
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    path_c10datadir = os.path.join(dir_path, "c10datadir.py")
+    if os.path.exists(path_c10datadir):
+        import c10datadir
+        datadir = c10datadir.c10datadir
+    else:
+        tmpdir = tempfile.gettempdir()
+        datadir = os.path.abspath(os.path.join(tmpdir, 'cifar10data'))
+    print("Using datadir=%s" % (datadir))
+
+    if (not os.path.exists(datadir)):
+        print(
+            "Specified datadir %s does not exist. Consider making it here with os.mkdir(datadir)"
+            % (datadir, ))
+
+    print("c10driver: getting data from", datadir)
     trainset = datasets.CIFAR10(
-        root=c10datadir, train=True, download=True, transform=transform)
+        root=datadir, train=True, download=True, transform=transform)
 
     fnModel0 = os.path.join(outputdir, "model0.onnx")
 

@@ -107,7 +107,7 @@ void BatchNormOp::setup() {
     }
   }
 
-  if (settings.graph.getIr().isTraining() && output->n() != 5) {
+  if (getGraph().getIr().isTraining() && output->n() != 5) {
     throw error(
         "The Ir is in training mode, yet this batch-normalization Op, \"{}\" "
         "has only {} output(s) which means it is in inference mode. To be in "
@@ -132,6 +132,10 @@ BatchNormGradOp::BatchNormGradOp(const BatchNormOp &op_)
       fwdInInfo(op_.inInfo(BatchNormOp::getXInIndex())),
       fwdScaleInInfo(op_.inInfo(BatchNormOp::getScaleInIndex())),
       fwdBInInfo(op_.inInfo(BatchNormOp::getBInIndex())) {}
+
+std::unique_ptr<Op> BatchNormGradOp::clone() const {
+  return make_unique<BatchNormGradOp>(*this);
+}
 
 const std::map<int, int> &BatchNormGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {

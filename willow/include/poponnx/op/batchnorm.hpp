@@ -31,6 +31,8 @@ public:
   static OutIndex getSavedMeanOutIndex() { return 3; }
   static OutIndex getSavedVarOutIndex() { return 4; }
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
   // Attributes
   float getEpsilon() const { return epsilon; }
   float getMomentum() const { return momentum; }
@@ -56,6 +58,7 @@ private:
 class BatchNormGradOp : public Op {
 public:
   BatchNormGradOp(const BatchNormOp &);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
@@ -73,6 +76,8 @@ public:
   float getEpsilon() const { return epsilon; }
 
   void appendAttributes(OpSerialiserBase &) const override;
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   float epsilon;

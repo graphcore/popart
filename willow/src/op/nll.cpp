@@ -96,6 +96,10 @@ NllGradOp::NllGradOp(const NllOp &op_)
     : Op(Onnx::CustomGradOperators::NllGrad, op_.getSettings()),
       nllloss_(op_.nlll()) {}
 
+std::unique_ptr<Op> NllGradOp::clone() const {
+  return make_unique<NllGradOp>(*this);
+}
+
 const std::vector<GradInOutMapper> &NllGradOp::gradInputInfo() const {
   // input at index 0 : labelIn()
   // input at index 1 : probsIn()

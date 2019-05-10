@@ -23,7 +23,7 @@ public:
 
   bool canBeReplacedByIdentity() final;
 
-  float getSubgraphValue() const final { return 0.1f; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   // return the gradient Op for the i'th input, 0 <= i < number of inputs
@@ -42,7 +42,7 @@ public:
   InIndex getFwdIndex() { return fwdIndex; }
   const TensorInfo &getFwdInputInfo() { return fwdInputInfo; }
 
-  float getSubgraphValue() const final { return 0.1f; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   InIndex fwdIndex;

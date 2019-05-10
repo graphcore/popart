@@ -174,8 +174,7 @@ void ConvOpx::grow(poplar::program::Sequence &prog) const {
   } else if (op.getPhase() == Phase::BWD) {
     options = &dv_p->bwdConvOptions;
   } else {
-    throw error("Unexpected phase {} for conv",
-                static_cast<int>(op.getPhase()));
+    throw error("Unexpected phase {} for conv", op.getPhase());
   }
 
   poplin::ConvParams popConvParams = getPoplarConvParams(op.getParameters());
@@ -242,7 +241,7 @@ ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   }
 }
 
-bool ConvOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
+bool ConvOpx::createsEquiv(int ind0, const Opx *opx1, int ind1) const {
   // if opx1 is not a ConvOpx, it does not create the same poplar::Tensor
   if (opx1->op_p->opid != Onnx::Operators::Conv_1) {
     return false;
@@ -257,8 +256,8 @@ bool ConvOpx::createsEquiv(int ind0, Opx *opx1, int ind1) const {
   // finally, check that the convolution parameters are the same
   auto &lhsOp = getOp<ConvOp>();
 
-  ConvOpx *rhs = dynamic_cast<ConvOpx *>(opx1);
-  auto &rhsOp  = rhs->getOp<ConvOp>();
+  const ConvOpx *rhs = dynamic_cast<const ConvOpx *>(opx1);
+  auto &rhsOp        = rhs->getOp<ConvOp>();
   if (lhsOp.getParameters() != rhsOp.getParameters()) {
     return false;
   }

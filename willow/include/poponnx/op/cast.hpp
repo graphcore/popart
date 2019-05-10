@@ -19,7 +19,7 @@ public:
 
   DataType toDataType() { return to; }
 
-  float getSubgraphValue() const final { return 0.1f; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   DataType to;

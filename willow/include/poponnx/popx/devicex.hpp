@@ -1,6 +1,8 @@
 #ifndef GUARD_NEURALNET_POPDEVICE_HPP
 #define GUARD_NEURALNET_POPDEVICE_HPP
 
+#include <boost/optional.hpp>
+
 #include <poplar/DeviceManager.hpp>
 #include <poplar/Engine.hpp>
 #include <poplar/Graph.hpp>
@@ -13,8 +15,9 @@
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/popx/enigma.hpp>
 #include <poponnx/popx/poplaroptionsx.hpp>
-#include <poponnx/popx/subgraphoutlinex.hpp>
 #include <poponnx/pritask.hpp>
+
+using boost::optional;
 
 namespace poponnx {
 namespace popx {
@@ -49,6 +52,7 @@ public:
     COPYOPTIMIZERBETWEENIPUS,
     PROGRAM,
     WEIGHTSTOHOST,
+    TOHOSTFINALCOPY,
     SETRANDOMSEED,
     N // The number of program fragments
   };
@@ -60,6 +64,7 @@ public:
   poplar::program::Sequence &streamOptimizerFromHostFragment();
   poplar::program::Sequence &copyOptimizerBetweenIpusFragment();
   poplar::program::Sequence &setRandomSeedFragment();
+  poplar::program::Sequence &toHostFinalCopyFragment();
   poplar::program::Sequence &programFragment();
   poplar::program::Sequence &weightsToHostFragment();
 
@@ -67,9 +72,9 @@ public:
   std::vector<poplar::program::Program> progs();
 
   poplar::program::Sequence &programFragment(PopPrograms::ProgramFragmentIndex);
-  poplar::program::Sequence &programFragment(const Scope &);
-  bool containsFragment(const Scope &);
-  void createFragment(const Scope &);
+  poplar::program::Sequence &programFragment(const Graph &);
+  bool containsFragment(const Graph &) const;
+  void createFragment(const Graph &);
 
 private:
   // Specify how many times to loop the 'repeatable' program
@@ -92,11 +97,11 @@ poplar::Type popType(DataType);
 // A bundle struct to represent the path a tensor
 // takes through an Opx
 struct OpxInAndOutIndex {
-  OpxInAndOutIndex(Opx *opx_, InIndex inIndex_, OutIndex outIndex_)
+  OpxInAndOutIndex(const Opx *opx_, InIndex inIndex_, OutIndex outIndex_)
       : opx(opx_), inIndex(inIndex_), outIndex(outIndex_) {}
   OpxInAndOutIndex() = default;
 
-  Opx *opx;
+  const Opx *opx;
   InIndex inIndex;
   OutIndex outIndex;
 };
@@ -105,10 +110,10 @@ struct OpxInAndOutIndex {
 // for allocating an input tensor
 class InputCreatorCandidate {
 public:
-  InputCreatorCandidate(int, Opx *, std::vector<OpxInAndOutIndex>);
+  InputCreatorCandidate(int, const Opx *, std::vector<OpxInAndOutIndex>);
   InputCreatorCandidate() = default;
   int index;
-  Opx *opx;
+  const Opx *opx;
 
   std::vector<OpxInAndOutIndex> getPathFromInput();
 
@@ -166,6 +171,7 @@ public:
   PopPrograms progs;
 
   Opx *getOpx(OpId);
+  const Opx *getOpx(OpId) const;
 
   // Get the root graph
   poplar::Graph &rootGraph();
@@ -199,7 +205,37 @@ public:
   // Helper method to get the replication factor based on the user options
   unsigned getReplicationFactor() const;
 
-  poplar::program::Sequence &programFragment(const Scope &scope);
+  bool containsFragment(const Graph &scope) const;
+  void createFragment(const Graph &);
+  poplar::program::Sequence &programFragment(const Graph &scope);
+
+  // A forward search of graph:
+  //   - from inputs of the graph
+  //   - to Opxs with optimized poplar calls to create the tensor,
+  //     or to Opxs that destroy layout information of the input
+  //     tensor on the output
+  //   - traversing through Opxs that cannot create the tenosr
+  //     themselves, but preserve layout information from input
+  //     to output tensor
+  //   - tracking the route taken through the graph to the endpoints
+  // Using the defualt arguments will return only creator candidates,
+  // with each candidate's path containing only Opxs that need to be
+  // 'unwound' to correctly lay out the input tensor
+  std::vector<InputCreatorCandidate>
+  getCreatorEndpoints(Tensor *tensor,
+                      std::vector<OpxInAndOutIndex> pathFromInput,
+                      bool excludeEndpointsFromPath = true,
+                      bool includeDeadends          = false) const;
+
+  // Get a single creator candidate for creating a tensor
+  // Will throw an error if multiple candidates that do not agree are found
+  optional<InputCreatorCandidate> getTensorCreator(Tensor *tensor) const;
+
+  // Create a program fragment for a graph, and `grow' the associated opxs
+  void createFragmentAndGrow(const Graph &);
+
+  bool isEngineLoaded() const;
+  void setEngineIsLoaded(bool isLoaded);
 
 private:
   // The root graph. Operations that span the boundaries between
@@ -223,24 +259,6 @@ private:
   // period
   std::map<ReturnPeriod, poplar::Tensor> batchCountingTensors;
   std::map<ReturnPeriod, poplar::Tensor> batchCountCheckingTensors;
-
-  // A forward search of graph:
-  //   - from inputs of the graph
-  //   - to Opxs with optimized poplar calls to create the tensor,
-  //     or to Opxs that destroy layout information of the input
-  //     tensor on the output
-  //   - traversing through Opxs that cannot create the tenosr
-  //     themselves, but preserve layout information from input
-  //     to output tensor
-  //   - tracking the route taken through the graph to the endpoints
-  // Using the defualt arguments will return only creator candidates,
-  // with each candidate's path containing only Opxs that need to be
-  // 'unwound' to correctly lay out the input tensor
-  std::vector<InputCreatorCandidate>
-  getCreatorEndpoints(Tensor *tensor,
-                      std::vector<OpxInAndOutIndex> pathFromInput,
-                      bool excludeEndpointsFromPath = true,
-                      bool includeDeadends          = false);
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
@@ -279,8 +297,8 @@ private:
   TaskId initBatchCounterTensorsTaskId() const;
 
   // Task to add a program to increment and check the batch count
-  PriTask updateBatchCoutTask(poplar::program::Sequence &sq);
-  TaskId updateBatchCoutTaskId() const;
+  PriTask updateBatchCountTask(poplar::program::Sequence &sq);
+  TaskId updateBatchCountTaskId() const;
 
   // Task to append a Copy to poplar::Stream from poplar::Tensor every
   // N batches
@@ -312,6 +330,25 @@ private:
 
   std::map<TensorId, std::vector<char>> h2dBuffers;
   std::map<TensorId, std::vector<char>> d2hBuffers;
+
+  // Wrapper for calls to poplar Engine API calls: loading
+  // engine onto the poplar device and connecting streams.
+  // Must be called before running a poplar program with a
+  // call to this Devicex's engine.
+  void loadEngineAndConnectStreams();
+
+  // Is this Devicex's engine the last to have been loaded onto
+  // deviceInfo's device?
+  // Becomes true once loadEngineAndConnectStreams() is called.
+  // Becomes 'false' if another engine has been loaded after
+  // loadEngineAndConnectStreams() has been called. This is
+  // different to 'prepareHasBeenCalled', which, once true,
+  // is always true
+  bool engineIsLoaded = false;
+
+  // Wrapper function that checks the calling devicex was the
+  // last to have loaded its engine to deviceInfo's device
+  void run(PopPrograms::ProgramIndex ind);
 
   // copy a step tensor from user provided src, to allocated memory dst
   // input parameters are,
@@ -346,9 +383,6 @@ private:
   // Store input tensors based on how they are allocated
   std::set<TensorId> linearlyCreatedInputTensors;
   std::set<TensorId> efficientlyCreatedInputTensors;
-
-  // The subgraph outliner
-  SubgraphOutlinex outline;
 
   bool prepareHasBeenCalled;
 };

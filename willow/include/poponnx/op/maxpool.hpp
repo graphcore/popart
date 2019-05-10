@@ -25,6 +25,8 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   void setup0() final;
   void setSpatialK() final;
@@ -39,6 +41,7 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
+  std::unique_ptr<Op> clone() const final;
 
   static InIndex getPrePooledInIndex() { return 0; }
   static InIndex getPooledInIndex() { return 1; }
@@ -48,6 +51,8 @@ public:
   const MaxPoolOp *getCloneOfCreator() const;
 
   void appendAttributes(OpSerialiserBase &) const override;
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   // The shape and type of the input to the
@@ -59,7 +64,7 @@ private:
   //    how to do the backwards pass (padding, striding, etc)
   // 2) we DON'T store a pointer to the creating forward op,
   //    which might be optimised out and deleted
-  std::unique_ptr<Op> cloneOfCreator;
+  std::shared_ptr<Op> cloneOfCreator;
 };
 
 } // namespace poponnx

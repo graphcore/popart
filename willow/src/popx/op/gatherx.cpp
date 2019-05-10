@@ -328,7 +328,7 @@ InputCreatorType GatherOpx::getInputCreatorType(int index0) const {
                                            : Opx::getInputCreatorType(index0);
 }
 
-bool GatherOpx::createsEquiv(int, Opx *, int) const { return false; }
+bool GatherOpx::createsEquiv(int, const Opx *, int) const { return false; }
 
 std::vector<TensorId> GatherOpx::mustExistBeforeCreate(int) const { return {}; }
 

@@ -114,6 +114,8 @@ public:
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   int64_t getNOutChans() const final;
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
   void setup() override;
 
   // from github.com/onnx/onnx/blob/master/docs/Operators.md#Conv :
@@ -154,6 +156,8 @@ private:
 class ConvWeightsGradOp : public Op {
 public:
   ConvWeightsGradOp(const ConvOp &);
+  std::unique_ptr<Op> clone() const final;
+  ConvWeightsGradOp(const ConvWeightsGradOp &) = default;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
@@ -172,8 +176,10 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
 private:
-  std::unique_ptr<Op> cloneOfCreator;
+  std::shared_ptr<Op> cloneOfCreator;
   TensorInfo weightsInfo;
 };
 
@@ -181,7 +187,9 @@ class ConvFlipWeightsOp : public Op {
 public:
   ConvFlipWeightsOp(const OperatorIdentifier &_opid,
                     const Op::Settings &settings_);
+  ConvFlipWeightsOp(const ConvFlipWeightsOp &) = default;
   ~ConvFlipWeightsOp() override;
+  std::unique_ptr<Op> clone() const final;
   void setup() final;
 
   static InIndex getInIndex() { return 0; }
@@ -190,6 +198,8 @@ public:
   const ConvParameters &getParameters() const { return params; }
   void setParameters(const ConvParameters &p) { params = p; }
 
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
 private:
   ConvParameters params;
 };
@@ -197,6 +207,7 @@ private:
 class ConvDataGradOp : public Op {
 public:
   ConvDataGradOp(const ConvOp &);
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
@@ -213,9 +224,11 @@ public:
   const ConvParameters &getParameters() const { return params; }
   void setParameters(const ConvParameters &p) { params = p; }
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
 private:
   ConvParameters params;
-  std::unique_ptr<Op> cloneOfCreator;
+  std::shared_ptr<Op> cloneOfCreator;
   TensorInfo dataInfo;
 };
 

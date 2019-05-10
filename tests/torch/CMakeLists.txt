@@ -11,13 +11,13 @@ IF(C10_DIR)
   ENDIF()
 ENDIF()
 MESSAGE(STATUS "C10_PYSTRING_DIR is ${C10_PYSTRING_DIR}")
-
-configure_file(cifar10/download_dataset.py.in
-  ${CMAKE_BINARY_DIR}/cifar10/download_dataset.py
+configure_file(cifar10/c10datadir.py.in
+  ${CMAKE_BINARY_DIR}/cifar10/c10datadir.py
   @ONLY)
 
-install(FILES ${CMAKE_BINARY_DIR}/cifar10/download_dataset.py
-  DESTINATION ${INSTALL_TESTS}/torch/cifar10/)
+install(FILES ${CMAKE_BINARY_DIR}/cifar10/c10datadir.py
+  DESTINATION ${INSTALL_TESTS}/torch/cifar10)
+
 #------ end of download data script
 
 
@@ -27,7 +27,6 @@ set(CPACK_SOURCE_IGNORE_FILES ${INSTALL_TESTS})
 add_test(NAME model0_train_cpu
 		 WORKING_DIRECTORY ${INSTALL_TESTS}
 		 COMMAND python3 torch/cifar10/model0.py --device=cpu)
-
 
 add_test(NAME model0_train_ipumodel
 		 WORKING_DIRECTORY ${INSTALL_TESTS}

@@ -45,6 +45,10 @@ void SqueezeOp::appendAttributes(OpSerialiserBase &os) const {
 
 void SqueezeGradOp::setup() { outInfo(getOutIndex()) = unsqueezedInfo; }
 
+std::unique_ptr<Op> SqueezeGradOp::clone() const {
+  return make_unique<SqueezeGradOp>(*this);
+}
+
 SqueezeGradOp::SqueezeGradOp(const SqueezeOp &op_)
     : Op(Onnx::GradOperators::SqueezeGrad, op_.getSettings()),
       unsqueezedInfo(op_.inInfo(SqueezeOp::getInIndex())) {}

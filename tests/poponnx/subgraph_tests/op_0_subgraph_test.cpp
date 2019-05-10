@@ -117,6 +117,11 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
       losses = {up_losses[0].get()};
     }
 
+    auto opts = SessionOptions();
+    // This test tests the functionality of fwtools::subgraph::getRinseMatches,
+    // not the actual outlining of the Ir
+    opts.enableOutlining = false;
+
     Ir ir;
     ir.prepare({modelProto,
                 InputShapeInfo(),
@@ -124,7 +129,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
                 losses,
                 optimizer.get(),
                 *cpuDevice,
-                {},
+                opts,
                 Patterns(PatternsLevel::DEFAULT)});
 
     auto sched = ir.getOpSchedule({});
@@ -276,6 +281,12 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
       {{0, 3}, 3},
       {{7, 9, 11, 13, 15, 17}, 2},
       {{0, 1, 2, 3, 4, 5, 8, 10, 12, 14, 16, 18}, 1}};
+
+  auto opts = SessionOptions();
+  // This test tests the functionality of fwtools::subgraph::getRinseMatches,
+  // not the actual outlining of the Ir
+  opts.enableOutlining = false;
+
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
@@ -283,7 +294,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
               losses,
               optimizer.get(),
               *cpuDevice,
-              {},
+              opts,
               Patterns(PatternsLevel::DEFAULT)});
 
   std::vector<Match> expected_matches{};

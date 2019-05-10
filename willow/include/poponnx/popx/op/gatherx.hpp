@@ -22,7 +22,7 @@ public:
   // If this Opx creates a poplar::Tensor at index0 (via createInput),
   // does it create the same poplar::Tensor as if opx1 creates one at
   // index1?. default behaviour : throws error
-  bool createsEquiv(int index0, Opx *opx1, int index1) const override;
+  bool createsEquiv(int index0, const Opx *opx1, int index1) const override;
   // To create a poplar::Tensor for input index index0, which
   // poplar::Tensors must already exist?
   std::vector<TensorId> mustExistBeforeCreate(int index0) const override;

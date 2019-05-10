@@ -17,6 +17,7 @@ private:
 class MaxArgGradOp : public NonLinearVariadicGradOp {
 public:
   MaxArgGradOp(const MaxOp &, InIndex);
+  std::unique_ptr<Op> clone() const final;
 };
 
 } // namespace poponnx

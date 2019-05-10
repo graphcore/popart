@@ -12,7 +12,7 @@ MeanOp::MeanOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
 std::unique_ptr<Op> MeanOp::clone() const { return make_unique<MeanOp>(*this); }
 
 std::unique_ptr<Op> MeanOp::getIthGrad(int i) const {
-  return std::unique_ptr<MeanArgGradOp>(new MeanArgGradOp(*this, i));
+  return make_unique<MeanArgGradOp>(*this, i);
 }
 
 MeanArgGradOp::MeanArgGradOp(const MeanOp &op_, InIndex inputIndex)
@@ -22,6 +22,10 @@ MeanArgGradOp::MeanArgGradOp(const MeanOp &op_, InIndex inputIndex)
       {getGradInIndex(), VariadicOp::getOutIndex(), GradOpInType::GRADOUT}};
 
   nInputs = op_.input->n();
+}
+
+std::unique_ptr<Op> MeanArgGradOp::clone() const {
+  return make_unique<MeanArgGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &MeanArgGradOp::gradInputInfo() const {

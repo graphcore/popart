@@ -53,10 +53,10 @@ try:
 except ValueError:
     print("Onnx model path: ", onnx_model, " doesn't exist")
 
-# TODO: change to not use builder when T6675 is complete
+# create graph transformer using .onnx file. Use builder to get output tensor ids
 builder = poponnx.Builder(onnx_model)
 output = builder.getOutputTensorIds()[0]
-graph_transformer = poponnx.GraphTransformer(builder.getModelProto())
+graph_transformer = poponnx.GraphTransformer(onnx_model)
 graph_transformer.convertAllFixedPointInitializersToConstants()
 
 # Create forward pass session

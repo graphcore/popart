@@ -20,6 +20,7 @@ public:
 class ReluInplaceOp : public ElementWiseInplaceUnaryOp {
 public:
   ReluInplaceOp(const ReluOp &);
+  std::unique_ptr<Op> clone() const final;
 };
 
 // takes output of ReluOp as input and not the input of ReluOp
@@ -32,6 +33,7 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   void setup() final;
+  std::unique_ptr<Op> clone() const final;
 
   // The index at which the output of the Relu (the "relud" tensor)
   // is an input to this ReluGradOp
@@ -43,7 +45,7 @@ public:
 
   static OutIndex getOutIndex() { return 0; }
 
-  float getSubgraphValue() const final { return 0.1f; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
 } // namespace poponnx

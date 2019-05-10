@@ -24,6 +24,8 @@ public:
   const Tensor *rhsIn() const;
   const Tensor *out() const;
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
   // Follow the numpy matmul broadcasting rules for the output shape
   Shape npMatMulOut(Shape lhs, Shape rhs) const;
 
@@ -44,6 +46,7 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   void setup() final;
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
@@ -57,13 +60,15 @@ public:
 
   const MatMulOp *getCloneOfCreator() const;
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
 private:
   TensorInfo fwdOpOutputGrad;
   TensorInfo fwdOpLhsInfo;
   TensorInfo fwdOpRhsInfo;
 
   // TODO : Would benefit from a MatMulGradOp class - T6830
-  std::unique_ptr<Op> cloneOfCreator;
+  std::shared_ptr<Op> cloneOfCreator;
 };
 
 class MatMulRhsGradOp : public Op {
@@ -78,6 +83,7 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   void setup() final;
+  std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
@@ -91,12 +97,14 @@ public:
 
   const MatMulOp *getCloneOfCreator() const;
 
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
 private:
   TensorInfo fwdOpOutputGrad;
   TensorInfo fwdOpLhsInfo;
   TensorInfo fwdOpRhsInfo;
 
-  std::unique_ptr<Op> cloneOfCreator;
+  std::shared_ptr<Op> cloneOfCreator;
 };
 
 } // namespace poponnx

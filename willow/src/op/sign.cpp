@@ -17,6 +17,8 @@ OperatorIdentifier SignOp::getOpId(const Ir &) {
   return Onnx::Operators::Sign_9;
 }
 
+std::unique_ptr<Op> SignOp::clone() const { return make_unique<SignOp>(*this); }
+
 SignGradOp::SignGradOp(const SignOp &op_)
     : Op(Onnx::GradOperators::SignGrad, op_.getSettings()) {}
 
@@ -33,6 +35,10 @@ const std::vector<GradInOutMapper> &SignGradOp::gradInputInfo() const {
 }
 
 void SignGradOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
+
+std::unique_ptr<Op> SignGradOp::clone() const {
+  return make_unique<SignGradOp>(*this);
+}
 
 namespace {
 static OpCreator<SignOp> absOpCreator({Onnx::Operators::Sign_9});

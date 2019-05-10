@@ -8,7 +8,9 @@ void Scope::pop() { names.pop_back(); }
 
 Scope Scope::operator/(const std::string &name) const {
   Scope result(*this);
-  result.names.push_back(name);
+  if (!name.empty()) {
+    result.names.push_back(name);
+  }
   return result;
 }
 

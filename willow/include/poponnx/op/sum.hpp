@@ -18,6 +18,7 @@ class SumArgGradOp : public LinearVariadicGradOp {
 public:
   SumArgGradOp(const SumOp &, InIndex inIndex);
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  std::unique_ptr<Op> clone() const final;
 
 private:
   std::vector<GradInOutMapper> gradInputInfoVec;
