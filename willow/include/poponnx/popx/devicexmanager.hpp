@@ -4,6 +4,7 @@
 #include <poplar/DeviceManager.hpp>
 
 #include <poponnx/devicemanager.hpp>
+#include <poponnx/popx/devicex.hpp>
 
 namespace poponnx {
 namespace popx {
@@ -47,6 +48,8 @@ public:
   }
 
   poplar::Device &getDevice() { return device; }
+
+  std::set<Devicex *> previouslyLoadedDevicexs;
 
 protected:
   poplar::Device device;

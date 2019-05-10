@@ -234,6 +234,9 @@ public:
   // Create a program fragment for a graph, and `grow' the associated opxs
   void createFragmentAndGrow(const Graph &);
 
+  bool isEngineLoaded() const;
+  void setEngineIsLoaded(bool isLoaded);
+
 private:
   // The root graph. Operations that span the boundaries between
   // replicated subgraphs (e.g. all-reduce of weight deltas) should be added
@@ -327,6 +330,25 @@ private:
 
   std::map<TensorId, std::vector<char>> h2dBuffers;
   std::map<TensorId, std::vector<char>> d2hBuffers;
+
+  // Wrapper for calls to poplar Engine API calls: loading
+  // engine onto the poplar device and connecting streams.
+  // Must be called before running a poplar program with a
+  // call to this Devicex's engine.
+  void loadEngineAndConnectStreams();
+
+  // Is this Devicex's engine the last to have been loaded onto
+  // deviceInfo's device?
+  // Becomes true once loadEngineAndConnectStreams() is called.
+  // Becomes 'false' if another engine has been loaded after
+  // loadEngineAndConnectStreams() has been called. This is
+  // different to 'prepareHasBeenCalled', which, once true,
+  // is always true
+  bool engineIsLoaded = false;
+
+  // Wrapper function that checks the calling devicex was the
+  // last to have loaded its engine to deviceInfo's device
+  void run(PopPrograms::ProgramIndex ind);
 
   // copy a step tensor from user provided src, to allocated memory dst
   // input parameters are,
