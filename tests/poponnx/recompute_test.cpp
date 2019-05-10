@@ -94,6 +94,7 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
   SessionOptions opts;
   opts.autoRecomputation = RecomputationType::None;
   opts.enableOutlining   = false;
+  opts.mergeVarUpdate    = MergeVarUpdateType::None;
 
   Ir ir;
   ir.prepare({modelProto,
@@ -156,6 +157,7 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
   SessionOptions opts;
   opts.autoRecomputation = RecomputationType::Standard;
   opts.enableOutlining   = false;
+  opts.mergeVarUpdate    = MergeVarUpdateType::None;
 
   Ir ir;
   ir.prepare({modelProto,
@@ -223,6 +225,7 @@ BOOST_AUTO_TEST_CASE(NormOnlyRecomputeTest) {
   SessionOptions opts;
   opts.autoRecomputation = RecomputationType::NormOnly;
   opts.enableOutlining   = false;
+  opts.mergeVarUpdate    = MergeVarUpdateType::None;
 
   Ir ir;
   ir.prepare({modelProto,

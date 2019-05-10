@@ -24,7 +24,8 @@
 // loss = lambda*|C|_1
 BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
 
-  auto test = []() {
+  // genPdf : generate of dot file pdf of the training computation
+  auto test = [](bool genPdf) {
     using namespace poponnx;
 
     // the dimensions of the matrices
@@ -32,7 +33,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
     int M = 7;
     int N = 8;
 
-    // we will generate random ininitializations
+    // we will generate random initializations
     int seed = 1013;
     std::default_random_engine eng(seed);
     std::uniform_real_distribution<float> fdis(-4, 4);
@@ -107,7 +108,14 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
     auto cpuDevice =
         poponnx::DeviceManager::createDeviceManager().createCpuDevice();
 
-    auto opts = SessionOptions();
+    auto opts            = SessionOptions();
+    opts.enableOutlining = true;
+    if (genPdf) {
+      opts.firstDotOp = 0;
+      opts.finalDotOp = 100;
+      opts.dotChecks.insert(DotCheck::FINAL);
+      opts.logDir = ".";
+    }
 
     // training info
     float learnRate = 0.321;
@@ -201,7 +209,24 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
                                   v_B_updated_baseline.end(),
                                   B_readback.begin(),
                                   B_readback.end());
+
+    if (genPdf) {
+      for (auto check : opts.dotChecks) {
+        auto dot_string = getDotCheckString(check);
+        std::stringstream command_ss;
+        command_ss << "dot "
+                   << " -Tpdf "
+                   << " -o "
+                   << io::appendDirFn(opts.logDir, dot_string + ".pdf") << " "
+                   << io::appendDirFn(opts.logDir, dot_string + ".dot");
+        std::string command = command_ss.str();
+        int ran             = std::system(command.c_str());
+        std::cout << command << " returned with status " << ran << std::endl;
+      }
+    }
   };
 
-  test();
+  // should only be true for debugging (on a machine with dot program)
+  bool genPdf = false;
+  test(genPdf);
 }

@@ -36,6 +36,7 @@
 #include <poponnx/transforms/auto_virtual_graph.hpp>
 #include <poponnx/transforms/interipucopy.hpp>
 #include <poponnx/transforms/mergecopies.hpp>
+#include <poponnx/transforms/mergevarupdates.hpp>
 #include <poponnx/transforms/prune.hpp>
 #include <poponnx/transforms/recompute.hpp>
 #include <poponnx/transforms/subgraphoutline.hpp>
@@ -740,6 +741,7 @@ void Ir::prepare(const IrBundle &gb) {
   if (canTrain()) {
     constructBackwards();
   }
+
   updateVertices();
   dotCheckpoint(DotCheck::BWD0);
 
@@ -757,6 +759,38 @@ void Ir::prepare(const IrBundle &gb) {
   // consumers are removed at this point.
   removeIsolatedTensors();
   updateVertices();
+
+  switch (userOptions.mergeVarUpdate) {
+
+  case (MergeVarUpdateType::All): {
+    enableTransform(MergeAllVarUpdates::id(), true);
+    applyTransform(MergeAllVarUpdates::id(), getMainGraph());
+    // reset the trainTargetOps, updated by MergeVarUpdates
+    trainTargetOps.clear();
+    for (auto &op : getMainGraph().getOps()) {
+      if (op.second->isConvertibleTo<VarUpdateOp>()) {
+        trainTargetOps.insert(op.second.get());
+      }
+    }
+    updateVertices();
+    break;
+  }
+  case (MergeVarUpdateType::Auto): {
+    throw error("MergeVarUpdateType::Auto not supported");
+    // TODO T8703. remember to update trainTargetOps, as in ::All case
+  }
+
+  case (MergeVarUpdateType::None): {
+    // do nothing
+    break;
+  }
+
+  case (MergeVarUpdateType::N):
+  default: {
+    // should never occur
+    throw error("Unrecognised MergeVarUpdateType, bailing from merger");
+  }
+  }
 
   // Explicitly set this transform to default (off),
   // unless either
@@ -797,7 +831,6 @@ void Ir::prepare(const IrBundle &gb) {
   // Add internal ops to copy tensors between ipu's as needed
   applyTransform(InterIpuCopy::id(), getMainGraph());
   applyTransform(MergeCopies::id(), getMainGraph());
-
   updateVertices();
 
   dotCheckpoint(DotCheck::PREALIAS);
@@ -813,7 +846,6 @@ void Ir::prepare(const IrBundle &gb) {
 
     applyInplacePattern();
   }
-
   updateVertices();
 
   if (getSessionOptions().enableOutlining) {

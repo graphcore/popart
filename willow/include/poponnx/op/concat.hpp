@@ -67,6 +67,7 @@ private:
 // An inplace variant of the concat op
 class ConcatInplaceOp : public ConcatOp {
 public:
+  ConcatInplaceOp(int64_t axis_, const Op::Settings &settings);
   ConcatInplaceOp(const ConcatOp &concatOp, int64_t axis_);
 
   std::unique_ptr<Op> clone() const override;

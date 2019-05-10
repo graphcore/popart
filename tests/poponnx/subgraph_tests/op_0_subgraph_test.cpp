@@ -123,6 +123,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     opts.enableOutlining = false;
 
     Ir ir;
+    opts.mergeVarUpdate = MergeVarUpdateType::None;
     ir.prepare({modelProto,
                 InputShapeInfo(),
                 dataFlow,

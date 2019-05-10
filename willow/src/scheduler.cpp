@@ -37,7 +37,6 @@ public:
     for (auto &t : op->output->tensors()) {
       diff -= t->info.nbytes();
     }
-
     return diff;
   }
 
@@ -107,6 +106,7 @@ std::vector<Op *> Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
   };
 
   for (auto &id_op : ops) {
+
     // we are going through all the ops, and registering all the
     // constraints which have the op as "after"
     Op *after = id_op.second.get();
@@ -132,7 +132,7 @@ std::vector<Op *> Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
   }
 
   auto readyToProcess = [&nIndicesAwaiting, &nBeforeKey](Op *op) {
-    return (nIndicesAwaiting[op] == 0 && nBeforeKey[op] == 0);
+    return (nIndicesAwaiting.at(op) == 0 && nBeforeKey.at(op) == 0);
   };
 
   // processing a tensor involves
@@ -146,7 +146,7 @@ std::vector<Op *> Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
           Op *op = op_count.first;
           nIndicesAwaiting[op] -= op_count.second;
           if (readyToProcess(op)) {
-            opsToProcess.push(op_count.first);
+            opsToProcess.push(op);
           }
         }
       };

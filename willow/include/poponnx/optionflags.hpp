@@ -29,6 +29,15 @@ enum class RecomputationType {
   N         // the number of RecomputationTypes, must appear as the final enum
 };
 
+enum class MergeVarUpdateType {
+  None = 0, // Do not merge VarUpdate Ops
+  All,      // Merge all VarUpdate Ops into as few groups as possible.
+            // This is a good choice when memory is not a constraint
+  Auto,     // Merge into groups, attempting not to increase max-liveness
+            // Auto needs implementing TODO T8703
+  N         // The numbe of MergeVarUpdateTypes, must appear as the final enum
+};
+
 /**
  * A structure containing user configuration options for the Session class
  */
@@ -81,6 +90,10 @@ struct SessionOptions {
   /// Enable recomputation of operations in the graph in the backwards pass to
   /// reduce model size at the cost of computation cycles
   RecomputationType autoRecomputation = RecomputationType::None;
+
+  /// Enable merging of VarUpdates into groups of VarUpdates, by flattening
+  /// and concatenating Variable Tensors and Updating Tensors
+  MergeVarUpdateType mergeVarUpdate = MergeVarUpdateType::None;
 
   /// By default, we use the stable-softmax poplar function. This input tensor
   /// to softmax, _x_, is preprocessed by subtracting max(_x_) to each element

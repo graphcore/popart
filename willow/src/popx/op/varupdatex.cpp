@@ -25,13 +25,13 @@ void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   // First update weights with weight decay
   popops::mapInPlace(graph(),
                      pe::Mul(pe::_1, pe::_2),
-                     {getInTensor(SGDVarUpdateOp::getVarInIndex()),
+                     {getInTensor(SGDVarUpdateOp::getVarToUpdateInIndex()),
                       getInTensor(SGDVarUpdateOp::getWeightDecayInIndex())},
                      prog,
                      idStr());
 
   poplar::Tensor weightDeltas =
-      getInTensor(SGDVarUpdateOp::getVarGradInIndex());
+      getInTensor(SGDVarUpdateOp::getUpdaterInIndex());
 
   if (dv_p->getReplicationFactor() > 1) {
 
@@ -46,15 +46,15 @@ void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   // Then subtract scaled gradients
   popops::scaledSubtractFrom(
       graph(),
-      getInTensor(SGDVarUpdateOp::getVarInIndex()), // weights
-      weightDeltas,                                 // weightDeltas
+      getInTensor(SGDVarUpdateOp::getVarToUpdateInIndex()), // weights
+      weightDeltas,                                         // weightDeltas
       getInTensor(SGDVarUpdateOp::getLearnRateInIndex()),
       prog,
       idStr());
 
   // output is a reference to the updated input
   setOutTensor(SGDVarUpdateOp::getUpdatedVarOutIndex(),
-               getInTensor(SGDVarUpdateOp::getVarInIndex()));
+               getInTensor(SGDVarUpdateOp::getVarToUpdateInIndex()));
 }
 
 ConstSGDVarUpdateOpx::ConstSGDVarUpdateOpx(Op *op, Devicex *devicex)
@@ -76,12 +76,12 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
     popops::mapInPlace(graph(),
                        pe::Mul(pe::_1, pe::Const(weightDecayScaleFactor)),
-                       {getInTensor(SGDVarUpdateOp::getVarInIndex())},
+                       {getInTensor(SGDVarUpdateOp::getVarToUpdateInIndex())},
                        prog,
                        idStr());
   }
 
-  poplar::Tensor weightDeltas = getInTensor(vu_op.getVarGradInIndex());
+  poplar::Tensor weightDeltas = getInTensor(vu_op.getUpdaterInIndex());
 
   if (dv_p->getReplicationFactor() > 1) {
 
@@ -94,14 +94,17 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   // Then subtract scaled gradients
-  popops::scaledSubtractFrom(graph(),
-                             getInTensor(vu_op.getVarInIndex()), // weights
-                             weightDeltas,                       // weightDeltas
-                             vu_op.getLearnRate(),
-                             prog,
-                             idStr() + "/scaledSubtract");
+  popops::scaledSubtractFrom(
+      graph(),
+      getInTensor(vu_op.getVarToUpdateInIndex()), // weights
+      weightDeltas,                               // weightDeltas
+      vu_op.getLearnRate(),
+      prog,
+      idStr() + "/scaledSubtract");
 
-  // no poplar::Tensors to insert
+  // output is a reference to the updated input
+  setOutTensor(ConstSGDVarUpdateOp::getUpdatedVarOutIndex(),
+               getInTensor(ConstSGDVarUpdateOp::getVarToUpdateInIndex()));
 }
 
 CopyVarUpdateOpx::CopyVarUpdateOpx(Op *op, Devicex *devicex)
@@ -111,13 +114,13 @@ CopyVarUpdateOpx::CopyVarUpdateOpx(Op *op, Devicex *devicex)
 
 void CopyVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto vu_op = getOp<CopyVarUpdateOp>();
-  poplar::program::Copy copy(getInTensor(CopyVarUpdateOp::getVarFromInIndex()),
-                             getInTensor(CopyVarUpdateOp::getVarToInIndex()));
+  poplar::program::Copy copy(getInTensor(VarUpdateOp::getUpdaterInIndex()),
+                             getInTensor(VarUpdateOp::getVarToUpdateInIndex()));
   prog.add(copy);
 
   // output is a reference to destination of the copy
-  setOutTensor(SGDVarUpdateOp::getUpdatedVarOutIndex(),
-               getInTensor(CopyVarUpdateOp::getVarToInIndex()));
+  setOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
+               getInTensor(VarUpdateOp::getVarToUpdateInIndex()));
 }
 
 namespace {
