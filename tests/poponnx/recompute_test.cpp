@@ -49,198 +49,214 @@ TensorId batchnormalization(Builder *b, TensorId act, ConstVoidData bndata) {
 }
 
 BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
-  // Build an onnnx model
-  auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset9();
+  auto run_test = [](bool enableOutlining, int expectedScheduleSize) {
+    // Build an onnnx model
+    auto builder = Builder::create();
+    auto aiOnnx  = builder->aiOnnxOpset9();
 
-  TensorInfo input_shape{"FLOAT", std::vector<int64_t>{1, 4, 32, 32}};
+    TensorInfo input_shape{"FLOAT", std::vector<int64_t>{1, 4, 32, 32}};
 
-  TensorInfo weights_shape{"FLOAT", std::vector<int64_t>{4, 4, 3, 3}};
-  float weight_vals[4 * 4 * 3 * 3] = {0};
-  ConstVoidData weight_data        = {weight_vals, weights_shape};
+    TensorInfo weights_shape{"FLOAT", std::vector<int64_t>{4, 4, 3, 3}};
+    float weight_vals[4 * 4 * 3 * 3] = {0};
+    ConstVoidData weight_data        = {weight_vals, weights_shape};
 
-  auto act = builder->addInputTensor(input_shape);
+    auto act = builder->addInputTensor(input_shape);
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  auto proto      = builder->getModelProto();
-  auto modelProto = io::getModelFromString(proto);
+    auto proto      = builder->getModelProto();
+    auto modelProto = io::getModelFromString(proto);
 
-  // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
-  auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+    // Add the last tensor, and the 3rd tensor as anchors
+    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
+    auto optimizer = ConstSGD(0.01);
+    std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
+    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
-  SessionOptions opts;
-  opts.autoRecomputation = RecomputationType::None;
-  opts.enableOutlining   = false;
-  opts.mergeVarUpdate    = MergeVarUpdateType::None;
+    SessionOptions opts;
+    opts.autoRecomputation = RecomputationType::None;
+    opts.enableOutlining   = enableOutlining;
+    opts.mergeVarUpdate    = MergeVarUpdateType::None;
 
-  Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              losses,
-              &optimizer,
-              *cpuDevice,
-              opts,
-              Patterns({PreAliasPatternType::OPTOIDENTITY,
-                        PreAliasPatternType::POSTNREPL})});
+    Ir ir;
+    ir.prepare({modelProto,
+                InputShapeInfo(),
+                dataFlow,
+                losses,
+                &optimizer,
+                *cpuDevice,
+                opts,
+                Patterns({PreAliasPatternType::OPTOIDENTITY,
+                          PreAliasPatternType::POSTNREPL})});
 
-  // All but the original 6 operations should be pruned
-  BOOST_CHECK_EQUAL(ir.getOpSchedule({}).size(), 42);
+    // All but the original 6 operations should be pruned
+    BOOST_CHECK_EQUAL(ir.getOpSchedule({}).size(), expectedScheduleSize);
+  };
+
+  run_test(false, 42);
+  run_test(true, 24);
 }
 
 BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
-  // Build an onnnx model
-  auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset9();
+  auto run_test = [](bool enableOutlining, int expectedScheduleSize) {
+    // Build an onnnx model
+    auto builder = Builder::create();
+    auto aiOnnx  = builder->aiOnnxOpset9();
 
-  TensorInfo input_shape{"FLOAT", std::vector<int64_t>{1, 4, 32, 32}};
+    TensorInfo input_shape{"FLOAT", std::vector<int64_t>{1, 4, 32, 32}};
 
-  TensorInfo weights_shape{"FLOAT", std::vector<int64_t>{4, 4, 3, 3}};
-  float weight_vals[4 * 4 * 3 * 3] = {0};
-  ConstVoidData weight_data        = {weight_vals, weights_shape};
+    TensorInfo weights_shape{"FLOAT", std::vector<int64_t>{4, 4, 3, 3}};
+    float weight_vals[4 * 4 * 3 * 3] = {0};
+    ConstVoidData weight_data        = {weight_vals, weights_shape};
 
-  auto act = builder->addInputTensor(input_shape);
+    auto act = builder->addInputTensor(input_shape);
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act});
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act});
 
-  auto proto      = builder->getModelProto();
-  auto modelProto = io::getModelFromString(proto);
+    auto proto      = builder->getModelProto();
+    auto modelProto = io::getModelFromString(proto);
 
-  // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
-  auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+    // Add the last tensor, and the 3rd tensor as anchors
+    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
+    auto optimizer = ConstSGD(0.01);
+    std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
+    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
-  SessionOptions opts;
-  opts.autoRecomputation = RecomputationType::Standard;
-  opts.enableOutlining   = false;
-  opts.mergeVarUpdate    = MergeVarUpdateType::None;
+    SessionOptions opts;
+    opts.autoRecomputation = RecomputationType::Standard;
+    opts.enableOutlining   = enableOutlining;
+    opts.mergeVarUpdate    = MergeVarUpdateType::None;
 
-  Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              losses,
-              &optimizer,
-              *cpuDevice,
-              opts,
-              Patterns({PreAliasPatternType::OPTOIDENTITY,
-                        PreAliasPatternType::POSTNREPL})});
+    Ir ir;
+    ir.prepare({modelProto,
+                InputShapeInfo(),
+                dataFlow,
+                losses,
+                &optimizer,
+                *cpuDevice,
+                opts,
+                Patterns({PreAliasPatternType::OPTOIDENTITY,
+                          PreAliasPatternType::POSTNREPL})});
 
-  // All but the original 6 operations should be pruned
-  BOOST_CHECK_EQUAL(ir.getOpSchedule({}).size(), 46);
+    // All but the original 6 operations should be pruned
+    BOOST_CHECK_EQUAL(ir.getOpSchedule({}).size(), expectedScheduleSize);
+  };
+
+  run_test(false, 46);
+  run_test(true, 49);
 }
 
 BOOST_AUTO_TEST_CASE(NormOnlyRecomputeTest) {
-  // Test that norms (and non-linearities following norms) are cloned in the
-  // ir for recomputation in the backwards pass.
+  auto run_test = [](bool enableOutlining, int expectedBatchNormCount) {
+    // Test that norms (and non-linearities following norms) are cloned in the
+    // ir for recomputation in the backwards pass.
 
-  // The model:
-  //
-  // In -> Conv -> BN -> Relu -> Conv -> Relu -> Conv -> BN -> Out
-  //
-  // With RecomputationType::None:
-  //   BN: 2
-  //   Relu: 2
-  // With RecomputationType::NormOnly:
-  //   BN: 4 (both recomputed)
-  //   Relu: 3 (recomputed only when following norm)
+    // The model:
+    //
+    // In -> Conv -> BN -> Relu -> Conv -> Relu -> Conv -> BN -> Out
+    //
+    // With RecomputationType::None:
+    //   BN: 2
+    //   Relu: 2
+    // With RecomputationType::NormOnly:
+    //   BN: 4 (both recomputed)
+    //   Relu: 3 (recomputed only when following norm)
 
-  // Build an onnnx model
-  auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset9();
+    // Build an onnnx model
+    auto builder = Builder::create();
+    auto aiOnnx  = builder->aiOnnxOpset9();
 
-  TensorInfo input_shape{"FLOAT", std::vector<int64_t>{1, 4, 32, 32}};
+    TensorInfo input_shape{"FLOAT", std::vector<int64_t>{1, 4, 32, 32}};
 
-  TensorInfo weights_shape{"FLOAT", std::vector<int64_t>{4, 4, 3, 3}};
-  float weight_vals[4 * 4 * 3 * 3] = {0};
-  ConstVoidData weight_data        = {weight_vals, weights_shape};
+    TensorInfo weights_shape{"FLOAT", std::vector<int64_t>{4, 4, 3, 3}};
+    float weight_vals[4 * 4 * 3 * 3] = {0};
+    ConstVoidData weight_data        = {weight_vals, weights_shape};
 
-  TensorInfo bn_shape{"FLOAT", std::vector<int64_t>{4}};
-  float bn_vals[4]      = {0};
-  ConstVoidData bn_data = {bn_vals, bn_shape};
+    TensorInfo bn_shape{"FLOAT", std::vector<int64_t>{4}};
+    float bn_vals[4]      = {0};
+    ConstVoidData bn_data = {bn_vals, bn_shape};
 
-  auto act = builder->addInputTensor(input_shape);
+    auto act = builder->addInputTensor(input_shape);
 
-  act = conv(builder.get(), act, weight_data);
-  act = batchnormalization(builder.get(), act, bn_data); // BN is recomputed
-  act = aiOnnx.relu({act}); // Relu after Batchnorm is recomputed
-  act = conv(builder.get(), act, weight_data);
-  act = aiOnnx.relu({act}); // Relu after conv is not recomputed
-  act = conv(builder.get(), act, weight_data);
-  act = batchnormalization(builder.get(), act, bn_data); // BN is recomputed
+    act = conv(builder.get(), act, weight_data);
+    act = batchnormalization(builder.get(), act, bn_data); // BN is recomputed
+    act = aiOnnx.relu({act}); // Relu after Batchnorm is recomputed
+    act = conv(builder.get(), act, weight_data);
+    act = aiOnnx.relu({act}); // Relu after conv is not recomputed
+    act = conv(builder.get(), act, weight_data);
+    act = batchnormalization(builder.get(), act, bn_data); // BN is recomputed
 
-  auto proto      = builder->getModelProto();
-  auto modelProto = io::getModelFromString(proto);
+    auto proto      = builder->getModelProto();
+    auto modelProto = io::getModelFromString(proto);
 
-  // Add the last tensor, and the 3rd tensor as anchors
-  auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
-  auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
-  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+    // Add the last tensor, and the 3rd tensor as anchors
+    auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
+    auto optimizer = ConstSGD(0.01);
+    std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
+    auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
-  SessionOptions opts;
-  opts.autoRecomputation = RecomputationType::NormOnly;
-  opts.enableOutlining   = false;
-  opts.mergeVarUpdate    = MergeVarUpdateType::None;
+    SessionOptions opts;
+    opts.autoRecomputation = RecomputationType::NormOnly;
+    opts.enableOutlining   = enableOutlining;
+    opts.mergeVarUpdate    = MergeVarUpdateType::None;
 
-  Ir ir;
-  ir.prepare({modelProto,
-              InputShapeInfo(),
-              dataFlow,
-              losses,
-              &optimizer,
-              *cpuDevice,
-              opts,
-              Patterns({PreAliasPatternType::OPTOIDENTITY,
-                        PreAliasPatternType::POSTNREPL})});
+    Ir ir;
+    ir.prepare({modelProto,
+                InputShapeInfo(),
+                dataFlow,
+                losses,
+                &optimizer,
+                *cpuDevice,
+                opts,
+                Patterns({PreAliasPatternType::OPTOIDENTITY,
+                          PreAliasPatternType::POSTNREPL})});
 
-  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::BatchNormalization).size() ==
-              4);
-  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu).size() == 3);
+    BOOST_CHECK_EQUAL(
+        ir.opsOfType(Onnx::AiOnnx::OpSet9::BatchNormalization).size(),
+        expectedBatchNormCount);
+    BOOST_CHECK_EQUAL(ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu).size(), 3);
+  };
+
+  run_test(false, 4);
+  run_test(true, 2);
 }
 
 BOOST_AUTO_TEST_CASE(DontInheritRecomputeTest) {
@@ -269,8 +285,7 @@ BOOST_AUTO_TEST_CASE(DontInheritRecomputeTest) {
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   SessionOptions opts;
-  opts.dotChecks       = {DotCheck::FINAL};
-  opts.enableOutlining = false;
+  opts.dotChecks = {DotCheck::FINAL};
 
   Ir ir;
   ir.prepare({modelProto,

@@ -37,16 +37,17 @@ InputCreatorType CallOpx::getInputCreatorType(int index) const {
 }
 
 bool CallOpx::createsEquiv(int index0, const Opx *opx1, int index1) const {
-  // If both ops are call ops and both ops call the same graph and the index is
-  // the same
-  if (opx1->op_p->opid == Onnx::CustomOperators::Call &&
-      &getOp<CallOp>().getCalledGraph() ==
-          &opx1->getOp<CallOp>().getCalledGraph() &&
-      index0 == index1) {
-    return true;
+  // If opx1 is a CallOpx, delegate to opx1->getCreator getCreator
+  // while loop handles +1 depths of CallOpxs
+  while (opx1->op_p->opid == Onnx::CustomOperators::Call) {
+    auto c2 = dynamic_cast<const CallOpx *>(opx1)->getCreator(index1);
+    opx1    = c2->opx;
+    index1  = c2->index;
   }
 
-  return false;
+  // pass responsibility to creator
+  auto creator = getCreator(index0);
+  return creator->opx->createsEquiv(creator->index, opx1, index1);
 }
 
 std::vector<TensorId> CallOpx::mustExistBeforeCreate(int index) const {

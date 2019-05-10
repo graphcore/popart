@@ -1107,15 +1107,21 @@ void Ir::enableTransform(std::size_t transformId, bool enable) {
 
 std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) {
   std::vector<Op *> typedOps;
-  for (auto &id_op : getMainGraph().getOps()) {
-    if (id_op.second->opid == opid) {
-      typedOps.push_back(id_op.second.get());
+  for (auto &id_graph : graphs) {
+    auto graph = id_graph.second.get();
+
+    for (auto &id_op : graph->getOps()) {
+      if (id_op.second->opid == opid) {
+        typedOps.push_back(id_op.second.get());
+      }
     }
   }
   return typedOps;
 }
 
-bool Ir::isAnchored(TensorId tenId) const { return dataFlow.isAnchored(tenId); }
+bool Ir::isAnchored(const TensorId &tenId) const {
+  return dataFlow.isAnchored(tenId);
+}
 
 void Ir::constructForwards() {
   constructFromOnnxGraph(onnxModel->graph(), {});

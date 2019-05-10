@@ -214,11 +214,11 @@ public:
   //   - to Opxs with optimized poplar calls to create the tensor,
   //     or to Opxs that destroy layout information of the input
   //     tensor on the output
-  //   - traversing through Opxs that cannot create the tenosr
+  //   - traversing through Opxs that cannot create the tensor
   //     themselves, but preserve layout information from input
   //     to output tensor
   //   - tracking the route taken through the graph to the endpoints
-  // Using the defualt arguments will return only creator candidates,
+  // Using the default arguments will return only creator candidates,
   // with each candidate's path containing only Opxs that need to be
   // 'unwound' to correctly lay out the input tensor
   std::vector<InputCreatorCandidate>
