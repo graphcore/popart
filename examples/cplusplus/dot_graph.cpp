@@ -48,10 +48,6 @@ int main(int argc, char **argv) {
   session_opts.firstDotOp = opts.startOp();
   session_opts.finalDotOp = opts.endOp();
 
-  // Include sug-graph annotation. With TODO T7217,
-  // this can be made into a command-line option
-  session_opts.dotSubgraphAnnotation = true;
-
   GraphTransformer gt(opts.modelPath());
   gt.convertAllFixedPointInitializersToConstants();
 
@@ -125,16 +121,14 @@ int main(int argc, char **argv) {
   }
 
   // dot -Tpdf -o x.pdf x.dot
+  // (for all x.dot  in session_opts.logDir)
   if (opts.compileDotsToPDF() == true) {
-    for (auto check : session_opts.dotChecks) {
-      auto dot_string = getDotCheckString(check);
+    for (auto dotFn : poponnx::io::getMatchFns(session_opts.logDir, ".dot")) {
+      std::string pdfFn = dotFn.substr(0, dotFn.size() - 4) + ".pdf";
       std::stringstream command_ss;
       command_ss << "dot "
                  << " -Tpdf "
-                 << " -o "
-                 << io::appendDirFn(session_opts.logDir, dot_string + ".pdf")
-                 << " "
-                 << io::appendDirFn(session_opts.logDir, dot_string + ".dot");
+                 << " -o " << pdfFn << " " << dotFn;
       std::string command = command_ss.str();
       int ran             = std::system(command.c_str());
       std::cout << command << " returned with status " << ran << std::endl;

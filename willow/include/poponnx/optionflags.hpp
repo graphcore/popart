@@ -60,14 +60,13 @@ struct SessionOptions {
   /// Include the Op name in the .dot file (the Op type is always exported)
   bool dotOpNames = false;
 
-  /// Include annotation of sub-graphs in the .dot file
-  bool dotSubgraphAnnotation = false;
-
   /// Export Poplar computation graph
   bool exportPoplarComputationGraph = false;
 
   /// Export Poplar vertex graph
   bool exportPoplarVertexGraph = false;
+
+  bool separateCallOpPdfs = true;
 
   /// Controls caching of the convolution graphs. If set to false, then none of
   ///  the convolutions will be cached.

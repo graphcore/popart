@@ -358,8 +358,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
       .def_readwrite("reportOptions", &SessionOptions::reportOptions)
       .def_readwrite("dotOpNames", &SessionOptions::dotOpNames)
-      .def_readwrite("dotSubgraphAnnotation",
-                     &SessionOptions::dotSubgraphAnnotation)
+      .def_readwrite("separateCallOpPdfs", &SessionOptions::separateCallOpPdfs)
       .def_readwrite("finalDotOp", &SessionOptions::finalDotOp)
       .def_readwrite("firstDotOp", &SessionOptions::firstDotOp)
       .def_readwrite("constantWeights", &SessionOptions::constantWeights)

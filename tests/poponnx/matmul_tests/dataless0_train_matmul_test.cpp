@@ -210,6 +210,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
                                   B_readback.begin(),
                                   B_readback.end());
 
+    // dot -Tpdf -o final.pdf final.dot
     if (genPdf) {
       for (auto check : opts.dotChecks) {
         auto dot_string = getDotCheckString(check);
