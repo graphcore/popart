@@ -198,12 +198,6 @@ public:
 
   PopTensors tensors;
 
-  // TODO T8008 : is this still used and/or needed?
-  poplar::Tensor getConst(const poplar::Type &type,
-                          const std::vector<size_t> &shape,
-                          double val,
-                          const std::string &name);
-
   // Helper method to get the replication factor based on the user options
   unsigned getReplicationFactor() const;
 
@@ -261,6 +255,11 @@ private:
   // period
   std::map<ReturnPeriod, poplar::Tensor> batchCountingTensors;
   std::map<ReturnPeriod, poplar::Tensor> batchCountCheckingTensors;
+
+  poplar::Tensor getConst(const poplar::Type &type,
+                          const std::vector<size_t> &shape,
+                          double val,
+                          const std::string &name);
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
