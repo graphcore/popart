@@ -380,11 +380,34 @@ private:
   template <typename T> void setInitVal(Tensor *tensor);
   void setInitValHalf(Tensor *tensor);
 
+  // Either return the executable in cachedExecutable
+  // or compile `rootGraph' and try to save the generated executable before
+  // returning it. After calling `getExecutable', `cachedExecutable' will always
+  // be set to `boost::none'.
+  poplar::Executable getExecutable();
+
+  // Try to save the argument executable to a file at
+  // `ir().getSessionOptions().cachePath'.
+  void trySaveExecutable(poplar::Executable &);
+
+  // Try to load a poplar::Executable from a file at
+  // `ir().getSessionOptions().cachePath'. If successful,
+  // `this->cachedExecutable' will be set else, `this->cachedExecutable' will
+  // remain set to `boost::none'.
+  void tryLoadExecutable();
+
+  bool usingCachedExecutable() { return static_cast<bool>(cachedExecutable); }
+
+  std::string getPoplarCachePath();
+  std::string getPoponnxCachePath();
+
   // Store input tensors based on how they are allocated
   std::set<TensorId> linearlyCreatedInputTensors;
   std::set<TensorId> efficientlyCreatedInputTensors;
 
   bool prepareHasBeenCalled;
+
+  optional<poplar::Executable> cachedExecutable;
 };
 
 } // namespace popx

@@ -135,6 +135,12 @@ struct SessionOptions {
   // prepared. This option has no effect on a training session
   bool constantWeights = true;
 
+  /// Enable poplar executable caching
+  bool enableEngineCaching = false;
+
+  /// Path to save the poplar::Executable to.
+  std::string cachePath = "session_cache";
+
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;
 

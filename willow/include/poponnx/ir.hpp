@@ -162,7 +162,7 @@ public:
   onnx::ModelProto step(int n);
   // if the tensor is returned to user (passes call to DataFlow).
   bool isAnchored(const TensorId &) const;
-  void append(std::stringstream &);
+  void append(std::stringstream &) const;
   std::vector<std::unique_ptr<Loss>> losses;
 
   // The tensors specific to the optimization. Learning rate(s), momentum(s) etc
@@ -418,5 +418,15 @@ public:
 };
 
 } // namespace poponnx
+
+namespace std {
+template <> struct hash<poponnx::Ir> {
+  std::size_t operator()(const poponnx::Ir &ir) const {
+    std::stringstream ss;
+    ir.append(ss);
+    return std::hash<std::string>{}(ss.str());
+  }
+};
+}; // namespace std
 
 #endif

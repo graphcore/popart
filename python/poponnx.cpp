@@ -363,6 +363,9 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("finalDotOp", &SessionOptions::finalDotOp)
       .def_readwrite("firstDotOp", &SessionOptions::firstDotOp)
       .def_readwrite("constantWeights", &SessionOptions::constantWeights)
+      .def_readwrite("cachePath", &SessionOptions::cachePath)
+      .def_readwrite("enableEngineCaching",
+                     &SessionOptions::enableEngineCaching)
       // set in python use the python set constructor, so something like
       // mySessionOptions.dotChecks = {poponnx.DotCheck.FINAL}
       .def_readwrite("dotChecks", &SessionOptions::dotChecks);

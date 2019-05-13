@@ -1907,7 +1907,7 @@ void Ir::growFinalLoss() {
 
 TensorId Ir::getFinalLossId() const { return "finalLoss"; }
 
-void Ir::append(std::stringstream &ss) {
+void Ir::append(std::stringstream &ss) const {
   ss << "\n";
 
   int i = 0;

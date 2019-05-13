@@ -1159,6 +1159,8 @@ void Devicex::prepare() {
   logging::devicex::info("Poplar version: {}", poplar::versionString());
   logging::devicex::info("Poplar release githash: {}", poplar::packageHash());
 
+  tryLoadExecutable();
+
   // Do not like the dynamic_cast is there a better way to handle this?
   auto &popDevice = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
 
@@ -1348,18 +1350,8 @@ void Devicex::prepare() {
 
   logging::devicex::info("Starting Engine compilation");
 
-  auto progressLogger = [](int progress, int total) {
-    if (total != 0) {
-      float percentage = std::floor(100.0f * static_cast<float>(progress) /
-                                    static_cast<float>(total));
-      logging::devicex::debug("Engine compilation {}% complete", percentage);
-    }
-  };
-
   try {
-    poplar::Executable executable = poplar::compileGraph(
-        rootGraph(), progs.progs(), engineOptions, progressLogger);
-
+    auto executable = getExecutable();
     pEngine.reset(new poplar::Engine(std::move(executable), engineOptions));
   } catch (const poplar::graph_memory_allocation_error &e) {
     // If the creation of the engine throw an exception due to memory allocation
@@ -1384,6 +1376,116 @@ void Devicex::prepare() {
   loadEngineAndConnectStreams();
 
   prepareHasBeenCalled = true;
+}
+
+poplar::Executable Devicex::getExecutable() {
+  auto progressLogger = [](int progress, int total) {
+    if (total != 0) {
+      float percentage = std::floor(100.0f * static_cast<float>(progress) /
+                                    static_cast<float>(total));
+      logging::devicex::debug("Engine compilation {}% complete", percentage);
+    }
+  };
+
+  if (cachedExecutable) {
+    // return the executable in cachedExecutable while ensuring cachedExecutable
+    // is set to boost::none
+    optional<poplar::Executable> result = boost::none;
+    boost::swap(cachedExecutable, result);
+    return std::move(result.get());
+  } else {
+    auto executable = poplar::compileGraph(
+        rootGraph(), progs.progs(), engineOptions, progressLogger);
+    trySaveExecutable(executable);
+    return executable;
+  }
+}
+
+namespace {
+
+class SavedInfo {
+public:
+  SavedInfo(const Devicex &devicex) : irHash(std::hash<Ir>{}(devicex.ir())) {}
+
+  void serialize(std::ostream &os) { os << irHash; }
+
+  static SavedInfo deserialize(std::istream &is) {
+    SavedInfo result;
+    is >> result.irHash;
+    return result;
+  }
+
+  bool operator==(const SavedInfo &rhs) { return irHash == rhs.irHash; }
+
+  std::size_t irHash;
+
+private:
+  SavedInfo() : irHash(0) {}
+};
+
+} // namespace
+
+std::string Devicex::getPoplarCachePath() {
+  return ir().getSessionOptions().cachePath + ".poplar";
+}
+
+std::string Devicex::getPoponnxCachePath() {
+  return ir().getSessionOptions().cachePath + ".poponnx";
+}
+
+void Devicex::trySaveExecutable(poplar::Executable &executable) {
+  auto cachePath    = ir().getSessionOptions().cachePath;
+  auto cacheEnabled = ir().getSessionOptions().enableEngineCaching;
+
+  if (cacheEnabled && !cachePath.empty() &&
+      deviceInfo->getType() == DeviceType::Ipu) {
+    // save the poplar executable
+    auto poplarCachePath = getPoplarCachePath();
+    std::ofstream poplarFs(poplarCachePath, std::ofstream::binary);
+    logging::devicex::debug("Saving poplar Executable to '{}'",
+                            poplarCachePath);
+    executable.serialize(poplarFs);
+
+    // save the poponnx ir hash
+    auto poponnxCachePath = getPoponnxCachePath();
+    std::ofstream poponnxFs(poponnxCachePath, std::ofstream::binary);
+    logging::devicex::debug("Saving poponnx ir hash to '{}'", poponnxCachePath);
+    SavedInfo savedInfo(*this);
+    savedInfo.serialize(poponnxFs);
+  };
+}
+
+void Devicex::tryLoadExecutable() {
+  auto warn = [&](const std::string &msg) {
+    logging::devicex::warn("Unable to load cached poplar::Executable, {}", msg);
+  };
+
+  auto cachePath    = ir().getSessionOptions().cachePath;
+  auto cacheEnabled = ir().getSessionOptions().enableEngineCaching;
+
+  if (cacheEnabled && !cachePath.empty() &&
+      deviceInfo->getType() == DeviceType::Ipu) {
+    // load the poponnx ir hash
+    auto poponnxCachePath = getPoponnxCachePath();
+    std::ifstream poponnxFs(poponnxCachePath, std::ifstream::binary);
+    if (poponnxFs.is_open()) {
+      if (SavedInfo(*this) == SavedInfo::deserialize(poponnxFs)) {
+        auto poplarCachePath = getPoplarCachePath();
+        std::ifstream poplarFs(poplarCachePath, std::ifstream::binary);
+        if (poplarFs.is_open()) {
+          logging::devicex::trace("Loading poplar Executable from '{}'",
+                                  cachePath);
+          cachedExecutable.emplace(poplar::Executable::deserialize(poplarFs));
+        } else {
+          warn(fmt::format("could not open file `{}'", poplarCachePath));
+        }
+      } else {
+        warn("ir hashes differ");
+      }
+    } else {
+      warn(fmt::format("could not open file `{}'", poponnxCachePath));
+    }
+  }
 }
 
 TaskId Devicex::streamFromHostTaskId(TensorId id) const {
