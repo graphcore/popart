@@ -141,6 +141,12 @@ struct SessionOptions {
   /// Path to save the poplar::Executable to.
   std::string cachePath = "session_cache";
 
+  // Enable exceptions when floating point errors occur.
+  bool enableFloatingPointChecks = false;
+
+  // Enable stochastic rounding
+  bool enableStochasticRounding = false;
+
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;
 

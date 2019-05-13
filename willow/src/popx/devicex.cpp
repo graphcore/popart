@@ -9,6 +9,8 @@
 #include <popops/codelets.hpp>
 #include <poprand/RandomGen.hpp>
 #include <poprand/codelets.hpp>
+#include <popsys/CSRFunctions.hpp>
+#include <popsys/codelets.hpp>
 #include <poputil/exceptions.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
@@ -183,6 +185,10 @@ poplar::program::Sequence &PopPrograms::copyOptimizerBetweenIpusFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::COPYOPTIMIZERBETWEENIPUS)];
 }
 
+poplar::program::Sequence &PopPrograms::initFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::INIT)];
+}
+
 poplar::program::Sequence &PopPrograms::programFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::PROGRAM)];
 }
@@ -222,6 +228,11 @@ poplar::program::Sequence PopPrograms::program() {
   prog.add(programFragment());
 
   poplar::program::Sequence outer;
+
+  // Only add the init fragment if settings have been added
+  if (!initFragment().isEmpty()) {
+    outer.add(initFragment());
+  }
   outer.add(setRandomSeedFragment());
   outer.add(poplar::program::Repeat(repeatCount, prog));
   outer.add(toHostFinalCopyFragment());
@@ -1153,6 +1164,39 @@ void Devicex::loadEngineAndConnectStreams() {
   }
 }
 
+// Floating point settings are not suported on CPU
+void Devicex::setFloatingPointBehaviour(poplar::Graph &graph) {
+
+  if (ir().getSessionOptions().enableFloatingPointChecks) {
+    if (deviceInfo->getType() == DeviceType::Ipu) {
+      logging::devicex::info("Enabling all floating point checks");
+      // Not enabling stochasitc rounding, that is done in a seperate call
+      popsys::FloatingPointBehaviour behaviour(true, true, true, false, true);
+      popsys::setFloatingPointBehaviour(
+          graph, progs.initFragment(), behaviour, "/init");
+    } else {
+      logging::devicex::warn(
+          "Floating point checks can not be enabled for non IPU devices");
+    }
+  }
+}
+
+// Stocastic rounding is only supported on the IPU
+void Devicex::setStochasticRoundingBehaviour(poplar::Graph &graph) {
+
+  if (ir().getSessionOptions().enableStochasticRounding) {
+    if (deviceInfo->getType() == DeviceType::Ipu) {
+      logging::devicex::info("Enabling stochastic rounding");
+      bool behaviour = true;
+      popsys::setStochasticRounding(
+          graph, progs.initFragment(), behaviour, "/init");
+    } else {
+      logging::devicex::warn(
+          "Stochastic rounding can not be enabled for non IPU devices");
+    }
+  }
+}
+
 // go all the way to creating the engine and connecting streams
 void Devicex::prepare() {
 
@@ -1164,8 +1208,14 @@ void Devicex::prepare() {
   // Do not like the dynamic_cast is there a better way to handle this?
   auto &popDevice = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
 
-  // Create the top level graph
+  // Create the top level root graph
   pRootGraph.reset(new poplar::Graph(popDevice));
+
+  popops::addCodelets(rootGraph());
+  poplin::addCodelets(rootGraph());
+  popnn::addCodelets(rootGraph());
+  poprand::addCodelets(rootGraph());
+  popsys::addCodelets(rootGraph());
 
   // Create the master graph
   logging::devicex::debug("Creating master graph with replication factor {}",
@@ -1173,6 +1223,9 @@ void Devicex::prepare() {
 
   pMasterGraph.reset(new poplar::Graph(
       pRootGraph->createReplicatedGraph(getReplicationFactor())));
+
+  setFloatingPointBehaviour(masterGraph());
+  setStochasticRoundingBehaviour(masterGraph());
 
   if (ir().getSessionOptions().enableVirtualGraphs) {
     auto numIPUs     = masterGraph().getTarget().getNumIPUs();
@@ -1199,11 +1252,6 @@ void Devicex::prepare() {
       }
     }
   }
-
-  popops::addCodelets(rootGraph());
-  poplin::addCodelets(rootGraph());
-  popnn::addCodelets(rootGraph());
-  poprand::addCodelets(rootGraph());
 
   // create an Opx for every Op
   for (Op *op : ir().getOpSchedule({})) {
@@ -1383,7 +1431,7 @@ poplar::Executable Devicex::getExecutable() {
     if (total != 0) {
       float percentage = std::floor(100.0f * static_cast<float>(progress) /
                                     static_cast<float>(total));
-      logging::devicex::debug("Engine compilation {}% complete", percentage);
+      logging::devicex::info("Engine compilation {}% complete", percentage);
     }
   };
 

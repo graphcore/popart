@@ -50,6 +50,7 @@ public:
     COPYWEIGHTSBETWEENIPUS,
     STREAMOPTIMIZERFROMHOST,
     COPYOPTIMIZERBETWEENIPUS,
+    INIT,
     PROGRAM,
     WEIGHTSTOHOST,
     TOHOSTFINALCOPY,
@@ -65,6 +66,7 @@ public:
   poplar::program::Sequence &copyOptimizerBetweenIpusFragment();
   poplar::program::Sequence &setRandomSeedFragment();
   poplar::program::Sequence &toHostFinalCopyFragment();
+  poplar::program::Sequence &initFragment();
   poplar::program::Sequence &programFragment();
   poplar::program::Sequence &weightsToHostFragment();
 
@@ -400,6 +402,9 @@ private:
 
   std::string getPoplarCachePath();
   std::string getPoponnxCachePath();
+
+  void setFloatingPointBehaviour(poplar::Graph &graph);
+  void setStochasticRoundingBehaviour(poplar::Graph &graph);
 
   // Store input tensors based on how they are allocated
   std::set<TensorId> linearlyCreatedInputTensors;
