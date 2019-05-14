@@ -10,6 +10,9 @@
 
 namespace poponnx {
 
+ConcatInplaceOp::ConcatInplaceOp(int64_t axis_, const Op::Settings &settings)
+    : ConcatOp(Onnx::CustomOperators::ConcatInplace, axis_, settings) {}
+
 ConcatOp::ConcatOp(const OperatorIdentifier &_opid,
                    int64_t axis_,
                    const Op::Settings &settings_)

@@ -50,6 +50,7 @@ public:
     COPYWEIGHTSBETWEENIPUS,
     STREAMOPTIMIZERFROMHOST,
     COPYOPTIMIZERBETWEENIPUS,
+    INIT,
     PROGRAM,
     WEIGHTSTOHOST,
     TOHOSTFINALCOPY,
@@ -65,6 +66,7 @@ public:
   poplar::program::Sequence &copyOptimizerBetweenIpusFragment();
   poplar::program::Sequence &setRandomSeedFragment();
   poplar::program::Sequence &toHostFinalCopyFragment();
+  poplar::program::Sequence &initFragment();
   poplar::program::Sequence &programFragment();
   poplar::program::Sequence &weightsToHostFragment();
 
@@ -196,12 +198,6 @@ public:
 
   PopTensors tensors;
 
-  // TODO T8008 : is this still used and/or needed?
-  poplar::Tensor getConst(const poplar::Type &type,
-                          const std::vector<size_t> &shape,
-                          double val,
-                          const std::string &name);
-
   // Helper method to get the replication factor based on the user options
   unsigned getReplicationFactor() const;
 
@@ -214,11 +210,11 @@ public:
   //   - to Opxs with optimized poplar calls to create the tensor,
   //     or to Opxs that destroy layout information of the input
   //     tensor on the output
-  //   - traversing through Opxs that cannot create the tenosr
+  //   - traversing through Opxs that cannot create the tensor
   //     themselves, but preserve layout information from input
   //     to output tensor
   //   - tracking the route taken through the graph to the endpoints
-  // Using the defualt arguments will return only creator candidates,
+  // Using the default arguments will return only creator candidates,
   // with each candidate's path containing only Opxs that need to be
   // 'unwound' to correctly lay out the input tensor
   std::vector<InputCreatorCandidate>
@@ -259,6 +255,11 @@ private:
   // period
   std::map<ReturnPeriod, poplar::Tensor> batchCountingTensors;
   std::map<ReturnPeriod, poplar::Tensor> batchCountCheckingTensors;
+
+  poplar::Tensor getConst(const poplar::Type &type,
+                          const std::vector<size_t> &shape,
+                          double val,
+                          const std::string &name);
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
@@ -380,11 +381,37 @@ private:
   template <typename T> void setInitVal(Tensor *tensor);
   void setInitValHalf(Tensor *tensor);
 
+  // Either return the executable in cachedExecutable
+  // or compile `rootGraph' and try to save the generated executable before
+  // returning it. After calling `getExecutable', `cachedExecutable' will always
+  // be set to `boost::none'.
+  poplar::Executable getExecutable();
+
+  // Try to save the argument executable to a file at
+  // `ir().getSessionOptions().cachePath'.
+  void trySaveExecutable(poplar::Executable &);
+
+  // Try to load a poplar::Executable from a file at
+  // `ir().getSessionOptions().cachePath'. If successful,
+  // `this->cachedExecutable' will be set else, `this->cachedExecutable' will
+  // remain set to `boost::none'.
+  void tryLoadExecutable();
+
+  bool usingCachedExecutable() { return static_cast<bool>(cachedExecutable); }
+
+  std::string getPoplarCachePath();
+  std::string getPoponnxCachePath();
+
+  void setFloatingPointBehaviour(poplar::Graph &graph);
+  void setStochasticRoundingBehaviour(poplar::Graph &graph);
+
   // Store input tensors based on how they are allocated
   std::set<TensorId> linearlyCreatedInputTensors;
   std::set<TensorId> efficientlyCreatedInputTensors;
 
   bool prepareHasBeenCalled;
+
+  optional<poplar::Executable> cachedExecutable;
 };
 
 } // namespace popx

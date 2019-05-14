@@ -129,7 +129,7 @@ void Op::disconnectOutTensor(Tensor *tensor) {
   for (auto idx : output->indices(tensor)) {
     // Trying to reset the producer here when the producer is not `this' should
     // probably be an error
-    if (tensor->hasProducer() || tensor->getProducer() == this) {
+    if (tensor->hasProducer() && tensor->getProducer() == this) {
       tensor->resetProducer(nullptr);
     }
     output->erase(idx);

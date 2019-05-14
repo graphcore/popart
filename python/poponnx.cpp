@@ -358,11 +358,17 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("convolutionOptions", &SessionOptions::convolutionOptions)
       .def_readwrite("reportOptions", &SessionOptions::reportOptions)
       .def_readwrite("dotOpNames", &SessionOptions::dotOpNames)
-      .def_readwrite("dotSubgraphAnnotation",
-                     &SessionOptions::dotSubgraphAnnotation)
+      .def_readwrite("separateCallOpPdfs", &SessionOptions::separateCallOpPdfs)
       .def_readwrite("finalDotOp", &SessionOptions::finalDotOp)
       .def_readwrite("firstDotOp", &SessionOptions::firstDotOp)
       .def_readwrite("constantWeights", &SessionOptions::constantWeights)
+      .def_readwrite("cachePath", &SessionOptions::cachePath)
+      .def_readwrite("enableEngineCaching",
+                     &SessionOptions::enableEngineCaching)
+      .def_readwrite("enableFloatingPointChecks",
+                     &SessionOptions::enableFloatingPointChecks)
+      .def_readwrite("enableStochasticRounding",
+                     &SessionOptions::enableStochasticRounding)
       // set in python use the python set constructor, so something like
       // mySessionOptions.dotChecks = {poponnx.DotCheck.FINAL}
       .def_readwrite("dotChecks", &SessionOptions::dotChecks);
@@ -459,20 +465,18 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("modelToHost", &InferenceSession::modelToHost)
       .def("getInfo", &InferenceSession::getInfo)
       .def("getSummaryReport", &InferenceSession::getSummaryReport)
-      .def(
-          "getGraphReport",
-          [](const InferenceSession &session, bool use_cbor) {
-            auto report = session.getGraphReport(use_cbor);
-            return py::bytes(report);
-          },
-          py::arg("use_cbor") = false)
-      .def(
-          "getExecutionReport",
-          [](const InferenceSession &session, bool use_cbor) {
-            auto report = session.getExecutionReport(use_cbor);
-            return py::bytes(report);
-          },
-          py::arg("use_cbor") = false)
+      .def("getGraphReport",
+           [](const InferenceSession &session, bool use_cbor) {
+             auto report = session.getGraphReport(use_cbor);
+             return py::bytes(report);
+           },
+           py::arg("use_cbor") = false)
+      .def("getExecutionReport",
+           [](const InferenceSession &session, bool use_cbor) {
+             auto report = session.getExecutionReport(use_cbor);
+             return py::bytes(report);
+           },
+           py::arg("use_cbor") = false)
       .def("getTensorTileMap", &InferenceSession::getTensorTileMap)
       .def("resetHostWeights", &InferenceSession::resetHostWeights);
 
@@ -497,20 +501,18 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("modelToHost", &TrainingSession::modelToHost)
       .def("getInfo", &TrainingSession::getInfo)
       .def("getSummaryReport", &TrainingSession::getSummaryReport)
-      .def(
-          "getGraphReport",
-          [](const TrainingSession &session, bool use_cbor) {
-            auto report = session.getGraphReport(use_cbor);
-            return py::bytes(report);
-          },
-          py::arg("use_cbor") = false)
-      .def(
-          "getExecutionReport",
-          [](const TrainingSession &session, bool use_cbor) {
-            auto report = session.getExecutionReport(use_cbor);
-            return py::bytes(report);
-          },
-          py::arg("use_cbor") = false)
+      .def("getGraphReport",
+           [](const TrainingSession &session, bool use_cbor) {
+             auto report = session.getGraphReport(use_cbor);
+             return py::bytes(report);
+           },
+           py::arg("use_cbor") = false)
+      .def("getExecutionReport",
+           [](const TrainingSession &session, bool use_cbor) {
+             auto report = session.getExecutionReport(use_cbor);
+             return py::bytes(report);
+           },
+           py::arg("use_cbor") = false)
       .def("getTensorTileMap", &TrainingSession::getTensorTileMap)
       .def("resetHostWeights", &TrainingSession::resetHostWeights);
 
@@ -558,16 +560,15 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("addInputTensorFromParentGraph",
            &Builder::addInputTensorFromHigherScope,
            py::arg("tensorId"))
-      .def(
-          "addInitializedInputTensor",
-          [](Builder &builder, py::array array, std::string &debugPrefix) {
-            ConstVoidData initData;
-            initData.data = array.request().ptr;
-            initData.info = getTensorInfo(array);
-            return builder.addInitializedInputTensor(initData, debugPrefix);
-          },
-          py::arg("initVal"),
-          py::arg("debugPrefix") = std::string())
+      .def("addInitializedInputTensor",
+           [](Builder &builder, py::array array, std::string &debugPrefix) {
+             ConstVoidData initData;
+             initData.data = array.request().ptr;
+             initData.info = getTensorInfo(array);
+             return builder.addInitializedInputTensor(initData, debugPrefix);
+           },
+           py::arg("initVal"),
+           py::arg("debugPrefix") = std::string())
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
 
       // Accessors for the ai.onnx domain builder interfac
@@ -681,20 +682,18 @@ PYBIND11_MODULE(poponnx_core, m) {
                &Builder::virtualGraph),
            py::arg("nodeOutputNames"),
            py::arg("value") = 0)
-      .def(
-          "virtualGraph",
-          [](Builder &self, int64_t index) -> AttributeContextManager {
-            AttributeContextManager acm(self, sVirtualGraphAttribute, index);
-            return acm;
-          },
-          py::arg("value"))
-      .def(
-          "nameScope",
-          [](Builder &self, const std::string &name) -> NameContextManager {
-            NameContextManager ncm(self, name);
-            return ncm;
-          },
-          py::arg("name"))
+      .def("virtualGraph",
+           [](Builder &self, int64_t index) -> AttributeContextManager {
+             AttributeContextManager acm(self, sVirtualGraphAttribute, index);
+             return acm;
+           },
+           py::arg("value"))
+      .def("nameScope",
+           [](Builder &self, const std::string &name) -> NameContextManager {
+             NameContextManager ncm(self, name);
+             return ncm;
+           },
+           py::arg("name"))
       .def("getVirtualGraph",
            static_cast<int64_t (Builder::*)(const TensorId &)>(
                &Builder::getVirtualGraph),

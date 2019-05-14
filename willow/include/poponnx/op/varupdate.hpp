@@ -1,6 +1,7 @@
 #ifndef GUARD_NEURALNET_VARUPDATE_HPP
 #define GUARD_NEURALNET_VARUPDATE_HPP
 
+#include <poponnx/names.hpp>
 #include <poponnx/op.hpp>
 
 namespace poponnx {
@@ -12,8 +13,11 @@ public:
               const Op::Settings &settings_);
   void setup() final;
 
-  static InIndex getVarInIndex() { return 0; }
-  static InIndex getVarGradInIndex() { return 1; }
+  // the Var to be updated
+  static InIndex getVarToUpdateInIndex() { return 0; }
+
+  // the gradient or source of copy
+  static InIndex getUpdaterInIndex() { return 1; }
 
   // Returns a reference to the updated Var. Note that this
   // is the only Op which modifies an input AND does not
@@ -27,6 +31,12 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  // Return a map of all optimizer specific input Tensors (learning rate, etc)
+  virtual std::map<InIndex, TensorId> optimizerInputs() const = 0;
+
+  // Create a clone, but with a new name
+  virtual std::unique_ptr<Op> cloneWithNewName(const TensorId &) const = 0;
+
 private:
   TensorId varId;
   TensorId varGradId;
@@ -39,6 +49,15 @@ public:
 
   static InIndex getLearnRateInIndex() { return 2; }
   static InIndex getWeightDecayInIndex() { return 3; }
+
+  std::map<InIndex, TensorId> optimizerInputs() const final {
+    return {{getLearnRateInIndex(), inId(getLearnRateInIndex())},
+            {getWeightDecayInIndex(), inId(getWeightDecayInIndex())}};
+  }
+
+  std::unique_ptr<Op> cloneWithNewName(const TensorId &id) const final {
+    return std::unique_ptr<Op>(new SGDVarUpdateOp(id, settings));
+  }
 };
 
 class ConstSGDVarUpdateOp : public VarUpdateOp {
@@ -50,6 +69,14 @@ public:
   std::unique_ptr<Op> clone() const final;
   float getLearnRate() const;
   float getWeightDecay() const;
+  void appendAttributes(OpSerialiserBase &is) const;
+
+  std::unique_ptr<Op> cloneWithNewName(const TensorId &id) const final {
+    return std::unique_ptr<Op>(
+        new ConstSGDVarUpdateOp(id, learnRate, weightDecay, settings));
+  }
+
+  std::map<InIndex, TensorId> optimizerInputs() const final { return {}; }
 
 private:
   float learnRate;
@@ -61,10 +88,11 @@ public:
   CopyVarUpdateOp(TensorId to, const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
 
-  static InIndex getVarToInIndex() { return 0; }
-  static InIndex getVarFromInIndex() { return 1; }
+  std::unique_ptr<Op> cloneWithNewName(const TensorId &id) const final {
+    return std::unique_ptr<Op>(new CopyVarUpdateOp(id, settings));
+  }
 
-private:
+  std::map<InIndex, TensorId> optimizerInputs() const final { return {}; }
 };
 
 } // namespace poponnx

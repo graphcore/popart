@@ -36,6 +36,7 @@
 #include <poponnx/transforms/auto_virtual_graph.hpp>
 #include <poponnx/transforms/interipucopy.hpp>
 #include <poponnx/transforms/mergecopies.hpp>
+#include <poponnx/transforms/mergevarupdates.hpp>
 #include <poponnx/transforms/prune.hpp>
 #include <poponnx/transforms/recompute.hpp>
 #include <poponnx/transforms/subgraphoutline.hpp>
@@ -50,9 +51,7 @@
 #include <poponnx/patterns/inplace.hpp>
 #include <poponnx/patterns/updateinplaceprioritiesforipu.hpp>
 
-// Currently used only for graph visualization,
-// should not be included when TODO T7143 is complete.
-#include <poponnx/subgraph/outliner.hpp>
+#include <poponnx/dotvisualizer.hpp>
 
 namespace poponnx {
 
@@ -118,203 +117,8 @@ void Ir::updateOptimizer(const Optimizer *newOptimizer) {
 }
 
 void Ir::dotCheckpoint(DotCheck check) const {
-
-  // a selection of colors from
-  // https://www.graphviz.org/doc/info/colors.html
-  std::vector<std::string> colors{
-      "aliceblue",     "azure",       "brown1",          "cadetblue1",
-      "chartreuse",    "coral",       "cornflowerblue",  "cornsilk1",
-      "cyan3",         "darkkhaki",   "darkolivegreen1", "deeppink",
-      "darkseagreen1", "gold",        "indianred",       "khaki1",
-      "lightcoral",    "limegreen",   "maroon1",         "orangered",
-      "salmon",        "springgreen", "tomato"};
-
-  if (userOptions.dotChecks.count(check) == 0) {
-    return;
-  }
-
-  // the full path to the .dot file to be written
-  std::string dotfn =
-      io::appendDirFn(userOptions.logDir, getDotCheckString(check) + ".dot");
-
-  logging::ir::info("In function to write dot file {}", dotfn);
-
-  // the name that an Op has in the .dot file
-  auto nodeDotId = [](OpId id) { return "\"n_" + std::to_string(id) + "\""; };
-
-  // the name that a Tensor has in the .dot file.
-  auto tensorDotId = [](const TensorId &id) { return '\"' + id + '\"'; };
-
-  // inplace Ops will have a olive green edge, others will have a red edge
-  auto getOpNodeColor = [](const std::string &id) {
-    auto found = id.find("Inplace");
-    if (found != std::string::npos) {
-      return "\"#6B8E23\"";
-    }
-    return "\"#cc3300\"";
-  };
-
-  std::ofstream strm;
-  strm.open(dotfn, std::ios::out);
-  if (!strm.is_open()) {
-    throw error("failed to open file `" + dotfn + '\'');
-  }
-
-  strm << "digraph net {\n";
-  strm << "size=\"6,6\";\n";
-
-  logging::ir::trace("Obtaining Op Schedule");
-  auto scheduledOps = getOpSchedule({});
-
-  // For each Op, we collect a vector of tuples,
-  // 1) the match identifier
-  // 2) which occurence of the match it is in
-  std::vector<fwtools::subgraph::Match> matches;
-  if (userOptions.dotSubgraphAnnotation) {
-    logging::ir::trace("Getting matches from schedule of size {}",
-                       scheduledOps.size());
-
-    // TODO : create option for threshold T7482
-    matches = fwtools::subgraph::getRinseMatches<Op>(
-        scheduledOps,
-        userOptions.outlineThreshold,
-        fwtools::subgraph::getDefaultOutlinerAlgorithm());
-  }
-  std::vector<std::vector<std::tuple<int, int>>> opToMatch(scheduledOps.size());
-  for (int match_i = 0; match_i < matches.size(); ++match_i) {
-    auto &match = matches[match_i];
-    for (int start_i = 0; start_i < match.starts.size(); ++start_i) {
-      auto start = match.starts[start_i];
-      for (int delta = 0; delta < match.length; ++delta) {
-        opToMatch[start + delta].push_back(
-            std::tuple<int, int>(match_i, start_i));
-      }
-    }
-  }
-
-  // the position in the schedule at which an op runs
-  int scheduleIndex = 0;
-
-  // we keep track of which tensors have been defined in the .dot file
-  std::set<TensorId> tensorsVisited{};
-
-  auto getTensorNodeColor = [](TensorType type) {
-    switch (type) {
-    case TensorType::Stream:
-      return "\"red\"";
-    case TensorType::Const:
-      return "\"blue\"";
-    case TensorType::Variable:
-      return "\"green\"";
-    case TensorType::Momentum:
-    case TensorType::Unknown:
-    case TensorType::ActGrad:
-    case TensorType::N:
-    default:
-      return "\"black\"";
-    }
-  };
-
-  // Create a tensor node in the .dot file
-  auto makeNodeIfRequired = [&getTensorNodeColor,
-                             &tensorDotId,
-                             &strm,
-                             &tensorsVisited](const Tensor *tensor) {
-    if (tensorsVisited.count(tensor->id) == 0) {
-      tensorsVisited.insert(tensor->id);
-      strm << tensorDotId(tensor->id) << " [shape= \"egg\", label=\""
-           << tensor->info << " c:" << tensor->consumers.getTotal()
-           << "\", color = " << getTensorNodeColor(tensor->tensorType())
-           << "];\n";
-    }
-  };
-
-  int start = std::max(0, userOptions.firstDotOp);
-  int end   = std::min<int>(userOptions.finalDotOp,
-                          static_cast<int>(scheduledOps.size()));
-
-  if (!(start < end) && scheduledOps.size() != 0) {
-    throw error("Invalid dot range ({}, {}) with schedule of size {}, "
-                "as no Ops will be exported to the .dot file",
-                userOptions.firstDotOp,
-                userOptions.finalDotOp,
-                scheduledOps.size());
-  }
-
-  for (int i = start; i < end; ++i) {
-    auto &n = scheduledOps.at(i);
-
-    // The string which will appear in the dot file to represent an Op
-    std::stringstream coreNameStream;
-    coreNameStream << scheduleIndex << '.' << ' ' << n->opid.type;
-    // Add the debug name if present and requested
-    if (userOptions.dotOpNames) {
-      if (!n->name().empty()) {
-        coreNameStream << "(" << n->name() << ")";
-      } else {
-        coreNameStream << " (" << n->id << ")";
-      }
-    }
-
-    if (!userOptions.dotSubgraphAnnotation) {
-      // add the .dot entry for a node [shape="box", label=...]
-      strm << nodeDotId(n->id) << " [shape= \"box\", label=\""
-           << coreNameStream.str();
-      strm << "\", color = " << getOpNodeColor(n->str()) << "];\n";
-    }
-
-    else {
-      auto &opMatches = opToMatch.at(i);
-      strm << nodeDotId(n->id)
-           << " [shape= \"box\", color = " << getOpNodeColor(n->str())
-           << ", label=<"
-           << "\n"
-           << "<TABLE BORDER=\"0\" CELLSPACING=\"3\"> \n"
-           << "<TR>\n"
-           << "<TD BGCOLOR=\"white\" COLSPAN=\""
-           << std::max(1ul, opMatches.size()) << "\" PORT=\"thisport\">"
-           << coreNameStream.str() << "</TD>\n"
-           << "</TR>\n";
-
-      // sub-graph annotation:
-      if (opMatches.size() > 0) {
-        strm << "<TR>\n";
-        for (auto &opMatch : opMatches) {
-          int matchId             = std::get<0>(opMatch);
-          int matchNumber         = std::get<1>(opMatch);
-          std::string colorString = colors[matchId % colors.size()];
-          strm << "<TD BGCOLOR=\"" << colorString << "\"> " << matchId << ':'
-               << matchNumber << "</TD>\n ";
-        }
-        strm << "</TR>\n";
-      }
-      strm << "</TABLE>>";
-      strm << "];\n";
-    }
-
-    ++scheduleIndex;
-
-    // insert the input -> op edges into the .dot file
-    for (auto &ind_ten : n->input->tensorMap()) {
-      TensorId tenId = ind_ten.second->id;
-      makeNodeIfRequired(ind_ten.second);
-      strm << tensorDotId(tenId) << " -> " << nodeDotId(n->id) << ';' << '\n';
-    }
-
-    // insert the op -> output edges into the .dot file
-    for (auto &ind_ten : n->output->tensorMap()) {
-      auto tenId = ind_ten.second->id;
-      makeNodeIfRequired(ind_ten.second);
-      strm << nodeDotId(n->id) << " -> " << tensorDotId(tenId) << ';' << '\n';
-      TensorId possibleGradId = getGradId(tenId);
-      if (getTensors().contains(possibleGradId)) {
-      }
-    }
-  }
-  strm << '}' << '\n';
-  strm.flush();
-
-  logging::ir::trace("Dot file written");
+  DotVisualizer viz(this, check);
+  viz.write();
 }
 
 void Ir::confirmNoReservedIds() const {
@@ -405,11 +209,11 @@ void Ir::logIr() {
   logging::ir::info(ss2.str());
 }
 
-void Ir::verifyOpOutputConnectivity() const {
+void Ir::verifyOpOutputConnectivity(const Graph &graph) const {
   logging::ir::info("Checking op output tensor producers");
 
   // Check op output tensor producers
-  for (auto &op_pair : getMainGraph().getOps()) {
+  for (auto &op_pair : graph.getOps()) {
     auto &op = op_pair.second;
 
     for (auto &tensor_pair : op->output->tensorMap()) {
@@ -429,12 +233,12 @@ void Ir::verifyOpOutputConnectivity() const {
   }
 }
 
-void Ir::verifyOpInputConnectivity() const {
+void Ir::verifyOpInputConnectivity(const Graph &graph) const {
   logging::ir::info("Checking op input tensor consumers");
 
   // Count the number of times an op consumes its input tensors
   std::map<std::pair<Tensor *, Op *>, int> consumption_count;
-  for (auto &op_pair : getMainGraph().getOps()) {
+  for (auto &op_pair : graph.getOps()) {
     auto &op = op_pair.second;
 
     for (auto &tensor_pair : op->input->tensorMap()) {
@@ -558,8 +362,11 @@ void Ir::verifyTensorConsumerConnectivity() const {
 void Ir::verifyConnectivity() const {
   logging::ir::info("Checking IR connectivity");
 
-  verifyOpInputConnectivity();
-  verifyOpOutputConnectivity();
+  for (auto &x : graphs) {
+    auto &graph = *x.second.get();
+    verifyOpInputConnectivity(graph);
+    verifyOpOutputConnectivity(graph);
+  }
   verifyTensorProducerConnectivity();
   verifyTensorConsumerConnectivity();
 
@@ -740,6 +547,7 @@ void Ir::prepare(const IrBundle &gb) {
   if (canTrain()) {
     constructBackwards();
   }
+
   updateVertices();
   dotCheckpoint(DotCheck::BWD0);
 
@@ -757,6 +565,38 @@ void Ir::prepare(const IrBundle &gb) {
   // consumers are removed at this point.
   removeIsolatedTensors();
   updateVertices();
+
+  switch (userOptions.mergeVarUpdate) {
+
+  case (MergeVarUpdateType::All): {
+    enableTransform(MergeAllVarUpdates::id(), true);
+    applyTransform(MergeAllVarUpdates::id(), getMainGraph());
+    // reset the trainTargetOps, updated by MergeVarUpdates
+    trainTargetOps.clear();
+    for (auto &op : getMainGraph().getOps()) {
+      if (op.second->isConvertibleTo<VarUpdateOp>()) {
+        trainTargetOps.insert(op.second.get());
+      }
+    }
+    updateVertices();
+    break;
+  }
+  case (MergeVarUpdateType::Auto): {
+    throw error("MergeVarUpdateType::Auto not supported");
+    // TODO T8703. remember to update trainTargetOps, as in ::All case
+  }
+
+  case (MergeVarUpdateType::None): {
+    // do nothing
+    break;
+  }
+
+  case (MergeVarUpdateType::N):
+  default: {
+    // should never occur
+    throw error("Unrecognised MergeVarUpdateType, bailing from merger");
+  }
+  }
 
   // Explicitly set this transform to default (off),
   // unless either
@@ -797,10 +637,16 @@ void Ir::prepare(const IrBundle &gb) {
   // Add internal ops to copy tensors between ipu's as needed
   applyTransform(InterIpuCopy::id(), getMainGraph());
   applyTransform(MergeCopies::id(), getMainGraph());
-
   updateVertices();
 
   dotCheckpoint(DotCheck::PREALIAS);
+
+  // outlining makes Phase of Vertices meaningless as matches
+  // can contain Ops from different Pphase. We should not
+  // run updateVertices after this pass
+  if (getSessionOptions().enableOutlining) {
+    applyTransform(SubgraphOutline::id(), getMainGraph());
+  }
 
   // Now, we apply the Patterns which can handle and create
   // topological constraints. Currently, this is only one
@@ -810,14 +656,9 @@ void Ir::prepare(const IrBundle &gb) {
     if (patterns.isUpdateInplacePrioritiesForIpuEnabled()) {
       applyUpdateInplacePrioritiesForIpu();
     }
-
-    applyInplacePattern();
-  }
-
-  updateVertices();
-
-  if (getSessionOptions().enableOutlining) {
-    applyTransform(SubgraphOutline::id(), getMainGraph());
+    for (auto &id_graph : graphs) {
+      applyInplacePattern(*id_graph.second);
+    }
   }
 
   dotCheckpoint(DotCheck::FINAL);
@@ -1075,15 +916,21 @@ void Ir::enableTransform(std::size_t transformId, bool enable) {
 
 std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) {
   std::vector<Op *> typedOps;
-  for (auto &id_op : getMainGraph().getOps()) {
-    if (id_op.second->opid == opid) {
-      typedOps.push_back(id_op.second.get());
+  for (auto &id_graph : graphs) {
+    auto graph = id_graph.second.get();
+
+    for (auto &id_op : graph->getOps()) {
+      if (id_op.second->opid == opid) {
+        typedOps.push_back(id_op.second.get());
+      }
     }
   }
   return typedOps;
 }
 
-bool Ir::isAnchored(TensorId tenId) const { return dataFlow.isAnchored(tenId); }
+bool Ir::isAnchored(const TensorId &tenId) const {
+  return dataFlow.isAnchored(tenId);
+}
 
 void Ir::constructForwards() {
   constructFromOnnxGraph(onnxModel->graph(), {});
@@ -1869,7 +1716,7 @@ void Ir::growFinalLoss() {
 
 TensorId Ir::getFinalLossId() const { return "finalLoss"; }
 
-void Ir::append(std::stringstream &ss) {
+void Ir::append(std::stringstream &ss) const {
   ss << "\n";
 
   int i = 0;
@@ -2040,7 +1887,7 @@ void Ir::applyUpdateInplacePrioritiesForIpu() {
   }
 }
 
-void Ir::applyInplacePattern() {
+void Ir::applyInplacePattern(Graph &graph) {
 
   Inplace inplace;
 
@@ -2050,7 +1897,7 @@ void Ir::applyInplacePattern() {
   using Triplet = std::tuple<OpId, OperatorIdentifier, float>;
 
   std::vector<Triplet> priorities;
-  for (auto &id_op : getMainGraph().getOps()) {
+  for (auto &id_op : graph.getOps()) {
     Op *op = id_op.second.get();
 
     // first see if the user has overriden the default priorities
@@ -2113,7 +1960,7 @@ void Ir::applyInplacePattern() {
       if (inplaced_already_it != inplacedAlready.end()) {
         // the Op has already been inplaced
       } else {
-        Op *op              = getMainGraph().getOps().at(id).get();
+        Op *op              = graph.getOps().at(id).get();
         bool touchesAnchors = false;
         for (auto &tensor : inplace.touches(op, identifier)) {
           if (isAnchored(tensor->id)) {

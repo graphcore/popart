@@ -16,6 +16,7 @@
 
 // The layers required to construct the backwards pass
 #include <poponnx/op/conv.hpp>
+#include <poponnx/op/flatten.hpp>
 #include <poponnx/op/varupdate.hpp>
 
 namespace poponnx {
@@ -167,34 +168,35 @@ void Graph::eraseOp(OpId opid) {
 }
 
 void Graph::setVarUpdateConstraints() {
-  // impose the constraint that the varupdates
+  // impose the constraint that inplace consumers
   // are the last consumers of the vars
   for (auto &varId : getTensors().getIds(TensorType::Variable)) {
 
     Tensor *var = getTensors().get(varId);
 
-    // First, determine which consumer is the updater
-    std::vector<VarUpdateOp *> varUpdaters;
+    // First, determine which consumer is the updater,
+    // or a flatten-inplace if merged var updating.
+    std::vector<Op *> varInplaceConsumers;
     for (Op *consumer : var->consumers.getOps()) {
-      auto varUpdateOp = dynamic_cast<VarUpdateOp *>(consumer);
-      if (varUpdateOp != nullptr) {
-        varUpdaters.push_back(varUpdateOp);
+      if (dynamic_cast<VarUpdateOp *>(consumer) != nullptr ||
+          dynamic_cast<FlattenInplaceOp *>(consumer) != nullptr) {
+        varInplaceConsumers.push_back(consumer);
         break;
       }
     }
-    if (varUpdaters.size() == 0) {
-      throw error("Failed to find any updaters of {}, bailing" + var->str());
-    } else if (varUpdaters.size() > 1) {
+    if (varInplaceConsumers.size() == 0) {
+      throw error("Failed to find any updaters of {}, bailing", var->str());
+    } else if (varInplaceConsumers.size() > 1) {
       throw error("Found more than 1 potential updater of {}, bailing",
                   var->str());
     }
-    // Good, there is a unique consumer which is a VarUpdateOp
-    VarUpdateOp *varupdater = varUpdaters.back();
+    // Good, there is a unique consumer which is inplace
+    Op *varInplaceConsumer = varInplaceConsumers.back();
 
     // Set the constraints
     for (Op *consumer : var->consumers.getOps()) {
-      if (consumer != varupdater) {
-        topoCons->insert(consumer, varupdater);
+      if (consumer != varInplaceConsumer) {
+        topoCons->insert(consumer, varInplaceConsumer);
       }
     }
   }

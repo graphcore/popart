@@ -29,6 +29,15 @@ enum class RecomputationType {
   N         // the number of RecomputationTypes, must appear as the final enum
 };
 
+enum class MergeVarUpdateType {
+  None = 0, // Do not merge VarUpdate Ops
+  All,      // Merge all VarUpdate Ops into as few groups as possible.
+            // This is a good choice when memory is not a constraint
+  Auto,     // Merge into groups, attempting not to increase max-liveness
+            // Auto needs implementing TODO T8703
+  N         // The numbe of MergeVarUpdateTypes, must appear as the final enum
+};
+
 /**
  * A structure containing user configuration options for the Session class
  */
@@ -51,14 +60,13 @@ struct SessionOptions {
   /// Include the Op name in the .dot file (the Op type is always exported)
   bool dotOpNames = false;
 
-  /// Include annotation of sub-graphs in the .dot file
-  bool dotSubgraphAnnotation = false;
-
   /// Export Poplar computation graph
   bool exportPoplarComputationGraph = false;
 
   /// Export Poplar vertex graph
   bool exportPoplarVertexGraph = false;
+
+  bool separateCallOpPdfs = true;
 
   /// Controls caching of the convolution graphs. If set to false, then none of
   ///  the convolutions will be cached.
@@ -81,6 +89,10 @@ struct SessionOptions {
   /// Enable recomputation of operations in the graph in the backwards pass to
   /// reduce model size at the cost of computation cycles
   RecomputationType autoRecomputation = RecomputationType::None;
+
+  /// Enable merging of VarUpdates into groups of VarUpdates, by flattening
+  /// and concatenating Variable Tensors and Updating Tensors
+  MergeVarUpdateType mergeVarUpdate = MergeVarUpdateType::None;
 
   /// By default, we use the stable-softmax poplar function. This input tensor
   /// to softmax, _x_, is preprocessed by subtracting max(_x_) to each element
@@ -121,6 +133,18 @@ struct SessionOptions {
   // weights with a call to resetHostWeights after the session has been
   // prepared. This option has no effect on a training session
   bool constantWeights = true;
+
+  /// Enable poplar executable caching
+  bool enableEngineCaching = false;
+
+  /// Path to save the poplar::Executable to.
+  std::string cachePath = "session_cache";
+
+  // Enable exceptions when floating point errors occur.
+  bool enableFloatingPointChecks = false;
+
+  // Enable stochastic rounding
+  bool enableStochasticRounding = false;
 
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;

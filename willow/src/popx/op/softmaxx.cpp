@@ -264,6 +264,19 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor reduction =
       popops::reduce(graph(), oneHotProbs, {1}, {popops::Operation::ADD}, prog);
 
+  // Create an epsilon value
+  poplar::Tensor eps =
+      getConst(probs.elementType(), {1}, 1.0e-7, debugPrefix("epsilon"));
+
+  // Add eps to reduction to make sure it does not have any 0's before the
+  // log
+  reduction = popops::map(graph(),
+                          popops::expr::BinaryOpType::ADD,
+                          reduction,
+                          eps,
+                          prog,
+                          debugPrefix("EpsMul"));
+
   // and log it,
   popops::mapInPlace(graph(),
                      popops::expr::UnaryOpType::LOGARITHM,

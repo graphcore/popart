@@ -7,6 +7,8 @@ namespace poponnx {
 
 class CallOp : public Op {
 public:
+  // parent: Graph this CallOp belongs to
+  // callee: Graph this CallOp executes
   CallOp(Graph &parent, Graph &callee);
 
   void setup() final;

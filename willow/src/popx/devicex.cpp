@@ -9,6 +9,8 @@
 #include <popops/codelets.hpp>
 #include <poprand/RandomGen.hpp>
 #include <poprand/codelets.hpp>
+#include <popsys/CSRFunctions.hpp>
+#include <popsys/codelets.hpp>
 #include <poputil/exceptions.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
@@ -183,6 +185,10 @@ poplar::program::Sequence &PopPrograms::copyOptimizerBetweenIpusFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::COPYOPTIMIZERBETWEENIPUS)];
 }
 
+poplar::program::Sequence &PopPrograms::initFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::INIT)];
+}
+
 poplar::program::Sequence &PopPrograms::programFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::PROGRAM)];
 }
@@ -222,6 +228,11 @@ poplar::program::Sequence PopPrograms::program() {
   prog.add(programFragment());
 
   poplar::program::Sequence outer;
+
+  // Only add the init fragment if settings have been added
+  if (!initFragment().isEmpty()) {
+    outer.add(initFragment());
+  }
   outer.add(setRandomSeedFragment());
   outer.add(poplar::program::Repeat(repeatCount, prog));
   outer.add(toHostFinalCopyFragment());
@@ -1153,17 +1164,58 @@ void Devicex::loadEngineAndConnectStreams() {
   }
 }
 
+// Floating point settings are not suported on CPU
+void Devicex::setFloatingPointBehaviour(poplar::Graph &graph) {
+
+  if (ir().getSessionOptions().enableFloatingPointChecks) {
+    if (deviceInfo->getType() == DeviceType::Ipu) {
+      logging::devicex::info("Enabling all floating point checks");
+      // Not enabling stochasitc rounding, that is done in a seperate call
+      popsys::FloatingPointBehaviour behaviour(true, true, true, false, true);
+      popsys::setFloatingPointBehaviour(
+          graph, progs.initFragment(), behaviour, "/init");
+    } else {
+      logging::devicex::warn(
+          "Floating point checks can not be enabled for non IPU devices");
+    }
+  }
+}
+
+// Stocastic rounding is only supported on the IPU
+void Devicex::setStochasticRoundingBehaviour(poplar::Graph &graph) {
+
+  if (ir().getSessionOptions().enableStochasticRounding) {
+    if (deviceInfo->getType() == DeviceType::Ipu) {
+      logging::devicex::info("Enabling stochastic rounding");
+      bool behaviour = true;
+      popsys::setStochasticRounding(
+          graph, progs.initFragment(), behaviour, "/init");
+    } else {
+      logging::devicex::warn(
+          "Stochastic rounding can not be enabled for non IPU devices");
+    }
+  }
+}
+
 // go all the way to creating the engine and connecting streams
 void Devicex::prepare() {
 
   logging::devicex::info("Poplar version: {}", poplar::versionString());
   logging::devicex::info("Poplar release githash: {}", poplar::packageHash());
 
+  tryLoadExecutable();
+
   // Do not like the dynamic_cast is there a better way to handle this?
   auto &popDevice = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
 
-  // Create the top level graph
+  // Create the top level root graph
   pRootGraph.reset(new poplar::Graph(popDevice));
+
+  popops::addCodelets(rootGraph());
+  poplin::addCodelets(rootGraph());
+  popnn::addCodelets(rootGraph());
+  poprand::addCodelets(rootGraph());
+  popsys::addCodelets(rootGraph());
 
   // Create the master graph
   logging::devicex::debug("Creating master graph with replication factor {}",
@@ -1171,6 +1223,9 @@ void Devicex::prepare() {
 
   pMasterGraph.reset(new poplar::Graph(
       pRootGraph->createReplicatedGraph(getReplicationFactor())));
+
+  setFloatingPointBehaviour(masterGraph());
+  setStochasticRoundingBehaviour(masterGraph());
 
   if (ir().getSessionOptions().enableVirtualGraphs) {
     auto numIPUs     = masterGraph().getTarget().getNumIPUs();
@@ -1197,11 +1252,6 @@ void Devicex::prepare() {
       }
     }
   }
-
-  popops::addCodelets(rootGraph());
-  poplin::addCodelets(rootGraph());
-  popnn::addCodelets(rootGraph());
-  poprand::addCodelets(rootGraph());
 
   // create an Opx for every Op
   for (Op *op : ir().getOpSchedule({})) {
@@ -1348,18 +1398,8 @@ void Devicex::prepare() {
 
   logging::devicex::info("Starting Engine compilation");
 
-  auto progressLogger = [](int progress, int total) {
-    if (total != 0) {
-      float percentage = std::floor(100.0f * static_cast<float>(progress) /
-                                    static_cast<float>(total));
-      logging::devicex::debug("Engine compilation {}% complete", percentage);
-    }
-  };
-
   try {
-    poplar::Executable executable = poplar::compileGraph(
-        rootGraph(), progs.progs(), engineOptions, progressLogger);
-
+    auto executable = getExecutable();
     pEngine.reset(new poplar::Engine(std::move(executable), engineOptions));
   } catch (const poplar::graph_memory_allocation_error &e) {
     // If the creation of the engine throw an exception due to memory allocation
@@ -1384,6 +1424,116 @@ void Devicex::prepare() {
   loadEngineAndConnectStreams();
 
   prepareHasBeenCalled = true;
+}
+
+poplar::Executable Devicex::getExecutable() {
+  auto progressLogger = [](int progress, int total) {
+    if (total != 0) {
+      float percentage = std::floor(100.0f * static_cast<float>(progress) /
+                                    static_cast<float>(total));
+      logging::devicex::info("Engine compilation {}% complete", percentage);
+    }
+  };
+
+  if (cachedExecutable) {
+    // return the executable in cachedExecutable while ensuring cachedExecutable
+    // is set to boost::none
+    optional<poplar::Executable> result = boost::none;
+    boost::swap(cachedExecutable, result);
+    return std::move(result.get());
+  } else {
+    auto executable = poplar::compileGraph(
+        rootGraph(), progs.progs(), engineOptions, progressLogger);
+    trySaveExecutable(executable);
+    return executable;
+  }
+}
+
+namespace {
+
+class SavedInfo {
+public:
+  SavedInfo(const Devicex &devicex) : irHash(std::hash<Ir>{}(devicex.ir())) {}
+
+  void serialize(std::ostream &os) { os << irHash; }
+
+  static SavedInfo deserialize(std::istream &is) {
+    SavedInfo result;
+    is >> result.irHash;
+    return result;
+  }
+
+  bool operator==(const SavedInfo &rhs) { return irHash == rhs.irHash; }
+
+  std::size_t irHash;
+
+private:
+  SavedInfo() : irHash(0) {}
+};
+
+} // namespace
+
+std::string Devicex::getPoplarCachePath() {
+  return ir().getSessionOptions().cachePath + ".poplar";
+}
+
+std::string Devicex::getPoponnxCachePath() {
+  return ir().getSessionOptions().cachePath + ".poponnx";
+}
+
+void Devicex::trySaveExecutable(poplar::Executable &executable) {
+  auto cachePath    = ir().getSessionOptions().cachePath;
+  auto cacheEnabled = ir().getSessionOptions().enableEngineCaching;
+
+  if (cacheEnabled && !cachePath.empty() &&
+      deviceInfo->getType() == DeviceType::Ipu) {
+    // save the poplar executable
+    auto poplarCachePath = getPoplarCachePath();
+    std::ofstream poplarFs(poplarCachePath, std::ofstream::binary);
+    logging::devicex::debug("Saving poplar Executable to '{}'",
+                            poplarCachePath);
+    executable.serialize(poplarFs);
+
+    // save the poponnx ir hash
+    auto poponnxCachePath = getPoponnxCachePath();
+    std::ofstream poponnxFs(poponnxCachePath, std::ofstream::binary);
+    logging::devicex::debug("Saving poponnx ir hash to '{}'", poponnxCachePath);
+    SavedInfo savedInfo(*this);
+    savedInfo.serialize(poponnxFs);
+  };
+}
+
+void Devicex::tryLoadExecutable() {
+  auto warn = [&](const std::string &msg) {
+    logging::devicex::warn("Unable to load cached poplar::Executable, {}", msg);
+  };
+
+  auto cachePath    = ir().getSessionOptions().cachePath;
+  auto cacheEnabled = ir().getSessionOptions().enableEngineCaching;
+
+  if (cacheEnabled && !cachePath.empty() &&
+      deviceInfo->getType() == DeviceType::Ipu) {
+    // load the poponnx ir hash
+    auto poponnxCachePath = getPoponnxCachePath();
+    std::ifstream poponnxFs(poponnxCachePath, std::ifstream::binary);
+    if (poponnxFs.is_open()) {
+      if (SavedInfo(*this) == SavedInfo::deserialize(poponnxFs)) {
+        auto poplarCachePath = getPoplarCachePath();
+        std::ifstream poplarFs(poplarCachePath, std::ifstream::binary);
+        if (poplarFs.is_open()) {
+          logging::devicex::trace("Loading poplar Executable from '{}'",
+                                  cachePath);
+          cachedExecutable.emplace(poplar::Executable::deserialize(poplarFs));
+        } else {
+          warn(fmt::format("could not open file `{}'", poplarCachePath));
+        }
+      } else {
+        warn("ir hashes differ");
+      }
+    } else {
+      warn(fmt::format("could not open file `{}'", poponnxCachePath));
+    }
+  }
 }
 
 TaskId Devicex::streamFromHostTaskId(TensorId id) const {

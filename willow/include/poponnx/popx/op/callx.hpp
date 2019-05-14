@@ -21,12 +21,17 @@ public:
   std::vector<TensorId> mustExistBeforeCreate(int index0) const;
 
 private:
-  // Copy aliased or modifed inputs back from graph
+  // Copy aliased or modifed inputs back from graph.
   void copyModified(poplar::program::Sequence &prog) const;
+  // Copy CallOp inputs to Graph input tensors.
+  // If the graph input tensors have not been created,
+  // they are created here by cloning the CallOp inputs.
   void copyInputs(poplar::program::Sequence &prog) const;
+  // Copy the Graph output tensors to the CallOp outputs.
   void copyOutputs(poplar::program::Sequence &prog,
                    const std::vector<poplar::Tensor> &outputs) const;
   void doCall(poplar::program::Sequence &prog) const;
+  // preparing outputs at returned (calling) site
   std::vector<poplar::Tensor> prepareOutputs() const;
 
   optional<InputCreatorCandidate> getCreator(InIndex) const;

@@ -1,6 +1,7 @@
 #ifndef GUARD_NEURALNET_TRANSFORM_HPP
 #define GUARD_NEURALNET_TRANSFORM_HPP
 
+#include <string>
 #include <typeinfo>
 
 namespace poponnx {

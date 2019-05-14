@@ -182,6 +182,19 @@ poplar::Tensor Opx::broadcast(const std::vector<int64_t> &desired_shape,
   return t;
 }
 
+poplar::Tensor Opx::getConst(const poplar::Type &type,
+                             const std::vector<size_t> &shape,
+                             double val,
+                             const std::string &name) const {
+  static int tileCounter = 0;
+
+  auto tensor = graph().addConstant(type, shape, val, name);
+  auto tile   = tileCounter % graph().getTarget().getTilesPerIPU();
+  tileCounter++;
+  graph().setTileMapping(tensor, tile);
+  return tensor;
+}
+
 // TODO : Find a better place to put these, ops that will be optimized out
 // before creating opx's
 namespace {

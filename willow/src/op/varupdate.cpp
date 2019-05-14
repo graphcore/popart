@@ -2,6 +2,7 @@
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/varupdate.hpp>
 #include <poponnx/opmanager.hpp>
+#include <poponnx/opserialiser.hpp>
 #include <poponnx/region.hpp>
 #include <poponnx/tensornames.hpp>
 
@@ -15,16 +16,22 @@ VarUpdateOp::VarUpdateOp(const OperatorIdentifier &_opid,
 }
 
 void VarUpdateOp::setup() {
-  outInfo(getUpdatedVarOutIndex()) = inInfo(getVarInIndex());
+  outInfo(getUpdatedVarOutIndex()) = inInfo(getVarToUpdateInIndex());
 }
 
 //
 view::Region VarUpdateOp::aliases(InIndex index) const {
-  if (index == getVarInIndex()) {
+  if (index == getVarToUpdateInIndex()) {
     return view::Region::getFull(inShape(index));
   } else {
     return view::Region::getEmpty(inRank(index));
   }
+}
+
+void ConstSGDVarUpdateOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("learning rate", learnRate);
+  os.appendAttribute("weight decay", weightDecay);
 }
 
 // Modifies is the same as aliases

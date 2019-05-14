@@ -162,6 +162,11 @@ public:
 
   TensorId inId(InIndex index) const;
   TensorId outId(OutIndex index) const;
+
+  poplar::Tensor getConst(const poplar::Type &type,
+                          const std::vector<size_t> &shape,
+                          double val,
+                          const std::string &name) const;
 };
 
 } // namespace popx

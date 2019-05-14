@@ -161,8 +161,8 @@ public:
   // take training steps
   onnx::ModelProto step(int n);
   // if the tensor is returned to user (passes call to DataFlow).
-  bool isAnchored(TensorId) const;
-  void append(std::stringstream &);
+  bool isAnchored(const TensorId &) const;
+  void append(std::stringstream &) const;
   std::vector<std::unique_ptr<Loss>> losses;
 
   // The tensors specific to the optimization. Learning rate(s), momentum(s) etc
@@ -229,9 +229,6 @@ public:
   // (public for unit testing only)
   void applyTransform(std::size_t transformId, Graph &graph);
 
-  // enable/disable a transform stage (public for unit testing only)
-  void enableTransform(std::size_t transformId, bool enable);
-
   // run after creating the backwards pass, checks that
   // the user provided anchor tensors actually exist.
   // the user may have not used the correct gradient
@@ -287,7 +284,7 @@ public:
 
   void applyUpdateInplacePrioritiesForIpu();
 
-  void applyInplacePattern();
+  void applyInplacePattern(Graph &);
 
   // confirm that the names of the Const tensors
   // from the user (constTensors) are in the onnx Model
@@ -358,8 +355,8 @@ private:
 
   // Verify the connectivity of the graph
   void verifyConnectivity() const;
-  void verifyOpInputConnectivity() const;
-  void verifyOpOutputConnectivity() const;
+  void verifyOpInputConnectivity(const Graph &graph) const;
+  void verifyOpOutputConnectivity(const Graph &graph) const;
   void verifyTensorProducerConnectivity() const;
   void verifyTensorConsumerConnectivity() const;
   void verifyTensorIds() const;
@@ -410,6 +407,9 @@ private:
 
   bool isPrepared = false;
 
+  // enable/disable a transform stage
+  void enableTransform(std::size_t transformId, bool enable);
+
 public:
   // A "dummy" Op used to ensure that anchor tensors
   // will be copied out of sub-graphs, even if they
@@ -418,5 +418,15 @@ public:
 };
 
 } // namespace poponnx
+
+namespace std {
+template <> struct hash<poponnx::Ir> {
+  std::size_t operator()(const poponnx::Ir &ir) const {
+    std::stringstream ss;
+    ir.append(ss);
+    return std::hash<std::string>{}(ss.str());
+  }
+};
+}; // namespace std
 
 #endif
