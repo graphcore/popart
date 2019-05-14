@@ -209,11 +209,11 @@ void Ir::logIr() {
   logging::ir::info(ss2.str());
 }
 
-void Ir::verifyOpOutputConnectivity() const {
+void Ir::verifyOpOutputConnectivity(const Graph &graph) const {
   logging::ir::info("Checking op output tensor producers");
 
   // Check op output tensor producers
-  for (auto &op_pair : getMainGraph().getOps()) {
+  for (auto &op_pair : graph.getOps()) {
     auto &op = op_pair.second;
 
     for (auto &tensor_pair : op->output->tensorMap()) {
@@ -233,12 +233,12 @@ void Ir::verifyOpOutputConnectivity() const {
   }
 }
 
-void Ir::verifyOpInputConnectivity() const {
+void Ir::verifyOpInputConnectivity(const Graph &graph) const {
   logging::ir::info("Checking op input tensor consumers");
 
   // Count the number of times an op consumes its input tensors
   std::map<std::pair<Tensor *, Op *>, int> consumption_count;
-  for (auto &op_pair : getMainGraph().getOps()) {
+  for (auto &op_pair : graph.getOps()) {
     auto &op = op_pair.second;
 
     for (auto &tensor_pair : op->input->tensorMap()) {
@@ -362,8 +362,11 @@ void Ir::verifyTensorConsumerConnectivity() const {
 void Ir::verifyConnectivity() const {
   logging::ir::info("Checking IR connectivity");
 
-  verifyOpInputConnectivity();
-  verifyOpOutputConnectivity();
+  for (auto &x : graphs) {
+    auto &graph = *x.second.get();
+    verifyOpInputConnectivity(graph);
+    verifyOpOutputConnectivity(graph);
+  }
   verifyTensorProducerConnectivity();
   verifyTensorConsumerConnectivity();
 
@@ -638,6 +641,13 @@ void Ir::prepare(const IrBundle &gb) {
 
   dotCheckpoint(DotCheck::PREALIAS);
 
+  // outlining makes Phase of Vertices meaningless as matches
+  // can contain Ops from different Pphase. We should not
+  // run updateVertices after this pass
+  if (getSessionOptions().enableOutlining) {
+    applyTransform(SubgraphOutline::id(), getMainGraph());
+  }
+
   // Now, we apply the Patterns which can handle and create
   // topological constraints. Currently, this is only one
   // in-placing Pattern.
@@ -646,16 +656,9 @@ void Ir::prepare(const IrBundle &gb) {
     if (patterns.isUpdateInplacePrioritiesForIpuEnabled()) {
       applyUpdateInplacePrioritiesForIpu();
     }
-
-    applyInplacePattern();
-  }
-  updateVertices();
-
-  // outlining makes Phase of Vertices meaningless as matches
-  // can contain Ops from different Pphase. We should not
-  // run updateVertices after this pass
-  if (getSessionOptions().enableOutlining) {
-    applyTransform(SubgraphOutline::id(), getMainGraph());
+    for (auto &id_graph : graphs) {
+      applyInplacePattern(*id_graph.second);
+    }
   }
 
   dotCheckpoint(DotCheck::FINAL);
@@ -1884,7 +1887,7 @@ void Ir::applyUpdateInplacePrioritiesForIpu() {
   }
 }
 
-void Ir::applyInplacePattern() {
+void Ir::applyInplacePattern(Graph &graph) {
 
   Inplace inplace;
 
@@ -1894,7 +1897,7 @@ void Ir::applyInplacePattern() {
   using Triplet = std::tuple<OpId, OperatorIdentifier, float>;
 
   std::vector<Triplet> priorities;
-  for (auto &id_op : getMainGraph().getOps()) {
+  for (auto &id_op : graph.getOps()) {
     Op *op = id_op.second.get();
 
     // first see if the user has overriden the default priorities
@@ -1957,7 +1960,7 @@ void Ir::applyInplacePattern() {
       if (inplaced_already_it != inplacedAlready.end()) {
         // the Op has already been inplaced
       } else {
-        Op *op              = getMainGraph().getOps().at(id).get();
+        Op *op              = graph.getOps().at(id).get();
         bool touchesAnchors = false;
         for (auto &tensor : inplace.touches(op, identifier)) {
           if (isAnchored(tensor->id)) {

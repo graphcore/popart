@@ -284,7 +284,7 @@ public:
 
   void applyUpdateInplacePrioritiesForIpu();
 
-  void applyInplacePattern();
+  void applyInplacePattern(Graph &);
 
   // confirm that the names of the Const tensors
   // from the user (constTensors) are in the onnx Model
@@ -355,8 +355,8 @@ private:
 
   // Verify the connectivity of the graph
   void verifyConnectivity() const;
-  void verifyOpInputConnectivity() const;
-  void verifyOpOutputConnectivity() const;
+  void verifyOpInputConnectivity(const Graph &graph) const;
+  void verifyOpOutputConnectivity(const Graph &graph) const;
   void verifyTensorProducerConnectivity() const;
   void verifyTensorConsumerConnectivity() const;
   void verifyTensorIds() const;
