@@ -168,8 +168,17 @@ void updateTopoCons(const std::vector<OpId> &ops,
 static OpId replaceWithCallOp(const Match::Instance &instance,
                               Graph &graph,
                               Graph &subgraph) {
+
+  // Vote for new Phase amongst Ops (unanimous agreement required)
+  Phase phase = graph.getOp(instance.ops[0])->getPhase();
+  for (OpId id : instance.ops) {
+    if (phase != graph.getOp(id)->getPhase()) {
+      phase = Phase::UNDEFINED;
+      break;
+    }
+  }
+
   // Copy some attributes from the first op in the instance
-  auto phase    = graph.getOp(instance.ops.at(0))->getPhase();
   auto scope    = graph.getOp(instance.ops.at(0))->getScope();
   auto vgraphid = graph.getOp(instance.ops.at(0))->getVirtualGraphId();
 

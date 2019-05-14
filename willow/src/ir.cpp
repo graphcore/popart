@@ -651,6 +651,9 @@ void Ir::prepare(const IrBundle &gb) {
   }
   updateVertices();
 
+  // outlining makes Phase of Vertices meaningless as matches
+  // can contain Ops from different Pphase. We should not
+  // run updateVertices after this pass
   if (getSessionOptions().enableOutlining) {
     applyTransform(SubgraphOutline::id(), getMainGraph());
   }
