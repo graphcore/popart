@@ -51,7 +51,7 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
 
   // Create an epsilon value
   poplar::Tensor eps =
-      dv_p->getConst(probs.elementType(), {1}, 1.0e-7, debugPrefix("epsilon"));
+      getConst(probs.elementType(), {1}, 1.0e-7, debugPrefix("epsilon"));
 
   // Add eps to reduction make sure it does not have any 0's before the
   // log
