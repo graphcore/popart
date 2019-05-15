@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <poplar/Graph.hpp>
 #include <poplar/Tensor.hpp>
 #include <poputil/TileMapping.hpp>
