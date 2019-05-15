@@ -326,13 +326,13 @@ def test_tensor_tile_mapping(tmpdir):
     # Assume a 1216 tile device, and mapping a scalar will put it on tile 0
     assert (len(m[o]) == 1216)
 
-    for i in enumerate(m[o]):
-        tile, intervals = i
-        if tile == 0:
-            assert (len(intervals) == 1)
-            assert (intervals[0] == (0, 1))
-        else:
-            assert (len(intervals) == 0)
+    # There should only be one tile with a non zero interval
+    non_zero_intervals = [(tile, i) for tile, i in enumerate(m[o])
+                          if len(i) > 0]
+    assert len(non_zero_intervals) == 1
+
+    tile, intervals = non_zero_intervals[0]
+    assert intervals[0] == (0, 1)
 
 
 def test_no_compile(tmpdir):
