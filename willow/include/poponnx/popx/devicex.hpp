@@ -14,6 +14,7 @@
 #include <poponnx/device.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/popx/enigma.hpp>
+#include <poponnx/popx/linearmapper.hpp>
 #include <poponnx/popx/poplaroptionsx.hpp>
 #include <poponnx/pritask.hpp>
 
@@ -255,6 +256,9 @@ private:
   // period
   std::map<ReturnPeriod, poplar::Tensor> batchCountingTensors;
   std::map<ReturnPeriod, poplar::Tensor> batchCountCheckingTensors;
+
+  // Map tensors evenly across all tiles
+  LinearMapper linearMapper;
 
   poplar::Tensor getConst(const poplar::Type &type,
                           const std::vector<size_t> &shape,

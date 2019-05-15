@@ -754,7 +754,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
             auto newTensor = graph.addVariable(
                 popType(tensor->info), tensor->info.shape_szt(), tensor->str());
-            poputil::mapTensorLinearly(graph, newTensor);
+            linearMapper.mapTensor(graph, newTensor);
 
             tensors.insert(tensor->id, newTensor);
             linearlyCreatedInputTensors.insert(tensor->id);
