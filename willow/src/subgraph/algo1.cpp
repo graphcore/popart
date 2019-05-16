@@ -375,10 +375,18 @@ bool Algo1Base::noOverlapping(const Match &match) {
 
     std::vector<Start> initialOtherStarts = std::vector<int>(
         match.starts.begin() + 1, match.starts.begin() + nFirstSetters);
+
+    // as we proceed through this loop, initialOtherStarts has match starts,
+    // @iteration 0   [1,2,3,....n-1,n]
+    // @iteration 1   [0,2,3,....n-1,n]
+    // @iteration 2   [0,1,3,....n-1,n]
+    // .
+    // .
+    // @iteration n-1 [0,1,2,....n-2,n]
+    // @iteration n   [0,1,2,....n-2, n-1]
     for (int firstSetter = 0; firstSetter < nFirstSetters; ++firstSetter) {
       if (firstSetter > 0) {
         initialOtherStarts[firstSetter - 1] = match.starts[firstSetter - 1];
-        initialOtherStarts[firstSetter]     = match.starts[firstSetter + 1];
       }
       std::vector<Match> local = {{{match.starts[firstSetter]}, sub_length}};
       completeLocalUnsorted(local, initialOtherStarts, sub_length);
