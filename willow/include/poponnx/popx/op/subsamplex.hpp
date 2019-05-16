@@ -15,6 +15,13 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
+class SubsampleInplaceOpx : public Opx {
+
+public:
+  SubsampleInplaceOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
 class SubsampleGradOpx : public Opx {
 public:
   SubsampleGradOpx(Op *, Devicex *);

@@ -44,6 +44,11 @@ public:
 
   std::unique_ptr<Op>
   getInplaceVariant(const OperatorIdentifier &o) const final;
+
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final {
+    return {{Onnx::CustomOperators::FlattenInplace, 10}};
+  }
 };
 
 class FlattenInplaceOp : public FlattenBaseOp {
