@@ -566,11 +566,7 @@ void Ir::prepare(const IrBundle &gb) {
   removeIsolatedTensors();
   updateVertices();
 
-  switch (userOptions.mergeVarUpdate) {
-
-  case (MergeVarUpdateType::All): {
-    enableTransform(MergeAllVarUpdates::id(), true);
-    applyTransform(MergeAllVarUpdates::id(), getMainGraph());
+  auto updateTrainTargetOps = [this]() {
     // reset the trainTargetOps, updated by MergeVarUpdates
     trainTargetOps.clear();
     for (auto &op : getMainGraph().getOps()) {
@@ -579,11 +575,21 @@ void Ir::prepare(const IrBundle &gb) {
       }
     }
     updateVertices();
+  };
+
+  switch (userOptions.mergeVarUpdate) {
+
+  case (MergeVarUpdateType::All): {
+    enableTransform(MergeAllVarUpdates::id(), true);
+    applyTransform(MergeAllVarUpdates::id(), getMainGraph());
+    updateTrainTargetOps();
     break;
   }
   case (MergeVarUpdateType::Auto): {
-    throw error("MergeVarUpdateType::Auto not supported");
-    // TODO T8703. remember to update trainTargetOps, as in ::All case
+    enableTransform(MergeAutoVarUpdates::id(), true);
+    applyTransform(MergeAutoVarUpdates::id(), getMainGraph());
+    updateTrainTargetOps();
+    break;
   }
 
   case (MergeVarUpdateType::None): {

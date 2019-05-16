@@ -18,11 +18,15 @@ public:
   // captured in the std::string argument of the tuple.
   using PartitionId = std::string;
   PartitionId getPartitionId(Op *op) const;
+  using VarUpdatePartition = std::map<PartitionId, std::vector<VarUpdateOp *>>;
+
+  virtual VarUpdatePartition getGroupTargetsMap(const Graph &) const = 0;
+
+  virtual bool apply(Graph &) const override final;
 
 protected:
   // partition all VarUpdateOps by PartitionId
-  std::map<PartitionId, std::vector<VarUpdateOp *>>
-  getLargestGroupTargetsMap(const Graph &graph) const;
+  VarUpdatePartition getLargestGroupTargetsMap(const Graph &) const;
 };
 
 // A Transformation to merge all Ops which inherit from VarUpdateOp into as few
@@ -32,14 +36,26 @@ public:
   static std::size_t id();
   MergeAllVarUpdates() : MergeVarUpdates() {}
   virtual ~MergeAllVarUpdates() override {}
-  virtual bool apply(Graph &graph) const override final;
   virtual std::size_t getId() const override final { return id(); }
   virtual std::string getName() const override final {
     return "MergeAllVarUpdates";
   }
+  VarUpdatePartition getGroupTargetsMap(const Graph &graph) const final {
+    return getLargestGroupTargetsMap(graph);
+  }
 };
 
-// TODO T8703: Auto to inherit from MergeVarUpdates
+class MergeAutoVarUpdates : public MergeVarUpdates {
+public:
+  static std::size_t id();
+  MergeAutoVarUpdates() : MergeVarUpdates() {}
+  virtual ~MergeAutoVarUpdates() override {}
+  virtual std::size_t getId() const override final { return id(); }
+  virtual std::string getName() const override final {
+    return "MergeAutoVarUpdates";
+  }
+  VarUpdatePartition getGroupTargetsMap(const Graph &) const final;
+};
 
 } // namespace poponnx
 

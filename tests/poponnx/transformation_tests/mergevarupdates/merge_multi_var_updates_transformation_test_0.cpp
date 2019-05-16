@@ -53,7 +53,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     int nInChans  = 3;
     int batchsize = 1;
     TensorInfo in0info{"FLOAT",
-                       std::vector<int64_t>{batchsize, nInChans, 16, 16}};
+                       std::vector<int64_t>{batchsize, nInChans, 6, 6}};
     auto in0 = builder->addInputTensor(in0info);
     std::vector<float> in0data(in0info.nelms());
     for (auto &val : in0data) {
@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     // reduce(bn(conv(bn(conv(bn(conv(bn(conv(....(bn(conv(input))...)))), nConv
     // convolutions chained together, with the number of channels increasing by
     // 1 at each subsequent conv.
-    constexpr int nConv = 5;
+    constexpr int nConv = 8;
     std::array<std::vector<float>, nConv> convWeights;
     std::array<std::vector<float>, nConv> bnWeights;
     std::array<ConstVoidData, nConv> cvds;
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     auto opts = SessionOptions();
 
     opts.firstDotOp = 0;
-    opts.finalDotOp = 100;
+    opts.finalDotOp = 200;
     opts.dotChecks.insert(DotCheck::FINAL);
     opts.logDir         = ".";
     opts.mergeVarUpdate = mvu;
