@@ -1567,6 +1567,7 @@ void Devicex::tryLoadExecutable() {
           logging::devicex::trace("Loading poplar Executable from '{}'",
                                   cachePath);
           cachedExecutable.emplace(poplar::Executable::deserialize(poplarFs));
+          usingCachedExecutable = true;
         } else {
           warn(fmt::format("could not open file `{}'", poplarCachePath));
         }
@@ -1841,11 +1842,21 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
           f};
 }
 
-std::string Devicex::getSummaryReport() const {
+void Devicex::doProfileChecks() const {
   if (pEngine == nullptr) {
     throw error(
         "Session must have been prepared before a report can be fetched");
   }
+  if (usingCachedExecutable) {
+    throw error("Unable to get reports when using a cached executable.\n"
+                "Either remove the cache file ({}), or \ndisable engine "
+                "caching (userOptions.enableEngineCaching = false)",
+                ir().getSessionOptions().cachePath);
+  }
+}
+
+std::string Devicex::getSummaryReport() const {
+  doProfileChecks();
   const auto &g_prof = pEngine->getGraphProfile();
   const auto &e_prof = pEngine->getExecutionProfile();
 
@@ -1857,10 +1868,7 @@ std::string Devicex::getSummaryReport() const {
 }
 
 std::string Devicex::getGraphReport(bool use_cbor) const {
-  if (pEngine == nullptr) {
-    throw error(
-        "Session must have been prepared before a report can be fetched");
-  }
+  doProfileChecks();
   std::stringstream ss;
   auto report = pEngine->getGraphProfile();
   if (use_cbor) {
@@ -1873,10 +1881,7 @@ std::string Devicex::getGraphReport(bool use_cbor) const {
 }
 
 std::string Devicex::getExecutionReport(bool use_cbor) const {
-  if (pEngine == nullptr) {
-    throw error(
-        "Session must have been prepared before a report can be fetched");
-  }
+  doProfileChecks();
   std::stringstream ss;
   auto report = pEngine->getExecutionProfile();
 

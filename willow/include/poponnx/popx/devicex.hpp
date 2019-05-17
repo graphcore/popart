@@ -426,13 +426,13 @@ private:
   // remain set to `boost::none'.
   void tryLoadExecutable();
 
-  bool usingCachedExecutable() { return static_cast<bool>(cachedExecutable); }
-
   std::string getPoplarCachePath();
   std::string getPoponnxCachePath();
 
   void setFloatingPointBehaviour(poplar::Graph &graph);
   void setStochasticRoundingBehaviour(poplar::Graph &graph);
+
+  void doProfileChecks() const;
 
   // Store input tensors based on how they are allocated
   std::set<TensorId> linearlyCreatedInputTensors;
@@ -441,6 +441,7 @@ private:
   bool prepareHasBeenCalled;
 
   optional<poplar::Executable> cachedExecutable;
+  bool usingCachedExecutable = false;
 };
 
 } // namespace popx
