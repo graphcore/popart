@@ -121,9 +121,8 @@ std::shared_ptr<poponnx::DeviceInfo> DevicexManager::createHostDevice(
       int numIPUs     = mapFind(options, "numIPUs", 1);
       int tilesPerIPU = mapFind(options, "tilesPerIPU", 20);
 
-      auto target =
-          poplar::Target::createIPUTarget(numIPUs, tilesPerIPU, "_TEST_SYSTEM");
-
+      auto target = poplar::Target::createIPUTarget(
+          numIPUs, tilesPerIPU, "_VIRTUAL_GRAPH_TEST_16");
       poplar::Device device = poplar::Device::createSimulatorDevice(target);
       return std::make_shared<DevicexSimInfo>(*this, device);
     } catch (const poplar::poplar_error &e) {

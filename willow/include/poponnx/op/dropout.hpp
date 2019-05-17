@@ -5,11 +5,6 @@
 
 namespace poponnx {
 
-// Currently only support dropout in testing mode in which case it
-// becomes an identity, so this op does not have any grad op's
-
-// TODO : T8559 Add support for Dropout in training
-
 class DropoutOp : public Op {
 public:
   DropoutOp(const OperatorIdentifier &_opid,
@@ -28,12 +23,37 @@ public:
 
   bool canBeReplacedByIdentity() override;
 
-  // T8559 : disable outlining by default? TODO
+  uint32_t getSeedModifier() const { return seedModifier; }
+  void setSeedModifier(uint32_t sm) { seedModifier = sm; }
+  float getRatio() const { return ratio; }
+  void setRatio(float r) { ratio = r; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
   float ratio;
+  uint32_t seedModifier;
+};
+
+class DropoutGradOp : public Op {
+public:
+  DropoutGradOp(const DropoutOp &fwdOp);
+
+  std::unique_ptr<Op> clone() const final;
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+  void setup() final;
+
+  static InIndex getGradInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
+  uint32_t getSeedModifier() const { return seedModifier; }
+  float getRatio() const { return ratio; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+private:
+  float ratio;
+  uint32_t seedModifier;
 };
 
 } // namespace poponnx

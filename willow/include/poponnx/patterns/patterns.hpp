@@ -183,6 +183,9 @@ public:
   bool isNegativeOneScaleEnabled() {
     return isPatternEnabled(PreAliasPatternType::NEGATIVEONESCALE);
   }
+  bool isDropoutGradOpEnabled() {
+    return isPatternEnabled(PreAliasPatternType::DROPOUTGRADOP);
+  }
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
@@ -257,6 +260,9 @@ public:
   }
   Patterns &enableNegativeOneScale(bool v) {
     return enablePattern(PreAliasPatternType::NEGATIVEONESCALE, v);
+  }
+  Patterns &enableDropoutGradOp(bool v) {
+    return enablePattern(PreAliasPatternType::DROPOUTGRADOP, v);
   }
 
   std::vector<std::unique_ptr<PreAliasPattern>> getPreAliasList();

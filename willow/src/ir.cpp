@@ -1057,14 +1057,11 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     {
       // inputs to gradOp (to populate in this scope):
       std::map<int, std::string> m_inputs;
-      //  int max_input_index = 0;
       for (auto &inOutMapper : gradOp->gradInputInfo()) {
 
         int indexGrad     = inOutMapper.iGrad;
         int indexFwd      = inOutMapper.iNonGrad;
         GradOpInType type = inOutMapper.type;
-
-        //  max_input_index = std::max(indexGrad, max_input_index);
 
         // the input at index 'indexGrad' to gradOp is
         switch (type) {
@@ -1072,7 +1069,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         case GradOpInType::IN: {
           if (!nonGradOp->input->hasIndex(indexFwd)) {
             throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
-                        "OUTPUT {} is not defined ",
+                        "INPUT {} is not defined ",
                         gradOp->debugName(),
                         nonGradOp->debugName(),
                         indexFwd);
@@ -1536,9 +1533,7 @@ void Ir::constructBackwards() {
         throw error("can't currently register gradient of " +
                     nongrad->tensor_type() + " tensor, " + nongrad->str());
 
-      default: {
-        throw error("only handling ActGrad and Variable for now");
-      }
+      default: { throw error("only handling ActGrad and Variable for now"); }
       }
     }
 
@@ -2073,6 +2068,11 @@ Tensors &Ir::getMainGraphTensors() { return getMainGraph().getTensors(); }
 
 const Tensors &Ir::getMainGraphTensors() const {
   return getMainGraph().getTensors();
+}
+
+uint32_t Ir::getAndIncrementDropoutSeedModifier() {
+  dropoutSeedModifier += 1;
+  return dropoutSeedModifier;
 }
 
 } // namespace poponnx

@@ -586,7 +586,7 @@ const static AiGraphcoreOpIdV1 CosGrad("CosGrad");
 // constexpr static char DepthToSpace[] = "DepthToSpace";
 const static AiGraphcoreOpIdV1 DivArg0Grad("DivArg0Grad");
 const static AiGraphcoreOpIdV1 DivArg1Grad("DivArg1Grad");
-// constexpr static char Dropout[] = "DropOut";
+const static AiGraphcoreOpIdV1 DropoutGrad("DropoutGrad");
 // constexpr static char Elu[] = "Elu";
 // constexpr static char Equal[] = "Equal";
 // constexpr static char Erf[] = "Erf";

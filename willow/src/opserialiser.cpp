@@ -33,6 +33,10 @@ void OpSerialiser::appendAttribute(const std::string &name, int64_t value) {
   appendAttr(name, value);
 }
 
+void OpSerialiser::appendAttribute(const std::string &name, uint32_t value) {
+  appendAttr(name, value);
+}
+
 void OpSerialiser::appendAttribute(const std::string &name, uint64_t value) {
   appendAttr(name, value);
 }
@@ -84,6 +88,10 @@ void OpEquivIdCreator::appendAttribute(const std::string &, float value) {
 }
 
 void OpEquivIdCreator::appendAttribute(const std::string &, int64_t value) {
+  appendAttr(value);
+}
+
+void OpEquivIdCreator::appendAttribute(const std::string &, uint32_t value) {
   appendAttr(value);
 }
 

@@ -850,27 +850,6 @@ def test_shape(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
-def test_dropout_testing(op_tester):
-    d1 = np.random.rand(2).astype(np.float32)
-
-    def init_builder(builder):
-        i1 = builder.addInputTensor(d1)
-        (o, ) = builder.aiOnnx.dropout([i1], 1, 0.5, "test_dropout")
-        builder.addOutputTensor(o)
-        return [o]
-
-    def reference(ref_data):
-        t1 = torch.tensor(d1)
-        dropout = torch.nn.Dropout()
-        dropout.eval()
-        out = dropout(t1)
-
-        return [out]
-
-    op_tester.passes = ['OpToIdentity']
-    op_tester.run(init_builder, reference, 'infer')
-
-
 def test_flatten_infer(op_tester):
     d1 = np.random.rand(2, 3, 4, 5).astype(np.float32)
     axis = 2
@@ -890,32 +869,6 @@ def test_flatten_infer(op_tester):
         return [out]
 
     op_tester.run(init_builder, reference, 'infer')
-
-
-# Verify when in training mode that the exception is thrown
-def test_dropout_training(op_tester):
-    d1 = np.random.rand(2).astype(np.float32)
-
-    def init_builder(builder):
-        i1 = builder.addInputTensor(d1)
-        (o, ) = builder.aiOnnx.dropout([i1], 1, 0.5, "test_dropout")
-        builder.addOutputTensor(o)
-        return [o]
-
-    def reference(ref_data):
-        t1 = torch.tensor(d1)
-        dropout = torch.nn.Dropout()
-        out = dropout(t1)
-
-        return [out]
-
-    op_tester.passes = ['OpToIdentity']
-
-    # Case 2 b does not have the size as x.dim(1)
-    with pytest.raises(poponnx.poponnx_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
-
-    assert (e_info.value.args[0] == "Dropout does not support training")
 
 
 def test_argmin_no_keepdims(op_tester):

@@ -15,6 +15,7 @@ public:
 
   virtual void appendAttribute(const std::string &, float)               = 0;
   virtual void appendAttribute(const std::string &, int64_t)             = 0;
+  virtual void appendAttribute(const std::string &, uint32_t)            = 0;
   virtual void appendAttribute(const std::string &, uint64_t)            = 0;
   virtual void appendAttribute(const std::string &,
                                const std::vector<int64_t> &)             = 0;
@@ -33,6 +34,7 @@ public:
 
   void appendAttribute(const std::string &, float) override;
   void appendAttribute(const std::string &, int64_t) override;
+  void appendAttribute(const std::string &, uint32_t) override;
   void appendAttribute(const std::string &, uint64_t) override;
   void appendAttribute(const std::string &,
                        const std::vector<int64_t> &) override;
@@ -59,6 +61,7 @@ public:
 
   void appendAttribute(const std::string &, float) override;
   void appendAttribute(const std::string &, int64_t) override;
+  void appendAttribute(const std::string &, uint32_t) override;
   void appendAttribute(const std::string &, uint64_t) override;
   void appendAttribute(const std::string &,
                        const std::vector<int64_t> &) override;
