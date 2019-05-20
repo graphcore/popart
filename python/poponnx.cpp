@@ -18,6 +18,7 @@
 #include <poponnx/session.hpp>
 #include <poponnx/tensordata.hpp>
 #include <poponnx/tensornames.hpp>
+#include <poponnx/version.hpp>
 
 #include <poplar/exceptions.hpp>
 #include <poputil/exceptions.hpp>
@@ -211,6 +212,9 @@ PYBIND11_MODULE(poponnx_core, m) {
   m.def("getTensorInfo", &getTensorInfo);
 
   m.def("getLogger", &Logger::getLogger, py::arg("name") = "all");
+
+  m.def("versionString", &poponnx::core::versionString);
+  m.def("packageHash", &poponnx::core::packageHash);
 
   py::class_<Logger>(m, "Logger").def("setLevel", &Logger::setLevel);
 

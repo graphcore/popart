@@ -70,11 +70,6 @@ find_package(Boost REQUIRED COMPONENTS filesystem system program_options)
 # find_package(CBLAS REQUIRED)
 
 set(POPONNX_PYTHON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/python)
-add_subdirectory(willow)
-
-# Examples and tests
-add_subdirectory(tests)
-add_subdirectory(examples)
 
 #------ cpack information
 execute_process(
@@ -111,6 +106,18 @@ string(REGEX REPLACE
 set(VERSION ${CPACK_PACKAGE_VERSION_MAJOR})
 set(VERSION ${VERSION}.${CPACK_PACKAGE_VERSION_MINOR})
 set(VERSION ${VERSION}.${CPACK_PACKAGE_VERSION_PATCH})
+
+execute_process(COMMAND
+  git rev-parse --short=10 HEAD
+  WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  OUTPUT_VARIABLE GIT_COMMIT_HASH 
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+add_subdirectory(willow)
+
+# Examples and tests
+add_subdirectory(tests)
+add_subdirectory(examples)
 
 # light-weight wrapper using pybind11, plus python support libraries
 # VERSION needs to be defined before adding this directory

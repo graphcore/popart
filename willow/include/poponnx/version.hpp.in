@@ -1,0 +1,14 @@
+#ifndef GUARD_NEURALNET_VERSION_HPP
+#define GUARD_NEURALNET_VERSION_HPP
+
+namespace poponnx {
+namespace core {
+
+inline std::string versionString() { return "@VERSION@ (@GIT_COMMIT_HASH@)"; }
+
+inline std::string packageHash() { return "@VIEW_HASH@"; }
+
+} // namespace core
+} // namespace poponnx
+
+#endif

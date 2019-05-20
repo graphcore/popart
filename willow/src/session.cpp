@@ -12,10 +12,15 @@
 #include <poponnx/tensordata.hpp>
 #include <poponnx/tensors.hpp>
 #include <poponnx/util.hpp>
+#include <poponnx/version.hpp>
 
 namespace poponnx {
 
-Session::Session() {}
+Session::Session() {
+  logging::session::info("Poponnx version: {}", poponnx::core::versionString());
+  logging::session::info("Poponnx release githash: {}",
+                         poponnx::core::packageHash());
+}
 
 void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
   logging::session::trace("Session::setDevice({})", *deviceInfo);
