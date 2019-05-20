@@ -19,18 +19,20 @@ SigmoidOpx::SigmoidOpx(Op *op, Devicex *devicex)
 
 poplar::Tensor SigmoidComputex::outplace(poplar::program::Sequence &p,
                                          poplar::Graph &g,
-                                         const poplar::Tensor &t) const {
+                                         const poplar::Tensor &t,
+                                         const std::string &s) const {
   auto outTensor = cloneNcopy(p, g, t);
-  inplace(p, g, outTensor);
+  inplace(p, g, outTensor, s);
   return outTensor;
 }
 
 void SigmoidComputex::inplace(poplar::program::Sequence &p,
                               poplar::Graph &g,
-                              const poplar::Tensor &t) const {
+                              const poplar::Tensor &t,
+                              const std::string &s) const {
 
   // apply the inplace SIGMOID
-  popnn::nonLinearityInPlace(g, popnn::NonLinearityType::SIGMOID, t, p, "");
+  popnn::nonLinearityInPlace(g, popnn::NonLinearityType::SIGMOID, t, p, s);
 }
 
 SigmoidGradOpx::SigmoidGradOpx(Op *op, Devicex *devicex)

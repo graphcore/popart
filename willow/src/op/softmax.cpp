@@ -16,10 +16,34 @@ SoftmaxOp::SoftmaxOp(const OperatorIdentifier &_opid,
                      const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_), axis(axis_) {}
 
+SoftmaxInplaceOp::SoftmaxInplaceOp(const SoftmaxOp &softmax_op)
+    : ElementWiseInplaceUnaryOp(Onnx::CustomOperators::SoftmaxInplace,
+                                softmax_op.getSettings()),
+      axis(softmax_op.getAxis()) {}
+
 std::vector<std::unique_ptr<Op>> SoftmaxOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(make_unique<SoftmaxGradOp>(*this));
   return upops;
+}
+
+std::vector<std::tuple<OperatorIdentifier, float>>
+SoftmaxOp::inplacePriorityDefault() const {
+  // see T6768: choosing default inplace priorities
+  return {{Onnx::CustomOperators::SoftmaxInplace, 10}};
+}
+
+std::unique_ptr<Op> SoftmaxInplaceOp::clone() const {
+  return make_unique<SoftmaxInplaceOp>(*this);
+}
+
+std::unique_ptr<Op>
+SoftmaxOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
+  if (operator_id == Onnx::CustomOperators::SoftmaxInplace) {
+    return make_unique<SoftmaxInplaceOp>(*this);
+  }
+  // catch remaining cases and throw an error
+  return Op::getInplaceVariant(operator_id);
 }
 
 std::unique_ptr<Op> SoftmaxOp::clone() const {

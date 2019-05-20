@@ -713,6 +713,7 @@ const static AiGraphcoreOpIdV1 Square("Square");
 const static AiGraphcoreOpIdV1 GroupNormalization_1("GroupNormalization", 3, 3);
 
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
+const static AiGraphcoreOpIdV1 SoftmaxInplace("SoftmaxInplace");
 const static AiGraphcoreOpIdV1 SigmoidInplace("SigmoidInplace");
 const static AiGraphcoreOpIdV1 ScaleInplace("ScaleInplace");
 const static AiGraphcoreOpIdV1 ExpInplace("ExpInplace");

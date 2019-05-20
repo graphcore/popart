@@ -7,18 +7,52 @@
 namespace poponnx {
 
 class SoftmaxOp;
+class SoftmaxInplaceOp;
 class SoftmaxGradOp;
 class SoftmaxGradDirectOp;
 class NlllWithSoftmaxGradDirectOp;
 
 namespace popx {
 
-class SoftmaxOpx : public ElementWiseUnaryOpx {
+class SoftmaxComputex : public EwuComputex {
+
+public:
+  SoftmaxComputex(int64_t ax, bool ens, const std::vector<size_t> &os)
+      : axis(ax), enableNonStable(ens), outShape(os) {}
+
+  poplar::Tensor outplace(poplar::program::Sequence &,
+                          poplar::Graph &,
+                          const poplar::Tensor &,
+                          const std::string &) const final;
+
+  void inplace(poplar::program::Sequence &,
+               poplar::Graph &,
+               const poplar::Tensor &,
+               const std::string &) const final;
+
+  static std::unique_ptr<EwuComputex>
+  get(int64_t axis, bool ens, const std::vector<size_t> &os) {
+    return std::unique_ptr<EwuComputex>(new SoftmaxComputex(axis, ens, os));
+  }
+
+  poplar::Tensor reshape(const poplar::Tensor &) const final;
+
+  void setAxis(int64_t a) { axis = a; }
+
+private:
+  int64_t axis;
+  bool enableNonStable;
+  std::vector<size_t> outShape;
+};
+
+class SoftmaxOpx : public ElementWiseUnaryOutplaceOpx {
 public:
   SoftmaxOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+};
 
-  static poplar::Tensor coerceTo2D(const poplar::Tensor &t, int64_t axis);
+class SoftmaxInplaceOpx : public ElementWiseUnaryInplaceOpx {
+public:
+  SoftmaxInplaceOpx(Op *, Devicex *);
 };
 
 // compute dL/dv from v and dp, where p = softmax(v)

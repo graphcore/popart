@@ -18,6 +18,21 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final;
+
+  std::unique_ptr<Op> getInplaceVariant(const OperatorIdentifier &) const final;
+
+private:
+  int64_t axis;
+};
+
+class SoftmaxInplaceOp : public ElementWiseInplaceUnaryOp {
+public:
+  SoftmaxInplaceOp(const SoftmaxOp &);
+  std::unique_ptr<Op> clone() const final;
+  int64_t getAxis() const { return axis; }
+
 private:
   int64_t axis;
 };
