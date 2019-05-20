@@ -7,6 +7,7 @@
 #include <poponnx/tensor.hpp>
 
 #include <ostream>
+
 namespace poponnx {
 namespace popx {
 
@@ -21,6 +22,11 @@ static poplar::Tensor subsample(poplar::Tensor &t,
   return result;
 }
 
+SubsampleInplaceOpx::SubsampleInplaceOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {
+  verifyOp<SubsampleInplaceOp>(op);
+}
+
 SubsampleOpx::SubsampleOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<SubsampleOp>(op, {Onnx::CustomOperators::Subsample_1});
 }
@@ -28,12 +34,17 @@ SubsampleOpx::SubsampleOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 void SubsampleOpx::grow(poplar::program::Sequence &prog) const {
 
   SubsampleOp &op = getOp<SubsampleOp>();
-
-  auto outTensor = getInTensor(SubsampleOp::getInIndex());
-  outTensor      = subsample(outTensor, op.strides_u32());
-
+  auto outTensor  = getInTensor(SubsampleOp::getInIndex());
+  outTensor       = subsample(outTensor, op.strides_u32());
   // Need to clone/copy a new output tensor so is not in place
   setOutTensor(SubsampleOp::getOutIndex(), cloneNcopy(prog, outTensor));
+}
+
+void SubsampleInplaceOpx::grow(poplar::program::Sequence &) const {
+  SubsampleInplaceOp &op = getOp<SubsampleInplaceOp>();
+  auto outTensor         = getInTensor(SubsampleOp::getInIndex());
+  outTensor              = subsample(outTensor, op.strides_u32());
+  setOutTensor(SubsampleOp::getOutIndex(), outTensor);
 }
 
 SubsampleGradOpx::SubsampleGradOpx(Op *op, Devicex *devicex)
@@ -83,6 +94,8 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
 namespace {
 OpxCreator<SubsampleOpx>
     subsampleOpxCreator(Onnx::CustomOperators::Subsample_1);
+OpxCreator<SubsampleInplaceOpx>
+    subsampleInplaceOpxCreator(Onnx::CustomOperators::SubsampleInplace);
 OpxCreator<SubsampleGradOpx>
     subsampleGradOpxCreator(Onnx::CustomGradOperators::SubsampleGrad);
 } // namespace

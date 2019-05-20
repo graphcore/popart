@@ -197,6 +197,10 @@ poplar::program::Sequence &PopPrograms::setRandomSeedFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEED)];
 }
 
+poplar::program::Sequence &PopPrograms::setRandomDropoutSeedFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMDROPOUTSEED)];
+}
+
 poplar::program::Sequence &PopPrograms::toHostFinalCopyFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::TOHOSTFINALCOPY)];
 }
@@ -234,6 +238,7 @@ poplar::program::Sequence PopPrograms::program() {
     outer.add(initFragment());
   }
   outer.add(setRandomSeedFragment());
+  outer.add(setRandomDropoutSeedFragment());
   outer.add(poplar::program::Repeat(repeatCount, prog));
   outer.add(toHostFinalCopyFragment());
 
@@ -780,8 +785,8 @@ void Devicex::createFragmentAndGrow(const Graph &graph) {
 }
 
 PriTask Devicex::initRandomSeed() {
-  auto streamFromHostTask = [this]() {
-    logging::devicex::debug("Initializing random seed.", randomSeedId);
+  auto initRandomSeedTask = [this]() {
+    logging::devicex::debug("Initializing random seed.");
 
     auto seedTensor =
         masterGraph().addVariable(poplar::UNSIGNED_INT, {2}, randomSeedId);
@@ -807,7 +812,40 @@ PriTask Devicex::initRandomSeed() {
       +1e6,              // high priority
       "initRandomSeed",  // name of this task
       {},                // depends on
-      streamFromHostTask // what to run when the task is executed
+      initRandomSeedTask // what to run when the task is executed
+  };
+}
+
+PriTask Devicex::initDropoutRandomSeed() {
+  auto initDropoutRandomSeedTask = [this]() {
+    logging::devicex::debug("Initializing dropout random seed tensor.");
+
+    dropoutRandomSeed = masterGraph().addVariable(
+        poplar::UNSIGNED_INT, {2}, dropoutRandomSeedTensorId());
+    masterGraph().setTileMapping(dropoutRandomSeed, 0);
+  };
+
+  return {
+      +1e6,                      // high priority
+      initDropoutRandomSeedId(), // name of this task
+      {},                        // depends on
+      initDropoutRandomSeedTask  // what to run when the task is executed
+  };
+}
+
+PriTask Devicex::incrementDropoutRandomSeedTask() {
+  auto incrementDropoutRandomSeedTask = [this]() {
+    popops::addInPlace(masterGraph(),
+                       *getDropoutRandomSeed(),
+                       getConst(poplar::UNSIGNED_INT, {}, 1, "one"),
+                       programFragment());
+  };
+
+  return {
+      +1e6,                          // high priority
+      "incrementDropoutRandomSeed",  // name of this task
+      {initDropoutRandomSeedId()},   // depends on
+      incrementDropoutRandomSeedTask // what to run when the task is executed
   };
 }
 
@@ -1311,8 +1349,13 @@ void Devicex::prepare() {
     }
   }
 
-  // Init the random seed
+  // Init the random seed(s)
   tasks.add(initRandomSeed());
+  if (isDropoutRandomSeedRequired()) {
+    // Dropout has a separate random seed
+    tasks.add(initDropoutRandomSeed());
+    tasks.add(incrementDropoutRandomSeedTask());
+  }
 
   // Depending on anchor return types specified by the user, some
   // tensors may need to be added to the graph to keep track of
@@ -1524,6 +1567,7 @@ void Devicex::tryLoadExecutable() {
           logging::devicex::trace("Loading poplar Executable from '{}'",
                                   cachePath);
           cachedExecutable.emplace(poplar::Executable::deserialize(poplarFs));
+          usingCachedExecutable = true;
         } else {
           warn(fmt::format("could not open file `{}'", poplarCachePath));
         }
@@ -1560,6 +1604,10 @@ TaskId Devicex::initBatchCounterTensorsTaskId() const {
 
 TaskId Devicex::updateBatchCountTaskId() const {
   return "updateBatchCountTask";
+}
+
+TaskId Devicex::initDropoutRandomSeedId() const {
+  return "initDropoutRandomSeed";
 }
 
 TaskId Devicex::initTensorTaskId(TensorId id) const {
@@ -1794,11 +1842,21 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
           f};
 }
 
-std::string Devicex::getSummaryReport() const {
+void Devicex::doProfileChecks() const {
   if (pEngine == nullptr) {
     throw error(
         "Session must have been prepared before a report can be fetched");
   }
+  if (usingCachedExecutable) {
+    throw error("Unable to get reports when using a cached executable.\n"
+                "Either remove the cache file ({}), or \ndisable engine "
+                "caching (userOptions.enableEngineCaching = false)",
+                ir().getSessionOptions().cachePath);
+  }
+}
+
+std::string Devicex::getSummaryReport() const {
+  doProfileChecks();
   const auto &g_prof = pEngine->getGraphProfile();
   const auto &e_prof = pEngine->getExecutionProfile();
 
@@ -1810,10 +1868,7 @@ std::string Devicex::getSummaryReport() const {
 }
 
 std::string Devicex::getGraphReport(bool use_cbor) const {
-  if (pEngine == nullptr) {
-    throw error(
-        "Session must have been prepared before a report can be fetched");
-  }
+  doProfileChecks();
   std::stringstream ss;
   auto report = pEngine->getGraphProfile();
   if (use_cbor) {
@@ -1826,10 +1881,7 @@ std::string Devicex::getGraphReport(bool use_cbor) const {
 }
 
 std::string Devicex::getExecutionReport(bool use_cbor) const {
-  if (pEngine == nullptr) {
-    throw error(
-        "Session must have been prepared before a report can be fetched");
-  }
+  doProfileChecks();
   std::stringstream ss;
   auto report = pEngine->getExecutionProfile();
 
@@ -1908,6 +1960,22 @@ std::set<TensorId> Devicex::getEfficientlyCreatedInputTensors() const {
 
 bool Devicex::useSyntheticData() {
   return (ir().getSessionOptions().ignoreData);
+}
+
+bool Devicex::isDropoutRandomSeedRequired() const {
+  return requiresDropoutRandomSeed;
+}
+
+void Devicex::setDropoutRandomSeedIsRequired(bool isRequired) {
+  requiresDropoutRandomSeed = isRequired;
+}
+
+std::string Devicex::dropoutRandomSeedTensorId() const {
+  return "dropoutRandomSeed";
+}
+
+const poplar::Tensor *Devicex::getDropoutRandomSeed() const {
+  return &dropoutRandomSeed;
 }
 
 } // namespace popx

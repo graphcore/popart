@@ -318,6 +318,8 @@ public:
     return userOptions.autoRecomputation != RecomputationType::None;
   }
 
+  uint32_t getAndIncrementDropoutSeedModifier();
+
 private:
   // Accessors for the tensors
   const Tensors &getTensors() const;
@@ -409,6 +411,8 @@ private:
 
   // enable/disable a transform stage
   void enableTransform(std::size_t transformId, bool enable);
+
+  uint32_t dropoutSeedModifier = 0;
 
 public:
   // A "dummy" Op used to ensure that anchor tensors

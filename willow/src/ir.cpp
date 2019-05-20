@@ -566,11 +566,7 @@ void Ir::prepare(const IrBundle &gb) {
   removeIsolatedTensors();
   updateVertices();
 
-  switch (userOptions.mergeVarUpdate) {
-
-  case (MergeVarUpdateType::All): {
-    enableTransform(MergeAllVarUpdates::id(), true);
-    applyTransform(MergeAllVarUpdates::id(), getMainGraph());
+  auto updateTrainTargetOps = [this]() {
     // reset the trainTargetOps, updated by MergeVarUpdates
     trainTargetOps.clear();
     for (auto &op : getMainGraph().getOps()) {
@@ -579,11 +575,21 @@ void Ir::prepare(const IrBundle &gb) {
       }
     }
     updateVertices();
+  };
+
+  switch (userOptions.mergeVarUpdate) {
+
+  case (MergeVarUpdateType::All): {
+    enableTransform(MergeAllVarUpdates::id(), true);
+    applyTransform(MergeAllVarUpdates::id(), getMainGraph());
+    updateTrainTargetOps();
     break;
   }
   case (MergeVarUpdateType::Auto): {
-    throw error("MergeVarUpdateType::Auto not supported");
-    // TODO T8703. remember to update trainTargetOps, as in ::All case
+    enableTransform(MergeAutoVarUpdates::id(), true);
+    applyTransform(MergeAutoVarUpdates::id(), getMainGraph());
+    updateTrainTargetOps();
+    break;
   }
 
   case (MergeVarUpdateType::None): {
@@ -1051,14 +1057,11 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     {
       // inputs to gradOp (to populate in this scope):
       std::map<int, std::string> m_inputs;
-      //  int max_input_index = 0;
       for (auto &inOutMapper : gradOp->gradInputInfo()) {
 
         int indexGrad     = inOutMapper.iGrad;
         int indexFwd      = inOutMapper.iNonGrad;
         GradOpInType type = inOutMapper.type;
-
-        //  max_input_index = std::max(indexGrad, max_input_index);
 
         // the input at index 'indexGrad' to gradOp is
         switch (type) {
@@ -1066,7 +1069,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
         case GradOpInType::IN: {
           if (!nonGradOp->input->hasIndex(indexFwd)) {
             throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
-                        "OUTPUT {} is not defined ",
+                        "INPUT {} is not defined ",
                         gradOp->debugName(),
                         nonGradOp->debugName(),
                         indexFwd);
@@ -1530,9 +1533,7 @@ void Ir::constructBackwards() {
         throw error("can't currently register gradient of " +
                     nongrad->tensor_type() + " tensor, " + nongrad->str());
 
-      default: {
-        throw error("only handling ActGrad and Variable for now");
-      }
+      default: { throw error("only handling ActGrad and Variable for now"); }
       }
     }
 
@@ -2067,6 +2068,11 @@ Tensors &Ir::getMainGraphTensors() { return getMainGraph().getTensors(); }
 
 const Tensors &Ir::getMainGraphTensors() const {
   return getMainGraph().getTensors();
+}
+
+uint32_t Ir::getAndIncrementDropoutSeedModifier() {
+  dropoutSeedModifier += 1;
+  return dropoutSeedModifier;
 }
 
 } // namespace poponnx

@@ -56,6 +56,7 @@ public:
     WEIGHTSTOHOST,
     TOHOSTFINALCOPY,
     SETRANDOMSEED,
+    SETRANDOMDROPOUTSEED,
     N // The number of program fragments
   };
 
@@ -66,6 +67,7 @@ public:
   poplar::program::Sequence &streamOptimizerFromHostFragment();
   poplar::program::Sequence &copyOptimizerBetweenIpusFragment();
   poplar::program::Sequence &setRandomSeedFragment();
+  poplar::program::Sequence &setRandomDropoutSeedFragment();
   poplar::program::Sequence &toHostFinalCopyFragment();
   poplar::program::Sequence &initFragment();
   poplar::program::Sequence &programFragment();
@@ -234,6 +236,16 @@ public:
   bool isEngineLoaded() const;
   void setEngineIsLoaded(bool isLoaded);
 
+  bool isDropoutRandomSeedRequired() const;
+  void setDropoutRandomSeedIsRequired(bool isRequired);
+  std::string dropoutRandomSeedTensorId() const;
+  const poplar::Tensor *getDropoutRandomSeed() const;
+  // Compile-time poplar tensors used to determine sampling of random
+  // numbers across tiles. Combined with the random seed and seedModifier,
+  // this ensures that the same random mask is generated for fwd and bwd
+  // dropout ops in the same layer
+  std::map<uint32_t, poplar::Tensor> dropoutReferenceTensors;
+
 private:
   // The root graph. Operations that span the boundaries between
   // replicated subgraphs (e.g. all-reduce of weight deltas) should be added
@@ -260,6 +272,15 @@ private:
   // Map tensors evenly across all tiles
   LinearMapper linearMapper;
 
+  // A random seed tensor is needed to get repeatable random
+  // masks for corresponding fwd and bwd dropout ops.
+  // Design decision: a separate seed tensor to the one used to
+  // initialise the random hardware so that manipulation of this
+  // tensor for some other reason between fwd and bwd dropout
+  // layers doensn't break dropout's functionality
+  bool requiresDropoutRandomSeed = false;
+  poplar::Tensor dropoutRandomSeed;
+
   poplar::Tensor getConst(const poplar::Type &type,
                           const std::vector<size_t> &shape,
                           double val,
@@ -272,6 +293,8 @@ private:
 
   PriTask initRandomSeed();
   void connectRandomSeedStream();
+  PriTask initDropoutRandomSeed();
+  TaskId initDropoutRandomSeedId() const;
 
   PriTask setInitTensorValTask(Tensor *);
   TaskId setInitTensorValTaskId(TensorId) const;
@@ -310,6 +333,8 @@ private:
   PriTask toHostEveryNBatchesTask(Tensor *tensor,
                                   ReturnPeriod N,
                                   poplar::program::Sequence &);
+
+  PriTask incrementDropoutRandomSeedTask();
 
   PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
   TaskId opTaskId(Op *) const;
@@ -401,13 +426,13 @@ private:
   // remain set to `boost::none'.
   void tryLoadExecutable();
 
-  bool usingCachedExecutable() { return static_cast<bool>(cachedExecutable); }
-
   std::string getPoplarCachePath();
   std::string getPoponnxCachePath();
 
   void setFloatingPointBehaviour(poplar::Graph &graph);
   void setStochasticRoundingBehaviour(poplar::Graph &graph);
+
+  void doProfileChecks() const;
 
   // Store input tensors based on how they are allocated
   std::set<TensorId> linearlyCreatedInputTensors;
@@ -416,6 +441,7 @@ private:
   bool prepareHasBeenCalled;
 
   optional<poplar::Executable> cachedExecutable;
+  bool usingCachedExecutable = false;
 };
 
 } // namespace popx

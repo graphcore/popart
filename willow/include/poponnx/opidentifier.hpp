@@ -586,7 +586,7 @@ const static AiGraphcoreOpIdV1 CosGrad("CosGrad");
 // constexpr static char DepthToSpace[] = "DepthToSpace";
 const static AiGraphcoreOpIdV1 DivArg0Grad("DivArg0Grad");
 const static AiGraphcoreOpIdV1 DivArg1Grad("DivArg1Grad");
-// constexpr static char Dropout[] = "DropOut";
+const static AiGraphcoreOpIdV1 DropoutGrad("DropoutGrad");
 // constexpr static char Elu[] = "Elu";
 // constexpr static char Equal[] = "Equal";
 // constexpr static char Erf[] = "Erf";
@@ -725,6 +725,7 @@ const static AiGraphcoreOpIdV1 SgdVarUpdate("SGDVarUpdate");
 const static AiGraphcoreOpIdV1 ConstSgdVarUpdate("ConstSGDVarUpdate");
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
 const static AiGraphcoreOpIdV1 FlattenInplace("FlattenInplace");
+const static AiGraphcoreOpIdV1 SubsampleInplace("SubsampleInplace");
 
 const static AiGraphcoreOpIdV1 ConvFlipWeights("ConvFlipWeights");
 

@@ -5,12 +5,11 @@
 
 namespace poponnx {
 
-class SubsampleOp : public Op {
+class SubsampleBaseOp : public Op {
 public:
-  SubsampleOp(const OperatorIdentifier &_opid,
-              const std::vector<int64_t> &strides_,
-              const Op::Settings &settings_);
-  std::unique_ptr<Op> clone() const override;
+  SubsampleBaseOp(const OperatorIdentifier &_opid,
+                  const std::vector<int64_t> &strides_,
+                  const Op::Settings &settings_);
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() override;
 
@@ -30,15 +29,50 @@ public:
 
   bool canBeReplacedByIdentity() override;
 
+  // currently these are conservative TODO T6973
+  view::RegMap fwdRegMap(InIndex) const final;
+  view::RegMap bwdRegMap(InIndex) const final;
+
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 public:
   std::vector<int64_t> strides;
 };
 
+class SubsampleOp : public SubsampleBaseOp {
+public:
+  SubsampleOp(const OperatorIdentifier &_opid,
+              const std::vector<int64_t> &strides_,
+              const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override;
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &o) const final;
+
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final {
+    return {{Onnx::CustomOperators::SubsampleInplace, 10}};
+  }
+};
+
+class SubsampleInplaceOp : public SubsampleBaseOp {
+public:
+  SubsampleInplaceOp(const SubsampleOp &);
+  std::unique_ptr<Op> clone() const final;
+
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &o) const final {
+    // this throws an error
+    return Op::getInplaceVariant(o);
+  }
+
+  // modifies and uses are still the defaults, but aliases changes
+  // to be the same as uses (the full out region)
+  view::Region aliases(InIndex index) const final;
+};
+
 class SubsampleGradOp : public Op {
 public:
-  SubsampleGradOp(const SubsampleOp &fwdOp);
+  SubsampleGradOp(const SubsampleBaseOp &fwdOp);
   std::unique_ptr<Op> clone() const final;
   void setup() override;
 

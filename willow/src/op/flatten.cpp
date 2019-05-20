@@ -18,7 +18,7 @@ FlattenOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 
 view::RegMap FlattenBaseOp::fwdRegMap(InIndex inIndex) const {
   if (inIndex != 0) {
-    throw error("Internal Logic Error in FlatteBaseOp::fwdRegMap."
+    throw error("Internal Logic Error in FlattenBaseOp::fwdRegMap."
                 "Received input index {} but only 0 allowed, "
                 "This for Op {}, ",
                 inIndex,
@@ -32,7 +32,7 @@ view::RegMap FlattenBaseOp::fwdRegMap(InIndex inIndex) const {
 
 view::RegMap FlattenBaseOp::bwdRegMap(InIndex inIndex) const {
   if (inIndex != 0) {
-    throw error("Internal Logic Error in FlatteBaseOp::bwdRegMap."
+    throw error("Internal Logic Error in FlattenBaseOp::bwdRegMap."
                 "Received input index {} but only 0 allowed, "
                 "This for Op {}, ",
                 inIndex,

@@ -34,7 +34,6 @@ enum class MergeVarUpdateType {
   All,      // Merge all VarUpdate Ops into as few groups as possible.
             // This is a good choice when memory is not a constraint
   Auto,     // Merge into groups, attempting not to increase max-liveness
-            // Auto needs implementing TODO T8703
   N         // The numbe of MergeVarUpdateTypes, must appear as the final enum
 };
 
@@ -93,6 +92,10 @@ struct SessionOptions {
   /// Enable merging of VarUpdates into groups of VarUpdates, by flattening
   /// and concatenating Variable Tensors and Updating Tensors
   MergeVarUpdateType mergeVarUpdate = MergeVarUpdateType::None;
+
+  /// The Auto VarUpdate merging algorithm has a threshold on the total
+  /// memory of Variable Tensors to merge for updating. Memory in bytes.
+  int64_t mergeVarUpdateMemThreshold = 1000000;
 
   /// By default, we use the stable-softmax poplar function. This input tensor
   /// to softmax, _x_, is preprocessed by subtracting max(_x_) to each element
