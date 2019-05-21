@@ -353,6 +353,8 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("mergeVarUpdate", &SessionOptions::mergeVarUpdate)
       .def_readwrite("mergeVarUpdateMemThreshold",
                      &SessionOptions::mergeVarUpdateMemThreshold)
+      .def_readwrite("rearrangeAnchorsOnHost",
+                     &SessionOptions::rearrangeAnchorsOnHost)
       .def_readwrite("enableVirtualGraphs",
                      &SessionOptions::enableVirtualGraphs)
       .def_readwrite("autoVirtualGraph", &SessionOptions::autoVirtualGraph)

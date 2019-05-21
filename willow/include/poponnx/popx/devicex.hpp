@@ -344,6 +344,8 @@ private:
   // and for device->host
   PopStreamId d2hId(TensorId) const;
 
+  bool doRearrangeOnHost(Tensor *tensor) const;
+
   // Hack need to for subgraph. do better
 public:
   std::unique_ptr<Opx> createOpx(Op *);

@@ -1237,7 +1237,6 @@ void Devicex::setStochasticRoundingBehaviour(poplar::Graph &graph) {
 
 // go all the way to creating the engine and connecting streams
 void Devicex::prepare() {
-
   logging::devicex::info("Poplar version: {}", poplar::versionString());
   logging::devicex::info("Poplar release githash: {}", poplar::packageHash());
 
@@ -1639,8 +1638,6 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
                               poplar::program::Sequence &copySq) const {
 
   auto f = [&streamSq, &copySq, tensor, this]() {
-    bool rearrange_on_host = tensor->tensorType() != TensorType::Stream;
-
     logging::devicex::debug("Adding poplar::program::Copy from host " +
                             tensor->id);
 
@@ -1668,7 +1665,7 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
       for (unsigned i = 0; i < getReplicationFactor(); ++i) {
         streamSq.add(poplar::program::Copy(fromHostStreams.at(tensor->id),
                                            nonReplicatedTensor[i],
-                                           rearrange_on_host));
+                                           doRearrangeOnHost(tensor)));
       }
     }
   };
@@ -1689,8 +1686,6 @@ PriTask Devicex::toHostTask(Tensor *tensor,
     logging::devicex::debug("Adding poplar::program::Copy to host " +
                             tensor->id);
 
-    bool rearrange_on_host = tensor->tensorType() != TensorType::Stream;
-
     // getNonReplicatedTensor is not a const method
     // T8378
     auto nonReplicatedTensor =
@@ -1707,7 +1702,7 @@ PriTask Devicex::toHostTask(Tensor *tensor,
       for (unsigned i = 0; i < getReplicationFactor(); ++i) {
         sq.add(poplar::program::Copy(nonReplicatedTensor[i],
                                      toHostStreams.at(tensor->id),
-                                     rearrange_on_host));
+                                     doRearrangeOnHost(tensor)));
       }
     }
   };
@@ -1803,8 +1798,6 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
 
     poplar::program::Sequence copyseq;
 
-    bool rearrange_on_host = tensor->tensorType() != TensorType::Stream;
-
     auto nonReplicatedTensor =
         rootGraph().getNonReplicatedTensor(tensors.get(tensor->id));
 
@@ -1821,7 +1814,7 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
       for (unsigned i = 0; i < getReplicationFactor(); ++i) {
         copyseq.add(poplar::program::Copy(nonReplicatedTensor[i],
                                           toHostStreams.at(tensor->id),
-                                          rearrange_on_host));
+                                          doRearrangeOnHost(tensor)));
       }
     }
 
@@ -1840,6 +1833,15 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
               taskWhichCreates(tensor->id)    // poplar::Tensor creation task.
           },
           f};
+}
+
+bool Devicex::doRearrangeOnHost(Tensor *tensor) const {
+  if (tensor->tensorType() == TensorType::Stream) {
+    return false;
+  } else if (ir().isAnchored(tensor->id)) {
+    return ir().getSessionOptions().rearrangeAnchorsOnHost;
+  }
+  return true;
 }
 
 void Devicex::doProfileChecks() const {

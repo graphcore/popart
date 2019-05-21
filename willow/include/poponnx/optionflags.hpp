@@ -97,6 +97,13 @@ struct SessionOptions {
   /// memory of Variable Tensors to merge for updating. Memory in bytes.
   int64_t mergeVarUpdateMemThreshold = 1000000;
 
+  /// Before anchor tensors are streamed from device to host, they are not
+  /// necessarily arranged in memory as required when they are to be copied
+  /// from host stream to host. This can be done on the device or on the host.
+  /// Done on host by default to save memory, but often at the expense of
+  /// cycles, especially for larger anchor tensors.
+  bool rearrangeAnchorsOnHost = true;
+
   /// By default, we use the stable-softmax poplar function. This input tensor
   /// to softmax, _x_, is preprocessed by subtracting max(_x_) to each element
   /// before computing the exponentials, ensuring numerical stability. If you
