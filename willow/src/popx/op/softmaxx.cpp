@@ -17,12 +17,46 @@
 namespace poponnx {
 namespace popx {
 
+namespace {
+template <typename T> T *getAs(Op *op) {
+  auto x = dynamic_cast<T *>(op);
+  if (!x) {
+    throw error("Failed to cast {} in Softmaxx", op->str());
+  }
+  return x;
+}
+} // namespace
+
+SoftmaxInplaceOpx::SoftmaxInplaceOpx(Op *op, Devicex *devicex)
+    : ElementWiseUnaryInplaceOpx(
+          op,
+          devicex,
+          SoftmaxComputex::get(
+              getAs<SoftmaxInplaceOp>(op)->getAxis(),
+              devicex->ir().getSessionOptions().enableNonStableSoftmax,
+              op->inInfo(SoftmaxInplaceOp::getInIndex()).shape_szt())) {}
+
 SoftmaxOpx::SoftmaxOpx(Op *op, Devicex *devicex)
-    : ElementWiseUnaryOpx(op, devicex) {
-  verifyOp<SoftmaxOp>(op, Onnx::Operators::Softmax_1);
+    : ElementWiseUnaryOutplaceOpx(
+          op,
+          devicex,
+          SoftmaxComputex::get(
+              getAs<SoftmaxOp>(op)->getAxis(),
+              devicex->ir().getSessionOptions().enableNonStableSoftmax,
+              op->inInfo(SoftmaxOp::getInIndex()).shape_szt())) {}
+
+poplar::Tensor SoftmaxComputex::outplace(poplar::program::Sequence &p,
+                                         poplar::Graph &g,
+                                         const poplar::Tensor &t,
+                                         const std::string &s) const {
+  auto outTensor = cloneNcopy(p, g, t);
+  inplace(p, g, outTensor, s);
+  return outTensor;
 }
 
-poplar::Tensor SoftmaxOpx::coerceTo2D(const poplar::Tensor &t, int64_t axis) {
+namespace {
+poplar::Tensor coerceTo2D(const poplar::Tensor &t, int64_t axis) {
+
   const auto in_shape = t.shape();
   auto k              = in_shape.begin();
   std::advance(k, axis);
@@ -33,28 +67,30 @@ poplar::Tensor SoftmaxOpx::coerceTo2D(const poplar::Tensor &t, int64_t axis) {
       k, in_shape.end(), std::size_t{1}, std::multiplies<std::size_t>());
   return t.reshape({n, d});
 }
+} // namespace
 
-void SoftmaxOpx::grow(poplar::program::Sequence &prog) const {
-  auto input = getInTensor(SoftmaxOp::getInIndex());
+void SoftmaxComputex::inplace(poplar::program::Sequence &p,
+                              poplar::Graph &g,
+                              const poplar::Tensor &tIn,
+                              const std::string &dbs) const {
 
-  const auto axis = getOp<SoftmaxOp>().getAxis();
-  input           = coerceTo2D(input, axis);
+  auto input = coerceTo2D(tIn, axis);
 
   // By default use stable softmax (prevent overflow by subtracting max
   // input value from input tensor before computing the exponentials).
   // Optionally override.
   popnn::NonLinearityType nlType;
-  if (dv_p->ir().getSessionOptions().enableNonStableSoftmax) {
+  if (enableNonStable) {
     nlType = popnn::NonLinearityType::SOFTMAX;
   } else {
     nlType = popnn::NonLinearityType::SOFTMAX_STABLE;
   }
 
-  auto outTensor = popnn::nonLinearity(
-      graph(), nlType, input, prog, debugPrefix("nonLinearity"));
+  popnn::nonLinearityInPlace(g, nlType, input, p, dbs);
+}
 
-  outTensor = outTensor.reshape(inInfo(SoftmaxOp::getInIndex()).shape_szt());
-  setOutTensor(0, outTensor);
+poplar::Tensor SoftmaxComputex::reshape(const poplar::Tensor &t) const {
+  return t.reshape(outShape);
 }
 
 SoftmaxGradOpx::SoftmaxGradOpx(Op *op, Devicex *devicex)
@@ -143,11 +179,11 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // The gradient of the loss w.r.t. the probabilities (g in above description)
   auto d_probs = getInTensor(SoftmaxGradOp::getGradProbsInIndex());
-  d_probs      = SoftmaxOpx::coerceTo2D(d_probs, axis);
+  d_probs      = coerceTo2D(d_probs, axis);
 
   // The input to the softmax (which we are computing the gradient of here)
   auto pre_probs = getInTensor(SoftmaxGradOp::getActsInIndex());
-  pre_probs      = SoftmaxOpx::coerceTo2D(pre_probs, axis);
+  pre_probs      = coerceTo2D(pre_probs, axis);
 
   // recomputing the probabilities (p in the above description)
   popnn::NonLinearityType nlType;
@@ -315,6 +351,9 @@ OpxCreator<SoftmaxGradDirectOpx>
     softmaxGradDirectOpxCreator(Onnx::CustomGradOperators::SoftmaxGradDirect);
 OpxCreator<NlllWithSoftmaxGradDirectOpx> nlllWithSoftmaxGradDirectOpxCreator(
     Onnx::CustomGradOperators::NlllWithSoftmaxGradDirect);
+OpxCreator<SoftmaxInplaceOpx>
+    softmaxxInplaceOpxCreator(Onnx::CustomOperators::SoftmaxInplace);
+
 } // namespace
 
 } // namespace popx

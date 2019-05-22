@@ -102,15 +102,15 @@ createCopyGroup(Op *op, const std::vector<Op *> &op_schedule) {
       std::find(op_schedule.begin(), op_schedule.end(), op);
 
   for (auto tensor : op->input->tensors()) {
-    auto producer = tensor->getProducer();
-
-    // clang-format off
-    if (isCopyTensor(tensor)
-        && producer->input->n() == 1
-        && producer->output->n() == 1
-        && checkOpIsFirstConsumer(op_schedule_iter, tensor, op_schedule)) {
-      // clang-format on
-      group.push_back(tensor);
+    if (isCopyTensor(tensor)) {
+      auto producer = tensor->getProducer();
+      // clang-format off
+      if (producer->input->n() == 1
+          && producer->output->n() == 1
+          && checkOpIsFirstConsumer(op_schedule_iter, tensor, op_schedule)) {
+        // clang-format on
+        group.push_back(tensor);
+      }
     }
   }
 

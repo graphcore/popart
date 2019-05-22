@@ -61,7 +61,8 @@ std::vector<Match> getRinseMatches(const std::vector<T *> &schedule,
     Algo1<T> algo1(schedule);
     algo1.init();
     auto acc = algo1.getPreThresholded();
-    // run the blanket algorithm.
+
+    // run the blanket algorithm, to remove matches with only incremental value
     return applyIncrementalThreshold(
         acc, static_cast<int>(schedule.size()), threshold);
   }

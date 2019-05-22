@@ -7,6 +7,7 @@ include(EnableCompilerWarnings)
 add_compile_options("-Wno-missing-prototypes")
 
 include_directories("../willow/include")
+include_directories("${CMAKE_BINARY_DIR}/willow/include")
 
 find_package(pybind11 REQUIRED)
 find_package(Poplar REQUIRED)

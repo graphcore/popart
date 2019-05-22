@@ -51,17 +51,23 @@ void ElementWiseUnaryInplaceOpx::grow(poplar::program::Sequence &prog) const {
   // them we can use the poplar inplace version. Otherwise, we must
   // use a non-inplace version.  See T7110 for a possible improvement
   if (!outTensor.isParallelWriteable()) {
-    outTensor = cx->outplace(prog, graph(), outTensor);
+    outTensor = cx->outplace(
+        prog, graph(), outTensor, debugPrefix("nonLinearityInplace"));
   } else {
-    cx->inplace(prog, graph(), outTensor);
+    cx->inplace(
+        prog, graph(), outTensor, debugPrefix("nonLinearityOutplaceFallback"));
   }
+  outTensor = cx->reshape(outTensor);
   setOutTensor(ElementWiseUnaryOp::getOutIndex(), outTensor);
 }
 
 void ElementWiseUnaryOutplaceOpx::grow(poplar::program::Sequence &prog) const {
-  auto outTensor = cx->outplace(
-      prog, graph(), getInTensor(ElementWiseUnaryOp::getInIndex()));
+  auto outTensor = cx->outplace(prog,
+                                graph(),
+                                getInTensor(ElementWiseUnaryOp::getInIndex()),
+                                debugPrefix("nonLinearityOutplace"));
 
+  outTensor = cx->reshape(outTensor);
   setOutTensor(ElementWiseUnaryOp::getOutIndex(), outTensor);
 }
 

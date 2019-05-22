@@ -5,7 +5,11 @@ include(EnableCompilerWarnings)
 
 option(POPLAR_BACKEND "Build Poplar backend (Graphcore IPU)" ON)
 include_directories("include")
+include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
 
+configure_file(include/poponnx/version.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/include/poponnx/version.hpp
+  @ONLY)
 
 # core poponnx source files:
 file(GLOB core_sources src/*cpp)

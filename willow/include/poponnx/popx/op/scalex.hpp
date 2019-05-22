@@ -15,11 +15,13 @@ public:
 
   poplar::Tensor outplace(poplar::program::Sequence &,
                           poplar::Graph &,
-                          const poplar::Tensor &tensor) const final;
+                          const poplar::Tensor &tensor,
+                          const std::string &) const final;
 
   void inplace(poplar::program::Sequence &,
                poplar::Graph &,
-               const poplar::Tensor &) const final;
+               const poplar::Tensor &,
+               const std::string &) const final;
 
   static std::unique_ptr<EwuComputex> get(float x) {
     return std::unique_ptr<EwuComputex>(

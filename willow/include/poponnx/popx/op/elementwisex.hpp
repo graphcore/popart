@@ -15,15 +15,20 @@ public:
 
   virtual poplar::Tensor outplace(poplar::program::Sequence &,
                                   poplar::Graph &,
-                                  const poplar::Tensor &) const = 0;
+                                  const poplar::Tensor &,
+                                  const std::string &) const = 0;
 
   virtual void inplace(poplar::program::Sequence &,
                        poplar::Graph &,
-                       const poplar::Tensor &t) const = 0;
+                       const poplar::Tensor &t,
+                       const std::string &) const = 0;
 
   poplar::Tensor cloneNcopy(poplar::program::Sequence &,
                             poplar::Graph &,
                             const poplar::Tensor &) const;
+
+  // certain elementwise unary ops may reshape the input tensor (eg Softmax)
+  virtual poplar::Tensor reshape(const poplar::Tensor &t) const { return t; }
 };
 
 // Base class for elementwise unary operations

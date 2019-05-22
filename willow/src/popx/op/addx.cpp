@@ -66,6 +66,8 @@ void AddLhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
                         getInTensor(AddLhsInplaceOp::getArg1InIndex()),
                         prog,
                         idStr());
+
+  out = out.reshape(outInfo(AddLhsInplaceOp::getOutIndex()).shape_szt());
   setOutTensor(AddLhsInplaceOp::getOutIndex(), out);
 }
 
@@ -81,6 +83,7 @@ void AddRhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
                         prog,
                         idStr());
 
+  out = out.reshape(outInfo(AddRhsInplaceOp::getOutIndex()).shape_szt());
   setOutTensor(AddRhsInplaceOp::getOutIndex(), out);
 }
 
