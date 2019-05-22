@@ -319,7 +319,7 @@ def test_matmul_train_cached_by_default():
     session.weightsFromHost()
     session.optimizerFromHost()
 
-    # Check that there is only 3 matmul convs in computation set.
+    # Check that there are only 3 matmul convs in computation set.
     summaryReport = session.getSummaryReport()
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 

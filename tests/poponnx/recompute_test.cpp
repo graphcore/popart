@@ -93,9 +93,10 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
     auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
     SessionOptions opts;
-    opts.autoRecomputation = RecomputationType::None;
-    opts.enableOutlining   = enableOutlining;
-    opts.mergeVarUpdate    = MergeVarUpdateType::None;
+    opts.autoRecomputation              = RecomputationType::None;
+    opts.enableOutlining                = enableOutlining;
+    opts.enableOutliningCopyCostPruning = false;
+    opts.mergeVarUpdate                 = MergeVarUpdateType::None;
 
     Ir ir;
     ir.prepare({modelProto,

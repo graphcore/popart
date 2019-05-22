@@ -74,6 +74,10 @@ struct SessionOptions {
   /// Controls caching of identifical sections of the graph.
   bool enableOutlining = true;
 
+  /// Controls whether the cost of copying of cached sections should be included
+  /// in the outlining cost model.
+  bool enableOutliningCopyCostPruning = true;
+
   /// The incremental value that a sub-graph requires, relative to its nested
   /// sub-graphs (if any), to be eligible for outlining. A high threshold
   /// results in fewer sub-graphs being outlined, a negative value results in
