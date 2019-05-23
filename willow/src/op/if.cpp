@@ -66,6 +66,20 @@ const Graph &IfOp::getElseGraph() const {
   return getGraph().getIr().getGraph(gid);
 }
 
+std::vector<const Graph *> IfOp::getCalledGraphs() const {
+  return {&getThenGraph(), &getElseGraph()};
+}
+
+std::vector<TensorId> IfOp::getInputsForGraph(const Graph &graph) const {
+  if (&graph == &getThenGraph()) {
+    return then_input_ids;
+  } else if (&graph == &getElseGraph()) {
+    return else_input_ids;
+  } else {
+    throw error("IfOp does not call graph '{}'", graph.id.str());
+  }
+}
+
 namespace {
 
 static OpCreator<IfOp> ifOpCreator(

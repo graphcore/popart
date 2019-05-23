@@ -35,6 +35,7 @@ class PriTasks {
 public:
   std::unordered_map<TaskId, PriTask> tasksMap;
   void add(const PriTask &t);
+  bool contains(const TaskId &);
 
   // return the tasks in an order of descending priority as far
   // as possible, subject to all dependencies being satisfied.

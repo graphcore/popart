@@ -19,6 +19,8 @@
 #include <poponnx/logging.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op.hpp>
+#include <poponnx/op/call.hpp>
+#include <poponnx/op/if.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/devicexmanager.hpp>
 #include <poponnx/popx/opx.hpp>
@@ -773,17 +775,6 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   }
 }
 
-void Devicex::createFragmentAndGrow(const Graph &graph) {
-  createFragment(graph);
-  auto &graph_prog = programFragment(graph);
-
-  // Grow opxs
-  for (auto op : graph.getOpSchedule({})) {
-    auto opx = getOpx(op->id);
-    opx->grow(graph_prog);
-  }
-}
-
 PriTask Devicex::initRandomSeed() {
   auto initRandomSeedTask = [this]() {
     logging::devicex::debug("Initializing random seed.");
@@ -1039,6 +1030,55 @@ poplar::program::Sequence &Devicex::programFragment(const Graph &graph) {
   return progs.programFragment(graph);
 }
 
+void Devicex::addOpTasks(PriTasks &tasks) {
+  // Ensure there is a program fragment for every graph
+  for (auto graph : ir().getGraphSchedule()) {
+    if (!containsFragment(*graph)) {
+      createFragment(*graph);
+    }
+  }
+
+  double priority     = 0.;
+  TaskId prevOpTaskId = "";
+
+  // 'ops' are in the order of the Ir's schedule
+  for (auto op : ir().getOpSchedule({})) {
+
+    for (auto graph : op->getCalledGraphs()) {
+      auto opInputs = op->getInputsForGraph(*graph);
+      for (int i = 0; i < opInputs.size(); i++) {
+        auto graphInput = graph->getInputId(i);
+        if (!tasks.contains(initTensorTaskId(graphInput))) {
+          tasks.add(initTensorByCloningTask(op, opInputs.at(i), graphInput));
+        }
+      }
+    }
+
+    auto task = opTask(op, priority, prevOpTaskId);
+    tasks.add(task);
+    prevOpTaskId = task.name;
+    priority -= 1.;
+  }
+}
+
+PriTask
+Devicex::initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId) {
+  Opx *opx = getOpx(op->id);
+
+  auto f = [srcId, dstId, opx, this]() {
+    logging::debug("Cloning tensor {} to {}", srcId, dstId);
+    auto src = opx->get(srcId);
+    auto dst = opx->graph().clone(src);
+    tensors.insert(dstId, dst);
+  };
+
+  std::vector<TaskId> deps;
+  auto creatorTask = taskWhichCreates(srcId);
+  deps.push_back(creatorTask);
+
+  return {-1e6, initTensorTaskId(dstId), deps, f};
+}
+
 PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
 
   OpId id  = op->id;
@@ -1064,6 +1104,26 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
       if (useSyntheticData() == false)
         deps.push_back(fromHostTaskId(tensor->id));
     }
+  }
+
+  auto addGraphOpsToDeps = [&](const Graph &graph) {
+    for (auto graphOp : graph.getOpSchedule({})) {
+      auto taskId = opTaskId(graphOp);
+      if (std::find(deps.begin(), deps.end(), taskId) == deps.end()) {
+        deps.push_back(taskId);
+      }
+    }
+  };
+
+  // TODO This could probably be made generic in the future
+  // for (auto &graph : op->getCalledGraphs()) { ... }
+  if (op->isConvertibleTo<CallOp>()) {
+    auto callOp = dynamic_cast<CallOp *>(op);
+    addGraphOpsToDeps(callOp->getCalledGraph());
+  } else if (op->isConvertibleTo<IfOp>()) {
+    auto ifOp = dynamic_cast<IfOp *>(op);
+    addGraphOpsToDeps(ifOp->getThenGraph());
+    addGraphOpsToDeps(ifOp->getElseGraph());
   }
 
   // Depends on previous op task. This preserves op ordering from ir.
@@ -1295,9 +1355,6 @@ void Devicex::prepare() {
     opxs[op->id] = createOpx(op);
   }
 
-  // Only the ops on the main graph should be added to tasks
-  std::vector<Op *> ops = ir().getMainGraph().getOpSchedule({});
-
   PriTasks tasks;
 
   // weights (variables):
@@ -1406,16 +1463,7 @@ void Devicex::prepare() {
     }
   }
 
-  double priority     = 0.;
-  TaskId prevOpTaskId = "";
-  // 'ops' are in the order of the Ir's schedule
-  for (int i = 0; i < ops.size(); ++i) {
-    Op *op    = ops[i];
-    auto task = opTask(op, priority, prevOpTaskId);
-    tasks.add(task);
-    prevOpTaskId = task.name;
-    priority -= 1.;
-  }
+  addOpTasks(tasks);
 
   for (auto &task : tasks.getLinearised()) {
     task.f();
@@ -1444,11 +1492,11 @@ void Devicex::prepare() {
     auto executable = getExecutable();
     pEngine.reset(new poplar::Engine(std::move(executable), engineOptions));
   } catch (const poplar::graph_memory_allocation_error &e) {
-    // If the creation of the engine throw an exception due to memory allocation
-    // i.e. the program does not fit show graph profile and re-throw the
-    // exception In certain cases poplar will throw the error without a graph
-    // profile. The following engine option needs to be set to enable the graph
-    // profile in this case "debug.allowOutOfMemory":"true"
+    // If the creation of the engine throw an exception due to memory
+    // allocation i.e. the program does not fit show graph profile and
+    // re-throw the exception In certain cases poplar will throw the error
+    // without a graph profile. The following engine option needs to be set to
+    // enable the graph profile in this case "debug.allowOutOfMemory":"true"
 
     if (e.graphProfile.type() == poplar::ProfileValue::Type::MAP &&
         e.graphProfile.size() != 0) {
@@ -1478,8 +1526,8 @@ poplar::Executable Devicex::getExecutable() {
   };
 
   if (cachedExecutable) {
-    // return the executable in cachedExecutable while ensuring cachedExecutable
-    // is set to boost::none
+    // return the executable in cachedExecutable while ensuring
+    // cachedExecutable is set to boost::none
     optional<poplar::Executable> result = boost::none;
     boost::swap(cachedExecutable, result);
     return std::move(result.get());
@@ -1641,16 +1689,16 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
     logging::devicex::debug("Adding poplar::program::Copy from host " +
                             tensor->id);
 
-    // getNonReplicatedTensor is not a const method so have to have a const_cast
-    // T8378
+    // getNonReplicatedTensor is not a const method so have to have a
+    // const_cast T8378
     auto nonReplicatedTensor =
         const_cast<poplar::Graph &>(rootGraph())
             .getNonReplicatedTensor(tensors.get(tensor->id));
 
     if (tensor->tensorType() == TensorType::Variable) {
 
-      // Copy the variable from the stream into the non replicated tensor index
-      // 0 then copy it to the the other indices
+      // Copy the variable from the stream into the non replicated tensor
+      // index 0 then copy it to the the other indices
       streamSq.add(poplar::program::Copy(
           fromHostStreams.at(tensor->id), nonReplicatedTensor[0], true));
 

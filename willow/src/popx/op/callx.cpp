@@ -87,12 +87,7 @@ void CallOpx::copyInputs(poplar::program::Sequence &prog) const {
   for (int i = 0; i < callop.input->n(); i++) {
     auto call_input     = get(callop.inId(i));
     auto graph_input_id = callop.getCalledGraph().getInputId(i);
-
-    if (!dv_p->tensors.contains(graph_input_id)) {
-      dv_p->tensors.insert(graph_input_id, graph().clone(call_input));
-    }
-    auto graph_input = get(graph_input_id);
-
+    auto graph_input    = get(graph_input_id);
     poplar::program::Copy copy_prog(call_input, graph_input);
     prog.add(copy_prog);
   }
@@ -114,12 +109,7 @@ void CallOpx::copyOutputs(poplar::program::Sequence &prog,
 void CallOpx::doCall(poplar::program::Sequence &prog) const {
   auto &callop       = getOp<CallOp>();
   auto &called_graph = callop.getCalledGraph();
-
-  if (!dv_p->containsFragment(called_graph)) {
-    dv_p->createFragmentAndGrow(called_graph);
-  }
-
-  auto &graph_prog = dv_p->programFragment(called_graph);
+  auto &graph_prog   = dv_p->programFragment(called_graph);
   prog.add(graph_prog);
 }
 

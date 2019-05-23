@@ -39,6 +39,10 @@ void PriTasks::add(const PriTask &t) {
   tasksMap[t.name] = t;
 }
 
+bool PriTasks::contains(const TaskId &taskId) {
+  return tasksMap.find(taskId) != tasksMap.end();
+}
+
 // this function will reorder v_tasks so that there are no dependency breakages.
 std::vector<PriTask> PriTasks::getLinearised() const {
   std::priority_queue<PriTask> pq;

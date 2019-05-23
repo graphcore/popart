@@ -230,9 +230,6 @@ public:
   // Will throw an error if multiple candidates that do not agree are found
   optional<InputCreatorCandidate> getTensorCreator(Tensor *tensor) const;
 
-  // Create a program fragment for a graph, and `grow' the associated opxs
-  void createFragmentAndGrow(const Graph &);
-
   bool isEngineLoaded() const;
   void setEngineIsLoaded(bool isLoaded);
 
@@ -289,6 +286,7 @@ private:
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
   PriTask initTensorTask(Tensor *);
+  PriTask initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId);
   TaskId initTensorTaskId(TensorId) const;
 
   PriTask initRandomSeed();
@@ -338,6 +336,8 @@ private:
 
   PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
   TaskId opTaskId(Op *) const;
+
+  void addOpTasks(PriTasks &);
 
   // The ID of the poplar::Stream host->device for poplar::Tensor
   PopStreamId h2dId(TensorId) const;
