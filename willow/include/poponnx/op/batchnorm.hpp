@@ -77,7 +77,7 @@ public:
 
   void appendAttributes(OpSerialiserBase &) const override;
 
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
 private:
   float epsilon;
