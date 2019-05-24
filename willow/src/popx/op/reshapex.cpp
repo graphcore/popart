@@ -15,16 +15,32 @@ void ReshapeOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(ReshapeOp::getOutIndex(), outTensor);
 }
 
-ReshapeOpx::ReshapeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+void ReshapeInplaceOpx::grow(poplar::program::Sequence &) const {
+  auto outTensor = getInTensor(ReshapeOp::getInIndex());
+  outTensor = outTensor.reshape(outInfo(ReshapeOp::getOutIndex()).shape_szt());
+  setOutTensor(ReshapeOp::getOutIndex(), outTensor);
+}
+
+ReshapeBaseOpx::ReshapeBaseOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  verifyOp<ReshapeBaseOp>(op);
+}
+
+ReshapeOpx::ReshapeOpx(Op *op, Devicex *devicex) : ReshapeBaseOpx(op, devicex) {
   verifyOp<ReshapeOp>(op);
 }
 
-InputCreatorType ReshapeOpx::getInputCreatorType(InIndex) const {
+ReshapeInplaceOpx::ReshapeInplaceOpx(Op *op, Devicex *devicex)
+    : ReshapeBaseOpx(op, devicex) {
+  verifyOp<ReshapeInplaceOp>(op);
+}
+
+InputCreatorType ReshapeBaseOpx::getInputCreatorType(InIndex) const {
   return InputCreatorType::CANUNWIND;
 }
 
-poplar::Tensor
-ReshapeOpx::unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const {
+poplar::Tensor ReshapeBaseOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                  InIndex,
+                                                  OutIndex) const {
   return tensor.reshape(inInfo(ReshapeOp::getInIndex()).shape_szt());
 }
 
@@ -35,6 +51,8 @@ ReshapeGradOpx::ReshapeGradOpx(Op *op, Devicex *devicex)
 
 namespace {
 OpxCreator<ReshapeOpx> reshapeOpxCreator(Onnx::Operators::Reshape_5);
+OpxCreator<ReshapeInplaceOpx>
+    reshapeInplaceOpxCreator(Onnx::CustomOperators::ReshapeInplace);
 OpxCreator<ReshapeGradOpx>
     reshapeGradOpxCreator(Onnx::GradOperators::ReshapeGrad);
 } // namespace

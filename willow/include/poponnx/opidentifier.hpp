@@ -885,6 +885,7 @@ const static AiGraphcoreOpIdV1 SgdVarUpdate("SGDVarUpdate");
 const static AiGraphcoreOpIdV1 ConstSgdVarUpdate("ConstSGDVarUpdate");
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
 const static AiGraphcoreOpIdV1 FlattenInplace("FlattenInplace");
+const static AiGraphcoreOpIdV1 ReshapeInplace("ReshapeInplace");
 const static AiGraphcoreOpIdV1 SubsampleInplace("SubsampleInplace");
 
 const static AiGraphcoreOpIdV1 ConvFlipWeights("ConvFlipWeights");

@@ -11,14 +11,25 @@ class ReshapeGradOp;
 
 namespace popx {
 
-class ReshapeOpx : public Opx {
+class ReshapeBaseOpx : public Opx {
 public:
-  ReshapeOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  ReshapeBaseOpx(Op *, Devicex *);
   InputCreatorType getInputCreatorType(InIndex) const final;
   poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
                                     InIndex inIndex,
                                     OutIndex outIndex) const final;
+};
+
+class ReshapeOpx : public ReshapeBaseOpx {
+public:
+  ReshapeOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
+class ReshapeInplaceOpx : public ReshapeBaseOpx {
+public:
+  ReshapeInplaceOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
 };
 
 // The gradient of a reshape is the reshape in reverse
