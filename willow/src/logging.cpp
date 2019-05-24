@@ -97,6 +97,8 @@ Module moduleFromString(const std::string &module) {
     return Module::opx;
   if (module == "ces")
     return Module::ces;
+  if (module == "python")
+    return Module::python;
 
   return Module::none;
 }
@@ -134,6 +136,9 @@ std::string moduleName(const Module m) {
     break;
   case Module::ces:
     module = "ces";
+    break;
+  case Module::python:
+    module = "python";
     break;
   case Module::none:
   default:
@@ -247,7 +252,7 @@ void configure(const std::map<std::string, std::string> &config) {
   logging::debug("Logging levels configured as {}", ss.str());
 }
 
-void log(Module m, Level l, std::string &&msg) {
+void log(Module m, Level l, const std::string &&msg) {
   LoggingContext::getLogger(m)->log(translate(l), msg);
 }
 

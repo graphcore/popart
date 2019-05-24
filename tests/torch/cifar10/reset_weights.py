@@ -82,7 +82,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
 
     trainset = get_trainset()
 
-    stepLoader = torch.utils.data.DataLoader(
+    stepLoader = poponnx.DataLoader(
         trainset,
         # the amount of data loaded for each step.
         # note this is not the batch size, it's the "step" size
@@ -118,7 +118,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
             inputs = {}
             for tenId in cifarInIndices.keys():
                 inputs[tenId] = \
-                    addStepDimension(data[cifarInIndices[tenId]].numpy(),
+                    addStepDimension(data[cifarInIndices[tenId]],
                                      session.dataFeed.batchesPerStep())
             stepi += 1
 

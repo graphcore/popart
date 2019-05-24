@@ -83,15 +83,16 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     # write ONNX Model to file
     torchWriter.saveModel(fnModel=fnModel0)
 
-    stepLoader = torch.utils.data.DataLoader(
+    stepLoader = poponnx.DataLoader(
         trainset,
         # the amount of data loaded for each step.
         # note this is not the batch size, it's the "step" size
         # (samples per step)
         batch_size=torchWriter.samplesPerBatch * dataFeed.batchesPerStep(),
-        #single-threaded non-random data loading
+        tensor_type='float32',
+        #non-random data loading
         shuffle=False,
-        num_workers=0)
+        num_workers=2)
 
     deviceManager = poponnx.DeviceManager()
 
@@ -310,7 +311,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             inputs = {}
             for tenId in cifarInIndices.keys():
                 inputs[tenId] = \
-                    addStepDimension(stepData[cifarInIndices[tenId]].numpy(),
+                    addStepDimension(stepData[cifarInIndices[tenId]],
                                      session.dataFeed.batchesPerStep())
 
             if mode == "train":

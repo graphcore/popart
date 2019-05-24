@@ -64,6 +64,7 @@ enum class Module {
   op,        /// Op module
   opx,       /// Opx module
   ces,       /// Const Expr module
+  python,    /// The python module
   none       /// The undefined module
 };
 
@@ -84,7 +85,7 @@ void flush(Module m);
 
 // Log a message. You should probably use the MAKE_LOG_TEMPLATE macros
 // instead, e.g. logging::debug("A debug message").
-void log(Module m, Level l, std::string &&msg);
+void log(Module m, Level l, const std::string &&msg);
 
 // Log a formatted message. This uses the `fmt` C++ library for formatting.
 // See https://github.com/fmtlib/fmt for details. You should probably use
