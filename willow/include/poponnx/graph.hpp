@@ -36,7 +36,7 @@ public:
   // and returns the Op's OpId
   OpId moveIntoGraph(std::unique_ptr<Op> op);
 
-  std::vector<Graph *> getCalledGraphs() const;
+  std::vector<const Graph *> getCalledGraphs() const;
 
   // called from growFromNode and many other places where Ops created
   // T requires functions input(int) and input_size()

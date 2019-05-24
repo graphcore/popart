@@ -16,7 +16,7 @@ void CallOp::setup() {}
 
 std::unique_ptr<Op> CallOp::clone() const { return make_unique<CallOp>(*this); }
 
-Graph &CallOp::getCalledGraph() { return callee.get(); }
+const Graph &CallOp::getCalledGraph() const { return callee.get(); }
 
 void CallOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
@@ -37,6 +37,18 @@ bool CallOp::isInputModified(InIndex index) {
   }
 
   return false;
+}
+
+std::vector<const Graph *> CallOp::getCalledGraphs() const {
+  return {&getCalledGraph()};
+}
+
+std::vector<TensorId> CallOp::getInputsForGraph(const Graph &) const {
+  std::vector<TensorId> result;
+  for (int i = 0; i < input->n(); i++) {
+    result.push_back(inId(i));
+  }
+  return result;
 }
 
 } // namespace poponnx

@@ -163,7 +163,7 @@ def op_tester(tmpdir):
             inputs = {}
             for k, v in bld._input_map.items():
                 if self.options.replicatedGraphCount > 1:
-                    um = (4, )
+                    um = (self.options.replicatedGraphCount, )
                     um = um + tuple([1] * np.ndim(v))
                     inputs[k] = np.tile(v, um)
                 else:

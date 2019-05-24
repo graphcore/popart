@@ -25,9 +25,6 @@ public:
   static InIndex getBiasInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 
-  // T7721: make add bias cachable
-  bool isOutlineable() const override { return false; }
-
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 

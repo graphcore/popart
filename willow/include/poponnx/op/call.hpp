@@ -14,13 +14,17 @@ public:
   void setup() final;
   std::unique_ptr<Op> clone() const final;
 
-  Graph &getCalledGraph();
+  const Graph &getCalledGraph() const;
 
   void appendAttributes(OpSerialiserBase &os) const override;
 
   bool isInputModified(InIndex);
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+  std::vector<const Graph *> getCalledGraphs() const override;
+
+  std::vector<TensorId> getInputsForGraph(const Graph &) const override;
 
 private:
   std::reference_wrapper<Graph> callee;

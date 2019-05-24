@@ -1821,13 +1821,13 @@ std::vector<const Graph *> Ir::getGraphSchedule() const {
       return;
     }
 
-    // schedule all called graphs first
+    // add graph to schedule
+    sorted.push_back(graph);
+
+    // schedule all called graphs
     for (auto g : graph->getCalledGraphs()) {
       scheduleGraph(g);
     }
-
-    // add graph to schedule
-    sorted.push_back(graph);
   };
 
   scheduleGraph(&getMainGraph());
@@ -1843,10 +1843,31 @@ std::vector<const Graph *> Ir::getGraphSchedule() const {
 
 std::vector<Op *> Ir::getOpSchedule(const OpsBeforeKey &gCons) const {
   std::vector<Op *> sorted;
-  for (auto graph : getGraphSchedule()) {
-    auto sorted_graph = graph->getOpSchedule(gCons);
-    sorted.insert(sorted.end(), sorted_graph.begin(), sorted_graph.end());
-  }
+  std::set<const Graph *> addedGraphs;
+
+  std::function<void(const Graph *)> addGraph;
+  addGraph = [&](const Graph *graph) {
+    // Only add each graph once
+    if (addedGraphs.find(graph) != addedGraphs.end()) {
+      return;
+    }
+    addedGraphs.insert(graph);
+
+    // Add each op in the graph
+    for (auto op : graph->getOpSchedule(gCons)) {
+      // If the op calls another graph
+      // the ops in that graph should be scheduled first
+      for (auto calledGraph : op->getCalledGraphs()) {
+        addGraph(calledGraph);
+      }
+
+      sorted.push_back(op);
+    }
+  };
+
+  // Start adding ops from the main graph
+  addGraph(&getMainGraph());
+
   return sorted;
 }
 

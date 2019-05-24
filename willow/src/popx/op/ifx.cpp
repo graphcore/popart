@@ -18,12 +18,7 @@ void IfOpx::copyInputs(poplar::program::Sequence &prog,
   for (auto &id : input_ids) {
     auto ifop_input      = get(id);
     auto branch_input_id = (Scope() / graph_id / id).str();
-
-    if (!dv_p->tensors.contains(branch_input_id)) {
-      dv_p->tensors.insert(branch_input_id, graph().clone(ifop_input));
-    }
-
-    auto branch_input = get(branch_input_id);
+    auto branch_input    = get(branch_input_id);
     poplar::program::Copy copy_prog(ifop_input, branch_input);
     prog.add(copy_prog);
   }
@@ -56,10 +51,6 @@ void IfOpx::copyOutputs(poplar::program::Sequence &prog,
 
 void IfOpx::callBranch(poplar::program::Sequence &prog,
                        const Graph &graph) const {
-  if (!dv_p->containsFragment(graph)) {
-    dv_p->createFragmentAndGrow(graph);
-  }
-
   auto &branch_prog = dv_p->programFragment(graph);
   prog.add(branch_prog);
 }

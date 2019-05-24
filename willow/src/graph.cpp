@@ -59,22 +59,13 @@ void Graph::addOutput(const TensorId &tensorId) {
   graph_outputs.push_back(tensorId);
 }
 
-std::vector<Graph *> Graph::getCalledGraphs() const {
-  std::vector<Graph *> called;
+std::vector<const Graph *> Graph::getCalledGraphs() const {
+  std::vector<const Graph *> called;
 
   for (auto &id_op : getOps()) {
     auto op = id_op.second.get();
-    if (op->isConvertibleTo<IfOp>()) {
-      auto ifop = dynamic_cast<IfOp *>(op);
-
-      auto then_id = GraphId(ifop->getThenScope().str());
-      called.push_back(&ir.getGraph(then_id));
-
-      auto else_id = GraphId(ifop->getElseScope().str());
-      called.push_back(&ir.getGraph(else_id));
-    } else if (op->isConvertibleTo<CallOp>()) {
-      auto callop = dynamic_cast<CallOp *>(op);
-      called.push_back(&callop->getCalledGraph());
+    for (auto graph : op->getCalledGraphs()) {
+      called.push_back(graph);
     }
   }
 

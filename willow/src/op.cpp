@@ -225,6 +225,12 @@ void Op::appendAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("scope", getScope());
 }
 
+std::vector<const Graph *> Op::getCalledGraphs() const { return {}; }
+
+std::vector<TensorId> Op::getInputsForGraph(const Graph &) const {
+  throw error("Op does not call any graphs");
+}
+
 const std::string &Op::name() const { return getName(); }
 
 Op::Op(const Op &op)

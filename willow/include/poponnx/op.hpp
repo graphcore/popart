@@ -291,6 +291,13 @@ public:
   // should be overridden if the derived class has additional attributes.
   virtual void appendAttributes(OpSerialiserBase &) const;
 
+  // All graph that this op may call during its execution
+  virtual std::vector<const Graph *> getCalledGraphs() const;
+
+  // The op inputs that are used as inputs for the graph,
+  // in the order they will be used for the graph.
+  virtual std::vector<TensorId> getInputsForGraph(const Graph &) const;
+
 private:
   virtual void appendMore(OpSerialiserBase &) const {}
 
