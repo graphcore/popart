@@ -174,7 +174,12 @@ std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
 
 TensorInfo npOut(const TensorInfo &i0, const TensorInfo &i1) {
   if (i0.dataType() != i1.dataType()) {
-    throw error("np broadcasting failed, incompatible types");
+    throw error(("np broadcasting failed, incompatible types {} and {} "
+                 "(shapes {} and {})"),
+                i0.data_type(),
+                i1.data_type(),
+                i0.shape(),
+                i1.shape());
   }
 
   return {i0.dataType(), npOut(i0.shape(), i1.shape())};

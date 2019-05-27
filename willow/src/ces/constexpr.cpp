@@ -4,6 +4,7 @@
 #include <poponnx/ces/castce.hpp>
 #include <poponnx/ces/concatce.hpp>
 #include <poponnx/ces/constexpr.hpp>
+#include <poponnx/ces/gatherce.hpp>
 #include <poponnx/ces/reshapece.hpp>
 #include <poponnx/ces/scalece.hpp>
 #include <poponnx/ces/slicece.hpp>
@@ -150,6 +151,7 @@ void ConstExprOpManager::registerConstOps() {
   registerConstOp<ConstExprConcat>("Concat");
   registerConstOp<ConstExprUnsqueeze>("Unsqueeze");
   registerConstOp<ConstExprReshape>("Reshape");
+  registerConstOp<ConstExprGather>("Gather");
 }
 
 std::unique_ptr<ConstExprOp> ConstExprOpManager::createConstExprOp(Op *op) {
