@@ -143,7 +143,7 @@ struct SessionOptions {
   bool compileEngine = true;
 
   // An optimization for an inference session to have constant weights, true by
-  // default Set this option to false if you are going to want to change the
+  // default. Set this option to false if you are going to want to change the
   // weights with a call to resetHostWeights after the session has been
   // prepared. This option has no effect on a training session
   bool constantWeights = true;

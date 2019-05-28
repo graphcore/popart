@@ -105,5 +105,63 @@ def test_train_then_infer_via_file():
     inference_anchors = inference_session.initAnchorArrays()
     inference_inputs = {input: input_data}
 
-    inference_session.run(
-        poponnx.PyStepIO(inference_inputs, inference_anchors))
+    inference_session.run(poponnx.PyStepIO(inference_inputs,
+                                           inference_anchors))
+
+
+def test_cannot_call_resethostweights_with_constant_weights():
+
+    builder = poponnx.Builder()
+
+    input_shape = poponnx.TensorInfo("FLOAT", [1, 2, 4, 4])
+
+    weight_data = np.ones([3, 2, 3, 3], np.float32)
+    input = builder.addInputTensor(input_shape)
+    weights = builder.addInitializedInputTensor(weight_data)
+    act = builder.aiOnnx.conv([input, weights],
+                              dilations=[1, 1],
+                              pads=[1, 1, 1, 1],
+                              strides=[1, 1])
+    o = builder.aiOnnx.relu([act])
+
+    builder.addOutputTensor(o)
+
+    opts = poponnx.SessionOptions()
+    opts.constantWeights = True  # Fix weights in inference session
+
+    # ----------------------------------------------
+
+    # Create the device
+    options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
+    device = poponnx.DeviceManager().createIpuModelDevice(options)
+    device.attach()
+
+    # ----------------------------------------------
+
+    # Prepare the input data
+    input_data = np.ones(input_shape.shape(), dtype=np.float32)
+
+    # ----------------------------------------------
+
+    # Prepare the Inference session
+    inference_dataFlow = poponnx.DataFlow(1,
+                                          {o: poponnx.AnchorReturnType("ALL")})
+
+    inference_session = poponnx.InferenceSession(
+        fnModel=builder.getModelProto(),
+        dataFeed=inference_dataFlow,
+        userOptions=opts,
+        deviceInfo=device)
+
+    # Compile the inference graph
+    inference_session.prepareDevice()
+
+    # Create a file with some weights
+    inference_session.modelToHost("test.onnx")
+
+    ## Load the updated weights from the training session
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        inference_session.resetHostWeights("test.onnx")
+
+    assert (e_info.value.args[0].startswith(
+        "Cannot call resetHostWeights when constantWeights is set"))
