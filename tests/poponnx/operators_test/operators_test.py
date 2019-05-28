@@ -926,6 +926,190 @@ def test_argmax_no_keepdims(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
+def test_ceil(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 6 - 3  # numbers in range [-3, 3]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.ceil([i1], "test_ceil")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = np.ceil(d1)
+        return [result.astype(np.float32)]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_ceil_inplace(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 10  # numbers in range [0, 10]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        # Pad with ops to allow in-placing
+        log = builder.aiOnnx.log([i1])
+        ceil = builder.aiOnnx.ceil([log], "test_ceil")
+        o = builder.aiOnnx.exp([ceil])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = np.exp(np.ceil(np.log(d1)))
+        return [result.astype(np.float32)]
+
+    op_tester.passes = ['InPlace']
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_ceil_grad(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 6 - 3  # numbers in range [-3, 3]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.ceil([i1], "test_ceil")
+        builder.addOutputTensor(o)
+        return [o, poponnx.reservedGradientPrefix() + o]
+
+    def reference(ref_data):
+        return [np.ceil(d1 * 0).astype(np.float32)]
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        op_tester.run(init_builder, reference, 'train')
+
+    assert (e_info.value.args[0].startswith(
+        "PopONNX does not have a valid grad op"))
+
+
+def test_floor(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 6 - 3  # numbers in range [-3, 3]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.floor([i1], "test_floor")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = np.floor(d1)
+        return [result.astype(np.float32)]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_floor_inplace(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 10  # numbers in range [0, 10]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        # Pad with ops to allow in-placing
+        log = builder.aiOnnx.log([i1])
+        floor = builder.aiOnnx.floor([log], "test_floor")
+        o = builder.aiOnnx.exp([floor])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = np.exp(np.floor(np.log(d1)))
+        return [result.astype(np.float32)]
+
+    op_tester.passes = ['InPlace']
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_floor_grad(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 6 - 3  # numbers in range [-3, 3]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.floor([i1], "test_floor")
+        builder.addOutputTensor(o)
+        return [o, poponnx.reservedGradientPrefix() + o]
+
+    def reference(ref_data):
+        return [np.floor(d1 * 0).astype(np.float32)]
+
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        op_tester.run(init_builder, reference, 'train')
+
+    assert (e_info.value.args[0].startswith(
+        "PopONNX does not have a valid grad op"))
+
+
+def test_clip(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 6 - 3  # numbers in range [-3, 3]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.clip([i1], min=-1.5, max=1.5)
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1)
+        result = torch.clamp(a, min=-1.5, max=1.5)
+        return [result]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_clip_inplace(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 10  # numbers in range [0, 10]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        # Pad with ops to allow in-placing
+        log = builder.aiOnnx.log([i1])
+        clip = builder.aiOnnx.clip([log], min=4, max=7)
+        o = builder.aiOnnx.exp([clip])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        a = torch.tensor(d1)
+        result = torch.exp(torch.clamp(torch.log(a), min=4, max=7))
+        return [result]
+
+    op_tester.passes = ['InPlace']
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_clip_grad(op_tester):
+    d1 = np.random.rand(2, 7).astype(np.float32)
+    d1 = d1 * 6 - 3  # numbers in range [-3, 3]
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.clip([i1], min=-1.5, max=1.5)
+        builder.addOutputTensor(o)
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i1,
+            poponnx.reservedGradientPrefix() + o
+        ]
+
+    def reference(ref_data):
+        a = torch.tensor(d1, requires_grad=True)
+        b = torch.clamp(a, min=-1.5, max=1.5)
+        d__o = ref_data.getOutputTensorGrad(0)
+        b.backward(torch.tensor(d__o))
+        print(b)
+        print(a.grad)
+        print("b grad", b.grad)
+        return [b, a.grad, None]
+
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'train')
+
+
 def test_argmax_keepdims(op_tester):
     d1 = np.random.rand(5, 7, 11, 13).astype(np.float32)
     axis = 0
