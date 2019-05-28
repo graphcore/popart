@@ -33,13 +33,13 @@ Adding operations to the graph
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The builder adds operations to the graph by calling one of the many
-operation methods.  For instance `acos` with add an arc-cosine ONNX operation
+operation methods.  For instance `relu` will add a relu ONNX operation
 to the graph.  Each of these methods follows a common signature, for
 instance:
 
 ::
 
-  output = builder.aiOnnx.acos([input], "debug-name")
+  output = builder.aiOnnx.relu([input], "debug-name")
 
 They take a list of arguments which are the input tensor names, and an optional
 string to assign to the node.  This name is passed to the Poplar nodes.  It returns
@@ -85,7 +85,10 @@ For instance, to place a specific convolution onto IPU 1:
 
   we = builder.addInitializedInputTensor(np.zeros([32, 4, 3, 3], np.float16))
   bi = builder.addInitializedInputTensor(np.zeros([32], np.float16))
-  o = builder.aiOnnx.conv([x, we, bi], [1, 1], [1, 1, 1, 1], [1, 1])
+  o = builder.aiOnnx.conv([x, we, bi],
+                          dilations=[1, 1],
+                          pads=[1, 1, 1, 1],
+                          strides=[1, 1])
   builder.virtualGraph(o, 1)
 
 

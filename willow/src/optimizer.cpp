@@ -112,8 +112,10 @@ void SGD::resetTensorDatas(Graph &graph) const {
   // Note: scaling weightDecay scalar by learnRate on host
   // to allow for efficient implementation of weight update
   // on the device
-  resetTensor(getWeightDecayId(DataType::FLOAT), weightDecay() * learnRate());
-  resetTensor(getWeightDecayId(DataType::FLOAT16), weightDecay() * learnRate());
+  resetTensor(getWeightDecayId(DataType::FLOAT),
+              1 - (weightDecay() * learnRate()));
+  resetTensor(getWeightDecayId(DataType::FLOAT16),
+              1 - (weightDecay() * learnRate()));
 }
 
 void ConstSGD::setTensorData(Tensor *) const {

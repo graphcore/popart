@@ -12,3 +12,5 @@ add_poponnx_cpp_unit_test(slice_ce_test slice_ce_test.cpp)
 add_poponnx_cpp_unit_test(concat_ce_test concat_ce_test.cpp)
 add_poponnx_cpp_unit_test(unsqueeze_ce_test unsqueeze_ce_test.cpp)
 add_poponnx_cpp_unit_test(gemm_decomposition_ce_test gemm_decomposition_ce_test.cpp)
+add_poponnx_cpp_unit_test(gather_ce_test gather_ce_test.cpp)
+

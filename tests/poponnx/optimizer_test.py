@@ -91,8 +91,8 @@ def test_sgd_param_check():
         assert (np.array_equal(anchorsArrays["learnRate_FLOAT"][0], stepLr))
         # The weight decay tensor is scaled by lr on the host
         # before training
-        assert (np.array_equal(anchorsArrays["weightDecay_FLOAT"][0],
-                               stepWd * stepLr))
+        scaled = 1 - (stepWd * stepLr)
+        assert (np.allclose(anchorsArrays["weightDecay_FLOAT"][0], scaled))
 
 
 def test_constsgd_vs_sgd():
