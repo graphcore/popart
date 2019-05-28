@@ -33,11 +33,10 @@ constructed.
 ::
 
   l = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
-  o = poponnx.ConstSGD(0.01)
+  opt = poponnx.ConstSGD(0.01)
   df = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
   device = poponnx.DeviceManager().createCpuDevice()
-  s = poponnx.TrainingSession("onnx.pb", deviceInfo=device, dataFeed=df, losses=l, optimzier=o)
-
+  s = poponnx.TrainingSession("onnx.pb", deviceInfo=device, dataFeed=df, losses=l, optimizer=opt)
 
 
 Other parameters are required for constructing a session to train a
@@ -199,11 +198,12 @@ updated to reflect changes to them that the optimizer has made.
 Fetching the trained parameters
 ===============================
 
-The method `modelToHost` returns a model with updated weights.
+The method `modelToHost` writes a model with updated weights
+to the file at the provided path.
 
 ::
 
-  trained_model = session.modelToHost()
+  session.modelToHost("trained_model.onnx")
 
 
 Retrieving Poplar compilation and execution reports

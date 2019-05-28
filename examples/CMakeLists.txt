@@ -8,6 +8,13 @@ add_custom_command(TARGET poponnx_examples
                    ${CMAKE_BINARY_DIR}/examples/python
 )
 
+# Required for including examples in documentation
+add_custom_command(TARGET poponnx_examples
+  COMMAND cmake -E copy_directory
+                   ${CMAKE_SOURCE_DIR}/examples/cplusplus
+                   ${CMAKE_BINARY_DIR}/examples/cplusplus
+)
+
 
 add_custom_target(poponnx_run_examples
   DEPENDS poponnx_examples
