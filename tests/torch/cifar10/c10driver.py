@@ -92,7 +92,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         tensor_type='float32',
         #non-random data loading
         shuffle=False,
-        num_workers=2)
+        num_workers=0)
 
     deviceManager = poponnx.DeviceManager()
 

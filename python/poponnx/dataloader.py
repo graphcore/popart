@@ -563,7 +563,7 @@ class _DataLoaderIter(object):
                     self.processing_times.clear()
             else:
                 batch = self.collate_fn([self.dataset[i] for i in indices])
-            return batch
+            return [x.numpy() for x in batch]
 
         # check if the next sample has already been generated
         if self.rcvd_idx in self.reorder_dict:
