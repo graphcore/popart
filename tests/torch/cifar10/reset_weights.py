@@ -24,10 +24,8 @@ def get_trainset():
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
 
-    trainset = datasets.CIFAR10(root=c10datadir,
-                                train=True,
-                                download=True,
-                                transform=transform)
+    trainset = datasets.CIFAR10(
+        root=c10datadir, train=True, download=True, transform=transform)
 
     return trainset
 
@@ -90,8 +88,7 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
         # note this is not the batch size, it's the "step" size
         # (samples per step)
         batch_size=torchWriter.samplesPerBatch * dataFeed.batchesPerStep(),
-        shuffle=False,
-        num_workers=3)
+        shuffle=False)
 
     poponnx.getLogger().setLevel("TRACE")
     poponnx.getLogger("session").setLevel("WARN")
@@ -213,12 +210,13 @@ willowOptPasses = poponnx.Patterns()
 class Module0(torch.nn.Module):
     def __init__(self):
         torch.nn.Module.__init__(self)
-        self.conv1 = torch.nn.Conv2d(nChans,
-                                     nChans,
-                                     kernel_size=(3, 3),
-                                     stride=1,
-                                     padding=(1, 3),
-                                     bias=False)
+        self.conv1 = torch.nn.Conv2d(
+            nChans,
+            nChans,
+            kernel_size=(3, 3),
+            stride=1,
+            padding=(1, 3),
+            bias=False)
         self.relu = torch.nn.functional.relu
 
     def forward(self, inputs):
