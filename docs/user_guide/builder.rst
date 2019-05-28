@@ -108,4 +108,5 @@ specific IPU together:
   with builder.virtualGraph(1):
       o = builder.aiOnnx.add([o1, o2])
 
-
+Alternatively, for automatic placement of nodes on available IPUs, use the
+session option `autoVirtualGraph`.  See `SessionOptions`.

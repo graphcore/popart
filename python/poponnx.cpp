@@ -195,6 +195,30 @@ public:
   void setLevel(const std::string &level) {
     logging::configure({{name, level}});
   }
+
+  void debug(const std::string &info) {
+    logging::log(
+        logging::Module::python, logging::Level::Debug, std::move(info));
+  }
+
+  void info(const std::string &info) {
+    logging::log(
+        logging::Module::python, logging::Level::Info, std::move(info));
+  }
+
+  void warn(const std::string &info) {
+    logging::log(
+        logging::Module::python, logging::Level::Warn, std::move(info));
+  }
+
+  void error(const std::string &info) {
+    logging::log(logging::Module::python, logging::Level::Err, std::move(info));
+  }
+
+  void critical(const std::string &info) {
+    logging::log(
+        logging::Module::python, logging::Level::Critical, std::move(info));
+  }
 };
 
 // The following code allow boost optional to be used in the C++ interface and
@@ -216,7 +240,13 @@ PYBIND11_MODULE(poponnx_core, m) {
   m.def("versionString", &poponnx::core::versionString);
   m.def("packageHash", &poponnx::core::packageHash);
 
-  py::class_<Logger>(m, "Logger").def("setLevel", &Logger::setLevel);
+  py::class_<Logger>(m, "Logger")
+      .def("setLevel", &Logger::setLevel)
+      .def("debug", &Logger::debug)
+      .def("info", &Logger::info)
+      .def("warn", &Logger::warn)
+      .def("error", &Logger::error)
+      .def("critical", &Logger::critical);
 
   py::class_<OperatorIdentifier>(m, "OperatorIdentifier")
       .def(py::init<const std::string &, const std::string &, unsigned>(),

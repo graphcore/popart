@@ -219,3 +219,17 @@ of the graph since the last report was fetched.
 
 Both `getGraphReport` and `getExecutionReport` can optionally return a CBOR
 formatted report.
+
+TODO
+====
+
+Add sections on recomputation, automatic virtual graphs, running training+inference
+sessions, logging, different sorts of anchors, replication, updating optimizer
+params, high performance training tips.
+
+Expand optimizers and losses to include all available.
+
+Add something about the pytorch data feeder.
+
+Add API section - at least for the main user-facing classes InferenceSession,
+TrainingSession, SessionOptions.
