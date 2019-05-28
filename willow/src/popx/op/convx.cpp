@@ -49,6 +49,7 @@ static void printPoplinConvParams(const poplin::ConvParams &params) {
 static poplin::ConvParams getPoplarConvParams(const ConvParameters &param) {
   return poplin::ConvParams(
       popType(param.type),
+      popType(param.type),
       param.batchSize,
       vXtoY<int64_t, size_t>(param.inputShape),
       vXtoY<int64_t, size_t>(param.kernelShape),

@@ -399,7 +399,7 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
                             combinedBroadcastTs.first,  // A
                             combinedBroadcastTs.second, // B
                             prog,                       // prog
-
+                            combinedBroadcastTs.first.elementType(),
                             idStr(), // debugPrefix
                             // getPoplarOptions().toOptionFlags(),
                             dv_p->fwdMmOptions.toOptionFlags(), // options
@@ -530,6 +530,7 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
     auto result = poplin::createMatMulGroupedInputLHS(
         graph(),
         popType(getMatMulOp()->lhsIn()->info.dataType()),
+        popType(getMatMulOp()->lhsIn()->info.dataType()),
         lhsShape,
         rhsShape,
         name,
@@ -543,6 +544,7 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
   } else if (index == MatMulOp::getRhsInIndex()) {
     auto result = poplin::createMatMulGroupedInputRHS(
         graph(),
+        popType(getMatMulOp()->lhsIn()->info.dataType()),
         popType(getMatMulOp()->lhsIn()->info.dataType()),
         lhsShape,
         rhsShape,
@@ -675,7 +677,7 @@ void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
                             combinedBroadcastTs.first,  // A
                             combinedBroadcastTs.second, // B
                             prog,                       // prog
-
+                            combinedBroadcastTs.first.elementType(),
                             idStr(), // debugPrefix
                             // getPoplarOptions().toOptionFlags(), // options
                             dv_p->bwdMmLhsOptions.toOptionFlags(), // options
@@ -786,7 +788,8 @@ void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
                             combinedBroadcastTs.first,  // A
                             combinedBroadcastTs.second, // B
                             prog,                       // prog
-                            idStr(),                    // debugPrefix
+                            combinedBroadcastTs.first.elementType(),
+                            idStr(), // debugPrefix
                             // getPoplarOptions().toOptionFlags(), // options
                             dv_p->bwdMmRhsOptions.toOptionFlags(), // options
                             &dv_p->matmulCache);                   // cache
