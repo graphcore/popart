@@ -13,8 +13,8 @@ public:
   using ArgExtremaOpx::ArgExtremaOpx;
 
 private:
-  poplar::Tensor selectSlice(const poplar::Tensor &sorted,
-                             unsigned axis) const final;
+  poplar::Tensor extremaOp(poplar::program::Sequence &,
+                           const poplar::Tensor &) const final;
 };
 
 } // namespace popx

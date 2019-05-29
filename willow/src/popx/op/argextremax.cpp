@@ -1,3 +1,5 @@
+#include <popops/Cast.hpp>
+
 #include <poponnx/error.hpp>
 #include <poponnx/op/argextrema.hpp>
 #include <poponnx/popx/devicex.hpp>
@@ -7,22 +9,45 @@
 namespace poponnx {
 namespace popx {
 
-ArgExtremaOpx::ArgExtremaOpx(Op *op, Devicex *devicex)
-    : BaseSortOpx(op, devicex) {
+ArgExtremaOpx::ArgExtremaOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ArgExtremaOp>(op);
-  keepdims = dynamic_cast<ArgExtremaOp *>(op)->getKeepDims() != 0;
 }
 
 void ArgExtremaOpx::grow(poplar::program::Sequence &prog) const {
+  auto input         = getInTensor(0);
+  auto dims          = input.shape().size();
+  auto &argExtremaOp = getOp<ArgExtremaOp>();
+  auto axis          = argExtremaOp.getAxis();
 
-  // Use the specialised slice
-  poplar::Tensor values = selectSlice(growIndicesSort(prog), axis);
+  // The axis in which to compute the arg indices should be the last axis in
+  // axes. The rest of the axes should be in ascending order.
+  std::vector<unsigned int> axes(dims);
+  std::iota(axes.begin(), axes.end(), 0);
+  axes.erase(axes.begin() + axis);
+  axes.push_back(static_cast<unsigned int>(axis));
+  input = input.dimShuffle(axes);
 
-  // Squeeze out the axis dimension?
-  if (!keepdims) {
-    values = values.squeeze({axis});
+  // Reshape the input to a 2d tensor
+  auto shape        = input.shape();
+  std::size_t dim_0 = std::accumulate(
+      shape.begin(), shape.end() - 1, 1, std::multiplies<std::size_t>());
+  std::size_t dim_1 = shape.back();
+  input             = input.reshape({dim_0, dim_1});
+
+  // Do the extrema operation
+  auto result = extremaOp(prog, input);
+
+  std::vector<std::size_t> new_shape;
+  std::copy(shape.begin(), shape.end() - 1, std::back_inserter(new_shape));
+
+  if (argExtremaOp.getKeepDims()) {
+    new_shape.insert(new_shape.begin() + axis, 1);
   }
-  setOutTensor(ArgExtremaOp::getOutIndex(), values);
+
+  result = result.reshape(new_shape);
+
+  result = popops::cast(graph(), result, poplar::INT, prog, idStr());
+  setOutTensor(0, result);
 }
 
 } // namespace popx
