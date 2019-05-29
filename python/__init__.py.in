@@ -13,4 +13,3 @@ from poponnx.builder import Builder
 from poponnx.session import InferenceSession, TrainingSession
 from poponnx.options import SessionOptions
 from poponnx.tensorinfo import TensorInfo
-from poponnx.dataloader import DataLoader
