@@ -58,9 +58,6 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
   auto result = popnn::gn::groupNormalise(
       graph(), input, scale, b, mean, invStdDev, prog, idStr() + "/groupNorm");
 
-  // Then convert the invSd to the variance
-  auto var = convertInvSdToVar(prog, invStdDev, epsilon);
-
   // Convert the output back into the input format
   poplar::Tensor y =
       convertPoplarOutputToOnnxOutput(result.first, nonBroadcastDims);
@@ -68,7 +65,7 @@ void GroupNormOpx::grow(poplar::program::Sequence &prog) const {
   // Return the result
   setOutTensor(GroupNormOp::getYOutIndex(), y);
   setOutTensor(GroupNormOp::getMeanOutIndex(), mean);
-  setOutTensor(GroupNormOp::getVarOutIndex(), var);
+  setOutTensor(GroupNormOp::getInvStdDevOutIndex(), invStdDev);
 }
 
 GroupNormGradOpx::GroupNormGradOpx(Op *op, Devicex *devicex)
@@ -80,11 +77,11 @@ void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
 
   auto op = getOp<GroupNormGradOp>();
 
-  auto x     = getInTensor(GroupNormGradOp::getXInIndex());
-  auto yGrad = getInTensor(GroupNormGradOp::getYGradInIndex());
-  auto scale = getInTensor(GroupNormGradOp::getScaleInIndex());
-  auto mean  = getInTensor(GroupNormGradOp::getMeanInIndex());
-  auto var   = getInTensor(GroupNormGradOp::getVarInIndex());
+  auto x         = getInTensor(GroupNormGradOp::getXInIndex());
+  auto yGrad     = getInTensor(GroupNormGradOp::getYGradInIndex());
+  auto scale     = getInTensor(GroupNormGradOp::getScaleInIndex());
+  auto mean      = getInTensor(GroupNormGradOp::getMeanInIndex());
+  auto invStdDev = getInTensor(GroupNormGradOp::getInvStdDevInIndex());
 
   float epsilon = op.getEpsilon();
 
@@ -93,9 +90,6 @@ void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Shape nonBroadcastDims;
   std::tie(xP, nonBroadcastDims)     = convertOnnxInputToPoplarInput(x);
   std::tie(yGradP, nonBroadcastDims) = convertOnnxInputToPoplarInput(yGrad);
-
-  // Calculate inverse standard deviation
-  auto invStdDev = convertVarToInvSd(prog, var, epsilon);
 
   poplar::Tensor xWhitened = popnn::gn::groupNormWhiten(
       graph(), xP, mean, invStdDev, prog, idStr() + "/whitenedActs");

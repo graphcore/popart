@@ -24,7 +24,7 @@ public:
   // Ouput's
   static OutIndex getYOutIndex() { return 0; }
   static OutIndex getMeanOutIndex() { return 1; }
-  static OutIndex getVarOutIndex() { return 2; }
+  static OutIndex getInvStdDevOutIndex() { return 2; }
 
   // Attributes
   float getEpsilon() const { return epsilon; }
@@ -52,7 +52,7 @@ public:
   static InIndex getXInIndex() { return 0; }
   static InIndex getScaleInIndex() { return 1; }
   static InIndex getMeanInIndex() { return 2; }
-  static InIndex getVarInIndex() { return 3; }
+  static InIndex getInvStdDevInIndex() { return 3; }
   static InIndex getYGradInIndex() { return 4; }
 
   static OutIndex getXGradOutIndex() { return 0; }
