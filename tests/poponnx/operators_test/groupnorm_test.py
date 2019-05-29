@@ -25,11 +25,11 @@ def test_groupnorm_0(op_tester):
         i1 = builder.addInputTensor(d1)
         iScale = builder.addInputTensor(scale)
         iB = builder.addInputTensor(b)
-        (o_y, o_mean, o_var) = builder.aiGraphcore.groupnormalization(
+        (o_y, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
             [i1, iScale, iB], num_groups, epsilon)
         builder.addOutputTensor(o_y)
         return [
-            o_y, o_mean, o_var,
+            o_y, o_mean, o_invstd,
             poponnx.reservedGradientPrefix() + i1,
             poponnx.reservedGradientPrefix() + iB,
             poponnx.reservedGradientPrefix() + iScale,
@@ -64,9 +64,10 @@ def test_groupnorm_0(op_tester):
         v = _input.view(4, -1)
         # Get the mean and var
         _mean = v.mean(-1)
-        _var = v.var(-1, unbiased=False)
+        _invstd = 1 / v.std(-1, unbiased=False)
+        print(_invstd)
 
-        return [_y, _mean, _var, None, None, None, d__o]
+        return [_y, _mean, _invstd, None, None, None, d__o]
 
     op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
     op_tester.run(init_builder, reference, 'train')
@@ -92,13 +93,13 @@ def test_groupnorm_1(op_tester):
         i1 = builder.addInputTensor(d1)
         iScale = builder.addInputTensor(scale)
         iB = builder.addInputTensor(b)
-        (o_y, o_mean, o_var) = builder.aiGraphcore.groupnormalization(
+        (o_y, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
             [i1, iScale, iB], num_groups)
         builder.addOutputTensor(o_y)
         builder.addOutputTensor(o_mean)
-        builder.addOutputTensor(o_var)
+        builder.addOutputTensor(o_invstd)
         return [
-            o_y, o_mean, o_var,
+            o_y, o_mean, o_invstd,
             poponnx.reservedGradientPrefix() + i1,
             poponnx.reservedGradientPrefix() + iScale,
             poponnx.reservedGradientPrefix() + iB,
@@ -121,9 +122,11 @@ def test_groupnorm_1(op_tester):
         v = _input.view(2, -1)
         # Get the mean and var
         _mean = v.mean(-1)
-        _var = v.var(-1, unbiased=False)
 
-        return [_y, _mean, _var, _input.grad, m.weight.grad, m.bias.grad, d__o]
+        # Causes torch to an inf value.
+        # _invstd = 1 / v.std(-1, unbiased=False)
+
+        return [_y, _mean, None, _input.grad, m.weight.grad, m.bias.grad, d__o]
 
     op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
     op_tester.run(init_builder, reference, 'train')
@@ -181,9 +184,11 @@ def test_groupnorm_2(op_tester):
         v = _input.view(30, -1)
         # Get the mean and var
         _mean = v.mean(-1)
-        _var = v.var(-1, unbiased=False)
 
-        return [_y, _mean, _var, _input.grad, m.weight.grad, m.bias.grad, d__o]
+        # Causes torch to an inf value.
+        # _invstd = 1 / v.std(-1, unbiased=False)
+
+        return [_y, _mean, None, _input.grad, m.weight.grad, m.bias.grad, d__o]
 
     op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
     op_tester.run(init_builder, reference, 'train')
@@ -210,13 +215,13 @@ def test_groupnorm_3(op_tester):
         i1 = builder.addInputTensor(d1)
         iScale = builder.addInputTensor(scale)
         iB = builder.addInputTensor(b)
-        (o_y, o_mean, o_var) = builder.aiGraphcore.groupnormalization(
+        (o_y, o_mean, o_invstd) = builder.aiGraphcore.groupnormalization(
             [i1, iScale, iB], num_groups, epsilon)
         builder.addOutputTensor(o_y)
         builder.addOutputTensor(o_mean)
-        builder.addOutputTensor(o_var)
+        builder.addOutputTensor(o_invstd)
         return [
-            o_y, o_mean, o_var,
+            o_y, o_mean, o_invstd,
             poponnx.reservedGradientPrefix() + i1,
             poponnx.reservedGradientPrefix() + iScale,
             poponnx.reservedGradientPrefix() + iB,
@@ -239,9 +244,11 @@ def test_groupnorm_3(op_tester):
         v = _input.view(2, -1)
         # Get the mean and var
         _mean = v.mean(-1)
-        _var = v.var(-1, unbiased=False)
 
-        return [_y, _mean, _var, _input.grad, m.weight.grad, m.bias.grad, d__o]
+        # Causes torch to an inf value.
+        #_invstd = 1 / v.std(-1, unbiased=False)
+
+        return [_y, _mean, None, _input.grad, m.weight.grad, m.bias.grad, d__o]
 
     op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
     op_tester.run(init_builder, reference, 'train')

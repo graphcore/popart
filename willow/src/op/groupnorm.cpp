@@ -29,9 +29,10 @@ void GroupNormOp::setup() {
   outInfo(getYOutIndex()) = inInfo(getXInIndex());
 
   // For each sample (dimension 0), and each group, there is a single mean and a
-  // single variance
-  outInfo(getVarOutIndex())  = {inInfo(getXInIndex()).dataType(),
-                               {inInfo(getXInIndex()).dim(0) * num_groups}};
+  // single inverse standard deviation
+  outInfo(getInvStdDevOutIndex()) = {
+      inInfo(getXInIndex()).dataType(),
+      {inInfo(getXInIndex()).dim(0) * num_groups}};
   outInfo(getMeanOutIndex()) = {inInfo(getXInIndex()).dataType(),
                                 {inInfo(getXInIndex()).dim(0) * num_groups}};
 }
@@ -63,7 +64,9 @@ const std::vector<GradInOutMapper> &GroupNormGradOp::gradInputInfo() const {
       {getXInIndex(), GroupNormOp::getXInIndex(), GradOpInType::IN},
       {getScaleInIndex(), GroupNormOp::getScaleInIndex(), GradOpInType::IN},
       {getMeanInIndex(), GroupNormOp::getMeanOutIndex(), GradOpInType::OUT},
-      {getVarInIndex(), GroupNormOp::getVarOutIndex(), GradOpInType::OUT}};
+      {getInvStdDevInIndex(),
+       GroupNormOp::getInvStdDevOutIndex(),
+       GradOpInType::OUT}};
   return inInfo;
 }
 

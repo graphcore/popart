@@ -1138,6 +1138,14 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   auto f = [opx, this]() {
     logging::devicex::debug("Creating output tensors for " +
                             opx->op_p->debugName());
+
+    // The following code can be useful to debug floating point exceptions by
+    // printing the names of the op's as they are executed.
+    // poplar::Tensor d1 = masterGraph().addVariable(poplar::FLOAT, {1},
+    // opx->op_p->str()); masterGraph().setTileMapping(d1, 0);
+    // programFragment(opx->op_p->getGraph()).add(poplar::program::PrintTensor(opx->op_p->str(),
+    // d1));
+
     opx->grow(programFragment(opx->op_p->getGraph()));
   };
   return {priority, opTaskId(op), deps, f};
