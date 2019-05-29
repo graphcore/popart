@@ -1,3 +1,5 @@
+#include <popnn/Loss.hpp>
+
 #include <poponnx/error.hpp>
 #include <poponnx/op/argmax.hpp>
 #include <poponnx/popx/devicex.hpp>
@@ -7,12 +9,9 @@
 namespace poponnx {
 namespace popx {
 
-poplar::Tensor ArgMaxOpx::selectSlice(const poplar::Tensor &sorted,
-                                      unsigned axis) const {
-  const auto size = sorted.dim(axis);
-
-  // Take the last (maximum) slice
-  return sorted.slice(size - 1, size, axis);
+poplar::Tensor ArgMaxOpx::extremaOp(poplar::program::Sequence &prog,
+                                    const poplar::Tensor &input) const {
+  return popnn::argMax(graph(), input, prog, idStr());
 }
 
 namespace {

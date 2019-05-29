@@ -1,3 +1,5 @@
+#include <popnn/Loss.hpp>
+
 #include <poponnx/op/argmin.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/argminx.hpp>
@@ -6,10 +8,9 @@
 namespace poponnx {
 namespace popx {
 
-poplar::Tensor ArgMinOpx::selectSlice(const poplar::Tensor &sorted,
-                                      unsigned axis) const {
-  // Take the first (minimum) slice
-  return sorted.slice(0, 1, axis);
+poplar::Tensor ArgMinOpx::extremaOp(poplar::program::Sequence &prog,
+                                    const poplar::Tensor &input) const {
+  return popnn::argMin(graph(), input, prog, idStr());
 }
 
 namespace {

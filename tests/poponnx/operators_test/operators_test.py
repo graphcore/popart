@@ -908,6 +908,32 @@ def test_argmin_keepdims(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
+def _test_argmax(op_tester, data, axis, keepdims):
+    print(f'_test_argmax axis={axis}, keepdims={keepdims}')
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(data)
+        o = builder.aiOnnx.argmax([i1], axis, keepdims, "test_argmax")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        result = np.argmax(data, axis=axis)
+        if keepdims == 1:
+            result = np.expand_dims(result, axis)
+        return [result.astype(np.int32)]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_argmax_2d(op_tester):
+    data = np.random.rand(5, 6).astype(np.float32)
+    _test_argmax(op_tester, data, 0, 1)
+    _test_argmax(op_tester, data, 0, 0)
+    _test_argmax(op_tester, data, 1, 1)
+    _test_argmax(op_tester, data, 1, 0)
+
+
 def test_argmax_no_keepdims(op_tester):
     d1 = np.random.rand(5, 7, 11, 13).astype(np.float32)
     axis = 0

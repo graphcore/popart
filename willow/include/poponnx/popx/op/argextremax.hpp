@@ -2,21 +2,20 @@
 #define GUARD_NEURALNET_ARGEXTREMAX_HPP
 
 #include <poponnx/names.hpp>
-#include <poponnx/popx/op/basesortx.hpp>
+#include <poponnx/popx/opx.hpp>
 
 namespace poponnx {
 
 namespace popx {
 
-class ArgExtremaOpx : public BaseSortOpx {
+class ArgExtremaOpx : public Opx {
 public:
   ArgExtremaOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  void grow(poplar::program::Sequence &) const override;
 
 private:
-  bool keepdims;
-  virtual poplar::Tensor selectSlice(const poplar::Tensor &sorted,
-                                     unsigned axis) const = 0;
+  virtual poplar::Tensor extremaOp(poplar::program::Sequence &,
+                                   const poplar::Tensor &) const = 0;
 };
 
 } // namespace popx
