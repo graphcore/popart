@@ -52,7 +52,8 @@ BOOST_AUTO_TEST_CASE(PostNRepl_IdentityOp) {
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(tensorIds.back(), "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
@@ -106,7 +107,8 @@ BOOST_AUTO_TEST_CASE(PreUniRepl) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
@@ -155,7 +157,8 @@ BOOST_AUTO_TEST_CASE(OpToIdentity) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
@@ -201,7 +204,8 @@ BOOST_AUTO_TEST_CASE(GatherToIdentity) {
   // Create the IR
   auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
@@ -251,7 +255,8 @@ BOOST_AUTO_TEST_CASE(SplitConvBias) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
@@ -395,7 +400,8 @@ BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {
                             {reservedGradientPrefix() + input1, art},
                             {reservedGradientPrefix() + input2, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
@@ -445,7 +451,8 @@ BOOST_AUTO_TEST_CASE(ReciprocalGradOp) {
                             {reservedGradientPrefix() + input, art},
                             {"l1LossVal", art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(output, "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(output, "l1LossVal", 0.1, ReductionType::SUM)};
 
   auto opts      = SessionOptions();
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
@@ -513,7 +520,8 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{identOut, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(identOut, "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;

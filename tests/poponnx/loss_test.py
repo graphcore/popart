@@ -194,7 +194,14 @@ def test_nll_loss_grad_with_ignored_index():
                     poponnx.AnchorReturnType("ALL")
                 }),
             optimizer=poponnx.ConstSGD(0.001, 0.01),
-            losses=[poponnx.NllLoss(out, lb, "loss", ignore_index=ignoreInd)],
+            losses=[
+                poponnx.NllLoss(
+                    out,
+                    lb,
+                    "loss",
+                    ignore_index=ignoreInd,
+                    reduction=poponnx.ReductionType.Mean)
+            ],
             passes=poponnx.Patterns(patterns),
             deviceInfo=poponnx.DeviceManager().createCpuDevice())
 
@@ -228,7 +235,7 @@ def test_nll_loss_grad_with_ignored_index():
         return hook
 
     softmax = torch.nn.Softmax(dim=1)
-    loss = torch.nn.NLLLoss(reduction="sum", ignore_index=ignoreInd)
+    loss = torch.nn.NLLLoss(reduction="mean", ignore_index=ignoreInd)
 
     input = torch.tensor(ip_data, requires_grad=True)
     target = torch.tensor(lb_data)

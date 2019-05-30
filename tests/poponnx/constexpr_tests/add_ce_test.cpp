@@ -69,7 +69,8 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add0) {
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(outId, "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
@@ -155,7 +156,8 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Add1) {
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{outId, art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(outId, "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(outId, "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;

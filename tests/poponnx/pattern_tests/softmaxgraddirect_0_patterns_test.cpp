@@ -65,7 +65,8 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
     auto dataFlow = DataFlow(
         1, {{reservedGradientPrefix() + input1, art}, {"nllLossVal", art}});
     auto optimizer = ConstSGD(0.01);
-    std::vector<Loss *> losses{new NllLoss(softmaxOut, input2, "nllLossVal")};
+    std::vector<Loss *> losses{
+        new NllLoss(softmaxOut, input2, "nllLossVal", ReductionType::SUM)};
 
     if (sameIPU == false) {
       losses[0]->virtualGraph(1);

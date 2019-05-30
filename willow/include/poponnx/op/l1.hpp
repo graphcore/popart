@@ -9,7 +9,7 @@ namespace poponnx {
 class L1Loss : public Loss {
 public:
   // where lambda*|"input"|_1 = "output" (so output has rank 0)
-  L1Loss(TensorId input, TensorId output, float lambda);
+  L1Loss(TensorId input, TensorId output, float lambda, ReductionType rt);
   // There are no tensors streamed into this loss layer (unlike NLL for
   // example which has a label streamed in)
   std::vector<TensorId> getStreamTensorNames() const final;

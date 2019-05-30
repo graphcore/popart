@@ -116,7 +116,8 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     float lossLambda = 0.26;
     float learnRate  = 0.1;
     auto optimizer   = SGD(learnRate);
-    std::vector<Loss *> losses{new L1Loss(reduced, "l1LossVal", lossLambda)};
+    std::vector<Loss *> losses{
+        new L1Loss(reduced, "l1LossVal", lossLambda, ReductionType::SUM)};
 
     Ir ir;
     ir.prepare({modelProto,

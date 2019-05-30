@@ -37,7 +37,8 @@ BOOST_AUTO_TEST_CASE(Inplace_basic0) {
   // Create the IR
   auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
@@ -88,7 +89,8 @@ BOOST_AUTO_TEST_CASE(Inplace_basic1) {
   // Create the IR
   auto dataFlow  = DataFlow(1, {{out, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(out, "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;

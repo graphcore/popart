@@ -112,8 +112,8 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
 
     if (train) {
       optimizer.reset(new ConstSGD(0.01));
-      up_losses.push_back(
-          std::unique_ptr<L1Loss>(new L1Loss(out, "l1LossVal", 0.1)));
+      up_losses.push_back(std::unique_ptr<L1Loss>(
+          new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM)));
       losses = {up_losses[0].get()};
     }
 
@@ -273,8 +273,8 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   optimizer.reset(new ConstSGD(0.01));
-  up_losses.push_back(
-      std::unique_ptr<L1Loss>(new L1Loss(out, "l1LossVal", 0.1)));
+  up_losses.push_back(std::unique_ptr<L1Loss>(
+      new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM)));
   losses = {up_losses[0].get()};
 
   std::vector<Match> expected_train_matches = {

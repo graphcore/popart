@@ -225,8 +225,8 @@ auto main(int argc, char **argv) -> int {
 
   // 2.2 Loss(es).
   // 2.2.1 l1 loss : 0.1 * |output|_1
-  std::unique_ptr<poponnx::L1Loss> l1Loss(
-      new poponnx::L1Loss(outputs[0], "l1LossVal", 0.1f));
+  std::unique_ptr<poponnx::L1Loss> l1Loss(new poponnx::L1Loss(
+      outputs[0], "l1LossVal", 0.1f, poponnx::ReductionType::SUM));
   std::vector<poponnx::Loss *> losses{l1Loss.get()};
 
   // 2.3 Data streaming.

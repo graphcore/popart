@@ -130,7 +130,8 @@ BOOST_AUTO_TEST_CASE(Train0TopK) {
 
     float learnRate = 0.1;
     auto optimizer  = ConstSGD(learnRate);
-    std::vector<Loss *> losses{new L1Loss(halvedOut, "l1LossVal", lossLambda)};
+    std::vector<Loss *> losses{
+        new L1Loss(halvedOut, "l1LossVal", lossLambda, ReductionType::SUM)};
 
     auto session = poponnx::TrainingSession::createFromOnnxModel(
         proto,

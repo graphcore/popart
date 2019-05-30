@@ -69,8 +69,16 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
                      debugPrefix("Log"));
 
   if (nllloss->hasIgnoreIndex()) {
-    applyMaskInPlaceForIgnoredIndex(
+    auto lossMask = applyMaskInPlaceForIgnoredIndex(
         *this, graph(), reduction, label1D, nllloss->getIgnoreIndex(), prog);
+    if (nllloss->getReductionType() == ReductionType::MEAN) {
+      applyScalingInPlaceForMeanReductionWithIgnoreIndex(
+          *this, graph(), reduction, lossMask, prog);
+    }
+  } else {
+    if (nllloss->getReductionType() == ReductionType::MEAN) {
+      applyScalingInPlaceForMeanReduction(*this, graph(), reduction, prog);
+    }
   }
 
   // and negate it.
@@ -86,12 +94,67 @@ void NllOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0, reduction);
 }
 
-void NllOpx::applyMaskInPlaceForIgnoredIndex(const Opx &opx,
-                                             poplar::Graph &graph,
-                                             poplar::Tensor t,
-                                             poplar::Tensor labels,
-                                             int ignoreIndex,
-                                             poplar::program::Sequence &prog) {
+void NllOpx::applyScalingInPlaceForMeanReduction(
+    const Opx &opx,
+    poplar::Graph &graph,
+    poplar::Tensor t,
+    poplar::program::Sequence &prog) {
+  double totalSamples = static_cast<double>(opx.dv_p->getReplicationFactor()) *
+                        static_cast<double>(t.dim(0));
+  auto t_totalSamples = opx.getConst(
+      t.elementType(), {}, totalSamples, opx.debugPrefix("Samples"));
+  popops::mapInPlace(graph,
+                     popops::expr::BinaryOpType::DIVIDE,
+                     t,
+                     t_totalSamples,
+                     prog,
+                     opx.debugPrefix("Mean"));
+}
+
+void NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
+    const Opx &opx,
+    poplar::Graph &graph,
+    poplar::Tensor t,
+    poplar::Tensor mask,
+    poplar::program::Sequence &prog) {
+  // Determine the scale-factor for mean reduction dynamically from the
+  // mask.
+  // Any sample whose label index is the 'ignore index' should not be
+  // counted when scaling the loss/loss grad
+  if (mask.rank() == 2 && mask.dim(1) == 1) {
+    mask = mask.squeeze({1});
+  }
+  auto numNonIgnoredSamples =
+      popops::reduce(graph, mask, {0}, {popops::Operation::ADD}, prog);
+
+  auto repFactor =
+      opx.getConst(t.elementType(),
+                   {},
+                   static_cast<double>(opx.dv_p->getReplicationFactor()),
+                   opx.debugPrefix("ReplicationFactor"));
+
+  auto totalSamples = popops::map(graph,
+                                  popops::expr::BinaryOpType::MULTIPLY,
+                                  repFactor,
+                                  numNonIgnoredSamples,
+                                  prog,
+                                  opx.debugPrefix("TotalSamples"));
+
+  popops::mapInPlace(graph,
+                     popops::expr::BinaryOpType::DIVIDE,
+                     t,
+                     totalSamples,
+                     prog,
+                     opx.debugPrefix("Mean"));
+}
+
+poplar::Tensor
+NllOpx::applyMaskInPlaceForIgnoredIndex(const Opx &opx,
+                                        poplar::Graph &graph,
+                                        poplar::Tensor t,
+                                        poplar::Tensor labels,
+                                        int ignoreIndex,
+                                        poplar::program::Sequence &prog) {
   // Get the scalar ignoreIndex tensor. If it doens't already
   // exist, create it
   auto ignoreIndexTensor = graph.addConstant(
@@ -120,6 +183,8 @@ void NllOpx::applyMaskInPlaceForIgnoredIndex(const Opx &opx,
                      lossMask,
                      prog,
                      opx.debugPrefix("masked"));
+
+  return lossMask;
 }
 
 NllGradOpx::NllGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -177,8 +242,16 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   // Apply mask before reduction, so that ignored class doesn't
   // contribute to the loss gradient
   if (nllloss->hasIgnoreIndex()) {
-    NllOpx::applyMaskInPlaceForIgnoredIndex(
+    auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
         *this, graph(), oneHot, label1D, nllloss->getIgnoreIndex(), prog);
+    if (nllloss->getReductionType() == ReductionType::MEAN) {
+      NllOpx::applyScalingInPlaceForMeanReductionWithIgnoreIndex(
+          *this, graph(), oneHot, lossMask, prog);
+    }
+  } else {
+    if (nllloss->getReductionType() == ReductionType::MEAN) {
+      NllOpx::applyScalingInPlaceForMeanReduction(*this, graph(), oneHot, prog);
+    }
   }
 
   // Output is reshaped to match probs input shape
