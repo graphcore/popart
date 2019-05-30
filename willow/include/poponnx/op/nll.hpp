@@ -8,8 +8,12 @@ namespace poponnx {
 
 class NllLoss : public Loss {
 public:
-  NllLoss(TensorId probs, TensorId label, TensorId output);
-  NllLoss(TensorId probs, TensorId label, TensorId output, int ignoreIndex);
+  NllLoss(TensorId probs, TensorId label, TensorId output, ReductionType rt);
+  NllLoss(TensorId probs,
+          TensorId label,
+          TensorId output,
+          int ignoreIndex,
+          ReductionType rt);
 
   // label is the only streamed input tensor to this loss
   std::vector<TensorId> getStreamTensorNames() const final;

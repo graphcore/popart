@@ -120,7 +120,10 @@ def op_tester(tmpdir):
             else:
                 optimizer = None
 
-            losses = [poponnx.L1Loss(anchorIds[0], "l1LossVal", 0.1)]
+            losses = [
+                poponnx.L1Loss(anchorIds[0], "l1LossVal", 0.1,
+                               poponnx.ReductionType.Mean)
+            ]
             proto = bld.getModelProto()
 
             self.options.logDir = self.logging_dir
@@ -277,8 +280,10 @@ def test_weight_update(op_tester):
         # forward
         o = module([a])
 
-        loss = 0.1 * torch.norm(o, 1)
-        loss.backward()
+        loss = torch.nn.L1Loss(reduction="mean")
+        target = torch.zeros(o.size())
+        output = 0.1 * loss(o, target)
+        output.backward()
         optimizer.step()
 
         return [o, b.grad, module.B.data, module.C.data]
@@ -348,8 +353,10 @@ def test_weight_update_replicated(op_tester):
         for n in range(replicationFactor):
             o = module([a])
             outputs = outputs + (o, )
-            loss = 0.1 * torch.norm(o, 1)
-            loss.backward()
+            loss = torch.nn.L1Loss(reduction="mean")
+            target = torch.zeros(o.size())
+            output = 0.1 * loss(o, target) / replicationFactor
+            output.backward()
 
         # Update the weights
         optimizer.step()

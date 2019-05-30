@@ -10,6 +10,15 @@
 
 namespace poponnx {
 
+// When weight updates of a batch are computed in one go, we
+// are reducing over the gradients of the whole minibatch.
+// What type of reduction should this be?
+// SUM : By scaling the loss gradient (and loss) by identity,
+//       this is a sum reduction
+// MEAN : By dividing the loss gradient (and loss) by total
+//        number of samples this is an average (mean) reduction
+enum class ReductionType { SUM = 0, MEAN };
+
 enum class eLoss { NLL, L1 };
 std::map<std::string, eLoss> initLossMap();
 const std::map<std::string, eLoss> &lossMap();
@@ -19,7 +28,7 @@ public:
   virtual ~Loss()    = default;
   Loss(const Loss &) = default;
   Loss &operator=(const Loss &) = delete;
-  Loss(const std::vector<TensorId> &input, TensorId output);
+  Loss(const std::vector<TensorId> &input, TensorId output, ReductionType rt);
   virtual std::vector<TensorId> getStreamTensorNames() const             = 0;
   virtual std::unique_ptr<Op> getOp(const Op::Settings &settings_) const = 0;
   const TensorId &input(InIndex i) const;
@@ -28,6 +37,7 @@ public:
   // with Node function (uses same template)
   const TensorId &output(OutIndex) const;
   int output_size() const;
+  ReductionType getReductionType() const;
   virtual const OperatorIdentifier &op_type() const = 0;
   virtual std::unique_ptr<Loss> clone() const       = 0;
 
@@ -45,6 +55,8 @@ private:
   std::vector<TensorId> input_;
   // The name of the output tensor
   TensorId output_;
+  // How to reduce the loss over multiple samples
+  ReductionType reduction_type_;
 };
 
 class LossOp : public Op {

@@ -36,8 +36,11 @@ std::vector<TensorId> NllLoss::getStreamTensorNames() const {
 
 // as per pydriver.py
 
-NllLoss::NllLoss(TensorId probs, TensorId label, TensorId output)
-    : Loss({probs, label}, output) {
+NllLoss::NllLoss(TensorId probs,
+                 TensorId label,
+                 TensorId output,
+                 ReductionType rt)
+    : Loss({probs, label}, output, rt) {
   // confirming that I haven't miswired things
   if (input(getProbsInIndex()) != probs || input(getLabelInIndex()) != label) {
     throw error("ILE: mis-wired tensors in calling parent constructor");
@@ -47,8 +50,9 @@ NllLoss::NllLoss(TensorId probs, TensorId label, TensorId output)
 NllLoss::NllLoss(TensorId probs,
                  TensorId label,
                  TensorId output,
-                 int ignoreIndex)
-    : NllLoss(probs, label, output) {
+                 int ignoreIndex,
+                 ReductionType rt)
+    : NllLoss(probs, label, output, rt) {
 
   // An ignoreIndex has been supplied. This will influence the grow()
   // function of the loss.

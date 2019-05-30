@@ -18,11 +18,8 @@ L1Opx::L1Opx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 void L1GradOpx::grow(poplar::program::Sequence &prog) const {
   L1GradOp &l1gradop = getOp<L1GradOp>();
-  poplar::Tensor t_lambda =
-      getConst(popType(op_p->inInfo(0)),
-               {1},
-               static_cast<double>(l1gradop.l1l()->getLambda()),
-               debugPrefix("lamda"));
+
+  double lambda = static_cast<double>(l1gradop.l1l()->getLambda());
 
   // Signum : +1 of positive, -1 if negative, 0 if zero.
   poplar::Tensor signumTensor = popops::map(graph(),
@@ -31,14 +28,39 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                                             prog,
                                             debugPrefix("Signum"));
 
-  // scale the signum tensor by lambda,
-  // so +lambda if positive, -lambda if negative, 0 if zero
-  poplar::Tensor gradTensor = popops::map(graph(),
-                                          popops::expr::BinaryOpType::MULTIPLY,
-                                          signumTensor,
-                                          t_lambda,
-                                          prog,
-                                          debugPrefix("Multiply"));
+  double scale;
+  switch (l1gradop.l1l()->getReductionType()) {
+  case ReductionType::SUM: {
+    scale = lambda;
+    break;
+  }
+  case ReductionType::MEAN: {
+    // Design note: The L1Loss measures the mean absolute error between
+    // each element of the input and a (zero) target. The target here is the
+    // same size as the input tensor. This is unlike NllLoss, whose target
+    // is a 1D tensor of size `batchSize`.
+    // As a result the mean reduction is not over the size of the outer
+    // dimension, but over the total number of elements in the tensor.
+    // This is consistent with pytorch: pytorch.org/docs/stable/nn.html#l1loss
+    double totalSamples = static_cast<double>(dv_p->getReplicationFactor()) *
+                          static_cast<double>(getInTensor(0).numElements());
+    scale = lambda / totalSamples;
+    break;
+  }
+  default: { throw error("Unsupported reduction type for Loss {}", idStr()); }
+  }
+
+  auto t_scale =
+      getConst(popType(op_p->inInfo(0)), {1}, scale, debugPrefix("scale"));
+
+  // scale the signum tensor by 'scale',
+  // so +scale if positive, -scale if negative, 0 if zero
+  auto gradTensor = popops::map(graph(),
+                                popops::expr::BinaryOpType::MULTIPLY,
+                                signumTensor,
+                                t_scale,
+                                prog,
+                                debugPrefix("Multiply"));
 
   setOutTensor(0, gradTensor);
 }
@@ -66,18 +88,33 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
   // over dimension 0, which is batch id
   std::iota(dims.begin(), dims.end(), 1);
 
-  auto scale = getConst(poplar::FLOAT,
-                        {},
-                        static_cast<double>(l1op.l1l()->getLambda()),
-                        debugPrefix("lambda"));
+  double lambda = static_cast<double>(l1op.l1l()->getLambda());
 
-  poplar::Tensor reduction =
-      popops::reduce(graph(),
-                     absTensor,
-                     dims,
-                     {popops::Operation::ADD, false, scale},
-                     prog,
-                     debugPrefix("add"));
+  double scale;
+  switch (l1op.l1l()->getReductionType()) {
+  case ReductionType::SUM: {
+    scale = lambda;
+    break;
+  }
+  case ReductionType::MEAN: {
+    double totalSamples = static_cast<double>(dv_p->getReplicationFactor()) *
+                          static_cast<double>(getInTensor(0).dim(0));
+    scale = lambda / totalSamples;
+    break;
+  }
+  default: { throw error("Unsupported reduction type for Loss {}", idStr()); }
+  }
+
+  logging::devicex::debug("DEBUG : scale {}", scale);
+  auto t_scale =
+      getConst(popType(op_p->inInfo(0)), {}, scale, debugPrefix("scale"));
+
+  auto reduction = popops::reduce(graph(),
+                                  absTensor,
+                                  dims,
+                                  {popops::Operation::ADD, false, t_scale},
+                                  prog,
+                                  debugPrefix("add"));
 
   setOutTensor(0, reduction);
 }

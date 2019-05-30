@@ -93,8 +93,8 @@ int main(int argc, char **argv) {
     // choosing an arbitrary shape for label, can't run shape inference now
     isi.add(label, {"INT32", std::vector<int64_t>{7}});
 
-    up_losses.emplace_back(
-        std::unique_ptr<Loss>(new NllLoss(out, label, "nllLossVal")));
+    up_losses.emplace_back(std::unique_ptr<Loss>(
+        new NllLoss(out, label, "nllLossVal", ReductionType::SUM)));
   }
 
   std::vector<Loss *> losses;

@@ -50,7 +50,8 @@ BOOST_AUTO_TEST_CASE(SytheticData_False) {
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(tensorIds.back(), "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::SUM)};
 
   auto cpuDevice =
       poponnx::DeviceManager::createDeviceManager().createCpuDevice();
@@ -103,7 +104,8 @@ BOOST_AUTO_TEST_CASE(SytheticData_True) {
   auto art       = AnchorReturnType("ALL");
   auto dataFlow  = DataFlow(1, {{tensorIds.back(), art}, {tensorIds[2], art}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(tensorIds.back(), "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::SUM)};
 
   SessionOptions options;
   options.ignoreData = true;

@@ -25,8 +25,10 @@ const TensorId &Loss::output(OutIndex i) const {
   return output_;
 }
 
-Loss::Loss(const std::vector<TensorId> &in_, TensorId out_)
-    : input_(in_), output_(out_) {}
+ReductionType Loss::getReductionType() const { return reduction_type_; }
+
+Loss::Loss(const std::vector<TensorId> &in_, TensorId out_, ReductionType rt_)
+    : input_(in_), output_(out_), reduction_type_(rt_) {}
 
 LossOp::LossOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : Op(_opid, settings_) {}

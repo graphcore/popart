@@ -324,25 +324,32 @@ PYBIND11_MODULE(poponnx_core, m) {
   loss.def("input", &Loss::input);
   loss.def("output", &Loss::output);
 
+  py::enum_<ReductionType>(m, "ReductionType")
+      .value("Sum", ReductionType::SUM)
+      .value("Mean", ReductionType::MEAN);
+
   py::class_<NllLoss>(m, "NllLoss", loss)
-      .def(py::init<TensorId, TensorId, TensorId>(),
-           py::arg("probabilities"),
-           py::arg("labels"),
-           py::arg("output"))
-      .def(py::init<TensorId, TensorId, TensorId, int>(),
+      .def(py::init<TensorId, TensorId, TensorId, ReductionType>(),
            py::arg("probabilities"),
            py::arg("labels"),
            py::arg("output"),
-           py::arg("ignore_index"))
+           py::arg("reduction") = ReductionType::SUM)
+      .def(py::init<TensorId, TensorId, TensorId, int, ReductionType>(),
+           py::arg("probabilities"),
+           py::arg("labels"),
+           py::arg("output"),
+           py::arg("ignore_index"),
+           py::arg("reduction") = ReductionType::SUM)
       .def("probsTensorId", &NllLoss::probsTensorId)
       .def("labelTensorId", &NllLoss::labelTensorId)
       .def("virtualGraph", &NllLoss::virtualGraph);
 
   py::class_<L1Loss>(m, "L1Loss", loss)
-      .def(py::init<TensorId, TensorId, float>(),
+      .def(py::init<TensorId, TensorId, float, ReductionType>(),
            py::arg("input"),
            py::arg("output"),
-           py::arg("lambda"))
+           py::arg("lambda"),
+           py::arg("reduction") = ReductionType::SUM)
       .def("getInputId", &L1Loss::getInputId)
       .def("getLambda", &L1Loss::getLambda)
       .def("virtualGraph", &L1Loss::virtualGraph);

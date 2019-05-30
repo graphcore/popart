@@ -89,7 +89,8 @@ BOOST_AUTO_TEST_CASE(NoRecomputeTest) {
     // Add the last tensor, and the 3rd tensor as anchors
     auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
     auto optimizer = ConstSGD(0.01);
-    std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
+    std::vector<Loss *> losses{
+        new L1Loss(act, "l1LossVal", 0.1, ReductionType::SUM)};
     auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
     SessionOptions opts;
@@ -158,7 +159,8 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
     // Add the last tensor, and the 3rd tensor as anchors
     auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
     auto optimizer = ConstSGD(0.01);
-    std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
+    std::vector<Loss *> losses{
+        new L1Loss(act, "l1LossVal", 0.1, ReductionType::SUM)};
     auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
     SessionOptions opts;
@@ -231,7 +233,8 @@ BOOST_AUTO_TEST_CASE(NormOnlyRecomputeTest) {
     // Add the last tensor, and the 3rd tensor as anchors
     auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
     auto optimizer = ConstSGD(0.01);
-    std::vector<Loss *> losses{new L1Loss(act, "l1LossVal", 0.1)};
+    std::vector<Loss *> losses{
+        new L1Loss(act, "l1LossVal", 0.1, ReductionType::SUM)};
     auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
     SessionOptions opts;
@@ -282,7 +285,8 @@ BOOST_AUTO_TEST_CASE(DontInheritRecomputeTest) {
                {{relu_out, AnchorReturnType("ALL")},
                 {reservedGradientPrefix() + act, AnchorReturnType("ALL")}});
   auto optimizer = ConstSGD(0.01);
-  std::vector<Loss *> losses{new L1Loss(relu_out, "l1LossVal", 0.1)};
+  std::vector<Loss *> losses{
+      new L1Loss(relu_out, "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   SessionOptions opts;
