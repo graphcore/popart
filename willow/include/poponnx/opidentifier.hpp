@@ -710,6 +710,7 @@ const static AiGraphcoreOpIdV1 ConcatInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 FloorInplace("FloorInplace");
 const static AiGraphcoreOpIdV1 SliceInplace("SliceInplace");
 const static AiGraphcoreOpIdV1 PadInplace("PadInplace");
+const static AiGraphcoreOpIdV1 PrintTensor_1("PrintTensor", 1, 1);
 const static AiGraphcoreOpIdV1 ConcatGradInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 Subsample_1("Subsample", 1, 1);
 const static AiGraphcoreOpIdV1 Square("Square");
@@ -742,6 +743,7 @@ namespace OpSet1 {
 const static OperatorIdentifier Subsample = CustomOperators::Subsample_1;
 const static OperatorIdentifier GroupNormalization =
     CustomOperators::GroupNormalization_1;
+const static OperatorIdentifier PrintTensor = CustomOperators::PrintTensor_1;
 } // namespace OpSet1
 } // namespace AiGraphcore
 

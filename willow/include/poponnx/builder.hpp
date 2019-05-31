@@ -90,6 +90,15 @@ public:
   TensorId subsample(const std::vector<TensorId> &args,
                      const std::vector<int64_t> &strides,
                      const std::string &name = {});
+
+  /**
+   * Add a print tensor operation to the model
+   *
+   * This is a poplar extension
+   */
+  TensorId printtensor(const std::vector<TensorId> &args,
+                       int64_t print_gradient  = 1,
+                       const std::string &name = {});
 };
 
 /**

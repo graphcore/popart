@@ -233,3 +233,6 @@ Add something about the pytorch data feeder.
 
 Add API section - at least for the main user-facing classes InferenceSession,
 TrainingSession, SessionOptions.
+
+Add a section on debugging numerical problems,
+including the use of PrintTensor and floating point exceptions.

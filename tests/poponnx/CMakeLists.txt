@@ -72,6 +72,8 @@ add_poponnx_py_unit_test(all_constexpr)
 add_poponnx_py_unit_test(graph_replication_test)
 add_poponnx_py_unit_test(saved_executable)
 add_poponnx_py_unit_test(train_then_infer_test)
+add_poponnx_py_unit_test(addbias)
+add_poponnx_py_unit_test(printtensor)
 
 add_subdirectory(operators_test)
 add_subdirectory(constexpr_tests)
