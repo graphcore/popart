@@ -4843,11 +4843,12 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
   .def("constantofshape",
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
-          const ConstVoidData&  value,
-          const std::string &name) -> TensorId{
-           return opset.constantofshape(args,
-                                        value,
-                                        name);
+          py::array array,
+          const std::string &name) {
+           ConstVoidData initData;
+           initData.data = array.request().ptr;
+           initData.info = getTensorInfo(array);
+           return opset.constantofshape(args, initData, name);
        },
        py::arg("args"),
        py::arg("value"),

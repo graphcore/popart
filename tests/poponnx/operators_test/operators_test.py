@@ -1208,3 +1208,24 @@ def test_instancenorm_grad(op_tester):
     op_tester.atol *= 10
     op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
     op_tester.run(init_builder, reference, 'train')
+
+
+def test_constantofshape(op_tester):
+    shape = np.random.rand(1, 2, 3).astype(np.int32)
+    value = np.array([3.1415]).astype(np.float32)
+
+    def init_builder(builder):
+        s = builder.addInputTensor(shape)
+        i = builder.aiOnnx.identity([s])
+        c = builder.aiOnnx.constantofshape([i], value)
+        o = builder.aiOnnx.identity([c])
+
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        out = np.array([3.1415] * 2 * 3).astype(np.float32)
+        out = np.reshape(out, (1, 2, 3))
+        return [out]
+
+    op_tester.run(init_builder, reference, 'infer')

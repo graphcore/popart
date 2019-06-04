@@ -13,6 +13,7 @@ public:
 private:
   static void processConstantNode(const onnx::NodeProto &, Graph *);
   static void processShapeNode(const onnx::NodeProto &, Graph *);
+  static void processConstantOfShapeNode(const onnx::NodeProto &, Graph *);
 };
 
 } // namespace poponnx
