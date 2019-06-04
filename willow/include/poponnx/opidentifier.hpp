@@ -670,7 +670,7 @@ const static AiGraphcoreOpIdV1 SoftmaxGrad("SoftmaxGrad");
 // constexpr static char Softplus[] = "Softplus";
 // constexpr static char Softsign[] = "Softsign";
 // constexpr static char SpaceToDepth[] = "SpaceToDepth";
-// constexpr static char Split[] = "Split";
+const static AiGraphcoreOpIdV1 SplitGrad("SplitGrad");
 const static AiGraphcoreOpIdV1 SqrtGrad("SqrtGrad");
 const static AiGraphcoreOpIdV1 SqueezeGrad("SqueezeGrad");
 const static AiGraphcoreOpIdV1 SubArg0Grad("SubArg0Grad");
