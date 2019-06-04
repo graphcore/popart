@@ -144,15 +144,9 @@ backend_test = onnx.backend.test.BackendTest(IpuBackend, __name__)
 # Operations we do not support
 backend_test.exclude('test_acos')
 backend_test.exclude('test_and')
-backend_test.exclude('test_argmax')
-backend_test.exclude('test_argmin')
 backend_test.exclude('test_asin')
 backend_test.exclude('test_atan')
-backend_test.exclude('test_cast')
-backend_test.exclude('test_ceil')
-backend_test.exclude('test_clip')
 backend_test.exclude('test_compress')
-backend_test.exclude('test_constantlike')
 backend_test.exclude('test_convtranspose')
 backend_test.exclude('test_depthtospace')
 backend_test.exclude('test_dynamic_slice')
@@ -161,7 +155,6 @@ backend_test.exclude('test_equal')
 backend_test.exclude('test_erf')
 backend_test.exclude('test_expand')
 backend_test.exclude('test_eyelike')
-backend_test.exclude('test_floor')
 backend_test.exclude('test_greater')
 backend_test.exclude('test_gru')
 backend_test.exclude('test_hardmax')
@@ -170,7 +163,6 @@ backend_test.exclude('test_isnan')
 backend_test.exclude('test_leakyrelu')
 backend_test.exclude('test_less')
 backend_test.exclude('test_lrn')
-backend_test.exclude('test_logsoft')
 backend_test.exclude('test_maxunpool')
 backend_test.exclude('test_mvn')
 backend_test.exclude('test_not')
@@ -186,11 +178,10 @@ backend_test.exclude('test_reduce_max')
 backend_test.exclude('test_reduce_mean')
 backend_test.exclude('test_reduce_min')
 backend_test.exclude('test_reduce_prod')
-backend_test.exclude('test_reduce_sum')
+backend_test.exclude('test_reduce_sum_square')
 backend_test.exclude('test_rnn')
 backend_test.exclude('test_scan')
 backend_test.exclude('test_selu')
-backend_test.exclude('test_shape')
 backend_test.exclude('test_shrink')
 backend_test.exclude('test_simple_rnn')
 backend_test.exclude('test_sinh')
@@ -212,8 +203,6 @@ backend_test.exclude('test_GLU_dim')
 backend_test.exclude('test_GLU')
 backend_test.exclude('test_LeakyReLU')
 backend_test.exclude('test_LeakyReLU_with_negval')
-backend_test.exclude('test_Linear')
-backend_test.exclude('test_Linear_no_bias')
 backend_test.exclude('test_SELU')
 backend_test.exclude('test_nonzero')
 backend_test.exclude('test_tfidfvectorizer')
@@ -230,13 +219,24 @@ backend_test.exclude('squeezenet')
 backend_test.exclude('vgg19')
 backend_test.exclude('zfnet512')
 
-# The following tests cause a seg fault
-backend_test.exclude('gemm_broadcast')
-
 # Test that do not work for ops we have implemented
 
 # poplar lstm does not support peepholes
 backend_test.exclude('test_lstm_with_peepholes_ipu')
+
+# no double type on ipu
+backend_test.exclude('cast_DOUBLE_to_FLOAT16')
+backend_test.exclude('cast_DOUBLE_to_FLOAT_ipu')
+backend_test.exclude('cast_FLOAT16_to_DOUBLE_ipu')
+backend_test.exclude('cast_FLOAT_to_DOUBLE_ipu')
+
+# no int64 on ipu
+backend_test.exclude('test_argmax')
+backend_test.exclude('test_argmin')
+
+# no string type
+backend_test.exclude('cast_FLOAT_to_STRING_ipu')
+backend_test.exclude('cast_STRING_to_FLOAT_ipu')
 
 # T6601
 backend_test.exclude('averagepool_1d_default')
@@ -268,9 +268,6 @@ backend_test.exclude('gather_1')
 backend_test.exclude('scatter_with_axis')
 backend_test.exclude('scatter_without_axis')
 
-# T6606
-backend_test.exclude('sum_one_input')
-
 # T6607
 backend_test.exclude('Conv1d_dilated')
 backend_test.exclude('Conv1d_groups')
@@ -288,11 +285,20 @@ backend_test.exclude('Conv3d_stride_padding')
 backend_test.exclude('Conv3d')
 
 # T6608
-backend_test.exclude('Conv2d_depthwise_padded')
-backend_test.exclude('Conv2d_depthwise_strided')
-backend_test.exclude('Conv2d_depthwise_with_multiplier')
 backend_test.exclude('Conv2d_groups')
 backend_test.exclude('Conv2d_groups_thnn')
+
+# T9144
+backend_test.exclude('logsoftmax_axis_0_ipu')
+backend_test.exclude('logsoftmax_axis_2_ipu')
+
+# T9147
+backend_test.exclude('reduce_sum_default_axes_keepdims_example_ipu')
+backend_test.exclude('reduce_sum_default_axes_keepdims_random_ipu')
+
+# T9150
+backend_test.exclude('test_shape_ipu')
+backend_test.exclude('test_shape_example_ipu')
 
 # Failures that have not been triaged
 backend_test.exclude('test_reshape_extended_dims')
@@ -301,9 +307,7 @@ backend_test.exclude('test_reshape_one_dim')
 backend_test.exclude('test_reshape_reduced_dim')
 backend_test.exclude('test_reshape_reordered_dims')
 
-backend_test.exclude('test_softmax_large_number')
 backend_test.exclude('test_softsign')
-backend_test.exclude('test_Softsign')
 backend_test.exclude('test_log_softmax_dim3')
 
 backend_test.exclude('test_operator_add_broadcast')
@@ -311,19 +315,14 @@ backend_test.exclude('test_operator_add_size1_broadcast')
 backend_test.exclude('test_operator_add_size1_right_broadcast')
 backend_test.exclude('test_operator_add_size1_singleton_broadcast')
 backend_test.exclude('test_operator_chunk')
-backend_test.exclude('test_operator_clip')
 backend_test.exclude('test_operator_convtranspose')
-backend_test.exclude('test_operator_max')
 backend_test.exclude('test_operator_maxpool')
-backend_test.exclude('test_operator_min')
 backend_test.exclude('test_operator_non_float_params')
 backend_test.exclude('test_operator_pow')
 backend_test.exclude('test_operator_reduced_mean')
 backend_test.exclude('test_operator_repeat')
-backend_test.exclude('test_operator_rnn')
 backend_test.exclude('test_operator_selu')
 backend_test.exclude('test_operator_symbolic')
-backend_test.exclude('test_operator_view')
 
 backend_test.exclude('test_maxpool_with_argmax_2d_precomputed_pads')
 backend_test.exclude('test_maxpool_1d_default')
