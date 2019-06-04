@@ -1,8 +1,10 @@
+#include <boost/range/algorithm/find.hpp>
 
 #include <poponnx/popx/devicexmanager.hpp>
 
 #include <poponnx/error.hpp>
 #include <poponnx/makeunique.hpp>
+#include <poponnx/util.hpp>
 
 #include <poplar/Device.hpp>
 #include <poplar/IPUModel.hpp>
@@ -10,6 +12,8 @@
 
 #include <algorithm>
 #include <sstream>
+
+using boost::find;
 
 namespace poponnx {
 namespace popx {
@@ -97,12 +101,28 @@ std::shared_ptr<poponnx::DeviceInfo> DevicexManager::createHostDevice(
     poponnx::DeviceType type,
     const std::map<std::string, std::string> &options) {
 
+  auto checkOptions = [&](const std::vector<std::string> &validOptionKeys) {
+    for (auto &key_value : options) {
+      auto &key = key_value.first;
+      if (find(validOptionKeys, key) == validOptionKeys.end()) {
+        throw error("Invalid option `{}' passed to "
+                    "DevicexManager::createHostDevice for device type {}. "
+                    "Valid options are {}",
+                    key,
+                    type,
+                    validOptionKeys);
+      }
+    }
+  };
+
   switch (type) {
   case DeviceType::Cpu: {
+    checkOptions({});
     poplar::Device device = poplar::Device::createCPUDevice();
     return std::make_shared<DevicexCpuInfo>(*this, device);
   }
   case DeviceType::IpuModel: {
+    checkOptions({"numIPUs", "tilesPerIPU", "compileIPUCode"});
 
     // Create an ipumodel, using the values set in the options map, else use the
     // defaults
@@ -115,6 +135,7 @@ std::shared_ptr<poponnx::DeviceInfo> DevicexManager::createHostDevice(
     return std::make_shared<DevicexIpuModelInfo>(*this, device);
   }
   case DeviceType::Sim: {
+    checkOptions({"numIPUs", "tilesPerIPU"});
     try {
 
       // Use the values from the options map or use the defaults.
