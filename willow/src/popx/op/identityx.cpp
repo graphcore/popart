@@ -1,3 +1,4 @@
+#include <iostream>
 #include <poponnx/error.hpp>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/popx/op/identityx.hpp>
@@ -16,8 +17,12 @@ void IdentityOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 IdentityGradOpx::IdentityGradOpx(Op *op, Devicex *devicex)
-    : IdentityOpx(op, devicex) {
+    : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<IdentityGradOp>(op, Onnx::GradOperators::IdentityGrad);
+}
+
+void IdentityGradOpx::grow(poplar::program::Sequence &prog) const {
+  setOutTensor(0, Opx::cloneNcopy(prog, getInTensor(0)));
 }
 
 namespace {

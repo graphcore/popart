@@ -25,9 +25,10 @@ public:
   bool createsEquiv(int index0, const Opx *opx1, int index1) const final;
 };
 
-class AddBiasDataGradOpx : public IdentityOpx {
+class AddBiasDataGradOpx : public Opx {
 public:
   AddBiasDataGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
 };
 
 class AddBiasBiasGradOpx : public ReduceSumOpx {

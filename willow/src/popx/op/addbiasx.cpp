@@ -13,7 +13,7 @@ AddBiasOpx::AddBiasOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 AddBiasDataGradOpx::AddBiasDataGradOpx(Op *op, Devicex *devicex)
-    : IdentityOpx(op, devicex) {
+    : Opx(op, devicex) {
   verifyOp<AddBiasDataGradOp>(op, Onnx::CustomGradOperators::AddBiasDataGrad);
 }
 
@@ -24,6 +24,10 @@ void AddBiasOpx::grow(poplar::program::Sequence &prog) const {
   poplin::addBias(
       graph(), result, getInTensor(AddBiasOp::getBiasInIndex()), prog, idStr());
   setOutTensor(AddBiasOp::getOutIndex(), result);
+}
+
+void AddBiasDataGradOpx::grow(poplar::program::Sequence &prog) const {
+  setOutTensor(0, Opx::cloneNcopy(prog, getInTensor(0)));
 }
 
 std::vector<TensorId> AddBiasOpx::mustExistBeforeCreate(InIndex index) const {

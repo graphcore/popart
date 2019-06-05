@@ -133,21 +133,21 @@ def op_tester(tmpdir):
                 device = tu.get_ipu_model(numIPUs=self.numIPUs)
 
             if step_type == 'infer':
-                session = poponnx.InferenceSession(
-                    fnModel=proto,
-                    dataFeed=dataFlow,
-                    deviceInfo=device,
-                    passes=poponnx.Patterns(self.passes),
-                    userOptions=self.options)
+                session = poponnx.InferenceSession(fnModel=proto,
+                                                   dataFeed=dataFlow,
+                                                   deviceInfo=device,
+                                                   passes=poponnx.Patterns(
+                                                       self.passes),
+                                                   userOptions=self.options)
             else:
-                session = poponnx.TrainingSession(
-                    fnModel=proto,
-                    dataFeed=dataFlow,
-                    losses=losses,
-                    optimizer=optimizer,
-                    deviceInfo=device,
-                    passes=poponnx.Patterns(self.passes),
-                    userOptions=self.options)
+                session = poponnx.TrainingSession(fnModel=proto,
+                                                  dataFeed=dataFlow,
+                                                  losses=losses,
+                                                  optimizer=optimizer,
+                                                  deviceInfo=device,
+                                                  passes=poponnx.Patterns(
+                                                      self.passes),
+                                                  userOptions=self.options)
 
             anchor_map = session.initAnchorArrays()
 
@@ -176,6 +176,8 @@ def op_tester(tmpdir):
                 if isinstance(t, torch.Tensor):
                     return t.data.numpy()
                 elif isinstance(t, np.ndarray):
+                    return t
+                elif isinstance(t, np.float32):
                     return t
                 elif t is None:
                     return None
