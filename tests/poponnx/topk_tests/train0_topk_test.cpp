@@ -45,8 +45,9 @@ BOOST_AUTO_TEST_CASE(Train0TopK) {
     std::uniform_real_distribution<float> fdis(-4, 4);
 
     // prepare to build an onnx model
-    auto builder = Builder::create();
-    auto aiOnnx  = builder->aiOnnxOpset9();
+    auto builder     = Builder::create();
+    auto aiOnnx      = builder->aiOnnxOpset9();
+    auto aiGraphcore = builder->aiGraphcoreOpset1();
 
     TensorInfo xInfo{"FLOAT", std::vector<int64_t>{D0, D1, D2, D3}};
     TensorId xId = builder->addInputTensor(xInfo);
@@ -112,7 +113,7 @@ BOOST_AUTO_TEST_CASE(Train0TopK) {
     auto indices = topkOut[1];
 
     auto squaredOut = aiOnnx.mul({values, values});
-    auto halvedOut  = aiOnnx.scale({squaredOut}, scaleFactor);
+    auto halvedOut  = aiGraphcore.scale({squaredOut}, scaleFactor);
 
     builder->addOutputTensor(halvedOut);
 

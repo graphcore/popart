@@ -49,33 +49,34 @@ BOOST_AUTO_TEST_CASE(Inplace_Scale1) {
   //         in which case 1.1, 2.2, 3.3 are inplaced
 
   auto test = [](bool branch77High) {
-    auto builder = Builder::create();
-    auto aiOnnx  = builder->aiOnnxOpset9();
+    auto builder     = Builder::create();
+    auto aiOnnx      = builder->aiOnnxOpset9();
+    auto aiGraphcore = builder->aiGraphcoreOpset1();
     TensorInfo shape0{"FLOAT", std::vector<int64_t>{10, 10}};
     auto in0 = builder->addInputTensor(shape0);
 
     auto sl11 = aiOnnx.slice({in0}, {3, 3}, {0, 0}, {0, 1});
     builder->setInplacePreferences(sl11, {{"SliceInplace", 1000.0}});
     float factor11 = 1.1 * (2 * branch77High - 1);
-    auto sc11      = aiOnnx.scale({sl11}, factor11);
+    auto sc11      = aiGraphcore.scale({sl11}, factor11);
     builder->setInplacePreferences(sc11, {{"ScaleInplace", 10.0 + factor11}});
 
     auto sl22 = aiOnnx.slice({in0}, {6, 5}, {3, 1}, {0, 1});
     builder->setInplacePreferences(sl22, {{"SliceInplace", 1000.}});
     float factor22 = 2.2 * (2 * branch77High - 1);
-    auto sc22      = aiOnnx.scale({sl22}, factor22);
+    auto sc22      = aiGraphcore.scale({sl22}, factor22);
     builder->setInplacePreferences(sc22, {{"ScaleInplace", 10.0 + factor22}});
 
     auto sl33 = aiOnnx.slice({in0}, {9, 5}, {6, 0}, {0, 1});
     builder->setInplacePreferences(sl33, {{"SliceInplace", 1000.0}});
     float factor33 = 3.3 * (2 * branch77High - 1);
-    auto sc33      = aiOnnx.scale({sl33}, factor33);
+    auto sc33      = aiGraphcore.scale({sl33}, factor33);
     builder->setInplacePreferences(sc33, {{"ScaleInplace", 10.0 + factor33}});
 
     auto sl44 = aiOnnx.slice({in0}, {10, 4}, {7, 1}, {0, 1});
     builder->setInplacePreferences(sl44, {{"SliceInplace", 1000.0}});
     float factor44 = 4.4 * (2 * branch77High - 1);
-    auto sc44      = aiOnnx.scale({sl44}, factor44);
+    auto sc44      = aiGraphcore.scale({sl44}, factor44);
     builder->setInplacePreferences(sc44, {{"ScaleInplace", 10.0 + factor44}});
 
     auto topCon = aiOnnx.concat({sc11, sc22, sc33, sc44}, 1);
@@ -84,7 +85,7 @@ BOOST_AUTO_TEST_CASE(Inplace_Scale1) {
     auto sl77 = aiOnnx.slice({in0}, {10, 4}, {0, 1}, {0, 1});
     builder->setInplacePreferences(sl77, {{"SliceInplace", 1000.0}});
     float factor77 = 7.7 * (2 * branch77High - 1);
-    auto sc77      = aiOnnx.scale({sl77}, factor77);
+    auto sc77      = aiGraphcore.scale({sl77}, factor77);
     builder->setInplacePreferences(sc77, {{"ScaleInplace", 10.0 + factor77}});
 
     auto out = aiOnnx.matmul({sc77, topCon});
@@ -114,11 +115,11 @@ BOOST_AUTO_TEST_CASE(Inplace_Scale1) {
     BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SliceInplace).size() == 5);
 
     if (branch77High) {
-      BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Scale).size() == 4);
+      BOOST_CHECK(ir.opsOfType(Onnx::AiGraphcore::OpSet1::Scale).size() == 4);
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ScaleInplace).size() ==
                   1);
     } else {
-      BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Scale).size() == 2);
+      BOOST_CHECK(ir.opsOfType(Onnx::AiGraphcore::OpSet1::Scale).size() == 2);
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ScaleInplace).size() ==
                   3);
     }

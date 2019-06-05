@@ -84,7 +84,7 @@ void GemmDecompositionPattern::scaleTensor(const TensorId &input,
                                            float scale_factor,
                                            Op *op) const {
   auto scale = dynamic_cast<ScaleOp *>(
-      makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Scale, op));
+      makeReplacementOpInIr(Onnx::AiGraphcore::OpSet1::Scale, op));
   scale->setScaleFactor(scale_factor);
 
   scale->connectInTensor(ScaleOp::getInIndex(), input);

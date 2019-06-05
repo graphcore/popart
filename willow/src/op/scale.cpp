@@ -86,7 +86,7 @@ const std::map<int, int> &ScaleGradOp::gradOutToNonGradIn() const {
 
 namespace {
 static OpCreator<ScaleOp> scaleOpCreator(
-    Onnx::Operators::Scale_1,
+    Onnx::CustomOperators::Scale_1,
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
@@ -95,8 +95,6 @@ static OpCreator<ScaleOp> scaleOpCreator(
       return std::unique_ptr<Op>(new ScaleOp(_opid, scale, settings));
     },
     true);
-// static GradOpCreator<ScaleGradOp>
-//    scaleGradOpCreator(Onnx::GradOperators::ScaleGrad);
 
 } // namespace
 } // namespace poponnx

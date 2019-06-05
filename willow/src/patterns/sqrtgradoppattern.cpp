@@ -25,7 +25,7 @@ bool SqrtGradOpPattern::apply(Op *op) const {
 
   // create the new ops
   auto scale = dynamic_cast<ScaleOp *>(
-      makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Scale, op));
+      makeReplacementOpInIr(Onnx::AiGraphcore::OpSet1::Scale, op));
   scale->setScaleFactor(2.0f);
   auto div = makeReplacementOpInIr(Onnx::AiOnnx::OpSet9::Div, op);
 

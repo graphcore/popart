@@ -24,8 +24,9 @@ BOOST_AUTO_TEST_CASE(Inplace_Scale0) {
   //
 
   auto test = [](bool branch77High) {
-    auto builder = Builder::create();
-    auto aiOnnx  = builder->aiOnnxOpset9();
+    auto builder     = Builder::create();
+    auto aiOnnx      = builder->aiOnnxOpset9();
+    auto aiGraphcore = builder->aiGraphcoreOpset1();
     TensorInfo shape0{"FLOAT", std::vector<int64_t>{6, 6}};
     auto in0 = builder->addInputTensor(shape0);
 
@@ -38,8 +39,8 @@ BOOST_AUTO_TEST_CASE(Inplace_Scale0) {
     float factor11 = 1.1 * (2 * branch77High - 1);
     float factor22 = 2.2 * (2 * branch77High - 1);
 
-    auto sc11 = aiOnnx.scale({sl11}, factor11);
-    auto sc22 = aiOnnx.scale({sl22}, factor22);
+    auto sc11 = aiGraphcore.scale({sl11}, factor11);
+    auto sc22 = aiGraphcore.scale({sl22}, factor22);
 
     builder->setInplacePreferences(sc11, {{"ScaleInplace", 10.0 + factor11}});
     builder->setInplacePreferences(sc22, {{"ScaleInplace", 10.0 + factor22}});
@@ -67,7 +68,7 @@ BOOST_AUTO_TEST_CASE(Inplace_Scale0) {
     BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::MatMul).size() == 1);
     BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Slice).size() == 0);
     BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SliceInplace).size() == 2);
-    BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Scale).size() == 0);
+    BOOST_CHECK(ir.opsOfType(Onnx::AiGraphcore::OpSet1::Scale).size() == 0);
     BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ScaleInplace).size() == 2);
   };
 

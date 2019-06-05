@@ -16,6 +16,7 @@ namespace ONNX_NAMESPACE {
 void SubsampleShapeInference(InferenceContext &ctx);
 void GroupNormalizationShapeInference(InferenceContext &ctx);
 void PrintTensorShapeInference(InferenceContext &ctx);
+void ScaleShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -57,6 +58,10 @@ void GroupNormalizationShapeInference(InferenceContext &ctx) {
 }
 
 void PrintTensorShapeInference(InferenceContext &ctx) {
+  propagateShapeAndTypeFromFirstInput(ctx);
+}
+
+void ScaleShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
@@ -141,6 +146,27 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
               true)
         .TypeAndShapeInferenceFunction(PrintTensorShapeInference));
 
+static const char scaleDoc[] =
+    "Scale takes one input data (Tensor<float>) and produces one output data "
+    "(Tensor<float>) whose value is the input data tensor scaled element-wise.";
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    Scale,
+    AiGraphcore,
+    poponnx::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc(scaleDoc)
+        .Input(0, "X", "Input tensor", "T")
+        .Output(0, "Y", "Output tensor", "T")
+        .TypeConstraint(
+            "T",
+            {"tensor(float)", "tensor(int32)", "tensor(float16)"},
+            "Constrain input and output types to signed numeric tensors.")
+        .Attr("scale", "The scale to apply", AttributeProto::FLOAT, true)
+        .TypeAndShapeInferenceFunction(ScaleShapeInference));
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(poponnx::Domain::ai_graphcore, 1, 1);
@@ -156,6 +182,10 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, PrintTensor)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
+          AiGraphcore, 1, Scale)>());
 
   return true;
 }

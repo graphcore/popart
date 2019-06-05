@@ -37,8 +37,9 @@ BOOST_AUTO_TEST_CASE(Inplace_pad0) {
     //  where pad above is null padding
 
     // Build an onnx model
-    auto builder = Builder::create();
-    auto aiOnnx  = builder->aiOnnxOpset9();
+    auto builder     = Builder::create();
+    auto aiOnnx      = builder->aiOnnxOpset9();
+    auto aiGraphcore = builder->aiGraphcoreOpset1();
 
     // input and output:
     int64_t nElmsIn   = 2;
@@ -51,9 +52,9 @@ BOOST_AUTO_TEST_CASE(Inplace_pad0) {
     auto in0 = builder->addInputTensor(info0);
 
     auto p0 = aiOnnx.pad({in0}, {nPadLeft, nPadRight});
-    auto s0 = aiOnnx.scale({p0}, 2.0f);
+    auto s0 = aiGraphcore.scale({p0}, 2.0f);
 
-    auto s1 = aiOnnx.scale({in0}, 3.0f);
+    auto s1 = aiGraphcore.scale({in0}, 3.0f);
     auto p1 = aiOnnx.pad({s1}, {nPadLeft, nPadRight});
 
     auto sum = aiOnnx.add({p1, s0});

@@ -950,7 +950,8 @@ const onnx::ValueInfoProto &BuilderImpl::getValueInfoProto(TensorId id) const {
         model_.graph().value_info(getValueTensorIndex(id));
     return t;
   } else {
-    throw error("{} is not an known tensor. Must be one of {} {} {}",
+    throw error("{} is not an known tensor. Must be one of (inputs:{}) "
+                "(outputs:{}) (values:{})",
                 id,
                 getStrFromTensorIdVec(getInputTensorIds()),
                 getStrFromTensorIdVec(getOutputTensorIds()),

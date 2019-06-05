@@ -292,14 +292,15 @@ BOOST_AUTO_TEST_CASE(ScaleByOne) {
   //
   // () -> [Identity] -> ()
   // Build an onnx model
-  auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset9();
+  auto builder     = Builder::create();
+  auto aiOnnx      = builder->aiOnnxOpset9();
+  auto aiGraphcore = builder->aiGraphcoreOpset1();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
 
   auto inp = builder->addInputTensor(shape);
 
-  auto scale = aiOnnx.scale({inp}, 1.0f);
+  auto scale = aiGraphcore.scale({inp}, 1.0f);
 
   builder->addOutputTensor(scale);
 
@@ -324,7 +325,7 @@ BOOST_AUTO_TEST_CASE(ScaleByOne) {
 
   // Check the ir
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Identity).size() == 1);
-  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Scale).size() == 0);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiGraphcore::OpSet1::Scale).size() == 0);
 }
 
 BOOST_AUTO_TEST_CASE(ScaleByNegativeOne) {
@@ -334,14 +335,15 @@ BOOST_AUTO_TEST_CASE(ScaleByNegativeOne) {
   //
   // () -> [Negate] -> ()
   // Build an onnx model
-  auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset9();
+  auto builder     = Builder::create();
+  auto aiOnnx      = builder->aiOnnxOpset9();
+  auto aiGraphcore = builder->aiGraphcoreOpset1();
 
   TensorInfo shape{"FLOAT", std::vector<int64_t>{2}};
 
   auto inp = builder->addInputTensor(shape);
 
-  auto scale = aiOnnx.scale({inp}, -1.0f);
+  auto scale = aiGraphcore.scale({inp}, -1.0f);
 
   builder->addOutputTensor(scale);
 
@@ -366,7 +368,7 @@ BOOST_AUTO_TEST_CASE(ScaleByNegativeOne) {
 
   // Check the ir
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Neg).size() == 1);
-  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Scale).size() == 0);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiGraphcore::OpSet1::Scale).size() == 0);
 }
 
 BOOST_AUTO_TEST_CASE(SubtractArg1GradOp) {

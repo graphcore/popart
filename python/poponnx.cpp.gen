@@ -1234,18 +1234,6 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
        },
        py::arg("args"),
        py::arg("debugPrefix") = std::string())
-  .def("scale",
-       [](AiOnnxOpset6 &opset,
-          const std::vector<TensorId> &args,
-          float scale,
-          const std::string &name) -> TensorId{
-           return opset.scale(args,
-                              scale,
-                              name);
-       },
-       py::arg("args"),
-       py::arg("scale") = 1.0f,
-       py::arg("debugPrefix") = std::string())
   .def("scaledtanh",
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
@@ -2744,18 +2732,6 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
                                 name);
        },
        py::arg("args"),
-       py::arg("debugPrefix") = std::string())
-  .def("scale",
-       [](AiOnnxOpset7 &opset,
-          const std::vector<TensorId> &args,
-          float scale,
-          const std::string &name) -> TensorId{
-           return opset.scale(args,
-                              scale,
-                              name);
-       },
-       py::arg("args"),
-       py::arg("scale") = 1.0f,
        py::arg("debugPrefix") = std::string())
   .def("scaledtanh",
        [](AiOnnxOpset7 &opset,
@@ -4273,18 +4249,6 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
                                 name);
        },
        py::arg("args"),
-       py::arg("debugPrefix") = std::string())
-  .def("scale",
-       [](AiOnnxOpset8 &opset,
-          const std::vector<TensorId> &args,
-          float scale,
-          const std::string &name) -> TensorId{
-           return opset.scale(args,
-                              scale,
-                              name);
-       },
-       py::arg("args"),
-       py::arg("scale") = 1.0f,
        py::arg("debugPrefix") = std::string())
   .def("scaledtanh",
        [](AiOnnxOpset8 &opset,
@@ -5953,18 +5917,6 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
                                 name);
        },
        py::arg("args"),
-       py::arg("debugPrefix") = std::string())
-  .def("scale",
-       [](AiOnnxOpset9 &opset,
-          const std::vector<TensorId> &args,
-          float scale,
-          const std::string &name) -> TensorId{
-           return opset.scale(args,
-                              scale,
-                              name);
-       },
-       py::arg("args"),
-       py::arg("scale") = 1.0f,
        py::arg("debugPrefix") = std::string())
   .def("scaledtanh",
        [](AiOnnxOpset9 &opset,

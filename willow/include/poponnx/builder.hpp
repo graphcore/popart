@@ -99,6 +99,21 @@ public:
   TensorId printtensor(const std::vector<TensorId> &args,
                        int64_t print_gradient  = 1,
                        const std::string &name = {});
+
+  /**
+   * Add a scale operation to the model
+   *
+   * This is a poplar extension, to replace the experimental scale
+   * operator that has been removed
+   *
+   * \param args Tensor T
+   * \param scale The scale to apply
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId scale(const std::vector<TensorId> &args,
+                 float scale,
+                 const std::string &name = {});
 };
 
 /**

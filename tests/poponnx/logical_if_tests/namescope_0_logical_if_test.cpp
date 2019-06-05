@@ -42,12 +42,13 @@ BOOST_AUTO_TEST_CASE(LogicalIf_namescope0) {
     auto else_branch = [&info, in0, in1](Builder &parent_builder) {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
+      auto aiGraphcore = builder.aiGraphcoreOpset1();
       builder.addInputTensorFromHigherScope(in0);
       builder.addInputTensorFromHigherScope(in1);
 
       // could get identical name as then_branch
       auto out0 = aiOnnx.add({in0, in1});
-      auto out1 = aiOnnx.scale({out0}, 2);
+      auto out1 = aiGraphcore.scale({out0}, 2);
       builder.addOutputTensor(out1);
       return io::getModelFromString(builder.getModelProto()).graph();
     }(builder);

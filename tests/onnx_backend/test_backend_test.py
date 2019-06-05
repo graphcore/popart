@@ -206,6 +206,22 @@ backend_test.exclude('test_SELU')
 backend_test.exclude('test_nonzero')
 backend_test.exclude('test_tfidfvectorizer')
 backend_test.exclude('test_where')
+backend_test.exclude('test_slice')
+backend_test.exclude('test_bitshift')
+backend_test.exclude('test_matmulinteger')
+
+backend_test.exclude('test_convinteger')
+backend_test.exclude('test_basic_convinteger')
+backend_test.exclude('test_dequantizelinear')
+backend_test.exclude('test_isinf')
+backend_test.exclude('test_mod')
+backend_test.exclude('test_resize')
+backend_test.exclude('test_nonmaxsuppression')
+backend_test.exclude('test_qlinearconv')
+backend_test.exclude('test_qlinearmatmul')
+backend_test.exclude('test_quantizelinear')
+backend_test.exclude('test_reversesequence')
+backend_test.exclude('test_roialign')
 
 # high level models
 backend_test.exclude('bvlc_alexnet')
@@ -217,6 +233,7 @@ backend_test.exclude('shufflenet')
 backend_test.exclude('squeezenet')
 backend_test.exclude('vgg19')
 backend_test.exclude('zfnet512')
+backend_test.exclude('strnorm')
 
 # Test that do not work for ops we have implemented
 
@@ -249,6 +266,10 @@ backend_test.exclude('MaxPool3d')
 backend_test.exclude('MaxPool3d_stride')
 backend_test.exclude('MaxPool3d_stride_padding')
 
+# T????
+backend_test.exclude('maxpool_2d_ceil')
+backend_test.exclude('maxpool_2d_dilations')
+
 # T6602
 backend_test.exclude('averagepool_2d_pads_count_include_pad')
 backend_test.exclude('averagepool_2d_precomputed_pads_count_include_pad')
@@ -257,6 +278,9 @@ backend_test.exclude('averagepool_2d_precomputed_pads_count_include_pad')
 backend_test.exclude('averagepool_2d_precomputed_same_upper')
 backend_test.exclude('averagepool_2d_same_lower')
 backend_test.exclude('averagepool_2d_same_upper')
+
+# T???? Add new ceil param
+backend_test.exclude('averagepool_2d_ceil')
 
 # T6604
 backend_test.exclude('constant')

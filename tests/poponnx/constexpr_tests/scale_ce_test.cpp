@@ -77,15 +77,16 @@ std::string getTestModelProto(DataType type) {
   TensorInfo in_info    = {"FLOAT", Shape{2, 2}};
   const_data            = {raw_const_data.data(), const_info};
 
-  auto builder = Builder::create();
-  auto aiOnnx  = builder->aiOnnxOpset9();
+  auto builder     = Builder::create();
+  auto aiOnnx      = builder->aiOnnxOpset9();
+  auto aiGraphcore = builder->aiGraphcoreOpset1();
 
   auto x4 = aiOnnx.constant(const_data, "x4");
   auto x0 = builder->addInputTensor(in_info);
   auto x1 = builder->addInputTensor(in_info);
   auto x2 = aiOnnx.matmul({x0, x1});
-  auto x3 = aiOnnx.scale({x2}, 0.5);
-  auto x5 = aiOnnx.scale({x4}, 0.5);
+  auto x3 = aiGraphcore.scale({x2}, 0.5);
+  auto x5 = aiGraphcore.scale({x4}, 0.5);
   auto c0 = aiOnnx.cast({x5}, "FLOAT");
   auto x6 = aiOnnx.add({x3, c0});
   builder->addOutputTensor(x6);
@@ -121,7 +122,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale0) {
               Patterns({})});
 
   // only the one scale (after the matmul) should remain
-  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Scale).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiGraphcore::OpSet1::Scale).size() == 1);
 }
 
 // Test that the graph output is correct
