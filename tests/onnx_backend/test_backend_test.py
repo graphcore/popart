@@ -184,7 +184,6 @@ backend_test.exclude('test_size')
 backend_test.exclude('test_softplus')
 backend_test.exclude('test_Softplus')
 backend_test.exclude('test_thresholdedrelu')
-backend_test.exclude('test_tile')
 backend_test.exclude('test_top_k')
 backend_test.exclude('test_upsample')
 backend_test.exclude('test_xor')
@@ -329,6 +328,9 @@ backend_test.exclude('reduce_sum_square_default_axes_keepdims_random_ipu')
 # T9150
 backend_test.exclude('test_shape_ipu')
 backend_test.exclude('test_shape_example_ipu')
+
+# Failures due to static size of poplar graph
+backend_test.exclude('test_tile')
 
 # Failures that have not been triaged
 backend_test.exclude('test_reshape_extended_dims')
