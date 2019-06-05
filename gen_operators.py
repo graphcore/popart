@@ -1,6 +1,7 @@
 import onnx.defs
 import io
 import numpy as np  # type: ignore
+import textwrap
 
 overrideOP = {
     "ai.onnx.AveragePool:7": {
@@ -676,6 +677,23 @@ def genPythonBuilderBinds(filename, schema):
                             "          return opset.constant(initData, name);\n"
                         )
                         f.write("       },\n")
+                    # Special case for the constantofshape operator
+                    elif op.name == "ConstantOfShape":
+                        x = f"""
+                        []({classname} &opset,
+                           const std::vector<TensorId> &args,
+                           py::array array,
+                           const std::string &name) {{
+                            ConstVoidData initData;
+                            initData.data = array.request().ptr;
+                            initData.info = getTensorInfo(array);
+                            return opset.constantofshape(args, initData, name);
+                        }},
+                        """
+                        x = textwrap.dedent(x)
+                        x = textwrap.indent(x, ' ' * 7)
+                        x = x[1:]  # drop the first newline
+                        f.write(x)
                     else:
 
                         # Add the lamda

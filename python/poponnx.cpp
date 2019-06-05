@@ -596,6 +596,11 @@ PYBIND11_MODULE(poponnx_core, m) {
            py::arg("num_groups"),
            py::arg("epsilon")     = 1e-05f,
            py::arg("debugPrefix") = std::string())
+      .def("printtensor",
+           &AiGraphcoreOpset1::printtensor,
+           py::arg("args"),
+           py::arg("print_gradient") = 1,
+           py::arg("debugPrefix")    = std::string())
       .def("subsample",
            &AiGraphcoreOpset1::subsample,
            py::arg("args"),

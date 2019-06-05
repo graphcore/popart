@@ -1662,20 +1662,6 @@ class AiOnnxOpset6 : private DomainOpSet {
                   const std::vector<int64_t>& strides = std::vector<int64_t>(),
                   const std::string &name = "");
 
-    /**
-     * Add the 'Scale' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Scale
-     *
-     * \param args List of input tensor ids
-     * \param scale The 'scale' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    scale(const std::vector<TensorId>& args,
-          float scale = 1.0f,
-          const std::string &name = "");
 
     /**
      * Add the 'LpPool' to the model
@@ -1862,7 +1848,6 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
     using AiOnnxOpset6::tanh;
     using AiOnnxOpset6::max;
     using AiOnnxOpset6::convtranspose;
-    using AiOnnxOpset6::scale;
     using AiOnnxOpset6::lppool;
     using AiOnnxOpset6::aten;
     using AiOnnxOpset6::hardmax;
@@ -2417,7 +2402,6 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
     using AiOnnxOpset7::reducel2;
     using AiOnnxOpset7::tanh;
     using AiOnnxOpset7::convtranspose;
-    using AiOnnxOpset7::scale;
     using AiOnnxOpset7::lppool;
     using AiOnnxOpset7::aten;
     using AiOnnxOpset7::hardmax;
@@ -2642,7 +2626,6 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     using AiOnnxOpset8::tanh;
     using AiOnnxOpset8::max;
     using AiOnnxOpset8::convtranspose;
-    using AiOnnxOpset8::scale;
     using AiOnnxOpset8::lppool;
     using AiOnnxOpset8::aten;
     using AiOnnxOpset8::hardmax;

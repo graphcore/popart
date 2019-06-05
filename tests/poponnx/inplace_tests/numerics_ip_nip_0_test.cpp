@@ -80,38 +80,41 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     }
 
     // Build an onnx model
-    auto builder = Builder::create();
-    auto aiOnnx  = builder->aiOnnxOpset9();
+    auto builder     = Builder::create();
+    auto aiOnnx      = builder->aiOnnxOpset9();
+    auto aiGraphcore = builder->aiGraphcoreOpset1();
 
-    auto getSubmodule = [N, &builder, &eng, &aiOnnx, &fdis, &idis](
-                            std::vector<TensorId> tensorsIn) {
-      std::shuffle(tensorsIn.begin(), tensorsIn.end(), eng);
-      std::vector<TensorId> tensorsOut;
+    auto getSubmodule =
+        [N, &builder, &eng, &aiOnnx, &aiGraphcore, &fdis, &idis](
+            std::vector<TensorId> tensorsIn) {
+          std::shuffle(tensorsIn.begin(), tensorsIn.end(), eng);
+          std::vector<TensorId> tensorsOut;
 
-      // the top half: add, sigmoid.
-      for (int i = 0; i < std::pow(2, N - 1); ++i) {
-        auto sum = aiOnnx.add({tensorsIn[2 * i], tensorsIn[2 * i + 1]});
+          // the top half: add, sigmoid.
+          for (int i = 0; i < std::pow(2, N - 1); ++i) {
+            auto sum = aiOnnx.add({tensorsIn[2 * i], tensorsIn[2 * i + 1]});
 
-        builder->setInplacePreferences(sum,
-                                       {{"AddLhsInplace", 100.0f + fdis(eng)},
-                                        {"AddRhsInplace", 100.0f + fdis(eng)}});
+            builder->setInplacePreferences(
+                sum,
+                {{"AddLhsInplace", 100.0f + fdis(eng)},
+                 {"AddRhsInplace", 100.0f + fdis(eng)}});
 
-        auto sigmoidOut = aiOnnx.sigmoid({sum});
-        builder->setInplacePreferences(
-            sigmoidOut, {{"SigmoidInplace", 100.0f + fdis(eng)}});
-        tensorsOut.push_back(sigmoidOut);
-      }
+            auto sigmoidOut = aiOnnx.sigmoid({sum});
+            builder->setInplacePreferences(
+                sigmoidOut, {{"SigmoidInplace", 100.0f + fdis(eng)}});
+            tensorsOut.push_back(sigmoidOut);
+          }
 
-      // the bottom half: scale.
-      for (int i = 0; i < std::pow(2, N - 1); ++i) {
-        TensorId id0  = tensorsIn[idis(eng) % tensorsIn.size()];
-        auto scaleOut = aiOnnx.scale({id0}, fdis(eng));
-        builder->setInplacePreferences(scaleOut,
-                                       {{"ScaleInplace", 100.0f + fdis(eng)}});
-        tensorsOut.push_back(scaleOut);
-      }
-      return tensorsOut;
-    };
+          // the bottom half: scale.
+          for (int i = 0; i < std::pow(2, N - 1); ++i) {
+            TensorId id0  = tensorsIn[idis(eng) % tensorsIn.size()];
+            auto scaleOut = aiGraphcore.scale({id0}, fdis(eng));
+            builder->setInplacePreferences(
+                scaleOut, {{"ScaleInplace", 100.0f + fdis(eng)}});
+            tensorsOut.push_back(scaleOut);
+          }
+          return tensorsOut;
+        };
 
     auto appendModule =
         [N, &builder, &eng, &fdis, &aiOnnx, &idis, &getSubmodule](
@@ -163,7 +166,7 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
 
       // the skip connect. We alternate between highest
       // priority and lowest priority
-      auto skipTensor = aiOnnx.scale({singleTensor}, fdis(eng));
+      auto skipTensor = aiGraphcore.scale({singleTensor}, fdis(eng));
       builder->setInplacePreferences(
           skipTensor,
           {{"ScaleInplace", 10.0f + 200.0f * (i % 2 == 1) + fdis(eng)}});

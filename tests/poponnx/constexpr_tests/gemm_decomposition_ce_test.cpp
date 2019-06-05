@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Gemm_Decomposition0) {
 
   // Check the ir
   // 1) there should only be 1 scale op,
-  BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::Scale).size() == 1);
+  BOOST_CHECK(ir.opsOfType(Onnx::AiGraphcore::OpSet1::Scale).size() == 1);
   // 2) there should only be 1 mul op,
   BOOST_CHECK(ir.opsOfType(Onnx::AiOnnx::OpSet9::MatMul).size() == 1);
   // 3) there should only be 1 add op,

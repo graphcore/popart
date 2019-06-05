@@ -83,7 +83,6 @@ void GroupNormGradOpx::grow(poplar::program::Sequence &prog) const {
   auto mean      = getInTensor(GroupNormGradOp::getMeanInIndex());
   auto invStdDev = getInTensor(GroupNormGradOp::getInvStdDevInIndex());
 
-  float epsilon = op.getEpsilon();
 
   // Convert input shape to poplar rules
   poplar::Tensor xP, yGradP;

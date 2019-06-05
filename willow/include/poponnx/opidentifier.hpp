@@ -386,7 +386,6 @@ const static OperatorIdentifier
     ImageScaler_1(Domain::ai_onnx, "ImageScaler", 0, 1, 1);
 const static OperatorIdentifier
     ParametricSoftplus_1(Domain::ai_onnx, "ParametricSoftplus", 0, 1, 1);
-const static OperatorIdentifier Scale_1(Domain::ai_onnx, "Scale", 0, 1, 1);
 const static OperatorIdentifier
     ScaledTanh_1(Domain::ai_onnx, "ScaledTanh", 0, 1, 1);
 const static OperatorIdentifier
@@ -542,7 +541,6 @@ const static OperatorIdentifier GivenTensorFill = Operators::GivenTensorFill_1;
 const static OperatorIdentifier ImageScaler     = Operators::ImageScaler_1;
 const static OperatorIdentifier ParametricSoftplus =
     Operators::ParametricSoftplus_1;
-const static OperatorIdentifier Scale           = Operators::Scale_1;
 const static OperatorIdentifier ScaledTanh      = Operators::ScaledTanh_1;
 const static OperatorIdentifier ThresholdedRelu = Operators::ThresholdedRelu_1;
 
@@ -670,7 +668,7 @@ const static AiGraphcoreOpIdV1 SoftmaxGrad("SoftmaxGrad");
 // constexpr static char Softplus[] = "Softplus";
 // constexpr static char Softsign[] = "Softsign";
 // constexpr static char SpaceToDepth[] = "SpaceToDepth";
-// constexpr static char Split[] = "Split";
+const static AiGraphcoreOpIdV1 SplitGrad("SplitGrad");
 const static AiGraphcoreOpIdV1 SqrtGrad("SqrtGrad");
 const static AiGraphcoreOpIdV1 SqueezeGrad("SqueezeGrad");
 const static AiGraphcoreOpIdV1 SubArg0Grad("SubArg0Grad");
@@ -694,6 +692,7 @@ const static AiGraphcoreOpIdV1 UnsqueezeGrad("UnsqueezeGrad");
 // constexpr static char GivenTensorFill[] = "GivenTensorFill";
 // constexpr static char ImageScaler[] = "ImageScaler";
 // constexpr static char ParametricSoftplus[] = "ParametricSoftplus";
+const static AiGraphcoreOpIdV1 Scale("Scale");
 const static AiGraphcoreOpIdV1 ScaleGrad("ScaleGrad");
 // constexpr static char ScaledTanh[] = "ScaledTanh";
 // constexpr static char ThresholdedRelu[] = "ThresholdedRelu";
@@ -710,8 +709,10 @@ const static AiGraphcoreOpIdV1 ConcatInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 FloorInplace("FloorInplace");
 const static AiGraphcoreOpIdV1 SliceInplace("SliceInplace");
 const static AiGraphcoreOpIdV1 PadInplace("PadInplace");
+const static AiGraphcoreOpIdV1 PrintTensor_1("PrintTensor", 1, 1);
 const static AiGraphcoreOpIdV1 ConcatGradInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 Subsample_1("Subsample", 1, 1);
+const static AiGraphcoreOpIdV1 Scale_1("Scale", 1, 1);
 const static AiGraphcoreOpIdV1 Square("Square");
 const static AiGraphcoreOpIdV1 GroupNormalization_1("GroupNormalization", 3, 3);
 
@@ -742,6 +743,8 @@ namespace OpSet1 {
 const static OperatorIdentifier Subsample = CustomOperators::Subsample_1;
 const static OperatorIdentifier GroupNormalization =
     CustomOperators::GroupNormalization_1;
+const static OperatorIdentifier PrintTensor = CustomOperators::PrintTensor_1;
+const static OperatorIdentifier Scale       = CustomOperators::Scale_1;
 } // namespace OpSet1
 } // namespace AiGraphcore
 

@@ -44,7 +44,7 @@ BOOST_AUTO_TEST_CASE(Inplace_subsample0) {
   auto subsample0 = builder->aiGraphcoreOpset1().subsample({rel0}, {2, 1, 2});
 
   float scaleFactor0 = 0.2;
-  auto s0            = aiOnnx.scale({in0}, scaleFactor0);
+  auto s0            = builder->aiGraphcoreOpset1().scale({in0}, scaleFactor0);
   auto subsample1    = builder->aiGraphcoreOpset1().subsample({s0}, {2, 1, 2});
 
   auto addOut = aiOnnx.add({subsample0, subsample1});
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE(Inplace_subsample0) {
   auto opsOfTypeRelu = ir.opsOfType(Onnx::AiOnnx::OpSet9::Relu);
   BOOST_CHECK(opsOfTypeRelu.size() == 0);
 
-  auto opsOfTypeScale = ir.opsOfType(Onnx::AiOnnx::OpSet9::Scale);
+  auto opsOfTypeScale = ir.opsOfType(Onnx::AiGraphcore::OpSet1::Scale);
   BOOST_CHECK(opsOfTypeScale.size() == 1);
 
   auto opsOfTypeAdd = ir.opsOfType(Onnx::AiOnnx::OpSet9::Add);

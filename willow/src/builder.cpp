@@ -200,6 +200,30 @@ TensorId AiGraphcoreOpset1::subsample(const std::vector<TensorId> &args,
                   name)[0];
 }
 
+TensorId AiGraphcoreOpset1::printtensor(const std::vector<TensorId> &args,
+                                        int64_t print_gradient,
+                                        const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::PrintTensor,
+           getOpsetVersion(),
+           args,
+           {{"print_gradient", print_gradient}},
+           name)
+      .at(0);
+}
+
+TensorId AiGraphcoreOpset1::scale(const std::vector<TensorId> &args,
+                                  float scale,
+                                  const std::string &name) {
+  return impl
+      ->op(Onnx::AiGraphcore::OpSet1::Scale,
+           getOpsetVersion(),
+           args,
+           {{"scale", scale}},
+           name)
+      .at(0);
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,

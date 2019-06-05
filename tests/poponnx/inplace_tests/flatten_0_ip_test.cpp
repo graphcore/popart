@@ -37,8 +37,9 @@ BOOST_AUTO_TEST_CASE(Inplace_flatten0) {
     //  where flatten above is null flattending
 
     // Build an onnx model
-    auto builder = Builder::create();
-    auto aiOnnx  = builder->aiOnnxOpset9();
+    auto builder     = Builder::create();
+    auto aiOnnx      = builder->aiOnnxOpset9();
+    auto aiGraphcore = builder->aiGraphcoreOpset1();
 
     TensorInfo info0{"FLOAT", std::vector<int64_t>{2, 3, 2, 6}};
     TensorInfo infoOut{"FLOAT", std::vector<int64_t>{6, 6}};
@@ -50,10 +51,10 @@ BOOST_AUTO_TEST_CASE(Inplace_flatten0) {
 
     auto flat0         = aiOnnx.flatten({in0}, 2);
     float scaleFactor0 = 2.0;
-    auto s0            = aiOnnx.scale({flat0}, scaleFactor0);
+    auto s0            = aiGraphcore.scale({flat0}, scaleFactor0);
 
     float scaleFactor1 = 3.0;
-    auto s1            = aiOnnx.scale({in0}, scaleFactor1);
+    auto s1            = aiGraphcore.scale({in0}, scaleFactor1);
     auto flat1         = aiOnnx.flatten({s1}, 3);
 
     auto dotOut = aiOnnx.matmul({s0, flat1});

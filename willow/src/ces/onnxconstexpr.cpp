@@ -3,13 +3,15 @@
 #include <poponnx/ces/onnxconstexpr.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/graph.hpp>
+#include <poponnx/onnxutil.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensors.hpp>
 
 namespace poponnx {
 
 bool OnnxConstExprUtil::isConst(const onnx::NodeProto &node) {
-  return node.op_type() == "Constant" || node.op_type() == "Shape";
+  return node.op_type() == "Constant" || node.op_type() == "Shape" ||
+         node.op_type() == "ConstantOfShape";
 }
 
 void OnnxConstExprUtil::processNode(const onnx::NodeProto &node, Graph *graph) {
@@ -17,6 +19,8 @@ void OnnxConstExprUtil::processNode(const onnx::NodeProto &node, Graph *graph) {
     processConstantNode(node, graph);
   } else if (node.op_type() == "Shape") {
     processShapeNode(node, graph);
+  } else if (node.op_type() == "ConstantOfShape") {
+    processConstantOfShapeNode(node, graph);
   } else {
     throw error("Can not process node type {} as const", node.op_type());
   }
@@ -51,6 +55,39 @@ void OnnxConstExprUtil::processShapeNode(const onnx::NodeProto &node,
 
   TensorInfo outInfo(DataType::INT64, {static_cast<int64_t>(shape.size())});
   graph->getTensors().addConstInit(node.output(0), outInfo, data.data());
+}
+
+void OnnxConstExprUtil::processConstantOfShapeNode(const onnx::NodeProto &node,
+                                                   Graph *graph) {
+  auto inputId     = node.input(0);
+  auto inputTensor = graph->getTensors().get(inputId);
+  TensorId name    = node.output(0);
+
+  if (node.attribute().size() == 0) {
+    // if no value provided, use DataType::FLOAT and value 0.0f
+    TensorInfo resultInfo(DataType::FLOAT, inputTensor->info.shape());
+    std::vector<float> resultData(resultInfo.nelms(), 0.0f);
+
+    graph->getTensors().addConstInit(
+        name, resultInfo, reinterpret_cast<void *>(resultData.data()));
+  } else {
+    // TensorData from attribute value
+    const onnx::TensorProto &value = node.attribute(0).t();
+    ConstVoidData valueCVData      = onnxutil::getConstData(value);
+
+    // Result takes data type from value and shape from input
+    TensorInfo resultInfo(valueCVData.info.dataType(),
+                          inputTensor->info.shape());
+
+    const char *valueData = reinterpret_cast<const char *>(valueCVData.data);
+    std::vector<char> resultData(resultInfo.nbytes());
+    for (int i = 0; i < resultData.size(); i++) {
+      resultData.at(i) = valueData[i % valueCVData.info.nbytes()];
+    }
+
+    graph->getTensors().addConstInit(
+        name, resultInfo, reinterpret_cast<void *>(resultData.data()));
+  }
 }
 
 } // namespace poponnx
