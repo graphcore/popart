@@ -243,6 +243,12 @@ public:
   // dropout ops in the same layer
   std::map<uint32_t, poplar::Tensor> dropoutReferenceTensors;
 
+  poplar::Tensor getConst(poplar::Graph &graph,
+                          const poplar::Type &type,
+                          const std::vector<size_t> &shape,
+                          double val,
+                          const std::string &name);
+
 private:
   // The root graph. Operations that span the boundaries between
   // replicated subgraphs (e.g. all-reduce of weight deltas) should be added
@@ -277,11 +283,6 @@ private:
   // layers doensn't break dropout's functionality
   bool requiresDropoutRandomSeed = false;
   poplar::Tensor dropoutRandomSeed;
-
-  poplar::Tensor getConst(const poplar::Type &type,
-                          const std::vector<size_t> &shape,
-                          double val,
-                          const std::string &name);
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
