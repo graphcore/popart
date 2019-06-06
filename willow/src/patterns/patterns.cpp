@@ -19,13 +19,15 @@ Patterns::Patterns(PatternsLevel level) {
     break;
   }
 
-    // add none of the patterns
+  // add none of the patterns
   case PatternsLevel::NONE: {
     break;
   }
   }
 
-  // step 2 : removing patterns to run
+  // step 2 : removing patterns to run (turning off logging)
+  auto prevLogLevel = getLogLevel(logging::Module::pattern);
+  setLogLevel(logging::Module::pattern, logging::Level::Off);
   switch (level) {
   case PatternsLevel::DEFAULT: {
     enableSplitGather(false);
@@ -37,6 +39,7 @@ Patterns::Patterns(PatternsLevel level) {
     break;
   }
   }
+  setLogLevel(logging::Module::pattern, prevLogLevel);
 }
 
 Patterns::Patterns(std::vector<PreAliasPatternType> types) {
