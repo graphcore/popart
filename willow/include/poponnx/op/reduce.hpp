@@ -37,6 +37,8 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  const Shape &backwardShape() const;
+
 protected:
   // The input shape, with '1' inserted in reduction axes.
   // This is the same as the output shape if keepdims is true.
@@ -53,6 +55,9 @@ public:
   std::unique_ptr<Op> clone() const override;
   void setup() override;
 
+  // A list of integers, along which have been reduced.
+  const std::vector<int64_t> &getAxes() const;
+
   const std::vector<GradInOutMapper> &gradInputInfo() const override;
   const std::map<int, int> &gradOutToNonGradIn() const final;
   const Shape &backwardShape() const;
@@ -68,6 +73,7 @@ protected:
   // the shape of this grad Op's input, but with '1's inserted where
   // broadcasts are required to obtain the gradient of the fwd Op's input
   const Shape backward_shape;
+  std::vector<int64_t> axes;
 };
 
 } // namespace poponnx

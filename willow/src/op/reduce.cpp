@@ -67,12 +67,14 @@ bool ReduceOp::canBeReplacedByIdentity() {
   return (inInfo(getInIndex()).shape() == outInfo(getOutIndex()).shape());
 }
 
+const Shape &ReduceOp::backwardShape() const { return backward_shape; }
+
 ReduceGradOp::ReduceGradOp(const AiGraphcoreOpIdV1 &opid_,
                            const ReduceOp &fwdOp,
                            const Shape &backward_shape_)
     : Op(opid_, fwdOp.getSettings()),
       outputTensorInfo(fwdOp.inInfo(ReduceOp::getInIndex())),
-      backward_shape(backward_shape_) {}
+      backward_shape(backward_shape_), axes(fwdOp.getAxes()) {}
 
 std::unique_ptr<Op> ReduceGradOp::clone() const {
   return make_unique<ReduceGradOp>(*this);
@@ -93,5 +95,7 @@ const std::map<int, int> &ReduceGradOp::gradOutToNonGradIn() const {
 const Shape &ReduceGradOp::backwardShape() const { return backward_shape; }
 
 void ReduceGradOp::setup() { outInfo(getOutIndex()) = outputTensorInfo; }
+
+const std::vector<int64_t> &ReduceGradOp::getAxes() const { return axes; }
 
 } // namespace poponnx
