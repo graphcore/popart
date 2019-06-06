@@ -5,10 +5,6 @@
 
 namespace poponnx {
 
-// Opset version 1 from
-// https://github.com/onnx/onnx/blob/master/docs/Operators.md#TopK
-// (The definition of Top-K changes in opset 10)
-
 class TopKOp : public BaseSortOp {
 public:
   TopKOp(const OperatorIdentifier &_opid,
@@ -17,11 +13,14 @@ public:
          const Op::Settings &settings);
   std::unique_ptr<Op> clone() const override;
   void setup() final;
+  virtual void connectInTensor(InIndex, TensorId) final;
 
   int64_t getK() const;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
 
   void appendAttributes(OpSerialiserBase &) const final;
+
+  static InIndex getKInIndex() { return 1; }
 
   // The outputs are:
   // - the sorted input, sliced from 0:K
@@ -31,7 +30,7 @@ public:
   static OutIndex getIndicesOutIndex() { return 1; }
 
 private:
-  const int64_t K;
+  int64_t K;
 };
 
 // Similar to Scatter, except it has 2 inputs instead of 3.

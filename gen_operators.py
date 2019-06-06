@@ -26,6 +26,9 @@ overrideOP = {
     "ai.onnx.MaxPool:8": {
         "verifyInput": True
     },
+    "ai.onnx.MaxPool:10": {
+        "verifyInput": True
+    },
     "ai.onnx.Pad:2": {
         "verifyInput": True,
     }
@@ -234,6 +237,8 @@ class Attribute:
                 return 'onnx::GraphProto()'
             elif self.type == onnx.defs.OpSchema.AttrType.TENSOR:
                 return '0'
+            elif self.type == onnx.defs.OpSchema.AttrType.STRING:
+                return 'std::string()'
             else:
                 return 'UNKNOWN'
 
@@ -393,7 +398,8 @@ def genBuilderHpp(filename, schema):
         addHeader(f)
 
         for k, v, in schema.domains.items():
-            for opset_version, opset in sorted(v.opsets.items()):
+            for opset_version, opset in sorted(v.opsets.items(),
+                                               key=lambda x: int(x[0])):
 
                 classname = v.CppName() + "Opset" + opset_version
 
@@ -459,8 +465,8 @@ def genBuilderHpp(filename, schema):
                             "     * \param num_outputs The number of output tensor ids\n"
                         )
 
-                    for a in sorted(
-                            op.attributes, key=lambda x: x.hasDefault()):
+                    for a in sorted(op.attributes,
+                                    key=lambda x: x.hasDefault()):
                         if not a.isDeprecated():
                             f.write("     * \param {} The '{}' attribute \n".
                                     format(a.name, a.name))
@@ -514,7 +520,8 @@ def genBuilderCpp(filename, schema):
         addHeader(f)
 
         for k, v, in schema.domains.items():
-            for opset_version, opset in sorted(v.opsets.items()):
+            for opset_version, opset in sorted(v.opsets.items(),
+                                               key=lambda x: int(x[0])):
 
                 classname = v.CppName() + "Opset" + opset_version
 
@@ -639,7 +646,8 @@ def genPythonBuilderBinds(filename, schema):
 
             ops = []
 
-            for opset_version, opset in sorted(v.opsets.items()):
+            for opset_version, opset in sorted(v.opsets.items(),
+                                               key=lambda x: int(x[0])):
 
                 # Add all ops in the this op set
                 for op in opset.operators:
@@ -679,17 +687,16 @@ def genPythonBuilderBinds(filename, schema):
                         f.write("       },\n")
                     # Special case for the constantofshape operator
                     elif op.name == "ConstantOfShape":
-                        x = f"""
-                        []({classname} &opset,
-                           const std::vector<TensorId> &args,
-                           py::array array,
-                           const std::string &name) {{
-                            ConstVoidData initData;
-                            initData.data = array.request().ptr;
-                            initData.info = getTensorInfo(array);
-                            return opset.constantofshape(args, initData, name);
-                        }},
-                        """
+                        x = "\
+                        []({classname} &opset,\
+                           const std::vector<TensorId> &args,\
+                           py::array array,\
+                           const std::string &name) {{\
+                            ConstVoidData initData;\
+                            initData.data = array.request().ptr;\
+                            initData.info = getTensorInfo(array);\
+                            return opset.constantofshape(args, initData, name);\
+                        }},".format(classname)
                         x = textwrap.dedent(x)
                         x = textwrap.indent(x, ' ' * 7)
                         x = x[1:]  # drop the first newline
@@ -707,10 +714,9 @@ def genPythonBuilderBinds(filename, schema):
                         if op.min_output != op.max_output:
                             f.write("          unsigned num_outputs,\n")
 
-                        for a in sorted(
-                                op.attributes,
-                                key=lambda x: x.hasDefault() or not x.required
-                        ):
+                        for a in sorted(op.attributes,
+                                        key=lambda x: x.hasDefault() or not x.
+                                        required):
                             if not a.isDeprecated():
                                 f.write("          {} {},\n".format(
                                     a.CppType(), a.name))
@@ -735,10 +741,9 @@ def genPythonBuilderBinds(filename, schema):
                                 "                         {}num_outputs,\n".
                                 format(spaces(len(op.CppName()))))
 
-                        for a in sorted(
-                                op.attributes,
-                                key=lambda x: x.hasDefault() or not x.required
-                        ):
+                        for a in sorted(op.attributes,
+                                        key=lambda x: x.hasDefault() or not x.
+                                        required):
                             if not a.isDeprecated():
                                 f.write(
                                     "                         {}{},\n".format(

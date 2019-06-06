@@ -82,45 +82,19 @@ void ReshapeOp::connectInTensor(InIndex inIndex, TensorId tenId) {
   // the data tensor to this Op as an input, the default connection of
   // an input tensor to its Op
   if (inIndex == 0) {
-    defaultConnectInTensor(inIndex, tenId);
+    Op::connectInTensor(inIndex, tenId);
   } else if (inIndex == 1) {
     // we attempt to set outputInfo
-
-    TensorId shapeId = tenId;
-
-    // check 2 : that there is already a tensor with the shape tensor's name
-    if (!getGraph().getTensors().contains(shapeId)) {
-      throw error("no Tensor named `" + shapeId + "' recorded in Ir. " +
-                  " This is the second input in the ReshapeOp constructor. ");
-    }
-    Tensor *shapeTensor = getGraph().getTensors().get(shapeId);
-
-    // check 3 : that the tensor has data
-    if (!shapeTensor->hasTensorData()) {
-      throw error("The shape Tensor `" + shapeId + "' does not have data");
-    }
-    TensorData *tensorData = shapeTensor->tensorData();
-
-    // check 4 : that the data is int64 (as per the ONNX spec)
-    if (shapeTensor->info.dataType() != DataType::INT64) {
-      throw error("shape tensor `" + shapeId + "' is not INT64, it is " +
-                  shapeTensor->info.data_type());
+    try {
+      getInTensorData(tenId, outShape);
+      finaliseShape();
+    } catch (poponnx::error &err) {
+      throw error("Need the value of the {} input 'shape' to detemine the "
+                  "output shape, but was unable because {}",
+                  opid,
+                  err.what());
     }
 
-    // check 5 : that is is rank 0 or rank 1
-    if (shapeTensor->info.rank() > 1) {
-      throw error(
-          "new shape tensor should be rank 0/1 in ReshapeOp constructor");
-    }
-
-    // Finally, we can set the shape of the output tensor
-    outShape      = {};
-    int64_t *data = static_cast<int64_t *>(tensorData->data());
-    for (int i = 0; i < shapeTensor->info.dim(0); ++i) {
-      outShape.push_back(data[i]);
-    }
-
-    finaliseShape();
   } else {
     throw error("Unexpected index " + std::to_string(inIndex) +
                 " in ReshapeOp::connectInTensor");

@@ -11,9 +11,10 @@ namespace poponnx {
 MaxPoolOp::MaxPoolOp(const OperatorIdentifier &_opid,
                      const std::vector<int64_t> &kernelShape_,
                      int64_t storageOrder_,
+                     int64_t ceilMode_,
                      const HasReceptiveFieldOp::Settings &settings_)
     : HasReceptiveFieldOp(_opid, settings_), storageOrder(storageOrder_),
-      kernelShape(kernelShape_) {}
+      ceilMode(ceilMode_), kernelShape(kernelShape_) {}
 
 void MaxPoolOp::setup0() {
 
@@ -56,6 +57,7 @@ void MaxPoolOp::appendAttributes(OpSerialiserBase &os) const {
   HasReceptiveFieldOp::appendAttributes(os);
   os.appendAttribute("storage_order", storageOrder);
   os.appendAttribute("kernel_shape", kernelShape);
+  os.appendAttribute("ceil_mode", ceilMode);
 }
 
 MaxPoolGradOp::MaxPoolGradOp(const MaxPoolOp &op_)
@@ -112,11 +114,12 @@ static OpCreator<MaxPoolOp> maxPoolOpCreator(
 
       int64_t storageOrder =
           attr.getAttribute<Attributes::Int>("storage_order", 0);
+      int64_t ceilMode = attr.getAttribute<Attributes::Int>("ceil_mode", 0);
       std::vector<int64_t> kernelShape =
           attr.getAttribute<Attributes::Ints>("kernel_shape", {});
 
-      return std::unique_ptr<Op>(
-          new MaxPoolOp(_opid, kernelShape, storageOrder, receptiveSettings));
+      return std::unique_ptr<Op>(new MaxPoolOp(
+          _opid, kernelShape, ceilMode, storageOrder, receptiveSettings));
     },
     true);
 } // namespace

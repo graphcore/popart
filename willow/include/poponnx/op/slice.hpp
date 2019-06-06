@@ -23,9 +23,14 @@ public:
               const Op::Settings &settings_);
 
   static InIndex getInIndex() { return 0; }
+  static InIndex getStartsInIndex() { return 1; }
+  static InIndex getEndsInIndex() { return 2; }
+  static InIndex getAxesInIndex() { return 3; }
+  static InIndex getStepsInIndex() { return 4; }
   static OutIndex getOutIndex() { return 0; }
 
   void setup() final;
+  virtual void connectInTensor(InIndex, TensorId) final;
 
   void appendAttributes(OpSerialiserBase &) const override;
 
@@ -49,9 +54,9 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
 private:
-  const std::vector<int64_t> starts;
-  const std::vector<int64_t> ends;
-  const std::vector<int64_t> axes;
+  std::vector<int64_t> starts;
+  std::vector<int64_t> ends;
+  std::vector<int64_t> axes;
 
   TensorInfo createOutShape() const;
 

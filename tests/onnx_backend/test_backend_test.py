@@ -124,8 +124,10 @@ class IpuBackend(onnx.backend.base.Backend):
             outputs_info=None,  # type: Optional[Sequence[Tuple[numpy.dtype, Tuple[int, ...]]]]
             **kwargs  # type: Any
     ):  # type: (...) -> Optional[Tuple[Any, ...]]
-        super(IpuBackend, cls).run_node(
-            node, inputs, device=device, outputs_info=outputs_info)
+        super(IpuBackend, cls).run_node(node,
+                                        inputs,
+                                        device=device,
+                                        outputs_info=outputs_info)
 
         raise BackendIsNotSupposedToImplementIt(
             "This is the ipu backend test that doesn't verify the results but does run the checker"
@@ -149,7 +151,6 @@ backend_test.exclude('test_atan')
 backend_test.exclude('test_compress')
 backend_test.exclude('test_convtranspose')
 backend_test.exclude('test_depthtospace')
-backend_test.exclude('test_dynamic_slice')
 backend_test.exclude('test_elu')
 backend_test.exclude('test_equal')
 backend_test.exclude('test_erf')
@@ -198,7 +199,6 @@ backend_test.exclude('test_SELU')
 backend_test.exclude('test_nonzero')
 backend_test.exclude('test_tfidfvectorizer')
 backend_test.exclude('test_where')
-backend_test.exclude('test_slice')
 backend_test.exclude('test_bitshift')
 backend_test.exclude('test_matmulinteger')
 
@@ -214,6 +214,7 @@ backend_test.exclude('test_qlinearmatmul')
 backend_test.exclude('test_quantizelinear')
 backend_test.exclude('test_reversesequence')
 backend_test.exclude('test_roialign')
+backend_test.exclude('test_split')
 
 # high level models
 backend_test.exclude('bvlc_alexnet')
@@ -333,6 +334,9 @@ backend_test.exclude('test_shape_example_ipu')
 
 # Failures due to static size of poplar graph
 backend_test.exclude('test_tile')
+
+# T9215
+backend_test.exclude('test_slice')
 
 # Failures that have not been triaged
 backend_test.exclude('test_reshape_extended_dims')

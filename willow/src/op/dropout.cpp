@@ -80,7 +80,9 @@ const std::map<int, int> &DropoutGradOp::gradOutToNonGradIn() const {
 
 namespace {
 static OpCreator<DropoutOp> dropoutOpCreator(
-    {Onnx::Operators::Dropout_6, Onnx::Operators::Dropout_7},
+    {Onnx::Operators::Dropout_6,
+     Onnx::Operators::Dropout_7,
+     Onnx::Operators::Dropout_10},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

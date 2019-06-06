@@ -15,6 +15,7 @@ public:
   MaxPoolOp(const OperatorIdentifier &_opid,
             const std::vector<int64_t> &kernelShape_,
             int64_t storageOrder,
+            int64_t _ceilMode,
             const HasReceptiveFieldOp::Settings &settings);
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
@@ -32,6 +33,7 @@ private:
   void setSpatialK() final;
 
   int64_t storageOrder;
+  int64_t ceilMode;
   std::vector<int64_t> kernelShape;
 };
 

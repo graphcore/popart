@@ -1,3 +1,4 @@
+#include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/topk.hpp>
 #include <poponnx/opmanager.hpp>
@@ -14,19 +15,40 @@ TopKOp::TopKOp(const OperatorIdentifier &opid_,
 
 std::unique_ptr<Op> TopKOp::clone() const { return make_unique<TopKOp>(*this); }
 
+void TopKOp::connectInTensor(InIndex inIndex, TensorId tenId) {
+  if (inIndex == getInIndex()) {
+    BaseSortOp::connectInTensor(inIndex, tenId);
+  }
+
+  if (opid.version >= 10) {
+    if (inIndex == getKInIndex()) {
+      try {
+        std::vector<int64_t> k;
+        getInTensorData(tenId, k);
+        K = k[0];
+      } catch (poponnx::error &err) {
+        throw error("Need the value of the {} input 'K' to detemine the output "
+                    "shape, but was unable because {}",
+                    opid,
+                    err.what());
+      }
+    }
+  }
+}
+
 void TopKOp::setup() {
 
   validateAxis();
 
   auto shape = inShape(getInIndex());
-  if (shape.at(getAxis()) < K) {
+  if (shape.at(getAxis()) < getK()) {
     throw error("Cannot take top-{} on dim of size {}, invalid Op {}",
-                K,
+                getK(),
                 getAxis(),
                 str());
   }
 
-  shape[getAxis()] = K;
+  shape[getAxis()] = getK();
 
   // TODO T8133 : how to manage this correctly, should be INT64
   outInfo(getIndicesOutIndex()) = TensorInfo(DataType::INT32, shape);
@@ -36,7 +58,14 @@ void TopKOp::setup() {
 
 void TopKOp::appendAttributes(OpSerialiserBase &os) const {
   BaseSortOp::appendAttributes(os);
-  os.appendAttribute("K", K);
+
+  if (opid.version == 1) {
+    os.appendAttribute("K", K);
+  } else {
+    // Append the determined K so that this op may be used
+    // in outlining
+    os.appendAttribute("_K", K);
+  }
 }
 
 int64_t TopKOp::getK() const { return K; }
@@ -88,16 +117,31 @@ namespace {
 std::unique_ptr<Op> topKFactory(const OperatorIdentifier &_opid,
                                 const Op::Settings &settings,
                                 const Attributes &attr) {
-  // K is required
-  int64_t K = attr.getAttribute<Attributes::Int>("k", 1);
-  // axis is optional
-  int64_t axis = attr.getAttribute<Attributes::Int>("axis", 0);
 
-  return make_unique<TopKOp>(_opid, K, axis, settings);
+  if (_opid.version == 1) {
+    // K is required
+    int64_t K = attr.getAttribute<Attributes::Int>("k", 1);
+    // axis is optional
+    int64_t axis = attr.getAttribute<Attributes::Int>("axis", 0);
+
+    return make_unique<TopKOp>(_opid, K, axis, settings);
+  } else if (_opid.version == 10) {
+    // K is now an input, which we will attend to determine in the setup
+    // method
+
+    // axis is optional
+    int64_t axis = attr.getAttribute<Attributes::Int>("axis", 0);
+
+    return make_unique<TopKOp>(_opid, -1, axis, settings);
+  } else {
+    throw error("Unsupported operator version {} for topK", _opid.version);
+  }
 }
 
-static OpCreator<TopKOp>
-    TopKOpCreator(Onnx::Operators::TopK_1, topKFactory, true);
+static OpCreator<TopKOp> TopKOpCreator({Onnx::Operators::TopK_1,
+                                        Onnx::Operators::TopK_10},
+                                       topKFactory,
+                                       true);
 } // namespace
 
 } // namespace poponnx

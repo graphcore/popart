@@ -575,12 +575,39 @@ def test_unsqueeze_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
-def test_slice(op_tester):
+def test_slice_opset9(op_tester):
     d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnx.slice([i1], axes=[0, 1], starts=[1, 0], ends=[2, 3])
+        o = builder.aiOnnxOpset9.slice([i1],
+                                       axes=[0, 1],
+                                       starts=[1, 0],
+                                       ends=[2, 3])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        o = d1[1:2, 0:3]
+
+        return [o]
+
+    op_tester.run(init_builder, reference, 'infer')
+
+
+def test_slice_opset10(op_tester):
+    d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
+    axesV = np.array([0, 1]).astype(np.int32)
+    startsV = np.array([1, 0]).astype(np.int32)
+    endsV = np.array([2, 3]).astype(np.int32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        axes = builder.addInitializedInputTensor(axesV)
+        starts = builder.addInitializedInputTensor(startsV)
+        ends = builder.addInitializedInputTensor(endsV)
+
+        o = builder.aiOnnx.slice([i1, starts, ends, axes])
         builder.addOutputTensor(o)
         return [o]
 
@@ -594,10 +621,14 @@ def test_slice(op_tester):
 
 def test_slice_default_axes(op_tester):
     d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
+    startsV = np.array([1, 0]).astype(np.int32)
+    endsV = np.array([2, 3]).astype(np.int32)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnx.slice([i1], axes=[], starts=[1, 0], ends=[2, 3])
+        starts = builder.addInitializedInputTensor(startsV)
+        ends = builder.addInitializedInputTensor(endsV)
+        o = builder.aiOnnx.slice([i1, starts, ends])
         builder.addOutputTensor(o)
         return [o]
 
@@ -611,10 +642,17 @@ def test_slice_default_axes(op_tester):
 
 def test_slice_neg(op_tester):
     d1 = np.array([1., 2., 3., 4., 5., 6., 7., 8.]).astype(np.float32)
+    axesV = np.array([0]).astype(np.int32)
+    startsV = np.array([-5]).astype(np.int32)
+    endsV = np.array([-3]).astype(np.int32)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnx.slice([i1], axes=[0], starts=[-5], ends=[-3])
+        axes = builder.addInitializedInputTensor(axesV)
+        starts = builder.addInitializedInputTensor(startsV)
+        ends = builder.addInitializedInputTensor(endsV)
+
+        o = builder.aiOnnx.slice([i1, starts, ends, axes])
         builder.addOutputTensor(o)
         return [o]
 
@@ -628,10 +666,17 @@ def test_slice_neg(op_tester):
 
 def test_slice_grad(op_tester):
     d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
+    axesV = np.array([0, 1]).astype(np.int32)
+    startsV = np.array([1, 0]).astype(np.int32)
+    endsV = np.array([2, 3]).astype(np.int32)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnx.slice([i1], axes=[0, 1], starts=[1, 0], ends=[2, 3])
+        axes = builder.aiOnnx.constant(axesV)
+        starts = builder.aiOnnx.constant(startsV)
+        ends = builder.aiOnnx.constant(endsV)
+
+        o = builder.aiOnnx.slice([i1, starts, ends, axes])
         builder.addOutputTensor(o)
         return [
             o,
@@ -653,45 +698,69 @@ def test_slice_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_slice_error_start_input(op_tester):
+    d1 = np.array([[1., 2., 3., 4.], [5., 6., 7., 8.]]).astype(np.float32)
+    axesV = np.array([0, 1]).astype(np.int32)
+    startsV = np.array([1, 0]).astype(np.int32)
+    endsV = np.array([2, 3]).astype(np.int32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        starts = builder.addInputTensor(startsV)
+        ends = builder.addInputTensor(endsV)
+
+        o = builder.aiOnnx.slice([i1, starts, ends])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        return []
+
+    op_tester.passes = ['PreUniRepl']
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        op_tester.run(init_builder, reference, 'train')
+
+    assert (
+        e_info.value.args[0] ==
+        "Need the value of the ai.onnx.Slice:10 input 'starts' to detemine the output shape, but was unable because the tensor `input/1` does not have data"
+    )
+
+
 def test_pad(op_tester):
     data = np.array([[[1., 2.], [3., 4.]]]).astype(np.float32)
-    _test_pad(
-        op_tester,
-        data,
-        lower_padding=(2, 1, 1),
-        upper_padding=(1, 0, 2),
-        mode='constant')
+    _test_pad(op_tester,
+              data,
+              lower_padding=(2, 1, 1),
+              upper_padding=(1, 0, 2),
+              mode='constant')
 
 
 def test_pad_with_value(op_tester):
     data = np.array([[[1., 2.], [3., 4.]]]).astype(np.float32)
-    _test_pad(
-        op_tester,
-        data,
-        lower_padding=(2, 1, 1),
-        upper_padding=(1, 0, 2),
-        mode='constant',
-        pad_value=0.3)
+    _test_pad(op_tester,
+              data,
+              lower_padding=(2, 1, 1),
+              upper_padding=(1, 0, 2),
+              mode='constant',
+              pad_value=0.3)
 
 
 def test_pad_type_edge(op_tester):
     data = np.array([[[1., 2.], [3., 4.]]]).astype(np.float32)
-    _test_pad(
-        op_tester,
-        data,
-        lower_padding=(2, 1, 1),
-        upper_padding=(1, 0, 2),
-        mode='edge')
+    _test_pad(op_tester,
+              data,
+              lower_padding=(2, 1, 1),
+              upper_padding=(1, 0, 2),
+              mode='edge')
 
 
 def test_pad_type_reflect(op_tester):
     data = np.array([[1., 2., 3.], [4., 5., 6.]]).astype(np.float32)
-    _test_pad(
-        op_tester,
-        data,
-        lower_padding=(1, 0),
-        upper_padding=(0, 2),
-        mode='reflect')
+    _test_pad(op_tester,
+              data,
+              lower_padding=(1, 0),
+              upper_padding=(0, 2),
+              mode='reflect')
 
 
 def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
@@ -1190,8 +1259,10 @@ def test_instancenorm_grad(op_tester):
     def reference(ref_data):
         i_data = torch.tensor(data, requires_grad=True)
 
-        m = torch.nn.InstanceNorm2d(
-            features, eps=epsilon, momentum=0, affine=True)
+        m = torch.nn.InstanceNorm2d(features,
+                                    eps=epsilon,
+                                    momentum=0,
+                                    affine=True)
         m.weight.data = torch.tensor(scale)
         m.bias.data = torch.tensor(bias)
         out = m(i_data)

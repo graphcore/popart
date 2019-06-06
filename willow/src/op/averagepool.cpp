@@ -9,12 +9,15 @@ namespace poponnx {
 
 // TODO : Support "count_include_pad" T6249
 
+// TODO : Support ceilMode T9185
+
 AveragePoolOp::AveragePoolOp(const OperatorIdentifier &_opid,
                              int64_t _countIncludePad,
+                             int64_t _ceilMode,
                              const std::vector<int64_t> &_kernelShape,
                              const HasReceptiveFieldOp::Settings &settings_)
     : HasReceptiveFieldOp(_opid, settings_), kernelShape(_kernelShape),
-      countIncludePad(_countIncludePad) {
+      countIncludePad(_countIncludePad), ceilMode(_ceilMode) {
 
   // TODO : Use the count_include_pad for AveragePool-1
 }
@@ -59,6 +62,7 @@ void AveragePoolOp::appendAttributes(OpSerialiserBase &os) const {
   HasReceptiveFieldOp::appendAttributes(os);
   os.appendAttribute("kernel_shape", kernelShape);
   os.appendAttribute("count_include_pad", countIncludePad);
+  os.appendAttribute("ceil_mode", ceilMode);
 }
 
 AveragePoolGradOp::AveragePoolGradOp(const AveragePoolOp &op_)
@@ -107,7 +111,9 @@ std::unique_ptr<Op> AveragePoolGradOp::clone() const {
 
 namespace {
 static OpCreator<AveragePoolOp> averagePoolOpCreator(
-    {Onnx::Operators::AveragePool_1, Onnx::Operators::AveragePool_7},
+    {Onnx::Operators::AveragePool_1,
+     Onnx::Operators::AveragePool_7,
+     Onnx::Operators::AveragePool_10},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
@@ -119,9 +125,10 @@ static OpCreator<AveragePoolOp> averagePoolOpCreator(
           attr.getAttribute<Attributes::Ints>("kernel_shape", {});
       int64_t countIncludePad =
           attr.getAttribute<Attributes::Int>("count_include_pad", 0);
+      int64_t ceilMode = attr.getAttribute<Attributes::Int>("ceil_mode", 0);
 
       return std::unique_ptr<Op>(new AveragePoolOp(
-          _opid, countIncludePad, kernelShape, receptiveSettings));
+          _opid, countIncludePad, ceilMode, kernelShape, receptiveSettings));
     },
     true);
 } // namespace

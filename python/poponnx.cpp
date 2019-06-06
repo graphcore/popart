@@ -634,16 +634,10 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_property_readonly("aiOnnxOpset7", &Builder::aiOnnxOpset7)
       .def_property_readonly("aiOnnxOpset8", &Builder::aiOnnxOpset8)
       .def_property_readonly("aiOnnxOpset9", &Builder::aiOnnxOpset9)
+      .def_property_readonly("aiOnnxOpset10", &Builder::aiOnnxOpset10)
 
       // Accessors for the ai.graphcore domain builder interface
       .def_property_readonly("aiGraphcoreOpset1", &Builder::aiGraphcoreOpset1)
-
-      .def("reshape_const",
-           &Builder::reshape_const<AiOnnxOpset9>,
-           py::arg("T"),
-           py::arg("args"),
-           py::arg("shape"),
-           py::arg("debugPrefix") = std::string())
 
       .def("addNodeAttribute",
            static_cast<void (Builder::*)(const std::string &,

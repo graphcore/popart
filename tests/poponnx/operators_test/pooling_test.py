@@ -11,13 +11,19 @@ def test_average_pool_1(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnx.averagepool([i1], [2, 2], 0, [0, 0, 0, 0], [2, 2])
+        o = builder.aiOnnx.averagepool([i1],
+                                       kernel_shape=[2, 2],
+                                       count_include_pad=0,
+                                       pads=[0, 0, 0, 0],
+                                       strides=[2, 2])
         builder.addOutputTensor(o)
         return [o]
 
     def reference(ref_data):
-        avgpool = torch.nn.AvgPool2d(
-            kernel_size=2, stride=2, padding=0, count_include_pad=False)
+        avgpool = torch.nn.AvgPool2d(kernel_size=2,
+                                     stride=2,
+                                     padding=0,
+                                     count_include_pad=False)
         out = avgpool(torch.from_numpy(d1))
         return [out]
 
@@ -29,13 +35,19 @@ def test_average_pool_2(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnx.averagepool([i1], [3, 3], 0, [1, 1, 1, 1], [1, 1])
+        o = builder.aiOnnx.averagepool([i1],
+                                       kernel_shape=[3, 3],
+                                       count_include_pad=0,
+                                       pads=[1, 1, 1, 1],
+                                       strides=[1, 1])
         builder.addOutputTensor(o)
         return [o]
 
     def reference(ref_data):
-        avgpool = torch.nn.AvgPool2d(
-            kernel_size=3, stride=1, padding=1, count_include_pad=False)
+        avgpool = torch.nn.AvgPool2d(kernel_size=3,
+                                     stride=1,
+                                     padding=1,
+                                     count_include_pad=False)
         out = avgpool(torch.from_numpy(d1))
         return [out]
 
@@ -47,13 +59,19 @@ def test_average_pool_3(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        o = builder.aiOnnx.averagepool([i1], [3, 3], 0, [0, 0, 0, 0], [2, 2])
+        o = builder.aiOnnx.averagepool([i1],
+                                       kernel_shape=[3, 3],
+                                       count_include_pad=0,
+                                       pads=[0, 0, 0, 0],
+                                       strides=[2, 2])
         builder.addOutputTensor(o)
         return [o]
 
     def reference(ref_data):
-        avgpool = torch.nn.AvgPool2d(
-            kernel_size=3, stride=2, padding=0, count_include_pad=False)
+        avgpool = torch.nn.AvgPool2d(kernel_size=3,
+                                     stride=2,
+                                     padding=0,
+                                     count_include_pad=False)
         out = avgpool(torch.from_numpy(d1))
         return [out]
 
@@ -67,7 +85,11 @@ def test_average_pool_with_count_include_pad(op_tester):
     builder = poponnx.Builder()
 
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 1, 14, 14]))
-    o = builder.aiOnnx.averagepool([i1], [3, 3], 1, [0, 0, 0, 0], [2, 2])
+    o = builder.aiOnnx.averagepool([i1],
+                                   kernel_shape=[3, 3],
+                                   count_include_pad=1,
+                                   pads=[0, 0, 0, 0],
+                                   strides=[2, 2])
     builder.addOutputTensor(o)
 
     builder.removeNodeAttribute("count_include_pad", set([o]))
@@ -81,13 +103,12 @@ def test_average_pool_with_count_include_pad(op_tester):
     opts = poponnx.SessionOptionsCore()
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        poponnx.TrainingSession(
-            fnModel=proto,
-            dataFeed=dataFlow,
-            losses=losses,
-            optimizer=optimizer,
-            userOptions=opts,
-            deviceInfo=tu.get_poplar_cpu_device())
+        poponnx.TrainingSession(fnModel=proto,
+                                dataFeed=dataFlow,
+                                losses=losses,
+                                optimizer=optimizer,
+                                userOptions=opts,
+                                deviceInfo=tu.get_poplar_cpu_device())
 
     assert (e_info.value.args[0].startswith(
         "`count_include_pad` is not supported"))
@@ -98,8 +119,12 @@ def test_maxpool_1(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        (o, ) = builder.aiOnnx.maxpool([i1], 1, [2, 2], [0, 0, 0, 0], 0,
-                                       [2, 2])
+        (o, ) = builder.aiOnnx.maxpool([i1],
+                                       num_outputs=1,
+                                       kernel_shape=[2, 2],
+                                       pads=[0, 0, 0, 0],
+                                       storage_order=0,
+                                       strides=[2, 2])
         builder.addOutputTensor(o)
         return [o]
 
@@ -117,8 +142,12 @@ def test_maxpool_2(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        (o, ) = builder.aiOnnx.maxpool([i1], 1, [3, 3], [1, 1, 1, 1], 0,
-                                       [1, 1])
+        (o, ) = builder.aiOnnx.maxpool([i1],
+                                       num_outputs=1,
+                                       kernel_shape=[3, 3],
+                                       pads=[1, 1, 1, 1],
+                                       storage_order=0,
+                                       strides=[1, 1])
         builder.addOutputTensor(o)
         return [o]
 
@@ -136,8 +165,12 @@ def test_maxpool_3(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        (o, ) = builder.aiOnnx.maxpool([i1], 1, [5, 5], [2, 2, 2, 2], 0,
-                                       [2, 2])
+        (o, ) = builder.aiOnnx.maxpool([i1],
+                                       num_outputs=1,
+                                       kernel_shape=[5, 5],
+                                       pads=[2, 2, 2, 2],
+                                       storage_order=0,
+                                       strides=[2, 2])
         builder.addOutputTensor(o)
         return [o]
 
@@ -155,8 +188,12 @@ def test_maxpool_4(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        (o, ) = builder.aiOnnx.maxpool([i1], 1, [5, 5], [2, 2, 2, 2], 0,
-                                       [2, 2])
+        (o, ) = builder.aiOnnx.maxpool([i1],
+                                       num_outputs=1,
+                                       kernel_shape=[5, 5],
+                                       pads=[2, 2, 2, 2],
+                                       storage_order=0,
+                                       strides=[2, 2])
         builder.addOutputTensor(o)
         return [o]
 
@@ -174,8 +211,12 @@ def test_maxpool_grad(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        (o, ) = builder.aiOnnx.maxpool([i1], 1, [2, 2], [0, 0, 0, 0], 0,
-                                       [2, 2])
+        (o, ) = builder.aiOnnx.maxpool([i1],
+                                       num_outputs=1,
+                                       kernel_shape=[2, 2],
+                                       pads=[0, 0, 0, 0],
+                                       storage_order=0,
+                                       strides=[2, 2])
         builder.addOutputTensor(o)
         return [
             o,

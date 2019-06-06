@@ -74,32 +74,41 @@ BaseSortOpx::growIndicesSort(poplar::program::Sequence &prog) const {
   return popops::sortKeyValue(graph(), input, indices, axis, prog);
 }
 
-poplar::Tensor BaseSortOpx::createInput(InIndex,
+poplar::Tensor BaseSortOpx::createInput(InIndex inIndex,
                                         const std::string &name) const {
-  // Create an input that will minimise the amount of exchange in sort. This
-  // means minimising the number of tile boundaries on the given axis.
 
-  auto info = inInfo(BaseSortOp::getInIndex());
+  if (inIndex == BaseSortOp::getInIndex()) {
+    // Create an input that will minimise the amount of exchange in sort. This
+    // means minimising the number of tile boundaries on the given axis.
 
-  // Put the given axis at the back of the shape.
-  auto shape = info.shape_szt();
-  std::swap(shape[axis], shape.back());
+    auto info = inInfo(BaseSortOp::getInIndex());
 
-  // Create a new variable of the modified shape
-  auto t = graph().addVariable(popType(info), shape, name);
+    // Put the given axis at the back of the shape.
+    auto shape = info.shape_szt();
+    std::swap(shape[axis], shape.back());
 
-  // Map it linearly
-  poputil::mapTensorLinearly(graph(), t);
+    // Create a new variable of the modified shape
+    auto t = graph().addVariable(popType(info), shape, name);
 
-  // DimShuffle back to the desired shape
-  std::vector<unsigned> permutation(t.rank());
-  std::iota(permutation.begin(), permutation.end(), 0);
-  std::swap(permutation[axis], permutation.back());
-  return t.dimShuffle(permutation);
+    // Map it linearly
+    poputil::mapTensorLinearly(graph(), t);
+
+    // DimShuffle back to the desired shape
+    std::vector<unsigned> permutation(t.rank());
+    std::iota(permutation.begin(), permutation.end(), 0);
+    std::swap(permutation[axis], permutation.back());
+    return t.dimShuffle(permutation);
+  } else {
+    return Opx::createInput(inIndex, name);
+  }
 }
 
-InputCreatorType BaseSortOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANCREATE;
+InputCreatorType BaseSortOpx::getInputCreatorType(InIndex inIndex) const {
+  if (inIndex == BaseSortOp::getInIndex()) {
+    return InputCreatorType::CANCREATE;
+  } else {
+    return Opx::getInputCreatorType(inIndex);
+  }
 }
 
 std::vector<TensorId> BaseSortOpx::mustExistBeforeCreate(InIndex) const {

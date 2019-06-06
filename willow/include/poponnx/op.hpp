@@ -284,6 +284,9 @@ public:
   const Shape &inShape(InIndex index) const;
   const Shape &outShape(OutIndex index) const;
 
+  size_t inTensorCount() const;
+  size_t outTensorCount() const;
+
   Rank inRank(InIndex index) const;
   Rank outRank(OutIndex index) const;
 
@@ -327,6 +330,13 @@ public:
   // it will mean that any possiable subgraph that this op is part of will
   // not be cached. The default is enabled (return true)
   virtual bool isOutlineable() const;
+
+protected:
+  // Attempt to get the data of an input tensor. This method will throw an
+  // exception if it could not access the data.
+  void getInTensorData(TensorId tensorId,
+                       std::vector<int64_t> &data,
+                       std::vector<DataType> dataTypes = {DataType::INT64});
 };
 
 } // namespace poponnx

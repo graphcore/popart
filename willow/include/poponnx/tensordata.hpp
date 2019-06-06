@@ -22,7 +22,9 @@ public:
 
   // create by copying to data_ from onnx::TensorProto
   TensorData(const onnx::TensorProto &);
+
   void *data();
+  const void *data() const;
 
   // reset the data in the TensorData by copying from src.
   // Input data must be the same size as the existing data_

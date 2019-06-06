@@ -11,7 +11,12 @@ def test_slice_basic(op_tester):
 
     def init_builder(builder):
         c = builder.aiOnnx.constant(data)
-        s = builder.aiOnnx.slice([c], axes=[0, 1], starts=[1, 0], ends=[2, 3])
+
+        axes = builder.aiOnnx.constant(np.array([0, 1]).astype(np.int32))
+        starts = builder.aiOnnx.constant(np.array([1, 0]).astype(np.int32))
+        ends = builder.aiOnnx.constant(np.array([2, 3]).astype(np.int32))
+
+        s = builder.aiOnnx.slice([c, starts, ends, axes])
 
         i1 = builder.addInputTensor(dummy)
         o = builder.aiOnnx.add([i1, s])
@@ -32,10 +37,10 @@ def test_slice_complex(op_tester):
 
     def init_builder(builder):
         c = builder.aiOnnx.constant(data)
-        s = builder.aiOnnx.slice([c],
-                                 axes=[1, 3, 4],
-                                 starts=[1, 0, 2],
-                                 ends=[3, 4, 4])
+        axes = builder.aiOnnx.constant(np.array([1, 3, 4]).astype(np.int32))
+        starts = builder.aiOnnx.constant(np.array([1, 0, 2]).astype(np.int32))
+        ends = builder.aiOnnx.constant(np.array([3, 4, 4]).astype(np.int32))
+        s = builder.aiOnnx.slice([c, starts, ends, axes])
 
         i1 = builder.addInputTensor(dummy)
         o = builder.aiOnnx.add([i1, s])
@@ -71,8 +76,8 @@ def _test_concat(op_tester, shape, axis):
     d0 = np.arange(0, dl).reshape(shape).astype(np.float32)
     d1 = np.arange(dl + 1, 2 * dl + 1).reshape(shape).astype(np.float32)
 
-    dummy = np.zeros(
-        np.concatenate((d0, d1), axis=axis).shape, dtype=np.float32)
+    dummy = np.zeros(np.concatenate((d0, d1), axis=axis).shape,
+                     dtype=np.float32)
 
     def init_builder(builder):
         c0 = builder.aiOnnx.constant(d0)
@@ -100,8 +105,8 @@ def test_concat_3_inputs(op_tester):
     d1 = np.arange(dl + 1, 2 * dl + 1).reshape(shape).astype(np.float32)
     d2 = np.arange(2 * dl + 2, 3 * dl + 2).reshape(shape).astype(np.float32)
 
-    dummy = np.zeros(
-        np.concatenate((d0, d1, d2), axis=axis).shape, dtype=np.float32)
+    dummy = np.zeros(np.concatenate((d0, d1, d2), axis=axis).shape,
+                     dtype=np.float32)
 
     def init_builder(builder):
         c0 = builder.aiOnnx.constant(d0)

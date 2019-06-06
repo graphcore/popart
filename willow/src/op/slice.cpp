@@ -244,6 +244,46 @@ std::vector<std::unique_ptr<Op>> SliceOp::getGradOps() {
   return upops;
 }
 
+void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
+  if (inIndex == getInIndex()) {
+    Op::connectInTensor(inIndex, tenId);
+  }
+
+  if (opid.version >= 10) {
+    if (inIndex == getStartsInIndex()) {
+      try {
+        getInTensorData(tenId, starts, {DataType::INT32, DataType::INT64});
+      } catch (poponnx::error &err) {
+        throw error("Need the value of the {} input 'starts' to detemine the "
+                    "output shape, but was unable because {}",
+                    opid,
+                    err.what());
+      }
+      axes = sanitizeAxes(starts, {});
+    } else if (inIndex == getEndsInIndex()) {
+      try {
+        getInTensorData(tenId, ends, {DataType::INT32, DataType::INT64});
+      } catch (poponnx::error &err) {
+        throw error("Need the value of the {} input 'ends' to detemine the "
+                    "output shape, but was unable because {}",
+                    opid,
+                    err.what());
+      }
+    } else if (inIndex == getAxesInIndex()) {
+      try {
+        std::vector<int64_t> _axes;
+        getInTensorData(tenId, _axes, {DataType::INT32, DataType::INT64});
+        axes = sanitizeAxes(starts, _axes);
+      } catch (poponnx::error &err) {
+        throw error("Need the value of the {} input 'axes' to detemine the "
+                    "output shape, but was unable because {}",
+                    opid,
+                    err.what());
+      }
+    }
+  }
+}
+
 void BaseSliceOp::setup() { outInfo(getOutIndex()) = createOutShape(); }
 
 std::vector<std::unique_ptr<Op>> SliceInplaceOp::getGradOps() {
@@ -267,9 +307,16 @@ view::Region SliceInplaceOp::aliases(InIndex inIndex) const {
 
 void BaseSliceOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
-  os.appendAttribute("starts", starts);
-  os.appendAttribute("ends", ends);
-  os.appendAttribute("axes", axes);
+
+  if (opid.version < 10) {
+    os.appendAttribute("starts", starts);
+    os.appendAttribute("ends", ends);
+    os.appendAttribute("axes", axes);
+  } else {
+    os.appendAttribute("_starts", starts);
+    os.appendAttribute("_ends", ends);
+    os.appendAttribute("_axes", axes);
+  }
 }
 
 SliceGradOp::SliceGradOp(const SliceOp &op_)
@@ -306,19 +353,25 @@ std::vector<int64_t> SliceGradOp::calculatePadding(const SliceOp &slice_op) {
 
 namespace {
 static OpCreator<SliceOp> sliceOpCreator(
-    Onnx::Operators::Slice_1,
+    {Onnx::Operators::Slice_1, Onnx::Operators::Slice_10},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
-      std::vector<int64_t> starts =
-          attr.getAttribute<Attributes::Ints>("starts", {});
-      std::vector<int64_t> ends =
-          attr.getAttribute<Attributes::Ints>("ends", {});
-      std::vector<int64_t> axes =
-          attr.getAttribute<Attributes::Ints>("axes", {});
+      if (_opid.version < 10) {
+        // Before version 10 the slice parameters were attributes
+        std::vector<int64_t> starts =
+            attr.getAttribute<Attributes::Ints>("starts", {});
+        std::vector<int64_t> ends =
+            attr.getAttribute<Attributes::Ints>("ends", {});
+        std::vector<int64_t> axes =
+            attr.getAttribute<Attributes::Ints>("axes", {});
 
-      return std::unique_ptr<Op>(
-          new SliceOp(_opid, starts, ends, axes, settings));
+        return std::unique_ptr<Op>(
+            new SliceOp(_opid, starts, ends, axes, settings));
+      } else {
+        // Slice parameters are now inputs
+        return std::unique_ptr<Op>(new SliceOp(_opid, {}, {}, {}, settings));
+      }
     },
     true);
 } // namespace

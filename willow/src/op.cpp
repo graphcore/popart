@@ -248,6 +248,9 @@ const Tensor *Op::outTensor(OutIndex index) const {
   return output->tensor(index);
 }
 
+size_t Op::inTensorCount() const { return input->n(); }
+size_t Op::outTensorCount() const { return output->n(); }
+
 TensorId Op::inId(InIndex index) { return inTensor(index)->id; }
 const TensorId Op::inId(InIndex index) const { return inTensor(index)->id; }
 TensorId Op::outId(OutIndex index) { return outTensor(index)->id; }
@@ -389,5 +392,59 @@ Op::getSubgraphOutputs() const {
 }
 
 bool Op::isOutlineable() const { return true; }
+
+void Op::getInTensorData(TensorId tensorId,
+                         std::vector<int64_t> &data,
+                         std::vector<DataType> dataTypes) {
+
+  // check 1 : that there is already a tensor with the shape tensor's name
+  if (!getGraph().getTensors().contains(tensorId)) {
+    throw error("the tensor `" + tensorId + "` is not defined");
+  }
+
+  Tensor *tensor = getGraph().getTensors().get(tensorId);
+
+  // check 2 : that the tensor has data
+  if (!tensor->hasTensorData()) {
+    throw error("the tensor `" + tensorId + "` does not have data");
+  }
+
+  TensorData *tensorData = tensor->tensorData();
+
+  // check 3 : that the data is the expected type
+  bool validType = false;
+  for (auto dt : dataTypes) {
+    if (tensor->info.dataType() == dt) {
+      validType = true;
+      break;
+    }
+  }
+
+  if (!validType) {
+    throw error("the tensor `" + tensorId +
+                "` is not the correct type, it is " + tensor->info.data_type());
+  }
+
+  // check 5 : that is is rank 0 or rank 1
+  if (tensor->info.rank() > 1) {
+    throw error("the rank of tensor `" + tensorId + "` is greater than 1");
+  }
+
+  if (tensor->info.dataType() == DataType::INT32) {
+    int32_t *pdata = static_cast<int32_t *>(tensorData->data());
+    for (int i = 0; i < tensor->info.nelms(); ++i) {
+      data.push_back(pdata[i]);
+    }
+  } else if (tensor->info.dataType() == DataType::INT64) {
+    int64_t *pdata = static_cast<int64_t *>(tensorData->data());
+    for (int i = 0; i < tensor->info.nelms(); ++i) {
+      data.push_back(pdata[i]);
+    }
+  } else {
+    throw error("unsupported data type {} for tensor `{}`",
+                tensor->info.data_type(),
+                tensorId);
+  }
+}
 
 } // namespace poponnx

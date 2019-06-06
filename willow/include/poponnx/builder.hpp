@@ -202,6 +202,11 @@ public:
   AiOnnxOpset9 aiOnnxOpset9() { return AiOnnxOpset9(this->impl_); }
 
   /**
+   * Return the builder interface for ai.onnx opset 10
+   */
+  AiOnnxOpset10 aiOnnxOpset10() { return AiOnnxOpset10(this->impl_); }
+
+  /**
    * Return the builder interface for ai.onnx.ml opset 1
    */
   AiOnnxMlOpset1 aiOnnxMlOpset1() { return AiOnnxMlOpset1(this->impl_); }
