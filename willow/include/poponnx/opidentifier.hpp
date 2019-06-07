@@ -762,7 +762,7 @@ const static AiGraphcoreOpIdV1 IdentityGrad("IdentityGrad");
 const static AiGraphcoreOpIdV1
     InstanceNormalizationGrad("InstanceNormalizationGrad");
 // constexpr static char IsNaN[] = "IsNan";
-// constexpr static char LRN[] = "LRN";
+const static AiGraphcoreOpIdV1 LRN("LRN");
 const static AiGraphcoreOpIdV1 LSTMGrad("LSTMGrad");
 // constexpr static char LeakyRelu[] = "LeakyRely";
 // constexpr static char Less[] = "Less";
@@ -816,6 +816,7 @@ const static AiGraphcoreOpIdV1 ReduceL1Grad("ReduceL1Grad");
 const static AiGraphcoreOpIdV1 ReduceL2Grad("ReduceL2Grad");
 const static AiGraphcoreOpIdV1 ReluGrad("ReluGrad");
 const static AiGraphcoreOpIdV1 ReshapeGrad("ReshapeGrad");
+const static AiGraphcoreOpIdV1 LRNGrad("LRNGrad");
 // constexpr static char Scan[] = "Scan";
 const static AiGraphcoreOpIdV1 ScatterDataGrad("ScatterDataGrad");
 const static AiGraphcoreOpIdV1 ScatterUpdateGrad("ScatterUpdateGrad");
