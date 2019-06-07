@@ -48,35 +48,28 @@ function(add_poponnx_py_unit_test name)
            WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
 endfunction()
 
-# currently failing
-# add_poponnx_py_unit_test(auto_virtual_graph_test)
-add_poponnx_py_unit_test(builder_test)
-add_poponnx_py_unit_test(graph_caching_test)
-add_poponnx_py_unit_test(loader_test)
-add_poponnx_py_unit_test(net_test)
-add_poponnx_py_unit_test(anchorreturntype_test)
-add_poponnx_py_unit_test(options_test)
-add_poponnx_py_unit_test(report_test)
-add_poponnx_py_unit_test(patterns_test)
-add_poponnx_py_unit_test(padsumpattern)
-add_poponnx_py_unit_test(fp16_test)
-add_poponnx_py_unit_test(variable_inference_test)
-add_poponnx_py_unit_test(virtual_graph_check_test)
-add_poponnx_py_unit_test(virtual_graph_test)
-add_poponnx_py_unit_test(optimizer_test)
-add_poponnx_py_unit_test(export_test)
-add_poponnx_py_unit_test(ipu_copy_test)
-add_poponnx_py_unit_test(float_to_half_conversion_test)
-add_poponnx_py_unit_test(recompute_test)
-add_poponnx_py_unit_test(ipu_gather_test)
-add_poponnx_py_unit_test(loss_test)
-add_poponnx_py_unit_test(all_constexpr)
-add_poponnx_py_unit_test(graph_replication_test)
-add_poponnx_py_unit_test(saved_executable)
-add_poponnx_py_unit_test(train_then_infer_test)
-add_poponnx_py_unit_test(addbias)
-add_poponnx_py_unit_test(printtensor)
-add_poponnx_py_unit_test(mapping_test)
+function(add_all_py_unit_tests exclusions)
+  message(STATUS "Adding all python tests in ${CMAKE_CURRENT_SOURCE_DIR}")
+
+  file(GLOB PYTHON_TESTS 
+    RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}
+    CONFIGURE_DEPENDS
+    *.py)
+
+  foreach(TEST_FILE ${PYTHON_TESTS})
+    get_filename_component(TEST_NAME ${TEST_FILE} NAME_WE)
+    list(FIND exclusions ${TEST_NAME} IDX)
+    if(IDX EQUAL -1)
+      add_poponnx_py_unit_test(${TEST_NAME})
+    else(IDX EQUAL -1)
+      message(STATUS "Skipping file ${TEST_FILE}")
+    endif(IDX EQUAL -1)
+  endforeach(TEST_FILE)
+endfunction()
+
+# auto_virtual_graph_test is currently failing
+add_all_py_unit_tests("test_util;auto_virtual_graph_test")
+
 
 add_subdirectory(operators_test)
 add_subdirectory(constexpr_tests)
