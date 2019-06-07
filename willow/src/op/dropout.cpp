@@ -55,7 +55,7 @@ bool DropoutOp::canBeReplacedByIdentity() {
 
 DropoutGradOp::DropoutGradOp(const DropoutOp &fwdOp)
     : Op(Onnx::GradOperators::DropoutGrad, fwdOp.getSettings()),
-      seedModifier(fwdOp.getSeedModifier()), ratio(fwdOp.getRatio()) {}
+      ratio(fwdOp.getRatio()), seedModifier(fwdOp.getSeedModifier()) {}
 
 std::unique_ptr<Op> DropoutGradOp::clone() const {
   return make_unique<DropoutGradOp>(*this);

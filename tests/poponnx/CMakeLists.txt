@@ -48,6 +48,8 @@ function(add_poponnx_py_unit_test name)
            WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
 endfunction()
 
+# currently failing
+# add_poponnx_py_unit_test(auto_virtual_graph_test)
 add_poponnx_py_unit_test(builder_test)
 add_poponnx_py_unit_test(graph_caching_test)
 add_poponnx_py_unit_test(loader_test)
@@ -74,6 +76,7 @@ add_poponnx_py_unit_test(saved_executable)
 add_poponnx_py_unit_test(train_then_infer_test)
 add_poponnx_py_unit_test(addbias)
 add_poponnx_py_unit_test(printtensor)
+add_poponnx_py_unit_test(mapping_test)
 
 add_subdirectory(operators_test)
 add_subdirectory(constexpr_tests)

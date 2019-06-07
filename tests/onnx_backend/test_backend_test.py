@@ -322,6 +322,10 @@ backend_test.exclude('reduce_sum_default_axes_keepdims_example_ipu')
 backend_test.exclude('reduce_sum_default_axes_keepdims_random_ipu')
 backend_test.exclude('reduce_sum_square_default_axes_keepdims_example_ipu')
 backend_test.exclude('reduce_sum_square_default_axes_keepdims_random_ipu')
+backend_test.exclude('test_reduce_l1_default_axes_keepdims_example')
+backend_test.exclude('test_reduce_l1_default_axes_keepdims_random')
+backend_test.exclude('test_reduce_l2_default_axes_keepdims_example')
+backend_test.exclude('test_reduce_l2_default_axes_keepdims_random')
 
 # T9150
 backend_test.exclude('test_shape_ipu')

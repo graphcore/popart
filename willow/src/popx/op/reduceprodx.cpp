@@ -78,11 +78,11 @@ void ReduceProdGradOpx::grow(poplar::program::Sequence &prog) const {
   j = 0;
   for (int64_t i = 0; i < perm.size(); ++i) {
     if (i < axis.size()) {
-      perm[i] = axis[i];
+      perm[i] = static_cast<unsigned>(axis[i]);
     } else {
-      perm[i] = others[j++];
+      perm[i] = static_cast<unsigned>(others[j++]);
     }
-    reverse_perm[perm[i]] = i;
+    reverse_perm[perm[i]] = static_cast<unsigned>(i);
   }
 
   output              = output.dimShuffle(perm);
@@ -90,8 +90,8 @@ void ReduceProdGradOpx::grow(poplar::program::Sequence &prog) const {
   auto shuffled_shape = output.shape();
 
   // Flatten all the reduced dimensions into one
-  output    = output.flatten(0, axis.size());
-  fwd_input = fwd_input.flatten(0, axis.size());
+  output    = output.flatten(0, static_cast<unsigned>(axis.size()));
+  fwd_input = fwd_input.flatten(0, static_cast<unsigned>(axis.size()));
 
   auto lrcumprod = cloneNcopy(prog, output);
 

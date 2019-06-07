@@ -47,7 +47,7 @@ std::vector<Y> vXtoY(const std::vector<X> &c0) {
 
 // Note: Template order different than for vXtoY!
 template <typename T1, typename T2>
-static std::vector<T1> vector_cast(const std::vector<T2> &xs) {
+std::vector<T1> vector_cast(const std::vector<T2> &xs) {
   std::vector<T1> ys;
 
   ys.reserve(xs.size());
