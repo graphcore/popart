@@ -155,7 +155,7 @@ static poplar::Tensor gatherWrapper(poplar::Graph &graph,
   if (too_big_dim == startIndexMap.end()) {
     return popops::gather(graph,
                           operand,
-                          indices,
+                          indices.reinterpret(poplar::UNSIGNED_INT),
                           indexVectorDim,
                           offsetDims,
                           sliceSizes,

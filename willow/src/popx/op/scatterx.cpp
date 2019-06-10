@@ -147,7 +147,7 @@ void ScatterUpdateGradOpx::grow(poplar::program::Sequence &prog) const {
   // Gather the elements from the grad input
   auto result = popops::gather(graph(),
                                gradIn,
-                               indices,
+                               indices.reinterpret(poplar::UNSIGNED_INT),
                                index_vector_dim,
                                {},
                                sliceSizes,
