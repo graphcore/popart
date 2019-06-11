@@ -45,6 +45,19 @@ std::vector<Y> vXtoY(const std::vector<X> &c0) {
   return c1;
 }
 
+// Note: Template order different than for vXtoY!
+template <typename T1, typename T2>
+std::vector<T1> vector_cast(const std::vector<T2> &xs) {
+  std::vector<T1> ys;
+
+  ys.reserve(xs.size());
+  for (const auto &x : xs) {
+    ys.emplace_back(static_cast<T1>(x));
+  }
+
+  return ys;
+}
+
 template <typename Y> std::vector<Y> vBooltoY(const std::vector<bool> &c0) {
   std::vector<Y> c1;
   c1.reserve(c0.size());

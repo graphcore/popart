@@ -124,8 +124,10 @@ class IpuBackend(onnx.backend.base.Backend):
             outputs_info=None,  # type: Optional[Sequence[Tuple[numpy.dtype, Tuple[int, ...]]]]
             **kwargs  # type: Any
     ):  # type: (...) -> Optional[Tuple[Any, ...]]
-        super(IpuBackend, cls).run_node(
-            node, inputs, device=device, outputs_info=outputs_info)
+        super(IpuBackend, cls).run_node(node,
+                                        inputs,
+                                        device=device,
+                                        outputs_info=outputs_info)
 
         raise BackendIsNotSupposedToImplementIt(
             "This is the ipu backend test that doesn't verify the results but does run the checker"
@@ -149,7 +151,6 @@ backend_test.exclude('test_atan')
 backend_test.exclude('test_compress')
 backend_test.exclude('test_convtranspose')
 backend_test.exclude('test_depthtospace')
-backend_test.exclude('test_dynamic_slice')
 backend_test.exclude('test_elu')
 backend_test.exclude('test_equal')
 backend_test.exclude('test_erf')
@@ -162,7 +163,6 @@ backend_test.exclude('test_hardsigmoid')
 backend_test.exclude('test_isnan')
 backend_test.exclude('test_leakyrelu')
 backend_test.exclude('test_less')
-backend_test.exclude('test_lrn')
 backend_test.exclude('test_maxunpool')
 backend_test.exclude('test_mvn')
 backend_test.exclude('test_not')
@@ -171,14 +171,7 @@ backend_test.exclude('test_or')
 backend_test.exclude('test_pow')
 backend_test.exclude('test_prelu')
 backend_test.exclude('test_PReLU')
-backend_test.exclude('test_reduce_l1')
-backend_test.exclude('test_reduce_l2')
 backend_test.exclude('test_reduce_log')
-backend_test.exclude('test_reduce_max')
-backend_test.exclude('test_reduce_mean')
-backend_test.exclude('test_reduce_min')
-backend_test.exclude('test_reduce_prod')
-backend_test.exclude('test_reduce_sum_square')
 backend_test.exclude('test_rnn')
 backend_test.exclude('test_scan')
 backend_test.exclude('test_selu')
@@ -189,7 +182,6 @@ backend_test.exclude('test_size')
 backend_test.exclude('test_softplus')
 backend_test.exclude('test_Softplus')
 backend_test.exclude('test_thresholdedrelu')
-backend_test.exclude('test_tile')
 backend_test.exclude('test_top_k')
 backend_test.exclude('test_upsample')
 backend_test.exclude('test_xor')
@@ -206,7 +198,6 @@ backend_test.exclude('test_SELU')
 backend_test.exclude('test_nonzero')
 backend_test.exclude('test_tfidfvectorizer')
 backend_test.exclude('test_where')
-backend_test.exclude('test_slice')
 backend_test.exclude('test_bitshift')
 backend_test.exclude('test_matmulinteger')
 
@@ -222,6 +213,7 @@ backend_test.exclude('test_qlinearmatmul')
 backend_test.exclude('test_quantizelinear')
 backend_test.exclude('test_reversesequence')
 backend_test.exclude('test_roialign')
+backend_test.exclude('test_split')
 
 # high level models
 backend_test.exclude('bvlc_alexnet')
@@ -318,10 +310,32 @@ backend_test.exclude('logsoftmax_axis_2_ipu')
 # T9147
 backend_test.exclude('reduce_sum_default_axes_keepdims_example_ipu')
 backend_test.exclude('reduce_sum_default_axes_keepdims_random_ipu')
+backend_test.exclude('reduce_max_default_axes_keepdim_example_ipu')
+backend_test.exclude('reduce_max_default_axes_keepdims_random_ipu')
+backend_test.exclude('reduce_mean_default_axes_keepdims_example_ipu')
+backend_test.exclude('reduce_mean_default_axes_keepdims_random_ipu')
+backend_test.exclude('reduce_min_default_axes_keepdims_example_ipu')
+backend_test.exclude('reduce_min_default_axes_keepdims_random_ipu')
+backend_test.exclude('reduce_prod_default_axes_keepdims_example_ipu')
+backend_test.exclude('reduce_prod_default_axes_keepdims_random_ipu')
+backend_test.exclude('reduce_sum_default_axes_keepdims_example_ipu')
+backend_test.exclude('reduce_sum_default_axes_keepdims_random_ipu')
+backend_test.exclude('reduce_sum_square_default_axes_keepdims_example_ipu')
+backend_test.exclude('reduce_sum_square_default_axes_keepdims_random_ipu')
+backend_test.exclude('test_reduce_l1_default_axes_keepdims_example')
+backend_test.exclude('test_reduce_l1_default_axes_keepdims_random')
+backend_test.exclude('test_reduce_l2_default_axes_keepdims_example')
+backend_test.exclude('test_reduce_l2_default_axes_keepdims_random')
 
 # T9150
 backend_test.exclude('test_shape_ipu')
 backend_test.exclude('test_shape_example_ipu')
+
+# Failures due to static size of poplar graph
+backend_test.exclude('test_tile')
+
+# T9215
+backend_test.exclude('test_slice')
 
 # Failures that have not been triaged
 backend_test.exclude('test_reshape_extended_dims')

@@ -13,7 +13,6 @@ SliceOpx::SliceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 void SliceOpx::grow(poplar::program::Sequence &prog) const {
-  logging::opx::trace("SliceOpx::grow");
   auto t = getInTensor(SliceOp::getInIndex());
   for (auto slice : getSliceOp()->getSlices()) {
     t = t.slice(slice.start, slice.end, static_cast<unsigned>(slice.axis));
@@ -23,7 +22,6 @@ void SliceOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 void SliceInplaceOpx::grow(poplar::program::Sequence &) const {
-  logging::opx::trace("SliceInplaceOpx::grow");
   auto t = getInTensor(SliceOp::getInIndex());
   for (auto slice : getSliceInplaceOp()->getSlices()) {
     t = t.slice(slice.start, slice.end, static_cast<unsigned>(slice.axis));
@@ -47,7 +45,8 @@ SliceInplaceOpx::SliceInplaceOpx(Op *op_, Devicex *devicex)
 }
 
 namespace {
-OpxCreator<SliceOpx> sliceOpxCreator(Onnx::Operators::Slice_1);
+OpxCreator<SliceOpx> sliceOpxCreator({Onnx::Operators::Slice_1,
+                                      Onnx::Operators::Slice_10});
 OpxCreator<SliceInplaceOpx>
     sliceInplaceOpxCreator(Onnx::CustomOperators::SliceInplace);
 OpxCreator<SliceGradOpx> sliceGradOpxCreator(Onnx::GradOperators::SliceGrad);

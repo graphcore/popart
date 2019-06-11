@@ -12,7 +12,9 @@ namespace popx {
 DropoutOpx::DropoutOpx(Op *op, Devicex *devicex)
     : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<DropoutOp>(op,
-                      {Onnx::Operators::Dropout_6, Onnx::Operators::Dropout_7});
+                      {Onnx::Operators::Dropout_6,
+                       Onnx::Operators::Dropout_7,
+                       Onnx::Operators::Dropout_10});
 
   if (dv_p->isDropoutRandomSeedRequired() == false) {
     dv_p->setDropoutRandomSeedIsRequired(true);
@@ -60,7 +62,8 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<DropoutOpx> dropoutOpxCreator({Onnx::Operators::Dropout_6,
-                                          Onnx::Operators::Dropout_7});
+                                          Onnx::Operators::Dropout_7,
+                                          Onnx::Operators::Dropout_10});
 OpxCreator<Opx> dropoutGradOpxCreator(Onnx::GradOperators::DropoutGrad,
                                       "DropoutGradOp should be optimised out, "
                                       "\"DropoutGradOp\" pattern is required");

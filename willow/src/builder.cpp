@@ -94,6 +94,18 @@ verify_AiOnnxOpset8_MaxPool_8(std::unique_ptr<BuilderImpl> &impl,
       boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
       boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]));
 }
+
+static void
+verify_AiOnnxOpset10_MaxPool_10(std::unique_ptr<BuilderImpl> &impl,
+                                std::vector<TensorId> inputs,
+                                std::map<std::string, boost::any> attributes) {
+  verifyWindowParameters(
+      impl,
+      inputs[0],
+      boost::any_cast<const std::vector<int64_t> &>(attributes["strides"]),
+      boost::any_cast<const std::vector<int64_t> &>(attributes["pads"]));
+}
+
 static void
 verify_AiOnnxOpset6_Pad_2(std::unique_ptr<BuilderImpl> &impl,
                           std::vector<TensorId> inputs,

@@ -14,23 +14,6 @@ class AiOnnxOpset6 : private DomainOpSet {
     int getOpsetVersion() const override { return 6;} 
 
     /**
-     * Add the 'Xor' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Xor-1
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param broadcast The 'broadcast' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    logical_xor(const std::vector<TensorId>& args,
-                boost::optional<int64_t> axis = boost::optional<int64_t>(),
-                int64_t broadcast = 0,
-                const std::string &name = "");
-
-    /**
      * Add the 'Unsqueeze' to the model
      *
      * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Unsqueeze
@@ -46,9 +29,24 @@ class AiOnnxOpset6 : private DomainOpSet {
               const std::string &name = "");
 
     /**
+     * Add the 'Transpose' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Transpose
+     *
+     * \param args List of input tensor ids
+     * \param perm The 'perm' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    transpose(const std::vector<TensorId>& args,
+              const std::vector<int64_t>& perm = std::vector<int64_t>(),
+              const std::string &name = "");
+
+    /**
      * Add the 'TopK' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#TopK
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#TopK-1
      *
      * \param args List of input tensor ids
      * \param k The 'k' attribute 
@@ -63,35 +61,42 @@ class AiOnnxOpset6 : private DomainOpSet {
          const std::string &name = "");
 
     /**
-     * Add the 'ThresholdedRelu' to the model
+     * Add the 'Tile' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ThresholdedRelu
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Tile
      *
      * \param args List of input tensor ids
-     * \param alpha The 'alpha' attribute 
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    thresholdedrelu(const std::vector<TensorId>& args,
-                    float alpha = 1.0f,
-                    const std::string &name = "");
+    tile(const std::vector<TensorId>& args,
+         const std::string &name = "");
 
     /**
-     * Add the 'Sub' to the model
+     * Add the 'Tanh' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Sub-6
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Tanh
      *
      * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param broadcast The 'broadcast' attribute 
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    sub(const std::vector<TensorId>& args,
-        boost::optional<int64_t> axis = boost::optional<int64_t>(),
-        int64_t broadcast = 0,
+    tanh(const std::vector<TensorId>& args,
+         const std::string &name = "");
+
+    /**
+     * Add the 'Sum' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Sum-6
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    sum(const std::vector<TensorId>& args,
         const std::string &name = "");
 
     /**
@@ -110,324 +115,6 @@ class AiOnnxOpset6 : private DomainOpSet {
             const std::string &name = "");
 
     /**
-     * Add the 'ReduceLogSum' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceLogSum
-     *
-     * \param args List of input tensor ids
-     * \param axes The 'axes' attribute 
-     * \param keepdims The 'keepdims' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    reducelogsum(const std::vector<TensorId>& args,
-                 const std::vector<int64_t>& axes = std::vector<int64_t>(),
-                 int64_t keepdims = 1,
-                 const std::string &name = "");
-
-    /**
-     * Add the 'Split' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Split
-     *
-     * \param args List of input tensor ids
-     * \param num_outputs The number of output tensor ids
-     * \param split The 'split' attribute 
-     * \param axis The 'axis' attribute 
-     * \param name Optional identifier for the operation
-     * \return A list of normalized output tensors
-     */
-    std::vector<TensorId>
-    split(const std::vector<TensorId>& args,
-          unsigned num_outputs,
-          int64_t axis = 0,
-          const std::vector<int64_t>& split = std::vector<int64_t>(),
-          const std::string &name = "");
-
-    /**
-     * Add the 'Sqrt' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sqrt
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    sqrt(const std::vector<TensorId>& args,
-         const std::string &name = "");
-
-    /**
-     * Add the 'Softsign' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softsign
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    softsign(const std::vector<TensorId>& args,
-             const std::string &name = "");
-
-    /**
-     * Add the 'Softplus' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softplus
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    softplus(const std::vector<TensorId>& args,
-             const std::string &name = "");
-
-    /**
-     * Add the 'Size' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Size
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    size(const std::vector<TensorId>& args,
-         const std::string &name = "");
-
-    /**
-     * Add the 'Transpose' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Transpose
-     *
-     * \param args List of input tensor ids
-     * \param perm The 'perm' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    transpose(const std::vector<TensorId>& args,
-              const std::vector<int64_t>& perm = std::vector<int64_t>(),
-              const std::string &name = "");
-
-    /**
-     * Add the 'Shape' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Shape
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    shape(const std::vector<TensorId>& args,
-          const std::string &name = "");
-
-    /**
-     * Add the 'Selu' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Selu
-     *
-     * \param args List of input tensor ids
-     * \param alpha The 'alpha' attribute 
-     * \param gamma The 'gamma' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    selu(const std::vector<TensorId>& args,
-         float alpha = 1.67326f,
-         float gamma = 1.0507f,
-         const std::string &name = "");
-
-    /**
-     * Add the 'Sum' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Sum-6
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    sum(const std::vector<TensorId>& args,
-        const std::string &name = "");
-
-    /**
-     * Add the 'Relu' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Relu
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    relu(const std::vector<TensorId>& args,
-         const std::string &name = "");
-
-    /**
-     * Add the 'Upsample' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Upsample-1
-     *
-     * \param args List of input tensor ids
-     * \param height_scale The 'height_scale' attribute 
-     * \param width_scale The 'width_scale' attribute 
-     * \param mode The 'mode' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    upsample(const std::vector<TensorId>& args,
-             float height_scale,
-             float width_scale,
-             const std::string& mode = "nearest",
-             const std::string &name = "");
-
-    /**
-     * Add the 'Floor' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Floor
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    floor(const std::vector<TensorId>& args,
-          const std::string &name = "");
-
-    /**
-     * Add the 'ReduceSumSquare' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceSumSquare
-     *
-     * \param args List of input tensor ids
-     * \param axes The 'axes' attribute 
-     * \param keepdims The 'keepdims' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    reducesumsquare(const std::vector<TensorId>& args,
-                    const std::vector<int64_t>& axes = std::vector<int64_t>(),
-                    int64_t keepdims = 1,
-                    const std::string &name = "");
-
-    /**
-     * Add the 'ReduceMin' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceMin
-     *
-     * \param args List of input tensor ids
-     * \param axes The 'axes' attribute 
-     * \param keepdims The 'keepdims' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    reducemin(const std::vector<TensorId>& args,
-              const std::vector<int64_t>& axes = std::vector<int64_t>(),
-              int64_t keepdims = 1,
-              const std::string &name = "");
-
-    /**
-     * Add the 'ReduceL1' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceL1
-     *
-     * \param args List of input tensor ids
-     * \param axes The 'axes' attribute 
-     * \param keepdims The 'keepdims' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    reducel1(const std::vector<TensorId>& args,
-             const std::vector<int64_t>& axes = std::vector<int64_t>(),
-             int64_t keepdims = 1,
-             const std::string &name = "");
-
-    /**
-     * Add the 'Reciprocal' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Reciprocal
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    reciprocal(const std::vector<TensorId>& args,
-               const std::string &name = "");
-
-    /**
-     * Add the 'Sigmoid' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sigmoid
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    sigmoid(const std::vector<TensorId>& args,
-            const std::string &name = "");
-
-    /**
-     * Add the 'RandomNormalLike' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#RandomNormalLike
-     *
-     * \param args List of input tensor ids
-     * \param dtype The 'dtype' attribute 
-     * \param seed The 'seed' attribute 
-     * \param mean The 'mean' attribute 
-     * \param scale The 'scale' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    randomnormallike(const std::vector<TensorId>& args,
-                     boost::optional<int64_t> dtype = boost::optional<int64_t>(),
-                     float mean = 0.0f,
-                     float scale = 1.0f,
-                     boost::optional<float> seed = boost::optional<float>(),
-                     const std::string &name = "");
-
-    /**
-     * Add the 'RNN' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#RNN-1
-     *
-     * \param args List of input tensor ids
-     * \param num_outputs The number of output tensor ids
-     * \param activation_alpha The 'activation_alpha' attribute 
-     * \param activation_beta The 'activation_beta' attribute 
-     * \param clip The 'clip' attribute 
-     * \param hidden_size The 'hidden_size' attribute 
-     * \param activations The 'activations' attribute 
-     * \param direction The 'direction' attribute 
-     * \param output_sequence The 'output_sequence' attribute 
-     * \param name Optional identifier for the operation
-     * \return A list of normalized output tensors
-     */
-    std::vector<TensorId>
-    rnn(const std::vector<TensorId>& args,
-        unsigned num_outputs,
-        const std::vector<float>& activation_alpha = std::vector<float>(),
-        const std::vector<float>& activation_beta = std::vector<float>(),
-        const std::vector<std::string>& activations = std::vector<std::string>(),
-        boost::optional<float> clip = boost::optional<float>(),
-        const std::string& direction = "forward",
-        boost::optional<int64_t> hidden_size = boost::optional<int64_t>(),
-        int64_t output_sequence = 0,
-        const std::string &name = "");
-
-    /**
      * Add the 'SpaceToDepth' to the model
      *
      * https://github.com/onnx/onnx/blob/master/docs/Operators.md#SpaceToDepth
@@ -441,6 +128,19 @@ class AiOnnxOpset6 : private DomainOpSet {
     spacetodepth(const std::vector<TensorId>& args,
                  int64_t blocksize,
                  const std::string &name = "");
+
+    /**
+     * Add the 'Softsign' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softsign
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    softsign(const std::vector<TensorId>& args,
+             const std::string &name = "");
 
     /**
      * Add the 'Softmax' to the model
@@ -458,45 +158,9 @@ class AiOnnxOpset6 : private DomainOpSet {
             const std::string &name = "");
 
     /**
-     * Add the 'ParametricSoftplus' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ParametricSoftplus
-     *
-     * \param args List of input tensor ids
-     * \param alpha The 'alpha' attribute 
-     * \param beta The 'beta' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    parametricsoftplus(const std::vector<TensorId>& args,
-                       boost::optional<float> alpha = boost::optional<float>(),
-                       boost::optional<float> beta = boost::optional<float>(),
-                       const std::string &name = "");
-
-    /**
-     * Add the 'Pad' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Pad
-     *
-     * \param args List of input tensor ids
-     * \param pads The 'pads' attribute 
-     * \param mode The 'mode' attribute 
-     * \param value The 'value' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    pad(const std::vector<TensorId>& args,
-        const std::vector<int64_t>& pads,
-        const std::string& mode = "constant",
-        float value = 0.0f,
-        const std::string &name = "");
-
-    /**
      * Add the 'Slice' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Slice
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Slice-1
      *
      * \param args List of input tensor ids
      * \param axes The 'axes' attribute 
@@ -511,338 +175,6 @@ class AiOnnxOpset6 : private DomainOpSet {
           const std::vector<int64_t>& starts,
           const std::vector<int64_t>& axes = std::vector<int64_t>(),
           const std::string &name = "");
-
-    /**
-     * Add the 'Greater' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Greater-1
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param broadcast The 'broadcast' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    greater(const std::vector<TensorId>& args,
-            boost::optional<int64_t> axis = boost::optional<int64_t>(),
-            int64_t broadcast = 0,
-            const std::string &name = "");
-
-    /**
-     * Add the 'ReduceLogSumExp' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceLogSumExp
-     *
-     * \param args List of input tensor ids
-     * \param axes The 'axes' attribute 
-     * \param keepdims The 'keepdims' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    reducelogsumexp(const std::vector<TensorId>& args,
-                    const std::vector<int64_t>& axes = std::vector<int64_t>(),
-                    int64_t keepdims = 1,
-                    const std::string &name = "");
-
-    /**
-     * Add the 'Or' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Or-1
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param broadcast The 'broadcast' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    logical_or(const std::vector<TensorId>& args,
-               boost::optional<int64_t> axis = boost::optional<int64_t>(),
-               int64_t broadcast = 0,
-               const std::string &name = "");
-
-    /**
-     * Add the 'Neg' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Neg
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    neg(const std::vector<TensorId>& args,
-        const std::string &name = "");
-
-    /**
-     * Add the 'RandomUniformLike' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#RandomUniformLike
-     *
-     * \param args List of input tensor ids
-     * \param dtype The 'dtype' attribute 
-     * \param seed The 'seed' attribute 
-     * \param high The 'high' attribute 
-     * \param low The 'low' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    randomuniformlike(const std::vector<TensorId>& args,
-                      boost::optional<int64_t> dtype = boost::optional<int64_t>(),
-                      float high = 1.0f,
-                      float low = 0.0f,
-                      boost::optional<float> seed = boost::optional<float>(),
-                      const std::string &name = "");
-
-    /**
-     * Add the 'Mul' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Mul-6
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param broadcast The 'broadcast' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    mul(const std::vector<TensorId>& args,
-        boost::optional<int64_t> axis = boost::optional<int64_t>(),
-        int64_t broadcast = 0,
-        const std::string &name = "");
-
-    /**
-     * Add the 'ScaledTanh' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ScaledTanh
-     *
-     * \param args List of input tensor ids
-     * \param alpha The 'alpha' attribute 
-     * \param beta The 'beta' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    scaledtanh(const std::vector<TensorId>& args,
-               boost::optional<float> alpha = boost::optional<float>(),
-               boost::optional<float> beta = boost::optional<float>(),
-               const std::string &name = "");
-
-    /**
-     * Add the 'Mean' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Mean-6
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    mean(const std::vector<TensorId>& args,
-         const std::string &name = "");
-
-    /**
-     * Add the 'MaxRoiPool' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MaxRoiPool
-     *
-     * \param args List of input tensor ids
-     * \param pooled_shape The 'pooled_shape' attribute 
-     * \param spatial_scale The 'spatial_scale' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    maxroipool(const std::vector<TensorId>& args,
-               const std::vector<int64_t>& pooled_shape,
-               float spatial_scale = 1.0f,
-               const std::string &name = "");
-
-    /**
-     * Add the 'ReduceSum' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceSum
-     *
-     * \param args List of input tensor ids
-     * \param axes The 'axes' attribute 
-     * \param keepdims The 'keepdims' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    reducesum(const std::vector<TensorId>& args,
-              const std::vector<int64_t>& axes = std::vector<int64_t>(),
-              int64_t keepdims = 1,
-              const std::string &name = "");
-
-    /**
-     * Add the 'Pow' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Pow-1
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param broadcast The 'broadcast' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    pow(const std::vector<TensorId>& args,
-        boost::optional<int64_t> axis = boost::optional<int64_t>(),
-        int64_t broadcast = 0,
-        const std::string &name = "");
-
-    /**
-     * Add the 'MaxPool' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#MaxPool-1
-     *
-     * \param args List of input tensor ids
-     * \param kernel_shape The 'kernel_shape' attribute 
-     * \param pads The 'pads' attribute 
-     * \param strides The 'strides' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    maxpool(const std::vector<TensorId>& args,
-            const std::vector<int64_t>& kernel_shape,
-            const std::vector<int64_t>& pads = std::vector<int64_t>(),
-            const std::vector<int64_t>& strides = std::vector<int64_t>(),
-            const std::string &name = "");
-
-    /**
-     * Add the 'LpNormalization' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#LpNormalization
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param p The 'p' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    lpnormalization(const std::vector<TensorId>& args,
-                    int64_t axis = -1,
-                    int64_t p = 2,
-                    const std::string &name = "");
-
-    /**
-     * Add the 'ReduceMax' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceMax
-     *
-     * \param args List of input tensor ids
-     * \param axes The 'axes' attribute 
-     * \param keepdims The 'keepdims' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    reducemax(const std::vector<TensorId>& args,
-              const std::vector<int64_t>& axes = std::vector<int64_t>(),
-              int64_t keepdims = 1,
-              const std::string &name = "");
-
-    /**
-     * Add the 'Loop' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Loop
-     *
-     * \param args List of input tensor ids
-     * \param num_outputs The number of output tensor ids
-     * \param body The 'body' attribute 
-     * \param name Optional identifier for the operation
-     * \return A list of normalized output tensors
-     */
-    std::vector<TensorId>
-    loop(const std::vector<TensorId>& args,
-         unsigned num_outputs,
-         const onnx::GraphProto & body,
-         const std::string &name = "");
-
-    /**
-     * Add the 'Log' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Log
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    log(const std::vector<TensorId>& args,
-        const std::string &name = "");
-
-    /**
-     * Add the 'LeakyRelu' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#LeakyRelu
-     *
-     * \param args List of input tensor ids
-     * \param alpha The 'alpha' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    leakyrelu(const std::vector<TensorId>& args,
-              float alpha = 0.01f,
-              const std::string &name = "");
-
-    /**
-     * Add the 'BatchNormalization' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#BatchNormalization-6
-     *
-     * \param args List of input tensor ids
-     * \param num_outputs The number of output tensor ids
-     * \param epsilon The 'epsilon' attribute 
-     * \param is_test The 'is_test' attribute 
-     * \param momentum The 'momentum' attribute 
-     * \param spatial The 'spatial' attribute 
-     * \param name Optional identifier for the operation
-     * \return A list of normalized output tensors
-     */
-    std::vector<TensorId>
-    batchnormalization(const std::vector<TensorId>& args,
-                       unsigned num_outputs,
-                       float epsilon = 1e-05f,
-                       int64_t is_test = 0,
-                       float momentum = 0.9f,
-                       int64_t spatial = 1,
-                       const std::string &name = "");
-
-    /**
-     * Add the 'Cast' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Cast-6
-     *
-     * \param args List of input tensor ids
-     * \param to The 'to' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    cast(const std::vector<TensorId>& args,
-         const std::string& to,
-         const std::string &name = "");
-
-    /**
-     * Add the 'Not' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Not
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    logical_not(const std::vector<TensorId>& args,
-                const std::string &name = "");
 
     /**
      * Add the 'LSTM' to the model
@@ -876,147 +208,22 @@ class AiOnnxOpset6 : private DomainOpSet {
          const std::string &name = "");
 
     /**
-     * Add the 'ArgMax' to the model
+     * Add the 'GlobalAveragePool' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ArgMax
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param keepdims The 'keepdims' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    argmax(const std::vector<TensorId>& args,
-           int64_t axis = 0,
-           int64_t keepdims = 1,
-           const std::string &name = "");
-
-    /**
-     * Add the 'LRN' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#LRN
-     *
-     * \param args List of input tensor ids
-     * \param size The 'size' attribute 
-     * \param alpha The 'alpha' attribute 
-     * \param beta The 'beta' attribute 
-     * \param bias The 'bias' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    lrn(const std::vector<TensorId>& args,
-        int64_t size,
-        float alpha = 0.0001f,
-        float beta = 0.75f,
-        float bias = 1.0f,
-        const std::string &name = "");
-
-    /**
-     * Add the 'RandomUniform' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#RandomUniform
-     *
-     * \param seed The 'seed' attribute 
-     * \param shape The 'shape' attribute 
-     * \param dtype The 'dtype' attribute 
-     * \param high The 'high' attribute 
-     * \param low The 'low' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    randomuniform(                  const std::vector<int64_t>& shape,
-                  int64_t dtype = 1,
-                  float high = 1.0f,
-                  float low = 0.0f,
-                  boost::optional<float> seed = boost::optional<float>(),
-                  const std::string &name = "");
-
-    /**
-     * Add the 'InstanceNormalization' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#InstanceNormalization
-     *
-     * \param args List of input tensor ids
-     * \param epsilon The 'epsilon' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    instancenormalization(const std::vector<TensorId>& args,
-                          float epsilon = 1e-05f,
-                          const std::string &name = "");
-
-    /**
-     * Add the 'Concat' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Concat
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    concat(const std::vector<TensorId>& args,
-           int64_t axis,
-           const std::string &name = "");
-
-    /**
-     * Add the 'If' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#If
-     *
-     * \param args List of input tensor ids
-     * \param num_outputs The number of output tensor ids
-     * \param else_branch The 'else_branch' attribute 
-     * \param then_branch The 'then_branch' attribute 
-     * \param name Optional identifier for the operation
-     * \return A list of normalized output tensors
-     */
-    std::vector<TensorId>
-    logical_if(const std::vector<TensorId>& args,
-               unsigned num_outputs,
-               const onnx::GraphProto & else_branch,
-               const onnx::GraphProto & then_branch,
-               const std::string &name = "");
-
-    /**
-     * Add the 'Clip' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Clip
-     *
-     * \param args List of input tensor ids
-     * \param max The 'max' attribute 
-     * \param min The 'min' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    clip(const std::vector<TensorId>& args,
-         float max = 3.4028234663852886e+38f,
-         float min = -3.4028234663852886e+38f,
-         const std::string &name = "");
-
-    /**
-     * Add the 'Identity' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Identity
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#GlobalAveragePool
      *
      * \param args List of input tensor ids
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    identity(const std::vector<TensorId>& args,
-             const std::string &name = "");
+    globalaveragepool(const std::vector<TensorId>& args,
+                      const std::string &name = "");
 
     /**
-     * Add the 'ReduceProd' to the model
+     * Add the 'ReduceL2' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceProd
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceL2
      *
      * \param args List of input tensor ids
      * \param axes The 'axes' attribute 
@@ -1025,55 +232,10 @@ class AiOnnxOpset6 : private DomainOpSet {
      * \return The normalized output tensor ids
      */
     TensorId
-    reduceprod(const std::vector<TensorId>& args,
-               const std::vector<int64_t>& axes = std::vector<int64_t>(),
-               int64_t keepdims = 1,
-               const std::string &name = "");
-
-    /**
-     * Add the 'PRelu' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#PRelu-6
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    prelu(const std::vector<TensorId>& args,
-          const std::string &name = "");
-
-    /**
-     * Add the 'Gather' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Gather
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    gather(const std::vector<TensorId>& args,
-           int64_t axis = 0,
-           const std::string &name = "");
-
-    /**
-     * Add the 'HardSigmoid' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#HardSigmoid
-     *
-     * \param args List of input tensor ids
-     * \param alpha The 'alpha' attribute 
-     * \param beta The 'beta' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    hardsigmoid(const std::vector<TensorId>& args,
-                float alpha = 0.2f,
-                float beta = 0.5f,
-                const std::string &name = "");
+    reducel2(const std::vector<TensorId>& args,
+             const std::vector<int64_t>& axes = std::vector<int64_t>(),
+             int64_t keepdims = 1,
+             const std::string &name = "");
 
     /**
      * Add the 'GRU' to the model
@@ -1107,170 +269,21 @@ class AiOnnxOpset6 : private DomainOpSet {
         const std::string &name = "");
 
     /**
-     * Add the 'GlobalLpPool' to the model
+     * Add the 'ReduceMean' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#GlobalLpPool
-     *
-     * \param args List of input tensor ids
-     * \param p The 'p' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    globallppool(const std::vector<TensorId>& args,
-                 int64_t p = 2,
-                 const std::string &name = "");
-
-    /**
-     * Add the 'Elu' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Elu
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceMean
      *
      * \param args List of input tensor ids
-     * \param alpha The 'alpha' attribute 
+     * \param axes The 'axes' attribute 
+     * \param keepdims The 'keepdims' attribute 
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    elu(const std::vector<TensorId>& args,
-        float alpha = 1.0f,
-        const std::string &name = "");
-
-    /**
-     * Add the 'GlobalAveragePool' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#GlobalAveragePool
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    globalaveragepool(const std::vector<TensorId>& args,
-                      const std::string &name = "");
-
-    /**
-     * Add the 'AveragePool' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#AveragePool-1
-     *
-     * \param args List of input tensor ids
-     * \param kernel_shape The 'kernel_shape' attribute 
-     * \param pads The 'pads' attribute 
-     * \param strides The 'strides' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    averagepool(const std::vector<TensorId>& args,
-                const std::vector<int64_t>& kernel_shape,
-                const std::vector<int64_t>& pads = std::vector<int64_t>(),
-                const std::vector<int64_t>& strides = std::vector<int64_t>(),
-                const std::string &name = "");
-
-    /**
-     * Add the 'GivenTensorFill' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#GivenTensorFill
-     *
-     * \param args List of input tensor ids
-     * \param extra_shape The 'extra_shape' attribute 
-     * \param input_as_shape The 'input_as_shape' attribute 
-     * \param shape The 'shape' attribute 
-     * \param values The 'values' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    giventensorfill(const std::vector<TensorId>& args,
-                    const std::vector<int64_t>& extra_shape = std::vector<int64_t>(),
-                    boost::optional<int64_t> input_as_shape = boost::optional<int64_t>(),
-                    const std::vector<int64_t>& shape = std::vector<int64_t>(),
-                    const std::vector<float>& values = std::vector<float>(),
-                    const std::string &name = "");
-
-    /**
-     * Add the 'GRUUnit' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#GRUUnit
-     *
-     * \param args List of input tensor ids
-     * \param drop_states The 'drop_states' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    gruunit(const std::vector<TensorId>& args,
-            boost::optional<int64_t> drop_states = boost::optional<int64_t>(),
-            const std::string &name = "");
-
-    /**
-     * Add the 'ImageScaler' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ImageScaler
-     *
-     * \param args List of input tensor ids
-     * \param bias The 'bias' attribute 
-     * \param scale The 'scale' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    imagescaler(const std::vector<TensorId>& args,
-                const std::vector<float>& bias = std::vector<float>(),
-                float scale = 1.0f,
-                const std::string &name = "");
-
-    /**
-     * Add the 'MatMul' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#MatMul-1
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    matmul(const std::vector<TensorId>& args,
-           const std::string &name = "");
-
-    /**
-     * Add the 'Affine' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Affine
-     *
-     * \param args List of input tensor ids
-     * \param alpha The 'alpha' attribute 
-     * \param beta The 'beta' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    affine(const std::vector<TensorId>& args,
-           float alpha = 1.0f,
-           float beta = 0.0f,
-           const std::string &name = "");
-
-    /**
-     * Add the 'RandomNormal' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#RandomNormal
-     *
-     * \param seed The 'seed' attribute 
-     * \param shape The 'shape' attribute 
-     * \param dtype The 'dtype' attribute 
-     * \param mean The 'mean' attribute 
-     * \param scale The 'scale' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    randomnormal(                 const std::vector<int64_t>& shape,
-                 int64_t dtype = 1,
-                 float mean = 0.0f,
-                 float scale = 1.0f,
-                 boost::optional<float> seed = boost::optional<float>(),
-                 const std::string &name = "");
+    reducemean(const std::vector<TensorId>& args,
+               const std::vector<int64_t>& axes = std::vector<int64_t>(),
+               int64_t keepdims = 1,
+               const std::string &name = "");
 
     /**
      * Add the 'Flatten' to the model
@@ -1301,22 +314,9 @@ class AiOnnxOpset6 : private DomainOpSet {
         const std::string &name = "");
 
     /**
-     * Add the 'Min' to the model
+     * Add the 'Equal' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Min-6
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    min(const std::vector<TensorId>& args,
-        const std::string &name = "");
-
-    /**
-     * Add the 'Div' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Div-6
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Equal-1
      *
      * \param args List of input tensor ids
      * \param axis The 'axis' attribute 
@@ -1325,10 +325,23 @@ class AiOnnxOpset6 : private DomainOpSet {
      * \return The normalized output tensor ids
      */
     TensorId
-    div(const std::vector<TensorId>& args,
-        boost::optional<int64_t> axis = boost::optional<int64_t>(),
-        int64_t broadcast = 0,
-        const std::string &name = "");
+    equal(const std::vector<TensorId>& args,
+          boost::optional<int64_t> axis = boost::optional<int64_t>(),
+          int64_t broadcast = 0,
+          const std::string &name = "");
+
+    /**
+     * Add the 'Not' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Not
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    logical_not(const std::vector<TensorId>& args,
+                const std::string &name = "");
 
     /**
      * Add the 'Gemm' to the model
@@ -1354,17 +367,77 @@ class AiOnnxOpset6 : private DomainOpSet {
          const std::string &name = "");
 
     /**
-     * Add the 'GlobalMaxPool' to the model
+     * Add the 'InstanceNormalization' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#GlobalMaxPool
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#InstanceNormalization
+     *
+     * \param args List of input tensor ids
+     * \param epsilon The 'epsilon' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    instancenormalization(const std::vector<TensorId>& args,
+                          float epsilon = 1e-05f,
+                          const std::string &name = "");
+
+    /**
+     * Add the 'Size' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Size
      *
      * \param args List of input tensor ids
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    globalmaxpool(const std::vector<TensorId>& args,
-                  const std::string &name = "");
+    size(const std::vector<TensorId>& args,
+         const std::string &name = "");
+
+    /**
+     * Add the 'Sqrt' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sqrt
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    sqrt(const std::vector<TensorId>& args,
+         const std::string &name = "");
+
+    /**
+     * Add the 'Elu' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Elu
+     *
+     * \param args List of input tensor ids
+     * \param alpha The 'alpha' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    elu(const std::vector<TensorId>& args,
+        float alpha = 1.0f,
+        const std::string &name = "");
+
+    /**
+     * Add the 'ArgMin' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ArgMin
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param keepdims The 'keepdims' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    argmin(const std::vector<TensorId>& args,
+           int64_t axis = 0,
+           int64_t keepdims = 1,
+           const std::string &name = "");
 
     /**
      * Add the 'Conv' to the model
@@ -1390,56 +463,41 @@ class AiOnnxOpset6 : private DomainOpSet {
          const std::string &name = "");
 
     /**
-     * Add the 'Ceil' to the model
+     * Add the 'Hardmax' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Ceil
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Hardmax
      *
      * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    ceil(const std::vector<TensorId>& args,
-         const std::string &name = "");
+    hardmax(const std::vector<TensorId>& args,
+            int64_t axis = 1,
+            const std::string &name = "");
 
     /**
-     * Add the 'Crop' to the model
+     * Add the 'ArgMax' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Crop
-     *
-     * \param args List of input tensor ids
-     * \param border The 'border' attribute 
-     * \param scale The 'scale' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    crop(const std::vector<TensorId>& args,
-         const std::vector<int64_t>& border = std::vector<int64_t>(),
-         const std::vector<int64_t>& scale = std::vector<int64_t>(),
-         const std::string &name = "");
-
-    /**
-     * Add the 'ReduceMean' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceMean
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ArgMax
      *
      * \param args List of input tensor ids
-     * \param axes The 'axes' attribute 
+     * \param axis The 'axis' attribute 
      * \param keepdims The 'keepdims' attribute 
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    reducemean(const std::vector<TensorId>& args,
-               const std::vector<int64_t>& axes = std::vector<int64_t>(),
-               int64_t keepdims = 1,
-               const std::string &name = "");
+    argmax(const std::vector<TensorId>& args,
+           int64_t axis = 0,
+           int64_t keepdims = 1,
+           const std::string &name = "");
 
     /**
-     * Add the 'Less' to the model
+     * Add the 'And' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Less-1
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#And-1
      *
      * \param args List of input tensor ids
      * \param axis The 'axis' attribute 
@@ -1448,10 +506,359 @@ class AiOnnxOpset6 : private DomainOpSet {
      * \return The normalized output tensor ids
      */
     TensorId
-    less(const std::vector<TensorId>& args,
-         boost::optional<int64_t> axis = boost::optional<int64_t>(),
-         int64_t broadcast = 0,
+    logical_and(const std::vector<TensorId>& args,
+                boost::optional<int64_t> axis = boost::optional<int64_t>(),
+                int64_t broadcast = 0,
+                const std::string &name = "");
+
+    /**
+     * Add the 'ReduceMax' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceMax
+     *
+     * \param args List of input tensor ids
+     * \param axes The 'axes' attribute 
+     * \param keepdims The 'keepdims' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    reducemax(const std::vector<TensorId>& args,
+              const std::vector<int64_t>& axes = std::vector<int64_t>(),
+              int64_t keepdims = 1,
+              const std::string &name = "");
+
+    /**
+     * Add the 'If' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#If
+     *
+     * \param args List of input tensor ids
+     * \param num_outputs The number of output tensor ids
+     * \param else_branch The 'else_branch' attribute 
+     * \param then_branch The 'then_branch' attribute 
+     * \param name Optional identifier for the operation
+     * \return A list of normalized output tensors
+     */
+    std::vector<TensorId>
+    logical_if(const std::vector<TensorId>& args,
+               unsigned num_outputs,
+               const onnx::GraphProto & else_branch,
+               const onnx::GraphProto & then_branch,
+               const std::string &name = "");
+
+    /**
+     * Add the 'Identity' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Identity
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    identity(const std::vector<TensorId>& args,
+             const std::string &name = "");
+
+    /**
+     * Add the 'Abs' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Abs
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    abs(const std::vector<TensorId>& args,
+        const std::string &name = "");
+
+    /**
+     * Add the 'Selu' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Selu
+     *
+     * \param args List of input tensor ids
+     * \param alpha The 'alpha' attribute 
+     * \param gamma The 'gamma' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    selu(const std::vector<TensorId>& args,
+         float alpha = 1.67326f,
+         float gamma = 1.0507f,
          const std::string &name = "");
+
+    /**
+     * Add the 'Add' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Add-6
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param broadcast The 'broadcast' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    add(const std::vector<TensorId>& args,
+        boost::optional<int64_t> axis = boost::optional<int64_t>(),
+        int64_t broadcast = 0,
+        const std::string &name = "");
+
+    /**
+     * Add the 'Split' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Split
+     *
+     * \param args List of input tensor ids
+     * \param num_outputs The number of output tensor ids
+     * \param split The 'split' attribute 
+     * \param axis The 'axis' attribute 
+     * \param name Optional identifier for the operation
+     * \return A list of normalized output tensors
+     */
+    std::vector<TensorId>
+    split(const std::vector<TensorId>& args,
+          unsigned num_outputs,
+          int64_t axis = 0,
+          const std::vector<int64_t>& split = std::vector<int64_t>(),
+          const std::string &name = "");
+
+    /**
+     * Add the 'BatchNormalization' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#BatchNormalization-6
+     *
+     * \param args List of input tensor ids
+     * \param num_outputs The number of output tensor ids
+     * \param epsilon The 'epsilon' attribute 
+     * \param is_test The 'is_test' attribute 
+     * \param momentum The 'momentum' attribute 
+     * \param spatial The 'spatial' attribute 
+     * \param name Optional identifier for the operation
+     * \return A list of normalized output tensors
+     */
+    std::vector<TensorId>
+    batchnormalization(const std::vector<TensorId>& args,
+                       unsigned num_outputs,
+                       float epsilon = 1e-05f,
+                       int64_t is_test = 0,
+                       float momentum = 0.9f,
+                       int64_t spatial = 1,
+                       const std::string &name = "");
+
+    /**
+     * Add the 'Loop' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Loop
+     *
+     * \param args List of input tensor ids
+     * \param num_outputs The number of output tensor ids
+     * \param body The 'body' attribute 
+     * \param name Optional identifier for the operation
+     * \return A list of normalized output tensors
+     */
+    std::vector<TensorId>
+    loop(const std::vector<TensorId>& args,
+         unsigned num_outputs,
+         const onnx::GraphProto & body,
+         const std::string &name = "");
+
+    /**
+     * Add the 'LpNormalization' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#LpNormalization
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param p The 'p' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    lpnormalization(const std::vector<TensorId>& args,
+                    int64_t axis = -1,
+                    int64_t p = 2,
+                    const std::string &name = "");
+
+    /**
+     * Add the 'PRelu' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#PRelu-6
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    prelu(const std::vector<TensorId>& args,
+          const std::string &name = "");
+
+    /**
+     * Add the 'Upsample' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Upsample-1
+     *
+     * \param args List of input tensor ids
+     * \param height_scale The 'height_scale' attribute 
+     * \param width_scale The 'width_scale' attribute 
+     * \param mode The 'mode' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    upsample(const std::vector<TensorId>& args,
+             float height_scale,
+             float width_scale,
+             const std::string& mode = "nearest",
+             const std::string &name = "");
+
+    /**
+     * Add the 'GlobalLpPool' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#GlobalLpPool
+     *
+     * \param args List of input tensor ids
+     * \param p The 'p' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    globallppool(const std::vector<TensorId>& args,
+                 int64_t p = 2,
+                 const std::string &name = "");
+
+    /**
+     * Add the 'ReduceLogSumExp' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceLogSumExp
+     *
+     * \param args List of input tensor ids
+     * \param axes The 'axes' attribute 
+     * \param keepdims The 'keepdims' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    reducelogsumexp(const std::vector<TensorId>& args,
+                    const std::vector<int64_t>& axes = std::vector<int64_t>(),
+                    int64_t keepdims = 1,
+                    const std::string &name = "");
+
+    /**
+     * Add the 'MatMul' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#MatMul-1
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    matmul(const std::vector<TensorId>& args,
+           const std::string &name = "");
+
+    /**
+     * Add the 'Sub' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Sub-6
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param broadcast The 'broadcast' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    sub(const std::vector<TensorId>& args,
+        boost::optional<int64_t> axis = boost::optional<int64_t>(),
+        int64_t broadcast = 0,
+        const std::string &name = "");
+
+    /**
+     * Add the 'MaxPool' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#MaxPool-1
+     *
+     * \param args List of input tensor ids
+     * \param kernel_shape The 'kernel_shape' attribute 
+     * \param pads The 'pads' attribute 
+     * \param strides The 'strides' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    maxpool(const std::vector<TensorId>& args,
+            const std::vector<int64_t>& kernel_shape,
+            const std::vector<int64_t>& pads = std::vector<int64_t>(),
+            const std::vector<int64_t>& strides = std::vector<int64_t>(),
+            const std::string &name = "");
+
+    /**
+     * Add the 'Neg' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Neg
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    neg(const std::vector<TensorId>& args,
+        const std::string &name = "");
+
+    /**
+     * Add the 'ReduceSum' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceSum
+     *
+     * \param args List of input tensor ids
+     * \param axes The 'axes' attribute 
+     * \param keepdims The 'keepdims' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    reducesum(const std::vector<TensorId>& args,
+              const std::vector<int64_t>& axes = std::vector<int64_t>(),
+              int64_t keepdims = 1,
+              const std::string &name = "");
+
+    /**
+     * Add the 'Xor' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Xor-1
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param broadcast The 'broadcast' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    logical_xor(const std::vector<TensorId>& args,
+                boost::optional<int64_t> axis = boost::optional<int64_t>(),
+                int64_t broadcast = 0,
+                const std::string &name = "");
+
+    /**
+     * Add the 'Greater' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Greater-1
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param broadcast The 'broadcast' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    greater(const std::vector<TensorId>& args,
+            boost::optional<int64_t> axis = boost::optional<int64_t>(),
+            int64_t broadcast = 0,
+            const std::string &name = "");
 
     /**
      * Add the 'Dropout' to the model
@@ -1473,51 +880,96 @@ class AiOnnxOpset6 : private DomainOpSet {
             const std::string &name = "");
 
     /**
-     * Add the 'Equal' to the model
+     * Add the 'ReduceSumSquare' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Equal-1
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param broadcast The 'broadcast' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    equal(const std::vector<TensorId>& args,
-          boost::optional<int64_t> axis = boost::optional<int64_t>(),
-          int64_t broadcast = 0,
-          const std::string &name = "");
-
-    /**
-     * Add the 'Add' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Add-6
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceSumSquare
      *
      * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param broadcast The 'broadcast' attribute 
+     * \param axes The 'axes' attribute 
+     * \param keepdims The 'keepdims' attribute 
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    add(const std::vector<TensorId>& args,
-        boost::optional<int64_t> axis = boost::optional<int64_t>(),
-        int64_t broadcast = 0,
-        const std::string &name = "");
+    reducesumsquare(const std::vector<TensorId>& args,
+                    const std::vector<int64_t>& axes = std::vector<int64_t>(),
+                    int64_t keepdims = 1,
+                    const std::string &name = "");
 
     /**
-     * Add the 'Constant' to the model
+     * Add the 'Cast' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Constant-1
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Cast-6
      *
-     * \param value The 'value' attribute 
+     * \param args List of input tensor ids
+     * \param to The 'to' attribute 
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    constant(             const ConstVoidData&  value,
+    cast(const std::vector<TensorId>& args,
+         const std::string& to,
+         const std::string &name = "");
+
+    /**
+     * Add the 'ReduceL1' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceL1
+     *
+     * \param args List of input tensor ids
+     * \param axes The 'axes' attribute 
+     * \param keepdims The 'keepdims' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    reducel1(const std::vector<TensorId>& args,
+             const std::vector<int64_t>& axes = std::vector<int64_t>(),
+             int64_t keepdims = 1,
              const std::string &name = "");
+
+    /**
+     * Add the 'Gather' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Gather
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    gather(const std::vector<TensorId>& args,
+           int64_t axis = 0,
+           const std::string &name = "");
+
+    /**
+     * Add the 'Ceil' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Ceil
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    ceil(const std::vector<TensorId>& args,
+         const std::string &name = "");
+
+    /**
+     * Add the 'Concat' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Concat
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    concat(const std::vector<TensorId>& args,
+           int64_t axis,
+           const std::string &name = "");
 
     /**
      * Add the 'DepthToSpace' to the model
@@ -1533,107 +985,6 @@ class AiOnnxOpset6 : private DomainOpSet {
     depthtospace(const std::vector<TensorId>& args,
                  int64_t blocksize,
                  const std::string &name = "");
-
-    /**
-     * Add the 'LogSoftmax' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#LogSoftmax
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    logsoftmax(const std::vector<TensorId>& args,
-               int64_t axis = 1,
-               const std::string &name = "");
-
-    /**
-     * Add the 'Tile' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Tile
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    tile(const std::vector<TensorId>& args,
-         const std::string &name = "");
-
-    /**
-     * Add the 'And' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#And-1
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param broadcast The 'broadcast' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    logical_and(const std::vector<TensorId>& args,
-                boost::optional<int64_t> axis = boost::optional<int64_t>(),
-                int64_t broadcast = 0,
-                const std::string &name = "");
-
-    /**
-     * Add the 'Reshape' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Reshape
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    reshape(const std::vector<TensorId>& args,
-            const std::string &name = "");
-
-    /**
-     * Add the 'ReduceL2' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceL2
-     *
-     * \param args List of input tensor ids
-     * \param axes The 'axes' attribute 
-     * \param keepdims The 'keepdims' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    reducel2(const std::vector<TensorId>& args,
-             const std::vector<int64_t>& axes = std::vector<int64_t>(),
-             int64_t keepdims = 1,
-             const std::string &name = "");
-
-    /**
-     * Add the 'Tanh' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Tanh
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    tanh(const std::vector<TensorId>& args,
-         const std::string &name = "");
-
-    /**
-     * Add the 'Max' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Max-6
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    max(const std::vector<TensorId>& args,
-        const std::string &name = "");
 
     /**
      * Add the 'ConvTranspose' to the model
@@ -1662,6 +1013,112 @@ class AiOnnxOpset6 : private DomainOpSet {
                   const std::vector<int64_t>& strides = std::vector<int64_t>(),
                   const std::string &name = "");
 
+    /**
+     * Add the 'LogSoftmax' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#LogSoftmax
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    logsoftmax(const std::vector<TensorId>& args,
+               int64_t axis = 1,
+               const std::string &name = "");
+
+    /**
+     * Add the 'ReduceLogSum' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceLogSum
+     *
+     * \param args List of input tensor ids
+     * \param axes The 'axes' attribute 
+     * \param keepdims The 'keepdims' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    reducelogsum(const std::vector<TensorId>& args,
+                 const std::vector<int64_t>& axes = std::vector<int64_t>(),
+                 int64_t keepdims = 1,
+                 const std::string &name = "");
+
+    /**
+     * Add the 'AveragePool' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#AveragePool-1
+     *
+     * \param args List of input tensor ids
+     * \param kernel_shape The 'kernel_shape' attribute 
+     * \param pads The 'pads' attribute 
+     * \param strides The 'strides' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    averagepool(const std::vector<TensorId>& args,
+                const std::vector<int64_t>& kernel_shape,
+                const std::vector<int64_t>& pads = std::vector<int64_t>(),
+                const std::vector<int64_t>& strides = std::vector<int64_t>(),
+                const std::string &name = "");
+
+    /**
+     * Add the 'Relu' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Relu
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    relu(const std::vector<TensorId>& args,
+         const std::string &name = "");
+
+    /**
+     * Add the 'Less' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Less-1
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param broadcast The 'broadcast' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    less(const std::vector<TensorId>& args,
+         boost::optional<int64_t> axis = boost::optional<int64_t>(),
+         int64_t broadcast = 0,
+         const std::string &name = "");
+
+    /**
+     * Add the 'Log' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Log
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    log(const std::vector<TensorId>& args,
+        const std::string &name = "");
+
+    /**
+     * Add the 'Sigmoid' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sigmoid
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    sigmoid(const std::vector<TensorId>& args,
+            const std::string &name = "");
 
     /**
      * Add the 'LpPool' to the model
@@ -1685,77 +1142,455 @@ class AiOnnxOpset6 : private DomainOpSet {
            const std::string &name = "");
 
     /**
-     * Add the 'ATen' to the model
+     * Add the 'Max' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ATen
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Max-6
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    max(const std::vector<TensorId>& args,
+        const std::string &name = "");
+
+    /**
+     * Add the 'MaxRoiPool' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MaxRoiPool
+     *
+     * \param args List of input tensor ids
+     * \param pooled_shape The 'pooled_shape' attribute 
+     * \param spatial_scale The 'spatial_scale' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    maxroipool(const std::vector<TensorId>& args,
+               const std::vector<int64_t>& pooled_shape,
+               float spatial_scale = 1.0f,
+               const std::string &name = "");
+
+    /**
+     * Add the 'LRN' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#LRN
+     *
+     * \param args List of input tensor ids
+     * \param size The 'size' attribute 
+     * \param alpha The 'alpha' attribute 
+     * \param beta The 'beta' attribute 
+     * \param bias The 'bias' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    lrn(const std::vector<TensorId>& args,
+        int64_t size,
+        float alpha = 0.0001f,
+        float beta = 0.75f,
+        float bias = 1.0f,
+        const std::string &name = "");
+
+    /**
+     * Add the 'Mean' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Mean-6
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    mean(const std::vector<TensorId>& args,
+         const std::string &name = "");
+
+    /**
+     * Add the 'Floor' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Floor
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    floor(const std::vector<TensorId>& args,
+          const std::string &name = "");
+
+    /**
+     * Add the 'Min' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Min-6
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    min(const std::vector<TensorId>& args,
+        const std::string &name = "");
+
+    /**
+     * Add the 'RNN' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#RNN-1
      *
      * \param args List of input tensor ids
      * \param num_outputs The number of output tensor ids
+     * \param activation_alpha The 'activation_alpha' attribute 
+     * \param activation_beta The 'activation_beta' attribute 
+     * \param clip The 'clip' attribute 
+     * \param hidden_size The 'hidden_size' attribute 
+     * \param activations The 'activations' attribute 
+     * \param direction The 'direction' attribute 
+     * \param output_sequence The 'output_sequence' attribute 
      * \param name Optional identifier for the operation
      * \return A list of normalized output tensors
      */
     std::vector<TensorId>
-    aten(const std::vector<TensorId>& args,
-         unsigned num_outputs,
-         const std::string &name = "");
-
-    /**
-     * Add the 'Hardmax' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Hardmax
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    hardmax(const std::vector<TensorId>& args,
-            int64_t axis = 1,
-            const std::string &name = "");
-
-    /**
-     * Add the 'Abs' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Abs
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    abs(const std::vector<TensorId>& args,
+    rnn(const std::vector<TensorId>& args,
+        unsigned num_outputs,
+        const std::vector<float>& activation_alpha = std::vector<float>(),
+        const std::vector<float>& activation_beta = std::vector<float>(),
+        const std::vector<std::string>& activations = std::vector<std::string>(),
+        boost::optional<float> clip = boost::optional<float>(),
+        const std::string& direction = "forward",
+        boost::optional<int64_t> hidden_size = boost::optional<int64_t>(),
+        int64_t output_sequence = 0,
         const std::string &name = "");
 
     /**
-     * Add the 'ArgMin' to the model
+     * Add the 'Mul' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ArgMin
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Mul-6
      *
      * \param args List of input tensor ids
      * \param axis The 'axis' attribute 
+     * \param broadcast The 'broadcast' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    mul(const std::vector<TensorId>& args,
+        boost::optional<int64_t> axis = boost::optional<int64_t>(),
+        int64_t broadcast = 0,
+        const std::string &name = "");
+
+    /**
+     * Add the 'GlobalMaxPool' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#GlobalMaxPool
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    globalmaxpool(const std::vector<TensorId>& args,
+                  const std::string &name = "");
+
+    /**
+     * Add the 'Pad' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Pad
+     *
+     * \param args List of input tensor ids
+     * \param pads The 'pads' attribute 
+     * \param mode The 'mode' attribute 
+     * \param value The 'value' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    pad(const std::vector<TensorId>& args,
+        const std::vector<int64_t>& pads,
+        const std::string& mode = "constant",
+        float value = 0.0f,
+        const std::string &name = "");
+
+    /**
+     * Add the 'Or' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Or-1
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param broadcast The 'broadcast' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    logical_or(const std::vector<TensorId>& args,
+               boost::optional<int64_t> axis = boost::optional<int64_t>(),
+               int64_t broadcast = 0,
+               const std::string &name = "");
+
+    /**
+     * Add the 'Pow' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Pow-1
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param broadcast The 'broadcast' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    pow(const std::vector<TensorId>& args,
+        boost::optional<int64_t> axis = boost::optional<int64_t>(),
+        int64_t broadcast = 0,
+        const std::string &name = "");
+
+    /**
+     * Add the 'Constant' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Constant-1
+     *
+     * \param value The 'value' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    constant(             const ConstVoidData&  value,
+             const std::string &name = "");
+
+    /**
+     * Add the 'RandomNormal' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#RandomNormal
+     *
+     * \param seed The 'seed' attribute 
+     * \param shape The 'shape' attribute 
+     * \param dtype The 'dtype' attribute 
+     * \param mean The 'mean' attribute 
+     * \param scale The 'scale' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    randomnormal(                 const std::vector<int64_t>& shape,
+                 int64_t dtype = 1,
+                 float mean = 0.0f,
+                 float scale = 1.0f,
+                 boost::optional<float> seed = boost::optional<float>(),
+                 const std::string &name = "");
+
+    /**
+     * Add the 'Softplus' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Softplus
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    softplus(const std::vector<TensorId>& args,
+             const std::string &name = "");
+
+    /**
+     * Add the 'RandomNormalLike' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#RandomNormalLike
+     *
+     * \param args List of input tensor ids
+     * \param dtype The 'dtype' attribute 
+     * \param seed The 'seed' attribute 
+     * \param mean The 'mean' attribute 
+     * \param scale The 'scale' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    randomnormallike(const std::vector<TensorId>& args,
+                     boost::optional<int64_t> dtype = boost::optional<int64_t>(),
+                     float mean = 0.0f,
+                     float scale = 1.0f,
+                     boost::optional<float> seed = boost::optional<float>(),
+                     const std::string &name = "");
+
+    /**
+     * Add the 'RandomUniform' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#RandomUniform
+     *
+     * \param seed The 'seed' attribute 
+     * \param shape The 'shape' attribute 
+     * \param dtype The 'dtype' attribute 
+     * \param high The 'high' attribute 
+     * \param low The 'low' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    randomuniform(                  const std::vector<int64_t>& shape,
+                  int64_t dtype = 1,
+                  float high = 1.0f,
+                  float low = 0.0f,
+                  boost::optional<float> seed = boost::optional<float>(),
+                  const std::string &name = "");
+
+    /**
+     * Add the 'Div' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Div-6
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param broadcast The 'broadcast' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    div(const std::vector<TensorId>& args,
+        boost::optional<int64_t> axis = boost::optional<int64_t>(),
+        int64_t broadcast = 0,
+        const std::string &name = "");
+
+    /**
+     * Add the 'ReduceMin' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceMin
+     *
+     * \param args List of input tensor ids
+     * \param axes The 'axes' attribute 
      * \param keepdims The 'keepdims' attribute 
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    argmin(const std::vector<TensorId>& args,
-           int64_t axis = 0,
-           int64_t keepdims = 1,
-           const std::string &name = "");
+    reducemin(const std::vector<TensorId>& args,
+              const std::vector<int64_t>& axes = std::vector<int64_t>(),
+              int64_t keepdims = 1,
+              const std::string &name = "");
 
     /**
-     * Add the 'DynamicSlice' to the model
+     * Add the 'HardSigmoid' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#DynamicSlice
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#HardSigmoid
+     *
+     * \param args List of input tensor ids
+     * \param alpha The 'alpha' attribute 
+     * \param beta The 'beta' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    hardsigmoid(const std::vector<TensorId>& args,
+                float alpha = 0.2f,
+                float beta = 0.5f,
+                const std::string &name = "");
+
+    /**
+     * Add the 'Clip' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Clip
+     *
+     * \param args List of input tensor ids
+     * \param max The 'max' attribute 
+     * \param min The 'min' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    clip(const std::vector<TensorId>& args,
+         float max = 3.4028234663852886e+38f,
+         float min = -3.4028234663852886e+38f,
+         const std::string &name = "");
+
+    /**
+     * Add the 'RandomUniformLike' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#RandomUniformLike
+     *
+     * \param args List of input tensor ids
+     * \param dtype The 'dtype' attribute 
+     * \param seed The 'seed' attribute 
+     * \param high The 'high' attribute 
+     * \param low The 'low' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    randomuniformlike(const std::vector<TensorId>& args,
+                      boost::optional<int64_t> dtype = boost::optional<int64_t>(),
+                      float high = 1.0f,
+                      float low = 0.0f,
+                      boost::optional<float> seed = boost::optional<float>(),
+                      const std::string &name = "");
+
+    /**
+     * Add the 'LeakyRelu' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#LeakyRelu
+     *
+     * \param args List of input tensor ids
+     * \param alpha The 'alpha' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    leakyrelu(const std::vector<TensorId>& args,
+              float alpha = 0.01f,
+              const std::string &name = "");
+
+    /**
+     * Add the 'Reciprocal' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Reciprocal
      *
      * \param args List of input tensor ids
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    dynamicslice(const std::vector<TensorId>& args,
-                 const std::string &name = "");
+    reciprocal(const std::vector<TensorId>& args,
+               const std::string &name = "");
+
+    /**
+     * Add the 'ReduceProd' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReduceProd
+     *
+     * \param args List of input tensor ids
+     * \param axes The 'axes' attribute 
+     * \param keepdims The 'keepdims' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    reduceprod(const std::vector<TensorId>& args,
+               const std::vector<int64_t>& axes = std::vector<int64_t>(),
+               int64_t keepdims = 1,
+               const std::string &name = "");
+
+    /**
+     * Add the 'Reshape' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Reshape
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    reshape(const std::vector<TensorId>& args,
+            const std::string &name = "");
+
+    /**
+     * Add the 'Shape' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Shape
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    shape(const std::vector<TensorId>& args,
+          const std::string &name = "");
 
 };
 
@@ -1770,108 +1605,105 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
     int getOpsetVersion() const override { return 7;} 
 
     using AiOnnxOpset6::unsqueeze;
-    using AiOnnxOpset6::topk;
-    using AiOnnxOpset6::thresholdedrelu;
-    using AiOnnxOpset6::squeeze;
-    using AiOnnxOpset6::reducelogsum;
-    using AiOnnxOpset6::split;
-    using AiOnnxOpset6::sqrt;
-    using AiOnnxOpset6::softsign;
-    using AiOnnxOpset6::softplus;
-    using AiOnnxOpset6::size;
     using AiOnnxOpset6::transpose;
-    using AiOnnxOpset6::shape;
-    using AiOnnxOpset6::selu;
+    using AiOnnxOpset6::topk;
+    using AiOnnxOpset6::tile;
+    using AiOnnxOpset6::tanh;
     using AiOnnxOpset6::sum;
-    using AiOnnxOpset6::relu;
-    using AiOnnxOpset6::floor;
-    using AiOnnxOpset6::reducesumsquare;
-    using AiOnnxOpset6::reducemin;
-    using AiOnnxOpset6::reducel1;
-    using AiOnnxOpset6::reciprocal;
-    using AiOnnxOpset6::sigmoid;
-    using AiOnnxOpset6::randomnormallike;
+    using AiOnnxOpset6::squeeze;
     using AiOnnxOpset6::spacetodepth;
+    using AiOnnxOpset6::softsign;
     using AiOnnxOpset6::softmax;
-    using AiOnnxOpset6::parametricsoftplus;
-    using AiOnnxOpset6::pad;
     using AiOnnxOpset6::slice;
-    using AiOnnxOpset6::reducelogsumexp;
-    using AiOnnxOpset6::neg;
-    using AiOnnxOpset6::randomuniformlike;
-    using AiOnnxOpset6::scaledtanh;
-    using AiOnnxOpset6::mean;
-    using AiOnnxOpset6::maxroipool;
-    using AiOnnxOpset6::reducesum;
-    using AiOnnxOpset6::maxpool;
-    using AiOnnxOpset6::lpnormalization;
-    using AiOnnxOpset6::reducemax;
-    using AiOnnxOpset6::loop;
-    using AiOnnxOpset6::log;
-    using AiOnnxOpset6::leakyrelu;
-    using AiOnnxOpset6::cast;
-    using AiOnnxOpset6::logical_not;
-    using AiOnnxOpset6::argmax;
-    using AiOnnxOpset6::lrn;
-    using AiOnnxOpset6::randomuniform;
-    using AiOnnxOpset6::instancenormalization;
-    using AiOnnxOpset6::concat;
-    using AiOnnxOpset6::logical_if;
-    using AiOnnxOpset6::clip;
-    using AiOnnxOpset6::identity;
-    using AiOnnxOpset6::reduceprod;
-    using AiOnnxOpset6::gather;
-    using AiOnnxOpset6::hardsigmoid;
-    using AiOnnxOpset6::globallppool;
-    using AiOnnxOpset6::elu;
     using AiOnnxOpset6::globalaveragepool;
-    using AiOnnxOpset6::giventensorfill;
-    using AiOnnxOpset6::gruunit;
-    using AiOnnxOpset6::imagescaler;
-    using AiOnnxOpset6::matmul;
-    using AiOnnxOpset6::affine;
-    using AiOnnxOpset6::randomnormal;
+    using AiOnnxOpset6::reducel2;
+    using AiOnnxOpset6::reducemean;
     using AiOnnxOpset6::flatten;
     using AiOnnxOpset6::exp;
+    using AiOnnxOpset6::logical_not;
+    using AiOnnxOpset6::instancenormalization;
+    using AiOnnxOpset6::size;
+    using AiOnnxOpset6::sqrt;
+    using AiOnnxOpset6::elu;
+    using AiOnnxOpset6::argmin;
+    using AiOnnxOpset6::conv;
+    using AiOnnxOpset6::hardmax;
+    using AiOnnxOpset6::argmax;
+    using AiOnnxOpset6::reducemax;
+    using AiOnnxOpset6::logical_if;
+    using AiOnnxOpset6::identity;
+    using AiOnnxOpset6::abs;
+    using AiOnnxOpset6::selu;
+    using AiOnnxOpset6::split;
+    using AiOnnxOpset6::loop;
+    using AiOnnxOpset6::lpnormalization;
+    using AiOnnxOpset6::globallppool;
+    using AiOnnxOpset6::reducelogsumexp;
+    using AiOnnxOpset6::matmul;
+    using AiOnnxOpset6::maxpool;
+    using AiOnnxOpset6::neg;
+    using AiOnnxOpset6::reducesum;
+    using AiOnnxOpset6::reducesumsquare;
+    using AiOnnxOpset6::cast;
+    using AiOnnxOpset6::reducel1;
+    using AiOnnxOpset6::gather;
+    using AiOnnxOpset6::ceil;
+    using AiOnnxOpset6::concat;
+    using AiOnnxOpset6::depthtospace;
+    using AiOnnxOpset6::convtranspose;
+    using AiOnnxOpset6::logsoftmax;
+    using AiOnnxOpset6::reducelogsum;
+    using AiOnnxOpset6::relu;
+    using AiOnnxOpset6::log;
+    using AiOnnxOpset6::sigmoid;
+    using AiOnnxOpset6::lppool;
+    using AiOnnxOpset6::max;
+    using AiOnnxOpset6::maxroipool;
+    using AiOnnxOpset6::lrn;
+    using AiOnnxOpset6::mean;
+    using AiOnnxOpset6::floor;
     using AiOnnxOpset6::min;
     using AiOnnxOpset6::globalmaxpool;
-    using AiOnnxOpset6::conv;
-    using AiOnnxOpset6::ceil;
-    using AiOnnxOpset6::crop;
-    using AiOnnxOpset6::reducemean;
+    using AiOnnxOpset6::pad;
     using AiOnnxOpset6::constant;
-    using AiOnnxOpset6::depthtospace;
-    using AiOnnxOpset6::logsoftmax;
-    using AiOnnxOpset6::tile;
+    using AiOnnxOpset6::randomnormal;
+    using AiOnnxOpset6::softplus;
+    using AiOnnxOpset6::randomnormallike;
+    using AiOnnxOpset6::randomuniform;
+    using AiOnnxOpset6::reducemin;
+    using AiOnnxOpset6::hardsigmoid;
+    using AiOnnxOpset6::clip;
+    using AiOnnxOpset6::randomuniformlike;
+    using AiOnnxOpset6::leakyrelu;
+    using AiOnnxOpset6::reciprocal;
+    using AiOnnxOpset6::reduceprod;
     using AiOnnxOpset6::reshape;
-    using AiOnnxOpset6::reducel2;
-    using AiOnnxOpset6::tanh;
-    using AiOnnxOpset6::max;
-    using AiOnnxOpset6::convtranspose;
-    using AiOnnxOpset6::lppool;
-    using AiOnnxOpset6::aten;
-    using AiOnnxOpset6::hardmax;
-    using AiOnnxOpset6::abs;
-    using AiOnnxOpset6::argmin;
-    using AiOnnxOpset6::dynamicslice;
+    using AiOnnxOpset6::shape;
     /**
-     * Add the 'Multinomial' to the model
+     * Add the 'Sin' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Multinomial
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sin
      *
      * \param args List of input tensor ids
-     * \param seed The 'seed' attribute 
-     * \param dtype The 'dtype' attribute 
-     * \param sample_size The 'sample_size' attribute 
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    multinomial(const std::vector<TensorId>& args,
-                int64_t dtype = 6,
-                int64_t sample_size = 1,
-                boost::optional<float> seed = boost::optional<float>(),
-                const std::string &name = "");
+    sin(const std::vector<TensorId>& args,
+        const std::string &name = "");
+
+    /**
+     * Add the 'Atan' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Atan
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    atan(const std::vector<TensorId>& args,
+         const std::string &name = "");
 
     /**
      * Add the 'Asin' to the model
@@ -1898,175 +1730,6 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
     TensorId
     acos(const std::vector<TensorId>& args,
          const std::string &name = "");
-
-    /**
-     * Add the 'Xor' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Xor
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    logical_xor(const std::vector<TensorId>& args,
-                const std::string &name = "");
-
-    /**
-     * Add the 'Sub' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sub
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    sub(const std::vector<TensorId>& args,
-        const std::string &name = "");
-
-    /**
-     * Add the 'Upsample' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Upsample-7
-     *
-     * \param args List of input tensor ids
-     * \param scales The 'scales' attribute 
-     * \param mode The 'mode' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    upsample(const std::vector<TensorId>& args,
-             const std::vector<float>& scales,
-             const std::string& mode = "nearest",
-             const std::string &name = "");
-
-    /**
-     * Add the 'Sin' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sin
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    sin(const std::vector<TensorId>& args,
-        const std::string &name = "");
-
-    /**
-     * Add the 'RNN' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#RNN
-     *
-     * \param args List of input tensor ids
-     * \param num_outputs The number of output tensor ids
-     * \param activation_alpha The 'activation_alpha' attribute 
-     * \param activation_beta The 'activation_beta' attribute 
-     * \param clip The 'clip' attribute 
-     * \param hidden_size The 'hidden_size' attribute 
-     * \param activations The 'activations' attribute 
-     * \param direction The 'direction' attribute 
-     * \param name Optional identifier for the operation
-     * \return A list of normalized output tensors
-     */
-    std::vector<TensorId>
-    rnn(const std::vector<TensorId>& args,
-        unsigned num_outputs,
-        const std::vector<float>& activation_alpha = std::vector<float>(),
-        const std::vector<float>& activation_beta = std::vector<float>(),
-        const std::vector<std::string>& activations = std::vector<std::string>(),
-        boost::optional<float> clip = boost::optional<float>(),
-        const std::string& direction = "forward",
-        boost::optional<int64_t> hidden_size = boost::optional<int64_t>(),
-        const std::string &name = "");
-
-    /**
-     * Add the 'Cos' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cos
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    cos(const std::vector<TensorId>& args,
-        const std::string &name = "");
-
-    /**
-     * Add the 'Greater' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Greater-7
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    greater(const std::vector<TensorId>& args,
-            const std::string &name = "");
-
-    /**
-     * Add the 'Or' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Or
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    logical_or(const std::vector<TensorId>& args,
-               const std::string &name = "");
-
-    /**
-     * Add the 'Mul' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Mul
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    mul(const std::vector<TensorId>& args,
-        const std::string &name = "");
-
-    /**
-     * Add the 'Pow' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Pow
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    pow(const std::vector<TensorId>& args,
-        const std::string &name = "");
-
-    /**
-     * Add the 'BatchNormalization' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#BatchNormalization-7
-     *
-     * \param args List of input tensor ids
-     * \param num_outputs The number of output tensor ids
-     * \param epsilon The 'epsilon' attribute 
-     * \param momentum The 'momentum' attribute 
-     * \param spatial The 'spatial' attribute 
-     * \param name Optional identifier for the operation
-     * \return A list of normalized output tensors
-     */
-    std::vector<TensorId>
-    batchnormalization(const std::vector<TensorId>& args,
-                       unsigned num_outputs,
-                       float epsilon = 1e-05f,
-                       float momentum = 0.9f,
-                       int64_t spatial = 1,
-                       const std::string &name = "");
 
     /**
      * Add the 'LSTM' to the model
@@ -2098,17 +1761,17 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
          const std::string &name = "");
 
     /**
-     * Add the 'PRelu' to the model
+     * Add the 'Tan' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#PRelu-7
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Tan
      *
      * \param args List of input tensor ids
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    prelu(const std::vector<TensorId>& args,
-          const std::string &name = "");
+    tan(const std::vector<TensorId>& args,
+        const std::string &name = "");
 
     /**
      * Add the 'GRU' to the model
@@ -2140,50 +1803,48 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
         const std::string &name = "");
 
     /**
-     * Add the 'AveragePool' to the model
+     * Add the 'Multinomial' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#AveragePool
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Multinomial
      *
      * \param args List of input tensor ids
-     * \param kernel_shape The 'kernel_shape' attribute 
-     * \param pads The 'pads' attribute 
-     * \param strides The 'strides' attribute 
-     * \param count_include_pad The 'count_include_pad' attribute 
+     * \param seed The 'seed' attribute 
+     * \param dtype The 'dtype' attribute 
+     * \param sample_size The 'sample_size' attribute 
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    averagepool(const std::vector<TensorId>& args,
-                const std::vector<int64_t>& kernel_shape,
-                int64_t count_include_pad = 0,
-                const std::vector<int64_t>& pads = std::vector<int64_t>(),
-                const std::vector<int64_t>& strides = std::vector<int64_t>(),
+    multinomial(const std::vector<TensorId>& args,
+                int64_t dtype = 6,
+                int64_t sample_size = 1,
+                boost::optional<float> seed = boost::optional<float>(),
                 const std::string &name = "");
 
     /**
-     * Add the 'Tan' to the model
+     * Add the 'Equal' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Tan
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Equal
      *
      * \param args List of input tensor ids
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    tan(const std::vector<TensorId>& args,
-        const std::string &name = "");
+    equal(const std::vector<TensorId>& args,
+          const std::string &name = "");
 
     /**
-     * Add the 'Div' to the model
+     * Add the 'Cos' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Div
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cos
      *
      * \param args List of input tensor ids
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    div(const std::vector<TensorId>& args,
+    cos(const std::vector<TensorId>& args,
         const std::string &name = "");
 
     /**
@@ -2208,47 +1869,17 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
          const std::string &name = "");
 
     /**
-     * Add the 'Less' to the model
+     * Add the 'And' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Less-7
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    less(const std::vector<TensorId>& args,
-         const std::string &name = "");
-
-    /**
-     * Add the 'Dropout' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Dropout
-     *
-     * \param args List of input tensor ids
-     * \param num_outputs The number of output tensor ids
-     * \param ratio The 'ratio' attribute 
-     * \param name Optional identifier for the operation
-     * \return A list of normalized output tensors
-     */
-    std::vector<TensorId>
-    dropout(const std::vector<TensorId>& args,
-            unsigned num_outputs,
-            float ratio = 0.5f,
-            const std::string &name = "");
-
-    /**
-     * Add the 'Equal' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Equal
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#And
      *
      * \param args List of input tensor ids
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    equal(const std::vector<TensorId>& args,
-          const std::string &name = "");
+    logical_and(const std::vector<TensorId>& args,
+                const std::string &name = "");
 
     /**
      * Add the 'Add' to the model
@@ -2264,30 +1895,224 @@ class AiOnnxOpset7 : private AiOnnxOpset6 {
         const std::string &name = "");
 
     /**
-     * Add the 'Atan' to the model
+     * Add the 'BatchNormalization' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Atan
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#BatchNormalization-7
+     *
+     * \param args List of input tensor ids
+     * \param num_outputs The number of output tensor ids
+     * \param epsilon The 'epsilon' attribute 
+     * \param momentum The 'momentum' attribute 
+     * \param spatial The 'spatial' attribute 
+     * \param name Optional identifier for the operation
+     * \return A list of normalized output tensors
+     */
+    std::vector<TensorId>
+    batchnormalization(const std::vector<TensorId>& args,
+                       unsigned num_outputs,
+                       float epsilon = 1e-05f,
+                       float momentum = 0.9f,
+                       int64_t spatial = 1,
+                       const std::string &name = "");
+
+    /**
+     * Add the 'PRelu' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#PRelu-7
      *
      * \param args List of input tensor ids
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    atan(const std::vector<TensorId>& args,
+    prelu(const std::vector<TensorId>& args,
+          const std::string &name = "");
+
+    /**
+     * Add the 'Upsample' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Upsample-7
+     *
+     * \param args List of input tensor ids
+     * \param scales The 'scales' attribute 
+     * \param mode The 'mode' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    upsample(const std::vector<TensorId>& args,
+             const std::vector<float>& scales,
+             const std::string& mode = "nearest",
+             const std::string &name = "");
+
+    /**
+     * Add the 'Sub' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sub
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    sub(const std::vector<TensorId>& args,
+        const std::string &name = "");
+
+    /**
+     * Add the 'Xor' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Xor
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    logical_xor(const std::vector<TensorId>& args,
+                const std::string &name = "");
+
+    /**
+     * Add the 'Greater' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Greater-7
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    greater(const std::vector<TensorId>& args,
+            const std::string &name = "");
+
+    /**
+     * Add the 'Dropout' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Dropout-7
+     *
+     * \param args List of input tensor ids
+     * \param num_outputs The number of output tensor ids
+     * \param ratio The 'ratio' attribute 
+     * \param name Optional identifier for the operation
+     * \return A list of normalized output tensors
+     */
+    std::vector<TensorId>
+    dropout(const std::vector<TensorId>& args,
+            unsigned num_outputs,
+            float ratio = 0.5f,
+            const std::string &name = "");
+
+    /**
+     * Add the 'AveragePool' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#AveragePool-7
+     *
+     * \param args List of input tensor ids
+     * \param kernel_shape The 'kernel_shape' attribute 
+     * \param pads The 'pads' attribute 
+     * \param strides The 'strides' attribute 
+     * \param count_include_pad The 'count_include_pad' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    averagepool(const std::vector<TensorId>& args,
+                const std::vector<int64_t>& kernel_shape,
+                int64_t count_include_pad = 0,
+                const std::vector<int64_t>& pads = std::vector<int64_t>(),
+                const std::vector<int64_t>& strides = std::vector<int64_t>(),
+                const std::string &name = "");
+
+    /**
+     * Add the 'Less' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Less-7
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    less(const std::vector<TensorId>& args,
          const std::string &name = "");
 
     /**
-     * Add the 'And' to the model
+     * Add the 'RNN' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#And
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#RNN
+     *
+     * \param args List of input tensor ids
+     * \param num_outputs The number of output tensor ids
+     * \param activation_alpha The 'activation_alpha' attribute 
+     * \param activation_beta The 'activation_beta' attribute 
+     * \param clip The 'clip' attribute 
+     * \param hidden_size The 'hidden_size' attribute 
+     * \param activations The 'activations' attribute 
+     * \param direction The 'direction' attribute 
+     * \param name Optional identifier for the operation
+     * \return A list of normalized output tensors
+     */
+    std::vector<TensorId>
+    rnn(const std::vector<TensorId>& args,
+        unsigned num_outputs,
+        const std::vector<float>& activation_alpha = std::vector<float>(),
+        const std::vector<float>& activation_beta = std::vector<float>(),
+        const std::vector<std::string>& activations = std::vector<std::string>(),
+        boost::optional<float> clip = boost::optional<float>(),
+        const std::string& direction = "forward",
+        boost::optional<int64_t> hidden_size = boost::optional<int64_t>(),
+        const std::string &name = "");
+
+    /**
+     * Add the 'Mul' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Mul
      *
      * \param args List of input tensor ids
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    logical_and(const std::vector<TensorId>& args,
-                const std::string &name = "");
+    mul(const std::vector<TensorId>& args,
+        const std::string &name = "");
+
+    /**
+     * Add the 'Or' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Or
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    logical_or(const std::vector<TensorId>& args,
+               const std::string &name = "");
+
+    /**
+     * Add the 'Pow' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Pow
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    pow(const std::vector<TensorId>& args,
+        const std::string &name = "");
+
+    /**
+     * Add the 'Div' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Div
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    div(const std::vector<TensorId>& args,
+        const std::string &name = "");
 
 };
 
@@ -2301,113 +2126,103 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
     // return the opset version
     int getOpsetVersion() const override { return 8;} 
 
-    using AiOnnxOpset7::multinomial;
+    using AiOnnxOpset7::sin;
+    using AiOnnxOpset7::atan;
     using AiOnnxOpset7::asin;
     using AiOnnxOpset7::acos;
-    using AiOnnxOpset7::logical_xor;
     using AiOnnxOpset7::unsqueeze;
-    using AiOnnxOpset7::topk;
-    using AiOnnxOpset7::thresholdedrelu;
-    using AiOnnxOpset7::sub;
-    using AiOnnxOpset7::squeeze;
-    using AiOnnxOpset7::reducelogsum;
-    using AiOnnxOpset7::split;
-    using AiOnnxOpset7::sqrt;
-    using AiOnnxOpset7::softsign;
-    using AiOnnxOpset7::softplus;
-    using AiOnnxOpset7::size;
     using AiOnnxOpset7::transpose;
-    using AiOnnxOpset7::shape;
-    using AiOnnxOpset7::selu;
-    using AiOnnxOpset7::relu;
-    using AiOnnxOpset7::upsample;
-    using AiOnnxOpset7::floor;
-    using AiOnnxOpset7::reducesumsquare;
-    using AiOnnxOpset7::reducemin;
-    using AiOnnxOpset7::reducel1;
-    using AiOnnxOpset7::reciprocal;
-    using AiOnnxOpset7::sin;
-    using AiOnnxOpset7::sigmoid;
-    using AiOnnxOpset7::randomnormallike;
-    using AiOnnxOpset7::rnn;
-    using AiOnnxOpset7::cos;
-    using AiOnnxOpset7::spacetodepth;
-    using AiOnnxOpset7::softmax;
-    using AiOnnxOpset7::parametricsoftplus;
-    using AiOnnxOpset7::pad;
-    using AiOnnxOpset7::slice;
-    using AiOnnxOpset7::greater;
-    using AiOnnxOpset7::reducelogsumexp;
-    using AiOnnxOpset7::logical_or;
-    using AiOnnxOpset7::neg;
-    using AiOnnxOpset7::randomuniformlike;
-    using AiOnnxOpset7::mul;
-    using AiOnnxOpset7::scaledtanh;
-    using AiOnnxOpset7::maxroipool;
-    using AiOnnxOpset7::reducesum;
-    using AiOnnxOpset7::pow;
-    using AiOnnxOpset7::lpnormalization;
-    using AiOnnxOpset7::reducemax;
-    using AiOnnxOpset7::loop;
-    using AiOnnxOpset7::log;
-    using AiOnnxOpset7::leakyrelu;
-    using AiOnnxOpset7::batchnormalization;
-    using AiOnnxOpset7::cast;
-    using AiOnnxOpset7::logical_not;
-    using AiOnnxOpset7::lstm;
-    using AiOnnxOpset7::argmax;
-    using AiOnnxOpset7::lrn;
-    using AiOnnxOpset7::randomuniform;
-    using AiOnnxOpset7::instancenormalization;
-    using AiOnnxOpset7::concat;
-    using AiOnnxOpset7::logical_if;
-    using AiOnnxOpset7::clip;
-    using AiOnnxOpset7::identity;
-    using AiOnnxOpset7::reduceprod;
-    using AiOnnxOpset7::prelu;
-    using AiOnnxOpset7::gather;
-    using AiOnnxOpset7::hardsigmoid;
-    using AiOnnxOpset7::gru;
-    using AiOnnxOpset7::globallppool;
-    using AiOnnxOpset7::elu;
-    using AiOnnxOpset7::globalaveragepool;
-    using AiOnnxOpset7::averagepool;
-    using AiOnnxOpset7::giventensorfill;
-    using AiOnnxOpset7::gruunit;
-    using AiOnnxOpset7::imagescaler;
-    using AiOnnxOpset7::matmul;
-    using AiOnnxOpset7::affine;
-    using AiOnnxOpset7::randomnormal;
-    using AiOnnxOpset7::flatten;
-    using AiOnnxOpset7::tan;
-    using AiOnnxOpset7::exp;
-    using AiOnnxOpset7::div;
-    using AiOnnxOpset7::gemm;
-    using AiOnnxOpset7::globalmaxpool;
-    using AiOnnxOpset7::conv;
-    using AiOnnxOpset7::ceil;
-    using AiOnnxOpset7::crop;
-    using AiOnnxOpset7::reducemean;
-    using AiOnnxOpset7::less;
-    using AiOnnxOpset7::dropout;
-    using AiOnnxOpset7::equal;
-    using AiOnnxOpset7::add;
-    using AiOnnxOpset7::constant;
-    using AiOnnxOpset7::depthtospace;
-    using AiOnnxOpset7::atan;
-    using AiOnnxOpset7::logsoftmax;
+    using AiOnnxOpset7::topk;
     using AiOnnxOpset7::tile;
-    using AiOnnxOpset7::logical_and;
-    using AiOnnxOpset7::reshape;
-    using AiOnnxOpset7::reducel2;
     using AiOnnxOpset7::tanh;
-    using AiOnnxOpset7::convtranspose;
-    using AiOnnxOpset7::lppool;
-    using AiOnnxOpset7::aten;
-    using AiOnnxOpset7::hardmax;
-    using AiOnnxOpset7::abs;
+    using AiOnnxOpset7::squeeze;
+    using AiOnnxOpset7::spacetodepth;
+    using AiOnnxOpset7::softsign;
+    using AiOnnxOpset7::softmax;
+    using AiOnnxOpset7::slice;
+    using AiOnnxOpset7::lstm;
+    using AiOnnxOpset7::tan;
+    using AiOnnxOpset7::globalaveragepool;
+    using AiOnnxOpset7::reducel2;
+    using AiOnnxOpset7::gru;
+    using AiOnnxOpset7::reducemean;
+    using AiOnnxOpset7::multinomial;
+    using AiOnnxOpset7::flatten;
+    using AiOnnxOpset7::exp;
+    using AiOnnxOpset7::equal;
+    using AiOnnxOpset7::logical_not;
+    using AiOnnxOpset7::cos;
+    using AiOnnxOpset7::gemm;
+    using AiOnnxOpset7::instancenormalization;
+    using AiOnnxOpset7::size;
+    using AiOnnxOpset7::sqrt;
+    using AiOnnxOpset7::elu;
     using AiOnnxOpset7::argmin;
-    using AiOnnxOpset7::dynamicslice;
+    using AiOnnxOpset7::conv;
+    using AiOnnxOpset7::hardmax;
+    using AiOnnxOpset7::argmax;
+    using AiOnnxOpset7::logical_and;
+    using AiOnnxOpset7::reducemax;
+    using AiOnnxOpset7::logical_if;
+    using AiOnnxOpset7::identity;
+    using AiOnnxOpset7::abs;
+    using AiOnnxOpset7::selu;
+    using AiOnnxOpset7::add;
+    using AiOnnxOpset7::split;
+    using AiOnnxOpset7::batchnormalization;
+    using AiOnnxOpset7::loop;
+    using AiOnnxOpset7::lpnormalization;
+    using AiOnnxOpset7::prelu;
+    using AiOnnxOpset7::upsample;
+    using AiOnnxOpset7::globallppool;
+    using AiOnnxOpset7::reducelogsumexp;
+    using AiOnnxOpset7::matmul;
+    using AiOnnxOpset7::sub;
+    using AiOnnxOpset7::neg;
+    using AiOnnxOpset7::reducesum;
+    using AiOnnxOpset7::logical_xor;
+    using AiOnnxOpset7::greater;
+    using AiOnnxOpset7::dropout;
+    using AiOnnxOpset7::reducesumsquare;
+    using AiOnnxOpset7::cast;
+    using AiOnnxOpset7::reducel1;
+    using AiOnnxOpset7::gather;
+    using AiOnnxOpset7::ceil;
+    using AiOnnxOpset7::concat;
+    using AiOnnxOpset7::depthtospace;
+    using AiOnnxOpset7::convtranspose;
+    using AiOnnxOpset7::logsoftmax;
+    using AiOnnxOpset7::reducelogsum;
+    using AiOnnxOpset7::averagepool;
+    using AiOnnxOpset7::relu;
+    using AiOnnxOpset7::less;
+    using AiOnnxOpset7::log;
+    using AiOnnxOpset7::sigmoid;
+    using AiOnnxOpset7::lppool;
+    using AiOnnxOpset7::maxroipool;
+    using AiOnnxOpset7::lrn;
+    using AiOnnxOpset7::floor;
+    using AiOnnxOpset7::rnn;
+    using AiOnnxOpset7::mul;
+    using AiOnnxOpset7::globalmaxpool;
+    using AiOnnxOpset7::pad;
+    using AiOnnxOpset7::logical_or;
+    using AiOnnxOpset7::pow;
+    using AiOnnxOpset7::constant;
+    using AiOnnxOpset7::randomnormal;
+    using AiOnnxOpset7::softplus;
+    using AiOnnxOpset7::randomnormallike;
+    using AiOnnxOpset7::randomuniform;
+    using AiOnnxOpset7::div;
+    using AiOnnxOpset7::reducemin;
+    using AiOnnxOpset7::hardsigmoid;
+    using AiOnnxOpset7::clip;
+    using AiOnnxOpset7::randomuniformlike;
+    using AiOnnxOpset7::leakyrelu;
+    using AiOnnxOpset7::reciprocal;
+    using AiOnnxOpset7::reduceprod;
+    using AiOnnxOpset7::reshape;
+    using AiOnnxOpset7::shape;
     /**
      * Add the 'Scan' to the model
      *
@@ -2456,22 +2271,9 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
         const std::string &name = "");
 
     /**
-     * Add the 'Mean' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Mean
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    mean(const std::vector<TensorId>& args,
-         const std::string &name = "");
-
-    /**
      * Add the 'MaxPool' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MaxPool
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#MaxPool-8
      *
      * \param args List of input tensor ids
      * \param num_outputs The number of output tensor ids
@@ -2492,19 +2294,6 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
             const std::string &name = "");
 
     /**
-     * Add the 'Min' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Min
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    min(const std::vector<TensorId>& args,
-        const std::string &name = "");
-
-    /**
      * Add the 'Max' to the model
      *
      * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Max
@@ -2515,6 +2304,32 @@ class AiOnnxOpset8 : private AiOnnxOpset7 {
      */
     TensorId
     max(const std::vector<TensorId>& args,
+        const std::string &name = "");
+
+    /**
+     * Add the 'Mean' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Mean
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    mean(const std::vector<TensorId>& args,
+         const std::string &name = "");
+
+    /**
+     * Add the 'Min' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Min
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    min(const std::vector<TensorId>& args,
         const std::string &name = "");
 
 };
@@ -2529,109 +2344,114 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     // return the opset version
     int getOpsetVersion() const override { return 9;} 
 
-    using AiOnnxOpset8::multinomial;
+    using AiOnnxOpset8::expand;
+    using AiOnnxOpset8::sin;
+    using AiOnnxOpset8::atan;
     using AiOnnxOpset8::asin;
     using AiOnnxOpset8::acos;
-    using AiOnnxOpset8::logical_xor;
     using AiOnnxOpset8::unsqueeze;
-    using AiOnnxOpset8::topk;
-    using AiOnnxOpset8::expand;
-    using AiOnnxOpset8::thresholdedrelu;
-    using AiOnnxOpset8::sub;
-    using AiOnnxOpset8::squeeze;
-    using AiOnnxOpset8::reducelogsum;
-    using AiOnnxOpset8::split;
-    using AiOnnxOpset8::sqrt;
-    using AiOnnxOpset8::softsign;
-    using AiOnnxOpset8::softplus;
-    using AiOnnxOpset8::size;
     using AiOnnxOpset8::transpose;
-    using AiOnnxOpset8::shape;
-    using AiOnnxOpset8::selu;
-    using AiOnnxOpset8::sum;
-    using AiOnnxOpset8::relu;
-    using AiOnnxOpset8::floor;
-    using AiOnnxOpset8::reducesumsquare;
-    using AiOnnxOpset8::reducemin;
-    using AiOnnxOpset8::reducel1;
-    using AiOnnxOpset8::reciprocal;
-    using AiOnnxOpset8::sin;
-    using AiOnnxOpset8::sigmoid;
-    using AiOnnxOpset8::randomnormallike;
-    using AiOnnxOpset8::rnn;
-    using AiOnnxOpset8::cos;
-    using AiOnnxOpset8::spacetodepth;
-    using AiOnnxOpset8::softmax;
-    using AiOnnxOpset8::parametricsoftplus;
-    using AiOnnxOpset8::pad;
-    using AiOnnxOpset8::slice;
-    using AiOnnxOpset8::reducelogsumexp;
-    using AiOnnxOpset8::logical_or;
-    using AiOnnxOpset8::neg;
-    using AiOnnxOpset8::randomuniformlike;
-    using AiOnnxOpset8::mul;
-    using AiOnnxOpset8::scaledtanh;
-    using AiOnnxOpset8::mean;
-    using AiOnnxOpset8::maxroipool;
-    using AiOnnxOpset8::reducesum;
-    using AiOnnxOpset8::pow;
-    using AiOnnxOpset8::maxpool;
-    using AiOnnxOpset8::lpnormalization;
-    using AiOnnxOpset8::reducemax;
-    using AiOnnxOpset8::loop;
-    using AiOnnxOpset8::log;
-    using AiOnnxOpset8::leakyrelu;
-    using AiOnnxOpset8::logical_not;
-    using AiOnnxOpset8::lstm;
-    using AiOnnxOpset8::argmax;
-    using AiOnnxOpset8::lrn;
-    using AiOnnxOpset8::randomuniform;
-    using AiOnnxOpset8::instancenormalization;
-    using AiOnnxOpset8::concat;
-    using AiOnnxOpset8::logical_if;
-    using AiOnnxOpset8::clip;
-    using AiOnnxOpset8::identity;
-    using AiOnnxOpset8::reduceprod;
-    using AiOnnxOpset8::gather;
-    using AiOnnxOpset8::hardsigmoid;
-    using AiOnnxOpset8::gru;
-    using AiOnnxOpset8::globallppool;
-    using AiOnnxOpset8::elu;
-    using AiOnnxOpset8::globalaveragepool;
-    using AiOnnxOpset8::averagepool;
-    using AiOnnxOpset8::giventensorfill;
-    using AiOnnxOpset8::gruunit;
-    using AiOnnxOpset8::imagescaler;
-    using AiOnnxOpset8::affine;
-    using AiOnnxOpset8::randomnormal;
-    using AiOnnxOpset8::tan;
-    using AiOnnxOpset8::exp;
-    using AiOnnxOpset8::min;
-    using AiOnnxOpset8::div;
-    using AiOnnxOpset8::globalmaxpool;
-    using AiOnnxOpset8::conv;
-    using AiOnnxOpset8::ceil;
-    using AiOnnxOpset8::crop;
-    using AiOnnxOpset8::reducemean;
-    using AiOnnxOpset8::dropout;
-    using AiOnnxOpset8::equal;
-    using AiOnnxOpset8::add;
-    using AiOnnxOpset8::depthtospace;
-    using AiOnnxOpset8::atan;
-    using AiOnnxOpset8::logsoftmax;
+    using AiOnnxOpset8::topk;
     using AiOnnxOpset8::tile;
-    using AiOnnxOpset8::logical_and;
-    using AiOnnxOpset8::reshape;
-    using AiOnnxOpset8::reducel2;
     using AiOnnxOpset8::tanh;
-    using AiOnnxOpset8::max;
-    using AiOnnxOpset8::convtranspose;
-    using AiOnnxOpset8::lppool;
-    using AiOnnxOpset8::aten;
-    using AiOnnxOpset8::hardmax;
-    using AiOnnxOpset8::abs;
+    using AiOnnxOpset8::sum;
+    using AiOnnxOpset8::squeeze;
+    using AiOnnxOpset8::spacetodepth;
+    using AiOnnxOpset8::softsign;
+    using AiOnnxOpset8::softmax;
+    using AiOnnxOpset8::slice;
+    using AiOnnxOpset8::lstm;
+    using AiOnnxOpset8::tan;
+    using AiOnnxOpset8::globalaveragepool;
+    using AiOnnxOpset8::reducel2;
+    using AiOnnxOpset8::gru;
+    using AiOnnxOpset8::reducemean;
+    using AiOnnxOpset8::multinomial;
+    using AiOnnxOpset8::exp;
+    using AiOnnxOpset8::equal;
+    using AiOnnxOpset8::logical_not;
+    using AiOnnxOpset8::cos;
+    using AiOnnxOpset8::instancenormalization;
+    using AiOnnxOpset8::size;
+    using AiOnnxOpset8::sqrt;
+    using AiOnnxOpset8::elu;
     using AiOnnxOpset8::argmin;
-    using AiOnnxOpset8::dynamicslice;
+    using AiOnnxOpset8::conv;
+    using AiOnnxOpset8::hardmax;
+    using AiOnnxOpset8::argmax;
+    using AiOnnxOpset8::logical_and;
+    using AiOnnxOpset8::reducemax;
+    using AiOnnxOpset8::logical_if;
+    using AiOnnxOpset8::identity;
+    using AiOnnxOpset8::abs;
+    using AiOnnxOpset8::selu;
+    using AiOnnxOpset8::add;
+    using AiOnnxOpset8::split;
+    using AiOnnxOpset8::loop;
+    using AiOnnxOpset8::lpnormalization;
+    using AiOnnxOpset8::globallppool;
+    using AiOnnxOpset8::reducelogsumexp;
+    using AiOnnxOpset8::sub;
+    using AiOnnxOpset8::maxpool;
+    using AiOnnxOpset8::neg;
+    using AiOnnxOpset8::reducesum;
+    using AiOnnxOpset8::logical_xor;
+    using AiOnnxOpset8::dropout;
+    using AiOnnxOpset8::reducesumsquare;
+    using AiOnnxOpset8::reducel1;
+    using AiOnnxOpset8::gather;
+    using AiOnnxOpset8::ceil;
+    using AiOnnxOpset8::concat;
+    using AiOnnxOpset8::depthtospace;
+    using AiOnnxOpset8::convtranspose;
+    using AiOnnxOpset8::logsoftmax;
+    using AiOnnxOpset8::reducelogsum;
+    using AiOnnxOpset8::averagepool;
+    using AiOnnxOpset8::relu;
+    using AiOnnxOpset8::log;
+    using AiOnnxOpset8::sigmoid;
+    using AiOnnxOpset8::lppool;
+    using AiOnnxOpset8::max;
+    using AiOnnxOpset8::maxroipool;
+    using AiOnnxOpset8::lrn;
+    using AiOnnxOpset8::mean;
+    using AiOnnxOpset8::floor;
+    using AiOnnxOpset8::min;
+    using AiOnnxOpset8::rnn;
+    using AiOnnxOpset8::mul;
+    using AiOnnxOpset8::globalmaxpool;
+    using AiOnnxOpset8::pad;
+    using AiOnnxOpset8::logical_or;
+    using AiOnnxOpset8::pow;
+    using AiOnnxOpset8::randomnormal;
+    using AiOnnxOpset8::softplus;
+    using AiOnnxOpset8::randomnormallike;
+    using AiOnnxOpset8::randomuniform;
+    using AiOnnxOpset8::div;
+    using AiOnnxOpset8::reducemin;
+    using AiOnnxOpset8::hardsigmoid;
+    using AiOnnxOpset8::clip;
+    using AiOnnxOpset8::randomuniformlike;
+    using AiOnnxOpset8::leakyrelu;
+    using AiOnnxOpset8::reciprocal;
+    using AiOnnxOpset8::reduceprod;
+    using AiOnnxOpset8::reshape;
+    using AiOnnxOpset8::shape;
+    /**
+     * Add the 'MeanVarianceNormalization' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MeanVarianceNormalization
+     *
+     * \param args List of input tensor ids
+     * \param axes The 'axes' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    meanvariancenormalization(const std::vector<TensorId>& args,
+                              const std::vector<int64_t>& axes = std::vector<int64_t>(),
+                              const std::string &name = "");
+
     /**
      * Add the 'TfIdfVectorizer' to the model
      *
@@ -2677,75 +2497,69 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
             const std::string &name = "");
 
     /**
-     * Add the 'Sign' to the model
+     * Add the 'Erf' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sign
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Erf
      *
      * \param args List of input tensor ids
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    sign(const std::vector<TensorId>& args,
-         const std::string &name = "");
+    erf(const std::vector<TensorId>& args,
+        const std::string &name = "");
 
     /**
-     * Add the 'IsNaN' to the model
+     * Add the 'Atanh' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#IsNaN
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Atanh
      *
      * \param args List of input tensor ids
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    isnan(const std::vector<TensorId>& args,
+    atanh(const std::vector<TensorId>& args,
           const std::string &name = "");
 
     /**
-     * Add the 'Shrink' to the model
+     * Add the 'Acosh' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Shrink
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Acosh
      *
      * \param args List of input tensor ids
-     * \param bias The 'bias' attribute 
-     * \param lambd The 'lambd' attribute 
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    shrink(const std::vector<TensorId>& args,
-           float bias = 0.0f,
-           float lambd = 0.5f,
-           const std::string &name = "");
+    acosh(const std::vector<TensorId>& args,
+          const std::string &name = "");
 
     /**
-     * Add the 'Sinh' to the model
+     * Add the 'Asinh' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sinh
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Asinh
      *
      * \param args List of input tensor ids
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    sinh(const std::vector<TensorId>& args,
+    asinh(const std::vector<TensorId>& args,
+          const std::string &name = "");
+
+    /**
+     * Add the 'Cosh' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cosh
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    cosh(const std::vector<TensorId>& args,
          const std::string &name = "");
-
-    /**
-     * Add the 'Scatter' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Scatter
-     *
-     * \param args List of input tensor ids
-     * \param axis The 'axis' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    scatter(const std::vector<TensorId>& args,
-            int64_t axis = 0,
-            const std::string &name = "");
 
     /**
      * Add the 'OneHot' to the model
@@ -2761,42 +2575,6 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     onehot(const std::vector<TensorId>& args,
            int64_t axis = -1,
            const std::string &name = "");
-
-    /**
-     * Add the 'MaxUnpool' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MaxUnpool
-     *
-     * \param args List of input tensor ids
-     * \param kernel_shape The 'kernel_shape' attribute 
-     * \param pads The 'pads' attribute 
-     * \param strides The 'strides' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    maxunpool(const std::vector<TensorId>& args,
-              const std::vector<int64_t>& kernel_shape,
-              const std::vector<int64_t>& pads = std::vector<int64_t>(),
-              const std::vector<int64_t>& strides = std::vector<int64_t>(),
-              const std::string &name = "");
-
-    /**
-     * Add the 'EyeLike' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#EyeLike
-     *
-     * \param args List of input tensor ids
-     * \param dtype The 'dtype' attribute 
-     * \param k The 'k' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    eyelike(const std::vector<TensorId>& args,
-            boost::optional<int64_t> dtype = boost::optional<int64_t>(),
-            int64_t k = 0,
-            const std::string &name = "");
 
     /**
      * Add the 'ConstantOfShape' to the model
@@ -2856,170 +2634,62 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
          const std::string &name = "");
 
     /**
-     * Add the 'Acosh' to the model
+     * Add the 'Shrink' to the model
      *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Acosh
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Shrink
      *
      * \param args List of input tensor ids
+     * \param bias The 'bias' attribute 
+     * \param lambd The 'lambd' attribute 
      * \param name Optional identifier for the operation
      * \return The normalized output tensor ids
      */
     TensorId
-    acosh(const std::vector<TensorId>& args,
-          const std::string &name = "");
-
-    /**
-     * Add the 'Where' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Where
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    where(const std::vector<TensorId>& args,
-          const std::string &name = "");
-
-    /**
-     * Add the 'Erf' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Erf
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    erf(const std::vector<TensorId>& args,
-        const std::string &name = "");
-
-    /**
-     * Add the 'Upsample' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Upsample
-     *
-     * \param args List of input tensor ids
-     * \param mode The 'mode' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    upsample(const std::vector<TensorId>& args,
-             const std::string& mode = "nearest",
-             const std::string &name = "");
-
-    /**
-     * Add the 'Asinh' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Asinh
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    asinh(const std::vector<TensorId>& args,
-          const std::string &name = "");
-
-    /**
-     * Add the 'Greater' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Greater
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    greater(const std::vector<TensorId>& args,
-            const std::string &name = "");
-
-    /**
-     * Add the 'BatchNormalization' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#BatchNormalization
-     *
-     * \param args List of input tensor ids
-     * \param num_outputs The number of output tensor ids
-     * \param epsilon The 'epsilon' attribute 
-     * \param momentum The 'momentum' attribute 
-     * \param name Optional identifier for the operation
-     * \return A list of normalized output tensors
-     */
-    std::vector<TensorId>
-    batchnormalization(const std::vector<TensorId>& args,
-                       unsigned num_outputs,
-                       float epsilon = 1e-05f,
-                       float momentum = 0.9f,
-                       const std::string &name = "");
-
-    /**
-     * Add the 'Cosh' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cosh
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    cosh(const std::vector<TensorId>& args,
-         const std::string &name = "");
-
-    /**
-     * Add the 'Cast' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cast
-     *
-     * \param args List of input tensor ids
-     * \param to The 'to' attribute 
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    cast(const std::vector<TensorId>& args,
-         const std::string& to,
-         const std::string &name = "");
-
-    /**
-     * Add the 'PRelu' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#PRelu
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    prelu(const std::vector<TensorId>& args,
-          const std::string &name = "");
-
-    /**
-     * Add the 'Atanh' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Atanh
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    atanh(const std::vector<TensorId>& args,
-          const std::string &name = "");
-
-    /**
-     * Add the 'MatMul' to the model
-     *
-     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MatMul
-     *
-     * \param args List of input tensor ids
-     * \param name Optional identifier for the operation
-     * \return The normalized output tensor ids
-     */
-    TensorId
-    matmul(const std::vector<TensorId>& args,
+    shrink(const std::vector<TensorId>& args,
+           float bias = 0.0f,
+           float lambd = 0.5f,
            const std::string &name = "");
+
+    /**
+     * Add the 'Sign' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sign
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    sign(const std::vector<TensorId>& args,
+         const std::string &name = "");
+
+    /**
+     * Add the 'IsNaN' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#IsNaN
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    isnan(const std::vector<TensorId>& args,
+          const std::string &name = "");
+
+    /**
+     * Add the 'Scatter' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Scatter
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    scatter(const std::vector<TensorId>& args,
+            int64_t axis = 0,
+            const std::string &name = "");
 
     /**
      * Add the 'Flatten' to the model
@@ -3034,6 +2704,23 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     TensorId
     flatten(const std::vector<TensorId>& args,
             int64_t axis = 1,
+            const std::string &name = "");
+
+    /**
+     * Add the 'EyeLike' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#EyeLike
+     *
+     * \param args List of input tensor ids
+     * \param dtype The 'dtype' attribute 
+     * \param k The 'k' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    eyelike(const std::vector<TensorId>& args,
+            boost::optional<int64_t> dtype = boost::optional<int64_t>(),
+            int64_t k = 0,
             const std::string &name = "");
 
     /**
@@ -3058,6 +2745,113 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
          const std::string &name = "");
 
     /**
+     * Add the 'MaxUnpool' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MaxUnpool
+     *
+     * \param args List of input tensor ids
+     * \param kernel_shape The 'kernel_shape' attribute 
+     * \param pads The 'pads' attribute 
+     * \param strides The 'strides' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    maxunpool(const std::vector<TensorId>& args,
+              const std::vector<int64_t>& kernel_shape,
+              const std::vector<int64_t>& pads = std::vector<int64_t>(),
+              const std::vector<int64_t>& strides = std::vector<int64_t>(),
+              const std::string &name = "");
+
+    /**
+     * Add the 'BatchNormalization' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#BatchNormalization
+     *
+     * \param args List of input tensor ids
+     * \param num_outputs The number of output tensor ids
+     * \param epsilon The 'epsilon' attribute 
+     * \param momentum The 'momentum' attribute 
+     * \param name Optional identifier for the operation
+     * \return A list of normalized output tensors
+     */
+    std::vector<TensorId>
+    batchnormalization(const std::vector<TensorId>& args,
+                       unsigned num_outputs,
+                       float epsilon = 1e-05f,
+                       float momentum = 0.9f,
+                       const std::string &name = "");
+
+    /**
+     * Add the 'PRelu' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#PRelu
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    prelu(const std::vector<TensorId>& args,
+          const std::string &name = "");
+
+    /**
+     * Add the 'Upsample' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Changelog.md#Upsample-9
+     *
+     * \param args List of input tensor ids
+     * \param mode The 'mode' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    upsample(const std::vector<TensorId>& args,
+             const std::string& mode = "nearest",
+             const std::string &name = "");
+
+    /**
+     * Add the 'MatMul' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MatMul
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    matmul(const std::vector<TensorId>& args,
+           const std::string &name = "");
+
+    /**
+     * Add the 'Greater' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Greater
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    greater(const std::vector<TensorId>& args,
+            const std::string &name = "");
+
+    /**
+     * Add the 'Cast' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Cast
+     *
+     * \param args List of input tensor ids
+     * \param to The 'to' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    cast(const std::vector<TensorId>& args,
+         const std::string& to,
+         const std::string &name = "");
+
+    /**
      * Add the 'Less' to the model
      *
      * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Less
@@ -3068,6 +2862,19 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
      */
     TensorId
     less(const std::vector<TensorId>& args,
+         const std::string &name = "");
+
+    /**
+     * Add the 'Sinh' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Sinh
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    sinh(const std::vector<TensorId>& args,
          const std::string &name = "");
 
     /**
@@ -3082,6 +2889,494 @@ class AiOnnxOpset9 : private AiOnnxOpset8 {
     TensorId
     constant(             const ConstVoidData&  value,
              const std::string &name = "");
+
+    /**
+     * Add the 'Where' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Where
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    where(const std::vector<TensorId>& args,
+          const std::string &name = "");
+
+};
+
+class AiOnnxOpset10 : private AiOnnxOpset9 {
+
+  protected:
+    using AiOnnxOpset9::impl;
+  public:
+    AiOnnxOpset10(std::unique_ptr<BuilderImpl>& impl_) : AiOnnxOpset9(impl_) {} 
+
+    // return the opset version
+    int getOpsetVersion() const override { return 10;} 
+
+    using AiOnnxOpset9::meanvariancenormalization;
+    using AiOnnxOpset9::tfidfvectorizer;
+    using AiOnnxOpset9::nonzero;
+    using AiOnnxOpset9::erf;
+    using AiOnnxOpset9::atanh;
+    using AiOnnxOpset9::acosh;
+    using AiOnnxOpset9::asinh;
+    using AiOnnxOpset9::cosh;
+    using AiOnnxOpset9::onehot;
+    using AiOnnxOpset9::constantofshape;
+    using AiOnnxOpset9::compress;
+    using AiOnnxOpset9::scan;
+    using AiOnnxOpset9::expand;
+    using AiOnnxOpset9::shrink;
+    using AiOnnxOpset9::sin;
+    using AiOnnxOpset9::sign;
+    using AiOnnxOpset9::atan;
+    using AiOnnxOpset9::asin;
+    using AiOnnxOpset9::acos;
+    using AiOnnxOpset9::unsqueeze;
+    using AiOnnxOpset9::transpose;
+    using AiOnnxOpset9::tile;
+    using AiOnnxOpset9::isnan;
+    using AiOnnxOpset9::tanh;
+    using AiOnnxOpset9::sum;
+    using AiOnnxOpset9::squeeze;
+    using AiOnnxOpset9::spacetodepth;
+    using AiOnnxOpset9::softsign;
+    using AiOnnxOpset9::softmax;
+    using AiOnnxOpset9::lstm;
+    using AiOnnxOpset9::tan;
+    using AiOnnxOpset9::globalaveragepool;
+    using AiOnnxOpset9::reducel2;
+    using AiOnnxOpset9::gru;
+    using AiOnnxOpset9::scatter;
+    using AiOnnxOpset9::reducemean;
+    using AiOnnxOpset9::multinomial;
+    using AiOnnxOpset9::flatten;
+    using AiOnnxOpset9::exp;
+    using AiOnnxOpset9::equal;
+    using AiOnnxOpset9::eyelike;
+    using AiOnnxOpset9::logical_not;
+    using AiOnnxOpset9::cos;
+    using AiOnnxOpset9::gemm;
+    using AiOnnxOpset9::instancenormalization;
+    using AiOnnxOpset9::size;
+    using AiOnnxOpset9::sqrt;
+    using AiOnnxOpset9::elu;
+    using AiOnnxOpset9::argmin;
+    using AiOnnxOpset9::maxunpool;
+    using AiOnnxOpset9::conv;
+    using AiOnnxOpset9::hardmax;
+    using AiOnnxOpset9::argmax;
+    using AiOnnxOpset9::logical_and;
+    using AiOnnxOpset9::reducemax;
+    using AiOnnxOpset9::logical_if;
+    using AiOnnxOpset9::identity;
+    using AiOnnxOpset9::abs;
+    using AiOnnxOpset9::selu;
+    using AiOnnxOpset9::add;
+    using AiOnnxOpset9::split;
+    using AiOnnxOpset9::batchnormalization;
+    using AiOnnxOpset9::loop;
+    using AiOnnxOpset9::lpnormalization;
+    using AiOnnxOpset9::prelu;
+    using AiOnnxOpset9::globallppool;
+    using AiOnnxOpset9::reducelogsumexp;
+    using AiOnnxOpset9::matmul;
+    using AiOnnxOpset9::sub;
+    using AiOnnxOpset9::neg;
+    using AiOnnxOpset9::reducesum;
+    using AiOnnxOpset9::logical_xor;
+    using AiOnnxOpset9::greater;
+    using AiOnnxOpset9::reducesumsquare;
+    using AiOnnxOpset9::cast;
+    using AiOnnxOpset9::reducel1;
+    using AiOnnxOpset9::gather;
+    using AiOnnxOpset9::ceil;
+    using AiOnnxOpset9::concat;
+    using AiOnnxOpset9::depthtospace;
+    using AiOnnxOpset9::convtranspose;
+    using AiOnnxOpset9::logsoftmax;
+    using AiOnnxOpset9::reducelogsum;
+    using AiOnnxOpset9::relu;
+    using AiOnnxOpset9::less;
+    using AiOnnxOpset9::log;
+    using AiOnnxOpset9::sigmoid;
+    using AiOnnxOpset9::lppool;
+    using AiOnnxOpset9::max;
+    using AiOnnxOpset9::maxroipool;
+    using AiOnnxOpset9::lrn;
+    using AiOnnxOpset9::mean;
+    using AiOnnxOpset9::floor;
+    using AiOnnxOpset9::min;
+    using AiOnnxOpset9::rnn;
+    using AiOnnxOpset9::mul;
+    using AiOnnxOpset9::globalmaxpool;
+    using AiOnnxOpset9::pad;
+    using AiOnnxOpset9::sinh;
+    using AiOnnxOpset9::logical_or;
+    using AiOnnxOpset9::pow;
+    using AiOnnxOpset9::constant;
+    using AiOnnxOpset9::randomnormal;
+    using AiOnnxOpset9::where;
+    using AiOnnxOpset9::softplus;
+    using AiOnnxOpset9::randomnormallike;
+    using AiOnnxOpset9::randomuniform;
+    using AiOnnxOpset9::div;
+    using AiOnnxOpset9::reducemin;
+    using AiOnnxOpset9::hardsigmoid;
+    using AiOnnxOpset9::clip;
+    using AiOnnxOpset9::randomuniformlike;
+    using AiOnnxOpset9::leakyrelu;
+    using AiOnnxOpset9::reciprocal;
+    using AiOnnxOpset9::reduceprod;
+    using AiOnnxOpset9::reshape;
+    using AiOnnxOpset9::shape;
+    /**
+     * Add the 'NonMaxSuppression' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#NonMaxSuppression
+     *
+     * \param args List of input tensor ids
+     * \param center_point_box The 'center_point_box' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    nonmaxsuppression(const std::vector<TensorId>& args,
+                      int64_t center_point_box = 0,
+                      const std::string &name = "");
+
+    /**
+     * Add the 'DequantizeLinear' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#DequantizeLinear
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    dequantizelinear(const std::vector<TensorId>& args,
+                     const std::string &name = "");
+
+    /**
+     * Add the 'QLinearConv' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#QLinearConv
+     *
+     * \param args List of input tensor ids
+     * \param dilations The 'dilations' attribute 
+     * \param kernel_shape The 'kernel_shape' attribute 
+     * \param pads The 'pads' attribute 
+     * \param strides The 'strides' attribute 
+     * \param group The 'group' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    qlinearconv(const std::vector<TensorId>& args,
+                const std::vector<int64_t>& dilations = std::vector<int64_t>(),
+                int64_t group = 1,
+                const std::vector<int64_t>& kernel_shape = std::vector<int64_t>(),
+                const std::vector<int64_t>& pads = std::vector<int64_t>(),
+                const std::vector<int64_t>& strides = std::vector<int64_t>(),
+                const std::string &name = "");
+
+    /**
+     * Add the 'ConvInteger' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ConvInteger
+     *
+     * \param args List of input tensor ids
+     * \param dilations The 'dilations' attribute 
+     * \param kernel_shape The 'kernel_shape' attribute 
+     * \param pads The 'pads' attribute 
+     * \param strides The 'strides' attribute 
+     * \param group The 'group' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    convinteger(const std::vector<TensorId>& args,
+                const std::vector<int64_t>& dilations = std::vector<int64_t>(),
+                int64_t group = 1,
+                const std::vector<int64_t>& kernel_shape = std::vector<int64_t>(),
+                const std::vector<int64_t>& pads = std::vector<int64_t>(),
+                const std::vector<int64_t>& strides = std::vector<int64_t>(),
+                const std::string &name = "");
+
+    /**
+     * Add the 'MatMulInteger' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MatMulInteger
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    matmulinteger(const std::vector<TensorId>& args,
+                  const std::string &name = "");
+
+    /**
+     * Add the 'ThresholdedRelu' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ThresholdedRelu
+     *
+     * \param args List of input tensor ids
+     * \param alpha The 'alpha' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    thresholdedrelu(const std::vector<TensorId>& args,
+                    float alpha = 1.0f,
+                    const std::string &name = "");
+
+    /**
+     * Add the 'Mod' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Mod
+     *
+     * \param args List of input tensor ids
+     * \param fmod The 'fmod' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    mod(const std::vector<TensorId>& args,
+        int64_t fmod = 0,
+        const std::string &name = "");
+
+    /**
+     * Add the 'Resize' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Resize
+     *
+     * \param args List of input tensor ids
+     * \param mode The 'mode' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    resize(const std::vector<TensorId>& args,
+           const std::string& mode = "nearest",
+           const std::string &name = "");
+
+    /**
+     * Add the 'ReverseSequence' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#ReverseSequence
+     *
+     * \param args List of input tensor ids
+     * \param batch_axis The 'batch_axis' attribute 
+     * \param time_axis The 'time_axis' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    reversesequence(const std::vector<TensorId>& args,
+                    int64_t batch_axis = 1,
+                    int64_t time_axis = 0,
+                    const std::string &name = "");
+
+    /**
+     * Add the 'TopK' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#TopK
+     *
+     * \param args List of input tensor ids
+     * \param axis The 'axis' attribute 
+     * \param name Optional identifier for the operation
+     * \return A list of normalized output tensors
+     */
+    std::vector<TensorId>
+    topk(const std::vector<TensorId>& args,
+         int64_t axis = -1,
+         const std::string &name = "");
+
+    /**
+     * Add the 'Slice' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Slice
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    slice(const std::vector<TensorId>& args,
+          const std::string &name = "");
+
+    /**
+     * Add the 'StringNormalizer' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#StringNormalizer
+     *
+     * \param args List of input tensor ids
+     * \param locale The 'locale' attribute 
+     * \param stopwords The 'stopwords' attribute 
+     * \param case_change_action The 'case_change_action' attribute 
+     * \param is_case_sensitive The 'is_case_sensitive' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    stringnormalizer(const std::vector<TensorId>& args,
+                     const std::string& case_change_action = "NONE",
+                     int64_t is_case_sensitive = 0,
+                     boost::optional<std::string> locale = std::string(),
+                     const std::vector<std::string>& stopwords = std::vector<std::string>(),
+                     const std::string &name = "");
+
+    /**
+     * Add the 'RoiAlign' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#RoiAlign
+     *
+     * \param args List of input tensor ids
+     * \param mode The 'mode' attribute 
+     * \param output_height The 'output_height' attribute 
+     * \param output_width The 'output_width' attribute 
+     * \param sampling_ratio The 'sampling_ratio' attribute 
+     * \param spatial_scale The 'spatial_scale' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    roialign(const std::vector<TensorId>& args,
+             const std::string& mode = "avg",
+             int64_t output_height = 1,
+             int64_t output_width = 1,
+             int64_t sampling_ratio = 0,
+             float spatial_scale = 1.0f,
+             const std::string &name = "");
+
+    /**
+     * Add the 'IsInf' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#IsInf
+     *
+     * \param args List of input tensor ids
+     * \param detect_negative The 'detect_negative' attribute 
+     * \param detect_positive The 'detect_positive' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    isinf(const std::vector<TensorId>& args,
+          int64_t detect_negative = 1,
+          int64_t detect_positive = 1,
+          const std::string &name = "");
+
+    /**
+     * Add the 'QLinearMatMul' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#QLinearMatMul
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    qlinearmatmul(const std::vector<TensorId>& args,
+                  const std::string &name = "");
+
+    /**
+     * Add the 'Upsample' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Upsample
+     *
+     * \param args List of input tensor ids
+     * \param mode The 'mode' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    upsample(const std::vector<TensorId>& args,
+             const std::string& mode = "nearest",
+             const std::string &name = "");
+
+    /**
+     * Add the 'MaxPool' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#MaxPool
+     *
+     * \param args List of input tensor ids
+     * \param num_outputs The number of output tensor ids
+     * \param dilations The 'dilations' attribute 
+     * \param kernel_shape The 'kernel_shape' attribute 
+     * \param pads The 'pads' attribute 
+     * \param strides The 'strides' attribute 
+     * \param ceil_mode The 'ceil_mode' attribute 
+     * \param storage_order The 'storage_order' attribute 
+     * \param name Optional identifier for the operation
+     * \return A list of normalized output tensors
+     */
+    std::vector<TensorId>
+    maxpool(const std::vector<TensorId>& args,
+            unsigned num_outputs,
+            const std::vector<int64_t>& kernel_shape,
+            int64_t ceil_mode = 0,
+            const std::vector<int64_t>& dilations = std::vector<int64_t>(),
+            const std::vector<int64_t>& pads = std::vector<int64_t>(),
+            int64_t storage_order = 0,
+            const std::vector<int64_t>& strides = std::vector<int64_t>(),
+            const std::string &name = "");
+
+    /**
+     * Add the 'Dropout' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#Dropout
+     *
+     * \param args List of input tensor ids
+     * \param num_outputs The number of output tensor ids
+     * \param ratio The 'ratio' attribute 
+     * \param name Optional identifier for the operation
+     * \return A list of normalized output tensors
+     */
+    std::vector<TensorId>
+    dropout(const std::vector<TensorId>& args,
+            unsigned num_outputs,
+            float ratio = 0.5f,
+            const std::string &name = "");
+
+    /**
+     * Add the 'QuantizeLinear' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#QuantizeLinear
+     *
+     * \param args List of input tensor ids
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    quantizelinear(const std::vector<TensorId>& args,
+                   const std::string &name = "");
+
+    /**
+     * Add the 'AveragePool' to the model
+     *
+     * https://github.com/onnx/onnx/blob/master/docs/Operators.md#AveragePool
+     *
+     * \param args List of input tensor ids
+     * \param kernel_shape The 'kernel_shape' attribute 
+     * \param pads The 'pads' attribute 
+     * \param strides The 'strides' attribute 
+     * \param ceil_mode The 'ceil_mode' attribute 
+     * \param count_include_pad The 'count_include_pad' attribute 
+     * \param name Optional identifier for the operation
+     * \return The normalized output tensor ids
+     */
+    TensorId
+    averagepool(const std::vector<TensorId>& args,
+                const std::vector<int64_t>& kernel_shape,
+                int64_t ceil_mode = 0,
+                int64_t count_include_pad = 0,
+                const std::vector<int64_t>& pads = std::vector<int64_t>(),
+                const std::vector<int64_t>& strides = std::vector<int64_t>(),
+                const std::string &name = "");
 
 };
 

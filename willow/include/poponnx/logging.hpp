@@ -51,6 +51,7 @@ enum class Level {
   Err      = 4,
   Critical = 5,
   Off      = 6,
+  N        = 7, // Number of levels
 };
 
 enum class Module {
@@ -75,6 +76,8 @@ void configure(const std::map<std::string, std::string> &config);
 // log level is set by the POPONNX_LOG_LEVEL environment variable
 // and is off by default.
 void setLogLevel(Module m, Level l);
+
+Level getLogLevel(Module m);
 
 // Return true if the passed log level is currently enabled.
 bool shouldLog(Module m, Level l);

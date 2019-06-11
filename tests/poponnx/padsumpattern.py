@@ -181,9 +181,22 @@ def test_pad_sum7(op_tester):
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
-        s1 = builder.aiOnnx.slice([i1], axes=[0], starts=[0], ends=[1])
-        s2 = builder.aiOnnx.slice([i1], axes=[0], starts=[3], ends=[4])
-        s3 = builder.aiOnnx.slice([i1], axes=[0], starts=[1], ends=[3])
+
+        s1_axes = builder.aiOnnx.constant(np.array([0]).astype(np.int64))
+        s1_starts = builder.aiOnnx.constant(np.array([0]).astype(np.int64))
+        s1_ends = builder.aiOnnx.constant(np.array([1]).astype(np.int64))
+        s1 = builder.aiOnnx.slice([i1, s1_starts, s1_ends, s1_axes])
+
+        s2_axes = builder.aiOnnx.constant(np.array([0]).astype(np.int32))
+        s2_starts = builder.aiOnnx.constant(np.array([3]).astype(np.int32))
+        s2_ends = builder.aiOnnx.constant(np.array([4]).astype(np.int32))
+        s2 = builder.aiOnnx.slice([i1, s2_starts, s2_ends, s2_axes])
+
+        s3_axes = builder.aiOnnx.constant(np.array([0]).astype(np.int64))
+        s3_starts = builder.aiOnnx.constant(np.array([1]).astype(np.int64))
+        s3_ends = builder.aiOnnx.constant(np.array([3]).astype(np.int64))
+        s3 = builder.aiOnnx.slice([i1, s3_starts, s3_ends, s3_axes])
+
         c1 = builder.aiOnnx.concat([s1, s2, s3], 0)
         u1 = builder.aiOnnx.unsqueeze([c1], axes=[0])
 

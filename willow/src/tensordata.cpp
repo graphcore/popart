@@ -19,6 +19,7 @@ TensorData::TensorData(const TensorInfo &info, const void *from) {
 }
 
 void *TensorData::data() { return data_.data(); }
+const void *TensorData::data() const { return data_.data(); }
 
 void TensorData::resetData(const onnx::TensorProto &tp) {
   ConstVoidData cv_data = onnxutil::getConstData(tp);

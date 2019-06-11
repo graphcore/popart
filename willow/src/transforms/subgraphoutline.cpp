@@ -210,11 +210,8 @@ Match::Instance::Instance(const std::vector<OpId> &ops_, Graph &graph)
   for (auto opid : ops) {
     auto op = graph.getOp(opid);
 
-    // can not use op->input->tensors() here.
-    // order is very important and op->input->tensors() doesn't gaurantee
-    // returning tensors in index order
-    for (int i = 0; i < op->input->n(); i++) {
-      auto input = op->inTensor(i);
+    for (auto &index_tensor : op->input->tensorMap()) {
+      auto input = index_tensor.second;
 
       if (!input->hasProducer() ||
           op_set.find(input->getProducer()) == op_set.end()) {
@@ -229,11 +226,8 @@ Match::Instance::Instance(const std::vector<OpId> &ops_, Graph &graph)
       });
     };
 
-    // can not use op->output->tensors() here.
-    // order is very important and op->output->tensors() doesn't gaurantee
-    // returning tensors in index order
-    for (int i = 0; i < op->output->n(); i++) {
-      auto output = op->outTensor(i);
+    for (auto &index_tensor : op->output->tensorMap()) {
+      auto output = index_tensor.second;
 
       if (hasExternalConsumer(output) || ir.isAnchored(output->id)) {
         addExternalOutput(output);

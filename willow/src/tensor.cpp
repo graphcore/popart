@@ -44,6 +44,13 @@ TensorData *Tensor::tensorData() {
   return data_.get();
 }
 
+const TensorData *Tensor::tensorData() const {
+  if (data_.get() == nullptr) {
+    throw error("Data not set for " + id);
+  }
+  return data_.get();
+}
+
 void Consumers::append(std::stringstream &ss) {
   std::string tab = "     ";
 

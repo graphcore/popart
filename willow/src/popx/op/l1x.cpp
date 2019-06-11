@@ -105,7 +105,6 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
   default: { throw error("Unsupported reduction type for Loss {}", idStr()); }
   }
 
-  logging::devicex::debug("DEBUG : scale {}", scale);
   auto t_scale =
       getConst(popType(op_p->inInfo(0)), {}, scale, debugPrefix("scale"));
 

@@ -106,6 +106,7 @@ public:
   bool hasProducer() const;
   bool hasTensorData() const;
   TensorData *tensorData();
+  const TensorData *tensorData() const;
 
   template <typename... Args> void setTensorData(Args &&... args) {
     // if data has already been created and had a stream

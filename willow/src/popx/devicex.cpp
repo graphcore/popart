@@ -98,12 +98,17 @@ void Devicex::weightsToHost(
   }
 }
 
-poplar::Tensor Devicex::getConst(const poplar::Type &type,
+poplar::Tensor Devicex::getConst(poplar::Graph &graph,
+                                 const poplar::Type &type,
                                  const std::vector<size_t> &shape,
                                  double val,
                                  const std::string &name) {
-  auto tensor = masterGraph().addConstant(type, shape, val, name);
-  masterGraph().setTileMapping(tensor, 0);
+  static unsigned tileCounter = 0;
+
+  auto tensor = graph.addConstant(type, shape, val, name);
+  auto tile   = tileCounter % graph.getTarget().getTilesPerIPU();
+  tileCounter++;
+  graph.setTileMapping(tensor, tile);
   return tensor;
 }
 
@@ -826,10 +831,11 @@ PriTask Devicex::initDropoutRandomSeed() {
 
 PriTask Devicex::incrementDropoutRandomSeedTask() {
   auto incrementDropoutRandomSeedTask = [this]() {
-    popops::addInPlace(masterGraph(),
-                       *getDropoutRandomSeed(),
-                       getConst(poplar::UNSIGNED_INT, {}, 1, "one"),
-                       programFragment());
+    popops::addInPlace(
+        masterGraph(),
+        *getDropoutRandomSeed(),
+        getConst(masterGraph(), poplar::UNSIGNED_INT, {}, 1, "one"),
+        programFragment());
   };
 
   return {
@@ -1786,14 +1792,14 @@ PriTask Devicex::initBatchCounterTensorsTask() {
       batchCountCheckingTensors[N] =
           masterGraph().addVariable(poplar::BOOL, {});
 
-      getConst(poplar::INT, {}, N, "batchCounter");
+      getConst(masterGraph(), poplar::INT, {}, N, "batchCounter");
 
       poputil::mapTensorLinearly(masterGraph(), batchCountingTensors[N]);
       poputil::mapTensorLinearly(masterGraph(), batchCountCheckingTensors[N]);
     }
 
     // Make sure const 1 tensor exists
-    getConst(poplar::INT, {}, 1, "one");
+    getConst(masterGraph(), poplar::INT, {}, 1, "one");
   };
 
   return {+1e6, // followed by writes to host: always as early as possible
@@ -1814,19 +1820,21 @@ PriTask Devicex::updateBatchCountTask(poplar::program::Sequence &sq) {
     // the anchor tensor is required, and check if it is a
     // copy batch
     for (ReturnPeriod N : ir().getDataFlow().rps()) {
-      popops::addInPlace(masterGraph(),
-                         batchCountingTensors[N],
-                         getConst(poplar::INT, {}, 1, "batchCount/one"),
-                         sq);
+      popops::addInPlace(
+          masterGraph(),
+          batchCountingTensors[N],
+          getConst(masterGraph(), poplar::INT, {}, 1, "batchCount/one"),
+          sq);
 
-      batchCountCheckingTensors[N] =
-          popops::eq(masterGraph(),
-                     batchCountingTensors[N],
-                     getConst(poplar::INT, {}, N, "batchCount/n"),
-                     sq);
+      batchCountCheckingTensors[N] = popops::eq(
+          masterGraph(),
+          batchCountingTensors[N],
+          getConst(masterGraph(), poplar::INT, {}, N, "batchCount/n"),
+          sq);
 
       // Reset batch count once it has reached N
-      auto zero = getConst(poplar::INT, {}, 0, "batchCount/zero");
+      auto zero =
+          getConst(masterGraph(), poplar::INT, {}, 0, "batchCount/zero");
       sq.add(poplar::program::If(
           batchCountCheckingTensors[N],
           poplar::program::Copy(zero, batchCountingTensors[N]),

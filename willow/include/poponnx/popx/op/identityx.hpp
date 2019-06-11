@@ -14,9 +14,10 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
-class IdentityGradOpx : public IdentityOpx {
+class IdentityGradOpx : public ElementWiseUnaryOpx {
 public:
   IdentityGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
 };
 
 } // namespace popx

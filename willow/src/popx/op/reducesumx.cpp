@@ -7,6 +7,7 @@
 #include <poponnx/popx/op/reducesumx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/util.hpp>
 
 #include <popops/Reduce.hpp>
 
@@ -17,29 +18,19 @@ ReduceSumOpx::ReduceSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ReduceSumOp>(op);
 }
 
-template <typename T1, typename T2>
-static std::vector<T1> vector_cast(const std::vector<T2> &xs) {
-  std::vector<T1> ys;
-
-  ys.reserve(xs.size());
-  for (const auto &x : xs) {
-    ys.emplace_back(static_cast<T1>(x));
-  }
-
-  return ys;
-}
-
 void ReduceSumOpx::grow(poplar::program::Sequence &prog) const {
-  const auto op    = dynamic_cast<ReduceSumOp *>(op_p);
-  const auto input = getInTensor(0);
+  const auto op    = getOp<ReduceSumOp>();
+  const auto input = getInTensor(ReduceSumOp::getInIndex());
 
   auto output_tensor = popops::reduce(graph(),
                                       input,
-                                      vector_cast<std::size_t>(op->getAxes()),
+                                      vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
                                       prog);
 
-  setOutTensor(0, output_tensor.reshape(outInfo(0).shape_szt()));
+  setOutTensor(
+      ReduceSumOp::getOutIndex(),
+      output_tensor.reshape(outInfo(ReduceSumOp::getOutIndex()).shape_szt()));
 }
 
 ReduceSumGradOpx::ReduceSumGradOpx(Op *op, Devicex *devicex)
@@ -48,11 +39,11 @@ ReduceSumGradOpx::ReduceSumGradOpx(Op *op, Devicex *devicex)
 }
 
 void ReduceSumGradOpx::grow(poplar::program::Sequence &prog) const {
-  const auto op        = dynamic_cast<ReduceSumGradOp *>(op_p);
-  auto output          = cloneNcopy(prog, getInTensor(0));
-  auto input_shape     = inShape(0);
-  auto output_shape    = outShape(0);
-  const auto new_shape = vector_cast<std::size_t>(op->backwardShape());
+  const auto op = getOp<ReduceSumGradOp>();
+  auto output   = cloneNcopy(prog, getInTensor(ReduceSumGradOp::getInIndex()));
+  auto input_shape     = inShape(ReduceSumGradOp::getInIndex());
+  auto output_shape    = outShape(ReduceSumGradOp::getOutIndex());
+  const auto new_shape = vector_cast<std::size_t>(op.backwardShape());
 
   output = output.reshape(new_shape);
 
@@ -64,7 +55,7 @@ void ReduceSumGradOpx::grow(poplar::program::Sequence &prog) const {
   }
 
   // output now matches the shape of output_shape
-  setOutTensor(0, output);
+  setOutTensor(ReduceSumGradOp::getOutIndex(), output);
 }
 
 namespace {

@@ -33,7 +33,7 @@ const static int64_t graphcoreOperatorSetVersion = defaultAiGraphcoreOpset;
 
 // Supported opset versions
 const static int64_t minOnnxOperatorSetVersion = 6;
-const static int64_t maxOnnxOperatorSetVersion = 9;
+const static int64_t maxOnnxOperatorSetVersion = 10;
 
 const static int64_t minGraphcoreOperatorSetVersion = 1;
 const static int64_t maxGraphcoreOperatorSetVersion = 1;

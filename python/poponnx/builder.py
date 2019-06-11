@@ -1,4 +1,5 @@
 import poponnx
+import numpy as np
 
 
 # A wrapper around the Builder cpp class, renamed BuilderCore in pybind,
@@ -7,10 +8,8 @@ class Builder(poponnx.BuilderCore):
     def __init__(self, modelProtoOrFilename=None, opsets=None):
 
         if (opsets == None):
-
             # These are the default opsets, they will increment with releases
-
-            self.opsets = {"ai.onnx": 9, "ai.onnx.ml": 1, "ai.graphcore": 1}
+            self.opsets = {"ai.onnx": 10, "ai.onnx.ml": 1, "ai.graphcore": 1}
         else:
             self.opsets = opsets
 
@@ -25,7 +24,9 @@ class Builder(poponnx.BuilderCore):
     @property
     def aiOnnx(self):
         version = self.opsets["ai.onnx"]
-        if version == 9:
+        if version == 10:
+            return self.aiOnnxOpset10
+        elif version == 9:
             return self.aiOnnxOpset9
         elif version == 8:
             return self.aiOnnxOpset8
@@ -54,3 +55,8 @@ class Builder(poponnx.BuilderCore):
         else:
             # Need to raise an exception here
             pass
+
+    def reshape_const(self, aiOnnx, args, shape, debugPrefix=""):
+        newShape = aiOnnx.constant(
+            np.array(shape).astype(np.int64), debugPrefix + "_const")
+        return aiOnnx.reshape([args[0], newShape], debugPrefix)

@@ -1,5 +1,6 @@
 // Copyright (c) 2018, Graphcore Ltd, All rights reserved
 
+#include <poponnx/error.hpp>
 #include <poponnx/logging.hpp>
 
 #include <spdlog/fmt/fmt.h>
@@ -262,6 +263,17 @@ bool shouldLog(Module m, Level l) {
 
 void setLogLevel(Module m, Level l) {
   LoggingContext::getLogger(m)->set_level(translate(l));
+}
+
+Level getLogLevel(Module m) {
+  for (int l = 0; l < static_cast<int>(Level::N); l++) {
+    Level level = static_cast<Level>(l);
+    if (shouldLog(m, level)) {
+      return level;
+    }
+  }
+  throw error("getLogLevel could not find loglevel for module " +
+              moduleName(m));
 }
 
 void flush(Module m) { LoggingContext::getLogger(m)->flush(); }

@@ -163,6 +163,7 @@ public:
   TensorId inId(InIndex index) const;
   TensorId outId(OutIndex index) const;
 
+  // shortcut for dv_p->getConst
   poplar::Tensor getConst(const poplar::Type &type,
                           const std::vector<size_t> &shape,
                           double val,
