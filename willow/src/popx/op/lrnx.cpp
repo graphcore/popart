@@ -41,13 +41,17 @@ poplar::Tensor getScale(poplar::Graph &graph,
 
   for (auto i = -left; i < right; ++i) {
     // i == 0 added by default,
-    if ((i != 0L) && (channels - std::max(0L, i)) - std::max(0L, -i) > 0)
-      popops::addInPlace(
-          graph,
-          square_sum.slice(std::max(0L, -i), channels - std::max(0L, i), 1),
-          square.slice(std::max(0L, i), channels - std::max(0L, -i), 1),
-          prog,
-          id_str);
+    if ((i != 0L) &&
+        (channels - std::max<int64_t>(0L, i)) - std::max<int64_t>(0L, -i) > 0)
+      popops::addInPlace(graph,
+                         square_sum.slice(std::max<int64_t>(0L, -i),
+                                          channels - std::max<int64_t>(0L, i),
+                                          1),
+                         square.slice(std::max<int64_t>(0L, i),
+                                      channels - std::max<int64_t>(0L, -i),
+                                      1),
+                         prog,
+                         id_str);
   }
 
   auto scale = popops::map(
