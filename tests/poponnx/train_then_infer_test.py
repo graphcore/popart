@@ -105,8 +105,8 @@ def test_train_then_infer_via_file():
     inference_anchors = inference_session.initAnchorArrays()
     inference_inputs = {input: input_data}
 
-    inference_session.run(poponnx.PyStepIO(inference_inputs,
-                                           inference_anchors))
+    inference_session.run(
+        poponnx.PyStepIO(inference_inputs, inference_anchors))
 
 
 def test_cannot_call_resethostweights_with_constant_weights():

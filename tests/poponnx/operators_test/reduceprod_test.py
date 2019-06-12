@@ -85,9 +85,9 @@ def test_reduceprod_training(op_tester):
             result.append(out)
             result.append(tensor)
 
-        sum = torch.unsqueeze(torch.sum(
-            torch.stack([torch.sum(r) for r in result[0::2]])),
-                              dim=0)
+        sum = torch.unsqueeze(
+            torch.sum(torch.stack([torch.sum(r) for r in result[0::2]])),
+            dim=0)
 
         d__o = ref_data.getOutputTensorGrad(0)
         sum.backward(torch.tensor(d__o))

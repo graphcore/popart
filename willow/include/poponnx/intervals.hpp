@@ -14,6 +14,9 @@ namespace poponnx {
 // 2 eggs.
 std::vector<std::array<int, 2>> getDecreasingIntervals(int N);
 
+std::vector<std::array<int, 2>>
+getDecreasingIntervals(const std::vector<int64_t> &floorHeights);
+
 } // namespace poponnx
 
 #endif

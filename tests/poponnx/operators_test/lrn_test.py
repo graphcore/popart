@@ -92,16 +92,14 @@ def test_lrn_training(op_tester):
         result = []
         for nsize in nsizes:
             tensor = torch.tensor(data, requires_grad=True)
-            out = torch.nn.LocalResponseNorm(nsize,
-                                             alpha=alpha,
-                                             beta=beta,
-                                             k=bias)(tensor)
+            out = torch.nn.LocalResponseNorm(
+                nsize, alpha=alpha, beta=beta, k=bias)(tensor)
             result.append(out)
             result.append(tensor)
 
-        sum = torch.unsqueeze(torch.sum(
-            torch.stack([torch.sum(r) for r in result[0::2]])),
-                              dim=0)
+        sum = torch.unsqueeze(
+            torch.sum(torch.stack([torch.sum(r) for r in result[0::2]])),
+            dim=0)
 
         d__o = ref_data.getOutputTensorGrad(0)
         sum.backward(torch.tensor(d__o))

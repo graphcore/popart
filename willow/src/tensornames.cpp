@@ -5,10 +5,6 @@ namespace poponnx {
 
 TensorId getGradId(const TensorId &id) { return reservedGradientPrefix() + id; }
 
-TensorId getRecompId(const TensorId &id) {
-  return reservedRecomputePrefix() + id;
-}
-
 TensorId getUpdatedVarId(const TensorId &id) {
   return reservedUpdatedVarPrefix() + id;
 }
@@ -30,9 +26,7 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
 }
 
 std::vector<std::string> reservedPrefixes() {
-  return {reservedGradientPrefix(),
-          reservedRecomputePrefix(),
-          reservedUpdatedVarPrefix()};
+  return {reservedGradientPrefix(), reservedUpdatedVarPrefix()};
 }
 
 } // namespace poponnx

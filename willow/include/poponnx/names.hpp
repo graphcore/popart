@@ -97,11 +97,11 @@ using OnnxTensorPtrs = std::map<TensorId, const onnx::TensorProto *>;
 using OpsBeforeKey   = std::map<Op *, std::vector<Op *>>;
 
 // Custom node attribute names
-static constexpr const char *sRecomputeOutputAttribute =
-    "__recompute_output_in_backward_pass";
 static constexpr const char *sVirtualGraphAttribute = "__ipu_number";
 static constexpr const char *sInplaceOpNames        = "__inplace_op_names";
 static constexpr const char *sInplaceOpPriorities   = "__inplace_op_priorities";
+static constexpr const char *sRecomputeOutputAttribute =
+    "__recompute_output_in_backward_pass";
 
 // The deliminator used in poponnx tensor names
 static constexpr const char *sNameDelimiter = "/";

@@ -518,18 +518,20 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("modelToHost", &InferenceSession::modelToHost)
       .def("getInfo", &InferenceSession::getInfo)
       .def("getSummaryReport", &InferenceSession::getSummaryReport)
-      .def("getGraphReport",
-           [](const InferenceSession &session, bool use_cbor) {
-             auto report = session.getGraphReport(use_cbor);
-             return py::bytes(report);
-           },
-           py::arg("use_cbor") = false)
-      .def("getExecutionReport",
-           [](const InferenceSession &session, bool use_cbor) {
-             auto report = session.getExecutionReport(use_cbor);
-             return py::bytes(report);
-           },
-           py::arg("use_cbor") = false)
+      .def(
+          "getGraphReport",
+          [](const InferenceSession &session, bool use_cbor) {
+            auto report = session.getGraphReport(use_cbor);
+            return py::bytes(report);
+          },
+          py::arg("use_cbor") = false)
+      .def(
+          "getExecutionReport",
+          [](const InferenceSession &session, bool use_cbor) {
+            auto report = session.getExecutionReport(use_cbor);
+            return py::bytes(report);
+          },
+          py::arg("use_cbor") = false)
       .def("getTensorTileMap", &InferenceSession::getTensorTileMap)
       .def("resetHostWeights", &InferenceSession::resetHostWeights);
 
@@ -554,18 +556,20 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("modelToHost", &TrainingSession::modelToHost)
       .def("getInfo", &TrainingSession::getInfo)
       .def("getSummaryReport", &TrainingSession::getSummaryReport)
-      .def("getGraphReport",
-           [](const TrainingSession &session, bool use_cbor) {
-             auto report = session.getGraphReport(use_cbor);
-             return py::bytes(report);
-           },
-           py::arg("use_cbor") = false)
-      .def("getExecutionReport",
-           [](const TrainingSession &session, bool use_cbor) {
-             auto report = session.getExecutionReport(use_cbor);
-             return py::bytes(report);
-           },
-           py::arg("use_cbor") = false)
+      .def(
+          "getGraphReport",
+          [](const TrainingSession &session, bool use_cbor) {
+            auto report = session.getGraphReport(use_cbor);
+            return py::bytes(report);
+          },
+          py::arg("use_cbor") = false)
+      .def(
+          "getExecutionReport",
+          [](const TrainingSession &session, bool use_cbor) {
+            auto report = session.getExecutionReport(use_cbor);
+            return py::bytes(report);
+          },
+          py::arg("use_cbor") = false)
       .def("getTensorTileMap", &TrainingSession::getTensorTileMap)
       .def("resetHostWeights", &TrainingSession::resetHostWeights);
 
@@ -618,15 +622,16 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("addInputTensorFromParentGraph",
            &Builder::addInputTensorFromHigherScope,
            py::arg("tensorId"))
-      .def("addInitializedInputTensor",
-           [](Builder &builder, py::array array, std::string &debugPrefix) {
-             ConstVoidData initData;
-             initData.data = array.request().ptr;
-             initData.info = getTensorInfo(array);
-             return builder.addInitializedInputTensor(initData, debugPrefix);
-           },
-           py::arg("initVal"),
-           py::arg("debugPrefix") = std::string())
+      .def(
+          "addInitializedInputTensor",
+          [](Builder &builder, py::array array, std::string &debugPrefix) {
+            ConstVoidData initData;
+            initData.data = array.request().ptr;
+            initData.info = getTensorInfo(array);
+            return builder.addInitializedInputTensor(initData, debugPrefix);
+          },
+          py::arg("initVal"),
+          py::arg("debugPrefix") = std::string())
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
 
       // Accessors for the ai.onnx domain builder interfac
@@ -734,22 +739,25 @@ PYBIND11_MODULE(poponnx_core, m) {
                &Builder::virtualGraph),
            py::arg("nodeOutputNames"),
            py::arg("value") = 0)
-      .def("virtualGraph",
-           [](Builder &self, int64_t index) -> AttributeContextManager {
-             AttributeContextManager acm(self, sVirtualGraphAttribute, index);
-             return acm;
-           },
-           py::arg("value"))
-      .def("nameScope",
-           [](Builder &self, const std::string &name) -> NameContextManager {
-             NameContextManager ncm(self, name);
-             return ncm;
-           },
-           py::arg("name"))
+      .def(
+          "virtualGraph",
+          [](Builder &self, int64_t index) -> AttributeContextManager {
+            AttributeContextManager acm(self, sVirtualGraphAttribute, index);
+            return acm;
+          },
+          py::arg("value"))
+      .def(
+          "nameScope",
+          [](Builder &self, const std::string &name) -> NameContextManager {
+            NameContextManager ncm(self, name);
+            return ncm;
+          },
+          py::arg("name"))
       .def("getVirtualGraph",
            static_cast<int64_t (Builder::*)(const TensorId &)>(
                &Builder::getVirtualGraph),
            py::arg("nodeOutputNames"))
+
       .def("recomputeOutputInBackwardPass",
            static_cast<void (Builder::*)(const TensorId &, bool value)>(
                &Builder::recomputeOutputInBackwardPass),
@@ -761,12 +769,7 @@ PYBIND11_MODULE(poponnx_core, m) {
                &Builder::recomputeOutputInBackwardPass),
            py::arg("nodeOutputNames"),
            py::arg("value") = true)
-      .def("setInplacePreferences",
-           static_cast<void (Builder::*)(const TensorId &,
-                                         const std::map<OpType, float> &)>(
-               &Builder::setInplacePreferences),
-           py::arg("nodeOutputName"),
-           py::arg("prefs"))
+
       .def("getRecomputeOutputInBackwardPass",
            static_cast<bool (Builder::*)(const TensorId &)>(
                &Builder::getRecomputeOutputInBackwardPass),
@@ -775,7 +778,14 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def("getRecomputeOutputInBackwardPass",
            static_cast<bool (Builder::*)(const std::set<TensorId> &)>(
                &Builder::getRecomputeOutputInBackwardPass),
-           py::arg("nodeOutputNames"));
+           py::arg("nodeOutputNames"))
+
+      .def("setInplacePreferences",
+           static_cast<void (Builder::*)(const TensorId &,
+                                         const std::map<OpType, float> &)>(
+               &Builder::setInplacePreferences),
+           py::arg("nodeOutputName"),
+           py::arg("prefs"));
 
   py::class_<AttributeContextManager>(m, "AttributeContextManager")
       .def("__enter__", &AttributeContextManager::enter)
@@ -843,7 +853,6 @@ PYBIND11_MODULE(poponnx_core, m) {
       });
 
   m.def("reservedGradientPrefix", &reservedGradientPrefix);
-  m.def("reservedRecomputePrefix", &reservedRecomputePrefix);
   m.def("reservedUpdatedVarPrefix", &reservedUpdatedVarPrefix);
 
   // Exceptions are processed explicitly to allow the main dynamic library

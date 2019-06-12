@@ -11,6 +11,7 @@ def test_valid_recompute_options():
     i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
     i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
     o = builder.aiOnnx.add([i1, i2])
+
     builder.addOutputTensor(o)
 
     # specify manual recomputation
@@ -29,6 +30,5 @@ def test_valid_recompute_options():
             passes=poponnx.Patterns([]),
             userOptions=opts,
             deviceInfo=poponnx.DeviceManager().createCpuDevice())
-    assert (
-        e_info.value.args[0] ==
-        "A mixture of auto and manual recomputaion is currently not supported")
+    assert (e_info.value.args[0] ==
+            "A mixture of auto and manual recomputaion is not supported")

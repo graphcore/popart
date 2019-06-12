@@ -76,8 +76,8 @@ def _test_concat(op_tester, shape, axis):
     d0 = np.arange(0, dl).reshape(shape).astype(np.float32)
     d1 = np.arange(dl + 1, 2 * dl + 1).reshape(shape).astype(np.float32)
 
-    dummy = np.zeros(np.concatenate((d0, d1), axis=axis).shape,
-                     dtype=np.float32)
+    dummy = np.zeros(
+        np.concatenate((d0, d1), axis=axis).shape, dtype=np.float32)
 
     def init_builder(builder):
         c0 = builder.aiOnnx.constant(d0)
@@ -105,8 +105,8 @@ def test_concat_3_inputs(op_tester):
     d1 = np.arange(dl + 1, 2 * dl + 1).reshape(shape).astype(np.float32)
     d2 = np.arange(2 * dl + 2, 3 * dl + 2).reshape(shape).astype(np.float32)
 
-    dummy = np.zeros(np.concatenate((d0, d1, d2), axis=axis).shape,
-                     dtype=np.float32)
+    dummy = np.zeros(
+        np.concatenate((d0, d1, d2), axis=axis).shape, dtype=np.float32)
 
     def init_builder(builder):
         c0 = builder.aiOnnx.constant(d0)

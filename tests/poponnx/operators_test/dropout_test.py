@@ -226,58 +226,6 @@ def test_dropout_training7():
     assert (np.array_equal(anchors[d1], anchors[d2]) is not True)
 
 
-## TODO T8803 : requires hardware or a sim device
-# Check that dropout works correctly with recomputation (cloned op has same mask
-# and ratio)
-def test_dropout_training8():
-    dsize = 100
-    ratio = 0.2
-    use_ipu = True
-
-    builder = poponnx.Builder()
-    ip = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [dsize]))
-    d__ip = poponnx.reservedGradientPrefix() + ip
-    [dropout] = builder.aiOnnx.dropout([ip], num_outputs=1, ratio=ratio)
-    # Add op with a path to bwd pass so recomputation op is not pruned
-    exp = builder.aiOnnx.exp([dropout])
-    out = exp
-    builder.addOutputTensor(out)
-
-    no_recomp_proto = builder.getModelProto()
-
-    builder.recomputeOutputInBackwardPass(dropout)
-    builder.recomputeOutputInBackwardPass(exp)
-    recomp_proto = builder.getModelProto()
-
-    if use_ipu is True:
-        device = poponnx.DeviceManager().acquireAvailableDevice()
-        if device is None:
-            pytest.skip("Test needs to run on IPU, but none are available")
-    else:
-        device = poponnx.DeviceManager().createCpuDevice()
-
-    session_no_recomp, anchors_no_recomp = get_session(
-        anchorIds=[out, ip, d__ip],
-        proto=no_recomp_proto,
-        device=device,
-        output=out)
-
-    session_recomp, anchors_recomp = get_session(
-        anchorIds=[out, ip, d__ip],
-        proto=recomp_proto,
-        device=device,
-        output=out)
-
-    ip_data = np.random.random_sample(dsize).astype(np.float32)
-    stepio_no_recomp = poponnx.PyStepIO({ip: ip_data}, anchors_no_recomp)
-    stepio_recomp = poponnx.PyStepIO({ip: ip_data}, anchors_recomp)
-
-    session_no_recomp.run(stepio_no_recomp)
-    session_recomp.run(stepio_recomp)
-
-    assert np.allclose(anchors_no_recomp[d__ip], anchors_recomp[d__ip])
-
-
 def get_dropout_session(dsize=100,
                         ratio=0.2,
                         bps=1,

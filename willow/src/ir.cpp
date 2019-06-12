@@ -33,12 +33,12 @@
 #include <poponnx/util.hpp>
 
 // The transformations
+#include <poponnx/recompute.hpp>
 #include <poponnx/transforms/auto_virtual_graph.hpp>
 #include <poponnx/transforms/interipucopy.hpp>
 #include <poponnx/transforms/mergecopies.hpp>
 #include <poponnx/transforms/mergevarupdates.hpp>
 #include <poponnx/transforms/prune.hpp>
-#include <poponnx/transforms/recompute.hpp>
 #include <poponnx/transforms/subgraphoutline.hpp>
 #include <poponnx/transforms/virtual_graph_check.hpp>
 
@@ -85,6 +85,25 @@ std::vector<Tensor *> Ir::optimizerTensors() const {
     }
   }
   return optTensors;
+}
+
+Op *Ir::getTurningPointOp() const {
+
+  // the point at which the forward part of the compute graph ends
+  Op *turningPointOp     = nullptr;
+  auto mainGraphSchedule = getMainGraph().getOpSchedule({});
+  for (auto op : mainGraphSchedule) {
+    if (op->getPhase() == Phase::FWD || op->getPhase() == Phase::LOSS) {
+      turningPointOp = op;
+    }
+  }
+
+  if (!turningPointOp) {
+    throw error(
+        "ILE: failed to set turningPointOp, is the graph in training mode?");
+  }
+
+  return turningPointOp;
 }
 
 // the rule followed : a Stream tensor which is not an
@@ -538,6 +557,10 @@ void Ir::prepare(const IrBundle &gb) {
     setNPathsToLoss();
   }
 
+  if (autoRecomputationEnabled() && getMainGraph().hasUserRecomputeOps()) {
+    throw error("A mixture of auto and manual recomputaion is not supported");
+  }
+
   // tensors with no producer and no consumers are removed
   // at this point. We may want something more subtle.
   removeIsolatedTensors();
@@ -604,21 +627,6 @@ void Ir::prepare(const IrBundle &gb) {
   }
   }
 
-  // Explicitly set this transform to default (off),
-  // unless either
-  // 1. The option is switched on by the user, XOR
-  // 2. Ops in the ir have been annotated with the 'recompute'
-  //    attribute. At the moment this can only happen if
-  //    specified when building the onnx graph using the poponnx
-  //    Builder
-  if (hasAutoRecomputationEnabled() && hasUserRecomputeOps()) {
-    throw error(
-        "A mixture of auto and manual recomputaion is currently not supported");
-  } else {
-    enableTransform(Recompute::id(),
-                    hasAutoRecomputationEnabled() || hasUserRecomputeOps());
-    applyTransform(Recompute::id(), getMainGraph());
-  }
   updateVertices();
 
   // we now start applying topological constraints between
@@ -654,6 +662,13 @@ void Ir::prepare(const IrBundle &gb) {
     applyTransform(SubgraphOutline::id(), getMainGraph());
   }
 
+  if (autoRecomputationEnabled()) {
+    updateVertices();
+    logging::transform::info("Auto-annotating Ops for recomputation");
+    recompute::autoAnnotate(getMainGraph(),
+                            getSessionOptions().autoRecomputation);
+  }
+
   // Now, we apply the Patterns which can handle and create
   // topological constraints. Currently, this is only one
   // in-placing Pattern.
@@ -685,6 +700,7 @@ void Ir::prepare(const IrBundle &gb) {
   verifyTensorIds();
   // end of checks
 
+  updateVertices();
   isPrepared = true;
 }
 
@@ -976,18 +992,6 @@ OpId Ir::getAndIncrOpsCounter() {
 
 OpId Ir::getOpsCounter() const { return opsCounter; }
 
-bool Ir::hasUserRecomputeOps() const {
-  bool hasUserRecomputeOps = false;
-  for (auto &id_op : getMainGraph().getOps()) {
-    Op *op = id_op.second.get();
-    if (op->getRecomputeOutput()) {
-      hasUserRecomputeOps = true;
-      break;
-    }
-  }
-  return hasUserRecomputeOps;
-}
-
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
   std::unique_ptr<poponnx::Op> gradSum =
@@ -1048,9 +1052,9 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     Op *gradOp    = upop.get();
     OpId gradOpId = getMainGraph().moveIntoGraph(std::move(upop));
 
-    // grad op shouldn't inherit recomputeOutputSettings from forward op
-    if (nonGradOp->getRecomputeOutput()) {
-      gradOp->setRecomputeOutput(boost::none);
+    if (nonGradOp->settings.recomputeType == RecomputeType::RECOMPUTE &&
+        autoRecomputationEnabled()) {
+      throw error("Grad Ops should be grown before recompute annotation");
     }
 
     // connect inputs of gradOp
@@ -1270,8 +1274,7 @@ void Ir::updateVertices() {
       insNouts.push_back(tensor_indices.first->id);
     }
     for (auto id : insNouts) {
-      if ((id.find(reservedGradientPrefix()) != std::string::npos) ||
-          (id.find(reservedRecomputePrefix()) != std::string::npos)) {
+      if (id.find(reservedGradientPrefix()) != std::string::npos) {
         suggestions.push_back(Phase::BWD);
       }
     }
@@ -1991,7 +1994,26 @@ void Ir::applyInplacePattern(Graph &graph) {
             touchesAnchors = true;
           }
         }
-        if (!touchesAnchors) {
+
+        // If it is recompute and uses inplace output, do not inplace.
+        // This is conservative (aliasing can sometimes still be inplaced)
+        // TODO T9352: use logic based on existing Inplace code
+        // It can be shown that checkpoints consuming recomputable outputs
+        // do not need to be inplaced
+        bool recomputeUsingCheckpoint = false;
+        if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+          for (auto &index_tensor : op->input->tensorMap()) {
+            auto inTensor = index_tensor.second;
+            if (!inTensor->hasProducer() ||
+                (inTensor->hasProducer() &&
+                 inTensor->getProducer()->settings.recomputeType ==
+                     RecomputeType::CHECKPOINT)) {
+              recomputeUsingCheckpoint = true;
+            }
+          }
+        }
+
+        if (!touchesAnchors && !recomputeUsingCheckpoint) {
           auto newTopoCons = inplace.getNewTopoCons(op, identifier);
           if (isSchedulable(newTopoCons)) {
             inplacedAlready.insert(op->id);

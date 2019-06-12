@@ -104,6 +104,9 @@ public:
   Ir();
   ~Ir();
 
+  // The last op in the schedule which is either FWD or LOSS
+  Op *getTurningPointOp() const;
+
   // Set the onnxModel.
   // A note on constant tensors: The outputs of ONNX Constant Operators
   // will always be treated as constants, so left unchanged if in training mode
@@ -310,11 +313,7 @@ public:
   // Return the opset version in use for a domain
   int getOpSetVersionFromModel(const std::string &domain) const;
 
-  // There are ops in the ir with the recompute attribute, derived
-  // from user-specified onnx node attribute
-  bool hasUserRecomputeOps() const;
-
-  bool hasAutoRecomputationEnabled() const {
+  bool autoRecomputationEnabled() const {
     return userOptions.autoRecomputation != RecomputationType::None;
   }
 
@@ -345,7 +344,7 @@ private:
   // Common code for the growGradient... and growCopy...
   Op *growVarUpdateOpInternal(OpId opId);
 
-  Op *growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints);
+  // Op *growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints);
 
   Op *growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum);
 

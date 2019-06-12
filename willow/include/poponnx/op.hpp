@@ -18,6 +18,8 @@
 
 namespace poponnx {
 
+enum class RecomputeType { CHECKPOINT = 0, RECOMPUTE };
+
 class OpSerialiserBase;
 
 // the input tensor of a grad-op has what kind of
@@ -82,6 +84,8 @@ public:
 
     Scope scope;
 
+    RecomputeType recomputeType = RecomputeType::CHECKPOINT;
+
     // optional inplace priorities, to take precedence over the default
     // priorities. A negative priority gurarantees no inplacing
     // This should really be a map with "OperatorIdentifier" keys, see T6783
@@ -90,11 +94,8 @@ public:
     // The virtual graph this op has been assigned to if set
     boost::optional<int64_t> vgraphId;
 
-    // If the output should be recomputed if set
-    boost::optional<int64_t> recomputeOutput;
-
-    // This method will attempt the optional attributes (vgraphId,
-    // recomputeOutput) depending on whether the attribute has been
+    // This method will append the optional attributes (vgraphId, etc)
+    // depending on whether the attribute has been
     // set in the onnx model.
     virtual void setFromAttributes(const Attributes &attributes);
   };
@@ -110,13 +111,6 @@ public:
 
   void setVirtualGraphId(const boost::optional<int64_t> value) {
     settings.vgraphId = value;
-  }
-
-  const boost::optional<int64_t> getRecomputeOutput() const {
-    return settings.recomputeOutput;
-  }
-  void setRecomputeOutput(const boost::optional<int64_t> value) {
-    settings.recomputeOutput = value;
   }
 
   const std::string &getName() const { return settings.name; }

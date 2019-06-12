@@ -163,7 +163,7 @@ void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
 
 std::string Op::getSubgraphEquivId() const {
 
-  if (isOutlineable()) {
+  if (isOutlineable() && settings.recomputeType != RecomputeType::RECOMPUTE) {
     OpEquivIdCreator os(this);
     appendAttributes(os);
     return os.str();
@@ -220,7 +220,11 @@ int64_t Op::memOfOutputs() const {
 }
 
 void Op::appendAttributes(OpSerialiserBase &os) const {
-  os.appendAttribute(sRecomputeOutputAttribute, getRecomputeOutput());
+
+  std::string recomputeString =
+      settings.recomputeType == RecomputeType::RECOMPUTE ? "YES" : "NO";
+  os.appendAttribute("recompute", recomputeString);
+
   os.appendAttribute(sVirtualGraphAttribute, getVirtualGraphId());
   os.appendAttribute("scope", getScope());
 }
@@ -274,7 +278,8 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
   if (attributes.hasAttribute(sRecomputeOutputAttribute)) {
     int64_t value;
     attributes.set(value, sRecomputeOutputAttribute);
-    recomputeOutput = value;
+    recomputeType =
+        value ? RecomputeType::RECOMPUTE : RecomputeType::CHECKPOINT;
   }
 
   bool hasNamesAtt = attributes.hasAttribute(sInplaceOpNames);

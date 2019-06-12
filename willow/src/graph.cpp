@@ -248,8 +248,8 @@ bool Graph::isSchedulable(const OpsBeforeKey &gCons) const {
 
 bool Graph::hasUserRecomputeOps() const {
   for (auto &id_op : getOps()) {
-    Op *op = id_op.second.get();
-    if (op->getRecomputeOutput()) {
+    if (id_op.second.get()->settings.recomputeType ==
+        RecomputeType::RECOMPUTE) {
       return true;
     }
   }
@@ -294,7 +294,8 @@ Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
     for (Op *isEarlier : waiting[newOp]) {
       if (live.count(isEarlier) == 0) {
         throw error(
-            "ILE: op should still be live (newOp waits for its output)");
+            "ILE: Op {} should still be live (newOp waits for its output)",
+            isEarlier->str());
       }
       --nWaiting[isEarlier];
       if (nWaiting[isEarlier] == 0) {

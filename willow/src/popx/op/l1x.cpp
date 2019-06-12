@@ -47,7 +47,9 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
     scale = lambda / totalSamples;
     break;
   }
-  default: { throw error("Unsupported reduction type for Loss {}", idStr()); }
+  default: {
+    throw error("Unsupported reduction type for Loss {}", idStr());
+  }
   }
 
   auto t_scale =
@@ -102,7 +104,9 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
     scale = lambda / totalSamples;
     break;
   }
-  default: { throw error("Unsupported reduction type for Loss {}", idStr()); }
+  default: {
+    throw error("Unsupported reduction type for Loss {}", idStr());
+  }
   }
 
   auto t_scale =

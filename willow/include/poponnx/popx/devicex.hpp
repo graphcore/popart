@@ -21,6 +21,7 @@
 using boost::optional;
 
 namespace poponnx {
+
 namespace popx {
 
 using PopStreamId = std::string;
@@ -52,7 +53,7 @@ public:
     STREAMOPTIMIZERFROMHOST,
     COPYOPTIMIZERBETWEENIPUS,
     INIT,
-    PROGRAM,
+    MAINPROGRAM,
     WEIGHTSTOHOST,
     TOHOSTFINALCOPY,
     SETRANDOMSEED,
@@ -70,16 +71,25 @@ public:
   poplar::program::Sequence &setRandomDropoutSeedFragment();
   poplar::program::Sequence &toHostFinalCopyFragment();
   poplar::program::Sequence &initFragment();
-  poplar::program::Sequence &programFragment();
+  poplar::program::Sequence &mainProgramFragment();
   poplar::program::Sequence &weightsToHostFragment();
 
   // A list of programs that can be run by the Poplar engine.
   std::vector<poplar::program::Program> progs();
 
   poplar::program::Sequence &programFragment(PopPrograms::ProgramFragmentIndex);
+
+  // Sub-graph program fragments, getters and setters
   poplar::program::Sequence &programFragment(const Graph &);
   bool containsFragment(const Graph &) const;
   void createFragment(const Graph &);
+
+  // Recompute program fragments, get and (implicitly) create. There is a unique
+  // fragment for each recomputed Op
+  poplar::program::Sequence &recomputeFragment(OpId id);
+
+  bool hasBeenRecomputed(OpId) const;
+  void recordRecomputed(OpId id);
 
 private:
   // Specify how many times to loop the 'repeatable' program
@@ -88,7 +98,13 @@ private:
   static constexpr int seqs_size = static_cast<int>(ProgramFragmentIndex::N);
   std::array<poplar::program::Sequence, seqs_size> seqs;
 
+  // The sub-graph program fragments will be stored here
   std::unordered_map<std::string, poplar::program::Sequence> scopeSeqs;
+
+  // The recompute program fragments will be stored here
+  std::map<OpId, poplar::program::Sequence> recomputeSeqs;
+
+  std::set<OpId> beenRecomputed;
 
   poplar::program::Sequence weightsFromHost();
   poplar::program::Sequence optimizerFromHost();
@@ -335,7 +351,11 @@ private:
 
   PriTask incrementDropoutRandomSeedTask();
 
-  PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
+  // isPostTurningPoint is used for recomputation, to determine whether to
+  // generate new code or re-run earlier code
+  PriTask
+  opTask(Op *, double priority, TaskId prevOpTaskId, bool isPostTurningPoint);
+
   TaskId opTaskId(Op *) const;
 
   void addOpTasks(PriTasks &);
@@ -354,11 +374,29 @@ public:
   // 1-to-1 mapping between Ops and Opxs
   std::map<OpId, std::unique_ptr<Opx>> opxs;
 
+  // Some functions useful for logging the order in which Ops are used to
+  // generate poplar code / recomputed.
+  //
+  // The Ops in order of code generation/recompute
+  const std::vector<Op *> &getMainGraphOpSeries() const;
+
+  // index of first appearance of Op in series
+  std::map<Op *, int> getMainGraphOpSeriesNums() const;
+
+  // number of appearances of each Op. Expectation: RECOMPUTE Ops appear twice
+  // and CHECKPOINT Ops appear once
+  std::map<Op *, int> getMainGraphOpCounts() const;
+
+  // A summary string of the Op series, with annotation for recomputation
+  std::string getMainGraphOpString() const;
+
 private:
-  // the poplar::Streams for poplar::Tensors,
-  // from host to device:
+  std::vector<Op *> mainGraphOpRegistery;
+
+  //  poplar::Streams for poplar::Tensors,
+  //  1) from host to device;
   std::map<TensorId, poplar::DataStream> fromHostStreams;
-  // and from device to host:
+  // and 2) from device to host;
   std::map<TensorId, poplar::DataStream> toHostStreams;
 
   std::map<TensorId, std::vector<char>> h2dBuffers;
@@ -404,7 +442,7 @@ private:
   // Call hostStreamToHost in all the Tensors in pir->dataFlow.anchors()
   void anchorsHostFromHostStreams(const IStepIO &stepio);
 
-  poplar::program::Sequence &programFragment();
+  poplar::program::Sequence &mainProgramFragment();
 
   // Returns true if using synthetic data, false if using real data
   // This will return the options.ignoreData flag

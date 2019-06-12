@@ -26,7 +26,6 @@ TensorId getRecompId(const TensorId &tenId);
 TensorId getUpdatedVarId(const TensorId &id);
 
 constexpr const char *reservedGradientPrefix() { return "D___"; }
-constexpr const char *reservedRecomputePrefix() { return "R___"; }
 constexpr const char *reservedUpdatedVarPrefix() { return "UV___"; }
 
 std::vector<std::string> reservedPrefixes();
