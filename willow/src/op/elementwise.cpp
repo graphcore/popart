@@ -48,4 +48,14 @@ void ElementWiseBinaryOp::setup() {
       npOut(inInfo(getArg0InIndex()), inInfo(getArg1InIndex()));
 }
 
+BinaryComparisonOp::BinaryComparisonOp(const OperatorIdentifier &_opid,
+                                       const Op::Settings &settings_)
+    : Op(_opid, settings_) {}
+
+void BinaryComparisonOp::setup() {
+  outInfo(getOutIndex()) = {DataType::BOOL,
+                            npOut(inInfo(getArg0InIndex()).shape(),
+                                  inInfo(getArg1InIndex()).shape())};
+}
+
 } // namespace poponnx

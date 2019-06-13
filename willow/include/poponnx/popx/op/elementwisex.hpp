@@ -74,6 +74,12 @@ public:
   unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const override;
 };
 
+// Base class for binary comparison operations
+class BinaryComparisonOpx : public Opx {
+public:
+  BinaryComparisonOpx(Op *, Devicex *);
+};
+
 } // namespace popx
 } // namespace poponnx
 

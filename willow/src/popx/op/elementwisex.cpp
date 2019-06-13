@@ -87,5 +87,8 @@ poplar::Tensor EwuComputex::cloneNcopy(poplar::program::Sequence &prog,
   return outTensor;
 }
 
+BinaryComparisonOpx::BinaryComparisonOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {}
+
 } // namespace popx
 } // namespace poponnx

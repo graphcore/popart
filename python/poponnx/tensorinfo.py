@@ -15,6 +15,7 @@ def _get_poponnx_type(dtype):
         np.float16: 'FLOAT16',
         np.float32: 'FLOAT',
         np.float64: 'DOUBLE',
+        np.bool_: 'BOOL'
     }[dtype]
 
 
