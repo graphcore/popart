@@ -743,58 +743,6 @@ def test_inout_tensor_info():
         e_info.value.args[0].find("is not an input or output tensor. Must be"))
 
 
-def test_recompute_output_in_backward_pass():
-
-    builder = poponnx.Builder()
-
-    i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-    i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [4, 2, 3, 3]))
-
-    o = builder.aiOnnx.conv([i1, i2],
-                            dilations=[1, 1],
-                            pads=[0, 0, 0, 0],
-                            strides=[1, 1])
-    builder.recomputeOutputInBackwardPass(o)
-
-    builder.addOutputTensor(o)
-    # Test that tha attribute has been set
-    val = True
-    res = builder.getRecomputeOutputInBackwardPass(o)
-    assert (res == val)
-
-
-def test_recompute_multiple_outputs_in_backward_pass():
-
-    b = poponnx.Builder()
-
-    i1 = b.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 5, 32, 32]))
-
-    scale = b.addInitializedInputTensor(np.zeros(5, np.float16))
-    bias = b.addInitializedInputTensor(np.zeros(5, np.float16))
-    mean = b.addInitializedInputTensor(np.zeros(5, np.float16))
-    var = b.addInitializedInputTensor(np.zeros(5, np.float16))
-    (o_y, o_mean, o_var, o_saved_mean,
-     o_saved_var) = b.aiOnnx.batchnormalization([i1, scale, bias, mean, var],
-                                                5)
-
-    b.addOutputTensor(o_y)
-
-    # Try to set the attribute on a node by specifying a subset of
-    # outputs of that node
-    with pytest.raises(poponnx.poponnx_exception) as e_info:
-        b.recomputeOutputInBackwardPass(o_y)
-    assert (
-        e_info.value.args[0].endswith("Must specify all outputs of a node"))
-
-    # Test that tha attribute has been set correctly
-    val = True
-    b.recomputeOutputInBackwardPass(
-        {o_y, o_mean, o_var, o_saved_mean, o_saved_var})
-    res = b.getRecomputeOutputInBackwardPass(
-        {o_y, o_mean, o_var, o_saved_mean, o_saved_var})
-    assert (res == val)
-
-
 def test_set_virtual_graph():
 
     builder = poponnx.Builder()

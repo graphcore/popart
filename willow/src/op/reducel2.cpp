@@ -41,20 +41,19 @@ const std::vector<GradInOutMapper> &ReduceL2GradOp::gradInputInfo() const {
 }
 
 namespace {
-static OpCreator<ReduceL2Op>
-    reduceL2OpCreator(Onnx::Operators::ReduceL2_1,
-                      [](const OperatorIdentifier &_opid,
-                         const Op::Settings &settings,
-                         const Attributes &attr) -> std::unique_ptr<Op> {
-                        int64_t keepdims =
-                            attr.getAttribute<Attributes::Int>("keepdims", 1);
-                        std::vector<int64_t> axes =
-                            attr.getAttribute<Attributes::Ints>("axes", {});
+static OpCreator<ReduceL2Op> reduceL2OpCreator(
+    Onnx::Operators::ReduceL2_1,
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      int64_t keepdims = attr.getAttribute<Attributes::Int>("keepdims", 1);
+      std::vector<int64_t> axes =
+          attr.getAttribute<Attributes::Ints>("axes", {});
 
-                        return std::unique_ptr<Op>(
-                            new ReduceL2Op(_opid, axes, keepdims, settings));
-                      },
-                      true);
+      return std::unique_ptr<Op>(
+          new ReduceL2Op(_opid, axes, keepdims, settings));
+    },
+    true);
 } // namespace
 
 } // namespace poponnx

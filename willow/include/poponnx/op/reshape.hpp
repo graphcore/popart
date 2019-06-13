@@ -10,38 +10,79 @@ namespace poponnx {
 // This Op is based on the ONNX Operator described at
 // github.com/onnx/onnx/blob/master/docs/Operators.md#Reshape
 // but it is slightly different: this Op is static w.r.t. shape
-class ReshapeOp : public Op {
+
+class ReshapeBaseOp : public Op {
 public:
-  ReshapeOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
+  ReshapeBaseOp(const OperatorIdentifier &_opid,
+                const Shape &,
+                const Op::Settings &settings_);
 
-  // This will be used by ReshapeGradOp
-  ReshapeOp(const OperatorIdentifier &_opid,
-            const Shape &outShape_,
-            const Op::Settings &settings_);
+  ReshapeBaseOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+      : Op(_opid, settings_) {}
 
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
-  std::unique_ptr<Op> clone() const final;
   void setup() final;
-  virtual void connectInTensor(InIndex, TensorId) final;
 
-  // The index at which the data is
-  // input to this Op
   static InIndex getInIndex() { return 0; }
-
-  // The output index of the unique, reshaped, output.
   static OutIndex getOutIndex() { return 0; }
 
-  const Shape &getOutShape();
+  const Shape &getOutShape() const;
+
+  // currently these are conservative TODO T6973
+  view::RegMap fwdRegMap(InIndex) const final;
+  view::RegMap bwdRegMap(InIndex) const final;
 
   bool canBeReplacedByIdentity() override;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  void connectInTensor(InIndex inIndex, TensorId tenId) final;
 
-private:
+protected:
   // The shape of the data output tensor
   Shape outShape;
 
   void finaliseShape();
+};
+
+class ReshapeOp : public ReshapeBaseOp {
+public:
+  ReshapeOp(const OperatorIdentifier &_opid,
+            const Shape &s,
+            const Op::Settings &settings_)
+      : ReshapeBaseOp(_opid, s, settings_) {}
+
+  ReshapeOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
+      : ReshapeBaseOp(_opid, settings_) {}
+
+  std::unique_ptr<Op> clone() const override;
+
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &o) const final;
+
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final {
+    return {{Onnx::CustomOperators::ReshapeInplace, 10}};
+  }
+};
+
+class ReshapeInplaceOp : public ReshapeBaseOp {
+public:
+  ReshapeInplaceOp(const OperatorIdentifier &_opid,
+                   const Shape &,
+                   const Op::Settings &settings_);
+  ReshapeInplaceOp(const ReshapeOp &);
+  std::unique_ptr<Op> clone() const final;
+
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &o) const final {
+    // this throws an error
+    return Op::getInplaceVariant(o);
+  }
+
+  // modifies and uses are still the defaults, but aliases changes
+  // to be the same as uses (the full out region)
+  view::Region aliases(InIndex index) const final { return uses(index); }
 };
 
 // The gradient of reshape is the reverse of the

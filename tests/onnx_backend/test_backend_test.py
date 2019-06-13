@@ -79,8 +79,8 @@ class IpuBackend(onnx.backend.base.Backend):
         model = onnx.shape_inference.infer_shapes(model)
         value_infos = {
             vi.name: vi
-            for vi in itertools.chain(model.graph.value_info,
-                                      model.graph.output)
+            for vi in itertools.chain(model.graph.value_info, model.graph.
+                                      output)
         }
 
         # if do_enforce_test_coverage_whitelist(model):
@@ -124,10 +124,8 @@ class IpuBackend(onnx.backend.base.Backend):
             outputs_info=None,  # type: Optional[Sequence[Tuple[numpy.dtype, Tuple[int, ...]]]]
             **kwargs  # type: Any
     ):  # type: (...) -> Optional[Tuple[Any, ...]]
-        super(IpuBackend, cls).run_node(node,
-                                        inputs,
-                                        device=device,
-                                        outputs_info=outputs_info)
+        super(IpuBackend, cls).run_node(
+            node, inputs, device=device, outputs_info=outputs_info)
 
         raise BackendIsNotSupposedToImplementIt(
             "This is the ipu backend test that doesn't verify the results but does run the checker"

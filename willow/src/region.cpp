@@ -8,6 +8,7 @@ namespace poponnx {
 namespace view {
 
 bool Region::operator==(const Region &r) const {
+  // is this correct for empty regions?
   return lower == r.lower && upper == r.upper && isEmptyRank0 == r.isEmptyRank0;
 }
 

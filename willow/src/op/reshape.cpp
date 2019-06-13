@@ -10,21 +10,65 @@
 
 namespace poponnx {
 
+std::unique_ptr<Op>
+ReshapeOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
+  if (operator_id == Onnx::CustomOperators::ReshapeInplace) {
+    return make_unique<ReshapeInplaceOp>(*this);
+  }
+  // catch remaining cases and throw an error
+  return Op::getInplaceVariant(operator_id);
+}
+
+view::RegMap ReshapeBaseOp::fwdRegMap(InIndex inIndex) const {
+  if (inIndex != 0) {
+    throw error("Internal Logic Error in ReshapeBaseOp::fwdRegMap."
+                "Received input index {} but only 0 allowed, "
+                "This for Op {}, ",
+                inIndex,
+                str());
+  }
+  // being conservative and returning the full region,
+  // even for non-full input region :
+  auto outRegion = view::Region::getFull(outInfo(getOutIndex()).shape());
+  return [outRegion](const view::Region &) { return outRegion; };
+}
+
+view::RegMap ReshapeBaseOp::bwdRegMap(InIndex inIndex) const {
+  if (inIndex != 0) {
+    throw error("Internal Logic Error in ReshapeBaseOp::bwdRegMap."
+                "Received input index {} but only 0 allowed, "
+                "This for Op {}, ",
+                inIndex,
+                str());
+  }
+  auto inRegion = view::Region::getFull(inInfo(getInIndex()).shape());
+  return [inRegion](const view::Region &) { return inRegion; };
+}
+
+ReshapeInplaceOp::ReshapeInplaceOp(const ReshapeOp &op)
+    : ReshapeBaseOp(Onnx::CustomOperators::ReshapeInplace,
+                    op.getOutShape(),
+                    op.settings) {}
+
+std::unique_ptr<Op> ReshapeInplaceOp::clone() const {
+  return make_unique<ReshapeInplaceOp>(*this);
+}
+
+std::unique_ptr<Op> ReshapeOp::clone() const {
+  return make_unique<ReshapeOp>(*this);
+}
+
 // This will be used by ReshapeGradOp
-ReshapeOp::ReshapeOp(const OperatorIdentifier &_opid,
-                     const std::vector<int64_t> &ots,
-                     const Op::Settings &settings_)
+ReshapeBaseOp::ReshapeBaseOp(const OperatorIdentifier &_opid,
+                             const std::vector<int64_t> &ots,
+                             const Op::Settings &settings_)
     : Op(_opid, settings_), outShape(ots) {
   finaliseShape();
 }
 
-ReshapeOp::ReshapeOp(const OperatorIdentifier &_opid,
-                     const Op::Settings &settings_)
-    : Op(_opid, settings_) {}
+const Shape &ReshapeBaseOp::getOutShape() const { return outShape; }
 
-const Shape &ReshapeOp::getOutShape() { return outShape; }
-
-void ReshapeOp::finaliseShape() {
+void ReshapeBaseOp::finaliseShape() {
   // replace zeros with size of input dimension
   for (int i = 0; i < outShape.size(); i++) {
     if (outShape[i] == 0) {
@@ -54,11 +98,7 @@ std::vector<std::unique_ptr<Op>> ReshapeOp::getGradOps() {
   return upops;
 }
 
-std::unique_ptr<Op> ReshapeOp::clone() const {
-  return make_unique<ReshapeOp>(*this);
-}
-
-void ReshapeOp::setup() {
+void ReshapeBaseOp::setup() {
   // output type  : same as input type;
   // output shape : outShape, determined in the constructor
   outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), outShape};
@@ -76,7 +116,7 @@ void ReshapeOp::setup() {
   }
 }
 
-void ReshapeOp::connectInTensor(InIndex inIndex, TensorId tenId) {
+void ReshapeBaseOp::connectInTensor(InIndex inIndex, TensorId tenId) {
 
   // index 0 is the data tensor to be reshaped. We connect
   // the data tensor to this Op as an input, the default connection of
@@ -123,7 +163,7 @@ const std::map<int, int> &ReshapeGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-bool ReshapeOp::canBeReplacedByIdentity() {
+bool ReshapeBaseOp::canBeReplacedByIdentity() {
   return inShape(getInIndex()) == outShape;
 }
 

@@ -268,6 +268,29 @@ public:
   }
 
   /**
+   * Get whether the given node will have its output recomputed in the backward
+   * pass.
+   *
+   * \param nodeOutputName Name of the output tensor of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  bool getRecomputeOutputInBackwardPass(const TensorId &nodeOutputName) {
+    return getBoolNodeAttribute(sRecomputeOutputAttribute, {nodeOutputName});
+  }
+
+  /**
+   * Get whether the given node will have its output recomputed in the backward
+   * pass.
+   *
+   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
+   *                        find the node in the ONNX model.
+   */
+  bool
+  getRecomputeOutputInBackwardPass(const std::set<TensorId> &nodeOutputNames) {
+    return getBoolNodeAttribute(sRecomputeOutputAttribute, nodeOutputNames);
+  }
+
+  /**
    * Set the virtual graph that computes the given node.  Applies when creating
    * a graph for a multi-IPU configuration.
    *
@@ -561,29 +584,6 @@ public:
    */
   std::vector<std::string>
   getAllNodeAttributeNames(const std::set<TensorId> &nodeOutputNames);
-
-  /**
-   * Get whether the given node will have its output recomputed in the backward
-   * pass.
-   *
-   * \param nodeOutputName Name of the output tensor of the ONNX node used to
-   *                        find the node in the ONNX model.
-   */
-  bool getRecomputeOutputInBackwardPass(const TensorId &nodeOutputName) {
-    return getBoolNodeAttribute(sRecomputeOutputAttribute, {nodeOutputName});
-  }
-
-  /**
-   * Get whether the given node will have its output recomputed in the backward
-   * pass.
-   *
-   * \param nodeOutputNames Names of the output tensors of the ONNX node used to
-   *                        find the node in the ONNX model.
-   */
-  bool
-  getRecomputeOutputInBackwardPass(const std::set<TensorId> &nodeOutputNames) {
-    return getBoolNodeAttribute(sRecomputeOutputAttribute, nodeOutputNames);
-  }
 
   /**
    * Get the index of the virtual graph that computes this node. This applies

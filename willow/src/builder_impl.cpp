@@ -130,6 +130,9 @@ TensorId BuilderImpl::getNextId(const std::string &name, OutIndex n) {
     valid = (!inCurrentScope(proposedId) && !inLowerScope(proposedId) &&
              !inHigherScope(proposedId));
   }
+  if (tensorIds.count(proposedId) != 0) {
+    throw error("cannot re-use proposedId");
+  }
   tensorIds.emplace(proposedId);
   return proposedId;
 }

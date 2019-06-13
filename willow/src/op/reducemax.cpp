@@ -43,20 +43,19 @@ const std::vector<GradInOutMapper> &ReduceMaxGradOp::gradInputInfo() const {
 namespace {
 // @SL@ the new factory method for the reduceMax op will get the attributes from
 // the model and pass them to the constructor of the OP
-static OpCreator<ReduceMaxOp>
-    reduceMaxOpCreator(Onnx::Operators::ReduceMax_1,
-                       [](const OperatorIdentifier &_opid,
-                          const Op::Settings &settings,
-                          const Attributes &attr) -> std::unique_ptr<Op> {
-                         int64_t keepdims =
-                             attr.getAttribute<Attributes::Int>("keepdims", 1);
-                         std::vector<int64_t> axes =
-                             attr.getAttribute<Attributes::Ints>("axes", {});
+static OpCreator<ReduceMaxOp> reduceMaxOpCreator(
+    Onnx::Operators::ReduceMax_1,
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      int64_t keepdims = attr.getAttribute<Attributes::Int>("keepdims", 1);
+      std::vector<int64_t> axes =
+          attr.getAttribute<Attributes::Ints>("axes", {});
 
-                         return std::unique_ptr<Op>(
-                             new ReduceMaxOp(_opid, axes, keepdims, settings));
-                       },
-                       true);
+      return std::unique_ptr<Op>(
+          new ReduceMaxOp(_opid, axes, keepdims, settings));
+    },
+    true);
 } // namespace
 
 } // namespace poponnx

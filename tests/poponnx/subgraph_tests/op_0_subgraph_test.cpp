@@ -74,6 +74,8 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
                  float threshold,
                  int algo) {
     auto sets = getSets(sched, expected_matches, threshold, algo);
+    std::cout << "testing with threshold = " << threshold
+              << " and algo = " << algo << std::endl;
     BOOST_CHECK(sets[0] == sets[1]);
   };
 
@@ -120,7 +122,8 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     auto opts = SessionOptions();
     // This test tests the functionality of fwtools::subgraph::getRinseMatches,
     // not the actual outlining of the Ir
-    opts.enableOutlining = false;
+    opts.enableOutlining   = false;
+    opts.autoRecomputation = RecomputationType::None;
 
     Ir ir;
     opts.mergeVarUpdate = MergeVarUpdateType::None;
@@ -230,6 +233,8 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
                  float threshold,
                  int algo) {
     auto sets = getSets(sched, expected_matches, threshold, algo);
+    std::cout << "Anchor0 test with threshold = " << threshold
+              << " and algo = " << algo << std::endl;
     BOOST_CHECK(sets[0] == sets[1]);
   };
 
@@ -286,7 +291,8 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   auto opts = SessionOptions();
   // This test tests the functionality of fwtools::subgraph::getRinseMatches,
   // not the actual outlining of the Ir
-  opts.enableOutlining = false;
+  opts.enableOutlining   = false;
+  opts.autoRecomputation = RecomputationType::None;
 
   Ir ir;
   ir.prepare({modelProto,

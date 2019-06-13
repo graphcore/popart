@@ -10,6 +10,26 @@ namespace poponnx {
 CallOp::CallOp(Graph &parent_, Graph &callee_)
     : Op(Onnx::CustomOperators::Call, {parent_, ""}), callee(callee_) {
   settings.name = fmt::format("Call_{}", callee_.id);
+
+  // set the Phase, if possible
+  const auto &graphOps = callee.get().getOps();
+  std::vector<Phase> graphPhases;
+  graphPhases.reserve(graphOps.size());
+  for (auto &op : graphOps) {
+    graphPhases.push_back(op.second->getPhase());
+  }
+
+  auto allAre = [&graphPhases](Phase target) {
+    return std::all_of(graphPhases.begin(),
+                       graphPhases.end(),
+                       [target](Phase p) { return p == target; });
+  };
+
+  if (allAre(Phase::FWD)) {
+    setPhase(Phase::FWD);
+  } else if (allAre(Phase::BWD)) {
+    setPhase(Phase::BWD);
+  }
 }
 
 void CallOp::setup() {}

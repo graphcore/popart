@@ -37,9 +37,7 @@ void Pattern::transferBaseProperties(Op *from, Op *to) const {
     to->setVirtualGraphId(from->getVirtualGraphId());
   }
 
-  if (from->getRecomputeOutput()) {
-    to->setRecomputeOutput(from->getRecomputeOutput());
-  }
+  to->settings.recomputeType = from->settings.recomputeType;
 }
 
 std::unique_ptr<Op>
