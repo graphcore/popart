@@ -15,7 +15,7 @@ class AddBiasOp : public Op {
 public:
   AddBiasOp(const OperatorIdentifier &_opid, const Op::Settings &settings);
 
-  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   void setup() final;
 
@@ -26,6 +26,31 @@ public:
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const override;
+
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &) const override;
+
+  view::RegMap fwdRegMap(InIndex i) const override;
+  view::RegMap bwdRegMap(InIndex i) const override;
+};
+
+class AddBiasInplaceOp : public AddBiasOp {
+public:
+  AddBiasInplaceOp(const AddBiasOp &);
+
+  std::unique_ptr<Op> clone() const override;
+
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final;
+
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &o) const final;
+
+  view::Region modifies(InIndex index) const override;
+  view::Region aliases(InIndex index) const override;
 };
 
 // The gradient op for the data input of the add bias op.

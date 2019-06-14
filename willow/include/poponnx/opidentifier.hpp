@@ -856,6 +856,7 @@ const static AiGraphcoreOpIdV1 ScaleGrad("ScaleGrad");
 
 namespace CustomOperators {
 const static AiGraphcoreOpIdV1 AddBias("AddBias");
+const static AiGraphcoreOpIdV1 AddBiasInplace("AddBiasInplace");
 const static AiGraphcoreOpIdV1 AddLhsInplace("AddLhsInplace");
 const static AiGraphcoreOpIdV1 AddRhsInplace("AddRhsInplace");
 const static AiGraphcoreOpIdV1 CeilInplace("CeilInplace");

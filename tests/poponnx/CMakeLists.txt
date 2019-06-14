@@ -1,4 +1,11 @@
-find_package(Boost REQUIRED unit_test_framework)
+find_package(Boost REQUIRED unit_test_framework filesystem)
+
+# Workaround for this bug: https://github.com/boostorg/system/issues/26
+# on certain systems/compilers (e.g. compiling the host-runtime-view
+# on Centos 7.6 with GCC 7.3).
+# TODO: When CMake 3.12 is required use add_compile_definitions() instead.
+add_definitions(-DBOOST_ERROR_CODE_HEADER_ONLY)
+
 
 function(add_test_executable name)
     add_executable(${name} ${ARGN})
@@ -8,7 +15,7 @@ function(add_test_executable name)
       $<TARGET_PROPERTY:poponnx,INCLUDE_DIRECTORIES>)
   target_link_libraries(${name}
     poponnx
-    Boost::unit_test_framework
+    ${Boost_LIBRARIES}
   )
   if (NOT Boost_UNIT_TEST_FRAMEWORK_LIBRARY MATCHES "\\.a$")
     target_compile_definitions(${name} PRIVATE -DBOOST_TEST_DYN_LINK)

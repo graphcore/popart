@@ -9,12 +9,17 @@ namespace poponnx {
 namespace popx {
 
 AddBiasOpx::AddBiasOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<AddBiasOp>(op, Onnx::CustomOperators::AddBias);
+  verifyOp<AddBiasOp>(op);
 }
 
 AddBiasDataGradOpx::AddBiasDataGradOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {
   verifyOp<AddBiasDataGradOp>(op, Onnx::CustomGradOperators::AddBiasDataGrad);
+}
+
+AddBiasInplaceOpx::AddBiasInplaceOpx(Op *op, Devicex *devicex)
+    : AddBiasOpx(op, devicex) {
+  verifyOp<AddBiasInplaceOp>(op, Onnx::CustomOperators::AddBiasInplace);
 }
 
 void AddBiasOpx::grow(poplar::program::Sequence &prog) const {
@@ -62,8 +67,17 @@ AddBiasBiasGradOpx::AddBiasBiasGradOpx(Op *op, Devicex *devicex)
   verifyOp<AddBiasBiasGradOp>(op, Onnx::CustomGradOperators::AddBiasBiasGrad);
 }
 
+void AddBiasInplaceOpx::grow(poplar::program::Sequence &prog) const {
+  auto dataIn = getInTensor(AddBiasOp::getDataInIndex());
+  auto biasIn = getInTensor(AddBiasOp::getBiasInIndex());
+  poplin::addBias(graph(), dataIn, biasIn, prog, idStr());
+  setOutTensor(AddBiasOp::getOutIndex(), dataIn);
+}
+
 namespace {
 OpxCreator<AddBiasOpx> addBiasOpxCreator(Onnx::CustomOperators::AddBias);
+OpxCreator<AddBiasInplaceOpx>
+    addBiasInplaceOpxCreator(Onnx::CustomOperators::AddBiasInplace);
 OpxCreator<AddBiasBiasGradOpx>
     addBiasBiasGradOpxCreator(Onnx::CustomGradOperators::AddBiasBiasGrad);
 OpxCreator<AddBiasDataGradOpx>

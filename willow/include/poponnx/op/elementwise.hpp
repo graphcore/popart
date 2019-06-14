@@ -72,6 +72,22 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
+// Base class for comparison operations
+class BinaryComparisonOp : public Op {
+public:
+  BinaryComparisonOp(const OperatorIdentifier &_opid,
+                     const Op::Settings &settings);
+  void setup() final;
+
+  // Current implementation places arg0 input at index 0, and arg1 input
+  // at index 1.
+  static InIndex getArg0InIndex() { return 0; }
+  static InIndex getArg1InIndex() { return 1; }
+  static OutIndex getOutIndex() { return 0; }
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+};
+
 } // namespace poponnx
 
 #endif
