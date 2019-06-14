@@ -168,7 +168,14 @@ def op_tester(tmpdir):
                 if self.options.replicatedGraphCount > 1:
                     um = (self.options.replicatedGraphCount, )
                     um = um + tuple([1] * np.ndim(v))
-                    inputs[k] = np.tile(v, um)
+
+                    # we add this offset to ensure that samples on devices are distinct
+                    offset = 1 * np.arange(
+                        self.options.replicatedGraphCount).astype(
+                            v.dtype).reshape(um)
+
+                    inputs[k] = np.tile(v, um) + offset
+
                 else:
                     inputs[k] = v
 
@@ -351,7 +358,8 @@ def test_weight_update_replicated(op_tester):
 
         # graph with gradient accumlation i.e. only update the weights after x passes
         for n in range(replicationFactor):
-            o = module([a])
+            # adding n as offset, as op_tester expects
+            o = module([a + n])
             outputs = outputs + (o, )
             loss = torch.nn.L1Loss(reduction="mean")
             target = torch.zeros(o.size())
@@ -379,9 +387,10 @@ def test_weight_update_replicated(op_tester):
 
 def test_replication_infer(op_tester):
 
-    A = np.ones((2, 4)).astype(np.float32)
-    B = np.random.rand(4, 6).astype(np.float32)
-    C = np.random.rand(2, 6).astype(np.float32)
+    # 2 samples per device
+    A = np.random.rand(2, 7).astype(np.float32)
+    B = np.random.rand(7, 6).astype(np.float32)
+    C = np.random.rand(1, 6).astype(np.float32)
 
     alpha = 1.0
     beta = 1.0
@@ -423,11 +432,12 @@ def test_replication_infer(op_tester):
 
         # forward
         # Run the pytorch module multiple times to simulate the same
-        # behaviour as poponnx
-        o1 = module([a])
-        o2 = module([a])
-        o3 = module([a])
-        o4 = module([a])
+        # behaviour as poponnx. The offsets (with corresponding offsets
+        # in op_tester) ensure that the samples are distinct between replicas
+        o1 = module([a + 0.])
+        o2 = module([a + 1.])
+        o3 = module([a + 2.])
+        o4 = module([a + 3.])
 
         return [
             torch.cat((torch.unsqueeze(o1, 0), torch.unsqueeze(o2, 0),

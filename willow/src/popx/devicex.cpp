@@ -541,7 +541,7 @@ void Devicex::anchorsHostToHostStreams(const IStepIO &stepio) {
                             ir().getDataFlow().batchesPerStep());
       }
       // if the replicationFactor is greater than 1 then add an extra
-      // dimension of size replicationFactor so we can report mutliple
+      // dimension of size replicationFactor so we can report multiple
       // copies of the tensor
       // Q: Should replicated tensors be combined before returning?
       if (getReplicationFactor() > 1) {
@@ -1021,13 +1021,18 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
               index);
 
           if (tensor->tensorType() == TensorType::Variable ||
-              tensor->tensorType() == TensorType::Stream ||
-              tensor->tensorType() == TensorType::Const) {
+              tensor->tensorType() == TensorType::Stream) {
+
+            auto nElms = tensor->info.nelms();
+            if (tensor->tensorType() == TensorType::Stream) {
+              nElms *= getReplicationFactor();
+            }
+
             fromHostStreams.emplace(
                 tensor->id,
-                rootGraph().addHostToDeviceFIFO(h2dId(tensor->id),
-                                                popType(tensor->info),
-                                                tensor->info.nelms()));
+                rootGraph().addHostToDeviceFIFO(
+                    h2dId(tensor->id), popType(tensor->info), nElms));
+
           } else if (tensor->tensorType() == TensorType::Const) {
             throw error("Constants are not streamed to device");
           } else {
@@ -1391,7 +1396,7 @@ void Devicex::loadEngineAndConnectStreams() {
 
     auto engineToStream =
         [this](char *data0, int64_t n_bytes, PopStreamId streamId) {
-          // Poplar has no const void * version, disappointing
+          // Poplar has no const void * version
           auto addr0 = static_cast<void *>(data0);
           auto addr1 = static_cast<void *>(data0 + n_bytes);
           // connect the stream (circular buffer)
@@ -1885,11 +1890,8 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
     logging::devicex::debug("Adding poplar::program::Copy from host " +
                             tensor->id);
 
-    // getNonReplicatedTensor is not a const method so have to have a
-    // const_cast T8378
     auto nonReplicatedTensor =
-        const_cast<poplar::Graph &>(rootGraph())
-            .getNonReplicatedTensor(tensors.get(tensor->id));
+        rootGraph().getNonReplicatedTensor(tensors.get(tensor->id));
 
     if (tensor->tensorType() == TensorType::Variable) {
 
@@ -1906,11 +1908,10 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
 
       // For a stream we copy 'n' lots of data from the stream into each index
       // for the replicated tensor
-      for (unsigned i = 0; i < getReplicationFactor(); ++i) {
-        streamSq.add(poplar::program::Copy(fromHostStreams.at(tensor->id),
-                                           nonReplicatedTensor[i],
-                                           doRearrangeOnHost(tensor)));
-      }
+
+      streamSq.add(poplar::program::Copy(fromHostStreams.at(tensor->id),
+                                         nonReplicatedTensor,
+                                         doRearrangeOnHost(tensor)));
     }
   };
 
@@ -1930,11 +1931,8 @@ PriTask Devicex::toHostTask(Tensor *tensor,
     logging::devicex::debug("Adding poplar::program::Copy to host " +
                             tensor->id);
 
-    // getNonReplicatedTensor is not a const method
-    // T8378
     auto nonReplicatedTensor =
-        const_cast<poplar::Graph &>(rootGraph())
-            .getNonReplicatedTensor(tensors.get(tensor->id));
+        rootGraph().getNonReplicatedTensor(tensors.get(tensor->id));
 
     if (tensor->tensorType() == TensorType::Variable) {
       // Copy from the first replicated graph (all graphs should be in sync
@@ -2195,8 +2193,7 @@ poplar::Type popType(const TensorInfo &info) {
   }
 }
 
-// piggy-backing on TensorInfo's data_type()
-// function to get a string of the DataType
+// using TensorInfo's data_type() function to get a string of the DataType
 poplar::Type popType(DataType type) { return popType(TensorInfo(type, {1})); }
 
 std::set<TensorId> Devicex::getLinearlyCreatedInputTensors() const {
