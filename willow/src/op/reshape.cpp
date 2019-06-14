@@ -29,8 +29,14 @@ view::RegMap ReshapeBaseOp::fwdRegMap(InIndex inIndex) const {
   }
   // being conservative and returning the full region,
   // even for non-full input region :
-  auto outRegion = view::Region::getFull(outInfo(getOutIndex()).shape());
-  return [outRegion](const view::Region &) { return outRegion; };
+  auto outRegion   = view::Region::getFull(outInfo(getOutIndex()).shape());
+  auto emptyRegion = view::Region::getEmpty(outRank(getOutIndex()));
+  return [emptyRegion, outRegion](const view::Region &r) {
+    if (r.isEmpty()) {
+      return emptyRegion;
+    }
+    return outRegion;
+  };
 }
 
 view::RegMap ReshapeBaseOp::bwdRegMap(InIndex inIndex) const {
@@ -41,8 +47,14 @@ view::RegMap ReshapeBaseOp::bwdRegMap(InIndex inIndex) const {
                 inIndex,
                 str());
   }
-  auto inRegion = view::Region::getFull(inInfo(getInIndex()).shape());
-  return [inRegion](const view::Region &) { return inRegion; };
+  auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
+  auto emptyRegion = view::Region::getEmpty(inRank(getInIndex()));
+  return [emptyRegion, inRegion](const view::Region &r) {
+    if (r.isEmpty()) {
+      return emptyRegion;
+    }
+    return inRegion;
+  };
 }
 
 ReshapeInplaceOp::ReshapeInplaceOp(const ReshapeOp &op)

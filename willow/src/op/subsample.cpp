@@ -10,6 +10,8 @@
 
 namespace poponnx {
 
+// T9392: There is code duplication across the view changing ops
+
 view::RegMap SubsampleBaseOp::fwdRegMap(InIndex inIndex) const {
   if (inIndex != 0) {
     throw error("Internal Logic Error in SubsampleBaseOp::fwdRegMap."
@@ -20,8 +22,14 @@ view::RegMap SubsampleBaseOp::fwdRegMap(InIndex inIndex) const {
   }
   // being conservative and returning the full region,
   // even for non-full input region :
-  auto outRegion = view::Region::getFull(outInfo(getOutIndex()).shape());
-  return [outRegion](const view::Region &) { return outRegion; };
+  auto outRegion   = view::Region::getFull(outInfo(getOutIndex()).shape());
+  auto emptyRegion = view::Region::getEmpty(outRank(getOutIndex()));
+  return [emptyRegion, outRegion](const view::Region &r) {
+    if (r.isEmpty()) {
+      return emptyRegion;
+    }
+    return outRegion;
+  };
 }
 
 view::RegMap SubsampleBaseOp::bwdRegMap(InIndex inIndex) const {
@@ -32,8 +40,14 @@ view::RegMap SubsampleBaseOp::bwdRegMap(InIndex inIndex) const {
                 inIndex,
                 str());
   }
-  auto inRegion = view::Region::getFull(inInfo(getInIndex()).shape());
-  return [inRegion](const view::Region &) { return inRegion; };
+  auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
+  auto emptyRegion = view::Region::getEmpty(inRank(getInIndex()));
+  return [emptyRegion, inRegion](const view::Region &r) {
+    if (r.isEmpty()) {
+      return emptyRegion;
+    }
+    return inRegion;
+  };
 }
 
 SubsampleBaseOp::SubsampleBaseOp(const OperatorIdentifier &_opid,
