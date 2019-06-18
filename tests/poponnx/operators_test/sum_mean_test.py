@@ -34,6 +34,22 @@ def test_sum(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
+def test_sum_1_input(op_tester):
+    d1 = np.random.rand(2, 2).astype(np.float32)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.sum([i1], "test_sum")
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        return [d1]
+
+    op_tester.passes = []
+    op_tester.run(init_builder, reference, 'infer')
+
+
 def test_X_training(op_tester, X="mean"):
     d1 = np.random.rand(8, 7).astype(np.float32)
     d2 = np.random.rand(6, 8, 7).astype(np.float32)

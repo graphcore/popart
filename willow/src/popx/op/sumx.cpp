@@ -51,10 +51,15 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
     expr.push(exprs.back().get());
   }
 
-  // Compute the sum
-  auto sum = popops::map(graph(), *expr.front(), inputs, prog);
-
-  setOutTensor(SumOp::getOutIndex(), sum);
+  if (inputs.size() == 1) {
+    // Copy the only input to output
+    auto output = cloneNcopy(prog, inputs.front());
+    setOutTensor(SumOp::getOutIndex(), output);
+  } else {
+    // Compute the sum
+    auto sum = popops::map(graph(), *expr.front(), inputs, prog);
+    setOutTensor(SumOp::getOutIndex(), sum);
+  }
 }
 
 InputCreatorType SumOpx::getInputCreatorType(InIndex index) const {
