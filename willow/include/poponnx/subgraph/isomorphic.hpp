@@ -49,7 +49,7 @@ int isomorphicUntil(int seq_length,
                     const std::map<T *, int> &schedule_index) {
 
   auto relativeToStart = [&schedule_index](T *node, Start start) {
-    auto index = schedule_index.at(node);
+    Start index = schedule_index.at(node);
     return index - start;
   };
 
@@ -75,8 +75,8 @@ int isomorphicUntil(int seq_length,
   std::map<Input, std::vector<InternalConsumer>> externProds1;
 
   for (int delta = 0; delta < seq_length; ++delta) {
-    auto &t0 = schedule[s0 + delta];
-    auto &t1 = schedule[s1 + delta];
+    auto &t0 = schedule.at(s0 + delta);
+    auto &t1 = schedule.at(s1 + delta);
     if ((getSubgraphInIndices(t0) != getSubgraphInIndices(t1)) ||
         getSubgraphOutIndices(t0) != getSubgraphOutIndices(t1)) {
       // this should actually be an error, as they shouldn't have
@@ -105,21 +105,21 @@ int isomorphicUntil(int seq_length,
         // 0
         auto found0 = externProds0.find(in0);
         if (found0 == externProds0.end()) {
-          externProds0[in0] = {{delta, inIndex}};
+          externProds0.insert({in0, {{delta, inIndex}}});
         } else {
           externProds0[in0].push_back({delta, inIndex});
         }
         // 1
         auto found1 = externProds1.find(in1);
         if (found1 == externProds1.end()) {
-          externProds1[in1] = {{delta, inIndex}};
+          externProds1.insert({in1, {{delta, inIndex}}});
         } else {
           externProds1[in1].push_back({delta, inIndex});
         }
 
         // we check if they are still isomorphic
         // with this external input now included
-        if (externProds0[in0] != externProds1[in1]) {
+        if (externProds0.at(in0) != externProds1.at(in1)) {
           return delta;
         }
       }
@@ -168,6 +168,7 @@ int isomorphicUntil(int seq_length,
       }
     }
   }
+
   return seq_length;
 }
 

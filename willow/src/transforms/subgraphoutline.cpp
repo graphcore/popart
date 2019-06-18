@@ -463,6 +463,7 @@ static std::vector<Replacement> applyMatch(const Match &match, Graph &graph) {
 std::vector<Match> getRinseMatches(const std::vector<Op *> &ops,
                                    float threshold,
                                    bool copyCostPruning) {
+
   auto fw_matches = fwtools::subgraph::getRinseMatches(
       ops, threshold, fwtools::subgraph::getDefaultOutlinerAlgorithm());
 
