@@ -176,6 +176,12 @@ const std::vector<Tensor *> TensorIndexMap::tensors() const {
     tensors.push_back(tensor_indices.first);
   }
 
+  // ensure that the order of the returned vector does not depend on the
+  // addresses of the Tensors in memory
+  std::sort(tensors.begin(),
+            tensors.end(),
+            [](const Tensor *a, const Tensor *b) { return a->id < b->id; });
+
   return tensors;
 }
 
