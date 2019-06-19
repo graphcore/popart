@@ -13,9 +13,10 @@ GlobalAveragePoolOp::GlobalAveragePoolOp(const OperatorIdentifier &_opid,
 
 void GlobalAveragePoolOp::setup() {
   // If the input is N x C x D1 x D2 then the output shape N x C x 1 x 1
-  // If the input is N x C x D1 ... Dn then the output shape N x C x 1 x 1
-  Shape gapShape = {inShape(getInIndex())[0], inShape(getInIndex())[1], 1, 1};
-  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), gapShape};
+  // If the input is N x C x D1 ... Dn then the output shape N x C x 1 x ... x 1
+  auto gap = inShape(getInIndex());
+  std::fill(gap.begin() + 2, gap.end(), 1);
+  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), gap};
 
   kernel =
       Shape(inShape(getInIndex()).begin() + 2, inShape(getInIndex()).end());

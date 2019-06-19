@@ -15,9 +15,10 @@ GlobalMaxPoolOp::GlobalMaxPoolOp(const OperatorIdentifier &_opid,
 void GlobalMaxPoolOp::setup() {
 
   // If the input is N x C x D1 x D2 then the output shape N x C x 1 x 1
-  // If the input is N x C x D1 ... Dn then the output shape N x C x 1 x 1
-  Shape gmpShape = {inShape(getInIndex())[0], inShape(getInIndex())[1], 1, 1};
-  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), gmpShape};
+  // If the input is N x C x D1 ... Dn then the output shape N x C x 1 x ... x 1
+  auto gmp = inShape(getInIndex());
+  std::fill(gmp.begin() + 2, gmp.end(), 1);
+  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), gmp};
 
   kernel =
       Shape(inShape(getInIndex()).begin() + 2, inShape(getInIndex()).end());

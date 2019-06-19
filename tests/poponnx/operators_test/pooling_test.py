@@ -287,16 +287,12 @@ def test_globalmaxpool_3d(op_tester):
 
     def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)
-        globalmaxpool = torch.nn.MaxPool3d(6, 6, 4)
+        globalmaxpool = torch.nn.MaxPool3d((6, 6, 4))
         out = globalmaxpool(t1)
         return [out]
 
     op_tester.passes = ['PreUniRepl']
-
-    with pytest.raises(poponnx.poplibs_exception) as e_info:
-        op_tester.run(init_builder, reference, step_type='infer')
-
-    assert (e_info.value.args[0].startswith("Only 2D pooling supported"))
+    op_tester.run(init_builder, reference, step_type='infer')
 
 
 def test_globalaveragepool_2d(op_tester):
