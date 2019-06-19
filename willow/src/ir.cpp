@@ -1152,39 +1152,39 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
 }
 
 void TensorGradRegistry::insert(Tensor *nonGrad, Tensor *grad) {
-  auto found = partial.find(nonGrad);
+  auto found = partial.find(nonGrad->id);
   if (found == partial.end()) {
-    partial[nonGrad] = {grad};
+    partial.insert({nonGrad->id, {grad}});
   } else {
-    partial[nonGrad].push_back(grad);
+    partial[nonGrad->id].push_back(grad);
   }
-  if (partial[nonGrad].size() == nonGrad->nPathsToLoss()) {
-    complete[nonGrad] = partial[nonGrad];
-    partial.erase(nonGrad);
+  if (partial[nonGrad->id].size() == nonGrad->nPathsToLoss()) {
+    complete[nonGrad->id] = partial[nonGrad->id];
+    partial.erase(nonGrad->id);
   }
 }
 
 void OpGradRegistry::insert(Op *nonGrad, int index) {
-  auto found = partial.find(nonGrad);
+  auto found = partial.find(nonGrad->id);
   // so far NO gradients for nonGrad are in:
   if (found == partial.end()) {
-    partial[nonGrad] = {};
+    partial.insert({nonGrad->id, {}});
   }
   // this should be removed when we're happy the IL (internal logic)
   // is correct:
-  if (partial[nonGrad].count(index) != 0) {
+  if (partial[nonGrad->id].count(index) != 0) {
     throw error("ILE : index already present in OpGradRegistry::insert");
   }
-  partial[nonGrad].insert(index);
+  partial[nonGrad->id].insert(index);
   // probably just checks that the size of partial is
   // nonGrad->output->n(), but maybe not.
-  if (nonGrad->readyToCreateGradients(partial[nonGrad])) {
+  if (nonGrad->readyToCreateGradients(partial[nonGrad->id])) {
     complete.push_back(nonGrad);
-    partial.erase(nonGrad);
+    partial.erase(nonGrad->id);
   }
 }
 
-std::map<Tensor *, std::vector<Tensor *>> TensorGradRegistry::popComplete() {
+std::map<TensorId, std::vector<Tensor *>> TensorGradRegistry::popComplete() {
   auto toRet = complete;
   complete   = {};
   return toRet;
@@ -1497,7 +1497,7 @@ void Ir::constructBackwards() {
 
     for (auto &nongrad_egrads : tensor_grad_registry.popComplete()) {
 
-      Tensor *nongrad                     = nongrad_egrads.first;
+      Tensor *nongrad = getTensors().get(nongrad_egrads.first);
       const std::vector<Tensor *> &egrads = nongrad_egrads.second;
       // nongrad required below, as the name of the output of the
       // created op (sumOp) will be based off of it. Also, we
@@ -1953,7 +1953,11 @@ void Ir::applyInplacePattern(Graph &graph) {
   }
 
   auto tripletComparitor = [](const Triplet &a, const Triplet &b) {
-    return std::get<2>(a) > std::get<2>(b);
+    if (std::get<2>(a) - std::get<2>(b) != 0.0f) {
+      return std::get<2>(a) > std::get<2>(b);
+    }
+    // if same priority, fall back to ID to keep it deterministic
+    return std::get<0>(a) > std::get<0>(b);
   };
 
   if (priorities.size() != 0) {

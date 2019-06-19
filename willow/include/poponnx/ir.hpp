@@ -32,7 +32,7 @@ public:
 // part of the training compute graph.
 class TensorGradRegistry {
 public:
-  using TMap = std::map<Tensor *, std::vector<Tensor *>>;
+  using TMap = std::map<TensorId, std::vector<Tensor *>>;
   // Register tensor "edgeGrad" as being a
   // gradient of "nonGrad" w.r.t. loss along some edge
   void insert(Tensor *nonGrad, Tensor *edgeGrad);
@@ -64,7 +64,7 @@ public:
 private:
   // For a non-grad-op, which of its outputs (by index)
   // have had a gradient computed
-  std::map<Op *, std::set<int>> partial;
+  std::map<OpId, std::set<int>> partial;
   // When all required gradient inputs are in,
   // move the key of partial from partial to complete
   std::vector<Op *> complete;
