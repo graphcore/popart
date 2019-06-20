@@ -10,7 +10,11 @@
 
 namespace poponnx {
 
+class BackwardPassCreator;
+
 class Graph {
+  friend class BackwardPassCreator;
+
 public:
   Graph(Ir &, const GraphId &);
 
@@ -28,9 +32,9 @@ public:
   const Ir &getIr() const { return ir; }
   Ir &getIr() { return ir; }
 
-  void constructFromOnnxGraph(const onnx::GraphProto &onnx_graph,
-                              const Scope &scope);
-  Op *growFromNode(const Node &node, const Scope &scope);
+  void constructFromOnnxGraph(const onnx::GraphProto &onnx_graph);
+  Op *growFromNode(const Node &node);
+  Graph &getBackwardsGraph(const GraphId &bwdId);
 
   // moves ownership of created Op into the Graph,
   // and returns the Op's OpId
@@ -48,7 +52,7 @@ public:
   void connectInputsFromInputMapWrapper(const InputMapWrapper &in, OpId id);
   void connectOutputsFromOutputMapWrapper(const OutputMapWrapper &, OpId opId);
 
-  std::unique_ptr<Op> addOp(const Node &node, const Scope &scope);
+  std::unique_ptr<Op> addOp(const Node &node);
 
   void eraseOp(OpId id);
 
@@ -88,13 +92,32 @@ public:
 
   const std::vector<TensorId> &getInputIds() const { return graph_inputs; }
   void addInput(const TensorId &, const TensorInfo &);
+  // Mark an existing tensor as a graph input.
+  void markAsInput(const TensorId &);
   // Add new graph input with auto generated name
   TensorId addInput(const TensorInfo &);
   TensorId getInputId(InIndex idx) const { return graph_inputs.at(idx); }
 
   const std::vector<TensorId> &getOutputIds() const { return graph_outputs; }
-  void addOutput(const TensorId &);
+  // Mark an existing tensor as a graph output.
+  void markAsOutput(const TensorId &);
+  void removeOutput(const TensorId &);
   TensorId getOutputId(OutIndex idx) const { return graph_outputs.at(idx); }
+
+  TensorId addScope(const TensorId &) const;
+  TensorId removeScope(const TensorId &) const;
+  Scope getScope() const;
+
+  // For grad-graphs, matching input indices to
+  // corresponding IN/OUT/GRADOUT indices of
+  // corresponding non-grad-graph.
+  const std::vector<GradInOutMapper> &gradInputInfo() const {
+    return gradInInfo;
+  }
+
+private:
+  std::vector<Op *>
+  growGradOps(Op *nonGradOp, const std::map<TensorId, TensorId> &gradTensorMap);
 
 public:
   std::unique_ptr<TopoCons> topoCons;
@@ -106,6 +129,7 @@ private:
   std::vector<TensorId> graph_inputs;
   std::vector<TensorId> graph_outputs;
   std::unique_ptr<Scheduler> scheduler;
+  std::vector<GradInOutMapper> gradInInfo;
 
   Ir &ir;
 };

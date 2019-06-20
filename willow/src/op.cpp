@@ -452,4 +452,33 @@ void Op::getInTensorData(TensorId tensorId,
   }
 }
 
+std::ostream &operator<<(std::ostream &ss, const GradInOutMapper &g) {
+  ss << fmt::format("GradInOutMapper(iGrad: {}, iNonGrad: {}, type: {})",
+                    g.iGrad,
+                    g.iNonGrad,
+                    g.type);
+  return ss;
+}
+
+std::ostream &operator<<(std::ostream &ss, const GradOpInType &t) {
+  switch (t) {
+  case GradOpInType::IN: {
+    ss << "GradOpInType::IN";
+    break;
+  }
+  case GradOpInType::OUT: {
+    ss << "GradOpInType::OUT";
+    break;
+  }
+  case GradOpInType::GRADOUT: {
+    ss << "GradOpInType::GRADOUT";
+    break;
+  }
+  default:
+    ss << fmt::format("GradOpInType::UNDEFINED({})", static_cast<int>(t));
+    break;
+  }
+  return ss;
+}
+
 } // namespace poponnx

@@ -368,12 +368,10 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
   auto subgraph_id =
       fmt::format("{}_subgraph({})", graph.id, generate_subgraph_unique_id());
   auto &subgraph      = ir.createGraph(subgraph_id);
-  auto subgraph_scope = Scope() / graph.id.str() / subgraph_id;
+  auto subgraph_scope = subgraph.getScope();
   auto &instance      = match.instances[0];
 
   // clone all the ops and move into subgraph
-  // many ops don't have a clone method implemented yet
-  // so if there is an clone_error, erase the graph and return none
   std::map<Op *, Op *> clone_map;
   for (auto opid : instance.ops) {
     auto op    = graph.getOp(opid);
@@ -414,7 +412,7 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
   // create graph outputs
   for (auto tensor : instance.external_outputs) {
     auto out_id = tensor_map.at(tensor)->id;
-    subgraph.addOutput(out_id);
+    subgraph.markAsOutput(out_id);
   }
 
   // hook up graph inputs and outputs

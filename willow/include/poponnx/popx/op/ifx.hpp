@@ -13,17 +13,21 @@ public:
   void grow(poplar::program::Sequence &) const final;
 
 private:
-  void copyInputs(poplar::program::Sequence &prog,
-                  const Graph &graph,
-                  const std::vector<TensorId> &input_ids) const;
+  void copyInputs(poplar::program::Sequence &thenProg,
+                  poplar::program::Sequence &elseProg) const;
 
-  void copyOutputs(poplar::program::Sequence &prog,
-                   const Graph &graph,
-                   const std::vector<TensorId> &output_ids,
+  void callBranch(poplar::program::Sequence &prog, const Graph &graph) const;
+
+  void copyOutputs(poplar::program::Sequence &thenProg,
+                   poplar::program::Sequence &elseProg,
                    const std::vector<poplar::Tensor> &outputs) const;
 
-  void callBranch(poplar::program::Sequence &, const Graph &) const;
   std::vector<poplar::Tensor> prepareOutputs() const;
+};
+
+class IfGradOpx : public IfOpx {
+public:
+  IfGradOpx(Op *, Devicex *);
 };
 
 } // namespace popx

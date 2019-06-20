@@ -543,7 +543,10 @@ void Ir::prepare(const IrBundle &gb) {
   // construct the forward pass from ONNX,
   constructForwards();
   dotCheckpoint(DotCheck::FWD0);
-  applyPreAliasPatterns(getMainGraph());
+  for (auto &id_graph : graphs) {
+    auto &graph = getGraph(id_graph.first);
+    applyPreAliasPatterns(graph);
+  }
   dotCheckpoint(DotCheck::FWD1);
 
   enableTransform(AutoVirtualGraph::id(),
@@ -581,7 +584,10 @@ void Ir::prepare(const IrBundle &gb) {
   validateAnchors();
   applyTransform(Prune::id(), getMainGraph());
 
-  applyPreAliasPatterns(getMainGraph());
+  for (auto &id_graph : graphs) {
+    auto &graph = getGraph(id_graph.first);
+    applyPreAliasPatterns(graph);
+  }
   setNPathsToLoss();
 
   // tensors with no producer and no
@@ -750,17 +756,34 @@ void Ir::registerInputTensors() {
   }
   // we create a map of the tensors to their consumers' types
   std::map<TensorId, std::vector<std::string>> consumerTypes;
+  auto addConsumerType = [&](const TensorId &tenId, const Node &node, int i) {
+    auto found      = consumerTypes.find(tenId);
+    auto consumerId = fmt::format("{}@{}", node.op_type(), i);
+    if (found == consumerTypes.end()) {
+      consumerTypes[tenId] = {consumerId};
+    } else {
+      found->second.push_back(consumerId);
+    }
+  };
 
   // populate consumerTypes
   for (auto &node : onnxGraph.node()) {
     for (int i = 0; i < node.input_size(); ++i) {
-      auto found = consumerTypes.find(node.input(i));
-      if (found == consumerTypes.end()) {
-        consumerTypes[node.input(i)] = {node.op_type() + "@" +
-                                        std::to_string(i)};
-      } else {
-        found->second.push_back(node.op_type() + "@" + std::to_string(i));
-      }
+      addConsumerType(node.input(i), node, i);
+    }
+
+    // need to look at the branch inputs for If node
+    if (node.op_type() == Onnx::AiOnnx::OpSet9::If.type) {
+      Attributes attr{node.attribute()};
+      auto addBranchInputs = [&](std::string branchName) {
+        auto branch = attr.getAttribute<Attributes::Graph>(branchName);
+        for (int i = 0; i < branch.input_size(); i++) {
+          auto inputId = branch.input(i).name();
+          addConsumerType(inputId, node, i);
+        }
+      };
+      addBranchInputs("then_branch");
+      addBranchInputs("else_branch");
     }
   }
 
@@ -974,7 +997,7 @@ Graph &Ir::constructFromOnnxGraph(const onnx::GraphProto &graph,
     graphs.insert({scope_id, make_unique<Graph>(*this, scope_id)});
   }
 
-  graphs.at(scope_id)->constructFromOnnxGraph(graph, scope);
+  graphs.at(scope_id)->constructFromOnnxGraph(graph);
 
   return *graphs.at(scope_id);
 }
@@ -2090,10 +2113,13 @@ Tensors &Ir::getTensors() { return getMainGraph().getTensors(); }
 const Graph &Ir::getMainGraph() const { return getGraph(GraphId::root()); }
 Graph &Ir::getMainGraph() { return getGraph(GraphId::root()); }
 
-const Graph &Ir::getGraph(const GraphId &graphId) const {
+Graph &Ir::getGraph(const GraphId &graphId) const {
   return *graphs.at(graphId);
 }
-Graph &Ir::getGraph(const GraphId &graphId) { return *graphs.at(graphId); }
+
+bool Ir::hasGraph(const GraphId &graphId) const {
+  return graphs.find(graphId) != graphs.end();
+}
 
 Graph &Ir::createGraph(const GraphId &graphId) {
   auto found = graphs.find(graphId);

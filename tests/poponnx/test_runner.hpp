@@ -9,6 +9,7 @@
 #include <poponnx/filereader.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/ndarraywrapper.hpp>
+#include <poponnx/optimizer.hpp>
 
 // Hack to see the internals of Session
 #define private public
@@ -63,21 +64,27 @@ public:
     auto modelProto = io::getModelFromString(proto);
 
     // Create the IR
-    auto dataFlow  = DataFlow(1, {{outId, AnchorReturnType("ALL")}});
+    anchors.insert({outId, AnchorReturnType("ALL")});
+    auto dataFlow  = DataFlow(1, anchors);
     auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
-    session = InferenceSession::createFromOnnxModel(
-        proto, dataFlow, cpuDevice, {}, {}, opts, patterns);
+    if (isTraining) {
+      auto optimizer = ConstSGD(0.1);
+      session        = TrainingSession::createFromOnnxModel(
+          proto, dataFlow, losses, optimizer, cpuDevice, {}, opts, patterns);
+    } else {
+      session = InferenceSession::createFromOnnxModel(
+          proto, dataFlow, cpuDevice, losses, {}, opts, patterns);
+    }
 
     irChecker(session->ir);
 
     ran_checkIr = true;
   }
 
-  template <typename ResultsChecker>
-  void checkResult(ResultsChecker &&resultsChecker,
-                   std::vector<TestTensor> &inputs,
-                   std::vector<TestTensor> &outputs) {
+private:
+  void runSession(std::vector<TestTensor> &inputs,
+                  std::vector<TestTensor> &outputs) {
     if (!ran_checkIr) {
       checkIr([](Ir &) {});
     }
@@ -97,19 +104,45 @@ public:
       device_prepared = true;
     }
 
+    if (isTraining) {
+      session->weightsFromHost();
+    }
+
     StepIO stepio(input_map, output_map);
     session->run(stepio);
 
+    if (isTraining) {
+      session->weightsToHost();
+    }
+  }
+
+public:
+  template <typename ResultsChecker>
+  void checkResult(ResultsChecker &&resultsChecker,
+                   std::vector<TestTensor> &inputs,
+                   std::vector<TestTensor> &outputs) {
+    runSession(inputs, outputs);
     resultsChecker(outputs.front());
+  }
+
+  template <typename ResultsChecker>
+  void checkResults(ResultsChecker &&resultsChecker,
+                    std::vector<TestTensor> &inputs,
+                    std::vector<TestTensor> &outputs) {
+    runSession(inputs, outputs);
+    resultsChecker(outputs);
   }
 
   SessionOptions opts;
   Patterns patterns;
+  bool isTraining = false;
+  std::vector<Loss *> losses;
+  std::map<TensorId, AnchorReturnType> anchors;
 
 private:
   std::string proto;
   TensorId outId;
-  std::unique_ptr<InferenceSession> session;
+  std::unique_ptr<Session> session;
   bool ran_checkIr     = false;
   bool device_prepared = false;
 };
