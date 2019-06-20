@@ -134,6 +134,11 @@ std::string Session::getExecutionReport(bool use_cbor) const {
   return device_->getExecutionReport(use_cbor);
 }
 
+std::string Session::getSerializedGraph() const {
+  logging::session::trace("Session::getSerializedGraph");
+  return device_->getSerializedGraph();
+}
+
 TensorTileMap Session::getTensorTileMap() const {
   logging::session::trace("Session::getTensorTileMap");
 

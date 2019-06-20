@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <poponnx/logging.hpp>
+#include <poponnx/names.hpp>
 
 namespace poponnx {
 
@@ -61,6 +62,19 @@ enum class ErrorSource {
   poplar  = 1,
   poplibs = 2,
   unknown = 3,
+};
+
+// A specialization of the poponnx error exception for the case when the device
+// prepare call fails due to lack of memory
+
+class memory_allocation_err : public error {
+
+public:
+  memory_allocation_err(const std::string &info) : error(info) {}
+
+  virtual std::unique_ptr<memory_allocation_err> clone() const = 0;
+  virtual std::string getSummaryReport() const                 = 0;
+  virtual std::string getGraphReport(bool use_cbor) const      = 0;
 };
 
 ErrorSource getErrorSource(const std::exception &e);

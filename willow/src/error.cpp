@@ -7,6 +7,9 @@
 namespace poponnx {
 
 ErrorSource getErrorSource(const std::exception &e) {
+  if (dynamic_cast<const poponnx::memory_allocation_err *>(&e)) {
+    return ErrorSource::poponnx;
+  }
   if (dynamic_cast<const poponnx::error *>(&e)) {
     return ErrorSource::poponnx;
   }

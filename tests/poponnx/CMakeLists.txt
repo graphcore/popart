@@ -76,7 +76,8 @@ function(add_all_py_unit_tests exclusions)
 endfunction()
 
 # auto_virtual_graph_test is currently failing
-add_all_py_unit_tests("test_util;auto_virtual_graph_test")
+# exception_test needs hardware
+add_all_py_unit_tests("test_util;auto_virtual_graph_test;exception_test")
 
 
 add_subdirectory(operators_test)

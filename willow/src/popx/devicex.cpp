@@ -35,6 +35,59 @@
 namespace poponnx {
 namespace popx {
 
+class devicex_memory_allocation_err : public poponnx::memory_allocation_err {
+
+  const poplar::graph_memory_allocation_error exception;
+  const poplar::OptionFlags reportOptions;
+
+public:
+  devicex_memory_allocation_err(const devicex_memory_allocation_err &rhs)
+      : poponnx::memory_allocation_err(rhs.what()),
+        exception(std::move(rhs.exception)), reportOptions(rhs.reportOptions) {}
+
+  devicex_memory_allocation_err(const poplar::graph_memory_allocation_error &e,
+                                const poplar::OptionFlags &_reportOptions)
+      : poponnx::memory_allocation_err(e.what()), exception(std::move(e)),
+        reportOptions(_reportOptions) {}
+
+  std::unique_ptr<memory_allocation_err> clone() const {
+    return make_unique<devicex_memory_allocation_err>(*this);
+  }
+
+  std::string getSummaryReport() const {
+
+    if (exception.graphProfile.type() == poplar::ProfileValue::Type::MAP &&
+        exception.graphProfile.size() != 0) {
+
+      std::stringstream ss;
+      poplar::printProfileSummary(
+          ss, exception.graphProfile, {}, reportOptions);
+      return ss.str();
+    } else {
+      throw error("Need to set the 'debug.allowOutOfMemory' engine option to "
+                  "true to get the graph report");
+    }
+  }
+
+  std::string getGraphReport(bool use_cbor) const {
+
+    if (exception.graphProfile.type() == poplar::ProfileValue::Type::MAP &&
+        exception.graphProfile.size() != 0) {
+
+      std::stringstream ss;
+      if (use_cbor) {
+        serializeToCBOR(ss, exception.graphProfile);
+      } else {
+        serializeToJSON(ss, exception.graphProfile);
+      }
+      return ss.str();
+    } else {
+      throw error("Need to set the 'debug.allowOutOfMemory' engine option to "
+                  "true to get the graph report");
+    }
+  }
+};
+
 std::map<Op *, int> Devicex::getMainGraphOpSeriesNums() const {
   std::map<Op *, int> nums;
   int num = 0;
@@ -374,6 +427,8 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
 
   // TODO (see T5100) : if inference, forward should be INFERENCE_FWD
   for (auto it : ir.getSessionOptions().convolutionOptions) {
+    logging::devicex::info(
+        "Setting user convolution option {} = {}", it.first, it.second);
     fwdConvOptions.options[it.first] = it.second;
     bwdConvOptions.options[it.first] = it.second;
     wuConvOptions.options[it.first]  = it.second;
@@ -402,10 +457,14 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
 
   engineOptions.set("target.workerStackSizeInBytes", "0x200");
   for (auto it : ir.getSessionOptions().engineOptions) {
+    logging::devicex::info(
+        "Setting engine option {} = {}", it.first, it.second);
     engineOptions.set(it.first, it.second);
   }
 
   for (auto it : ir.getSessionOptions().reportOptions) {
+    logging::devicex::info(
+        "Setting report option {} = {}", it.first, it.second);
     reportOptions.set(it.first, it.second);
   }
 }
@@ -1699,15 +1758,8 @@ void Devicex::prepare() {
     // without a graph profile. The following engine option needs to be set to
     // enable the graph profile in this case "debug.allowOutOfMemory":"true"
 
-    if (e.graphProfile.type() == poplar::ProfileValue::Type::MAP &&
-        e.graphProfile.size() != 0) {
-
-      std::stringstream ss;
-      poplar::printProfileSummary(ss, e.graphProfile, {}, reportOptions);
-      logging::log(logging::Module::devicex, logging::Level::Err, ss.str());
-
-      throw;
-    }
+    logging::devicex::err("Memory allocation error : {}", e.what());
+    throw devicex_memory_allocation_err(e, reportOptions);
   }
 
   logging::devicex::info("Engine compiled");
@@ -2141,8 +2193,16 @@ std::string Devicex::getExecutionReport(bool use_cbor) const {
   return ss.str();
 }
 
+std::string Devicex::getSerializedGraph() const {
+  doProfileChecks();
+  std::stringstream ss;
+  pMasterGraph->serialize(ss, poplar::SerializationFormat::Binary);
+  return ss.str();
+}
+
 TensorTileMap Devicex::getTensorTileMap() const {
   TensorTileMap map;
+
   for (const auto &t : tensors.getTensors()) {
     std::vector<TensorIntervalList> mapping;
     for (auto tile : pMasterGraph->getTileMapping(t.second)) {
