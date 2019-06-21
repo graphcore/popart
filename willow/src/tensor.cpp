@@ -31,6 +31,7 @@ std::ostream &operator<<(std::ostream &os, const TensorType &tt) {
   case TensorType::Variable:
     os << "Variable";
     break;
+  case TensorType::N:
   default:
     os << "Undefined";
     break;

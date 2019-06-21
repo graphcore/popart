@@ -405,11 +405,11 @@ poplar::Graph &Devicex::graph(int64_t virtualGraphIndex) {
   }
   return virtualGraphs.at(virtualGraphIndex);
 }
+Devicex::~Devicex() = default;
 
 Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
-    : poponnx::Device(ir),
-      progs(PopPrograms(ir.getDataFlow().batchesPerStep())), tensors(ir),
-      deviceInfo(deviceInfo_), prepareHasBeenCalled(false) {
+    : _ir(ir), progs(PopPrograms(ir.getDataFlow().batchesPerStep())),
+      tensors(ir), deviceInfo(deviceInfo_), prepareHasBeenCalled(false) {
 
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 

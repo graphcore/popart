@@ -1,4 +1,3 @@
-#include <poponnx/device.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/filereader.hpp>
 #include <poponnx/graph.hpp>

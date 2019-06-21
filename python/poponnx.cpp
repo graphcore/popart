@@ -2,7 +2,6 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <poponnx/builder.hpp>
-#include <poponnx/device.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/graphtransformer.hpp>

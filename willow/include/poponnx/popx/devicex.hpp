@@ -11,12 +11,16 @@
 #include <poplin/MatMul.hpp>
 #include <poputil/TileMapping.hpp>
 
-#include <poponnx/device.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/popx/enigma.hpp>
 #include <poponnx/popx/linearmapper.hpp>
 #include <poponnx/popx/poplaroptionsx.hpp>
 #include <poponnx/pritask.hpp>
+
+#include <set>
+#include <poponnx/names.hpp>
+// MutableVoidData is defined in here:
+#include <poponnx/tensordata.hpp>
 
 using boost::optional;
 
@@ -151,41 +155,42 @@ private:
   const Ir &ir;
 };
 
-class Devicex : public poponnx::Device {
+class Devicex {
+
+private:
+  const Ir &_ir;
 
 public:
+  const Ir &ir() const { return _ir; }
   Devicex(const Ir &, std::shared_ptr<DeviceInfo> deviceInfo);
-  void prepare() final;
-  void weightsFromHost() final;
-  void optimizerFromHost() final;
+  ~Devicex();
+  void prepare();
+  void weightsFromHost();
+  void optimizerFromHost();
 
-  void run(const IStepIO &) final;
+  void run(const IStepIO &);
 
   // device -> host stream
-  void weightsToHost() final;
+  void weightsToHost();
   // device ->host stream -> specified host addresses
-  void weightsToHost(const std::map<TensorId, MutableVoidData> &) final;
+  void weightsToHost(const std::map<TensorId, MutableVoidData> &);
 
   // TODO T8229 : change these names to disambiguate
   // the source and destination
   // (is this writing to or from the device?)
-  void readWeights(const IWeightsIO &weights) final;
-  void writeWeights(const IWeightsIO &weights) final;
+  void readWeights(const IWeightsIO &weights);
+  void writeWeights(const IWeightsIO &weights);
 
-  virtual std::string getSummaryReport() const override final;
-  virtual std::string
-  getGraphReport(bool use_cbor = false) const override final;
-  virtual std::string
-  getExecutionReport(bool use_cbor = false) const override final;
-  virtual void saveTensorTileMap(const std::string &) const override final;
-  virtual TensorTileMap getTensorTileMap() const override final;
-  virtual std::string getSerializedGraph() const override final;
+  std::string getSummaryReport() const;
+  std::string getGraphReport(bool use_cbor = false) const;
+  std::string getExecutionReport(bool use_cbor = false) const;
+   void saveTensorTileMap(const std::string &) const;
+  TensorTileMap getTensorTileMap() const;
+  std::string getSerializedGraph() const;
 
   // Return stored input tensors based on how they are allocated
-  virtual std::set<TensorId>
-  getLinearlyCreatedInputTensors() const override final;
-  virtual std::set<TensorId>
-  getEfficientlyCreatedInputTensors() const override final;
+  std::set<TensorId> getLinearlyCreatedInputTensors() const;
+  std::set<TensorId> getEfficientlyCreatedInputTensors() const;
 
   PopPrograms progs;
 
