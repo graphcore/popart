@@ -127,10 +127,11 @@ static void appendConvParameterAttributes(const ConvParameters &params,
   ConvParameters p = popx::canonicalizeConvParams(params);
 
   os.appendAttribute("__batchsize", p.batchSize);
-  os.appendAttribute("__batchsize", p.numInChannels);
+  os.appendAttribute("__numInChannels", p.numInChannels);
   os.appendAttribute("__numOutChannels", p.numOutChannels);
   os.appendAttribute("__inputShape", p.inputShape);
   os.appendAttribute("__kernelShape", p.kernelShape);
+  os.appendAttribute("__groups", p.numGroups);
 
   os.appendAttribute("__input.lowerTruncation",
                      p.inputTransformation.lowerTruncation);

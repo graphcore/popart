@@ -212,8 +212,8 @@ public:
   const Graph &getMainGraph() const;
   Graph &getMainGraph();
 
-  const Graph &getGraph(const GraphId &) const;
-  Graph &getGraph(const GraphId &);
+  Graph &getGraph(const GraphId &) const;
+  bool hasGraph(const GraphId &) const;
 
   Graph &createGraph(const GraphId &);
 

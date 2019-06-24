@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
                 optimizer.get(),
                 *cpuDevice,
                 opts,
-                Patterns(PatternsLevel::DEFAULT)});
+                Patterns(PatternsLevel::DEFAULT).enableInPlace(false)});
 
     auto sched = ir.getOpSchedule({});
 
@@ -302,7 +302,7 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
               optimizer.get(),
               *cpuDevice,
               opts,
-              Patterns(PatternsLevel::DEFAULT)});
+              Patterns(PatternsLevel::DEFAULT).enableInPlace(false)});
 
   std::vector<Match> expected_matches{};
   auto sched = ir.getOpSchedule({});

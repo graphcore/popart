@@ -10,6 +10,6 @@ sys.path.insert(0, lp)
 # Import all symbols into our namespace
 from poponnx_core import *
 from poponnx.builder import Builder
-from poponnx.session import InferenceSession, TrainingSession
+from poponnx.session import InferenceSession, TrainingSession, PrepareDeviceException
 from poponnx.options import SessionOptions
 from poponnx.tensorinfo import TensorInfo

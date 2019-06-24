@@ -37,10 +37,23 @@ def _initAnchorArrays(self):
         if self.replicationFactor > 1:
             anchorArrayShape.insert(0, self.replicationFactor)
 
-        anchorArrays[anchor] = np.empty(
-            shape=anchorArrayShape, dtype=anchorInfo.data_type_lcase())
+        anchorArrays[anchor] = np.empty(shape=anchorArrayShape,
+                                        dtype=anchorInfo.data_type_lcase())
 
     return anchorArrays
+
+
+# Custom expection thrown by the devicePrepare call
+class PrepareDeviceException(poponnx.poponnx_exception):
+    def __init__(self, e):
+        super(poponnx.poponnx_exception, self).__init__(str(e))
+        self.error = e
+
+    def getSummaryReport(self):
+        return self.error.getSummaryReport()
+
+    def getGraphReport(self):
+        return self.error.getGraphReport()
 
 
 class InferenceSession(poponnx.InferenceSessionCore):
@@ -66,6 +79,15 @@ class InferenceSession(poponnx.InferenceSessionCore):
     def initAnchorArrays(self):
         return _initAnchorArrays(self)
 
+    def prepareDevice(self):
+
+        err = poponnx.PrepareDeviceError()
+        super(InferenceSession, self).prepareDevice(err)
+
+        # If an error occured during the perpareDevice raise an exception
+        if (not err.isSuccessful()):
+            raise poponnx.PrepareDeviceException(err)
+
 
 class TrainingSession(poponnx.TrainingSessionCore):
     def __init__(self,
@@ -90,3 +112,12 @@ class TrainingSession(poponnx.TrainingSessionCore):
 
     def initAnchorArrays(self):
         return _initAnchorArrays(self)
+
+    def prepareDevice(self):
+
+        err = poponnx.PrepareDeviceError()
+        super(TrainingSession, self).prepareDevice(err)
+
+        # If an error occured during the perpareDevice raise an exception
+        if (not err.isSuccessful()):
+            raise poponnx.PrepareDeviceException(err)

@@ -13,3 +13,6 @@ add_poponnx_cpp_unit_test(splitgather_default_patterns_test
 
 add_poponnx_cpp_unit_test(patterns_test 
                           patterns_test.cpp)
+
+add_poponnx_cpp_unit_test(split_to_slice_patterns_test 
+                          split_to_slice_patterns_test.cpp)

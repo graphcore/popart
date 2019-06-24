@@ -182,6 +182,7 @@ public:
   virtual std::string
   getExecutionReport(bool use_cbor = false) const override final;
   virtual TensorTileMap getTensorTileMap() const override final;
+  virtual std::string getSerializedGraph() const override final;
 
   // Return stored input tensors based on how they are allocated
   virtual std::set<TensorId>
@@ -205,7 +206,7 @@ public:
   // This function is mostly string manipulation
   TaskId taskWhichCreates(TensorId) const;
 
-  // enigma has a PlanningCache for matmul and conv
+  // PlanningCache for matmul and conv
   poplin::PlanningCache convCache;
   poplin::matmul::PlanningCache matmulCache;
 

@@ -100,6 +100,17 @@ public:
   std::string getExecutionReport(bool use_cbor = false) const;
 
   /**
+   * Retrieve the serialized graph from the poplar::Engine
+   *
+   * A JSON format report is produced.
+   *
+   * This may only be called after the `prepareDevice()` call has been made.
+   *
+   * \return a string containing the serialized graph
+   */
+  std::string getSerializedGraph() const;
+
+  /**
    * Retrieve the tensor tile mapping from the poplar::Graph
    *
    * This may only be called after the `prepareDevice()` call has been made.

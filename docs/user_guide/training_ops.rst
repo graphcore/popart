@@ -18,4 +18,3 @@ Optimizers
 .. doxygenclass:: poponnx::ConstSGD
 
 .. doxygenclass:: poponnx::SGD
-

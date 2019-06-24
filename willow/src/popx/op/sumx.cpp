@@ -51,6 +51,7 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
     expr.push(exprs.back().get());
   }
 
+  // Work around bug in popops T9425
   if (inputs.size() == 1) {
     // Copy the only input to output
     auto output = cloneNcopy(prog, inputs.front());

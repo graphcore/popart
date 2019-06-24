@@ -333,6 +333,9 @@ protected:
                        std::vector<DataType> dataTypes = {DataType::INT64});
 };
 
+std::ostream &operator<<(std::ostream &, const GradInOutMapper &);
+std::ostream &operator<<(std::ostream &, const GradOpInType &);
+
 } // namespace poponnx
 
 #endif

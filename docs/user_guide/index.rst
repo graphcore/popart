@@ -12,7 +12,10 @@ ONNX for the IPU
     builder
     executing
     training_ops
+    performance
+    numerical_issues
     examples
     supported_ops
     references
+    api
 

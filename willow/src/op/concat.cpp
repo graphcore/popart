@@ -117,7 +117,15 @@ Shape ConcatOp::getOutputShape(int64_t axis,
 
     if (!std::equal(outShapePrefixBegin, outShapePrefixEnd, shapePrefixBegin) ||
         !std::equal(outShapeSuffixBegin, outShapeSuffixEnd, shapeSuffixBegin)) {
-      throw error("Input {} to concat does not have matching shape", i);
+      std::stringstream ss;
+      ss << "In ConcatOp::getOutputShape, axis = " << axis << " and shapes : ";
+      for (auto sp : inputs) {
+        ss << '\n';
+        appendSequence(ss, *sp);
+      }
+
+      throw error(
+          "Input {} to concat does not have matching shape. {}", i, ss.str());
     }
 
     outShape[axis] += shape[axis];

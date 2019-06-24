@@ -1,3 +1,4 @@
+#include <boost/algorithm/string.hpp>
 #include <onnx/onnx_pb.h>
 
 #include <poponnx/ces/constexpr.hpp>
@@ -7,6 +8,7 @@
 #include <poponnx/opmanager.hpp>
 #include <poponnx/pbwrap.hpp>
 #include <poponnx/scheduler.hpp>
+#include <poponnx/tensornames.hpp>
 #include <poponnx/tensors.hpp>
 #include <poponnx/topocons.hpp>
 
@@ -20,6 +22,44 @@
 #include <poponnx/op/varupdate.hpp>
 
 namespace poponnx {
+
+// map of grad Tensor to the list of Tensors that
+// must be summed to create the grad Tensor
+using GradTensorsPartsMap = std::map<Tensor *, std::vector<Tensor *>>;
+
+class TensorGradMapRegister {
+public:
+  void insert(Tensor *nonGrad, Tensor *grad);
+  GradTensorsPartsMap popComplete();
+
+  GradTensorsPartsMap partial;
+  GradTensorsPartsMap complete;
+};
+
+class BackwardPassCreator {
+public:
+  BackwardPassCreator(Graph &fwdGraph_, Graph &bwdGraph_);
+
+private:
+  void growGradGraph();
+  std::vector<Op *> growGradOps(Op *nonGradOp);
+  bool opIsReadyToCreateGradients(Op *);
+  void registerBwdOp(Op *fwdOp, Op *bwdOp);
+  Op *growGradSumOp(Tensor *target, const std::vector<Tensor *> &partials);
+  TensorId getGradId(const TensorId &);
+  void populateGradInInfo(
+      const std::map<TensorId, TensorId> &bwdInputIdToFwdTensorId);
+
+  static void cloneGraph(const Graph &from, Graph &to);
+  static void doPrune(Graph &);
+
+  Graph &fwdGraph;
+  Graph &bwdGraph;
+
+  // A map of fwd tensors to their corresponding gradient tensors
+  std::map<TensorId, TensorId> gradTensorMap;
+  TensorGradMapRegister gradRegister;
+};
 
 Graph::Graph(Ir &ir_, const GraphId &id_) : id(id_), ir(ir_) {
   up_tensors.reset(new Tensors(*this));
@@ -49,14 +89,32 @@ void Graph::addInput(const TensorId &tensorId, const TensorInfo &tensorInfo) {
 }
 
 TensorId Graph::addInput(const TensorInfo &tinfo) {
-  auto tenid    = fmt::format("input_{}", graph_inputs.size());
-  auto scopedid = (Scope() / id.str() / tenid).str();
-  addInput(scopedid, tinfo);
-  return scopedid;
+  auto tensorId = fmt::format("input_{}", graph_inputs.size());
+  auto scopedId = addScope(tensorId);
+  addInput(scopedId, tinfo);
+  return scopedId;
 }
 
-void Graph::addOutput(const TensorId &tensorId) {
+void Graph::markAsInput(const TensorId &tensorId) {
+  if (!getTensors().contains(tensorId)) {
+    throw error("Could not find tensor '{}' to mark as input");
+  }
+  graph_inputs.push_back(tensorId);
+}
+
+void Graph::markAsOutput(const TensorId &tensorId) {
+  if (!getTensors().contains(tensorId)) {
+    throw error("Could not find tensor '{}' to mark as output");
+  }
   graph_outputs.push_back(tensorId);
+}
+
+void Graph::removeOutput(const TensorId &tensorId) {
+  auto found = boost::range::find(graph_outputs, tensorId);
+  if (found == graph_outputs.end()) {
+    throw error("Could not find tensor '{}' in graph {} outputs", tensorId, id);
+  }
+  graph_outputs.erase(found);
 }
 
 std::vector<const Graph *> Graph::getCalledGraphs() const {
@@ -72,13 +130,12 @@ std::vector<const Graph *> Graph::getCalledGraphs() const {
   return called;
 }
 
-void Graph::constructFromOnnxGraph(const onnx::GraphProto &onnx_graph,
-                                   const Scope &scope) {
+void Graph::constructFromOnnxGraph(const onnx::GraphProto &onnx_graph) {
   for (const auto &node : onnx_graph.node()) {
     if (OnnxConstExprUtil::isConst(node)) {
       OnnxConstExprUtil::processNode(node, this);
     } else {
-      Op *op = growFromNode(node, scope);
+      Op *op = growFromNode(node);
 
       // process ops as they are created
       // Reshape requires a const input tensor at creation time
@@ -91,9 +148,9 @@ void Graph::constructFromOnnxGraph(const onnx::GraphProto &onnx_graph,
   }
 }
 
-Op *Graph::growFromNode(const Node &node, const Scope &scope) {
+Op *Graph::growFromNode(const Node &node) {
 
-  OpId opId = moveIntoGraph(addOp(node, scope));
+  OpId opId = moveIntoGraph(addOp(node));
 
   connectInputs(node, opId);
   connectOutputs(node, opId);
@@ -103,6 +160,55 @@ Op *Graph::growFromNode(const Node &node, const Scope &scope) {
   Op *fromNodeOp = ops.at(opId).get();
   fromNodeOp->setup();
   return fromNodeOp;
+}
+
+Scope Graph::getScope() const { return Scope() / id.str(); }
+
+TensorId Graph::addScope(const TensorId &tensorId) const {
+  return (getScope() / tensorId).str();
+}
+
+TensorId Graph::removeScope(const TensorId &scopedId) const {
+  using boost::algorithm::starts_with;
+
+  auto scopeStr = getScope().str();
+  if (!starts_with(scopedId, scopeStr)) {
+    throw error(
+        "Can not remove scope from {} as it does not start with scope {}",
+        scopedId,
+        scopeStr);
+  }
+  return scopedId.substr(scopeStr.size() + 1);
+}
+
+Graph &Graph::getBackwardsGraph(const GraphId &bwdId) {
+  if (ir.hasGraph(bwdId)) {
+    return ir.getGraph(bwdId);
+  } else {
+    auto &bwdGraph = ir.createGraph(bwdId);
+    BackwardPassCreator(*this, bwdGraph);
+    return bwdGraph;
+  }
+}
+
+void TensorGradMapRegister::insert(Tensor *nonGrad, Tensor *grad) {
+  auto found = partial.find(nonGrad);
+  if (found == partial.end()) {
+    partial.insert({nonGrad, {grad}});
+  } else {
+    found->second.push_back(grad);
+  }
+
+  if (partial.at(nonGrad).size() == nonGrad->consumers.getTotal()) {
+    complete.insert({nonGrad, partial.at(nonGrad)});
+    partial.erase(nonGrad);
+  }
+}
+
+GradTensorsPartsMap TensorGradMapRegister::popComplete() {
+  auto toRet = complete;
+  complete   = {};
+  return toRet;
 }
 
 OpId Graph::moveIntoGraph(std::unique_ptr<Op> op) {
@@ -124,7 +230,7 @@ void Graph::connectOutputsFromOutputMapWrapper(const OutputMapWrapper &out,
   connectOutputs(out, opid);
 }
 
-std::unique_ptr<Op> Graph::addOp(const Node &node, const Scope &scope) {
+std::unique_ptr<Op> Graph::addOp(const Node &node) {
 
   int version = ir.getOpSetVersionFromModel(node.domain());
 
@@ -133,7 +239,7 @@ std::unique_ptr<Op> Graph::addOp(const Node &node, const Scope &scope) {
                                               version,
                                               *this,
                                               node.name(),
-                                              scope,
+                                              getScope(),
                                               node.attribute());
   if (p != nullptr)
     return p;
@@ -306,6 +412,393 @@ Graph::getLiveSets(const std::vector<Op *> &topoOps) const {
     liveSets.push_back(live);
   }
   return liveSets;
+}
+
+BackwardPassCreator::BackwardPassCreator(Graph &fwdGraph_, Graph &bwdGraph_)
+    : fwdGraph(fwdGraph_), bwdGraph(bwdGraph_) {
+  growGradGraph();
+
+  // create map of bwdGraph input TensorIds to fwdGraph input/gradient TensorIds
+  // must be done before pruning
+  std::map<TensorId, TensorId> bwdInputIdToFwdTensorId;
+  for (int i = 0; i < fwdGraph.getInputIds().size(); i++) {
+    auto fwdIn = fwdGraph.getInputId(i);
+    auto bwdIn = bwdGraph.getInputId(i);
+    bwdInputIdToFwdTensorId.insert({bwdIn, fwdIn});
+  }
+  for (auto &fwdOut : fwdGraph.getOutputIds()) {
+    auto gradId = getGradId(fwdOut);
+    bwdInputIdToFwdTensorId.insert({gradId, fwdOut});
+  }
+
+  doPrune(bwdGraph);
+
+  populateGradInInfo(bwdInputIdToFwdTensorId);
+}
+
+void BackwardPassCreator::populateGradInInfo(
+    const std::map<TensorId, TensorId> &bwdInputIdToFwdTensorId) {
+  // Populate bwdGraph.gradInInfo
+  using boost::range::find;
+  std::map<TensorId, GradInOutMapper> partialGradInfo;
+  for (int i = 0; i < fwdGraph.getInputIds().size(); i++) {
+    auto id = fwdGraph.getInputId(i);
+    partialGradInfo.insert({id, {-1, i, GradOpInType::IN}});
+  }
+  for (int i = 0; i < fwdGraph.getOutputIds().size(); i++) {
+    auto id = fwdGraph.getOutputId(i);
+    partialGradInfo.insert({id, {-1, i, GradOpInType::GRADOUT}});
+  }
+
+  auto bwdInputIds = bwdGraph.getInputIds();
+  for (int bIdx = 0; bIdx < bwdInputIds.size(); bIdx++) {
+    auto bwdId       = bwdInputIds.at(bIdx);
+    auto fwdTensorId = bwdInputIdToFwdTensorId.at(bwdId);
+    auto found       = partialGradInfo.find(fwdTensorId);
+    if (found != partialGradInfo.end()) {
+      auto gradInOutMapper  = found->second;
+      gradInOutMapper.iGrad = bIdx;
+      bwdGraph.gradInInfo.push_back(gradInOutMapper);
+    } else {
+      throw error(
+          "Could not find corresponding input tensor for graph input {}",
+          bwdId);
+    }
+  }
+}
+
+void BackwardPassCreator::growGradGraph() {
+  // clone ops from the fwdGraph into the bwdGraph
+  cloneGraph(fwdGraph, bwdGraph);
+  // cloned outputs are not required
+  for (auto &id : bwdGraph.getOutputIds()) {
+    bwdGraph.removeOutput(id);
+  }
+
+  // Create an input tensor for each output tensor of fwdGraph
+  for (auto &scopedId : fwdGraph.getOutputIds()) {
+    auto gradId   = getGradId(scopedId);
+    auto gradInfo = fwdGraph.getTensors().get(scopedId)->info;
+    bwdGraph.addInput(gradId, gradInfo);
+    gradTensorMap.insert({scopedId, gradId});
+  }
+
+  // Add all ops in the fwdGraph to pending ops
+  std::set<Op *> pendingOps;
+  for (auto &id_op : fwdGraph.getOps()) {
+    auto op = id_op.second.get();
+    pendingOps.insert(op);
+  }
+
+  while (!pendingOps.empty()) {
+    // get all the ops that are ready to grow grad ops
+    std::vector<Op *> readyOps;
+    for (auto op : pendingOps) {
+      if (opIsReadyToCreateGradients(op)) {
+        readyOps.push_back(op);
+      }
+    }
+    // remove ready ops from pending
+    for (auto op : readyOps) {
+      pendingOps.erase(pendingOps.find(op));
+    }
+    // grow grad ops for op
+    for (auto fwdOp : readyOps) {
+      auto bwdOps = growGradOps(fwdOp);
+
+      for (auto bwdOp : bwdOps) {
+        registerBwdOp(fwdOp, bwdOp);
+      }
+    }
+  }
+
+  // connect up outputs
+  for (auto &scopedId : fwdGraph.getInputIds()) {
+    if (gradTensorMap.find(scopedId) == gradTensorMap.end()) {
+      throw error("Could not find tensor {} in gradTensorMap", scopedId);
+    }
+    auto gradId = getGradId(scopedId);
+    bwdGraph.markAsOutput(gradId);
+  }
+}
+
+void BackwardPassCreator::cloneGraph(const Graph &from, Graph &to) {
+  // clone all the ops
+  std::map<Op *, Op *> cloneMap;
+  for (auto &id_op : from.getOps()) {
+    auto op    = id_op.second.get();
+    auto clone = op->clone();
+    clone->setPhase(op->getPhase());
+    clone->settings.graph = to;
+    clone->settings.scope = to.getScope();
+    auto cloneId          = to.moveIntoGraph(std::move(clone));
+    cloneMap.insert({op, to.getOp(cloneId)});
+  }
+
+  // clone all the tensors
+  std::map<Tensor *, Tensor *> tensorMap;
+  for (auto &id : from.getTensors().getAllTensorIds()) {
+    auto tensor = from.getTensors().get(id);
+
+    auto newId = to.addScope(from.removeScope(id));
+
+    auto tensorClone = tensor->clone();
+    tensorClone->id  = newId;
+    to.getTensors().moveIntoTensors(std::move(tensorClone));
+    auto tensorClonePtr = to.getTensors().get(newId);
+    tensorMap.insert({tensor, tensorClonePtr});
+  }
+
+  // hook up op inputs and outputs
+  for (auto &id_op : from.getOps()) {
+    auto op    = id_op.second.get();
+    auto clone = cloneMap.at(op);
+
+    // connect inputs
+    for (auto &idx_tensor : op->input->tensorMap()) {
+      auto idx             = idx_tensor.first;
+      auto tensor          = idx_tensor.second;
+      auto clone_tensor_id = tensorMap.at(tensor)->id;
+      clone->connectInTensor(idx, clone_tensor_id);
+    }
+
+    // connect outputs
+    for (auto &idx_tensor : op->output->tensorMap()) {
+      auto idx             = idx_tensor.first;
+      auto tensor          = idx_tensor.second;
+      auto clone_tensor_id = tensorMap.at(tensor)->id;
+      clone->connectOutTensor(idx, clone_tensor_id);
+    }
+  }
+
+  // add graph inputs and outputs
+  for (auto &id : from.getInputIds()) {
+    auto unscopedId = from.removeScope(id);
+    auto newId      = to.addScope(unscopedId);
+    to.markAsInput(newId);
+  }
+
+  for (auto &id : from.getOutputIds()) {
+    auto unscopedId = from.removeScope(id);
+    auto newId      = to.addScope(unscopedId);
+    to.markAsOutput(newId);
+  }
+}
+
+void BackwardPassCreator::registerBwdOp(Op *fwdOp, Op *bwdOp) {
+  for (auto &idx_tensor : bwdOp->output->tensorMap()) {
+    auto bwdOutIndex = idx_tensor.first;
+    auto bwdTensor   = idx_tensor.second;
+    auto fwdInIndex  = bwdOp->getNonGradInIndex(bwdOutIndex);
+    auto fwdTensor   = fwdOp->inTensor(fwdInIndex);
+    gradRegister.insert(fwdTensor, bwdTensor);
+  }
+
+  for (auto &fwdTensor_partials : gradRegister.popComplete()) {
+    auto fwdTensor = fwdTensor_partials.first;
+    auto &partials = fwdTensor_partials.second;
+    auto sumOp     = growGradSumOp(fwdTensor, partials);
+    gradTensorMap.insert({fwdTensor->id, sumOp->outId(0)});
+  }
+}
+
+Op *BackwardPassCreator::growGradSumOp(Tensor *nonGradTensor,
+                                       const std::vector<Tensor *> &partials) {
+  std::unique_ptr<poponnx::Op> gradSum = OpManager::createOp(
+      Domain::ai_onnx,
+      "Sum",
+      bwdGraph.getIr().getOpSetVersionFromModel(Domain::ai_onnx),
+      bwdGraph,
+      "GradSum");
+
+  OpId opId = bwdGraph.moveIntoGraph(std::move(gradSum));
+
+  std::vector<TensorId> inputs;
+  inputs.reserve(partials.size());
+  for (auto &tensor : partials) {
+    inputs.push_back(tensor->id);
+  }
+
+  auto gradId = getGradId(nonGradTensor->id);
+
+  std::vector<TensorId> outputs{gradId};
+
+  bwdGraph.connectInputs(InputVecWrapper(inputs), opId);
+  bwdGraph.connectOutputs(OutputVecWrapper(outputs), opId);
+  Op *op = bwdGraph.getOps()[opId].get();
+  op->setup();
+  return op;
+}
+
+TensorId BackwardPassCreator::getGradId(const TensorId &id) {
+  auto x = fwdGraph.removeScope(id);
+  x      = poponnx::getGradId(x);
+  return bwdGraph.addScope(x);
+}
+
+bool BackwardPassCreator::opIsReadyToCreateGradients(Op *op) {
+  for (auto output : op->output->tensors()) {
+    if (gradTensorMap.find(output->id) == gradTensorMap.end()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+std::vector<Op *> BackwardPassCreator::growGradOps(Op *nonGradOp) {
+  auto nonGradOpId = nonGradOp->id;
+  auto bwdOps      = nonGradOp->getGradOps();
+  if (bwdOps.empty()) {
+    throw error("Cannot get gradients for {}", nonGradOp->debugName());
+  }
+
+  std::vector<Op *> result;
+
+  for (auto &uPtrOp : bwdOps) {
+    Op *gradOp    = uPtrOp.get();
+    OpId gradOpId = bwdGraph.moveIntoGraph(std::move(uPtrOp));
+
+    gradOp->setScope(bwdGraph.getScope());
+
+    if (nonGradOp->settings.recomputeType == RecomputeType::RECOMPUTE &&
+        bwdGraph.getIr().autoRecomputationEnabled()) {
+      throw error("Grad Ops should be grown before recompute annotation");
+    }
+
+    // connect inputs of gradOp
+    {
+      // inputs to gradOp (to populate in this scope):
+      std::map<int, std::string> m_inputs;
+      for (auto &inOutMapper : gradOp->gradInputInfo()) {
+
+        int indexGrad     = inOutMapper.iGrad;
+        int indexFwd      = inOutMapper.iNonGrad;
+        GradOpInType type = inOutMapper.type;
+
+        // the input at index 'indexGrad' to gradOp is
+        switch (type) {
+        //  (1) the INPUT at index 'indexFwd' of nonGradOp
+        //  This will be a tensor internal to fwdGraph
+        case GradOpInType::IN: {
+          auto fwdId          = nonGradOp->inId(indexFwd);
+          auto bwdId          = bwdGraph.addScope(fwdGraph.removeScope(fwdId));
+          m_inputs[indexGrad] = bwdId;
+          break;
+        }
+
+        //  (2) the OUTPUT at index 'indexFwd' of nonGradOp
+        //  This will be a tensor internal to fwdGraph
+        case GradOpInType::OUT: {
+          auto fwdId          = nonGradOp->outId(indexFwd);
+          auto bwdId          = bwdGraph.addScope(fwdGraph.removeScope(fwdId));
+          m_inputs[indexGrad] = bwdId;
+          break;
+        }
+
+        //  (3) the GRADIENT of the OUTPUT
+        //      at index 'indexFwd' of nonGradOp.
+        case GradOpInType::GRADOUT: {
+          auto fwdId = nonGradOp->outId(indexFwd);
+          auto found = gradTensorMap.find(fwdId);
+          if (found == gradTensorMap.end()) {
+            throw error("Could not find TensorId '{}' in gradTensorMap", fwdId);
+          }
+          m_inputs[indexGrad] = found->second;
+          break;
+        }
+        }
+      }
+
+      bwdGraph.connectInputs(InputMapWrapper(m_inputs), gradOpId);
+    }
+
+    // connect outputs of gradOp
+    {
+      std::vector<TensorId> v_outputs;
+      for (auto out_in : gradOp->gradOutToNonGradIn()) {
+        int gradOut   = out_in.first;
+        int nonGradIn = out_in.second;
+
+        if (!nonGradOp->input->tensor(nonGradIn)) {
+          throw error("Invalid configuration of gradOp {}. nonGradOp ({}) "
+                      "OUTPUT {} is not defined ",
+                      gradOp->debugName(),
+                      nonGradOp->debugName(),
+                      nonGradIn);
+        }
+
+        TensorId inId  = nonGradOp->inId(nonGradIn);
+        TensorId outId = getEdgeGradId(inId, nonGradOpId, nonGradIn);
+        if (v_outputs.size() < gradOut + 1) {
+          v_outputs.resize(gradOut + 1, "");
+        }
+        v_outputs[gradOut] = outId;
+      }
+      bwdGraph.connectOutputs(OutputVecWrapper(v_outputs), gradOpId);
+    }
+    gradOp->setup();
+
+    result.push_back(gradOp);
+  }
+
+  return result;
+}
+
+void BackwardPassCreator::doPrune(Graph &graph) {
+  using boost::range::find;
+
+  auto outputIds   = graph.getOutputIds();
+  auto isNotOutput = [&outputIds](const TensorId &tId) {
+    return find(outputIds, tId) == outputIds.end();
+  };
+
+  auto removeTensor = [&graph](Tensor *tensor) {
+    if (tensor->hasProducer()) {
+      auto producer = tensor->getProducer();
+      producer->disconnectOutTensor(tensor);
+    }
+    graph.getTensors().remove(tensor->id);
+  };
+
+  while (true) {
+    // set to true if a tensor or op is removed
+    bool continueLoop = false;
+
+    // Remove tensors that are not inputs or outputs and have no consumers
+    for (auto &id : graph.getTensors().getAllTensorIds()) {
+      auto tensor = graph.getTensors().get(id);
+      if (tensor->consumers.getTotal() == 0 && isNotOutput(id)) {
+        removeTensor(tensor);
+        continueLoop = true;
+      }
+    }
+
+    // Remove ops with no outputs
+    for (auto &id_op : graph.getOps()) {
+      auto id = id_op.first;
+      auto op = id_op.second.get();
+
+      if (op->output->n() == 0) {
+        op->disconnectAllInputs();
+        graph.eraseOp(id);
+        continueLoop = true;
+      }
+    }
+
+    if (!continueLoop) {
+      break;
+    }
+  }
+
+  // Remove inputs ids that have been pruned
+  auto inputIds = graph.getInputIds();
+  for (auto &id : inputIds) {
+    if (!graph.getTensors().contains(id)) {
+      auto inputIter = find(graph.getInputIds(), id);
+      graph.graph_inputs.erase(inputIter);
+    }
+  }
 }
 
 } // namespace poponnx

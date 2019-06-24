@@ -2,6 +2,8 @@
 #include <spdlog/fmt/fmt.h>
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
+#include <poponnx/op.hpp>
+#include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
 #include <poponnx/region.hpp>
 #include <poponnx/tensor.hpp>
@@ -9,10 +11,8 @@
 #include <poponnx/util.hpp>
 
 // The layers:
-#include <poponnx/op.hpp>
-#include <poponnx/opmanager.hpp>
-
 #include <poponnx/op/elementwise.hpp>
+#include <poponnx/op/varupdate.hpp>
 
 namespace poponnx {
 
@@ -163,7 +163,20 @@ void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
 
 std::string Op::getSubgraphEquivId() const {
 
-  if (isOutlineable() && settings.recomputeType != RecomputeType::RECOMPUTE) {
+  // Are any of the inputs aliased by output?
+  bool noAliases = true;
+  for (auto &index_tensor : input->tensorMap()) {
+    noAliases = noAliases && aliases(index_tensor.first).isEmpty();
+  }
+
+  // Of all aliasing Ops, we only allow the VarUpdateOp to be outlined.
+  // This partially resolves the failure to the propogate inplace modifications
+  // through calls, T8604.
+  bool aliasAndNotVarUpdate =
+      !noAliases && !(dynamic_cast<const VarUpdateOp *>(this));
+
+  if (isOutlineable() && settings.recomputeType != RecomputeType::RECOMPUTE &&
+      !aliasAndNotVarUpdate) {
     OpEquivIdCreator os(this);
     appendAttributes(os);
     return os.str();
@@ -450,6 +463,35 @@ void Op::getInTensorData(TensorId tensorId,
                 tensor->info.data_type(),
                 tensorId);
   }
+}
+
+std::ostream &operator<<(std::ostream &ss, const GradInOutMapper &g) {
+  ss << fmt::format("GradInOutMapper(iGrad: {}, iNonGrad: {}, type: {})",
+                    g.iGrad,
+                    g.iNonGrad,
+                    g.type);
+  return ss;
+}
+
+std::ostream &operator<<(std::ostream &ss, const GradOpInType &t) {
+  switch (t) {
+  case GradOpInType::IN: {
+    ss << "GradOpInType::IN";
+    break;
+  }
+  case GradOpInType::OUT: {
+    ss << "GradOpInType::OUT";
+    break;
+  }
+  case GradOpInType::GRADOUT: {
+    ss << "GradOpInType::GRADOUT";
+    break;
+  }
+  default:
+    ss << fmt::format("GradOpInType::UNDEFINED({})", static_cast<int>(t));
+    break;
+  }
+  return ss;
 }
 
 } // namespace poponnx

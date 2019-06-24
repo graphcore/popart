@@ -1,4 +1,5 @@
 #include <limits>
+#include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
 #include <poponnx/op/varupdate.hpp>
 #include <poponnx/opmanager.hpp>
@@ -19,7 +20,6 @@ void VarUpdateOp::setup() {
   outInfo(getUpdatedVarOutIndex()) = inInfo(getVarToUpdateInIndex());
 }
 
-//
 view::Region VarUpdateOp::aliases(InIndex index) const {
   if (index == getVarToUpdateInIndex()) {
     return view::Region::getFull(inShape(index));
@@ -37,6 +37,15 @@ void ConstSGDVarUpdateOp::appendAttributes(OpSerialiserBase &os) const {
 // Modifies is the same as aliases
 view::Region VarUpdateOp::modifies(InIndex index) const {
   return aliases(index);
+}
+
+float VarUpdateOp::getSubgraphValue() const {
+  // If we have replicated graphs then outline varupdates if possiable
+  if (getIr().getSessionOptions().enableReplicatedGraphs) {
+    return getHighSubgraphValue();
+  } else {
+    return getLowSubgraphValue();
+  }
 }
 
 SGDVarUpdateOp::SGDVarUpdateOp(TensorId varId_, const Op::Settings &settings_)

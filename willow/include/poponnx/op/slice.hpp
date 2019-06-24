@@ -46,6 +46,9 @@ public:
   const std::vector<int64_t> &getStarts() const { return starts; }
   const std::vector<int64_t> &getEnds() const { return ends; }
   const std::vector<int64_t> &getAxes() const { return axes; }
+  void setStarts(const std::vector<int64_t> &x) { starts = x; }
+  void setEnds(const std::vector<int64_t> &x) { ends = x; }
+  void setAxes(const std::vector<int64_t> &x) { axes = x; }
 
   std::vector<Slice> getSlices(std::vector<int64_t> input_shape) const;
   // assume input_shape is the shape of the input to this op:

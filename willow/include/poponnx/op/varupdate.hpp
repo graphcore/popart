@@ -29,7 +29,7 @@ public:
   view::Region modifies(InIndex) const final;
   const TensorId &getVarId() const { return varId; }
 
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  float getSubgraphValue() const final;
 
   // Return a map of all optimizer specific input Tensors (learning rate, etc)
   virtual std::map<InIndex, TensorId> optimizerInputs() const = 0;
