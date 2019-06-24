@@ -174,6 +174,10 @@ specified in the `dataFlow` object during session construction.
   stepio = poponnx.PyStepIO({'a': data_a, 'b': data_b}, anchors)
 
 
+TODO:
+- Add something about the pytorch data feeder.
+
+
 Running
 ~~~~~~~
 
@@ -194,6 +198,26 @@ If the session is created for training, any pre-initialized parameters will be
 updated to reflect changes to them that the optimizer has made.
 
 
+Retrieving results
+~~~~~~~~~~~~~~~~~~
+
+The `DataFow` class describes how to execute the graph.  The second parameter is
+a description of the anchors, the results to fetch from the graph.
+
+::
+
+  df = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+
+The python dictionary has keys which are the names of the tensors to retreive
+from the model, and the values are an `AnchorReturnType`, one of:
+
+* poponnx.AnchorReturnType("ALL"), a vector of results is returned, one for each
+  iteration of the graph.
+* poponnx.AnchorReturnType("EVERYN", N), a vector containing the tensor, but
+  only for iterations which are divisible by `N`.
+* poponnx.AnchorReturnType("FINAL"), the value of the tensor on the final
+  iteration through the graph.
+
 
 Fetching the trained parameters
 ===============================
@@ -204,6 +228,15 @@ to the file at the provided path.
 ::
 
   session.modelToHost("trained_model.onnx")
+
+
+A file of saved parameters, for example from an earlier execution session, can
+be loaded into the current session.
+
+::
+
+  session.resetHostWeights("test.onnx")
+  session.weightsFromHost()
 
 
 Retrieving Poplar compilation and execution reports
@@ -220,19 +253,22 @@ of the graph since the last report was fetched.
 Both `getGraphReport` and `getExecutionReport` can optionally return a CBOR
 formatted report.
 
-TODO
-====
+Turning on execution tracing
+============================
 
-Add sections on recomputation, automatic virtual graphs, running training+inference
-sessions, logging, different sorts of anchors, replication, updating optimizer
-params, high performance training tips.
+Poponnx contains an internal logging system that can show the progress of graph
+compilation and execution.  It can be turned on by called the `Logger` class.
 
-Expand optimizers and losses to include all available.
+::
 
-Add something about the pytorch data feeder.
+  poponnx.getLogger().setLevel("TRACE")
 
-Add API section - at least for the main user-facing classes InferenceSession,
-TrainingSession, SessionOptions.
+Logging levels in decreasing verbosity are:
 
-Add a section on debugging numerical problems,
-including the use of PrintTensor and floating point exceptions.
+* TRACE
+* DEBUG
+* INFO
+* WARN
+* ERR
+* CRITICAL
+* OFF
