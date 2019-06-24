@@ -1303,9 +1303,7 @@ void Ir::updateVertices() {
     }
 
     if (suggestions.size() == 0) {
-      // no suggestions, it must a FWD (assuming all
-      // tensors in backwards hace a gradient or
-      // recompute prefix in them)
+      // no suggestions, we assume it is FWD
       op->setPhase(Phase::FWD);
     } else {
       for (auto phase : suggestions) {

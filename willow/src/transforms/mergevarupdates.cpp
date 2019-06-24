@@ -1,4 +1,5 @@
 #include <tuple>
+
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/makeunique.hpp>
@@ -292,7 +293,7 @@ bool MergeVarUpdates::apply(Graph &graph) const {
 
   // flatten to shape (1, ni) for all tensors,
   const int flattenAxis = 0;
-  // then concat to shape (1, n1 + n2 + ... + nT).
+  // then concat to shape (1, n1 + n2 + ... + nT)
   const int concatAxis = 1;
 
   auto targetsMap = getGroupTargetsMap(graph);
@@ -366,12 +367,14 @@ bool MergeVarUpdates::apply(Graph &graph) const {
               op->createAndConnectOutTensor(FlattenBaseOp::getOutIndex(),
                                             getFlattenedPrefix() + id);
               op->setup();
+              op->setPhase(Phase::BWD);
               return op;
             };
 
         // create FlattenInplaceOp for the weight being updated
         auto weightIn =
             singleUpdateOp->inTensor(VarUpdateOp::getVarToUpdateInIndex());
+
         auto flWeOp = makeFlattened(weightIn->id);
         flattenWeightOps.push_back(flWeOp);
         concatWeightsNameStream << '_' << weightIn->id;
@@ -407,6 +410,7 @@ bool MergeVarUpdates::apply(Graph &graph) const {
 
         concatOp->createAndConnectOutTensor(ConcatOp::getOutIndex(), newId);
         concatOp->setup();
+        concatOp->setPhase(Phase::BWD);
         return concatOp;
       };
 

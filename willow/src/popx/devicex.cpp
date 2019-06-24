@@ -1416,6 +1416,17 @@ unsigned Devicex::getReplicationFactor() const {
     replicationFactor =
         static_cast<unsigned>(ir().getSessionOptions().replicatedGraphCount);
   }
+
+  else {
+    // A check on user input consistency
+    if (static_cast<unsigned>(ir().getSessionOptions().replicatedGraphCount) >
+        1) {
+      throw error(
+          "enableReplicatedGraphs is false, but replicatedGraphCount > 1. "
+          "Either enable replication, or set the replicated graph count to 1");
+    }
+  }
+
   return replicationFactor;
 }
 
@@ -1598,9 +1609,11 @@ void Devicex::prepare() {
       if (op->getVirtualGraphId()) {
         int64_t index = *(op->getVirtualGraphId());
         if (index < 0 || index >= numIPUs) {
-          throw error("{} has been assigned to an invalid virtual graph {}",
+          throw error("{} has been assigned to an invalid virtual graph {}. "
+                      "numIPUs = {}.",
                       op->debugName(),
-                      index);
+                      index,
+                      numIPUs);
         }
       }
     }
