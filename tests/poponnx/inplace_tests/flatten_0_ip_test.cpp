@@ -1,7 +1,7 @@
 #define BOOST_TEST_MODULE Flatten0InplaceTest
 
 #include <boost/test/unit_test.hpp>
-#include <cmath>
+#include <complex>
 #include <random>
 #include <vector>
 #include <poponnx/builder.hpp>
