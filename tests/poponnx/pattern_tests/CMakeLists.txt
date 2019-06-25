@@ -16,3 +16,8 @@ add_poponnx_cpp_unit_test(patterns_test
 
 add_poponnx_cpp_unit_test(split_to_slice_patterns_test 
                           split_to_slice_patterns_test.cpp)
+
+
+add_poponnx_cpp_unit_test(replicate_and_shard_ir_test_0 
+                          replicate_and_shard_ir_test_0.cpp)
+
