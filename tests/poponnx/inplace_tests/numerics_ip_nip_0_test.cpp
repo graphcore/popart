@@ -16,6 +16,7 @@
 #include <poponnx/tensordata.hpp>
 
 #include <chrono>
+#include <complex>
 #include <iostream>
 #include <random>
 
