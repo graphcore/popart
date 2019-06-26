@@ -30,11 +30,15 @@ enum class RecomputationType {
 };
 
 enum class MergeVarUpdateType {
-  None = 0, // Do not merge VarUpdate Ops
-  All,      // Merge all VarUpdate Ops into as few groups as possible.
-            // This is a good choice when memory is not a constraint
-  Auto,     // Merge into groups, attempting not to increase max-liveness
-  N         // The numbe of MergeVarUpdateTypes, must appear as the final enum
+  None = 0,  // Do not merge VarUpdate Ops
+  All,       // Merge all VarUpdate Ops into as few groups as possible.
+             // This is a good choice when memory is not a constraint
+  AutoLoose, // Merge into groups, attempting to not increase max-liveness in
+             // the process, and not slicing individual Var Tensors to be
+             // processed by different VarUpdateOps
+  AutoTight, // Merge into groups, so that VarUpdateOps process Tensors of
+             // exactly mergeVarUpdateMemThreshold in size
+  N          // The numbe of MergeVarUpdateTypes, must appear as the final enum
 };
 
 /**

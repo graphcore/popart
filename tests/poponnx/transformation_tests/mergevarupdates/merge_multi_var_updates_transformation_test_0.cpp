@@ -72,11 +72,17 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     std::array<TensorId, nConv + 1> actIds;
     actIds[0] = in0;
 
+    int64_t copyElms = 0;
+    int64_t sgdElms  = 0;
     for (int i = 0; i < nConv; ++i) {
       int nOutChans = nInChans + 1;
       TensorInfo conv_weight_info{
           "FLOAT", std::vector<int64_t>{nOutChans, nInChans, 1, 1}};
       TensorInfo bn_weight_info("FLOAT", std::vector<int64_t>{nOutChans});
+
+      copyElms += 2 * nOutChans;
+      sgdElms += 2 * nOutChans;
+      sgdElms += nOutChans * nInChans;
 
       convWeights[i] = std::vector<float>(nOutChans * nInChans, 0);
       for (auto &x : convWeights[i]) {
@@ -110,8 +116,9 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     opts.firstDotOp = 0;
     opts.finalDotOp = 200;
     opts.dotChecks.insert(DotCheck::FINAL);
-    opts.logDir         = ".";
-    opts.mergeVarUpdate = mvu;
+    opts.logDir                     = ".";
+    opts.mergeVarUpdate             = mvu;
+    opts.mergeVarUpdateMemThreshold = 24; // 24 bytes = 7 floats
 
     float lossLambda = 0.26;
     float learnRate  = 0.1;
@@ -159,7 +166,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
 
     } else if (mvu == MergeVarUpdateType::None) {
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SgdVarUpdate).size() ==
-                  nConv);
+                  3 * nConv);
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::CopyVarUpdate).size() ==
                   2 * nConv);
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::FlattenInplace).size() ==
@@ -167,7 +174,26 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size() ==
                   0);
     }
+
+    else if (mvu == MergeVarUpdateType::AutoTight) {
+      auto nSgd  = ir.opsOfType(Onnx::CustomOperators::SgdVarUpdate).size();
+      auto nCopy = ir.opsOfType(Onnx::CustomOperators::CopyVarUpdate).size();
+      auto thr   = opts.mergeVarUpdateMemThreshold;
+      std::cout << "copy elms : " << copyElms << std::endl;
+      std::cout << "sgd elms : " << sgdElms << std::endl;
+      std::cout << "nSgd : " << nSgd << std::endl;
+      std::cout << "nCopy : " << nCopy << std::endl;
+      std::cout << "memory threshold : " << thr << std::endl;
+      auto expectednsgd = (sgdElms * 4) / thr + ((sgdElms * 4) % thr != 0);
+      std::cout << "expected sgds : " << expectednsgd << std::endl;
+      auto expectedncopy = (copyElms * 4) / thr + ((copyElms * 4) % thr != 0);
+      std::cout << "expected copies : " << expectedncopy << std::endl;
+      BOOST_CHECK(nSgd == expectednsgd);
+      BOOST_CHECK(nCopy == expectedncopy);
+    }
   };
 
   test(MergeVarUpdateType::All);
+  test(MergeVarUpdateType::None);
+  test(MergeVarUpdateType::AutoTight);
 }

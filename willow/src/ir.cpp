@@ -614,9 +614,15 @@ void Ir::prepare(const IrBundle &gb) {
     updateTrainTargetOps();
     break;
   }
-  case (MergeVarUpdateType::Auto): {
-    enableTransform(MergeAutoVarUpdates::id(), true);
-    applyTransform(MergeAutoVarUpdates::id(), getMainGraph());
+  case (MergeVarUpdateType::AutoTight): {
+    enableTransform(MergeTightThreshold::id(), true);
+    applyTransform(MergeTightThreshold::id(), getMainGraph());
+    updateTrainTargetOps();
+    break;
+  }
+  case (MergeVarUpdateType::AutoLoose): {
+    enableTransform(MergeLooseThreshold::id(), true);
+    applyTransform(MergeLooseThreshold::id(), getMainGraph());
     updateTrainTargetOps();
     break;
   }

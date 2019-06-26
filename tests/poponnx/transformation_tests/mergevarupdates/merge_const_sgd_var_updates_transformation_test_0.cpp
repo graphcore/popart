@@ -55,16 +55,20 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
     // The model will be reduce(conv(conv(conv(conv(....(conv(input))...)))),
     // nConv convolutions chained together, with the number of
     // channels increasing by 1 at each subsequent conv.
-    constexpr int nConv = 5;
+    constexpr int nConv = 15;
     std::array<std::vector<float>, nConv> weights;
     std::array<ConstVoidData, nConv> cvds;
     std::array<TensorId, nConv + 1> actIds;
     actIds[0] = in0;
 
+    int64_t totalWeightElms = 0;
+
     for (int i = 0; i < nConv; ++i) {
       int nOutChans = nInChans + 1;
       TensorInfo weight_info{"FLOAT",
                              std::vector<int64_t>{nOutChans, nInChans, 1, 1}};
+
+      totalWeightElms += nOutChans * nInChans;
       weights[i] = std::vector<float>(nOutChans * nInChans, 0);
       for (auto &x : weights[i]) {
         x = fdis(eng);
@@ -87,6 +91,8 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
 
     auto opts           = SessionOptions();
     opts.mergeVarUpdate = mvu;
+
+    opts.mergeVarUpdateMemThreshold = 100;
 
     float lossLambda = 0.26;
     float learnRate  = 0.1;
@@ -134,8 +140,22 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size() ==
                   0);
     }
+
+    else if (mvu == MergeVarUpdateType::AutoTight) {
+
+      auto nConstSgds =
+          ir.opsOfType(Onnx::CustomOperators::ConstSgdVarUpdate).size();
+      std::cout << "total weight elms: " << totalWeightElms
+                << " threshold: " << opts.mergeVarUpdateMemThreshold
+                << " nConstSgds : " << nConstSgds;
+      auto weightsMem   = 4 * totalWeightElms;
+      bool notDivisible = (weightsMem % opts.mergeVarUpdateMemThreshold) != 0;
+      BOOST_CHECK((notDivisible +
+                   weightsMem / opts.mergeVarUpdateMemThreshold) == nConstSgds);
+    }
   };
 
   test(MergeVarUpdateType::All);
   test(MergeVarUpdateType::None);
+  test(MergeVarUpdateType::AutoTight);
 }

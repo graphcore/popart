@@ -206,6 +206,13 @@ SliceOp::SliceOp(const OperatorIdentifier &_opid,
                  const Op::Settings &settings_)
     : BaseSliceOp(_opid, starts_, ends_, axes_, settings_) {}
 
+SliceInplaceOp::SliceInplaceOp(const OperatorIdentifier &_opid,
+                               const std::vector<int64_t> &starts_,
+                               const std::vector<int64_t> &ends_,
+                               const std::vector<int64_t> &axes_,
+                               const Op::Settings &settings_)
+    : BaseSliceOp(_opid, starts_, ends_, axes_, settings_) {}
+
 std::vector<int64_t>
 BaseSliceOp::sanitizeAxes(const std::vector<int64_t> &starts,
                           std::vector<int64_t> axes) {
@@ -284,7 +291,10 @@ void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
   }
 }
 
-void BaseSliceOp::setup() { outInfo(getOutIndex()) = createOutShape(); }
+void BaseSliceOp::setup() {
+  outInfo(getOutIndex()) = createOutShape();
+  // TODO : check that shapes agree T9582
+}
 
 std::vector<std::unique_ptr<Op>> SliceInplaceOp::getGradOps() {
   throw error(
