@@ -1,6 +1,6 @@
+#include <memory>
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/concat.hpp>
 #include <poponnx/op/gather.hpp>
 #include <poponnx/op/reshape.hpp>
@@ -87,7 +87,7 @@ canonicalizeTranspose(const int64_t axis,
   std::iota(permutation.begin(), permutation.end(), 0);
   std::swap(permutation.front(), permutation[axis]);
 
-  return make_unique<TransposeOp>(
+  return std::make_unique<TransposeOp>(
       Onnx::Operators::Transpose_1, permutation, settings);
 }
 
@@ -99,7 +99,7 @@ canonicalizeShape(const int64_t axis,
       inputShape.begin(), inputShape.end(), 1, std::multiplies<int64_t>());
 
   const Shape canonShape = {inputShape[axis], numElements / inputShape[axis]};
-  return make_unique<ReshapeOp>(
+  return std::make_unique<ReshapeOp>(
       Onnx::Operators::Reshape_5, canonShape, settings);
 }
 
@@ -115,7 +115,7 @@ createSlices(const int64_t count, const int64_t stride, Op::Settings settings) {
     const std::vector<int64_t> ends_   = {(i + 1) * stride};
     const std::vector<int64_t> axes_   = {1};
 
-    slices.push_back(make_unique<SliceOp>(
+    slices.push_back(std::make_unique<SliceOp>(
         Onnx::Operators::Slice_1, starts_, ends_, axes_, settings));
   }
 
@@ -129,8 +129,8 @@ createGathers(const int64_t count, Op::Settings settings) {
 
   for (int i = 0; i < count; ++i) {
     settings.vgraphId = i;
-    gathers.push_back(
-        make_unique<SplitGatherOp>(Onnx::Operators::Gather_1, 0, settings));
+    gathers.push_back(std::make_unique<SplitGatherOp>(
+        Onnx::Operators::Gather_1, 0, settings));
   }
 
   return gathers;
@@ -145,7 +145,7 @@ decanonicalizeShape(const int64_t axis,
   origShape.erase(origShape.begin());
   origShape.insert(origShape.begin(), indicesShape.begin(), indicesShape.end());
 
-  return make_unique<ReshapeOp>(
+  return std::make_unique<ReshapeOp>(
       Onnx::Operators::Reshape_5, origShape, settings);
 }
 
@@ -160,7 +160,7 @@ decanonicalizeTranspose(const int64_t axis,
               permutation.begin() + indicesShape.size(),
               permutation.begin() + indicesShape.size() + axis);
 
-  return make_unique<TransposeOp>(
+  return std::make_unique<TransposeOp>(
       Onnx::Operators::Transpose_1, permutation, settings);
 }
 
@@ -228,8 +228,8 @@ bool SplitGatherPattern::apply(Op *op) const {
 
   // Concatenate the gathered fragments
   const auto concatDim = gather->inRank(1);
-  auto concat =
-      make_unique<ConcatOp>(Onnx::Operators::Concat_4, concatDim, op->settings);
+  auto concat          = std::make_unique<ConcatOp>(
+      Onnx::Operators::Concat_4, concatDim, op->settings);
   auto t3 = createIntermediateTensorId(outTensorId);
   for (int i = 0; i < split; ++i) {
     concat->connectInTensor(i, gatheredts[i]);

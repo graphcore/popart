@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/reduceprod.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -14,12 +14,13 @@ ReduceProdOp::ReduceProdOp(const OperatorIdentifier &_opid,
     : ReduceOp(_opid, axes_, keepdims_, settings_) {}
 
 std::unique_ptr<Op> ReduceProdOp::clone() const {
-  return make_unique<ReduceProdOp>(*this);
+  return std::make_unique<ReduceProdOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> ReduceProdOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
-  result.emplace_back(make_unique<ReduceProdGradOp>(*this, backward_shape));
+  result.emplace_back(
+      std::make_unique<ReduceProdGradOp>(*this, backward_shape));
   return result;
 }
 
@@ -29,7 +30,7 @@ ReduceProdGradOp::ReduceProdGradOp(const ReduceProdOp &fwdOp,
       axes(fwdOp.getAxes()) {}
 
 std::unique_ptr<Op> ReduceProdGradOp::clone() const {
-  return make_unique<ReduceProdGradOp>(*this);
+  return std::make_unique<ReduceProdGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &ReduceProdGradOp::gradInputInfo() const {

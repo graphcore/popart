@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/tanh.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -8,11 +8,13 @@ namespace poponnx {
 TanhOp::TanhOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
 
-std::unique_ptr<Op> TanhOp::clone() const { return make_unique<TanhOp>(*this); }
+std::unique_ptr<Op> TanhOp::clone() const {
+  return std::make_unique<TanhOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> TanhOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<TanhGradOp>(*this));
+  upops.emplace_back(std::make_unique<TanhGradOp>(*this));
   return upops;
 }
 
@@ -20,7 +22,7 @@ TanhGradOp::TanhGradOp(const TanhOp &fwdOp)
     : Op(Onnx::GradOperators::TanhGrad, fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> TanhGradOp::clone() const {
-  return make_unique<TanhGradOp>(*this);
+  return std::make_unique<TanhGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &TanhGradOp::gradInputInfo() const {

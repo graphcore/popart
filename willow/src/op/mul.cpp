@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/mul.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -11,7 +11,9 @@ MulOp::MulOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
   // TODO : Use the attributes in Mul-6
 }
 
-std::unique_ptr<Op> MulOp::clone() const { return make_unique<MulOp>(*this); }
+std::unique_ptr<Op> MulOp::clone() const {
+  return std::make_unique<MulOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> MulOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -20,9 +22,9 @@ std::vector<std::unique_ptr<Op>> MulOp::getGradOps() {
   const auto &shape_in_1   = inShape(getArg1InIndex());
   const auto &shape_output = outShape(getOutIndex());
 
-  upops.emplace_back(make_unique<MulArg0GradOp>(
+  upops.emplace_back(std::make_unique<MulArg0GradOp>(
       *this, npReductionAxis(shape_in_0, shape_output)));
-  upops.emplace_back(make_unique<MulArg1GradOp>(
+  upops.emplace_back(std::make_unique<MulArg1GradOp>(
       *this, npReductionAxis(shape_in_1, shape_output)));
   return upops;
 }
@@ -56,7 +58,7 @@ MulArg0GradOp::MulArg0GradOp(const MulOp &op_,
                    op_.getSettings()) {}
 
 std::unique_ptr<Op> MulArg0GradOp::clone() const {
-  return make_unique<MulArg0GradOp>(*this);
+  return std::make_unique<MulArg0GradOp>(*this);
 }
 
 const std::map<int, int> &MulArg0GradOp::gradOutToNonGradIn() const {
@@ -80,7 +82,7 @@ MulArg1GradOp::MulArg1GradOp(const MulOp &op_,
                    op_.getSettings()) {}
 
 std::unique_ptr<Op> MulArg1GradOp::clone() const {
-  return make_unique<MulArg1GradOp>(*this);
+  return std::make_unique<MulArg1GradOp>(*this);
 }
 
 const std::map<int, int> &MulArg1GradOp::gradOutToNonGradIn() const {

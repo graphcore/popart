@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/subtract.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -12,7 +12,7 @@ SubtractOp::SubtractOp(const OperatorIdentifier &_opid,
 }
 
 std::unique_ptr<Op> SubtractOp::clone() const {
-  return make_unique<SubtractOp>(*this);
+  return std::make_unique<SubtractOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> SubtractOp::getGradOps() {
@@ -21,9 +21,9 @@ std::vector<std::unique_ptr<Op>> SubtractOp::getGradOps() {
   const auto &shape_a0 = inShape(SubtractOp::getArg0InIndex());
   const auto &shape_o0 = outShape(SubtractOp::getOutIndex());
 
-  upops.emplace_back(make_unique<SubtractArg0GradOp>(
+  upops.emplace_back(std::make_unique<SubtractArg0GradOp>(
       *this, npReductionAxis(shape_a0, shape_o0)));
-  upops.emplace_back(make_unique<SubtractArg1GradOp>(*this));
+  upops.emplace_back(std::make_unique<SubtractArg1GradOp>(*this));
 
   return upops;
 }
@@ -73,7 +73,7 @@ const std::vector<GradInOutMapper> &SubtractArg1GradOp::gradInputInfo() const {
 }
 
 std::unique_ptr<Op> SubtractArg1GradOp::clone() const {
-  return make_unique<SubtractArg1GradOp>(*this);
+  return std::make_unique<SubtractArg1GradOp>(*this);
 }
 
 void SubtractArg1GradOp::setup() {

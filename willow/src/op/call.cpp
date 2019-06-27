@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/call.hpp>
 #include <poponnx/opserialiser.hpp>
 #include <poponnx/scope.hpp>
@@ -34,7 +34,9 @@ CallOp::CallOp(Graph &parent_, Graph &callee_)
 
 void CallOp::setup() {}
 
-std::unique_ptr<Op> CallOp::clone() const { return make_unique<CallOp>(*this); }
+std::unique_ptr<Op> CallOp::clone() const {
+  return std::make_unique<CallOp>(*this);
+}
 
 const Graph &CallOp::getCalledGraph() const { return callee.get(); }
 

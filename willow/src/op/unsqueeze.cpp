@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/unsqueeze.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -12,12 +12,12 @@ UnsqueezeOp::UnsqueezeOp(const OperatorIdentifier &_opid,
 
 std::vector<std::unique_ptr<Op>> UnsqueezeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<UnsqueezeGradOp>(*this));
+  upops.emplace_back(std::make_unique<UnsqueezeGradOp>(*this));
   return upops;
 }
 
 std::unique_ptr<Op> UnsqueezeOp::clone() const {
-  return make_unique<UnsqueezeOp>(*this);
+  return std::make_unique<UnsqueezeOp>(*this);
 }
 
 void UnsqueezeOp::setup() {
@@ -33,7 +33,7 @@ void UnsqueezeOp::appendAttributes(OpSerialiserBase &os) const {
 void UnsqueezeGradOp::setup() { outInfo(getOutIndex()) = squeezedInfo; }
 
 std::unique_ptr<Op> UnsqueezeGradOp::clone() const {
-  return make_unique<UnsqueezeGradOp>(*this);
+  return std::make_unique<UnsqueezeGradOp>(*this);
 }
 
 UnsqueezeGradOp::UnsqueezeGradOp(const UnsqueezeOp &op_)

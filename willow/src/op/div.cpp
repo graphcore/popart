@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/div.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -10,7 +10,9 @@ DivOp::DivOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
   // TODO : Use the attributes in Div-6
 }
 
-std::unique_ptr<Op> DivOp::clone() const { return make_unique<DivOp>(*this); }
+std::unique_ptr<Op> DivOp::clone() const {
+  return std::make_unique<DivOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> DivOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -19,9 +21,9 @@ std::vector<std::unique_ptr<Op>> DivOp::getGradOps() {
   const auto &shape_in_1   = inShape(getArg1InIndex());
   const auto &shape_output = outShape(getOutIndex());
 
-  upops.emplace_back(make_unique<DivArg0GradOp>(
+  upops.emplace_back(std::make_unique<DivArg0GradOp>(
       *this, npReductionAxis(shape_in_0, shape_output)));
-  upops.emplace_back(make_unique<DivArg1GradOp>(
+  upops.emplace_back(std::make_unique<DivArg1GradOp>(
       *this, npReductionAxis(shape_in_1, shape_output)));
   return upops;
 }
@@ -47,7 +49,7 @@ DivArg0GradOp::DivArg0GradOp(const DivOp &op,
                    op.getSettings()) {}
 
 std::unique_ptr<Op> DivArg0GradOp::clone() const {
-  return make_unique<DivArg0GradOp>(*this);
+  return std::make_unique<DivArg0GradOp>(*this);
 }
 
 const std::map<int, int> &DivArg0GradOp::gradOutToNonGradIn() const {
@@ -71,7 +73,7 @@ DivArg1GradOp::DivArg1GradOp(const DivOp &op,
                    op.getSettings()) {}
 
 std::unique_ptr<Op> DivArg1GradOp::clone() const {
-  return make_unique<DivArg1GradOp>(*this);
+  return std::make_unique<DivArg1GradOp>(*this);
 }
 
 const std::map<int, int> &DivArg1GradOp::gradOutToNonGradIn() const {

@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/squeeze.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -21,12 +21,12 @@ void SqueezeOp::setAxesToDefault() {
 
 std::vector<std::unique_ptr<Op>> SqueezeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SqueezeGradOp>(*this));
+  upops.emplace_back(std::make_unique<SqueezeGradOp>(*this));
   return upops;
 }
 
 std::unique_ptr<Op> SqueezeOp::clone() const {
-  return make_unique<SqueezeOp>(*this);
+  return std::make_unique<SqueezeOp>(*this);
 }
 
 void SqueezeOp::setup() {
@@ -46,7 +46,7 @@ void SqueezeOp::appendAttributes(OpSerialiserBase &os) const {
 void SqueezeGradOp::setup() { outInfo(getOutIndex()) = unsqueezedInfo; }
 
 std::unique_ptr<Op> SqueezeGradOp::clone() const {
-  return make_unique<SqueezeGradOp>(*this);
+  return std::make_unique<SqueezeGradOp>(*this);
 }
 
 SqueezeGradOp::SqueezeGradOp(const SqueezeOp &op_)

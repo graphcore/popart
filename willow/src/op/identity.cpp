@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -10,12 +10,12 @@ IdentityOp::IdentityOp(const OperatorIdentifier &_opid,
     : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> IdentityOp::clone() const {
-  return make_unique<IdentityOp>(*this);
+  return std::make_unique<IdentityOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> IdentityOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<IdentityGradOp>(*this));
+  upops.emplace_back(std::make_unique<IdentityGradOp>(*this));
   return upops;
 }
 
@@ -23,7 +23,7 @@ IdentityGradOp::IdentityGradOp(const IdentityOp &fwdOp)
     : IdentityOp(Onnx::GradOperators::IdentityGrad, fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> IdentityGradOp::clone() const {
-  return make_unique<IdentityGradOp>(*this);
+  return std::make_unique<IdentityGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &IdentityGradOp::gradInputInfo() const {

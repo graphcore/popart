@@ -1,10 +1,10 @@
 #include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/range/algorithm/find.hpp>
 
+#include <memory>
 #include <poponnx/error.hpp>
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/op/call.hpp>
@@ -329,7 +329,7 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
   }
 
   // Create the call op
-  auto up_call_op = make_unique<CallOp>(graph, subgraph);
+  auto up_call_op = std::make_unique<CallOp>(graph, subgraph);
   auto call_op_id = graph.moveIntoGraph(std::move(up_call_op));
   auto call_op    = graph.getOp(call_op_id);
   call_op->setPhase(phase);

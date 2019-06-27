@@ -1,6 +1,6 @@
+#include <memory>
 #include <poponnx/attributes.hpp>
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/dropout.hpp>
 #include <poponnx/patterns/dropoutgradoppattern.hpp>
 #include <poponnx/tensor.hpp>

@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/min.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensorindex.hpp>
@@ -8,10 +8,12 @@ namespace poponnx {
 MinOp::MinOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : VariadicOp(_opid, settings_) {}
 
-std::unique_ptr<Op> MinOp::clone() const { return make_unique<MinOp>(*this); }
+std::unique_ptr<Op> MinOp::clone() const {
+  return std::make_unique<MinOp>(*this);
+}
 
 std::unique_ptr<Op> MinOp::getIthGrad(int i) const {
-  return make_unique<MinArgGradOp>(*this, i);
+  return std::make_unique<MinArgGradOp>(*this, i);
 }
 
 MinArgGradOp::MinArgGradOp(const MinOp &op_, InIndex inputIndex)
@@ -20,7 +22,7 @@ MinArgGradOp::MinArgGradOp(const MinOp &op_, InIndex inputIndex)
                               inputIndex) {}
 
 std::unique_ptr<Op> MinArgGradOp::clone() const {
-  return make_unique<MinArgGradOp>(*this);
+  return std::make_unique<MinArgGradOp>(*this);
 }
 
 namespace {

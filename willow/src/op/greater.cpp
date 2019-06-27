@@ -1,5 +1,5 @@
+#include <memory>
 #include <vector>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/greater.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -11,7 +11,7 @@ GreaterOp::GreaterOp(const OperatorIdentifier &_opid,
     : BinaryComparisonOp(_opid, settings_) {}
 
 std::unique_ptr<Op> GreaterOp::clone() const {
-  return make_unique<GreaterOp>(*this);
+  return std::make_unique<GreaterOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> GreaterOp::getGradOps() {

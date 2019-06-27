@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/argmin.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -6,7 +6,7 @@
 namespace poponnx {
 
 std::unique_ptr<Op> ArgMinOp::clone() const {
-  return make_unique<ArgMinOp>(*this);
+  return std::make_unique<ArgMinOp>(*this);
 }
 
 namespace {
@@ -16,7 +16,7 @@ std::unique_ptr<Op> argMinFactory(const OperatorIdentifier &_opid,
   int64_t axis     = attr.getAttribute<Attributes::Int>("axis", 0);
   int64_t keepdims = attr.getAttribute<Attributes::Int>("keepdims", 1);
 
-  return make_unique<ArgMinOp>(_opid, axis, keepdims, settings);
+  return std::make_unique<ArgMinOp>(_opid, axis, keepdims, settings);
 }
 
 static OpCreator<ArgMinOp>

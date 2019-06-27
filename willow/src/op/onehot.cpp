@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/onehot.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -15,7 +15,7 @@ OnehotOp::OnehotOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_), axis(axis_) {}
 
 std::unique_ptr<Op> OnehotOp::clone() const {
-  return make_unique<OnehotOp>(*this);
+  return std::make_unique<OnehotOp>(*this);
 }
 
 void OnehotOp::setup() {
@@ -73,7 +73,7 @@ void OnehotOp::connectInTensor(InIndex inIndex, TensorId tenId) {
 
 std::vector<std::unique_ptr<Op>> OnehotOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<OnehotGradOp>(*this));
+  upops.emplace_back(std::make_unique<OnehotGradOp>(*this));
   return upops;
 }
 
@@ -89,7 +89,7 @@ OnehotGradOp::OnehotGradOp(const OnehotOp &fwdOp_)
       outputShape(fwdOp_.inInfo(OnehotOp::getValuesInIndex()).shape()) {}
 
 std::unique_ptr<Op> OnehotGradOp::clone() const {
-  return make_unique<OnehotGradOp>(*this);
+  return std::make_unique<OnehotGradOp>(*this);
 }
 
 void OnehotGradOp::setup() {

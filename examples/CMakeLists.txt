@@ -1,5 +1,7 @@
+
 # for more useful warnings
 include(EnableCompilerWarnings)
+
 
 add_custom_target(poponnx_examples)
 add_custom_command(TARGET poponnx_examples
@@ -62,7 +64,7 @@ set(urlbase "https://s3.amazonaws.com/download.onnx/models/opset_9")
 
 
 ## cpp examples
-set (CMAKE_CXX_STANDARD 11)
+set (CMAKE_CXX_STANDARD 14)
 
 function(add_poponnx_cpp_example name)
   message(STATUS

@@ -1,3 +1,4 @@
+#include <memory>
 #include <onnx/onnx_pb.h>
 #include <poponnx/attributes.hpp>
 #include <poponnx/ces/addce.hpp>
@@ -13,7 +14,6 @@
 #include <poponnx/error.hpp>
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/onnxutil.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -138,7 +138,7 @@ void ConstExprOpManager::registerConstExprOp(const std::string &type,
 template <typename T>
 void ConstExprOpManager::registerConstOp(const std::string &type) {
   registerConstExprOpImpl(type, [](Op *op) -> std::unique_ptr<ConstExprOp> {
-    return make_unique<T>(op);
+    return std::make_unique<T>(op);
   });
 }
 

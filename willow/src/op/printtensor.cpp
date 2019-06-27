@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/printtensor.hpp>
 #include <poponnx/opmanager.hpp>
@@ -14,7 +14,7 @@ PrintTensorOp::PrintTensorOp(const OperatorIdentifier &opid_,
       printGradient(printGradient_) {}
 
 std::unique_ptr<Op> PrintTensorOp::clone() const {
-  return make_unique<PrintTensorOp>(*this);
+  return std::make_unique<PrintTensorOp>(*this);
 }
 
 void PrintTensorOp::appendAttributes(OpSerialiserBase &os) const {
@@ -26,10 +26,10 @@ void PrintTensorOp::appendAttributes(OpSerialiserBase &os) const {
 std::vector<std::unique_ptr<Op>> PrintTensorOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
   upops.emplace_back(
-      make_unique<PrintTensorOp>(Onnx::CustomOperators::PrintTensor_1,
-                                 printGradient,
-                                 printGradient,
-                                 getSettings()));
+      std::make_unique<PrintTensorOp>(Onnx::CustomOperators::PrintTensor_1,
+                                      printGradient,
+                                      printGradient,
+                                      getSettings()));
   return upops;
 }
 

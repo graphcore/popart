@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <vector>
 
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/argmax.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -9,7 +9,7 @@
 namespace poponnx {
 
 std::unique_ptr<Op> ArgMaxOp::clone() const {
-  return make_unique<ArgMaxOp>(*this);
+  return std::make_unique<ArgMaxOp>(*this);
 }
 
 namespace {
@@ -19,7 +19,7 @@ std::unique_ptr<Op> argMaxFactory(const OperatorIdentifier &_opid,
   int64_t axis     = attr.getAttribute<Attributes::Int>("axis", 0);
   int64_t keepdims = attr.getAttribute<Attributes::Int>("keepdims", 1);
 
-  return make_unique<ArgMaxOp>(_opid, axis, keepdims, settings);
+  return std::make_unique<ArgMaxOp>(_opid, axis, keepdims, settings);
 }
 
 static OpCreator<ArgMaxOp>

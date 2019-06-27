@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/pad.hpp>
 #include <poponnx/op/padgrad.hpp>
 #include <poponnx/opmanager.hpp>
@@ -22,13 +22,15 @@ PadOp::PadOp(const OperatorIdentifier &_opid,
              const Op::Settings &settings_)
     : BasePadOp(_opid, _pads, value_, _mode, settings_) {}
 
-std::unique_ptr<Op> PadOp::clone() const { return make_unique<PadOp>(*this); }
+std::unique_ptr<Op> PadOp::clone() const {
+  return std::make_unique<PadOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> PadOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
 
   if (getMode() == "constant") {
-    upops.emplace_back(make_unique<PadGradOp>(*this));
+    upops.emplace_back(std::make_unique<PadGradOp>(*this));
   } else {
     // TODO : T6631 Add support for other grad op when mode is "Reflect" &
     // "Edge". May define different pad grad op classes for the different modes
@@ -40,7 +42,7 @@ std::vector<std::unique_ptr<Op>> PadOp::getGradOps() {
 std::unique_ptr<Op>
 PadOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::PadInplace) {
-    return make_unique<PadInplaceOp>(*this);
+    return std::make_unique<PadInplaceOp>(*this);
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
@@ -107,7 +109,7 @@ view::Region PadInplaceOp::uses(InIndex index) const {
 }
 
 std::unique_ptr<Op> PadInplaceOp::clone() const {
-  return make_unique<PadInplaceOp>(*this);
+  return std::make_unique<PadInplaceOp>(*this);
 }
 
 std::vector<std::tuple<OperatorIdentifier, float>>
@@ -197,7 +199,7 @@ PadGradOp::PadGradOp(const PadOp &fwdOp)
               fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> PadGradOp::clone() const {
-  return make_unique<PadGradOp>(*this);
+  return std::make_unique<PadGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &PadGradOp::gradInputInfo() const {

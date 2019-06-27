@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/error.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/onehot.hpp>
 #include <poponnx/popx/op/onehotx.hpp>
 #include <poponnx/popx/opxmanager.hpp>

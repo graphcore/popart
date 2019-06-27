@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/onnxutil.hpp>
 #include <poponnx/op/cast.hpp>
 #include <poponnx/opmanager.hpp>
@@ -10,11 +10,13 @@ CastOp::CastOp(const OperatorIdentifier &_opid,
                const Op::Settings &settings_)
     : Op(_opid, settings_), to(_to) {}
 
-std::unique_ptr<Op> CastOp::clone() const { return make_unique<CastOp>(*this); }
+std::unique_ptr<Op> CastOp::clone() const {
+  return std::make_unique<CastOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> CastOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<CastGradOp>(*this));
+  upops.emplace_back(std::make_unique<CastGradOp>(*this));
   return upops;
 }
 
@@ -26,7 +28,7 @@ CastGradOp::CastGradOp(const CastOp &fwdOp)
              fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> CastGradOp::clone() const {
-  return make_unique<CastGradOp>(*this);
+  return std::make_unique<CastGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &CastGradOp::gradInputInfo() const {
@@ -54,7 +56,7 @@ static OpCreator<CastOp> castOpCreator(
       auto tpdt_to   = static_cast<onnx::TensorProto_DataType>(i64_to);
       DataType dt_to = onnxutil::getDataType(tpdt_to);
 
-      return make_unique<CastOp>(opid, dt_to, settings);
+      return std::make_unique<CastOp>(opid, dt_to, settings);
     },
     true);
 } // namespace

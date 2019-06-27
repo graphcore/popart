@@ -1,7 +1,7 @@
+#include <memory>
 #include <spdlog/fmt/fmt.h>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/lstm.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/lstmx.hpp>
@@ -24,7 +24,7 @@ LSTMOpx::LSTMOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 // Only create an intermediate tensor if it is consumed or used as a anchor
 std::unique_ptr<poplar::Tensor> LSTMOpx::createIntermediate() const {
   if (getOp<LSTMOp>().isTraining()) {
-    return make_unique<poplar::Tensor>();
+    return std::make_unique<poplar::Tensor>();
   } else {
     return std::unique_ptr<poplar::Tensor>(nullptr);
   }

@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/scale.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -20,7 +20,7 @@ ScaleInplaceOp::ScaleInplaceOp(const ScaleOp &scale_op)
 std::unique_ptr<Op>
 ScaleOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::ScaleInplace) {
-    return make_unique<ScaleInplaceOp>(*this);
+    return std::make_unique<ScaleInplaceOp>(*this);
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
@@ -32,12 +32,12 @@ ScaleOp::ScaleOp(const OperatorIdentifier &_opid,
     : ElementWiseUnaryOp(_opid, settings_), scale_factor(scale_) {}
 
 std::unique_ptr<Op> ScaleOp::clone() const {
-  return make_unique<ScaleOp>(*this);
+  return std::make_unique<ScaleOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> ScaleOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<ScaleGradOp>(*this));
+  upops.emplace_back(std::make_unique<ScaleGradOp>(*this));
   return upops;
 }
 
@@ -55,7 +55,7 @@ void ScaleInplaceOp::appendAttributes(OpSerialiserBase &os) const {
 }
 
 std::unique_ptr<Op> ScaleInplaceOp::clone() const {
-  return make_unique<ScaleInplaceOp>(*this);
+  return std::make_unique<ScaleInplaceOp>(*this);
 }
 
 // A scale with a scale factor of +1 can be replaced by identity
@@ -67,7 +67,7 @@ ScaleGradOp::ScaleGradOp(const ScaleOp &fwdOp)
               fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> ScaleGradOp::clone() const {
-  return make_unique<ScaleGradOp>(*this);
+  return std::make_unique<ScaleGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &ScaleGradOp::gradInputInfo() const {

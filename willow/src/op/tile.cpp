@@ -1,8 +1,8 @@
+#include <memory>
 #include <numeric>
 #include <onnx/onnx_pb.h>
 #include <poponnx/error.hpp>
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/tile.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -26,11 +26,13 @@ const std::vector<int64_t> &TileOp::getRepeats() const { return repeats; }
 
 std::vector<std::unique_ptr<Op>> TileOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<TileGradOp>(*this));
+  upops.emplace_back(std::make_unique<TileGradOp>(*this));
   return upops;
 }
 
-std::unique_ptr<Op> TileOp::clone() const { return make_unique<TileOp>(*this); }
+std::unique_ptr<Op> TileOp::clone() const {
+  return std::make_unique<TileOp>(*this);
+}
 
 void TileOp::setup() {
   // output type  : same as input type;

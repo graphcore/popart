@@ -4,6 +4,7 @@
 #include <random>
 #include <set>
 
+#include <memory>
 #include <poplin/codelets.hpp>
 #include <popnn/codelets.hpp>
 #include <popops/ElementWise.hpp>
@@ -18,7 +19,6 @@
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/op/call.hpp>
 #include <poponnx/op/if.hpp>
@@ -51,7 +51,7 @@ public:
         reportOptions(_reportOptions) {}
 
   std::unique_ptr<memory_allocation_err> clone() const {
-    return make_unique<devicex_memory_allocation_err>(*this);
+    return std::make_unique<devicex_memory_allocation_err>(*this);
   }
 
   std::string getSummaryReport() const {

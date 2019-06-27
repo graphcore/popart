@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/add.hpp>
 #include <poponnx/op/gemm.hpp>
 #include <poponnx/op/matmul.hpp>

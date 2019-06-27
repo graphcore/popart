@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/div.hpp>
 #include <poponnx/op/log.hpp>
 #include <poponnx/patterns/loggradoppattern.hpp>

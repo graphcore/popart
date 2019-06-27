@@ -1,8 +1,8 @@
+#include <memory>
 #include <numeric>
 #include <onnx/onnx_pb.h>
 #include <poponnx/error.hpp>
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/reshape.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -13,7 +13,7 @@ namespace poponnx {
 std::unique_ptr<Op>
 ReshapeOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::ReshapeInplace) {
-    return make_unique<ReshapeInplaceOp>(*this);
+    return std::make_unique<ReshapeInplaceOp>(*this);
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
@@ -63,11 +63,11 @@ ReshapeInplaceOp::ReshapeInplaceOp(const ReshapeOp &op)
                     op.settings) {}
 
 std::unique_ptr<Op> ReshapeInplaceOp::clone() const {
-  return make_unique<ReshapeInplaceOp>(*this);
+  return std::make_unique<ReshapeInplaceOp>(*this);
 }
 
 std::unique_ptr<Op> ReshapeOp::clone() const {
-  return make_unique<ReshapeOp>(*this);
+  return std::make_unique<ReshapeOp>(*this);
 }
 
 // This will be used by ReshapeGradOp
@@ -106,7 +106,7 @@ void ReshapeBaseOp::finaliseShape() {
 
 std::vector<std::unique_ptr<Op>> ReshapeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<ReshapeGradOp>(*this));
+  upops.emplace_back(std::make_unique<ReshapeGradOp>(*this));
   return upops;
 }
 

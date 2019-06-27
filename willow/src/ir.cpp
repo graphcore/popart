@@ -170,7 +170,8 @@ IrBundle::IrBundle(const onnx::ModelProto &modelProto_,
       deviceInfo(deviceInfo_), userOptions(userOptions_), patterns(patterns_) {}
 
 Ir::Ir() : onnxModel(nullptr) {
-  graphs.insert({GraphId::root(), make_unique<Graph>(*this, GraphId::root())});
+  graphs.insert(
+      {GraphId::root(), std::make_unique<Graph>(*this, GraphId::root())});
 }
 
 void Ir::setOnnxModel(const onnx::ModelProto &model) {
@@ -1000,7 +1001,7 @@ Graph &Ir::constructFromOnnxGraph(const onnx::GraphProto &graph,
   auto scope_id = scope.str();
   if (graphs.find(scope_id) == graphs.end()) {
     logging::ir::debug("Adding new graph for scope {}", scope_id);
-    graphs.insert({scope_id, make_unique<Graph>(*this, scope_id)});
+    graphs.insert({scope_id, std::make_unique<Graph>(*this, scope_id)});
   }
 
   graphs.at(scope_id)->constructFromOnnxGraph(graph);
@@ -2131,7 +2132,7 @@ Graph &Ir::createGraph(const GraphId &graphId) {
     throw error("Graph({}) is already in Ir", graphId);
   }
 
-  graphs.insert({graphId, make_unique<Graph>(*this, graphId)});
+  graphs.insert({graphId, std::make_unique<Graph>(*this, graphId)});
   return getGraph(graphId);
 }
 

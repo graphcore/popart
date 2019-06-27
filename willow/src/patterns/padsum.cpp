@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/add.hpp>
 #include <poponnx/op/concat.hpp>
 #include <poponnx/op/pad.hpp>
@@ -269,7 +269,7 @@ static std::vector<std::unique_ptr<PadOp>> createPadOps(
                                             paddingIntervals.end());
     }
 
-    result[i] = make_unique<PadOp>(
+    result[i] = std::make_unique<PadOp>(
         Onnx::Operators::Pad_2, padding, 0, "constant", settings);
   }
 
@@ -288,7 +288,7 @@ createConcatOp(int64_t axis,
                const TensorId outTensor,
                const Op::Settings &settings) {
   // Create the concat op
-  std::unique_ptr<ConcatOp> concat = make_unique<ConcatOp>(
+  std::unique_ptr<ConcatOp> concat = std::make_unique<ConcatOp>(
       poponnx::Onnx::AiOnnx::OpSet9::Concat, axis, settings);
 
   // Connect the concat op to the input and output tensors

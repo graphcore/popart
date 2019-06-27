@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/reducemean.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -14,12 +14,13 @@ ReduceMeanOp::ReduceMeanOp(const OperatorIdentifier &_opid,
     : ReduceOp(_opid, axes_, keepdims_, settings_) {}
 
 std::unique_ptr<Op> ReduceMeanOp::clone() const {
-  return make_unique<ReduceMeanOp>(*this);
+  return std::make_unique<ReduceMeanOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> ReduceMeanOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
-  result.emplace_back(make_unique<ReduceMeanGradOp>(*this, backward_shape));
+  result.emplace_back(
+      std::make_unique<ReduceMeanGradOp>(*this, backward_shape));
   return result;
 }
 
@@ -30,7 +31,7 @@ ReduceMeanGradOp::ReduceMeanGradOp(const ReduceMeanOp &fwdOp,
                    backward_shape_) {}
 
 std::unique_ptr<Op> ReduceMeanGradOp::clone() const {
-  return make_unique<ReduceMeanGradOp>(*this);
+  return std::make_unique<ReduceMeanGradOp>(*this);
 }
 
 namespace {

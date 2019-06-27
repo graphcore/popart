@@ -1,6 +1,6 @@
 #include <limits>
+#include <memory>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/varupdate.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -52,7 +52,7 @@ SGDVarUpdateOp::SGDVarUpdateOp(TensorId varId_, const Op::Settings &settings_)
     : VarUpdateOp(Onnx::CustomOperators::SgdVarUpdate, varId_, settings_) {}
 
 std::unique_ptr<Op> SGDVarUpdateOp::clone() const {
-  return make_unique<SGDVarUpdateOp>(*this);
+  return std::make_unique<SGDVarUpdateOp>(*this);
 }
 
 ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_,
@@ -67,14 +67,14 @@ float ConstSGDVarUpdateOp::getLearnRate() const { return learnRate; }
 float ConstSGDVarUpdateOp::getWeightDecay() const { return weightDecay; }
 
 std::unique_ptr<Op> ConstSGDVarUpdateOp::clone() const {
-  return make_unique<ConstSGDVarUpdateOp>(*this);
+  return std::make_unique<ConstSGDVarUpdateOp>(*this);
 }
 
 CopyVarUpdateOp::CopyVarUpdateOp(TensorId varId_, const Op::Settings &settings_)
     : VarUpdateOp(Onnx::CustomOperators::CopyVarUpdate, varId_, settings_) {}
 
 std::unique_ptr<Op> CopyVarUpdateOp::clone() const {
-  return make_unique<CopyVarUpdateOp>(*this);
+  return std::make_unique<CopyVarUpdateOp>(*this);
 }
 
 namespace {} // namespace

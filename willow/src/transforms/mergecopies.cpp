@@ -1,8 +1,8 @@
 #include <boost/range/algorithm.hpp>
 
+#include <memory>
 #include <poponnx/error.hpp>
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/op/ipucopy.hpp>
@@ -23,7 +23,7 @@ static bool isCopyTensor(const Tensor *t) {
 static IpuCopyOp *
 createCopyOp(Graph &graph, uint64_t from_ipu, uint64_t to_ipu) {
   Op::Settings settings(graph, "");
-  auto ipuCopy_op = make_unique<IpuCopyOp>(
+  auto ipuCopy_op = std::make_unique<IpuCopyOp>(
       Onnx::CustomOperators::IpuCopy, from_ipu, to_ipu, settings);
   auto ipuCopy = ipuCopy_op.get();
   graph.moveIntoGraph(std::move(ipuCopy_op));

@@ -1,8 +1,8 @@
 #include <tuple>
 
+#include <memory>
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/concat.hpp>
 #include <poponnx/op/flatten.hpp>
 #include <poponnx/op/slice.hpp>
@@ -534,7 +534,7 @@ bool MergeVarUpdates::apply(Graph &graph) const {
                                  VarUpdateStartEnd::Start start,
                                  VarUpdateStartEnd::End end) {
           // create FlattenInplaceOp
-          auto tempFlattenOp = make_unique<FlattenInplaceOp>(
+          auto tempFlattenOp = std::make_unique<FlattenInplaceOp>(
               Onnx::CustomOperators::FlattenInplace,
               flattenAxis,
               canonSettings);
@@ -562,7 +562,7 @@ bool MergeVarUpdates::apply(Graph &graph) const {
           //
           if (end - start != tensor->info.nelms()) {
 
-            auto tempSliceOp = make_unique<SliceInplaceOp>(
+            auto tempSliceOp = std::make_unique<SliceInplaceOp>(
                 Onnx::CustomOperators::SliceInplace,
                 std::vector<int64_t>{start}, // starts
                 std::vector<int64_t>{end},   // ends

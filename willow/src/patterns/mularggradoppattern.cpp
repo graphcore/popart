@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/mul.hpp>
 #include <poponnx/patterns/mularggradoppattern.hpp>
 #include <poponnx/tensor.hpp>

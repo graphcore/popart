@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/gather.hpp>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/pad.hpp>

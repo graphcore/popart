@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/addbias.hpp>
 #include <poponnx/op/conv.hpp>
 #include <poponnx/patterns/convdatagrad.hpp>

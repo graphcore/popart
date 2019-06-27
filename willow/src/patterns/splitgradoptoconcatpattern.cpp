@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/concat.hpp>
 #include <poponnx/op/gather.hpp>
 #include <poponnx/op/identity.hpp>
@@ -26,7 +26,7 @@ SplitGradOpToConcatPattern::sequence(Op *op) const {
   std::vector<std::unique_ptr<Op>> seq;
 
   auto axis = splitGradOp->getAxis();
-  seq.push_back(make_unique<ConcatOp>(
+  seq.push_back(std::make_unique<ConcatOp>(
       Onnx::Operators::Concat_4, axis, op->getSettings()));
 
   return seq;

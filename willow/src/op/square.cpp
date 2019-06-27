@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/square.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>

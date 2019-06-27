@@ -1,6 +1,6 @@
+#include <memory>
 #include <utility>
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/mul.hpp>
 #include <poponnx/op/negate.hpp>
 #include <poponnx/op/reciprocal.hpp>

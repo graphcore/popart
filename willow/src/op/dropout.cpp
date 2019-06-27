@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/dropout.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -15,7 +15,7 @@ DropoutOp::DropoutOp(const OperatorIdentifier &_opid,
 }
 
 std::unique_ptr<Op> DropoutOp::clone() const {
-  return make_unique<DropoutOp>(*this);
+  return std::make_unique<DropoutOp>(*this);
 }
 
 void DropoutOp::setup() {
@@ -32,7 +32,7 @@ void DropoutOp::setup() {
 
 std::vector<std::unique_ptr<Op>> DropoutOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<DropoutGradOp>(*this));
+  upops.emplace_back(std::make_unique<DropoutGradOp>(*this));
   return upops;
 }
 
@@ -58,7 +58,7 @@ DropoutGradOp::DropoutGradOp(const DropoutOp &fwdOp)
       ratio(fwdOp.getRatio()), seedModifier(fwdOp.getSeedModifier()) {}
 
 std::unique_ptr<Op> DropoutGradOp::clone() const {
-  return make_unique<DropoutGradOp>(*this);
+  return std::make_unique<DropoutGradOp>(*this);
 }
 
 void DropoutGradOp::setup() {

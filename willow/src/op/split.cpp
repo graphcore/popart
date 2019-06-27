@@ -1,6 +1,6 @@
 #include <boost/range/numeric.hpp>
 
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/split.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -45,7 +45,7 @@ void SplitOp::setup() {
 }
 
 std::unique_ptr<Op> SplitOp::clone() const {
-  return make_unique<SplitOp>(*this);
+  return std::make_unique<SplitOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> SplitOp::getGradOps() {
@@ -53,7 +53,7 @@ std::vector<std::unique_ptr<Op>> SplitOp::getGradOps() {
   std::map<int, int> outInfoMap;
 
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SplitGradOp>(*this, getSettings()));
+  upops.emplace_back(std::make_unique<SplitGradOp>(*this, getSettings()));
   return upops;
 }
 
@@ -90,7 +90,7 @@ SplitGradOp::SplitGradOp(const SplitOp &fwdOp, const Op::Settings &settings_)
 void SplitGradOp::setup() { outInfo(getOutIndex()) = fwdOpInInfo; }
 
 std::unique_ptr<Op> SplitGradOp::clone() const {
-  return make_unique<SplitGradOp>(*this);
+  return std::make_unique<SplitGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &SplitGradOp::gradInputInfo() const {
@@ -111,7 +111,7 @@ static OpCreator<SplitOp> splitOpCreator(
       auto axis  = attr.getAttribute<Attributes::Int>("axis", 0);
       auto split = attr.getAttribute<Attributes::Ints>("split", {});
 
-      return make_unique<SplitOp>(opid_, axis, split, settings_);
+      return std::make_unique<SplitOp>(opid_, axis, split, settings_);
     },
     true);
 } // namespace

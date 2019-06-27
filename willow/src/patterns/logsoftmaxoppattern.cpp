@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/log.hpp>
 #include <poponnx/op/logsoftmax.hpp>
 #include <poponnx/op/softmax.hpp>

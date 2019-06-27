@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/transpose.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -16,12 +16,12 @@ TransposeOp::TransposeOp(const OperatorIdentifier &_opid,
 }
 
 std::unique_ptr<Op> TransposeOp::clone() const {
-  return make_unique<TransposeOp>(*this);
+  return std::make_unique<TransposeOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> TransposeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<TransposeGradOp>(*this));
+  upops.emplace_back(std::make_unique<TransposeGradOp>(*this));
   return upops;
 }
 
@@ -74,7 +74,7 @@ TransposeGradOp::TransposeGradOp(const TransposeOp &fwdOp)
                   fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> TransposeGradOp::clone() const {
-  return make_unique<TransposeGradOp>(*this);
+  return std::make_unique<TransposeGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &TransposeGradOp::gradInputInfo() const {

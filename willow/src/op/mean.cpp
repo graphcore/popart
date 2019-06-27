@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/mean.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -9,10 +9,12 @@ namespace poponnx {
 MeanOp::MeanOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : VariadicOp(_opid, settings_) {}
 
-std::unique_ptr<Op> MeanOp::clone() const { return make_unique<MeanOp>(*this); }
+std::unique_ptr<Op> MeanOp::clone() const {
+  return std::make_unique<MeanOp>(*this);
+}
 
 std::unique_ptr<Op> MeanOp::getIthGrad(int i) const {
-  return make_unique<MeanArgGradOp>(*this, i);
+  return std::make_unique<MeanArgGradOp>(*this, i);
 }
 
 MeanArgGradOp::MeanArgGradOp(const MeanOp &op_, InIndex inputIndex)
@@ -25,7 +27,7 @@ MeanArgGradOp::MeanArgGradOp(const MeanOp &op_, InIndex inputIndex)
 }
 
 std::unique_ptr<Op> MeanArgGradOp::clone() const {
-  return make_unique<MeanArgGradOp>(*this);
+  return std::make_unique<MeanArgGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &MeanArgGradOp::gradInputInfo() const {

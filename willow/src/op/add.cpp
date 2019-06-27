@@ -1,7 +1,7 @@
 #include <vector>
 // for `find', we need the algorithm header
 #include <algorithm>
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/add.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -33,7 +33,9 @@ AddOp::AddOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
   // TODO : Use the attributes in Add-6
 }
 
-std::unique_ptr<Op> AddOp::clone() const { return make_unique<AddOp>(*this); }
+std::unique_ptr<Op> AddOp::clone() const {
+  return std::make_unique<AddOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> AddOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -42,10 +44,10 @@ std::vector<std::unique_ptr<Op>> AddOp::getGradOps() {
   const auto &shape_a1 = inShape(getArg1InIndex());
   const auto &shape_o0 = outShape(getOutIndex());
 
-  upops.emplace_back(
-      make_unique<AddArg0GradOp>(*this, npReductionAxis(shape_a0, shape_o0)));
-  upops.emplace_back(
-      make_unique<AddArg1GradOp>(*this, npReductionAxis(shape_a1, shape_o0)));
+  upops.emplace_back(std::make_unique<AddArg0GradOp>(
+      *this, npReductionAxis(shape_a0, shape_o0)));
+  upops.emplace_back(std::make_unique<AddArg1GradOp>(
+      *this, npReductionAxis(shape_a1, shape_o0)));
 
   return upops;
 }
@@ -75,9 +77,9 @@ AddOp::inplacePriorityDefault() const {
 std::unique_ptr<Op>
 AddOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::AddLhsInplace) {
-    return make_unique<AddLhsInplaceOp>(*this);
+    return std::make_unique<AddLhsInplaceOp>(*this);
   } else if (operator_id == Onnx::CustomOperators::AddRhsInplace) {
-    return make_unique<AddRhsInplaceOp>(*this);
+    return std::make_unique<AddRhsInplaceOp>(*this);
   }
 
   // catch remaining cases and throw an error
@@ -92,7 +94,7 @@ AddLhsInplaceOp::AddLhsInplaceOp(const AddOp &op)
     : AddOp(Onnx::CustomOperators::AddLhsInplace, op.getSettings()) {}
 
 std::unique_ptr<Op> AddLhsInplaceOp::clone() const {
-  return make_unique<AddLhsInplaceOp>(*this);
+  return std::make_unique<AddLhsInplaceOp>(*this);
 }
 
 view::Region AddLhsInplaceOp::modifies(InIndex index) const {
@@ -119,7 +121,7 @@ AddRhsInplaceOp::AddRhsInplaceOp(const AddOp &op)
     : AddOp(Onnx::CustomOperators::AddRhsInplace, op.getSettings()) {}
 
 std::unique_ptr<Op> AddRhsInplaceOp::clone() const {
-  return make_unique<AddRhsInplaceOp>(*this);
+  return std::make_unique<AddRhsInplaceOp>(*this);
 }
 
 view::Region AddRhsInplaceOp::modifies(InIndex index) const {

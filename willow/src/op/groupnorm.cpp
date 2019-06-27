@@ -1,5 +1,5 @@
 
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/groupnorm.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -15,12 +15,12 @@ GroupNormOp::GroupNormOp(const OperatorIdentifier &opid_,
     : Op(opid_, settings_), num_groups(num_groups_), epsilon(epsilon_) {}
 
 std::unique_ptr<Op> GroupNormOp::clone() const {
-  return make_unique<GroupNormOp>(*this);
+  return std::make_unique<GroupNormOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> GroupNormOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<GroupNormGradOp>(*this));
+  upops.emplace_back(std::make_unique<GroupNormGradOp>(*this));
   return upops;
 }
 
@@ -78,7 +78,7 @@ void GroupNormGradOp::setup() {
 }
 
 std::unique_ptr<Op> GroupNormGradOp::clone() const {
-  return make_unique<GroupNormGradOp>(*this);
+  return std::make_unique<GroupNormGradOp>(*this);
 }
 
 void GroupNormGradOp::appendAttributes(OpSerialiserBase &os) const {

@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/error.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/matmul.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/matmulx.hpp>

@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/sign.hpp>
 #include <poponnx/opmanager.hpp>
 
@@ -9,7 +9,7 @@ SignOp::SignOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
 
 std::vector<std::unique_ptr<Op>> SignOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SignGradOp>(*this));
+  upops.emplace_back(std::make_unique<SignGradOp>(*this));
   return upops;
 }
 
@@ -17,7 +17,9 @@ OperatorIdentifier SignOp::getOpId(const Ir &) {
   return Onnx::Operators::Sign_9;
 }
 
-std::unique_ptr<Op> SignOp::clone() const { return make_unique<SignOp>(*this); }
+std::unique_ptr<Op> SignOp::clone() const {
+  return std::make_unique<SignOp>(*this);
+}
 
 SignGradOp::SignGradOp(const SignOp &op_)
     : Op(Onnx::GradOperators::SignGrad, op_.getSettings()) {}
@@ -37,7 +39,7 @@ const std::vector<GradInOutMapper> &SignGradOp::gradInputInfo() const {
 void SignGradOp::setup() { outInfo(getOutIndex()) = inInfo(getInIndex()); }
 
 std::unique_ptr<Op> SignGradOp::clone() const {
-  return make_unique<SignGradOp>(*this);
+  return std::make_unique<SignGradOp>(*this);
 }
 
 namespace {

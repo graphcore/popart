@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/reducelogsumexp.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -14,13 +14,13 @@ ReduceLogSumExpOp::ReduceLogSumExpOp(const OperatorIdentifier &_opid,
     : ReduceOp(_opid, axes_, keepdims_, settings_) {}
 
 std::unique_ptr<Op> ReduceLogSumExpOp::clone() const {
-  return make_unique<ReduceLogSumExpOp>(*this);
+  return std::make_unique<ReduceLogSumExpOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> ReduceLogSumExpOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
   result.emplace_back(
-      make_unique<ReduceLogSumExpGradOp>(*this, backward_shape));
+      std::make_unique<ReduceLogSumExpGradOp>(*this, backward_shape));
   return result;
 }
 
@@ -31,7 +31,7 @@ ReduceLogSumExpGradOp::ReduceLogSumExpGradOp(const ReduceLogSumExpOp &fwdOp,
                    backward_shape_) {}
 
 std::unique_ptr<Op> ReduceLogSumExpGradOp::clone() const {
-  return make_unique<ReduceLogSumExpGradOp>(*this);
+  return std::make_unique<ReduceLogSumExpGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &

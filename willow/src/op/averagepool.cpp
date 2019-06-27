@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/error.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/averagepool.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -45,7 +45,7 @@ const AveragePoolOp *AveragePoolGradOp::getCloneOfCreator() const {
 }
 
 std::unique_ptr<Op> AveragePoolOp::clone() const {
-  return make_unique<AveragePoolOp>(*this);
+  return std::make_unique<AveragePoolOp>(*this);
 }
 
 // Pooling does not change the number of channels,
@@ -54,7 +54,7 @@ int64_t AveragePoolOp::getNOutChans() const { return nInChans; }
 
 std::vector<std::unique_ptr<Op>> AveragePoolOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<AveragePoolGradOp>(*this));
+  upops.emplace_back(std::make_unique<AveragePoolGradOp>(*this));
   return upops;
 }
 
@@ -106,7 +106,7 @@ const std::map<int, int> &AveragePoolGradOp::gradOutToNonGradIn() const {
 void AveragePoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
 std::unique_ptr<Op> AveragePoolGradOp::clone() const {
-  return make_unique<AveragePoolGradOp>(*this);
+  return std::make_unique<AveragePoolGradOp>(*this);
 }
 
 namespace {

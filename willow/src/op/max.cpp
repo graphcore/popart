@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/max.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensorindex.hpp>
@@ -8,10 +8,12 @@ namespace poponnx {
 MaxOp::MaxOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : VariadicOp(_opid, settings_) {}
 
-std::unique_ptr<Op> MaxOp::clone() const { return make_unique<MaxOp>(*this); }
+std::unique_ptr<Op> MaxOp::clone() const {
+  return std::make_unique<MaxOp>(*this);
+}
 
 std::unique_ptr<Op> MaxOp::getIthGrad(int i) const {
-  return make_unique<MaxArgGradOp>(*this, i);
+  return std::make_unique<MaxArgGradOp>(*this, i);
 }
 
 MaxArgGradOp::MaxArgGradOp(const MaxOp &op_, InIndex inputIndex)
@@ -20,7 +22,7 @@ MaxArgGradOp::MaxArgGradOp(const MaxOp &op_, InIndex inputIndex)
                               inputIndex) {}
 
 std::unique_ptr<Op> MaxArgGradOp::clone() const {
-  return make_unique<MaxArgGradOp>(*this);
+  return std::make_unique<MaxArgGradOp>(*this);
 }
 
 namespace {

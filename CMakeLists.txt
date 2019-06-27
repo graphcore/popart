@@ -4,8 +4,8 @@ project(poponnx)
 
 enable_testing()
 
-# All C++ code in this project will be compiled as C++11
-add_definitions(-std=c++11)
+# All C++ code in this project will be compiled as C++14
+set (CMAKE_CXX_STANDARD 14)
 
 # colorful ninja, idea from
 # medium.com/@alasher/colored-c-compiler-output-with-ninja-clang-gcc-10bfe7f2b949

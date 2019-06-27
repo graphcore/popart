@@ -1,6 +1,6 @@
 #include <algorithm>
+#include <memory>
 #include <onnx/defs/schema.h>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/subsample.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -56,12 +56,12 @@ SubsampleBaseOp::SubsampleBaseOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_), strides(strides_) {}
 
 std::unique_ptr<Op> SubsampleOp::clone() const {
-  return make_unique<SubsampleOp>(*this);
+  return std::make_unique<SubsampleOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> SubsampleBaseOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SubsampleGradOp>(*this));
+  upops.emplace_back(std::make_unique<SubsampleGradOp>(*this));
   return upops;
 }
 
@@ -114,13 +114,13 @@ view::Region SubsampleInplaceOp::aliases(InIndex index) const {
 }
 
 std::unique_ptr<Op> SubsampleInplaceOp::clone() const {
-  return make_unique<SubsampleInplaceOp>(*this);
+  return std::make_unique<SubsampleInplaceOp>(*this);
 }
 
 std::unique_ptr<Op>
 SubsampleOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::SubsampleInplace) {
-    return make_unique<SubsampleInplaceOp>(*this);
+    return std::make_unique<SubsampleInplaceOp>(*this);
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
@@ -144,7 +144,7 @@ SubsampleGradOp::SubsampleGradOp(const SubsampleBaseOp &fwdOp_)
       strides(fwdOp_.getStrides()), fwdOpInfo(fwdOp_.inInfo(0)) {}
 
 std::unique_ptr<Op> SubsampleGradOp::clone() const {
-  return make_unique<SubsampleGradOp>(*this);
+  return std::make_unique<SubsampleGradOp>(*this);
 }
 
 void SubsampleGradOp::setup() { output->tensor(0)->info = fwdOpInfo; }

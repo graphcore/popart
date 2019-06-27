@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/ceil.hpp>
 #include <poponnx/opmanager.hpp>
 
@@ -17,7 +17,7 @@ CeilInplaceOp::CeilInplaceOp(const CeilOp &ceil_op)
 std::unique_ptr<Op>
 CeilOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::CeilInplace) {
-    return make_unique<CeilInplaceOp>(*this);
+    return std::make_unique<CeilInplaceOp>(*this);
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
@@ -26,14 +26,16 @@ CeilOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 CeilOp::CeilOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
 
-std::unique_ptr<Op> CeilOp::clone() const { return make_unique<CeilOp>(*this); }
+std::unique_ptr<Op> CeilOp::clone() const {
+  return std::make_unique<CeilOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> CeilOp::getGradOps() {
   throw error("PopONNX does not have a valid grad op corresponding to CeilOp");
 }
 
 std::unique_ptr<Op> CeilInplaceOp::clone() const {
-  return make_unique<CeilInplaceOp>(*this);
+  return std::make_unique<CeilInplaceOp>(*this);
 }
 
 namespace {
