@@ -36,6 +36,22 @@ std::string getDotCheckString(DotCheck d) {
   return V[static_cast<int>(d)];
 }
 
+DotCheck dotCheckFromString(const std::string &s) {
+  const static std::map<std::string, DotCheck> dotCheckStringsMap{
+      {"FWD0", DotCheck::FWD0},
+      {"FWD1", DotCheck::FWD1},
+      {"BWD0", DotCheck::BWD0},
+      {"PREALIAS", DotCheck::PREALIAS},
+      {"FINAL", DotCheck::FINAL}};
+
+  auto found = dotCheckStringsMap.find(s);
+  if (found != dotCheckStringsMap.end()) {
+    return found->second;
+  } else {
+    throw error("Unrecognised dot check '{}'", s);
+  }
+}
+
 // No implementation required
 
 } // namespace poponnx

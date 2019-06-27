@@ -1,3 +1,4 @@
+#include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <sstream>
 #include <poponnx/dotvisualizer.hpp>
@@ -122,7 +123,7 @@ void DotVisualizer::makeNodeIfRequired(const Tensor *tensor,
 }
 
 void DotVisualizer::write() {
-  if (ir->getSessionOptions().dotChecks.count(check) == 0) {
+  if (getDotChecks().count(check) == 0) {
     return;
   }
 
@@ -195,4 +196,23 @@ void DotVisualizer::write() {
 
   logging::ir::trace("Dot file(s) written");
 }
+
+std::set<DotCheck> DotVisualizer::getDotChecks() {
+  auto dotChecks = ir->getSessionOptions().dotChecks;
+
+  auto poponnxDotChecks = std::getenv("POPONNX_DOT_CHECKS");
+  if (poponnxDotChecks && std::strcmp(poponnxDotChecks, "") != 0) {
+    std::vector<std::string> dotCheckStrings;
+    boost::split(
+        dotCheckStrings, poponnxDotChecks, [](char c) { return c == ':'; });
+
+    for (auto &s : dotCheckStrings) {
+      auto c = dotCheckFromString(s);
+      dotChecks.insert(c);
+    }
+  }
+
+  return dotChecks;
+}
+
 } // namespace poponnx

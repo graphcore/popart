@@ -8,3 +8,4 @@
 add_poponnx_cpp_unit_test(basic_0_dot_test basic_0_dot_test.cpp)
 add_poponnx_cpp_unit_test(nested_0_dot_test nested_0_dot_test.cpp)
 
+add_all_py_unit_tests("")
