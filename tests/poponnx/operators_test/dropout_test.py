@@ -2,6 +2,7 @@ import numpy as np
 import poponnx
 import pytest
 import torch
+import itertools
 from op_tester import op_tester
 
 
@@ -224,6 +225,42 @@ def test_dropout_training7():
 
     session.run(stepio)
     assert (np.array_equal(anchors[d1], anchors[d2]) is not True)
+
+
+def test_dropout_training_replicated(op_tester):
+    ip_data = np.random.random_sample(100).astype(np.float32)
+    replication_factor = 4
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(ip_data)
+        [o] = builder.aiOnnx.dropout([i1], num_outputs=1, ratio=0.2)
+        builder.addOutputTensor(o)
+
+        return [o]
+
+    def check_result(ref_data):
+        o = ref_data.getOutputTensor(0)
+        # np.sign on the output of dropout returns an array of zeros and ones
+        o = np.sign(o)
+
+        for ai, bi in itertools.combinations(
+            [i for i in range(replication_factor)], 2):
+            print(f'Checking o[{ai}] is not equal to o[{bi}]')
+            a = o[ai]
+            b = o[bi]
+            assert not np.allclose(a, b)
+
+        return [None]
+
+    device = poponnx.DeviceManager().acquireAvailableDevice(replication_factor)
+    if device is None:
+        pytest.skip("Test needs to run on IPU, but none are available")
+
+    op_tester.options.enableReplicatedGraphs = True
+    op_tester.options.replicatedGraphCount = replication_factor
+    op_tester.device = device
+    op_tester.numIPUs = replication_factor
+    session = op_tester.run(init_builder, check_result, 'train')
 
 
 def get_dropout_session(dsize=100,

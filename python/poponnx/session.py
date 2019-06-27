@@ -37,8 +37,8 @@ def _initAnchorArrays(self):
         if self.replicationFactor > 1:
             anchorArrayShape.insert(0, self.replicationFactor)
 
-        anchorArrays[anchor] = np.empty(shape=anchorArrayShape,
-                                        dtype=anchorInfo.data_type_lcase())
+        anchorArrays[anchor] = np.empty(
+            shape=anchorArrayShape, dtype=anchorInfo.data_type_lcase())
 
     return anchorArrays
 

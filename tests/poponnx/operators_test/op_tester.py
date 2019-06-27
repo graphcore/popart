@@ -74,6 +74,10 @@ def op_tester(tmpdir):
             gradId = poponnx.reservedGradientPrefix() + tensorId
             return self._anchor_map[gradId]
 
+        def getOutputTensor(self, index):
+            tensorId = self._outputs[index]
+            return self._anchor_map[tensorId]
+
     class OpTester:
         def __init__(self, logging_dir):
             np.random.seed(0)
@@ -85,6 +89,7 @@ def op_tester(tmpdir):
             self.rtol = 1e-05
             self.atol = 1e-08
             self.check_shapes = True
+            self.loss_reduction_type = poponnx.ReductionType.Sum
 
         def verifyTensor(self, t1, ref):
             if self.check_shapes:
@@ -122,7 +127,10 @@ def op_tester(tmpdir):
             else:
                 optimizer = None
 
-            losses = [poponnx.L1Loss(anchorIds[0], "l1LossVal", 0.1)]
+            losses = [
+                poponnx.L1Loss(anchorIds[0], "l1LossVal", 0.1,
+                               self.loss_reduction_type)
+            ]
             proto = bld.getModelProto()
 
             self.options.logDir = self.logging_dir
@@ -131,6 +139,8 @@ def op_tester(tmpdir):
                 device = tu.get_poplar_cpu_device()
             elif self.device == "ipu_model":
                 device = tu.get_ipu_model(numIPUs=self.numIPUs)
+            else:
+                device = self.device
 
             if step_type == 'infer':
                 session = poponnx.InferenceSession(
@@ -160,7 +170,25 @@ def op_tester(tmpdir):
                     raise Exception(
                         'Input "{}" to poponnx.PyStepIO is not C_CONTIGUOS'.
                         format(k))
-            stepio = poponnx.PyStepIO(bld._input_map, anchor_map)
+
+            # Add the replication dimension to the inputs
+            inputs = {}
+            for k, v in bld._input_map.items():
+                if self.options.replicatedGraphCount > 1:
+                    um = (self.options.replicatedGraphCount, )
+                    um = um + tuple([1] * np.ndim(v))
+
+                    # we add this offset to ensure that samples on devices are distinct
+                    offset = 1 * np.arange(
+                        self.options.replicatedGraphCount).astype(
+                            v.dtype).reshape(um)
+
+                    inputs[k] = np.tile(v, um) + offset
+
+                else:
+                    inputs[k] = v
+
+            stepio = poponnx.PyStepIO(inputs, anchor_map)
 
             if (step_type == 'train'):
                 session.weightsFromHost()
