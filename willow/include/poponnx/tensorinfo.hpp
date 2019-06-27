@@ -2,7 +2,6 @@
 #define GUARD_NEURALNET_TENSORINFO_HPP
 
 #include <algorithm>
-#include <boost/range/algorithm.hpp>
 #include <sstream>
 #include <vector>
 #include <poponnx/error.hpp>
@@ -82,7 +81,7 @@ std::vector<T> squeeze(const std::vector<T> &v, const std::vector<T> &axes) {
   std::vector<T> new_shape;
   new_shape.reserve(v.size());
   for (int i = 0; i < v.size(); i++) {
-    if (boost::find(axes, i) == axes.end()) {
+    if (std::find(axes.begin(), axes.end(), i) == axes.end()) {
       new_shape.push_back(v[i]);
     }
   }
@@ -102,7 +101,7 @@ std::vector<T> unsqueeze(const std::vector<T> &v, const std::vector<T> &axes) {
   auto it = v.begin();
 
   for (int i = 0; i < v.size() + axes.size(); i++) {
-    if (boost::find(axes, i) == axes.end()) {
+    if (std::find(axes.begin(), axes.end(), i) == axes.end()) {
       new_shape.push_back(*it);
       it++;
     } else {
