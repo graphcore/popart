@@ -56,7 +56,7 @@ def test_reshape_neg_one_error(op_tester):
         op_tester.run(init_builder, None, 'infer')
 
     assert ('shape input to ReshapeOp can only use -1 to '
-            'specify one unknown dimension') in str(e_info)
+            'specify one unknown dimension') in str(e_info.value)
 
 
 def test_reshape_zeros(op_tester):
