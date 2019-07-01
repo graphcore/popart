@@ -1,5 +1,4 @@
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/log.hpp>
 #include <poponnx/op/mul.hpp>
 #include <poponnx/op/pow.hpp>

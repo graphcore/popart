@@ -1,5 +1,4 @@
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/pow.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -9,7 +8,9 @@ namespace poponnx {
 PowOp::PowOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseBinaryOp(_opid, settings_) {}
 
-std::unique_ptr<Op> PowOp::clone() const { return make_unique<PowOp>(*this); }
+std::unique_ptr<Op> PowOp::clone() const {
+  return std::make_unique<PowOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> PowOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -18,9 +19,9 @@ std::vector<std::unique_ptr<Op>> PowOp::getGradOps() {
   const auto &shape_in_1   = inShape(getArg1InIndex());
   const auto &shape_output = outShape(getOutIndex());
 
-  upops.emplace_back(make_unique<PowArg0GradOp>(
+  upops.emplace_back(std::make_unique<PowArg0GradOp>(
       *this, npReductionAxis(shape_in_0, shape_output)));
-  upops.emplace_back(make_unique<PowArg1GradOp>(
+  upops.emplace_back(std::make_unique<PowArg1GradOp>(
       *this, npReductionAxis(shape_in_1, shape_output)));
   return upops;
 }
@@ -46,7 +47,7 @@ PowArg0GradOp::PowArg0GradOp(const PowOp &op,
                    op.getSettings()) {}
 
 std::unique_ptr<Op> PowArg0GradOp::clone() const {
-  return make_unique<PowArg0GradOp>(*this);
+  return std::make_unique<PowArg0GradOp>(*this);
 }
 
 const std::map<int, int> &PowArg0GradOp::gradOutToNonGradIn() const {
@@ -71,7 +72,7 @@ PowArg1GradOp::PowArg1GradOp(const PowOp &op,
                    op.getSettings()) {}
 
 std::unique_ptr<Op> PowArg1GradOp::clone() const {
-  return make_unique<PowArg1GradOp>(*this);
+  return std::make_unique<PowArg1GradOp>(*this);
 }
 
 const std::map<int, int> &PowArg1GradOp::gradOutToNonGradIn() const {
