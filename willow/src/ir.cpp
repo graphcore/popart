@@ -40,10 +40,10 @@
 #include <poponnx/transforms/mergevarupdates.hpp>
 #include <poponnx/transforms/prune.hpp>
 #include <poponnx/transforms/subgraphoutline.hpp>
-#include <poponnx/transforms/virtual_graph_check.hpp>
 
 // The layers required to construct the backwards pass
 #include <poponnx/op/batchnorm.hpp>
+#include <poponnx/op/ipucopy.hpp>
 #include <poponnx/op/placeholder.hpp>
 #include <poponnx/op/sum.hpp>
 #include <poponnx/op/varupdate.hpp>
@@ -543,6 +543,10 @@ void Ir::prepare(const IrBundle &gb) {
 
   // construct the forward pass from ONNX,
   constructForwards();
+
+  // Check virtual graph settings and annotations are consistent
+  verifyVirtualGraphIds(false);
+
   dotCheckpoint(DotCheck::FWD0);
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
@@ -658,9 +662,6 @@ void Ir::prepare(const IrBundle &gb) {
 
   updateVertices();
 
-  // Check to make sure that all or none have assigned to an ipu
-  applyTransform(VirtualGraphCheck::id(), getMainGraph());
-
   // Add internal ops to copy tensors between ipu's as needed
   applyTransform(InterIpuCopy::id(), getMainGraph());
   applyTransform(MergeCopies::id(), getMainGraph());
@@ -711,10 +712,101 @@ void Ir::prepare(const IrBundle &gb) {
   verifyConstExprFolding();
   verifyConnectivity();
   verifyTensorIds();
+  verifyVirtualGraphIds(true);
   // end of checks
 
   updateVertices();
   isPrepared = true;
+}
+
+void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
+  logging::ir::debug("Verifying virtual graph id consistency");
+  // All non-IpuCopyOps, sorted by virtual graph id (-1 if not set)
+  std::map<int64_t, std::vector<Op *>> vgraphs;
+  for (auto &id_op : getMainGraph().getOps()) {
+    if (!dynamic_cast<IpuCopyOp *>(id_op.second.get())) {
+      int64_t vgid;
+      if (id_op.second->getVirtualGraphId()) {
+        vgid = *id_op.second->getVirtualGraphId();
+      } else {
+        vgid = -1;
+      }
+
+      auto found = vgraphs.find(vgid);
+      if (found == vgraphs.end()) {
+        vgraphs.insert({vgid, std::vector<Op *>{id_op.second.get()}});
+      } else {
+        found->second.push_back(id_op.second.get());
+      }
+    }
+  }
+
+  // a mix of annotated and not annotated Ops : suggests a problem
+  if (vgraphs.count(-1) != 0 && vgraphs.size() > 1) {
+    std::ostringstream errm;
+    errm << "Either all Ops in the main graph must have their virtual "
+         << "graph ids set, or none must. Histogram of Ops by virtual graph "
+            "id\n";
+    for (auto id_v : vgraphs) {
+      errm << "  " << id_v.first << " : " << id_v.second.size() << "\n";
+    }
+    errm << "Ops with no virtual graph id :  \n";
+    for (auto op : vgraphs[-1]) {
+      errm << "  " << op->str() << "\n";
+    }
+    throw error(errm.str());
+  }
+
+  if (getSessionOptions().enableVirtualGraphs) {
+    // only -1s, no Op has a virtual graph annotation : problem.
+    if (vgraphs.size() == 1 && vgraphs.count(-1) != 0) {
+
+      std::ostringstream errm;
+
+      // no auto virtual graphing, the user should have annotated ops
+      if (!getSessionOptions().autoVirtualGraph) {
+        errm
+            << "SessionOptions flag enableVirtualGraphs is true, "
+            << "and flag autoVirtualGraph is false, "
+            << "but no Ops have been annotated with virtual graph information. "
+            << "This is an inconsistent combination. ";
+
+        throw error(errm.str());
+      }
+
+      // auto virtual graphing, why has the auto-sharder not run?
+      else if (postAutoVirtualGraphTransform) {
+        errm
+            << "SessionOptions flag enableVirtualGraphs is true, "
+            << "and flag autoVirtualGraph is true, "
+            << "but no Ops have been annotated with virtual graph information. "
+            << "Moreover, the paramater postAutoVirtualGraphTransoform "
+            << "is true, "
+            << "so AutoVirtualGraph should have been run. "
+            << "This is an inconsistent combination, possibly an internal "
+            << "logic error has";
+
+        throw error(errm.str());
+      }
+    }
+  }
+
+  else {
+    for (auto vgid_ops : vgraphs) {
+      auto vgid = vgid_ops.first;
+      // enableVirtualGraphs is false, yet there is at least one Op with virtual
+      // graph id set : suggests a problem
+      if (vgid != -1) {
+        auto op = vgid_ops.second.at(0);
+        throw error("SessionOptions flag enableVirtualGraphs is false, but "
+                    "{} has virtual graph id {}. This is inconsistent, "
+                    "consider setting enableVirtualGraphs to true or removing "
+                    "all virtual graph annotation from Ops. ",
+                    op->str(),
+                    op->getVirtualGraphId());
+      }
+    }
+  }
 }
 
 void Ir::resetWeights(const onnx::ModelProto &modelProto) {

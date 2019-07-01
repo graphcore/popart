@@ -361,6 +361,7 @@ private:
   void verifyTensorProducerConnectivity() const;
   void verifyTensorConsumerConnectivity() const;
   void verifyTensorIds() const;
+  void verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const;
 
   // Verify ConstExpr folding has removed input tensors
   // as expected

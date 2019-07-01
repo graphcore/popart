@@ -865,9 +865,9 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
         // have been copied to the ipu from another op
         if (op->opid != Onnx::CustomOperators::IpuCopy) {
 
-          auto &graph = getOpx(op->id)->graph();
-
           if (ipus.end() == std::find(ipus.begin(), ipus.end(), index)) {
+
+            auto &graph = getOpx(op->id)->graph();
 
             auto newTensor = graph.addVariable(
                 popType(tensor->info), tensor->info.shape_szt(), tensor->str());

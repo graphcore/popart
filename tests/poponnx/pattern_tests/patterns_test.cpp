@@ -527,6 +527,9 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
       new L1Loss(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
+  SessionOptions opts;
+  opts.enableVirtualGraphs = true;
+
   Ir ir;
   ir.prepare({modelProto,
               InputShapeInfo(),
@@ -534,7 +537,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
               losses,
               &optimizer,
               *cpuDevice,
-              {},
+              opts,
               Patterns({PreAliasPatternType::OPTOIDENTITY})});
 
   // Check the PadOp has been removed

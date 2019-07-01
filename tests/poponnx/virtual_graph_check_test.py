@@ -51,6 +51,7 @@ def test_all_virtual_graph():
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     opts = poponnx.SessionOptionsCore()
+    opts.enableVirtualGraphs = True
 
     poponnx.InferenceSession(
         fnModel=proto,
@@ -88,6 +89,8 @@ def test_mixed_virtual_graph():
             userOptions=opts,
             deviceInfo=tu.get_poplar_cpu_device())
 
-    assert (e_info.value.args[0].startswith(
-        ("Op(ai.onnx.Add:7, outputs=[{}]) has virtual graph attribute but "
-         "Op(ai.onnx.Add:7, outputs=[{}]) does not").format(o1, o)))
+    assert (e_info.value.args[0].startswith("Either all"))
+
+
+#         ("Op(ai.onnx.Add:7, outputs=[{}]) has virtual graph attribute but "
+#          "Op(ai.onnx.Add:7, outputs=[{}]) does not").format(o1, o)))
