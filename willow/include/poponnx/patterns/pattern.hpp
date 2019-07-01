@@ -38,6 +38,8 @@ enum class PreAliasPatternType {
   SUMTOADD,
   SPLITGRADOPTOCONCAT,
   SPLITOP,
+  POWARG0GRADOP,
+  POWARG1GRADOP
 };
 
 // Definition: A tensor is "touched" by a Pattern if

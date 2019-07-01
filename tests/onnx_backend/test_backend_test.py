@@ -79,8 +79,8 @@ class IpuBackend(onnx.backend.base.Backend):
         model = onnx.shape_inference.infer_shapes(model)
         value_infos = {
             vi.name: vi
-            for vi in itertools.chain(model.graph.value_info, model.graph.
-                                      output)
+            for vi in itertools.chain(model.graph.value_info,
+                                      model.graph.output)
         }
 
         # if do_enforce_test_coverage_whitelist(model):
@@ -124,8 +124,10 @@ class IpuBackend(onnx.backend.base.Backend):
             outputs_info=None,  # type: Optional[Sequence[Tuple[numpy.dtype, Tuple[int, ...]]]]
             **kwargs  # type: Any
     ):  # type: (...) -> Optional[Tuple[Any, ...]]
-        super(IpuBackend, cls).run_node(
-            node, inputs, device=device, outputs_info=outputs_info)
+        super(IpuBackend, cls).run_node(node,
+                                        inputs,
+                                        device=device,
+                                        outputs_info=outputs_info)
 
         raise BackendIsNotSupposedToImplementIt(
             "This is the ipu backend test that doesn't verify the results but does run the checker"
@@ -160,7 +162,6 @@ backend_test.exclude('test_leakyrelu')
 backend_test.exclude('test_maxunpool')
 backend_test.exclude('test_mvn')
 backend_test.exclude('test_onehot')
-backend_test.exclude('test_pow')
 backend_test.exclude('test_prelu')
 backend_test.exclude('test_PReLU')
 backend_test.exclude('test_reduce_log')
@@ -347,7 +348,7 @@ backend_test.exclude('test_operator_chunk')
 backend_test.exclude('test_operator_convtranspose')
 backend_test.exclude('test_operator_maxpool')
 backend_test.exclude('test_operator_non_float_params')
-backend_test.exclude('test_operator_pow')
+
 backend_test.exclude('test_operator_reduced_mean')
 backend_test.exclude('test_operator_repeat')
 backend_test.exclude('test_operator_selu')
