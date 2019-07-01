@@ -28,6 +28,7 @@ public:
   virtual std::string getGraphReport(bool use_cbor) const              = 0;
   virtual std::string getExecutionReport(bool use_cbor) const          = 0;
   virtual std::string getSerializedGraph() const                       = 0;
+  virtual void saveTensorTileMap(const std::string &) const            = 0;
   virtual TensorTileMap getTensorTileMap() const                       = 0;
   virtual std::set<TensorId> getLinearlyCreatedInputTensors() const    = 0;
   virtual std::set<TensorId> getEfficientlyCreatedInputTensors() const = 0;

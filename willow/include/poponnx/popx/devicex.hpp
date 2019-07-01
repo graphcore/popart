@@ -181,6 +181,7 @@ public:
   getGraphReport(bool use_cbor = false) const override final;
   virtual std::string
   getExecutionReport(bool use_cbor = false) const override final;
+  virtual void saveTensorTileMap(const std::string &) const override final;
   virtual TensorTileMap getTensorTileMap() const override final;
   virtual std::string getSerializedGraph() const override final;
 

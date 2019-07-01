@@ -16,6 +16,7 @@
 #include <poputil/exceptions.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/error.hpp>
+#include <poponnx/filereader.hpp>
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
 #include <poponnx/logging.hpp>
@@ -31,6 +32,7 @@
 #include <poponnx/recompute.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
+#include <poponnx/tojson.hpp>
 
 namespace poponnx {
 namespace popx {
@@ -1761,6 +1763,13 @@ void Devicex::prepare() {
 
   logging::devicex::info("Starting Engine compilation");
 
+  auto trySaveTensorTileMap = [this]() {
+    auto poponnxTensorTileMap = std::getenv("POPONNX_TENSOR_TILE_MAP");
+    if (poponnxTensorTileMap && strcmp(poponnxTensorTileMap, "") != 0) {
+      saveTensorTileMap(poponnxTensorTileMap);
+    }
+  };
+
   try {
     auto executable = getExecutable();
     pEngine.reset(new poplar::Engine(std::move(executable), engineOptions));
@@ -1771,6 +1780,8 @@ void Devicex::prepare() {
     // without a graph profile. The following engine option needs to be set to
     // enable the graph profile in this case "debug.allowOutOfMemory":"true"
 
+    trySaveTensorTileMap();
+
     logging::devicex::err("Memory allocation error : {}", e.what());
     throw devicex_memory_allocation_err(e, reportOptions);
   }
@@ -1778,6 +1789,8 @@ void Devicex::prepare() {
   logging::devicex::info("Engine compiled");
 
   loadEngineAndConnectStreams();
+
+  trySaveTensorTileMap();
 
   prepareHasBeenCalled = true;
 }
@@ -2232,6 +2245,20 @@ TensorTileMap Devicex::getTensorTileMap() const {
   }
   return map;
 }
+
+void Devicex::saveTensorTileMap(const std::string &mapFileName) const {
+  auto tt = getTensorTileMap();
+
+  std::string finalPath =
+      io::appendDirFn(ir().getSessionOptions().logDir, mapFileName);
+
+  std::ofstream ofs(finalPath, std::ofstream::out);
+  if (!ofs.is_open()) {
+    throw error("Unable to open file '{}'", finalPath);
+  }
+
+  writeJSON(tt, ofs);
+};
 
 poplar::Type popType(const TensorInfo &info) {
   switch (info.dataType()) {
