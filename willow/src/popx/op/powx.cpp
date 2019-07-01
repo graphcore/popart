@@ -1,3 +1,4 @@
+#include <memory>
 #include <poponnx/error.hpp>
 #include <poponnx/op/pow.hpp>
 #include <poponnx/popx/op/powx.hpp>

@@ -1,3 +1,4 @@
+#include <memory>
 #include <poponnx/graph.hpp>
 #include <poponnx/op/mul.hpp>
 #include <poponnx/op/pow.hpp>

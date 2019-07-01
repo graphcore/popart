@@ -1,3 +1,4 @@
+#include <memory>
 #include <poponnx/ir.hpp>
 #include <poponnx/op/pow.hpp>
 #include <poponnx/opmanager.hpp>
