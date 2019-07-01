@@ -19,6 +19,7 @@ enum class DotCheck {
 };
 
 std::string getDotCheckString(DotCheck);
+DotCheck dotCheckFromString(const std::string &);
 
 // If doing auto-recomputation, how should we decide which ops to recompute
 // in the backwards pass?

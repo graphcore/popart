@@ -1,4 +1,5 @@
 #include <boost/algorithm/string.hpp>
+#include <boost/range/algorithm.hpp>
 #include <onnx/onnx_pb.h>
 
 #include <poponnx/ces/constexpr.hpp>

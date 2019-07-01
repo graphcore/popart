@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/gather.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -16,12 +16,12 @@ GatherOp::GatherOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_), axis(axis_) {}
 
 std::unique_ptr<Op> GatherOp::clone() const {
-  return make_unique<GatherOp>(*this);
+  return std::make_unique<GatherOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> GatherOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
-  result.push_back(make_unique<GatherGradOp>(*this, axis));
+  result.push_back(std::make_unique<GatherGradOp>(*this, axis));
   return result;
 }
 
@@ -74,7 +74,7 @@ GatherGradOp::GatherGradOp(const GatherOp &op, int64_t axis_)
       fwdDataInfo(op.inInfo(GatherOp::dataInIndex())) {}
 
 std::unique_ptr<Op> GatherGradOp::clone() const {
-  return make_unique<GatherGradOp>(*this);
+  return std::make_unique<GatherGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &GatherGradOp::gradInputInfo() const {

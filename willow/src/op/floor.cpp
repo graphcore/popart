@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/floor.hpp>
 #include <poponnx/opmanager.hpp>
 
@@ -17,7 +17,7 @@ FloorInplaceOp::FloorInplaceOp(const FloorOp &floor_op)
 std::unique_ptr<Op>
 FloorOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::FloorInplace) {
-    return make_unique<FloorInplaceOp>(*this);
+    return std::make_unique<FloorInplaceOp>(*this);
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
@@ -27,7 +27,7 @@ FloorOp::FloorOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> FloorOp::clone() const {
-  return make_unique<FloorOp>(*this);
+  return std::make_unique<FloorOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> FloorOp::getGradOps() {
@@ -35,7 +35,7 @@ std::vector<std::unique_ptr<Op>> FloorOp::getGradOps() {
 }
 
 std::unique_ptr<Op> FloorInplaceOp::clone() const {
-  return make_unique<FloorInplaceOp>(*this);
+  return std::make_unique<FloorInplaceOp>(*this);
 }
 
 namespace {

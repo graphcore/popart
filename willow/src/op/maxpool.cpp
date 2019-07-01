@@ -1,7 +1,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/maxpool.hpp>
 
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
@@ -40,7 +40,7 @@ const MaxPoolOp *MaxPoolGradOp::getCloneOfCreator() const {
 }
 
 std::unique_ptr<Op> MaxPoolOp::clone() const {
-  return make_unique<MaxPoolOp>(*this);
+  return std::make_unique<MaxPoolOp>(*this);
 }
 
 // Pooling does not change the number of channels,
@@ -49,7 +49,7 @@ int64_t MaxPoolOp::getNOutChans() const { return nInChans; }
 
 std::vector<std::unique_ptr<Op>> MaxPoolOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<MaxPoolGradOp>(*this));
+  upops.emplace_back(std::make_unique<MaxPoolGradOp>(*this));
   return upops;
 }
 
@@ -99,7 +99,7 @@ const std::map<int, int> &MaxPoolGradOp::gradOutToNonGradIn() const {
 void MaxPoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
 std::unique_ptr<Op> MaxPoolGradOp::clone() const {
-  return make_unique<MaxPoolGradOp>(*this);
+  return std::make_unique<MaxPoolGradOp>(*this);
 }
 
 namespace {

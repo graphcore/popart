@@ -1,7 +1,7 @@
 #include <iterator>
+#include <memory>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/nll.hpp>
 #include <poponnx/op/softmax.hpp>
 #include <poponnx/popx/devicex.hpp>

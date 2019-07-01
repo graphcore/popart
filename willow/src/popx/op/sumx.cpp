@@ -2,8 +2,8 @@
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
 
+#include <memory>
 #include <poponnx/error.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/sum.hpp>
 #include <poponnx/popx/op/sumx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
@@ -36,7 +36,7 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
   // Add the input tensors as placeholders to the expression
   for (int i = 0; i < sumOp.input->n(); ++i) {
     inputs.push_back(getInTensor(i));
-    exprs.push_back(make_unique<popops::expr::PlaceHolder>(i + 1));
+    exprs.push_back(std::make_unique<popops::expr::PlaceHolder>(i + 1));
     expr.push(exprs.back().get());
   }
 
@@ -47,7 +47,7 @@ void SumOpx::grow(poplar::program::Sequence &prog) const {
     auto &b = *expr.front();
     expr.pop();
 
-    exprs.push_back(make_unique<popops::expr::Add>(a, b));
+    exprs.push_back(std::make_unique<popops::expr::Add>(a, b));
     expr.push(exprs.back().get());
   }
 

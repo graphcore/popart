@@ -1,9 +1,9 @@
 #include <boost/range/algorithm/copy.hpp>
 
+#include <memory>
 #include <onnx/onnx_pb.h>
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/if.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -70,7 +70,9 @@ IfOp::IfOp(const OperatorIdentifier &opid_,
       thenGraphId(thenBranchInfo.graphId), elseGraphId(elseBranchInfo.graphId) {
 }
 
-std::unique_ptr<Op> IfOp::clone() const { return make_unique<IfOp>(*this); }
+std::unique_ptr<Op> IfOp::clone() const {
+  return std::make_unique<IfOp>(*this);
+}
 
 std::map<TensorId, TensorId> IfOp::getBranchOutIdToOpOutIdMap() const {
   std::map<TensorId, TensorId> result;
@@ -248,9 +250,9 @@ std::vector<std::unique_ptr<Op>> IfOp::getGradOps() {
   auto gradInInfo = getGradInInfo(gradOpInputIds);
 
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<IfGradOp>(
+  upops.emplace_back(std::make_unique<IfGradOp>(
       *this, gradInInfo, bwdThenBranchInfo, bwdElseBranchInfo));
-  upops.emplace_back(make_unique<IfConditionGradOp>(*this));
+  upops.emplace_back(std::make_unique<IfConditionGradOp>(*this));
   return upops;
 }
 
@@ -345,7 +347,7 @@ IfGradOp::IfGradOp(const IfOp &fwdOp,
 }
 
 std::unique_ptr<Op> IfGradOp::clone() const {
-  return make_unique<IfGradOp>(*this);
+  return std::make_unique<IfGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &IfGradOp::gradInputInfo() const {
@@ -473,7 +475,7 @@ static OpCreator<IfOp> ifOpCreator(
         thenAndElseOutputIndicesMap.insert({i, i});
       }
 
-      auto op = make_unique<IfOp>(
+      auto op = std::make_unique<IfOp>(
           opid_,
           inputIds,
           BranchInfo{

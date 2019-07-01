@@ -1,7 +1,7 @@
+#include <memory>
 #include <poponnx/error.hpp>
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/op/ipucopy.hpp>
@@ -111,7 +111,7 @@ void InterIpuCopy::insertIpuCopy(Graph &graph,
 
   Op::Settings settings(graph, "");
 
-  auto ipuCopy_op = make_unique<IpuCopyOp>(
+  auto ipuCopy_op = std::make_unique<IpuCopyOp>(
       Onnx::CustomOperators::IpuCopy, fromIpu, toIpu, settings);
 
   auto ipuCopy = ipuCopy_op.get();

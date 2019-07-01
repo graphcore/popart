@@ -1,6 +1,6 @@
 #include <algorithm>
+#include <memory>
 #include <vector>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/instancenorm.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -15,12 +15,12 @@ InstanceNormOp::InstanceNormOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_), epsilon(_epsilon) {}
 
 std::unique_ptr<Op> InstanceNormOp::clone() const {
-  return make_unique<InstanceNormOp>(*this);
+  return std::make_unique<InstanceNormOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> InstanceNormOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<InstanceNormGradOp>(*this));
+  upops.emplace_back(std::make_unique<InstanceNormGradOp>(*this));
   return upops;
 }
 
@@ -86,7 +86,7 @@ void InstanceNormGradOp::setup() {
 }
 
 std::unique_ptr<Op> InstanceNormGradOp::clone() const {
-  return make_unique<InstanceNormGradOp>(*this);
+  return std::make_unique<InstanceNormGradOp>(*this);
 }
 
 namespace {

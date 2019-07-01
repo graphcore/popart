@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/error.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/receptive.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>

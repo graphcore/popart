@@ -1,6 +1,6 @@
 #include <algorithm>
+#include <memory>
 #include <numeric>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/addbias.hpp>
 #include <poponnx/op/conv.hpp>
 #include <poponnx/opmanager.hpp>
@@ -13,18 +13,18 @@ AddBiasOp::AddBiasOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_) {}
 
 std::unique_ptr<Op> AddBiasOp::clone() const {
-  return make_unique<AddBiasOp>(*this);
+  return std::make_unique<AddBiasOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> AddBiasOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<AddBiasDataGradOp>(*this));
+  upops.emplace_back(std::make_unique<AddBiasDataGradOp>(*this));
 
   // "Borrowed" from poplin::convolutionBiasUpdate
   std::vector<int64_t> reduceDims(outRank(getOutIndex()) - 1);
   std::iota(reduceDims.begin() + 1, reduceDims.end(), 2);
 
-  upops.emplace_back(make_unique<AddBiasBiasGradOp>(*this, reduceDims));
+  upops.emplace_back(std::make_unique<AddBiasBiasGradOp>(*this, reduceDims));
   return upops;
 }
 
@@ -38,7 +38,7 @@ AddBiasOp::inplacePriorityDefault() const {
 std::unique_ptr<Op>
 AddBiasOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::AddBiasInplace) {
-    return make_unique<AddBiasInplaceOp>(*this);
+    return std::make_unique<AddBiasInplaceOp>(*this);
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
@@ -104,7 +104,7 @@ AddBiasInplaceOp::AddBiasInplaceOp(const AddBiasOp &op)
     : AddBiasOp(Onnx::CustomOperators::AddBiasInplace, op.getSettings()) {}
 
 std::unique_ptr<Op> AddBiasInplaceOp::clone() const {
-  return make_unique<AddBiasInplaceOp>(*this);
+  return std::make_unique<AddBiasInplaceOp>(*this);
 }
 
 std::vector<std::tuple<OperatorIdentifier, float>>

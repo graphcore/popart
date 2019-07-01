@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/error.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/op/averagepool.hpp>
 #include <poponnx/op/globalaveragepool.hpp>
@@ -162,63 +162,64 @@ public:
 
 namespace {
 
-OpxCreator<Opx> maxpoolOpxCreator({Onnx::Operators::MaxPool_1,
-                                   Onnx::Operators::MaxPool_8,
-                                   Onnx::Operators::MaxPool_10},
-                                  [](Op *op,
-                                     Devicex *devicex) -> std::unique_ptr<Opx> {
-                                    return make_unique<TPoolOpx<MaxPoolOp>>(
-                                        op, devicex, popnn::PoolingType::MAX);
-                                  });
+OpxCreator<Opx>
+    maxpoolOpxCreator({Onnx::Operators::MaxPool_1,
+                       Onnx::Operators::MaxPool_8,
+                       Onnx::Operators::MaxPool_10},
+                      [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
+                        return std::make_unique<TPoolOpx<MaxPoolOp>>(
+                            op, devicex, popnn::PoolingType::MAX);
+                      });
 
 OpxCreator<Opx> maxpoolGradOpxCreator(
     {Onnx::GradOperators::MaxPoolGrad},
     [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
-      return make_unique<TPoolGradOpx<MaxPoolGradOp, MaxPoolOp>>(
+      return std::make_unique<TPoolGradOpx<MaxPoolGradOp, MaxPoolOp>>(
           op, devicex, popnn::PoolingType::MAX);
     });
 
 OpxCreator<Opx> globalMaxpoolOpxCreator(
     {Onnx::Operators::GlobalMaxPool_1},
     [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
-      return make_unique<TPoolOpx<GlobalMaxPoolOp>>(
+      return std::make_unique<TPoolOpx<GlobalMaxPoolOp>>(
           op, devicex, popnn::PoolingType::MAX);
     });
 
 OpxCreator<Opx> globalMaxpoolGradOpxCreator(
     {Onnx::GradOperators::GlobalMaxPoolGrad},
     [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
-      return make_unique<TPoolGradOpx<GlobalMaxPoolGradOp, GlobalMaxPoolOp>>(
+      return std::make_unique<
+          TPoolGradOpx<GlobalMaxPoolGradOp, GlobalMaxPoolOp>>(
           op, devicex, popnn::PoolingType::MAX);
     });
 
-OpxCreator<Opx> averageOpxCreator({Onnx::Operators::AveragePool_1,
-                                   Onnx::Operators::AveragePool_7,
-                                   Onnx::Operators::AveragePool_10},
-                                  [](Op *op,
-                                     Devicex *devicex) -> std::unique_ptr<Opx> {
-                                    return make_unique<TPoolOpx<AveragePoolOp>>(
-                                        op, devicex, popnn::PoolingType::AVG);
-                                  });
+OpxCreator<Opx>
+    averageOpxCreator({Onnx::Operators::AveragePool_1,
+                       Onnx::Operators::AveragePool_7,
+                       Onnx::Operators::AveragePool_10},
+                      [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
+                        return std::make_unique<TPoolOpx<AveragePoolOp>>(
+                            op, devicex, popnn::PoolingType::AVG);
+                      });
 
 OpxCreator<Opx> averageGradOpxCreator(
     {Onnx::GradOperators::AveragePoolGrad},
     [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
-      return make_unique<TPoolGradOpx<AveragePoolGradOp, AveragePoolOp>>(
+      return std::make_unique<TPoolGradOpx<AveragePoolGradOp, AveragePoolOp>>(
           op, devicex, popnn::PoolingType::AVG);
     });
 
 OpxCreator<Opx> globalAverageOpxCreator(
     {Onnx::Operators::GlobalAveragePool_1},
     [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
-      return make_unique<TPoolOpx<GlobalAveragePoolOp>>(
+      return std::make_unique<TPoolOpx<GlobalAveragePoolOp>>(
           op, devicex, popnn::PoolingType::AVG);
     });
 
 OpxCreator<Opx> globalAverageGradOpxCreator(
     {Onnx::GradOperators::GlobalAveragePoolGrad},
     [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
-      return make_unique<
+      return std::make_unique<
           TPoolGradOpx<GlobalAveragePoolGradOp, GlobalAveragePoolOp>>(
           op, devicex, popnn::PoolingType::AVG);
     });

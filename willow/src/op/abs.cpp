@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/abs.hpp>
 #include <poponnx/opmanager.hpp>
 
@@ -7,11 +7,13 @@ namespace poponnx {
 AbsOp::AbsOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
 
-std::unique_ptr<Op> AbsOp::clone() const { return make_unique<AbsOp>(*this); }
+std::unique_ptr<Op> AbsOp::clone() const {
+  return std::make_unique<AbsOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> AbsOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<AbsGradOp>(*this));
+  upops.emplace_back(std::make_unique<AbsGradOp>(*this));
   return upops;
 }
 
@@ -34,7 +36,7 @@ const std::vector<GradInOutMapper> &AbsGradOp::gradInputInfo() const {
 void AbsGradOp::setup() { outInfo(getOutIndex()) = inInfo(getGradInIndex()); }
 
 std::unique_ptr<Op> AbsGradOp::clone() const {
-  return make_unique<AbsGradOp>(*this);
+  return std::make_unique<AbsGradOp>(*this);
 }
 
 namespace {

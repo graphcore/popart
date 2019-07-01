@@ -3,7 +3,6 @@
 #include <vector>
 #include <poponnx/error.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/conv.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -29,12 +28,14 @@ const Tensor *ConvOp::weightsIn() const {
 
 std::vector<std::unique_ptr<Op>> ConvOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<ConvDataGradOp>(*this));
-  upops.emplace_back(make_unique<ConvWeightsGradOp>(*this));
+  upops.emplace_back(std::make_unique<ConvDataGradOp>(*this));
+  upops.emplace_back(std::make_unique<ConvWeightsGradOp>(*this));
   return upops;
 }
 
-std::unique_ptr<Op> ConvOp::clone() const { return make_unique<ConvOp>(*this); }
+std::unique_ptr<Op> ConvOp::clone() const {
+  return std::make_unique<ConvOp>(*this);
+}
 
 void ConvWeightsGradOp::setup() { outInfo(getOutIndex()) = weightsInfo; }
 
@@ -184,7 +185,7 @@ ConvWeightsGradOp::ConvWeightsGradOp(const ConvOp &op_)
 }
 
 std::unique_ptr<Op> ConvWeightsGradOp::clone() const {
-  return make_unique<ConvWeightsGradOp>(*this);
+  return std::make_unique<ConvWeightsGradOp>(*this);
 }
 
 void ConvWeightsGradOp::appendAttributes(OpSerialiserBase &os) const {
@@ -219,7 +220,7 @@ ConvDataGradOp::ConvDataGradOp(const ConvOp &op_)
 }
 
 std::unique_ptr<Op> ConvDataGradOp::clone() const {
-  return make_unique<ConvDataGradOp>(*this);
+  return std::make_unique<ConvDataGradOp>(*this);
 }
 
 void ConvDataGradOp::appendAttributes(OpSerialiserBase &os) const {
@@ -250,7 +251,7 @@ ConvFlipWeightsOp::ConvFlipWeightsOp(const OperatorIdentifier &opid_,
     : Op(opid_, settings_) {}
 
 std::unique_ptr<Op> ConvFlipWeightsOp::clone() const {
-  return make_unique<ConvFlipWeightsOp>(*this);
+  return std::make_unique<ConvFlipWeightsOp>(*this);
 }
 
 ConvFlipWeightsOp::~ConvFlipWeightsOp() {}

@@ -16,6 +16,7 @@ ONNX for the IPU
     numerical_issues
     examples
     supported_ops
+    env_vars
     references
     api
 

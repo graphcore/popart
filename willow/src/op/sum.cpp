@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/sum.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -11,10 +11,12 @@ SumOp::SumOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
   // TODO : Do not broadcast in version 6
 }
 
-std::unique_ptr<Op> SumOp::clone() const { return make_unique<SumOp>(*this); }
+std::unique_ptr<Op> SumOp::clone() const {
+  return std::make_unique<SumOp>(*this);
+}
 
 std::unique_ptr<Op> SumOp::getIthGrad(int i) const {
-  return make_unique<SumArgGradOp>(*this, i);
+  return std::make_unique<SumArgGradOp>(*this, i);
 }
 
 SumArgGradOp::SumArgGradOp(const SumOp &op_, InIndex inputIndex)
@@ -25,7 +27,7 @@ SumArgGradOp::SumArgGradOp(const SumOp &op_, InIndex inputIndex)
 }
 
 std::unique_ptr<Op> SumArgGradOp::clone() const {
-  return make_unique<SumArgGradOp>(*this);
+  return std::make_unique<SumArgGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &SumArgGradOp::gradInputInfo() const {

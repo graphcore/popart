@@ -48,6 +48,8 @@ private:
   // The schedule index within a Graph
   std::map<FullGraphName, int> graphScheduleCounter;
   int getNextGraphIndex(const FullGraphName &gString);
+
+  std::set<DotCheck> getDotChecks();
 };
 } // namespace poponnx
 

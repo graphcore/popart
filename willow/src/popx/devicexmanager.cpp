@@ -2,8 +2,8 @@
 
 #include <poponnx/popx/devicexmanager.hpp>
 
+#include <memory>
 #include <poponnx/error.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/util.hpp>
 
 #include <poplar/Device.hpp>

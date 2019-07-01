@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/scatter.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -16,14 +16,14 @@ ScatterOp::ScatterOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_), axis(axis_) {}
 
 std::unique_ptr<Op> ScatterOp::clone() const {
-  return make_unique<ScatterOp>(*this);
+  return std::make_unique<ScatterOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> ScatterOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
 
-  result.push_back(make_unique<ScatterDataGradOp>(*this, axis));
-  result.push_back(make_unique<ScatterUpdateGradOp>(*this, axis));
+  result.push_back(std::make_unique<ScatterDataGradOp>(*this, axis));
+  result.push_back(std::make_unique<ScatterUpdateGradOp>(*this, axis));
 
   return result;
 }
@@ -57,7 +57,7 @@ ScatterDataGradOp::ScatterDataGradOp(const ScatterOp &op, int64_t axis_)
     : Op(Onnx::GradOperators::ScatterDataGrad, op.getSettings()), axis(axis_) {}
 
 std::unique_ptr<Op> ScatterDataGradOp::clone() const {
-  return make_unique<ScatterDataGradOp>(*this);
+  return std::make_unique<ScatterDataGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &ScatterDataGradOp::gradInputInfo() const {
@@ -91,7 +91,7 @@ ScatterUpdateGradOp::ScatterUpdateGradOp(const ScatterOp &op, int64_t axis_)
       axis(axis_) {}
 
 std::unique_ptr<Op> ScatterUpdateGradOp::clone() const {
-  return make_unique<ScatterUpdateGradOp>(*this);
+  return std::make_unique<ScatterUpdateGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &ScatterUpdateGradOp::gradInputInfo() const {

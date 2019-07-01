@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/sigmoid.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -14,7 +14,7 @@ SigmoidOp::inplacePriorityDefault() const {
 std::unique_ptr<Op>
 SigmoidOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::SigmoidInplace) {
-    return make_unique<SigmoidInplaceOp>(*this);
+    return std::make_unique<SigmoidInplaceOp>(*this);
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
@@ -25,7 +25,7 @@ SigmoidInplaceOp::SigmoidInplaceOp(const SigmoidOp &sigm_op)
                                 sigm_op.getSettings()) {}
 
 std::unique_ptr<Op> SigmoidInplaceOp::clone() const {
-  return make_unique<SigmoidInplaceOp>(*this);
+  return std::make_unique<SigmoidInplaceOp>(*this);
 }
 
 SigmoidOp::SigmoidOp(const OperatorIdentifier &_opid,
@@ -33,12 +33,12 @@ SigmoidOp::SigmoidOp(const OperatorIdentifier &_opid,
     : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> SigmoidOp::clone() const {
-  return make_unique<SigmoidOp>(*this);
+  return std::make_unique<SigmoidOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> SigmoidOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SigmoidGradOp>(*this));
+  upops.emplace_back(std::make_unique<SigmoidGradOp>(*this));
   return upops;
 }
 
@@ -46,7 +46,7 @@ SigmoidGradOp::SigmoidGradOp(const SigmoidOp &fwdOp)
     : Op(Onnx::GradOperators::SigmoidGrad, fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> SigmoidGradOp::clone() const {
-  return make_unique<SigmoidGradOp>(*this);
+  return std::make_unique<SigmoidGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &SigmoidGradOp::gradInputInfo() const {

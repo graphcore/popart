@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/reciprocal.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -10,13 +10,13 @@ ReciprocalOp::ReciprocalOp(const OperatorIdentifier &_opid,
     : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> ReciprocalOp::clone() const {
-  return make_unique<ReciprocalOp>(*this);
+  return std::make_unique<ReciprocalOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> ReciprocalOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
 
-  upops.emplace_back(make_unique<ReciprocalGradOp>(*this));
+  upops.emplace_back(std::make_unique<ReciprocalGradOp>(*this));
   return upops;
 }
 
@@ -25,7 +25,7 @@ ReciprocalGradOp::ReciprocalGradOp(const ReciprocalOp &op_)
                                       op_) {}
 
 std::unique_ptr<Op> ReciprocalGradOp::clone() const {
-  return make_unique<ReciprocalGradOp>(*this);
+  return std::make_unique<ReciprocalGradOp>(*this);
 }
 
 namespace {

@@ -1,7 +1,7 @@
+#include <memory>
 #include <poponnx/error.hpp>
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/nll.hpp>
 #include <poponnx/op/softmax.hpp>
 #include <poponnx/opmanager.hpp>
@@ -23,7 +23,7 @@ SoftmaxInplaceOp::SoftmaxInplaceOp(const SoftmaxOp &softmax_op)
 
 std::vector<std::unique_ptr<Op>> SoftmaxOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SoftmaxGradOp>(*this));
+  upops.emplace_back(std::make_unique<SoftmaxGradOp>(*this));
   return upops;
 }
 
@@ -34,20 +34,20 @@ SoftmaxOp::inplacePriorityDefault() const {
 }
 
 std::unique_ptr<Op> SoftmaxInplaceOp::clone() const {
-  return make_unique<SoftmaxInplaceOp>(*this);
+  return std::make_unique<SoftmaxInplaceOp>(*this);
 }
 
 std::unique_ptr<Op>
 SoftmaxOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::SoftmaxInplace) {
-    return make_unique<SoftmaxInplaceOp>(*this);
+    return std::make_unique<SoftmaxInplaceOp>(*this);
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
 }
 
 std::unique_ptr<Op> SoftmaxOp::clone() const {
-  return make_unique<SoftmaxOp>(*this);
+  return std::make_unique<SoftmaxOp>(*this);
 }
 
 int64_t SoftmaxOp::getAxis() const { return axis; }
@@ -66,7 +66,7 @@ SoftmaxGradOp::SoftmaxGradOp(const SoftmaxOp &op_)
       axis(op_.getAxis()) {}
 
 std::unique_ptr<Op> SoftmaxGradOp::clone() const {
-  return make_unique<SoftmaxGradOp>(*this);
+  return std::make_unique<SoftmaxGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &SoftmaxGradOp::gradInputInfo() const {

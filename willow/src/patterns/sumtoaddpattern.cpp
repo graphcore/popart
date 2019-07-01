@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/graph.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/add.hpp>
 #include <poponnx/op/sum.hpp>
 #include <poponnx/patterns/sumtoaddpattern.hpp>

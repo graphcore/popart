@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/relu.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/region.hpp>
@@ -16,7 +16,7 @@ ReluOp::inplacePriorityDefault() const {
 std::unique_ptr<Op>
 ReluOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::ReluInplace) {
-    return make_unique<ReluInplaceOp>(*this);
+    return std::make_unique<ReluInplaceOp>(*this);
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
@@ -27,17 +27,19 @@ ReluInplaceOp::ReluInplaceOp(const ReluOp &relu_op)
                                 relu_op.getSettings()) {}
 
 std::unique_ptr<Op> ReluInplaceOp::clone() const {
-  return make_unique<ReluInplaceOp>(*this);
+  return std::make_unique<ReluInplaceOp>(*this);
 }
 
-std::unique_ptr<Op> ReluOp::clone() const { return make_unique<ReluOp>(*this); }
+std::unique_ptr<Op> ReluOp::clone() const {
+  return std::make_unique<ReluOp>(*this);
+}
 
 ReluOp::ReluOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::vector<std::unique_ptr<Op>> ReluOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<ReluGradOp>(*this));
+  upops.emplace_back(std::make_unique<ReluGradOp>(*this));
   return upops;
 }
 
@@ -46,7 +48,7 @@ void ReluGradOp::setup() {
 }
 
 std::unique_ptr<Op> ReluGradOp::clone() const {
-  return make_unique<ReluGradOp>(*this);
+  return std::make_unique<ReluGradOp>(*this);
 }
 
 ReluGradOp::ReluGradOp(const ReluOp &op_)

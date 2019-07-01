@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/ipucopy.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -17,7 +17,7 @@ IpuCopyOp::IpuCopyOp(const OperatorIdentifier &_opid,
 }
 
 std::unique_ptr<Op> IpuCopyOp::clone() const {
-  return make_unique<IpuCopyOp>(*this);
+  return std::make_unique<IpuCopyOp>(*this);
 }
 
 void IpuCopyOp::setup() {

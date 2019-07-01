@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/error.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/logsoftmax.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -11,7 +11,7 @@ LogSoftmaxOp::LogSoftmaxOp(const OperatorIdentifier &_opid,
     : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> LogSoftmaxOp::clone() const {
-  return make_unique<LogSoftmaxOp>(*this);
+  return std::make_unique<LogSoftmaxOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> LogSoftmaxOp::getGradOps() {

@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/error.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/globalaveragepool.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -44,12 +44,12 @@ Shape GlobalAveragePoolOp::getUpperPads() const {
 }
 
 std::unique_ptr<Op> GlobalAveragePoolOp::clone() const {
-  return make_unique<GlobalAveragePoolOp>(*this);
+  return std::make_unique<GlobalAveragePoolOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> GlobalAveragePoolOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<GlobalAveragePoolGradOp>(*this));
+  upops.emplace_back(std::make_unique<GlobalAveragePoolGradOp>(*this));
   return upops;
 }
 
@@ -99,7 +99,7 @@ const std::map<int, int> &GlobalAveragePoolGradOp::gradOutToNonGradIn() const {
 void GlobalAveragePoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
 std::unique_ptr<Op> GlobalAveragePoolGradOp::clone() const {
-  return make_unique<GlobalAveragePoolGradOp>(*this);
+  return std::make_unique<GlobalAveragePoolGradOp>(*this);
 }
 
 const GlobalAveragePoolOp *GlobalAveragePoolGradOp::getCloneOfCreator() const {

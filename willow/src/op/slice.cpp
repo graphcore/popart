@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/pad.hpp>
 #include <poponnx/op/slice.hpp>
 #include <poponnx/op/slicegrad.hpp>
@@ -86,7 +86,7 @@ std::unique_ptr<Op>
 SliceOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 
   if (operator_id == Onnx::CustomOperators::SliceInplace) {
-    return make_unique<SliceInplaceOp>(*this);
+    return std::make_unique<SliceInplaceOp>(*this);
   }
 
   // catch remaining cases and throw an error
@@ -232,11 +232,11 @@ SliceInplaceOp::SliceInplaceOp(const SliceOp &op)
                   op.getSettings()) {}
 
 std::unique_ptr<Op> SliceOp::clone() const {
-  return make_unique<SliceOp>(*this);
+  return std::make_unique<SliceOp>(*this);
 }
 
 std::unique_ptr<Op> SliceInplaceOp::clone() const {
-  return make_unique<SliceInplaceOp>(*this);
+  return std::make_unique<SliceInplaceOp>(*this);
 }
 
 std::vector<std::tuple<OperatorIdentifier, float>>
@@ -247,7 +247,7 @@ SliceOp::inplacePriorityDefault() const {
 
 std::vector<std::unique_ptr<Op>> SliceOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<SliceGradOp>(*this));
+  upops.emplace_back(std::make_unique<SliceGradOp>(*this));
   return upops;
 }
 

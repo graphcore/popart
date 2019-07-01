@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/topk.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -13,7 +13,9 @@ TopKOp::TopKOp(const OperatorIdentifier &opid_,
                const Op::Settings &settings)
     : BaseSortOp(opid_, axis_, settings), K(K_) {}
 
-std::unique_ptr<Op> TopKOp::clone() const { return make_unique<TopKOp>(*this); }
+std::unique_ptr<Op> TopKOp::clone() const {
+  return std::make_unique<TopKOp>(*this);
+}
 
 void TopKOp::connectInTensor(InIndex inIndex, TensorId tenId) {
   if (inIndex == getInIndex()) {
@@ -72,7 +74,7 @@ int64_t TopKOp::getK() const { return K; }
 
 std::vector<std::unique_ptr<Op>> TopKOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
-  result.push_back(make_unique<TopKGradOp>(*this));
+  result.push_back(std::make_unique<TopKGradOp>(*this));
   return result;
 }
 
@@ -82,7 +84,7 @@ TopKGradOp::TopKGradOp(const TopKOp &topk)
 }
 
 std::unique_ptr<Op> TopKGradOp::clone() const {
-  return make_unique<TopKGradOp>(*this);
+  return std::make_unique<TopKGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &TopKGradOp::gradInputInfo() const {
@@ -124,7 +126,7 @@ std::unique_ptr<Op> topKFactory(const OperatorIdentifier &_opid,
     // axis is optional
     int64_t axis = attr.getAttribute<Attributes::Int>("axis", 0);
 
-    return make_unique<TopKOp>(_opid, K, axis, settings);
+    return std::make_unique<TopKOp>(_opid, K, axis, settings);
   } else if (_opid.version == 10) {
     // K is now an input, which we will attend to determine in the setup
     // method
@@ -132,7 +134,7 @@ std::unique_ptr<Op> topKFactory(const OperatorIdentifier &_opid,
     // axis is optional
     int64_t axis = attr.getAttribute<Attributes::Int>("axis", 0);
 
-    return make_unique<TopKOp>(_opid, -1, axis, settings);
+    return std::make_unique<TopKOp>(_opid, -1, axis, settings);
   } else {
     throw error("Unsupported operator version {} for topK", _opid.version);
   }

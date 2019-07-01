@@ -1,17 +1,19 @@
+#include <memory>
 #include <sstream>
 #include <poponnx/error.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/l1.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
 namespace poponnx {
 
-std::unique_ptr<Op> L1Op::clone() const { return make_unique<L1Op>(*this); }
+std::unique_ptr<Op> L1Op::clone() const {
+  return std::make_unique<L1Op>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> L1Op::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<L1GradOp>(*this));
+  upops.emplace_back(std::make_unique<L1GradOp>(*this));
   return upops;
 }
 
@@ -62,7 +64,7 @@ L1GradOp::L1GradOp(const L1Op &op_)
       l1loss_(op_.l1l()) {}
 
 std::unique_ptr<Op> L1GradOp::clone() const {
-  return make_unique<L1GradOp>(*this);
+  return std::make_unique<L1GradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &L1GradOp::gradInputInfo() const {

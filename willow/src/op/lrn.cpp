@@ -1,8 +1,8 @@
 #include <algorithm>
+#include <memory>
 #include <vector>
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/lrn.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -20,11 +20,13 @@ LRNOp::LRNOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_), alpha(_alpha), beta(_beta), bias(_bias),
       size(_size) {}
 
-std::unique_ptr<Op> LRNOp::clone() const { return make_unique<LRNOp>(*this); }
+std::unique_ptr<Op> LRNOp::clone() const {
+  return std::make_unique<LRNOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> LRNOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
-  result.emplace_back(make_unique<LRNGradOp>(*this));
+  result.emplace_back(std::make_unique<LRNGradOp>(*this));
   return result;
 }
 
@@ -51,7 +53,7 @@ LRNGradOp::LRNGradOp(const LRNOp &op_)
       size(op_.getSize()) {}
 
 std::unique_ptr<Op> LRNGradOp::clone() const {
-  return make_unique<LRNGradOp>(*this);
+  return std::make_unique<LRNGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &LRNGradOp::gradInputInfo() const {

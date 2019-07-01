@@ -1,7 +1,7 @@
+#include <memory>
 #include <vector>
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/lstm.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -19,11 +19,13 @@ LSTMOp::LSTMOp(const OperatorIdentifier &_opid,
   // TODO : Use the output_sequence attribute in version 1
 }
 
-std::unique_ptr<Op> LSTMOp::clone() const { return make_unique<LSTMOp>(*this); }
+std::unique_ptr<Op> LSTMOp::clone() const {
+  return std::make_unique<LSTMOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> LSTMOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<LSTMGradOp>(*this));
+  upops.emplace_back(std::make_unique<LSTMGradOp>(*this));
   return upops;
 }
 
@@ -140,7 +142,7 @@ LSTMGradOp::LSTMGradOp(const LSTMOp &fwd_op)
       forward_op(fwd_op) {}
 
 std::unique_ptr<Op> LSTMGradOp::clone() const {
-  return make_unique<LSTMGradOp>(*this);
+  return std::make_unique<LSTMGradOp>(*this);
 }
 
 void LSTMGradOp::setup() {

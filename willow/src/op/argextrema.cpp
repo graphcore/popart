@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <vector>
 
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/argextrema.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -16,7 +16,7 @@ ArgExtremaOp::ArgExtremaOp(const OperatorIdentifier &opid_,
     : Op(opid_, settings), keepdims(keepdims_), axis(axis_) {}
 
 std::unique_ptr<Op> ArgExtremaOp::clone() const {
-  return make_unique<ArgExtremaOp>(*this);
+  return std::make_unique<ArgExtremaOp>(*this);
 }
 
 void ArgExtremaOp::setup() {

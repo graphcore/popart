@@ -1,9 +1,9 @@
 #include <algorithm>
+#include <memory>
 #include <onnx/onnx_pb.h>
 #include <sstream>
 #include <poponnx/attributes.hpp>
 #include <poponnx/error.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/util.hpp>
 
 namespace poponnx {

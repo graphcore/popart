@@ -1,6 +1,6 @@
 #include <poponnx/op/negate.hpp>
 
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
 
@@ -11,12 +11,12 @@ NegateOp::NegateOp(const OperatorIdentifier &_opid,
     : ElementWiseUnaryOp(_opid, settings_) {}
 
 std::unique_ptr<Op> NegateOp::clone() const {
-  return make_unique<NegateOp>(*this);
+  return std::make_unique<NegateOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> NegateOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<NegateGradOp>(*this));
+  upops.emplace_back(std::make_unique<NegateGradOp>(*this));
   return upops;
 }
 
@@ -24,7 +24,7 @@ NegateGradOp::NegateGradOp(const NegateOp &fwdOp)
     : NegateOp(Onnx::GradOperators::NegGrad, fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> NegateGradOp::clone() const {
-  return make_unique<NegateGradOp>(*this);
+  return std::make_unique<NegateGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &NegateGradOp::gradInputInfo() const {

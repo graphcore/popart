@@ -1,8 +1,8 @@
 #include <algorithm>
+#include <memory>
 #include <vector>
 #include <poponnx/graph.hpp>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/batchnorm.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -23,12 +23,12 @@ BatchNormOp::BatchNormOp(const OperatorIdentifier &_opid,
 }
 
 std::unique_ptr<Op> BatchNormOp::clone() const {
-  return make_unique<BatchNormOp>(*this);
+  return std::make_unique<BatchNormOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> BatchNormOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<BatchNormGradOp>(*this));
+  upops.emplace_back(std::make_unique<BatchNormGradOp>(*this));
   return upops;
 }
 
@@ -134,7 +134,7 @@ BatchNormGradOp::BatchNormGradOp(const BatchNormOp &op_)
       fwdBInInfo(op_.inInfo(BatchNormOp::getBInIndex())) {}
 
 std::unique_ptr<Op> BatchNormGradOp::clone() const {
-  return make_unique<BatchNormGradOp>(*this);
+  return std::make_unique<BatchNormGradOp>(*this);
 }
 
 const std::map<int, int> &BatchNormGradOp::gradOutToNonGradIn() const {

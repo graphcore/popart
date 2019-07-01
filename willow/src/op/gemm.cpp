@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/gemm.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -17,7 +17,9 @@ GemmOp::GemmOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_), alpha(alpha_), beta(beta_), transA(transA_),
       transB(transB_), broadcast(broadcast_) {}
 
-std::unique_ptr<Op> GemmOp::clone() const { return make_unique<GemmOp>(*this); }
+std::unique_ptr<Op> GemmOp::clone() const {
+  return std::make_unique<GemmOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> GemmOp::getGradOps() {
   throw error(

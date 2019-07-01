@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/flatten.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -10,7 +10,7 @@ namespace poponnx {
 std::unique_ptr<Op>
 FlattenOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::FlattenInplace) {
-    return make_unique<FlattenInplaceOp>(*this);
+    return std::make_unique<FlattenInplaceOp>(*this);
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
@@ -65,11 +65,11 @@ FlattenInplaceOp::FlattenInplaceOp(const FlattenOp &op)
                     op.settings) {}
 
 std::unique_ptr<Op> FlattenInplaceOp::clone() const {
-  return make_unique<FlattenInplaceOp>(*this);
+  return std::make_unique<FlattenInplaceOp>(*this);
 }
 
 std::unique_ptr<Op> FlattenOp::clone() const {
-  return make_unique<FlattenOp>(*this);
+  return std::make_unique<FlattenOp>(*this);
 }
 
 FlattenInplaceOp::FlattenInplaceOp(const OperatorIdentifier &_opid,
@@ -103,7 +103,7 @@ void FlattenBaseOp::setup() {
 std::vector<std::unique_ptr<Op>> FlattenBaseOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> result;
 
-  result.push_back(make_unique<FlattenGradOp>(*this));
+  result.push_back(std::make_unique<FlattenGradOp>(*this));
 
   return result;
 }
@@ -143,7 +143,7 @@ static std::unique_ptr<Op> flattenOpFactory(const OperatorIdentifier &_opid,
                                             const Op::Settings &settings,
                                             const Attributes &attr) {
   int64_t axis = attr.getAttribute<Attributes::Int>("axis", 1);
-  return make_unique<FlattenOp>(_opid, axis, settings);
+  return std::make_unique<FlattenOp>(_opid, axis, settings);
 }
 
 static std::unique_ptr<Op>
@@ -151,7 +151,7 @@ flattenInplaceOpFactory(const OperatorIdentifier &_opid,
                         const Op::Settings &settings,
                         const Attributes &attr) {
   int64_t axis = attr.getAttribute<Attributes::Int>("axis", 1);
-  return make_unique<FlattenInplaceOp>(_opid, axis, settings);
+  return std::make_unique<FlattenInplaceOp>(_opid, axis, settings);
 }
 
 static OpCreator<FlattenOp> flattenOpCreator({Onnx::Operators::Flatten_1,

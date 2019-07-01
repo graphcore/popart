@@ -1,5 +1,5 @@
 #include <algorithm>
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/reduce.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -18,7 +18,7 @@ ReduceOp::ReduceOp(const OperatorIdentifier &_opid,
 }
 
 std::unique_ptr<Op> ReduceOp::clone() const {
-  return make_unique<ReduceOp>(*this);
+  return std::make_unique<ReduceOp>(*this);
 }
 
 void ReduceOp::setup() {
@@ -77,7 +77,7 @@ ReduceGradOp::ReduceGradOp(const AiGraphcoreOpIdV1 &opid_,
       backward_shape(backward_shape_), axes(fwdOp.getAxes()) {}
 
 std::unique_ptr<Op> ReduceGradOp::clone() const {
-  return make_unique<ReduceGradOp>(*this);
+  return std::make_unique<ReduceGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &ReduceGradOp::gradInputInfo() const {

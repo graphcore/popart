@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/ir.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/identity.hpp>
 #include <poponnx/op/negate.hpp>
 #include <poponnx/op/reducesum.hpp>
@@ -24,7 +24,7 @@ SubtractArg1GradOpPattern::sequence(Op *op) const {
   std::vector<std::unique_ptr<Op>> seq;
 
   seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Neg, op, {}));
-  seq.push_back(make_unique<ReduceSumOp>(
+  seq.push_back(std::make_unique<ReduceSumOp>(
       Onnx::AiOnnx::OpSet9::ReduceSum, axes, false, op->getSettings()));
 
   return seq;

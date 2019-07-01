@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/exp.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -14,7 +14,7 @@ ExpOp::inplacePriorityDefault() const {
 std::unique_ptr<Op>
 ExpOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::ExpInplace) {
-    return make_unique<ExpInplaceOp>(*this);
+    return std::make_unique<ExpInplaceOp>(*this);
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
@@ -25,17 +25,19 @@ ExpInplaceOp::ExpInplaceOp(const ExpOp &exp_op)
                                 exp_op.getSettings()) {}
 
 std::unique_ptr<Op> ExpInplaceOp::clone() const {
-  return make_unique<ExpInplaceOp>(*this);
+  return std::make_unique<ExpInplaceOp>(*this);
 }
 
 ExpOp::ExpOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
 
-std::unique_ptr<Op> ExpOp::clone() const { return make_unique<ExpOp>(*this); }
+std::unique_ptr<Op> ExpOp::clone() const {
+  return std::make_unique<ExpOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> ExpOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<ExpGradOp>(*this));
+  upops.emplace_back(std::make_unique<ExpGradOp>(*this));
   return upops;
 }
 
@@ -43,7 +45,7 @@ ExpGradOp::ExpGradOp(const ExpOp &fwdOp)
     : Op(Onnx::GradOperators::ExpGrad, fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> ExpGradOp::clone() const {
-  return make_unique<ExpGradOp>(*this);
+  return std::make_unique<ExpGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &ExpGradOp::gradInputInfo() const {

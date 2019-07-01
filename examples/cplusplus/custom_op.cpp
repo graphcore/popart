@@ -7,10 +7,10 @@
 // ISSUE : the version can currently only be 9. Need to support onnx version
 // information
 
+#include <memory>
 #include <poponnx/builder.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/logging.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/ndarraywrapper.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/op/l1.hpp>
@@ -52,6 +52,14 @@ class CubeGradOp;
 class CubeOpx;
 class CubeGradOpx;
 
+namespace {
+// for C++11 compatibility, we don't use std::make_unique
+template <typename T, typename... Args>
+std::unique_ptr<T> make_unique(Args &&... args) {
+  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+} // namespace
+
 // The gradient Op
 class CubeGradOp : public poponnx::Op {
 public:
@@ -59,7 +67,7 @@ public:
       : poponnx::Op(Onnx::CustomGradOperators::CubeGrad, fwdOp.getSettings()) {}
 
   std::unique_ptr<Op> clone() const final {
-    return poponnx::make_unique<CubeGradOp>(*this);
+    return make_unique<CubeGradOp>(*this);
   }
 
   // same comment as for CubeOp, for running shape/type inference "statically"
@@ -122,9 +130,7 @@ public:
   //
   virtual void setup() { outInfo(0) = inInfo(0); }
 
-  std::unique_ptr<Op> clone() const final {
-    return poponnx::make_unique<CubeOp>(*this);
-  }
+  std::unique_ptr<Op> clone() const final { return make_unique<CubeOp>(*this); }
 
   // There is only one Gradient Op for CubeOp, a CubeGradOp
   // It is possible to have multiple Gradient Ops

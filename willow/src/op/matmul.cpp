@@ -1,5 +1,5 @@
+#include <memory>
 #include <poponnx/error.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/op/matmul.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/tensor.hpp>
@@ -13,13 +13,13 @@ MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
     : Op(_opid, settings_) {}
 
 std::unique_ptr<Op> MatMulOp::clone() const {
-  return make_unique<MatMulOp>(*this);
+  return std::make_unique<MatMulOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> MatMulOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<MatMulLhsGradOp>(*this));
-  upops.emplace_back(make_unique<MatMulRhsGradOp>(*this));
+  upops.emplace_back(std::make_unique<MatMulLhsGradOp>(*this));
+  upops.emplace_back(std::make_unique<MatMulRhsGradOp>(*this));
   return upops;
 }
 
@@ -102,7 +102,7 @@ MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)
 void MatMulLhsGradOp::setup() { outInfo(0) = fwdOpLhsInfo; }
 
 std::unique_ptr<Op> MatMulLhsGradOp::clone() const {
-  return make_unique<MatMulLhsGradOp>(*this);
+  return std::make_unique<MatMulLhsGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &MatMulLhsGradOp::gradInputInfo() const {
@@ -137,7 +137,7 @@ MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
       fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
 
 std::unique_ptr<Op> MatMulRhsGradOp::clone() const {
-  return make_unique<MatMulRhsGradOp>(*this);
+  return std::make_unique<MatMulRhsGradOp>(*this);
 }
 
 void MatMulRhsGradOp::setup() { outInfo(0) = fwdOpRhsInfo; }

@@ -1,4 +1,4 @@
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/clip.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -20,7 +20,7 @@ ClipInplaceOp::ClipInplaceOp(const ClipOp &clip_op)
 std::unique_ptr<Op>
 ClipOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::ClipInplace) {
-    return make_unique<ClipInplaceOp>(*this);
+    return std::make_unique<ClipInplaceOp>(*this);
   }
   // catch remaining cases and throw an error
   return Op::getInplaceVariant(operator_id);
@@ -32,11 +32,13 @@ ClipOp::ClipOp(const OperatorIdentifier &_opid,
                const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_), min(min_), max(max_) {}
 
-std::unique_ptr<Op> ClipOp::clone() const { return make_unique<ClipOp>(*this); }
+std::unique_ptr<Op> ClipOp::clone() const {
+  return std::make_unique<ClipOp>(*this);
+}
 
 std::vector<std::unique_ptr<Op>> ClipOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<ClipGradOp>(*this));
+  upops.emplace_back(std::make_unique<ClipGradOp>(*this));
   return upops;
 }
 
@@ -58,7 +60,7 @@ void ClipInplaceOp::appendAttributes(OpSerialiserBase &os) const {
 }
 
 std::unique_ptr<Op> ClipInplaceOp::clone() const {
-  return make_unique<ClipInplaceOp>(*this);
+  return std::make_unique<ClipInplaceOp>(*this);
 }
 
 // A clip op with a clipping range of min and max numbers than
@@ -79,7 +81,7 @@ ClipGradOp::ClipGradOp(const ClipOp &fwdOp)
              fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> ClipGradOp::clone() const {
-  return make_unique<ClipGradOp>(*this);
+  return std::make_unique<ClipGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &ClipGradOp::gradInputInfo() const {

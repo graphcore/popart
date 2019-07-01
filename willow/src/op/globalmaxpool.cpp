@@ -1,7 +1,7 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/globalmaxpool.hpp>
 
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
@@ -46,12 +46,12 @@ Shape GlobalMaxPoolOp::getUpperPads() const {
 }
 
 std::unique_ptr<Op> GlobalMaxPoolOp::clone() const {
-  return make_unique<GlobalMaxPoolOp>(*this);
+  return std::make_unique<GlobalMaxPoolOp>(*this);
 }
 
 std::vector<std::unique_ptr<Op>> GlobalMaxPoolOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
-  upops.emplace_back(make_unique<GlobalMaxPoolGradOp>(*this));
+  upops.emplace_back(std::make_unique<GlobalMaxPoolGradOp>(*this));
   return upops;
 }
 
@@ -96,7 +96,7 @@ const std::map<int, int> &GlobalMaxPoolGradOp::gradOutToNonGradIn() const {
 void GlobalMaxPoolGradOp::setup() { outInfo(getOutIndex()) = unpooledInfo; }
 
 std::unique_ptr<Op> GlobalMaxPoolGradOp::clone() const {
-  return make_unique<GlobalMaxPoolGradOp>(*this);
+  return std::make_unique<GlobalMaxPoolGradOp>(*this);
 }
 
 const GlobalMaxPoolOp *GlobalMaxPoolGradOp::getCloneOfCreator() const {

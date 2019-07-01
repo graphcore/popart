@@ -2,9 +2,9 @@
 #define GUARD_NEURALNET_CONSTEXPR_HPP
 
 #include <map>
+#include <memory>
 #include <poponnx/attributes.hpp>
 #include <poponnx/error.hpp>
-#include <poponnx/makeunique.hpp>
 #include <poponnx/names.hpp>
 #include <poponnx/op.hpp>
 #include <poponnx/tensorinfo.hpp>
@@ -101,7 +101,9 @@ template <class OP> class ConstExprOpCreator {
   void registerOp(const std::string &type) {
     ConstExprOpManager::registerConstExprOp(
         type, [](Op *op) -> std::unique_ptr<ConstExprOp> {
-          return make_unique<OP>(op);
+          // using C++11 in the public API for now, make_unique preferred
+          // internally
+          return std::unique_ptr<OP>(new OP(op));
         });
   }
 

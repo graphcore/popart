@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include <poponnx/makeunique.hpp>
+#include <memory>
 #include <poponnx/op/concat.hpp>
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
@@ -22,7 +22,7 @@ ConcatInplaceOp::ConcatInplaceOp(const ConcatOp &op, int64_t axis_)
     : ConcatOp(Onnx::CustomOperators::ConcatInplace, axis_, op.getSettings()) {}
 
 std::unique_ptr<Op> ConcatOp::clone() const {
-  return make_unique<ConcatOp>(*this);
+  return std::make_unique<ConcatOp>(*this);
 }
 
 void ConcatOp::regMapPreChecks(InIndex inIndex) const {
@@ -69,7 +69,7 @@ view::RegMap ConcatOp::bwdRegMap(InIndex inIndex) const {
 std::unique_ptr<Op>
 ConcatOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   if (operator_id == Onnx::CustomOperators::ConcatInplace) {
-    return make_unique<ConcatInplaceOp>(*this, axis);
+    return std::make_unique<ConcatInplaceOp>(*this, axis);
   }
 
   // catch remaining cases and throw an error
@@ -77,7 +77,7 @@ ConcatOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 }
 
 std::unique_ptr<Op> ConcatInplaceOp::clone() const {
-  return make_unique<ConcatInplaceOp>(*this);
+  return std::make_unique<ConcatInplaceOp>(*this);
 }
 
 int64_t ConcatOp::getAxis() const { return axis; }
@@ -173,7 +173,7 @@ std::vector<std::unique_ptr<Op>> ConcatOp::getGradOps() {
   result.reserve(input->n());
 
   for (int i = 0; i < input->n(); ++i) {
-    result.push_back(make_unique<ConcatGradOp>(*this, i));
+    result.push_back(std::make_unique<ConcatGradOp>(*this, i));
   }
 
   return result;
@@ -217,7 +217,7 @@ ConcatGradOp::ConcatGradOp(const OperatorIdentifier &_opid,
       gradOutToNonGradInInfo(concat_grad_op.gradOutToNonGradInInfo) {}
 
 std::unique_ptr<Op> ConcatGradOp::clone() const {
-  return make_unique<ConcatGradOp>(*this);
+  return std::make_unique<ConcatGradOp>(*this);
 }
 
 const std::vector<GradInOutMapper> &ConcatGradOp::gradInputInfo() const {
