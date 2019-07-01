@@ -11,6 +11,34 @@
 
 namespace poponnx {
 
+std::ostream &operator<<(std::ostream &os, const TensorType &tt) {
+  switch (tt) {
+  case TensorType::ActGrad:
+    os << "ActGrad";
+    break;
+  case TensorType::Const:
+    os << "Const";
+    break;
+  case TensorType::Momentum:
+    os << "Momentum";
+    break;
+  case TensorType::Stream:
+    os << "Stream";
+    break;
+  case TensorType::Unknown:
+    os << "Unknown";
+    break;
+  case TensorType::Variable:
+    os << "Variable";
+    break;
+  default:
+    os << "Undefined";
+    break;
+  }
+
+  return os;
+}
+
 std::unique_ptr<Tensor> Tensor::clone() const {
   std::unique_ptr<Tensor> theClone(
       new Tensor("clone_" + id, tensorType(), graph));

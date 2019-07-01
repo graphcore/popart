@@ -49,9 +49,7 @@ public:
   // Order of these enums is used for scheduling
   enum class ProgramFragmentIndex {
     STREAMWEIGHTSFROMHOST = 0,
-    COPYWEIGHTSBETWEENIPUS,
     STREAMOPTIMIZERFROMHOST,
-    COPYOPTIMIZERBETWEENIPUS,
     INIT,
     MAINPROGRAM,
     WEIGHTSTOHOST,
@@ -64,9 +62,7 @@ public:
   // Program fragments are not necessarily complete program that can be given to
   // a poplar engine.
   poplar::program::Sequence &streamWeightsFromHostFragment();
-  poplar::program::Sequence &copyWeightsBetweenIpusFragment();
   poplar::program::Sequence &streamOptimizerFromHostFragment();
-  poplar::program::Sequence &copyOptimizerBetweenIpusFragment();
   poplar::program::Sequence &setRandomSeedFragment();
   poplar::program::Sequence &setRandomDropoutSeedFragment();
   poplar::program::Sequence &toHostFinalCopyFragment();
@@ -200,7 +196,12 @@ public:
   poplar::Graph &rootGraph();
   const poplar::Graph &rootGraph() const;
 
+  // T9669 replace masterGraph with replicatedGraph
   poplar::Graph &masterGraph();
+  
+  poplar::Graph &replicatedGraph();
+  const poplar::Graph &replicatedGraph() const;
+
   poplar::Graph &graph(int64_t virtualGraphIndex);
 
   // return the name of the task which creates a poplar::Tensor
@@ -276,7 +277,7 @@ private:
   // Operations that are not mapped to a specific IPU should be added to
   // this graph. This will be a replicated graph if the options specify a
   // replication factor greater than one.
-  std::unique_ptr<poplar::Graph> pMasterGraph{nullptr};
+  std::unique_ptr<poplar::Graph> pReplicatedGraph{nullptr};
 
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
   std::unique_ptr<poplar::Target> pTarget{nullptr};
@@ -328,8 +329,7 @@ private:
 
   // Task to append a Copy from poplar::Stream to poplar::Tensor
   PriTask fromHostTask(Tensor *tensor,
-                       poplar::program::Sequence &streamSq,
-                       poplar::program::Sequence &copySq) const;
+                       poplar::program::Sequence &streamSq) const;
   TaskId fromHostTaskId(TensorId) const;
 
   // Task to append a Copy to poplar::Stream from poplar::Tensor
