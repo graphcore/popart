@@ -296,10 +296,6 @@ backend_test.exclude('Conv3d')
 backend_test.exclude('Conv2d_groups')
 backend_test.exclude('Conv2d_groups_thnn')
 
-# T9144
-backend_test.exclude('logsoftmax_axis_0_ipu')
-backend_test.exclude('logsoftmax_axis_2_ipu')
-
 # T9147
 backend_test.exclude('reduce_sum_default_axes_keepdims_example_ipu')
 backend_test.exclude('reduce_sum_default_axes_keepdims_random_ipu')

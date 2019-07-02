@@ -9,9 +9,16 @@ class NllLoss;
 
 class LogSoftmaxOp : public ElementWiseUnaryOp {
 public:
-  LogSoftmaxOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
+  LogSoftmaxOp(const OperatorIdentifier &_opid,
+               int64_t axis,
+               const Op::Settings &settings_);
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   std::unique_ptr<Op> clone() const final;
+
+  int64_t getAxis() { return axis; }
+
+private:
+  int64_t axis;
 };
 
 // Has no grad op. LogSoftmaxOp pattern converts

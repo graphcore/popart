@@ -52,6 +52,8 @@ std::unique_ptr<Op> SoftmaxOp::clone() const {
 
 int64_t SoftmaxOp::getAxis() const { return axis; }
 
+void SoftmaxOp::setAxis(int64_t axis_) { axis = axis_; }
+
 void SoftmaxOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
   os.appendAttribute("axis", axis);
