@@ -116,6 +116,12 @@ void Session::modelToHost(const std::string &fn) {
   device_->weightsToHost(initMap);
 
   io::writeModel(model, fn);
+
+  if (!ir.getSessionOptions().constantWeights ||
+      ir.getExecutionMode() != Ir::ExecutionMode::INFERENCE) {
+    // Weights in ir, device, and disk now all match
+    ir.resetWeights(model);
+  }
 }
 
 std::string Session::getSummaryReport() const {
