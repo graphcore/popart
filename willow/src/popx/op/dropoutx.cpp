@@ -1,3 +1,4 @@
+#include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
 #include <poprand/RandomGen.hpp>
 #include <poponnx/error.hpp>
@@ -6,6 +7,8 @@
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/dropoutx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
+
+namespace pe = popops::expr;
 
 namespace poponnx {
 namespace popx {
@@ -23,13 +26,15 @@ DropoutOpx::DropoutOpx(Op *op, Devicex *devicex)
 }
 
 void DropoutOpx::grow(poplar::program::Sequence &prog) const {
+
+  auto &op = getOp<DropoutOp>();
+
   if (op_p->getIr().canTrain()) {
     auto dropoutOp    = dynamic_cast<DropoutOp *>(op_p);
     auto seedModifier = dropoutOp->getSeedModifier();
-
     // Converting from poponnx standard (float) to poplar (double) for ratio
     auto ratio              = static_cast<double>(dropoutOp->getRatio());
-    auto dropoutProbability = 1 - ratio;
+    auto dropoutProbability = 1. - ratio;
 
     // If fwd dropout op, add reference tensor for layer to map.
     // If a bwd dropout op, or recomputation op, retrieve the reference
@@ -42,23 +47,48 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
     } else {
       refTensor = dv_p->dropoutReferenceTensors.at(seedModifier);
     }
+    auto seed = getSeed(prog);
+    // When ratio is outside of (0,1), an error is thrown in op creation,
+    // so we avoid div/0 errors here.
+    float scale = 1. / (1. - dropoutOp->getRatio());
 
-    auto seed    = getSeed(prog);
-    auto dropout = poprand::dropout(graph(),
-                                    &seed,
-                                    seedModifier,
-                                    getInTensor(DropoutOp::getInIndex()),
-                                    refTensor,
-                                    dropoutProbability,
-                                    1 / dropoutProbability,
-                                    prog,
-                                    debugPrefix("dropout"));
+    // Calculate the dropout mask using poplibs and a tensor of ones.
+    auto mask = poprand::bernoulli(graph(),
+                                   &seed,
+                                   seedModifier,
+                                   refTensor,
+                                   refTensor.elementType(),
+                                   dropoutProbability,
+                                   prog,
+                                   debugPrefix("mask"));
+
+    // Use the mask to multiply by the input tensor and scale up.
+    auto dropout =
+        popops::map(graph(),
+                    pe::Mul(pe::Mul(pe::_1, pe::_2), pe::Const(scale)),
+                    {mask, getInTensor(DropoutOp::getInIndex())},
+                    prog,
+                    debugPrefix("dropout"));
 
     setOutTensor(dropoutOp->getOutIndex(), dropout);
+    if (op.returnMask()) {
+      setOutTensor(
+          DropoutOp::getMaskOutIndex(),
+          popops::cast(graph(), mask, poplar::BOOL, prog, debugPrefix("mask")));
+    }
   } else {
-    // In inference/evaluation mode, dropout is an idendity function
+    // In inference/evaluation mode, dropout is an identity function
     setOutTensor(DropoutOp::getOutIndex(),
                  getInTensor(DropoutOp::getInIndex()));
+    // In inference mask is just a tensor of true values.
+    if (op.returnMask()) {
+      auto mask =
+          graph().addConstant(poplar::BOOL,
+                              getInTensor(DropoutOp::getInIndex()).shape(),
+                              true,
+                              debugPrefix("mask"));
+      setOutTensor(DropoutOp::getMaskOutIndex(), mask);
+    }
   }
 }
 

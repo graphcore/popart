@@ -19,14 +19,12 @@ std::unique_ptr<Op> DropoutOp::clone() const {
 }
 
 void DropoutOp::setup() {
-  outInfo(getOutIndex()) = inInfo(getInIndex());
-
-  if (output->n() != 1) {
-    throw error("The op, \"{}\" has {} outputs. In Poponnx the Dropout op only "
-                "supports a single output tensor. The optional 'mask' output "
-                "is not currently supported.",
-                str(),
-                output->n());
+  if (output->n() > 1) {
+    output_mask                = true;
+    outInfo(getOutIndex())     = inInfo(getInIndex());
+    outInfo(getMaskOutIndex()) = {DataType::BOOL, inInfo(getInIndex()).shape()};
+  } else {
+    outInfo(getOutIndex()) = inInfo(getInIndex());
   }
 }
 
@@ -87,7 +85,13 @@ static OpCreator<DropoutOp> dropoutOpCreator(
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
       float ratio = attr.getAttribute<Attributes::Float>("ratio", 0.5f);
-
+      // If invalid probability for ratio supplied, throw error.
+      if (ratio < 0. || ratio > 1.) {
+        throw error("{} ratio value {} is not valid. Please use a value in the "
+                    "interval (0,1)",
+                    _opid,
+                    ratio);
+      }
       return std::unique_ptr<Op>(new DropoutOp(_opid, ratio, settings));
     },
     true);
