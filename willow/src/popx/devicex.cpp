@@ -1064,40 +1064,50 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
         if (std::find(ipus.begin(), ipus.end(), index) == ipus.end()) {
 
           logging::devicex::debug(
-              "Creating host-to-device FIFO {} copied to ipu:{}",
+              "Creating host-to-device FIFO {} copied to ipu:{} type:{}",
               tensor->id,
-              index);
+              index,
+              tensor->tensorType());
+
+          poplar::ReplicatedStreamMode mode;
 
           if (tensor->tensorType() == TensorType::Variable) {
-
             // If it is a variable we 'broadcast' the same tensor
             // to all replicants
-
-            fromHostStreams.emplace(
-                tensor->id,
-                graph.addHostToDeviceFIFO(
-                    h2dId(tensor->id),
-                    popType(tensor->info),
-                    tensor->info.nelms(),
-                    poplar::ReplicatedStreamMode::BROADCAST));
+            mode = poplar::ReplicatedStreamMode::BROADCAST;
 
           } else if (tensor->tensorType() == TensorType::Stream) {
 
             // If it is a stream then we 'duplicate' the stream to
             // each replicant and poplar takes care of the mapping.
 
-            fromHostStreams.emplace(
-                tensor->id,
-                graph.addHostToDeviceFIFO(
-                    h2dId(tensor->id),
-                    popType(tensor->info),
-                    tensor->info.nelms(),
-                    poplar::ReplicatedStreamMode::REPLICATE));
+            auto optimizerTensors = ir().optimizerTensors();
+
+            if (std::find_if(optimizerTensors.begin(),
+                             optimizerTensors.end(),
+                             [tensor](const Tensor *value) -> bool {
+                               return tensor->id == value->id;
+                             }) != optimizerTensors.end()) {
+
+              // Special case of the optimizer tensors which are streams, but
+              // should be broadcast. i.e. 1 value sent to all devices
+              mode = poplar::ReplicatedStreamMode::BROADCAST;
+            } else {
+              mode = poplar::ReplicatedStreamMode::REPLICATE;
+            }
+
           } else {
             throw error("Tensor {} of type {} are not stream to device",
                         tensor->id,
                         tensor->tensorType());
           }
+
+          fromHostStreams.emplace(
+              tensor->id,
+              graph.addHostToDeviceFIFO(h2dId(tensor->id),
+                                        popType(tensor->info),
+                                        tensor->info.nelms(),
+                                        mode));
 
           ipus.push_back(index);
         }
@@ -1454,6 +1464,7 @@ void Devicex::loadEngineAndConnectStreams() {
 
     logging::devicex::debug("Connecting optimizer streams");
     for (Tensor *tensor : ir().optimizerTensors()) {
+      logging::devicex::debug(" {}", tensor->id);
       pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
     }
 
@@ -1490,6 +1501,7 @@ void Devicex::loadEngineAndConnectStreams() {
     logging::devicex::debug(
         "Creating host buffers for h2d streams, and connecting");
     for (Tensor *tensor : ir().dataStreamTensors()) {
+      logging::devicex::debug(" {}", tensor->id);
       PopStreamId streamId = h2dId(tensor->id);
       // allocate host memory, where the poplar::Stream will read data from
       int64_t n_bytes = ir().getDataFlow().batchesPerStep() *
@@ -1502,6 +1514,8 @@ void Devicex::loadEngineAndConnectStreams() {
     logging::devicex::debug(
         "Creating host buffers for anchor d2h streams, connecting");
     for (TensorId anchorId : ir().getDataFlow().anchors()) {
+      logging::devicex::debug(" {}", anchorId);
+
       PopStreamId streamId = d2hId(anchorId);
       Tensor *tensor       = ir().getTensor(anchorId);
       int64_t batch_bytes  = tensor->info.nbytes();
@@ -1524,6 +1538,8 @@ void Devicex::loadEngineAndConnectStreams() {
         break;
       }
       }
+
+      // The host data need to be multiplied
       d2hBuffers[anchorId] = std::vector<char>(n_bytes);
       char *data0          = d2hBuffers[tensor->id].data();
       engineToStream(data0, n_bytes, streamId);
@@ -1533,6 +1549,7 @@ void Devicex::loadEngineAndConnectStreams() {
         "Creating host buffers for weight d2h streams, connecting");
 
     for (auto initId : ir().getTensorIds(TensorType::Variable)) {
+      logging::devicex::debug(" {}", initId);
       PopStreamId streamId = d2hId(initId);
       Tensor *tensor       = ir().getTensor(initId);
       int64_t n_bytes      = tensor->info.nbytes();
