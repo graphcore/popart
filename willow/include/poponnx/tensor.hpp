@@ -21,6 +21,8 @@ enum class TensorType {
   N // number of tensor types
 };
 
+std::ostream &operator<<(std::ostream &os, const TensorType &tt);
+
 // Define how the variable tensor will be updated
 enum class VariableUpdateType {
   None = 0, // Not updated

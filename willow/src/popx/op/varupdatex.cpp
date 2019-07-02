@@ -74,11 +74,12 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
     float weightDecayScaleFactor =
         1 - (vu_op.getWeightDecay() * vu_op.getLearnRate());
 
-    popops::mapInPlace(graph(),
-                       pe::Mul(pe::_1, pe::Const(weightDecayScaleFactor)),
-                       {getInTensor(SGDVarUpdateOp::getVarToUpdateInIndex())},
-                       prog,
-                       idStr());
+    popops::mapInPlace(
+        graph(),
+        pe::Mul(pe::_1, pe::Const(weightDecayScaleFactor)),
+        {getInTensor(ConstSGDVarUpdateOp::getVarToUpdateInIndex())},
+        prog,
+        idStr());
   }
 
   poplar::Tensor weightDeltas = getInTensor(vu_op.getUpdaterInIndex());

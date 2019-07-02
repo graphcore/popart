@@ -58,7 +58,8 @@ if (not os.path.exists(download_path)):
     tar.close()
 
 # Get onnx model from extracted tar
-unzipped_path = os.path.join(modeldir, fn.split('.')[0])
+# TODO: This needs to better handle the different model and tarfile combinations
+unzipped_path = os.path.join(modeldir, fn).replace(".tar.gz", "")
 test_data_dir = os.path.join(unzipped_path, test_data_dir)
 onnx_model = glob.glob(os.path.join(unzipped_path, "*.onnx"))[0]
 try:

@@ -13,13 +13,16 @@ public:
 
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
-
-  void setup() override;
+  void setup() final;
 
   void appendAttributes(OpSerialiserBase &) const override;
 
+  // Inputs
   static InIndex getInIndex() { return 0; }
+
+  // Ouputs
   static OutIndex getOutIndex() { return 0; }
+  static OutIndex getMaskOutIndex() { return 1; }
 
   bool canBeReplacedByIdentity() override;
 
@@ -30,7 +33,10 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  bool returnMask() const { return output_mask; }
+
 private:
+  bool output_mask = false;
   float ratio;
   uint32_t seedModifier;
 };

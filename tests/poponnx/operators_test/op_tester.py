@@ -90,6 +90,7 @@ def op_tester(tmpdir):
             self.atol = 1e-08
             self.check_shapes = True
             self.loss_reduction_type = poponnx.ReductionType.Sum
+            self.equal_nan = False
 
         def verifyTensor(self, t1, ref):
             if self.check_shapes:
@@ -98,15 +99,15 @@ def op_tester(tmpdir):
                         t1.shape, ref.shape))
                 assert t1.shape == ref.shape
 
-            if not np.allclose(t1, ref, self.rtol, self.atol):
+            if not np.allclose(t1, ref, self.rtol, self.atol, self.equal_nan):
                 print('rtol:{} atol:{}'.format(self.rtol, self.atol))
                 print('Poponnx:\n{}'.format(t1))
                 print('Torch:\n{}'.format(ref))
                 print('Diff:\n{}'.format(np.subtract(t1, ref)))
                 print('IsClose:\n{}'.format(
-                    np.isclose(t1, ref, self.rtol, self.atol)))
+                    np.isclose(t1, ref, self.rtol, self.atol, self.equal_nan)))
 
-            assert np.allclose(t1, ref, self.rtol, self.atol)
+            assert np.allclose(t1, ref, self.rtol, self.atol, self.equal_nan)
 
         def run(self, init_builder, reference, step_type='infer', opsets=None):
             assert step_type in ('infer', 'train')
@@ -143,21 +144,21 @@ def op_tester(tmpdir):
                 device = self.device
 
             if step_type == 'infer':
-                session = poponnx.InferenceSession(
-                    fnModel=proto,
-                    dataFeed=dataFlow,
-                    deviceInfo=device,
-                    passes=poponnx.Patterns(self.passes),
-                    userOptions=self.options)
+                session = poponnx.InferenceSession(fnModel=proto,
+                                                   dataFeed=dataFlow,
+                                                   deviceInfo=device,
+                                                   passes=poponnx.Patterns(
+                                                       self.passes),
+                                                   userOptions=self.options)
             else:
-                session = poponnx.TrainingSession(
-                    fnModel=proto,
-                    dataFeed=dataFlow,
-                    losses=losses,
-                    optimizer=optimizer,
-                    deviceInfo=device,
-                    passes=poponnx.Patterns(self.passes),
-                    userOptions=self.options)
+                session = poponnx.TrainingSession(fnModel=proto,
+                                                  dataFeed=dataFlow,
+                                                  losses=losses,
+                                                  optimizer=optimizer,
+                                                  deviceInfo=device,
+                                                  passes=poponnx.Patterns(
+                                                      self.passes),
+                                                  userOptions=self.options)
 
             anchor_map = session.initAnchorArrays()
 

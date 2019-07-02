@@ -28,28 +28,34 @@ def test_dropout_testing(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
 
-# Verify when in training mode that dropout cannot be used with !=1 outputs.
-def test_dropout_training1(op_tester):
-    d1 = np.random.rand(10).astype(np.float32)
+# Verify that the mask returned is correct when requesting 2 outputs.
+# Manually calculate the result of the dropout using numpy and compare
+def test_dropout_training1():
+    dsize = 10
+    ratio = 0.2
+    d1 = np.random.rand(dsize).astype(np.float32)
 
-    def init_builder(builder):
-        i1 = builder.addInputTensor(d1)
-        [o1, o2] = builder.aiOnnx.dropout([i1], num_outputs=2)
-        builder.addOutputTensor(o1)
-        return [o1, o2]
+    builder = poponnx.Builder()
+    ip = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [dsize]))
+    d__ip = poponnx.reservedGradientPrefix() + ip
 
-    def reference(ref_data):
-        dropout = torch.nn.Dropout()
-        out = dropout(torch.tensor(d1))
-        return [out]
+    [o1, o2] = builder.aiOnnx.dropout([ip], num_outputs=2, ratio=ratio)
+    builder.addOutputTensor(o1)
+    builder.addOutputTensor(o2)
 
-    op_tester.passes = ['DropoutGradOp']
-    with pytest.raises(poponnx.poponnx_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
+    session, anchors = get_session(
+        anchorIds=[o1, o2, ip, d__ip],
+        proto=builder.getModelProto(),
+        device=poponnx.DeviceManager().createCpuDevice(),
+        output=o1)
 
-    assert (e_info.value.args[0].find(
-        "In Poponnx the Dropout op only supports a single output tensor") !=
-            -1)
+    stepio = poponnx.PyStepIO({ip: d1}, anchors)
+    session.run(stepio)
+
+    # d1 * mask * (1/(1-ratio)) should give the same answer as poponnx implementation
+    reference = d1 * anchors[o2] * (1 / (1 - ratio))
+
+    assert (np.isclose(anchors[o1], reference)).all()
 
 
 # Verify that poponnx errors our properly when the DropoutGradOp is
@@ -88,8 +94,8 @@ def test_dropout_training2(op_tester):
 def test_dropout_training3():
     dsize = 10000  # large input size to make statistical assumptions accurate
     ratio = 0.2
-    session, ip, out, d__ip, anchors = get_dropout_session(
-        dsize=dsize, ratio=ratio)
+    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
+                                                           ratio=ratio)
 
     # Ensure inputs in range [1.0, 2.0] to ensure comparing with 0 is valid
     ip_data = np.random.random_sample(dsize).astype(np.float32) + 1
@@ -109,8 +115,9 @@ def test_dropout_training3():
     # 2.
     onnxDropoutProportion = np.count_nonzero(anchors[out]) / dsize
     torchDropoutProportion = np.count_nonzero(torchOut) / dsize
-    assert (np.isclose(
-        onnxDropoutProportion, torchDropoutProportion, atol=0.05))
+    assert (np.isclose(onnxDropoutProportion,
+                       torchDropoutProportion,
+                       atol=0.05))
     assert (np.isclose(onnxDropoutProportion, 1 - ratio, atol=0.05))
 
 
@@ -135,11 +142,10 @@ def test_dropout_training4():
     if device is None:
         pytest.skip("Test needs to run on IPU, but none are available")
 
-    session, anchors = get_session(
-        anchorIds=[d1, d__ip],
-        proto=builder.getModelProto(),
-        device=device,
-        output=out)
+    session, anchors = get_session(anchorIds=[d1, d__ip],
+                                   proto=builder.getModelProto(),
+                                   device=device,
+                                   output=out)
 
     # Ensure inputs in range [1.0, 2.0] to ensure comparing with 0 is valid
     ip_data = np.random.random_sample((dsize, dsize)).astype(np.float32) + 1
@@ -147,9 +153,8 @@ def test_dropout_training4():
 
     session.run(stepio)
 
-    for fwdEl, bwdEl in zip(
-            np.ndarray.flatten(anchors[d1]),
-            np.ndarray.flatten(anchors[d__ip])):
+    for fwdEl, bwdEl in zip(np.ndarray.flatten(anchors[d1]),
+                            np.ndarray.flatten(anchors[d__ip])):
         if fwdEl == 0:
             assert bwdEl == 0
         if bwdEl != 0:
@@ -180,8 +185,9 @@ def test_dropout_training5():
 def test_dropout_training6():
     dsize = 100
     bps = 2
-    session, ip, out, d__ip, anchors = get_dropout_session(
-        dsize=dsize, bps=bps, use_ipu=True)
+    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
+                                                           bps=bps,
+                                                           use_ipu=True)
 
     # Same data for each batch
     ip_data_bps1 = np.random.random_sample(dsize).astype(np.float32)
@@ -213,11 +219,10 @@ def test_dropout_training7():
     if device is None:
         pytest.skip("Test needs to run on IPU, but none are available")
 
-    session, anchors = get_session(
-        anchorIds=[d1, d2],
-        proto=builder.getModelProto(),
-        device=device,
-        output=out)
+    session, anchors = get_session(anchorIds=[d1, d2],
+                                   proto=builder.getModelProto(),
+                                   device=device,
+                                   output=out)
 
     # Same data for each batch
     ip_data = np.random.random_sample(dsize).astype(np.float32)
@@ -225,6 +230,30 @@ def test_dropout_training7():
 
     session.run(stepio)
     assert (np.array_equal(anchors[d1], anchors[d2]) is not True)
+
+
+# Verify that poponnx errors out properly when ratio is not in (0,1)
+def test_dropout_training8(op_tester):
+    d1 = np.random.rand(10).astype(np.float32)
+    ratio = 100 * np.random.rand(1)[0] + 1
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        [o1] = builder.aiOnnx.dropout([i1], num_outputs=1, ratio=ratio)
+        builder.addOutputTensor(o1)
+        return [o1, poponnx.reservedGradientPrefix() + i1]
+
+    def reference(ref_data):
+        dropout = torch.nn.Dropout()
+        out = dropout(torch.tensor(d1))
+        return [out]
+
+    # This should trigger the ratio error.
+    with pytest.raises(poponnx.poponnx_exception) as e_info:
+        op_tester.run(init_builder, reference, 'train')
+
+    assert (e_info.value.args[0].endswith(
+        "Please use a value in the interval (0,1)"))
 
 
 def test_dropout_training_replicated(op_tester):
@@ -283,12 +312,11 @@ def get_dropout_session(dsize=100,
     else:
         device = poponnx.DeviceManager().createCpuDevice()
 
-    session, anchors = get_session(
-        anchorIds=[out, ip, d__ip],
-        proto=builder.getModelProto(),
-        device=device,
-        output=out,
-        bps=bps)
+    session, anchors = get_session(anchorIds=[out, ip, d__ip],
+                                   proto=builder.getModelProto(),
+                                   device=device,
+                                   output=out,
+                                   bps=bps)
 
     return session, ip, out, d__ip, anchors
 

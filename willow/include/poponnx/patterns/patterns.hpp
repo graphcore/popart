@@ -152,6 +152,12 @@ public:
   bool isDivArg1GradOpEnabled() {
     return isPatternEnabled(PreAliasPatternType::DIVARG1GRADOP);
   }
+  bool isPowArg0GradOpEnabled() {
+    return isPatternEnabled(PreAliasPatternType::POWARG0GRADOP);
+  }
+  bool isPowArg1GradOpEnabled() {
+    return isPatternEnabled(PreAliasPatternType::POWARG1GRADOP);
+  }
   bool isSinGradOpEnabled() {
     return isPatternEnabled(PreAliasPatternType::SINGRADOP);
   }
@@ -225,6 +231,12 @@ public:
   }
   Patterns &enableDivArg1GradOp(bool v) {
     return enablePattern(PreAliasPatternType::DIVARG1GRADOP, v);
+  }
+  Patterns &enablePowArg0GradOp(bool v) {
+    return enablePattern(PreAliasPatternType::POWARG0GRADOP, v);
+  }
+  Patterns &enablePowArg1GradOp(bool v) {
+    return enablePattern(PreAliasPatternType::POWARG1GRADOP, v);
   }
   Patterns &enableSinGradOp(bool v) {
     return enablePattern(PreAliasPatternType::SINGRADOP, v);

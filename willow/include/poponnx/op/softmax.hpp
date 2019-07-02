@@ -15,6 +15,7 @@ public:
   std::unique_ptr<Op> clone() const final;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
   int64_t getAxis() const;
+  void setAxis(int64_t);
 
   void appendAttributes(OpSerialiserBase &) const override;
 
@@ -32,6 +33,8 @@ public:
   SoftmaxInplaceOp(const SoftmaxOp &);
   std::unique_ptr<Op> clone() const final;
   int64_t getAxis() const { return axis; }
+
+  void appendAttributes(OpSerialiserBase &) const override;
 
 private:
   int64_t axis;

@@ -723,7 +723,7 @@ void Ir::resetWeights(const onnx::ModelProto &modelProto) {
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();
     if (!getTensors().contains(tenId)) {
-      throw error("no tensor " + tenId + " in tensors");
+      throw error("resetWeights, no tensor '" + tenId + "' in tensors");
     }
     auto tensor = getTensors().get(tenId);
     if (tensor->info != TensorInfo(initializer)) {
@@ -1564,9 +1564,7 @@ void Ir::constructBackwards() {
         throw error("can't currently register gradient of " +
                     nongrad->tensor_type() + " tensor, " + nongrad->str());
 
-      default: {
-        throw error("only handling ActGrad and Variable for now");
-      }
+      default: { throw error("only handling ActGrad and Variable for now"); }
       }
     }
 
