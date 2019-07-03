@@ -1078,22 +1078,13 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
 
           } else if (tensor->tensorType() == TensorType::Stream) {
 
-            // If it is a stream then we 'duplicate' the stream to
-            // each replicant and poplar takes care of the mapping.
-
-            auto optimizerTensors = ir().optimizerTensors();
-
-            if (std::find_if(optimizerTensors.begin(),
-                             optimizerTensors.end(),
-                             [tensor](const Tensor *value) -> bool {
-                               return tensor->id == value->id;
-                             }) != optimizerTensors.end()) {
-
-              // Special case of the optimizer tensors which are streams, but
-              // should be broadcast. i.e. 1 value sent to all devices
+            switch (tensor->getReplicatedStreamMode()) {
+            case Tensor::ReplicatedStreamMode::Broadcast:
               mode = poplar::ReplicatedStreamMode::BROADCAST;
-            } else {
+              break;
+            case Tensor::ReplicatedStreamMode::Replicate:
               mode = poplar::ReplicatedStreamMode::REPLICATE;
+              break;
             }
 
           } else {

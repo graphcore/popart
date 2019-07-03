@@ -214,7 +214,12 @@ void Ir::setOptimizer(const Optimizer *o) {
       TensorId id     = id_info.first;
       TensorInfo info = id_info.second;
       getTensors().addStream(id, info);
-      optimizer->setTensorData(getTensors().get(id));
+
+      Tensor *tensor = getTensors().get(id);
+      optimizer->setTensorData(tensor);
+
+      // optimizer tensors are a speical type of stream which is broadcast
+      tensor->setReplicatedStreamMode(Tensor::ReplicatedStreamMode::Broadcast);
     }
   }
 }

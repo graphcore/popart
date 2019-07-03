@@ -109,7 +109,12 @@ def op_tester(tmpdir):
 
             assert np.allclose(t1, ref, self.rtol, self.atol, self.equal_nan)
 
-        def run(self, init_builder, reference, step_type='infer', opsets=None):
+        def run(self,
+                init_builder,
+                reference,
+                step_type='infer',
+                opsets=None,
+                optimizer=poponnx.ConstSGD(0.01)):
             assert step_type in ('infer', 'train')
 
             bld = Builder(opsets=opsets)
@@ -122,11 +127,6 @@ def op_tester(tmpdir):
                     anchors[anchorId] = poponnx.AnchorReturnType("ALL")
 
             dataFlow = poponnx.DataFlow(1, anchors)
-
-            if (step_type == 'train'):
-                optimizer = poponnx.ConstSGD(0.01)
-            else:
-                optimizer = None
 
             losses = [
                 poponnx.L1Loss(anchorIds[0], "l1LossVal", 0.1,
@@ -193,6 +193,7 @@ def op_tester(tmpdir):
 
             if (step_type == 'train'):
                 session.weightsFromHost()
+                session.optimizerFromHost()
 
             session.run(stepio)
 
@@ -216,6 +217,7 @@ def op_tester(tmpdir):
             ref_out = [fix_type(i) for i in ref_out]
             for index, key in enumerate(anchorIds):
                 if key in anchors:
+                    print(key, anchor_map[key])
                     if ref_out[index] is not None:
                         print('Testing anchor "{}"...'.format(key))
                         self.verifyTensor(anchor_map[key], ref_out[index])

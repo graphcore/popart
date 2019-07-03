@@ -81,6 +81,9 @@ std::map<TensorType, TensorTypeInfo> initTensorTypeInfoMap();
 
 class Tensor : public Vertex {
 public:
+  // The type of replication to use if a Stream tensor
+  enum class ReplicatedStreamMode { Replicate, Broadcast };
+
   // note : producer (if there is one)
   // must be set after construction
   Tensor(TensorId, TensorType, Graph &);
@@ -95,6 +98,14 @@ public:
   const std::string &tensor_type() const;
   const TensorTypeInfo *getTensorTypeInfo() const { return tensorTypeInfo; }
   void setTensorType(TensorType);
+
+  // Accessor's for the replicated stream mode
+  ReplicatedStreamMode getReplicatedStreamMode() const {
+    return replicatedStreamMode;
+  }
+  void setReplicatedStreamMode(const ReplicatedStreamMode &mode) {
+    replicatedStreamMode = mode;
+  }
 
   Consumers consumers;
   // shape and data type. Not to be used before inferShape of pir has run
@@ -131,6 +142,10 @@ protected:
   Graph &graph;
   Op *producer;
   const TensorTypeInfo *tensorTypeInfo;
+
+  // By default stream tensors are replicated
+  ReplicatedStreamMode replicatedStreamMode = ReplicatedStreamMode::Replicate;
+
   // c++ note : we cannot initialise this as {nullptr} with gcc
   // when using pimpl, it must be initialised in the .cpp constructor
   std::unique_ptr<TensorData> data_;
