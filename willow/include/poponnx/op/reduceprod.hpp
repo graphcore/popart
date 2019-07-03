@@ -22,10 +22,6 @@ public:
   std::unique_ptr<Op> clone() const final;
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   static InIndex getFwdInInIndex() { return 1; }
-  const std::vector<int64_t> &getAxes() const;
-
-private:
-  std::vector<int64_t> axes;
 };
 
 } // namespace poponnx
