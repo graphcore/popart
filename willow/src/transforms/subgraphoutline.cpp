@@ -371,12 +371,32 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
   auto subgraph_scope = subgraph.getScope();
   auto &instance      = match.instances[0];
 
+  // get the phase of the ops at index `i' in all instances of match.
+  // will return Phase::UNDEFINED if the instances phases dont match.
+  auto getPhase = [&](int i) {
+    // Get the phase of the op at index `i' in the first instance.
+    auto phase = graph.getOp(instance.ops.at(i))->getPhase();
+
+    // If the phase of the op at index `i' in each instance matches
+    // then return that phase, else return the undefined phase.
+    for (auto &inst : match.instances) {
+      auto opid = inst.ops.at(i);
+      auto op   = graph.getOp(opid);
+      if (phase != op->getPhase()) {
+        return Phase::UNDEFINED;
+      }
+    }
+
+    return phase;
+  };
+
   // clone all the ops and move into subgraph
   std::map<Op *, Op *> clone_map;
-  for (auto opid : instance.ops) {
+  for (int i = 0; i < instance.ops.size(); i++) {
+    auto opid  = instance.ops.at(i);
     auto op    = graph.getOp(opid);
     auto clone = op->clone();
-    clone->setPhase(op->getPhase());
+    clone->setPhase(getPhase(i));
     clone->settings.graph = subgraph;
     clone->settings.scope = subgraph_scope;
     auto cloneid          = subgraph.moveIntoGraph(std::move(clone));

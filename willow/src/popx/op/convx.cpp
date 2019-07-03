@@ -174,6 +174,10 @@ void ConvOpx::grow(poplar::program::Sequence &prog) const {
     options = &dv_p->fwdConvOptions;
   } else if (op.getPhase() == Phase::BWD) {
     options = &dv_p->bwdConvOptions;
+  } else if (op.getPhase() == Phase::UNDEFINED) {
+    logging::opx::warn(
+        "Conv has undefined phase, defaulting to fwdConvOptions");
+    options = &dv_p->fwdConvOptions;
   } else {
     throw error("Unexpected phase {} for conv", op.getPhase());
   }
