@@ -654,17 +654,37 @@ Opx *Devicex::getOpx(OpId id) { return opxs.at(id).get(); }
 
 const Opx *Devicex::getOpx(OpId id) const { return opxs.at(id).get(); }
 
+// The Id of the task which adds a Tensor to a poplar::Graph
 TaskId Devicex::taskWhichCreates(TensorId id) const {
   Tensor *tensor = ir().getTensor(id);
-  // streamed and init tensors are created with
-  // tasks with names from initTensorTaskId
-  // These tensors are recognisable as having no producing Op.
-  if (tensor->hasProducer() == false) {
+  // Tensors without producers are created by special tasks,
+  if (!tensor->hasProducer()) {
     return initTensorTaskId(id);
   }
 
+  // Tensors with producer Ops are created (added to a Graph) by their
+  // producer's OpTask
   else {
     return opTaskId(tensor->getProducer());
+  }
+}
+
+TaskId Devicex::taskWhichPopulates(TensorId id) const {
+  Tensor *tensor = ir().getTensor(id);
+
+  // OpTasks both initialize a Tensor, and generate the code to set its value
+  if (tensor->hasProducer()) {
+    return opTaskId(tensor->getProducer());
+  }
+
+  // if a Tensor is of type Stream, the Copy from host to device populates it
+  else if (!useSyntheticData() && tensor->tensorType() == TensorType::Stream) {
+    return fromHostTaskId(tensor->id);
+  }
+
+  // if a Tensor has no producer and is not a Stream, it is a Variable...
+  else {
+    return initTensorTaskId(id);
   }
 }
 
@@ -1250,16 +1270,11 @@ PriTask Devicex::opTask(Op *op,
   for (auto t_inds : op->input->indicesMap()) {
     Tensor *tensor = t_inds.first;
 
-    auto creatorTask = taskWhichCreates(tensor->id);
-    // Make sure we only add the creatorTask once in the dependency list
-    if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end())
-      deps.push_back(creatorTask);
+    auto creatorTask = taskWhichPopulates(tensor->id);
 
-    // if the tensor is streamed on, we must wait
-    // 'til the Copy has happened
-    if (tensor->tensorType() == TensorType::Stream) {
-      if (useSyntheticData() == false)
-        deps.push_back(fromHostTaskId(tensor->id));
+    // Make sure we only add the creatorTask once in the dependency list
+    if (std::find(deps.begin(), deps.end(), creatorTask) == deps.end()) {
+      deps.push_back(creatorTask);
     }
   }
 
@@ -2000,14 +2015,15 @@ PriTask Devicex::toHostTask(Tensor *tensor,
                                  doRearrangeOnHost(tensor)));
   };
 
-  return {+1e6, // writes to host: always as early as possible
-          toHostTaskId(tensor->id),
-          {
-              // the dependencies:
-              streamToHostTaskId(tensor->id), // poplar::Stream creation task,
-              taskWhichCreates(tensor->id)    // poplar::Tensor creation task.
-          },
-          f};
+  return {
+      +1e6, // writes to host: always as early as possible
+      toHostTaskId(tensor->id),
+      {
+          // the dependencies:
+          streamToHostTaskId(tensor->id), // poplar::Stream creation task,
+          taskWhichPopulates(tensor->id)  // poplar::Tensor has its final values
+      },
+      f};
 }
 
 PriTask Devicex::initBatchCounterTensorsTask() {
@@ -2102,15 +2118,16 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
     sq.add(poplar::program::If(isNthBatch, copyseq, emptyseq));
   };
 
-  return {+1e6, // writes to host: always as early as possible
-          toHostTaskId(tensor->id),
-          {
-              // the dependencies:
-              updateBatchCountTaskId(),       // updating poplar::Tensor task,
-              streamToHostTaskId(tensor->id), // poplar::Stream creation task,
-              taskWhichCreates(tensor->id)    // poplar::Tensor creation task.
-          },
-          f};
+  return {
+      +1e6, // writes to host: always as early as possible
+      toHostTaskId(tensor->id),
+      {
+          // the dependencies:
+          updateBatchCountTaskId(),       // updating poplar::Tensor task,
+          streamToHostTaskId(tensor->id), // poplar::Stream creation task,
+          taskWhichPopulates(tensor->id)  // poplar::Tensor value setting task
+      },
+      f};
 }
 
 bool Devicex::doRearrangeOnHost(Tensor *tensor) const {
@@ -2261,7 +2278,7 @@ std::set<TensorId> Devicex::getEfficientlyCreatedInputTensors() const {
   return efficientlyCreatedInputTensors;
 }
 
-bool Devicex::useSyntheticData() {
+bool Devicex::useSyntheticData() const {
   return (ir().getSessionOptions().ignoreData);
 }
 

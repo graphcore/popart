@@ -184,7 +184,7 @@ public:
   std::string getSummaryReport() const;
   std::string getGraphReport(bool use_cbor = false) const;
   std::string getExecutionReport(bool use_cbor = false) const;
-   void saveTensorTileMap(const std::string &) const;
+  void saveTensorTileMap(const std::string &) const;
   TensorTileMap getTensorTileMap() const;
   std::string getSerializedGraph() const;
 
@@ -203,15 +203,20 @@ public:
 
   // T9669 replace masterGraph with replicatedGraph
   poplar::Graph &masterGraph();
-  
+
   poplar::Graph &replicatedGraph();
   const poplar::Graph &replicatedGraph() const;
 
   poplar::Graph &graph(int64_t virtualGraphIndex);
 
-  // return the name of the task which creates a poplar::Tensor
-  // This function is mostly string manipulation
+  // Return the name of the task which initializes/creates a poplar::Tensor in a
+  // poplar::Graph. This is NOT about creating a poplar::Program.
   TaskId taskWhichCreates(TensorId) const;
+
+  // Return the name of the task which adds code which sets the final
+  // values of poplar::Tensor to a fragment. This IS about creating a
+  // poplar::Program.
+  TaskId taskWhichPopulates(TensorId) const;
 
   // PlanningCache for matmul and conv
   poplin::PlanningCache convCache;
@@ -453,7 +458,7 @@ private:
 
   // Returns true if using synthetic data, false if using real data
   // This will return the options.ignoreData flag
-  bool useSyntheticData();
+  bool useSyntheticData() const;
 
   template <typename T> void setInitVal(Tensor *tensor);
   void setInitValHalf(Tensor *tensor);
