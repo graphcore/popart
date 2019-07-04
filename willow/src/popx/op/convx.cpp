@@ -170,16 +170,14 @@ void ConvOpx::grow(poplar::program::Sequence &prog) const {
   // Work out the option based on the phase of the op
   // Conv can be bwd depending on the phase.
   PoplarOptions *options = nullptr;
-  if (op.getPhase() == Phase::FWD) {
+  if (op.toLoss == PathToLoss::Yes && op.fromLoss == PathFromLoss::No) {
     options = &dv_p->fwdConvOptions;
-  } else if (op.getPhase() == Phase::BWD) {
+  } else if (op.toLoss == PathToLoss::No && op.fromLoss == PathFromLoss::Yes) {
     options = &dv_p->bwdConvOptions;
-  } else if (op.getPhase() == Phase::UNDEFINED) {
+  } else {
     logging::opx::warn(
         "Conv has undefined phase, defaulting to fwdConvOptions");
     options = &dv_p->fwdConvOptions;
-  } else {
-    throw error("Unexpected phase {} for conv", op.getPhase());
   }
 
   poplin::ConvParams popConvParams = getPoplarConvParams(op.getParameters());

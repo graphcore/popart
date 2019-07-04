@@ -1,52 +1,45 @@
 #ifndef NEURALNET_VERTEX_HPP
 #define NEURALNET_VERTEX_HPP
 
+#include <string>
+
 namespace poponnx {
 
-// All Vertices are partitioned into FWD, BWD, LOSS.
-// Recompute Ops and gradient Ops are BWD
-// All Loss Ops (nll, l1loss)
-// and the final sum over losses are LOSS
-enum class Phase { FWD = 0, BWD, LOSS, UNDEFINED };
-
-std::ostream &operator<<(std::ostream &, const Phase &);
-
-std::map<Phase, std::string> init_phase_names();
-const std::map<Phase, std::string> &phase_names();
-
-// All vertices, except those
-// in FWD on paths which don't lead to any BWD vertex
-enum class PathToBwd { YES, NO, UNDEFINED };
+enum class PathToLoss { Yes, No, Undefined };
+enum class PathFromLoss { Yes, No, Undefined };
+enum class ScheduledPreLoss { Yes, No, Undefined };
 
 class Vertex {
 
 public:
   Vertex()          = default;
   virtual ~Vertex() = default;
+
   // The copy constructor does not copy any
-  // fields, all fields are set to the "unset" value
+  // fields, all fields are set to the "Undefined" value
   Vertex(const Vertex &) : Vertex() {}
+
   Vertex &operator=(const Vertex &) = delete;
 
-  void incrNPathsToLoss();
-  int nPathsToLoss() const;
-  void setNPathsToLossToZero();
+  // Is there a path from this Vertex to the final loss Op? More specifically,
+  // would there be such a path if the final loss Op had not been pruned.
+  PathToLoss toLoss{PathToLoss::Undefined};
 
-  void setPhase(Phase);
-  Phase getPhase() const;
+  // Is there a path from the final loss Op to this Vertex?
+  PathFromLoss fromLoss{PathFromLoss::Undefined};
 
-  void setPathToBwd(PathToBwd);
-  bool hasPathToBwd() const;
+  // Is this Vertex currently scheduled before the final loss Op?
+  ScheduledPreLoss scheduledPreLoss{ScheduledPreLoss::Undefined};
 
-  bool isFwdToBwd() const;
+  int nEdgesToLoss{undefinedNEdges};
 
   virtual std::string str() const = 0;
 
+  // A string summarising toLoss, fromLoss, scheduledPreLoss
+  std::string wrtLossStr() const;
+
 private:
-  static int undefinedNPaths;
-  int nPathsToLoss_{undefinedNPaths};
-  Phase phase_{Phase::UNDEFINED};
-  PathToBwd path_to_bwd_;
+  static constexpr int undefinedNEdges = -9;
 };
 
 } // namespace poponnx

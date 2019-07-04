@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(StandardRecomputeTest) {
     auto proto      = builder->getModelProto();
     auto modelProto = io::getModelFromString(proto);
 
-    // Add the last tensor, and the 3rd tensor as anchors
+    // Add the last tensor as an anchor
     auto dataFlow  = DataFlow(1, {{act, AnchorReturnType("ALL")}});
     auto optimizer = ConstSGD(0.01);
     std::vector<Loss *> losses{

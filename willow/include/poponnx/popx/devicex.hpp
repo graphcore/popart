@@ -26,6 +26,8 @@ using boost::optional;
 
 namespace poponnx {
 
+enum class ScheduledPreLoss;
+
 namespace popx {
 
 using PopStreamId = std::string;
@@ -55,7 +57,9 @@ public:
     STREAMWEIGHTSFROMHOST = 0,
     STREAMOPTIMIZERFROMHOST,
     INIT,
-    MAINPROGRAM,
+    PREFORWARD,
+    FORWARD,
+    BACKWARD,
     WEIGHTSTOHOST,
     TOHOSTFINALCOPY,
     SETRANDOMSEED,
@@ -71,8 +75,13 @@ public:
   poplar::program::Sequence &setRandomDropoutSeedFragment();
   poplar::program::Sequence &toHostFinalCopyFragment();
   poplar::program::Sequence &initFragment();
-  poplar::program::Sequence &mainProgramFragment();
+  poplar::program::Sequence &preForwardFragment();
+  poplar::program::Sequence &forwardFragment();
+  poplar::program::Sequence &backwardFragment();
   poplar::program::Sequence &weightsToHostFragment();
+  // If ScheduledPreLoss::Yes, then return forwardFragment(), else return
+  // backwardFragment()
+  poplar::program::Sequence &forwardOrBackwardFragment(ScheduledPreLoss);
 
   // A list of programs that can be run by the Poplar engine.
   std::vector<poplar::program::Program> progs();
@@ -80,7 +89,7 @@ public:
   poplar::program::Sequence &programFragment(PopPrograms::ProgramFragmentIndex);
 
   // Sub-graph program fragments, getters and setters
-  poplar::program::Sequence &programFragment(const Graph &);
+  poplar::program::Sequence &scopeFragment(const Graph &);
   bool containsFragment(const Graph &) const;
   void createFragment(const Graph &);
 
@@ -235,7 +244,6 @@ public:
 
   bool containsFragment(const Graph &scope) const;
   void createFragment(const Graph &);
-  poplar::program::Sequence &programFragment(const Graph &scope);
 
   // A forward search of graph:
   //   - from inputs of the graph
@@ -363,10 +371,7 @@ private:
 
   PriTask incrementDropoutRandomSeedTask();
 
-  // isPostTurningPoint is used for recomputation, to determine whether to
-  // generate new code or re-run earlier code
-  PriTask
-  opTask(Op *, double priority, TaskId prevOpTaskId, bool isPostTurningPoint);
+  PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
 
   TaskId opTaskId(Op *) const;
 
@@ -453,8 +458,6 @@ private:
 
   // Call hostStreamToHost in all the Tensors in pir->dataFlow.anchors()
   void anchorsHostFromHostStreams(const IStepIO &stepio);
-
-  poplar::program::Sequence &mainProgramFragment();
 
   // Returns true if using synthetic data, false if using real data
   // This will return the options.ignoreData flag

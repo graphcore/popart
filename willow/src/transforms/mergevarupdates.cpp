@@ -264,8 +264,7 @@ MergeLooseThreshold::getFinal(const Graph &g) const {
   // find the point at which the forward part of the compute graph ends
   int switchIndex = -1;
   for (int i = 0; i < opSched.size(); ++i) {
-    if (opSched[i]->getPhase() == Phase::FWD ||
-        opSched[i]->getPhase() == Phase::LOSS) {
+    if (opSched[i]->toLoss == PathToLoss::Yes) {
       switchIndex = i;
     }
   }
@@ -556,10 +555,7 @@ bool MergeVarUpdates::apply(Graph &graph) const {
 
           flattenOp->setup();
 
-          flattenOp->setPhase(Phase::BWD);
-
           // create slice if necessary
-          //
           if (end - start != tensor->info.nelms()) {
 
             auto tempSliceOp = std::make_unique<SliceInplaceOp>(
@@ -583,8 +579,6 @@ bool MergeVarUpdates::apply(Graph &graph) const {
                                                sliceOutIdSs.str());
 
             sliceOp->setup();
-
-            sliceOp->setPhase(Phase::BWD);
 
             return dynamic_cast<Op *>(sliceOp);
           }
@@ -631,7 +625,6 @@ bool MergeVarUpdates::apply(Graph &graph) const {
 
         concatOp->createAndConnectOutTensor(ConcatOp::getOutIndex(), newId);
         concatOp->setup();
-        concatOp->setPhase(Phase::BWD);
         return concatOp;
       };
 

@@ -46,7 +46,7 @@ void IfOpx::copyInputs(poplar::program::Sequence &thenProg,
 
 void IfOpx::callBranch(poplar::program::Sequence &prog,
                        const Graph &graph) const {
-  auto &branch_prog = dv_p->programFragment(graph);
+  auto &branch_prog = dv_p->progs.scopeFragment(graph);
   prog.add(branch_prog);
 }
 

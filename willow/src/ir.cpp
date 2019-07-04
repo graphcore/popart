@@ -57,7 +57,7 @@ namespace poponnx {
 
 Ir::~Ir() = default;
 
-void Ir::confirmNonReservedId(TensorId tenId) const {
+void Ir::confirmNonReservedId(const TensorId &tenId) const {
   for (auto reservedPrefix : reservedPrefixes()) {
     if (tenId.find(reservedPrefix) != std::string::npos) {
       throw error("Provided tensor " + tenId +
@@ -85,25 +85,6 @@ std::vector<Tensor *> Ir::optimizerTensors() const {
     }
   }
   return optTensors;
-}
-
-Op *Ir::getTurningPointOp() const {
-
-  // the point at which the forward part of the compute graph ends
-  Op *turningPointOp     = nullptr;
-  auto mainGraphSchedule = getMainGraph().getOpSchedule({});
-  for (auto op : mainGraphSchedule) {
-    if (op->getPhase() == Phase::FWD || op->getPhase() == Phase::LOSS) {
-      turningPointOp = op;
-    }
-  }
-
-  if (!turningPointOp) {
-    throw error(
-        "ILE: failed to set turningPointOp, is the graph in training mode?");
-  }
-
-  return turningPointOp;
 }
 
 // the rule followed : a Stream tensor which is not an
@@ -553,6 +534,7 @@ void Ir::prepare(const IrBundle &gb) {
   verifyVirtualGraphIds(false);
 
   dotCheckpoint(DotCheck::FWD0);
+
   for (auto &id_graph : graphs) {
     auto &graph = getGraph(id_graph.first);
     applyPreAliasPatterns(graph);
@@ -567,7 +549,7 @@ void Ir::prepare(const IrBundle &gb) {
   if (canEvaluate()) {
     growFinalLoss();
     updateVertices();
-    setNPathsToLoss();
+    setNEdgesToLoss();
   }
 
   if (autoRecomputationEnabled() && getMainGraph().hasUserRecomputeOps()) {
@@ -580,6 +562,7 @@ void Ir::prepare(const IrBundle &gb) {
 
   setOptimizer(gb.optimizer);
 
+  updateVertices();
   if (canTrain()) {
     constructBackwards();
   }
@@ -598,7 +581,10 @@ void Ir::prepare(const IrBundle &gb) {
     auto &graph = getGraph(id_graph.first);
     applyPreAliasPatterns(graph);
   }
-  setNPathsToLoss();
+
+  if (canEvaluate()) {
+    setNEdgesToLoss();
+  }
 
   // tensors with no producer and no
   // consumers are removed at this point.
@@ -714,14 +700,54 @@ void Ir::prepare(const IrBundle &gb) {
                         "SoftMaxGradDirect");
     }
   }
+
+  updateVertices();
+
   verifyConstExprFolding();
   verifyConnectivity();
   verifyTensorIds();
   verifyVirtualGraphIds(true);
+  verifyVertexAttributesOnlyInMain();
   // end of checks
 
-  updateVertices();
   isPrepared = true;
+}
+
+void Ir::verifyVertexAttributesOnlyInMain() const {
+
+  auto verify = [](Vertex *v) {
+    if (v->toLoss != PathToLoss::Undefined) {
+      throw error("Vertex {}, which is not in the main scope, does not have "
+                  "PathToLoss::Undefined",
+                  v->str());
+    }
+    if (v->fromLoss != PathFromLoss::Undefined) {
+      throw error("Vertex {}, which is not in the main scope, does not have "
+                  "PathFromLoss::Undefined",
+                  v->str());
+    }
+    if (v->scheduledPreLoss != ScheduledPreLoss::Undefined) {
+      throw error("Vertex {}, which is not in the main scope, does not have "
+                  "ScheduledPreLoss::Undefined",
+                  v->str());
+    }
+  };
+
+  for (auto op : getOpSchedule({})) {
+
+    // If this Vertex is not in the main Graph
+    if (!op->settings.scope.str().empty()) {
+      verify(op);
+
+      for (auto tIn : op->input->tensors()) {
+        verify(tIn);
+      }
+
+      for (auto tOut : op->output->tensors()) {
+        verify(tOut);
+      }
+    }
+  }
 }
 
 void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
@@ -1083,13 +1109,9 @@ bool Ir::isAnchored(const TensorId &tenId) const {
 
 void Ir::constructForwards() {
   constructFromOnnxGraph(onnxModel->graph(), {});
-
-  // Not necessary to set the phase here (it will be done in
-  // updateVertices). To check our logic though, we do this here
-  // and then check that we agree in updateVertices()
   for (auto &id_op : getMainGraph().getOps()) {
-    auto op = id_op.second.get();
-    op->setPhase(Phase::FWD);
+    auto op      = id_op.second.get();
+    op->fromLoss = PathFromLoss::No;
   }
 }
 
@@ -1285,7 +1307,7 @@ void TensorGradRegistry::insert(Tensor *nonGrad, Tensor *grad) {
   } else {
     partial[nonGrad->id].push_back(grad);
   }
-  if (partial[nonGrad->id].size() == nonGrad->nPathsToLoss()) {
+  if (partial[nonGrad->id].size() == nonGrad->nEdgesToLoss) {
     complete[nonGrad->id] = partial[nonGrad->id];
     partial.erase(nonGrad->id);
   }
@@ -1302,7 +1324,9 @@ void OpGradRegistry::insert(Op *nonGrad, int index) {
   if (partial[nonGrad->id].count(index) != 0) {
     throw error("ILE : index already present in OpGradRegistry::insert");
   }
+
   partial[nonGrad->id].insert(index);
+
   // probably just checks that the size of partial is
   // nonGrad->output->n(), but maybe not.
   if (nonGrad->readyToCreateGradients(partial[nonGrad->id])) {
@@ -1330,234 +1354,187 @@ std::vector<Op *> OpGradRegistry::popComplete() {
 // The cost of maintaining irHasChanged is non-trivial
 // and would require runtime overhead, for now not
 // going to implement it.
+//
+
+namespace {
+
+// move backwards through the inputs and their producers
+std::set<Vertex *> backwardPropogate(std::vector<Op *> frontier) {
+  std::set<Vertex *> visited;
+  for (auto x : frontier) {
+    visited.emplace(x);
+  }
+  while (frontier.size() > 0) {
+    auto toProcess = frontier.back();
+    frontier.resize(frontier.size() - 1);
+    // get all producers of inputs, add them to the frontier
+    for (auto inTensor : toProcess->input->tensors()) {
+      visited.emplace(inTensor);
+      auto producer = inTensor->getProducerUnsafe();
+      if (producer && visited.count(producer) == 0) {
+        visited.emplace(producer);
+        frontier.push_back(producer);
+      }
+    }
+  }
+  return visited;
+}
+
+// move forwards the the outputs and their consumers
+std::set<Vertex *> forwardPropogate(std::vector<Op *> frontier) {
+  std::set<Vertex *> visited;
+  for (auto x : frontier) {
+    visited.emplace(x);
+  }
+  while (frontier.size() > 0) {
+    auto toProcess = frontier.back();
+    frontier.resize(frontier.size() - 1);
+    for (auto outTensor : toProcess->output->tensors()) {
+      visited.emplace(outTensor);
+      for (auto consumer : outTensor->consumers.getOps()) {
+        if (visited.count(consumer) == 0) {
+          visited.emplace(consumer);
+          frontier.push_back(consumer);
+        }
+      }
+    }
+  }
+  return visited;
+}
+
+} // namespace
 
 void Ir::updateVertices() {
 
-  // for all vertices (Ops and Tensors),
-  // what phase is it in (FWD, BWD, LOSS) ?
+  // for all vertices (Ops and Tensors), set
+  //  1) toLoss (is there a path to the final loss?)
+  //  2) fromLoss (is there a path from the final loss?)
+  //  3) scheduledPreLoss (is it scheduled before the final loss?)
 
-  // for all vertices (Ops and Tensors),
-  // is there a path to a BWD vertex? (YES, NO)
+  logging::ir::trace(
+      "Updating all Vertices (toLoss, fromLoss, scheduledPreLoss)");
 
-  logging::ir::trace("Determining the phase of all Ops");
-
-  // determine the phase of all Ops
+  // 1) get All Ops which have toLoss true, and backwards propagate
+  std::vector<Op *> toLossFrontier;
+  // 1) get All Ops which have fromLoss Yes, and backwards propagate
+  std::vector<Op *> fromLossFrontier;
   for (auto &id_op : getMainGraph().getOps()) {
     Op *op = id_op.second.get();
-
-    // There are several potential sources of information
-    // that can be used to determine the Phase of an Op.
-    // We gather all such sources, and confirm that they
-    // are in agreement.
-    std::vector<Phase> suggestions;
-
-    // source 1 : if the op already has a
-    // phase set, it should be the same.
-    Phase prevPhase = op->getPhase();
-    if (prevPhase != Phase::UNDEFINED) {
-      suggestions.push_back(prevPhase);
+    if (op->toLoss == PathToLoss::Yes) {
+      toLossFrontier.push_back(op);
     }
-
-    // source 2 : if a producer of the op's
-    // inputs is BWD, then it must be BWD too.
-    for (auto tensor_indices : op->input->indicesMap()) {
-      Tensor *inTensor = tensor_indices.first;
-      if (inTensor->hasProducer()) {
-        if (inTensor->getProducer()->getPhase() == Phase::BWD) {
-          suggestions.push_back(Phase::BWD);
-        }
-      }
-    }
-
-    // source 3 : if any of the consumers of the
-    // op's outputs is FWD, then it must be FWD too.
-    for (auto tensor_indices : op->output->indicesMap()) {
-      Tensor *outTensor = tensor_indices.first;
-      for (Op *consumer : outTensor->consumers.getOps()) {
-        if (consumer->getPhase() == Phase::FWD) {
-          suggestions.push_back(Phase::FWD);
-        }
-      }
-    }
-
-    // source 4 : if the op is inherits from the
-    // LossOp base class, then it is LOSS.
-    if (op->isLossOp()) {
-      suggestions.push_back(Phase::LOSS);
-    }
-
-    // source 5: if the output is "finalLoss", then it is LOSS
-    if (op->output->hasIndex(0) && op->output->id(0) == getFinalLossId()) {
-      suggestions.push_back(Phase::LOSS);
-    }
-
-    // source 6 : if an input or an output has a gradient
-    // or recompute prefix, it is BWD
-    std::vector<TensorId> insNouts;
-    for (auto tensor_indices : op->output->indicesMap()) {
-      insNouts.push_back(tensor_indices.first->id);
-    }
-    for (auto tensor_indices : op->input->indicesMap()) {
-      insNouts.push_back(tensor_indices.first->id);
-    }
-    for (auto id : insNouts) {
-      if (id.find(reservedGradientPrefix()) != std::string::npos) {
-        suggestions.push_back(Phase::BWD);
-      }
-    }
-
-    if (suggestions.size() == 0) {
-      // no suggestions, we assume it is FWD
-      op->setPhase(Phase::FWD);
-    } else {
-      for (auto phase : suggestions) {
-        if (phase != suggestions[0]) {
-          std::stringstream ss;
-          ss << "failed to determine phase of " + op->debugName() +
-                    ", which has suggested phases: ";
-          std::vector<std::string> suggestions_s;
-          for (auto &x : suggestions) {
-            suggestions_s.push_back(phase_names().at(x));
-          }
-          appendSequence(ss, suggestions_s);
-          throw error(ss.str());
-        }
-      }
-      op->setPhase(suggestions[0]);
+    if (op->fromLoss == PathFromLoss::Yes) {
+      fromLossFrontier.push_back(op);
     }
   }
 
-  // now we set the tensor phases,
-  // as the phase of the earliest
-  // consumer or producer
+  auto toLossVertices = backwardPropogate(toLossFrontier);
+  for (Vertex *v : toLossVertices) {
+    if (v->toLoss == PathToLoss::No) {
+      throw error("ILE: Vertex {} deduced to have PathToLoss::Yes, but it "
+                  "currently has PathToLoss::No",
+                  v->str());
+    }
+    v->toLoss = PathToLoss::Yes;
+  }
+
+  auto fromLossVertices = forwardPropogate(fromLossFrontier);
+  for (Vertex *v : fromLossVertices) {
+    if (v->fromLoss == PathFromLoss::No) {
+      throw error("ILE: Vertex {} deduced to have PathFromLoss::Yes, but has "
+                  "PathFromLoss::No",
+                  v->str());
+    }
+    v->fromLoss = PathFromLoss::Yes;
+  }
+
+  // set all Undefined to No
   for (auto &id_op : getMainGraph().getOps()) {
-    Op *op = id_op.second.get();
-    std::vector<Tensor *> associated_tensors;
-
-    for (auto tensor_indices : op->output->indicesMap()) {
-      associated_tensors.push_back(tensor_indices.first);
-    }
-
-    for (auto tensor_indices : op->input->indicesMap()) {
-      associated_tensors.push_back(tensor_indices.first);
-    }
-
-    for (Tensor *tensor : associated_tensors) {
-      auto ass_ops = tensor->associatedOps();
-      if (ass_ops.size() == 0) {
-        throw error("Tensor " + tensor->id + " has no associated ops");
+    auto setUnPaths = [](Vertex *v) {
+      if (v->toLoss != PathToLoss::Yes) {
+        v->toLoss = PathToLoss::No;
       }
-      // starting with the latest of the phases (BWD),
-      // update whenever an associated op is in an earlier phase.
-      tensor->setPhase(Phase::BWD);
-      for (auto ass_op : ass_ops) {
-        // FWD is the earliest Phase, if any associated Op is
-        // in the FWD phase then so is this tensor
-        if (ass_op->getPhase() == Phase::FWD) {
-          tensor->setPhase(Phase::FWD);
-        } else if (ass_op->getPhase() == Phase::LOSS &&
-                   tensor->getPhase() == Phase::BWD) {
-          tensor->setPhase(Phase::LOSS);
+      if (v->fromLoss != PathFromLoss::Yes) {
+        v->fromLoss = PathFromLoss::No;
+      }
+    };
+
+    auto op = id_op.second.get();
+    setUnPaths(op);
+    for (auto tensor : op->input->tensors()) {
+      setUnPaths(tensor);
+    }
+    for (auto tensor : op->output->tensors()) {
+      setUnPaths(tensor);
+    }
+  }
+
+  // 3.1) scheduledPreLoss for Ops.
+  // The first Op which is PathFromLoss::Yes, and all subsequent Ops, are
+  // ScheduledPreLoss::No
+  bool inFwd = true;
+  for (auto op : getMainGraph().getOpSchedule({})) {
+    if (op->fromLoss == PathFromLoss::Yes) {
+      inFwd = false;
+    }
+    op->scheduledPreLoss = inFwd ? ScheduledPreLoss::Yes : ScheduledPreLoss::No;
+  }
+
+  // 3.2) scheduledPreLoss for Tensors
+  for (auto op : getMainGraph().getOpSchedule({})) {
+    for (auto tensor : op->input->tensors()) {
+      // inputs to pre-loss are pre-loss
+      if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
+        tensor->scheduledPreLoss = ScheduledPreLoss::Yes;
+        // inputs to post-loss are post-loss if not already pre-loss
+      } else if (op->scheduledPreLoss == ScheduledPreLoss::No) {
+        if (tensor->scheduledPreLoss != ScheduledPreLoss::Yes) {
+          tensor->scheduledPreLoss = ScheduledPreLoss::No;
         }
       }
     }
-  }
-
-  // All phases now set.
-
-  // Now, set if there is a path to a bwd op.
-  // we do this starting from scratch.
-
-  std::set<Op *> s_op_front;
-  std::vector<Op *> v_op_front;
-  std::set<Op *> s_ops_visited;
-
-  // initialising all Vertices to NO
-  for (auto &id_op : getMainGraph().getOps()) {
-    Op *op = id_op.second.get();
-    op->setPathToBwd(PathToBwd::NO);
-    for (auto &tensor_indices : op->input->indicesMap()) {
-      tensor_indices.first->setPathToBwd(PathToBwd::NO);
-    }
-    for (auto &tensor_indices : op->output->indicesMap()) {
-      tensor_indices.first->setPathToBwd(PathToBwd::NO);
-    }
-  }
-
-  // initialising all backward and loss
-  // Ops to YES, adding them to the front
-  for (auto &id_op : getMainGraph().getOps()) {
-    Op *op = id_op.second.get();
-    if (op->getPhase() == Phase::BWD || op->getPhase() == Phase::LOSS) {
-      op->setPathToBwd(PathToBwd::YES);
-      v_op_front.push_back(op);
-      s_op_front.insert(op);
-    }
-  }
-
-  while (v_op_front.size() != 0) {
-    Op *onPath = v_op_front.back();
-    v_op_front.resize(v_op_front.size() - 1);
-    s_op_front.erase(onPath);
-    if (s_ops_visited.count(onPath) == 0) {
-      s_ops_visited.emplace(onPath);
-      for (auto &tensor_indices : onPath->input->indicesMap()) {
-        Tensor *tOnPath = tensor_indices.first;
-        tOnPath->setPathToBwd(PathToBwd::YES);
-        if (tOnPath->hasProducer()) {
-          Op *producer = tOnPath->getProducer();
-          producer->setPathToBwd(PathToBwd::YES);
-          if (s_op_front.count(producer) == 0) {
-            s_op_front.insert(producer);
-            v_op_front.push_back(producer);
-          }
-        }
-      }
+    // Outputs are always the same as the producer Op, this rule takes priority
+    // over all input annotation rules.
+    for (auto tensor : op->output->tensors()) {
+      tensor->scheduledPreLoss = op->scheduledPreLoss;
     }
   }
 }
 
-void Ir::setNPathsToLoss() {
+void Ir::setNEdgesToLoss() {
 
-  auto found = getMainGraph().getOps().find(finalLossId);
-  if (found == getMainGraph().getOps().end()) {
-    // There will be no losses at all for an inference
-    return;
+  if (isTesting()) {
+    throw error("ILE: Call to setNEdgesToLoss() in Testing  mode is not valid");
   }
-  Op *finalLossOp = found->second.get();
 
-  // initialize number of paths for
-  // all Ops and Tensors to loss to be zero
+  // set all edge counts to zero (we set from scratch in this function)
+  for (auto &id_op : getMainGraph().getOps()) {
+    Op *op           = id_op.second.get();
+    op->nEdgesToLoss = 0;
+    for (auto index_tensor : op->input->tensorMap()) {
+      index_tensor.second->nEdgesToLoss = 0;
+    }
+    for (auto index_tensor : op->output->tensorMap()) {
+      index_tensor.second->nEdgesToLoss = 0;
+    }
+  }
+
   for (auto &id_op : getMainGraph().getOps()) {
     Op *op = id_op.second.get();
-    op->setNPathsToLossToZero();
-    for (auto t_inds : op->input->indicesMap()) {
-      t_inds.first->setNPathsToLossToZero();
-    }
-    for (auto t_inds : op->output->indicesMap()) {
-      t_inds.first->setNPathsToLossToZero();
-    }
-  }
 
-  std::vector<Op *> opFront{finalLossOp};
-  std::set<Op *> opsSeen{finalLossOp};
-  std::set<Tensor *> tensorsSeen{};
-  while (opFront.size() != 0) {
-    Op *op = opFront.back();
-    opFront.resize(opFront.size() - 1);
-    for (auto &ind_ten : op->input->tensorMap()) {
-      auto tensor = ind_ten.second;
-      tensor->incrNPathsToLoss();
-      if (tensorsSeen.count(tensor) == 0) {
-        tensorsSeen.insert(tensor);
-        if (tensor->hasProducer()) {
-          auto producer = tensor->getProducer();
-          producer->incrNPathsToLoss();
-          if (opsSeen.count(producer) == 0) {
-            opFront.push_back(producer);
-            opsSeen.insert(producer);
-          }
-        }
+    // For each Op, how many OutIndices lead to loss?
+    for (auto index_tensor : op->output->tensorMap()) {
+      auto outTensor = index_tensor.second;
+      if (outTensor->toLoss == PathToLoss::Yes) {
+        ++op->nEdgesToLoss;
+      }
+    }
+
+    // If Op goes to Loss, then for each of its inputs, +1 path
+    if (op->toLoss == PathToLoss::Yes) {
+      for (auto index_tensor : op->input->tensorMap()) {
+        auto inTensor = index_tensor.second;
+        ++inTensor->nEdgesToLoss;
       }
     }
   }
@@ -1581,6 +1558,7 @@ void Ir::constructBackwards() {
   // unclear whether they should be maintained in a valid state throughout
   // the objects life. In this case, I think the second is worse, so
   // going for the lambda solution.
+
   TensorGradRegistry tensor_grad_registry;
   OpGradRegistry op_grad_registry;
 
@@ -1616,8 +1594,8 @@ void Ir::constructBackwards() {
 
   while (!opsToRegister.empty()) {
 
-    registerOpGrads(opsToRegister.back().grad, opsToRegister.back().nongrad);
-
+    auto &toRegister = opsToRegister.back();
+    registerOpGrads(toRegister.grad, toRegister.nongrad);
     opsToRegister.resize(opsToRegister.size() - 1);
 
     for (auto &nongrad_egrads : tensor_grad_registry.popComplete()) {
@@ -1629,10 +1607,8 @@ void Ir::constructBackwards() {
       // register the link between sumOp's output and nongrad
       Op *sumOp = growGradSumOp(nongrad, egrads);
 
-      // Not necessary to set the phase here (it will be done in
-      // updateVertices). To check our logic though, we do this here
-      // and then check that we agree in updateVertices()
-      sumOp->setPhase(Phase::BWD);
+      sumOp->fromLoss = PathFromLoss::Yes;
+      logging::ir::trace("New gradient sumOp, {}, created", sumOp->str());
 
       switch (nongrad->tensorType()) {
 
@@ -1661,7 +1637,9 @@ void Ir::constructBackwards() {
         throw error("can't currently register gradient of " +
                     nongrad->tensor_type() + " tensor, " + nongrad->str());
 
-      default: { throw error("only handling ActGrad and Variable for now"); }
+      default: {
+        throw error("only handling ActGrad and Variable for now");
+      }
       }
     }
 
@@ -1692,9 +1670,11 @@ void Ir::constructBackwards() {
       throw error("Unknown variable update approach");
     };
   }
+
+  logging::ir::info("Constructing backwards complete");
 }
 
-Op *Ir::growCopyVarUpdateOp(TensorId varId, TensorId from) {
+Op *Ir::growCopyVarUpdateOp(const TensorId &varId, const TensorId &from) {
   OpId opId = getMainGraph().moveIntoGraph(
       std::unique_ptr<Op>(new CopyVarUpdateOp(varId, {getMainGraph(), ""})));
 
@@ -1705,7 +1685,7 @@ Op *Ir::growCopyVarUpdateOp(TensorId varId, TensorId from) {
   return growVarUpdateOpInternal(opId);
 }
 
-Op *Ir::growGradientVarUpdateOp(TensorId varId) {
+Op *Ir::growGradientVarUpdateOp(const TensorId &varId) {
 
   // A sanity check that the Tensor is not fixed point type
   if (getTensors().get(varId)->info.getDataTypeInfo()->isFixedPoint()) {
@@ -1757,19 +1737,13 @@ Op *Ir::growVarUpdateOpInternal(OpId opId) {
   getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
   op->setup();
 
-  // Not necessary to set the phase here (it will be done in
-  // updateVertices). To check our logic though, we do this here
-  // and then check that we agree in updateVertices()
-  op->setPhase(Phase::BWD);
-
   trainTargetOps.insert(op);
   return op;
 }
 
 void Ir::growFinalLoss() {
-  // There may be no losses (in inference especially)
   if (losses.size() == 0) {
-    return;
+    throw error("In Ir::growFinalLoss, but losses vector is empty");
   }
 
   logging::ir::info("growing final loss");
@@ -1785,11 +1759,9 @@ void Ir::growFinalLoss() {
     getMainGraph().connectOutputs(*loss, opId);
     lossOps.push_back(lossOp);
     lossOp->setup();
-
-    // Not necessary to set the phase here (it will be done in
-    // updateVertices). To check our logic though, we do this here
-    // and then check that we agree in updateVertices()
-    lossOp->setPhase(Phase::LOSS);
+    lossOp->toLoss = PathToLoss::Yes;
+    // there is no path from the final loss to this pre-final loss op
+    lossOp->fromLoss = PathFromLoss::No;
   }
 
   // now growing the FINAL loss (sum of individual losses)
@@ -1799,6 +1771,10 @@ void Ir::growFinalLoss() {
                           getOpSetVersionFromModel(Domain::ai_onnx),
                           getMainGraph(),
                           "FinalLoss");
+
+  // The final Loss Op is the only Op which (we say) has both paths to and from
+  finalLossSum->toLoss   = PathToLoss::Yes;
+  finalLossSum->fromLoss = PathFromLoss::Yes;
 
   if (getSessionOptions().enableVirtualGraphs) {
 
@@ -1822,7 +1798,7 @@ void Ir::growFinalLoss() {
     finalLossSum->setVirtualGraphId(it->first);
   }
 
-  OpId opId = getMainGraph().moveIntoGraph(std::move(finalLossSum));
+  finalLossOpId = getMainGraph().moveIntoGraph(std::move(finalLossSum));
 
   std::vector<TensorId> inputs;
   inputs.reserve(lossOps.size());
@@ -1831,16 +1807,14 @@ void Ir::growFinalLoss() {
     inputs.push_back(op->output->tensor(0)->id);
   }
   std::vector<TensorId> outputs{getFinalLossId()};
-  getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
-  getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
-  getMainGraph().getOps()[opId]->setup();
+  getMainGraph().connectInputs(InputVecWrapper(inputs), finalLossOpId);
+  getMainGraph().connectOutputs(OutputVecWrapper(outputs), finalLossOpId);
+  getMainGraph().getOps()[finalLossOpId]->setup();
 
   // Not necessary to set the phase here (it will be done in
   // updateVertices). To check our logic though, we do this here
   // and then check that we agree in updateVertices()
-  getMainGraph().getOps()[opId]->setPhase(Phase::LOSS);
-  finalLossId = opId;
-  logging::ir::trace("Final loss id set to {}", finalLossId);
+  logging::ir::trace("Final loss Op id set to {}", finalLossOpId);
 }
 
 TensorId Ir::getFinalLossId() const { return "finalLoss"; }
@@ -1917,22 +1891,24 @@ int Ir::getOpSetVersionFromModel(const std::string &node_domain) const {
 }
 
 std::vector<GradNonGradPair> Ir::growLossGradients() {
-  std::vector<GradNonGradPair> pairs;
-  if (getMainGraph().getOps().find(finalLossId) !=
-      getMainGraph().getOps().end()) {
-    for (auto &t_inds :
-         getMainGraph().getOp(finalLossId)->input->indicesMap()) {
-      Tensor *t  = t_inds.first;
+  auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);
+  if (finalLossOpFound != getMainGraph().getOps().end()) {
+    std::vector<GradNonGradPair> pairs;
+    for (auto &t_inds : finalLossOpFound->second->input->indicesMap()) {
+      Tensor *t = t_inds.first;
+      // a Loss Op going into the final Sum
       Op *lossOp = t->getProducer();
       for (Op *gradOp : growGradOps(lossOp)) {
         pairs.push_back({gradOp, lossOp});
       }
     }
+    return pairs;
+  } else {
+    throw error("Call to growLossGradients, but finalLossOpId not found");
   }
-  return pairs;
 }
 
-OpId Ir::getFinalLossOpId() const { return finalLossId; }
+OpId Ir::getFinalLossOpId() const { return finalLossOpId; }
 
 std::vector<const Graph *> Ir::getGraphSchedule() const {
   std::vector<const Graph *> sorted;

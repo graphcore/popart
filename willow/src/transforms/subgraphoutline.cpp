@@ -308,15 +308,6 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
                               Graph &graph,
                               Graph &subgraph) {
 
-  // Vote for new Phase amongst Ops (unanimous agreement required)
-  Phase phase = graph.getOp(instance.ops[0])->getPhase();
-  for (OpId id : instance.ops) {
-    if (phase != graph.getOp(id)->getPhase()) {
-      phase = Phase::UNDEFINED;
-      break;
-    }
-  }
-
   // Copy some attributes from the first op in the instance
   auto scope    = graph.getOp(instance.ops.at(0))->getScope();
   auto vgraphid = graph.getOp(instance.ops.at(0))->getVirtualGraphId();
@@ -328,11 +319,11 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
     op->disconnectAllOutputs();
   }
 
-  // Create the call op
-  auto up_call_op = std::make_unique<CallOp>(graph, subgraph);
-  auto call_op_id = graph.moveIntoGraph(std::move(up_call_op));
-  auto call_op    = graph.getOp(call_op_id);
-  call_op->setPhase(phase);
+  // Create the call op. Note that toLoss and fromLoss are set in the
+  // constructor
+  auto up_call_op         = std::make_unique<CallOp>(graph, subgraph);
+  auto call_op_id         = graph.moveIntoGraph(std::move(up_call_op));
+  auto call_op            = graph.getOp(call_op_id);
   call_op->settings.scope = scope;
   call_op->setVirtualGraphId(vgraphid);
 
@@ -371,32 +362,12 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
   auto subgraph_scope = subgraph.getScope();
   auto &instance      = match.instances[0];
 
-  // get the phase of the ops at index `i' in all instances of match.
-  // will return Phase::UNDEFINED if the instances phases dont match.
-  auto getPhase = [&](int i) {
-    // Get the phase of the op at index `i' in the first instance.
-    auto phase = graph.getOp(instance.ops.at(i))->getPhase();
-
-    // If the phase of the op at index `i' in each instance matches
-    // then return that phase, else return the undefined phase.
-    for (auto &inst : match.instances) {
-      auto opid = inst.ops.at(i);
-      auto op   = graph.getOp(opid);
-      if (phase != op->getPhase()) {
-        return Phase::UNDEFINED;
-      }
-    }
-
-    return phase;
-  };
-
   // clone all the ops and move into subgraph
   std::map<Op *, Op *> clone_map;
   for (int i = 0; i < instance.ops.size(); i++) {
-    auto opid  = instance.ops.at(i);
-    auto op    = graph.getOp(opid);
-    auto clone = op->clone();
-    clone->setPhase(getPhase(i));
+    auto opid             = instance.ops.at(i);
+    auto op               = graph.getOp(opid);
+    auto clone            = op->clone();
     clone->settings.graph = subgraph;
     clone->settings.scope = subgraph_scope;
     auto cloneid          = subgraph.moveIntoGraph(std::move(clone));

@@ -221,7 +221,7 @@ Op::getInplaceVariant(const OperatorIdentifier &operator_id) const {
 }
 
 bool Op::readyToCreateGradients(std::set<int> &s) const {
-  return s.size() == nPathsToLoss();
+  return s.size() == nEdgesToLoss;
 }
 
 int64_t Op::memOfOutputs() const {
