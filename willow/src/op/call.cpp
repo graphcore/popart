@@ -10,19 +10,6 @@ namespace poponnx {
 CallOp::CallOp(Graph &parent_, Graph &callee_)
     : Op(Onnx::CustomOperators::Call, {parent_, ""}), callee(callee_) {
   settings.name = fmt::format("Call_{}", callee_.id);
-
-  // Set the position w.r.t loss, if possible. If any of the internal ops
-  // is connected to the final loss, then so is this CallOp.
-  const auto &graphOps = callee.get().getOps();
-  for (auto &id_op : graphOps) {
-    auto op = id_op.second.get();
-    if (op->toLoss == PathToLoss::Yes) {
-      toLoss = PathToLoss::Yes;
-    }
-    if (op->fromLoss == PathFromLoss::Yes) {
-      fromLoss = PathFromLoss::Yes;
-    }
-  }
 }
 
 void CallOp::setup() {}

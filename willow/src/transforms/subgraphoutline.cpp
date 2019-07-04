@@ -312,13 +312,6 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
   auto scope    = graph.getOp(instance.ops.at(0))->getScope();
   auto vgraphid = graph.getOp(instance.ops.at(0))->getVirtualGraphId();
 
-  // Disconnect the old ops
-  for (auto opid : instance.ops) {
-    auto op = graph.getOp(opid);
-    op->disconnectAllInputs();
-    op->disconnectAllOutputs();
-  }
-
   // Create the call op. Note that toLoss and fromLoss are set in the
   // constructor
   auto up_call_op         = std::make_unique<CallOp>(graph, subgraph);
@@ -326,6 +319,26 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
   auto call_op            = graph.getOp(call_op_id);
   call_op->settings.scope = scope;
   call_op->setVirtualGraphId(vgraphid);
+
+  // Set the position w.r.t loss, if possible. If any of the internal ops
+  // is connected to the final loss, then so is this CallOp. Note that we use
+  // the Ops in the instance of this Match, and not the canonical subgraph.
+  for (auto opid : instance.ops) {
+    auto op = graph.getOp(opid);
+    if (op->toLoss == PathToLoss::Yes) {
+      call_op->toLoss = PathToLoss::Yes;
+    }
+    if (op->fromLoss == PathFromLoss::Yes) {
+      call_op->fromLoss = PathFromLoss::Yes;
+    }
+  }
+
+  // Disconnect the old ops
+  for (auto opid : instance.ops) {
+    auto op = graph.getOp(opid);
+    op->disconnectAllInputs();
+    op->disconnectAllOutputs();
+  }
 
   // Connect inputs
   for (int i = 0; i < instance.external_inputs.size(); i++) {
