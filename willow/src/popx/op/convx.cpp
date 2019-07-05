@@ -56,30 +56,26 @@ static poplin::ConvParams getPoplarConvParams(const ConvParameters &param) {
       param.numInChannels,
       param.numOutChannels,
       param.numGroups,
-      // InputTransform inputTransform
-      {
-          vXtoY<int64_t, unsigned>(param.inputTransformation.lowerTruncation),
-          vXtoY<int64_t, unsigned>(param.inputTransformation.upperTruncation),
-          vXtoY<int64_t, unsigned>(param.inputTransformation.dilation),
-          vXtoY<int64_t, unsigned>(param.inputTransformation.lowerPadding),
-          vXtoY<int64_t, unsigned>(param.inputTransformation.upperPadding),
-          param.inputTransformation.flip,
-      },
-      // InputTransform kernelTransform
-      {
-          vXtoY<int64_t, unsigned>(param.kernelTransformation.lowerTruncation),
-          vXtoY<int64_t, unsigned>(param.kernelTransformation.upperTruncation),
-          vXtoY<int64_t, unsigned>(param.kernelTransformation.dilation),
-          vXtoY<int64_t, unsigned>(param.kernelTransformation.lowerPadding),
-          vXtoY<int64_t, unsigned>(param.kernelTransformation.upperPadding),
-          param.kernelTransformation.flip,
-      },
-      // OutputTransform outputTransform
-      {vXtoY<int64_t, unsigned>(param.outputTransformation.lowerTruncation),
-       vXtoY<int64_t, unsigned>(param.outputTransformation.upperTruncation),
-       vXtoY<int64_t, unsigned>(param.outputTransformation.stride),
-       vXtoY<int64_t, unsigned>(param.outputTransformation.lowerPadding),
-       vXtoY<int64_t, unsigned>(param.outputTransformation.upperPadding)});
+
+      vXtoY<int64_t, unsigned>(param.inputTransformation.lowerTruncation),
+      vXtoY<int64_t, unsigned>(param.inputTransformation.upperTruncation),
+      vXtoY<int64_t, unsigned>(param.inputTransformation.dilation),
+      vXtoY<int64_t, unsigned>(param.inputTransformation.lowerPadding),
+      vXtoY<int64_t, unsigned>(param.inputTransformation.upperPadding),
+      param.inputTransformation.flip,
+
+      vXtoY<int64_t, unsigned>(param.kernelTransformation.lowerTruncation),
+      vXtoY<int64_t, unsigned>(param.kernelTransformation.upperTruncation),
+      vXtoY<int64_t, unsigned>(param.kernelTransformation.dilation),
+      vXtoY<int64_t, unsigned>(param.kernelTransformation.lowerPadding),
+      vXtoY<int64_t, unsigned>(param.kernelTransformation.upperPadding),
+      param.kernelTransformation.flip,
+
+      vXtoY<int64_t, unsigned>(param.outputTransformation.lowerTruncation),
+      vXtoY<int64_t, unsigned>(param.outputTransformation.upperTruncation),
+      vXtoY<int64_t, unsigned>(param.outputTransformation.stride),
+      vXtoY<int64_t, unsigned>(param.outputTransformation.lowerPadding),
+      vXtoY<int64_t, unsigned>(param.outputTransformation.upperPadding));
 }
 
 static ConvParameters
@@ -138,7 +134,7 @@ ConvParameters getConvGradParameters(const ConvParameters &fwdParams) {
 ConvParameters canonicalizeConvParams(const ConvParameters &param) {
   poplin::ConvParams popParams = popx::getPoplarConvParams(param);
 
-  auto canonicalizedPopParams = popParams.canonicalize();
+  auto canonicalizedPopParams = poplin::canonicalizeParams(popParams);
 
   ConvParameters result = convertPoplarConvParameters(canonicalizedPopParams);
   result.type           = param.type;
