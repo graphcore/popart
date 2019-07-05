@@ -60,13 +60,11 @@ int64_t Opx::getVirtualGraphId() const {
   }
 }
 
-poplar::Graph &Opx::masterGraph() const { return dv_p->masterGraph(); }
-
 poplar::Graph &Opx::graph() const {
   if (op_p->getIr().getSessionOptions().enableVirtualGraphs) {
-    return dv_p->graph(getVirtualGraphId());
+    return dv_p->getVirtualGraph(getVirtualGraphId());
   } else {
-    return dv_p->masterGraph();
+    return dv_p->graph();
   }
 }
 

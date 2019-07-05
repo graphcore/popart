@@ -31,19 +31,20 @@ void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                      {getInTensor(SGDVarUpdateOp::getVarToUpdateInIndex()),
                       getInTensor(SGDVarUpdateOp::getWeightDecayInIndex())},
                      prog,
-                     idStr());
+                     debugPrefix("weightDecay"));
 
   poplar::Tensor weightDeltas =
       getInTensor(SGDVarUpdateOp::getUpdaterInIndex());
 
   if (dv_p->getReplicationFactor() > 1) {
 
-    weightDeltas = popops::replicatedAllReduce(graph(),
-                                               dv_p->rootGraph(),
-                                               weightDeltas,
-                                               popops::Operation::ADD,
-                                               prog,
-                                               "/allReduce");
+    weightDeltas =
+        popops::replicatedAllReduce(graph(),
+                                    weightDeltas,
+                                    popops::Operation::ADD,
+                                    prog,
+                                    debugPrefix("allReduce_Add"),
+                                    {{"useReplicatedImplementation", "true"}});
   }
 
   // Then subtract scaled gradients
@@ -53,7 +54,7 @@ void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
       weightDeltas,                                         // weightDeltas
       getInTensor(SGDVarUpdateOp::getLearnRateInIndex()),
       prog,
-      idStr());
+      debugPrefix("scaledSubtract"));
 
   // output is a reference to the updated input
   setOutTensor(SGDVarUpdateOp::getUpdatedVarOutIndex(),
@@ -82,19 +83,20 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
         pe::Mul(pe::_1, pe::Const(weightDecayScaleFactor)),
         {getInTensor(ConstSGDVarUpdateOp::getVarToUpdateInIndex())},
         prog,
-        idStr());
+        debugPrefix("weightDecay"));
   }
 
   poplar::Tensor weightDeltas = getInTensor(vu_op.getUpdaterInIndex());
 
   if (dv_p->getReplicationFactor() > 1) {
 
-    weightDeltas = popops::replicatedAllReduce(graph(),
-                                               dv_p->rootGraph(),
-                                               weightDeltas,
-                                               popops::Operation::ADD,
-                                               prog,
-                                               "/allReduce");
+    weightDeltas =
+        popops::replicatedAllReduce(graph(),
+                                    weightDeltas,
+                                    popops::Operation::ADD,
+                                    prog,
+                                    debugPrefix("allReduce_Add"),
+                                    {{"useReplicatedImplementation", "true"}});
   }
 
   // Then subtract scaled gradients
@@ -104,7 +106,7 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
       weightDeltas,                               // weightDeltas
       vu_op.getLearnRate(),
       prog,
-      idStr() + "/scaledSubtract");
+      debugPrefix("scaledSubtract"));
 
   // output is a reference to the updated input
   setOutTensor(ConstSGDVarUpdateOp::getUpdatedVarOutIndex(),

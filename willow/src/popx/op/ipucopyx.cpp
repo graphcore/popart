@@ -1,5 +1,6 @@
 #include <poponnx/error.hpp>
 #include <poponnx/op/ipucopy.hpp>
+#include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/ipucopyx.hpp>
 #include <poponnx/popx/opxmanager.hpp>
 #include <poponnx/tensorindex.hpp>
@@ -19,7 +20,8 @@ void IpuCopyOpx::grow(poplar::program::Sequence &prog) const {
 
   for (auto &idx_tensor : op.input->tensorMap()) {
     auto idx = idx_tensor.first;
-    auto t   = poputil::copyToIpu(masterGraph(),
+    // Need to get the non virtual graph, so can not use Opx::graph()
+    auto t = poputil::copyToIpu(dv_p->graph(),
                                 getInTensor(idx),
                                 prog,
                                 static_cast<int>(op.getDestIpu()));

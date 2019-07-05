@@ -397,17 +397,10 @@ void PopPrograms::createFragment(const Graph &graph) {
   scopeSeqs.insert({graph.id.str(), {}});
 }
 
-poplar::Graph &Devicex::rootGraph() { return *pRootGraph; }
-const poplar::Graph &Devicex::rootGraph() const { return *pRootGraph; }
+poplar::Graph &Devicex::graph() { return *pGraph; }
+const poplar::Graph &Devicex::graph() const { return *pGraph; }
 
-poplar::Graph &Devicex::replicatedGraph() { return *pReplicatedGraph; }
-const poplar::Graph &Devicex::replicatedGraph() const {
-  return *pReplicatedGraph;
-}
-
-poplar::Graph &Devicex::masterGraph() { return *pReplicatedGraph; }
-
-poplar::Graph &Devicex::graph(int64_t virtualGraphIndex) {
+poplar::Graph &Devicex::getVirtualGraph(int64_t virtualGraphIndex) {
   if (virtualGraphIndex < 0 || virtualGraphIndex >= virtualGraphs.size()) {
     throw error("Invalid virtual graph index {} ({} available)",
                 virtualGraphIndex,
@@ -920,28 +913,25 @@ PriTask Devicex::initRandomSeed() {
     logging::devicex::debug("Initializing random seed.");
 
     auto seedTensor =
-        replicatedGraph().addVariable(poplar::UNSIGNED_INT, {2}, randomSeedId);
-    replicatedGraph().setTileMapping(seedTensor, 0);
+        graph().addVariable(poplar::UNSIGNED_INT, {2}, randomSeedId);
+    graph().setTileMapping(seedTensor, 0);
 
     auto &sq = progs.setRandomSeedFragment();
 
     if (!useSyntheticData()) {
       // Right now just use the same random seed on each replica if the user set
       // it T9638 - to corrupt the seed for each replicant
-      auto dataStream = replicatedGraph().addHostToDeviceFIFO(
-          h2dId(randomSeedId),
-          seedTensor.elementType(),
-          seedTensor.numElements(),
-          poplar::ReplicatedStreamMode::REPLICATE);
+      auto dataStream =
+          graph().addHostToDeviceFIFO(h2dId(randomSeedId),
+                                      seedTensor.elementType(),
+                                      seedTensor.numElements(),
+                                      poplar::ReplicatedStreamMode::REPLICATE);
 
       sq.add(poplar::program::Copy(dataStream, seedTensor));
     }
 
-    poprand::setSeed(replicatedGraph(),
-                     seedTensor,
-                     0,
-                     sq,
-                     fmt::format("{}/set", randomSeedId));
+    poprand::setSeed(
+        graph(), seedTensor, 0, sq, fmt::format("{}/set", randomSeedId));
   };
 
   return {
@@ -956,9 +946,9 @@ PriTask Devicex::initDropoutRandomSeed() {
   auto initDropoutRandomSeedTask = [this]() {
     logging::devicex::debug("Initializing dropout random seed tensor.");
 
-    dropoutRandomSeed = masterGraph().addVariable(
+    dropoutRandomSeed = graph().addVariable(
         poplar::UNSIGNED_INT, {2}, dropoutRandomSeedTensorId());
-    masterGraph().setTileMapping(dropoutRandomSeed, 0);
+    graph().setTileMapping(dropoutRandomSeed, 0);
   };
 
   return {
@@ -971,11 +961,10 @@ PriTask Devicex::initDropoutRandomSeed() {
 
 PriTask Devicex::incrementDropoutRandomSeedTask() {
   auto incrementDropoutRandomSeedTask = [this]() {
-    popops::addInPlace(
-        masterGraph(),
-        *getDropoutRandomSeed(),
-        getConst(masterGraph(), poplar::UNSIGNED_INT, {}, 1, "one"),
-        progs.preForwardFragment());
+    popops::addInPlace(graph(),
+                       *getDropoutRandomSeed(),
+                       getConst(graph(), poplar::UNSIGNED_INT, {}, 1, "one"),
+                       progs.preForwardFragment());
   };
 
   return {
@@ -1009,7 +998,7 @@ void Devicex::connectRandomSeedStream() {
 
 template <typename T> void Devicex::setInitVal(Tensor *tensor) {
 
-  replicatedGraph().setInitialValue<T>(
+  graph().setInitialValue<T>(
       tensors.get(tensor->id),
       poplar::ArrayRef<T>(static_cast<const T *>(tensor->tensorData()->data()),
                           tensor->info.nelms()));
@@ -1018,7 +1007,7 @@ template <typename T> void Devicex::setInitVal(Tensor *tensor) {
 // Using specialised poplar function for setting init val for FLOAT16
 void Devicex::setInitValHalf(Tensor *tensor) {
 
-  replicatedGraph().setInitialValueHalf(
+  graph().setInitialValueHalf(
       tensors.get(tensor->id),
       poplar::ArrayRef<uint16_t>(
           static_cast<const uint16_t *>(tensor->tensorData()->data()),
@@ -1151,10 +1140,10 @@ PriTask Devicex::streamToHostTask(Tensor *tensor) {
   auto f = [this, tensor]() {
     logging::devicex::debug("Creating device-to-host FIFO {}", tensor->id);
 
-    toHostStreams.emplace(
-        tensor->id,
-        replicatedGraph().addDeviceToHostFIFO(
-            d2hId(tensor->id), popType(tensor->info), tensor->info.nelms()));
+    toHostStreams.emplace(tensor->id,
+                          graph().addDeviceToHostFIFO(d2hId(tensor->id),
+                                                      popType(tensor->info),
+                                                      tensor->info.nelms()));
   };
 
   return {
@@ -1613,35 +1602,32 @@ void Devicex::prepare() {
   // Do not like the dynamic_cast is there a better way to handle this?
   auto &popDevice = dynamic_cast<DevicexInfo &>(*deviceInfo).getDevice();
 
-  // Create the top level root graph
-  pRootGraph.reset(new poplar::Graph(popDevice));
+  const unsigned numIOTilesPerIpu = 0;
+  poplar::replication_factor rf(getReplicationFactor());
 
-  popops::addCodelets(rootGraph());
-  poplin::addCodelets(rootGraph());
-  popnn::addCodelets(rootGraph());
-  poprand::addCodelets(rootGraph());
-  popsys::addCodelets(rootGraph());
+  logging::devicex::debug("Creating graph with replication factor {}",
+                          getReplicationFactor());
 
-  // Create the master graph
-  logging::devicex::debug(
-      "Creating replicated graph with replication factor {}",
-      getReplicationFactor());
+  pGraph.reset(new poplar::Graph(popDevice, numIOTilesPerIpu, rf));
 
-  pReplicatedGraph.reset(new poplar::Graph(
-      pRootGraph->createReplicatedGraph(getReplicationFactor())));
+  popops::addCodelets(graph());
+  poplin::addCodelets(graph());
+  popnn::addCodelets(graph());
+  poprand::addCodelets(graph());
+  popsys::addCodelets(graph());
 
-  setFloatingPointBehaviour(masterGraph());
-  setStochasticRoundingBehaviour(masterGraph());
+  setFloatingPointBehaviour(graph());
+  setStochasticRoundingBehaviour(graph());
 
   if (ir().getSessionOptions().enableVirtualGraphs) {
-    auto numIPUs     = masterGraph().getTarget().getNumIPUs();
-    auto tilesPerIPU = masterGraph().getTarget().getTilesPerIPU();
+    auto numIPUs     = graph().getTarget().getNumIPUs();
+    auto tilesPerIPU = graph().getTarget().getTilesPerIPU();
 
     for (unsigned ipu = 0; ipu < numIPUs; ++ipu) {
       unsigned startTile = ipu * tilesPerIPU;
       unsigned endTile   = (ipu + 1) * tilesPerIPU;
       virtualGraphs.emplace_back(
-          masterGraph().createVirtualGraph(startTile, endTile));
+          graph().createVirtualGraph(startTile, endTile));
       logging::devicex::info(
           "Created virtual graph {} from {} to {}", ipu, startTile, endTile);
     }
@@ -1785,13 +1771,13 @@ void Devicex::prepare() {
   if (ir().getSessionOptions().exportPoplarVertexGraph) {
     std::ofstream strm;
     strm.open("poplar_vertex_graph.dot", std::ios::out);
-    masterGraph().outputVertexGraph(strm, progs.progs());
+    graph().outputVertexGraph(strm, progs.progs());
   }
 
   if (ir().getSessionOptions().exportPoplarComputationGraph) {
     std::ofstream strm;
     strm.open("poplar_compute_graph.dot", std::ios::out);
-    masterGraph().outputComputeGraph(strm, progs.progs());
+    graph().outputComputeGraph(strm, progs.progs());
   }
 
   if (!ir().getSessionOptions().compileEngine) {
@@ -1850,7 +1836,7 @@ poplar::Executable Devicex::getExecutable() {
     return std::move(result.get());
   } else {
     auto executable = poplar::compileGraph(
-        rootGraph(), progs.progs(), engineOptions, progressLogger);
+        graph(), progs.progs(), engineOptions, progressLogger);
     trySaveExecutable(executable);
     return executable;
   }
@@ -2042,18 +2028,17 @@ PriTask Devicex::initBatchCounterTensorsTask() {
     // Id and decide when to execute the copy to the host
     for (ReturnPeriod N : ir().getDataFlow().rps()) {
       // Add to map so copy task can access
-      batchCountingTensors[N] = masterGraph().addVariable(poplar::INT, {});
-      batchCountCheckingTensors[N] =
-          masterGraph().addVariable(poplar::BOOL, {});
+      batchCountingTensors[N]      = graph().addVariable(poplar::INT, {});
+      batchCountCheckingTensors[N] = graph().addVariable(poplar::BOOL, {});
 
-      getConst(masterGraph(), poplar::INT, {}, N, "batchCounter");
+      getConst(graph(), poplar::INT, {}, N, "batchCounter");
 
-      poputil::mapTensorLinearly(masterGraph(), batchCountingTensors[N]);
-      poputil::mapTensorLinearly(masterGraph(), batchCountCheckingTensors[N]);
+      poputil::mapTensorLinearly(graph(), batchCountingTensors[N]);
+      poputil::mapTensorLinearly(graph(), batchCountCheckingTensors[N]);
     }
 
     // Make sure const 1 tensor exists
-    getConst(masterGraph(), poplar::INT, {}, 1, "one");
+    getConst(graph(), poplar::INT, {}, 1, "one");
   };
 
   return {+1e6, // followed by writes to host: always as early as possible
@@ -2075,20 +2060,19 @@ PriTask Devicex::updateBatchCountTask(poplar::program::Sequence &sq) {
     // copy batch
     for (ReturnPeriod N : ir().getDataFlow().rps()) {
       popops::addInPlace(
-          masterGraph(),
+          graph(),
           batchCountingTensors[N],
-          getConst(masterGraph(), poplar::INT, {}, 1, "batchCount/one"),
+          getConst(graph(), poplar::INT, {}, 1, "batchCount/one"),
           sq);
 
-      batchCountCheckingTensors[N] = popops::eq(
-          masterGraph(),
-          batchCountingTensors[N],
-          getConst(masterGraph(), poplar::INT, {}, N, "batchCount/n"),
-          sq);
+      batchCountCheckingTensors[N] =
+          popops::eq(graph(),
+                     batchCountingTensors[N],
+                     getConst(graph(), poplar::INT, {}, N, "batchCount/n"),
+                     sq);
 
       // Reset batch count once it has reached N
-      auto zero =
-          getConst(masterGraph(), poplar::INT, {}, 0, "batchCount/zero");
+      auto zero = getConst(graph(), poplar::INT, {}, 0, "batchCount/zero");
       sq.add(poplar::program::If(
           batchCountCheckingTensors[N],
           poplar::program::Copy(zero, batchCountingTensors[N]),
@@ -2204,7 +2188,7 @@ std::string Devicex::getExecutionReport(bool use_cbor) const {
 std::string Devicex::getSerializedGraph() const {
   doProfileChecks();
   std::stringstream ss;
-  replicatedGraph().serialize(ss, poplar::SerializationFormat::Binary);
+  graph().serialize(ss, poplar::SerializationFormat::Binary);
   return ss.str();
 }
 
@@ -2213,7 +2197,7 @@ TensorTileMap Devicex::getTensorTileMap() const {
 
   for (const auto &t : tensors.getTensors()) {
     std::vector<TensorIntervalList> mapping;
-    for (auto tile : replicatedGraph().getTileMapping(t.second)) {
+    for (auto tile : graph().getTileMapping(t.second)) {
       TensorIntervalList intervalList;
       std::transform(tile.begin(),
                      tile.end(),
