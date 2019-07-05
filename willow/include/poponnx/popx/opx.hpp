@@ -76,9 +76,7 @@ public:
 
   // dv_p->getVirtualGraphId(). Defaults to 0 if virtualGraph is not enabled
   int64_t getVirtualGraphId() const;
-  // shortcut for dv_p->masterGraph
-  poplar::Graph &masterGraph() const;
-  // shortcut for dv_p->graph
+  // Returns the virtual graph if enabled, else returns the dv_p->graph
   poplar::Graph &graph() const;
   // shortcut for dv_p->tensors.get
   const poplar::Tensor &get(TensorId) const;

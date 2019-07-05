@@ -192,17 +192,10 @@ public:
   Opx *getOpx(OpId);
   const Opx *getOpx(OpId) const;
 
-  // Get the root graph
-  poplar::Graph &rootGraph();
-  const poplar::Graph &rootGraph() const;
+  poplar::Graph &graph();
+  const poplar::Graph &graph() const;
 
-  // T9669 replace masterGraph with replicatedGraph
-  poplar::Graph &masterGraph();
-  
-  poplar::Graph &replicatedGraph();
-  const poplar::Graph &replicatedGraph() const;
-
-  poplar::Graph &graph(int64_t virtualGraphIndex);
+  poplar::Graph &getVirtualGraph(int64_t virtualGraphIndex);
 
   // return the name of the task which creates a poplar::Tensor
   // This function is mostly string manipulation
@@ -269,15 +262,7 @@ public:
                           const std::string &name);
 
 private:
-  // The root graph. Operations that span the boundaries between
-  // replicated subgraphs (e.g. all-reduce of weight deltas) should be added
-  // here
-  std::unique_ptr<poplar::Graph> pRootGraph{nullptr};
-
-  // Operations that are not mapped to a specific IPU should be added to
-  // this graph. This will be a replicated graph if the options specify a
-  // replication factor greater than one.
-  std::unique_ptr<poplar::Graph> pReplicatedGraph{nullptr};
+  std::unique_ptr<poplar::Graph> pGraph{nullptr};
 
   std::unique_ptr<poplar::Engine> pEngine{nullptr};
   std::unique_ptr<poplar::Target> pTarget{nullptr};
