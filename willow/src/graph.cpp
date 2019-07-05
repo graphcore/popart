@@ -282,18 +282,19 @@ void Graph::setVarUpdateConstraints() {
       }
     }
     if (varInplaceConsumers.size() == 0) {
-      throw error("Failed to find any updaters of {}, bailing", var->str());
+      logging::debug("Failed to find any updaters of {}", var->str());
     } else if (varInplaceConsumers.size() > 1) {
       throw error("Found more than 1 potential updater of {}, bailing",
                   var->str());
-    }
-    // Good, there is a unique consumer which is inplace
-    Op *varInplaceConsumer = varInplaceConsumers.back();
+    } else {
+      // Good, there is a unique consumer which is inplace
+      Op *varInplaceConsumer = varInplaceConsumers.back();
 
-    // Set the constraints
-    for (Op *consumer : var->consumers.getOps()) {
-      if (consumer != varInplaceConsumer) {
-        topoCons->insert(consumer, varInplaceConsumer);
+      // Set the constraints
+      for (Op *consumer : var->consumers.getOps()) {
+        if (consumer != varInplaceConsumer) {
+          topoCons->insert(consumer, varInplaceConsumer);
+        }
       }
     }
   }

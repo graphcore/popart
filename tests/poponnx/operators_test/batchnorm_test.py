@@ -339,7 +339,7 @@ def test_batchnorm_train_2(op_tester):
         return [_y, None, None]
 
     op_tester.passes = ['PreUniRepl', 'ReciprocalGradOp']
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder, reference, 'infer')
 
 
 # This test is a error case where the batch

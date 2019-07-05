@@ -1194,7 +1194,7 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
   OpId nonGradOpId = nonGradOp->id;
   auto backOps     = nonGradOp->getGradOps();
   if (backOps.size() < 1) {
-    throw error("Cannot get gradients for {}", nonGradOp->debugName());
+    logging::ir::debug("Cannot get gradients for {}", nonGradOp->debugName());
   }
   std::vector<Op *> gradOps;
   for (auto &upop : backOps) {
@@ -1301,13 +1301,48 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
 }
 
 void TensorGradRegistry::insert(Tensor *nonGrad, Tensor *grad) {
+  // The expected number of edges is assumed to be the same as the
+  // number of edges to the loss for the non-grad tensor.
+  if (expectedNumEdges.find(nonGrad->id) == expectedNumEdges.end()) {
+    expectedNumEdges.insert({nonGrad->id, nonGrad->nEdgesToLoss});
+  }
+
   auto found = partial.find(nonGrad->id);
   if (found == partial.end()) {
     partial.insert({nonGrad->id, {grad}});
   } else {
     partial[nonGrad->id].push_back(grad);
   }
-  if (partial[nonGrad->id].size() == nonGrad->nEdgesToLoss) {
+
+  tryMakeComplete(nonGrad);
+}
+
+void TensorGradRegistry::decrementNumberExpectedEdges(Tensor *nonGrad) {
+  auto found = expectedNumEdges.find(nonGrad->id);
+  if (found == expectedNumEdges.end()) {
+    expectedNumEdges.insert({nonGrad->id, nonGrad->nEdgesToLoss - 1});
+  } else {
+    found->second--;
+  }
+
+  // Only make complete if this is already in partials.
+  // This prevents adding entries with 0 gradient edges.
+  if (partial.find(nonGrad->id) != partial.end()) {
+    tryMakeComplete(nonGrad);
+  }
+}
+
+int TensorGradRegistry::getNumberExpectedEdges(Tensor *nonGrad) {
+  auto found = expectedNumEdges.find(nonGrad->id);
+  if (found != expectedNumEdges.end()) {
+    return found->second;
+  } else {
+    return nonGrad->nEdgesToLoss;
+  }
+}
+
+void TensorGradRegistry::tryMakeComplete(Tensor *nonGrad) {
+  if (partial[nonGrad->id].size() == expectedNumEdges.at(nonGrad->id)) {
     complete[nonGrad->id] = partial[nonGrad->id];
     partial.erase(nonGrad->id);
   }
@@ -1575,6 +1610,21 @@ void Ir::constructBackwards() {
     }
   };
 
+  // register an op that doesn't create any grad ops
+  std::function<void(Op *)> registerOpWithoutGrads;
+  registerOpWithoutGrads = [&tensor_grad_registry,
+                            &registerOpWithoutGrads](Op *nonGradOp) {
+    for (auto &index_tensor : nonGradOp->input->tensorMap()) {
+      auto input = index_tensor.second;
+      tensor_grad_registry.decrementNumberExpectedEdges(input);
+
+      if (tensor_grad_registry.getNumberExpectedEdges(input) == 0 &&
+          input->hasProducer()) {
+        registerOpWithoutGrads(input->getProducer());
+      }
+    }
+  };
+
   // communicate that a new gradient tensor
   // (which is a sum along edges) is ready
   auto registerTensorGrad = [this, &op_grad_registry](Tensor *sum) {
@@ -1592,11 +1642,13 @@ void Ir::constructBackwards() {
   // initialised as the gradients of the individual losses
   std::vector<GradNonGradPair> opsToRegister = growLossGradients();
 
-  while (!opsToRegister.empty()) {
+  while (!opsToRegister.empty() || !tensor_grad_registry.complete.empty()) {
 
-    auto &toRegister = opsToRegister.back();
-    registerOpGrads(toRegister.grad, toRegister.nongrad);
-    opsToRegister.resize(opsToRegister.size() - 1);
+    if (!opsToRegister.empty()) {
+      auto &toRegister = opsToRegister.back();
+      registerOpGrads(toRegister.grad, toRegister.nongrad);
+      opsToRegister.resize(opsToRegister.size() - 1);
+    }
 
     for (auto &nongrad_egrads : tensor_grad_registry.popComplete()) {
 
@@ -1637,15 +1689,19 @@ void Ir::constructBackwards() {
         throw error("can't currently register gradient of " +
                     nongrad->tensor_type() + " tensor, " + nongrad->str());
 
-      default: {
+      default:
         throw error("only handling ActGrad and Variable for now");
-      }
       }
     }
 
     for (Op *op : op_grad_registry.popComplete()) {
-      for (auto &gradOp : growGradOps(op)) {
-        opsToRegister.push_back({gradOp, op});
+      auto gradOps = growGradOps(op);
+      if (gradOps.size() == 0) {
+        registerOpWithoutGrads(op);
+      } else {
+        for (auto &gradOp : gradOps) {
+          opsToRegister.push_back({gradOp, op});
+        }
       }
     }
   }
@@ -1674,7 +1730,7 @@ void Ir::constructBackwards() {
   logging::ir::info("Constructing backwards complete");
 }
 
-Op *Ir::growCopyVarUpdateOp(const TensorId &varId, const TensorId &from) {
+void Ir::growCopyVarUpdateOp(const TensorId &varId, const TensorId &from) {
   OpId opId = getMainGraph().moveIntoGraph(
       std::unique_ptr<Op>(new CopyVarUpdateOp(varId, {getMainGraph(), ""})));
 
@@ -1682,24 +1738,27 @@ Op *Ir::growCopyVarUpdateOp(const TensorId &varId, const TensorId &from) {
   std::vector<TensorId> inputs{varId, from};
   getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
 
-  return growVarUpdateOpInternal(opId);
+  growVarUpdateOpInternal(opId);
 }
 
-Op *Ir::growGradientVarUpdateOp(const TensorId &varId) {
+void Ir::growGradientVarUpdateOp(const TensorId &varId) {
 
   // A sanity check that the Tensor is not fixed point type
   if (getTensors().get(varId)->info.getDataTypeInfo()->isFixedPoint()) {
     throw error("Currently only floating point variable tensors are updatable");
   }
-  OpId opId =
-      getMainGraph().moveIntoGraph(optimizer->createOp(varId, getMainGraph()));
   auto inputs =
       optimizer->getInputIds(varId, getTensors().get(varId)->info.dataType());
-  getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
-  return growVarUpdateOpInternal(opId);
+  if (getMainGraph().getTensors().contains(
+          inputs.at(VarUpdateOp::getUpdaterInIndex()))) {
+    OpId opId = getMainGraph().moveIntoGraph(
+        optimizer->createOp(varId, getMainGraph()));
+    getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
+    growVarUpdateOpInternal(opId);
+  }
 }
 
-Op *Ir::growVarUpdateOpInternal(OpId opId) {
+void Ir::growVarUpdateOpInternal(OpId opId) {
 
   Op *op = getMainGraph().getOps()[opId].get();
 
@@ -1738,7 +1797,6 @@ Op *Ir::growVarUpdateOpInternal(OpId opId) {
   op->setup();
 
   trainTargetOps.insert(op);
-  return op;
 }
 
 void Ir::growFinalLoss() {

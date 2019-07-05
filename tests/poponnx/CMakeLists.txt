@@ -47,6 +47,7 @@ add_poponnx_cpp_unit_test(allocatortest allocator_test.cpp)
 add_poponnx_cpp_unit_test(mergecopiestest mergecopies_test.cpp)
 add_poponnx_cpp_unit_test(isnonlinearitytest is_nonlinearity_test.cpp)
 add_poponnx_cpp_unit_test(isnormtest is_norm_test.cpp)
+add_poponnx_cpp_unit_test(nogradoptest no_gradop_test.cpp)
 
 function(add_poponnx_py_unit_test name)
   message(STATUS

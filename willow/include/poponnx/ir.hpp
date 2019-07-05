@@ -37,6 +37,12 @@ public:
   // gradient of "nonGrad" w.r.t. loss along a single edge
   void insert(Tensor *nonGrad, Tensor *edgeGrad);
 
+  // Decrease the number of edges expected to be registered
+  // for a non-grad tensor.
+  void decrementNumberExpectedEdges(Tensor *nonGrad);
+
+  int getNumberExpectedEdges(Tensor *nonGrad);
+
   // Return the non-gradient tensors which have ALL their
   // required gradients registered, and are thus ready to
   // have their edge gradients summed to
@@ -44,7 +50,6 @@ public:
   // Note that this is NOT a const pop member function
   TMap popComplete();
 
-private:
   // stores all non-grad tensors which have some, but not all of
   // their edges already having gradients registered
   TMap partial;
@@ -52,6 +57,12 @@ private:
   // edges provide gradients. When popCompleted() is called,
   // this map is returned,
   TMap complete;
+
+private:
+  // the number of edges expected to register gradients for a non-grad tensor.
+  std::map<TensorId, int> expectedNumEdges;
+
+  void tryMakeComplete(Tensor *nonGrad);
 };
 
 class OpGradRegistry {
@@ -331,16 +342,12 @@ private:
   // we check that a reserved pattern is not present.
   void confirmNonReservedId(const TensorId &tenId) const;
 
-  // create an Op from Node (if not Constant Node), wire it to
-  // correct input Tensors and create the activation output Tensors
-  Op *growFromNode(const Node &, const Scope &);
+  void growGradientVarUpdateOp(const TensorId &varId);
 
-  Op *growGradientVarUpdateOp(const TensorId &varId);
-
-  Op *growCopyVarUpdateOp(const TensorId &varId, const TensorId &from);
+  void growCopyVarUpdateOp(const TensorId &varId, const TensorId &from);
 
   // Common code for the growGradient... and growCopy...
-  Op *growVarUpdateOpInternal(OpId opId);
+  void growVarUpdateOpInternal(OpId opId);
 
   // Op *growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints);
 
