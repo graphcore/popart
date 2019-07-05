@@ -1,7 +1,21 @@
+import inspect
 import fnmatch
 import re
 import poponnx
 import numpy as np
+
+
+def filter_dict(dict_to_filter, fun):
+    sig = inspect.signature(fun)
+    filter_keys = [
+        param.name for param in sig.parameters.values()
+        if param.kind == param.POSITIONAL_OR_KEYWORD
+    ]
+    filtered_dict = {
+        filter_key: dict_to_filter[filter_key]
+        for filter_key in filter_keys if filter_key in dict_to_filter.keys()
+    }
+    return filtered_dict
 
 
 def get_poplar_cpu_device():
