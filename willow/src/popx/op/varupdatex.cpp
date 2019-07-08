@@ -22,6 +22,9 @@ void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   // Weight update (matching pytorch implementation):
   //   w <- w * (1 - lr * wd) - lr * delta
 
+  // The (1 -lr * wd) calculation is done in SGD::setTensorData, weightDecay is
+  // weightDecayScaleFactor
+
   // First update weights with weight decay
   popops::mapInPlace(graph(),
                      pe::Mul(pe::_1, pe::_2),

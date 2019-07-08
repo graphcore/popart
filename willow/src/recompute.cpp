@@ -21,7 +21,7 @@ namespace {
 
 void annotateNormOnly(Graph &graph) {
   for (auto op : graph.getOpSchedule({})) {
-    if (op->isFwdToBwd() && op->isNorm()) {
+    if (op->toLoss == PathToLoss::Yes && op->isNorm()) {
       // don't checkpoint Norms as their outputs are large and
       // relatively cheap to recompute
       op->settings.recomputeType = RecomputeType::RECOMPUTE;
@@ -34,10 +34,11 @@ void annotateNormOnly(Graph &graph) {
 void annotateStandard(const Graph &graph) {
   std::vector<Op *> fwdOps;
   for (auto op : graph.getOpSchedule({})) {
-    if (op->isFwdToBwd()) {
+    if (op->toLoss == PathToLoss::Yes) {
       fwdOps.push_back(op);
     }
   }
+
   if (fwdOps.size() == 0) {
     return;
   }

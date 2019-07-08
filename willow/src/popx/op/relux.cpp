@@ -1,4 +1,3 @@
-#include <poponnx/device.hpp>
 #include <poponnx/error.hpp>
 #include <poponnx/op/relu.hpp>
 #include <poponnx/popx/op/relux.hpp>

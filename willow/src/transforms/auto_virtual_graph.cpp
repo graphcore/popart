@@ -6,7 +6,6 @@
 #include <poponnx/op.hpp>
 #include <poponnx/op/loss.hpp>
 #include <poponnx/tensor.hpp>
-
 #include <poponnx/transforms/auto_virtual_graph.hpp>
 
 namespace poponnx {
@@ -117,7 +116,7 @@ float AutoVirtualGraph::costFn(Op *op, bool training) const {
 // 1.1) Seperate graph into subgraphs
 //   - Create a subgraph for each consumer of each dataStreamTensor (Inputs to
 //   graph)
-//   - Add all consuming Ops to it's parent subgraph
+//   - Add all consuming Ops to its parent subgraph
 //   - If an Op consumes from more than one subgraph, create a new subgraph for
 //   it.
 // 1.2) Find split nodes in subgraphs
@@ -145,7 +144,7 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
     return true;
   }
 
-  logging::transform::info("[AutoVirtualGraph] Auto virtual graph with {} ipus",
+  logging::transform::info("[AutoVirtualGraph] Auto virtual graph with {} IPUs",
                            num_ipus);
 
   float cumulative_cost = 0.f;
@@ -156,81 +155,80 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
 
   for (auto *t : ir.dataStreamTensors()) {
     for (Op *consumer_op : t->consumers.getOps()) {
-      if (consumer_op->getPhase() == Phase::FWD ||
-          consumer_op->getPhase() == Phase::UNDEFINED) {
-        node_subgraph_map.insert({consumer_op->id, next_subgraph_id});
-        subgraphs.push_back({consumer_op->id});
-        next_subgraph_id++;
-        logging::transform::trace(
-            "Starting at {} {}.", consumer_op->debugName(), consumer_op->id);
-      }
+      node_subgraph_map.insert({consumer_op->id, next_subgraph_id});
+      subgraphs.push_back({consumer_op->id});
+      next_subgraph_id++;
+      logging::transform::trace(
+          "Starting at {} {}.", consumer_op->debugName(), consumer_op->id);
     }
   }
   // In topological order...
   for (Op *op : graph.getOpSchedule({})) {
-    // Find potential split nodes in the FWD graph.
-    if (op->getPhase() == Phase::FWD || op->getPhase() == Phase::UNDEFINED) {
-      float op_cost = costFn(op, training);
 
-      // Keep a cumulative_cost of the whole graph.
-      cumulative_cost += op_cost;
+    if (op->toLoss != PathToLoss::Undefined) {
+      throw error("ILE: Op {} has been annotated with PathToLoss "
+                  "information, AutoVirtualGraph::apply should be applied "
+                  "before the final loss is grown though",
+                  op->str());
+    }
 
-      auto subgraph_id = node_subgraph_map.find(op->id)->second;
-      auto &subgraph   = subgraphs.at(subgraph_id);
+    // Find potential split nodes
+    float op_cost = costFn(op, training);
 
-      // Keep a cumulative cost of each subgraph.
-      subgraph.cost += op_cost;
+    // Keep a cumulative_cost of the whole graph.
+    cumulative_cost += op_cost;
 
-      // Op is a split in the subgraph
-      if (subgraph.candidates.erase(op->id) && subgraph.candidates.empty()) {
-        subgraph.split_nodes.insert({subgraph.cost, op->id});
-        logging::transform::trace(
-            "Adding split on subgraph {}, node {} {}, cost {}",
-            subgraph_id,
-            op->debugName(),
-            op->id,
-            subgraph.cost);
-      }
+    auto subgraph_id = node_subgraph_map.find(op->id)->second;
+    auto &subgraph   = subgraphs.at(subgraph_id);
 
-      // Add Op consumers to the subgraph candidates.
-      for (Tensor *t : op->output->tensors()) {
-        for (Op *consumer_op : t->consumers.getOps()) {
-          if (consumer_op->getPhase() == Phase::FWD ||
-              consumer_op->getPhase() == Phase::UNDEFINED) {
-            auto insert_result =
-                node_subgraph_map.insert({consumer_op->id, subgraph_id});
-            // If this op has been seen in another subgraph. Create a new
-            // subgraph for it.
-            if (!insert_result.second &&
-                insert_result.first->second != subgraph_id) {
-              auto &conflict_subgraph =
-                  subgraphs.at(insert_result.first->second);
-              if (conflict_subgraph.candidates.size() == 1 &&
-                  conflict_subgraph.cost == 0.0f) {
-                // This subgraph is a single op and has no cost, so don't create
-                // a new subgraph Just move it into the current op's subgraph.
-                logging::transform::trace(
-                    "Moving node {} {} from subgraph {} to {}.",
-                    consumer_op->debugName(),
-                    consumer_op->id,
-                    insert_result.first->second,
-                    subgraph_id);
-                conflict_subgraph.candidates.erase(consumer_op->id);
-                subgraph.candidates.insert(consumer_op->id);
-                insert_result.first->second = subgraph_id;
-              } else {
-                logging::transform::trace("Creating new subgraph {} at {} {}.",
-                                          next_subgraph_id,
-                                          consumer_op->debugName(),
-                                          consumer_op->id);
-                subgraphs.push_back({consumer_op->id});
-                insert_result.first->second = next_subgraph_id;
-                next_subgraph_id++;
-              }
-            } else {
-              subgraph.candidates.insert(consumer_op->id);
-            }
+    // Keep a cumulative cost of each subgraph.
+    subgraph.cost += op_cost;
+
+    // Op is a split in the subgraph
+    if (subgraph.candidates.erase(op->id) && subgraph.candidates.empty()) {
+      subgraph.split_nodes.insert({subgraph.cost, op->id});
+      logging::transform::trace(
+          "Adding split on subgraph {}, node {} {}, cost {}",
+          subgraph_id,
+          op->debugName(),
+          op->id,
+          subgraph.cost);
+    }
+
+    // Add Op consumers to the subgraph candidates.
+    for (Tensor *t : op->output->tensors()) {
+      for (Op *consumer_op : t->consumers.getOps()) {
+        auto insert_result =
+            node_subgraph_map.insert({consumer_op->id, subgraph_id});
+        // If this op has been seen in another subgraph. Create a new
+        // subgraph for it.
+        if (!insert_result.second &&
+            insert_result.first->second != subgraph_id) {
+          auto &conflict_subgraph = subgraphs.at(insert_result.first->second);
+          if (conflict_subgraph.candidates.size() == 1 &&
+              conflict_subgraph.cost == 0.0f) {
+            // This subgraph is a single op and has no cost, so don't create
+            // a new subgraph Just move it into the current op's subgraph.
+            logging::transform::trace(
+                "Moving node {} {} from subgraph {} to {}.",
+                consumer_op->debugName(),
+                consumer_op->id,
+                insert_result.first->second,
+                subgraph_id);
+            conflict_subgraph.candidates.erase(consumer_op->id);
+            subgraph.candidates.insert(consumer_op->id);
+            insert_result.first->second = subgraph_id;
+          } else {
+            logging::transform::trace("Creating new subgraph {} at {} {}.",
+                                      next_subgraph_id,
+                                      consumer_op->debugName(),
+                                      consumer_op->id);
+            subgraphs.push_back({consumer_op->id});
+            insert_result.first->second = next_subgraph_id;
+            next_subgraph_id++;
           }
+        } else {
+          subgraph.candidates.insert(consumer_op->id);
         }
       }
     }
@@ -316,16 +314,12 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
 
   // Add sharding information to graph.
   for (Op *op : graph.getOpSchedule({})) {
-    // Find potential split nodes in the FWD graph.
-    if (op->getPhase() == Phase::FWD || op->getPhase() == Phase::UNDEFINED) {
-      auto &subgraph = subgraphs.at(node_subgraph_map.find(op->id)->second);
-
-      op->setVirtualGraphId(subgraph.virtual_graph_id);
-
-      if (subgraph.final_splits.erase(op->id)) {
-        // Does the op go on the previous or next graph? For now previous.
-        subgraph.virtual_graph_id++;
-      }
+    // Find potential split nodes
+    auto &subgraph = subgraphs.at(node_subgraph_map.find(op->id)->second);
+    op->setVirtualGraphId(subgraph.virtual_graph_id);
+    if (subgraph.final_splits.erase(op->id)) {
+      // Does the op go on the previous or next graph? For now previous.
+      subgraph.virtual_graph_id++;
     }
   }
 

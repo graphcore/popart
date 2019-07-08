@@ -66,7 +66,6 @@ bool SplitOpPattern::apply(Op *op) const {
     sliceOp->setAxes(axes);
     sliceOp->connectInTensor(SliceOp::getInIndex(), inputTensor->id);
     sliceOp->connectOutTensor(SliceOp::getOutIndex(), outTensor->id);
-    sliceOp->setPhase(splitOp->getPhase());
     sliceOp->setup();
   }
 

@@ -48,7 +48,7 @@ void DropoutOp::appendAttributes(OpSerialiserBase &os) const {
 
 // Dropout in testing mode can be replaced by the identity
 bool DropoutOp::canBeReplacedByIdentity() {
-  return (getIr().isTesting() || getIr().isEvaulation());
+  return (getIr().isTesting() || getIr().isEvaluation());
 }
 
 DropoutGradOp::DropoutGradOp(const DropoutOp &fwdOp)
@@ -86,7 +86,7 @@ static OpCreator<DropoutOp> dropoutOpCreator(
        const Attributes &attr) -> std::unique_ptr<Op> {
       float ratio = attr.getAttribute<Attributes::Float>("ratio", 0.5f);
       // If invalid probability for ratio supplied, throw error.
-      if (ratio < 0. || ratio > 1.) {
+      if (ratio <= float(0.) || ratio >= float(1.)) {
         throw error("{} ratio value {} is not valid. Please use a value in the "
                     "interval (0,1)",
                     _opid,

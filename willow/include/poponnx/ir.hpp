@@ -34,8 +34,14 @@ class TensorGradRegistry {
 public:
   using TMap = std::map<TensorId, std::vector<Tensor *>>;
   // Register tensor "edgeGrad" as being a
-  // gradient of "nonGrad" w.r.t. loss along some edge
+  // gradient of "nonGrad" w.r.t. loss along a single edge
   void insert(Tensor *nonGrad, Tensor *edgeGrad);
+
+  // Decrease the number of edges expected to be registered
+  // for a non-grad tensor.
+  void decrementNumberExpectedEdges(Tensor *nonGrad);
+
+  int getNumberExpectedEdges(Tensor *nonGrad);
 
   // Return the non-gradient tensors which have ALL their
   // required gradients registered, and are thus ready to
@@ -44,7 +50,6 @@ public:
   // Note that this is NOT a const pop member function
   TMap popComplete();
 
-private:
   // stores all non-grad tensors which have some, but not all of
   // their edges already having gradients registered
   TMap partial;
@@ -52,11 +57,17 @@ private:
   // edges provide gradients. When popCompleted() is called,
   // this map is returned,
   TMap complete;
+
+private:
+  // the number of edges expected to register gradients for a non-grad tensor.
+  std::map<TensorId, int> expectedNumEdges;
+
+  void tryMakeComplete(Tensor *nonGrad);
 };
 
 class OpGradRegistry {
 public:
-  // register that the output of nonGrad at index
+  // register that the output of nonGrad Op at OutIndex index
   // has had its gradient tensor computed
   void insert(Op *nonGrad, int index);
   std::vector<Op *> popComplete();
@@ -104,9 +115,6 @@ public:
   Ir();
   ~Ir();
 
-  // The last op in the schedule which is either FWD or LOSS
-  Op *getTurningPointOp() const;
-
   // Set the onnxModel.
   // A note on constant tensors: The outputs of ONNX Constant Operators
   // will always be treated as constants, so left unchanged if in training mode
@@ -146,7 +154,7 @@ public:
   // Onnx refers to Inference as testing.
   bool isTraining() { return executionMode == ExecutionMode::TRAINING; }
   bool isTesting() { return executionMode == ExecutionMode::INFERENCE; }
-  bool isEvaulation() { return executionMode == ExecutionMode::EVALUATION; }
+  bool isEvaluation() { return executionMode == ExecutionMode::EVALUATION; }
 
   // Set the losses, will clear any previous losses
   void setLosses(const std::vector<Loss *> &l);
@@ -273,10 +281,11 @@ public:
   // determines which are Stream and which are Variable
   void registerInputTensors();
 
-  // The number of paths to the loss is used in
-  // constructing the backwards pass. This functions set
-  // this number of all Ops and Tensors
-  void setNPathsToLoss();
+  // Consider the number of out edges a Vertex (Op/Tensor) has which lead to the
+  // final loss Tensor is used in constructing the backwards pass. This function
+  // sets this number for all Vertices. Out edges go to consumers for Tensors,
+  // and to output Tensors for Ops.
+  void setNEdgesToLoss();
 
   // For all vertices set the phase, and whether or not
   // there is a path to vertex in whose phase is BWD.
@@ -331,18 +340,14 @@ private:
   // gradients are named automatically. To prevent them
   // getting names already taken by non-gradient tensors,
   // we check that a reserved pattern is not present.
-  void confirmNonReservedId(TensorId tenId) const;
+  void confirmNonReservedId(const TensorId &tenId) const;
 
-  // create an Op from Node (if not Constant Node), wire it to
-  // correct input Tensors and create the activation output Tensors
-  Op *growFromNode(const Node &, const Scope &);
+  void growGradientVarUpdateOp(const TensorId &varId);
 
-  Op *growGradientVarUpdateOp(TensorId varId);
-
-  Op *growCopyVarUpdateOp(TensorId varId, TensorId from);
+  void growCopyVarUpdateOp(const TensorId &varId, const TensorId &from);
 
   // Common code for the growGradient... and growCopy...
-  Op *growVarUpdateOpInternal(OpId opId);
+  void growVarUpdateOpInternal(OpId opId);
 
   // Op *growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints);
 
@@ -361,6 +366,8 @@ private:
   void verifyTensorProducerConnectivity() const;
   void verifyTensorConsumerConnectivity() const;
   void verifyTensorIds() const;
+  void verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const;
+  void verifyVertexAttributesOnlyInMain() const;
 
   // Verify ConstExpr folding has removed input tensors
   // as expected
@@ -402,7 +409,7 @@ private:
   // The update ops which must be run during a training pass
   std::set<Op *> trainTargetOps;
 
-  OpId finalLossId{-1000};
+  OpId finalLossOpId{-1000};
 
   ExecutionMode executionMode = ExecutionMode::TRAINING;
 

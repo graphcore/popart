@@ -173,12 +173,22 @@ void Tensors::removeIsolated() {
   }
 }
 
-std::vector<TensorId> Tensors::getIds(TensorType type) const {
-  std::vector<TensorId> ids;
+std::vector<Tensor *> Tensors::getOfType(TensorType type) const {
+  std::vector<Tensor *> ofType;
   for (auto &id_pt : M) {
     if (id_pt.second->tensorType() == type) {
-      ids.push_back(id_pt.first);
+      ofType.push_back(id_pt.second.get());
     }
+  }
+  return ofType;
+}
+
+std::vector<TensorId> Tensors::getIds(TensorType type) const {
+  auto typedTensors = getOfType(type);
+  std::vector<TensorId> ids;
+  ids.reserve(typedTensors.size());
+  for (Tensor *t : typedTensors) {
+    ids.push_back(t->id);
   }
   return ids;
 }

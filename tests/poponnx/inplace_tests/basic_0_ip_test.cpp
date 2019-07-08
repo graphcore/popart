@@ -94,13 +94,16 @@ BOOST_AUTO_TEST_CASE(Inplace_basic1) {
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;
+
+  SessionOptions opts;
+  opts.enableVirtualGraphs = true;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
               losses,
               &optimizer,
               *cpuDevice,
-              {},
+              opts,
               Patterns(PatternsLevel::NONE).enableInPlace(true)});
 
   // Check the ir

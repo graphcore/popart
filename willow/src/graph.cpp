@@ -268,9 +268,8 @@ void Graph::eraseOp(OpId opid) {
 void Graph::setVarUpdateConstraints() {
   // impose the constraint that inplace consumers
   // are the last consumers of the vars
-  for (auto &varId : getTensors().getIds(TensorType::Variable)) {
 
-    Tensor *var = getTensors().get(varId);
+  for (auto var : getTensors().getOfType(TensorType::Variable)) {
 
     // First, determine which consumer is the updater,
     // or a flatten-inplace if merged var updating.
@@ -283,18 +282,19 @@ void Graph::setVarUpdateConstraints() {
       }
     }
     if (varInplaceConsumers.size() == 0) {
-      throw error("Failed to find any updaters of {}, bailing", var->str());
+      logging::debug("Failed to find any updaters of {}", var->str());
     } else if (varInplaceConsumers.size() > 1) {
       throw error("Found more than 1 potential updater of {}, bailing",
                   var->str());
-    }
-    // Good, there is a unique consumer which is inplace
-    Op *varInplaceConsumer = varInplaceConsumers.back();
+    } else {
+      // Good, there is a unique consumer which is inplace
+      Op *varInplaceConsumer = varInplaceConsumers.back();
 
-    // Set the constraints
-    for (Op *consumer : var->consumers.getOps()) {
-      if (consumer != varInplaceConsumer) {
-        topoCons->insert(consumer, varInplaceConsumer);
+      // Set the constraints
+      for (Op *consumer : var->consumers.getOps()) {
+        if (consumer != varInplaceConsumer) {
+          topoCons->insert(consumer, varInplaceConsumer);
+        }
       }
     }
   }
@@ -527,12 +527,14 @@ void BackwardPassCreator::cloneGraph(const Graph &from, Graph &to) {
   // clone all the ops
   std::map<Op *, Op *> cloneMap;
   for (auto &id_op : from.getOps()) {
-    auto op    = id_op.second.get();
-    auto clone = op->clone();
-    clone->setPhase(op->getPhase());
-    clone->settings.graph = to;
-    clone->settings.scope = to.getScope();
-    auto cloneId          = to.moveIntoGraph(std::move(clone));
+    auto op                 = id_op.second.get();
+    auto clone              = op->clone();
+    clone->toLoss           = op->toLoss;
+    clone->fromLoss         = op->fromLoss;
+    clone->scheduledPreLoss = op->scheduledPreLoss;
+    clone->settings.graph   = to;
+    clone->settings.scope   = to.getScope();
+    auto cloneId            = to.moveIntoGraph(std::move(clone));
     cloneMap.insert({op, to.getOp(cloneId)});
   }
 

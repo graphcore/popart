@@ -23,10 +23,12 @@ void PrintTensorOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 std::string PrintTensorOpx::getTitle() const {
-  if (op_p->getPhase() == Phase::FWD) {
+  if (op_p->scheduledPreLoss == ScheduledPreLoss::Yes) {
     return op_p->inTensor(PrintTensorOp::getInIndex())->id;
-  } else {
+  } else if (op_p->scheduledPreLoss == ScheduledPreLoss::No) {
     return op_p->outTensor(PrintTensorOp::getOutIndex())->id;
+  } else {
+    throw error("ScheduledPreLoss Unknown not allowed in getTitle");
   }
 }
 

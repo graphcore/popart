@@ -10,6 +10,10 @@ struct SessionOptions;
 class Patterns;
 class DeviceInfo;
 
+namespace popx {
+class Devicex;
+}
+
 /**
  * Session is a runtime instance the provides an interface for executing ONNX
  * graphs on IPU hardware.
@@ -163,7 +167,7 @@ protected:
    * Implementation of the computation, for IPU back-end this is
    * where calls to poplar are made.
    */
-  std::unique_ptr<Device> device_;
+  std::unique_ptr<popx::Devicex> device_;
 
   /**
    * Flag to indicate if weightsFromHost has been called

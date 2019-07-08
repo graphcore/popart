@@ -33,8 +33,8 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
     auto dropoutOp    = dynamic_cast<DropoutOp *>(op_p);
     auto seedModifier = dropoutOp->getSeedModifier();
     // Converting from poponnx standard (float) to poplar (double) for ratio
-    auto ratio              = static_cast<double>(dropoutOp->getRatio());
-    auto dropoutProbability = 1. - ratio;
+    double ratio              = static_cast<double>(dropoutOp->getRatio());
+    double dropoutProbability = 1. - ratio;
 
     // If fwd dropout op, add reference tensor for layer to map.
     // If a bwd dropout op, or recomputation op, retrieve the reference
@@ -50,7 +50,7 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
     auto seed = getSeed(prog);
     // When ratio is outside of (0,1), an error is thrown in op creation,
     // so we avoid div/0 errors here.
-    float scale = 1. / (1. - dropoutOp->getRatio());
+    float scale = float(1.) / (float(1.) - dropoutOp->getRatio());
 
     // Calculate the dropout mask using poplibs and a tensor of ones.
     auto mask = poprand::bernoulli(graph(),

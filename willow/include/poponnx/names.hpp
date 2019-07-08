@@ -47,7 +47,6 @@ using OutIndex = int;
 
 // forward declaring several poponnx classes
 class DataFlow;
-class Device;
 class InputShapeInfo;
 class Ir;
 class Loss;

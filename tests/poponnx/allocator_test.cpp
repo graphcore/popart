@@ -3,7 +3,6 @@
 #include <boost/test/unit_test.hpp>
 #include <poponnx/builder.hpp>
 #include <poponnx/dataflow.hpp>
-#include <poponnx/device.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/filereader.hpp>
 #include <poponnx/inputshapeinfo.hpp>
@@ -60,7 +59,7 @@ BOOST_AUTO_TEST_CASE(allocator_conv_control) {
               {},         // no SessionOptions
               Patterns({})});
 
-  std::unique_ptr<Device> device;
+  std::unique_ptr<popx::Devicex> device;
   device.reset(new popx::Devicex(ir, cpuDevice));
   device->prepare();
 
@@ -116,7 +115,7 @@ BOOST_AUTO_TEST_CASE(allocator_single_input_viewchanging_conv) {
               {},         // no SessionOptions
               Patterns({})});
 
-  std::unique_ptr<Device> device;
+  std::unique_ptr<popx::Devicex> device;
   device.reset(new popx::Devicex(ir, cpuDevice));
   device->prepare();
 

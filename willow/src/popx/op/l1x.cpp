@@ -47,9 +47,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
     scale = lambda / totalSamples;
     break;
   }
-  default: {
-    throw error("Unsupported reduction type for Loss {}", idStr());
-  }
+  default: { throw error("Unsupported reduction type for Loss {}", idStr()); }
   }
 
   auto t_scale =
@@ -104,13 +102,12 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
     scale = lambda / totalSamples;
     break;
   }
-  default: {
-    throw error("Unsupported reduction type for Loss {}", idStr());
-  }
+  default: { throw error("Unsupported reduction type for Loss {}", idStr()); }
   }
 
-  auto t_scale =
-      getConst(popType(op_p->inInfo(0)), {}, scale, debugPrefix("scale"));
+  // t_scale is always expected to be FLOAT, regardless of the input type
+  // to the reduction
+  auto t_scale = getConst(poplar::FLOAT, {}, scale, debugPrefix("scale"));
 
   auto reduction = popops::reduce(graph(),
                                   absTensor,

@@ -29,7 +29,11 @@ def test_weight_update(op_tester):
         o = builder.aiOnnx.gemm([i1, i2, i3], alpha, beta, transA, transB)
         builder.addOutputTensor(o)
 
-        return [o, poponnx.reservedGradientPrefix() + i2, i2, i3]
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + i2, i2, i3, "learnRate_FLOAT",
+            "weightDecay_FLOAT"
+        ]
 
     def reference(ref_data):
         class Module(torch.nn.Module):
@@ -71,11 +75,19 @@ def test_weight_update(op_tester):
         output.backward()
         optimizer.step()
 
-        return [o, b.grad, module.B.data, module.C.data]
+        return [
+            o, b.grad, module.B.data, module.C.data,
+            np.float32(0.01),
+            np.float32(1.0)
+        ]
 
     op_tester.passes = ['GemmDecomposition', 'PreUniRepl']
     op_tester.loss_reduction_type = poponnx.ReductionType.Mean
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(
+        init_builder,
+        reference,
+        'train',
+        optimizer=poponnx.SGD(learning_rate=0.01, weight_decay=0.0))
 
 
 def test_weight_update_replicated(op_tester):
@@ -100,7 +112,8 @@ def test_weight_update_replicated(op_tester):
         return [
             o,
             poponnx.reservedGradientPrefix() + i2, i2,
-            poponnx.reservedGradientPrefix() + i3, i3
+            poponnx.reservedGradientPrefix() + i3, i3, "learnRate_FLOAT",
+            "weightDecay_FLOAT"
         ]
 
     def reference(ref_data):
@@ -153,7 +166,9 @@ def test_weight_update_replicated(op_tester):
 
         return [
             torch.cat(outputs), module.b.grad, module.B.data, module.c.grad,
-            module.C.data
+            module.C.data,
+            np.array([0.01, 0.01, 0.01, 0.01], np.float32),
+            np.array([1, 1, 1, 1], np.float32)
         ]
 
     op_tester.passes = ['GemmDecomposition', 'PreUniRepl']
@@ -162,7 +177,11 @@ def test_weight_update_replicated(op_tester):
     op_tester.device = "ipu_model"
     op_tester.numIPUs = replicationFactor
     op_tester.loss_reduction_type = poponnx.ReductionType.Mean
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(
+        init_builder,
+        reference,
+        'train',
+        optimizer=poponnx.SGD(learning_rate=0.01, weight_decay=0.0))
 
 
 def test_replication_infer(op_tester):

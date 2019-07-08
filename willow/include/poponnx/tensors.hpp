@@ -38,6 +38,7 @@ public:
   // the output of an Op)
   void addActGrad(TensorId);
   std::vector<TensorId> getIds(TensorType) const;
+  std::vector<Tensor *> getOfType(TensorType) const;
   std::vector<TensorId> getAllTensorIds() const;
   std::vector<TensorId> getNoProducerIds() const;
   const onnx::TensorProto *getOnnxInit(TensorId) const;

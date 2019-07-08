@@ -11,16 +11,22 @@
 #include <poplin/MatMul.hpp>
 #include <poputil/TileMapping.hpp>
 
-#include <poponnx/device.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/popx/enigma.hpp>
 #include <poponnx/popx/linearmapper.hpp>
 #include <poponnx/popx/poplaroptionsx.hpp>
 #include <poponnx/pritask.hpp>
 
+#include <set>
+#include <poponnx/names.hpp>
+// MutableVoidData is defined in here:
+#include <poponnx/tensordata.hpp>
+
 using boost::optional;
 
 namespace poponnx {
+
+enum class ScheduledPreLoss;
 
 namespace popx {
 
@@ -51,7 +57,9 @@ public:
     STREAMWEIGHTSFROMHOST = 0,
     STREAMOPTIMIZERFROMHOST,
     INIT,
-    MAINPROGRAM,
+    PREFORWARD,
+    FORWARD,
+    BACKWARD,
     WEIGHTSTOHOST,
     TOHOSTFINALCOPY,
     SETRANDOMSEED,
@@ -67,8 +75,13 @@ public:
   poplar::program::Sequence &setRandomDropoutSeedFragment();
   poplar::program::Sequence &toHostFinalCopyFragment();
   poplar::program::Sequence &initFragment();
-  poplar::program::Sequence &mainProgramFragment();
+  poplar::program::Sequence &preForwardFragment();
+  poplar::program::Sequence &forwardFragment();
+  poplar::program::Sequence &backwardFragment();
   poplar::program::Sequence &weightsToHostFragment();
+  // If ScheduledPreLoss::Yes, then return forwardFragment(), else return
+  // backwardFragment()
+  poplar::program::Sequence &forwardOrBackwardFragment(ScheduledPreLoss);
 
   // A list of programs that can be run by the Poplar engine.
   std::vector<poplar::program::Program> progs();
@@ -76,7 +89,7 @@ public:
   poplar::program::Sequence &programFragment(PopPrograms::ProgramFragmentIndex);
 
   // Sub-graph program fragments, getters and setters
-  poplar::program::Sequence &programFragment(const Graph &);
+  poplar::program::Sequence &scopeFragment(const Graph &);
   bool containsFragment(const Graph &) const;
   void createFragment(const Graph &);
 
@@ -151,41 +164,42 @@ private:
   const Ir &ir;
 };
 
-class Devicex : public poponnx::Device {
+class Devicex {
+
+private:
+  const Ir &_ir;
 
 public:
+  const Ir &ir() const { return _ir; }
   Devicex(const Ir &, std::shared_ptr<DeviceInfo> deviceInfo);
-  void prepare() final;
-  void weightsFromHost() final;
-  void optimizerFromHost() final;
+  ~Devicex();
+  void prepare();
+  void weightsFromHost();
+  void optimizerFromHost();
 
-  void run(const IStepIO &) final;
+  void run(const IStepIO &);
 
   // device -> host stream
-  void weightsToHost() final;
+  void weightsToHost();
   // device ->host stream -> specified host addresses
-  void weightsToHost(const std::map<TensorId, MutableVoidData> &) final;
+  void weightsToHost(const std::map<TensorId, MutableVoidData> &);
 
   // TODO T8229 : change these names to disambiguate
   // the source and destination
   // (is this writing to or from the device?)
-  void readWeights(const IWeightsIO &weights) final;
-  void writeWeights(const IWeightsIO &weights) final;
+  void readWeights(const IWeightsIO &weights);
+  void writeWeights(const IWeightsIO &weights);
 
-  virtual std::string getSummaryReport() const override final;
-  virtual std::string
-  getGraphReport(bool use_cbor = false) const override final;
-  virtual std::string
-  getExecutionReport(bool use_cbor = false) const override final;
-  virtual void saveTensorTileMap(const std::string &) const override final;
-  virtual TensorTileMap getTensorTileMap() const override final;
-  virtual std::string getSerializedGraph() const override final;
+  std::string getSummaryReport() const;
+  std::string getGraphReport(bool use_cbor = false) const;
+  std::string getExecutionReport(bool use_cbor = false) const;
+  void saveTensorTileMap(const std::string &) const;
+  TensorTileMap getTensorTileMap() const;
+  std::string getSerializedGraph() const;
 
   // Return stored input tensors based on how they are allocated
-  virtual std::set<TensorId>
-  getLinearlyCreatedInputTensors() const override final;
-  virtual std::set<TensorId>
-  getEfficientlyCreatedInputTensors() const override final;
+  std::set<TensorId> getLinearlyCreatedInputTensors() const;
+  std::set<TensorId> getEfficientlyCreatedInputTensors() const;
 
   PopPrograms progs;
 
@@ -197,9 +211,14 @@ public:
 
   poplar::Graph &getVirtualGraph(int64_t virtualGraphIndex);
 
-  // return the name of the task which creates a poplar::Tensor
-  // This function is mostly string manipulation
+  // Return the name of the task which initializes/creates a poplar::Tensor in a
+  // poplar::Graph. This is NOT about creating a poplar::Program.
   TaskId taskWhichCreates(TensorId) const;
+
+  // Return the name of the task which adds code which sets the final
+  // values of poplar::Tensor to a fragment. This IS about creating a
+  // poplar::Program.
+  TaskId taskWhichPopulates(TensorId) const;
 
   // PlanningCache for matmul and conv
   poplin::PlanningCache convCache;
@@ -218,7 +237,6 @@ public:
 
   bool containsFragment(const Graph &scope) const;
   void createFragment(const Graph &);
-  poplar::program::Sequence &programFragment(const Graph &scope);
 
   // A forward search of graph:
   //   - from inputs of the graph
@@ -338,10 +356,7 @@ private:
 
   PriTask incrementDropoutRandomSeedTask();
 
-  // isPostTurningPoint is used for recomputation, to determine whether to
-  // generate new code or re-run earlier code
-  PriTask
-  opTask(Op *, double priority, TaskId prevOpTaskId, bool isPostTurningPoint);
+  PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
 
   TaskId opTaskId(Op *) const;
 
@@ -429,11 +444,9 @@ private:
   // Call hostStreamToHost in all the Tensors in pir->dataFlow.anchors()
   void anchorsHostFromHostStreams(const IStepIO &stepio);
 
-  poplar::program::Sequence &mainProgramFragment();
-
   // Returns true if using synthetic data, false if using real data
   // This will return the options.ignoreData flag
-  bool useSyntheticData();
+  bool useSyntheticData() const;
 
   template <typename T> void setInitVal(Tensor *tensor);
   void setInitValHalf(Tensor *tensor);

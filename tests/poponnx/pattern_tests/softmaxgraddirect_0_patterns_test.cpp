@@ -73,6 +73,10 @@ BOOST_AUTO_TEST_CASE(SoftmaxGradDirect0) {
     }
 
     auto opts = SessionOptions();
+    if (sameIPU == false) {
+      opts.enableVirtualGraphs = true;
+    }
+
     // No .dot files will be written
     opts.dotChecks = {};
 

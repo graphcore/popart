@@ -26,8 +26,9 @@ std::vector<std::unique_ptr<Op>> ReduceProdOp::getGradOps() {
 
 ReduceProdGradOp::ReduceProdGradOp(const ReduceProdOp &fwdOp,
                                    const Shape &backward_shape_)
-    : ReduceGradOp(Onnx::GradOperators::ReduceProdGrad, fwdOp, backward_shape_),
-      axes(fwdOp.getAxes()) {}
+    : ReduceGradOp(Onnx::GradOperators::ReduceProdGrad,
+                   fwdOp,
+                   backward_shape_) {}
 
 std::unique_ptr<Op> ReduceProdGradOp::clone() const {
   return std::make_unique<ReduceProdGradOp>(*this);
@@ -39,8 +40,6 @@ const std::vector<GradInOutMapper> &ReduceProdGradOp::gradInputInfo() const {
       {getFwdInInIndex(), ReduceProdOp::getInIndex(), GradOpInType::IN}};
   return inInfo;
 }
-
-const std::vector<int64_t> &ReduceProdGradOp::getAxes() const { return axes; }
 
 namespace {
 // @SL@ the new factory method for the reduceProd op will get the attributes

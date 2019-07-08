@@ -56,26 +56,30 @@ static poplin::ConvParams getPoplarConvParams(const ConvParameters &param) {
       param.numInChannels,
       param.numOutChannels,
       param.numGroups,
-
-      vXtoY<int64_t, unsigned>(param.inputTransformation.lowerTruncation),
-      vXtoY<int64_t, unsigned>(param.inputTransformation.upperTruncation),
-      vXtoY<int64_t, unsigned>(param.inputTransformation.dilation),
-      vXtoY<int64_t, unsigned>(param.inputTransformation.lowerPadding),
-      vXtoY<int64_t, unsigned>(param.inputTransformation.upperPadding),
-      param.inputTransformation.flip,
-
-      vXtoY<int64_t, unsigned>(param.kernelTransformation.lowerTruncation),
-      vXtoY<int64_t, unsigned>(param.kernelTransformation.upperTruncation),
-      vXtoY<int64_t, unsigned>(param.kernelTransformation.dilation),
-      vXtoY<int64_t, unsigned>(param.kernelTransformation.lowerPadding),
-      vXtoY<int64_t, unsigned>(param.kernelTransformation.upperPadding),
-      param.kernelTransformation.flip,
-
-      vXtoY<int64_t, unsigned>(param.outputTransformation.lowerTruncation),
-      vXtoY<int64_t, unsigned>(param.outputTransformation.upperTruncation),
-      vXtoY<int64_t, unsigned>(param.outputTransformation.stride),
-      vXtoY<int64_t, unsigned>(param.outputTransformation.lowerPadding),
-      vXtoY<int64_t, unsigned>(param.outputTransformation.upperPadding));
+      // InputTransform inputTransform
+      {
+          vXtoY<int64_t, unsigned>(param.inputTransformation.lowerTruncation),
+          vXtoY<int64_t, unsigned>(param.inputTransformation.upperTruncation),
+          vXtoY<int64_t, unsigned>(param.inputTransformation.dilation),
+          vXtoY<int64_t, unsigned>(param.inputTransformation.lowerPadding),
+          vXtoY<int64_t, unsigned>(param.inputTransformation.upperPadding),
+          param.inputTransformation.flip,
+      },
+      // InputTransform kernelTransform
+      {
+          vXtoY<int64_t, unsigned>(param.kernelTransformation.lowerTruncation),
+          vXtoY<int64_t, unsigned>(param.kernelTransformation.upperTruncation),
+          vXtoY<int64_t, unsigned>(param.kernelTransformation.dilation),
+          vXtoY<int64_t, unsigned>(param.kernelTransformation.lowerPadding),
+          vXtoY<int64_t, unsigned>(param.kernelTransformation.upperPadding),
+          param.kernelTransformation.flip,
+      },
+      // OutputTransform outputTransform
+      {vXtoY<int64_t, unsigned>(param.outputTransformation.lowerTruncation),
+       vXtoY<int64_t, unsigned>(param.outputTransformation.upperTruncation),
+       vXtoY<int64_t, unsigned>(param.outputTransformation.stride),
+       vXtoY<int64_t, unsigned>(param.outputTransformation.lowerPadding),
+       vXtoY<int64_t, unsigned>(param.outputTransformation.upperPadding)});
 }
 
 static ConvParameters
@@ -134,7 +138,7 @@ ConvParameters getConvGradParameters(const ConvParameters &fwdParams) {
 ConvParameters canonicalizeConvParams(const ConvParameters &param) {
   poplin::ConvParams popParams = popx::getPoplarConvParams(param);
 
-  auto canonicalizedPopParams = poplin::canonicalizeParams(popParams);
+  auto canonicalizedPopParams = popParams.canonicalize();
 
   ConvParameters result = convertPoplarConvParameters(canonicalizedPopParams);
   result.type           = param.type;
@@ -170,12 +174,14 @@ void ConvOpx::grow(poplar::program::Sequence &prog) const {
   // Work out the option based on the phase of the op
   // Conv can be bwd depending on the phase.
   PoplarOptions *options = nullptr;
-  if (op.getPhase() == Phase::FWD) {
+  if (op.toLoss == PathToLoss::Yes && op.fromLoss == PathFromLoss::No) {
     options = &dv_p->fwdConvOptions;
-  } else if (op.getPhase() == Phase::BWD) {
+  } else if (op.toLoss == PathToLoss::No && op.fromLoss == PathFromLoss::Yes) {
     options = &dv_p->bwdConvOptions;
   } else {
-    throw error("Unexpected phase {} for conv", op.getPhase());
+    logging::opx::warn(
+        "Conv has undefined phase, defaulting to fwdConvOptions");
+    options = &dv_p->fwdConvOptions;
   }
 
   poplin::ConvParams popConvParams = getPoplarConvParams(op.getParameters());

@@ -16,8 +16,8 @@ import test_util as tu
 #       Create a function to initialize the `Builder`.
 #       This function should return a list of anchors.
 #
-#       Create a function to produce refernece output.
-#       This should return a list of refernece values
+#       Create a function to produce reference output.
+#       This should return a list of reference values
 #       the indices of which should correspond to the
 #       anchors they reference.
 #       The list of references must be the same length
@@ -104,34 +104,48 @@ def op_tester(tmpdir):
                 print('Poponnx:\n{}'.format(t1))
                 print('Torch:\n{}'.format(ref))
                 print('Diff:\n{}'.format(np.subtract(t1, ref)))
-                print('IsClose:\n{}'.format(
-                    np.isclose(t1, ref, self.rtol, self.atol, self.equal_nan)))
+                isclose = np.isclose(t1, ref, self.rtol, self.atol,
+                                     self.equal_nan)
+                print('IsClose:\n{}'.format(isclose))
+                indices = np.argwhere(np.logical_not(isclose))
+                print('# not close:', indices.shape[0])
+                for i in indices[0:10]:
+                    print(i, 'Poponnx:', t1[tuple(i)], 'Torch:', ref[tuple(i)])
 
             assert np.allclose(t1, ref, self.rtol, self.atol, self.equal_nan)
 
-        def run(self, init_builder, reference, step_type='infer', opsets=None):
+        def run(self,
+                init_builder,
+                reference,
+                step_type='infer',
+                opsets=None,
+                optimizer=poponnx.ConstSGD(0.01),
+                losses=None):
             assert step_type in ('infer', 'train')
 
             bld = Builder(opsets=opsets)
 
             anchors = {}
-            anchorIds = init_builder(bld)
-            for anchorId in anchorIds:
 
+            # Allows to pass additional arguments to init_builder, if required
+            # by the specific init_builder function implementation.
+            if losses is None:
+                losses = []
+            kwargs = {'losses': losses}
+            kwargs = tu.filter_dict(kwargs, init_builder)
+            anchorIds = init_builder(bld, **kwargs)
+
+            for anchorId in anchorIds:
                 if anchorId not in bld._init_input_map:
                     anchors[anchorId] = poponnx.AnchorReturnType("ALL")
 
             dataFlow = poponnx.DataFlow(1, anchors)
 
-            if (step_type == 'train'):
-                optimizer = poponnx.ConstSGD(0.01)
-            else:
-                optimizer = None
-
-            losses = [
-                poponnx.L1Loss(anchorIds[0], "l1LossVal", 0.1,
-                               self.loss_reduction_type)
-            ]
+            if len(losses) == 0:
+                losses = [
+                    poponnx.L1Loss(anchorIds[0], "l1LossVal", 0.1,
+                                   self.loss_reduction_type)
+                ]
             proto = bld.getModelProto()
 
             self.options.logDir = self.logging_dir
@@ -146,6 +160,7 @@ def op_tester(tmpdir):
             if step_type == 'infer':
                 session = poponnx.InferenceSession(fnModel=proto,
                                                    dataFeed=dataFlow,
+                                                   losses=losses,
                                                    deviceInfo=device,
                                                    passes=poponnx.Patterns(
                                                        self.passes),
@@ -193,6 +208,7 @@ def op_tester(tmpdir):
 
             if (step_type == 'train'):
                 session.weightsFromHost()
+                session.optimizerFromHost()
 
             session.run(stepio)
 
@@ -208,6 +224,8 @@ def op_tester(tmpdir):
                     return t
                 elif isinstance(t, np.float32):
                     return t
+                elif isinstance(t, np.float16):
+                    return t
                 elif t is None:
                     return None
                 else:
@@ -216,6 +234,7 @@ def op_tester(tmpdir):
             ref_out = [fix_type(i) for i in ref_out]
             for index, key in enumerate(anchorIds):
                 if key in anchors:
+                    print(key, anchor_map[key])
                     if ref_out[index] is not None:
                         print('Testing anchor "{}"...'.format(key))
                         self.verifyTensor(anchor_map[key], ref_out[index])

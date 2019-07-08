@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_UTIL_HPP
 
 #include <memory>
+#include <set>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -137,6 +138,12 @@ count_mismatch(IIter1 begin1, IIter1 end1, IIter2 begin2, IIter2 end2) {
 namespace std {
 template <typename T>
 std::ostream &operator<<(std::ostream &ss, const std::vector<T> &v) {
+  poponnx::appendSequence(ss, v);
+  return ss;
+}
+
+template <typename T>
+std::ostream &operator<<(std::ostream &ss, const std::set<T> &v) {
   poponnx::appendSequence(ss, v);
   return ss;
 }
