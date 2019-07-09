@@ -25,6 +25,7 @@ public:
   bool operator==(const Half &rhs);
 
   Half operator+(const Half &);
+  Half operator/(const Half &);
 
   operator float() const;
 

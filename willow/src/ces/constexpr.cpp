@@ -1,10 +1,10 @@
 #include <memory>
 #include <onnx/onnx_pb.h>
 #include <poponnx/attributes.hpp>
-#include <poponnx/ces/addce.hpp>
 #include <poponnx/ces/castce.hpp>
 #include <poponnx/ces/concatce.hpp>
 #include <poponnx/ces/constexpr.hpp>
+#include <poponnx/ces/elementwisece.hpp>
 #include <poponnx/ces/gatherce.hpp>
 #include <poponnx/ces/reshapece.hpp>
 #include <poponnx/ces/scalece.hpp>
@@ -144,6 +144,10 @@ void ConstExprOpManager::registerConstOp(const std::string &type) {
 
 void ConstExprOpManager::registerConstOps() {
   registerConstOp<ConstExprAdd>("Add");
+  registerConstOp<ConstExprMul>("Mul");
+  registerConstOp<ConstExprSub>("Sub");
+  registerConstOp<ConstExprMod>("Mod");
+  registerConstOp<ConstExprDiv>("Div");
   registerConstOp<ConstExprCast>("Cast");
   registerConstOp<ConstExprScale>("Scale");
   registerConstOp<ConstExprSlice>("Slice");
