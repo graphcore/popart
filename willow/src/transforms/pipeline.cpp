@@ -158,9 +158,9 @@ bool Pipeline::apply(Graph &graph) const {
   for (TensorId tid : graph.getTensors().getIds(TensorType::Stream)) {
     auto tensor                = graph.getTensors().get(tid);
     auto consumerOps           = tensor->consumers.getOps();
-    auto firstConsumerVGraphId = consumerOps[0]->getVirtualGraphId();
+    auto firstConsumerVGraphId = getVirtualGraphIdOrSourceIpu(consumerOps[0]);
     for (Op *consumer : consumerOps) {
-      if (consumer->getVirtualGraphId() != firstConsumerVGraphId) {
+      if (getVirtualGraphIdOrSourceIpu(consumer) != firstConsumerVGraphId) {
         throw error("For pipelining, stream tensors can only be streamed "
                     "directly onto a single IPU");
       }
@@ -191,7 +191,8 @@ bool Pipeline::apply(Graph &graph) const {
     }
 
     auto vGraphIdCheckOp = tensor->consumers.getOps()[0];
-    int vGraphId = static_cast<int>(vGraphIdCheckOp->getVirtualGraphId());
+    int vGraphId =
+        static_cast<int>(getVirtualGraphIdOrSourceIpu(vGraphIdCheckOp));
     if (vGraphId == numIPUs - 1) {
       continue;
     }
@@ -225,7 +226,7 @@ bool Pipeline::apply(Graph &graph) const {
         std::make_unique<StashOp>(Onnx::CustomOperators::Stash, settings);
     auto stashOp = stashOp_up.get();
     graph.moveIntoGraph(std::move(stashOp_up));
-    stashOp->setVirtualGraphId(vGraphIdCheckOp->getVirtualGraphId());
+    stashOp->setVirtualGraphId(getVirtualGraphIdOrSourceIpu(vGraphIdCheckOp));
     stashOp->connectInTensor(StashOp::getInIndex(), tid);
     auto stashId = stashOp->getStashedTensorId();
     stashOp->createAndConnectOutTensor(StashOp::getOutIndex(), stashId);
@@ -236,7 +237,7 @@ bool Pipeline::apply(Graph &graph) const {
         std::make_unique<RestoreOp>(Onnx::CustomOperators::Restore, settings);
     auto restoreOp = restoreOp_up.get();
     graph.moveIntoGraph(std::move(restoreOp_up));
-    restoreOp->setVirtualGraphId(vGraphIdCheckOp->getVirtualGraphId());
+    restoreOp->setVirtualGraphId(getVirtualGraphIdOrSourceIpu(vGraphIdCheckOp));
     restoreOp->connectInTensor(RestoreOp::getActToRestoreInIndex(), tid);
     restoreOp->connectInTensor(RestoreOp::getStashInIndex(), stashId);
     auto restoreId = restoreOp->getRestoredTensorId(); // An alias
@@ -258,6 +259,15 @@ bool Pipeline::apply(Graph &graph) const {
   }
 
   return true;
+}
+
+int64_t Pipeline::getVirtualGraphIdOrSourceIpu(Op *op) const {
+  if (op->isConvertibleTo<IpuCopyOp>()) {
+    auto ipuCopyOp = dynamic_cast<poponnx::IpuCopyOp *>(op);
+    return static_cast<int64_t>(ipuCopyOp->getSourceIpu());
+  } else {
+    return op->getVirtualGraphId();
+  }
 }
 
 namespace {

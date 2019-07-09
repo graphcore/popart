@@ -17,6 +17,9 @@ public:
   virtual std::size_t getId() const final { return id(); }
 
   virtual std::string getName() const final { return "Pipeline"; }
+
+private:
+  int64_t getVirtualGraphIdOrSourceIpu(Op *op) const;
 };
 
 } // namespace poponnx

@@ -134,7 +134,6 @@ void InterIpuCopy::insertIpuCopy(Graph &graph,
   TensorId copiedTensor = generateCopiedTensorId(tensor, toIpu);
 
   ipuCopy->createAndConnectOutTensor(0, copiedTensor);
-  ipuCopy->setVirtualGraphId(fromOp->getVirtualGraphId());
   ipuCopy->setup();
 
   // Add the copied input tensor to the to op for each index

@@ -44,9 +44,20 @@ static void mergeCopies(const std::vector<Tensor *> &copy_group, Graph &graph) {
   }
 
   // create a new copy op
+
+  // TODO T9888: This transform breaks the 'sourceIpu' attribute for the
+  // merged IpuCopyOp. We can now copy from multiple source IPUs to a
+  // single destination IPU.
+  // For now, make the sourceIpu attribute the lowest of all the copy ops
+  // being merged
   auto source_ipu = (*producers.begin())->getSourceIpu();
-  auto dest_ipu   = (*producers.begin())->getDestIpu();
-  auto copy_op    = createCopyOp(graph, source_ipu, dest_ipu);
+  for (auto producer : producers) {
+    if (producer->getSourceIpu() < source_ipu) {
+      source_ipu = producer->getSourceIpu();
+    }
+  }
+  auto dest_ipu = (*producers.begin())->getDestIpu();
+  auto copy_op  = createCopyOp(graph, source_ipu, dest_ipu);
 
   // move the copies
   for (auto t : copy_group) {
@@ -59,10 +70,6 @@ static void mergeCopies(const std::vector<Tensor *> &copy_group, Graph &graph) {
     int idx = copy_op->output->n();
     copy_op->connectInTensor(idx, source->id);
     copy_op->connectOutTensor(idx, t->id);
-
-    if (!copy_op->hasVirtualGraphId()) {
-      copy_op->setVirtualGraphId(producer->getVirtualGraphId());
-    }
 
     graph.eraseOp(producer->id);
   }
