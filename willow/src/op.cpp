@@ -81,6 +81,7 @@ view::RegMap Op::bwdRegMap(InIndex i) const {
 }
 
 bool Op::isLossOp() const { return false; }
+bool Op::isIpuCopyOp() const { return false; }
 
 Op::~Op() = default;
 
@@ -238,7 +239,7 @@ void Op::appendAttributes(OpSerialiserBase &os) const {
       settings.recomputeType == RecomputeType::RECOMPUTE ? "YES" : "NO";
   os.appendAttribute("recompute", recomputeString);
 
-  os.appendAttribute(sVirtualGraphAttribute, getVirtualGraphId());
+  os.appendAttribute(sVirtualGraphAttribute, getOptionalVirtualGraphId());
   os.appendAttribute("scope", getScope());
 }
 
@@ -324,6 +325,31 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
     for (int i = 0; i < names.size(); ++i) {
       inplacePriorityVeto.push_back({names[i], priorities[i]});
     }
+  }
+}
+
+void Op::setVirtualGraphId(const boost::optional<int64_t> value) {
+  settings.vgraphId = value;
+}
+
+const boost::optional<int64_t> Op::getOptionalVirtualGraphId() const {
+  return settings.vgraphId;
+}
+
+int64_t Op::getVirtualGraphId() const {
+  if (!hasVirtualGraphId()) {
+    throw error(
+        "Cannot return vGraphId for Op {}. It has not had this attribute set",
+        debugName());
+  }
+  return *(settings.vgraphId);
+}
+
+bool Op::hasVirtualGraphId() const {
+  if (settings.vgraphId) {
+    return true;
+  } else {
+    return false;
   }
 }
 

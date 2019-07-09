@@ -310,7 +310,7 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
 
   // Copy some attributes from the first op in the instance
   auto scope    = graph.getOp(instance.ops.at(0))->getScope();
-  auto vgraphid = graph.getOp(instance.ops.at(0))->getVirtualGraphId();
+  auto vgraphid = graph.getOp(instance.ops.at(0))->getOptionalVirtualGraphId();
 
   // Create the call op. Note that toLoss and fromLoss are set in the
   // constructor

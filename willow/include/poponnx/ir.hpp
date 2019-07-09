@@ -184,9 +184,12 @@ public:
   std::vector<Tensor *> dataStreamTensors() const;
 
   std::vector<Op *> opsOfType(const OperatorIdentifier &opid);
+  bool isConsumedByOpOfType(TensorId tid, const OperatorIdentifier &opid);
 
   // Simple recursive depth first search
   std::vector<const Graph *> getGraphSchedule() const;
+
+  int getRepeatCount() const;
 
   // Essentially Kahn's algorithm (1962),
   // https://en.wikipedia.org/wiki/Topological_sorting
@@ -349,7 +352,10 @@ private:
   // Common code for the growGradient... and growCopy...
   void growVarUpdateOpInternal(OpId opId);
 
-  // Op *growRecomputeOp(Op *oriOp, const std::set<Op *> &checkpoints);
+  // Get the best virtual graph Id based on the graph Ids of producers of ts
+  // to minimise graph<->graph communication
+  boost::optional<int64_t>
+  getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts);
 
   Op *growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum);
 

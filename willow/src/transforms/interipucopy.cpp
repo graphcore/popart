@@ -134,6 +134,7 @@ void InterIpuCopy::insertIpuCopy(Graph &graph,
   TensorId copiedTensor = generateCopiedTensorId(tensor, toIpu);
 
   ipuCopy->createAndConnectOutTensor(0, copiedTensor);
+  ipuCopy->setVirtualGraphId(fromOp->getVirtualGraphId());
   ipuCopy->setup();
 
   // Add the copied input tensor to the to op for each index
@@ -148,7 +149,7 @@ bool InterIpuCopy::apply(Graph &graph) const {
   // If the first op does not have an ipuNumber attribute, assume that no op's
   // have the ipuNumber set and so there is no inter ipu copy required.
   if (graph.getOps().size() > 0 &&
-      !(graph.getOps().begin()->second->getVirtualGraphId())) {
+      !(graph.getOps().begin()->second->hasVirtualGraphId())) {
     return false;
   }
 
@@ -168,8 +169,8 @@ bool InterIpuCopy::apply(Graph &graph) const {
 
       // Get which ipu the from op is on
       int64_t fromIpu = -1;
-      if (from->getVirtualGraphId()) {
-        fromIpu = *(from->getVirtualGraphId());
+      if (from->hasVirtualGraphId()) {
+        fromIpu = from->getVirtualGraphId();
       }
 
       // For each input tensor
@@ -209,8 +210,8 @@ bool InterIpuCopy::apply(Graph &graph) const {
 
             // Get which ipu the to op is on
             int64_t toIpu = -1;
-            if (to->getVirtualGraphId()) {
-              toIpu = *(to->getVirtualGraphId());
+            if (to->hasVirtualGraphId()) {
+              toIpu = to->getVirtualGraphId();
             }
 
             // If the ops are not on the same ipu
@@ -245,15 +246,15 @@ bool InterIpuCopy::apply(Graph &graph) const {
 
       // Get which ipu the to op is on
       int64_t sourceIpu = -1;
-      if (sourceOp->getVirtualGraphId()) {
-        sourceIpu = *(sourceOp->getVirtualGraphId());
+      if (sourceOp->hasVirtualGraphId()) {
+        sourceIpu = sourceOp->getVirtualGraphId();
       }
 
       for (auto &op : s.second) {
 
         int64_t toIpu = -1;
-        if (op->getVirtualGraphId()) {
-          toIpu = *(op->getVirtualGraphId());
+        if (op->hasVirtualGraphId()) {
+          toIpu = op->getVirtualGraphId();
         }
 
         // It the case of the first op the ipu will be the same so nothing to do

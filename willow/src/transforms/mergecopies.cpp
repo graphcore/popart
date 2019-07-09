@@ -60,6 +60,10 @@ static void mergeCopies(const std::vector<Tensor *> &copy_group, Graph &graph) {
     copy_op->connectInTensor(idx, source->id);
     copy_op->connectOutTensor(idx, t->id);
 
+    if (!copy_op->hasVirtualGraphId()) {
+      copy_op->setVirtualGraphId(producer->getVirtualGraphId());
+    }
+
     graph.eraseOp(producer->id);
   }
 

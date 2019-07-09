@@ -33,6 +33,8 @@ void IpuCopyOp::appendAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("__destIpu", destIpu);
 }
 
+bool IpuCopyOp::isIpuCopyOp() const { return true; }
+
 // Have intentionally not added the IpuCopyOp to the OpManager. This IpuCopyOp
 // needs to be explicitly created as part of the interipucopy transform
 

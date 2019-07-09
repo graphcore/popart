@@ -137,6 +137,9 @@ struct SessionOptions {
   /// virtual graphs to achieve model parallelism.
   bool autoVirtualGraph = false;
 
+  /// Enable pipelining of virtual graphs
+  bool enablePipelining = false;
+
   /// Use synthetic data i.e. disable data transfer to/from the host
   /// Set to 'true' to use synthetic data, 'false' to use real data
   bool ignoreData = false;

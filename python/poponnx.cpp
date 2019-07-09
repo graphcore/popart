@@ -401,6 +401,7 @@ PYBIND11_MODULE(poponnx_core, m) {
       .def_readwrite("outlineThreshold", &SessionOptions::outlineThreshold)
       .def_readwrite("enableNonStableSoftmax",
                      &SessionOptions::enableNonStableSoftmax)
+      .def_readwrite("enablePipelining", &SessionOptions::enablePipelining)
       .def_readwrite("autoRecomputation", &SessionOptions::autoRecomputation)
       .def_readwrite("mergeVarUpdate", &SessionOptions::mergeVarUpdate)
       .def_readwrite("mergeVarUpdateMemThreshold",
