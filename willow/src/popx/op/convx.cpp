@@ -53,8 +53,8 @@ static poplin::ConvParams getPoplarConvParams(const ConvParameters &param) {
       param.batchSize,
       vXtoY<int64_t, size_t>(param.inputShape),
       vXtoY<int64_t, size_t>(param.kernelShape),
-      param.numInChannels,
-      param.numOutChannels,
+      param.numInChannelsPerGroup,
+      param.numOutChannelsPerGroup,
       param.numGroups,
       // InputTransform inputTransform
       {
@@ -86,12 +86,12 @@ static ConvParameters
 convertPoplarConvParameters(const poplin::ConvParams &popParams) {
 
   ConvParameters params;
-  params.batchSize     = popParams.batchSize;
-  params.inputShape    = vXtoY<std::size_t, int64_t>(popParams.inputFieldShape);
-  params.kernelShape   = vXtoY<std::size_t, int64_t>(popParams.kernelShape);
-  params.numInChannels = popParams.getNumInputChans();
-  params.numOutChannels = popParams.getNumOutputChans();
-  params.numGroups      = popParams.getNumConvGroups();
+  params.batchSize   = popParams.batchSize;
+  params.inputShape  = vXtoY<std::size_t, int64_t>(popParams.inputFieldShape);
+  params.kernelShape = vXtoY<std::size_t, int64_t>(popParams.kernelShape);
+  params.numInChannelsPerGroup  = popParams.getNumInputChansPerConvGroup();
+  params.numOutChannelsPerGroup = popParams.getNumOutputChansPerConvGroup();
+  params.numGroups              = popParams.getNumConvGroups();
 
   auto convertInput = [](ConvParameters::Input &input,
                          const poplin::ConvParams::InputTransform &popInput) {
@@ -152,15 +152,19 @@ std::vector<TensorId> ConvOpx::mustExistBeforeCreate(InIndex) const {
   return {};
 }
 
-// If user provides 4D weights (missing 'group' dimension), add
-// an outer dimension, size 1
 static poplar::Tensor
-addGroupDimensionIfMissing(const poplar::Tensor &weights) {
-  poplar::Tensor weights5D = weights;
-  if (weights.rank() == 4) {
-    weights5D = weights.expand({0});
+reshapeOnnxWeightsForPoplar(const poplar::Tensor &weights,
+                            std::size_t chansOut,
+                            std::size_t chansIn,
+                            const ConvParameters &params) {
+  std::size_t groups               = params.numGroups;
+  std::vector<int64_t> kernelShape = params.kernelShape;
+
+  std::vector<std::size_t> weightsShape{groups, chansOut, chansIn};
+  for (auto i : kernelShape) {
+    weightsShape.push_back(i);
   }
-  return weights5D;
+  return weights.reshape(weightsShape);
 }
 
 void ConvOpx::grow(poplar::program::Sequence &prog) const {
@@ -169,7 +173,11 @@ void ConvOpx::grow(poplar::program::Sequence &prog) const {
   const auto &in      = getInTensor(ConvOp::getDataInIndex());
   const auto &weights = getInTensor(ConvOp::getWeightsInIndex());
 
-  poplar::Tensor weights5D = addGroupDimensionIfMissing(weights);
+  auto params    = op.getParameters();
+  auto weights5D = reshapeOnnxWeightsForPoplar(weights,
+                                               params.numOutChannelsPerGroup,
+                                               params.numInChannelsPerGroup,
+                                               params);
 
   // Work out the option based on the phase of the op
   // Conv can be bwd depending on the phase.
@@ -301,14 +309,17 @@ poplar::Tensor ConvOpx::createInput(InIndex index,
     // in a 4D weight tensor, then we need to squeeze the 0th dimension from
     // the tensor returned from createWeights:
     if (input.rank() == 5 && op_p->inRank(index) == 4) {
-      // If shapes disagree only on first dimension, as in
-      //   IR shape :            [   a, b, c, d]
-      //   poplar::Tensor shape: [1, a, b, c, d]
+      // Check that the shapes are compatible.
+      // They should be related as shown below:
+      //   IR shape :            [        a,        b, c, d]
+      //   poplar::Tensor shape: [groups, a/groups, b, c, d]
+      auto groups  = op.getParameters().numGroups;
       auto ptshape = input.shape();
       auto irshape = op_p->inInfo(index).shape_szt();
-      if (std::equal(ptshape.begin() + 1, ptshape.end(), irshape.begin()) &&
-          ptshape[0] == 1) {
-        input = input.squeeze({0});
+
+      if (std::equal(ptshape.begin() + 2, ptshape.end(), irshape.begin() + 1) &&
+          ptshape[0] == groups && ptshape[1] * groups == irshape[0]) {
+        input = input.reshape(irshape);
       }
     }
     return input;
@@ -337,15 +348,20 @@ ConvFlipWeightsGradOpx::ConvFlipWeightsGradOpx(Op *op_, Devicex *devicex_)
 
 void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
 
-  auto &op = getOp<ConvFlipWeightsOp>();
+  auto &op    = getOp<ConvFlipWeightsOp>();
+  auto params = op.getParameters();
 
-  poplar::Tensor weights   = getInTensor(ConvFlipWeightsOp::getInIndex());
-  poplar::Tensor weights5D = addGroupDimensionIfMissing(weights);
+  poplar::Tensor weights = getInTensor(ConvFlipWeightsOp::getInIndex());
+  // swap In Out channels
+  auto weights5D = reshapeOnnxWeightsForPoplar(weights,
+                                               params.numInChannelsPerGroup,
+                                               params.numOutChannelsPerGroup,
+                                               params);
 
   auto fwdOptions            = dv_p->bwdConvOptions;
   fwdOptions.options["pass"] = "TRAINING_FWD";
 
-  poplin::ConvParams popConvParams = getPoplarConvParams(op.getParameters());
+  poplin::ConvParams popConvParams = getPoplarConvParams(params);
 
   auto convWeights =
       poplin::createWeights(graph(),
@@ -355,8 +371,22 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
                             fwdOptions.toOptionFlags(),
                             &dv_p->convCache);
 
-  poplin::weightsTransposeChansFlipXY(
-      graph(), weights5D, convWeights, seq, debugPrefix("transposeXY"));
+  // weightsTransposeChansFlipXY must be called on each group individually
+  for (int i = 0; i < params.numGroups; i++) {
+    // dim 0 of weights5D and convWeights are the groups.
+    // slice off group i from weights5D and convWeights.
+    auto w = weights5D.slice(i, i + 1, 0);
+    auto c = convWeights.slice(i, i + 1, 0);
+
+    // call weightsTransposeChansFlipXY on group i of weights5D and convWeights.
+    poplin::weightsTransposeChansFlipXY(
+        graph(), w, c, seq, debugPrefix(fmt::format("group{}_transposeXY", i)));
+  }
+
+  auto newShape = convWeights.shape();
+  newShape[2]   = newShape[2] * newShape[0];
+  newShape[0]   = 1;
+  convWeights   = convWeights.reshape(newShape);
 
   // Taken the 1 off the front convWeights if it was added.
   if (weights.rank() != weights5D.rank()) {

@@ -234,7 +234,6 @@ def op_tester(tmpdir):
             ref_out = [fix_type(i) for i in ref_out]
             for index, key in enumerate(anchorIds):
                 if key in anchors:
-                    print(key, anchor_map[key])
                     if ref_out[index] is not None:
                         print('Testing anchor "{}"...'.format(key))
                         self.verifyTensor(anchor_map[key], ref_out[index])

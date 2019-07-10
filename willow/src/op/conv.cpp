@@ -17,8 +17,9 @@ ConvParameters canonicalizeConvParams(const ConvParameters &param);
 } // namespace popx
 
 ConvOp::ConvOp(const OperatorIdentifier &_opid,
+               int64_t group_,
                const HasReceptiveFieldOp::Settings &settings_)
-    : HasReceptiveFieldOp(_opid, settings_) {}
+    : HasReceptiveFieldOp(_opid, settings_), group(group_) {}
 
 const Tensor *ConvOp::dataIn() const { return inTensor(getDataInIndex()); }
 
@@ -51,10 +52,21 @@ Shape ConvOp::getOutShape() const {
 
 void ConvOp::setup0() {
   nOutChans = weightsIn()->info.dim(0);
-  // setting groups from the input tensor,
-  // we could also use the value in nAtts, as
-  // "group" is required property of the ONNX conv op
-  group = nInChans / weightsIn()->info.dim(1);
+
+  if (group == 0) {
+    throw error("group attribute in {} must be greater than zero", debugName());
+  }
+
+  if (nInChans != weightsIn()->info.dim(1) * group) {
+    throw error(
+        "Invalid value for group ({}) in {}. number of input channels ({}) / "
+        "group ({}) should be equal to the weight inputs second dimension ({})",
+        group,
+        debugName(),
+        nInChans,
+        group,
+        weightsIn()->info.dim(1));
+  }
 }
 
 // ConvOp attributes only MIGHT contain the kernel shape,
@@ -77,13 +89,13 @@ void ConvOp::setup() {
   inputShape = inShape(ConvOp::getDataInIndex());
 
   // Setup the conv parameters
-  params.type           = outType;
-  params.batchSize      = batchSize;
-  params.inputShape     = spatialD;
-  params.kernelShape    = spatialK;
-  params.numInChannels  = nInChans;
-  params.numOutChannels = getNOutChans();
-  params.numGroups      = group;
+  params.type                   = outType;
+  params.batchSize              = batchSize;
+  params.inputShape             = spatialD;
+  params.kernelShape            = spatialK;
+  params.numInChannelsPerGroup  = nInChans / group;
+  params.numOutChannelsPerGroup = getNOutChans() / group;
+  params.numGroups              = group;
 
   std::vector<int64_t> zeros(nSpatialDims, 0);
   std::vector<int64_t> ones(nSpatialDims, 1);
@@ -128,8 +140,8 @@ static void appendConvParameterAttributes(const ConvParameters &params,
   ConvParameters p = popx::canonicalizeConvParams(params);
 
   os.appendAttribute("__batchsize", p.batchSize);
-  os.appendAttribute("__numInChannels", p.numInChannels);
-  os.appendAttribute("__numOutChannels", p.numOutChannels);
+  os.appendAttribute("__numInChannelsPerGroup", p.numInChannelsPerGroup);
+  os.appendAttribute("__numOutChannelsPerGroup", p.numOutChannelsPerGroup);
   os.appendAttribute("__inputShape", p.inputShape);
   os.appendAttribute("__kernelShape", p.kernelShape);
   os.appendAttribute("__groups", p.numGroups);
@@ -281,7 +293,9 @@ static OpCreator<ConvOp> convOpCreator(
           settings.graph, settings.name, settings.scope);
       receptiveSettings.setFromAttributes(attr);
 
-      return std::unique_ptr<Op>(new ConvOp(_opid, receptiveSettings));
+      int64_t group = attr.getAttribute<Attributes::Int>("group", 1);
+
+      return std::unique_ptr<Op>(new ConvOp(_opid, group, receptiveSettings));
     },
     true);
 
