@@ -5,9 +5,9 @@ import tarfile
 import tempfile
 import urllib.request
 
+import poponnx
 import numpy as np
 import onnx
-import poponnx
 from onnx import numpy_helper
 
 # Onnx modelzoo models are hosted on AWS as tarballs, with URL:
