@@ -508,7 +508,7 @@ def test_logsoftmax(op_tester):
 
 def test_logsoftmax_grad(op_tester):
     # create test data
-    d1 = np.random.rand(1, 4).astype(np.float32)
+    d1 = np.random.rand(1, 10).astype(np.float32)
 
     def init_builder(builder):
         i1 = builder.addInputTensor(d1)
@@ -528,6 +528,7 @@ def test_logsoftmax_grad(op_tester):
         b.backward(torch.tensor(d__o))
         return [b, a.grad, None]
 
+    op_tester.atol *= 10
     op_tester.passes = ['PreUniRepl', 'LogSoftmaxOp', 'LogGradOp']
     op_tester.run(init_builder, reference, 'train')
 
