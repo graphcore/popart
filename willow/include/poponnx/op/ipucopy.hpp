@@ -26,6 +26,8 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
   bool isOutlineable() const override { return false; }
+
+  bool isIpuCopyOp() const override;
 };
 } // namespace poponnx
 

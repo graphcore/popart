@@ -411,8 +411,8 @@ poplar::Graph &Devicex::getVirtualGraph(int64_t virtualGraphIndex) {
 Devicex::~Devicex() = default;
 
 Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
-    : _ir(ir), progs(PopPrograms(ir.getDataFlow().batchesPerStep())),
-      tensors(ir), deviceInfo(deviceInfo_), prepareHasBeenCalled(false) {
+    : _ir(ir), progs(PopPrograms(ir.getRepeatCount())), tensors(ir),
+      deviceInfo(deviceInfo_), prepareHasBeenCalled(false) {
 
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
@@ -881,8 +881,8 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
       for (auto *op : tensor->consumers.getOps()) {
 
         int64_t index = -1;
-        if (op->getVirtualGraphId())
-          index = *(op->getVirtualGraphId());
+        if (op->hasVirtualGraphId())
+          index = op->getVirtualGraphId();
 
         // The copyToIpu op assume that the tensor will already
         // have been copied to the ipu from another op
@@ -1079,8 +1079,8 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
         auto &graph = getOpx(op->id)->graph();
 
         int64_t index = -1;
-        if (op->getVirtualGraphId())
-          index = *(op->getVirtualGraphId());
+        if (op->hasVirtualGraphId())
+          index = op->getVirtualGraphId();
 
         // Only stream the tensor once for all op's that consume it on an ipu
         if (std::find(ipus.begin(), ipus.end(), index) == ipus.end()) {
@@ -1432,6 +1432,8 @@ unsigned Devicex::getReplicationFactor() const {
   return replicationFactor;
 }
 
+PipelineInfo Devicex::pipelineInfo() const { return pInfo; }
+
 bool Devicex::isEngineLoaded() const { return engineIsLoaded; }
 
 void Devicex::setEngineIsLoaded(bool isLoaded) { engineIsLoaded = isLoaded; }
@@ -1634,8 +1636,8 @@ void Devicex::prepare() {
 
     // Make sure that the virtual graph information is valid
     for (Op *op : ir().getOpSchedule({})) {
-      if (op->getVirtualGraphId()) {
-        int64_t index = *(op->getVirtualGraphId());
+      if (op->hasVirtualGraphId()) {
+        int64_t index = op->getVirtualGraphId();
         if (index < 0 || index >= numIPUs) {
           throw error("{} has been assigned to an invalid virtual graph {}. "
                       "numIPUs = {}.",
@@ -1714,6 +1716,157 @@ void Devicex::prepare() {
   if (ir().getDataFlow().isBatchCountingRequired()) {
     tasks.add(initBatchCounterTensorsTask());
     tasks.add(updateBatchCountTask(progs.preForwardFragment()));
+  }
+
+  // Create the tensors and program fragments needed to track
+  // the state of the pipeline
+  if (ir().getSessionOptions().enablePipelining) {
+    // A model, where X' is the grad op of X:
+    //
+    // A  A' IPU0
+    // |  |
+    // B  B' IPU1
+    // |  |
+    // C--C' IPU2
+    //
+    // The schedule on each IPU looks as follows:
+    // 1. F<i> - execute fwd ops on batch i on the IPU, and stash activations
+    // 2. C<i>F - copy activations for batch i to the next IPU
+    // 3. C<i>B - copy grads for batch i to the previous IPU
+    // 4. B<i> - restore activations and run bwd ops on batch i on the IPU
+    //
+    // A pipeline with the minimum number of steps for 3 IPUs looks as follows:
+    //
+    // Training mode:
+    //
+    // clang-format off
+    //
+    //       <- fwd fill -> <-------- bwd fill --------> <--- main ---> <------ fwd flush ------> < bwd flush ->
+    // IPU0: F0.C0F, F1.C1F, F2.   C2F   , F3.C3F       , F4.B0.C0F    ,    B1        ,    B2    , B3    , B4
+    // IPU1:         F0.C0F, F1.   C1F   , F2.B0.C2F.C0B, F3.B1.C3F.C1B, F4.B2.C4F.C2B,    B3.C3B, B4.C4B,
+    // IPU2:                 F0.B0.   C0B, F1.B1.    C1B, F2.B2.    C2B, F3.B3.   .C3B, F4.B4.C4B,       ,
+    //
+    // clang-format on
+    //
+    // Inference mode:
+    //
+    //       <- fwd fill -> < main> <fwd flush>
+    // IPU0: F0.C0F, F1.C1F, F2.C2F,
+    // IPU1:         F0.C0F, F1.C1F, F2.C2F,
+    // IPU2:                 F0.   , F1.     F2
+    //
+    // To save on control conditional branching, we can apply the following
+    // simplifications:
+    // 1. Always do ipu-copy ops - this never affects the weights or outputs
+    //    we care about
+    // 2. Always do fwd ops - we wont get junk weight updates because we still
+    //    only conditionally run the bwd ops
+    //
+    // Extra complications vs. Enigma:
+    // 1. Anchors. Need to conditionally copy to device buffer based on step
+    //    and unit number
+
+    // TODO move to inside a task
+
+    if (ir().canTrain()) {
+      // 1. Populate map of stash and restore index tensors.
+      //    Note: these tensors are present only at the popx level,
+      //    not in the IR
+      for (int i = 0; i < deviceInfo->getNumIpus(); i++) {
+        int64_t vGraphId = static_cast<int64_t>(i);
+        poplar::Tensor stashIdTensor;
+
+        // stash
+        stashIdTensor =
+            getVirtualGraph(vGraphId).addVariable(poplar::UNSIGNED_INT, {1});
+        getVirtualGraph(vGraphId).setTileMapping(stashIdTensor, 0);
+        getVirtualGraph(vGraphId).setInitialValue(
+            stashIdTensor, poplar::ArrayRef<uint32_t>({0}));
+
+        pInfo.stashIndex.emplace(vGraphId, stashIdTensor);
+      }
+
+      // 2. Create the program to increment the stash and restore tensors.
+      //    To be run directly after the IPU's program frament that calls the
+      //    stash and restore opxs respectively
+      for (int i = 0; i < deviceInfo->getNumIpus(); i++) {
+        poplar::program::Sequence incrStashIndex, incrRestoreIndex;
+
+        int64_t vGraphId = static_cast<int64_t>(i);
+        auto one         = getConst(
+            getVirtualGraph(vGraphId), poplar::UNSIGNED_INT, {}, 1, "one");
+        auto stashSize       = static_cast<uint32_t>(getStashSize(vGraphId));
+        auto stashSizeTensor = getConst(getVirtualGraph(vGraphId),
+                                        poplar::UNSIGNED_INT,
+                                        {},
+                                        stashSize,
+                                        "stashSize");
+
+        // stash
+        popops::addInPlace(getVirtualGraph(vGraphId),
+                           pInfo.stashIndex.at(vGraphId),
+                           one,
+                           incrStashIndex);
+
+        popops::remInPlace(getVirtualGraph(vGraphId),
+                           pInfo.stashIndex.at(vGraphId),
+                           stashSizeTensor,
+                           incrStashIndex);
+
+        pInfo.incrStashIndex.emplace(vGraphId, incrStashIndex);
+      }
+    }
+
+    // 3. Populate the pipeline batch counting tensor (per-ipu, to reduce
+    //    ipu-ipu copies).
+    //    Update program to be run at the end of the pipeline batch
+    uint32_t numIPUs = static_cast<uint32_t>(deviceInfo->getNumIpus());
+
+    for (uint32_t i = 0; i < numIPUs; i++) {
+      int64_t vGraphId = static_cast<int64_t>(i);
+
+      // init tensor
+      poplar::Tensor pipelineCycle;
+
+      pipelineCycle =
+          getVirtualGraph(vGraphId).addVariable(poplar::UNSIGNED_INT, {1});
+      getVirtualGraph(vGraphId).setTileMapping(pipelineCycle, 0);
+      getVirtualGraph(vGraphId).setInitialValue(
+          pipelineCycle, poplar::ArrayRef<uint32_t>({0}));
+
+      pInfo.pipelineCycle.emplace(vGraphId, pipelineCycle);
+
+      // update tensor
+      poplar::program::Sequence incrPipelineCycle;
+
+      uint32_t bps = static_cast<uint32_t>(ir().getDataFlow().batchesPerStep());
+      uint32_t totalPipelineCycles;
+
+      if (ir().canTrain()) {
+        totalPipelineCycles = bps + 2 * (numIPUs - 1);
+      } else {
+        totalPipelineCycles = bps + numIPUs - 1;
+      }
+      auto totalPipelineCyclesTensor = getConst(getVirtualGraph(vGraphId),
+                                                poplar::UNSIGNED_INT,
+                                                {},
+                                                totalPipelineCycles,
+                                                "totPipelineCycles");
+      auto one                       = getConst(
+          getVirtualGraph(vGraphId), poplar::UNSIGNED_INT, {}, 1, "one");
+
+      popops::addInPlace(getVirtualGraph(vGraphId),
+                         pInfo.pipelineCycle.at(vGraphId),
+                         one,
+                         incrPipelineCycle);
+
+      popops::remInPlace(getVirtualGraph(vGraphId),
+                         pInfo.pipelineCycle.at(vGraphId),
+                         totalPipelineCyclesTensor,
+                         incrPipelineCycle);
+
+      pInfo.incrPipelineCycle.emplace(vGraphId, incrPipelineCycle);
+    }
   }
 
   // stream-to-host tensors : 1) make streams 2) make copy programs
@@ -1817,6 +1970,11 @@ void Devicex::prepare() {
   trySaveTensorTileMap();
 
   prepareHasBeenCalled = true;
+}
+
+int64_t Devicex::getStashSize(int64_t vGraphId) {
+  int64_t numIPUs = static_cast<int64_t>(deviceInfo->getNumIpus());
+  return 2 * (numIPUs - vGraphId) - 1;
 }
 
 poplar::Executable Devicex::getExecutable() {

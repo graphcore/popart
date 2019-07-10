@@ -66,7 +66,8 @@ bool Fuser::matches(Op *op0) const {
       if (op1->opid == get1()) {
 
         // The fused ops must be on the same IPU
-        if (op0->getVirtualGraphId() == op1->getVirtualGraphId()) {
+        if (op0->getOptionalVirtualGraphId() ==
+            op1->getOptionalVirtualGraphId()) {
           return true;
         }
       }

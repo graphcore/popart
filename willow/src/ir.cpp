@@ -38,6 +38,7 @@
 #include <poponnx/transforms/interipucopy.hpp>
 #include <poponnx/transforms/mergecopies.hpp>
 #include <poponnx/transforms/mergevarupdates.hpp>
+#include <poponnx/transforms/pipeline.hpp>
 #include <poponnx/transforms/prune.hpp>
 #include <poponnx/transforms/subgraphoutline.hpp>
 
@@ -658,6 +659,15 @@ void Ir::prepare(const IrBundle &gb) {
   applyTransform(MergeCopies::id(), getMainGraph());
   updateVertices();
 
+  // Each virtual graph is a pipeline stage in the pipeline.
+  // Transform the graph to cache forward-pass tensors, and
+  // restore them when needed in the backwards pass, allowing
+  // for greater parallelism during compute
+  if (getSessionOptions().enablePipelining) {
+    applyTransform(Pipeline::id(), getMainGraph());
+  }
+  updateVertices();
+
   dotCheckpoint(DotCheck::PREALIAS);
 
   // outlining makes Phase of Vertices meaningless as matches
@@ -714,7 +724,6 @@ void Ir::prepare(const IrBundle &gb) {
 }
 
 void Ir::verifyVertexAttributesOnlyInMain() const {
-
   auto verify = [](Vertex *v) {
     if (v->toLoss != PathToLoss::Undefined) {
       throw error("Vertex {}, which is not in the main scope, does not have "
@@ -754,11 +763,12 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
   logging::ir::debug("Verifying virtual graph id consistency");
   // All non-IpuCopyOps, sorted by virtual graph id (-1 if not set)
   std::map<int64_t, std::vector<Op *>> vgraphs;
+
   for (auto &id_op : getMainGraph().getOps()) {
     if (!dynamic_cast<IpuCopyOp *>(id_op.second.get())) {
       int64_t vgid;
-      if (id_op.second->getVirtualGraphId()) {
-        vgid = *id_op.second->getVirtualGraphId();
+      if (id_op.second->hasVirtualGraphId()) {
+        vgid = id_op.second->getVirtualGraphId();
       } else {
         vgid = -1;
       }
@@ -1103,6 +1113,18 @@ std::vector<Op *> Ir::opsOfType(const OperatorIdentifier &opid) {
   return typedOps;
 }
 
+bool Ir::isConsumedByOpOfType(TensorId tid, const OperatorIdentifier &opid) {
+  auto tensor       = getTensors().get(tid);
+  auto tidConsumers = tensor->consumers.getOps();
+
+  for (Op *op : tidConsumers) {
+    if (op->opid == opid) {
+      return true;
+    }
+  }
+  return false;
+}
+
 bool Ir::isAnchored(const TensorId &tenId) const {
   return dataFlow.isAnchored(tenId);
 }
@@ -1141,6 +1163,30 @@ OpId Ir::getAndIncrOpsCounter() {
 
 OpId Ir::getOpsCounter() const { return opsCounter; }
 
+boost::optional<int64_t>
+Ir::getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts) {
+  // Count which vgraph's the producer ops are on.
+  std::map<int64_t, int64_t> vgraphIdMap;
+  for (auto &t : ts) {
+    Op *producer = t->getProducerUnsafe();
+    if (producer) {
+      if (producer->hasVirtualGraphId()) {
+        vgraphIdMap[producer->getVirtualGraphId()]++;
+      }
+    }
+  }
+
+  // Find the vgraph id with the most occurrences.
+  auto it = std::max_element(vgraphIdMap.begin(),
+                             vgraphIdMap.end(),
+                             [](const std::pair<int64_t, int64_t> &p1,
+                                const std::pair<int64_t, int64_t> &p2) {
+                               return p1.second < p2.second;
+                             });
+
+  return it->first;
+}
+
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
   std::unique_ptr<poponnx::Op> gradSum =
@@ -1151,25 +1197,7 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
                           "GradSum");
 
   if (getSessionOptions().enableVirtualGraphs) {
-
-    // Count which vgraph's the producer ops are on.
-    std::map<int64_t, int64_t> vgraphIdMap;
-    for (auto &t : toSum) {
-      boost::optional<int64_t> vgraphId = t->getProducer()->getVirtualGraphId();
-      if (vgraphId) {
-        vgraphIdMap[*vgraphId]++;
-      }
-    }
-
-    // Find the vgraph id with the most occurrences.
-    auto it = std::max_element(vgraphIdMap.begin(),
-                               vgraphIdMap.end(),
-                               [](const std::pair<int64_t, int64_t> &p1,
-                                  const std::pair<int64_t, int64_t> &p2) {
-                                 return p1.second < p2.second;
-                               });
-
-    gradSum->setVirtualGraphId(it->first);
+    gradSum->setVirtualGraphId(getVirtualGraphIdFromTensorProducers(toSum));
   }
 
   OpId opId = getMainGraph().moveIntoGraph(std::move(gradSum));
@@ -1763,27 +1791,8 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
   Op *op = getMainGraph().getOps()[opId].get();
 
   if (getSessionOptions().enableVirtualGraphs) {
-
-    // Count which vgraph's the input's producer ops are on.
-    std::map<int64_t, int64_t> vgraphIdMap;
-    for (auto inputT : op->input->tensors()) {
-      Op *producer = inputT->getProducerUnsafe();
-      if (producer != nullptr) {
-        boost::optional<int64_t> vgraphId = producer->getVirtualGraphId();
-        if (vgraphId) {
-          vgraphIdMap[*vgraphId]++;
-        }
-      }
-    }
-    // Find the vgraph id with the most occurrences.
-    auto it = std::max_element(vgraphIdMap.begin(),
-                               vgraphIdMap.end(),
-                               [](const std::pair<int64_t, int64_t> &p1,
-                                  const std::pair<int64_t, int64_t> &p2) {
-                                 return p1.second < p2.second;
-                               });
-
-    op->setVirtualGraphId(it->first);
+    op->setVirtualGraphId(
+        getVirtualGraphIdFromTensorProducers(op->input->tensors()));
   }
 
   auto varUpdateOp = dynamic_cast<VarUpdateOp *>(op);
@@ -1835,25 +1844,12 @@ void Ir::growFinalLoss() {
   finalLossSum->fromLoss = PathFromLoss::Yes;
 
   if (getSessionOptions().enableVirtualGraphs) {
-
-    // Count which vgraph's the producer ops are on.
-    std::map<int64_t, int64_t> vgraphIdMap;
-    for (auto &l : lossOps) {
-      boost::optional<int64_t> vgraphId = l->getVirtualGraphId();
-      if (vgraphId) {
-        vgraphIdMap[*vgraphId]++;
-      }
+    std::vector<Tensor *> lossTensors;
+    for (auto &op : lossOps) {
+      lossTensors.push_back(op->output->tensor(0));
     }
-
-    // Find the vgraph id with the most occurrences.
-    auto it = std::max_element(vgraphIdMap.begin(),
-                               vgraphIdMap.end(),
-                               [](const std::pair<int64_t, int64_t> &p1,
-                                  const std::pair<int64_t, int64_t> &p2) {
-                                 return p1.second < p2.second;
-                               });
-
-    finalLossSum->setVirtualGraphId(it->first);
+    finalLossSum->setVirtualGraphId(
+        getVirtualGraphIdFromTensorProducers(lossTensors));
   }
 
   finalLossOpId = getMainGraph().moveIntoGraph(std::move(finalLossSum));
@@ -2282,6 +2278,25 @@ const Tensors &Ir::getMainGraphTensors() const {
 uint32_t Ir::getAndIncrementDropoutSeedModifier() {
   dropoutSeedModifier += 1;
   return dropoutSeedModifier;
+}
+
+int Ir::getRepeatCount() const {
+  int bps = getDataFlow().batchesPerStep();
+  if (getSessionOptions().enablePipelining) {
+    // Need additional 'runs' to fill and flush the pipeline, based on:
+    // 1. Number of IPUs
+    // 2. Whether in inference/eval or training mode
+    int numIPUs = deviceInfo->getNumIpus();
+    if (canTrain()) {
+      // additional runs for: fwd flush, bwd flush
+      return bps + 2 * (numIPUs - 1);
+    } else {
+      // additional runs for: fwd flush
+      return bps + numIPUs - 1;
+    }
+  } else {
+    return bps;
+  }
 }
 
 } // namespace poponnx

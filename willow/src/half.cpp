@@ -45,6 +45,10 @@ Half Half::operator+(const Half &rhs) {
   return (static_cast<float>(*this) + static_cast<float>(rhs));
 }
 
+Half Half::operator/(const Half &rhs) {
+  return (static_cast<float>(*this) / static_cast<float>(rhs));
+}
+
 Half::operator float() const { return halfToFloat(this->data); }
 
 std::ostream &operator<<(std::ostream &ss, const Half &v) {

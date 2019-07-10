@@ -48,9 +48,9 @@ Opx::unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const {
 }
 
 int64_t Opx::getVirtualGraphId() const {
-  if (op_p->getVirtualGraphId())
-    return *(op_p->getVirtualGraphId());
-  else {
+  if (op_p->hasVirtualGraphId()) {
+    return op_p->getVirtualGraphId();
+  } else {
     if (op_p->getIr().getSessionOptions().enableVirtualGraphs) {
       throw error("{} does not have a virtual graph attribute",
                   op_p->debugName());

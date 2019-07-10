@@ -35,7 +35,7 @@ bool SplitGatherPattern::matches(Op *op) const {
   }
 
   // The op doesn't have a vgraph id
-  if (!op->getVirtualGraphId()) {
+  if (!op->hasVirtualGraphId()) {
     return false;
   }
 

@@ -136,6 +136,23 @@ struct OpxInAndOutIndex {
   OutIndex outIndex;
 };
 
+// A bundle struct containing the tensors needed to track the
+// state of the pipeline
+struct PipelineInfo {
+  PipelineInfo() = default;
+
+  // Tensors for each IPU specify the offset of the stashes
+  // when stashing and restoring activations, and programs to
+  // update them
+  std::map<int64_t, poplar::Tensor> stashIndex;
+  std::map<int64_t, poplar::program::Sequence> incrStashIndex;
+
+  // Tensors for each IPU to track where in the pipeline we are,
+  // and programs to update them
+  std::map<int64_t, poplar::Tensor> pipelineCycle;
+  std::map<int64_t, poplar::program::Sequence> incrPipelineCycle;
+};
+
 // A bundle class to represent candidate Opxs
 // for allocating an input tensor
 class InputCreatorCandidate {
@@ -235,6 +252,8 @@ public:
   // Helper method to get the replication factor based on the user options
   unsigned getReplicationFactor() const;
 
+  PipelineInfo pipelineInfo() const;
+
   bool containsFragment(const Graph &scope) const;
   void createFragment(const Graph &);
 
@@ -305,6 +324,9 @@ private:
   // layers doensn't break dropout's functionality
   bool requiresDropoutRandomSeed = false;
   poplar::Tensor dropoutRandomSeed;
+
+  PipelineInfo pInfo;
+  int64_t getStashSize(int64_t vGraphId);
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)

@@ -33,7 +33,7 @@ void Pattern::initialise(std::string pattern_name_) {
 }
 
 void Pattern::transferBaseProperties(Op *from, Op *to) const {
-  if (from->getVirtualGraphId()) {
+  if (from->hasVirtualGraphId()) {
     to->setVirtualGraphId(from->getVirtualGraphId());
   }
 

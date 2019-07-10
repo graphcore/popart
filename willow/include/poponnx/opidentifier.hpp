@@ -877,6 +877,7 @@ const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
 const static AiGraphcoreOpIdV1 SoftmaxInplace("SoftmaxInplace");
 const static AiGraphcoreOpIdV1 SigmoidInplace("SigmoidInplace");
 const static AiGraphcoreOpIdV1 ScaleInplace("ScaleInplace");
+const static AiGraphcoreOpIdV1 Stash("Stash");
 const static AiGraphcoreOpIdV1 ExpInplace("ExpInplace");
 const static AiGraphcoreOpIdV1 L1("L1");
 const static AiGraphcoreOpIdV1 Nll("Nll");
@@ -888,6 +889,7 @@ const static AiGraphcoreOpIdV1 ConstSgdVarUpdate("ConstSGDVarUpdate");
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
 const static AiGraphcoreOpIdV1 FlattenInplace("FlattenInplace");
 const static AiGraphcoreOpIdV1 ReshapeInplace("ReshapeInplace");
+const static AiGraphcoreOpIdV1 Restore("Restore");
 const static AiGraphcoreOpIdV1 SubsampleInplace("SubsampleInplace");
 
 const static AiGraphcoreOpIdV1 ConvFlipWeights("ConvFlipWeights");

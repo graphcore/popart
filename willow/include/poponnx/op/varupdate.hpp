@@ -19,9 +19,7 @@ public:
   // the gradient or source of copy
   static InIndex getUpdaterInIndex() { return 1; }
 
-  // Returns a reference to the updated Var. Note that this
-  // is the only Op which modifies an input AND does not
-  // have "Inplace"  in its name (16.04.2019).
+  // Returns a reference to the updated Var
   static OutIndex getUpdatedVarOutIndex() { return 0; }
 
   // This Op aliases and modifies the input at index getVarIndex()

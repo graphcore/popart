@@ -64,8 +64,8 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
 
   std::set<int> vGraphs;
   for (auto &id_op : ir.getMainGraphOps()) {
-    if (id_op.second->getVirtualGraphId()) {
-      vGraphs.emplace(*id_op.second->getVirtualGraphId());
+    if (id_op.second->hasVirtualGraphId()) {
+      vGraphs.emplace(id_op.second->getVirtualGraphId());
     }
   }
 

@@ -551,7 +551,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   BOOST_CHECK(op->name().find(opName) == 0);
 
   // virtual graph id
-  BOOST_CHECK(*(op->getVirtualGraphId()) == vgNumber);
+  BOOST_CHECK(op->getVirtualGraphId() == vgNumber);
 
   // recomputation
   BOOST_CHECK(

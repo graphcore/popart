@@ -104,16 +104,10 @@ public:
 
   Settings &getSettings() { return settings; }
   const Settings &getSettings() const { return settings; }
-
-  const boost::optional<int64_t> getVirtualGraphId() const {
-    return settings.vgraphId;
-  }
-
-  void setVirtualGraphId(const boost::optional<int64_t> value) {
-    settings.vgraphId = value;
-  }
-
-  const std::string &getName() const { return settings.name; }
+  const boost::optional<int64_t> getOptionalVirtualGraphId() const;
+  int64_t getVirtualGraphId() const;
+  void setVirtualGraphId(const boost::optional<int64_t> value);
+  bool hasVirtualGraphId() const;
 
   Ir &getIr();
   const Ir &getIr() const;
@@ -123,6 +117,7 @@ public:
 
   const Scope &getScope() const { return settings.scope; }
   void setScope(const Scope &scope) { settings.scope = scope; }
+  const std::string &getName() const { return settings.name; }
 
   virtual bool isNorm() const;
   bool isElementWiseUnary() const;
@@ -256,8 +251,10 @@ public:
 
   // Is this Op a LossOp (nll, l1loss, etc)? Note:
   // the Sum op which adds the losses together is not
-  // a LossOp (although its Phase is LOSS)
+  // a LossOp
   virtual bool isLossOp() const;
+
+  virtual bool isIpuCopyOp() const;
 
   // helper functions, access fields of input and output
   Tensor *inTensor(InIndex index);
