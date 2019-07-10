@@ -275,8 +275,8 @@ void Graph::setVarUpdateConstraints() {
     // or a flatten-inplace if merged var updating.
     std::vector<Op *> varInplaceConsumers;
     for (Op *consumer : var->consumers.getOps()) {
-      if (dynamic_cast<VarUpdateOp *>(consumer) != nullptr ||
-          dynamic_cast<FlattenInplaceOp *>(consumer) != nullptr) {
+      if (dynamic_cast<VarUpdateOp *>(consumer) ||
+          dynamic_cast<FlattenInplaceOp *>(consumer)) {
         varInplaceConsumers.push_back(consumer);
         break;
       }
