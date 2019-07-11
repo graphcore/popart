@@ -20,55 +20,41 @@ static bool isCopyTensor(const Tensor *t) {
   return t->hasProducer() && t->getProducer()->isConvertibleTo<IpuCopyOp>();
 }
 
-static IpuCopyOp *
-createCopyOp(Graph &graph, uint64_t from_ipu, uint64_t to_ipu) {
+static IpuCopyOp *createCopyOp(Graph &graph, uint64_t to_ipu) {
   Op::Settings settings(graph, "");
   auto ipuCopy_op = std::make_unique<IpuCopyOp>(
-      Onnx::CustomOperators::IpuCopy, from_ipu, to_ipu, settings);
+      Onnx::CustomOperators::IpuCopy, to_ipu, settings);
   auto ipuCopy = ipuCopy_op.get();
   graph.moveIntoGraph(std::move(ipuCopy_op));
   return ipuCopy;
 }
 
-static void mergeCopies(const std::vector<Tensor *> &copy_group, Graph &graph) {
-  std::set<IpuCopyOp *> producers;
-  for (auto t : copy_group) {
-    auto p = dynamic_cast<IpuCopyOp *>(t->getProducer());
-    producers.insert(p);
-  }
+static uint64_t getDestIpu(const std::vector<Tensor *> &copy_group) {
+  auto p = copy_group.front()->getProducer();
+  return dynamic_cast<IpuCopyOp *>(p)->getDestIpu();
+}
 
-  std::map<Tensor *, Tensor *> dest_source_map;
-  for (auto t : copy_group) {
-    auto source = t->getProducer()->input->tensor(0);
-    dest_source_map.insert({t, source});
-  }
+static void mergeCopies(const std::vector<Tensor *> &copy_group, Graph &graph) {
+  auto getSourceTensor = [](Tensor *t) {
+    // assumes producer of t has 1 input only.
+    return t->getProducer()->input->tensor(0);
+  };
 
   // create a new copy op
-
-  // TODO T9888: This transform breaks the 'sourceIpu' attribute for the
-  // merged IpuCopyOp. We can now copy from multiple source IPUs to a
-  // single destination IPU.
-  // For now, make the sourceIpu attribute the lowest of all the copy ops
-  // being merged
-  auto source_ipu = (*producers.begin())->getSourceIpu();
-  for (auto producer : producers) {
-    if (producer->getSourceIpu() < source_ipu) {
-      source_ipu = producer->getSourceIpu();
-    }
-  }
-  auto dest_ipu = (*producers.begin())->getDestIpu();
-  auto copy_op  = createCopyOp(graph, source_ipu, dest_ipu);
+  auto dest_ipu = getDestIpu(copy_group);
+  auto copy_op  = createCopyOp(graph, dest_ipu);
 
   // move the copies
   for (auto t : copy_group) {
-    auto source   = dest_source_map.at(t);
-    auto producer = t->getProducer();
+    auto source    = getSourceTensor(t);
+    auto producer  = dynamic_cast<IpuCopyOp *>(t->getProducer());
+    auto sourceIpu = producer->getSourceIpu(source->id);
 
     producer->disconnectInTensor(source);
     producer->disconnectOutTensor(t);
 
     int idx = copy_op->output->n();
-    copy_op->connectInTensor(idx, source->id);
+    copy_op->connectInTensor(idx, source->id, sourceIpu);
     copy_op->connectOutTensor(idx, t->id);
 
     graph.eraseOp(producer->id);

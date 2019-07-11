@@ -5,21 +5,20 @@
 
 namespace poponnx {
 
+using SourceIpuMap = std::map<TensorId, uint64_t>;
+
 class IpuCopyOp : public Op {
-
-  uint64_t sourceIpu;
-  uint64_t destIpu;
-
 public:
   IpuCopyOp(const OperatorIdentifier &_opid,
-            uint64_t _sourceIpu,
             uint64_t _destIpu,
             const Op::Settings &settings_);
   std::unique_ptr<Op> clone() const final;
   void setup() final;
 
   uint64_t getDestIpu() const { return destIpu; }
-  uint64_t getSourceIpu() const { return sourceIpu; }
+  const SourceIpuMap &getSourceIpus() const;
+  uint64_t getSourceIpu(const TensorId &tenId) const;
+  uint64_t getSourceIpu() const;
 
   void appendAttributes(OpSerialiserBase &) const override;
 
@@ -28,6 +27,18 @@ public:
   bool isOutlineable() const override { return false; }
 
   bool isIpuCopyOp() const override;
+
+  void connectInTensor(InIndex, TensorId, uint64_t sourceIpu);
+
+private:
+  void connectInTensor(InIndex, TensorId) override {
+    throw error(
+        "Must supply a sourceIpu when calling "
+        "IpuCopyOp::connectInTensor(InIndex, TensorId, uint64_t sourceIpu)");
+  }
+
+  SourceIpuMap sourceIpus;
+  uint64_t destIpu;
 };
 } // namespace poponnx
 
