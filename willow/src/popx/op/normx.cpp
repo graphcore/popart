@@ -66,25 +66,22 @@ poplar::Tensor NormOpx::convertPoplarOutputToOnnxOutput(
 poplar::Tensor NormOpx::convertInvSdToVar(poplar::program::Sequence &prog,
                                           const poplar::Tensor &invSd,
                                           float epsilon) const {
-
-  popops::mapInPlace(graph(),
+  return popops::map(graph(),
                      pe::InvStdDevToVariance(pe::_1, pe::Const(epsilon)),
                      {invSd},
                      prog,
                      idStr() + "/invSdToVar");
-  return invSd;
 }
 
 // convert variant to inverse standard deviation
 poplar::Tensor NormOpx::convertVarToInvSd(poplar::program::Sequence &prog,
                                           const poplar::Tensor &var,
                                           float epsilon) const {
-  popops::mapInPlace(graph(),
+  return popops::map(graph(),
                      pe::VarianceToInvStdDev(pe::_1, pe::Const(epsilon)),
                      {var},
                      prog,
                      idStr() + "/varToInvSd");
-  return var;
 }
 
 NormOpx::NormOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
