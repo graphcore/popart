@@ -251,7 +251,7 @@ def test_inference_min_batches():
                           doTraining=False,
                           doDevicex=False)
     assert (e_info.value.args[0].startswith(
-        "For pipelining, depth must be at least"))
+        "For pipelining, depth (batchesPerStep) must"))
 
 
 def test_training_min_batches():
@@ -274,7 +274,7 @@ def test_training_min_batches():
                           doTraining=True,
                           doDevicex=False)
     assert (e_info.value.args[0].startswith(
-        "For pipelining, depth must be at least"))
+        "For pipelining, depth (batchesPerStep) must"))
 
 
 def test_output_matches_train():

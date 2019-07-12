@@ -244,3 +244,60 @@ BOOST_AUTO_TEST_CASE(MergeCopies3) {
   // 2) and it should have 2 outputs
   BOOST_CHECK(copies.front()->output->n() == 2);
 }
+
+BOOST_AUTO_TEST_CASE(MergeCopies4) {
+  // Virtual Graph 0
+  // {(i0), (i1)} -> [Add] -> (a0)
+  //
+  // Virtual Graph 1
+  // {(i0), (i1)} -> [Add] -> (a1)
+  //
+  // Virtual Graph 2
+  // {(a0[copy]), (a1[copy])} -> [Add] -> ()
+  //
+  // The copy of a0 and a1 should be merged to a single IpuCopyOp
+
+  auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
+
+  TensorInfo tinfo{"FLOAT", std::vector<int64_t>{4, 4}};
+
+  auto i0 = builder->addInputTensor(tinfo, "i0");
+  auto i1 = builder->addInputTensor(tinfo, "i1");
+
+  auto a0 = aiOnnx.add({i0, i1});
+  builder->virtualGraph(a0, 0);
+  auto a1 = aiOnnx.add({i0, i1});
+  builder->virtualGraph(a1, 1);
+  auto a2 = aiOnnx.add({a0, a1});
+  builder->virtualGraph(a2, 2);
+
+  auto out = a2;
+  builder->addOutputTensor(out);
+
+  std::string proto = builder->getModelProto();
+  auto model_proto  = io::getModelFromString(proto);
+
+  // Create the IR, adding outId as an anchor
+  auto data_flow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
+
+  SessionOptions opts;
+  opts.enableVirtualGraphs = true;
+
+  auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
+
+  Ir ir;
+  ir.prepare({model_proto, {}, data_flow, {}, nullptr, *cpuDevice, opts, {}});
+
+  // Check the ir
+  auto copies = getOpsOfType<IpuCopyOp>(ir);
+  // 1) there should only be 2 IpuCopyOps,
+  //    one to copy i0 and i1 from virtual graph 0 to virtual graph 1,
+  //    and one to copy a0 and a1 from virtual graph 0 and 1 to virtual graph 2.
+  BOOST_CHECK(copies.size() == 2);
+  // 2) and they should both have 2 inputs and outputs
+  for (auto op : copies) {
+    BOOST_CHECK(op->input->n() == 2);
+    BOOST_CHECK(op->output->n() == 2);
+  }
+}

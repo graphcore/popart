@@ -112,7 +112,7 @@ void InterIpuCopy::insertIpuCopy(Graph &graph,
   Op::Settings settings(graph, "");
 
   auto ipuCopy_op = std::make_unique<IpuCopyOp>(
-      Onnx::CustomOperators::IpuCopy, fromIpu, toIpu, settings);
+      Onnx::CustomOperators::IpuCopy, toIpu, settings);
 
   auto ipuCopy = ipuCopy_op.get();
   graph.moveIntoGraph(std::move(ipuCopy_op));
@@ -127,7 +127,7 @@ void InterIpuCopy::insertIpuCopy(Graph &graph,
     toOp->disconnectInTensor(i, tensor);
   }
 
-  ipuCopy->connectInTensor(0, tensor->id);
+  ipuCopy->connectInTensor(0, tensor->id, fromIpu);
 
   // The copiedTensor id needs to be unique as the same tensor may be copied to
   // multiple ipus's

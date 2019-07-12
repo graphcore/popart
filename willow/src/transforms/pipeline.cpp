@@ -8,6 +8,7 @@
 #include <poponnx/op/stash.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensors.hpp>
+#include <poponnx/topocons.hpp>
 
 #include <poponnx/transforms/pipeline.hpp>
 
@@ -45,17 +46,19 @@
 //
 // FwdOp
 //   |
-//  t_act ------             t_act_grad
-//   |          |               |
-//   |        StashOp           |
-//   |          |               |
-//   |        t_act_stashed     |
-//   |          |               |
-// RestoreOp <--                |
-//   |                          |
-// t_act_alias --------------- BwdOp
-//   |                          |
-//  ...                     t_grad_in
+// t_act ----------           t_act_grad
+//   | \           |             |
+//   |   \      StashOp          |
+//   |     \       |             |
+//   |       \   t_act_stashed   |
+//   |        |    |             |
+//   |        |    |             |
+//   |     RestoreOp             |
+//   |       |                   |
+//   |     t_act_alias ------- BwdOp
+//   |                           |
+//   |                       t_grad_in
+//  ...
 
 namespace poponnx {
 
@@ -82,7 +85,7 @@ bool Pipeline::apply(Graph &graph) const {
     minDepth = numIPUs;
   }
   if (ir.getDataFlow().batchesPerStep() < minDepth) {
-    throw error("For pipelining, depth must be at least " +
+    throw error("For pipelining, depth (batchesPerStep) must be at least " +
                 std::to_string(minDepth) + " for " +
                 std::to_string(ir.getDeviceInfo()->getNumIpus()) + " IPUs");
   }
@@ -212,7 +215,7 @@ bool Pipeline::apply(Graph &graph) const {
     }
   }
 
-  // 2. For each acivation tensor, create a single stash
+  // 2. For each Tensor to be stashed, create a single stash
   //    and (in-place) restore op
   Op::Settings settings(graph, "");
 
@@ -243,13 +246,34 @@ bool Pipeline::apply(Graph &graph) const {
     auto restoreId = restoreOp->getRestoredTensorId(); // An alias
     restoreOp->createAndConnectOutTensor(RestoreOp::getRestoredActOutIndex(),
                                          restoreId);
-    // Disconnect tid from all other consumers, reconnect to restoreId
+
+    // Disconnect tid from all post-other consumers, reconnect to restoreId
     for (Op *tidConsumer : tidConsumers) {
-      for (auto i : tidConsumer->input->indicesMap().at(tensor)) {
-        tidConsumer->disconnectInTensor(i, tensor);
-        tidConsumer->connectInTensor(i, restoreId);
+      if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::No) {
+        for (auto i : tidConsumer->input->indicesMap().at(tensor)) {
+          tidConsumer->disconnectInTensor(i, tensor);
+          tidConsumer->connectInTensor(i, restoreId);
+        }
       }
     }
+
+    // apply topological constraints:
+    // (1)  -> Stash after all forward consumers
+    // (2)  -> Restore after Stash
+    // (3)  -> All backwards after Restore
+
+    // (2)
+    graph.topoCons->insert(stashOp, restoreOp);
+    for (auto tidConsumer : tidConsumers) {
+      if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
+        // (1)
+        graph.topoCons->insert(tidConsumer, stashOp);
+      } else {
+        // (3)
+        graph.topoCons->insert(restoreOp, tidConsumer);
+      }
+    }
+
     restoreOp->setup();
 
     logging::transform::debug(

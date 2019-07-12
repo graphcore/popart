@@ -147,6 +147,26 @@ std::ostream &operator<<(std::ostream &ss, const std::set<T> &v) {
   poponnx::appendSequence(ss, v);
   return ss;
 }
+
+template <typename Key, typename Value>
+std::ostream &operator<<(std::ostream &ss, const std::map<Key, Value> &v) {
+  ss << "[";
+
+  int comma_counter = 0;
+  for (auto &key_value : v) {
+    auto &key   = key_value.first;
+    auto &value = key_value.second;
+    ss << key << ": " << value;
+    if (comma_counter < v.size()) {
+      ss << ", ";
+      comma_counter++;
+    }
+  }
+
+  ss << "]";
+
+  return ss;
+}
 } // namespace std
 
 #endif

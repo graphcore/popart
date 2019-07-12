@@ -12,8 +12,8 @@ struct ConvParameters {
   DataType type;
   int64_t batchSize;
 
-  int64_t numInChannels;
-  int64_t numOutChannels;
+  int64_t numInChannelsPerGroup;
+  int64_t numOutChannelsPerGroup;
   int64_t numGroups;
 
   Shape inputShape;
@@ -78,8 +78,8 @@ inline bool operator!=(const ConvParameters::Output &a,
 inline bool operator==(const ConvParameters &a, const ConvParameters &b) {
   return std::tie(a.type,
                   a.batchSize,
-                  a.numInChannels,
-                  a.numOutChannels,
+                  a.numInChannelsPerGroup,
+                  a.numOutChannelsPerGroup,
                   a.numGroups,
                   a.inputShape,
                   a.kernelShape,
@@ -87,8 +87,8 @@ inline bool operator==(const ConvParameters &a, const ConvParameters &b) {
                   a.kernelTransformation,
                   a.outputTransformation) == std::tie(b.type,
                                                       b.batchSize,
-                                                      b.numInChannels,
-                                                      b.numOutChannels,
+                                                      b.numInChannelsPerGroup,
+                                                      b.numOutChannelsPerGroup,
                                                       b.numGroups,
                                                       b.inputShape,
                                                       b.kernelShape,
@@ -104,6 +104,7 @@ inline bool operator!=(const ConvParameters &a, const ConvParameters &b) {
 class ConvOp : public HasReceptiveFieldOp {
 public:
   ConvOp(const OperatorIdentifier &_opid,
+         int64_t group,
          const HasReceptiveFieldOp::Settings &settings_);
   int64_t nOutChans;
   int64_t group;

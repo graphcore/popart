@@ -146,6 +146,132 @@ def test_convolution_2(op_tester):
     op_tester.run(init_builder, reference, step_type='train')
 
 
+def test_convolution_3(op_tester):
+    batch_size = 1
+    chans_in = 2
+    chans_out = 3
+    size = 4
+    kernel_size = 3
+    padding = 1
+
+    data = np.ones([batch_size, chans_in, size, size], dtype=np.float32)
+    filt = np.ones([chans_out, chans_in, kernel_size, kernel_size],
+                   dtype=np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        f = builder.addInputTensor(filt)
+        o = builder.aiOnnx.conv([d, f],
+                                dilations=[1, 1],
+                                pads=[padding] * 4,
+                                strides=[1, 1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        d = torch.tensor(data)
+        conv = torch.nn.Conv2d(
+            chans_in, chans_out, kernel_size, padding=[padding] * 2)
+        conv.weight.data = torch.tensor(filt)
+        conv.bias.data = torch.tensor([0.0 for i in range(chans_out)])
+        o = conv(d)
+        return [o]
+
+    op_tester.run(init_builder, reference, step_type='infer')
+
+
+def test_convolution_4(op_tester):
+    batch_size = 1
+    chans_in = 6
+    chans_out = 9
+    size = 4
+    kernel_size = 3
+    padding = 1
+    groups = 3
+
+    data = np.random.rand(batch_size, chans_in, size, size).astype(np.float32)
+
+    filt = np.random.rand(chans_out, chans_in // groups, kernel_size,
+                          kernel_size).astype(np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        f = builder.addInputTensor(filt)
+        o = builder.aiOnnx.conv([d, f],
+                                dilations=[1, 1],
+                                pads=[padding] * 4,
+                                strides=[1, 1],
+                                group=groups)
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        d = torch.tensor(data)
+        conv = torch.nn.Conv2d(
+            chans_in,
+            chans_out,
+            kernel_size,
+            padding=[padding] * 2,
+            groups=groups)
+        conv.weight.data = torch.tensor(filt)
+        conv.bias.data = torch.tensor([0.0 for i in range(chans_out)])
+        o = conv(d)
+        return [o]
+
+    op_tester.run(init_builder, reference, step_type='infer')
+
+
+def test_convolution_5(op_tester):
+    batch_size = 1
+    size = 4
+    kernel_size = 3
+    padding = 1
+    groups = 5
+    # chans_in/out must be divisible by groups
+    chans_in = groups * 11
+    chans_out = groups * 7
+
+    data = np.random.rand(batch_size, chans_in, size, size).astype(np.float32)
+
+    filt = np.random.rand(chans_out, chans_in // groups, kernel_size,
+                          kernel_size).astype(np.float32)
+
+    def init_builder(builder):
+        d = builder.addInputTensor(data)
+        f = builder.addInputTensor(filt)
+        o = builder.aiOnnx.conv([d, f],
+                                dilations=[1, 1],
+                                pads=[padding] * 4,
+                                strides=[1, 1],
+                                group=groups)
+        builder.addOutputTensor(o)
+        return [
+            o,
+            poponnx.reservedGradientPrefix() + d,
+            poponnx.reservedGradientPrefix() + o
+        ]
+
+    def reference(ref_data):
+        d = torch.tensor(data, requires_grad=True)
+        conv = torch.nn.Conv2d(
+            chans_in,
+            chans_out,
+            kernel_size,
+            padding=[padding] * 2,
+            groups=groups)
+        conv.weight.data = torch.tensor(filt)
+        conv.bias.data = torch.tensor([0.0 for i in range(chans_out)])
+        o = conv(d)
+        d__o = ref_data.getOutputTensorGrad(0)
+        o.backward(torch.tensor(d__o))
+        dg = d.grad
+
+        return [o, dg, None]
+
+    op_tester.passes = ['ConvDataGrad']
+    op_tester.run(init_builder, reference, step_type='train')
+
+
 def test_reciprocal(op_tester):
     # create test data
     d1 = np.random.rand(4).astype(np.float32)
