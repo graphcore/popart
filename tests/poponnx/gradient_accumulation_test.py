@@ -44,14 +44,13 @@ def run_graph(labelArray, accl_steps, enable_accl, batches_per_step,
 
     device = tu.get_ipu_model(compileIPUCode=False)
 
-    session = poponnx.TrainingSession(fnModel=proto,
-                                      dataFeed=poponnx.DataFlow(
-                                          batches_per_step, anchorNames),
-                                      deviceInfo=device,
-                                      losses=losses,
-                                      optimizer=poponnx.SGD(learning_rate=0.1,
-                                                            weight_decay=0.1),
-                                      userOptions=opts)
+    session = poponnx.TrainingSession(
+        fnModel=proto,
+        dataFeed=poponnx.DataFlow(batches_per_step, anchorNames),
+        deviceInfo=device,
+        losses=losses,
+        optimizer=poponnx.SGD(learning_rate=0.1, weight_decay=0.1),
+        userOptions=opts)
 
     session.prepareDevice()
     session.weightsFromHost()
@@ -70,11 +69,10 @@ def run_graph(labelArray, accl_steps, enable_accl, batches_per_step,
         input_shape = [outer_dim] + input_shape
 
     for i in range(6):
-        stepio = poponnx.PyStepIO(
-            {
-                input_: np.ones(input_shape, np.float32),
-                label: labelArray.astype(np.int32)
-            }, anchorArrays)
+        stepio = poponnx.PyStepIO({
+            input_: np.ones(input_shape, np.float32),
+            label: labelArray.astype(np.int32)
+        }, anchorArrays)
         session.run(stepio)
 
     proto_file = "{}.onnx".format(proto_name)
@@ -135,10 +133,11 @@ def test_gradient_accumulation_error_1():
     device = tu.get_ipu_model(compileIPUCode=False)
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        poponnx.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=device)
+        poponnx.InferenceSession(
+            fnModel=proto,
+            dataFeed=dataFlow,
+            userOptions=opts,
+            deviceInfo=device)
 
     assert (e_info.value.args[0].startswith(
         "Gradient Accumulation only available when training"))

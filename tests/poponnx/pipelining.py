@@ -238,18 +238,20 @@ def test_inference_min_batches():
     """
     minBatches = 3  # numIpus
 
-    get_model_anchors(doSharding=True,
-                      doPipelining=True,
-                      batchesPerStep=minBatches,
-                      doTraining=False,
-                      doDevicex=False)
+    get_model_anchors(
+        doSharding=True,
+        doPipelining=True,
+        batchesPerStep=minBatches,
+        doTraining=False,
+        doDevicex=False)
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        get_model_anchors(doSharding=True,
-                          doPipelining=True,
-                          batchesPerStep=minBatches - 1,
-                          doTraining=False,
-                          doDevicex=False)
+        get_model_anchors(
+            doSharding=True,
+            doPipelining=True,
+            batchesPerStep=minBatches - 1,
+            doTraining=False,
+            doDevicex=False)
     assert (e_info.value.args[0].startswith(
         "For pipelining, depth (batchesPerStep) must"))
 
@@ -261,18 +263,20 @@ def test_training_min_batches():
     """
     minBatches = 5  # 2 * (numIpus-1) + 1
 
-    get_model_anchors(doSharding=True,
-                      doPipelining=True,
-                      batchesPerStep=minBatches,
-                      doTraining=True,
-                      doDevicex=False)
+    get_model_anchors(
+        doSharding=True,
+        doPipelining=True,
+        batchesPerStep=minBatches,
+        doTraining=True,
+        doDevicex=False)
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        get_model_anchors(doSharding=True,
-                          doPipelining=True,
-                          batchesPerStep=minBatches - 1,
-                          doTraining=True,
-                          doDevicex=False)
+        get_model_anchors(
+            doSharding=True,
+            doPipelining=True,
+            batchesPerStep=minBatches - 1,
+            doTraining=True,
+            doDevicex=False)
     assert (e_info.value.args[0].startswith(
         "For pipelining, depth (batchesPerStep) must"))
 
@@ -285,18 +289,21 @@ def test_output_matches_train():
     as non-pipelined models
     """
     bps = 8
-    singleIpu_anchors = get_model_anchors(doSharding=False,
-                                          doPipelining=False,
-                                          batchesPerStep=bps,
-                                          doTraining=True)
-    multiIpu_anchors = get_model_anchors(doSharding=True,
-                                         doPipelining=False,
-                                         batchesPerStep=bps,
-                                         doTraining=True)
-    pipelined_anchors = get_model_anchors(doSharding=True,
-                                          doPipelining=True,
-                                          batchesPerStep=bps,
-                                          doTraining=True)
+    singleIpu_anchors = get_model_anchors(
+        doSharding=False,
+        doPipelining=False,
+        batchesPerStep=bps,
+        doTraining=True)
+    multiIpu_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=False,
+        batchesPerStep=bps,
+        doTraining=True)
+    pipelined_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=True,
+        batchesPerStep=bps,
+        doTraining=True)
     # TODO, depends on T9630, add a case with grad accumulation. All tensor
     # outputs should be exactly the same when doing pipelined vs non-pipelined
     # when grad accumulation is turned on
@@ -321,18 +328,21 @@ def test_output_matches_infer():
     inference
     """
     bps = 8
-    singleIpu_anchors = get_model_anchors(doSharding=False,
-                                          doPipelining=False,
-                                          batchesPerStep=bps,
-                                          doTraining=False)
-    multiIpu_anchors = get_model_anchors(doSharding=True,
-                                         doPipelining=False,
-                                         batchesPerStep=bps,
-                                         doTraining=False)
-    pipelined_anchors = get_model_anchors(doSharding=True,
-                                          doPipelining=True,
-                                          batchesPerStep=bps,
-                                          doTraining=False)
+    singleIpu_anchors = get_model_anchors(
+        doSharding=False,
+        doPipelining=False,
+        batchesPerStep=bps,
+        doTraining=False)
+    multiIpu_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=False,
+        batchesPerStep=bps,
+        doTraining=False)
+    pipelined_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=True,
+        batchesPerStep=bps,
+        doTraining=False)
 
     for (tId1, t1), (tId2, t2) in zip(singleIpu_anchors.items(),
                                       multiIpu_anchors.items()):
