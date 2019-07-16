@@ -160,7 +160,7 @@ void TensorIndexMap::clear() {
   indices_map.clear();
 }
 
-Tensor *TensorIndexMap::tensor(int index) { return tensor_map[index]; }
+Tensor *TensorIndexMap::tensor(int index) { return tensor_map.at(index); }
 
 const Tensor *TensorIndexMap::tensor(int index) const {
   return tensor_map.at(index);

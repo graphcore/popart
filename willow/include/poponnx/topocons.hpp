@@ -37,6 +37,8 @@ public:
   // of Tensor "consumed"
   OpsBeforeKey finalConsumerCons(const Tensor *consumed, Op *last) const;
 
+  friend std::ostream &operator<<(std::ostream &os, const TopoCons &tc);
+
 private:
   // for all val : set, "key -> val"
   std::map<Op *, std::set<Op *>> valsAfter;
@@ -44,6 +46,9 @@ private:
   // the mirror of valsAfterKey, so for all val : set, "val -> key"
   std::map<Op *, std::set<Op *>> valsBefore;
 };
+
+std::ostream &operator<<(std::ostream &os, const TopoCons &tc);
+
 } // namespace poponnx
 
 #endif

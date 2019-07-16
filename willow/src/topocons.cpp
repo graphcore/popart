@@ -132,4 +132,32 @@ void TopoCons::insert(Op *before, Op *after) {
   }
 }
 
+std::ostream &operator<<(std::ostream &os, const TopoCons &tc) {
+  os << "TopoCons:\n";
+
+  os << "  valsAfter:\n";
+  for (auto &op_opsAfter : tc.valsAfter) {
+    auto op        = op_opsAfter.first;
+    auto &opsAfter = op_opsAfter.second;
+
+    os << fmt::format("    {}:\n", op->debugName());
+    for (auto o : opsAfter) {
+      os << fmt::format("      {}\n", o->debugName());
+    }
+  }
+
+  os << "  valsBefore:\n";
+  for (auto &op_opsBefore : tc.valsBefore) {
+    auto op         = op_opsBefore.first;
+    auto &opsBefore = op_opsBefore.second;
+
+    os << fmt::format("    {}:\n", op->debugName());
+    for (auto o : opsBefore) {
+      os << fmt::format("      {}\n", o->debugName());
+    }
+  }
+
+  return os;
+}
+
 } // namespace poponnx

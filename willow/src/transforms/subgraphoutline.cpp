@@ -387,6 +387,25 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
     clone_map.insert({op, subgraph.getOp(cloneid)});
   }
 
+  // Preserve topological constraints between ops being added to the subgraph
+  for (auto &op_subgraphOp : clone_map) {
+    auto op         = op_subgraphOp.first;
+    auto subgraphOp = op_subgraphOp.second;
+
+    for (auto &before : graph.topoCons->getBefores(op)) {
+      auto subgraphBefore = clone_map.find(before);
+      if (subgraphBefore != clone_map.end()) {
+        subgraph.topoCons->insert(subgraphBefore->second, subgraphOp);
+      }
+    }
+    for (auto &before : graph.topoCons->getAfters(op)) {
+      auto subgraphAfter = clone_map.find(before);
+      if (subgraphAfter != clone_map.end()) {
+        subgraph.topoCons->insert(subgraphOp, subgraphAfter->second);
+      }
+    }
+  }
+
   // duplicate all the output tensors
   std::map<Tensor *, Tensor *> tensor_map;
   for (auto output : instance.all_outputs) {
