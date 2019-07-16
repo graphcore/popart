@@ -27,6 +27,9 @@ TensorId getUpdatedVarId(const TensorId &id);
 
 constexpr const char *reservedGradientPrefix() { return "D___"; }
 constexpr const char *reservedUpdatedVarPrefix() { return "UV___"; }
+constexpr const char *reservedAccumulationPrefix() { return "A___"; }
+constexpr const char *reservedAccumulationOutPrefix() { return "AO___"; }
+constexpr const char *reservedAccumulationResetPrefix() { return "R___"; }
 
 std::vector<std::string> reservedPrefixes();
 

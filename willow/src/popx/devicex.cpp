@@ -32,7 +32,13 @@
 #include <poponnx/recompute.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
+#include <poponnx/tensors.hpp>
 #include <poponnx/tojson.hpp>
+#include <poponnx/topocons.hpp>
+
+#include <poponnx/op/gradientaccl.hpp>
+#include <poponnx/op/varupdate.hpp>
+#include <poponnx/tensornames.hpp>
 
 namespace poponnx {
 namespace popx {
@@ -199,6 +205,10 @@ void Devicex::weightsToHost(
     for (auto id : ir().getTensorIds(TensorType::Variable)) {
       auto found = onnxModelData.find(id);
       if (found == onnxModelData.end()) {
+        // When accumulating gradients, don't save the accumulating tensors.
+        if (id.find(reservedAccumulationPrefix()) != std::string::npos) {
+          continue;
+        }
         throw error("No TensorId " + id + " in final host destination map");
       }
       MutableVoidData mv_data = found->second;
@@ -279,7 +289,8 @@ const std::map<TensorId, poplar::Tensor> &PopTensors::getTensors() const {
   return tensors_;
 }
 
-PopPrograms::PopPrograms(const int repeatCount_) : repeatCount(repeatCount_) {
+PopPrograms::PopPrograms(const int repeatCount_, const int accumulationFactor_)
+    : repeatCount(repeatCount_), accumulationFactor(accumulationFactor_) {
   if (repeatCount_ <= 0) {
     throw error("Program repeat count must be greater than zero");
   }
@@ -321,6 +332,16 @@ poplar::program::Sequence &PopPrograms::toHostFinalCopyFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::TOHOSTFINALCOPY)];
 }
 
+poplar::program::Sequence &PopPrograms::varUpdateFromAccumulatorFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::VARUPDATEFROMACCUMULATOR)];
+}
+
+poplar::program::Sequence &
+PopPrograms::resetWeightGradientAccumulatorFragment() {
+  return seqs[static_cast<int>(
+      ProgramFragmentIndex::RESETWEIGHTGRADIENTACCUMULATOR)];
+}
+
 poplar::program::Sequence &PopPrograms::weightsToHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::WEIGHTSTOHOST)];
 }
@@ -338,6 +359,8 @@ poplar::program::Sequence PopPrograms::optimizerFromHost() {
 }
 
 poplar::program::Sequence PopPrograms::program() {
+
+  // Graph
   poplar::program::Sequence prog;
   prog.add(preForwardFragment());
   prog.add(forwardFragment());
@@ -351,6 +374,17 @@ poplar::program::Sequence PopPrograms::program() {
   }
   outer.add(setRandomSeedFragment());
   outer.add(setRandomDropoutSeedFragment());
+
+  if (accumulationFactor > 1) {
+    logging::devicex::trace(
+        "Adding gradient accumulation repeat loop with {} loops",
+        accumulationFactor);
+    prog = poplar::program::Repeat(accumulationFactor, prog);
+    prog.add(varUpdateFromAccumulatorFragment());
+    prog.add(resetWeightGradientAccumulatorFragment());
+  }
+
+  // BatchesPerStep loop
   outer.add(poplar::program::Repeat(repeatCount, prog));
   outer.add(toHostFinalCopyFragment());
 
@@ -411,8 +445,9 @@ poplar::Graph &Devicex::getVirtualGraph(int64_t virtualGraphIndex) {
 Devicex::~Devicex() = default;
 
 Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
-    : _ir(ir), progs(PopPrograms(ir.getRepeatCount())), tensors(ir),
-      deviceInfo(deviceInfo_), prepareHasBeenCalled(false) {
+    : _ir(ir), progs(PopPrograms(ir.getRepeatCount(),
+                                 static_cast<int>(getAccumulationFactor()))),
+      tensors(ir), deviceInfo(deviceInfo_), prepareHasBeenCalled(false) {
 
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
@@ -500,6 +535,8 @@ void Devicex::hostToHostStream(
     dstInfo.append(ss);
     ss << ",\nBatches per step : " << ir().getDataFlow().batchesPerStep()
        << '.';
+    ss << "\nGradient accumulation steps : " << getAccumulationFactor() << '.';
+
     throw error(ss.str());
   }
 
@@ -588,12 +625,18 @@ void Devicex::anchorsHostToHostStreams(const IStepIO &stepio) {
       // we calculate the TensorInfo for dst. If batchesPerStep() = 1, then
       // it has the same dimensions as tensor->info. Otherwise it has has
       // an extra dimension of size batchesPerStep() to accommmodate all
-      // step anchor tensors.
+      // step anchor tensors and all the accumulationFactor steps.
+
       auto stepDstShape = tensor->info.shape();
-      if (ir().getDataFlow().batchesPerStep() > 1) {
-        stepDstShape.insert(stepDstShape.begin(),
-                            ir().getDataFlow().batchesPerStep());
+      int outer_dim     = 1;
+      if (ir().getDataFlow().batchesPerStep() > 1)
+        outer_dim *= ir().getDataFlow().batchesPerStep();
+      if (ir().getSessionOptions().enableGradientAccumulation)
+        outer_dim *= getAccumulationFactor();
+      if (outer_dim > 1) {
+        stepDstShape.insert(stepDstShape.begin(), outer_dim);
       }
+
       // if the replicationFactor is greater than 1 then add an extra
       // dimension of size replicationFactor so we can report multiple
       // copies of the tensor
@@ -602,7 +645,6 @@ void Devicex::anchorsHostToHostStreams(const IStepIO &stepio) {
         stepDstShape.insert(stepDstShape.begin(), getReplicationFactor());
       }
       TensorInfo dstInfo{tensor->info.dataType(), stepDstShape};
-
       // the info of the user provided src step tensor
       TensorInfo srcInfo = stepin.info;
 
@@ -1388,8 +1430,29 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
         logging::devicex::debug("Adding post-turning check-point Op {}",
                                 op->debugName());
 
-        opx->grow(progs.backwardFragment());
-        mainGraphOpRegistery.push_back(op);
+        // If we are doing gradient accumulation, we need to ensure the reset
+        // and var update aren't run every time. Instead, these fragments sit
+        // outside the "main" loop of the fowards and backwards passes.
+        if (containingGraph.getIr()
+                .getSessionOptions()
+                .enableGradientAccumulation) {
+          if (dynamic_cast<VarUpdateOp *>(op) != nullptr) {
+            // This is a var update op, so we only run in the var update
+            // fragment.
+            opx->grow(progs.varUpdateFromAccumulatorFragment());
+          } else if (dynamic_cast<ResetAcclOp *>(op) != nullptr) {
+            // This is a reset op, so we only run in the reset fragment.
+            opx->grow(progs.resetWeightGradientAccumulatorFragment());
+          } else {
+            // This is a normal op in a gradient accumulation graph.
+            opx->grow(progs.backwardFragment());
+          }
+          mainGraphOpRegistery.push_back(op);
+        } else {
+          // Put this op into the "regular" backwards pass.
+          opx->grow(progs.backwardFragment());
+          mainGraphOpRegistery.push_back(op);
+        }
       }
 
       else {
@@ -1430,6 +1493,28 @@ unsigned Devicex::getReplicationFactor() const {
   }
 
   return replicationFactor;
+}
+
+unsigned Devicex::getAccumulationFactor() const {
+
+  unsigned accumulationFactor = 1;
+  if (ir().getSessionOptions().enableGradientAccumulation) {
+    accumulationFactor =
+        static_cast<unsigned>(ir().getSessionOptions().accumulationFactor);
+  }
+
+  else {
+    // A check on user input consistency
+    if (static_cast<unsigned>(ir().getSessionOptions().accumulationFactor) >
+        1) {
+      throw error(
+          "enableGradientAccumulation is false, but accumulationFactor > 1. "
+          "Either enable gradient accumulation, or set the accumulation factor "
+          "to 1");
+    }
+  }
+
+  return accumulationFactor;
 }
 
 PipelineInfo Devicex::pipelineInfo() const { return pInfo; }
@@ -1504,9 +1589,18 @@ void Devicex::loadEngineAndConnectStreams() {
     for (Tensor *tensor : ir().dataStreamTensors()) {
       logging::devicex::debug(" {}", tensor->id);
       PopStreamId streamId = h2dId(tensor->id);
-      // allocate host memory, where the poplar::Stream will read data from
-      int64_t n_bytes = ir().getDataFlow().batchesPerStep() *
-                        tensor->info.nbytes() * getReplicationFactor();
+      // Allocate host memory, where the poplar::Stream will read data from.
+      // Micro-batch number of bytes: data processed in one go by hardware
+      int64_t n_bytes = tensor->info.nbytes();
+      // Number of micro-batches in a batch = gradient accumulation steps
+      if (ir().getSessionOptions().enableGradientAccumulation)
+        n_bytes *= ir().getSessionOptions().accumulationFactor;
+      // Number of batches (weight updates) in a step.
+      if (ir().getDataFlow().batchesPerStep() > 1)
+        n_bytes *= ir().getDataFlow().batchesPerStep();
+      if (ir().getSessionOptions().enableReplicatedGraphs) {
+        n_bytes *= getReplicationFactor();
+      }
       h2dBuffers[tensor->id] = std::vector<char>(n_bytes);
       char *data0            = h2dBuffers[tensor->id].data();
       engineToStream(data0, n_bytes, streamId);

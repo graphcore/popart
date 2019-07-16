@@ -37,10 +37,11 @@ std::size_t AutoVirtualGraph::id() {
 // The cost of an Op. Currently it's 1*input_weights + 1*outputs_to_grad + 0.
 // This could be improved by having different parameters for each op type.
 // This does not take into account Ops using the same Weights
-float AutoVirtualGraph::costFn(Op *op, bool training) const {
-  float w_weights     = 1.f;
-  float w_activations = 1.f;
-  float total         = 0;
+float AutoVirtualGraph::costFn(Op *op,
+                               bool training,
+                               float w_weights     = 1.f,
+                               float w_activations = 1.f) const {
+  float total = 0;
 
   std::set<int> inputs_seen;
   std::set<int> outputs_seen;
@@ -144,6 +145,12 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
     return true;
   }
 
+  float w_weights = 1.0f;
+  if (opts.enableGradientAccumulation) {
+    // Weights are doubled as there is an accumulator to match each.
+    w_weights = 2.0f;
+  }
+
   logging::transform::info("[AutoVirtualGraph] Auto virtual graph with {} IPUs",
                            num_ipus);
 
@@ -173,7 +180,7 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
     }
 
     // Find potential split nodes
-    float op_cost = costFn(op, training);
+    float op_cost = costFn(op, training, w_weights);
 
     // Keep a cumulative_cost of the whole graph.
     cumulative_cost += op_cost;

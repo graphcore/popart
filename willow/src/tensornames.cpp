@@ -26,7 +26,11 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
 }
 
 std::vector<std::string> reservedPrefixes() {
-  return {reservedGradientPrefix(), reservedUpdatedVarPrefix()};
+  return {reservedGradientPrefix(),
+          reservedUpdatedVarPrefix(),
+          reservedAccumulationPrefix(),
+          reservedAccumulationOutPrefix(),
+          reservedAccumulationResetPrefix()};
 }
 
 } // namespace poponnx

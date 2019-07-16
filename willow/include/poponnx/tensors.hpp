@@ -24,6 +24,7 @@ public:
 
   // create a Variable Tensor
   void addVarInit(const TensorId &, const onnx::TensorProto *);
+  void addVarInit(const TensorId &, const TensorInfo &, const void *);
 
   // create a Constant Tensor
   void addConstInit(const TensorId &, const onnx::TensorProto *);

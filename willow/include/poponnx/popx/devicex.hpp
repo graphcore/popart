@@ -42,7 +42,9 @@ public:
   // to communicate with the host to call the 'run'. By supplying a
   // count, we can loop a repeatable program inside a Poplar repeat
   // program
-  PopPrograms(const int repeatCount);
+  PopPrograms(const int repeatCount_, const int accumulationFactor_);
+  PopPrograms(const int repeatCount_)
+      : PopPrograms::PopPrograms(repeatCount_, 0) {}
 
   enum ProgramIndex {
     WEIGHTSFROMHOST = 0,
@@ -60,6 +62,8 @@ public:
     PREFORWARD,
     FORWARD,
     BACKWARD,
+    VARUPDATEFROMACCUMULATOR,
+    RESETWEIGHTGRADIENTACCUMULATOR,
     WEIGHTSTOHOST,
     TOHOSTFINALCOPY,
     SETRANDOMSEED,
@@ -78,6 +82,8 @@ public:
   poplar::program::Sequence &preForwardFragment();
   poplar::program::Sequence &forwardFragment();
   poplar::program::Sequence &backwardFragment();
+  poplar::program::Sequence &varUpdateFromAccumulatorFragment();
+  poplar::program::Sequence &resetWeightGradientAccumulatorFragment();
   poplar::program::Sequence &weightsToHostFragment();
   // If ScheduledPreLoss::Yes, then return forwardFragment(), else return
   // backwardFragment()
@@ -103,6 +109,10 @@ public:
 private:
   // Specify how many times to loop the 'repeatable' program
   int repeatCount;
+
+  // Specifiy how many times to loop the program before applying
+  // varUpdates in a training program
+  int accumulationFactor;
 
   static constexpr int seqs_size = static_cast<int>(ProgramFragmentIndex::N);
   std::array<poplar::program::Sequence, seqs_size> seqs;
@@ -251,6 +261,7 @@ public:
 
   // Helper method to get the replication factor based on the user options
   unsigned getReplicationFactor() const;
+  unsigned getAccumulationFactor() const;
 
   PipelineInfo pipelineInfo() const;
 

@@ -35,6 +35,7 @@
 // The transformations
 #include <poponnx/recompute.hpp>
 #include <poponnx/transforms/auto_virtual_graph.hpp>
+#include <poponnx/transforms/gradient_accumulation.hpp>
 #include <poponnx/transforms/interipucopy.hpp>
 #include <poponnx/transforms/mergecopies.hpp>
 #include <poponnx/transforms/mergevarupdates.hpp>
@@ -653,6 +654,12 @@ void Ir::prepare(const IrBundle &gb) {
   applyTransform(Prune::id(), getMainGraph());
 
   updateVertices();
+
+  // Apply transform after topological constraints have been added.
+  if (userOptions.enableGradientAccumulation) {
+    logging::transform::info("Applying gradient accumulation graph transform");
+    applyTransform(GradientAccumulation::id(), getMainGraph());
+  }
 
   // Add internal ops to copy tensors between ipu's as needed
   applyTransform(InterIpuCopy::id(), getMainGraph());
@@ -1806,6 +1813,10 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
   op->setup();
 
   trainTargetOps.insert(op);
+}
+
+bool Ir::addToTrainTargetOps(Op *op) {
+  return trainTargetOps.insert(op).second;
 }
 
 void Ir::growFinalLoss() {

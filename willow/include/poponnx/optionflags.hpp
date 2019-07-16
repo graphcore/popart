@@ -128,10 +128,17 @@ struct SessionOptions {
   /// Enable replication of graphs
   bool enableReplicatedGraphs = false;
 
+  /// Enable gradient accumulation
+  bool enableGradientAccumulation = false;
+
   /// If enableReplicatedGraphs is true, replicatedGraphCount will set the
   /// number of replicated graphs - must be a factor of the number of IPU's
   /// (CHECK)
   int64_t replicatedGraphCount = 1;
+
+  /// Specify the number of micro-batches to accumulate before applying the
+  /// varUpdate.
+  int64_t accumulationFactor = 1;
 
   /// Enable transformation pass that attempts to automatically place ops on
   /// virtual graphs to achieve model parallelism.

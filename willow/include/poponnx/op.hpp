@@ -145,6 +145,10 @@ public:
   std::string str() const final;
   std::string debugName() const;
 
+  // create a Variable tensor copying the shape and type
+  // from an input and replace it. This is helpful for gradAccl
+  void replaceInTensorWithZeros(InIndex, TensorId);
+
   // create an ActGrad (output) tensor
   // and wire it to this Op's output
   void createAndConnectOutTensor(OutIndex, TensorId);

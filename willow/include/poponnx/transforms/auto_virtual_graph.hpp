@@ -38,7 +38,8 @@ public:
     return "AutoVirtualGraph";
   }
 
-  float costFn(Op *op, bool training) const;
+  float
+  costFn(Op *op, bool training, float w_weights, float w_activations) const;
 };
 
 } // namespace poponnx

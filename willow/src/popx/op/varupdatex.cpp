@@ -1,4 +1,5 @@
 #include <poponnx/error.hpp>
+#include <poponnx/ir.hpp>
 #include <poponnx/op/varupdate.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/op/varupdatex.hpp>
@@ -13,7 +14,37 @@ namespace pe = popops::expr;
 namespace poponnx {
 namespace popx {
 
-SGDVarUpdateOpx::SGDVarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+VarUpdateOpx::VarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
+
+poplar::Tensor VarUpdateOpx::createInput(int index,
+                                         const std::string &name) const {
+  if (index != VarUpdateOp::getUpdaterInIndex()) {
+    throw error("VarUpdateOpx::createInput Cannot create input {}", index);
+  }
+
+  poplar::Tensor var = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
+
+  return graph().clone(var, name);
+}
+
+InputCreatorType VarUpdateOpx::getInputCreatorType(int index1) const {
+  return index1 == VarUpdateOp::getUpdaterInIndex() &&
+                 op_p->getIr().getSessionOptions().enableGradientAccumulation
+             ? InputCreatorType::CANCREATE
+             : Opx::getInputCreatorType(index1);
+}
+
+std::vector<TensorId> VarUpdateOpx::mustExistBeforeCreate(int index1) const {
+  if (index1 != VarUpdateOp::getUpdaterInIndex()) {
+    throw error("VarUpdateOpx::mustExistBeforeCreate : Invalid index = " +
+                std::to_string(index1));
+  }
+
+  return {inId(VarUpdateOp::getVarToUpdateInIndex())};
+}
+
+SGDVarUpdateOpx::SGDVarUpdateOpx(Op *op, Devicex *devicex)
+    : VarUpdateOpx(op, devicex) {
   verifyOp<SGDVarUpdateOp>(op, Onnx::CustomOperators::SgdVarUpdate);
 }
 
@@ -62,7 +93,7 @@ void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ConstSGDVarUpdateOpx::ConstSGDVarUpdateOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : VarUpdateOpx(op, devicex) {
   verifyOp<ConstSGDVarUpdateOp>(op, Onnx::CustomOperators::ConstSgdVarUpdate);
 }
 
@@ -114,7 +145,7 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 CopyVarUpdateOpx::CopyVarUpdateOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : VarUpdateOpx(op, devicex) {
   verifyOp<CopyVarUpdateOp>(op, Onnx::CustomOperators::CopyVarUpdate);
 }
 

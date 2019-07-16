@@ -273,11 +273,22 @@ void Tensors::addVarInit(const TensorId &name, const onnx::TensorProto *pt) {
     }
   }
 }
+
+void Tensors::addVarInit(const TensorId &name,
+                         const TensorInfo &info,
+                         const void *src) {
+  insert(name,
+         std::unique_ptr<VariableTensor>(new VariableTensor(name, graph)));
+
+  Tensor *init = get(name);
+  init->info   = info;
+  init->setTensorData(info, src);
+}
+
 void Tensors::addConstInit(const TensorId &name,
                            const TensorInfo &info,
                            const void *src) {
-  insert(name,
-         std::unique_ptr<Tensor>(new Tensor(name, TensorType::Const, graph)));
+  insert(name, std::make_unique<Tensor>(name, TensorType::Const, graph));
 
   insertConstId(name);
 
@@ -302,10 +313,9 @@ void Tensors::addInit(const TensorId &name,
                       TensorType tt) {
 
   if (tt == TensorType::Variable) {
-    insert(name,
-           std::unique_ptr<VariableTensor>(new VariableTensor(name, graph)));
+    insert(name, std::make_unique<VariableTensor>(name, graph));
   } else {
-    insert(name, std::unique_ptr<Tensor>(new Tensor(name, tt, graph)));
+    insert(name, std::make_unique<Tensor>(name, tt, graph));
   }
 
   Tensor *init = get(name);
