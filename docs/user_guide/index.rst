@@ -19,4 +19,5 @@ ONNX for the IPU
     env_vars
     references
     api
+    batch_size
 

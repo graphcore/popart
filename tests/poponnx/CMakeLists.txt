@@ -33,6 +33,7 @@ function(add_poponnx_cpp_unit_test name)
 endfunction()
 
 add_poponnx_cpp_unit_test(dataflowtest dataflowtest.cpp)
+add_poponnx_cpp_unit_test(vertex_vgid_test vertex_vgid_test.cpp)
 add_poponnx_cpp_unit_test(inputshapeinfotest inputshapeinfotest.cpp)
 add_poponnx_cpp_unit_test(loggingtest loggingtest.cpp)
 add_poponnx_cpp_unit_test(exceptiontest exceptiontest.cpp)

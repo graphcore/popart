@@ -181,16 +181,19 @@ def test_mini_resnet_like():
     graph_report = json.loads(graph_report)
 
     total_mem = sum(graph_report['memory']['byTile']['total'])
-    ref_total = 69_157_193
+    max_mem = max(graph_report['memory']['byTile']['totalIncludingGaps'])
+    print(f'total_mem: {total_mem}')
+    print(f'max_mem: {max_mem}')
+
     # Check that the total memory is within 5% of the reference
+    ref_total = 65_138_488
     # If it is more than 5% over, it needs investigating
     assert total_mem / ref_total < 1.05
     # If it is move than 5% under, the reference should probably be updated
     assert total_mem / ref_total > 0.95
 
-    max_mem = max(graph_report['memory']['byTile']['totalIncludingGaps'])
-    ref_max = 137_240
     # Check that the maximum memory is within 5% of the reference
+    ref_max = 136_472
     # If it is more than 5% over, it needs investigating
     assert max_mem / ref_max < 1.05
     # If it is move than 5% under, the reference should probably be updated

@@ -4,12 +4,59 @@
 #include <poponnx/error.hpp>
 #include <poponnx/onnxutil.hpp>
 #include <poponnx/op.hpp>
+#include <poponnx/op/ipucopy.hpp>
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
 #include <poponnx/tensorindex.hpp>
 #include <poponnx/util.hpp>
 
 namespace poponnx {
+
+int64_t Tensor::getVirtualGraphIdUnsafe() const {
+
+  // If this Tensor has a Producer, use its VirtualGraphId if it has one
+  if (hasProducer()) {
+    // special case of IPUCopy producer
+    auto ipucopy = dynamic_cast<IpuCopyOp *>(getProducer());
+    if (ipucopy) {
+      return ipucopy->getDestIpu();
+    } else if (getProducer()->hasVirtualGraphId()) {
+      return getProducer()->getVirtualGraphId();
+    }
+  }
+
+  // No producer with an id. Try to get the virtual graph id from a consumer.
+  // Use the id of the first consumer with an id, if there is one
+  for (Op *consumer : consumers.getOps()) {
+    if (consumer->hasVirtualGraphId()) {
+      return consumer->getVirtualGraphId();
+    }
+  }
+
+  // no consumers have virtual graph ids. Last hope now is that a consumer
+  // is an IPUCopy, otherwise we will return -1 (to denote no virtual graph)
+  for (Op *consumer : consumers.getOps()) {
+    auto ipucopy = dynamic_cast<IpuCopyOp *>(consumer);
+    if (ipucopy) {
+      return ipucopy->getSourceIpus().at(id);
+    }
+  }
+
+  // No virtual graph Id determined
+  return -1;
+}
+
+int64_t Tensor::getVirtualGraphId() const {
+  auto vid = getVirtualGraphIdUnsafe();
+  if (vid == -1) {
+    throw error("Invalid call to getVirtualGraphId, Tensor does not have one");
+  }
+  return vid;
+}
+
+bool Tensor::hasVirtualGraphId() const {
+  return getVirtualGraphIdUnsafe() != -1;
+}
 
 std::ostream &operator<<(std::ostream &os, const TensorType &tt) {
   switch (tt) {

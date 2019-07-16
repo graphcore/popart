@@ -138,6 +138,11 @@ public:
   Graph &getGraph() { return graph; }
   const Graph &getGraph() const { return graph; }
 
+  // Determine the virtual graph of this Tensor, on-the-fly
+  // based on consumers and producers
+  bool hasVirtualGraphId() const;
+  int64_t getVirtualGraphId() const;
+
 protected:
   Graph &graph;
   Op *producer;
@@ -149,6 +154,10 @@ protected:
   // c++ note : we cannot initialise this as {nullptr} with gcc
   // when using pimpl, it must be initialised in the .cpp constructor
   std::unique_ptr<TensorData> data_;
+
+private:
+  // return the virtual graph id, or -1 if there is not one
+  int64_t getVirtualGraphIdUnsafe() const;
 };
 
 class VariableTensor : public Tensor {
