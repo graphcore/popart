@@ -23,6 +23,7 @@
 #include <poponnx/op.hpp>
 #include <poponnx/op/call.hpp>
 #include <poponnx/op/if.hpp>
+#include <poponnx/op/varupdate.hpp>
 #include <poponnx/popx/devicex.hpp>
 #include <poponnx/popx/devicexmanager.hpp>
 #include <poponnx/popx/opx.hpp>
@@ -172,14 +173,21 @@ void Devicex::readWeights(const IWeightsIO &weights) {
   // Better to do this the otherway round
   for (auto id : ir().getTensorIds(TensorType::Variable)) {
     if (weights.contains(id)) {
+      logging::devicex::debug("Reading weights (host stream -> host) for {}",
+                              id);
       MutableVoidData stepout = weights.weight(id);
-      hostStreamToHost(stepout, id);
+      bool isAnchorStream     = false;
+      hostStreamToHost(stepout, id, isAnchorStream);
+    } else {
+      logging::devicex::debug(
+          "Not reading weights (host stream -> host) for {}", id);
     }
   }
 }
 
 void Devicex::writeWeights(const IWeightsIO &weights) {
   // Better to do this the otherway round
+  // Also : should check that all weights have valid names
   for (auto id : ir().getTensorIds(TensorType::Variable)) {
     if (weights.contains(id)) {
       auto tensor             = ir().getTensor(id);
@@ -212,7 +220,8 @@ void Devicex::weightsToHost(
         throw error("No TensorId " + id + " in final host destination map");
       }
       MutableVoidData mv_data = found->second;
-      hostStreamToHost(mv_data, id);
+      bool isAnchorStream     = false;
+      hostStreamToHost(mv_data, id, isAnchorStream);
     }
   }
 }
@@ -580,17 +589,27 @@ void Devicex::hostToHostStream(
 // poplar::Streams cannot write to an arbitrary dynamic address,
 // they are connected to a fixed host address. This function copies
 // from that fixed address to a dynamic address (mv_data).
-void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
+void Devicex::hostStreamToHost(const MutableVoidData &mv_data,
+                               TensorId id,
+                               bool isAnchorStream) {
 
   // The host end of the poplar::Stream,
   // we will try to copy from here
-  auto src = static_cast<const void *>(d2hBuffers.at(id).data());
-
-  auto dst = mv_data.data;
+  const void *src;
 
   // size of the host end of the poplar stream.
   // It is a char vector, so this is in bytes.
-  int64_t nbytes_src = d2hBuffers.at(id).size();
+  int64_t nbytes_src;
+
+  if (isAnchorStream) {
+    src        = static_cast<const void *>(d2hAnchorBuffers.at(id).data());
+    nbytes_src = d2hAnchorBuffers.at(id).size();
+  } else {
+    src        = static_cast<const void *>(d2hWeightBuffers.at(id).data());
+    nbytes_src = d2hWeightBuffers.at(id).size();
+  }
+
+  auto dst = mv_data.data;
 
   // number of bytes of the destination.
   int64_t nbytes_dst = mv_data.info.nbytes();
@@ -660,7 +679,9 @@ void Devicex::anchorsHostFromHostStreams(const IStepIO &stepio) {
     logging::devicex::debug(prefix + "Copying from d2h stream address(es) ");
     for (TensorId anchorId : ir().getDataFlow().anchors()) {
       MutableVoidData stepout = stepio.out(anchorId);
-      hostStreamToHost(stepout, anchorId);
+
+      constexpr bool isAnchorStream = true;
+      hostStreamToHost(stepout, anchorId, isAnchorStream);
     }
   }
 }
@@ -727,7 +748,7 @@ TaskId Devicex::taskWhichPopulates(TensorId id) const {
     return fromHostTaskId(tensor->id);
   }
 
-  // if a Tensor has no producer and is not a Stream, it is a Variable...
+  // default:
   else {
     return initTensorTaskId(id);
   }
@@ -1178,19 +1199,25 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
   };
 }
 
-PriTask Devicex::streamToHostTask(Tensor *tensor) {
-  auto f = [this, tensor]() {
+PriTask Devicex::streamToHostTask(Tensor *tensor, bool isAnchorStream) {
+  auto f = [this, tensor, isAnchorStream]() {
     logging::devicex::debug("Creating device-to-host FIFO {}", tensor->id);
 
-    toHostStreams.emplace(tensor->id,
-                          graph().addDeviceToHostFIFO(d2hId(tensor->id),
-                                                      popType(tensor->info),
-                                                      tensor->info.nelms()));
+    auto pToHostStreams = &toHostAnchorStreams;
+    if (!isAnchorStream) {
+      pToHostStreams = &toHostWeightStreams;
+    }
+
+    pToHostStreams->emplace(
+        tensor->id,
+        graph().addDeviceToHostFIFO(d2hId(tensor->id, isAnchorStream),
+                                    popType(tensor->info),
+                                    tensor->info.nelms()));
   };
 
   return {
-      0,                              // priority unimportant
-      streamToHostTaskId(tensor->id), // name of this task
+      0,                                              // priority unimportant
+      streamToHostTaskId(tensor->id, isAnchorStream), // name of this task
       {taskWhichCreates(tensor->id)}, // poplar::Tensor must exist
       f                               // what to run when the task is executed
   };
@@ -1609,9 +1636,9 @@ void Devicex::loadEngineAndConnectStreams() {
     logging::devicex::debug(
         "Creating host buffers for anchor d2h streams, connecting");
     for (TensorId anchorId : ir().getDataFlow().anchors()) {
-      logging::devicex::debug(" {}", anchorId);
 
-      PopStreamId streamId = d2hId(anchorId);
+      bool isAnchorStream  = true;
+      PopStreamId streamId = d2hId(anchorId, isAnchorStream);
       Tensor *tensor       = ir().getTensor(anchorId);
       int64_t batch_bytes  = tensor->info.nbytes();
       int64_t n_bytes;
@@ -1634,9 +1661,11 @@ void Devicex::loadEngineAndConnectStreams() {
       }
       }
 
+      logging::devicex::debug(" {} of size {} bytes", anchorId, n_bytes);
+
       // The host data need to be multiplied
-      d2hBuffers[anchorId] = std::vector<char>(n_bytes);
-      char *data0          = d2hBuffers[tensor->id].data();
+      d2hAnchorBuffers[anchorId] = std::vector<char>(n_bytes);
+      char *data0                = d2hAnchorBuffers[tensor->id].data();
       engineToStream(data0, n_bytes, streamId);
     }
 
@@ -1645,11 +1674,13 @@ void Devicex::loadEngineAndConnectStreams() {
 
     for (auto initId : ir().getTensorIds(TensorType::Variable)) {
       logging::devicex::debug(" {}", initId);
-      PopStreamId streamId = d2hId(initId);
-      Tensor *tensor       = ir().getTensor(initId);
-      int64_t n_bytes      = tensor->info.nbytes();
-      d2hBuffers[initId]   = std::vector<char>(n_bytes);
-      char *data0          = d2hBuffers[initId].data();
+
+      bool isAnchorStream      = false;
+      PopStreamId streamId     = d2hId(initId, isAnchorStream);
+      Tensor *tensor           = ir().getTensor(initId);
+      int64_t n_bytes          = tensor->info.nbytes();
+      d2hWeightBuffers[initId] = std::vector<char>(n_bytes);
+      char *data0              = d2hWeightBuffers[initId].data();
       engineToStreamVariables(data0, n_bytes, streamId);
     }
   }
@@ -1767,9 +1798,11 @@ void Devicex::prepare() {
       // 3
       tasks.add(fromHostTask(tensor, progs.streamWeightsFromHostFragment()));
       // 4
-      tasks.add(streamToHostTask(tensor));
+      bool isAnchorStream = false;
+      tasks.add(streamToHostTask(tensor, isAnchorStream));
       // 5
-      tasks.add(toHostTask(tensor, progs.weightsToHostFragment()));
+      tasks.add(
+          toHostTask(tensor, progs.weightsToHostFragment(), isAnchorStream));
     }
   }
 
@@ -1970,19 +2003,19 @@ void Devicex::prepare() {
     for (auto anchorId : ir().getDataFlow().anchors()) {
       Tensor *tensor = ir().getTensor(anchorId);
 
-      // 1
-      tasks.add(streamToHostTask(tensor));
+      bool isAnchorStream = true;
+      tasks.add(streamToHostTask(tensor, isAnchorStream));
+
       // 2
       switch (ir().getDataFlow().art(anchorId).id()) {
       // Copy program runs after every batch
       case (AnchorReturnTypeId::ALL): {
         tasks.add(toHostTask(
-            tensor, progs.forwardOrBackwardFragment(tensor->scheduledPreLoss)));
-        break;
-      }
-      // Copy program runs at the end of the step
-      case (AnchorReturnTypeId::FINAL): {
-        tasks.add(toHostTask(tensor, progs.toHostFinalCopyFragment()));
+            tensor,
+            tensor->tensorType() == TensorType::Variable
+                ? progs.backwardFragment()
+                : progs.forwardOrBackwardFragment(tensor->scheduledPreLoss),
+            isAnchorStream));
         break;
       }
       // Copy program runs at the end of every N batches
@@ -1990,7 +2023,15 @@ void Devicex::prepare() {
         tasks.add(toHostEveryNBatchesTask(
             tensor,
             ir().getDataFlow().art(anchorId).rp(),
-            progs.forwardOrBackwardFragment(tensor->scheduledPreLoss)));
+            tensor->tensorType() == TensorType::Variable
+                ? progs.backwardFragment()
+                : progs.forwardOrBackwardFragment(tensor->scheduledPreLoss)));
+        break;
+      }
+      // Copy program runs at the end of the step
+      case (AnchorReturnTypeId::FINAL): {
+        tasks.add(toHostTask(
+            tensor, progs.toHostFinalCopyFragment(), isAnchorStream));
         break;
       }
       }
@@ -2190,15 +2231,21 @@ TaskId Devicex::setInitTensorValTaskId(TensorId id) const {
   return "setInitTensorValTask_" + id;
 }
 
-TaskId Devicex::streamToHostTaskId(TensorId id) const {
-  return "streamToHostTask_" + id;
+TaskId Devicex::streamToHostTaskId(TensorId id, bool isAnchorStream) const {
+  std::string anchorPrefix = isAnchorStream ? "anchor" : "weight";
+  return anchorPrefix + "StreamToHostTask_" + id;
 }
 
 TaskId Devicex::fromHostTaskId(TensorId id) const {
   return "fromHostTask_" + id;
 }
 
-TaskId Devicex::toHostTaskId(TensorId id) const { return "toHostTask_" + id; }
+TaskId Devicex::toHostTaskId(TensorId id, bool isAnchorStream) const {
+  if (isAnchorStream) {
+    return "anchorToHostTask_" + id;
+  }
+  return "weightToHostTask_" + id;
+}
 
 TaskId Devicex::initBatchCounterTensorsTaskId() const {
   return "initBatchCounterTensorsTask";
@@ -2225,7 +2272,12 @@ TaskId Devicex::opTaskId(Op *op) const {
 
 PopStreamId Devicex::h2dId(TensorId id) const { return "h2d_" + id; }
 
-PopStreamId Devicex::d2hId(TensorId id) const { return "d2h_" + id; }
+PopStreamId Devicex::d2hId(TensorId id, bool isAnchorStream) const {
+
+  std::string anchorPrefix = isAnchorStream ? "anchor" : "weight";
+
+  return anchorPrefix + "_d2h_" + id;
+}
 
 PriTask Devicex::fromHostTask(Tensor *tensor,
                               poplar::program::Sequence &streamSq) const {
@@ -2249,26 +2301,48 @@ PriTask Devicex::fromHostTask(Tensor *tensor,
 }
 
 PriTask Devicex::toHostTask(Tensor *tensor,
-                            poplar::program::Sequence &sq) const {
+                            poplar::program::Sequence &sq,
+                            bool isAnchorStream) const {
 
-  auto f = [&sq, tensor, this]() {
-    logging::devicex::debug("Adding poplar::program::Copy to host " +
-                            tensor->id);
+  auto f = [&sq, tensor, this, isAnchorStream]() {
+    logging::devicex::debug(
+        "Adding poplar::program::Copy to host (isAnchorStream = {}) " +
+            tensor->id,
+        isAnchorStream);
+
+    auto pToHostStreams = &toHostAnchorStreams;
+    if (!isAnchorStream) {
+      pToHostStreams = &toHostWeightStreams;
+    }
 
     sq.add(poplar::program::Copy(tensors.get(tensor->id),
-                                 toHostStreams.at(tensor->id),
+                                 pToHostStreams->at(tensor->id),
                                  doRearrangeOnHost(tensor)));
   };
 
-  return {
-      +1e6, // writes to host: always as early as possible
-      toHostTaskId(tensor->id),
-      {
-          // the dependencies:
-          streamToHostTaskId(tensor->id), // poplar::Stream creation task,
-          taskWhichPopulates(tensor->id)  // poplar::Tensor has its final values
-      },
-      f};
+  auto finalPopulator = taskWhichPopulates(tensor->id);
+  if (isAnchorStream && tensor->tensorType() == TensorType::Variable) {
+    for (auto op : tensor->consumers.getOps()) {
+      if (dynamic_cast<VarUpdateOp *>(op)) {
+        finalPopulator = opTaskId(op);
+      }
+    }
+  }
+
+  auto taskId = toHostTaskId(tensor->id, isAnchorStream);
+
+  logging::devicex::debug(
+      "Final populator for {} is {} ", taskId, finalPopulator);
+
+  return {+1e6, // writes to host: always as early as possible
+          taskId,
+          {
+              // the dependencies:
+              streamToHostTaskId(
+                  tensor->id, isAnchorStream), // poplar::Stream creation task,
+              finalPopulator // poplar::Tensor has its final values
+          },
+          f};
 }
 
 PriTask Devicex::initBatchCounterTensorsTask() {
@@ -2352,7 +2426,7 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
 
     poplar::program::Sequence copyseq;
     copyseq.add(poplar::program::Copy(tensors.get(tensor->id),
-                                      toHostStreams.at(tensor->id),
+                                      toHostAnchorStreams.at(tensor->id),
                                       doRearrangeOnHost(tensor)));
 
     // Placeholder 'do nothing' branch if not running copy program
@@ -2361,14 +2435,16 @@ PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
     sq.add(poplar::program::If(isNthBatch, copyseq, emptyseq));
   };
 
+  bool isAnchorStream = true;
   return {
       +1e6, // writes to host: always as early as possible
-      toHostTaskId(tensor->id),
+      toHostTaskId(tensor->id, isAnchorStream),
       {
           // the dependencies:
-          updateBatchCountTaskId(),       // updating poplar::Tensor task,
-          streamToHostTaskId(tensor->id), // poplar::Stream creation task,
-          taskWhichPopulates(tensor->id)  // poplar::Tensor value setting task
+          updateBatchCountTaskId(), // updating poplar::Tensor task,
+          streamToHostTaskId(tensor->id,
+                             isAnchorStream), // poplar::Stream creation task,
+          taskWhichPopulates(tensor->id) // poplar::Tensor value setting task
       },
       f};
 }

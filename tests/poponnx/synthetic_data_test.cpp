@@ -25,7 +25,7 @@
 
 using namespace poponnx;
 
-BOOST_AUTO_TEST_CASE(SytheticData_False) {
+BOOST_AUTO_TEST_CASE(SyntheticData_False) {
 
   // Build an onnx model
   auto builder = Builder::create();
@@ -73,13 +73,14 @@ BOOST_AUTO_TEST_CASE(SytheticData_False) {
 
   BOOST_TEST(devicex->useSyntheticData() == false);
   BOOST_TEST(devicex->h2dBuffers.size() == 1);
-  BOOST_TEST(devicex->d2hBuffers.size() == 2);
+  BOOST_TEST(devicex->d2hAnchorBuffers.size() == 2);
+  BOOST_TEST(devicex->d2hWeightBuffers.size() == 0);
   // The one input tensor
   BOOST_TEST(devicex->fromHostStreams.size() == 1);
   // The two anchor tensors
-  BOOST_TEST(devicex->toHostStreams.size() == 2);
+  BOOST_TEST(devicex->toHostAnchorStreams.size() == 2);
 }
-BOOST_AUTO_TEST_CASE(SytheticData_True) {
+BOOST_AUTO_TEST_CASE(SyntheticData_True) {
 
   // Build an onnx model
   auto builder = Builder::create();
@@ -130,7 +131,9 @@ BOOST_AUTO_TEST_CASE(SytheticData_True) {
 
   BOOST_TEST(devicex->useSyntheticData() == true);
   BOOST_CHECK(devicex->h2dBuffers.size() == 0);
-  BOOST_TEST(devicex->d2hBuffers.size() == 0);
+  BOOST_TEST(devicex->d2hAnchorBuffers.size() == 0);
+  BOOST_TEST(devicex->d2hWeightBuffers.size() == 0);
   BOOST_TEST(devicex->fromHostStreams.size() == 0);
-  BOOST_TEST(devicex->toHostStreams.size() == 0);
+  BOOST_TEST(devicex->toHostAnchorStreams.size() == 0);
+  BOOST_TEST(devicex->toHostWeightStreams.size() == 0);
 }

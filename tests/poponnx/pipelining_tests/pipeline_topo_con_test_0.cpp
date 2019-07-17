@@ -13,6 +13,7 @@
 #include <poponnx/tensor.hpp>
 #include <poponnx/tensordata.hpp>
 
+// We check that the topological constraints on Stash and Restore are satisfied
 BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
 
   using namespace poponnx;
@@ -92,6 +93,10 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
               *device,
               userOptions,
               Patterns(PatternsLevel::DEFAULT)});
+
+  //
+  // Testing starts now
+  //
 
   auto opSchedule = ir.getOpSchedule({});
   for (auto op : opSchedule) {

@@ -213,9 +213,12 @@ public:
 
   // TODO T8229 : change these names to disambiguate
   // the source and destination
-  // (is this writing to or from the device?)
-  void readWeights(const IWeightsIO &weights);
-  void writeWeights(const IWeightsIO &weights);
+
+  // Write weights from (CPU end of) stream, to dst (host -> host)
+  void readWeights(const IWeightsIO &dst);
+
+  // Write weights from src to Ir Tensor memory (host -> host)
+  void writeWeights(const IWeightsIO &src);
 
   std::string getSummaryReport() const;
   std::string getGraphReport(bool use_cbor = false) const;
@@ -242,9 +245,9 @@ public:
   // poplar::Graph. This is NOT about creating a poplar::Program.
   TaskId taskWhichCreates(TensorId) const;
 
-  // Return the name of the task which adds code which sets the final
+  // Return the name of the task which adds code which sets the initial
   // values of poplar::Tensor to a fragment. This IS about creating a
-  // poplar::Program.
+  // poplar::Program. For Variable Tensors, this is the Copy from Stream program
   TaskId taskWhichPopulates(TensorId) const;
 
   // PlanningCache for matmul and conv
@@ -359,18 +362,20 @@ private:
   PriTask streamFromHostTask(Tensor *);
   TaskId streamFromHostTaskId(TensorId) const;
 
-  // Task to create a poplar::Stream to write from poplar::Tensor
-  PriTask streamToHostTask(Tensor *);
-  TaskId streamToHostTaskId(TensorId) const;
-
   // Task to append a Copy from poplar::Stream to poplar::Tensor
   PriTask fromHostTask(Tensor *tensor,
                        poplar::program::Sequence &streamSq) const;
   TaskId fromHostTaskId(TensorId) const;
 
+  // Task to create a poplar::Stream to write from poplar::Tensor to host
+  PriTask streamToHostTask(Tensor *, bool isAnchorStream);
+  TaskId streamToHostTaskId(TensorId, bool isAnchorStream) const;
+
   // Task to append a Copy to poplar::Stream from poplar::Tensor
-  PriTask toHostTask(Tensor *tensor, poplar::program::Sequence &) const;
-  TaskId toHostTaskId(TensorId) const;
+  PriTask toHostTask(Tensor *tensor,
+                     poplar::program::Sequence &,
+                     bool isAnchorStream) const;
+  TaskId toHostTaskId(TensorId, bool isAnchorStream) const;
 
   // Task to create poplar::Tensors from nothing, specifically for
   // use in keeping track of the batch count
@@ -398,7 +403,7 @@ private:
   // The ID of the poplar::Stream host->device for poplar::Tensor
   PopStreamId h2dId(TensorId) const;
   // and for device->host
-  PopStreamId d2hId(TensorId) const;
+  PopStreamId d2hId(TensorId, bool isAnchorStream) const;
 
   bool doRearrangeOnHost(Tensor *tensor) const;
 
@@ -431,11 +436,14 @@ private:
   //  poplar::Streams for poplar::Tensors,
   //  1) from host to device;
   std::map<TensorId, poplar::DataStream> fromHostStreams;
+
   // and 2) from device to host;
-  std::map<TensorId, poplar::DataStream> toHostStreams;
+  std::map<TensorId, poplar::DataStream> toHostAnchorStreams;
+  std::map<TensorId, poplar::DataStream> toHostWeightStreams;
 
   std::map<TensorId, std::vector<char>> h2dBuffers;
-  std::map<TensorId, std::vector<char>> d2hBuffers;
+  std::map<TensorId, std::vector<char>> d2hAnchorBuffers;
+  std::map<TensorId, std::vector<char>> d2hWeightBuffers;
 
   // Wrapper for calls to poplar Engine API calls: loading
   // engine onto the poplar device and connecting streams.
@@ -469,7 +477,9 @@ private:
                         const TensorInfo &srcInfo,
                         TensorId id);
 
-  void hostStreamToHost(const MutableVoidData &mv_data, TensorId id);
+  void hostStreamToHost(const MutableVoidData &mv_data,
+                        TensorId id,
+                        bool isAnchorStream);
 
   // Call hostToHostStream on all the Tensors in pir->dataStreamTensors()
   void anchorsHostToHostStreams(const IStepIO &stepio);

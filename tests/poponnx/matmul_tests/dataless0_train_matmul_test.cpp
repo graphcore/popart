@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
                                   raw_B_grad_out.begin(),
                                   raw_B_grad_out.end());
 
-    // we will read the updated weights back, and check that are correct
+    // we will read the updated weights back, and check that they are correct
     std::vector<float> v_A_updated_baseline = v_A_init;
     std::vector<float> v_B_updated_baseline = v_B_init;
     for (int k = 0; k < K; ++k) {
