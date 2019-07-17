@@ -43,7 +43,10 @@ using ReturnPeriod = int;
 // The position at which a Tensor is consumed by an Op
 using InIndex = int;
 // The position at which a Tensor is output by an Op
-using OutIndex = int;
+using OutIndex      = int;
+using PipelineCycle = int64_t;
+using VGraphId      = int64_t;
+using StashIndex    = int64_t;
 
 // forward declaring several poponnx classes
 class DataFlow;

@@ -2291,23 +2291,4 @@ uint32_t Ir::getAndIncrementDropoutSeedModifier() {
   return dropoutSeedModifier;
 }
 
-int Ir::getRepeatCount() const {
-  int bps = getDataFlow().batchesPerStep();
-  if (getSessionOptions().enablePipelining) {
-    // Need additional 'runs' to fill and flush the pipeline, based on:
-    // 1. Number of IPUs
-    // 2. Whether in inference/eval or training mode
-    int numIPUs = deviceInfo->getNumIpus();
-    if (canTrain()) {
-      // additional runs for: fwd flush, bwd flush
-      return bps + 2 * (numIPUs - 1);
-    } else {
-      // additional runs for: fwd flush
-      return bps + numIPUs - 1;
-    }
-  } else {
-    return bps;
-  }
-}
-
 } // namespace poponnx

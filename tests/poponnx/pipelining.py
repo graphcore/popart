@@ -238,20 +238,18 @@ def test_inference_min_batches():
     """
     minBatches = 3  # numIpus
 
-    get_model_anchors(
-        doSharding=True,
-        doPipelining=True,
-        batchesPerStep=minBatches,
-        doTraining=False,
-        doDevicex=False)
+    get_model_anchors(doSharding=True,
+                      doPipelining=True,
+                      batchesPerStep=minBatches,
+                      doTraining=False,
+                      doDevicex=False)
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        get_model_anchors(
-            doSharding=True,
-            doPipelining=True,
-            batchesPerStep=minBatches - 1,
-            doTraining=False,
-            doDevicex=False)
+        get_model_anchors(doSharding=True,
+                          doPipelining=True,
+                          batchesPerStep=minBatches - 1,
+                          doTraining=False,
+                          doDevicex=False)
     assert (e_info.value.args[0].startswith(
         "For pipelining, depth (batchesPerStep) must"))
 
@@ -263,20 +261,18 @@ def test_training_min_batches():
     """
     minBatches = 5  # 2 * (numIpus-1) + 1
 
-    get_model_anchors(
-        doSharding=True,
-        doPipelining=True,
-        batchesPerStep=minBatches,
-        doTraining=True,
-        doDevicex=False)
+    get_model_anchors(doSharding=True,
+                      doPipelining=True,
+                      batchesPerStep=minBatches,
+                      doTraining=True,
+                      doDevicex=False)
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        get_model_anchors(
-            doSharding=True,
-            doPipelining=True,
-            batchesPerStep=minBatches - 1,
-            doTraining=True,
-            doDevicex=False)
+        get_model_anchors(doSharding=True,
+                          doPipelining=True,
+                          batchesPerStep=minBatches - 1,
+                          doTraining=True,
+                          doDevicex=False)
     assert (e_info.value.args[0].startswith(
         "For pipelining, depth (batchesPerStep) must"))
 
@@ -289,21 +285,18 @@ def test_output_matches_train():
     as non-pipelined models
     """
     bps = 8
-    singleIpu_anchors = get_model_anchors(
-        doSharding=False,
-        doPipelining=False,
-        batchesPerStep=bps,
-        doTraining=True)
-    multiIpu_anchors = get_model_anchors(
-        doSharding=True,
-        doPipelining=False,
-        batchesPerStep=bps,
-        doTraining=True)
-    pipelined_anchors = get_model_anchors(
-        doSharding=True,
-        doPipelining=True,
-        batchesPerStep=bps,
-        doTraining=True)
+    singleIpu_anchors = get_model_anchors(doSharding=False,
+                                          doPipelining=False,
+                                          batchesPerStep=bps,
+                                          doTraining=True)
+    multiIpu_anchors = get_model_anchors(doSharding=True,
+                                         doPipelining=False,
+                                         batchesPerStep=bps,
+                                         doTraining=True)
+    pipelined_anchors = get_model_anchors(doSharding=True,
+                                          doPipelining=True,
+                                          batchesPerStep=bps,
+                                          doTraining=True)
     # TODO, depends on T9630, add a case with grad accumulation. All tensor
     # outputs should be exactly the same when doing pipelined vs non-pipelined
     # when grad accumulation is turned on
@@ -314,11 +307,12 @@ def test_output_matches_train():
 
     # Expect only the anchors from the first batch to be equal. After that, the
     # continuous gradient accumulation option causes model parameters to diverge
-    # for (tId1,t1), (tId2,t2) in zip(singleIpu_anchors.items(), pipelined_anchors.items()):
-    #     for i in range(np.shape(t1)[0]):
-    #         print("singleIpu   , batch: ", i, tId1, np.sum(t1[i]))
-    #         print("pipelinedIpu, batch: ", i, tId2, np.sum(t2[i]))
-    #     assert(np.allclose(t1[0], t2[0]))
+    for (tId1, t1), (tId2, t2) in zip(singleIpu_anchors.items(),
+                                      pipelined_anchors.items()):
+        for i in range(np.shape(t1)[0]):
+            print("singleIpu   , batch: ", i, tId1, np.sum(t1[i]))
+            print("pipelinedIpu, batch: ", i, tId2, np.sum(t2[i]))
+        # assert(np.allclose(t1[0], t2[0]))
 
 
 def test_output_matches_infer():
@@ -328,27 +322,30 @@ def test_output_matches_infer():
     inference
     """
     bps = 8
-    singleIpu_anchors = get_model_anchors(
-        doSharding=False,
-        doPipelining=False,
-        batchesPerStep=bps,
-        doTraining=False)
-    multiIpu_anchors = get_model_anchors(
-        doSharding=True,
-        doPipelining=False,
-        batchesPerStep=bps,
-        doTraining=False)
-    pipelined_anchors = get_model_anchors(
-        doSharding=True,
-        doPipelining=True,
-        batchesPerStep=bps,
-        doTraining=False)
+    singleIpu_anchors = get_model_anchors(doSharding=False,
+                                          doPipelining=False,
+                                          batchesPerStep=bps,
+                                          doTraining=False)
+    multiIpu_anchors = get_model_anchors(doSharding=True,
+                                         doPipelining=False,
+                                         batchesPerStep=bps,
+                                         doTraining=False)
+    pipelined_anchors = get_model_anchors(doSharding=True,
+                                          doPipelining=True,
+                                          batchesPerStep=bps,
+                                          doTraining=False)
 
     for (tId1, t1), (tId2, t2) in zip(singleIpu_anchors.items(),
                                       multiIpu_anchors.items()):
+        for i in range(np.shape(t1)[0]):
+            print("singleIpu, batch: ", i, tId1, np.sum(t1[i]))
+            print("multiIpu , batch: ", i, tId2, np.sum(t2[i]))
         assert (np.allclose(t1, t2))
     for (tId1, t1), (tId2, t2) in zip(singleIpu_anchors.items(),
                                       pipelined_anchors.items()):
+        for i in range(np.shape(t1)[0]):
+            print("singleIpu   , batch: ", i, tId1, np.sum(t1[i]))
+            print("pipelinedIpu, batch: ", i, tId2, np.sum(t2[i]))
         assert (np.allclose(t1, t2))
 
 
@@ -364,6 +361,8 @@ def get_model_anchors(doSharding,
                       doTraining,
                       doProfiling=False,
                       doDevicex=True):
+    np.random.seed(seed=1)
+
     builder = poponnx.Builder()
     batchSize = 2
     shape_d0 = [batchSize, 2, 4, 4]
@@ -371,8 +370,7 @@ def get_model_anchors(doSharding,
     d0 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", shape_d0))
     data_w0 = np.ones(shape=[2, 2, 3, 3]).astype(np.float32)
     w0 = builder.addInitializedInputTensor(data_w0)
-    if doTraining is True:
-        l0 = builder.addInputTensor(poponnx.TensorInfo("INT32", shape_l0))
+    l0 = builder.addInputTensor(poponnx.TensorInfo("INT32", shape_l0))
 
     s0 = builder.aiOnnx.sin([d0], "s0")
     e0 = builder.aiOnnx.exp([s0], "e0")
@@ -386,12 +384,13 @@ def get_model_anchors(doSharding,
     builder.addOutputTensor(out)
 
     art = poponnx.AnchorReturnType("ALL")
+    loss = poponnx.NllLoss(out, l0, "loss")
+
     if doTraining is True:
-        loss = poponnx.NllLoss(out, l0, "loss")
         d0_grad = poponnx.reservedGradientPrefix() + d0
         anchor_map = {d0_grad: art, out: art, "loss": art}
     else:
-        anchor_map = {out: art}
+        anchor_map = {out: art, "loss": art}
 
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -407,8 +406,7 @@ def get_model_anchors(doSharding,
         builder.virtualGraph(c0, 1)
         builder.virtualGraph(r0, 2)
         builder.virtualGraph(out, 2)
-        if doTraining is True:
-            loss.virtualGraph(2)
+        loss.virtualGraph(2)
 
     if doTraining is True:
         session = poponnx.TrainingSession(
@@ -423,6 +421,7 @@ def get_model_anchors(doSharding,
         session = poponnx.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFeed=poponnx.DataFlow(batchesPerStep, anchor_map),
+            losses=[loss],
             userOptions=opts,
             deviceInfo=poponnx.DeviceManager().createIpuModelDevice(
                 deviceOpts))
@@ -436,13 +435,13 @@ def get_model_anchors(doSharding,
     if batchesPerStep > 1:
         shape_d0.insert(0, batchesPerStep)
         shape_l0.insert(0, batchesPerStep)
-    data = 2 * np.ones(shape_d0, dtype=np.float32)
-    label = np.ones(shape_l0, dtype=np.int32)
+    data = np.random.uniform(low=-10.0, high=10.0,
+                             size=shape_d0).astype(np.float32)
+    classes = np.prod(shape_d0) / (batchSize * batchesPerStep)
+    label = np.random.randint(low=0, high=classes,
+                              size=shape_l0).astype(np.int32)
 
-    if doTraining is True:
-        inputs = {d0: data, l0: label}
-    else:
-        inputs = {d0: data}
+    inputs = {d0: data, l0: label}
     stepio = poponnx.PyStepIO(inputs, anchors)
 
     session.weightsFromHost()

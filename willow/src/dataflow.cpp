@@ -47,6 +47,11 @@ DataFlow::DataFlow() : batchesPerStep_(0) {}
 
 DataFlow::DataFlow(int BpR, const std::map<TensorId, AnchorReturnType> &m)
     : batchesPerStep_(BpR), m_anchors(m) {
+
+  if (batchesPerStep_ <= 0) {
+    throw error("'Batches per step' must be greater than zero");
+  }
+
   for (auto &id_rt : m_anchors) {
     v_anchors.push_back(id_rt.first);
     s_anchors.insert(id_rt.first);

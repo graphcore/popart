@@ -298,152 +298,70 @@ const std::map<TensorId, poplar::Tensor> &PopTensors::getTensors() const {
   return tensors_;
 }
 
-PopPrograms::PopPrograms(const int repeatCount_, const int accumulationFactor_)
-    : repeatCount(repeatCount_), accumulationFactor(accumulationFactor_) {
-  if (repeatCount_ <= 0) {
-    throw error("Program repeat count must be greater than zero");
-  }
-}
+PipelineInfo::PipelineInfo(int _batchesPerStep, int _numIPUs, bool _doTraining)
+    : doTraining(_doTraining) {
 
-poplar::program::Sequence &PopPrograms::streamWeightsFromHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::STREAMWEIGHTSFROMHOST)];
-}
+  auto bps                  = static_cast<int64_t>(_batchesPerStep);
+  auto numIPUs              = static_cast<int64_t>(_numIPUs);
+  auto fillFlushPhaseCycles = numIPUs - 1;
+  fillPhase.start           = 0;
+  fwdFillPhase.start        = 0;
+  fwdFillPhase.end          = fillFlushPhaseCycles - 1;
 
-poplar::program::Sequence &PopPrograms::streamOptimizerFromHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::STREAMOPTIMIZERFROMHOST)];
-}
+  int64_t mainCycles;
+  if (_doTraining) {
+    bwdFillPhase.start = fillFlushPhaseCycles;
+    bwdFillPhase.end   = 2 * fillFlushPhaseCycles - 1;
 
-poplar::program::Sequence &PopPrograms::initFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::INIT)];
-}
+    mainCycles      = bps - 2 * fillFlushPhaseCycles;
+    mainPhase.start = bwdFillPhase.end + 1;
+    mainPhase.end   = mainPhase.start + mainCycles - 1;
 
-poplar::program::Sequence &PopPrograms::preForwardFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::PREFORWARD)];
-}
+    fwdFlushPhase.start = bwdFillPhase.end + mainCycles + 1;
+    fwdFlushPhase.end   = fwdFlushPhase.start + fillFlushPhaseCycles - 1;
 
-poplar::program::Sequence &PopPrograms::forwardFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::FORWARD)];
-}
+    bwdFlushPhase.start = fwdFlushPhase.end + 1;
+    bwdFlushPhase.end   = bwdFlushPhase.start + fillFlushPhaseCycles - 1;
 
-poplar::program::Sequence &PopPrograms::backwardFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::BACKWARD)];
-}
-
-poplar::program::Sequence &PopPrograms::setRandomSeedFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEED)];
-}
-
-poplar::program::Sequence &PopPrograms::setRandomDropoutSeedFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMDROPOUTSEED)];
-}
-
-poplar::program::Sequence &PopPrograms::toHostFinalCopyFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::TOHOSTFINALCOPY)];
-}
-
-poplar::program::Sequence &PopPrograms::varUpdateFromAccumulatorFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::VARUPDATEFROMACCUMULATOR)];
-}
-
-poplar::program::Sequence &
-PopPrograms::resetWeightGradientAccumulatorFragment() {
-  return seqs[static_cast<int>(
-      ProgramFragmentIndex::RESETWEIGHTGRADIENTACCUMULATOR)];
-}
-
-poplar::program::Sequence &PopPrograms::weightsToHostFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::WEIGHTSTOHOST)];
-}
-
-poplar::program::Sequence PopPrograms::weightsFromHost() {
-  poplar::program::Sequence prog;
-  prog.add(streamWeightsFromHostFragment());
-  return prog;
-}
-
-poplar::program::Sequence PopPrograms::optimizerFromHost() {
-  poplar::program::Sequence prog;
-  prog.add(streamOptimizerFromHostFragment());
-  return prog;
-}
-
-poplar::program::Sequence PopPrograms::program() {
-
-  // Graph
-  poplar::program::Sequence prog;
-  prog.add(preForwardFragment());
-  prog.add(forwardFragment());
-  prog.add(backwardFragment());
-
-  poplar::program::Sequence outer;
-
-  // Only add the init fragment if settings have been added
-  if (!initFragment().isEmpty()) {
-    outer.add(initFragment());
-  }
-  outer.add(setRandomSeedFragment());
-  outer.add(setRandomDropoutSeedFragment());
-
-  if (accumulationFactor > 1) {
-    logging::devicex::trace(
-        "Adding gradient accumulation repeat loop with {} loops",
-        accumulationFactor);
-    prog = poplar::program::Repeat(accumulationFactor, prog);
-    prog.add(varUpdateFromAccumulatorFragment());
-    prog.add(resetWeightGradientAccumulatorFragment());
-  }
-
-  // BatchesPerStep loop
-  outer.add(poplar::program::Repeat(repeatCount, prog));
-  outer.add(toHostFinalCopyFragment());
-
-  return outer;
-}
-
-poplar::program::Sequence PopPrograms::weightsToHost() {
-  return weightsToHostFragment();
-}
-
-std::vector<poplar::program::Program> PopPrograms::progs() {
-  std::vector<poplar::program::Program> ps(ProgramIndex::N);
-
-  ps[ProgramIndex::WEIGHTSFROMHOST]   = weightsFromHost();
-  ps[ProgramIndex::OPTIMIZERFROMHOST] = optimizerFromHost();
-  ps[ProgramIndex::PROGRAM]           = program();
-  ps[ProgramIndex::WEIGHTSTOHOST]     = weightsToHost();
-
-  return ps;
-}
-
-poplar::program::Sequence &
-PopPrograms::programFragment(PopPrograms::ProgramFragmentIndex index) {
-  return seqs[static_cast<int>(index)];
-}
-
-poplar::program::Sequence &PopPrograms::scopeFragment(const Graph &graph) {
-  if (graph.id.str().empty()) {
-    throw error("There is no scope fragment for the main scope");
+    fillPhase.end    = bwdFillPhase.end;
+    flushPhase.start = fwdFlushPhase.start;
+    flushPhase.end   = bwdFlushPhase.end;
   } else {
-    return scopeSeqs.at(graph.id.str());
+    mainCycles      = bps - fillFlushPhaseCycles;
+    mainPhase.start = fwdFillPhase.end + 1;
+    mainPhase.end   = mainPhase.start + mainCycles - 1;
+
+    fwdFlushPhase.start = mainPhase.end + 1;
+    fwdFlushPhase.end   = fwdFlushPhase.start + fillFlushPhaseCycles - 1;
+
+    fillPhase.end    = fwdFillPhase.end;
+    flushPhase.start = fwdFlushPhase.start;
+    flushPhase.end   = fwdFlushPhase.end;
   }
 }
 
-bool PopPrograms::containsFragment(const Graph &graph) const {
-  if (graph.id.str().empty()) {
-    return true;
-  } else {
-    return scopeSeqs.find(graph.id.str()) != scopeSeqs.end();
-  }
+bool PipelineInfo::doFwd(PipelineCycle pCycle, VGraphId vGraphId) const {
+  bool doFwdPipelineLower = (pCycle >= vGraphId);
+  bool doFwdPipelineUpper = (pCycle < vGraphId + fwdFlushPhase.start);
+
+  return (doFwdPipelineLower && doFwdPipelineUpper);
 }
 
-void PopPrograms::createFragment(const Graph &graph) {
-  scopeSeqs.insert({graph.id.str(), {}});
+bool PipelineInfo::doBwd(PipelineCycle pCycle, VGraphId vGraphId) const {
+  if (!doTraining) {
+    return false;
+  }
+
+  bool doBwdPipelineLower = (pCycle > bwdFillPhase.start + 1 - vGraphId);
+  bool doBwdPipelineUpper = (pCycle <= bwdFlushPhase.end - vGraphId);
+
+  return (doBwdPipelineLower && doBwdPipelineUpper);
 }
 
 poplar::Graph &Devicex::graph() { return *pGraph; }
 const poplar::Graph &Devicex::graph() const { return *pGraph; }
 
-poplar::Graph &Devicex::getVirtualGraph(int64_t virtualGraphIndex) {
+poplar::Graph &Devicex::getVirtualGraph(VGraphId virtualGraphIndex) {
   if (virtualGraphIndex < 0 || virtualGraphIndex >= virtualGraphs.size()) {
     throw error("Invalid virtual graph index {} ({} available)",
                 virtualGraphIndex,
@@ -454,9 +372,8 @@ poplar::Graph &Devicex::getVirtualGraph(int64_t virtualGraphIndex) {
 Devicex::~Devicex() = default;
 
 Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
-    : _ir(ir), progs(PopPrograms(ir.getRepeatCount(),
-                                 static_cast<int>(getAccumulationFactor()))),
-      tensors(ir), deviceInfo(deviceInfo_), prepareHasBeenCalled(false) {
+    : _ir(ir), progs(PopPrograms(this)), tensors(ir), deviceInfo(deviceInfo_),
+      prepareHasBeenCalled(false) {
 
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
@@ -493,6 +410,12 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
 
   bwdMmLhsOptions.options.insert({"fullyConnectedPass", "TRAINING_BWD"});
   bwdMmRhsOptions.options.insert({"fullyConnectedPass", "TRAINING_WU"});
+
+  if (ir.getSessionOptions().enablePipelining) {
+    pInfo = PipelineInfo(ir.getDataFlow().batchesPerStep(),
+                         deviceInfo_->getNumIpus(),
+                         ir.canTrain());
+  }
 
   engineOptions.set("target.workerStackSizeInBytes", "0x200");
   for (auto it : ir.getSessionOptions().engineOptions) {
@@ -940,10 +863,10 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
       // Find the ipu the op that consumes with tensor is on and create the
       // tensor on that graph
-      std::vector<int64_t> ipus;
+      std::vector<VGraphId> ipus;
       for (auto *op : tensor->consumers.getOps()) {
 
-        int64_t index = -1;
+        VGraphId index = -1;
         if (op->hasVirtualGraphId())
           index = op->getVirtualGraphId();
 
@@ -1134,14 +1057,14 @@ PriTask Devicex::setInitTensorValTask(Tensor *tensor) {
 
 PriTask Devicex::streamFromHostTask(Tensor *tensor) {
   auto f = [this, tensor]() {
-    std::vector<int64_t> ipus;
+    std::vector<VGraphId> ipus;
     for (auto *op : tensor->consumers.getOps()) {
 
       // Assume another op will copy the tensor for an ipucopy
       if (op->opid != Onnx::CustomOperators::IpuCopy) {
         auto &graph = getOpx(op->id)->graph();
 
-        int64_t index = -1;
+        VGraphId index = -1;
         if (op->hasVirtualGraphId())
           index = op->getVirtualGraphId();
 
@@ -1387,10 +1310,22 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
       if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
         if (op->settings.recomputeType == RecomputeType::CHECKPOINT) {
           logging::devicex::debug("Adding checkpoint Op {}", op->debugName());
-          opx->grow(progs.forwardFragment());
+          if (ir().getSessionOptions().enablePipelining) {
+            if (op->isIpuCopyOp()) {
+              opx->grow(progs.pipelineIpuCopyFragment());
+            } else {
+              opx->grow(progs.pipelineForwardFragment(op->getVirtualGraphId()));
+            }
+          } else {
+            opx->grow(progs.forwardFragment());
+          }
         } else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
           logging::devicex::debug("Adding (first) recompute Op {}",
                                   op->debugName());
+          if (ir().getSessionOptions().enablePipelining) {
+            throw error(
+                "Recompute ops not currently supported in pipelined graph");
+          }
           opx->grow(progs.recomputeFragment(op->id));
           progs.forwardFragment().add(progs.recomputeFragment(op->id));
         } else {
@@ -1405,80 +1340,89 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
           throw error("ILE: Non-checkpoint post turning point");
         }
 
-        // decide what needs to be re-run
-        std::set<Op *> toRerun;
+        if (ir().getSessionOptions().enablePipelining) {
+          if (op->isIpuCopyOp()) {
+            opx->grow(progs.pipelineIpuCopyFragment());
+          } else {
+            opx->grow(progs.pipelineBackwardFragment(op->getVirtualGraphId()));
+          }
+        } else {
+          // decide what needs to be re-run
+          std::set<Op *> toRerun;
 
-        auto getRequiredProducers = [&toRerun, this](Op *toBackcheck) {
-          std::vector<Op *> newOps;
-          for (auto t : toBackcheck->input->tensors()) {
-            if (t->hasProducer()) {
-              Op *inProducer = t->getProducer();
-              // recompute op, which hasn't been recomputed, and hasn't been
-              // registered as required yet
-              if (inProducer->settings.recomputeType ==
-                      RecomputeType::RECOMPUTE &&
-                  !progs.hasBeenRecomputed(inProducer->id) &&
-                  toRerun.count(inProducer) == 0) {
-                newOps.push_back(inProducer);
+          auto getRequiredProducers = [&toRerun, this](Op *toBackcheck) {
+            std::vector<Op *> newOps;
+            for (auto t : toBackcheck->input->tensors()) {
+              if (t->hasProducer()) {
+                Op *inProducer = t->getProducer();
+                // recompute op, which hasn't been recomputed, and hasn't been
+                // registered as required yet
+                if (inProducer->settings.recomputeType ==
+                        RecomputeType::RECOMPUTE &&
+                    !progs.hasBeenRecomputed(inProducer->id) &&
+                    toRerun.count(inProducer) == 0) {
+                  newOps.push_back(inProducer);
+                }
+              }
+            }
+            return newOps;
+          };
+
+          std::vector<Op *> rerunFront = getRequiredProducers(op);
+
+          while (!rerunFront.empty()) {
+            Op *newRecomputeOp = rerunFront.back();
+            rerunFront.resize(rerunFront.size() - 1);
+            if (toRerun.count(newRecomputeOp) == 0) {
+              toRerun.insert(newRecomputeOp);
+              for (auto x : getRequiredProducers(newRecomputeOp)) {
+                rerunFront.push_back(x);
               }
             }
           }
-          return newOps;
-        };
 
-        std::vector<Op *> rerunFront = getRequiredProducers(op);
+          std::vector<Op *> toRerunVector;
+          for (auto x : toRerun) {
+            toRerunVector.push_back(x);
+            progs.recordRecomputed(x->id);
+          }
+          std::sort(toRerunVector.begin(),
+                    toRerunVector.end(),
+                    [](const Op *a, const Op *b) { return a->id < b->id; });
+          for (auto opToRerun : toRerunVector) {
+            logging::devicex::debug("Adding (second) recompute Op {}",
+                                    opToRerun->debugName());
+            progs.backwardFragment().add(
+                progs.recomputeFragment(opToRerun->id));
+            mainGraphOpRegistery.push_back(opToRerun);
+          }
 
-        while (!rerunFront.empty()) {
-          Op *newRecomputeOp = rerunFront.back();
-          rerunFront.resize(rerunFront.size() - 1);
-          if (toRerun.count(newRecomputeOp) == 0) {
-            toRerun.insert(newRecomputeOp);
-            for (auto x : getRequiredProducers(newRecomputeOp)) {
-              rerunFront.push_back(x);
+          logging::devicex::debug("Adding post-turning check-point Op {}",
+                                  op->debugName());
+
+          // If we are doing gradient accumulation, we need to ensure the reset
+          // and var update aren't run every time. Instead, these fragments sit
+          // outside the "main" loop of the fowards and backwards passes.
+          if (containingGraph.getIr()
+                  .getSessionOptions()
+                  .enableGradientAccumulation) {
+            if (dynamic_cast<VarUpdateOp *>(op) != nullptr) {
+              // This is a var update op, so we only run in the var update
+              // fragment.
+              opx->grow(progs.varUpdateFromAccumulatorFragment());
+            } else if (dynamic_cast<ResetAcclOp *>(op) != nullptr) {
+              // This is a reset op, so we only run in the reset fragment.
+              opx->grow(progs.resetWeightGradientAccumulatorFragment());
+            } else {
+              // This is a normal op in a gradient accumulation graph.
+              opx->grow(progs.backwardFragment());
             }
-          }
-        }
-
-        std::vector<Op *> toRerunVector;
-        for (auto x : toRerun) {
-          toRerunVector.push_back(x);
-          progs.recordRecomputed(x->id);
-        }
-        std::sort(toRerunVector.begin(),
-                  toRerunVector.end(),
-                  [](const Op *a, const Op *b) { return a->id < b->id; });
-        for (auto opToRerun : toRerunVector) {
-          logging::devicex::debug("Adding (second) recompute Op {}",
-                                  opToRerun->debugName());
-          progs.backwardFragment().add(progs.recomputeFragment(opToRerun->id));
-          mainGraphOpRegistery.push_back(opToRerun);
-        }
-
-        logging::devicex::debug("Adding post-turning check-point Op {}",
-                                op->debugName());
-
-        // If we are doing gradient accumulation, we need to ensure the reset
-        // and var update aren't run every time. Instead, these fragments sit
-        // outside the "main" loop of the fowards and backwards passes.
-        if (containingGraph.getIr()
-                .getSessionOptions()
-                .enableGradientAccumulation) {
-          if (dynamic_cast<VarUpdateOp *>(op) != nullptr) {
-            // This is a var update op, so we only run in the var update
-            // fragment.
-            opx->grow(progs.varUpdateFromAccumulatorFragment());
-          } else if (dynamic_cast<ResetAcclOp *>(op) != nullptr) {
-            // This is a reset op, so we only run in the reset fragment.
-            opx->grow(progs.resetWeightGradientAccumulatorFragment());
+            mainGraphOpRegistery.push_back(op);
           } else {
-            // This is a normal op in a gradient accumulation graph.
+            // Put this op into the "regular" backwards pass.
             opx->grow(progs.backwardFragment());
+            mainGraphOpRegistery.push_back(op);
           }
-          mainGraphOpRegistery.push_back(op);
-        } else {
-          // Put this op into the "regular" backwards pass.
-          opx->grow(progs.backwardFragment());
-          mainGraphOpRegistery.push_back(op);
         }
       }
 
@@ -1762,7 +1706,7 @@ void Devicex::prepare() {
     // Make sure that the virtual graph information is valid
     for (Op *op : ir().getOpSchedule({})) {
       if (op->hasVirtualGraphId()) {
-        int64_t index = op->getVirtualGraphId();
+        VGraphId index = op->getVirtualGraphId();
         if (index < 0 || index >= numIPUs) {
           throw error("{} has been assigned to an invalid virtual graph {}. "
                       "numIPUs = {}.",
@@ -1848,152 +1792,7 @@ void Devicex::prepare() {
   // Create the tensors and program fragments needed to track
   // the state of the pipeline
   if (ir().getSessionOptions().enablePipelining) {
-    // A model, where X' is the grad op of X:
-    //
-    // A  A' IPU0
-    // |  |
-    // B  B' IPU1
-    // |  |
-    // C--C' IPU2
-    //
-    // The schedule on each IPU looks as follows:
-    // 1. F<i> - execute fwd ops on batch i on the IPU, and stash activations
-    // 2. C<i>F - copy activations for batch i to the next IPU
-    // 3. C<i>B - copy grads for batch i to the previous IPU
-    // 4. B<i> - restore activations and run bwd ops on batch i on the IPU
-    //
-    // A pipeline with the minimum number of steps for 3 IPUs looks as follows:
-    //
-    // Training mode:
-    //
-    // clang-format off
-    //
-    //       <- fwd fill -> <-------- bwd fill --------> <--- main ---> <------ fwd flush ------> < bwd flush ->
-    // IPU0: F0.C0F, F1.C1F, F2.   C2F   , F3.C3F       , F4.B0.C0F    ,    B1        ,    B2    , B3    , B4
-    // IPU1:         F0.C0F, F1.   C1F   , F2.B0.C2F.C0B, F3.B1.C3F.C1B, F4.B2.C4F.C2B,    B3.C3B, B4.C4B,
-    // IPU2:                 F0.B0.   C0B, F1.B1.    C1B, F2.B2.    C2B, F3.B3.   .C3B, F4.B4.C4B,       ,
-    //
-    // clang-format on
-    //
-    // Inference mode:
-    //
-    //       <- fwd fill -> < main> <fwd flush>
-    // IPU0: F0.C0F, F1.C1F, F2.C2F,
-    // IPU1:         F0.C0F, F1.C1F, F2.C2F,
-    // IPU2:                 F0.   , F1.     F2
-    //
-    // To save on control conditional branching, we can apply the following
-    // simplifications:
-    // 1. Always do ipu-copy ops - this never affects the weights or outputs
-    //    we care about
-    // 2. Always do fwd ops - we wont get junk weight updates because we still
-    //    only conditionally run the bwd ops
-    //
-    // Extra complications vs. Enigma:
-    // 1. Anchors. Need to conditionally copy to device buffer based on step
-    //    and unit number
-
-    // TODO move to inside a task
-
-    if (ir().canTrain()) {
-      // 1. Populate map of stash and restore index tensors.
-      //    Note: these tensors are present only at the popx level,
-      //    not in the IR
-      for (int i = 0; i < deviceInfo->getNumIpus(); i++) {
-        int64_t vGraphId = static_cast<int64_t>(i);
-        poplar::Tensor stashIdTensor;
-
-        // stash
-        stashIdTensor =
-            getVirtualGraph(vGraphId).addVariable(poplar::UNSIGNED_INT, {1});
-        getVirtualGraph(vGraphId).setTileMapping(stashIdTensor, 0);
-        getVirtualGraph(vGraphId).setInitialValue(
-            stashIdTensor, poplar::ArrayRef<uint32_t>({0}));
-
-        pInfo.stashIndex.emplace(vGraphId, stashIdTensor);
-      }
-
-      // 2. Create the program to increment the stash and restore tensors.
-      //    To be run directly after the IPU's program frament that calls the
-      //    stash and restore opxs respectively
-      for (int i = 0; i < deviceInfo->getNumIpus(); i++) {
-        poplar::program::Sequence incrStashIndex, incrRestoreIndex;
-
-        int64_t vGraphId = static_cast<int64_t>(i);
-        auto one         = getConst(
-            getVirtualGraph(vGraphId), poplar::UNSIGNED_INT, {}, 1, "one");
-        auto stashSize       = static_cast<uint32_t>(getStashSize(vGraphId));
-        auto stashSizeTensor = getConst(getVirtualGraph(vGraphId),
-                                        poplar::UNSIGNED_INT,
-                                        {},
-                                        stashSize,
-                                        "stashSize");
-
-        // stash
-        popops::addInPlace(getVirtualGraph(vGraphId),
-                           pInfo.stashIndex.at(vGraphId),
-                           one,
-                           incrStashIndex);
-
-        popops::remInPlace(getVirtualGraph(vGraphId),
-                           pInfo.stashIndex.at(vGraphId),
-                           stashSizeTensor,
-                           incrStashIndex);
-
-        pInfo.incrStashIndex.emplace(vGraphId, incrStashIndex);
-      }
-    }
-
-    // 3. Populate the pipeline batch counting tensor (per-ipu, to reduce
-    //    ipu-ipu copies).
-    //    Update program to be run at the end of the pipeline batch
-    uint32_t numIPUs = static_cast<uint32_t>(deviceInfo->getNumIpus());
-
-    for (uint32_t i = 0; i < numIPUs; i++) {
-      int64_t vGraphId = static_cast<int64_t>(i);
-
-      // init tensor
-      poplar::Tensor pipelineCycle;
-
-      pipelineCycle =
-          getVirtualGraph(vGraphId).addVariable(poplar::UNSIGNED_INT, {1});
-      getVirtualGraph(vGraphId).setTileMapping(pipelineCycle, 0);
-      getVirtualGraph(vGraphId).setInitialValue(
-          pipelineCycle, poplar::ArrayRef<uint32_t>({0}));
-
-      pInfo.pipelineCycle.emplace(vGraphId, pipelineCycle);
-
-      // update tensor
-      poplar::program::Sequence incrPipelineCycle;
-
-      uint32_t bps = static_cast<uint32_t>(ir().getDataFlow().batchesPerStep());
-      uint32_t totalPipelineCycles;
-
-      if (ir().canTrain()) {
-        totalPipelineCycles = bps + 2 * (numIPUs - 1);
-      } else {
-        totalPipelineCycles = bps + numIPUs - 1;
-      }
-      auto totalPipelineCyclesTensor = getConst(getVirtualGraph(vGraphId),
-                                                poplar::UNSIGNED_INT,
-                                                {},
-                                                totalPipelineCycles,
-                                                "totPipelineCycles");
-      auto one                       = getConst(
-          getVirtualGraph(vGraphId), poplar::UNSIGNED_INT, {}, 1, "one");
-
-      popops::addInPlace(getVirtualGraph(vGraphId),
-                         pInfo.pipelineCycle.at(vGraphId),
-                         one,
-                         incrPipelineCycle);
-
-      popops::remInPlace(getVirtualGraph(vGraphId),
-                         pInfo.pipelineCycle.at(vGraphId),
-                         totalPipelineCyclesTensor,
-                         incrPipelineCycle);
-
-      pInfo.incrPipelineCycle.emplace(vGraphId, incrPipelineCycle);
-    }
+    tasks.add(initAndUpdatePipelineStashIndicesTask());
   }
 
   // stream-to-host tensors : 1) make streams 2) make copy programs
@@ -2010,22 +1809,33 @@ void Devicex::prepare() {
       switch (ir().getDataFlow().art(anchorId).id()) {
       // Copy program runs after every batch
       case (AnchorReturnTypeId::ALL): {
-        tasks.add(toHostTask(
-            tensor,
-            tensor->tensorType() == TensorType::Variable
-                ? progs.backwardFragment()
-                : progs.forwardOrBackwardFragment(tensor->scheduledPreLoss),
-            isAnchorStream));
+        if (ir().getSessionOptions().enablePipelining) {
+          auto &sq = progs.pipelineFwdOrBwdToHostStreamFragment(
+              tensor->scheduledPreLoss, tensor->getVirtualGraphId());
+          tasks.add(toHostTask(tensor, sq, isAnchorStream));
+        } else {
+          tasks.add(toHostTask(
+              tensor,
+              tensor->tensorType() == TensorType::Variable
+                  ? progs.backwardFragment()
+                  : progs.forwardOrBackwardFragment(tensor->scheduledPreLoss),
+              isAnchorStream));
+        }
         break;
       }
       // Copy program runs at the end of every N batches
       case (AnchorReturnTypeId::EVERYN): {
-        tasks.add(toHostEveryNBatchesTask(
-            tensor,
-            ir().getDataFlow().art(anchorId).rp(),
-            tensor->tensorType() == TensorType::Variable
-                ? progs.backwardFragment()
-                : progs.forwardOrBackwardFragment(tensor->scheduledPreLoss)));
+        if (ir().getSessionOptions().enablePipelining) {
+          throw error(
+              "AnchorReturnType::EVERYN is not valid for pipelined models");
+        } else {
+          tasks.add(toHostEveryNBatchesTask(
+              tensor,
+              ir().getDataFlow().art(anchorId).rp(),
+              tensor->tensorType() == TensorType::Variable
+                  ? progs.backwardFragment()
+                  : progs.forwardOrBackwardFragment(tensor->scheduledPreLoss)));
+        }
         break;
       }
       // Copy program runs at the end of the step
@@ -2043,8 +1853,14 @@ void Devicex::prepare() {
     }
 
     for (Tensor *tensor : ir().dataStreamTensors()) {
-      tasks.add(fromHostTask(
-          tensor, progs.forwardOrBackwardFragment(tensor->scheduledPreLoss)));
+      if (ir().getSessionOptions().enablePipelining) {
+        auto &sq =
+            progs.pipelineToDeviceStreamFragment(tensor->getVirtualGraphId());
+        tasks.add(fromHostTask(tensor, sq));
+      } else {
+        auto &sq = progs.forwardOrBackwardFragment(tensor->scheduledPreLoss);
+        tasks.add(fromHostTask(tensor, sq));
+      }
     }
   }
 
@@ -2107,7 +1923,7 @@ void Devicex::prepare() {
   prepareHasBeenCalled = true;
 }
 
-int64_t Devicex::getStashSize(int64_t vGraphId) {
+int64_t Devicex::getStashSize(VGraphId vGraphId) {
   int64_t numIPUs = static_cast<int64_t>(deviceInfo->getNumIpus());
   return 2 * (numIPUs - vGraphId) - 1;
 }
@@ -2414,6 +2230,60 @@ PriTask Devicex::updateBatchCountTask(poplar::program::Sequence &sq) {
           f};
 }
 
+PriTask Devicex::initAndUpdatePipelineStashIndicesTask() {
+
+  auto f = [this]() {
+    if (ir().canTrain()) {
+      // 1. Populate map of stash index tensors. Each IPU needs a single
+      //    tensor to track stash and restore indices. Restore index is
+      //    always (stash index + 1) % stash size.
+      //    Note: these tensors are present only at the popx level,
+      //    not in the IR
+      for (int i = 0; i < deviceInfo->getNumIpus() - 1; i++) {
+        VGraphId vGraphId = static_cast<VGraphId>(i);
+        poplar::Tensor stashIdTensor;
+
+        stashIdTensor =
+            getVirtualGraph(vGraphId).addVariable(poplar::UNSIGNED_INT, {1});
+        getVirtualGraph(vGraphId).setTileMapping(stashIdTensor, 0);
+        getVirtualGraph(vGraphId).setInitialValue(
+            stashIdTensor, poplar::ArrayRef<uint32_t>({0}));
+
+        pInfo.stashIndex.emplace(vGraphId, stashIdTensor);
+      }
+
+      // 2. Create the program to increment the stash and restore tensors.
+      //    To be run directly after the IPU's program frament that calls the
+      //    stash and restore opxs respectively
+      for (int i = 0; i < deviceInfo->getNumIpus() - 1; i++) {
+
+        VGraphId vGraphId = static_cast<VGraphId>(i);
+        auto &sq          = progs.pipelineIncrStashIndexFragment(vGraphId);
+
+        auto one = getConst(
+            getVirtualGraph(vGraphId), poplar::UNSIGNED_INT, {}, 1, "one");
+        auto stashSize       = static_cast<uint32_t>(getStashSize(vGraphId));
+        auto stashSizeTensor = getConst(getVirtualGraph(vGraphId),
+                                        poplar::UNSIGNED_INT,
+                                        {},
+                                        stashSize,
+                                        "stashSize");
+
+        // stash
+        popops::addInPlace(
+            getVirtualGraph(vGraphId), pInfo.stashIndex.at(vGraphId), one, sq);
+
+        popops::remInPlace(getVirtualGraph(vGraphId),
+                           pInfo.stashIndex.at(vGraphId),
+                           stashSizeTensor,
+                           sq);
+      }
+    }
+  };
+
+  return {+1e6, "initAndUpdatePipelineStashIndices", {}, f};
+}
+
 PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,
                                          int N,
                                          poplar::program::Sequence &sq) {
@@ -2609,43 +2479,12 @@ void Devicex::setDropoutRandomSeedIsRequired(bool isRequired) {
   requiresDropoutRandomSeed = isRequired;
 }
 
-bool PopPrograms::hasBeenRecomputed(OpId id) const {
-  auto itHas = (beenRecomputed.find(id) != beenRecomputed.end());
-  return itHas;
-}
-
-void PopPrograms::recordRecomputed(OpId id) { beenRecomputed.insert(id); }
-
 std::string Devicex::dropoutRandomSeedTensorId() const {
   return "dropoutRandomSeed";
 }
 
 const poplar::Tensor *Devicex::getDropoutRandomSeed() const {
   return &dropoutRandomSeed;
-}
-
-poplar::program::Sequence &PopPrograms::recomputeFragment(OpId id) {
-  auto found = recomputeSeqs.find(id);
-  if (found != recomputeSeqs.end()) {
-    return found->second;
-  }
-  recomputeSeqs.insert({id, poplar::program::Sequence{}});
-  return recomputeSeqs[id];
-}
-
-poplar::program::Sequence &
-PopPrograms::forwardOrBackwardFragment(ScheduledPreLoss preLoss) {
-  switch (preLoss) {
-  case ScheduledPreLoss::Yes: {
-    return forwardFragment();
-  }
-  case ScheduledPreLoss::No: {
-    return backwardFragment();
-  }
-  case ScheduledPreLoss::Undefined: {
-    throw error("There is no fragment for Undefined SchedulePreLoss");
-  }
-  }
 }
 
 } // namespace popx

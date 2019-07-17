@@ -15,6 +15,7 @@
 #include <poponnx/popx/enigma.hpp>
 #include <poponnx/popx/linearmapper.hpp>
 #include <poponnx/popx/poplaroptionsx.hpp>
+#include <poponnx/popx/popprograms.hpp>
 #include <poponnx/pritask.hpp>
 
 #include <set>
@@ -25,9 +26,6 @@
 using boost::optional;
 
 namespace poponnx {
-
-enum class ScheduledPreLoss;
-
 namespace popx {
 
 using PopStreamId = std::string;
@@ -35,100 +33,36 @@ using PopStreamId = std::string;
 class Opx;
 class GraphCachex;
 
-class PopPrograms {
-
+// A class containing the tensors needed to track the
+// state of the pipeline
+class PipelineInfo {
 public:
-  // We may want to run some programs multiple times without having
-  // to communicate with the host to call the 'run'. By supplying a
-  // count, we can loop a repeatable program inside a Poplar repeat
-  // program
-  PopPrograms(const int repeatCount_, const int accumulationFactor_);
-  PopPrograms(const int repeatCount_)
-      : PopPrograms::PopPrograms(repeatCount_, 0) {}
+  PipelineInfo() = default;
+  PipelineInfo(int _batchesPerStep, int _numIPUs, bool _doTraining);
 
-  enum ProgramIndex {
-    WEIGHTSFROMHOST = 0,
-    OPTIMIZERFROMHOST,
-    PROGRAM,
-    WEIGHTSTOHOST,
-    N // The number of programs
+  bool doTraining;
+
+  struct PipelinePhase {
+    // [start, end]
+    PipelineCycle start, end;
   };
 
-  // Order of these enums is used for scheduling
-  enum class ProgramFragmentIndex {
-    STREAMWEIGHTSFROMHOST = 0,
-    STREAMOPTIMIZERFROMHOST,
-    INIT,
-    PREFORWARD,
-    FORWARD,
-    BACKWARD,
-    VARUPDATEFROMACCUMULATOR,
-    RESETWEIGHTGRADIENTACCUMULATOR,
-    WEIGHTSTOHOST,
-    TOHOSTFINALCOPY,
-    SETRANDOMSEED,
-    SETRANDOMDROPOUTSEED,
-    N // The number of program fragments
-  };
+  // Describes all points of interest in the pipeline
+  PipelinePhase fwdFillPhase, bwdFillPhase;
+  PipelinePhase fillPhase;
 
-  // Program fragments are not necessarily complete program that can be given to
-  // a poplar engine.
-  poplar::program::Sequence &streamWeightsFromHostFragment();
-  poplar::program::Sequence &streamOptimizerFromHostFragment();
-  poplar::program::Sequence &setRandomSeedFragment();
-  poplar::program::Sequence &setRandomDropoutSeedFragment();
-  poplar::program::Sequence &toHostFinalCopyFragment();
-  poplar::program::Sequence &initFragment();
-  poplar::program::Sequence &preForwardFragment();
-  poplar::program::Sequence &forwardFragment();
-  poplar::program::Sequence &backwardFragment();
-  poplar::program::Sequence &varUpdateFromAccumulatorFragment();
-  poplar::program::Sequence &resetWeightGradientAccumulatorFragment();
-  poplar::program::Sequence &weightsToHostFragment();
-  // If ScheduledPreLoss::Yes, then return forwardFragment(), else return
-  // backwardFragment()
-  poplar::program::Sequence &forwardOrBackwardFragment(ScheduledPreLoss);
+  PipelinePhase mainPhase;
 
-  // A list of programs that can be run by the Poplar engine.
-  std::vector<poplar::program::Program> progs();
+  PipelinePhase fwdFlushPhase, bwdFlushPhase;
+  PipelinePhase flushPhase;
 
-  poplar::program::Sequence &programFragment(PopPrograms::ProgramFragmentIndex);
+  bool doFwd(PipelineCycle pCycle, VGraphId vGraphId) const;
+  bool doBwd(PipelineCycle pCycle, VGraphId vGraphId) const;
 
-  // Sub-graph program fragments, getters and setters
-  poplar::program::Sequence &scopeFragment(const Graph &);
-  bool containsFragment(const Graph &) const;
-  void createFragment(const Graph &);
-
-  // Recompute program fragments, get and (implicitly) create. There is a unique
-  // fragment for each recomputed Op
-  poplar::program::Sequence &recomputeFragment(OpId id);
-
-  bool hasBeenRecomputed(OpId) const;
-  void recordRecomputed(OpId id);
-
-private:
-  // Specify how many times to loop the 'repeatable' program
-  int repeatCount;
-
-  // Specifiy how many times to loop the program before applying
-  // varUpdates in a training program
-  int accumulationFactor;
-
-  static constexpr int seqs_size = static_cast<int>(ProgramFragmentIndex::N);
-  std::array<poplar::program::Sequence, seqs_size> seqs;
-
-  // The sub-graph program fragments will be stored here
-  std::unordered_map<std::string, poplar::program::Sequence> scopeSeqs;
-
-  // The recompute program fragments will be stored here
-  std::map<OpId, poplar::program::Sequence> recomputeSeqs;
-
-  std::set<OpId> beenRecomputed;
-
-  poplar::program::Sequence weightsFromHost();
-  poplar::program::Sequence optimizerFromHost();
-  poplar::program::Sequence program();
-  poplar::program::Sequence weightsToHost();
+  // Tensors for each IPU specify the offset of the stashes
+  // when stashing and restoring activations, and programs to
+  // update them
+  std::map<StashIndex, poplar::Tensor> stashIndex;
 };
 
 poplar::Type popType(const TensorInfo &);
@@ -144,23 +78,6 @@ struct OpxInAndOutIndex {
   const Opx *opx;
   InIndex inIndex;
   OutIndex outIndex;
-};
-
-// A bundle struct containing the tensors needed to track the
-// state of the pipeline
-struct PipelineInfo {
-  PipelineInfo() = default;
-
-  // Tensors for each IPU specify the offset of the stashes
-  // when stashing and restoring activations, and programs to
-  // update them
-  std::map<int64_t, poplar::Tensor> stashIndex;
-  std::map<int64_t, poplar::program::Sequence> incrStashIndex;
-
-  // Tensors for each IPU to track where in the pipeline we are,
-  // and programs to update them
-  std::map<int64_t, poplar::Tensor> pipelineCycle;
-  std::map<int64_t, poplar::program::Sequence> incrPipelineCycle;
 };
 
 // A bundle class to represent candidate Opxs
@@ -239,7 +156,7 @@ public:
   poplar::Graph &graph();
   const poplar::Graph &graph() const;
 
-  poplar::Graph &getVirtualGraph(int64_t virtualGraphIndex);
+  poplar::Graph &getVirtualGraph(VGraphId virtualGraphIndex);
 
   // Return the name of the task which initializes/creates a poplar::Tensor in a
   // poplar::Graph. This is NOT about creating a poplar::Program.
@@ -340,7 +257,7 @@ private:
   poplar::Tensor dropoutRandomSeed;
 
   PipelineInfo pInfo;
-  int64_t getStashSize(int64_t vGraphId);
+  int64_t getStashSize(VGraphId vGraphId);
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
@@ -393,6 +310,8 @@ private:
                                   poplar::program::Sequence &);
 
   PriTask incrementDropoutRandomSeedTask();
+
+  PriTask initAndUpdatePipelineStashIndicesTask();
 
   PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
 
