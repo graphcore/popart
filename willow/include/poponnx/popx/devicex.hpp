@@ -445,6 +445,12 @@ private:
 
   optional<poplar::Executable> cachedExecutable;
   bool usingCachedExecutable = false;
+
+  // Option to trace the opx execution using printTensor. This can be useful in
+  // determining where an exception has occurred. It is enabled by setting
+  // POPONNX_OPX_TRACE environment variable to "1"
+  bool opxTrace = false;
+  poplar::Tensor opxTraceTensor;
 };
 
 } // namespace popx

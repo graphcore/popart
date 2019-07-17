@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cctype>
+#include <cstring>
 #include <fstream>
 #include <random>
 #include <set>
@@ -380,6 +381,11 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
   if (!deviceInfo->attach()) {
     throw error("failed to attach to device");
   }
+
+  // Set the opxTrace flag based on the environment variable
+  auto POPONNX_OPX_TRACE = std::getenv("POPONNX_OPX_TRACE");
+  opxTrace =
+      POPONNX_OPX_TRACE ? strncmp(POPONNX_OPX_TRACE, "1", 1) == 0 : false;
 
   // TODO (see T5100) : if inference, forward should be INFERENCE_FWD
   for (auto it : ir.getSessionOptions().convolutionOptions) {
@@ -1287,20 +1293,25 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     }
   }
 
-  // The following code can be useful to debug floating point exceptions by
-  // printing the names of the Ops as they are executed.
-  // poplar::Tensor d1 = masterGraph().addVariable(poplar::FLOAT, {1},
-  // opx->op_p->str()); masterGraph().setTileMapping(d1, 0);
-  // programFragment(opx->op_p->getGraph()).add(poplar::program::PrintTensor(opx->op_p->str(),
-  // d1));
-
   auto f = [op, opx, this]() {
+    auto growOpx = [opx, this](poplar::program::Sequence &seq) {
+      if (opxTrace) {
+        seq.add(poplar::program::PrintTensor(opx->op_p->str() + "/enter",
+                                             opxTraceTensor));
+        opx->grow(seq);
+        seq.add(poplar::program::PrintTensor(opx->op_p->str() + "/exit",
+                                             opxTraceTensor));
+      } else {
+        opx->grow(seq);
+      }
+    };
+
     const auto &containingGraph = opx->op_p->getGraph();
     // if this Op is not in the main scope
     if (!containingGraph.id.str().empty()) {
       logging::devicex::debug("Creating output tensors for non-main " +
                               opx->op_p->debugName());
-      opx->grow(progs.scopeFragment(containingGraph));
+      growOpx(progs.scopeFragment(containingGraph));
     }
 
     // else if this Op is in the main scope
@@ -1312,12 +1323,12 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
           logging::devicex::debug("Adding checkpoint Op {}", op->debugName());
           if (ir().getSessionOptions().enablePipelining) {
             if (op->isIpuCopyOp()) {
-              opx->grow(progs.pipelineIpuCopyFragment());
+              growOpx(progs.pipelineIpuCopyFragment());
             } else {
-              opx->grow(progs.pipelineForwardFragment(op->getVirtualGraphId()));
+              growOpx(progs.pipelineForwardFragment(op->getVirtualGraphId()));
             }
           } else {
-            opx->grow(progs.forwardFragment());
+            growOpx(progs.forwardFragment());
           }
         } else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
           logging::devicex::debug("Adding (first) recompute Op {}",
@@ -1326,7 +1337,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
             throw error(
                 "Recompute ops not currently supported in pipelined graph");
           }
-          opx->grow(progs.recomputeFragment(op->id));
+          growOpx(progs.recomputeFragment(op->id));
           progs.forwardFragment().add(progs.recomputeFragment(op->id));
         } else {
           throw error("Unrecognised recompute type");
@@ -1342,9 +1353,9 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
 
         if (ir().getSessionOptions().enablePipelining) {
           if (op->isIpuCopyOp()) {
-            opx->grow(progs.pipelineIpuCopyFragment());
+            growOpx(progs.pipelineIpuCopyFragment());
           } else {
-            opx->grow(progs.pipelineBackwardFragment(op->getVirtualGraphId()));
+            growOpx(progs.pipelineBackwardFragment(op->getVirtualGraphId()));
           }
         } else {
           // decide what needs to be re-run
@@ -1409,18 +1420,18 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
             if (dynamic_cast<VarUpdateOp *>(op) != nullptr) {
               // This is a var update op, so we only run in the var update
               // fragment.
-              opx->grow(progs.varUpdateFromAccumulatorFragment());
+              growOpx(progs.varUpdateFromAccumulatorFragment());
             } else if (dynamic_cast<ResetAcclOp *>(op) != nullptr) {
               // This is a reset op, so we only run in the reset fragment.
-              opx->grow(progs.resetWeightGradientAccumulatorFragment());
+              growOpx(progs.resetWeightGradientAccumulatorFragment());
             } else {
               // This is a normal op in a gradient accumulation graph.
-              opx->grow(progs.backwardFragment());
+              growOpx(progs.backwardFragment());
             }
             mainGraphOpRegistery.push_back(op);
           } else {
             // Put this op into the "regular" backwards pass.
-            opx->grow(progs.backwardFragment());
+            growOpx(progs.backwardFragment());
             mainGraphOpRegistery.push_back(op);
           }
         }
@@ -1716,6 +1727,11 @@ void Devicex::prepare() {
         }
       }
     }
+  }
+
+  // Create a constant tensor which will be used if opxTrace is enabled
+  if (opxTrace) {
+    opxTraceTensor = getConst(graph(), poplar::HALF, {1}, 0, "traceTensor");
   }
 
   // create an Opx for every Op
