@@ -785,12 +785,11 @@ def test_set_weights_from_host():
     optimizer = poponnx.ConstSGD(0.01)
     losses = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
 
-    session = poponnx.TrainingSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
-        deviceInfo=getDevice())
+    session = poponnx.TrainingSession(fnModel=proto,
+                                      dataFeed=dataFlow,
+                                      losses=losses,
+                                      optimizer=optimizer,
+                                      deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()
 
@@ -1194,8 +1193,9 @@ def test_load_onnx_model_from_other_builder(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(
-        fnModel=proto, dataFeed=dataFlow, deviceInfo=getDevice())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()
 
@@ -1217,8 +1217,9 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
     proto2 = builder.getModelProto()
-    session = poponnx.InferenceSession(
-        fnModel=proto2, dataFeed=dataFlow, deviceInfo=getDevice())
+    session = poponnx.InferenceSession(fnModel=proto2,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()
 
@@ -1259,8 +1260,9 @@ def test_load_onnx_model_from_file(tmpdir):
 
     proto = builder2.getModelProto()
 
-    session = poponnx.InferenceSession(
-        fnModel=proto, dataFeed=dataFlow, deviceInfo=getDevice())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()
 
@@ -1412,15 +1414,15 @@ def test_tensor_names(tmpdir):
     builder = poponnx.Builder(opsets={"ai.onnx": 9, "ai.graphcore": 1})
 
     i1 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64))
-    i2 = builder.addInitializedInputTensor(
-        np.array([1, 6], dtype=np.int64), "weights")
+    i2 = builder.addInitializedInputTensor(np.array([1, 6], dtype=np.int64),
+                                           "weights")
 
     assert (i1 == "init_input")
     assert (i2 == "weights")
 
     with builder.nameScope("layer1"):
-        i3 = builder.addInitializedInputTensor(
-            np.array([1, 6], dtype=np.int64))
+        i3 = builder.addInitializedInputTensor(np.array([1, 6],
+                                                        dtype=np.int64))
         i4 = builder.addInitializedInputTensor(
             np.array([1, 6], dtype=np.int64), "weights")
 
@@ -1431,8 +1433,8 @@ def test_tensor_names(tmpdir):
     i6 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 3]), "data")
 
     with builder.nameScope("layer2"):
-        i7 = builder.addInputTensor(
-            poponnx.TensorInfo("FLOAT", [2, 3]), "label")
+        i7 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [2, 3]),
+                                    "label")
 
     assert (i5 == "input")
     assert (i6 == "data")

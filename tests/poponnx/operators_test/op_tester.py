@@ -158,22 +158,22 @@ def op_tester(tmpdir):
                 device = self.device
 
             if step_type == 'infer':
-                session = poponnx.InferenceSession(
-                    fnModel=proto,
-                    dataFeed=dataFlow,
-                    losses=losses,
-                    deviceInfo=device,
-                    passes=poponnx.Patterns(self.passes),
-                    userOptions=self.options)
+                session = poponnx.InferenceSession(fnModel=proto,
+                                                   dataFeed=dataFlow,
+                                                   losses=losses,
+                                                   deviceInfo=device,
+                                                   passes=poponnx.Patterns(
+                                                       self.passes),
+                                                   userOptions=self.options)
             else:
-                session = poponnx.TrainingSession(
-                    fnModel=proto,
-                    dataFeed=dataFlow,
-                    losses=losses,
-                    optimizer=optimizer,
-                    deviceInfo=device,
-                    passes=poponnx.Patterns(self.passes),
-                    userOptions=self.options)
+                session = poponnx.TrainingSession(fnModel=proto,
+                                                  dataFeed=dataFlow,
+                                                  losses=losses,
+                                                  optimizer=optimizer,
+                                                  deviceInfo=device,
+                                                  passes=poponnx.Patterns(
+                                                      self.passes),
+                                                  userOptions=self.options)
 
             anchor_map = session.initAnchorArrays()
 

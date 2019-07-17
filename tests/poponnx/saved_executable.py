@@ -34,11 +34,10 @@ def test_simple_load(tmp_path):
         opts.cachePath = str(tmp_path / 'saved_graph')
 
         # Create a session to compile and execute the graph
-        session = poponnx.InferenceSession(
-            fnModel=proto,
-            dataFeed=dataFlow,
-            userOptions=opts,
-            deviceInfo=device)
+        session = poponnx.InferenceSession(fnModel=proto,
+                                           dataFeed=dataFlow,
+                                           userOptions=opts,
+                                           deviceInfo=device)
 
         # Compile graph
         session.prepareDevice()
@@ -161,11 +160,10 @@ def test_bad_load(tmp_path):
         opts.cachePath = str(tmp_path / 'saved_graph')
 
         # Create a session to compile and execute the graph
-        session = poponnx.InferenceSession(
-            fnModel=proto,
-            dataFeed=dataFlow,
-            userOptions=opts,
-            deviceInfo=device)
+        session = poponnx.InferenceSession(fnModel=proto,
+                                           dataFeed=dataFlow,
+                                           userOptions=opts,
+                                           deviceInfo=device)
 
         # Compile graph
         session.prepareDevice()
@@ -218,11 +216,10 @@ def test_get_reports(tmp_path):
         opts.cachePath = str(tmp_path / 'saved_graph')
 
         # Create a session to compile and execute the graph
-        session = poponnx.InferenceSession(
-            fnModel=proto,
-            dataFeed=dataFlow,
-            userOptions=opts,
-            deviceInfo=device)
+        session = poponnx.InferenceSession(fnModel=proto,
+                                           dataFeed=dataFlow,
+                                           userOptions=opts,
+                                           deviceInfo=device)
 
         # Compile graph
         session.prepareDevice()

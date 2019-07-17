@@ -195,12 +195,11 @@ def test_nll_loss_grad_with_ignored_index():
                 }),
             optimizer=poponnx.ConstSGD(0.001, 0.01),
             losses=[
-                poponnx.NllLoss(
-                    out,
-                    lb,
-                    "loss",
-                    ignore_index=ignoreInd,
-                    reduction=poponnx.ReductionType.Mean)
+                poponnx.NllLoss(out,
+                                lb,
+                                "loss",
+                                ignore_index=ignoreInd,
+                                reduction=poponnx.ReductionType.Mean)
             ],
             passes=poponnx.Patterns(patterns),
             deviceInfo=poponnx.DeviceManager().createCpuDevice())

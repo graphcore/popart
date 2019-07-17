@@ -20,10 +20,9 @@ def identity_inference_session(tmpdir, inputShape, inputArray, BPS, art):
     batchesPerStep = BPS
     dataFlow = poponnx.DataFlow(batchesPerStep, {o: art})
 
-    session = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        deviceInfo=tu.get_poplar_cpu_device())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 

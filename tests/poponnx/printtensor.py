@@ -29,11 +29,10 @@ def test_basic(tmpdir, capfd):
     opts.enableOutlining = False
     opts.enableOutliningCopyCostPruning = False
 
-    session = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        deviceInfo=tu.get_poplar_cpu_device())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       userOptions=opts,
+                                       deviceInfo=tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 

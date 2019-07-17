@@ -9,13 +9,12 @@ from poponnx import TensorInfo, DataFlow, NllLoss, L1Loss, SGD, ConstSGD
 
 def conv3x3(in_planes, out_planes, stride=1):
     """3x3 convolution with padding"""
-    return torch.nn.Conv2d(
-        in_planes,
-        out_planes,
-        kernel_size=3,
-        stride=stride,
-        padding=1,
-        bias=False)
+    return torch.nn.Conv2d(in_planes,
+                           out_planes,
+                           kernel_size=3,
+                           stride=stride,
+                           padding=1,
+                           bias=False)
 
 
 class PytorchNetWriter(NetWriter):
@@ -27,14 +26,13 @@ class PytorchNetWriter(NetWriter):
         all others:
           -- parameters passed to base class.
         """
-        NetWriter.__init__(
-            self,
-            inNames=inNames,
-            outNames=outNames,
-            losses=losses,
-            optimizer=optimizer,
-            inputShapeInfo=inputShapeInfo,
-            dataFeed=dataFeed)
+        NetWriter.__init__(self,
+                           inNames=inNames,
+                           outNames=outNames,
+                           losses=losses,
+                           optimizer=optimizer,
+                           inputShapeInfo=inputShapeInfo,
+                           dataFeed=dataFeed)
 
         self.module = module
         self.samplesPerBatch = samplesPerBatch
@@ -45,11 +43,10 @@ class PytorchNetWriter(NetWriter):
         """
         if (isinstance(self.optimizer, SGD)
                 or isinstance(self.optimizer, ConstSGD)):
-            return torch.optim.SGD(
-                self.module.parameters(),
-                lr=self.optimizer.learnRate(),
-                weight_decay=self.optimizer.weightDecay(),
-                momentum=0.0)
+            return torch.optim.SGD(self.module.parameters(),
+                                   lr=self.optimizer.learnRate(),
+                                   weight_decay=self.optimizer.weightDecay(),
+                                   momentum=0.0)
         else:
             raise RuntimeError("unrecognised optimizer")
 
@@ -72,8 +69,8 @@ class PytorchNetWriter(NetWriter):
                 lossValues.append(nll_loss)
 
             elif isinstance(loss, L1Loss):
-                lossValues.append(loss.getLambda() * torch.norm(
-                    outMap[loss.getInputId()], 1))
+                lossValues.append(loss.getLambda() *
+                                  torch.norm(outMap[loss.getInputId()], 1))
 
             else:
                 raise RuntimeError(
@@ -94,13 +91,12 @@ class PytorchNetWriter(NetWriter):
             for x in inputDataInfos
         ]
 
-        torch.onnx.export(
-            self.module,
-            inputData,
-            fnModel,
-            verbose=False,
-            input_names=self.inNames,
-            output_names=self.outNames)
+        torch.onnx.export(self.module,
+                          inputData,
+                          fnModel,
+                          verbose=False,
+                          input_names=self.inNames,
+                          output_names=self.outNames)
 
     def train(self, inMap):
         """

@@ -56,13 +56,12 @@ losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
 class Module0(torch.nn.Module):
     def __init__(self):
         torch.nn.Module.__init__(self)
-        self.conv1 = torch.nn.Conv2d(
-            nChans,
-            nChans,
-            kernel_size=(3, 3),
-            stride=1,
-            padding=(1, 3),
-            bias=False)
+        self.conv1 = torch.nn.Conv2d(nChans,
+                                     nChans,
+                                     kernel_size=(3, 3),
+                                     stride=1,
+                                     padding=(1, 3),
+                                     bias=False)
 
     def forward(self, inputs):
         """out = relu(conv(in))"""

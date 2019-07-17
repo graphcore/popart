@@ -17,10 +17,9 @@ def test_summary_report_before_execution(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        deviceInfo=tu.get_poplar_cpu_device())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=tu.get_poplar_cpu_device())
 
     session.initAnchorArrays()
 
@@ -44,10 +43,9 @@ def test_graph_report_before_execution(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        deviceInfo=tu.get_poplar_cpu_device())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=tu.get_poplar_cpu_device())
 
     session.initAnchorArrays()
 
@@ -71,10 +69,9 @@ def test_execution_report_before_execution(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        deviceInfo=tu.get_poplar_cpu_device())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=tu.get_poplar_cpu_device())
 
     session.initAnchorArrays()
 
@@ -98,10 +95,9 @@ def test_summary_report_with_cpu_device(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        deviceInfo=tu.get_poplar_cpu_device())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=tu.get_poplar_cpu_device())
 
     session.initAnchorArrays()
 
@@ -127,10 +123,9 @@ def test_graph_report_with_cpu_device(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        deviceInfo=tu.get_poplar_cpu_device())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=tu.get_poplar_cpu_device())
 
     session.initAnchorArrays()
 
@@ -158,10 +153,9 @@ def test_execution_report_with_cpu_device(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        deviceInfo=tu.get_poplar_cpu_device())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=tu.get_poplar_cpu_device())
 
     session.initAnchorArrays()
 

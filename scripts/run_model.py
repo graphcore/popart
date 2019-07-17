@@ -24,7 +24,8 @@ graph_transformer.convertAllFixedPointInitializersToConstants()
 output = builder.getOutputTensorIds()[0]
 dataFlow = poponnx.DataFlow(1, {output: poponnx.AnchorReturnType("ALL")})
 
-s = poponnx.Session(
-    graph_transformer.getModelProto(), dataFeed=dataFlow, userOptions=opts)
+s = poponnx.Session(graph_transformer.getModelProto(),
+                    dataFeed=dataFlow,
+                    userOptions=opts)
 s.setDevice(device)
 s.prepareDevice()

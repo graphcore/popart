@@ -75,8 +75,10 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             % (datadir, ))
 
     print("c10driver: getting data from", datadir)
-    trainset = datasets.CIFAR10(
-        root=datadir, train=True, download=True, transform=transform)
+    trainset = datasets.CIFAR10(root=datadir,
+                                train=True,
+                                download=True,
+                                transform=transform)
 
     fnModel0 = os.path.join(outputdir, "model0.onnx")
 
@@ -152,32 +154,29 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     # performs Ir optimisations
 
     if mode == 'infer':
-        session = poponnx.InferenceSession(
-            fnModel=modelProtoX,
-            inputShapeInfo=inputShapeInfo,
-            dataFeed=dataFeed,
-            passes=passes,
-            userOptions=opts,
-            deviceInfo=device)
+        session = poponnx.InferenceSession(fnModel=modelProtoX,
+                                           inputShapeInfo=inputShapeInfo,
+                                           dataFeed=dataFeed,
+                                           passes=passes,
+                                           userOptions=opts,
+                                           deviceInfo=device)
     elif mode == 'evaluate':
-        session = poponnx.InferenceSession(
-            fnModel=modelProtoX,
-            inputShapeInfo=inputShapeInfo,
-            dataFeed=dataFeed,
-            losses=torchWriter.losses,
-            passes=passes,
-            userOptions=opts,
-            deviceInfo=device)
+        session = poponnx.InferenceSession(fnModel=modelProtoX,
+                                           inputShapeInfo=inputShapeInfo,
+                                           dataFeed=dataFeed,
+                                           losses=torchWriter.losses,
+                                           passes=passes,
+                                           userOptions=opts,
+                                           deviceInfo=device)
     else:
-        session = poponnx.TrainingSession(
-            fnModel=modelProtoX,
-            inputShapeInfo=inputShapeInfo,
-            dataFeed=dataFeed,
-            losses=torchWriter.losses,
-            optimizer=torchWriter.optimizer,
-            passes=passes,
-            userOptions=opts,
-            deviceInfo=device)
+        session = poponnx.TrainingSession(fnModel=modelProtoX,
+                                          inputShapeInfo=inputShapeInfo,
+                                          dataFeed=dataFeed,
+                                          losses=torchWriter.losses,
+                                          optimizer=torchWriter.optimizer,
+                                          passes=passes,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
     # get the tensor info for the anchors
     anchorArrays = session.initAnchorArrays()

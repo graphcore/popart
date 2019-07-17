@@ -30,13 +30,12 @@ cifarInIndices = {"image0": 0}
 class Module0(torch.nn.Module):
     def __init__(self):
         torch.nn.Module.__init__(self)
-        self.conv1 = torch.nn.Conv2d(
-            nChans,
-            nChans,
-            kernel_size=(3, 3),
-            stride=1,
-            padding=(1, 3),
-            bias=False)
+        self.conv1 = torch.nn.Conv2d(nChans,
+                                     nChans,
+                                     kernel_size=(3, 3),
+                                     stride=1,
+                                     padding=(1, 3),
+                                     bias=False)
         self.relu = torch.nn.functional.relu
 
     def forward(self, inputs):
@@ -63,11 +62,10 @@ torchWriter = torchwriter.PytorchNetWriter(
     samplesPerBatch=samplesPerBatch)
 
 # Passes if torch and poponnx models match
-c10driver.run(
-    torchWriter=torchWriter,
-    passes=None,
-    outputdir=args.outputdir,
-    cifarInIndices=cifarInIndices,
-    device=args.device,
-    device_hw_id=args.hw_id,
-    mode="infer")
+c10driver.run(torchWriter=torchWriter,
+              passes=None,
+              outputdir=args.outputdir,
+              cifarInIndices=cifarInIndices,
+              device=args.device,
+              device_hw_id=args.hw_id,
+              mode="infer")

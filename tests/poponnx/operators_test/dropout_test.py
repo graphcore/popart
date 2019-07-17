@@ -94,8 +94,8 @@ def test_dropout_training2(op_tester):
 def test_dropout_training3():
     dsize = 10000  # large input size to make statistical assumptions accurate
     ratio = 0.2
-    session, ip, out, d__ip, anchors = get_dropout_session(
-        dsize=dsize, ratio=ratio)
+    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
+                                                           ratio=ratio)
 
     # Ensure inputs in range [1.0, 2.0] to ensure comparing with 0 is valid
     ip_data = np.random.random_sample(dsize).astype(np.float32) + 1
@@ -115,8 +115,9 @@ def test_dropout_training3():
     # 2.
     onnxDropoutProportion = np.count_nonzero(anchors[out]) / dsize
     torchDropoutProportion = np.count_nonzero(torchOut) / dsize
-    assert (np.isclose(
-        onnxDropoutProportion, torchDropoutProportion, atol=0.05))
+    assert (np.isclose(onnxDropoutProportion,
+                       torchDropoutProportion,
+                       atol=0.05))
     assert (np.isclose(onnxDropoutProportion, 1 - ratio, atol=0.05))
 
 
@@ -141,11 +142,10 @@ def test_dropout_training4():
     if device is None:
         pytest.skip("Test needs to run on IPU, but none are available")
 
-    session, anchors = get_session(
-        anchorIds=[d1, d__ip],
-        proto=builder.getModelProto(),
-        device=device,
-        output=out)
+    session, anchors = get_session(anchorIds=[d1, d__ip],
+                                   proto=builder.getModelProto(),
+                                   device=device,
+                                   output=out)
 
     # Ensure inputs in range [1.0, 2.0] to ensure comparing with 0 is valid
     ip_data = np.random.random_sample((dsize, dsize)).astype(np.float32) + 1
@@ -153,9 +153,8 @@ def test_dropout_training4():
 
     session.run(stepio)
 
-    for fwdEl, bwdEl in zip(
-            np.ndarray.flatten(anchors[d1]),
-            np.ndarray.flatten(anchors[d__ip])):
+    for fwdEl, bwdEl in zip(np.ndarray.flatten(anchors[d1]),
+                            np.ndarray.flatten(anchors[d__ip])):
         if fwdEl == 0:
             assert bwdEl == 0
         if bwdEl != 0:
@@ -186,8 +185,9 @@ def test_dropout_training5():
 def test_dropout_training6():
     dsize = 100
     bps = 2
-    session, ip, out, d__ip, anchors = get_dropout_session(
-        dsize=dsize, bps=bps, use_ipu=True)
+    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
+                                                           bps=bps,
+                                                           use_ipu=True)
 
     # Same data for each batch
     ip_data_bps1 = np.random.random_sample(dsize).astype(np.float32)
@@ -219,11 +219,10 @@ def test_dropout_training7():
     if device is None:
         pytest.skip("Test needs to run on IPU, but none are available")
 
-    session, anchors = get_session(
-        anchorIds=[d1, d2],
-        proto=builder.getModelProto(),
-        device=device,
-        output=out)
+    session, anchors = get_session(anchorIds=[d1, d2],
+                                   proto=builder.getModelProto(),
+                                   device=device,
+                                   output=out)
 
     # Same data for each batch
     ip_data = np.random.random_sample(dsize).astype(np.float32)
@@ -313,12 +312,11 @@ def get_dropout_session(dsize=100,
     else:
         device = poponnx.DeviceManager().createCpuDevice()
 
-    session, anchors = get_session(
-        anchorIds=[out, ip, d__ip],
-        proto=builder.getModelProto(),
-        device=device,
-        output=out,
-        bps=bps)
+    session, anchors = get_session(anchorIds=[out, ip, d__ip],
+                                   proto=builder.getModelProto(),
+                                   device=device,
+                                   output=out,
+                                   bps=bps)
 
     return session, ip, out, d__ip, anchors
 

@@ -24,10 +24,9 @@ def test_stream_on_off(tmpdir):
             o: poponnx.AnchorReturnType("ALL")
         })
 
-    session = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        deviceInfo=tu.get_poplar_cpu_device())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 

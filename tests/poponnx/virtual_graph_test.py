@@ -30,11 +30,10 @@ def test_virtual_graph():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        deviceInfo=tu.get_ipu_model(numIPUs=2))
+    s = poponnx.InferenceSession(fnModel=proto,
+                                 dataFeed=dataFlow,
+                                 userOptions=opts,
+                                 deviceInfo=tu.get_ipu_model(numIPUs=2))
 
     s.prepareDevice()
 
@@ -68,11 +67,10 @@ def test_virtual_graph2():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        deviceInfo=tu.get_ipu_model(numIPUs=2))
+    s = poponnx.InferenceSession(fnModel=proto,
+                                 dataFeed=dataFlow,
+                                 userOptions=opts,
+                                 deviceInfo=tu.get_ipu_model(numIPUs=2))
 
     s.prepareDevice()
 
@@ -103,8 +101,7 @@ def test_virtual_graph3():
     # Need to anchor the output of the backward pass to stop it being pruned
     dataFlow = poponnx.DataFlow(
         1, {
-            o:
-            poponnx.AnchorReturnType("ALL"),
+            o: poponnx.AnchorReturnType("ALL"),
             poponnx.reservedGradientPrefix() + i1:
             poponnx.AnchorReturnType("ALL"),
             poponnx.reservedGradientPrefix() + i2:
@@ -123,13 +120,12 @@ def test_virtual_graph3():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.TrainingSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
-        userOptions=opts,
-        deviceInfo=tu.get_ipu_model(numIPUs=4))
+    s = poponnx.TrainingSession(fnModel=proto,
+                                dataFeed=dataFlow,
+                                losses=losses,
+                                optimizer=optimizer,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=4))
 
     s.prepareDevice()
 
@@ -170,12 +166,9 @@ def test_virtual_graph4():
     # Need to anchor the output of the backward pass to stop it being pruned
     dataFlow = poponnx.DataFlow(
         1, {
-            o1:
-            poponnx.AnchorReturnType("ALL"),
-            o2:
-            poponnx.AnchorReturnType("ALL"),
-            o3:
-            poponnx.AnchorReturnType("ALL"),
+            o1: poponnx.AnchorReturnType("ALL"),
+            o2: poponnx.AnchorReturnType("ALL"),
+            o3: poponnx.AnchorReturnType("ALL"),
             poponnx.reservedGradientPrefix() + i1:
             poponnx.AnchorReturnType("ALL"),
             poponnx.reservedGradientPrefix() + i2:
@@ -198,13 +191,12 @@ def test_virtual_graph4():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.TrainingSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        losses=losses,
-        optimizer=optimizer,
-        userOptions=opts,
-        deviceInfo=tu.get_ipu_model(numIPUs=4))
+    s = poponnx.TrainingSession(fnModel=proto,
+                                dataFeed=dataFlow,
+                                losses=losses,
+                                optimizer=optimizer,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=4))
 
     s.prepareDevice()
 

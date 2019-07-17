@@ -185,10 +185,10 @@ def test_gather_complex(op_tester):
                 range(result.shape[6])):
 
             # Derive the expected value
-            value = (
-                d6 + data.shape[4] * (d5 + data.shape[3] *
-                                      (indices[d2, d3, d4] + data.shape[2] *
-                                       (d1 + data.shape[1] * d0))))
+            value = (d6 + data.shape[4] *
+                     (d5 + data.shape[3] *
+                      (indices[d2, d3, d4] + data.shape[2] *
+                       (d1 + data.shape[1] * d0))))
 
             result[d0, d1, d2, d3, d4, d5, d6] = value
         return [result]

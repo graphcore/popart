@@ -175,8 +175,10 @@ def test_batchnorm_train_0(op_tester):
         _mean = torch.tensor(mean, requires_grad=False)
         _var = torch.tensor(var, requires_grad=False)
 
-        m = torch.nn.BatchNorm2d(
-            2, eps=epsilon, momentum=momentum, track_running_stats=True)
+        m = torch.nn.BatchNorm2d(2,
+                                 eps=epsilon,
+                                 momentum=momentum,
+                                 track_running_stats=True)
         m.state_dict()['weight'].copy_(_weight)
         m.state_dict()['bias'].copy_(_bias)
         m.state_dict()['running_mean'].copy_(_mean)
@@ -245,8 +247,10 @@ def test_batchnorm_train_1(op_tester):
             _mean = torch.tensor(mean, requires_grad=False)
             _var = torch.tensor(var, requires_grad=False)
 
-            m = torch.nn.BatchNorm2d(
-                2, eps=epsilon, momentum=momentum, track_running_stats=True)
+            m = torch.nn.BatchNorm2d(2,
+                                     eps=epsilon,
+                                     momentum=momentum,
+                                     track_running_stats=True)
             m.state_dict()['weight'].copy_(_weight)
             m.state_dict()['bias'].copy_(_bias)
             m.state_dict()['running_mean'].copy_(_mean)
@@ -320,8 +324,10 @@ def test_batchnorm_train_2(op_tester):
         _mean = torch.tensor(mean, requires_grad=False)
         _var = torch.tensor(var, requires_grad=False)
 
-        m = torch.nn.BatchNorm3d(
-            2, eps=epsilon, momentum=momentum, track_running_stats=True)
+        m = torch.nn.BatchNorm3d(2,
+                                 eps=epsilon,
+                                 momentum=momentum,
+                                 track_running_stats=True)
         m.state_dict()['weight'].copy_(_weight)
         m.state_dict()['bias'].copy_(_bias)
         m.state_dict()['running_mean'].copy_(_mean)
@@ -378,8 +384,10 @@ def test_batchnorm_train_3(op_tester):
         _mean = torch.tensor(mean, requires_grad=False)
         _var = torch.tensor(var, requires_grad=False)
 
-        m = torch.nn.BatchNorm2d(
-            2, eps=epsilon, momentum=momentum, track_running_stats=True)
+        m = torch.nn.BatchNorm2d(2,
+                                 eps=epsilon,
+                                 momentum=momentum,
+                                 track_running_stats=True)
         m.state_dict()['weight'].copy_(_weight)
         m.state_dict()['bias'].copy_(_bias)
         m.state_dict()['running_mean'].copy_(_mean)
@@ -472,8 +480,10 @@ def test_batchnorm_test_0(op_tester):
         _mean = torch.tensor(mean, requires_grad=False)
         _var = torch.tensor(var, requires_grad=False)
 
-        m = torch.nn.BatchNorm2d(
-            2, eps=epsilon, momentum=momentum, track_running_stats=True)
+        m = torch.nn.BatchNorm2d(2,
+                                 eps=epsilon,
+                                 momentum=momentum,
+                                 track_running_stats=True)
         m.state_dict()['weight'].copy_(_weight)
         m.state_dict()['bias'].copy_(_bias)
         m.state_dict()['running_mean'].copy_(_mean)
@@ -518,8 +528,10 @@ def test_batchnorm_test_1(op_tester):
         _mean = torch.tensor(mean, requires_grad=False)
         _var = torch.tensor(var, requires_grad=False)
 
-        m = torch.nn.BatchNorm2d(
-            2, eps=epsilon, momentum=momentum, track_running_stats=True)
+        m = torch.nn.BatchNorm2d(2,
+                                 eps=epsilon,
+                                 momentum=momentum,
+                                 track_running_stats=True)
         m.state_dict()['weight'].copy_(_weight)
         m.state_dict()['bias'].copy_(_bias)
         m.state_dict()['running_mean'].copy_(_mean)
@@ -564,8 +576,10 @@ def test_batchnorm_test_2(op_tester):
         _mean = torch.tensor(mean, requires_grad=False)
         _var = torch.tensor(var, requires_grad=False)
 
-        m = torch.nn.BatchNorm3d(
-            2, eps=epsilon, momentum=momentum, track_running_stats=True)
+        m = torch.nn.BatchNorm3d(2,
+                                 eps=epsilon,
+                                 momentum=momentum,
+                                 track_running_stats=True)
         m.state_dict()['weight'].copy_(_weight)
         m.state_dict()['bias'].copy_(_bias)
         m.state_dict()['running_mean'].copy_(_mean)
@@ -643,11 +657,10 @@ def test_batchnorm_repeated():
     options = poponnx.SessionOptionsCore()
     options.enableStochasticRounding = False
 
-    session = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        deviceInfo=device,
-        userOptions=options)
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=device,
+                                       userOptions=options)
 
     anchors = session.initAnchorArrays()
 

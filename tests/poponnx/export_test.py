@@ -40,13 +40,12 @@ def test_constants_preserved():
 
     opts = poponnx.SessionOptionsCore()
 
-    session = poponnx.TrainingSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        losses=losses,
-        optimizer=optimizer,
-        deviceInfo=tu.get_poplar_cpu_device())
+    session = poponnx.TrainingSession(fnModel=proto,
+                                      dataFeed=dataFlow,
+                                      userOptions=opts,
+                                      losses=losses,
+                                      optimizer=optimizer,
+                                      deviceInfo=tu.get_poplar_cpu_device())
 
     anchorArrays = session.initAnchorArrays()
 

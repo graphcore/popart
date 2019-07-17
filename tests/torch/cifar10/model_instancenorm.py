@@ -34,8 +34,10 @@ class Module0(torch.nn.Module):
         self.sin = torch.sin
         self.conv1 = torchwriter.conv3x3(nInChans, nOutChans)
         self.conv2 = torchwriter.conv3x3(nOutChans, nOutChans)
-        self.in2 = torch.nn.InstanceNorm2d(
-            nOutChans, eps=0.1, affine=True, momentum=0)
+        self.in2 = torch.nn.InstanceNorm2d(nOutChans,
+                                           eps=0.1,
+                                           affine=True,
+                                           momentum=0)
 
     def forward(self, inputs):
         im0 = inputs[0]
@@ -62,11 +64,10 @@ torchWriter = torchwriter.PytorchNetWriter(
     module=Module0(),
     samplesPerBatch=batchSize)
 
-c10driver.run(
-    torchWriter,
-    None,
-    args.outputdir,
-    cifarInIndices,
-    args.device,
-    args.hw_id,
-    transformations=["prepareNodesForTraining"])
+c10driver.run(torchWriter,
+              None,
+              args.outputdir,
+              cifarInIndices,
+              args.device,
+              args.hw_id,
+              transformations=["prepareNodesForTraining"])

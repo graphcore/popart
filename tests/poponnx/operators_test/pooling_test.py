@@ -20,8 +20,10 @@ def test_average_pool_1(op_tester):
         return [o]
 
     def reference(ref_data):
-        avgpool = torch.nn.AvgPool2d(
-            kernel_size=2, stride=2, padding=0, count_include_pad=False)
+        avgpool = torch.nn.AvgPool2d(kernel_size=2,
+                                     stride=2,
+                                     padding=0,
+                                     count_include_pad=False)
         out = avgpool(torch.from_numpy(d1))
         return [out]
 
@@ -42,8 +44,10 @@ def test_average_pool_2(op_tester):
         return [o]
 
     def reference(ref_data):
-        avgpool = torch.nn.AvgPool2d(
-            kernel_size=3, stride=1, padding=1, count_include_pad=False)
+        avgpool = torch.nn.AvgPool2d(kernel_size=3,
+                                     stride=1,
+                                     padding=1,
+                                     count_include_pad=False)
         out = avgpool(torch.from_numpy(d1))
         return [out]
 
@@ -64,8 +68,10 @@ def test_average_pool_3(op_tester):
         return [o]
 
     def reference(ref_data):
-        avgpool = torch.nn.AvgPool2d(
-            kernel_size=3, stride=2, padding=0, count_include_pad=False)
+        avgpool = torch.nn.AvgPool2d(kernel_size=3,
+                                     stride=2,
+                                     padding=0,
+                                     count_include_pad=False)
         out = avgpool(torch.from_numpy(d1))
         return [out]
 
@@ -97,13 +103,12 @@ def test_average_pool_with_count_include_pad(op_tester):
     opts = poponnx.SessionOptionsCore()
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
-        poponnx.TrainingSession(
-            fnModel=proto,
-            dataFeed=dataFlow,
-            losses=losses,
-            optimizer=optimizer,
-            userOptions=opts,
-            deviceInfo=tu.get_poplar_cpu_device())
+        poponnx.TrainingSession(fnModel=proto,
+                                dataFeed=dataFlow,
+                                losses=losses,
+                                optimizer=optimizer,
+                                userOptions=opts,
+                                deviceInfo=tu.get_poplar_cpu_device())
 
     assert (e_info.value.args[0].startswith(
         "`count_include_pad` is not supported"))

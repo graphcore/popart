@@ -18,8 +18,8 @@ def conv(b, x, ksize, stride, c_out, name):
         p = int(ksize / 2)
         padding = [p, p, p, p]
 
-        we = b.addInitializedInputTensor(
-            np.zeros(wshape, np.float16), "weights")
+        we = b.addInitializedInputTensor(np.zeros(wshape, np.float16),
+                                         "weights")
         o = b.aiOnnx.conv([x, we],
                           strides=stride,
                           pads=padding,
@@ -50,8 +50,8 @@ def fully_connected(b, x, cout):
         # assume 'x' is [N, C, 1, 1]
         shape = b.getTensorShape(x)
         x = b.reshape_const(b.aiOnnx, [x], [shape[0], shape[1]])
-        w = b.addInitializedInputTensor(
-            np.zeros([shape[1], cout], np.float16), "weights")
+        w = b.addInitializedInputTensor(np.zeros([shape[1], cout], np.float16),
+                                        "weights")
         o = b.aiOnnx.matmul([x, w])
 
     return o
@@ -60,14 +60,14 @@ def fully_connected(b, x, cout):
 def norm(b, x, bshape, training, norm_type):
     if norm_type == "BatchNorm":
         with b.nameScope("bn"):
-            scale = b.addInitializedInputTensor(
-                np.zeros(bshape, np.float16), "scale")
-            bias = b.addInitializedInputTensor(
-                np.zeros(bshape, np.float16), "bias")
-            mean = b.addInitializedInputTensor(
-                np.zeros(bshape, np.float16), "mean")
-            var = b.addInitializedInputTensor(
-                np.zeros(bshape, np.float16), "var")
+            scale = b.addInitializedInputTensor(np.zeros(bshape, np.float16),
+                                                "scale")
+            bias = b.addInitializedInputTensor(np.zeros(bshape, np.float16),
+                                               "bias")
+            mean = b.addInitializedInputTensor(np.zeros(bshape, np.float16),
+                                               "mean")
+            var = b.addInitializedInputTensor(np.zeros(bshape, np.float16),
+                                              "var")
             if training:
                 (x, _, _, _, _) = b.aiOnnx.batchnormalization(
                     [x, scale, bias, mean, var], 5)
@@ -78,10 +78,10 @@ def norm(b, x, bshape, training, norm_type):
     elif norm_type == "GroupNorm":
         # Assume group-size of 32
         with b.nameScope("gn"):
-            scale = b.addInitializedInputTensor(
-                np.zeros(bshape, np.float16), "scale")
-            bias = b.addInitializedInputTensor(
-                np.zeros(bshape, np.float16), "bias")
+            scale = b.addInitializedInputTensor(np.zeros(bshape, np.float16),
+                                                "scale")
+            bias = b.addInitializedInputTensor(np.zeros(bshape, np.float16),
+                                               "bias")
             (x, _, _) = b.aiGraphcore.groupnormalization([x, scale, bias], 32)
 
     else:
@@ -170,9 +170,8 @@ def test_mini_resnet_like():
                                   {"loss": poponnx.AnchorReturnType("ALL")}),
         optimizer=poponnx.ConstSGD(0.001),
         losses=[poponnx.NllLoss(op, lb, "loss")],
-        deviceInfo=poponnx.DeviceManager().createIpuModelDevice({
-            'numIPUs': 1
-        }),
+        deviceInfo=poponnx.DeviceManager().createIpuModelDevice({'numIPUs':
+                                                                 1}),
         userOptions=opts)
 
     session.prepareDevice()

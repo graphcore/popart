@@ -234,8 +234,12 @@ def test_lstm_initial_hc(op_tester):
         return [Y, Y_h, Y_c]
 
     def reference(ref_data):
-        lstm = LSTM_Helper(
-            X=d1, W=d2, R=d3, B=d4, initial_h=initial_h, initial_c=initial_c)
+        lstm = LSTM_Helper(X=d1,
+                           W=d2,
+                           R=d3,
+                           B=d4,
+                           initial_h=initial_h,
+                           initial_c=initial_c)
         Y, Y_h, Y_c = lstm.step()
 
         return [Y, Y_h, Y_c]
@@ -350,10 +354,12 @@ def test_lstm_torch_grad_all_inputs(op_tester):
         whg.unsqueeze_(0)
 
         # reorder the biases for comparison with poponnx
-        bii, bif, bic, bio = torch.split(
-            lstm.bias_ih_l0.grad, hidden_size, dim=1)
-        bhi, bhf, bhc, bho = torch.split(
-            lstm.bias_hh_l0.grad, hidden_size, dim=1)
+        bii, bif, bic, bio = torch.split(lstm.bias_ih_l0.grad,
+                                         hidden_size,
+                                         dim=1)
+        bhi, bhf, bhc, bho = torch.split(lstm.bias_hh_l0.grad,
+                                         hidden_size,
+                                         dim=1)
         b_grad = torch.cat((bii, bio, bif, bic, bhi, bho, bhf, bhc)).view(
             1, 8 * hidden_size)
 
@@ -470,12 +476,11 @@ def test_import_torch_lstm(tmpdir):
         tt = [torch.tensor(i) for i in inputs]
         dummy_input = [tt[0], (tt[1], tt[2])]
 
-        torch.onnx.export(
-            model,
-            dummy_input,
-            onnx_file_name,
-            input_names=['X', 'initial_h', 'initial_c'],
-            output_names=['Y', 'Y_h', 'Y_c'])
+        torch.onnx.export(model,
+                          dummy_input,
+                          onnx_file_name,
+                          input_names=['X', 'initial_h', 'initial_c'],
+                          output_names=['Y', 'Y_h', 'Y_c'])
 
     # create a random np array of shape `*shape` and type np.float32
     def np_rand(*shape):
@@ -503,8 +508,9 @@ def test_import_torch_lstm(tmpdir):
         dataFlow = poponnx.DataFlow(1, anchors)
         options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
         device = poponnx.DeviceManager().createIpuModelDevice(options)
-        s = poponnx.InferenceSession(
-            fnModel=onnx_file_name, dataFeed=dataFlow, deviceInfo=device)
+        s = poponnx.InferenceSession(fnModel=onnx_file_name,
+                                     dataFeed=dataFlow,
+                                     deviceInfo=device)
 
         anchor_map = s.initAnchorArrays()
         s.prepareDevice()
@@ -567,12 +573,11 @@ def test_import_torch_lstm_train(tmpdir):
         tt = [torch.tensor(i) for i in inputs]
         dummy_input = [tt[0], (tt[1], tt[2])]
 
-        torch.onnx.export(
-            model,
-            dummy_input,
-            onnx_file_name,
-            input_names=['X', 'initial_h', 'initial_c'],
-            output_names=['out'])
+        torch.onnx.export(model,
+                          dummy_input,
+                          onnx_file_name,
+                          input_names=['X', 'initial_h', 'initial_c'],
+                          output_names=['out'])
 
     # create a random np array of shape `*shape` and type np.float32
     def np_rand(*shape):
@@ -649,13 +654,12 @@ def test_import_torch_lstm_train(tmpdir):
         options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
         device = poponnx.DeviceManager().createIpuModelDevice(options)
         print('Creating session')
-        s = poponnx.TrainingSession(
-            fnModel=onnx_file_name,
-            dataFeed=dataFlow,
-            optimizer=optimizer,
-            losses=losses,
-            passes=poponnx.Patterns(["PreUniRepl"]),
-            deviceInfo=device)
+        s = poponnx.TrainingSession(fnModel=onnx_file_name,
+                                    dataFeed=dataFlow,
+                                    optimizer=optimizer,
+                                    losses=losses,
+                                    passes=poponnx.Patterns(["PreUniRepl"]),
+                                    deviceInfo=device)
         print('setting device')
 
         anchor_map = s.initAnchorArrays()
@@ -672,14 +676,18 @@ def test_import_torch_lstm_train(tmpdir):
         s.run(stepio)
         s.modelToHost(get_poponnx_fname(onnx_file_name))
 
-        anchor_map[poponnx.reservedGradientPrefix() + 'W'] = anchor_map.pop(
-            poponnx.reservedGradientPrefix() + 'lstm.weight_ih_l0')
-        anchor_map[poponnx.reservedGradientPrefix() + 'R'] = anchor_map.pop(
-            poponnx.reservedGradientPrefix() + 'lstm.weight_hh_l0')
-        anchor_map[poponnx.reservedGradientPrefix() + 'WB'] = anchor_map.pop(
-            poponnx.reservedGradientPrefix() + 'lstm.bias_ih_l0')
-        anchor_map[poponnx.reservedGradientPrefix() + 'RB'] = anchor_map.pop(
-            poponnx.reservedGradientPrefix() + 'lstm.bias_hh_l0')
+        anchor_map[poponnx.reservedGradientPrefix() +
+                   'W'] = anchor_map.pop(poponnx.reservedGradientPrefix() +
+                                         'lstm.weight_ih_l0')
+        anchor_map[poponnx.reservedGradientPrefix() +
+                   'R'] = anchor_map.pop(poponnx.reservedGradientPrefix() +
+                                         'lstm.weight_hh_l0')
+        anchor_map[poponnx.reservedGradientPrefix() +
+                   'WB'] = anchor_map.pop(poponnx.reservedGradientPrefix() +
+                                          'lstm.bias_ih_l0')
+        anchor_map[poponnx.reservedGradientPrefix() +
+                   'RB'] = anchor_map.pop(poponnx.reservedGradientPrefix() +
+                                          'lstm.bias_hh_l0')
         return anchor_map
 
     input_size = 2
@@ -753,12 +761,11 @@ def test_import_torch_lstm_multi_run(tmpdir):
         tt = [torch.tensor(i) for i in inputs]
         dummy_input = [tt[0], (tt[1], tt[2])]
 
-        torch.onnx.export(
-            model,
-            dummy_input,
-            onnx_file_name,
-            input_names=['X', 'initial_h', 'initial_c'],
-            output_names=['Y', 'Y_h', 'Y_c'])
+        torch.onnx.export(model,
+                          dummy_input,
+                          onnx_file_name,
+                          input_names=['X', 'initial_h', 'initial_c'],
+                          output_names=['Y', 'Y_h', 'Y_c'])
 
     # create a random np array of shape `*shape` and type np.float32
     def np_rand(*shape):
@@ -800,8 +807,9 @@ def test_import_torch_lstm_multi_run(tmpdir):
         dataFlow = poponnx.DataFlow(1, anchors)
         options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
         device = poponnx.DeviceManager().createIpuModelDevice(options)
-        s = poponnx.InferenceSession(
-            fnModel=onnx_file_name, dataFeed=dataFlow, deviceInfo=device)
+        s = poponnx.InferenceSession(fnModel=onnx_file_name,
+                                     dataFeed=dataFlow,
+                                     deviceInfo=device)
 
         anchor_map = s.initAnchorArrays()
         s.prepareDevice()

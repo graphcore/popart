@@ -111,21 +111,20 @@ def ipu_op_tester(tmpdir):
             device = tu.get_ipu_model(numIPUs=4)
 
             if (step_type == 'infer'):
-                session = poponnx.InferenceSession(
-                    fnModel=proto,
-                    dataFeed=dataFlow,
-                    deviceInfo=device,
-                    passes=poponnx.Patterns(self.passes),
-                    userOptions=opts)
+                session = poponnx.InferenceSession(fnModel=proto,
+                                                   dataFeed=dataFlow,
+                                                   deviceInfo=device,
+                                                   passes=poponnx.Patterns(
+                                                       self.passes),
+                                                   userOptions=opts)
             elif (step_type == 'train'):
-                session = poponnx.Session(
-                    fnModel=proto,
-                    dataFeed=dataFlow,
-                    losses=losses,
-                    optimizer=optimizer,
-                    deviceInfo=device,
-                    passes=poponnx.Patterns(self.passes),
-                    userOptions=opts)
+                session = poponnx.Session(fnModel=proto,
+                                          dataFeed=dataFlow,
+                                          losses=losses,
+                                          optimizer=optimizer,
+                                          deviceInfo=device,
+                                          passes=poponnx.Patterns(self.passes),
+                                          userOptions=opts)
 
             anchor_map = session.initAnchorArrays()
 

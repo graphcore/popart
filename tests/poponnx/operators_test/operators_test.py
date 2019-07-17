@@ -170,8 +170,10 @@ def test_convolution_3(op_tester):
 
     def reference(ref_data):
         d = torch.tensor(data)
-        conv = torch.nn.Conv2d(
-            chans_in, chans_out, kernel_size, padding=[padding] * 2)
+        conv = torch.nn.Conv2d(chans_in,
+                               chans_out,
+                               kernel_size,
+                               padding=[padding] * 2)
         conv.weight.data = torch.tensor(filt)
         conv.bias.data = torch.tensor([0.0 for i in range(chans_out)])
         o = conv(d)
@@ -207,12 +209,11 @@ def test_convolution_4(op_tester):
 
     def reference(ref_data):
         d = torch.tensor(data)
-        conv = torch.nn.Conv2d(
-            chans_in,
-            chans_out,
-            kernel_size,
-            padding=[padding] * 2,
-            groups=groups)
+        conv = torch.nn.Conv2d(chans_in,
+                               chans_out,
+                               kernel_size,
+                               padding=[padding] * 2,
+                               groups=groups)
         conv.weight.data = torch.tensor(filt)
         conv.bias.data = torch.tensor([0.0 for i in range(chans_out)])
         o = conv(d)
@@ -253,12 +254,11 @@ def test_convolution_5(op_tester):
 
     def reference(ref_data):
         d = torch.tensor(data, requires_grad=True)
-        conv = torch.nn.Conv2d(
-            chans_in,
-            chans_out,
-            kernel_size,
-            padding=[padding] * 2,
-            groups=groups)
+        conv = torch.nn.Conv2d(chans_in,
+                               chans_out,
+                               kernel_size,
+                               padding=[padding] * 2,
+                               groups=groups)
         conv.weight.data = torch.tensor(filt)
         conv.bias.data = torch.tensor([0.0 for i in range(chans_out)])
         o = conv(d)
@@ -855,43 +855,39 @@ def test_slice_error_start_input(op_tester):
 
 def test_pad(op_tester):
     data = np.array([[[1., 2.], [3., 4.]]]).astype(np.float32)
-    _test_pad(
-        op_tester,
-        data,
-        lower_padding=(2, 1, 1),
-        upper_padding=(1, 0, 2),
-        mode='constant')
+    _test_pad(op_tester,
+              data,
+              lower_padding=(2, 1, 1),
+              upper_padding=(1, 0, 2),
+              mode='constant')
 
 
 def test_pad_with_value(op_tester):
     data = np.array([[[1., 2.], [3., 4.]]]).astype(np.float32)
-    _test_pad(
-        op_tester,
-        data,
-        lower_padding=(2, 1, 1),
-        upper_padding=(1, 0, 2),
-        mode='constant',
-        pad_value=0.3)
+    _test_pad(op_tester,
+              data,
+              lower_padding=(2, 1, 1),
+              upper_padding=(1, 0, 2),
+              mode='constant',
+              pad_value=0.3)
 
 
 def test_pad_type_edge(op_tester):
     data = np.array([[[1., 2.], [3., 4.]]]).astype(np.float32)
-    _test_pad(
-        op_tester,
-        data,
-        lower_padding=(2, 1, 1),
-        upper_padding=(1, 0, 2),
-        mode='edge')
+    _test_pad(op_tester,
+              data,
+              lower_padding=(2, 1, 1),
+              upper_padding=(1, 0, 2),
+              mode='edge')
 
 
 def test_pad_type_reflect(op_tester):
     data = np.array([[1., 2., 3.], [4., 5., 6.]]).astype(np.float32)
-    _test_pad(
-        op_tester,
-        data,
-        lower_padding=(1, 0),
-        upper_padding=(0, 2),
-        mode='reflect')
+    _test_pad(op_tester,
+              data,
+              lower_padding=(1, 0),
+              upper_padding=(0, 2),
+              mode='reflect')
 
 
 def _test_pad(op_tester, data, lower_padding, upper_padding, mode,
@@ -1390,8 +1386,10 @@ def test_instancenorm_grad(op_tester):
     def reference(ref_data):
         i_data = torch.tensor(data, requires_grad=True)
 
-        m = torch.nn.InstanceNorm2d(
-            features, eps=epsilon, momentum=0, affine=True)
+        m = torch.nn.InstanceNorm2d(features,
+                                    eps=epsilon,
+                                    momentum=0,
+                                    affine=True)
         m.weight.data = torch.tensor(scale)
         m.bias.data = torch.tensor(bias)
         out = m(i_data)

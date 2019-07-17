@@ -20,10 +20,9 @@ def test_add_fp16(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        deviceInfo=tu.get_poplar_cpu_device())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 
@@ -47,8 +46,8 @@ def test_add_variable_fp16(tmpdir):
     shape = poponnx.TensorInfo("FLOAT16", [2])
 
     i1 = builder.addInputTensor(shape)
-    i2 = builder.addInitializedInputTensor(
-        np.array([2., 4.], dtype=np.float16))
+    i2 = builder.addInitializedInputTensor(np.array([2., 4.],
+                                                    dtype=np.float16))
     o = builder.aiOnnx.add([i1, i2])
     builder.addOutputTensor(o)
 
@@ -56,10 +55,9 @@ def test_add_variable_fp16(tmpdir):
 
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
 
-    session = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        deviceInfo=tu.get_poplar_cpu_device())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=tu.get_poplar_cpu_device())
 
     session.prepareDevice()
     session.weightsFromHost()
@@ -104,10 +102,9 @@ def test_fp16transpose(tmpdir):
 
     proto = builder.getModelProto()
     dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
-    session = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        deviceInfo=tu.get_poplar_cpu_device())
+    session = poponnx.InferenceSession(fnModel=proto,
+                                       dataFeed=dataFlow,
+                                       deviceInfo=tu.get_poplar_cpu_device())
 
     session.prepareDevice()
     anchors = session.initAnchorArrays()

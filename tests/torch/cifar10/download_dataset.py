@@ -44,5 +44,7 @@ else:
     data_tar.extractall(path=c10datadir.c10datadir)
 
 print('Verifying CIFAR10 data...', flush=True)
-trainset = datasets.CIFAR10(
-    root=c10datadir.c10datadir, train=True, download=True, transform=transform)
+trainset = datasets.CIFAR10(root=c10datadir.c10datadir,
+                            train=True,
+                            download=True,
+                            transform=transform)

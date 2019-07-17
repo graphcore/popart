@@ -28,11 +28,10 @@ def test_ipu_copy_bca1():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        deviceInfo=tu.get_ipu_model(numIPUs=3))
+    s = poponnx.InferenceSession(fnModel=proto,
+                                 dataFeed=dataFlow,
+                                 userOptions=opts,
+                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     s.prepareDevice()
 
@@ -62,11 +61,10 @@ def test_ipu_copy_aca1():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        deviceInfo=tu.get_ipu_model(numIPUs=3))
+    s = poponnx.InferenceSession(fnModel=proto,
+                                 dataFeed=dataFlow,
+                                 userOptions=opts,
+                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     with pytest.raises(poponnx.poponnx_exception) as e_info:
         s.prepareDevice()
@@ -105,11 +103,10 @@ def test_ipu_copy_bca4():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        deviceInfo=tu.get_ipu_model(numIPUs=3))
+    s = poponnx.InferenceSession(fnModel=proto,
+                                 dataFeed=dataFlow,
+                                 userOptions=opts,
+                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     s.prepareDevice()
 
@@ -146,11 +143,10 @@ def test_ipu_copy_bca2():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        deviceInfo=tu.get_ipu_model(numIPUs=3))
+    s = poponnx.InferenceSession(fnModel=proto,
+                                 dataFeed=dataFlow,
+                                 userOptions=opts,
+                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     s.prepareDevice()
 
@@ -179,11 +175,10 @@ def test_ipu_copy_bca3():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        deviceInfo=tu.get_ipu_model(numIPUs=2))
+    s = poponnx.InferenceSession(fnModel=proto,
+                                 dataFeed=dataFlow,
+                                 userOptions=opts,
+                                 deviceInfo=tu.get_ipu_model(numIPUs=2))
 
     s.prepareDevice()
 
@@ -217,10 +212,9 @@ def test_ipu_copy_bca5():
     opts = poponnx.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = poponnx.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        deviceInfo=tu.get_ipu_model(numIPUs=3))
+    s = poponnx.InferenceSession(fnModel=proto,
+                                 dataFeed=dataFlow,
+                                 userOptions=opts,
+                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     s.prepareDevice()

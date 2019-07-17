@@ -68,12 +68,11 @@ torchWriter = torchwriter.PytorchNetWriter(
     module=Module0(),
     samplesPerBatch=batchSize)
 
-c10driver.run(
-    torchWriter,
-    None,
-    args.outputdir,
-    cifarInIndices,
-    args.device,
-    args.hw_id,
-    transformations=["prepareNodesForTraining"])
+c10driver.run(torchWriter,
+              None,
+              args.outputdir,
+              cifarInIndices,
+              args.device,
+              args.hw_id,
+              transformations=["prepareNodesForTraining"])
 #, "removeUnusedInputs"])

@@ -126,8 +126,8 @@ def test_constsgd_vs_sgd():
                                           anchorsArraysConstSgd)
 
         # set scalar learnRate
-        inputsUserSgd["learningRate_FLOAT"] = np.ones(
-            stepSize, dtype=np.float32) * lr
+        inputsUserSgd["learningRate_FLOAT"] = np.ones(stepSize,
+                                                      dtype=np.float32) * lr
         stepioUserSgd = poponnx.PyStepIO(inputsUserSgd, anchorsArraysUserSgd)
 
         if step == numSteps - 1:
