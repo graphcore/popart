@@ -3,7 +3,6 @@
 #include <boost/test/unit_test.hpp>
 #include <poponnx/builder.hpp>
 #include <poponnx/dataflow.hpp>
-#include <poponnx/device.hpp>
 #include <poponnx/devicemanager.hpp>
 #include <poponnx/filereader.hpp>
 #include <poponnx/inputshapeinfo.hpp>
