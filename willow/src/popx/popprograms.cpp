@@ -244,7 +244,7 @@ poplar::program::Sequence PopPrograms::program() {
     outer.add(setRandomDropoutSeedFragment());
 
     auto accumulationFactor = static_cast<int>(dv_p->getAccumulationFactor());
-    if (accumulationFactor > 1) {
+    if (dv_p->ir().getSessionOptions().enableGradientAccumulation) {
       logging::devicex::trace(
           "Adding gradient accumulation repeat loop with {} loops",
           accumulationFactor);
