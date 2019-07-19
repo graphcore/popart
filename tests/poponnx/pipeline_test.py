@@ -22,8 +22,8 @@ def test_disabled_virtual_graphs():
             userOptions=opts,
             losses=[loss],
             deviceInfo=poponnx.DeviceManager().createIpuModelDevice({}))
-    assert (e_info.value.args[0].startswith(
-        "Pipelining requires the 'enableVirtualGraphs' session option"))
+    assert e_info.value.args[0].startswith(
+        "Pipelining requires the 'enableVirtualGraphs' session option")
 
 
 def test_enabled_recomputation():
@@ -56,8 +56,8 @@ def test_enabled_recomputation():
                 "tilesPerIPU":
                 20
             }))
-    assert (e_info.value.args[0].startswith(
-        "When pipelining is enabled, recomputation is currently not allowed"))
+    assert e_info.value.args[0].startswith(
+        "When pipelining is enabled, recomputation is currently not allowed")
 
 
 def test_bad_sharding0():
@@ -95,8 +95,7 @@ def test_bad_sharding0():
                 "tilesPerIPU":
                 20
             }))
-    assert (
-        e_info.value.args[0].find("forward IPU copies go from IPU N to N+1"))
+    assert e_info.value.args[0].find("forward IPU copies go from IPU N to N+1")
 
     # 2)
     builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
@@ -119,8 +118,7 @@ def test_bad_sharding0():
                 "tilesPerIPU":
                 20
             }))
-    assert (
-        e_info.value.args[0].find("forward IPU copies go from IPU N to N+1"))
+    assert e_info.value.args[0].find("forward IPU copies go from IPU N to N+1")
 
     # 3)
     builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
@@ -143,8 +141,8 @@ def test_bad_sharding0():
                 "tilesPerIPU":
                 20
             }))
-    assert (e_info.value.args[0].find(
-        "such that the loss is on the final IPU in the pipeline"))
+    assert e_info.value.args[0].find(
+        "such that the loss is on the final IPU in the pipeline")
 
 
 def test_stream_tensors_to_multiple_ipus():
@@ -227,8 +225,7 @@ def test_bad_sharding1():
                 "tilesPerIPU":
                 20
             }))
-    assert (
-        e_info.value.args[0].find("forward IPU copies go from IPU N to N+1"))
+    assert e_info.value.args[0].find("forward IPU copies go from IPU N to N+1")
 
 
 def test_inference_min_batches():
@@ -250,8 +247,8 @@ def test_inference_min_batches():
                           batchesPerStep=minBatches - 1,
                           doTraining=False,
                           doDevicex=False)
-    assert (e_info.value.args[0].startswith(
-        "For pipelining, depth (batchesPerStep) must"))
+    assert e_info.value.args[0].startswith(
+        "For pipelining, depth (batchesPerStep) must")
 
 
 def test_training_min_batches():
@@ -273,8 +270,8 @@ def test_training_min_batches():
                           batchesPerStep=minBatches - 1,
                           doTraining=True,
                           doDevicex=False)
-    assert (e_info.value.args[0].startswith(
-        "For pipelining, depth (batchesPerStep) must"))
+    assert e_info.value.args[0].startswith(
+        "For pipelining, depth (batchesPerStep) must")
 
 
 def test_output_matches_train():
@@ -303,7 +300,7 @@ def test_output_matches_train():
 
     for (tId1, t1), (tId2, t2) in zip(singleIpu_anchors.items(),
                                       multiIpu_anchors.items()):
-        assert (np.allclose(t1, t2))
+        assert np.allclose(t1, t2)
 
     # Expect only the anchors from the first batch to be equal. After that, the
     # continuous gradient accumulation option causes model parameters to diverge
@@ -312,7 +309,37 @@ def test_output_matches_train():
         for i in range(np.shape(t1)[0]):
             print("singleIpu   , batch: ", i, tId1, np.sum(t1[i]))
             print("pipelinedIpu, batch: ", i, tId2, np.sum(t2[i]))
-        # assert(np.allclose(t1[0], t2[0]))
+        assert np.allclose(t1[0], t2[0])
+
+
+def test_acts_match_restored_acts():
+    """
+    In this test we check that the stashed tensors and their equivalent
+    Restored tensors have the same values for all batches. This confirms
+    that the schedule of restoring and streaming anchors is correct
+
+    How do we know they're not both wrong? Take this example where the
+    streamed input is stashed. Check that it matches the raw data input
+    that is fed to the StepIO (requires T10110)
+    """
+    bps = 8
+    pipelined_anchors = get_model_anchors(doSharding=True,
+                                          doPipelining=True,
+                                          batchesPerStep=bps,
+                                          doTraining=True,
+                                          anchorRestoredTensors=True,
+                                          returnRawInput=True)
+
+    for (tId, t) in pipelined_anchors.items():
+        for i in range(np.shape(t)[0]):
+            print("batch: ", i, tId, np.sum(t[i]))
+    # TODO depends on T10110
+    # assert np.allclose(pipelined_anchors[poponnx.reservedRestoredPrefix() + "Exp:0"],
+    #                    pipelined_anchors["Exp:0"])
+    # assert np.allclose(pipelined_anchors[poponnx.reservedRestoredPrefix() + "input"],
+    #                    pipelined_anchors["input"])
+    # assert np.allclose(pipelined_anchors["input_raw"],
+    #                    pipelined_anchors["input"])
 
 
 def test_output_matches_infer():
@@ -340,13 +367,14 @@ def test_output_matches_infer():
         for i in range(np.shape(t1)[0]):
             print("singleIpu, batch: ", i, tId1, np.sum(t1[i]))
             print("multiIpu , batch: ", i, tId2, np.sum(t2[i]))
-        assert (np.allclose(t1, t2))
+        assert np.allclose(t1, t2)
+
     for (tId1, t1), (tId2, t2) in zip(singleIpu_anchors.items(),
                                       pipelined_anchors.items()):
         for i in range(np.shape(t1)[0]):
             print("singleIpu   , batch: ", i, tId1, np.sum(t1[i]))
             print("pipelinedIpu, batch: ", i, tId2, np.sum(t2[i]))
-        assert (np.allclose(t1, t2))
+        assert np.allclose(t1, t2)
 
 
 # Model
@@ -360,7 +388,9 @@ def get_model_anchors(doSharding,
                       batchesPerStep,
                       doTraining,
                       doProfiling=False,
-                      doDevicex=True):
+                      doDevicex=True,
+                      anchorRestoredTensors=False,
+                      returnRawInput=False):
     np.random.seed(seed=1)
 
     builder = poponnx.Builder()
@@ -386,11 +416,13 @@ def get_model_anchors(doSharding,
     art = poponnx.AnchorReturnType("ALL")
     loss = poponnx.NllLoss(out, l0, "loss")
 
+    anchor_map = {"loss": art, w0: art, e0: art}
     if doTraining is True:
-        d0_grad = poponnx.reservedGradientPrefix() + d0
-        anchor_map = {d0_grad: art, out: art, "loss": art}
-    else:
-        anchor_map = {out: art, "loss": art}
+        anchor_map[poponnx.reservedGradientPrefix() + d0] = art
+        if doPipelining is True and anchorRestoredTensors is True:
+            anchor_map[poponnx.reservedRestoredPrefix() + e0] = art
+            anchor_map[d0] = art
+            anchor_map[poponnx.reservedRestoredPrefix() + d0] = art
 
     opts = poponnx.SessionOptionsCore()
     opts.reportOptions = {"showExecutionSteps": "true"}
@@ -452,6 +484,9 @@ def get_model_anchors(doSharding,
     if doProfiling is True:
         from gcprofile import save_poponnx_report
         save_poponnx_report(session)
+
+    if returnRawInput is True:
+        anchors["input_raw"] = data
 
     return anchors
 

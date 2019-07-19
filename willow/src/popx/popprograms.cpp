@@ -77,7 +77,8 @@ poplar::program::Sequence PopPrograms::optimizerFromHost() {
 }
 
 void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
-                                   poplar::program::Sequence &sq) {
+                                   poplar::program::Sequence &sq,
+                                   std::ostringstream &ss) {
   // Inside the each phase, conditionally do:
   //
   // 1. The pre-forward fragment
@@ -96,6 +97,7 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   // 2.
   for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
     if (pInfo.doFwd(pCycle, vgid_seq.first)) {
+      ss << "\n  vg" << vgid_seq.first << " : ToDeviceStream";
       sq.add(vgid_seq.second);
     }
   }
@@ -103,6 +105,7 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   // 3.
   for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::Forward)) {
     if (pInfo.doFwd(pCycle, vgid_seq.first)) {
+      ss << "\n  vg" << vgid_seq.first << " : Forward";
       sq.add(vgid_seq.second);
     }
   }
@@ -111,7 +114,9 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   if (pipelineSeqs.find(PipelineFragmentId::IncrStashIndex) !=
       pipelineSeqs.end()) {
     for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::IncrStashIndex)) {
-      if (pInfo.doFwd(pCycle, vgid_seq.first)) {
+      if (pInfo.doFwd(pCycle, vgid_seq.first) ||
+          pInfo.doBwd(pCycle, vgid_seq.first)) {
+        ss << "\n  vg" << vgid_seq.first << " : IncrStashIndex";
         sq.add(vgid_seq.second);
       }
     }
@@ -121,6 +126,7 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   if (pipelineSeqs.find(PipelineFragmentId::Backward) != pipelineSeqs.end()) {
     for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::Backward)) {
       if (pInfo.doBwd(pCycle, vgid_seq.first)) {
+        ss << "\n  vg" << vgid_seq.first << " : Backward";
         sq.add(vgid_seq.second);
       }
     }
@@ -132,6 +138,7 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
     for (auto &vgid_seq :
          pipelineSeqs.at(PipelineFragmentId::FwdToHostStream)) {
       if (pInfo.doFwd(pCycle, vgid_seq.first)) {
+        ss << "\n  vg" << vgid_seq.first << " : FwdToHostStream";
         sq.add(vgid_seq.second);
       }
     }
@@ -141,6 +148,7 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
     for (auto &vgid_seq :
          pipelineSeqs.at(PipelineFragmentId::BwdToHostStream)) {
       if (pInfo.doBwd(pCycle, vgid_seq.first)) {
+        ss << "\n  vg" << vgid_seq.first << " : BwdToHostStream";
         sq.add(vgid_seq.second);
       }
     }
@@ -193,27 +201,50 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
   // Note that the IPU copies are always run regardless of the conditionals.
   // Host<->Device streams are run as normal with a the fwd/bwd program
   // fragments.
+
+  // Which parts of the Ir graph are run in each of the pipeline
+  // fragments? Print this info here:
+  std::ostringstream ss;
+  ss << "\n";
+  for (auto &fragid_ipudescs : pipelineDescs) {
+    PipelineFragmentId fragId = fragid_ipudescs.first;
+    std::string fragStr       = getStrFromPipelineFragmentId(fragId);
+    ss << "\n" + fragStr + ":";
+    for (auto vgid_desc : pipelineDescs.at(fragId)) {
+      auto vgStr = std::to_string(vgid_desc.first);
+      auto desc  = vgid_desc.second;
+      ss << "\n  vg" + vgStr + ":" + desc;
+    }
+  }
+  ss << "\n\n";
+
   PipelineInfo pInfo = dv_p->pipelineInfo();
 
   poplar::program::Sequence fill;
   for (PipelineCycle pCycle = pInfo.fillPhase.start;
        pCycle <= pInfo.fillPhase.end;
        pCycle++) {
-    addPipelineCycle(pCycle, fill);
+    ss << "\nPipeline Cycle " + std::to_string(pCycle) + ":";
+    addPipelineCycle(pCycle, fill, ss);
   }
 
   // All pipeline cycles in the main phase are identical. So we create the
   // program for a single cycle and repeat for mainCycles
   poplar::program::Sequence main;
-  addPipelineCycle(pInfo.mainPhase.start, main);
+  ss << "\nPipeline Cycle 'Main':";
+  addPipelineCycle(pInfo.mainPhase.start, main, ss);
   int64_t mainCycles = pInfo.mainPhase.end - pInfo.mainPhase.start + 1;
 
   poplar::program::Sequence flush;
   for (PipelineCycle pCycle = pInfo.flushPhase.start;
        pCycle <= pInfo.flushPhase.end;
        pCycle++) {
-    addPipelineCycle(pCycle, flush);
+    ss << "\nPipeline Cycle " + std::to_string(pCycle) + ":";
+    addPipelineCycle(pCycle, flush, ss);
   }
+
+  logging::devicex::debug("Pipelining program construction summary:");
+  logging::devicex::debug(ss.str());
 
   poplar::program::Sequence outer;
 
@@ -319,53 +350,6 @@ poplar::program::Sequence &PopPrograms::recomputeFragment(OpId id) {
 }
 
 poplar::program::Sequence &
-PopPrograms::pipelineFragment(VGraphId vGraphId, PipelineFragmentId frag) {
-  auto foundFrag = pipelineSeqs.find(frag);
-  if (foundFrag != pipelineSeqs.end()) {
-    auto foundVGraph = pipelineSeqs.at(frag).find(vGraphId);
-    if (foundVGraph != pipelineSeqs.at(frag).end()) {
-      return pipelineSeqs.at(frag).at(vGraphId);
-    } else {
-      pipelineSeqs.at(frag).insert({vGraphId, poplar::program::Sequence{}});
-      return pipelineSeqs.at(frag).at(vGraphId);
-    }
-  } else {
-    pipelineSeqs.insert({frag, {{vGraphId, poplar::program::Sequence{}}}});
-    return pipelineSeqs.at(frag).at(vGraphId);
-  }
-}
-
-poplar::program::Sequence &
-PopPrograms::pipelineForwardFragment(VGraphId vGraphId) {
-  return pipelineFragment(vGraphId, PipelineFragmentId::Forward);
-}
-
-poplar::program::Sequence &
-PopPrograms::pipelineBackwardFragment(VGraphId vGraphId) {
-  return pipelineFragment(vGraphId, PipelineFragmentId::Backward);
-}
-
-poplar::program::Sequence &
-PopPrograms::pipelineToDeviceStreamFragment(VGraphId vGraphId) {
-  return pipelineFragment(vGraphId, PipelineFragmentId::ToDeviceStream);
-}
-
-poplar::program::Sequence &
-PopPrograms::pipelineFwdToHostStreamFragment(VGraphId vGraphId) {
-  return pipelineFragment(vGraphId, PipelineFragmentId::FwdToHostStream);
-}
-
-poplar::program::Sequence &
-PopPrograms::pipelineBwdToHostStreamFragment(VGraphId vGraphId) {
-  return pipelineFragment(vGraphId, PipelineFragmentId::BwdToHostStream);
-}
-
-poplar::program::Sequence &
-PopPrograms::pipelineIncrStashIndexFragment(VGraphId vGraphId) {
-  return pipelineFragment(vGraphId, PipelineFragmentId::IncrStashIndex);
-}
-
-poplar::program::Sequence &
 PopPrograms::forwardOrBackwardFragment(ScheduledPreLoss preLoss) {
   switch (preLoss) {
   case ScheduledPreLoss::Yes: {
@@ -381,17 +365,103 @@ PopPrograms::forwardOrBackwardFragment(ScheduledPreLoss preLoss) {
 }
 
 poplar::program::Sequence &
+PopPrograms::pipelineFragment(VGraphId vGraphId,
+                              PipelineFragmentId frag,
+                              const std::string &desc) {
+  auto foundFrag = pipelineSeqs.find(frag);
+  if (foundFrag != pipelineSeqs.end()) {
+    auto foundVGraph = pipelineSeqs.at(frag).find(vGraphId);
+    if (foundVGraph != pipelineSeqs.at(frag).end()) {
+      pipelineDescs.at(frag).at(vGraphId).append("\n    " + desc);
+      return pipelineSeqs.at(frag).at(vGraphId);
+    } else {
+      pipelineDescs.at(frag).insert({vGraphId, "\n    " + desc});
+      pipelineSeqs.at(frag).insert({vGraphId, poplar::program::Sequence{}});
+      return pipelineSeqs.at(frag).at(vGraphId);
+    }
+  } else {
+    pipelineDescs.insert({frag, {{vGraphId, "\n    " + desc}}});
+    pipelineSeqs.insert({frag, {{vGraphId, poplar::program::Sequence{}}}});
+    return pipelineSeqs.at(frag).at(vGraphId);
+  }
+}
+
+poplar::program::Sequence &
+PopPrograms::pipelineForwardFragment(VGraphId vGraphId,
+                                     const std::string &desc) {
+  return pipelineFragment(vGraphId, PipelineFragmentId::Forward, desc);
+}
+
+poplar::program::Sequence &
+PopPrograms::pipelineBackwardFragment(VGraphId vGraphId,
+                                      const std::string &desc) {
+  return pipelineFragment(vGraphId, PipelineFragmentId::Backward, desc);
+}
+
+poplar::program::Sequence &
+PopPrograms::pipelineToDeviceStreamFragment(VGraphId vGraphId,
+                                            const std::string &desc) {
+  return pipelineFragment(vGraphId, PipelineFragmentId::ToDeviceStream, desc);
+}
+
+poplar::program::Sequence &
+PopPrograms::pipelineFwdToHostStreamFragment(VGraphId vGraphId,
+                                             const std::string &desc) {
+  return pipelineFragment(vGraphId, PipelineFragmentId::FwdToHostStream, desc);
+}
+
+poplar::program::Sequence &
+PopPrograms::pipelineBwdToHostStreamFragment(VGraphId vGraphId,
+                                             const std::string &desc) {
+  return pipelineFragment(vGraphId, PipelineFragmentId::BwdToHostStream, desc);
+}
+
+poplar::program::Sequence &
+PopPrograms::pipelineIncrStashIndexFragment(VGraphId vGraphId,
+                                            const std::string &desc) {
+  return pipelineFragment(vGraphId, PipelineFragmentId::IncrStashIndex, desc);
+}
+
+poplar::program::Sequence &
 PopPrograms::pipelineFwdOrBwdToHostStreamFragment(ScheduledPreLoss preLoss,
-                                                  VGraphId vGraphId) {
+                                                  VGraphId vGraphId,
+                                                  const std::string &desc) {
   switch (preLoss) {
   case ScheduledPreLoss::Yes: {
-    return pipelineFwdToHostStreamFragment(vGraphId);
+    return pipelineFwdToHostStreamFragment(vGraphId, desc);
   }
   case ScheduledPreLoss::No: {
-    return pipelineBwdToHostStreamFragment(vGraphId);
+    return pipelineBwdToHostStreamFragment(vGraphId, desc);
   }
   case ScheduledPreLoss::Undefined: {
     throw error("There is no fragment for Undefined SchedulePreLoss");
+  }
+  }
+}
+
+std::string
+PopPrograms::getStrFromPipelineFragmentId(PipelineFragmentId fragId) {
+  switch (fragId) {
+  case PipelineFragmentId::ToDeviceStream: {
+    return "ToDeviceStream";
+  }
+  case PipelineFragmentId::Forward: {
+    return "Forward";
+  }
+  case PipelineFragmentId::Backward: {
+    return "Backward";
+  }
+  case PipelineFragmentId::FwdToHostStream: {
+    return "FwdToHostStream";
+  }
+  case PipelineFragmentId::BwdToHostStream: {
+    return "BwdToHostStream";
+  }
+  case PipelineFragmentId::IncrStashIndex: {
+    return "IncrStashIndex";
+  }
+  case PipelineFragmentId::N: {
+    throw error("Cannot return string for PipelineFragmentId 'N'");
   }
   }
 }

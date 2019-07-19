@@ -4,6 +4,7 @@
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
+#include <poponnx/tensornames.hpp>
 
 namespace poponnx {
 
@@ -31,7 +32,7 @@ view::Region RestoreOp::aliases(InIndex index) const {
 view::Region RestoreOp::modifies(InIndex index) const { return aliases(index); }
 
 TensorId RestoreOp::getRestoredTensorId() const {
-  return "Restored__" + inId(getActToRestoreInIndex());
+  return reservedRestoredPrefix() + inId(getActToRestoreInIndex());
 }
 
 namespace {

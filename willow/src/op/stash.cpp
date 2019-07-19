@@ -4,8 +4,7 @@
 #include <poponnx/opmanager.hpp>
 #include <poponnx/opserialiser.hpp>
 #include <poponnx/tensor.hpp>
-
-#include <popops/DynamicSlice.hpp>
+#include <poponnx/tensornames.hpp>
 
 namespace poponnx {
 
@@ -34,7 +33,7 @@ int64_t StashOp::getStashSize() {
 }
 
 TensorId StashOp::getStashedTensorId() const {
-  return "Stashed__" + inId(getInIndex());
+  return reservedStashedPrefix() + inId(getInIndex());
 }
 
 namespace {

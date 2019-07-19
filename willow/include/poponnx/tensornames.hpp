@@ -30,6 +30,8 @@ constexpr const char *reservedUpdatedVarPrefix() { return "UV___"; }
 constexpr const char *reservedAccumulationPrefix() { return "A___"; }
 constexpr const char *reservedAccumulationOutPrefix() { return "AO___"; }
 constexpr const char *reservedAccumulationResetPrefix() { return "R___"; }
+constexpr const char *reservedStashedPrefix() { return "Stashed___"; }
+constexpr const char *reservedRestoredPrefix() { return "Restored___"; }
 
 std::vector<std::string> reservedPrefixes();
 

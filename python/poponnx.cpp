@@ -930,6 +930,8 @@ PYBIND11_MODULE(poponnx_core, m) {
   m.def("reservedAccumulationPrefix", &reservedAccumulationPrefix);
   m.def("reservedAccumulationOutPrefix", &reservedAccumulationOutPrefix);
   m.def("reservedAccumulationResetPrefix", &reservedAccumulationResetPrefix);
+  m.def("reservedStashedPrefix", &reservedStashedPrefix);
+  m.def("reservedRestoredPrefix", &reservedRestoredPrefix);
 
   // Exceptions are processed explicitly to allow the main dynamic library
   // to do the type inference.  This prevents some inter dynamic library type

@@ -572,11 +572,6 @@ void Ir::prepare(const IrBundle &gb) {
   updateVertices();
   dotCheckpoint(DotCheck::BWD0);
 
-  // confirm that all the anchor names provided
-  // are indeed real tensor names. This is a check
-  // that the user has not provided incorrect names.
-  // We allow duplicates.
-  validateAnchors();
   applyTransform(Prune::id(), getMainGraph());
 
   for (auto &id_graph : graphs) {
@@ -652,7 +647,6 @@ void Ir::prepare(const IrBundle &gb) {
   }
 
   applyTransform(Prune::id(), getMainGraph());
-
   updateVertices();
 
   // Apply transform after topological constraints have been added.
@@ -666,22 +660,11 @@ void Ir::prepare(const IrBundle &gb) {
   applyTransform(MergeCopies::id(), getMainGraph());
   updateVertices();
 
-  // Each virtual graph is a pipeline stage in the pipeline.
-  // Transform the graph to cache forward-pass tensors, and
-  // restore them when needed in the backwards pass, allowing
-  // for greater parallelism during compute
-  if (getSessionOptions().enablePipelining) {
-    applyTransform(Pipeline::id(), getMainGraph());
-  }
-  updateVertices();
-
   dotCheckpoint(DotCheck::PREALIAS);
 
-  // outlining makes Phase of Vertices meaningless as matches
-  // can contain Ops from different Pphase. We should not
-  // run updateVertices after this pass
   if (getSessionOptions().enableOutlining) {
     applyTransform(SubgraphOutline::id(), getMainGraph());
+    updateVertices();
   }
 
   if (autoRecomputationEnabled()) {
@@ -704,8 +687,26 @@ void Ir::prepare(const IrBundle &gb) {
     }
   }
 
-  dotCheckpoint(DotCheck::FINAL);
+  updateVertices();
 
+  // Each virtual graph is a pipeline stage in the pipeline.
+  // Transform the graph to cache forward-pass tensors, and
+  // restore them when needed in the backwards pass, allowing
+  // for greater parallelism during compute.
+  // We rely on 'scheduledPreLoss' attributes not changing beyond
+  // this point. Hence, don't call updateVertices (T10109) again
+  if (getSessionOptions().enablePipelining) {
+    applyTransform(Pipeline::id(), getMainGraph());
+    // updateVertices();
+  }
+
+  // confirm that all the anchor names provided
+  // are indeed real tensor names. This is a check
+  // that the user has not provided incorrect names.
+  // We allow duplicates.
+  validateAnchors();
+
+  dotCheckpoint(DotCheck::FINAL);
   logIr();
 
   // some checks, now that prepare is complete
@@ -717,8 +718,6 @@ void Ir::prepare(const IrBundle &gb) {
                         "SoftMaxGradDirect");
     }
   }
-
-  updateVertices();
 
   verifyConstExprFolding();
   verifyConnectivity();

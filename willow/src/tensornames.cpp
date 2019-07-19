@@ -30,7 +30,9 @@ std::vector<std::string> reservedPrefixes() {
           reservedUpdatedVarPrefix(),
           reservedAccumulationPrefix(),
           reservedAccumulationOutPrefix(),
-          reservedAccumulationResetPrefix()};
+          reservedAccumulationResetPrefix(),
+          reservedStashedPrefix(),
+          reservedRestoredPrefix()};
 }
 
 } // namespace poponnx

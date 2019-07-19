@@ -200,17 +200,17 @@ bool Pipeline::apply(Graph &graph) const {
       continue;
     }
 
-    bool isConsumedByFwdOp = false;
-    bool isConsumedByBwdOp = false;
+    bool isConsumedByOpScheduledPreLoss  = false;
+    bool isConsumedByOpScheduledPostLoss = false;
     for (Op *consumer : tensor->consumers.getOps()) {
-      if (consumer->toLoss == PathToLoss::Yes) {
-        isConsumedByFwdOp = true;
+      if (consumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
+        isConsumedByOpScheduledPreLoss = true;
       } else if (consumer->scheduledPreLoss == ScheduledPreLoss::No) {
-        isConsumedByBwdOp = true;
+        isConsumedByOpScheduledPostLoss = true;
       }
     }
 
-    if (isConsumedByFwdOp && isConsumedByBwdOp) {
+    if (isConsumedByOpScheduledPreLoss && isConsumedByOpScheduledPostLoss) {
       toStashTensors.push_back(tid);
     }
   }
@@ -234,6 +234,10 @@ bool Pipeline::apply(Graph &graph) const {
     auto stashId = stashOp->getStashedTensorId();
     stashOp->createAndConnectOutTensor(StashOp::getOutIndex(), stashId);
     stashOp->setup();
+    // We don't call updateVertices() after this transform, so set attributes
+    // manually (see T10109)
+    stashOp->scheduledPreLoss               = ScheduledPreLoss::Yes;
+    stashOp->outTensor(0)->scheduledPreLoss = ScheduledPreLoss::Yes;
 
     // Restore
     auto restoreOp_up =
@@ -246,6 +250,10 @@ bool Pipeline::apply(Graph &graph) const {
     auto restoreId = restoreOp->getRestoredTensorId(); // An alias
     restoreOp->createAndConnectOutTensor(RestoreOp::getRestoredActOutIndex(),
                                          restoreId);
+    // We don't call updateVertices() after this transform, so set attributes
+    // manually (see T10109)
+    restoreOp->scheduledPreLoss               = ScheduledPreLoss::No;
+    restoreOp->outTensor(0)->scheduledPreLoss = ScheduledPreLoss::No;
 
     // Disconnect tid from all post-other consumers, reconnect to restoreId
     for (Op *tidConsumer : tidConsumers) {
@@ -258,19 +266,29 @@ bool Pipeline::apply(Graph &graph) const {
     }
 
     // apply topological constraints:
-    // (1)  -> Stash after all forward consumers
+    // (1)  -> Stash before all forward consumers
     // (2)  -> Restore after Stash
     // (3)  -> All backwards after Restore
+    // (4)  -> Restore after all producers of (non-tid) tensors
+    //         consumed by all backwards
 
     // (2)
     graph.topoCons->insert(stashOp, restoreOp);
     for (auto tidConsumer : tidConsumers) {
       if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
         // (1)
-        graph.topoCons->insert(tidConsumer, stashOp);
+        graph.topoCons->insert(stashOp, tidConsumer);
       } else {
         // (3)
         graph.topoCons->insert(restoreOp, tidConsumer);
+        // (4)
+        for (Tensor *t : tidConsumer->input->tensors()) {
+          if (t->id == restoreId) {
+            continue;
+          } else {
+            graph.topoCons->insert(t->getProducer(), restoreOp);
+          }
+        }
       }
     }
 

@@ -93,27 +93,42 @@ public:
     IncrStashIndex,
     N // The number of pipeline cycle components
   };
+  std::string getStrFromPipelineFragmentId(PipelineFragmentId fragId);
 
-  // Program fragments specific to pipelined model
+  // Program fragments specific to pipelined model. Each method to return
+  // a pipeline program fragment takes a 'description' string, that describes
+  // the code being added to the returned fragment. This description is added
+  // to pipelineDescs to build up a full description of the program.
   poplar::program::Sequence &pipelineFragment(VGraphId vGraphId,
-                                              PipelineFragmentId frag);
-  poplar::program::Sequence &pipelineToDeviceStreamFragment(VGraphId vGraphId);
-  poplar::program::Sequence &pipelineForwardFragment(VGraphId vGraphId);
-  poplar::program::Sequence &pipelineBackwardFragment(VGraphId vGraphId);
+                                              PipelineFragmentId frag,
+                                              const std::string &desc);
+  poplar::program::Sequence &
+  pipelineToDeviceStreamFragment(VGraphId vGraphId, const std::string &desc);
+  poplar::program::Sequence &pipelineForwardFragment(VGraphId vGraphId,
+                                                     const std::string &desc);
+  poplar::program::Sequence &pipelineBackwardFragment(VGraphId vGraphId,
+                                                      const std::string &desc);
   // To stream anchors that are computed in the pipelineForwardFragment
-  poplar::program::Sequence &pipelineFwdToHostStreamFragment(VGraphId vGraphId);
+  poplar::program::Sequence &
+  pipelineFwdToHostStreamFragment(VGraphId vGraphId, const std::string &desc);
   // To stream anchors that are computed in the pipelineBackwardFragment
-  poplar::program::Sequence &pipelineBwdToHostStreamFragment(VGraphId vGraphId);
+  poplar::program::Sequence &
+  pipelineBwdToHostStreamFragment(VGraphId vGraphId, const std::string &desc);
   poplar::program::Sequence &pipelineIpuCopyFragment() {
     return pipelineIpuCopySeq;
   }
-  poplar::program::Sequence &pipelineIncrStashIndexFragment(VGraphId vGraphId);
+  poplar::program::Sequence &
+  pipelineIncrStashIndexFragment(VGraphId vGraphId, const std::string &desc);
   // If ScheduledPreLoss::Yes, then return pipelineFwdToHostStreamFragment(),
   // else return pipelineBwdToHostStreamFragment()
   poplar::program::Sequence &
-      pipelineFwdOrBwdToHostStreamFragment(ScheduledPreLoss, VGraphId);
+  pipelineFwdOrBwdToHostStreamFragment(ScheduledPreLoss,
+                                       VGraphId,
+                                       const std::string &desc);
 
-  void addPipelineCycle(PipelineCycle pCycle, poplar::program::Sequence &sq);
+  void addPipelineCycle(PipelineCycle pCycle,
+                        poplar::program::Sequence &sq,
+                        std::ostringstream &ss);
 
   Devicex *dv_p;
 
@@ -130,6 +145,8 @@ private:
   // Pipelining fragments for each IPU are stored here
   std::map<PipelineFragmentId, std::map<VGraphId, poplar::program::Sequence>>
       pipelineSeqs;
+  // ... and their corresponding descriptions
+  std::map<PipelineFragmentId, std::map<VGraphId, std::string>> pipelineDescs;
   poplar::program::Sequence pipelineIpuCopySeq;
   poplar::program::Sequence getMainProgramFromPipelineFragments();
 

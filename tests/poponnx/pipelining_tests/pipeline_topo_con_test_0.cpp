@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
   for (auto op : opSchedule) {
     auto opIndex = schedIndex.at(op);
 
-    // if it's a stash op, it must appear after all pathToLoss,
+    // if it's a stash op, it must appear before all pathToLoss,
     // before the Restore (we confirm there is 1)
     // before all pathFromLoss.
     auto stashOp = dynamic_cast<StashOp *>(op);
@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
       auto act      = stashOp->input->tensor(0);
       for (auto consumer : act->consumers.getOps()) {
         if (consumer->toLoss == PathToLoss::Yes) {
-          BOOST_CHECK(schedIndex.at(consumer) < opIndex);
+          BOOST_CHECK(schedIndex.at(consumer) > opIndex);
         }
         if (consumer->fromLoss == PathFromLoss::Yes) {
           BOOST_CHECK(schedIndex.at(consumer) > opIndex);

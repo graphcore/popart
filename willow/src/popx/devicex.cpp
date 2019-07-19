@@ -1325,7 +1325,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
             if (op->isIpuCopyOp()) {
               growOpx(progs.pipelineIpuCopyFragment());
             } else {
-              growOpx(progs.pipelineForwardFragment(op->getVirtualGraphId()));
+              growOpx(progs.pipelineForwardFragment(op->getVirtualGraphId(), op->str()));
             }
           } else {
             growOpx(progs.forwardFragment());
@@ -1355,7 +1355,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
           if (op->isIpuCopyOp()) {
             growOpx(progs.pipelineIpuCopyFragment());
           } else {
-            growOpx(progs.pipelineBackwardFragment(op->getVirtualGraphId()));
+            growOpx(progs.pipelineBackwardFragment(op->getVirtualGraphId(), op->str()));
           }
         } else {
           // decide what needs to be re-run
@@ -1826,9 +1826,16 @@ void Devicex::prepare() {
       // Copy program runs after every batch
       case (AnchorReturnTypeId::ALL): {
         if (ir().getSessionOptions().enablePipelining) {
-          auto &sq = progs.pipelineFwdOrBwdToHostStreamFragment(
-              tensor->scheduledPreLoss, tensor->getVirtualGraphId());
-          tasks.add(toHostTask(tensor, sq, isAnchorStream));
+          tasks.add(
+              toHostTask(tensor,
+                         tensor->tensorType() == TensorType::Variable
+                             ? progs.pipelineBwdToHostStreamFragment(
+                                   tensor->getVirtualGraphId(), tensor->str())
+                             : progs.pipelineFwdOrBwdToHostStreamFragment(
+                                   tensor->scheduledPreLoss,
+                                   tensor->getVirtualGraphId(),
+                                   tensor->str()),
+                         isAnchorStream));
         } else {
           tasks.add(toHostTask(
               tensor,
@@ -1870,8 +1877,8 @@ void Devicex::prepare() {
 
     for (Tensor *tensor : ir().dataStreamTensors()) {
       if (ir().getSessionOptions().enablePipelining) {
-        auto &sq =
-            progs.pipelineToDeviceStreamFragment(tensor->getVirtualGraphId());
+        auto &sq = progs.pipelineToDeviceStreamFragment(
+            tensor->getVirtualGraphId(), tensor->str());
         tasks.add(fromHostTask(tensor, sq));
       } else {
         auto &sq = progs.forwardOrBackwardFragment(tensor->scheduledPreLoss);
@@ -2274,7 +2281,8 @@ PriTask Devicex::initAndUpdatePipelineStashIndicesTask() {
       for (int i = 0; i < deviceInfo->getNumIpus() - 1; i++) {
 
         VGraphId vGraphId = static_cast<VGraphId>(i);
-        auto &sq          = progs.pipelineIncrStashIndexFragment(vGraphId);
+        auto &sq          = progs.pipelineIncrStashIndexFragment(
+            vGraphId, "incrStash_vg" + std::to_string(vGraphId));
 
         auto one = getConst(
             getVirtualGraph(vGraphId), poplar::UNSIGNED_INT, {}, 1, "one");

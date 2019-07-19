@@ -32,6 +32,14 @@ bool Prune::apply(Graph &graph) const {
 
   // the "front" is initialsed with (1) anchor tensors,
   for (auto &tensorId : ir.getDataFlow().anchors()) {
+
+    // Pruning can be run before anchors are validated.
+    // There may be anchored tensors that aren't yet
+    // present in the Ir.
+    if (!graph.getTensors().contains(tensorId)) {
+      continue;
+    }
+
     Tensor *t = graph.getTensors().get(tensorId);
     // we have this check here as we allow
     // duplicated names from the (careless!) user
