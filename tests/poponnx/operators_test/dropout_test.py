@@ -161,20 +161,47 @@ def test_dropout_training4():
             assert fwdEl != 0
 
 
-# Test for repeatable randomness (i.e. if you run the same training session
-# on the same input data, the same random mask is applied)
-def test_dropout_training5():
+## TODO T8803 : requires hardware or a sim device
+# Test that a different mask is used every time session.run is called.
+def test_dropout_training_randomness():
     dsize = 100
-    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize)
+    session, ip, out, d__ip, anchors = get_dropout_session(
+        dsize=dsize, use_ipu=True)
 
     ip_data = np.random.random_sample(dsize).astype(np.float32)
     stepio = poponnx.PyStepIO({ip: ip_data}, anchors)
 
-    session.run(stepio)
-    run1_out = anchors[out]
+    session.setRandomSeed(0)
 
     session.run(stepio)
-    run2_out = anchors[out]
+    # need to copy the anchor as the next call to run will overwrite the data
+    run1_out = np.copy(anchors[out])
+
+    session.run(stepio)
+    run2_out = np.copy(anchors[out])
+
+    assert not np.array_equal(run1_out, run2_out)
+
+
+## TODO T8803 : requires hardware or a sim device
+# Test for repeatable randomness (i.e. if you run the same training session
+# on the same input data, with the same seed the same, random mask is applied)
+def test_dropout_training_set_seed():
+    dsize = 100
+    session, ip, out, d__ip, anchors = get_dropout_session(
+        dsize=dsize, use_ipu=True)
+
+    ip_data = np.random.random_sample(dsize).astype(np.float32)
+    stepio = poponnx.PyStepIO({ip: ip_data}, anchors)
+
+    session.setRandomSeed(7)
+    session.run(stepio)
+    # need to copy the anchor as the next call to run will overwrite the data
+    run1_out = np.copy(anchors[out])
+
+    session.setRandomSeed(7)
+    session.run(stepio)
+    run2_out = np.copy(anchors[out])
 
     assert (np.array_equal(run1_out, run2_out))
 
@@ -256,40 +283,141 @@ def test_dropout_training8(op_tester):
         "Please use a value in the interval (0,1)"))
 
 
-def test_dropout_training_replicated(op_tester):
-    ip_data = np.random.random_sample(100).astype(np.float32)
+## TODO T8803 : requires hardware or a sim device
+# check we get a different dropout from each replicated graph
+def test_dropout_training_replicated():
     replication_factor = 4
+    dsize = 10
+    session, ip, out, d__ip, anchors = get_replicated_dropout_session(
+        dsize=dsize,
+        num_layers=1,
+        ratio=0.3,
+        replication_factor=replication_factor)
 
-    def init_builder(builder):
-        i1 = builder.addInputTensor(ip_data)
-        [o] = builder.aiOnnx.dropout([i1], num_outputs=1, ratio=0.2)
-        builder.addOutputTensor(o)
+    ip_data = np.ones([replication_factor, dsize], dtype=np.float32)
+    stepio = poponnx.PyStepIO({ip: ip_data}, anchors)
 
-        return [o]
+    session.run(stepio)
 
-    def check_result(ref_data):
-        o = ref_data.getOutputTensor(0)
-        # np.sign on the output of dropout returns an array of zeros and ones
-        o = np.sign(o)
+    o = anchors[out]
+    for ai, bi in itertools.combinations(
+        [i for i in range(replication_factor)], 2):
+        print(f'Checking o[{ai}] is not equal to o[{bi}]')
+        a = o[ai]
+        b = o[bi]
+        assert not np.allclose(a, b)
 
-        for ai, bi in itertools.combinations(
-            [i for i in range(replication_factor)], 2):
-            print(f'Checking o[{ai}] is not equal to o[{bi}]')
-            a = o[ai]
-            b = o[bi]
-            assert not np.allclose(a, b)
 
-        return [None]
+## TODO T8803 : requires hardware or a sim device
+# Check set seed when using replicated graphs
+def test_dropout_training_replicated_repeatable():
+    replication_factor = 4
+    dsize = 10
+    session, ip, out, d__ip, anchors = get_replicated_dropout_session(
+        dsize=dsize,
+        num_layers=1,
+        ratio=0.3,
+        replication_factor=replication_factor)
+
+    ip_data = np.ones([replication_factor, dsize], dtype=np.float32)
+    stepio = poponnx.PyStepIO({ip: ip_data}, anchors)
+
+    session.setRandomSeed(7)
+    session.run(stepio)
+    ref_out = np.copy(anchors[out])
+    ref_d__ip = np.copy(anchors[d__ip])
+
+    # Another call should produce different results
+    session.run(stepio)
+    assert not np.array_equal(ref_out, anchors[out])
+    assert not np.array_equal(ref_d__ip, anchors[d__ip])
+
+    # Resetting the seed should give the same results as the first run
+    session.setRandomSeed(7)
+    session.run(stepio)
+    assert np.array_equal(ref_out, anchors[out])
+    assert np.array_equal(ref_d__ip, anchors[d__ip])
+
+
+## TODO T8803 : requires hardware or a sim device
+# Check that all micro batches use different seeds when using multiple
+# batches per step and replicated graphs.
+def test_replicated_with_multiple_batches_per_step():
+    replication_factor = 4
+    dsize = 10
+    batches_per_step = 2
+    session, ip, out, d__ip, anchors = get_replicated_dropout_session(
+        dsize=dsize,
+        num_layers=1,
+        ratio=0.3,
+        replication_factor=replication_factor,
+        batches_per_step=batches_per_step)
+
+    ip_data = np.ones([replication_factor, batches_per_step, dsize],
+                      dtype=np.float32)
+    stepio = poponnx.PyStepIO({ip: ip_data}, anchors)
+
+    session.run(stepio)
+    ref_out = np.copy(anchors[out])
+
+    # Another call should produce different results
+    session.run(stepio)
+
+    o = anchors[out]
+    micro_batches = []
+    for replication_index in range(replication_factor):
+        for batch_index in range(batches_per_step):
+            x = o[replication_index][batch_index]
+            micro_batches.append(x)
+
+    # Check that none of the micro batch results are the same
+    for ai, bi in itertools.combinations(
+        [i for i in range(len(micro_batches))], 2):
+        print(
+            f'Checking micro_batches[{ai}] is not equal to micro_batches[{bi}]'
+        )
+        a = micro_batches[ai]
+        b = micro_batches[bi]
+        assert not np.allclose(a, b)
+
+
+def get_replicated_dropout_session(replication_factor=4,
+                                   dsize=10,
+                                   num_layers=1,
+                                   ratio=0.3,
+                                   batches_per_step=1):
+    builder = poponnx.Builder()
+    ip = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [dsize]))
+    d__ip = poponnx.reservedGradientPrefix() + ip
+    out = ip
+    for layer in range(num_layers):
+        [out] = builder.aiOnnx.dropout([out], num_outputs=1, ratio=ratio)
+    builder.addOutputTensor(out)
 
     device = poponnx.DeviceManager().acquireAvailableDevice(replication_factor)
     if device is None:
         pytest.skip("Test needs to run on IPU, but none are available")
 
-    op_tester.options.enableReplicatedGraphs = True
-    op_tester.options.replicatedGraphCount = replication_factor
-    op_tester.device = device
-    op_tester.numIPUs = replication_factor
-    session = op_tester.run(init_builder, check_result, 'train')
+    dfAnchors = [out, ip, d__ip]
+    dfAnchors = {i: poponnx.AnchorReturnType("ALL") for i in dfAnchors}
+
+    opts = poponnx.SessionOptions()
+    opts.enableReplicatedGraphs = True
+    opts.replicatedGraphCount = replication_factor
+
+    session = poponnx.TrainingSession(
+        fnModel=builder.getModelProto(),
+        dataFeed=poponnx.DataFlow(batches_per_step, dfAnchors),
+        optimizer=poponnx.ConstSGD(0.1),
+        losses=[poponnx.L1Loss(out, "l1LossVal", 0.1)],
+        userOptions=opts,
+        deviceInfo=device)
+
+    session.prepareDevice()
+    session.weightsFromHost()
+    anchors = session.initAnchorArrays()
+
+    return session, ip, out, d__ip, anchors
 
 
 def get_dropout_session(dsize=100,

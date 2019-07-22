@@ -150,8 +150,6 @@ std::map<Op *, int> Devicex::getMainGraphOpCounts() const {
   return counts;
 }
 
-const std::string randomSeedId = "randomSeed";
-
 void Devicex::run(PopPrograms::ProgramIndex ind) {
   if (isEngineLoaded() == false) {
     loadEngineAndConnectStreams();
@@ -904,9 +902,9 @@ PriTask Devicex::initRandomSeed() {
   auto initRandomSeedTask = [this]() {
     logging::devicex::debug("Initializing random seed.");
 
-    auto seedTensor =
-        graph().addVariable(poplar::UNSIGNED_INT, {2}, randomSeedId);
-    graph().setTileMapping(seedTensor, 0);
+    randomSeedTensor =
+        graph().addVariable(poplar::UNSIGNED_INT, {2}, randomSeedId());
+    graph().setTileMapping(randomSeedTensor, 0);
 
     auto &sq = progs.setRandomSeedFragment();
 
@@ -914,23 +912,26 @@ PriTask Devicex::initRandomSeed() {
       // Right now just use the same random seed on each replica if the user set
       // it T9638 - to corrupt the seed for each replicant
       auto dataStream =
-          graph().addHostToDeviceFIFO(h2dId(randomSeedId),
-                                      seedTensor.elementType(),
-                                      seedTensor.numElements(),
+          graph().addHostToDeviceFIFO(h2dId(randomSeedId()),
+                                      randomSeedTensor.elementType(),
+                                      randomSeedTensor.numElements(),
                                       poplar::ReplicatedStreamMode::REPLICATE);
 
-      sq.add(poplar::program::Copy(dataStream, seedTensor));
+      sq.add(poplar::program::Copy(dataStream, randomSeedTensor));
     }
 
-    poprand::setSeed(
-        graph(), seedTensor, 0, sq, fmt::format("{}/set", randomSeedId));
+    poprand::setSeed(graph(),
+                     randomSeedTensor,
+                     0,
+                     sq,
+                     fmt::format("{}/set", randomSeedId()));
   };
 
   return {
-      +1e6,              // high priority
-      "initRandomSeed",  // name of this task
-      {},                // depends on
-      initRandomSeedTask // what to run when the task is executed
+      +1e6,                   // high priority
+      initRandomSeedTaskId(), // name of this task
+      {},                     // depends on
+      initRandomSeedTask      // what to run when the task is executed
   };
 }
 
@@ -941,12 +942,18 @@ PriTask Devicex::initDropoutRandomSeed() {
     dropoutRandomSeed = graph().addVariable(
         poplar::UNSIGNED_INT, {2}, dropoutRandomSeedTensorId());
     graph().setTileMapping(dropoutRandomSeed, 0);
+
+    auto &sq = progs.setRandomSeedFragment();
+
+    if (!useSyntheticData()) {
+      sq.add(poplar::program::Copy(randomSeedTensor, dropoutRandomSeed));
+    }
   };
 
   return {
       +1e6,                      // high priority
       initDropoutRandomSeedId(), // name of this task
-      {},                        // depends on
+      {initRandomSeedTaskId()},  // depends on
       initDropoutRandomSeedTask  // what to run when the task is executed
   };
 }
@@ -968,23 +975,33 @@ PriTask Devicex::incrementDropoutRandomSeedTask() {
 }
 
 void Devicex::connectRandomSeedStream() {
-  std::default_random_engine randomGenerator;
-
-  // Generate a seperate random seed for each replicant.
-
+  // Generate a separate random seed for each replicant.
   for (uint16_t replicaId = 0; replicaId < getReplicationFactor();
        ++replicaId) {
 
-    auto callback = [randomGenerator, replicaId](void *ptr) mutable {
-      std::uniform_int_distribution<uint64_t> distribution;
+    auto callback = [this, replicaId](void *ptr) {
+      logging::devicex::debug(
+          "     Updating random seed for replica:{} to `{} + replicaId({})'",
+          replicaId,
+          randomSeed,
+          replicaId);
       uint64_t *data = reinterpret_cast<uint64_t *>(ptr);
-
-      logging::devicex::debug("     Updating random seed for replica:{}",
-                              replicaId);
-      data[0] = distribution(randomGenerator);
+      data[0]        = randomSeed + replicaId;
     };
 
-    pEngine->connectStreamToCallback(h2dId(randomSeedId), replicaId, callback);
+    pEngine->connectStreamToCallback(
+        h2dId(randomSeedId()), replicaId, callback);
+  }
+}
+
+void Devicex::setRandomSeed(uint64_t seedValue) {
+  randomSeed = seedValue;
+
+  if (useSyntheticData() == false) {
+    logging::devicex::debug("Setting the random seed to {}", seedValue);
+    pEngine->disableExecutionProfiling();
+    run(PopPrograms::ProgramIndex::SETRANDOMSEED);
+    logging::devicex::debug("done.");
   }
 }
 
@@ -1943,6 +1960,9 @@ void Devicex::prepare() {
 
   trySaveTensorTileMap();
 
+  uint64_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+  setRandomSeed(seed);
+
   prepareHasBeenCalled = true;
 }
 
@@ -2093,6 +2113,8 @@ TaskId Devicex::initBatchCounterTensorsTaskId() const {
 TaskId Devicex::updateBatchCountTaskId() const {
   return "updateBatchCountTask";
 }
+
+TaskId Devicex::initRandomSeedTaskId() const { return "initRandomSeedTask"; }
 
 TaskId Devicex::initDropoutRandomSeedId() const {
   return "initDropoutRandomSeed";
@@ -2502,6 +2524,8 @@ bool Devicex::isDropoutRandomSeedRequired() const {
 void Devicex::setDropoutRandomSeedIsRequired(bool isRequired) {
   requiresDropoutRandomSeed = isRequired;
 }
+
+std::string Devicex::randomSeedId() const { return "randomSeed"; }
 
 std::string Devicex::dropoutRandomSeedTensorId() const {
   return "dropoutRandomSeed";

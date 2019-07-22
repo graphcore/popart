@@ -560,6 +560,9 @@ PYBIND11_MODULE(poponnx_core, m) {
             }
           },
           py::arg("err").none())
+      .def("setRandomSeed",
+           &InferenceSession::setRandomSeed,
+           py::arg("seedValue"))
       .def("weightsFromHost", &InferenceSession::weightsFromHost)
       .def("writeWeights", &TrainingSession::writeWeights)
       .def("run", &InferenceSession::run)
@@ -615,6 +618,9 @@ PYBIND11_MODULE(poponnx_core, m) {
             }
           },
           py::arg("err").none())
+      .def("setRandomSeed",
+           &TrainingSession::setRandomSeed,
+           py::arg("seedValue"))
       .def("weightsToHost", &TrainingSession::weightsToHost)
       .def("weightsFromHost", &TrainingSession::weightsFromHost)
       .def("readWeights", &TrainingSession::readWeights)

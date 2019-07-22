@@ -14,9 +14,6 @@ class DropoutOpx : public ElementWiseUnaryOpx {
 public:
   DropoutOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
-
-private:
-  poplar::Tensor getSeed(poplar::program::Sequence &) const;
 };
 
 } // namespace popx

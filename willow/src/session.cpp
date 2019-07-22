@@ -26,6 +26,11 @@ void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
   device_.reset(new popx::Devicex(ir, deviceInfo));
 }
 
+void Session::setRandomSeed(uint64_t seedValue) {
+  logging::session::trace("Session::setRandomSeed({})", seedValue);
+  device_->setRandomSeed(seedValue);
+}
+
 // get the TensorInfo on a Tensor
 TensorInfo Session::getInfo(TensorId id) const {
   logging::session::trace("Session::getInfo({})", id);

@@ -123,6 +123,8 @@ public:
 
   void run(const IStepIO &);
 
+  void setRandomSeed(uint64_t seedValue);
+
   // device -> host stream
   void weightsToHost();
   // device ->host stream -> specified host addresses
@@ -213,6 +215,7 @@ public:
   bool isEngineLoaded() const;
   void setEngineIsLoaded(bool isLoaded);
 
+  std::string randomSeedId() const;
   bool isDropoutRandomSeedRequired() const;
   void setDropoutRandomSeedIsRequired(bool isRequired);
   std::string dropoutRandomSeedTensorId() const;
@@ -239,6 +242,8 @@ private:
 
   std::shared_ptr<DeviceInfo> deviceInfo;
 
+  uint64_t randomSeed;
+
   // Non-const tensors used to keep track of batch count, modulo the return
   // period
   std::map<ReturnPeriod, poplar::Tensor> batchCountingTensors;
@@ -255,6 +260,7 @@ private:
   // layers doensn't break dropout's functionality
   bool requiresDropoutRandomSeed = false;
   poplar::Tensor dropoutRandomSeed;
+  poplar::Tensor randomSeedTensor;
 
   PipelineInfo pInfo;
   int64_t getStashSize(VGraphId vGraphId);
@@ -266,7 +272,9 @@ private:
   TaskId initTensorTaskId(TensorId) const;
 
   PriTask initRandomSeed();
+  TaskId initRandomSeedTaskId() const;
   void connectRandomSeedStream();
+
   PriTask initDropoutRandomSeed();
   TaskId initDropoutRandomSeedId() const;
 

@@ -22,6 +22,10 @@ poplar::program::Sequence &PopPrograms::streamOptimizerFromHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::STREAMOPTIMIZERFROMHOST)];
 }
 
+poplar::program::Sequence &PopPrograms::setRandomSeedFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEED)];
+}
+
 poplar::program::Sequence &PopPrograms::initFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::INIT)];
 }
@@ -36,14 +40,6 @@ poplar::program::Sequence &PopPrograms::forwardFragment() {
 
 poplar::program::Sequence &PopPrograms::backwardFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::BACKWARD)];
-}
-
-poplar::program::Sequence &PopPrograms::setRandomSeedFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEED)];
-}
-
-poplar::program::Sequence &PopPrograms::setRandomDropoutSeedFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMDROPOUTSEED)];
 }
 
 poplar::program::Sequence &PopPrograms::toHostFinalCopyFragment() {
@@ -73,6 +69,12 @@ poplar::program::Sequence PopPrograms::weightsFromHost() {
 poplar::program::Sequence PopPrograms::optimizerFromHost() {
   poplar::program::Sequence prog;
   prog.add(streamOptimizerFromHostFragment());
+  return prog;
+}
+
+poplar::program::Sequence PopPrograms::setRandomSeed() {
+  poplar::program::Sequence prog;
+  prog.add(setRandomSeedFragment());
   return prog;
 }
 
@@ -249,8 +251,6 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
   poplar::program::Sequence outer;
 
   outer.add(initFragment());
-  outer.add(setRandomSeedFragment());
-  outer.add(setRandomDropoutSeedFragment());
   outer.add(fill);
   outer.add(poplar::program::Repeat(static_cast<int>(mainCycles), main));
   outer.add(flush);
@@ -271,8 +271,6 @@ poplar::program::Sequence PopPrograms::program() {
     poplar::program::Sequence outer;
 
     outer.add(initFragment());
-    outer.add(setRandomSeedFragment());
-    outer.add(setRandomDropoutSeedFragment());
 
     auto accumulationFactor = static_cast<int>(dv_p->getAccumulationFactor());
     if (dv_p->ir().getSessionOptions().enableGradientAccumulation) {
@@ -302,6 +300,7 @@ std::vector<poplar::program::Program> PopPrograms::progs() {
 
   ps[ProgramIndex::WEIGHTSFROMHOST]   = weightsFromHost();
   ps[ProgramIndex::OPTIMIZERFROMHOST] = optimizerFromHost();
+  ps[ProgramIndex::SETRANDOMSEED]     = setRandomSeed();
   ps[ProgramIndex::PROGRAM]           = program();
   ps[ProgramIndex::WEIGHTSTOHOST]     = weightsToHost();
 

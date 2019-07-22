@@ -47,7 +47,8 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
     } else {
       refTensor = dv_p->dropoutReferenceTensors.at(seedModifier);
     }
-    auto seed = getSeed(prog);
+    auto seed = *dv_p->getDropoutRandomSeed();
+    prog.add(poplar::program::PrintTensor("dropout seed", seed));
     // When ratio is outside of (0,1), an error is thrown in op creation,
     // so we avoid div/0 errors here.
     float scale = float(1.) / (float(1.) - dropoutOp->getRatio());
@@ -89,28 +90,6 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
                               debugPrefix("mask"));
       setOutTensor(DropoutOp::getMaskOutIndex(), mask);
     }
-  }
-}
-
-poplar::Tensor DropoutOpx::getSeed(poplar::program::Sequence &prog) const {
-  if (dv_p->getReplicationFactor() == 1) {
-    return *dv_p->getDropoutRandomSeed();
-  } else {
-    static unsigned tileCounter = 0;
-    auto tile = tileCounter % graph().getTarget().getTilesPerIPU();
-    tileCounter++;
-
-    auto indexConstant = graph().addReplicationIndexConstant();
-    graph().setTileMapping(indexConstant, tile);
-
-    auto seed = popops::map(graph(),
-                            popops::expr::BinaryOpType::ADD,
-                            *dv_p->getDropoutRandomSeed(),
-                            indexConstant,
-                            prog,
-                            debugPrefix("seedAddReplicationIndex"));
-
-    return seed;
   }
 }
 

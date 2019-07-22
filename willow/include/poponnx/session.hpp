@@ -26,6 +26,8 @@ protected:
 public:
   virtual ~Session() = 0;
 
+  void setRandomSeed(uint64_t seedValue);
+
   /**
    * Prepare the network for execution.
    *
