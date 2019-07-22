@@ -1,6 +1,7 @@
 #ifndef GUARD_NEURALNET_PIPELINE_HPP
 #define GUARD_NEURALNET_PIPELINE_HPP
 
+#include <poponnx/op/restore.hpp>
 #include <poponnx/transforms/transform.hpp>
 
 namespace poponnx {
@@ -20,6 +21,9 @@ public:
 
 private:
   int64_t getVirtualGraphIdOrSourceIpu(Op *op) const;
+
+  RestoreOp *addNewRestoreOp(Graph &graph) const;
+  RestoreOp *addNewRestoreInplaceOp(Graph &graph) const;
 };
 
 } // namespace poponnx

@@ -16,6 +16,12 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
+class RestoreInplaceOpx : public Opx {
+public:
+  RestoreInplaceOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
 } // namespace popx
 } // namespace poponnx
 

@@ -890,6 +890,7 @@ const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
 const static AiGraphcoreOpIdV1 FlattenInplace("FlattenInplace");
 const static AiGraphcoreOpIdV1 ReshapeInplace("ReshapeInplace");
 const static AiGraphcoreOpIdV1 Restore("Restore");
+const static AiGraphcoreOpIdV1 RestoreInplace("RestoreInplace");
 const static AiGraphcoreOpIdV1 SubsampleInplace("SubsampleInplace");
 
 const static AiGraphcoreOpIdV1 ConvFlipWeights("ConvFlipWeights");

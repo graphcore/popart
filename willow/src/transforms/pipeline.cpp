@@ -240,20 +240,34 @@ bool Pipeline::apply(Graph &graph) const {
     stashOp->outTensor(0)->scheduledPreLoss = ScheduledPreLoss::Yes;
 
     // Restore
-    auto restoreOp_up =
-        std::make_unique<RestoreOp>(Onnx::CustomOperators::Restore, settings);
-    auto restoreOp = restoreOp_up.get();
-    graph.moveIntoGraph(std::move(restoreOp_up));
+
+    // Should op be Restore (outplace) or RestoreInplace?
+    bool isInplace = true;
+    if (ir.isAnchored(tid)) {
+      isInplace = false;
+    } else {
+      for (Op *tidConsumer : tidConsumers) {
+        if (tidConsumer->isIpuCopyOp()) {
+          isInplace = false;
+        }
+      }
+    }
+
+    RestoreOp *restoreOp;
+    if (isInplace) {
+      logging::ir::debug("Restore Op is inplace");
+      restoreOp = addNewRestoreInplaceOp(graph);
+    } else {
+      logging::ir::debug("Restore Op is outplace");
+      restoreOp = addNewRestoreOp(graph);
+    }
+
     restoreOp->setVirtualGraphId(getVirtualGraphIdOrSourceIpu(vGraphIdCheckOp));
     restoreOp->connectInTensor(RestoreOp::getActToRestoreInIndex(), tid);
     restoreOp->connectInTensor(RestoreOp::getStashInIndex(), stashId);
-    auto restoreId = restoreOp->getRestoredTensorId(); // An alias
+    auto restoreId = restoreOp->getRestoredTensorId();
     restoreOp->createAndConnectOutTensor(RestoreOp::getRestoredActOutIndex(),
                                          restoreId);
-    // We don't call updateVertices() after this transform, so set attributes
-    // manually (see T10109)
-    restoreOp->scheduledPreLoss               = ScheduledPreLoss::No;
-    restoreOp->outTensor(0)->scheduledPreLoss = ScheduledPreLoss::No;
 
     // Disconnect tid from all post-other consumers, reconnect to restoreId
     for (Op *tidConsumer : tidConsumers) {
@@ -264,6 +278,11 @@ bool Pipeline::apply(Graph &graph) const {
         }
       }
     }
+
+    // We don't call updateVertices() after this transform, so set attributes
+    // manually (see T10109)
+    restoreOp->scheduledPreLoss               = ScheduledPreLoss::No;
+    restoreOp->outTensor(0)->scheduledPreLoss = ScheduledPreLoss::No;
 
     // apply topological constraints:
     // (1)  -> Stash before all forward consumers
@@ -283,7 +302,8 @@ bool Pipeline::apply(Graph &graph) const {
         graph.topoCons->insert(restoreOp, tidConsumer);
         // (4)
         for (Tensor *t : tidConsumer->input->tensors()) {
-          if (t->id == restoreId) {
+          // if (t->id == restoreId) {
+          if (t->getProducer() == restoreOp) {
             continue;
           } else {
             graph.topoCons->insert(t->getProducer(), restoreOp);
@@ -310,6 +330,26 @@ int64_t Pipeline::getVirtualGraphIdOrSourceIpu(Op *op) const {
   } else {
     return op->getVirtualGraphId();
   }
+}
+
+RestoreOp *Pipeline::addNewRestoreOp(Graph &graph) const {
+  Op::Settings settings(graph, "");
+  auto restoreOp_up =
+      std::make_unique<RestoreOp>(Onnx::CustomOperators::Restore, settings);
+  auto restoreOp = restoreOp_up.get();
+  graph.moveIntoGraph(std::move(restoreOp_up));
+
+  return restoreOp;
+}
+
+RestoreOp *Pipeline::addNewRestoreInplaceOp(Graph &graph) const {
+  Op::Settings settings(graph, "");
+  auto restoreOp_up = std::make_unique<RestoreOp>(
+      Onnx::CustomOperators::RestoreInplace, settings);
+  auto restoreOp = restoreOp_up.get();
+  graph.moveIntoGraph(std::move(restoreOp_up));
+
+  return restoreOp;
 }
 
 namespace {

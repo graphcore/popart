@@ -20,7 +20,19 @@ void RestoreOp::setup() {
   outInfo(getRestoredActOutIndex()) = inInfo(getActToRestoreInIndex());
 }
 
-view::Region RestoreOp::aliases(InIndex index) const {
+TensorId RestoreOp::getRestoredTensorId() const {
+  return reservedRestoredPrefix() + inId(getActToRestoreInIndex());
+}
+
+RestoreInplaceOp::RestoreInplaceOp(const OperatorIdentifier &_opid,
+                                   const Op::Settings &settings_)
+    : RestoreOp(_opid, settings_) {}
+
+std::unique_ptr<Op> RestoreInplaceOp::clone() const {
+  return std::make_unique<RestoreInplaceOp>(*this);
+}
+
+view::Region RestoreInplaceOp::aliases(InIndex index) const {
   if (index == getActToRestoreInIndex()) {
     return view::Region::getFull(inShape(index));
   } else {
@@ -29,14 +41,14 @@ view::Region RestoreOp::aliases(InIndex index) const {
 }
 
 // Modifies is the same as aliases
-view::Region RestoreOp::modifies(InIndex index) const { return aliases(index); }
-
-TensorId RestoreOp::getRestoredTensorId() const {
-  return reservedRestoredPrefix() + inId(getActToRestoreInIndex());
+view::Region RestoreInplaceOp::modifies(InIndex index) const {
+  return aliases(index);
 }
 
 namespace {
 static OpCreator<RestoreOp> RestoreOpCreator(Onnx::CustomOperators::Restore);
+static OpCreator<RestoreOp>
+    RestoreInplaceOpCreator(Onnx::CustomOperators::RestoreInplace);
 
 } // namespace
 

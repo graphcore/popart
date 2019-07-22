@@ -320,7 +320,7 @@ def test_acts_match_restored_acts():
 
     How do we know they're not both wrong? Take this example where the
     streamed input is stashed. Check that it matches the raw data input
-    that is fed to the StepIO (requires T10110)
+    that is fed to the StepIO
     """
     bps = 8
     pipelined_anchors = get_model_anchors(doSharding=True,
@@ -333,13 +333,15 @@ def test_acts_match_restored_acts():
     for (tId, t) in pipelined_anchors.items():
         for i in range(np.shape(t)[0]):
             print("batch: ", i, tId, np.sum(t[i]))
-    # TODO depends on T10110
-    # assert np.allclose(pipelined_anchors[poponnx.reservedRestoredPrefix() + "Exp:0"],
-    #                    pipelined_anchors["Exp:0"])
-    # assert np.allclose(pipelined_anchors[poponnx.reservedRestoredPrefix() + "input"],
-    #                    pipelined_anchors["input"])
-    # assert np.allclose(pipelined_anchors["input_raw"],
-    #                    pipelined_anchors["input"])
+
+    assert np.allclose(
+        pipelined_anchors[poponnx.reservedRestoredPrefix() + "Exp:0"],
+        pipelined_anchors["Exp:0"])
+    assert np.allclose(
+        pipelined_anchors[poponnx.reservedRestoredPrefix() + "input"],
+        pipelined_anchors["input"])
+    assert np.allclose(pipelined_anchors["input_raw"],
+                       pipelined_anchors["input"])
 
 
 def test_output_matches_infer():

@@ -10,6 +10,28 @@
 namespace poponnx {
 namespace popx {
 
+void RestoreInplaceOpx::grow(poplar::program::Sequence &prog) const {
+  auto vGraphId     = getOp<RestoreInplaceOp>().getVirtualGraphId();
+  auto actToRestore = getInTensor(RestoreInplaceOp::getRestoredActOutIndex());
+  auto stash        = getInTensor(RestoreInplaceOp::getStashInIndex());
+
+  auto actFromStash =
+      popops::dynamicSlice(graph(),
+                           stash,
+                           dv_p->pipelineInfo().stashIndex.at(vGraphId),
+                           {0},
+                           {1},
+                           prog,
+                           debugPrefix("restore"));
+  prog.add(poplar::program::Copy(actFromStash.squeeze({0}), actToRestore));
+  setOutTensor(RestoreInplaceOp::getRestoredActOutIndex(), actToRestore);
+}
+
+RestoreInplaceOpx::RestoreInplaceOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {
+  verifyOp<RestoreInplaceOp>(op);
+}
+
 void RestoreOpx::grow(poplar::program::Sequence &prog) const {
   auto vGraphId     = getOp<RestoreOp>().getVirtualGraphId();
   auto actToRestore = getInTensor(RestoreOp::getRestoredActOutIndex());
@@ -21,9 +43,10 @@ void RestoreOpx::grow(poplar::program::Sequence &prog) const {
                            dv_p->pipelineInfo().stashIndex.at(vGraphId),
                            {0},
                            {1},
-                           prog);
-  prog.add(poplar::program::Copy(actFromStash.squeeze({0}), actToRestore));
-  setOutTensor(RestoreOp::getRestoredActOutIndex(), actToRestore);
+                           prog,
+                           debugPrefix("restore"));
+
+  setOutTensor(RestoreOp::getRestoredActOutIndex(), actFromStash.squeeze({0}));
 }
 
 RestoreOpx::RestoreOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -32,6 +55,8 @@ RestoreOpx::RestoreOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 namespace {
 OpxCreator<RestoreOpx> restoreOpxCreator(Onnx::CustomOperators::Restore);
+OpxCreator<RestoreOpx>
+    restoreInplaceOpxCreator(Onnx::CustomOperators::RestoreInplace);
 } // namespace
 
 } // namespace popx

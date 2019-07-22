@@ -22,7 +22,8 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
                         dv_p->pipelineInfo().stashIndex.at(vGraphId),
                         {0},
                         {1},
-                        prog);
+                        prog,
+                        debugPrefix("stash"));
 
   setOutTensor(StashOp::getOutIndex(), outTensor);
 }

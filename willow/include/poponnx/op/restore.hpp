@@ -21,13 +21,19 @@ public:
   // Returns a reference to the restored activation tensor
   static OutIndex getRestoredActOutIndex() { return 0; }
 
-  // This Op aliases and modifies the input at index getVarIndex()
-  view::Region aliases(InIndex) const final;
-  view::Region modifies(InIndex) const final;
-
   TensorId getRestoredTensorId() const;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+};
+
+class RestoreInplaceOp : public RestoreOp {
+public:
+  RestoreInplaceOp(const OperatorIdentifier &, const Op::Settings &);
+  std::unique_ptr<Op> clone() const override;
+
+  // This Op aliases and modifies the input at index getVarIndex()
+  view::Region aliases(InIndex) const final;
+  view::Region modifies(InIndex) const final;
 };
 
 } // namespace poponnx

@@ -102,13 +102,15 @@ BOOST_AUTO_TEST_CASE(test) {
 
   // So we expect the transformation to stash (1) and (2)
   BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::Stash).size() == 2);
-  BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::Restore).size() == 2);
+  BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::RestoreInplace).size() == 2);
 
   BOOST_CHECK(ir.isConsumedByOpOfType(d0, Onnx::CustomOperators::Stash));
-  BOOST_CHECK(ir.isConsumedByOpOfType(d0, Onnx::CustomOperators::Restore));
+  BOOST_CHECK(
+      ir.isConsumedByOpOfType(d0, Onnx::CustomOperators::RestoreInplace));
 
   BOOST_CHECK(ir.isConsumedByOpOfType(e0, Onnx::CustomOperators::Stash));
-  BOOST_CHECK(ir.isConsumedByOpOfType(e0, Onnx::CustomOperators::Restore));
+  BOOST_CHECK(
+      ir.isConsumedByOpOfType(e0, Onnx::CustomOperators::RestoreInplace));
 
   // The model is split over 3 IPUs.
   // d0 is on IPU0, so its expected stash size is (2 - 0)*2 + 1 = 5
