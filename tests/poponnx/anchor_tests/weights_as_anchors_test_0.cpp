@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(WeightAnchorTest0) {
   // samples in batch  (samples per weight update)
   int64_t batchSize = 4;
 
-  // samples in a step (samples processed with each call to run(...)
+  // batches in a step (processed with each call to run(...))
   int64_t batchesPerStep = 100;
 
   // the number of weight update steps is batchesPerStep = 100
