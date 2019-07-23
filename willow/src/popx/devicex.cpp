@@ -351,7 +351,7 @@ bool PipelineInfo::doBwd(PipelineCycle pCycle, VGraphId vGraphId) const {
     return false;
   }
 
-  bool doBwdPipelineLower = (pCycle > bwdFillPhase.start + 1 - vGraphId);
+  bool doBwdPipelineLower = (pCycle > bwdFillPhase.end - vGraphId);
   bool doBwdPipelineUpper = (pCycle <= bwdFlushPhase.end - vGraphId);
 
   return (doBwdPipelineLower && doBwdPipelineUpper);

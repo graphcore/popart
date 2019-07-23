@@ -4,3 +4,4 @@
 
 add_poponnx_cpp_unit_test(pipeline_topo_con_test_0 pipeline_topo_con_test_0.cpp)
 add_poponnx_cpp_unit_test(pipeline_continuous_equivalent_test_0 pipeline_continuous_equivalent_test_0.cpp)
+add_all_py_unit_tests("")
