@@ -307,11 +307,12 @@ bool Pipeline::apply(Graph &graph) const {
         graph.topoCons->insert(restoreOp, tidConsumer);
         // (4)
         for (Tensor *t : tidConsumer->input->tensors()) {
-          // if (t->id == restoreId) {
-          if (t->getProducer() == restoreOp) {
-            continue;
-          } else {
-            graph.topoCons->insert(t->getProducer(), restoreOp);
+          if (t->hasProducer()) {
+            if (t->getProducer() == restoreOp) {
+              continue;
+            } else {
+              graph.topoCons->insert(t->getProducer(), restoreOp);
+            }
           }
         }
       }
