@@ -7,12 +7,29 @@
 
 namespace poponnx {
 
+DropoutBaseOp::DropoutBaseOp(const OperatorIdentifier &opid_,
+                             float ratio_,
+                             uint32_t seedModifier_,
+                             const Op::Settings &settings_)
+    : Op(opid_, settings_), ratio(ratio_), seedModifier(seedModifier_) {}
+
+uint32_t DropoutBaseOp::getSeedModifier() const { return seedModifier; }
+
+void DropoutBaseOp::setSeedModifier(uint32_t sm) { seedModifier = sm; }
+
+float DropoutBaseOp::getRatio() const { return ratio; }
+
+void DropoutBaseOp::setRatio(float r) { ratio = r; }
+
+float DropoutBaseOp::getSubgraphValue() const { return getLowSubgraphValue(); }
+
 DropoutOp::DropoutOp(const OperatorIdentifier &_opid,
                      float ratio_,
                      const Op::Settings &settings_)
-    : Op(_opid, settings_), ratio(ratio_) {
-  seedModifier = getIr().getAndIncrementDropoutSeedModifier();
-}
+    : DropoutBaseOp(_opid,
+                    ratio_,
+                    settings_.getIr().getAndIncrementDropoutSeedModifier(),
+                    settings_) {}
 
 std::unique_ptr<Op> DropoutOp::clone() const {
   return std::make_unique<DropoutOp>(*this);
@@ -25,6 +42,12 @@ void DropoutOp::setup() {
     outInfo(getMaskOutIndex()) = {DataType::BOOL, inInfo(getInIndex()).shape()};
   } else {
     outInfo(getOutIndex()) = inInfo(getInIndex());
+  }
+
+  if (getIr().isTraining()) {
+    auto tensor_id = fmt::format("Dropout({})_seed", id);
+    createAndConnectOutTensor(getSeedOutIndex(), tensor_id);
+    outInfo(getSeedOutIndex()) = {DataType::UINT32, {2}};
   }
 }
 
@@ -52,8 +75,10 @@ bool DropoutOp::canBeReplacedByIdentity() {
 }
 
 DropoutGradOp::DropoutGradOp(const DropoutOp &fwdOp)
-    : Op(Onnx::GradOperators::DropoutGrad, fwdOp.getSettings()),
-      ratio(fwdOp.getRatio()), seedModifier(fwdOp.getSeedModifier()) {}
+    : DropoutBaseOp(Onnx::GradOperators::DropoutGrad,
+                    fwdOp.getRatio(),
+                    fwdOp.getSeedModifier(),
+                    fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> DropoutGradOp::clone() const {
   return std::make_unique<DropoutGradOp>(*this);
@@ -66,7 +91,8 @@ void DropoutGradOp::setup() {
 const std::vector<GradInOutMapper> &DropoutGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       // Design note : seed tensor input to dropout op/gradop not in Ir
-      {getGradInIndex(), DropoutOp::getOutIndex(), GradOpInType::GRADOUT}};
+      {getGradInIndex(), DropoutOp::getOutIndex(), GradOpInType::GRADOUT},
+      {getSeedInIndex(), DropoutOp::getSeedOutIndex(), GradOpInType::OUT}};
   return inInfo;
 }
 

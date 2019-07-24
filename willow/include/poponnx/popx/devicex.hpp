@@ -51,6 +51,7 @@ public:
   PipelinePhase fwdFillPhase, bwdFillPhase;
   PipelinePhase fillPhase;
 
+  // The phase between the pipeline being filled and flushed
   PipelinePhase mainPhase;
 
   PipelinePhase fwdFlushPhase, bwdFlushPhase;

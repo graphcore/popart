@@ -5,7 +5,26 @@
 
 namespace poponnx {
 
-class DropoutOp : public Op {
+class DropoutBaseOp : public Op {
+public:
+  DropoutBaseOp(const OperatorIdentifier &opid_,
+                float ratio_,
+                uint32_t seedModifier_,
+                const Op::Settings &settings_);
+
+  uint32_t getSeedModifier() const;
+  void setSeedModifier(uint32_t sm);
+  float getRatio() const;
+  void setRatio(float r);
+
+  float getSubgraphValue() const final;
+
+protected:
+  float ratio;
+  uint32_t seedModifier;
+};
+
+class DropoutOp : public DropoutBaseOp {
 public:
   DropoutOp(const OperatorIdentifier &_opid,
             float ratio_,
@@ -23,25 +42,17 @@ public:
   // Ouputs
   static OutIndex getOutIndex() { return 0; }
   static OutIndex getMaskOutIndex() { return 1; }
+  static OutIndex getSeedOutIndex() { return 2; }
 
   bool canBeReplacedByIdentity() override;
-
-  uint32_t getSeedModifier() const { return seedModifier; }
-  void setSeedModifier(uint32_t sm) { seedModifier = sm; }
-  float getRatio() const { return ratio; }
-  void setRatio(float r) { ratio = r; }
-
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
   bool returnMask() const { return output_mask; }
 
 private:
   bool output_mask = false;
-  float ratio;
-  uint32_t seedModifier;
 };
 
-class DropoutGradOp : public Op {
+class DropoutGradOp : public DropoutBaseOp {
 public:
   DropoutGradOp(const DropoutOp &fwdOp);
 
@@ -51,15 +62,8 @@ public:
   void setup() final;
 
   static InIndex getGradInIndex() { return 0; }
+  static InIndex getSeedInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
-  uint32_t getSeedModifier() const { return seedModifier; }
-  float getRatio() const { return ratio; }
-
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
-
-private:
-  float ratio;
-  uint32_t seedModifier;
 };
 
 } // namespace poponnx

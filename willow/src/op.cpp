@@ -98,6 +98,11 @@ void Op::defaultConnectInTensor(InIndex inIndex, TensorId tenId) {
   Tensor *ptensor = getGraph().getTensors().get(tenId);
   input->insert(inIndex, ptensor);
   ptensor->consumers.increment(this);
+
+  // Inherit fromLoss from the input tensor
+  if (ptensor->fromLoss == PathFromLoss::Yes) {
+    fromLoss = PathFromLoss::Yes;
+  }
 }
 
 void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
@@ -112,6 +117,9 @@ void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
   } else {
     ptensor->setProducer(this);
   }
+
+  // Output tensor takes fromLoss from op
+  ptensor->fromLoss = fromLoss;
 }
 
 void Op::disconnectInTensor(Tensor *tensor) {
@@ -298,6 +306,8 @@ Op::Op(const OperatorIdentifier &_opid, const Op::Settings &settings_)
       id(settings_.graph.get().getIr().getAndIncrOpsCounter()), opid(_opid),
       // the Attributes
       settings(settings_) {}
+
+Ir &Op::Op::Settings::getIr() const { return graph.get().getIr(); }
 
 void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
 

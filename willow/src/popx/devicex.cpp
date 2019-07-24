@@ -2484,6 +2484,9 @@ poplar::Type popType(const TensorInfo &info) {
   case DataType::BOOL: {
     return poplar::BOOL;
   }
+  case DataType::UINT32: {
+    return poplar::UNSIGNED_INT;
+  }
 
   case DataType::UNDEFINED:
   case DataType::UINT8:
@@ -2494,7 +2497,6 @@ poplar::Type popType(const TensorInfo &info) {
   case DataType::STRING:
   case DataType::BFLOAT16:
   case DataType::DOUBLE:
-  case DataType::UINT32:
   case DataType::UINT64:
   case DataType::COMPLEX64:
   case DataType::COMPLEX128:

@@ -24,7 +24,7 @@ def test_dropout_testing(op_tester):
     op_tester.run(init_builder, reference, 'infer')
 
     # ... and with identity pattern
-    op_tester.passes = ['OpToIdentity', 'DropoutGradOp']
+    op_tester.passes = ['OpToIdentity']
     op_tester.run(init_builder, reference, 'infer')
 
 
@@ -56,30 +56,6 @@ def test_dropout_training1():
     reference = d1 * anchors[o2] * (1 / (1 - ratio))
 
     assert (np.isclose(anchors[o1], reference)).all()
-
-
-# Verify that poponnx errors our properly when the DropoutGradOp is
-# not applied
-def test_dropout_training2(op_tester):
-    d1 = np.random.rand(10).astype(np.float32)
-
-    def init_builder(builder):
-        i1 = builder.addInputTensor(d1)
-        [o1] = builder.aiOnnx.dropout([i1], num_outputs=1)
-        builder.addOutputTensor(o1)
-        return [o1, poponnx.reservedGradientPrefix() + i1]
-
-    def reference(ref_data):
-        dropout = torch.nn.Dropout()
-        out = dropout(torch.tensor(d1))
-        return [out]
-
-    # 'DropoutGradOp' pattern not applied
-    with pytest.raises(poponnx.poponnx_exception) as e_info:
-        op_tester.run(init_builder, reference, 'train')
-
-    assert (e_info.value.args[0].startswith(
-        "DropoutGradOp should be optimised out"))
 
 
 # We cannot directly test poponnx dropout vs pytorch here, because they have

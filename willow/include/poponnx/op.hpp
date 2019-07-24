@@ -98,6 +98,8 @@ public:
     // depending on whether the attribute has been
     // set in the onnx model.
     virtual void setFromAttributes(const Attributes &attributes);
+
+    Ir &getIr() const;
   };
 
   Settings settings;

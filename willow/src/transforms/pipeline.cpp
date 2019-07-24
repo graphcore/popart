@@ -210,7 +210,12 @@ bool Pipeline::apply(Graph &graph) const {
       }
     }
 
-    if (isConsumedByOpScheduledPreLoss && isConsumedByOpScheduledPostLoss) {
+    bool isProducedPreLoss =
+        tensor->hasProducer() &&
+        tensor->getProducer()->scheduledPreLoss == ScheduledPreLoss::Yes;
+
+    if ((isConsumedByOpScheduledPreLoss || isProducedPreLoss) &&
+        isConsumedByOpScheduledPostLoss) {
       toStashTensors.push_back(tid);
     }
   }
