@@ -1743,6 +1743,15 @@ void Devicex::prepare() {
         }
       }
     }
+  } else {
+    auto numIPUs = graph().getTarget().getNumIPUs();
+    if (numIPUs > 1 &&
+        numIPUs != ir().getSessionOptions().replicatedGraphCount) {
+      throw error("If virtual graphs are disabled, the replicated graph count "
+                  "({}) needs to be equal to the number of IPUs ({})",
+                  ir().getSessionOptions().replicatedGraphCount,
+                  numIPUs);
+    }
   }
 
   // Create a constant tensor which will be used if opxTrace is enabled
