@@ -461,8 +461,16 @@ void Devicex::hostToHostStream(
     TensorId id // for clear error message, we need the id of the tensor
 ) {
 
-  // confirm that the shapes of dst and src agree
-  if (dstInfo.shape() != srcInfo.shape()) {
+  // strip off all preceding 1's
+  auto strip = [](const Shape &s) {
+    return Shape(std::find_if_not(std::cbegin(s),
+                                  std::cend(s),
+                                  [](auto x) { return x == 1; }),
+                 s.end());
+  };
+
+  // confirm that the shapes of dst and src agree, ignoring all leading 1's
+  if (strip(dstInfo.shape()) != strip(srcInfo.shape())) {
     std::stringstream ss;
     ss << "Shape discrepency for tensor " << id
        << ",\nStep tensor info (user) : ";
@@ -1342,7 +1350,8 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
             if (op->isIpuCopyOp()) {
               growOpx(progs.pipelineIpuCopyFragment());
             } else {
-              growOpx(progs.pipelineForwardFragment(op->getVirtualGraphId(), op->str()));
+              growOpx(progs.pipelineForwardFragment(op->getVirtualGraphId(),
+                                                    op->str()));
             }
           } else {
             growOpx(progs.forwardFragment());
@@ -1372,7 +1381,8 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
           if (op->isIpuCopyOp()) {
             growOpx(progs.pipelineIpuCopyFragment());
           } else {
-            growOpx(progs.pipelineBackwardFragment(op->getVirtualGraphId(), op->str()));
+            growOpx(progs.pipelineBackwardFragment(op->getVirtualGraphId(),
+                                                   op->str()));
           }
         } else {
           // decide what needs to be re-run
