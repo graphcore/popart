@@ -160,11 +160,17 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
 
   int next_subgraph_id = 0;
 
+  auto startNewSubgraph =
+      [&node_subgraph_map, &subgraphs, &next_subgraph_id](OpId conId) {
+        auto iter = node_subgraph_map.insert({conId, next_subgraph_id});
+        subgraphs.push_back({conId});
+        next_subgraph_id++;
+        return iter;
+      };
+
   for (auto *t : ir.dataStreamTensors()) {
     for (Op *consumer_op : t->consumers.getOps()) {
-      node_subgraph_map.insert({consumer_op->id, next_subgraph_id});
-      subgraphs.push_back({consumer_op->id});
-      next_subgraph_id++;
+      startNewSubgraph(consumer_op->id);
       logging::transform::trace(
           "Starting at {} {}.", consumer_op->debugName(), consumer_op->id);
     }
@@ -185,7 +191,17 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
     // Keep a cumulative_cost of the whole graph.
     cumulative_cost += op_cost;
 
-    auto subgraph_id = node_subgraph_map.find(op->id)->second;
+    // If the Op has a path to it from a Stream Tensor, it will have been
+    // assigned a sub-graph
+    auto subgraph_id_found = node_subgraph_map.find(op->id);
+
+    // If the Op does not have a path to it from a Stream Tensor, it will not
+    // yet have been assigned a sub-graph
+    if (subgraph_id_found == node_subgraph_map.end()) {
+      subgraph_id_found = startNewSubgraph(op->id).first;
+    }
+
+    auto subgraph_id = subgraph_id_found->second;
     auto &subgraph   = subgraphs.at(subgraph_id);
 
     // Keep a cumulative cost of each subgraph.
