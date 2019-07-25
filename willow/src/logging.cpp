@@ -2,6 +2,7 @@
 
 #include <popart/error.hpp>
 #include <popart/logging.hpp>
+#include <popart/util.hpp>
 
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/sinks/ansicolor_sink.h>
@@ -154,9 +155,9 @@ const char *defaultLoggerDestination = "stderr";
 const char *defaultLoggerLevel       = "OFF";
 
 LoggingContext::LoggingContext() {
-  auto POPART_LOG_DEST   = getenv("LOG_DEST");
-  auto POPART_LOG_LEVEL  = getenv("LOG_LEVEL");
-  auto POPART_LOG_CONFIG = getenv("LOG_CONFIG");
+  auto POPART_LOG_DEST   = getPopartEnvVar("LOG_DEST");
+  auto POPART_LOG_LEVEL  = getPopartEnvVar("LOG_LEVEL");
+  auto POPART_LOG_CONFIG = getPopartEnvVar("LOG_CONFIG");
 
   // Get logging output from the POPART_LOG_DEST environment variable.
   // The valid options are "stdout", "stderr", or if it is neither

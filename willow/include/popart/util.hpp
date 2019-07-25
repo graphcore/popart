@@ -9,7 +9,7 @@
 
 namespace popart {
 
-char *getenv(std::string env_var);
+char *getPopartEnvVar(std::string env_var);
 
 // turn input into a string, and pads
 // it if necessary to some minimum length `padSize'

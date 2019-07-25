@@ -200,7 +200,7 @@ void DotVisualizer::write() {
 std::set<DotCheck> DotVisualizer::getDotChecks() {
   auto dotChecks = ir->getSessionOptions().dotChecks;
 
-  auto popartDotChecks = getenv("DOT_CHECKS");
+  auto popartDotChecks = getPopartEnvVar("DOT_CHECKS");
   if (popartDotChecks && std::strcmp(popartDotChecks, "") != 0) {
     std::vector<std::string> dotCheckStrings;
     boost::split(

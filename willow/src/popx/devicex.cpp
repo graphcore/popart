@@ -385,7 +385,7 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
   }
 
   // Set the opxTrace flag based on the environment variable
-  auto POPART_OPX_TRACE = getenv("OPX_TRACE");
+  auto POPART_OPX_TRACE = getPopartEnvVar("OPX_TRACE");
   opxTrace = POPART_OPX_TRACE ? strncmp(POPART_OPX_TRACE, "1", 1) == 0 : false;
 
   // TODO (see T5100) : if inference, forward should be INFERENCE_FWD
@@ -1954,7 +1954,7 @@ void Devicex::prepare() {
   logging::devicex::info("Starting Engine compilation");
 
   auto trySaveTensorTileMap = [this]() {
-    auto popartTensorTileMap = getenv("TENSOR_TILE_MAP");
+    auto popartTensorTileMap = getPopartEnvVar("TENSOR_TILE_MAP");
     if (popartTensorTileMap && strcmp(popartTensorTileMap, "") != 0) {
       saveTensorTileMap(popartTensorTileMap);
     }
