@@ -8,13 +8,13 @@ In this example, a simple addition is prepared for execution.
 
 ::
 
-  import poponnx
+  import popart
 
-  builder = poponnx.Builder()
+  builder = popart.Builder()
 
   # Build a simple graph
-  i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
-  i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1, 2, 32, 32]))
+  i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1, 2, 32, 32]))
+  i2 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1, 2, 32, 32]))
 
   o = builder.aiOnnx.add([i1, i2])
 
@@ -23,11 +23,11 @@ In this example, a simple addition is prepared for execution.
   proto = builder.getModelProto()
 
   # Create a runtime environment
-  anchors = {o : poponnx.AnchorReturnType("ALL")}
-  dataFeed = poponnx.DataFlow(1, anchors)
-  device = poponnx.DeviceManager().createCpuDevice()
+  anchors = {o : popart.AnchorReturnType("ALL")}
+  dataFeed = popart.DataFlow(1, anchors)
+  device = popart.DeviceManager().createCpuDevice()
 
-  session = poponnx.InferenceSession(proto, dataFeed, device)
+  session = popart.InferenceSession(proto, dataFeed, device)
 
 Adding operations to the graph
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -97,12 +97,12 @@ specific IPU together:
 
 ::
 
-  builder = poponnx.Builder()
+  builder = popart.Builder()
 
-  i1 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
-  i2 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
-  i3 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
-  i4 = builder.addInputTensor(poponnx.TensorInfo("FLOAT", [1]))
+  i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]))
+  i2 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]))
+  i3 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]))
+  i4 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]))
 
   with builder.virtualGraph(0):
       o1 = builder.aiOnnx.add([i1, i2])

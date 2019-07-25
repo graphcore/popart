@@ -1,10 +1,10 @@
 #include <memory>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/mul.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/mul.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 MulOp::MulOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseBinaryOp(_opid, settings_) {
@@ -104,4 +104,4 @@ static OpCreator<MulOp> mulOpCreator({Onnx::Operators::Mul_6,
 
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

@@ -1,12 +1,12 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/exp.hpp>
-#include <poponnx/op/mul.hpp>
-#include <poponnx/patterns/expgradoppattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/exp.hpp>
+#include <popart/op/mul.hpp>
+#include <popart/patterns/expgradoppattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool ExpGradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<ExpGradOp>();
@@ -41,4 +41,4 @@ static PatternCreator<ExpGradOpPattern>
     ExpGradOpPattern(PreAliasPatternType::EXPGRADOP, "ExpGradOp");
 }
 
-} // namespace poponnx
+} // namespace popart

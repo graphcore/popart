@@ -4,12 +4,12 @@
 #include <random>
 #include <set>
 
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/popprograms.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/popprograms.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 PopPrograms::PopPrograms(Devicex *dv_p_) : dv_p(dv_p_) {}
@@ -466,4 +466,4 @@ PopPrograms::getStrFromPipelineFragmentId(PipelineFragmentId fragId) {
 }
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

@@ -4,12 +4,12 @@
 #include <iterator>
 #include <vector>
 
-#include <poponnx/error.hpp>
-#include <poponnx/op/reducemean.hpp>
-#include <poponnx/popx/op/reducemeanx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/op/reducemean.hpp>
+#include <popart/popx/op/reducemeanx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/util.hpp>
 
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
@@ -17,7 +17,7 @@
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 ReduceMeanOpx::ReduceMeanOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -87,4 +87,4 @@ OpxCreator<ReduceMeanGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

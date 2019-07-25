@@ -1,9 +1,9 @@
-#include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/batchnorm.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/batchnormx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/batchnorm.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/batchnormx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <poplar/Tensor.hpp>
 #include <poplin/Norms.hpp>
@@ -17,7 +17,7 @@ using Shape = std::vector<std::size_t>;
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 BatchNormOpx::BatchNormOpx(Op *op, Devicex *devicex) : NormOpx(op, devicex) {
@@ -293,4 +293,4 @@ OpxCreator<BatchNormGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

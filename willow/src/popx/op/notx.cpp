@@ -1,13 +1,13 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/not.hpp>
-#include <poponnx/popx/devicex.hpp>
+#include <popart/error.hpp>
+#include <popart/op/not.hpp>
+#include <popart/popx/devicex.hpp>
 
-#include <poponnx/popx/op/notx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/popx/op/notx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 NotOpx::NotOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
@@ -31,4 +31,4 @@ OpxCreator<NotOpx> greaterOpxCreator_1(Onnx::Operators::Not_1);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

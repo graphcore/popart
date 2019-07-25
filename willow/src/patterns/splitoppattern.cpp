@@ -1,11 +1,11 @@
-#include <poponnx/graph.hpp>
-#include <poponnx/op/slice.hpp>
-#include <poponnx/op/split.hpp>
-#include <poponnx/patterns/splitoppattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/slice.hpp>
+#include <popart/op/split.hpp>
+#include <popart/patterns/splitoppattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 namespace {
 
@@ -78,4 +78,4 @@ static PatternCreator<SplitOpPattern>
     splitOpPattern(PreAliasPatternType::SPLITOP, "SplitOp");
 }
 
-} // namespace poponnx
+} // namespace popart

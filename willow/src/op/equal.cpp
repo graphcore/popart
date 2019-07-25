@@ -1,10 +1,10 @@
 #include <memory>
 #include <vector>
-#include <poponnx/op/equal.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/equal.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 EqualOp::EqualOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : BinaryComparisonOp(_opid, settings_) {}
@@ -14,7 +14,7 @@ std::unique_ptr<Op> EqualOp::clone() const {
 }
 
 std::vector<std::unique_ptr<Op>> EqualOp::getGradOps() {
-  throw error("PopONNX does not have a valid grad op corresponding to EqualOp");
+  throw error("PopART does not have a valid grad op corresponding to EqualOp");
 }
 
 namespace {
@@ -22,4 +22,4 @@ static OpCreator<EqualOp> EqualOpCreator({Onnx::Operators::Equal_1,
                                           Onnx::Operators::Equal_7});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

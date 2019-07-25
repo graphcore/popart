@@ -4,19 +4,19 @@
 #include <unordered_set>
 #include <vector>
 
-#include <poponnx/builder_impl.hpp>
-#include <poponnx/ces/constexpr.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/filereader.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/opidentifier.hpp>
-#include <poponnx/tensordata.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/builder_impl.hpp>
+#include <popart/ces/constexpr.hpp>
+#include <popart/error.hpp>
+#include <popart/filereader.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/opidentifier.hpp>
+#include <popart/tensordata.hpp>
+#include <popart/tensorinfo.hpp>
 
 #include <onnx/checker.h>
 #include <onnx/shape_inference/implementation.h>
 
-namespace poponnx {
+namespace popart {
 
 // Supported IR version - this is the file format version
 const static uint64_t minIrVersion = 3;
@@ -986,4 +986,4 @@ void BuilderImpl::pushNameScope(const std::string &name) {
 
 void BuilderImpl::popNameScope() { name_scope_stack_.pop_back(); }
 
-} // namespace poponnx
+} // namespace popart

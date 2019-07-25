@@ -1,6 +1,6 @@
-#include <poponnx/graphid.hpp>
+#include <popart/graphid.hpp>
 
-namespace poponnx {
+namespace popart {
 
 const GraphId rootId("");
 
@@ -19,4 +19,4 @@ std::ostream &operator<<(std::ostream &ss, const GraphId &graph_id) {
   return ss;
 }
 
-} // namespace poponnx
+} // namespace popart

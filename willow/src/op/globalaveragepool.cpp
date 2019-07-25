@@ -1,11 +1,11 @@
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/op/globalaveragepool.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/globalaveragepool.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 GlobalAveragePoolOp::GlobalAveragePoolOp(const OperatorIdentifier &_opid,
                                          const Op::Settings &settings_)
@@ -111,4 +111,4 @@ static OpCreator<GlobalAveragePoolOp>
     globalAveragePoolOpCreator({Onnx::Operators::GlobalAveragePool_1});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

@@ -1,13 +1,13 @@
 #include <memory>
-#include <poponnx/op/pad.hpp>
-#include <poponnx/op/slice.hpp>
-#include <poponnx/op/slicegrad.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/region.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/pad.hpp>
+#include <popart/op/slice.hpp>
+#include <popart/op/slicegrad.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/region.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 Slice::Slice(int64_t start_, int64_t end_, int64_t axis_)
     : start(start_), end(end_), axis(axis_) {}
@@ -260,7 +260,7 @@ void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
     if (inIndex == getStartsInIndex()) {
       try {
         getInTensorData(tenId, starts, {DataType::INT32, DataType::INT64});
-      } catch (poponnx::error &err) {
+      } catch (popart::error &err) {
         throw error("Need the value of the {} input 'starts' to detemine the "
                     "output shape, but was unable because {}",
                     opid,
@@ -270,7 +270,7 @@ void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
     } else if (inIndex == getEndsInIndex()) {
       try {
         getInTensorData(tenId, ends, {DataType::INT32, DataType::INT64});
-      } catch (poponnx::error &err) {
+      } catch (popart::error &err) {
         throw error("Need the value of the {} input 'ends' to detemine the "
                     "output shape, but was unable because {}",
                     opid,
@@ -281,7 +281,7 @@ void BaseSliceOp::connectInTensor(InIndex inIndex, TensorId tenId) {
         std::vector<int64_t> _axes;
         getInTensorData(tenId, _axes, {DataType::INT32, DataType::INT64});
         axes = sanitizeAxes(starts, _axes);
-      } catch (poponnx::error &err) {
+      } catch (popart::error &err) {
         throw error("Need the value of the {} input 'axes' to detemine the "
                     "output shape, but was unable because {}",
                     opid,
@@ -386,4 +386,4 @@ static OpCreator<SliceOp> sliceOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

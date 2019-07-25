@@ -1,4 +1,4 @@
-#include <poponnx/subgraph/outliner.hpp>
+#include <popart/subgraph/outliner.hpp>
 
 namespace fwtools {
 namespace subgraph {

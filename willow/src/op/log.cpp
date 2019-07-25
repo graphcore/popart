@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/log.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/log.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 LogOp::LogOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
@@ -29,4 +29,4 @@ namespace {
 static OpCreator<LogOp> logOpCreator_6(Onnx::Operators::Log_6);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

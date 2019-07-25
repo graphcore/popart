@@ -1,8 +1,8 @@
-#include <poponnx/op.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/topocons.hpp>
+#include <popart/op.hpp>
+#include <popart/tensor.hpp>
+#include <popart/topocons.hpp>
 
-namespace poponnx {
+namespace popart {
 
 OpsBeforeKey TopoCons::finalConsumerCons(const Tensor *tensor, Op *last) const {
 
@@ -160,4 +160,4 @@ std::ostream &operator<<(std::ostream &os, const TopoCons &tc) {
   return os;
 }
 
-} // namespace poponnx
+} // namespace popart

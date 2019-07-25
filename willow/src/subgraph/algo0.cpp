@@ -1,4 +1,4 @@
-#include <poponnx/subgraph/algo0.hpp>
+#include <popart/subgraph/algo0.hpp>
 
 namespace fwtools {
 namespace subgraph {

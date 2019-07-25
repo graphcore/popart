@@ -1,12 +1,12 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/div.hpp>
-#include <poponnx/op/reducesum.hpp>
-#include <poponnx/patterns/divarg0gradoppattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/div.hpp>
+#include <popart/op/reducesum.hpp>
+#include <popart/patterns/divarg0gradoppattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool DivArg0GradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<DivArg0GradOp>();
@@ -56,4 +56,4 @@ static PatternCreator<DivArg0GradOpPattern>
     DivArg0GradOpPattern(PreAliasPatternType::DIVARG0GRADOP, "DivArg0GradOp");
 }
 
-} // namespace poponnx
+} // namespace popart

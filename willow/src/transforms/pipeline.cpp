@@ -1,16 +1,16 @@
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/names.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/op/ipucopy.hpp>
-#include <poponnx/op/restore.hpp>
-#include <poponnx/op/stash.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/topocons.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/op/restore.hpp>
+#include <popart/op/stash.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 
-#include <poponnx/transforms/pipeline.hpp>
+#include <popart/transforms/pipeline.hpp>
 
 // Which pipelining scheme should we use? There are some considerations to
 // make:
@@ -60,7 +60,7 @@
 //   |                       t_grad_in
 //  ...
 
-namespace poponnx {
+namespace popart {
 
 std::size_t Pipeline::id() { return typeid(Pipeline).hash_code(); }
 
@@ -128,7 +128,7 @@ bool Pipeline::apply(Graph &graph) const {
     // 4.2 All copy ops with pathToLoss=yes go from IPU N->N+1,
     //     and all copy ops with pathFromLoss=yes go from IPU N->N-1
     if (op->isIpuCopyOp()) {
-      auto ipuCopyOp = dynamic_cast<poponnx::IpuCopyOp *>(op);
+      auto ipuCopyOp = dynamic_cast<popart::IpuCopyOp *>(op);
       auto sourceIpu = ipuCopyOp->getSourceIpu();
       auto destIpu   = ipuCopyOp->getDestIpu();
 
@@ -331,7 +331,7 @@ bool Pipeline::apply(Graph &graph) const {
 
 int64_t Pipeline::getVirtualGraphIdOrSourceIpu(Op *op) const {
   if (op->isConvertibleTo<IpuCopyOp>()) {
-    auto ipuCopyOp = dynamic_cast<poponnx::IpuCopyOp *>(op);
+    auto ipuCopyOp = dynamic_cast<popart::IpuCopyOp *>(op);
     return static_cast<int64_t>(ipuCopyOp->getSourceIpu());
   } else {
     return op->getVirtualGraphId();
@@ -362,4 +362,4 @@ namespace {
 bool init = Transform::registerTransform(new Pipeline);
 }
 
-} // namespace poponnx
+} // namespace popart

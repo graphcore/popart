@@ -2,11 +2,11 @@
 #include <vector>
 
 #include <memory>
-#include <poponnx/op/argmax.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/argmax.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::unique_ptr<Op> ArgMaxOp::clone() const {
   return std::make_unique<ArgMaxOp>(*this);
@@ -26,4 +26,4 @@ static OpCreator<ArgMaxOp>
     ArgMaxOpCreator(Onnx::Operators::ArgMax_1, argMaxFactory, true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

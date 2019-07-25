@@ -65,15 +65,15 @@ if (BUILD_DOCS)
                      -r ${RELEASE}
 		     -b pdf
 		     ${CMAKE_BINARY_DIR}/docs/pdf_user_guide
-		     ${CMAKE_BINARY_DIR}/docs/latex/poponnx.pdf
+		     ${CMAKE_BINARY_DIR}/docs/latex/popart.pdf
     COMMENT "Building PDF documentation from 'user_guide' directory"
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/docs
     DEPENDS ${CMAKE_BINARY_DIR}/docs/latex
             ${CMAKE_BINARY_DIR}/docs/Doxyfile
 	    ${CMAKE_BINARY_DIR}/docs/pdf_user_guide
 	    ${SUPPORTED_OPS_GEN}
-	    poponnx_examples
-            poponnx_core
+	    popart_examples
+            popart_core
   )
 
   add_custom_command(
@@ -89,8 +89,8 @@ if (BUILD_DOCS)
             ${CMAKE_BINARY_DIR}/docs/html/doxygen/latex
 	    ${CMAKE_BINARY_DIR}/docs/html_user_guide
 	    ${SUPPORTED_OPS_GEN}
-	    poponnx_examples
-            poponnx_core
+	    popart_examples
+            popart_core
   )
 
   add_custom_target(html_zip ALL
@@ -101,19 +101,19 @@ if (BUILD_DOCS)
   )
 
   add_custom_target(pdf_copy ALL
-    COMMAND cp ${CMAKE_BINARY_DIR}/docs/latex/poponnx.pdf ${CMAKE_BINARY_DIR}/${USER_GUIDE_PDF_NAME}
+    COMMAND cp ${CMAKE_BINARY_DIR}/docs/latex/popart.pdf ${CMAKE_BINARY_DIR}/${USER_GUIDE_PDF_NAME}
     DEPENDS ${CMAKE_BINARY_DIR}/docs/pdfgen
   )
 
   install(DIRECTORY ${CMAKE_BINARY_DIR}/docs/html DESTINATION docs
-          COMPONENT poponnx-docs)
+          COMPONENT popart-docs)
 
-  install(FILES ${CMAKE_BINARY_DIR}/docs/latex/poponnx.pdf DESTINATION docs/pdf
-          COMPONENT poponnx-docs)
+  install(FILES ${CMAKE_BINARY_DIR}/docs/latex/popart.pdf DESTINATION docs/pdf
+          COMPONENT popart-docs)
 
   install(DIRECTORY ${CMAKE_BINARY_DIR}/docs/html/doxygen/html
           DESTINATION docs/doxygen
-          COMPONENT poponnx-docs)
+          COMPONENT popart-docs)
 
 else()
   install(FILES)

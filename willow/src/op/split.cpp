@@ -1,14 +1,14 @@
 #include <boost/range/numeric.hpp>
 
 #include <memory>
-#include <poponnx/op/split.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/op/split.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
 using boost::accumulate;
 
-namespace poponnx {
+namespace popart {
 
 SplitOp::SplitOp(const OperatorIdentifier &opid_,
                  int64_t axis_,
@@ -116,4 +116,4 @@ static OpCreator<SplitOp> splitOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

@@ -1,24 +1,24 @@
-#include <poponnx/error.hpp>
-#include <poponnx/filereader.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/logging.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/optionflags.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/session.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensordata.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/util.hpp>
-#include <poponnx/version.hpp>
+#include <popart/error.hpp>
+#include <popart/filereader.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/logging.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/optionflags.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/session.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
+#include <popart/tensors.hpp>
+#include <popart/util.hpp>
+#include <popart/version.hpp>
 
-namespace poponnx {
+namespace popart {
 
 Session::Session() {
-  logging::session::info("Poponnx version: {}", poponnx::core::versionString());
-  logging::session::info("Poponnx release githash: {}",
-                         poponnx::core::packageHash());
+  logging::session::info("Popart version: {}", popart::core::versionString());
+  logging::session::info("Popart release githash: {}",
+                         popart::core::packageHash());
 }
 
 void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
@@ -296,4 +296,4 @@ void TrainingSession::optimizerFromHost() {
 
   device_->optimizerFromHost();
 }
-} // namespace poponnx
+} // namespace popart

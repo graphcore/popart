@@ -2,16 +2,16 @@
 #include <iterator>
 #include <vector>
 
-#include <poponnx/error.hpp>
-#include <poponnx/op/reducesum.hpp>
-#include <poponnx/popx/op/reducesumx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/op/reducesum.hpp>
+#include <popart/popx/op/reducesumx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/util.hpp>
 
 #include <popops/Reduce.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 ReduceSumOpx::ReduceSumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -65,4 +65,4 @@ OpxCreator<ReduceSumGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

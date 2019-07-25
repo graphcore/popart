@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/div.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/div.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 DivOp::DivOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseBinaryOp(_opid, settings_) {
@@ -95,4 +95,4 @@ static OpCreator<DivOp> divOpCreator({Onnx::Operators::Div_6,
                                       Onnx::Operators::Div_7});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

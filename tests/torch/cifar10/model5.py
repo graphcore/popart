@@ -4,9 +4,9 @@
 import sys
 import os
 import c10driver
-import poponnx
+import popart
 import cmdline
-from poponnx.torch import torchwriter
+from popart.torch import torchwriter
 #we require torch in this file to create the torch Module
 import torch
 
@@ -17,18 +17,18 @@ nOutChans = 10
 batchSize = 3
 batchesPerStep = 2
 anchors = {
-    "nllLossVal": poponnx.AnchorReturnType("FINAL"),
-    "probs": poponnx.AnchorReturnType("FINAL")
+    "nllLossVal": popart.AnchorReturnType("FINAL"),
+    "probs": popart.AnchorReturnType("FINAL")
 }
-dataFeed = poponnx.DataFlow(batchesPerStep, anchors)
-inputShapeInfo = poponnx.InputShapeInfo()
+dataFeed = popart.DataFlow(batchesPerStep, anchors)
+inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
-                   poponnx.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
-inputShapeInfo.add("label", poponnx.TensorInfo("INT32", [batchSize]))
+                   popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
+inputShapeInfo.add("label", popart.TensorInfo("INT32", [batchSize]))
 inNames = ["image0"]
 cifarInIndices = {"image0": 0, "label": 1}
 outNames = ["probs"]
-losses = [poponnx.NllLoss("probs", "label", "nllLossVal")]
+losses = [popart.NllLoss("probs", "label", "nllLossVal")]
 
 
 class Module0(torch.nn.Module):
@@ -66,7 +66,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     outNames=outNames,
     losses=losses,
     # large weight_decay term to test that it is definitely working
-    optimizer=poponnx.SGD(learning_rate=0.001, weight_decay=10),
+    optimizer=popart.SGD(learning_rate=0.001, weight_decay=10),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:

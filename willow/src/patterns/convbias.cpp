@@ -1,14 +1,14 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/addbias.hpp>
-#include <poponnx/op/conv.hpp>
-#include <poponnx/patterns/convbias.hpp>
-#include <poponnx/patterns/patterns.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/addbias.hpp>
+#include <popart/op/conv.hpp>
+#include <popart/patterns/convbias.hpp>
+#include <popart/patterns/patterns.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool ConvBiasPattern::matches(Op *op) const {
   return (op->opid == Onnx::Operators::Conv_1) && (op->input->n() == 3);
@@ -49,4 +49,4 @@ static PatternCreator<ConvBiasPattern>
     convBiasPattern(PreAliasPatternType::SPLITCONVBIAS, "SplitConvBias");
 }
 
-} // namespace poponnx
+} // namespace popart

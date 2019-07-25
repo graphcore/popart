@@ -1,13 +1,13 @@
-#include <poponnx/graphtransformer_impl.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/opidentifier.hpp>
+#include <popart/graphtransformer_impl.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/opidentifier.hpp>
 
 // used for float to half conversion
 #include <poplar/Target.hpp>
 
 #include <onnx/checker.h>
 
-namespace poponnx {
+namespace popart {
 
 GraphTransformerImpl::GraphTransformerImpl(
     const std::string &modelProtoOrFilename) {
@@ -264,4 +264,4 @@ void GraphTransformerImpl::prepareNodesForTraining() {
   }
 }
 
-} // namespace poponnx
+} // namespace popart

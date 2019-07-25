@@ -1,9 +1,9 @@
-#include <poponnx/ces/castce.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/op/cast.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ces/castce.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/op/cast.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ConstExprCast::ConstExprCast(Op *op_) : ConstExprOp(op_) {}
 
@@ -55,4 +55,4 @@ std::vector<char> ConstExprCast::compute() {
   return v_out;
 }
 
-} // namespace poponnx
+} // namespace popart

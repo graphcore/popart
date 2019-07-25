@@ -1,14 +1,14 @@
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/logging.hpp>
-#include <poponnx/names.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/op/loss.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/transforms/auto_virtual_graph.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/logging.hpp>
+#include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/op/loss.hpp>
+#include <popart/tensor.hpp>
+#include <popart/transforms/auto_virtual_graph.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::pair<bool, OpId> Subgraph::best_split(float split_cost) {
   auto lb_node = split_nodes.lower_bound(split_cost);
@@ -342,4 +342,4 @@ namespace {
 bool init = Transform::registerTransform(new AutoVirtualGraph);
 }
 
-} // namespace poponnx
+} // namespace popart

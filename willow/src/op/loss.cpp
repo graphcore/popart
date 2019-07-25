@@ -1,8 +1,8 @@
 #include <sstream>
-#include <poponnx/error.hpp>
-#include <poponnx/op/loss.hpp>
+#include <popart/error.hpp>
+#include <popart/op/loss.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::map<std::string, eLoss> initLossMap() {
   return {{"NLL", eLoss::NLL}, {"L1", eLoss::L1}};
@@ -37,4 +37,4 @@ LossOp::LossOp(const Op &op) : Op(op) {}
 
 bool LossOp::isLossOp() const { return true; }
 
-} // namespace poponnx
+} // namespace popart

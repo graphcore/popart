@@ -1,12 +1,12 @@
-#include <poponnx/error.hpp>
-#include <poponnx/filereader.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/error.hpp>
+#include <popart/filereader.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace onnxutil {
 
-// functions for translating between poponnx's enum class and onnx's enum
+// functions for translating between popart's enum class and onnx's enum
 onnx::TensorProto_DataType getTPDataType(DataType data_type) {
   switch (data_type) {
   case DataType::UINT8: {
@@ -61,7 +61,7 @@ onnx::TensorProto_DataType getTPDataType(DataType data_type) {
     return onnx::TensorProto_DataType_UNDEFINED;
   }
   default:
-    throw error("unrecognised PopONNX DataType");
+    throw error("unrecognised PopART DataType");
   }
 }
 
@@ -265,4 +265,4 @@ void visitModelValueInfos(onnx::ModelProto &model,
 }
 
 } // namespace onnxutil
-} // namespace poponnx
+} // namespace popart

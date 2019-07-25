@@ -1,7 +1,7 @@
 // Copyright (c) 2018, Graphcore Ltd, All rights reserved
 
-#include <poponnx/error.hpp>
-#include <poponnx/logging.hpp>
+#include <popart/error.hpp>
+#include <popart/logging.hpp>
 
 #include <spdlog/fmt/fmt.h>
 #include <spdlog/sinks/ansicolor_sink.h>
@@ -15,7 +15,7 @@
 #include <iostream>
 #include <string>
 
-namespace poponnx {
+namespace popart {
 namespace logging {
 
 namespace {
@@ -84,8 +84,8 @@ Module moduleFromString(const std::string &module) {
     return Module::ir;
   if (module == "devicex")
     return Module::devicex;
-  if (module == "poponnx")
-    return Module::poponnx;
+  if (module == "popart")
+    return Module::popart;
   if (module == "transform")
     return Module::transform;
   if (module == "pattern")
@@ -105,7 +105,7 @@ Module moduleFromString(const std::string &module) {
 }
 
 std::string moduleName(const Module m) {
-  std::string prefix = "poponnx:";
+  std::string prefix = "popart:";
   std::string module;
   switch (m) {
   case Module::session:
@@ -117,8 +117,8 @@ std::string moduleName(const Module m) {
   case Module::devicex:
     module = "devicex";
     break;
-  case Module::poponnx:
-    module = "poponnx";
+  case Module::popart:
+    module = "popart";
     break;
   case Module::transform:
     module = "transform";
@@ -154,23 +154,23 @@ const char *defaultLoggerDestination = "stderr";
 const char *defaultLoggerLevel       = "OFF";
 
 LoggingContext::LoggingContext() {
-  auto POPONNX_LOG_DEST   = std::getenv("POPONNX_LOG_DEST");
-  auto POPONNX_LOG_LEVEL  = std::getenv("POPONNX_LOG_LEVEL");
-  auto POPONNX_LOG_CONFIG = std::getenv("POPONNX_LOG_CONFIG");
+  auto POPART_LOG_DEST   = getenv("LOG_DEST");
+  auto POPART_LOG_LEVEL  = getenv("LOG_LEVEL");
+  auto POPART_LOG_CONFIG = getenv("LOG_CONFIG");
 
-  // Get logging output from the POPONNX_LOG_DEST environment variable.
+  // Get logging output from the POPART_LOG_DEST environment variable.
   // The valid options are "stdout", "stderr", or if it is neither
   // of those it is treated as a filename. The default is stderr.
   std::string logDest =
-      POPONNX_LOG_DEST ? POPONNX_LOG_DEST : defaultLoggerDestination;
+      POPART_LOG_DEST ? POPART_LOG_DEST : defaultLoggerDestination;
 
   // Get logging level from OS ENV. The default level is off.
-  defaultLevel = logLevelFromString(POPONNX_LOG_LEVEL ? POPONNX_LOG_LEVEL
+  defaultLevel = logLevelFromString(POPART_LOG_LEVEL ? POPART_LOG_LEVEL
                                                       : defaultLoggerLevel);
 
-  if (POPONNX_LOG_CONFIG) {
+  if (POPART_LOG_CONFIG) {
     try {
-      boost::property_tree::read_json(POPONNX_LOG_CONFIG, loggingConfig);
+      boost::property_tree::read_json(POPART_LOG_CONFIG, loggingConfig);
     } catch (const boost::exception &) {
       std::cerr << "Error reading log configuration file: "
                 << boost::current_exception_diagnostic_information()
@@ -189,7 +189,7 @@ LoggingContext::LoggingContext() {
       sink =
           std::make_shared<spdlog::sinks::simple_file_sink_mt>(logDest, true);
     } catch (const spdlog::spdlog_ex &e) {
-      // Should we be throwing an poponnx exception?
+      // Should we be throwing an popart exception?
       std::cerr << "Error opening log file: " << e.what() << std::endl;
       throw;
     }
@@ -279,4 +279,4 @@ Level getLogLevel(Module m) {
 void flush(Module m) { LoggingContext::getLogger(m)->flush(); }
 
 } // namespace logging
-} // namespace poponnx
+} // namespace popart

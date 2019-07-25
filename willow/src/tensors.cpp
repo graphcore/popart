@@ -1,12 +1,12 @@
-#include <poponnx/chains.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/names.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/chains.hpp>
+#include <popart/graph.hpp>
+#include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 view::Chains Tensors::getChainsFromTo(Tensor *from, Tensor *to) const {
   if (from == to) {
@@ -342,4 +342,4 @@ bool Tensors::contains(TensorId id) const { return M.find(id) != M.end(); }
 
 void Tensors::insertConstId(const std::string &id) { constIds.insert(id); }
 
-} // namespace poponnx
+} // namespace popart

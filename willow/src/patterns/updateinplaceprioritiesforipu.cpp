@@ -1,10 +1,10 @@
-#include <poponnx/ir.hpp>
-#include <poponnx/op/add.hpp>
-#include <poponnx/op/conv.hpp>
-#include <poponnx/patterns/updateinplaceprioritiesforipu.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/add.hpp>
+#include <popart/op/conv.hpp>
+#include <popart/patterns/updateinplaceprioritiesforipu.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 // Check for sequence:
 //
@@ -85,4 +85,4 @@ void UpdateInplacePrioritiesForIpu::apply(Op *op) const {
   }
 }
 
-} // namespace poponnx
+} // namespace popart

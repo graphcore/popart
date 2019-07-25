@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <memory>
-#include <poponnx/op/reduce.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/reduce.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ReduceOp::ReduceOp(const OperatorIdentifier &_opid,
                    const std::vector<int64_t> &axes_,
@@ -98,4 +98,4 @@ void ReduceGradOp::setup() { outInfo(getOutIndex()) = outputTensorInfo; }
 
 const std::vector<int64_t> &ReduceGradOp::getAxes() const { return axes; }
 
-} // namespace poponnx
+} // namespace popart

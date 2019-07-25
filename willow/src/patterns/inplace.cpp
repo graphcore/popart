@@ -1,15 +1,15 @@
-#include <poponnx/chains.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/patterns/inplace.hpp>
-#include <poponnx/pbwrap.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/topocons.hpp>
-#include <poponnx/util.hpp>
+#include <popart/chains.hpp>
+#include <popart/graph.hpp>
+#include <popart/op.hpp>
+#include <popart/patterns/inplace.hpp>
+#include <popart/pbwrap.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
+#include <popart/util.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ExternOpTensorBundle::ExternOpTensorBundle(Op *opCopy,
                                            std::unique_ptr<Op> opNew)
@@ -363,4 +363,4 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   return gCons;
 }
 
-} // namespace poponnx
+} // namespace popart

@@ -1,7 +1,7 @@
 #include <sstream>
-#include <poponnx/tensornames.hpp>
+#include <popart/tensornames.hpp>
 
-namespace poponnx {
+namespace popart {
 
 TensorId getGradId(const TensorId &id) { return reservedGradientPrefix() + id; }
 
@@ -35,4 +35,4 @@ std::vector<std::string> reservedPrefixes() {
           reservedRestoredPrefix()};
 }
 
-} // namespace poponnx
+} // namespace popart

@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <memory>
-#include <poponnx/op/flatten.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/flatten.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::unique_ptr<Op>
 FlattenOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
@@ -165,4 +165,4 @@ static OpCreator<FlattenOp> flattenInplaceOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

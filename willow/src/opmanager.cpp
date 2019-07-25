@@ -1,8 +1,8 @@
 
-#include <poponnx/graph.hpp>
-#include <poponnx/opmanager.hpp>
+#include <popart/graph.hpp>
+#include <popart/opmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::ostream &operator<<(std::ostream &os, const OperatorIdentifier &opid) {
   os << opid.domain << "." << opid.type << ":" << opid.version;
@@ -148,4 +148,4 @@ OpVersion OpManager::getOpVersionFromOpSet(const OpDomain &opDomain,
   return version;
 }
 
-} // namespace poponnx
+} // namespace popart

@@ -1,12 +1,12 @@
-#include <poponnx/graph.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/patterns/fuser.hpp>
-#include <poponnx/pbwrap.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/graph.hpp>
+#include <popart/op.hpp>
+#include <popart/patterns/fuser.hpp>
+#include <popart/pbwrap.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool Fuser::apply(Op *op) const {
 
@@ -80,4 +80,4 @@ std::vector<const Tensor *> Fuser::touches(Op *op) const {
   return {op->output->tensor(0)};
 }
 
-} // namespace poponnx
+} // namespace popart

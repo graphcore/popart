@@ -1,10 +1,10 @@
 #include <memory>
-#include <poponnx/op/clip.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/clip.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 ClipOp::inplacePriorityDefault() const {
@@ -113,4 +113,4 @@ static OpCreator<ClipOp> clipOpCreator(
     true);
 
 } // namespace
-} // namespace poponnx
+} // namespace popart

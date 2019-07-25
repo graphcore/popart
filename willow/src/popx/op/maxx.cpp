@@ -1,9 +1,9 @@
 
-#include <poponnx/error.hpp>
-#include <poponnx/op/max.hpp>
-#include <poponnx/popx/op/maxx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/error.hpp>
+#include <popart/op/max.hpp>
+#include <popart/popx/op/maxx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensorindex.hpp>
 
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
@@ -11,7 +11,7 @@
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 MaxOpx::MaxOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
@@ -91,4 +91,4 @@ OpxCreator<MaxArgGradOpx> maxGradOpxCreator(Onnx::GradOperators::MaxArgGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

@@ -1,8 +1,8 @@
-#include <poponnx/op/basesort.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/basesort.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 BaseSortOp::BaseSortOp(const OperatorIdentifier &_opid,
                        int64_t axis_,
@@ -34,4 +34,4 @@ void BaseSortOp::appendAttributes(OpSerialiserBase &os) const {
 
 int64_t BaseSortOp::getAxis() const { return axis; }
 
-} // namespace poponnx
+} // namespace popart

@@ -1,13 +1,13 @@
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/identity.hpp>
-#include <poponnx/op/pad.hpp>
-#include <poponnx/patterns/postnrepl.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/pad.hpp>
+#include <popart/patterns/postnrepl.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 // (see .hpp for ascii picture definitions)
 bool PostNRepl::apply(Op *op) const {
@@ -90,4 +90,4 @@ static PatternCreator<PostNRepl>
     PostNReplPattern(PreAliasPatternType::POSTNREPL, "PostNRepl");
 }
 
-} // namespace poponnx
+} // namespace popart

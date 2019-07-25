@@ -1,10 +1,10 @@
 #include <popnn/NonLinearity.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/sigmoid.hpp>
-#include <poponnx/popx/op/sigmoidx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/sigmoid.hpp>
+#include <popart/popx/op/sigmoidx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 SigmoidInplaceOpx::SigmoidInplaceOpx(Op *op, Devicex *devicex)
@@ -62,4 +62,4 @@ OpxCreator<SigmoidInplaceOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

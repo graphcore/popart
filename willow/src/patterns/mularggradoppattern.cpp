@@ -1,13 +1,13 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/mul.hpp>
-#include <poponnx/patterns/mularggradoppattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensorinfo.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/mul.hpp>
+#include <popart/patterns/mularggradoppattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool MulArgGradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<MulArgGradOp>();
@@ -70,4 +70,4 @@ static PatternCreator<MulArgGradOpPattern>
     MulArgGradOpPattern(PreAliasPatternType::MULARGGRADOP, "MulArgGradOp");
 }
 
-} // namespace poponnx
+} // namespace popart

@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/cosh.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/cosh.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 CoshOp::CoshOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : Op(_opid, settings_) {}
@@ -23,4 +23,4 @@ namespace {
 static OpCreator<CoshOp> coshOpCreator(Onnx::Operators::Cosh_9);
 }
 
-} // namespace poponnx
+} // namespace popart

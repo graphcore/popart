@@ -1,15 +1,15 @@
 #include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <sstream>
-#include <poponnx/dotvisualizer.hpp>
-#include <poponnx/filereader.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/call.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensornames.hpp>
+#include <popart/dotvisualizer.hpp>
+#include <popart/filereader.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/call.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
 
-namespace poponnx {
+namespace popart {
 
 DotVisualizer::DotVisualizer(const Ir *_ir_, DotCheck _check_)
     : ir(_ir_), check(_check_) {
@@ -200,11 +200,11 @@ void DotVisualizer::write() {
 std::set<DotCheck> DotVisualizer::getDotChecks() {
   auto dotChecks = ir->getSessionOptions().dotChecks;
 
-  auto poponnxDotChecks = std::getenv("POPONNX_DOT_CHECKS");
-  if (poponnxDotChecks && std::strcmp(poponnxDotChecks, "") != 0) {
+  auto popartDotChecks = getenv("DOT_CHECKS");
+  if (popartDotChecks && std::strcmp(popartDotChecks, "") != 0) {
     std::vector<std::string> dotCheckStrings;
     boost::split(
-        dotCheckStrings, poponnxDotChecks, [](char c) { return c == ':'; });
+        dotCheckStrings, popartDotChecks, [](char c) { return c == ':'; });
 
     for (auto &s : dotCheckStrings) {
       auto c = dotCheckFromString(s);
@@ -215,4 +215,4 @@ std::set<DotCheck> DotVisualizer::getDotChecks() {
   return dotChecks;
 }
 
-} // namespace poponnx
+} // namespace popart

@@ -2,18 +2,18 @@
 #include <iterator>
 #include <vector>
 
-#include <poponnx/error.hpp>
-#include <poponnx/op/reduceprod.hpp>
-#include <poponnx/popx/op/reduceprodx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/reduceprod.hpp>
+#include <popart/popx/op/reduceprodx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
 
 #include <popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 ReduceProdOpx::ReduceProdOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -130,4 +130,4 @@ OpxCreator<ReduceProdGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

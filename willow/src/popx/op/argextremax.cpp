@@ -1,12 +1,12 @@
 #include <popops/Cast.hpp>
 
-#include <poponnx/error.hpp>
-#include <poponnx/op/argextrema.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/argextremax.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/argextrema.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/argextremax.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 ArgExtremaOpx::ArgExtremaOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -51,4 +51,4 @@ void ArgExtremaOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

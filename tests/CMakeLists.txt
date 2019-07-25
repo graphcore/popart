@@ -1,4 +1,4 @@
-add_subdirectory(poponnx)
+add_subdirectory(popart)
 add_subdirectory(torch)
 add_subdirectory(onnx_backend)
 

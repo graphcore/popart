@@ -1,14 +1,14 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/abs.hpp>
-#include <poponnx/popx/op/absx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/abs.hpp>
+#include <popart/popx/op/absx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 AbsOpx::AbsOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
@@ -30,4 +30,4 @@ OpxCreator<AbsOpx> absOpxCreator(Onnx::Operators::Abs_6);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

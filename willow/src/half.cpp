@@ -1,9 +1,9 @@
-#include <poponnx/error.hpp>
-#include <poponnx/half.hpp>
+#include <popart/error.hpp>
+#include <popart/half.hpp>
 
 #include <poplar/Target.hpp>
 
-namespace poponnx {
+namespace popart {
 
 static float halfToFloat(uint16_t f16) {
   // poplar::Target is not used in this function
@@ -56,4 +56,4 @@ std::ostream &operator<<(std::ostream &ss, const Half &v) {
   return ss;
 }
 
-} // namespace poponnx
+} // namespace popart

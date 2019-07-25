@@ -1,17 +1,17 @@
-#include <poponnx/error.hpp>
-#include <poponnx/logging.hpp>
+#include <popart/error.hpp>
+#include <popart/logging.hpp>
 
 #include <poplar/exceptions.hpp>
 #include <poputil/exceptions.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ErrorSource getErrorSource(const std::exception &e) {
-  if (dynamic_cast<const poponnx::memory_allocation_err *>(&e)) {
-    return ErrorSource::poponnx;
+  if (dynamic_cast<const popart::memory_allocation_err *>(&e)) {
+    return ErrorSource::popart;
   }
-  if (dynamic_cast<const poponnx::error *>(&e)) {
-    return ErrorSource::poponnx;
+  if (dynamic_cast<const popart::error *>(&e)) {
+    return ErrorSource::popart;
   }
   if (dynamic_cast<const poplar::poplar_error *>(&e)) {
     return ErrorSource::poplar;
@@ -22,4 +22,4 @@ ErrorSource getErrorSource(const std::exception &e) {
   return ErrorSource::unknown;
 }
 
-} // namespace poponnx
+} // namespace popart

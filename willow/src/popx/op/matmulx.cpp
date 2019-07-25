@@ -1,12 +1,12 @@
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/op/matmul.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/matmulx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorinfo.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/op/matmul.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/matmulx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/util.hpp>
 
 #include <poplin/MatMul.hpp>
 #include <popops/Reduce.hpp>
@@ -14,7 +14,7 @@
 #include <boost/range/algorithm.hpp>
 #include <boost/range/algorithm_ext.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 MatMulOpx::MatMulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -872,4 +872,4 @@ OpxCreator<MatMulRhsGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

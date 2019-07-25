@@ -1,10 +1,10 @@
 #include <popnn/NonLinearity.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/tanh.hpp>
-#include <poponnx/popx/op/tanhx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/tanh.hpp>
+#include <popart/popx/op/tanhx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 TanhOpx::TanhOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -47,4 +47,4 @@ OpxCreator<TanhGradOpx> tanhGradOpxCreator(Onnx::GradOperators::TanhGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

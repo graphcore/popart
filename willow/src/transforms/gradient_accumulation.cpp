@@ -1,22 +1,22 @@
 #include <limits>
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/logging.hpp>
-#include <poponnx/op/concat.hpp>
-#include <poponnx/op/flatten.hpp>
-#include <poponnx/op/gradientaccl.hpp>
-#include <poponnx/op/varupdate.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensornames.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/topocons.hpp>
-#include <poponnx/vertex.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/logging.hpp>
+#include <popart/op/concat.hpp>
+#include <popart/op/flatten.hpp>
+#include <popart/op/gradientaccl.hpp>
+#include <popart/op/varupdate.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
+#include <popart/vertex.hpp>
 
-#include <poponnx/transforms/gradient_accumulation.hpp>
+#include <popart/transforms/gradient_accumulation.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::size_t GradientAccumulation::id() {
   return typeid(GradientAccumulation).hash_code();
@@ -121,4 +121,4 @@ namespace {
 bool init = Transform::registerTransform(new GradientAccumulation);
 }
 
-} // namespace poponnx
+} // namespace popart

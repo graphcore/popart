@@ -1,19 +1,19 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/concat.hpp>
-#include <poponnx/op/gather.hpp>
-#include <poponnx/op/reshape.hpp>
-#include <poponnx/op/slice.hpp>
-#include <poponnx/op/transpose.hpp>
-#include <poponnx/patterns/splitgather.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/concat.hpp>
+#include <popart/op/gather.hpp>
+#include <popart/op/reshape.hpp>
+#include <popart/op/slice.hpp>
+#include <popart/op/transpose.hpp>
+#include <popart/patterns/splitgather.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensors.hpp>
 
 #include <boost/math/common_factor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 // Private gather op class
 namespace {
@@ -281,4 +281,4 @@ static PatternCreator<SplitGatherPattern>
     convBiasPattern(PreAliasPatternType::SPLITGATHER, "SplitGather");
 }
 
-} // namespace poponnx
+} // namespace popart

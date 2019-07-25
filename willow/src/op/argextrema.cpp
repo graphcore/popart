@@ -2,12 +2,12 @@
 #include <vector>
 
 #include <memory>
-#include <poponnx/op/argextrema.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/argextrema.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ArgExtremaOp::ArgExtremaOp(const OperatorIdentifier &opid_,
                            int64_t axis_,
@@ -60,4 +60,4 @@ int64_t ArgExtremaOp::getKeepDims() const { return keepdims; }
 
 int64_t ArgExtremaOp::getAxis() const { return axis; }
 
-} // namespace poponnx
+} // namespace popart

@@ -1,11 +1,11 @@
 #include <iostream>
 #include <vector>
-#include <poponnx/ces/gatherce.hpp>
-#include <poponnx/ndarraywrapper.hpp>
-#include <poponnx/op/gather.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ces/gatherce.hpp>
+#include <popart/ndarraywrapper.hpp>
+#include <popart/op/gather.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ConstExprGather::ConstExprGather(Op *op_) : ConstExprOp(op_) {}
 
@@ -62,4 +62,4 @@ std::vector<char> ConstExprGather::compute() {
       dataIn->info.dataType(), *dataIn, *indicesIn, axis, outInfo0());
 }
 
-} // namespace poponnx
+} // namespace popart

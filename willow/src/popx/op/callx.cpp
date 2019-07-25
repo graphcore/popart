@@ -1,11 +1,11 @@
-#include <poponnx/graph.hpp>
-#include <poponnx/op/call.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/callx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/call.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/callx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 CallOpx::CallOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -129,4 +129,4 @@ OpxCreator<CallOpx> callOpxCreator(Onnx::CustomOperators::Call);
 }
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

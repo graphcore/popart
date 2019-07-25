@@ -2,10 +2,10 @@
 
 #include <queue> // we use a priority_queue
 #include <sstream>
-#include <poponnx/error.hpp>
-#include <poponnx/pritask.hpp>
+#include <popart/error.hpp>
+#include <popart/pritask.hpp>
 
-namespace poponnx {
+namespace popart {
 
 PriTask::PriTask(double p,
                  TaskId n,
@@ -130,4 +130,4 @@ std::vector<PriTask> PriTasks::getLinearised() const {
   return linearisedTasks;
 }
 
-} // namespace poponnx
+} // namespace popart

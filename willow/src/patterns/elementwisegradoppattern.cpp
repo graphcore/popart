@@ -1,17 +1,17 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/abs.hpp>
-#include <poponnx/op/cos.hpp>
-#include <poponnx/op/mul.hpp>
-#include <poponnx/op/sign.hpp>
-#include <poponnx/op/sin.hpp>
-#include <poponnx/patterns/pattern.hpp>
-#include <poponnx/patterns/patterns.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/abs.hpp>
+#include <popart/op/cos.hpp>
+#include <popart/op/mul.hpp>
+#include <popart/op/sign.hpp>
+#include <popart/op/sin.hpp>
+#include <popart/patterns/pattern.hpp>
+#include <popart/patterns/patterns.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 // Generalized pattern to replace a GradOp with the Derivative of the Op and a
 // Mul
@@ -64,4 +64,4 @@ static PatternCreator<ElementWiseGradOpPattern<SinGradOp, CosOp>>
 
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

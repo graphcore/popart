@@ -1,9 +1,9 @@
 #include <algorithm>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/util.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/util.hpp>
 
-namespace poponnx {
+namespace popart {
 
 TensorId TensorIndexMap::id(int index) const { return tensor(index)->id; }
 
@@ -185,4 +185,4 @@ const std::vector<Tensor *> TensorIndexMap::tensors() const {
   return tensors;
 }
 
-} // namespace poponnx
+} // namespace popart

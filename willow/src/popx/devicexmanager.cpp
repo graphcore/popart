@@ -1,10 +1,10 @@
 #include <boost/range/algorithm/find.hpp>
 
-#include <poponnx/popx/devicexmanager.hpp>
+#include <popart/popx/devicexmanager.hpp>
 
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/util.hpp>
 
 #include <poplar/Device.hpp>
 #include <poplar/IPUModel.hpp>
@@ -15,10 +15,10 @@
 
 using boost::find;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
-poponnx::DeviceType convertDeviceType(poplar::TargetType targetType) {
+popart::DeviceType convertDeviceType(poplar::TargetType targetType) {
   switch (targetType) {
   case poplar::TargetType::IPU:
     return DeviceType::Ipu;
@@ -35,18 +35,18 @@ DevicexManager::DevicexManager() {
 }
 
 void DevicexManager::enumerate(
-    std::vector<std::shared_ptr<poponnx::DeviceInfo>> &devices) {
+    std::vector<std::shared_ptr<popart::DeviceInfo>> &devices) {
 
   auto deviceManager = poplar::DeviceManager::createDeviceManager();
   std::vector<poplar::Device> popdevices = deviceManager.getDevices();
 
   for (auto &device : popdevices) {
 
-    poponnx::DeviceType type =
+    popart::DeviceType type =
         convertDeviceType(device.getTarget().getTargetType());
     switch (type) {
     case DeviceType::Ipu: {
-      std::shared_ptr<poponnx::DeviceInfo> ipu =
+      std::shared_ptr<popart::DeviceInfo> ipu =
           std::make_shared<DevicexIpuInfo>(*this, device.getId(), device);
       devices.push_back(ipu);
     } break;
@@ -97,8 +97,8 @@ bool mapFind<bool>(const std::map<std::string, std::string> &map,
   }
 }
 
-std::shared_ptr<poponnx::DeviceInfo> DevicexManager::createHostDevice(
-    poponnx::DeviceType type,
+std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
+    popart::DeviceType type,
     const std::map<std::string, std::string> &options) {
 
   auto checkOptions = [&](const std::vector<std::string> &validOptionKeys) {
@@ -197,4 +197,4 @@ static DevicexManager s_devicexManager;
 }
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

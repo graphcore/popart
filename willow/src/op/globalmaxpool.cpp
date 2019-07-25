@@ -1,12 +1,12 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/globalmaxpool.hpp>
+#include <popart/error.hpp>
+#include <popart/op/globalmaxpool.hpp>
 
 #include <memory>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 GlobalMaxPoolOp::GlobalMaxPoolOp(const OperatorIdentifier &_opid,
                                  const Op::Settings &settings_)
@@ -108,4 +108,4 @@ static OpCreator<GlobalMaxPoolOp>
     globalMaxPoolOpCreator({Onnx::Operators::GlobalMaxPool_1});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

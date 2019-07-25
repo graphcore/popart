@@ -8,30 +8,30 @@
 // information
 
 #include <memory>
-#include <poponnx/builder.hpp>
-#include <poponnx/devicemanager.hpp>
-#include <poponnx/logging.hpp>
-#include <poponnx/ndarraywrapper.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/op/l1.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/optimizer.hpp>
-#include <poponnx/patterns/pattern.hpp>
-#include <poponnx/popx/opx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/session.hpp>
-#include <poponnx/tensordata.hpp>
-#include <poponnx/tensorinfo.hpp>
-#include <poponnx/tensornames.hpp>
+#include <popart/builder.hpp>
+#include <popart/devicemanager.hpp>
+#include <popart/logging.hpp>
+#include <popart/ndarraywrapper.hpp>
+#include <popart/op.hpp>
+#include <popart/op/l1.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/optimizer.hpp>
+#include <popart/patterns/pattern.hpp>
+#include <popart/popx/opx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/session.hpp>
+#include <popart/tensordata.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
 
 #include <popops/ElementWise.hpp>
 
 namespace Onnx {
 namespace CustomOperators {
-const poponnx::OperatorIdentifier Cube = {"com.acme", "Cube", 1};
+const popart::OperatorIdentifier Cube = {"com.acme", "Cube", 1};
 } // namespace CustomOperators
 namespace CustomGradOperators {
-const poponnx::OperatorIdentifier CubeGrad = {"com.acme", "CubeGrad", 1};
+const popart::OperatorIdentifier CubeGrad = {"com.acme", "CubeGrad", 1};
 } // namespace CustomGradOperators
 } // namespace Onnx
 
@@ -61,10 +61,10 @@ std::unique_ptr<T> make_unique(Args &&... args) {
 } // namespace
 
 // The gradient Op
-class CubeGradOp : public poponnx::Op {
+class CubeGradOp : public popart::Op {
 public:
-  CubeGradOp(const poponnx::Op &fwdOp)
-      : poponnx::Op(Onnx::CustomGradOperators::CubeGrad, fwdOp.getSettings()) {}
+  CubeGradOp(const popart::Op &fwdOp)
+      : popart::Op(Onnx::CustomGradOperators::CubeGrad, fwdOp.getSettings()) {}
 
   std::unique_ptr<Op> clone() const final {
     return make_unique<CubeGradOp>(*this);
@@ -99,10 +99,10 @@ public:
   //            |
   //   output at index 0 (gradient of T0)
   //
-  virtual const std::vector<poponnx::GradInOutMapper> &gradInputInfo() const {
-    static const std::vector<poponnx::GradInOutMapper> inInfo = {
-        {0, 0, poponnx::GradOpInType::GRADOUT},
-        {1, 0, poponnx::GradOpInType::OUT}};
+  virtual const std::vector<popart::GradInOutMapper> &gradInputInfo() const {
+    static const std::vector<popart::GradInOutMapper> inInfo = {
+        {0, 0, popart::GradOpInType::GRADOUT},
+        {1, 0, popart::GradOpInType::OUT}};
     return inInfo;
   }
 
@@ -118,13 +118,13 @@ public:
 };
 
 // The forward Op
-class CubeOp : public poponnx::Op {
+class CubeOp : public popart::Op {
 public:
-  CubeOp(const poponnx::OperatorIdentifier &_opid,
-         const poponnx::Op::Settings &settings_)
-      : poponnx::Op(_opid, settings_) {}
+  CubeOp(const popart::OperatorIdentifier &_opid,
+         const popart::Op::Settings &settings_)
+      : popart::Op(_opid, settings_) {}
 
-  // The output poponnx Tensor has the same inputInfo and numerical type
+  // The output popart Tensor has the same inputInfo and numerical type
   // (i.e. the same TensorInfo) as the input Tensor. This function is
   // required for inputInfo/type inference
   //
@@ -134,9 +134,9 @@ public:
 
   // There is only one Gradient Op for CubeOp, a CubeGradOp
   // It is possible to have multiple Gradient Ops
-  // (Conv has 2 in poponnx, one for weights and one for activations)
+  // (Conv has 2 in popart, one for weights and one for activations)
   //
-  std::vector<std::unique_ptr<poponnx::Op>> getGradOps() {
+  std::vector<std::unique_ptr<popart::Op>> getGradOps() {
     std::vector<std::unique_ptr<Op>> upops;
     upops.emplace_back(new CubeGradOp(*this));
     return upops;
@@ -146,13 +146,13 @@ public:
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 };
 
-static poponnx::OpCreator<CubeOp> cubeOpCreator(Onnx::CustomOperators::Cube);
+static popart::OpCreator<CubeOp> cubeOpCreator(Onnx::CustomOperators::Cube);
 
 // forward Opx (poplar implementation of the forward Op)
-class CubeOpx : public poponnx::popx::Opx {
+class CubeOpx : public popart::popx::Opx {
 public:
-  CubeOpx(poponnx::Op *op, poponnx::popx::Devicex *devicex)
-      : poponnx::popx::Opx(op, devicex) {
+  CubeOpx(popart::Op *op, popart::popx::Devicex *devicex)
+      : popart::popx::Opx(op, devicex) {
     // not strictly necessary, we check that op is castable to a CubeOp *.
     verifyOp<CubeOp>(op, Onnx::CustomOperators::Cube);
   }
@@ -170,10 +170,10 @@ public:
   }
 };
 
-class CubeGradOpx : public poponnx::popx::Opx {
+class CubeGradOpx : public popart::popx::Opx {
 public:
-  CubeGradOpx(poponnx::Op *op, poponnx::popx::Devicex *devicex)
-      : poponnx::popx::Opx(op, devicex) {
+  CubeGradOpx(popart::Op *op, popart::popx::Devicex *devicex)
+      : popart::popx::Opx(op, devicex) {
     verifyOp<CubeGradOp>(op, Onnx::CustomGradOperators::CubeGrad);
   }
 
@@ -195,9 +195,9 @@ public:
   }
 };
 
-static poponnx::popx::OpxCreator<CubeOpx>
+static popart::popx::OpxCreator<CubeOpx>
     cubeOpxCreator(Onnx::CustomOperators::Cube);
-static poponnx::popx::OpxCreator<CubeGradOpx>
+static popart::popx::OpxCreator<CubeGradOpx>
     cubeGradOpxCreator(Onnx::CustomGradOperators::CubeGrad);
 
 auto main(int argc, char **argv) -> int {
@@ -209,11 +209,11 @@ auto main(int argc, char **argv) -> int {
   // step 1 : generate an ONNX inference Model which uses Cube.
   // The simple mode will be : input->Cube->output
   //
-  auto builder = poponnx::Builder::create();
+  auto builder = popart::Builder::create();
 
   // The input Tensor will be of type FLOAT, and will
   // be a rank-1 tensor with 2 elements
-  poponnx::TensorInfo inputInfo{"FLOAT", std::vector<int64_t>{2}};
+  popart::TensorInfo inputInfo{"FLOAT", std::vector<int64_t>{2}};
 
   auto input = builder->addInputTensor(inputInfo);
 
@@ -227,70 +227,70 @@ auto main(int argc, char **argv) -> int {
   // step 2 : add additional information for training, currently not part of
   // the ONNX specification:
   // 2.1 an Optimiser.
-  auto optimizer = poponnx::ConstSGD(0.01f);
+  auto optimizer = popart::ConstSGD(0.01f);
 
   // 2.2 Loss(es).
   // 2.2.1 l1 loss : 0.1 * |output|_1
-  std::unique_ptr<poponnx::L1Loss> l1Loss(new poponnx::L1Loss(
-      outputs[0], "l1LossVal", 0.1f, poponnx::ReductionType::SUM));
-  std::vector<poponnx::Loss *> losses{l1Loss.get()};
+  std::unique_ptr<popart::L1Loss> l1Loss(new popart::L1Loss(
+      outputs[0], "l1LossVal", 0.1f, popart::ReductionType::SUM));
+  std::vector<popart::Loss *> losses{l1Loss.get()};
 
   // 2.3 Data streaming.
   // We will stream
   // 1) the output tensor back to host every iteration
   // 2) the gradient of input tensor back to host every iteration
-  auto dataFlow = poponnx::DataFlow(
+  auto dataFlow = popart::DataFlow(
       1, // this is the number of batches per step. It does not have an
          // equivalent in other standard frameworks like Tensorflow. It is the
          // number of batches to process when session->run(.) is called.
          // (see below)
-      {{outputs[0], poponnx::AnchorReturnType("ALL")},
-       {poponnx::reservedGradientPrefix() + input,
-        poponnx::AnchorReturnType("ALL")}});
+      {{outputs[0], popart::AnchorReturnType("ALL")},
+       {popart::reservedGradientPrefix() + input,
+        popart::AnchorReturnType("ALL")}});
 
   auto cpuDevice =
-      poponnx::DeviceManager::createDeviceManager().createCpuDevice();
+      popart::DeviceManager::createDeviceManager().createCpuDevice();
 
   // Create the session
-  auto session = poponnx::TrainingSession::createFromOnnxModel(
+  auto session = popart::TrainingSession::createFromOnnxModel(
       proto,
       dataFlow,
       losses,
       optimizer,
       cpuDevice,
-      poponnx::InputShapeInfo(),
+      popart::InputShapeInfo(),
       {},
-      poponnx::Patterns({poponnx::PreAliasPatternType::PREUNIREPL}));
+      popart::Patterns({popart::PreAliasPatternType::PREUNIREPL}));
 
   // prepare the anchors buffers. The anchors are what were specified in 2.3
   // for data streaming: the tensors which will be returned from the device
   // to the host. We specified 2 such tensors in 2.3,
   // 1) the output tensor (i.e. the output of the forward pass)
   float rawOutputData[2] = {0, 0};
-  poponnx::NDArrayWrapper<float> outData(rawOutputData, {2});
+  popart::NDArrayWrapper<float> outData(rawOutputData, {2});
 
   // 2) and the gradient of input tensor
   float rawGradInputData[2] = {0, 0};
-  poponnx::NDArrayWrapper<float> gradInData(rawGradInputData, {2});
-  std::map<poponnx::TensorId, poponnx::IArray &> anchors = {
+  popart::NDArrayWrapper<float> gradInData(rawGradInputData, {2});
+  std::map<popart::TensorId, popart::IArray &> anchors = {
       {outputs[0], outData},
-      {poponnx::reservedGradientPrefix() + input, gradInData},
+      {popart::reservedGradientPrefix() + input, gradInData},
   };
 
   session->prepareDevice();
 
   // prepare the input tensor for this example
   float rawInputData[2] = {2.0f, 4.0f};
-  poponnx::NDArrayWrapper<float> inData(rawInputData, {2});
-  std::map<poponnx::TensorId, poponnx::IArray &> inputs = {{input, inData}};
+  popart::NDArrayWrapper<float> inData(rawInputData, {2});
+  std::map<popart::TensorId, popart::IArray &> inputs = {{input, inData}};
 
-  poponnx::StepIO stepio(inputs, anchors);
+  popart::StepIO stepio(inputs, anchors);
 
   session->weightsFromHost();
   session->optimizerFromHost();
   session->run(stepio);
 
-  poponnx::logging::ir::err("input : {}", inData);
-  poponnx::logging::ir::err("output : {}", outData);
-  poponnx::logging::ir::err("dInput : {}", gradInData);
+  popart::logging::ir::err("input : {}", inData);
+  popart::logging::ir::err("output : {}", outData);
+  popart::logging::ir::err("dInput : {}", gradInData);
 }

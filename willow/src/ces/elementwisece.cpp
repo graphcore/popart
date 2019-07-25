@@ -1,11 +1,11 @@
 #include <cmath>
 #include <vector>
-#include <poponnx/ces/elementwisece.hpp>
-#include <poponnx/ndarraywrapper.hpp>
-#include <poponnx/op/add.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ces/elementwisece.hpp>
+#include <popart/ndarraywrapper.hpp>
+#include <popart/op/add.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 template <typename OPERATION> class BinaryFunctor {
 public:
@@ -104,4 +104,4 @@ std::vector<char> ConstExprMod::compute() {
   return callOpFunctor<BinaryFunctor<Mod>>(in0->info.dataType(), *in0, *in1);
 }
 
-} // namespace poponnx
+} // namespace popart

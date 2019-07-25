@@ -2,8 +2,8 @@ import sys
 import os
 import numpy as np
 import tempfile
-import poponnx
-from poponnx.torch import torchwriter
+import popart
+from popart.torch import torchwriter
 # we require torch in this file to create the torch Module
 import torch
 from torchvision import transforms, datasets
@@ -35,7 +35,7 @@ def get_trainset():
 def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, passes, opts):
     # Reads ONNX model from file and creates backwards graph,
     # performs Ir optimisations
-    session = poponnx.TrainingSession(
+    session = popart.TrainingSession(
         fnModel=fnModel,
         inputShapeInfo=inputShapeInfo,
         dataFeed=dataFeed,
@@ -43,7 +43,7 @@ def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, passes, opts):
         optimizer=torchWriter.optimizer,
         passes=passes,
         userOptions=opts,
-        deviceInfo=poponnx.DeviceManager().createCpuDevice())
+        deviceInfo=popart.DeviceManager().createCpuDevice())
 
     print("Setting device to IPU, and preparing it")
 
@@ -59,7 +59,7 @@ def get_session(fnModel, inputShapeInfo, dataFeed, torchWriter, passes, opts):
 
 
 def compare_models(model_A0, model_A1, model_B0, model_B1):
-    report = poponnx.NumericsReport(model_A0, model_A1, model_B0, model_B1)
+    report = popart.NumericsReport(model_A0, model_A1, model_B0, model_B1)
     report = report.fullReport()
     print(report)
 
@@ -92,10 +92,10 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
         batch_size=torchWriter.samplesPerBatch * dataFeed.batchesPerStep(),
         shuffle=False)
 
-    poponnx.getLogger().setLevel("TRACE")
-    poponnx.getLogger("session").setLevel("WARN")
+    popart.getLogger().setLevel("TRACE")
+    popart.getLogger("session").setLevel("WARN")
 
-    opts = poponnx.SessionOptionsCore()
+    opts = popart.SessionOptionsCore()
     opts.logDir = outputdir
     opts.constantWeights = False
 
@@ -129,8 +129,8 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
     def getFnModel(framework, stepi):
         return os.path.join(outputdir, "%sModel_%d.onnx" % (framework, stepi))
 
-    def getFnPopOnnx(stepi):
-        return getFnModel("PopOnnx", stepi)
+    def getFnPopArt(stepi):
+        return getFnModel("PopArt", stepi)
 
     def getFnTorch(stepi):
         return getFnModel("Torch", stepi)
@@ -139,12 +139,12 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
     fnTorchModel = getFnTorch(0)
     torchWriter.saveModel(fnTorchModel)
 
-    # save the poponnx model
-    fnPopOnnxModel = getFnPopOnnx(0)
-    session.modelToHost(fnPopOnnxModel)
+    # save the popart model
+    fnPopArtModel = getFnPopArt(0)
+    session.modelToHost(fnPopArtModel)
 
     # check that the models do not match
-    diff = compare_models(fnModel0, fnTorchModel, fnModel0, fnPopOnnxModel)
+    diff = compare_models(fnModel0, fnTorchModel, fnModel0, fnPopArtModel)
     assert (diff > 0.0)
 
     print("Updating weights using model %s" % (fnTorchModel, ))
@@ -152,12 +152,12 @@ def run(torchWriter, passes, outputdir, cifarInIndices):
     session.resetHostWeights(fnTorchModel)
     session.weightsFromHost()
 
-    # save the poponnx model
-    fnPopOnnxModel = getFnPopOnnx(1)
-    session.modelToHost(fnPopOnnxModel)
+    # save the popart model
+    fnPopArtModel = getFnPopArt(1)
+    session.modelToHost(fnPopArtModel)
 
     # check that the models match
-    diff = compare_models(fnModel0, fnTorchModel, fnModel0, fnPopOnnxModel)
+    diff = compare_models(fnModel0, fnTorchModel, fnModel0, fnPopArtModel)
     assert (diff == 0.0)
 
 
@@ -178,19 +178,19 @@ batchesPerStep = 3
 # the tensor to which the loss is applied "out",
 # and the input tensor "image0"
 anchors = {
-    "l1LossVal": poponnx.AnchorReturnType("FINAL"),
-    "out": poponnx.AnchorReturnType("FINAL"),
-    "image0": poponnx.AnchorReturnType("FINAL")
+    "l1LossVal": popart.AnchorReturnType("FINAL"),
+    "out": popart.AnchorReturnType("FINAL"),
+    "image0": popart.AnchorReturnType("FINAL")
 }
 
-dataFeed = poponnx.DataFlow(batchesPerStep, anchors)
+dataFeed = popart.DataFlow(batchesPerStep, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the Session constructor.
 # In this example there is 1 streamed input, image0.
-inputShapeInfo = poponnx.InputShapeInfo()
+inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add(
-    "image0", poponnx.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
+    "image0", popart.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
 
 inNames = ["image0"]
 
@@ -203,10 +203,10 @@ outNames = ["out"]
 # cifar training data loader : at index 0 : image, at index 1 : label.
 cifarInIndices = {"image0": 0}
 
-losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
+losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 
 # The optimization passes to run in the Ir, see patterns.hpp
-willowOptPasses = poponnx.Patterns()
+willowOptPasses = popart.Patterns()
 
 
 class Module0(torch.nn.Module):
@@ -236,7 +236,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
     losses=losses,
-    optimizer=poponnx.ConstSGD(0.001),
+    optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     # Torch specific:

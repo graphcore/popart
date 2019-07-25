@@ -1,10 +1,10 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/exp.hpp>
-#include <poponnx/popx/op/expx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/exp.hpp>
+#include <popart/popx/op/expx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 ExpInplaceOpx::ExpInplaceOpx(Op *op, Devicex *devicex)
@@ -43,4 +43,4 @@ OpxCreator<Opx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

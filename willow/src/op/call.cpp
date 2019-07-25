@@ -1,11 +1,11 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/call.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/scope.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/call.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/scope.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 CallOp::CallOp(Graph &parent_, Graph &callee_)
     : Op(Onnx::CustomOperators::Call, {parent_, ""}), callee(callee_) {
@@ -53,4 +53,4 @@ std::vector<TensorId> CallOp::getInputsForGraph(const Graph &) const {
   return result;
 }
 
-} // namespace poponnx
+} // namespace popart

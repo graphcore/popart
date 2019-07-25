@@ -1,13 +1,13 @@
 #include <memory>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/log.hpp>
-#include <poponnx/op/logsoftmax.hpp>
-#include <poponnx/op/softmax.hpp>
-#include <poponnx/patterns/logsoftmaxoppattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/log.hpp>
+#include <popart/op/logsoftmax.hpp>
+#include <popart/op/softmax.hpp>
+#include <popart/patterns/logsoftmaxoppattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool LogSoftmaxOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<LogSoftmaxOp>();
@@ -33,4 +33,4 @@ static PatternCreator<LogSoftmaxOpPattern>
     LogSoftmaxOpPattern(PreAliasPatternType::LOGSOFTMAXOP, "LogSoftmaxOp");
 }
 
-} // namespace poponnx
+} // namespace popart

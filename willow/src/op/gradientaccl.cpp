@@ -1,11 +1,11 @@
 #include <limits>
 #include <memory>
-#include <poponnx/op/gradientaccl.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/region.hpp>
-#include <poponnx/tensornames.hpp>
+#include <popart/op/gradientaccl.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/region.hpp>
+#include <popart/tensornames.hpp>
 
-namespace poponnx {
+namespace popart {
 GradientAcclOp::GradientAcclOp(const OperatorIdentifier &_opid,
                                const Op::Settings &settings_)
     : Op(_opid, settings_) {
@@ -59,4 +59,4 @@ view::Region ResetAcclOp::modifies(InIndex index) const {
 // Have intentionally not added the these Ops to the OpManager. They
 // need to be explicitly created as part of the gradient_accumulation transform
 
-} // namespace poponnx
+} // namespace popart

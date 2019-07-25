@@ -9,7 +9,7 @@
 #include <sstream>
 #include <tuple>
 #include <vector>
-#include <poponnx/subgraph/suffixtree.hpp>
+#include <popart/subgraph/suffixtree.hpp>
 
 namespace fwtools {
 namespace subgraph {

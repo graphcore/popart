@@ -1,14 +1,14 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/cos.hpp>
-#include <poponnx/op/mul.hpp>
-#include <poponnx/op/negate.hpp>
-#include <poponnx/op/sin.hpp>
-#include <poponnx/patterns/cosgradoppattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/cos.hpp>
+#include <popart/op/mul.hpp>
+#include <popart/op/negate.hpp>
+#include <popart/op/sin.hpp>
+#include <popart/patterns/cosgradoppattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool CosGradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<CosGradOp>();
@@ -57,4 +57,4 @@ static PatternCreator<CosGradOpPattern>
     CosGradOpPattern(PreAliasPatternType::COSGRADOP, "CosGradOp");
 }
 
-} // namespace poponnx
+} // namespace popart

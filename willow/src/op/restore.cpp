@@ -1,12 +1,12 @@
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/restore.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensornames.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/restore.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
 
-namespace poponnx {
+namespace popart {
 
 RestoreOp::RestoreOp(const OperatorIdentifier &_opid,
                      const Op::Settings &settings_)
@@ -52,4 +52,4 @@ static OpCreator<RestoreOp>
 
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

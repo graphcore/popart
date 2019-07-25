@@ -1,12 +1,12 @@
 
 #include <memory>
-#include <poponnx/op/groupnorm.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/op/groupnorm.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 GroupNormOp::GroupNormOp(const OperatorIdentifier &opid_,
                          int64_t num_groups_,
@@ -103,4 +103,4 @@ static OpCreator<GroupNormOp> groupNormOpCreator(
 
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

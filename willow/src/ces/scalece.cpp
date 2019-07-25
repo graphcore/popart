@@ -1,9 +1,9 @@
-#include <poponnx/ces/scalece.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/op/scale.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ces/scalece.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/op/scale.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 // custom_cast is just a static_cast unless a specialization is provided
 template <typename To> To custom_cast(double x) { return static_cast<To>(x); }
@@ -47,7 +47,7 @@ std::vector<char> ConstExprScale::compute() {
 
   auto data = callOpFunctor<ScaleFunctor>(
       in0->info.dataType(), // callOpFunctor will determine what template
-                            // parameter to use from this poponnx type
+                            // parameter to use from this popart type
       in0,                  // arg0 of ScaleFunctor
       factor64              // arg1 of scaleFunctor
   );
@@ -55,4 +55,4 @@ std::vector<char> ConstExprScale::compute() {
   return data;
 }
 
-} // namespace poponnx
+} // namespace popart

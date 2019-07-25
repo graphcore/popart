@@ -1,14 +1,14 @@
 #include <memory>
 #include <numeric>
 #include <onnx/onnx_pb.h>
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/reshape.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/reshape.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::unique_ptr<Op>
 ReshapeOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
@@ -140,7 +140,7 @@ void ReshapeBaseOp::connectInTensor(InIndex inIndex, TensorId tenId) {
     try {
       getInTensorData(tenId, outShape);
       finaliseShape();
-    } catch (poponnx::error &err) {
+    } catch (popart::error &err) {
       throw error("Need the value of the {} input 'shape' to detemine the "
                   "output shape, but was unable because {}",
                   opid,
@@ -183,4 +183,4 @@ namespace {
 static OpCreator<ReshapeOp> reshapeOpCreator(Onnx::Operators::Reshape_5);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

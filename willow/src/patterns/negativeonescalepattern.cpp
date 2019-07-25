@@ -1,12 +1,12 @@
 #include <boost/math/special_functions/relative_difference.hpp>
-#include <poponnx/op/scale.hpp>
-#include <poponnx/patterns/negativeonescalepattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/op/scale.hpp>
+#include <popart/patterns/negativeonescalepattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
 
 using boost::math::epsilon_difference;
 
-namespace poponnx {
+namespace popart {
 
 bool NegativeOneScalePattern::matches(Op *op) const {
   if (!(op->isConvertibleTo<ScaleOp>())) {
@@ -33,4 +33,4 @@ static PatternCreator<NegativeOneScalePattern>
                            "NegativeOneScalePattern");
 }
 
-} // namespace poponnx
+} // namespace popart

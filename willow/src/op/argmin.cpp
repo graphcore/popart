@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/argmin.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/argmin.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::unique_ptr<Op> ArgMinOp::clone() const {
   return std::make_unique<ArgMinOp>(*this);
@@ -23,4 +23,4 @@ static OpCreator<ArgMinOp>
     argMinOpCreator(Onnx::Operators::ArgMin_1, argMinFactory, true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

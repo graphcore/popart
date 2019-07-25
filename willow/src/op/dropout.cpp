@@ -1,11 +1,11 @@
 #include <memory>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/dropout.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/dropout.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 DropoutBaseOp::DropoutBaseOp(const OperatorIdentifier &opid_,
                              float ratio_,
@@ -123,4 +123,4 @@ static OpCreator<DropoutOp> dropoutOpCreator(
     true);
 
 } // namespace
-} // namespace poponnx
+} // namespace popart

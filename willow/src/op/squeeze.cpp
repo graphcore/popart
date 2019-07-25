@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/squeeze.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
+#include <popart/op/squeeze.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
 
-namespace poponnx {
+namespace popart {
 
 SqueezeOp::SqueezeOp(const OperatorIdentifier &_opid,
                      const std::vector<int64_t> &axes_,
@@ -82,4 +82,4 @@ static OpCreator<SqueezeOp> squeezeOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

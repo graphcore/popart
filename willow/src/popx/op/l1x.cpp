@@ -1,15 +1,15 @@
 #include <numeric>
-#include <poponnx/error.hpp>
-#include <poponnx/op/l1.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/l1x.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/l1.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/l1x.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
 
 #include <popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 L1Opx::L1Opx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -133,4 +133,4 @@ OpxCreator<L1GradOpx> l1GradOpxCreator(Onnx::CustomGradOperators::L1Grad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

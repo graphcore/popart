@@ -1,10 +1,10 @@
 #include <memory>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/pow.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/pow.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 PowOp::PowOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseBinaryOp(_opid, settings_) {}
@@ -88,11 +88,11 @@ const std::vector<GradInOutMapper> &PowArg1GradOp::gradInputInfo() const {
       {1, PowOp::getArg0InIndex(), GradOpInType::IN},
       {2, PowOp::getOutIndex(), GradOpInType::OUT}};
   return inInfo;
-} // namespace poponnx
+} // namespace popart
 
 namespace {
 static OpCreator<PowOp> mulOpCreator({Onnx::Operators::Pow_1,
                                       Onnx::Operators::Pow_7});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

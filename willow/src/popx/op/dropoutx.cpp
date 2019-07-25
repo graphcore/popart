@@ -1,16 +1,16 @@
 #include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
 #include <poprand/RandomGen.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/dropout.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/dropoutx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/dropout.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/dropoutx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 namespace {
@@ -152,4 +152,4 @@ OpxCreator<DropoutGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

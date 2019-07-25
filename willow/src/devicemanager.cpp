@@ -1,8 +1,8 @@
 #include <sstream>
-#include <poponnx/devicemanager.hpp>
-#include <poponnx/error.hpp>
+#include <popart/devicemanager.hpp>
+#include <popart/error.hpp>
 
-namespace poponnx {
+namespace popart {
 
 DeviceManager &DeviceManager::createDeviceManager() {
   static DeviceManager deviceManager;
@@ -129,4 +129,4 @@ std::ostream &operator<<(std::ostream &os, const DeviceInfo &di) {
   return os << di.toString();
 }
 
-} // namespace poponnx
+} // namespace popart

@@ -1,11 +1,11 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/log.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/logx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/log.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/logx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 LogOpx::LogOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
@@ -30,4 +30,4 @@ OpxCreator<Opx> logGradOpxCreator(
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

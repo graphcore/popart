@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/tanh.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/tanh.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 TanhOp::TanhOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
@@ -49,4 +49,4 @@ static OpCreator<TanhOp> tanhOpCreator(Onnx::Operators::Tanh_6);
 
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

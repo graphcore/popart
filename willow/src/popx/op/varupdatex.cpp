@@ -1,9 +1,9 @@
-#include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/varupdate.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/varupdatex.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/varupdate.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/varupdatex.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/Collectives.hpp>
 #include <popops/ElementWise.hpp>
@@ -11,7 +11,7 @@
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 VarUpdateOpx::VarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
@@ -170,4 +170,4 @@ OpxCreator<CopyVarUpdateOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

@@ -1,8 +1,8 @@
 #include <sstream>
-#include <poponnx/op.hpp>
-#include <poponnx/scope.hpp>
+#include <popart/op.hpp>
+#include <popart/scope.hpp>
 
-namespace poponnx {
+namespace popart {
 
 void Scope::pop() { names.pop_back(); }
 
@@ -91,4 +91,4 @@ std::ostream &operator<<(std::ostream &ss, const Scope &scope) {
   return ss;
 }
 
-} // namespace poponnx
+} // namespace popart

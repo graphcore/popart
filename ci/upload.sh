@@ -4,11 +4,11 @@ set -e
 
 if [ ! -f "view.txt" ]
 then
-  echo "Run 'bash poponnx/ci/upload.sh' from the poponnx_view directory."
+  echo "Run 'bash popart/ci/upload.sh' from the poponnx_view directory."
   exit 1
 fi
 
-source ./poponnx/ci/utils.sh
+source ./popart/ci/utils.sh
 
 if [ $# -eq 0 ]
 then
@@ -24,12 +24,12 @@ else
 fi
 
 # Use the virtualenv for building
-VE="${PWD}/../external/poponnx_build_python_${PYBIN}"
+VE="${PWD}/../external/popart_build_python_${PYBIN}"
 source ${VE}/bin/activate
 
 rm -rf build/pkg
 
-pushd build/build/poponnx
+pushd build/build/popart
 make package_and_move
 popd
 

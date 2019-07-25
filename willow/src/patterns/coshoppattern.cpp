@@ -1,16 +1,16 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/add.hpp>
-#include <poponnx/op/cosh.hpp>
-#include <poponnx/op/exp.hpp>
-#include <poponnx/op/negate.hpp>
-#include <poponnx/op/scale.hpp>
-#include <poponnx/patterns/coshoppattern.hpp>
-#include <poponnx/patterns/pattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/add.hpp>
+#include <popart/op/cosh.hpp>
+#include <popart/op/exp.hpp>
+#include <popart/op/negate.hpp>
+#include <popart/op/scale.hpp>
+#include <popart/patterns/coshoppattern.hpp>
+#include <popart/patterns/pattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool CoshOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<CoshOp>();
@@ -75,4 +75,4 @@ static PatternCreator<CoshOpPattern> CoshOpPattern(PreAliasPatternType::COSHOP,
                                                    "CoshOp");
 }
 
-} // namespace poponnx
+} // namespace popart

@@ -5,7 +5,7 @@
 //
 //
 
-#include "poponnx/opmanager.hpp"
+#include "popart/opmanager.hpp"
 #include <iostream>
 
 auto main(int argc, char **argv) -> int {
@@ -14,25 +14,25 @@ auto main(int argc, char **argv) -> int {
   (void)argc;
   (void)argv;
 
-  auto ops = poponnx::OpManager::getSupportedOperations(false);
+  auto ops = popart::OpManager::getSupportedOperations(false);
 
-  std::cout << "Supported ONNX Operators (" << poponnx::Domain::ai_onnx << ")"
+  std::cout << "Supported ONNX Operators (" << popart::Domain::ai_onnx << ")"
             << std::endl;
   std::cout << "===================================================="
             << std::endl;
   for (auto &op : ops) {
-    if (op.domain == poponnx::Domain::ai_onnx)
+    if (op.domain == popart::Domain::ai_onnx)
       std::cout << op << std::endl;
   }
 
   std::cout << std::endl;
 
-  std::cout << "Custom ONNX Operators (" << poponnx::Domain::ai_graphcore << ")"
+  std::cout << "Custom ONNX Operators (" << popart::Domain::ai_graphcore << ")"
             << std::endl;
   std::cout << "===================================================="
             << std::endl;
   for (auto &op : ops) {
-    if (op.domain == poponnx::Domain::ai_graphcore)
+    if (op.domain == popart::Domain::ai_graphcore)
       std::cout << op << std::endl;
   }
 }

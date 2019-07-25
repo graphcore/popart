@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/op/onehot.hpp>
-#include <poponnx/popx/op/onehotx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/op/onehot.hpp>
+#include <popart/popx/op/onehotx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/util.hpp>
 
 #include <popops/ElementWise.hpp>
 #include <popops/Encoding.hpp>
@@ -11,7 +11,7 @@
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 OnehotOpx::OnehotOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -160,4 +160,4 @@ OpxCreator<OnehotGradOpx> onehotGradOpxCreator(Onnx::GradOperators::OneHotGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

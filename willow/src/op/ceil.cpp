@@ -1,8 +1,8 @@
 #include <memory>
-#include <poponnx/op/ceil.hpp>
-#include <poponnx/opmanager.hpp>
+#include <popart/op/ceil.hpp>
+#include <popart/opmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 CeilOp::inplacePriorityDefault() const {
@@ -31,7 +31,7 @@ std::unique_ptr<Op> CeilOp::clone() const {
 }
 
 std::vector<std::unique_ptr<Op>> CeilOp::getGradOps() {
-  throw error("PopONNX does not have a valid grad op corresponding to CeilOp");
+  throw error("PopART does not have a valid grad op corresponding to CeilOp");
 }
 
 std::unique_ptr<Op> CeilInplaceOp::clone() const {
@@ -43,4 +43,4 @@ static OpCreator<CeilOp> ceilOpCreator({Onnx::Operators::Ceil_1,
                                         Onnx::Operators::Ceil_6});
 
 } // namespace
-} // namespace poponnx
+} // namespace popart

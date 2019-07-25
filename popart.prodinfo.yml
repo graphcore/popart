@@ -1,0 +1,11 @@
+id : popart
+type : tool
+title: ONNX libraries for poplar
+version: @VERSION@
+source_id: @SNAPSHOT@
+repo: git@phabricator.sourcevertex.net:diffusion/POPONNXVIEW/poponnx_view.git
+elements:
+  - name: PopART framework (@OS_TYPE@)
+    file: @PACKAGE_FILE_NAME@.tar.gz
+    type: popart_build_@OS_TYPE@
+@PKG_ELEMENTS@

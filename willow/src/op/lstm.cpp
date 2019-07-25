@@ -1,16 +1,16 @@
 #include <memory>
 #include <vector>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/lstm.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensornames.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/lstm.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 LSTMOp::LSTMOp(const OperatorIdentifier &_opid,
                boost::optional<int64_t> hidden_size,
@@ -41,7 +41,7 @@ void LSTMOp::trySetOutInfo(OutIndex index, const TensorInfo &info) {
 
 void LSTMOp::setup() {
   if (input->hasIndex(getPeepholeInIndex())) {
-    throw error("Poponnx does not support peephole connections");
+    throw error("Popart does not support peephole connections");
   }
   if (input->hasIndex(getSequenceLensInIndex())) {
     logging::op::warn("Lstm optional input `sequence_lens' will be ignored");
@@ -299,4 +299,4 @@ static OpCreator<LSTMOp> lstmOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

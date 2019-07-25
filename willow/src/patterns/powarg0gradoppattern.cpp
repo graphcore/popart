@@ -1,16 +1,16 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/mul.hpp>
-#include <poponnx/op/pow.hpp>
-#include <poponnx/op/reducesum.hpp>
-#include <poponnx/op/subtract.hpp>
-#include <poponnx/optimizer.hpp>
-#include <poponnx/patterns/powarg0gradoppattern.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/mul.hpp>
+#include <popart/op/pow.hpp>
+#include <popart/op/reducesum.hpp>
+#include <popart/op/subtract.hpp>
+#include <popart/optimizer.hpp>
+#include <popart/patterns/powarg0gradoppattern.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool PowArg0GradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<PowArg0GradOp>();
@@ -85,4 +85,4 @@ static PatternCreator<PowArg0GradOpPattern>
     PowArg0GradOpPattern(PreAliasPatternType::POWARG0GRADOP, "PowArg0GradOp");
 }
 
-} // namespace poponnx
+} // namespace popart

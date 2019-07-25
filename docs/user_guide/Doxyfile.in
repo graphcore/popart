@@ -1,6 +1,6 @@
 DOXYFILE_ENCODING      = UTF-8
 
-PROJECT_NAME           = poponnx
+PROJECT_NAME           = popart
 
 PROJECT_NUMBER         =
 

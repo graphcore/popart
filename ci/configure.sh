@@ -4,11 +4,11 @@ set -e
 
 if [ ! -f "view.txt" ]
 then
-  echo "Run 'bash poponnx/ci/configure.sh' from the poponnx_view directory."
+  echo "Run 'bash popart/ci/configure.sh' from the poponnx_view directory."
   exit 1
 fi
 
-source ./poponnx/ci/utils.sh
+source ./popart/ci/utils.sh
 
 if [ $# -gt 0 ]
 then
@@ -20,7 +20,7 @@ fi
 if command -v sphinx-build
 then
   echo "Building docs"
-  DOCS="-DPOPONNX_CMAKE_ARGS=-DBUILD_DOCS=ON"
+  DOCS="-DPOPART_CMAKE_ARGS=-DBUILD_DOCS=ON"
 else
   echo "Not building docs"
   DOCS=""
@@ -51,7 +51,7 @@ fi
 
 echo "Using ${PYTHON_BIN_PATH}"
 
-VE="${PWD}/../external/poponnx_build_python_${PYBIN}"
+VE="${PWD}/../external/popart_build_python_${PYBIN}"
 
 # Set up an independent python virtualenv
 rm -rf ${VE}

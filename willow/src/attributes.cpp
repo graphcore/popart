@@ -2,11 +2,11 @@
 #include <memory>
 #include <onnx/onnx_pb.h>
 #include <sstream>
-#include <poponnx/attributes.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/util.hpp>
+#include <popart/attributes.hpp>
+#include <popart/error.hpp>
+#include <popart/util.hpp>
 
-namespace poponnx {
+namespace popart {
 
 const std::vector<std::string> &Attributes::getNames() const { return names; }
 
@@ -325,4 +325,4 @@ Attributes::Graph Attributes::getAttribute(const std::string &key) const {
 
   throw error("no attribute key {}", key);
 }
-} // namespace poponnx
+} // namespace popart

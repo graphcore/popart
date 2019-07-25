@@ -2,7 +2,7 @@
 
 
 def install_release(release_utils, release_id, snapshot_id, version_str):
-    release_utils.log.info('Tagging poponnx release ' + version_str)
+    release_utils.log.info('Tagging popart release ' + version_str)
 
     # Create the release on the document server.
     release_utils.create_document_release(snapshot_id)

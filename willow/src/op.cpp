@@ -1,20 +1,20 @@
 #include <onnx/onnx_pb.h>
 #include <spdlog/fmt/fmt.h>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/region.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/util.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/region.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
+#include <popart/util.hpp>
 
 // The layers:
-#include <poponnx/op/elementwise.hpp>
-#include <poponnx/op/varupdate.hpp>
+#include <popart/op/elementwise.hpp>
+#include <popart/op/varupdate.hpp>
 
-namespace poponnx {
+namespace popart {
 
 GradInOutMapper::GradInOutMapper(int iG, int iNG, GradOpInType t)
     : iGrad(iG), iNonGrad(iNG), type(t) {}
@@ -548,4 +548,4 @@ std::ostream &operator<<(std::ostream &ss, const GradOpInType &t) {
   return ss;
 }
 
-} // namespace poponnx
+} // namespace popart

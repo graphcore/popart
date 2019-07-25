@@ -8,8 +8,8 @@ libc++abi.dylib: terminating with uncaught exception of type google::protobuf::F
 The above error is cause when I have 
 ```
 import onnx
-import poponnx
-import poponnx.torch
+import popart
+import popart.torch
 ```
 
 The problem is described here

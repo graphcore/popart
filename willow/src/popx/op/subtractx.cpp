@@ -1,11 +1,11 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/subtract.hpp>
-#include <poponnx/popx/op/subtractx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/subtract.hpp>
+#include <popart/popx/op/subtractx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 SubtractOpx::SubtractOpx(Op *op, Devicex *devicex)
@@ -39,4 +39,4 @@ OpxCreator<Opx> subtractArg1GradOpxCreator(
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

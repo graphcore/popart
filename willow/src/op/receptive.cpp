@@ -1,12 +1,12 @@
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/op/receptive.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/op/receptive.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/util.hpp>
 
-namespace poponnx {
+namespace popart {
 
 HasReceptiveFieldOp::HasReceptiveFieldOp(
     const OperatorIdentifier &_opid,
@@ -120,8 +120,8 @@ void HasReceptiveFieldOp::Settings::setFromAttributes(
 
   if (attributes.hasAttribute("auto_pad")) {
     throw error(
-        "auto_pad is set, but is deprecated and unsupported by poponnx");
+        "auto_pad is set, but is deprecated and unsupported by popart");
   }
 }
 
-} // namespace poponnx
+} // namespace popart

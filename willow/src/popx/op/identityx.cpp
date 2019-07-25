@@ -1,10 +1,10 @@
 #include <iostream>
-#include <poponnx/error.hpp>
-#include <poponnx/op/identity.hpp>
-#include <poponnx/popx/op/identityx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/popx/op/identityx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 IdentityOpx::IdentityOpx(Op *op, Devicex *devicex)
@@ -32,4 +32,4 @@ OpxCreator<IdentityGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

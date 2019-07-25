@@ -1,13 +1,13 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/restore.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/restorex.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/restore.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/restorex.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
 
 #include <popops/DynamicSlice.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 void RestoreInplaceOpx::grow(poplar::program::Sequence &prog) const {
@@ -60,4 +60,4 @@ OpxCreator<RestoreOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

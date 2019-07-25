@@ -1,12 +1,12 @@
-#include <poponnx/op/basesort.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/basesortx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/op/basesort.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/basesortx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/Sort.hpp>
 #include <poputil/TileMapping.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 BaseSortOpx::BaseSortOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -116,4 +116,4 @@ std::vector<TensorId> BaseSortOpx::mustExistBeforeCreate(InIndex) const {
 }
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

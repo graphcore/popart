@@ -1,15 +1,15 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/scatter.hpp>
-#include <poponnx/popx/op/scatterutilx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/op/scatter.hpp>
+#include <popart/popx/op/scatterutilx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/util.hpp>
 
 #include <popops/Cast.hpp>
 #include <popops/Gather.hpp>
 #include <popops/Scatter.hpp>
 #include <poputil/TileMapping.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 namespace scatterutilx {
 
@@ -105,4 +105,4 @@ void growScatter(poplar::program::Sequence &prog,
 
 } // namespace scatterutilx
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

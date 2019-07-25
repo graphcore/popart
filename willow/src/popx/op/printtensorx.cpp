@@ -1,9 +1,9 @@
-#include <poponnx/op/printtensor.hpp>
-#include <poponnx/popx/op/printtensorx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/printtensor.hpp>
+#include <popart/popx/op/printtensorx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 PrintTensorOpx::PrintTensorOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -38,4 +38,4 @@ OpxCreator<PrintTensorOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

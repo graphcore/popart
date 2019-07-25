@@ -1,11 +1,11 @@
 #include <popnn/Loss.hpp>
 
-#include <poponnx/op/argmin.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/argminx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/op/argmin.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/argminx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 poplar::Tensor ArgMinOpx::extremaOp(poplar::program::Sequence &prog,
@@ -18,4 +18,4 @@ OpxCreator<ArgMinOpx> argMinOpxCreator(Onnx::Operators::ArgMin_1);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

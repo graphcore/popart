@@ -1,12 +1,12 @@
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/op/pow.hpp>
-#include <poponnx/popx/op/powx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/pow.hpp>
+#include <popart/popx/op/powx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 PowOpx::PowOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
@@ -35,4 +35,4 @@ OpxCreator<Opx> powArg1OpxCreator(Onnx::GradOperators::PowArg1Grad,
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

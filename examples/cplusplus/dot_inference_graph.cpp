@@ -1,16 +1,16 @@
-// A tool for visualising the Ir (PopONNX's Intermediate representation).
+// A tool for visualising the Ir (PopART's Intermediate representation).
 // as a .dot file which can be compiled into a .pdf file.
 
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <vector>
-#include <poponnx/builder.hpp>
-#include <poponnx/filereader.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/optionflags.hpp>
+#include <popart/builder.hpp>
+#include <popart/filereader.hpp>
+#include <popart/ir.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/optionflags.hpp>
 
-using namespace poponnx;
+using namespace popart;
 namespace po = boost::program_options;
 
 

@@ -1,12 +1,12 @@
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/op/matmul.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/op/matmul.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/util.hpp>
 
-namespace poponnx {
+namespace popart {
 
 MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_)
@@ -178,4 +178,4 @@ static OpCreator<MatMulOp> matMulOpCreator({Onnx::Operators::MatMul_1,
                                             Onnx::Operators::MatMul_9});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

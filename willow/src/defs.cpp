@@ -1,7 +1,7 @@
 #include <functional>
 
-#include <poponnx/names.hpp>
-#include <poponnx/opidentifier.hpp>
+#include <popart/names.hpp>
+#include <popart/opidentifier.hpp>
 
 #include <onnx/defs/schema.h>
 #include <onnx/defs/shape_inference.h>
@@ -76,7 +76,7 @@ static const char groupnormalizationDoc[] =
 ONNX_OPERATOR_SET_SCHEMA_EX(
     GroupNormalization,
     AiGraphcore,
-    poponnx::Domain::ai_graphcore,
+    popart::Domain::ai_graphcore,
     1,
     false,
     OpSchema()
@@ -107,7 +107,7 @@ static const char subsampleDoc[] =
 ONNX_OPERATOR_SET_SCHEMA_EX(
     Subsample,
     AiGraphcore,
-    poponnx::Domain::ai_graphcore,
+    popart::Domain::ai_graphcore,
     1,
     false,
     OpSchema()
@@ -130,7 +130,7 @@ static const char printTensorDoc[] =
 ONNX_OPERATOR_SET_SCHEMA_EX(
     PrintTensor,
     AiGraphcore,
-    poponnx::Domain::ai_graphcore,
+    popart::Domain::ai_graphcore,
     1,
     false,
     OpSchema()
@@ -154,7 +154,7 @@ static const char scaleDoc[] =
 ONNX_OPERATOR_SET_SCHEMA_EX(
     Scale,
     AiGraphcore,
-    poponnx::Domain::ai_graphcore,
+    popart::Domain::ai_graphcore,
     1,
     false,
     OpSchema()
@@ -170,7 +170,7 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
 
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
-  d.AddDomainToVersion(poponnx::Domain::ai_graphcore, 1, 1);
+  d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
 
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(

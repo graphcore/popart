@@ -1,12 +1,12 @@
 #include <string>
 #include <vector>
 
-#include <poponnx/ces/reshapece.hpp>
-#include <poponnx/ndarraywrapper.hpp>
-#include <poponnx/op/reshape.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ces/reshapece.hpp>
+#include <popart/ndarraywrapper.hpp>
+#include <popart/op/reshape.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 namespace {
 class ReshapeFunctor {
@@ -35,4 +35,4 @@ std::vector<char> ConstExprReshape::compute() {
   return callOpFunctor<ReshapeFunctor>(in0->info.dataType(), *in0, shape);
 }
 
-} // namespace poponnx
+} // namespace popart

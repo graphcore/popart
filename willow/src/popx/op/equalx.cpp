@@ -1,13 +1,13 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/equal.hpp>
-#include <poponnx/popx/devicex.hpp>
+#include <popart/error.hpp>
+#include <popart/op/equal.hpp>
+#include <popart/popx/devicex.hpp>
 
-#include <poponnx/popx/op/equalx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/popx/op/equalx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 EqualOpx::EqualOpx(Op *op, Devicex *devicex)
@@ -34,4 +34,4 @@ OpxCreator<EqualOpx> greaterOpxCreator_9(Onnx::Operators::Equal_7);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/sqrt.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/sqrt.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 SqrtOp::SqrtOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
@@ -46,4 +46,4 @@ namespace {
 static OpCreator<SqrtOp> sqrtOpCreator(Onnx::Operators::Sqrt_6);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

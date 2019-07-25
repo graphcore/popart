@@ -1,13 +1,13 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/add.hpp>
-#include <poponnx/op/sum.hpp>
-#include <poponnx/patterns/sumtoaddpattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/add.hpp>
+#include <popart/op/sum.hpp>
+#include <popart/patterns/sumtoaddpattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool SumToAddPattern::matches(Op *op) const {
   return op->isConvertibleTo<SumOp>() && op->input->n() == 2;
@@ -40,4 +40,4 @@ static PatternCreator<SumToAddPattern>
     SumToAddPattern(PreAliasPatternType::SUMTOADD, "SumToAdd");
 }
 
-} // namespace poponnx
+} // namespace popart

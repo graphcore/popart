@@ -1,14 +1,14 @@
 #include <memory>
 #include <numeric>
 #include <onnx/onnx_pb.h>
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/tile.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/tile.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 // This will be used by TileGradOp
 TileOp::TileOp(const OperatorIdentifier &_opid,
@@ -140,4 +140,4 @@ static OpCreator<TileOp> tileOpCreator({Onnx::Operators::Tile_1,
                                         Onnx::Operators::Tile_6});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

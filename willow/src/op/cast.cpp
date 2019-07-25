@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/op/cast.hpp>
-#include <poponnx/opmanager.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/op/cast.hpp>
+#include <popart/opmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 
 CastOp::CastOp(const OperatorIdentifier &_opid,
                DataType _to,
@@ -61,4 +61,4 @@ static OpCreator<CastOp> castOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

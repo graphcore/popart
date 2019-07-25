@@ -1,10 +1,10 @@
 #include <vector>
-#include <poponnx/ces/transposece.hpp>
-#include <poponnx/ndarraywrapper.hpp>
-#include <poponnx/op/transpose.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ces/transposece.hpp>
+#include <popart/ndarraywrapper.hpp>
+#include <popart/op/transpose.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ConstExprTranspose::ConstExprTranspose(Op *op_) : ConstExprOp(op_) {}
 
@@ -128,4 +128,4 @@ std::vector<char> ConstExprTranspose::compute() {
   return callOpFunctor<TransposeFunctor>(in0->info.dataType(), *in0, perm);
 }
 
-} // namespace poponnx
+} // namespace popart

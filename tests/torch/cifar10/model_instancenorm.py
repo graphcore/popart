@@ -1,9 +1,9 @@
 import sys
 import os
 import c10driver
-import poponnx
+import popart
 import cmdline
-from poponnx.torch import torchwriter
+from popart.torch import torchwriter
 import torch
 args = cmdline.parse()
 
@@ -12,19 +12,19 @@ nOutChans = 8
 batchSize = 2
 batchesPerStep = 4
 anchors = {
-    "l1LossVal": poponnx.AnchorReturnType("EVERYN", 2),
-    "out": poponnx.AnchorReturnType("FINAL"),
-    "im0": poponnx.AnchorReturnType("ALL")
+    "l1LossVal": popart.AnchorReturnType("EVERYN", 2),
+    "out": popart.AnchorReturnType("FINAL"),
+    "im0": popart.AnchorReturnType("ALL")
 }
-dataFeed = poponnx.DataFlow(batchesPerStep, anchors)
-inputShapeInfo = poponnx.InputShapeInfo()
+dataFeed = popart.DataFlow(batchesPerStep, anchors)
+inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("im0",
-                   poponnx.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
+                   popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 
 inNames = ["im0"]
 outNames = ["out"]
 cifarInIndices = {"im0": 0}
-losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
+losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 
 
 class Module0(torch.nn.Module):
@@ -57,7 +57,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
     losses=losses,
-    optimizer=poponnx.ConstSGD(0.001),
+    optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:

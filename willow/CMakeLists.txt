@@ -7,11 +7,11 @@ option(POPLAR_BACKEND "Build Poplar backend (Graphcore IPU)" ON)
 include_directories("include")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}/include")
 
-configure_file(include/poponnx/version.hpp.in
-  ${CMAKE_CURRENT_BINARY_DIR}/include/poponnx/version.hpp
+configure_file(include/popart/version.hpp.in
+  ${CMAKE_CURRENT_BINARY_DIR}/include/popart/version.hpp
   @ONLY)
 
-# core poponnx source files:
+# core popart source files:
 file(GLOB core_sources src/*cpp)
 file(GLOB op_sources src/op/*cpp)
 file(GLOB ces_sources src/ces/*cpp)
@@ -42,12 +42,12 @@ endif()
 find_package(Spdlog REQUIRED)
 message(STATUS "Spdlog include dir is " ${SPDLOG_INCLUDE_DIRS})
 
-add_library(poponnx SHARED ${sources})
+add_library(popart SHARED ${sources})
 
 # Then need position indepenent code enabled to make dyanamic library with static libs
-set_property(TARGET poponnx PROPERTY POSITION_INDEPENDENT_CODE ON)
+set_property(TARGET popart PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-target_include_directories (poponnx SYSTEM PUBLIC
+target_include_directories (popart SYSTEM PUBLIC
     # if the model checker is used: ${ONNX_UTILS_INCLUDE_DIR}
     ${ONNX_PB_INCLUDE_DIR}
     ${ONNX_CHECKER_INCLUDE_DIR}
@@ -60,7 +60,7 @@ target_include_directories (poponnx SYSTEM PUBLIC
     ${POPLIBS_INCLUDE_DIR}
     )
 
-target_link_libraries(poponnx
+target_link_libraries(popart
   # if the onnx mode checker is incorporated, this will be needed: ${ONNX_LIB}
   ${ONNX_LIB}
   ${ONNX_PROTO_LIB}
@@ -78,19 +78,19 @@ target_link_libraries(poponnx
 )
 
 # The following defines cause compiler warnings if not set
-target_compile_definitions(poponnx
+target_compile_definitions(popart
   PRIVATE PROTOBUF_INLINE_NOT_IN_HEADERS=0
 )
 
 
-install(TARGETS poponnx
-        EXPORT poponnx
+install(TARGETS popart
+        EXPORT popart
         DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        COMPONENT poponnx)
+        COMPONENT popart)
 
-install(DIRECTORY "include/poponnx"
+install(DIRECTORY "include/popart"
         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        COMPONENT poponnx)
+        COMPONENT popart)
 
 # See T6089: to use python3 where strictly required, and 
 # then remove this commented out code:
@@ -99,4 +99,4 @@ install(DIRECTORY "include/poponnx"
 #>         COMMAND python -c "import sys; sys.exit(sys.version_info.major <= 2)"
 #>         VERBATIM
 #> )
-#> add_dependencies(poponnx python_ver_check)
+#> add_dependencies(popart python_ver_check)

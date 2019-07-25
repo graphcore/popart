@@ -1,9 +1,9 @@
 #include <algorithm>
 #include <vector>
-#include <poponnx/dataflow.hpp>
-#include <poponnx/error.hpp>
+#include <popart/dataflow.hpp>
+#include <popart/error.hpp>
 
-namespace poponnx {
+namespace popart {
 
 AnchorReturnType::AnchorReturnType(std::string artString)
     : artId_(getIdFromStr(artString)), returnPeriod_(0) {
@@ -99,4 +99,4 @@ void DataFlow::isValidAnchorReturnPeriod(TensorId anchorId,
   }
 }
 
-} // namespace poponnx
+} // namespace popart

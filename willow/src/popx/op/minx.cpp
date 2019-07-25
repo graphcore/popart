@@ -1,17 +1,17 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/min.hpp>
-#include <poponnx/popx/op/minx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/op/min.hpp>
+#include <popart/popx/op/minx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/util.hpp>
 
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 MinOpx::MinOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
@@ -91,4 +91,4 @@ OpxCreator<MinArgGradOpx> minGradOpxCreator(Onnx::GradOperators::MinArgGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

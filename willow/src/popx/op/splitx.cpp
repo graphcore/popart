@@ -1,9 +1,9 @@
-#include <poponnx/op/split.hpp>
-#include <poponnx/popx/op/splitx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/op/split.hpp>
+#include <popart/popx/op/splitx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 namespace popx {
 
@@ -33,4 +33,4 @@ OpxCreator<SplitOpx> splitOpxCreator(Onnx::Operators::Split_2);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

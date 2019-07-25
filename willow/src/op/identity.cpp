@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/identity.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 IdentityOp::IdentityOp(const OperatorIdentifier &_opid,
                        const Op::Settings &settings_)
@@ -44,4 +44,4 @@ namespace {
 static OpCreator<IdentityOp> identityOpCreator(Onnx::Operators::Identity_1);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

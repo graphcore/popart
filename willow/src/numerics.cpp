@@ -1,11 +1,11 @@
-#include <poponnx/error.hpp>
-#include <poponnx/filereader.hpp>
-#include <poponnx/numerics.hpp>
-#include <poponnx/onnxutil.hpp>
+#include <popart/error.hpp>
+#include <popart/filereader.hpp>
+#include <popart/numerics.hpp>
+#include <popart/onnxutil.hpp>
 
 #include <cmath>
 
-namespace poponnx {
+namespace popart {
 namespace numerics {
 
 NumericsReport::NumericsReport(std::string AStarts, // A starts
@@ -106,4 +106,4 @@ std::map<TensorId, float> NumericsReport::getRelativeErrors() {
 }
 
 } // namespace numerics
-} // namespace poponnx
+} // namespace popart

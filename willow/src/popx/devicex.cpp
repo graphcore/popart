@@ -15,49 +15,49 @@
 #include <popsys/CSRFunctions.hpp>
 #include <popsys/codelets.hpp>
 #include <poputil/exceptions.hpp>
-#include <poponnx/devicemanager.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/filereader.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/logging.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/op/call.hpp>
-#include <poponnx/op/if.hpp>
-#include <poponnx/op/varupdate.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/devicexmanager.hpp>
-#include <poponnx/popx/opx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/popx/poplaroptionsx.hpp>
-#include <poponnx/pritask.hpp>
-#include <poponnx/recompute.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensordata.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/tojson.hpp>
-#include <poponnx/topocons.hpp>
+#include <popart/devicemanager.hpp>
+#include <popart/error.hpp>
+#include <popart/filereader.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/logging.hpp>
+#include <popart/op.hpp>
+#include <popart/op/call.hpp>
+#include <popart/op/if.hpp>
+#include <popart/op/varupdate.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/devicexmanager.hpp>
+#include <popart/popx/opx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/popx/poplaroptionsx.hpp>
+#include <popart/pritask.hpp>
+#include <popart/recompute.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
+#include <popart/tensors.hpp>
+#include <popart/tojson.hpp>
+#include <popart/topocons.hpp>
 
-#include <poponnx/op/gradientaccl.hpp>
-#include <poponnx/op/varupdate.hpp>
-#include <poponnx/tensornames.hpp>
+#include <popart/op/gradientaccl.hpp>
+#include <popart/op/varupdate.hpp>
+#include <popart/tensornames.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
-class devicex_memory_allocation_err : public poponnx::memory_allocation_err {
+class devicex_memory_allocation_err : public popart::memory_allocation_err {
 
   const poplar::graph_memory_allocation_error exception;
   const poplar::OptionFlags reportOptions;
 
 public:
   devicex_memory_allocation_err(const devicex_memory_allocation_err &rhs)
-      : poponnx::memory_allocation_err(rhs.what()),
+      : popart::memory_allocation_err(rhs.what()),
         exception(std::move(rhs.exception)), reportOptions(rhs.reportOptions) {}
 
   devicex_memory_allocation_err(const poplar::graph_memory_allocation_error &e,
                                 const poplar::OptionFlags &_reportOptions)
-      : poponnx::memory_allocation_err(e.what()), exception(std::move(e)),
+      : popart::memory_allocation_err(e.what()), exception(std::move(e)),
         reportOptions(_reportOptions) {}
 
   std::unique_ptr<memory_allocation_err> clone() const {
@@ -381,9 +381,9 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
   }
 
   // Set the opxTrace flag based on the environment variable
-  auto POPONNX_OPX_TRACE = std::getenv("POPONNX_OPX_TRACE");
+  auto POPART_OPX_TRACE = getenv("OPX_TRACE");
   opxTrace =
-      POPONNX_OPX_TRACE ? strncmp(POPONNX_OPX_TRACE, "1", 1) == 0 : false;
+      POPART_OPX_TRACE ? strncmp(POPART_OPX_TRACE, "1", 1) == 0 : false;
 
   // TODO (see T5100) : if inference, forward should be INFERENCE_FWD
   for (auto it : ir.getSessionOptions().convolutionOptions) {
@@ -1932,9 +1932,9 @@ void Devicex::prepare() {
   logging::devicex::info("Starting Engine compilation");
 
   auto trySaveTensorTileMap = [this]() {
-    auto poponnxTensorTileMap = std::getenv("POPONNX_TENSOR_TILE_MAP");
-    if (poponnxTensorTileMap && strcmp(poponnxTensorTileMap, "") != 0) {
-      saveTensorTileMap(poponnxTensorTileMap);
+    auto popartTensorTileMap = getenv("TENSOR_TILE_MAP");
+    if (popartTensorTileMap && strcmp(popartTensorTileMap, "") != 0) {
+      saveTensorTileMap(popartTensorTileMap);
     }
   };
 
@@ -2022,8 +2022,8 @@ std::string Devicex::getPoplarCachePath() {
   return ir().getSessionOptions().cachePath + ".poplar";
 }
 
-std::string Devicex::getPoponnxCachePath() {
-  return ir().getSessionOptions().cachePath + ".poponnx";
+std::string Devicex::getPopartCachePath() {
+  return ir().getSessionOptions().cachePath + ".popart";
 }
 
 void Devicex::trySaveExecutable(poplar::Executable &executable) {
@@ -2039,12 +2039,12 @@ void Devicex::trySaveExecutable(poplar::Executable &executable) {
                             poplarCachePath);
     executable.serialize(poplarFs);
 
-    // save the poponnx ir hash
-    auto poponnxCachePath = getPoponnxCachePath();
-    std::ofstream poponnxFs(poponnxCachePath, std::ofstream::binary);
-    logging::devicex::debug("Saving poponnx ir hash to '{}'", poponnxCachePath);
+    // save the popart ir hash
+    auto popartCachePath = getPopartCachePath();
+    std::ofstream popartFs(popartCachePath, std::ofstream::binary);
+    logging::devicex::debug("Saving popart ir hash to '{}'", popartCachePath);
     SavedInfo savedInfo(*this);
-    savedInfo.serialize(poponnxFs);
+    savedInfo.serialize(popartFs);
   };
 }
 
@@ -2058,11 +2058,11 @@ void Devicex::tryLoadExecutable() {
 
   if (cacheEnabled && !cachePath.empty() &&
       deviceInfo->getType() == DeviceType::Ipu) {
-    // load the poponnx ir hash
-    auto poponnxCachePath = getPoponnxCachePath();
-    std::ifstream poponnxFs(poponnxCachePath, std::ifstream::binary);
-    if (poponnxFs.is_open()) {
-      if (SavedInfo(*this) == SavedInfo::deserialize(poponnxFs)) {
+    // load the popart ir hash
+    auto popartCachePath = getPopartCachePath();
+    std::ifstream popartFs(popartCachePath, std::ifstream::binary);
+    if (popartFs.is_open()) {
+      if (SavedInfo(*this) == SavedInfo::deserialize(popartFs)) {
         auto poplarCachePath = getPoplarCachePath();
         std::ifstream poplarFs(poplarCachePath, std::ifstream::binary);
         if (poplarFs.is_open()) {
@@ -2077,7 +2077,7 @@ void Devicex::tryLoadExecutable() {
         warn("ir hashes differ");
       }
     } else {
-      warn(fmt::format("could not open file `{}'", poponnxCachePath));
+      warn(fmt::format("could not open file `{}'", popartCachePath));
     }
   }
 }
@@ -2538,4 +2538,4 @@ const poplar::Tensor *Devicex::getDropoutRandomSeed() const {
 }
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

@@ -1,6 +1,0 @@
-# Tests of pipelining
-# to run only these tests with ctest, consider using something like,
-# `ctest -R anchors -j5 -VV'.
-
-add_poponnx_cpp_unit_test(
-        weights_as_anchors_test_0 weights_as_anchors_test_0.cpp)

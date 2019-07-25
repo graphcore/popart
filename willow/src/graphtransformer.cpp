@@ -1,8 +1,8 @@
-#include <poponnx/error.hpp>
-#include <poponnx/graphtransformer.hpp>
-#include <poponnx/graphtransformer_impl.hpp>
+#include <popart/error.hpp>
+#include <popart/graphtransformer.hpp>
+#include <popart/graphtransformer_impl.hpp>
 
-namespace poponnx {
+namespace popart {
 
 GraphTransformer::GraphTransformer(const std::string &modelProtoOrFilename)
     : impl(new GraphTransformerImpl(modelProtoOrFilename)) {}
@@ -30,4 +30,4 @@ void GraphTransformer::prepareNodesForTraining() {
 
 void GraphTransformer::removeUnusedInputs() { impl->removeUnusedInputs(); }
 
-} // namespace poponnx
+} // namespace popart

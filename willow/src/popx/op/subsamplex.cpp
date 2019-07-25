@@ -1,14 +1,14 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/subsample.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/subsamplex.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/subsample.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/subsamplex.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
 
 #include <ostream>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 static poplar::Tensor subsample(poplar::Tensor &t,
@@ -101,4 +101,4 @@ OpxCreator<SubsampleGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

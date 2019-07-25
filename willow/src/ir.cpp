@@ -7,55 +7,55 @@
 #include <unordered_set>
 #include <vector>
 
-#include <poponnx/builder.hpp>
-#include <poponnx/ces/constexpr.hpp>
-#include <poponnx/ces/onnxconstexpr.hpp>
-#include <poponnx/chains.hpp>
-#include <poponnx/devicemanager.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/filereader.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/intervals.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/logging.hpp>
-#include <poponnx/op/loss.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/optimizer.hpp>
-#include <poponnx/optionflags.hpp>
-#include <poponnx/pbwrap.hpp>
-#include <poponnx/scheduler.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensorinfo.hpp>
-#include <poponnx/tensornames.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/topocons.hpp>
-#include <poponnx/util.hpp>
+#include <popart/builder.hpp>
+#include <popart/ces/constexpr.hpp>
+#include <popart/ces/onnxconstexpr.hpp>
+#include <popart/chains.hpp>
+#include <popart/devicemanager.hpp>
+#include <popart/error.hpp>
+#include <popart/filereader.hpp>
+#include <popart/graph.hpp>
+#include <popart/intervals.hpp>
+#include <popart/ir.hpp>
+#include <popart/logging.hpp>
+#include <popart/op/loss.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/optimizer.hpp>
+#include <popart/optionflags.hpp>
+#include <popart/pbwrap.hpp>
+#include <popart/scheduler.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
+#include <popart/util.hpp>
 
 // The transformations
-#include <poponnx/recompute.hpp>
-#include <poponnx/transforms/auto_virtual_graph.hpp>
-#include <poponnx/transforms/gradient_accumulation.hpp>
-#include <poponnx/transforms/interipucopy.hpp>
-#include <poponnx/transforms/mergecopies.hpp>
-#include <poponnx/transforms/mergevarupdates.hpp>
-#include <poponnx/transforms/pipeline.hpp>
-#include <poponnx/transforms/prune.hpp>
-#include <poponnx/transforms/subgraphoutline.hpp>
+#include <popart/recompute.hpp>
+#include <popart/transforms/auto_virtual_graph.hpp>
+#include <popart/transforms/gradient_accumulation.hpp>
+#include <popart/transforms/interipucopy.hpp>
+#include <popart/transforms/mergecopies.hpp>
+#include <popart/transforms/mergevarupdates.hpp>
+#include <popart/transforms/pipeline.hpp>
+#include <popart/transforms/prune.hpp>
+#include <popart/transforms/subgraphoutline.hpp>
 
 // The layers required to construct the backwards pass
-#include <poponnx/op/batchnorm.hpp>
-#include <poponnx/op/ipucopy.hpp>
-#include <poponnx/op/placeholder.hpp>
-#include <poponnx/op/sum.hpp>
-#include <poponnx/op/varupdate.hpp>
+#include <popart/op/batchnorm.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/op/placeholder.hpp>
+#include <popart/op/sum.hpp>
+#include <popart/op/varupdate.hpp>
 
-#include <poponnx/patterns/inplace.hpp>
-#include <poponnx/patterns/updateinplaceprioritiesforipu.hpp>
+#include <popart/patterns/inplace.hpp>
+#include <popart/patterns/updateinplaceprioritiesforipu.hpp>
 
-#include <poponnx/dotvisualizer.hpp>
+#include <popart/dotvisualizer.hpp>
 
-namespace poponnx {
+namespace popart {
 
 Ir::~Ir() = default;
 
@@ -989,7 +989,7 @@ void Ir::registerInputTensors() {
       if (consumerTypes.find(id) == consumerTypes.end() &&
           !allowUnusedStreamTensors) {
         throw error(
-            "Request to create poponnx Stream Tensor {} failed, "
+            "Request to create popart Stream Tensor {} failed, "
             "as it has no consumers in the ONNX GraphProto. "
             "If Tensor {} is only used as an input "
             "to a Loss, then it should not be included in the ONNX Model, "
@@ -1195,7 +1195,7 @@ Ir::getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts) {
 
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
-  std::unique_ptr<poponnx::Op> gradSum =
+  std::unique_ptr<popart::Op> gradSum =
       OpManager::createOp(Domain::ai_onnx,
                           "Sum",
                           getOpSetVersionFromModel(Domain::ai_onnx),
@@ -1842,7 +1842,7 @@ void Ir::growFinalLoss() {
   }
 
   // now growing the FINAL loss (sum of individual losses)
-  std::unique_ptr<poponnx::Op> finalLossSum =
+  std::unique_ptr<popart::Op> finalLossSum =
       OpManager::createOp(Domain::ai_onnx,
                           "Sum",
                           getOpSetVersionFromModel(Domain::ai_onnx),
@@ -2290,4 +2290,4 @@ uint32_t Ir::getAndIncrementDropoutSeedModifier() {
   return dropoutSeedModifier;
 }
 
-} // namespace poponnx
+} // namespace popart

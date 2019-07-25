@@ -1,10 +1,10 @@
 #include <memory>
 #include <vector>
-#include <poponnx/op/and.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/and.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 AndOp::AndOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : BinaryComparisonOp(_opid, settings_) {}
@@ -14,7 +14,7 @@ std::unique_ptr<Op> AndOp::clone() const {
 }
 
 std::vector<std::unique_ptr<Op>> AndOp::getGradOps() {
-  throw error("PopONNX does not have a valid grad op corresponding to AndOp");
+  throw error("PopART does not have a valid grad op corresponding to AndOp");
 }
 
 namespace {
@@ -22,4 +22,4 @@ static OpCreator<AndOp> AndOpCreator({Onnx::Operators::And_1,
                                       Onnx::Operators::And_7});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

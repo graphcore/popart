@@ -1,10 +1,10 @@
 #include <memory>
-#include <poponnx/op/scale.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/scale.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 ScaleOp::inplacePriorityDefault() const {
@@ -97,4 +97,4 @@ static OpCreator<ScaleOp> scaleOpCreator(
     true);
 
 } // namespace
-} // namespace poponnx
+} // namespace popart

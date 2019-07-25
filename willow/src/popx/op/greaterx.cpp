@@ -1,14 +1,14 @@
 #include <popops/Cast.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/greater.hpp>
-#include <poponnx/popx/devicex.hpp>
+#include <popart/error.hpp>
+#include <popart/op/greater.hpp>
+#include <popart/popx/devicex.hpp>
 
-#include <poponnx/popx/op/greaterx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/popx/op/greaterx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 GreaterOpx::GreaterOpx(Op *op, Devicex *devicex)
@@ -36,4 +36,4 @@ OpxCreator<GreaterOpx> greaterOpxCreator_9(Onnx::Operators::Greater_9);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

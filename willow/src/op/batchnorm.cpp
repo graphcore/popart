@@ -1,15 +1,15 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/batchnorm.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/batchnorm.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 BatchNormOp::BatchNormOp(const OperatorIdentifier &_opid,
                          float _epsilon,
@@ -190,4 +190,4 @@ static OpCreator<BatchNormOp> batchNormOpCreator(
 
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

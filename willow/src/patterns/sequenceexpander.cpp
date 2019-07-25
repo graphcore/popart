@@ -1,14 +1,14 @@
-#include <poponnx/graph.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/patterns/sequenceexpander.hpp>
-#include <poponnx/pbwrap.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/graph.hpp>
+#include <popart/op.hpp>
+#include <popart/patterns/sequenceexpander.hpp>
+#include <popart/pbwrap.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
 #include <algorithm>
 #include <numeric>
 
-namespace poponnx {
+namespace popart {
 
 std::vector<const Tensor *> SequenceExpander::touches(Op *) const { return {}; }
 
@@ -68,4 +68,4 @@ bool SequenceExpander::apply(Op *op) const {
   }
 }
 
-} // namespace poponnx
+} // namespace popart

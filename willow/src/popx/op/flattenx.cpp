@@ -1,10 +1,10 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/flatten.hpp>
-#include <poponnx/popx/op/flattenx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/flatten.hpp>
+#include <popart/popx/op/flattenx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 FlattenInplaceOpx::FlattenInplaceOpx(Op *op, Devicex *devicex)
@@ -45,4 +45,4 @@ OpxCreator<FlattenGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart
