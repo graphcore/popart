@@ -84,10 +84,22 @@ bool Pipeline::apply(Graph &graph) const {
   } else {
     minDepth = numIPUs;
   }
-  if (ir.getDataFlow().batchesPerStep() < minDepth) {
-    throw error("For pipelining, depth (batchesPerStep) must be at least " +
-                std::to_string(minDepth) + " for " +
-                std::to_string(ir.getDeviceInfo()->getNumIpus()) + " IPUs");
+  if ((ir.getDataFlow().batchesPerStep() *
+       ir.getSessionOptions().accumulationFactor) < minDepth) {
+    throw error("For pipelining, depth (batchesPerStep * gradient "
+                "accumulation factor) must be at least {} "
+                "for {} IPUs ({} * {} !>= {})",
+                minDepth,
+                ir.getDeviceInfo()->getNumIpus(),
+                ir.getDataFlow().batchesPerStep(),
+                ir.getSessionOptions().accumulationFactor,
+                minDepth);
+  }
+
+  if ((ir.getSessionOptions().accumulationFactor > 1) &&
+      (ir.getDataFlow().batchesPerStep() != 1)) {
+    throw error("When pipelining and gradient accumulation are enabled, "
+                "batchesPerStep must be == 1");
   }
 
   // 3. Currently recomputation is not supported with pipelining (TODO T9575)

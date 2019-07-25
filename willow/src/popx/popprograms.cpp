@@ -233,9 +233,9 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
   // All pipeline cycles in the main phase are identical. So we create the
   // program for a single cycle and repeat for mainCycles
   poplar::program::Sequence main;
-  ss << "\nPipeline Cycle 'Main':";
-  addPipelineCycle(pInfo.mainPhase.start, main, ss);
   int64_t mainCycles = pInfo.mainPhase.end - pInfo.mainPhase.start + 1;
+  ss << "\nPipeline Cycle 'Main', " + std::to_string(mainCycles) + " cycles";
+  addPipelineCycle(pInfo.mainPhase.start, main, ss);
 
   poplar::program::Sequence flush;
   for (PipelineCycle pCycle = pInfo.flushPhase.start;
@@ -254,6 +254,12 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
   outer.add(fill);
   outer.add(poplar::program::Repeat(static_cast<int>(mainCycles), main));
   outer.add(flush);
+  if (dv_p->ir().getSessionOptions().enableGradientAccumulation) {
+    // If we are doing gradient accumulation, add the var updates and reset ops
+    // outside the main pipeline cycle.
+    outer.add(varUpdateFromAccumulatorFragment());
+    outer.add(resetWeightGradientAccumulatorFragment());
+  }
   outer.add(toHostFinalCopyFragment());
 
   return outer;

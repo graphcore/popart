@@ -651,7 +651,6 @@ void Ir::prepare(const IrBundle &gb) {
 
   // Apply transform after topological constraints have been added.
   if (userOptions.enableGradientAccumulation) {
-    logging::transform::info("Applying gradient accumulation graph transform");
     applyTransform(GradientAccumulation::id(), getMainGraph());
   }
 

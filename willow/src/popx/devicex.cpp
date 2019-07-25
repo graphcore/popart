@@ -6,15 +6,6 @@
 #include <set>
 
 #include <memory>
-#include <poplin/codelets.hpp>
-#include <popnn/codelets.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/codelets.hpp>
-#include <poprand/RandomGen.hpp>
-#include <poprand/codelets.hpp>
-#include <popsys/CSRFunctions.hpp>
-#include <popsys/codelets.hpp>
-#include <poputil/exceptions.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
@@ -37,6 +28,15 @@
 #include <popart/tensors.hpp>
 #include <popart/tojson.hpp>
 #include <popart/topocons.hpp>
+#include <poplin/codelets.hpp>
+#include <popnn/codelets.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/codelets.hpp>
+#include <poprand/RandomGen.hpp>
+#include <poprand/codelets.hpp>
+#include <popsys/CSRFunctions.hpp>
+#include <popsys/codelets.hpp>
+#include <poputil/exceptions.hpp>
 
 #include <popart/op/gradientaccl.hpp>
 #include <popart/op/varupdate.hpp>
@@ -297,10 +297,14 @@ const std::map<TensorId, poplar::Tensor> &PopTensors::getTensors() const {
   return tensors_;
 }
 
-PipelineInfo::PipelineInfo(int _batchesPerStep, int _numIPUs, bool _doTraining)
+PipelineInfo::PipelineInfo(int _batchesPerStep,
+                           int _gradAcclFactor,
+                           int _numIPUs,
+                           bool _doTraining)
     : doTraining(_doTraining) {
 
   auto bps                  = static_cast<int64_t>(_batchesPerStep);
+  auto gradAcclFactor       = static_cast<int64_t>(_gradAcclFactor);
   auto numIPUs              = static_cast<int64_t>(_numIPUs);
   auto fillFlushPhaseCycles = numIPUs - 1;
   fillPhase.start           = 0;
@@ -312,7 +316,7 @@ PipelineInfo::PipelineInfo(int _batchesPerStep, int _numIPUs, bool _doTraining)
     bwdFillPhase.start = fillFlushPhaseCycles;
     bwdFillPhase.end   = 2 * fillFlushPhaseCycles - 1;
 
-    mainCycles      = bps - 2 * fillFlushPhaseCycles;
+    mainCycles      = (bps * gradAcclFactor) - 2 * fillFlushPhaseCycles;
     mainPhase.start = bwdFillPhase.end + 1;
     mainPhase.end   = mainPhase.start + mainCycles - 1;
 
@@ -326,7 +330,7 @@ PipelineInfo::PipelineInfo(int _batchesPerStep, int _numIPUs, bool _doTraining)
     flushPhase.start = fwdFlushPhase.start;
     flushPhase.end   = bwdFlushPhase.end;
   } else {
-    mainCycles      = bps - fillFlushPhaseCycles;
+    mainCycles      = (bps * gradAcclFactor) - fillFlushPhaseCycles;
     mainPhase.start = fwdFillPhase.end + 1;
     mainPhase.end   = mainPhase.start + mainCycles - 1;
 
@@ -382,8 +386,7 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
 
   // Set the opxTrace flag based on the environment variable
   auto POPART_OPX_TRACE = getenv("OPX_TRACE");
-  opxTrace =
-      POPART_OPX_TRACE ? strncmp(POPART_OPX_TRACE, "1", 1) == 0 : false;
+  opxTrace = POPART_OPX_TRACE ? strncmp(POPART_OPX_TRACE, "1", 1) == 0 : false;
 
   // TODO (see T5100) : if inference, forward should be INFERENCE_FWD
   for (auto it : ir.getSessionOptions().convolutionOptions) {
@@ -416,9 +419,11 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
   bwdMmRhsOptions.options.insert({"fullyConnectedPass", "TRAINING_WU"});
 
   if (ir.getSessionOptions().enablePipelining) {
-    pInfo = PipelineInfo(ir.getDataFlow().batchesPerStep(),
-                         deviceInfo_->getNumIpus(),
-                         ir.canTrain());
+    pInfo = PipelineInfo(
+        ir.getDataFlow().batchesPerStep(),
+        static_cast<int>(ir.getSessionOptions().accumulationFactor),
+        deviceInfo_->getNumIpus(),
+        ir.canTrain());
   }
 
   engineOptions.set("target.workerStackSizeInBytes", "0x200");
@@ -1269,7 +1274,7 @@ Devicex::initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId) {
 }
 
 PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
-
+  // TODO: Improve readability of this code.
   Opx *opx = getOpx(op->id);
 
   // although priority should guarantee that this
@@ -1338,7 +1343,6 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
                               opx->op_p->debugName());
       growOpx(progs.scopeFragment(containingGraph));
     }
-
     // else if this Op is in the main scope
     else {
 
@@ -1380,6 +1384,14 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
         if (ir().getSessionOptions().enablePipelining) {
           if (op->isIpuCopyOp()) {
             growOpx(progs.pipelineIpuCopyFragment());
+          } else if ((op->isConvertibleTo<VarUpdateOp>()) &&
+                     (ir().getSessionOptions().enableGradientAccumulation)) {
+
+            growOpx(progs.varUpdateFromAccumulatorFragment());
+          } else if ((op->isConvertibleTo<ResetAcclOp>()) &&
+                     (ir().getSessionOptions().enableGradientAccumulation)) {
+
+            growOpx(progs.resetWeightGradientAccumulatorFragment());
           } else {
             growOpx(progs.pipelineBackwardFragment(op->getVirtualGraphId(),
                                                    op->str()));

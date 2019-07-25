@@ -248,7 +248,8 @@ def test_inference_min_batches():
                           doTraining=False,
                           doDevicex=False)
     assert e_info.value.args[0].startswith(
-        "For pipelining, depth (batchesPerStep) must")
+        "For pipelining, depth (batchesPerStep * gradient accumulation factor) must"
+    )
 
 
 def test_training_min_batches():
@@ -271,7 +272,8 @@ def test_training_min_batches():
                           doTraining=True,
                           doDevicex=False)
     assert e_info.value.args[0].startswith(
-        "For pipelining, depth (batchesPerStep) must")
+        "For pipelining, depth (batchesPerStep * gradient accumulation factor) must"
+    )
 
 
 def test_output_matches_train():
@@ -460,13 +462,12 @@ def test_pipelined_dropout():
         userOptions.enableVirtualGraphs = do_pipelining
         userOptions.enablePipelining = do_pipelining
 
-        session = popart.TrainingSession(
-            fnModel=builder.getModelProto(),
-            dataFeed=dataFlow,
-            optimizer=popart.ConstSGD(0.1),
-            losses=[loss],
-            userOptions=userOptions,
-            deviceInfo=device)
+        session = popart.TrainingSession(fnModel=builder.getModelProto(),
+                                         dataFeed=dataFlow,
+                                         optimizer=popart.ConstSGD(0.1),
+                                         losses=[loss],
+                                         userOptions=userOptions,
+                                         deviceInfo=device)
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -576,16 +577,14 @@ def get_model_anchors(doSharding,
             losses=[loss],
             optimizer=popart.ConstSGD(0.01),
             userOptions=opts,
-            deviceInfo=popart.DeviceManager().createIpuModelDevice(
-                deviceOpts))
+            deviceInfo=popart.DeviceManager().createIpuModelDevice(deviceOpts))
     else:
         session = popart.InferenceSession(
             fnModel=builder.getModelProto(),
             dataFeed=popart.DataFlow(batchesPerStep, anchor_map),
             losses=[loss],
             userOptions=opts,
-            deviceInfo=popart.DeviceManager().createIpuModelDevice(
-                deviceOpts))
+            deviceInfo=popart.DeviceManager().createIpuModelDevice(deviceOpts))
 
     if doDevicex is False:
         return None

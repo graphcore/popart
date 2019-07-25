@@ -71,7 +71,10 @@ bool GradientAccumulation::apply(Graph &graph) const {
       acclOp->connectInTensor(GradientAcclOp::getGradInIndex(), gradTensorId);
       acclOp->createAndConnectOutTensor(GradientAcclOp::getAcclOutIndex(),
                                         acclOutTensorId);
-
+      if (op->hasVirtualGraphId()) {
+        // Inherit virtual graph from parent op
+        acclOp->setVirtualGraphId(op->getVirtualGraphId());
+      }
       // Put it in the backward pass (from loss)
       acclOp->fromLoss = PathFromLoss::Yes;
       if (!ir.addToTrainTargetOps(acclOp)) {
@@ -107,7 +110,10 @@ bool GradientAccumulation::apply(Graph &graph) const {
       resetOp->connectInTensor(ResetAcclOp::getAcclInIndex(), acclTensorId);
       resetOp->createAndConnectOutTensor(ResetAcclOp::getAcclOutIndex(),
                                          acclResetTensorId);
-
+      if (op->hasVirtualGraphId()) {
+        // Inherit virtual graph from parent op
+        resetOp->setVirtualGraphId(op->getVirtualGraphId());
+      }
       op.get()->connectInTensor(VarUpdateOp::getUpdaterInIndex(),
                                 acclOutTensorId);
 

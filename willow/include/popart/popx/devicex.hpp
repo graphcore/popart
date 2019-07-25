@@ -18,8 +18,8 @@
 #include <popart/popx/popprograms.hpp>
 #include <popart/pritask.hpp>
 
-#include <set>
 #include <popart/names.hpp>
+#include <set>
 // MutableVoidData is defined in here:
 #include <popart/tensordata.hpp>
 
@@ -38,7 +38,10 @@ class GraphCachex;
 class PipelineInfo {
 public:
   PipelineInfo() = default;
-  PipelineInfo(int _batchesPerStep, int _numIPUs, bool _doTraining);
+  PipelineInfo(int _batchesPerStep,
+               int _gradAcclFactor,
+               int _numIPUs,
+               bool _doTraining);
 
   bool doTraining;
 
