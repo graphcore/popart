@@ -12,7 +12,7 @@ public:
   NDArrayWrapper(T *d, const TensorInfo &i);
   NDArrayWrapper(Tensor &tensor);
   NDArrayWrapper(T *d, const std::vector<int64_t> &shape);
-  NDArrayWrapper(const NDArrayWrapper &) = delete;
+  NDArrayWrapper(const NDArrayWrapper &) = default;
 
   T &operator[](int64_t i);
   const T &operator[](int64_t i) const;
