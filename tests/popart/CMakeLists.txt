@@ -97,4 +97,5 @@ add_subdirectory(recompute_tests)
 add_subdirectory(pipelining_tests)
 add_subdirectory(anchor_tests)
 add_subdirectory(auto_virtual_graph_tests)
+add_subdirectory(dropout_tests)
 
