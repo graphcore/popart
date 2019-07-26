@@ -1,4 +1,4 @@
-#include "poponnx/subgraph/subgraphutil.hpp"
+#include "popart/subgraph/subgraphutil.hpp"
 
 #include <algorithm>
 #include <tuple>

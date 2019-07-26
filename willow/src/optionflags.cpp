@@ -1,9 +1,9 @@
 #include <algorithm>
 #include <array>
-#include <poponnx/error.hpp>
-#include <poponnx/optionflags.hpp>
+#include <popart/error.hpp>
+#include <popart/optionflags.hpp>
 
-namespace poponnx {
+namespace popart {
 
 constexpr static int NDotChecks = static_cast<int>(DotCheck::N);
 
@@ -54,4 +54,4 @@ DotCheck dotCheckFromString(const std::string &s) {
 
 // No implementation required
 
-} // namespace poponnx
+} // namespace popart

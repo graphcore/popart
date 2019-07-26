@@ -4,15 +4,15 @@ and use them in an inference session
 '''
 
 import numpy as np
-import poponnx
+import popart
 
 # Create a builder and construct a graph
 #------------------------------------------------------------------------------
 
-builder = poponnx.Builder()
+builder = popart.Builder()
 
-data_shape = poponnx.TensorInfo("FLOAT16", [1, 2])
-lbl_shape = poponnx.TensorInfo("INT32", [1])
+data_shape = popart.TensorInfo("FLOAT16", [1, 2])
+lbl_shape = popart.TensorInfo("INT32", [1])
 
 ip = builder.addInputTensor(data_shape)
 lb = builder.addInputTensor(lbl_shape)
@@ -24,20 +24,20 @@ o = builder.aiOnnx.relu([o])
 o = builder.aiOnnx.softmax([o])
 builder.addOutputTensor(o)
 
-dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
 # Create a session to compile and the graph for inference
 #------------------------------------------------------------------------------
-inferenceOptions = poponnx.SessionOptions()
+inferenceOptions = popart.SessionOptions()
 # Need to compile the inference graph with variable weights we they can be updated
 # before execution
 inferenceOptions.constantWeights = False
 
-inferenceSession = poponnx.InferenceSession(
+inferenceSession = popart.InferenceSession(
     fnModel=builder.getModelProto(),
     dataFeed=dataFlow,
     userOptions=inferenceOptions,
-    deviceInfo=poponnx.DeviceManager().createIpuModelDevice({}))
+    deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
 
 # Compile graph
 inferenceSession.prepareDevice()
@@ -47,14 +47,14 @@ inferenceAnchors = inferenceSession.initAnchorArrays()
 
 # Create a session to compile and the graph for training
 #------------------------------------------------------------------------------
-trainingOptions = poponnx.SessionOptions()
-trainingSession = poponnx.TrainingSession(
+trainingOptions = popart.SessionOptions()
+trainingSession = popart.TrainingSession(
     fnModel=builder.getModelProto(),
     dataFeed=dataFlow,
-    losses=[poponnx.NllLoss(o, lb, "loss")],
-    optimizer=poponnx.ConstSGD(0.001),
+    losses=[popart.NllLoss(o, lb, "loss")],
+    optimizer=popart.ConstSGD(0.001),
     userOptions=trainingOptions,
-    deviceInfo=poponnx.DeviceManager().createIpuModelDevice({}))
+    deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
 
 # Compile graph
 trainingSession.prepareDevice()
@@ -68,7 +68,7 @@ trainingDataLables = np.random.rand(1).astype(np.int32)
 
 # Create buffers to receive results from the execution
 trainingAnchors = trainingSession.initAnchorArrays()
-trainingStepio = poponnx.PyStepIO({
+trainingStepio = popart.PyStepIO({
     ip: trainingData,
     lb: trainingDataLables
 }, trainingAnchors)
@@ -85,7 +85,7 @@ trainingSession.weightsToHost()
 # Prepare the map of weights to read the weights into
 weights = {}
 weights[w] = np.empty([2, 2], np.float16)
-weightsIo = poponnx.PyWeightsIO(weights)
+weightsIo = popart.PyWeightsIO(weights)
 
 # Read the weights from the session
 trainingSession.readWeights(weightsIo)
@@ -99,7 +99,7 @@ interenceDataLables = np.random.rand(1).astype(np.int32)
 
 # Create buffers to receive results from the execution
 inferenceAnchors = inferenceSession.initAnchorArrays()
-inferenceStepio = poponnx.PyStepIO({
+inferenceStepio = popart.PyStepIO({
     ip: interenceData,
     lb: interenceDataLables
 }, inferenceAnchors)

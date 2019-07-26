@@ -1,12 +1,12 @@
 #include <algorithm>
 #include <memory>
-#include <poponnx/op/pad.hpp>
-#include <poponnx/op/padgrad.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/pad.hpp>
+#include <popart/op/padgrad.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 BasePadOp::BasePadOp(const OperatorIdentifier &_opid,
                      const std::vector<int64_t> &_pads,
@@ -263,4 +263,4 @@ static OpCreator<PadOp> padCreator(
     true);
 }
 
-} // namespace poponnx
+} // namespace popart

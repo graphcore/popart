@@ -1,11 +1,11 @@
 #include <memory>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/topk.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/topk.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 TopKOp::TopKOp(const OperatorIdentifier &opid_,
                int64_t K_,
@@ -28,7 +28,7 @@ void TopKOp::connectInTensor(InIndex inIndex, TensorId tenId) {
         std::vector<int64_t> k;
         getInTensorData(tenId, k);
         K = k[0];
-      } catch (poponnx::error &err) {
+      } catch (popart::error &err) {
         throw error("Need the value of the {} input 'K' to detemine the output "
                     "shape, but was unable because {}",
                     opid,
@@ -146,4 +146,4 @@ static OpCreator<TopKOp> TopKOpCreator({Onnx::Operators::TopK_1,
                                        true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

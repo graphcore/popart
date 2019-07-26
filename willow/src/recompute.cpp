@@ -1,19 +1,19 @@
-#include <poponnx/graph.hpp>
-#include <poponnx/intervals.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/names.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/op/batchnorm.hpp>
-#include <poponnx/op/call.hpp>
-#include <poponnx/op/conv.hpp>
-#include <poponnx/op/groupnorm.hpp>
-#include <poponnx/pbwrap.hpp>
-#include <poponnx/recompute.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensornames.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/graph.hpp>
+#include <popart/intervals.hpp>
+#include <popart/ir.hpp>
+#include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/op/batchnorm.hpp>
+#include <popart/op/call.hpp>
+#include <popart/op/conv.hpp>
+#include <popart/op/groupnorm.hpp>
+#include <popart/pbwrap.hpp>
+#include <popart/recompute.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 namespace recompute {
 
@@ -149,4 +149,4 @@ void autoAnnotate(Graph &graph, RecomputationType rctype) {
 
 } // namespace recompute
 
-} // namespace poponnx
+} // namespace popart

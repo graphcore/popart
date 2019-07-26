@@ -1,11 +1,11 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/div.hpp>
-#include <poponnx/popx/op/divx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/div.hpp>
+#include <popart/popx/op/divx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 DivOpx::DivOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
@@ -34,4 +34,4 @@ OpxCreator<Opx> divArg1OpxCreator(Onnx::GradOperators::DivArg1Grad,
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

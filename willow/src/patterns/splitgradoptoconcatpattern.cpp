@@ -1,19 +1,19 @@
 #include <memory>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/concat.hpp>
-#include <poponnx/op/gather.hpp>
-#include <poponnx/op/identity.hpp>
-#include <poponnx/op/pad.hpp>
-#include <poponnx/op/reducesum.hpp>
-#include <poponnx/op/scale.hpp>
-#include <poponnx/op/split.hpp>
-#include <poponnx/op/subsample.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/patterns/splitgradoptoconcatpattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/concat.hpp>
+#include <popart/op/gather.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/pad.hpp>
+#include <popart/op/reducesum.hpp>
+#include <popart/op/scale.hpp>
+#include <popart/op/split.hpp>
+#include <popart/op/subsample.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/patterns/splitgradoptoconcatpattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool SplitGradOpToConcatPattern::matches(Op *op) const {
   return op->isConvertibleTo<SplitGradOp>();
@@ -38,4 +38,4 @@ static PatternCreator<SplitGradOpToConcatPattern>
                                "SplitGradOpToConcat");
 }
 
-} // namespace poponnx
+} // namespace popart

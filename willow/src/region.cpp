@@ -1,10 +1,10 @@
-#include <poponnx/error.hpp>
-#include <poponnx/region.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/region.hpp>
+#include <popart/util.hpp>
 
 #include <boost/range/algorithm.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace view {
 
 bool Region::operator==(const Region &r) const {
@@ -110,4 +110,4 @@ std::ostream &operator<<(std::ostream &stream, const Region &r) {
 }
 
 } // namespace view
-} // namespace poponnx
+} // namespace popart

@@ -1,12 +1,12 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/relu.hpp>
-#include <poponnx/popx/op/relux.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/error.hpp>
+#include <popart/op/relu.hpp>
+#include <popart/popx/op/relux.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensorindex.hpp>
 
 #include <popnn/NonLinearity.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 ReluInplaceOpx::ReluInplaceOpx(Op *op, Devicex *devicex)
@@ -65,4 +65,4 @@ OpxCreator<ReluGradOpx> reluxGradOpxCreator(Onnx::GradOperators::ReluGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

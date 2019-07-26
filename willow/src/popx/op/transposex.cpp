@@ -1,10 +1,10 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/transpose.hpp>
-#include <poponnx/popx/op/transposex.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/transpose.hpp>
+#include <popart/popx/op/transposex.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 TransposeOpx::TransposeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -56,4 +56,4 @@ OpxCreator<TransposeGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

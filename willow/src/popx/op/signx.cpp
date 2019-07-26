@@ -1,8 +1,8 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/sign.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/signx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/sign.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/signx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
@@ -10,7 +10,7 @@
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 SignOpx::SignOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
@@ -48,4 +48,4 @@ OpxCreator<SignGradOpx> signGradOpxCreator(Onnx::GradOperators::SignGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

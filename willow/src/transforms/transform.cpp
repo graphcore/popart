@@ -1,7 +1,7 @@
-#include <poponnx/logging.hpp>
-#include <poponnx/transforms/transform.hpp>
+#include <popart/logging.hpp>
+#include <popart/transforms/transform.hpp>
 
-namespace poponnx {
+namespace popart {
 
 // Map from the transform Id to a transform
 using TransformMap = std::map<std::size_t, std::unique_ptr<Transform>>;
@@ -22,4 +22,4 @@ bool Transform::registerTransform(Transform *transform) {
   return true;
 }
 
-} // namespace poponnx
+} // namespace popart

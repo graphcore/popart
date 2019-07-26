@@ -1,10 +1,10 @@
 #include <memory>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/cos.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/cos.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 CosOp::CosOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
@@ -32,4 +32,4 @@ namespace {
 static OpCreator<CosOp> cosOpCreator(Onnx::Operators::Cos_7);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

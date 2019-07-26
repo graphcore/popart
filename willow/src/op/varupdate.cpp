@@ -1,13 +1,13 @@
 #include <limits>
 #include <memory>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/varupdate.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/region.hpp>
-#include <poponnx/tensornames.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/varupdate.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/region.hpp>
+#include <popart/tensornames.hpp>
 
-namespace poponnx {
+namespace popart {
 VarUpdateOp::VarUpdateOp(const OperatorIdentifier &_opid,
                          TensorId varId_,
                          const Op::Settings &settings_)
@@ -79,4 +79,4 @@ std::unique_ptr<Op> CopyVarUpdateOp::clone() const {
 
 namespace {} // namespace
 
-} // namespace poponnx
+} // namespace popart

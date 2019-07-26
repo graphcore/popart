@@ -1,8 +1,8 @@
 #include <memory>
-#include <poponnx/op/abs.hpp>
-#include <poponnx/opmanager.hpp>
+#include <popart/op/abs.hpp>
+#include <popart/opmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 
 AbsOp::AbsOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
@@ -43,4 +43,4 @@ namespace {
 static OpCreator<AbsOp> absOpCreator({Onnx::Operators::Abs_6});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

@@ -1,9 +1,9 @@
-#include <poponnx/op.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/op.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 OpSerialiser::OpSerialiser(const Op *op, std::stringstream &ss_)
     : OpSerialiserBase(), ss(ss_) {
@@ -156,4 +156,4 @@ template <typename T> void OpEquivIdCreator::appendAttr(const T &value) {
   ss << value << sep;
 }
 
-} // namespace poponnx
+} // namespace popart

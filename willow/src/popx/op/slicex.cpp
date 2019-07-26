@@ -1,11 +1,11 @@
 #include <algorithm>
-#include <poponnx/op/slice.hpp>
-#include <poponnx/op/slicegrad.hpp>
-#include <poponnx/popx/op/slicegradx.hpp>
-#include <poponnx/popx/op/slicex.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/op/slice.hpp>
+#include <popart/op/slicegrad.hpp>
+#include <popart/popx/op/slicegradx.hpp>
+#include <popart/popx/op/slicex.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 SliceOpx::SliceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -53,4 +53,4 @@ OpxCreator<SliceGradOpx> sliceGradOpxCreator(Onnx::GradOperators::SliceGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

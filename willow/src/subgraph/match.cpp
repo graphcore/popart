@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <sstream>
-#include <poponnx/subgraph/match.hpp>
-#include <poponnx/subgraph/subgraphnames.hpp>
+#include <popart/subgraph/match.hpp>
+#include <popart/subgraph/subgraphnames.hpp>
 
 namespace fwtools {
 namespace subgraph {

@@ -1,12 +1,12 @@
-#include <poponnx/graph.hpp>
-#include <poponnx/op/nll.hpp>
-#include <poponnx/op/softmax.hpp>
-#include <poponnx/patterns/nlllwithsoftmaxgraddirect.hpp>
-#include <poponnx/patterns/patterns.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/nll.hpp>
+#include <popart/op/softmax.hpp>
+#include <popart/patterns/nlllwithsoftmaxgraddirect.hpp>
+#include <popart/patterns/patterns.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool NlllWithSoftmaxGradDirect::matches(Op *op) const {
 
@@ -87,4 +87,4 @@ static PatternCreator<NlllWithSoftmaxGradDirect>
                       "NlllWithSoftmaxGradDirect");
 }
 
-} // namespace poponnx
+} // namespace popart

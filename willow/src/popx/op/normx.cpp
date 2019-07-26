@@ -1,9 +1,9 @@
-#include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/normx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/ir.hpp>
+#include <popart/op.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/normx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <poplar/Tensor.hpp>
 #include <poplin/Norms.hpp>
@@ -17,7 +17,7 @@ using Shape = std::vector<std::size_t>;
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 // Need to convert onnx input to poplar format. Poplar only excepts 2D or 4D
@@ -87,4 +87,4 @@ poplar::Tensor NormOpx::convertVarToInvSd(poplar::program::Sequence &prog,
 NormOpx::NormOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

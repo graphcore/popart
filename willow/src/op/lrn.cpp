@@ -1,15 +1,15 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/lrn.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/lrn.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 LRNOp::LRNOp(const OperatorIdentifier &_opid,
              float _alpha,
@@ -100,4 +100,4 @@ static OpCreator<LRNOp> lrnOpCreator(
 
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

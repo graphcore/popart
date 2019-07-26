@@ -1,14 +1,14 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/add.hpp>
-#include <poponnx/op/concat.hpp>
-#include <poponnx/op/pad.hpp>
-#include <poponnx/op/sum.hpp>
-#include <poponnx/patterns/padsum.hpp>
-#include <poponnx/patterns/patterns.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/add.hpp>
+#include <popart/op/concat.hpp>
+#include <popart/op/pad.hpp>
+#include <popart/op/sum.hpp>
+#include <popart/patterns/padsum.hpp>
+#include <popart/patterns/patterns.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensors.hpp>
 
 #include <boost/numeric/interval.hpp>
 #include <boost/range/adaptors.hpp>
@@ -19,7 +19,7 @@
 #include <algorithm>
 #include <iterator>
 
-namespace poponnx {
+namespace popart {
 
 bool PadSumPattern::matches(Op *op) const {
   // Is the input a sum/add
@@ -289,7 +289,7 @@ createConcatOp(int64_t axis,
                const Op::Settings &settings) {
   // Create the concat op
   std::unique_ptr<ConcatOp> concat = std::make_unique<ConcatOp>(
-      poponnx::Onnx::AiOnnx::OpSet9::Concat, axis, settings);
+      popart::Onnx::AiOnnx::OpSet9::Concat, axis, settings);
 
   // Connect the concat op to the input and output tensors
   concat->connectOutTensor(0, outTensor);
@@ -383,4 +383,4 @@ static PatternCreator<PadSumPattern> PadSumPattern(PreAliasPatternType::PADSUM,
                                                    "PadSum");
 }
 
-} // namespace poponnx
+} // namespace popart

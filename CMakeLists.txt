@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.4)
 
-project(poponnx)
+project(popart)
 
 enable_testing()
 
@@ -56,7 +56,7 @@ find_package(PROTOBUF REQUIRED)
 
 # Using installed cmake find (ONNX must be installed)
 # For a hand-crafted Findonnx script, see a very early commit
-# or repo poponnx if available
+# or repo popart if available
 find_package(ONNX REQUIRED)
 
 # The logging library
@@ -69,7 +69,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 find_package(Boost REQUIRED COMPONENTS filesystem system program_options)
 # find_package(CBLAS REQUIRED)
 
-set(POPONNX_PYTHON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/python)
+set(POPART_PYTHON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/python)
 
 #------ cpack information
 execute_process(
@@ -134,12 +134,12 @@ else()
 endif()
 
 
-set(PACKAGE_FILE_NAME poponnx-${PACKAGE_OS_TYPE}-${VERSION}-${SNAPSHOT})
+set(PACKAGE_FILE_NAME popart-${PACKAGE_OS_TYPE}-${VERSION}-${SNAPSHOT})
 set(CPACK_PACKAGE_FILE_NAME ${PACKAGE_FILE_NAME})
 
-set(USER_GUIDE_PDF_NAME poponnx-user-guide-${VERSION}-${SNAPSHOT}.pdf)
-set(USER_GUIDE_HTML_NAME poponnx-user-guide-html-${VERSION}-${SNAPSHOT}.zip)
-set(PRODINFO_FILE_NAME poponnx-${VERSION}-${SNAPSHOT}.yml)
+set(USER_GUIDE_PDF_NAME popart-user-guide-${VERSION}-${SNAPSHOT}.pdf)
+set(USER_GUIDE_HTML_NAME popart-user-guide-html-${VERSION}-${SNAPSHOT}.zip)
+set(PRODINFO_FILE_NAME popart-${VERSION}-${SNAPSHOT}.yml)
 
 include(CPack)
 
@@ -181,7 +181,7 @@ execute_process(
   OUTPUT_VARIABLE VIEW_REMOTE_URL
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
-configure_file(poponnx.prodinfo.yml
+configure_file(popart.prodinfo.yml
   ${CMAKE_BINARY_DIR}/${PRODINFO_FILE_NAME}
   @ONLY)
 #------ end of product info file

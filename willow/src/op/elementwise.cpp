@@ -1,7 +1,7 @@
-#include <poponnx/op/elementwise.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/elementwise.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ElementWiseUnaryOp::ElementWiseUnaryOp(const OperatorIdentifier &_opid,
                                        const Op::Settings &settings_)
@@ -58,4 +58,4 @@ void BinaryComparisonOp::setup() {
                                   inInfo(getArg1InIndex()).shape())};
 }
 
-} // namespace poponnx
+} // namespace popart

@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/sin.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/sin.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 SinOp::SinOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
 
@@ -28,4 +28,4 @@ namespace {
 static OpCreator<SinOp> sinOpCreator(Onnx::Operators::Sin_7);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

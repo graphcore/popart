@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <memory>
-#include <poponnx/op/reducesum.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/reducesum.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ReduceSumOp::ReduceSumOp(const OperatorIdentifier &_opid,
                          const std::vector<int64_t> &axes_,
@@ -50,4 +50,4 @@ static OpCreator<ReduceSumOp> reduceSumOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

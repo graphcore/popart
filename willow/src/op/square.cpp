@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/square.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/square.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 SquareOp::SquareOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_)
@@ -21,4 +21,4 @@ namespace {
 static OpCreator<SquareOp> squareOpCreator(Onnx::CustomOperators::Square);
 }
 
-} // namespace poponnx
+} // namespace popart

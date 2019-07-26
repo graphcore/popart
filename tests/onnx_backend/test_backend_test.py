@@ -17,7 +17,7 @@ from typing import Optional, Text, Any, Tuple, Sequence
 from onnx import NodeProto, ModelProto, TensorProto
 import numpy  # type: ignore
 
-import poponnx
+import popart
 
 # The following just executes the fake backend through the backend test
 # infrastructure. Since we don't have full reference implementation of all ops
@@ -57,7 +57,7 @@ class Context:
                 inputmap[str(inp.name)] = inputs[i]
                 i = i + 1
 
-        stepio = poponnx.PyStepIO(inputmap, anchors)
+        stepio = popart.PyStepIO(inputmap, anchors)
         self.session.run(stepio)
 
         outputs = [i.name for i in self.model.graph.output]
@@ -79,8 +79,8 @@ class IpuBackend(onnx.backend.base.Backend):
         model = onnx.shape_inference.infer_shapes(model)
         value_infos = {
             vi.name: vi
-            for vi in itertools.chain(model.graph.value_info, model.graph.
-                                      output)
+            for vi in itertools.chain(model.graph.value_info,
+                                      model.graph.output)
         }
 
         # if do_enforce_test_coverage_whitelist(model):
@@ -94,19 +94,19 @@ class IpuBackend(onnx.backend.base.Backend):
         #             for dim in tt.shape.dim:
         #                 assert dim.WhichOneof('value') == 'dim_value'
 
-        poponnx.getLogger().setLevel("DEBUG")
+        popart.getLogger().setLevel("DEBUG")
 
-        opts = poponnx.SessionOptions()
+        opts = popart.SessionOptions()
 
         anchors = {}
         for output in model.graph.output:
-            anchors[output.name] = poponnx.AnchorReturnType("ALL")
+            anchors[output.name] = popart.AnchorReturnType("ALL")
 
-        session = poponnx.InferenceSession(
+        session = popart.InferenceSession(
             fnModel=model.SerializeToString(),
-            dataFeed=poponnx.DataFlow(1, anchors),
-            deviceInfo=poponnx.DeviceManager().createCpuDevice(),
-            # deviceInfo=poponnx.DeviceManager().createIpuModelDevice({}),
+            dataFeed=popart.DataFlow(1, anchors),
+            deviceInfo=popart.DeviceManager().createCpuDevice(),
+            # deviceInfo=popart.DeviceManager().createIpuModelDevice({}),
             userOptions=opts)
 
         session.prepareDevice()
@@ -124,8 +124,10 @@ class IpuBackend(onnx.backend.base.Backend):
             outputs_info=None,  # type: Optional[Sequence[Tuple[numpy.dtype, Tuple[int, ...]]]]
             **kwargs  # type: Any
     ):  # type: (...) -> Optional[Tuple[Any, ...]]
-        super(IpuBackend, cls).run_node(
-            node, inputs, device=device, outputs_info=outputs_info)
+        super(IpuBackend, cls).run_node(node,
+                                        inputs,
+                                        device=device,
+                                        outputs_info=outputs_info)
 
         raise BackendIsNotSupposedToImplementIt(
             "This is the ipu backend test that doesn't verify the results but does run the checker"

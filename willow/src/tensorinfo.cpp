@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <onnx/onnx_pb.h>
-#include <poponnx/error.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/tensorinfo.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/util.hpp>
 
-namespace poponnx {
+namespace popart {
 
 template <> DataType getDataType<int8_t>() { return DataType::INT8; }
 template <> DataType getDataType<int16_t>() { return DataType::INT16; }
@@ -113,7 +113,7 @@ static std::string npOutExceptionMessage(const std::vector<int64_t> &s0,
 // s0            = {   1, 4, 5} &
 // s1            = {2, 3, 1, 1} =>
 // npOut(s0, s1) = {2, 3, 4, 5}
-// Look in tests/poponnx/numpybroadcastshapetest.cpp for more examples.
+// Look in tests/popart/numpybroadcastshapetest.cpp for more examples.
 std::vector<int64_t> npOut(const std::vector<int64_t> &s0,
                            const std::vector<int64_t> &s1,
                            const std::string &debugName) {
@@ -437,4 +437,4 @@ bool DataTypeInfo::isFixedPoint() const { return isFixedPoint_; }
 
 DataType DataTypeInfo::type() const { return type_; }
 
-} // namespace poponnx
+} // namespace popart

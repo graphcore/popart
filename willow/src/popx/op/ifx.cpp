@@ -1,13 +1,13 @@
 #include <popops/Zero.hpp>
 
-#include <poponnx/graph.hpp>
-#include <poponnx/op/if.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/ifx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/if.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/ifx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 void IfOpx::copyInputs(poplar::program::Sequence &thenProg,
@@ -162,4 +162,4 @@ OpxCreator<IfGradOpx> ifGradOpxCreator(Onnx::CustomGradOperators::IfGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

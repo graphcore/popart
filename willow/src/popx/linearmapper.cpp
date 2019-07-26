@@ -4,9 +4,9 @@
 #include <poplar/Tensor.hpp>
 #include <poputil/TileMapping.hpp>
 
-#include <poponnx/popx/linearmapper.hpp>
+#include <popart/popx/linearmapper.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 namespace {
@@ -49,4 +49,4 @@ LinearMapper::MapperImpl &LinearMapper::getMapper(poplar::Graph &graph) {
 }
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

@@ -1,16 +1,16 @@
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/op/nll.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/nllx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/nll.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/nllx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Encoding.hpp>
 #include <popops/Reduce.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 NllOpx::NllOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -267,4 +267,4 @@ static OpxCreator<NllGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

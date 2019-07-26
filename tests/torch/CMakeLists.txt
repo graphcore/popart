@@ -23,7 +23,7 @@ install(FILES ${CMAKE_BINARY_DIR}/cifar10/c10datadir.py
 
 set(CPACK_SOURCE_IGNORE_FILES ${INSTALL_TESTS})
 
-# poponnx.torch tests (require pytorch and torchvision)
+# popart.torch tests (require pytorch and torchvision)
 add_test(NAME model0_train_cpu
 		 WORKING_DIRECTORY ${INSTALL_TESTS}
 		 COMMAND python3 torch/cifar10/model0.py --device=cpu)

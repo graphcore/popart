@@ -9,11 +9,11 @@
 #include <google/protobuf/io/coded_stream.h>
 #include <google/protobuf/io/zero_copy_stream_impl.h>
 
-#include <poponnx/error.hpp>
-#include <poponnx/filereader.hpp>
-#include <poponnx/names.hpp>
+#include <popart/error.hpp>
+#include <popart/filereader.hpp>
+#include <popart/names.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace io {
 
 // 2GB total_bytes_limit for reading protobuf coded input streams
@@ -23,7 +23,7 @@ static const int protobufByteLimit = std::numeric_limits<int>::max();
 std::string getCanonicalDirName(const std::string &dirName0) {
   namespace bf = boost::filesystem;
   if (!bf::is_directory(dirName0)) {
-    throw poponnx::error("Directory does not exisit: {}", dirName0);
+    throw popart::error("Directory does not exisit: {}", dirName0);
   }
   bf::path p(dirName0);
   return bf::canonical(dirName0).string();
@@ -281,4 +281,4 @@ std::vector<std::string> getFns(const std::string &dir) {
   return getInDir(dir, is_reg);
 }
 } // namespace io
-} // namespace poponnx
+} // namespace popart

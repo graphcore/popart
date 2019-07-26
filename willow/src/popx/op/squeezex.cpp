@@ -1,10 +1,10 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/squeeze.hpp>
-#include <poponnx/popx/op/squeezex.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/squeeze.hpp>
+#include <popart/popx/op/squeezex.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 void SqueezeOpx::grow(poplar::program::Sequence &prog) const {
@@ -34,4 +34,4 @@ OpxCreator<SqueezeGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

@@ -1,8 +1,8 @@
-#include <poponnx/error.hpp>
-#include <poponnx/ndindices.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/error.hpp>
+#include <popart/ndindices.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 NDIndices::NDIndices(const TensorInfo &i) : info(i) {}
 
@@ -47,4 +47,4 @@ int64_t NDIndices::flatten_impl(const std::vector<int64_t> &indices) const {
   return index;
 }
 
-} // namespace poponnx
+} // namespace popart

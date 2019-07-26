@@ -15,7 +15,7 @@ contains an entry to fetch that anchor.
 
 ::
 
-  import poponnx
+  import popart
   import torch.onnx
   import torchvision
 
@@ -25,11 +25,11 @@ contains an entry to fetch that anchor.
   torch.onnx.export(model, input_, "alexnet.onnx")
 
   # Create a runtime environment
-  anchors = {"output" : poponnx.AnchorReturnType("ALL")}
-  dataFeed = poponnx.DataFlow(100, anchors)
-  device = poponnx.DeviceManager().createCpuDevice()
+  anchors = {"output" : popart.AnchorReturnType("ALL")}
+  dataFeed = popart.DataFlow(100, anchors)
+  device = popart.DeviceManager().createCpuDevice()
 
-  session = poponnx.InferenceSession("alexnet.onnx", dataFeed, device)
+  session = popart.InferenceSession("alexnet.onnx", dataFeed, device)
 
 
 The `Session` class takes the name of a protobuf file, or the protobuf
@@ -44,7 +44,7 @@ network instead of performing inference.
 
 ::
 
-  import poponnx
+  import popart
   import torch.onnx
   import torchvision
 
@@ -54,18 +54,18 @@ network instead of performing inference.
   torch.onnx.export(model, input_, "alexnet.onnx")
 
   # Create a runtime environment
-  anchors = {"output" : poponnx.AnchorReturnType("ALL")}
-  dataFeed = poponnx.DataFlow(100, anchors)
+  anchors = {"output" : popart.AnchorReturnType("ALL")}
+  dataFeed = popart.DataFlow(100, anchors)
 
-  losses = [poponnx.NllLoss("output", "labels", "loss")]
-  optimizer = poponnx.ConstSGD(0.001)
+  losses = [popart.NllLoss("output", "labels", "loss")]
+  optimizer = popart.ConstSGD(0.001)
 
   # We need to describe the labels input shape
-  inputShapeInfo = poponnx.InputShapeInfo()
-  inputShapeInfo.add("labels", poponnx.TensorInfo("INT32", [4]))
-  device = poponnx.DeviceManager().createCpuDevice()
+  inputShapeInfo = popart.InputShapeInfo()
+  inputShapeInfo.add("labels", popart.TensorInfo("INT32", [4]))
+  device = popart.DeviceManager().createCpuDevice()
 
-  session = poponnx.TrainingSession("alexnet.onnx",
+  session = popart.TrainingSession("alexnet.onnx",
                                     deviceInfo=device,
                                     dataFeed=dataFeed,
                                     losses=losses,

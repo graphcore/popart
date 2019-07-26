@@ -1,13 +1,13 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/onehot.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/typefunctor.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/onehot.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
+#include <popart/typefunctor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 OnehotOp::OnehotOp(const OperatorIdentifier &_opid,
                    int64_t axis_,
@@ -130,4 +130,4 @@ static OpCreator<OnehotOp> onehotOpCreator(
     true);
 
 } // namespace
-} // namespace poponnx
+} // namespace popart

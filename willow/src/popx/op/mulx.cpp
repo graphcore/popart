@@ -1,11 +1,11 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/mul.hpp>
-#include <poponnx/popx/op/mulx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/mul.hpp>
+#include <popart/popx/op/mulx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 MulOpx::MulOpx(Op *op, Devicex *devicex) : ElementWiseBinaryOpx(op, devicex) {
@@ -37,4 +37,4 @@ static OpxCreator<Opx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

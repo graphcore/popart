@@ -3,12 +3,12 @@
 #include <vector>
 
 #include <memory>
-#include <poponnx/op/gather.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/gather.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 GatherOp::GatherOp(const OperatorIdentifier &_opid,
                    int64_t axis_,
@@ -114,4 +114,4 @@ static OpCreator<GatherOp> gatherOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

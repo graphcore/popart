@@ -1,12 +1,12 @@
 #include <algorithm>
 #include <memory>
 #include <numeric>
-#include <poponnx/op/addbias.hpp>
-#include <poponnx/op/conv.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/addbias.hpp>
+#include <popart/op/conv.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 AddBiasOp::AddBiasOp(const OperatorIdentifier &_opid,
                      const Op::Settings &settings_)
@@ -183,4 +183,4 @@ namespace {
 static OpCreator<AddBiasOp> addOpCreator(Onnx::CustomOperators::AddBias, false);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

@@ -1,15 +1,15 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/add.hpp>
-#include <poponnx/op/gemm.hpp>
-#include <poponnx/op/matmul.hpp>
-#include <poponnx/op/scale.hpp>
-#include <poponnx/op/transpose.hpp>
-#include <poponnx/patterns/gemmdecompositionpattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/add.hpp>
+#include <popart/op/gemm.hpp>
+#include <popart/op/matmul.hpp>
+#include <popart/op/scale.hpp>
+#include <popart/op/transpose.hpp>
+#include <popart/patterns/gemmdecompositionpattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool GemmDecompositionPattern::matches(Op *op) const {
   return op->isConvertibleTo<GemmOp>();
@@ -112,4 +112,4 @@ static PatternCreator<GemmDecompositionPattern>
                              "GemmDecomposition");
 }
 
-} // namespace poponnx
+} // namespace popart

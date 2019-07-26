@@ -1,13 +1,13 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/topk.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/scatterutilx.hpp>
-#include <poponnx/popx/op/topkx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/topk.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/scatterutilx.hpp>
+#include <popart/popx/op/topkx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/Zero.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 TopKOpx::TopKOpx(Op *op, Devicex *devicex) : BaseSortOpx(op, devicex) {
@@ -69,4 +69,4 @@ OpxCreator<TopKGradOpx> topkGradOpxCreator(Onnx::GradOperators::TopKGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

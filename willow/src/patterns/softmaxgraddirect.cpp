@@ -1,11 +1,11 @@
-#include <poponnx/graph.hpp>
-#include <poponnx/op/nll.hpp>
-#include <poponnx/op/softmax.hpp>
-#include <poponnx/patterns/patterns.hpp>
-#include <poponnx/patterns/softmaxgraddirect.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/nll.hpp>
+#include <popart/op/softmax.hpp>
+#include <popart/patterns/patterns.hpp>
+#include <popart/patterns/softmaxgraddirect.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 // NLLGRAD (0) -> x -> SOFTMAXGRAD.
 const OperatorIdentifier &SoftmaxGradDirect::get0() const {
@@ -33,4 +33,4 @@ static PatternCreator<SoftmaxGradDirect>
                       "SoftmaxGradDirect");
 }
 
-} // namespace poponnx
+} // namespace popart

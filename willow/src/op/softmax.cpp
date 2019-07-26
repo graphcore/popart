@@ -1,15 +1,15 @@
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/nll.hpp>
-#include <poponnx/op/softmax.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/nll.hpp>
+#include <popart/op/softmax.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 SoftmaxOp::SoftmaxOp(const OperatorIdentifier &_opid,
                      int64_t axis_,
@@ -197,4 +197,4 @@ static OpCreator<SoftmaxOp> softmaxOpCreator(
 //    softmaxGradDirectOpCreator(Onnx::CustomGradOperators::SoftmaxGradDirect);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

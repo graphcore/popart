@@ -1,13 +1,12 @@
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/stash.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/stash.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
 
-#include <popops/DynamicSlice.hpp>
-
-namespace poponnx {
+namespace popart {
 
 StashOp::StashOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : Op(_opid, settings_) {}
@@ -34,7 +33,7 @@ int64_t StashOp::getStashSize() {
 }
 
 TensorId StashOp::getStashedTensorId() const {
-  return "Stashed__" + inId(getInIndex());
+  return reservedStashedPrefix() + inId(getInIndex());
 }
 
 namespace {
@@ -42,4 +41,4 @@ static OpCreator<StashOp> StashOpCreator(Onnx::CustomOperators::Stash);
 
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

@@ -1,13 +1,13 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/stash.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/stashx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/stash.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/stashx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
 
 #include <popops/DynamicSlice.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 void StashOpx::grow(poplar::program::Sequence &prog) const {
@@ -22,7 +22,8 @@ void StashOpx::grow(poplar::program::Sequence &prog) const {
                         dv_p->pipelineInfo().stashIndex.at(vGraphId),
                         {0},
                         {1},
-                        prog);
+                        prog,
+                        debugPrefix("stash"));
 
   setOutTensor(StashOp::getOutIndex(), outTensor);
 }
@@ -36,4 +37,4 @@ OpxCreator<StashOpx> stashOpxCreator(Onnx::CustomOperators::Stash);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

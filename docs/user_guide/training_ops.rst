@@ -7,14 +7,14 @@ These typically take named input tensors and name their outputs, and specify the
 Losses
 ~~~~~~
 
-.. doxygenclass:: poponnx::L1Loss
+.. doxygenclass:: popart::L1Loss
 
-.. doxygenclass:: poponnx::NllLoss
+.. doxygenclass:: popart::NllLoss
 
 
 Optimizers
 ~~~~~~~~~~
 
-.. doxygenclass:: poponnx::ConstSGD
+.. doxygenclass:: popart::ConstSGD
 
-.. doxygenclass:: poponnx::SGD
+.. doxygenclass:: popart::SGD

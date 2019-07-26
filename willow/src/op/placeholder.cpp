@@ -1,7 +1,7 @@
 #include <memory>
-#include <poponnx/op/placeholder.hpp>
+#include <popart/op/placeholder.hpp>
 
-namespace poponnx {
+namespace popart {
 
 PlaceholderOp::PlaceholderOp(const OperatorIdentifier &opid_,
                              const Op::Settings &settings_)
@@ -11,4 +11,4 @@ std::unique_ptr<Op> PlaceholderOp::clone() const {
   return std::make_unique<PlaceholderOp>(*this);
 }
 
-} // namespace poponnx
+} // namespace popart

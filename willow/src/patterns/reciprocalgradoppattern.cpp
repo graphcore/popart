@@ -1,16 +1,16 @@
 #include <memory>
 #include <utility>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/mul.hpp>
-#include <poponnx/op/negate.hpp>
-#include <poponnx/op/reciprocal.hpp>
-#include <poponnx/op/square.hpp>
-#include <poponnx/patterns/reciprocalgradoppattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/mul.hpp>
+#include <popart/op/negate.hpp>
+#include <popart/op/reciprocal.hpp>
+#include <popart/op/square.hpp>
+#include <popart/patterns/reciprocalgradoppattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool ReciprocalGradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<ReciprocalGradOp>();
@@ -67,4 +67,4 @@ static PatternCreator<ReciprocalGradOpPattern>
                             "ReciprocalGradOp");
 }
 
-} // namespace poponnx
+} // namespace popart

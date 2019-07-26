@@ -1,11 +1,11 @@
 #include <poplin/Convolution.hpp>
 #include <popops/Reduce.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/addbias.hpp>
-#include <poponnx/popx/op/addbiasx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/addbias.hpp>
+#include <popart/popx/op/addbiasx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 AddBiasOpx::AddBiasOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -85,4 +85,4 @@ OpxCreator<AddBiasDataGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

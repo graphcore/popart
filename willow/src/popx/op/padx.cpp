@@ -1,11 +1,11 @@
 #include <popops/Pad.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/pad.hpp>
-#include <poponnx/popx/op/padgradx.hpp>
-#include <poponnx/popx/op/padx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/pad.hpp>
+#include <popart/popx/op/padgradx.hpp>
+#include <popart/popx/op/padx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 PadOpx::PadOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -89,4 +89,4 @@ OpxCreator<PadInplaceOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

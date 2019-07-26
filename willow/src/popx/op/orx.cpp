@@ -1,13 +1,13 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/or.hpp>
-#include <poponnx/popx/devicex.hpp>
+#include <popart/error.hpp>
+#include <popart/op/or.hpp>
+#include <popart/popx/devicex.hpp>
 
-#include <poponnx/popx/op/orx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/popx/op/orx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 OrOpx::OrOpx(Op *op, Devicex *devicex) : BinaryComparisonOpx(op, devicex) {
@@ -33,4 +33,4 @@ OpxCreator<OrOpx> greaterOpxCreator_9(Onnx::Operators::Or_7);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

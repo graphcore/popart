@@ -1,12 +1,12 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/reciprocal.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/reciprocalx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/reciprocal.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/reciprocalx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 ReciprocalOpx::ReciprocalOpx(Op *op, Devicex *devicex)
@@ -34,4 +34,4 @@ OpxCreator<Opx> reciprocalGradGradOpxCreator(
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

@@ -1,12 +1,12 @@
 #include <algorithm>
 #include <onnx/onnx_pb.h>
 #include <vector>
-#include <poponnx/ces/slicece.hpp>
-#include <poponnx/ndarraywrapper.hpp>
-#include <poponnx/op/slice.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ces/slicece.hpp>
+#include <popart/ndarraywrapper.hpp>
+#include <popart/op/slice.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 class IndicesIter {
 public:
@@ -93,4 +93,4 @@ std::vector<char> ConstExprSlice::compute() {
       in0->info.dataType(), *in0, outInfo0(), getAllSlices());
 }
 
-} // namespace poponnx
+} // namespace popart

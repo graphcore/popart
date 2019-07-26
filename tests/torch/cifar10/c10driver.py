@@ -1,15 +1,15 @@
 import os
 import sys
 import tempfile
-import poponnx
+import popart
 import torch
 import numpy as np
 import math
 import re
 from tempfile import TemporaryDirectory
 from torchvision import transforms, datasets
-from poponnx.torch import torchwriter
-from poponnx import NllLoss, L1Loss
+from popart.torch import torchwriter
+from popart import NllLoss, L1Loss
 import tempfile
 
 
@@ -28,8 +28,8 @@ def run(torchWriter,
         syntheticData=False,
         transformations=[]):
 
-    poponnx.getLogger().setLevel("TRACE")
-    poponnx.getLogger("session").setLevel("WARN")
+    popart.getLogger().setLevel("TRACE")
+    popart.getLogger("session").setLevel("WARN")
 
     if outputdir is None:
         with TemporaryDirectory() as outputdir:
@@ -75,8 +75,10 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             % (datadir, ))
 
     print("c10driver: getting data from", datadir)
-    trainset = datasets.CIFAR10(
-        root=datadir, train=True, download=True, transform=transform)
+    trainset = datasets.CIFAR10(root=datadir,
+                                train=True,
+                                download=True,
+                                transform=transform)
 
     fnModel0 = os.path.join(outputdir, "model0.onnx")
 
@@ -93,7 +95,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         shuffle=False,
         num_workers=0)
 
-    deviceManager = poponnx.DeviceManager()
+    deviceManager = popart.DeviceManager()
 
     # Create a CPU device
     if device == "cpu":
@@ -127,13 +129,13 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         print('{0}. {1}'.format(idx, d))
     print("")
 
-    opts = poponnx.SessionOptionsCore()
+    opts = popart.SessionOptionsCore()
     opts.ignoreData = syntheticData
     opts.logDir = outputdir
 
     modelProtoX = fnModel0
     if transformations:
-        gc = poponnx.GraphTransformer(fnModel0)
+        gc = popart.GraphTransformer(fnModel0)
         for transformation in transformations:
             print("Running %s transformation pass" % (transformation, ))
             if transformation == "removeUnusedInputs":
@@ -152,32 +154,29 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     # performs Ir optimisations
 
     if mode == 'infer':
-        session = poponnx.InferenceSession(
-            fnModel=modelProtoX,
-            inputShapeInfo=inputShapeInfo,
-            dataFeed=dataFeed,
-            passes=passes,
-            userOptions=opts,
-            deviceInfo=device)
+        session = popart.InferenceSession(fnModel=modelProtoX,
+                                           inputShapeInfo=inputShapeInfo,
+                                           dataFeed=dataFeed,
+                                           passes=passes,
+                                           userOptions=opts,
+                                           deviceInfo=device)
     elif mode == 'evaluate':
-        session = poponnx.InferenceSession(
-            fnModel=modelProtoX,
-            inputShapeInfo=inputShapeInfo,
-            dataFeed=dataFeed,
-            losses=torchWriter.losses,
-            passes=passes,
-            userOptions=opts,
-            deviceInfo=device)
+        session = popart.InferenceSession(fnModel=modelProtoX,
+                                           inputShapeInfo=inputShapeInfo,
+                                           dataFeed=dataFeed,
+                                           losses=torchWriter.losses,
+                                           passes=passes,
+                                           userOptions=opts,
+                                           deviceInfo=device)
     else:
-        session = poponnx.TrainingSession(
-            fnModel=modelProtoX,
-            inputShapeInfo=inputShapeInfo,
-            dataFeed=dataFeed,
-            losses=torchWriter.losses,
-            optimizer=torchWriter.optimizer,
-            passes=passes,
-            userOptions=opts,
-            deviceInfo=device)
+        session = popart.TrainingSession(fnModel=modelProtoX,
+                                          inputShapeInfo=inputShapeInfo,
+                                          dataFeed=dataFeed,
+                                          losses=torchWriter.losses,
+                                          optimizer=torchWriter.optimizer,
+                                          passes=passes,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
     # get the tensor info for the anchors
     anchorArrays = session.initAnchorArrays()
@@ -220,8 +219,8 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     def getFnModel(framework, stepi):
         return os.path.join(outputdir, "%sModel_%d.onnx" % (framework, stepi))
 
-    def getFnPopOnnx(stepi):
-        return getFnModel("PopOnnx", stepi)
+    def getFnPopArt(stepi):
+        return getFnModel("PopArt", stepi)
 
     def getFnTorch(stepi):
         return getFnModel("Torch", stepi)
@@ -304,7 +303,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             # Form the input map for one step's worth of data.
             # Note: data from the torch DataLoader has shape:
             #   [stepSize * batchSize, sampleShape]
-            # whereas Poponnx expects input data of the shape:
+            # whereas Popart expects input data of the shape:
             #   [stepSize, batchSize, sampleShape]
             # so we reshape the input array before passing to the stepio
             inputs = {}
@@ -317,24 +316,24 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                 # take batchesPerStep passes (1 step), Torch
                 torchWriter.train(inputs)
 
-                # take batchesPerStep passes (1 step), PopOnnx
-                pystepio = poponnx.PyStepIO(inputs, anchorArrays)
+                # take batchesPerStep passes (1 step), PopArt
+                pystepio = popart.PyStepIO(inputs, anchorArrays)
                 session.run(pystepio)
 
                 # write models to file
                 fnTorchModel = getFnTorch(stepi)
                 torchWriter.saveModel(fnTorchModel)
-                fnPopOnnxModel = getFnPopOnnx(stepi)
-                session.modelToHost(fnPopOnnxModel)
+                fnPopArtModel = getFnPopArt(stepi)
+                session.modelToHost(fnPopArtModel)
 
                 # Compare parameters from updated Onnx models
                 if stepi == 0:
-                    nr = poponnx.NumericsReport(fnModel0, fnTorchModel,
-                                                fnModel0, fnPopOnnxModel)
+                    nr = popart.NumericsReport(fnModel0, fnTorchModel,
+                                                fnModel0, fnPopArtModel)
                 else:
-                    nr = poponnx.NumericsReport(
+                    nr = popart.NumericsReport(
                         getFnTorch(stepi - 1), fnTorchModel,
-                        getFnPopOnnx(stepi - 1), fnPopOnnxModel)
+                        getFnPopArt(stepi - 1), fnPopArtModel)
 
                 print(nr.fullReport())
                 # One relative error calculated per weight tensor
@@ -346,12 +345,12 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                 # returns scalar for each sample
                 torchLosses = torchWriter.evaluate(inputs)
 
-                # take batchesPerStep passes (1 step), PopOnnx
-                pystepio = poponnx.PyStepIO(inputs, anchorArrays)
+                # take batchesPerStep passes (1 step), PopArt
+                pystepio = popart.PyStepIO(inputs, anchorArrays)
                 session.run(pystepio)
                 pLosses = getLossesFromAnchors(torchWriter, anchorArrays)
 
-                # Compare torch loss tensors with poponnx loss from
+                # Compare torch loss tensors with popart loss from
                 # anchor tensor map.
                 # Torch losses returned for all samples, whereas
                 # anchors are returned as specified by the user.
@@ -368,11 +367,11 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                 # anchors
                 torchOutputs = torchWriter.infer(inputs)
 
-                # take batchesPerStep passes (1 step), PopOnnx
-                pystepio = poponnx.PyStepIO(inputs, anchorArrays)
+                # take batchesPerStep passes (1 step), PopArt
+                pystepio = popart.PyStepIO(inputs, anchorArrays)
                 session.run(pystepio)
 
-                # Compare torch outputs tensors with poponnx output from
+                # Compare torch outputs tensors with popart output from
                 # anchor tensor maps
                 for nInd, outName in enumerate(torchWriter.outNames):
                     # Torch outputs returned for all samples, whereas

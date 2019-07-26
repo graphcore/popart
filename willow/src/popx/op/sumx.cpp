@@ -3,17 +3,17 @@
 #include <popops/Reduce.hpp>
 
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/op/sum.hpp>
-#include <poponnx/popx/op/sumx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/error.hpp>
+#include <popart/op/sum.hpp>
+#include <popart/popx/op/sumx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensorindex.hpp>
 
 #include <queue>
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 SumOpx::SumOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -124,4 +124,4 @@ OpxCreator<SumArgGradOpx> sumGradOpxCreator(Onnx::GradOperators::SumArgGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

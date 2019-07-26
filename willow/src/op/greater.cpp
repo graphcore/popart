@@ -1,10 +1,10 @@
 #include <memory>
 #include <vector>
-#include <poponnx/op/greater.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/greater.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 GreaterOp::GreaterOp(const OperatorIdentifier &_opid,
                      const Op::Settings &settings_)
@@ -16,7 +16,7 @@ std::unique_ptr<Op> GreaterOp::clone() const {
 
 std::vector<std::unique_ptr<Op>> GreaterOp::getGradOps() {
   throw error(
-      "PopONNX does not have a valid grad op corresponding to GreaterOp");
+      "PopART does not have a valid grad op corresponding to GreaterOp");
 }
 
 namespace {
@@ -24,4 +24,4 @@ static OpCreator<GreaterOp> GreaterOpCreator({Onnx::Operators::Greater_7,
                                               Onnx::Operators::Greater_9});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

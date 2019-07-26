@@ -1,13 +1,13 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/ipucopy.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/ipucopyx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/error.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/ipucopyx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensorindex.hpp>
 
 #include <poputil/TileMapping.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 IpuCopyOpx::IpuCopyOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -34,4 +34,4 @@ OpxCreator<IpuCopyOpx> ipuCopyOpxCreator(Onnx::CustomOperators::IpuCopy);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

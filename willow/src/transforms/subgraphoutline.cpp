@@ -2,25 +2,25 @@
 #include <boost/range/algorithm/find.hpp>
 
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/names.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/op/call.hpp>
-#include <poponnx/topocons.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/op/call.hpp>
+#include <popart/topocons.hpp>
 
-#include <poponnx/subgraph/outliner.hpp>
-#include <poponnx/transforms/subgraphoutline.hpp>
+#include <popart/subgraph/outliner.hpp>
+#include <popart/transforms/subgraphoutline.hpp>
 
 using boost::find;
 using boost::algorithm::any_of;
 
-namespace poponnx {
+namespace popart {
 namespace {
 
 // TODO T8888: templatize every function in this namespace so that can be used
-// outside of poponnx, then put it in the poponnx/subgraph directory. Then add
+// outside of popart, then put it in the popart/subgraph directory. Then add
 // tests with the Blip class (as other basic outlining functions are).
 namespace outline {
 namespace {
@@ -387,6 +387,25 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
     clone_map.insert({op, subgraph.getOp(cloneid)});
   }
 
+  // Preserve topological constraints between ops being added to the subgraph
+  for (auto &op_subgraphOp : clone_map) {
+    auto op         = op_subgraphOp.first;
+    auto subgraphOp = op_subgraphOp.second;
+
+    for (auto &before : graph.topoCons->getBefores(op)) {
+      auto subgraphBefore = clone_map.find(before);
+      if (subgraphBefore != clone_map.end()) {
+        subgraph.topoCons->insert(subgraphBefore->second, subgraphOp);
+      }
+    }
+    for (auto &before : graph.topoCons->getAfters(op)) {
+      auto subgraphAfter = clone_map.find(before);
+      if (subgraphAfter != clone_map.end()) {
+        subgraph.topoCons->insert(subgraphOp, subgraphAfter->second);
+      }
+    }
+  }
+
   // duplicate all the output tensors
   std::map<Tensor *, Tensor *> tensor_map;
   for (auto output : instance.all_outputs) {
@@ -551,4 +570,4 @@ namespace {
 bool init = Transform::registerTransform(new SubgraphOutline);
 }
 
-} // namespace poponnx
+} // namespace popart

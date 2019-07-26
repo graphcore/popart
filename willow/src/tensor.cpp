@@ -1,16 +1,16 @@
 #include <algorithm>
 #include <cstring>
 
-#include <poponnx/error.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/op/ipucopy.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensordata.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/op.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensordata.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/util.hpp>
 
-namespace poponnx {
+namespace popart {
 
 int64_t Tensor::getVirtualGraphIdUnsafe() const {
 
@@ -293,4 +293,4 @@ std::unique_ptr<Tensor> VariableTensor::clone() const {
   return theClone;
 }
 
-} // namespace poponnx
+} // namespace popart

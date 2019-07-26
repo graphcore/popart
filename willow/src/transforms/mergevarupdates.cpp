@@ -1,20 +1,20 @@
 #include <tuple>
 
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/concat.hpp>
-#include <poponnx/op/flatten.hpp>
-#include <poponnx/op/slice.hpp>
-#include <poponnx/op/varupdate.hpp>
-#include <poponnx/opidentifier.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/optionflags.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/transforms/mergevarupdates.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/concat.hpp>
+#include <popart/op/flatten.hpp>
+#include <popart/op/slice.hpp>
+#include <popart/op/varupdate.hpp>
+#include <popart/opidentifier.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/optionflags.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensors.hpp>
+#include <popart/transforms/mergevarupdates.hpp>
 
-namespace poponnx {
+namespace popart {
 
 namespace {
 std::string getConcatWeightsPrefix() { return "concatWeights___"; }
@@ -688,4 +688,4 @@ bool initAuto  = Transform::registerTransform(new MergeTightThreshold);
 bool initAuto2 = Transform::registerTransform(new MergeLooseThreshold);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

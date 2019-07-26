@@ -1,16 +1,16 @@
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/names.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/op/ipucopy.hpp>
-#include <poponnx/op/restore.hpp>
-#include <poponnx/op/stash.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/topocons.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/op/restore.hpp>
+#include <popart/op/stash.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 
-#include <poponnx/transforms/pipeline.hpp>
+#include <popart/transforms/pipeline.hpp>
 
 // Which pipelining scheme should we use? There are some considerations to
 // make:
@@ -60,7 +60,7 @@
 //   |                       t_grad_in
 //  ...
 
-namespace poponnx {
+namespace popart {
 
 std::size_t Pipeline::id() { return typeid(Pipeline).hash_code(); }
 
@@ -84,10 +84,22 @@ bool Pipeline::apply(Graph &graph) const {
   } else {
     minDepth = numIPUs;
   }
-  if (ir.getDataFlow().batchesPerStep() < minDepth) {
-    throw error("For pipelining, depth (batchesPerStep) must be at least " +
-                std::to_string(minDepth) + " for " +
-                std::to_string(ir.getDeviceInfo()->getNumIpus()) + " IPUs");
+  if ((ir.getDataFlow().batchesPerStep() *
+       ir.getSessionOptions().accumulationFactor) < minDepth) {
+    throw error("For pipelining, depth (batchesPerStep * gradient "
+                "accumulation factor) must be at least {} "
+                "for {} IPUs ({} * {} !>= {})",
+                minDepth,
+                ir.getDeviceInfo()->getNumIpus(),
+                ir.getDataFlow().batchesPerStep(),
+                ir.getSessionOptions().accumulationFactor,
+                minDepth);
+  }
+
+  if ((ir.getSessionOptions().accumulationFactor > 1) &&
+      (ir.getDataFlow().batchesPerStep() != 1)) {
+    throw error("When pipelining and gradient accumulation are enabled, "
+                "batchesPerStep must be == 1");
   }
 
   // 3. Currently recomputation is not supported with pipelining (TODO T9575)
@@ -128,7 +140,7 @@ bool Pipeline::apply(Graph &graph) const {
     // 4.2 All copy ops with pathToLoss=yes go from IPU N->N+1,
     //     and all copy ops with pathFromLoss=yes go from IPU N->N-1
     if (op->isIpuCopyOp()) {
-      auto ipuCopyOp = dynamic_cast<poponnx::IpuCopyOp *>(op);
+      auto ipuCopyOp = dynamic_cast<popart::IpuCopyOp *>(op);
       auto sourceIpu = ipuCopyOp->getSourceIpu();
       auto destIpu   = ipuCopyOp->getDestIpu();
 
@@ -200,17 +212,22 @@ bool Pipeline::apply(Graph &graph) const {
       continue;
     }
 
-    bool isConsumedByFwdOp = false;
-    bool isConsumedByBwdOp = false;
+    bool isConsumedByOpScheduledPreLoss  = false;
+    bool isConsumedByOpScheduledPostLoss = false;
     for (Op *consumer : tensor->consumers.getOps()) {
-      if (consumer->toLoss == PathToLoss::Yes) {
-        isConsumedByFwdOp = true;
+      if (consumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
+        isConsumedByOpScheduledPreLoss = true;
       } else if (consumer->scheduledPreLoss == ScheduledPreLoss::No) {
-        isConsumedByBwdOp = true;
+        isConsumedByOpScheduledPostLoss = true;
       }
     }
 
-    if (isConsumedByFwdOp && isConsumedByBwdOp) {
+    bool isProducedPreLoss =
+        tensor->hasProducer() &&
+        tensor->getProducer()->scheduledPreLoss == ScheduledPreLoss::Yes;
+
+    if ((isConsumedByOpScheduledPreLoss || isProducedPreLoss) &&
+        isConsumedByOpScheduledPostLoss) {
       toStashTensors.push_back(tid);
     }
   }
@@ -234,16 +251,38 @@ bool Pipeline::apply(Graph &graph) const {
     auto stashId = stashOp->getStashedTensorId();
     stashOp->createAndConnectOutTensor(StashOp::getOutIndex(), stashId);
     stashOp->setup();
+    // We don't call updateVertices() after this transform, so set attributes
+    // manually (see T10109)
+    stashOp->scheduledPreLoss               = ScheduledPreLoss::Yes;
+    stashOp->outTensor(0)->scheduledPreLoss = ScheduledPreLoss::Yes;
 
     // Restore
-    auto restoreOp_up =
-        std::make_unique<RestoreOp>(Onnx::CustomOperators::Restore, settings);
-    auto restoreOp = restoreOp_up.get();
-    graph.moveIntoGraph(std::move(restoreOp_up));
+
+    // Should op be Restore (outplace) or RestoreInplace?
+    bool isInplace = true;
+    if (ir.isAnchored(tid)) {
+      isInplace = false;
+    } else {
+      for (Op *tidConsumer : tidConsumers) {
+        if (tidConsumer->isIpuCopyOp()) {
+          isInplace = false;
+        }
+      }
+    }
+
+    RestoreOp *restoreOp;
+    if (isInplace) {
+      logging::ir::debug("Restore Op is inplace");
+      restoreOp = addNewRestoreInplaceOp(graph);
+    } else {
+      logging::ir::debug("Restore Op is outplace");
+      restoreOp = addNewRestoreOp(graph);
+    }
+
     restoreOp->setVirtualGraphId(getVirtualGraphIdOrSourceIpu(vGraphIdCheckOp));
     restoreOp->connectInTensor(RestoreOp::getActToRestoreInIndex(), tid);
     restoreOp->connectInTensor(RestoreOp::getStashInIndex(), stashId);
-    auto restoreId = restoreOp->getRestoredTensorId(); // An alias
+    auto restoreId = restoreOp->getRestoredTensorId();
     restoreOp->createAndConnectOutTensor(RestoreOp::getRestoredActOutIndex(),
                                          restoreId);
 
@@ -257,20 +296,37 @@ bool Pipeline::apply(Graph &graph) const {
       }
     }
 
+    // We don't call updateVertices() after this transform, so set attributes
+    // manually (see T10109)
+    restoreOp->scheduledPreLoss               = ScheduledPreLoss::No;
+    restoreOp->outTensor(0)->scheduledPreLoss = ScheduledPreLoss::No;
+
     // apply topological constraints:
-    // (1)  -> Stash after all forward consumers
+    // (1)  -> Stash before all forward consumers
     // (2)  -> Restore after Stash
     // (3)  -> All backwards after Restore
+    // (4)  -> Restore after all producers of (non-tid) tensors
+    //         consumed by all backwards
 
     // (2)
     graph.topoCons->insert(stashOp, restoreOp);
     for (auto tidConsumer : tidConsumers) {
       if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
         // (1)
-        graph.topoCons->insert(tidConsumer, stashOp);
+        graph.topoCons->insert(stashOp, tidConsumer);
       } else {
         // (3)
         graph.topoCons->insert(restoreOp, tidConsumer);
+        // (4)
+        for (Tensor *t : tidConsumer->input->tensors()) {
+          if (t->hasProducer()) {
+            if (t->getProducer() == restoreOp) {
+              continue;
+            } else {
+              graph.topoCons->insert(t->getProducer(), restoreOp);
+            }
+          }
+        }
       }
     }
 
@@ -287,15 +343,35 @@ bool Pipeline::apply(Graph &graph) const {
 
 int64_t Pipeline::getVirtualGraphIdOrSourceIpu(Op *op) const {
   if (op->isConvertibleTo<IpuCopyOp>()) {
-    auto ipuCopyOp = dynamic_cast<poponnx::IpuCopyOp *>(op);
+    auto ipuCopyOp = dynamic_cast<popart::IpuCopyOp *>(op);
     return static_cast<int64_t>(ipuCopyOp->getSourceIpu());
   } else {
     return op->getVirtualGraphId();
   }
 }
 
+RestoreOp *Pipeline::addNewRestoreOp(Graph &graph) const {
+  Op::Settings settings(graph, "");
+  auto restoreOp_up =
+      std::make_unique<RestoreOp>(Onnx::CustomOperators::Restore, settings);
+  auto restoreOp = restoreOp_up.get();
+  graph.moveIntoGraph(std::move(restoreOp_up));
+
+  return restoreOp;
+}
+
+RestoreOp *Pipeline::addNewRestoreInplaceOp(Graph &graph) const {
+  Op::Settings settings(graph, "");
+  auto restoreOp_up = std::make_unique<RestoreOp>(
+      Onnx::CustomOperators::RestoreInplace, settings);
+  auto restoreOp = restoreOp_up.get();
+  graph.moveIntoGraph(std::move(restoreOp_up));
+
+  return restoreOp;
+}
+
 namespace {
 bool init = Transform::registerTransform(new Pipeline);
 }
 
-} // namespace poponnx
+} // namespace popart

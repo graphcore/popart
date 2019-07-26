@@ -3,12 +3,12 @@
 #include <vector>
 
 #include <memory>
-#include <poponnx/op/scatter.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/scatter.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ScatterOp::ScatterOp(const OperatorIdentifier &_opid,
                      int64_t axis_,
@@ -134,4 +134,4 @@ static OpCreator<ScatterOp> ScatterOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

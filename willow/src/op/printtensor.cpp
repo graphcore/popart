@@ -1,10 +1,10 @@
 #include <memory>
-#include <poponnx/op/identity.hpp>
-#include <poponnx/op/printtensor.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/printtensor.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
 
-namespace poponnx {
+namespace popart {
 
 PrintTensorOp::PrintTensorOp(const OperatorIdentifier &opid_,
                              bool printSelf_,
@@ -61,4 +61,4 @@ static OpCreator<PrintTensorOp> printtensorOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

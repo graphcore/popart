@@ -1,9 +1,9 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/scatter.hpp>
-#include <poponnx/popx/op/scatterutilx.hpp>
-#include <poponnx/popx/op/scatterx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/op/scatter.hpp>
+#include <popart/popx/op/scatterutilx.hpp>
+#include <popart/popx/op/scatterx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/util.hpp>
 
 #include <popops/Cast.hpp>
 #include <popops/Gather.hpp>
@@ -12,7 +12,7 @@
 
 #include <poputil/TileMapping.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 ScatterOpx::ScatterOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -167,4 +167,4 @@ OpxCreator<ScatterUpdateGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

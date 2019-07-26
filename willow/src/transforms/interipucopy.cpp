@@ -1,16 +1,16 @@
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/names.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/op/ipucopy.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
 
-#include <poponnx/transforms/interipucopy.hpp>
+#include <popart/transforms/interipucopy.hpp>
 
-namespace poponnx {
+namespace popart {
 
 class CopiedTensors {
 
@@ -288,4 +288,4 @@ namespace {
 bool init = Transform::registerTransform(new InterIpuCopy);
 }
 
-} // namespace poponnx
+} // namespace popart

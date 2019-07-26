@@ -1,9 +1,9 @@
-#include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/lrn.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/lrnx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/lrn.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/lrnx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <poplar/Tensor.hpp>
 #include <poplin/Norms.hpp>
@@ -16,7 +16,7 @@ using Shape = std::vector<std::size_t>;
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 LRNOpx::LRNOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -126,4 +126,4 @@ OpxCreator<LRNGradOpx> batchNormGradOpxCreator(Onnx::GradOperators::LRNGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

@@ -7,54 +7,55 @@
 #include <unordered_set>
 #include <vector>
 
-#include <poponnx/builder.hpp>
-#include <poponnx/ces/constexpr.hpp>
-#include <poponnx/ces/onnxconstexpr.hpp>
-#include <poponnx/chains.hpp>
-#include <poponnx/devicemanager.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/filereader.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/intervals.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/logging.hpp>
-#include <poponnx/op/loss.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/optimizer.hpp>
-#include <poponnx/optionflags.hpp>
-#include <poponnx/pbwrap.hpp>
-#include <poponnx/scheduler.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensorinfo.hpp>
-#include <poponnx/tensornames.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/topocons.hpp>
-#include <poponnx/util.hpp>
+#include <popart/builder.hpp>
+#include <popart/ces/constexpr.hpp>
+#include <popart/ces/onnxconstexpr.hpp>
+#include <popart/chains.hpp>
+#include <popart/devicemanager.hpp>
+#include <popart/error.hpp>
+#include <popart/filereader.hpp>
+#include <popart/graph.hpp>
+#include <popart/intervals.hpp>
+#include <popart/ir.hpp>
+#include <popart/logging.hpp>
+#include <popart/op/loss.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/optimizer.hpp>
+#include <popart/optionflags.hpp>
+#include <popart/pbwrap.hpp>
+#include <popart/scheduler.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensorinfo.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
+#include <popart/util.hpp>
 
 // The transformations
-#include <poponnx/recompute.hpp>
-#include <poponnx/transforms/auto_virtual_graph.hpp>
-#include <poponnx/transforms/interipucopy.hpp>
-#include <poponnx/transforms/mergecopies.hpp>
-#include <poponnx/transforms/mergevarupdates.hpp>
-#include <poponnx/transforms/pipeline.hpp>
-#include <poponnx/transforms/prune.hpp>
-#include <poponnx/transforms/subgraphoutline.hpp>
+#include <popart/recompute.hpp>
+#include <popart/transforms/auto_virtual_graph.hpp>
+#include <popart/transforms/gradient_accumulation.hpp>
+#include <popart/transforms/interipucopy.hpp>
+#include <popart/transforms/mergecopies.hpp>
+#include <popart/transforms/mergevarupdates.hpp>
+#include <popart/transforms/pipeline.hpp>
+#include <popart/transforms/prune.hpp>
+#include <popart/transforms/subgraphoutline.hpp>
 
 // The layers required to construct the backwards pass
-#include <poponnx/op/batchnorm.hpp>
-#include <poponnx/op/ipucopy.hpp>
-#include <poponnx/op/placeholder.hpp>
-#include <poponnx/op/sum.hpp>
-#include <poponnx/op/varupdate.hpp>
+#include <popart/op/batchnorm.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/op/placeholder.hpp>
+#include <popart/op/sum.hpp>
+#include <popart/op/varupdate.hpp>
 
-#include <poponnx/patterns/inplace.hpp>
-#include <poponnx/patterns/updateinplaceprioritiesforipu.hpp>
+#include <popart/patterns/inplace.hpp>
+#include <popart/patterns/updateinplaceprioritiesforipu.hpp>
 
-#include <poponnx/dotvisualizer.hpp>
+#include <popart/dotvisualizer.hpp>
 
-namespace poponnx {
+namespace popart {
 
 Ir::~Ir() = default;
 
@@ -571,11 +572,6 @@ void Ir::prepare(const IrBundle &gb) {
   updateVertices();
   dotCheckpoint(DotCheck::BWD0);
 
-  // confirm that all the anchor names provided
-  // are indeed real tensor names. This is a check
-  // that the user has not provided incorrect names.
-  // We allow duplicates.
-  validateAnchors();
   applyTransform(Prune::id(), getMainGraph());
 
   for (auto &id_graph : graphs) {
@@ -651,30 +647,23 @@ void Ir::prepare(const IrBundle &gb) {
   }
 
   applyTransform(Prune::id(), getMainGraph());
-
   updateVertices();
+
+  // Apply transform after topological constraints have been added.
+  if (userOptions.enableGradientAccumulation) {
+    applyTransform(GradientAccumulation::id(), getMainGraph());
+  }
 
   // Add internal ops to copy tensors between ipu's as needed
   applyTransform(InterIpuCopy::id(), getMainGraph());
   applyTransform(MergeCopies::id(), getMainGraph());
   updateVertices();
 
-  // Each virtual graph is a pipeline stage in the pipeline.
-  // Transform the graph to cache forward-pass tensors, and
-  // restore them when needed in the backwards pass, allowing
-  // for greater parallelism during compute
-  if (getSessionOptions().enablePipelining) {
-    applyTransform(Pipeline::id(), getMainGraph());
-  }
-  updateVertices();
-
   dotCheckpoint(DotCheck::PREALIAS);
 
-  // outlining makes Phase of Vertices meaningless as matches
-  // can contain Ops from different Pphase. We should not
-  // run updateVertices after this pass
   if (getSessionOptions().enableOutlining) {
     applyTransform(SubgraphOutline::id(), getMainGraph());
+    updateVertices();
   }
 
   if (autoRecomputationEnabled()) {
@@ -697,8 +686,26 @@ void Ir::prepare(const IrBundle &gb) {
     }
   }
 
-  dotCheckpoint(DotCheck::FINAL);
+  updateVertices();
 
+  // Each virtual graph is a pipeline stage in the pipeline.
+  // Transform the graph to cache forward-pass tensors, and
+  // restore them when needed in the backwards pass, allowing
+  // for greater parallelism during compute.
+  // We rely on 'scheduledPreLoss' attributes not changing beyond
+  // this point. Hence, don't call updateVertices (T10109) again
+  if (getSessionOptions().enablePipelining) {
+    applyTransform(Pipeline::id(), getMainGraph());
+    // updateVertices();
+  }
+
+  // confirm that all the anchor names provided
+  // are indeed real tensor names. This is a check
+  // that the user has not provided incorrect names.
+  // We allow duplicates.
+  validateAnchors();
+
+  dotCheckpoint(DotCheck::FINAL);
   logIr();
 
   // some checks, now that prepare is complete
@@ -710,8 +717,6 @@ void Ir::prepare(const IrBundle &gb) {
                         "SoftMaxGradDirect");
     }
   }
-
-  updateVertices();
 
   verifyConstExprFolding();
   verifyConnectivity();
@@ -983,7 +988,7 @@ void Ir::registerInputTensors() {
       if (consumerTypes.find(id) == consumerTypes.end() &&
           !allowUnusedStreamTensors) {
         throw error(
-            "Request to create poponnx Stream Tensor {} failed, "
+            "Request to create popart Stream Tensor {} failed, "
             "as it has no consumers in the ONNX GraphProto. "
             "If Tensor {} is only used as an input "
             "to a Loss, then it should not be included in the ONNX Model, "
@@ -1189,7 +1194,7 @@ Ir::getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts) {
 
 Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
 
-  std::unique_ptr<poponnx::Op> gradSum =
+  std::unique_ptr<popart::Op> gradSum =
       OpManager::createOp(Domain::ai_onnx,
                           "Sum",
                           getOpSetVersionFromModel(Domain::ai_onnx),
@@ -1808,6 +1813,10 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
   trainTargetOps.insert(op);
 }
 
+bool Ir::addToTrainTargetOps(Op *op) {
+  return trainTargetOps.insert(op).second;
+}
+
 void Ir::growFinalLoss() {
   if (losses.size() == 0) {
     throw error("In Ir::growFinalLoss, but losses vector is empty");
@@ -1832,7 +1841,7 @@ void Ir::growFinalLoss() {
   }
 
   // now growing the FINAL loss (sum of individual losses)
-  std::unique_ptr<poponnx::Op> finalLossSum =
+  std::unique_ptr<popart::Op> finalLossSum =
       OpManager::createOp(Domain::ai_onnx,
                           "Sum",
                           getOpSetVersionFromModel(Domain::ai_onnx),
@@ -2280,23 +2289,4 @@ uint32_t Ir::getAndIncrementDropoutSeedModifier() {
   return dropoutSeedModifier;
 }
 
-int Ir::getRepeatCount() const {
-  int bps = getDataFlow().batchesPerStep();
-  if (getSessionOptions().enablePipelining) {
-    // Need additional 'runs' to fill and flush the pipeline, based on:
-    // 1. Number of IPUs
-    // 2. Whether in inference/eval or training mode
-    int numIPUs = deviceInfo->getNumIpus();
-    if (canTrain()) {
-      // additional runs for: fwd flush, bwd flush
-      return bps + 2 * (numIPUs - 1);
-    } else {
-      // additional runs for: fwd flush
-      return bps + numIPUs - 1;
-    }
-  } else {
-    return bps;
-  }
-}
-
-} // namespace poponnx
+} // namespace popart

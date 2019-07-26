@@ -1,0 +1,20 @@
+#ifndef GUARD_NEURALNET_IPUCOPYX_HPP
+#define GUARD_NEURALNET_IPUCOPYX_HPP
+
+#include <popart/names.hpp>
+#include <popart/popx/opx.hpp>
+
+namespace popart {
+
+namespace popx {
+
+class IpuCopyOpx : public Opx {
+public:
+  IpuCopyOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
+} // namespace popx
+} // namespace popart
+
+#endif

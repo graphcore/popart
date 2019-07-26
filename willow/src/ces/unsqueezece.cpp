@@ -1,9 +1,9 @@
 #include <onnx/onnx_pb.h>
-#include <poponnx/ces/unsqueezece.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ces/unsqueezece.hpp>
+#include <popart/op.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ConstExprUnsqueeze::ConstExprUnsqueeze(Op *op_) : ConstExprOp(op_) {}
 
@@ -13,4 +13,4 @@ std::vector<char> ConstExprUnsqueeze::compute() {
   return std::vector<char>(data, data + nbytes);
 }
 
-} // namespace poponnx
+} // namespace popart

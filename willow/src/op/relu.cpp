@@ -1,11 +1,11 @@
 #include <memory>
-#include <poponnx/op/relu.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/region.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
+#include <popart/op/relu.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/region.hpp>
+#include <popart/tensor.hpp>
+#include <popart/util.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 ReluOp::inplacePriorityDefault() const {
@@ -78,4 +78,4 @@ namespace {
 static OpCreator<ReluOp> reluOpCreator(Onnx::Operators::Relu_6);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

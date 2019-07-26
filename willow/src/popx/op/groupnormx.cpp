@@ -1,9 +1,9 @@
-#include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/groupnorm.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/groupnormx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/groupnorm.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/groupnormx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <poplar/Tensor.hpp>
 #include <poplin/Norms.hpp>
@@ -17,7 +17,7 @@ using Shape = std::vector<std::size_t>;
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 GroupNormOpx::GroupNormOpx(Op *op, Devicex *devicex) : NormOpx(op, devicex) {
@@ -131,4 +131,4 @@ OpxCreator<GroupNormGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

@@ -1,12 +1,12 @@
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/varupdate.hpp>
-#include <poponnx/optimizer.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensornames.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/varupdate.hpp>
+#include <popart/optimizer.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 Optimizer::~Optimizer()                 = default;
 Optimizer::Optimizer()                  = default;
@@ -165,4 +165,4 @@ OptimizerType ConstSGD::type() const { return OptimizerType::CONSTSGD; }
 
 std::string ConstSGD::type_s() const { return "ConstSGD"; }
 
-} // namespace poponnx
+} // namespace popart

@@ -1,8 +1,8 @@
 #include <set>
-#include <poponnx/error.hpp>
-#include <poponnx/inputshapeinfo.hpp>
+#include <popart/error.hpp>
+#include <popart/inputshapeinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 void InputShapeInfo::add(TensorId id, const TensorInfo &info) {
   infos[id] = info;
@@ -38,4 +38,4 @@ std::vector<TensorId> InputShapeInfo::getAllTensorIds() const {
   return all;
 }
 
-} // namespace poponnx
+} // namespace popart

@@ -1,8 +1,8 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 OpxManager &OpxManager::getInstance() {
@@ -28,4 +28,4 @@ std::unique_ptr<Opx> OpxManager::createOpx(Op *op, Devicex *devicex) {
 }
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

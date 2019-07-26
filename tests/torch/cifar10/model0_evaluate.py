@@ -1,9 +1,9 @@
 import sys
 import os
 import c10driver
-import poponnx
+import popart
 import cmdline
-from poponnx.torch import torchwriter
+from popart.torch import torchwriter
 #we require torch in this file to create the torch Module
 import torch
 
@@ -13,18 +13,18 @@ nChans = 3
 samplesPerBatch = 2
 batchesPerStep = 4
 anchors = {
-    "l1LossVal": poponnx.AnchorReturnType("ALL"),
-    "out": poponnx.AnchorReturnType("FINAL"),
-    "image0": poponnx.AnchorReturnType("ALL")
+    "l1LossVal": popart.AnchorReturnType("ALL"),
+    "out": popart.AnchorReturnType("FINAL"),
+    "image0": popart.AnchorReturnType("ALL")
 }
-dataFeed = poponnx.DataFlow(batchesPerStep, anchors)
-inputShapeInfo = poponnx.InputShapeInfo()
+dataFeed = popart.DataFlow(batchesPerStep, anchors)
+inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add(
-    "image0", poponnx.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
+    "image0", popart.TensorInfo("FLOAT", [samplesPerBatch, nChans, 32, 32]))
 
 inNames = ["image0"]
 outNames = ["out"]
-losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
+losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 optimizer = None
 
 #cifar training data loader : at index 0 : image, at index 1 : label.
@@ -34,13 +34,12 @@ cifarInIndices = {"image0": 0}
 class Module0(torch.nn.Module):
     def __init__(self):
         torch.nn.Module.__init__(self)
-        self.conv1 = torch.nn.Conv2d(
-            nChans,
-            nChans,
-            kernel_size=(3, 3),
-            stride=1,
-            padding=(1, 3),
-            bias=False)
+        self.conv1 = torch.nn.Conv2d(nChans,
+                                     nChans,
+                                     kernel_size=(3, 3),
+                                     stride=1,
+                                     padding=(1, 3),
+                                     bias=False)
         self.relu = torch.nn.functional.relu
 
     def forward(self, inputs):
@@ -66,12 +65,11 @@ torchWriter = torchwriter.PytorchNetWriter(
     module=Module0(),
     samplesPerBatch=samplesPerBatch)
 
-# Passes if torch and poponnx models match
-c10driver.run(
-    torchWriter=torchWriter,
-    passes=None,
-    outputdir=args.outputdir,
-    cifarInIndices=cifarInIndices,
-    device=args.device,
-    device_hw_id=args.hw_id,
-    mode="evaluate")
+# Passes if torch and popart models match
+c10driver.run(torchWriter=torchWriter,
+              passes=None,
+              outputdir=args.outputdir,
+              cifarInIndices=cifarInIndices,
+              device=args.device,
+              device_hw_id=args.hw_id,
+              mode="evaluate")

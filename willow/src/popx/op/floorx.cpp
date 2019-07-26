@@ -1,10 +1,10 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/op/floor.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/floorx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/op/floor.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/floorx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 poplar::Tensor FloorComputex::outplace(poplar::program::Sequence &prog,
@@ -41,4 +41,4 @@ OpxCreator<FloorInplaceOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

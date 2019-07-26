@@ -1,14 +1,14 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/cos.hpp>
-#include <poponnx/op/div.hpp>
-#include <poponnx/op/sin.hpp>
-#include <poponnx/op/tan.hpp>
-#include <poponnx/patterns/tantosinovercospattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/cos.hpp>
+#include <popart/op/div.hpp>
+#include <popart/op/sin.hpp>
+#include <popart/op/tan.hpp>
+#include <popart/patterns/tantosinovercospattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool TanToSinOverCosPattern::matches(Op *op) const {
   return op->isConvertibleTo<TanOp>();
@@ -59,4 +59,4 @@ static PatternCreator<TanToSinOverCosPattern>
                            "TanToSinOverCos");
 }
 
-} // namespace poponnx
+} // namespace popart

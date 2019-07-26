@@ -36,7 +36,7 @@ For:
    representations for the ops.
 2) One fewer switch statement. No need to switch on Ir's Op to determine
    which Poplar functionality to call
-3) Closer to how poponnx does things, will make code porting easier
+3) Closer to how popart does things, will make code porting easier
 
 For now I feel like the best long term decision is Against. So keeping 
 Poplar API calls as far from the abstract Ir for now.

@@ -1,7 +1,7 @@
-#include <poponnx/op/elementwise.hpp>
-#include <poponnx/popx/op/elementwisex.hpp>
+#include <popart/op/elementwise.hpp>
+#include <popart/popx/op/elementwisex.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 ElementWiseUnaryOutplaceOpx::ElementWiseUnaryOutplaceOpx(
@@ -91,4 +91,4 @@ BinaryComparisonOpx::BinaryComparisonOpx(Op *op, Devicex *devicex)
     : Opx(op, devicex) {}
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

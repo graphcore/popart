@@ -1,13 +1,13 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
-#include <poponnx/op/instancenorm.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/op/instancenorm.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 InstanceNormOp::InstanceNormOp(const OperatorIdentifier &_opid,
                                float _epsilon,
@@ -104,4 +104,4 @@ static OpCreator<InstanceNormOp> instanceNormOpCreator(
 
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

@@ -2,15 +2,15 @@
 
 #include <memory>
 #include <onnx/onnx_pb.h>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/if.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensornames.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/if.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 namespace {
 
@@ -489,4 +489,4 @@ static OpCreator<IfOp> ifOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

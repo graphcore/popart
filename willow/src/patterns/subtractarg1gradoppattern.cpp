@@ -1,13 +1,13 @@
 #include <memory>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/identity.hpp>
-#include <poponnx/op/negate.hpp>
-#include <poponnx/op/reducesum.hpp>
-#include <poponnx/op/subtract.hpp>
-#include <poponnx/patterns/subtractarg1gradoppattern.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/identity.hpp>
+#include <popart/op/negate.hpp>
+#include <popart/op/reducesum.hpp>
+#include <popart/op/subtract.hpp>
+#include <popart/patterns/subtractarg1gradoppattern.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool SubtractArg1GradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<SubtractArg1GradOp>();
@@ -36,4 +36,4 @@ static PatternCreator<SubtractArg1GradOpPattern>
                       "SubtractArg1GradOp");
 }
 
-} // namespace poponnx
+} // namespace popart

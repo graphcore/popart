@@ -1,10 +1,10 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/sin.hpp>
-#include <poponnx/popx/op/sinx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/sin.hpp>
+#include <popart/popx/op/sinx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 SinOpx::SinOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
@@ -28,4 +28,4 @@ OpxCreator<Opx> sinGradOpxCreator(
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

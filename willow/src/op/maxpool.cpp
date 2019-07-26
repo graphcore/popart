@@ -1,12 +1,12 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/maxpool.hpp>
+#include <popart/error.hpp>
+#include <popart/op/maxpool.hpp>
 
 #include <memory>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 MaxPoolOp::MaxPoolOp(const OperatorIdentifier &_opid,
                      const std::vector<int64_t> &kernelShape_,
@@ -124,4 +124,4 @@ static OpCreator<MaxPoolOp> maxPoolOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

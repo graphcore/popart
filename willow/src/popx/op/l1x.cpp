@@ -1,15 +1,15 @@
 #include <numeric>
-#include <poponnx/error.hpp>
-#include <poponnx/op/l1.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/l1x.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/l1.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/l1x.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
 
 #include <popops/ElementWise.hpp>
 #include <popops/Reduce.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 L1Opx::L1Opx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -47,7 +47,9 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
     scale = lambda / totalSamples;
     break;
   }
-  default: { throw error("Unsupported reduction type for Loss {}", idStr()); }
+  default: {
+    throw error("Unsupported reduction type for Loss {}", idStr());
+  }
   }
 
   auto t_scale =
@@ -102,7 +104,9 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
     scale = lambda / totalSamples;
     break;
   }
-  default: { throw error("Unsupported reduction type for Loss {}", idStr()); }
+  default: {
+    throw error("Unsupported reduction type for Loss {}", idStr());
+  }
   }
 
   // t_scale is always expected to be FLOAT, regardless of the input type
@@ -129,4 +133,4 @@ OpxCreator<L1GradOpx> l1GradOpxCreator(Onnx::CustomGradOperators::L1Grad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

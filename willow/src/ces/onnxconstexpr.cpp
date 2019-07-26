@@ -1,13 +1,13 @@
 #include <onnx/onnx_pb.h>
 
-#include <poponnx/ces/onnxconstexpr.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/ces/onnxconstexpr.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool OnnxConstExprUtil::isConst(const onnx::NodeProto &node) {
   return node.op_type() == "Constant" || node.op_type() == "Shape" ||
@@ -90,4 +90,4 @@ void OnnxConstExprUtil::processConstantOfShapeNode(const onnx::NodeProto &node,
   }
 }
 
-} // namespace poponnx
+} // namespace popart

@@ -1,14 +1,14 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/addbias.hpp>
-#include <poponnx/op/conv.hpp>
-#include <poponnx/patterns/convdatagrad.hpp>
-#include <poponnx/patterns/patterns.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/util.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/addbias.hpp>
+#include <popart/op/conv.hpp>
+#include <popart/patterns/convdatagrad.hpp>
+#include <popart/patterns/patterns.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
+#include <popart/util.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool ConvDataGradPattern::matches(Op *op) const {
   return (op->opid == Onnx::GradOperators::ConvDataGrad);
@@ -21,7 +21,7 @@ std::vector<const Tensor *> ConvDataGradPattern::touches(Op *) const {
 /*
 static void printConvParameters(const ConvParameters &params) {
   logging::pattern::info(
-      "poponnx::ConvParameters t:{} bs:{} s:{} ks:{} c:{},{} g:{} i:({} {} {} "
+      "popart::ConvParameters t:{} bs:{} s:{} ks:{} c:{},{} g:{} i:({} {} {} "
       "{} {} {}) k:({} {} {} {} {} {}) o:({} {} {} {} {})",
       static_cast<int>(params.type),
       params.batchSize,
@@ -110,4 +110,4 @@ static PatternCreator<ConvDataGradPattern>
     convDataGradPattern(PreAliasPatternType::CONVDATAGRAD, "ConvDataGrad");
 }
 
-} // namespace poponnx
+} // namespace popart

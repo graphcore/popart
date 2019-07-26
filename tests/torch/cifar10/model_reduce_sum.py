@@ -2,8 +2,8 @@ import sys
 import os
 import c10driver
 import cmdline
-import poponnx
-from poponnx.torch import torchwriter
+import popart
+from popart.torch import torchwriter
 #we require torch in this file to create the torch Module
 import torch
 
@@ -26,18 +26,18 @@ batchesPerStep = 3
 # the tensor to which the loss is applied "out",
 # and the input tensor "image0"
 anchors = {
-    "l1LossVal": poponnx.AnchorReturnType("FINAL"),
-    "out": poponnx.AnchorReturnType("FINAL"),
-    "image0": poponnx.AnchorReturnType("FINAL")
+    "l1LossVal": popart.AnchorReturnType("FINAL"),
+    "out": popart.AnchorReturnType("FINAL"),
+    "image0": popart.AnchorReturnType("FINAL")
 }
-dataFeed = poponnx.DataFlow(batchesPerStep, anchors)
+dataFeed = popart.DataFlow(batchesPerStep, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the Session constructor.
 # In this example there is 1 streamed input, image0.
-inputShapeInfo = poponnx.InputShapeInfo()
+inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
-                   poponnx.TensorInfo("FLOAT", [batchSize, nChans, 32, 32]))
+                   popart.TensorInfo("FLOAT", [batchSize, nChans, 32, 32]))
 
 inNames = ["image0"]
 
@@ -50,19 +50,18 @@ outNames = ["out"]
 #cifar training data loader : at index 0 : image, at index 1 : label.
 cifarInIndices = {"image0": 0}
 
-losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
+losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 
 
 class Module0(torch.nn.Module):
     def __init__(self):
         torch.nn.Module.__init__(self)
-        self.conv1 = torch.nn.Conv2d(
-            nChans,
-            nChans,
-            kernel_size=(3, 3),
-            stride=1,
-            padding=(1, 3),
-            bias=False)
+        self.conv1 = torch.nn.Conv2d(nChans,
+                                     nChans,
+                                     kernel_size=(3, 3),
+                                     stride=1,
+                                     padding=(1, 3),
+                                     bias=False)
 
     def forward(self, inputs):
         """out = relu(conv(in))"""
@@ -80,7 +79,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
     losses=losses,
-    optimizer=poponnx.ConstSGD(0.001),
+    optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:

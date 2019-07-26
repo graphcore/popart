@@ -1,9 +1,9 @@
 import sys
 import os
 import c10driver
-import poponnx
+import popart
 import cmdline
-from poponnx.torch import torchwriter
+from popart.torch import torchwriter
 #we require torch in this file to create the torch Module
 import torch
 import numpy as np
@@ -30,19 +30,19 @@ batchesPerStep = 4
 # the tensor to which the loss is applied "out",
 # and the input tensor "image0"
 anchors = {
-    "l1LossVal": poponnx.AnchorReturnType("EVERYN", 2),
-    "out": poponnx.AnchorReturnType("FINAL"),
-    "image0": poponnx.AnchorReturnType("ALL")
+    "l1LossVal": popart.AnchorReturnType("EVERYN", 2),
+    "out": popart.AnchorReturnType("FINAL"),
+    "image0": popart.AnchorReturnType("ALL")
 }
 
-dataFeed = poponnx.DataFlow(batchesPerStep, anchors)
+dataFeed = popart.DataFlow(batchesPerStep, anchors)
 
 # willow is non-dynamic. All input Tensor shapes and
 # types must be fed into the Session constructor.
 # In this example there is 1 streamed input, image0.
-inputShapeInfo = poponnx.InputShapeInfo()
+inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
-                   poponnx.TensorInfo("FLOAT", [batchSize, nChans, 32, 32]))
+                   popart.TensorInfo("FLOAT", [batchSize, nChans, 32, 32]))
 
 inNames = ["image0"]
 
@@ -54,7 +54,7 @@ outNames = ["out"]
 #cifar training data loader : at index 0 : image, at index 1 : label.
 cifarInIndices = {"image0": 0}
 
-losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
+losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 
 layers = 1
 batch_size = 32
@@ -93,12 +93,12 @@ torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
     losses=losses,
-    optimizer=poponnx.ConstSGD(0.001),
+    optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:
     module=Module0(),
     samplesPerBatch=batchSize)
 
-c10driver.run(torchWriter, poponnx.Patterns(['PreUniRepl']), args.outputdir,
+c10driver.run(torchWriter, popart.Patterns(['PreUniRepl']), args.outputdir,
               cifarInIndices, args.device, args.hw_id)

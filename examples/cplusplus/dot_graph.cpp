@@ -1,20 +1,20 @@
-// A tool for visualising the Ir (PopONNX's Intermediate representation)
+// A tool for visualising the Ir (PopART's Intermediate representation)
 // as a .dot file which can be compiled into a .pdf file.
 // This tool supports training and as well as inference.
 
 #include <boost/program_options.hpp>
 #include <iostream>
 #include <vector>
-#include <poponnx/builder.hpp>
-#include <poponnx/filereader.hpp>
-#include <poponnx/graphtransformer.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/op/nll.hpp>
-#include <poponnx/optimizer.hpp>
-#include <poponnx/optionflags.hpp>
+#include <popart/builder.hpp>
+#include <popart/filereader.hpp>
+#include <popart/graphtransformer.hpp>
+#include <popart/ir.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/op/nll.hpp>
+#include <popart/optimizer.hpp>
+#include <popart/optionflags.hpp>
 
-using namespace poponnx;
+using namespace popart;
 namespace po = boost::program_options;
 
 // TODO: improved visualization (T5144)
@@ -123,7 +123,7 @@ int main(int argc, char **argv) {
   // dot -Tpdf -o x.pdf x.dot
   // (for all x.dot  in session_opts.logDir)
   if (opts.compileDotsToPDF() == true) {
-    for (auto dotFn : poponnx::io::getMatchFns(session_opts.logDir, ".dot")) {
+    for (auto dotFn : popart::io::getMatchFns(session_opts.logDir, ".dot")) {
       std::string pdfFn = dotFn.substr(0, dotFn.size() - 4) + ".pdf";
       std::stringstream command_ss;
       command_ss << "dot "

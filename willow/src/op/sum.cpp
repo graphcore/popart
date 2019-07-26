@@ -1,10 +1,10 @@
 #include <memory>
-#include <poponnx/op/sum.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/op/sum.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 SumOp::SumOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : VariadicOp(_opid, settings_) {
@@ -39,4 +39,4 @@ static OpCreator<SumOp> sumOpCreator({Onnx::Operators::Sum_6,
                                       Onnx::Operators::Sum_8});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

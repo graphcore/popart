@@ -1,12 +1,12 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/add.hpp>
-#include <poponnx/popx/op/addx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/add.hpp>
+#include <popart/popx/op/addx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 #include <poputil/TileMapping.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 const unsigned max_tile_imbalance = 150000;
@@ -115,4 +115,4 @@ OpxCreator<AddArg1GradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

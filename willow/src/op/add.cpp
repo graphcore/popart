@@ -2,11 +2,11 @@
 // for `find', we need the algorithm header
 #include <algorithm>
 #include <memory>
-#include <poponnx/op/add.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/add.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 template <typename T>
 static std::vector<T>
@@ -237,4 +237,4 @@ static OpCreator<AddOp> addOpCreator({Onnx::Operators::Add_6,
                                       Onnx::Operators::Add_7});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

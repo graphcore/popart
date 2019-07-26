@@ -1,10 +1,10 @@
 #include <memory>
-#include <poponnx/op/mean.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/op/mean.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 MeanOp::MeanOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : VariadicOp(_opid, settings_) {}
@@ -44,4 +44,4 @@ static OpCreator<MeanOp> opCreator({Onnx::Operators::Mean_6,
                                     Onnx::Operators::Mean_8});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

@@ -1,16 +1,16 @@
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/op/averagepool.hpp>
-#include <poponnx/op/globalaveragepool.hpp>
-#include <poponnx/op/globalmaxpool.hpp>
-#include <poponnx/op/maxpool.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op.hpp>
+#include <popart/op/averagepool.hpp>
+#include <popart/op/globalaveragepool.hpp>
+#include <popart/op/globalmaxpool.hpp>
+#include <popart/op/maxpool.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popnn/Pooling.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 static poplar::Type getReductionType(const popnn::PoolingType &pooling_type,
@@ -227,4 +227,4 @@ OpxCreator<Opx> globalAverageGradOpxCreator(
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

@@ -1,15 +1,15 @@
 #include <onnx/onnx_pb.h>
 #include <spdlog/fmt/fmt.h>
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/patterns/pattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/patterns/pattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/util.hpp>
 
-namespace poponnx {
+namespace popart {
 
 int PreAliasPattern::tensor_counter = 0;
 
@@ -86,4 +86,4 @@ std::string Pattern::getReplacementOpName(Op *op) const {
   return replacementName;
 }
 
-} // namespace poponnx
+} // namespace popart

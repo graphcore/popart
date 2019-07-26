@@ -1,12 +1,12 @@
 #include <popnn/Loss.hpp>
 
-#include <poponnx/error.hpp>
-#include <poponnx/op/argmax.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/argmaxx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/argmax.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/argmaxx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 poplar::Tensor ArgMaxOpx::extremaOp(poplar::program::Sequence &prog,
@@ -19,4 +19,4 @@ OpxCreator<ArgMaxOpx> argMaxOpxCreator(Onnx::Operators::ArgMax_1);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

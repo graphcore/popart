@@ -1,20 +1,20 @@
 #include <iterator>
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/nll.hpp>
-#include <poponnx/op/softmax.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/nllx.hpp>
-#include <poponnx/popx/op/softmaxx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/nll.hpp>
+#include <popart/op/softmax.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/nllx.hpp>
+#include <popart/popx/op/softmaxx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popnn/NonLinearity.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Encoding.hpp>
 #include <popops/Reduce.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 namespace {
@@ -384,4 +384,4 @@ OpxCreator<SoftmaxInplaceOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

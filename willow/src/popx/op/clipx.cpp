@@ -1,13 +1,13 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/clip.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/clipx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/clip.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/clipx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/Cast.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 poplar::Tensor ClipComputex::getClipTensor(float val,
@@ -178,4 +178,4 @@ OpxCreator<ClipGradOpx> clipGradOpxCreator(Onnx::GradOperators::ClipGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

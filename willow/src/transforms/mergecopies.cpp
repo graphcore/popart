@@ -1,18 +1,18 @@
 #include <boost/range/algorithm.hpp>
 
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/names.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/op/ipucopy.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensors.hpp>
 
-#include <poponnx/transforms/mergecopies.hpp>
+#include <popart/transforms/mergecopies.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::size_t MergeCopies::id() { return typeid(MergeCopies).hash_code(); }
 
@@ -133,4 +133,4 @@ namespace {
 bool init = Transform::registerTransform(new MergeCopies);
 }
 
-} // namespace poponnx
+} // namespace popart

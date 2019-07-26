@@ -1,13 +1,13 @@
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/pad.hpp>
-#include <poponnx/patterns/patterns.hpp>
-#include <poponnx/patterns/preunirepl.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/pad.hpp>
+#include <popart/patterns/patterns.hpp>
+#include <popart/patterns/preunirepl.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool PreUniRepl::matches(Op *op) const {
   // op must have 1 input, and that input
@@ -68,4 +68,4 @@ static PatternCreator<PreUniRepl>
     PreUniReplPattern(PreAliasPatternType::PREUNIREPL, "PreUniRepl");
 }
 
-} // namespace poponnx
+} // namespace popart

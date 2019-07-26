@@ -1,10 +1,10 @@
 #include <map>
 #include <sstream>
 
-#include <poponnx/error.hpp>
-#include <poponnx/vertex.hpp>
+#include <popart/error.hpp>
+#include <popart/vertex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::string Vertex::wrtLossStr() const {
 
@@ -61,4 +61,4 @@ std::string Vertex::wrtLossStr() const {
   return ss.str();
 }
 
-}; // namespace poponnx
+}; // namespace popart

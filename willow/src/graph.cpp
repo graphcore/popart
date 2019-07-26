@@ -2,27 +2,27 @@
 #include <boost/range/algorithm.hpp>
 #include <onnx/onnx_pb.h>
 
-#include <poponnx/ces/constexpr.hpp>
-#include <poponnx/ces/onnxconstexpr.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/pbwrap.hpp>
-#include <poponnx/scheduler.hpp>
-#include <poponnx/tensornames.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/topocons.hpp>
+#include <popart/ces/constexpr.hpp>
+#include <popart/ces/onnxconstexpr.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/pbwrap.hpp>
+#include <popart/scheduler.hpp>
+#include <popart/tensornames.hpp>
+#include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 
 // Ops required for Graph::getCalledOps
-#include <poponnx/op/call.hpp>
-#include <poponnx/op/if.hpp>
+#include <popart/op/call.hpp>
+#include <popart/op/if.hpp>
 
 // The layers required to construct the backwards pass
-#include <poponnx/op/conv.hpp>
-#include <poponnx/op/flatten.hpp>
-#include <poponnx/op/varupdate.hpp>
+#include <popart/op/conv.hpp>
+#include <popart/op/flatten.hpp>
+#include <popart/op/varupdate.hpp>
 
-namespace poponnx {
+namespace popart {
 
 // map of grad Tensor to the list of Tensors that
 // must be summed to create the grad Tensor
@@ -607,7 +607,7 @@ void BackwardPassCreator::registerBwdOp(Op *fwdOp, Op *bwdOp) {
 
 Op *BackwardPassCreator::growGradSumOp(Tensor *nonGradTensor,
                                        const std::vector<Tensor *> &partials) {
-  std::unique_ptr<poponnx::Op> gradSum = OpManager::createOp(
+  std::unique_ptr<popart::Op> gradSum = OpManager::createOp(
       Domain::ai_onnx,
       "Sum",
       bwdGraph.getIr().getOpSetVersionFromModel(Domain::ai_onnx),
@@ -635,7 +635,7 @@ Op *BackwardPassCreator::growGradSumOp(Tensor *nonGradTensor,
 
 TensorId BackwardPassCreator::getGradId(const TensorId &id) {
   auto x = fwdGraph.removeScope(id);
-  x      = poponnx::getGradId(x);
+  x      = popart::getGradId(x);
   return bwdGraph.addScope(x);
 }
 
@@ -804,4 +804,4 @@ void BackwardPassCreator::doPrune(Graph &graph) {
   }
 }
 
-} // namespace poponnx
+} // namespace popart

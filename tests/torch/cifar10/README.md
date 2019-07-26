@@ -41,9 +41,9 @@ output = conv(input) with bias and loss is l1 norm of output
 reset_weights
 ------
 Test updating the weights using a second model that differs from the first only in weights.
-Create a pytorch model, export it to onnx and load it using poponnx.
+Create a pytorch model, export it to onnx and load it using popart.
 Run a number of steps on the pytorch model, reexport the model to onnx, and use this onnx model
-to reset the weights of the poponnx model.
+to reset the weights of the popart model.
 
 model_broadcasts
 ------

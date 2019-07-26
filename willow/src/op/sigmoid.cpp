@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/sigmoid.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/sigmoid.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 SigmoidOp::inplacePriorityDefault() const {
@@ -72,4 +72,4 @@ namespace {
 static OpCreator<SigmoidOp> sigmoidOpCreator(Onnx::Operators::Sigmoid_6);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

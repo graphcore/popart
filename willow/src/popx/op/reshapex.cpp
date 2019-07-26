@@ -1,10 +1,10 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/reshape.hpp>
-#include <poponnx/popx/op/reshapex.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/reshape.hpp>
+#include <popart/popx/op/reshapex.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 // Test note : scale by 1.0001 in grad op makes the test fail. Good.
@@ -58,4 +58,4 @@ OpxCreator<ReshapeGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

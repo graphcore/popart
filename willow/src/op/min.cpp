@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/min.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/op/min.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 MinOp::MinOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : VariadicOp(_opid, settings_) {}
@@ -30,4 +30,4 @@ static OpCreator<MinOp> minOpCreator({Onnx::Operators::Min_6,
                                       Onnx::Operators::Min_8});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

@@ -787,9 +787,9 @@ def main():
     schema = parseDefinitions()
 
     #genOpIdentifiers('gen/opidentifier_gen.hpp', schema)
-    genBuilderHpp('willow/include/poponnx/builder.h.gen', schema)
+    genBuilderHpp('willow/include/popart/builder.h.gen', schema)
     genBuilderCpp('willow/src/builder.cpp.gen', schema)
-    genPythonBuilderBinds('python/poponnx.cpp.gen', schema)
+    genPythonBuilderBinds('python/popart.cpp.gen', schema)
 
 
 if __name__ == '__main__':

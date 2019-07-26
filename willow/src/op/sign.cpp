@@ -1,8 +1,8 @@
 #include <memory>
-#include <poponnx/op/sign.hpp>
-#include <poponnx/opmanager.hpp>
+#include <popart/op/sign.hpp>
+#include <popart/opmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 
 SignOp::SignOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
@@ -46,4 +46,4 @@ namespace {
 static OpCreator<SignOp> absOpCreator({Onnx::Operators::Sign_9});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

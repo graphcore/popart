@@ -1,4 +1,4 @@
-#include <poponnx/subgraph/rinsematcherbase.hpp>
+#include <popart/subgraph/rinsematcherbase.hpp>
 
 namespace fwtools {
 namespace subgraph {

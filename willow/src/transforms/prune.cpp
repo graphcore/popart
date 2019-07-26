@@ -1,15 +1,15 @@
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/names.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/topocons.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 
-#include <poponnx/transforms/prune.hpp>
+#include <popart/transforms/prune.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::size_t Prune::id() { return typeid(Prune).hash_code(); }
 
@@ -32,6 +32,14 @@ bool Prune::apply(Graph &graph) const {
 
   // the "front" is initialsed with (1) anchor tensors,
   for (auto &tensorId : ir.getDataFlow().anchors()) {
+
+    // Pruning can be run before anchors are validated.
+    // There may be anchored tensors that aren't yet
+    // present in the Ir.
+    if (!graph.getTensors().contains(tensorId)) {
+      continue;
+    }
+
     Tensor *t = graph.getTensors().get(tensorId);
     // we have this check here as we allow
     // duplicated names from the (careless!) user
@@ -128,4 +136,4 @@ namespace {
 bool init = Transform::registerTransform(new Prune);
 }
 
-} // namespace poponnx
+} // namespace popart

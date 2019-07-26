@@ -1,8 +1,8 @@
 #include <algorithm>
-#include <poponnx/chains.hpp>
-#include <poponnx/error.hpp>
+#include <popart/chains.hpp>
+#include <popart/error.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace view {
 
 bool Chain::untraversable() const {
@@ -93,4 +93,4 @@ Regions Chains::apply(const Region &regIn) const {
 }
 
 } // namespace view
-} // namespace poponnx
+} // namespace popart

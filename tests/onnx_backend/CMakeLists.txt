@@ -1,4 +1,4 @@
-function(add_poponnx_py_unit_test name)
+function(add_popart_py_unit_test name)
   message(STATUS
     "Adding Python test '${name}'")
   add_test(NAME "${name}"
@@ -6,5 +6,5 @@ function(add_poponnx_py_unit_test name)
            WORKING_DIRECTORY ${CMAKE_CURRENT_BUILD_DIR})
 endfunction()
 
-add_poponnx_py_unit_test(test_backend_test)
+add_popart_py_unit_test(test_backend_test)
 

@@ -1,10 +1,10 @@
 import numpy as np
-import poponnx
+import popart
 
 # Create a builder and construct a graph
-builder = poponnx.Builder()
+builder = popart.Builder()
 
-data_shape = poponnx.TensorInfo("FLOAT", [1])
+data_shape = popart.TensorInfo("FLOAT", [1])
 
 a = builder.addInputTensor(data_shape)
 b = builder.addInputTensor(data_shape)
@@ -16,13 +16,13 @@ builder.addOutputTensor(o)
 proto = builder.getModelProto()
 
 # Describe how to run the model
-dataFlow = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
 # Create a session to compile and execute the graph
-session = poponnx.InferenceSession(
+session = popart.InferenceSession(
     fnModel=proto,
     dataFeed=dataFlow,
-    deviceInfo=poponnx.DeviceManager().createIpuModelDevice({}))
+    deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
 
 # Compile graph
 session.prepareDevice()
@@ -34,7 +34,7 @@ anchors = session.initAnchorArrays()
 data_a = np.random.rand(1).astype(np.float32)
 data_b = np.random.rand(1).astype(np.float32)
 
-stepio = poponnx.PyStepIO({a: data_a, b: data_b}, anchors)
+stepio = popart.PyStepIO({a: data_a, b: data_b}, anchors)
 session.run(stepio)
 
 print("Input a is " + str(data_a))

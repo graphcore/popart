@@ -1,11 +1,11 @@
 #include <memory>
 #include <sstream>
-#include <poponnx/error.hpp>
-#include <poponnx/op/nll.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/nll.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::unique_ptr<Op> NllOp::clone() const {
   return std::make_unique<NllOp>(*this);
@@ -128,4 +128,4 @@ const std::map<int, int> &NllGradOp::gradOutToNonGradIn() const {
 
 namespace {} // namespace
 
-} // namespace poponnx
+} // namespace popart

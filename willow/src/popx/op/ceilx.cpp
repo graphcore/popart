@@ -1,10 +1,10 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/op/ceil.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/ceilx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/op/ceil.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/ceilx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 poplar::Tensor CeilComputex::outplace(poplar::program::Sequence &prog,
@@ -41,4 +41,4 @@ OpxCreator<CeilInplaceOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

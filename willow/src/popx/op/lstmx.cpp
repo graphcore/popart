@@ -1,20 +1,20 @@
 #include <memory>
 #include <spdlog/fmt/fmt.h>
-#include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/lstm.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/lstmx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/lstm.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/lstmx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/util.hpp>
 
 #include <popnn/Lstm.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Zero.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 LSTMOpx::LSTMOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -163,7 +163,7 @@ LSTMOpx::reshapePoplibWeightsForOnnx(poplar::Tensor poplib_weights,
                                      bool transpose) {
   // ONNX expects input weights in shape [num_directions, 4*hidden_size, K]
   // where
-  //   num_directions is always 1 for poponnx
+  //   num_directions is always 1 for popart
   //   and K is either input_size or hidden_size, for the inputWeights or
   //   outputWeights respectivly
   // and order is W[iofc]
@@ -441,4 +441,4 @@ OpxCreator<LSTMGradOpx> lstmGradOpxCreator(Onnx::GradOperators::LSTMGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

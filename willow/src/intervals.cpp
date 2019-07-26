@@ -1,10 +1,10 @@
-#include <poponnx/intervals.hpp>
+#include <popart/intervals.hpp>
 // for std::sqrt
 #include <cmath>
 
 #include <numeric>
 
-namespace poponnx {
+namespace popart {
 
 std::vector<std::array<int, 2>> getDecreasingIntervals(int N) {
   // what is the largest K s.t.
@@ -146,4 +146,4 @@ getDecreasingIntervals(const std::vector<int64_t> &floorHeights) {
   return adjustedIntervals;
 }
 
-} // namespace poponnx
+} // namespace popart

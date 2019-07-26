@@ -8,7 +8,7 @@ import urllib.request
 import numpy as np
 from PIL import Image
 import onnx
-import poponnx
+import popart
 from onnx import numpy_helper
 
 # Onnx modelzoo models are hosted on AWS as tarballs, with URL:
@@ -18,13 +18,13 @@ from onnx import numpy_helper
 # You will need a folder of sample images from the imagenet dataset, along with
 # the txt file of image classes here : https://github.com/onnx/models/blob/master/models/image_classification/synset.txt
 # Both the directory of the images and the txt file of the classes will need to be specified as arguments
-# Here we test that we can load these popular models into the Poponnx Ir and and
+# Here we test that we can load these popular models into the Popart Ir and and
 # train on some simple data, just to see if it runs.
 # 1. Download the tarball to /tmp/modelzoo/
 # 2. Tarball extracts to /tmp/modelzoo/<MODEL_NAME>
 # 3. Onnx model path is /tmp/modelzoo/<MODEL_NAME>/model.onnx
-# 4. Read onnx proto into a Poponnx Session
-# 5. Create the Poponnx Ir
+# 4. Read onnx proto into a Popart Session
+# 5. Create the Popart Ir
 # 6. Train against the supplied images
 
 
@@ -134,7 +134,7 @@ for f in files:
 steps_per_epoch = len(inputs) // batches_per_step
 
 # create graph transformer using .onnx file. Use builder to get input / output tensor ids
-builder = poponnx.Builder(onnx_model, opsets={"ai.onnx": onnx_opset_version})
+builder = popart.Builder(onnx_model, opsets={"ai.onnx": onnx_opset_version})
 input_ = builder.getInputTensorIds()[0]
 output = builder.getOutputTensorIds()[0]
 
@@ -142,22 +142,22 @@ output = builder.getOutputTensorIds()[0]
 probs = builder.aiOnnx.softmax([output])
 
 # Add the labels input - onnx model doesn't include inputs for training
-lbl_shape = poponnx.TensorInfo("INT32", [1])
+lbl_shape = popart.TensorInfo("INT32", [1])
 lb = builder.addInputTensor(lbl_shape)
-graph_transformer = poponnx.GraphTransformer(builder.getModelProto())
+graph_transformer = popart.GraphTransformer(builder.getModelProto())
 graph_transformer.convertAllFixedPointInitializersToConstants()
 graph_transformer.prepareNodesForTraining()
 
 # Create the training session and input the Nll Loss function.
-trainingOptions = poponnx.SessionOptions()
-trainingSession = poponnx.TrainingSession(
+trainingOptions = popart.SessionOptions()
+trainingSession = popart.TrainingSession(
     fnModel=graph_transformer.getModelProto(),
-    dataFeed=poponnx.DataFlow(batches_per_step,
-                              {output: poponnx.AnchorReturnType("ALL")}),
-    losses=[poponnx.NllLoss(probs, lb, "loss")],
-    optimizer=poponnx.ConstSGD(0.001),
+    dataFeed=popart.DataFlow(batches_per_step,
+                              {output: popart.AnchorReturnType("ALL")}),
+    losses=[popart.NllLoss(probs, lb, "loss")],
+    optimizer=popart.ConstSGD(0.001),
     userOptions=trainingOptions,
-    deviceInfo=poponnx.DeviceManager().createIpuModelDevice({}))
+    deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
 
 # Compile graph
 trainingSession.prepareDevice()
@@ -172,7 +172,7 @@ for epoch in range(4):
     for i in range(steps_per_epoch):
         print("Step {} ...".format(i))
         # Input tensor shape (10,1,3,224,224) for 1 image per batch, 10 batches per step.
-        trainingStepio = poponnx.PyStepIO(
+        trainingStepio = popart.PyStepIO(
             {
                 input_: np.stack(inputs[j:j + batches_per_step], axis=0),
                 lb: np.stack(labels[j:j + batches_per_step], axis=0)

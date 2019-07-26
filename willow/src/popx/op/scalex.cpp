@@ -1,11 +1,11 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/scale.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/scalex.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/scale.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/scalex.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 poplar::Tensor ScaleComputex::getScaleTensor(const poplar::Type &type,
@@ -81,4 +81,4 @@ OpxCreator<ScaleGradOpx> scaleGradOpxCreator(Onnx::GradOperators::ScaleGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

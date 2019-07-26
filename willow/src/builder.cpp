@@ -1,9 +1,9 @@
-#include <poponnx/builder_impl.hpp>
-#include <poponnx/logging.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/opidentifier.hpp>
+#include <popart/builder_impl.hpp>
+#include <popart/logging.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/opidentifier.hpp>
 
-namespace poponnx {
+namespace popart {
 
 class TensorInfo;
 
@@ -392,4 +392,4 @@ void Builder::pushNameScope(const std::string &name) {
 
 void Builder::popNameScope() { impl_->popNameScope(); }
 
-} // namespace poponnx
+} // namespace popart

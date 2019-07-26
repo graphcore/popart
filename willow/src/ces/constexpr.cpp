@@ -1,25 +1,25 @@
 #include <memory>
 #include <onnx/onnx_pb.h>
-#include <poponnx/attributes.hpp>
-#include <poponnx/ces/castce.hpp>
-#include <poponnx/ces/concatce.hpp>
-#include <poponnx/ces/constexpr.hpp>
-#include <poponnx/ces/elementwisece.hpp>
-#include <poponnx/ces/gatherce.hpp>
-#include <poponnx/ces/reshapece.hpp>
-#include <poponnx/ces/scalece.hpp>
-#include <poponnx/ces/slicece.hpp>
-#include <poponnx/ces/transposece.hpp>
-#include <poponnx/ces/unsqueezece.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/attributes.hpp>
+#include <popart/ces/castce.hpp>
+#include <popart/ces/concatce.hpp>
+#include <popart/ces/constexpr.hpp>
+#include <popart/ces/elementwisece.hpp>
+#include <popart/ces/gatherce.hpp>
+#include <popart/ces/reshapece.hpp>
+#include <popart/ces/scalece.hpp>
+#include <popart/ces/slicece.hpp>
+#include <popart/ces/transposece.hpp>
+#include <popart/ces/unsqueezece.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ConstExprOp::ConstExprOp(Op *op_) : op(op_) {}
 
@@ -172,4 +172,4 @@ std::unique_ptr<ConstExprOp> ConstExprOpManager::createConstExprOp(Op *op) {
   }
 }
 
-} // namespace poponnx
+} // namespace popart

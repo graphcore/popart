@@ -1,11 +1,11 @@
 #include <memory>
-#include <poponnx/op/ipucopy.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/op/ipucopy.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 IpuCopyOp::IpuCopyOp(const OperatorIdentifier &_opid,
                      uint64_t _destIpu,
@@ -63,4 +63,4 @@ void IpuCopyOp::connectInTensor(InIndex inIndex,
 // Have intentionally not added the IpuCopyOp to the OpManager. This IpuCopyOp
 // needs to be explicitly created as part of the interipucopy transform
 
-} // namespace poponnx
+} // namespace popart

@@ -1,12 +1,12 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/tile.hpp>
-#include <poponnx/popx/op/tilex.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/tile.hpp>
+#include <popart/popx/op/tilex.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
 
 #include <popops/ElementWise.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 void TileOpx::grow(poplar::program::Sequence &prog) const {
@@ -75,4 +75,4 @@ OpxCreator<TileGradOpx> tileGradOpxCreator(Onnx::GradOperators::TileGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

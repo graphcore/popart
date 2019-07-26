@@ -1,6 +1,6 @@
-#include <poponnx/vectorandset.hpp>
+#include <popart/vectorandset.hpp>
 
-namespace poponnx {
+namespace popart {
 
 const std::vector<std::string> &VectorAndSet::v() const { return v_vals; }
 
@@ -38,4 +38,4 @@ void VectorAndSet::insert(const std::string &id) {
   }
 }
 
-} // namespace poponnx
+} // namespace popart

@@ -5,7 +5,7 @@ import tarfile
 import tempfile
 import urllib.request
 
-import poponnx
+import popart
 import numpy as np
 import onnx
 from onnx import numpy_helper
@@ -15,13 +15,13 @@ from onnx import numpy_helper
 # Some specific examples have non-standard urls e.g. resnet-18 URL is:
 # https://s3.amazonaws.com/onnx-model-zoo/resnet/resnet18v1/resnet18v1.tar.gz
 #
-# Here we test that we can load these popular models into the Poponnx Ir and test against the
+# Here we test that we can load these popular models into the Popart Ir and test against the
 # given input / output data:
 # 1. Download the tarball to /tmp/modelzoo/
 # 2. Tarball extracts to /tmp/modelzoo/<MODEL_NAME>
 # 3. Onnx model path is /tmp/modelzoo/<MODEL_NAME>/model.onnx
-# 4. Read onnx proto into a Poponnx Session
-# 5. Create the Poponnx Ir
+# 4. Read onnx proto into a Popart Session
+# 5. Create the Popart Ir
 # 6. Get the output and compare tensors against the downloaded output
 
 # Get download url and test number from args
@@ -88,24 +88,24 @@ for i in range(ref_outputs_num):
     ref_outputs.append(numpy_helper.to_array(tensor))
 
 # create graph transformer using .onnx file. Use builder to get input / output tensor ids
-builder = poponnx.Builder(onnx_model)
+builder = popart.Builder(onnx_model)
 input_ = builder.getInputTensorIds()[0]
 output = builder.getOutputTensorIds()[0]
-graph_transformer = poponnx.GraphTransformer(onnx_model)
+graph_transformer = popart.GraphTransformer(onnx_model)
 graph_transformer.convertAllFixedPointInitializersToConstants()
 
 # Create forward pass session
-session = poponnx.InferenceSession(
+session = popart.InferenceSession(
     fnModel=graph_transformer.getModelProto(),
-    dataFeed=poponnx.DataFlow(1, {output: poponnx.AnchorReturnType("ALL")}),
-    deviceInfo=poponnx.DeviceManager().createIpuModelDevice({}))
+    dataFeed=popart.DataFlow(1, {output: popart.AnchorReturnType("ALL")}),
+    deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
 
 # Compile graph
 session.prepareDevice()
 
 # Create buffers to receive results from the execution
 inferenceAnchors = session.initAnchorArrays()
-stepio = poponnx.PyStepIO({input_: inputs[0]}, inferenceAnchors)
+stepio = popart.PyStepIO({input_: inputs[0]}, inferenceAnchors)
 
 # Run the inference graph
 session.run(stepio)

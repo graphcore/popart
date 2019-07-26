@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <memory>
-#include <poponnx/op/reducel2.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/reducel2.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ReduceL2Op::ReduceL2Op(const OperatorIdentifier &_opid,
                        const std::vector<int64_t> &axes_,
@@ -56,4 +56,4 @@ static OpCreator<ReduceL2Op> reduceL2OpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

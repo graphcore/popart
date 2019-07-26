@@ -1,11 +1,11 @@
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/op/averagepool.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/averagepool.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 // TODO : Support "count_include_pad" T6249
 
@@ -133,4 +133,4 @@ static OpCreator<AveragePoolOp> averagePoolOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

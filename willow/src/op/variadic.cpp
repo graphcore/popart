@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/variadic.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/op/variadic.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 VariadicOp::VariadicOp(const OperatorIdentifier &_opid,
                        const Op::Settings &settings_)
@@ -79,4 +79,4 @@ void VariadicGradOp::setup() { outInfo(getOutIndex()) = fwdInputInfo; }
 
 namespace {} // namespace
 
-} // namespace poponnx
+} // namespace popart

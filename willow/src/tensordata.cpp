@@ -1,11 +1,11 @@
-#include <poponnx/error.hpp>
-#include <poponnx/half.hpp>
-#include <poponnx/onnxutil.hpp>
-#include <poponnx/tensordata.hpp>
+#include <popart/error.hpp>
+#include <popart/half.hpp>
+#include <popart/onnxutil.hpp>
+#include <popart/tensordata.hpp>
 
 #include <cstring>
 
-namespace poponnx {
+namespace popart {
 
 TensorData::TensorData(const onnx::TensorProto &tp) {
   ConstVoidData cv_data = onnxutil::getConstData(tp);
@@ -91,4 +91,4 @@ void WeightsIO::insert(TensorId id, MutableVoidData mvd) {
   weights.insert({id, mvd});
 }
 
-} // namespace poponnx
+} // namespace popart

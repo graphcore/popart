@@ -4,15 +4,15 @@ import sys
 
 if len(sys.argv) < 3:
     sys.exit(
-        "gen_supported_ops.py <path of poponnx python install> <output file>")
+        "gen_supported_ops.py <path of popart python install> <output file>")
 
-print("Looking for poponnx module in " + sys.argv[1])
+print("Looking for popart module in " + sys.argv[1])
 print("Writing supported ops to " + sys.argv[2])
 
 sys.path.append(sys.argv[1])
-import poponnx
+import popart
 
-supported_ops = poponnx.getSupportedOperations(False)
+supported_ops = popart.getSupportedOperations(False)
 
 ops = dict([[x, []] for x in set([x.domain for x in supported_ops])])
 for op in supported_ops:

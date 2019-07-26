@@ -7,9 +7,9 @@ import torch
 import numpy as np
 from torchvision import transforms, datasets
 import c10driver
-import poponnx
+import popart
 import cmdline
-from poponnx.torch import torchwriter
+from popart.torch import torchwriter
 
 args = cmdline.parse()
 
@@ -18,17 +18,17 @@ nOutChans = 10
 batchSize = 2
 batchesPerStep = 3
 anchors = {
-    "l1LossVal": poponnx.AnchorReturnType("FINAL"),
-    "out": poponnx.AnchorReturnType("FINAL")
+    "l1LossVal": popart.AnchorReturnType("FINAL"),
+    "out": popart.AnchorReturnType("FINAL")
 }
-dataFeed = poponnx.DataFlow(batchesPerStep, anchors)
-inputShapeInfo = poponnx.InputShapeInfo()
+dataFeed = popart.DataFlow(batchesPerStep, anchors)
+inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
-                   poponnx.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
+                   popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 inNames = ["image0"]
 cifarInIndices = {"image0": 0, "label": 1}
 outNames = ["out"]
-losses = [poponnx.L1Loss("out", "l1LossVal", 0.1)]
+losses = [popart.L1Loss("out", "l1LossVal", 0.1)]
 
 
 class Module0(torch.nn.Module):
@@ -63,7 +63,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     outNames=outNames,
     losses=losses,
     # large weight_decay term to test that it is definitely working
-    optimizer=poponnx.ConstSGD(learning_rate=0.001, weight_decay=10),
+    optimizer=popart.ConstSGD(learning_rate=0.001, weight_decay=10),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:

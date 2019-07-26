@@ -9,9 +9,9 @@ import sys
 import os
 
 import c10driver
-import poponnx
+import popart
 import cmdline
-from poponnx.torch import torchwriter
+from popart.torch import torchwriter
 #we require torch in this file to create the torch Module
 import torch
 
@@ -22,20 +22,20 @@ nOutChans = 4
 batchSize = 2
 batchesPerStep = 3
 anchors = {
-    "l1LossVal0": poponnx.AnchorReturnType("FINAL"),
+    "l1LossVal0": popart.AnchorReturnType("FINAL"),
 }
-dataFeed = poponnx.DataFlow(batchesPerStep, anchors)
-inputShapeInfo = poponnx.InputShapeInfo()
+dataFeed = popart.DataFlow(batchesPerStep, anchors)
+inputShapeInfo = popart.InputShapeInfo()
 inputShapeInfo.add("image0",
-                   poponnx.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
+                   popart.TensorInfo("FLOAT", [batchSize, nInChans, 32, 32]))
 
 inNames = ["image0"]
 cifarInIndices = {"image0": 0}
 
 outNames = ["probs"]
-losses = [poponnx.L1Loss("probs", "l1LossVal0", 0.1)]
+losses = [popart.L1Loss("probs", "l1LossVal0", 0.1)]
 
-willowOptPasses = poponnx.Patterns(poponnx.PatternsLevel.ALL)
+willowOptPasses = popart.Patterns(popart.PatternsLevel.ALL)
 
 
 class Module0(torch.nn.Module):
@@ -78,7 +78,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
     losses=losses,
-    optimizer=poponnx.ConstSGD(0.001),
+    optimizer=popart.ConstSGD(0.001),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:

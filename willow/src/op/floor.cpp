@@ -1,8 +1,8 @@
 #include <memory>
-#include <poponnx/op/floor.hpp>
-#include <poponnx/opmanager.hpp>
+#include <popart/op/floor.hpp>
+#include <popart/opmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 FloorOp::inplacePriorityDefault() const {
@@ -31,7 +31,7 @@ std::unique_ptr<Op> FloorOp::clone() const {
 }
 
 std::vector<std::unique_ptr<Op>> FloorOp::getGradOps() {
-  throw error("PopONNX does not have a valid grad op corresponding to FloorOp");
+  throw error("PopART does not have a valid grad op corresponding to FloorOp");
 }
 
 std::unique_ptr<Op> FloorInplaceOp::clone() const {
@@ -43,4 +43,4 @@ static OpCreator<FloorOp> floorOpCreator({Onnx::Operators::Floor_1,
                                           Onnx::Operators::Floor_6});
 
 } // namespace
-} // namespace poponnx
+} // namespace popart

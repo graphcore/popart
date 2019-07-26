@@ -1,14 +1,14 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/div.hpp>
-#include <poponnx/op/scale.hpp>
-#include <poponnx/op/sqrt.hpp>
-#include <poponnx/patterns/pattern.hpp>
-#include <poponnx/patterns/sqrtgradoppattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/div.hpp>
+#include <popart/op/scale.hpp>
+#include <popart/op/sqrt.hpp>
+#include <popart/patterns/pattern.hpp>
+#include <popart/patterns/sqrtgradoppattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool SqrtGradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<SqrtGradOp>();
@@ -53,4 +53,4 @@ static PatternCreator<SqrtGradOpPattern>
     SqrtGradOpPattern(PreAliasPatternType::SQRTGRADOP, "SqrtGradOp");
 }
 
-} // namespace poponnx
+} // namespace popart

@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <memory>
-#include <poponnx/op/reducelogsum.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/reducelogsum.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ReduceLogSumOp::ReduceLogSumOp(const OperatorIdentifier &_opid,
                                const std::vector<int64_t> &axes_,
@@ -62,4 +62,4 @@ static OpCreator<ReduceLogSumOp> ReduceLogSumOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

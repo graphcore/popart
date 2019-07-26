@@ -1,12 +1,12 @@
-#include <poponnx/chains.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/names.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensors.hpp>
+#include <popart/chains.hpp>
+#include <popart/graph.hpp>
+#include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensors.hpp>
 
-namespace poponnx {
+namespace popart {
 
 view::Chains Tensors::getChainsFromTo(Tensor *from, Tensor *to) const {
   if (from == to) {
@@ -273,11 +273,22 @@ void Tensors::addVarInit(const TensorId &name, const onnx::TensorProto *pt) {
     }
   }
 }
+
+void Tensors::addVarInit(const TensorId &name,
+                         const TensorInfo &info,
+                         const void *src) {
+  insert(name,
+         std::unique_ptr<VariableTensor>(new VariableTensor(name, graph)));
+
+  Tensor *init = get(name);
+  init->info   = info;
+  init->setTensorData(info, src);
+}
+
 void Tensors::addConstInit(const TensorId &name,
                            const TensorInfo &info,
                            const void *src) {
-  insert(name,
-         std::unique_ptr<Tensor>(new Tensor(name, TensorType::Const, graph)));
+  insert(name, std::make_unique<Tensor>(name, TensorType::Const, graph));
 
   insertConstId(name);
 
@@ -302,10 +313,9 @@ void Tensors::addInit(const TensorId &name,
                       TensorType tt) {
 
   if (tt == TensorType::Variable) {
-    insert(name,
-           std::unique_ptr<VariableTensor>(new VariableTensor(name, graph)));
+    insert(name, std::make_unique<VariableTensor>(name, graph));
   } else {
-    insert(name, std::unique_ptr<Tensor>(new Tensor(name, tt, graph)));
+    insert(name, std::make_unique<Tensor>(name, tt, graph));
   }
 
   Tensor *init = get(name);
@@ -332,4 +342,4 @@ bool Tensors::contains(TensorId id) const { return M.find(id) != M.end(); }
 
 void Tensors::insertConstId(const std::string &id) { constIds.insert(id); }
 
-} // namespace poponnx
+} // namespace popart

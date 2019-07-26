@@ -1,11 +1,11 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/concat.hpp>
-#include <poponnx/popx/op/concatx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/error.hpp>
+#include <popart/op/concat.hpp>
+#include <popart/popx/op/concatx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 ConcatOpx::ConcatOpx(Op *op_, Devicex *devicex)
@@ -69,4 +69,4 @@ OpxCreator<ConcatGradOpx> concatGradOpxCreator(Onnx::GradOperators::ConcatGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

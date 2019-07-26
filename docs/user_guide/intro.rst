@@ -1,7 +1,7 @@
 Introduction
 ------------
 
-PopONNX is part of the Poplar SDK for designing and running algorithms on
+PopART is part of the Poplar SDK for designing and running algorithms on
 networks of Graphcore IPU processors.
 
 It has three main features:

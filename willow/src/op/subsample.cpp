@@ -1,14 +1,14 @@
 #include <algorithm>
 #include <memory>
 #include <onnx/defs/schema.h>
-#include <poponnx/op/subsample.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/util.hpp>
+#include <popart/op/subsample.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/util.hpp>
 
-namespace poponnx {
+namespace popart {
 
 // T9392: There is code duplication across the view changing ops
 
@@ -186,4 +186,4 @@ static OpCreator<SubsampleOp> subsampleOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

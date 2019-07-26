@@ -1,8 +1,9 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/varupdate.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/varupdatex.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/varupdate.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/varupdatex.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/Collectives.hpp>
 #include <popops/ElementWise.hpp>
@@ -10,10 +11,40 @@
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
-SGDVarUpdateOpx::SGDVarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+VarUpdateOpx::VarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
+
+poplar::Tensor VarUpdateOpx::createInput(int index,
+                                         const std::string &name) const {
+  if (index != VarUpdateOp::getUpdaterInIndex()) {
+    throw error("VarUpdateOpx::createInput Cannot create input {}", index);
+  }
+
+  poplar::Tensor var = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
+
+  return graph().clone(var, name);
+}
+
+InputCreatorType VarUpdateOpx::getInputCreatorType(int index1) const {
+  return index1 == VarUpdateOp::getUpdaterInIndex() &&
+                 op_p->getIr().getSessionOptions().enableGradientAccumulation
+             ? InputCreatorType::CANCREATE
+             : Opx::getInputCreatorType(index1);
+}
+
+std::vector<TensorId> VarUpdateOpx::mustExistBeforeCreate(int index1) const {
+  if (index1 != VarUpdateOp::getUpdaterInIndex()) {
+    throw error("VarUpdateOpx::mustExistBeforeCreate : Invalid index = " +
+                std::to_string(index1));
+  }
+
+  return {inId(VarUpdateOp::getVarToUpdateInIndex())};
+}
+
+SGDVarUpdateOpx::SGDVarUpdateOpx(Op *op, Devicex *devicex)
+    : VarUpdateOpx(op, devicex) {
   verifyOp<SGDVarUpdateOp>(op, Onnx::CustomOperators::SgdVarUpdate);
 }
 
@@ -62,7 +93,7 @@ void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ConstSGDVarUpdateOpx::ConstSGDVarUpdateOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : VarUpdateOpx(op, devicex) {
   verifyOp<ConstSGDVarUpdateOp>(op, Onnx::CustomOperators::ConstSgdVarUpdate);
 }
 
@@ -114,7 +145,7 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 CopyVarUpdateOpx::CopyVarUpdateOpx(Op *op, Devicex *devicex)
-    : Opx(op, devicex) {
+    : VarUpdateOpx(op, devicex) {
   verifyOp<CopyVarUpdateOp>(op, Onnx::CustomOperators::CopyVarUpdate);
 }
 
@@ -139,4 +170,4 @@ OpxCreator<CopyVarUpdateOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

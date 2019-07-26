@@ -1,12 +1,12 @@
 #include <onnx/onnx_pb.h>
-#include <poponnx/ces/concatce.hpp>
-#include <poponnx/ndarraywrapper.hpp>
-#include <poponnx/ndindices.hpp>
-#include <poponnx/op/concat.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/ces/concatce.hpp>
+#include <popart/ndarraywrapper.hpp>
+#include <popart/ndindices.hpp>
+#include <popart/op/concat.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ConstExprConcat::ConstExprConcat(Op *op_) : ConstExprOp(op_) {
   axis        = getOp<ConcatOp>().getAxis();
@@ -59,4 +59,4 @@ std::vector<char> ConstExprConcat::compute() {
       in0_info.dataType(), out_info, inputs, axis);
 }
 
-} // namespace poponnx
+} // namespace popart

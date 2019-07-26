@@ -1,14 +1,14 @@
 #include <algorithm>
 #include <memory>
 #include <vector>
-#include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/conv.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/conv.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 // These are utility functions that are need by the Ir Conv.
 namespace popx {
@@ -303,4 +303,4 @@ static OpCreator<ConvFlipWeightsOp>
     convFlipWeightsOpCreator(Onnx::CustomOperators::ConvFlipWeights);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

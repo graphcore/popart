@@ -1,10 +1,10 @@
-#include <poponnx/op/negate.hpp>
+#include <popart/op/negate.hpp>
 
 #include <memory>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 NegateOp::NegateOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_)
@@ -46,4 +46,4 @@ static OpCreator<NegateOp> negateOpCreator(Onnx::Operators::Neg_6);
 
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

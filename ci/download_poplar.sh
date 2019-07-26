@@ -12,12 +12,12 @@ if [ "$#" -lt 2 ] || [ "$#" -gt 3 ] ; then
   exit 1
 fi
 
-if [ ! -d poponnx ]; then
+if [ ! -d popart ]; then
   echo "CWD needs to be poponnx_view"
   exit 1
 fi
 
-source ./poponnx/ci/utils.sh
+source ./popart/ci/utils.sh
 
 # Get the current directory
 VIEW_DIR=${PWD}

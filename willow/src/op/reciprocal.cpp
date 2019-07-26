@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/reciprocal.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/reciprocal.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 ReciprocalOp::ReciprocalOp(const OperatorIdentifier &_opid,
                            const Op::Settings &settings_)
@@ -34,4 +34,4 @@ static OpCreator<ReciprocalOp>
 
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

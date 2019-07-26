@@ -1,10 +1,10 @@
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/op/logsoftmax.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/logsoftmax.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 LogSoftmaxOp::LogSoftmaxOp(const OperatorIdentifier &_opid,
                            int64_t axis_,
@@ -34,4 +34,4 @@ static OpCreator<LogSoftmaxOp> logSoftmaxOpCreator(
 
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

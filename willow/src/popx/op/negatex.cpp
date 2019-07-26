@@ -1,10 +1,10 @@
 #include <popops/ElementWise.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/negate.hpp>
-#include <poponnx/popx/op/negatex.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/error.hpp>
+#include <popart/op/negate.hpp>
+#include <popart/popx/op/negatex.hpp>
+#include <popart/popx/opxmanager.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 NegateOpx::NegateOpx(Op *op, Devicex *devicex)
@@ -42,4 +42,4 @@ static OpxCreator<NegateGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

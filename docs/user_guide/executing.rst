@@ -20,9 +20,9 @@ A full forward pass will be constructed.
 
 ::
 
-  df = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
-  device = poponnx.DeviceManager().createCpuDevice()
-  s = poponnx.InferenceSession("onnx.pb", deviceInfo=device, dataFeed=df)
+  df = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+  device = popart.DeviceManager().createCpuDevice()
+  s = popart.InferenceSession("onnx.pb", deviceInfo=device, dataFeed=df)
 
 
 To construct a session for training, you need to provide the model,
@@ -32,11 +32,11 @@ constructed.
 
 ::
 
-  l = [poponnx.L1Loss(o, "l1LossVal", 0.1)]
-  opt = poponnx.ConstSGD(0.01)
-  df = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
-  device = poponnx.DeviceManager().createCpuDevice()
-  s = poponnx.TrainingSession("onnx.pb", deviceInfo=device, dataFeed=df, losses=l, optimizer=opt)
+  l = [popart.L1Loss(o, "l1LossVal", 0.1)]
+  opt = popart.ConstSGD(0.01)
+  df = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+  device = popart.DeviceManager().createCpuDevice()
+  s = popart.TrainingSession("onnx.pb", deviceInfo=device, dataFeed=df, losses=l, optimizer=opt)
 
 
 Other parameters are required for constructing a session to train a
@@ -86,9 +86,9 @@ The device must be passed into the sessions constructor.
 
 ::
 
-  df = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
-  device = poponnx.DeviceManager().createCpuDevice()
-  s = poponnx.InferenceSession("onnx.pb", deviceInfo=device, dataFeed=df)
+  df = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+  device = popart.DeviceManager().createCpuDevice()
+  s = popart.InferenceSession("onnx.pb", deviceInfo=device, dataFeed=df)
 
 The device manager can enumerate the available devices with the `enumerateDevices`
 method. The  `acquireAvailableDevice` method will acquire the
@@ -97,7 +97,7 @@ next available device. The first parameter specifies how many IPUs to acquire.
 ::
 
   # Acquire a 2 IPU pair
-  dev = poponnx.DeviceManager().acquireAvailableDevice(2)
+  dev = popart.DeviceManager().acquireAvailableDevice(2)
 
 Using `acquireDeviceById` will select a device from the list
 of IPU configurations, as given by the `enumerateDevices` method, or by the `gc-info`
@@ -106,7 +106,7 @@ application.
 ::
 
   # Acquire IPU configuration 5
-  dev = poponnx.DeviceManager().acquireDeviceById(5)
+  dev = popart.DeviceManager().acquireDeviceById(5)
 
 
 
@@ -144,7 +144,7 @@ They can also be updated between executions.
 
   # Update learning rate parameter between training steps
   stepLr = learningRate[step]
-  session.updateOptimizer(poponnx.SGD(stepLr))
+  session.updateOptimizer(popart.SGD(stepLr))
   session.optimizerFromHost()
 
 Executing a session
@@ -171,7 +171,7 @@ specified in the `dataFlow` object during session construction.
   data_a = np.random.rand(1).astype(np.float32)
   data_b = np.random.rand(1).astype(np.float32)
 
-  stepio = poponnx.PyStepIO({'a': data_a, 'b': data_b}, anchors)
+  stepio = popart.PyStepIO({'a': data_a, 'b': data_b}, anchors)
 
 
 TODO:
@@ -206,16 +206,16 @@ a description of the anchors, the results to fetch from the graph.
 
 ::
 
-  df = poponnx.DataFlow(1, {o: poponnx.AnchorReturnType("ALL")})
+  df = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
 The python dictionary has keys which are the names of the tensors to retreive
 from the model, and the values are an `AnchorReturnType`, one of:
 
-* poponnx.AnchorReturnType("ALL"), a vector of results is returned, one for each
+* popart.AnchorReturnType("ALL"), a vector of results is returned, one for each
   iteration of the graph.
-* poponnx.AnchorReturnType("EVERYN", N), a vector containing the tensor, but
+* popart.AnchorReturnType("EVERYN", N), a vector containing the tensor, but
   only for iterations which are divisible by `N`.
-* poponnx.AnchorReturnType("FINAL"), the value of the tensor on the final
+* popart.AnchorReturnType("FINAL"), the value of the tensor on the final
   iteration through the graph.
 
 
@@ -256,12 +256,12 @@ formatted report.
 Turning on execution tracing
 ============================
 
-Poponnx contains an internal logging system that can show the progress of graph
+Popart contains an internal logging system that can show the progress of graph
 compilation and execution.  It can be turned on by called the `Logger` class.
 
 ::
 
-  poponnx.getLogger().setLevel("TRACE")
+  popart.getLogger().setLevel("TRACE")
 
 Logging levels in decreasing verbosity are:
 

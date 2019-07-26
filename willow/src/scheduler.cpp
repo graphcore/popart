@@ -1,15 +1,15 @@
 #include <algorithm>
 #include <queue>
 
-#include <poponnx/graph.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/scheduler.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/topocons.hpp>
+#include <popart/graph.hpp>
+#include <popart/op.hpp>
+#include <popart/scheduler.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
+#include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 
-namespace poponnx {
+namespace popart {
 
 // A note on non-determinism. For maps with
 // pointers as keys, iterating through them
@@ -181,4 +181,4 @@ std::vector<Op *> Scheduler::getPartialOpSchedule(const OpsBeforeKey &gCons,
   return sorted;
 }
 
-} // namespace poponnx
+} // namespace popart

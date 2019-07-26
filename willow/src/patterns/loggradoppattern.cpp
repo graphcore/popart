@@ -1,12 +1,12 @@
 #include <memory>
-#include <poponnx/graph.hpp>
-#include <poponnx/op/div.hpp>
-#include <poponnx/op/log.hpp>
-#include <poponnx/patterns/loggradoppattern.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorinfo.hpp>
+#include <popart/graph.hpp>
+#include <popart/op/div.hpp>
+#include <popart/op/log.hpp>
+#include <popart/patterns/loggradoppattern.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorinfo.hpp>
 
-namespace poponnx {
+namespace popart {
 
 bool LogGradOpPattern::matches(Op *op) const {
   return op->isConvertibleTo<LogGradOp>();
@@ -42,4 +42,4 @@ static PatternCreator<LogGradOpPattern>
     LogGradOpPattern(PreAliasPatternType::LOGGRADOP, "LogGradOp");
 }
 
-} // namespace poponnx
+} // namespace popart

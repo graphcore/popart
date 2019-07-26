@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/unsqueeze.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
+#include <popart/op/unsqueeze.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
 
-namespace poponnx {
+namespace popart {
 
 UnsqueezeOp::UnsqueezeOp(const OperatorIdentifier &_opid,
                          const std::vector<int64_t> &axes_,
@@ -69,4 +69,4 @@ static OpCreator<UnsqueezeOp> unsqueezeOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

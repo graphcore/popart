@@ -1,11 +1,11 @@
-#include <poponnx/typefunctor.hpp>
+#include <popart/typefunctor.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace typefunctor {
 
-template <> int64_t Int64FromVoid::operator()<poponnx::Half>(void *) {
-  throw error("functor Int64FromVoid cannot handle poponnx::Half");
+template <> int64_t Int64FromVoid::operator()<popart::Half>(void *) {
+  throw error("functor Int64FromVoid cannot handle popart::Half");
 }
 
 } // namespace typefunctor
-} // namespace poponnx
+} // namespace popart

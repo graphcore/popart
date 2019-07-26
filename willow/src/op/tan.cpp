@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/tan.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/tan.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 TanOp::TanOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : ElementWiseUnaryOp(_opid, settings_) {}
@@ -21,4 +21,4 @@ namespace {
 static OpCreator<TanOp> tanOpCreator(Onnx::Operators::Tan_7);
 }
 
-} // namespace poponnx
+} // namespace popart

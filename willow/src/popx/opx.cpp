@@ -1,13 +1,13 @@
-#include <poponnx/error.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op/conv.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/opx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/error.hpp>
+#include <popart/ir.hpp>
+#include <popart/op/conv.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/opx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 Opx::Opx(Op *op_p_, Devicex *dv_p_) : op_p(op_p_), dv_p(dv_p_) {}
@@ -205,4 +205,4 @@ OpxCreator<Opx> tanGradOpxCreator(Onnx::Operators::Tan_7,
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

@@ -1,9 +1,9 @@
-#include <poponnx/error.hpp>
-#include <poponnx/op/gather.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/gatherx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/util.hpp>
+#include <popart/error.hpp>
+#include <popart/op/gather.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/gatherx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/util.hpp>
 
 #include <popops/ElementWise.hpp>
 #include <popops/Gather.hpp>
@@ -14,7 +14,7 @@
 #include <boost/range/algorithm_ext.hpp>
 #include <boost/range/numeric.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 GatherOpx::GatherOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -149,4 +149,4 @@ OpxCreator<GatherGradOpx> gatherGradOpxCreator(Onnx::GradOperators::GatherGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

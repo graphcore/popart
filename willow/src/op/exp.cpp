@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/exp.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/exp.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::vector<std::tuple<OperatorIdentifier, float>>
 ExpOp::inplacePriorityDefault() const {
@@ -69,4 +69,4 @@ namespace {
 static OpCreator<ExpOp> expOpCreator(Onnx::Operators::Exp_6);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

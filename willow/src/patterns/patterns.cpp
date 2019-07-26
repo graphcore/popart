@@ -1,7 +1,7 @@
-#include <poponnx/logging.hpp>
-#include <poponnx/patterns/patterns.hpp>
+#include <popart/logging.hpp>
+#include <popart/patterns/patterns.hpp>
 
-namespace poponnx {
+namespace popart {
 
 Patterns::Patterns(PatternsLevel level) {
 
@@ -111,4 +111,4 @@ std::ostream &operator<<(std::ostream &os, const Patterns &patterns) {
   return os;
 }
 
-} // namespace poponnx
+} // namespace popart

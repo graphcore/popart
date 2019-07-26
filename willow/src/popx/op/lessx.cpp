@@ -1,14 +1,14 @@
 #include <popops/Cast.hpp>
-#include <poponnx/error.hpp>
-#include <poponnx/op/less.hpp>
-#include <poponnx/popx/devicex.hpp>
+#include <popart/error.hpp>
+#include <popart/op/less.hpp>
+#include <popart/popx/devicex.hpp>
 
-#include <poponnx/popx/op/lessx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
+#include <popart/popx/op/lessx.hpp>
+#include <popart/popx/opxmanager.hpp>
 
 #include <popops/ElementWise.hpp>
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 LessOpx::LessOpx(Op *op, Devicex *devicex) : BinaryComparisonOpx(op, devicex) {
@@ -34,4 +34,4 @@ OpxCreator<LessOpx> lessOpxCreator_9(Onnx::Operators::Less_9);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

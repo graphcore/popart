@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <memory>
-#include <poponnx/op/transpose.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/op/transpose.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/tensor.hpp>
 
-namespace poponnx {
+namespace popart {
 
 TransposeOp::TransposeOp(const OperatorIdentifier &_opid,
                          const std::vector<int64_t> &perm_,
@@ -109,4 +109,4 @@ static OpCreator<TransposeOp> transposeOpCreator(
     true);
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

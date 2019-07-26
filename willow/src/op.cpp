@@ -1,20 +1,20 @@
 #include <onnx/onnx_pb.h>
 #include <spdlog/fmt/fmt.h>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/opserialiser.hpp>
-#include <poponnx/region.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/tensors.hpp>
-#include <poponnx/util.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/op.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
+#include <popart/region.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensors.hpp>
+#include <popart/util.hpp>
 
 // The layers:
-#include <poponnx/op/elementwise.hpp>
-#include <poponnx/op/varupdate.hpp>
+#include <popart/op/elementwise.hpp>
+#include <popart/op/varupdate.hpp>
 
-namespace poponnx {
+namespace popart {
 
 GradInOutMapper::GradInOutMapper(int iG, int iNG, GradOpInType t)
     : iGrad(iG), iNonGrad(iNG), type(t) {}
@@ -98,6 +98,11 @@ void Op::defaultConnectInTensor(InIndex inIndex, TensorId tenId) {
   Tensor *ptensor = getGraph().getTensors().get(tenId);
   input->insert(inIndex, ptensor);
   ptensor->consumers.increment(this);
+
+  // Inherit fromLoss from the input tensor
+  if (ptensor->fromLoss == PathFromLoss::Yes) {
+    fromLoss = PathFromLoss::Yes;
+  }
 }
 
 void Op::connectInTensor(InIndex inIndex, TensorId tenId) {
@@ -112,6 +117,9 @@ void Op::connectOutTensor(OutIndex outIndex, TensorId tenId) {
   } else {
     ptensor->setProducer(this);
   }
+
+  // Output tensor takes fromLoss from op
+  ptensor->fromLoss = fromLoss;
 }
 
 void Op::disconnectInTensor(Tensor *tensor) {
@@ -151,6 +159,24 @@ void Op::disconnectAllOutputs() {
     tensor->resetProducer(nullptr);
   }
   output->clear();
+}
+
+void Op::replaceInTensorWithZeros(InIndex inIndex, TensorId tenId) {
+  Tensor *t = input->tensor(inIndex);
+
+  // Create new variable of zeros;
+  auto info = t->info;
+  auto size = info.nbytes();
+  if (t->tensorType() == TensorType::Variable) {
+    getGraph().getTensors().addVarInit(
+        tenId, info, static_cast<const void *>(new char[size]{0}));
+  } else {
+    getGraph().getTensors().addConstInit(
+        tenId, info, static_cast<const void *>(new char[size]{0}));
+  }
+
+  disconnectInTensor(inIndex, t);
+  connectInTensor(inIndex, tenId);
 }
 
 void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
@@ -280,6 +306,8 @@ Op::Op(const OperatorIdentifier &_opid, const Op::Settings &settings_)
       id(settings_.graph.get().getIr().getAndIncrOpsCounter()), opid(_opid),
       // the Attributes
       settings(settings_) {}
+
+Ir &Op::Op::Settings::getIr() const { return graph.get().getIr(); }
 
 void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
 
@@ -520,4 +548,4 @@ std::ostream &operator<<(std::ostream &ss, const GradOpInType &t) {
   return ss;
 }
 
-} // namespace poponnx
+} // namespace popart

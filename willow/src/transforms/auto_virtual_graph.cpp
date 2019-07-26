@@ -1,14 +1,14 @@
-#include <poponnx/error.hpp>
-#include <poponnx/graph.hpp>
-#include <poponnx/ir.hpp>
-#include <poponnx/logging.hpp>
-#include <poponnx/names.hpp>
-#include <poponnx/op.hpp>
-#include <poponnx/op/loss.hpp>
-#include <poponnx/tensor.hpp>
-#include <poponnx/transforms/auto_virtual_graph.hpp>
+#include <popart/error.hpp>
+#include <popart/graph.hpp>
+#include <popart/ir.hpp>
+#include <popart/logging.hpp>
+#include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/op/loss.hpp>
+#include <popart/tensor.hpp>
+#include <popart/transforms/auto_virtual_graph.hpp>
 
-namespace poponnx {
+namespace popart {
 
 std::pair<bool, OpId> Subgraph::best_split(float split_cost) {
   auto lb_node = split_nodes.lower_bound(split_cost);
@@ -37,10 +37,11 @@ std::size_t AutoVirtualGraph::id() {
 // The cost of an Op. Currently it's 1*input_weights + 1*outputs_to_grad + 0.
 // This could be improved by having different parameters for each op type.
 // This does not take into account Ops using the same Weights
-float AutoVirtualGraph::costFn(Op *op, bool training) const {
-  float w_weights     = 1.f;
-  float w_activations = 1.f;
-  float total         = 0;
+float AutoVirtualGraph::costFn(Op *op,
+                               bool training,
+                               float w_weights     = 1.f,
+                               float w_activations = 1.f) const {
+  float total = 0;
 
   std::set<int> inputs_seen;
   std::set<int> outputs_seen;
@@ -144,6 +145,12 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
     return true;
   }
 
+  float w_weights = 1.0f;
+  if (opts.enableGradientAccumulation) {
+    // Weights are doubled as there is an accumulator to match each.
+    w_weights = 2.0f;
+  }
+
   logging::transform::info("[AutoVirtualGraph] Auto virtual graph with {} IPUs",
                            num_ipus);
 
@@ -153,11 +160,17 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
 
   int next_subgraph_id = 0;
 
+  auto startNewSubgraph =
+      [&node_subgraph_map, &subgraphs, &next_subgraph_id](OpId conId) {
+        auto iter = node_subgraph_map.insert({conId, next_subgraph_id});
+        subgraphs.push_back({conId});
+        next_subgraph_id++;
+        return iter;
+      };
+
   for (auto *t : ir.dataStreamTensors()) {
     for (Op *consumer_op : t->consumers.getOps()) {
-      node_subgraph_map.insert({consumer_op->id, next_subgraph_id});
-      subgraphs.push_back({consumer_op->id});
-      next_subgraph_id++;
+      startNewSubgraph(consumer_op->id);
       logging::transform::trace(
           "Starting at {} {}.", consumer_op->debugName(), consumer_op->id);
     }
@@ -173,12 +186,22 @@ bool AutoVirtualGraph::apply(Graph &graph) const {
     }
 
     // Find potential split nodes
-    float op_cost = costFn(op, training);
+    float op_cost = costFn(op, training, w_weights);
 
     // Keep a cumulative_cost of the whole graph.
     cumulative_cost += op_cost;
 
-    auto subgraph_id = node_subgraph_map.find(op->id)->second;
+    // If the Op has a path to it from a Stream Tensor, it will have been
+    // assigned a sub-graph
+    auto subgraph_id_found = node_subgraph_map.find(op->id);
+
+    // If the Op does not have a path to it from a Stream Tensor, it will not
+    // yet have been assigned a sub-graph
+    if (subgraph_id_found == node_subgraph_map.end()) {
+      subgraph_id_found = startNewSubgraph(op->id).first;
+    }
+
+    auto subgraph_id = subgraph_id_found->second;
     auto &subgraph   = subgraphs.at(subgraph_id);
 
     // Keep a cumulative cost of each subgraph.
@@ -335,4 +358,4 @@ namespace {
 bool init = Transform::registerTransform(new AutoVirtualGraph);
 }
 
-} // namespace poponnx
+} // namespace popart

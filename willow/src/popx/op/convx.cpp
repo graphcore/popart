@@ -1,16 +1,16 @@
 #include <memory>
-#include <poponnx/error.hpp>
-#include <poponnx/op/conv.hpp>
-#include <poponnx/popx/devicex.hpp>
-#include <poponnx/popx/op/convx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/popx/poplaroptionsx.hpp>
-#include <poponnx/tensor.hpp>
+#include <popart/error.hpp>
+#include <popart/op/conv.hpp>
+#include <popart/popx/devicex.hpp>
+#include <popart/popx/op/convx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/popx/poplaroptionsx.hpp>
+#include <popart/tensor.hpp>
 
 #include <poplin/ConvUtil.hpp>
 #include <poplin/Convolution.hpp>
 
-namespace poponnx {
+namespace popart {
 
 namespace popx {
 
@@ -226,7 +226,7 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
       dv_p->wuConvOptions.toOptionFlags(),
       &dv_p->convCache);
 
-  // Shape of weights Poponnx Tensor of forward Op
+  // Shape of weights Popart Tensor of forward Op
   // auto fwdShape = convOp->inInfo(convOp->getWeightsInIndex()).shape_szt(); //
   // segfault
   auto fwdShape = gradOp.outInfo(ConvWeightsGradOp::getOutIndex()).shape_szt();
@@ -406,4 +406,4 @@ OpxCreator<ConvFlipWeightsGradOpx>
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart

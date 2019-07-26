@@ -1,9 +1,9 @@
 #include <memory>
-#include <poponnx/op/max.hpp>
-#include <poponnx/opmanager.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/op/max.hpp>
+#include <popart/opmanager.hpp>
+#include <popart/tensorindex.hpp>
 
-namespace poponnx {
+namespace popart {
 
 MaxOp::MaxOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : VariadicOp(_opid, settings_) {}
@@ -30,4 +30,4 @@ static OpCreator<MaxOp> maxOpCreator({Onnx::Operators::Max_6,
                                       Onnx::Operators::Max_8});
 } // namespace
 
-} // namespace poponnx
+} // namespace popart

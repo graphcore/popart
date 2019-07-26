@@ -1,9 +1,9 @@
 
-#include <poponnx/error.hpp>
-#include <poponnx/op/mean.hpp>
-#include <poponnx/popx/op/meanx.hpp>
-#include <poponnx/popx/opxmanager.hpp>
-#include <poponnx/tensorindex.hpp>
+#include <popart/error.hpp>
+#include <popart/op/mean.hpp>
+#include <popart/popx/op/meanx.hpp>
+#include <popart/popx/opxmanager.hpp>
+#include <popart/tensorindex.hpp>
 
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
@@ -11,7 +11,7 @@
 
 namespace pe = popops::expr;
 
-namespace poponnx {
+namespace popart {
 namespace popx {
 
 MeanOpx::MeanOpx(Op *op, Devicex *devicex) : ElementWiseUnaryOpx(op, devicex) {
@@ -83,4 +83,4 @@ OpxCreator<MeanArgGradOpx> meanGradOpxCreator(Onnx::GradOperators::MeanArgGrad);
 } // namespace
 
 } // namespace popx
-} // namespace poponnx
+} // namespace popart
