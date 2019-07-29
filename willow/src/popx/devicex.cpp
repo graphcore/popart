@@ -1669,7 +1669,7 @@ void Devicex::setFloatingPointBehaviour(poplar::Graph &graph) {
           graph, progs.initFragment(), behaviour, "/init");
     } else {
       logging::devicex::warn(
-          "Floating point checks can not be enabled for non IPU devices");
+          "Floating point checks cannot be enabled for non IPU devices");
     }
   }
 }
@@ -1685,7 +1685,7 @@ void Devicex::setStochasticRoundingBehaviour(poplar::Graph &graph) {
           graph, progs.initFragment(), behaviour, "/init");
     } else {
       logging::devicex::warn(
-          "Stochastic rounding can not be enabled for non IPU devices");
+          "Stochastic rounding cannot be enabled for non IPU devices");
     }
   }
 }

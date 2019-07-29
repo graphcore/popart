@@ -20,7 +20,7 @@ void IpuCopyOpx::grow(poplar::program::Sequence &prog) const {
 
   for (auto &idx_tensor : op.input->tensorMap()) {
     auto idx = idx_tensor.first;
-    // Need to get the non virtual graph, so can not use Opx::graph()
+    // Need to get the non virtual graph, so cannot use Opx::graph()
     auto t = poputil::copyToIpu(dv_p->graph(),
                                 getInTensor(idx),
                                 prog,

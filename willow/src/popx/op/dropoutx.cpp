@@ -70,7 +70,7 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
     // If fwd dropout op, add reference tensor for layer to map.
     // If a recomputation op, retrieve the reference
     // tensor for that layer.
-    // Ref tensor can not be an op input because the tensor layout changes the
+    // Ref tensor cannot be an op input because the tensor layout changes the
     // result of poprand::bernoulli, and if the op is pipelined, the stash and
     // restore ops may change the tensor layout of the ops input.
     poplar::Tensor refTensor;
@@ -128,7 +128,7 @@ void DropoutGradOpx::grow(poplar::program::Sequence &prog) const {
   auto seedModifier = op.getSeedModifier();
 
   // Fwd dropout op should have added a reference tensor.
-  // See comment in forward op for why this can not be an op input.
+  // See comment in forward op for why this cannot be an op input.
   poplar::Tensor refTensor = dv_p->dropoutReferenceTensors.at(seedModifier);
 
   auto dropout_mask = growDropout(graph(),

@@ -533,7 +533,7 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
     auto t        = subgraph.getTensors().get(input_id);
     if (tensor_map.find(tensor) != tensor_map.end()) {
       throw error(
-          "tensor {} is already in tensor map, can not rebind to {} -> {}",
+          "tensor {} is already in tensor map, cannot rebind to {} -> {}",
           tensor->id,
           tensor->id,
           t->id);
@@ -605,7 +605,7 @@ std::vector<Match> getRinseMatches(const std::vector<Op *> &ops,
 
   // Sort the matches so the smallest subgraphs are at the back.
   // `matches' is treated like a stack, so this will ensure the smallest
-  // subgraphs are processed first `matches' can not be std::stack as it needs
+  // subgraphs are processed first `matches' cannot be std::stack as it needs
   // to be iterated over
   std::sort(fw_matches.begin(),
             fw_matches.end(),

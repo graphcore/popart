@@ -22,7 +22,7 @@ void OnnxConstExprUtil::processNode(const onnx::NodeProto &node, Graph *graph) {
   } else if (node.op_type() == "ConstantOfShape") {
     processConstantOfShapeNode(node, graph);
   } else {
-    throw error("Can not process node type {} as const", node.op_type());
+    throw error("Cannot process node type {} as const", node.op_type());
   }
 }
 

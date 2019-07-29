@@ -175,7 +175,7 @@ TensorId Graph::removeScope(const TensorId &scopedId) const {
   auto scopeStr = getScope().str();
   if (!starts_with(scopedId, scopeStr)) {
     throw error(
-        "Can not remove scope from {} as it does not start with scope {}",
+        "Cannot remove scope from {} as it does not start with scope {}",
         scopedId,
         scopeStr);
   }

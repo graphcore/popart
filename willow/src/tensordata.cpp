@@ -24,14 +24,14 @@ const void *TensorData::data() const { return data_.data(); }
 void TensorData::resetData(const onnx::TensorProto &tp) {
   ConstVoidData cv_data = onnxutil::getConstData(tp);
   if (data_.size() != cv_data.info.nbytes()) {
-    throw error("can not reset tensor data with data of non-matching size");
+    throw error("cannot reset tensor data with data of non-matching size");
   }
   std::memcpy(data_.data(), cv_data.data, cv_data.info.nbytes());
 }
 
 void TensorData::resetData(const TensorInfo &info, const void *from) {
   if (data_.size() != info.nbytes()) {
-    throw error("can not reset tensor data with data of non-matching size");
+    throw error("cannot reset tensor data with data of non-matching size");
   }
   data_.resize(info.nbytes());
   std::memcpy(data_.data(), from, info.nbytes());

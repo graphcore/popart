@@ -151,11 +151,11 @@ std::shared_ptr<popart::DeviceInfo> DevicexManager::createHostDevice(
     }
   }
   case DeviceType::Ipu: {
-    throw error("Can not create device of type ipu");
+    throw error("Cannot create device of type ipu");
   }
   }
 
-  // return null if we can not create a device that meets the requirements
+  // return null if we cannot create a device that meets the requirements
   return nullptr;
 }
 
