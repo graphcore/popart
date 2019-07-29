@@ -948,42 +948,19 @@ PriTask Devicex::initRandomSeed() {
   };
 }
 
-PriTask Devicex::initDropoutRandomSeed() {
-  auto initDropoutRandomSeedTask = [this]() {
-    logging::devicex::debug("Initializing dropout random seed tensor.");
-
-    dropoutRandomSeed = graph().addVariable(
-        poplar::UNSIGNED_INT, {2}, dropoutRandomSeedTensorId());
-    graph().setTileMapping(dropoutRandomSeed, 0);
-
-    auto &sq = progs.setRandomSeedFragment();
-
-    if (!useSyntheticData()) {
-      sq.add(poplar::program::Copy(randomSeedTensor, dropoutRandomSeed));
-    }
-  };
-
-  return {
-      +1e6,                      // high priority
-      initDropoutRandomSeedId(), // name of this task
-      {initRandomSeedTaskId()},  // depends on
-      initDropoutRandomSeedTask  // what to run when the task is executed
-  };
-}
-
-PriTask Devicex::incrementDropoutRandomSeedTask() {
-  auto incrementDropoutRandomSeedTask = [this]() {
+PriTask Devicex::incrementRandomSeedTask() {
+  auto incrementRandomSeedTask = [this]() {
     popops::addInPlace(graph(),
-                       *getDropoutRandomSeed(),
+                       getRandomSeedTensor(),
                        getConst(graph(), poplar::UNSIGNED_INT, {}, 1, "one"),
                        progs.preForwardFragment());
   };
 
   return {
-      +1e6,                          // high priority
-      "incrementDropoutRandomSeed",  // name of this task
-      {initDropoutRandomSeedId()},   // depends on
-      incrementDropoutRandomSeedTask // what to run when the task is executed
+      +1e6,                        // high priority
+      incrementRandomSeedTaskId(), // name of this task
+      {initRandomSeedTaskId()},    // depends on
+      incrementRandomSeedTask      // what to run when the task is executed
   };
 }
 
@@ -1830,11 +1807,7 @@ void Devicex::prepare() {
 
   // Init the random seed(s)
   tasks.add(initRandomSeed());
-  if (isDropoutRandomSeedRequired()) {
-    // Dropout has a separate random seed
-    tasks.add(initDropoutRandomSeed());
-    tasks.add(incrementDropoutRandomSeedTask());
-  }
+  tasks.add(incrementRandomSeedTask());
 
   // Depending on anchor return types specified by the user, some
   // tensors may need to be added to the graph to keep track of
@@ -2138,8 +2111,8 @@ TaskId Devicex::updateBatchCountTaskId() const {
 
 TaskId Devicex::initRandomSeedTaskId() const { return "initRandomSeedTask"; }
 
-TaskId Devicex::initDropoutRandomSeedId() const {
-  return "initDropoutRandomSeed";
+TaskId Devicex::incrementRandomSeedTaskId() const {
+  return "incrementRandomSeed";
 }
 
 TaskId Devicex::initTensorTaskId(TensorId id) const {
@@ -2541,22 +2514,10 @@ bool Devicex::useSyntheticData() const {
   return (ir().getSessionOptions().ignoreData);
 }
 
-bool Devicex::isDropoutRandomSeedRequired() const {
-  return requiresDropoutRandomSeed;
-}
-
-void Devicex::setDropoutRandomSeedIsRequired(bool isRequired) {
-  requiresDropoutRandomSeed = isRequired;
-}
-
 std::string Devicex::randomSeedId() const { return "randomSeed"; }
 
-std::string Devicex::dropoutRandomSeedTensorId() const {
-  return "dropoutRandomSeed";
-}
-
-const poplar::Tensor *Devicex::getDropoutRandomSeed() const {
-  return &dropoutRandomSeed;
+const poplar::Tensor &Devicex::getRandomSeedTensor() const {
+  return randomSeedTensor;
 }
 
 } // namespace popx

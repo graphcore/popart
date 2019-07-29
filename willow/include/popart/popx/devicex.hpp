@@ -220,10 +220,7 @@ public:
   void setEngineIsLoaded(bool isLoaded);
 
   std::string randomSeedId() const;
-  bool isDropoutRandomSeedRequired() const;
-  void setDropoutRandomSeedIsRequired(bool isRequired);
-  std::string dropoutRandomSeedTensorId() const;
-  const poplar::Tensor *getDropoutRandomSeed() const;
+  const poplar::Tensor &getRandomSeedTensor() const;
   // Compile-time poplar tensors used to determine sampling of random
   // numbers across tiles. Combined with the random seed and seedModifier,
   // this ensures that the same random mask is generated for fwd and bwd
@@ -256,14 +253,6 @@ private:
   // Map tensors evenly across all tiles
   LinearMapper linearMapper;
 
-  // A random seed tensor is needed to get repeatable random
-  // masks for corresponding fwd and bwd dropout ops.
-  // Design decision: a separate seed tensor to the one used to
-  // initialise the random hardware so that manipulation of this
-  // tensor for some other reason between fwd and bwd dropout
-  // layers doensn't break dropout's functionality
-  bool requiresDropoutRandomSeed = false;
-  poplar::Tensor dropoutRandomSeed;
   poplar::Tensor randomSeedTensor;
 
   PipelineInfo pInfo;
@@ -277,10 +266,9 @@ private:
 
   PriTask initRandomSeed();
   TaskId initRandomSeedTaskId() const;
+  TaskId incrementRandomSeedTaskId() const;
   void connectRandomSeedStream();
-
-  PriTask initDropoutRandomSeed();
-  TaskId initDropoutRandomSeedId() const;
+  PriTask incrementRandomSeedTask();
 
   PriTask setInitTensorValTask(Tensor *);
   TaskId setInitTensorValTaskId(TensorId) const;
@@ -320,8 +308,6 @@ private:
   PriTask toHostEveryNBatchesTask(Tensor *tensor,
                                   ReturnPeriod N,
                                   poplar::program::Sequence &);
-
-  PriTask incrementDropoutRandomSeedTask();
 
   PriTask initAndUpdatePipelineStashIndicesTask();
 
