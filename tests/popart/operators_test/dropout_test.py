@@ -141,8 +141,8 @@ def test_dropout_training4():
 # Test that a different mask is used every time session.run is called.
 def test_dropout_training_randomness():
     dsize = 100
-    session, ip, out, d__ip, anchors = get_dropout_session(
-        dsize=dsize, use_ipu=True)
+    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
+                                                           use_ipu=True)
 
     ip_data = np.random.random_sample(dsize).astype(np.float32)
     stepio = popart.PyStepIO({ip: ip_data}, anchors)
@@ -164,8 +164,8 @@ def test_dropout_training_randomness():
 # on the same input data, with the same seed the same, random mask is applied)
 def test_dropout_training_set_seed():
     dsize = 100
-    session, ip, out, d__ip, anchors = get_dropout_session(
-        dsize=dsize, use_ipu=True)
+    session, ip, out, d__ip, anchors = get_dropout_session(dsize=dsize,
+                                                           use_ipu=True)
 
     ip_data = np.random.random_sample(dsize).astype(np.float32)
     stepio = popart.PyStepIO({ip: ip_data}, anchors)

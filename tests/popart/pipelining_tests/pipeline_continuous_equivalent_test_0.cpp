@@ -165,8 +165,7 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
   std::vector<float> v_act5_out(stepDataElms);
   popart::NDArrayWrapper<float> act5_wrapper(v_act5_out.data(), stepDataShape);
 
-  std::map<popart::TensorId, popart::IArray &> anchors = {
-      {act5, act5_wrapper}};
+  std::map<popart::TensorId, popart::IArray &> anchors = {{act5, act5_wrapper}};
 
   WeightsIO weightsRead;
   std::vector<float> w0_readback(weightInfo.nelms(), -99.0f);
@@ -198,7 +197,7 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
       }
     }
     popart::NDArrayWrapper<float> input1_wrapper(v_input_0.data(),
-                                                  stepDataInfo);
+                                                 stepDataInfo);
     std::map<popart::TensorId, popart::IArray &> inputs = {
         {input1, input1_wrapper}};
     popart::StepIO stepio(inputs, anchors);

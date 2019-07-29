@@ -6,6 +6,15 @@
 #include <set>
 
 #include <memory>
+#include <poplin/codelets.hpp>
+#include <popnn/codelets.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/codelets.hpp>
+#include <poprand/RandomGen.hpp>
+#include <poprand/codelets.hpp>
+#include <popsys/CSRFunctions.hpp>
+#include <popsys/codelets.hpp>
+#include <poputil/exceptions.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
@@ -28,15 +37,6 @@
 #include <popart/tensors.hpp>
 #include <popart/tojson.hpp>
 #include <popart/topocons.hpp>
-#include <poplin/codelets.hpp>
-#include <popnn/codelets.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/codelets.hpp>
-#include <poprand/RandomGen.hpp>
-#include <poprand/codelets.hpp>
-#include <popsys/CSRFunctions.hpp>
-#include <popsys/codelets.hpp>
-#include <poputil/exceptions.hpp>
 
 #include <popart/op/gradientaccl.hpp>
 #include <popart/op/varupdate.hpp>

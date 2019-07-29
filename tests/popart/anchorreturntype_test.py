@@ -21,8 +21,8 @@ def identity_inference_session(tmpdir, inputShape, inputArray, BPS, art):
     dataFlow = popart.DataFlow(batchesPerStep, {o: art})
 
     session = popart.InferenceSession(fnModel=proto,
-                                       dataFeed=dataFlow,
-                                       deviceInfo=tu.get_poplar_cpu_device())
+                                      dataFeed=dataFlow,
+                                      deviceInfo=tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 

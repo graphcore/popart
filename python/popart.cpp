@@ -19,9 +19,9 @@
 #include <popart/tensornames.hpp>
 #include <popart/version.hpp>
 
+#include <stdexcept>
 #include <poplar/exceptions.hpp>
 #include <poputil/exceptions.hpp>
-#include <stdexcept>
 
 #include <onnx/onnx_pb.h>
 

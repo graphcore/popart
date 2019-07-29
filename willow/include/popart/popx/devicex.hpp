@@ -18,8 +18,8 @@
 #include <popart/popx/popprograms.hpp>
 #include <popart/pritask.hpp>
 
-#include <popart/names.hpp>
 #include <set>
+#include <popart/names.hpp>
 // MutableVoidData is defined in here:
 #include <popart/tensordata.hpp>
 

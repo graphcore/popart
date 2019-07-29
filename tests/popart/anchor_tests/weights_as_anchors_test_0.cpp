@@ -179,13 +179,12 @@ BOOST_AUTO_TEST_CASE(WeightAnchorTest0) {
   std::vector<float> v_w5_out(stepWeightElms, -77.0f);
   popart::NDArrayWrapper<float> w5_wrapper(v_w5_out.data(), stepWeightShape);
 
-  std::map<popart::TensorId, popart::IArray &> anchors = {
-      {act5, act5_wrapper},
-      {w1, w1_wrapper},
-      {w2, w2_wrapper},
-      {w3, w3_wrapper},
-      {w4, w4_wrapper},
-      {w5, w5_wrapper}};
+  std::map<popart::TensorId, popart::IArray &> anchors = {{act5, act5_wrapper},
+                                                          {w1, w1_wrapper},
+                                                          {w2, w2_wrapper},
+                                                          {w3, w3_wrapper},
+                                                          {w4, w4_wrapper},
+                                                          {w5, w5_wrapper}};
 
   WeightsIO weightsRead;
   std::vector<float> w0_readback(weightInfo.nelms(), -99.0f);

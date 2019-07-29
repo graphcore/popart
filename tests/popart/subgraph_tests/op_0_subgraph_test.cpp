@@ -185,8 +185,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
       {{10, 14, 18, 22}, 1},
       {{13, 17, 21, 24}, 1}};
 
-  popart::logging::info(
-      "simple case of an Op schedule. Is TEST, threshold -1");
+  popart::logging::info("simple case of an Op schedule. Is TEST, threshold -1");
   testWithTrain(false, -1.0, expected_test_matches);
 
   popart::logging::info(
@@ -203,8 +202,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
                             {{11, 15, 19, 23}, 1},
                             {{10, 14, 18, 22}, 1},
                             {{13, 17, 21, 24}, 1}};
-  popart::logging::info(
-      "simple case of an Op schedule. Is TRAIN, threshold 0");
+  popart::logging::info("simple case of an Op schedule. Is TRAIN, threshold 0");
   testWithTrain(true, 0.0, expected_train_matches);
 
   // at threshold 1.0f, all matmul ops are always cached
@@ -218,8 +216,7 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
       {{11, 15, 19, 23}, 1},
 
   };
-  popart::logging::info(
-      "simple case of an Op schedule. Is TRAIN, threshold 1");
+  popart::logging::info("simple case of an Op schedule. Is TRAIN, threshold 1");
   testWithTrain(true, 1.0, expected_train_matches);
 }
 

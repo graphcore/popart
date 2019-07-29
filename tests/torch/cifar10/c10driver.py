@@ -155,28 +155,28 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
 
     if mode == 'infer':
         session = popart.InferenceSession(fnModel=modelProtoX,
-                                           inputShapeInfo=inputShapeInfo,
-                                           dataFeed=dataFeed,
-                                           passes=passes,
-                                           userOptions=opts,
-                                           deviceInfo=device)
-    elif mode == 'evaluate':
-        session = popart.InferenceSession(fnModel=modelProtoX,
-                                           inputShapeInfo=inputShapeInfo,
-                                           dataFeed=dataFeed,
-                                           losses=torchWriter.losses,
-                                           passes=passes,
-                                           userOptions=opts,
-                                           deviceInfo=device)
-    else:
-        session = popart.TrainingSession(fnModel=modelProtoX,
                                           inputShapeInfo=inputShapeInfo,
                                           dataFeed=dataFeed,
-                                          losses=torchWriter.losses,
-                                          optimizer=torchWriter.optimizer,
                                           passes=passes,
                                           userOptions=opts,
                                           deviceInfo=device)
+    elif mode == 'evaluate':
+        session = popart.InferenceSession(fnModel=modelProtoX,
+                                          inputShapeInfo=inputShapeInfo,
+                                          dataFeed=dataFeed,
+                                          losses=torchWriter.losses,
+                                          passes=passes,
+                                          userOptions=opts,
+                                          deviceInfo=device)
+    else:
+        session = popart.TrainingSession(fnModel=modelProtoX,
+                                         inputShapeInfo=inputShapeInfo,
+                                         dataFeed=dataFeed,
+                                         losses=torchWriter.losses,
+                                         optimizer=torchWriter.optimizer,
+                                         passes=passes,
+                                         userOptions=opts,
+                                         deviceInfo=device)
 
     # get the tensor info for the anchors
     anchorArrays = session.initAnchorArrays()
@@ -329,7 +329,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                 # Compare parameters from updated Onnx models
                 if stepi == 0:
                     nr = popart.NumericsReport(fnModel0, fnTorchModel,
-                                                fnModel0, fnPopArtModel)
+                                               fnModel0, fnPopArtModel)
                 else:
                     nr = popart.NumericsReport(
                         getFnTorch(stepi - 1), fnTorchModel,

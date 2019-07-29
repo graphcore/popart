@@ -75,8 +75,8 @@ BOOST_AUTO_TEST_CASE(DataFlow_Case2) {
 BOOST_AUTO_TEST_CASE(DataFlow_Case3) {
 
   auto df = popart::DataFlow(6,
-                              {{"one", AnchorReturnType("EVERYN", 2)},
-                               {"two", AnchorReturnType("FINAL")}});
+                             {{"one", AnchorReturnType("EVERYN", 2)},
+                              {"two", AnchorReturnType("FINAL")}});
 
   BOOST_CHECK(df.art("one").rp() == 2);
   BOOST_CHECK_EXCEPTION(df.art("two").rp(), error, inValidReturnPeriod1);

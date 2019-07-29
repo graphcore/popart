@@ -122,8 +122,7 @@ def test_constsgd_vs_sgd():
     numSteps = 3
     for step in range(numSteps):
 
-        stepioConstSgd = popart.PyStepIO(inputsConstSgd,
-                                          anchorsArraysConstSgd)
+        stepioConstSgd = popart.PyStepIO(inputsConstSgd, anchorsArraysConstSgd)
 
         # set scalar learnRate
         inputsUserSgd["learningRate_FLOAT"] = np.ones(stepSize,

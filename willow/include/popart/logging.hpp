@@ -55,7 +55,7 @@ enum class Level {
 };
 
 enum class Module {
-  popart,   /// Generic popart module, used when the module is not passed
+  popart,    /// Generic popart module, used when the module is not passed
   session,   /// Session module
   ir,        /// Ir module
   devicex,   /// Devicex module
@@ -110,7 +110,7 @@ void log(Module m, Level l, const char *s, const Args &... args) {
 #define MAKE_LOG_TEMPLATE(fnName, lvl)                                         \
   template <typename... Args>                                                  \
   inline void fnName(const std::string &s, const Args &... args) {             \
-    log(Module::popart,                                                       \
+    log(Module::popart,                                                        \
         Level::lvl,                                                            \
         s.c_str(),                                                             \
         std::forward<const Args>(args)...);                                    \

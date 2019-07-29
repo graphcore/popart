@@ -113,8 +113,7 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
 
   };
 
-  popart::logging::info(
-      "crossing in final means not included, threshold -1.0");
+  popart::logging::info("crossing in final means not included, threshold -1.0");
   test(types, value_map, expected_matches, -1.0f);
 
   expected_matches = {
@@ -128,7 +127,6 @@ BOOST_AUTO_TEST_CASE(Final0_Subgraph) {
       {{1, 5, 8}, 2},       // 12      : 20
       {{3, 10, 12, 14}, 2}, // 00      : 20
   };
-  popart::logging::info(
-      "crossing in final means not included, threshold 15.0");
+  popart::logging::info("crossing in final means not included, threshold 15.0");
   test(types, value_map, expected_matches, 15.0f);
 }

@@ -25,7 +25,7 @@ output = builder.getOutputTensorIds()[0]
 dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("ALL")})
 
 s = popart.Session(graph_transformer.getModelProto(),
-                    dataFeed=dataFlow,
-                    userOptions=opts)
+                   dataFeed=dataFlow,
+                   userOptions=opts)
 s.setDevice(device)
 s.prepareDevice()

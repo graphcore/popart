@@ -23,9 +23,9 @@ def test_no_virtual_graph():
     opts = popart.SessionOptionsCore()
 
     popart.InferenceSession(fnModel=proto,
-                             dataFeed=dataFlow,
-                             userOptions=opts,
-                             deviceInfo=tu.get_poplar_cpu_device())
+                            dataFeed=dataFlow,
+                            userOptions=opts,
+                            deviceInfo=tu.get_poplar_cpu_device())
 
 
 def test_all_virtual_graph():
@@ -53,9 +53,9 @@ def test_all_virtual_graph():
     opts.enableVirtualGraphs = True
 
     popart.InferenceSession(fnModel=proto,
-                             dataFeed=dataFlow,
-                             userOptions=opts,
-                             deviceInfo=tu.get_poplar_cpu_device())
+                            dataFeed=dataFlow,
+                            userOptions=opts,
+                            deviceInfo=tu.get_poplar_cpu_device())
 
 
 def test_mixed_virtual_graph():
@@ -82,9 +82,9 @@ def test_mixed_virtual_graph():
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_poplar_cpu_device())
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_poplar_cpu_device())
 
     assert (e_info.value.args[0].startswith("Either all"))
 

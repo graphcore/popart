@@ -29,9 +29,9 @@ def test_ipu_copy_bca1():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     s.prepareDevice()
 
@@ -62,9 +62,9 @@ def test_ipu_copy_aca1():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     with pytest.raises(popart.popart_exception) as e_info:
         s.prepareDevice()
@@ -104,9 +104,9 @@ def test_ipu_copy_bca4():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     s.prepareDevice()
 
@@ -144,9 +144,9 @@ def test_ipu_copy_bca2():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     s.prepareDevice()
 
@@ -176,9 +176,9 @@ def test_ipu_copy_bca3():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=2))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=2))
 
     s.prepareDevice()
 
@@ -213,8 +213,8 @@ def test_ipu_copy_bca5():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     s.prepareDevice()

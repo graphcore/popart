@@ -21,8 +21,8 @@ def test_add_fp16(tmpdir):
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     session = popart.InferenceSession(fnModel=proto,
-                                       dataFeed=dataFlow,
-                                       deviceInfo=tu.get_poplar_cpu_device())
+                                      dataFeed=dataFlow,
+                                      deviceInfo=tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 
@@ -56,8 +56,8 @@ def test_add_variable_fp16(tmpdir):
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     session = popart.InferenceSession(fnModel=proto,
-                                       dataFeed=dataFlow,
-                                       deviceInfo=tu.get_poplar_cpu_device())
+                                      dataFeed=dataFlow,
+                                      deviceInfo=tu.get_poplar_cpu_device())
 
     session.prepareDevice()
     session.weightsFromHost()
@@ -103,8 +103,8 @@ def test_fp16transpose(tmpdir):
     proto = builder.getModelProto()
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
     session = popart.InferenceSession(fnModel=proto,
-                                       dataFeed=dataFlow,
-                                       deviceInfo=tu.get_poplar_cpu_device())
+                                      dataFeed=dataFlow,
+                                      deviceInfo=tu.get_poplar_cpu_device())
 
     session.prepareDevice()
     anchors = session.initAnchorArrays()

@@ -167,7 +167,7 @@ LoggingContext::LoggingContext() {
 
   // Get logging level from OS ENV. The default level is off.
   defaultLevel = logLevelFromString(POPART_LOG_LEVEL ? POPART_LOG_LEVEL
-                                                      : defaultLoggerLevel);
+                                                     : defaultLoggerLevel);
 
   if (POPART_LOG_CONFIG) {
     try {

@@ -20,8 +20,8 @@ def inference_add_to_variable(tmpdir, np_type):
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     session = popart.InferenceSession(fnModel=proto,
-                                       dataFeed=dataFlow,
-                                       deviceInfo=tu.get_poplar_cpu_device())
+                                      dataFeed=dataFlow,
+                                      deviceInfo=tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 

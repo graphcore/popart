@@ -35,9 +35,9 @@ def test_simple_load(tmp_path):
 
         # Create a session to compile and execute the graph
         session = popart.InferenceSession(fnModel=proto,
-                                           dataFeed=dataFlow,
-                                           userOptions=opts,
-                                           deviceInfo=device)
+                                          dataFeed=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
         # Compile graph
         session.prepareDevice()
@@ -161,9 +161,9 @@ def test_bad_load(tmp_path):
 
         # Create a session to compile and execute the graph
         session = popart.InferenceSession(fnModel=proto,
-                                           dataFeed=dataFlow,
-                                           userOptions=opts,
-                                           deviceInfo=device)
+                                          dataFeed=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
         # Compile graph
         session.prepareDevice()
@@ -217,9 +217,9 @@ def test_get_reports(tmp_path):
 
         # Create a session to compile and execute the graph
         session = popart.InferenceSession(fnModel=proto,
-                                           dataFeed=dataFlow,
-                                           userOptions=opts,
-                                           deviceInfo=device)
+                                          dataFeed=dataFlow,
+                                          userOptions=opts,
+                                          deviceInfo=device)
 
         # Compile graph
         session.prepareDevice()

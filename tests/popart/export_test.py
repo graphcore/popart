@@ -41,11 +41,11 @@ def test_constants_preserved():
     opts = popart.SessionOptionsCore()
 
     session = popart.TrainingSession(fnModel=proto,
-                                      dataFeed=dataFlow,
-                                      userOptions=opts,
-                                      losses=losses,
-                                      optimizer=optimizer,
-                                      deviceInfo=tu.get_poplar_cpu_device())
+                                     dataFeed=dataFlow,
+                                     userOptions=opts,
+                                     losses=losses,
+                                     optimizer=optimizer,
+                                     deviceInfo=tu.get_poplar_cpu_device())
 
     anchorArrays = session.initAnchorArrays()
 
