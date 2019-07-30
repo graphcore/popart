@@ -135,6 +135,9 @@ public:
   // FFS could this be combined with updateOptimizer?
   void setOptimizer(const Optimizer *o);
 
+  // Get the optimizer
+  const std::unique_ptr<Optimizer> &getOptimizer() const { return optimizer; }
+
   // Set the device info
   void setDeviceInfo(DeviceInfo &);
 

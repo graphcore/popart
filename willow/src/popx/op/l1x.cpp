@@ -1,13 +1,18 @@
 #include <numeric>
 #include <popart/error.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/l1.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/l1x.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
 
 #include <popops/ElementWise.hpp>
+#include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
+
+namespace pe = popops::expr;
 
 namespace popart {
 namespace popx {
@@ -47,9 +52,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
     scale = lambda / totalSamples;
     break;
   }
-  default: {
-    throw error("Unsupported reduction type for Loss {}", idStr());
-  }
+  default: { throw error("Unsupported reduction type for Loss {}", idStr()); }
   }
 
   auto t_scale =
@@ -63,6 +66,24 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                                 t_scale,
                                 prog,
                                 debugPrefix("Multiply"));
+
+  if (dv_p->ir().getOptimizer()->constantLossScaling()) {
+    auto lossScaling = dv_p->ir().getOptimizer()->getLossScaling();
+    if (lossScaling > 1.0f || lossScaling < 1.0f) {
+      popops::mapInPlace(graph(),
+                         pe::Mul(pe::_1, pe::Const(lossScaling)),
+                         {gradTensor},
+                         prog,
+                         debugPrefix("ScaledLoss"));
+    }
+  } else {
+    popops::mapInPlace(
+        graph(),
+        pe::Mul(pe::_1, pe::_2),
+        {gradTensor, getInTensor(L1GradOp::getLossScalingInIndex())},
+        prog,
+        debugPrefix("ScaledLoss"));
+  }
 
   setOutTensor(0, gradTensor);
 }
@@ -104,9 +125,7 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
     scale = lambda / totalSamples;
     break;
   }
-  default: {
-    throw error("Unsupported reduction type for Loss {}", idStr());
-  }
+  default: { throw error("Unsupported reduction type for Loss {}", idStr()); }
   }
 
   // t_scale is always expected to be FLOAT, regardless of the input type

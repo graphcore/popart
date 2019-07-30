@@ -66,6 +66,9 @@ public:
   void setup() final;
   std::unique_ptr<Op> clone() const final;
 
+  // inputs 0 & 1 are defined in NllOp
+  static InIndex getLossScalingInIndex() { return 2; }
+
   static OutIndex getOutIndex() { return 0; }
 
   const NllLoss *nlll() const;

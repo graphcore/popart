@@ -6,6 +6,7 @@
 #include <popart/op/softmax.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 
@@ -169,6 +170,14 @@ std::unique_ptr<Op> NlllWithSoftmaxGradDirectOp::clone() const {
 }
 
 void NlllWithSoftmaxGradDirectOp::setup() {
+
+  // connect the loss scaling tensor if is non-const
+  if (!getIr().getOptimizer()->constantLossScaling()) {
+    connectInTensor(NlllWithSoftmaxGradDirectOp::getLossScalingInIndex(),
+                    getIr().getOptimizer()->getLossScalingTensorId(
+                        inInfo(nlll()->getProbsInIndex()).dataType()));
+  }
+
   // gradient of activations has same shape as probabilities
   outInfo(getGradOutIndex()) = inInfo(getProbsInIndex());
 

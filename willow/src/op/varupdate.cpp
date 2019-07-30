@@ -32,6 +32,7 @@ void ConstSGDVarUpdateOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
   os.appendAttribute("learning rate", learnRate);
   os.appendAttribute("weight decay", weightDecay);
+  os.appendAttribute("loss scaling", lossScaling);
 }
 
 // Modifies is the same as aliases
@@ -58,13 +59,16 @@ std::unique_ptr<Op> SGDVarUpdateOp::clone() const {
 ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_,
                                          float lr_,
                                          float wd_,
+                                         float ls_,
                                          const Op::Settings &settings_)
     : VarUpdateOp(Onnx::CustomOperators::ConstSgdVarUpdate, varId_, settings_),
-      learnRate(lr_), weightDecay(wd_) {}
+      learnRate(lr_), weightDecay(wd_), lossScaling(ls_) {}
 
 float ConstSGDVarUpdateOp::getLearnRate() const { return learnRate; }
 
 float ConstSGDVarUpdateOp::getWeightDecay() const { return weightDecay; }
+
+float ConstSGDVarUpdateOp::getLossScaling() const { return lossScaling; }
 
 std::unique_ptr<Op> ConstSGDVarUpdateOp::clone() const {
   return std::make_unique<ConstSGDVarUpdateOp>(*this);

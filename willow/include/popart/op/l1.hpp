@@ -56,6 +56,8 @@ public:
   std::unique_ptr<Op> clone() const final;
 
   static InIndex getInIndex() { return 0; }
+  static InIndex getLossScalingInIndex() { return 1; }
+
   static OutIndex getOutIndex() { return 0; }
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }

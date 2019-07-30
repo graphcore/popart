@@ -1,6 +1,8 @@
 #include <memory>
 #include <popart/error.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/nll.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/op/nllx.hpp>
 #include <popart/popx/opxmanager.hpp>
@@ -8,7 +10,10 @@
 #include <popops/Cast.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Encoding.hpp>
+#include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
+
+namespace pe = popops::expr;
 
 namespace popart {
 namespace popx {
@@ -256,6 +261,24 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
+
+  if (dv_p->ir().getOptimizer()->constantLossScaling()) {
+    auto lossScaling = dv_p->ir().getOptimizer()->getLossScaling();
+    if (lossScaling > 1.0f || lossScaling < 1.0f) {
+      popops::mapInPlace(graph(),
+                         pe::Mul(pe::_1, pe::Const(lossScaling)),
+                         {oneHot},
+                         prog,
+                         debugPrefix("ScaledLoss"));
+    }
+  } else {
+    popops::mapInPlace(
+        graph(),
+        pe::Mul(pe::_1, pe::_2),
+        {oneHot, getInTensor(NllGradOp::getLossScalingInIndex())},
+        prog,
+        debugPrefix("ScaledLoss"));
+  }
 
   setOutTensor(0, oneHot);
 }

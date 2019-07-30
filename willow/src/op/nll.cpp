@@ -1,8 +1,10 @@
 #include <memory>
 #include <sstream>
 #include <popart/error.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/nll.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 
 namespace popart {
@@ -94,6 +96,14 @@ NllOp::NllOp(const OperatorIdentifier &_opid,
     : LossOp(_opid, settings_), nllloss_(n) {}
 
 void NllGradOp::setup() {
+
+  // connect the loss scaling tensor if is non-const
+  if (!getIr().getOptimizer()->constantLossScaling()) {
+    connectInTensor(NllGradOp::getLossScalingInIndex(),
+                    getIr().getOptimizer()->getLossScalingTensorId(
+                        inInfo(nlll()->getProbsInIndex()).dataType()));
+  }
+
   // gradient of probs has same shape as probs
   outInfo(nlll()->getOutIndex()) = inInfo(nlll()->getProbsInIndex());
 }

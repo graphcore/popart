@@ -61,10 +61,13 @@ MergeVarUpdates::PartitionId MergeVarUpdates::getPartitionId(Op *op) const {
     auto svu = dynamic_cast<SGDVarUpdateOp *>(op);
 
     // 2.1) same learning rate input Tensor
-    ss << "lri_" << svu->inId(svu->getLearnRateInIndex()) << '_';
+    ss << "lri_" << svu->inId(svu->getScaledLearnRateInIndex()) << '_';
 
     // 1.2) same weight decay input Tensor
     ss << "wdi_" << svu->inId(svu->getWeightDecayInIndex()) << '_';
+
+    // 1.3) same loss scaling input Tensor
+    ss << "lsi_" << svu->inId(svu->getLossScalingInIndex()) << '_';
   }
 
   // 3) CopyVarUpdate

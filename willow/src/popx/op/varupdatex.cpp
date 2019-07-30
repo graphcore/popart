@@ -51,10 +51,14 @@ SGDVarUpdateOpx::SGDVarUpdateOpx(Op *op, Devicex *devicex)
 void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   // Weight update (matching pytorch implementation):
-  //   w <- w * (1 - lr * wd) - lr * delta
+  //   w <- w * (1 - (lr/ls) * wd) - (lr/ls) * delta
+  //
+  // lr = learning rate
+  // ls = loss scaling
+  // wd = weight decay
 
-  // The (1 -lr * wd) calculation is done in SGD::setTensorData, weightDecay is
-  // weightDecayScaleFactor
+  // The (1 -(lr/ls) * wd) and (lr/ls) calculation is done in
+  // SGD::setTensorData, weightDecay is weightDecayScaleFactor
 
   // First update weights with weight decay
   popops::mapInPlace(graph(),
@@ -83,7 +87,7 @@ void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
       graph(),
       getInTensor(SGDVarUpdateOp::getVarToUpdateInIndex()), // weights
       weightDeltas,                                         // weightDeltas
-      getInTensor(SGDVarUpdateOp::getLearnRateInIndex()),
+      getInTensor(SGDVarUpdateOp::getScaledLearnRateInIndex()),
       prog,
       debugPrefix("scaledSubtract"));
 
@@ -101,13 +105,14 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto vu_op = getOp<ConstSGDVarUpdateOp>();
 
   // Weight update (matching pytorch implementation):
-  //   w <- w * (1 - lr * wd) - lr * delta
+  //   w <- w * (1 - (lr/ls) * wd) - (lr/ls) * delta
 
   // First update weights with weight decay (only if user has
   // specified non-zero weight decay)
   if (vu_op.getWeightDecay() != 0.0f) {
     float weightDecayScaleFactor =
-        1 - (vu_op.getWeightDecay() * vu_op.getLearnRate());
+        1 - (vu_op.getWeightDecay() *
+             (vu_op.getLearnRate() / vu_op.getLossScaling()));
 
     popops::mapInPlace(
         graph(),
@@ -135,7 +140,7 @@ void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
       graph(),
       getInTensor(vu_op.getVarToUpdateInIndex()), // weights
       weightDeltas,                               // weightDeltas
-      vu_op.getLearnRate(),
+      vu_op.getLearnRate() / vu_op.getLossScaling(),
       prog,
       debugPrefix("scaledSubtract"));
 

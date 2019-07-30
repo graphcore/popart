@@ -33,14 +33,16 @@ def run(torchWriter,
 
     if outputdir is None:
         with TemporaryDirectory() as outputdir:
-            _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
-                      device_hw_id, mode, syntheticData, transformations)
+            return _run_impl(torchWriter, passes, outputdir, cifarInIndices,
+                             device, device_hw_id, mode, syntheticData,
+                             transformations)
     else:
         if not os.path.exists(outputdir):
             os.mkdir(outputdir)
 
-        _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
-                  device_hw_id, mode, syntheticData, transformations)
+        return _run_impl(torchWriter, passes, outputdir, cifarInIndices,
+                         device, device_hw_id, mode, syntheticData,
+                         transformations)
 
 
 def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
@@ -382,3 +384,5 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                     result = getTensorError(torchOuput, anchorArrays[outName])
                     print(reportTensorError(nInd, result))
                     checkResult(result, margin)
+
+    return anchorArrays
