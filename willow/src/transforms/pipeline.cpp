@@ -256,6 +256,11 @@ bool Pipeline::apply(Graph &graph) const {
     stashOp->scheduledPreLoss               = ScheduledPreLoss::Yes;
     stashOp->outTensor(0)->scheduledPreLoss = ScheduledPreLoss::Yes;
 
+    logging::transform::debug(
+        "Adding stash of size {} of activations {} for pipelining",
+        stashOp->getStashSize(),
+        tensor->id);
+
     // Restore
 
     // Should op be Restore (outplace) or RestoreInplace?
@@ -272,10 +277,8 @@ bool Pipeline::apply(Graph &graph) const {
 
     RestoreOp *restoreOp;
     if (isInplace) {
-      logging::ir::debug("Restore Op is inplace");
       restoreOp = addNewRestoreInplaceOp(graph);
     } else {
-      logging::ir::debug("Restore Op is outplace");
       restoreOp = addNewRestoreOp(graph);
     }
 
@@ -300,13 +303,14 @@ bool Pipeline::apply(Graph &graph) const {
     // manually (see T10109)
     restoreOp->scheduledPreLoss               = ScheduledPreLoss::No;
     restoreOp->outTensor(0)->scheduledPreLoss = ScheduledPreLoss::No;
+    restoreOp->setup();
 
     // apply topological constraints:
     // (1)  -> Stash before all forward consumers
     // (2)  -> Restore after Stash
     // (3)  -> All backwards after Restore
     // (4)  -> Restore after all producers of (non-tid) tensors
-    //         consumed by all backwards
+    //         consumed by first scheduled backwards
 
     // (2)
     graph.topoCons->insert(stashOp, restoreOp);
@@ -317,25 +321,34 @@ bool Pipeline::apply(Graph &graph) const {
       } else {
         // (3)
         graph.topoCons->insert(restoreOp, tidConsumer);
-        // (4)
-        for (Tensor *t : tidConsumer->input->tensors()) {
-          if (t->hasProducer()) {
-            if (t->getProducer() == restoreOp) {
-              continue;
-            } else {
-              graph.topoCons->insert(t->getProducer(), restoreOp);
-            }
-          }
+      }
+    }
+    // (4)
+    // First get first scheduled bwd consumer
+    std::vector<Op *> opSchedule = graph.getOpSchedule({});
+    auto firstScheduledOpIt      = opSchedule.end();
+    for (auto tidConsumer : tidConsumers) {
+      if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
+        continue;
+      } else {
+        if (std::find(firstScheduledOpIt, opSchedule.end(), tidConsumer) ==
+            opSchedule.end()) {
+          firstScheduledOpIt =
+              std::find(opSchedule.begin(), opSchedule.end(), tidConsumer);
         }
       }
     }
-
-    restoreOp->setup();
-
-    logging::transform::debug(
-        "Adding stash of size {} of activations {} for pipelining",
-        stashOp->getStashSize(),
-        tensor->id);
+    Op *firstScheduledOp = *firstScheduledOpIt;
+    // Add the topocons
+    for (Tensor *t : firstScheduledOp->input->tensors()) {
+      if (t->hasProducer()) {
+        if (t->getProducer() == restoreOp) {
+          continue;
+        } else {
+          graph.topoCons->insert(t->getProducer(), restoreOp);
+        }
+      }
+    }
   }
 
   return true;

@@ -97,10 +97,19 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   sq.add(preForwardFragment());
 
   // 2.
-  for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
-    if (pInfo.doFwd(pCycle, vgid_seq.first)) {
-      ss << "\n  vg" << vgid_seq.first << " : ToDeviceStream";
-      sq.add(vgid_seq.second);
+  if (pipelineSeqs.find(PipelineFragmentId::ToDeviceStream) !=
+      pipelineSeqs.end()) {
+    for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
+      if (pInfo.doFwd(pCycle, vgid_seq.first)) {
+        ss << "\n  vg" << vgid_seq.first << " : ToDeviceStream";
+        sq.add(vgid_seq.second);
+      }
+    }
+  } else {
+    if (dv_p->useSyntheticData() == false) {
+      throw error(
+          "There are no ToDeviceStream pipeline program fragments. Check that "
+          "the stream copies have been added to the correct fragment.");
     }
   }
 

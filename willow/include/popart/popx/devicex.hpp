@@ -347,6 +347,10 @@ public:
   // A summary string of the Op series, with annotation for recomputation
   std::string getMainGraphOpString() const;
 
+  // Returns true if using synthetic data, false if using real data
+  // This will return the options.ignoreData flag
+  bool useSyntheticData() const;
+
 private:
   std::vector<Op *> mainGraphOpRegistery;
 
@@ -403,10 +407,6 @@ private:
 
   // Call hostStreamToHost in all the Tensors in pir->dataFlow.anchors()
   void anchorsHostFromHostStreams(const IStepIO &stepio);
-
-  // Returns true if using synthetic data, false if using real data
-  // This will return the options.ignoreData flag
-  bool useSyntheticData() const;
 
   template <typename T> void setInitVal(Tensor *tensor);
   void setInitValHalf(Tensor *tensor);
