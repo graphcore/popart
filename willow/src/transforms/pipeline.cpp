@@ -6,10 +6,10 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/stash.hpp>
+#include <popart/patterns/contiguateipucopyindices.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
-
 #include <popart/transforms/pipeline.hpp>
 
 // Which pipelining scheme should we use? There are some considerations to
@@ -67,6 +67,7 @@ std::size_t Pipeline::id() { return typeid(Pipeline).hash_code(); }
 bool Pipeline::apply(Graph &graph) const {
   auto &ir     = graph.getIr();
   auto numIPUs = ir.getDeviceInfo()->getNumIpus();
+  // We use numIPUs as proxy for sharding factor, not quite correct:TODO T10254
 
   // First, some checks that pipelining is compatible with other user options:
 
@@ -84,6 +85,7 @@ bool Pipeline::apply(Graph &graph) const {
   } else {
     minDepth = numIPUs;
   }
+
   if ((ir.getDataFlow().batchesPerStep() *
        ir.getSessionOptions().accumulationFactor) < minDepth) {
     throw error("For pipelining, depth (batchesPerStep * gradient "
@@ -109,16 +111,11 @@ bool Pipeline::apply(Graph &graph) const {
         "When pipelining is enabled, recomputation is currently not allowed");
   }
 
-  // 4. We assume layers must be sharded linearly with IPU number.
+  // 4. Forward layers must be sharded with increasing IPU index
   //    Examples violating this:
-  //      - Cases where an op on IPU N cannot depends on an op on IPU n>N
-  //          Consider the fwd Graph : Op0 -> Op1 -> Op2 -> Op3
+  //      Consider the fwd Graph : Op0 -> Op1 -> Op2 -> Op3
   //          e.g. 1) IPU0 : {Op2, Op3}, IPU1 : {Op0, Op1}
   //          e.g. 2) IPU0 : {Op0, Op2}, IPU1 : {Op1, Op3}
-  //      - Parallel branches, such as Op0 -> Op2
-  //                                           ^
-  //                                   Op1 ----'
-  //        where the vGraph split is IPU0 : {Op0}, IPU1 : {Op1}, IPU2 : {Op2}.
 
   // The checks:
   for (auto &op_pair : graph.getOps()) {
@@ -136,33 +133,46 @@ bool Pipeline::apply(Graph &graph) const {
                     std::to_string(numIPUs) + " IPUs");
       }
     }
+  }
 
-    // 4.2 All copy ops with pathToLoss=yes go from IPU N->N+1,
-    //     and all copy ops with pathFromLoss=yes go from IPU N->N-1
-    if (op->isIpuCopyOp()) {
-      auto ipuCopyOp = dynamic_cast<popart::IpuCopyOp *>(op);
-      auto sourceIpu = ipuCopyOp->getSourceIpu();
-      auto destIpu   = ipuCopyOp->getDestIpu();
+  // 4.2 Copies in the correct direction
 
-      // For an inference graph, or fwd pass of a training graph...
-      if (op->toLoss == PathToLoss::Yes || !ir.canTrain()) {
-        if (destIpu != sourceIpu + 1) {
-          throw error("For pipelining, the graph must be sharded such that "
-                      "forward IPU copies go from IPU N to N+1. However, " +
-                      op->debugName() + " copies from " +
-                      std::to_string(sourceIpu) + " to " +
-                      std::to_string(destIpu));
-        }
+  auto getIpuCopyOps = [&graph] {
+    // contiguating IpuCopyOps
+    std::vector<popart::IpuCopyOp *> ipuCopies;
+    for (auto &op_pair : graph.getOps()) {
+      auto ipuCopyOp = dynamic_cast<popart::IpuCopyOp *>(op_pair.second.get());
+      if (ipuCopyOp) {
+        ipuCopies.push_back(ipuCopyOp);
       }
-      // For the bwd pass of a training graph...
-      else {
-        if (destIpu != sourceIpu - 1) {
-          throw error("For pipelining, the graph must be sharded such that "
-                      "backward IPU copies go from IPU N to N-1. However, " +
-                      op->debugName() + " copies from " +
-                      std::to_string(sourceIpu) + " to " +
-                      std::to_string(destIpu));
-        }
+    }
+    return ipuCopies;
+  };
+
+  auto ipuCopies = getIpuCopyOps();
+  for (auto ipuCopyOp : ipuCopies) {
+    uint64_t sourceIpu = ipuCopyOp->getSourceIpu();
+    uint64_t destIpu   = ipuCopyOp->getDestIpu();
+    // For an inference graph, or fwd pass of a training graph,
+    if (ipuCopyOp->toLoss == PathToLoss::Yes || !ir.canTrain()) {
+      if (destIpu <= sourceIpu) {
+        throw error("For pipelining, forward IpuCopyOps  must copy to an "
+                    "IPU of larger index. However {} copies from {} to {}.",
+                    ipuCopyOp->debugName(),
+                    sourceIpu,
+                    destIpu);
+      }
+    }
+
+    // for bwd pass, IPU Copy must have destination with lower VGraphId than
+    // source
+    else {
+      if (destIpu >= sourceIpu) {
+        throw error("For pipelining, backward IpuCopyOps  must copy to an "
+                    "IPU of smaller index. However {} copies from {} to {}.",
+                    ipuCopyOp->debugName(),
+                    sourceIpu,
+                    destIpu);
       }
     }
   }
@@ -183,6 +193,26 @@ bool Pipeline::apply(Graph &graph) const {
   }
 
   // Now apply the transform
+
+  // 0. Contiguate the IPUCopies
+  ContiguateIpuCopyIndicesPattern contiguator;
+  for (auto ipuCopyOp : ipuCopies) {
+    if (contiguator.matches(ipuCopyOp)) {
+      logging::transform::debug("Contiguating {}", ipuCopyOp->str());
+      contiguator.apply(ipuCopyOp);
+    }
+  }
+  ir.updateVertices();
+
+  // verify that all IpuCopies are contiguous
+  for (auto ipuCopyOp : getIpuCopyOps()) {
+    auto sourceIpu = static_cast<int64_t>(ipuCopyOp->getSourceIpu());
+    auto destIpu   = static_cast<int64_t>(ipuCopyOp->getDestIpu());
+    auto delta     = destIpu - sourceIpu;
+    if (delta != 1 && delta != -1) {
+      throw error("ILE: Failed to contiguate all IpuCopyOps");
+    }
+  }
 
   if (!ir.canTrain()) {
     // No stashing of forward activations required in inference/eval mode

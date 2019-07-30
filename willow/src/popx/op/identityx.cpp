@@ -1,4 +1,3 @@
-#include <iostream>
 #include <popart/error.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/popx/op/identityx.hpp>

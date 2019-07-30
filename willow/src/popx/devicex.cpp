@@ -24,6 +24,7 @@
 #include <popart/op.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/if.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
@@ -1328,8 +1329,11 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
         if (op->settings.recomputeType == RecomputeType::CHECKPOINT) {
           logging::devicex::debug("Adding checkpoint Op {}", op->debugName());
           if (ir().getSessionOptions().enablePipelining) {
-            if (op->isIpuCopyOp()) {
-              growOpx(progs.pipelineIpuCopyFragment());
+            auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
+            if (ipuCopyOp) {
+              growOpx(progs.pipelineIpuCopyFwdFragment(
+                  ipuCopyOp->getSourceIpu(),
+                  ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
             } else {
               growOpx(progs.pipelineForwardFragment(op->getVirtualGraphId(),
                                                     op->str()));
@@ -1359,8 +1363,11 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
         }
 
         if (ir().getSessionOptions().enablePipelining) {
-          if (op->isIpuCopyOp()) {
-            growOpx(progs.pipelineIpuCopyFragment());
+          auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
+          if (ipuCopyOp) {
+            growOpx(progs.pipelineIpuCopyBwdFragment(
+                ipuCopyOp->getDestIpu(),
+                ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
           } else if ((op->isConvertibleTo<VarUpdateOp>()) &&
                      (ir().getSessionOptions().enableGradientAccumulation)) {
 
@@ -2031,6 +2038,7 @@ std::string Devicex::getPopartCachePath() {
 }
 
 void Devicex::trySaveExecutable(poplar::Executable &executable) {
+
   auto cachePath    = ir().getSessionOptions().cachePath;
   auto cacheEnabled = ir().getSessionOptions().enableEngineCaching;
 
@@ -2281,6 +2289,8 @@ PriTask Devicex::updateBatchCountTask(poplar::program::Sequence &sq) {
 
 PriTask Devicex::initAndUpdatePipelineStashIndicesTask() {
 
+  // TODO : use if getNumIpus() here as a proxy for number of virtual graphs
+  // assumes there is not graph replication. Task to address this is T10254
   auto f = [this]() {
     if (ir().canTrain()) {
       // 1. Populate map of stash index tensors. Each IPU needs a single

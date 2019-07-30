@@ -1,4 +1,3 @@
-#include <iostream>
 #include <vector>
 #include <popart/ces/gatherce.hpp>
 #include <popart/ndarraywrapper.hpp>

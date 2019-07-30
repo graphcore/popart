@@ -90,6 +90,8 @@ public:
     FwdToHostStream,
     BwdToHostStream,
     IncrStashIndex,
+    IpuCopyFwd,
+    IpuCopyBwd,
     N // The number of pipeline cycle components
   };
   std::string getStrFromPipelineFragmentId(PipelineFragmentId fragId);
@@ -101,6 +103,7 @@ public:
   poplar::program::Sequence &pipelineFragment(VGraphId vGraphId,
                                               PipelineFragmentId frag,
                                               const std::string &desc);
+
   poplar::program::Sequence &
   pipelineToDeviceStreamFragment(VGraphId vGraphId, const std::string &desc);
   poplar::program::Sequence &pipelineForwardFragment(VGraphId vGraphId,
@@ -113,9 +116,10 @@ public:
   // To stream anchors that are computed in the pipelineBackwardFragment
   poplar::program::Sequence &
   pipelineBwdToHostStreamFragment(VGraphId vGraphId, const std::string &desc);
-  poplar::program::Sequence &pipelineIpuCopyFragment() {
-    return pipelineIpuCopySeq;
-  }
+  poplar::program::Sequence &
+  pipelineIpuCopyFwdFragment(VGraphId id, const std::string &desc);
+  poplar::program::Sequence &
+  pipelineIpuCopyBwdFragment(VGraphId id, const std::string &desc);
   poplar::program::Sequence &
   pipelineIncrStashIndexFragment(VGraphId vGraphId, const std::string &desc);
   // If ScheduledPreLoss::Yes, then return pipelineFwdToHostStreamFragment(),
@@ -146,7 +150,7 @@ private:
       pipelineSeqs;
   // ... and their corresponding descriptions
   std::map<PipelineFragmentId, std::map<VGraphId, std::string>> pipelineDescs;
-  poplar::program::Sequence pipelineIpuCopySeq;
+
   poplar::program::Sequence getMainProgramFromPipelineFragments();
 
   std::set<OpId> beenRecomputed;

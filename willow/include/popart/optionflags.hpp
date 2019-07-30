@@ -55,7 +55,7 @@ struct SessionOptions {
   /// When to write '.dot' files during Ir construction
   std::set<DotCheck> dotChecks = {};
 
-  /// The ops to write to the .dot file will be a continous interval
+  /// The ops to write to the .dot file will be a continuous interval
   /// of the schedule, controlled by firstDotOp and finalDotOp. In particular,
   /// it will be [min(0, firstDotOp), max(N ops in Ir, finalDotOp))
   int firstDotOp = 0;

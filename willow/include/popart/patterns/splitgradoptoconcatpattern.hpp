@@ -12,8 +12,6 @@ public:
   // Does op at the root of the
   // pattern make a match?
   bool matches(Op *) const override;
-  // what phase should this Pattern run in? PRETOPOCONS, as it does not
-  // handle topological constraints.
 
 private:
   // Replace the given op with the returned sequence of ops
