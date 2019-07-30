@@ -1,7 +1,10 @@
 import sys
+import popart
 from popart import *
 
 poponnx_exception = popart_exception
+
+__version__ = popart.__version__
 
 print(
     "You have imported an old module 'poponnx'. Please change your code to "
