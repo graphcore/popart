@@ -177,6 +177,9 @@ public:
     std::vector<Tensor *> external_outputs;
     std::set<Tensor *> all_outputs;
 
+    bool contains(const Op *) const;
+    int getIndex(const Op *) const;
+
   private:
     void addExternalOutput(Tensor *);
     void addExternalInput(Tensor *);
@@ -236,6 +239,24 @@ Match::Instance::Instance(const std::vector<OpId> &ops_, Graph &graph)
       all_outputs.insert(output);
     }
   }
+}
+
+bool Match::Instance::contains(const Op *op) const {
+  for (auto opid : ops) {
+    if (op->id == opid) {
+      return true;
+    }
+  }
+  return false;
+}
+
+int Match::Instance::getIndex(const Op *op) const {
+  for (int i = 0; i < ops.size(); i++) {
+    if (op->id == ops[i]) {
+      return i;
+    }
+  }
+  throw error("Match::Instance does not contain op {}", op->id);
 }
 
 void Match::Instance::addExternalInput(Tensor *tensor) {
@@ -367,6 +388,94 @@ int generate_subgraph_unique_id() {
   return uid++;
 }
 
+class InstanceConstraints {
+public:
+  InstanceConstraints(const Match::Instance &instance, Graph &graph) {
+    for (auto opid : instance.ops) {
+      auto op = graph.getOp(opid);
+
+      for (auto &before : graph.topoCons->getBefores(op)) {
+        if (instance.contains(before)) {
+          insertInternal(instance.getIndex(before), instance.getIndex(op));
+        }
+      }
+
+      for (auto &after : graph.topoCons->getAfters(op)) {
+        if (instance.contains(after)) {
+          insertInternal(instance.getIndex(op), instance.getIndex(after));
+        }
+      }
+    }
+  }
+
+  void insertInternal(int before, int after) {
+    auto foundBefore = internalBefores.find(after);
+    if (foundBefore == internalBefores.end()) {
+      internalBefores.insert({after, {before}});
+    } else {
+      foundBefore->second.insert(before);
+    }
+
+    auto foundAfter = internalAfters.find(before);
+    if (foundAfter == internalAfters.end()) {
+      internalAfters.insert({before, {after}});
+    } else {
+      foundAfter->second.insert(after);
+    }
+  }
+
+  bool operator!=(const InstanceConstraints &rhs) { return !(*this == rhs); }
+
+  bool operator==(const InstanceConstraints &rhs) {
+    return (internalBefores == rhs.internalBefores) &&
+           (internalAfters == rhs.internalAfters);
+  }
+
+  std::map<int, std::set<int>> internalBefores;
+  std::map<int, std::set<int>> internalAfters;
+};
+
+std::ostream &operator<<(std::ostream &os, const InstanceConstraints &ic) {
+  os << "InstanceConstraints:";
+
+  os << "\n  internalBefores:";
+  for (auto &i_befores : ic.internalBefores) {
+    auto i        = i_befores.first;
+    auto &befores = i_befores.second;
+    os << fmt::format("\n    {}:", i);
+    for (auto &before : befores) {
+      os << fmt::format("\n      {}", before);
+    }
+  }
+
+  os << "\n  internalAfters:";
+  for (auto &i_afters : ic.internalAfters) {
+    auto i       = i_afters.first;
+    auto &afters = i_afters.second;
+    os << fmt::format("\n    {}:", i);
+    for (auto &after : afters) {
+      os << fmt::format("\n      {}", after);
+    }
+  }
+
+  return os;
+};
+
+void verifyTopologicalConstraints(const Match &match, Graph &graph) {
+  logging::debug("Checking topological constraints");
+  InstanceConstraints c0(match.instances.at(0), graph);
+  for (int i = 1; i < match.instances.size(); i++) {
+    InstanceConstraints c(match.instances.at(i), graph);
+
+    if (c0 != c) {
+      throw error("Internal Logic Error: Internal constraints between match "
+                  "instance \n{} \nand \n{} do not match",
+                  c0,
+                  c);
+    }
+  }
+}
+
 Graph &createSubgraph(const Match &match, Graph &graph) {
   auto &ir = graph.getIr();
   auto subgraph_id =
@@ -466,6 +575,8 @@ Graph &createSubgraph(const Match &match, Graph &graph) {
 // Create a subgraph for the match and
 // replace instances of the match with a CallOp
 static std::vector<Replacement> applyMatch(const Match &match, Graph &graph) {
+  verifyTopologicalConstraints(match, graph);
+
   auto &subgraph = createSubgraph(match, graph);
 
   std::vector<Replacement> replacements;
