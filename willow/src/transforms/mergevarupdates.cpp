@@ -1,6 +1,5 @@
-#include <tuple>
-
 #include <memory>
+#include <tuple>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/concat.hpp>
@@ -120,6 +119,19 @@ int64_t MergeAuto::getThresholdMemory(const Graph &g) const {
   if (thresholdMemory < 0) {
     throw error("Negative memory {} threshold detected in MergeAuto. The "
                 "option mergeVarUpdateMemThreshold must be positive. ",
+                thresholdMemory);
+  }
+
+  return thresholdMemory;
+}
+
+int64_t MergeLooseThreshold::getMemToPlayWithAtPeak(const Graph &g) const {
+
+  int64_t thresholdMemory = g.getIr().getSessionOptions().looseThresholdAtPeak;
+
+  if (thresholdMemory < 0) {
+    throw error("Negative memory {} threshold detected in MergeLoose. The "
+                "option looseThresholdAtPeak must be non-negative. ",
                 thresholdMemory);
   }
 
@@ -315,8 +327,10 @@ MergeLooseThreshold::getFinal(const Graph &g) const {
     throw error("ILE: expected final cumulative memory to be zero");
   }
 
-  // An estimate of how much memory there is to use for delaying weight
+  // An estimate of how much memory there is,  to use for delaying weight
   // updates without effecting max-liveness, looks something like
+  //
+  // clang-format off
   //
   // *                         *
   // *                         *
@@ -324,13 +338,21 @@ MergeLooseThreshold::getFinal(const Graph &g) const {
   // ****                 ******
   // *******        ************
   // **********   **************
+  // ***************************  (this final line: memToPlayWith at peak liveness)
+  //
+  // clang-format on
+  //
   // -----------------------------> schedule index
   // where above: vertical is memory to play with
   // and horizontal is schedule position
 
+  // At peak, can delay scheduling while below this number of bytes:
+  int64_t memToPlayWithAtPeak = getMemToPlayWithAtPeak(g);
+
   std::vector<int64_t> memToPlayWith(opSched.size(), 0);
   for (int i = 0; i < opSched.size(); ++i) {
-    memToPlayWith[i] = maxCumMemFwdLiveForBwd - cumMemFwdLiveForBwd[i];
+    memToPlayWith[i] =
+        maxCumMemFwdLiveForBwd - cumMemFwdLiveForBwd[i] + memToPlayWithAtPeak;
   }
 
   std::map<VarUpdateOp *, PartitionId> parentPartitionId;
