@@ -108,11 +108,10 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
                  getInTensor(DropoutOp::getInIndex()));
     // In inference mask is just a tensor of true values.
     if (op.returnMask()) {
-      auto mask =
-          graph().addConstant(poplar::BOOL,
-                              getInTensor(DropoutOp::getInIndex()).shape(),
-                              true,
-                              debugPrefix("mask"));
+      auto mask = getConst(poplar::BOOL,
+                           getInTensor(DropoutOp::getInIndex()).shape(),
+                           true,
+                           debugPrefix("mask"));
       setOutTensor(DropoutOp::getMaskOutIndex(), mask);
     }
   }
