@@ -38,6 +38,13 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
   auto act1            = aiOnnx.add({w1, act0}, "act1");
   act1                 = aiOnnx.relu({act1});
 
+  act1 = aiOnnx.sin({act1});
+  act1 = aiOnnx.cos({act1});
+  act1 = aiOnnx.mul({act0, act1});
+  act1 = aiOnnx.sigmoid({act1});
+  act1 = aiOnnx.sin({act1});
+  act1 = aiOnnx.sigmoid({act1});
+
   std::vector<float> w2Vals(2 * 2, 1.0f);
   ConstVoidData w2Data = {w2Vals.data(), info};
   auto w2              = builder->addInitializedInputTensor(w2Data);
@@ -131,9 +138,6 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
     std::cout << ss.str();
   }
 
-  // test 1 : every stash happens after corresponding preLoss consumers
-  // test 2 : every restore happens after corresponding stash
-  // test 3 : every restore happens before corresponding postLoss consumers
   std::map<Op *, int> schedIndex;
   for (int i = 0; i < opSchedule.size(); ++i) {
     schedIndex.insert({opSchedule[i], i});
@@ -142,48 +146,60 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
   for (auto op : opSchedule) {
     auto opIndex = schedIndex.at(op);
 
-    // if it's a stash op, it must appear before all pathToLoss,
-    // before the Restore (we confirm there is 1)
-    // before all pathFromLoss.
+    // If it's a Stash, we check that
+    // 1) Stash appears before the corresponding Restore (we
+    // confirm there is 1 corresponding Restore)
+    // 2) Stash has ScheduledPreLoss::Yes.
+    // 3) Consumers of stashed Tensor with PathFromLoss::Yes appear after Stash
     auto stashOp = dynamic_cast<StashOp *>(op);
     if (stashOp) {
+      // 2)
+      BOOST_CHECK(stashOp->scheduledPreLoss == ScheduledPreLoss::Yes);
       int nRestores = 0;
-      auto act      = stashOp->input->tensor(0);
-      for (auto consumer : act->consumers.getOps()) {
-        if (consumer->toLoss == PathToLoss::Yes) {
-          BOOST_CHECK(schedIndex.at(consumer) > opIndex);
-        }
+      for (auto consumer : stashOp->input->tensor(0)->consumers.getOps()) {
+        // 3)
         if (consumer->fromLoss == PathFromLoss::Yes) {
           BOOST_CHECK(schedIndex.at(consumer) > opIndex);
         }
+        // 1)
         if (dynamic_cast<RestoreOp *>(consumer)) {
           ++nRestores;
           BOOST_CHECK(schedIndex.at(consumer) > opIndex);
         }
       }
+      // 1)
       BOOST_CHECK(nRestores == 1);
     }
 
-    // if it's a restore op, it must appear after all pathToLoss,
-    // after the Stash (we confirm there is 1)
-    // before all pathFromLoss.
+    // if it's Restore, we check
+    // 1) Restore happens after it's unique corresponding Stash
+    // 2) Restore has ScheduledPreLoss::No
+    // 3) Consumers of restored Tensor with PathFromLoss::Yes appear after
+    // Restore 4) Consumers of restored Tensor with PathFromLoss::No appear
+    // before Restore
     auto restoreOp = dynamic_cast<RestoreOp *>(op);
     if (restoreOp) {
+      // 2)
+      BOOST_CHECK(restoreOp->scheduledPreLoss == ScheduledPreLoss::No);
       int nStash   = 0;
       auto inIndex = restoreOp->getActToRestoreInIndex();
       auto act     = restoreOp->input->tensor(inIndex);
       for (auto consumer : act->consumers.getOps()) {
+        // 4)
         if (consumer->toLoss == PathToLoss::Yes) {
           BOOST_CHECK(schedIndex.at(consumer) < opIndex);
         }
+        // 3)
         if (consumer->fromLoss == PathFromLoss::Yes) {
           BOOST_CHECK(schedIndex.at(consumer) > opIndex);
         }
         if (dynamic_cast<StashOp *>(consumer)) {
+          // 1)
           ++nStash;
           BOOST_CHECK(schedIndex.at(consumer) < opIndex);
         }
       }
+      // 1)
       BOOST_CHECK(nStash == 1);
     }
   }

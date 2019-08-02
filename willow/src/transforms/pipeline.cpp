@@ -219,6 +219,19 @@ bool Pipeline::apply(Graph &graph) const {
     return true;
   }
 
+  // 1. We will insert topological constraints to ensure that relative positions
+  // of Stash and Restore Ops w.r.t. Loss are correct. Finding the first Op with
+  // a path from the Loss
+  auto currentSchedule = graph.getOpSchedule({});
+  auto firstFromLoss =
+      std::find_if(currentSchedule.cbegin(),
+                   currentSchedule.cend(),
+                   [](Op *op) { return op->fromLoss == PathFromLoss::Yes; });
+  if (firstFromLoss == currentSchedule.cend()) {
+    throw error(
+        "ILE: no Op with PathFromLoss::Yes, yet canTrain() is true, bailing");
+  }
+
   // 1. Find all tensors in the fwd pass that are inputs to ops in the bwd pass
   std::vector<TensorId> toStashTensors;
   for (auto &tid : graph.getTensors().getAllTensorIds()) {
@@ -281,10 +294,6 @@ bool Pipeline::apply(Graph &graph) const {
     auto stashId = stashOp->getStashedTensorId();
     stashOp->createAndConnectOutTensor(StashOp::getOutIndex(), stashId);
     stashOp->setup();
-    // We don't call updateVertices() after this transform, so set attributes
-    // manually (see T10109)
-    stashOp->scheduledPreLoss               = ScheduledPreLoss::Yes;
-    stashOp->outTensor(0)->scheduledPreLoss = ScheduledPreLoss::Yes;
 
     logging::transform::debug(
         "Adding stash of size {} of activations {} for pipelining",
@@ -329,54 +338,22 @@ bool Pipeline::apply(Graph &graph) const {
       }
     }
 
-    // We don't call updateVertices() after this transform, so set attributes
-    // manually (see T10109)
-    restoreOp->scheduledPreLoss               = ScheduledPreLoss::No;
-    restoreOp->outTensor(0)->scheduledPreLoss = ScheduledPreLoss::No;
     restoreOp->setup();
 
     // apply topological constraints:
-    // (1)  -> Stash before all forward consumers
-    // (2)  -> Restore after Stash
-    // (3)  -> All backwards after Restore
-    // (4)  -> Restore after all producers of (non-tid) tensors
-    //         consumed by first scheduled backwards
+    // (1)  : Stash -> "firstFromLoss" -> Restore
+    // (2)  : All backwards after Restore.
+
+    // (1)
+    graph.topoCons->insert(stashOp, *firstFromLoss);
+    graph.topoCons->insert(*firstFromLoss, restoreOp);
 
     // (2)
-    graph.topoCons->insert(stashOp, restoreOp);
+    // we use "backwards" to mean scheduledPreLoss is No,  but
+    // we could equivalently check pathFromLoss is Yes
     for (auto tidConsumer : tidConsumers) {
-      if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
-        // (1)
-        graph.topoCons->insert(stashOp, tidConsumer);
-      } else {
-        // (3)
+      if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::No) {
         graph.topoCons->insert(restoreOp, tidConsumer);
-      }
-    }
-    // (4)
-    // First get first scheduled bwd consumer
-    std::vector<Op *> opSchedule = graph.getOpSchedule({});
-    auto firstScheduledOpIt      = opSchedule.end();
-    for (auto tidConsumer : tidConsumers) {
-      if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
-        continue;
-      } else {
-        if (std::find(firstScheduledOpIt, opSchedule.end(), tidConsumer) ==
-            opSchedule.end()) {
-          firstScheduledOpIt =
-              std::find(opSchedule.begin(), opSchedule.end(), tidConsumer);
-        }
-      }
-    }
-    Op *firstScheduledOp = *firstScheduledOpIt;
-    // Add the topocons
-    for (Tensor *t : firstScheduledOp->input->tensors()) {
-      if (t->hasProducer()) {
-        if (t->getProducer() == restoreOp) {
-          continue;
-        } else {
-          graph.topoCons->insert(t->getProducer(), restoreOp);
-        }
       }
     }
   }

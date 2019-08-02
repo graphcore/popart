@@ -692,11 +692,9 @@ void Ir::prepare(const IrBundle &gb) {
   // Transform the graph to cache forward-pass tensors, and
   // restore them when needed in the backwards pass, allowing
   // for greater parallelism during compute.
-  // We rely on 'scheduledPreLoss' attributes not changing beyond
-  // this point. Hence, don't call updateVertices (T10109) again
   if (getSessionOptions().enablePipelining) {
     applyTransform(Pipeline::id(), getMainGraph());
-    // updateVertices();
+    updateVertices();
   }
 
   // confirm that all the anchor names provided
