@@ -1480,9 +1480,9 @@ void Ir::updateVertices() {
   logging::ir::trace(
       "Updating all Vertices (toLoss, fromLoss, scheduledPreLoss)");
 
-  // 1) get All Ops which have toLoss true, and backwards propagate
+  // 1) Get all Ops which have toLoss Yes, and backwards propagate
   std::vector<Op *> toLossFrontier;
-  // 1) get All Ops which have fromLoss Yes, and backwards propagate
+  // 2) Get all Ops which have fromLoss Yes, and forwards propagate
   std::vector<Op *> fromLossFrontier;
   for (auto &id_op : getMainGraph().getOps()) {
     Op *op = id_op.second.get();

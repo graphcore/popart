@@ -151,15 +151,15 @@ bool Pipeline::apply(Graph &graph) const {
 
   auto ipuCopies = getIpuCopyOps();
   for (auto ipuCopyOp : ipuCopies) {
-    uint64_t sourceIpu = ipuCopyOp->getSourceIpu();
-    uint64_t destIpu   = ipuCopyOp->getDestIpu();
+    uint64_t destIpu = ipuCopyOp->getDestIpu();
     // For an inference graph, or fwd pass of a training graph,
     if (ipuCopyOp->toLoss == PathToLoss::Yes || !ir.canTrain()) {
-      if (destIpu <= sourceIpu) {
-        throw error("For pipelining, forward IpuCopyOps  must copy to an "
+      uint64_t maxSourceIpu = ipuCopyOp->getMaxSourceIpu();
+      if (destIpu <= maxSourceIpu) {
+        throw error("For pipelining, forward IpuCopyOps must copy to an "
                     "IPU of larger index. However {} copies from {} to {}.",
                     ipuCopyOp->debugName(),
-                    sourceIpu,
+                    maxSourceIpu,
                     destIpu);
       }
     }
@@ -167,11 +167,12 @@ bool Pipeline::apply(Graph &graph) const {
     // for bwd pass, IPU Copy must have destination with lower VGraphId than
     // source
     else {
-      if (destIpu >= sourceIpu) {
-        throw error("For pipelining, backward IpuCopyOps  must copy to an "
+      uint64_t minSourceIpu = ipuCopyOp->getMinSourceIpu();
+      if (destIpu >= minSourceIpu) {
+        throw error("For pipelining, backward IpuCopyOps must copy to an "
                     "IPU of smaller index. However {} copies from {} to {}.",
                     ipuCopyOp->debugName(),
-                    sourceIpu,
+                    minSourceIpu,
                     destIpu);
       }
     }
@@ -198,7 +199,7 @@ bool Pipeline::apply(Graph &graph) const {
   ContiguateIpuCopyIndicesPattern contiguator;
   for (auto ipuCopyOp : ipuCopies) {
     if (contiguator.matches(ipuCopyOp)) {
-      logging::transform::debug("Contiguating {}", ipuCopyOp->str());
+      logging::transform::debug("Contiguating {}", ipuCopyOp->debugName());
       contiguator.apply(ipuCopyOp);
     }
   }
@@ -210,7 +211,11 @@ bool Pipeline::apply(Graph &graph) const {
     auto destIpu   = static_cast<int64_t>(ipuCopyOp->getDestIpu());
     auto delta     = destIpu - sourceIpu;
     if (delta != 1 && delta != -1) {
-      throw error("ILE: Failed to contiguate all IpuCopyOps");
+      throw error("ILE: IpuCopy {} is not contiguous. It copies from IPU {} to "
+                  "IPU {}. Failed to contiguate all IpuCopyOps",
+                  ipuCopyOp->debugName(),
+                  sourceIpu,
+                  destIpu);
     }
   }
 

@@ -243,6 +243,34 @@ bool InterIpuCopy::apply(Graph &graph) const {
 
       auto sourceOp = *s.second.begin();
 
+      if (graph.getIr().getSessionOptions().enablePipelining) {
+        // We add an additional constraint on the order of IPU copies here:
+        //
+        // 'All stream tensors are to be copied to a larger IPU number
+        //  than that of sourceOp, except for optimizer stream tensors,
+        //  which are to be copied to a smaller IPU number than that of
+        //  sourceOp'
+        //
+        auto optTensors = graph.getIr().optimizerTensors();
+        if (std::find(optTensors.begin(),
+                      optTensors.end(),
+                      graph.getTensors().get(s.first)) == optTensors.end()) {
+          // sourceOp should be op mapped to smallest vGraphId
+          for (Op *op : s.second) {
+            if (op->getVirtualGraphId() < sourceOp->getVirtualGraphId()) {
+              sourceOp = op;
+            }
+          }
+        } else {
+          // sourceOp should be op mapped to largest vGraphId
+          for (Op *op : s.second) {
+            if (op->getVirtualGraphId() > sourceOp->getVirtualGraphId()) {
+              sourceOp = op;
+            }
+          }
+        }
+      }
+
       // Get which ipu the to op is on
       int64_t sourceIpu = -1;
       if (sourceOp->hasVirtualGraphId()) {
