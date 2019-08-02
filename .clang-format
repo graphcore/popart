@@ -61,12 +61,12 @@ ForEachMacros:
   - BOOST_FOREACH
 IncludeBlocks:   Preserve
 IncludeCategories: 
-  - Regex:           '<poponnx*'
-    Priority:        10
-  - Regex:           '^"(llvm|llvm-c|clang|clang-c)/'
-    Priority:        2
-  - Regex:           '^(<|"(gtest|gmock|isl|json)/)'
-    Priority:        3
+  # Put popart includes last in contiguous blocks of includes
+  - Regex:           '<popart*'
+    Priority:        100000
+  # Put other pop* includes just before popart
+  - Regex:           '<pop*'
+    Priority:        10000
   - Regex:           '.*'
     Priority:        1
 IncludeIsMainRegex: '(Test)?$'

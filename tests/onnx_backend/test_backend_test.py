@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import popart
+
 import itertools
 import os
 import unittest
@@ -16,8 +18,6 @@ import onnx.version_converter
 from typing import Optional, Text, Any, Tuple, Sequence
 from onnx import NodeProto, ModelProto, TensorProto
 import numpy  # type: ignore
-
-import popart
 
 # The following just executes the fake backend through the backend test
 # infrastructure. Since we don't have full reference implementation of all ops

@@ -6,6 +6,15 @@
 #include <set>
 
 #include <memory>
+#include <poplin/codelets.hpp>
+#include <popnn/codelets.hpp>
+#include <popops/ElementWise.hpp>
+#include <popops/codelets.hpp>
+#include <poprand/RandomGen.hpp>
+#include <poprand/codelets.hpp>
+#include <popsys/CSRFunctions.hpp>
+#include <popsys/codelets.hpp>
+#include <poputil/exceptions.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
@@ -15,6 +24,7 @@
 #include <popart/op.hpp>
 #include <popart/op/call.hpp>
 #include <popart/op/if.hpp>
+#include <popart/op/ipucopy.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
@@ -28,15 +38,6 @@
 #include <popart/tensors.hpp>
 #include <popart/tojson.hpp>
 #include <popart/topocons.hpp>
-#include <poplin/codelets.hpp>
-#include <popnn/codelets.hpp>
-#include <popops/ElementWise.hpp>
-#include <popops/codelets.hpp>
-#include <poprand/RandomGen.hpp>
-#include <poprand/codelets.hpp>
-#include <popsys/CSRFunctions.hpp>
-#include <popsys/codelets.hpp>
-#include <poputil/exceptions.hpp>
 
 #include <popart/op/gradientaccl.hpp>
 #include <popart/op/varupdate.hpp>
@@ -948,42 +949,19 @@ PriTask Devicex::initRandomSeed() {
   };
 }
 
-PriTask Devicex::initDropoutRandomSeed() {
-  auto initDropoutRandomSeedTask = [this]() {
-    logging::devicex::debug("Initializing dropout random seed tensor.");
-
-    dropoutRandomSeed = graph().addVariable(
-        poplar::UNSIGNED_INT, {2}, dropoutRandomSeedTensorId());
-    graph().setTileMapping(dropoutRandomSeed, 0);
-
-    auto &sq = progs.setRandomSeedFragment();
-
-    if (!useSyntheticData()) {
-      sq.add(poplar::program::Copy(randomSeedTensor, dropoutRandomSeed));
-    }
-  };
-
-  return {
-      +1e6,                      // high priority
-      initDropoutRandomSeedId(), // name of this task
-      {initRandomSeedTaskId()},  // depends on
-      initDropoutRandomSeedTask  // what to run when the task is executed
-  };
-}
-
-PriTask Devicex::incrementDropoutRandomSeedTask() {
-  auto incrementDropoutRandomSeedTask = [this]() {
+PriTask Devicex::incrementRandomSeedTask() {
+  auto incrementRandomSeedTask = [this]() {
     popops::addInPlace(graph(),
-                       *getDropoutRandomSeed(),
+                       getRandomSeedTensor(),
                        getConst(graph(), poplar::UNSIGNED_INT, {}, 1, "one"),
                        progs.preForwardFragment());
   };
 
   return {
-      +1e6,                          // high priority
-      "incrementDropoutRandomSeed",  // name of this task
-      {initDropoutRandomSeedId()},   // depends on
-      incrementDropoutRandomSeedTask // what to run when the task is executed
+      +1e6,                        // high priority
+      incrementRandomSeedTaskId(), // name of this task
+      {initRandomSeedTaskId()},    // depends on
+      incrementRandomSeedTask      // what to run when the task is executed
   };
 }
 
@@ -1351,8 +1329,11 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
         if (op->settings.recomputeType == RecomputeType::CHECKPOINT) {
           logging::devicex::debug("Adding checkpoint Op {}", op->debugName());
           if (ir().getSessionOptions().enablePipelining) {
-            if (op->isIpuCopyOp()) {
-              growOpx(progs.pipelineIpuCopyFragment());
+            auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
+            if (ipuCopyOp) {
+              growOpx(progs.pipelineIpuCopyFwdFragment(
+                  ipuCopyOp->getSourceIpu(),
+                  ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
             } else {
               growOpx(progs.pipelineForwardFragment(op->getVirtualGraphId(),
                                                     op->str()));
@@ -1382,8 +1363,11 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
         }
 
         if (ir().getSessionOptions().enablePipelining) {
-          if (op->isIpuCopyOp()) {
-            growOpx(progs.pipelineIpuCopyFragment());
+          auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
+          if (ipuCopyOp) {
+            growOpx(progs.pipelineIpuCopyBwdFragment(
+                ipuCopyOp->getDestIpu(),
+                ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
           } else if ((op->isConvertibleTo<VarUpdateOp>()) &&
                      (ir().getSessionOptions().enableGradientAccumulation)) {
 
@@ -1692,7 +1676,7 @@ void Devicex::setFloatingPointBehaviour(poplar::Graph &graph) {
           graph, progs.initFragment(), behaviour, "/init");
     } else {
       logging::devicex::warn(
-          "Floating point checks can not be enabled for non IPU devices");
+          "Floating point checks cannot be enabled for non IPU devices");
     }
   }
 }
@@ -1708,7 +1692,7 @@ void Devicex::setStochasticRoundingBehaviour(poplar::Graph &graph) {
           graph, progs.initFragment(), behaviour, "/init");
     } else {
       logging::devicex::warn(
-          "Stochastic rounding can not be enabled for non IPU devices");
+          "Stochastic rounding cannot be enabled for non IPU devices");
     }
   }
 }
@@ -1765,6 +1749,15 @@ void Devicex::prepare() {
                       numIPUs);
         }
       }
+    }
+  } else {
+    auto numIPUs = graph().getTarget().getNumIPUs();
+    if (numIPUs > 1 &&
+        numIPUs != ir().getSessionOptions().replicatedGraphCount) {
+      throw error("If virtual graphs are disabled, the replicated graph count "
+                  "({}) needs to be equal to the number of IPUs ({})",
+                  ir().getSessionOptions().replicatedGraphCount,
+                  numIPUs);
     }
   }
 
@@ -1830,11 +1823,7 @@ void Devicex::prepare() {
 
   // Init the random seed(s)
   tasks.add(initRandomSeed());
-  if (isDropoutRandomSeedRequired()) {
-    // Dropout has a separate random seed
-    tasks.add(initDropoutRandomSeed());
-    tasks.add(incrementDropoutRandomSeedTask());
-  }
+  tasks.add(incrementRandomSeedTask());
 
   // Depending on anchor return types specified by the user, some
   // tensors may need to be added to the graph to keep track of
@@ -2049,6 +2038,7 @@ std::string Devicex::getPopartCachePath() {
 }
 
 void Devicex::trySaveExecutable(poplar::Executable &executable) {
+
   auto cachePath    = ir().getSessionOptions().cachePath;
   auto cacheEnabled = ir().getSessionOptions().enableEngineCaching;
 
@@ -2138,8 +2128,8 @@ TaskId Devicex::updateBatchCountTaskId() const {
 
 TaskId Devicex::initRandomSeedTaskId() const { return "initRandomSeedTask"; }
 
-TaskId Devicex::initDropoutRandomSeedId() const {
-  return "initDropoutRandomSeed";
+TaskId Devicex::incrementRandomSeedTaskId() const {
+  return "incrementRandomSeed";
 }
 
 TaskId Devicex::initTensorTaskId(TensorId id) const {
@@ -2299,6 +2289,8 @@ PriTask Devicex::updateBatchCountTask(poplar::program::Sequence &sq) {
 
 PriTask Devicex::initAndUpdatePipelineStashIndicesTask() {
 
+  // TODO : use if getNumIpus() here as a proxy for number of virtual graphs
+  // assumes there is not graph replication. Task to address this is T10254
   auto f = [this]() {
     if (ir().canTrain()) {
       // 1. Populate map of stash index tensors. Each IPU needs a single
@@ -2541,22 +2533,10 @@ bool Devicex::useSyntheticData() const {
   return (ir().getSessionOptions().ignoreData);
 }
 
-bool Devicex::isDropoutRandomSeedRequired() const {
-  return requiresDropoutRandomSeed;
-}
-
-void Devicex::setDropoutRandomSeedIsRequired(bool isRequired) {
-  requiresDropoutRandomSeed = isRequired;
-}
-
 std::string Devicex::randomSeedId() const { return "randomSeed"; }
 
-std::string Devicex::dropoutRandomSeedTensorId() const {
-  return "dropoutRandomSeed";
-}
-
-const poplar::Tensor *Devicex::getDropoutRandomSeed() const {
-  return &dropoutRandomSeed;
+const poplar::Tensor &Devicex::getRandomSeedTensor() const {
+  return randomSeedTensor;
 }
 
 } // namespace popx

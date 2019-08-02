@@ -786,10 +786,10 @@ def test_set_weights_from_host():
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
 
     session = popart.TrainingSession(fnModel=proto,
-                                      dataFeed=dataFlow,
-                                      losses=losses,
-                                      optimizer=optimizer,
-                                      deviceInfo=getDevice())
+                                     dataFeed=dataFlow,
+                                     losses=losses,
+                                     optimizer=optimizer,
+                                     deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()
 
@@ -1194,8 +1194,8 @@ def test_load_onnx_model_from_other_builder(tmpdir):
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     session = popart.InferenceSession(fnModel=proto,
-                                       dataFeed=dataFlow,
-                                       deviceInfo=getDevice())
+                                      dataFeed=dataFlow,
+                                      deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()
 
@@ -1218,8 +1218,8 @@ def test_load_onnx_model_from_other_builder(tmpdir):
 
     proto2 = builder.getModelProto()
     session = popart.InferenceSession(fnModel=proto2,
-                                       dataFeed=dataFlow,
-                                       deviceInfo=getDevice())
+                                      dataFeed=dataFlow,
+                                      deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()
 
@@ -1261,8 +1261,8 @@ def test_load_onnx_model_from_file(tmpdir):
     proto = builder2.getModelProto()
 
     session = popart.InferenceSession(fnModel=proto,
-                                       dataFeed=dataFlow,
-                                       deviceInfo=getDevice())
+                                      dataFeed=dataFlow,
+                                      deviceInfo=getDevice())
 
     anchors = session.initAnchorArrays()
 

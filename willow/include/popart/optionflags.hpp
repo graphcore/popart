@@ -55,7 +55,7 @@ struct SessionOptions {
   /// When to write '.dot' files during Ir construction
   std::set<DotCheck> dotChecks = {};
 
-  /// The ops to write to the .dot file will be a continous interval
+  /// The ops to write to the .dot file will be a continuous interval
   /// of the schedule, controlled by firstDotOp and finalDotOp. In particular,
   /// it will be [min(0, firstDotOp), max(N ops in Ir, finalDotOp))
   int firstDotOp = 0;
@@ -102,9 +102,19 @@ struct SessionOptions {
   /// and concatenating Variable Tensors and Updating Tensors
   MergeVarUpdateType mergeVarUpdate = MergeVarUpdateType::None;
 
-  /// The Auto VarUpdate merging algorithm has a threshold on the total
-  /// memory of Variable Tensors to merge for updating. Memory in bytes.
+  /// The AutoLoose and AutoTight VarUpdate merging algorithm has a threshold on
+  /// the total memory of Variable Tensors to merge for updating. Memory in
+  /// bytes.
   int64_t mergeVarUpdateMemThreshold = 1000000;
+
+  /// The AutoLoose VarUpudate merging algorithm has absolute threshold defined
+  /// by min(mergeVarUpdateMemThreshold,
+  ///        liveAtPeak - liveCurrently + looseThresholdAtPeak),
+  /// where liveAtPeak is an estimate of the maximum live memory of the
+  /// computation, and liveCurrently is an estimate of the live memory where the
+  /// threshold is being used to determine whether to schedule or postpone a
+  /// VarUpdate.
+  int64_t looseThresholdAtPeak = 8000;
 
   /// Before anchor tensors are streamed from device to host, they are not
   /// necessarily arranged in memory as required when they are to be copied

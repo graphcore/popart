@@ -141,11 +141,11 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
     // the gradient of A,
     std::vector<float> raw_A_grad_out(A_info.nelms());
     popart::NDArrayWrapper<float> A_grad_wrapper(raw_A_grad_out.data(),
-                                                  A_info.shape());
+                                                 A_info.shape());
     // and the gradient of B.
     std::vector<float> raw_B_grad_out(B_info.nelms());
     popart::NDArrayWrapper<float> B_grad_wrapper(raw_B_grad_out.data(),
-                                                  B_info.shape());
+                                                 B_info.shape());
 
     std::map<popart::TensorId, popart::IArray &> anchors = {
         {C_id, C_wrapper},
@@ -158,7 +158,7 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
     popart::NDArrayWrapper<float> A_wrapper(v_A_init.data(), A_info);
     popart::NDArrayWrapper<float> B_wrapper(v_B_init.data(), B_info);
     std::map<popart::TensorId, popart::IArray &> inputs = {{A_id, A_wrapper},
-                                                             {B_id, B_wrapper}};
+                                                           {B_id, B_wrapper}};
 
     popart::StepIO stepio(inputs, anchors);
 

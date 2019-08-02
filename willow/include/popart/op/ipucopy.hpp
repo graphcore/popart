@@ -26,9 +26,12 @@ public:
 
   bool isOutlineable() const override { return false; }
 
-  bool isIpuCopyOp() const override;
+  bool isIpuCopyOp() const final;
 
   void connectInTensor(InIndex, TensorId, uint64_t sourceIpu);
+
+  // A string of the form "[ sourceIpus ] --> [ destIpu ]"
+  std::string getFromToStr() const;
 
 private:
   void connectInTensor(InIndex, TensorId) override {

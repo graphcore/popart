@@ -13,8 +13,8 @@ class DevicexManager : public popart::DeviceProvider {
 public:
   DevicexManager();
 
-  virtual void enumerate(
-      std::vector<std::shared_ptr<popart::DeviceInfo>> &devices) override;
+  virtual void
+  enumerate(std::vector<std::shared_ptr<popart::DeviceInfo>> &devices) override;
 
   virtual std::shared_ptr<popart::DeviceInfo>
   createHostDevice(popart::DeviceType type,

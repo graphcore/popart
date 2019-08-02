@@ -97,10 +97,19 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   sq.add(preForwardFragment());
 
   // 2.
-  for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
-    if (pInfo.doFwd(pCycle, vgid_seq.first)) {
-      ss << "\n  vg" << vgid_seq.first << " : ToDeviceStream";
-      sq.add(vgid_seq.second);
+  if (pipelineSeqs.find(PipelineFragmentId::ToDeviceStream) !=
+      pipelineSeqs.end()) {
+    for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
+      if (pInfo.doFwd(pCycle, vgid_seq.first)) {
+        ss << "\n  vg" << vgid_seq.first << " : ToDeviceStream";
+        sq.add(vgid_seq.second);
+      }
+    }
+  } else {
+    if (dv_p->useSyntheticData() == false) {
+      throw error(
+          "There are no ToDeviceStream pipeline program fragments. Check that "
+          "the stream copies have been added to the correct fragment.");
     }
   }
 
@@ -156,11 +165,38 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
     }
   }
 
-  // 7.
-  sq.add(pipelineIpuCopyFragment());
+  // 7.1 Insert the FWD inter IPU-copies.
+  // We add these in reverse order, i->i+1 then i-1->i then i-2->i-1 etc.
+  auto foundFwd = pipelineSeqs.find(PipelineFragmentId::IpuCopyFwd);
+  if (foundFwd != pipelineSeqs.end()) {
+    const auto &M = foundFwd->second;
+    for (auto vgid_seq = M.rbegin(); vgid_seq != M.rend(); ++vgid_seq) {
+      if (pInfo.doFwd(pCycle, vgid_seq->first)) {
+        ss << "\n  vg" << vgid_seq->first << " : IpuFwdCopy";
+        sq.add(vgid_seq->second);
+      }
+    }
+  }
+
+  // 7.2 Insert the BWD inter IPU-copies.
+  // These are added in ascending order of virtual graph id, so i-1->i-2 then
+  // i->i-1 then i+1->i etc. This order is important for correctness.
+  //
+  if (pipelineSeqs.find(PipelineFragmentId::IpuCopyBwd) != pipelineSeqs.end()) {
+    for (const auto &vgid_seq :
+         pipelineSeqs.at(PipelineFragmentId::IpuCopyBwd)) {
+      // Note that vgid_seq.first == 0 corresponds to the copy from IPU1 to
+      // IPU0, so the we must check if IPU1 ran a backwards pass
+      if (pInfo.doBwd(pCycle, vgid_seq.first + 1)) {
+        ss << "\n  vg" << vgid_seq.first << " : IpuBwdCopy";
+        sq.add(vgid_seq.second);
+      }
+    }
+  }
 }
 
 poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
+
   // What's happening here? Consider the model:
   //
   // A  A' IPU0
@@ -428,6 +464,16 @@ PopPrograms::pipelineIncrStashIndexFragment(VGraphId vGraphId,
 }
 
 poplar::program::Sequence &
+PopPrograms::pipelineIpuCopyFwdFragment(VGraphId id, const std::string &desc) {
+  return pipelineFragment(id, PipelineFragmentId::IpuCopyFwd, desc);
+}
+
+poplar::program::Sequence &
+PopPrograms::pipelineIpuCopyBwdFragment(VGraphId id, const std::string &desc) {
+  return pipelineFragment(id, PipelineFragmentId::IpuCopyBwd, desc);
+}
+
+poplar::program::Sequence &
 PopPrograms::pipelineFwdOrBwdToHostStreamFragment(ScheduledPreLoss preLoss,
                                                   VGraphId vGraphId,
                                                   const std::string &desc) {
@@ -465,6 +511,13 @@ PopPrograms::getStrFromPipelineFragmentId(PipelineFragmentId fragId) {
   case PipelineFragmentId::IncrStashIndex: {
     return "IncrStashIndex";
   }
+  case PipelineFragmentId::IpuCopyFwd: {
+    return "IpuCopyFwd";
+  }
+  case PipelineFragmentId::IpuCopyBwd: {
+    return "IpuCopyBwd";
+  }
+
   case PipelineFragmentId::N: {
     throw error("Cannot return string for PipelineFragmentId 'N'");
   }

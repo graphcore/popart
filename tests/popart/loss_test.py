@@ -116,8 +116,7 @@ def test_nll_loss_with_ignored_index():
 
     session = popart.TrainingSession(
         fnModel=builder.getModelProto(),
-        dataFeed=popart.DataFlow(1,
-                                  {"loss": popart.AnchorReturnType("ALL")}),
+        dataFeed=popart.DataFlow(1, {"loss": popart.AnchorReturnType("ALL")}),
         optimizer=popart.ConstSGD(0.001, 0.01),
         losses=[popart.NllLoss(out, lb, "loss", ignore_index=ignoreInd)],
         passes=popart.Patterns(popart.PatternsLevel.ALL),
@@ -196,10 +195,10 @@ def test_nll_loss_grad_with_ignored_index():
             optimizer=popart.ConstSGD(0.001, 0.01),
             losses=[
                 popart.NllLoss(out,
-                                lb,
-                                "loss",
-                                ignore_index=ignoreInd,
-                                reduction=popart.ReductionType.Mean)
+                               lb,
+                               "loss",
+                               ignore_index=ignoreInd,
+                               reduction=popart.ReductionType.Mean)
             ],
             passes=popart.Patterns(patterns),
             deviceInfo=popart.DeviceManager().createCpuDevice())

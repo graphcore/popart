@@ -45,12 +45,14 @@ public:
   SGDVarUpdateOp(TensorId, const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
 
-  static InIndex getLearnRateInIndex() { return 2; }
+  static InIndex getScaledLearnRateInIndex() { return 2; }
   static InIndex getWeightDecayInIndex() { return 3; }
+  static InIndex getLossScalingInIndex() { return 4; }
 
   std::map<InIndex, TensorId> optimizerInputs() const final {
-    return {{getLearnRateInIndex(), inId(getLearnRateInIndex())},
-            {getWeightDecayInIndex(), inId(getWeightDecayInIndex())}};
+    return {{getScaledLearnRateInIndex(), inId(getScaledLearnRateInIndex())},
+            {getWeightDecayInIndex(), inId(getWeightDecayInIndex())},
+            {getLossScalingInIndex(), inId(getLossScalingInIndex())}};
   }
 
   std::unique_ptr<Op> cloneWithNewName(const TensorId &id) const final {
@@ -63,15 +65,17 @@ public:
   ConstSGDVarUpdateOp(TensorId,
                       float learnRate,
                       float weightDecay,
+                      float lossScaling,
                       const Op::Settings &);
   std::unique_ptr<Op> clone() const final;
   float getLearnRate() const;
   float getWeightDecay() const;
+  float getLossScaling() const;
   void appendAttributes(OpSerialiserBase &is) const;
 
   std::unique_ptr<Op> cloneWithNewName(const TensorId &id) const final {
-    return std::unique_ptr<Op>(
-        new ConstSGDVarUpdateOp(id, learnRate, weightDecay, settings));
+    return std::unique_ptr<Op>(new ConstSGDVarUpdateOp(
+        id, learnRate, weightDecay, lossScaling, settings));
   }
 
   std::map<InIndex, TensorId> optimizerInputs() const final { return {}; }
@@ -79,6 +83,7 @@ public:
 private:
   float learnRate;
   float weightDecay;
+  float lossScaling;
 };
 
 class CopyVarUpdateOp : public VarUpdateOp {

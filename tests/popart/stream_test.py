@@ -25,8 +25,8 @@ def test_stream_on_off(tmpdir):
         })
 
     session = popart.InferenceSession(fnModel=proto,
-                                       dataFeed=dataFlow,
-                                       deviceInfo=tu.get_poplar_cpu_device())
+                                      dataFeed=dataFlow,
+                                      deviceInfo=tu.get_poplar_cpu_device())
 
     session.prepareDevice()
 

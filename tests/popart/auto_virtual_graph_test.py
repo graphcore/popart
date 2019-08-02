@@ -48,9 +48,9 @@ def test_auto_virtual_graph_subgraphs_2():
     device = tu.get_ipu_model(numIPUs=ipus)
 
     popart.Session(fnModel=proto,
-                    dataFeed=dataFlow,
-                    userOptions=opts,
-                    deviceInfo=device)
+                   dataFeed=dataFlow,
+                   userOptions=opts,
+                   deviceInfo=device)
 
 
 def test_auto_virtual_graph_subgraphs_4():
@@ -97,9 +97,9 @@ def test_auto_virtual_graph_subgraphs_4():
     device = tu.get_ipu_model(numIPUs=ipus)
 
     popart.Session(fnModel=proto,
-                    dataFeed=dataFlow,
-                    userOptions=opts,
-                    deviceInfo=device)
+                   dataFeed=dataFlow,
+                   userOptions=opts,
+                   deviceInfo=device)
 
 
 def test_auto_virtual_graph_inf_2():
@@ -131,9 +131,9 @@ def test_auto_virtual_graph_inf_2():
     device = tu.get_ipu_model(numIPUs=ipus)
 
     popart.Session(fnModel=proto,
-                    dataFeed=dataFlow,
-                    userOptions=opts,
-                    deviceInfo=device)
+                   dataFeed=dataFlow,
+                   userOptions=opts,
+                   deviceInfo=device)
 
 
 def test_auto_virtual_graph_inf_many():
@@ -165,9 +165,9 @@ def test_auto_virtual_graph_inf_many():
     device = tu.get_ipu_model(numIPUs=ipus)
 
     popart.Session(fnModel=proto,
-                    dataFeed=dataFlow,
-                    userOptions=opts,
-                    deviceInfo=device)
+                   dataFeed=dataFlow,
+                   userOptions=opts,
+                   deviceInfo=device)
 
 
 def test_auto_virtual_graph_train():
@@ -204,11 +204,11 @@ def test_auto_virtual_graph_train():
     device = tu.get_ipu_model(numIPUs=ipus)
 
     popart.Session(fnModel=proto,
-                    dataFeed=dataFlow,
-                    userOptions=opts,
-                    losses=[loss],
-                    optimizer=popart.SGD(0.01),
-                    deviceInfo=device)
+                   dataFeed=dataFlow,
+                   userOptions=opts,
+                   losses=[loss],
+                   optimizer=popart.SGD(0.01),
+                   deviceInfo=device)
 
 
 def test_auto_virtual_graph_not_enough_splits():
@@ -240,9 +240,9 @@ def test_auto_virtual_graph_not_enough_splits():
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.Session(fnModel=proto,
-                        dataFeed=dataFlow,
-                        userOptions=opts,
-                        deviceInfo=device)
+                       dataFeed=dataFlow,
+                       userOptions=opts,
+                       deviceInfo=device)
 
     assert (e_info.value.args[0].startswith(
         "[AutoVirtualGraph] Couldn't find enough splits"))

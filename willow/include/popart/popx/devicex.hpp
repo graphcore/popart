@@ -18,8 +18,8 @@
 #include <popart/popx/popprograms.hpp>
 #include <popart/pritask.hpp>
 
-#include <popart/names.hpp>
 #include <set>
+#include <popart/names.hpp>
 // MutableVoidData is defined in here:
 #include <popart/tensordata.hpp>
 
@@ -220,10 +220,7 @@ public:
   void setEngineIsLoaded(bool isLoaded);
 
   std::string randomSeedId() const;
-  bool isDropoutRandomSeedRequired() const;
-  void setDropoutRandomSeedIsRequired(bool isRequired);
-  std::string dropoutRandomSeedTensorId() const;
-  const poplar::Tensor *getDropoutRandomSeed() const;
+  const poplar::Tensor &getRandomSeedTensor() const;
   // Compile-time poplar tensors used to determine sampling of random
   // numbers across tiles. Combined with the random seed and seedModifier,
   // this ensures that the same random mask is generated for fwd and bwd
@@ -256,14 +253,6 @@ private:
   // Map tensors evenly across all tiles
   LinearMapper linearMapper;
 
-  // A random seed tensor is needed to get repeatable random
-  // masks for corresponding fwd and bwd dropout ops.
-  // Design decision: a separate seed tensor to the one used to
-  // initialise the random hardware so that manipulation of this
-  // tensor for some other reason between fwd and bwd dropout
-  // layers doensn't break dropout's functionality
-  bool requiresDropoutRandomSeed = false;
-  poplar::Tensor dropoutRandomSeed;
   poplar::Tensor randomSeedTensor;
 
   PipelineInfo pInfo;
@@ -277,10 +266,9 @@ private:
 
   PriTask initRandomSeed();
   TaskId initRandomSeedTaskId() const;
+  TaskId incrementRandomSeedTaskId() const;
   void connectRandomSeedStream();
-
-  PriTask initDropoutRandomSeed();
-  TaskId initDropoutRandomSeedId() const;
+  PriTask incrementRandomSeedTask();
 
   PriTask setInitTensorValTask(Tensor *);
   TaskId setInitTensorValTaskId(TensorId) const;
@@ -321,8 +309,6 @@ private:
                                   ReturnPeriod N,
                                   poplar::program::Sequence &);
 
-  PriTask incrementDropoutRandomSeedTask();
-
   PriTask initAndUpdatePipelineStashIndicesTask();
 
   PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
@@ -360,6 +346,10 @@ public:
 
   // A summary string of the Op series, with annotation for recomputation
   std::string getMainGraphOpString() const;
+
+  // Returns true if using synthetic data, false if using real data
+  // This will return the options.ignoreData flag
+  bool useSyntheticData() const;
 
 private:
   std::vector<Op *> mainGraphOpRegistery;
@@ -417,10 +407,6 @@ private:
 
   // Call hostStreamToHost in all the Tensors in pir->dataFlow.anchors()
   void anchorsHostFromHostStreams(const IStepIO &stepio);
-
-  // Returns true if using synthetic data, false if using real data
-  // This will return the options.ignoreData flag
-  bool useSyntheticData() const;
 
   template <typename T> void setInitVal(Tensor *tensor);
   void setInitValHalf(Tensor *tensor);

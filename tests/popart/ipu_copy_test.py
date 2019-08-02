@@ -29,9 +29,9 @@ def test_ipu_copy_bca1():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     s.prepareDevice()
 
@@ -62,9 +62,9 @@ def test_ipu_copy_aca1():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     with pytest.raises(popart.popart_exception) as e_info:
         s.prepareDevice()
@@ -104,9 +104,9 @@ def test_ipu_copy_bca4():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     s.prepareDevice()
 
@@ -144,9 +144,9 @@ def test_ipu_copy_bca2():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     s.prepareDevice()
 
@@ -176,9 +176,9 @@ def test_ipu_copy_bca3():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=2))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=2))
 
     s.prepareDevice()
 
@@ -213,8 +213,53 @@ def test_ipu_copy_bca5():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=3))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=3))
+
+    s.prepareDevice()
+
+
+#     IPU 0      *        IPU 1                                       
+# =========================================
+#                *                                            
+#     i1 -----> copy ---> mul                                                     
+#     |          *        |                                    
+#     v          *        v                                   
+#    add -----> copy --> add
+#                *        |                                   
+#                *        v                                   
+#                *      output                                     
+def test_copy_to_op_with_duplicate_inputs():
+    popart.getLogger().setLevel("TRACE")
+
+    builder = popart.Builder()
+
+    i1 = builder.addInputTensor(popart.TensorInfo("FLOAT", [1]))
+
+    o1 = builder.aiOnnx.add([i1, i1])
+    builder.virtualGraph(o1, 0)
+
+    o2 = builder.aiOnnx.mul([i1, i1])
+    builder.virtualGraph(o2, 1)
+
+    o3 = builder.aiOnnx.add([o1, o2])
+    builder.virtualGraph(o3, 1)
+
+    o = o3
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+
+    opts = popart.SessionOptionsCore()
+    opts.enableVirtualGraphs = True
+
+    s = popart.InferenceSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        userOptions=opts,
+        deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     s.prepareDevice()

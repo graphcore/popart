@@ -12,11 +12,14 @@ Optimizer::~Optimizer()                 = default;
 Optimizer::Optimizer()                  = default;
 Optimizer::Optimizer(const Optimizer &) = default;
 
-TensorId getLearningRateId(DataType dtype) {
-  return "learnRate_" + getDataTypeInfoMap().at(dtype).name();
+TensorId getScaledLearningRateId(DataType dtype) {
+  return "scaledLearnRate_" + getDataTypeInfoMap().at(dtype).name();
 }
 TensorId getWeightDecayId(DataType dtype) {
   return "weightDecay_" + getDataTypeInfoMap().at(dtype).name();
+}
+TensorId getLossScalingId(DataType dtype) {
+  return "lossScaling_" + getDataTypeInfoMap().at(dtype).name();
 }
 
 // convert a float to type T
@@ -40,23 +43,41 @@ static std::vector<char> convertFloatToDataType(DataType dtype, float data) {
   }
 }
 
-BaseSGD::BaseSGD(float lr, float wd) : learnRate_(lr), weightDecay_(wd) {}
+BaseSGD::BaseSGD(float lr, float wd, float ls)
+    : learnRate_(lr), weightDecay_(wd), lossScaling_(ls) {
+
+  // Reject loss scaling of 0.
+  if (!(lossScaling_ > 0.0f || lossScaling_ < 0.0f)) {
+    throw error("Loss scaling can not be 0");
+  }
+}
 
 float BaseSGD::learnRate() const { return learnRate_; }
 
 float BaseSGD::weightDecay() const { return weightDecay_; }
 
-SGD::SGD(float lr, float wd) : BaseSGD(lr, wd) {}
+float BaseSGD::lossScaling() const { return lossScaling_; }
+
+float BaseSGD::weightDecayScaleFactor() const {
+  return 1 - (weightDecay() * (scaledLearningRate()));
+}
+float BaseSGD::scaledLearningRate() const {
+  return learnRate() / lossScaling();
+}
+
+SGD::SGD(float lr, float wd, float ls) : BaseSGD(lr, wd, ls) {}
 
 std::unique_ptr<Optimizer> SGD::clone() const {
   return std::unique_ptr<Optimizer>(new SGD(*this));
 }
 
 std::map<TensorId, TensorInfo> SGD::tensorInfos() const {
-  return {{getLearningRateId(DataType::FLOAT), {DataType::FLOAT, {}}},
-          {getLearningRateId(DataType::FLOAT16), {DataType::FLOAT16, {}}},
+  return {{getScaledLearningRateId(DataType::FLOAT), {DataType::FLOAT, {}}},
+          {getScaledLearningRateId(DataType::FLOAT16), {DataType::FLOAT16, {}}},
           {getWeightDecayId(DataType::FLOAT), {DataType::FLOAT, {}}},
-          {getWeightDecayId(DataType::FLOAT16), {DataType::FLOAT16, {}}}};
+          {getWeightDecayId(DataType::FLOAT16), {DataType::FLOAT16, {}}},
+          {getLossScalingId(DataType::FLOAT), {DataType::FLOAT, {}}},
+          {getLossScalingId(DataType::FLOAT16), {DataType::FLOAT16, {}}}};
 }
 
 std::unique_ptr<Op> SGD::createOp(TensorId varId, Graph &graph) const {
@@ -64,31 +85,47 @@ std::unique_ptr<Op> SGD::createOp(TensorId varId, Graph &graph) const {
 }
 
 std::vector<TensorId> SGD::getInputIds(TensorId varId, DataType varType) const {
-  std::vector<TensorId> inputs(4, "");
-  inputs[VarUpdateOp::getVarToUpdateInIndex()]    = varId;
-  inputs[VarUpdateOp::getUpdaterInIndex()]        = getGradId(varId);
-  inputs[SGDVarUpdateOp::getLearnRateInIndex()]   = getLearningRateId(varType);
+  std::vector<TensorId> inputs(5, "");
+  inputs[VarUpdateOp::getVarToUpdateInIndex()] = varId;
+  inputs[VarUpdateOp::getUpdaterInIndex()]     = getGradId(varId);
+  inputs[SGDVarUpdateOp::getScaledLearnRateInIndex()] =
+      getScaledLearningRateId(varType);
   inputs[SGDVarUpdateOp::getWeightDecayInIndex()] = getWeightDecayId(varType);
+  inputs[SGDVarUpdateOp::getLossScalingInIndex()] = getLossScalingId(varType);
   return inputs;
 }
 
+TensorId Optimizer::getLossScalingTensorId(DataType varType) const {
+  return getLossScalingId(varType);
+}
+
 void SGD::setTensorData(Tensor *t) const {
-  if (t->id == getLearningRateId(DataType::FLOAT) ||
-      t->id == getLearningRateId(DataType::FLOAT16)) {
+  if (t->id == getScaledLearningRateId(DataType::FLOAT) ||
+      t->id == getScaledLearningRateId(DataType::FLOAT16)) {
+    // Note:
+    // w <- w * (1 - (lr/ls) * wd) - (lr/ls) * delta
+    //                                ^^^^^
+    // Calculate this term of the weight update formula
+    // on host to allow for efficient implementation of weight
+    // update on the device
     auto converted_data =
-        convertFloatToDataType(t->info.dataType(), learnRate());
+        convertFloatToDataType(t->info.dataType(), scaledLearningRate());
     t->setTensorData(t->info, converted_data.data());
   } else if (t->id == getWeightDecayId(DataType::FLOAT) ||
              t->id == getWeightDecayId(DataType::FLOAT16)) {
     // Note:
-    // w <- w * (1 - lr * wd) - lr * delta
-    //          ^^^^^^^^^^^^^
+    // w <- w * (1 - (lr/ls) * wd) - (lr/ls) * delta
+    //          ^^^^^^^^^^^^^^^^^
     // Calculating   this     term of the weight update formula
     // on host to allow for efficient implementation of weight
     // update on the device
-    float weightDecayScaleFactor = 1 - (weightDecay() * learnRate());
     auto converted_data =
-        convertFloatToDataType(t->info.dataType(), weightDecayScaleFactor);
+        convertFloatToDataType(t->info.dataType(), weightDecayScaleFactor());
+    t->setTensorData(t->info, converted_data.data());
+  } else if (t->id == getLossScalingId(DataType::FLOAT) ||
+             t->id == getLossScalingId(DataType::FLOAT16)) {
+    auto converted_data =
+        convertFloatToDataType(t->info.dataType(), lossScaling());
     t->setTensorData(t->info, converted_data.data());
   } else {
     throw error("SGD cannot set the parameter (" + t->id + ") currently");
@@ -106,16 +143,17 @@ void SGD::resetTensorDatas(Graph &graph) const {
     }
   };
 
-  resetTensor(getLearningRateId(DataType::FLOAT), learnRate());
-  resetTensor(getLearningRateId(DataType::FLOAT16), learnRate());
+  resetTensor(getScaledLearningRateId(DataType::FLOAT), scaledLearningRate());
+  resetTensor(getScaledLearningRateId(DataType::FLOAT16), scaledLearningRate());
+
+  resetTensor(getLossScalingId(DataType::FLOAT), lossScaling());
+  resetTensor(getLossScalingId(DataType::FLOAT16), lossScaling());
 
   // Note: scaling weightDecay scalar by learnRate on host
   // to allow for efficient implementation of weight update
   // on the device
-  resetTensor(getWeightDecayId(DataType::FLOAT),
-              1 - (weightDecay() * learnRate()));
-  resetTensor(getWeightDecayId(DataType::FLOAT16),
-              1 - (weightDecay() * learnRate()));
+  resetTensor(getWeightDecayId(DataType::FLOAT), weightDecayScaleFactor());
+  resetTensor(getWeightDecayId(DataType::FLOAT16), weightDecayScaleFactor());
 }
 
 void ConstSGD::setTensorData(Tensor *) const {
@@ -127,8 +165,8 @@ void ConstSGD::resetTensorDatas(Graph &) const {
 }
 
 std::unique_ptr<Op> ConstSGD::createOp(TensorId varId, Graph &graph) const {
-  return std::unique_ptr<Op>(
-      new ConstSGDVarUpdateOp(varId, learnRate(), weightDecay(), {graph, ""}));
+  return std::unique_ptr<Op>(new ConstSGDVarUpdateOp(
+      varId, learnRate(), weightDecay(), lossScaling(), {graph, ""}));
 }
 
 std::vector<TensorId> ConstSGD::getInputIds(TensorId varId, DataType) const {
@@ -138,7 +176,7 @@ std::vector<TensorId> ConstSGD::getInputIds(TensorId varId, DataType) const {
   return inputs;
 }
 
-ConstSGD::ConstSGD(float lr, float wd) : BaseSGD(lr, wd) {}
+ConstSGD::ConstSGD(float lr, float wd, float ls) : BaseSGD(lr, wd, ls) {}
 
 std::unique_ptr<Optimizer> ConstSGD::clone() const {
   return std::unique_ptr<Optimizer>(new ConstSGD(*this));

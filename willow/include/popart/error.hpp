@@ -58,7 +58,7 @@ public:
 };
 
 enum class ErrorSource {
-  popart = 0,
+  popart  = 0,
   poplar  = 1,
   poplibs = 2,
   unknown = 3,

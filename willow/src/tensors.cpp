@@ -302,7 +302,7 @@ void Tensors::makeConstInit(const TensorId &name, const void *src) {
 
   auto *tensor = get(name);
   if (tensor->hasProducer()) {
-    throw error("can not make an existing tensor const if it has a producer");
+    throw error("cannot make an existing tensor const if it has a producer");
   }
   tensor->setTensorType(TensorType::Const);
   tensor->setTensorData(tensor->info, src);

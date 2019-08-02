@@ -509,8 +509,8 @@ def test_import_torch_lstm(tmpdir):
         options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
         device = popart.DeviceManager().createIpuModelDevice(options)
         s = popart.InferenceSession(fnModel=onnx_file_name,
-                                     dataFeed=dataFlow,
-                                     deviceInfo=device)
+                                    dataFeed=dataFlow,
+                                    deviceInfo=device)
 
         anchor_map = s.initAnchorArrays()
         s.prepareDevice()
@@ -655,11 +655,11 @@ def test_import_torch_lstm_train(tmpdir):
         device = popart.DeviceManager().createIpuModelDevice(options)
         print('Creating session')
         s = popart.TrainingSession(fnModel=onnx_file_name,
-                                    dataFeed=dataFlow,
-                                    optimizer=optimizer,
-                                    losses=losses,
-                                    passes=popart.Patterns(["PreUniRepl"]),
-                                    deviceInfo=device)
+                                   dataFeed=dataFlow,
+                                   optimizer=optimizer,
+                                   losses=losses,
+                                   passes=popart.Patterns(["PreUniRepl"]),
+                                   deviceInfo=device)
         print('setting device')
 
         anchor_map = s.initAnchorArrays()
@@ -708,7 +708,7 @@ def test_import_torch_lstm_train(tmpdir):
     torch_export_lstm(get_torch_fname(fname), torch_lstm, (x, h0, c0))
 
     nr = popart.NumericsReport(fname, get_torch_fname(fname), fname,
-                                get_popart_fname(fname))
+                               get_popart_fname(fname))
     print(nr.fullReport())
 
     assert len(popart_out.keys()) == 8
@@ -808,8 +808,8 @@ def test_import_torch_lstm_multi_run(tmpdir):
         options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
         device = popart.DeviceManager().createIpuModelDevice(options)
         s = popart.InferenceSession(fnModel=onnx_file_name,
-                                     dataFeed=dataFlow,
-                                     deviceInfo=device)
+                                    dataFeed=dataFlow,
+                                    deviceInfo=device)
 
         anchor_map = s.initAnchorArrays()
         s.prepareDevice()

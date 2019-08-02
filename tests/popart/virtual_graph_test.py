@@ -31,9 +31,9 @@ def test_virtual_graph():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=2))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=2))
 
     s.prepareDevice()
 
@@ -68,9 +68,9 @@ def test_virtual_graph2():
     opts.enableVirtualGraphs = True
 
     s = popart.InferenceSession(fnModel=proto,
-                                 dataFeed=dataFlow,
-                                 userOptions=opts,
-                                 deviceInfo=tu.get_ipu_model(numIPUs=2))
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=2))
 
     s.prepareDevice()
 
@@ -121,11 +121,11 @@ def test_virtual_graph3():
     opts.enableVirtualGraphs = True
 
     s = popart.TrainingSession(fnModel=proto,
-                                dataFeed=dataFlow,
-                                losses=losses,
-                                optimizer=optimizer,
-                                userOptions=opts,
-                                deviceInfo=tu.get_ipu_model(numIPUs=4))
+                               dataFeed=dataFlow,
+                               losses=losses,
+                               optimizer=optimizer,
+                               userOptions=opts,
+                               deviceInfo=tu.get_ipu_model(numIPUs=4))
 
     s.prepareDevice()
 
@@ -192,11 +192,11 @@ def test_virtual_graph4():
     opts.enableVirtualGraphs = True
 
     s = popart.TrainingSession(fnModel=proto,
-                                dataFeed=dataFlow,
-                                losses=losses,
-                                optimizer=optimizer,
-                                userOptions=opts,
-                                deviceInfo=tu.get_ipu_model(numIPUs=4))
+                               dataFeed=dataFlow,
+                               losses=losses,
+                               optimizer=optimizer,
+                               userOptions=opts,
+                               deviceInfo=tu.get_ipu_model(numIPUs=4))
 
     s.prepareDevice()
 

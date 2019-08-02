@@ -33,14 +33,16 @@ def run(torchWriter,
 
     if outputdir is None:
         with TemporaryDirectory() as outputdir:
-            _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
-                      device_hw_id, mode, syntheticData, transformations)
+            return _run_impl(torchWriter, passes, outputdir, cifarInIndices,
+                             device, device_hw_id, mode, syntheticData,
+                             transformations)
     else:
         if not os.path.exists(outputdir):
             os.mkdir(outputdir)
 
-        _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
-                  device_hw_id, mode, syntheticData, transformations)
+        return _run_impl(torchWriter, passes, outputdir, cifarInIndices,
+                         device, device_hw_id, mode, syntheticData,
+                         transformations)
 
 
 def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
@@ -104,7 +106,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     # Create an IPU Model device
     elif device == "ipu_model":
 
-        options = {"compileIPUCode": True, 'numIPUs': 2, "tilesPerIPU": 1216}
+        options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
         device = deviceManager.createIpuModelDevice(options)
 
     # Create an Simulator
@@ -155,28 +157,28 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
 
     if mode == 'infer':
         session = popart.InferenceSession(fnModel=modelProtoX,
-                                           inputShapeInfo=inputShapeInfo,
-                                           dataFeed=dataFeed,
-                                           passes=passes,
-                                           userOptions=opts,
-                                           deviceInfo=device)
-    elif mode == 'evaluate':
-        session = popart.InferenceSession(fnModel=modelProtoX,
-                                           inputShapeInfo=inputShapeInfo,
-                                           dataFeed=dataFeed,
-                                           losses=torchWriter.losses,
-                                           passes=passes,
-                                           userOptions=opts,
-                                           deviceInfo=device)
-    else:
-        session = popart.TrainingSession(fnModel=modelProtoX,
                                           inputShapeInfo=inputShapeInfo,
                                           dataFeed=dataFeed,
-                                          losses=torchWriter.losses,
-                                          optimizer=torchWriter.optimizer,
                                           passes=passes,
                                           userOptions=opts,
                                           deviceInfo=device)
+    elif mode == 'evaluate':
+        session = popart.InferenceSession(fnModel=modelProtoX,
+                                          inputShapeInfo=inputShapeInfo,
+                                          dataFeed=dataFeed,
+                                          losses=torchWriter.losses,
+                                          passes=passes,
+                                          userOptions=opts,
+                                          deviceInfo=device)
+    else:
+        session = popart.TrainingSession(fnModel=modelProtoX,
+                                         inputShapeInfo=inputShapeInfo,
+                                         dataFeed=dataFeed,
+                                         losses=torchWriter.losses,
+                                         optimizer=torchWriter.optimizer,
+                                         passes=passes,
+                                         userOptions=opts,
+                                         deviceInfo=device)
 
     # get the tensor info for the anchors
     anchorArrays = session.initAnchorArrays()
@@ -329,7 +331,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                 # Compare parameters from updated Onnx models
                 if stepi == 0:
                     nr = popart.NumericsReport(fnModel0, fnTorchModel,
-                                                fnModel0, fnPopArtModel)
+                                               fnModel0, fnPopArtModel)
                 else:
                     nr = popart.NumericsReport(
                         getFnTorch(stepi - 1), fnTorchModel,
@@ -382,3 +384,5 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
                     result = getTensorError(torchOuput, anchorArrays[outName])
                     print(reportTensorError(nInd, result))
                     checkResult(result, margin)
+
+    return anchorArrays

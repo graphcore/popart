@@ -658,9 +658,9 @@ def test_batchnorm_repeated():
     options.enableStochasticRounding = False
 
     session = popart.InferenceSession(fnModel=proto,
-                                       dataFeed=dataFlow,
-                                       deviceInfo=device,
-                                       userOptions=options)
+                                      dataFeed=dataFlow,
+                                      deviceInfo=device,
+                                      userOptions=options)
 
     anchors = session.initAnchorArrays()
 

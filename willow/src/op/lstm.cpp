@@ -288,7 +288,7 @@ static OpCreator<LSTMOp> lstmOpCreator(
         throw error("LSTMOp attribute `input_forget' must be set to 0");
       }
 
-      // can not check hidden_size till inputs are connected
+      // cannot check hidden_size till inputs are connected
       boost::optional<int64_t> hidden_size;
       if (attr.hasAttribute("hidden_size")) {
         hidden_size = attr.getAttribute<Attributes::Int>("hidden_size");

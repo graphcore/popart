@@ -33,11 +33,10 @@ def test_basic(tmpdir):
 
         proto = builder.getModelProto()
 
-        dataFlow = popart.DataFlow(
-            1, {
-                c1: popart.AnchorReturnType("ALL"),
-                o: popart.AnchorReturnType("ALL")
-            })
+        dataFlow = popart.DataFlow(1, {
+            c1: popart.AnchorReturnType("ALL"),
+            o: popart.AnchorReturnType("ALL")
+        })
 
         opts = popart.SessionOptions()
         opts.enableOutlining = enableOutlining

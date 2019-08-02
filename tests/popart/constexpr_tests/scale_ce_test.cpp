@@ -132,7 +132,7 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale1) {
   // scaled is INT32, and once when it is FLOAT
   auto numerical_accuracy_test = [](popart::DataType type) {
     popart::logging::session::info("In numerical_accuracy_test for type {}",
-                                    TensorInfo(type, {1}).data_type());
+                                   TensorInfo(type, {1}).data_type());
 
     auto proto = getTestModelProto(type);
 
@@ -148,15 +148,15 @@ BOOST_AUTO_TEST_CASE(ConstExprTest_Scale1) {
     auto cpuDevice =
         popart::DeviceManager::createDeviceManager().createCpuDevice();
 
-    auto session = popart::InferenceSession::createFromOnnxModel(
-        proto,
-        data_flow,
-        cpuDevice,
-        {}, // no losses
-        popart::InputShapeInfo(),
-        {},        // no session options
-        Patterns() // no patterns
-    );
+    auto session =
+        popart::InferenceSession::createFromOnnxModel(proto,
+                                                      data_flow,
+                                                      cpuDevice,
+                                                      {}, // no losses
+                                                      popart::InputShapeInfo(),
+                                                      {}, // no session options
+                                                      Patterns() // no patterns
+        );
 
     // prepare the anchors
     std::vector<float> rawOutputData(4);

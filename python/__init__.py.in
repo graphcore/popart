@@ -1,5 +1,9 @@
 import os, sys
 
+if 'onnx' in sys.modules.keys():
+    raise ImportError('It looks like onnx has already been imported. Due to '
+                      'an ongoing issue, popart must be imported before onnx.')
+
 __version__ = "@VERSION@"
 
 # Add the DSO library path

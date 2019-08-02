@@ -144,7 +144,7 @@ def op_tester(tmpdir):
             if len(losses) == 0:
                 losses = [
                     popart.L1Loss(anchorIds[0], "l1LossVal", 0.1,
-                                   self.loss_reduction_type)
+                                  self.loss_reduction_type)
                 ]
             proto = bld.getModelProto()
 
@@ -159,21 +159,21 @@ def op_tester(tmpdir):
 
             if step_type == 'infer':
                 session = popart.InferenceSession(fnModel=proto,
-                                                   dataFeed=dataFlow,
-                                                   losses=losses,
-                                                   deviceInfo=device,
-                                                   passes=popart.Patterns(
-                                                       self.passes),
-                                                   userOptions=self.options)
-            else:
-                session = popart.TrainingSession(fnModel=proto,
                                                   dataFeed=dataFlow,
                                                   losses=losses,
-                                                  optimizer=optimizer,
                                                   deviceInfo=device,
                                                   passes=popart.Patterns(
                                                       self.passes),
                                                   userOptions=self.options)
+            else:
+                session = popart.TrainingSession(fnModel=proto,
+                                                 dataFeed=dataFlow,
+                                                 losses=losses,
+                                                 optimizer=optimizer,
+                                                 deviceInfo=device,
+                                                 passes=popart.Patterns(
+                                                     self.passes),
+                                                 userOptions=self.options)
 
             anchor_map = session.initAnchorArrays()
 

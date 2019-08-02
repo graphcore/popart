@@ -112,19 +112,19 @@ def ipu_op_tester(tmpdir):
 
             if (step_type == 'infer'):
                 session = popart.InferenceSession(fnModel=proto,
-                                                   dataFeed=dataFlow,
-                                                   deviceInfo=device,
-                                                   passes=popart.Patterns(
-                                                       self.passes),
-                                                   userOptions=opts)
+                                                  dataFeed=dataFlow,
+                                                  deviceInfo=device,
+                                                  passes=popart.Patterns(
+                                                      self.passes),
+                                                  userOptions=opts)
             elif (step_type == 'train'):
                 session = popart.Session(fnModel=proto,
-                                          dataFeed=dataFlow,
-                                          losses=losses,
-                                          optimizer=optimizer,
-                                          deviceInfo=device,
-                                          passes=popart.Patterns(self.passes),
-                                          userOptions=opts)
+                                         dataFeed=dataFlow,
+                                         losses=losses,
+                                         optimizer=optimizer,
+                                         deviceInfo=device,
+                                         passes=popart.Patterns(self.passes),
+                                         userOptions=opts)
 
             anchor_map = session.initAnchorArrays()
 

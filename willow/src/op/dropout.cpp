@@ -90,7 +90,6 @@ void DropoutGradOp::setup() {
 
 const std::vector<GradInOutMapper> &DropoutGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
-      // Design note : seed tensor input to dropout op/gradop not in Ir
       {getGradInIndex(), DropoutOp::getOutIndex(), GradOpInType::GRADOUT},
       {getSeedInIndex(), DropoutOp::getSeedOutIndex(), GradOpInType::OUT}};
   return inInfo;

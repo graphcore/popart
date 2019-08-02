@@ -13,7 +13,7 @@ char *getPopartEnvVar(std::string env_var) {
   }
 
   result = std::getenv(fmt::format("POPONNX_{}", env_var).c_str());
-  if (result == nullptr) {
+  if (result != nullptr) {
     std::cerr << fmt::format("You are using a deprecated environment variable "
                              "'POPONNX_{}', please change it to 'POPART_{}'\n",
                              env_var,

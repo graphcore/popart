@@ -421,7 +421,7 @@ std::string Op::debugName() const {
 
 bool Op::isNorm() const { return false; }
 
-// By default an operation can not be replaced
+// By default an operation cannot be replaced
 bool Op::canBeReplacedByIdentity() { return false; }
 
 std::map<fwtools::subgraph::InIndex, Op::SubgraphInSig>

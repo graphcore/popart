@@ -99,6 +99,7 @@ public:
   virtual std::string getName() const override final {
     return "MergeLooseThreshold";
   }
+  int64_t getMemToPlayWithAtPeak(const Graph &) const;
 
 private:
   PartitionMap getFinal(const Graph &) const final;

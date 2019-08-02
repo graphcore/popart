@@ -7,6 +7,16 @@
 
 namespace popart {
 
+std::string IpuCopyOp::getFromToStr() const {
+  std::ostringstream ss;
+  ss << "[ ";
+  for (auto x : getSourceIpus()) {
+    ss << x.second << " ";
+  }
+  ss << "] --> [ " << getDestIpu() << " ] ";
+  return ss.str();
+}
+
 IpuCopyOp::IpuCopyOp(const OperatorIdentifier &_opid,
                      uint64_t _destIpu,
                      const Op::Settings &settings_)

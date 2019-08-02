@@ -33,11 +33,10 @@ SignGradOpx::SignGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 void SignGradOpx::grow(poplar::program::Sequence &) const {
 
-  auto outTensor =
-      graph().addConstant(popType(outInfo(SignGradOp::getOutIndex())),
-                          outInfo(SignGradOp::getOutIndex()).shape_szt(),
-                          0,
-                          debugPrefix("zeros"));
+  auto outTensor = getConst(popType(outInfo(SignGradOp::getOutIndex())),
+                            outInfo(SignGradOp::getOutIndex()).shape_szt(),
+                            0,
+                            debugPrefix("zeros"));
 
   setOutTensor(SignGradOp::getOutIndex(), outTensor);
 }

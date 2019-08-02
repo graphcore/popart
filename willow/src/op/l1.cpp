@@ -1,8 +1,11 @@
 #include <memory>
 #include <sstream>
+
 #include <popart/error.hpp>
+#include <popart/ir.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/optimizer.hpp>
 #include <popart/tensor.hpp>
 
 namespace popart {
@@ -45,6 +48,14 @@ L1Op::L1Op(const OperatorIdentifier &_opid,
     : LossOp(_opid, settings_), l1loss_(n) {}
 
 void L1GradOp::setup() {
+
+  // connect the loss scaling tensor if is non-const
+  if (!getIr().getOptimizer()->constantLossScaling()) {
+    connectInTensor(L1GradOp::getLossScalingInIndex(),
+                    getIr().getOptimizer()->getLossScalingTensorId(
+                        inInfo(getInIndex()).dataType()));
+  }
+
   // gradient of input has same shape as input to L1
   outInfo(getOutIndex()) = inInfo(getInIndex());
 }

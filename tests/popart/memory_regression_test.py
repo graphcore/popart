@@ -129,7 +129,7 @@ def get_resnet18_proto(batch_size, training, norm_type):
 
     ds = resnet_data_size()
     data_shape = popart.TensorInfo("FLOAT16",
-                                    [batch_size, ds[0], ds[1], ds[2]])
+                                   [batch_size, ds[0], ds[1], ds[2]])
     ip = b.addInputTensor(data_shape, "data")
 
     if training:
@@ -166,12 +166,10 @@ def test_mini_resnet_like():
 
     session = popart.TrainingSession(
         fnModel=proto,
-        dataFeed=popart.DataFlow(1,
-                                  {"loss": popart.AnchorReturnType("ALL")}),
+        dataFeed=popart.DataFlow(1, {"loss": popart.AnchorReturnType("ALL")}),
         optimizer=popart.ConstSGD(0.001),
         losses=[popart.NllLoss(op, lb, "loss")],
-        deviceInfo=popart.DeviceManager().createIpuModelDevice({'numIPUs':
-                                                                 1}),
+        deviceInfo=popart.DeviceManager().createIpuModelDevice({'numIPUs': 1}),
         userOptions=opts)
 
     session.prepareDevice()

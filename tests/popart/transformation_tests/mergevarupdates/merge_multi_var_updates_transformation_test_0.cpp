@@ -118,7 +118,10 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     opts.dotChecks.insert(DotCheck::FINAL);
     opts.logDir                     = ".";
     opts.mergeVarUpdate             = mvu;
-    opts.mergeVarUpdateMemThreshold = 24; // 24 bytes = 7 floats
+    opts.mergeVarUpdateMemThreshold = mvu == MergeVarUpdateType::AutoLoose
+                                          ? 10000
+                                          : 24; // 24 bytes = 7 floats
+    opts.looseThresholdAtPeak = 10000;
 
     float lossLambda = 0.26;
     float learnRate  = 0.1;
@@ -191,9 +194,21 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
       BOOST_CHECK(nSgd == expectednsgd);
       BOOST_CHECK(nCopy == expectedncopy);
     }
+
+    else if (mvu == MergeVarUpdateType::AutoLoose) {
+      auto nSgd  = ir.opsOfType(Onnx::CustomOperators::SgdVarUpdate).size();
+      auto nCopy = ir.opsOfType(Onnx::CustomOperators::CopyVarUpdate).size();
+      std::cout << "nSgd : " << nSgd << std::endl;
+      std::cout << "nCopy : " << nCopy << std::endl;
+      // because both thresholds are greater than the total memory, there should
+      // be just 1 SGDVarUpdate and 1 CopyVarUpdate
+      BOOST_CHECK(nSgd == 1);
+      BOOST_CHECK(nCopy == 1);
+    }
   };
 
   test(MergeVarUpdateType::All);
   test(MergeVarUpdateType::None);
   test(MergeVarUpdateType::AutoTight);
+  test(MergeVarUpdateType::AutoLoose);
 }

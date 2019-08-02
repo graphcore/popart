@@ -157,7 +157,7 @@ bool InterIpuCopy::apply(Graph &graph) const {
   CopiedTensors copiedTensors;
 
   // Keep a record of which stream tensors are going to which ops
-  std::map<TensorId, std::vector<Op *>> streamsMap;
+  std::map<TensorId, std::set<Op *>> streamsMap;
 
   // For each op
   for (auto &entry : graph.getOps()) {
@@ -184,10 +184,10 @@ bool InterIpuCopy::apply(Graph &graph) const {
             tensor->tensorType() == TensorType::Variable) {
           auto it = streamsMap.find(tensor->id);
           if (it == streamsMap.end()) {
-            std::vector<Op *> streams = {from};
+            std::set<Op *> streams = {from};
             streamsMap.insert(std::make_pair(tensor->id, streams));
           } else {
-            streamsMap[tensor->id].push_back(from);
+            streamsMap[tensor->id].insert(from);
           }
         }
       }
@@ -241,7 +241,7 @@ bool InterIpuCopy::apply(Graph &graph) const {
 
     if (s.second.size() > 1) {
 
-      auto sourceOp = s.second[0];
+      auto sourceOp = *s.second.begin();
 
       // Get which ipu the to op is on
       int64_t sourceIpu = -1;

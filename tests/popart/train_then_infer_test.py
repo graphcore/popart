@@ -54,7 +54,7 @@ def test_train_then_infer_via_file():
 
     # Prepare the Inference session
     inference_dataFlow = popart.DataFlow(1,
-                                          {o: popart.AnchorReturnType("ALL")})
+                                         {o: popart.AnchorReturnType("ALL")})
 
     inference_session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
@@ -89,8 +89,8 @@ def test_train_then_infer_via_file():
     training_inputs = {input: input_data}
 
     for i in range(4):
-        training_session.run(
-            popart.PyStepIO(training_inputs, training_anchors))
+        training_session.run(popart.PyStepIO(training_inputs,
+                                             training_anchors))
 
     # Save the trained weights
     training_session.modelToHost("test.onnx")
@@ -105,8 +105,7 @@ def test_train_then_infer_via_file():
     inference_anchors = inference_session.initAnchorArrays()
     inference_inputs = {input: input_data}
 
-    inference_session.run(popart.PyStepIO(inference_inputs,
-                                           inference_anchors))
+    inference_session.run(popart.PyStepIO(inference_inputs, inference_anchors))
 
 
 def test_cannot_call_resethostweights_with_constant_weights():
@@ -145,7 +144,7 @@ def test_cannot_call_resethostweights_with_constant_weights():
 
     # Prepare the Inference session
     inference_dataFlow = popart.DataFlow(1,
-                                          {o: popart.AnchorReturnType("ALL")})
+                                         {o: popart.AnchorReturnType("ALL")})
 
     inference_session = popart.InferenceSession(
         fnModel=builder.getModelProto(),
