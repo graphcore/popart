@@ -44,7 +44,13 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
   poplar::Tensor mean;
   poplar::Tensor invStdDev;
   std::tie(mean, invStdDev) =
-      popnn::in::instanceNormStatistics(graph(), inputP, epsilon, prog, false);
+      popnn::in::instanceNormStatistics(graph(),
+                                        inputP,
+                                        epsilon,
+                                        prog,
+                                        false,
+                                        poplar::FLOAT,
+                                        debugPrefix("instanceNormStatistics"));
 
   // Calculate the normalization
   auto result = popnn::in::instanceNormalise(graph(),
@@ -54,7 +60,7 @@ void InstanceNormOpx::grow(poplar::program::Sequence &prog) const {
                                              mean,
                                              invStdDev,
                                              prog,
-                                             idStr() + "/instanceNorm");
+                                             debugPrefix("instanceNorm"));
 
   // Convert the output back into the input format
   poplar::Tensor y =
@@ -79,8 +85,13 @@ void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
   auto mean        = getInTensor(InstanceNormGradOp::getMeanInIndex());
   auto inv_std_dev = getInTensor(InstanceNormGradOp::getInvStdDevInIndex());
 
-  auto input_whitened = popnn::in::instanceNormWhiten(
-      graph(), input, mean, inv_std_dev, prog, idStr());
+  auto input_whitened =
+      popnn::in::instanceNormWhiten(graph(),
+                                    input,
+                                    mean,
+                                    inv_std_dev,
+                                    prog,
+                                    debugPrefix("instanceNormWhiten"));
 
   auto input_grad = popnn::in::instanceNormGradients(
       graph(),
@@ -90,11 +101,16 @@ void InstanceNormGradOpx::grow(poplar::program::Sequence &prog) const {
       scale,
       prog,
       poplar::FLOAT, // TODO: could this be HALF?
-      idStr());
+      debugPrefix("instanceNormGradients"));
 
   poplar::Tensor scale_grad, b_grad;
   std::tie(scale_grad, b_grad) = popnn::in::instanceNormParamGradients(
-      graph(), input_whitened, out_grad, prog, poplar::FLOAT, idStr());
+      graph(),
+      input_whitened,
+      out_grad,
+      prog,
+      poplar::FLOAT,
+      debugPrefix("instanceNormParamGradients"));
 
   setOutTensor(InstanceNormGradOp::getInputOutIndex(), input_grad);
   setOutTensor(InstanceNormGradOp::getScaleOutIndex(), scale_grad);

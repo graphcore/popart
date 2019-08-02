@@ -68,11 +68,10 @@ def test_convolution_cached_by_default():
     # Check that there is only one convolution computation set.
     summaryReport = session.getSummaryReport()
     computeSets = tu.get_compute_sets_from_report(summaryReport)
-
     num_3x3_convolutions = tu.get_compute_set_regex_count(
-        r'^[0-9]+/Conv_3x3/Convolve$', computeSets)
+        r'^[0-9]+/convolution/Conv_3x3/Convolve$', computeSets)
     num_4x4_convolutions = tu.get_compute_set_regex_count(
-        r'^[0-9]+/Conv_4x4/Convolve$', computeSets)
+        r'^[0-9]+/weightDeltas/Conv_4x4/Convolve$', computeSets)
     # There should be only one convolution of each type
     assert (num_3x3_convolutions == 1)
     assert (num_4x4_convolutions == 1)
@@ -149,9 +148,9 @@ def test_convolution_disable_all():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_3x3_convolutions = tu.get_compute_set_regex_count(
-        r'^[0-9]+/Conv_3x3/Convolve$', computeSets)
+        r'^[0-9]+/convolution/Conv_3x3/Convolve$', computeSets)
     num_4x4_convolutions = tu.get_compute_set_regex_count(
-        r'^[0-9]+/Conv_4x4/Convolve$', computeSets)
+        r'^[0-9]+/weightDeltas/Conv_4x4/Convolve$', computeSets)
     # Two 3x3 convolutions (bwd + fwd) for each convolution
     assert (num_3x3_convolutions == 6)
     # Updates
@@ -228,8 +227,8 @@ def test_matmul_infer_cached_by_default():
     summaryReport = session.getSummaryReport()
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
-    num_matmuls = tu.get_compute_set_regex_count(r'^[0-9]+/Conv_1/Convolve$',
-                                                 computeSets)
+    num_matmuls = tu.get_compute_set_regex_count(
+        r'^[0-9]+/matmulGrouped/Conv_1/Convolve$', computeSets)
     # There should be only one matmul
     assert (num_matmuls == 1)
 
@@ -323,8 +322,8 @@ def test_matmul_train_cached_by_default():
     summaryReport = session.getSummaryReport()
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
-    num_matmuls = tu.get_compute_set_regex_count(r'^[0-9]+/Conv_1/Convolve$',
-                                                 computeSets)
+    num_matmuls = tu.get_compute_set_regex_count(
+        r'^[0-9]+/matmulGrouped/Conv_1/Convolve$', computeSets)
     # There should be only three matmul
     assert (num_matmuls == 3)
 
@@ -421,8 +420,10 @@ def test_gemm_train_cached_by_default():
     summaryReport = session.getSummaryReport()
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
-    num_matmuls = tu.get_compute_set_regex_count(r'^[0-9]+/Conv_1/Convolve$',
-                                                 computeSets)
+    print(summaryReport)
+
+    num_matmuls = tu.get_compute_set_regex_count(
+        r'^[0-9]+/matmulGrouped/Conv_1/Convolve$', computeSets)
     # There should be only three matmul
     assert (num_matmuls == 3)
 
@@ -497,8 +498,8 @@ def test_outlining_bca1():
     summaryReport = session.getSummaryReport()
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
-    num_matmuls = tu.get_compute_set_regex_count(r'^[0-9]+/Conv_1/Convolve$',
-                                                 computeSets)
+    num_matmuls = tu.get_compute_set_regex_count(
+        r'^[0-9]+/matmulGrouped/Conv_1/Convolve$', computeSets)
     # There should be only one matmul
     assert (num_matmuls == 1)
 
@@ -579,8 +580,8 @@ def test_outlining_bca2():
     summaryReport = session.getSummaryReport()
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
-    num_matmuls = tu.get_compute_set_regex_count(r'^[0-9]+/Conv_1/Convolve$',
-                                                 computeSets)
+    num_matmuls = tu.get_compute_set_regex_count(
+        r'^[0-9]+/matmulGrouped/Conv_1/Convolve$', computeSets)
     # There should be only one matmul
     assert (num_matmuls == 1)
 
@@ -671,7 +672,7 @@ def test_outlining_bca3():
     summaryReport = session.getSummaryReport()
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
-    num_matmuls = tu.get_compute_set_regex_count(r'^[0-9]+/Conv_1/Convolve$',
-                                                 computeSets)
+    num_matmuls = tu.get_compute_set_regex_count(
+        r'^[0-9]+/matmulGrouped/Conv_1/Convolve$', computeSets)
     # There should be only one matmul
     assert (num_matmuls == 3)

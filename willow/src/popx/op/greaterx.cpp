@@ -25,7 +25,7 @@ void GreaterOpx::grow(poplar::program::Sequence &prog) const {
                      get(inId(GreaterOp::getArg0InIndex())),
                      get(inId(GreaterOp::getArg1InIndex())),
                      prog,
-                     idStr()));
+                     debugPrefix()));
 }
 
 namespace {

@@ -22,7 +22,7 @@ void AbsOpx::grow(poplar::program::Sequence &prog) const {
                            popops::expr::UnaryOpType::ABSOLUTE,
                            getInTensor(AbsOp::getInIndex()),
                            prog,
-                           idStr()));
+                           debugPrefix()));
 }
 
 namespace {

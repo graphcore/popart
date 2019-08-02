@@ -39,7 +39,7 @@ void TopKGradOpx::grow(poplar::program::Sequence &prog) const {
 
   poputil::mapTensorLinearly(graph(), dataGrad);
 
-  popops::zero(graph(), dataGrad, prog);
+  popops::zero(graph(), dataGrad, prog, debugPrefix("zero"));
 
   scatterutilx::growScatter(prog, graph(), indices, gradIn, dataGrad, axis);
 

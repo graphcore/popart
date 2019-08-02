@@ -29,7 +29,8 @@ void ReduceMaxOpx::grow(poplar::program::Sequence &prog) const {
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::MAX},
-                                      prog);
+                                      prog,
+                                      debugPrefix("max"));
 
   setOutTensor(
       ReduceMaxOp::getOutIndex(),
@@ -64,10 +65,15 @@ void ReduceMaxGradOpx::grow(poplar::program::Sequence &prog) const {
   mask = popops::map(graph(),
                      pe::Add(pe::Signum(pe::Sub(pe::_2, pe::_1)), pe::Const(1)),
                      {mask, getInTensor(ReduceMaxGradOp::getFwdInInIndex())},
-                     prog);
+                     prog,
+                     debugPrefix("mask"));
 
-  output = popops::map(
-      graph(), popops::expr::BinaryOpType::MULTIPLY, output, mask, prog);
+  output = popops::map(graph(),
+                       popops::expr::BinaryOpType::MULTIPLY,
+                       output,
+                       mask,
+                       prog,
+                       debugPrefix("mul"));
 
   // output now matches the shape of output_shape
   setOutTensor(ReduceMaxGradOp::getOutIndex(), output);

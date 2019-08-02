@@ -52,7 +52,7 @@ void AddOpx::grow(poplar::program::Sequence &prog) const {
                            getInTensor(AddOp::getArg0InIndex()),
                            getInTensor(AddOp::getArg1InIndex()),
                            prog,
-                           idStr()));
+                           debugPrefix()));
 }
 
 AddLhsInplaceOpx::AddLhsInplaceOpx(Op *op, Devicex *devicex)
@@ -65,7 +65,7 @@ void AddLhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
                         getInTensor(AddLhsInplaceOp::getArg0InIndex()),
                         getInTensor(AddLhsInplaceOp::getArg1InIndex()),
                         prog,
-                        idStr());
+                        debugPrefix());
 
   out = out.reshape(outInfo(AddLhsInplaceOp::getOutIndex()).shape_szt());
   setOutTensor(AddLhsInplaceOp::getOutIndex(), out);
@@ -81,7 +81,7 @@ void AddRhsInplaceOpx::grow(poplar::program::Sequence &prog) const {
                         getInTensor(AddRhsInplaceOp::getArg1InIndex()),
                         getInTensor(AddRhsInplaceOp::getArg0InIndex()),
                         prog,
-                        idStr());
+                        debugPrefix());
 
   out = out.reshape(outInfo(AddRhsInplaceOp::getOutIndex()).shape_szt());
   setOutTensor(AddRhsInplaceOp::getOutIndex(), out);

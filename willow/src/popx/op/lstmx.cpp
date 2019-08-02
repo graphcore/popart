@@ -47,7 +47,7 @@ void LSTMOpx::grow(poplar::program::Sequence &prog) const {
                                                       *weights,
                                                       intermediate.get(),
                                                       prog,
-                                                      idStr(),
+                                                      debugPrefix("lstmFwd"),
                                                       dv_p->lstmOptions,
                                                       &dv_p->matmulCache);
 
@@ -100,9 +100,9 @@ void LSTMOpx::growBias(poplar::program::Sequence &prog) const {
                        biases,
                        bias_input.slice(4 * hidden_size, 8 * hidden_size, 1),
                        prog,
-                       idStr());
+                       debugPrefix("add"));
   } else {
-    popops::zero(graph(), biases, prog, idStr());
+    popops::zero(graph(), biases, prog, debugPrefix("zero"));
   }
 }
 
@@ -193,7 +193,7 @@ poplar::Tensor LSTMOpx::createLSTMInput() const {
   auto cache       = &dv_p->matmulCache;
 
   return popnn::lstm::createInput(
-      graph(), lstm_params, idStr(), options, cache);
+      graph(), lstm_params, debugPrefix("input"), options, cache);
 }
 
 popnn::lstm::LstmState LSTMOpx::getInitialState() const {
@@ -202,8 +202,8 @@ popnn::lstm::LstmState LSTMOpx::getInitialState() const {
     auto cache       = &dv_p->matmulCache;
     auto lstm_params = createLSTMParams();
 
-    initial_state =
-        createInitialState(graph(), lstm_params, idStr(), options, cache);
+    initial_state = createInitialState(
+        graph(), lstm_params, debugPrefix("initialState"), options, cache);
   }
 
   return *initial_state;
@@ -215,7 +215,8 @@ popnn::lstm::LstmWeights LSTMOpx::getLSTMWeights() const {
     auto options     = dv_p->lstmOptions;
     auto cache       = &dv_p->matmulCache;
 
-    weights = createWeights(graph(), lstm_params, idStr(), options, cache);
+    weights = createWeights(
+        graph(), lstm_params, debugPrefix("weights"), options, cache);
   }
 
   return *weights;
@@ -274,23 +275,23 @@ void LSTMOpx::prepareInitialState(popnn::lstm::LstmState &init_state,
   auto hasInitH = lstm_op.hasInitialHInput();
 
   if (!hasInitC && !hasInitH) {
-    zeroInitialState(graph(), init_state, prog, idStr());
+    zeroInitialState(graph(), init_state, prog, debugPrefix());
   } else if (!hasInitC) {
-    popops::zero(graph(), init_state.cellState, prog, idStr());
+    popops::zero(graph(), init_state.cellState, prog, debugPrefix());
   } else if (!hasInitH) {
-    popops::zero(graph(), init_state.output, prog, idStr());
+    popops::zero(graph(), init_state.output, prog, debugPrefix());
   }
 
   // Check the inputs have been created
   if (hasInitC && !inputCreated(LSTMOp::getInitialCInIndex())) {
     prog.add(poplar::program::Copy(
         getInTensor(LSTMOp::getInitialCInIndex()),
-        createInput(LSTMOp::getInitialCInIndex(), "initC")));
+        createInput(LSTMOp::getInitialCInIndex(), debugPrefix("initC"))));
   }
   if (hasInitH && !inputCreated(LSTMOp::getInitialHInIndex())) {
     prog.add(poplar::program::Copy(
         getInTensor(LSTMOp::getInitialHInIndex()),
-        createInput(LSTMOp::getInitialHInIndex(), "initH")));
+        createInput(LSTMOp::getInitialHInIndex(), debugPrefix("initH"))));
   }
 }
 
@@ -334,7 +335,7 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
                      output_grad_copy[output_grad_copy.dim(0) - 1],
                      output_h_grad,
                      prog,
-                     idStr());
+                     debugPrefix());
 
   poplar::Tensor input_grad;
   popnn::lstm::LstmWeights weights_grad;
@@ -351,7 +352,7 @@ void LSTMGradOpx::grow(poplar::program::Sequence &prog) const {
                                        &output_c_grad,
                                        &input_grad,
                                        weights_grad,
-                                       idStr(),
+                                       debugPrefix("lstmBwdWithWU"),
                                        dv_p->lstmOptions,
                                        &dv_p->matmulCache);
 

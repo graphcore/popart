@@ -131,6 +131,13 @@ std::string Opx::debugPrefix(const std::string &prefix) const {
   return idStr() + sNameDelimiter + prefix;
 }
 
+std::string Opx::debugPrefix(const std::string &p1,
+                             const std::string &p2) const {
+  return debugPrefix(p1 + sNameDelimiter + p2);
+}
+
+std::string Opx::debugPrefix() const { return idStr(); }
+
 poplar::Tensor Opx::cloneNcopy(poplar::program::Sequence &prog,
                                TensorId id) const {
   auto outTensor = graph().clone(get(id));

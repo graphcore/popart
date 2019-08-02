@@ -21,7 +21,7 @@ void NotOpx::grow(poplar::program::Sequence &prog) const {
                      popops::expr::UnaryOpType::LOGICAL_NOT,
                      get(inId(NotOp::getInIndex())),
                      prog,
-                     idStr()));
+                     debugPrefix()));
 }
 
 namespace {

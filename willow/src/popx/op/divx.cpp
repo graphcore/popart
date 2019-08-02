@@ -19,7 +19,7 @@ void DivOpx::grow(poplar::program::Sequence &prog) const {
                            getInTensor(DivOp::getArg0InIndex()),
                            getInTensor(DivOp::getArg1InIndex()),
                            prog,
-                           idStr()));
+                           debugPrefix()));
 }
 
 namespace {

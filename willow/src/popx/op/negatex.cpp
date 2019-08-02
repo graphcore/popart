@@ -18,7 +18,7 @@ void NegateOpx::grow(poplar::program::Sequence &prog) const {
                            popops::expr::UnaryOpType::NEGATE,
                            getInTensor(0),
                            prog,
-                           idStr()));
+                           debugPrefix()));
 }
 
 NegateGradOpx::NegateGradOpx(Op *op, Devicex *devicex)
@@ -32,7 +32,7 @@ void NegateGradOpx::grow(poplar::program::Sequence &prog) const {
                            popops::expr::UnaryOpType::NEGATE,
                            getInTensor(0),
                            prog,
-                           idStr()));
+                           debugPrefix()));
 }
 
 namespace {

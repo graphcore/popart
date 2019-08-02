@@ -22,7 +22,7 @@ void OrOpx::grow(poplar::program::Sequence &prog) const {
                      get(inId(OrOp::getArg0InIndex())),
                      get(inId(OrOp::getArg1InIndex())),
                      prog,
-                     idStr()));
+                     debugPrefix()));
 }
 
 namespace {

@@ -400,7 +400,7 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
                             combinedBroadcastTs.second, // B
                             prog,                       // prog
                             combinedBroadcastTs.first.elementType(),
-                            idStr(), // debugPrefix
+                            debugPrefix("matmulGrouped"), // debugPrefix
                             // getPoplarOptions().toOptionFlags(),
                             dv_p->fwdMmOptions.toOptionFlags(), // options
                             &dv_p->matmulCache);                // cache
@@ -678,7 +678,7 @@ void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
                             combinedBroadcastTs.second, // B
                             prog,                       // prog
                             combinedBroadcastTs.first.elementType(),
-                            idStr(), // debugPrefix
+                            debugPrefix("matmulGrouped"), // debugPrefix
                             // getPoplarOptions().toOptionFlags(), // options
                             dv_p->bwdMmLhsOptions.toOptionFlags(), // options
                             &dv_p->matmulCache);                   // cache
@@ -789,7 +789,7 @@ void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
                             combinedBroadcastTs.second, // B
                             prog,                       // prog
                             combinedBroadcastTs.first.elementType(),
-                            idStr(), // debugPrefix
+                            debugPrefix("matmulGrouped"), // debugPrefix
                             // getPoplarOptions().toOptionFlags(), // options
                             dv_p->bwdMmRhsOptions.toOptionFlags(), // options
                             &dv_p->matmulCache);                   // cache

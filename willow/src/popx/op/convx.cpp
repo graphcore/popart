@@ -200,7 +200,7 @@ void ConvOpx::grow(poplar::program::Sequence &prog) const {
                                        popConvParams,
                                        false,
                                        prog,
-                                       idStr(),
+                                       debugPrefix("convolution"),
                                        options->toOptionFlags(),
                                        &(dv_p->convCache));
 
@@ -222,7 +222,7 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
       activations,
       getPoplarConvParams(convOp->getParameters()),
       prog,
-      idStr(),
+      debugPrefix("weightDeltas"),
       dv_p->wuConvOptions.toOptionFlags(),
       &dv_p->convCache);
 

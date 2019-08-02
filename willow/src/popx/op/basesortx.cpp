@@ -63,7 +63,8 @@ BaseSortOpx::growFullSortResult(poplar::program::Sequence &prog) const {
   auto indices = getIotaTensor(prog);
 
   // sort indices and values, using values as the "keys" to sort on
-  popops::sortKeyValueInPlace(graph(), values, indices, axis, prog);
+  popops::sortKeyValueInPlace(
+      graph(), values, indices, axis, prog, debugPrefix());
   return FullSortResult(indices, values, axis);
 }
 
@@ -71,7 +72,8 @@ poplar::Tensor
 BaseSortOpx::growIndicesSort(poplar::program::Sequence &prog) const {
   auto input   = getInTensor(BaseSortOp::getInIndex());
   auto indices = getIotaTensor(prog);
-  return popops::sortKeyValue(graph(), input, indices, axis, prog);
+  return popops::sortKeyValue(
+      graph(), input, indices, axis, prog, debugPrefix());
 }
 
 poplar::Tensor BaseSortOpx::createInput(InIndex inIndex,

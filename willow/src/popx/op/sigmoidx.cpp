@@ -47,7 +47,7 @@ void SigmoidGradOpx::grow(poplar::program::Sequence &prog) const {
       getInTensor(SigmoidGradOp::getFwdOutInIndex()), // out,
       getInTensor(SigmoidGradOp::getGradInIndex()),   // outGradient,
       prog,                                           // prog,
-      idStr()                                         // debugPrefix
+      debugPrefix()                                   // debugPrefix
   );
 
   setOutTensor(SigmoidOp::getOutIndex(), outTensor);

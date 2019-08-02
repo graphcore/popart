@@ -42,7 +42,7 @@ poplar::Tensor BatchNormOpx::batchNormalise(poplar::program::Sequence &prog,
                                  pe::Mul(pe::_1, pe::_2),
                                  {scale, invSd},
                                  prog,
-                                 idStr() + "/Multiplicand");
+                                 debugPrefix("multiplicand"));
 
   // addend = beta - gamma * mean / sdDev
   //        = beta - gamma * mean * invSd
@@ -50,11 +50,11 @@ poplar::Tensor BatchNormOpx::batchNormalise(poplar::program::Sequence &prog,
                             pe::Sub(pe::_1, pe::Mul(pe::_2, pe::_3)),
                             {b, multiplcand, mean},
                             prog,
-                            idStr() + "/Addend");
+                            debugPrefix("addend"));
 
   // Perform the batchNorm
   return popnn::bn::batchNormalise(
-      graph(), x, multiplcand, addend, prog, idStr());
+      graph(), x, multiplcand, addend, prog, debugPrefix("batchNormalise"));
 }
 
 static bool isZeroElementArray(const poplar::Shape &shape) {
@@ -107,8 +107,14 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
       std::tie(xP, nonBroadcastDims) = convertOnnxInputToPoplarInput(x);
 
       poplar::Tensor batchMean, invSd;
-      std::tie(batchMean, invSd) = popnn::bn::batchNormStatistics(
-          graph(), xP, epsilon, prog, false, poplar::FLOAT, idStr());
+      std::tie(batchMean, invSd) =
+          popnn::bn::batchNormStatistics(graph(),
+                                         xP,
+                                         epsilon,
+                                         prog,
+                                         false,
+                                         poplar::FLOAT,
+                                         debugPrefix("normStats"));
 
       // batch normalise
       auto y = batchNormalise(prog, xP, scale, b, batchMean, invSd);
@@ -142,7 +148,7 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
                   pe::Mul(pe::Const(momentum), pe::_1)),
           {mean, batchMean},
           prog,
-          idStr() + "/runningMean");
+          debugPrefix("runningMean"));
 
       // Calculate the running variance using the unbiased results
       auto runningVar = popops::map(
@@ -151,7 +157,7 @@ void BatchNormOpx::grow(poplar::program::Sequence &prog) const {
                   pe::Mul(pe::Const(momentum), pe::_1)),
           {var, batchVar},
           prog,
-          idStr() + "/runningVar");
+          debugPrefix("runningVar"));
 
       // return the results
       setOutTensor(BatchNormOp::getYOutIndex(), y);
@@ -201,7 +207,7 @@ BatchNormGradOpx::batchNormaliseGrad(poplar::program::Sequence &prog,
   poplar::Tensor xGrad, scaleGrad, bGrad;
 
   poplar::Tensor xWhitened = popnn::bn::batchNormWhiten(
-      graph(), x, mean, invSd, prog, idStr() + "/WhitenedActs");
+      graph(), x, mean, invSd, prog, debugPrefix("WhitenedActs"));
 
   // Compute the delta for the operand
   xGrad = popnn::bn::batchNormGradients(graph(),
@@ -211,7 +217,7 @@ BatchNormGradOpx::batchNormaliseGrad(poplar::program::Sequence &prog,
                                         scale,
                                         prog,
                                         poplar::FLOAT,
-                                        idStr() + "/OperandGrad");
+                                        debugPrefix("operandGrad"));
 
   // Compute the deltas for scaled and offset
   std::tie(scaleGrad, bGrad) =
@@ -220,7 +226,7 @@ BatchNormGradOpx::batchNormaliseGrad(poplar::program::Sequence &prog,
                                          yGrad,
                                          prog,
                                          poplar::FLOAT,
-                                         idStr() + "/ScaleOffsetGrads");
+                                         debugPrefix("scaleOffsetGrads"));
 
   return std::make_tuple(xGrad, scaleGrad, bGrad);
 }

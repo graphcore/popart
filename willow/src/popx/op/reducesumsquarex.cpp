@@ -30,7 +30,8 @@ void ReduceSumSquareOpx::grow(poplar::program::Sequence &prog) const {
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::SQUARE_ADD},
-                                      prog);
+                                      prog,
+                                      debugPrefix("squareAdd"));
 
   setOutTensor(ReduceSumSquareOp::getOutIndex(),
                output_tensor.reshape(
@@ -63,7 +64,8 @@ void ReduceSumSquareGradOpx::grow(poplar::program::Sequence &prog) const {
       graph(),
       pe::Mul(pe::Mul(pe::_1, pe::_2), pe::Const(2)),
       {output, getInTensor(ReduceSumSquareGradOp::getFwdInInIndex())},
-      prog);
+      prog,
+      debugPrefix("mul"));
 
   // output now matches the shape of output_shape
   setOutTensor(ReduceSumSquareGradOp::getOutIndex(), output);

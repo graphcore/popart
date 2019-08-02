@@ -29,7 +29,8 @@ void ReduceMinOpx::grow(poplar::program::Sequence &prog) const {
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::MIN},
-                                      prog);
+                                      prog,
+                                      debugPrefix("min"));
 
   setOutTensor(
       ReduceMinOp::getOutIndex(),
@@ -64,10 +65,15 @@ void ReduceMinGradOpx::grow(poplar::program::Sequence &prog) const {
   mask = popops::map(graph(),
                      pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
                      {mask, getInTensor(ReduceMinGradOp::getFwdInInIndex())},
-                     prog);
+                     prog,
+                     debugPrefix("mask"));
 
-  output = popops::map(
-      graph(), popops::expr::BinaryOpType::MULTIPLY, output, mask, prog);
+  output = popops::map(graph(),
+                       popops::expr::BinaryOpType::MULTIPLY,
+                       output,
+                       mask,
+                       prog,
+                       debugPrefix("mul"));
 
   // output now matches the shape of output_shape
   setOutTensor(ReduceMinGradOp::getOutIndex(), output);

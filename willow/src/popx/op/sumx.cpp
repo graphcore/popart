@@ -97,7 +97,7 @@ void SumArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
                             prog,
-                            idStr());
+                            debugPrefix("add"));
 
   logging::info("{} Shape of SumArgGradOpx output {} {}",
                 out,

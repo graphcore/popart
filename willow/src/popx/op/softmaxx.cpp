@@ -140,15 +140,15 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
 
   // 1 at position "label", 0 elsewhere.
   auto oneHot =
-      graph().clone(probs2D.elementType(), probs2D, debugPrefix("OneHot"));
-  popops::encodeOneHot(graph(), label1D, oneHot, prog, debugPrefix("Nll"));
+      graph().clone(probs2D.elementType(), probs2D, debugPrefix("oneHot"));
+  popops::encodeOneHot(graph(), label1D, oneHot, prog, debugPrefix("nll"));
 
   // -1 at position "label", 0 elsewhere.
   popops::mapInPlace(graph(),
                      popops::expr::UnaryOpType::NEGATE,
                      oneHot,
                      prog,
-                     debugPrefix("Neg"));
+                     debugPrefix("neg"));
 
   // p - 1 at position "label" label, p elsewhere.
   popops::mapInPlace(graph(),
@@ -156,7 +156,7 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      oneHot,
                      probs2D,
                      prog,
-                     debugPrefix("Sub"));
+                     debugPrefix("sub"));
 
   if (sfmgd.nlll()->hasIgnoreIndex()) {
     auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
@@ -214,7 +214,7 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
                         probs,
                         d_probs,
                         prog,
-                        debugPrefix("Mul"));
+                        debugPrefix("mul"));
 
   // reduce along all dimensions except 0 (0 is the sample index)
   std::vector<size_t> redDims(probs.rank() - 1);
@@ -227,7 +227,7 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
                                redDims,
                                {popops::Operation::ADD},
                                prog,
-                               debugPrefix("Reduce"))
+                               debugPrefix("reduce"))
                     .reshape(upRanked);
 
   auto g_minus_sum_pg = popops::map(graph(),
@@ -235,14 +235,14 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
                                     d_probs,
                                     sum_pg,
                                     prog,
-                                    debugPrefix("Sub"));
+                                    debugPrefix("sub"));
 
   auto dv = popops::map(graph(),
                         popops::expr::BinaryOpType::MULTIPLY,
                         probs,
                         g_minus_sum_pg,
                         prog,
-                        debugPrefix("Mul"));
+                        debugPrefix("mul"));
 
   dv = dv.reshape(inInfo(SoftmaxGradOp::getActsInIndex()).shape_szt());
   setOutTensor(0, dv);
@@ -260,8 +260,8 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   // 1 at position "label", 0 elsewhere.
   // This tensor will be used for both NllLoss and SoftmaxDirectGrad
   auto oneHot =
-      graph().clone(probs2D.elementType(), probs2D, debugPrefix("OneHot"));
-  popops::encodeOneHot(graph(), label1D, oneHot, prog, debugPrefix("SfmGrad"));
+      graph().clone(probs2D.elementType(), probs2D, debugPrefix("oneHot"));
+  popops::encodeOneHot(graph(), label1D, oneHot, prog, debugPrefix("sfmGrad"));
 
   // First the first part of the loss calculation:
 
@@ -272,7 +272,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                  oneHot,
                                  probs2D,
                                  prog,
-                                 debugPrefix("Mul"));
+                                 debugPrefix("mul"));
 
   // Now compute the SoftmaxGrad:
 
@@ -282,7 +282,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      popops::expr::UnaryOpType::NEGATE,
                      oneHot,
                      prog,
-                     debugPrefix("Neg"));
+                     debugPrefix("neg"));
 
   // p - 1 at position "label" label, p elsewhere.
   popops::mapInPlace(graph(),
@@ -290,7 +290,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      oneHot,
                      probs2D,
                      prog,
-                     debugPrefix("Sub"));
+                     debugPrefix("sub"));
 
   if (nllsfmgd.nlll()->hasIgnoreIndex()) {
     auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
@@ -321,7 +321,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                          pe::Mul(pe::_1, pe::Const(lossScaling)),
                          {oneHot},
                          prog,
-                         debugPrefix("ScaledLoss"));
+                         debugPrefix("scaledLoss"));
     }
   } else {
     popops::mapInPlace(
@@ -330,7 +330,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
         {oneHot,
          getInTensor(NlllWithSoftmaxGradDirectOp::getLossScalingInIndex())},
         prog,
-        debugPrefix("ScaledLoss"));
+        debugPrefix("scaledLoss"));
   }
 
   setOutTensor(nllsfmgd.getGradOutIndex(), oneHot);
@@ -338,8 +338,12 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   // Now compute the rest of the NllLoss from the same one-hot encoded tensor:
 
   // sum rows, so that just the p corresponding to the label remains
-  poplar::Tensor reduction =
-      popops::reduce(graph(), oneHotProbs, {1}, {popops::Operation::ADD}, prog);
+  poplar::Tensor reduction = popops::reduce(graph(),
+                                            oneHotProbs,
+                                            {1},
+                                            {popops::Operation::ADD},
+                                            prog,
+                                            debugPrefix("add"));
 
   // Create an epsilon value
   poplar::Tensor eps =
@@ -352,14 +356,14 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                           reduction,
                           eps,
                           prog,
-                          debugPrefix("EpsMul"));
+                          debugPrefix("epsMul"));
 
   // and log it,
   popops::mapInPlace(graph(),
                      popops::expr::UnaryOpType::LOGARITHM,
                      reduction,
                      prog,
-                     debugPrefix("Log"));
+                     debugPrefix("log"));
 
   // TODO: T8305, re-use the mask created above
   if (nllsfmgd.nlll()->hasIgnoreIndex()) {
@@ -386,7 +390,7 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                      popops::expr::UnaryOpType::NEGATE,
                      reduction,
                      prog,
-                     debugPrefix("Neg"));
+                     debugPrefix("neg"));
 
   // One loss per sample, so the output is reshaped to match label input shape
   reduction = reduction.reshape(label.shape());

@@ -23,7 +23,7 @@ void LessOpx::grow(poplar::program::Sequence &prog) const {
                      get(inId(LessOp::getArg0InIndex())),
                      get(inId(LessOp::getArg1InIndex())),
                      prog,
-                     idStr()));
+                     debugPrefix()));
 }
 
 namespace {

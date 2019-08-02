@@ -26,8 +26,11 @@ void AddBiasOpx::grow(poplar::program::Sequence &prog) const {
   // Clone & copy the input tensor because poplin::addBias is in-place.
   const auto result =
       Opx::cloneNcopy(prog, getInTensor(AddBiasOp::getDataInIndex()));
-  poplin::addBias(
-      graph(), result, getInTensor(AddBiasOp::getBiasInIndex()), prog, idStr());
+  poplin::addBias(graph(),
+                  result,
+                  getInTensor(AddBiasOp::getBiasInIndex()),
+                  prog,
+                  debugPrefix());
   setOutTensor(AddBiasOp::getOutIndex(), result);
 }
 
@@ -70,7 +73,7 @@ AddBiasBiasGradOpx::AddBiasBiasGradOpx(Op *op, Devicex *devicex)
 void AddBiasInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto dataIn = getInTensor(AddBiasOp::getDataInIndex());
   auto biasIn = getInTensor(AddBiasOp::getBiasInIndex());
-  poplin::addBias(graph(), dataIn, biasIn, prog, idStr());
+  poplin::addBias(graph(), dataIn, biasIn, prog, debugPrefix());
   setOutTensor(AddBiasOp::getOutIndex(), dataIn);
 }
 
