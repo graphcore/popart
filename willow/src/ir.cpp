@@ -1757,7 +1757,7 @@ void Ir::constructBackwards() {
     case VariableUpdateType::None:
     default:
       throw error("Unknown variable update approach");
-    };
+    }
   }
 
   logging::ir::info("Constructing backwards complete");

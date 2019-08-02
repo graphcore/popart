@@ -86,8 +86,8 @@ AddOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
   return Op::getInplaceVariant(operator_id);
 }
 
-void AddOp::setInplacePriority(const OperatorIdentifier &id, float priority) {
-  defaultInplacePriorities[id] = priority;
+void AddOp::setInplacePriority(const OperatorIdentifier &x, float p) {
+  defaultInplacePriorities[x] = p;
 }
 
 AddLhsInplaceOp::AddLhsInplaceOp(const AddOp &op)

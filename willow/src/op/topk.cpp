@@ -10,8 +10,8 @@ namespace popart {
 TopKOp::TopKOp(const OperatorIdentifier &opid_,
                int64_t K_,
                int64_t axis_,
-               const Op::Settings &settings)
-    : BaseSortOp(opid_, axis_, settings), K(K_) {}
+               const Op::Settings &settings_)
+    : BaseSortOp(opid_, axis_, settings_), K(K_) {}
 
 std::unique_ptr<Op> TopKOp::clone() const {
   return std::make_unique<TopKOp>(*this);

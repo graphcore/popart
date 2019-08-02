@@ -9,7 +9,7 @@ namespace popart {
 class ElementWiseUnaryOp : public Op {
 public:
   ElementWiseUnaryOp(const OperatorIdentifier &_opid,
-                     const Op::Settings &settings);
+                     const Op::Settings &_settings);
   void setup() final;
 
   static InIndex getInIndex() { return 0; }
@@ -23,8 +23,8 @@ public:
 class ElementWiseInplaceUnaryOp : public ElementWiseUnaryOp {
 public:
   ElementWiseInplaceUnaryOp(const OperatorIdentifier &_opid,
-                            const Op::Settings &settings)
-      : ElementWiseUnaryOp(_opid, settings) {}
+                            const Op::Settings &_settings)
+      : ElementWiseUnaryOp(_opid, _settings) {}
 
   view::Region modifies(InIndex index) const final { return uses(index); }
   view::Region aliases(InIndex index) const final { return uses(index); }
@@ -60,7 +60,7 @@ public:
 class ElementWiseBinaryOp : public Op {
 public:
   ElementWiseBinaryOp(const OperatorIdentifier &_opid,
-                      const Op::Settings &settings);
+                      const Op::Settings &_settings);
   void setup() final;
 
   // Current implementation places arg0 input at index 0, and arg1 input
@@ -76,7 +76,7 @@ public:
 class BinaryComparisonOp : public Op {
 public:
   BinaryComparisonOp(const OperatorIdentifier &_opid,
-                     const Op::Settings &settings);
+                     const Op::Settings &_settings);
   void setup() final;
 
   // Current implementation places arg0 input at index 0, and arg1 input

@@ -34,7 +34,7 @@ void SubsampleShapeInference(InferenceContext &ctx) {
   std::vector<int64_t> strides;
   if (getRepeatedAttribute(ctx, "strides", strides)) {
     if (strides.size() != n_input_dims) {
-      fail_shape_inference("Attribute strides has incorrect size");
+      fail_shape_inference("Attribute strides has incorrect size")
     }
   } else {
     strides.assign(n_input_dims, 1);
@@ -47,7 +47,7 @@ void SubsampleShapeInference(InferenceContext &ctx) {
     if (strides[d] != 0) {
       *output_shape->add_dim() = (input_shape.dim(d) / strides[d]);
     } else {
-      fail_shape_inference("Attribute stride of zero");
+      fail_shape_inference("Attribute stride of zero")
     }
   }
 }

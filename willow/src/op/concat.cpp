@@ -10,8 +10,8 @@
 
 namespace popart {
 
-ConcatInplaceOp::ConcatInplaceOp(int64_t axis_, const Op::Settings &settings)
-    : ConcatOp(Onnx::CustomOperators::ConcatInplace, axis_, settings) {}
+ConcatInplaceOp::ConcatInplaceOp(int64_t axis_, const Op::Settings &settings_)
+    : ConcatOp(Onnx::CustomOperators::ConcatInplace, axis_, settings_) {}
 
 ConcatOp::ConcatOp(const OperatorIdentifier &_opid,
                    int64_t axis_,

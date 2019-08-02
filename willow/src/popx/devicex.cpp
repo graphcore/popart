@@ -2057,7 +2057,7 @@ void Devicex::trySaveExecutable(poplar::Executable &executable) {
     logging::devicex::debug("Saving popart ir hash to '{}'", popartCachePath);
     SavedInfo savedInfo(*this);
     savedInfo.serialize(popartFs);
-  };
+  }
 }
 
 void Devicex::tryLoadExecutable() {
