@@ -6,6 +6,8 @@
 #include <random>
 #include <tuple>
 #include <vector>
+
+#define protected public
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
 #include <popart/devicemanager.hpp>
@@ -14,10 +16,13 @@
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
+#include <popart/op/restore.hpp>
+#include <popart/op/stash.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
 #include <popart/tensornames.hpp>
+#undef protected
 
 // The tricky thing with testing continuous pipelining is that we don't
 // have a baseline, as it is not exact SGD. But "theory predicts" that as
@@ -239,6 +244,21 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
 
     session->prepareDevice();
 
+    if (continuous) {
+      auto opSchedule = session->ir.getOpSchedule({});
+      for (auto op : opSchedule) {
+        auto stashOp = dynamic_cast<StashOp *>(op);
+        if (stashOp) {
+          BOOST_CHECK(stashOp->scheduledPreLoss == ScheduledPreLoss::Yes);
+        }
+
+        auto restoreOp = dynamic_cast<RestoreOp *>(op);
+        if (restoreOp) {
+          BOOST_CHECK(restoreOp->scheduledPreLoss == ScheduledPreLoss::No);
+        }
+      }
+    }
+
     // The samples (same for 0 and 1)
     std::vector<float> v_input_x(stepDataElms);
 
@@ -326,6 +346,6 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     std::cout << "delta ends " << delta_ends << std::endl;
   }
 
-  //TODO(jn) fix this test
-  // BOOST_CHECK(delta_ends < 0.0003);
+  // TODO(jn) fix this test
+  BOOST_CHECK(delta_ends < 0.0003);
 }

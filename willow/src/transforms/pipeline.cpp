@@ -346,6 +346,7 @@ bool Pipeline::apply(Graph &graph) const {
     restoreOp->setup();
 
     // apply topological constraints:
+    // (0)  : Stash before all other consumers
     // (1)  : Stash -> "firstFromLoss" -> Restore
     // (2)  : All backwards after Restore.
 
@@ -353,10 +354,16 @@ bool Pipeline::apply(Graph &graph) const {
     graph.topoCons->insert(stashOp, *firstFromLoss);
     graph.topoCons->insert(*firstFromLoss, restoreOp);
 
-    // (2)
-    // we use "backwards" to mean scheduledPreLoss is No,  but
-    // we could equivalently check pathFromLoss is Yes
     for (auto tidConsumer : tidConsumers) {
+
+      // (0)
+      if (tidConsumer != stashOp) {
+        graph.topoCons->insert(stashOp, tidConsumer);
+      }
+
+      // (2)
+      // we use "backwards" to mean scheduledPreLoss is No,  but
+      // we could equivalently check pathFromLoss is Yes
       if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::No) {
         graph.topoCons->insert(restoreOp, tidConsumer);
       }
