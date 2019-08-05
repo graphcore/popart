@@ -986,6 +986,10 @@ void Devicex::connectRandomSeedStream() {
 }
 
 void Devicex::setRandomSeed(uint64_t seedValue) {
+  if (!prepareHasBeenCalled) {
+    throw error("Devicex::prepare() must be called before "
+                "Devicex::setRandomSeed(uint64_t) is called.");
+  }
   randomSeed = seedValue;
 
   if (useSyntheticData() == false) {
@@ -1971,10 +1975,10 @@ void Devicex::prepare() {
 
   trySaveTensorTileMap();
 
+  prepareHasBeenCalled = true;
+
   uint64_t seed = std::chrono::system_clock::now().time_since_epoch().count();
   setRandomSeed(seed);
-
-  prepareHasBeenCalled = true;
 }
 
 int64_t Devicex::getStashSize(VGraphId vGraphId) {
