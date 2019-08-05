@@ -2,10 +2,12 @@
 #include <cctype>
 #include <cstring>
 #include <fstream>
+#include <memory>
 #include <random>
 #include <set>
 
-#include <memory>
+#include <boost/range/algorithm/find.hpp>
+
 #include <poplin/codelets.hpp>
 #include <popnn/codelets.hpp>
 #include <popops/ElementWise.hpp>
@@ -1327,9 +1329,26 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     }
     // else if this Op is in the main scope
     else {
+      auto isOptimizerTensorCopy = [&]() {
+        if (!op->isConvertibleTo<IpuCopyOp>()) {
+          return false;
+        }
 
+        auto optimizerTensors = ir().optimizerTensors();
+        for (auto input : op->input->tensors()) {
+          if (boost::find(optimizerTensors, input) == optimizerTensors.end()) {
+            return false;
+          }
+        }
+
+        return true;
+      };
+
+      if (isOptimizerTensorCopy()) {
+        growOpx(progs.streamOptimizerFromHostFragment());
+      }
       // pre-loss : create vertices for all recompute types
-      if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
+      else if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
         if (op->settings.recomputeType == RecomputeType::CHECKPOINT) {
           logging::devicex::debug("Adding checkpoint Op {}", op->debugName());
           if (ir().getSessionOptions().enablePipelining) {
