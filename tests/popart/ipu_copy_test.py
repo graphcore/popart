@@ -220,16 +220,16 @@ def test_ipu_copy_bca5():
     s.prepareDevice()
 
 
-#     IPU 0      *        IPU 1                                       
+#     IPU 0      *        IPU 1
 # =========================================
-#                *                                            
-#     i1 -----> copy ---> mul                                                     
-#     |          *        |                                    
-#     v          *        v                                   
+#                *
+#     i1 -----> copy ---> mul
+#     |          *        |
+#     v          *        v
 #    add -----> copy --> add
-#                *        |                                   
-#                *        v                                   
-#                *      output                                     
+#                *        |
+#                *        v
+#                *      output
 def test_copy_to_op_with_duplicate_inputs():
     popart.getLogger().setLevel("TRACE")
 
@@ -256,10 +256,9 @@ def test_copy_to_op_with_duplicate_inputs():
     opts = popart.SessionOptionsCore()
     opts.enableVirtualGraphs = True
 
-    s = popart.InferenceSession(
-        fnModel=proto,
-        dataFeed=dataFlow,
-        userOptions=opts,
-        deviceInfo=tu.get_ipu_model(numIPUs=3))
+    s = popart.InferenceSession(fnModel=proto,
+                                dataFeed=dataFlow,
+                                userOptions=opts,
+                                deviceInfo=tu.get_ipu_model(numIPUs=3))
 
     s.prepareDevice()

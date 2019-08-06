@@ -65,9 +65,14 @@ namespace popart {
 std::size_t Pipeline::id() { return typeid(Pipeline).hash_code(); }
 
 bool Pipeline::apply(Graph &graph) const {
+
   auto &ir     = graph.getIr();
   auto numIPUs = ir.getDeviceInfo()->getNumIpus();
   // We use numIPUs as proxy for sharding factor, not quite correct:TODO T10254
+
+  if (ir.autoRecomputationEnabled()) {
+    throw error("Auto recomputation for Pipelining needs implementing");
+  }
 
   // First, some checks that pipelining is compatible with other user options:
 
@@ -105,10 +110,9 @@ bool Pipeline::apply(Graph &graph) const {
   }
 
   // 3. Currently recomputation is not supported with pipelining (TODO T9575)
-  if (ir.autoRecomputationEnabled() ||
-      ir.getMainGraph().hasUserRecomputeOps()) {
-    throw error(
-        "When pipelining is enabled, recomputation is currently not allowed");
+  if (ir.getMainGraph().hasUserRecomputeOps()) {
+    throw error("When pipelining is enabled, user annotation for recomputation "
+                "is not allowed");
   }
 
   // 4. Forward layers must be sharded with increasing IPU index
@@ -153,27 +157,32 @@ bool Pipeline::apply(Graph &graph) const {
   for (auto ipuCopyOp : ipuCopies) {
     uint64_t destIpu = ipuCopyOp->getDestIpu();
     // For an inference graph, or fwd pass of a training graph,
-    if (ipuCopyOp->toLoss == PathToLoss::Yes || !ir.canTrain()) {
+    if (!ir.canTrain() ||
+        ipuCopyOp->scheduledPreLoss == ScheduledPreLoss::Yes) {
       uint64_t maxSourceIpu = ipuCopyOp->getMaxSourceIpu();
       if (destIpu <= maxSourceIpu) {
-        throw error("For pipelining, forward IpuCopyOps must copy to an "
-                    "IPU of larger index. However {} copies from {} to {}.",
-                    ipuCopyOp->debugName(),
-                    maxSourceIpu,
-                    destIpu);
+        throw error(
+            "For pipelining, forward IpuCopyOps must copy to an "
+            "IPU of larger index. However {} ({}) copies from {} to {}.",
+            ipuCopyOp->debugName(),
+            ipuCopyOp->str(),
+            maxSourceIpu,
+            destIpu);
       }
     }
 
     // for bwd pass, IPU Copy must have destination with lower VGraphId than
     // source
-    else {
+    else if (ipuCopyOp->scheduledPreLoss == ScheduledPreLoss::No) {
       uint64_t minSourceIpu = ipuCopyOp->getMinSourceIpu();
       if (destIpu >= minSourceIpu) {
-        throw error("For pipelining, backward IpuCopyOps must copy to an "
-                    "IPU of smaller index. However {} copies from {} to {}.",
-                    ipuCopyOp->debugName(),
-                    minSourceIpu,
-                    destIpu);
+        throw error(
+            "For pipelining, backward IpuCopyOps must copy to an "
+            "IPU of smaller index. However {} ({}) copies from {} to {}.",
+            ipuCopyOp->debugName(),
+            ipuCopyOp->str(),
+            minSourceIpu,
+            destIpu);
       }
     }
   }
@@ -194,6 +203,8 @@ bool Pipeline::apply(Graph &graph) const {
   }
 
   // Now apply the transform
+
+  // TODO T10373 : support copies from multiple sources
 
   // 0. Contiguate the IPUCopies
   ContiguateIpuCopyIndicesPattern contiguator;
@@ -236,6 +247,8 @@ bool Pipeline::apply(Graph &graph) const {
     throw error(
         "ILE: no Op with PathFromLoss::Yes, yet canTrain() is true, bailing");
   }
+  logging::transform::debug("First PathFromLoss::Yes in schedule is {}.",
+                            (*firstFromLoss)->str());
 
   // 1. Find all tensors in the fwd pass that are inputs to ops in the bwd pass
   std::vector<TensorId> toStashTensors;

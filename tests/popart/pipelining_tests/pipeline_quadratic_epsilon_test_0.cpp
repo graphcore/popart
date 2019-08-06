@@ -1,4 +1,4 @@
-#define BOOST_TEST_MODULE PipelineTrainingTest0
+#define BOOST_TEST_MODULE PipelineQuadraticEpsilonTesto0
 
 #include <algorithm>
 #include <boost/test/unit_test.hpp>

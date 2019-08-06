@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <fstream>
+#include <iostream>
 #include <map>
 #include <sstream>
 #include <string>
@@ -666,7 +667,7 @@ void Ir::prepare(const IrBundle &gb) {
     updateVertices();
   }
 
-  if (autoRecomputationEnabled()) {
+  if (autoRecomputationEnabled() && !getSessionOptions().enablePipelining) {
     updateVertices();
     logging::transform::info("Auto-annotating Ops for recomputation");
     recompute::autoAnnotate(getMainGraph(),
@@ -1489,38 +1490,45 @@ void Ir::updateVertices() {
     if (op->toLoss == PathToLoss::Yes) {
       toLossFrontier.push_back(op);
     }
+
     if (op->fromLoss == PathFromLoss::Yes) {
       fromLossFrontier.push_back(op);
+    }
+
+    // If an Op's input has PathFromLoss::Yes, then so do does Op
+    for (auto arr : op->input->tensors()) {
+      if (arr->fromLoss == PathFromLoss::Yes) {
+        op->fromLoss = PathFromLoss::Yes;
+        fromLossFrontier.push_back(op);
+      }
+    }
+
+    // If an Op's output has PathToLoss::Yes, then so do does Op
+    for (auto arr : op->output->tensors()) {
+      if (arr->toLoss == PathToLoss::Yes) {
+        op->toLoss = PathToLoss::Yes;
+        toLossFrontier.push_back(op);
+      }
     }
   }
 
   auto toLossVertices = backwardPropogate(toLossFrontier);
   for (Vertex *v : toLossVertices) {
-    if (v->toLoss == PathToLoss::No) {
-      throw error("ILE: Vertex {} deduced to have PathToLoss::Yes, but it "
-                  "currently has PathToLoss::No",
-                  v->str());
-    }
     v->toLoss = PathToLoss::Yes;
   }
 
   auto fromLossVertices = forwardPropogate(fromLossFrontier);
   for (Vertex *v : fromLossVertices) {
-    if (v->fromLoss == PathFromLoss::No) {
-      throw error("ILE: Vertex {} deduced to have PathFromLoss::Yes, but has "
-                  "PathFromLoss::No",
-                  v->str());
-    }
     v->fromLoss = PathFromLoss::Yes;
   }
 
   // set all Undefined to No
   for (auto &id_op : getMainGraph().getOps()) {
     auto setUnPaths = [](Vertex *v) {
-      if (v->toLoss != PathToLoss::Yes) {
+      if (v->toLoss == PathToLoss::Undefined) {
         v->toLoss = PathToLoss::No;
       }
-      if (v->fromLoss != PathFromLoss::Yes) {
+      if (v->fromLoss == PathFromLoss::Undefined) {
         v->fromLoss = PathFromLoss::No;
       }
     };
@@ -1755,6 +1763,25 @@ void Ir::constructBackwards() {
     case VariableUpdateType::None:
     default:
       throw error("Unknown variable update approach");
+    }
+  }
+
+  // All Ops and Tensors at this point with a reserved gradient prefix have a
+  // path from the final Loss (before any Patterns and Transformations). After
+  // Patterns, this is no longer true as names get mangled.
+  for (auto &id_op : getMainGraph().getOps()) {
+    Op *op = id_op.second.get();
+    for (auto inArr : op->input->tensors()) {
+      if (inArr->id.find(reservedGradientPrefix()) != std::string::npos) {
+        inArr->fromLoss = PathFromLoss::Yes;
+        op->fromLoss    = PathFromLoss::Yes;
+      }
+    }
+    for (auto outArr : op->output->tensors()) {
+      if (outArr->id.find(reservedGradientPrefix()) != std::string::npos) {
+        outArr->fromLoss = PathFromLoss::Yes;
+        op->fromLoss     = PathFromLoss::Yes;
+      }
     }
   }
 

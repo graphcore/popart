@@ -57,7 +57,7 @@ def test_enabled_recomputation():
                 20
             }))
     assert e_info.value.args[0].startswith(
-        "When pipelining is enabled, recomputation is currently not allowed")
+        "Auto recomputation for Pipelining needs implementing")
 
 
 def test_bad_sharding0():

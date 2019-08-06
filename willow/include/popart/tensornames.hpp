@@ -25,11 +25,15 @@ TensorId getRecompId(const TensorId &tenId);
 // get an variable tensor's post-update name, based on original name
 TensorId getUpdatedVarId(const TensorId &id);
 
-constexpr const char *reservedGradientPrefix() { return "D___"; }
-constexpr const char *reservedUpdatedVarPrefix() { return "UV___"; }
-constexpr const char *reservedAccumulationPrefix() { return "A___"; }
-constexpr const char *reservedAccumulationOutPrefix() { return "AO___"; }
-constexpr const char *reservedAccumulationResetPrefix() { return "R___"; }
+constexpr const char *reservedGradientPrefix() { return "Gradient___"; }
+constexpr const char *reservedUpdatedVarPrefix() { return "UpdatedVar___"; }
+constexpr const char *reservedAccumulationPrefix() { return "Accumulation___"; }
+constexpr const char *reservedAccumulationOutPrefix() {
+  return "AccumulationOut___";
+}
+constexpr const char *reservedAccumulationResetPrefix() {
+  return "AccumulationReset___";
+}
 constexpr const char *reservedStashedPrefix() { return "Stashed___"; }
 constexpr const char *reservedRestoredPrefix() { return "Restored___"; }
 

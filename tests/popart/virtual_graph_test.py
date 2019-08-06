@@ -284,8 +284,9 @@ def test_streaming_optimizer_tensors():
             losses[0].virtualGraph(1)
 
         optimizer = popart.ConstSGD(0.01)
-        optimizer = popart.SGD(
-            learning_rate=1.0, weight_decay=0.0, loss_scaling=1.0)
+        optimizer = popart.SGD(learning_rate=1.0,
+                               weight_decay=0.0,
+                               loss_scaling=1.0)
 
         opts = popart.SessionOptionsCore()
         opts.enableVirtualGraphs = useVirtualGraphs
