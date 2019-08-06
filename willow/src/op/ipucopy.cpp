@@ -51,7 +51,8 @@ uint64_t IpuCopyOp::getSourceIpu() const {
   // check all source ipus are the same
   for (auto id_source : sourceIpus) {
     if (sourceIpu != id_source.second) {
-      throw error("IpuCopyOp copies tensors from multiple sources");
+      throw error("IpuCopyOp copies tensors from multiple sources: {}",
+                  getFromToStr());
     }
   }
   return sourceIpu;

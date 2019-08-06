@@ -180,9 +180,9 @@ def test_stream_tensors_to_multiple_ipus():
         }))
 
 
-def test_bad_sharding1():
+def test_sharding_multi_source():
     """
-    Branched sharding throws error
+    Branched sharding does not merge IPU Copies with pipelining
     e.g. Op0 -> Op2
                  ^
          Op1 ----'
@@ -213,19 +213,17 @@ def test_bad_sharding1():
     builder.virtualGraph(op2_out, 2)
     loss.virtualGraph(2)
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(
-            fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(10, anchor_map),
-            userOptions=opts,
-            losses=[loss],
-            deviceInfo=popart.DeviceManager().createIpuModelDevice({
-                'numIPUs':
-                3,
-                "tilesPerIPU":
-                20
-            }))
-    assert e_info.value.args[0].find("forward IPU copies go from IPU N to N+1")
+    session = popart.InferenceSession(
+        fnModel=builder.getModelProto(),
+        dataFeed=popart.DataFlow(10, anchor_map),
+        userOptions=opts,
+        losses=[loss],
+        deviceInfo=popart.DeviceManager().createIpuModelDevice({
+            'numIPUs':
+            3,
+            "tilesPerIPU":
+            20
+        }))
 
 
 def test_inference_min_batches():

@@ -208,8 +208,6 @@ bool Pipeline::apply(Graph &graph) const {
 
   // Now apply the transform
 
-  // TODO T10373 : support copies from multiple sources
-
   // 0. Contiguate the IPUCopies
   ContiguateIpuCopyIndicesPattern contiguator;
   for (auto ipuCopyOp : ipuCopies) {
