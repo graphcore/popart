@@ -8,9 +8,23 @@
 
 namespace popart {
 
+MatMulBaseOp::MatMulBaseOp(const OperatorIdentifier &_opid,
+                           const Op::Settings &settings_)
+    : Op(_opid, settings_) {}
+
+MatMulBaseGradOp::MatMulBaseGradOp(const OperatorIdentifier &_opid,
+                                   const MatMulOp &fwdOp)
+    : MatMulBaseOp(_opid, fwdOp.getSettings()),
+      fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
+      fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
+
+const MatMulOp *MatMulBaseGradOp::getCloneOfCreator() const {
+  return dynamic_cast<const MatMulOp *>(cloneOfCreator.get());
+}
+
 MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_)
-    : Op(_opid, settings_) {}
+    : MatMulBaseOp(_opid, settings_) {}
 
 std::unique_ptr<Op> MatMulOp::clone() const {
   return std::make_unique<MatMulOp>(*this);
@@ -43,8 +57,11 @@ void MatMulOp::verifyInputShapes(const Shape &lhs, const Shape &rhs) const {
   }
 }
 
-Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) const {
+Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) {
   verifyInputShapes(lhs, rhs);
+
+  auto originalLhsShape = lhs;
+  auto originalRhsShape = rhs;
 
   const bool lhs_prepend = lhs.size() == 1;
   const bool rhs_append  = rhs.size() == 1;
@@ -61,8 +78,31 @@ Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) const {
     rhs.push_back(1);
   }
 
+  // Add a 1 group dim
+  bool lhsGroupDimAppend = false;
+  if (lhs.size() == 2) {
+    lhs.insert(lhs.begin(), 1);
+    lhsGroupDimAppend = true;
+  }
+
+  // Add a 1 group dim
+  bool rhsGroupDimAppend = false;
+  if (rhs.size() == 2) {
+    rhs.insert(rhs.begin(), 1);
+    rhsGroupDimAppend = true;
+  }
+
+  // Save the expanded input shapes - minium of 3D
+  lhsShape = lhs;
+  rhsShape = rhs;
+
   Shape result =
       npOut({lhs.begin(), lhs.end() - 2}, {rhs.begin(), rhs.end() - 2});
+
+  // Save the expanded output shape - minium of 3D
+  outShape = result;
+  outShape.push_back(lhs[lhs.size() - 2]);
+  outShape.push_back(rhs[rhs.size() - 1]);
 
   // After matrix multiplication the prepended 1 is removed.
   // We implement this by not adding it.
@@ -76,7 +116,27 @@ Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) const {
     result.push_back(rhs[rhs.size() - 1]);
   }
 
+  // Squeeze off any prepended 1's if both
+  // lhs & rhs had prepended a group dimension
+  if (lhsGroupDimAppend && rhsGroupDimAppend && result[0] == 1) {
+    result.erase(result.begin());
+  }
+
+  // Special case of 2 1d inputs
+  if (originalLhsShape.size() == 1 && originalRhsShape.size() == 1 &&
+      result.size() == 1 && result[0] == 1)
+    result.erase(result.begin());
+
   if (lhs[lhs.size() - 1] != rhs[rhs.size() - 2]) {
+
+    // Remove the group dimension if added to return to the user defined
+    // shape
+    if (lhsGroupDimAppend)
+      lhs.erase(lhs.begin());
+
+    if (rhsGroupDimAppend)
+      rhs.erase(rhs.begin());
+
     throw error("{} contracting dimensions unequal: lhs '{}' {}, rhs '{}' {}",
                 debugName(),
                 lhsIn()->str(),
@@ -95,9 +155,7 @@ void MatMulOp::setup() {
 }
 
 MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)
-    : Op(Onnx::GradOperators::MatMulLhsGrad, fwdOp.getSettings()),
-      fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
-      fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
+    : MatMulBaseGradOp(Onnx::GradOperators::MatMulLhsGrad, fwdOp) {}
 
 void MatMulLhsGradOp::setup() { outInfo(0) = fwdOpLhsInfo; }
 
@@ -132,9 +190,7 @@ Shape MatMulLhsGradOp::getRhsInputShape() const { return fwdOpRhsInfo.shape(); }
 Shape MatMulLhsGradOp::getOutputShape() const { return fwdOpLhsInfo.shape(); }
 
 MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
-    : Op(Onnx::GradOperators::MatMulRhsGrad, fwdOp.getSettings()),
-      fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
-      fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
+    : MatMulBaseGradOp(Onnx::GradOperators::MatMulRhsGrad, fwdOp) {}
 
 std::unique_ptr<Op> MatMulRhsGradOp::clone() const {
   return std::make_unique<MatMulRhsGradOp>(*this);
@@ -164,14 +220,6 @@ Shape MatMulRhsGradOp::getGradInputShape() const {
 Shape MatMulRhsGradOp::getLhsInputShape() const { return fwdOpLhsInfo.shape(); }
 
 Shape MatMulRhsGradOp::getOutputShape() const { return fwdOpRhsInfo.shape(); }
-
-const MatMulOp *MatMulLhsGradOp::getCloneOfCreator() const {
-  return dynamic_cast<const MatMulOp *>(cloneOfCreator.get());
-}
-
-const MatMulOp *MatMulRhsGradOp::getCloneOfCreator() const {
-  return dynamic_cast<const MatMulOp *>(cloneOfCreator.get());
-}
 
 namespace {
 static OpCreator<MatMulOp> matMulOpCreator({Onnx::Operators::MatMul_1,

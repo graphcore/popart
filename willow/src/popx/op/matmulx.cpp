@@ -36,30 +36,21 @@ std::vector<std::size_t> MatMulOpx::getOutputShape() const {
   return MatMulOpx::onnxShapeToPoplar(matmul->outInfo(0).shape());
 }
 
-static std::vector<std::size_t> lhsInitReshape(std::vector<std::size_t> shape) {
-  while (shape.size() < 3) {
-    shape.insert(shape.begin(), 1);
-  }
-
-  return shape;
-}
-
-static std::vector<std::size_t> rhsInitReshape(std::vector<std::size_t> shape) {
-  while (shape.size() < 2) {
-    shape.push_back(1);
-  }
-
-  if (shape.size() < 3) {
-    shape.insert(shape.begin(), 1);
-  }
-
-  return shape;
-}
-
 static std::pair<poplar::Tensor, poplar::Tensor>
-matInitReshape(poplar::Tensor lhs, poplar::Tensor rhs) {
-  return {lhs.reshape(lhsInitReshape(lhs.shape())),
-          rhs.reshape(rhsInitReshape(rhs.shape()))};
+matInitReshape(MatMulBaseOp &matmul, poplar::Tensor lhs, poplar::Tensor rhs) {
+
+  auto a = lhs;
+  auto b = rhs;
+
+  if (a.rank() < matmul.getExpandedLhsShape().size()) {
+    a = a.reshape(vXtoY<int64_t, std::size_t>(matmul.getExpandedLhsShape()));
+  }
+
+  if (b.rank() < matmul.getExpandedRhsShape().size()) {
+    b = b.reshape(vXtoY<int64_t, std::size_t>(matmul.getExpandedRhsShape()));
+  }
+
+  return {a, b};
 }
 
 static std::vector<std::size_t> matchRank(std::vector<std::size_t> shape,
@@ -318,7 +309,8 @@ static poplar::Tensor matTranspose(poplar::Tensor t) {
 // with shape [2, 3, 1, 5, 6, 8, 9]. We would expect an output tensor with shape
 // [2, 3, 4, 5, 6, 7, 9].
 void MatMulOpx::grow(poplar::program::Sequence &prog) const {
-  auto matmul = getMatMulOp();
+
+  auto &matmul = getOp<MatMulOp>();
 
   auto a = getInTensor(MatMulOp::getLhsInIndex());
   auto b = getInTensor(MatMulOp::getRhsInIndex());
@@ -329,7 +321,7 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   // rank is already more than 3.
   // a' := a = [2, 1, 4, 5, 1, 7, 8]
   // b' := b = [2, 3, 1, 5, 6, 8, 9]
-  auto initReshapedTs = matInitReshape(a, b);
+  auto initReshapedTs = matInitReshape(matmul, a, b);
 
   // Match the ranks of both tensors by prefixing their shape with 1s
   //
@@ -381,27 +373,13 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   //                        G |  M   N
   // o' := matmul(a, b) = [10 | 28, 162]
 
-  /*
-    auto outTensor =
-        dv_p->graphCache.matMulGrouped(graph(),                    // graph
-                                       combinedBroadcastTs.first,  // A
-                                       combinedBroadcastTs.second, // B
-                                       prog,                       // prog
-                                       matmul->cacheOperation,
-                                       idStr(),            // debugPrefix
-                                       dv_p->fwdMmOptions, // options
-                                       &dv_p->matmulCache, // cache
-                                       getVirtualGraphId() // virtualGraphId
-        );
-  */
   auto outTensor =
       poplin::matMulGrouped(graph(),                    // graph
                             combinedBroadcastTs.first,  // A
                             combinedBroadcastTs.second, // B
                             prog,                       // prog
                             combinedBroadcastTs.first.elementType(),
-                            debugPrefix("matmulGrouped"), // debugPrefix
-                            // getPoplarOptions().toOptionFlags(),
+                            debugPrefix("matmulGrouped"),       // debugPrefix
                             dv_p->fwdMmOptions.toOptionFlags(), // options
                             &dv_p->matmulCache);                // cache
 
@@ -478,8 +456,7 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   outTensor =
       matShuffleGroupDims(outTensor, matchedRankTs.first, matchedRankTs.second);
 
-  // insert(outId(0), outTensor.reshape(matmul->outInfo(0).shape_szt()));
-  setOutTensor(0, outTensor.reshape(matmul->outInfo(0).shape_szt()));
+  setOutTensor(0, outTensor.reshape(matmul.outInfo(0).shape_szt()));
 }
 
 MatMulOp *MatMulOpx::getMatMulOp() const {
@@ -488,15 +465,12 @@ MatMulOp *MatMulOpx::getMatMulOp() const {
 
 poplar::Tensor MatMulOpx::createInput(InIndex index,
                                       const std::string &name) const {
-  auto matmul = getMatMulOp();
+  auto &matmul = getOp<MatMulOp>();
 
   std::vector<std::size_t> lhsShape =
-      vXtoY<int64_t, std::size_t>(inShape(MatMulOp::getLhsInIndex()));
+      vXtoY<int64_t, std::size_t>(matmul.getExpandedLhsShape());
   std::vector<std::size_t> rhsShape =
-      vXtoY<int64_t, std::size_t>(inShape(MatMulOp::getRhsInIndex()));
-
-  lhsShape = lhsInitReshape(lhsShape);
-  rhsShape = rhsInitReshape(rhsShape);
+      vXtoY<int64_t, std::size_t>(matmul.getExpandedRhsShape());
 
   lhsShape = matchRank(
       lhsShape,
@@ -540,7 +514,7 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
     result = result.reshape(lhsShapeP);
     result = result.dimShuffle(invertPermutation(permutation));
 
-    return result.reshape(matmul->lhsIn()->info.shape_szt());
+    return result.reshape(matmul.lhsIn()->info.shape_szt());
   } else if (index == MatMulOp::getRhsInIndex()) {
     auto result = poplin::createMatMulGroupedInputRHS(
         graph(),
@@ -555,7 +529,7 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
     result = result.reshape(rhsShapeP);
     result = result.dimShuffle(invertPermutation(permutation));
 
-    return result.reshape(matmul->rhsIn()->info.shape_szt());
+    return result.reshape(matmul.rhsIn()->info.shape_szt());
   } else {
     throw error("MatMulOpx::createInput invalid input index {}", index);
   }
@@ -608,8 +582,8 @@ static poplar::Tensor reduceResult(poplar::Graph &g,
 
     // First remove any leading '1' dimension with a squeeze
     std::vector<std::size_t> squeezeDims;
-    for (auto i = 0; i < t_shape.size() - r_shape.size(); ++i) {
-      if (t_shape[i] == 1) {
+    for (auto i = 0; i < t.shape().size() - r_shape.size(); ++i) {
+      if (t.shape()[i] == 1) {
         squeezeDims.push_back(i);
       } else {
         break;
@@ -626,27 +600,55 @@ static poplar::Tensor reduceResult(poplar::Graph &g,
   // If the shapes are still not the same then use the reduce
   if (shape != t.shape()) {
 
-    t_shape = t.shape();
+    if (shape.size() == 1) {
 
-    while (t_shape.size() < r_shape.size()) {
-      t_shape.insert(t_shape.begin(), 1);
-    }
+      // First remove any ending '1' dimension with a squeeze
+      std::vector<std::size_t> squeezeDims;
+      for (auto i = t.shape().size() - 1; i > (r_shape.size() - 1); --i) {
+        if (t.shape()[i] == 1) {
+          squeezeDims.push_back(i);
+        } else {
+          break;
+        }
+      }
 
-    t = t.reshape(t_shape);
-
-    while (t_shape.size() > r_shape.size()) {
-      r_shape.insert(r_shape.begin(), 1);
-    }
-
-    axes.reserve(t.rank());
-    for (int i = 0; i < t.rank(); ++i) {
-      if (t.dim(i) != r_shape[i]) {
-        axes.push_back(i);
+      if (squeezeDims.size() > 0) {
+        logging::opx::debug("Reducing {} {} to {}. (dims {})",
+                            t,
+                            t_shape,
+                            r_shape,
+                            squeezeDims);
+        t = t.squeeze(squeezeDims);
       }
     }
 
-    return popops::reduce(g, t, axes, {popops::Operation::ADD}, prog)
-        .reshape(shape);
+    // If the shapes are still not the same then use the reduce
+    if (shape != t.shape()) {
+
+      t_shape = t.shape();
+
+      while (t_shape.size() < r_shape.size()) {
+        t_shape.insert(t_shape.begin(), 1);
+      }
+
+      t = t.reshape(t_shape);
+
+      while (t_shape.size() > r_shape.size()) {
+        r_shape.insert(r_shape.begin(), 1);
+      }
+
+      axes.reserve(t.rank());
+      for (int i = 0; i < t.rank(); ++i) {
+        if (t.dim(i) != r_shape[i]) {
+          axes.push_back(i);
+        }
+      }
+
+      return popops::reduce(g, t, axes, {popops::Operation::ADD}, prog)
+          .reshape(shape);
+    } else {
+      return t;
+    }
   } else {
     return t;
   }
@@ -654,10 +656,12 @@ static poplar::Tensor reduceResult(poplar::Graph &g,
 
 void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
 
+  auto &matMulLhsGrad = getOp<MatMulLhsGradOp>();
+
   auto a = getInTensor(MatMulLhsGradOp::getGradInIndex());
   auto b = getInTensor(MatMulLhsGradOp::getRhsInIndex());
 
-  auto initReshapedTs = matInitReshape(a, b);
+  auto initReshapedTs = matInitReshape(matMulLhsGrad, a, b);
 
   auto matchedRankTs =
       matMatchRank(initReshapedTs.first, initReshapedTs.second);
@@ -679,7 +683,6 @@ void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
                             prog,                       // prog
                             combinedBroadcastTs.first.elementType(),
                             debugPrefix("matmulGrouped"), // debugPrefix
-                            // getPoplarOptions().toOptionFlags(), // options
                             dv_p->bwdMmLhsOptions.toOptionFlags(), // options
                             &dv_p->matmulCache);                   // cache
 
@@ -765,10 +768,12 @@ MatMulRhsGradOp *MatMulRhsGradOpx::getMatMulRhsGradOp() const {
 
 void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
 
+  auto &matMulRhsGrad = getOp<MatMulRhsGradOp>();
+
   auto a = getInTensor(MatMulRhsGradOp::getLhsInIndex());
   auto b = getInTensor(MatMulRhsGradOp::getGradInIndex());
 
-  auto initReshapedTs = matInitReshape(a, b);
+  auto initReshapedTs = matInitReshape(matMulRhsGrad, a, b);
 
   auto matchedRankTs =
       matMatchRank(initReshapedTs.first, initReshapedTs.second);
@@ -790,7 +795,6 @@ void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
                             prog,                       // prog
                             combinedBroadcastTs.first.elementType(),
                             debugPrefix("matmulGrouped"), // debugPrefix
-                            // getPoplarOptions().toOptionFlags(), // options
                             dv_p->bwdMmRhsOptions.toOptionFlags(), // options
                             &dv_p->matmulCache);                   // cache
 

@@ -5,7 +5,22 @@
 
 namespace popart {
 
-class MatMulOp : public Op {
+class MatMulBaseOp : public Op {
+public:
+  MatMulBaseOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
+  MatMulBaseOp(const MatMulBaseOp &) = default;
+  ~MatMulBaseOp() override           = default;
+
+  // Return the expanded shape of the lhs input to matmul
+  // minium shape G x N x M
+  virtual Shape getExpandedLhsShape() const = 0;
+
+  // Return the expended shape of the rhs input to matmul
+  // minium shape G x N x M
+  virtual Shape getExpandedRhsShape() const = 0;
+};
+
+class MatMulOp : public MatMulBaseOp {
 public:
   MatMulOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
   MatMulOp(const MatMulOp &) = default;
@@ -24,17 +39,46 @@ public:
   const Tensor *rhsIn() const;
   const Tensor *out() const;
 
+  // Return the expanded shape of the inputs & output to matmul
+  Shape getExpandedLhsShape() const override { return lhsShape; }
+  Shape getExpandedRhsShape() const override { return rhsShape; }
+  Shape getExpandedOutShape() const { return outShape; }
+
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
   // Follow the numpy matmul broadcasting rules for the output shape
-  Shape npMatMulOut(Shape lhs, Shape rhs) const;
+  Shape npMatMulOut(Shape lhs, Shape rhs);
 
 private:
   // Verifies the input shapes are valid and throws and exception if not
   void verifyInputShapes(const Shape &lhs, const Shape &rhs) const;
+
+  // The expanded shapes of inputs & outputs. They will
+  // be a minium of a 3D shapes
+  Shape lhsShape;
+  Shape rhsShape;
+  Shape outShape;
 };
 
-class MatMulLhsGradOp : public Op {
+class MatMulBaseGradOp : public MatMulBaseOp {
+public:
+  MatMulBaseGradOp(const OperatorIdentifier &_opid, const MatMulOp &fwdOp);
+  MatMulBaseGradOp(const MatMulBaseGradOp &) = default;
+  ~MatMulBaseGradOp() override               = default;
+
+  const MatMulOp *getCloneOfCreator() const;
+
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
+protected:
+  TensorInfo fwdOpOutputGrad;
+  TensorInfo fwdOpLhsInfo;
+  TensorInfo fwdOpRhsInfo;
+
+  std::shared_ptr<Op> cloneOfCreator;
+};
+
+class MatMulLhsGradOp : public MatMulBaseGradOp {
 public:
   MatMulLhsGradOp(const MatMulOp &op_);
   MatMulLhsGradOp(const MatMulLhsGradOp &) = default;
@@ -50,6 +94,15 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
+  // Return the expanded shape of the inputs. Note that the tranpose of the rhs
+  // is done inside the matmul
+  Shape getExpandedLhsShape() const override {
+    return getCloneOfCreator()->getExpandedOutShape();
+  }
+  Shape getExpandedRhsShape() const override {
+    return getCloneOfCreator()->getExpandedRhsShape();
+  }
+
   // The ONNX tensor shape
   // The shape of the grad op's gradient input
   Shape getGradInputShape() const;
@@ -57,21 +110,9 @@ public:
   Shape getRhsInputShape() const;
   // The shape of the grad op's output
   Shape getOutputShape() const;
-
-  const MatMulOp *getCloneOfCreator() const;
-
-  float getSubgraphValue() const final { return getHighSubgraphValue(); }
-
-private:
-  TensorInfo fwdOpOutputGrad;
-  TensorInfo fwdOpLhsInfo;
-  TensorInfo fwdOpRhsInfo;
-
-  // TODO : Would benefit from a MatMulGradOp class - T6830
-  std::shared_ptr<Op> cloneOfCreator;
 };
 
-class MatMulRhsGradOp : public Op {
+class MatMulRhsGradOp : public MatMulBaseGradOp {
 public:
   MatMulRhsGradOp(const MatMulOp &op_);
   MatMulRhsGradOp(const MatMulRhsGradOp &) = default;
@@ -87,6 +128,15 @@ public:
   const std::vector<GradInOutMapper> &gradInputInfo() const final;
   const std::map<int, int> &gradOutToNonGradIn() const final;
 
+  // Return the expanded shape of the inputs. Note that the tranpose of the rhs
+  // is done inside the matmul
+  Shape getExpandedLhsShape() const override {
+    return getCloneOfCreator()->getExpandedLhsShape();
+  }
+  Shape getExpandedRhsShape() const override {
+    return getCloneOfCreator()->getExpandedOutShape();
+  }
+
   // The ONNX tensor shape
   // The shape of the grad op's gradient input
   Shape getLhsInputShape() const;
@@ -94,17 +144,6 @@ public:
   Shape getGradInputShape() const;
   // The shape of the grad op's output
   Shape getOutputShape() const;
-
-  const MatMulOp *getCloneOfCreator() const;
-
-  float getSubgraphValue() const final { return getHighSubgraphValue(); }
-
-private:
-  TensorInfo fwdOpOutputGrad;
-  TensorInfo fwdOpLhsInfo;
-  TensorInfo fwdOpRhsInfo;
-
-  std::shared_ptr<Op> cloneOfCreator;
 };
 
 } // namespace popart
