@@ -91,22 +91,26 @@ bool Pipeline::apply(Graph &graph) const {
     minDepth = numIPUs;
   }
 
-  if ((ir.getDataFlow().batchesPerStep() *
-       ir.getSessionOptions().accumulationFactor) < minDepth) {
-    throw error("For pipelining, depth (batchesPerStep * gradient "
-                "accumulation factor) must be at least {} "
-                "for {} IPUs ({} * {} !>= {})",
-                minDepth,
-                ir.getDeviceInfo()->getNumIpus(),
-                ir.getDataFlow().batchesPerStep(),
-                ir.getSessionOptions().accumulationFactor,
-                minDepth);
-  }
-
-  if ((ir.getSessionOptions().accumulationFactor > 1) &&
-      (ir.getDataFlow().batchesPerStep() != 1)) {
-    throw error("When pipelining and gradient accumulation are enabled, "
-                "batchesPerStep must be == 1");
+  int depth;
+  if (ir.getSessionOptions().enableGradientAccumulation) {
+    depth = ir.getSessionOptions().accumulationFactor;
+    if (depth < minDepth) {
+      // TODO: Update this to account for replication (T10254) . This
+      // requirement is more complex when replicating.
+      throw error("For pipelining, depth (gradient accumulation factor) must "
+                  "be at least {} "
+                  "for {} IPUs",
+                  minDepth,
+                  ir.getDeviceInfo()->getNumIpus());
+    }
+  } else {
+    depth = ir.getDataFlow().batchesPerStep();
+    if (depth < minDepth) {
+      throw error("For pipelining, depth (batchesPerStep) must be at least {} "
+                  "for {} IPUs",
+                  minDepth,
+                  ir.getDeviceInfo()->getNumIpus());
+    }
   }
 
   // 3. Currently recomputation is not supported with pipelining (TODO T9575)

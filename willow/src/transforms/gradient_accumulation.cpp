@@ -34,7 +34,10 @@ bool GradientAccumulation::apply(Graph &graph) const {
 
   for (auto &id_op : graph.getOps()) {
     auto &op = id_op.second;
-    if (op->isConvertibleTo<VarUpdateOp>()) {
+    // Only apply to VarUpdate ops that are not CopyVarUpdate ops that appear
+    // in batch norms.
+    if (op->isConvertibleTo<VarUpdateOp>() &&
+        !(op->isConvertibleTo<CopyVarUpdateOp>())) {
       // Get the gradient tensor id
       auto gradTensorId = op->input->id(VarUpdateOp::getUpdaterInIndex());
 
@@ -75,8 +78,8 @@ bool GradientAccumulation::apply(Graph &graph) const {
         // Inherit virtual graph from parent op
         acclOp->setVirtualGraphId(op->getVirtualGraphId());
       }
-      // Put it in the backward pass (from loss)
-      acclOp->fromLoss = PathFromLoss::Yes;
+
+      // Add it to train target ops to prevent pruning.
       if (!ir.addToTrainTargetOps(acclOp)) {
         throw error("Could not add {} to train target ops", acclOp->id);
       }

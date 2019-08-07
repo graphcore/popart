@@ -303,8 +303,9 @@ const std::map<TensorId, poplar::Tensor> &PopTensors::getTensors() const {
 PipelineInfo::PipelineInfo(int _batchesPerStep,
                            int _gradAcclFactor,
                            int _numIPUs,
-                           bool _doTraining)
-    : doTraining(_doTraining) {
+                           bool _doTraining,
+                           bool _doGradAccl)
+    : doTraining(_doTraining), doGradAccl(_doGradAccl) {
 
   auto bps                  = static_cast<int64_t>(_batchesPerStep);
   auto gradAcclFactor       = static_cast<int64_t>(_gradAcclFactor);
@@ -319,7 +320,11 @@ PipelineInfo::PipelineInfo(int _batchesPerStep,
     bwdFillPhase.start = fillFlushPhaseCycles;
     bwdFillPhase.end   = 2 * fillFlushPhaseCycles - 1;
 
-    mainCycles      = (bps * gradAcclFactor) - 2 * fillFlushPhaseCycles;
+    if (doGradAccl) {
+      mainCycles = gradAcclFactor - 2 * fillFlushPhaseCycles;
+    } else {
+      mainCycles = bps - 2 * fillFlushPhaseCycles;
+    }
     mainPhase.start = bwdFillPhase.end + 1;
     mainPhase.end   = mainPhase.start + mainCycles - 1;
 
@@ -333,7 +338,7 @@ PipelineInfo::PipelineInfo(int _batchesPerStep,
     flushPhase.start = fwdFlushPhase.start;
     flushPhase.end   = bwdFlushPhase.end;
   } else {
-    mainCycles      = (bps * gradAcclFactor) - fillFlushPhaseCycles;
+    mainCycles      = bps - fillFlushPhaseCycles;
     mainPhase.start = fwdFillPhase.end + 1;
     mainPhase.end   = mainPhase.start + mainCycles - 1;
 
@@ -426,7 +431,8 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
         ir.getDataFlow().batchesPerStep(),
         static_cast<int>(ir.getSessionOptions().accumulationFactor),
         deviceInfo_->getNumIpus(),
-        ir.canTrain());
+        ir.canTrain(),
+        ir.getSessionOptions().enableGradientAccumulation);
   }
 
   engineOptions.set("target.workerStackSizeInBytes", "0x200");
