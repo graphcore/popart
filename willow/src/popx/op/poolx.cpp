@@ -109,7 +109,7 @@ public:
                                       pool_params,
                                       getInTensor(0),
                                       prog,
-                                      idStr(),
+                                      debugPrefix("pool"),
                                       dv_p->pooling_options));
   }
 
@@ -153,7 +153,7 @@ public:
                      getInTensor(GRADOP::getGradPooledInIndex()),
                      false, // useScaledVariant TODO T7295
                      prog,
-                     idStr(),
+                     debugPrefix("poolInputGradient"),
                      dv_p->pooling_options));
   }
 

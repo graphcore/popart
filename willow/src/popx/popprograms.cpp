@@ -284,18 +284,30 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
   logging::devicex::debug("Pipelining program construction summary:");
   logging::devicex::debug(ss.str());
 
+  poplar::program::Sequence inner;
+
+  inner.add(initFragment());
+  inner.add(fill);
+  // This is the inner main cycles loop, if doing pipelining withour gradient
+  // accumulation, this the batches per step loop, as batch size = micro_batch
+  // size
+  inner.add(poplar::program::Repeat(static_cast<int>(mainCycles), main));
+  inner.add(flush);
   poplar::program::Sequence outer;
 
-  outer.add(initFragment());
-  outer.add(fill);
-  outer.add(poplar::program::Repeat(static_cast<int>(mainCycles), main));
-  outer.add(flush);
   if (dv_p->ir().getSessionOptions().enableGradientAccumulation) {
-    // If we are doing gradient accumulation, add the var updates and reset ops
-    // outside the main pipeline cycle.
-    outer.add(varUpdateFromAccumulatorFragment());
-    outer.add(resetWeightGradientAccumulatorFragment());
+
+    inner.add(varUpdateFromAccumulatorFragment());
+    inner.add(resetWeightGradientAccumulatorFragment());
+    // If doing gradient accumulation, the inner loop loops over mini batches,
+    // and this outer loop loops over multiple batches per step.
+    outer = poplar::program::Repeat(
+        static_cast<int>(dv_p->ir().getDataFlow().batchesPerStep()), inner);
+  } else {
+    // No gradient accumulation, so just add one iteration of the inner program.
+    outer.add(inner);
   }
+
   outer.add(toHostFinalCopyFragment());
 
   return outer;

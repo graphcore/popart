@@ -25,7 +25,7 @@ linspace(poplar::Graph &graph, int left, int right, int increment) {
                  [left, increment](int v) { return left + v * increment; });
 
   auto result = graph.addConstant(
-      poplar::INT, {count}, poplar::ArrayRef<int>(values), "/count");
+      poplar::INT, {count}, poplar::ArrayRef<int>(values), "count");
 
   graph.setTileMapping(result, 0);
 

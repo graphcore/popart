@@ -38,6 +38,10 @@ void IpuCopyOp::setup() {
 
 const SourceIpuMap &IpuCopyOp::getSourceIpus() const { return sourceIpus; }
 
+const SourceTensorMap &IpuCopyOp::getSourceTensors() const {
+  return sourceTensors;
+}
+
 uint64_t IpuCopyOp::getSourceIpu(const TensorId &tenId) const {
   return sourceIpus.at(tenId);
 }
@@ -47,10 +51,33 @@ uint64_t IpuCopyOp::getSourceIpu() const {
   // check all source ipus are the same
   for (auto id_source : sourceIpus) {
     if (sourceIpu != id_source.second) {
-      throw error("IpuCopyOp copies tensors from multiple sources");
+      throw error("IpuCopyOp copies tensors from multiple sources: {}",
+                  getFromToStr());
     }
   }
   return sourceIpu;
+}
+
+uint64_t IpuCopyOp::getMinSourceIpu() const {
+  auto minSourceIpu = sourceIpus.begin()->second;
+
+  for (auto id_source : sourceIpus) {
+    if (minSourceIpu < id_source.second) {
+      minSourceIpu = id_source.second;
+    }
+  }
+  return minSourceIpu;
+}
+
+uint64_t IpuCopyOp::getMaxSourceIpu() const {
+  auto maxSourceIpu = sourceIpus.begin()->second;
+
+  for (auto id_source : sourceIpus) {
+    if (maxSourceIpu > id_source.second) {
+      maxSourceIpu = id_source.second;
+    }
+  }
+  return maxSourceIpu;
 }
 
 void IpuCopyOp::appendAttributes(OpSerialiserBase &os) const {
@@ -67,6 +94,12 @@ void IpuCopyOp::connectInTensor(InIndex inIndex,
                                 TensorId tenId,
                                 uint64_t sourceIpu) {
   sourceIpus.insert({tenId, sourceIpu});
+  if (sourceTensors.find(sourceIpu) == sourceTensors.end()) {
+    sourceTensors.insert({sourceIpu, {tenId}});
+  } else {
+    std::vector<TensorId> &tensorIds = sourceTensors.at(sourceIpu);
+    tensorIds.push_back(tenId);
+  }
   defaultConnectInTensor(inIndex, tenId);
 }
 

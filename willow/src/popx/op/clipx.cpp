@@ -13,7 +13,7 @@ namespace popx {
 poplar::Tensor ClipComputex::getClipTensor(float val,
                                            const poplar::Type &type,
                                            poplar::Graph &graph) {
-  auto tensor = graph.addConstant(type, {}, val, "/clip");
+  auto tensor = graph.addConstant(type, {}, val, "clip");
   graph.setTileMapping(tensor, 0);
   return tensor;
 }
@@ -132,10 +132,10 @@ void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
                   ClipComputex::getClipTensor(
                       clipGradOp->getClipMin(), gradIn.elementType(), graph()),
                   prog,
-                  debugPrefix("MinMask"));
+                  debugPrefix("minMask"));
 
   auto minMask = popops::cast(
-      graph(), minMaskBool, gradIn.elementType(), prog, debugPrefix("Cast"));
+      graph(), minMaskBool, gradIn.elementType(), prog, debugPrefix("cast"));
 
   // Apply min mask
   auto outTensor = popops::map(graph(),
@@ -143,7 +143,7 @@ void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
                                gradIn,
                                minMask,
                                prog,
-                               debugPrefix("ApplyMinMask"));
+                               debugPrefix("applyMinMask"));
 
   // Create the mask for the max clip
   auto maxMaskBool =
@@ -153,10 +153,10 @@ void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
                   ClipComputex::getClipTensor(
                       clipGradOp->getClipMax(), gradIn.elementType(), graph()),
                   prog,
-                  debugPrefix("MaxMask"));
+                  debugPrefix("maxMask"));
 
   auto maxMask = popops::cast(
-      graph(), maxMaskBool, gradIn.elementType(), prog, debugPrefix("Cast"));
+      graph(), maxMaskBool, gradIn.elementType(), prog, debugPrefix("cast"));
 
   // Apply max mask
   popops::mapInPlace(graph(),
@@ -164,7 +164,7 @@ void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
                      outTensor,
                      maxMask,
                      prog,
-                     debugPrefix("ApplyMaxMask"));
+                     debugPrefix("applyMaxMask"));
 
   setOutTensor(clipGradOp->getOutIndex(), outTensor);
 }

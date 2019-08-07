@@ -29,7 +29,7 @@ void MinOpx::grow(poplar::program::Sequence &prog) const {
                               outTensor,
                               getInTensor(i),
                               prog,
-                              idStr());
+                              debugPrefix("min", std::to_string(i)));
     }
   }
 
@@ -54,14 +54,14 @@ void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
                   {getInTensor(MinArgGradOp::getFwdOutInIndex()),
                    getInTensor(MinArgGradOp::getFwdInIndex())},
                   prog,
-                  idStr());
+                  debugPrefix("mask"));
 
   // Multiple the mask by the grad input
   auto result = popops::map(graph(),
                             pe::Mul(pe::_1, pe::_2),
                             {mask, getInTensor(MinArgGradOp::getGradInIndex())},
                             prog,
-                            idStr());
+                            debugPrefix("result"));
 
   auto shapeOfOutputOfFwdOp = inInfo(MinArgGradOp::getFwdOutInIndex()).shape();
   auto shapeOfInputToFwdOp  = inInfo(MinArgGradOp::getFwdInIndex()).shape();
@@ -77,7 +77,7 @@ void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
                             prog,
-                            idStr());
+                            debugPrefix("out"));
 
   // Reshape the output, to add 1's if needed
   setOutTensor(MinArgGradOp::getOutIndex(),

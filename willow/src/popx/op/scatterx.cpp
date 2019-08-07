@@ -88,7 +88,8 @@ void ScatterDataGradOpx::grow(poplar::program::Sequence &prog) const {
                   update_window_dims,
                   inserted_window_dims,
                   scatter_dims_to_op,
-                  prog);
+                  prog,
+                  debugPrefix("scatter"));
 
   setOutTensor(ScatterDataGradOp::gradOutIndex(), data);
 }

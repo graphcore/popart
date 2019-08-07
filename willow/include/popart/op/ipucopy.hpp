@@ -5,7 +5,8 @@
 
 namespace popart {
 
-using SourceIpuMap = std::map<TensorId, uint64_t>;
+using SourceIpuMap    = std::map<TensorId, uint64_t>;
+using SourceTensorMap = std::map<uint64_t, std::vector<TensorId>>;
 
 class IpuCopyOp : public Op {
 public:
@@ -17,8 +18,11 @@ public:
 
   uint64_t getDestIpu() const { return destIpu; }
   const SourceIpuMap &getSourceIpus() const;
+  const SourceTensorMap &getSourceTensors() const;
   uint64_t getSourceIpu(const TensorId &tenId) const;
   uint64_t getSourceIpu() const;
+  uint64_t getMinSourceIpu() const;
+  uint64_t getMaxSourceIpu() const;
 
   void appendAttributes(OpSerialiserBase &) const override;
 
@@ -41,6 +45,7 @@ private:
   }
 
   SourceIpuMap sourceIpus;
+  SourceTensorMap sourceTensors;
   uint64_t destIpu;
 };
 } // namespace popart

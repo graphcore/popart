@@ -1,4 +1,8 @@
 #define BOOST_ERROR_CODE_HEADER_ONLY
+// this ifdef suppresses the unused macro warning for
+// BOOST_ERROR_CODE_HEADER_ONLY
+#ifdef BOOST_ERROR_CODE_HEADER_ONLY
+#endif
 
 #include <boost/filesystem.hpp>
 #include <fstream>

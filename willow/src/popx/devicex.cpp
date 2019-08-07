@@ -2,10 +2,12 @@
 #include <cctype>
 #include <cstring>
 #include <fstream>
+#include <memory>
 #include <random>
 #include <set>
 
-#include <memory>
+#include <boost/range/algorithm/find.hpp>
+
 #include <poplin/codelets.hpp>
 #include <popnn/codelets.hpp>
 #include <popops/ElementWise.hpp>
@@ -301,8 +303,9 @@ const std::map<TensorId, poplar::Tensor> &PopTensors::getTensors() const {
 PipelineInfo::PipelineInfo(int _batchesPerStep,
                            int _gradAcclFactor,
                            int _numIPUs,
-                           bool _doTraining)
-    : doTraining(_doTraining) {
+                           bool _doTraining,
+                           bool _doGradAccl)
+    : doTraining(_doTraining), doGradAccl(_doGradAccl) {
 
   auto bps                  = static_cast<int64_t>(_batchesPerStep);
   auto gradAcclFactor       = static_cast<int64_t>(_gradAcclFactor);
@@ -317,7 +320,11 @@ PipelineInfo::PipelineInfo(int _batchesPerStep,
     bwdFillPhase.start = fillFlushPhaseCycles;
     bwdFillPhase.end   = 2 * fillFlushPhaseCycles - 1;
 
-    mainCycles      = (bps * gradAcclFactor) - 2 * fillFlushPhaseCycles;
+    if (doGradAccl) {
+      mainCycles = gradAcclFactor - 2 * fillFlushPhaseCycles;
+    } else {
+      mainCycles = bps - 2 * fillFlushPhaseCycles;
+    }
     mainPhase.start = bwdFillPhase.end + 1;
     mainPhase.end   = mainPhase.start + mainCycles - 1;
 
@@ -331,7 +338,7 @@ PipelineInfo::PipelineInfo(int _batchesPerStep,
     flushPhase.start = fwdFlushPhase.start;
     flushPhase.end   = bwdFlushPhase.end;
   } else {
-    mainCycles      = (bps * gradAcclFactor) - fillFlushPhaseCycles;
+    mainCycles      = bps - fillFlushPhaseCycles;
     mainPhase.start = fwdFillPhase.end + 1;
     mainPhase.end   = mainPhase.start + mainCycles - 1;
 
@@ -409,22 +416,23 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
   bwdConvOptions.options["pass"] = "TRAINING_BWD";
   wuConvOptions.options["pass"]  = "TRAINING_WU";
 
-  // Not sure what these options should be
-  if (ir.getExecutionMode() == Ir::ExecutionMode::TRAINING) {
-    fwdMmOptions.options.insert({"fullyConnectedPass", "TRAINING_FWD"});
-  } else {
-    fwdMmOptions.options.insert({"fullyConnectedPass", "INFERENCE_FWD"});
+  if (ir.getSessionOptions().enableFullyConnectedPass) {
+    if (ir.getExecutionMode() == Ir::ExecutionMode::TRAINING) {
+      fwdMmOptions.options.insert({"fullyConnectedPass", "TRAINING_FWD"});
+      bwdMmLhsOptions.options.insert({"fullyConnectedPass", "TRAINING_BWD"});
+      bwdMmRhsOptions.options.insert({"fullyConnectedPass", "TRAINING_WU"});
+    } else {
+      fwdMmOptions.options.insert({"fullyConnectedPass", "INFERENCE_FWD"});
+    }
   }
-
-  bwdMmLhsOptions.options.insert({"fullyConnectedPass", "TRAINING_BWD"});
-  bwdMmRhsOptions.options.insert({"fullyConnectedPass", "TRAINING_WU"});
 
   if (ir.getSessionOptions().enablePipelining) {
     pInfo = PipelineInfo(
         ir.getDataFlow().batchesPerStep(),
         static_cast<int>(ir.getSessionOptions().accumulationFactor),
         deviceInfo_->getNumIpus(),
-        ir.canTrain());
+        ir.canTrain(),
+        ir.getSessionOptions().enableGradientAccumulation);
   }
 
   engineOptions.set("target.workerStackSizeInBytes", "0x200");
@@ -986,6 +994,10 @@ void Devicex::connectRandomSeedStream() {
 }
 
 void Devicex::setRandomSeed(uint64_t seedValue) {
+  if (!prepareHasBeenCalled) {
+    throw error("Devicex::prepare() must be called before "
+                "Devicex::setRandomSeed(uint64_t) is called.");
+  }
   randomSeed = seedValue;
 
   if (useSyntheticData() == false) {
@@ -1323,9 +1335,26 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     }
     // else if this Op is in the main scope
     else {
+      auto isOptimizerTensorCopy = [&]() {
+        if (!op->isConvertibleTo<IpuCopyOp>()) {
+          return false;
+        }
 
+        auto optimizerTensors = ir().optimizerTensors();
+        for (auto input : op->input->tensors()) {
+          if (boost::find(optimizerTensors, input) == optimizerTensors.end()) {
+            return false;
+          }
+        }
+
+        return true;
+      };
+
+      if (isOptimizerTensorCopy()) {
+        growOpx(progs.streamOptimizerFromHostFragment());
+      }
       // pre-loss : create vertices for all recompute types
-      if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
+      else if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
         if (op->settings.recomputeType == RecomputeType::CHECKPOINT) {
           logging::devicex::debug("Adding checkpoint Op {}", op->debugName());
           if (ir().getSessionOptions().enablePipelining) {
@@ -1971,10 +2000,10 @@ void Devicex::prepare() {
 
   trySaveTensorTileMap();
 
+  prepareHasBeenCalled = true;
+
   uint64_t seed = std::chrono::system_clock::now().time_since_epoch().count();
   setRandomSeed(seed);
-
-  prepareHasBeenCalled = true;
 }
 
 int64_t Devicex::getStashSize(VGraphId vGraphId) {
@@ -2057,7 +2086,7 @@ void Devicex::trySaveExecutable(poplar::Executable &executable) {
     logging::devicex::debug("Saving popart ir hash to '{}'", popartCachePath);
     SavedInfo savedInfo(*this);
     savedInfo.serialize(popartFs);
-  };
+  }
 }
 
 void Devicex::tryLoadExecutable() {

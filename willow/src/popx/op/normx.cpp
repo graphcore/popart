@@ -70,7 +70,7 @@ poplar::Tensor NormOpx::convertInvSdToVar(poplar::program::Sequence &prog,
                      pe::InvStdDevToVariance(pe::_1, pe::Const(epsilon)),
                      {invSd},
                      prog,
-                     idStr() + "/invSdToVar");
+                     debugPrefix("invSdToVar"));
 }
 
 // convert variant to inverse standard deviation
@@ -81,7 +81,7 @@ poplar::Tensor NormOpx::convertVarToInvSd(poplar::program::Sequence &prog,
                      pe::VarianceToInvStdDev(pe::_1, pe::Const(epsilon)),
                      {var},
                      prog,
-                     idStr() + "/varToInvSd");
+                     debugPrefix("varToInvSd"));
 }
 
 NormOpx::NormOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}

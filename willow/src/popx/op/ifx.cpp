@@ -73,7 +73,7 @@ void IfOpx::copyOutputs(poplar::program::Sequence &thenProg,
   auto zeroOutput = [&](poplar::program::Sequence &prog, OutIndex opIndex) {
     auto opId     = outId(opIndex);
     auto opOutput = outputs.at(opIndex);
-    popops::zero(graph(), opOutput, prog, idStr());
+    popops::zero(graph(), opOutput, prog, debugPrefix("zero"));
   };
 
   auto copyOrZeroBranchOutput =

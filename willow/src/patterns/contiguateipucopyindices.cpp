@@ -12,11 +12,11 @@ namespace popart {
 bool ContiguateIpuCopyIndicesPattern::matches(Op *op) const {
   auto copyOp = dynamic_cast<IpuCopyOp *>(op);
   if (copyOp) {
-    if (copyOp->getSourceIpus().size() != 1) {
+    if (copyOp->getSourceTensors().size() != 1) {
       return false;
     }
-    auto delta = static_cast<int64_t>(copyOp->getDestIpu()) -
-                 static_cast<int64_t>(copyOp->getSourceIpu());
+    auto delta = static_cast<VGraphId>(copyOp->getDestIpu()) -
+                 static_cast<VGraphId>(copyOp->getSourceIpu());
 
     if (delta == +1 || delta == -1) {
       return false;
@@ -38,11 +38,11 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
   auto originalIpuCopyOp = dynamic_cast<IpuCopyOp *>(op);
 
   // Creation of intermediate IpuCopyOps:
-  int64_t firstIpuId = originalIpuCopyOp->getSourceIpu();
-  int64_t finalIpuId = originalIpuCopyOp->getDestIpu();
-  auto delta         = firstIpuId < finalIpuId ? +1 : -1;
+  VGraphId firstIpuId = originalIpuCopyOp->getSourceIpu();
+  VGraphId finalIpuId = originalIpuCopyOp->getDestIpu();
+  auto delta          = firstIpuId < finalIpuId ? +1 : -1;
   std::vector<std::unique_ptr<IpuCopyOp>> seq;
-  for (int64_t src = firstIpuId; src != finalIpuId; src += delta) {
+  for (VGraphId src = firstIpuId; src != finalIpuId; src += delta) {
     auto dst = src + delta;
     seq.push_back(std::make_unique<IpuCopyOp>(
         Onnx::CustomOperators::IpuCopy, dst, op->getSettings()));
@@ -55,24 +55,25 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
         tensors.first, tensors.second, originalIpuCopyOp->getSourceIpu());
   }
 
-  // Connect the output tensor to the back of the sequence
+  // Connect the output tensor to the back of the sequence. Note: this
+  // can have more than one ouput (all with the same destIPUs) if this
+  // IpuCopy has been merged in the MergeCopies transform
   auto &finalIpuCopy = seq.back();
-  if (op->output->tensorIdMap().size() != 1) {
-    throw error("ILE : expected a single output Tensor for an IpuCopyOp");
-  }
   for (auto &tensors : op->output->tensorIdMap()) {
     finalIpuCopy->connectOutTensor(tensors.first, tensors.second);
   }
 
   // Connect the sequence of IpuCopys with intermediate Tensors
   int seqIndex = 0;
-  for (int64_t src = firstIpuId; src != finalIpuId - delta; src += delta) {
+  for (VGraphId src = firstIpuId; src != finalIpuId - delta; src += delta) {
     auto srcOp  = seq.at(seqIndex).get();
     auto destOp = seq.at(seqIndex + 1).get();
-    auto tensor = PreAliasPattern::createIntermediateTensorId(
-        originalIpuCopyOp->output->id(0));
-    srcOp->createAndConnectOutTensor(0, tensor);
-    destOp->connectInTensor(0, tensor, src + delta);
+    for (int i = 0; i < originalIpuCopyOp->output->n(); i++) {
+      auto tensor = PreAliasPattern::createIntermediateTensorId(
+          originalIpuCopyOp->output->id(i));
+      srcOp->createAndConnectOutTensor(i, tensor);
+      destOp->connectInTensor(i, tensor, src + delta);
+    }
     ++seqIndex;
   }
 

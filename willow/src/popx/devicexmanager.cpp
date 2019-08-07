@@ -26,7 +26,7 @@ popart::DeviceType convertDeviceType(poplar::TargetType targetType) {
     return DeviceType::IpuModel;
   case poplar::TargetType::CPU:
     return DeviceType::Cpu;
-  };
+  }
   throw error("Unknonw target type");
 }
 

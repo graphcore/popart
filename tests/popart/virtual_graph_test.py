@@ -241,3 +241,102 @@ def test_virtual_graph_bad_index():
     # s.prepareDevice()
 
     pass
+
+
+def test_streaming_optimizer_tensors():
+    input_data = np.random.rand(2, 2).astype(np.float32)
+    weight_data_0 = np.random.rand(2, 2).astype(np.float32)
+    weight_data_1 = np.random.rand(2, 2).astype(np.float32)
+
+    def run_test(useVirtualGraphs):
+        popart.getLogger().setLevel("TRACE")
+
+        builder = popart.Builder()
+
+        i1 = builder.addInputTensor(
+            popart.TensorInfo("FLOAT", input_data.shape))
+        w1 = builder.addInitializedInputTensor(weight_data_0)
+        w2 = builder.addInitializedInputTensor(weight_data_1)
+
+        # with builder.virtualGraph(0):
+        o1 = builder.aiOnnx.matmul([i1, w1])
+        if useVirtualGraphs:
+            builder.virtualGraph(o1, 0)
+
+        # with builder.virtualGraph(1):
+        o2 = builder.aiOnnx.matmul([o1, w2])
+        if useVirtualGraphs:
+            builder.virtualGraph(o2, 1)
+
+        o = o2
+        builder.addOutputTensor(o)
+
+        proto = builder.getModelProto()
+
+        # Need to anchor the output of the backward pass to stop it being pruned
+        dataFlow = popart.DataFlow(1, {
+            o: popart.AnchorReturnType("ALL"),
+        })
+
+        losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
+        #Make sure that the loss is also assigned to a virtual graph
+        if useVirtualGraphs:
+            losses[0].virtualGraph(1)
+
+        optimizer = popart.ConstSGD(0.01)
+        optimizer = popart.SGD(learning_rate=1.0,
+                               weight_decay=0.0,
+                               loss_scaling=1.0)
+
+        opts = popart.SessionOptionsCore()
+        opts.enableVirtualGraphs = useVirtualGraphs
+
+        numIPUs = 1
+        if useVirtualGraphs:
+            numIPUs = 4
+
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFeed=dataFlow,
+            losses=losses,
+            optimizer=optimizer,
+            userOptions=opts,
+            deviceInfo=tu.get_ipu_model(numIPUs=numIPUs))
+
+        session.prepareDevice()
+
+        anchors = session.initAnchorArrays()
+
+        inputs = {i1: input_data}
+        stepio = popart.PyStepIO(inputs, anchors)
+
+        session.weightsFromHost()
+        session.optimizerFromHost()
+
+        # run 6 steps, changing the optimizer halfway through
+        result = []
+        for i in range(3):
+            session.run(stepio)
+            result.append(np.copy(anchors[o]))
+
+        session.updateOptimizer(
+            popart.SGD(learning_rate=0.5, weight_decay=0.0, loss_scaling=1.0))
+        session.optimizerFromHost()
+
+        for i in range(3):
+            session.run(stepio)
+            result.append(np.copy(anchors[o]))
+
+        return result
+
+    x = run_test(False)
+    y = run_test(True)
+
+    assert len(x) == len(y)
+
+    for i in range(len(x)):
+        print(x[i])
+        print(y[i])
+        print()
+
+        assert np.array_equal(x[i], y[i])

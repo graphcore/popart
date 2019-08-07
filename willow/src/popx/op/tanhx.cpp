@@ -14,8 +14,11 @@ TanhOpx::TanhOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 void TanhOpx::grow(poplar::program::Sequence &prog) const {
   auto in_tensor = getInTensor(TanhOp::getInIndex());
   // auto out_id     = outId(TanhOp::getOutIndex());
-  auto out_tensor = popnn::nonLinearity(
-      graph(), popnn::NonLinearityType::TANH, in_tensor, prog, idStr());
+  auto out_tensor = popnn::nonLinearity(graph(),
+                                        popnn::NonLinearityType::TANH,
+                                        in_tensor,
+                                        prog,
+                                        debugPrefix("nonLinearity"));
   setOutTensor(TanhOp::getOutIndex(), out_tensor);
 }
 
@@ -37,7 +40,12 @@ void TanhGradOpx::grow(poplar::program::Sequence &prog) const {
   auto grad_out = getInTensor(TanhGradOp::getGradInIndex());
   // auto out_id     = outId(TanhGradOp::getOutIndex());
   auto out_tensor = popnn::nonLinearityInputGradient(
-      graph(), popnn::NonLinearityType::TANH, fwd_out, grad_out, prog, idStr());
+      graph(),
+      popnn::NonLinearityType::TANH,
+      fwd_out,
+      grad_out,
+      prog,
+      debugPrefix("nonLinearityInputGradient"));
   setOutTensor(TanhGradOp::getOutIndex(), out_tensor);
 }
 

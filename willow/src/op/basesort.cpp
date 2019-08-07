@@ -6,8 +6,8 @@ namespace popart {
 
 BaseSortOp::BaseSortOp(const OperatorIdentifier &_opid,
                        int64_t axis_,
-                       const Op::Settings &settings)
-    : Op(_opid, settings), axis(axis_) {}
+                       const Op::Settings &settings_)
+    : Op(_opid, settings_), axis(axis_) {}
 
 void BaseSortOp::validateAxis() const {
   auto shape = inShape(getInIndex());

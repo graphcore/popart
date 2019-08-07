@@ -12,8 +12,8 @@ namespace popart {
 ArgExtremaOp::ArgExtremaOp(const OperatorIdentifier &opid_,
                            int64_t axis_,
                            int64_t keepdims_,
-                           const Op::Settings &settings)
-    : Op(opid_, settings), keepdims(keepdims_), axis(axis_) {}
+                           const Op::Settings &settings_)
+    : Op(opid_, settings_), keepdims(keepdims_), axis(axis_) {}
 
 std::unique_ptr<Op> ArgExtremaOp::clone() const {
   return std::make_unique<ArgExtremaOp>(*this);

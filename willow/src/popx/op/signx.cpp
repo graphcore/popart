@@ -24,7 +24,7 @@ void SignOpx::grow(poplar::program::Sequence &prog) const {
                            popops::expr::UnaryOpType::SIGNUM,
                            getInTensor(SignOp::getInIndex()),
                            prog,
-                           idStr()));
+                           debugPrefix()));
 }
 
 SignGradOpx::SignGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {

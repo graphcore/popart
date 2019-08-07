@@ -34,7 +34,8 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
   // If there are no indices, return an empty tensor of the appropriate
   // shape
   if (indices.numElements() == 0) {
-    auto result = graph().addVariable(data.elementType(), outputShape);
+    auto result = graph().addVariable(
+        data.elementType(), outputShape, debugPrefix("result"));
 
     setOutTensor(GatherOp::outIndex(), result);
   } else {
@@ -46,7 +47,8 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
                                  indices.reinterpret(poplar::UNSIGNED_INT),
                                  static_cast<unsigned>(axis),
                                  prog,
-                                 popops::GatherParams{});
+                                 popops::GatherParams{},
+                                 debugPrefix());
 
     // Reshape into the expected ONNX shape
     result = result.reshape(outputShape);

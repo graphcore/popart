@@ -87,9 +87,10 @@ public:
   Tensor *inTensor(InIndex) const;
   // shortcut for op_p->output.id(int)
   Tensor *outTensor(OutIndex) const;
-  // shortcut for std::to_string(op_p->id)
-  std::string idStr() const;
+  // the debug prefix to use in poplar calls
+  std::string debugPrefix() const;
   std::string debugPrefix(const std::string &prefix) const;
+  std::string debugPrefix(const std::string &p1, const std::string &p2) const;
   // shortcut for op_p->input.tensor(int)->info
   const TensorInfo &inInfo(InIndex) const;
   // shortcut for op_p->input.tensor(int)->info.shape()
@@ -166,6 +167,9 @@ public:
                           const std::vector<size_t> &shape,
                           double val,
                           const std::string &name) const;
+
+private:
+  std::string idStr() const;
 };
 
 } // namespace popx

@@ -65,9 +65,14 @@ namespace popart {
 std::size_t Pipeline::id() { return typeid(Pipeline).hash_code(); }
 
 bool Pipeline::apply(Graph &graph) const {
+
   auto &ir     = graph.getIr();
   auto numIPUs = ir.getDeviceInfo()->getNumIpus();
   // We use numIPUs as proxy for sharding factor, not quite correct:TODO T10254
+
+  if (ir.autoRecomputationEnabled()) {
+    throw error("Auto recomputation for Pipelining needs implementing");
+  }
 
   // First, some checks that pipelining is compatible with other user options:
 
@@ -86,29 +91,32 @@ bool Pipeline::apply(Graph &graph) const {
     minDepth = numIPUs;
   }
 
-  if ((ir.getDataFlow().batchesPerStep() *
-       ir.getSessionOptions().accumulationFactor) < minDepth) {
-    throw error("For pipelining, depth (batchesPerStep * gradient "
-                "accumulation factor) must be at least {} "
-                "for {} IPUs ({} * {} !>= {})",
-                minDepth,
-                ir.getDeviceInfo()->getNumIpus(),
-                ir.getDataFlow().batchesPerStep(),
-                ir.getSessionOptions().accumulationFactor,
-                minDepth);
-  }
-
-  if ((ir.getSessionOptions().accumulationFactor > 1) &&
-      (ir.getDataFlow().batchesPerStep() != 1)) {
-    throw error("When pipelining and gradient accumulation are enabled, "
-                "batchesPerStep must be == 1");
+  int depth;
+  if (ir.getSessionOptions().enableGradientAccumulation) {
+    depth = ir.getSessionOptions().accumulationFactor;
+    if (depth < minDepth) {
+      // TODO: Update this to account for replication (T10254) . This
+      // requirement is more complex when replicating.
+      throw error("For pipelining, depth (gradient accumulation factor) must "
+                  "be at least {} "
+                  "for {} IPUs",
+                  minDepth,
+                  ir.getDeviceInfo()->getNumIpus());
+    }
+  } else {
+    depth = ir.getDataFlow().batchesPerStep();
+    if (depth < minDepth) {
+      throw error("For pipelining, depth (batchesPerStep) must be at least {} "
+                  "for {} IPUs",
+                  minDepth,
+                  ir.getDeviceInfo()->getNumIpus());
+    }
   }
 
   // 3. Currently recomputation is not supported with pipelining (TODO T9575)
-  if (ir.autoRecomputationEnabled() ||
-      ir.getMainGraph().hasUserRecomputeOps()) {
-    throw error(
-        "When pipelining is enabled, recomputation is currently not allowed");
+  if (ir.getMainGraph().hasUserRecomputeOps()) {
+    throw error("When pipelining is enabled, user annotation for recomputation "
+                "is not allowed");
   }
 
   // 4. Forward layers must be sharded with increasing IPU index
@@ -151,28 +159,34 @@ bool Pipeline::apply(Graph &graph) const {
 
   auto ipuCopies = getIpuCopyOps();
   for (auto ipuCopyOp : ipuCopies) {
-    uint64_t sourceIpu = ipuCopyOp->getSourceIpu();
-    uint64_t destIpu   = ipuCopyOp->getDestIpu();
+    uint64_t destIpu = ipuCopyOp->getDestIpu();
     // For an inference graph, or fwd pass of a training graph,
-    if (ipuCopyOp->toLoss == PathToLoss::Yes || !ir.canTrain()) {
-      if (destIpu <= sourceIpu) {
-        throw error("For pipelining, forward IpuCopyOps  must copy to an "
-                    "IPU of larger index. However {} copies from {} to {}.",
-                    ipuCopyOp->debugName(),
-                    sourceIpu,
-                    destIpu);
+    if (!ir.canTrain() ||
+        ipuCopyOp->scheduledPreLoss == ScheduledPreLoss::Yes) {
+      uint64_t maxSourceIpu = ipuCopyOp->getMaxSourceIpu();
+      if (destIpu <= maxSourceIpu) {
+        throw error(
+            "For pipelining, forward IpuCopyOps must copy to an "
+            "IPU of larger index. However {} ({}) copies from {} to {}.",
+            ipuCopyOp->debugName(),
+            ipuCopyOp->str(),
+            maxSourceIpu,
+            destIpu);
       }
     }
 
     // for bwd pass, IPU Copy must have destination with lower VGraphId than
     // source
-    else {
-      if (destIpu >= sourceIpu) {
-        throw error("For pipelining, backward IpuCopyOps  must copy to an "
-                    "IPU of smaller index. However {} copies from {} to {}.",
-                    ipuCopyOp->debugName(),
-                    sourceIpu,
-                    destIpu);
+    else if (ipuCopyOp->scheduledPreLoss == ScheduledPreLoss::No) {
+      uint64_t minSourceIpu = ipuCopyOp->getMinSourceIpu();
+      if (destIpu >= minSourceIpu) {
+        throw error(
+            "For pipelining, backward IpuCopyOps must copy to an "
+            "IPU of smaller index. However {} ({}) copies from {} to {}.",
+            ipuCopyOp->debugName(),
+            ipuCopyOp->str(),
+            minSourceIpu,
+            destIpu);
       }
     }
   }
@@ -198,7 +212,7 @@ bool Pipeline::apply(Graph &graph) const {
   ContiguateIpuCopyIndicesPattern contiguator;
   for (auto ipuCopyOp : ipuCopies) {
     if (contiguator.matches(ipuCopyOp)) {
-      logging::transform::debug("Contiguating {}", ipuCopyOp->str());
+      logging::transform::debug("Contiguating {}", ipuCopyOp->debugName());
       contiguator.apply(ipuCopyOp);
     }
   }
@@ -210,7 +224,11 @@ bool Pipeline::apply(Graph &graph) const {
     auto destIpu   = static_cast<int64_t>(ipuCopyOp->getDestIpu());
     auto delta     = destIpu - sourceIpu;
     if (delta != 1 && delta != -1) {
-      throw error("ILE: Failed to contiguate all IpuCopyOps");
+      throw error("ILE: IpuCopy {} is not contiguous. It copies from IPU {} to "
+                  "IPU {}. Failed to contiguate all IpuCopyOps",
+                  ipuCopyOp->debugName(),
+                  sourceIpu,
+                  destIpu);
     }
   }
 
@@ -218,6 +236,21 @@ bool Pipeline::apply(Graph &graph) const {
     // No stashing of forward activations required in inference/eval mode
     return true;
   }
+
+  // 1. We will insert topological constraints to ensure that relative positions
+  // of Stash and Restore Ops w.r.t. Loss are correct. Finding the first Op with
+  // a path from the Loss
+  auto currentSchedule = graph.getOpSchedule({});
+  auto firstFromLoss =
+      std::find_if(currentSchedule.cbegin(),
+                   currentSchedule.cend(),
+                   [](Op *op) { return op->fromLoss == PathFromLoss::Yes; });
+  if (firstFromLoss == currentSchedule.cend()) {
+    throw error(
+        "ILE: no Op with PathFromLoss::Yes, yet canTrain() is true, bailing");
+  }
+  logging::transform::debug("First PathFromLoss::Yes in schedule is {}.",
+                            (*firstFromLoss)->str());
 
   // 1. Find all tensors in the fwd pass that are inputs to ops in the bwd pass
   std::vector<TensorId> toStashTensors;
@@ -281,10 +314,6 @@ bool Pipeline::apply(Graph &graph) const {
     auto stashId = stashOp->getStashedTensorId();
     stashOp->createAndConnectOutTensor(StashOp::getOutIndex(), stashId);
     stashOp->setup();
-    // We don't call updateVertices() after this transform, so set attributes
-    // manually (see T10109)
-    stashOp->scheduledPreLoss               = ScheduledPreLoss::Yes;
-    stashOp->outTensor(0)->scheduledPreLoss = ScheduledPreLoss::Yes;
 
     logging::transform::debug(
         "Adding stash of size {} of activations {} for pipelining",
@@ -329,54 +358,29 @@ bool Pipeline::apply(Graph &graph) const {
       }
     }
 
-    // We don't call updateVertices() after this transform, so set attributes
-    // manually (see T10109)
-    restoreOp->scheduledPreLoss               = ScheduledPreLoss::No;
-    restoreOp->outTensor(0)->scheduledPreLoss = ScheduledPreLoss::No;
     restoreOp->setup();
 
     // apply topological constraints:
-    // (1)  -> Stash before all forward consumers
-    // (2)  -> Restore after Stash
-    // (3)  -> All backwards after Restore
-    // (4)  -> Restore after all producers of (non-tid) tensors
-    //         consumed by first scheduled backwards
+    // (0)  : Stash before all other consumers
+    // (1)  : Stash -> "firstFromLoss" -> Restore
+    // (2)  : All backwards after Restore.
 
-    // (2)
-    graph.topoCons->insert(stashOp, restoreOp);
+    // (1)
+    graph.topoCons->insert(stashOp, *firstFromLoss);
+    graph.topoCons->insert(*firstFromLoss, restoreOp);
+
     for (auto tidConsumer : tidConsumers) {
-      if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
-        // (1)
+
+      // (0)
+      if (tidConsumer != stashOp) {
         graph.topoCons->insert(stashOp, tidConsumer);
-      } else {
-        // (3)
+      }
+
+      // (2)
+      // we use "backwards" to mean scheduledPreLoss is No,  but
+      // we could equivalently check pathFromLoss is Yes
+      if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::No) {
         graph.topoCons->insert(restoreOp, tidConsumer);
-      }
-    }
-    // (4)
-    // First get first scheduled bwd consumer
-    std::vector<Op *> opSchedule = graph.getOpSchedule({});
-    auto firstScheduledOpIt      = opSchedule.end();
-    for (auto tidConsumer : tidConsumers) {
-      if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
-        continue;
-      } else {
-        if (std::find(firstScheduledOpIt, opSchedule.end(), tidConsumer) ==
-            opSchedule.end()) {
-          firstScheduledOpIt =
-              std::find(opSchedule.begin(), opSchedule.end(), tidConsumer);
-        }
-      }
-    }
-    Op *firstScheduledOp = *firstScheduledOpIt;
-    // Add the topocons
-    for (Tensor *t : firstScheduledOp->input->tensors()) {
-      if (t->hasProducer()) {
-        if (t->getProducer() == restoreOp) {
-          continue;
-        } else {
-          graph.topoCons->insert(t->getProducer(), restoreOp);
-        }
       }
     }
   }

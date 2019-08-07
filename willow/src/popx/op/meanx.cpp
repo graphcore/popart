@@ -29,14 +29,14 @@ void MeanOpx::grow(poplar::program::Sequence &prog) const {
                               outTensor,
                               getInTensor(i),
                               prog,
-                              idStr());
+                              debugPrefix("add", std::to_string(i)));
     }
 
     outTensor = popops::map(graph(),
                             pe::Divide(pe::_1, pe::Const(op_p->input->n())),
                             {outTensor},
                             prog,
-                            idStr());
+                            debugPrefix("divide"));
   }
 
   setOutTensor(MeanOp::getOutIndex(), outTensor);
@@ -62,14 +62,14 @@ void MeanArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
                             prog,
-                            idStr());
+                            debugPrefix("reduce"));
 
   // scale the grad input (reduced)
   popops::mapInPlace(graph(),
                      pe::Mul(pe::_1, pe::Const(gradOp.getScale())),
                      {out},
                      prog,
-                     idStr());
+                     debugPrefix("mull"));
 
   // Reshape the output, to add 1's if needed
   setOutTensor(MeanArgGradOp::getOutIndex(),

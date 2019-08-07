@@ -52,7 +52,9 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
     scale = lambda / totalSamples;
     break;
   }
-  default: { throw error("Unsupported reduction type for Loss {}", idStr()); }
+  default: {
+    throw error("Unsupported reduction type for Loss {}", debugPrefix());
+  }
   }
 
   auto t_scale =
@@ -65,7 +67,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                                 signumTensor,
                                 t_scale,
                                 prog,
-                                debugPrefix("Multiply"));
+                                debugPrefix("multiply"));
 
   if (dv_p->ir().getOptimizer()->constantLossScaling()) {
     auto lossScaling = dv_p->ir().getOptimizer()->getLossScaling();
@@ -74,7 +76,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
                          pe::Mul(pe::_1, pe::Const(lossScaling)),
                          {gradTensor},
                          prog,
-                         debugPrefix("ScaledLoss"));
+                         debugPrefix("scaledLoss"));
     }
   } else {
     popops::mapInPlace(
@@ -82,7 +84,7 @@ void L1GradOpx::grow(poplar::program::Sequence &prog) const {
         pe::Mul(pe::_1, pe::_2),
         {gradTensor, getInTensor(L1GradOp::getLossScalingInIndex())},
         prog,
-        debugPrefix("ScaledLoss"));
+        debugPrefix("scaledLoss"));
   }
 
   setOutTensor(0, gradTensor);
@@ -125,7 +127,9 @@ void L1Opx::grow(poplar::program::Sequence &prog) const {
     scale = lambda / totalSamples;
     break;
   }
-  default: { throw error("Unsupported reduction type for Loss {}", idStr()); }
+  default: {
+    throw error("Unsupported reduction type for Loss {}", debugPrefix());
+  }
   }
 
   // t_scale is always expected to be FLOAT, regardless of the input type

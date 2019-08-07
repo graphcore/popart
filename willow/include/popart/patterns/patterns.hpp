@@ -96,7 +96,7 @@ public:
         type, name, [name]() -> std::unique_ptr<PreAliasPattern> {
           auto pattern = std::unique_ptr<PATTERN>(new PATTERN());
           pattern->initialise(name);
-          return pattern;
+          return std::move(pattern);
         });
   }
 };

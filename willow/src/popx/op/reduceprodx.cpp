@@ -28,7 +28,8 @@ void ReduceProdOpx::grow(poplar::program::Sequence &prog) const {
                                       input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::MUL},
-                                      prog);
+                                      prog,
+                                      debugPrefix("mul"));
 
   setOutTensor(
       ReduceProdOp::getOutIndex(),
@@ -104,13 +105,15 @@ void ReduceProdGradOpx::grow(poplar::program::Sequence &prog) const {
     popops::mapInPlace(graph(),
                        pe::Mul(pe::_1, pe::_2),
                        {left, fwd_input.slice(i - 1, i, 0)},
-                       prog);
+                       prog,
+                       debugPrefix("mul"));
     popops::mapInPlace(
         graph(),
         pe::Mul(pe::_1, pe::_2),
         {right,
          fwd_input.slice(lrcumprod.dim(0) - i, lrcumprod.dim(0) - i + 1, 0)},
-        prog);
+        prog,
+        debugPrefix("mul"));
   }
 
   // Undo flattening

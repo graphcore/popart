@@ -20,7 +20,7 @@ void PowOpx::grow(poplar::program::Sequence &prog) const {
                            getInTensor(PowOp::getArg0InIndex()),
                            getInTensor(PowOp::getArg1InIndex()),
                            prog,
-                           idStr()));
+                           debugPrefix()));
 }
 
 namespace {

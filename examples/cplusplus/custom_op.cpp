@@ -166,7 +166,7 @@ public:
                                          popops::expr::_1),
                        {get(inId(0))},
                        prog,
-                       idStr()));
+                       debugPrefix()));
   }
 };
 
@@ -191,7 +191,7 @@ public:
                                           popops::expr::_2)),
                     {get(inId(0)), get(inId(1))}, // FwdOut, GradOut
                     prog,
-                    idStr()));
+                    debugPrefix()));
   }
 };
 
@@ -239,14 +239,14 @@ auto main(int argc, char **argv) -> int {
   // We will stream
   // 1) the output tensor back to host every iteration
   // 2) the gradient of input tensor back to host every iteration
-  auto dataFlow = popart::DataFlow(
-      1, // this is the number of batches per step. It does not have an
-         // equivalent in other standard frameworks like Tensorflow. It is the
-         // number of batches to process when session->run(.) is called.
-         // (see below)
-      {{outputs[0], popart::AnchorReturnType("ALL")},
-       {popart::reservedGradientPrefix() + input,
-        popart::AnchorReturnType("ALL")}});
+  auto dataFlow =
+      popart::DataFlow(1, // this is the number of batches per step. It does not
+                          // have an equivalent in other standard frameworks
+                          // like Tensorflow. It is the number of batches to
+                          // process when session->run(.) is called. (see below)
+                       {{outputs[0], popart::AnchorReturnType("ALL")},
+                        {popart::reservedGradientPrefix() + input,
+                         popart::AnchorReturnType("ALL")}});
 
   auto cpuDevice =
       popart::DeviceManager::createDeviceManager().createCpuDevice();

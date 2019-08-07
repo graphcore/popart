@@ -75,14 +75,14 @@ void LRNOpx::grow(poplar::program::Sequence &prog) const {
                         op.getAlpha(),
                         op.getBias(),
                         op.getSize(),
-                        debugPrefix("getScale"));
+                        debugPrefix("scale"));
 
   auto output =
       popops::map(graph(),
                   pe::Mul(pe::_1, pe::Pow(pe::_2, pe::Const(-op.getBeta()))),
                   {input, scale},
                   prog,
-                  debugPrefix("Output"));
+                  debugPrefix("output"));
 
   setOutTensor(LRNOp::getOutIndex(), output);
 }
@@ -102,7 +102,7 @@ void LRNGradOpx::grow(poplar::program::Sequence &prog) const {
                         op.getAlpha(),
                         op.getBias(),
                         op.getSize(),
-                        debugPrefix("getScale"));
+                        debugPrefix("scale"));
 
   auto output = popops::map(
       graph(),
@@ -115,7 +115,7 @@ void LRNGradOpx::grow(poplar::program::Sequence &prog) const {
                       pe::Pow(pe::_3, pe::Const(-op.getBeta() - 1.f))))),
       {input, fwd_input, scale},
       prog,
-      debugPrefix("Grad"));
+      debugPrefix("grad"));
 
   setOutTensor(LRNGradOp::getOutIndex(), output);
 }

@@ -13,7 +13,7 @@ def test_pipeline_grad_accl_model1():
     """
     np.random.seed(1234)
     gradAcclFactor = 8
-    batchesPerStep = 1
+    batchesPerStep = 8
 
     labelArray = np.random.randint(0, hidden_size, batch_size)
     gradaccl_no_pipeline_anchors = get_model_anchors_model1(
@@ -46,16 +46,16 @@ def test_pipeline_grad_accl_model2():
     without pipelining.
     """
     gradAcclFactor = 8
-    batchesPerStep = 1
+    batchesPerStep = 8
 
-    gradaccl_no_pipeline_anchors = get_model_anchors_model1_model2(
+    gradaccl_no_pipeline_anchors = get_model_anchors_model2(
         doSharding=False,
         doPipelining=False,
         batchesPerStep=batchesPerStep,
         doTraining=True,
         doGradAccl=True,
         gradAcclFactor=gradAcclFactor)
-    gradaccl_pipeline_anchors = get_model_anchors_model1_model2(
+    gradaccl_pipeline_anchors = get_model_anchors_model2(
         doSharding=True,
         doPipelining=True,
         batchesPerStep=batchesPerStep,
@@ -68,6 +68,25 @@ def test_pipeline_grad_accl_model2():
             print("gradaccl no pipelining, batch: ", i, tId1, np.sum(t1[i]))
             print("gradaccl pipelining   , batch: ", i, tId2, np.sum(t2[i]))
         assert np.allclose(t1, t2)
+
+
+def test_invalid_grad_accl_size():
+    """
+    In this test we check that an error is thrown when using a gradient accumulation
+    factor too small for the number of IPUs.
+    """
+    gradAcclFactor = 1
+    batchesPerStep = 8
+
+    with pytest.raises(popart.popart_exception) as e_info:
+        get_model_anchors_model2(doSharding=True,
+                                 doPipelining=True,
+                                 batchesPerStep=batchesPerStep,
+                                 doTraining=True,
+                                 doGradAccl=True,
+                                 gradAcclFactor=gradAcclFactor)
+    assert e_info.value.args[0].startswith(
+        "For pipelining, depth (gradient accumulation factor)")
 
 
 def get_model_anchors_model1(doSharding,
@@ -197,17 +216,17 @@ def get_model_anchors_model1(doSharding,
     return anchors
 
 
-def get_model_anchors_model1_model2(doSharding,
-                                    doPipelining,
-                                    batchesPerStep,
-                                    doTraining,
-                                    doGradAccl=False,
-                                    gradAcclFactor=1,
-                                    doProfiling=False,
-                                    doDevicex=True,
-                                    anchorRestoredTensors=False,
-                                    returnRawInput=False,
-                                    labelArray=None):
+def get_model_anchors_model2(doSharding,
+                             doPipelining,
+                             batchesPerStep,
+                             doTraining,
+                             doGradAccl=False,
+                             gradAcclFactor=1,
+                             doProfiling=False,
+                             doDevicex=True,
+                             anchorRestoredTensors=False,
+                             returnRawInput=False,
+                             labelArray=None):
 
     np.random.seed(1234)
     builder = popart.Builder()

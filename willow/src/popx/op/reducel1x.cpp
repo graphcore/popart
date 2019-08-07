@@ -25,13 +25,14 @@ void ReduceL1Opx::grow(poplar::program::Sequence &prog) const {
   const auto op    = getOp<ReduceL1Op>();
   const auto input = getInTensor(ReduceL1Op::getInIndex());
 
-  auto abs_input = popops::abs(graph(), input, prog);
+  auto abs_input = popops::abs(graph(), input, prog, debugPrefix("abs"));
 
   auto output_tensor = popops::reduce(graph(),
                                       abs_input,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
-                                      prog);
+                                      prog,
+                                      debugPrefix("reduce"));
 
   setOutTensor(
       ReduceL1Op::getOutIndex(),
@@ -59,8 +60,11 @@ void ReduceL1GradOpx::grow(poplar::program::Sequence &prog) const {
     }
   }
 
-  output = popops::map(
-      graph(), pe::Mul(pe::_1, pe::Signum(pe::_2)), {output, fwd_input}, prog);
+  output = popops::map(graph(),
+                       pe::Mul(pe::_1, pe::Signum(pe::_2)),
+                       {output, fwd_input},
+                       prog,
+                       debugPrefix("output"));
 
   // output now matches the shape of output_shape
   setOutTensor(ReduceL1GradOp::getOutIndex(), output);

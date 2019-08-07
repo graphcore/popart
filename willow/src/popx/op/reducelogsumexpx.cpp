@@ -30,7 +30,8 @@ void ReduceLogSumExpOpx::grow(poplar::program::Sequence &prog) const {
                                input,
                                vector_cast<std::size_t>(op.getAxes()),
                                {popops::Operation::MAX},
-                               prog);
+                               prog,
+                               debugPrefix("maxval"));
   auto broadcast_maxval = maxval.reshape(new_shape);
 
   // Broadcasting across each dimension
@@ -44,15 +45,20 @@ void ReduceLogSumExpOpx::grow(poplar::program::Sequence &prog) const {
   auto expinput = popops::map(graph(),
                               pe::Exp(pe::Sub(pe::_1, pe::_2)),
                               {input, broadcast_maxval},
-                              prog);
+                              prog,
+                              debugPrefix("expinput"));
 
   auto output_tensor = popops::reduce(graph(),
                                       expinput,
                                       vector_cast<std::size_t>(op.getAxes()),
                                       {popops::Operation::ADD},
-                                      prog);
-  output_tensor      = popops::map(
-      graph(), pe::Add(pe::Log(pe::_1), pe::_2), {output_tensor, maxval}, prog);
+                                      prog,
+                                      debugPrefix("output"));
+  output_tensor      = popops::map(graph(),
+                              pe::Add(pe::Log(pe::_1), pe::_2),
+                              {output_tensor, maxval},
+                              prog,
+                              debugPrefix("logAdd"));
 
   setOutTensor(ReduceLogSumExpOp::getOutIndex(),
                output_tensor.reshape(
@@ -80,7 +86,8 @@ void ReduceLogSumExpGradOpx::grow(poplar::program::Sequence &prog) const {
                                fwd_input,
                                vector_cast<std::size_t>(op.getAxes()),
                                {popops::Operation::MAX},
-                               prog);
+                               prog,
+                               debugPrefix("maxval"));
   auto broadcast_maxval = maxval.reshape(new_shape);
 
   // Broadcasting across each dimension
@@ -98,7 +105,8 @@ void ReduceLogSumExpGradOpx::grow(poplar::program::Sequence &prog) const {
                   pe::Mul(pe::Divide(pe::_1, pe::Exp(pe::Sub(pe::_2, pe::_4))),
                           pe::Exp(pe::Sub(pe::_3, pe::_4))),
                   {output, scale, fwd_input, broadcast_maxval},
-                  prog);
+                  prog,
+                  debugPrefix("output"));
 
   // output now matches the shape of output_shape
   setOutTensor(ReduceLogSumExpGradOp::getOutIndex(), output);

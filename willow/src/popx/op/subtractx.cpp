@@ -20,7 +20,7 @@ void SubtractOpx::grow(poplar::program::Sequence &prog) const {
                            getInTensor(SubtractOp::getArg0InIndex()),
                            getInTensor(SubtractOp::getArg1InIndex()),
                            prog,
-                           idStr()));
+                           debugPrefix()));
 }
 
 SubtractArg0GradOpx::SubtractArg0GradOpx(Op *op, Devicex *devicex)

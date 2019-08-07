@@ -19,7 +19,7 @@ void MulOpx::grow(poplar::program::Sequence &prog) const {
                            getInTensor(0),
                            getInTensor(1),
                            prog,
-                           idStr()));
+                           debugPrefix()));
 }
 
 namespace {

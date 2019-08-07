@@ -18,7 +18,7 @@ void CastOpx::grow(poplar::program::Sequence &prog) const {
                             getInTensor(CastOp::getInIndex()),
                             popType(op_p->outInfo(CastOp::getOutIndex())),
                             prog,
-                            idStr()));
+                            debugPrefix()));
 }
 
 CastGradOpx::CastGradOpx(Op *op, Devicex *devicex) : CastOpx(op, devicex) {

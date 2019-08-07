@@ -30,7 +30,7 @@ void MaxOpx::grow(poplar::program::Sequence &prog) const {
                               outTensor,
                               getInTensor(i),
                               prog,
-                              idStr());
+                              debugPrefix("max", std::to_string(i)));
     }
   }
 
@@ -54,14 +54,14 @@ void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
                   {getInTensor(MaxArgGradOp::getFwdInIndex()),
                    getInTensor(MaxArgGradOp::getFwdOutInIndex())},
                   prog,
-                  idStr());
+                  debugPrefix("mask"));
 
   // Multiple the mask by the grad
   auto result = popops::map(graph(),
                             pe::Mul(pe::_1, pe::_2),
                             {mask, getInTensor(MaxArgGradOp::getGradInIndex())},
                             prog,
-                            idStr());
+                            debugPrefix("result"));
 
   auto shapeOfOutputOfFwdOp = inInfo(MaxArgGradOp::getFwdOutInIndex()).shape();
   auto shapeOfInputToFwdOp  = inInfo(MaxArgGradOp::getFwdInIndex()).shape();
@@ -77,7 +77,7 @@ void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
                             vXtoY<int64_t, std::size_t>(axes),
                             {popops::Operation::ADD},
                             prog,
-                            idStr());
+                            debugPrefix("reduce"));
 
   // Reshape the output, to add 1's if needed
   setOutTensor(MaxArgGradOp::getOutIndex(),

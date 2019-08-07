@@ -3,16 +3,53 @@
 #include <memory>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
+#include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
-
 #include <popart/transforms/mergecopies.hpp>
 
 namespace popart {
+
+namespace {
+// Get the Virtual Graph of Tensor t0 where t0 -> IpuCopyOp -> t1
+int64_t getSrcTensorVirtualGraph(const Tensor *t1) {
+  if (t1->hasProducer()) {
+    auto producer = t1->getProducer();
+
+    if (dynamic_cast<IpuCopyOp *>(producer)) {
+      auto srcTensors = producer->input->tensors();
+
+      if (srcTensors.size() == 1) {
+        auto t0 = srcTensors[0];
+
+        if (t0->hasVirtualGraphId()) {
+          auto t0Id = t0->getVirtualGraphId();
+
+          return t0Id;
+        }
+        throw error("ILE: Expected to be able to obtain VirtualGraphId of the "
+                    "source Tensor (t1 = {}) of an IpuCopyOp",
+                    t1->str());
+      }
+      throw error(
+          "ILE: Expected IpuCopyOp (producer = {}) in MergeCopies::apply to "
+          "have exactly 1 input Tensor. Is this not the first time this "
+          "transformation is being called?",
+          producer->str());
+    }
+    throw error("ILE: Expected the producer of a Tensor in a copy group to "
+                "be an IpuCopyOp, not an Op of another type ({})",
+                producer->str());
+  }
+  throw error("ILE: Expected a Tensor in a copy group to have a producer, in "
+              "particular an IpuCopyOp producer. Tensor : {}",
+              t1->str());
+}
+} // namespace
 
 std::size_t MergeCopies::id() { return typeid(MergeCopies).hash_code(); }
 
@@ -115,6 +152,7 @@ createCopyGroup(Op *op, const std::vector<Op *> &op_schedule) {
 }
 
 bool MergeCopies::apply(Graph &graph) const {
+
   const auto multiple_copy_consumers = getOpsThatConsumeMultipleCopies(graph);
 
   const auto op_schedule = graph.getOpSchedule({});
@@ -122,10 +160,27 @@ bool MergeCopies::apply(Graph &graph) const {
   for (auto op : multiple_copy_consumers) {
     const auto copy_group = createCopyGroup(op, op_schedule);
     if (copy_group.size() > 1) {
-      mergeCopies(copy_group, graph);
+
+      // without pipelining, we merge copies with different sources
+      if (!graph.getIr().getSessionOptions().enablePipelining) {
+        mergeCopies(copy_group, graph);
+      }
+
+      // with pipelining, we don't merge copies with different sources
+      else {
+        bool allSameSource = true;
+        auto virtualGraph0 = getSrcTensorVirtualGraph(*copy_group.cbegin());
+        for (auto t : copy_group) {
+          if (getSrcTensorVirtualGraph(t) != virtualGraph0) {
+            allSameSource = false;
+          }
+        }
+        if (allSameSource) {
+          mergeCopies(copy_group, graph);
+        }
+      }
     }
   }
-
   return true;
 }
 

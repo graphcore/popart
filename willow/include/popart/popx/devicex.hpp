@@ -41,9 +41,11 @@ public:
   PipelineInfo(int _batchesPerStep,
                int _gradAcclFactor,
                int _numIPUs,
-               bool _doTraining);
+               bool _doTraining,
+               bool _doGradAccl);
 
   bool doTraining;
+  bool doGradAccl;
 
   struct PipelinePhase {
     // [start, end]

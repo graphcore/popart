@@ -27,7 +27,8 @@ void IpuCopyOpx::grow(poplar::program::Sequence &prog) const {
     auto t = poputil::copyToIpu(dv_p->graph(),
                                 getInTensor(idx),
                                 prog,
-                                static_cast<int>(op.getDestIpu()));
+                                static_cast<int>(op.getDestIpu()),
+                                debugPrefix());
     setOutTensor(idx, t);
   }
 }
