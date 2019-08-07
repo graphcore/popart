@@ -157,7 +157,7 @@ bool InterIpuCopy::apply(Graph &graph) const {
   CopiedTensors copiedTensors;
 
   // Keep a record of which stream tensors are going to which ops
-  std::map<TensorId, std::set<Op *>> streamsMap;
+  std::map<TensorId, std::set<OpId>> streamsMap;
 
   // For each op
   for (auto &entry : graph.getOps()) {
@@ -184,10 +184,10 @@ bool InterIpuCopy::apply(Graph &graph) const {
             tensor->tensorType() == TensorType::Variable) {
           auto it = streamsMap.find(tensor->id);
           if (it == streamsMap.end()) {
-            std::set<Op *> streams = {from};
+            std::set<OpId> streams = {from->id};
             streamsMap.insert(std::make_pair(tensor->id, streams));
           } else {
-            streamsMap[tensor->id].insert(from);
+            streamsMap[tensor->id].insert(from->id);
           }
         }
       }
@@ -238,10 +238,16 @@ bool InterIpuCopy::apply(Graph &graph) const {
   // add ops in copy that tensor to other ipus
   copiedTensors.clear();
   for (auto &s : streamsMap) {
+    auto &streamId    = s.first;
+    auto &consumerIds = s.second;
 
-    if (s.second.size() > 1) {
+    if (consumerIds.size() > 1) {
+      std::vector<Op *> consumers;
+      for (auto id : consumerIds) {
+        consumers.push_back(graph.getOp(id));
+      }
 
-      auto sourceOp = *s.second.begin();
+      auto sourceOp = *consumers.begin();
 
       if (graph.getIr().getSessionOptions().enablePipelining) {
         // We add an additional constraint on the order of IPU copies here:
@@ -254,16 +260,16 @@ bool InterIpuCopy::apply(Graph &graph) const {
         auto optTensors = graph.getIr().optimizerTensors();
         if (std::find(optTensors.begin(),
                       optTensors.end(),
-                      graph.getTensors().get(s.first)) == optTensors.end()) {
+                      graph.getTensors().get(streamId)) == optTensors.end()) {
           // sourceOp should be op mapped to smallest vGraphId
-          for (Op *op : s.second) {
+          for (Op *op : consumers) {
             if (op->getVirtualGraphId() < sourceOp->getVirtualGraphId()) {
               sourceOp = op;
             }
           }
         } else {
           // sourceOp should be op mapped to largest vGraphId
-          for (Op *op : s.second) {
+          for (Op *op : consumers) {
             if (op->getVirtualGraphId() > sourceOp->getVirtualGraphId()) {
               sourceOp = op;
             }
@@ -277,8 +283,7 @@ bool InterIpuCopy::apply(Graph &graph) const {
         sourceIpu = sourceOp->getVirtualGraphId();
       }
 
-      for (auto &op : s.second) {
-
+      for (auto &op : consumers) {
         int64_t toIpu = -1;
         if (op->hasVirtualGraphId()) {
           toIpu = op->getVirtualGraphId();
@@ -289,11 +294,11 @@ bool InterIpuCopy::apply(Graph &graph) const {
 
           logging::transform::debug(
               "Adding op to copy streaming tensor {} from ipu {} to ipu {}",
-              s.first,
+              streamId,
               sourceIpu,
               toIpu);
 
-          Tensor *tensor = graph.getTensors().get(s.first);
+          Tensor *tensor = graph.getTensors().get(streamId);
 
           bool alreadyCopied = copiedTensors.find(tensor->id, toIpu);
           if (alreadyCopied == true) {
