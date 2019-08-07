@@ -26,6 +26,7 @@ public:
   void grow(poplar::program::Sequence &) const final;
 
 private:
+  poplar::OptionFlags getOptions() const;
 };
 
 class ConvWeightsGradOpx : public Opx {

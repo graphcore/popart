@@ -10,6 +10,22 @@
 
 namespace popart {
 
+std::string toString(const ConvPartialsType &x) {
+  switch (x) {
+  case ConvPartialsType::HALF:
+    return "ConvPartialsType::HALF";
+  case ConvPartialsType::FLOAT:
+    return "ConvPartialsType::FLOAT";
+  default:
+    throw error("Bad ConvPartialsType '{}'", static_cast<int>(x));
+  }
+}
+
+std::ostream &operator<<(std::ostream &os, const ConvPartialsType &x) {
+  os << toString(x);
+  return os;
+}
+
 // These are utility functions that are need by the Ir Conv.
 namespace popx {
 ConvParameters getConvGradParameters(const ConvParameters &fwdParams);
@@ -18,8 +34,10 @@ ConvParameters canonicalizeConvParams(const ConvParameters &param);
 
 ConvOp::ConvOp(const OperatorIdentifier &_opid,
                int64_t group_,
+               const ConvPartialsType &partialsType_,
                const HasReceptiveFieldOp::Settings &settings_)
-    : HasReceptiveFieldOp(_opid, settings_), group(group_) {}
+    : HasReceptiveFieldOp(_opid, settings_), group(group_),
+      partialsType(partialsType_) {}
 
 const Tensor *ConvOp::dataIn() const { return inTensor(getDataInIndex()); }
 
@@ -183,6 +201,7 @@ static void appendConvParameterAttributes(const ConvParameters &params,
 
 void ConvOp::appendAttributes(OpSerialiserBase &os) const {
   HasReceptiveFieldOp::appendAttributes(os);
+  os.appendAttribute("partialsType", toString(partialsType));
   appendConvParameterAttributes(params, os);
 }
 
@@ -283,7 +302,22 @@ void ConvFlipWeightsOp::setup() {
   outInfo(getOutIndex()) = {weightsIn.dataType(), weightsOutShape};
 }
 
+void ConvFlipWeightsOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("partialsType", toString(partialsType));
+}
+
 namespace {
+ConvPartialsType fromString(const std::string &s) {
+  if (s == "HALF" || s == "half") {
+    return ConvPartialsType::HALF;
+  } else if (s == "FLOAT" || s == "float") {
+    return ConvPartialsType::FLOAT;
+  } else {
+    throw error("Unable to get ConvPartialsType from string '{}'", s);
+  }
+}
+
 static OpCreator<ConvOp> convOpCreator(
     Onnx::Operators::Conv_1,
     [](const OperatorIdentifier &_opid,
@@ -295,7 +329,25 @@ static OpCreator<ConvOp> convOpCreator(
 
       int64_t group = attr.getAttribute<Attributes::Int>("group", 1);
 
-      return std::unique_ptr<Op>(new ConvOp(_opid, group, receptiveSettings));
+      auto partialsType = ConvPartialsType::FLOAT;
+
+      // try set the partials from an attribute
+      if (attr.hasAttribute(sPartialsTypeAttribute)) {
+        std::string partialsTypeAttr =
+            attr.getAttribute<Attributes::String>(sPartialsTypeAttribute);
+        partialsType = fromString(partialsTypeAttr);
+      }
+      // otherwise see if partialsType was set in the convolution options
+      else {
+        auto &opts = settings.getIr().getSessionOptions().convolutionOptions;
+        auto partialsTypeOpt = opts.find("partialsType");
+        if (partialsTypeOpt != opts.end()) {
+          partialsType = fromString(partialsTypeOpt->second);
+        }
+      }
+
+      return std::unique_ptr<Op>(
+          new ConvOp(_opid, group, partialsType, receptiveSettings));
     },
     true);
 

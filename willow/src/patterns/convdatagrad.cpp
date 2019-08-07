@@ -57,17 +57,22 @@ bool ConvDataGradPattern::apply(Op *op) const {
   auto grad_out       = op->outTensor(ConvDataGradOp::getOutIndex());
 
   const auto convdatagrad = dynamic_cast<ConvDataGradOp *>(op);
+  const auto fwdOp        = convdatagrad->getCloneOfCreator();
 
   auto flip = dynamic_cast<ConvFlipWeightsOp *>(
       makeReplacementOpInIr(Onnx::CustomOperators::ConvFlipWeights, op));
   auto conv = dynamic_cast<ConvOp *>(
       makeReplacementOpInIr(Onnx::Operators::Conv_1, op));
 
+  // Inherit the partials type from the forward op
+  flip->setPartialsType(fwdOp->getPartialsType());
+  conv->setPartialsType(fwdOp->getPartialsType());
+
   // Get the data grad conv parameters
   ConvParameters bwdConvParams = convdatagrad->getParameters();
 
   // Get the input shape
-  auto fwdConvInputShape = convdatagrad->getCloneOfCreator()->getInputShape();
+  auto fwdConvInputShape = fwdOp->getInputShape();
 
   // Remove the ConvGradOp
   convdatagrad->disconnectAllInputs();
