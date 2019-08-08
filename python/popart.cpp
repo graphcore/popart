@@ -948,6 +948,9 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("reservedAccumulationResetPrefix", &reservedAccumulationResetPrefix);
   m.def("reservedStashedPrefix", &reservedStashedPrefix);
   m.def("reservedRestoredPrefix", &reservedRestoredPrefix);
+  m.def("reservedLearnRatePrefix", &reservedLearnRatePrefix);
+  m.def("reservedWeightDecayPrefix", &reservedWeightDecayPrefix);
+  m.def("reservedLossScalingPrefix", &reservedLossScalingPrefix);
 
   // Exceptions are processed explicitly to allow the main dynamic library
   // to do the type inference.  This prevents some inter dynamic library type

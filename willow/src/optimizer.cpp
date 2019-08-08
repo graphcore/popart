@@ -13,13 +13,13 @@ Optimizer::Optimizer()                  = default;
 Optimizer::Optimizer(const Optimizer &) = default;
 
 TensorId getScaledLearningRateId(DataType dtype) {
-  return "scaledLearnRate_" + getDataTypeInfoMap().at(dtype).name();
+  return reservedLearnRatePrefix() + getDataTypeInfoMap().at(dtype).name();
 }
 TensorId getWeightDecayId(DataType dtype) {
-  return "weightDecay_" + getDataTypeInfoMap().at(dtype).name();
+  return reservedWeightDecayPrefix() + getDataTypeInfoMap().at(dtype).name();
 }
 TensorId getLossScalingId(DataType dtype) {
-  return "lossScaling_" + getDataTypeInfoMap().at(dtype).name();
+  return reservedLossScalingPrefix() + getDataTypeInfoMap().at(dtype).name();
 }
 
 // convert a float to type T

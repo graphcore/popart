@@ -1335,22 +1335,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     }
     // else if this Op is in the main scope
     else {
-      auto isOptimizerTensorCopy = [&]() {
-        if (!op->isConvertibleTo<IpuCopyOp>()) {
-          return false;
-        }
-
-        auto optimizerTensors = ir().optimizerTensors();
-        for (auto input : op->input->tensors()) {
-          if (boost::find(optimizerTensors, input) == optimizerTensors.end()) {
-            return false;
-          }
-        }
-
-        return true;
-      };
-
-      if (isOptimizerTensorCopy()) {
+      if (op->copiesOptimizerTensors()) {
         growOpx(progs.streamOptimizerFromHostFragment());
       }
       // pre-loss : create vertices for all recompute types

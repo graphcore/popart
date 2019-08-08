@@ -159,6 +159,13 @@ bool Pipeline::apply(Graph &graph) const {
 
   auto ipuCopies = getIpuCopyOps();
   for (auto ipuCopyOp : ipuCopies) {
+    // Ignore copies of optimizer tensors. These are run inside a different
+    // program fragment to the pipelined program, so don't have to follow
+    // the same constraints of other IpuCopy ops.
+    if (ipuCopyOp->copiesOptimizerTensors()) {
+      continue;
+    }
+
     uint64_t destIpu = ipuCopyOp->getDestIpu();
     // For an inference graph, or fwd pass of a training graph,
     if (!ir.canTrain() ||
@@ -260,11 +267,15 @@ bool Pipeline::apply(Graph &graph) const {
     // Not a candidate for stashing if the tensor:
     // - has no consumers
     // - is a variable tensor
+    // - is an optimizer tensor
     // - is on the final IPU
     if (tensor->consumers.getOps().empty()) {
       continue;
     }
     if (tensor->tensorType() == TensorType::Variable) {
+      continue;
+    }
+    if (tensor->isOptimizerTensor()) {
       continue;
     }
 

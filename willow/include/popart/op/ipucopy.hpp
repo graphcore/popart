@@ -32,6 +32,8 @@ public:
 
   bool isIpuCopyOp() const final;
 
+  bool copiesOptimizerTensors() const final;
+
   void connectInTensor(InIndex, TensorId, uint64_t sourceIpu);
 
   // A string of the form "[ sourceIpus ] --> [ destIpu ]"

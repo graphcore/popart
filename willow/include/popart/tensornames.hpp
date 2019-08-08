@@ -37,6 +37,11 @@ constexpr const char *reservedAccumulationResetPrefix() {
 constexpr const char *reservedStashedPrefix() { return "Stashed___"; }
 constexpr const char *reservedRestoredPrefix() { return "Restored___"; }
 
+constexpr const char *reservedLearnRatePrefix() { return "scaledLearnRate_"; }
+constexpr const char *reservedWeightDecayPrefix() { return "weightDecay_"; }
+constexpr const char *reservedLossScalingPrefix() { return "lossScaling_"; }
+
+std::vector<std::string> reservedOptimizerPrefixes();
 std::vector<std::string> reservedPrefixes();
 
 } // namespace popart

@@ -262,6 +262,10 @@ public:
 
   virtual bool isIpuCopyOp() const;
 
+  // Returns true for Ops that copy only optimizer tensors
+  // from one IPU to another
+  virtual bool copiesOptimizerTensors() const;
+
   // helper functions, access fields of input and output
   Tensor *inTensor(InIndex index);
   const Tensor *inTensor(InIndex index) const;
