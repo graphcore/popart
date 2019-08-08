@@ -1267,8 +1267,8 @@ Devicex::initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId) {
   return {-1e6, initTensorTaskId(dstId), deps, f};
 }
 
+// This code should be refactored
 PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
-  // TODO: Improve readability of this code.
   Opx *opx = getOpx(op->id);
 
   // although priority should guarantee that this
@@ -1337,6 +1337,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
                               opx->op_p->debugName());
       growOpx(progs.scopeFragment(containingGraph));
     }
+
     // else if this Op is in the main scope
     else {
       if (op->copiesOptimizerTensors()) {
@@ -1346,34 +1347,58 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
         growOpx(
             progs.pipelineRestoreFragment(op->getVirtualGraphId(), op->str()));
       }
+
       // pre-loss : create vertices for all recompute types
       else if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
+
+        // Pre-loss, not recompute
         if (op->settings.recomputeType == RecomputeType::CHECKPOINT) {
           logging::devicex::debug("Adding checkpoint Op {}", op->debugName());
+
+          // Pre-loss, not recompute, pipelining
           if (ir().getSessionOptions().enablePipelining) {
             auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
+
             if (ipuCopyOp) {
               growOpx(progs.pipelineIpuCopyFwdFragment(
                   ipuCopyOp->getSourceIpu(),
                   ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
-            } else {
+            }
+
+            else {
               growOpx(progs.pipelineForwardFragment(op->getVirtualGraphId(),
                                                     op->str()));
             }
-          } else {
+          }
+
+          // Pre-loss, not recompute, no pipelining
+          else {
             growOpx(progs.forwardFragment());
           }
-        } else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+        }
+
+        // Pre-loss, recompute
+        else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
           logging::devicex::debug("Adding (first) recompute Op {}",
                                   op->debugName());
-          if (ir().getSessionOptions().enablePipelining) {
-            throw error(
-                "Recompute ops not currently supported in pipelined graph");
-          }
+
           growOpx(progs.recomputeFragment(op->id));
-          progs.forwardFragment().add(progs.recomputeFragment(op->id));
-        } else {
-          throw error("Unrecognised recompute type");
+
+          // Pre-loss, recompute, pipelining
+          if (ir().getSessionOptions().enablePipelining) {
+            progs.pipelineForwardFragment(op->getVirtualGraphId(), op->str())
+                .add(progs.recomputeFragment(op->id));
+          }
+
+          // Pre-loss, recompute, no-pipelining
+          else {
+            progs.forwardFragment().add(progs.recomputeFragment(op->id));
+          }
+        }
+
+        // Pre-loss, not recompute or checkpoint
+        else {
+          throw error("ILE: Unrecognised recompute type");
         }
         mainGraphOpRegistery.push_back(op);
       }
@@ -1381,29 +1406,29 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
       // post-loss
       else if (op->scheduledPreLoss == ScheduledPreLoss::No) {
         if (op->settings.recomputeType != RecomputeType::CHECKPOINT) {
-          throw error("ILE: Non-checkpoint post turning point");
+          throw error(
+              "ILE: Non-checkpoint post turning point is not permitted");
         }
 
-        if (ir().getSessionOptions().enablePipelining) {
-          auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
-          if (ipuCopyOp) {
-            growOpx(progs.pipelineIpuCopyBwdFragment(
-                ipuCopyOp->getDestIpu(),
-                ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
-          } else if ((op->isConvertibleTo<VarUpdateOp>()) &&
-                     (ir().getSessionOptions().enableGradientAccumulation)) {
+        // 2 special case Ops when gradient accumulation is enabled.
+        // If we are doing gradient accumulation, we need to ensure the reset
+        // and var update aren't run every time. Instead, these fragments sit
+        // outside the "main" loop of the fowards and backwards passes.
+        // special case Op 1:
+        if ((op->isConvertibleTo<VarUpdateOp>()) &&
+            (ir().getSessionOptions().enableGradientAccumulation)) {
+          growOpx(progs.varUpdateFromAccumulatorFragment());
+        }
+        // special case Op 2:
+        else if ((op->isConvertibleTo<ResetAcclOp>()) &&
+                 (ir().getSessionOptions().enableGradientAccumulation)) {
+          growOpx(progs.resetWeightGradientAccumulatorFragment());
+        }
 
-            growOpx(progs.varUpdateFromAccumulatorFragment());
-          } else if ((op->isConvertibleTo<ResetAcclOp>()) &&
-                     (ir().getSessionOptions().enableGradientAccumulation)) {
+        // post-loss, not special gradient accumulation case,
+        else {
 
-            growOpx(progs.resetWeightGradientAccumulatorFragment());
-          } else {
-            growOpx(progs.pipelineBackwardFragment(op->getVirtualGraphId(),
-                                                   op->str()));
-          }
-        } else {
-          // decide what needs to be re-run
+          // decide what needs to be re-run.
           std::set<Op *> toRerun;
 
           auto getRequiredProducers = [&toRerun, this](Op *toBackcheck) {
@@ -1445,6 +1470,13 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
           std::sort(toRerunVector.begin(),
                     toRerunVector.end(),
                     [](const Op *a, const Op *b) { return a->id < b->id; });
+
+          if (ir().getSessionOptions().enablePipelining &&
+              !toRerunVector.empty()) {
+            throw error("Recomputation with pipelining is not yet fully "
+                        "supported in devicex");
+          }
+
           for (auto opToRerun : toRerunVector) {
             logging::devicex::debug("Adding (second) recompute Op {}",
                                     opToRerun->debugName());
@@ -1456,37 +1488,33 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
           logging::devicex::debug("Adding post-turning check-point Op {}",
                                   op->debugName());
 
-          // If we are doing gradient accumulation, we need to ensure the reset
-          // and var update aren't run every time. Instead, these fragments sit
-          // outside the "main" loop of the fowards and backwards passes.
-          if (containingGraph.getIr()
-                  .getSessionOptions()
-                  .enableGradientAccumulation) {
-            if (dynamic_cast<VarUpdateOp *>(op) != nullptr) {
-              // This is a var update op, so we only run in the var update
-              // fragment.
-              growOpx(progs.varUpdateFromAccumulatorFragment());
-            } else if (dynamic_cast<ResetAcclOp *>(op) != nullptr) {
-              // This is a reset op, so we only run in the reset fragment.
-              growOpx(progs.resetWeightGradientAccumulatorFragment());
-            } else {
-              // This is a normal op in a gradient accumulation graph.
-              growOpx(progs.backwardFragment());
-            }
-            mainGraphOpRegistery.push_back(op);
-          } else {
-            // Put this op into the "regular" backwards pass.
+          // Post-loss, no pipelining.
+          if (!ir().getSessionOptions().enablePipelining) {
             growOpx(progs.backwardFragment());
-            mainGraphOpRegistery.push_back(op);
           }
+
+          // post-loss, with pipelining.
+          else {
+            auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
+            if (ipuCopyOp) {
+              growOpx(progs.pipelineIpuCopyBwdFragment(
+                  ipuCopyOp->getDestIpu(),
+                  ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
+            } else {
+              growOpx(progs.pipelineBackwardFragment(op->getVirtualGraphId(),
+                                                     op->str()));
+            }
+          }
+          mainGraphOpRegistery.push_back(op);
         }
       }
 
       else {
-        throw error("ILE: Unknown SchedulePreLoss is prepare, should "
+        throw error("ILE: Unknown SchedulePreLoss in prepare, should "
                     "updateVertices have been called recently?");
       }
     }
+    // main scope Ops complete
   };
   return {priority, opTaskId(op), deps, f};
 }
