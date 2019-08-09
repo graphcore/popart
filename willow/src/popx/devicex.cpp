@@ -1716,6 +1716,12 @@ void Devicex::prepare() {
   logging::devicex::info("Poplar version: {}", poplar::versionString());
   logging::devicex::info("Poplar release githash: {}", poplar::packageHash());
 
+  if (ir().getSessionOptions().enablePipelining &&
+      ir().getSessionOptions().autoRecomputation != RecomputationType::None) {
+    throw error(
+        "Pipelining with recomputation is not yet supported in Devicex");
+  }
+
   tryLoadExecutable();
 
   // Do not like the dynamic_cast is there a better way to handle this?

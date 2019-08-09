@@ -158,7 +158,6 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
           vgid = ipuCopyOp->getSourceIpu();
         } else {
           nMultiSource += 1;
-          ;
         }
 
         sss[vgid] << op->wrtLossStr() << "  " << op->getName() << "     "
