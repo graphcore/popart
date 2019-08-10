@@ -392,4 +392,23 @@ void Builder::pushNameScope(const std::string &name) {
 
 void Builder::popNameScope() { impl_->popNameScope(); }
 
+void Builder::setPartialsType(const TensorId &nodeOutputName,
+                              const std::string partialsType) {
+  auto nodeProto = impl_->findNodeProtoByOutputNames({nodeOutputName});
+  if (nodeProto.op_type() != "Conv") {
+    throw error("Builder::setPartialsType should only be called on Conv");
+  }
+
+  addNodeAttribute(sPartialsTypeAttribute, partialsType, {nodeOutputName});
+}
+
+std::string Builder::getPartialsType(const TensorId &nodeOutputName) {
+  if (impl_->nodeHasAttribute(sPartialsTypeAttribute, {nodeOutputName})) {
+    return impl_->getStringNodeAttribute(sPartialsTypeAttribute,
+                                         {nodeOutputName});
+  } else {
+    return "FLOAT";
+  }
+}
+
 } // namespace popart

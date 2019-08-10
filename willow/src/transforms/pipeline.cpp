@@ -1,3 +1,4 @@
+#include <vector>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -70,10 +71,6 @@ bool Pipeline::apply(Graph &graph) const {
   auto numIPUs = ir.getDeviceInfo()->getNumIpus();
   // We use numIPUs as proxy for sharding factor, not quite correct:TODO T10254
 
-  if (ir.autoRecomputationEnabled()) {
-    throw error("Auto recomputation for Pipelining needs implementing");
-  }
-
   // First, some checks that pipelining is compatible with other user options:
 
   // 1. Pipelining uses the virtual graph API. This must be enabled
@@ -91,7 +88,7 @@ bool Pipeline::apply(Graph &graph) const {
     minDepth = numIPUs;
   }
 
-  int depth;
+  int64_t depth;
   if (ir.getSessionOptions().enableGradientAccumulation) {
     depth = ir.getSessionOptions().accumulationFactor;
     if (depth < minDepth) {
@@ -159,6 +156,13 @@ bool Pipeline::apply(Graph &graph) const {
 
   auto ipuCopies = getIpuCopyOps();
   for (auto ipuCopyOp : ipuCopies) {
+    // Ignore copies of optimizer tensors. These are run inside a different
+    // program fragment to the pipelined program, so don't have to follow
+    // the same constraints of other IpuCopy ops.
+    if (ipuCopyOp->copiesOptimizerTensors()) {
+      continue;
+    }
+
     uint64_t destIpu = ipuCopyOp->getDestIpu();
     // For an inference graph, or fwd pass of a training graph,
     if (!ir.canTrain() ||
@@ -253,18 +257,22 @@ bool Pipeline::apply(Graph &graph) const {
                             (*firstFromLoss)->str());
 
   // 1. Find all tensors in the fwd pass that are inputs to ops in the bwd pass
-  std::vector<TensorId> toStashTensors;
+  std::vector<TensorId> toStashCandidateTensors;
   for (auto &tid : graph.getTensors().getAllTensorIds()) {
     auto tensor = graph.getTensors().get(tid);
 
     // Not a candidate for stashing if the tensor:
     // - has no consumers
     // - is a variable tensor
+    // - is an optimizer tensor
     // - is on the final IPU
     if (tensor->consumers.getOps().empty()) {
       continue;
     }
     if (tensor->tensorType() == TensorType::Variable) {
+      continue;
+    }
+    if (tensor->isOptimizerTensor()) {
       continue;
     }
 
@@ -291,7 +299,76 @@ bool Pipeline::apply(Graph &graph) const {
 
     if ((isConsumedByOpScheduledPreLoss || isProducedPreLoss) &&
         isConsumedByOpScheduledPostLoss) {
-      toStashTensors.push_back(tid);
+      toStashCandidateTensors.push_back(tid);
+    }
+  }
+
+  std::vector<TensorId> toStashTensors;
+  // If there is no recomputation, then the candidates for stashing will all be
+  // stashed.
+  if (!ir.autoRecomputationEnabled()) {
+    toStashTensors = toStashCandidateTensors;
+  }
+
+  // If there is recomputation, the candidate set is reduced. Candidate
+  // Tensors which can be recomputed from other stashing candidates, are
+  // filtered out, and their producers are set to RECOMPUTE
+  else {
+
+    // Initialise forward Ops to be Recompute
+    for (auto op : graph.getOpSchedule({})) {
+      if (!dynamic_cast<IpuCopyOp *>(op) && op->fromLoss == PathFromLoss::No) {
+        op->settings.recomputeType = RecomputeType::RECOMPUTE;
+      }
+    }
+
+    logging::transform::debug(
+        "Reducing the set of stashing candidate Tensors for recomputation");
+
+    // Finding initial set of Tensors which are not produced on their IPUs
+    std::vector<Tensor *> frontier;
+    std::set<TensorId> beenOnFrontier;
+    for (auto tid : graph.getTensors().getAllTensorIds()) {
+      Tensor *tensor = graph.getTensors().get(tid);
+      if (!tensor->hasProducer() ||
+          dynamic_cast<IpuCopyOp *>(tensor->getProducer())) {
+        frontier.push_back(tensor);
+        beenOnFrontier.insert(tid);
+      }
+    }
+
+    // Starting from all Tensors which are not produced on their IPUs,
+    // propogate "CHECKPOINT" forward til either a Stash Tensor or an IPU copy
+    // is reached
+    while (!frontier.empty()) {
+      Tensor *tensor = frontier.back();
+      frontier.pop_back();
+      for (Op *consumer : tensor->consumers.getOps()) {
+        consumer->settings.recomputeType = RecomputeType::CHECKPOINT;
+        if (!dynamic_cast<IpuCopyOp *>(consumer)) {
+          for (Tensor *consumerOut : consumer->output->tensors()) {
+            if (beenOnFrontier.count(consumerOut->id) == 0 &&
+                // consumerOut is not a stash candidate
+                (std::find(toStashCandidateTensors.cbegin(),
+                           toStashCandidateTensors.cend(),
+                           consumerOut->id) ==
+                 toStashCandidateTensors.cend())) {
+              frontier.push_back(consumerOut);
+              beenOnFrontier.insert(consumerOut->id);
+            }
+          }
+        }
+      }
+    }
+
+    // Filter stash candidates: only stash CHECKPOINT Ops
+    for (auto tid : toStashCandidateTensors) {
+      auto tensor = graph.getTensors().get(tid);
+      if (!tensor->hasProducer() ||
+          tensor->getProducer()->settings.recomputeType !=
+              RecomputeType::RECOMPUTE) {
+        toStashTensors.push_back(tid);
+      }
     }
   }
 
@@ -377,7 +454,7 @@ bool Pipeline::apply(Graph &graph) const {
       }
 
       // (2)
-      // we use "backwards" to mean scheduledPreLoss is No,  but
+      // we use "backwards" to mean scheduledPreLoss is No, but
       // we could equivalently check pathFromLoss is Yes
       if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::No) {
         graph.topoCons->insert(restoreOp, tidConsumer);

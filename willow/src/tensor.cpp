@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstring>
+#include <string>
 
 #include <popart/error.hpp>
 #include <popart/onnxutil.hpp>
@@ -8,6 +9,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensorindex.hpp>
+#include <popart/tensornames.hpp>
 #include <popart/util.hpp>
 
 namespace popart {
@@ -214,6 +216,16 @@ Op *Tensor::getProducer() const {
 Op *Tensor::getProducerUnsafe() const { return producer; }
 
 bool Tensor::hasProducer() const { return producer != nullptr; }
+
+bool Tensor::isOptimizerTensor() const {
+  for (auto optPref : reservedOptimizerPrefixes()) {
+    std::size_t found = id.find(optPref);
+    if (found != std::string::npos) {
+      return true;
+    }
+  }
+  return false;
+}
 
 void Consumers::increment(Op *op) {
   auto found = consumers_m.find(op);

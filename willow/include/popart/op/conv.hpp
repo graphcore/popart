@@ -6,6 +6,11 @@
 
 namespace popart {
 
+enum class ConvPartialsType { HALF, FLOAT };
+
+std::string toString(const ConvPartialsType &);
+std::ostream &operator<<(std::ostream &, const ConvPartialsType &);
+
 // The detailed conv parameters at the ir level
 struct ConvParameters {
 
@@ -105,6 +110,7 @@ class ConvOp : public HasReceptiveFieldOp {
 public:
   ConvOp(const OperatorIdentifier &_opid,
          int64_t group,
+         const ConvPartialsType &partialsType_,
          const HasReceptiveFieldOp::Settings &settings_);
   int64_t nOutChans;
   int64_t group;
@@ -141,6 +147,9 @@ public:
 
   const Shape &getInputShape() const { return inputShape; }
 
+  const ConvPartialsType &getPartialsType() const { return partialsType; }
+  void setPartialsType(const ConvPartialsType &v) { partialsType = v; }
+
 private:
   ConvParameters params;
 
@@ -149,6 +158,8 @@ private:
 
   // Saved shape of the input data
   Shape inputShape;
+
+  ConvPartialsType partialsType;
 
   void setup0() final;
   void setSpatialK() final;
@@ -201,8 +212,14 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  const ConvPartialsType &getPartialsType() const { return partialsType; }
+  void setPartialsType(const ConvPartialsType &v) { partialsType = v; }
+
+  void appendAttributes(OpSerialiserBase &os) const final;
+
 private:
   ConvParameters params;
+  ConvPartialsType partialsType;
 };
 
 class ConvDataGradOp : public Op {

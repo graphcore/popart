@@ -28,7 +28,7 @@ def test_disabled_virtual_graphs():
 
 def test_enabled_recomputation():
     """
-    In this test we check that an error is thrown when doing pipelining
+    In this test we check that NO error is thrown when doing pipelining
     if recomputation is enabled
     """
     builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
@@ -43,21 +43,19 @@ def test_enabled_recomputation():
     builder.virtualGraph(op1_out, 1)
     builder.virtualGraph(op2_out, 1)
     builder.virtualGraph(op3_out, 1)
+    loss.virtualGraph(1)
 
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(
-            fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(10, anchor_map),
-            userOptions=opts,
-            losses=[loss],
-            deviceInfo=popart.DeviceManager().createIpuModelDevice({
-                'numIPUs':
-                2,
-                "tilesPerIPU":
-                20
-            }))
-    assert e_info.value.args[0].startswith(
-        "Auto recomputation for Pipelining needs implementing")
+    session = popart.InferenceSession(
+        fnModel=builder.getModelProto(),
+        dataFeed=popart.DataFlow(10, anchor_map),
+        userOptions=opts,
+        losses=[loss],
+        deviceInfo=popart.DeviceManager().createIpuModelDevice({
+            'numIPUs':
+            2,
+            "tilesPerIPU":
+            20
+        }))
 
 
 def test_bad_sharding0():

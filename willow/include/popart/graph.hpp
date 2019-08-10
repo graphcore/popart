@@ -1,5 +1,6 @@
 #ifndef GUARD_NEURALNET_GRAPH_HPP
 #define GUARD_NEURALNET_GRAPH_HPP
+
 #include <map>
 
 #include <popart/graphid.hpp>

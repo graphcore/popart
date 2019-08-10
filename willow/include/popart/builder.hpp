@@ -301,6 +301,22 @@ public:
     addNodeAttribute(sVirtualGraphAttribute, value, {nodeOutputName});
   }
 
+  /**
+   * Set the partials type for the given node. Used on the convolution op.
+   *
+   * \param nodeOutputName Name of the output tensor of the ONNX node
+   * \param partialsType The type for the partials. Can be either FLOAT or HALF.
+   */
+  void setPartialsType(const TensorId &nodeOutputName,
+                       const std::string partialsType);
+
+  /**
+   * Get the partials type for the given node.
+   *
+   * \param nodeOutputName Name of the output tensor of the ONNX node
+   */
+  std::string getPartialsType(const TensorId &nodeOutputName);
+
   void setInplacePreferences(const TensorId &nodeOutputName,
                              const std::map<OpType, float> &prefs) {
 

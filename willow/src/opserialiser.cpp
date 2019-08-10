@@ -73,7 +73,9 @@ void OpSerialiser::appendAttr(const std::string &name, const T &value) {
 }
 
 // Ignore forward ops
-void OpSerialiser::appendForwardOp(const Op *) {}
+void OpSerialiser::appendForwardOp(const Op *op) {
+  ss << tab << tab << op->debugName() << " attributes\n";
+}
 
 OpEquivIdCreator::OpEquivIdCreator(const Op *op) {
   ss << op->opid.domain << "::" << op->opid.type << "::" << op->opid.version

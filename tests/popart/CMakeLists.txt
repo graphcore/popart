@@ -79,7 +79,7 @@ endfunction()
 
 # auto_virtual_graph_test is currently failing
 # exception_test needs hardware
-add_all_py_unit_tests("test_util;auto_virtual_graph_test;exception_test;graph_replication_test")
+add_all_py_unit_tests("test_util;auto_virtual_graph_test;exception_test;graph_replication_test;test_session")
 
 
 add_subdirectory(operators_test)

@@ -244,44 +244,53 @@ def test_virtual_graph_bad_index():
 
 
 def test_streaming_optimizer_tensors():
-    input_data = np.random.rand(2, 2).astype(np.float32)
+    bps = 5
+    input_data = np.random.rand(bps, 2, 2).astype(np.float32)
     weight_data_0 = np.random.rand(2, 2).astype(np.float32)
     weight_data_1 = np.random.rand(2, 2).astype(np.float32)
+    weight_data_2 = np.random.rand(2, 2).astype(np.float32)
 
-    def run_test(useVirtualGraphs):
+    def run_test(enablePipelining):
         popart.getLogger().setLevel("TRACE")
 
         builder = popart.Builder()
 
         i1 = builder.addInputTensor(
-            popart.TensorInfo("FLOAT", input_data.shape))
-        w1 = builder.addInitializedInputTensor(weight_data_0)
-        w2 = builder.addInitializedInputTensor(weight_data_1)
+            popart.TensorInfo("FLOAT", input_data.shape[1::]))
+        w0 = builder.addInitializedInputTensor(weight_data_0)
+        w1 = builder.addInitializedInputTensor(weight_data_1)
+        w2 = builder.addInitializedInputTensor(weight_data_2)
 
-        # with builder.virtualGraph(0):
-        o1 = builder.aiOnnx.matmul([i1, w1])
-        if useVirtualGraphs:
-            builder.virtualGraph(o1, 0)
+        o0 = builder.aiOnnx.matmul([i1, w0])
+        if enablePipelining:
+            builder.virtualGraph(o0, 0)
 
-        # with builder.virtualGraph(1):
+        o1 = builder.aiOnnx.matmul([o0, w1])
+        if enablePipelining:
+            builder.virtualGraph(o1, 1)
+
         o2 = builder.aiOnnx.matmul([o1, w2])
-        if useVirtualGraphs:
-            builder.virtualGraph(o2, 1)
+        if enablePipelining:
+            builder.virtualGraph(o2, 2)
 
         o = o2
         builder.addOutputTensor(o)
 
         proto = builder.getModelProto()
 
+        if enablePipelining:
+            anchorId = popart.reservedLearnRatePrefix() + "FLOAT_c0"
+        else:
+            anchorId = popart.reservedLearnRatePrefix() + "FLOAT"
+
         # Need to anchor the output of the backward pass to stop it being pruned
-        dataFlow = popart.DataFlow(1, {
-            o: popart.AnchorReturnType("ALL"),
-        })
+        dataFlow = popart.DataFlow(bps,
+                                   {anchorId: popart.AnchorReturnType("ALL")})
 
         losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
-        #Make sure that the loss is also assigned to a virtual graph
-        if useVirtualGraphs:
-            losses[0].virtualGraph(1)
+        # Make sure that the loss is also assigned to a virtual graph
+        if enablePipelining:
+            losses[0].virtualGraph(2)
 
         optimizer = popart.ConstSGD(0.01)
         optimizer = popart.SGD(learning_rate=1.0,
@@ -289,11 +298,12 @@ def test_streaming_optimizer_tensors():
                                loss_scaling=1.0)
 
         opts = popart.SessionOptionsCore()
-        opts.enableVirtualGraphs = useVirtualGraphs
+        opts.enableVirtualGraphs = enablePipelining
+        opts.enablePipelining = enablePipelining
 
         numIPUs = 1
-        if useVirtualGraphs:
-            numIPUs = 4
+        if enablePipelining:
+            numIPUs = 3
 
         session = popart.TrainingSession(
             fnModel=proto,
@@ -313,19 +323,17 @@ def test_streaming_optimizer_tensors():
         session.weightsFromHost()
         session.optimizerFromHost()
 
-        # run 6 steps, changing the optimizer halfway through
+        # run 2 steps, changing the optimizer halfway through
         result = []
-        for i in range(3):
-            session.run(stepio)
-            result.append(np.copy(anchors[o]))
+        session.run(stepio)
+        result.append(np.copy(anchors[anchorId]))
 
         session.updateOptimizer(
             popart.SGD(learning_rate=0.5, weight_decay=0.0, loss_scaling=1.0))
         session.optimizerFromHost()
 
-        for i in range(3):
-            session.run(stepio)
-            result.append(np.copy(anchors[o]))
+        session.run(stepio)
+        result.append(np.copy(anchors[anchorId]))
 
         return result
 

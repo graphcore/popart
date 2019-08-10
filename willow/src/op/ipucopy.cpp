@@ -1,4 +1,5 @@
 #include <memory>
+#include <popart/graph.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
@@ -89,6 +90,24 @@ void IpuCopyOp::appendAttributes(OpSerialiserBase &os) const {
 }
 
 bool IpuCopyOp::isIpuCopyOp() const { return true; }
+
+bool IpuCopyOp::copiesOptimizerTensors() const {
+  int optTensorCount = 0;
+  for (auto tid_vgraphid : getSourceIpus()) {
+    Tensor *t = getGraph().getTensors().get(tid_vgraphid.first);
+    if (t->isOptimizerTensor()) {
+      optTensorCount++;
+    }
+  }
+
+  // Only return true if all tensors being copied
+  // by op are optimizer tensors
+  if (optTensorCount == getSourceIpus().size()) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 void IpuCopyOp::connectInTensor(InIndex inIndex,
                                 TensorId tenId,

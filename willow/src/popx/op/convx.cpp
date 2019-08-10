@@ -14,6 +14,24 @@ namespace popart {
 
 namespace popx {
 
+namespace {
+void addPartialsType(const ConvPartialsType &partialsType,
+                     poplar::OptionFlags &optionFlags) {
+  switch (partialsType) {
+  case ConvPartialsType::HALF: {
+    optionFlags.set("partialsType", "half");
+    break;
+  }
+  case ConvPartialsType::FLOAT: {
+    optionFlags.set("partialsType", "float");
+    break;
+  }
+  default:
+    throw error("Bad ConvPartialsType {}", static_cast<int>(partialsType));
+  }
+}
+} // namespace
+
 /*
 static void printPoplinConvParams(const poplin::ConvParams &params) {
   logging::pattern::info(
@@ -167,17 +185,8 @@ reshapeOnnxWeightsForPoplar(const poplar::Tensor &weights,
   return weights.reshape(weightsShape);
 }
 
-void ConvOpx::grow(poplar::program::Sequence &prog) const {
-
-  ConvOp &op          = getOp<ConvOp>();
-  const auto &in      = getInTensor(ConvOp::getDataInIndex());
-  const auto &weights = getInTensor(ConvOp::getWeightsInIndex());
-
-  auto params    = op.getParameters();
-  auto weights5D = reshapeOnnxWeightsForPoplar(weights,
-                                               params.numOutChannelsPerGroup,
-                                               params.numInChannelsPerGroup,
-                                               params);
+poplar::OptionFlags ConvOpx::getOptions() const {
+  ConvOp &op = getOp<ConvOp>();
 
   // Work out the option based on the phase of the op
   // Conv can be bwd depending on the phase.
@@ -192,6 +201,24 @@ void ConvOpx::grow(poplar::program::Sequence &prog) const {
     options = &dv_p->fwdConvOptions;
   }
 
+  // Maybe set the partials
+  auto optionFlags = options->toOptionFlags();
+  addPartialsType(op.getPartialsType(), optionFlags);
+  return optionFlags;
+}
+
+void ConvOpx::grow(poplar::program::Sequence &prog) const {
+
+  ConvOp &op          = getOp<ConvOp>();
+  const auto &in      = getInTensor(ConvOp::getDataInIndex());
+  const auto &weights = getInTensor(ConvOp::getWeightsInIndex());
+
+  auto params    = op.getParameters();
+  auto weights5D = reshapeOnnxWeightsForPoplar(weights,
+                                               params.numOutChannelsPerGroup,
+                                               params.numInChannelsPerGroup,
+                                               params);
+
   poplin::ConvParams popConvParams = getPoplarConvParams(op.getParameters());
 
   auto outTensor = poplin::convolution(graph(),
@@ -201,7 +228,7 @@ void ConvOpx::grow(poplar::program::Sequence &prog) const {
                                        false,
                                        prog,
                                        debugPrefix("convolution"),
-                                       options->toOptionFlags(),
+                                       getOptions(),
                                        &(dv_p->convCache));
 
   setOutTensor(ConvOp::getOutIndex(), outTensor);
@@ -216,6 +243,9 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
   const poplar::Tensor &activations =
       getInTensor(ConvWeightsGradOp::getPreConvolvedInIndex());
 
+  auto optionFlags = dv_p->wuConvOptions.toOptionFlags();
+  addPartialsType(convOp->getPartialsType(), optionFlags);
+
   poplar::Tensor wGrad = poplin::calculateWeightDeltas(
       graph(),
       zDelta,
@@ -223,7 +253,7 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
       getPoplarConvParams(convOp->getParameters()),
       prog,
       debugPrefix("weightDeltas"),
-      dv_p->wuConvOptions.toOptionFlags(),
+      optionFlags,
       &dv_p->convCache);
 
   // Shape of weights Popart Tensor of forward Op
@@ -289,13 +319,16 @@ poplar::Tensor ConvOpx::createInput(InIndex index,
 
   auto &op = getOp<ConvOp>();
 
+  auto optionFlags = dv_p->fwdConvOptions.toOptionFlags();
+  addPartialsType(op.getPartialsType(), optionFlags);
+
   if (index == ConvOp::getWeightsInIndex()) {
     poplar::Tensor input =
         poplin::createWeights(graph(),                                 // graph
                               getPoplarConvParams(op.getParameters()), // params
                               name,                                    // name
-                              dv_p->fwdConvOptions.toOptionFlags(), // options
-                              &dv_p->convCache                      // cache
+                              optionFlags,     // options
+                              &dv_p->convCache // cache
         );
 
     // If the user supplies a 4D weights tensor as input to conv,
@@ -328,7 +361,7 @@ poplar::Tensor ConvOpx::createInput(InIndex index,
         graph(),                                 // graph
         getPoplarConvParams(op.getParameters()), // params
         name,                                    // name
-        dv_p->fwdConvOptions.toOptionFlags(),    // options
+        optionFlags,                             // options
         &dv_p->convCache                         // cache
     );
   } else {
@@ -361,6 +394,9 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
   auto fwdOptions            = dv_p->bwdConvOptions;
   fwdOptions.options["pass"] = "TRAINING_FWD";
 
+  auto optionFlags = fwdOptions.toOptionFlags();
+  addPartialsType(op.getPartialsType(), optionFlags);
+
   poplin::ConvParams popConvParams = getPoplarConvParams(params);
 
   auto convWeights =
@@ -368,7 +404,7 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
                             popConvParams,
                             inTensor(ConvFlipWeightsOp::getInIndex())->str() +
                                 sNameDelimiter + "flipped",
-                            fwdOptions.toOptionFlags(),
+                            optionFlags,
                             &dv_p->convCache);
 
   // weightsTransposeChansFlipXY must be called on each group individually

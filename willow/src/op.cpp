@@ -82,6 +82,7 @@ view::RegMap Op::bwdRegMap(InIndex i) const {
 
 bool Op::isLossOp() const { return false; }
 bool Op::isIpuCopyOp() const { return false; }
+bool Op::copiesOptimizerTensors() const { return false; }
 
 Op::~Op() = default;
 

@@ -25,14 +25,25 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
   return edgeGradId;
 }
 
+std::vector<std::string> reservedOptimizerPrefixes() {
+  return {reservedLearnRatePrefix(),
+          reservedWeightDecayPrefix(),
+          reservedLossScalingPrefix()};
+}
+
 std::vector<std::string> reservedPrefixes() {
-  return {reservedGradientPrefix(),
-          reservedUpdatedVarPrefix(),
-          reservedAccumulationPrefix(),
-          reservedAccumulationOutPrefix(),
-          reservedAccumulationResetPrefix(),
-          reservedStashedPrefix(),
-          reservedRestoredPrefix()};
+  std::vector<std::string> prefs = {reservedGradientPrefix(),
+                                    reservedUpdatedVarPrefix(),
+                                    reservedAccumulationPrefix(),
+                                    reservedAccumulationOutPrefix(),
+                                    reservedAccumulationResetPrefix(),
+                                    reservedStashedPrefix(),
+                                    reservedRestoredPrefix()};
+
+  std::vector<std::string> optPrefs = reservedOptimizerPrefixes();
+  prefs.insert(prefs.end(), optPrefs.begin(), optPrefs.end());
+
+  return prefs;
 }
 
 } // namespace popart

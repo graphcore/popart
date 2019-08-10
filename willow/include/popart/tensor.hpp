@@ -117,6 +117,9 @@ public:
   void setProducer(Op *);
   void resetProducer(Op *);
   bool hasProducer() const;
+  // Returns true for stream tensors that are optimizer tensors, as
+  // well as their copies
+  bool isOptimizerTensor() const;
   bool hasTensorData() const;
   TensorData *tensorData();
   const TensorData *tensorData() const;

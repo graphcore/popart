@@ -178,6 +178,9 @@ public:
   bool hasParent() const { return nullptr != parent; }
   std::vector<const BuilderImpl *> getChildren() const;
 
+  onnx::NodeProto &
+  findNodeProtoByOutputNames(const std::set<TensorId> &nodeOutputNames);
+
 private:
   void finalizeOp(onnx::NodeProto *node, const std::string &name);
 
@@ -204,9 +207,6 @@ private:
   bool
   findNodeProtoByOutputNamesImpl(onnx::NodeProto *&out,
                                  const std::set<TensorId> &nodeOutputNames);
-
-  onnx::NodeProto &
-  findNodeProtoByOutputNames(const std::set<TensorId> &nodeOutputNames);
 
   bool nodeHasAttributeImpl(onnx::AttributeProto *&out,
                             onnx::NodeProto &node,

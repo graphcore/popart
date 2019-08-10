@@ -104,6 +104,7 @@ static constexpr const char *sInplaceOpNames        = "__inplace_op_names";
 static constexpr const char *sInplaceOpPriorities   = "__inplace_op_priorities";
 static constexpr const char *sRecomputeOutputAttribute =
     "__recompute_output_in_backward_pass";
+static constexpr const char *sPartialsTypeAttribute = "__partials_type";
 
 // The deliminator used in popart tensor names
 static constexpr const char *sNameDelimiter = "/";
