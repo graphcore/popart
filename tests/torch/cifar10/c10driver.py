@@ -26,7 +26,8 @@ def run(torchWriter,
         device_hw_id,
         mode="train",
         syntheticData=False,
-        transformations=[]):
+        transformations=[],
+        epochs=4):
 
     popart.getLogger().setLevel("TRACE")
     popart.getLogger("session").setLevel("WARN")
@@ -35,18 +36,18 @@ def run(torchWriter,
         with TemporaryDirectory() as outputdir:
             return _run_impl(torchWriter, passes, outputdir, cifarInIndices,
                              device, device_hw_id, mode, syntheticData,
-                             transformations)
+                             transformations, epochs)
     else:
         if not os.path.exists(outputdir):
             os.mkdir(outputdir)
 
         return _run_impl(torchWriter, passes, outputdir, cifarInIndices,
                          device, device_hw_id, mode, syntheticData,
-                         transformations)
+                         transformations, epochs)
 
 
 def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
-              device_hw_id, mode, syntheticData, transformations):
+              device_hw_id, mode, syntheticData, transformations, epochs):
     dataFeed = torchWriter.dataFeed
     inputShapeInfo = torchWriter.inputShapeInfo
     validModes = ["infer", "evaluate", "train"]
@@ -297,7 +298,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
     margin = 1.5e-8
     numReports = []
 
-    for epoch in range(4):  # loop over the dataset multiple times
+    for epoch in range(epochs):  # loop over the dataset multiple times
         for stepi, stepData in enumerate(stepLoader):
             if stepi == 1:  # Perform N steps, N=1
                 break

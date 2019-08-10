@@ -97,10 +97,7 @@ def test_not(op_tester):
         return [o]
 
     def reference(ref_data):
-        t1 = torch.tensor(d1).type(torch.ByteTensor)
-        out = ~t1
-        print(out)
-        return [out]
+        return [np.logical_not(d1)]
 
     op_tester.run(init_builder, reference, step_type='infer')
 

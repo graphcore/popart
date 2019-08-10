@@ -5,6 +5,7 @@ import popart
 import cmdline
 from popart.torch import torchwriter
 import torch
+
 args = cmdline.parse()
 
 nInChans = 3
@@ -64,10 +65,13 @@ torchWriter = torchwriter.PytorchNetWriter(
     module=Module0(),
     samplesPerBatch=batchSize)
 
-c10driver.run(torchWriter,
-              None,
-              args.outputdir,
-              cifarInIndices,
-              args.device,
-              args.hw_id,
-              transformations=["prepareNodesForTraining"])
+c10driver.run(
+    torchWriter,
+    None,
+    args.outputdir,
+    cifarInIndices,
+    args.device,
+    args.hw_id,
+    transformations=["prepareNodesForTraining"],
+    epochs=2  # Numerical instability causes divergence after 2 epochs)
+)
