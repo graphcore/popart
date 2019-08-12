@@ -4,6 +4,7 @@
 #include <popart/pbwrap.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
+#include <popart/topocons.hpp>
 
 #include <algorithm>
 #include <numeric>
@@ -46,6 +47,9 @@ bool SequenceExpander::expand(std::vector<std::unique_ptr<Op>> &seq,
   for (auto &step : seq) {
     logging::pattern::info("Inserting op {}", step->str());
     step->setup();
+
+    op->getGraph().topoCons->transfer(op, step.get());
+
     op->getGraph().moveIntoGraph(std::move(step));
   }
 

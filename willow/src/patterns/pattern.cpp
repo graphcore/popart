@@ -43,11 +43,11 @@ void Pattern::transferBaseProperties(Op *from, Op *to) const {
 std::unique_ptr<Op>
 PreAliasPattern::makeReplacementOp(const OperatorIdentifier &operator_id,
                                    Op *oldOp,
-                                   const Attributes &) const {
+                                   const std::string name) const {
 
   // Create replacement Op with new attributes
   std::unique_ptr<Op> newOp = OpManager::createOp(
-      operator_id, oldOp->getGraph(), getReplacementOpName(oldOp));
+      operator_id, oldOp->getGraph(), getReplacementOpName(oldOp, name));
 
   if (newOp == nullptr) {
     throw error(
@@ -64,10 +64,10 @@ PreAliasPattern::makeReplacementOp(const OperatorIdentifier &operator_id,
 Op *PreAliasPattern::makeReplacementOpInIr(
     const OperatorIdentifier &operator_id,
     Op *oldOp,
-    const Attributes &attr) const {
+    const std::string name) const {
   // Create replacement Op with new attributes and
   // move into Ir
-  std::unique_ptr<Op> newOpUp = makeReplacementOp(operator_id, oldOp, attr);
+  std::unique_ptr<Op> newOpUp = makeReplacementOp(operator_id, oldOp);
   Op *newOp                   = newOpUp.get();
   oldOp->getGraph().moveIntoGraph(std::move(newOpUp));
 
@@ -76,13 +76,19 @@ Op *PreAliasPattern::makeReplacementOpInIr(
 
 const std::string &Pattern::getPatternName() const { return pattern_name; }
 
-std::string Pattern::getReplacementOpName(Op *op) const {
+std::string Pattern::getReplacementOpName(Op *op,
+                                          const std::string name) const {
   std::string replacementName;
   if (op->name() == "") {
     replacementName = "";
   } else {
     replacementName = op->name() + "_from_" + getPatternName();
   }
+
+  if (!name.empty()) {
+    replacementName.append(std::string("_") + name);
+  }
+
   return replacementName;
 }
 

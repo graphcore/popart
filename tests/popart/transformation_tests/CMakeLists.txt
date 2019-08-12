@@ -12,3 +12,4 @@ add_popart_cpp_unit_test(pipelining_transform pipelining_transform.cpp)
 
 add_subdirectory(mergevarupdates)
 
+add_all_py_unit_tests("")

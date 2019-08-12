@@ -8,36 +8,62 @@ namespace popart {
 // Corresponds to the ONNX Transpose op
 // for N-dimensional tensors.
 // https://github.com/onnx/onnx/blob/master/docs/Operators.md#Transpose
-class TransposeOp : public Op {
-public:
-  TransposeOp(const OperatorIdentifier &_opid,
 
-              const std::vector<int64_t> &perm_,
-              const Op::Settings &settings_);
-  std::unique_ptr<Op> clone() const override;
-  std::vector<std::unique_ptr<Op>> getGradOps() final;
+class TransposeBaseOp : public Op {
+public:
+  TransposeBaseOp(const OperatorIdentifier &_opid,
+                  const Shape &perm_,
+                  const Op::Settings &settings_);
+
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+  void setPerm(const Shape &value) { perm = value; }
+  const Shape &getPerm() const { return perm; }
+
+  // currently these are conservative TODO T6973
+  view::RegMap fwdRegMap(InIndex) const final;
+  view::RegMap bwdRegMap(InIndex) const final;
+
+  // Get the permutation required to reverse the Transpose operation
+  Shape generateReversePermutation() const;
 
   void setup() final;
-
-  void setPerm(const std::vector<int64_t> &value) { perm = value; }
-  const std::vector<int64_t> &getPerm() const;
 
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 
-  // Get the permutation required to reverse the Transpose operation
-  std::vector<int64_t> generateReversePermutation() const;
+private:
+  // the new permutation of the tensor axes
+  Shape perm;
+  void setDefaultPerm();
+};
+
+class TransposeOp : public TransposeBaseOp {
+public:
+  TransposeOp(const OperatorIdentifier &_opid,
+              const Shape &perm_,
+              const Op::Settings &settings_);
+  std::unique_ptr<Op> clone() const override;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
 
   void appendAttributes(OpSerialiserBase &) const override;
 
   bool canBeReplacedByIdentity() override;
 
-  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+  // For inplace support
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &o) const final;
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final;
+};
 
-private:
-  // the new permutation of the tensor axes
-  std::vector<int64_t> perm;
-  void setDefaultPerm();
+class TransposeInplaceOp : public TransposeBaseOp {
+public:
+  TransposeInplaceOp(const OperatorIdentifier &_opid,
+                     const Shape &,
+                     const Op::Settings &settings_);
+  TransposeInplaceOp(const TransposeOp &);
+  std::unique_ptr<Op> clone() const final;
 };
 
 // TransposeGrad is a reverse transposition

@@ -179,6 +179,8 @@ def test_matmul_broadcasting(op_tester):
     # generated test cases
     # these are all known to be valid input shapes to np.matmul
     shapes = (
+        ([1], [4, 2, 1, 3]),
+        ([3], [3]),
         ([2, 4, 5, 1, 1, 8, 7], [2, 4, 5, 3, 6, 7, 9]),
         ([2, 1, 4, 5, 1, 7, 8], [2, 3, 1, 5, 6, 8, 9]),
         ([4, 6, 2], [4, 2, 8]),
@@ -187,7 +189,6 @@ def test_matmul_broadcasting(op_tester):
         ([2, 1], [1, 2]),
         ([1, 2], [4, 2, 1]),
         ([2], [4, 2, 1]),
-        ([3], [3]),
         ([1, 4, 2], [2]),
         ([2, 2], [2, 2]),
         ([1, 3, 4], [1, 3, 4, 2]),
@@ -407,4 +408,10 @@ def test_matmul_broadcasting(op_tester):
                 print("{} {} ".format(t1.grad, t2.grad))
                 return [r, r__o, t1.grad, t2.grad]
 
+        # Test without the MatMulXXGradOp to MatMulOp pass
+        op_tester.passes = []
+        op_tester.run(init_builder, reference, 'train')
+
+        # Test with the MatMulXXGradOp to MatMulOp pass
+        op_tester.passes = ['MatMulLhsGradOp', 'MatMulRhsGradOp']
         op_tester.run(init_builder, reference, 'train')

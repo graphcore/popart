@@ -39,7 +39,10 @@ enum class PreAliasPatternType {
   SPLITOP,
   POWARG0GRADOP,
   POWARG1GRADOP,
-  CONTIGUATEIPUCOPYINDICES
+  CONTIGUATEIPUCOPYINDICES,
+  MATMULOP,
+  MATMULLHSGRADOP,
+  MATMULRHSGRADOP
 };
 
 // Definition: A tensor is "touched" by a Pattern if
@@ -67,7 +70,7 @@ public:
   void initialise(std::string pattern_name);
 
 protected:
-  std::string getReplacementOpName(Op *op) const;
+  std::string getReplacementOpName(Op *op, const std::string name) const;
 
   void transferBaseProperties(Op *from, Op *to) const;
 
@@ -90,14 +93,14 @@ protected:
   // inherit name and attributes of op they replace
   std::unique_ptr<Op> makeReplacementOp(const OperatorIdentifier &,
                                         Op *oldOp,
-                                        const Attributes &attr = {}) const;
+                                        const std::string name = "") const;
 
 public:
   // New op(s) created in replacement of old op will
   // inherit name and attributes of op they replace
   Op *makeReplacementOpInIr(const OperatorIdentifier &,
                             Op *oldOp,
-                            const Attributes &attr = {}) const;
+                            const std::string name = "") const;
 
   static TensorId createIntermediateTensorId(TensorId base_id);
 

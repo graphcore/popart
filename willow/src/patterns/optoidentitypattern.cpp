@@ -20,7 +20,7 @@ bool OpToIdentityPattern::matches(Op *op) const {
 std::vector<std::unique_ptr<Op>> OpToIdentityPattern::sequence(Op *op) const {
   std::vector<std::unique_ptr<Op>> seq;
 
-  seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Identity, op, {}));
+  seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Identity, op));
 
   return seq;
 }

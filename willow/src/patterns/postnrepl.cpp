@@ -6,6 +6,7 @@
 #include <popart/patterns/postnrepl.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
+#include <popart/topocons.hpp>
 
 namespace popart {
 
@@ -16,6 +17,13 @@ bool PostNRepl::apply(Op *op) const {
 
   // op is [*]
   Tensor *ori = op->input->tensor(0);
+
+  // Update the topocons due to the removal of this op.
+  for (auto &ind_t : op->output->tensorMap()) {
+    for (auto c : ind_t.second->consumers.getOps()) {
+      graph.topoCons->transfer(op, c);
+    }
+  }
 
   std::vector<Tensor *> replicates;
   // setting replicates (rep1), (rep2), (rep3)

@@ -44,6 +44,10 @@ public:
   Shape getExpandedRhsShape() const override { return rhsShape; }
   Shape getExpandedOutShape() const { return outShape; }
 
+  // set/get the option for matmul to create it's inputs
+  void setCanCreateInputs(bool value) { canCreateInputs = value; }
+  bool getCanCreateInputs() const { return canCreateInputs; }
+
   float getSubgraphValue() const final { return getHighSubgraphValue(); }
 
   // Follow the numpy matmul broadcasting rules for the output shape
@@ -52,6 +56,9 @@ public:
 private:
   // Verifies the input shapes are valid and throws and exception if not
   void verifyInputShapes(const Shape &lhs, const Shape &rhs) const;
+
+  // Flag to indicate if mat mul can create it's inputs.
+  bool canCreateInputs = true;
 
   // The expanded shapes of inputs & outputs. They will
   // be a minium of a 3D shapes

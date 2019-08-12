@@ -119,7 +119,9 @@ public:
 
   const Scope &getScope() const { return settings.scope; }
   void setScope(const Scope &scope) { settings.scope = scope; }
+
   const std::string &getName() const { return settings.name; }
+  void setName(const std::string &name) { settings.name = name; }
 
   virtual bool isNorm() const;
   bool isElementWiseUnary() const;
@@ -303,7 +305,7 @@ public:
   virtual std::vector<TensorId> getInputsForGraph(const Graph &) const;
 
 private:
-  virtual void appendMore(OpSerialiserBase &) const {}
+  virtual void appendMore(OpSerialiserBase &) const;
 
 public:
   // The functionality required for sub-graph matching

@@ -7,10 +7,20 @@ Patterns::Patterns(PatternsLevel level) {
 
   // step 1 : adding patterns to run
   switch (level) {
-
-  // add all of the patterns
-  case PatternsLevel::DEFAULT:
+  // add the default patterns
+  case PatternsLevel::DEFAULT: {
+    logging::pattern::info("Enabling default patterns");
+    auto patternList = PreAliasPatternManager::getPatternList();
+    for (auto pattern : patternList) {
+      settings.insert(std::pair<PreAliasPatternType, bool>(
+          pattern, PreAliasPatternManager::getEnabledByDefault(pattern)));
+    }
+    inplaceEnabled = true;
+    break;
+  }
+    // add all of the patterns
   case PatternsLevel::ALL: {
+    logging::pattern::info("Enabling all patterns");
     auto patternList = PreAliasPatternManager::getPatternList();
     for (auto pattern : patternList) {
       settings.insert(std::pair<PreAliasPatternType, bool>(pattern, true));
@@ -21,25 +31,10 @@ Patterns::Patterns(PatternsLevel level) {
 
   // add none of the patterns
   case PatternsLevel::NONE: {
+    logging::pattern::info("Enabling no patterns");
     break;
   }
-  }
-
-  // step 2 : removing patterns to run (turning off logging)
-  auto prevLogLevel = getLogLevel(logging::Module::pattern);
-  setLogLevel(logging::Module::pattern, logging::Level::Off);
-  switch (level) {
-  case PatternsLevel::DEFAULT: {
-    enableSplitGather(false);
-    break;
-  }
-
-  case PatternsLevel::ALL:
-  case PatternsLevel::NONE: {
-    break;
-  }
-  }
-  setLogLevel(logging::Module::pattern, prevLogLevel);
+  };
 }
 
 Patterns::Patterns(std::vector<PreAliasPatternType> types) {

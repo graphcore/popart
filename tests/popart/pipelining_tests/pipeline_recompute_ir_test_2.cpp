@@ -151,6 +151,11 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
     auto device =
         DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
 
+    Patterns patterns(PatternsLevel::DEFAULT);
+    patterns.enableMatMulOp(false);
+    patterns.enableMatMulLhsGradOp(false);
+    patterns.enableMatMulRhsGradOp(false);
+
     Ir ir;
     ir.prepare({modelProto,
                 InputShapeInfo(),
@@ -159,7 +164,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
                 &optimizer,
                 *device,
                 userOptions,
-                Patterns(PatternsLevel::DEFAULT)});
+                patterns});
 
     auto sched = ir.getMainGraph().getOpSchedule({});
 

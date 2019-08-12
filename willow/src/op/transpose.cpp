@@ -7,13 +7,53 @@
 
 namespace popart {
 
+TransposeBaseOp::TransposeBaseOp(const OperatorIdentifier &_opid,
+                                 const std::vector<int64_t> &perm_,
+                                 const Op::Settings &settings_)
+    : Op(_opid, settings_), perm(perm_) {}
+
+view::RegMap TransposeBaseOp::fwdRegMap(InIndex inIndex) const {
+  if (inIndex != 0) {
+    throw error("Internal Logic Error in TransposeBaseOp::fwdRegMap."
+                "Received input index {} but only 0 allowed, "
+                "This for Op {}, ",
+                inIndex,
+                str());
+  }
+  // being conservative and returning the full region,
+  // even for non-full input region :
+  auto outRegion   = view::Region::getFull(outInfo(getOutIndex()).shape());
+  auto emptyRegion = view::Region::getEmpty(outRank(getOutIndex()));
+  return [emptyRegion, outRegion](const view::Region &r) {
+    if (r.isEmpty()) {
+      return emptyRegion;
+    }
+    return outRegion;
+  };
+}
+
+view::RegMap TransposeBaseOp::bwdRegMap(InIndex inIndex) const {
+  if (inIndex != 0) {
+    throw error("Internal Logic Error in TransposeBaseOp::bwdRegMap."
+                "Received input index {} but only 0 allowed, "
+                "This for Op {}, ",
+                inIndex,
+                str());
+  }
+  auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
+  auto emptyRegion = view::Region::getEmpty(inRank(getInIndex()));
+  return [emptyRegion, inRegion](const view::Region &r) {
+    if (r.isEmpty()) {
+      return emptyRegion;
+    }
+    return inRegion;
+  };
+}
+
 TransposeOp::TransposeOp(const OperatorIdentifier &_opid,
                          const std::vector<int64_t> &perm_,
                          const Op::Settings &settings_)
-    : Op(_opid, settings_), perm(perm_) {
-
-  //  nAtts.setIfPresent(perm, "perm");
-}
+    : TransposeBaseOp(_opid, perm_, settings_) {}
 
 std::unique_ptr<Op> TransposeOp::clone() const {
   return std::make_unique<TransposeOp>(*this);
@@ -25,7 +65,7 @@ std::vector<std::unique_ptr<Op>> TransposeOp::getGradOps() {
   return upops;
 }
 
-void TransposeOp::setup() {
+void TransposeBaseOp::setup() {
   auto in_shape = inInfo(getInIndex()).shape();
 
   // If perm is empty, set the the default value
@@ -41,9 +81,7 @@ void TransposeOp::setup() {
   outInfo(getOutIndex()) = {inInfo(getInIndex()).data_type(), out_shape};
 }
 
-const std::vector<int64_t> &TransposeOp::getPerm() const { return perm; }
-
-std::vector<int64_t> TransposeOp::generateReversePermutation() const {
+std::vector<int64_t> TransposeBaseOp::generateReversePermutation() const {
   std::vector<int64_t> reverse_perm(perm.size());
   for (int i = 0; i < perm.size(); i++) {
     reverse_perm[perm[i]] = i;
@@ -52,7 +90,7 @@ std::vector<int64_t> TransposeOp::generateReversePermutation() const {
   return reverse_perm;
 }
 
-void TransposeOp::setDefaultPerm() {
+void TransposeBaseOp::setDefaultPerm() {
   auto in_shape = inInfo(getInIndex()).shape();
 
   // default behaviour is to reverse the shape of the input tensor
@@ -65,7 +103,24 @@ void TransposeOp::setDefaultPerm() {
 
 void TransposeOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
-  os.appendAttribute("perm", perm);
+  os.appendAttribute("perm", getPerm());
+}
+
+bool TransposeOp::canBeReplacedByIdentity() {
+  return std::is_sorted(getPerm().begin(), getPerm().end());
+}
+
+std::unique_ptr<Op>
+TransposeOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
+  if (operator_id == Onnx::CustomOperators::TransposeInplace) {
+    return std::make_unique<TransposeInplaceOp>(*this);
+  }
+  // catch remaining cases and throw an error
+  return Op::getInplaceVariant(operator_id);
+}
+std::vector<std::tuple<OperatorIdentifier, float>>
+TransposeOp::inplacePriorityDefault() const {
+  return {{Onnx::CustomOperators::TransposeInplace, 10}};
 }
 
 TransposeGradOp::TransposeGradOp(const TransposeOp &fwdOp)
@@ -91,8 +146,13 @@ const std::map<int, int> &TransposeGradOp::gradOutToNonGradIn() const {
   return outInfo;
 }
 
-bool TransposeOp::canBeReplacedByIdentity() {
-  return std::is_sorted(perm.begin(), perm.end());
+TransposeInplaceOp::TransposeInplaceOp(const TransposeOp &op)
+    : TransposeBaseOp(Onnx::CustomOperators::TransposeInplace,
+                      op.getPerm(),
+                      op.settings) {}
+
+std::unique_ptr<Op> TransposeInplaceOp::clone() const {
+  return std::make_unique<TransposeInplaceOp>(*this);
 }
 
 namespace {
@@ -101,9 +161,7 @@ static OpCreator<TransposeOp> transposeOpCreator(
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
-      std::vector<int64_t> perm =
-          attr.getAttribute<Attributes::Ints>("perm", {});
-
+      Shape perm = attr.getAttribute<Attributes::Ints>("perm", {});
       return std::unique_ptr<Op>(new TransposeOp(_opid, perm, settings));
     },
     true);

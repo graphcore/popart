@@ -22,7 +22,7 @@ std::vector<std::unique_ptr<Op>>
 NegativeOneScalePattern::sequence(Op *op) const {
   std::vector<std::unique_ptr<Op>> seq;
 
-  seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Neg, op, {}));
+  seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Neg, op));
 
   return seq;
 }

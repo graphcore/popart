@@ -59,6 +59,13 @@ std::vector<Op *> TopoCons::getBefores(Op *after) const {
 
 void TopoCons::transfer(Op *beforeTransfer, Op *afterTransfer) {
 
+  if (!getBefores(beforeTransfer).empty() ||
+      !getAfters(beforeTransfer).empty()) {
+    logging::ir::debug("Transfering topological constrains from {} to {}",
+                       beforeTransfer->str(),
+                       afterTransfer->str());
+  }
+
   // for all b : b -> beforeTransfer, insert
   //             b -> afterTransfer. The edge
   //             b -> beforeTransfer will be removed at the end

@@ -44,6 +44,23 @@ poplar::Tensor TransposeOpx::unwindTensorLayout(poplar::Tensor tensor,
   return tensor.dimShuffle(reverse_perm);
 }
 
+TransposeInplaceOpx::TransposeInplaceOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {
+  verifyOp<TransposeInplaceOp>(op);
+}
+
+void TransposeInplaceOpx::grow(poplar::program::Sequence &) const {
+  auto perm = getOp<TransposeInplaceOp>().getPerm();
+  std::vector<unsigned> unsigned_perm;
+  for (auto i : perm) {
+    unsigned_perm.push_back(static_cast<unsigned>(i));
+  }
+
+  setOutTensor(
+      TransposeOp::getOutIndex(),
+      getInTensor(TransposeOp::getInIndex()).dimShuffle(unsigned_perm));
+}
+
 TransposeGradOpx::TransposeGradOpx(Op *op, Devicex *devicex)
     : TransposeOpx(op, devicex) {
   verifyOp<TransposeGradOp>(op, Onnx::GradOperators::TransposeGrad);
@@ -51,6 +68,8 @@ TransposeGradOpx::TransposeGradOpx(Op *op, Devicex *devicex)
 
 namespace {
 OpxCreator<TransposeOpx> transposeOpxCreator(Onnx::Operators::Transpose_1);
+OpxCreator<TransposeInplaceOpx>
+    transposeInplaceOpxCreator(Onnx::CustomOperators::TransposeInplace);
 OpxCreator<TransposeGradOpx>
     transposeGradOpxCreator(Onnx::GradOperators::TransposeGrad);
 } // namespace

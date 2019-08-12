@@ -70,7 +70,7 @@ bool Inplace::apply(Op *op,
   std::unique_ptr<Op> up_inplaceOp = op->getInplaceVariant(identifier);
   Op *inplaceOp                    = up_inplaceOp.get();
   transferBaseProperties(op, inplaceOp);
-  inplaceOp->settings.name = getReplacementOpName(op);
+  inplaceOp->setName(getReplacementOpName(op, ""));
   graph.moveIntoGraph(std::move(up_inplaceOp));
 
   // replace op with inplaceOp everywhere in newCons
