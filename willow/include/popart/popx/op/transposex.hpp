@@ -18,6 +18,12 @@ public:
                                     OutIndex outIndex) const final;
 };
 
+class TransposeInplaceOpx : public Opx {
+public:
+  TransposeInplaceOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
 class TransposeGradOpx : public TransposeOpx {
 public:
   TransposeGradOpx(Op *, Devicex *);

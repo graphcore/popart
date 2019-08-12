@@ -6,7 +6,7 @@ import test_util as tu
 
 def test_convolution_cached_by_default():
     """
-    In this test we check that the default behaviour is for convolutions to be
+    In this test we check that the default behavior is for convolutions to be
     cached.
     """
 
@@ -69,9 +69,9 @@ def test_convolution_cached_by_default():
     summaryReport = session.getSummaryReport()
     computeSets = tu.get_compute_sets_from_report(summaryReport)
     num_3x3_convolutions = tu.get_compute_set_regex_count(
-        r'^[0-9]+/convolution/Conv_3x3/Convolve$', computeSets)
+        r'^.+/convolution/Conv_3x3/Convolve$', computeSets)
     num_4x4_convolutions = tu.get_compute_set_regex_count(
-        r'^[0-9]+/weightDeltas/Conv_4x4/Convolve$', computeSets)
+        r'^.+/weightDeltas/Conv_4x4/Convolve$', computeSets)
     # There should be only one convolution of each type
     assert (num_3x3_convolutions == 1)
     assert (num_4x4_convolutions == 1)
@@ -148,9 +148,9 @@ def test_convolution_disable_all():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_3x3_convolutions = tu.get_compute_set_regex_count(
-        r'^[0-9]+/convolution/Conv_3x3/Convolve$', computeSets)
+        r'^.+/convolution/Conv_3x3/Convolve$', computeSets)
     num_4x4_convolutions = tu.get_compute_set_regex_count(
-        r'^[0-9]+/weightDeltas/Conv_4x4/Convolve$', computeSets)
+        r'^.+/weightDeltas/Conv_4x4/Convolve$', computeSets)
     # Two 3x3 convolutions (bwd + fwd) for each convolution
     assert (num_3x3_convolutions == 6)
     # Updates
@@ -228,7 +228,7 @@ def test_matmul_infer_cached_by_default():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(
-        r'^[0-9]+/matmulGrouped/Conv_1/Convolve$', computeSets)
+        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
     # There should be only one matmul
     assert (num_matmuls == 1)
 
@@ -323,7 +323,7 @@ def test_matmul_train_cached_by_default():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(
-        r'^[0-9]+/matmulGrouped/Conv_1/Convolve$', computeSets)
+        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
     # There should be only three matmul
     assert (num_matmuls == 3)
 
@@ -420,10 +420,8 @@ def test_gemm_train_cached_by_default():
     summaryReport = session.getSummaryReport()
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
-    print(summaryReport)
-
     num_matmuls = tu.get_compute_set_regex_count(
-        r'^[0-9]+/matmulGrouped/Conv_1/Convolve$', computeSets)
+        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
     # There should be only three matmul
     assert (num_matmuls == 3)
 
@@ -499,7 +497,7 @@ def test_outlining_bca1():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(
-        r'^[0-9]+/matmulGrouped/Conv_1/Convolve$', computeSets)
+        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
     # There should be only one matmul
     assert (num_matmuls == 1)
 
@@ -581,7 +579,7 @@ def test_outlining_bca2():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(
-        r'^[0-9]+/matmulGrouped/Conv_1/Convolve$', computeSets)
+        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
     # There should be only one matmul
     assert (num_matmuls == 1)
 
@@ -673,6 +671,100 @@ def test_outlining_bca3():
     computeSets = tu.get_compute_sets_from_report(summaryReport)
 
     num_matmuls = tu.get_compute_set_regex_count(
-        r'^[0-9]+/matmulGrouped/Conv_1/Convolve$', computeSets)
-    # There should be only one matmul
+        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
+    # There should be only 3 matmuls (fwd, bwd_lhs, bwd_rhs)
     assert (num_matmuls == 3)
+
+
+def test_outlining_bca4():
+    """
+    In this test we check that for the case of 2 2d tensors they can all
+    use the same matmul 
+    """
+
+    popart.getLogger().setLevel("TRACE")
+
+    builder = popart.Builder()
+
+    matmul_lhs_shape = popart.TensorInfo("FLOAT", [2, 2])
+    matmul_rhs_shape = popart.TensorInfo("FLOAT", [2, 2])
+
+    i1 = builder.addInputTensor(matmul_lhs_shape)
+    i2 = builder.addInputTensor(matmul_rhs_shape)
+    i3 = builder.addInputTensor(matmul_lhs_shape)
+    i4 = builder.addInputTensor(matmul_rhs_shape)
+
+    c1 = builder.aiOnnx.matmul([i1, i2])
+    c2 = builder.aiOnnx.matmul([i3, i4])
+
+    a1 = builder.aiOnnx.add([c1, c2])
+
+    c3 = builder.aiOnnx.matmul([i1, i2])
+    c4 = builder.aiOnnx.matmul([i3, i4])
+
+    a2 = builder.aiOnnx.add([c3, c4])
+
+    o = builder.aiOnnx.add([a1, a2])
+
+    builder.addOutputTensor(o)
+
+    proto = builder.getModelProto()
+
+    anchor_names = [o]
+    dataFlow = popart.DataFlow(
+        1, {
+            o: popart.AnchorReturnType("ALL"),
+            popart.reservedGradientPrefix() + i1:
+            popart.AnchorReturnType("ALL"),
+            popart.reservedGradientPrefix() + i2:
+            popart.AnchorReturnType("ALL"),
+            popart.reservedGradientPrefix() + i3:
+            popart.AnchorReturnType("ALL"),
+            popart.reservedGradientPrefix() + i4:
+            popart.AnchorReturnType("ALL")
+        })
+
+    opts = popart.SessionOptionsCore()
+    opts.reportOptions = {"showExecutionSteps": "true"}
+
+    optimizer = popart.ConstSGD(0.01)
+    losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
+
+    session = popart.TrainingSession(
+        fnModel=proto,
+        dataFeed=dataFlow,
+        losses=losses,
+        optimizer=optimizer,
+        userOptions=opts,
+        # Enable the matmul patterns
+        passes=popart.Patterns(popart.PatternsLevel.ALL),
+        deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+
+    anchors = session.initAnchorArrays()
+
+    session.prepareDevice()
+
+    matmul1_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
+    matmul1_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
+
+    matmul2_lhs = np.ones(matmul_lhs_shape.shape(), dtype=np.float32)
+    matmul2_rhs = np.ones(matmul_rhs_shape.shape(), dtype=np.float32)
+
+    inputs = {
+        i1: matmul1_lhs,
+        i2: matmul1_rhs,
+        i3: matmul2_lhs,
+        i4: matmul2_rhs
+    }
+    stepio = popart.PyStepIO(inputs, anchors)
+
+    session.run(stepio)
+
+    # Check that there is only one convolution computation set.
+    summaryReport = session.getSummaryReport()
+    computeSets = tu.get_compute_sets_from_report(summaryReport)
+
+    num_matmuls = tu.get_compute_set_regex_count(
+        r'^.+/matmulGrouped/Conv_1/Convolve$', computeSets)
+    # There should be only one matmul
+    assert (num_matmuls == 1)

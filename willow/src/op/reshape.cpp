@@ -78,6 +78,11 @@ ReshapeBaseOp::ReshapeBaseOp(const OperatorIdentifier &_opid,
   finaliseShape();
 }
 
+void ReshapeBaseOp::setOutShape(const Shape &value) {
+  outShape = value;
+  finaliseShape();
+}
+
 const Shape &ReshapeBaseOp::getOutShape() const { return outShape; }
 
 void ReshapeBaseOp::finaliseShape() {

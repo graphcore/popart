@@ -25,6 +25,9 @@ class PreAliasPatternManager {
   // List of all registered pattern types
   std::vector<PreAliasPatternType> patterns;
 
+  // Identify if the pattern is enabled by default
+  std::map<PreAliasPatternType, bool> enabledByDefault;
+
   // Used to convert a string to a PreAliasPatternType (an enum class)
   std::map<std::string, PreAliasPatternType> stringToPreAliasPatternTypeMapping;
 
@@ -44,8 +47,11 @@ public:
   static void
   registerPattern(PreAliasPatternType type,
                   std::string name,
+                  bool enabled,
                   std::function<std::unique_ptr<PreAliasPattern>()> func) {
     getInstance().patterns.push_back(type);
+    getInstance().enabledByDefault.insert(
+        std::pair<PreAliasPatternType, bool>(type, enabled));
     getInstance().stringToPreAliasPatternTypeMapping.insert(
         std::pair<std::string, PreAliasPatternType>(name, type));
     getInstance().factory.insert(
@@ -56,6 +62,10 @@ public:
 
   static const std::vector<PreAliasPatternType> &getPatternList() {
     return getInstance().patterns;
+  }
+
+  static bool getEnabledByDefault(PreAliasPatternType t) {
+    return getInstance().enabledByDefault[t];
   }
 
   static std::string getPatternName(PreAliasPatternType type) {
@@ -91,9 +101,11 @@ public:
 // PreAliasPatternManager
 template <class PATTERN> class PatternCreator {
 public:
-  PatternCreator(PreAliasPatternType type, std::string name) {
+  PatternCreator(PreAliasPatternType type,
+                 std::string name,
+                 bool enabled = true) {
     PreAliasPatternManager::registerPattern(
-        type, name, [name]() -> std::unique_ptr<PreAliasPattern> {
+        type, name, enabled, [name]() -> std::unique_ptr<PreAliasPattern> {
           auto pattern = std::unique_ptr<PATTERN>(new PATTERN());
           pattern->initialise(name);
           return std::move(pattern);
@@ -189,6 +201,15 @@ public:
   bool isNegativeOneScaleEnabled() {
     return isPatternEnabled(PreAliasPatternType::NEGATIVEONESCALE);
   }
+  bool isMatMulOpEnabled() {
+    return isPatternEnabled(PreAliasPatternType::MATMULOP);
+  }
+  bool isMatMulLhsGradOpEnabled() {
+    return isPatternEnabled(PreAliasPatternType::MATMULLHSGRADOP);
+  }
+  bool isMatMulRhsGradOpEnabled() {
+    return isPatternEnabled(PreAliasPatternType::MATMULRHSGRADOP);
+  }
 
   // The following methods are fluent allow you to
   // Pattens().enableInPlace0(false).
@@ -269,6 +290,15 @@ public:
   }
   Patterns &enableNegativeOneScale(bool v) {
     return enablePattern(PreAliasPatternType::NEGATIVEONESCALE, v);
+  }
+  Patterns &enableMatMulOp(bool v) {
+    return enablePattern(PreAliasPatternType::MATMULOP, v);
+  }
+  Patterns &enableMatMulLhsGradOp(bool v) {
+    return enablePattern(PreAliasPatternType::MATMULLHSGRADOP, v);
+  }
+  Patterns &enableMatMulRhsGradOp(bool v) {
+    return enablePattern(PreAliasPatternType::MATMULRHSGRADOP, v);
   }
 
   std::vector<std::unique_ptr<PreAliasPattern>> getPreAliasList();

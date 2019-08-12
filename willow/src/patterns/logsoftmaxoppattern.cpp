@@ -17,13 +17,13 @@ bool LogSoftmaxOpPattern::matches(Op *op) const {
 std::vector<std::unique_ptr<Op>> LogSoftmaxOpPattern::sequence(Op *op) const {
   std::vector<std::unique_ptr<Op>> seq;
 
-  seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Softmax, op, {}));
+  seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Softmax, op));
 
   auto axis      = dynamic_cast<LogSoftmaxOp *>(op)->getAxis();
   auto softmaxOp = dynamic_cast<SoftmaxOp *>(seq.at(0).get());
   softmaxOp->setAxis(axis);
 
-  seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Log, op, {}));
+  seq.push_back(makeReplacementOp(Onnx::AiOnnx::OpSet9::Log, op));
 
   return seq;
 }

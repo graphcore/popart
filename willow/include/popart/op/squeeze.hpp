@@ -14,6 +14,8 @@ public:
   void setup() final;
   std::unique_ptr<Op> clone() const final;
 
+  void setAxes(const std::vector<int64_t> &value) { axes = value; }
+
   static InIndex getInIndex() { return 0; }
   static OutIndex getOutIndex() { return 0; }
 

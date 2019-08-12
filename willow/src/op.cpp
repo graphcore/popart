@@ -225,6 +225,12 @@ void Op::append(std::stringstream &ss) const {
   appendMore(os);
 }
 
+// The appendMore attributes appear in the log but are not used
+// in the outlining algorithm
+void Op::appendMore(OpSerialiserBase &os) const {
+  os.appendAttribute("priority", static_cast<float>(priority));
+}
+
 int Op::getNonGradInIndex(int gradOpOutIndex) const {
   return gradOutToNonGradIn().at(gradOpOutIndex);
 }

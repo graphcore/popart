@@ -256,18 +256,24 @@ void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
   }
 
   // confirm shapes agree (up to squeezing out the extra 1s)
-  auto irTensorStr   = ir.getTensor(id)->str();
-  auto expectedShape = ir.getTensor(id)->info.shape_szt();
+  auto irTensor = ir.getTensor(id);
+  auto shape    = pt.shape();
 
-  if (pt.shape() != expectedShape) {
-    std::stringstream ss;
-    ss << "poplar::Tensor " << id << " of unexpected shape. "
-       << "Poplar tensor shape: ";
-    appendSequence(ss, pt.shape());
-    ss << ". Expected (Ir) tensor shape: ";
-    appendSequence(ss, expectedShape);
-    ss << ". This for tensor " << irTensorStr;
-    throw error(ss.str());
+  if (pt.shape() != irTensor->info.shape_szt()) {
+
+    // squeeze out extra 1s
+    while (!shape.empty() && shape[0] == 1) {
+      shape.erase(shape.begin());
+    }
+
+    if (shape != irTensor->info.shape_szt()) {
+      std::stringstream ss;
+      ss << "poplar::Tensor " << id << " of unexpected shape. "
+         << "Poplar tensor shape: " << pt.shape() << "."
+         << "Expected (Ir) tensor shape: " << irTensor->info.shape_szt() << "."
+         << "This for tensor " << irTensor->str();
+      throw error(ss.str());
+    }
   }
 
   // confirm types agree
@@ -277,7 +283,7 @@ void PopTensors::insert(TensorId id, const poplar::Tensor &pt) {
     ss << "poplar::Tensor " << id << " of unexpected Type. "
        << "Poplar tensor type : " << pt.elementType();
     ss << ". Expected (Ir) tensor type : " << expectedType;
-    ss << ". This for tensor " << irTensorStr;
+    ss << ". This for tensor " << irTensor->str();
     throw error(ss.str());
   }
 
@@ -765,13 +771,6 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
 optional<InputCreatorCandidate>
 Devicex::getTensorCreator(Tensor *tensor) const {
 
-  auto errorbase = [&tensor]() {
-    std::stringstream ss;
-    ss << "Failed to add tensor " << tensor->id << '.';
-    tensor->consumers.append(ss);
-    return ss.str();
-  };
-
   // Search of the graph to get the candidate Opxs that
   // know how to create this tensor.
   // The pathFromInput argument is an empty vector, as
@@ -804,7 +803,9 @@ Devicex::getTensorCreator(Tensor *tensor) const {
   }
 
   if (candidates.size() > 1) {
-    throw error(errorbase() + "\nConflicting creator candidates.");
+    // If multiple ops say they can create an tensor how to pick the 'right one?
+    logging::devicex::warn("Multiple creator candidates, picking first");
+    return candidates.front();
   } else if (candidates.size() == 1) {
     return candidates.front();
   } else {
@@ -829,7 +830,9 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     auto f = [this, creator, inIndex, pathFromInput, tensor]() {
       logging::devicex::debug("Creating poplar::Tensor {}", tensor->id);
       poplar::Tensor input = creator->createInput(inIndex, tensor->str());
-      logging::devicex::debug("poplar::Tensor {} created", tensor->id);
+      logging::devicex::debug("poplar::Tensor {} created by {}",
+                              tensor->id,
+                              creator->debugPrefix());
 
       // Reverse the path,
       // The first element is now the Opx producing a tensor consumed by

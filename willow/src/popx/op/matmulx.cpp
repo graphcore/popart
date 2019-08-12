@@ -393,7 +393,6 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   // o' := matSplitBroadcastDims(o, a, b) = [10 |  4 | 7 | 18 | 9]
   outTensor = matSplitBroadcastDims(
       outTensor, reshapedGroupsTs.first, reshapedGroupsTs.second);
-
   // Shuffle the column broadcast dim forward
   //
   // The shapes in the given example
@@ -536,7 +535,12 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
 }
 
 InputCreatorType MatMulOpx::getInputCreatorType(InIndex) const {
-  return InputCreatorType::CANCREATE;
+  const MatMulOp *op = dynamic_cast<const MatMulOp *>(op_p);
+  if (op->getCanCreateInputs()) {
+    return InputCreatorType::CANCREATE;
+  } else {
+    return InputCreatorType::DEADEND;
+  }
 }
 
 bool MatMulOpx::createsEquiv(int ind0, const Opx *opx1, int ind1) const {
@@ -549,7 +553,7 @@ bool MatMulOpx::createsEquiv(int ind0, const Opx *opx1, int ind1) const {
 
   // Test that the shapes and types of inputs and outputs of the two ops are the
   // same
-  // TODO : Could optimzie this to not use the either lhs or rhs
+  // TODO : Could optimize this to not use the either lhs or rhs
   const MatMulOpx *rhs = dynamic_cast<const MatMulOpx *>(opx1);
   if (getMatMulOp()->lhsIn()->info != rhs->getMatMulOp()->lhsIn()->info ||
       getMatMulOp()->rhsIn()->info != rhs->getMatMulOp()->rhsIn()->info ||
