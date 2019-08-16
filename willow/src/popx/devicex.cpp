@@ -2001,8 +2001,8 @@ void Devicex::prepare() {
 }
 
 int64_t Devicex::getStashSize(VGraphId vGraphId) {
-  int64_t numIPUs = static_cast<int64_t>(deviceInfo->getNumIpus());
-  return 2 * (numIPUs - vGraphId) - 1;
+  int64_t maxVGraphId = static_cast<int64_t>(ir().getMaxVirtualGraphId());
+  return 2 * (maxVGraphId - vGraphId) - 1;
 }
 
 poplar::Executable Devicex::getExecutable() {
@@ -2312,8 +2312,9 @@ PriTask Devicex::updateBatchCountTask(poplar::program::Sequence &sq) {
 
 PriTask Devicex::initAndUpdatePipelineStashIndicesTask() {
 
-  // TODO : use if getNumIpus() here as a proxy for number of virtual graphs
-  // assumes there is not graph replication. Task to address this is T10254
+  // We replicate the entire pipeline here if using replicated graphs, so as
+  // long as getMaxVirtualGraphId can return a value, we have enough IPUs to
+  // continue
   auto f = [this]() {
     if (ir().canTrain()) {
       // 1. Populate map of stash index tensors. Each IPU needs a single
@@ -2321,7 +2322,7 @@ PriTask Devicex::initAndUpdatePipelineStashIndicesTask() {
       //    always (stash index + 1) % stash size.
       //    Note: these tensors are present only at the popx level,
       //    not in the IR
-      for (int i = 0; i < deviceInfo->getNumIpus() - 1; i++) {
+      for (int i = 0; i < ir().getMaxVirtualGraphId() - 1; i++) {
         VGraphId vGraphId = static_cast<VGraphId>(i);
         poplar::Tensor stashIdTensor;
 
@@ -2337,7 +2338,7 @@ PriTask Devicex::initAndUpdatePipelineStashIndicesTask() {
       // 2. Create the program to increment the stash and restore tensors.
       //    To be run directly after the IPU's program frament that calls the
       //    stash and restore opxs respectively
-      for (int i = 0; i < deviceInfo->getNumIpus() - 1; i++) {
+      for (int i = 0; i < ir().getMaxVirtualGraphId() - 1; i++) {
 
         VGraphId vGraphId = static_cast<VGraphId>(i);
         auto &sq          = progs.pipelineIncrStashIndexFragment(

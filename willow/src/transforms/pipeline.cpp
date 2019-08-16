@@ -67,9 +67,9 @@ std::size_t Pipeline::id() { return typeid(Pipeline).hash_code(); }
 
 bool Pipeline::apply(Graph &graph) const {
 
-  auto &ir     = graph.getIr();
-  auto numIPUs = ir.getDeviceInfo()->getNumIpus();
-  // We use numIPUs as proxy for sharding factor, not quite correct:TODO T10254
+  auto &ir         = graph.getIr();
+  auto maxVGraphId = ir.getMaxVirtualGraphId();
+  // We use numIPUs // replicated graph count for the max vGraph ID.
 
   // First, some checks that pipelining is compatible with other user options:
 
@@ -83,17 +83,17 @@ bool Pipeline::apply(Graph &graph) const {
   //    and flushing the pipeline
   int minDepth;
   if (ir.canTrain()) {
-    minDepth = 2 * (numIPUs - 1) + 1;
+    minDepth = 2 * (maxVGraphId - 1) + 1;
   } else {
-    minDepth = numIPUs;
+    minDepth = maxVGraphId;
   }
 
   int64_t depth;
   if (ir.getSessionOptions().enableGradientAccumulation) {
     depth = ir.getSessionOptions().accumulationFactor;
     if (depth < minDepth) {
-      // TODO: Update this to account for replication (T10254) . This
-      // requirement is more complex when replicating.
+      // For replicated graphs we are replicating the entire pipeline, so these
+      // condidtions still hold.
       throw error("For pipelining, depth (gradient accumulation factor) must "
                   "be at least {} "
                   "for {} IPUs",
@@ -129,13 +129,13 @@ bool Pipeline::apply(Graph &graph) const {
     // 4.1. Loss is on graph numIPUs - 1
     if (op->isLossOp()) {
       int vGraphId = static_cast<int>(op->getVirtualGraphId());
-      if (vGraphId != numIPUs - 1) {
+      if (vGraphId != maxVGraphId - 1) {
         throw error("For pipelining, the graph must be sharded such that "
                     "the loss is on the final IPU in the pipeline. "
                     "Loss op " +
                     op->debugName() + " has vGraphId " +
                     std::to_string(vGraphId) + " but there are " +
-                    std::to_string(numIPUs) + " IPUs");
+                    std::to_string(maxVGraphId) + " IPUs");
       }
     }
   }
@@ -279,7 +279,7 @@ bool Pipeline::apply(Graph &graph) const {
     auto vGraphIdCheckOp = tensor->consumers.getOps()[0];
     int vGraphId =
         static_cast<int>(getVirtualGraphIdOrSourceIpu(vGraphIdCheckOp));
-    if (vGraphId == numIPUs - 1) {
+    if (vGraphId == maxVGraphId - 1) {
       continue;
     }
 
