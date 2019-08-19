@@ -5,6 +5,7 @@ import popart
 import cmdline
 from popart.torch import torchwriter
 import torch
+import numpy as np
 
 args = cmdline.parse()
 
@@ -39,6 +40,10 @@ class Module0(torch.nn.Module):
                                            eps=0.1,
                                            affine=True,
                                            momentum=0)
+        # Force random initialization
+        np.random.seed(0)
+        self.in2.weight.data = torch.tensor(
+            np.random.rand(nOutChans).astype(np.float32))
 
     def forward(self, inputs):
         im0 = inputs[0]
@@ -65,13 +70,11 @@ torchWriter = torchwriter.PytorchNetWriter(
     module=Module0(),
     samplesPerBatch=batchSize)
 
-c10driver.run(
-    torchWriter,
-    None,
-    args.outputdir,
-    cifarInIndices,
-    args.device,
-    args.hw_id,
-    transformations=["prepareNodesForTraining"],
-    epochs=2  # Numerical instability causes divergence after 2 epochs)
-)
+c10driver.run(torchWriter,
+              None,
+              args.outputdir,
+              cifarInIndices,
+              args.device,
+              args.hw_id,
+              transformations=["prepareNodesForTraining"],
+              epochs=4)

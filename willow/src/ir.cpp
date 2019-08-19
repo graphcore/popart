@@ -1978,6 +1978,24 @@ int Ir::getOpSetVersionFromModel(const std::string &node_domain) const {
   return version;
 }
 
+unsigned Ir::getMaxVirtualGraphId() const {
+  unsigned maxVirtualGraphId = 1;
+  unsigned replGraphCount =
+      static_cast<unsigned>(getSessionOptions().replicatedGraphCount);
+  unsigned numIPUs = static_cast<unsigned>(deviceInfo->getNumIpus());
+  if (getSessionOptions().enableReplicatedGraphs) {
+    if (numIPUs % replGraphCount != 0) {
+      throw error("For replicated graphs, the number of IPUs must be divisible "
+                  "by the replication factor.");
+    } else {
+      maxVirtualGraphId = numIPUs / replGraphCount;
+    }
+  } else {
+    maxVirtualGraphId = numIPUs;
+  }
+  return maxVirtualGraphId;
+}
+
 std::vector<GradNonGradPair> Ir::growLossGradients() {
   auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);
   if (finalLossOpFound != getMainGraph().getOps().end()) {
