@@ -87,9 +87,10 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   // 2. Host->Device copies for each IPU
   // 3. Forward fragments for each IPU
   // 4. Increment stash index for each IPU
-  // 5. Backward fragments for each IPU
-  // 6. Device->Host copies for each IPU
-  // 7. Inter-IPU copies
+  // 5. Restore fragment for each IPU
+  // 6. Backward fragments for each IPU
+  // 7. Device->Host copies for each IPU
+  // 8. Inter-IPU copies
 
   PipelineInfo pInfo = dv_p->pipelineInfo();
 
@@ -134,6 +135,19 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   }
 
   // 5.
+  if (pipelineSeqs.find(PipelineFragmentId::Restore) != pipelineSeqs.end()) {
+    for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::Restore)) {
+      // of the bwd fragment is added, then the restore fragment must be added
+      // too
+      if (pInfo.doBwd(pCycle, vgid_seq.first)) {
+        ss << "\n  vg" << vgid_seq.first << " : Restore";
+        logging::devicex::debug("Adding restore frag to final sq");
+        sq.add(vgid_seq.second);
+      }
+    }
+  }
+
+  // 6.
   if (pipelineSeqs.find(PipelineFragmentId::Backward) != pipelineSeqs.end()) {
     for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::Backward)) {
       if (pInfo.doBwd(pCycle, vgid_seq.first)) {
@@ -143,7 +157,7 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
     }
   }
 
-  // 6.
+  // 7.
   if (pipelineSeqs.find(PipelineFragmentId::FwdToHostStream) !=
       pipelineSeqs.end()) {
     for (auto &vgid_seq :
@@ -165,7 +179,7 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
     }
   }
 
-  // 7.1 Insert the FWD inter IPU-copies.
+  // 8.1 Insert the FWD inter IPU-copies.
   // We add these in reverse order, i->i+1 then i-1->i then i-2->i-1 etc.
   auto foundFwd = pipelineSeqs.find(PipelineFragmentId::IpuCopyFwd);
   if (foundFwd != pipelineSeqs.end()) {
@@ -178,7 +192,7 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
     }
   }
 
-  // 7.2 Insert the BWD inter IPU-copies.
+  // 8.2 Insert the BWD inter IPU-copies.
   // These are added in ascending order of virtual graph id, so i-1->i-2 then
   // i->i-1 then i+1->i etc. This order is important for correctness.
   //
@@ -464,6 +478,12 @@ PopPrograms::pipelineFwdToHostStreamFragment(VGraphId vGraphId,
 }
 
 poplar::program::Sequence &
+PopPrograms::pipelineRestoreFragment(VGraphId vGraphId,
+                                     const std::string &desc) {
+  return pipelineFragment(vGraphId, PipelineFragmentId::Restore, desc);
+}
+
+poplar::program::Sequence &
 PopPrograms::pipelineBwdToHostStreamFragment(VGraphId vGraphId,
                                              const std::string &desc) {
   return pipelineFragment(vGraphId, PipelineFragmentId::BwdToHostStream, desc);
@@ -528,6 +548,10 @@ PopPrograms::getStrFromPipelineFragmentId(PipelineFragmentId fragId) {
   }
   case PipelineFragmentId::IpuCopyBwd: {
     return "IpuCopyBwd";
+  }
+
+  case PipelineFragmentId::Restore: {
+    return "Restore";
   }
 
   case PipelineFragmentId::N: {

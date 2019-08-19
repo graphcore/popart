@@ -440,7 +440,8 @@ bool Pipeline::apply(Graph &graph) const {
     // apply topological constraints:
     // (0)  : Stash before all other consumers
     // (1)  : Stash -> "firstFromLoss" -> Restore
-    // (2)  : All backwards after Restore.
+    // The only topological constraint on Restore is that is
+    // SchedulePreLoss::No, exact scheduling controlled by the backend.
 
     // (1)
     graph.topoCons->insert(stashOp, *firstFromLoss);
@@ -451,13 +452,6 @@ bool Pipeline::apply(Graph &graph) const {
       // (0)
       if (tidConsumer != stashOp) {
         graph.topoCons->insert(stashOp, tidConsumer);
-      }
-
-      // (2)
-      // we use "backwards" to mean scheduledPreLoss is No, but
-      // we could equivalently check pathFromLoss is Yes
-      if (tidConsumer->scheduledPreLoss == ScheduledPreLoss::No) {
-        graph.topoCons->insert(restoreOp, tidConsumer);
       }
     }
   }

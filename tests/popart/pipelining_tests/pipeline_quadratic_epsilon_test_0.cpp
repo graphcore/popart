@@ -254,7 +254,8 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
 
         auto restoreOp = dynamic_cast<RestoreOp *>(op);
         if (restoreOp) {
-          BOOST_CHECK(restoreOp->scheduledPreLoss == ScheduledPreLoss::No);
+          // we don't check that it is scheduled post-loss, as it is the backend
+          // that controls where it is scheduled
         }
       }
     }

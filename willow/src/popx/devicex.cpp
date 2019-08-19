@@ -27,6 +27,7 @@
 #include <popart/op/call.hpp>
 #include <popart/op/if.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/restore.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
@@ -1340,6 +1341,10 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     else {
       if (op->copiesOptimizerTensors()) {
         growOpx(progs.streamOptimizerFromHostFragment());
+      } else if (dynamic_cast<RestoreOp *>(op)) {
+        logging::devicex::debug("Growing Restore Opx {}", op->debugName());
+        growOpx(
+            progs.pipelineRestoreFragment(op->getVirtualGraphId(), op->str()));
       }
       // pre-loss : create vertices for all recompute types
       else if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
