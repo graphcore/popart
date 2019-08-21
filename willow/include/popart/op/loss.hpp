@@ -42,6 +42,8 @@ public:
   virtual std::unique_ptr<Loss> clone() const       = 0;
 
   void virtualGraph(int64_t value) { vgraphId = value; }
+  bool hasVirtualGraphId() const;
+  int64_t getVirtualGraphId() const;
 
 protected:
   // Identify on which vgraph the loss should be executed. This is

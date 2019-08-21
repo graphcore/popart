@@ -765,40 +765,70 @@ void Ir::verifyVertexAttributesOnlyInMain() const {
 
 void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
   logging::ir::debug("Verifying virtual graph id consistency");
-  // All non-IpuCopyOps, sorted by virtual graph id (-1 if not set)
-  std::map<int64_t, std::vector<Op *>> vgraphs;
 
-  for (auto &id_op : getMainGraph().getOps()) {
-    if (!dynamic_cast<IpuCopyOp *>(id_op.second.get())) {
-      int64_t vgid;
-      if (id_op.second->hasVirtualGraphId()) {
-        vgid = id_op.second->getVirtualGraphId();
-      } else {
-        vgid = -1;
-      }
-
-      auto found = vgraphs.find(vgid);
-      if (found == vgraphs.end()) {
-        vgraphs.insert({vgid, std::vector<Op *>{id_op.second.get()}});
-      } else {
-        found->second.push_back(id_op.second.get());
-      }
+  // Get the virtual graph Id from an op or loss (-1 if not set)
+  auto getVgid = [](const auto &x) -> int64_t {
+    if (x->hasVirtualGraphId()) {
+      return x->getVirtualGraphId();
+    } else {
+      return -1;
     }
+  };
+
+  std::set<int64_t> vgraphs;
+
+  // Get the vgraph ids from all non-IpuCopyOps
+  for (auto &id_op : getMainGraph().getOps()) {
+    auto op = id_op.second.get();
+    if (!op->isConvertibleTo<IpuCopyOp>()) {
+      vgraphs.insert(getVgid(id_op.second));
+    }
+  }
+
+  for (auto &loss : losses) {
+    vgraphs.insert(getVgid(loss));
   }
 
   // a mix of annotated and not annotated Ops : suggests a problem
   if (vgraphs.count(-1) != 0 && vgraphs.size() > 1) {
     std::ostringstream errm;
     errm << "Either all Ops in the main graph must have their virtual "
-         << "graph ids set, or none must. Histogram of Ops by virtual graph "
-            "id\n";
-    for (auto id_v : vgraphs) {
-      errm << "  " << id_v.first << " : " << id_v.second.size() << "\n";
+         << "graph ids set, or none must. Op count per virtual graph id\n";
+    std::map<int64_t, int> vgraph_op_count;
+    for (auto id : vgraphs) {
+      vgraph_op_count.insert({id, 0});
     }
+
+    for (auto &id_op : getMainGraph().getOps()) {
+      auto op = id_op.second.get();
+      vgraph_op_count.at(getVgid(op))++;
+    }
+
+    for (auto &loss : losses) {
+      vgraph_op_count.at(getVgid(loss))++;
+    }
+
+    for (auto &id_size : vgraph_op_count) {
+      errm << "  " << id_size.first << " : " << id_size.second << "\n";
+    }
+
     errm << "Ops with no virtual graph id :  \n";
-    for (auto op : vgraphs[-1]) {
-      errm << "  " << op->str() << "\n";
+    for (auto &id_op : getMainGraph().getOps()) {
+      auto op = id_op.second.get();
+      if (!op->isConvertibleTo<IpuCopyOp>() && !op->hasVirtualGraphId()) {
+        errm << "  " << op->str() << "\n";
+      }
     }
+
+    errm << "Losses with no virtual graph id : \n";
+    for (auto &loss : losses) {
+      if (!loss->hasVirtualGraphId()) {
+        errm << "  "
+             << "Loss"
+             << "\n";
+      }
+    }
+
     throw error(errm.str());
   }
 
@@ -837,18 +867,30 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
   }
 
   else {
-    for (auto vgid_ops : vgraphs) {
-      auto vgid = vgid_ops.first;
-      // enableVirtualGraphs is false, yet there is at least one Op with virtual
-      // graph id set : suggests a problem
-      if (vgid != -1) {
-        auto op = vgid_ops.second.at(0);
-        throw error("SessionOptions flag enableVirtualGraphs is false, but "
-                    "{} has virtual graph id {}. This is inconsistent, "
-                    "consider setting enableVirtualGraphs to true or removing "
-                    "all virtual graph annotation from Ops. ",
-                    op->str(),
-                    op->getVirtualGraphId());
+    // enableVirtualGraphs is false, yet there is at least one Op with virtual
+    // graph id set : suggests a problem
+    if (vgraphs != std::set<int64_t>{-1}) {
+      for (auto &id_op : getMainGraph().getOps()) {
+        auto op = id_op.second.get();
+        if (op->hasVirtualGraphId()) {
+          throw error(
+              "SessionOptions flag enableVirtualGraphs is false, but "
+              "{} has virtual graph id {}. This is inconsistent, "
+              "consider setting enableVirtualGraphs to true or removing "
+              "all virtual graph annotation from Ops. ",
+              op->str(),
+              op->getVirtualGraphId());
+        }
+      }
+      for (auto &loss : losses) {
+        if (loss->hasVirtualGraphId()) {
+          throw error(
+              "SessionOptions flag enableVirtualGraphs is false, but "
+              "Loss has virtual graph id {}. This is inconsistent, "
+              "consider setting enableVirtualGraphs to true or removing "
+              "all virtual graph annotation from Ops. ",
+              loss->getVirtualGraphId());
+        }
       }
     }
   }
@@ -1178,6 +1220,16 @@ Ir::getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts) {
         vgraphIdMap[producer->getVirtualGraphId()]++;
       }
     }
+  }
+
+  if (vgraphIdMap.size() == 0) {
+    std::vector<TensorId> ts_ids;
+    for (auto t : ts) {
+      ts_ids.push_back(t->id);
+    }
+    throw error("ILE: None of the producers of the tensors in {} have virtual "
+                "graph ids",
+                ts_ids);
   }
 
   // Find the vgraph id with the most occurrences.

@@ -91,6 +91,7 @@ BOOST_AUTO_TEST_CASE(Inplace_basic1) {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{
       new L1Loss(out, "l1LossVal", 0.1, ReductionType::SUM)};
+  losses[0]->virtualGraph(0);
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   Ir ir;

@@ -30,6 +30,23 @@ ReductionType Loss::getReductionType() const { return reduction_type_; }
 Loss::Loss(const std::vector<TensorId> &in_, TensorId out_, ReductionType rt_)
     : input_(in_), output_(out_), reduction_type_(rt_) {}
 
+int64_t Loss::getVirtualGraphId() const {
+  if (!hasVirtualGraphId()) {
+    throw error(
+        "Cannot return vGraphId for Loss {}. It has not had this attribute set",
+        input_);
+  }
+  return *vgraphId;
+}
+
+bool Loss::hasVirtualGraphId() const {
+  if (vgraphId) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 LossOp::LossOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : Op(_opid, settings_) {}
 

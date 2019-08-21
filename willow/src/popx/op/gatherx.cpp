@@ -5,9 +5,10 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/util.hpp>
 
+#include <popops/DynamicSlice.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/Gather.hpp>
-#include <popops/Scatter.hpp>
+#include <popops/Zero.hpp>
 #include <poputil/TileMapping.hpp>
 
 #include <boost/range/algorithm.hpp>
@@ -39,18 +40,36 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
 
     setOutTensor(GatherOp::outIndex(), result);
   } else {
-    // Flatten the scalar indices
-    indices = indices.flatten();
+    // Flatten the scalar indices.
+    auto offsets = indices.flatten();
+    // Add a degenerate dimension at the end.
+    offsets = offsets.expand({1});
+    // reinterpret the indices as unsigned int. This assumes negative indices.
+    // are impossible.
+    offsets = offsets.reinterpret(poplar::UNSIGNED_INT);
 
-    auto result = popops::gather(graph(),
-                                 data,
-                                 indices.reinterpret(poplar::UNSIGNED_INT),
-                                 static_cast<unsigned>(axis),
-                                 prog,
-                                 popops::GatherParams{},
-                                 debugPrefix());
+    // Create a permutation that swaps the gather axis for the front.
+    std::vector<unsigned> permutation(data.rank(), 0);
+    boost::iota(permutation, 0);
+    std::swap(permutation.front(), permutation[axis]);
 
-    // Reshape into the expected ONNX shape
+    // Place the gather axis at the front.
+    data = data.dimShuffle(permutation);
+    // Store the shape for later.
+    auto tmp_shape = data.shape();
+    // Flatten the other dimensions.
+    data = data.flatten(1, data.rank());
+
+    auto result = popops::multiSlice(
+        graph(), data, offsets, {0}, {1}, prog, debugPrefix());
+
+    // Reshape the result to "unflatten" the other dimensions.
+    tmp_shape.front() = result.dim(0);
+    result            = result.reshape(tmp_shape);
+    // Put the gather axis dimension back in the right place.
+    result = result.dimShuffle(permutation);
+
+    // Reshape into the expected ONNX shape.
     result = result.reshape(outputShape);
 
     setOutTensor(GatherOp::outIndex(), result);
@@ -93,54 +112,56 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
   const auto outputShape =
       vXtoY<int64_t, std::size_t>(outShape(GatherGradOp::gradOutIndex()));
 
-  auto update = getInTensor(GatherGradOp::gradInIndex());
-
-  auto result = popops::createGatherInput(
-      graph(),
-      update.elementType(),
-      outputShape,
-      static_cast<unsigned>(axis),
-      popops::GatherParams{},
-      op_p->str() + "output" + std::to_string(GatherGradOp::gradOutIndex()));
-
+  auto update  = getInTensor(GatherGradOp::gradInIndex());
   auto indices = getInTensor(GatherGradOp::indicesInIndex());
 
-  std::vector<unsigned> update_window_dims(update.rank() - indices.rank());
-  auto begin = update_window_dims.begin();
-  auto mid   = update_window_dims.begin() + axis;
-  auto end   = update_window_dims.end();
-  std::iota(begin, mid, 0);
-  std::iota(mid, end, axis + indices.rank());
+  auto result = popops::createGatherInput(graph(),
+                                          update.elementType(),
+                                          outputShape,
+                                          static_cast<unsigned>(axis),
+                                          popops::GatherParams{},
+                                          debugPrefix("result"));
 
-  std::vector<std::size_t> inserted_window_dims = {
-      static_cast<std::size_t>(axis)};
+  // Zero the result tensor
+  popops::zero(graph(), result, prog, debugPrefix("zero"));
 
-  std::vector<unsigned> scatter_dims_to_op = {static_cast<unsigned>(axis)};
+  if (result.numElements() == 0 || update.numElements() == 0 ||
+      indices.numElements() == 0) {
+    setOutTensor(GatherGradOp::gradOutIndex(), result);
+    return;
+  }
 
-  // Add overlapping gradients
-  popops::UpdateComputationFunc updateComp =
-      [](poplar::Graph &g,
-         poplar::Tensor &a,
-         poplar::Tensor &b,
-         poplar::program::Sequence &p) -> poplar::Tensor {
-    popops::addInPlace(g, b, a, p);
+  auto scale = graph().addConstant(
+      update.elementType(), {}, 1.0f, debugPrefix("const_1"));
+  graph().setTileMapping(scale, 0);
 
-    return b;
-  };
+  // Flatten the index shaped region of the update
+  update = update.flatten(static_cast<unsigned>(axis),
+                          static_cast<unsigned>(axis) + indices.rank());
+  // Put the slice dimension at the front
+  update = update.dimRoll(static_cast<unsigned>(axis));
+  // Flatten the rest of the dimensions
+  update = update.flatten(1, update.rank());
+  // Add a degenerate dimension
+  update = update.expand({1});
 
-  // Scatter the grad input into the result
-  popops::scatter(graph(),
-                  result,
-                  indices,
-                  update,
-                  indices.rank(),
-                  update_window_dims,
-                  inserted_window_dims,
-                  scatter_dims_to_op,
-                  updateComp,
-                  prog);
+  auto target = result;
+  // Put the slice dimension at the front
+  target = target.dimRoll(static_cast<unsigned>(axis));
+  // Flatten the rest of the dimensions
+  target = target.flatten(1, target.rank());
 
-  result = result.reshape(outputShape);
+  // Flatten the indices to a vector
+  indices = indices.flatten();
+  // Add a degenerate dimension
+  indices = indices.expand({1});
+  // Reinterpret the indices as unsigned int, assuming negative indices don't
+  // exist.
+  indices = indices.reinterpret(poplar::UNSIGNED_INT);
+
+  // Accumulate the updates into the target
+  popops::multiUpdateAdd(
+      graph(), target, update, indices, scale, {0}, {1}, prog, debugPrefix());
 
   setOutTensor(GatherGradOp::gradOutIndex(), result);
 }

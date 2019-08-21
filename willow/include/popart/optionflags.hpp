@@ -185,11 +185,8 @@ struct SessionOptions {
   // Enable stochastic rounding
   bool enableStochasticRounding = false;
 
-  // Enable the fullyConnectedPass options to matmuls. When set to false it
-  // will choose the fastest plan for each matmul at the expense of cycles (i.e.
-  // ipu exchange) Setting fullyConnectedPass to true to will allow matmul's to
-  // be planned to reduce cycles
-  bool enableFullyConnectedPass = false;
+  // Enable the global fullyConnectedPass options for matmuls.
+  bool enableFullyConnectedPass = true;
 
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;

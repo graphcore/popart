@@ -525,6 +525,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   auto optimizer = ConstSGD(0.01);
   std::vector<Loss *> losses{
       new L1Loss(identOut, "l1LossVal", 0.1, ReductionType::SUM)};
+  losses[0]->virtualGraph(0);
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   SessionOptions opts;

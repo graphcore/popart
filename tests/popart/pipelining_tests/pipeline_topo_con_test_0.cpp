@@ -294,35 +294,20 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
         BOOST_CHECK(nRestores == 1);
       }
 
-      // if it's Restore, we check
-      // 1) Restore happens after it's unique corresponding Stash
-      // 2) Restore has ScheduledPreLoss::No
-      // 3) Consumers of restored Tensor with PathFromLoss::Yes appear after
-      // Restore 4) Consumers of restored Tensor with PathFromLoss::No appear
-      // before Restore
+      // if it's a Restore Op, we don't check any ordering conditions in the Ir,
+      // because the backend is expected to control the scheduling of Restore
+      // Ops, which happens later
       auto restoreOp = dynamic_cast<RestoreOp *>(op);
       if (restoreOp) {
-        // 2)
-        BOOST_CHECK(restoreOp->scheduledPreLoss == ScheduledPreLoss::No);
         int nStash   = 0;
         auto inIndex = restoreOp->getActToRestoreInIndex();
         auto act     = restoreOp->input->tensor(inIndex);
         for (auto consumer : act->consumers.getOps()) {
-          // 4)
-          if (consumer->toLoss == PathToLoss::Yes) {
-            BOOST_CHECK(schedIndex.at(consumer) < opIndex);
-          }
-          // 3)
-          if (consumer->fromLoss == PathFromLoss::Yes) {
-            BOOST_CHECK(schedIndex.at(consumer) > opIndex);
-          }
           if (dynamic_cast<StashOp *>(consumer)) {
-            // 1)
             ++nStash;
             BOOST_CHECK(schedIndex.at(consumer) < opIndex);
           }
         }
-        // 1)
         BOOST_CHECK(nStash == 1);
       }
     }

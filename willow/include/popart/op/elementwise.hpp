@@ -20,6 +20,21 @@ public:
   float getSubgraphValue() const override { return getLowSubgraphValue(); }
 };
 
+// Base class for elementwise unary boolean output operations
+class ElementWiseUnaryBooleanOp : public Op {
+public:
+  ElementWiseUnaryBooleanOp(const OperatorIdentifier &_opid,
+                            const Op::Settings &_settings);
+  void setup() final;
+
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
+
+  // Making this function override and not final, as there
+  // may be a more / less expensive to compute non-linearity.
+  float getSubgraphValue() const override { return getLowSubgraphValue(); }
+};
+
 class ElementWiseInplaceUnaryOp : public ElementWiseUnaryOp {
 public:
   ElementWiseInplaceUnaryOp(const OperatorIdentifier &_opid,
