@@ -11,6 +11,15 @@ void ElementWiseUnaryOp::setup() {
   outInfo(getOutIndex()) = inInfo(getInIndex());
 }
 
+ElementWiseUnaryBooleanOp::ElementWiseUnaryBooleanOp(
+    const OperatorIdentifier &_opid,
+    const Op::Settings &settings_)
+    : Op(_opid, settings_) {}
+
+void ElementWiseUnaryBooleanOp::setup() {
+  outInfo(getOutIndex()) = {DataType::BOOL, inInfo(getInIndex()).shape()};
+}
+
 ElementWiseNonLinearUnaryGradOp::ElementWiseNonLinearUnaryGradOp(
     const OperatorIdentifier &_opid,
     const ElementWiseUnaryOp &op)
