@@ -1222,6 +1222,16 @@ Ir::getVirtualGraphIdFromTensorProducers(std::vector<Tensor *> ts) {
     }
   }
 
+  if (vgraphIdMap.size() == 0) {
+    std::vector<TensorId> ts_ids;
+    for (auto t : ts) {
+      ts_ids.push_back(t->id);
+    }
+    throw error("ILE: None of the producers of the tensors in {} have virtual "
+                "graph ids",
+                ts_ids);
+  }
+
   // Find the vgraph id with the most occurrences.
   auto it = std::max_element(vgraphIdMap.begin(),
                              vgraphIdMap.end(),
