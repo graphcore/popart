@@ -75,6 +75,7 @@ bool AveragePoolOp::canBeReplacedByIdentity() {
   if (padsSum == 0 && stridesProduct == 1 && kernelShapeProduct == 1) {
     return true;
   }
+  return false;
 }
 
 AveragePoolGradOp::AveragePoolGradOp(const AveragePoolOp &op_)
