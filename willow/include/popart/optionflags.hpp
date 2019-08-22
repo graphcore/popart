@@ -42,6 +42,16 @@ enum class MergeVarUpdateType {
   N          // The numbe of MergeVarUpdateTypes, must appear as the final enum
 };
 
+enum class VirtualGraphMode {
+  Off = 0, // virtual graphs are not enabled
+  Manual,  // user must set the virtualGraph attribute on all ops and losses
+  Auto,    // autoVirtualGraph transform is used
+  N        // The number of VirtualGraphModes, must appear as the final enum
+};
+
+std::string toString(VirtualGraphMode);
+std::ostream &operator<<(std::ostream &, VirtualGraphMode);
+
 /**
  * A structure containing user configuration options for the Session class
  */
@@ -153,6 +163,8 @@ struct SessionOptions {
   /// Enable transformation pass that attempts to automatically place ops on
   /// virtual graphs to achieve model parallelism.
   bool autoVirtualGraph = false;
+
+  VirtualGraphMode virtualGraphMode = VirtualGraphMode::Off;
 
   /// Enable pipelining of virtual graphs
   bool enablePipelining = false;

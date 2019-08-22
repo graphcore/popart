@@ -52,6 +52,24 @@ DotCheck dotCheckFromString(const std::string &s) {
   }
 }
 
+std::string toString(VirtualGraphMode v) {
+  switch (v) {
+  case VirtualGraphMode::Off:
+    return "VirtualGraphMode::Off";
+  case VirtualGraphMode::Manual:
+    return "VirtualGraphMode::Manual";
+  case VirtualGraphMode::Auto:
+    return "VirtualGraphMode::Auto";
+  default:
+    throw error("Bad VirtualGraphMode {}", static_cast<int>(v));
+  }
+}
+
+std::ostream &operator<<(std::ostream &os, VirtualGraphMode v) {
+  os << toString(v);
+  return os;
+}
+
 // No implementation required
 
 } // namespace popart

@@ -202,6 +202,9 @@ public:
   // Do all the Ops with all their dependencies form a DAG?
   bool isSchedulable(const OpsBeforeKey &) const;
 
+  // Is the virtualGraphMode set to something other than VirtualGraphMode::Off.
+  bool virtualGraphsEnabled() const;
+
 public:
   OpId getOpsCounter() const;
   OpId getAndIncrOpsCounter();

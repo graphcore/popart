@@ -172,7 +172,39 @@ void Ir::setDataFlow(const DataFlow &df) {
   }
 }
 
-void Ir::setUserOptions(const SessionOptions &flags) { userOptions = flags; }
+bool Ir::virtualGraphsEnabled() const {
+  return userOptions.virtualGraphMode != VirtualGraphMode::Off;
+}
+
+void Ir::setUserOptions(const SessionOptions &flags) {
+  userOptions = flags;
+
+  // Warn the user if they are using the enableVirtualGraphs or autoVirtualGraph
+  // options.
+  if (userOptions.enableVirtualGraphs) {
+    logging::ir::warn(
+        "The options enableVirtualGraphs is deprecated and will be removed in "
+        "a future release. Please use virtualGraphMode instead");
+  }
+  if (userOptions.autoVirtualGraph) {
+    logging::ir::warn(
+        "The options autoVirtualGraph is deprecated and will be removed in a "
+        "future release. Please use virtualGraphMode instead");
+  }
+
+  // If the user has not set virtualGraphMode (assuming default value Off means
+  // the user left it unset), check the enableVirtualGraphs and
+  // autoVirtualGraphs options.
+  if (userOptions.virtualGraphMode == VirtualGraphMode::Off) {
+    if (userOptions.enableVirtualGraphs) {
+      if (userOptions.autoVirtualGraph) {
+        userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+      } else {
+        userOptions.virtualGraphMode = VirtualGraphMode::Manual;
+      }
+    }
+  }
+}
 void Ir::setInputShapeInfo(const InputShapeInfo &info) {
   inputShapeInfo = info;
 }
@@ -545,8 +577,7 @@ void Ir::prepare(const IrBundle &gb) {
   dotCheckpoint(DotCheck::FWD1);
 
   enableTransform(AutoVirtualGraph::id(),
-                  userOptions.autoVirtualGraph &&
-                      userOptions.enableVirtualGraphs);
+                  userOptions.virtualGraphMode == VirtualGraphMode::Auto);
   applyTransform(AutoVirtualGraph::id(), getMainGraph());
 
   if (canEvaluate()) {
@@ -832,64 +863,54 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
     throw error(errm.str());
   }
 
-  if (getSessionOptions().enableVirtualGraphs) {
+  if (virtualGraphsEnabled()) {
     // only -1s, no Op has a virtual graph annotation : problem.
     if (vgraphs.size() == 1 && vgraphs.count(-1) != 0) {
-
-      std::ostringstream errm;
-
-      // no auto virtual graphing, the user should have annotated ops
-      if (!getSessionOptions().autoVirtualGraph) {
-        errm
-            << "SessionOptions flag enableVirtualGraphs is true, "
-            << "and flag autoVirtualGraph is false, "
-            << "but no Ops have been annotated with virtual graph information. "
-            << "This is an inconsistent combination. ";
-
-        throw error(errm.str());
+      // manual virtual graphing, the user should have annotated ops
+      if (getSessionOptions().virtualGraphMode == VirtualGraphMode::Manual) {
+        throw error("SessionOptions flag virtualGraphMode is {}, but no Ops "
+                    "have been annotated with virtual graph information. This "
+                    "is an inconsistent combination. ",
+                    getSessionOptions().virtualGraphMode);
       }
 
       // auto virtual graphing, why has the auto-sharder not run?
       else if (postAutoVirtualGraphTransform) {
-        errm
-            << "SessionOptions flag enableVirtualGraphs is true, "
-            << "and flag autoVirtualGraph is true, "
-            << "but no Ops have been annotated with virtual graph information. "
-            << "Moreover, the paramater postAutoVirtualGraphTransoform "
-            << "is true, "
-            << "so AutoVirtualGraph should have been run. "
-            << "This is an inconsistent combination, possibly an internal "
-            << "logic error has";
-
-        throw error(errm.str());
+        throw error(
+            "SessionOptions flag virtualGraphMode is {}, but no Ops have been "
+            "annotated with virtual graph information. Moreover, the paramater "
+            "postAutoVirtualGraphTransoform is true, so AutoVirtualGraph "
+            "should have been run. This is an inconsistent combination, "
+            "possibly an internal logic error has",
+            getSessionOptions().virtualGraphMode);
       }
     }
   }
 
   else {
-    // enableVirtualGraphs is false, yet there is at least one Op with virtual
-    // graph id set : suggests a problem
+    // virtualGraphMode is Off, yet there is at least one Op with virtual graph
+    // id set : suggests a problem
     if (vgraphs != std::set<int64_t>{-1}) {
       for (auto &id_op : getMainGraph().getOps()) {
         auto op = id_op.second.get();
         if (op->hasVirtualGraphId()) {
-          throw error(
-              "SessionOptions flag enableVirtualGraphs is false, but "
-              "{} has virtual graph id {}. This is inconsistent, "
-              "consider setting enableVirtualGraphs to true or removing "
-              "all virtual graph annotation from Ops. ",
-              op->str(),
-              op->getVirtualGraphId());
+          throw error("SessionOptions flag virtualGraphMode is {}, but "
+                      "{} has virtual graph id {}. This is inconsistent, "
+                      "consider setting virtualGraphMode to Manual or removing "
+                      "all virtual graph annotation from Ops. ",
+                      getSessionOptions().virtualGraphMode,
+                      op->str(),
+                      op->getVirtualGraphId());
         }
       }
       for (auto &loss : losses) {
         if (loss->hasVirtualGraphId()) {
-          throw error(
-              "SessionOptions flag enableVirtualGraphs is false, but "
-              "Loss has virtual graph id {}. This is inconsistent, "
-              "consider setting enableVirtualGraphs to true or removing "
-              "all virtual graph annotation from Ops. ",
-              loss->getVirtualGraphId());
+          throw error("SessionOptions flag virtualGraphMode is {}, but "
+                      "Loss has virtual graph id {}. This is inconsistent, "
+                      "consider setting virtualGraphMode to Manual or removing "
+                      "all virtual graph annotation from Ops. ",
+                      getSessionOptions().virtualGraphMode,
+                      loss->getVirtualGraphId());
         }
       }
     }
@@ -1252,7 +1273,7 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
                           getMainGraph(),
                           "GradSum");
 
-  if (getSessionOptions().enableVirtualGraphs) {
+  if (virtualGraphsEnabled()) {
     gradSum->setVirtualGraphId(getVirtualGraphIdFromTensorProducers(toSum));
   }
 
@@ -1872,7 +1893,7 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
 
   Op *op = getMainGraph().getOps()[opId].get();
 
-  if (getSessionOptions().enableVirtualGraphs) {
+  if (virtualGraphsEnabled()) {
     op->setVirtualGraphId(
         getVirtualGraphIdFromTensorProducers(op->input->tensors()));
   }
@@ -1929,7 +1950,7 @@ void Ir::growFinalLoss() {
   finalLossSum->toLoss   = PathToLoss::Yes;
   finalLossSum->fromLoss = PathFromLoss::Yes;
 
-  if (getSessionOptions().enableVirtualGraphs) {
+  if (virtualGraphsEnabled()) {
     std::vector<Tensor *> lossTensors;
     for (auto &op : lossOps) {
       lossTensors.push_back(op->output->tensor(0));

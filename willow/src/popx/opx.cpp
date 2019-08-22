@@ -51,7 +51,7 @@ int64_t Opx::getVirtualGraphId() const {
   if (op_p->hasVirtualGraphId()) {
     return op_p->getVirtualGraphId();
   } else {
-    if (op_p->getIr().getSessionOptions().enableVirtualGraphs) {
+    if (op_p->getIr().virtualGraphsEnabled()) {
       throw error("{} does not have a virtual graph attribute",
                   op_p->debugName());
     } else {
@@ -61,7 +61,7 @@ int64_t Opx::getVirtualGraphId() const {
 }
 
 poplar::Graph &Opx::graph() const {
-  if (op_p->getIr().getSessionOptions().enableVirtualGraphs) {
+  if (op_p->getIr().virtualGraphsEnabled()) {
     return dv_p->getVirtualGraph(getVirtualGraphId());
   } else {
     return dv_p->graph();
