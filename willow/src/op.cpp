@@ -273,6 +273,7 @@ void Op::appendAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("recompute", recomputeString);
 
   os.appendAttribute(sVirtualGraphAttribute, getOptionalVirtualGraphId());
+  os.appendAttribute(sPipelineStageAttribute, settings.pipelineStage);
   os.appendAttribute("scope", getScope());
 }
 
@@ -324,6 +325,12 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
     vgraphId = value;
   }
 
+  if (attributes.hasAttribute(sPipelineStageAttribute)) {
+    int64_t value;
+    attributes.set(value, sPipelineStageAttribute);
+    pipelineStage = value;
+  }
+
   if (attributes.hasAttribute(sRecomputeOutputAttribute)) {
     int64_t value;
     attributes.set(value, sRecomputeOutputAttribute);
@@ -367,11 +374,11 @@ void Op::setVirtualGraphId(const boost::optional<int64_t> value) {
   settings.vgraphId = value;
 }
 
-const boost::optional<int64_t> Op::getOptionalVirtualGraphId() const {
+const boost::optional<VGraphId> Op::getOptionalVirtualGraphId() const {
   return settings.vgraphId;
 }
 
-int64_t Op::getVirtualGraphId() const {
+VGraphId Op::getVirtualGraphId() const {
   if (!hasVirtualGraphId()) {
     throw error(
         "Cannot return vGraphId for Op {}. It has not had this attribute set",
@@ -386,6 +393,21 @@ bool Op::hasVirtualGraphId() const {
   } else {
     return false;
   }
+}
+
+void Op::setPipelineStage(PipelineStage value) {
+  settings.pipelineStage = value;
+}
+
+bool Op::hasPipelineStage() const { return bool(settings.pipelineStage); }
+
+PipelineStage Op::getPipelineStage() const {
+  if (!hasPipelineStage()) {
+    throw error("Cannot return pipelineStage for Op {}. It has not had this "
+                "attribute set",
+                debugName());
+  }
+  return *(settings.pipelineStage);
 }
 
 const Shape &Op::inShape(InIndex index) const {

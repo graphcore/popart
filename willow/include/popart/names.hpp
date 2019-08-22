@@ -46,6 +46,7 @@ using InIndex = int;
 using OutIndex      = int;
 using PipelineCycle = int64_t;
 using VGraphId      = int64_t;
+using PipelineStage = int64_t;
 using StashIndex    = int64_t;
 
 // forward declaring several popart classes
@@ -104,7 +105,8 @@ static constexpr const char *sInplaceOpNames        = "__inplace_op_names";
 static constexpr const char *sInplaceOpPriorities   = "__inplace_op_priorities";
 static constexpr const char *sRecomputeOutputAttribute =
     "__recompute_output_in_backward_pass";
-static constexpr const char *sPartialsTypeAttribute = "__partials_type";
+static constexpr const char *sPartialsTypeAttribute  = "__partials_type";
+static constexpr const char *sPipelineStageAttribute = "__pipeline_stage";
 
 // The deliminator used in popart tensor names
 static constexpr const char *sNameDelimiter = "/";

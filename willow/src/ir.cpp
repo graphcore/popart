@@ -250,6 +250,88 @@ void Ir::logIr() {
   logging::ir::info(ss2.str());
 }
 
+void Ir::verifyPiplineStageAttribute() const {
+  if (!getSessionOptions().enablePipelining) {
+    return;
+  }
+
+  auto getPipelineStage = [](auto x) -> PipelineStage {
+    if (x->hasPipelineStage()) {
+      return x->getPipelineStage();
+    } else {
+      return -1;
+    }
+  };
+
+  auto getVirtualGraphId = [](auto x) -> VGraphId {
+    if (x->hasVirtualGraphId()) {
+      return x->getVirtualGraphId();
+    } else {
+      return -1;
+    }
+  };
+
+  // collect a set of vgraph ids for each pipeline stage
+  std::map<PipelineStage, std::vector<Op *>> pipelineStages;
+
+  for (auto &id_op : getMainGraph().getOps()) {
+    auto op = id_op.second.get();
+    if (!op->isConvertibleTo<IpuCopyOp>()) {
+      auto ps = getPipelineStage(op);
+      pipelineStages[ps].push_back(op);
+    }
+  }
+
+  // if no ops have had the pipeline stage attribute set, the virtual graph id
+  // will be used.
+
+  // some ops have not had the pipeline stage attribute set
+  if (pipelineStages.count(-1) != 0 && pipelineStages.size() > 1) {
+    std::stringstream ss;
+    ss << "Only some ops have had their pipeline stage set. Ops missing the "
+          "pipeline stage:";
+    for (auto &id_op : getMainGraph().getOps()) {
+      auto op = id_op.second.get();
+      if (!op->isConvertibleTo<IpuCopyOp>()) {
+        if (getPipelineStage(op) == -1) {
+          ss << fmt::format("\n  {}", op->debugName());
+        }
+      }
+    }
+    throw error(ss.str());
+  }
+  // all ops have had the pipeline stage attribute set
+  else if (pipelineStages.count(-1) == 0) {
+    // check that all ops in a pipeline stage have the same virtualGraph
+    for (auto &ps_ops : pipelineStages) {
+      auto ps   = ps_ops.first;
+      auto &ops = ps_ops.second;
+
+      std::set<VGraphId> vgraphs;
+      for (auto op : ops) {
+        // ops may not have a virtual graph id yet as the virtualGraphMode may
+        // be Auto. In this case getVirtualGraphId returns -1 and we just check
+        // that all ops in the pipeline stage are on virtual graph -1
+        vgraphs.insert(getVirtualGraphId(op));
+      }
+
+      if (vgraphs.size() > 1) {
+        std::vector<std::string> opNames;
+        for (auto op : ops) {
+          opNames.push_back(op->debugName());
+        }
+
+        throw error("Ops {} have the same pipeline stage {}, but different "
+                    "virtual graph ids {}. All ops with the same pipeline "
+                    "stage must also have the same virtual graph id",
+                    opNames,
+                    ps,
+                    vgraphs);
+      }
+    }
+  }
+}
+
 void Ir::verifyOpOutputConnectivity(const Graph &graph) const {
   logging::ir::info("Checking op output tensor producers");
 
@@ -567,6 +649,7 @@ void Ir::prepare(const IrBundle &gb) {
 
   // Check virtual graph settings and annotations are consistent
   verifyVirtualGraphIds(false);
+  verifyPiplineStageAttribute();
 
   dotCheckpoint(DotCheck::FWD0);
 

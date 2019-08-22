@@ -836,6 +836,11 @@ PYBIND11_MODULE(popart_core, m) {
              return acm;
            },
            py::arg("value"))
+      .def("pipelineStage",
+           static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
+               &Builder::pipelineStage),
+           py::arg("nodeOutputNames"),
+           py::arg("value") = 0)
       .def("setPartialsType",
            &Builder::setPartialsType,
            py::arg("nodeOutputName"),
