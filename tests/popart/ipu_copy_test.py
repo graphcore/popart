@@ -26,7 +26,7 @@ def test_ipu_copy_bca1():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     opts = popart.SessionOptionsCore()
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
@@ -59,7 +59,7 @@ def test_ipu_copy_aca1():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     opts = popart.SessionOptionsCore()
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
@@ -101,7 +101,7 @@ def test_ipu_copy_bca4():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     opts = popart.SessionOptionsCore()
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
@@ -141,7 +141,7 @@ def test_ipu_copy_bca2():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     opts = popart.SessionOptionsCore()
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
@@ -173,7 +173,7 @@ def test_ipu_copy_bca3():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     opts = popart.SessionOptionsCore()
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
@@ -210,7 +210,7 @@ def test_ipu_copy_bca5():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     opts = popart.SessionOptionsCore()
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
@@ -254,7 +254,7 @@ def test_copy_to_op_with_duplicate_inputs():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     opts = popart.SessionOptionsCore()
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,

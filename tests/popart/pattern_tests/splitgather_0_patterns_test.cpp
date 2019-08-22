@@ -36,7 +36,7 @@ BOOST_AUTO_TEST_CASE(SplitGatherTest0) {
   auto dataFlow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
 
   SessionOptions userOptions;
-  userOptions.enableVirtualGraphs = true;
+  userOptions.virtualGraphMode = VirtualGraphMode::Manual;
 
   std::map<std::string, std::string> deviceOpts{{"numIPUs", "2"}};
   auto device =

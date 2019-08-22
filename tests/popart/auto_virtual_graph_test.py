@@ -42,8 +42,7 @@ def test_auto_virtual_graph_subgraphs_2():
     dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
 
     opts = popart.SessionOptions()
-    opts.enableVirtualGraphs = True
-    opts.autoVirtualGraph = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
     device = tu.get_ipu_model(numIPUs=ipus)
 
@@ -91,8 +90,7 @@ def test_auto_virtual_graph_subgraphs_4():
     dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
 
     opts = popart.SessionOptions()
-    opts.enableVirtualGraphs = True
-    opts.autoVirtualGraph = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
     device = tu.get_ipu_model(numIPUs=ipus)
 
@@ -125,8 +123,7 @@ def test_auto_virtual_graph_inf_2():
     dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
 
     opts = popart.SessionOptions()
-    opts.enableVirtualGraphs = True
-    opts.autoVirtualGraph = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
     device = tu.get_ipu_model(numIPUs=ipus)
 
@@ -159,8 +156,7 @@ def test_auto_virtual_graph_inf_many():
     dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
 
     opts = popart.SessionOptions()
-    opts.enableVirtualGraphs = True
-    opts.autoVirtualGraph = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
     device = tu.get_ipu_model(numIPUs=ipus)
 
@@ -198,8 +194,7 @@ def test_auto_virtual_graph_train():
         1, {loss.output(0): popart.AnchorReturnType("FINAL")})
 
     opts = popart.SessionOptions()
-    opts.enableVirtualGraphs = True
-    opts.autoVirtualGraph = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
     device = tu.get_ipu_model(numIPUs=ipus)
 
@@ -233,8 +228,7 @@ def test_auto_virtual_graph_not_enough_splits():
     dataFlow = popart.DataFlow(1, {output: popart.AnchorReturnType("FINAL")})
 
     opts = popart.SessionOptions()
-    opts.enableVirtualGraphs = True
-    opts.autoVirtualGraph = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Auto
 
     device = tu.get_ipu_model(numIPUs=ipus)
 

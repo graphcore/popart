@@ -50,7 +50,7 @@ def test_all_virtual_graph():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     opts = popart.SessionOptionsCore()
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     popart.InferenceSession(fnModel=proto,
                             dataFeed=dataFlow,

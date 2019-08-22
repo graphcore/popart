@@ -106,10 +106,9 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest1) {
   auto dataFlow   = DataFlow(100, {{act, AnchorReturnType("ALL")}});
 
   SessionOptions userOptions;
-  userOptions.enableVirtualGraphs = true;
-  userOptions.autoVirtualGraph    = false;
-  userOptions.enablePipelining    = true;
-  userOptions.autoRecomputation   = RecomputationType::Standard;
+  userOptions.virtualGraphMode  = VirtualGraphMode::Manual;
+  userOptions.enablePipelining  = true;
+  userOptions.autoRecomputation = RecomputationType::Standard;
 
   constexpr int64_t nIpus{4};
 

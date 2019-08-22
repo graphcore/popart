@@ -54,8 +54,7 @@ BOOST_AUTO_TEST_CASE(VertexVgidTest0) {
 
     SessionOptions userOptions;
     if (withSharding) {
-      userOptions.enableVirtualGraphs = true;
-      userOptions.autoVirtualGraph    = true;
+      userOptions.virtualGraphMode = VirtualGraphMode::Auto;
     }
     std::map<std::string, std::string> deviceOpts{{"numIPUs", "3"}};
 

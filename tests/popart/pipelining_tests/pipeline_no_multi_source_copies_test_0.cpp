@@ -114,9 +114,8 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
     auto dataFlow   = DataFlow(20, {{act1, AnchorReturnType("ALL")}});
 
     SessionOptions userOptions;
-    userOptions.enableVirtualGraphs = true;
-    userOptions.autoVirtualGraph    = true;
-    userOptions.enablePipelining    = withPipelining;
+    userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+    userOptions.enablePipelining = withPipelining;
 
     constexpr int64_t nIpus{6};
     std::map<std::string, std::string> deviceOpts{

@@ -64,7 +64,7 @@ def run_graph(labelArray,
     opts.enableGradientAccumulation = enable_accl
     opts.accumulationFactor = accl_steps
     opts.enableOutlining = False
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     if enable_multi_ipu:
         device = tu.get_ipu_model(numIPUs=num_ipus, compileIPUCode=False)
@@ -271,7 +271,7 @@ def run_graph_complex(labelArray,
     opts.enableGradientAccumulation = enable_accl
     opts.accumulationFactor = accl_steps
     opts.enableOutlining = False
-    opts.enableVirtualGraphs = False
+    opts.virtualGraphMode = popart.VirtualGraphMode.Off
 
     if enable_multi_ipu:
         device = tu.get_ipu_model(numIPUs=num_ipus, compileIPUCode=False)

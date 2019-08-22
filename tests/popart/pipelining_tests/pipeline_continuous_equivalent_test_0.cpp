@@ -128,9 +128,8 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
 
   // shard over 3 IPUs, and enable pipelining
   SessionOptions userOptions;
-  userOptions.enableVirtualGraphs = true;
-  userOptions.autoVirtualGraph    = true;
-  userOptions.enablePipelining    = true;
+  userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+  userOptions.enablePipelining = true;
   std::map<std::string, std::string> deviceOpts{{"numIPUs", "3"}};
 
   float learnRate = 0.01;

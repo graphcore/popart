@@ -20,7 +20,7 @@ def test_disabled_virtual_graphs():
 
     opts = popart.SessionOptionsCore()
     opts.enablePipelining = True
-    opts.enableVirtualGraphs = False
+    opts.virtualGraphMode = popart.VirtualGraphMode.Off
 
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(
@@ -43,7 +43,7 @@ def test_enabled_recomputation():
 
     opts = popart.SessionOptionsCore()
     opts.enablePipelining = True
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
     opts.autoRecomputation = popart.RecomputationType.Standard
 
     builder.virtualGraph(op0_out, 0)
@@ -77,7 +77,7 @@ def test_bad_sharding0():
 
     opts = popart.SessionOptionsCore()
     opts.enablePipelining = True
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     # 1)
     builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
@@ -164,7 +164,7 @@ def test_stream_tensors_to_multiple_ipus():
 
     opts = popart.SessionOptionsCore()
     opts.enablePipelining = True
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     builder.virtualGraph(op0_out, 0)
     builder.virtualGraph(op1_out, 1)
@@ -211,7 +211,7 @@ def test_sharding_multi_source():
 
     opts = popart.SessionOptionsCore()
     opts.enablePipelining = True
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     builder.virtualGraph(op0_out, 0)
     builder.virtualGraph(op1_out, 1)
@@ -460,7 +460,8 @@ def test_pipelined_dropout():
             loss.virtualGraph(layers - 1)
 
         userOptions = popart.SessionOptions()
-        userOptions.enableVirtualGraphs = do_pipelining
+        if do_pipelining:
+            userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
         userOptions.enablePipelining = do_pipelining
 
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
@@ -562,7 +563,7 @@ def get_model_anchors(doSharding,
     if doSharding is False:
         deviceOpts = {'numIPUs': 1, "tilesPerIPU": 20}
     else:
-        opts.enableVirtualGraphs = True
+        opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         deviceOpts = {'numIPUs': 3, "tilesPerIPU": 20}
         builder.virtualGraph(s0, 0)
         builder.virtualGraph(e0, 1)

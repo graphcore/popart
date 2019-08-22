@@ -223,10 +223,9 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"}};
 
     if (continuous == true) {
-      userOptions.enableVirtualGraphs = true;
-      userOptions.autoVirtualGraph    = true;
-      userOptions.enablePipelining    = true;
-      deviceOpts["numIPUs"]           = "3";
+      userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+      userOptions.enablePipelining = true;
+      deviceOpts["numIPUs"]        = "3";
     }
 
     auto device =
