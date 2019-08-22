@@ -1,7 +1,7 @@
+#include <functional>
+#include <memory>
 #include <popart/error.hpp>
 #include <popart/op/maxpool.hpp>
-
-#include <memory>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
@@ -58,6 +58,17 @@ void MaxPoolOp::appendAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("storage_order", storageOrder);
   os.appendAttribute("kernel_shape", kernelShape);
   os.appendAttribute("ceil_mode", ceilMode);
+}
+
+bool MaxPoolOp::canBeReplacedByIdentity() {
+  int64_t padsSum        = std::accumulate(pads.begin(), pads.end(), 0);
+  int64_t stridesProduct = std::accumulate(
+      strides.begin(), strides.end(), 1, std::multiplies<int64_t>());
+  int64_t kernelShapeProduct = std::accumulate(
+      kernelShape.begin(), kernelShape.end(), 1, std::multiplies<int64_t>());
+  if (padsSum == 0 && stridesProduct == 1 && kernelShapeProduct == 1) {
+    return true;
+  }
 }
 
 MaxPoolGradOp::MaxPoolGradOp(const MaxPoolOp &op_)

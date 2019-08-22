@@ -1,3 +1,4 @@
+#include <functional>
 #include <memory>
 #include <popart/error.hpp>
 #include <popart/op/averagepool.hpp>
@@ -63,6 +64,17 @@ void AveragePoolOp::appendAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("kernel_shape", kernelShape);
   os.appendAttribute("count_include_pad", countIncludePad);
   os.appendAttribute("ceil_mode", ceilMode);
+}
+
+bool AveragePoolOp::canBeReplacedByIdentity() {
+  int64_t padsSum        = std::accumulate(pads.begin(), pads.end(), 0);
+  int64_t stridesProduct = std::accumulate(
+      strides.begin(), strides.end(), 1, std::multiplies<int64_t>());
+  int64_t kernelShapeProduct = std::accumulate(
+      kernelShape.begin(), kernelShape.end(), 1, std::multiplies<int64_t>());
+  if (padsSum == 0 && stridesProduct == 1 && kernelShapeProduct == 1) {
+    return true;
+  }
 }
 
 AveragePoolGradOp::AveragePoolGradOp(const AveragePoolOp &op_)
