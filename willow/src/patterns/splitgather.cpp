@@ -52,7 +52,7 @@ bool SplitGatherPattern::matches(Op *op) const {
   const int64_t virtualGraphCount = op->getIr().getDeviceInfo()->getNumIpus();
 
   // We aren't using vgraphs
-  if (!op->getIr().getSessionOptions().enableVirtualGraphs) {
+  if (!op->getIr().virtualGraphsEnabled()) {
     return false;
   }
 

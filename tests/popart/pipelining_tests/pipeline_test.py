@@ -23,7 +23,7 @@ def test_disabled_virtual_graphs():
             losses=[loss],
             deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
     assert e_info.value.args[0].startswith(
-        "Pipelining requires the 'enableVirtualGraphs' session option")
+        "Pipelining requires the 'virtualGraphMode' session option")
 
 
 def test_enabled_recomputation():

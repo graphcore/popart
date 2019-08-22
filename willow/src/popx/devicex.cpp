@@ -1780,7 +1780,7 @@ void Devicex::prepare() {
   setFloatingPointBehaviour(graph());
   setStochasticRoundingBehaviour(graph());
 
-  if (ir().getSessionOptions().enableVirtualGraphs) {
+  if (ir().virtualGraphsEnabled()) {
     auto numIPUs     = graph().getTarget().getNumIPUs();
     auto tilesPerIPU = graph().getTarget().getTilesPerIPU();
 

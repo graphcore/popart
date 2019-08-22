@@ -415,6 +415,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def_readwrite("enableVirtualGraphs",
                      &SessionOptions::enableVirtualGraphs)
       .def_readwrite("autoVirtualGraph", &SessionOptions::autoVirtualGraph)
+      .def_readwrite("virtualGraphMode", &SessionOptions::virtualGraphMode)
       .def_readwrite("enableReplicatedGraphs",
                      &SessionOptions::enableReplicatedGraphs)
       .def_readwrite("replicatedGraphCount",
@@ -463,6 +464,11 @@ PYBIND11_MODULE(popart_core, m) {
       .value("All", MergeVarUpdateType::All)
       .value("AutoTight", MergeVarUpdateType::AutoTight)
       .value("AutoLoose", MergeVarUpdateType::AutoLoose);
+
+  py::enum_<VirtualGraphMode>(m, "VirtualGraphMode")
+      .value("Off", VirtualGraphMode::Off)
+      .value("Manual", VirtualGraphMode::Manual)
+      .value("Auto", VirtualGraphMode::Auto);
 
   py::enum_<PreAliasPatternType>(m, "PreAliasPatternType")
       .value("PREUNIREPL", PreAliasPatternType::PREUNIREPL)

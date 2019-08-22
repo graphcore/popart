@@ -69,6 +69,7 @@ bool MaxPoolOp::canBeReplacedByIdentity() {
   if (padsSum == 0 && stridesProduct == 1 && kernelShapeProduct == 1) {
     return true;
   }
+  return false;
 }
 
 MaxPoolGradOp::MaxPoolGradOp(const MaxPoolOp &op_)

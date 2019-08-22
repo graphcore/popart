@@ -74,9 +74,9 @@ bool Pipeline::apply(Graph &graph) const {
   // First, some checks that pipelining is compatible with other user options:
 
   // 1. Pipelining uses the virtual graph API. This must be enabled
-  if (!ir.getSessionOptions().enableVirtualGraphs) {
-    throw error("Pipelining requires the 'enableVirtualGraphs' session option "
-                "to be turned on.");
+  if (!ir.virtualGraphsEnabled()) {
+    throw error("Pipelining requires the 'virtualGraphMode' session option "
+                "to not be VirtualGraphMode::Off.");
   }
 
   // 2. There must be enough batches of data for the cycle of filling
