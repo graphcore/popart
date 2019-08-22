@@ -78,6 +78,29 @@ def test_average_pool_3(op_tester):
     op_tester.run(init_builder, reference)
 
 
+def test_average_pool_4(op_tester):
+    """
+    The Identity case
+    """
+    d1 = np.random.rand(4, 256, 6, 6).astype(np.float16)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        o = builder.aiOnnx.averagepool([i1],
+                                       kernel_shape=[1, 1],
+                                       count_include_pad=0,
+                                       pads=[0, 0, 0, 0],
+                                       strides=[1, 1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        return [d1]
+
+    op_tester.passes = ['OpToIdentity']
+    op_tester.run(init_builder, reference)
+
+
 def test_average_pool_with_count_include_pad(op_tester):
 
     popart.getLogger().setLevel("TRACE")
@@ -204,6 +227,30 @@ def test_maxpool_4(op_tester):
         return [out]
 
     op_tester.run(init_builder, reference, step_type='infer')
+
+
+def test_maxpool_5(op_tester):
+    """
+    The Identity case
+    """
+    d1 = np.random.rand(4, 256, 6, 6).astype(np.float16)
+
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        (o, ) = builder.aiOnnx.maxpool([i1],
+                                       num_outputs=1,
+                                       kernel_shape=[1, 1],
+                                       storage_order=0,
+                                       pads=[0, 0, 0, 0],
+                                       strides=[1, 1])
+        builder.addOutputTensor(o)
+        return [o]
+
+    def reference(ref_data):
+        return [d1]
+
+    op_tester.passes = ['OpToIdentity']
+    op_tester.run(init_builder, reference)
 
 
 def test_maxpool_grad(op_tester):
