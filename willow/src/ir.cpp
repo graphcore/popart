@@ -517,19 +517,12 @@ void Ir::verifyTensorIds() const {
 }
 
 bool Ir::isCandidateForConstExprFolding(const Tensor &tensor) const {
+  // A tensor is computable as a const expression if it is Const. This would
+  // also be true for Variable tensors during inference, unless the user calls
+  // resetHostWeights. Because of this, am choosing to ignore case of Variable
+  // tensors during inference.
   auto tt = tensor.tensorType();
-
-  if (canTrain()) {
-    if (tt != TensorType::Const) {
-      return false;
-    }
-  } else {
-    // evalulation or inference
-    if (tt != TensorType::Const && tt != TensorType::Variable) {
-      return false;
-    }
-  }
-  return true;
+  return tt == TensorType::Const;
 }
 
 std::set<Tensor *> Ir::getRootInputsToOp(Op *op) {
