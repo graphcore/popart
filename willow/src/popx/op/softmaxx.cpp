@@ -144,19 +144,12 @@ void SoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
   popops::encodeOneHot(graph(), label1D, oneHot, prog, debugPrefix("nll"));
 
   // -1 at position "label", 0 elsewhere.
-  popops::mapInPlace(graph(),
-                     popops::expr::UnaryOpType::NEGATE,
-                     oneHot,
-                     prog,
-                     debugPrefix("neg"));
-
   // p - 1 at position "label" label, p elsewhere.
   popops::mapInPlace(graph(),
-                     popops::expr::BinaryOpType::ADD,
-                     oneHot,
-                     probs2D,
+                     pe::Add(pe::Neg(pe::_1), pe::_2),
+                     {oneHot, probs2D},
                      prog,
-                     debugPrefix("sub"));
+                     debugPrefix("negsub"));
 
   if (sfmgd.nlll()->hasIgnoreIndex()) {
     auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
@@ -230,19 +223,11 @@ void SoftmaxGradOpx::grow(poplar::program::Sequence &prog) const {
                                debugPrefix("reduce"))
                     .reshape(upRanked);
 
-  auto g_minus_sum_pg = popops::map(graph(),
-                                    popops::expr::BinaryOpType::SUBTRACT,
-                                    d_probs,
-                                    sum_pg,
-                                    prog,
-                                    debugPrefix("sub"));
-
   auto dv = popops::map(graph(),
-                        popops::expr::BinaryOpType::MULTIPLY,
-                        probs,
-                        g_minus_sum_pg,
+                        pe::Mul(pe::_1, pe::Sub(pe::_2, pe::_3)),
+                        {probs, d_probs, sum_pg},
                         prog,
-                        debugPrefix("mul"));
+                        debugPrefix("SubMul"));
 
   dv = dv.reshape(inInfo(SoftmaxGradOp::getActsInIndex()).shape_szt());
   setOutTensor(0, dv);
@@ -278,19 +263,12 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
 
   // TODO: T8303
   // -1 at position "label", 0 elsewhere.
-  popops::mapInPlace(graph(),
-                     popops::expr::UnaryOpType::NEGATE,
-                     oneHot,
-                     prog,
-                     debugPrefix("neg"));
-
   // p - 1 at position "label" label, p elsewhere.
   popops::mapInPlace(graph(),
-                     popops::expr::BinaryOpType::ADD,
-                     oneHot,
-                     probs2D,
+                     pe::Add(pe::Neg(pe::_1), pe::_2),
+                     {oneHot, probs2D},
                      prog,
-                     debugPrefix("sub"));
+                     debugPrefix("NegSub"));
 
   if (nllsfmgd.nlll()->hasIgnoreIndex()) {
     auto lossMask = NllOpx::applyMaskInPlaceForIgnoredIndex(
@@ -345,25 +323,12 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
                                             prog,
                                             debugPrefix("add"));
 
-  // Create an epsilon value
-  poplar::Tensor eps =
-      getConst(probs.elementType(), {1}, 1.0e-7, debugPrefix("epsilon"));
-
-  // Add eps to reduction to make sure it does not have any 0's before the
-  // log
-  reduction = popops::map(graph(),
-                          popops::expr::BinaryOpType::ADD,
-                          reduction,
-                          eps,
-                          prog,
-                          debugPrefix("epsMul"));
-
-  // and log it,
+  // Add eps to reduction to make sure it does not have any 0's and log it,
   popops::mapInPlace(graph(),
-                     popops::expr::UnaryOpType::LOGARITHM,
-                     reduction,
+                     pe::Log(pe::Add(pe::_1, pe::Const(1.0e-7f))),
+                     {reduction},
                      prog,
-                     debugPrefix("log"));
+                     debugPrefix("LogEpsMul"));
 
   // TODO: T8305, re-use the mask created above
   if (nllsfmgd.nlll()->hasIgnoreIndex()) {
