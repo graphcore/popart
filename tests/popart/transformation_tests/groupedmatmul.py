@@ -76,17 +76,45 @@ def test_matmul_1d(tmpdir):
     run_test()
 
 
-def test_matmul_grouping(tmpdir):
-    lhs_shape = [8, 6, 32, 64]
-    rhs_shape = [8, 6, 32, 64]
-    lhs_2_shape = [8, 6, 32, 32]
-    rhs_2_shape = [8, 6, 32, 64]
-    lhs_data = np.random.rand(8, 6, 32, 64).astype(np.float32)
-    rhs_data = np.random.rand(8, 6, 32, 64).astype(np.float32)
-    lhs_2_data = np.random.rand(8, 6, 32, 32).astype(np.float32)
-    rhs_2_data = np.random.rand(8, 6, 32, 64).astype(np.float32)
+'''
+Verify that the following 
 
-    def run_test():
+    A    B      C    D             A   C        B   D
+    |    |      |    |             |   |        |   |
+    MAT_MUL     MAT_MUL            CONCAT       CONCAT
+       |           |        =>       |            |
+   TRANSPOSE       |                 +-- MATMUL---+
+       |           |                       | 
+       +---MATMUL--+                 +-----+------+
+             |                       |            |
+                                   SLICE        SLICE
+                                     |            |  
+                                 TRANSPOSE        |
+                                     |            |
+                                     + --MATMUL---+
+                                           |
+ 
+causes the two MATMULs to be grouped
+'''
+
+
+def test_matmul_grouping_test_1(tmpdir):
+    lhs_shape = [6, 32, 32]
+    rhs_shape = [6, 32, 64]
+    lhs_2_shape = [6, 32, 32]
+    rhs_2_shape = [6, 32, 64]
+    lhs_data = np.random.rand(6, 32, 32).astype(np.float32)
+    rhs_data = np.random.rand(6, 32, 64).astype(np.float32)
+    lhs_2_data = np.random.rand(6, 32, 32).astype(np.float32)
+    rhs_2_data = np.random.rand(6, 32, 64).astype(np.float32)
+
+    def verify():
+        r1 = np.matmul(lhs_data, rhs_data)
+        r2 = np.matmul(lhs_2_data, rhs_2_data)
+        r2_t = np.transpose(r2, axes=[0, 2, 1])
+        return np.matmul(r1, r2_t)
+
+    def run_test(groupingEnabled):
         builder = popart.Builder()
 
         lhs = builder.addInputTensor(popart.TensorInfo("FLOAT", lhs_shape),
@@ -98,46 +126,33 @@ def test_matmul_grouping(tmpdir):
         rhs_2 = builder.addInputTensor(popart.TensorInfo("FLOAT", rhs_2_shape),
                                        "rhs_2")
 
-        rhs_t = builder.aiOnnx.transpose([rhs],
-                                         perm=[0, 1, 3, 2],
-                                         debugPrefix="rhs.transpose")
-        r1 = builder.aiOnnx.matmul([lhs, rhs_t])
+        r1 = builder.aiOnnx.matmul([lhs, rhs])
 
         r2 = builder.aiOnnx.matmul([lhs_2, rhs_2])
 
-        o = builder.aiOnnx.matmul([r1, r2])
+        r2_t = builder.aiOnnx.transpose([r2],
+                                        perm=[0, 2, 1],
+                                        debugPrefix="rhs.transpose")
+
+        o = builder.aiOnnx.matmul([r1, r2_t])
 
         builder.addOutputTensor(o)
 
         proto = builder.getModelProto()
 
-        dataFlow = popart.DataFlow(
-            1, {
-                o:
-                popart.AnchorReturnType("ALL"),
-                popart.reservedGradientPrefix() + lhs:
-                popart.AnchorReturnType("ALL"),
-                popart.reservedGradientPrefix() + rhs:
-                popart.AnchorReturnType("ALL"),
-                popart.reservedGradientPrefix() + lhs_2:
-                popart.AnchorReturnType("ALL"),
-                popart.reservedGradientPrefix() + rhs_2:
-                popart.AnchorReturnType("ALL")
-            })
+        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
+        opts.enableOutlining = False
+        opts.groupingEnabled = groupingEnabled
 
         pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
-        pat.MatMulLhsGradOp = True
-        pat.MatMulRhsGradOp = True
 
-        session = popart.TrainingSession(
+        session = popart.InferenceSession(
             fnModel=proto,
             dataFeed=dataFlow,
             userOptions=opts,
-            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
-            optimizer=popart.ConstSGD(0.01),
             passes=pat,
             deviceInfo=tu.get_ipu_model(compileIPUCode=False))
 
@@ -157,6 +172,198 @@ def test_matmul_grouping(tmpdir):
 
         return anchors[o]
 
-    run_test()
+    assert (np.allclose(run_test(False), verify()))
+    assert (np.allclose(run_test(True), verify()))
+
+    # Need to check the number of MatMuls & Make sure that the MatMulXXXGradOps have been removed
+
+
+'''
+Verify that the following 
+
+    A    B       C    D             A   C        B   D
+    |    |       |    |
+    | TRANSPOSE  |    |
+    |    |       |    |             |   |        |   |
+    MAT_MUL      MAT_MUL            CONCAT       CONCAT
+       |           |        =>       |            |
+   TRANSPOSE       |                 +-- MATMUL---+
+       |           |                       | 
+       +---MATMUL--+                 +-----+------+
+             |                       |            |
+                                   SLICE        SLICE
+                                     |            |  
+                                 TRANSPOSE        |
+                                     |            |
+                                     + --MATMUL---+
+                                           |
+ 
+causes the two MATMULs to be grouped
+'''
+
+
+def test_matmul_grouping_test_2(tmpdir):
+    A = [1, 32, 64]
+    B = [1, 32, 64]
+    C = [1, 32, 32]
+    D = [1, 32, 64]
+    A_data = np.random.rand(1, 32, 64).astype(np.float32)
+    B_data = np.random.rand(1, 32, 64).astype(np.float32)
+    C_data = np.random.rand(1, 32, 32).astype(np.float32)
+    D_data = np.random.rand(1, 32, 64).astype(np.float32)
+
+    def verify():
+        b_t = np.transpose(B_data, axes=[0, 2, 1])
+        r1 = np.matmul(A_data, b_t)
+        r2 = np.matmul(C_data, D_data)
+        return np.matmul(r1, r2)
+
+    def run_test(groupingEnabled):
+        builder = popart.Builder()
+
+        a = builder.addInputTensor(popart.TensorInfo("FLOAT", A), "A")
+        b = builder.addInputTensor(popart.TensorInfo("FLOAT", B), "B")
+        c = builder.addInputTensor(popart.TensorInfo("FLOAT", C), "D")
+        d = builder.addInputTensor(popart.TensorInfo("FLOAT", D), "D")
+
+        b_t = builder.aiOnnx.transpose([b], perm=[0, 2, 1], debugPrefix="B.T")
+
+        r1 = builder.aiOnnx.matmul([a, b_t], "MATMUL_A")
+
+        r2 = builder.aiOnnx.matmul([c, d], "MATMUL_B")
+
+        o = builder.aiOnnx.matmul([r1, r2], "END")
+
+        builder.addOutputTensor(o)
+
+        proto = builder.getModelProto()
+
+        dataFlow = popart.DataFlow(
+            1, {
+                o: popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + a:
+                popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + b:
+                popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + c:
+                popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + d:
+                popart.AnchorReturnType("ALL")
+            })
+
+        opts = popart.SessionOptions()
+        opts.reportOptions = {"showExecutionSteps": "true"}
+        opts.enableOutlining = False
+        opts.groupingEnabled = groupingEnabled
+        opts.dotOpNames = True
+
+        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFeed=dataFlow,
+            userOptions=opts,
+            passes=pat,
+            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            optimizer=popart.ConstSGD(0.01),
+            deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+
+        session.prepareDevice()
+
+        anchors = session.initAnchorArrays()
+
+        inputs = {a: A_data, b: B_data, c: C_data, d: D_data}
+        stepio = popart.PyStepIO(inputs, anchors)
+
+        session.run(stepio)
+
+        return anchors[o]
+
+    #assert(np.allclose(run_test(False), verify()))
+    assert (np.allclose(run_test(True), verify()))
+
+    # Need to check the number of MatMuls & Make sure that the MatMulXXXGradOps have been removed
+
+
+# Verify 2d inputs are expanded to 3d first
+def test_matmul_grouping_test_3(tmpdir):
+    A = [32, 64]
+    B = [32, 64]
+    C = [32, 32]
+    D = [32, 64]
+    A_data = np.random.rand(32, 64).astype(np.float32)
+    B_data = np.random.rand(32, 64).astype(np.float32)
+    C_data = np.random.rand(32, 32).astype(np.float32)
+    D_data = np.random.rand(32, 64).astype(np.float32)
+
+    def verify():
+        b_t = np.transpose(B_data, axes=[1, 0])
+        r1 = np.matmul(A_data, b_t)
+        r2 = np.matmul(C_data, D_data)
+        return np.matmul(r1, r2)
+
+    def run_test(groupingEnabled):
+        builder = popart.Builder()
+
+        a = builder.addInputTensor(popart.TensorInfo("FLOAT", A), "A")
+        b = builder.addInputTensor(popart.TensorInfo("FLOAT", B), "B")
+        c = builder.addInputTensor(popart.TensorInfo("FLOAT", C), "D")
+        d = builder.addInputTensor(popart.TensorInfo("FLOAT", D), "D")
+
+        b_t = builder.aiOnnx.transpose([b], perm=[1, 0], debugPrefix="B.T")
+
+        r1 = builder.aiOnnx.matmul([a, b_t], "MATMUL_A")
+
+        r2 = builder.aiOnnx.matmul([c, d], "MATMUL_B")
+
+        o = builder.aiOnnx.matmul([r1, r2], "END")
+
+        builder.addOutputTensor(o)
+
+        proto = builder.getModelProto()
+
+        dataFlow = popart.DataFlow(
+            1, {
+                o: popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + a:
+                popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + b:
+                popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + c:
+                popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + d:
+                popart.AnchorReturnType("ALL")
+            })
+
+        opts = popart.SessionOptions()
+        opts.reportOptions = {"showExecutionSteps": "true"}
+        opts.enableOutlining = False
+        opts.groupingEnabled = groupingEnabled
+        opts.dotOpNames = True
+
+        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFeed=dataFlow,
+            userOptions=opts,
+            passes=pat,
+            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            optimizer=popart.ConstSGD(0.01),
+            deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+
+        session.prepareDevice()
+
+        anchors = session.initAnchorArrays()
+
+        inputs = {a: A_data, b: B_data, c: C_data, d: D_data}
+        stepio = popart.PyStepIO(inputs, anchors)
+
+        session.run(stepio)
+
+        return anchors[o]
+
+    #assert(np.allclose(run_test(False), verify()))
+    assert (np.allclose(run_test(True), verify()))
 
     # Need to check the number of MatMuls & Make sure that the MatMulXXXGradOps have been removed

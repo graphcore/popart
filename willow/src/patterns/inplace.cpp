@@ -39,6 +39,8 @@ ExternOpTensorBundle::ExternOpTensorBundle(Op *opCopy,
 
 Op *ExternOpTensorBundle::getOp() { return up_op.get(); }
 
+Inplace::Inplace() : Pattern() { initialise("InPlace"); }
+
 // what is touched? The output, and all the inputs at the target indices
 std::vector<const Tensor *> Inplace::touches(Op *op, OperatorIdentifier) const {
 

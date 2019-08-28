@@ -37,6 +37,7 @@
 #include <popart/recompute.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
 #include <popart/transforms/gradient_accumulation.hpp>
+#include <popart/transforms/groupmatmuls.hpp>
 #include <popart/transforms/interipucopy.hpp>
 #include <popart/transforms/mergecopies.hpp>
 #include <popart/transforms/mergevarupdates.hpp>
@@ -765,6 +766,11 @@ void Ir::prepare(const IrBundle &gb) {
   // Add internal ops to copy tensors between ipu's as needed
   applyTransform(InterIpuCopy::id(), getMainGraph());
   applyTransform(MergeCopies::id(), getMainGraph());
+
+  if (getSessionOptions().enableGroupedMatmuls) {
+    applyTransform(GroupMatMuls::id(), getMainGraph());
+  }
+
   updateVertices();
 
   dotCheckpoint(DotCheck::PREALIAS);

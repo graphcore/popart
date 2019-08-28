@@ -70,6 +70,18 @@ template <typename Y> std::vector<Y> vBooltoY(const std::vector<bool> &c0) {
   return c1;
 }
 
+// Handy erase_if for std::map. Will be added to C++ 20 eventually
+// https://en.cppreference.com/w/cpp/experimental/map/erase_if
+template <class Key, class T, class Compare, class Alloc, class Pred>
+void erase_if(std::map<Key, T, Compare, Alloc> &c, const Pred &pred) {
+  for (auto it = c.begin(); it != c.end();) {
+    if (pred(*it))
+      it = c.erase(it);
+    else
+      ++it;
+  }
+}
+
 namespace util {
 
 /// Zip a pair of sequences with a given function into a third sequence.

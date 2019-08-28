@@ -56,6 +56,9 @@ public:
   // exception
   template <typename T> T getAttribute(const std::string &key) const;
 
+  // Adds the key and value
+  template <typename T> void setAttribute(const std::string &key, T &);
+
 private:
   std::map<std::string, onnxAttPtr> att_map;
   std::vector<std::string> names;
@@ -118,6 +121,10 @@ Attributes::Float Attributes::getAttribute(const std::string &key) const;
 template <>
 Attributes::Graph Attributes::getAttribute(const std::string &key) const;
 
+template <>
+void Attributes::setAttribute(const std::string &key, Attributes::Ints &);
+template <>
+void Attributes::setAttribute(const std::string &key, Attributes::Int &);
 } // namespace popart
 
 #endif

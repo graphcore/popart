@@ -82,7 +82,7 @@ std::string Pattern::getReplacementOpName(Op *op,
   if (op->name() == "") {
     replacementName = "";
   } else {
-    replacementName = op->name() + "_from_" + getPatternName();
+    replacementName = op->name() + ":" + getPatternName();
   }
 
   if (!name.empty()) {

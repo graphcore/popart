@@ -472,6 +472,8 @@ PYBIND11_MODULE(popart_core, m) {
                      &SessionOptions::enableStochasticRounding)
       .def_readwrite("enableFullyConnectedPass",
                      &SessionOptions::enableFullyConnectedPass)
+      .def_readwrite("enableGroupedMatmuls",
+                     &SessionOptions::enableGroupedMatmuls)
       // set in python use the python set constructor, so something like
       // mySessionOptions.dotChecks = {popart.DotCheck.FINAL}
       .def_readwrite("dotChecks", &SessionOptions::dotChecks);

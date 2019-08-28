@@ -123,8 +123,9 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     auto opts = SessionOptions();
     // This test tests the functionality of fwtools::subgraph::getRinseMatches,
     // not the actual outlining of the Ir
-    opts.enableOutlining   = false;
-    opts.autoRecomputation = RecomputationType::None;
+    opts.enableOutlining      = false;
+    opts.enableGroupedMatmuls = false;
+    opts.autoRecomputation    = RecomputationType::None;
 
     Ir ir;
     opts.mergeVarUpdate = MergeVarUpdateType::None;
@@ -376,8 +377,9 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   auto opts = SessionOptions();
   // This test tests the functionality of fwtools::subgraph::getRinseMatches,
   // not the actual outlining of the Ir
-  opts.enableOutlining   = false;
-  opts.autoRecomputation = RecomputationType::None;
+  opts.enableOutlining      = false;
+  opts.enableGroupedMatmuls = false;
+  opts.autoRecomputation    = RecomputationType::None;
 
   Ir ir;
   ir.prepare({modelProto,

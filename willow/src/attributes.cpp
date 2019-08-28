@@ -325,4 +325,34 @@ Attributes::Graph Attributes::getAttribute(const std::string &key) const {
 
   throw error("no attribute key {}", key);
 }
+
+// Adds the key and value
+template <>
+void Attributes::setAttribute(const std::string &key, Attributes::Int &value) {
+  if (hasAttribute(key)) {
+    set(value, key);
+  } else {
+    names.push_back(key);
+    onnx::AttributeProto *attribute = new onnx::AttributeProto();
+    attribute->set_name(key);
+    attribute->set_i(value);
+    att_map[key] = attribute;
+  }
+}
+
+template <>
+void Attributes::setAttribute(const std::string &key, Attributes::Ints &value) {
+  if (hasAttribute(key)) {
+    set(value, key);
+  } else {
+    names.push_back(key);
+    onnx::AttributeProto *attribute = new onnx::AttributeProto();
+    attribute->set_name(key);
+    for (int i = 0; i < value.size(); ++i) {
+      attribute->add_ints(value[i]);
+    }
+    att_map[key] = attribute;
+  }
+}
+
 } // namespace popart
