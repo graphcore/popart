@@ -6,8 +6,8 @@ if (BUILD_DOCS)
   find_package(gcdoc REQUIRED)
 
   list(APPEND DOXYGEN_INPUT0 "")
-  list(APPEND DOXYGEN_INPUT0 ${CMAKE_SOURCE_DIR}/willow/include)
-  list(APPEND DOXYGEN_INPUT0 ${CMAKE_SOURCE_DIR}/${INSTALL_PYDIR})
+  list(APPEND DOXYGEN_INPUT0 ${CMAKE_CURRENT_SOURCE_DIR}/../willow/include)
+  list(APPEND DOXYGEN_INPUT0 ${CMAKE_CURRENT_SOURCE_DIR}/../${INSTALL_PYDIR})
 
   string(REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT0}")
   configure_file(user_guide/Doxyfile.in Doxyfile @ONLY)
