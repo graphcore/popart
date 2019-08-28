@@ -80,7 +80,7 @@ function(add_popart_cpp_example name)
     popart)
   set(executable_name "${name}")
   add_custom_command(TARGET popart_run_examples
-                     COMMAND ${CMAKE_BINARY_DIR}/examples/${name}
+                     COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${name}
 		                 DEPENDS ${name} ${ARGN}
                      WORKING_DIRECTORY ${CMAKE_BINARY_DIR})  
 endfunction()
