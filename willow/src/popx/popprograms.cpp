@@ -428,6 +428,8 @@ PopPrograms::forwardOrBackwardFragment(ScheduledPreLoss preLoss) {
   case ScheduledPreLoss::Undefined: {
     throw error("There is no fragment for Undefined SchedulePreLoss");
   }
+  default:
+    throw error("Unknown SchedulePreLoss fragment");
   }
 }
 
