@@ -1,5 +1,5 @@
-ONNX for the IPU
-================
+PopART User Guide
+=================
 
 .. gcdoc::
     :verb-borders:

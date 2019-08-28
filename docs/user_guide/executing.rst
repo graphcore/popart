@@ -18,7 +18,7 @@ To construct a session for inference you need to provide the model,
 the input data feed, and a deviceInfo. 
 A full forward pass will be constructed.
 
-::
+.. code-block:: python
 
   df = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
   device = popart.DeviceManager().createCpuDevice()
@@ -26,11 +26,11 @@ A full forward pass will be constructed.
 
 
 To construct a session for training, you need to provide the model,
-input data feed, loss, optimzier, and a deviceInfo 
+input data feed, loss, optimiser, and a deviceInfo 
 A full forward pass, loss calculation and backward pass will be
 constructed.  
 
-::
+.. code-block:: python
 
   l = [popart.L1Loss(o, "l1LossVal", 0.1)]
   opt = popart.ConstSGD(0.01)
@@ -60,7 +60,7 @@ When a network is being prepared for training, one or more loss function
 nodes will be appended to the graph.  These are provided by the `losses`
 parameter.  This is a list of loss operations.
 
-When training, an optimization algorithm is also required.  This is provided
+When training, an optimisation algorithm is also required.  This is provided
 by the `optimizer` parameter.
 
 Session control options
@@ -76,7 +76,7 @@ as described in the API reference documentation.
 
 The `patterns` parameter allows the user to select a set of graph transformation
 patterns which will be applied to the graph.  Without this parameter, a default
-set of optimization transformations will be applied.
+set of optimisation transformations will be applied.
 
 Selecting a device for execution
 ================================
@@ -84,7 +84,7 @@ Selecting a device for execution
 The device manager allows the selection of an IPU configuration for the execution.
 The device must be passed into the sessions constructor.
 
-::
+.. code-block:: python
 
   df = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
   device = popart.DeviceManager().createCpuDevice()
@@ -94,7 +94,7 @@ The device manager can enumerate the available devices with the `enumerateDevice
 method. The  `acquireAvailableDevice` method will acquire the
 next available device. The first parameter specifies how many IPUs to acquire.
 
-::
+.. code-block:: python
 
   # Acquire a 2 IPU pair
   dev = popart.DeviceManager().acquireAvailableDevice(2)
@@ -103,7 +103,7 @@ Using `acquireDeviceById` will select a device from the list
 of IPU configurations, as given by the `enumerateDevices` method, or by the `gc-info`
 application.
 
-::
+.. code-block:: python
 
   # Acquire IPU configuration 5
   dev = popart.DeviceManager().acquireDeviceById(5)
@@ -121,7 +121,7 @@ Compiling the graph and preparing the hardware for execution
 Once the device has been selected, the graph can be compiled for it, and
 loaded into the hardware.  The `prepareDevice` method is used:
 
-::
+.. code-block:: python
 
   session.prepareDevice()
 
@@ -130,17 +130,17 @@ If there are any pre-defined inputs (weights, biases, etc.) in the graph
 then they will not be specified in the `PyStepIO` object.  However, before
 executing the graph, they will need to the copied to the hardware.
 
-If there are any optimizer specific parameters which can be modified,
+If there are any optimiser specific parameters which can be modified,
 then these must be written to the device.
 
-::
+.. code-block:: python
 
   session.weightsFromHost()
   session.optimizerFromHost()
 
 They can also be updated between executions.
 
-::
+.. code-block:: python
 
   # Update learning rate parameter between training steps
   stepLr = learningRate[step]
@@ -162,7 +162,7 @@ A convenience method `initAnchorArrays` can create the output buffers
 and map for the user, given the anchors (output nodes) which were
 specified in the `dataFlow` object during session construction.
 
-::
+.. code-block:: python
 
   # Create buffers to receive results from the execution
   anchors = session.initAnchorArrays()
@@ -183,7 +183,7 @@ Running
 
 To execute the session you need to call run. 
 
-::
+.. code-block:: python
 
   session.run(stepio)
 
@@ -194,8 +194,8 @@ If losses are provided to the inference session the forward pass and the losses
 will be executed, and the final loss value will be returned.
 
 
-If the session is created for training, any pre-initialized parameters will be 
-updated to reflect changes to them that the optimizer has made.
+If the session is created for training, any pre-initialised parameters will be 
+updated to reflect changes to them that the optimiser has made.
 
 
 Retrieving results
@@ -204,11 +204,11 @@ Retrieving results
 The `DataFow` class describes how to execute the graph.  The second parameter is
 a description of the anchors, the results to fetch from the graph.
 
-::
+.. code-block:: python
 
   df = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-The python dictionary has keys which are the names of the tensors to retreive
+The Python dictionary has keys which are the names of the tensors to retrieve
 from the model, and the values are an `AnchorReturnType`, one of:
 
 * popart.AnchorReturnType("ALL"), a vector of results is returned, one for each
@@ -225,7 +225,7 @@ Fetching the trained parameters
 The method `modelToHost` writes a model with updated weights
 to the file at the provided path.
 
-::
+.. code-block:: python
 
   session.modelToHost("trained_model.onnx")
 
@@ -233,7 +233,7 @@ to the file at the provided path.
 A file of saved parameters, for example from an earlier execution session, can
 be loaded into the current session.
 
-::
+.. code-block:: python
 
   session.resetHostWeights("test.onnx")
   session.weightsFromHost()
@@ -256,10 +256,10 @@ formatted report.
 Turning on execution tracing
 ============================
 
-Popart contains an internal logging system that can show the progress of graph
+PopART contains an internal logging system that can show the progress of graph
 compilation and execution.  It can be turned on by called the `Logger` class.
 
-::
+.. code-block:: python
 
   popart.getLogger().setLevel("TRACE")
 
