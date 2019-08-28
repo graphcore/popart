@@ -9,7 +9,8 @@ if len(sys.argv) < 3:
 print("Looking for popart module in " + sys.argv[1])
 print("Writing supported ops to " + sys.argv[2])
 
-sys.path.append(sys.argv[1])
+for p in sys.argv[1].split(':'):
+    sys.path.append(p)
 import popart
 
 supported_ops = popart.getSupportedOperations(False)

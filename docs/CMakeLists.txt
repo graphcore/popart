@@ -18,7 +18,7 @@ if (BUILD_DOCS)
 
   add_custom_command(
     OUTPUT ${SUPPORTED_OPS_GEN}
-    COMMAND python3 gen_supported_ops.py ${CMAKE_BINARY_DIR}/python ${SUPPORTED_OPS_GEN}
+    COMMAND python3 gen_supported_ops.py "${CMAKE_BINARY_DIR}/python:${CMAKE_BINARY_DIR}/popart/python" ${SUPPORTED_OPS_GEN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Creating supported ops"
   )
