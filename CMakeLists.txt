@@ -158,7 +158,9 @@ add_custom_target(package_and_move
 )
 else()
 add_custom_target(package_and_move
-  COMMAND ${CMAKE_CPACK_COMMAND}
+  # CMAKE_BINARY_DIR is not the CWD for this command when it is nested in the popart_super repo
+  # Specifying CPackConfig.cmake manually for this reason
+  COMMAND ${CMAKE_CPACK_COMMAND} --config ${CMAKE_BINARY_DIR}/CPackConfig.cmake
   COMMAND bash -c "mkdir -p ${PKG_UPLOAD_DIR}"
   COMMAND bash -c "mv ${PACKAGE_FILE_NAME}.tar.gz ${PKG_UPLOAD_DIR}"
   COMMAND bash -c "mv ${PRODINFO_FILE_NAME} ${PKG_UPLOAD_DIR}"
