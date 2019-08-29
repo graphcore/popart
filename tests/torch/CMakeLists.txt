@@ -12,10 +12,10 @@ IF(C10_DIR)
 ENDIF()
 MESSAGE(STATUS "C10_PYSTRING_DIR is ${C10_PYSTRING_DIR}")
 configure_file(cifar10/c10datadir.py.in
-  ${CMAKE_BINARY_DIR}/cifar10/c10datadir.py
+  ${CMAKE_CURRENT_BINARY_DIR}/cifar10/c10datadir.py
   @ONLY)
 
-install(FILES ${CMAKE_BINARY_DIR}/cifar10/c10datadir.py
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/cifar10/c10datadir.py
   DESTINATION ${INSTALL_TESTS}/torch/cifar10)
 
 #------ end of download data script
