@@ -43,7 +43,7 @@ target_link_libraries(popart_core PRIVATE
 add_custom_command(
   TARGET popart_core
   PRE_BUILD
-  COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/popart ${CMAKE_BINARY_DIR}/python/popart
+  COMMAND cmake -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/popart ${CMAKE_CURRENT_BINARY_DIR}/popart
   COMMENT "Copying python module"
 )
 
@@ -71,8 +71,8 @@ install(DIRECTORY
   DESTINATION ${INSTALL_PYDIR})
 
 configure_file(__init__.py.in
-  ${CMAKE_BINARY_DIR}/python/popart/__init__.py
+  ${CMAKE_CURRENT_BINARY_DIR}/popart/__init__.py
   @ONLY)
 
-install(FILES ${CMAKE_BINARY_DIR}/python/popart/__init__.py
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/popart/__init__.py
   DESTINATION ${INSTALL_PYDIR}/popart)

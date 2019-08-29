@@ -7,14 +7,14 @@ add_custom_target(popart_examples)
 add_custom_command(TARGET popart_examples
   COMMAND cmake -E copy_directory
                    ${CMAKE_CURRENT_SOURCE_DIR}/python
-                   ${CMAKE_BINARY_DIR}/examples/python
+                   ${CMAKE_CURRENT_BINARY_DIR}/python
 )
 
 # Required for including examples in documentation
 add_custom_command(TARGET popart_examples
   COMMAND cmake -E copy_directory
                    ${CMAKE_CURRENT_SOURCE_DIR}/cplusplus
-                   ${CMAKE_BINARY_DIR}/examples/cplusplus
+                   ${CMAKE_CURRENT_BINARY_DIR}/cplusplus
 )
 
 
@@ -25,7 +25,7 @@ add_custom_target(popart_run_examples
 add_custom_command(TARGET popart_run_examples
   COMMAND cmake -E copy
                    ${CMAKE_CURRENT_SOURCE_DIR}/run_example.sh
-                   ${CMAKE_BINARY_DIR}/examples/
+                   ${CMAKE_CURRENT_BINARY_DIR}/
 )
 
 ## python examples
@@ -33,19 +33,19 @@ function(add_popart_py_example name)
   message(STATUS
     "Adding example '${name}'")
   add_custom_command(TARGET popart_run_examples
-                     COMMAND bash ${CMAKE_BINARY_DIR}/examples/run_example.sh
-		                  ${CMAKE_CURRENT_SOURCE_DIR}/python/${name}.py
-                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+                     COMMAND bash ${CMAKE_CURRENT_BINARY_DIR}/run_example.sh
+		                 ${CMAKE_CURRENT_SOURCE_DIR}/python/${name}.py
+                     WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 endfunction()
 
 function(add_popart_py_modelzoo_example name urlbase)
   message(STATUS
     "Adding example '${name}'")
   add_custom_command(TARGET popart_run_examples
-                     COMMAND bash ${CMAKE_BINARY_DIR}/examples/run_example.sh
-                      ${CMAKE_CURRENT_SOURCE_DIR}/python/model_zoo_import.py
-                      ${urlbase}/${name}.tar.gz
-                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+                     COMMAND bash ${CMAKE_CURRENT_BINARY_DIR}/run_example.sh
+                     ${CMAKE_CURRENT_SOURCE_DIR}/python/model_zoo_import.py
+                     ${urlbase}/${name}.tar.gz
+                     WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 endfunction()
 
 add_popart_py_example(simple_addition)
@@ -82,7 +82,7 @@ function(add_popart_cpp_example name)
   add_custom_command(TARGET popart_run_examples
                      COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${name}
 		                 DEPENDS ${name} ${ARGN}
-                     WORKING_DIRECTORY ${CMAKE_BINARY_DIR})  
+                     WORKING_DIRECTORY ${PROJECT_BINARY_DIR})  
 endfunction()
 
 
