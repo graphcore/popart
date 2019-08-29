@@ -1,3 +1,6 @@
+Glossary
+========
+
 Sample
 ~~~~~~
 The smallest division of a data set. 

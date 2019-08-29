@@ -31,7 +31,7 @@ These values may be combined using `:` as a separator.
 The below shows how to set `POPART_DOT_CHECKS` to export
 dot graphs `FWD0` and `FINAL`.
 
-::
+.. code-block:: console
 
   export POPART_DOT_CHECKS=FWD0:FINAL
 
@@ -47,6 +47,6 @@ The format of the tensor tile map is json.
 The tensor tile map will be saved in the call to `Session::prepareDevice`.
 The below show how to set the variable to save the tensor tile map to `ttm.js`.
 
-::
+.. code-block:: console
 
   export POPART_TENSOR_TILE_MAP=ttm.js

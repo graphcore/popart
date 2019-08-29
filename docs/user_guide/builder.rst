@@ -6,7 +6,7 @@ party framework.
 
 In this example, a simple addition is prepared for execution.
 
-::
+.. code-block:: python
 
   import popart
 
@@ -37,7 +37,7 @@ operation methods.  For instance `relu` will add a relu ONNX operation
 to the graph.  Each of these methods follows a common signature, for
 instance:
 
-::
+.. code-block:: python
 
   output = builder.aiOnnx.relu([input], "debug-name")
 
@@ -47,7 +47,7 @@ the name of the tensor which is an output of the newly added node.
 
 In some cases other arguments are required, for instance:
 
-::
+.. code-block:: python
 
   output = builder.aiOnnx.gather(['input', 'indices'], axis=1, debugPrefix="My-Gather")
 
@@ -58,7 +58,7 @@ Parameters, for instance the weights of a convolution, are represented as
 initialized inputs to the graph.  They can be added with the
 `addInitializedInputTensor` method:
 
-::
+.. code-block:: python
 
   w_data = np.random.rand(64, 4, 3, 3).astype(np.float16)
   w1 = builder.addInitializedInputTensor(w_data)
@@ -69,7 +69,7 @@ Setting outputs
 The outputs of the graph should be marked appropriately, using the
 `addOutputTensor` method:
 
-::
+.. code-block:: python
 
   builder.addOutputTensor(output)
 
@@ -81,7 +81,7 @@ to be marked with an annotation to describe which IPU they will run upon.
 
 For instance, to place a specific convolution onto IPU 1:
 
-::
+.. code-block:: python
 
   we = builder.addInitializedInputTensor(np.zeros([32, 4, 3, 3], np.float16))
   bi = builder.addInitializedInputTensor(np.zeros([32], np.float16))
@@ -95,7 +95,7 @@ For instance, to place a specific convolution onto IPU 1:
 A context manager is available for placing multiple operations onto a
 specific IPU together:
 
-::
+.. code-block:: python
 
   builder = popart.Builder()
 

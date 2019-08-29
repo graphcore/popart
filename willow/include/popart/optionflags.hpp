@@ -201,7 +201,7 @@ struct SessionOptions {
   bool enableFullyConnectedPass = false;
 
   /// Enable/disable the grouping of matmuls that are the same shape
-  bool enableGroupedMatmuls = true;
+  bool enableGroupedMatmuls = false;
 
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;

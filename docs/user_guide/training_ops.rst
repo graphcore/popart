@@ -8,13 +8,17 @@ Losses
 ~~~~~~
 
 .. doxygenclass:: popart::L1Loss
+  :members:
 
 .. doxygenclass:: popart::NllLoss
+  :members:
 
 
-Optimizers
+Optimisers
 ~~~~~~~~~~
 
 .. doxygenclass:: popart::ConstSGD
+  :members:
 
 .. doxygenclass:: popart::SGD
+  :members:

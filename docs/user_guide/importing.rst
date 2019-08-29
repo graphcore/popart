@@ -13,7 +13,7 @@ is used to create a pre-trained AlexNet graph, with a 4x3x244x244 input. The
 `torchvision` graph has an ONNX output called `out`, and the `DataFlow` object
 contains an entry to fetch that anchor.
 
-::
+.. code-block:: python
 
   import popart
   import torch.onnx
@@ -42,7 +42,7 @@ Other parameters to the `Session` object describe the types of loss to apply to
 the network and the optimizer to use, for when the user wishes to train the
 network instead of performing inference.
 
-::
+.. code-block:: python
 
   import popart
   import torch.onnx
