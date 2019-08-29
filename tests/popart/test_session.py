@@ -10,6 +10,7 @@ class TestSession:
         self.numIPUs = 1
         self.mode = 'inference'
         self.passes = None
+        self.batchesPerStep = 1
 
     def prepare_and_run(self, init_builder, ins=None):
         self.prepare(init_builder)
@@ -21,9 +22,9 @@ class TestSession:
         self._builder._check_inputs()
         anchors = _get_anchors(anchorIds, self._builder)
 
-        dataFlow = popart.DataFlow(1, anchors)
+        dataFlow = popart.DataFlow(self.batchesPerStep, anchors)
         proto = self._builder.getModelProto()
-        losses = _get_losses(anchorIds)
+        losses = self._get_losses(anchorIds)
         device = self._get_device()
 
         optimizer = popart.ConstSGD(0.01)
@@ -48,6 +49,17 @@ class TestSession:
         stepio = popart.PyStepIO(inputs, _anchor_map)
         self._session.run(stepio)
         return _anchor_map
+
+    def _get_losses(self, anchorIds):
+        if self._builder._losses:
+            print(f'Returning losses from builder {self._builder._losses}')
+            return self._builder._losses
+        else:
+            print(f'Returning default losses')
+            return [
+                popart.L1Loss(anchorIds[0], "l1LossVal", 0.1,
+                              popart.ReductionType.Sum)
+            ]
 
     def _get_session(self, **kwargs):
         def create_session(valid_args, session_type):
@@ -80,7 +92,11 @@ class TestSession:
             if ins and k in ins:
                 inputs[k] = ins[k]
             else:
-                inputs[k] = v
+                if self.batchesPerStep == 1:
+                    inputs[k] = v
+                else:
+                    inputs[k] = np.stack(
+                        [v for _ in range(self.batchesPerStep)])
 
         if ins:
             for k in ins.keys():
@@ -103,6 +119,7 @@ class _Builder:
         self._input_map = {}
         self._init_input_map = {}
         self._outputs = []
+        self._losses = []
 
     def addInputTensor(self, data, debug_prefix=None):
         shape = popart.TensorInfo(data)
@@ -123,6 +140,10 @@ class _Builder:
         self._init_input_map[tensor_id] = data
 
         return tensor_id
+
+    def addL1Loss(self, *args):
+        self._losses.append(popart.L1Loss(*args))
+        return self._losses[-1]
 
     def addOutputTensor(self, tensorId):
         self._outputs.append(tensorId)
@@ -151,9 +172,3 @@ def _get_anchors(anchorIds, builder):
             anchors[anchorId] = popart.AnchorReturnType('ALL')
 
     return anchors
-
-
-def _get_losses(anchorIds):
-    return [
-        popart.L1Loss(anchorIds[0], "l1LossVal", 0.1, popart.ReductionType.Sum)
-    ]

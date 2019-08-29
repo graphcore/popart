@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
                             {outs.at(2), AnchorReturnType("ALL")}});
 
   SessionOptions userOptions;
-  userOptions.enableVirtualGraphs = false;
+  userOptions.virtualGraphMode = VirtualGraphMode::Off;
 
   std::map<std::string, std::string> deviceOpts{{"numIPUs", "2"}};
   auto device =

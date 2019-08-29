@@ -99,9 +99,8 @@ void prepareIr1(popart::Ir &ir) {
   auto dataFlow = DataFlow(10, {{act4, AnchorReturnType("ALL")}});
 
   SessionOptions userOptions;
-  userOptions.enableVirtualGraphs = true;
-  userOptions.autoVirtualGraph    = true;
-  userOptions.enablePipelining    = true;
+  userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+  userOptions.enablePipelining = true;
 
   std::map<std::string, std::string> deviceOpts{{"numIPUs", "3"}};
 
@@ -197,9 +196,8 @@ void prepareIr0(popart::Ir &ir) {
   auto dataFlow = DataFlow(10, {{act0, AnchorReturnType("ALL")}});
 
   SessionOptions userOptions;
-  userOptions.enableVirtualGraphs = true;
-  userOptions.autoVirtualGraph    = true;
-  userOptions.enablePipelining    = true;
+  userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+  userOptions.enablePipelining = true;
 
   std::map<std::string, std::string> deviceOpts{{"numIPUs", "3"}};
 

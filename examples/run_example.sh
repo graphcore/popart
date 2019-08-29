@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
-export PYTHONPATH=./python
+export PYTHONPATH=./python:popart/python
 python -s $1

@@ -106,7 +106,7 @@ def ipu_op_tester(tmpdir):
 
             opts = popart.SessionOptionsCore()
             opts.logDir = self.logging_dir
-            opts.enableVirtualGraphs = True
+            opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
             device = tu.get_ipu_model(numIPUs=4)
 

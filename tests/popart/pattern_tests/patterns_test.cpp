@@ -529,7 +529,7 @@ BOOST_AUTO_TEST_CASE(Attribute_Inheritance) {
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
   SessionOptions opts;
-  opts.enableVirtualGraphs = true;
+  opts.virtualGraphMode = VirtualGraphMode::Manual;
 
   Ir ir;
   ir.prepare({modelProto,

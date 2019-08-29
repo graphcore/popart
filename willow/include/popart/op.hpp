@@ -92,7 +92,9 @@ public:
     std::vector<std::tuple<std::string, float>> inplacePriorityVeto;
 
     // The virtual graph this op has been assigned to if set
-    boost::optional<int64_t> vgraphId;
+    boost::optional<VGraphId> vgraphId;
+
+    boost::optional<PipelineStage> pipelineStage;
 
     // This method will append the optional attributes (vgraphId, etc)
     // depending on whether the attribute has been
@@ -107,9 +109,13 @@ public:
   Settings &getSettings() { return settings; }
   const Settings &getSettings() const { return settings; }
   const boost::optional<int64_t> getOptionalVirtualGraphId() const;
-  int64_t getVirtualGraphId() const;
-  void setVirtualGraphId(const boost::optional<int64_t> value);
+  VGraphId getVirtualGraphId() const;
+  void setVirtualGraphId(const boost::optional<VGraphId> value);
   bool hasVirtualGraphId() const;
+
+  void setPipelineStage(PipelineStage);
+  bool hasPipelineStage() const;
+  PipelineStage getPipelineStage() const;
 
   Ir &getIr();
   const Ir &getIr() const;

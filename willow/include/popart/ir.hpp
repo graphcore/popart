@@ -386,6 +386,7 @@ private:
   void verifyTensorIds() const;
   void verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const;
   void verifyVertexAttributesOnlyInMain() const;
+  void verifyPiplineStageAttribute() const;
 
   // Verify ConstExpr folding has removed input tensors
   // as expected

@@ -62,7 +62,7 @@ BOOST_AUTO_TEST_CASE(MergeCopies0) {
   auto data_flow = DataFlow(1, {{out_id, AnchorReturnType("ALL")}});
 
   SessionOptions opts;
-  opts.enableVirtualGraphs = true;
+  opts.virtualGraphMode = VirtualGraphMode::Manual;
 
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
@@ -123,7 +123,7 @@ BOOST_AUTO_TEST_CASE(MergeCopies1) {
   auto data_flow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
 
   SessionOptions opts;
-  opts.enableVirtualGraphs = true;
+  opts.virtualGraphMode = VirtualGraphMode::Manual;
 
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
@@ -179,7 +179,7 @@ BOOST_AUTO_TEST_CASE(MergeCopies2) {
   auto data_flow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
 
   SessionOptions opts;
-  opts.enableVirtualGraphs = true;
+  opts.virtualGraphMode = VirtualGraphMode::Manual;
 
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
@@ -230,7 +230,7 @@ BOOST_AUTO_TEST_CASE(MergeCopies3) {
   auto data_flow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
 
   SessionOptions opts;
-  opts.enableVirtualGraphs = true;
+  opts.virtualGraphMode = VirtualGraphMode::Manual;
 
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 
@@ -282,7 +282,7 @@ BOOST_AUTO_TEST_CASE(MergeCopies4) {
   auto data_flow = DataFlow(1, {{out, AnchorReturnType("ALL")}});
 
   SessionOptions opts;
-  opts.enableVirtualGraphs = true;
+  opts.virtualGraphMode = VirtualGraphMode::Manual;
 
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();
 

@@ -95,7 +95,11 @@ void ConstExprUtil::makeTensorConstInit(const TensorId name,
 }
 
 bool ConstExprUtil::isComputable(Op *op, Graph &graph) {
-  auto mode    = graph.getIr().getExecutionMode();
+  // An op is computable as a const expression if all the inputs are Const
+  // tensors, and none of the outputs are anchors. This would also be true for
+  // Variable tensors during inference, unless the user calls resetHostWeights.
+  // Because of this, am choosing to ignore case of Variable tensors during
+  // inference.
   auto inputs  = op->input->tensors();
   auto outputs = op->output->tensors();
 
@@ -106,16 +110,9 @@ bool ConstExprUtil::isComputable(Op *op, Graph &graph) {
     return false;
   }
 
-  if (mode == Ir::ExecutionMode::TRAINING) {
-    return std::all_of(inputs.begin(), inputs.end(), [](Tensor *t) {
-      return t->tensorType() == TensorType::Const;
-    });
-  } else {
-    return std::all_of(inputs.begin(), inputs.end(), [](Tensor *t) {
-      return t->tensorType() == TensorType::Const ||
-             t->tensorType() == TensorType::Variable;
-    });
-  }
+  return std::all_of(inputs.begin(), inputs.end(), [](Tensor *t) {
+    return t->tensorType() == TensorType::Const;
+  });
 }
 
 ConstExprOpManager::ConstExprOpManager() { registerConstOps(); }

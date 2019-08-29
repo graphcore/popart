@@ -6,14 +6,14 @@ include(EnableCompilerWarnings)
 add_custom_target(popart_examples)
 add_custom_command(TARGET popart_examples
   COMMAND cmake -E copy_directory
-                   ${CMAKE_SOURCE_DIR}/examples/python
+                   ${CMAKE_CURRENT_SOURCE_DIR}/python
                    ${CMAKE_BINARY_DIR}/examples/python
 )
 
 # Required for including examples in documentation
 add_custom_command(TARGET popart_examples
   COMMAND cmake -E copy_directory
-                   ${CMAKE_SOURCE_DIR}/examples/cplusplus
+                   ${CMAKE_CURRENT_SOURCE_DIR}/cplusplus
                    ${CMAKE_BINARY_DIR}/examples/cplusplus
 )
 
@@ -24,7 +24,7 @@ add_custom_target(popart_run_examples
 
 add_custom_command(TARGET popart_run_examples
   COMMAND cmake -E copy
-                   ${CMAKE_SOURCE_DIR}/examples/run_example.sh
+                   ${CMAKE_CURRENT_SOURCE_DIR}/run_example.sh
                    ${CMAKE_BINARY_DIR}/examples/
 )
 
@@ -80,7 +80,7 @@ function(add_popart_cpp_example name)
     popart)
   set(executable_name "${name}")
   add_custom_command(TARGET popart_run_examples
-                     COMMAND ${CMAKE_BINARY_DIR}/examples/${name}
+                     COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${name}
 		                 DEPENDS ${name} ${ARGN}
                      WORKING_DIRECTORY ${CMAKE_BINARY_DIR})  
 endfunction()

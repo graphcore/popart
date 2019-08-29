@@ -39,6 +39,13 @@ public:
 
   friend std::ostream &operator<<(std::ostream &os, const TopoCons &tc);
 
+  const std::map<Op *, std::set<Op *>> &getValsAfter() const {
+    return valsAfter;
+  }
+  const std::map<Op *, std::set<Op *>> &getValsBefore() const {
+    return valsBefore;
+  }
+
 private:
   // for all val : set, "key -> val"
   std::map<Op *, std::set<Op *>> valsAfter;

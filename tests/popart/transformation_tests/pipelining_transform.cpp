@@ -62,9 +62,9 @@ BOOST_AUTO_TEST_CASE(test) {
   std::map<TensorId, AnchorReturnType> anchorMap = {
       {out, art}, {reservedGradientPrefix() + d0, art}};
 
-  auto opts                = SessionOptions();
-  opts.enableVirtualGraphs = true;
-  opts.enablePipelining    = true;
+  auto opts             = SessionOptions();
+  opts.virtualGraphMode = VirtualGraphMode::Manual;
+  opts.enablePipelining = true;
   builder->virtualGraph(s0, 0);
   builder->virtualGraph(e0, 1);
   builder->virtualGraph(c0, 1);

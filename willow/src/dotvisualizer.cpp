@@ -8,6 +8,7 @@
 #include <popart/op/call.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
+#include <popart/topocons.hpp>
 
 namespace popart {
 
@@ -145,6 +146,10 @@ void DotVisualizer::write() {
   for (int i = start; i < end; ++i) {
     auto &n = scheduledOps.at(i);
 
+    auto generateNodeName = [this](Op *op) -> std::string {
+      return nodeDotId(op->id);
+    };
+
     // The string which will appear in the dot file to represent an Op
     std::stringstream coreNameStream;
     // add a graph identifier
@@ -161,7 +166,7 @@ void DotVisualizer::write() {
     // Add the debug name if present and requested
     if (ir->getSessionOptions().dotOpNames) {
       if (!n->name().empty()) {
-        coreNameStream << " (" << n->name() << ")";
+        coreNameStream << " (" << n->id << ":" << n->name() << ")";
       } else {
         coreNameStream << " (" << n->id << ")";
       }
@@ -171,24 +176,47 @@ void DotVisualizer::write() {
                   << coreNameStream.str();
     strm(gString) << "\", color = " << getOpNodeColor(n) << "];\n";
 
-    // insert the input -> op edges into the .dot file
     for (auto &ind_ten : n->input->tensorMap()) {
-      TensorId tenId = ind_ten.second->id;
-      makeNodeIfRequired(ind_ten.second, strm(gString));
-      strm(gString) << tensorDotId(tenId) << " -> " << nodeDotId(n->id)
-                    << "[color=gray]" << ';' << '\n';
+      if (ind_ten.second->hasProducer() == false) {
+        if (tensorsVisited.count(ind_ten.second->id) == 0) {
+          makeNodeIfRequired(ind_ten.second, strm(gString));
+          for (auto &c : ind_ten.second->consumers.getOps()) {
+            strm(gString) << tensorDotId(ind_ten.second->id) << " -> "
+                          << generateNodeName(c) << " [color=grey, label=\""
+                          << ind_ten.second->id << "\"];\n";
+          }
+        }
+      }
     }
 
-    // insert the op -> output edges into the .dot file
     for (auto &ind_ten : n->output->tensorMap()) {
-      auto tenId = ind_ten.second->id;
-      makeNodeIfRequired(ind_ten.second, strm(gString));
-      strm(gString) << nodeDotId(n->id) << " -> " << tensorDotId(tenId)
-                    << "[color=gray]" << ';' << '\n';
-      TensorId possibleGradId = getGradId(tenId);
+      auto &consumers = ind_ten.second->consumers;
+      for (auto &c : consumers.getOps()) {
+        strm(gString) << generateNodeName(n) << " -> " << generateNodeName(c)
+                      << " [color=grey, label=\"" << ind_ten.second->id
+                      << "\"];\n";
+      }
+
+      if (consumers.getOps().size() == 0) {
+        // must be an output
+        makeNodeIfRequired(ind_ten.second, strm(gString));
+        strm(gString) << generateNodeName(n) << " -> "
+                      << tensorDotId(ind_ten.second->id)
+                      << " [color=grey, label=\"" << ind_ten.second->id
+                      << "\"];\n";
+      }
+    }
+
+    for (auto &after : n->getGraph().topoCons->getAfters(n)) {
+      strm(gString) << generateNodeName(n) << " -> " << generateNodeName(after)
+                    << " [color=yellow];\n";
+    }
+
+    for (auto &before : n->getGraph().topoCons->getBefores(n)) {
+      strm(gString) << generateNodeName(before) << " -> " << generateNodeName(n)
+                    << " [color=blue];\n";
     }
   }
-
   for (auto &x : ofstreams) {
     x.second << '}' << '\n';
     x.second.flush();

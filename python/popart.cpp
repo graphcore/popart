@@ -85,6 +85,40 @@ std::map<std::string, std::string> getDictionary(py::dict pydict) {
   }
   return dictionary;
 }
+
+std::map<std::string, boost::any> getDictionaryVar(py::dict pydict) {
+  // This attempts to convert the py::dict to a map of string, boost::any. Since
+  // we do not know the python types given by the user until runtime, we have to
+  // account for each type. See attributes.hpp for a description of possible
+  // attribute types.
+
+  std::map<std::string, boost::any> dictionary;
+  for (auto element : pydict) {
+    auto key = py::str(element.first);
+    auto val = element.second;
+    if (py::isinstance<py::str>(val)) {
+      // String
+      dictionary.insert(std::make_pair(key, val.cast<std::string>()));
+    } else if (py::isinstance<py::int_>(val)) {
+      // Int
+      dictionary.insert(std::make_pair(key, val.cast<int64_t>()));
+    } else if (py::isinstance<py::list>(val)) {
+      // Ints
+      std::vector<int64_t> vec;
+      for (auto subval : val) {
+        vec.push_back(subval.cast<int64_t>());
+      }
+      dictionary.insert(std::make_pair(key, vec));
+    } else if (py::isinstance<py::float_>(val)) {
+      // Float
+      dictionary.insert(std::make_pair(key, val.cast<float>()));
+    } else {
+      throw error("Invalid type provided in custom op attribute '{}'", key);
+    }
+  }
+  return dictionary;
+}
+
 class PyStepIO : public IStepIO {
 public:
   PyStepIO(std::map<TensorId, py::array> inputs_,
@@ -438,6 +472,8 @@ PYBIND11_MODULE(popart_core, m) {
                      &SessionOptions::enableStochasticRounding)
       .def_readwrite("enableFullyConnectedPass",
                      &SessionOptions::enableFullyConnectedPass)
+      .def_readwrite("enableGroupedMatmuls",
+                     &SessionOptions::enableGroupedMatmuls)
       // set in python use the python set constructor, so something like
       // mySessionOptions.dotChecks = {popart.DotCheck.FINAL}
       .def_readwrite("dotChecks", &SessionOptions::dotChecks);
@@ -725,7 +761,7 @@ PYBIND11_MODULE(popart_core, m) {
            py::arg("debugPrefix") = std::string())
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
 
-      // Accessors for the ai.onnx domain builder interfac
+      // Accessors for the ai.onnx domain builder interface
       .def_property_readonly("aiOnnxOpset6", &Builder::aiOnnxOpset6)
       .def_property_readonly("aiOnnxOpset7", &Builder::aiOnnxOpset7)
       .def_property_readonly("aiOnnxOpset8", &Builder::aiOnnxOpset8)
@@ -734,7 +770,38 @@ PYBIND11_MODULE(popart_core, m) {
 
       // Accessors for the ai.graphcore domain builder interface
       .def_property_readonly("aiGraphcoreOpset1", &Builder::aiGraphcoreOpset1)
-
+      // Custom Op interface for separately compiled operations used in python.
+      .def("customOp",
+           [](Builder &builder,
+              const std::string &opName,
+              const int &OpVersion,
+              const std::string &domain,
+              const py::list &inputs,
+              const py::dict &attr,
+              const unsigned &numOutputs,
+              const std::string &name) {
+             popart::OperatorIdentifier opId = {
+                 domain, opName, static_cast<popart::OpVersion>(OpVersion)};
+             std::vector<TensorId> input_vector;
+             for (auto item : inputs) {
+               std::string str = py::cast<std::string>(item);
+               TensorId t      = static_cast<TensorId>(str);
+               input_vector.push_back(t);
+             }
+             return builder.customOp(opId,
+                                     1,
+                                     input_vector,
+                                     numOutputs,
+                                     getDictionaryVar(attr),
+                                     name);
+           },
+           py::arg("opName"),
+           py::arg("opVersion"),
+           py::arg("domain"),
+           py::arg("inputs"),
+           py::arg("attributes"),
+           py::arg("numOutputs") = 1,
+           py::arg("name")       = std::string())
       .def("addNodeAttribute",
            static_cast<void (Builder::*)(const std::string &,
                                          const int64_t &,
@@ -836,6 +903,11 @@ PYBIND11_MODULE(popart_core, m) {
              return acm;
            },
            py::arg("value"))
+      .def("pipelineStage",
+           static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
+               &Builder::pipelineStage),
+           py::arg("nodeOutputNames"),
+           py::arg("value") = 0)
       .def("setPartialsType",
            &Builder::setPartialsType,
            py::arg("nodeOutputName"),

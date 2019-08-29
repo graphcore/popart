@@ -28,7 +28,7 @@ def test_virtual_graph():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     opts = popart.SessionOptionsCore()
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
@@ -65,7 +65,7 @@ def test_virtual_graph2():
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
     opts = popart.SessionOptionsCore()
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.InferenceSession(fnModel=proto,
                                 dataFeed=dataFlow,
@@ -118,7 +118,7 @@ def test_virtual_graph3():
     optimizer = popart.ConstSGD(0.01)
 
     opts = popart.SessionOptionsCore()
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.TrainingSession(fnModel=proto,
                                dataFeed=dataFlow,
@@ -189,7 +189,7 @@ def test_virtual_graph4():
     optimizer = popart.ConstSGD(0.01)
 
     opts = popart.SessionOptionsCore()
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     s = popart.TrainingSession(fnModel=proto,
                                dataFeed=dataFlow,
@@ -235,7 +235,7 @@ def test_virtual_graph_bad_index():
     # dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
     #
     # opts = popart.SessionOptionsCore()
-    # opts.enableVirtualGraphs = True
+    # opts.virtualGraphMode = popart.VirtualGraphMode.Manual
     #
     # s = popart.Session(fnModel=proto, dataFeed=dataFlow, userOptions=opts, deviceInfo=tu.get_ipu_model(numIPUs = 2))
     # s.prepareDevice()
@@ -298,7 +298,8 @@ def test_streaming_optimizer_tensors():
                                loss_scaling=1.0)
 
         opts = popart.SessionOptionsCore()
-        opts.enableVirtualGraphs = enablePipelining
+        if enablePipelining:
+            opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         opts.enablePipelining = enablePipelining
 
         numIPUs = 1

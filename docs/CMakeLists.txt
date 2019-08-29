@@ -6,8 +6,8 @@ if (BUILD_DOCS)
   find_package(gcdoc REQUIRED)
 
   list(APPEND DOXYGEN_INPUT0 "")
-  list(APPEND DOXYGEN_INPUT0 ${CMAKE_SOURCE_DIR}/willow/include)
-  list(APPEND DOXYGEN_INPUT0 ${CMAKE_SOURCE_DIR}/${INSTALL_PYDIR})
+  list(APPEND DOXYGEN_INPUT0 ${CMAKE_CURRENT_SOURCE_DIR}/../willow/include)
+  list(APPEND DOXYGEN_INPUT0 ${CMAKE_CURRENT_SOURCE_DIR}/../${INSTALL_PYDIR})
 
   string(REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT0}")
   configure_file(user_guide/Doxyfile.in Doxyfile @ONLY)
@@ -18,7 +18,7 @@ if (BUILD_DOCS)
 
   add_custom_command(
     OUTPUT ${SUPPORTED_OPS_GEN}
-    COMMAND python3 gen_supported_ops.py ${CMAKE_BINARY_DIR}/python ${SUPPORTED_OPS_GEN}
+    COMMAND python3 gen_supported_ops.py "${CMAKE_BINARY_DIR}/python:${CMAKE_BINARY_DIR}/popart/python" ${SUPPORTED_OPS_GEN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Creating supported ops"
   )
@@ -61,7 +61,7 @@ if (BUILD_DOCS)
 
   add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/docs/pdfgen
-    COMMAND ${GCDOC} -v -x ${CMAKE_BINARY_DIR}/docs/Doxyfile
+    COMMAND ${GCDOC} -v -x ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
                      -r ${RELEASE}
 		     -b pdf
 		     ${CMAKE_BINARY_DIR}/docs/pdf_user_guide
@@ -69,7 +69,7 @@ if (BUILD_DOCS)
     COMMENT "Building PDF documentation from 'user_guide' directory"
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/docs
     DEPENDS ${CMAKE_BINARY_DIR}/docs/latex
-            ${CMAKE_BINARY_DIR}/docs/Doxyfile
+    ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
 	    ${CMAKE_BINARY_DIR}/docs/pdf_user_guide
 	    ${SUPPORTED_OPS_GEN}
 	    popart_examples
@@ -78,14 +78,14 @@ if (BUILD_DOCS)
 
   add_custom_command(
     OUTPUT ${CMAKE_BINARY_DIR}/docs/html
-    COMMAND ${GCDOC} -v -x ${CMAKE_BINARY_DIR}/docs/Doxyfile
+    COMMAND ${GCDOC} -v -x ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
                      -r ${RELEASE}
 		     -b html
 		     ${CMAKE_BINARY_DIR}/docs/html_user_guide
 		     ${CMAKE_BINARY_DIR}/docs/html
     COMMENT "Building html documentation from 'user_guide' directory"
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/docs
-    DEPENDS ${CMAKE_BINARY_DIR}/docs/Doxyfile
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
             ${CMAKE_BINARY_DIR}/docs/html/doxygen/latex
 	    ${CMAKE_BINARY_DIR}/docs/html_user_guide
 	    ${SUPPORTED_OPS_GEN}

@@ -157,9 +157,8 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
         DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
 
     SessionOptions userOptions;
-    userOptions.enableVirtualGraphs = true;
-    userOptions.autoVirtualGraph    = true;
-    userOptions.enablePipelining    = true;
+    userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+    userOptions.enablePipelining = true;
 
     if (tt == TestType::Ir) {
 

@@ -27,6 +27,8 @@ private:
 // for all cases with 0 outputs
 class Inplace : public Pattern {
 public:
+  Inplace();
+
   // which tensors are touched if "op" is replaced by type "inpl"
   std::vector<const Tensor *> touches(Op *op, OperatorIdentifier inpl) const;
 

@@ -67,7 +67,7 @@ Op *PreAliasPattern::makeReplacementOpInIr(
     const std::string name) const {
   // Create replacement Op with new attributes and
   // move into Ir
-  std::unique_ptr<Op> newOpUp = makeReplacementOp(operator_id, oldOp);
+  std::unique_ptr<Op> newOpUp = makeReplacementOp(operator_id, oldOp, name);
   Op *newOp                   = newOpUp.get();
   oldOp->getGraph().moveIntoGraph(std::move(newOpUp));
 
@@ -82,7 +82,7 @@ std::string Pattern::getReplacementOpName(Op *op,
   if (op->name() == "") {
     replacementName = "";
   } else {
-    replacementName = op->name() + "_from_" + getPatternName();
+    replacementName = op->name() + ":" + getPatternName();
   }
 
   if (!name.empty()) {

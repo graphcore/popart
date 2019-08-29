@@ -1,6 +1,13 @@
 import numpy as np
-import pytest
 import popart
+import pytest
+import re
+
+# importing test_session requires adding to sys.path
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+from test_session import TestSession
 
 
 def test_disabled_virtual_graphs():
@@ -13,7 +20,7 @@ def test_disabled_virtual_graphs():
 
     opts = popart.SessionOptionsCore()
     opts.enablePipelining = True
-    opts.enableVirtualGraphs = False
+    opts.virtualGraphMode = popart.VirtualGraphMode.Off
 
     with pytest.raises(popart.popart_exception) as e_info:
         session = popart.InferenceSession(
@@ -36,7 +43,7 @@ def test_enabled_recomputation():
 
     opts = popart.SessionOptionsCore()
     opts.enablePipelining = True
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
     opts.autoRecomputation = popart.RecomputationType.Standard
 
     builder.virtualGraph(op0_out, 0)
@@ -70,7 +77,7 @@ def test_bad_sharding0():
 
     opts = popart.SessionOptionsCore()
     opts.enablePipelining = True
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     # 1)
     builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
@@ -157,7 +164,7 @@ def test_stream_tensors_to_multiple_ipus():
 
     opts = popart.SessionOptionsCore()
     opts.enablePipelining = True
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     builder.virtualGraph(op0_out, 0)
     builder.virtualGraph(op1_out, 1)
@@ -204,7 +211,7 @@ def test_sharding_multi_source():
 
     opts = popart.SessionOptionsCore()
     opts.enablePipelining = True
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     builder.virtualGraph(op0_out, 0)
     builder.virtualGraph(op1_out, 1)
@@ -453,7 +460,8 @@ def test_pipelined_dropout():
             loss.virtualGraph(layers - 1)
 
         userOptions = popart.SessionOptions()
-        userOptions.enableVirtualGraphs = do_pipelining
+        if do_pipelining:
+            userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
         userOptions.enablePipelining = do_pipelining
 
         session = popart.TrainingSession(fnModel=builder.getModelProto(),
@@ -555,7 +563,7 @@ def get_model_anchors(doSharding,
     if doSharding is False:
         deviceOpts = {'numIPUs': 1, "tilesPerIPU": 20}
     else:
-        opts.enableVirtualGraphs = True
+        opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         deviceOpts = {'numIPUs': 3, "tilesPerIPU": 20}
         builder.virtualGraph(s0, 0)
         builder.virtualGraph(e0, 1)
@@ -635,3 +643,65 @@ def get_simple_linear_model(streamInputToOp1AndOp2=False):
     anchor_map = {op3_out: art, "loss": art}
 
     return builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss
+
+
+def test_pipeline_stage_errors():
+    dummy_data = np.zeros(2, dtype=np.float32)
+    bps = 2
+
+    vgraph_ids = []
+    ps_ids = []
+
+    def init_builder(builder):
+        d0 = builder.addInputTensor(dummy_data, 'data0')
+        d1 = builder.addInputTensor(dummy_data, 'data1')
+        d2 = builder.addInputTensor(dummy_data, 'data2')
+
+        s0 = builder.aiOnnx.sin([d0], "s0")
+        m0 = builder.aiOnnx.mul([s0, d0])
+        e0 = builder.aiOnnx.exp([m0])
+        e1 = builder.aiOnnx.exp([e0])
+
+        builder.addOutputTensor(e1)
+
+        print(f'Setting virtual graphs to {vgraph_ids}')
+        for tid, vgid in zip((s0, m0, e0, e1), vgraph_ids):
+            if vgid is not None:
+                builder.virtualGraph(tid, vgid)
+
+        print(f'Setting pipeline stages to {ps_ids}')
+        for tid, psid in zip((s0, m0, e0, e1), ps_ids):
+            if psid is not None:
+                builder.pipelineStage(tid, psid)
+
+        loss = builder.addL1Loss(e1, 'l1LossVal', 0.1,
+                                 popart.ReductionType.Sum)
+        loss.virtualGraph(1)
+
+        return [e1]
+
+    session = TestSession()
+    session.options.enableVirtualGraphs = True
+    session.options.enablePipelining = True
+    session.device = 'ipu_model'
+    session.numIPUs = 2
+    session.batchesPerStep = bps
+
+    # test a pipeline stage appearing on multiple virtual graphs
+    vgraph_ids = [0, 0, 0, 1]
+    ps_ids = [0, 0, 1, 1]
+    with pytest.raises(popart.popart_exception) as e_info:
+        session.prepare(init_builder)
+
+    emsg = e_info.value.args[0]
+    assert re.match('Ops .* have the same pipeline stage 1,.*',
+                    emsg) is not None
+
+    # test not all ops having a pipeline stage set
+    vgraph_ids = [0, 0, 1, 1]
+    ps_ids = [0, 0, None, 1]
+    with pytest.raises(popart.popart_exception) as e_info:
+        session.prepare(init_builder)
+
+    emsg = e_info.value.args[0]
+    assert emsg.startswith('Only some ops have had their pipeline stage set.')

@@ -38,9 +38,8 @@ BOOST_AUTO_TEST_CASE(SplitToSliceTest0) {
   auto dataFlow = DataFlow(1, {{act, AnchorReturnType("ALL")}});
 
   SessionOptions userOptions;
-  userOptions.enableVirtualGraphs    = true;
+  userOptions.virtualGraphMode       = VirtualGraphMode::Auto;
   userOptions.enableReplicatedGraphs = true;
-  userOptions.autoVirtualGraph       = true;
   userOptions.replicatedGraphCount   = 4;
   std::map<std::string, std::string> deviceOpts{{"numIPUs", "8"}};
 

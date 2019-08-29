@@ -153,8 +153,7 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
       DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
 
   SessionOptions userOptions;
-  userOptions.enableVirtualGraphs = true;
-  userOptions.autoVirtualGraph    = true;
+  userOptions.virtualGraphMode = VirtualGraphMode::Auto;
 
   // TODO : extend to pipelining T10204
   userOptions.enablePipelining = false;

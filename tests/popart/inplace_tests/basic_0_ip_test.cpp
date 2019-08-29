@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE(Inplace_basic1) {
   Ir ir;
 
   SessionOptions opts;
-  opts.enableVirtualGraphs = true;
+  opts.virtualGraphMode = VirtualGraphMode::Manual;
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,

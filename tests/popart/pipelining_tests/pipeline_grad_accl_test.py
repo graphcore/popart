@@ -153,7 +153,7 @@ def get_model_anchors_model1(doSharding,
     opts.enablePipelining = doPipelining
     opts.enableGradientAccumulation = doGradAccl
     opts.accumulationFactor = gradAcclFactor
-    opts.enableVirtualGraphs = True
+    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     if doSharding is False:
         deviceOpts = {'numIPUs': 1, "tilesPerIPU": 20}
@@ -276,7 +276,7 @@ def get_model_anchors_model2(doSharding,
     if doSharding is False:
         deviceOpts = {'numIPUs': 1, "tilesPerIPU": 20}
     else:
-        opts.enableVirtualGraphs = True
+        opts.virtualGraphMode = popart.VirtualGraphMode.Manual
         deviceOpts = {'numIPUs': 3, "tilesPerIPU": 20}
         builder.virtualGraph(s0, 0)
         builder.virtualGraph(e0, 1)

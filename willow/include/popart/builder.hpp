@@ -301,6 +301,14 @@ public:
     addNodeAttribute(sVirtualGraphAttribute, value, {nodeOutputName});
   }
 
+  void pipelineStage(const TensorId &nodeOutputName, int64_t value) {
+    addNodeAttribute(sPipelineStageAttribute, value, {nodeOutputName});
+  }
+
+  void pipelineStage(const std::set<TensorId> &nodeOutputNames, int64_t value) {
+    addNodeAttribute(sPipelineStageAttribute, value, nodeOutputNames);
+  }
+
   /**
    * Set the partials type for the given node. Used on the convolution op.
    *

@@ -126,8 +126,7 @@ BOOST_AUTO_TEST_CASE(WeightAnchorTest0) {
   // shard over 3 IPUs
   //
   SessionOptions userOptions;
-  userOptions.enableVirtualGraphs = true;
-  userOptions.autoVirtualGraph    = true;
+  userOptions.virtualGraphMode = VirtualGraphMode::Auto;
 
   std::map<std::string, std::string> deviceOpts{{"numIPUs", "3"}};
 
