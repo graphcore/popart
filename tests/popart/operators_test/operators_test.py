@@ -289,83 +289,47 @@ def test_reciprocal(op_tester):
     op_tester.run(init_builder, reference)
 
 
-def test_div(tmpdir):
-    # create test data
+def test_div(op_tester):
     d1 = np.random.rand(4).astype(np.float32)
     d2 = np.random.rand(4).astype(np.float32)
 
-    # create graph
-    test = tu.BasicSession(tmpdir)
-    i1 = test.add_input_tensor(d1)
-    i2 = test.add_input_tensor(d2)
-    o = test.builder.aiOnnx.div([i1, i2])
-    test.builder.addOutputTensor(o)
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        i2 = builder.addInputTensor(d2)
+        o = builder.aiOnnx.div([i1, i2], "test_div")
+        builder.addOutputTensor(o)
+        return [o]
 
-    test.passes.extend(["PreUniRepl"])
+    def reference(ref_data):
+        out = d1 / d2
+        return [out]
 
-    # run the popart session
-    anchors = test.run(o, [o], 'infer')
-
-    # create and run numpy reference
-    def numpy_reference(i1, i2):
-        outputs = {}
-        outputs[o] = i1 / i2
-        return outputs
-
-    reference_results = numpy_reference(d1, d2)
-
-    # compare results
-    for key in [o]:
-        print('Checking anchor %s ...' % (key, ))
-        assert np.array_equal(anchors[key], reference_results[key])
+    op_tester.passes = ['PreUniRepl']
+    op_tester.run(init_builder, reference, 'infer')
 
 
-def test_div_grad(tmpdir):
-    # create test data
-    d1 = np.random.rand(4, 1, 4).astype(np.float32)
-    d2 = np.random.rand(3, 1).astype(np.float32)
+def test_div_grad(op_tester):
+    d1 = np.random.rand(4).astype(np.float32)
+    d2 = np.random.rand(4).astype(np.float32)
 
-    # create graph
-    test = tu.BasicSession(tmpdir)
-    i1 = test.add_input_tensor(d1)
-    i2 = test.add_input_tensor(d2)
-    o = test.builder.aiOnnx.div([i1, i2])
-    test.builder.addOutputTensor(o)
+    def init_builder(builder):
+        i1 = builder.addInputTensor(d1)
+        i2 = builder.addInputTensor(d2)
+        o = builder.aiOnnx.div([i1, i2], "test_div")
+        builder.addOutputTensor(o)
+        gradPrefix = popart.reservedGradientPrefix()
+        return [o, gradPrefix + i1, gradPrefix + i2, gradPrefix + o]
 
-    test.passes.extend(["PreUniRepl", "DivArg0GradOp", "DivArg1GradOp"])
-
-    # run the popart session
-    anchors = test.run(o, [
-        o,
-        popart.reservedGradientPrefix() + o,
-        popart.reservedGradientPrefix() + i1,
-        popart.reservedGradientPrefix() + i2
-    ], 'train')
-
-    # create and run torch reference
-    def torch_reference(d__o):
+    def reference(ref_data):
         t1 = torch.tensor(d1, requires_grad=True)
         t2 = torch.tensor(d2, requires_grad=True)
         out = t1 / t2
+        d__o = ref_data.getOutputTensorGrad(0)
         out.backward(torch.tensor(d__o))
+        return [out, t1.grad, t2.grad, None]
 
-        outputs = {}
-        outputs[o] = out.data.numpy()
-        outputs[popart.reservedGradientPrefix() + i1] = t1.grad.data.numpy()
-        outputs[popart.reservedGradientPrefix() + i2] = t2.grad.data.numpy()
-        return outputs
-
-    reference_results = torch_reference(
-        anchors[popart.reservedGradientPrefix() + o])
-
-    # compare results
-    for key in [
-            o,
-            popart.reservedGradientPrefix() + i1,
-            popart.reservedGradientPrefix() + i2
-    ]:
-        print('Checking anchor %s ...' % (key, ))
-        assert np.allclose(anchors[key], reference_results[key])
+    op_tester.passes = ['PreUniRepl', 'DivArg0GradOp', 'DivArg1GradOp']
+    op_tester.run(init_builder, reference, 'train')
 
 
 def test_reciprocal_grad(op_tester):
