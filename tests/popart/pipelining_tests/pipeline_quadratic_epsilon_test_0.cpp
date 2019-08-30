@@ -67,11 +67,10 @@
 //
 // SGD_delta  =  |weights_start - weights_end|_1 for exact SGD
 // cont_delta =  |weights_start - weights_end|_1 for continuous pipelining
-// SGD_cont_error = | weights_end_cont - weights_end_SGD|_1
+// SGD_cont_error = |weights_end_cont - weights_end_SGD|_1
 //
 // Notice the linear scaling of the error with learning rate
 // (quadratic per step)
-//
 //
 // THIS TEST:
 // confirm that the final line is reproduced, that is, when

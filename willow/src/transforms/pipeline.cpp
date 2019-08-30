@@ -256,6 +256,31 @@ bool Pipeline::apply(Graph &graph) const {
   logging::transform::debug("First PathFromLoss::Yes in schedule is {}.",
                             (*firstFromLoss)->str());
 
+  // Ops which have no path to or from the loss can be scheduled pre- or post-
+  // loss. In the pipelining transformation, the position of an Op relative
+  // the loss is used to determine where and when to stash and restore Tensors.
+  // Therefore, the position of all Ops relative to the loss must be fixed and
+  // known. We here freeze positions relative to the loss.
+  //
+  // Note that for most situations, these constraints are redundant, as
+  // the constraints added later (Stash before loss, Restore after loss) imply
+  // them. But, there are edge cases where there is no Restore-Stash combo to
+  // implicitly constrain this order (for recomputation)
+  //
+  bool beforeFirstFromLoss{true};
+  for (auto op : currentSchedule) {
+    if (op == *firstFromLoss) {
+      beforeFirstFromLoss = false;
+    } else if (op->toLoss == PathToLoss::No &&
+               op->fromLoss == PathFromLoss::No) {
+      if (beforeFirstFromLoss) {
+        graph.topoCons->insert(op, *firstFromLoss);
+      } else {
+        graph.topoCons->insert(*firstFromLoss, op);
+      }
+    }
+  }
+
   // 1. Find all tensors in the fwd pass that are inputs to ops in the bwd pass
   std::vector<TensorId> toStashCandidateTensors;
   for (auto &tid : graph.getTensors().getAllTensorIds()) {
@@ -440,7 +465,7 @@ bool Pipeline::apply(Graph &graph) const {
     // apply topological constraints:
     // (0)  : Stash before all other consumers
     // (1)  : Stash -> "firstFromLoss" -> Restore
-    // The only topological constraint on Restore is that is
+    // The only topological constraint on Restore is that it is
     // SchedulePreLoss::No, exact scheduling controlled by the backend.
 
     // (1)
