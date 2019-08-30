@@ -48,6 +48,27 @@ public:
   TensorId getLossScalingTensorId(DataType varType) const;
 };
 
+class SGDBuilder {
+public:
+  SGDBuilder &learningRate(float);
+  SGDBuilder &weightDecay(float);
+  SGDBuilder &lossScaling(float);
+  SGDBuilder &variableLearningRate(bool);
+  SGDBuilder &variableWeightDecay(bool);
+  SGDBuilder &variableLossScaling(bool);
+
+  std::unique_ptr<Optimizer> build() const;
+
+private:
+  float learningRate_ = 0.001f;
+  float weightDecay_  = 0.0f;
+  float lossScaling_  = 1.0f;
+
+  bool variableLearningRate_ = false;
+  bool variableWeightDecay_  = false;
+  bool variableLossScaling_  = false;
+};
+
 class BaseSGD : public Optimizer {
 public:
   BaseSGD(float lr, float wd, float ls);

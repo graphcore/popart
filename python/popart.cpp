@@ -401,6 +401,16 @@ PYBIND11_MODULE(popart_core, m) {
       .def("getLambda", &L1Loss::getLambda)
       .def("virtualGraph", &L1Loss::virtualGraph);
 
+  py::class_<SGDBuilder>(m, "SGDBuilder")
+      .def(py::init<>())
+      .def("learningRate", &SGDBuilder::learningRate)
+      .def("weightDecay", &SGDBuilder::weightDecay)
+      .def("lossScaling", &SGDBuilder::lossScaling)
+      .def("variableLearningRate", &SGDBuilder::variableLearningRate)
+      .def("variableWeightDecay", &SGDBuilder::variableWeightDecay)
+      .def("variableLossScaling", &SGDBuilder::variableLossScaling)
+      .def("build", &SGDBuilder::build);
+
   py::class_<Optimizer> optimizer(m, "Optimizer");
 
   py::class_<BaseSGD> basesgd(m, "BaseSGD", optimizer);
