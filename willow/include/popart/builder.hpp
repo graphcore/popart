@@ -684,6 +684,14 @@ public:
    */
   void popNameScope();
 
+  /**
+   * Get the current namescope stack using the default delimiter
+   *
+   * \param name Optional string to concatenate to the end of the stack
+   * \return A string of the concatenated namescope stack.
+   */
+  std::string getNameScope(const std::string &name = "") const;
+
 private:
   void configure();
   void configure(const std::string &modelProtoOrFilename);

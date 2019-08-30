@@ -390,6 +390,10 @@ void Builder::pushNameScope(const std::string &name) {
   impl_->pushNameScope(name);
 }
 
+std::string Builder::getNameScope(const std::string &name) const {
+  return impl_->getNameScope(name);
+}
+
 void Builder::popNameScope() { impl_->popNameScope(); }
 
 void Builder::setPartialsType(const TensorId &nodeOutputName,

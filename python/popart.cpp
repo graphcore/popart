@@ -931,6 +931,11 @@ PYBIND11_MODULE(popart_core, m) {
              return ncm;
            },
            py::arg("name"))
+      .def("getNameScope",
+           [](Builder &self, std::string &name) {
+             return self.getNameScope(name);
+           },
+           py::arg("name") = "")
       .def("getVirtualGraph",
            static_cast<int64_t (Builder::*)(const TensorId &)>(
                &Builder::getVirtualGraph),
