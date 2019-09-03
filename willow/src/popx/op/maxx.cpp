@@ -48,16 +48,20 @@ void MaxArgGradOpx::grow(poplar::program::Sequence &prog) const {
   //    and all other values < 0
   // 2. Signum the result to give a tensor of 0's and -1's.
   // 3. Add 1 from the result to give a mask tensor
-  // 4. Multiply by the gradient tensor.
-  auto result = popops::map(
-      graph(),
-      pe::Mul(pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
-              pe::_3),
-      {getInTensor(MaxArgGradOp::getFwdInIndex()),
-       getInTensor(MaxArgGradOp::getFwdOutInIndex()),
-       getInTensor(MaxArgGradOp::getGradInIndex())},
-      prog,
-      debugPrefix("result"));
+  auto mask =
+      popops::map(graph(),
+                  pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
+                  {getInTensor(MaxArgGradOp::getFwdInIndex()),
+                   getInTensor(MaxArgGradOp::getFwdOutInIndex())},
+                  prog,
+                  debugPrefix("mask"));
+
+  // Multiple the mask by the grad
+  auto result = popops::map(graph(),
+                            pe::Mul(pe::_1, pe::_2),
+                            {mask, getInTensor(MaxArgGradOp::getGradInIndex())},
+                            prog,
+                            debugPrefix("result"));
 
   auto shapeOfOutputOfFwdOp = inInfo(MaxArgGradOp::getFwdOutInIndex()).shape();
   auto shapeOfInputToFwdOp  = inInfo(MaxArgGradOp::getFwdInIndex()).shape();

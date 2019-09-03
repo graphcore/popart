@@ -9,8 +9,6 @@
 #include <popops/Expr.hpp>
 #include <popops/Reduce.hpp>
 
-#include <queue>
-
 namespace pe = popops::expr;
 
 namespace popart {
@@ -24,40 +22,21 @@ void MeanOpx::grow(poplar::program::Sequence &prog) const {
   auto outTensor = cloneNcopy(prog, getInTensor(0));
 
   if (op_p->input->n() > 1) {
-    // Follow the logic in the sumx op to build the sum operation over
-    // the input tensors.
-    // Holder for the input tensors:
-    std::vector<poplar::Tensor> inputs;
 
-    // The "owner" of all expr nodes:
-    std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
-
-    // The queue of expr nodes to be reduced:
-    std::queue<popops::expr::Expr *> expr;
-
-    for (int i = 0; i < op_p->input->n(); ++i) {
-      inputs.push_back(getInTensor(i));
-      exprs.push_back(std::make_unique<pe::PlaceHolder>(i + 1));
-      expr.push(exprs.back().get());
+    for (int i = 1; i < op_p->input->n(); ++i) {
+      outTensor = popops::map(graph(),
+                              popops::expr::BinaryOpType::ADD,
+                              outTensor,
+                              getInTensor(i),
+                              prog,
+                              debugPrefix("add", std::to_string(i)));
     }
 
-    // Build a fairly balanced binary tree
-    while (expr.size() > 1) {
-      auto &a = *expr.front();
-      expr.pop();
-      auto &b = *expr.front();
-      expr.pop();
-
-      exprs.push_back(std::make_unique<pe::Add>(a, b));
-      expr.push(exprs.back().get());
-    }
-    // Add in a divide in the end.
-    outTensor =
-        popops::map(graph(),
-                    pe::Divide(*expr.front(), pe::Const(op_p->input->n())),
-                    inputs,
-                    prog,
-                    debugPrefix("mean"));
+    outTensor = popops::map(graph(),
+                            pe::Divide(pe::_1, pe::Const(op_p->input->n())),
+                            {outTensor},
+                            prog,
+                            debugPrefix("divide"));
   }
 
   setOutTensor(MeanOp::getOutIndex(), outTensor);

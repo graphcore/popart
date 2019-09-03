@@ -7,9 +7,6 @@
 
 #include <popops/ElementWise.hpp>
 #include <popops/Encoding.hpp>
-#include <popops/Expr.hpp>
-
-#include <queue>
 #include <popops/Reduce.hpp>
 
 namespace pe = popops::expr;
@@ -47,25 +44,25 @@ void OnehotOpx::grow(poplar::program::Sequence &prog) const {
   popops::encodeOneHot(
       graph(), indices.flatten(), output, prog, debugPrefix("onehot"));
 
-  // The "owner" of all expr nodes:
-  std::vector<std::unique_ptr<popops::expr::Expr>> exprs;
+  // create the tensor with not-hot values
+  auto nothot =
+      popops::map(graph(),
+                  pe::Mul(pe::Neg(pe::Sub(pe::_1, pe::Const(1))), pe::_2),
+                  {output, values.slice({0, 1}, 0)},
+                  prog,
+                  debugPrefix("nothot"));
 
-  // a = output, b = values.slice({0, 1}, 0), c = values.slice({1, 2}, 0)
-  // First append a * c, we use this later
-  exprs.push_back(std::make_unique<pe::Mul>(pe::_1, pe::_3));
-  // Append a - 1
-  exprs.push_back(std::make_unique<pe::Sub>(pe::_1, pe::Const(1)));
-  // ...then negate
-  exprs.push_back(std::make_unique<pe::Neg>(*exprs.back()));
-  // ...then multiply by b
-  exprs.push_back(std::make_unique<pe::Mul>(*exprs.back(), pe::_2));
-  // then multiply this by a * c which we appended first
-  exprs.push_back(std::make_unique<pe::Add>(*exprs.front(), *exprs.back()));
-
-  // Apply the above expression to the input tensors
+  // create the tensor with hot values
   popops::mapInPlace(graph(),
-                     *exprs.back(),
-                     {output, values.slice({0, 1}, 0), values.slice({1, 2}, 0)},
+                     pe::Mul(pe::_1, pe::_2),
+                     {output, values.slice({1, 2}, 0)},
+                     prog,
+                     debugPrefix("hot"));
+
+  // Add the hot value and not-hot value tensors together
+  popops::mapInPlace(graph(),
+                     pe::Add(pe::_1, pe::_2),
+                     {output, nothot},
                      prog,
                      debugPrefix("combine"));
 
