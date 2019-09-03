@@ -1777,6 +1777,16 @@ void Devicex::prepare() {
   poprand::addCodelets(graph());
   popsys::addCodelets(graph());
 
+  // Add custom codelets as per the user provided list of paths. Allow poplar to
+  // infer the file type from the extension. Also feed through the compile
+  // flags.
+  for (auto codelet : ir().getSessionOptions().customCodelets) {
+    logging::devicex::info("Adding codelet: {}", codelet);
+    graph().addCodelets(codelet,
+                        poplar::CodeletFileType::Auto,
+                        ir().getSessionOptions().customCodeletCompileFlags);
+  }
+
   setFloatingPointBehaviour(graph());
   setStochasticRoundingBehaviour(graph());
 

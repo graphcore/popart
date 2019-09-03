@@ -486,7 +486,10 @@ PYBIND11_MODULE(popart_core, m) {
                      &SessionOptions::enableGroupedMatmuls)
       // set in python use the python set constructor, so something like
       // mySessionOptions.dotChecks = {popart.DotCheck.FINAL}
-      .def_readwrite("dotChecks", &SessionOptions::dotChecks);
+      .def_readwrite("dotChecks", &SessionOptions::dotChecks)
+      .def_readwrite("customCodelets", &SessionOptions::customCodelets)
+      .def_readwrite("customCodeletCompileFlags",
+                     &SessionOptions::customCodeletCompileFlags);
 
   py::enum_<PatternsLevel>(m, "PatternsLevel")
       .value("ALL", PatternsLevel::ALL)
