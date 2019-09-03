@@ -24,6 +24,8 @@ public:
   view::RegMap fwdRegMap(InIndex) const final;
   view::RegMap bwdRegMap(InIndex) const final;
 
+  view::Region aliases(InIndex index) const final { return uses(index); }
+
   // Get the permutation required to reverse the Transpose operation
   Shape generateReversePermutation() const;
 

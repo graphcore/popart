@@ -171,88 +171,30 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
 
   std::vector<Match> expected_test_matches = {{{0, 8}, 8}, {{0, 4, 8, 12}, 4}};
 
-  /*
-    0 Reshape             |                          [1   2
-    1 Reshape             |                           1]  2
-    2 Reshape             |                          [1   2
-    3 Reshape             |                           1]  2
-    4 Reshape             |    [&    [%
-    5 MatMul              |     &     %           @
-    6 Reshape             |     &     %
-    7 Relu                |     &     %]
-    8 Reshape             |     &    [%                   2
-    9 MatMul              |     &     %           @
-    10 Reshape            |     &     %
-    11 Relu               |     &]    %]
-    12 Reshape            |    [&    [%                   2
-    13 MatMul             |     &     %           @
-    14 Reshape            |     &     %
-    15 Relu               |     &     %]
-    16 Reshape            |     &    [%                   2
-    17 MatMul             |     &     %           @
-    18 Reshape            |     &     %
-    19 Relu               |     &]    %]
-    20 Identity           |
-    21 L1Grad             |
-    22 ReluGrad           | [*                                        5
-    23 ReshapeGrad        |  *                                    4
-    24 Transpose          |  *                                3
-    25 MatMul             |  *    [£    [!   [#   @
-    26 ReshapeGrad        |  *     £     !    #]
-    27 ConstSGDVarUpdate  |  *     £     !]
-    28 Transpose          |  *     £
-    29 MatMul             |  *     £         [#   @
-    30 ReshapeGrad        |  *     £]         #]
-    31 ReluGrad           |  *                                         5
-    32 ReshapeGrad        |  *                                    4
-    33 Transpose          |  *]                               3
-    34 MatMul             |       [£    [!   [#   @
-    35 ReshapeGrad        |        £     !    #]
-    36 ConstSGDVarUpdate  |        £     !]
-    37 Transpose          |        £                          3
-    38 MatMul             |        £         [#   @
-    39 ReshapeGrad        |        £]         #]
-    40 ReluGrad           | [*                                         5
-    41 ReshapeGrad        |  *                                    4
-    42 Transpose          |  *    [£                          3
-    43 MatMul             |  *     £    [!   [#   @
-    44 ReshapeGrad        |  *     £     !    #]
-    45 ConstSGDVarUpdate  |  *     £     !]
-    46 Transpose          |  *     £                          3
-    47 MatMul             |  *     £]        [#   @
-    48 ReshapeGrad        |  *                #]                       5
-    49 ReluGrad           |  *
-    50 ReshapeGrad        |  *                                    4
-    51 Transpose          |  *]                               3
-    52 MatMul             |             [!   [#   @
-    53 ReshapeGrad        |              !    #]
-    54 ConstSGDVarUpdate  |              !]
-  */
-
   std::vector<Match> expected_train_matches_algo0 = {
-      {{22, 40}, 12},
       {{4, 12}, 8},
-      {{25, 34, 43}, 6},
+      {{31, 42}, 6},
+      {{31, 42, 53}, 5},
       {{4, 8, 12, 16}, 4},
-      {{25, 34, 43, 52}, 3},
-      {{25, 29, 34, 38, 43, 47, 52}, 2},
-      {{5, 9, 13, 17, 25, 29, 34, 38, 43, 47, 52}, 1},
+      {{27, 38, 49, 59}, 3},
+      {{27, 31, 38, 42, 49, 53, 59}, 2},
+      {{5, 9, 13, 17, 27, 31, 38, 42, 49, 53, 59}, 1},
       {{0, 2}, 2},
       {{0, 1, 2, 3, 4, 8, 12, 16}, 1},
-      {{24, 28, 33, 37, 42, 46, 51}, 1},
-      {{23, 32, 41, 50}, 1},
-      {{22, 31, 40, 49}, 1}};
+      {{24, 25, 35, 36, 46, 47, 57}, 1},
+      {{23, 34, 45, 56}, 1},
+      {{22, 33, 44, 55}, 1}};
 
   std::vector<Match> expected_train_matches_algo1 = {
-      {{22, 40}, 12},
       {{4, 12}, 8},
-      {{25, 34, 43}, 6},
+      {{31, 42}, 6},
+      {{31, 42, 53}, 5},
       {{4, 8, 12, 16}, 4},
-      {{25, 34, 43, 52}, 3},
-      {{25, 29, 34, 38, 43, 47, 52}, 2},
-      {{5, 9, 13, 17, 25, 29, 34, 38, 43, 47, 52}, 1},
+      {{27, 38, 49, 59}, 3},
+      {{27, 31, 38, 42, 49, 53, 59}, 2},
+      {{5, 9, 13, 17, 27, 31, 38, 42, 49, 53, 59}, 1},
       {{0, 2}, 2},
-      {{24, 28, 33, 37, 42, 46, 51}, 1},
+      {{24, 25, 35, 36, 46, 47, 57}, 1},
       {{0, 1, 2, 3, 4, 8, 12, 16}, 1}};
 
   popart::logging::info("simple case of an Op schedule. Is TEST, threshold -1");
@@ -271,22 +213,21 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
 
   expected_train_matches_algo0 = {
       {{4, 8, 12, 16}, 4},
-      {{25, 34, 43, 52}, 3},
-      {{25, 29, 34, 38, 43, 47, 52}, 2},
-      {{5, 9, 13, 17, 25, 29, 34, 38, 43, 47, 52}, 1},
+      {{27, 38, 49, 59}, 3},
+      {{27, 31, 38, 42, 49, 53, 59}, 2},
+      {{5, 9, 13, 17, 27, 31, 38, 42, 49, 53, 59}, 1},
       {{0, 1, 2, 3, 4, 8, 12, 16}, 1},
-      {{24, 28, 33, 37, 42, 46, 51}, 1},
-      {{23, 32, 41, 50}, 1},
-      {{22, 31, 40, 49}, 1}};
+      {{24, 25, 35, 36, 46, 47, 57}, 1},
+      {{23, 34, 45, 56}, 1},
+      {{22, 33, 44, 55}, 1}};
 
   expected_train_matches_algo1 = {
-      {{22, 40}, 12},
-      {{25, 34, 43}, 6},
+      {{31, 42, 53}, 5},
       {{4, 8, 12, 16}, 4},
-      {{25, 34, 43, 52}, 3},
-      {{25, 29, 34, 38, 43, 47, 52}, 2},
-      {{5, 9, 13, 17, 25, 29, 34, 38, 43, 47, 52}, 1},
-      {{24, 28, 33, 37, 42, 46, 51}, 1},
+      {{27, 38, 49, 59}, 3},
+      {{27, 31, 38, 42, 49, 53, 59}, 2},
+      {{5, 9, 13, 17, 27, 31, 38, 42, 49, 53, 59}, 1},
+      {{24, 25, 35, 36, 46, 47, 57}, 1},
       {{0, 1, 2, 3, 4, 8, 12, 16}, 1}};
 
   popart::logging::info("simple case of an Op schedule. Is TRAIN, threshold 0");
@@ -299,10 +240,10 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
   testWithTrain(false, 1.0, expected_test_matches, expected_test_matches);
 
   expected_train_matches_algo0 = {
-      {{5, 9, 13, 17, 25, 29, 34, 38, 43, 47, 52}, 1}};
+      {{5, 9, 13, 17, 27, 31, 38, 42, 49, 53, 59}, 1}};
 
   expected_train_matches_algo1 = {
-      {{22, 40}, 12}, {{5, 9, 13, 17, 25, 29, 34, 38, 43, 47, 52}, 1}};
+      {{5, 9, 13, 17, 27, 31, 38, 42, 49, 53, 59}, 1}};
 
   popart::logging::info("simple case of an Op schedule. Is TRAIN, threshold 1");
   testWithTrain(

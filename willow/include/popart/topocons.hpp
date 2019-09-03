@@ -28,6 +28,9 @@ public:
   // with "afterTransfer", on both ends of topological constraints
   void transfer(Op *beforeTransfer, Op *afterTransfer);
 
+  // return true if this op has a constraint
+  bool hasConstraint(Op *op);
+
   bool contains(Op *before, Op *after) const;
   std::vector<Op *> getAfters(Op *before) const;
   std::vector<Op *> getBefores(Op *after) const;

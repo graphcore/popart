@@ -12,6 +12,23 @@ public:
 
   std::unique_ptr<Op> clone() const override;
   std::vector<std::unique_ptr<Op>> getGradOps() final;
+
+  // For inplace support
+  std::unique_ptr<Op>
+  getInplaceVariant(const OperatorIdentifier &o) const final;
+  std::vector<std::tuple<OperatorIdentifier, float>>
+  inplacePriorityDefault() const final;
+};
+
+class IdentityInplaceOp : public IdentityOp {
+public:
+  IdentityInplaceOp(const OperatorIdentifier &_opid,
+                    const Op::Settings &settings);
+  IdentityInplaceOp(const IdentityOp &concatOp);
+
+  std::unique_ptr<Op> clone() const override;
+
+  view::Region aliases(InIndex index) const final { return uses(index); }
 };
 
 class IdentityGradOp : public IdentityOp {
