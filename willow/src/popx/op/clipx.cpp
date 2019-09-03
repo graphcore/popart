@@ -7,6 +7,8 @@
 
 #include <popops/Cast.hpp>
 
+namespace pe = popops::expr;
+
 namespace popart {
 namespace popx {
 
@@ -123,48 +125,25 @@ void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
   auto clipGradOp = dynamic_cast<ClipGradOp *>(op_p);
   auto gradIn     = getInTensor(clipGradOp->getGradClippedInIndex());
   auto fwdOut     = getInTensor(clipGradOp->getClippedInIndex());
+  auto clipmax    = ClipComputex::getClipTensor(
+      clipGradOp->getClipMax(), gradIn.elementType(), graph());
+  auto clipmin = ClipComputex::getClipTensor(
+      clipGradOp->getClipMin(), gradIn.elementType(), graph());
 
-  // Create the mask for the min clip
-  auto minMaskBool =
-      popops::map(graph(),
-                  popops::expr::BinaryOpType::NOT_EQUAL,
-                  fwdOut,
-                  ClipComputex::getClipTensor(
-                      clipGradOp->getClipMin(), gradIn.elementType(), graph()),
-                  prog,
-                  debugPrefix("minMask"));
-
-  auto minMask = popops::cast(
-      graph(), minMaskBool, gradIn.elementType(), prog, debugPrefix("cast"));
-
-  // Apply min mask
-  auto outTensor = popops::map(graph(),
-                               popops::expr::BinaryOpType::MULTIPLY,
-                               gradIn,
-                               minMask,
-                               prog,
-                               debugPrefix("applyMinMask"));
-
-  // Create the mask for the max clip
-  auto maxMaskBool =
-      popops::map(graph(),
-                  popops::expr::BinaryOpType::NOT_EQUAL,
-                  fwdOut,
-                  ClipComputex::getClipTensor(
-                      clipGradOp->getClipMax(), gradIn.elementType(), graph()),
-                  prog,
-                  debugPrefix("maxMask"));
-
-  auto maxMask = popops::cast(
-      graph(), maxMaskBool, gradIn.elementType(), prog, debugPrefix("cast"));
-
-  // Apply max mask
-  popops::mapInPlace(graph(),
-                     popops::expr::BinaryOpType::MULTIPLY,
-                     outTensor,
-                     maxMask,
-                     prog,
-                     debugPrefix("applyMaxMask"));
+  // 1. Check where clipmin and clipmax are not equal to fwOut
+  // 2. Cast as gradin type from bool
+  // 3. Multiply 1. and 2.
+  // 4. Multiply by gradIn
+  // gradin * cast(clipmax != fwdOut) * cast(clipmin != fwdOut)
+  auto outTensor = popops::map(
+      graph(),
+      pe::Mul(
+          pe::Mul(pe::_1,
+                  pe::Cast(pe::NotEqual(pe::_2, pe::_3), gradIn.elementType())),
+          pe::Cast(pe::NotEqual(pe::_2, pe::_4), gradIn.elementType())),
+      {gradIn, fwdOut, clipmin, clipmax},
+      prog,
+      debugPrefix("ApplyMinMaxMask"));
 
   setOutTensor(clipGradOp->getOutIndex(), outTensor);
 }
