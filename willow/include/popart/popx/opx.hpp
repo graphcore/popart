@@ -46,6 +46,9 @@ public:
   // cannot use downstream opxs as candidates to create input
   // tensor
   virtual InputCreatorType getInputCreatorType(int index0) const;
+  // When an input tensor has multiple creator candidates, we choose
+  // the one with highest priority
+  double inputCreatorPriority{0.0};
   // If this Opx creates a poplar::Tensor at index0 (via createInput),
   // does it create the same poplar::Tensor as if opx1 creates one at
   // index1?. default behaviour : throws error

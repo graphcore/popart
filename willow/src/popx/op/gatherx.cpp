@@ -22,6 +22,9 @@ GatherOpx::GatherOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<GatherOp>(op, Onnx::Operators::Gather_1);
 
   axis = dynamic_cast<GatherOp *>(op)->getAxis();
+
+  // We always want the gather to layout its inputs
+  inputCreatorPriority = std::numeric_limits<double>::max();
 }
 
 void GatherOpx::grow(poplar::program::Sequence &prog) const {
