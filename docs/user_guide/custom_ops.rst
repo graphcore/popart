@@ -5,12 +5,12 @@ This shows how to create a custom operator and include it from an ONNX graph in 
 
 .. literalinclude:: ../../examples/cplusplus/custom_op.cpp
 
-If you want to use your custom op in python, an example is 
-provided in the ``examples/custom_op/custom_op.cpp`` folder. This wraps the code 
-in an ``extern "C"`` wrapper to avoid mangled names when using in python. Other than removing the C++ example usage,
-there are no more changes to the C++ file. 
+If you want to use your custom op in Python, an example is
+provided in the file ``examples/custom_op/custom_op.cpp``. This wraps the code
+in an ``extern "C"`` wrapper to avoid mangled names when using with Python. Other than replacing the C++ example code,
+no more changes to the C++ file are required.
 
-To compile into a shared object file, make sure you have an up to date version of g++ installed, and 
+To compile into a shared object file, make sure you have an up to date version of g++ installed, and
 your build tree is activated by running the ``activate.sh`` file.
 then cd into the ``examples/custom_op/`` folder and run:
 
@@ -18,7 +18,7 @@ then cd into the ``examples/custom_op/`` folder and run:
 
   g++  -fPIC custom_op.cpp -shared -lpopart -o custom_op.so
 
-Then, run: 
+Then, run:
 
 ::
 
@@ -26,8 +26,8 @@ Then, run:
 
 See `here <https://linux.die.net/man/1/g++>`_ for an explanation of the g++ flags used.
 
-Ensure you still have your build environment activated, as well as any python virual environments, then run ``custom_op.py`` 
-which invokes the ``CubeOp`` via python. 
+Ensure you still have your build environment activated, as well as any Python virtual environments, then run ``custom_op.py``
+which invokes the ``CubeOp`` via python.
 
 To create your own custom op, For an op in PopART, you need to implement 4 classes.
 
@@ -39,8 +39,8 @@ To create your own custom op, For an op in PopART, you need to implement 4 class
 
  - CubeGradOpx;
 
-The ``Op`` is a poplar/hardware agnostic description of the computation. The ``OpX`` is the poplar implementation of the ``Op``. 
-Gradients are used in the backwards pass. So, for inference only, you can disregard the gradient ``Op`` & ``OpX``. For an op to be 
+The ``Op`` is a Poplar and hardware agnostic description of the computation. The ``OpX`` is the Poplar implementation of the ``Op``.
+Gradients are used in the backwards pass. So, for inference only, you can disregard the gradient ``Op`` & ``OpX``. For an op to be
 "visible" for PopART to use, you must register it and provide an OpSet version and domain:
 
 ::
