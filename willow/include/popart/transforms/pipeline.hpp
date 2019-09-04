@@ -23,7 +23,7 @@ private:
   int64_t getVirtualGraphIdOrSourceIpu(Op *op) const;
 
   RestoreOp *addNewRestoreOp(Graph &graph) const;
-  RestoreOp *addNewRestoreInplaceOp(Graph &graph) const;
+  RestoreInplaceOp *addNewRestoreInplaceOp(Graph &graph) const;
 };
 
 } // namespace popart

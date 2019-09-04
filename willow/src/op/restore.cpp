@@ -47,7 +47,7 @@ view::Region RestoreInplaceOp::modifies(InIndex index) const {
 
 namespace {
 static OpCreator<RestoreOp> RestoreOpCreator(Onnx::CustomOperators::Restore);
-static OpCreator<RestoreOp>
+static OpCreator<RestoreInplaceOp>
     RestoreInplaceOpCreator(Onnx::CustomOperators::RestoreInplace);
 
 } // namespace

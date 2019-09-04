@@ -503,9 +503,9 @@ RestoreOp *Pipeline::addNewRestoreOp(Graph &graph) const {
   return restoreOp;
 }
 
-RestoreOp *Pipeline::addNewRestoreInplaceOp(Graph &graph) const {
+RestoreInplaceOp *Pipeline::addNewRestoreInplaceOp(Graph &graph) const {
   Op::Settings settings(graph, "");
-  auto restoreOp_up = std::make_unique<RestoreOp>(
+  auto restoreOp_up = std::make_unique<RestoreInplaceOp>(
       Onnx::CustomOperators::RestoreInplace, settings);
   auto restoreOp = restoreOp_up.get();
   graph.moveIntoGraph(std::move(restoreOp_up));
