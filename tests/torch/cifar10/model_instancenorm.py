@@ -35,7 +35,6 @@ class Module0(torch.nn.Module):
 
         self.sin = torch.sin
         self.conv1 = torchwriter.conv3x3(nInChans, nOutChans)
-        self.conv2 = torchwriter.conv3x3(nOutChans, nOutChans)
         self.in2 = torch.nn.InstanceNorm2d(nOutChans,
                                            eps=0.1,
                                            affine=True,
@@ -48,8 +47,6 @@ class Module0(torch.nn.Module):
     def forward(self, inputs):
         im0 = inputs[0]
         x = self.conv1(im0)
-        x = self.sin(x)
-        x = self.conv2(x)
         x = self.in2(x)
         x = self.sin(x)
         return x
