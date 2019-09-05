@@ -174,11 +174,15 @@ def _check_for_conv_partials(sess, includes, excludes):
 
     types = [i.split()[0] for i in sr]
     for item in includes:
-        line = f'poplin::ConvPartialHorizontalMac<half,{item},true>'
-        print(f'Checking {line} is present')
-        assert line in types
+        # It is difficult to know which option the convolution planner will choose,
+        # so we check for both.
+        line_1 = f'poplin::ConvPartialHorizontalMac<half,{item},true>'
+        line_2 = f'poplin::ConvPartial1x1Out<half,{item},true,false>'
+        print(f'Checking {line_1} or {line_2} is present')
+        assert (line_1 in types or line_2 in types)
 
     for item in excludes:
-        line = f'poplin::ConvPartialHorizontalMac<half,{item},true>'
-        print(f'Checking {line} is not present')
-        assert line not in types
+        line_1 = f'poplin::ConvPartialHorizontalMac<half,{item},true>'
+        line_2 = f'poplin::ConvPartial1x1Out<half,{item},true,false>'
+        print(f'Checking {line_1} and {line_2} is not present')
+        assert ((line_1 not in types) and (line_2 not in types))
