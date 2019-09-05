@@ -1498,7 +1498,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
             auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
             if (ipuCopyOp) {
               growOpx(progs.pipelineIpuCopyBwdFragment(
-                  ipuCopyOp->getDestIpu(),
+                  ipuCopyOp->getSourceIpu(),
                   ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
             } else {
               growOpx(progs.pipelineBackwardFragment(op->getVirtualGraphId(),
