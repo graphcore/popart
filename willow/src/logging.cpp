@@ -56,6 +56,7 @@ private:
   boost::property_tree::ptree loggingConfig;
   std::shared_ptr<spdlog::sinks::sink> sink;
   std::map<Module, std::shared_ptr<spdlog::logger>> loggers;
+  std::string logFormat;
 };
 
 Level logLevelFromString(const std::string &level) {
@@ -158,6 +159,11 @@ LoggingContext::LoggingContext() {
   auto POPART_LOG_DEST   = getPopartEnvVar("LOG_DEST");
   auto POPART_LOG_LEVEL  = getPopartEnvVar("LOG_LEVEL");
   auto POPART_LOG_CONFIG = getPopartEnvVar("LOG_CONFIG");
+  auto POPART_LOG_FORMAT = getPopartEnvVar("LOG_FORMAT");
+
+  if (POPART_LOG_FORMAT) {
+    logFormat = std::string(POPART_LOG_FORMAT);
+  }
 
   // Get logging output from the POPART_LOG_DEST environment variable.
   // The valid options are "stdout", "stderr", or if it is neither
@@ -195,9 +201,6 @@ LoggingContext::LoggingContext() {
       throw;
     }
   }
-
-  // Set the pattern of the logging output
-  spdlog::set_pattern("%T.%e %t [%n:%L] %v");
 }
 
 // Find the logger is already created, else create a new logger
@@ -222,6 +225,10 @@ std::shared_ptr<spdlog::logger> LoggingContext::getLogger(Module m) {
       level = logLevelFromString(*levelCfg);
 
     logger->set_level(translate(level));
+
+    if (!instance.logFormat.empty()) {
+      logger->set_pattern(instance.logFormat);
+    }
 
     // save the logger
     instance.loggers[m] = logger;
