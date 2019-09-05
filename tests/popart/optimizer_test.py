@@ -243,7 +243,8 @@ def test_sgd_builder():
 
     stepSize = 2
 
-    session, inputsUserSgd = trainSession(anchorNames, opt_builder.build(), stepSize)
+    session, inputsUserSgd = trainSession(anchorNames, opt_builder.build(),
+                                          stepSize)
     anchorsArrays = session.initAnchorArrays()
 
     # train

@@ -47,8 +47,9 @@ std::unique_ptr<Optimizer> SGDBuilder::build() const {
     return std::make_unique<SGD>(learningRate_, weightDecay_, lossScaling_);
   } else if (variableLearningRate_ || variableWeightDecay_ ||
              variableLossScaling_) {
-    throw error("Either optimizer learning rate, weight decay, and loss scaling "
-                "must all be variable, or none of them");
+    throw error(
+        "Either optimizer learning rate, weight decay, and loss scaling "
+        "must all be variable, or none of them");
   } else {
     return std::make_unique<ConstSGD>(
         learningRate_, weightDecay_, lossScaling_);
