@@ -339,6 +339,15 @@ public:
   }
 
   /**
+   * Set the available memory for the given node. Used on the convolution op.
+   *
+   * \param nodeOutputName Name of the output tensor of the ONNX node
+   * \param availableMemoryProportion The available memory proportion 0 < x
+   * <= 1.
+   */
+  void setAvailableMemoryProportion(const TensorId &nodeOutputName,
+                                    const float availableMemoryProportion);
+  /**
    * Set an attribute that will be set on all subsequent operations
    */
   void setAttribute(const std::string &attribute, boost::any value);

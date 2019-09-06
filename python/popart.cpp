@@ -938,6 +938,10 @@ PYBIND11_MODULE(popart_core, m) {
       .def("getPartialsType",
            &Builder::getPartialsType,
            py::arg("nodeOutputName"))
+      .def("setAvailableMemoryProportion",
+           &Builder::setAvailableMemoryProportion,
+           py::arg("nodeOutputName"),
+           py::arg("availableMemoryProportion"))
       .def(
           "nameScope",
           [](Builder &self, const std::string &name) -> NameContextManager {

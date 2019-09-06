@@ -204,6 +204,9 @@ poplar::OptionFlags ConvOpx::getOptions() const {
   // Maybe set the partials
   auto optionFlags = options->toOptionFlags();
   addPartialsType(op.getPartialsType(), optionFlags);
+  // Maybe set the available memory proportion
+  optionFlags.set("availableMemoryProportion",
+                  std::to_string(op.getAvailableMemoryProportion()));
   return optionFlags;
 }
 
@@ -245,6 +248,8 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
 
   auto optionFlags = dv_p->wuConvOptions.toOptionFlags();
   addPartialsType(convOp->getPartialsType(), optionFlags);
+  optionFlags.set("availableMemoryProportion",
+                  std::to_string(convOp->getAvailableMemoryProportion()));
 
   poplar::Tensor wGrad = poplin::calculateWeightDeltas(
       graph(),
@@ -321,6 +326,8 @@ poplar::Tensor ConvOpx::createInput(InIndex index,
 
   auto optionFlags = dv_p->fwdConvOptions.toOptionFlags();
   addPartialsType(op.getPartialsType(), optionFlags);
+  optionFlags.set("availableMemoryProportion",
+                  std::to_string(op.getAvailableMemoryProportion()));
 
   if (index == ConvOp::getWeightsInIndex()) {
     poplar::Tensor input =
@@ -396,6 +403,8 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
 
   auto optionFlags = fwdOptions.toOptionFlags();
   addPartialsType(op.getPartialsType(), optionFlags);
+  optionFlags.set("availableMemoryProportion",
+                  std::to_string(op.getAvailableMemoryProportion()));
 
   poplin::ConvParams popConvParams = getPoplarConvParams(params);
 

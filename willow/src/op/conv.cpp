@@ -35,9 +35,11 @@ ConvParameters canonicalizeConvParams(const ConvParameters &param);
 ConvOp::ConvOp(const OperatorIdentifier &_opid,
                int64_t group_,
                const ConvPartialsType &partialsType_,
+               const float &availableMemoryProportion_,
                const HasReceptiveFieldOp::Settings &settings_)
     : HasReceptiveFieldOp(_opid, settings_), group(group_),
-      partialsType(partialsType_) {}
+      partialsType(partialsType_),
+      availableMemoryProportion(availableMemoryProportion_) {}
 
 const Tensor *ConvOp::dataIn() const { return inTensor(getDataInIndex()); }
 
@@ -202,6 +204,7 @@ static void appendConvParameterAttributes(const ConvParameters &params,
 void ConvOp::appendAttributes(OpSerialiserBase &os) const {
   HasReceptiveFieldOp::appendAttributes(os);
   os.appendAttribute("partialsType", toString(partialsType));
+  os.appendAttribute("availableMemoryProportion", availableMemoryProportion);
   appendConvParameterAttributes(params, os);
 }
 
@@ -305,6 +308,7 @@ void ConvFlipWeightsOp::setup() {
 void ConvFlipWeightsOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
   os.appendAttribute("partialsType", toString(partialsType));
+  os.appendAttribute("availableMemoryProportion", availableMemoryProportion);
 }
 
 namespace {
@@ -329,7 +333,8 @@ static OpCreator<ConvOp> convOpCreator(
 
       int64_t group = attr.getAttribute<Attributes::Int>("group", 1);
 
-      auto partialsType = ConvPartialsType::FLOAT;
+      auto partialsType               = ConvPartialsType::FLOAT;
+      float availableMemoryProportion = .9f;
 
       // try set the partials from an attribute
       if (attr.hasAttribute(sPartialsTypeAttribute)) {
@@ -346,8 +351,17 @@ static OpCreator<ConvOp> convOpCreator(
         }
       }
 
-      return std::unique_ptr<Op>(
-          new ConvOp(_opid, group, partialsType, receptiveSettings));
+      // try set the availMemAttribute from an attribute
+      if (attr.hasAttribute(sAvailMemAttribute)) {
+        availableMemoryProportion =
+            attr.getAttribute<Attributes::Float>(sAvailMemAttribute);
+      }
+
+      return std::unique_ptr<Op>(new ConvOp(_opid,
+                                            group,
+                                            partialsType,
+                                            availableMemoryProportion,
+                                            receptiveSettings));
     },
     true);
 
