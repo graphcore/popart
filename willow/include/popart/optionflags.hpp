@@ -211,6 +211,14 @@ struct SessionOptions {
 
   /// Poplar reporting options
   std::map<std::string, std::string> reportOptions;
+
+  /// List of codelets (with filetype) to be added to the poplar graph. See the
+  /// poplar documentation for more information.
+  std::vector<std::string> customCodelets;
+
+  /// Compile flags for the custom codelets. For example `-g` to generate debug
+  /// info.
+  std::string customCodeletCompileFlags;
 };
 
 } // namespace popart

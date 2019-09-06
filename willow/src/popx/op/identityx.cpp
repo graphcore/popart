@@ -15,6 +15,15 @@ void IdentityOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0, Opx::cloneNcopy(prog, getInTensor(0)));
 }
 
+IdentityInplaceOpx::IdentityInplaceOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {
+  verifyOp<IdentityInplaceOp>(op);
+}
+
+void IdentityInplaceOpx::grow(poplar::program::Sequence &prog) const {
+  setOutTensor(0, getInTensor(0));
+}
+
 IdentityGradOpx::IdentityGradOpx(Op *op, Devicex *devicex)
     : ElementWiseUnaryOpx(op, devicex) {
   verifyOp<IdentityGradOp>(op, Onnx::GradOperators::IdentityGrad);
@@ -26,6 +35,8 @@ void IdentityGradOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<IdentityOpx> identityOpxCreator(Onnx::Operators::Identity_1);
+OpxCreator<IdentityInplaceOpx>
+    identityInplaceOpxCreator(Onnx::CustomOperators::IdentityInplace);
 OpxCreator<IdentityGradOpx>
     identityGradOpxCreator(Onnx::GradOperators::IdentityGrad);
 } // namespace

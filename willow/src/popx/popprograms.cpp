@@ -141,7 +141,8 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
       // too
       if (pInfo.doBwd(pCycle, vgid_seq.first)) {
         ss << "\n  vg" << vgid_seq.first << " : Restore";
-        logging::devicex::debug("Adding restore frag to final sq");
+        logging::devicex::debug("Adding restore frag to final seq, pCycle {}",
+                                pCycle);
         sq.add(vgid_seq.second);
       }
     }
@@ -181,6 +182,7 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
 
   // 8.1 Insert the FWD inter IPU-copies.
   // We add these in reverse order, i->i+1 then i-1->i then i-2->i-1 etc.
+  // Note that vgid_seq.first == 1 corresponds to the copy from IPU1 to IPU2
   auto foundFwd = pipelineSeqs.find(PipelineFragmentId::IpuCopyFwd);
   if (foundFwd != pipelineSeqs.end()) {
     const auto &M = foundFwd->second;
@@ -195,13 +197,11 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   // 8.2 Insert the BWD inter IPU-copies.
   // These are added in ascending order of virtual graph id, so i-1->i-2 then
   // i->i-1 then i+1->i etc. This order is important for correctness.
-  //
+  // Note that vgid_seq.first == 1 corresponds to the copy from IPU1 to IPU0
   if (pipelineSeqs.find(PipelineFragmentId::IpuCopyBwd) != pipelineSeqs.end()) {
     for (const auto &vgid_seq :
          pipelineSeqs.at(PipelineFragmentId::IpuCopyBwd)) {
-      // Note that vgid_seq.first == 0 corresponds to the copy from IPU1 to
-      // IPU0, so the we must check if IPU1 ran a backwards pass
-      if (pInfo.doBwd(pCycle, vgid_seq.first + 1)) {
+      if (pInfo.doBwd(pCycle, vgid_seq.first)) {
         ss << "\n  vg" << vgid_seq.first << " : IpuBwdCopy";
         sq.add(vgid_seq.second);
       }

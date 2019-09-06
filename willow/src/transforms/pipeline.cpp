@@ -256,6 +256,31 @@ bool Pipeline::apply(Graph &graph) const {
   logging::transform::debug("First PathFromLoss::Yes in schedule is {}.",
                             (*firstFromLoss)->str());
 
+  // Ops which have no path to or from the loss can be scheduled pre- or post-
+  // loss. In the pipelining transformation, the position of an Op relative
+  // the loss is used to determine where and when to stash and restore Tensors.
+  // Therefore, the position of all Ops relative to the loss must be fixed and
+  // known. We here freeze positions relative to the loss.
+  //
+  // Note that for most situations, these constraints are redundant, as
+  // the constraints added later (Stash before loss, Restore after loss) imply
+  // them. But, there are edge cases where there is no Restore-Stash combo to
+  // implicitly constrain this order (for recomputation)
+  //
+  bool beforeFirstFromLoss{true};
+  for (auto op : currentSchedule) {
+    if (op == *firstFromLoss) {
+      beforeFirstFromLoss = false;
+    } else if (op->toLoss == PathToLoss::No &&
+               op->fromLoss == PathFromLoss::No) {
+      if (beforeFirstFromLoss) {
+        graph.topoCons->insert(op, *firstFromLoss);
+      } else {
+        graph.topoCons->insert(*firstFromLoss, op);
+      }
+    }
+  }
+
   // 1. Find all tensors in the fwd pass that are inputs to ops in the bwd pass
   std::vector<TensorId> toStashCandidateTensors;
   for (auto &tid : graph.getTensors().getAllTensorIds()) {
@@ -266,6 +291,7 @@ bool Pipeline::apply(Graph &graph) const {
     // - is a variable tensor
     // - is an optimizer tensor
     // - is on the final IPU
+
     if (tensor->consumers.getOps().empty()) {
       continue;
     }
@@ -310,36 +336,64 @@ bool Pipeline::apply(Graph &graph) const {
     toStashTensors = toStashCandidateTensors;
   }
 
-  // If there is recomputation, the candidate set is reduced. Candidate
-  // Tensors which can be recomputed from other stashing candidates, are
-  // filtered out, and their producers are set to RECOMPUTE
+  // If there is recomputation, the candidate set is reduced.
+  //
+  // Candidate Tensors which can be recomputed from other stashing candidates,
+  // are filtered out, and their producers are set to RECOMPUTE.
+  //
+  // The only exceptions are candidate stashing Tensors which are copied to
+  // another IPU : these must be stashed even if they recomputable. This
+  // guarantees that the correct Tensor is copied after fwd and bwd have
+  // executed.
+  //
+  // Algorithm : initialize all pre-loss Ops to be RECOMPUTE, and then set to
+  // CHECKPOINT if (1) cannot be computed from previous Stashed Tensors or (2)
+  // must be copied to next IPU.
   else {
 
-    // Initialise forward Ops to be Recompute
+    // Initialise forward Ops to be Recompute, except Ops whose output enters an
+    // IpuCopy.
     for (auto op : graph.getOpSchedule({})) {
-      if (!dynamic_cast<IpuCopyOp *>(op) && op->fromLoss == PathFromLoss::No) {
+      if (!dynamic_cast<IpuCopyOp *>(op) &&
+          op->scheduledPreLoss == ScheduledPreLoss::Yes) {
         op->settings.recomputeType = RecomputeType::RECOMPUTE;
+        for (auto tensor : op->output->tensors()) {
+          for (auto consumer : tensor->consumers.getOps()) {
+            if (dynamic_cast<IpuCopyOp *>(consumer)) {
+              op->settings.recomputeType = RecomputeType::CHECKPOINT;
+            }
+          }
+        }
       }
     }
 
     logging::transform::debug(
         "Reducing the set of stashing candidate Tensors for recomputation");
 
-    // Finding initial set of Tensors which are not produced on their IPUs
+    // Finding initial set of Tensors which are not produced on their IPUs and
+    // are not stashed
     std::vector<Tensor *> frontier;
     std::set<TensorId> beenOnFrontier;
     for (auto tid : graph.getTensors().getAllTensorIds()) {
       Tensor *tensor = graph.getTensors().get(tid);
-      if (!tensor->hasProducer() ||
-          dynamic_cast<IpuCopyOp *>(tensor->getProducer())) {
-        frontier.push_back(tensor);
-        beenOnFrontier.insert(tid);
+      // not produced on IPU : stream tensor or copied on
+      if ((!tensor->hasProducer() &&
+           tensor->tensorType() == TensorType::Stream) ||
+          (tensor->hasProducer() &&
+           dynamic_cast<IpuCopyOp *>(tensor->getProducer()))) {
+        // not stashed
+        if (std::find(toStashCandidateTensors.cbegin(),
+                      toStashCandidateTensors.cend(),
+                      tensor->id) == toStashCandidateTensors.cend()) {
+          frontier.push_back(tensor);
+          beenOnFrontier.insert(tid);
+        }
       }
     }
 
-    // Starting from all Tensors which are not produced on their IPUs,
+    // Starting from the initial frontier found above,
     // propogate "CHECKPOINT" forward til either a Stash Tensor or an IPU copy
-    // is reached
+    // is reached.
     while (!frontier.empty()) {
       Tensor *tensor = frontier.back();
       frontier.pop_back();
@@ -411,6 +465,17 @@ bool Pipeline::apply(Graph &graph) const {
       }
     }
 
+    // RECOMPUTE ops must be inplace, confirm:
+    for (Op *tidConsumer : tidConsumers) {
+      if (tidConsumer->settings.recomputeType == RecomputeType::RECOMPUTE) {
+        if (isInplace == false) {
+          throw error("A recompute Op consumes a stashed Tensor, therefore "
+                      "the stashing must be in-place. But some previous logic "
+                      "has set the stashing to be non-inplace");
+        }
+      }
+    }
+
     RestoreOp *restoreOp;
     if (isInplace) {
       restoreOp = addNewRestoreInplaceOp(graph);
@@ -440,7 +505,7 @@ bool Pipeline::apply(Graph &graph) const {
     // apply topological constraints:
     // (0)  : Stash before all other consumers
     // (1)  : Stash -> "firstFromLoss" -> Restore
-    // The only topological constraint on Restore is that is
+    // The only topological constraint on Restore is that it is
     // SchedulePreLoss::No, exact scheduling controlled by the backend.
 
     // (1)
@@ -455,7 +520,6 @@ bool Pipeline::apply(Graph &graph) const {
       }
     }
   }
-
   return true;
 }
 
@@ -478,9 +542,9 @@ RestoreOp *Pipeline::addNewRestoreOp(Graph &graph) const {
   return restoreOp;
 }
 
-RestoreOp *Pipeline::addNewRestoreInplaceOp(Graph &graph) const {
+RestoreInplaceOp *Pipeline::addNewRestoreInplaceOp(Graph &graph) const {
   Op::Settings settings(graph, "");
-  auto restoreOp_up = std::make_unique<RestoreOp>(
+  auto restoreOp_up = std::make_unique<RestoreInplaceOp>(
       Onnx::CustomOperators::RestoreInplace, settings);
   auto restoreOp = restoreOp_up.get();
   graph.moveIntoGraph(std::move(restoreOp_up));

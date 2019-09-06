@@ -111,6 +111,7 @@ public:
   ConvOp(const OperatorIdentifier &_opid,
          int64_t group,
          const ConvPartialsType &partialsType_,
+         const float &availableMemoryProportion_,
          const HasReceptiveFieldOp::Settings &settings_);
   int64_t nOutChans;
   int64_t group;
@@ -149,6 +150,12 @@ public:
 
   const ConvPartialsType &getPartialsType() const { return partialsType; }
   void setPartialsType(const ConvPartialsType &v) { partialsType = v; }
+  float getAvailableMemoryProportion() const {
+    return availableMemoryProportion;
+  }
+  void setAvailableMemoryProportion(const float &v) {
+    availableMemoryProportion = v;
+  }
 
 private:
   ConvParameters params;
@@ -160,6 +167,7 @@ private:
   Shape inputShape;
 
   ConvPartialsType partialsType;
+  float availableMemoryProportion;
 
   void setup0() final;
   void setSpatialK() final;
@@ -214,12 +222,19 @@ public:
 
   const ConvPartialsType &getPartialsType() const { return partialsType; }
   void setPartialsType(const ConvPartialsType &v) { partialsType = v; }
+  float getAvailableMemoryProportion() const {
+    return availableMemoryProportion;
+  }
+  void setAvailableMemoryProportion(const float &v) {
+    availableMemoryProportion = v;
+  }
 
   void appendAttributes(OpSerialiserBase &os) const final;
 
 private:
   ConvParameters params;
   ConvPartialsType partialsType;
+  float availableMemoryProportion;
 };
 
 class ConvDataGradOp : public Op {

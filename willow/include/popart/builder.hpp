@@ -339,6 +339,15 @@ public:
   }
 
   /**
+   * Set the available memory for the given node. Used on the convolution op.
+   *
+   * \param nodeOutputName Name of the output tensor of the ONNX node
+   * \param availableMemoryProportion The available memory proportion 0 < x
+   * <= 1.
+   */
+  void setAvailableMemoryProportion(const TensorId &nodeOutputName,
+                                    const float availableMemoryProportion);
+  /**
    * Set an attribute that will be set on all subsequent operations
    */
   void setAttribute(const std::string &attribute, boost::any value);
@@ -683,6 +692,14 @@ public:
    * Remove the last entry in the name scope stack
    */
   void popNameScope();
+
+  /**
+   * Get the current namescope stack using the default delimiter
+   *
+   * \param name Optional string to concatenate to the end of the stack
+   * \return A string of the concatenated namescope stack.
+   */
+  std::string getNameScope(const std::string &name = "") const;
 
 private:
   void configure();

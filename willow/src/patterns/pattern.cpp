@@ -38,6 +38,8 @@ void Pattern::transferBaseProperties(Op *from, Op *to) const {
   }
 
   to->settings.recomputeType = from->settings.recomputeType;
+
+  to->priority = from->priority;
 }
 
 std::unique_ptr<Op>

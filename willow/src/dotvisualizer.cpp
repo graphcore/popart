@@ -128,7 +128,7 @@ void DotVisualizer::write() {
     return;
   }
 
-  logging::ir::trace("Obtaining Op Schedule");
+  logging::ir::trace("Obtaining Op Schedule in DotVisualizer::write");
   auto scheduledOps = ir->getOpSchedule({});
 
   int start = std::max(0, ir->getSessionOptions().firstDotOp);
@@ -182,7 +182,7 @@ void DotVisualizer::write() {
           makeNodeIfRequired(ind_ten.second, strm(gString));
           for (auto &c : ind_ten.second->consumers.getOps()) {
             strm(gString) << tensorDotId(ind_ten.second->id) << " -> "
-                          << generateNodeName(c) << " [color=grey, label=\""
+                          << generateNodeName(c) << " [color=black, label=\""
                           << ind_ten.second->id << "\"];\n";
           }
         }
@@ -193,7 +193,7 @@ void DotVisualizer::write() {
       auto &consumers = ind_ten.second->consumers;
       for (auto &c : consumers.getOps()) {
         strm(gString) << generateNodeName(n) << " -> " << generateNodeName(c)
-                      << " [color=grey, label=\"" << ind_ten.second->id
+                      << " [color=black, label=\"" << ind_ten.second->id
                       << "\"];\n";
       }
 
@@ -202,19 +202,15 @@ void DotVisualizer::write() {
         makeNodeIfRequired(ind_ten.second, strm(gString));
         strm(gString) << generateNodeName(n) << " -> "
                       << tensorDotId(ind_ten.second->id)
-                      << " [color=grey, label=\"" << ind_ten.second->id
+                      << " [color=black, label=\"" << ind_ten.second->id
                       << "\"];\n";
       }
     }
 
+    // For simplicity only show the after constraint
     for (auto &after : n->getGraph().topoCons->getAfters(n)) {
       strm(gString) << generateNodeName(n) << " -> " << generateNodeName(after)
-                    << " [color=yellow];\n";
-    }
-
-    for (auto &before : n->getGraph().topoCons->getBefores(n)) {
-      strm(gString) << generateNodeName(before) << " -> " << generateNodeName(n)
-                    << " [color=blue];\n";
+                    << " [color=grey, style=dotted];\n";
     }
   }
   for (auto &x : ofstreams) {

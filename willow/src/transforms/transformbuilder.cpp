@@ -153,4 +153,3 @@ void TransformBuilder::transpose(TensorId in,
 }
 
 } // namespace popart
-

@@ -19,6 +19,26 @@ std::vector<std::unique_ptr<Op>> IdentityOp::getGradOps() {
   return upops;
 }
 
+std::unique_ptr<Op>
+IdentityOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
+  if (operator_id == Onnx::CustomOperators::IdentityInplace) {
+    return std::make_unique<IdentityInplaceOp>(*this);
+  }
+  // catch remaining cases and throw an error
+  return Op::getInplaceVariant(operator_id);
+}
+std::vector<std::tuple<OperatorIdentifier, float>>
+IdentityOp::inplacePriorityDefault() const {
+  return {{Onnx::CustomOperators::IdentityInplace, 10}};
+}
+
+IdentityInplaceOp::IdentityInplaceOp(const IdentityOp &op)
+    : IdentityOp(Onnx::CustomOperators::IdentityInplace, op.settings) {}
+
+std::unique_ptr<Op> IdentityInplaceOp::clone() const {
+  return std::make_unique<IdentityInplaceOp>(*this);
+}
+
 IdentityGradOp::IdentityGradOp(const IdentityOp &fwdOp)
     : IdentityOp(Onnx::GradOperators::IdentityGrad, fwdOp.getSettings()) {}
 

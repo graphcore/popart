@@ -24,6 +24,13 @@ OpsBeforeKey TopoCons::finalConsumerCons(const Tensor *tensor, Op *last) const {
 }
 
 void TopoCons::insert(const OpsBeforeKey &ops) {
+
+  for (auto &entry : ops) {
+    logging::ir::debug("Inserting topological constraints from {} to {}",
+                       entry.first->str(),
+                       entry.second);
+  }
+
   for (auto &after_befores : ops) {
     Op *after                        = after_befores.first;
     const std::vector<Op *> &befores = after_befores.second;
@@ -58,26 +65,41 @@ std::vector<Op *> TopoCons::getBefores(Op *after) const {
 };
 
 void TopoCons::transfer(Op *beforeTransfer, Op *afterTransfer) {
+  transferToMultiple(beforeTransfer, {afterTransfer});
+}
+
+void TopoCons::transferToMultiple(Op *beforeTransfer,
+                                  const std::vector<Op *> &afterTransfer) {
 
   if (!getBefores(beforeTransfer).empty() ||
       !getAfters(beforeTransfer).empty()) {
-    logging::ir::debug("Transfering topological constrains from {} to {}",
+    std::ostringstream oss;
+    oss << ' ';
+    for (auto x : afterTransfer) {
+      oss << x->str() << ' ';
+    }
+
+    logging::ir::debug("Transfering topological constraints from {} to [{}]",
                        beforeTransfer->str(),
-                       afterTransfer->str());
+                       oss.str());
   }
 
   // for all b : b -> beforeTransfer, insert
-  //             b -> afterTransfer. The edge
+  //             b -> x for all x in afterTransfer. The edge
   //             b -> beforeTransfer will be removed at the end
   for (Op *b : getBefores(beforeTransfer)) {
-    insert(b, afterTransfer);
+    for (auto x : afterTransfer) {
+      insert(b, x);
+    }
   }
 
   // for all a : beforeTransfer -> a, insert
   //             afterTransfer -> a. The edge
   //             beforeTransfer -> a will be removed at the end
   for (Op *a : getAfters(beforeTransfer)) {
-    insert(afterTransfer, a);
+    for (auto x : afterTransfer) {
+      insert(x, a);
+    }
   }
 
   remove(beforeTransfer);
@@ -95,6 +117,9 @@ bool TopoCons::contains(Op *before, Op *after) const {
 }
 
 void TopoCons::remove(Op *op) {
+
+  logging::ir::debug("Removing topological constraints from {}", op->str());
+
   for (Op *before : getBefores(op)) {
     valsAfter[before].erase(op);
   }
@@ -107,6 +132,11 @@ void TopoCons::remove(Op *op) {
 
 // insert the topological constraint before -> after
 void TopoCons::insert(Op *before, Op *after) {
+
+  logging::ir::debug("Inserting topological constraints from {} to {}",
+                     before->str(),
+                     after->str());
+
   if (before == after) {
     throw error("Cannot have \"a -> a\" topological constraint");
   }
@@ -137,6 +167,16 @@ void TopoCons::insert(Op *before, Op *after) {
   } else {
     valsBefore[after] = {before};
   }
+}
+
+bool TopoCons::hasConstraint(Op *op) {
+
+  if ((valsBefore.find(op) == valsBefore.end()) &&
+      ((valsAfter.find(op) == valsAfter.end()))) {
+    return false;
+  }
+
+  return true;
 }
 
 std::ostream &operator<<(std::ostream &os, const TopoCons &tc) {

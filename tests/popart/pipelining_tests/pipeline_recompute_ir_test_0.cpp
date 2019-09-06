@@ -31,11 +31,19 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
   auto input1 = builder->addInputTensor(info);
   auto w1     = builder->addInitializedInputTensor(wData);
 
-  auto act = aiOnnx.add({input1, w1});
-  for (int i = 0; i < 17; ++i) {
-    act = aiOnnx.sigmoid({act});
-  }
+  constexpr int64_t nIpus{3};
 
+  auto act = aiOnnx.add({input1, w1});
+  builder->virtualGraph(act, 0);
+
+  for (int vgid = 0; vgid < nIpus; ++vgid) {
+    for (int i = 0; i < 2; ++i) {
+      act = aiOnnx.sigmoid({act});
+      builder->virtualGraph(act, vgid);
+    }
+    act = aiGraphcore.scale({act}, 1.55);
+    builder->virtualGraph(act, vgid);
+  }
   builder->addOutputTensor(act);
 
   auto proto      = builder->getModelProto();
@@ -43,11 +51,10 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
   auto dataFlow   = DataFlow(100, {{act, AnchorReturnType("ALL")}});
 
   SessionOptions userOptions;
-  userOptions.virtualGraphMode  = VirtualGraphMode::Auto;
+  userOptions.virtualGraphMode  = VirtualGraphMode::Manual;
   userOptions.enablePipelining  = true;
   userOptions.autoRecomputation = RecomputationType::Standard;
 
-  constexpr int64_t nIpus{3};
   std::map<std::string, std::string> deviceOpts{
       {"numIPUs", std::to_string(nIpus)}};
 
@@ -55,6 +62,7 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
 
   auto loss1 = std::unique_ptr<Loss>(
       new L1Loss(act, "l1LossVal_1", 0.1, ReductionType::MEAN));
+  loss1->virtualGraph(2);
 
   auto device =
       DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
@@ -83,7 +91,9 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
     }
   }
 
-  // unique stashes on all but last IPU.
+  // 2 stashes, one on all but last IPU.
+  std::cout << "number of stashes: " << stashIpus.size()
+            << " number of IPUs: " << nIpus << std::endl;
   BOOST_CHECK(stashIpus.size() == nIpus - 1);
   for (int64_t ipu = 0; ipu < nIpus - 1; ++ipu) {
     BOOST_CHECK(std::find(stashIpus.begin(), stashIpus.end(), ipu) !=

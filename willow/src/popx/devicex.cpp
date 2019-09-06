@@ -1406,8 +1406,11 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
       // post-loss
       else if (op->scheduledPreLoss == ScheduledPreLoss::No) {
         if (op->settings.recomputeType != RecomputeType::CHECKPOINT) {
-          throw error(
-              "ILE: Non-checkpoint post turning point is not permitted");
+          std::stringstream oss;
+          op->append(oss);
+          throw error("ILE: Non-checkpoint Op which is ScheduledPreLoss::No is "
+                      "not permitted: \n{}",
+                      oss.str());
         }
 
         // 2 special case Ops when gradient accumulation is enabled.
@@ -1462,26 +1465,35 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
             }
           }
 
+          // put the ops to rerun in a topological order
+          auto aSchedule = op->getGraph().getOpSchedule({});
           std::vector<Op *> toRerunVector;
-          for (auto x : toRerun) {
-            toRerunVector.push_back(x);
-            progs.recordRecomputed(x->id);
-          }
-          std::sort(toRerunVector.begin(),
-                    toRerunVector.end(),
-                    [](const Op *a, const Op *b) { return a->id < b->id; });
-
-          if (ir().getSessionOptions().enablePipelining &&
-              !toRerunVector.empty()) {
-            throw error("Recomputation with pipelining is not yet fully "
-                        "supported in devicex");
+          toRerunVector.reserve(toRerun.size());
+          for (auto schedOp : aSchedule) {
+            if (toRerun.count(schedOp) > 0) {
+              toRerunVector.push_back(schedOp);
+              progs.recordRecomputed(schedOp->id);
+            }
           }
 
           for (auto opToRerun : toRerunVector) {
             logging::devicex::debug("Adding (second) recompute Op {}",
                                     opToRerun->debugName());
-            progs.backwardFragment().add(
-                progs.recomputeFragment(opToRerun->id));
+
+            if (ir().getSessionOptions().enablePipelining) {
+
+              progs
+                  .pipelineBackwardFragment(op->getVirtualGraphId(),
+                                            "recompute of " + opToRerun->str())
+                  .add(progs.recomputeFragment(opToRerun->id));
+
+            }
+
+            else {
+              progs.backwardFragment().add(
+                  progs.recomputeFragment(opToRerun->id));
+            }
+
             mainGraphOpRegistery.push_back(opToRerun);
           }
 
@@ -1498,7 +1510,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
             auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
             if (ipuCopyOp) {
               growOpx(progs.pipelineIpuCopyBwdFragment(
-                  ipuCopyOp->getDestIpu(),
+                  ipuCopyOp->getSourceIpu(),
                   ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
             } else {
               growOpx(progs.pipelineBackwardFragment(op->getVirtualGraphId(),
@@ -1752,12 +1764,6 @@ void Devicex::prepare() {
   logging::devicex::info("Poplar version: {}", poplar::versionString());
   logging::devicex::info("Poplar release githash: {}", poplar::packageHash());
 
-  if (ir().getSessionOptions().enablePipelining &&
-      ir().getSessionOptions().autoRecomputation != RecomputationType::None) {
-    throw error(
-        "Pipelining with recomputation is not yet supported in Devicex");
-  }
-
   tryLoadExecutable();
 
   // Do not like the dynamic_cast is there a better way to handle this?
@@ -1776,6 +1782,16 @@ void Devicex::prepare() {
   popnn::addCodelets(graph());
   poprand::addCodelets(graph());
   popsys::addCodelets(graph());
+
+  // Add custom codelets as per the user provided list of paths. Allow poplar to
+  // infer the file type from the extension. Also feed through the compile
+  // flags.
+  for (auto codelet : ir().getSessionOptions().customCodelets) {
+    logging::devicex::info("Adding codelet: {}", codelet);
+    graph().addCodelets(codelet,
+                        poplar::CodeletFileType::Auto,
+                        ir().getSessionOptions().customCodeletCompileFlags);
+  }
 
   setFloatingPointBehaviour(graph());
   setStochasticRoundingBehaviour(graph());

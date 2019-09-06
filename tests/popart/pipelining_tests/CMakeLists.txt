@@ -9,6 +9,10 @@ add_popart_cpp_unit_test(pipeline_discontiguous_ipu_copy_test_0
                          pipeline_discontiguous_ipu_copy_test_0.cpp)
 add_popart_cpp_unit_test(pipeline_quadratic_epsilon_test_0
                          pipeline_quadratic_epsilon_test_0.cpp)
+add_popart_cpp_unit_test(pipeline_quadratic_epsilon_test_1
+                         pipeline_quadratic_epsilon_test_1.cpp)
+add_popart_cpp_unit_test(pipeline_recompute_numerical_test_0
+                         pipeline_recompute_numerical_test_0.cpp)
 add_popart_cpp_unit_test(pipeline_no_multi_source_copies_test_0
                          pipeline_no_multi_source_copies_test_0.cpp)
 add_popart_cpp_unit_test(pipeline_recompute_ir_test_0

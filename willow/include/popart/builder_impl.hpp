@@ -173,6 +173,7 @@ public:
 
   void pushNameScope(const std::string &name);
   void popNameScope();
+  std::string getNameScope(const std::string &name = "") const;
 
   const BuilderImpl *getParent() const;
   bool hasParent() const { return nullptr != parent; }

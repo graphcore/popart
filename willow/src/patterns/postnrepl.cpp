@@ -18,13 +18,6 @@ bool PostNRepl::apply(Op *op) const {
   // op is [*]
   Tensor *ori = op->input->tensor(0);
 
-  // Update the topocons due to the removal of this op.
-  for (auto &ind_t : op->output->tensorMap()) {
-    for (auto c : ind_t.second->consumers.getOps()) {
-      graph.topoCons->transfer(op, c);
-    }
-  }
-
   std::vector<Tensor *> replicates;
   // setting replicates (rep1), (rep2), (rep3)
   for (auto &ind_t : op->output->tensorMap()) {
@@ -76,6 +69,12 @@ bool PostNRepl::matches(Op *op) const {
     // good so far
   } else {
     // doesn't match a known case of PostNRepl
+    return false;
+  }
+
+  // Don't match operations that are part of a topological constraint,
+  // it just gets too complicated
+  if (op->getGraph().topoCons->hasConstraint(op)) {
     return false;
   }
 

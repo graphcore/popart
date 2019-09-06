@@ -9,6 +9,9 @@
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/op.hpp>
+#include <popart/op/mul.hpp>
+#include <popart/op/relu.hpp>
+#include <popart/op/varupdate.hpp>
 #include <popart/subgraph/outliner.hpp>
 #include <popart/tensornames.hpp>
 
@@ -92,15 +95,15 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
 
     auto in0 = builder->addInputTensor(info0);
     std::vector<TensorId> weightIds;
-    std::vector<TensorId> mmOutIds;
+    std::vector<TensorId> mulOutIds;
     std::vector<TensorId> reluIds{in0};
     int reps = 4;
     for (int i = 0; i < reps; ++i) {
       weightIds.push_back(builder->addInitializedInputTensor(weight_data));
     }
     for (int i = 0; i < reps; ++i) {
-      mmOutIds.push_back(aiOnnx.matmul({reluIds.back(), weightIds[i]}));
-      reluIds.push_back(aiOnnx.relu({mmOutIds.back()}));
+      mulOutIds.push_back(aiOnnx.mul({reluIds.back(), weightIds[i]}));
+      reluIds.push_back(aiOnnx.relu({mulOutIds.back()}));
     }
     auto out = aiOnnx.reducesum({reluIds.back()});
     builder->addOutputTensor(out);
@@ -123,9 +126,8 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     auto opts = SessionOptions();
     // This test tests the functionality of fwtools::subgraph::getRinseMatches,
     // not the actual outlining of the Ir
-    opts.enableOutlining      = false;
-    opts.enableGroupedMatmuls = false;
-    opts.autoRecomputation    = RecomputationType::None;
+    opts.enableOutlining   = false;
+    opts.autoRecomputation = RecomputationType::None;
 
     Ir ir;
     opts.mergeVarUpdate = MergeVarUpdateType::None;
@@ -140,6 +142,58 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
 
     auto sched = ir.getOpSchedule({});
 
+    // The training schedule looks like this (05 / September / 2019)
+    //
+    // 0 Mul
+    // 1 Relu
+    // 2 Mul
+    // 3 Relu
+    // 4 Mul
+    // 5 Relu
+    // 6 Mul
+    // 7 Relu
+    // 8 Identity
+    // 9 L1Grad
+    // 10 ReluGrad
+    // 11 Mul
+    // 12 Mul
+    // 13 ConstSGDVarUpdate
+    // 14 ReluGrad
+    // 15 Mul
+    // 16 Mul
+    // 17 ConstSGDVarUpdate
+    // 18 ReluGrad
+    // 19 Mul
+    // 20 Mul
+    // 21 ConstSGDVarUpdate
+    // 22 ReluGrad
+    // 23 Mul
+    // 24 ConstSGDVarUpdate
+    //
+    // The scheduler might change in the future, or patterns might modify the
+    // Ops. if so, this test needs to be redesigned, or patterns disabled.
+
+    // verify that a change to the scheduler or a transform hasn't made this
+    // test invalid
+    if (train) {
+      BOOST_CHECK(sched.size() == 25);
+      for (auto i : {0, 2, 4, 6, 11, 12, 15, 16, 19, 20, 23}) {
+        BOOST_CHECK(dynamic_cast<MulOp *>(sched[i]));
+      }
+
+      for (auto i : {13, 17, 21, 24}) {
+        BOOST_CHECK(dynamic_cast<VarUpdateOp *>(sched[i]));
+      }
+
+      for (auto i : {1, 3, 5, 7}) {
+        BOOST_CHECK(dynamic_cast<ReluOp *>(sched[i]));
+      }
+
+      for (auto i : {10, 14, 18, 22}) {
+        BOOST_CHECK(dynamic_cast<ReluGradOp *>(sched[i]));
+      }
+    }
+
     int i = 0;
     for (auto op : sched) {
       std::cout << i++ << " " << op->opid.type << std::endl;
@@ -149,164 +203,42 @@ BOOST_AUTO_TEST_CASE(Op0_Subgraph) {
     test(sched, expected_matches_algo1, threshold, 1);
   };
 
-  /*
-  0  Reshape  | [@  [*
-  1  MatMul   |  @   *
-  2  Reshape  |  @   *
-  3  Relu     |  @   *]
-  4  Reshape  |  @  [*
-  5  MatMul   |  @   *
-  6  Reshape  |  @   *
-  7  Relu     |  @]  *]
-  8  Reshape  | [@  [*
-  9  MatMul   |  @   *
-  10 Reshape  |  @   *
-  11 Relu     |  @   *]
-  12 Reshape  |  @  [*
-  13 MatMul   |  @   *
-  14 Reshape  |  @   *
-  15 Relu     |  @]  *]
-  16 Identity |
-  */
+  std::vector<Match> expected_test_matches{{{0, 2, 4, 6}, 2}};
 
-  std::vector<Match> expected_test_matches = {{{0, 8}, 8}, {{0, 4, 8, 12}, 4}};
-
-  /*
-    0 Reshape             |                          [1   2
-    1 Reshape             |                           1]  2
-    2 Reshape             |                          [1   2
-    3 Reshape             |                           1]  2
-    4 Reshape             |    [&    [%
-    5 MatMul              |     &     %           @
-    6 Reshape             |     &     %
-    7 Relu                |     &     %]
-    8 Reshape             |     &    [%                   2
-    9 MatMul              |     &     %           @
-    10 Reshape            |     &     %
-    11 Relu               |     &]    %]
-    12 Reshape            |    [&    [%                   2
-    13 MatMul             |     &     %           @
-    14 Reshape            |     &     %
-    15 Relu               |     &     %]
-    16 Reshape            |     &    [%                   2
-    17 MatMul             |     &     %           @
-    18 Reshape            |     &     %
-    19 Relu               |     &]    %]
-    20 Identity           |
-    21 L1Grad             |
-    22 ReluGrad           | [*                                        5
-    23 ReshapeGrad        |  *                                    4
-    24 Transpose          |  *                                3
-    25 MatMul             |  *    [£    [!   [#   @
-    26 ReshapeGrad        |  *     £     !    #]
-    27 ConstSGDVarUpdate  |  *     £     !]
-    28 Transpose          |  *     £
-    29 MatMul             |  *     £         [#   @
-    30 ReshapeGrad        |  *     £]         #]
-    31 ReluGrad           |  *                                         5
-    32 ReshapeGrad        |  *                                    4
-    33 Transpose          |  *]                               3
-    34 MatMul             |       [£    [!   [#   @
-    35 ReshapeGrad        |        £     !    #]
-    36 ConstSGDVarUpdate  |        £     !]
-    37 Transpose          |        £                          3
-    38 MatMul             |        £         [#   @
-    39 ReshapeGrad        |        £]         #]
-    40 ReluGrad           | [*                                         5
-    41 ReshapeGrad        |  *                                    4
-    42 Transpose          |  *    [£                          3
-    43 MatMul             |  *     £    [!   [#   @
-    44 ReshapeGrad        |  *     £     !    #]
-    45 ConstSGDVarUpdate  |  *     £     !]
-    46 Transpose          |  *     £                          3
-    47 MatMul             |  *     £]        [#   @
-    48 ReshapeGrad        |  *                #]                       5
-    49 ReluGrad           |  *
-    50 ReshapeGrad        |  *                                    4
-    51 Transpose          |  *]                               3
-    52 MatMul             |             [!   [#   @
-    53 ReshapeGrad        |              !    #]
-    54 ConstSGDVarUpdate  |              !]
-  */
-
+  // expected with threshold  = a very small value (just slightly positive to
+  // prevent redundant matches)
   std::vector<Match> expected_train_matches_algo0 = {
-      {{22, 40}, 12},
-      {{4, 12}, 8},
-      {{25, 34, 43}, 6},
-      {{4, 8, 12, 16}, 4},
-      {{25, 34, 43, 52}, 3},
-      {{25, 29, 34, 38, 43, 47, 52}, 2},
-      {{5, 9, 13, 17, 25, 29, 34, 38, 43, 47, 52}, 1},
-      {{0, 2}, 2},
-      {{0, 1, 2, 3, 4, 8, 12, 16}, 1},
-      {{24, 28, 33, 37, 42, 46, 51}, 1},
-      {{23, 32, 41, 50}, 1},
-      {{22, 31, 40, 49}, 1}};
+      {{0, 2, 4, 6}, 2},
+      {{0, 2, 4, 6, 11, 12, 15, 16, 19, 20, 23}, 1},
+      {{13, 17, 21, 24}, 1},
+      {{10, 14, 18, 22}, 1}};
 
-  std::vector<Match> expected_train_matches_algo1 = {
-      {{22, 40}, 12},
-      {{4, 12}, 8},
-      {{25, 34, 43}, 6},
-      {{4, 8, 12, 16}, 4},
-      {{25, 34, 43, 52}, 3},
-      {{25, 29, 34, 38, 43, 47, 52}, 2},
-      {{5, 9, 13, 17, 25, 29, 34, 38, 43, 47, 52}, 1},
-      {{0, 2}, 2},
-      {{24, 28, 33, 37, 42, 46, 51}, 1},
-      {{0, 1, 2, 3, 4, 8, 12, 16}, 1}};
+  std::vector<Match> expected_train_matches_algo1 =
+      expected_train_matches_algo0;
 
-  popart::logging::info("simple case of an Op schedule. Is TEST, threshold -1");
-  testWithTrain(false, -1.0, expected_test_matches, expected_test_matches);
+  popart::logging::info("simple case of an Op schedule. Is TEST, threshold 1");
+  testWithTrain(false, 0.01, expected_test_matches, expected_test_matches);
+
+  popart::logging::info("simple case of an Op schedule. Is TRAIN, threshold 1");
+  testWithTrain(
+      true, 0.01, expected_train_matches_algo0, expected_train_matches_algo1);
+
+  // expected threshold with a negative threshold
+  expected_train_matches_algo0 = {
+      {{10, 18}, 5},
+      {{0, 4}, 4},
+      {{11, 15, 19}, 3},
+      {{0, 2, 4, 6}, 2},
+      {{13, 17, 21, 24}, 1},
+      {{10, 14, 18, 22}, 1},
+      {{0, 2, 4, 6, 11, 12, 15, 16, 19, 20, 23}, 1}};
+
+  expected_train_matches_algo1 = expected_train_matches_algo0;
 
   popart::logging::info(
       "simple case of an Op schedule. Is TRAIN, threshold -1");
   testWithTrain(
       true, -1.0, expected_train_matches_algo0, expected_train_matches_algo1);
-
-  expected_test_matches = {{{0, 4, 8, 12}, 4}};
-
-  // remove completely saturated at threshold 0.0f
-  popart::logging::info("simple case of an Op schedule. Is TEST, threshold 0");
-  testWithTrain(false, 0.0, expected_test_matches, expected_test_matches);
-
-  expected_train_matches_algo0 = {
-      {{4, 8, 12, 16}, 4},
-      {{25, 34, 43, 52}, 3},
-      {{25, 29, 34, 38, 43, 47, 52}, 2},
-      {{5, 9, 13, 17, 25, 29, 34, 38, 43, 47, 52}, 1},
-      {{0, 1, 2, 3, 4, 8, 12, 16}, 1},
-      {{24, 28, 33, 37, 42, 46, 51}, 1},
-      {{23, 32, 41, 50}, 1},
-      {{22, 31, 40, 49}, 1}};
-
-  expected_train_matches_algo1 = {
-      {{22, 40}, 12},
-      {{25, 34, 43}, 6},
-      {{4, 8, 12, 16}, 4},
-      {{25, 34, 43, 52}, 3},
-      {{25, 29, 34, 38, 43, 47, 52}, 2},
-      {{5, 9, 13, 17, 25, 29, 34, 38, 43, 47, 52}, 1},
-      {{24, 28, 33, 37, 42, 46, 51}, 1},
-      {{0, 1, 2, 3, 4, 8, 12, 16}, 1}};
-
-  popart::logging::info("simple case of an Op schedule. Is TRAIN, threshold 0");
-  testWithTrain(
-      true, 0.0, expected_train_matches_algo0, expected_train_matches_algo1);
-
-  // at threshold 1.0f, all matmul ops are always cached
-  expected_test_matches = {{{0, 4, 8, 12}, 4}};
-  popart::logging::info("simple case of an Op schedule. Is TEST, threshold 1");
-  testWithTrain(false, 1.0, expected_test_matches, expected_test_matches);
-
-  expected_train_matches_algo0 = {
-      {{5, 9, 13, 17, 25, 29, 34, 38, 43, 47, 52}, 1}};
-
-  expected_train_matches_algo1 = {
-      {{22, 40}, 12}, {{5, 9, 13, 17, 25, 29, 34, 38, 43, 47, 52}, 1}};
-
-  popart::logging::info("simple case of an Op schedule. Is TRAIN, threshold 1");
-  testWithTrain(
-      true, 1.0, expected_train_matches_algo0, expected_train_matches_algo1);
 }
 
 BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
@@ -377,9 +309,8 @@ BOOST_AUTO_TEST_CASE(Anchor0_Subgraph) {
   auto opts = SessionOptions();
   // This test tests the functionality of fwtools::subgraph::getRinseMatches,
   // not the actual outlining of the Ir
-  opts.enableOutlining      = false;
-  opts.enableGroupedMatmuls = false;
-  opts.autoRecomputation    = RecomputationType::None;
+  opts.enableOutlining   = false;
+  opts.autoRecomputation = RecomputationType::None;
 
   Ir ir;
   ir.prepare({modelProto,

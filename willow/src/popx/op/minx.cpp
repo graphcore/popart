@@ -48,20 +48,16 @@ void MinArgGradOpx::grow(poplar::program::Sequence &prog) const {
   //    and all other values < 0
   // 2. Signum the result to give a tensor of 0's and -1's.
   // 3. Add 1 to the result to give a mask tensor
-  auto mask =
-      popops::map(graph(),
-                  pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
-                  {getInTensor(MinArgGradOp::getFwdOutInIndex()),
-                   getInTensor(MinArgGradOp::getFwdInIndex())},
-                  prog,
-                  debugPrefix("mask"));
-
-  // Multiple the mask by the grad input
-  auto result = popops::map(graph(),
-                            pe::Mul(pe::_1, pe::_2),
-                            {mask, getInTensor(MinArgGradOp::getGradInIndex())},
-                            prog,
-                            debugPrefix("result"));
+  // 4. Multiply by the gradient tensor.
+  auto result = popops::map(
+      graph(),
+      pe::Mul(pe::Add(pe::Signum(pe::Sub(pe::_1, pe::_2)), pe::Const(1)),
+              pe::_3),
+      {getInTensor(MinArgGradOp::getFwdOutInIndex()),
+       getInTensor(MinArgGradOp::getFwdInIndex()),
+       getInTensor(MinArgGradOp::getGradInIndex())},
+      prog,
+      debugPrefix("result"));
 
   auto shapeOfOutputOfFwdOp = inInfo(MinArgGradOp::getFwdOutInIndex()).shape();
   auto shapeOfInputToFwdOp  = inInfo(MinArgGradOp::getFwdInIndex()).shape();

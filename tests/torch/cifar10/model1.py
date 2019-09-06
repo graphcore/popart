@@ -92,7 +92,7 @@ torchWriter = torchwriter.PytorchNetWriter(
     inNames=inNames,
     outNames=outNames,
     losses=losses,
-    optimizer=popart.ConstSGD(0.001),
+    optimizer=popart.SGDBuilder().learningRate(0.001).build(),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:

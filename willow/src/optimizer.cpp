@@ -12,6 +12,50 @@ Optimizer::~Optimizer()                 = default;
 Optimizer::Optimizer()                  = default;
 Optimizer::Optimizer(const Optimizer &) = default;
 
+SGDBuilder &SGDBuilder::learningRate(float value) {
+  learningRate_ = value;
+  return *this;
+}
+
+SGDBuilder &SGDBuilder::weightDecay(float value) {
+  weightDecay_ = value;
+  return *this;
+}
+
+SGDBuilder &SGDBuilder::lossScaling(float value) {
+  lossScaling_ = value;
+  return *this;
+}
+
+SGDBuilder &SGDBuilder::variableLearningRate(bool value) {
+  variableLearningRate_ = value;
+  return *this;
+}
+
+SGDBuilder &SGDBuilder::variableWeightDecay(bool value) {
+  variableWeightDecay_ = value;
+  return *this;
+}
+
+SGDBuilder &SGDBuilder::variableLossScaling(bool value) {
+  variableLossScaling_ = value;
+  return *this;
+}
+
+std::unique_ptr<Optimizer> SGDBuilder::build() const {
+  if (variableLearningRate_ && variableWeightDecay_ && variableLossScaling_) {
+    return std::make_unique<SGD>(learningRate_, weightDecay_, lossScaling_);
+  } else if (variableLearningRate_ || variableWeightDecay_ ||
+             variableLossScaling_) {
+    throw error(
+        "Either optimizer learning rate, weight decay, and loss scaling "
+        "must all be variable, or none of them");
+  } else {
+    return std::make_unique<ConstSGD>(
+        learningRate_, weightDecay_, lossScaling_);
+  }
+}
+
 TensorId getScaledLearningRateId(DataType dtype) {
   return reservedLearnRatePrefix() + getDataTypeInfoMap().at(dtype).name();
 }

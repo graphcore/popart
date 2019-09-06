@@ -202,6 +202,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
 
     print("Setting device to IPU, and preparing it")
     session.prepareDevice()
+    session.setRandomSeed(0)
 
     if mode == "train":
         print("Writing weights to device")
@@ -295,7 +296,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
             raise TestFailureError(
                 str(result) + " is greater than " + str(margin))
 
-    margin = 1.5e-8
+    margin = 5.0e-7
     numReports = []
 
     for epoch in range(epochs):  # loop over the dataset multiple times

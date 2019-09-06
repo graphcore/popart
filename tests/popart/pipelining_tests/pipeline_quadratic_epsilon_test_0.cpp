@@ -67,11 +67,10 @@
 //
 // SGD_delta  =  |weights_start - weights_end|_1 for exact SGD
 // cont_delta =  |weights_start - weights_end|_1 for continuous pipelining
-// SGD_cont_error = | weights_end_cont - weights_end_SGD|_1
+// SGD_cont_error = |weights_end_cont - weights_end_SGD|_1
 //
 // Notice the linear scaling of the error with learning rate
 // (quadratic per step)
-//
 //
 // THIS TEST:
 // confirm that the final line is reproduced, that is, when
@@ -117,28 +116,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     int64_t batchElms    = sampleElms * batchSize;
     int64_t stepDataElms = batchElms * batchesPerStep;
 
-    // The model:
-    //
-    //  input1              input2
-    //    |                   |
-    //   (Add) -- Weight     (Add) -- Weight
-    //    |                   |
-    // (Sigmoid)           (Sigmoid)
-    //    |                   |
-    //   (Add) -- Weight     (Add) -- Weight
-    //    |                   |
-    // (Sigmoid)           (Sigmoid)
-    //    |                   |
-    //  (Add) -- Weight     (Add) -- Weight
-    //    |                   |
-    // (Sigmoid)           (Sigmoid)
-    //    \                   |
-    //     \                  |
-    //      \----------(Add)--|
-    //                   |
-    //                finalOut
-    //                   |
-    //                 l1-loss
+    // The model: see above
 
     // number of Adds on each of the two branches.
     int nLayers = 3;

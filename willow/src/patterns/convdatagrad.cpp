@@ -68,6 +68,10 @@ bool ConvDataGradPattern::apply(Op *op) const {
   flip->setPartialsType(fwdOp->getPartialsType());
   conv->setPartialsType(fwdOp->getPartialsType());
 
+  // Inherit the availableMemoryProportion from the forward op
+  flip->setAvailableMemoryProportion(fwdOp->getAvailableMemoryProportion());
+  conv->setAvailableMemoryProportion(fwdOp->getAvailableMemoryProportion());
+
   // Get the data grad conv parameters
   ConvParameters bwdConvParams = convdatagrad->getParameters();
 

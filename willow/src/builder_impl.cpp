@@ -986,4 +986,13 @@ void BuilderImpl::pushNameScope(const std::string &name) {
 
 void BuilderImpl::popNameScope() { name_scope_stack_.pop_back(); }
 
+std::string BuilderImpl::getNameScope(const std::string &name) const {
+  std::stringstream fullname;
+  for (const auto &n : name_scope_stack_) {
+    fullname << n << sNameDelimiter;
+  }
+  fullname << name;
+  return fullname.str();
+}
+
 } // namespace popart

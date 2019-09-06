@@ -48,7 +48,8 @@ public:
   std::string str() {
     std::stringstream ss;
     ss.precision(8);
-    ss << "|dA - dB|^2 / (|dA||dB| + 1e-8)  = " << getRelativeError();
+    ss << "|dA - dB|^2 / (|dA||dB| + 1e-8)  = " << getRelativeError()
+       << "  and  |dA||dB| = " << std::sqrt(ss_dA * ss_dB);
     return ss.str();
   }
 

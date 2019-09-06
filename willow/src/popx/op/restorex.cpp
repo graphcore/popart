@@ -22,7 +22,7 @@ void RestoreInplaceOpx::grow(poplar::program::Sequence &prog) const {
                            {0},
                            {1},
                            prog,
-                           debugPrefix("restore"));
+                           debugPrefix("RestoreInplaceOpx"));
   prog.add(poplar::program::Copy(actFromStash.squeeze({0}), actToRestore));
   setOutTensor(RestoreInplaceOp::getRestoredActOutIndex(), actToRestore);
 }
@@ -44,7 +44,7 @@ void RestoreOpx::grow(poplar::program::Sequence &prog) const {
                            {0},
                            {1},
                            prog,
-                           debugPrefix("restore"));
+                           debugPrefix("RestoreOpx"));
 
   setOutTensor(RestoreOp::getRestoredActOutIndex(), actFromStash.squeeze({0}));
 }
@@ -55,7 +55,7 @@ RestoreOpx::RestoreOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 
 namespace {
 OpxCreator<RestoreOpx> restoreOpxCreator(Onnx::CustomOperators::Restore);
-OpxCreator<RestoreOpx>
+OpxCreator<RestoreInplaceOpx>
     restoreInplaceOpxCreator(Onnx::CustomOperators::RestoreInplace);
 } // namespace
 
