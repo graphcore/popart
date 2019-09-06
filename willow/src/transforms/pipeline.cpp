@@ -291,6 +291,7 @@ bool Pipeline::apply(Graph &graph) const {
     // - is a variable tensor
     // - is an optimizer tensor
     // - is on the final IPU
+
     if (tensor->consumers.getOps().empty()) {
       continue;
     }
@@ -335,36 +336,64 @@ bool Pipeline::apply(Graph &graph) const {
     toStashTensors = toStashCandidateTensors;
   }
 
-  // If there is recomputation, the candidate set is reduced. Candidate
-  // Tensors which can be recomputed from other stashing candidates, are
-  // filtered out, and their producers are set to RECOMPUTE
+  // If there is recomputation, the candidate set is reduced.
+  //
+  // Candidate Tensors which can be recomputed from other stashing candidates,
+  // are filtered out, and their producers are set to RECOMPUTE.
+  //
+  // The only exceptions are candidate stashing Tensors which are copied to
+  // another IPU : these must be stashed even if they recomputable. This
+  // guarantees that the correct Tensor is copied after fwd and bwd have
+  // executed.
+  //
+  // Algorithm : initialize all pre-loss Ops to be RECOMPUTE, and then set to
+  // CHECKPOINT if (1) cannot be computed from previous Stashed Tensors or (2)
+  // must be copied to next IPU.
   else {
 
-    // Initialise forward Ops to be Recompute
+    // Initialise forward Ops to be Recompute, except Ops whose output enters an
+    // IpuCopy.
     for (auto op : graph.getOpSchedule({})) {
-      if (!dynamic_cast<IpuCopyOp *>(op) && op->fromLoss == PathFromLoss::No) {
+      if (!dynamic_cast<IpuCopyOp *>(op) &&
+          op->scheduledPreLoss == ScheduledPreLoss::Yes) {
         op->settings.recomputeType = RecomputeType::RECOMPUTE;
+        for (auto tensor : op->output->tensors()) {
+          for (auto consumer : tensor->consumers.getOps()) {
+            if (dynamic_cast<IpuCopyOp *>(consumer)) {
+              op->settings.recomputeType = RecomputeType::CHECKPOINT;
+            }
+          }
+        }
       }
     }
 
     logging::transform::debug(
         "Reducing the set of stashing candidate Tensors for recomputation");
 
-    // Finding initial set of Tensors which are not produced on their IPUs
+    // Finding initial set of Tensors which are not produced on their IPUs and
+    // are not stashed
     std::vector<Tensor *> frontier;
     std::set<TensorId> beenOnFrontier;
     for (auto tid : graph.getTensors().getAllTensorIds()) {
       Tensor *tensor = graph.getTensors().get(tid);
-      if (!tensor->hasProducer() ||
-          dynamic_cast<IpuCopyOp *>(tensor->getProducer())) {
-        frontier.push_back(tensor);
-        beenOnFrontier.insert(tid);
+      // not produced on IPU : stream tensor or copied on
+      if ((!tensor->hasProducer() &&
+           tensor->tensorType() == TensorType::Stream) ||
+          (tensor->hasProducer() &&
+           dynamic_cast<IpuCopyOp *>(tensor->getProducer()))) {
+        // not stashed
+        if (std::find(toStashCandidateTensors.cbegin(),
+                      toStashCandidateTensors.cend(),
+                      tensor->id) == toStashCandidateTensors.cend()) {
+          frontier.push_back(tensor);
+          beenOnFrontier.insert(tid);
+        }
       }
     }
 
-    // Starting from all Tensors which are not produced on their IPUs,
+    // Starting from the initial frontier found above,
     // propogate "CHECKPOINT" forward til either a Stash Tensor or an IPU copy
-    // is reached
+    // is reached.
     while (!frontier.empty()) {
       Tensor *tensor = frontier.back();
       frontier.pop_back();
@@ -436,6 +465,17 @@ bool Pipeline::apply(Graph &graph) const {
       }
     }
 
+    // RECOMPUTE ops must be inplace, confirm:
+    for (Op *tidConsumer : tidConsumers) {
+      if (tidConsumer->settings.recomputeType == RecomputeType::RECOMPUTE) {
+        if (isInplace == false) {
+          throw error("A recompute Op consumes a stashed Tensor, therefore "
+                      "the stashing must be in-place. But some previous logic "
+                      "has set the stashing to be non-inplace");
+        }
+      }
+    }
+
     RestoreOp *restoreOp;
     if (isInplace) {
       restoreOp = addNewRestoreInplaceOp(graph);
@@ -480,7 +520,6 @@ bool Pipeline::apply(Graph &graph) const {
       }
     }
   }
-
   return true;
 }
 

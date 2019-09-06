@@ -35,7 +35,8 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest1) {
   auto act = aiOnnx.add({input1, w1});
   builder->virtualGraph(act, 0);
 
-  auto getPipe = [&aiOnnx, &builder](TensorId act, VGraphId vgid) {
+  auto getPipe = [&aiOnnx, &aiGraphcore, &builder](TensorId act,
+                                                   VGraphId vgid) {
     // >-----
     //      |
     //  Sigmoid (to stash)
@@ -81,6 +82,8 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest1) {
       builder->virtualGraph(act2, vgid);
     }
     act = aiOnnx.sum({act0, act1, act2});
+    builder->virtualGraph(act, vgid);
+    act = aiGraphcore.scale({act}, 1.3);
     builder->virtualGraph(act, vgid);
 
     return act;
@@ -153,6 +156,8 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest1) {
   }
 
   // unique stashes on all but last IPU.
+  std::cout << "number of stashes: " << stashIpus.size()
+            << " number of IPUs: " << nIpus << std::endl;
   BOOST_CHECK(stashIpus.size() == nIpus - 1);
   for (int64_t ipu = 0; ipu < nIpus - 1; ++ipu) {
     BOOST_CHECK(std::find(stashIpus.begin(), stashIpus.end(), ipu) !=

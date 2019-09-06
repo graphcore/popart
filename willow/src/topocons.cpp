@@ -65,26 +65,41 @@ std::vector<Op *> TopoCons::getBefores(Op *after) const {
 };
 
 void TopoCons::transfer(Op *beforeTransfer, Op *afterTransfer) {
+  transferToMultiple(beforeTransfer, {afterTransfer});
+}
+
+void TopoCons::transferToMultiple(Op *beforeTransfer,
+                                  const std::vector<Op *> &afterTransfer) {
 
   if (!getBefores(beforeTransfer).empty() ||
       !getAfters(beforeTransfer).empty()) {
-    logging::ir::debug("Transfering topological constraints from {} to {}",
+    std::ostringstream oss;
+    oss << ' ';
+    for (auto x : afterTransfer) {
+      oss << x->str() << ' ';
+    }
+
+    logging::ir::debug("Transfering topological constraints from {} to [{}]",
                        beforeTransfer->str(),
-                       afterTransfer->str());
+                       oss.str());
   }
 
   // for all b : b -> beforeTransfer, insert
-  //             b -> afterTransfer. The edge
+  //             b -> x for all x in afterTransfer. The edge
   //             b -> beforeTransfer will be removed at the end
   for (Op *b : getBefores(beforeTransfer)) {
-    insert(b, afterTransfer);
+    for (auto x : afterTransfer) {
+      insert(b, x);
+    }
   }
 
   // for all a : beforeTransfer -> a, insert
   //             afterTransfer -> a. The edge
   //             beforeTransfer -> a will be removed at the end
   for (Op *a : getAfters(beforeTransfer)) {
-    insert(afterTransfer, a);
+    for (auto x : afterTransfer) {
+      insert(x, a);
+    }
   }
 
   remove(beforeTransfer);

@@ -128,7 +128,7 @@ void DotVisualizer::write() {
     return;
   }
 
-  logging::ir::trace("Obtaining Op Schedule");
+  logging::ir::trace("Obtaining Op Schedule in DotVisualizer::write");
   auto scheduledOps = ir->getOpSchedule({});
 
   int start = std::max(0, ir->getSessionOptions().firstDotOp);

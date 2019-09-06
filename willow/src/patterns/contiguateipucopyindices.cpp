@@ -6,6 +6,7 @@
 #include <popart/patterns/contiguateipucopyindices.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
+#include <popart/topocons.hpp>
 
 namespace popart {
 
@@ -42,11 +43,17 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
   VGraphId finalIpuId = originalIpuCopyOp->getDestIpu();
   auto delta          = firstIpuId < finalIpuId ? +1 : -1;
   std::vector<std::unique_ptr<IpuCopyOp>> seq;
+  std::vector<Op *> newIpuCopyOps;
   for (VGraphId src = firstIpuId; src != finalIpuId; src += delta) {
     auto dst = src + delta;
     seq.push_back(std::make_unique<IpuCopyOp>(
         Onnx::CustomOperators::IpuCopy, dst, op->getSettings()));
+    newIpuCopyOps.push_back(seq.back().get());
   }
+
+  // transfer all topological constraints to the new IpuCopy Ops
+  Graph &graph = op->getGraph();
+  graph.topoCons->transferToMultiple(op, newIpuCopyOps);
 
   // Connect the input tensors to the firstIpuCopy of the sequence
   auto firstIpuCopy = seq.front().get();

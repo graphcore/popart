@@ -46,7 +46,7 @@ public:
     // 1) priority
     // 2) n_inputs - n_ouputs
     // 3) type (string)
-    // 4) unique id.
+    // 4) () unique id.
     //
     // Motivation for (2) above is minimization of tensor liveness
 

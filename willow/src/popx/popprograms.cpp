@@ -141,7 +141,8 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
       // too
       if (pInfo.doBwd(pCycle, vgid_seq.first)) {
         ss << "\n  vg" << vgid_seq.first << " : Restore";
-        logging::devicex::debug("Adding restore frag to final sq");
+        logging::devicex::debug("Adding restore frag to final seq, pCycle {}",
+                                pCycle);
         sq.add(vgid_seq.second);
       }
     }

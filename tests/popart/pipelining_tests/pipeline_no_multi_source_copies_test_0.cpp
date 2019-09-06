@@ -45,36 +45,50 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
     auto input3 = builder->addInputTensor(info);
     auto w3     = builder->addInitializedInputTensor(wData);
 
-    auto getPipe = [&aiOnnx,
-                    &aiGraphcore](TensorId id1, TensorId id2, std::string num) {
+    auto getPipe = [&aiOnnx, &builder, &aiGraphcore](
+                       TensorId id1, TensorId id2, std::string num, int vgid) {
       auto act = aiOnnx.add({id1, id2}, "add1-" + num);
-      act      = aiOnnx.sigmoid({act}, "sigmoid-" + num);
-      act      = aiOnnx.cos({act}, "cos-" + num);
-      act      = aiOnnx.mul({act, id1}, "mul-" + num);
-      act      = aiOnnx.add({id2, act}, "add2-" + num);
-      act      = aiOnnx.relu({act}, "relu-" + num);
-
-      // Removing this additional non-linearity breaks the scheduler.
-      // This is only true when pipelining is enabled (no pipelining =>
-      // scheduler is fine). The task to fix this is the TODO T10403.
+      builder->virtualGraph(act, vgid);
       act = aiOnnx.sigmoid({act}, "sigmoid-" + num);
+      builder->virtualGraph(act, vgid);
+      act = aiOnnx.cos({act}, "cos-" + num);
+      builder->virtualGraph(act, vgid);
+      act = aiOnnx.mul({act, id1}, "mul-" + num);
+      builder->virtualGraph(act, vgid);
+
+      act = aiOnnx.add({id2, act}, "add2-" + num);
+      builder->virtualGraph(act, vgid);
+
+      act = aiOnnx.relu({act}, "relu-" + num);
+      builder->virtualGraph(act, vgid);
+
+      act = aiOnnx.sigmoid({act}, "sigmoid-" + num);
+      builder->virtualGraph(act, vgid);
 
       act = aiGraphcore.scale({act}, 5, "scale-" + num);
+      builder->virtualGraph(act, vgid);
+
       return act;
     };
 
-    auto act1 = getPipe(input1, w1, "1");
-    auto act2 = getPipe(input2, w2, "2");
-    auto act3 = getPipe(input3, w3, "3");
-    auto act4 = getPipe(input4, w4, "4");
-    auto act5 = getPipe(input5, w5, "5");
+    auto act1 = getPipe(input1, w1, "1", 0);
+    auto act2 = getPipe(input2, w2, "2", 1);
+    auto act3 = getPipe(input3, w3, "3", 2);
+    auto act4 = getPipe(input4, w4, "4", 3);
+    auto act5 = getPipe(input5, w5, "5", 4);
 
     auto act = aiOnnx.add({act1, act2}, "add1-final");
-    act      = aiOnnx.sub({act, act3}, "sub-final");
-    act      = aiOnnx.mul({act, act4}, "mul-final");
-    act      = aiOnnx.add({act, act5}, "add2-final");
-    act      = aiOnnx.sigmoid({act}, "sigmoid-final");
-    act      = aiOnnx.relu({act}, "relu-final");
+    builder->virtualGraph(act, 5);
+    act = aiOnnx.sub({act, act3}, "sub-final");
+    builder->virtualGraph(act, 5);
+    act = aiOnnx.mul({act, act4}, "mul-final");
+    builder->virtualGraph(act, 5);
+    act = aiOnnx.add({act, act5}, "add2-final");
+    builder->virtualGraph(act, 5);
+    act = aiOnnx.sigmoid({act}, "sigmoid-final");
+    builder->virtualGraph(act, 5);
+    act = aiOnnx.relu({act}, "relu-final");
+    builder->virtualGraph(act, 5);
 
     // in1, w1 in2,w2  in3, w3  in4, w4   in5, w5
     // |       |       |        |         |
@@ -114,7 +128,7 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
     auto dataFlow   = DataFlow(20, {{act1, AnchorReturnType("ALL")}});
 
     SessionOptions userOptions;
-    userOptions.virtualGraphMode = VirtualGraphMode::Auto;
+    userOptions.virtualGraphMode = VirtualGraphMode::Manual;
     userOptions.enablePipelining = withPipelining;
 
     constexpr int64_t nIpus{6};
@@ -125,6 +139,7 @@ BOOST_AUTO_TEST_CASE(PipelineNoMultiSourceTest0) {
 
     auto loss1 = std::unique_ptr<Loss>(
         new L1Loss(act, "l1LossVal_1", 0.1, ReductionType::MEAN));
+    loss1->virtualGraph(nIpus - 1);
 
     auto device =
         DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
