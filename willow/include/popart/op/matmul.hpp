@@ -7,7 +7,10 @@ namespace popart {
 
 class MatMulBaseOp : public Op {
 public:
-  MatMulBaseOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
+  MatMulBaseOp(
+      const OperatorIdentifier &_opid,
+      const Op::Settings &settings_,
+      const boost::optional<float> availableMemoryProportion_ = boost::none);
   MatMulBaseOp(const MatMulBaseOp &) = default;
   ~MatMulBaseOp() override           = default;
 
@@ -18,11 +21,24 @@ public:
   // Return the expended shape of the rhs input to matmul
   // minium shape G x N x M
   virtual Shape getExpandedRhsShape() const = 0;
+
+  boost::optional<float> getAvailableMemoryProportion() const {
+    return availableMemoryProportion;
+  }
+  void setAvailableMemoryProportion(const boost::optional<float> v) {
+    availableMemoryProportion = v;
+  }
+
+protected:
+  boost::optional<float> availableMemoryProportion;
 };
 
 class MatMulOp : public MatMulBaseOp {
 public:
-  MatMulOp(const OperatorIdentifier &_opid, const Op::Settings &settings_);
+  MatMulOp(
+      const OperatorIdentifier &_opid,
+      const Op::Settings &settings_,
+      const boost::optional<float> availableMemoryProportion_ = boost::none);
   MatMulOp(const MatMulOp &) = default;
   MatMulOp &operator=(const MatMulOp &) = delete;
   ~MatMulOp() override                  = default;

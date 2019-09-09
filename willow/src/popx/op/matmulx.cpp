@@ -36,6 +36,12 @@ std::vector<std::size_t> MatMulOpx::getOutputShape() const {
   return MatMulOpx::onnxShapeToPoplar(matmul->outInfo(0).shape());
 }
 
+static void setMatMulOptions(MatMulBaseOp &op, poplar::OptionFlags &opts) {
+  if (auto prop = op.getAvailableMemoryProportion()) {
+    opts.set("availableMemoryProportion", std::to_string(*prop));
+  }
+}
+
 static std::pair<poplar::Tensor, poplar::Tensor>
 matInitReshape(MatMulBaseOp &matmul, poplar::Tensor lhs, poplar::Tensor rhs) {
 
@@ -373,15 +379,18 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   //                        G |  M   N
   // o' := matmul(a, b) = [10 | 28, 162]
 
+  auto opts = dv_p->fwdMmOptions.toOptionFlags();
+  setMatMulOptions(matmul, opts);
+
   auto outTensor =
       poplin::matMulGrouped(graph(),                    // graph
                             combinedBroadcastTs.first,  // A
                             combinedBroadcastTs.second, // B
                             prog,                       // prog
                             combinedBroadcastTs.first.elementType(),
-                            debugPrefix("matmulGrouped"),       // debugPrefix
-                            dv_p->fwdMmOptions.toOptionFlags(), // options
-                            &dv_p->matmulCache);                // cache
+                            debugPrefix("matmulGrouped"), // debugPrefix
+                            opts,                         // options
+                            &dv_p->matmulCache);          // cache
 
   // Split the broadcast dimensions from the rows and columns
   //
@@ -499,6 +508,9 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
   rhsShape = matCombineBroadcastDims(rhsShape);
   std::swap(rhsShape[2], rhsShape[1]);
 
+  auto opts = dv_p->fwdMmOptions.toOptionFlags();
+  setMatMulOptions(matmul, opts);
+
   if (index == MatMulOp::getLhsInIndex()) {
     auto result = poplin::createMatMulGroupedInputLHS(
         graph(),
@@ -507,7 +519,7 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
         lhsShape,
         rhsShape,
         name,
-        dv_p->fwdMmOptions.toOptionFlags(),
+        opts,
         &dv_p->matmulCache);
 
     result = result.reshape(lhsShapeP);
@@ -522,7 +534,7 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
         lhsShape,
         rhsShape,
         name,
-        dv_p->fwdMmOptions.toOptionFlags(),
+        opts,
         &dv_p->matmulCache);
 
     result = result.reshape(rhsShapeP);
@@ -680,6 +692,9 @@ void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
   auto combinedBroadcastTs =
       matCombineBroadcastDims(reshapedGroupsTs.first, reshapedGroupsTs.second);
 
+  auto opts = dv_p->bwdMmLhsOptions.toOptionFlags();
+  setMatMulOptions(matMulLhsGrad, opts);
+
   auto outTensor =
       poplin::matMulGrouped(graph(),                    // graph
                             combinedBroadcastTs.first,  // A
@@ -687,8 +702,8 @@ void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
                             prog,                       // prog
                             combinedBroadcastTs.first.elementType(),
                             debugPrefix("matmulGrouped"), // debugPrefix
-                            dv_p->bwdMmLhsOptions.toOptionFlags(), // options
-                            &dv_p->matmulCache);                   // cache
+                            opts,                         // options
+                            &dv_p->matmulCache);          // cache
 
   outTensor = matSplitBroadcastDims(
       outTensor, reshapedGroupsTs.first, reshapedGroupsTs.second);
@@ -792,6 +807,9 @@ void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
   auto combinedBroadcastTs =
       matCombineBroadcastDims(reshapedGroupsTs.first, reshapedGroupsTs.second);
 
+  auto opts = dv_p->bwdMmRhsOptions.toOptionFlags();
+  setMatMulOptions(matMulRhsGrad, opts);
+
   auto outTensor =
       poplin::matMulGrouped(graph(),                    // graph
                             combinedBroadcastTs.first,  // A
@@ -799,8 +817,8 @@ void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
                             prog,                       // prog
                             combinedBroadcastTs.first.elementType(),
                             debugPrefix("matmulGrouped"), // debugPrefix
-                            dv_p->bwdMmRhsOptions.toOptionFlags(), // options
-                            &dv_p->matmulCache);                   // cache
+                            opts,                         // options
+                            &dv_p->matmulCache);          // cache
 
   outTensor = matSplitBroadcastDims(
       outTensor, reshapedGroupsTs.first, reshapedGroupsTs.second);

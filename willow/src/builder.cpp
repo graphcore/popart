@@ -419,9 +419,9 @@ void Builder::setAvailableMemoryProportion(
     const TensorId &nodeOutputName,
     const float availableMemoryProportion) {
   auto nodeProto = impl_->findNodeProtoByOutputNames({nodeOutputName});
-  if (nodeProto.op_type() != "Conv") {
-    throw error(
-        "Builder::setAvailableMemoryProportion should only be called on Conv");
+  if (!(nodeProto.op_type() == "Conv" || nodeProto.op_type() == "MatMul")) {
+    throw error("Builder::setAvailableMemoryProportion should only be called "
+                "on Conv or MatMul");
   } else if (availableMemoryProportion > 1.0f ||
              availableMemoryProportion <= 0.0f) {
     throw error("availableMemoryProportion must be in (0,1]");
