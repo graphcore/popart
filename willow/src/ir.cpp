@@ -274,12 +274,16 @@ void Ir::verifyPiplineStageAttribute() const {
 
   // collect a set of vgraph ids for each pipeline stage
   std::map<PipelineStage, std::vector<Op *>> pipelineStages;
+  std::map<VGraphId, std::set<PipelineStage>> pipelineStagesPerVGraph;
 
   for (auto &id_op : getMainGraph().getOps()) {
     auto op = id_op.second.get();
     if (!op->isConvertibleTo<IpuCopyOp>()) {
       auto ps = getPipelineStage(op);
       pipelineStages[ps].push_back(op);
+
+      auto vgraph = getVirtualGraphId(op);
+      pipelineStagesPerVGraph[vgraph].insert(ps);
     }
   }
 
@@ -303,6 +307,36 @@ void Ir::verifyPiplineStageAttribute() const {
   }
   // all ops have had the pipeline stage attribute set
   else if (pipelineStages.count(-1) == 0) {
+    // If training, we (currently) don't support multiple pipeline stages on a
+    // single vgraph
+    if (canTrain()) {
+      for (auto &vgraphid_ps : pipelineStagesPerVGraph) {
+        auto vgraphid = vgraphid_ps.first;
+        auto &pss     = vgraphid_ps.second;
+        if (pss.size() > 1) {
+          std::stringstream ss;
+          ss << "Multiple pipeline stages on a single virtual graph is not "
+                "supported for training.";
+          ss << fmt::format("\nThere are {} stages on virtual graph {}",
+                            pss.size(),
+                            vgraphid);
+          for (auto ps : pss) {
+            for (auto &id_op : getMainGraph().getOps()) {
+              auto op = id_op.second.get();
+              if (op->getPipelineStage() == ps &&
+                  op->getVirtualGraphId() == vgraphid) {
+                ss << fmt::format("\n  ps: {}, vg: {}, {}",
+                                  op->getPipelineStage(),
+                                  op->getVirtualGraphId(),
+                                  op->debugName());
+              }
+            }
+          }
+          throw error(ss.str());
+        }
+      }
+    }
+
     // check that all ops in a pipeline stage have the same virtualGraph
     for (auto &ps_ops : pipelineStages) {
       auto ps   = ps_ops.first;
@@ -676,6 +710,9 @@ void Ir::prepare(const IrBundle &gb) {
   updateVertices();
   if (canTrain()) {
     constructBackwards();
+    // This should be able to be removed. I added it for development purposes to
+    // make sure I was setting the backward pass pipeline stages correctly.
+    verifyPiplineStageAttribute();
   }
 
   updateVertices();
@@ -1358,6 +1395,23 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   if (virtualGraphsEnabled()) {
     gradSum->setVirtualGraphId(getVirtualGraphIdFromTensorProducers(toSum));
   }
+  if (getSessionOptions().enablePipelining) {
+    // Get all the producers pipeline stages and use the lowest one for the grad
+    // sum op.
+    std::set<PipelineStage> ps;
+    for (auto t : toSum) {
+      // Pipeline stage will not be set if user has not explicitly set it.
+      if (t->getProducer()->hasPipelineStage()) {
+        ps.insert(t->getProducer()->getPipelineStage());
+      }
+    }
+
+    if (ps.size() > 0) {
+      // TODO T10560 This should be max element when pipeline stages are
+      // unrolled.
+      gradSum->setPipelineStage(*std::min_element(ps.begin(), ps.end()));
+    }
+  }
 
   OpId opId = getMainGraph().moveIntoGraph(std::move(gradSum));
 
@@ -1391,6 +1445,10 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     if (nonGradOp->settings.recomputeType == RecomputeType::RECOMPUTE &&
         autoRecomputationEnabled()) {
       throw error("Grad Ops should be grown before recompute annotation");
+    }
+
+    if (nonGradOp->hasPipelineStage()) {
+      gradOp->setPipelineStage(nonGradOp->getPipelineStage());
     }
 
     // connect inputs of gradOp
@@ -1980,6 +2038,21 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
         getVirtualGraphIdFromTensorProducers(op->input->tensors()));
   }
 
+  if (getSessionOptions().enablePipelining) {
+    // Get the pipeline stages from the inputs producers.
+    std::set<PipelineStage> stages;
+    for (auto input : op->input->tensors()) {
+      if (input->hasProducer() && input->getProducer()->hasPipelineStage()) {
+        stages.insert(input->getProducer()->getPipelineStage());
+      }
+    }
+
+    // Set the op to the highest pipeline stage if there is one.
+    if (stages.size() > 0) {
+      op->setPipelineStage(*std::max_element(stages.begin(), stages.end()));
+    }
+  }
+
   auto varUpdateOp = dynamic_cast<VarUpdateOp *>(op);
   if (varUpdateOp == nullptr) {
     throw error("Internal Logic Error (ILE) Op {} expected to be a VarUpdateOp",
@@ -2027,6 +2100,22 @@ void Ir::growFinalLoss() {
                           getOpSetVersionFromModel(Domain::ai_onnx),
                           getMainGraph(),
                           "FinalLoss");
+
+  if (getSessionOptions().enablePipelining) {
+    // Get the pipeline stages of the losses and use the highest one for the
+    // final loss sum.
+    std::set<PipelineStage> lossPipelineStages;
+    for (auto &op : lossOps) {
+      if (op->hasPipelineStage()) {
+        lossPipelineStages.insert(op->getPipelineStage());
+      }
+    }
+
+    if (lossPipelineStages.size() > 0) {
+      finalLossSum->setPipelineStage(*std::max_element(
+          lossPipelineStages.begin(), lossPipelineStages.end()));
+    }
+  }
 
   // The final Loss Op is the only Op which (we say) has both paths to and from
   finalLossSum->toLoss   = PathToLoss::Yes;

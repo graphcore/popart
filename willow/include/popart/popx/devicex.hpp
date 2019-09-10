@@ -40,7 +40,7 @@ public:
   PipelineInfo() = default;
   PipelineInfo(int _batchesPerStep,
                int _gradAcclFactor,
-               int _numIPUs,
+               int _numPipelineStages,
                bool _doTraining,
                bool _doGradAccl);
 
@@ -259,6 +259,9 @@ private:
 
   PipelineInfo pInfo;
   int64_t getStashSize(VGraphId vGraphId);
+
+  std::map<PipelineStage, VGraphId> getPipelineToVGraphIdMap() const;
+  PipelineStage getMaxPipelineStage() const;
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)

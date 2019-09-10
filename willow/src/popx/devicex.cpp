@@ -309,15 +309,15 @@ const std::map<TensorId, poplar::Tensor> &PopTensors::getTensors() const {
 
 PipelineInfo::PipelineInfo(int _batchesPerStep,
                            int _gradAcclFactor,
-                           int _numIPUs,
+                           int _numPipelineStages,
                            bool _doTraining,
                            bool _doGradAccl)
     : doTraining(_doTraining), doGradAccl(_doGradAccl) {
 
   auto bps                  = static_cast<int64_t>(_batchesPerStep);
   auto gradAcclFactor       = static_cast<int64_t>(_gradAcclFactor);
-  auto numIPUs              = static_cast<int64_t>(_numIPUs);
-  auto fillFlushPhaseCycles = numIPUs - 1;
+  auto numPipelineStages    = static_cast<int64_t>(_numPipelineStages);
+  auto fillFlushPhaseCycles = numPipelineStages;
   fillPhase.start           = 0;
   fwdFillPhase.start        = 0;
   fwdFillPhase.end          = fillFlushPhaseCycles - 1;
@@ -437,7 +437,7 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
     pInfo = PipelineInfo(
         ir.getDataFlow().batchesPerStep(),
         static_cast<int>(ir.getSessionOptions().accumulationFactor),
-        deviceInfo_->getNumIpus(),
+        getMaxPipelineStage(),
         ir.canTrain(),
         ir.getSessionOptions().enableGradientAccumulation);
   }
@@ -906,13 +906,14 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
       std::vector<VGraphId> ipus;
       for (auto *op : tensor->consumers.getOps()) {
 
-        VGraphId index = -1;
-        if (op->hasVirtualGraphId())
-          index = op->getVirtualGraphId();
-
         // The copyToIpu op assume that the tensor will already
         // have been copied to the ipu from another op
         if (op->opid != Onnx::CustomOperators::IpuCopy) {
+
+          VGraphId index = -1;
+          if (op->hasVirtualGraphId()) {
+            index = op->getVirtualGraphId();
+          }
 
           if (ipus.end() == std::find(ipus.begin(), ipus.end(), index)) {
 
@@ -1355,7 +1356,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
       } else if (dynamic_cast<RestoreOp *>(op)) {
         logging::devicex::debug("Growing Restore Opx {}", op->debugName());
         growOpx(
-            progs.pipelineRestoreFragment(op->getVirtualGraphId(), op->str()));
+            progs.pipelineRestoreFragment(op->getPipelineStage(), op->str()));
       }
 
       // pre-loss : create vertices for all recompute types
@@ -1371,12 +1372,12 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
 
             if (ipuCopyOp) {
               growOpx(progs.pipelineIpuCopyFwdFragment(
-                  ipuCopyOp->getSourceIpu(),
+                  ipuCopyOp->getPipelineStage(),
                   ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
             }
 
             else {
-              growOpx(progs.pipelineForwardFragment(op->getVirtualGraphId(),
+              growOpx(progs.pipelineForwardFragment(op->getPipelineStage(),
                                                     op->str()));
             }
           }
@@ -1396,7 +1397,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
 
           // Pre-loss, recompute, pipelining
           if (ir().getSessionOptions().enablePipelining) {
-            progs.pipelineForwardFragment(op->getVirtualGraphId(), op->str())
+            progs.pipelineForwardFragment(op->getPipelineStage(), op->str())
                 .add(progs.recomputeFragment(op->id));
           }
 
@@ -1520,10 +1521,10 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
             auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
             if (ipuCopyOp) {
               growOpx(progs.pipelineIpuCopyBwdFragment(
-                  ipuCopyOp->getSourceIpu(),
+                  ipuCopyOp->getPipelineStage(),
                   ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
             } else {
-              growOpx(progs.pipelineBackwardFragment(op->getVirtualGraphId(),
+              growOpx(progs.pipelineBackwardFragment(op->getPipelineStage(),
                                                      op->str()));
             }
           }
@@ -1936,16 +1937,33 @@ void Devicex::prepare() {
       // Copy program runs after every batch
       case (AnchorReturnTypeId::ALL): {
         if (ir().getSessionOptions().enablePipelining) {
-          tasks.add(
-              toHostTask(tensor,
-                         tensor->tensorType() == TensorType::Variable
-                             ? progs.pipelineBwdToHostStreamFragment(
-                                   tensor->getVirtualGraphId(), tensor->str())
-                             : progs.pipelineFwdOrBwdToHostStreamFragment(
-                                   tensor->scheduledPreLoss,
-                                   tensor->getVirtualGraphId(),
-                                   tensor->str()),
-                         isAnchorStream));
+          auto isOptimizerTensorCopy = [&](Op *x) {
+            return x->isConvertibleTo<IpuCopyOp>() &&
+                   dynamic_cast<IpuCopyOp *>(x)->copiesOptimizerTensors();
+          };
+
+          PipelineStage ps;
+          // Copies of optimizer tensors do not have a pipeline stage.
+          if (tensor->hasProducer() &&
+              !isOptimizerTensorCopy(tensor->getProducer())) {
+            ps = tensor->getProducer()->getPipelineStage();
+          } else if (tensor->tensorType() == TensorType::Stream) {
+            ps = *tensor->consumers.findLowestPipelineStage();
+          } else if (tensor->tensorType() == TensorType::Variable) {
+            ps = *tensor->consumers.findHighestPipelineStage();
+          }
+          // Edge cases where we have a const or optimizer tensor.
+          else {
+            ps = *tensor->consumers.findHighestPipelineStage();
+          }
+
+          tasks.add(toHostTask(
+              tensor,
+              tensor->tensorType() == TensorType::Variable
+                  ? progs.pipelineBwdToHostStreamFragment(ps, tensor->str())
+                  : progs.pipelineFwdOrBwdToHostStreamFragment(
+                        tensor->scheduledPreLoss, ps, tensor->str()),
+              isAnchorStream));
         } else {
           tasks.add(toHostTask(
               tensor,
@@ -1987,8 +2005,8 @@ void Devicex::prepare() {
 
     for (Tensor *tensor : ir().dataStreamTensors()) {
       if (ir().getSessionOptions().enablePipelining) {
-        auto &sq = progs.pipelineToDeviceStreamFragment(
-            tensor->getVirtualGraphId(), tensor->str());
+        PipelineStage ps = *tensor->consumers.findLowestPipelineStage();
+        auto &sq = progs.pipelineToDeviceStreamFragment(ps, tensor->str());
         tasks.add(fromHostTask(tensor, sq));
       } else {
         auto &sq = progs.forwardOrBackwardFragment(tensor->scheduledPreLoss);
@@ -2369,6 +2387,50 @@ PriTask Devicex::updateBatchCountTask(poplar::program::Sequence &sq) {
           f};
 }
 
+std::map<PipelineStage, VGraphId> Devicex::getPipelineToVGraphIdMap() const {
+  // Create a map of pipeline stage to virtual graph ids
+  std::map<PipelineStage, VGraphId> pipeline_vgraph_map;
+  for (auto &id_op : ir().getMainGraph().getOps()) {
+    auto &id = id_op.first;
+    auto op  = id_op.second.get();
+
+    // Not sure why, but in test
+    // 'pipeline_test.py::test_acts_match_restored_acts', an IpuCopy did not
+    // have a virtual graph id set
+    if (!op->isConvertibleTo<IpuCopyOp>()) {
+      auto ps       = op->getPipelineStage();
+      auto vgraphid = op->getVirtualGraphId();
+
+      pipeline_vgraph_map[ps] = vgraphid;
+    }
+  }
+
+  std::stringstream ss;
+  ss << "Pipeline stages running on virtual graphs:";
+  for (auto &ps_vgraph : pipeline_vgraph_map) {
+    auto ps       = ps_vgraph.first;
+    auto vgraphid = ps_vgraph.second;
+    ss << fmt::format("\n  ps {} on virtual graph {}", ps, vgraphid);
+  }
+  logging::devicex::debug(ss.str());
+
+  return pipeline_vgraph_map;
+}
+
+PipelineStage Devicex::getMaxPipelineStage() const {
+  PipelineStage max_ps = 0;
+
+  for (auto &id_op : ir().getMainGraph().getOps()) {
+    auto op = id_op.second.get();
+
+    if (!op->isConvertibleTo<IpuCopyOp>()) {
+      max_ps = std::max(max_ps, op->getPipelineStage());
+    }
+  }
+
+  return max_ps;
+}
+
 PriTask Devicex::initAndUpdatePipelineStashIndicesTask() {
 
   // We replicate the entire pipeline here if using replicated graphs, so as
@@ -2376,13 +2438,22 @@ PriTask Devicex::initAndUpdatePipelineStashIndicesTask() {
   // continue
   auto f = [this]() {
     if (ir().canTrain()) {
-      // 1. Populate map of stash index tensors. Each IPU needs a single
-      //    tensor to track stash and restore indices. Restore index is
-      //    always (stash index + 1) % stash size.
-      //    Note: these tensors are present only at the popx level,
-      //    not in the IR
-      for (int i = 0; i < ir().getMaxVirtualGraphId() - 1; i++) {
-        VGraphId vGraphId = static_cast<VGraphId>(i);
+      auto pipeline_vgraph_map = getPipelineToVGraphIdMap();
+      auto max_ps              = getMaxPipelineStage();
+
+      // 1. Populate map of stash index tensors. Each pipeline stage needs a
+      //    single tensor to track stash and restore indices. Restore index is
+      //    always (stash index + 1) % stash size. Note: these tensors are
+      //    present only at the popx level, not in the IR
+      for (auto &ps_vgraph : pipeline_vgraph_map) {
+        PipelineStage ps  = ps_vgraph.first;
+        VGraphId vGraphId = ps_vgraph.second;
+
+        // stash index tensor is not required for last pipeline stage
+        if (ps == max_ps) {
+          continue;
+        }
+
         poplar::Tensor stashIdTensor;
 
         stashIdTensor =
@@ -2395,17 +2466,22 @@ PriTask Devicex::initAndUpdatePipelineStashIndicesTask() {
       }
 
       // 2. Create the program to increment the stash and restore tensors.
-      //    To be run directly after the IPU's program frament that calls the
-      //    stash and restore opxs respectively
-      for (int i = 0; i < ir().getMaxVirtualGraphId() - 1; i++) {
+      //    To be run directly after the pipeline stages program frament that
+      //    calls the stash and restore opxs respectively
+      for (auto &ps_vgraph : pipeline_vgraph_map) {
+        PipelineStage ps  = ps_vgraph.first;
+        VGraphId vGraphId = ps_vgraph.second;
 
-        VGraphId vGraphId = static_cast<VGraphId>(i);
-        auto &sq          = progs.pipelineIncrStashIndexFragment(
-            vGraphId, "incrStash_vg" + std::to_string(vGraphId));
+        // stash index tensor is not required for last pipeline stage
+        if (ps == max_ps) {
+          continue;
+        }
 
+        auto &sq = progs.pipelineIncrStashIndexFragment(
+            ps, fmt::format("incrStash_ps{}", ps));
         auto one = getConst(
             getVirtualGraph(vGraphId), poplar::UNSIGNED_INT, {}, 1, "one");
-        auto stashSize       = static_cast<uint32_t>(getStashSize(vGraphId));
+        auto stashSize       = static_cast<uint32_t>(getStashSize(ps));
         auto stashSizeTensor = getConst(getVirtualGraph(vGraphId),
                                         poplar::UNSIGNED_INT,
                                         {},

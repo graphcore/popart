@@ -389,7 +389,8 @@ PYBIND11_MODULE(popart_core, m) {
            py::arg("reduction") = ReductionType::SUM)
       .def("probsTensorId", &NllLoss::probsTensorId)
       .def("labelTensorId", &NllLoss::labelTensorId)
-      .def("virtualGraph", &NllLoss::virtualGraph);
+      .def("pipelineStage", &NllLoss::pipelineStage)
+  .def("virtualGraph", &NllLoss::virtualGraph);
 
   py::class_<L1Loss>(m, "L1Loss", loss)
       .def(py::init<TensorId, TensorId, float, ReductionType>(),
@@ -399,7 +400,8 @@ PYBIND11_MODULE(popart_core, m) {
            py::arg("reduction") = ReductionType::SUM)
       .def("getInputId", &L1Loss::getInputId)
       .def("getLambda", &L1Loss::getLambda)
-      .def("virtualGraph", &L1Loss::virtualGraph);
+      .def("pipelineStage", &L1Loss::pipelineStage)
+  .def("virtualGraph", &L1Loss::virtualGraph);
 
   py::class_<SGDBuilder>(m, "SGDBuilder")
       .def(py::init<>())

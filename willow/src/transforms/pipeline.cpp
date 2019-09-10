@@ -65,6 +65,89 @@ namespace popart {
 
 std::size_t Pipeline::id() { return typeid(Pipeline).hash_code(); }
 
+namespace {
+
+VGraphId getVirtualGraphIdOrSourceIpu(Op *op) {
+  if (op->isConvertibleTo<IpuCopyOp>()) {
+    auto ipuCopyOp = dynamic_cast<popart::IpuCopyOp *>(op);
+    return static_cast<int64_t>(ipuCopyOp->getSourceIpu());
+  } else {
+    return op->getVirtualGraphId();
+  }
+}
+
+void setCopyOpsPipelineStage(IpuCopyOp *op) {
+  // Copies of optimizer tensors do not run in the main program fragment and
+  // should not have their pipeline stage set.
+  if (op->copiesOptimizerTensors()) {
+    return;
+  }
+
+  auto in0 = op->inTensor(0);
+  if (in0->hasProducer()) {
+    auto producer = in0->getProducer();
+    auto ps       = producer->getPipelineStage();
+    op->setPipelineStage(ps);
+  } else {
+    throw error("Can not copy variable tensor {} between virtual graphs when "
+                "pipelining. All pipeline stages using this tensor should be "
+                "on the same graph.",
+                in0->str());
+  }
+}
+
+void checkOpsPipelineStage(Graph &graph) {
+  // return the pipeline stage or -1 if not set
+  // throw error if pipeline stage if negative
+  auto getPipelineStage = [](auto x) -> PipelineStage {
+    if (x->hasPipelineStage()) {
+      auto ps = x->getPipelineStage();
+      if (ps < 0) {
+        throw error("Op has bad pipeline stage {}", ps);
+      }
+      return ps;
+    } else {
+      return -1;
+    }
+  };
+
+  // collect all ops in  each pipeline stage
+  std::map<PipelineStage, std::vector<Op *>> pipelineStages;
+
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (!op->isConvertibleTo<IpuCopyOp>()) {
+      auto ps = getPipelineStage(op);
+      pipelineStages[ps].push_back(op);
+    }
+  }
+
+  // if no ops have had the pipeline stage attribute set, set it to the virtual
+  // graph id
+  if (pipelineStages.size() == 1 && pipelineStages.count(-1) != 0) {
+    for (auto &id_op : graph.getOps()) {
+      auto op = id_op.second.get();
+      if (!op->isConvertibleTo<IpuCopyOp>()) {
+        auto vgraphid = op->getVirtualGraphId();
+        op->setPipelineStage(vgraphid);
+      }
+    }
+  }
+
+  // use the pipeline stage of the source producer as the pipeline stage for the
+  // IpuCopy
+  logging::debug("Setting the pipeline stage attribute of the Ipu copy ops");
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (op->isConvertibleTo<IpuCopyOp>()) {
+      auto copyOp = dynamic_cast<IpuCopyOp *>(op);
+      setCopyOpsPipelineStage(copyOp);
+    }
+  }
+}
+
+} // namespace
+
 bool Pipeline::apply(Graph &graph) const {
 
   auto &ir         = graph.getIr();
@@ -78,6 +161,8 @@ bool Pipeline::apply(Graph &graph) const {
     throw error("Pipelining requires the 'virtualGraphMode' session option "
                 "to not be VirtualGraphMode::Off.");
   }
+
+  checkOpsPipelineStage(graph);
 
   // 2. There must be enough batches of data for the cycle of filling
   //    and flushing the pipeline
@@ -123,23 +208,6 @@ bool Pipeline::apply(Graph &graph) const {
   //          e.g. 2) IPU0 : {Op0, Op2}, IPU1 : {Op1, Op3}
 
   // The checks:
-  for (auto &op_pair : graph.getOps()) {
-    Op *op = op_pair.second.get();
-
-    // 4.1. Loss is on graph numIPUs - 1
-    if (op->isLossOp()) {
-      int vGraphId = static_cast<int>(op->getVirtualGraphId());
-      if (vGraphId != maxVGraphId - 1) {
-        throw error("For pipelining, the graph must be sharded such that "
-                    "the loss is on the final IPU in the pipeline. "
-                    "Loss op " +
-                    op->debugName() + " has vGraphId " +
-                    std::to_string(vGraphId) + " but there are " +
-                    std::to_string(maxVGraphId) + " IPUs");
-      }
-    }
-  }
-
   // 4.2 Copies in the correct direction
 
   auto getIpuCopyOps = [&graph] {
@@ -154,59 +222,22 @@ bool Pipeline::apply(Graph &graph) const {
     return ipuCopies;
   };
 
-  auto ipuCopies = getIpuCopyOps();
-  for (auto ipuCopyOp : ipuCopies) {
-    // Ignore copies of optimizer tensors. These are run inside a different
-    // program fragment to the pipelined program, so don't have to follow
-    // the same constraints of other IpuCopy ops.
-    if (ipuCopyOp->copiesOptimizerTensors()) {
-      continue;
-    }
-
-    uint64_t destIpu = ipuCopyOp->getDestIpu();
-    // For an inference graph, or fwd pass of a training graph,
-    if (!ir.canTrain() ||
-        ipuCopyOp->scheduledPreLoss == ScheduledPreLoss::Yes) {
-      uint64_t maxSourceIpu = ipuCopyOp->getMaxSourceIpu();
-      if (destIpu <= maxSourceIpu) {
-        throw error(
-            "For pipelining, forward IpuCopyOps must copy to an "
-            "IPU of larger index. However {} ({}) copies from {} to {}.",
-            ipuCopyOp->debugName(),
-            ipuCopyOp->str(),
-            maxSourceIpu,
-            destIpu);
-      }
-    }
-
-    // for bwd pass, IPU Copy must have destination with lower VGraphId than
-    // source
-    else if (ipuCopyOp->scheduledPreLoss == ScheduledPreLoss::No) {
-      uint64_t minSourceIpu = ipuCopyOp->getMinSourceIpu();
-      if (destIpu >= minSourceIpu) {
-        throw error(
-            "For pipelining, backward IpuCopyOps must copy to an "
-            "IPU of smaller index. However {} ({}) copies from {} to {}.",
-            ipuCopyOp->debugName(),
-            ipuCopyOp->str(),
-            minSourceIpu,
-            destIpu);
-      }
-    }
-  }
-
   // Other sharding assumptions to check:
 
   // 5. Ir stream tensors cannot be consumed by ops on multiple IPUs
   for (TensorId tid : graph.getTensors().getIds(TensorType::Stream)) {
-    auto tensor                = graph.getTensors().get(tid);
-    auto consumerOps           = tensor->consumers.getOps();
-    auto firstConsumerVGraphId = getVirtualGraphIdOrSourceIpu(consumerOps[0]);
-    for (Op *consumer : consumerOps) {
-      if (getVirtualGraphIdOrSourceIpu(consumer) != firstConsumerVGraphId) {
-        throw error("For pipelining, stream tensors can only be streamed "
-                    "directly onto a single IPU");
+    auto tensor = graph.getTensors().get(tid);
+    std::set<PipelineStage> pipelineStages;
+    for (auto c : tensor->consumers.getOps()) {
+      if (!c->isConvertibleTo<IpuCopyOp>() ||
+          !dynamic_cast<IpuCopyOp *>(c)->copiesOptimizerTensors()) {
+        pipelineStages.insert(c->getPipelineStage());
       }
+    }
+
+    if (pipelineStages.size() > 1) {
+      throw error("For pipelining, stream tensors can only be streamed "
+                  "directly onto a single IPU");
     }
   }
 
@@ -214,7 +245,7 @@ bool Pipeline::apply(Graph &graph) const {
 
   // 0. Contiguate the IPUCopies
   ContiguateIpuCopyIndicesPattern contiguator;
-  for (auto ipuCopyOp : ipuCopies) {
+  for (auto ipuCopyOp : getIpuCopyOps()) {
     if (contiguator.matches(ipuCopyOp)) {
       logging::transform::debug("Contiguating {}", ipuCopyOp->debugName());
       contiguator.apply(ipuCopyOp);
@@ -224,15 +255,28 @@ bool Pipeline::apply(Graph &graph) const {
 
   // verify that all IpuCopies are contiguous
   for (auto ipuCopyOp : getIpuCopyOps()) {
-    auto sourceIpu = static_cast<int64_t>(ipuCopyOp->getSourceIpu());
-    auto destIpu   = static_cast<int64_t>(ipuCopyOp->getDestIpu());
-    auto delta     = destIpu - sourceIpu;
-    if (delta != 1 && delta != -1) {
-      throw error("ILE: IpuCopy {} is not contiguous. It copies from IPU {} to "
-                  "IPU {}. Failed to contiguate all IpuCopyOps",
-                  ipuCopyOp->debugName(),
-                  sourceIpu,
-                  destIpu);
+    if (!ipuCopyOp->copiesOptimizerTensors()) {
+      auto sourceIpu = ipuCopyOp->getPipelineStage();
+      auto destIpu =
+          *ipuCopyOp->outTensor(0)->consumers.findLowestPipelineStage();
+      auto delta = destIpu - sourceIpu;
+      // only copies of optimizer may be non contiguous
+      if (delta != 1 && delta != -1) {
+        std::stringstream ss;
+        ss << fmt::format(
+            "ILE: IpuCopy {} is not contiguous. It copies from IPU {} to "
+            "IPU {}. Failed to contiguate all IpuCopyOps",
+            ipuCopyOp->debugName(),
+            sourceIpu,
+            destIpu);
+        ss << fmt::format("\nin tensor 0: {}", ipuCopyOp->inTensor(0)->str());
+        ss << fmt::format("\nin tensor 0 producer pipeline stage: {}",
+                          sourceIpu);
+        ss << fmt::format("\nout tensor 0: {}", ipuCopyOp->outTensor(0)->str());
+        ss << fmt::format("\nout tensor 0 lowest consumer pipeline stage: {}",
+                          destIpu);
+        throw error(ss.str());
+      }
     }
   }
 
@@ -302,10 +346,10 @@ bool Pipeline::apply(Graph &graph) const {
       continue;
     }
 
-    auto vGraphIdCheckOp = tensor->consumers.getOps()[0];
-    int vGraphId =
-        static_cast<int>(getVirtualGraphIdOrSourceIpu(vGraphIdCheckOp));
-    if (vGraphId == maxVGraphId - 1) {
+    auto pipelineStageCheckOp = tensor->consumers.getOps()[0];
+    int pipelineStage =
+        static_cast<int>(pipelineStageCheckOp->getPipelineStage());
+    if (pipelineStage == maxVGraphId - 1) {
       continue;
     }
 
@@ -431,16 +475,18 @@ bool Pipeline::apply(Graph &graph) const {
   Op::Settings settings(graph, "");
 
   for (auto &tid : toStashTensors) {
-    auto tensor          = graph.getTensors().get(tid);
-    auto tidConsumers    = tensor->consumers.getOps();
-    auto vGraphIdCheckOp = tidConsumers[0];
+    auto tensor               = graph.getTensors().get(tid);
+    auto tidConsumers         = tensor->consumers.getOps();
+    auto pipelineStageCheckOp = tidConsumers[0];
 
     // Stash
     auto stashOp_up =
         std::make_unique<StashOp>(Onnx::CustomOperators::Stash, settings);
     auto stashOp = stashOp_up.get();
     graph.moveIntoGraph(std::move(stashOp_up));
-    stashOp->setVirtualGraphId(getVirtualGraphIdOrSourceIpu(vGraphIdCheckOp));
+    stashOp->setVirtualGraphId(
+        getVirtualGraphIdOrSourceIpu(pipelineStageCheckOp));
+    stashOp->setPipelineStage(pipelineStageCheckOp->getPipelineStage());
     stashOp->connectInTensor(StashOp::getInIndex(), tid);
     auto stashId = stashOp->getStashedTensorId();
     stashOp->createAndConnectOutTensor(StashOp::getOutIndex(), stashId);
@@ -483,7 +529,9 @@ bool Pipeline::apply(Graph &graph) const {
       restoreOp = addNewRestoreOp(graph);
     }
 
-    restoreOp->setVirtualGraphId(getVirtualGraphIdOrSourceIpu(vGraphIdCheckOp));
+    restoreOp->setVirtualGraphId(
+        getVirtualGraphIdOrSourceIpu(pipelineStageCheckOp));
+    restoreOp->setPipelineStage(pipelineStageCheckOp->getPipelineStage());
     restoreOp->connectInTensor(RestoreOp::getActToRestoreInIndex(), tid);
     restoreOp->connectInTensor(RestoreOp::getStashInIndex(), stashId);
     auto restoreId = restoreOp->getRestoredTensorId();
@@ -521,15 +569,6 @@ bool Pipeline::apply(Graph &graph) const {
     }
   }
   return true;
-}
-
-int64_t Pipeline::getVirtualGraphIdOrSourceIpu(Op *op) const {
-  if (op->isConvertibleTo<IpuCopyOp>()) {
-    auto ipuCopyOp = dynamic_cast<popart::IpuCopyOp *>(op);
-    return static_cast<int64_t>(ipuCopyOp->getSourceIpu());
-  } else {
-    return op->getVirtualGraphId();
-  }
 }
 
 RestoreOp *Pipeline::addNewRestoreOp(Graph &graph) const {

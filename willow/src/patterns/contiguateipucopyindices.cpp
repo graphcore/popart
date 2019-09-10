@@ -13,11 +13,20 @@ namespace popart {
 bool ContiguateIpuCopyIndicesPattern::matches(Op *op) const {
   auto copyOp = dynamic_cast<IpuCopyOp *>(op);
   if (copyOp) {
+    // copies of optimizer tensors run outside the main program fragment
+    if (copyOp->copiesOptimizerTensors()) {
+      return false;
+    }
+
     if (copyOp->getSourceTensors().size() != 1) {
       return false;
     }
-    auto delta = static_cast<VGraphId>(copyOp->getDestIpu()) -
-                 static_cast<VGraphId>(copyOp->getSourceIpu());
+
+    auto in0        = copyOp->inTensor(0);
+    auto out0       = copyOp->outTensor(0);
+    auto firstStage = in0->getProducer()->getPipelineStage();
+    auto lastStage  = *out0->consumers.findLowestPipelineStage();
+    auto delta      = lastStage - firstStage;
 
     if (delta == +1 || delta == -1) {
       return false;
@@ -33,19 +42,56 @@ ContiguateIpuCopyIndicesPattern::touches(Op *) const {
   return {};
 }
 
+namespace {
+
+void setPipelineStagesForSequence(std::vector<std::unique_ptr<IpuCopyOp>> &seq,
+                                  PipelineStage originalOpsPipelineStage,
+                                  int64_t direction) {
+  PipelineStage delta = 1;
+  if (direction < 0) {
+    // decrement pipeline stage with each copy
+    delta = -1;
+  }
+
+  // Pipeline stages should increment/decrement over the sequence
+  for (int i = 0; i < seq.size(); i++) {
+    seq.at(i)->setPipelineStage(originalOpsPipelineStage + i * delta);
+  }
+}
+
+std::map<PipelineStage, VGraphId>
+getPipelineStageToVGraphMap(const Graph &graph) {
+  std::map<PipelineStage, VGraphId> result;
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (op->hasPipelineStage() && op->hasVirtualGraphId()) {
+      result[op->getPipelineStage()] = op->getVirtualGraphId();
+    }
+  }
+  return result;
+}
+
+} // namespace
+
 bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
 
   // We assume that a call to matches has confirmed that this cast is valid
   auto originalIpuCopyOp = dynamic_cast<IpuCopyOp *>(op);
 
   // Creation of intermediate IpuCopyOps:
-  VGraphId firstIpuId = originalIpuCopyOp->getSourceIpu();
-  VGraphId finalIpuId = originalIpuCopyOp->getDestIpu();
-  auto delta          = firstIpuId < finalIpuId ? +1 : -1;
+  auto in0        = originalIpuCopyOp->inTensor(0);
+  auto out0       = originalIpuCopyOp->outTensor(0);
+  auto firstStage = in0->getProducer()->getPipelineStage();
+  auto lastStage  = *out0->consumers.findLowestPipelineStage();
+
+  auto pipelineStageToVGraph = getPipelineStageToVGraphMap(op->getGraph());
+
+  auto delta = firstStage < lastStage ? +1 : -1;
   std::vector<std::unique_ptr<IpuCopyOp>> seq;
   std::vector<Op *> newIpuCopyOps;
-  for (VGraphId src = firstIpuId; src != finalIpuId; src += delta) {
-    auto dst = src + delta;
+  for (VGraphId src = firstStage; src != lastStage; src += delta) {
+    auto dstPipeline = src + delta;
+    auto dst         = pipelineStageToVGraph.at(dstPipeline);
     seq.push_back(std::make_unique<IpuCopyOp>(
         Onnx::CustomOperators::IpuCopy, dst, op->getSettings()));
     newIpuCopyOps.push_back(seq.back().get());
@@ -54,6 +100,9 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
   // transfer all topological constraints to the new IpuCopy Ops
   Graph &graph = op->getGraph();
   graph.topoCons->transferToMultiple(op, newIpuCopyOps);
+
+  setPipelineStagesForSequence(
+      seq, originalIpuCopyOp->getPipelineStage(), delta);
 
   // Connect the input tensors to the firstIpuCopy of the sequence
   auto firstIpuCopy = seq.front().get();
@@ -72,7 +121,7 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
 
   // Connect the sequence of IpuCopys with intermediate Tensors
   int seqIndex = 0;
-  for (VGraphId src = firstIpuId; src != finalIpuId - delta; src += delta) {
+  for (VGraphId src = firstStage; src != lastStage - delta; src += delta) {
     auto srcOp  = seq.at(seqIndex).get();
     auto destOp = seq.at(seqIndex + 1).get();
     for (int i = 0; i < originalIpuCopyOp->output->n(); i++) {

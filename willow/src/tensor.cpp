@@ -99,6 +99,36 @@ std::unique_ptr<Tensor> Tensor::clone() const {
 Consumers::Consumers(Tensor *tensorConsumed_)
     : tensorConsumed(tensorConsumed_) {}
 
+boost::optional<PipelineStage> Consumers::findLowestPipelineStage() {
+  std::set<PipelineStage> stages;
+  for (auto op : getOps()) {
+    if (op->hasPipelineStage()) {
+      stages.insert(op->getPipelineStage());
+    }
+  }
+
+  if (stages.size() == 0) {
+    return boost::none;
+  } else {
+    return *std::min_element(stages.begin(), stages.end());
+  }
+}
+
+boost::optional<PipelineStage> Consumers::findHighestPipelineStage() {
+  std::set<PipelineStage> stages;
+  for (auto op : getOps()) {
+    if (op->hasPipelineStage()) {
+      stages.insert(op->getPipelineStage());
+    }
+  }
+
+  if (stages.size() == 0) {
+    return boost::none;
+  } else {
+    return *std::max_element(stages.begin(), stages.end());
+  }
+}
+
 int Consumers::n(Op *op) const {
   auto found = consumers_m.find(op);
   if (found == consumers_m.end()) {

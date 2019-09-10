@@ -31,6 +31,9 @@ void Pattern::transferBaseProperties(Op *from, Op *to) const {
   if (from->hasVirtualGraphId()) {
     to->setVirtualGraphId(from->getVirtualGraphId());
   }
+  if (from->hasPipelineStage()) {
+    to->setPipelineStage(from->getPipelineStage());
+  }
 
   to->settings.recomputeType = from->settings.recomputeType;
 

@@ -3,6 +3,9 @@
 
 #include <map>
 #include <memory>
+
+#include <boost/optional.hpp>
+
 #include <popart/error.hpp>
 #include <popart/names.hpp>
 #include <popart/tensordata.hpp>
@@ -58,6 +61,9 @@ public:
   std::vector<Op *> getOps() const;
   // append information about this object
   void append(std::stringstream &ss);
+
+  boost::optional<PipelineStage> findLowestPipelineStage();
+  boost::optional<PipelineStage> findHighestPipelineStage();
 
 private:
   // The number of times an Op consumes the Tensor which

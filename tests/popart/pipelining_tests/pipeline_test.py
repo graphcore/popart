@@ -65,89 +65,6 @@ def test_enabled_recomputation():
         }))
 
 
-def test_bad_sharding0():
-    """
-    Non-linear sharding throws error.
-    For our graph : Op0 -> Op1 -> Op2 -> Op3 -> Loss
-    consider the three cases
-      1) IPU0 : {Op2, Op3}, IPU1 : {Op0, Op1, Loss}
-      2) IPU0 : {Op0, Op2}, IPU1 : {Op1, Op3, Loss}
-      3) IPU0 : {Op0, Op1, Loss}, IPU1 : {Op2, Op3}
-    """
-
-    opts = popart.SessionOptionsCore()
-    opts.enablePipelining = True
-    opts.virtualGraphMode = popart.VirtualGraphMode.Manual
-
-    # 1)
-    builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
-    )
-    builder.virtualGraph(op0_out, 1)
-    builder.virtualGraph(op1_out, 1)
-    builder.virtualGraph(op2_out, 0)
-    builder.virtualGraph(op3_out, 0)
-    loss.virtualGraph(1)
-
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(
-            fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(10, anchor_map),
-            userOptions=opts,
-            losses=[loss],
-            deviceInfo=popart.DeviceManager().createIpuModelDevice({
-                'numIPUs':
-                2,
-                "tilesPerIPU":
-                20
-            }))
-    assert e_info.value.args[0].find("forward IPU copies go from IPU N to N+1")
-
-    # 2)
-    builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
-    )
-    builder.virtualGraph(op0_out, 0)
-    builder.virtualGraph(op1_out, 1)
-    builder.virtualGraph(op2_out, 0)
-    builder.virtualGraph(op3_out, 1)
-    loss.virtualGraph(1)
-
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(
-            fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(10, anchor_map),
-            userOptions=opts,
-            losses=[loss],
-            deviceInfo=popart.DeviceManager().createIpuModelDevice({
-                'numIPUs':
-                2,
-                "tilesPerIPU":
-                20
-            }))
-    assert e_info.value.args[0].find("forward IPU copies go from IPU N to N+1")
-
-    # 3)
-    builder, op0_out, op1_out, op2_out, op3_out, anchor_map, loss = get_simple_linear_model(
-    )
-    builder.virtualGraph(op0_out, 0)
-    builder.virtualGraph(op1_out, 0)
-    builder.virtualGraph(op2_out, 1)
-    builder.virtualGraph(op3_out, 1)
-    loss.virtualGraph(0)
-
-    with pytest.raises(popart.popart_exception) as e_info:
-        session = popart.InferenceSession(
-            fnModel=builder.getModelProto(),
-            dataFeed=popart.DataFlow(10, anchor_map),
-            userOptions=opts,
-            losses=[loss],
-            deviceInfo=popart.DeviceManager().createIpuModelDevice({
-                'numIPUs':
-                2,
-                "tilesPerIPU":
-                20
-            }))
-    assert e_info.value.args[0].find(
-        "such that the loss is on the final IPU in the pipeline")
 
 
 def test_stream_tensors_to_multiple_ipus():
@@ -705,3 +622,197 @@ def test_pipeline_stage_errors():
 
     emsg = e_info.value.args[0]
     assert emsg.startswith('Only some ops have had their pipeline stage set.')
+
+
+def test_pipeline_stages_backwards_through_ipus():
+    dummy_data = np.array([0.5, 1.0], dtype=np.float32)
+    bps = 2
+
+    vgraph_ids = []
+    ps_ids = []
+
+    def init_builder(builder):
+        d0 = builder.addInputTensor(dummy_data, 'data0')
+        d1 = builder.addInputTensor(dummy_data, 'data1')
+        d2 = builder.addInputTensor(dummy_data, 'data2')
+
+        s0 = builder.aiOnnx.sin([d0], "s0")
+        m0 = builder.aiOnnx.mul([s0, d0])
+        e0 = builder.aiOnnx.exp([m0])
+        e1 = builder.aiOnnx.exp([e0], 'output')
+
+        builder.addOutputTensor(e1)
+
+        stage0 = [s0, m0]
+        stage1 = [e0, e1]
+
+        stage0_vgraph = 1
+        stage1_vgraph = 0
+
+        for tid in stage0:
+            builder.virtualGraph(tid, stage0_vgraph)
+            builder.pipelineStage(tid, 0)
+
+        for tid in stage1:
+            builder.virtualGraph(tid, stage1_vgraph)
+            builder.pipelineStage(tid, 1)
+
+        loss = builder.addL1Loss(e1, 'l1LossVal', 0.1,
+                                 popart.ReductionType.Sum)
+        loss.virtualGraph(stage1_vgraph)
+
+        return [e1]
+
+    def ref():
+        d0 = dummy_data
+        s0 = np.sin(d0)
+        m0 = s0 * d0
+        e0 = np.exp(m0)
+        e1 = np.exp(e0)
+        return e1
+
+    session = TestSession()
+    session.options.enableVirtualGraphs = True
+    session.options.enablePipelining = True
+    session.device = 'ipu_model'
+    session.numIPUs = 2
+    session.batchesPerStep = bps
+
+    # test a pipeline stage appearing on multiple virtual graphs
+    session.prepare(init_builder)
+    pipelineAnchors = session.run()
+
+    assert len(pipelineAnchors) == 1
+    pipelineAnchors = [v for k, v in pipelineAnchors.items()]
+    pipelineAnchor = pipelineAnchors[0]
+
+    print(pipelineAnchor)
+    print(ref())
+
+    assert np.array_equal(pipelineAnchor[0], ref())
+
+
+def test_multiple_stages_per_virtual_graph_inference():
+    bps = 4
+    dummy_data = np.random.rand(2, 2).astype(np.float32)
+    data = np.random.rand(bps, 2, 2).astype(np.float32)
+    weights = np.random.rand(2, 2).astype(np.float32)
+
+    vgraph_ids = []
+    ps_ids = []
+
+    def init_builder(builder):
+        d0 = builder.addInputTensor(dummy_data, 'data0')
+        w0 = builder.addInitializedInputTensor(weights)
+
+        mm0 = builder.aiOnnx.matmul([d0, w0], "mm0")
+        s0 = builder.aiOnnx.sin([mm0])
+        mm1 = builder.aiOnnx.matmul([s0, w0], "mm1")
+
+        builder.addOutputTensor(mm1)
+
+        builder.pipelineStage(mm0, 0)
+        builder.pipelineStage(s0, 1)
+        builder.pipelineStage(mm1, 2)
+
+        builder.virtualGraph(mm0, 0)
+        builder.virtualGraph(s0, 1)
+        builder.virtualGraph(mm1, 0)
+
+        loss = builder.addL1Loss(mm1, 'l1LossVal', 0.1,
+                                 popart.ReductionType.Sum)
+        loss.virtualGraph(0)
+
+        return [mm1]
+
+    def ref():
+        mm0 = np.matmul(data, weights)
+        s0 = np.sin(mm0)
+        mm1 = np.matmul(s0, weights)
+        return mm1
+
+    session = TestSession()
+    session.options.enableVirtualGraphs = True
+    session.options.enablePipelining = True
+    session.device = 'ipu_model'
+    session.numIPUs = 2
+    session.batchesPerStep = bps
+
+    # test a pipeline stage appearing on multiple virtual graphs
+    session.prepare(init_builder)
+    sessionAnchors = session.run({'data0': data})
+    assert len(sessionAnchors) == 1
+    sessionAnchors = [v for k, v in sessionAnchors.items()][0]
+    print(sessionAnchors)
+
+    print()
+
+    refAnchors = ref()
+    print(refAnchors)
+
+    assert np.allclose(sessionAnchors, refAnchors)
+
+
+def test_multiple_stages_per_virtual_graph_training():
+    bps = 5
+    dummy_data = np.random.rand(2, 2).astype(np.float32)
+    data = np.random.rand(bps, 2, 2).astype(np.float32)
+    weights = np.random.rand(2, 2).astype(np.float32)
+
+    def run_test(set_pipeline_stages):
+        def init_builder(builder):
+            d0 = builder.addInputTensor(dummy_data, 'data0')
+            w0 = builder.addInitializedInputTensor(weights)
+
+            mm0 = builder.aiOnnx.matmul([d0, w0], "mm0")
+            s0 = builder.aiOnnx.sin([mm0])
+            c0 = builder.aiOnnx.cos([s0], "c0")
+
+            builder.addOutputTensor(c0)
+
+            if set_pipeline_stages:
+                builder.pipelineStage(mm0, 0)
+                builder.pipelineStage(s0, 1)
+                builder.pipelineStage(c0, 2)
+
+                builder.virtualGraph(mm0, 1)
+                builder.virtualGraph(s0, 0)
+                builder.virtualGraph(c0, 2)
+            else:
+                builder.virtualGraph(mm0, 0)
+                builder.virtualGraph(s0, 1)
+                builder.virtualGraph(c0, 2)
+
+            loss = builder.addL1Loss(c0, 'l1LossVal', 0.1,
+                                     popart.ReductionType.Sum)
+            loss.virtualGraph(2)
+            if set_pipeline_stages:
+                loss.pipelineStage(2)
+
+            return [c0]
+
+        session = TestSession()
+        session.mode = 'train'
+        session.options.enableVirtualGraphs = True
+        session.options.enablePipelining = True
+        session.options.enableOutlining = False
+        session.device = 'ipu_model'
+        session.numIPUs = 3
+        session.batchesPerStep = bps
+
+        # test a pipeline stage appearing on multiple virtual graphs
+        session.prepare(init_builder)
+
+        sessionAnchors = session.run({'data0': data})
+        assert len(sessionAnchors) == 1
+        sessionAnchor = [v for k, v in sessionAnchors.items()][0]
+        return np.copy(sessionAnchor)
+
+    r0 = run_test(False)
+    r1 = run_test(True)
+
+    print(r0)
+    print()
+    print(r1)
+
+    assert np.allclose(r0, r1)

@@ -12,6 +12,20 @@
 
 namespace popart {
 
+namespace {
+
+// This transform may happend when pipelining disabled, in which case it should
+// fall back to vgraph id.
+PipelineStage getPipelineStageOrVGraphId(const Op *op) {
+  if (op->hasPipelineStage()) {
+    return op->getPipelineStage();
+  } else {
+    return op->getVirtualGraphId();
+  }
+}
+
+} // namespace
+
 class CopiedTensors {
 
   // record which tensors have been copied to which ipu's
@@ -261,14 +275,16 @@ bool InterIpuCopy::apply(Graph &graph) const {
             ScheduledPreLoss::Yes) {
           // sourceOp should be op mapped to smallest vGraphId
           for (Op *op : consumers) {
-            if (op->getVirtualGraphId() < sourceOp->getVirtualGraphId()) {
+            if (getPipelineStageOrVGraphId(op) <
+                getPipelineStageOrVGraphId(sourceOp)) {
               sourceOp = op;
             }
           }
         } else {
           // sourceOp should be op mapped to largest vGraphId
           for (Op *op : consumers) {
-            if (op->getVirtualGraphId() > sourceOp->getVirtualGraphId()) {
+            if (getPipelineStageOrVGraphId(op) >
+                getPipelineStageOrVGraphId(sourceOp)) {
               sourceOp = op;
             }
           }
