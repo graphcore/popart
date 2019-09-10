@@ -12,10 +12,17 @@ public:
   MatmulInfo(const MatmulInfo &other) = default;
   MatmulInfo &operator=(const MatmulInfo &rhs) = default;
   Op *op                                       = nullptr;
-  bool transpose                               = false;
 
+  // flag to indicate if this matmul inputs need transposing
+  bool transpose = false;
+
+  // If tranposed the tensor ids of the tranposed inputs
   TensorId transposeLhsTId;
   TensorId transposeRhsTId;
+
+  // The expanded inputs i.e. 4D starting with 1
+  TensorId expandedLhsTId;
+  TensorId expandedRhsTId;
 };
 
 class GroupMatMuls : public Transform {

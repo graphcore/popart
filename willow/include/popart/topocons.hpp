@@ -28,7 +28,7 @@ public:
   // with "afterTransfer", on both ends of topological constraints
   void transfer(Op *beforeTransfer, Op *afterTransfer);
 
-  // return true if this op has a constraint
+  // Returns true if there is a constraints on this operation
   bool hasConstraint(Op *op);
 
   // replace each topological constraint involving "beforeTransfer"

@@ -1,4 +1,5 @@
 #include <sstream>
+#include <popart/logging.hpp>
 #include <popart/tensornames.hpp>
 
 namespace popart {
@@ -44,6 +45,13 @@ std::vector<std::string> reservedPrefixes() {
   prefs.insert(prefs.end(), optPrefs.begin(), optPrefs.end());
 
   return prefs;
+}
+
+TensorId createIntermediateTensorId(TensorId base_id) {
+  static unsigned tensor_counter = 0;
+  auto temp_id = fmt::format("t{}__{}", tensor_counter++, base_id);
+  logging::ir::trace("Generating tensor id {}", temp_id);
+  return temp_id;
 }
 
 } // namespace popart

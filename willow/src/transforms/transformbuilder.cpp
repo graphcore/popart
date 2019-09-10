@@ -1,5 +1,8 @@
+#include <popart/ir.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/transforms/transformbuilder.hpp>
+
+#include <popart/op/reshape.hpp>
 
 namespace popart {
 
@@ -28,14 +31,19 @@ TensorId TransformBuilder::op(const OperatorIdentifier &_opid,
                               std::vector<TensorId> &inputs,
                               std::map<std::string, boost::any> attributes,
                               boost::optional<int64_t> virtualGraphId,
-                              const std::string debugPrefix) {
+                              const std::string opName,
+                              const std::string outputName) {
 
-  auto op = createOp(_opid, attributes, debugPrefix);
+  auto op = createOp(_opid, attributes, opName);
+
+  if (op == nullptr) {
+    throw error("Failed to create op : {} in the transform builder", _opid);
+  }
 
   for (int i = 0; i < inputs.size(); ++i) {
     op->connectInTensor(i, inputs[i]);
   }
-  op->createAndConnectOutTensor(0, debugPrefix + "/out");
+  op->createAndConnectOutTensor(0, outputName);
 
   if (virtualGraphId) {
     op->setVirtualGraphId(*virtualGraphId);
@@ -72,26 +80,55 @@ void TransformBuilder::opWithOutput(
 
 TransformBuilder::TransformBuilder(Graph &graph_) : graph(graph_) {}
 
+TensorId TransformBuilder::getNextId(const std::string &name, OutIndex n) {
+  std::stringstream id_ss;
+  id_ss << name;
+
+  if (n >= 0) {
+    id_ss << ':' << std::to_string(n);
+  }
+
+  bool valid       = false;
+  auto proposedStr = id_ss.str();
+  int c            = 0;
+  while (!valid) {
+
+    if (c != 0) {
+      proposedStr = id_ss.str() + "/" + std::to_string(c);
+    }
+
+    valid = (graph.getIr().containsTensor(proposedStr) == false);
+
+    c++;
+  }
+
+  return proposedStr;
+}
+
 TensorId TransformBuilder::concat(std::vector<TensorId> &inputs,
                                   boost::optional<int64_t> virtualGraphId,
-                                  const std::string debugPrefix) {
+                                  const std::string opName,
+                                  const std::string outputName) {
   return op(Onnx::Operators::Concat_1,
             inputs,
             {{"axis", static_cast<int64_t>(0)}},
             virtualGraphId,
-            debugPrefix + "/concat");
+            opName,
+            outputName);
 }
 
 TensorId TransformBuilder::matmul(TensorId lhs,
                                   TensorId rhs,
                                   boost::optional<int64_t> virtualGraphId,
-                                  const std::string debugPrefix) {
+                                  const std::string opName,
+                                  const std::string outputName) {
   std::vector<TensorId> inputs = {lhs, rhs};
   return op(Onnx::Operators::MatMul_1,
             inputs,
             {},
             virtualGraphId,
-            debugPrefix + "/matmul");
+            opName,
+            outputName);
 }
 
 TensorId TransformBuilder::slice(TensorId in,
@@ -99,14 +136,16 @@ TensorId TransformBuilder::slice(TensorId in,
                                  const Shape &ends,
                                  const Shape &axes,
                                  boost::optional<int64_t> virtualGraphId,
-                                 const std::string debugPrefix) {
+                                 const std::string opName,
+                                 const std::string outputName) {
   std::vector<TensorId> inputs = {in};
 
   return op(Onnx::Operators::Slice_1,
             inputs,
             {{"starts", starts}, {"ends", ends}, {"axes", axes}},
             virtualGraphId,
-            debugPrefix + "/slice");
+            opName,
+            outputName);
 }
 
 void TransformBuilder::slice(TensorId in,
@@ -115,7 +154,7 @@ void TransformBuilder::slice(TensorId in,
                              const Shape &axes,
                              TensorId out,
                              boost::optional<int64_t> virtualGraphId,
-                             const std::string debugPrefix) {
+                             const std::string opName) {
   std::vector<TensorId> inputs = {in};
 
   opWithOutput(Onnx::Operators::Slice_1,
@@ -123,33 +162,97 @@ void TransformBuilder::slice(TensorId in,
                {{"starts", starts}, {"ends", ends}, {"axes", axes}},
                out,
                virtualGraphId,
-               debugPrefix + "/slice");
+               opName);
+}
+
+TensorId TransformBuilder::squeeze(TensorId in,
+                                   const Shape &axes,
+                                   boost::optional<int64_t> virtualGraphId,
+                                   const std::string opName,
+                                   const std::string outputName) {
+  std::vector<TensorId> inputs = {in};
+
+  return op(Onnx::Operators::Squeeze_1,
+            inputs,
+            {{"axes", axes}},
+            virtualGraphId,
+            opName,
+            outputName);
+}
+
+void TransformBuilder::squeeze(TensorId in,
+                               const Shape &axes,
+                               TensorId out,
+                               boost::optional<int64_t> virtualGraphId,
+                               const std::string opName) {
+  std::vector<TensorId> inputs = {in};
+
+  opWithOutput(Onnx::Operators::Squeeze_1,
+               inputs,
+               {{"axes", axes}},
+               out,
+               virtualGraphId,
+               opName);
 }
 
 TensorId TransformBuilder::transpose(TensorId in,
                                      Shape perm,
                                      boost::optional<int64_t> virtualGraphId,
-                                     const std::string debugPrefix) {
+                                     const std::string opName,
+                                     const std::string outTensorName) {
   std::vector<TensorId> inputs = {in};
   return op(Onnx::Operators::Transpose_1,
             inputs,
             {{"perm", perm}},
             virtualGraphId,
-            debugPrefix + "/transpose");
+            opName,
+            outTensorName);
 }
 
 void TransformBuilder::transpose(TensorId in,
                                  Shape perm,
                                  TensorId out,
                                  boost::optional<int64_t> virtualGraphId,
-                                 const std::string debugPrefix) {
+                                 const std::string opName) {
   std::vector<TensorId> inputs = {in};
   opWithOutput(Onnx::Operators::Transpose_1,
                inputs,
                {{"perm", perm}},
                out,
                virtualGraphId,
-               debugPrefix + "/transpose");
+               opName);
+}
+
+TensorId TransformBuilder::reshape(TensorId in,
+                                   Shape shape,
+                                   boost::optional<int64_t> virtualGraphId,
+                                   const std::string opName,
+                                   const std::string outputName) {
+  auto op = createOp(Onnx::Operators::Reshape_5, {}, opName);
+
+  if (op == nullptr) {
+    throw error("Failed to create op : {}", Onnx::Operators::Reshape_5);
+  }
+
+  ReshapeOp *reshape = dynamic_cast<ReshapeOp *>(op.get());
+
+  // Have to duplicat this code so the setOutShape can be called
+  reshape->setOutShape(shape);
+
+  std::vector<TensorId> inputs = {in};
+  for (int i = 0; i < inputs.size(); ++i) {
+    op->connectInTensor(i, inputs[i]);
+  }
+  op->createAndConnectOutTensor(0, outputName);
+
+  if (virtualGraphId) {
+    op->setVirtualGraphId(*virtualGraphId);
+  }
+
+  op->setup();
+  auto _op = op.get();
+  graph.moveIntoGraph(std::move(op));
+  return _op->outTensor(0)->id;
 }
 
 } // namespace popart

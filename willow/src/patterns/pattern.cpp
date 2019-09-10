@@ -7,6 +7,7 @@
 #include <popart/opmanager.hpp>
 #include <popart/patterns/pattern.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensornames.hpp>
 #include <popart/util.hpp>
 
 namespace popart {
@@ -21,12 +22,6 @@ bool PreAliasPattern::touchesAnchored(Op *op) const {
   }
   return false;
 };
-
-TensorId PreAliasPattern::createIntermediateTensorId(TensorId base_id) {
-  auto temp_id = fmt::format("t{}__{}", tensor_counter++, base_id);
-  logging::pattern::trace("Generating tensor id {}", temp_id);
-  return temp_id;
-}
 
 void Pattern::initialise(std::string pattern_name_) {
   pattern_name = pattern_name_;
