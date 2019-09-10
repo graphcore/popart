@@ -3,7 +3,7 @@ Legal
 
 This document is confidential and is provided subject to one or more confidentiality obligations between you and Graphcore, including a Non-Disclosure Agreement. 
 
-The information disclosed to you hereunder (the “Materials”) is provided solely for the selection and use of Graphcore products. To the maximum extent permitted by applicable law: 
+The information disclosed to you hereunder (the "Materials") is provided solely for the selection and use of Graphcore products. To the maximum extent permitted by applicable law: 
 
 (1) Materials are made available "AS IS" and with all faults, Graphcore hereby DISCLAIMS ALL WARRANTIES AND CONDITIONS, EXPRESS, IMPLIED, OR STATUTORY, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, NON-INFRINGEMENT, OR FITNESS FOR ANY PARTICULAR PURPOSE; and 
 
