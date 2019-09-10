@@ -11,7 +11,7 @@ The information disclosed to you hereunder (the "Materials") is provided solely 
 
 Graphcore assumes no obligation to correct any errors contained in the Materials or to notify you of updates to the Materials or to product specifications. 
 
-You may not reproduce, modify, distribute, or publicly display the Materials without prior written consent. Certain products are subject to the terms and conditions of Graphcore’s limited warranty. Graphcore products are not designed or intended to be fail-safe or for use in any application requiring fail-safe performance; you assume sole risk and liability for use of Graphcore products in such critical applications.
+You may not reproduce, modify, distribute, or publicly display the Materials without prior written consent. Certain products are subject to the terms and conditions of Graphcore's limited warranty. Graphcore products are not designed or intended to be fail-safe or for use in any application requiring fail-safe performance; you assume sole risk and liability for use of Graphcore products in such critical applications.
 
 Trademarks & copyright
 ----------------------
