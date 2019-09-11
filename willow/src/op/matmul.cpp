@@ -1,5 +1,6 @@
 #include <memory>
 #include <popart/error.hpp>
+#include <popart/names.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/tensor.hpp>
@@ -8,13 +9,18 @@
 
 namespace popart {
 
-MatMulBaseOp::MatMulBaseOp(const OperatorIdentifier &_opid,
-                           const Op::Settings &settings_)
-    : Op(_opid, settings_) {}
+MatMulBaseOp::MatMulBaseOp(
+    const OperatorIdentifier &_opid,
+    const Op::Settings &settings_,
+    const boost::optional<float> availableMemoryProportion_)
+    : Op(_opid, settings_),
+      availableMemoryProportion(availableMemoryProportion_) {}
 
 MatMulBaseGradOp::MatMulBaseGradOp(const OperatorIdentifier &_opid,
                                    const MatMulOp &fwdOp)
-    : MatMulBaseOp(_opid, fwdOp.getSettings()),
+    : MatMulBaseOp(_opid,
+                   fwdOp.getSettings(),
+                   fwdOp.getAvailableMemoryProportion()),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
       fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
 
@@ -23,8 +29,9 @@ const MatMulOp *MatMulBaseGradOp::getCloneOfCreator() const {
 }
 
 MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
-                   const Op::Settings &settings_)
-    : MatMulBaseOp(_opid, settings_) {}
+                   const Op::Settings &settings_,
+                   const boost::optional<float> availableMemoryProportion_)
+    : MatMulBaseOp(_opid, settings_, availableMemoryProportion_) {}
 
 std::unique_ptr<Op> MatMulOp::clone() const {
   return std::make_unique<MatMulOp>(*this);
@@ -222,8 +229,22 @@ Shape MatMulRhsGradOp::getLhsInputShape() const { return fwdOpLhsInfo.shape(); }
 Shape MatMulRhsGradOp::getOutputShape() const { return fwdOpRhsInfo.shape(); }
 
 namespace {
-static OpCreator<MatMulOp> matMulOpCreator({Onnx::Operators::MatMul_1,
-                                            Onnx::Operators::MatMul_9});
+static OpCreator<MatMulOp> matMulOpCreator(
+    {Onnx::Operators::MatMul_1, Onnx::Operators::MatMul_9},
+    [](const OperatorIdentifier &_opid,
+       const Op::Settings &settings,
+       const Attributes &attr) -> std::unique_ptr<Op> {
+      // try set the availMemAttribute from an attribute
+      if (attr.hasAttribute(sAvailMemAttribute)) {
+        float availableMemoryProportion =
+            attr.getAttribute<Attributes::Float>(sAvailMemAttribute);
+        return std::unique_ptr<Op>(
+            new MatMulOp(_opid, settings, availableMemoryProportion));
+      } else {
+        return std::unique_ptr<Op>(new MatMulOp(_opid, settings));
+      }
+    },
+    true);
 } // namespace
 
 } // namespace popart

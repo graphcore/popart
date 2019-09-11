@@ -16,7 +16,7 @@ std::vector<const Tensor *> SequenceExpander::touches(Op *) const { return {}; }
 static void connectPair(TensorId baseId,
                         std::unique_ptr<Op> &left,
                         std::unique_ptr<Op> &right) {
-  auto tensor = PreAliasPattern::createIntermediateTensorId(baseId);
+  auto tensor = createIntermediateTensorId(baseId);
   logging::pattern::info("Adding intermediate tensor with id {}", tensor);
 
   left->createAndConnectOutTensor(0, tensor);

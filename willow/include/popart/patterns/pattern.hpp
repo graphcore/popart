@@ -4,6 +4,7 @@
 #include <map>
 #include <popart/names.hpp>
 #include <popart/opidentifier.hpp>
+#include <popart/tensornames.hpp>
 
 namespace popart {
 
@@ -101,9 +102,6 @@ public:
   Op *makeReplacementOpInIr(const OperatorIdentifier &,
                             Op *oldOp,
                             const std::string name = "") const;
-
-  static TensorId createIntermediateTensorId(TensorId base_id);
-
   // Does this Pattern match the
   // sub-graph centered (rooted) on op?
   virtual bool matches(Op *op) const = 0;

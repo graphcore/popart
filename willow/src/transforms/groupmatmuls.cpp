@@ -35,12 +35,14 @@ GroupMatMuls::findMatMuls(Graph &graph) const {
   for (auto &entry : graph.getOps()) {
     Op *op = entry.second.get();
 
-    // Find all matmuls which have input tensors which have rank 3
+    // Find all matmuls which have input tensors which have rank >= 3
     // TODO : Support 2D and 1D inputs
     if ((op->opid == Onnx::Operators::MatMul_1 ||
          op->opid == Onnx::Operators::MatMul_9) &&
-        (op->inRank(MatMulOp::getLhsInIndex()) == 3 &&
-         op->inRank(MatMulOp::getRhsInIndex()) == 3)) {
+        (op->inRank(MatMulOp::getLhsInIndex()) >= 3 &&
+         op->inRank(MatMulOp::getRhsInIndex()) >= 3 &&
+         op->inRank(MatMulOp::getLhsInIndex()) ==
+             op->inRank(MatMulOp::getRhsInIndex()))) {
 
       auto insertMatMulInfo =
           [](std::map<InputShapes, std::vector<MatmulInfo>> &matmuls_,
@@ -112,6 +114,16 @@ GroupMatMuls::findPotentialGroupedMatMuls(Graph &graph,
 
   // First get a list of all mat muls & transposed matmuls
   std::map<InputShapes, std::vector<MatmulInfo>> matmuls = findMatMuls(graph);
+
+  /*
+  // Code to print all found matmul grouped but input shapes
+  for(auto& entry : matmuls) {
+    logging::ir::info("Shape {} x {}", std::get<0>(entry.first),
+  std::get<1>(entry.first)); for(auto& matmul : entry.second) {
+       logging::ir::info(" {}" , matmul.op->str());
+    }
+  }
+  */
 
   // Find the
   std::map<InputShapes, std::map<GroupId, std::vector<MatmulInfo>>>
@@ -219,14 +231,7 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
 
   TransformBuilder builder(graph);
 
-  std::string name = "groupedMatMul:" + std::to_string(groupId) + "(";
-  for (int i = 0; i < matmulList.size(); ++i) {
-    if (i != 0) {
-      name += ",";
-    }
-    name += matmulList[i].op->name();
-  }
-  name += ")";
+  std::string name = "GroupedMatMul_" + std::to_string(groupId);
 
   // All grouped matmul need to have the same virtual graph id so
   // we can just use the first
@@ -239,47 +244,100 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
   for (auto &info : matmulList) {
     if (info.transpose) {
       const auto &inputTensorMap = info.op->input->tensorMap();
+      auto lhs                   = inputTensorMap.at(MatMulOp::getLhsInIndex());
+      auto rhs                   = inputTensorMap.at(MatMulOp::getRhsInIndex());
 
-      Shape lhsTransposeDims = tranposeDims(
-          inputTensorMap.at(MatMulOp::getLhsInIndex())->info.shape());
-      Shape rhsTransposeDims = tranposeDims(
-          inputTensorMap.at(MatMulOp::getRhsInIndex())->info.shape());
+      Shape lhsTransposeDims = tranposeDims(lhs->info.shape());
+      Shape rhsTransposeDims = tranposeDims(rhs->info.shape());
 
       info.transposeLhsTId =
-          builder.transpose(inputTensorMap.at(MatMulOp::getRhsInIndex())->id,
+          builder.transpose(rhs->id,
                             rhsTransposeDims,
                             virtualGraphId,
-                            name + "/lhs");
+                            info.op->name() + "_RhsTranspose",
+                            createIntermediateTensorId(rhs->id));
 
       info.transposeRhsTId =
-          builder.transpose(inputTensorMap.at(MatMulOp::getLhsInIndex())->id,
+          builder.transpose(lhs->id,
                             lhsTransposeDims,
                             virtualGraphId,
-                            name + "/rhs");
+                            info.op->name() + "_LhsTranspose",
+                            createIntermediateTensorId(lhs->id));
+    }
+  }
+
+  // Expand input to have a 1' at the front so we can concat and multiple
+  // tensors with different group dimensions.
+  for (auto &info : matmulList) {
+
+    if (info.transpose) {
+
+      auto lhs = graph.getIr().getTensor(info.transposeLhsTId);
+      auto rhs = graph.getIr().getTensor(info.transposeRhsTId);
+
+      auto lhsShape = lhs->info.shape();
+      lhsShape.insert(lhsShape.begin(), 1);
+      auto rhsShape = rhs->info.shape();
+      rhsShape.insert(rhsShape.begin(), 1);
+
+      info.expandedLhsTId =
+          builder.reshape(lhs->id,
+                          lhsShape,
+                          virtualGraphId,
+                          info.op->name() + "_LhsExpand",
+                          createIntermediateTensorId(lhs->id));
+      info.expandedRhsTId =
+          builder.reshape(rhs->id,
+                          rhsShape,
+                          virtualGraphId,
+                          info.op->name() + "_RhsExpand",
+                          createIntermediateTensorId(rhs->id));
+
+    } else {
+      const auto &inputTensorMap = info.op->input->tensorMap();
+      auto lhs                   = inputTensorMap.at(MatMulOp::getLhsInIndex());
+      auto rhs                   = inputTensorMap.at(MatMulOp::getRhsInIndex());
+
+      auto lhsShape = lhs->info.shape();
+      lhsShape.insert(lhsShape.begin(), 1);
+      auto rhsShape = rhs->info.shape();
+      rhsShape.insert(rhsShape.begin(), 1);
+
+      info.expandedLhsTId =
+          builder.reshape(lhs->id,
+                          lhsShape,
+                          virtualGraphId,
+                          info.op->name() + "_LhsExpand",
+                          createIntermediateTensorId(lhs->id));
+
+      info.expandedRhsTId =
+          builder.reshape(rhs->id,
+                          rhsShape,
+                          virtualGraphId,
+                          info.op->name() + "_RhsExpand",
+                          createIntermediateTensorId(rhs->id));
     }
   }
 
   // Concat the lhs and rhs inputs
-  // Need to assume they are all 3D inputs
   std::vector<TensorId> lhsTensors, rhsTensors;
   for (auto &info : matmulList) {
-
-    if (info.transpose) {
-      lhsTensors.push_back(info.transposeLhsTId);
-      rhsTensors.push_back(info.transposeRhsTId);
-    } else {
-      const auto &inputTensorMap = info.op->input->tensorMap();
-      lhsTensors.push_back(inputTensorMap.at(MatMulOp::getLhsInIndex())->id);
-      rhsTensors.push_back(inputTensorMap.at(MatMulOp::getRhsInIndex())->id);
-    }
+    lhsTensors.push_back(info.expandedLhsTId);
+    rhsTensors.push_back(info.expandedRhsTId);
   }
 
-  auto lhsConcatId = builder.concat(lhsTensors, virtualGraphId, name + "/lhs");
-  auto rhsConcatId = builder.concat(rhsTensors, virtualGraphId, name + "/rhs");
+  auto lhsConcatId = builder.concat(lhsTensors,
+                                    virtualGraphId,
+                                    name + "_LhsConcat",
+                                    builder.getNextId(name + "_LhsConcat"));
+  auto rhsConcatId = builder.concat(rhsTensors,
+                                    virtualGraphId,
+                                    name + "_RhsConcat",
+                                    builder.getNextId(name + "_RhsConcat"));
 
   // Need to matmul the grouped lhs & grouped rhs
-  auto matmulId =
-      builder.matmul(lhsConcatId, rhsConcatId, virtualGraphId, name);
+  auto matmulId = builder.matmul(
+      lhsConcatId, rhsConcatId, virtualGraphId, name, builder.getNextId(name));
 
   int sliceCount  = 0;
   int groupOffset = 0;
@@ -290,22 +348,28 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
     info.op->disconnectAllInputs();
     info.op->disconnectAllOutputs();
 
-    auto numGroups = outputTensor->info.shape()[0];
-
     Shape starts = {groupOffset};
-    Shape ends   = {groupOffset + numGroups};
+    Shape ends   = {groupOffset + 1};
     Shape axes   = {0};
 
     if (info.transpose == false) {
 
       // Need to un-concat the grouped result
-      builder.slice(matmulId,
-                    starts,
-                    ends,
-                    axes,
-                    outputTensor->id,
-                    virtualGraphId,
-                    name + std::to_string(sliceCount++));
+
+      auto sliceId = builder.slice(matmulId,
+                                   starts,
+                                   ends,
+                                   axes,
+                                   virtualGraphId,
+                                   info.op->name() + "_Slice:",
+                                   createIntermediateTensorId(matmulId));
+
+      builder.squeeze(sliceId,
+                      {0},
+                      outputTensor->id,
+                      virtualGraphId,
+                      info.op->name() + "_Squeeze:");
+
     } else {
 
       auto sliceId = builder.slice(matmulId,
@@ -313,23 +377,30 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                                    ends,
                                    axes,
                                    virtualGraphId,
-                                   name + std::to_string(sliceCount++));
+                                   info.op->name() + "_Slice:",
+                                   createIntermediateTensorId(matmulId));
+
+      auto squeezeId = builder.squeeze(sliceId,
+                                       {0},
+                                       virtualGraphId,
+                                       info.op->name() + "_Squeeze:",
+                                       createIntermediateTensorId(sliceId));
 
       Shape outputTransposeDims =
-          tranposeDims(graph.getIr().getTensor(sliceId)->info.shape());
+          tranposeDims(graph.getIr().getTensor(squeezeId)->info.shape());
 
-      builder.transpose(sliceId,
+      builder.transpose(squeezeId,
                         outputTransposeDims,
                         outputTensor->id,
                         virtualGraphId,
-                        name + "/out");
+                        info.op->name() + "_Transpose:");
     }
 
     graph.topoCons->transfer(info.op, outputTensor->getProducer());
 
     graph.eraseOp(info.op->id);
 
-    groupOffset += numGroups;
+    groupOffset++;
   }
 }
 

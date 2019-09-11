@@ -771,13 +771,30 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
 
 optional<InputCreatorCandidate>
 Devicex::getTensorCreator(Tensor *tensor) const {
-
   // Search of the graph to get the candidate Opxs that
   // know how to create this tensor.
   // The pathFromInput argument is an empty vector, as
   // we are starting the search from the root (input)
   std::vector<InputCreatorCandidate> candidates =
       getCreatorEndpoints(tensor, {});
+
+  // Filter out all but highest priority candidates
+  if (candidates.size() > 0) {
+    auto hasSmallerPriority = [&](InputCreatorCandidate icc1,
+                                  InputCreatorCandidate icc2) -> bool {
+      return icc1.opx->inputCreatorPriority < icc2.opx->inputCreatorPriority;
+    };
+    auto maxPriorityCandidate = *std::max_element(
+        candidates.begin(), candidates.end(), hasSmallerPriority);
+
+    auto hasNonMaxPriority = [&](InputCreatorCandidate icc) -> bool {
+      return icc.opx->inputCreatorPriority <
+             maxPriorityCandidate.opx->inputCreatorPriority;
+    };
+    candidates.erase(
+        std::remove_if(candidates.begin(), candidates.end(), hasNonMaxPriority),
+        candidates.end());
+  }
 
   if (candidates.size() > 1) {
     // check that all creators are in agreement on how
@@ -792,22 +809,15 @@ Devicex::getTensorCreator(Tensor *tensor) const {
         break;
       }
     }
-
-    // they're all equivalent, select the first candidate as the creator
-    if (allEquivalent) {
-      candidates.resize(1);
-    } else {
-      logging::devicex::warn("Input tensor '{}' has multiple creator "
-                             "candidates, but they are not in agreement",
-                             tensor->id);
+    if (!allEquivalent) {
+      logging::devicex::warn(
+          "Input tensor '{}' has multiple creator candidates with the same "
+          "priority, but they are not in agreement. Picking first creator "
+          "candidate.",
+          tensor->id);
     }
   }
-
-  if (candidates.size() > 1) {
-    // If multiple ops say they can create an tensor how to pick the 'right one?
-    logging::devicex::warn("Multiple creator candidates, picking first");
-    return candidates.front();
-  } else if (candidates.size() == 1) {
+  if (candidates.size() > 0) {
     return candidates.front();
   } else {
     return boost::none;
@@ -829,11 +839,11 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     auto pathFromInput = candidate->getPathFromInput();
 
     auto f = [this, creator, inIndex, pathFromInput, tensor]() {
-      logging::devicex::debug("Creating poplar::Tensor {}", tensor->id);
+      logging::devicex::debug(
+          "Creating poplar::Tensor {}, with layout allocated by {}",
+          tensor->id,
+          creator->op_p->str());
       poplar::Tensor input = creator->createInput(inIndex, tensor->str());
-      logging::devicex::debug("poplar::Tensor {} created by {}",
-                              tensor->id,
-                              creator->debugPrefix());
 
       // Reverse the path,
       // The first element is now the Opx producing a tensor consumed by
@@ -867,9 +877,9 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   } else {
 
     auto f = [this, tensor]() {
-      logging::devicex::warn("Creating init tensor '{}' linearly. No "
-                             "operator specific allocator found",
-                             tensor->id);
+      logging::devicex::debug("Creating poplar::Tensor '{}' linearly. No "
+                              "operator specific allocator found",
+                              tensor->id);
 
       // Get paths to both creator candidates and deadends, and print for debug
       std::vector<InputCreatorCandidate> endpoints =

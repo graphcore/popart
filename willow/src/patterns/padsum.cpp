@@ -275,8 +275,8 @@ static std::vector<std::unique_ptr<PadOp>> createPadOps(
 
   for (int i = 0; i < result.size(); ++i) {
     result[i]->connectInTensor(0, inputs[i]->id);
-    result[i]->createAndConnectOutTensor(
-        0, PreAliasPattern::createIntermediateTensorId(tensorId));
+    result[i]->createAndConnectOutTensor(0,
+                                         createIntermediateTensorId(tensorId));
   }
 
   return result;

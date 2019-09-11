@@ -1,16 +1,19 @@
+.. _popart_importing:
+
 Importing graphs
 ----------------
 
-The `Session` class is the runtime environment for executing graphs on the IPU
-hardware. It can read an ONNX graph from a serialized ONNX model protobuf
-(ModelProto), either directly from disk or from memory. A `Session` can either be 
-constructed as an `InferenceSession` or `TrainingSession`
+The PopART ``Session`` class creates the runtime environment for executing graphs on IPU
+hardware. It can read an ONNX graph from a serialised ONNX model protobuf
+(ModelProto), either directly from a file or from memory. A session object can be
+constructed either as an ``InferenceSession`` or a ``TrainingSession``
 
-Some metadata must be supplied to augment the data present in the ONNX graph.
+Some metadata must be supplied to augment the data present in the ONNX graph in order to run it,
+as described below.
 
-In this example of importing a graph for inference, the `torchvision` package
-is used to create a pre-trained AlexNet graph, with a 4x3x244x244 input. The
-`torchvision` graph has an ONNX output called `out`, and the `DataFlow` object
+In the following example of importing a graph for inference, TorchVision
+is used to create a pre-trained AlexNet graph, with a 4 x 3 x 244 x 244 input. The
+graph has an ONNX output called ``out``, and the ``DataFlow`` object
 contains an entry to fetch that anchor.
 
 .. code-block:: python
@@ -31,16 +34,22 @@ contains an entry to fetch that anchor.
 
   session = popart.InferenceSession("alexnet.onnx", dataFeed, device)
 
+The DataFlow object is described in more detail in :any:`popart_executing`.
 
-The `Session` class takes the name of a protobuf file, or the protobuf
-itself.  It also takes a `DataFlow` object which has some information about
-how to execute the graph; the number of times to repeat the graph in one
-execution of the backend, and the names of the tensors in the graph to return
-to the user.
+Creating a session
+~~~~~~~~~~~~~~~~~~
 
-Other parameters to the `Session` object describe the types of loss to apply to
-the network and the optimizer to use, for when the user wishes to train the
-network instead of performing inference.
+The ``Session`` class takes the name of a protobuf file, or the protobuf
+itself.  It also takes a ``DataFlow`` object which has information about
+how to execute the graph:
+  * The number of times to conduct a forward pass (and a backward pass,
+    if training) of the graph on the IPU before returning to the host for
+    more data.
+  * The names of the tensors in the graph used to return the results to the host.
+
+Other parameters to the ``Session`` object are used when you are training the
+network instead of performing inference. They describe the types of loss to apply to
+the network and the optimiser to use.
 
 .. code-block:: python
 
@@ -72,7 +81,21 @@ network instead of performing inference.
                                     optimizer=optimizer,
                                     inputShapeInfo=inputShapeInfo)
 
-In this case, when the `Session` object is asked to train the graph, an `NllLoss`
-node will be added to the end of the graph, and a `ConstSGD` optimizer will
-be used to optimize the parameters in the network.
+In this example, when the ``Session`` object is asked to train the graph, an ``NllLoss``
+node will be added to the end of the graph, and a ``ConstSGD`` optimiser will
+be used to optimise the parameters in the network.
 
+Session control options
+~~~~~~~~~~~~~~~~~~~~~~~
+
+In some ONNX graphs, the sizes of input tensors might not be specified.
+In this case, the ``inputShapeInfo`` parameter can be used to specify the
+input shapes.  The Poplar framework uses statically allocated memory buffers
+and so it needs to know the size of tensors before the compilation.
+
+The ``userOptions`` parameter can pass a set of session control options,
+as described in the API reference documentation.
+
+The ``patterns`` parameter allows the user to select a set of graph transformation
+patterns which will be applied to the graph.  Without this parameter, a default
+set of optimisation transformations will be applied.

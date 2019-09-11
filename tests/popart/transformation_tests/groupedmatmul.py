@@ -367,3 +367,110 @@ def test_matmul_grouping_test_3(tmpdir):
     assert (np.allclose(run_test(True), verify()))
 
     # Need to check the number of MatMuls & Make sure that the MatMulXXXGradOps have been removed
+
+
+# verify that we can group matmuls with different group dimensions
+def test_matmul_grouping_test_4(tmpdir):
+    A = [2, 3]
+    B = [2, 3, 4]
+    C = [2, 3]
+    D = [2, 3, 4]
+    A_data = np.random.rand(2, 3).astype(np.float32)
+    B_data = np.random.rand(2, 3, 4).astype(np.float32)
+    C_data = np.random.rand(2, 3).astype(np.float32)
+    D_data = np.random.rand(2, 3, 4).astype(np.float32)
+
+    def verify():
+        r1 = np.matmul(A_data, B_data)
+        r2 = np.matmul(C_data, D_data)
+
+        return np.add(r1, r2)
+
+    def verify_grouping():
+
+        A1 = np.reshape(A_data, (1, 1, 2, 3))
+        C1 = np.reshape(C_data, (1, 1, 2, 3))
+
+        B1 = np.reshape(B_data, (1, 2, 3, 4))
+        D1 = np.reshape(D_data, (1, 2, 3, 4))
+
+        l = np.concatenate((A1, C1), axis=0)
+        r = np.concatenate((B1, D1), axis=0)
+
+        o = np.matmul(l, r)
+
+        r1 = o[0:1]
+        r2 = o[1:1]
+
+        s1 = np.squeeze(r1)
+        s2 = np.squeeze(r2)
+
+        return np.add(s1, s2)
+
+    def run_test(groupingEnabled):
+        builder = popart.Builder()
+
+        a = builder.addInputTensor(popart.TensorInfo("FLOAT", A), "A")
+        b = builder.addInputTensor(popart.TensorInfo("FLOAT", B), "B")
+        c = builder.addInputTensor(popart.TensorInfo("FLOAT", C), "C")
+        d = builder.addInputTensor(popart.TensorInfo("FLOAT", D), "D")
+
+        r1 = builder.aiOnnx.matmul([a, b], "MATMUL_A")
+
+        r2 = builder.aiOnnx.matmul([c, d], "MATMUL_B")
+
+        o = builder.aiOnnx.add([r1, r2], "END")
+
+        builder.addOutputTensor(o)
+
+        proto = builder.getModelProto()
+
+        dataFlow = popart.DataFlow(
+            1, {
+                o: popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + a:
+                popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + b:
+                popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + c:
+                popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + d:
+                popart.AnchorReturnType("ALL")
+            })
+
+        opts = popart.SessionOptions()
+        opts.reportOptions = {"showExecutionSteps": "true"}
+        opts.enableOutlining = False
+        opts.groupingEnabled = groupingEnabled
+        opts.dotOpNames = True
+
+        pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
+
+        session = popart.TrainingSession(
+            fnModel=proto,
+            dataFeed=dataFlow,
+            userOptions=opts,
+            passes=pat,
+            losses=[popart.L1Loss(o, "l1LossVal", 0.1)],
+            optimizer=popart.ConstSGD(0.01),
+            deviceInfo=tu.get_ipu_model(compileIPUCode=False))
+
+        session.prepareDevice()
+
+        anchors = session.initAnchorArrays()
+
+        inputs = {a: A_data, b: B_data, c: C_data, d: D_data}
+        stepio = popart.PyStepIO(inputs, anchors)
+
+        session.run(stepio)
+
+        print(anchors[o])
+
+        return anchors[o]
+
+    assert (np.allclose(verify_grouping(), verify()))
+
+    assert (np.allclose(run_test(True), verify()))
+    #assert (np.allclose(run_test(True), verify()))
+
+    # Need to check the number of MatMuls & Make sure that the MatMulXXXGradOps have been removed

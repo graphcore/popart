@@ -158,7 +158,8 @@ void DotVisualizer::write() {
     if (addGraphPrefix) {
       coreNameStream << '<' << getAbridgedGraphName(gString) << '>' << ' ';
     }
-    coreNameStream << getNextGraphIndex(gString) << '.' << ' ' << n->opid.type;
+    coreNameStream << getNextGraphIndex(gString) << '.' << ' ' << n->opid.type
+                   << " (" << n->id << ')';
     if (dynamic_cast<CallOp *>(n)) {
       auto calledGraphId = dynamic_cast<CallOp *>(n)->getCalledGraph().id.str();
       coreNameStream << "<" << getAbridgedGraphName(calledGraphId) << ">";
@@ -193,8 +194,8 @@ void DotVisualizer::write() {
       auto &consumers = ind_ten.second->consumers;
       for (auto &c : consumers.getOps()) {
         strm(gString) << generateNodeName(n) << " -> " << generateNodeName(c)
-                      << " [color=black, label=\"" << ind_ten.second->id
-                      << "\"];\n";
+                      << " [color=black, label=\"" << ind_ten.second->id << "\n"
+                      << ind_ten.second->info.shape() << "\"];\n";
       }
 
       if (consumers.getOps().size() == 0) {

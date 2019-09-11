@@ -198,10 +198,10 @@ struct SessionOptions {
   bool enableStochasticRounding = false;
 
   // Enable the global fullyConnectedPass option for matmuls
-  bool enableFullyConnectedPass = false;
+  bool enableFullyConnectedPass = true;
 
   /// Enable/disable the grouping of matmuls that are the same shape
-  bool enableGroupedMatmuls = false;
+  bool enableGroupedMatmuls = true;
 
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;
