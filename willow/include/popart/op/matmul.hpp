@@ -7,9 +7,16 @@ namespace popart {
 
 class MatMulBaseOp : public Op {
 public:
+  // The phase of the matmul. Needed so when grad matmuls are
+  // converted to normal matmuls in preperation for outlining,
+  // they remember what they where originally so we can use the
+  // correct poplar fullyConnectedPass option
+  enum class Phase { Fwd, BwdLhs, BwdRhs };
+
   MatMulBaseOp(
       const OperatorIdentifier &_opid,
       const Op::Settings &settings_,
+      const Phase phase_,
       const boost::optional<float> availableMemoryProportion_ = boost::none);
   MatMulBaseOp(const MatMulBaseOp &) = default;
   ~MatMulBaseOp() override           = default;
@@ -29,7 +36,11 @@ public:
     availableMemoryProportion = v;
   }
 
+  Phase getPhase() { return phase; }
+  void setPhase(Phase p) { phase = p; }
+
 protected:
+  Phase phase;
   boost::optional<float> availableMemoryProportion;
 };
 
@@ -85,7 +96,9 @@ private:
 
 class MatMulBaseGradOp : public MatMulBaseOp {
 public:
-  MatMulBaseGradOp(const OperatorIdentifier &_opid, const MatMulOp &fwdOp);
+  MatMulBaseGradOp(const OperatorIdentifier &_opid,
+                   const MatMulOp &fwdOp,
+                   Phase phase);
   MatMulBaseGradOp(const MatMulBaseGradOp &) = default;
   ~MatMulBaseGradOp() override               = default;
 
