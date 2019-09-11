@@ -317,6 +317,9 @@ bool MatMulGradPattern::apply(Op *op) const {
   auto simon    = grad_in;
   auto grad_out = getGradOut(op);
 
+  // Get the phase of the matmul grad op
+  auto phase = dynamic_cast<MatMulBaseOp *>(op)->getPhase();
+
   auto lhsShape = getLhsShape(op);
   auto rhsShape = getRhsShape(op);
 
@@ -399,6 +402,7 @@ bool MatMulGradPattern::apply(Op *op) const {
   matmulOp->connectInTensor(getInIndex(), in->id);
   matmulOp->createAndConnectOutTensor(MatMulOp::getOutIndex(),
                                       createIntermediateTensorId(grad_out->id));
+  matmulOp->setPhase(phase);
   matmulOp->setup();
   auto out = matmulOp->outTensor(MatMulOp::getOutIndex());
 

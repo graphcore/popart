@@ -17,6 +17,19 @@
 namespace popart {
 namespace popx {
 
+PoplarOptions getPoplarOptionsForMatMul(Devicex *device,
+                                        MatMulBaseOp::Phase phase) {
+  PoplarOptions options;
+  if (phase == MatMulBaseOp::Phase::Fwd) {
+    options = device->fwdMmOptions;
+  } else if (phase == MatMulBaseOp::Phase::BwdLhs) {
+    options = device->bwdMmLhsOptions;
+  } else if (phase == MatMulBaseOp::Phase::BwdRhs) {
+    options = device->bwdMmRhsOptions;
+  }
+  return options;
+}
+
 MatMulOpx::MatMulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<MatMulOp>(op,
                      {Onnx::Operators::MatMul_1, Onnx::Operators::MatMul_9});
@@ -379,7 +392,8 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   //                        G |  M   N
   // o' := matmul(a, b) = [10 | 28, 162]
 
-  auto opts = dv_p->fwdMmOptions.toOptionFlags();
+  auto opts =
+      getPoplarOptionsForMatMul(dv_p, matmul.getPhase()).toOptionFlags();
   setMatMulOptions(matmul, opts);
 
   auto outTensor =
@@ -508,7 +522,8 @@ poplar::Tensor MatMulOpx::createInput(InIndex index,
   rhsShape = matCombineBroadcastDims(rhsShape);
   std::swap(rhsShape[2], rhsShape[1]);
 
-  auto opts = dv_p->fwdMmOptions.toOptionFlags();
+  auto opts =
+      getPoplarOptionsForMatMul(dv_p, matmul.getPhase()).toOptionFlags();
   setMatMulOptions(matmul, opts);
 
   if (index == MatMulOp::getLhsInIndex()) {
@@ -692,7 +707,8 @@ void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
   auto combinedBroadcastTs =
       matCombineBroadcastDims(reshapedGroupsTs.first, reshapedGroupsTs.second);
 
-  auto opts = dv_p->bwdMmLhsOptions.toOptionFlags();
+  auto opts =
+      getPoplarOptionsForMatMul(dv_p, matMulLhsGrad.getPhase()).toOptionFlags();
   setMatMulOptions(matMulLhsGrad, opts);
 
   auto outTensor =
@@ -807,7 +823,8 @@ void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
   auto combinedBroadcastTs =
       matCombineBroadcastDims(reshapedGroupsTs.first, reshapedGroupsTs.second);
 
-  auto opts = dv_p->bwdMmRhsOptions.toOptionFlags();
+  auto opts =
+      getPoplarOptionsForMatMul(dv_p, matMulRhsGrad.getPhase()).toOptionFlags();
   setMatMulOptions(matMulRhsGrad, opts);
 
   auto outTensor =

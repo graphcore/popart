@@ -12,14 +12,17 @@ namespace popart {
 MatMulBaseOp::MatMulBaseOp(
     const OperatorIdentifier &_opid,
     const Op::Settings &settings_,
+    const Phase phase_,
     const boost::optional<float> availableMemoryProportion_)
-    : Op(_opid, settings_),
+    : Op(_opid, settings_), phase(phase_),
       availableMemoryProportion(availableMemoryProportion_) {}
 
 MatMulBaseGradOp::MatMulBaseGradOp(const OperatorIdentifier &_opid,
-                                   const MatMulOp &fwdOp)
+                                   const MatMulOp &fwdOp,
+                                   Phase phase)
     : MatMulBaseOp(_opid,
                    fwdOp.getSettings(),
+                   phase,
                    fwdOp.getAvailableMemoryProportion()),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
       fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
@@ -31,7 +34,7 @@ const MatMulOp *MatMulBaseGradOp::getCloneOfCreator() const {
 MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_,
                    const boost::optional<float> availableMemoryProportion_)
-    : MatMulBaseOp(_opid, settings_, availableMemoryProportion_) {}
+    : MatMulBaseOp(_opid, settings_, Phase::Fwd, availableMemoryProportion_) {}
 
 std::unique_ptr<Op> MatMulOp::clone() const {
   return std::make_unique<MatMulOp>(*this);
@@ -162,7 +165,9 @@ void MatMulOp::setup() {
 }
 
 MatMulLhsGradOp::MatMulLhsGradOp(const MatMulOp &fwdOp)
-    : MatMulBaseGradOp(Onnx::GradOperators::MatMulLhsGrad, fwdOp) {}
+    : MatMulBaseGradOp(Onnx::GradOperators::MatMulLhsGrad,
+                       fwdOp,
+                       Phase::BwdLhs) {}
 
 void MatMulLhsGradOp::setup() { outInfo(0) = fwdOpLhsInfo; }
 
@@ -197,7 +202,9 @@ Shape MatMulLhsGradOp::getRhsInputShape() const { return fwdOpRhsInfo.shape(); }
 Shape MatMulLhsGradOp::getOutputShape() const { return fwdOpLhsInfo.shape(); }
 
 MatMulRhsGradOp::MatMulRhsGradOp(const MatMulOp &fwdOp)
-    : MatMulBaseGradOp(Onnx::GradOperators::MatMulRhsGrad, fwdOp) {}
+    : MatMulBaseGradOp(Onnx::GradOperators::MatMulRhsGrad,
+                       fwdOp,
+                       Phase::BwdRhs) {}
 
 std::unique_ptr<Op> MatMulRhsGradOp::clone() const {
   return std::make_unique<MatMulRhsGradOp>(*this);
