@@ -318,11 +318,11 @@ void BuilderImpl::addOutputTensor(const TensorId &arg0) {
   }
 }
 
-std::vector<TensorId> BuilderImpl::op(
+void BuilderImpl::op(
     const OperatorIdentifier &opid,
     int opsetVersion,
     const std::vector<TensorId> &inputs,
-    const unsigned numberOfOutputs,
+    const std::vector<TensorId> &outputs,
     const std::map<std::string, boost::any> &opAttributes,
     const std::string &name,
     std::function<void(std::vector<TensorId>,
@@ -333,7 +333,7 @@ std::vector<TensorId> BuilderImpl::op(
                           opid,
                           opsetVersion,
                           inputs.size(),
-                          numberOfOutputs,
+                          outputs.size(),
                           opAttributes.size(),
                           name);
 
@@ -353,8 +353,6 @@ std::vector<TensorId> BuilderImpl::op(
 
   if (validateInput)
     validateInput(inputs, opAttributes);
-
-  std::vector<TensorId> outputTensors(numberOfOutputs);
 
   // Set the opset version for this domain if this is the first op in the domain
   // to be added else check that the opset is correct
@@ -392,9 +390,8 @@ std::vector<TensorId> BuilderImpl::op(
   }
 
   // Set the outputs
-  for (int i = 0; i < numberOfOutputs; ++i) {
-    outputTensors[i] = getNextId(opid.type, i);
-    node->add_output(outputTensors[i]);
+  for (auto &output : outputs) {
+    node->add_output(output);
   }
 
   // Set the attributes
@@ -403,8 +400,6 @@ std::vector<TensorId> BuilderImpl::op(
   }
 
   finalizeOp(node, name);
-
-  return outputTensors;
 }
 
 bool BuilderImpl::findNodeProtoByOutputNamesImpl(

@@ -246,6 +246,15 @@ Builder::customOp(const OperatorIdentifier &opid,
   return impl_->op(opid, opsetVersion, inputs, numOutputs, attributes, name);
 }
 
+void Builder::customOp(const OperatorIdentifier &opid,
+                       int opsetVersion,
+                       const std::vector<TensorId> &inputs,
+                       const std::vector<TensorId> &outputs,
+                       const std::map<std::string, boost::any> &attributes,
+                       const std::string &name) {
+  impl_->op(opid, opsetVersion, inputs, outputs, attributes, name);
+}
+
 void Builder::addNodeAttribute(const std::string &attributeName,
                                const int64_t &attributeValue,
                                const std::set<TensorId> &nodeOutputNames) {

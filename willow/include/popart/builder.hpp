@@ -228,6 +228,15 @@ public:
            const std::map<std::string, boost::any> &attributes,
            const std::string &name = "");
 
+  // Add a custom op to the model
+  // provide the name of the output tensors to use
+  void customOp(const OperatorIdentifier &opid,
+                int opsetVersion,
+                const std::vector<TensorId> &inputs,
+                const std::vector<TensorId> &outputs,
+                const std::map<std::string, boost::any> &attributes,
+                const std::string &name = "");
+
   /**
    * This is a helper function that will add a constant and a reshape using the
    * provided domain.

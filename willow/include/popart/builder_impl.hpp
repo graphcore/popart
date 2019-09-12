@@ -45,23 +45,34 @@ public:
    * \param opid The operator identifier
    * \param opsetVersion The opset for the domain of the op
    * \param inputs The input tensor ids
-   * \param numberOfOutputs The number if output tensors
+   * \param outputs The output tensor ids
+   * \param opAttributes The attributes of the op
+   * \param name Debug name
+   * \param validateInput Callback function to validate the inputs & attributes
+   */
+
+  void op(const OperatorIdentifier &opid,
+          int opsetVersion,
+          const std::vector<TensorId> &inputs,
+          const std::vector<TensorId> &outputs,
+          const std::map<std::string, boost::any> &opAttributes,
+          const std::string &name,
+          std::function<void(std::vector<TensorId>,
+                             std::map<std::string, boost::any>)> validateInput =
+              nullptr);
+
+  /**
+   * Add an op to the model
+   *
+   *
+   * \param opid The operator identifier
+   * \param opsetVersion The opset for the domain of the op
+   * \param inputs The input tensor ids
    * \param opAttributes The attributes of the op
    * \param name Debug name
    * \param validateInput Callback function to validate the inputs & attributes
    * \return A list of output tensor ids. Size is given by numberOfOutputs
    */
-
-  std::vector<TensorId>
-  op(const OperatorIdentifier &opid,
-     int opsetVersion,
-     const std::vector<TensorId> &inputs,
-     const unsigned numberOfOutputs,
-     const std::map<std::string, boost::any> &opAttributes,
-     const std::string &name,
-     std::function<void(std::vector<TensorId>,
-                        std::map<std::string, boost::any>)> validateInput =
-         nullptr);
 
   std::vector<TensorId>
   op(const OperatorIdentifier &opid,
@@ -79,6 +90,43 @@ public:
               opAttributes,
               name,
               validateInput);
+  }
+
+  /**
+   * Add an op to the model
+   *
+   *
+   * \param opid The operator identifier
+   * \param opsetVersion The opset for the domain of the op
+   * \param inputs The input tensor ids
+   * \param numOutputs The number if output tensors
+   * \param opAttributes The attributes of the op
+   * \param name Debug name
+   * \param validateInput Callback function to validate the inputs & attributes
+   * \return A list of output tensor ids. Size is given by numberOfOutputs
+   */
+
+  std::vector<TensorId>
+  op(const OperatorIdentifier &opid,
+     int opsetVersion,
+     const std::vector<TensorId> &inputs,
+     unsigned int numOutputs,
+     const std::map<std::string, boost::any> &opAttributes,
+     const std::string &name,
+     std::function<void(std::vector<TensorId>,
+                        std::map<std::string, boost::any>)> validateInput =
+         nullptr) {
+
+    std::vector<TensorId> outputs(numOutputs);
+
+    // Generate the output names
+    for (int i = 0; i < numOutputs; ++i) {
+      outputs[i] = getNextId(opid.type, i);
+    }
+
+    op(opid, opsetVersion, inputs, outputs, opAttributes, name, validateInput);
+
+    return outputs;
   }
 
   // The following do seem to be ripe for a template
