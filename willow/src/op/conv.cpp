@@ -35,7 +35,7 @@ ConvParameters canonicalizeConvParams(const ConvParameters &param);
 ConvOp::ConvOp(const OperatorIdentifier &_opid,
                int64_t group_,
                const ConvPartialsType &partialsType_,
-               const float &availableMemoryProportion_,
+               boost::optional<float> availableMemoryProportion_,
                const HasReceptiveFieldOp::Settings &settings_)
     : HasReceptiveFieldOp(_opid, settings_), group(group_),
       partialsType(partialsType_),
@@ -204,7 +204,9 @@ static void appendConvParameterAttributes(const ConvParameters &params,
 void ConvOp::appendAttributes(OpSerialiserBase &os) const {
   HasReceptiveFieldOp::appendAttributes(os);
   os.appendAttribute("partialsType", toString(partialsType));
-  os.appendAttribute("availableMemoryProportion", availableMemoryProportion);
+  if (availableMemoryProportion) {
+    os.appendAttribute("availableMemoryProportion", *availableMemoryProportion);
+  }
   appendConvParameterAttributes(params, os);
 }
 
@@ -308,7 +310,9 @@ void ConvFlipWeightsOp::setup() {
 void ConvFlipWeightsOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
   os.appendAttribute("partialsType", toString(partialsType));
-  os.appendAttribute("availableMemoryProportion", availableMemoryProportion);
+  if (availableMemoryProportion) {
+    os.appendAttribute("availableMemoryProportion", *availableMemoryProportion);
+  }
 }
 
 namespace {
@@ -333,8 +337,8 @@ static OpCreator<ConvOp> convOpCreator(
 
       int64_t group = attr.getAttribute<Attributes::Int>("group", 1);
 
-      auto partialsType               = ConvPartialsType::FLOAT;
-      float availableMemoryProportion = .9f;
+      auto partialsType = ConvPartialsType::FLOAT;
+      boost::optional<float> availableMemoryProportion = boost::none;
 
       // try set the partials from an attribute
       if (attr.hasAttribute(sPartialsTypeAttribute)) {

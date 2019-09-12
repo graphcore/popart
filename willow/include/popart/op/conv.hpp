@@ -1,6 +1,8 @@
 #ifndef GUARD_NEURALNET_CONV_HPP
 #define GUARD_NEURALNET_CONV_HPP
 
+#include <boost/optional.hpp>
+
 #include <popart/op/receptive.hpp>
 #include <popart/util.hpp>
 
@@ -111,7 +113,7 @@ public:
   ConvOp(const OperatorIdentifier &_opid,
          int64_t group,
          const ConvPartialsType &partialsType_,
-         const float &availableMemoryProportion_,
+         boost::optional<float> availableMemoryProportion_,
          const HasReceptiveFieldOp::Settings &settings_);
   int64_t nOutChans;
   int64_t group;
@@ -150,10 +152,10 @@ public:
 
   const ConvPartialsType &getPartialsType() const { return partialsType; }
   void setPartialsType(const ConvPartialsType &v) { partialsType = v; }
-  float getAvailableMemoryProportion() const {
+  boost::optional<float> getAvailableMemoryProportion() const {
     return availableMemoryProportion;
   }
-  void setAvailableMemoryProportion(const float &v) {
+  void setAvailableMemoryProportion(boost::optional<float> v) {
     availableMemoryProportion = v;
   }
 
@@ -167,7 +169,7 @@ private:
   Shape inputShape;
 
   ConvPartialsType partialsType;
-  float availableMemoryProportion;
+  boost::optional<float> availableMemoryProportion;
 
   void setup0() final;
   void setSpatialK() final;
@@ -222,10 +224,10 @@ public:
 
   const ConvPartialsType &getPartialsType() const { return partialsType; }
   void setPartialsType(const ConvPartialsType &v) { partialsType = v; }
-  float getAvailableMemoryProportion() const {
+  boost::optional<float> getAvailableMemoryProportion() const {
     return availableMemoryProportion;
   }
-  void setAvailableMemoryProportion(const float &v) {
+  void setAvailableMemoryProportion(boost::optional<float> v) {
     availableMemoryProportion = v;
   }
 
@@ -234,7 +236,7 @@ public:
 private:
   ConvParameters params;
   ConvPartialsType partialsType;
-  float availableMemoryProportion;
+  boost::optional<float> availableMemoryProportion;
 };
 
 class ConvDataGradOp : public Op {
