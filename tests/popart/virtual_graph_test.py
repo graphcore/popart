@@ -279,9 +279,10 @@ def test_streaming_optimizer_tensors():
         proto = builder.getModelProto()
 
         if enablePipelining:
-            anchorId = popart.reservedLearnRatePrefix() + "FLOAT_c0"
+            anchorId = popart.reservedGlobalScaledLearningRatePrefix(
+            ) + "FLOAT_c0"
         else:
-            anchorId = popart.reservedLearnRatePrefix() + "FLOAT"
+            anchorId = popart.reservedGlobalScaledLearningRatePrefix() + "FLOAT"
 
         # Need to anchor the output of the backward pass to stop it being pruned
         dataFlow = popart.DataFlow(bps,

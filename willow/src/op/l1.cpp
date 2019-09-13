@@ -51,9 +51,9 @@ L1Op::L1Op(const OperatorIdentifier &_opid,
 void L1GradOp::setup() {
 
   // connect the loss scaling tensor if is non-const
-  if (!getIr().getOptimizer()->constantLossScaling()) {
+  if (!getIr().getOptimizer().lossScaling().isConst()) {
     connectInTensor(L1GradOp::getLossScalingInIndex(),
-                    getIr().getOptimizer()->getLossScalingTensorId(
+                    getIr().getOptimizer().getLossScalingTensorId(
                         inInfo(getInIndex()).dataType()));
   }
 

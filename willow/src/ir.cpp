@@ -77,47 +77,38 @@ GradNonGradPair::GradNonGradPair() : GradNonGradPair(nullptr, nullptr) {}
 
 const onnx::ModelProto &Ir::getModel() const { return *onnxModel; }
 
-std::vector<Tensor *> Ir::optimizerTensors() const {
-  std::vector<Tensor *> optTensors;
-  if (optimizer.get() != nullptr) {
-    for (auto &id_info : optimizer->tensorInfos()) {
-      // some tensors might have been removed,
-      // check they exist before calling getTensors().get(...)
-      if (getTensors().contains(id_info.first)) {
-        optTensors.push_back(getTensors().get(id_info.first));
-      }
-    }
-  }
-  return optTensors;
-}
-
 // the rule followed : a Stream tensor which is not an
 // optimizer tensor is a streamed data tensor
 std::vector<Tensor *> Ir::dataStreamTensors() const {
   std::vector<Tensor *> dsTensors;
-  std::map<TensorId, TensorInfo> optTensorInfo;
-  if (optimizer != nullptr) {
-    optTensorInfo = optimizer->tensorInfos();
-  }
-  for (TensorId id : getTensors().getIds(TensorType::Stream)) {
-    if (optTensorInfo.find(id) == optTensorInfo.end()) {
-      dsTensors.push_back(getTensors().get(id));
+  for (auto tensor : getTensors().getOfType(TensorType::Stream)) {
+    if (!tensor->isOptimizerTensor()) {
+      dsTensors.push_back(tensor);
     }
   }
   return dsTensors;
 }
 
-void Ir::updateOptimizer(const Optimizer *newOptimizer) {
-  if (optimizer.get() == nullptr) {
-    throw error("ILE: cannot update optimizer before it is set");
+std::vector<Tensor *> Ir::optimizerTensors() const {
+  std::vector<Tensor *> optimizerTensors;
+  for (auto tensor : getTensors().getOfType(TensorType::Stream)) {
+    if (tensor->isOptimizerTensor()) {
+      optimizerTensors.push_back(tensor);
+    }
   }
+  return optimizerTensors;
+}
+
+void Ir::updateOptimizer(const Optimizer &newOptimizer) {
   if (!optimizer->validReplacement(newOptimizer)) {
-    throw error("This Optimizer of type " + newOptimizer->type_s() +
+    throw error("This Optimizer of type " + newOptimizer.type_s() +
                 " is not a valid replacement for optimizer of type " +
                 optimizer->type_s());
   }
-  optimizer = newOptimizer->clone();
-  optimizer->resetTensorDatas(getMainGraph());
+  optimizer = newOptimizer.clone();
+  for (auto opt : optimizerTensors()) {
+    optimizer->resetTensorData(*opt);
+  }
 }
 
 void Ir::dotCheckpoint(DotCheck check) const {
@@ -223,21 +214,15 @@ void Ir::setLosses(const std::vector<Loss *> &_losses) {
   }
 }
 
-void Ir::setOptimizer(const Optimizer *o) {
-  if (o) {
-    optimizer = o->clone();
+void Ir::setOptimizer(const Optimizer &o) {
+  optimizer = o.clone();
 
-    for (auto &id_info : optimizer->tensorInfos()) {
-      TensorId id     = id_info.first;
-      TensorInfo info = id_info.second;
-      getTensors().addStream(id, info);
-
-      Tensor *tensor = getTensors().get(id);
-      optimizer->setTensorData(tensor);
-
-      // optimizer tensors are a speical type of stream which is broadcast
-      tensor->setReplicatedStreamMode(Tensor::ReplicatedStreamMode::Broadcast);
-    }
+  // We create scale factor Tensors now (they will be removed later if not
+  // used). All other optimizer Tensors are created just-in-time during Graph
+  // construction
+  for (DataType dt : {DataType::FLOAT, DataType::FLOAT16}) {
+    auto id = optimizer->getLossScalingTensorId(dt);
+    ensureOptimizerTensorCreated(id, {dt, {}});
   }
 }
 
@@ -705,7 +690,9 @@ void Ir::prepare(const IrBundle &gb) {
   // at this point. We may want something more subtle.
   removeIsolatedTensors();
 
-  setOptimizer(gb.optimizer);
+  if (gb.optimizer) {
+    setOptimizer(*gb.optimizer);
+  }
 
   updateVertices();
   if (canTrain()) {
@@ -1912,8 +1899,6 @@ void Ir::constructBackwards() {
       Op *sumOp = growGradSumOp(nongrad, egrads);
 
       sumOp->fromLoss = PathFromLoss::Yes;
-      logging::ir::trace("New gradient sumOp, {}, created", sumOp->str());
-
       switch (nongrad->tensorType()) {
 
       // if sumOp creates the gradient of an activation tensor,
@@ -2014,18 +1999,49 @@ void Ir::growCopyVarUpdateOp(const TensorId &varId, const TensorId &from) {
 
 void Ir::growGradientVarUpdateOp(const TensorId &varId) {
 
+  logging::ir::info("Growing gradient var update op for {}", varId);
+
   // A sanity check that the Tensor is not fixed point type
   if (getTensors().get(varId)->info.getDataTypeInfo()->isFixedPoint()) {
     throw error("Currently only floating point variable tensors are updatable");
   }
-  auto inputs =
-      optimizer->getInputIds(varId, getTensors().get(varId)->info.dataType());
-  if (getMainGraph().getTensors().contains(
-          inputs.at(VarUpdateOp::getUpdaterInIndex()))) {
-    OpId opId = getMainGraph().moveIntoGraph(
-        optimizer->createOp(varId, getMainGraph()));
-    getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
+
+  const Tensor &var    = *getTensors().get(varId);
+  auto inputIds        = optimizer->getInputIds(var);
+  auto optimizerInputs = optimizer->getOptimizerInputs(var);
+
+  // If there is no weight gradient, we assume that the gradient has been
+  // forced to zero somewhere else in the backwards pass
+  bool updaterAvailable = getMainGraph().getTensors().contains(
+      inputIds.at(VarUpdateOp::getUpdaterInIndex()));
+
+  if (updaterAvailable) {
+
+    // create the required optimizer tensors as needed
+    for (auto opt : optimizerInputs) {
+      auto optId   = std::get<0>(opt);
+      auto optInfo = std::get<1>(opt);
+      ensureOptimizerTensorCreated(optId, optInfo);
+    }
+
+    OpId opId =
+        getMainGraph().moveIntoGraph(optimizer->createOp(var, getMainGraph()));
+
+    getMainGraph().connectInputs(InputVecWrapper(inputIds), opId);
     growVarUpdateOpInternal(opId);
+  }
+}
+
+void Ir::ensureOptimizerTensorCreated(const TensorId &optId,
+                                      const TensorInfo &info) {
+  if (!getTensors().contains(optId)) {
+
+    getTensors().addStream(optId, info);
+    Tensor &optTensor = *getTensors().get(optId);
+    optimizer->setTensorData(optTensor);
+
+    // optimizer tensors are a special type of stream which is broadcast
+    optTensor.setReplicatedStreamMode(Tensor::ReplicatedStreamMode::Broadcast);
   }
 }
 
@@ -2082,8 +2098,6 @@ void Ir::growFinalLoss() {
   for (auto &loss : losses) {
     OpId opId = getMainGraph().moveIntoGraph(loss->getOp({getMainGraph(), ""}));
     Op *lossOp = getMainGraph().getOps()[opId].get();
-    logging::ir::trace("Connecting inputs/outputs for Loss Op {}",
-                       lossOp->str());
     getMainGraph().connectInputs(*loss, opId);
     getMainGraph().connectOutputs(*loss, opId);
     lossOps.push_back(lossOp);
@@ -2241,6 +2255,7 @@ unsigned Ir::getMaxVirtualGraphId() const {
 }
 
 std::vector<GradNonGradPair> Ir::growLossGradients() {
+
   auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);
   if (finalLossOpFound != getMainGraph().getOps().end()) {
     std::vector<GradNonGradPair> pairs;
@@ -2507,7 +2522,7 @@ Tensor *Ir::getTensor(const TensorId &tensor_id) const {
     }
   }
 
-  throw error("no tensor with id " + tensor_id);
+  throw error("no Ir::Tensor with TensorId, in Ir::getTensor(..) " + tensor_id);
 }
 
 bool Ir::containsTensor(const TensorId &tensor_id) const {

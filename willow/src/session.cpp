@@ -286,7 +286,7 @@ TrainingSession::createFromOnnxModel(const std::string &model,
 
 void TrainingSession::updateOptimizer(const Optimizer *optimizer) {
   logging::session::trace("TrainingSession::updateOptimizer");
-  ir.updateOptimizer(optimizer);
+  ir.updateOptimizer(*optimizer);
 }
 
 // write whatever optimizer tensors (learning rates,

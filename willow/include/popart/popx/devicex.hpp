@@ -198,7 +198,7 @@ public:
 
   // A forward search of graph:
   //   - from inputs of the graph
-  //   - to Opxs with optimized poplar calls to create the tensor,
+  //   - to Opxs with optimised poplar calls to create the tensor,
   //     or to Opxs that destroy layout information of the input
   //     tensor on the output
   //   - traversing through Opxs that cannot create the tensor

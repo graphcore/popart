@@ -403,30 +403,20 @@ PYBIND11_MODULE(popart_core, m) {
       .def("pipelineStage", &L1Loss::pipelineStage)
   .def("virtualGraph", &L1Loss::virtualGraph);
 
-  py::class_<SGDBuilder>(m, "SGDBuilder")
-      .def(py::init<>())
-      .def("learningRate", &SGDBuilder::learningRate)
-      .def("weightDecay", &SGDBuilder::weightDecay)
-      .def("lossScaling", &SGDBuilder::lossScaling)
-      .def("variableLearningRate", &SGDBuilder::variableLearningRate)
-      .def("variableWeightDecay", &SGDBuilder::variableWeightDecay)
-      .def("variableLossScaling", &SGDBuilder::variableLossScaling)
-      .def("build", &SGDBuilder::build);
-
   py::class_<Optimizer> optimizer(m, "Optimizer");
+  optimizer.def("getLossScalingVal", &Optimizer::getLossScalingVal);
 
-  py::class_<BaseSGD> basesgd(m, "BaseSGD", optimizer);
-  basesgd.def("learnRate", &BaseSGD::learnRate);
-  basesgd.def("weightDecay", &BaseSGD::weightDecay);
-  basesgd.def("lossScaling", &BaseSGD::lossScaling);
+  py::class_<SGD> sgd(m, "SGD", optimizer);
+  sgd.def(py::init<float, float, float>(),
+          py::arg("learning_rate"),
+          py::arg("weight_decay") = 0.0f,
+          py::arg("loss_scaling") = 1.0f);
 
-  py::class_<SGD>(m, "SGD", basesgd)
-      .def(py::init<float, float, float>(),
-           py::arg("learning_rate"),
-           py::arg("weight_decay") = 0.0f,
-           py::arg("loss_scaling") = 1.0f);
+  sgd.def("getGlobalLearningRateVal", &SGD::getGlobalLearningRateVal);
+  sgd.def("getGlobalWeightDecayVal", &SGD::getGlobalWeightDecayVal);
 
-  py::class_<ConstSGD>(m, "ConstSGD", basesgd)
+  // This class is deprecated, and SGD should be preferred
+  py::class_<ConstSGD>(m, "ConstSGD", sgd)
       .def(py::init<float, float, float>(),
            py::arg("learning_rate"),
            py::arg("weight_decay") = 0.0f,
@@ -1063,9 +1053,15 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("reservedAccumulationResetPrefix", &reservedAccumulationResetPrefix);
   m.def("reservedStashedPrefix", &reservedStashedPrefix);
   m.def("reservedRestoredPrefix", &reservedRestoredPrefix);
-  m.def("reservedLearnRatePrefix", &reservedLearnRatePrefix);
-  m.def("reservedWeightDecayPrefix", &reservedWeightDecayPrefix);
   m.def("reservedLossScalingPrefix", &reservedLossScalingPrefix);
+  m.def("reservedGlobalScaledLearningRatePrefix",
+        &reservedGlobalScaledLearningRatePrefix);
+  m.def("reservedGlobalWeightDecayScaleFactorPrefix",
+        &reservedGlobalWeightDecayScaleFactorPrefix);
+  m.def("reservedSpecificScaledLearningRatePrefix",
+        &reservedSpecificScaledLearningRatePrefix);
+  m.def("reservedSpecificWeightDecayScaleFactorPrefix",
+        &reservedSpecificWeightDecayScaleFactorPrefix);
 
   // Exceptions are processed explicitly to allow the main dynamic library
   // to do the type inference.  This prevents some inter dynamic library type

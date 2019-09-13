@@ -27,8 +27,10 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
 }
 
 std::vector<std::string> reservedOptimizerPrefixes() {
-  return {reservedLearnRatePrefix(),
-          reservedWeightDecayPrefix(),
+  return {reservedGlobalScaledLearningRatePrefix(),
+          reservedSpecificScaledLearningRatePrefix(),
+          reservedGlobalWeightDecayScaleFactorPrefix(),
+          reservedSpecificWeightDecayScaleFactorPrefix(),
           reservedLossScalingPrefix()};
 }
 

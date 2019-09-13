@@ -154,10 +154,6 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::FlattenInplace).size() ==
                   nConv * 10);
 
-      // check that no ConstSgdVarUpdate entered
-      BOOST_CHECK(
-          ir.opsOfType(Onnx::CustomOperators::ConstSgdVarUpdate).size() == 0);
-
       // 4 ConcatInplace
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size() ==
                   4);

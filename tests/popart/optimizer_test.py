@@ -57,10 +57,15 @@ def test_sgd_param_check():
     In this test we check that learning rate tensor, returned as an anchor,
     matches the value supplied to the optimizer constructor
     """
+
+    lrName = popart.reservedGlobalScaledLearningRatePrefix() + "FLOAT"
+    wdName = popart.reservedGlobalWeightDecayScaleFactorPrefix() + "FLOAT"
+    lsName = popart.reservedLossScalingPrefix() + "FLOAT"
+
     anchorNames = {
-        "scaledLearnRate_FLOAT": popart.AnchorReturnType("ALL"),
-        "weightDecay_FLOAT": popart.AnchorReturnType("ALL"),
-        "lossScaling_FLOAT": popart.AnchorReturnType("ALL")
+        lrName: popart.AnchorReturnType("ALL"),
+        wdName: popart.AnchorReturnType("ALL"),
+        lsName: popart.AnchorReturnType("ALL")
     }
 
     # Just a placeholder optimizer. We overwrite the hyper-parameters in this
@@ -93,16 +98,15 @@ def test_sgd_param_check():
 
         session.run(stepio)
 
-        assert (np.array_equal(anchorsArrays["lossScaling_FLOAT"][0], stepLs))
+        assert (np.array_equal(anchorsArrays[lsName][0], stepLs))
 
         scaled = (stepLr / stepLs)
-        assert (np.array_equal(anchorsArrays["scaledLearnRate_FLOAT"][0],
-                               scaled))
+        assert (np.array_equal(anchorsArrays[lrName][0], scaled))
 
         # The weight decay tensor is scaled by lr on the host
         # before training
-        scaled = 1 - (stepWd * (stepLr / stepLs))
-        assert (np.allclose(anchorsArrays["weightDecay_FLOAT"][0], scaled))
+        scaled = 1 - (stepWd * stepLr)
+        assert (np.allclose(anchorsArrays[wdName][0], scaled))
 
 
 def test_constsgd_vs_sgd():
@@ -218,65 +222,3 @@ def test_sgd_with_float16_model():
 
     stepio = popart.PyStepIO({inid1: input1}, anchorArrays)
     session.run(stepio)
-
-
-def test_sgd_builder():
-    """
-    In this test we check that learning rate tensor, returned as an anchor,
-    matches the value supplied to the optimizer constructor
-    """
-    anchorNames = {
-        "scaledLearnRate_FLOAT": popart.AnchorReturnType("ALL"),
-        "weightDecay_FLOAT": popart.AnchorReturnType("ALL"),
-        "lossScaling_FLOAT": popart.AnchorReturnType("ALL")
-    }
-
-    # Just a placeholder optimizer. We overwrite the hyper-parameters in this
-    # test once the session is created
-    opt_builder = popart.SGDBuilder()
-    opt_builder.learningRate(-1)
-    opt_builder.weightDecay(-1)
-    opt_builder.lossScaling(-1)
-    opt_builder.variableLearningRate(True)
-    opt_builder.variableWeightDecay(True)
-    opt_builder.variableLossScaling(True)
-
-    stepSize = 2
-
-    session, inputsUserSgd = trainSession(anchorNames, opt_builder.build(),
-                                          stepSize)
-    anchorsArrays = session.initAnchorArrays()
-
-    # train
-    numSteps = 3
-    learningRate = np.random.rand(numSteps).astype('float32')
-    weightDecay = np.random.rand(numSteps).astype('float32')
-    lossScaling = np.random.rand(numSteps).astype('float32')
-
-    for step in range(numSteps):
-
-        # Update learning rate parameter between training steps
-        stepLr = learningRate[step]
-        stepWd = weightDecay[step]
-        stepLs = lossScaling[step]
-
-        opt_builder.learningRate(stepLr)
-        opt_builder.weightDecay(stepWd)
-        opt_builder.lossScaling(stepLs)
-        session.updateOptimizer(opt_builder.build())
-        session.optimizerFromHost()
-
-        stepio = popart.PyStepIO(inputsUserSgd, anchorsArrays)
-
-        session.run(stepio)
-
-        assert (np.array_equal(anchorsArrays["lossScaling_FLOAT"][0], stepLs))
-
-        scaled = (stepLr / stepLs)
-        assert (np.array_equal(anchorsArrays["scaledLearnRate_FLOAT"][0],
-                               scaled))
-
-        # The weight decay tensor is scaled by lr on the host
-        # before training
-        scaled = 1 - (stepWd * (stepLr / stepLs))
-        assert (np.allclose(anchorsArrays["weightDecay_FLOAT"][0], scaled))

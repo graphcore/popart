@@ -28,20 +28,26 @@ view::Region VarUpdateOp::aliases(InIndex index) const {
   }
 }
 
-void ConstSGDVarUpdateOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
-  os.appendAttribute("learning rate", learnRate);
-  os.appendAttribute("weight decay", weightDecay);
-  os.appendAttribute("loss scaling", lossScaling);
-}
-
-// Modifies is the same as aliases
 view::Region VarUpdateOp::modifies(InIndex index) const {
   return aliases(index);
 }
 
+void SGDVarUpdateOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  if (initScaledLearningRate.isConst()) {
+    os.appendAttribute("const scaled learning rate",
+                       initScaledLearningRate.val());
+  }
+
+  if (initWeightDecayScaleFactor.isConst()) {
+    os.appendAttribute("const weight decay scale factor",
+                       initWeightDecayScaleFactor.val());
+  }
+}
+
 float VarUpdateOp::getSubgraphValue() const {
-  // If we have replicated graphs then outline varupdates if possiable
+  // If we have replicated graphs then outline VaruUdates, if possible
+  // The motivation for this is the (code) cost of inter-IPU copies, hmm
   if (getIr().getSessionOptions().enableReplicatedGraphs) {
     return getHighSubgraphValue();
   } else {
@@ -49,30 +55,34 @@ float VarUpdateOp::getSubgraphValue() const {
   }
 }
 
-SGDVarUpdateOp::SGDVarUpdateOp(TensorId varId_, const Op::Settings &settings_)
-    : VarUpdateOp(Onnx::CustomOperators::SgdVarUpdate, varId_, settings_) {}
+std::unique_ptr<Op> SGDVarUpdateOp::cloneWithNewName(const TensorId &x) const {
+  return std::make_unique<SGDVarUpdateOp>(
+      x, initScaledLearningRate, initWeightDecayScaleFactor, settings);
+}
 
 std::unique_ptr<Op> SGDVarUpdateOp::clone() const {
   return std::make_unique<SGDVarUpdateOp>(*this);
 }
 
-ConstSGDVarUpdateOp::ConstSGDVarUpdateOp(TensorId varId_,
-                                         float lr_,
-                                         float wd_,
-                                         float ls_,
-                                         const Op::Settings &settings_)
-    : VarUpdateOp(Onnx::CustomOperators::ConstSgdVarUpdate, varId_, settings_),
-      learnRate(lr_), weightDecay(wd_), lossScaling(ls_) {}
-
-float ConstSGDVarUpdateOp::getLearnRate() const { return learnRate; }
-
-float ConstSGDVarUpdateOp::getWeightDecay() const { return weightDecay; }
-
-float ConstSGDVarUpdateOp::getLossScaling() const { return lossScaling; }
-
-std::unique_ptr<Op> ConstSGDVarUpdateOp::clone() const {
-  return std::make_unique<ConstSGDVarUpdateOp>(*this);
+std::map<InIndex, TensorId> SGDVarUpdateOp::optimizerInputs() const {
+  std::map<InIndex, TensorId> m;
+  if (!initScaledLearningRate.isConst()) {
+    auto index = getScaledLearningRateInIndex();
+    m.insert({index, inId(index)});
+  }
+  if (!initWeightDecayScaleFactor.isConst()) {
+    auto index = getWeightDecayScaleFactorInIndex();
+    m.insert({index, inId(index)});
+  }
+  return m;
 }
+
+SGDVarUpdateOp::SGDVarUpdateOp(const TensorId &varId_,
+                               OptimizerValue slr,
+                               OptimizerValue wdsf,
+                               const Op::Settings &settings_)
+    : VarUpdateOp(Onnx::CustomOperators::SgdVarUpdate, varId_, settings_),
+      initScaledLearningRate(slr), initWeightDecayScaleFactor(wdsf) {}
 
 CopyVarUpdateOp::CopyVarUpdateOp(TensorId varId_, const Op::Settings &settings_)
     : VarUpdateOp(Onnx::CustomOperators::CopyVarUpdate, varId_, settings_) {}

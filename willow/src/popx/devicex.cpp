@@ -1627,8 +1627,9 @@ void Devicex::loadEngineAndConnectStreams() {
     connectRandomSeedStream();
 
     logging::devicex::debug("Connecting optimizer streams");
-    for (Tensor *tensor : ir().optimizerTensors()) {
-      logging::devicex::debug(" {}", tensor->id);
+
+    for (auto tensor : ir().optimizerTensors()) {
+      logging::devicex::debug("   {}", tensor->str());
       pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
     }
 
@@ -1999,7 +2000,7 @@ void Devicex::prepare() {
     }
 
     // create Program to write optimizer tensors to device
-    for (Tensor *tensor : ir().optimizerTensors()) {
+    for (auto tensor : ir().optimizerTensors()) {
       tasks.add(fromHostTask(tensor, progs.streamOptimizerFromHostFragment()));
     }
 

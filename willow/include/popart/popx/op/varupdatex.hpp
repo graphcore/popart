@@ -29,12 +29,6 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
-class ConstSGDVarUpdateOpx : public VarUpdateOpx {
-public:
-  ConstSGDVarUpdateOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
-};
-
 class CopyVarUpdateOpx : public VarUpdateOpx {
 public:
   CopyVarUpdateOpx(Op *, Devicex *);

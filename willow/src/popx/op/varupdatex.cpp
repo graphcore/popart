@@ -50,29 +50,52 @@ SGDVarUpdateOpx::SGDVarUpdateOpx(Op *op, Devicex *devicex)
 
 void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
-  // Weight update (matching pytorch implementation):
-  //   w <- w * (1 - (lr/ls) * wd) - (lr/ls) * delta
+  // Weight update (matching pytorch implementation)
+  //  w <- w * (1 - lr * wd) - (lr/ls) * weight_gradient
   //
   // lr = learning rate
   // ls = loss scaling
   // wd = weight decay
+  //
+  // This is expressed as
+  //
+  // w <- w * weightDecayScaleFactor - scaledLearningRate * weight_gradient
+  //
+  // The (1 - lr * wd) and (lr/ls) calculations are done in SGD::setTensorData
 
-  // The (1 -(lr/ls) * wd) and (lr/ls) calculation is done in
-  // SGD::setTensorData, weightDecay is weightDecayScaleFactor
+  auto vu_op = getOp<SGDVarUpdateOp>();
 
-  // First update weights with weight decay
-  popops::mapInPlace(graph(),
-                     pe::Mul(pe::_1, pe::_2),
-                     {getInTensor(SGDVarUpdateOp::getVarToUpdateInIndex()),
-                      getInTensor(SGDVarUpdateOp::getWeightDecayInIndex())},
-                     prog,
-                     debugPrefix("weightDecay"));
+  // (1) update weights with weight decay
 
+  // non-const weight decay scale factor
+  if (!vu_op.initWeightDecayScaleFactor.isConst()) {
+
+    popops::mapInPlace(
+        graph(),
+        pe::Mul(pe::_1, pe::_2),
+        {getInTensor(SGDVarUpdateOp::getVarToUpdateInIndex()),
+         getInTensor(SGDVarUpdateOp::getWeightDecayScaleFactorInIndex())},
+        prog,
+        debugPrefix("nonConstWeightDecay"));
+  }
+
+  // const weight decay scale factor
+  else {
+    float scaleFactor = vu_op.initWeightDecayScaleFactor.val();
+    if (scaleFactor != 1.0f) {
+      popops::mapInPlace(graph(),
+                         pe::Mul(pe::_1, pe::Const(scaleFactor)),
+                         {getInTensor(SGDVarUpdateOp::getVarToUpdateInIndex())},
+                         prog,
+                         debugPrefix("constWeightDecay"));
+    }
+  }
+
+  // (2) subtract scaled gradients
   poplar::Tensor weightDeltas =
       getInTensor(SGDVarUpdateOp::getUpdaterInIndex());
 
   if (dv_p->getReplicationFactor() > 1) {
-
     weightDeltas =
         popops::replicatedAllReduce(graph(),
                                     weightDeltas,
@@ -82,71 +105,31 @@ void SGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
                                     {{"useReplicatedImplementation", "true"}});
   }
 
-  // Then subtract scaled gradients
-  popops::scaledSubtractFrom(
-      graph(),
-      getInTensor(SGDVarUpdateOp::getVarToUpdateInIndex()), // weights
-      weightDeltas,                                         // weightDeltas
-      getInTensor(SGDVarUpdateOp::getScaledLearnRateInIndex()),
-      prog,
-      debugPrefix("scaledSubtract"));
+  // non-const scaled learning rate case
+  if (!vu_op.initScaledLearningRate.isConst()) {
+    popops::scaledSubtractFrom(
+        graph(),
+        getInTensor(SGDVarUpdateOp::getVarToUpdateInIndex()), // weights
+        weightDeltas,                                         // weightDeltas
+        getInTensor(SGDVarUpdateOp::getScaledLearningRateInIndex()),
+        prog,
+        debugPrefix("nonConstScaledSubtract"));
+  }
+
+  // const scaled learning rate case
+  else {
+    popops::scaledSubtractFrom(
+        graph(),
+        getInTensor(vu_op.getVarToUpdateInIndex()), // weights
+        weightDeltas,                               // weightDeltas
+        vu_op.initScaledLearningRate.val(),
+        prog,
+        debugPrefix("scaledSubtract"));
+  }
 
   // output is a reference to the updated input
   setOutTensor(SGDVarUpdateOp::getUpdatedVarOutIndex(),
                getInTensor(SGDVarUpdateOp::getVarToUpdateInIndex()));
-}
-
-ConstSGDVarUpdateOpx::ConstSGDVarUpdateOpx(Op *op, Devicex *devicex)
-    : VarUpdateOpx(op, devicex) {
-  verifyOp<ConstSGDVarUpdateOp>(op, Onnx::CustomOperators::ConstSgdVarUpdate);
-}
-
-void ConstSGDVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
-  auto vu_op = getOp<ConstSGDVarUpdateOp>();
-
-  // Weight update (matching pytorch implementation):
-  //   w <- w * (1 - (lr/ls) * wd) - (lr/ls) * delta
-
-  // First update weights with weight decay (only if user has
-  // specified non-zero weight decay)
-  if (vu_op.getWeightDecay() != 0.0f) {
-    float weightDecayScaleFactor =
-        1 - (vu_op.getWeightDecay() *
-             (vu_op.getLearnRate() / vu_op.getLossScaling()));
-
-    popops::mapInPlace(
-        graph(),
-        pe::Mul(pe::_1, pe::Const(weightDecayScaleFactor)),
-        {getInTensor(ConstSGDVarUpdateOp::getVarToUpdateInIndex())},
-        prog,
-        debugPrefix("weightDecay"));
-  }
-
-  poplar::Tensor weightDeltas = getInTensor(vu_op.getUpdaterInIndex());
-
-  if (dv_p->getReplicationFactor() > 1) {
-
-    weightDeltas =
-        popops::replicatedAllReduce(graph(),
-                                    weightDeltas,
-                                    popops::Operation::ADD,
-                                    prog,
-                                    debugPrefix("allReduce_Add"),
-                                    {{"useReplicatedImplementation", "true"}});
-  }
-
-  // Then subtract scaled gradients
-  popops::scaledSubtractFrom(
-      graph(),
-      getInTensor(vu_op.getVarToUpdateInIndex()), // weights
-      weightDeltas,                               // weightDeltas
-      vu_op.getLearnRate() / vu_op.getLossScaling(),
-      prog,
-      debugPrefix("scaledSubtract"));
-
-  // output is a reference to the updated input
-  setOutTensor(ConstSGDVarUpdateOp::getUpdatedVarOutIndex(),
-               getInTensor(ConstSGDVarUpdateOp::getVarToUpdateInIndex()));
 }
 
 CopyVarUpdateOpx::CopyVarUpdateOpx(Op *op, Devicex *devicex)
@@ -168,8 +151,6 @@ void CopyVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 namespace {
 OpxCreator<SGDVarUpdateOpx>
     sgdVarUpdateOpxCreator(Onnx::CustomOperators::SgdVarUpdate);
-OpxCreator<ConstSGDVarUpdateOpx>
-    constSgdVarUpdateOpxCreator(Onnx::CustomOperators::ConstSgdVarUpdate);
 OpxCreator<CopyVarUpdateOpx>
     copyVarUpdateOpxCreator(Onnx::CustomOperators::CopyVarUpdate);
 } // namespace

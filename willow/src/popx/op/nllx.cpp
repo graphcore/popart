@@ -243,8 +243,9 @@ void NllGradOpx::grow(poplar::program::Sequence &prog) const {
   // Output is reshaped to match probs input shape
   oneHot = oneHot.reshape(probs.shape());
 
-  if (dv_p->ir().getOptimizer()->constantLossScaling()) {
-    auto lossScaling = dv_p->ir().getOptimizer()->getLossScaling();
+  // TODO T11263 base class to reduce code duplication
+  if (dv_p->ir().getOptimizer().lossScaling().isConst()) {
+    auto lossScaling = dv_p->ir().getOptimizer().lossScaling().val();
     if (lossScaling > 1.0f || lossScaling < 1.0f) {
       popops::mapInPlace(graph(),
                          pe::Mul(pe::_1, pe::Const(lossScaling)),

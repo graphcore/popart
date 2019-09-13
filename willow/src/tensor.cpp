@@ -248,6 +248,9 @@ Op *Tensor::getProducerUnsafe() const { return producer; }
 bool Tensor::hasProducer() const { return producer != nullptr; }
 
 bool Tensor::isOptimizerTensor() const {
+
+  // TODO T11262 is to make an optimizer Tensor class, so that we don't need to
+  // do these string comparisons
   for (auto optPref : reservedOptimizerPrefixes()) {
     std::size_t found = id.find(optPref);
     if (found != std::string::npos) {
