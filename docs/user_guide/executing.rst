@@ -171,25 +171,88 @@ of the graph since the last report was fetched.
 Both ``getGraphReport`` and ``getExecutionReport`` can optionally return
 a Concise Binary Object Representation (CBOR) formatted report.
 
-For more information on the information returned by these functions, see the Profiling chapter of the *Poplar and Poplibs User Guide*.
+For more information on the information returned by these functions, see the
+Profiling chapter of the *Poplar and Poplibs User Guide*.
+
+.. _popart_logging:
 
 Turning on execution tracing
 ============================
 
 PopART contains an internal logging system that can show the progress of graph
-compilation and execution.  It can be turned on by calling the ``Logger`` class.
-For example:
+compilation and execution.
+
+Logging information is generated from the following modules:
+
+.. TODO: get descriptions of the remaining modules
+
+=========  =================================
+session	   The ONNX session (the PopART API)
+ir	       The intermediate representation
+devicex	   The poplar backend
+transform
+pattern
+builder
+op
+opx
+ces
+python
+=========  =================================
+
+
+The logging levels, in decreasing verbosity, are shown below.
+
+========  ============================
+TRACE     The highest level, shows the
+          order of method calls
+DEBUG
+INFO
+WARN      Warnings
+ERR       Errors
+CRITICAL  Only critical errors
+OFF       No logging
+========  ============================
+
+The default is "OFF". You can change this, and where the logging information is written to,
+by setting environment variables, see :any:`popart_env_vars`.
+
+Programming interface
+~~~~~~~~~~~~~~~~~~~~~
+
+You can also control the logging level for each module in your program.
+
+For example, in Python:
 
 .. code-block:: python
 
-  popart.getLogger().setLevel("TRACE")
+  # Set all modules to DEBUG level
+  popart.getLogger().setLevel("DEBUG")
+  # Turn off logging for the session module
+  popart.getLogger("session").setLevel("OFF")
 
-The logging levels, in decreasing verbosity, are:
+And in C++:
 
-* TRACE
-* DEBUG
-* INFO
-* WARN
-* ERR
-* CRITICAL
-* OFF
+.. code-block:: C++
+
+  // Set all modules to DEBUG level
+  popart::logger::setLevel("popart", "DEBUG")
+  // Turn off logging for the session module
+  popart::logger::setLevel("session", "OFF")
+
+
+Output format
+~~~~~~~~~~~~~
+
+The information is output in the following format:
+
+.. code-block:: none
+
+  [<timestamp>] [<module>] [<level>] <logging string>
+
+For example:
+
+.. code-block:: none
+
+  [2019-10-16 13:55:05.359] [popart:devicex] [debug] Creating poplar::Tensor 1
+  [2019-10-16 13:55:05.359] [popart:devicex] [debug] Creating host-to-device FIFO 1
+  [2019-10-16 13:55:05.359] [popart:devicex] [debug] Creating device-to-host FIFO 1
