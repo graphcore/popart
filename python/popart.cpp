@@ -195,8 +195,8 @@ public:
                           int64_t _i)
       : builder(_builder), attribute(_attribute), index(_i) {}
 
-  void enter() { builder.setAttribute(sVirtualGraphAttribute, index); }
-  void exit() { builder.clearAttribute(sVirtualGraphAttribute); }
+  void enter() { builder.setAttribute(attribute, index); }
+  void exit() { builder.clearAttribute(attribute); }
 };
 
 struct PrepareDeviceError {
@@ -390,7 +390,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def("probsTensorId", &NllLoss::probsTensorId)
       .def("labelTensorId", &NllLoss::labelTensorId)
       .def("pipelineStage", &NllLoss::pipelineStage)
-  .def("virtualGraph", &NllLoss::virtualGraph);
+      .def("virtualGraph", &NllLoss::virtualGraph);
 
   py::class_<L1Loss>(m, "L1Loss", loss)
       .def(py::init<TensorId, TensorId, float, ReductionType>(),
@@ -401,7 +401,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def("getInputId", &L1Loss::getInputId)
       .def("getLambda", &L1Loss::getLambda)
       .def("pipelineStage", &L1Loss::pipelineStage)
-  .def("virtualGraph", &L1Loss::virtualGraph);
+      .def("virtualGraph", &L1Loss::virtualGraph);
 
   py::class_<Optimizer> optimizer(m, "Optimizer");
   optimizer.def("getLossScalingVal", &Optimizer::getLossScalingVal);
@@ -923,6 +923,13 @@ PYBIND11_MODULE(popart_core, m) {
                &Builder::pipelineStage),
            py::arg("nodeOutputNames"),
            py::arg("value") = 0)
+      .def(
+          "pipelineStage",
+          [](Builder &self, int64_t index) -> AttributeContextManager {
+            AttributeContextManager acm(self, sPipelineStageAttribute, index);
+            return acm;
+          },
+          py::arg("value"))
       .def("setPartialsType",
            &Builder::setPartialsType,
            py::arg("nodeOutputName"),
