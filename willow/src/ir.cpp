@@ -38,6 +38,7 @@
 #include <popart/transforms/auto_virtual_graph.hpp>
 #include <popart/transforms/gradient_accumulation.hpp>
 #include <popart/transforms/groupmatmuls.hpp>
+#include <popart/transforms/inferpipelinestages.hpp>
 #include <popart/transforms/interipucopy.hpp>
 #include <popart/transforms/mergecopies.hpp>
 #include <popart/transforms/mergevarupdates.hpp>
@@ -236,9 +237,14 @@ void Ir::logIr() {
   logging::ir::info(ss2.str());
 }
 
-void Ir::verifyPiplineStageAttribute() const {
+void Ir::verifyPipelineSettings() const {
   if (!getSessionOptions().enablePipelining) {
     return;
+  }
+
+  if (!virtualGraphsEnabled()) {
+    throw error("Pipelining requires the 'virtualGraphMode' session option "
+                "to not be VirtualGraphMode::Off.");
   }
 
   auto getPipelineStage = [](auto x) -> PipelineStage {
@@ -292,35 +298,6 @@ void Ir::verifyPiplineStageAttribute() const {
   }
   // all ops have had the pipeline stage attribute set
   else if (pipelineStages.count(-1) == 0) {
-    // If training, we (currently) don't support multiple pipeline stages on a
-    // single vgraph
-    if (canTrain()) {
-      for (auto &vgraphid_ps : pipelineStagesPerVGraph) {
-        auto vgraphid = vgraphid_ps.first;
-        auto &pss     = vgraphid_ps.second;
-        if (pss.size() > 1) {
-          std::stringstream ss;
-          ss << "Multiple pipeline stages on a single virtual graph is not "
-                "supported for training.";
-          ss << fmt::format("\nThere are {} stages on virtual graph {}",
-                            pss.size(),
-                            vgraphid);
-          for (auto ps : pss) {
-            for (auto &id_op : getMainGraph().getOps()) {
-              auto op = id_op.second.get();
-              if (op->getPipelineStage() == ps &&
-                  op->getVirtualGraphId() == vgraphid) {
-                ss << fmt::format("\n  ps: {}, vg: {}, {}",
-                                  op->getPipelineStage(),
-                                  op->getVirtualGraphId(),
-                                  op->debugName());
-              }
-            }
-          }
-          throw error(ss.str());
-        }
-      }
-    }
 
     // check that all ops in a pipeline stage have the same virtualGraph
     for (auto &ps_ops : pipelineStages) {
@@ -662,7 +639,7 @@ void Ir::prepare(const IrBundle &gb) {
 
   // Check virtual graph settings and annotations are consistent
   verifyVirtualGraphIds(false);
-  verifyPiplineStageAttribute();
+  verifyPipelineSettings();
 
   dotCheckpoint(DotCheck::FWD0);
 
@@ -675,6 +652,10 @@ void Ir::prepare(const IrBundle &gb) {
   enableTransform(AutoVirtualGraph::id(),
                   userOptions.virtualGraphMode == VirtualGraphMode::Auto);
   applyTransform(AutoVirtualGraph::id(), getMainGraph());
+
+  if (getSessionOptions().enablePipelining) {
+    applyTransform(InferPipelineStages::id(), getMainGraph());
+  }
 
   if (canEvaluate()) {
     growFinalLoss();
@@ -697,9 +678,6 @@ void Ir::prepare(const IrBundle &gb) {
   updateVertices();
   if (canTrain()) {
     constructBackwards();
-    // This should be able to be removed. I added it for development purposes to
-    // make sure I was setting the backward pass pipeline stages correctly.
-    verifyPiplineStageAttribute();
   }
 
   updateVertices();
@@ -1394,9 +1372,7 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
     }
 
     if (ps.size() > 0) {
-      // TODO T10560 This should be max element when pipeline stages are
-      // unrolled.
-      gradSum->setPipelineStage(*std::min_element(ps.begin(), ps.end()));
+      gradSum->setPipelineStage(*std::max_element(ps.begin(), ps.end()));
     }
   }
 
@@ -1417,7 +1393,23 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   return op;
 }
 
+PipelineStage Ir::getFinalLossPipelineStage() const {
+  auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);
+  if (finalLossOpFound != getMainGraph().getOps().end()) {
+    auto lossOp = finalLossOpFound->second.get();
+    return lossOp->getPipelineStage();
+  } else {
+    throw error("Could not find final loss to get PipelineStage from");
+  }
+}
+
 std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
+  PipelineStage maxPipelineStage = 0;
+  if (getSessionOptions().enablePipelining) {
+    // the last fwd pass pipeline stage is also the first bwd pass pipeline
+    // stage.
+    maxPipelineStage = getFinalLossPipelineStage() * 2;
+  }
 
   OpId nonGradOpId = nonGradOp->id;
   auto backOps     = nonGradOp->getGradOps();
@@ -1435,7 +1427,8 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     }
 
     if (nonGradOp->hasPipelineStage()) {
-      gradOp->setPipelineStage(nonGradOp->getPipelineStage());
+      gradOp->setPipelineStage(maxPipelineStage -
+                               nonGradOp->getPipelineStage());
     }
 
     // connect inputs of gradOp

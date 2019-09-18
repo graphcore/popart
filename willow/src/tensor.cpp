@@ -60,6 +60,20 @@ bool Tensor::hasVirtualGraphId() const {
   return getVirtualGraphIdUnsafe() != -1;
 }
 
+std::set<PipelineStage> Tensor::getPipelineStages() const {
+  auto result = consumers.getPipelineStages();
+  if (hasProducer() && getProducer()->hasPipelineStage()) {
+    auto ps = getProducer()->getPipelineStage();
+    // An IpuCopyOp in pipeline stage N, produces a tensor ready to be consumed
+    // in pipeline stage N+1.
+    if (getProducer()->isConvertibleTo<IpuCopyOp>()) {
+      ps++;
+    }
+    result.insert(ps);
+  }
+  return result;
+}
+
 std::ostream &operator<<(std::ostream &os, const TensorType &tt) {
   switch (tt) {
   case TensorType::ActGrad:
@@ -99,13 +113,19 @@ std::unique_ptr<Tensor> Tensor::clone() const {
 Consumers::Consumers(Tensor *tensorConsumed_)
     : tensorConsumed(tensorConsumed_) {}
 
-boost::optional<PipelineStage> Consumers::findLowestPipelineStage() {
+std::set<PipelineStage> Consumers::getPipelineStages() const {
   std::set<PipelineStage> stages;
   for (auto op : getOps()) {
     if (op->hasPipelineStage()) {
       stages.insert(op->getPipelineStage());
     }
   }
+
+  return stages;
+}
+
+boost::optional<PipelineStage> Consumers::findLowestPipelineStage() const {
+  auto stages = getPipelineStages();
 
   if (stages.size() == 0) {
     return boost::none;
@@ -114,13 +134,8 @@ boost::optional<PipelineStage> Consumers::findLowestPipelineStage() {
   }
 }
 
-boost::optional<PipelineStage> Consumers::findHighestPipelineStage() {
-  std::set<PipelineStage> stages;
-  for (auto op : getOps()) {
-    if (op->hasPipelineStage()) {
-      stages.insert(op->getPipelineStage());
-    }
-  }
+boost::optional<PipelineStage> Consumers::findHighestPipelineStage() const {
+  auto stages = getPipelineStages();
 
   if (stages.size() == 0) {
     return boost::none;

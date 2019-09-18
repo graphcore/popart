@@ -660,6 +660,7 @@ def test_pipeline_stages_backwards_through_ipus():
         loss = builder.addL1Loss(e1, 'l1LossVal', 0.1,
                                  popart.ReductionType.Sum)
         loss.virtualGraph(stage1_vgraph)
+        loss.pipelineStage(1)
 
         return [e1]
 
@@ -722,6 +723,7 @@ def test_multiple_stages_per_virtual_graph_inference():
         loss = builder.addL1Loss(mm1, 'l1LossVal', 0.1,
                                  popart.ReductionType.Sum)
         loss.virtualGraph(0)
+        loss.pipelineStage(2)
 
         return [mm1]
 
@@ -816,3 +818,133 @@ def test_multiple_stages_per_virtual_graph_training():
     print(r1)
 
     assert np.allclose(r0, r1)
+
+# run the same model with and without recomputation and check the updated weights
+def test_recomputation():
+    accumulationFactor = 3
+    microBatchesPerStep = 3
+    bps = microBatchesPerStep // accumulationFactor
+    dummy_data = np.zeros((2, 2)).astype(np.float32)
+    data = np.array([i for i in range(accumulationFactor * 2 * 2)]).astype(np.float32) * 0.1
+    data = np.reshape(data, (accumulationFactor, 2, 2))
+    weight_data = np.array([i for i in range(2 * 2)]).astype(np.float32) * 0.25
+    weight_data = np.reshape(weight_data, (2, 2))
+
+    def run_test(enable_recomputation):
+        weights = {}
+
+        def init_builder(builder):
+            d0 = builder.addInputTensor(dummy_data, 'data0')
+            w0 = builder.addInitializedInputTensor(weight_data)
+            weights[w0] = np.empty(
+                shape=weight_data.shape, dtype=weight_data.dtype)
+
+            t0 = builder.aiOnnx.mul([d0, w0])
+            t1 = builder.aiOnnx.sigmoid([t0])
+            t2 = builder.aiGraphcore.scale([t1], 2.0)
+
+            for t in (t0, t1, t2):
+                builder.virtualGraph(t, 0)
+
+            loss = builder.addL1Loss(t2, 'l1LossVal', 0.159,
+                                     popart.ReductionType.Sum)
+            loss.virtualGraph(1)
+
+            return [t2]
+
+        session = TestSession()
+        session.device = 'ipu_model'
+        session.numIPUs = 2
+        session.mode = 'train'
+        session.options.virtualGraphMode = popart.VirtualGraphMode.Manual
+        session.options.enablePipelining = True
+        if enable_recomputation:
+            session.options.autoRecomputation = popart.RecomputationType.Standard
+        session.options.accumulationFactor = accumulationFactor
+        session.options.enableGradientAccumulation = True
+
+        session.prepare(init_builder)
+
+        anchors = session.run({'data0': data})
+
+        # return the weights
+        session._session.weightsToHost()
+        weightsIo = popart.PyWeightsIO(weights)
+        session._session.readWeights(weightsIo)
+        assert len(weights) == 1
+        weights = [v for k, v in weights.items()]
+        return weights[0]
+
+    w0 = run_test(False)
+    w1 = run_test(True)
+
+    print(w0)
+    print()
+    print(w1)
+    print()
+
+    diff = w0 - w1
+    print(diff)
+
+    assert np.array_equal(w0, w1)
+
+
+def test_bad_auto_staging():
+    bps = 4
+    dummy_data = np.random.rand(2, 2).astype(np.float32)
+    data = np.random.rand(bps, 2, 2).astype(np.float32)
+
+    vgraph_ids = []
+    ps_ids = []
+
+    def init_builder(builder):
+        d0 = builder.addInputTensor(dummy_data, 'data0')
+
+        t0 = builder.aiOnnx.sin([d0])
+        t1 = builder.aiOnnx.sin([t0])
+        t2 = builder.aiOnnx.sin([t1])
+
+        builder.addOutputTensor(t2)
+
+        builder.virtualGraph(t0, 0)
+        builder.virtualGraph(t1, 1)
+        builder.virtualGraph(t2, 0)
+
+        loss = builder.addL1Loss(t2, 'l1LossVal', 0.1,
+                                 popart.ReductionType.Sum)
+        loss.virtualGraph(0)
+
+        return [t2]
+
+    def ref(d0):
+        t0 = np.sin(d0)
+        t1 = np.sin(t0)
+        t2 = np.sin(t1)
+        return t2
+
+    session = TestSession()
+    session.options.enableVirtualGraphs = True
+    session.options.enablePipelining = True
+    session.device = 'ipu_model'
+    session.numIPUs = 2
+    session.batchesPerStep = bps
+
+    # test a pipeline stage appearing on multiple virtual graphs
+    with pytest.raises(popart.popart_exception) as e_info:
+        session.prepare(init_builder)
+
+    assert e_info.value.args[0].startswith(
+        'Tensor Sin:0/1 is consumed in an earlier pipeline stage than it is produced'
+    )
+
+    # The below lines should be uncommented when auto pipeline stage is improved.
+    # assert len(sessionAnchors) == 1
+    # result = [v for k, v in sessionAnchors.items()][0]
+
+    # for i in range(bps):
+    #     refResult = ref(data[i])
+    #     print(f'Batch {i}: {result[i]}')
+    #     print(f'Ref result: {refResult}')
+    #     print()
+
+    #     assert np.allclose(result[i], refResult)

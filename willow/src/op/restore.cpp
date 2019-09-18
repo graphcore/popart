@@ -9,8 +9,9 @@
 namespace popart {
 
 RestoreOp::RestoreOp(const OperatorIdentifier &_opid,
+                     int64_t stashSize_,
                      const Op::Settings &settings_)
-    : Op(_opid, settings_) {}
+    : Op(_opid, settings_), stashSize(stashSize_) {}
 
 std::unique_ptr<Op> RestoreOp::clone() const {
   return std::make_unique<RestoreOp>(*this);
@@ -24,9 +25,15 @@ TensorId RestoreOp::getRestoredTensorId() const {
   return reservedRestoredPrefix() + inId(getActToRestoreInIndex());
 }
 
+void RestoreOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("stashSize", stashSize);
+}
+
 RestoreInplaceOp::RestoreInplaceOp(const OperatorIdentifier &_opid,
+                                   int64_t stashSize_,
                                    const Op::Settings &settings_)
-    : RestoreOp(_opid, settings_) {}
+    : RestoreOp(_opid, stashSize_, settings_) {}
 
 std::unique_ptr<Op> RestoreInplaceOp::clone() const {
   return std::make_unique<RestoreInplaceOp>(*this);
@@ -44,12 +51,5 @@ view::Region RestoreInplaceOp::aliases(InIndex index) const {
 view::Region RestoreInplaceOp::modifies(InIndex index) const {
   return aliases(index);
 }
-
-namespace {
-static OpCreator<RestoreOp> RestoreOpCreator(Onnx::CustomOperators::Restore);
-static OpCreator<RestoreInplaceOp>
-    RestoreInplaceOpCreator(Onnx::CustomOperators::RestoreInplace);
-
-} // namespace
 
 } // namespace popart

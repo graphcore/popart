@@ -389,13 +389,15 @@ private:
   void verifyTensorIds() const;
   void verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const;
   void verifyVertexAttributesOnlyInMain() const;
-  void verifyPiplineStageAttribute() const;
+  void verifyPipelineSettings() const;
 
   // Verify ConstExpr folding has removed input tensors
   // as expected
   void verifyConstExprFolding();
   bool isCandidateForConstExprFolding(const Tensor &tensor) const;
   std::set<Tensor *> getRootInputsToOp(Op *op);
+
+  PipelineStage getFinalLossPipelineStage() const;
 
 private:
   DataFlow dataFlow;

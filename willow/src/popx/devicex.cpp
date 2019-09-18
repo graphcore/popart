@@ -319,61 +319,32 @@ PipelineInfo::PipelineInfo(int _batchesPerStep,
   auto numPipelineStages    = static_cast<int64_t>(_numPipelineStages);
   auto fillFlushPhaseCycles = numPipelineStages;
   fillPhase.start           = 0;
-  fwdFillPhase.start        = 0;
-  fwdFillPhase.end          = fillFlushPhaseCycles - 1;
+  fillPhase.end             = fillFlushPhaseCycles - 1;
 
   int64_t mainCycles;
-  if (_doTraining) {
-    bwdFillPhase.start = fillFlushPhaseCycles;
-    bwdFillPhase.end   = 2 * fillFlushPhaseCycles - 1;
-
-    if (doGradAccl) {
-      mainCycles = gradAcclFactor - 2 * fillFlushPhaseCycles;
-    } else {
-      mainCycles = bps - 2 * fillFlushPhaseCycles;
-    }
-    mainPhase.start = bwdFillPhase.end + 1;
-    mainPhase.end   = mainPhase.start + mainCycles - 1;
-
-    fwdFlushPhase.start = bwdFillPhase.end + mainCycles + 1;
-    fwdFlushPhase.end   = fwdFlushPhase.start + fillFlushPhaseCycles - 1;
-
-    bwdFlushPhase.start = fwdFlushPhase.end + 1;
-    bwdFlushPhase.end   = bwdFlushPhase.start + fillFlushPhaseCycles - 1;
-
-    fillPhase.end    = bwdFillPhase.end;
-    flushPhase.start = fwdFlushPhase.start;
-    flushPhase.end   = bwdFlushPhase.end;
+  if (doGradAccl) {
+    mainCycles = gradAcclFactor - fillFlushPhaseCycles;
   } else {
-    mainCycles      = bps - fillFlushPhaseCycles;
-    mainPhase.start = fwdFillPhase.end + 1;
-    mainPhase.end   = mainPhase.start + mainCycles - 1;
-
-    fwdFlushPhase.start = mainPhase.end + 1;
-    fwdFlushPhase.end   = fwdFlushPhase.start + fillFlushPhaseCycles - 1;
-
-    fillPhase.end    = fwdFillPhase.end;
-    flushPhase.start = fwdFlushPhase.start;
-    flushPhase.end   = fwdFlushPhase.end;
+    mainCycles = bps - fillFlushPhaseCycles;
   }
-}
-
-bool PipelineInfo::doFwd(PipelineCycle pCycle, VGraphId vGraphId) const {
-  bool doFwdPipelineLower = (pCycle >= vGraphId);
-  bool doFwdPipelineUpper = (pCycle < vGraphId + fwdFlushPhase.start);
-
-  return (doFwdPipelineLower && doFwdPipelineUpper);
-}
-
-bool PipelineInfo::doBwd(PipelineCycle pCycle, VGraphId vGraphId) const {
-  if (!doTraining) {
-    return false;
+  if (mainCycles < 1) {
+    throw error(
+        "ILE: mainCycles should not be less than 1. Current value is {}.",
+        mainCycles);
   }
 
-  bool doBwdPipelineLower = (pCycle > bwdFillPhase.end - vGraphId);
-  bool doBwdPipelineUpper = (pCycle <= bwdFlushPhase.end - vGraphId);
+  mainPhase.start = fillPhase.end + 1;
+  mainPhase.end   = mainPhase.start + mainCycles - 1;
 
-  return (doBwdPipelineLower && doBwdPipelineUpper);
+  flushPhase.start = mainPhase.end + 1;
+  flushPhase.end   = flushPhase.start + fillFlushPhaseCycles - 1;
+}
+
+bool PipelineInfo::doStage(PipelineCycle pCycle, VGraphId vGraphId) const {
+  bool doStageLower = (pCycle >= vGraphId);
+  bool doStageUpper = (pCycle < vGraphId + flushPhase.start);
+
+  return (doStageLower && doStageUpper);
 }
 
 poplar::Graph &Devicex::graph() { return *pGraph; }
@@ -437,7 +408,7 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
     pInfo = PipelineInfo(
         ir.getDataFlow().batchesPerStep(),
         static_cast<int>(ir.getSessionOptions().accumulationFactor),
-        getMaxPipelineStage(),
+        static_cast<int>(getMaxPipelineStage()),
         ir.canTrain(),
         ir.getSessionOptions().enableGradientAccumulation);
   }
@@ -1353,10 +1324,6 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     else {
       if (op->copiesOptimizerTensors()) {
         growOpx(progs.streamOptimizerFromHostFragment());
-      } else if (dynamic_cast<RestoreOp *>(op)) {
-        logging::devicex::debug("Growing Restore Opx {}", op->debugName());
-        growOpx(
-            progs.pipelineRestoreFragment(op->getPipelineStage(), op->str()));
       }
 
       // pre-loss : create vertices for all recompute types
@@ -1371,7 +1338,7 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
             auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
 
             if (ipuCopyOp) {
-              growOpx(progs.pipelineIpuCopyFwdFragment(
+              growOpx(progs.pipelineIpuCopyFragment(
                   ipuCopyOp->getPipelineStage(),
                   ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
             }
@@ -1494,8 +1461,8 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
             if (ir().getSessionOptions().enablePipelining) {
 
               progs
-                  .pipelineBackwardFragment(op->getVirtualGraphId(),
-                                            "recompute of " + opToRerun->str())
+                  .pipelineForwardFragment(op->getPipelineStage(),
+                                           "recompute of " + opToRerun->str())
                   .add(progs.recomputeFragment(opToRerun->id));
 
             }
@@ -1520,12 +1487,12 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
           else {
             auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
             if (ipuCopyOp) {
-              growOpx(progs.pipelineIpuCopyBwdFragment(
+              growOpx(progs.pipelineIpuCopyFragment(
                   ipuCopyOp->getPipelineStage(),
                   ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
             } else {
-              growOpx(progs.pipelineBackwardFragment(op->getPipelineStage(),
-                                                     op->str()));
+              growOpx(progs.pipelineForwardFragment(op->getPipelineStage(),
+                                                    op->str()));
             }
           }
           mainGraphOpRegistery.push_back(op);
@@ -1917,12 +1884,6 @@ void Devicex::prepare() {
     tasks.add(updateBatchCountTask(progs.preForwardFragment()));
   }
 
-  // Create the tensors and program fragments needed to track
-  // the state of the pipeline
-  if (ir().getSessionOptions().enablePipelining) {
-    tasks.add(initAndUpdatePipelineStashIndicesTask());
-  }
-
   // stream-to-host tensors : 1) make streams 2) make copy programs
   // note that the order in which tasks are added does not matter,
   // they will be topologically sorted before running
@@ -1958,13 +1919,10 @@ void Devicex::prepare() {
             ps = *tensor->consumers.findHighestPipelineStage();
           }
 
-          tasks.add(toHostTask(
-              tensor,
-              tensor->tensorType() == TensorType::Variable
-                  ? progs.pipelineBwdToHostStreamFragment(ps, tensor->str())
-                  : progs.pipelineFwdOrBwdToHostStreamFragment(
-                        tensor->scheduledPreLoss, ps, tensor->str()),
-              isAnchorStream));
+          tasks.add(
+              toHostTask(tensor,
+                         progs.pipelineToHostStreamFragment(ps, tensor->str()),
+                         isAnchorStream));
         } else {
           tasks.add(toHostTask(
               tensor,
@@ -2392,8 +2350,7 @@ std::map<PipelineStage, VGraphId> Devicex::getPipelineToVGraphIdMap() const {
   // Create a map of pipeline stage to virtual graph ids
   std::map<PipelineStage, VGraphId> pipeline_vgraph_map;
   for (auto &id_op : ir().getMainGraph().getOps()) {
-    auto &id = id_op.first;
-    auto op  = id_op.second.get();
+    auto op = id_op.second.get();
 
     // Not sure why, but in test
     // 'pipeline_test.py::test_acts_match_restored_acts', an IpuCopy did not
@@ -2430,78 +2387,6 @@ PipelineStage Devicex::getMaxPipelineStage() const {
   }
 
   return max_ps;
-}
-
-PriTask Devicex::initAndUpdatePipelineStashIndicesTask() {
-
-  // We replicate the entire pipeline here if using replicated graphs, so as
-  // long as getMaxVirtualGraphId can return a value, we have enough IPUs to
-  // continue
-  auto f = [this]() {
-    if (ir().canTrain()) {
-      auto pipeline_vgraph_map = getPipelineToVGraphIdMap();
-      auto max_ps              = getMaxPipelineStage();
-
-      // 1. Populate map of stash index tensors. Each pipeline stage needs a
-      //    single tensor to track stash and restore indices. Restore index is
-      //    always (stash index + 1) % stash size. Note: these tensors are
-      //    present only at the popx level, not in the IR
-      for (auto &ps_vgraph : pipeline_vgraph_map) {
-        PipelineStage ps  = ps_vgraph.first;
-        VGraphId vGraphId = ps_vgraph.second;
-
-        // stash index tensor is not required for last pipeline stage
-        if (ps == max_ps) {
-          continue;
-        }
-
-        poplar::Tensor stashIdTensor;
-
-        stashIdTensor =
-            getVirtualGraph(vGraphId).addVariable(poplar::UNSIGNED_INT, {1});
-        getVirtualGraph(vGraphId).setTileMapping(stashIdTensor, 0);
-        getVirtualGraph(vGraphId).setInitialValue(
-            stashIdTensor, poplar::ArrayRef<uint32_t>({0}));
-
-        pInfo.stashIndex.emplace(vGraphId, stashIdTensor);
-      }
-
-      // 2. Create the program to increment the stash and restore tensors.
-      //    To be run directly after the pipeline stages program frament that
-      //    calls the stash and restore opxs respectively
-      for (auto &ps_vgraph : pipeline_vgraph_map) {
-        PipelineStage ps  = ps_vgraph.first;
-        VGraphId vGraphId = ps_vgraph.second;
-
-        // stash index tensor is not required for last pipeline stage
-        if (ps == max_ps) {
-          continue;
-        }
-
-        auto &sq = progs.pipelineIncrStashIndexFragment(
-            ps, fmt::format("incrStash_ps{}", ps));
-        auto one = getConst(
-            getVirtualGraph(vGraphId), poplar::UNSIGNED_INT, {}, 1, "one");
-        auto stashSize       = static_cast<uint32_t>(getStashSize(ps));
-        auto stashSizeTensor = getConst(getVirtualGraph(vGraphId),
-                                        poplar::UNSIGNED_INT,
-                                        {},
-                                        stashSize,
-                                        "stashSize");
-
-        // stash
-        popops::addInPlace(
-            getVirtualGraph(vGraphId), pInfo.stashIndex.at(vGraphId), one, sq);
-
-        popops::remInPlace(getVirtualGraph(vGraphId),
-                           pInfo.stashIndex.at(vGraphId),
-                           stashSizeTensor,
-                           sq);
-      }
-    }
-  };
-
-  return {+1e6, "initAndUpdatePipelineStashIndices", {}, f};
 }
 
 PriTask Devicex::toHostEveryNBatchesTask(Tensor *tensor,

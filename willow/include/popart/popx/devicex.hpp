@@ -52,23 +52,14 @@ public:
     PipelineCycle start, end;
   };
 
-  // Describes all points of interest in the pipeline
-  PipelinePhase fwdFillPhase, bwdFillPhase;
   PipelinePhase fillPhase;
 
   // The phase between the pipeline being filled and flushed
   PipelinePhase mainPhase;
 
-  PipelinePhase fwdFlushPhase, bwdFlushPhase;
   PipelinePhase flushPhase;
 
-  bool doFwd(PipelineCycle pCycle, VGraphId vGraphId) const;
-  bool doBwd(PipelineCycle pCycle, VGraphId vGraphId) const;
-
-  // Tensors for each IPU specify the offset of the stashes
-  // when stashing and restoring activations, and programs to
-  // update them
-  std::map<StashIndex, poplar::Tensor> stashIndex;
+  bool doStage(PipelineCycle pCycle, VGraphId vGraphId) const;
 };
 
 poplar::Type popType(const TensorInfo &);

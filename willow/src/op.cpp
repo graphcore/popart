@@ -395,7 +395,11 @@ bool Op::hasVirtualGraphId() const {
   }
 }
 
-void Op::setPipelineStage(PipelineStage value) {
+boost::optional<PipelineStage> Op::getOptionalPipelineStage() const {
+  return settings.pipelineStage;
+}
+
+void Op::setPipelineStage(boost::optional<PipelineStage> value) {
   settings.pipelineStage = value;
 }
 
@@ -404,7 +408,7 @@ bool Op::hasPipelineStage() const { return bool(settings.pipelineStage); }
 PipelineStage Op::getPipelineStage() const {
   if (!hasPipelineStage()) {
     throw error("Cannot return pipelineStage for Op {}. It has not had this "
-                "attribute set",
+                "attribute set.",
                 debugName());
   }
   return *(settings.pipelineStage);

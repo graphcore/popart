@@ -45,17 +45,10 @@ ContiguateIpuCopyIndicesPattern::touches(Op *) const {
 namespace {
 
 void setPipelineStagesForSequence(std::vector<std::unique_ptr<IpuCopyOp>> &seq,
-                                  PipelineStage originalOpsPipelineStage,
-                                  int64_t direction) {
-  PipelineStage delta = 1;
-  if (direction < 0) {
-    // decrement pipeline stage with each copy
-    delta = -1;
-  }
-
+                                  PipelineStage originalOpsPipelineStage) {
   // Pipeline stages should increment/decrement over the sequence
   for (int i = 0; i < seq.size(); i++) {
-    seq.at(i)->setPipelineStage(originalOpsPipelineStage + i * delta);
+    seq.at(i)->setPipelineStage(originalOpsPipelineStage + i);
   }
 }
 
@@ -86,11 +79,20 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
 
   auto pipelineStageToVGraph = getPipelineStageToVGraphMap(op->getGraph());
 
-  auto delta = firstStage < lastStage ? +1 : -1;
+  if (lastStage <= firstStage) {
+    throw error(
+        "ILE: Copy op {}, goes from stage {} to stage {}. Copies must always "
+        "be to a later pipeline stage",
+        originalIpuCopyOp->debugName(),
+        firstStage,
+        lastStage);
+  }
+
   std::vector<std::unique_ptr<IpuCopyOp>> seq;
   std::vector<Op *> newIpuCopyOps;
-  for (VGraphId src = firstStage; src != lastStage; src += delta) {
-    auto dstPipeline = src + delta;
+  for (PipelineStage srcPipeline = firstStage; srcPipeline != lastStage;
+       srcPipeline++) {
+    auto dstPipeline = srcPipeline + 1;
     auto dst         = pipelineStageToVGraph.at(dstPipeline);
     seq.push_back(std::make_unique<IpuCopyOp>(
         Onnx::CustomOperators::IpuCopy, dst, op->getSettings()));
@@ -101,8 +103,7 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
   Graph &graph = op->getGraph();
   graph.topoCons->transferToMultiple(op, newIpuCopyOps);
 
-  setPipelineStagesForSequence(
-      seq, originalIpuCopyOp->getPipelineStage(), delta);
+  setPipelineStagesForSequence(seq, originalIpuCopyOp->getPipelineStage());
 
   // Connect the input tensors to the firstIpuCopy of the sequence
   auto firstIpuCopy = seq.front().get();
@@ -120,17 +121,15 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
   }
 
   // Connect the sequence of IpuCopys with intermediate Tensors
-  int seqIndex = 0;
-  for (VGraphId src = firstStage; src != lastStage - delta; src += delta) {
+  for (int seqIndex = 0; seqIndex < seq.size() - 1; seqIndex++) {
     auto srcOp  = seq.at(seqIndex).get();
     auto destOp = seq.at(seqIndex + 1).get();
     for (int i = 0; i < originalIpuCopyOp->output->n(); i++) {
       auto tensor =
           createIntermediateTensorId(originalIpuCopyOp->output->id(i));
       srcOp->createAndConnectOutTensor(i, tensor);
-      destOp->connectInTensor(i, tensor, src + delta);
+      destOp->connectInTensor(i, tensor, srcOp->getDestIpu());
     }
-    ++seqIndex;
   }
 
   // Insert the newly minted Ops into the IR

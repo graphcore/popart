@@ -745,6 +745,11 @@ PYBIND11_MODULE(popart_core, m) {
            py::arg("args"),
            py::arg("print_gradient") = 1,
            py::arg("debugPrefix")    = std::string())
+      .def("scale",
+           &AiGraphcoreOpset1::scale,
+           py::arg("args"),
+           py::arg("scale"),
+           py::arg("debugPrefix") = std::string())
       .def("subsample",
            &AiGraphcoreOpset1::subsample,
            py::arg("args"),

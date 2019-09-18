@@ -6,24 +6,41 @@
 #include <popart/tensor.hpp>
 
 #include <popops/DynamicSlice.hpp>
+#include <popops/ElementWise.hpp>
 
 namespace popart {
 namespace popx {
 
 void StashOpx::grow(poplar::program::Sequence &prog) const {
-  auto vGraphId  = getOp<StashOp>().getVirtualGraphId();
-  auto outInfo   = getOp<StashOp>().outInfo(StashOp::getOutIndex());
+  auto &stashOp  = getOp<StashOp>();
+  auto outInfo   = stashOp.outInfo(StashOp::getOutIndex());
   auto outTensor = popops::createSliceableTensor(
       graph(), popType(outInfo), outInfo.shape_szt(), {0}, {1});
 
+  // Create the stash index tensor
+  auto one       = getConst(poplar::UNSIGNED_INT, {}, 1.0, debugPrefix("one"));
+  auto stashSize = getConst(poplar::UNSIGNED_INT,
+                            {},
+                            stashOp.getStashSize(),
+                            debugPrefix("stash_size"));
+
+  poplar::Tensor stashIndex = graph().addVariable(poplar::UNSIGNED_INT, {1});
+  graph().setTileMapping(stashIndex, 0);
+  graph().setInitialValue(stashIndex, poplar::ArrayRef<uint32_t>({0}));
+
+  // Update the stash
   popops::dynamicUpdate(graph(),
                         outTensor,
                         getInTensor(StashOp::getInIndex()).expand({0}),
-                        dv_p->pipelineInfo().stashIndex.at(vGraphId),
+                        stashIndex,
                         {0},
                         {1},
                         prog,
                         debugPrefix("stash"));
+
+  // Increment the stash index
+  popops::addInPlace(graph(), stashIndex, one, prog);
+  popops::remInPlace(graph(), stashIndex, stashSize, prog);
 
   setOutTensor(StashOp::getOutIndex(), outTensor);
 }

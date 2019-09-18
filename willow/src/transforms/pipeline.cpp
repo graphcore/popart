@@ -1,4 +1,7 @@
 #include <vector>
+
+#include <boost/range/algorithm.hpp>
+
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -12,6 +15,9 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/pipeline.hpp>
+
+using boost::range::max_element;
+using boost::range::min_element;
 
 // Which pipelining scheme should we use? There are some considerations to
 // make:
@@ -146,6 +152,50 @@ void checkOpsPipelineStage(Graph &graph) {
   }
 }
 
+Op *getStashReferenceOp(Tensor *t) {
+  // Get the consumer with the lowest pipeline stage
+  // This will be used to set the stash vgraph and pstage
+  logging::debug("Checking consumers for a stash ref op");
+  auto consumers  = t->consumers.getOps();
+  auto stashRefOp = consumers.at(0);
+  for (auto c : t->consumers.getOps()) {
+    if (c->getPipelineStage() < stashRefOp->getPipelineStage()) {
+      stashRefOp = c;
+    }
+  }
+
+  return stashRefOp;
+}
+
+Op *getRestoreReferenceOp(Tensor *t, Op *stashRefOp) {
+  logging::debug("Collecting restore ref candidates");
+  auto consumers = t->consumers.getOps();
+
+  std::vector<Op *> restoreCandidates;
+  for (auto c : consumers) {
+    if (getVirtualGraphIdOrSourceIpu(c) ==
+            getVirtualGraphIdOrSourceIpu(stashRefOp) &&
+        c->getPipelineStage() != stashRefOp->getPipelineStage()) {
+      restoreCandidates.push_back(c);
+    }
+  }
+
+  if (restoreCandidates.size() == 0) {
+    throw error("No candidates for restore op.");
+  }
+
+  // Check all candidates have the same pipeline stage
+  PipelineStage restorePipelineStage =
+      restoreCandidates.at(0)->getPipelineStage();
+  for (auto c : restoreCandidates) {
+    if (restorePipelineStage != c->getPipelineStage()) {
+      throw error("Conflicting candidates for restore op pipeline stage");
+    }
+  }
+
+  return restoreCandidates.at(0);
+}
+
 } // namespace
 
 bool Pipeline::apply(Graph &graph) const {
@@ -227,15 +277,12 @@ bool Pipeline::apply(Graph &graph) const {
   // 5. Ir stream tensors cannot be consumed by ops on multiple IPUs
   for (TensorId tid : graph.getTensors().getIds(TensorType::Stream)) {
     auto tensor = graph.getTensors().get(tid);
-    std::set<PipelineStage> pipelineStages;
+    std::set<VGraphId> virtualGraphs;
     for (auto c : tensor->consumers.getOps()) {
-      if (!c->isConvertibleTo<IpuCopyOp>() ||
-          !dynamic_cast<IpuCopyOp *>(c)->copiesOptimizerTensors()) {
-        pipelineStages.insert(c->getPipelineStage());
-      }
+      virtualGraphs.insert(getVirtualGraphIdOrSourceIpu(c));
     }
 
-    if (pipelineStages.size() > 1) {
+    if (virtualGraphs.size() > 1) {
       throw error("For pipelining, stream tensors can only be streamed "
                   "directly onto a single IPU");
     }
@@ -300,31 +347,6 @@ bool Pipeline::apply(Graph &graph) const {
   logging::transform::debug("First PathFromLoss::Yes in schedule is {}.",
                             (*firstFromLoss)->str());
 
-  // Ops which have no path to or from the loss can be scheduled pre- or post-
-  // loss. In the pipelining transformation, the position of an Op relative
-  // the loss is used to determine where and when to stash and restore Tensors.
-  // Therefore, the position of all Ops relative to the loss must be fixed and
-  // known. We here freeze positions relative to the loss.
-  //
-  // Note that for most situations, these constraints are redundant, as
-  // the constraints added later (Stash before loss, Restore after loss) imply
-  // them. But, there are edge cases where there is no Restore-Stash combo to
-  // implicitly constrain this order (for recomputation)
-  //
-  bool beforeFirstFromLoss{true};
-  for (auto op : currentSchedule) {
-    if (op == *firstFromLoss) {
-      beforeFirstFromLoss = false;
-    } else if (op->toLoss == PathToLoss::No &&
-               op->fromLoss == PathFromLoss::No) {
-      if (beforeFirstFromLoss) {
-        graph.topoCons->insert(op, *firstFromLoss);
-      } else {
-        graph.topoCons->insert(*firstFromLoss, op);
-      }
-    }
-  }
-
   // 1. Find all tensors in the fwd pass that are inputs to ops in the bwd pass
   std::vector<TensorId> toStashCandidateTensors;
   for (auto &tid : graph.getTensors().getAllTensorIds()) {
@@ -334,7 +356,6 @@ bool Pipeline::apply(Graph &graph) const {
     // - has no consumers
     // - is a variable tensor
     // - is an optimizer tensor
-    // - is on the final IPU
 
     if (tensor->consumers.getOps().empty()) {
       continue;
@@ -346,31 +367,16 @@ bool Pipeline::apply(Graph &graph) const {
       continue;
     }
 
-    auto pipelineStageCheckOp = tensor->consumers.getOps()[0];
-    int pipelineStage =
-        static_cast<int>(pipelineStageCheckOp->getPipelineStage());
-    if (pipelineStage == maxVGraphId - 1) {
+    // Get all the stages the tensor is produced/consumed in.
+    std::set<PipelineStage> tensorStages = tensor->getPipelineStages();
+
+    // There is no need to stash a tensor that only appears in 1 stage.
+    if (tensorStages.size() == 1) {
       continue;
     }
 
-    bool isConsumedByOpScheduledPreLoss  = false;
-    bool isConsumedByOpScheduledPostLoss = false;
-    for (Op *consumer : tensor->consumers.getOps()) {
-      if (consumer->scheduledPreLoss == ScheduledPreLoss::Yes) {
-        isConsumedByOpScheduledPreLoss = true;
-      } else if (consumer->scheduledPreLoss == ScheduledPreLoss::No) {
-        isConsumedByOpScheduledPostLoss = true;
-      }
-    }
-
-    bool isProducedPreLoss =
-        tensor->hasProducer() &&
-        tensor->getProducer()->scheduledPreLoss == ScheduledPreLoss::Yes;
-
-    if ((isConsumedByOpScheduledPreLoss || isProducedPreLoss) &&
-        isConsumedByOpScheduledPostLoss) {
-      toStashCandidateTensors.push_back(tid);
-    }
+    logging::debug("Adding {} to stash candidates", tid);
+    toStashCandidateTensors.push_back(tid);
   }
 
   std::vector<TensorId> toStashTensors;
@@ -475,18 +481,22 @@ bool Pipeline::apply(Graph &graph) const {
   Op::Settings settings(graph, "");
 
   for (auto &tid : toStashTensors) {
-    auto tensor               = graph.getTensors().get(tid);
-    auto tidConsumers         = tensor->consumers.getOps();
-    auto pipelineStageCheckOp = tidConsumers[0];
+    auto tensor       = graph.getTensors().get(tid);
+    auto tidConsumers = tensor->consumers.getOps();
+
+    auto stashRefOp   = getStashReferenceOp(tensor);
+    auto restoreRefOp = getRestoreReferenceOp(tensor, stashRefOp);
+
+    auto stashSize =
+        restoreRefOp->getPipelineStage() - stashRefOp->getPipelineStage() + 1;
 
     // Stash
-    auto stashOp_up =
-        std::make_unique<StashOp>(Onnx::CustomOperators::Stash, settings);
+    auto stashOp_up = std::make_unique<StashOp>(
+        Onnx::CustomOperators::Stash, stashSize, settings);
     auto stashOp = stashOp_up.get();
     graph.moveIntoGraph(std::move(stashOp_up));
-    stashOp->setVirtualGraphId(
-        getVirtualGraphIdOrSourceIpu(pipelineStageCheckOp));
-    stashOp->setPipelineStage(pipelineStageCheckOp->getPipelineStage());
+    stashOp->setVirtualGraphId(getVirtualGraphIdOrSourceIpu(stashRefOp));
+    stashOp->setPipelineStage(stashRefOp->getPipelineStage());
     stashOp->connectInTensor(StashOp::getInIndex(), tid);
     auto stashId = stashOp->getStashedTensorId();
     stashOp->createAndConnectOutTensor(StashOp::getOutIndex(), stashId);
@@ -524,14 +534,13 @@ bool Pipeline::apply(Graph &graph) const {
 
     RestoreOp *restoreOp;
     if (isInplace) {
-      restoreOp = addNewRestoreInplaceOp(graph);
+      restoreOp = addNewRestoreInplaceOp(graph, stashSize);
     } else {
-      restoreOp = addNewRestoreOp(graph);
+      restoreOp = addNewRestoreOp(graph, stashSize);
     }
 
-    restoreOp->setVirtualGraphId(
-        getVirtualGraphIdOrSourceIpu(pipelineStageCheckOp));
-    restoreOp->setPipelineStage(pipelineStageCheckOp->getPipelineStage());
+    restoreOp->setVirtualGraphId(getVirtualGraphIdOrSourceIpu(restoreRefOp));
+    restoreOp->setPipelineStage(restoreRefOp->getPipelineStage());
     restoreOp->connectInTensor(RestoreOp::getActToRestoreInIndex(), tid);
     restoreOp->connectInTensor(RestoreOp::getStashInIndex(), stashId);
     auto restoreId = restoreOp->getRestoredTensorId();
@@ -550,19 +559,8 @@ bool Pipeline::apply(Graph &graph) const {
 
     restoreOp->setup();
 
-    // apply topological constraints:
-    // (0)  : Stash before all other consumers
-    // (1)  : Stash -> "firstFromLoss" -> Restore
-    // The only topological constraint on Restore is that it is
-    // SchedulePreLoss::No, exact scheduling controlled by the backend.
-
-    // (1)
-    graph.topoCons->insert(stashOp, *firstFromLoss);
-    graph.topoCons->insert(*firstFromLoss, restoreOp);
-
+    // StashOp should be before all other consumers
     for (auto tidConsumer : tidConsumers) {
-
-      // (0)
       if (tidConsumer != stashOp) {
         graph.topoCons->insert(stashOp, tidConsumer);
       }
@@ -571,20 +569,21 @@ bool Pipeline::apply(Graph &graph) const {
   return true;
 }
 
-RestoreOp *Pipeline::addNewRestoreOp(Graph &graph) const {
+RestoreOp *Pipeline::addNewRestoreOp(Graph &graph, int64_t stashSize) const {
   Op::Settings settings(graph, "");
-  auto restoreOp_up =
-      std::make_unique<RestoreOp>(Onnx::CustomOperators::Restore, settings);
+  auto restoreOp_up = std::make_unique<RestoreOp>(
+      Onnx::CustomOperators::Restore, stashSize, settings);
   auto restoreOp = restoreOp_up.get();
   graph.moveIntoGraph(std::move(restoreOp_up));
 
   return restoreOp;
 }
 
-RestoreInplaceOp *Pipeline::addNewRestoreInplaceOp(Graph &graph) const {
+RestoreInplaceOp *Pipeline::addNewRestoreInplaceOp(Graph &graph,
+                                                   int64_t stashSize) const {
   Op::Settings settings(graph, "");
   auto restoreOp_up = std::make_unique<RestoreInplaceOp>(
-      Onnx::CustomOperators::RestoreInplace, settings);
+      Onnx::CustomOperators::RestoreInplace, stashSize, settings);
   auto restoreOp = restoreOp_up.get();
   graph.moveIntoGraph(std::move(restoreOp_up));
 

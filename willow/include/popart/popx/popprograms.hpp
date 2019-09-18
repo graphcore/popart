@@ -86,13 +86,8 @@ public:
   enum class PipelineFragmentId {
     ToDeviceStream = 0,
     Forward,
-    Restore,
-    Backward,
-    FwdToHostStream,
-    BwdToHostStream,
-    IncrStashIndex,
-    IpuCopyFwd,
-    IpuCopyBwd,
+    ToHostStream,
+    IpuCopy,
     N // The number of pipeline cycle components
   };
   std::string getStrFromPipelineFragmentId(PipelineFragmentId);
@@ -109,29 +104,12 @@ public:
                                  const std::string &desc);
   poplar::program::Sequence &pipelineForwardFragment(PipelineStage,
                                                      const std::string &desc);
-  poplar::program::Sequence &pipelineBackwardFragment(PipelineStage,
-                                                      const std::string &desc);
-  poplar::program::Sequence &pipelineRestoreFragment(PipelineStage,
-                                                     const std::string &desc);
 
   // To stream anchors that are computed in the pipelineForwardFragment
   poplar::program::Sequence &
-  pipelineFwdToHostStreamFragment(PipelineStage, const std::string &desc);
-  // To stream anchors that are computed in the pipelineBackwardFragment
-  poplar::program::Sequence &
-  pipelineBwdToHostStreamFragment(PipelineStage, const std::string &desc);
-  poplar::program::Sequence &
-  pipelineIpuCopyFwdFragment(PipelineStage, const std::string &desc);
-  poplar::program::Sequence &
-  pipelineIpuCopyBwdFragment(PipelineStage, const std::string &desc);
-  poplar::program::Sequence &
-  pipelineIncrStashIndexFragment(PipelineStage, const std::string &desc);
-  // If ScheduledPreLoss::Yes, then return pipelineFwdToHostStreamFragment(),
-  // else return pipelineBwdToHostStreamFragment()
-  poplar::program::Sequence &
-  pipelineFwdOrBwdToHostStreamFragment(ScheduledPreLoss,
-                                       PipelineStage,
-                                       const std::string &desc);
+  pipelineToHostStreamFragment(PipelineStage, const std::string &desc);
+  poplar::program::Sequence &pipelineIpuCopyFragment(PipelineStage,
+                                                     const std::string &desc);
 
   void addPipelineCycle(PipelineCycle pCycle,
                         poplar::program::Sequence &sq,
