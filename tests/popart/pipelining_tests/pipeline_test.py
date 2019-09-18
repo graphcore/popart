@@ -65,8 +65,6 @@ def test_enabled_recomputation():
         }))
 
 
-
-
 def test_stream_tensors_to_multiple_ipus():
     """
     Streaming an input to Ops on multiple IPUs throws an error
@@ -155,18 +153,20 @@ def test_inference_min_batches():
     """
     minBatches = 3  # numIpus
 
-    get_model_anchors(doSharding=True,
-                      doPipelining=True,
-                      batchesPerStep=minBatches,
-                      doTraining=False,
-                      doDevicex=False)
+    get_model_anchors(
+        doSharding=True,
+        doPipelining=True,
+        batchesPerStep=minBatches,
+        doTraining=False,
+        doDevicex=False)
 
     with pytest.raises(popart.popart_exception) as e_info:
-        get_model_anchors(doSharding=True,
-                          doPipelining=True,
-                          batchesPerStep=minBatches - 1,
-                          doTraining=False,
-                          doDevicex=False)
+        get_model_anchors(
+            doSharding=True,
+            doPipelining=True,
+            batchesPerStep=minBatches - 1,
+            doTraining=False,
+            doDevicex=False)
     assert e_info.value.args[0].startswith(
         "For pipelining, depth (batchesPerStep) must")
 
@@ -178,18 +178,20 @@ def test_training_min_batches():
     """
     minBatches = 5  # 2 * (numIpus-1) + 1
 
-    get_model_anchors(doSharding=True,
-                      doPipelining=True,
-                      batchesPerStep=minBatches,
-                      doTraining=True,
-                      doDevicex=False)
+    get_model_anchors(
+        doSharding=True,
+        doPipelining=True,
+        batchesPerStep=minBatches,
+        doTraining=True,
+        doDevicex=False)
 
     with pytest.raises(popart.popart_exception) as e_info:
-        get_model_anchors(doSharding=True,
-                          doPipelining=True,
-                          batchesPerStep=minBatches - 1,
-                          doTraining=True,
-                          doDevicex=False)
+        get_model_anchors(
+            doSharding=True,
+            doPipelining=True,
+            batchesPerStep=minBatches - 1,
+            doTraining=True,
+            doDevicex=False)
     assert e_info.value.args[0].startswith(
         "For pipelining, depth (batchesPerStep) must")
 
@@ -202,18 +204,21 @@ def test_output_matches_train():
     as non-pipelined models
     """
     bps = 8
-    singleIpu_anchors = get_model_anchors(doSharding=False,
-                                          doPipelining=False,
-                                          batchesPerStep=bps,
-                                          doTraining=True)
-    multiIpu_anchors = get_model_anchors(doSharding=True,
-                                         doPipelining=False,
-                                         batchesPerStep=bps,
-                                         doTraining=True)
-    pipelined_anchors = get_model_anchors(doSharding=True,
-                                          doPipelining=True,
-                                          batchesPerStep=bps,
-                                          doTraining=True)
+    singleIpu_anchors = get_model_anchors(
+        doSharding=False,
+        doPipelining=False,
+        batchesPerStep=bps,
+        doTraining=True)
+    multiIpu_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=False,
+        batchesPerStep=bps,
+        doTraining=True)
+    pipelined_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=True,
+        batchesPerStep=bps,
+        doTraining=True)
     # TODO, depends on T9630, add a case with grad accumulation. All tensor
     # outputs should be exactly the same when doing pipelined vs non-pipelined
     # when grad accumulation is turned on
@@ -243,12 +248,13 @@ def test_acts_match_restored_acts():
     that is fed to the StepIO
     """
     bps = 8
-    pipelined_anchors = get_model_anchors(doSharding=True,
-                                          doPipelining=True,
-                                          batchesPerStep=bps,
-                                          doTraining=True,
-                                          anchorRestoredTensors=True,
-                                          returnRawInput=True)
+    pipelined_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=True,
+        batchesPerStep=bps,
+        doTraining=True,
+        anchorRestoredTensors=True,
+        returnRawInput=True)
 
     for (tId, t) in pipelined_anchors.items():
         for i in range(np.shape(t)[0]):
@@ -271,18 +277,21 @@ def test_output_matches_infer():
     inference
     """
     bps = 8
-    singleIpu_anchors = get_model_anchors(doSharding=False,
-                                          doPipelining=False,
-                                          batchesPerStep=bps,
-                                          doTraining=False)
-    multiIpu_anchors = get_model_anchors(doSharding=True,
-                                         doPipelining=False,
-                                         batchesPerStep=bps,
-                                         doTraining=False)
-    pipelined_anchors = get_model_anchors(doSharding=True,
-                                          doPipelining=True,
-                                          batchesPerStep=bps,
-                                          doTraining=False)
+    singleIpu_anchors = get_model_anchors(
+        doSharding=False,
+        doPipelining=False,
+        batchesPerStep=bps,
+        doTraining=False)
+    multiIpu_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=False,
+        batchesPerStep=bps,
+        doTraining=False)
+    pipelined_anchors = get_model_anchors(
+        doSharding=True,
+        doPipelining=True,
+        batchesPerStep=bps,
+        doTraining=False)
 
     for (tId1, t1), (tId2, t2) in zip(singleIpu_anchors.items(),
                                       multiIpu_anchors.items()):
@@ -381,12 +390,13 @@ def test_pipelined_dropout():
             userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
         userOptions.enablePipelining = do_pipelining
 
-        session = popart.TrainingSession(fnModel=builder.getModelProto(),
-                                         dataFeed=dataFlow,
-                                         optimizer=popart.ConstSGD(0.1),
-                                         losses=[loss],
-                                         userOptions=userOptions,
-                                         deviceInfo=device)
+        session = popart.TrainingSession(
+            fnModel=builder.getModelProto(),
+            dataFeed=dataFlow,
+            optimizer=popart.ConstSGD(0.1),
+            losses=[loss],
+            userOptions=userOptions,
+            deviceInfo=device)
 
         session.prepareDevice()
         session.weightsFromHost()
@@ -514,11 +524,11 @@ def get_model_anchors(doSharding,
     if batchesPerStep > 1:
         shape_d0.insert(0, batchesPerStep)
         shape_l0.insert(0, batchesPerStep)
-    data = np.random.uniform(low=-10.0, high=10.0,
-                             size=shape_d0).astype(np.float32)
+    data = np.random.uniform(
+        low=-10.0, high=10.0, size=shape_d0).astype(np.float32)
     classes = np.prod(shape_d0) / (batchSize * batchesPerStep)
-    label = np.random.randint(low=0, high=classes,
-                              size=shape_l0).astype(np.int32)
+    label = np.random.randint(
+        low=0, high=classes, size=shape_l0).astype(np.int32)
 
     inputs = {d0: data, l0: label}
     stepio = popart.PyStepIO(inputs, anchors)
@@ -755,52 +765,57 @@ def test_multiple_stages_per_virtual_graph_inference():
     assert np.allclose(sessionAnchors, refAnchors)
 
 
+# run the same model with and without revisiting ipus and compare the resultant weights.
 def test_multiple_stages_per_virtual_graph_training():
-    bps = 5
+    accumulation_factor = 5
+    micro_batches_per_step = 5
+    bps = micro_batches_per_step // accumulation_factor
     dummy_data = np.random.rand(2, 2).astype(np.float32)
-    data = np.random.rand(bps, 2, 2).astype(np.float32)
-    weights = np.random.rand(2, 2).astype(np.float32)
+    data = np.random.rand(accumulation_factor, 2, 2).astype(np.float32)
+    weight_data = np.random.rand(2, 2).astype(np.float32)
 
     def run_test(set_pipeline_stages):
+        weights = {}
+
         def init_builder(builder):
             d0 = builder.addInputTensor(dummy_data, 'data0')
-            w0 = builder.addInitializedInputTensor(weights)
+            w0 = builder.addInitializedInputTensor(weight_data)
+            weights[w0] = np.empty(
+                shape=weight_data.shape, dtype=weight_data.dtype)
 
-            mm0 = builder.aiOnnx.matmul([d0, w0], "mm0")
-            s0 = builder.aiOnnx.sin([mm0])
-            c0 = builder.aiOnnx.cos([s0], "c0")
+            t0 = builder.aiOnnx.matmul([d0, w0])
+            t1 = builder.aiOnnx.sin([t0])
+            t2 = builder.aiOnnx.matmul([t1, w0])
 
-            builder.addOutputTensor(c0)
+            builder.addOutputTensor(t2)
 
             if set_pipeline_stages:
-                builder.pipelineStage(mm0, 0)
-                builder.pipelineStage(s0, 1)
-                builder.pipelineStage(c0, 2)
+                builder.pipelineStage(t0, 0)
+                builder.pipelineStage(t1, 1)
+                builder.pipelineStage(t2, 2)
 
-                builder.virtualGraph(mm0, 1)
-                builder.virtualGraph(s0, 0)
-                builder.virtualGraph(c0, 2)
-            else:
-                builder.virtualGraph(mm0, 0)
-                builder.virtualGraph(s0, 1)
-                builder.virtualGraph(c0, 2)
+                builder.virtualGraph(t0, 0)
+                builder.virtualGraph(t1, 1)
+                builder.virtualGraph(t2, 0)
 
-            loss = builder.addL1Loss(c0, 'l1LossVal', 0.1,
+            loss = builder.addL1Loss(t2, 'l1LossVal', 0.1,
                                      popart.ReductionType.Sum)
-            loss.virtualGraph(2)
             if set_pipeline_stages:
                 loss.pipelineStage(2)
+                loss.virtualGraph(0)
 
-            return [c0]
+            return [t2]
 
         session = TestSession()
         session.mode = 'train'
-        session.options.enableVirtualGraphs = True
-        session.options.enablePipelining = True
-        session.options.enableOutlining = False
+        session.options.enableVirtualGraphs = set_pipeline_stages
+        session.options.enablePipelining = set_pipeline_stages
         session.device = 'ipu_model'
-        session.numIPUs = 3
+        if set_pipeline_stages:
+            session.numIPUs = 2
         session.batchesPerStep = bps
+        session.options.enableGradientAccumulation = True
+        session.options.accumulationFactor = accumulation_factor
 
         # test a pipeline stage appearing on multiple virtual graphs
         session.prepare(init_builder)
@@ -808,16 +823,32 @@ def test_multiple_stages_per_virtual_graph_training():
         sessionAnchors = session.run({'data0': data})
         assert len(sessionAnchors) == 1
         sessionAnchor = [v for k, v in sessionAnchors.items()][0]
-        return np.copy(sessionAnchor)
 
-    r0 = run_test(False)
-    r1 = run_test(True)
+        session._session.weightsToHost()
+        weightsIo = popart.PyWeightsIO(weights)
+        session._session.readWeights(weightsIo)
+        assert len(weights) == 1
+        weights = [v for k, v in weights.items()]
+        return weights[0], sessionAnchor
 
-    print(r0)
+    w0, r0 = run_test(False)
+    w1, r1 = run_test(True)
+
+    print("Single Ipu with gradient accumulation:")
+    print("  Result:")
+    print(f"    {r0}")
+    print("  Weights:")
+    print(f"    {w0}")
     print()
-    print(r1)
+    print("Pipelining with multiple stages per ipu:")
+    print("  Result:")
+    print(f"    {r1}")
+    print("  Weights:")
+    print(f"    {w1}")
 
     assert np.allclose(r0, r1)
+    assert np.allclose(w0, w1)
+
 
 # run the same model with and without recomputation and check the updated weights
 def test_recomputation():
@@ -825,7 +856,8 @@ def test_recomputation():
     microBatchesPerStep = 3
     bps = microBatchesPerStep // accumulationFactor
     dummy_data = np.zeros((2, 2)).astype(np.float32)
-    data = np.array([i for i in range(accumulationFactor * 2 * 2)]).astype(np.float32) * 0.1
+    data = np.array([i for i in range(accumulationFactor * 2 * 2)]).astype(
+        np.float32) * 0.1
     data = np.reshape(data, (accumulationFactor, 2, 2))
     weight_data = np.array([i for i in range(2 * 2)]).astype(np.float32) * 0.25
     weight_data = np.reshape(weight_data, (2, 2))

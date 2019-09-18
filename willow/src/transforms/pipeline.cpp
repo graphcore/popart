@@ -153,18 +153,57 @@ void checkOpsPipelineStage(Graph &graph) {
 }
 
 Op *getStashReferenceOp(Tensor *t) {
-  // Get the consumer with the lowest pipeline stage
-  // This will be used to set the stash vgraph and pstage
-  logging::debug("Checking consumers for a stash ref op");
-  auto consumers  = t->consumers.getOps();
-  auto stashRefOp = consumers.at(0);
-  for (auto c : t->consumers.getOps()) {
-    if (c->getPipelineStage() < stashRefOp->getPipelineStage()) {
-      stashRefOp = c;
+  // Choose an op for the stash op to copy the vgraph and pstage from.
+
+  // If the tensor has no producer, or the producer is a copy op, then the
+  // tensor has been streamed/copied onto this virtual graph just in time to be
+  // consumed. There must also be a later consumer on the same virtual graph,
+  // otherwise this tensor would not have been a candidate for stashing. Use the
+  // consumer with the lowest pipeline stage as the stash ref op.
+  if (!t->hasProducer() || t->getProducer()->isConvertibleTo<IpuCopyOp>()) {
+    auto consumers  = t->consumers.getOps();
+    auto stashRefOp = consumers.at(0);
+    for (auto c : t->consumers.getOps()) {
+      if (c->getPipelineStage() < stashRefOp->getPipelineStage()) {
+        stashRefOp = c;
+      }
     }
+
+    return stashRefOp;
+  }
+  // The tensor has been produced by an op on this virtual graph, and is to be
+  // consumed by an op on this virtual graph in a later pipeline stage.
+  else {
+    return t->getProducer();
+  }
+}
+
+std::string zeroCandidatesError(Tensor *t, Op *stashRefOp) {
+  std::stringstream ss;
+  ss << "ILE: No candidates for restore op.";
+
+  ss << fmt::format("\nTensor: {}", t->id);
+  if (t->hasProducer()) {
+    auto prod = t->getProducer();
+    ss << fmt::format("\n  Producer: {}, ps: {}, vg: {}",
+                      prod->debugName(),
+                      prod->getPipelineStage(),
+                      getVirtualGraphIdOrSourceIpu(prod));
+  }
+  ss << "\n  Consumers:";
+  for (auto c : t->consumers.getOps()) {
+    ss << fmt::format("\n    {}, ps: {}, vg: {}",
+                      c->debugName(),
+                      c->getPipelineStage(),
+                      getVirtualGraphIdOrSourceIpu(c));
   }
 
-  return stashRefOp;
+  ss << fmt::format("\nStash Ref Op: {}, ps: {}, vg: {}",
+                    stashRefOp->debugName(),
+                    stashRefOp->getPipelineStage(),
+                    getVirtualGraphIdOrSourceIpu(stashRefOp));
+
+  return ss.str();
 }
 
 Op *getRestoreReferenceOp(Tensor *t, Op *stashRefOp) {
@@ -181,7 +220,7 @@ Op *getRestoreReferenceOp(Tensor *t, Op *stashRefOp) {
   }
 
   if (restoreCandidates.size() == 0) {
-    throw error("No candidates for restore op.");
+    throw error(zeroCandidatesError(t, stashRefOp));
   }
 
   // Check all candidates have the same pipeline stage
