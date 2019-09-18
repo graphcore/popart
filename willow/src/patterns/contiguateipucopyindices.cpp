@@ -22,9 +22,8 @@ bool ContiguateIpuCopyIndicesPattern::matches(Op *op) const {
       return false;
     }
 
-    auto in0        = copyOp->inTensor(0);
     auto out0       = copyOp->outTensor(0);
-    auto firstStage = in0->getProducer()->getPipelineStage();
+    auto firstStage = op->getPipelineStage();
     auto lastStage  = *out0->consumers.findLowestPipelineStage();
     auto delta      = lastStage - firstStage;
 

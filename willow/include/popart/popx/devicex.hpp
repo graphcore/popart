@@ -59,7 +59,7 @@ public:
 
   PipelinePhase flushPhase;
 
-  bool doStage(PipelineCycle pCycle, VGraphId vGraphId) const;
+  bool doStage(PipelineCycle, PipelineStage) const;
 };
 
 poplar::Type popType(const TensorInfo &);

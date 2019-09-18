@@ -95,10 +95,16 @@ void setCopyOpsPipelineStage(IpuCopyOp *op) {
     auto ps       = producer->getPipelineStage();
     op->setPipelineStage(ps);
   } else {
-    throw error("Can not copy variable tensor {} between virtual graphs when "
-                "pipelining. All pipeline stages using this tensor should be "
-                "on the same graph.",
-                in0->str());
+    if (in0->tensorType() == TensorType::Variable) {
+      throw error("Can not copy variable tensor {} between virtual graphs when "
+                  "pipelining. All pipeline stages using this tensor should be "
+                  "on the same graph.",
+                  in0->str());
+    } else {
+      // Const or Stream tensors
+      auto ps = in0->consumers.findLowestPipelineStage();
+      op->setPipelineStage(ps);
+    }
   }
 }
 

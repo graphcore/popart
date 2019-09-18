@@ -340,9 +340,9 @@ PipelineInfo::PipelineInfo(int _batchesPerStep,
   flushPhase.end   = flushPhase.start + fillFlushPhaseCycles - 1;
 }
 
-bool PipelineInfo::doStage(PipelineCycle pCycle, VGraphId vGraphId) const {
-  bool doStageLower = (pCycle >= vGraphId);
-  bool doStageUpper = (pCycle < vGraphId + flushPhase.start);
+bool PipelineInfo::doStage(PipelineCycle pCycle, PipelineStage pStage) const {
+  bool doStageLower = (pCycle >= pStage);
+  bool doStageUpper = (pCycle < pStage + flushPhase.start);
 
   return (doStageLower && doStageUpper);
 }

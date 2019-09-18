@@ -97,10 +97,11 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   // 2.
   if (pipelineSeqs.find(PipelineFragmentId::ToDeviceStream) !=
       pipelineSeqs.end()) {
-    for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
-      if (pInfo.doStage(pCycle, vgid_seq.first)) {
-        ss << "\n  ps" << vgid_seq.first << " : ToDeviceStream";
-        sq.add(vgid_seq.second);
+    for (auto &stage_seq :
+         pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
+      if (pInfo.doStage(pCycle, stage_seq.first)) {
+        ss << "\n  ps" << stage_seq.first << " : ToDeviceStream";
+        sq.add(stage_seq.second);
       }
     }
   } else {
@@ -112,34 +113,34 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   }
 
   // 3.
-  for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::Forward)) {
-    if (pInfo.doStage(pCycle, vgid_seq.first)) {
-      ss << "\n  ps" << vgid_seq.first << " : Forward";
-      sq.add(vgid_seq.second);
+  for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Forward)) {
+    if (pInfo.doStage(pCycle, stage_seq.first)) {
+      ss << "\n  ps" << stage_seq.first << " : Forward";
+      sq.add(stage_seq.second);
     }
   }
 
   // 7.
   if (pipelineSeqs.find(PipelineFragmentId::ToHostStream) !=
       pipelineSeqs.end()) {
-    for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::ToHostStream)) {
-      if (pInfo.doStage(pCycle, vgid_seq.first)) {
-        ss << "\n  ps" << vgid_seq.first << " : ToHostStream";
-        sq.add(vgid_seq.second);
+    for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::ToHostStream)) {
+      if (pInfo.doStage(pCycle, stage_seq.first)) {
+        ss << "\n  ps" << stage_seq.first << " : ToHostStream";
+        sq.add(stage_seq.second);
       }
     }
   }
 
   // 8.1 Insert the FWD inter IPU-copies.
   // We add these in reverse order, i->i+1 then i-1->i then i-2->i-1 etc.
-  // Note that vgid_seq.first == 1 corresponds to the copy from IPU1 to IPU2
+  // Note that stage_seq.first == 1 corresponds to the copy from IPU1 to IPU2
   auto foundFwd = pipelineSeqs.find(PipelineFragmentId::IpuCopy);
   if (foundFwd != pipelineSeqs.end()) {
     const auto &M = foundFwd->second;
-    for (auto vgid_seq = M.rbegin(); vgid_seq != M.rend(); ++vgid_seq) {
-      if (pInfo.doStage(pCycle, vgid_seq->first)) {
-        ss << "\n  ps" << vgid_seq->first << " : IpuFwdCopy";
-        sq.add(vgid_seq->second);
+    for (auto stage_seq = M.rbegin(); stage_seq != M.rend(); ++stage_seq) {
+      if (pInfo.doStage(pCycle, stage_seq->first)) {
+        ss << "\n  ps" << stage_seq->first << " : IpuFwdCopy";
+        sq.add(stage_seq->second);
       }
     }
   }
@@ -198,9 +199,9 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
     PipelineFragmentId fragId = fragid_ipudescs.first;
     std::string fragStr       = getStrFromPipelineFragmentId(fragId);
     ss << "\n" + fragStr + ":";
-    for (auto vgid_desc : pipelineDescs.at(fragId)) {
-      auto vgStr = std::to_string(vgid_desc.first);
-      auto desc  = vgid_desc.second;
+    for (auto stage_desc : pipelineDescs.at(fragId)) {
+      auto vgStr = std::to_string(stage_desc.first);
+      auto desc  = stage_desc.second;
       ss << "\n  ps" + vgStr + ":" + desc;
     }
   }
