@@ -60,6 +60,20 @@ bool Tensor::hasVirtualGraphId() const {
   return getVirtualGraphIdUnsafe() != -1;
 }
 
+std::set<PipelineStage> Tensor::getPipelineStages() const {
+  auto result = consumers.getPipelineStages();
+  if (hasProducer() && getProducer()->hasPipelineStage()) {
+    auto ps = getProducer()->getPipelineStage();
+    // An IpuCopyOp in pipeline stage N, produces a tensor ready to be consumed
+    // in pipeline stage N+1.
+    if (getProducer()->isConvertibleTo<IpuCopyOp>()) {
+      ps++;
+    }
+    result.insert(ps);
+  }
+  return result;
+}
+
 std::ostream &operator<<(std::ostream &os, const TensorType &tt) {
   switch (tt) {
   case TensorType::ActGrad:
@@ -98,6 +112,37 @@ std::unique_ptr<Tensor> Tensor::clone() const {
 
 Consumers::Consumers(Tensor *tensorConsumed_)
     : tensorConsumed(tensorConsumed_) {}
+
+std::set<PipelineStage> Consumers::getPipelineStages() const {
+  std::set<PipelineStage> stages;
+  for (auto op : getOps()) {
+    if (op->hasPipelineStage()) {
+      stages.insert(op->getPipelineStage());
+    }
+  }
+
+  return stages;
+}
+
+boost::optional<PipelineStage> Consumers::findLowestPipelineStage() const {
+  auto stages = getPipelineStages();
+
+  if (stages.size() == 0) {
+    return boost::none;
+  } else {
+    return *std::min_element(stages.begin(), stages.end());
+  }
+}
+
+boost::optional<PipelineStage> Consumers::findHighestPipelineStage() const {
+  auto stages = getPipelineStages();
+
+  if (stages.size() == 0) {
+    return boost::none;
+  } else {
+    return *std::max_element(stages.begin(), stages.end());
+  }
+}
 
 int Consumers::n(Op *op) const {
   auto found = consumers_m.find(op);
@@ -218,6 +263,9 @@ Op *Tensor::getProducerUnsafe() const { return producer; }
 bool Tensor::hasProducer() const { return producer != nullptr; }
 
 bool Tensor::isOptimizerTensor() const {
+
+  // TODO T11262 is to make an optimizer Tensor class, so that we don't need to
+  // do these string comparisons
   for (auto optPref : reservedOptimizerPrefixes()) {
     std::size_t found = id.find(optPref);
     if (found != std::string::npos) {

@@ -8,62 +8,104 @@
 
 namespace popart {
 
-Optimizer::~Optimizer()                 = default;
-Optimizer::Optimizer()                  = default;
-Optimizer::Optimizer(const Optimizer &) = default;
+namespace {
+float getWeightDecayScaleFactor(float wd, float lr) { return 1.0f - lr * wd; }
+} // namespace
 
-SGDBuilder &SGDBuilder::learningRate(float value) {
-  learningRate_ = value;
-  return *this;
+bool SGD::weightDecayScaleFactorIsConst(const Tensor &weight) const {
+  auto wd = wds.get(weight.id);
+  auto lr = lrs.get(weight.id);
+  return wd.isConst() && lr.isConst();
 }
 
-SGDBuilder &SGDBuilder::weightDecay(float value) {
-  weightDecay_ = value;
-  return *this;
+float SGD::weightDecayScaleFactorVal(const Tensor &weight) const {
+  auto wd = wds.get(weight.id).val();
+  auto lr = lrs.get(weight.id).val();
+  return getWeightDecayScaleFactor(wd, lr);
 }
 
-SGDBuilder &SGDBuilder::lossScaling(float value) {
-  lossScaling_ = value;
-  return *this;
+OptimizerValue SGD::weightDecayScaleFactor(const Tensor &weight) const {
+  return {weightDecayScaleFactorVal(weight),
+          weightDecayScaleFactorIsConst(weight)};
 }
 
-SGDBuilder &SGDBuilder::variableLearningRate(bool value) {
-  variableLearningRate_ = value;
-  return *this;
+namespace {
+float getScaledLearningRate(float lr, float ls) { return lr / ls; }
+} // namespace
+
+bool SGD::scaledLearningRateIsConst(const Tensor &weight) const {
+  auto lr = lrs.get(weight.id);
+  return lr.isConst() && lossScaling().isConst();
 }
 
-SGDBuilder &SGDBuilder::variableWeightDecay(bool value) {
-  variableWeightDecay_ = value;
-  return *this;
+float SGD::scaledLearningRateVal(const Tensor &weight) const {
+  auto lr = lrs.get(weight.id).val();
+  return getScaledLearningRate(lr, lossScaling().val());
 }
 
-SGDBuilder &SGDBuilder::variableLossScaling(bool value) {
-  variableLossScaling_ = value;
-  return *this;
+OptimizerValue SGD::scaledLearningRate(const Tensor &weight) const {
+  return {scaledLearningRateVal(weight), scaledLearningRateIsConst(weight)};
 }
 
-std::unique_ptr<Optimizer> SGDBuilder::build() const {
-  if (variableLearningRate_ && variableWeightDecay_ && variableLossScaling_) {
-    return std::make_unique<SGD>(learningRate_, weightDecay_, lossScaling_);
-  } else if (variableLearningRate_ || variableWeightDecay_ ||
-             variableLossScaling_) {
-    throw error(
-        "Either optimizer learning rate, weight decay, and loss scaling "
-        "must all be variable, or none of them");
-  } else {
-    return std::make_unique<ConstSGD>(
-        learningRate_, weightDecay_, lossScaling_);
+void OptimizerValueMap::insertSpecific(const TensorId &id, OptimizerValue ov) {
+  auto found = specifics.find(id);
+  if (found != specifics.end()) {
+    std::ostringstream oss;
+    oss << "Attempt to insert specific value for optimization Tensor " << id
+        << "failed as there is already a specific value for " << id
+        << " present. Bailing, in case this is an error.";
+    throw error(oss.str());
   }
+  specifics.insert({id, ov});
 }
 
-TensorId getScaledLearningRateId(DataType dtype) {
-  return reservedLearnRatePrefix() + getDataTypeInfoMap().at(dtype).name();
+void SGD::insertSpecific(const TensorId &id,
+                         OptimizerValue wd,
+                         OptimizerValue lr) {
+  wds.insertSpecific(id, wd);
+  lrs.insertSpecific(id, lr);
 }
-TensorId getWeightDecayId(DataType dtype) {
-  return reservedWeightDecayPrefix() + getDataTypeInfoMap().at(dtype).name();
+
+OptimizerValue OptimizerValueMap::get(const TensorId &id) const {
+  auto found = specifics.find(id);
+  if (found != specifics.end()) {
+    return found->second;
+  }
+  return global;
+};
+
+TensorId SGD::getScaledLearningRateId(const Tensor &t) const {
+  if (lrs.hasSpecific(t.id)) {
+    return reservedSpecificScaledLearningRatePrefix() + t.id;
+  }
+  return reservedGlobalScaledLearningRatePrefix() + t.info.data_type();
 }
-TensorId getLossScalingId(DataType dtype) {
-  return reservedLossScalingPrefix() + getDataTypeInfoMap().at(dtype).name();
+
+TensorId SGD::getWeightDecayScaleFactorId(const Tensor &t) const {
+  if (lrs.hasSpecific(t.id)) {
+    return reservedSpecificWeightDecayScaleFactorPrefix() + t.id;
+  }
+  return reservedGlobalWeightDecayScaleFactorPrefix() + t.info.data_type();
+}
+
+TensorId Optimizer::getLossScalingTensorId(DataType t) const {
+  return reservedLossScalingPrefix() + getDataTypeInfoMap().at(t).name();
+}
+
+std::string
+SGD::stripWeightIdFromSpecificLearningRate(const TensorId &id) const {
+  return std::string(
+      id.begin() +
+          std::string(reservedSpecificScaledLearningRatePrefix()).size(),
+      id.end());
+}
+
+std::string
+SGD::stripWeightIdFromSpecificWeightDecay(const TensorId &id) const {
+  return std::string(
+      id.begin() +
+          std::string(reservedSpecificWeightDecayScaleFactorPrefix()).size(),
+      id.end());
 }
 
 // convert a float to type T
@@ -79,172 +121,182 @@ template <typename T> std::vector<char> convertFloatTo(float data) {
 static std::vector<char> convertFloatToDataType(DataType dtype, float data) {
   if (dtype == DataType::FLOAT) {
     return convertFloatTo<float>(data);
-  } else if (dtype == DataType::FLOAT16) {
+  }
+
+  else if (dtype == DataType::FLOAT16) {
     return convertFloatTo<Half>(data);
-  } else {
-    throw error("Can't convert float to DataType {}",
-                getDataTypeInfoMap().at(dtype).name());
   }
+
+  throw error("Can't convert float to DataType {}",
+              getDataTypeInfoMap().at(dtype).name());
 }
-
-BaseSGD::BaseSGD(float lr, float wd, float ls)
-    : learnRate_(lr), weightDecay_(wd), lossScaling_(ls) {
-
+Optimizer::Optimizer(OptimizerValue ls_) : ls(ls_) {
   // Reject loss scaling of 0.
-  if (!(lossScaling_ > 0.0f || lossScaling_ < 0.0f)) {
-    throw error("Loss scaling can not be 0");
+  if (!(ls.val() > 0.0f || ls.val() < 0.0f)) {
+    throw error("Loss scaling cannot be 0");
   }
 }
 
-float BaseSGD::learnRate() const { return learnRate_; }
+SGD::SGD(OptimizerValue lr, OptimizerValue wd, OptimizerValue ls)
+    : Optimizer(ls), lrs(lr), wds(wd) {}
 
-float BaseSGD::weightDecay() const { return weightDecay_; }
-
-float BaseSGD::lossScaling() const { return lossScaling_; }
-
-float BaseSGD::weightDecayScaleFactor() const {
-  return 1 - (weightDecay() * (scaledLearningRate()));
-}
-float BaseSGD::scaledLearningRate() const {
-  return learnRate() / lossScaling();
+std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
+  return std::make_unique<SGDVarUpdateOp>(w.id,
+                                          scaledLearningRate(w),
+                                          weightDecayScaleFactor(w),
+                                          Op::Settings(graph, ""));
 }
 
-SGD::SGD(float lr, float wd, float ls) : BaseSGD(lr, wd, ls) {}
+std::vector<TensorId> SGD::getInputIds(const Tensor &w) const {
 
-std::unique_ptr<Optimizer> SGD::clone() const {
-  return std::unique_ptr<Optimizer>(new SGD(*this));
-}
+  const TensorId &varId = w.id;
+  std::vector<TensorId> inputs(4, "");
 
-std::map<TensorId, TensorInfo> SGD::tensorInfos() const {
-  return {{getScaledLearningRateId(DataType::FLOAT), {DataType::FLOAT, {}}},
-          {getScaledLearningRateId(DataType::FLOAT16), {DataType::FLOAT16, {}}},
-          {getWeightDecayId(DataType::FLOAT), {DataType::FLOAT, {}}},
-          {getWeightDecayId(DataType::FLOAT16), {DataType::FLOAT16, {}}},
-          {getLossScalingId(DataType::FLOAT), {DataType::FLOAT, {}}},
-          {getLossScalingId(DataType::FLOAT16), {DataType::FLOAT16, {}}}};
-}
-
-std::unique_ptr<Op> SGD::createOp(TensorId varId, Graph &graph) const {
-  return std::unique_ptr<Op>(new SGDVarUpdateOp(varId, {graph, ""}));
-}
-
-std::vector<TensorId> SGD::getInputIds(TensorId varId, DataType varType) const {
-  std::vector<TensorId> inputs(5, "");
+  // variable
   inputs[VarUpdateOp::getVarToUpdateInIndex()] = varId;
-  inputs[VarUpdateOp::getUpdaterInIndex()]     = getGradId(varId);
-  inputs[SGDVarUpdateOp::getScaledLearnRateInIndex()] =
-      getScaledLearningRateId(varType);
-  inputs[SGDVarUpdateOp::getWeightDecayInIndex()] = getWeightDecayId(varType);
-  inputs[SGDVarUpdateOp::getLossScalingInIndex()] = getLossScalingId(varType);
+
+  // gradient
+  inputs[VarUpdateOp::getUpdaterInIndex()] = getGradId(varId);
+
+  // scaled learning rate (optional)
+  inputs[SGDVarUpdateOp::getScaledLearningRateInIndex()] =
+      scaledLearningRateIsConst(w) ? "" : getScaledLearningRateId(w);
+
+  // weight decay scale factor (optional)
+  inputs[SGDVarUpdateOp::getWeightDecayScaleFactorInIndex()] =
+      weightDecayScaleFactorIsConst(w) ? "" : getWeightDecayScaleFactorId(w);
   return inputs;
 }
 
-TensorId Optimizer::getLossScalingTensorId(DataType varType) const {
-  return getLossScalingId(varType);
-}
-
-void SGD::setTensorData(Tensor *t) const {
-  if (t->id == getScaledLearningRateId(DataType::FLOAT) ||
-      t->id == getScaledLearningRateId(DataType::FLOAT16)) {
-    // Note:
-    // w <- w * (1 - (lr/ls) * wd) - (lr/ls) * delta
-    //                                ^^^^^
-    // Calculate this term of the weight update formula
-    // on host to allow for efficient implementation of weight
-    // update on the device
-    auto converted_data =
-        convertFloatToDataType(t->info.dataType(), scaledLearningRate());
-    t->setTensorData(t->info, converted_data.data());
-  } else if (t->id == getWeightDecayId(DataType::FLOAT) ||
-             t->id == getWeightDecayId(DataType::FLOAT16)) {
-    // Note:
-    // w <- w * (1 - (lr/ls) * wd) - (lr/ls) * delta
-    //          ^^^^^^^^^^^^^^^^^
-    // Calculating   this     term of the weight update formula
-    // on host to allow for efficient implementation of weight
-    // update on the device
-    auto converted_data =
-        convertFloatToDataType(t->info.dataType(), weightDecayScaleFactor());
-    t->setTensorData(t->info, converted_data.data());
-  } else if (t->id == getLossScalingId(DataType::FLOAT) ||
-             t->id == getLossScalingId(DataType::FLOAT16)) {
-    auto converted_data =
-        convertFloatToDataType(t->info.dataType(), lossScaling());
-    t->setTensorData(t->info, converted_data.data());
-  } else {
-    throw error("SGD cannot set the parameter (" + t->id + ") currently");
+std::vector<std::tuple<TensorId, TensorInfo>>
+SGD::getOptimizerInputs(const Tensor &weight) const {
+  std::vector<TensorId> optimizerTensorInputIds;
+  if (!scaledLearningRateIsConst(weight)) {
+    optimizerTensorInputIds.push_back(getScaledLearningRateId(weight));
   }
+  if (!weightDecayScaleFactorIsConst(weight)) {
+    optimizerTensorInputIds.push_back(getWeightDecayScaleFactorId(weight));
+  }
+
+  std::vector<std::tuple<TensorId, TensorInfo>> optInputs;
+  for (auto id : optimizerTensorInputIds) {
+    optInputs.push_back(
+        std::make_tuple(id, TensorInfo(weight.info.dataType(), {})));
+  }
+  return optInputs;
 }
 
-void SGD::resetTensorDatas(Graph &graph) const {
-  // Check the tensor exists before resetting data
-  auto resetTensor = [&](TensorId id, float data) {
-    auto &tensors = graph.getTensors();
-    if (tensors.contains(id)) {
-      auto t              = tensors.get(id);
-      auto converted_data = convertFloatToDataType(t->info.dataType(), data);
-      t->tensorData()->resetData(t->info, converted_data.data());
-    }
-  };
+void SGD::setTensorData(Tensor &optTensor) const {
+  const auto &info   = optTensor.info;
+  float storedValue  = getStoredValue(optTensor);
+  auto convertedData = convertFloatToDataType(info.dataType(), storedValue);
 
-  resetTensor(getScaledLearningRateId(DataType::FLOAT), scaledLearningRate());
-  resetTensor(getScaledLearningRateId(DataType::FLOAT16), scaledLearningRate());
-
-  resetTensor(getLossScalingId(DataType::FLOAT), lossScaling());
-  resetTensor(getLossScalingId(DataType::FLOAT16), lossScaling());
-
-  // Note: scaling weightDecay scalar by learnRate on host
-  // to allow for efficient implementation of weight update
-  // on the device
-  resetTensor(getWeightDecayId(DataType::FLOAT), weightDecayScaleFactor());
-  resetTensor(getWeightDecayId(DataType::FLOAT16), weightDecayScaleFactor());
+  logging::ir::trace(
+      "Setting TensorData for {} to {}", optTensor.str(), storedValue);
+  optTensor.setTensorData(info, convertedData.data());
 }
 
-void ConstSGD::setTensorData(Tensor *) const {
-  throw error("ILE : ConstSGD does not set tensor data");
+void SGD::resetTensorData(Tensor &optTensor) const {
+  const auto &info   = optTensor.info;
+  float storedValue  = getStoredValue(optTensor);
+  auto convertedData = convertFloatToDataType(info.dataType(), storedValue);
+  logging::ir::trace(
+      "Resetting TensorData for {} to {}", optTensor.str(), storedValue);
+  optTensor.tensorData()->resetData(info, convertedData.data());
 }
 
-void ConstSGD::resetTensorDatas(Graph &) const {
-  throw error("ConstSGD does not have any tensors to reset");
+float SGD::getStoredValue(const Tensor &opt) const {
+
+  // loss scaling
+  if (opt.id.find(reservedLossScalingPrefix()) != std::string::npos) {
+    return lossScaling().val();
+  }
+
+  // global learning rate
+  if (opt.id.find(reservedGlobalScaledLearningRatePrefix()) !=
+      std::string::npos) {
+    return getScaledLearningRate(lrs.getGlobal().val(), lossScaling().val());
+  }
+
+  // specific learning rate
+  if (opt.id.find(reservedSpecificScaledLearningRatePrefix()) !=
+      std::string::npos) {
+    auto weightId = stripWeightIdFromSpecificLearningRate(opt.id);
+    return getScaledLearningRate(lrs.get(weightId).val(), lossScaling().val());
+  }
+
+  // weight decay
+  if (opt.id.find(reservedGlobalWeightDecayScaleFactorPrefix()) !=
+      std::string::npos) {
+    return getWeightDecayScaleFactor(wds.getGlobal().val(),
+                                     lrs.getGlobal().val());
+  }
+
+  if (opt.id.find(reservedSpecificWeightDecayScaleFactorPrefix()) !=
+      std::string::npos) {
+    auto weightId = stripWeightIdFromSpecificWeightDecay(opt.id);
+    return getWeightDecayScaleFactor(wds.get(weightId).val(),
+                                     lrs.get(weightId).val());
+  }
+
+  throw error("In getStoredValue for {}, it doesn't match any existing "
+              "optimizer prefix",
+              opt.id);
 }
 
-std::unique_ptr<Op> ConstSGD::createOp(TensorId varId, Graph &graph) const {
-  return std::unique_ptr<Op>(new ConstSGDVarUpdateOp(
-      varId, learnRate(), weightDecay(), lossScaling(), {graph, ""}));
-}
+bool OptimizerValueMap::validReplacement(const OptimizerValueMap &ovm) const {
 
-std::vector<TensorId> ConstSGD::getInputIds(TensorId varId, DataType) const {
-  std::vector<TensorId> inputs(2, "");
-  inputs[VarUpdateOp::getVarToUpdateInIndex()] = varId;
-  inputs[VarUpdateOp::getUpdaterInIndex()]     = getGradId(varId);
-  return inputs;
-}
-
-ConstSGD::ConstSGD(float lr, float wd, float ls) : BaseSGD(lr, wd, ls) {}
-
-std::unique_ptr<Optimizer> ConstSGD::clone() const {
-  return std::unique_ptr<Optimizer>(new ConstSGD(*this));
-}
-
-std::map<TensorId, TensorInfo> ConstSGD::tensorInfos() const { return {}; }
-
-bool SGD::validReplacement(const Optimizer *other) const {
-  if (other->type() != type()) {
+  if (!global.validReplacement(ovm.global)) {
     return false;
   }
-  // until we have momentum option, returning true
+
+  if (specifics.size() != ovm.specifics.size()) {
+    return false;
+  }
+
+  for (const auto &id_ov : specifics) {
+    const TensorId &id = id_ov.first;
+    const auto &ov     = id_ov.second;
+    auto ovm_found     = ovm.specifics.find(id);
+    if (ovm_found == ovm.specifics.end()) {
+      return false;
+    }
+    if (!ov.validReplacement(ovm_found->second)) {
+      return false;
+    }
+  }
   return true;
 }
 
-OptimizerType SGD::type() const { return OptimizerType::SGD; }
+bool SGD::validReplacement(const Optimizer &other) const {
+  if (other.type() != type()) {
+    return false;
+  }
 
-std::string SGD::type_s() const { return "SGD"; }
+  auto asSgd = dynamic_cast<const SGD *>(&other);
+  if (!asSgd) {
+    throw error("ILE: other has same `type' as this SGD, but cannot be "
+                "dynamically cast to SGD. Has there been a redesign of the "
+                "optimizer classes, if so this needs a rethink");
+  }
 
-// ConstSGD can never be replaced
-bool ConstSGD::validReplacement(const Optimizer *) const { return false; }
+  if (!lossScaling().validReplacement(other.lossScaling())) {
+    return false;
+  }
 
-OptimizerType ConstSGD::type() const { return OptimizerType::CONSTSGD; }
+  if (!lrs.validReplacement(asSgd->lrs)) {
+    return false;
+  }
 
-std::string ConstSGD::type_s() const { return "ConstSGD"; }
+  if (!wds.validReplacement(asSgd->wds)) {
+    return false;
+  }
+
+  return true;
+}
+
+std::unique_ptr<Optimizer> SGD::clone() const {
+  return std::make_unique<SGD>(*this);
+}
 
 } // namespace popart

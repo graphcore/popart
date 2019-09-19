@@ -1,39 +1,65 @@
+.. _popart_env_vars:
+
 Environment variables
----------------------
+=====================
 
 There are several environment variables which you can use to control the
 behaviour of PopART.
 
+Logging
+-------
+
+PopART can output information about its activity as described in :any:`popart_logging`.
+You can control the default level of logging information using environment variables.
+
 POPART_LOG_LEVEL
 ~~~~~~~~~~~~~~~~~
 
-This controls the amount of information written to the log output.
+This controls the amount of information written to the log output for all modules. Finer control
+can be achieved using :any:`POPART_LOG_CONFIG`.
 
-The logging levels, in decreasing verbosity, are:
-
-* TRACE
-* DEBUG
-* INFO
-* WARN
-* ERR
-* CRITICAL
-* OFF
-
-The default is "OFF".
 
 POPART_LOG_DEST
 ~~~~~~~~~~~~~~~~
 
-This variable defines the output for the logging information. The value can be stdout, stderr or a file name.
+This variable defines the output for the logging information. The value can be "stdout", "stderr" or a file name.
 
 The default, if not defined, is "stderr".
 
-.. TODO: POPART_LOG_CONFIG
-.. ~~~~~~~~~~~~~~~~~~
+.. _POPART_LOG_CONFIG:
 
+POPART_LOG_CONFIG
+~~~~~~~~~~~~~~~~~
+
+If set, this variable defines the name of a configuration file which specifies the logging level for each module.
+This is a JSON format file with pairs of module:level strings.
+For example, a file called ``conf.py`` can be specified by setting the environment variable:
+
+.. code-block:: console
+
+  export POPART_LOG_CONFIG=conf.py
+
+To set the logging level of the devicex and session modules, ``conf.py`` would contain:
+
+.. code-block:: json
+
+  {
+    "devicex":"INFO",
+    "session":"WARN"
+  }
+
+These values override the value specified in POPART_LOG_LEVEL.
+
+
+Generating DOT files
+---------------------
 
 POPART_DOT_CHECKS
 ~~~~~~~~~~~~~~~~~~
+
+PopART can output a graphical representation of the graph, in DOT format, when it
+constructs the intermediate representation (IR). The stages of IR construction
+where the DOT files is generated is controlled by this variable.
 
 Supported values:
 
@@ -45,14 +71,17 @@ Supported values:
 
 These values may be combined using ":" as a separator.
 The example below shows how to set ``POPART_DOT_CHECKS`` to export
-dot graphs ``FWD0`` and ``FINAL``.
+DOT graphs for the FWD0 and FINAL stages.
 
 .. code-block:: console
 
   export POPART_DOT_CHECKS=FWD0:FINAL
 
-The values of ``POPART_DOT_CHECKS`` will be combined with any values
-that are found in the session options.
+The values in ``POPART_DOT_CHECKS`` will be combined with any values
+that are defined in the session options.
+
+Saving the tensor map
+---------------------
 
 POPART_TENSOR_TILE_MAP
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -61,7 +90,7 @@ The mapping of tensors to tiles in the session can be saved to a file by setting
 to the name of a file. The tensor tile map will be written in JSON format.
 
 The tensor tile map will be saved when you call ``Session::prepareDevice``.
-The below show how to set the variable to save the tensor tile map to ``ttm.js``.
+For example, to save the tensor tile map to ``ttm.js`` you would set the variable as shown:
 
 .. code-block:: console
 

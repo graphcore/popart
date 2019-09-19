@@ -7,7 +7,9 @@ namespace popart {
 
 class RestoreOp : public Op {
 public:
-  RestoreOp(const OperatorIdentifier &, const Op::Settings &);
+  RestoreOp(const OperatorIdentifier &,
+            int64_t stashSize,
+            const Op::Settings &);
 
   std::unique_ptr<Op> clone() const override;
   void setup() final;
@@ -24,11 +26,20 @@ public:
   TensorId getRestoredTensorId() const;
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+  int64_t getStashSize() { return stashSize; }
+
+  void appendAttributes(OpSerialiserBase &) const override;
+
+private:
+  int64_t stashSize;
 };
 
 class RestoreInplaceOp : public RestoreOp {
 public:
-  RestoreInplaceOp(const OperatorIdentifier &, const Op::Settings &);
+  RestoreInplaceOp(const OperatorIdentifier &,
+                   int64_t stashSize,
+                   const Op::Settings &);
   std::unique_ptr<Op> clone() const override;
 
   // This Op aliases and modifies the input at index getVarIndex()

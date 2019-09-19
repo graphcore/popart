@@ -21,8 +21,9 @@ std::vector<std::unique_ptr<Op>> L1Op::getGradOps() {
 }
 
 std::unique_ptr<Op> L1Loss::getOp(const Op::Settings &settings_) const {
-  Op::Settings copiedSettings = settings_;
-  copiedSettings.vgraphId     = vgraphId;
+  Op::Settings copiedSettings  = settings_;
+  copiedSettings.vgraphId      = vgraphId;
+  copiedSettings.pipelineStage = pipelineStage_;
   return std::unique_ptr<Op>(new L1Op(op_type(), this, copiedSettings));
 }
 
@@ -50,9 +51,9 @@ L1Op::L1Op(const OperatorIdentifier &_opid,
 void L1GradOp::setup() {
 
   // connect the loss scaling tensor if is non-const
-  if (!getIr().getOptimizer()->constantLossScaling()) {
+  if (!getIr().getOptimizer().lossScaling().isConst()) {
     connectInTensor(L1GradOp::getLossScalingInIndex(),
-                    getIr().getOptimizer()->getLossScalingTensorId(
+                    getIr().getOptimizer().getLossScalingTensorId(
                         inInfo(getInIndex()).dataType()));
   }
 

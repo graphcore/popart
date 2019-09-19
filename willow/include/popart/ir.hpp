@@ -133,10 +133,13 @@ public:
 
   // Set the optimizer and add optimizer tensors
   // FFS could this be combined with updateOptimizer?
-  void setOptimizer(const Optimizer *o);
+  void setOptimizer(const Optimizer &);
+
+  void ensureOptimizerTensorCreated(const TensorId &optId,
+                                    const TensorInfo &info);
 
   // Get the optimizer
-  const std::unique_ptr<Optimizer> &getOptimizer() const { return optimizer; }
+  const Optimizer &getOptimizer() const { return *optimizer; }
 
   // Set the device info
   void setDeviceInfo(DeviceInfo &);
@@ -171,7 +174,7 @@ public:
   // Reset the weights with data from an ONNX model
   void resetWeights(const onnx::ModelProto &modelProto);
 
-  void updateOptimizer(const Optimizer *);
+  void updateOptimizer(const Optimizer &);
   // take training steps
   onnx::ModelProto step(int n);
   // if the tensor is returned to user (passes call to DataFlow).
@@ -386,13 +389,15 @@ private:
   void verifyTensorIds() const;
   void verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const;
   void verifyVertexAttributesOnlyInMain() const;
-  void verifyPiplineStageAttribute() const;
+  void verifyPipelineSettings() const;
 
   // Verify ConstExpr folding has removed input tensors
   // as expected
   void verifyConstExprFolding();
   bool isCandidateForConstExprFolding(const Tensor &tensor) const;
   std::set<Tensor *> getRootInputsToOp(Op *op);
+
+  PipelineStage getFinalLossPipelineStage() const;
 
 private:
   DataFlow dataFlow;

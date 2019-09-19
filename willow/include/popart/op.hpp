@@ -113,9 +113,10 @@ public:
   void setVirtualGraphId(const boost::optional<VGraphId> value);
   bool hasVirtualGraphId() const;
 
-  void setPipelineStage(PipelineStage);
+  void setPipelineStage(boost::optional<PipelineStage>);
   bool hasPipelineStage() const;
   PipelineStage getPipelineStage() const;
+  boost::optional<PipelineStage> getOptionalPipelineStage() const;
 
   Ir &getIr();
   const Ir &getIr() const;

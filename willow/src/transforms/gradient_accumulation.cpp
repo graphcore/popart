@@ -78,6 +78,7 @@ bool GradientAccumulation::apply(Graph &graph) const {
         // Inherit virtual graph from parent op
         acclOp->setVirtualGraphId(op->getVirtualGraphId());
       }
+      acclOp->setPipelineStage(op->getOptionalPipelineStage());
 
       // Add it to train target ops to prevent pruning.
       if (!ir.addToTrainTargetOps(acclOp)) {
@@ -117,6 +118,7 @@ bool GradientAccumulation::apply(Graph &graph) const {
         // Inherit virtual graph from parent op
         resetOp->setVirtualGraphId(op->getVirtualGraphId());
       }
+      resetOp->setPipelineStage(op->getOptionalPipelineStage());
       op.get()->connectInTensor(VarUpdateOp::getUpdaterInIndex(),
                                 acclOutTensorId);
 

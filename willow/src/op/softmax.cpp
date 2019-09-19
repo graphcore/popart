@@ -179,9 +179,9 @@ std::unique_ptr<Op> NlllWithSoftmaxGradDirectOp::clone() const {
 void NlllWithSoftmaxGradDirectOp::setup() {
 
   // connect the loss scaling tensor if is non-const
-  if (!getIr().getOptimizer()->constantLossScaling()) {
+  if (!getIr().getOptimizer().lossScaling().isConst()) {
     connectInTensor(NlllWithSoftmaxGradDirectOp::getLossScalingInIndex(),
-                    getIr().getOptimizer()->getLossScalingTensorId(
+                    getIr().getOptimizer().getLossScalingTensorId(
                         inInfo(nlll()->getProbsInIndex()).dataType()));
   }
 

@@ -20,10 +20,9 @@ public:
   virtual std::string getName() const final { return "Pipeline"; }
 
 private:
-  int64_t getVirtualGraphIdOrSourceIpu(Op *op) const;
-
-  RestoreOp *addNewRestoreOp(Graph &graph) const;
-  RestoreInplaceOp *addNewRestoreInplaceOp(Graph &graph) const;
+  RestoreOp *addNewRestoreOp(Graph &graph, int64_t stashSize) const;
+  RestoreInplaceOp *addNewRestoreInplaceOp(Graph &graph,
+                                           int64_t stashSize) const;
 };
 
 } // namespace popart

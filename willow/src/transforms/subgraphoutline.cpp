@@ -332,6 +332,7 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
   // Copy some attributes from the first op in the instance
   auto scope    = graph.getOp(instance.ops.at(0))->getScope();
   auto vgraphid = graph.getOp(instance.ops.at(0))->getOptionalVirtualGraphId();
+  auto ps       = graph.getOp(instance.ops.at(0))->getOptionalPipelineStage();
 
   // Create the call op. Note that toLoss and fromLoss are set in the
   // constructor
@@ -340,6 +341,7 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
   auto call_op            = graph.getOp(call_op_id);
   call_op->settings.scope = scope;
   call_op->setVirtualGraphId(vgraphid);
+  call_op->setPipelineStage(ps);
 
   // Set the position w.r.t loss, if possible. If any of the internal ops
   // is connected to the final loss, then so is this CallOp. Note that we use

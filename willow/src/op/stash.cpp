@@ -8,8 +8,10 @@
 
 namespace popart {
 
-StashOp::StashOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
-    : Op(_opid, settings_) {}
+StashOp::StashOp(const OperatorIdentifier &_opid,
+                 int64_t stashSize_,
+                 const Op::Settings &settings_)
+    : Op(_opid, settings_), stashSize(stashSize_) {}
 
 std::unique_ptr<Op> StashOp::clone() const {
   return std::make_unique<StashOp>(*this);
@@ -22,23 +24,15 @@ void StashOp::setup() {
   outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(), output_shape};
 }
 
-int64_t StashOp::getStashSize() {
-  int64_t vGraphId = getVirtualGraphId();
-  int64_t numIPUs = static_cast<int64_t>(getIr().getDeviceInfo()->getNumIpus());
-
-  if (vGraphId == numIPUs - 1) {
-    throw error("There should be no stashes on the final IPU.");
-  }
-  return 2 * (numIPUs - vGraphId) - 1;
+void StashOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("stashSize", stashSize);
 }
+
+int64_t StashOp::getStashSize() { return stashSize; }
 
 TensorId StashOp::getStashedTensorId() const {
   return reservedStashedPrefix() + inId(getInIndex());
 }
-
-namespace {
-static OpCreator<StashOp> StashOpCreator(Onnx::CustomOperators::Stash);
-
-} // namespace
 
 } // namespace popart

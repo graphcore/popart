@@ -40,7 +40,7 @@ public:
   PipelineInfo() = default;
   PipelineInfo(int _batchesPerStep,
                int _gradAcclFactor,
-               int _numIPUs,
+               int _numPipelineStages,
                bool _doTraining,
                bool _doGradAccl);
 
@@ -52,23 +52,14 @@ public:
     PipelineCycle start, end;
   };
 
-  // Describes all points of interest in the pipeline
-  PipelinePhase fwdFillPhase, bwdFillPhase;
   PipelinePhase fillPhase;
 
   // The phase between the pipeline being filled and flushed
   PipelinePhase mainPhase;
 
-  PipelinePhase fwdFlushPhase, bwdFlushPhase;
   PipelinePhase flushPhase;
 
-  bool doFwd(PipelineCycle pCycle, VGraphId vGraphId) const;
-  bool doBwd(PipelineCycle pCycle, VGraphId vGraphId) const;
-
-  // Tensors for each IPU specify the offset of the stashes
-  // when stashing and restoring activations, and programs to
-  // update them
-  std::map<StashIndex, poplar::Tensor> stashIndex;
+  bool doStage(PipelineCycle, PipelineStage) const;
 };
 
 poplar::Type popType(const TensorInfo &);
@@ -198,7 +189,7 @@ public:
 
   // A forward search of graph:
   //   - from inputs of the graph
-  //   - to Opxs with optimized poplar calls to create the tensor,
+  //   - to Opxs with optimised poplar calls to create the tensor,
   //     or to Opxs that destroy layout information of the input
   //     tensor on the output
   //   - traversing through Opxs that cannot create the tensor
@@ -259,6 +250,9 @@ private:
 
   PipelineInfo pInfo;
   int64_t getStashSize(VGraphId vGraphId);
+
+  std::map<PipelineStage, VGraphId> getPipelineToVGraphIdMap() const;
+  PipelineStage getMaxPipelineStage() const;
 
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)

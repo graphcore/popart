@@ -24,8 +24,9 @@ std::vector<std::unique_ptr<Op>> NllOp::getGradOps() {
 }
 
 std::unique_ptr<Op> NllLoss::getOp(const Op::Settings &settings_) const {
-  Op::Settings copiedSettings = settings_;
-  copiedSettings.vgraphId     = vgraphId;
+  Op::Settings copiedSettings  = settings_;
+  copiedSettings.vgraphId      = vgraphId;
+  copiedSettings.pipelineStage = pipelineStage_;
   return std::unique_ptr<Op>(
       new NllOp(Onnx::CustomOperators::Nll, this, copiedSettings));
 }
@@ -98,9 +99,9 @@ NllOp::NllOp(const OperatorIdentifier &_opid,
 void NllGradOp::setup() {
 
   // connect the loss scaling tensor if is non-const
-  if (!getIr().getOptimizer()->constantLossScaling()) {
+  if (!getIr().getOptimizer().lossScaling().isConst()) {
     connectInTensor(NllGradOp::getLossScalingInIndex(),
-                    getIr().getOptimizer()->getLossScalingTensorId(
+                    getIr().getOptimizer().getLossScalingTensorId(
                         inInfo(nlll()->getProbsInIndex()).dataType()));
   }
 

@@ -31,6 +31,7 @@ TensorId TransformBuilder::op(const OperatorIdentifier &_opid,
                               std::vector<TensorId> &inputs,
                               std::map<std::string, boost::any> attributes,
                               boost::optional<int64_t> virtualGraphId,
+                              boost::optional<int64_t> pipelineStage,
                               const std::string opName,
                               const std::string outputName) {
 
@@ -48,6 +49,7 @@ TensorId TransformBuilder::op(const OperatorIdentifier &_opid,
   if (virtualGraphId) {
     op->setVirtualGraphId(*virtualGraphId);
   }
+  op->setPipelineStage(pipelineStage);
 
   op->setup();
   auto _op = op.get();
@@ -61,6 +63,7 @@ void TransformBuilder::opWithOutput(
     std::map<std::string, boost::any> attributes,
     TensorId &out,
     boost::optional<int64_t> virtualGraphId,
+    boost::optional<int64_t> pipelineStage,
     const std::string debugPrefix) {
 
   auto op = createOp(_opid, attributes, debugPrefix);
@@ -73,6 +76,7 @@ void TransformBuilder::opWithOutput(
   if (virtualGraphId) {
     op->setVirtualGraphId(*virtualGraphId);
   }
+  op->setPipelineStage(pipelineStage);
 
   op->setup();
   graph.moveIntoGraph(std::move(op));
@@ -107,12 +111,14 @@ TensorId TransformBuilder::getNextId(const std::string &name, OutIndex n) {
 
 TensorId TransformBuilder::concat(std::vector<TensorId> &inputs,
                                   boost::optional<int64_t> virtualGraphId,
+                                  boost::optional<int64_t> pipelineStage,
                                   const std::string opName,
                                   const std::string outputName) {
   return op(Onnx::Operators::Concat_1,
             inputs,
             {{"axis", static_cast<int64_t>(0)}},
             virtualGraphId,
+            pipelineStage,
             opName,
             outputName);
 }
@@ -120,6 +126,7 @@ TensorId TransformBuilder::concat(std::vector<TensorId> &inputs,
 TensorId TransformBuilder::matmul(TensorId lhs,
                                   TensorId rhs,
                                   boost::optional<int64_t> virtualGraphId,
+                                  boost::optional<int64_t> pipelineStage,
                                   const std::string opName,
                                   const std::string outputName) {
   std::vector<TensorId> inputs = {lhs, rhs};
@@ -127,6 +134,7 @@ TensorId TransformBuilder::matmul(TensorId lhs,
             inputs,
             {},
             virtualGraphId,
+            pipelineStage,
             opName,
             outputName);
 }
@@ -136,6 +144,7 @@ TensorId TransformBuilder::slice(TensorId in,
                                  const Shape &ends,
                                  const Shape &axes,
                                  boost::optional<int64_t> virtualGraphId,
+                                 boost::optional<int64_t> pipelineStage,
                                  const std::string opName,
                                  const std::string outputName) {
   std::vector<TensorId> inputs = {in};
@@ -144,6 +153,7 @@ TensorId TransformBuilder::slice(TensorId in,
             inputs,
             {{"starts", starts}, {"ends", ends}, {"axes", axes}},
             virtualGraphId,
+            pipelineStage,
             opName,
             outputName);
 }
@@ -154,6 +164,7 @@ void TransformBuilder::slice(TensorId in,
                              const Shape &axes,
                              TensorId out,
                              boost::optional<int64_t> virtualGraphId,
+                             boost::optional<int64_t> pipelineStage,
                              const std::string opName) {
   std::vector<TensorId> inputs = {in};
 
@@ -162,12 +173,14 @@ void TransformBuilder::slice(TensorId in,
                {{"starts", starts}, {"ends", ends}, {"axes", axes}},
                out,
                virtualGraphId,
+               pipelineStage,
                opName);
 }
 
 TensorId TransformBuilder::squeeze(TensorId in,
                                    const Shape &axes,
                                    boost::optional<int64_t> virtualGraphId,
+                                   boost::optional<int64_t> pipelineStage,
                                    const std::string opName,
                                    const std::string outputName) {
   std::vector<TensorId> inputs = {in};
@@ -176,6 +189,7 @@ TensorId TransformBuilder::squeeze(TensorId in,
             inputs,
             {{"axes", axes}},
             virtualGraphId,
+            pipelineStage,
             opName,
             outputName);
 }
@@ -184,6 +198,7 @@ void TransformBuilder::squeeze(TensorId in,
                                const Shape &axes,
                                TensorId out,
                                boost::optional<int64_t> virtualGraphId,
+                               boost::optional<int64_t> pipelineStage,
                                const std::string opName) {
   std::vector<TensorId> inputs = {in};
 
@@ -192,12 +207,14 @@ void TransformBuilder::squeeze(TensorId in,
                {{"axes", axes}},
                out,
                virtualGraphId,
+               pipelineStage,
                opName);
 }
 
 TensorId TransformBuilder::transpose(TensorId in,
                                      Shape perm,
                                      boost::optional<int64_t> virtualGraphId,
+                                     boost::optional<int64_t> pipelineStage,
                                      const std::string opName,
                                      const std::string outTensorName) {
   std::vector<TensorId> inputs = {in};
@@ -205,6 +222,7 @@ TensorId TransformBuilder::transpose(TensorId in,
             inputs,
             {{"perm", perm}},
             virtualGraphId,
+            pipelineStage,
             opName,
             outTensorName);
 }
@@ -213,6 +231,7 @@ void TransformBuilder::transpose(TensorId in,
                                  Shape perm,
                                  TensorId out,
                                  boost::optional<int64_t> virtualGraphId,
+                                 boost::optional<int64_t> pipelineStage,
                                  const std::string opName) {
   std::vector<TensorId> inputs = {in};
   opWithOutput(Onnx::Operators::Transpose_1,
@@ -220,12 +239,14 @@ void TransformBuilder::transpose(TensorId in,
                {{"perm", perm}},
                out,
                virtualGraphId,
+               pipelineStage,
                opName);
 }
 
 TensorId TransformBuilder::reshape(TensorId in,
                                    Shape shape,
                                    boost::optional<int64_t> virtualGraphId,
+                                   boost::optional<int64_t> pipelineStage,
                                    const std::string opName,
                                    const std::string outputName) {
   auto op = createOp(Onnx::Operators::Reshape_5, {}, opName);
@@ -248,6 +269,7 @@ TensorId TransformBuilder::reshape(TensorId in,
   if (virtualGraphId) {
     op->setVirtualGraphId(*virtualGraphId);
   }
+  op->setPipelineStage(pipelineStage);
 
   op->setup();
   auto _op = op.get();

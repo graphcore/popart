@@ -45,11 +45,18 @@ public:
   bool hasVirtualGraphId() const;
   int64_t getVirtualGraphId() const;
 
+  void pipelineStage(PipelineStage pipeline_stage) {
+    pipelineStage_ = pipeline_stage;
+  }
+  bool hasPipelineStage() const;
+  PipelineStage getPipelineStage() const;
+
 protected:
   // Identify on which vgraph the loss should be executed. This is
   // an optional setting and may not be valid when virtual graph's are not
   // enabled
   boost::optional<int64_t> vgraphId;
+  boost::optional<PipelineStage> pipelineStage_;
 
 private:
   // The names of the input tensors, same

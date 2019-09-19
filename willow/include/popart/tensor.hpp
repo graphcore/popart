@@ -3,6 +3,10 @@
 
 #include <map>
 #include <memory>
+#include <set>
+
+#include <boost/optional.hpp>
+
 #include <popart/error.hpp>
 #include <popart/names.hpp>
 #include <popart/tensordata.hpp>
@@ -59,6 +63,10 @@ public:
   // append information about this object
   void append(std::stringstream &ss);
 
+  std::set<PipelineStage> getPipelineStages() const;
+  boost::optional<PipelineStage> findLowestPipelineStage() const;
+  boost::optional<PipelineStage> findHighestPipelineStage() const;
+
 private:
   // The number of times an Op consumes the Tensor which
   // owns these Consumers
@@ -106,6 +114,9 @@ public:
   void setReplicatedStreamMode(const ReplicatedStreamMode &mode) {
     replicatedStreamMode = mode;
   }
+
+  // Return all the pipeline stages the tensor is used in.
+  std::set<PipelineStage> getPipelineStages() const;
 
   Consumers consumers;
   // shape and data type. Not to be used before inferShape of pir has run

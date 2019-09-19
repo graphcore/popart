@@ -324,6 +324,5 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     std::cout << "delta ends " << delta_ends << std::endl;
   }
 
-  // TODO(jn) fix this test
   BOOST_CHECK(delta_ends < 0.0003);
 }

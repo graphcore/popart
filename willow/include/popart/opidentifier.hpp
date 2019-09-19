@@ -885,7 +885,6 @@ const static AiGraphcoreOpIdV1 Nll("Nll");
 const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 
 const static AiGraphcoreOpIdV1 SgdVarUpdate("SGDVarUpdate");
-const static AiGraphcoreOpIdV1 ConstSgdVarUpdate("ConstSGDVarUpdate");
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
 const static AiGraphcoreOpIdV1 FlattenInplace("FlattenInplace");
 const static AiGraphcoreOpIdV1 ReshapeInplace("ReshapeInplace");

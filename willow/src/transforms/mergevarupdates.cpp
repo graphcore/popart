@@ -41,38 +41,31 @@ MergeVarUpdates::PartitionId MergeVarUpdates::getPartitionId(Op *op) const {
   std::stringstream ss;
 
   // same virtual graph
-  ss << "vg_" << op->settings.vgraphId << '_';
+  ss << "vg_" << op->settings.vgraphId;
 
-  // same VarUpdateOp class
-  // 1) ConstSGD
-  if (op->isConvertibleTo<ConstSGDVarUpdateOp>()) {
-    auto csvu = dynamic_cast<ConstSGDVarUpdateOp *>(op);
-
-    // 1.1) same learning rate
-    ss << "lr_" << csvu->getLearnRate() << '_';
-
-    // 1.2) same weight decay
-    ss << "wd_" << csvu->getWeightDecay() << '_';
-  }
-
-  // 2) SGD
-  else if (op->isConvertibleTo<SGDVarUpdateOp>()) {
+  // 1) SGD settings
+  if (op->isConvertibleTo<SGDVarUpdateOp>()) {
     auto svu = dynamic_cast<SGDVarUpdateOp *>(op);
+    ss << "_SGD_";
 
-    // 2.1) same learning rate input Tensor
-    ss << "lri_" << svu->inId(svu->getScaledLearnRateInIndex()) << '_';
+    if (svu->initScaledLearningRate.isConst()) {
+      ss << "_constLr_" << svu->initScaledLearningRate.val();
+    } else {
+      ss << "_nonConstLr_" << svu->inId(svu->getScaledLearningRateInIndex());
+    }
 
-    // 1.2) same weight decay input Tensor
-    ss << "wdi_" << svu->inId(svu->getWeightDecayInIndex()) << '_';
-
-    // 1.3) same loss scaling input Tensor
-    ss << "lsi_" << svu->inId(svu->getLossScalingInIndex()) << '_';
+    if (svu->initWeightDecayScaleFactor.isConst()) {
+      ss << "_constWd_" << svu->initWeightDecayScaleFactor.val();
+    } else {
+      ss << "_nonConstWd_"
+         << svu->inId(svu->getWeightDecayScaleFactorInIndex());
+    }
   }
 
-  // 3) CopyVarUpdate
+  // 2) CopyVarUpdate settings
   else if (op->isConvertibleTo<CopyVarUpdateOp>()) {
     // there are no attributes to sub-partition CopyVarUpdatOps by
-    ss << "copyVar";
+    ss << "_copyVar_";
   }
 
   // 4) unknown. New CopyVarUpdateOps will need their cases here

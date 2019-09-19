@@ -47,6 +47,17 @@ bool Loss::hasVirtualGraphId() const {
   }
 }
 
+bool Loss::hasPipelineStage() const { return pipelineStage_ != boost::none; }
+
+PipelineStage Loss::getPipelineStage() const {
+  if (!hasPipelineStage()) {
+    throw error("Cannot return pipeline stage for Loss {}. It has not had this "
+                "attribute set",
+                input_);
+  }
+  return *pipelineStage_;
+}
+
 LossOp::LossOp(const OperatorIdentifier &_opid, const Op::Settings &settings_)
     : Op(_opid, settings_) {}
 

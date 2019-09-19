@@ -86,9 +86,6 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   // 1. The pre-forward fragment
   // 2. Host->Device copies for each IPU
   // 3. Forward fragments for each IPU
-  // 4. Increment stash index for each IPU
-  // 5. Restore fragment for each IPU
-  // 6. Backward fragments for each IPU
   // 7. Device->Host copies for each IPU
   // 8. Inter-IPU copies
 
@@ -100,10 +97,11 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   // 2.
   if (pipelineSeqs.find(PipelineFragmentId::ToDeviceStream) !=
       pipelineSeqs.end()) {
-    for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
-      if (pInfo.doFwd(pCycle, vgid_seq.first)) {
-        ss << "\n  vg" << vgid_seq.first << " : ToDeviceStream";
-        sq.add(vgid_seq.second);
+    for (auto &stage_seq :
+         pipelineSeqs.at(PipelineFragmentId::ToDeviceStream)) {
+      if (pInfo.doStage(pCycle, stage_seq.first)) {
+        ss << "\n  ps" << stage_seq.first << " : ToDeviceStream";
+        sq.add(stage_seq.second);
       }
     }
   } else {
@@ -115,95 +113,34 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   }
 
   // 3.
-  for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::Forward)) {
-    if (pInfo.doFwd(pCycle, vgid_seq.first)) {
-      ss << "\n  vg" << vgid_seq.first << " : Forward";
-      sq.add(vgid_seq.second);
-    }
-  }
-
-  // 4.
-  if (pipelineSeqs.find(PipelineFragmentId::IncrStashIndex) !=
-      pipelineSeqs.end()) {
-    for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::IncrStashIndex)) {
-      if (pInfo.doFwd(pCycle, vgid_seq.first) ||
-          pInfo.doBwd(pCycle, vgid_seq.first)) {
-        ss << "\n  vg" << vgid_seq.first << " : IncrStashIndex";
-        sq.add(vgid_seq.second);
-      }
-    }
-  }
-
-  // 5.
-  if (pipelineSeqs.find(PipelineFragmentId::Restore) != pipelineSeqs.end()) {
-    for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::Restore)) {
-      // of the bwd fragment is added, then the restore fragment must be added
-      // too
-      if (pInfo.doBwd(pCycle, vgid_seq.first)) {
-        ss << "\n  vg" << vgid_seq.first << " : Restore";
-        logging::devicex::debug("Adding restore frag to final seq, pCycle {}",
-                                pCycle);
-        sq.add(vgid_seq.second);
-      }
-    }
-  }
-
-  // 6.
-  if (pipelineSeqs.find(PipelineFragmentId::Backward) != pipelineSeqs.end()) {
-    for (auto &vgid_seq : pipelineSeqs.at(PipelineFragmentId::Backward)) {
-      if (pInfo.doBwd(pCycle, vgid_seq.first)) {
-        ss << "\n  vg" << vgid_seq.first << " : Backward";
-        sq.add(vgid_seq.second);
-      }
+  for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::Forward)) {
+    if (pInfo.doStage(pCycle, stage_seq.first)) {
+      ss << "\n  ps" << stage_seq.first << " : Forward";
+      sq.add(stage_seq.second);
     }
   }
 
   // 7.
-  if (pipelineSeqs.find(PipelineFragmentId::FwdToHostStream) !=
+  if (pipelineSeqs.find(PipelineFragmentId::ToHostStream) !=
       pipelineSeqs.end()) {
-    for (auto &vgid_seq :
-         pipelineSeqs.at(PipelineFragmentId::FwdToHostStream)) {
-      if (pInfo.doFwd(pCycle, vgid_seq.first)) {
-        ss << "\n  vg" << vgid_seq.first << " : FwdToHostStream";
-        sq.add(vgid_seq.second);
-      }
-    }
-  }
-  if (pipelineSeqs.find(PipelineFragmentId::BwdToHostStream) !=
-      pipelineSeqs.end()) {
-    for (auto &vgid_seq :
-         pipelineSeqs.at(PipelineFragmentId::BwdToHostStream)) {
-      if (pInfo.doBwd(pCycle, vgid_seq.first)) {
-        ss << "\n  vg" << vgid_seq.first << " : BwdToHostStream";
-        sq.add(vgid_seq.second);
+    for (auto &stage_seq : pipelineSeqs.at(PipelineFragmentId::ToHostStream)) {
+      if (pInfo.doStage(pCycle, stage_seq.first)) {
+        ss << "\n  ps" << stage_seq.first << " : ToHostStream";
+        sq.add(stage_seq.second);
       }
     }
   }
 
   // 8.1 Insert the FWD inter IPU-copies.
   // We add these in reverse order, i->i+1 then i-1->i then i-2->i-1 etc.
-  // Note that vgid_seq.first == 1 corresponds to the copy from IPU1 to IPU2
-  auto foundFwd = pipelineSeqs.find(PipelineFragmentId::IpuCopyFwd);
+  // Note that stage_seq.first == 1 corresponds to the copy from IPU1 to IPU2
+  auto foundFwd = pipelineSeqs.find(PipelineFragmentId::IpuCopy);
   if (foundFwd != pipelineSeqs.end()) {
     const auto &M = foundFwd->second;
-    for (auto vgid_seq = M.rbegin(); vgid_seq != M.rend(); ++vgid_seq) {
-      if (pInfo.doFwd(pCycle, vgid_seq->first)) {
-        ss << "\n  vg" << vgid_seq->first << " : IpuFwdCopy";
-        sq.add(vgid_seq->second);
-      }
-    }
-  }
-
-  // 8.2 Insert the BWD inter IPU-copies.
-  // These are added in ascending order of virtual graph id, so i-1->i-2 then
-  // i->i-1 then i+1->i etc. This order is important for correctness.
-  // Note that vgid_seq.first == 1 corresponds to the copy from IPU1 to IPU0
-  if (pipelineSeqs.find(PipelineFragmentId::IpuCopyBwd) != pipelineSeqs.end()) {
-    for (const auto &vgid_seq :
-         pipelineSeqs.at(PipelineFragmentId::IpuCopyBwd)) {
-      if (pInfo.doBwd(pCycle, vgid_seq.first)) {
-        ss << "\n  vg" << vgid_seq.first << " : IpuBwdCopy";
-        sq.add(vgid_seq.second);
+    for (auto stage_seq = M.rbegin(); stage_seq != M.rend(); ++stage_seq) {
+      if (pInfo.doStage(pCycle, stage_seq->first)) {
+        ss << "\n  ps" << stage_seq->first << " : IpuFwdCopy";
+        sq.add(stage_seq->second);
       }
     }
   }
@@ -262,10 +199,10 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
     PipelineFragmentId fragId = fragid_ipudescs.first;
     std::string fragStr       = getStrFromPipelineFragmentId(fragId);
     ss << "\n" + fragStr + ":";
-    for (auto vgid_desc : pipelineDescs.at(fragId)) {
-      auto vgStr = std::to_string(vgid_desc.first);
-      auto desc  = vgid_desc.second;
-      ss << "\n  vg" + vgStr + ":" + desc;
+    for (auto stage_desc : pipelineDescs.at(fragId)) {
+      auto vgStr = std::to_string(stage_desc.first);
+      auto desc  = stage_desc.second;
+      ss << "\n  ps" + vgStr + ":" + desc;
     }
   }
   ss << "\n\n";
@@ -434,94 +371,52 @@ PopPrograms::forwardOrBackwardFragment(ScheduledPreLoss preLoss) {
 }
 
 poplar::program::Sequence &
-PopPrograms::pipelineFragment(VGraphId vGraphId,
+PopPrograms::pipelineFragment(PipelineStage pipelineStage,
                               PipelineFragmentId frag,
                               const std::string &desc) {
   auto foundFrag = pipelineSeqs.find(frag);
   if (foundFrag != pipelineSeqs.end()) {
-    auto foundVGraph = pipelineSeqs.at(frag).find(vGraphId);
-    if (foundVGraph != pipelineSeqs.at(frag).end()) {
-      pipelineDescs.at(frag).at(vGraphId).append("\n    " + desc);
-      return pipelineSeqs.at(frag).at(vGraphId);
+    auto foundPipelineStage = pipelineSeqs.at(frag).find(pipelineStage);
+    if (foundPipelineStage != pipelineSeqs.at(frag).end()) {
+      pipelineDescs.at(frag).at(pipelineStage).append("\n    " + desc);
+      return pipelineSeqs.at(frag).at(pipelineStage);
     } else {
-      pipelineDescs.at(frag).insert({vGraphId, "\n    " + desc});
-      pipelineSeqs.at(frag).insert({vGraphId, poplar::program::Sequence{}});
-      return pipelineSeqs.at(frag).at(vGraphId);
+      pipelineDescs.at(frag).insert({pipelineStage, "\n    " + desc});
+      pipelineSeqs.at(frag).insert(
+          {pipelineStage, poplar::program::Sequence{}});
+      return pipelineSeqs.at(frag).at(pipelineStage);
     }
   } else {
-    pipelineDescs.insert({frag, {{vGraphId, "\n    " + desc}}});
-    pipelineSeqs.insert({frag, {{vGraphId, poplar::program::Sequence{}}}});
-    return pipelineSeqs.at(frag).at(vGraphId);
+    pipelineDescs.insert({frag, {{pipelineStage, "\n    " + desc}}});
+    pipelineSeqs.insert({frag, {{pipelineStage, poplar::program::Sequence{}}}});
+    return pipelineSeqs.at(frag).at(pipelineStage);
   }
 }
 
 poplar::program::Sequence &
-PopPrograms::pipelineForwardFragment(VGraphId vGraphId,
+PopPrograms::pipelineForwardFragment(PipelineStage pipelineStage,
                                      const std::string &desc) {
-  return pipelineFragment(vGraphId, PipelineFragmentId::Forward, desc);
+  return pipelineFragment(pipelineStage, PipelineFragmentId::Forward, desc);
 }
 
 poplar::program::Sequence &
-PopPrograms::pipelineBackwardFragment(VGraphId vGraphId,
-                                      const std::string &desc) {
-  return pipelineFragment(vGraphId, PipelineFragmentId::Backward, desc);
-}
-
-poplar::program::Sequence &
-PopPrograms::pipelineToDeviceStreamFragment(VGraphId vGraphId,
+PopPrograms::pipelineToDeviceStreamFragment(PipelineStage pipelineStage,
                                             const std::string &desc) {
-  return pipelineFragment(vGraphId, PipelineFragmentId::ToDeviceStream, desc);
+  return pipelineFragment(
+      pipelineStage, PipelineFragmentId::ToDeviceStream, desc);
 }
 
 poplar::program::Sequence &
-PopPrograms::pipelineFwdToHostStreamFragment(VGraphId vGraphId,
-                                             const std::string &desc) {
-  return pipelineFragment(vGraphId, PipelineFragmentId::FwdToHostStream, desc);
+PopPrograms::pipelineToHostStreamFragment(PipelineStage pipelineStage,
+                                          const std::string &desc) {
+  return pipelineFragment(
+      pipelineStage, PipelineFragmentId::ToHostStream, desc);
 }
 
 poplar::program::Sequence &
-PopPrograms::pipelineRestoreFragment(VGraphId vGraphId,
+PopPrograms::pipelineIpuCopyFragment(PipelineStage pipelineStage,
                                      const std::string &desc) {
-  return pipelineFragment(vGraphId, PipelineFragmentId::Restore, desc);
-}
-
-poplar::program::Sequence &
-PopPrograms::pipelineBwdToHostStreamFragment(VGraphId vGraphId,
-                                             const std::string &desc) {
-  return pipelineFragment(vGraphId, PipelineFragmentId::BwdToHostStream, desc);
-}
-
-poplar::program::Sequence &
-PopPrograms::pipelineIncrStashIndexFragment(VGraphId vGraphId,
-                                            const std::string &desc) {
-  return pipelineFragment(vGraphId, PipelineFragmentId::IncrStashIndex, desc);
-}
-
-poplar::program::Sequence &
-PopPrograms::pipelineIpuCopyFwdFragment(VGraphId id, const std::string &desc) {
-  return pipelineFragment(id, PipelineFragmentId::IpuCopyFwd, desc);
-}
-
-poplar::program::Sequence &
-PopPrograms::pipelineIpuCopyBwdFragment(VGraphId id, const std::string &desc) {
-  return pipelineFragment(id, PipelineFragmentId::IpuCopyBwd, desc);
-}
-
-poplar::program::Sequence &
-PopPrograms::pipelineFwdOrBwdToHostStreamFragment(ScheduledPreLoss preLoss,
-                                                  VGraphId vGraphId,
-                                                  const std::string &desc) {
-  switch (preLoss) {
-  case ScheduledPreLoss::Yes: {
-    return pipelineFwdToHostStreamFragment(vGraphId, desc);
-  }
-  case ScheduledPreLoss::No: {
-    return pipelineBwdToHostStreamFragment(vGraphId, desc);
-  }
-  case ScheduledPreLoss::Undefined: {
-    throw error("There is no fragment for Undefined SchedulePreLoss");
-  }
-  }
+  return pipelineFragment(pipelineStage, PipelineFragmentId::IpuCopy, desc);
 }
 
 std::string
@@ -533,32 +428,16 @@ PopPrograms::getStrFromPipelineFragmentId(PipelineFragmentId fragId) {
   case PipelineFragmentId::Forward: {
     return "Forward";
   }
-  case PipelineFragmentId::Backward: {
-    return "Backward";
+  case PipelineFragmentId::ToHostStream: {
+    return "ToHostStream";
   }
-  case PipelineFragmentId::FwdToHostStream: {
-    return "FwdToHostStream";
+  case PipelineFragmentId::IpuCopy: {
+    return "IpuCopy";
   }
-  case PipelineFragmentId::BwdToHostStream: {
-    return "BwdToHostStream";
-  }
-  case PipelineFragmentId::IncrStashIndex: {
-    return "IncrStashIndex";
-  }
-  case PipelineFragmentId::IpuCopyFwd: {
-    return "IpuCopyFwd";
-  }
-  case PipelineFragmentId::IpuCopyBwd: {
-    return "IpuCopyBwd";
-  }
-
-  case PipelineFragmentId::Restore: {
-    return "Restore";
-  }
-
-  case PipelineFragmentId::N: {
-    throw error("Cannot return string for PipelineFragmentId 'N'");
-  }
+  case PipelineFragmentId::N:
+  default:
+    throw error("Cannot return string for PipelineFragmentId '{}'",
+                static_cast<int>(fragId));
   }
 }
 

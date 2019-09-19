@@ -3,6 +3,7 @@
 
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/optimizervalue.hpp>
 
 namespace popart {
 
@@ -42,48 +43,29 @@ private:
 
 class SGDVarUpdateOp : public VarUpdateOp {
 public:
-  SGDVarUpdateOp(TensorId, const Op::Settings &);
+  SGDVarUpdateOp(const TensorId &, // the name of the Tensor to update
+                 OptimizerValue initialScaledLearningRate,
+                 OptimizerValue initialWeightDecayScaleFactor,
+                 const Op::Settings &);
+
   std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
 
-  static InIndex getScaledLearnRateInIndex() { return 2; }
-  static InIndex getWeightDecayInIndex() { return 3; }
-  static InIndex getLossScalingInIndex() { return 4; }
+  // If the scaled learning rate is not constant, this is the index at which it
+  // will be consumed by this Op
+  static InIndex getScaledLearningRateInIndex() { return 2; }
 
-  std::map<InIndex, TensorId> optimizerInputs() const final {
-    return {{getScaledLearnRateInIndex(), inId(getScaledLearnRateInIndex())},
-            {getWeightDecayInIndex(), inId(getWeightDecayInIndex())},
-            {getLossScalingInIndex(), inId(getLossScalingInIndex())}};
-  }
+  // If the weight decay scale factor is not constant, this is the index at
+  // which it will be consumed by this Op
+  static InIndex getWeightDecayScaleFactorInIndex() { return 3; }
 
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &x) const final {
-    return std::unique_ptr<Op>(new SGDVarUpdateOp(x, settings));
-  }
-};
+  // map of size 0/1/2, containing all non-const optimizer Tensors for this Op
+  std::map<InIndex, TensorId> optimizerInputs() const final;
 
-class ConstSGDVarUpdateOp : public VarUpdateOp {
-public:
-  ConstSGDVarUpdateOp(TensorId,
-                      float learnRate,
-                      float weightDecay,
-                      float lossScaling,
-                      const Op::Settings &);
-  std::unique_ptr<Op> clone() const final;
-  float getLearnRate() const;
-  float getWeightDecay() const;
-  float getLossScaling() const;
-  void appendAttributes(OpSerialiserBase &is) const;
+  const OptimizerValue initScaledLearningRate;
+  const OptimizerValue initWeightDecayScaleFactor;
 
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &x) const final {
-    return std::unique_ptr<Op>(new ConstSGDVarUpdateOp(
-        x, learnRate, weightDecay, lossScaling, settings));
-  }
-
-  std::map<InIndex, TensorId> optimizerInputs() const final { return {}; }
-
-private:
-  float learnRate;
-  float weightDecay;
-  float lossScaling;
+  void appendAttributes(OpSerialiserBase &) const final;
 };
 
 class CopyVarUpdateOp : public VarUpdateOp {

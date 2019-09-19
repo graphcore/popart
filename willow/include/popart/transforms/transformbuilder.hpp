@@ -18,6 +18,7 @@ class TransformBuilder {
               std::vector<TensorId> &inputs,
               std::map<std::string, boost::any> attributes,
               boost::optional<int64_t> virtualGraphId,
+              boost::optional<int64_t> pipelineStage,
               const std::string opName,
               const std::string outputName);
 
@@ -26,6 +27,7 @@ class TransformBuilder {
                     std::map<std::string, boost::any> attributes,
                     TensorId &out,
                     boost::optional<int64_t> virtualGraphId,
+                    boost::optional<int64_t> pipelineStage,
                     const std::string debugPrefix);
 
 public:
@@ -35,18 +37,21 @@ public:
 
   TensorId concat(std::vector<TensorId> &inputs,
                   boost::optional<int64_t> virtualGraphId,
+                  boost::optional<int64_t> pipelineStage,
                   const std::string opName,
                   const std::string outputName);
 
   TensorId matmul(TensorId lhs,
                   TensorId rhs,
                   boost::optional<int64_t> virtualGraphId,
+                  boost::optional<int64_t> pipelineStage,
                   const std::string opName,
                   const std::string outputName);
 
   TensorId squeeze(TensorId in,
                    const Shape &axes,
                    boost::optional<int64_t> virtualGraphId,
+                   boost::optional<int64_t> pipelineStage,
                    const std::string opName,
                    const std::string outputName);
 
@@ -54,6 +59,7 @@ public:
                const Shape &axes,
                TensorId out,
                boost::optional<int64_t> virtualGraphId,
+               boost::optional<int64_t> pipelineStage,
                const std::string opName);
 
   TensorId slice(TensorId in,
@@ -61,6 +67,7 @@ public:
                  const Shape &ends,
                  const Shape &axes,
                  boost::optional<int64_t> virtualGraphId,
+                 boost::optional<int64_t> pipelineStage,
                  const std::string opName,
                  const std::string outputName);
 
@@ -70,11 +77,13 @@ public:
              const Shape &axes,
              TensorId out,
              boost::optional<int64_t> virtualGraphId,
+             boost::optional<int64_t> pipelineStage,
              const std::string opName);
 
   TensorId transpose(TensorId in,
                      Shape perm,
                      boost::optional<int64_t> virtualGraphId,
+                     boost::optional<int64_t> pipelineStage,
                      const std::string opName,
                      const std::string outTensorName);
 
@@ -82,11 +91,13 @@ public:
                  Shape perm,
                  TensorId out,
                  boost::optional<int64_t> virtualGraphId,
+                 boost::optional<int64_t> pipelineStage,
                  const std::string opName);
 
   TensorId reshape(TensorId in,
                    Shape shape,
                    boost::optional<int64_t> virtualGraphId,
+                   boost::optional<int64_t> pipelineStage,
                    const std::string opName,
                    const std::string outputName);
 };

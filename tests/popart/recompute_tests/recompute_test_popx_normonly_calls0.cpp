@@ -17,8 +17,6 @@
 #undef private
 #undef public
 
-// TODO(jn) check values correct in python tests
-
 using namespace popart;
 
 TensorId conv(Builder *b, TensorId act, ConstVoidData wdata) {

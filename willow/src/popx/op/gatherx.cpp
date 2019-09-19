@@ -63,8 +63,15 @@ void GatherOpx::grow(poplar::program::Sequence &prog) const {
     // Flatten the other dimensions.
     data = data.flatten(1, data.rank());
 
-    auto result = popops::multiSlice(
-        graph(), data, offsets, {0}, {1}, prog, debugPrefix());
+    auto result = popops::multiSlice(graph(),
+                                     data,
+                                     offsets,
+                                     {0},
+                                     {1},
+                                     prog,
+                                     popops::SlicePlan(),
+                                     poplar::OptionFlags(),
+                                     debugPrefix());
 
     // Reshape the result to "unflatten" the other dimensions.
     tmp_shape.front() = result.dim(0);
@@ -163,8 +170,17 @@ void GatherGradOpx::grow(poplar::program::Sequence &prog) const {
   indices = indices.reinterpret(poplar::UNSIGNED_INT);
 
   // Accumulate the updates into the target
-  popops::multiUpdateAdd(
-      graph(), target, update, indices, scale, {0}, {1}, prog, debugPrefix());
+  popops::multiUpdateAdd(graph(),
+                         target,
+                         update,
+                         indices,
+                         scale,
+                         {0},
+                         {1},
+                         prog,
+                         popops::SlicePlan(),
+                         poplar::OptionFlags(),
+                         debugPrefix());
 
   setOutTensor(GatherGradOp::gradOutIndex(), result);
 }

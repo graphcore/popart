@@ -38,6 +38,7 @@
 #include <popart/transforms/auto_virtual_graph.hpp>
 #include <popart/transforms/gradient_accumulation.hpp>
 #include <popart/transforms/groupmatmuls.hpp>
+#include <popart/transforms/inferpipelinestages.hpp>
 #include <popart/transforms/interipucopy.hpp>
 #include <popart/transforms/mergecopies.hpp>
 #include <popart/transforms/mergevarupdates.hpp>
@@ -77,47 +78,38 @@ GradNonGradPair::GradNonGradPair() : GradNonGradPair(nullptr, nullptr) {}
 
 const onnx::ModelProto &Ir::getModel() const { return *onnxModel; }
 
-std::vector<Tensor *> Ir::optimizerTensors() const {
-  std::vector<Tensor *> optTensors;
-  if (optimizer.get() != nullptr) {
-    for (auto &id_info : optimizer->tensorInfos()) {
-      // some tensors might have been removed,
-      // check they exist before calling getTensors().get(...)
-      if (getTensors().contains(id_info.first)) {
-        optTensors.push_back(getTensors().get(id_info.first));
-      }
-    }
-  }
-  return optTensors;
-}
-
 // the rule followed : a Stream tensor which is not an
 // optimizer tensor is a streamed data tensor
 std::vector<Tensor *> Ir::dataStreamTensors() const {
   std::vector<Tensor *> dsTensors;
-  std::map<TensorId, TensorInfo> optTensorInfo;
-  if (optimizer != nullptr) {
-    optTensorInfo = optimizer->tensorInfos();
-  }
-  for (TensorId id : getTensors().getIds(TensorType::Stream)) {
-    if (optTensorInfo.find(id) == optTensorInfo.end()) {
-      dsTensors.push_back(getTensors().get(id));
+  for (auto tensor : getTensors().getOfType(TensorType::Stream)) {
+    if (!tensor->isOptimizerTensor()) {
+      dsTensors.push_back(tensor);
     }
   }
   return dsTensors;
 }
 
-void Ir::updateOptimizer(const Optimizer *newOptimizer) {
-  if (optimizer.get() == nullptr) {
-    throw error("ILE: cannot update optimizer before it is set");
+std::vector<Tensor *> Ir::optimizerTensors() const {
+  std::vector<Tensor *> optimizerTensors;
+  for (auto tensor : getTensors().getOfType(TensorType::Stream)) {
+    if (tensor->isOptimizerTensor()) {
+      optimizerTensors.push_back(tensor);
+    }
   }
+  return optimizerTensors;
+}
+
+void Ir::updateOptimizer(const Optimizer &newOptimizer) {
   if (!optimizer->validReplacement(newOptimizer)) {
-    throw error("This Optimizer of type " + newOptimizer->type_s() +
+    throw error("This Optimizer of type " + newOptimizer.type_s() +
                 " is not a valid replacement for optimizer of type " +
                 optimizer->type_s());
   }
-  optimizer = newOptimizer->clone();
-  optimizer->resetTensorDatas(getMainGraph());
+  optimizer = newOptimizer.clone();
+  for (auto opt : optimizerTensors()) {
+    optimizer->resetTensorData(*opt);
+  }
 }
 
 void Ir::dotCheckpoint(DotCheck check) const {
@@ -223,21 +215,15 @@ void Ir::setLosses(const std::vector<Loss *> &_losses) {
   }
 }
 
-void Ir::setOptimizer(const Optimizer *o) {
-  if (o) {
-    optimizer = o->clone();
+void Ir::setOptimizer(const Optimizer &o) {
+  optimizer = o.clone();
 
-    for (auto &id_info : optimizer->tensorInfos()) {
-      TensorId id     = id_info.first;
-      TensorInfo info = id_info.second;
-      getTensors().addStream(id, info);
-
-      Tensor *tensor = getTensors().get(id);
-      optimizer->setTensorData(tensor);
-
-      // optimizer tensors are a speical type of stream which is broadcast
-      tensor->setReplicatedStreamMode(Tensor::ReplicatedStreamMode::Broadcast);
-    }
+  // We create scale factor Tensors now (they will be removed later if not
+  // used). All other optimizer Tensors are created just-in-time during Graph
+  // construction
+  for (DataType dt : {DataType::FLOAT, DataType::FLOAT16}) {
+    auto id = optimizer->getLossScalingTensorId(dt);
+    ensureOptimizerTensorCreated(id, {dt, {}});
   }
 }
 
@@ -251,9 +237,14 @@ void Ir::logIr() {
   logging::ir::info(ss2.str());
 }
 
-void Ir::verifyPiplineStageAttribute() const {
+void Ir::verifyPipelineSettings() const {
   if (!getSessionOptions().enablePipelining) {
     return;
+  }
+
+  if (!virtualGraphsEnabled()) {
+    throw error("Pipelining requires the 'virtualGraphMode' session option "
+                "to not be VirtualGraphMode::Off.");
   }
 
   auto getPipelineStage = [](auto x) -> PipelineStage {
@@ -274,12 +265,16 @@ void Ir::verifyPiplineStageAttribute() const {
 
   // collect a set of vgraph ids for each pipeline stage
   std::map<PipelineStage, std::vector<Op *>> pipelineStages;
+  std::map<VGraphId, std::set<PipelineStage>> pipelineStagesPerVGraph;
 
   for (auto &id_op : getMainGraph().getOps()) {
     auto op = id_op.second.get();
     if (!op->isConvertibleTo<IpuCopyOp>()) {
       auto ps = getPipelineStage(op);
       pipelineStages[ps].push_back(op);
+
+      auto vgraph = getVirtualGraphId(op);
+      pipelineStagesPerVGraph[vgraph].insert(ps);
     }
   }
 
@@ -303,6 +298,7 @@ void Ir::verifyPiplineStageAttribute() const {
   }
   // all ops have had the pipeline stage attribute set
   else if (pipelineStages.count(-1) == 0) {
+
     // check that all ops in a pipeline stage have the same virtualGraph
     for (auto &ps_ops : pipelineStages) {
       auto ps   = ps_ops.first;
@@ -643,7 +639,7 @@ void Ir::prepare(const IrBundle &gb) {
 
   // Check virtual graph settings and annotations are consistent
   verifyVirtualGraphIds(false);
-  verifyPiplineStageAttribute();
+  verifyPipelineSettings();
 
   dotCheckpoint(DotCheck::FWD0);
 
@@ -656,6 +652,10 @@ void Ir::prepare(const IrBundle &gb) {
   enableTransform(AutoVirtualGraph::id(),
                   userOptions.virtualGraphMode == VirtualGraphMode::Auto);
   applyTransform(AutoVirtualGraph::id(), getMainGraph());
+
+  if (getSessionOptions().enablePipelining) {
+    applyTransform(InferPipelineStages::id(), getMainGraph());
+  }
 
   if (canEvaluate()) {
     growFinalLoss();
@@ -671,7 +671,9 @@ void Ir::prepare(const IrBundle &gb) {
   // at this point. We may want something more subtle.
   removeIsolatedTensors();
 
-  setOptimizer(gb.optimizer);
+  if (gb.optimizer) {
+    setOptimizer(*gb.optimizer);
+  }
 
   updateVertices();
   if (canTrain()) {
@@ -1358,6 +1360,21 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   if (virtualGraphsEnabled()) {
     gradSum->setVirtualGraphId(getVirtualGraphIdFromTensorProducers(toSum));
   }
+  if (getSessionOptions().enablePipelining) {
+    // Get all the producers pipeline stages and use the lowest one for the grad
+    // sum op.
+    std::set<PipelineStage> ps;
+    for (auto t : toSum) {
+      // Pipeline stage will not be set if user has not explicitly set it.
+      if (t->getProducer()->hasPipelineStage()) {
+        ps.insert(t->getProducer()->getPipelineStage());
+      }
+    }
+
+    if (ps.size() > 0) {
+      gradSum->setPipelineStage(*std::max_element(ps.begin(), ps.end()));
+    }
+  }
 
   OpId opId = getMainGraph().moveIntoGraph(std::move(gradSum));
 
@@ -1376,7 +1393,23 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
   return op;
 }
 
+PipelineStage Ir::getFinalLossPipelineStage() const {
+  auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);
+  if (finalLossOpFound != getMainGraph().getOps().end()) {
+    auto lossOp = finalLossOpFound->second.get();
+    return lossOp->getPipelineStage();
+  } else {
+    throw error("Could not find final loss to get PipelineStage from");
+  }
+}
+
 std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
+  PipelineStage maxPipelineStage = 0;
+  if (getSessionOptions().enablePipelining) {
+    // the last fwd pass pipeline stage is also the first bwd pass pipeline
+    // stage.
+    maxPipelineStage = getFinalLossPipelineStage() * 2;
+  }
 
   OpId nonGradOpId = nonGradOp->id;
   auto backOps     = nonGradOp->getGradOps();
@@ -1391,6 +1424,11 @@ std::vector<Op *> Ir::growGradOps(Op *nonGradOp) {
     if (nonGradOp->settings.recomputeType == RecomputeType::RECOMPUTE &&
         autoRecomputationEnabled()) {
       throw error("Grad Ops should be grown before recompute annotation");
+    }
+
+    if (nonGradOp->hasPipelineStage()) {
+      gradOp->setPipelineStage(maxPipelineStage -
+                               nonGradOp->getPipelineStage());
     }
 
     // connect inputs of gradOp
@@ -1854,8 +1892,6 @@ void Ir::constructBackwards() {
       Op *sumOp = growGradSumOp(nongrad, egrads);
 
       sumOp->fromLoss = PathFromLoss::Yes;
-      logging::ir::trace("New gradient sumOp, {}, created", sumOp->str());
-
       switch (nongrad->tensorType()) {
 
       // if sumOp creates the gradient of an activation tensor,
@@ -1956,18 +1992,49 @@ void Ir::growCopyVarUpdateOp(const TensorId &varId, const TensorId &from) {
 
 void Ir::growGradientVarUpdateOp(const TensorId &varId) {
 
+  logging::ir::info("Growing gradient var update op for {}", varId);
+
   // A sanity check that the Tensor is not fixed point type
   if (getTensors().get(varId)->info.getDataTypeInfo()->isFixedPoint()) {
     throw error("Currently only floating point variable tensors are updatable");
   }
-  auto inputs =
-      optimizer->getInputIds(varId, getTensors().get(varId)->info.dataType());
-  if (getMainGraph().getTensors().contains(
-          inputs.at(VarUpdateOp::getUpdaterInIndex()))) {
-    OpId opId = getMainGraph().moveIntoGraph(
-        optimizer->createOp(varId, getMainGraph()));
-    getMainGraph().connectInputs(InputVecWrapper(inputs), opId);
+
+  const Tensor &var    = *getTensors().get(varId);
+  auto inputIds        = optimizer->getInputIds(var);
+  auto optimizerInputs = optimizer->getOptimizerInputs(var);
+
+  // If there is no weight gradient, we assume that the gradient has been
+  // forced to zero somewhere else in the backwards pass
+  bool updaterAvailable = getMainGraph().getTensors().contains(
+      inputIds.at(VarUpdateOp::getUpdaterInIndex()));
+
+  if (updaterAvailable) {
+
+    // create the required optimizer tensors as needed
+    for (auto opt : optimizerInputs) {
+      auto optId   = std::get<0>(opt);
+      auto optInfo = std::get<1>(opt);
+      ensureOptimizerTensorCreated(optId, optInfo);
+    }
+
+    OpId opId =
+        getMainGraph().moveIntoGraph(optimizer->createOp(var, getMainGraph()));
+
+    getMainGraph().connectInputs(InputVecWrapper(inputIds), opId);
     growVarUpdateOpInternal(opId);
+  }
+}
+
+void Ir::ensureOptimizerTensorCreated(const TensorId &optId,
+                                      const TensorInfo &info) {
+  if (!getTensors().contains(optId)) {
+
+    getTensors().addStream(optId, info);
+    Tensor &optTensor = *getTensors().get(optId);
+    optimizer->setTensorData(optTensor);
+
+    // optimizer tensors are a special type of stream which is broadcast
+    optTensor.setReplicatedStreamMode(Tensor::ReplicatedStreamMode::Broadcast);
   }
 }
 
@@ -1978,6 +2045,21 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
   if (virtualGraphsEnabled()) {
     op->setVirtualGraphId(
         getVirtualGraphIdFromTensorProducers(op->input->tensors()));
+  }
+
+  if (getSessionOptions().enablePipelining) {
+    // Get the pipeline stages from the inputs producers.
+    std::set<PipelineStage> stages;
+    for (auto input : op->input->tensors()) {
+      if (input->hasProducer() && input->getProducer()->hasPipelineStage()) {
+        stages.insert(input->getProducer()->getPipelineStage());
+      }
+    }
+
+    // Set the op to the highest pipeline stage if there is one.
+    if (stages.size() > 0) {
+      op->setPipelineStage(*std::max_element(stages.begin(), stages.end()));
+    }
   }
 
   auto varUpdateOp = dynamic_cast<VarUpdateOp *>(op);
@@ -2009,8 +2091,6 @@ void Ir::growFinalLoss() {
   for (auto &loss : losses) {
     OpId opId = getMainGraph().moveIntoGraph(loss->getOp({getMainGraph(), ""}));
     Op *lossOp = getMainGraph().getOps()[opId].get();
-    logging::ir::trace("Connecting inputs/outputs for Loss Op {}",
-                       lossOp->str());
     getMainGraph().connectInputs(*loss, opId);
     getMainGraph().connectOutputs(*loss, opId);
     lossOps.push_back(lossOp);
@@ -2027,6 +2107,22 @@ void Ir::growFinalLoss() {
                           getOpSetVersionFromModel(Domain::ai_onnx),
                           getMainGraph(),
                           "FinalLoss");
+
+  if (getSessionOptions().enablePipelining) {
+    // Get the pipeline stages of the losses and use the highest one for the
+    // final loss sum.
+    std::set<PipelineStage> lossPipelineStages;
+    for (auto &op : lossOps) {
+      if (op->hasPipelineStage()) {
+        lossPipelineStages.insert(op->getPipelineStage());
+      }
+    }
+
+    if (lossPipelineStages.size() > 0) {
+      finalLossSum->setPipelineStage(*std::max_element(
+          lossPipelineStages.begin(), lossPipelineStages.end()));
+    }
+  }
 
   // The final Loss Op is the only Op which (we say) has both paths to and from
   finalLossSum->toLoss   = PathToLoss::Yes;
@@ -2152,6 +2248,7 @@ unsigned Ir::getMaxVirtualGraphId() const {
 }
 
 std::vector<GradNonGradPair> Ir::growLossGradients() {
+
   auto finalLossOpFound = getMainGraph().getOps().find(finalLossOpId);
   if (finalLossOpFound != getMainGraph().getOps().end()) {
     std::vector<GradNonGradPair> pairs;
@@ -2418,7 +2515,7 @@ Tensor *Ir::getTensor(const TensorId &tensor_id) const {
     }
   }
 
-  throw error("no tensor with id " + tensor_id);
+  throw error("no Ir::Tensor with TensorId, in Ir::getTensor(..) " + tensor_id);
 }
 
 bool Ir::containsTensor(const TensorId &tensor_id) const {
