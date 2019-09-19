@@ -1,0 +1,6 @@
+#!/bin/bash
+
+source @POPLAR_INSTALL_DIR@/enable.sh
+source @CMAKE_CURRENT_BINARY_DIR@/enable.sh
+
+python ${*}
