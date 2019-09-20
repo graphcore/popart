@@ -242,6 +242,13 @@ void ConvOpx::grow(poplar::program::Sequence &prog) const {
                                        getOptions(),
                                        &(dv_p->convCache));
 
+  // Log the report plan
+  std::stringstream ss;
+  poplin::reportPlanInfo(
+      ss, graph(), popConvParams, getOptions(), &(dv_p->convCache));
+  logging::opx::debug("Conv {} plan", op_p->str());
+  logging::log(logging::Module::opx, logging::Level::Debug, ss.str());
+
   setOutTensor(ConvOp::getOutIndex(), outTensor);
 }
 
@@ -268,6 +275,17 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
       debugPrefix("weightDeltas"),
       optionFlags,
       &dv_p->convCache);
+
+  // Log the report plan
+  std::stringstream ss;
+  poplin::reportWeightUpdatePlanInfo(
+      ss,
+      graph(),
+      getPoplarConvParams(convOp->getParameters()),
+      optionFlags,
+      &(dv_p->convCache));
+  logging::opx::debug("ConvWeightUpdate {} plan", op_p->str());
+  logging::log(logging::Module::opx, logging::Level::Debug, ss.str());
 
   // Shape of weights Popart Tensor of forward Op
   // auto fwdShape = convOp->inInfo(convOp->getWeightsInIndex()).shape_szt(); //

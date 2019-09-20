@@ -406,6 +406,19 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
                             opts,                         // options
                             &dv_p->matmulCache);          // cache
 
+  // Log the report plan
+  std::stringstream ss;
+  poplin::matMulGroupedReportPlan(ss,
+                                  graph(),
+                                  combinedBroadcastTs.first.elementType(),
+                                  outTensor.elementType(),
+                                  combinedBroadcastTs.first.shape(),
+                                  combinedBroadcastTs.second.shape(),
+                                  opts,
+                                  &dv_p->matmulCache);
+  logging::opx::debug("Grouped Matmul {} plan", op_p->str());
+  logging::log(logging::Module::opx, logging::Level::Debug, ss.str());
+
   // Split the broadcast dimensions from the rows and columns
   //
   // The shapes in the given example
@@ -721,6 +734,19 @@ void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
                             opts,                         // options
                             &dv_p->matmulCache);          // cache
 
+  // Log the report plan
+  std::stringstream ss;
+  poplin::matMulGroupedReportPlan(ss,
+                                  graph(),
+                                  combinedBroadcastTs.first.elementType(),
+                                  outTensor.elementType(),
+                                  combinedBroadcastTs.first.shape(),
+                                  combinedBroadcastTs.second.shape(),
+                                  opts,
+                                  &dv_p->matmulCache);
+  logging::opx::debug("Grouped Matmul {} plan", op_p->str());
+  logging::log(logging::Module::opx, logging::Level::Debug, ss.str());
+
   outTensor = matSplitBroadcastDims(
       outTensor, reshapedGroupsTs.first, reshapedGroupsTs.second);
 
@@ -836,6 +862,19 @@ void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
                             debugPrefix("matmulGrouped"), // debugPrefix
                             opts,                         // options
                             &dv_p->matmulCache);          // cache
+
+  // Log the report plan
+  std::stringstream ss;
+  poplin::matMulGroupedReportPlan(ss,
+                                  graph(),
+                                  combinedBroadcastTs.first.elementType(),
+                                  outTensor.elementType(),
+                                  combinedBroadcastTs.first.shape(),
+                                  combinedBroadcastTs.second.shape(),
+                                  opts,
+                                  &dv_p->matmulCache);
+  logging::opx::debug("Grouped Matmul {} plan", op_p->str());
+  logging::log(logging::Module::opx, logging::Level::Debug, ss.str());
 
   outTensor = matSplitBroadcastDims(
       outTensor, reshapedGroupsTs.first, reshapedGroupsTs.second);
