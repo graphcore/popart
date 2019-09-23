@@ -7,10 +7,11 @@ if (BUILD_DOCS)
 
   list(APPEND DOXYGEN_INPUT0 "")
   list(APPEND DOXYGEN_INPUT0 ${CMAKE_CURRENT_SOURCE_DIR}/../willow/include)
-  list(APPEND DOXYGEN_INPUT0 ${CMAKE_CURRENT_SOURCE_DIR}/../${INSTALL_PYDIR})
 
   string(REPLACE ";" " " DOXYGEN_INPUT "${DOXYGEN_INPUT0}")
-  configure_file(user_guide/Doxyfile.in Doxyfile @ONLY)
+  configure_file(api_cpp/Doxyfile.in Doxyfile @ONLY)
+
+  configure_file(./gen_docs.sh.in gen_docs.sh @ONLY)
 
   set(RELEASE "0.2.2")
 
@@ -43,77 +44,66 @@ if (BUILD_DOCS)
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}
   )
 
-  add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pdf_user_guide
-    COMMAND cp -R ${CMAKE_CURRENT_SOURCE_DIR}/user_guide
-    ${CMAKE_CURRENT_BINARY_DIR}/pdf_user_guide
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}
-  )
-
-  add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html_user_guide
-    COMMAND cp -R ${CMAKE_CURRENT_SOURCE_DIR}/user_guide
-    ${CMAKE_CURRENT_BINARY_DIR}/html_user_guide
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}
-  )
-
-  # Note : To keep the temporay files add the '-save-temps' option to the GCDOC command
+  # Note : To keep the temporary files add the '-save-temps' option to the GCDOC command
 
   add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/pdfgen
-    COMMAND ${GCDOC} -v -x ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-                     -r ${RELEASE}
-		     -b pdf
-         ${CMAKE_CURRENT_BINARY_DIR}/pdf_user_guide
-         ${CMAKE_CURRENT_BINARY_DIR}/latex/popart.pdf
-    COMMENT "Building PDF documentation from 'user_guide' directory"
+    COMMAND ${GCDOC} -v -r ${RELEASE} -b pdf ${CMAKE_CURRENT_SOURCE_DIR}/user_guide ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf
+    COMMAND ${GCDOC} -v -x ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile -r ${RELEASE} -b pdf ${CMAKE_CURRENT_SOURCE_DIR}/api_cpp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf
+    COMMAND bash ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh ${GCDOC} -v -r ${RELEASE} -b pdf ${CMAKE_CURRENT_SOURCE_DIR}/api_python ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf
+    COMMENT "Building PDF documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/latex
-    ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    ${CMAKE_CURRENT_BINARY_DIR}/pdf_user_guide
-	    ${SUPPORTED_OPS_GEN}
-	    popart_examples
-            popart_core
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
+    ${CMAKE_CURRENT_BINARY_DIR}/latex
+    ${SUPPORTED_OPS_GEN}
+    popart_examples
+    popart_core
   )
 
   add_custom_command(
     OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html
-    COMMAND ${GCDOC} -v -x ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-                     -r ${RELEASE}
-		     -b html
-         ${CMAKE_CURRENT_BINARY_DIR}/html_user_guide
-         ${CMAKE_CURRENT_BINARY_DIR}/html
-    COMMENT "Building html documentation from 'user_guide' directory"
+    COMMAND ${GCDOC} -v -r ${RELEASE} -b html ${CMAKE_CURRENT_SOURCE_DIR}/user_guide ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
+    COMMAND ${GCDOC} -v -x ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile -r ${RELEASE} -b html ${CMAKE_CURRENT_SOURCE_DIR}/api_cpp ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
+    COMMAND bash ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh ${GCDOC} -v -r ${RELEASE} -b html ${CMAKE_CURRENT_SOURCE_DIR}/api_python ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
+    COMMENT "Building html documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    ${CMAKE_CURRENT_BINARY_DIR}/html/doxygen/latex
-    ${CMAKE_CURRENT_BINARY_DIR}/html_user_guide
-	    ${SUPPORTED_OPS_GEN}
-	    popart_examples
-            popart_core
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
+    ${SUPPORTED_OPS_GEN}
+    popart_examples
+    popart_core
   )
 
   add_custom_target(html_zip ALL
-    COMMAND zip -r ${PROJECT_BINARY_DIR}/${USER_GUIDE_HTML_NAME} . -i *
+    COMMAND zip -r ${PROJECT_BINARY_DIR}/${USER_GUIDE_HTML_NAME} . -i popart_user_guide/*
+    COMMAND zip -r ${PROJECT_BINARY_DIR}/${PYTHON_API_HTML_NAME} . -i popart_api_python/*
+    COMMAND zip -r ${PROJECT_BINARY_DIR}/${CPP_API_HTML_NAME} . -i popart_api_cpp/*
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html
     VERBATIM
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html
   )
 
   add_custom_target(pdf_copy ALL
-    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart.pdf ${PROJECT_BINARY_DIR}/${USER_GUIDE_PDF_NAME}
+    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf ${PROJECT_BINARY_DIR}/${USER_GUIDE_PDF_NAME}
+    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf ${PROJECT_BINARY_DIR}/${CPP_API_PDF_NAME}
+    COMMAND cp ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf ${PROJECT_BINARY_DIR}/${PYTHON_API_PDF_NAME}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/pdfgen
   )
 
-install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION docs
-          COMPONENT popart-docs)
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION docs
+            COMPONENT popart-docs)
 
-        install(FILES ${CMAKE_CURRENT_BINARY_DIR}/latex/popart.pdf DESTINATION docs/pdf
-          COMPONENT popart-docs)
+  install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_user_guide.pdf
+    ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_cpp.pdf
+    ${CMAKE_CURRENT_BINARY_DIR}/latex/popart_api_python.pdf
+    DESTINATION docs/pdf
+    COMPONENT popart-docs)
 
-        install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/doxygen/html
-          DESTINATION docs/doxygen
-          COMPONENT popart-docs)
+  install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/
+    DESTINATION docs/popart_api_cpp/doxygen
+    COMPONENT popart-docs)
 
 else()
   install(FILES)

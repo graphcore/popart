@@ -72,7 +72,6 @@ target_link_libraries(popart
   ${POPLIN_LIB}
   ${POPNN_LIB}
   ${POPOPS_LIB}
-  ${POPSYS_LIB}
   ${POPRAND_LIB}
   ${POPUTIL_LIB}
 )
