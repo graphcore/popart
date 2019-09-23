@@ -148,8 +148,6 @@ public:
 
   // Set the optimization patterns
   void setPatterns(const Patterns &p);
-  std::string getPatternLevelStr(const Patterns &p);
-  bool isPatternsLevel(const Patterns &p, PatternsLevel level);
 
   // Remove from the IR any tensors which are unconnected, i.e.
   // the have no producers or consumers

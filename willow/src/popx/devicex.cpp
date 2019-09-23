@@ -8,13 +8,14 @@
 
 #include <boost/range/algorithm/find.hpp>
 
-#include <poplar/CSRFunctions.hpp>
 #include <poplin/codelets.hpp>
 #include <popnn/codelets.hpp>
 #include <popops/ElementWise.hpp>
 #include <popops/codelets.hpp>
 #include <poprand/RandomGen.hpp>
 #include <poprand/codelets.hpp>
+#include <popsys/CSRFunctions.hpp>
+#include <popsys/codelets.hpp>
 #include <poputil/exceptions.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
@@ -1032,15 +1033,12 @@ PriTask Devicex::setInitTensorValTask(Tensor *tensor) {
       setInitValHalf(tensor);
       break;
     }
-    case DataType::BOOL: {
-      setInitVal<bool>(tensor);
-      break;
-    }
 
     case DataType::UNDEFINED:
     case DataType::UINT8:
     case DataType::INT8:
     case DataType::INT64:
+    case DataType::BOOL:
     case DataType::UINT16:
     case DataType::INT16:
     case DataType::STRING:
@@ -1714,8 +1712,8 @@ void Devicex::setFloatingPointBehaviour(poplar::Graph &graph) {
     if (deviceInfo->getType() == DeviceType::Ipu) {
       logging::devicex::info("Enabling all floating point checks");
       // Not enabling stochasitc rounding, that is done in a seperate call
-      poplar::FloatingPointBehaviour behaviour(true, true, true, false, true);
-      poplar::setFloatingPointBehaviour(
+      popsys::FloatingPointBehaviour behaviour(true, true, true, false, true);
+      popsys::setFloatingPointBehaviour(
           graph, progs.initFragment(), behaviour, "/init");
     } else {
       logging::devicex::warn(
@@ -1731,7 +1729,7 @@ void Devicex::setStochasticRoundingBehaviour(poplar::Graph &graph) {
     if (deviceInfo->getType() == DeviceType::Ipu) {
       logging::devicex::info("Enabling stochastic rounding");
       bool behaviour = true;
-      poplar::setStochasticRounding(
+      popsys::setStochasticRounding(
           graph, progs.initFragment(), behaviour, "/init");
     } else {
       logging::devicex::warn(
@@ -1762,6 +1760,7 @@ void Devicex::prepare() {
   poplin::addCodelets(graph());
   popnn::addCodelets(graph());
   poprand::addCodelets(graph());
+  popsys::addCodelets(graph());
 
   // Add custom codelets as per the user provided list of paths. Allow poplar to
   // infer the file type from the extension. Also feed through the compile

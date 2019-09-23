@@ -15,5 +15,6 @@ PopART User Guide
     supported_ops
     env_vars
     references
+    api
     batch_size
     legal

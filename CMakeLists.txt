@@ -52,7 +52,7 @@ set(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
 
 find_package(Threads REQUIRED)
 
-find_package(PROTOBUF REQUIRED)
+find_package(PROTOBUF REQUIRED) 
 
 # Using installed cmake find (ONNX must be installed)
 # For a hand-crafted Findonnx script, see a very early commit
@@ -110,7 +110,7 @@ set(VERSION ${VERSION}.${CPACK_PACKAGE_VERSION_PATCH})
 execute_process(COMMAND
   git rev-parse --short=10 HEAD
   WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-  OUTPUT_VARIABLE GIT_COMMIT_HASH
+  OUTPUT_VARIABLE GIT_COMMIT_HASH 
   OUTPUT_STRIP_TRAILING_WHITESPACE)
 
 add_subdirectory(willow)
@@ -139,10 +139,6 @@ set(CPACK_PACKAGE_FILE_NAME ${PACKAGE_FILE_NAME})
 
 set(USER_GUIDE_PDF_NAME popart-user-guide-${VERSION}-${SNAPSHOT}.pdf)
 set(USER_GUIDE_HTML_NAME popart-user-guide-html-${VERSION}-${SNAPSHOT}.zip)
-set(PYTHON_API_PDF_NAME popart-python-api-${VERSION}-${SNAPSHOT}.pdf)
-set(PYTHON_API_HTML_NAME popart-python-api-html-${VERSION}-${SNAPSHOT}.zip)
-set(CPP_API_PDF_NAME popart-cpp-api-${VERSION}-${SNAPSHOT}.pdf)
-set(CPP_API_HTML_NAME popart-cpp-api-html-${VERSION}-${SNAPSHOT}.zip)
 set(PRODINFO_FILE_NAME popart-${VERSION}-${SNAPSHOT}.yml)
 
 include(CPack)
@@ -158,10 +154,6 @@ add_custom_target(package_and_move
   COMMAND bash -c "mv ${PACKAGE_FILE_NAME}.tar.gz ${PKG_UPLOAD_DIR}"
   COMMAND bash -c "mv ${PRODINFO_FILE_NAME} ${PKG_UPLOAD_DIR}"
   COMMAND bash -c "mv ${USER_GUIDE_PDF_NAME} ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${USER_GUIDE_HTML_NAME} ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${PYTHON_API_PDF_NAME} ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${PYTHON_API_HTML_NAME} ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${CPP_API_HTML_NAME} ${PKG_UPLOAD_DIR}"
   COMMAND bash -c "mv ${USER_GUIDE_HTML_NAME} ${PKG_UPLOAD_DIR}"
 )
 else()
@@ -184,22 +176,6 @@ if(BUILD_DOCS)
 
   string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime user guide (HTML)\n"
                              "    file: ${USER_GUIDE_HTML_NAME}\n"
-                             "    type: html_zip\n")
-
-  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime user guide (PDF)\n"
-                             "    file: ${PYTHON_API_PDF_NAME}\n"
-                             "    type: pdf\n")
-
-  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime user guide (HTML)\n"
-                             "    file: ${PYTHON_API_HTML_NAME}\n"
-                             "    type: html_zip\n")
-
-  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime user guide (PDF)\n"
-                             "    file: ${CPP_API_PDF_NAME}\n"
-                             "    type: pdf\n")
-
-  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime user guide (HTML)\n"
-                             "    file: ${CPP_API_HTML_NAME}\n"
                              "    type: html_zip\n")
 endif()
 

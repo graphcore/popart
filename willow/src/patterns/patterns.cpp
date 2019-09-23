@@ -4,10 +4,12 @@
 namespace popart {
 
 Patterns::Patterns(PatternsLevel level) {
-  switch (level) {
 
+  // step 1 : adding patterns to run
+  switch (level) {
   // add the default patterns
   case PatternsLevel::DEFAULT: {
+    logging::pattern::info("Enabling default patterns");
     auto patternList = PreAliasPatternManager::getPatternList();
     for (auto pattern : patternList) {
       settings.insert(std::pair<PreAliasPatternType, bool>(
@@ -16,9 +18,9 @@ Patterns::Patterns(PatternsLevel level) {
     inplaceEnabled = true;
     break;
   }
-
-  // add all of the patterns
+    // add all of the patterns
   case PatternsLevel::ALL: {
+    logging::pattern::info("Enabling all patterns");
     auto patternList = PreAliasPatternManager::getPatternList();
     for (auto pattern : patternList) {
       settings.insert(std::pair<PreAliasPatternType, bool>(pattern, true));
@@ -29,6 +31,7 @@ Patterns::Patterns(PatternsLevel level) {
 
   // add none of the patterns
   case PatternsLevel::NONE: {
+    logging::pattern::info("Enabling no patterns");
     break;
   }
   };
@@ -101,17 +104,6 @@ std::ostream &operator<<(std::ostream &os, const Patterns &patterns) {
   }
 
   return os;
-}
-
-bool Patterns::operator==(const Patterns &p) const {
-  if (p.settings != this->settings) {
-    return false;
-  }
-  if (this->inplaceEnabled != p.inplaceEnabled) {
-    return false;
-  }
-
-  return true;
 }
 
 } // namespace popart
