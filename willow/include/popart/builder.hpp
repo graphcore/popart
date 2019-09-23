@@ -339,8 +339,8 @@ public:
       addNodeAttribute(
           sSerializeMatMulFactorAttribute, factor, nodeOutputNames);
     } else if (mode != sSerializeMatMulMode_None) {
-      throw error("Unsupported mat mul serialization mode `{}`. Supported "
-                  "modes are `{}`, `{}` or `{}`",
+      throw error("Unsupported mat mul serialization mode '{}'. Supported "
+                  "modes are '{}', '{}' or '{}'",
                   mode,
                   sSerializeMatMulMode_InputChannels,
                   sSerializeMatMulMode_OutputChannels,
@@ -363,7 +363,6 @@ public:
    * \param nodeOutputName Name of the output tensor of the ONNX node
    */
   std::string getPartialsType(const TensorId &nodeOutputName);
-
   void setInplacePreferences(const TensorId &nodeOutputName,
                              const std::map<OpType, float> &prefs) {
 

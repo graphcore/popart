@@ -31,7 +31,7 @@ def test_matmul_serialization_invalid_mtest_matmul_serialization_invalid_modeode
     with pytest.raises(popart.popart_exception) as e_info:
         builder.setSerializeMatMul({o}, "invalid_mode")
     assert (e_info.value.args[0].startswith(
-        "Unsupported mat mul serialization mode `invalid_mode`. Supported modes are `input_channels`, `output_channels` or `none`"
+        "Unsupported mat mul serialization mode 'invalid_mode'. Supported modes are 'input_channels', 'output_channels' or 'none'"
     ))
 
 
