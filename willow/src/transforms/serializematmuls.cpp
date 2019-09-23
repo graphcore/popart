@@ -29,6 +29,10 @@
 // X = [GROUP_DIM, INPUT_CHANNELS, REDUCING_DIM]
 // W = [GROUP_DIM, REDUCING_DIM, OUTPUT_CHANNELS]
 
+// If 'keep_precision' is specified then any MatMul that is split along it's
+// reducing dimension will have an output type of FLOAT and a cast will be added
+// after the addInplaces.
+//
 // For D = INPUT_CHANNELS
 //
 //      X   W            d_Y     W.T         X.T    d_Y
@@ -47,11 +51,12 @@
 //  |      MatMulOp      MatMulLhsGradOp           MatMulRhsGradOp
 //  |        |                  |                      |
 //  |       Y_n               d_X_n                   d_W_n
+//  |
+//  | _d_W = addInplace(d_W_n-1, d_W_n)
 //
 //  Y    = concat(Y_0...Y_n)
 //  d_x  = concat(d_X_0...d_X_n)
-//  d_W  = sum(d_W_0...d_W_n)
-
+//  d_W  = cast(_d_W) if type(d_W) != type(_d_W) else _d_W
 //
 //  For D = OUTPUT_CHANNEL
 //
@@ -74,10 +79,35 @@
 //  |       Y_n               d_X_n                   d_W_n  W[:,n:n+1]
 //  |                                                  |     |
 //  |                                                 VarUpdate
+//  | _d_x = addInplace(d_x_n-1, d_x_n)
 //
 //  Y    = concat(Y_0...Y_n) - concat on final dim
-//  d_x  = sum(d_X_0...d_X_n)
+//  d_X  = cast(_d_X) if type(d_X) != type(_d_X) else _d_X
 //
+//                    For D = REDUCING_DIM
+//      X   W            d_Y     W.T         X.T    d_Y
+//      |   |             |      |            |      |
+//      MatMulOp      MatMulLhsGradOp       MatMulRhsGradOp
+//        |                  |                  |
+//        Y                 d_X                d_W    W
+//                                              |     |
+//                                             VarUpdate
+//
+//                       Transform to:
+//
+//  For n in [0,N):
+//  |
+//  | X[:,n:n+1] W[n:n+1,:] d_Y  W.T[:,n:n+1]       X.T[n:n+1,:] d_Y
+//  |      |      |          |         |                |         |
+//  |      MatMulOp         MatMulLhsGradOp           MatMulRhsGradOp
+//  |        |                     |                      |
+//  |       Y_n                  d_X_n                   d_W_n  W[n:n+1,:]
+//  |                                                     |     |
+//  |                                                    VarUpdate
+//  | _Y = addInplace(Y_n-1, Y_n)
+//
+//  Y    = cast(_Y) if type(Y) != type(_Y) else _Y
+//  d_X  = concat(d_X_0...d_X_n)
 
 namespace {
 
@@ -114,6 +144,7 @@ static void serializeMatMul(TransformBuilder &builder,
                             int sliceLhsDim, // -1 indicates no slice
                             Tensor *rhs,
                             int sliceRhsDim, // -1 indicates no slice
+                            Tensor *output,
                             MatMulBaseOp *matmul,
                             std::vector<TensorId> &outputTensors,
                             boost::optional<int64_t> virtualGraphId,
@@ -141,8 +172,8 @@ static void serializeMatMul(TransformBuilder &builder,
                                      axes,
                                      virtualGraphId,
                                      pipelineStage,
-                                     name + "_Slice",
-                                     builder.getNextId(name + "_Slice"));
+                                     name + "_SliceLhs",
+                                     builder.getNextId(name + "_SliceLhs"));
     }
 
     if (sliceRhsDim != -1) {
@@ -161,8 +192,17 @@ static void serializeMatMul(TransformBuilder &builder,
                                      axes,
                                      virtualGraphId,
                                      pipelineStage,
-                                     name + "_Slice",
-                                     builder.getNextId(name + "_Slice"));
+                                     name + "_SliceRhs",
+                                     builder.getNextId(name + "_SliceRhs"));
+    }
+
+    std::map<std::string, boost::any> attrs = {};
+    if (sliceLhsDim == 2 && sliceRhsDim == 1 &&
+        matmul->getSerialiseSettings().keep_precision &&
+        output->info.dataType() != DataType::FLOAT) {
+      // TODO (T11610): When partialsType has been added to MatMuls
+      // include a check here to make sure it equals FLOAT.
+      attrs.insert({sOutputTypeAttribute, std::string("FLOAT")});
     }
 
     auto m = builder.matmul(lhsMatMulInput,
@@ -170,7 +210,8 @@ static void serializeMatMul(TransformBuilder &builder,
                             virtualGraphId,
                             pipelineStage,
                             name + "_MatMul",
-                            builder.getNextId(name + "_MatMul"));
+                            builder.getNextId(name + "_MatMul"),
+                            attrs);
 
     dynamic_cast<MatMulBaseOp *>(builder.getProducer(m))
         ->setPhase(matmul->getPhase());
@@ -179,215 +220,89 @@ static void serializeMatMul(TransformBuilder &builder,
   }
 }
 
-static void
-serializeFwdMatMul_InputChannels(TransformBuilder &builder,
-                                 Tensor *lhs,
-                                 Tensor *rhs,
-                                 Tensor *output,
-                                 MatMulBaseOp *matmul,
-                                 std::vector<TensorId> &outputTensors,
-                                 boost::optional<int64_t> virtualGraphId,
-                                 boost::optional<int64_t> pipelineStage,
-                                 std::string name) {
-  serializeMatMul(builder,
-                  lhs,
-                  1,
-                  rhs,
-                  -1,
-                  matmul,
-                  outputTensors,
-                  virtualGraphId,
-                  pipelineStage,
-                  name);
-
-  builder.concat(outputTensors,
-                 0,
+static void sumByAddInplace(TransformBuilder &builder,
+                            const bool cast_needed,
+                            Tensor *output,
+                            std::vector<TensorId> &outputTensors,
+                            boost::optional<int64_t> virtualGraphId,
+                            boost::optional<int64_t> pipelineStage,
+                            std::string name) {
+  auto out = outputTensors[0];
+  for (size_t i = 1; i < outputTensors.size(); i++) {
+    std::vector<TensorId> inputs = {out, outputTensors[i]};
+    if (!cast_needed && i == outputTensors.size() - 1) {
+      builder.addLhsInplace(inputs,
+                            output->id,
+                            virtualGraphId,
+                            pipelineStage,
+                            name + "_AddInplace");
+    } else {
+      out = builder.addLhsInplace(inputs,
+                                  virtualGraphId,
+                                  pipelineStage,
+                                  name + "_AddInplace",
+                                  builder.getNextId(name + "_AddInPlace"));
+      // Add a constraint so the inplace add happens before the next matmul
+      if (!cast_needed)
+        builder.getGraph().topoCons->insert(
+            builder.getProducer(out),
+            builder.getProducer(outputTensors[i + 1]));
+    }
+  }
+  if (cast_needed) {
+    logging::transform::info(
+        "Casting Output {} to {}", out, output->info.data_type());
+    builder.cast(out,
                  output->id,
+                 output->info.dataType(),
                  virtualGraphId,
                  pipelineStage,
-                 name + "_Concat");
+                 name + "_Cast");
+  }
+}
 
+static void setAllSlices(Tensor *slicedTensor,
+                         const int unwindConcatDim,
+                         const int64_t factor) {
   // All the slices of lhs tensor
-  std::vector<TensorId> lhsSlices;
+  std::vector<TensorId> slices;
 
   // Build the list of slice tensors
-  for (auto op : lhs->consumers.getOps()) {
+  for (auto op : slicedTensor->consumers.getOps()) {
     SliceOp *sliceOp = dynamic_cast<SliceOp *>(op);
     if (sliceOp) {
-      lhsSlices.push_back(op->output->tensorIdMap().at(0));
+      slices.push_back(op->output->tensorIdMap().at(0));
     }
   }
+
+  if (slices.size() != factor)
+    throw error("All slices does not match factor allslices: {} factor: {}",
+                slices.size(),
+                factor);
 
   // Set the list in all the ops
-  for (auto op : lhs->consumers.getOps()) {
+  for (auto op : slicedTensor->consumers.getOps()) {
     SliceOp *sliceOp = dynamic_cast<SliceOp *>(op);
     if (sliceOp) {
-      sliceOp->allSlices       = lhsSlices;
-      sliceOp->unwindConcatDim = 0;
+      sliceOp->allSlices       = slices;
+      sliceOp->unwindConcatDim = unwindConcatDim;
     }
   }
-
-  builder.getGraph().topoCons->transfer(matmul, output->getProducer());
 }
 
-static void
-serializeBwdLhsMatMul_InputChannels(TransformBuilder &builder,
-                                    Tensor *lhs,
-                                    Tensor *rhs,
-                                    Tensor *output,
-                                    MatMulBaseOp *matmul,
-                                    std::vector<TensorId> &outputTensors,
-                                    boost::optional<int64_t> virtualGraphId,
-                                    boost::optional<int64_t> pipelineStage,
-                                    std::string name) {
-
-  serializeMatMul(builder,
-                  lhs,
-                  1,
-                  rhs,
-                  -1,
-                  matmul,
-                  outputTensors,
-                  virtualGraphId,
-                  pipelineStage,
-                  name);
-
-  builder.concat(outputTensors,
-                 output->id,
-                 virtualGraphId,
-                 pipelineStage,
-                 name + "_Concat");
-}
-
-static void
-serializeBwdRhsMatMul_InputChannels(TransformBuilder &builder,
-                                    Tensor *lhs,
-                                    Tensor *rhs,
-                                    Tensor *output,
-                                    MatMulBaseOp *matmul,
-                                    std::vector<TensorId> &outputTensors,
-                                    boost::optional<int64_t> virtualGraphId,
-                                    boost::optional<int64_t> pipelineStage,
-                                    std::string name) {
-  serializeMatMul(builder,
-                  lhs,
-                  2,
-                  rhs,
-                  1,
-                  matmul,
-                  outputTensors,
-                  virtualGraphId,
-                  pipelineStage,
-                  name);
-
-  builder.sum(
-      outputTensors, output->id, virtualGraphId, pipelineStage, name + "_Sum");
-}
-
-static void
-serializeFwdMatMul_OutputChannels(TransformBuilder &builder,
-                                  Tensor *lhs,
-                                  Tensor *rhs,
-                                  Tensor *output,
-                                  MatMulBaseOp *matmul,
-                                  std::vector<TensorId> &outputTensors,
-                                  boost::optional<int64_t> virtualGraphId,
-                                  boost::optional<int64_t> pipelineStage,
-                                  std::string name) {
-  serializeMatMul(builder,
-                  lhs,
-                  -1,
-                  rhs,
-                  2,
-                  matmul,
-                  outputTensors,
-                  virtualGraphId,
-                  pipelineStage,
-                  name);
-
-  builder.concat(outputTensors,
-                 2,
-                 output->id,
-                 virtualGraphId,
-                 pipelineStage,
-                 name + "_Concat");
-
-  // All the slices of rhs tensor
-  std::vector<TensorId> rhsSlices;
-
-  // build the list of slices
-  for (auto op : rhs->consumers.getOps()) {
-    SliceOp *sliceOp = dynamic_cast<SliceOp *>(op);
-    if (sliceOp) { // May not all be slice op's
-      rhsSlices.push_back(op->output->tensorIdMap().at(0));
-    }
-  }
-
-  // Set the slice list
-  for (auto op : rhs->consumers.getOps()) {
-    SliceOp *sliceOp = dynamic_cast<SliceOp *>(op);
-    if (sliceOp) {
-      sliceOp->allSlices       = rhsSlices;
-      sliceOp->unwindConcatDim = 2;
-    }
-  }
-
-  builder.getGraph().topoCons->transfer(matmul, output->getProducer());
-}
-
-static void
-serializeBwdLhsMatMul_OutputChannels(TransformBuilder &builder,
-                                     Tensor *lhs,
-                                     Tensor *rhs,
-                                     Tensor *output,
-                                     MatMulBaseOp *matmul,
-                                     std::vector<TensorId> &outputTensors,
-                                     boost::optional<int64_t> virtualGraphId,
-                                     boost::optional<int64_t> pipelineStage,
-                                     std::string name) {
-
-  serializeMatMul(builder,
-                  lhs,
-                  2,
-                  rhs,
-                  1,
-                  matmul,
-                  outputTensors,
-                  virtualGraphId,
-                  pipelineStage,
-                  name);
-
-  builder.sum(
-      outputTensors, output->id, virtualGraphId, pipelineStage, name + "_Sum");
-}
-
-static void
-serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
-                                     Tensor *lhs,
-                                     Tensor *rhs,
-                                     Tensor *matMulOutput,
-                                     MatMulBaseOp *matmul,
-                                     std::vector<TensorId> &outputTensors,
-                                     boost::optional<int64_t> virtualGraphId,
-                                     boost::optional<int64_t> pipelineStage,
-                                     std::string name) {
-  serializeMatMul(builder,
-                  lhs,
-                  -1,
-                  rhs,
-                  2,
-                  matmul,
-                  outputTensors,
-                  virtualGraphId,
-                  pipelineStage,
-                  name);
-
-  // Find the path from the matmul to the varupdate
-
+static void serializeVarUpdate(int sliceDim,
+                               TransformBuilder &builder,
+                               Tensor *matMulOutput,
+                               MatMulBaseOp *matmul,
+                               std::vector<TensorId> &outputTensors,
+                               boost::optional<int64_t> virtualGraphId,
+                               boost::optional<int64_t> pipelineStage,
+                               std::string name) {
   auto chaseme = matMulOutput;
   std::vector<Op *> path;
-  bool validPath      = true;
-  bool endOfPathFound = false;
+  bool validPath               = true;
+  bool endOfPathFound          = false;
+  const int slice_dim_from_end = 2 - sliceDim;
 
   while (endOfPathFound == false && validPath == true) {
 
@@ -436,14 +351,15 @@ serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
         varUpdate->input->tensorMap().at(VarUpdateOp::getVarToUpdateInIndex());
 
     // Calculate the size of serialized tensor
-    auto size = weightTensor->info.dim(weightTensor->info.rank() - 1) /
-                matmul->getSerialiseSettings().factor;
+    auto size =
+        weightTensor->info.dim(weightTensor->info.rank() - slice_dim_from_end) /
+        matmul->getSerialiseSettings().factor;
 
     for (int i = 0; i < matmul->getSerialiseSettings().factor; ++i) {
 
       Shape starts = {(i)*size};
       Shape ends   = {(i + 1) * size};
-      Shape axes   = {weightTensor->info.rank() - 1};
+      Shape axes   = {weightTensor->info.rank() - slice_dim_from_end};
 
       TensorId output = outputTensors[i];
 
@@ -457,11 +373,11 @@ serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
           auto outputshape = op->output->tensorMap()
                                  .at(ReshapeBaseOp::getOutIndex())
                                  ->info.shape();
-          auto d = outputshape.size() - 1;
+          auto d = outputshape.size() - slice_dim_from_end;
           outputshape[d] =
               outputshape[d] / matmul->getSerialiseSettings().factor;
 
-          logging::op::info("Serializing reshape ", outputshape);
+          logging::op::info("Serializing reshape {}", outputshape);
 
           output = builder.reshape(output,
                                    outputshape,
@@ -533,11 +449,305 @@ serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
   } else {
     // Concatenate the outputs
     builder.concat(outputTensors,
+                   sliceDim,
                    matMulOutput->id,
                    virtualGraphId,
                    pipelineStage,
                    name + "_Concat");
   }
+}
+
+static void
+serializeFwdMatMul_InputChannels(TransformBuilder &builder,
+                                 Tensor *lhs,
+                                 Tensor *rhs,
+                                 Tensor *output,
+                                 MatMulBaseOp *matmul,
+                                 std::vector<TensorId> &outputTensors,
+                                 boost::optional<int64_t> virtualGraphId,
+                                 boost::optional<int64_t> pipelineStage,
+                                 std::string name) {
+  serializeMatMul(builder,
+                  lhs,
+                  1,
+                  rhs,
+                  -1,
+                  output,
+                  matmul,
+                  outputTensors,
+                  virtualGraphId,
+                  pipelineStage,
+                  name);
+
+  builder.concat(outputTensors,
+                 0,
+                 output->id,
+                 virtualGraphId,
+                 pipelineStage,
+                 name + "_Concat");
+
+  setAllSlices(lhs, 1, matmul->getSerialiseSettings().factor);
+
+  builder.getGraph().topoCons->transfer(matmul, output->getProducer());
+}
+
+static void
+serializeBwdLhsMatMul_InputChannels(TransformBuilder &builder,
+                                    Tensor *lhs,
+                                    Tensor *rhs,
+                                    Tensor *output,
+                                    MatMulBaseOp *matmul,
+                                    std::vector<TensorId> &outputTensors,
+                                    boost::optional<int64_t> virtualGraphId,
+                                    boost::optional<int64_t> pipelineStage,
+                                    std::string name) {
+
+  serializeMatMul(builder,
+                  lhs,
+                  1,
+                  rhs,
+                  -1,
+                  output,
+                  matmul,
+                  outputTensors,
+                  virtualGraphId,
+                  pipelineStage,
+                  name);
+
+  builder.concat(outputTensors,
+                 output->id,
+                 virtualGraphId,
+                 pipelineStage,
+                 name + "_Concat");
+}
+
+static void
+serializeBwdRhsMatMul_InputChannels(TransformBuilder &builder,
+                                    Tensor *lhs,
+                                    Tensor *rhs,
+                                    Tensor *output,
+                                    MatMulBaseOp *matmul,
+                                    std::vector<TensorId> &outputTensors,
+                                    boost::optional<int64_t> virtualGraphId,
+                                    boost::optional<int64_t> pipelineStage,
+                                    std::string name) {
+  serializeMatMul(builder,
+                  lhs,
+                  2,
+                  rhs,
+                  1,
+                  output,
+                  matmul,
+                  outputTensors,
+                  virtualGraphId,
+                  pipelineStage,
+                  name);
+
+  sumByAddInplace(builder,
+                  matmul->getSerialiseSettings().keep_precision,
+                  output,
+                  outputTensors,
+                  virtualGraphId,
+                  pipelineStage,
+                  name);
+}
+
+static void
+serializeFwdMatMul_ReducingDim(TransformBuilder &builder,
+                               Tensor *lhs,
+                               Tensor *rhs,
+                               Tensor *output,
+                               MatMulBaseOp *matmul,
+                               std::vector<TensorId> &outputTensors,
+                               boost::optional<int64_t> virtualGraphId,
+                               boost::optional<int64_t> pipelineStage,
+                               std::string name) {
+
+  serializeMatMul(builder,
+                  lhs,
+                  2,
+                  rhs,
+                  1,
+                  output,
+                  matmul,
+                  outputTensors,
+                  virtualGraphId,
+                  pipelineStage,
+                  name);
+
+  sumByAddInplace(builder,
+                  matmul->getSerialiseSettings().keep_precision,
+                  output,
+                  outputTensors,
+                  virtualGraphId,
+                  pipelineStage,
+                  name);
+
+  setAllSlices(lhs, 2, matmul->getSerialiseSettings().factor);
+  setAllSlices(rhs, 1, matmul->getSerialiseSettings().factor);
+
+  builder.getGraph().topoCons->transfer(matmul, output->getProducer());
+}
+
+static void
+serializeBwdLhsMatMul_ReducingDim(TransformBuilder &builder,
+                                  Tensor *lhs,
+                                  Tensor *rhs,
+                                  Tensor *output,
+                                  MatMulBaseOp *matmul,
+                                  std::vector<TensorId> &outputTensors,
+                                  boost::optional<int64_t> virtualGraphId,
+                                  boost::optional<int64_t> pipelineStage,
+                                  std::string name) {
+
+  serializeMatMul(builder,
+                  lhs,
+                  -1,
+                  rhs,
+                  2,
+                  output,
+                  matmul,
+                  outputTensors,
+                  virtualGraphId,
+                  pipelineStage,
+                  name);
+
+  builder.concat(outputTensors,
+                 2,
+                 output->id,
+                 virtualGraphId,
+                 pipelineStage,
+                 name + "_Concat");
+}
+
+static void
+serializeBwdRhsMatMul_ReducingDim(TransformBuilder &builder,
+                                  Tensor *lhs,
+                                  Tensor *rhs,
+                                  Tensor *output,
+                                  MatMulBaseOp *matmul,
+                                  std::vector<TensorId> &outputTensors,
+                                  boost::optional<int64_t> virtualGraphId,
+                                  boost::optional<int64_t> pipelineStage,
+                                  std::string name) {
+  serializeMatMul(builder,
+                  lhs,
+                  1,
+                  rhs,
+                  -1,
+                  output,
+                  matmul,
+                  outputTensors,
+                  virtualGraphId,
+                  pipelineStage,
+                  name);
+
+  serializeVarUpdate(0,
+                     builder,
+                     output,
+                     matmul,
+                     outputTensors,
+                     virtualGraphId,
+                     pipelineStage,
+                     name);
+}
+
+static void
+serializeFwdMatMul_OutputChannels(TransformBuilder &builder,
+                                  Tensor *lhs,
+                                  Tensor *rhs,
+                                  Tensor *output,
+                                  MatMulBaseOp *matmul,
+                                  std::vector<TensorId> &outputTensors,
+                                  boost::optional<int64_t> virtualGraphId,
+                                  boost::optional<int64_t> pipelineStage,
+                                  std::string name) {
+  serializeMatMul(builder,
+                  lhs,
+                  -1,
+                  rhs,
+                  2,
+                  output,
+                  matmul,
+                  outputTensors,
+                  virtualGraphId,
+                  pipelineStage,
+                  name);
+
+  builder.concat(outputTensors,
+                 2,
+                 output->id,
+                 virtualGraphId,
+                 pipelineStage,
+                 name + "_Concat");
+
+  setAllSlices(rhs, 2, matmul->getSerialiseSettings().factor);
+
+  builder.getGraph().topoCons->transfer(matmul, output->getProducer());
+}
+
+static void
+serializeBwdLhsMatMul_OutputChannels(TransformBuilder &builder,
+                                     Tensor *lhs,
+                                     Tensor *rhs,
+                                     Tensor *output,
+                                     MatMulBaseOp *matmul,
+                                     std::vector<TensorId> &outputTensors,
+                                     boost::optional<int64_t> virtualGraphId,
+                                     boost::optional<int64_t> pipelineStage,
+                                     std::string name) {
+
+  serializeMatMul(builder,
+                  lhs,
+                  2,
+                  rhs,
+                  1,
+                  output,
+                  matmul,
+                  outputTensors,
+                  virtualGraphId,
+                  pipelineStage,
+                  name);
+
+  sumByAddInplace(builder,
+                  matmul->getSerialiseSettings().keep_precision,
+                  output,
+                  outputTensors,
+                  virtualGraphId,
+                  pipelineStage,
+                  name);
+}
+
+static void
+serializeBwdRhsMatMul_OutputChannels(TransformBuilder &builder,
+                                     Tensor *lhs,
+                                     Tensor *rhs,
+                                     Tensor *output,
+                                     MatMulBaseOp *matmul,
+                                     std::vector<TensorId> &outputTensors,
+                                     boost::optional<int64_t> virtualGraphId,
+                                     boost::optional<int64_t> pipelineStage,
+                                     std::string name) {
+  serializeMatMul(builder,
+                  lhs,
+                  -1,
+                  rhs,
+                  2,
+                  output,
+                  matmul,
+                  outputTensors,
+                  virtualGraphId,
+                  pipelineStage,
+                  name);
+
+  serializeVarUpdate(1,
+                     builder,
+                     output,
+                     matmul,
+                     outputTensors,
+                     virtualGraphId,
+                     pipelineStage,
+                     name);
 }
 
 bool SerializeMatMuls::apply(Graph &graph) const {
@@ -655,6 +865,43 @@ bool SerializeMatMuls::apply(Graph &graph) const {
                                              virtualGraphId,
                                              pipelineStage,
                                              name);
+      } break;
+      };
+    } else if (matmul->getSerialiseSettings().mode ==
+               MatMulBaseOp::SerialiseSettings::Mode::ReducingDim) {
+      switch (matmul->getPhase()) {
+      case MatMulOp::Phase::Fwd: {
+        serializeFwdMatMul_ReducingDim(builder,
+                                       matmuLhs,
+                                       matmulRhs,
+                                       matmulOutput,
+                                       matmul,
+                                       outputTensors,
+                                       virtualGraphId,
+                                       pipelineStage,
+                                       name);
+      } break;
+      case MatMulOp::Phase::BwdLhs: {
+        serializeBwdLhsMatMul_ReducingDim(builder,
+                                          matmuLhs,
+                                          matmulRhs,
+                                          matmulOutput,
+                                          matmul,
+                                          outputTensors,
+                                          virtualGraphId,
+                                          pipelineStage,
+                                          name);
+      } break;
+      case MatMulOp::Phase::BwdRhs: {
+        serializeBwdRhsMatMul_ReducingDim(builder,
+                                          matmuLhs,
+                                          matmulRhs,
+                                          matmulOutput,
+                                          matmul,
+                                          outputTensors,
+                                          virtualGraphId,
+                                          pipelineStage,
+                                          name);
       } break;
       };
     }

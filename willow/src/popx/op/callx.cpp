@@ -41,10 +41,14 @@ bool CallOpx::createsEquiv(int index0, const Opx *opx1, int index1) const {
   // while loop handles +1 depths of CallOpxs
 
   ICreatorCandidatePtr c2;
-  while (opx1->op_p->opid == Onnx::CustomOperators::Call) {
-    c2     = dynamic_cast<const CallOpx *>(opx1)->getCreator(index1);
-    opx1   = c2->getOpx();
-    index1 = c2->getIndex();
+  if (opx1->op_p->opid != Onnx::CustomOperators::Call) {
+    c2 = dv_p->getTensorCreator(opx1->inTensor(index1));
+  } else {
+    while (opx1->op_p->opid == Onnx::CustomOperators::Call) {
+      c2     = dynamic_cast<const CallOpx *>(opx1)->getCreator(index1);
+      opx1   = c2->getOpx();
+      index1 = c2->getIndex();
+    }
   }
 
   // pass responsibility to creator

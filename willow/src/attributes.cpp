@@ -130,6 +130,15 @@ template <> void Attributes::set(float &v, const std::string &key) const {
   }
 }
 
+template <> void Attributes::set(std::string &v, const std::string &key) const {
+  auto found = att_map.find(key);
+  if (found != att_map.end()) {
+    v = found->second->s();
+  } else {
+    throw error("no attribute key {}", key);
+  }
+}
+
 bool Attributes::hasAttribute(const std::string &key) const {
   return att_map.count(key) > 0;
 }
@@ -351,6 +360,19 @@ void Attributes::setAttribute(const std::string &key, Attributes::Ints &value) {
     for (int i = 0; i < value.size(); ++i) {
       attribute->add_ints(value[i]);
     }
+    att_map[key] = attribute;
+  }
+}
+
+template <>
+void Attributes::setAttribute(const std::string &key, std::string &value) {
+  if (hasAttribute(key)) {
+    set(value, key);
+  } else {
+    names.push_back(key);
+    onnx::AttributeProto *attribute = new onnx::AttributeProto();
+    attribute->set_name(key);
+    attribute->set_s(value.c_str());
     att_map[key] = attribute;
   }
 }

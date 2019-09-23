@@ -32,6 +32,7 @@ private:
 class AddLhsInplaceOp : public AddOp {
 public:
   AddLhsInplaceOp(const AddOp &addOp);
+  AddLhsInplaceOp(const Op::Settings &settings_);
 
   std::unique_ptr<Op> clone() const override;
 

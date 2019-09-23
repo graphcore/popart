@@ -75,12 +75,32 @@ public:
            boost::optional<int64_t> pipelineStage,
            const std::string opName);
 
+  TensorId addLhsInplace(std::vector<TensorId> &inputs,
+                         boost::optional<int64_t> virtualGraphId,
+                         boost::optional<int64_t> pipelineStage,
+                         const std::string opName,
+                         const std::string outputName);
+
+  void addLhsInplace(std::vector<TensorId> &inputs,
+                     TensorId out,
+                     boost::optional<int64_t> virtualGraphId,
+                     boost::optional<int64_t> pipelineStage,
+                     const std::string opName);
+
   TensorId matmul(TensorId lhs,
                   TensorId rhs,
                   boost::optional<int64_t> virtualGraphId,
                   boost::optional<int64_t> pipelineStage,
                   const std::string opName,
-                  const std::string outputName);
+                  const std::string outputName,
+                  std::map<std::string, boost::any> attrs = {});
+
+  void cast(TensorId input,
+            TensorId out,
+            DataType type,
+            boost::optional<int64_t> virtualGraphId,
+            boost::optional<int64_t> pipelineStage,
+            const std::string opName);
 
   TensorId squeeze(TensorId in,
                    const Shape &axes,

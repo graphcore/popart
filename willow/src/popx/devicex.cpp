@@ -737,30 +737,9 @@ std::vector<ICreatorCandidatePtr> Devicex::getCreatorEndpoints(
         std::shared_ptr<InputMultiCreatorCandidate> creatorCandidate =
             std::make_shared<InputMultiCreatorCandidate>(inIndex, opx, path);
 
-        // Determine the correct input index for this creator.
-        // This is a bit weak, find the matching input index for 1 of the
-        // creators and then use that.
-        InIndex index = -1;
-        for (auto creator : creators) {
-          for (auto input : creator->input->tensorIdMap()) {
-            if (input.second == outputName) {
-              index = input.first;
-              break;
-            }
-          }
-
-          if (index != -1) {
-            break;
-          }
-        }
-
-        if (index == -1) {
-          throw error("Could not determine input index for {}", outputName);
-        }
-
         // For each creator input recursively work out their creator candidates
-        for (auto *creator : creators) {
-          auto ind_ten = creator->input->tensorMap().at(index);
+        for (auto creator : creators) {
+          auto ind_ten = creator.first->input->tensorMap().at(creator.second);
 
           // Create a new path for each creator
           for (auto candidate : getCreatorEndpoints(ind_ten, {})) {

@@ -15,10 +15,11 @@ MatMulBaseOp::MatMulBaseOp(
     const Op::Settings &settings_,
     const Phase phase_,
     const boost::optional<float> availableMemoryProportion_,
-    const SerialiseSettings &serialization_)
+    const SerialiseSettings &serialization_,
+    const boost::optional<DataType> outputType_)
     : Op(_opid, settings_), phase(phase_),
       availableMemoryProportion(availableMemoryProportion_),
-      serialization(serialization_) {}
+      serialization(serialization_), outputType(outputType_) {}
 
 void MatMulBaseOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
@@ -40,7 +41,8 @@ MatMulBaseGradOp::MatMulBaseGradOp(const OperatorIdentifier &_opid,
                    fwdOp.getSettings(),
                    phase,
                    fwdOp.getAvailableMemoryProportion(),
-                   fwdOp.getSerialiseSettings()),
+                   fwdOp.getSerialiseSettings(),
+                   fwdOp.getOutputType()),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
       fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
 
@@ -51,12 +53,14 @@ const MatMulOp *MatMulBaseGradOp::getCloneOfCreator() const {
 MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_,
                    const boost::optional<float> availableMemoryProportion_,
-                   const SerialiseSettings &serialization_)
+                   const SerialiseSettings &serialization_,
+                   const boost::optional<DataType> outputType)
     : MatMulBaseOp(_opid,
                    settings_,
                    Phase::Fwd,
                    availableMemoryProportion_,
-                   serialization_) {}
+                   serialization_,
+                   outputType) {}
 
 std::unique_ptr<Op> MatMulOp::clone() const {
   return std::make_unique<MatMulOp>(*this);
@@ -204,6 +208,19 @@ void MatMulOp::setup() {
                       getSerialiseSettings().factor,
                       inputChannelsDim);
         }
+      } else if (getSerialiseSettings().mode ==
+                 MatMulBaseOp::SerialiseSettings::Mode::ReducingDim) {
+        // Get the reducing dim of the left hand tensor
+        auto reducingChannelsDim =
+            lhsIn()->info.shape()[lhsIn()->info.shape().size() - 1];
+
+        if (reducingChannelsDim % getSerialiseSettings().factor != 0) {
+          throw error("Invalid serialisation factor {} for reducing dimension "
+                      "{}. reducing_dim dim should be a multple of the "
+                      "serialisation factor ",
+                      getSerialiseSettings().factor,
+                      reducingChannelsDim);
+        }
       } else {
 
         // Get the output channels of the right hand size
@@ -222,8 +239,12 @@ void MatMulOp::setup() {
     }
   }
 
+  auto type = lhsIn()->info.dataType();
+  if (outputType)
+    type = *outputType;
+
   // Define the shape of the output tensor
-  outInfo(0) = {lhsIn()->info.dataType(),
+  outInfo(0) = {type,
                 npMatMulOut(lhsIn()->info.shape(), rhsIn()->info.shape())};
 }
 
@@ -311,6 +332,8 @@ static OpCreator<MatMulOp> matMulOpCreator(
 
       MatMulBaseOp::SerialiseSettings serialisation;
 
+      boost::optional<DataType> outputType;
+
       if (attr.hasAttribute(sSerializeMatMulModeAttribute)) {
 
         std::string mode = attr.getAttribute<Attributes::String>(
@@ -318,6 +341,9 @@ static OpCreator<MatMulOp> matMulOpCreator(
         if (mode == sSerializeMatMulMode_InputChannels) {
           serialisation.mode =
               MatMulBaseOp::SerialiseSettings::Mode::InputChannels;
+        } else if (mode == sSerializeMatMulMode_ReducingDim) {
+          serialisation.mode =
+              MatMulBaseOp::SerialiseSettings::Mode::ReducingDim;
         } else if (mode == sSerializeMatMulMode_OutputChannels) {
           serialisation.mode =
               MatMulBaseOp::SerialiseSettings::Mode::OutputChannels;
@@ -329,6 +355,9 @@ static OpCreator<MatMulOp> matMulOpCreator(
 
         serialisation.factor =
             attr.getAttribute<Attributes::Int>(sSerializeMatMulFactorAttribute);
+
+        serialisation.keep_precision = attr.getAttribute<Attributes::Int>(
+            sSerializeMatMulPrecisionAttribute);
       }
 
       if (attr.hasAttribute(sAvailMemAttribute)) {
@@ -336,8 +365,17 @@ static OpCreator<MatMulOp> matMulOpCreator(
             attr.getAttribute<Attributes::Float>(sAvailMemAttribute);
       }
 
-      return std::unique_ptr<Op>(new MatMulOp(
-          _opid, settings, availableMemoryProportion, serialisation));
+      if (attr.hasAttribute(sOutputTypeAttribute)) {
+        auto dtype_str =
+            attr.getAttribute<Attributes::String>(sOutputTypeAttribute);
+        outputType = dataTypeFromString(dtype_str);
+      }
+
+      return std::unique_ptr<Op>(new MatMulOp(_opid,
+                                              settings,
+                                              availableMemoryProportion,
+                                              serialisation,
+                                              outputType));
     },
     true);
 } // namespace

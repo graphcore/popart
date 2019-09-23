@@ -108,11 +108,14 @@ static constexpr const char *sRecomputeOutputAttribute =
 static constexpr const char *sPartialsTypeAttribute  = "__partials_type";
 static constexpr const char *sAvailMemAttribute      = "__available_memory";
 static constexpr const char *sPipelineStageAttribute = "__pipeline_stage";
+static constexpr const char *sOutputTypeAttribute    = "__output_type";
 
 static constexpr const char *sSerializeMatMulModeAttribute =
     "__serialize_matmul_mode";
 static constexpr const char *sSerializeMatMulFactorAttribute =
     "__serialize_matmul_factor";
+static constexpr const char *sSerializeMatMulPrecisionAttribute =
+    "__serialize_matmul_precision";
 
 // The deliminator used in popart tensor names
 static constexpr const char *sNameDelimiter = "/";
@@ -120,6 +123,7 @@ static constexpr const char *sNameDelimiter = "/";
 static constexpr const char *sSerializeMatMulMode_None = "none";
 static constexpr const char *sSerializeMatMulMode_InputChannels =
     "input_channels";
+static constexpr const char *sSerializeMatMulMode_ReducingDim = "reducing_dim";
 static constexpr const char *sSerializeMatMulMode_OutputChannels =
     "output_channels";
 

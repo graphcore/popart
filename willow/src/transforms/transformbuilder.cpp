@@ -1,7 +1,9 @@
 #include <popart/ir.hpp>
+#include <popart/onnxutil.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/transforms/transformbuilder.hpp>
 
+#include <popart/op/add.hpp>
 #include <popart/op/reshape.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/varupdate.hpp>
@@ -21,6 +23,9 @@ TransformBuilder::createOp(const OperatorIdentifier &opid,
       attr.setAttribute(attribute.first, value);
     } else if (tinfo == typeid(Attributes::Ints)) {
       auto value = boost::any_cast<Attributes::Ints>(attribute.second);
+      attr.setAttribute(attribute.first, value);
+    } else if (tinfo == typeid(std::string)) {
+      auto value = boost::any_cast<std::string>(attribute.second);
       attr.setAttribute(attribute.first, value);
     } else {
       throw error("Unsupported attribute value type {}", tinfo.name());
@@ -155,20 +160,103 @@ void TransformBuilder::sum(std::vector<TensorId> &inputs,
                opName);
 }
 
+TensorId
+TransformBuilder::addLhsInplace(std::vector<TensorId> &inputs,
+                                boost::optional<int64_t> virtualGraphId,
+                                boost::optional<int64_t> pipelineStage,
+                                const std::string opName,
+                                const std::string outputName) {
+  Op::Settings settings(graph, opName);
+
+  auto op = std::make_unique<AddLhsInplaceOp>(settings);
+
+  if (op == nullptr) {
+    throw error("Failed to create op : {} in the transform builder",
+                Onnx::CustomOperators::SliceInplace);
+  }
+
+  for (int i = 0; i < inputs.size(); ++i) {
+    op->connectInTensor(i, inputs[i]);
+  }
+  op->createAndConnectOutTensor(0, outputName);
+
+  if (virtualGraphId) {
+    op->setVirtualGraphId(*virtualGraphId);
+  }
+
+  if (pipelineStage) {
+    op->setPipelineStage(*pipelineStage);
+  }
+
+  op->setup();
+  auto _op = op.get();
+  graph.moveIntoGraph(std::move(op));
+  return _op->outTensor(0)->id;
+}
+
+void TransformBuilder::addLhsInplace(std::vector<TensorId> &inputs,
+                                     TensorId out,
+                                     boost::optional<int64_t> virtualGraphId,
+                                     boost::optional<int64_t> pipelineStage,
+                                     const std::string opName) {
+  Op::Settings settings(graph, opName);
+
+  auto op = std::make_unique<AddLhsInplaceOp>(settings);
+
+  if (op == nullptr) {
+    throw error("Failed to create op : {} in the transform builder",
+                Onnx::CustomOperators::SliceInplace);
+  }
+
+  for (int i = 0; i < inputs.size(); ++i) {
+    op->connectInTensor(i, inputs[i]);
+  }
+  op->connectOutTensor(0, out);
+
+  if (virtualGraphId) {
+    op->setVirtualGraphId(*virtualGraphId);
+  }
+
+  if (pipelineStage) {
+    op->setPipelineStage(*pipelineStage);
+  }
+
+  op->setup();
+  graph.moveIntoGraph(std::move(op));
+}
+
 TensorId TransformBuilder::matmul(TensorId lhs,
                                   TensorId rhs,
                                   boost::optional<int64_t> virtualGraphId,
                                   boost::optional<int64_t> pipelineStage,
                                   const std::string opName,
-                                  const std::string outputName) {
+                                  const std::string outputName,
+                                  std::map<std::string, boost::any> attrs) {
   std::vector<TensorId> inputs = {lhs, rhs};
   return op(Onnx::Operators::MatMul_1,
             inputs,
-            {},
+            attrs,
             virtualGraphId,
             pipelineStage,
             opName,
             outputName);
+}
+
+void TransformBuilder::cast(TensorId input,
+                            TensorId out,
+                            DataType type,
+                            boost::optional<int64_t> virtualGraphId,
+                            boost::optional<int64_t> pipelineStage,
+                            const std::string opName) {
+  std::vector<TensorId> inputs = {input};
+  opWithOutput(
+      Onnx::Operators::Cast_9,
+      inputs,
+      {{"to", static_cast<Attributes::Int>(onnxutil::getTPDataType(type))}},
+      out,
+      virtualGraphId,
+      pipelineStage,
+      opName);
 }
 
 TensorId TransformBuilder::slice(TensorId in,

@@ -20,7 +20,8 @@ public:
                                     InIndex inIndex,
                                     OutIndex outIndex) const final;
 
-  std::vector<Op *> getCreatorCandicates(InIndex) const final;
+  std::vector<std::pair<Op *, InIndex>>
+      getCreatorCandicates(InIndex) const final;
 };
 
 class SliceOpx : public BaseSliceOpx {

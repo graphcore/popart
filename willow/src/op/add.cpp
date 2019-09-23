@@ -93,6 +93,9 @@ void AddOp::setInplacePriority(const OperatorIdentifier &x, float p) {
 AddLhsInplaceOp::AddLhsInplaceOp(const AddOp &op)
     : AddOp(Onnx::CustomOperators::AddLhsInplace, op.getSettings()) {}
 
+AddLhsInplaceOp::AddLhsInplaceOp(const Op::Settings &settings_)
+    : AddOp(Onnx::CustomOperators::AddLhsInplace, settings_) {}
+
 std::unique_ptr<Op> AddLhsInplaceOp::clone() const {
   return std::make_unique<AddLhsInplaceOp>(*this);
 }

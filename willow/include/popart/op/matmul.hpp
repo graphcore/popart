@@ -14,17 +14,19 @@ public:
   enum class Phase { Fwd, BwdLhs, BwdRhs };
 
   struct SerialiseSettings {
-    enum class Mode { None, InputChannels, OutputChannels };
+    enum class Mode { None, InputChannels, ReducingDim, OutputChannels };
 
-    Mode mode      = Mode::None;
-    int64_t factor = 0;
+    Mode mode           = Mode::None;
+    int64_t factor      = 0;
+    bool keep_precision = false;
   };
 
   MatMulBaseOp(const OperatorIdentifier &_opid,
                const Op::Settings &settings_,
                const Phase phase_,
                const boost::optional<float> availableMemoryProportion_,
-               const SerialiseSettings &serialization_);
+               const SerialiseSettings &serialization_,
+               const boost::optional<DataType> outputType);
   MatMulBaseOp(const MatMulBaseOp &) = default;
   ~MatMulBaseOp() override           = default;
 
@@ -49,6 +51,8 @@ public:
 
   SerialiseSettings &getSerialiseSettings() { return serialization; }
 
+  boost::optional<DataType> getOutputType() const { return outputType; }
+
   Phase getPhase() { return phase; }
   void setPhase(Phase p) { phase = p; }
 
@@ -61,6 +65,9 @@ protected:
   boost::optional<float> availableMemoryProportion;
 
   SerialiseSettings serialization;
+
+  // Using optional as the input info is not known when initialising
+  boost::optional<DataType> outputType;
 };
 
 class MatMulOp : public MatMulBaseOp {
@@ -68,7 +75,8 @@ public:
   MatMulOp(const OperatorIdentifier &_opid,
            const Op::Settings &settings_,
            const boost::optional<float> availableMemoryProportion,
-           const SerialiseSettings &serialization_);
+           const SerialiseSettings &serialization_,
+           const boost::optional<DataType> outputType);
   MatMulOp(const MatMulOp &) = default;
   MatMulOp &operator=(const MatMulOp &) = delete;
   ~MatMulOp() override                  = default;
