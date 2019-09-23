@@ -43,7 +43,19 @@ InputCreatorType Opx::getInputCreatorType(int) const {
 poplar::Tensor
 Opx::unwindTensorLayout(poplar::Tensor, InIndex, OutIndex) const {
   throw error("Opx for {} cannot unwind the tensor layout change between input "
-              "and output",
+              "and output for {}",
+              op_p->opid);
+}
+
+poplar::Tensor
+Opx::unwindTensorLayout(std::vector<poplar::Tensor>, InIndex, OutIndex) const {
+  throw error("Opx for {} cannot unwind the tensor layout change between input "
+              "and output(s)",
+              op_p->opid);
+}
+
+std::vector<Op *> Opx::getCreatorCandicates(InIndex) const {
+  throw error("Opx for {} does not have a defined list of creators",
               op_p->opid);
 }
 

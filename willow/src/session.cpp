@@ -168,6 +168,13 @@ void Session::resetHostWeights(const std::string &modelProtoOrFilename) {
   weightsFromHostCalled = false;
 }
 
+std::string Session::serializeIr(IrSerializationFormat format) {
+  (void)format;
+  std::stringstream ss;
+  ir.serialise(Ir::SerialiseFormat::JSON, ss);
+  return ss.str();
+}
+
 InferenceSession::InferenceSession() : Session() {}
 
 InferenceSession::~InferenceSession() = default;

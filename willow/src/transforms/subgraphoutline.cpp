@@ -385,10 +385,11 @@ static OpId replaceWithCallOp(const Match::Instance &instance,
   return call_op->id;
 }
 
-int generate_subgraph_unique_id() {
-  static int uid = 0;
-  return uid++;
-}
+static int subgraph_uid = 0;
+
+void reset_subgraph_id() { subgraph_uid = 0; }
+
+int generate_subgraph_unique_id() { return subgraph_uid++; }
 
 class InstanceConstraints {
 public:
@@ -652,6 +653,10 @@ void applyReplacements(std::vector<Match> &matches,
 } // namespace
 
 bool SubgraphOutline::apply(Graph &graph) const {
+
+  // Make sure we start with a 0 subgraph id
+  reset_subgraph_id();
+
   auto &ir = graph.getIr();
 
   std::vector<Op *> outlinedOps = graph.getOpSchedule({});

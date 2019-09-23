@@ -33,13 +33,47 @@ class TransformBuilder {
 public:
   TransformBuilder(Graph &graph_);
 
+  Graph &getGraph() { return graph; }
+
   TensorId getNextId(const std::string &name, OutIndex n = 0);
+
+  Op *getProducer(TensorId id);
+
+  TensorId concat(std::vector<TensorId> &inputs,
+                  int64_t axis,
+                  boost::optional<int64_t> virtualGraphId,
+                  boost::optional<int64_t> pipelineStage,
+                  const std::string opName,
+                  const std::string outputName);
+
+  void concat(std::vector<TensorId> &inputs,
+              int64_t axis,
+              TensorId out,
+              boost::optional<int64_t> virtualGraphId,
+              boost::optional<int64_t> pipelineStage,
+              const std::string opName);
 
   TensorId concat(std::vector<TensorId> &inputs,
                   boost::optional<int64_t> virtualGraphId,
                   boost::optional<int64_t> pipelineStage,
                   const std::string opName,
-                  const std::string outputName);
+                  const std::string outputName) {
+    return concat(inputs, 0, virtualGraphId, pipelineStage, opName, outputName);
+  }
+
+  void concat(std::vector<TensorId> &inputs,
+              TensorId out,
+              boost::optional<int64_t> virtualGraphId,
+              boost::optional<int64_t> pipelineStage,
+              const std::string opName) {
+    concat(inputs, 0, out, virtualGraphId, pipelineStage, opName);
+  }
+
+  void sum(std::vector<TensorId> &inputs,
+           TensorId out,
+           boost::optional<int64_t> virtualGraphId,
+           boost::optional<int64_t> pipelineStage,
+           const std::string opName);
 
   TensorId matmul(TensorId lhs,
                   TensorId rhs,
@@ -71,6 +105,15 @@ public:
                  const std::string opName,
                  const std::string outputName);
 
+  TensorId sliceInPlace(TensorId in,
+                        const Shape &starts,
+                        const Shape &ends,
+                        const Shape &axes,
+                        boost::optional<int64_t> virtualGraphId,
+                        boost::optional<int64_t> pipelineStage,
+                        const std::string opName,
+                        const std::string outputName);
+
   void slice(TensorId in,
              const Shape &starts,
              const Shape &ends,
@@ -100,6 +143,14 @@ public:
                    boost::optional<int64_t> pipelineStage,
                    const std::string opName,
                    const std::string outputName);
+
+  TensorId reducesum(TensorId in,
+                     int64_t keepdims,
+                     std::vector<int64_t> axes,
+                     boost::optional<int64_t> virtualGraphId,
+                     boost::optional<int64_t> pipelineStage,
+                     const std::string opName,
+                     const std::string outputName);
 };
 
 } // namespace popart

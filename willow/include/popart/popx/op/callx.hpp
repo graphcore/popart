@@ -34,7 +34,7 @@ private:
   // preparing outputs at returned (calling) site
   std::vector<poplar::Tensor> prepareOutputs() const;
 
-  optional<InputCreatorCandidate> getCreator(InIndex) const;
+  ICreatorCandidatePtr getCreator(InIndex) const;
 };
 
 } // namespace popx

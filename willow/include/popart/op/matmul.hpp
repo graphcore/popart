@@ -13,11 +13,18 @@ public:
   // correct poplar fullyConnectedPass option
   enum class Phase { Fwd, BwdLhs, BwdRhs };
 
-  MatMulBaseOp(
-      const OperatorIdentifier &_opid,
-      const Op::Settings &settings_,
-      const Phase phase_,
-      const boost::optional<float> availableMemoryProportion_ = boost::none);
+  struct SerialiseSettings {
+    enum class Mode { None, InputChannels, OutputChannels };
+
+    Mode mode      = Mode::None;
+    int64_t factor = 0;
+  };
+
+  MatMulBaseOp(const OperatorIdentifier &_opid,
+               const Op::Settings &settings_,
+               const Phase phase_,
+               const boost::optional<float> availableMemoryProportion_,
+               const SerialiseSettings &serialization_);
   MatMulBaseOp(const MatMulBaseOp &) = default;
   ~MatMulBaseOp() override           = default;
 
@@ -36,20 +43,32 @@ public:
     availableMemoryProportion = v;
   }
 
+  const SerialiseSettings &getSerialiseSettings() const {
+    return serialization;
+  }
+
+  SerialiseSettings &getSerialiseSettings() { return serialization; }
+
   Phase getPhase() { return phase; }
   void setPhase(Phase p) { phase = p; }
 
+  void appendAttributes(OpSerialiserBase &os) const override;
+  void appendMore(OpSerialiserBase &os) const override;
+
 protected:
   Phase phase;
+
   boost::optional<float> availableMemoryProportion;
+
+  SerialiseSettings serialization;
 };
 
 class MatMulOp : public MatMulBaseOp {
 public:
-  MatMulOp(
-      const OperatorIdentifier &_opid,
-      const Op::Settings &settings_,
-      const boost::optional<float> availableMemoryProportion_ = boost::none);
+  MatMulOp(const OperatorIdentifier &_opid,
+           const Op::Settings &settings_,
+           const boost::optional<float> availableMemoryProportion,
+           const SerialiseSettings &serialization_);
   MatMulOp(const MatMulOp &) = default;
   MatMulOp &operator=(const MatMulOp &) = delete;
   ~MatMulOp() override                  = default;
@@ -85,6 +104,7 @@ private:
   void verifyInputShapes(const Shape &lhs, const Shape &rhs) const;
 
   // Flag to indicate if mat mul can create it's inputs.
+  // MatMulGradXXOps converted to MatMulOps don't create their inputs
   bool canCreateInputs = true;
 
   // The expanded shapes of inputs & outputs. They will

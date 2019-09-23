@@ -56,6 +56,13 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  // The dimension to concatentate on when unwinding the creator
+  int unwindConcatDim = 0;
+
+  // The set of all slices of the input.
+  // Used by the mat mul serialization transform so that we can unwind a creator
+  std::vector<TensorId> allSlices;
+
 private:
   std::vector<int64_t> starts;
   std::vector<int64_t> ends;

@@ -335,6 +335,13 @@ bool MatMulGradPattern::apply(Op *op) const {
       makeReplacementOpInIr(Onnx::Operators::Transpose_1, op, "TransposeIn"));
   auto matmulOp = dynamic_cast<MatMulOp *>(
       makeReplacementOpInIr(Onnx::Operators::MatMul_9, op));
+
+  // Copy over the matmul settings
+  matmulOp->setAvailableMemoryProportion(
+      dynamic_cast<MatMulBaseOp *>(op)->getAvailableMemoryProportion());
+  matmulOp->getSerialiseSettings() =
+      (dynamic_cast<MatMulBaseOp *>(op)->getSerialiseSettings());
+
   auto squeezeOp = dynamic_cast<SqueezeOp *>(
       makeReplacementOpInIr(Onnx::Operators::Squeeze_1, op, "Squeeze"));
   auto reduceSumOp = dynamic_cast<ReduceSumOp *>(

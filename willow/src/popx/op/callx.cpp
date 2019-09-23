@@ -12,7 +12,7 @@ CallOpx::CallOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<CallOp>(op, Onnx::CustomOperators::Call);
 }
 
-optional<InputCreatorCandidate> CallOpx::getCreator(InIndex index) const {
+ICreatorCandidatePtr CallOpx::getCreator(InIndex index) const {
   auto &callop    = getOp<CallOp>();
   auto &callgraph = callop.getCalledGraph();
   auto tensor_id  = callgraph.getInputId(index);
@@ -24,7 +24,7 @@ optional<InputCreatorCandidate> CallOpx::getCreator(InIndex index) const {
 poplar::Tensor CallOpx::createInput(InIndex index,
                                     const std::string &name) const {
   auto creator = getCreator(index);
-  return creator->opx->createInput(creator->index, name);
+  return creator->createInput(name);
 }
 
 InputCreatorType CallOpx::getInputCreatorType(int index) const {
@@ -39,20 +39,22 @@ InputCreatorType CallOpx::getInputCreatorType(int index) const {
 bool CallOpx::createsEquiv(int index0, const Opx *opx1, int index1) const {
   // If opx1 is a CallOpx, delegate to opx1->getCreator getCreator
   // while loop handles +1 depths of CallOpxs
+
+  ICreatorCandidatePtr c2;
   while (opx1->op_p->opid == Onnx::CustomOperators::Call) {
-    auto c2 = dynamic_cast<const CallOpx *>(opx1)->getCreator(index1);
-    opx1    = c2->opx;
-    index1  = c2->index;
+    c2     = dynamic_cast<const CallOpx *>(opx1)->getCreator(index1);
+    opx1   = c2->getOpx();
+    index1 = c2->getIndex();
   }
 
   // pass responsibility to creator
   auto creator = getCreator(index0);
-  return creator->opx->createsEquiv(creator->index, opx1, index1);
+  return creator->createsEquivalent(c2);
 }
 
 std::vector<TensorId> CallOpx::mustExistBeforeCreate(int index) const {
   auto creator = getCreator(index);
-  return creator->opx->mustExistBeforeCreate(creator->index);
+  return creator->mustExistBeforeCreate();
 }
 
 std::vector<poplar::Tensor> CallOpx::prepareOutputs() const {

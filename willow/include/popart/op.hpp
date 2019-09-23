@@ -166,6 +166,8 @@ public:
 
   void append(std::stringstream &ss) const;
 
+  void toJSON(std::stringstream &ss) const;
+
   // sum of the total memory of all output tensors
   // We might want a cycle counter too for more sophisticated recomputation
   int64_t memOfOutputs() const;
@@ -311,7 +313,7 @@ public:
   // in the order they will be used for the graph.
   virtual std::vector<TensorId> getInputsForGraph(const Graph &) const;
 
-private:
+protected:
   virtual void appendMore(OpSerialiserBase &) const;
 
 public:

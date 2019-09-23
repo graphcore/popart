@@ -319,6 +319,36 @@ public:
   }
 
   /**
+   * Set the settings for matmuls that should be serialized. This option
+   * will split a matmul into seperate smaller matmuls that will be excuted in
+   * series. This will also serialize the grad operations if training.
+   *
+   *
+   * \param nodeOutputNames Name of the output matmul tensors of the ONNX node
+   * \param mode Which dimension of the mat mul to serialize on.
+   * \param factor The number of serialised matmuls, must be a factor of the
+   * dimentions to serialise on.
+   *
+   */
+  void setSerializeMatMul(const std::set<TensorId> &nodeOutputNames,
+                          std::string mode,
+                          int64_t factor) {
+    if (mode == sSerializeMatMulMode_InputChannels ||
+        mode == sSerializeMatMulMode_OutputChannels) {
+      addNodeAttribute(sSerializeMatMulModeAttribute, mode, nodeOutputNames);
+      addNodeAttribute(
+          sSerializeMatMulFactorAttribute, factor, nodeOutputNames);
+    } else if (mode != sSerializeMatMulMode_None) {
+      throw error("Unsupported mat mul serialization mode `{}`. Supported "
+                  "modes are `{}`, `{}` or `{}`",
+                  mode,
+                  sSerializeMatMulMode_InputChannels,
+                  sSerializeMatMulMode_OutputChannels,
+                  sSerializeMatMulMode_None);
+    }
+  }
+
+  /**
    * Set the partials type for the given node. Used on the convolution op.
    *
    * \param nodeOutputName Name of the output tensor of the ONNX node

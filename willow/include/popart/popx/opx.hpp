@@ -27,7 +27,11 @@ enum class InputCreatorType {
   CANUNWIND,
   // Cannot create tensor, nor can it allow a
   // a downstream Opx to create the tensor
-  DEADEND
+  DEADEND,
+  // Opx has a poplar call to a function that can
+  // lay out the input tensor on the device from multiple
+  // creators
+  CANUNWIND_MULTIPLE_CREATORS
 };
 
 class Opx {
@@ -53,9 +57,20 @@ public:
   // does it create the same poplar::Tensor as if opx1 creates one at
   // index1?. default behaviour : throws error
   virtual bool createsEquiv(int index0, const Opx *opx1, int index1) const;
-  // Reverses the layout change to an input tensor
+  // Reverses the layout change to an input tensor for an op that returned
+  // CANUNWIND
   virtual poplar::Tensor
   unwindTensorLayout(poplar::Tensor tensor, InIndex, OutIndex) const;
+
+  // Reverses the layout change to an input tensor for an op that returned
+  // CANUNWIND_MULTIPLE_CREATORS
+  virtual poplar::Tensor unwindTensorLayout(std::vector<poplar::Tensor> tensor,
+                                            InIndex,
+                                            OutIndex) const;
+
+  // Returns list of creator candidates, used in CANUNWIND_MULTIPLE_CREATORS
+  virtual std::vector<Op *> getCreatorCandicates(InIndex) const;
+
   // To create a poplar::Tensor for input index index0, which
   // poplar::Tensors must already exist?
   virtual std::vector<TensorId> mustExistBeforeCreate(int index0) const;

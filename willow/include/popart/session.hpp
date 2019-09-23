@@ -150,6 +150,13 @@ public:
    */
   void writeWeights(const IWeightsIO &weightsIo);
 
+  /**
+   * Serizalise the ir graph to a string
+   *
+   * format : the format to serialize
+   */
+  std::string serializeIr(IrSerializationFormat format);
+
 protected:
   /**
    * Select a device type.

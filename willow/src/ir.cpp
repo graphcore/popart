@@ -44,6 +44,7 @@
 #include <popart/transforms/mergevarupdates.hpp>
 #include <popart/transforms/pipeline.hpp>
 #include <popart/transforms/prune.hpp>
+#include <popart/transforms/serializematmuls.hpp>
 #include <popart/transforms/subgraphoutline.hpp>
 
 // The layers required to construct the backwards pass
@@ -792,6 +793,10 @@ void Ir::prepare(const IrBundle &gb) {
   // Add internal ops to copy tensors between ipu's as needed
   applyTransform(InterIpuCopy::id(), getMainGraph());
   applyTransform(MergeCopies::id(), getMainGraph());
+
+  if (getSessionOptions().enableSerializedMatmuls) {
+    applyTransform(SerializeMatMuls::id(), getMainGraph());
+  }
 
   if (getSessionOptions().enableGroupedMatmuls) {
     applyTransform(GroupMatMuls::id(), getMainGraph());
@@ -2201,6 +2206,43 @@ void Ir::append(std::stringstream &ss) const {
       op->append(ss);
     }
   }
+}
+
+void Ir::serialise(SerialiseFormat format, std::stringstream &ss) const {
+
+  // TODO use the format to seralize the ir
+  (void)format;
+
+  ss << "{";
+
+  bool firstGraph = true;
+  for (auto graph : getGraphSchedule()) {
+
+    if (!firstGraph)
+      ss << ",";
+
+    if (firstGraph)
+      ss << "\"maingraph\" :[";
+    else
+      ss << "\"" << graph->id.str() << "\" :[";
+
+    bool firstOp = true;
+    for (auto &op : graph->getOpSchedule({})) {
+
+      if (!firstOp)
+        ss << ",";
+
+      op->toJSON(ss);
+
+      firstOp = false;
+    }
+
+    ss << "]";
+
+    firstGraph = false;
+  }
+
+  ss << "}";
 }
 
 int Ir::getDefaultOpsetVersion(const std::string &domain) const {
