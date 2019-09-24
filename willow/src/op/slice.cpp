@@ -229,7 +229,10 @@ SliceInplaceOp::SliceInplaceOp(const SliceOp &op)
                   op.getStarts(),
                   op.getEnds(),
                   op.getAxes(),
-                  op.getSettings()) {}
+                  op.getSettings()) {
+  allSlices       = op.allSlices;
+  unwindConcatDim = op.unwindConcatDim;
+}
 
 std::unique_ptr<Op> SliceOp::clone() const {
   return std::make_unique<SliceOp>(*this);

@@ -62,7 +62,8 @@ view::RegMap Op::fwdRegMap(InIndex i) const {
   } else if (!output->hasIndex(0)) {
     throw error("fwdMapReg called for op with no zero output");
   } else if (inShape(i) != outShape(0)) {
-    throw error("default fwdRegMap not valid : should be specialised");
+    throw error("default fwdRegMap not valid : should be specialised for {}",
+                str());
   }
 
   return [](const view::Region &r) { return r; };
@@ -224,6 +225,8 @@ void Op::append(std::stringstream &ss) const {
   ss << '\n';
   appendMore(os);
 }
+
+void Op::toJSON(std::stringstream &ss) const { OpJsonSerialiser os(this, ss); }
 
 // The appendMore attributes appear in the log but are not used
 // in the outlining algorithm

@@ -18,7 +18,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case1) {
   popart::Ir ir;
   auto &graph = ir.getMainGraph();
 
-  popart::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""});
+  popart::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""}, boost::none, {});
 
   popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph);
   lhs.info.set(popart::DataType::FLOAT, {2, 2});
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case2) {
   popart::Ir ir;
   auto &graph = ir.getMainGraph();
 
-  popart::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""});
+  popart::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""}, boost::none, {});
 
   popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph);
   lhs.info.set(popart::DataType::FLOAT, {3, 2});
@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE(MatMul_Case3) {
   popart::Ir ir;
   auto &graph = ir.getMainGraph();
 
-  popart::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""});
+  popart::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""}, boost::none, {});
 
   popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph);
   lhs.info.set(popart::DataType::FLOAT, {2, 1, 4, 3, 2});
@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase1) {
   popart::Ir ir;
   auto &graph = ir.getMainGraph();
 
-  popart::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""});
+  popart::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""}, boost::none, {});
 
   popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph);
   lhs.info.set(popart::DataType::FLOAT, {2, 2, 3});
@@ -300,7 +300,7 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase3) {
   popart::Ir ir;
   auto &graph = ir.getMainGraph();
 
-  popart::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""});
+  popart::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""}, boost::none, {});
 
   popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph);
   lhs.info.set(popart::DataType::FLOAT, {2, 3});
@@ -325,7 +325,7 @@ BOOST_AUTO_TEST_CASE(MatMul_ErrorCase4) {
   popart::Ir ir;
   auto &graph = ir.getMainGraph();
 
-  popart::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""});
+  popart::MatMulOp mm(Onnx::Operators::MatMul_9, {graph, ""}, boost::none, {});
 
   popart::Tensor lhs("lhs", popart::TensorType::ActGrad, graph);
   lhs.info.set(popart::DataType::FLOAT, {});

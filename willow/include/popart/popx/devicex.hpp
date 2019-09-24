@@ -65,31 +65,94 @@ public:
 poplar::Type popType(const TensorInfo &);
 poplar::Type popType(DataType);
 
-// A bundle struct to represent the path a tensor
-// takes through an Opx
-struct OpxInAndOutIndex {
-  OpxInAndOutIndex(const Opx *opx_, InIndex inIndex_, OutIndex outIndex_)
-      : opx(opx_), inIndex(inIndex_), outIndex(outIndex_) {}
-  OpxInAndOutIndex() = default;
+struct ICreatorCandidate;
+using ICreatorCandidatePtr = std::shared_ptr<ICreatorCandidate>;
 
-  const Opx *opx;
-  InIndex inIndex;
-  OutIndex outIndex;
-};
+// An interface for a potential creator of a tensor
+struct ICreatorCandidate {
 
-// A bundle class to represent candidate Opxs
-// for allocating an input tensor
-class InputCreatorCandidate {
-public:
-  InputCreatorCandidate(int, const Opx *, std::vector<OpxInAndOutIndex>);
-  InputCreatorCandidate() = default;
-  int index;
-  const Opx *opx;
+  // A bundle struct to represent the path a tensor
+  // takes through an Opx
+  struct OpxInAndOutIndex {
+    OpxInAndOutIndex(const Opx *opx_, InIndex inIndex_, OutIndex outIndex_)
+        : opx(opx_), inIndex(inIndex_), outIndex(outIndex_) {}
+    OpxInAndOutIndex() = default;
 
-  std::vector<OpxInAndOutIndex> getPathFromInput();
+    const Opx *opx;
+    InIndex inIndex;
+    OutIndex outIndex;
+  };
+
+  ICreatorCandidate(int, const Opx *, std::vector<OpxInAndOutIndex> path);
+  virtual ~ICreatorCandidate() = default;
+
+  // Create's a input tensor
+  virtual poplar::Tensor createInput(const std::string &name) = 0;
+
+  // Returns the list of tensors that must be created before this one
+  virtual std::vector<TensorId> mustExistBeforeCreate() = 0;
+
+  virtual bool createsEquivalent(const ICreatorCandidatePtr other) = 0;
+
+  virtual double getMaxCreatorPriority() = 0;
+
+  virtual std::string str() = 0;
+
+  // Returns the unwind path from the tensor to the creator
+  std::vector<OpxInAndOutIndex> getPathFromInput() { return pathFromInput; }
+  void setPathFromInput(std::vector<OpxInAndOutIndex> &value) {
+    pathFromInput = value;
+  }
+
+  int getIndex() const { return index; }
+  const Opx *getOpx() const { return opx; }
+
+protected:
+  poplar::Tensor unwind(poplar::Tensor i);
+  std::vector<OpxInAndOutIndex> pathFromInput;
 
 private:
-  std::vector<OpxInAndOutIndex> pathFromInput;
+  int index;
+  const Opx *opx;
+};
+
+class InputCreatorCandidate : public ICreatorCandidate {
+public:
+  InputCreatorCandidate(int, const Opx *, std::vector<OpxInAndOutIndex>);
+  InputCreatorCandidate()                   = default;
+  virtual ~InputCreatorCandidate() override = default;
+
+  poplar::Tensor createInput(const std::string &name) override;
+
+  std::vector<TensorId> mustExistBeforeCreate() override;
+
+  double getMaxCreatorPriority() override;
+
+  bool createsEquivalent(const ICreatorCandidatePtr other) override;
+
+  virtual std::string str() override;
+};
+
+class InputMultiCreatorCandidate : public ICreatorCandidate {
+public:
+  InputMultiCreatorCandidate(int,
+                             const Opx *,
+                             std::vector<OpxInAndOutIndex> path);
+  virtual ~InputMultiCreatorCandidate() override = default;
+
+  poplar::Tensor createInput(const std::string &name) override;
+  std::vector<TensorId> mustExistBeforeCreate() override;
+
+  double getMaxCreatorPriority() override;
+
+  bool createsEquivalent(const ICreatorCandidatePtr other) override;
+
+  virtual std::string str() override;
+
+  void addCreateorCandidate(ICreatorCandidatePtr c) { candidates.push_back(c); }
+
+private:
+  std::vector<ICreatorCandidatePtr> candidates;
 };
 
 class PopTensors {
@@ -199,15 +262,15 @@ public:
   // Using the default arguments will return only creator candidates,
   // with each candidate's path containing only Opxs that need to be
   // 'unwound' to correctly lay out the input tensor
-  std::vector<InputCreatorCandidate>
-  getCreatorEndpoints(Tensor *tensor,
-                      std::vector<OpxInAndOutIndex> pathFromInput,
-                      bool excludeEndpointsFromPath = true,
-                      bool includeDeadends          = false) const;
+  std::vector<ICreatorCandidatePtr> getCreatorEndpoints(
+      Tensor *tensor,
+      std::vector<ICreatorCandidate::OpxInAndOutIndex> pathFromInput,
+      bool excludeEndpointsFromPath = true,
+      bool includeDeadends          = false) const;
 
   // Get a single creator candidate for creating a tensor
   // Will throw an error if multiple candidates that do not agree are found
-  optional<InputCreatorCandidate> getTensorCreator(Tensor *tensor) const;
+  ICreatorCandidatePtr getTensorCreator(Tensor *tensor) const;
 
   bool isEngineLoaded() const;
   void setEngineIsLoaded(bool isLoaded);

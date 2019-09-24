@@ -353,7 +353,6 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                                  name,
                                  builder.getNextId(name));
 
-  int sliceCount  = 0;
   int groupOffset = 0;
   for (auto &info : matmulList) {
     auto outputTensor =

@@ -3,6 +3,7 @@
 #include <popart/names.hpp>
 #include <popart/op/matmul.hpp>
 #include <popart/opmanager.hpp>
+#include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/util.hpp>
@@ -13,9 +14,24 @@ MatMulBaseOp::MatMulBaseOp(
     const OperatorIdentifier &_opid,
     const Op::Settings &settings_,
     const Phase phase_,
-    const boost::optional<float> availableMemoryProportion_)
+    const boost::optional<float> availableMemoryProportion_,
+    const SerialiseSettings &serialization_)
     : Op(_opid, settings_), phase(phase_),
-      availableMemoryProportion(availableMemoryProportion_) {}
+      availableMemoryProportion(availableMemoryProportion_),
+      serialization(serialization_) {}
+
+void MatMulBaseOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+}
+
+void MatMulBaseOp::appendMore(OpSerialiserBase &os) const {
+  Op::appendMore(os);
+  os.appendAttribute("phase", static_cast<int64_t>(phase));
+  os.appendAttribute("serialization_mode",
+                     static_cast<int64_t>(serialization.mode));
+  os.appendAttribute("serialization_factor",
+                     static_cast<int64_t>(serialization.factor));
+}
 
 MatMulBaseGradOp::MatMulBaseGradOp(const OperatorIdentifier &_opid,
                                    const MatMulOp &fwdOp,
@@ -23,7 +39,8 @@ MatMulBaseGradOp::MatMulBaseGradOp(const OperatorIdentifier &_opid,
     : MatMulBaseOp(_opid,
                    fwdOp.getSettings(),
                    phase,
-                   fwdOp.getAvailableMemoryProportion()),
+                   fwdOp.getAvailableMemoryProportion(),
+                   fwdOp.getSerialiseSettings()),
       fwdOpOutputGrad(fwdOp.outInfo(0)), fwdOpLhsInfo(fwdOp.lhsIn()->info),
       fwdOpRhsInfo(fwdOp.rhsIn()->info), cloneOfCreator(fwdOp.clone()) {}
 
@@ -33,8 +50,13 @@ const MatMulOp *MatMulBaseGradOp::getCloneOfCreator() const {
 
 MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_,
-                   const boost::optional<float> availableMemoryProportion_)
-    : MatMulBaseOp(_opid, settings_, Phase::Fwd, availableMemoryProportion_) {}
+                   const boost::optional<float> availableMemoryProportion_,
+                   const SerialiseSettings &serialization_)
+    : MatMulBaseOp(_opid,
+                   settings_,
+                   Phase::Fwd,
+                   availableMemoryProportion_,
+                   serialization_) {}
 
 std::unique_ptr<Op> MatMulOp::clone() const {
   return std::make_unique<MatMulOp>(*this);
@@ -159,6 +181,47 @@ Shape MatMulOp::npMatMulOut(Shape lhs, Shape rhs) {
 }
 
 void MatMulOp::setup() {
+
+  if (phase == Phase::Fwd) {
+    if (getSerialiseSettings().mode !=
+        MatMulBaseOp::SerialiseSettings::Mode::None) {
+
+      // assuming
+      // lhs = [group_dims, input_channels, reduce_dim]
+      // rhs = [group_dims, reduce_dim, output_channels]
+
+      if (getSerialiseSettings().mode ==
+          MatMulBaseOp::SerialiseSettings::Mode::InputChannels) {
+
+        // Get the input channels of the left hand size
+        auto inputChannelsDim =
+            lhsIn()->info.shape()[lhsIn()->info.shape().size() - 2];
+
+        if (inputChannelsDim % getSerialiseSettings().factor != 0) {
+          throw error("Invalid serialisation factor {} for input channels dim "
+                      "{}. input_channels dim should be a multple of the "
+                      "serialisation factor ",
+                      getSerialiseSettings().factor,
+                      inputChannelsDim);
+        }
+      } else {
+
+        // Get the output channels of the right hand size
+        auto outputChannelsDim =
+            rhsIn()->info.shape()[rhsIn()->info.shape().size() - 1];
+
+        logging::op::info("{}", rhsIn()->info.shape());
+        if (outputChannelsDim % getSerialiseSettings().factor != 0) {
+          throw error("Invalid serialisation factor {} for output channels dim "
+                      "{}. output_channels dim should be a multple of the "
+                      "serialisation factor ",
+                      getSerialiseSettings().factor,
+                      outputChannelsDim);
+        }
+      }
+    }
+  }
+
   // Define the shape of the output tensor
   outInfo(0) = {lhsIn()->info.dataType(),
                 npMatMulOut(lhsIn()->info.shape(), rhsIn()->info.shape())};
@@ -242,14 +305,39 @@ static OpCreator<MatMulOp> matMulOpCreator(
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
       // try set the availMemAttribute from an attribute
-      if (attr.hasAttribute(sAvailMemAttribute)) {
-        float availableMemoryProportion =
-            attr.getAttribute<Attributes::Float>(sAvailMemAttribute);
-        return std::unique_ptr<Op>(
-            new MatMulOp(_opid, settings, availableMemoryProportion));
-      } else {
-        return std::unique_ptr<Op>(new MatMulOp(_opid, settings));
+
+      boost::optional<float> availableMemoryProportion;
+      boost::optional<int64_t> serialize;
+
+      MatMulBaseOp::SerialiseSettings serialisation;
+
+      if (attr.hasAttribute(sSerializeMatMulModeAttribute)) {
+
+        std::string mode = attr.getAttribute<Attributes::String>(
+            sSerializeMatMulModeAttribute, sSerializeMatMulMode_None);
+        if (mode == sSerializeMatMulMode_InputChannels) {
+          serialisation.mode =
+              MatMulBaseOp::SerialiseSettings::Mode::InputChannels;
+        } else if (mode == sSerializeMatMulMode_OutputChannels) {
+          serialisation.mode =
+              MatMulBaseOp::SerialiseSettings::Mode::OutputChannels;
+        } else if (mode == sSerializeMatMulMode_None) {
+          serialisation.mode = MatMulBaseOp::SerialiseSettings::Mode::None;
+        } else {
+          throw error("Unsupport matmul serialisation mode {}", mode);
+        }
+
+        serialisation.factor =
+            attr.getAttribute<Attributes::Int>(sSerializeMatMulFactorAttribute);
       }
+
+      if (attr.hasAttribute(sAvailMemAttribute)) {
+        availableMemoryProportion =
+            attr.getAttribute<Attributes::Float>(sAvailMemAttribute);
+      }
+
+      return std::unique_ptr<Op>(new MatMulOp(
+          _opid, settings, availableMemoryProportion, serialisation));
     },
     true);
 } // namespace

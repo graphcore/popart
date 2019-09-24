@@ -49,6 +49,10 @@ enum class VirtualGraphMode {
   N        // The number of VirtualGraphModes, must appear as the final enum
 };
 
+enum class IrSerializationFormat {
+  JSON // JSON format
+};
+
 std::string toString(VirtualGraphMode);
 std::ostream &operator<<(std::ostream &, VirtualGraphMode);
 
@@ -202,6 +206,9 @@ struct SessionOptions {
 
   /// Enable/disable the grouping of matmuls that are the same shape
   bool enableGroupedMatmuls = true;
+
+  /// Enable/disable the serializing of matmuls.
+  bool enableSerializedMatmuls = true;
 
   /// Poplar engine options
   std::map<std::string, std::string> engineOptions;

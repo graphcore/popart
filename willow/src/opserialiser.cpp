@@ -77,6 +77,166 @@ void OpSerialiser::appendForwardOp(const Op *op) {
   ss << tab << tab << op->debugName() << " attributes\n";
 }
 
+OpJsonSerialiser::OpJsonSerialiser(const Op *op, std::stringstream &ss_)
+    : OpSerialiserBase(), ss(ss_) {
+
+  ss << "{";
+
+  appendKeyValue("type", op->opid.type);
+  appendKeyValue("version", op->opid.version);
+  appendKeyValue("domain", op->opid.domain);
+  appendKeyValue("name", op->getName());
+
+  appendKeyValues("inputs",
+                  [&]() {
+                    auto i = op->input->tensorMap().size();
+                    for (auto it = op->input->tensorMap().begin();
+                         it != op->input->tensorMap().end();
+                         it++) {
+                      ss << "{";
+                      appendKeyValue("name", it->second->id);
+
+                      std::stringstream s;
+                      s << it->second->info.shape();
+
+                      appendKeyValue("shape", s.str());
+                      appendKeyValue("type", it->second->info.data_type());
+                      appendKeyValue("index", it->first, true);
+
+                      ss << "}";
+
+                      if (i-- > 1) {
+                        ss << ",";
+                      }
+                    }
+                  }
+
+  );
+
+  appendKeyValues("outputs", [&]() {
+    auto i = op->output->tensorMap().size();
+    for (auto it = op->output->tensorMap().begin();
+         it != op->output->tensorMap().end();
+         it++) {
+      ss << "{";
+      appendKeyValue("name", it->second->id);
+      appendKeyValue("index", it->first, true);
+      ss << "}";
+
+      if (i-- > 1) {
+        ss << ",";
+      }
+    }
+  });
+
+  appendKeyValueFn("attributes",
+                   [&]() {
+                     attributesAppended = false;
+                     op->appendAttributes(*this);
+
+                     if (attributesAppended)
+                       ss.seekp(-1, std::ios_base::end); // remove last ','
+                   },
+                   true);
+
+  ss << "}";
+}
+
+template <typename T>
+void OpJsonSerialiser::appendKeyValue(const std::string key,
+                                      T value,
+                                      bool last) {
+  ss << "\"" << key << "\""
+     << ":"
+     << "\"" << value << "\"";
+
+  if (!last)
+    ss << ",";
+}
+
+void OpJsonSerialiser::appendKeyValueFn(const std::string key,
+                                        std::function<void()> func,
+                                        bool last) {
+  ss << "\"" << key << "\""
+     << ":"
+     << "{";
+
+  func();
+
+  ss << "}";
+
+  if (!last)
+    ss << ",";
+}
+
+void OpJsonSerialiser::appendKeyValues(const std::string key,
+                                       std::function<void()> func,
+                                       bool last) {
+  ss << "\"" << key << "\""
+     << ":"
+     << "[";
+
+  func();
+
+  ss << "]";
+
+  if (!last)
+    ss << ",";
+}
+
+void OpJsonSerialiser::appendAttribute(const std::string &name, float value) {
+  appendAttr(name, value);
+}
+
+void OpJsonSerialiser::appendAttribute(const std::string &name, int64_t value) {
+  appendAttr(name, value);
+}
+
+void OpJsonSerialiser::appendAttribute(const std::string &name,
+                                       uint32_t value) {
+  appendAttr(name, value);
+}
+
+void OpJsonSerialiser::appendAttribute(const std::string &name,
+                                       uint64_t value) {
+  appendAttr(name, value);
+}
+
+void OpJsonSerialiser::appendAttribute(const std::string &name,
+                                       const std::vector<int64_t> &value) {
+  appendAttr(name, value);
+}
+
+void OpJsonSerialiser::appendAttribute(const std::string &name,
+                                       const std::string &value) {
+  appendAttr(name, value);
+}
+
+void OpJsonSerialiser::appendAttribute(const std::string &name,
+                                       boost::optional<int64_t> value) {
+  if (value) {
+    appendAttr(name, *value);
+  }
+}
+
+void OpJsonSerialiser::appendAttribute(const std::string &name, bool value) {
+  appendAttr(name, value ? "true" : "false");
+}
+
+void OpJsonSerialiser::appendAttribute(const std::string &name,
+                                       const Scope &scope) {
+  appendAttr(name, scope);
+}
+
+template <typename T>
+void OpJsonSerialiser::appendAttr(const std::string &name, const T &value) {
+  attributesAppended = true;
+  appendKeyValue(name, value);
+}
+
+// Ignore forward ops
+void OpJsonSerialiser::appendForwardOp(const Op *op) { (void)op; }
+
 OpEquivIdCreator::OpEquivIdCreator(const Op *op) {
   ss << op->opid.domain << "::" << op->opid.type << "::" << op->opid.version
      << sep;

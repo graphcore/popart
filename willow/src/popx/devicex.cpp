@@ -680,13 +680,13 @@ TaskId Devicex::taskWhichPopulates(TensorId id) const {
   }
 }
 
-std::vector<InputCreatorCandidate>
-Devicex::getCreatorEndpoints(Tensor *tensor,
-                             std::vector<OpxInAndOutIndex> pathFromInput,
-                             bool excludeEndpointsFromPath,
-                             bool includeDeadends) const {
+std::vector<ICreatorCandidatePtr> Devicex::getCreatorEndpoints(
+    Tensor *tensor,
+    std::vector<ICreatorCandidate::OpxInAndOutIndex> pathFromInput,
+    bool excludeEndpointsFromPath,
+    bool includeDeadends) const {
 
-  std::vector<InputCreatorCandidate> endpoints;
+  std::vector<ICreatorCandidatePtr> endpoints;
   for (Op *op : tensor->consumers.getOps()) {
     auto conOpId   = op->id;
     const Opx *opx = getOpx(conOpId);
@@ -701,7 +701,8 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
         if (!excludeEndpointsFromPath) {
           updatedPath.push_back({opx, inIndex, -1}); // note: no valid outIndex
         }
-        endpoints.push_back({inIndex, opx, updatedPath});
+        endpoints.push_back(
+            std::make_shared<InputCreatorCandidate>(inIndex, opx, updatedPath));
         break;
       }
       // Recursively search the DAG downstream of the op until we
@@ -711,11 +712,68 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
           auto nextOutputTensor = ind_ten.second;
           auto outIndex         = ind_ten.first;
           updatedPath.push_back({opx, inIndex, outIndex});
-          for (auto candidate :
+          for (auto &candidate :
                getCreatorEndpoints(nextOutputTensor, updatedPath)) {
             endpoints.push_back(candidate);
           }
         }
+        break;
+      }
+      // Recursively search the DAG downstream of the op until we
+      // have set of creator endpoints that can create the tensor
+      case InputCreatorType::CANUNWIND_MULTIPLE_CREATORS: {
+
+        // This does not handle multiple output op's
+        // TODO : Need to handle CANUNWIND_MULTIPLE_CREATORS with multiple
+        // outputs
+        auto outputName = opx->op_p->output->tensorMap().at(0)->id;
+
+        // Get the list of creator candicates
+        // ?? Better name ??
+        auto creators = opx->getCreatorCandicates(inIndex);
+
+        // Create the InputMultiCreatorCandidate
+        std::vector<ICreatorCandidate::OpxInAndOutIndex> path = {};
+        std::shared_ptr<InputMultiCreatorCandidate> creatorCandidate =
+            std::make_shared<InputMultiCreatorCandidate>(inIndex, opx, path);
+
+        // Determine the correct input index for this creator.
+        // This is a bit weak, find the matching input index for 1 of the
+        // creators and then use that.
+        InIndex index = -1;
+        for (auto creator : creators) {
+          for (auto input : creator->input->tensorIdMap()) {
+            if (input.second == outputName) {
+              index = input.first;
+              break;
+            }
+          }
+
+          if (index != -1) {
+            break;
+          }
+        }
+
+        if (index == -1) {
+          throw error("Could not determine input index for {}", outputName);
+        }
+
+        // For each creator input recursively work out their creator candidates
+        for (auto *creator : creators) {
+          auto ind_ten = creator->input->tensorMap().at(index);
+
+          // Create a new path for each creator
+          for (auto candidate : getCreatorEndpoints(ind_ten, {})) {
+            creatorCandidate->addCreateorCandidate(candidate);
+          }
+        }
+
+        // Save the path from the 'input' to this creator cadidator
+        creatorCandidate->setPathFromInput(updatedPath);
+
+        // Add creator to the options
+        endpoints.push_back(creatorCandidate);
+
         break;
       }
       // Consuming op can't create tensor
@@ -725,7 +783,8 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
             updatedPath.push_back(
                 {opx, inIndex, -1}); // note: no valid outIndex
           }
-          endpoints.push_back({inIndex, opx, updatedPath});
+          endpoints.push_back(std::make_shared<InputCreatorCandidate>(
+              inIndex, opx, updatedPath));
         }
         break;
       }
@@ -739,28 +798,32 @@ Devicex::getCreatorEndpoints(Tensor *tensor,
   return endpoints;
 }
 
-optional<InputCreatorCandidate>
-Devicex::getTensorCreator(Tensor *tensor) const {
+ICreatorCandidatePtr Devicex::getTensorCreator(Tensor *tensor) const {
   // Search of the graph to get the candidate Opxs that
   // know how to create this tensor.
   // The pathFromInput argument is an empty vector, as
   // we are starting the search from the root (input)
-  std::vector<InputCreatorCandidate> candidates =
+
+  std::vector<ICreatorCandidatePtr> candidates =
       getCreatorEndpoints(tensor, {});
 
   // Filter out all but highest priority candidates
+
   if (candidates.size() > 0) {
-    auto hasSmallerPriority = [&](InputCreatorCandidate icc1,
-                                  InputCreatorCandidate icc2) -> bool {
-      return icc1.opx->inputCreatorPriority < icc2.opx->inputCreatorPriority;
+
+    auto hasSmallerPriority = [&](ICreatorCandidatePtr icc1,
+                                  ICreatorCandidatePtr icc2) -> bool {
+      return icc1->getMaxCreatorPriority() < icc2->getMaxCreatorPriority();
     };
     auto maxPriorityCandidate = *std::max_element(
         candidates.begin(), candidates.end(), hasSmallerPriority);
 
-    auto hasNonMaxPriority = [&](InputCreatorCandidate icc) -> bool {
-      return icc.opx->inputCreatorPriority <
-             maxPriorityCandidate.opx->inputCreatorPriority;
+    auto hasNonMaxPriority =
+        [maxPriorityCandidate](ICreatorCandidatePtr &icc) -> bool {
+      return icc->getMaxCreatorPriority() <
+             maxPriorityCandidate->getMaxCreatorPriority();
     };
+
     candidates.erase(
         std::remove_if(candidates.begin(), candidates.end(), hasNonMaxPriority),
         candidates.end());
@@ -770,11 +833,11 @@ Devicex::getTensorCreator(Tensor *tensor) const {
     // check that all creators are in agreement on how
     // to create the poplar::Tensor. If they are, just keep
     // the first one.
-    bool allEquivalent = true;
-    auto cand0         = candidates[0];
+    bool allEquivalent         = true;
+    ICreatorCandidatePtr cand0 = candidates[0];
     for (int i = 1; i < candidates.size(); ++i) {
       auto cand1 = candidates[i];
-      if (!cand0.opx->createsEquiv(cand0.index, cand1.opx, cand1.index)) {
+      if (!cand0->createsEquivalent(cand1)) {
         allEquivalent = false;
         break;
       }
@@ -787,10 +850,11 @@ Devicex::getTensorCreator(Tensor *tensor) const {
           tensor->id);
     }
   }
+
   if (candidates.size() > 0) {
     return candidates.front();
   } else {
-    return boost::none;
+    return nullptr;
   }
 }
 
@@ -799,40 +863,30 @@ Devicex::getTensorCreator(Tensor *tensor) const {
 PriTask Devicex::initTensorTask(Tensor *tensor) {
   auto candidate = getTensorCreator(tensor);
 
+  // InputCreatorCandidate* candidate  =
+  // (dynamic_cast<InputCreatorCandidate*>(candidate_.get()));
+
   // 1. A unique candidate creator will create the tensor
   // 2. The tensor will be unwound (have its layout modified)
   //    by view-changing opxs on the path from the input to
   //    the candidate candidate
   if (candidate) {
-    const Opx *creator = candidate->opx;
-    int inIndex        = candidate->index;
-    auto pathFromInput = candidate->getPathFromInput();
 
-    auto f = [this, creator, inIndex, pathFromInput, tensor]() {
+    auto f = [this, candidate, tensor]() {
       logging::devicex::debug(
           "Creating poplar::Tensor {}, with layout allocated by {}",
           tensor->id,
-          creator->op_p->str());
-      poplar::Tensor input = creator->createInput(inIndex, tensor->str());
+          candidate->str());
 
-      // Reverse the path,
-      // The first element is now the Opx producing a tensor consumed by
-      // the candidate.
-      // The last element is now the Opx consuming the input we are mapping.
-      auto pathToInput = pathFromInput;
-      std::reverse(pathToInput.begin(), pathToInput.end());
+      poplar::Tensor input = candidate->createInput(tensor->str());
 
-      for (auto opxOnPath : pathToInput) {
-        input = opxOnPath.opx->unwindTensorLayout(
-            input, opxOnPath.inIndex, opxOnPath.outIndex);
-      }
       tensors.insert(tensor->id, input);
       efficientlyCreatedInputTensors.insert(tensor->id);
     };
     // the inputs of creator which must have poplar::Tensors
     // before creator creates input tensor at index inIndex.
     std::vector<TaskId> deps;
-    for (TensorId tenId : creator->mustExistBeforeCreate(inIndex)) {
+    for (TensorId tenId : candidate->mustExistBeforeCreate()) {
       TaskId dep = taskWhichCreates(tenId);
       deps.push_back(dep);
     }
@@ -852,7 +906,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
                               tensor->id);
 
       // Get paths to both creator candidates and deadends, and print for debug
-      std::vector<InputCreatorCandidate> endpoints =
+      std::vector<ICreatorCandidatePtr> endpoints =
           getCreatorEndpoints(tensor, {}, false, true);
       int endpointId = 1;
       logging::devicex::debug("Printing paths to {} endpoint(s) found when "
@@ -860,7 +914,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
                               endpoints.size(),
                               tensor->id);
       for (auto endpoint : endpoints) {
-        auto path = endpoint.getPathFromInput();
+        auto path = endpoint->getPathFromInput();
         logging::devicex::debug("  Path to endpoint {}, starting from input",
                                 endpointId);
         for (auto opxOnPath : path) {
@@ -1508,14 +1562,154 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
   return {priority, opTaskId(op), deps, f};
 }
 
-InputCreatorCandidate::InputCreatorCandidate(
-    int conIndex_,
-    const Opx *opx_,
-    std::vector<OpxInAndOutIndex> pathFromInput_)
-    : index(conIndex_), opx(opx_), pathFromInput(pathFromInput_) {}
+ICreatorCandidate::ICreatorCandidate(int index_,
+                                     const Opx *opx_,
+                                     std::vector<OpxInAndOutIndex> path)
+    : pathFromInput(path), index(index_), opx(opx_) {}
 
-std::vector<OpxInAndOutIndex> InputCreatorCandidate::getPathFromInput() {
-  return pathFromInput;
+poplar::Tensor ICreatorCandidate::unwind(poplar::Tensor input) {
+
+  // Reverse the path,
+  // The first element is now the Opx producing a tensor consumed by
+  // the candidate.
+  // The last element is now the Opx consuming the input we are mapping.
+
+  auto pathToInput = getPathFromInput();
+  std::reverse(pathToInput.begin(), pathToInput.end());
+
+  for (auto &opxOnPath : pathToInput) {
+    input = opxOnPath.opx->unwindTensorLayout(
+        input, opxOnPath.inIndex, opxOnPath.outIndex);
+  }
+
+  return input;
+}
+
+InputCreatorCandidate::InputCreatorCandidate(
+    int index,
+    const Opx *opx,
+    std::vector<OpxInAndOutIndex> pathFromInput_)
+    : ICreatorCandidate(index, opx, pathFromInput_) {}
+
+double InputCreatorCandidate::getMaxCreatorPriority() {
+  return getOpx()->inputCreatorPriority;
+}
+
+bool InputCreatorCandidate::createsEquivalent(
+    const ICreatorCandidatePtr other) {
+
+  const InputCreatorCandidate *otherCreator =
+      dynamic_cast<const InputCreatorCandidate *>(other.get());
+  if (otherCreator) {
+    return getOpx()->createsEquiv(
+        getIndex(), otherCreator->getOpx(), otherCreator->getIndex());
+  } else {
+    return false;
+  }
+}
+
+poplar::Tensor InputCreatorCandidate::createInput(const std::string &name) {
+  poplar::Tensor t = getOpx()->createInput(getIndex(), name);
+  return unwind(t);
+}
+
+std::vector<TensorId> InputCreatorCandidate::mustExistBeforeCreate() {
+  return getOpx()->mustExistBeforeCreate(getIndex());
+}
+
+std::string InputCreatorCandidate::str() {
+
+  std::string result = getOpx()->op_p->str();
+
+  result += "(";
+  for (auto &i : pathFromInput) {
+    result += "<- " + i.opx->op_p->str();
+  }
+  result += ")";
+
+  return result;
+}
+
+InputMultiCreatorCandidate::InputMultiCreatorCandidate(
+    int index,
+    const Opx *opx,
+    std::vector<OpxInAndOutIndex> pathFromInput_)
+    : ICreatorCandidate(index, opx, pathFromInput_) {}
+
+double InputMultiCreatorCandidate::getMaxCreatorPriority() {
+
+  return (*std::max_element(
+              candidates.begin(),
+              candidates.end(),
+              [](ICreatorCandidatePtr icc1, ICreatorCandidatePtr icc2) {
+                return icc1->getMaxCreatorPriority() <
+                       icc2->getMaxCreatorPriority();
+              }))
+      ->getMaxCreatorPriority();
+}
+
+bool InputMultiCreatorCandidate::createsEquivalent(
+    const ICreatorCandidatePtr other) {
+
+  // Test each candidate creator
+  InputMultiCreatorCandidate *_other =
+      dynamic_cast<InputMultiCreatorCandidate *>(other.get());
+
+  if (_other != nullptr) {
+    if (candidates.size() == _other->candidates.size()) {
+
+      for (int i = 0; i < candidates.size(); ++i) {
+        if (candidates[i]->createsEquivalent(_other->candidates[i]) == false) {
+          return false;
+        }
+      }
+
+    } else {
+      return false;
+    }
+  } else {
+    return false;
+  }
+
+  return true;
+}
+
+poplar::Tensor
+InputMultiCreatorCandidate::createInput(const std::string &name) {
+
+  std::vector<poplar::Tensor> tensors;
+
+  for (auto &c : candidates) {
+    tensors.push_back(c->createInput(name));
+  }
+
+  poplar::Tensor t = getOpx()->unwindTensorLayout(tensors, getIndex(), 0);
+
+  return unwind(t);
+}
+
+std::vector<TensorId> InputMultiCreatorCandidate::mustExistBeforeCreate() {
+  std::vector<TensorId> tensors;
+  for (auto &c : candidates) {
+    std::vector<TensorId> t2 = c->mustExistBeforeCreate();
+    tensors.insert(tensors.end(), t2.begin(), t2.end());
+  }
+  return tensors;
+}
+
+std::string InputMultiCreatorCandidate::str() {
+  std::string result;
+  for (auto &c : candidates) {
+    result = result + " " + c->str();
+  }
+
+  result += "  [";
+  for (auto &i : pathFromInput) {
+    result += "<- " + i.opx->op_p->str();
+  }
+  result += "]";
+
+  return result;
 }
 
 unsigned Devicex::getReplicationFactor() const {

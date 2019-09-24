@@ -112,6 +112,8 @@ class Ir {
 public:
   enum class ExecutionMode { INFERENCE, EVALUATION, TRAINING };
 
+  enum class SerialiseFormat { JSON };
+
   Ir();
   ~Ir();
 
@@ -180,6 +182,10 @@ public:
   // if the tensor is returned to user (passes call to DataFlow).
   bool isAnchored(const TensorId &) const;
   void append(std::stringstream &) const;
+
+  // serialise the ir into the stream based on the format
+  void serialise(SerialiseFormat format, std::stringstream &ss) const;
+
   std::vector<std::unique_ptr<Loss>> losses;
 
   // The tensors specific to the optimization. Learning rate(s), momentum(s) etc

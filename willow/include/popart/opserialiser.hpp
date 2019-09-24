@@ -53,6 +53,40 @@ private:
   const std::string tab = "    ";
 };
 
+class OpJsonSerialiser : public OpSerialiserBase {
+public:
+  OpJsonSerialiser(const Op *, std::stringstream &ss_);
+
+  void appendAttribute(const std::string &, float) override;
+  void appendAttribute(const std::string &, int64_t) override;
+  void appendAttribute(const std::string &, uint32_t) override;
+  void appendAttribute(const std::string &, uint64_t) override;
+  void appendAttribute(const std::string &,
+                       const std::vector<int64_t> &) override;
+  void appendAttribute(const std::string &, const std::string &) override;
+  void appendAttribute(const std::string &, boost::optional<int64_t>) override;
+  void appendAttribute(const std::string &, bool) override;
+  void appendAttribute(const std::string &, const Scope &) override;
+
+  virtual void appendForwardOp(const Op *) override;
+
+private:
+  template <typename T> void appendAttr(const std::string &, const T &);
+
+  template <typename T>
+  void appendKeyValue(const std::string key, T value, bool last = false);
+  void appendKeyValueFn(const std::string key,
+                        std::function<void()> func,
+                        bool last = false);
+  void appendKeyValues(const std::string key,
+                       std::function<void()> func,
+                       bool last = false);
+
+private:
+  std::stringstream &ss;
+  bool attributesAppended = false;
+};
+
 // Creates an Id in the format:
 // <domain>::<type>::<version>_<in0>,<in1>,...,<inN>_<out0>,<out1>,...,<outN>_<attr0>_<attr1>_..._<attrN>_
 class OpEquivIdCreator : public OpSerialiserBase {

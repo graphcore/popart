@@ -10,7 +10,20 @@ class SliceInplaceOp;
 
 namespace popx {
 
-class SliceOpx : public Opx {
+class BaseSliceOpx : public Opx {
+public:
+  BaseSliceOpx(Op *, Devicex *);
+
+  InputCreatorType getInputCreatorType(InIndex) const final;
+
+  poplar::Tensor unwindTensorLayout(std::vector<poplar::Tensor> tensors,
+                                    InIndex inIndex,
+                                    OutIndex outIndex) const final;
+
+  std::vector<Op *> getCreatorCandicates(InIndex) const final;
+};
+
+class SliceOpx : public BaseSliceOpx {
 public:
   SliceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
@@ -19,7 +32,7 @@ private:
   SliceOp *getSliceOp() const;
 };
 
-class SliceInplaceOpx : public Opx {
+class SliceInplaceOpx : public BaseSliceOpx {
 public:
   SliceInplaceOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;

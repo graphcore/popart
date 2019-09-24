@@ -3,6 +3,8 @@
 #include <popart/transforms/transformbuilder.hpp>
 
 #include <popart/op/reshape.hpp>
+#include <popart/op/slice.hpp>
+#include <popart/op/varupdate.hpp>
 
 namespace popart {
 
@@ -110,17 +112,47 @@ TensorId TransformBuilder::getNextId(const std::string &name, OutIndex n) {
 }
 
 TensorId TransformBuilder::concat(std::vector<TensorId> &inputs,
+                                  int64_t axis,
                                   boost::optional<int64_t> virtualGraphId,
                                   boost::optional<int64_t> pipelineStage,
                                   const std::string opName,
                                   const std::string outputName) {
   return op(Onnx::Operators::Concat_1,
             inputs,
-            {{"axis", static_cast<int64_t>(0)}},
+            {{"axis", static_cast<int64_t>(axis)}},
             virtualGraphId,
             pipelineStage,
             opName,
             outputName);
+}
+
+void TransformBuilder::concat(std::vector<TensorId> &inputs,
+                              int64_t axis,
+                              TensorId out,
+                              boost::optional<int64_t> virtualGraphId,
+                              boost::optional<int64_t> pipelineStage,
+                              const std::string opName) {
+  opWithOutput(Onnx::Operators::Concat_1,
+               inputs,
+               {{"axis", static_cast<int64_t>(axis)}},
+               out,
+               virtualGraphId,
+               pipelineStage,
+               opName);
+}
+
+void TransformBuilder::sum(std::vector<TensorId> &inputs,
+                           TensorId out,
+                           boost::optional<int64_t> virtualGraphId,
+                           boost::optional<int64_t> pipelineStage,
+                           const std::string opName) {
+  opWithOutput(Onnx::Operators::Sum_8,
+               inputs,
+               {},
+               out,
+               virtualGraphId,
+               pipelineStage,
+               opName);
 }
 
 TensorId TransformBuilder::matmul(TensorId lhs,
@@ -156,6 +188,49 @@ TensorId TransformBuilder::slice(TensorId in,
             pipelineStage,
             opName,
             outputName);
+}
+
+TensorId TransformBuilder::sliceInPlace(TensorId in,
+                                        const Shape &starts,
+                                        const Shape &ends,
+                                        const Shape &axes,
+                                        boost::optional<int64_t> virtualGraphId,
+                                        boost::optional<int64_t> pipelineStage,
+                                        const std::string opName,
+                                        const std::string outputName) {
+  std::vector<TensorId> inputs = {in};
+
+  Op::Settings settings(graph, opName);
+
+  auto op =
+      std::make_unique<SliceInplaceOp>(Onnx::CustomOperators::SliceInplace,
+                                       std::vector<int64_t>{starts}, // starts
+                                       std::vector<int64_t>{ends},   // ends
+                                       std::vector<int64_t>{axes},   // axes
+                                       settings);
+
+  if (op == nullptr) {
+    throw error("Failed to create op : {} in the transform builder",
+                Onnx::CustomOperators::SliceInplace);
+  }
+
+  for (int i = 0; i < inputs.size(); ++i) {
+    op->connectInTensor(i, inputs[i]);
+  }
+  op->createAndConnectOutTensor(0, outputName);
+
+  if (virtualGraphId) {
+    op->setVirtualGraphId(*virtualGraphId);
+  }
+
+  if (pipelineStage) {
+    op->setPipelineStage(*pipelineStage);
+  }
+
+  op->setup();
+  auto _op = op.get();
+  graph.moveIntoGraph(std::move(op));
+  return _op->outTensor(0)->id;
 }
 
 void TransformBuilder::slice(TensorId in,
@@ -275,6 +350,27 @@ TensorId TransformBuilder::reshape(TensorId in,
   auto _op = op.get();
   graph.moveIntoGraph(std::move(op));
   return _op->outTensor(0)->id;
+}
+
+TensorId TransformBuilder::reducesum(TensorId in,
+                                     int64_t keepdims,
+                                     std::vector<int64_t> axes,
+                                     boost::optional<int64_t> virtualGraphId,
+                                     boost::optional<int64_t> pipelineStage,
+                                     const std::string opName,
+                                     const std::string outputName) {
+  std::vector<TensorId> inputs = {in};
+  return op(Onnx::Operators::ReduceSum_1,
+            inputs,
+            {{"keepdims", keepdims}, {"axes", axes}},
+            virtualGraphId,
+            pipelineStage,
+            opName,
+            outputName);
+}
+
+Op *TransformBuilder::getProducer(TensorId id) {
+  return graph.getIr().getTensor(id)->getProducer();
 }
 
 } // namespace popart
