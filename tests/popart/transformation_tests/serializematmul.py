@@ -15,8 +15,7 @@ def gen_shape(shape):
     return '[{0} {1} {2}]'.format(str(shape[0]), str(shape[1]), str(shape[2]))
 
 
-def test_matmul_serialization_invalid_mtest_matmul_serialization_invalid_modeode(
-        tmpdir):
+def test_matmul_serialization_invalid_mode(tmpdir):
     lhs_shape = [2, 2]
     rhs_shape = [2, 4]
     lhs_data = np.random.rand(*lhs_shape).astype(np.float32)
@@ -28,8 +27,17 @@ def test_matmul_serialization_invalid_mtest_matmul_serialization_invalid_modeode
     rhs = builder.addInputTensor(popart.TensorInfo("FLOAT", rhs_shape), "rhs")
 
     o = builder.aiOnnx.matmul([lhs, rhs])
+
     with pytest.raises(popart.popart_exception) as e_info:
-        builder.setSerializeMatMul({o}, "invalid_mode")
+        try:
+            builder.setSerializeMatMul({o}, "invalid_mode")
+        except popart.popart_exception as e:
+            print("Catch popart_exception ", type(e))
+            raise
+        except Exception as e:
+            print("Unexpected exception from setSerializeMatMul ", type(e))
+            raise
+
     assert (e_info.value.args[0].startswith(
         "Unsupported mat mul serialization mode 'invalid_mode'. Supported modes are 'input_channels', 'output_channels' or 'none'"
     ))
