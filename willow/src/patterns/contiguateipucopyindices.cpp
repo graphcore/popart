@@ -73,7 +73,7 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
   // Creation of intermediate IpuCopyOps:
   auto in0        = originalIpuCopyOp->inTensor(0);
   auto out0       = originalIpuCopyOp->outTensor(0);
-  auto firstStage = in0->getProducer()->getPipelineStage();
+  auto firstStage = op->getPipelineStage();
   auto lastStage  = *out0->consumers.findLowestPipelineStage();
 
   auto pipelineStageToVGraph = getPipelineStageToVGraphMap(op->getGraph());
