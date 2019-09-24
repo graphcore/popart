@@ -481,19 +481,6 @@ PYBIND11_MODULE(popart_core, m) {
       .def("pipelineStage", &L1Loss::pipelineStage)
       .def("virtualGraph", &L1Loss::virtualGraph);
 
-  /*
-  Not clear why this is here?
-  py::class_<SGDBuilder>(m, "SGDBuilder")
-      .def(py::init<>())
-      .def("learningRate", &SGDBuilder::learningRate)
-      .def("weightDecay", &SGDBuilder::weightDecay)
-      .def("lossScaling", &SGDBuilder::lossScaling)
-      .def("variableLearningRate", &SGDBuilder::variableLearningRate)
-      .def("variableWeightDecay", &SGDBuilder::variableWeightDecay)
-      .def("variableLossScaling", &SGDBuilder::variableLossScaling)
-      .def("build", &SGDBuilder::build);
-  */
-
   py::class_<Optimizer> optimizer(m, "Optimizer");
   optimizer.def("getLossScalingVal", &Optimizer::getLossScalingVal);
 
@@ -502,6 +489,29 @@ PYBIND11_MODULE(popart_core, m) {
           py::arg("learning_rate"),
           py::arg("weight_decay") = 0.0f,
           py::arg("loss_scaling") = 1.0f);
+
+  sgd.def(py::init([](std::pair<float, bool> wd,
+                      std::pair<float, bool> lr,
+                      std::pair<float, bool> ls) -> popart::SGD {
+            return SGD({wd.first, wd.second},
+                       {lr.first, lr.second},
+                       {ls.first, ls.second});
+          }),
+          py::arg("learningRate"),
+          py::arg("weightDecay"),
+          py::arg("lossScaling"));
+
+  sgd.def(
+      "insertSpecific",
+      [](SGD &self,
+         std::string id,
+         std::pair<float, bool> wd,
+         std::pair<float, bool> lr) {
+        self.insertSpecific(id, {wd.first, wd.second}, {lr.first, lr.second});
+      },
+      py::arg("tensorId"),
+      py::arg("weightDecay"),
+      py::arg("learningRate"));
 
   sgd.def("getGlobalLearningRateVal", &SGD::getGlobalLearningRateVal);
   sgd.def("getGlobalWeightDecayVal", &SGD::getGlobalWeightDecayVal);
