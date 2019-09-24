@@ -958,7 +958,12 @@ PYBIND11_MODULE(popart_core, m) {
            py::arg("nodeOutputName"),
            py::arg("availableMemoryProportion"))
       .def("setSerializeMatMul",
-           &Builder::setSerializeMatMul,
+           [](Builder &self,
+              const std::set<TensorId> &nodeOutputNames,
+              std::string mode,
+              int64_t factor) {
+             self.setSerializeMatMul(nodeOutputNames, mode, factor);
+           },
            py::arg("nodeOutputName"),
            py::arg("mode"),
            py::arg("factor") = 0)
