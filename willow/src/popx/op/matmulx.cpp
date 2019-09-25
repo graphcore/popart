@@ -395,13 +395,16 @@ void MatMulOpx::grow(poplar::program::Sequence &prog) const {
   auto opts =
       getPoplarOptionsForMatMul(dv_p, matmul.getPhase()).toOptionFlags();
   setMatMulOptions(matmul, opts);
+  auto outputType = combinedBroadcastTs.first.elementType();
+  if (auto _outputType = matmul.getOutputType())
+    outputType = popType(*_outputType);
 
   auto outTensor =
       poplin::matMulGrouped(graph(),                    // graph
                             combinedBroadcastTs.first,  // A
                             combinedBroadcastTs.second, // B
                             prog,                       // prog
-                            combinedBroadcastTs.first.elementType(),
+                            outputType,
                             debugPrefix("matmulGrouped"), // debugPrefix
                             opts,                         // options
                             &dv_p->matmulCache);          // cache
@@ -724,12 +727,16 @@ void MatMulLhsGradOpx::grow(poplar::program::Sequence &prog) const {
       getPoplarOptionsForMatMul(dv_p, matMulLhsGrad.getPhase()).toOptionFlags();
   setMatMulOptions(matMulLhsGrad, opts);
 
+  auto outputType = combinedBroadcastTs.first.elementType();
+  if (auto _outputType = matMulLhsGrad.getOutputType())
+    outputType = popType(*_outputType);
+
   auto outTensor =
       poplin::matMulGrouped(graph(),                    // graph
                             combinedBroadcastTs.first,  // A
                             combinedBroadcastTs.second, // B
                             prog,                       // prog
-                            combinedBroadcastTs.first.elementType(),
+                            outputType,
                             debugPrefix("matmulGrouped"), // debugPrefix
                             opts,                         // options
                             &dv_p->matmulCache);          // cache
@@ -853,12 +860,16 @@ void MatMulRhsGradOpx::grow(poplar::program::Sequence &prog) const {
       getPoplarOptionsForMatMul(dv_p, matMulRhsGrad.getPhase()).toOptionFlags();
   setMatMulOptions(matMulRhsGrad, opts);
 
+  auto outputType = combinedBroadcastTs.first.elementType();
+  if (auto _outputType = matMulRhsGrad.getOutputType())
+    outputType = popType(*_outputType);
+
   auto outTensor =
       poplin::matMulGrouped(graph(),                    // graph
                             combinedBroadcastTs.first,  // A
                             combinedBroadcastTs.second, // B
                             prog,                       // prog
-                            combinedBroadcastTs.first.elementType(),
+                            outputType,
                             debugPrefix("matmulGrouped"), // debugPrefix
                             opts,                         // options
                             &dv_p->matmulCache);          // cache

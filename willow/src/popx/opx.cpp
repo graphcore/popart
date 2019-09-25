@@ -54,7 +54,7 @@ Opx::unwindTensorLayout(std::vector<poplar::Tensor>, InIndex, OutIndex) const {
               op_p->opid);
 }
 
-std::vector<Op *> Opx::getCreatorCandicates(InIndex) const {
+std::vector<std::pair<Op *, InIndex>> Opx::getCreatorCandicates(InIndex) const {
   throw error("Opx for {} does not have a defined list of creators",
               op_p->opid);
 }

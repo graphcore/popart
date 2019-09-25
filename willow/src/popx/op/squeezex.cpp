@@ -7,14 +7,26 @@
 namespace popart {
 namespace popx {
 
+SqueezeOpx::SqueezeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  verifyOp<SqueezeOp>(op, {Onnx::Operators::Squeeze_1});
+}
+
 void SqueezeOpx::grow(poplar::program::Sequence &prog) const {
   auto outTensor = cloneNcopy(prog, getInTensor(SqueezeOp::getInIndex()));
   outTensor = outTensor.reshape(outInfo(SqueezeOp::getOutIndex()).shape_szt());
   setOutTensor(SqueezeOp::getOutIndex(), outTensor);
 }
 
-SqueezeOpx::SqueezeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<SqueezeOp>(op, {Onnx::Operators::Squeeze_1});
+SqueezeInplaceOpx::SqueezeInplaceOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {
+  verifyOp<SqueezeInplaceOp>(op, {Onnx::CustomOperators::SqueezeInplace});
+}
+
+void SqueezeInplaceOpx::grow(poplar::program::Sequence &prog) const {
+  auto outTensor =
+      getInTensor(SqueezeOp::getInIndex())
+          .reshape(outInfo(SqueezeInplaceOp::getOutIndex()).shape_szt());
+  setOutTensor(SqueezeOp::getOutIndex(), outTensor);
 }
 
 SqueezeGradOpx::SqueezeGradOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
@@ -29,6 +41,8 @@ void SqueezeGradOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<SqueezeOpx> squeezeOpxCreator(Onnx::Operators::Squeeze_1);
+OpxCreator<SqueezeInplaceOpx>
+    squeezeInplaceOpxCreator(Onnx::CustomOperators::SqueezeInplace);
 OpxCreator<SqueezeGradOpx>
     squeezeGradOpxCreator(Onnx::GradOperators::SqueezeGrad);
 } // namespace

@@ -37,6 +37,17 @@ void TensorData::resetData(const TensorInfo &info, const void *from) {
   std::memcpy(data_.data(), from, info.nbytes());
 }
 
+StepIO::StepIO(std::map<TensorId, IArray &> inputs,
+               std::map<TensorId, IArray &> outputs) {
+  for (auto p : inputs) {
+    inputsInfo.insert({p.first, {p.second, 0}});
+  }
+
+  for (auto p : outputs) {
+    outputsInfo.insert({p.first, {p.second, 0}});
+  }
+}
+
 TensorInfo StepIO::getTensorInfo(IArray &array) const {
   auto dtype = array.dataType();
   auto tRank = array.rank();
@@ -49,25 +60,41 @@ TensorInfo StepIO::getTensorInfo(IArray &array) const {
 
 template <typename T>
 T StepIO::get(TensorId id,
-              const std::map<TensorId, IArray &> &M,
-              std::string mapName) const {
+              std::map<TensorId, ArrayInfo> &M,
+              unsigned numElements,
+              std::string mapName) {
+
   auto found = M.find(id);
   if (found == M.end()) {
-    throw error("No tensor {} provided in CppStepIO's {}", id, mapName);
+    throw error("No tensor {} provided in PyStepIO's {}", id, mapName);
   }
-  IArray &npArr = found->second;
+
+  ArrayInfo &arrayInfo = found->second;
+  auto offset          = arrayInfo.offset;
+
   T stepData;
-  stepData.data = npArr.data();
-  stepData.info = getTensorInfo(npArr);
+  stepData.info = getTensorInfo(arrayInfo.array);
+
+  // Set the data using the offset
+  auto numBytes = stepData.info.getDataTypeInfo()->nbytes() * numElements;
+  stepData.data = static_cast<uint8_t *>(arrayInfo.array.data()) + offset;
+
+  // Wrap around if we read all the data
+  if (offset + numBytes == stepData.info.nbytes()) {
+    arrayInfo.offset = 0;
+  } else {
+    arrayInfo.offset = offset + numBytes;
+  }
+
   return stepData;
 }
 
-ConstVoidData StepIO::in(TensorId id) const {
-  return get<ConstVoidData>(id, inputs, "inputs");
+ConstVoidData StepIO::in(TensorId id, int64_t numElements) {
+  return get<ConstVoidData>(id, inputsInfo, numElements, "inputs");
 }
 
-MutableVoidData StepIO::out(TensorId id) const {
-  return get<MutableVoidData>(id, outputs, "outputs");
+MutableVoidData StepIO::out(TensorId id, int64_t numElements) {
+  return get<MutableVoidData>(id, outputsInfo, numElements, "outputs");
 }
 
 bool WeightsIO::contains(TensorId id) const {
@@ -91,4 +118,10 @@ void WeightsIO::insert(TensorId id, MutableVoidData mvd) {
   weights.insert({id, mvd});
 }
 
+ConstVoidData StepIOCallback::in(TensorId id, int64_t) { return inputCb(id); }
+
+MutableVoidData StepIOCallback::out(TensorId id, int64_t) {
+  return outputCb(id);
+}
+void StepIOCallback::outComplete(TensorId id) { return outputCompleteCb(id); }
 } // namespace popart

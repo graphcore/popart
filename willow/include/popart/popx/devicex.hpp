@@ -181,7 +181,7 @@ public:
   void weightsFromHost();
   void optimizerFromHost();
 
-  void run(const IStepIO &);
+  void run(IStepIO &);
 
   void setRandomSeed(uint64_t seedValue);
 
@@ -413,6 +413,50 @@ public:
 private:
   std::vector<Op *> mainGraphOpRegistery;
 
+  // We have datastreams which are created during the prepare phase and
+  // associated with the stream call back
+  // Then when run is called the data streams are associated with the
+  // step oi class
+
+  class Datastream {
+
+  protected:
+    Tensor *tensor;
+    PopStreamId streamId;
+
+    // This is per data stream to allow for different stepio
+    // configurations per data stream.
+    // Q : Is there a better type than a pointer?
+    IStepIO *io;
+
+  public:
+    Datastream(Tensor *ten, PopStreamId s);
+
+    void setStepIO(IStepIO *v) { io = v; }
+
+    TensorId getTensorId();
+  };
+
+  // host to device data stream
+  class InputDatastream : public Datastream {
+  public:
+    InputDatastream(Tensor *t, PopStreamId s);
+    void read(void *ptr);
+  };
+
+  // device to host data stream
+  class OutputDatastream : public Datastream {
+  public:
+    OutputDatastream(Tensor *t, PopStreamId s);
+    void write(void *ptr);
+  };
+
+  // Map of tensors to the the data streams
+  std::map<TensorId, std::shared_ptr<InputDatastream>> inputStreams;
+  std::map<TensorId, std::shared_ptr<OutputDatastream>> outputStreams;
+
+  // T11630: should we combine the above with the below
+
   //  poplar::Streams for poplar::Tensors,
   //  1) from host to device;
   std::map<TensorId, poplar::DataStream> fromHostStreams;
@@ -421,8 +465,8 @@ private:
   std::map<TensorId, poplar::DataStream> toHostAnchorStreams;
   std::map<TensorId, poplar::DataStream> toHostWeightStreams;
 
-  std::map<TensorId, std::vector<char>> h2dBuffers;
-  std::map<TensorId, std::vector<char>> d2hAnchorBuffers;
+  // Q: Consider replacing the d2h weight buffer with a data stream as
+  // done for inputs
   std::map<TensorId, std::vector<char>> d2hWeightBuffers;
 
   // Wrapper for calls to poplar Engine API calls: loading
@@ -444,28 +488,13 @@ private:
   // last to have loaded its engine to deviceInfo's device
   void run(PopPrograms::ProgramIndex ind);
 
-  // copy a step tensor from user provided src, to allocated memory dst
-  // input parameters are,
-  // dst     : destination of copy, this is the host end of a poplar::Stream
-  // src     : source of the copy
-  // dstInfo : the info for dst
-  // srcInfo : user provided info for src. Both TensorInfos are required
-  //           so that we can verify dst and src are the same size
-  void hostToHostStream(void *dst,
-                        const void *src,
-                        const TensorInfo &dstInfo,
-                        const TensorInfo &srcInfo,
-                        TensorId id);
-
-  void hostStreamToHost(const MutableVoidData &mv_data,
-                        TensorId id,
-                        bool isAnchorStream);
+  void hostStreamToHost(const MutableVoidData &mv_data, TensorId id);
 
   // Call hostToHostStream on all the Tensors in pir->dataStreamTensors()
-  void anchorsHostToHostStreams(const IStepIO &stepio);
+  void anchorsHostToHostStreams(IStepIO &stepio);
 
   // Call hostStreamToHost in all the Tensors in pir->dataFlow.anchors()
-  void anchorsHostFromHostStreams(const IStepIO &stepio);
+  void anchorsHostFromHostStreams(IStepIO &stepio);
 
   template <typename T> void setInitVal(Tensor *tensor);
   void setInitValHalf(Tensor *tensor);

@@ -69,7 +69,8 @@ public:
                                             OutIndex) const;
 
   // Returns list of creator candidates, used in CANUNWIND_MULTIPLE_CREATORS
-  virtual std::vector<Op *> getCreatorCandicates(InIndex) const;
+  virtual std::vector<std::pair<Op *, InIndex>>
+      getCreatorCandicates(InIndex) const;
 
   // To create a poplar::Tensor for input index index0, which
   // poplar::Tensors must already exist?

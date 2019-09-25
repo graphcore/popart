@@ -28,7 +28,6 @@ poplar::Tensor
 BaseSliceOpx::unwindTensorLayout(std::vector<poplar::Tensor> tensors,
                                  InIndex,
                                  OutIndex) const {
-
   BaseSliceOp *op = dynamic_cast<BaseSliceOp *>(this->op_p);
   logging::opx::debug("BaseSliceOpx::unwindTensorLayout dim:{} inputs:{}",
                       op->unwindConcatDim,
@@ -36,16 +35,29 @@ BaseSliceOpx::unwindTensorLayout(std::vector<poplar::Tensor> tensors,
   return poplar::concat(tensors, op->unwindConcatDim);
 }
 
-std::vector<Op *> BaseSliceOpx::getCreatorCandicates(InIndex) const {
+std::vector<std::pair<Op *, InIndex>>
+BaseSliceOpx::getCreatorCandicates(InIndex) const {
 
-  std::vector<Op *> creators;
+  std::vector<std::pair<Op *, InIndex>> creators;
 
   BaseSliceOp *op = dynamic_cast<BaseSliceOp *>(this->op_p);
 
   // Get the list of op's the consume the all the slices of the input tensor
   for (auto t : op->allSlices) {
     auto consumerOps = op->getIr().getTensor(t)->consumers.getOps();
-    creators.insert(creators.end(), consumerOps.begin(), consumerOps.end());
+    for (auto *consumer : consumerOps) {
+      InIndex index = -1;
+      for (auto input : consumer->input->tensorIdMap()) {
+        if (input.second == t) {
+          index = input.first;
+          break;
+        }
+      }
+      if (index == -1) {
+        throw error("Could not determine input index for {}", t);
+      }
+      creators.push_back({consumer, index});
+    }
   }
 
   return creators;

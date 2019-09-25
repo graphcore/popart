@@ -332,17 +332,23 @@ public:
    */
   void setSerializeMatMul(const std::set<TensorId> &nodeOutputNames,
                           std::string mode,
-                          int64_t factor) {
+                          int64_t factor,
+                          bool keep_precision) {
     if (mode == sSerializeMatMulMode_InputChannels ||
-        mode == sSerializeMatMulMode_OutputChannels) {
+        mode == sSerializeMatMulMode_OutputChannels ||
+        mode == sSerializeMatMulMode_ReducingDim) {
       addNodeAttribute(sSerializeMatMulModeAttribute, mode, nodeOutputNames);
       addNodeAttribute(
           sSerializeMatMulFactorAttribute, factor, nodeOutputNames);
+      addNodeAttribute(sSerializeMatMulPrecisionAttribute,
+                       static_cast<int64_t>(keep_precision),
+                       nodeOutputNames);
     } else if (mode != sSerializeMatMulMode_None) {
       throw error("Unsupported mat mul serialization mode '{}'. Supported "
-                  "modes are '{}', '{}' or '{}'",
+                  "modes are '{}', '{}', '{}' or '{}'",
                   mode,
                   sSerializeMatMulMode_InputChannels,
+                  sSerializeMatMulMode_ReducingDim,
                   sSerializeMatMulMode_OutputChannels,
                   sSerializeMatMulMode_None);
     }

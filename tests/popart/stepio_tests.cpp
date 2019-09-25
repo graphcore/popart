@@ -1,0 +1,200 @@
+#define BOOST_TEST_MODULE StepIOTest
+
+#include <boost/test/unit_test.hpp>
+#include <popart/builder.hpp>
+#include <popart/dataflow.hpp>
+#include <popart/devicemanager.hpp>
+#include <popart/filereader.hpp>
+#include <popart/inputshapeinfo.hpp>
+#include <popart/ir.hpp>
+#include <popart/names.hpp>
+#include <popart/ndarraywrapper.hpp>
+#include <popart/op/l1.hpp>
+#include <popart/optimizer.hpp>
+#include <popart/session.hpp>
+#include <popart/tensordata.hpp>
+
+using namespace popart;
+
+BOOST_AUTO_TEST_CASE(StepIOTest_BufferInput) {
+
+  Shape inShape = {2, 5};
+  TensorInfo inInfo{"INT32", inShape};
+
+  Shape constShape = {5, 2};
+  std::vector<int> rawConstInputData(5 * 2);
+  std::iota(rawConstInputData.begin(), rawConstInputData.end(), 1);
+
+  popart::NDArrayWrapper<int> constData(rawConstInputData.data(), {5, 2});
+
+  ConstVoidData constShapeData = {rawConstInputData.data(),
+                                  {"INT32", constShape}};
+
+  // Build an onnx model
+  auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
+
+  auto constId = aiOnnx.constant(constShapeData, "out0ShapeData");
+  auto inId    = builder->addInputTensor(inInfo);
+
+  auto outShapeId = aiOnnx.transpose({constId}, {});
+  auto out        = aiOnnx.add({outShapeId, inId});
+  builder->addOutputTensor(out);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR, adding outId as an anchor
+  auto art      = AnchorReturnType("ALL");
+  auto dataFlow = DataFlow(1, {{out, art}});
+
+  auto cpuDevice =
+      popart::DeviceManager::createDeviceManager().createCpuDevice();
+
+  auto session = popart::InferenceSession::createFromOnnxModel(
+      proto,
+      dataFlow,
+      cpuDevice,
+      {},
+      popart::InputShapeInfo(),
+      {},
+      popart::Patterns({popart::PreAliasPatternType::POSTNREPL}));
+
+  // prepare the anchors
+  int rawOutputData[10];
+  popart::NDArrayWrapper<int> outData(rawOutputData, {2, 5});
+
+  std::map<popart::TensorId, popart::IArray &> anchors = {
+      {out, outData},
+  };
+
+  session->prepareDevice();
+
+  int rawInputData[10] = {
+      0,
+  };
+  popart::NDArrayWrapper<int> inData(rawInputData, {2, 5});
+  std::map<popart::TensorId, popart::IArray &> inputs = {{inId, inData}};
+
+  popart::StepIO stepio(inputs, anchors);
+
+  session->run(stepio);
+
+  popart::logging::info("const : {}", constData);
+  popart::logging::info("input : {}", inData);
+  popart::logging::info("output : {}", outData);
+
+  int expectedOutput[10] = {1, 3, 5, 7, 9, 2, 4, 6, 8, 10};
+  BOOST_CHECK(std::equal(&expectedOutput[0],
+                         &expectedOutput[10],
+                         &rawOutputData[0]) == true);
+}
+
+BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput) {
+
+  Shape inShape = {2, 5};
+  TensorInfo inInfo{"INT32", inShape};
+
+  Shape constShape = {5, 2};
+  std::vector<int> rawConstInputData(5 * 2);
+  std::iota(rawConstInputData.begin(), rawConstInputData.end(), 1);
+
+  popart::NDArrayWrapper<int> constData(rawConstInputData.data(), {5, 2});
+
+  ConstVoidData constShapeData = {rawConstInputData.data(),
+                                  {"INT32", constShape}};
+
+  // Build an onnx model
+  auto builder = Builder::create();
+  auto aiOnnx  = builder->aiOnnxOpset9();
+
+  auto constId = aiOnnx.constant(constShapeData, "out0ShapeData");
+  auto inId    = builder->addInputTensor(inInfo);
+
+  auto outShapeId = aiOnnx.transpose({constId}, {});
+  auto out        = aiOnnx.add({outShapeId, inId});
+  builder->addOutputTensor(out);
+
+  auto proto      = builder->getModelProto();
+  auto modelProto = io::getModelFromString(proto);
+
+  // Create the IR, adding outId as an anchor
+  auto art      = AnchorReturnType("ALL");
+  auto dataFlow = DataFlow(1, {{out, art}});
+
+  auto cpuDevice =
+      popart::DeviceManager::createDeviceManager().createCpuDevice();
+
+  auto session = popart::InferenceSession::createFromOnnxModel(
+      proto,
+      dataFlow,
+      cpuDevice,
+      {},
+      popart::InputShapeInfo(),
+      {},
+      popart::Patterns({popart::PreAliasPatternType::POSTNREPL}));
+
+  // prepare the anchors
+  int rawOutputData[10];
+  popart::NDArrayWrapper<int> outData(rawOutputData, {2, 5});
+
+  std::map<popart::TensorId, popart::IArray &> anchors = {
+      {out, outData},
+  };
+
+  session->prepareDevice();
+
+  int rawInputData[10] = {
+      0,
+  };
+  popart::NDArrayWrapper<int> inData(rawInputData, {2, 5});
+
+  std::map<popart::TensorId, popart::IArray &> inputs = {{inId, inData}};
+
+  popart::StepIOCallback::InputCallback input_callback =
+      [](TensorId id) -> ConstVoidData {
+    popart::logging::info("input callback called {}", id);
+
+    int rawInputData[10] = {
+        0,
+    };
+    popart::NDArrayWrapper<int> inData(rawInputData, {2, 5});
+
+    ConstVoidData data;
+    data.data = inData.data();
+    data.info = TensorInfo(DataType::INT32, {2, 5});
+    return data;
+  };
+
+  popart::StepIOCallback::OutputCallback output_callback =
+      [](TensorId id) -> MutableVoidData {
+    popart::logging::info("output callback called {}", id);
+
+    int rawOutputData[10];
+    popart::NDArrayWrapper<int> outData(rawOutputData, {2, 5});
+
+    MutableVoidData data;
+    data.data = outData.data();
+    data.info = TensorInfo(DataType::INT32, {2, 5});
+    return data;
+  };
+
+  popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
+      [](TensorId id) -> void {
+   popart::logging::info("output complete callback called {}", id);
+  };
+
+  popart::StepIOCallback stepio(
+      input_callback, output_callback, output_complete_callback);
+
+  session->run(stepio);
+
+  popart::logging::info("const : {}", constData);
+  popart::logging::info("input : {}", inData);
+  popart::logging::info("output : {}", outData);
+
+  int expectedOutput[10] = {1, 3, 5, 7, 9, 2, 4, 6, 8, 10};
+  BOOST_CHECK(std::equal(&expectedOutput[0],
+                         &expectedOutput[10],
+                         &rawOutputData[0]) == true);
+}

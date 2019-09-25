@@ -17,6 +17,12 @@ public:
   void grow(poplar::program::Sequence &) const final;
 };
 
+class SqueezeInplaceOpx : public Opx {
+public:
+  SqueezeInplaceOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
 class SqueezeGradOpx : public Opx {
 public:
   SqueezeGradOpx(Op *, Devicex *);
