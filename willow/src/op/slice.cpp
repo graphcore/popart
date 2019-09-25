@@ -1,7 +1,6 @@
 #include <memory>
 #include <popart/op/pad.hpp>
 #include <popart/op/slice.hpp>
-#include <popart/op/slicegrad.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/region.hpp>
@@ -333,11 +332,33 @@ void BaseSliceOp::appendAttributes(OpSerialiserBase &os) const {
 }
 
 SliceGradOp::SliceGradOp(const SliceOp &op_)
-    : PadOp(Onnx::GradOperators::SliceGrad,
-            calculatePadding(op_),
-            0,
-            "constant",
-            op_.getSettings()) {}
+    : Op(Onnx::GradOperators::SliceGrad, op_.getSettings()),
+      slices(op_.getSlices()),
+      preSlicedInInfo(op_.inInfo(SliceOp::getInIndex())) {
+  setPadding(op_);
+}
+
+std::unique_ptr<Op> SliceGradOp::clone() const {
+  return std::make_unique<SliceGradOp>(*this);
+}
+
+void SliceGradOp::setup() { outInfo(getOutIndex()) = preSlicedInInfo; }
+
+void SliceGradOp::setPadding(const SliceOp &slice_op) {
+  auto t_rank   = slice_op.inInfo(SliceOp::getInIndex()).rank();
+  auto in_shape = slice_op.inInfo(SliceOp::getInIndex()).shape();
+  std::vector<int64_t> pads(t_rank * 2, 0);
+
+  for (auto slice : slice_op.getSlices()) {
+    pads[slice.axis]          = slice.start;
+    pads[slice.axis + t_rank] = in_shape[slice.axis] - slice.end;
+  }
+
+  for (int i = 0; i < t_rank; i++) {
+    lower_padding.push_back(pads[i]);
+    upper_padding.push_back(pads[t_rank + i]);
+  }
+}
 
 const std::vector<GradInOutMapper> &SliceGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
@@ -349,19 +370,6 @@ const std::map<int, int> &SliceGradOp::gradOutToNonGradIn() const {
   static const std::map<int, int> outInfo = {
       {getOutIndex(), SliceOp::getInIndex()}};
   return outInfo;
-}
-
-std::vector<int64_t> SliceGradOp::calculatePadding(const SliceOp &slice_op) {
-  auto t_rank   = slice_op.inInfo(SliceOp::getInIndex()).rank();
-  auto in_shape = slice_op.inInfo(SliceOp::getInIndex()).shape();
-  std::vector<int64_t> pads(t_rank * 2, 0);
-
-  for (auto slice : slice_op.getSlices()) {
-    pads[slice.axis]          = slice.start;
-    pads[slice.axis + t_rank] = in_shape[slice.axis] - slice.end;
-  }
-
-  return pads;
 }
 
 namespace {

@@ -42,6 +42,15 @@ private:
   SliceInplaceOp *getSliceInplaceOp() const;
 };
 
+class SliceGradOpx : public Opx {
+public:
+  SliceGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+
+  bool canFindPreSlicedTensor() const;
+  std::pair<bool, poplar::Tensor> getPreSlicedTensorIfPossible() const;
+};
+
 } // namespace popx
 } // namespace popart
 
