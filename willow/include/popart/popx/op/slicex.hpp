@@ -47,7 +47,6 @@ public:
   SliceGradOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
 
-  bool canFindPreSlicedTensor() const;
   std::pair<bool, poplar::Tensor> getPreSlicedTensorIfPossible() const;
 };
 
