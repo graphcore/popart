@@ -22,7 +22,7 @@ SqueezeInplaceOpx::SqueezeInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<SqueezeInplaceOp>(op, {Onnx::CustomOperators::SqueezeInplace});
 }
 
-void SqueezeInplaceOpx::grow(poplar::program::Sequence &prog) const {
+void SqueezeInplaceOpx::grow(poplar::program::Sequence &) const {
   auto outTensor =
       getInTensor(SqueezeOp::getInIndex())
           .reshape(outInfo(SqueezeInplaceOp::getOutIndex()).shape_szt());

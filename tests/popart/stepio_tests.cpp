@@ -147,17 +147,11 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput) {
   int rawInputData[10] = {
       0,
   };
-  popart::NDArrayWrapper<int> inData(rawInputData, {2, 5});
-
-  std::map<popart::TensorId, popart::IArray &> inputs = {{inId, inData}};
 
   popart::StepIOCallback::InputCallback input_callback =
-      [](TensorId id) -> ConstVoidData {
+      [&](TensorId id) -> ConstVoidData {
     popart::logging::info("input callback called {}", id);
 
-    int rawInputData[10] = {
-        0,
-    };
     popart::NDArrayWrapper<int> inData(rawInputData, {2, 5});
 
     ConstVoidData data;
@@ -167,10 +161,9 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput) {
   };
 
   popart::StepIOCallback::OutputCallback output_callback =
-      [](TensorId id) -> MutableVoidData {
+      [&](TensorId id) -> MutableVoidData {
     popart::logging::info("output callback called {}", id);
 
-    int rawOutputData[10];
     popart::NDArrayWrapper<int> outData(rawOutputData, {2, 5});
 
     MutableVoidData data;
@@ -181,17 +174,13 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput) {
 
   popart::StepIOCallback::OutputCompleteCallback output_complete_callback =
       [](TensorId id) -> void {
-   popart::logging::info("output complete callback called {}", id);
+    popart::logging::info("output complete callback called {}", id);
   };
 
   popart::StepIOCallback stepio(
       input_callback, output_callback, output_complete_callback);
 
   session->run(stepio);
-
-  popart::logging::info("const : {}", constData);
-  popart::logging::info("input : {}", inData);
-  popart::logging::info("output : {}", outData);
 
   int expectedOutput[10] = {1, 3, 5, 7, 9, 2, 4, 6, 8, 10};
   BOOST_CHECK(std::equal(&expectedOutput[0],
