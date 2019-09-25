@@ -162,7 +162,6 @@ add_custom_target(package_and_move
   COMMAND bash -c "mv ${PYTHON_API_PDF_NAME} ${PKG_UPLOAD_DIR}"
   COMMAND bash -c "mv ${PYTHON_API_HTML_NAME} ${PKG_UPLOAD_DIR}"
   COMMAND bash -c "mv ${CPP_API_HTML_NAME} ${PKG_UPLOAD_DIR}"
-  COMMAND bash -c "mv ${USER_GUIDE_HTML_NAME} ${PKG_UPLOAD_DIR}"
 )
 else()
 add_custom_target(package_and_move
