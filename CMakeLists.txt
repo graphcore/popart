@@ -186,19 +186,19 @@ if(BUILD_DOCS)
                              "    file: ${USER_GUIDE_HTML_NAME}\n"
                              "    type: html_zip\n")
 
-  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime user guide (PDF)\n"
+  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime Python API (PDF)\n"
                              "    file: ${PYTHON_API_PDF_NAME}\n"
                              "    type: pdf\n")
 
-  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime user guide (HTML)\n"
+  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime Python API (HTML)\n"
                              "    file: ${PYTHON_API_HTML_NAME}\n"
                              "    type: html_zip\n")
 
-  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime user guide (PDF)\n"
+  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime C++ API (PDF)\n"
                              "    file: ${CPP_API_PDF_NAME}\n"
                              "    type: pdf\n")
 
-  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime user guide (HTML)\n"
+  string(APPEND PKG_ELEMENTS "  - name: Poplar advanced runtime C++ API (HTML)\n"
                              "    file: ${CPP_API_HTML_NAME}\n"
                              "    type: html_zip\n")
 endif()
