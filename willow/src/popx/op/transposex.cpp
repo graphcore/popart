@@ -49,6 +49,26 @@ TransposeInplaceOpx::TransposeInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<TransposeInplaceOp>(op);
 }
 
+InputCreatorType TransposeInplaceOpx::getInputCreatorType(InIndex) const {
+  return InputCreatorType::CANUNWIND;
+}
+
+poplar::Tensor TransposeInplaceOpx::unwindTensorLayout(poplar::Tensor tensor,
+                                                       InIndex,
+                                                       OutIndex) const {
+  auto perm = getOp<TransposeInplaceOp>().getPerm();
+  std::vector<unsigned> reverse_perm;
+
+  // For each dimension, find its position in perm
+  for (int i = 0; i < perm.size(); i++) {
+    auto it       = std::find(perm.begin(), perm.end(), i);
+    auto position = std::distance(perm.begin(), it);
+    reverse_perm.push_back(static_cast<unsigned>(position));
+  }
+
+  return tensor.dimShuffle(reverse_perm);
+}
+
 void TransposeInplaceOpx::grow(poplar::program::Sequence &) const {
   auto perm = getOp<TransposeInplaceOp>().getPerm();
   std::vector<unsigned> unsigned_perm;

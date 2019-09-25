@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 import popart
 import pprint
+import json
 
 # `import test_util` requires adding to sys.path
 import sys
@@ -114,7 +115,7 @@ def test_matmul_grouping_test_1(tmpdir):
         r2_t = np.transpose(r2, axes=[0, 2, 1])
         return np.matmul(r1, r2_t)
 
-    def run_test(groupingEnabled):
+    def run_test(groupingEnabled, verify):
         builder = popart.Builder()
 
         lhs = builder.addInputTensor(popart.TensorInfo("FLOAT", lhs_shape),
@@ -145,7 +146,7 @@ def test_matmul_grouping_test_1(tmpdir):
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableOutlining = False
-        opts.groupingEnabled = groupingEnabled
+        opts.enableGroupedMatmuls = groupingEnabled
 
         pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
 
@@ -170,12 +171,26 @@ def test_matmul_grouping_test_1(tmpdir):
 
         session.run(stepio)
 
+        verify(session)
+
         return anchors[o]
 
-    assert (np.allclose(run_test(False), verify()))
-    assert (np.allclose(run_test(True), verify()))
+    def verify_no_grouping(session):
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
 
-    # Need to check the number of MatMuls & Make sure that the MatMulXXXGradOps have been removed
+        matmuls = [op for op in ir['maingraph'] if op['type'] == 'MatMul']
+        assert (len(matmuls) == 3)
+
+    def verify_grouping(session):
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
+
+        matmuls = [op for op in ir['maingraph'] if op['type'] == 'MatMul']
+        assert (len(matmuls) == 2)
+
+    assert (np.allclose(run_test(False, verify_no_grouping), verify()))
+    assert (np.allclose(run_test(True, verify_grouping), verify()))
 
 
 '''
@@ -218,7 +233,7 @@ def test_matmul_grouping_test_2(tmpdir):
         r2 = np.matmul(C_data, D_data)
         return np.matmul(r1, r2)
 
-    def run_test(groupingEnabled):
+    def run_test(groupingEnabled, verify):
         builder = popart.Builder()
 
         a = builder.addInputTensor(popart.TensorInfo("FLOAT", A), "A")
@@ -254,7 +269,7 @@ def test_matmul_grouping_test_2(tmpdir):
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableOutlining = False
-        opts.groupingEnabled = groupingEnabled
+        opts.enableGroupedMatmuls = groupingEnabled
         opts.dotOpNames = True
 
         pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
@@ -277,12 +292,26 @@ def test_matmul_grouping_test_2(tmpdir):
 
         session.run(stepio)
 
+        verify(session)
+
         return anchors[o]
 
-    #assert(np.allclose(run_test(False), verify()))
-    assert (np.allclose(run_test(True), verify()))
+    def verify_no_grouping(session):
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
 
-    # Need to check the number of MatMuls & Make sure that the MatMulXXXGradOps have been removed
+        matmuls = [op for op in ir['maingraph'] if op['type'] == 'MatMul']
+        assert (len(matmuls) == 9)
+
+    def verify_grouping(session):
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
+
+        matmuls = [op for op in ir['maingraph'] if op['type'] == 'MatMul']
+        assert (len(matmuls) == 7)
+
+    assert (np.allclose(run_test(False, verify_no_grouping), verify()))
+    assert (np.allclose(run_test(True, verify_grouping), verify()))
 
 
 # Verify 2d inputs are expanded to 3d first
@@ -302,7 +331,7 @@ def test_matmul_grouping_test_3(tmpdir):
         r2 = np.matmul(C_data, D_data)
         return np.matmul(r1, r2)
 
-    def run_test(groupingEnabled):
+    def run_test(groupingEnabled, verify):
         builder = popart.Builder()
 
         a = builder.addInputTensor(popart.TensorInfo("FLOAT", A), "A")
@@ -338,7 +367,7 @@ def test_matmul_grouping_test_3(tmpdir):
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableOutlining = False
-        opts.groupingEnabled = groupingEnabled
+        opts.enableGroupedMatmuls = groupingEnabled
         opts.dotOpNames = True
 
         pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
@@ -361,12 +390,26 @@ def test_matmul_grouping_test_3(tmpdir):
 
         session.run(stepio)
 
+        verify(session)
+
         return anchors[o]
 
-    #assert(np.allclose(run_test(False), verify()))
-    assert (np.allclose(run_test(True), verify()))
+    def verify_no_grouping(session):
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
 
-    # Need to check the number of MatMuls & Make sure that the MatMulXXXGradOps have been removed
+        matmuls = [op for op in ir['maingraph'] if op['type'] == 'MatMul']
+        assert (len(matmuls) == 9)
+
+    def verify_grouping(session):
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
+
+        matmuls = [op for op in ir['maingraph'] if op['type'] == 'MatMul']
+        assert (len(matmuls) == 7)
+
+    assert (np.allclose(run_test(False, verify_no_grouping), verify()))
+    assert (np.allclose(run_test(True, verify_grouping), verify()))
 
 
 # verify that we can group matmuls with different group dimensions
@@ -407,7 +450,7 @@ def test_matmul_grouping_test_4(tmpdir):
 
         return np.add(s1, s2)
 
-    def run_test(groupingEnabled):
+    def run_test(groupingEnabled, verify):
         builder = popart.Builder()
 
         a = builder.addInputTensor(popart.TensorInfo("FLOAT", A), "A")
@@ -441,7 +484,7 @@ def test_matmul_grouping_test_4(tmpdir):
         opts = popart.SessionOptions()
         opts.reportOptions = {"showExecutionSteps": "true"}
         opts.enableOutlining = False
-        opts.groupingEnabled = groupingEnabled
+        opts.enableGroupedMatmuls = groupingEnabled
         opts.dotOpNames = True
 
         pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
@@ -464,13 +507,25 @@ def test_matmul_grouping_test_4(tmpdir):
 
         session.run(stepio)
 
-        print(anchors[o])
+        verify(session)
 
         return anchors[o]
 
     assert (np.allclose(verify_grouping(), verify()))
 
-    assert (np.allclose(run_test(True), verify()))
-    #assert (np.allclose(run_test(True), verify()))
+    def verify_no_grouping(session):
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
 
-    # Need to check the number of MatMuls & Make sure that the MatMulXXXGradOps have been removed
+        matmuls = [op for op in ir['maingraph'] if op['type'] == 'MatMul']
+        assert (len(matmuls) == 6)
+
+    def verify_grouping(session):
+        ir = json.loads(session._serializeIr(
+            popart.IrSerializationFormat.JSON))
+
+        matmuls = [op for op in ir['maingraph'] if op['type'] == 'MatMul']
+        assert (len(matmuls) == 3)
+
+    assert (np.allclose(run_test(False, verify_no_grouping), verify()))
+    assert (np.allclose(run_test(True, verify_grouping), verify()))

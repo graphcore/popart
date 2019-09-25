@@ -21,7 +21,12 @@ public:
 class TransposeInplaceOpx : public Opx {
 public:
   TransposeInplaceOpx(Op *, Devicex *);
+  InputCreatorType getInputCreatorType(InIndex) const final;
   void grow(poplar::program::Sequence &) const final;
+
+  poplar::Tensor unwindTensorLayout(poplar::Tensor tensor,
+                                    InIndex inIndex,
+                                    OutIndex outIndex) const final;
 };
 
 class TransposeGradOpx : public TransposeOpx {
