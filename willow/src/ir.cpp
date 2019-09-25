@@ -203,7 +203,31 @@ void Ir::setInputShapeInfo(const InputShapeInfo &info) {
   inputShapeInfo = info;
 }
 
-void Ir::setPatterns(const Patterns &p) { patterns = p; }
+void Ir::setPatterns(const Patterns &p) {
+  logging::pattern::info("Enabling {} patterns", getPatternLevelStr(p));
+  patterns = p;
+}
+
+std::string Ir::getPatternLevelStr(const Patterns &p) {
+  if (isPatternsLevel(p, PatternsLevel::ALL)) {
+    return "all";
+  } else if (isPatternsLevel(p, PatternsLevel::DEFAULT)) {
+    return "default";
+  } else if (isPatternsLevel(p, PatternsLevel::NONE)) {
+    return "no";
+  } else {
+    return "custom";
+  }
+}
+
+bool Ir::isPatternsLevel(const Patterns &p, PatternsLevel level) {
+  Patterns refPatterns(level);
+  if (refPatterns == p) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 void Ir::removeIsolatedTensors() { getTensors().removeIsolated(); }
 

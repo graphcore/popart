@@ -1086,12 +1086,15 @@ PriTask Devicex::setInitTensorValTask(Tensor *tensor) {
       setInitValHalf(tensor);
       break;
     }
+    case DataType::BOOL: {
+      setInitVal<bool>(tensor);
+      break;
+    }
 
     case DataType::UNDEFINED:
     case DataType::UINT8:
     case DataType::INT8:
     case DataType::INT64:
-    case DataType::BOOL:
     case DataType::UINT16:
     case DataType::INT16:
     case DataType::STRING:

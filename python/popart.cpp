@@ -1010,15 +1010,18 @@ PYBIND11_MODULE(popart_core, m) {
   py::class_<AttributeContextManager>(m, "AttributeContextManager")
       .def("__enter__", &AttributeContextManager::enter)
       .def("__exit__",
-           [](AttributeContextManager &self, void *, void *, void *) {
-             self.exit();
-           });
+           [](AttributeContextManager &self,
+              py::object &,
+              py::object &,
+              py::object &) { self.exit(); });
 
   py::class_<NameContextManager>(m, "NameContextManager")
       .def("__enter__", &NameContextManager::enter)
-      .def("__exit__", [](NameContextManager &self, void *, void *, void *) {
-        self.exit();
-      });
+      .def("__exit__",
+           [](NameContextManager &self,
+              py::object &,
+              py::object &,
+              py::object &) { self.exit(); });
 
   // PyBinding to a singleton
   py::class_<DeviceManager, std::unique_ptr<DeviceManager, py::nodelete>>(

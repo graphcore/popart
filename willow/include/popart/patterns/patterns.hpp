@@ -303,6 +303,7 @@ public:
 
   std::vector<std::unique_ptr<PreAliasPattern>> getPreAliasList();
 
+  bool operator==(const Patterns &p) const;
   friend std::ostream &operator<<(std::ostream &os, const Patterns &patterns);
 
 private:

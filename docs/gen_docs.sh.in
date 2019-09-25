@@ -1,0 +1,10 @@
+#!/bin/bash
+
+source @POPLAR_INSTALL_DIR@/enable.sh
+source @INSTALL_PYDIR@/enable.sh
+
+echo gen_docs.sh
+echo $LIBRARY_PATH
+echo $PYTHONPATH
+echo python ${*}
+python ${*}

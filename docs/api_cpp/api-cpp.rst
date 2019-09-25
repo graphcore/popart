@@ -68,9 +68,6 @@ Device manager
 
 .. doxygenenum:: popart::DeviceType
 
-.. doxygenclass:: popart::DataFlow
-   :members:
-
 .. doxygenclass:: popart::DeviceInfo
    :members:
 
@@ -97,11 +94,11 @@ Device manager
 .. doxygenfunction:: popart::operator<<(std::ostream&, const TopoCons&)
 .. doxygenfunction:: popart::operator<<(std::ostream&, const std::vector<std::size_t>&)
 .. doxygenfunction:: popart::operator<<(std::ostream&, const NDArrayWrapper<T>&)
+
 Error handling
 --------------
 
 .. doxygenenum:: popart::ErrorSource
-   :members:
 
 .. doxygenclass:: popart::error
    :members:
