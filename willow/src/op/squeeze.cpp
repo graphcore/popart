@@ -5,12 +5,60 @@
 
 namespace popart {
 
-SqueezeOp::SqueezeOp(const OperatorIdentifier &_opid,
-                     const std::vector<int64_t> &axes_,
-                     const Op::Settings &settings_)
+SqueezeBaseOp::SqueezeBaseOp(const OperatorIdentifier &_opid, 
+                             const std::vector<int64_t> &axes_,
+                             const Op::Settings &settings_)
     : Op(_opid, settings_), axes(axes_) {}
 
-void SqueezeOp::setAxesToDefault() {
+void SqueezeBaseOp::setup() {
+  if (axes.empty()) {
+    setAxesToDefault();
+  }
+
+  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(),
+                            squeeze(inShape(getInIndex()), axes)};
+}
+
+
+view::RegMap SqueezeBaseOp::fwdRegMap(InIndex inIndex) const {
+  if (inIndex != 0) {
+    throw error("Internal Logic Error in SqueezeBaseOp::fwdRegMap."
+                "Received input index {} but only 0 allowed, "
+                "This for Op {}, ",
+                inIndex,
+                str());
+  }
+  // being conservative and returning the full region,
+  // even for non-full input region :
+  auto outRegion   = view::Region::getFull(outInfo(getOutIndex()).shape());
+  auto emptyRegion = view::Region::getEmpty(outRank(getOutIndex()));
+  return [emptyRegion, outRegion](const view::Region &r) {
+    if (r.isEmpty()) {
+      return emptyRegion;
+    }
+    return outRegion;
+  };
+}
+
+view::RegMap SqueezeBaseOp::bwdRegMap(InIndex inIndex) const {
+  if (inIndex != 0) {
+    throw error("Internal Logic Error in SqueezeBaseOp::bwdRegMap."
+                "Received input index {} but only 0 allowed, "
+                "This for Op {}, ",
+                inIndex,
+                str());
+  }
+  auto inRegion    = view::Region::getFull(inInfo(getInIndex()).shape());
+  auto emptyRegion = view::Region::getEmpty(inRank(getInIndex()));
+  return [emptyRegion, inRegion](const view::Region &r) {
+    if (r.isEmpty()) {
+      return emptyRegion;
+    }
+    return inRegion;
+  };
+}
+
+void SqueezeBaseOp::setAxesToDefault() {
   auto in_shape = inShape(getInIndex());
   for (int i = 0; i < in_shape.size(); i++) {
     if (in_shape[i] == 1) {
@@ -18,6 +66,18 @@ void SqueezeOp::setAxesToDefault() {
     }
   }
 }
+
+void SqueezeBaseOp::appendAttributes(OpSerialiserBase &os) const {
+  Op::appendAttributes(os);
+  os.appendAttribute("axes", axes);
+}
+
+
+SqueezeOp::SqueezeOp(const OperatorIdentifier &_opid,
+                     const std::vector<int64_t> &axes_,
+                     const Op::Settings &settings_)
+    : SqueezeBaseOp(_opid, axes_, settings_) {}
+
 
 std::vector<std::unique_ptr<Op>> SqueezeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -29,18 +89,17 @@ std::unique_ptr<Op> SqueezeOp::clone() const {
   return std::make_unique<SqueezeOp>(*this);
 }
 
-void SqueezeOp::setup() {
-  if (axes.empty()) {
-    setAxesToDefault();
+std::unique_ptr<Op>
+SqueezeOp::getInplaceVariant(const OperatorIdentifier &operator_id) const {
+  if (operator_id == Onnx::CustomOperators::SqueezeInplace) {
+    return std::make_unique<SqueezeInplaceOp>(*this);
   }
-
-  outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(),
-                            squeeze(inShape(getInIndex()), axes)};
+  // catch remaining cases and throw an error
+  return Op::getInplaceVariant(operator_id);
 }
-
-void SqueezeOp::appendAttributes(OpSerialiserBase &os) const {
-  Op::appendAttributes(os);
-  os.appendAttribute("axes", axes);
+std::vector<std::tuple<OperatorIdentifier, float>>
+SqueezeOp::inplacePriorityDefault() const {
+  return {{Onnx::CustomOperators::SqueezeInplace, 10}};
 }
 
 void SqueezeGradOp::setup() { outInfo(getOutIndex()) = unsqueezedInfo; }
@@ -67,6 +126,14 @@ const std::map<int, int> &SqueezeGradOp::gradOutToNonGradIn() const {
       {getOutIndex(), SqueezeOp::getInIndex()}};
   return outInfo;
 }
+
+SqueezeInplaceOp::SqueezeInplaceOp(const SqueezeOp &op)
+    : SqueezeBaseOp(Onnx::CustomOperators::SqueezeInplace, op.getAxes(), op.settings){}
+
+std::unique_ptr<Op> SqueezeInplaceOp::clone() const {
+  return std::make_unique<SqueezeInplaceOp>(*this);
+}
+
 
 namespace {
 static OpCreator<SqueezeOp> squeezeOpCreator(

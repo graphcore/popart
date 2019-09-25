@@ -877,6 +877,7 @@ const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
 const static AiGraphcoreOpIdV1 SoftmaxInplace("SoftmaxInplace");
 const static AiGraphcoreOpIdV1 SigmoidInplace("SigmoidInplace");
 const static AiGraphcoreOpIdV1 ScaleInplace("ScaleInplace");
+const static AiGraphcoreOpIdV1 SqueezeInplace("SqueezeInplace");
 const static AiGraphcoreOpIdV1 Stash("Stash");
 const static AiGraphcoreOpIdV1 ExpInplace("ExpInplace");
 const static AiGraphcoreOpIdV1 L1("L1");
