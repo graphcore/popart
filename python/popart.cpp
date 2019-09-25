@@ -1,6 +1,8 @@
+#include <pybind11/functional.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+
 #include <popart/builder.hpp>
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
@@ -120,37 +122,105 @@ std::map<std::string, boost::any> getDictionaryVar(py::dict pydict) {
 }
 
 class PyStepIO : public IStepIO {
+
+  struct ArrayInfo {
+    py::array array;
+    int64_t offset;
+  };
+
 public:
-  PyStepIO(std::map<TensorId, py::array> inputs_,
-           std::map<TensorId, py::array> outputs_)
-      : inputs(inputs_), outputs(outputs_) {}
+  PyStepIO(std::map<TensorId, py::array> inputs,
+           std::map<TensorId, py::array> outputs) {
+    for (auto p : inputs) {
+      inputsInfo.insert({p.first, {p.second, 0}});
+    }
+
+    for (auto p : outputs) {
+      outputsInfo.insert({p.first, {p.second, 0}});
+    }
+  }
 
   template <typename T>
   T get(TensorId id,
-        const std::map<TensorId, py::array> &M,
-        std::string mapName) const {
+        std::map<TensorId, ArrayInfo> &M,
+        int64_t numElements,
+        std::string mapName) {
+
     auto found = M.find(id);
     if (found == M.end()) {
       throw error("No tensor {} provided in PyStepIO's {}", id, mapName);
     }
-    py::array npArr = found->second;
+
+    ArrayInfo &arrayInfo = found->second;
+    auto offset          = arrayInfo.offset;
+
     T stepData;
-    stepData.data = npArr.request().ptr;
-    stepData.info = getTensorInfo(npArr);
+    stepData.info = getTensorInfo(arrayInfo.array);
+
+    // Set the data using the offset
+    auto numBytes = stepData.info.getDataTypeInfo()->nbytes() * numElements;
+    stepData.data =
+        static_cast<uint8_t *>(arrayInfo.array.request().ptr) + offset;
+
+    // Wrap around if we read all the data
+    if (offset + numBytes == stepData.info.nbytes()) {
+      arrayInfo.offset = 0;
+    } else {
+      arrayInfo.offset = offset + numBytes;
+    }
+
     return stepData;
   }
 
-  ConstVoidData in(TensorId id) const final {
-    return get<ConstVoidData>(id, inputs, "inputs");
+  ConstVoidData in(TensorId id, int64_t numElements)final {
+    return get<ConstVoidData>(id, inputsInfo, numElements, "inputs");
   }
 
-  MutableVoidData out(TensorId id) const final {
-    return get<MutableVoidData>(id, outputs, "outputs");
+  MutableVoidData out(TensorId id, int64_t numElements) final {
+    return get<MutableVoidData>(id, outputsInfo, numElements, "outputs");
   }
 
 private:
-  std::map<TensorId, py::array> inputs;
-  std::map<TensorId, py::array> outputs;
+  std::map<TensorId, ArrayInfo> outputsInfo;
+  std::map<TensorId, ArrayInfo> inputsInfo;
+};
+
+class PyStepIOCallback : public IStepIO {
+public:
+  // inputCb The call back to get input data
+  // outputCb_ The call back to get out data
+  // outputCompleteCb_ The call back to indicate that output had been written
+  PyStepIOCallback(std::function<py::array(std::string)> inputCb_,
+                   std::function<py::array(std::string)> outputCb_,
+                   std::function<void(std::string)> outputCompleteCb_)
+      : inputCb(inputCb_), outputCb(outputCb_),
+        outputCompleteCb(outputCompleteCb_) {}
+
+  ConstVoidData in(TensorId id, int64_t)final {
+    py::array a = inputCb(id);
+
+    ConstVoidData data;
+    data.data = a.request().ptr;
+    data.info = getTensorInfo(a);
+    return data;
+  }
+
+  MutableVoidData out(TensorId id, int64_t) final {
+    py::array a = outputCb(id);
+
+    MutableVoidData data;
+    data.data = a.request().ptr;
+    data.info = getTensorInfo(a);
+    return data;
+  }
+
+  virtual void outComplete(TensorId id) final { outputCompleteCb(id); }
+
+private:
+  // user land callbacks
+  std::function<py::array(std::string)> inputCb;
+  std::function<py::array(std::string)> outputCb;
+  std::function<void(std::string)> outputCompleteCb;
 };
 
 class PyWeightsIO : public IWeightsIO {
@@ -322,6 +392,14 @@ PYBIND11_MODULE(popart_core, m) {
                     std::map<TensorId, py::array>>(),
            py::arg("inputs"),
            py::arg("outputs"));
+
+  py::class_<PyStepIOCallback>(m, "PyStepIOCallback", stepio)
+      .def(py::init<std::function<py::array(std::string)>,
+                    std::function<py::array(std::string)>,
+                    std::function<void(std::string)>>(),
+           py::arg("input_callback"),
+           py::arg("output_callback"),
+           py::arg("output_complete_callback"));
 
   py::class_<PyWeightsIO>(m, "PyWeightsIO", weightsio)
       .def(py::init<std::map<TensorId, py::array>>(), py::arg("weights"));

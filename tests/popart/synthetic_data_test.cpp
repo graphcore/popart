@@ -72,8 +72,6 @@ BOOST_AUTO_TEST_CASE(SyntheticData_False) {
       dynamic_cast<popart::popx::Devicex *>(session->device_.get());
 
   BOOST_TEST(devicex->useSyntheticData() == false);
-  BOOST_TEST(devicex->h2dBuffers.size() == 1);
-  BOOST_TEST(devicex->d2hAnchorBuffers.size() == 2);
   BOOST_TEST(devicex->d2hWeightBuffers.size() == 0);
   // The one input tensor
   BOOST_TEST(devicex->fromHostStreams.size() == 1);
@@ -130,8 +128,6 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
       dynamic_cast<popart::popx::Devicex *>(session->device_.get());
 
   BOOST_TEST(devicex->useSyntheticData() == true);
-  BOOST_CHECK(devicex->h2dBuffers.size() == 0);
-  BOOST_TEST(devicex->d2hAnchorBuffers.size() == 0);
   BOOST_TEST(devicex->d2hWeightBuffers.size() == 0);
   BOOST_TEST(devicex->fromHostStreams.size() == 0);
   BOOST_TEST(devicex->toHostAnchorStreams.size() == 0);

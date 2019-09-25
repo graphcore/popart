@@ -21,7 +21,7 @@ def test_matmul_serialization_invalid_mode(tmpdir):
     if platform.system() == "Darwin":
         # MacOS is throwing a RuntimeError not popart_exception
         print("T11614 : skipping this test on mac/os")
-        return
+        pytest.skip("T11614 : skipping this test on mac/os")
     else:
         lhs_shape = [2, 2]
         rhs_shape = [2, 4]

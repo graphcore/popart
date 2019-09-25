@@ -86,7 +86,7 @@ void Session::writeWeights(const IWeightsIO &weightsIo) {
   device_->writeWeights(weightsIo);
 }
 
-void Session::run(const IStepIO &stepio) {
+void Session::run(IStepIO &stepio) {
   logging::session::trace("Session::run");
   if (!ir.canInfer()) {
     throw error("Trying to infer when not in inference mode");

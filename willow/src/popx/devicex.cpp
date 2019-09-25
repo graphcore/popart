@@ -101,6 +101,80 @@ public:
   }
 };
 
+Devicex::Datastream::Datastream(Tensor *t, PopStreamId s)
+    : tensor(t), streamId(s), io(nullptr) {}
+
+TensorId Devicex::Datastream::getTensorId() { return tensor->id; }
+
+Devicex::InputDatastream::InputDatastream(Tensor *t, PopStreamId s)
+    : Datastream(t, s) {}
+
+void Devicex::InputDatastream::read(void *ptr) {
+
+  if (io) {
+
+    ConstVoidData data = io->in(getTensorId(), tensor->info.nelms());
+
+    const void *srcAddr = data.data;
+    void *dstAddr       = ptr;
+
+    auto srcInfo = data.info;
+    auto dstInfo = tensor->info;
+
+    // check the shape
+
+    // Not sure how best to match the shape as the shape of the input
+    // does not match the shape of the data.info. Infact that is a bit
+    // wrong now.
+
+    // check the type
+    if (srcInfo.dataType() == dstInfo.dataType()) {
+      memcpy(dstAddr, srcAddr, tensor->info.nbytes());
+    } else if (srcInfo.dataType() == DataType::INT64 &&
+               dstInfo.dataType() == DataType::INT32) {
+
+      static bool loggingWarning = false;
+      if (loggingWarning == false) {
+        logging::devicex::warn(
+            "Copying (host) tensor {} from INT64 to INT32. Will only warn once",
+            getTensorId());
+        loggingWarning = true;
+      }
+      int32_t *dest      = static_cast<int32_t *>(dstAddr);
+      const int64_t *src = static_cast<const int64_t *>(srcAddr);
+      for (int i = 0; i < tensor->info.nelms(); ++i) {
+        dest[i] = static_cast<int32_t>(src[i]);
+      }
+    } else {
+      std::stringstream ss;
+      ss << "Type discrepency for tensor " << getTensorId()
+         << ". User provided : " << srcInfo.data_type()
+         << " and expected : " << dstInfo.data_type()
+         << ". Consider a custom copy here (as memcpy cannot be used)";
+      throw error(ss.str());
+    }
+
+  } else {
+    logging::devicex::warn(
+        "No stepio set for tensor {} stream {}", getTensorId(), streamId);
+  }
+}
+
+Devicex::OutputDatastream::OutputDatastream(Tensor *t, PopStreamId s)
+    : Datastream(t, s) {}
+
+void Devicex::OutputDatastream::write(void *ptr) {
+
+  if (io) {
+    MutableVoidData data = io->out(getTensorId(), tensor->info.nelms());
+    memcpy(data.data, ptr, tensor->info.nbytes());
+    io->outComplete(getTensorId());
+  } else {
+    logging::devicex::warn(
+        "No stepio set for tensor {} stream {}", getTensorId(), streamId);
+  }
+}
+
 std::map<Op *, int> Devicex::getMainGraphOpSeriesNums() const {
   std::map<Op *, int> nums;
   int num = 0;
@@ -155,6 +229,7 @@ std::map<Op *, int> Devicex::getMainGraphOpCounts() const {
 
 void Devicex::run(PopPrograms::ProgramIndex ind) {
   if (isEngineLoaded() == false) {
+    logging::devicex::debug("Reloading engine & connecting streams");
     loadEngineAndConnectStreams();
   }
   pEngine->run(ind);
@@ -178,8 +253,7 @@ void Devicex::readWeights(const IWeightsIO &weights) {
       logging::devicex::debug("Reading weights (host stream -> host) for {}",
                               id);
       MutableVoidData stepout = weights.weight(id);
-      bool isAnchorStream     = false;
-      hostStreamToHost(stepout, id, isAnchorStream);
+      hostStreamToHost(stepout, id);
     } else {
       logging::devicex::debug(
           "Not reading weights (host stream -> host) for {}", id);
@@ -222,8 +296,7 @@ void Devicex::weightsToHost(
         throw error("No TensorId " + id + " in final host destination map");
       }
       MutableVoidData mv_data = found->second;
-      bool isAnchorStream     = false;
-      hostStreamToHost(mv_data, id, isAnchorStream);
+      hostStreamToHost(mv_data, id);
     }
   }
 }
@@ -444,80 +517,12 @@ void Devicex::optimizerFromHost() {
   }
 }
 
-void Devicex::hostToHostStream(
-    void *dst,                 // destination of copy (a step tensor)
-    const void *src,           // source of copy
-    const TensorInfo &dstInfo, // the info for dst
-    const TensorInfo &srcInfo, // user provided info for src
-    TensorId id // for clear error message, we need the id of the tensor
-) {
-
-  // strip off all preceding 1's
-  auto strip = [](const Shape &s) {
-    return Shape(std::find_if_not(std::cbegin(s),
-                                  std::cend(s),
-                                  [](auto x) { return x == 1; }),
-                 s.end());
-  };
-
-  // confirm that the shapes of dst and src agree, ignoring all leading 1's
-  if (strip(dstInfo.shape()) != strip(srcInfo.shape())) {
-    std::stringstream ss;
-    ss << "Shape discrepency for tensor " << id
-       << ",\nStep tensor info (user) : ";
-    srcInfo.append(ss);
-    ss << "\nStep tensor info (expected) : ";
-    dstInfo.append(ss);
-    ss << ",\nBatches per step : " << ir().getDataFlow().batchesPerStep()
-       << '.';
-    ss << "\nGradient accumulation steps : " << getAccumulationFactor() << '.';
-
-    throw error(ss.str());
-  }
-
-  // Log the name and shape of the tensor
-  logging::devicex::debug("       {} {}", id, srcInfo.shape());
-
-  auto srcType = srcInfo.dataType();
-  auto dstType = dstInfo.dataType();
-
-  // check type compatibility
-  if (srcType == dstType) {
-    // copy the full step data from src to dst
-    std::memcpy(dst, src, srcInfo.nbytes());
-  }
-
-  else if (srcType == DataType::INT64 && dstType == DataType::INT32) {
-    logging::devicex::debug("Copying (host) tensor {} from INT64 to INT32", id);
-    auto dst_int32 = static_cast<int *>(dst);
-    auto src_int64 = static_cast<const int64_t *>(src);
-    for (auto i = 0; i < dstInfo.nelms(); ++i) {
-      dst_int32[i] = static_cast<int>(src_int64[i]);
-    }
-  }
-  // add more custom copies here. Design decision: don't
-  // just blindly cast, if the user provides an int
-  // tensor when a float tensor is expected they might
-  // have made a mistake.
-
-  else {
-    std::stringstream ss;
-    ss << "Type discrepency for tensor " << id
-       << ". User provided : " << srcInfo.data_type()
-       << " and expected : " << dstInfo.data_type()
-       << ". Consider a custom copy here (as memcpy cannot be used)";
-    throw error(ss.str());
-  }
-}
-
 // Copy from the host end of a d2h stream, to some final host memory.
 // This is the step which follows a copy from device to host.
 // poplar::Streams cannot write to an arbitrary dynamic address,
 // they are connected to a fixed host address. This function copies
 // from that fixed address to a dynamic address (mv_data).
-void Devicex::hostStreamToHost(const MutableVoidData &mv_data,
-                               TensorId id,
-                               bool isAnchorStream) {
+void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
 
   // The host end of the poplar::Stream,
   // we will try to copy from here
@@ -527,13 +532,8 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data,
   // It is a char vector, so this is in bytes.
   int64_t nbytes_src;
 
-  if (isAnchorStream) {
-    src        = static_cast<const void *>(d2hAnchorBuffers.at(id).data());
-    nbytes_src = d2hAnchorBuffers.at(id).size();
-  } else {
-    src        = static_cast<const void *>(d2hWeightBuffers.at(id).data());
-    nbytes_src = d2hWeightBuffers.at(id).size();
-  }
+  src        = static_cast<const void *>(d2hWeightBuffers.at(id).data());
+  nbytes_src = d2hWeightBuffers.at(id).size();
 
   auto dst = mv_data.data;
 
@@ -554,76 +554,43 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data,
   std::memcpy(dst, src, nbytes_src);
 }
 
-void Devicex::anchorsHostToHostStreams(const IStepIO &stepio) {
+void Devicex::anchorsHostToHostStreams(IStepIO &stepio) {
 
   if (useSyntheticData() == false) {
     std::string prefix = "     ";
     logging::devicex::debug(prefix + "Copying to h2d stream address(es) ");
     for (Tensor *tensor : ir().dataStreamTensors()) {
-      ConstVoidData stepin = stepio.in(tensor->id);
-
-      // where to write to on host,
-      auto dst = static_cast<void *>(h2dBuffers.at(tensor->id).data());
-      // where to read from on host,
-      auto src = stepin.data;
-
-      // we calculate the TensorInfo for dst. If batchesPerStep() = 1, then
-      // it has the same dimensions as tensor->info. Otherwise it has has
-      // an extra dimension of size batchesPerStep() to accommmodate all
-      // step anchor tensors and all the accumulationFactor steps.
-
-      auto stepDstShape = tensor->info.shape();
-      int outer_dim     = 1;
-      if (ir().getDataFlow().batchesPerStep() > 1)
-        outer_dim *= ir().getDataFlow().batchesPerStep();
-      if (ir().getSessionOptions().enableGradientAccumulation)
-        outer_dim *= getAccumulationFactor();
-      if (outer_dim > 1) {
-        stepDstShape.insert(stepDstShape.begin(), outer_dim);
-      }
-
-      // if the replicationFactor is greater than 1 then add an extra
-      // dimension of size replicationFactor so we can report multiple
-      // copies of the tensor
-      // Q: Should replicated tensors be combined before returning?
-      if (getReplicationFactor() > 1) {
-        stepDstShape.insert(stepDstShape.begin(), getReplicationFactor());
-      }
-      TensorInfo dstInfo{tensor->info.dataType(), stepDstShape};
-      // the info of the user provided src step tensor
-      TensorInfo srcInfo = stepin.info;
-
-      hostToHostStream(dst, src, dstInfo, srcInfo, tensor->id);
+      inputStreams.at(tensor->id)->setStepIO(&stepio);
     }
   }
 }
 
-void Devicex::anchorsHostFromHostStreams(const IStepIO &stepio) {
+void Devicex::anchorsHostFromHostStreams(IStepIO &stepio) {
 
   if (useSyntheticData() == false) {
     std::string prefix = "     ";
     logging::devicex::debug(prefix + "Copying from d2h stream address(es) ");
     for (TensorId anchorId : ir().getDataFlow().anchors()) {
-      MutableVoidData stepout = stepio.out(anchorId);
-
-      constexpr bool isAnchorStream = true;
-      hostStreamToHost(stepout, anchorId, isAnchorStream);
+      outputStreams.at(anchorId)->setStepIO(&stepio);
     }
   }
 }
 
-void Devicex::run(const IStepIO &stepio) {
+void Devicex::run(IStepIO &stepio) {
   if (!prepareHasBeenCalled) {
     throw error("Devicex::prepare() must be called before"
                 " Devicex::run(const IStepIO &) is called.");
   }
   logging::devicex::debug("Performing one step: ");
+
+  // Configure the inputstreams
   anchorsHostToHostStreams(stepio);
+
+  // Configure the outputstreams
+  anchorsHostFromHostStreams(stepio);
 
   pEngine->enableExecutionProfiling();
   run(PopPrograms::ProgramIndex::PROGRAM);
-
-  anchorsHostFromHostStreams(stepio);
 }
 
 std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
@@ -1119,10 +1086,9 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
         if (std::find(ipus.begin(), ipus.end(), index) == ipus.end()) {
 
           logging::devicex::debug(
-              "Creating host-to-device FIFO {} copied to ipu:{} type:{}",
+              "Creating host-to-device FIFO {} copied to ipu:{}",
               tensor->id,
-              index,
-              tensor->tensorType());
+              index);
 
           poplar::ReplicatedStreamMode mode;
 
@@ -1775,14 +1741,36 @@ void Devicex::loadEngineAndConnectStreams() {
       pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
     }
 
-    auto engineToStream = [&pEngine = pEngine](char *data0,
-                                               int64_t n_bytes,
-                                               PopStreamId streamId) {
-      // Poplar has no const void * version
-      auto addr0 = static_cast<void *>(data0);
-      auto addr1 = static_cast<void *>(data0 + n_bytes);
-      // connect the stream (circular buffer)
-      pEngine->connectStream(streamId, addr0, addr1);
+    auto engineToInputStreamWithCallback = [&pEngine = pEngine,
+                                            this](Tensor *tensor,
+                                                  PopStreamId streamId) {
+      std::shared_ptr<InputDatastream> ds =
+          std::make_shared<InputDatastream>(tensor, streamId);
+      this->inputStreams[tensor->id] = ds;
+
+      auto callback = [ds](void *ptr) mutable { ds->read(ptr); };
+
+      auto replicationFactor = getReplicationFactor();
+      for (auto replicationIndex = 0; replicationIndex < replicationFactor;
+           ++replicationIndex) {
+        pEngine->connectStreamToCallback(streamId, replicationIndex, callback);
+      }
+    };
+
+    auto engineToOutputStreamWithCallback = [&pEngine = pEngine,
+                                             this](Tensor *tensor,
+                                                   PopStreamId streamId) {
+      std::shared_ptr<OutputDatastream> ds =
+          std::make_shared<OutputDatastream>(tensor, streamId);
+      this->outputStreams[tensor->id] = ds;
+
+      auto callback = [ds](void *ptr) mutable { ds->write(ptr); };
+
+      auto replicationFactor = getReplicationFactor();
+      for (auto replicationIndex = 0; replicationIndex < replicationFactor;
+           ++replicationIndex) {
+        pEngine->connectStreamToCallback(streamId, replicationIndex, callback);
+      }
     };
 
     // Special case for variables (i.e. weights). This should be the same on
@@ -1805,69 +1793,24 @@ void Devicex::loadEngineAndConnectStreams() {
           }
         };
 
-    logging::devicex::debug(
-        "Creating host buffers for h2d streams, and connecting");
+    logging::devicex::debug("Connected h2d input data streams");
     for (Tensor *tensor : ir().dataStreamTensors()) {
       logging::devicex::debug(" {}", tensor->id);
-      PopStreamId streamId = h2dId(tensor->id);
-      // Allocate host memory, where the poplar::Stream will read data from.
-      // Micro-batch number of bytes: data processed in one go by hardware
-      int64_t n_bytes = tensor->info.nbytes();
-      // Number of micro-batches in a batch = gradient accumulation steps
-      if (ir().getSessionOptions().enableGradientAccumulation)
-        n_bytes *= ir().getSessionOptions().accumulationFactor;
-      // Number of batches (weight updates) in a step.
-      if (ir().getDataFlow().batchesPerStep() > 1)
-        n_bytes *= ir().getDataFlow().batchesPerStep();
-      if (ir().getSessionOptions().enableReplicatedGraphs) {
-        n_bytes *= getReplicationFactor();
-      }
-      h2dBuffers[tensor->id] = std::vector<char>(n_bytes);
-      char *data0            = h2dBuffers[tensor->id].data();
-      engineToStream(data0, n_bytes, streamId);
+      engineToInputStreamWithCallback(tensor, h2dId(tensor->id));
     }
 
-    logging::devicex::debug(
-        "Creating host buffers for anchor d2h streams, connecting");
+    logging::devicex::debug("Connected d2h anchor data streams");
     for (TensorId anchorId : ir().getDataFlow().anchors()) {
 
       bool isAnchorStream  = true;
       PopStreamId streamId = d2hId(anchorId, isAnchorStream);
       Tensor *tensor       = ir().getTensor(anchorId);
-      int64_t batch_bytes  = tensor->info.nbytes();
-      int64_t n_bytes;
-      switch (ir().getDataFlow().art(anchorId).id()) {
-      case (AnchorReturnTypeId::FINAL): {
-        n_bytes = batch_bytes * getReplicationFactor();
-        break;
-      }
-      case (AnchorReturnTypeId::EVERYN): {
-        n_bytes = batch_bytes *
-                  (ir().getDataFlow().batchesPerStep() /
-                   ir().getDataFlow().art(anchorId).rp()) *
-                  getReplicationFactor();
-        break;
-      }
-      case (AnchorReturnTypeId::ALL): {
-        n_bytes = batch_bytes * ir().getDataFlow().batchesPerStep() *
-                  getReplicationFactor();
-        break;
-      }
-      }
-
-      logging::devicex::debug(" {} of size {} bytes", anchorId, n_bytes);
-
-      // The host data need to be multiplied
-      d2hAnchorBuffers[anchorId] = std::vector<char>(n_bytes);
-      char *data0                = d2hAnchorBuffers[tensor->id].data();
-      engineToStream(data0, n_bytes, streamId);
+      logging::devicex::debug(" {}", tensor->id);
+      engineToOutputStreamWithCallback(tensor, streamId);
     }
 
-    logging::devicex::debug(
-        "Creating host buffers for weight d2h streams, connecting");
-
+    logging::devicex::debug("Connected d2h weight data streams");
     for (auto initId : ir().getTensorIds(TensorType::Variable)) {
-      logging::devicex::debug(" {}", initId);
 
       bool isAnchorStream      = false;
       PopStreamId streamId     = d2hId(initId, isAnchorStream);
@@ -1875,6 +1818,8 @@ void Devicex::loadEngineAndConnectStreams() {
       int64_t n_bytes          = tensor->info.nbytes();
       d2hWeightBuffers[initId] = std::vector<char>(n_bytes);
       char *data0              = d2hWeightBuffers[initId].data();
+
+      logging::devicex::debug(" {}", initId);
       engineToStreamVariables(data0, n_bytes, streamId);
     }
   }

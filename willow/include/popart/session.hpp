@@ -55,7 +55,7 @@ public:
    * input data  : from address in stepIO.in
    * output data : to addresses in stepIO.out
    */
-  void run(const IStepIO &stepIO);
+  void run(IStepIO &stepIO);
 
   /**
    * Write current model to ONNX file

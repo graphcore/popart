@@ -60,31 +60,64 @@ class IStepIO {
 public:
   virtual ~IStepIO() = default;
   // constant input data,
-  virtual ConstVoidData in(TensorId) const = 0;
+  virtual ConstVoidData in(TensorId id, int64_t numElements) = 0;
   // non-const anchor data,
   // which will be modified inplace.
-  virtual MutableVoidData out(TensorId) const = 0;
+  virtual MutableVoidData out(TensorId id, int64_t numElements) = 0;
+
+  // Use to indicate then the output data has been written to the
+  // MutableVoidData
+  virtual void outComplete(TensorId) {}
 };
 
 class StepIO : public IStepIO {
+
+  struct ArrayInfo {
+    IArray &array;
+    int64_t offset;
+  };
+
 public:
   StepIO(std::map<TensorId, IArray &> inputs_,
-         std::map<TensorId, IArray &> outputs_)
-      : inputs(inputs_), outputs(outputs_) {}
+         std::map<TensorId, IArray &> outputs_);
 
-  ConstVoidData in(TensorId id) const final;
-  MutableVoidData out(TensorId id) const final;
+  ConstVoidData in(TensorId id, int64_t numElements)final;
+  MutableVoidData out(TensorId id, int64_t numElements) final;
 
 private:
   TensorInfo getTensorInfo(IArray &array) const;
 
   template <typename T>
   T get(TensorId id,
-        const std::map<TensorId, IArray &> &M,
-        std::string mapName) const;
+        std::map<TensorId, ArrayInfo> &M,
+        unsigned numElements,
+        std::string mapName);
 
-  std::map<TensorId, IArray &> inputs;
-  std::map<TensorId, IArray &> outputs;
+  std::map<TensorId, ArrayInfo> outputsInfo;
+  std::map<TensorId, ArrayInfo> inputsInfo;
+};
+
+class StepIOCallback : public IStepIO {
+
+public:
+  using InputCallback          = ConstVoidData (*)(TensorId);
+  using OutputCallback         = MutableVoidData (*)(TensorId);
+  using OutputCompleteCallback = void (*)(TensorId);
+
+  StepIOCallback(InputCallback inputCb_,
+                 OutputCallback outputCb_,
+                 OutputCompleteCallback outputCompleteCb_)
+      : inputCb(inputCb_), outputCb(outputCb_),
+        outputCompleteCb(outputCompleteCb_) {}
+
+  ConstVoidData in(TensorId id, int64_t numElements)final;
+  MutableVoidData out(TensorId id, int64_t numElements) final;
+  void outComplete(TensorId id) final;
+
+private:
+  InputCallback inputCb;
+  OutputCallback outputCb;
+  OutputCompleteCallback outputCompleteCb;
 };
 
 // A virtual class for accessing pointers to
