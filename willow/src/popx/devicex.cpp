@@ -289,10 +289,6 @@ void Devicex::weightsToHost(
     for (auto id : ir().getTensorIds(TensorType::Variable)) {
       auto found = onnxModelData.find(id);
       if (found == onnxModelData.end()) {
-        // When accumulating gradients, don't save the accumulating tensors.
-        if (id.find(reservedAccumulationPrefix()) != std::string::npos) {
-          continue;
-        }
         throw error("No TensorId " + id + " in final host destination map");
       }
       MutableVoidData mv_data = found->second;

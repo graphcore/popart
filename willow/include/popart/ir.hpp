@@ -197,6 +197,10 @@ public:
   // optimizer stream tensors (they are not data)
   std::vector<Tensor *> dataStreamTensors() const;
 
+  // Additional tensors that we want to add to the model proto when saving to a
+  // .onnx file
+  std::set<TensorId> additionalModelProtoTensors;
+
   std::vector<Op *> opsOfType(const OperatorIdentifier &opid);
   bool isConsumedByOpOfType(TensorId tid, const OperatorIdentifier &opid);
 

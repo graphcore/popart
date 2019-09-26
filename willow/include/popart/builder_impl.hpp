@@ -230,6 +230,11 @@ public:
   onnx::NodeProto &
   findNodeProtoByOutputNames(const std::set<TensorId> &nodeOutputNames);
 
+  static void
+  populateTensorProtoFromConstVoidData(const ConstVoidData &initData,
+                                       const std::string &id,
+                                       onnx::TensorProto *tp);
+
 private:
   void finalizeOp(onnx::NodeProto *node, const std::string &name);
 

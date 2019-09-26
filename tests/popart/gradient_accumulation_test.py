@@ -28,13 +28,15 @@ def run_graph(labelArray,
     with builder.virtualGraph(0):
         for i in range(3):
             w = builder.addInitializedInputTensor(
-                np.ones([hidden_size, hidden_size]).astype(np.float32))
+                np.ones([hidden_size, hidden_size]).astype(np.float32),
+                "weight")
             if i == 0: w0 = w
             x = builder.aiOnnx.matmul([x, w])
     with builder.virtualGraph(1 if enable_multi_ipu else 0):
         for i in range(3):
             w = builder.addInitializedInputTensor(
-                np.ones([hidden_size, hidden_size]).astype(np.float32))
+                np.ones([hidden_size, hidden_size]).astype(np.float32),
+                "weight")
             x = builder.aiOnnx.matmul([x, w])
     output = x
 
@@ -118,10 +120,14 @@ def check_models(modelA, modelB, epsilon=1e-9):
     modelB = onnx.load(modelB)
 
     for w_i, weightA in enumerate(modelA.graph.initializer):
-        for d_i, dataA in enumerate(weightA.float_data):
-            dataB = modelB.graph.initializer[w_i].float_data[d_i]
-            assert epsilon > abs(dataA - dataB), "Difference {}".format(dataA -
-                                                                        dataB)
+        # We need to avoid the gradient accl initializers as these won't be present
+        # in the non grad accl models.
+        if (popart.reservedAccumulationPrefix() not in weightA.name):
+            for d_i, dataA in enumerate(weightA.float_data):
+                dataB = modelB.graph.initializer[w_i].float_data[d_i]
+                assert epsilon > abs(dataA -
+                                     dataB), "Difference {}".format(dataA -
+                                                                    dataB)
 
 
 def test_gradient_accumulation_1():
@@ -340,3 +346,25 @@ def test_gradient_accumulation_complex_2():
                                    False)
 
     check_models(accl_proto, norm_proto, epsilon=1e-2)
+
+
+def test_gradient_accumulation_model_proto():
+    np.random.seed(1234)
+    labelArray = np.random.randint(0, hidden_size, batch_size)
+    accl_proto = run_graph(labelArray, 4, True, 5, "acclSteps", False)
+
+    model = onnx.load(accl_proto)
+    names = [t.name for t in model.graph.initializer]
+
+    # In case the model changes in the future...
+    assert len(names) > 1
+
+    for w_i, weightA in enumerate(model.graph.initializer):
+        # Test the accumulation tensors were restored and are all zero.
+        if popart.reservedAccumulationPrefix() in weightA.name:
+            for d_i, dataA in enumerate(weightA.float_data):
+                assert dataA == 0.0
+        # Test each weight tensor has a corresponding accumulation tensor.
+        elif "weight" in weightA.name:
+            assert (popart.reservedAccumulationPrefix() +
+                    popart.reservedGradientPrefix() + weightA.name) in names

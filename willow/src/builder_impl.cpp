@@ -212,9 +212,10 @@ void BuilderImpl::addInputTensorFromHigherScope(const TensorId &tensorId) {
   // TODO : get the type. T8276
 }
 
-static void populateTensorProtoFromConstVoidData(const ConstVoidData &initData,
-                                                 const std::string &id,
-                                                 onnx::TensorProto *tp) {
+void BuilderImpl::populateTensorProtoFromConstVoidData(
+    const ConstVoidData &initData,
+    const std::string &id,
+    onnx::TensorProto *tp) {
   auto onnxTensorType = initData.info.getOnnxTypeProto();
 
   tp->set_data_type(onnxutil::getTPDataType(initData.info.dataType()));

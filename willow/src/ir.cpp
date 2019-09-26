@@ -1040,8 +1040,9 @@ void Ir::resetWeights(const onnx::ModelProto &modelProto) {
     }
     auto tensor = getTensors().get(tenId);
     if (tensor->info != TensorInfo(initializer)) {
-      throw error(
-          "trying to reset weights using tensor with non matching tensor info");
+      throw error("trying to reset weights using tensor with non matching "
+                  "tensor info. Tensor ID: {}",
+                  tensor->id);
     }
     tensor->tensorData()->resetData(initializer);
   }
