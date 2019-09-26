@@ -983,6 +983,11 @@ void Devicex::setRandomSeed(uint64_t seedValue) {
     throw error("Devicex::prepare() must be called before "
                 "Devicex::setRandomSeed(uint64_t) is called.");
   }
+
+  setRandomSeedInternal(seedValue);
+}
+
+void Devicex::setRandomSeedInternal(uint64_t seedValue) {
   randomSeed = seedValue;
 
   if (useSyntheticData() == false) {
@@ -1728,6 +1733,7 @@ void Devicex::loadEngineAndConnectStreams() {
     logging::devicex::debug("Connecting initializer streams");
     for (auto id : ir().getTensorIds(TensorType::Variable)) {
       Tensor *tensor = ir().getTensor(id);
+      logging::devicex::debug("   {}", tensor->str());
       pEngine->connectStream(h2dId(id), tensor->tensorData()->data());
     }
 
@@ -1823,6 +1829,9 @@ void Devicex::loadEngineAndConnectStreams() {
       engineToStreamVariables(data0, n_bytes, streamId);
     }
   }
+
+  uint64_t seed = std::chrono::system_clock::now().time_since_epoch().count();
+  setRandomSeedInternal(seed);
 }
 
 // Floating point settings are not suported on CPU
@@ -2150,9 +2159,6 @@ void Devicex::prepare() {
   trySaveTensorTileMap();
 
   prepareHasBeenCalled = true;
-
-  uint64_t seed = std::chrono::system_clock::now().time_since_epoch().count();
-  setRandomSeed(seed);
 }
 
 int64_t Devicex::getStashSize(VGraphId vGraphId) {
