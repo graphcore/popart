@@ -111,6 +111,31 @@ public:
   // "modifies" is still the empty region
 };
 
+class SliceGradOp : public Op {
+public:
+  SliceGradOp(const SliceOp &);
+  std::unique_ptr<Op> clone() const final;
+  void setup() final;
+
+  static InIndex getInIndex() { return 0; }
+  static OutIndex getOutIndex() { return 0; }
+
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+
+  std::vector<Slice> getSlices() const { return slices; }
+  void setPadding(const SliceOp &slice_op);
+  std::vector<std::ptrdiff_t> getLowerPadding() const { return lower_padding; }
+  std::vector<std::ptrdiff_t> getUpperPadding() const { return upper_padding; }
+  float getSubgraphValue() const final { return getLowSubgraphValue(); }
+
+private:
+  std::vector<Slice> slices;
+  std::vector<std::ptrdiff_t> lower_padding;
+  std::vector<std::ptrdiff_t> upper_padding;
+  TensorInfo preSlicedInInfo;
+};
+
 } // namespace popart
 
 #endif

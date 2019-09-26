@@ -100,9 +100,9 @@ private:
 class StepIOCallback : public IStepIO {
 
 public:
-  using InputCallback          = ConstVoidData (*)(TensorId);
-  using OutputCallback         = MutableVoidData (*)(TensorId);
-  using OutputCompleteCallback = void (*)(TensorId);
+  using InputCallback          = std::function<ConstVoidData(TensorId)>;
+  using OutputCallback         = std::function<MutableVoidData(TensorId)>;
+  using OutputCompleteCallback = std::function<void(TensorId)>;
 
   StepIOCallback(InputCallback inputCb_,
                  OutputCallback outputCb_,

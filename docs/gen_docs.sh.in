@@ -1,7 +1,7 @@
 #!/bin/bash
 
 source @POPLAR_INSTALL_DIR@/enable.sh
-source @INSTALL_PYDIR@/enable.sh
+source @CMAKE_CURRENT_BINARY_DIR@/enable.sh
 
 echo gen_docs.sh
 echo $LIBRARY_PATH
