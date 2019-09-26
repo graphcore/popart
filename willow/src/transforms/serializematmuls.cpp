@@ -362,6 +362,7 @@ static void serializeVarUpdate(int sliceDim,
       Shape axes   = {weightTensor->info.rank() - slice_dim_from_end};
 
       TensorId output = outputTensors[i];
+      bool notFinal   = i != (matmul->getSerialiseSettings().factor - 1);
 
       // serialize the operations along the path
       for (auto op : path) {
@@ -436,7 +437,15 @@ static void serializeVarUpdate(int sliceDim,
         slicedVarUpdateOp->setPipelineStage(*pipelineStage);
       slicedVarUpdateOp->setup();
 
+      auto slicedVarUpdatePtr = slicedVarUpdateOp.get();
+
       builder.getGraph().moveIntoGraph(std::move(slicedVarUpdateOp));
+
+      builder.getGraph().topoCons->transfer(varUpdate, slicedVarUpdatePtr);
+
+      if (notFinal)
+        builder.getGraph().topoCons->insert(
+            slicedVarUpdatePtr, builder.getProducer(outputTensors[i + 1]));
     }
 
     // Remove the ops on the original path

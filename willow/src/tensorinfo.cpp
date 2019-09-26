@@ -276,8 +276,10 @@ const Shape &TensorInfo::shape() const { return shape_v; }
 Rank TensorInfo::rank() const { return static_cast<int>(shape_v.size()); }
 
 int64_t TensorInfo::nelms() const {
-  return std::accumulate(
-      shape_v.begin(), shape_v.end(), 1, std::multiplies<int64_t>());
+  return std::accumulate(shape_v.begin(),
+                         shape_v.end(),
+                         static_cast<int64_t>(1),
+                         std::multiplies<int64_t>());
 }
 
 int64_t TensorInfo::nbytes() const {
