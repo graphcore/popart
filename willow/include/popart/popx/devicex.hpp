@@ -317,6 +317,9 @@ private:
   std::map<PipelineStage, VGraphId> getPipelineToVGraphIdMap() const;
   PipelineStage getMaxPipelineStage() const;
 
+  // Sets the random seed, does not check if prepare has been called.
+  void setRandomSeedInternal(uint64_t seedValue);
+
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
   PriTask initTensorTask(Tensor *);
