@@ -157,6 +157,8 @@ public:
   bool hasVirtualGraphId() const;
   int64_t getVirtualGraphId() const;
 
+  bool consumersAllPreLoss() const;
+
 protected:
   Graph &graph;
   Op *producer;

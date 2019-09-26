@@ -27,6 +27,7 @@ enum class RecomputationType {
   None = 0, // No ops should be recomputed
   Standard, // Algorithm to pick checkpoint to try an minimize max liveness
   NormOnly, // Only Norm ops (+ non-linearities, if following) are recomputed
+  Pipeline, // Recompute all forward pipeline stages
   N         // the number of RecomputationTypes, must appear as the final enum
 };
 
