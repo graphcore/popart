@@ -4,6 +4,7 @@
 #include <popart/popx/op/stashx.hpp>
 #include <popart/popx/opxmanager.hpp>
 #include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 
 #include <popops/DynamicSlice.hpp>
 #include <popops/ElementWise.hpp>

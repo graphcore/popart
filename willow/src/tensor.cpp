@@ -14,6 +14,15 @@
 
 namespace popart {
 
+bool Tensor::consumersAllPreLoss() const {
+  for (Op *consumer : consumers.getOps()) {
+    if (consumer->scheduledPreLoss == ScheduledPreLoss::No) {
+      return false;
+    }
+  }
+  return true;
+}
+
 int64_t Tensor::getVirtualGraphIdUnsafe() const {
 
   // If this Tensor has a Producer, use its VirtualGraphId if it has one

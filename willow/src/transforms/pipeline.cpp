@@ -7,6 +7,7 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/stash.hpp>
@@ -15,6 +16,7 @@
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
 #include <popart/transforms/pipeline.hpp>
+#include <popart/vertex.hpp>
 
 using boost::range::max_element;
 using boost::range::min_element;
@@ -212,16 +214,67 @@ std::string zeroCandidatesError(Tensor *t, Op *stashRefOp) {
   return ss.str();
 }
 
+Op *searchForRestoreReferenceOp(Tensor *t) {
+  // Find a restore reference Op in the Post Loss graph by searching through
+  // the consumers but not crossing IPU boundaries.
+  std::vector<Op *> frontier;
+  std::set<TensorId> beenOnFrontier = {t->id};
+  for (auto *c : t->consumers.getOps()) {
+    frontier.push_back(c);
+  }
+  while (!frontier.empty()) {
+    Op *op = frontier.back();
+    frontier.pop_back();
+    if (!op->isIpuCopyOp()) {
+      // If it's post loss return it.
+      if (op->scheduledPreLoss == ScheduledPreLoss::No) {
+        return op;
+      } else {
+        // Otherwise go to the output's consumers and add recompute ops to the
+        // frontier
+        for (Tensor *outT : op->output->tensors()) {
+          if (beenOnFrontier.count(outT->id) == 0) {
+            beenOnFrontier.insert(outT->id);
+            for (auto *c : outT->consumers.getOps()) {
+              frontier.push_back(c);
+            }
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
+bool isStashCandidateForPreLossOnly(Tensor *tensor) {
+  if (!tensor->consumersAllPreLoss()) {
+    return false;
+  }
+  // If a Tensor is only consumed by ipuCopies then it shouldn't be stashed
+  for (auto *c : tensor->consumers.getOps()) {
+    if (!c->isIpuCopyOp()) {
+      return true;
+    }
+  }
+  return false;
+}
+
 Op *getRestoreReferenceOp(Tensor *t, Op *stashRefOp) {
   logging::debug("Collecting restore ref candidates");
   auto consumers = t->consumers.getOps();
 
   std::vector<Op *> restoreCandidates;
-  for (auto c : consumers) {
-    if (getVirtualGraphIdOrSourceIpu(c) ==
-            getVirtualGraphIdOrSourceIpu(stashRefOp) &&
-        c->getPipelineStage() != stashRefOp->getPipelineStage()) {
-      restoreCandidates.push_back(c);
+  if (t->consumersAllPreLoss()) {
+    auto *ref = searchForRestoreReferenceOp(t);
+    if (ref != nullptr)
+      restoreCandidates.push_back(ref);
+  } else {
+    for (auto c : consumers) {
+      if (getVirtualGraphIdOrSourceIpu(c) ==
+              getVirtualGraphIdOrSourceIpu(stashRefOp) &&
+          c->getPipelineStage() != stashRefOp->getPipelineStage()) {
+        restoreCandidates.push_back(c);
+      }
     }
   }
 
@@ -247,6 +300,8 @@ bool Pipeline::apply(Graph &graph) const {
 
   auto &ir         = graph.getIr();
   auto maxVGraphId = ir.getMaxVirtualGraphId();
+  bool full_recompute =
+      ir.getSessionOptions().autoRecomputation == RecomputationType::Pipeline;
   // We use numIPUs // replicated graph count for the max vGraph ID.
 
   // First, some checks that pipelining is compatible with other user options:
@@ -401,11 +456,15 @@ bool Pipeline::apply(Graph &graph) const {
     // - has no consumers
     // - is a variable tensor
     // - is an optimizer tensor
+    // - is a constant tensor
 
     if (tensor->consumers.getOps().empty()) {
       continue;
     }
     if (tensor->tensorType() == TensorType::Variable) {
+      continue;
+    }
+    if (tensor->tensorType() == TensorType::Const) {
       continue;
     }
     if (tensor->isOptimizerTensor()) {
@@ -416,11 +475,12 @@ bool Pipeline::apply(Graph &graph) const {
     std::set<PipelineStage> tensorStages = tensor->getPipelineStages();
 
     // There is no need to stash a tensor that only appears in 1 stage.
-    if (tensorStages.size() == 1) {
+    if (tensorStages.size() == 1 &&
+        !(full_recompute && isStashCandidateForPreLossOnly(tensor))) {
       continue;
     }
 
-    logging::debug("Adding {} to stash candidates", tid);
+    logging::transform::debug("Adding {} to stash candidates", tid);
     toStashCandidateTensors.push_back(tid);
   }
 
@@ -452,10 +512,13 @@ bool Pipeline::apply(Graph &graph) const {
       if (!dynamic_cast<IpuCopyOp *>(op) &&
           op->scheduledPreLoss == ScheduledPreLoss::Yes) {
         op->settings.recomputeType = RecomputeType::RECOMPUTE;
-        for (auto tensor : op->output->tensors()) {
-          for (auto consumer : tensor->consumers.getOps()) {
-            if (dynamic_cast<IpuCopyOp *>(consumer)) {
-              op->settings.recomputeType = RecomputeType::CHECKPOINT;
+        // If using full_recompute all forward ops are Recomputed
+        if (!full_recompute) {
+          for (auto tensor : op->output->tensors()) {
+            for (auto consumer : tensor->consumers.getOps()) {
+              if (dynamic_cast<IpuCopyOp *>(consumer)) {
+                op->settings.recomputeType = RecomputeType::CHECKPOINT;
+              }
             }
           }
         }
@@ -526,8 +589,7 @@ bool Pipeline::apply(Graph &graph) const {
   Op::Settings settings(graph, "");
 
   for (auto &tid : toStashTensors) {
-    auto tensor       = graph.getTensors().get(tid);
-    auto tidConsumers = tensor->consumers.getOps();
+    auto tensor = graph.getTensors().get(tid);
 
     auto stashRefOp   = getStashReferenceOp(tensor);
     auto restoreRefOp = getRestoreReferenceOp(tensor, stashRefOp);
@@ -547,12 +609,66 @@ bool Pipeline::apply(Graph &graph) const {
     stashOp->createAndConnectOutTensor(StashOp::getOutIndex(), stashId);
     stashOp->setup();
 
-    logging::transform::debug(
-        "Adding stash of size {} of activations {} for pipelining",
-        stashOp->getStashSize(),
-        tensor->id);
+    logging::transform::debug("Adding stash of size {} of activations {} for "
+                              "pipelining. Stash stage: {}, Restore stage {}",
+                              stashOp->getStashSize(),
+                              tensor->id,
+                              stashOp->getPipelineStage(),
+                              restoreRefOp->getPipelineStage());
+
+    // Full Recomputation
+    // If one of the preLossOnly stash tensors is consumed by an IpuCopy
+    // it must not be inplace, but stashes needed for recomputation must be
+    // inplace. To resolve this contradiction an IdentityOp is inserted between
+    // the the stashed tensor and the IpuCopy
+    if (full_recompute && tensor->consumersAllPreLoss()) {
+      std::vector<IpuCopyOp *> ipuCopyConsumers;
+      for (auto *c : tensor->consumers.getOps()) {
+        auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(c);
+        if (ipuCopyOp)
+          ipuCopyConsumers.push_back(ipuCopyOp);
+      }
+      if (ipuCopyConsumers.size() > 0) {
+        logging::transform::debug("Adding Identity Copy for stash tensor {}",
+                                  tid);
+        Op::Settings identitySettings(graph, tid + "_pipelineCopyOp");
+        TensorId identityOutput = tid + "_pipelineCopy";
+
+        // TODO: Make sure this is not pruned or inplaced. T11668
+        auto op = std::make_unique<IdentityOp>(Onnx::Operators::Identity_1,
+                                               identitySettings);
+
+        if (op == nullptr) {
+          throw error("Failed to create op {}", Onnx::Operators::Identity_1);
+        }
+
+        auto src_ipu = getVirtualGraphIdOrSourceIpu(stashRefOp);
+        op->connectInTensor(0, tid);
+        op->createAndConnectOutTensor(0, identityOutput);
+        op->setVirtualGraphId(src_ipu);
+        op->setPipelineStage(stashRefOp->getPipelineStage());
+
+        op->setup();
+        graph.moveIntoGraph(std::move(op));
+        for (auto *ipuCopyOp : ipuCopyConsumers) {
+          InIndex index = -1;
+          for (auto input : ipuCopyOp->input->tensorIdMap()) {
+            if (input.second == tid) {
+              index = input.first;
+              break;
+            }
+          }
+          if (index == -1) {
+            throw error("Could not determine input index for {}", tid);
+          }
+          ipuCopyOp->disconnectInTensor(index, tensor);
+          ipuCopyOp->connectInTensor(index, identityOutput, src_ipu);
+        }
+      }
+    }
 
     // Restore
+    auto tidConsumers = tensor->consumers.getOps();
 
     // Should op be Restore (outplace) or RestoreInplace?
     bool isInplace = true;
