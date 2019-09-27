@@ -977,27 +977,36 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
   }
 
   if (virtualGraphsEnabled()) {
-    // only -1s, no Op has a virtual graph annotation : problem.
+    // Check number ipus makes sense given virtual graphs have been enabled
+    if (!postAutoVirtualGraphTransform && deviceInfo->getNumIpus() == 1) {
+      logging::ir::warn("Auto virtualGraphMode is on, but only one IPU is "
+                        "specified, so no virtual graphs were created. Are you "
+                        "sure you meant to set VirtualGraphMode to auto?");
+    }
+    // Sanity check the virtual graph ids. Only -1's, no Op has a virtual graph
+    // annotation implies a problem.
     if (vgraphs.size() == 1 && vgraphs.count(-1) != 0) {
-      // manual virtual graphing, the user should have annotated ops
+      // Manual virtual graphing, the user should have annotated ops.
       if (getSessionOptions().virtualGraphMode == VirtualGraphMode::Manual) {
         throw error("SessionOptions flag virtualGraphMode is {}, but no Ops "
                     "have been annotated with virtual graph information. This "
                     "is an inconsistent combination. ",
                     getSessionOptions().virtualGraphMode);
       }
-
-      // auto virtual graphing, why has the auto-sharder not run?
+      // Auto virtual graphing, why has the auto-sharder not run?
       else if (postAutoVirtualGraphTransform) {
         throw error(
-            "SessionOptions flag virtualGraphMode is {}, but no Ops have been "
-            "annotated with virtual graph information. Moreover, the paramater "
+            "SessionOptions flag virtualGraphMode is {}, but no Ops have "
+            "been "
+            "annotated with virtual graph information. Moreover, the "
+            "paramater "
             "postAutoVirtualGraphTransoform is true, so AutoVirtualGraph "
             "should have been run. This is an inconsistent combination, "
-            "possibly an internal logic error has",
+            "possibly an internal logic error has occured",
             getSessionOptions().virtualGraphMode);
       }
     }
+
   }
 
   else {
