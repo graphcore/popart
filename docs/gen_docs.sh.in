@@ -1,10 +1,10 @@
 #!/bin/bash
 
-source @POPLAR_INSTALL_DIR@/enable.sh
-source @CMAKE_CURRENT_BINARY_DIR@/enable.sh
+set -v
 
-echo gen_docs.sh
-echo $LIBRARY_PATH
+source @POPLAR_INSTALL_DIR@/enable.sh
+source @CMAKE_CURRENT_BINARY_DIR@/../enable.sh
+
 echo $PYTHONPATH
-echo python ${*}
+
 python ${*}
