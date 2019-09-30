@@ -250,7 +250,7 @@ static void sumByAddInplace(TransformBuilder &builder,
     }
   }
   if (cast_needed) {
-    logging::transform::info(
+    logging::transform::debug(
         "Casting Output {} to {}", out, output->info.data_type());
     builder.cast(out,
                  output->id,
@@ -378,7 +378,7 @@ static void serializeVarUpdate(int sliceDim,
           outputshape[d] =
               outputshape[d] / matmul->getSerialiseSettings().factor;
 
-          logging::op::info("Serializing reshape {}", outputshape);
+          logging::op::debug("Serializing reshape {}", outputshape);
 
           output = builder.reshape(output,
                                    outputshape,
@@ -387,7 +387,7 @@ static void serializeVarUpdate(int sliceDim,
                                    name + "_Reshape",
                                    builder.getNextId(name + "_Reshape"));
         } else if (op->opid == Onnx::Operators::ReduceSum_1) {
-          logging::op::info("Serializing reduced sum");
+          logging::op::debug("Serializing reduced sum");
           output = builder.reducesum(output,
                                      0,
                                      {0},
@@ -921,6 +921,9 @@ bool SerializeMatMuls::apply(Graph &graph) const {
 
   // Update the graph verticies
   graph.getIr().updateVertices();
+
+  // Remove any dangling tensors
+  graph.getTensors().removeIsolated();
 
   return true;
 }
