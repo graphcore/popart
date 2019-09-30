@@ -52,8 +52,7 @@ if (BUILD_DOCS)
     COMMENT "Building PDF documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
-    ${CMAKE_CURRENT_BINARY_DIR}/../enable.sh
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
     ${CMAKE_CURRENT_BINARY_DIR}/latex
     ${SUPPORTED_OPS_GEN}
     popart_examples
@@ -68,30 +67,17 @@ if (BUILD_DOCS)
     COMMENT "Building html documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
-    ${CMAKE_CURRENT_BINARY_DIR}/../enable.sh
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
     ${SUPPORTED_OPS_GEN}
     popart_examples
     popart_core
   )
 
-  add_custom_target(ug_zip ALL
-    COMMAND zip -r ${PROJECT_BINARY_DIR}/${USER_GUIDE_HTML_NAME} . -i *
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
-    VERBATIM
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html
-  )
-
-  add_custom_target(python_zip ALL
-    COMMAND zip -r ${PROJECT_BINARY_DIR}/${PYTHON_API_HTML_NAME} . -i *
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
-    VERBATIM
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html
-  )
-
-  add_custom_target(cpp_zip ALL
-    COMMAND zip -r ${PROJECT_BINARY_DIR}/${CPP_API_HTML_NAME} . -i *
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
+  add_custom_target(html_zip ALL
+    COMMAND zip -r ${PROJECT_BINARY_DIR}/${USER_GUIDE_HTML_NAME} . -i popart_user_guide/*
+    COMMAND zip -r ${PROJECT_BINARY_DIR}/${PYTHON_API_HTML_NAME} . -i popart_api_python/*
+    COMMAND zip -r ${PROJECT_BINARY_DIR}/${CPP_API_HTML_NAME} . -i popart_api_cpp/*
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html
     VERBATIM
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html
   )
