@@ -1,13 +1,13 @@
-Supported operations
---------------------
+Supported operators
+-------------------
 
-PopART is compatible with ONNX [1.3] (onnx-versioning_).
+PopART is compatible with ONNX version 1.3
+(see `ONNX Versioning <https://github.com/onnx/onnx/blob/master/docs/Versioning.md>`_).
+This section lists the supported operators.
 
-It supports ONNX [ai.onnx] operator set versions 6 to 9 (onnx-operators_).
-
-It supports Graphcore [ai.graphcore] operator set version 1 (onnx-operators_).
+The Graphcore (ai.graphcore) and ONNX (ai.onnx) operators, and versions supported,
+are listed below.
+See `ONNX Operators <https://github.com/onnx/onnx/blob/master/docs/Operators.md>`_
+for more information.
 
 .. include:: ../supported_ops_gen.rst
-
-.. _onnx-versioning: https://github.com/onnx/onnx/blob/master/docs/Versioning.md
-.. _onnx-operators: https://github.com/onnx/onnx/blob/master/docs/Operators.md

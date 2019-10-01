@@ -13,7 +13,7 @@ if (BUILD_DOCS)
 
   configure_file(./gen_docs.sh.in gen_docs.sh @ONLY)
 
-  set(SUPPORTED_OPS_GEN ${CMAKE_CURRENT_BINARY_DIR}/supported_ops_gen.rst)
+  set(SUPPORTED_OPS_GEN ${CMAKE_CURRENT_SOURCE_DIR}/supported_ops_gen.rst)
 
   add_custom_command(
     OUTPUT ${SUPPORTED_OPS_GEN}
