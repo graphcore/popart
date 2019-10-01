@@ -264,17 +264,11 @@ Op *getRestoreReferenceOp(Tensor *t, Op *stashRefOp) {
   auto consumers = t->consumers.getOps();
 
   std::vector<Op *> restoreCandidates;
-  if (t->consumersAllPreLoss()) {
-    auto *ref = searchForRestoreReferenceOp(t);
-    if (ref != nullptr)
-      restoreCandidates.push_back(ref);
-  } else {
-    for (auto c : consumers) {
-      if (getVirtualGraphIdOrSourceIpu(c) ==
-              getVirtualGraphIdOrSourceIpu(stashRefOp) &&
-          c->getPipelineStage() != stashRefOp->getPipelineStage()) {
-        restoreCandidates.push_back(c);
-      }
+  for (auto c : consumers) {
+    if (getVirtualGraphIdOrSourceIpu(c) ==
+            getVirtualGraphIdOrSourceIpu(stashRefOp) &&
+        c->getPipelineStage() != stashRefOp->getPipelineStage()) {
+      restoreCandidates.push_back(c);
     }
   }
 
@@ -485,6 +479,7 @@ bool Pipeline::apply(Graph &graph) const {
   }
 
   std::vector<TensorId> toStashTensors;
+  std::map<TensorId, Op *> preLossOnlyRestoreRefOps;
   // If there is no recomputation, then the candidates for stashing will all be
   // stashed.
   if (!ir.autoRecomputationEnabled()) {
@@ -579,6 +574,16 @@ bool Pipeline::apply(Graph &graph) const {
       if (!tensor->hasProducer() ||
           tensor->getProducer()->settings.recomputeType !=
               RecomputeType::RECOMPUTE) {
+        // For full_recompute if a stash candidate doesn't have a
+        // restoreReference It is not required to recomputation during the
+        // backwards pass.
+        if (full_recompute) {
+          auto restoreRef = searchForRestoreReferenceOp(tensor);
+          if (restoreRef == nullptr) {
+            continue;
+          }
+          preLossOnlyRestoreRefOps.insert({tid, restoreRef});
+        }
         toStashTensors.push_back(tid);
       }
     }
@@ -591,8 +596,13 @@ bool Pipeline::apply(Graph &graph) const {
   for (auto &tid : toStashTensors) {
     auto tensor = graph.getTensors().get(tid);
 
-    auto stashRefOp   = getStashReferenceOp(tensor);
-    auto restoreRefOp = getRestoreReferenceOp(tensor, stashRefOp);
+    auto stashRefOp = getStashReferenceOp(tensor);
+    Op *restoreRefOp;
+    if (preLossOnlyRestoreRefOps.find(tid) != preLossOnlyRestoreRefOps.end()) {
+      restoreRefOp = preLossOnlyRestoreRefOps.at(tid);
+    } else {
+      restoreRefOp = getRestoreReferenceOp(tensor, stashRefOp);
+    }
 
     auto stashSize =
         restoreRefOp->getPipelineStage() - stashRefOp->getPipelineStage() + 1;

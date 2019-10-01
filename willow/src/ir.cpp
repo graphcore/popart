@@ -1396,23 +1396,31 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
                           getMainGraph(),
                           "GradSum");
 
-  if (virtualGraphsEnabled()) {
-    gradSum->setVirtualGraphId(getVirtualGraphIdFromTensorProducers(toSum));
-  }
   if (getSessionOptions().enablePipelining) {
     // Get all the producers pipeline stages and use the lowest one for the grad
     // sum op.
-    std::set<PipelineStage> ps;
+    std::set<std::pair<PipelineStage, VGraphId>> ps;
     for (auto t : toSum) {
       // Pipeline stage will not be set if user has not explicitly set it.
-      if (t->getProducer()->hasPipelineStage()) {
-        ps.insert(t->getProducer()->getPipelineStage());
+      auto prod = t->getProducer();
+      if (prod->hasPipelineStage()) {
+        ps.insert({prod->getPipelineStage(), prod->getVirtualGraphId()});
       }
     }
 
     if (ps.size() > 0) {
-      gradSum->setPipelineStage(*std::max_element(ps.begin(), ps.end()));
+      auto chosen =
+          std::max_element(ps.begin(),
+                           ps.end(),
+                           [](std::pair<PipelineStage, VGraphId> lhs,
+                              std::pair<PipelineStage, VGraphId> rhs) {
+                             return lhs.first < rhs.first;
+                           });
+      gradSum->setPipelineStage(chosen->first);
+      gradSum->setVirtualGraphId(chosen->second);
     }
+  } else if (virtualGraphsEnabled()) {
+    gradSum->setVirtualGraphId(getVirtualGraphIdFromTensorProducers(toSum));
   }
 
   OpId opId = getMainGraph().moveIntoGraph(std::move(gradSum));
