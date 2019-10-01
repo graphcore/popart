@@ -71,7 +71,7 @@ if (BUILD_DOCS)
   )
 
   add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/api_cpp
     COMMAND ${GCDOC} -v -x ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile -r ${VERSION} -b html ${CMAKE_CURRENT_SOURCE_DIR}/api_cpp ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
     COMMENT "Building html C++ API documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -82,7 +82,7 @@ if (BUILD_DOCS)
   )
 
   add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/api_python
     COMMAND bash ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh ${GCDOC} -v -r ${VERSION} -b html ${CMAKE_CURRENT_SOURCE_DIR}/api_python ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
     COMMENT "Building html Python API documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
