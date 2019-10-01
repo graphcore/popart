@@ -7,52 +7,99 @@ namespace popart {
 
 ConstExprCast::ConstExprCast(Op *op_) : ConstExprOp(op_) {}
 
+// If a specialised conversion is required, a specialised template for doCast
+// can be implemented.
+template <typename FROM, typename TO>
+std::vector<char> doCast(Tensor *inputTensor, const TensorInfo &outputInfo) {
+  auto inputData = static_cast<FROM *>(inputTensor->tensorData()->data());
+
+  std::vector<char> output(outputInfo.nbytes());
+  auto outputData = reinterpret_cast<TO *>(output.data());
+
+  for (int i = 0; i < outputInfo.nelms(); i++) {
+    outputData[i] = static_cast<TO>(inputData[i]);
+  }
+
+  return output;
+}
+
+template <typename FROM>
+std::vector<char> tryCastFrom(Tensor *inputTensor,
+                              const TensorInfo &outputInfo) {
+  switch (outputInfo.dataType()) {
+  case DataType::INT32:
+    return doCast<FROM, int32_t>(inputTensor, outputInfo);
+  case DataType::INT64:
+    return doCast<FROM, int64_t>(inputTensor, outputInfo);
+  case DataType::FLOAT:
+    return doCast<FROM, float>(inputTensor, outputInfo);
+  case DataType::FLOAT16:
+    return doCast<FROM, float16_t>(inputTensor, outputInfo);
+  case DataType::UINT8:
+  case DataType::INT8:
+  case DataType::UINT16:
+  case DataType::INT16:
+  case DataType::UINT32:
+  case DataType::UINT64:
+  case DataType::BOOL:
+  case DataType::BFLOAT16:
+  case DataType::DOUBLE:
+  case DataType::COMPLEX64:
+  case DataType::COMPLEX128:
+  case DataType::STRING:
+  case DataType::UNDEFINED:
+  default:
+    throw error("Currently no support for casting from {} to {}",
+                inputTensor->info.data_type(),
+                outputInfo.data_type());
+  }
+}
+
+namespace {
+
+std::vector<char> tryCast(Tensor *inputTensor, const TensorInfo &outputInfo) {
+  switch (inputTensor->info.dataType()) {
+  case DataType::INT32:
+    return tryCastFrom<int32_t>(inputTensor, outputInfo);
+  case DataType::INT64:
+    return tryCastFrom<int64_t>(inputTensor, outputInfo);
+  case DataType::FLOAT:
+    return tryCastFrom<float>(inputTensor, outputInfo);
+  case DataType::FLOAT16:
+    return tryCastFrom<float16_t>(inputTensor, outputInfo);
+  case DataType::UINT8:
+  case DataType::INT8:
+  case DataType::UINT16:
+  case DataType::INT16:
+  case DataType::UINT32:
+  case DataType::UINT64:
+  case DataType::BOOL:
+  case DataType::BFLOAT16:
+  case DataType::DOUBLE:
+  case DataType::COMPLEX64:
+  case DataType::COMPLEX128:
+  case DataType::STRING:
+  case DataType::UNDEFINED:
+  default:
+    throw error("Currently no support for casting from data type {}",
+                inputTensor->info.data_type());
+  }
+}
+
+} // namespace
+
 std::vector<char> ConstExprCast::compute() {
   // Obtain the output type
   Tensor *in0          = inTensor(0);
   const auto &out_info = outInfo0();
-  DataType dt_to       = out_info.dataType();
 
-  // initialize a container for the output data
-  std::vector<char> v_out(out_info.nbytes());
-
-  if (in0->info.dataType() == dt_to) {
+  if (in0->info.dataType() == out_info.dataType()) {
+    std::vector<char> v_out(out_info.nbytes());
     std::memcpy(v_out.data(), in0->tensorData()->data(), in0->info.nbytes());
+    return v_out;
+  } else {
+    return tryCast(in0, out_info);
   }
-
-  // We handle one  interesting case as a proof of concept : INT32 -> FLOAT.
-  // To scale this to all possible pairs, we will need a different approach.
-  // see T5925
-  //
-  else if (in0->info.dataType() == DataType::INT32 &&
-           dt_to == DataType::FLOAT) {
-    auto input  = static_cast<int *>(in0->tensorData()->data());
-    auto output = reinterpret_cast<float *>(v_out.data());
-    for (int i = 0; i < out_info.nelms(); ++i) {
-      output[i] = static_cast<float>(input[i]);
-    }
-  } else if (in0->info.dataType() == DataType::INT32 &&
-             dt_to == DataType::FLOAT16) {
-    auto input  = static_cast<int *>(in0->tensorData()->data());
-    auto output = reinterpret_cast<float16_t *>(v_out.data());
-    for (int i = 0; i < out_info.nelms(); ++i) {
-      output[i] = static_cast<float16_t>(input[i]);
-    }
-  } else if (in0->info.dataType() == DataType::FLOAT16 &&
-             dt_to == DataType::FLOAT) {
-    auto input  = static_cast<float16_t *>(in0->tensorData()->data());
-    auto output = reinterpret_cast<float_t *>(v_out.data());
-    for (int i = 0; i < out_info.nelms(); ++i) {
-      output[i] = static_cast<float_t>(input[i]);
-    }
-  }
-
-  else {
-    throw error("Currently no support for casting from " +
-                in0->info.data_type() + " to " + out_info.data_type());
-  }
-
-  return v_out;
 }
 
 } // namespace popart
