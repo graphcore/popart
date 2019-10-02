@@ -146,7 +146,7 @@ public:
   // Set the device info
   void setDeviceInfo(DeviceInfo &);
 
-  const DeviceInfo *getDeviceInfo();
+  const DeviceInfo *getDeviceInfo() const;
 
   // Set the optimization patterns
   void setPatterns(const Patterns &p);
@@ -468,9 +468,16 @@ public:
 namespace std {
 template <> struct hash<popart::Ir> {
   std::size_t operator()(const popart::Ir &ir) const {
+    // Hash based on all the IR attributes that
+    // can affect compiled program
+
     std::stringstream ss;
     ir.append(ss);
-    return std::hash<std::string>{}(ss.str());
+
+    return std::hash<std::string>{}(ss.str()) ^
+           std::hash<popart::DataFlow>{}(ir.getDataFlow()) ^
+           std::hash<popart::DeviceInfo>{}(*(ir.getDeviceInfo())) ^
+           std::hash<popart::SessionOptions>{}(ir.getSessionOptions());
   }
 };
 }; // namespace std

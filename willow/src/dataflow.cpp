@@ -6,14 +6,15 @@
 namespace popart {
 
 AnchorReturnType::AnchorReturnType(std::string artString)
-    : artId_(getIdFromStr(artString)), returnPeriod_(0) {
+    : artStr_(artString), artId_(getIdFromStr(artString)), returnPeriod_(0) {
   if (id() == AnchorReturnTypeId::EVERYN) {
     throw error("Must specify return period with option 'EVERYN'");
   }
 }
 
 AnchorReturnType::AnchorReturnType(std::string artString, int returnPeriod)
-    : artId_(getIdFromStr(artString)), returnPeriod_(returnPeriod) {
+    : artStr_(artString), artId_(getIdFromStr(artString)),
+      returnPeriod_(returnPeriod) {
   if (id() == AnchorReturnTypeId::EVERYN) {
     if (returnPeriod_ <= 0) {
       throw error("Anchor return period must be greater than zero");
@@ -41,6 +42,10 @@ AnchorReturnTypeId AnchorReturnType::getIdFromStr(std::string artString) {
     return AnchorReturnTypeId::ALL;
   else
     throw error("Invalid anchor return type ID supplied: " + artString);
+}
+
+std::size_t AnchorReturnType::hash() const {
+  return std::hash<std::string>()(artStr_) ^ std::hash<int>()(returnPeriod_);
 }
 
 DataFlow::DataFlow() : batchesPerStep_(0) {}
@@ -97,6 +102,15 @@ void DataFlow::isValidAnchorReturnPeriod(TensorId anchorId,
                   "per step");
     }
   }
+}
+
+std::size_t DataFlow::hash() const {
+  auto hash = std::hash<int>()(batchesPerStep());
+  for (auto tid_art : m_anchors) {
+    hash = hash ^ std::hash<TensorId>()(tid_art.first) ^
+           std::hash<AnchorReturnType>()(tid_art.second);
+  }
+  return hash;
 }
 
 } // namespace popart

@@ -4,8 +4,12 @@ import time
 import pytest
 
 
+## TODO T8803 : requires hardware or a sim device
+# Test:
+# 1. That engine caching works for two identical sessions
+# 2. That the cached engine isn't loaded for a different session
 def test_simple_load(tmp_path):
-    def run_session():
+    def run_session(bps):
         device = popart.DeviceManager().acquireAvailableDevice()
         if not device:
             pytest.skip("Unable to acquire device")
@@ -15,10 +19,11 @@ def test_simple_load(tmp_path):
         # Create a builder and construct a graph
         builder = popart.Builder()
 
-        data_shape = popart.TensorInfo("FLOAT", [1])
+        data_shape = [3]
+        data_info = popart.TensorInfo("FLOAT", data_shape)
 
-        a = builder.addInputTensor(data_shape)
-        b = builder.addInputTensor(data_shape)
+        a = builder.addInputTensor(data_info)
+        b = builder.addInputTensor(data_info)
 
         o = builder.aiOnnx.add([a, b])
 
@@ -27,7 +32,7 @@ def test_simple_load(tmp_path):
         proto = builder.getModelProto()
 
         # Describe how to run the model
-        dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
+        dataFlow = popart.DataFlow(bps, {o: popart.AnchorReturnType("ALL")})
 
         opts = popart.SessionOptions()
         opts.enableEngineCaching = True
@@ -46,24 +51,28 @@ def test_simple_load(tmp_path):
         anchors = session.initAnchorArrays()
 
         # Generate some random input data
-        data_a = np.random.rand(1).astype(np.float32)
-        data_b = np.random.rand(1).astype(np.float32)
+        data_shape.insert(0, bps)
+        data_a = np.random.random_sample(data_shape).astype(np.float32)
+        data_b = np.random.random_sample(data_shape).astype(np.float32)
 
         stepio = popart.PyStepIO({a: data_a, b: data_b}, anchors)
         session.run(stepio)
 
-        assert anchors[o] == data_a + data_b
-
+        assert np.allclose(anchors[o], data_a + data_b)
         return time.clock() - start
 
-    first_duration = run_session()
-    second_duration = run_session()
+    first_duration = run_session(2)
+    second_duration = run_session(2)
+    third_duration = run_session(70)
+
     # There is no direct way to test whether the cached executable was used,
     # but using the cached graph should be at least twice as fast as not.
-    assert (first_duration / 2) > second_duration
+    assert (first_duration / 2) > second_duration  # 1.
+    assert (first_duration / 2) < third_duration  # 2.
 
 
-# Check that no error is thrown is opts.cachePath is set and the device is a cpu device.
+# Check that no error is thrown if opts.cachePath is set and the device is a
+# cpu device.
 def test_cpu_device(tmp_path):
     # Create a builder and construct a graph
     builder = popart.Builder()
@@ -109,6 +118,7 @@ def test_cpu_device(tmp_path):
     assert anchors[o] == data_a + data_b
 
 
+## TODO T8803 : requires hardware or a sim device
 # create 2 models with identical stream names
 def test_bad_load(tmp_path):
     def get_add_model():
@@ -188,6 +198,7 @@ def test_bad_load(tmp_path):
     print()
 
 
+## TODO T8803 : requires hardware or a sim device
 def test_get_reports(tmp_path):
     def run_session():
         device = popart.DeviceManager().acquireAvailableDevice()

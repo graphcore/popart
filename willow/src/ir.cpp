@@ -254,7 +254,7 @@ void Ir::setOptimizer(const Optimizer &o) {
 
 void Ir::setDeviceInfo(DeviceInfo &di) { deviceInfo = &di; }
 
-const DeviceInfo *Ir::getDeviceInfo() { return deviceInfo; }
+const DeviceInfo *Ir::getDeviceInfo() const { return deviceInfo; }
 
 void Ir::logIr() {
   std::stringstream ss2;

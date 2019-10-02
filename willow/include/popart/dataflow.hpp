@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_DATAFLOW_HPP
 
 #include <set>
+#include <string>
 #include <vector>
 #include <popart/names.hpp>
 
@@ -36,10 +37,12 @@ public:
   AnchorReturnTypeId id() const { return artId_; }
   // Return period
   int rp() const;
+  std::size_t hash() const;
 
 private:
   AnchorReturnTypeId getIdFromStr(std::string artString);
 
+  std::string artStr_;
   AnchorReturnTypeId artId_;
 
   int returnPeriod_;
@@ -63,6 +66,7 @@ public:
   int nAnchors() const { return static_cast<int>(v_anchors.size()); }
   int batchesPerStep() const { return batchesPerStep_; }
   AnchorReturnType art(TensorId anchorId) const;
+  std::size_t hash() const;
 
 private:
   /// The number of batches processed by the backend in one call to train,
@@ -89,5 +93,17 @@ private:
 };
 
 } // namespace popart
+
+namespace std {
+template <> struct hash<popart::DataFlow> {
+  std::size_t operator()(const popart::DataFlow &df) const { return df.hash(); }
+};
+
+template <> struct hash<popart::AnchorReturnType> {
+  std::size_t operator()(const popart::AnchorReturnType &art) const {
+    return art.hash();
+  }
+};
+}; // namespace std
 
 #endif

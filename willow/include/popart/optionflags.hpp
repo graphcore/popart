@@ -57,6 +57,9 @@ enum class IrSerializationFormat {
 std::string toString(VirtualGraphMode);
 std::ostream &operator<<(std::ostream &, VirtualGraphMode);
 
+std::string toString(RecomputationType);
+std::ostream &operator<<(std::ostream &, RecomputationType);
+
 /**
  * A structure containing user configuration options for the Session class
  */
@@ -86,10 +89,6 @@ struct SessionOptions {
   bool exportPoplarVertexGraph = false;
 
   bool separateCallOpPdfs = true;
-
-  /// Controls caching of the convolution graphs. If set to false, then none of
-  ///  the convolutions will be cached.
-  bool enableConvolutionGraphCaching = true;
 
   /// Controls caching of identifical sections of the graph.
   bool enableOutlining = true;
@@ -230,5 +229,37 @@ struct SessionOptions {
 };
 
 } // namespace popart
+
+namespace std {
+template <> struct hash<popart::SessionOptions> {
+  std::size_t operator()(const popart::SessionOptions &so) const {
+    // Hash based on all the SessionOptions attributes that
+    // can affect compiled program
+
+    std::stringstream ss;
+    ss << so.autoRecomputation;
+
+    auto hash = std::hash<std::string>{}(ss.str());
+    hash = (hash ^ (std::hash<bool>{}(so.rearrangeAnchorsOnHost) << 1)) << 1;
+    hash = (hash ^ (std::hash<bool>{}(so.enableNonStableSoftmax) << 1)) << 1;
+    hash = (hash ^ (std::hash<int64_t>{}(so.replicatedGraphCount) << 1)) << 1;
+    hash = (hash ^ (std::hash<bool>{}(so.enablePipelining) << 1)) << 1;
+    hash = (hash ^ (std::hash<bool>{}(so.ignoreData) << 1)) << 1;
+    hash = (hash ^ (std::hash<bool>{}(so.enableFloatingPointChecks) << 1)) << 1;
+    hash = (hash ^ (std::hash<bool>{}(so.enableStochasticRounding) << 1)) << 1;
+    hash = (hash ^ (std::hash<bool>{}(so.enableFullyConnectedPass) << 1)) << 1;
+    for (auto key_val : so.engineOptions) {
+      hash = (hash ^ (std::hash<std::string>()(key_val.first) << 1)) << 1;
+      hash = (hash ^ (std::hash<std::string>()(key_val.second) << 1)) << 1;
+    }
+    for (auto key_val : so.convolutionOptions) {
+      hash = (hash ^ (std::hash<std::string>()(key_val.first) << 1)) << 1;
+      hash = (hash ^ (std::hash<std::string>()(key_val.second) << 1)) << 1;
+    }
+
+    return hash;
+  }
+};
+}; // namespace std
 
 #endif
