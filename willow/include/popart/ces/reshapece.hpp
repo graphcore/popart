@@ -1,14 +1,13 @@
 #ifndef GUARD_NEURALNET_CONSTEXPRS_RESHAPECE_HPP
 #define GUARD_NEURALNET_CONSTEXPRS_RESHAPECE_HPP
 
-#include <popart/ces/constexpr.hpp>
+#include <popart/ces/identityce.hpp>
 
 namespace popart {
 
-class ConstExprReshape : public ConstExprOp {
+class ConstExprReshape : public ConstExprIdentity {
 public:
-  ConstExprReshape(Op *op);
-  std::vector<char> compute() final;
+  ConstExprReshape(Op *op) : ConstExprIdentity(op) {}
 };
 
 } // namespace popart

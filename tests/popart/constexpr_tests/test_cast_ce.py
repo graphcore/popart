@@ -8,7 +8,7 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from test_session import TestSession
 
 
-def test_dummy():
+def test_various_casts():
     np.random.seed(1)
 
     def run_test(input_data, const_data):

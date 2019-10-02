@@ -1,0 +1,15 @@
+#ifndef GUARD_NEURALNET_CONSTEXPRS_SQUEEZECE_HPP
+#define GUARD_NEURALNET_CONSTEXPRS_SQUEEZECE_HPP
+
+#include <popart/ces/identityce.hpp>
+
+namespace popart {
+
+class ConstExprSqueeze : public ConstExprIdentity {
+public:
+  ConstExprSqueeze(Op *op) : ConstExprIdentity(op) {}
+};
+
+} // namespace popart
+
+#endif

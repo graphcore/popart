@@ -6,9 +6,11 @@
 #include <popart/ces/constexpr.hpp>
 #include <popart/ces/elementwisece.hpp>
 #include <popart/ces/gatherce.hpp>
+#include <popart/ces/identityce.hpp>
 #include <popart/ces/reshapece.hpp>
 #include <popart/ces/scalece.hpp>
 #include <popart/ces/slicece.hpp>
+#include <popart/ces/squeezece.hpp>
 #include <popart/ces/transposece.hpp>
 #include <popart/ces/unsqueezece.hpp>
 #include <popart/error.hpp>
@@ -151,6 +153,8 @@ void ConstExprOpManager::registerConstOps() {
   registerConstOp<ConstExprTranspose>("Transpose");
   registerConstOp<ConstExprConcat>("Concat");
   registerConstOp<ConstExprUnsqueeze>("Unsqueeze");
+  registerConstOp<ConstExprSqueeze>("Squeeze");
+  registerConstOp<ConstExprIdentity>("Identity");
   registerConstOp<ConstExprReshape>("Reshape");
   registerConstOp<ConstExprGather>("Gather");
 }
