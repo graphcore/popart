@@ -53,7 +53,7 @@ if (BUILD_DOCS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
     ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
-    ${CMAKE_INSTALL_PREFIX}/enable.sh
+    ${PROJECT_BINARY_DIR}/enable.sh
     ${CMAKE_CURRENT_BINARY_DIR}/latex
     ${SUPPORTED_OPS_GEN}
     popart_examples
@@ -87,7 +87,7 @@ if (BUILD_DOCS)
     COMMENT "Building html Python API documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
-    ${CMAKE_INSTALL_PREFIX}/enable.sh
+    ${PROJECT_BINARY_DIR}/enable.sh
     ${SUPPORTED_OPS_GEN}
     popart_examples
     popart_core
@@ -104,14 +104,14 @@ if (BUILD_DOCS)
     COMMAND zip -r ${PROJECT_BINARY_DIR}/${PYTHON_API_HTML_NAME} . -i *
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
     VERBATIM
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/api_python
   )
 
   add_custom_target(cpp_zip ALL
     COMMAND zip -r ${PROJECT_BINARY_DIR}/${CPP_API_HTML_NAME} . -i *
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
     VERBATIM
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/api_cpp
   )
 
   add_custom_target(pdf_copy ALL

@@ -216,7 +216,7 @@ configure_file(popart.prodinfo.yml
 
 #------ enable script
 configure_file(enable.sh.in
-  ${CMAKE_CURRENT_BINARY_DIR}/enable.sh
+  ${PROJECT_BINARY_DIR}/enable.sh
   @ONLY)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/enable.sh
