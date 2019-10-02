@@ -104,14 +104,14 @@ if (BUILD_DOCS)
     COMMAND zip -r ${PROJECT_BINARY_DIR}/${PYTHON_API_HTML_NAME} . -i *
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
     VERBATIM
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/api_python
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
   )
 
   add_custom_target(cpp_zip ALL
     COMMAND zip -r ${PROJECT_BINARY_DIR}/${CPP_API_HTML_NAME} . -i *
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
     VERBATIM
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/api_cpp
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
   )
 
   add_custom_target(pdf_copy ALL
