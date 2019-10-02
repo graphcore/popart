@@ -26,7 +26,9 @@ CastGradOpx::CastGradOpx(Op *op, Devicex *devicex) : CastOpx(op, devicex) {
 }
 
 namespace {
-OpxCreator<CastOpx> castOpxCreator(Onnx::Operators::Cast_9);
+OpxCreator<CastOpx> castOpxCreator({Onnx::Operators::Cast_1,
+                                    Onnx::Operators::Cast_6,
+                                    Onnx::Operators::Cast_9});
 OpxCreator<CastGradOpx> castGradOpxCreator(Onnx::GradOperators::CastGrad);
 } // namespace
 
