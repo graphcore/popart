@@ -5,6 +5,13 @@
 
 namespace popart {
 
+uint64_t Builder::getPipelineStage() const {
+  if (!impl_->hasAttribute(sPipelineStageAttribute)) {
+    throw popart::error("Pipeline stage not set in current scope.");
+  }
+  return boost::any_cast<uint64_t>(getAttribute(sPipelineStageAttribute));
+}
+
 class TensorInfo;
 
 static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,

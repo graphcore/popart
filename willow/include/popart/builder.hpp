@@ -409,6 +409,11 @@ public:
   void clearAttribute(const std::string &attribute);
 
   /**
+   * A convenience function for the pipeline stage attribute
+   */
+  uint64_t getPipelineStage() const;
+
+  /**
    * Set the virtual graph that computes the given node.  Applies when creating
    * a graph for a multi-IPU configuration.
    *

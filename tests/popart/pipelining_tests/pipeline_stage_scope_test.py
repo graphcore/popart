@@ -9,10 +9,9 @@ def test_get_pipeline_stage():
     assert (builder.hasPipelineStage() == False)
 
     # If the scope hasn't been set, getPipelineStage will throw a runtime error
-    with pytest.raises(popart.popart_exception) as excinfo:
+    with pytest.raises(popart.popart_exception) as e_info:
         stage = builder.getPipelineStage()
-
-    assert ("Pipeline stage not set in current scope." in str(excinfo.value))
+    assert ("Pipeline stage not set in current scope" in e_info.value.args[0])
 
     # When we enter a pipelineStage context, the builder should return that stage
     with builder.pipelineStage(0):

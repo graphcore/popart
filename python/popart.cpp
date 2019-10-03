@@ -1048,15 +1048,7 @@ PYBIND11_MODULE(popart_core, m) {
             return acm;
           },
           py::arg("value"))
-      .def("getPipelineStage",
-           [](Builder &self) -> uint64_t {
-             try {
-               return boost::any_cast<uint64_t>(
-                   self.getAttribute(sPipelineStageAttribute));
-             } catch (std::runtime_error const &ex) {
-               throw error("Pipeline stage not set in current scope.");
-             }
-           })
+      .def("getPipelineStage", &Builder::getPipelineStage)
       .def("hasPipelineStage",
            [](Builder &self) -> bool {
              return self.hasAttribute(sPipelineStageAttribute);
