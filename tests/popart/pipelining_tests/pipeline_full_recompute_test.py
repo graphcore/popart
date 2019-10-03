@@ -13,42 +13,97 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 import test_util as tu
 
 
+# Attention Op from BERT
+def attention_onnx(builder, qkv, mask, batch_size, sequence_length,
+                   hidden_size, attention_heads, qkv_length):
+    comb_shape = [batch_size, sequence_length, attention_heads, qkv_length]
+
+    def extract_heads(tensor, index, hidden_size, transpose=False):
+        tensor = builder.aiOnnxOpset9.slice([qkv],
+                                            axes=[1],
+                                            starts=[index * hidden_size],
+                                            ends=[(index + 1) * hidden_size])
+        tensor = builder.reshape_const(builder.aiOnnx, [tensor], comb_shape)
+        perm = [0, 2, 1, 3] if not transpose else [0, 2, 3, 1]
+        return builder.aiOnnx.transpose([tensor], perm=perm)
+
+    q, kt, v = [extract_heads(qkv, i, hidden_size, i == 1) for i in range(3)]
+
+    # Attention calculation
+    with builder.nameScope('Z'):
+        x = builder.aiOnnx.matmul([q, kt])
+
+        c = builder.aiOnnx.constant(
+            np.array(1 / np.sqrt(qkv_length)).astype(np.float32), "C")
+        x = builder.aiOnnx.mul([x, c])
+
+        x = builder.aiOnnx.add([x, mask], "ApplyMask")
+
+        x = builder.aiOnnx.softmax([x], axis=-1)
+
+        # x[batch_size, attention_heads, sequence_length, sequence_length] * v[batch_size, attention_heads, sequence_length, qkv_length]
+        z = builder.aiOnnx.matmul([x, v])
+
+        # [batch_size, attention_heads, sequence_length, qkv_length] -> [batch_size, sequence_length, attention_heads, qkv_length]
+        z = builder.aiOnnx.transpose([z], perm=[0, 2, 1, 3])
+        # [batch_size, sequence_length, attention_heads, qkv_length] -> [batch_size*sequence_length, attention_heads*qkv_length]
+        z = builder.reshape_const(builder.aiOnnx, [z],
+                                  [sequence_length * batch_size, hidden_size])
+    return z
+
+
 def test_full_recompute_pipelining(tmpdir):
     batches_per_step = 5
-    batch_size = 6
-    hidden_size = 12
+    batch_size = 1
+    hidden_size = 16
+    sequence_length = 8
+    attention_heads = 4
+    qkv_length = hidden_size / attention_heads
 
-    lhs_shape = [batch_size, hidden_size]
-    rhs_shape = [hidden_size, hidden_size]
-    mask_shape = [hidden_size]
+    input_shape = [batch_size * sequence_length, hidden_size]
+    mask_shape = [sequence_length]
 
-    lhs_data = np.ones((batches_per_step, *lhs_shape), dtype=np.float32)
-    rhs_data = np.ones((*rhs_shape, ), dtype=np.float32)
+    qkv_data = np.random.normal(
+        0, 0.02, [hidden_size, hidden_size * 3]).astype(np.float32)
 
     r = np.arange(0, mask_shape[0])
     masks = []
     for i in range(batches_per_step):
         masks.append(np.less(r, i).astype(np.float32))
-    mask_data = np.stack(masks)
+    mask_data = (1 - np.stack(masks)) * -1000.0
 
-    def run_test(verify):
-        builder = popart.Builder()
+    input_data = np.random.normal(
+        0, 0.02, [batches_per_step] + input_shape).astype(np.float32)
 
-        lhs = builder.addInputTensor(popart.TensorInfo("FLOAT", lhs_shape),
-                                     "lhs")
+    def run_test(mode=None, verify=None):
+        builder = popart.Builder(opsets={
+            "ai.onnx": 9,
+            "ai.onnx.ml": 1,
+            "ai.graphcore": 1
+        })
+
         mask = builder.addInputTensor(popart.TensorInfo("FLOAT", mask_shape),
                                       "mask")
-        rhs1 = builder.addInitializedInputTensor(rhs_data, "rhs")
-        rhs2 = builder.addInitializedInputTensor(rhs_data, "rhs")
+        x_in = builder.addInputTensor(popart.TensorInfo("FLOAT", input_shape),
+                                      "x_in")
 
-        # Recomp Mode Standard would reject "mask" as an stash op
+        qkv_1 = builder.addInitializedInputTensor(qkv_data, "qkv_1")
+        qkv_2 = builder.addInitializedInputTensor(qkv_data, "qkv_2")
+        qkv_3 = builder.addInitializedInputTensor(qkv_data, "qkv_3")
+
+        # Recomp Mode Standard will reject "mask" as an stash op
         with builder.virtualGraph(0), builder.pipelineStage(0):
-            o = builder.aiOnnx.add([lhs, mask])
-            o = builder.aiOnnx.matmul([o, rhs1])
+            o = builder.aiOnnx.matmul([x_in, qkv_1])
+            o = attention_onnx(builder, o, mask, batch_size, sequence_length,
+                               hidden_size, attention_heads, qkv_length)
         with builder.virtualGraph(1), builder.pipelineStage(1):
-            o = builder.aiOnnx.matmul([o, rhs2])
+            o = builder.aiOnnx.matmul([o, qkv_2])
+            o = attention_onnx(builder, o, mask, batch_size, sequence_length,
+                               hidden_size, attention_heads, qkv_length)
         with builder.virtualGraph(2), builder.pipelineStage(2):
-            o = builder.aiOnnx.add([o, mask])
+            o = builder.aiOnnx.matmul([o, qkv_3])
+            o = attention_onnx(builder, o, mask, batch_size, sequence_length,
+                               hidden_size, attention_heads, qkv_length)
 
         loss = popart.L1Loss(o, "l1LossVal", 0.1)
         loss.virtualGraph(2)
@@ -56,13 +111,23 @@ def test_full_recompute_pipelining(tmpdir):
 
         proto = builder.getModelProto()
 
-        dataFlow = popart.DataFlow(batches_per_step,
-                                   {o: popart.AnchorReturnType("ALL")})
+        dataFlow = popart.DataFlow(
+            batches_per_step, {
+                o:
+                popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + qkv_1:
+                popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + qkv_2:
+                popart.AnchorReturnType("ALL"),
+                popart.reservedGradientPrefix() + qkv_3:
+                popart.AnchorReturnType("ALL"),
+            })
 
         opts = popart.SessionOptions()
         opts.enableOutlining = False
         opts.enablePipelining = True
-        opts.autoRecomputation = popart.RecomputationType.Pipeline
+        if mode is not None:
+            opts.autoRecomputation = mode
         opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
         pat = popart.Patterns(popart.PatternsLevel.DEFAULT)
@@ -71,7 +136,7 @@ def test_full_recompute_pipelining(tmpdir):
                                          dataFeed=dataFlow,
                                          userOptions=opts,
                                          losses=[loss],
-                                         optimizer=popart.ConstSGD(0.01),
+                                         optimizer=popart.ConstSGD(0.0),
                                          passes=pat,
                                          deviceInfo=tu.get_ipu_model(
                                              compileIPUCode=False, numIPUs=3))
@@ -83,13 +148,16 @@ def test_full_recompute_pipelining(tmpdir):
 
         anchors = session.initAnchorArrays()
 
-        inputs = {lhs: lhs_data, mask: mask_data}
+        inputs = {x_in: input_data, mask: mask_data}
         stepio = popart.PyStepIO(inputs, anchors)
 
-        session.run(stepio)
-        session.weightsToHost()
+        for __ in range(10):
+            session.run(stepio)
 
-        verify(session)
+        if verify is not None:
+            verify(session)
+
+        return anchors
 
     def verify(session):
         ''' Verify the the matmul in the main graphs is correct'''
@@ -98,7 +166,14 @@ def test_full_recompute_pipelining(tmpdir):
         stashes = [op for op in ir["maingraph"] if op["type"] == "Stash"]
         stashedTensors = [stash["inputs"][0]["name"] for stash in stashes]
 
-        assert ('lhs' in stashedTensors)
+        assert ('x_in' in stashedTensors)
         assert ('mask' in stashedTensors)
+        assert ('mask_c1' in stashedTensors)
 
-    run_test(verify)
+    n_anchors = run_test()
+    s_anchors = run_test(popart.RecomputationType.Standard)
+    p_anchors = run_test(popart.RecomputationType.Pipeline, verify)
+
+    for key in s_anchors.keys():
+        assert np.all(np.isclose(n_anchors[key], p_anchors[key]))
+        assert np.all(np.isclose(s_anchors[key], p_anchors[key]))
