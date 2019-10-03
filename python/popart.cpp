@@ -1048,6 +1048,19 @@ PYBIND11_MODULE(popart_core, m) {
             return acm;
           },
           py::arg("value"))
+      .def("getPipelineStage",
+           [](Builder &self) -> uint64_t {
+             try {
+               return boost::any_cast<uint64_t>(
+                   self.getAttribute(sPipelineStageAttribute));
+             } catch (std::runtime_error const &ex) {
+               throw error("Pipeline stage not set in current scope.");
+             }
+           })
+      .def("hasPipelineStage",
+           [](Builder &self) -> bool {
+             return self.hasAttribute(sPipelineStageAttribute);
+           })
       .def("setPartialsType",
            &Builder::setPartialsType,
            py::arg("nodeOutputName"),

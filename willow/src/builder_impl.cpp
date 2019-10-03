@@ -972,6 +972,18 @@ void BuilderImpl::setAttribute(const std::string &attribute, boost::any value) {
   attributes.insert(std::make_pair(attribute, value));
 }
 
+boost::any BuilderImpl::getAttribute(const std::string &attribute) const {
+  auto it = attributes.find(attribute);
+  if (it != attributes.end()) {
+    return it->second;
+  }
+  throw error("Attribute {} not found", attribute);
+}
+
+bool BuilderImpl::hasAttribute(const std::string &attribute) const {
+  return attributes.find(attribute) != attributes.end();
+}
+
 void BuilderImpl::clearAttribute(const std::string &attribute) {
   attributes.erase(attribute);
 }

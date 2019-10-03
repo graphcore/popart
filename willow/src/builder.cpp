@@ -391,6 +391,14 @@ void Builder::setAttribute(const std::string &attribute, boost::any value) {
   impl_->setAttribute(attribute, value);
 }
 
+boost::any Builder::getAttribute(const std::string attribute) const {
+  return impl_->getAttribute(attribute);
+}
+
+bool Builder::hasAttribute(const std::string &attribute) const {
+  return impl_->hasAttribute(attribute);
+}
+
 void Builder::clearAttribute(const std::string &attribute) {
   impl_->clearAttribute(attribute);
 }
