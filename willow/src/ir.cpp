@@ -1057,6 +1057,43 @@ void Ir::resetWeights(const onnx::ModelProto &modelProto) {
   }
 }
 
+namespace {
+
+void checkForDimParams(const TensorId &id, const onnx::TypeProto &t) {
+  auto dimString = [&]() {
+    std::stringstream ss;
+    ss << "[";
+    int element_counter = 0;
+    for (auto &v : t.tensor_type().shape().dim()) {
+      if (element_counter > 0) {
+        ss << ", ";
+      }
+
+      if (v.has_dim_param()) {
+        ss << v.dim_param();
+      } else {
+        ss << v.dim_value();
+      }
+      element_counter += 1;
+    }
+    ss << "]";
+
+    return ss.str();
+  };
+
+  for (auto &v : t.tensor_type().shape().dim()) {
+    if (v.has_dim_param()) {
+      throw error("Input tensor '{}' must be specified in InputShapeInfo, as "
+                  "it has shape {}, which uses an unknown value '{}'.",
+                  id,
+                  dimString(),
+                  v.dim_param());
+    }
+  }
+}
+
+} // namespace
+
 void Ir::registerInputTensors() {
 
   auto &onnxGraph = onnxModel->graph();
@@ -1182,10 +1219,16 @@ void Ir::registerInputTensors() {
             id);
       }
       logCreationInfo("Stream", id);
-      if (valueInfo.has_type() && valueInfo.type().tensor_type().has_shape()) {
+      if (inputShapeInfo.has(id)) {
+        getTensors().addStream(id, inputShapeInfo.get(id));
+      } else if (valueInfo.has_type() &&
+                 valueInfo.type().tensor_type().has_shape()) {
+        checkForDimParams(id, valueInfo.type());
         getTensors().addStream(id, TensorInfo(valueInfo.type()));
       } else {
-        getTensors().addStream(id, inputShapeInfo.get(id));
+        throw error("Could not find tensor {} in InputShapeInfo, but no shape "
+                    "is specified in the onnx model",
+                    id);
       }
     }
   }

@@ -49,7 +49,12 @@ void TensorInfo::set(const onnx::TypeProto &t) {
       &getDataTypeInfoMap().at(onnxutil::getDataType(type.elem_type()));
   shape_v.clear();
   for (auto &v : type.shape().dim()) {
-    shape_v.push_back(v.dim_value());
+    if (v.has_dim_param()) {
+      throw error("Tensor shape requires unspecified parameter '{}'",
+                  v.dim_param());
+    } else {
+      shape_v.push_back(v.dim_value());
+    }
   }
   shape_v.shrink_to_fit();
 }
