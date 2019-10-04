@@ -38,7 +38,7 @@ def test_model_with_unspecified_dim_params(tmpdir):
             deviceInfo=popart.DeviceManager().createCpuDevice())
 
     assert e_info.value.args[0] == (
-        "Input tensor 'input' must be specified in InputShapeInfo, as it has shape [fubar, 2, 32, 32], which uses an unknown value 'fubar'."
+        "Input tensor 'input_0' must be specified in InputShapeInfo, as it has shape [fubar, 2, 32, 32], which uses an unknown value 'fubar'."
     )
 
 
