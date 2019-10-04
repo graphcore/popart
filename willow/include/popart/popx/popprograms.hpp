@@ -87,8 +87,8 @@ public:
     ToDeviceStream = 0,
     Forward,
     ToHostStream,
-    IpuCopy,
-    N // The number of pipeline cycle components
+    // IpuCopy fragment has been removed. There is now a Sequence per
+    // PipelineCycle in pipelineIpuCopySeqs to which copies are added.
   };
   std::string getStrFromPipelineFragmentId(PipelineFragmentId);
 
@@ -108,8 +108,8 @@ public:
   // To stream anchors that are computed in the pipelineForwardFragment
   poplar::program::Sequence &
   pipelineToHostStreamFragment(PipelineStage, const std::string &desc);
-  poplar::program::Sequence &pipelineIpuCopyFragment(PipelineStage,
-                                                     const std::string &desc);
+  std::vector<poplar::program::Sequence *>
+  pipelineIpuCopyFragments(PipelineStage, const std::string &desc);
 
   void addPipelineCycle(PipelineCycle pCycle,
                         poplar::program::Sequence &sq,
@@ -131,6 +131,11 @@ private:
   std::map<PipelineFragmentId,
            std::map<PipelineStage, poplar::program::Sequence>>
       pipelineSeqs;
+
+  // IpuCopy programs
+  std::map<PipelineCycle, poplar::program::Sequence> pipelineIpuCopySeqs;
+  std::map<PipelineCycle, std::vector<std::string>> pipelineIpuCopySeqDescs;
+
   // ... and their corresponding descriptions
   std::map<PipelineFragmentId, std::map<PipelineStage, std::string>>
       pipelineDescs;

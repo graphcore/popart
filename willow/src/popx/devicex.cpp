@@ -43,6 +43,7 @@
 
 #include <popart/op/gradientaccl.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/popx/op/ipucopyx.hpp>
 #include <popart/tensornames.hpp>
 
 namespace popart {
@@ -1168,6 +1169,50 @@ void Devicex::createFragment(const Graph &graph) {
   return progs.createFragment(graph);
 }
 
+void Devicex::addPipelinedCopyTasks(PriTasks &tasks) {
+  auto schedule          = ir().getMainGraph().getOpSchedule({});
+  std::string prevTaskId = "";
+
+  for (auto iter = schedule.rbegin(); iter != schedule.rend(); iter++) {
+    auto &op = *iter;
+    if (op->isConvertibleTo<IpuCopyOp>() && !op->copiesOptimizerTensors()) {
+      auto task = pipelinedCopyTask(op, prevTaskId);
+      tasks.add(task);
+      prevTaskId = task.name;
+    }
+  }
+}
+
+PriTask Devicex::pipelinedCopyTask(Op *op, TaskId prevTaskId) {
+  auto copyOp  = dynamic_cast<IpuCopyOp *>(op);
+  auto opx     = getOpx(copyOp->id);
+  auto copyOpx = dynamic_cast<IpuCopyOpx *>(opx);
+
+  auto f = [this, copyOp, copyOpx]() {
+    logging::debug("Adding pipelined copies for op {}", copyOp->debugName());
+    for (auto &prog : progs.pipelineIpuCopyFragments(
+             copyOp->getPipelineStage(),
+             fmt::format("{}, {}, PipelineStage({})",
+                         copyOp->debugName(),
+                         copyOp->getFromToStr(),
+                         copyOp->getPipelineStage()))) {
+      copyOpx->growPipelined(*prog);
+    }
+  };
+
+  std::vector<TaskId> deps;
+  if (!prevTaskId.empty()) {
+    // Ensure the ops are scheduled in the order we're iterating through them
+    // here.
+    deps.push_back(prevTaskId);
+  }
+
+  // The ops opTask needs to run first to create the destination tensor.
+  deps.push_back(opTaskId(op));
+
+  return {-100, pipelinedCopyTaskId(op), deps, f};
+}
+
 void Devicex::addOpTasks(PriTasks &tasks) {
 
   // Ensure there is a program fragment for every Ir Graph
@@ -1340,12 +1385,13 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
             auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
 
             if (ipuCopyOp) {
-              growOpx(progs.pipelineIpuCopyFragment(
-                  ipuCopyOp->getPipelineStage(),
-                  ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
-            }
-
-            else {
+              // IpuCopyOps are handled as a special case in pipelining. Here,
+              // the destination tensor is created using the
+              // `createPipelinedOutput` method. Later, for each pipeline cycle
+              // the copy appears in, a new copy program is added to the cycles
+              // sequence using `IpuCopyOpx::growPipelined`.
+              dynamic_cast<IpuCopyOpx *>(opx)->createPipelinedOutput();
+            } else {
               growOpx(progs.pipelineForwardFragment(op->getPipelineStage(),
                                                     op->str()));
             }
@@ -1489,9 +1535,12 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
           else {
             auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
             if (ipuCopyOp) {
-              growOpx(progs.pipelineIpuCopyFragment(
-                  ipuCopyOp->getPipelineStage(),
-                  ipuCopyOp->str() + ", " + ipuCopyOp->getFromToStr()));
+              // IpuCopyOps are handled as a special case in pipelining. Here,
+              // the destination tensor is created using the
+              // `createPipelinedOutput` method. Later, for each pipeline cycle
+              // the copy appears in, a new copy program is added to the cycles
+              // sequence using `IpuCopyOpx::growPipelined`.
+              dynamic_cast<IpuCopyOpx *>(opx)->createPipelinedOutput();
             } else {
               growOpx(progs.pipelineForwardFragment(op->getPipelineStage(),
                                                     op->str()));
@@ -2100,6 +2149,10 @@ void Devicex::prepare() {
 
   addOpTasks(tasks);
 
+  if (ir().getSessionOptions().enablePipelining) {
+    addPipelinedCopyTasks(tasks);
+  }
+
   for (auto &task : tasks.getLinearised()) {
     task.f();
   }
@@ -2320,6 +2373,13 @@ TaskId Devicex::opTaskId(Op *op) const {
 
   std::stringstream ss;
   ss << "fromOpTask_" << op->id << '_' << op->opid;
+  return ss.str();
+}
+
+TaskId Devicex::pipelinedCopyTaskId(Op *op) const {
+
+  std::stringstream ss;
+  ss << "pipelinedCopyTask_" << op->id << "_" << op->opid;
   return ss.str();
 }
 
