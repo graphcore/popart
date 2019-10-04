@@ -225,6 +225,10 @@ bool Match::fitsCleanly(const Match &rhs) const {
 
 bool Match::intersects(const Match &rhs) const {
 
+  if (length == 0 || rhs.length == 0) {
+    return false;
+  }
+
   auto thisIndex = 0ul;
   auto rhsIndex  = 0ul;
 
@@ -233,26 +237,28 @@ bool Match::intersects(const Match &rhs) const {
     int thisStart = starts[thisIndex];
     int thisEnd   = thisStart + length;
 
-    int rhsStart = rhs.starts[thisIndex];
+    int rhsStart = rhs.starts[rhsIndex];
     int rhsEnd   = rhsStart + rhs.length;
 
     // this starts before rhs ends, and this ends after rhs starts
     // this  ******.....
     // rhs   .....****..
-    if (thisStart < rhsEnd && thisEnd > rhsStart) {
+    if (thisStart == rhsStart) {
       return true;
     }
 
-    if (rhsStart < thisEnd && rhsEnd > thisStart) {
-      return true;
-    }
-
-    if (rhsStart < thisStart) {
-      ++rhsIndex;
+    if (thisStart < rhsStart) {
+      if (thisEnd > rhsStart) {
+        return true;
+      }
+      ++thisIndex;
     }
 
     else {
-      ++thisIndex;
+      if (rhsEnd > thisStart) {
+        return true;
+      }
+      ++rhsIndex;
     }
   }
   return false;
