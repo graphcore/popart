@@ -77,6 +77,7 @@ public:
                                   ConstExprOpFactoryFunc func);
 
   static std::unique_ptr<ConstExprOp> createConstExprOp(Op *op);
+  static bool hasConstExprOp(Op *op);
 
 private:
   ConstExprOpManager();

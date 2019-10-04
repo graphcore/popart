@@ -97,6 +97,13 @@ void ConstExprUtil::makeTensorConstInit(const TensorId name,
 }
 
 bool ConstExprUtil::isComputable(Op *op, Graph &graph) {
+  if (!ConstExprOpManager::hasConstExprOp(op)) {
+    logging::ces::warn("No ConstExpr implementation of {}, returning from "
+                       "constant folding early.",
+                       op->opid.type);
+    return false;
+  }
+
   // An op is computable as a const expression if all the inputs are Const
   // tensors, and none of the outputs are anchors. This would also be true for
   // Variable tensors during inference, unless the user calls resetHostWeights.
@@ -166,11 +173,15 @@ std::unique_ptr<ConstExprOp> ConstExprOpManager::createConstExprOp(Op *op) {
   if (it2 != self.constExprOpMap.end()) {
     return it2->second(op);
   } else {
-    throw error("No ConstExpr implementation of {}. "
-                "Consider what OpType::ADD does (creates a Const Tensor) "
-                "if you would like to implement a ConstExpr",
-                op->opid.type);
+    throw error("ILE: No ConstExpr implementation of {}. ", op->opid.type);
   }
+}
+
+bool ConstExprOpManager::hasConstExprOp(Op *op) {
+
+  auto &self = getInstance();
+  auto found = self.constExprOpMap.find(op->opid.type);
+  return found != self.constExprOpMap.end();
 }
 
 } // namespace popart
