@@ -28,6 +28,64 @@ void GradientAcclOpx::grow(poplar::program::Sequence &prog) const {
   setOutTensor(0, getInTensor(GradientAcclOp::getAcclInIndex()));
 }
 
+InputCreatorType GradientAcclOpx::getInputCreatorType(int index) const {
+  // Can create the accumlation tensor
+  if (index == GradientAcclOp::getAcclInIndex()) {
+    return InputCreatorType::CANCREATE;
+  } else {
+    return Opx::getInputCreatorType(index);
+  }
+}
+
+std::vector<TensorId> GradientAcclOpx::mustExistBeforeCreate(int index) const {
+  // Need the gradient in tensor to clone the layout
+  if (index == GradientAcclOp::getAcclInIndex()) {
+    return {inId(GradientAcclOp::getGradInIndex())};
+  } else {
+    return Opx::mustExistBeforeCreate(index);
+  }
+}
+
+bool GradientAcclOpx::createsEquiv(int ind0, const Opx *opx1, int ind1) const {
+  if (opx1->op_p->opid != Onnx::CustomOperators::GradientAccumulation)
+    return false;
+
+  if (ind0 != ind1)
+    return false;
+
+  const GradientAcclOpx *rhs = dynamic_cast<const GradientAcclOpx *>(opx1);
+
+  GradientAcclOp *op = dynamic_cast<GradientAcclOp *>(op_p);
+  if (op == nullptr)
+    return false;
+
+  GradientAcclOp *rhsOp = dynamic_cast<GradientAcclOp *>(rhs->op_p);
+  if (rhsOp == nullptr)
+    return false;
+
+  // Make sure that all the inputs/output match
+  if (op->inInfo(GradientAcclOp::getAcclInIndex()) !=
+          rhsOp->inInfo(GradientAcclOp::getAcclInIndex()) ||
+      op->inInfo(GradientAcclOp::getGradInIndex()) !=
+          rhsOp->inInfo(GradientAcclOp::getGradInIndex()) ||
+      op->outInfo(GradientAcclOp::getAcclOutIndex()) !=
+          rhsOp->outInfo(GradientAcclOp::getAcclOutIndex())) {
+    return false;
+  }
+
+  return true;
+}
+
+poplar::Tensor GradientAcclOpx::createInput(int index,
+                                            const std::string &name) const {
+  if (index == GradientAcclOp::getAcclInIndex()) {
+    poplar::Tensor var = getInTensor(GradientAcclOp::getGradInIndex());
+    return graph().clone(var, name);
+  } else {
+    return Opx::createInput(index, name);
+  }
+}
+
 ResetAcclOpx::ResetAcclOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<ResetAcclOp>(op, {Onnx::CustomOperators::ResetAccumulation});
 }

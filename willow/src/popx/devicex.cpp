@@ -686,7 +686,6 @@ std::vector<ICreatorCandidatePtr> Devicex::getCreatorEndpoints(
       // Recursively search the DAG downstream of the op until we
       // have set of creator endpoints that can create the tensor
       case InputCreatorType::CANUNWIND_MULTIPLE_CREATORS: {
-
         // This does not handle multiple output op's
         // TODO : Need to handle CANUNWIND_MULTIPLE_CREATORS with multiple
         // outputs

@@ -785,6 +785,16 @@ void Ir::prepare(const IrBundle &gb) {
   applyTransform(Prune::id(), getMainGraph());
   updateVertices();
 
+  // Make sure that matmuls are serialized before gradient
+  // accumalation
+  if (getSessionOptions().enableSerializedMatmuls) {
+    applyTransform(SerializeMatMuls::id(), getMainGraph());
+  }
+
+  if (getSessionOptions().enableGroupedMatmuls) {
+    applyTransform(GroupMatMuls::id(), getMainGraph());
+  }
+
   // Apply transform after topological constraints have been added.
   if (userOptions.enableGradientAccumulation) {
     applyTransform(GradientAccumulation::id(), getMainGraph());
@@ -793,14 +803,6 @@ void Ir::prepare(const IrBundle &gb) {
   // Add internal ops to copy tensors between ipu's as needed
   applyTransform(InterIpuCopy::id(), getMainGraph());
   applyTransform(MergeCopies::id(), getMainGraph());
-
-  if (getSessionOptions().enableSerializedMatmuls) {
-    applyTransform(SerializeMatMuls::id(), getMainGraph());
-  }
-
-  if (getSessionOptions().enableGroupedMatmuls) {
-    applyTransform(GroupMatMuls::id(), getMainGraph());
-  }
 
   updateVertices();
 

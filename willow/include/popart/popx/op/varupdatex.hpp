@@ -15,12 +15,6 @@ class VarUpdateOpx : public Opx {
 public:
   VarUpdateOpx(Op *, Devicex *);
 
-  // In the case of gradient accumulation these functions
-  // allow input at index1 (varGrad) to be created
-  // with the same mapping as the variable it's updating.
-  poplar::Tensor createInput(int index, const std::string &name) const override;
-  InputCreatorType getInputCreatorType(int index1) const override;
-  std::vector<TensorId> mustExistBeforeCreate(int index1) const override;
 };
 
 class SGDVarUpdateOpx : public VarUpdateOpx {
