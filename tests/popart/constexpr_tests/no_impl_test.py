@@ -21,6 +21,7 @@ def test_for_warning(capfd):
         return [x]
 
     os.environ['POPART_LOG_LEVEL'] = 'TRACE'
+    os.environ['POPART_LOG_FORMAT'] = '%v'
 
     session = TestSession()
     session.prepare(init_builder)
