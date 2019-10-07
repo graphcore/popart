@@ -731,6 +731,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   updateVertices();
   if (canTrain()) {
     constructBackwards();
+    verifyPipelineSettings();
   }
 
   updateVertices();
