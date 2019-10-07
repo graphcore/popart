@@ -84,30 +84,49 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
 
     auto seed = cloneNcopy(prog, dv_p->getRandomSeedTensor());
 
-    auto dropout_mask = growDropout(graph(),
-                                    getInTensor(DropoutOp::getInIndex()),
-                                    seed,
-                                    refTensor,
-                                    op.getRatio(),
-                                    seedModifier,
-                                    *this,
-                                    prog);
-    auto dropout      = dropout_mask.first;
-    auto mask         = dropout_mask.second;
+    if (op.getOutputMask()) {
 
-    setOutTensor(op.getOutIndex(), dropout);
-    if (op.returnMask()) {
+      auto dropout_mask = growDropout(graph(),
+                                      getInTensor(DropoutOp::getInIndex()),
+                                      seed,
+                                      refTensor,
+                                      op.getRatio(),
+                                      seedModifier,
+                                      *this,
+                                      prog);
+      auto dropout      = dropout_mask.first;
+      auto mask         = dropout_mask.second;
+
+      setOutTensor(op.getOutIndex(), dropout);
       setOutTensor(
           DropoutOp::getMaskOutIndex(),
           popops::cast(graph(), mask, poplar::BOOL, prog, debugPrefix("mask")));
+
+    } else {
+      double dropoutProbability = 1. - static_cast<double>(op.getRatio());
+      double scale = 1. / (1. - static_cast<double>(op.getRatio()));
+
+      auto dropout = poprand::dropout(graph(),
+                                      &seed,
+                                      seedModifier,
+                                      getInTensor(DropoutOp::getInIndex()),
+                                      refTensor,
+                                      dropoutProbability,
+                                      scale,
+                                      prog,
+                                      debugPrefix("dropout"));
+
+      setOutTensor(op.getOutIndex(), dropout);
     }
+
     setOutTensor(op.getSeedOutIndex(), seed);
+
   } else {
     // In inference/evaluation mode, dropout is an identity function
     setOutTensor(DropoutOp::getOutIndex(),
                  getInTensor(DropoutOp::getInIndex()));
     // In inference mask is just a tensor of true values.
-    if (op.returnMask()) {
+    if (op.getOutputMask()) {
       auto mask = getConst(poplar::BOOL,
                            getInTensor(DropoutOp::getInIndex()).shape(),
                            true,
@@ -130,17 +149,39 @@ void DropoutGradOpx::grow(poplar::program::Sequence &prog) const {
   // See comment in forward op for why this cannot be an op input.
   poplar::Tensor refTensor = dv_p->dropoutReferenceTensors.at(seedModifier);
 
-  auto dropout_mask = growDropout(graph(),
-                                  getInTensor(DropoutGradOp::getGradInIndex()),
-                                  getInTensor(op.getSeedInIndex()),
-                                  refTensor,
-                                  op.getRatio(),
-                                  seedModifier,
-                                  *this,
-                                  prog);
-  auto dropout      = dropout_mask.first;
+  if (op.getOutputMask()) {
 
-  setOutTensor(op.getOutIndex(), dropout);
+    auto dropout_mask =
+        growDropout(graph(),
+                    getInTensor(DropoutGradOp::getGradInIndex()),
+                    getInTensor(op.getSeedInIndex()),
+                    refTensor,
+                    op.getRatio(),
+                    seedModifier,
+                    *this,
+                    prog);
+    auto dropout = dropout_mask.first;
+
+    setOutTensor(op.getOutIndex(), dropout);
+
+  } else {
+
+    double dropoutProbability = 1. - static_cast<double>(op.getRatio());
+    double scale              = 1. / (1. - static_cast<double>(op.getRatio()));
+
+    auto dropout =
+        poprand::dropout(graph(),
+                         &getInTensor(op.getSeedInIndex()),
+                         seedModifier,
+                         getInTensor(DropoutGradOp::getGradInIndex()),
+                         refTensor,
+                         dropoutProbability,
+                         scale,
+                         prog,
+                         debugPrefix("dropout"));
+
+    setOutTensor(op.getOutIndex(), dropout);
+  }
 }
 
 namespace {

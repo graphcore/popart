@@ -10,18 +10,26 @@ public:
   DropoutBaseOp(const OperatorIdentifier &opid_,
                 float ratio_,
                 uint32_t seedModifier_,
+                bool outputMask_,
                 const Op::Settings &settings_);
 
   uint32_t getSeedModifier() const;
   void setSeedModifier(uint32_t sm);
+
   float getRatio() const;
   void setRatio(float r);
+
+  void setOutputMask(bool v) { output_mask = v; }
+  bool getOutputMask() const { return output_mask; }
 
   float getSubgraphValue() const final;
 
 protected:
   float ratio;
   uint32_t seedModifier;
+
+private:
+  bool output_mask = false;
 };
 
 class DropoutOp : public DropoutBaseOp {
@@ -45,11 +53,6 @@ public:
   static OutIndex getSeedOutIndex() { return 2; }
 
   bool canBeReplacedByIdentity() override;
-
-  bool returnMask() const { return output_mask; }
-
-private:
-  bool output_mask = false;
 };
 
 class DropoutGradOp : public DropoutBaseOp {
