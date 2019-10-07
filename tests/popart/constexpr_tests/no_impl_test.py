@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 # importing test_session requires adding to sys.path
 import sys
@@ -18,6 +19,8 @@ def test_for_warning(capfd):
         builder.addOutputTensor(x)
 
         return [x]
+
+    os.environ['POPART_LOG_LEVEL'] = 'TRACE'
 
     session = TestSession()
     session.prepare(init_builder)
