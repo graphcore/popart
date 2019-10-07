@@ -72,6 +72,26 @@ std::ostream &operator<<(std::ostream &os, VirtualGraphMode v) {
   return os;
 }
 
+std::string toString(RecomputationType r) {
+  switch (r) {
+  case RecomputationType::None:
+    return "VirtualGraphMode::Off";
+  case RecomputationType::Standard:
+    return "VirtualGraphMode::Manual";
+  case RecomputationType::NormOnly:
+    return "VirtualGraphMode::Auto";
+  case RecomputationType::N:
+    throw error("Bad RecomputationType {}", static_cast<int>(r));
+  default:
+    throw error("Unknown RecomputationType");
+  }
+}
+
+std::ostream &operator<<(std::ostream &os, RecomputationType r) {
+  os << toString(r);
+  return os;
+}
+
 // No implementation required
 
 } // namespace popart

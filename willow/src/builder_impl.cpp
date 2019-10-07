@@ -212,9 +212,10 @@ void BuilderImpl::addInputTensorFromHigherScope(const TensorId &tensorId) {
   // TODO : get the type. T8276
 }
 
-static void populateTensorProtoFromConstVoidData(const ConstVoidData &initData,
-                                                 const std::string &id,
-                                                 onnx::TensorProto *tp) {
+void BuilderImpl::populateTensorProtoFromConstVoidData(
+    const ConstVoidData &initData,
+    const std::string &id,
+    onnx::TensorProto *tp) {
   auto onnxTensorType = initData.info.getOnnxTypeProto();
 
   tp->set_data_type(onnxutil::getTPDataType(initData.info.dataType()));
@@ -969,6 +970,18 @@ std::vector<int64_t> BuilderImpl::getTensorShape(const TensorId id) {
 
 void BuilderImpl::setAttribute(const std::string &attribute, boost::any value) {
   attributes.insert(std::make_pair(attribute, value));
+}
+
+boost::any BuilderImpl::getAttribute(const std::string &attribute) const {
+  auto it = attributes.find(attribute);
+  if (it != attributes.end()) {
+    return it->second;
+  }
+  throw error("Attribute {} not found", attribute);
+}
+
+bool BuilderImpl::hasAttribute(const std::string &attribute) const {
+  return attributes.find(attribute) != attributes.end();
 }
 
 void BuilderImpl::clearAttribute(const std::string &attribute) {

@@ -1,14 +1,13 @@
 #ifndef GUARD_NEURALNET_CONSTEXPRS_UNSQUEEZECE_HPP
 #define GUARD_NEURALNET_CONSTEXPRS_UNSQUEEZECE_HPP
 
-#include <popart/ces/constexpr.hpp>
+#include <popart/ces/identityce.hpp>
 
 namespace popart {
 
-class ConstExprUnsqueeze : public ConstExprOp {
+class ConstExprUnsqueeze : public ConstExprIdentity {
 public:
-  ConstExprUnsqueeze(Op *);
-  std::vector<char> compute() final;
+  ConstExprUnsqueeze(Op *op) : ConstExprIdentity(op) {}
 };
 
 } // namespace popart

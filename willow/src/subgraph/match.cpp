@@ -225,27 +225,40 @@ bool Match::fitsCleanly(const Match &rhs) const {
 
 bool Match::intersects(const Match &rhs) const {
 
-  int thisStart = 0;
-  int rhsStart  = 0;
-  while (rhsStart != rhs.starts.size() && thisStart != starts.size()) {
+  if (length == 0 || rhs.length == 0) {
+    return false;
+  }
 
-    // a starts before b ends and a ends after b starts
-    if (starts[thisStart] < rhs.starts[rhsStart] + rhs.length &&
-        starts[thisStart] + starts.size() > rhs.starts[rhsStart]) {
+  auto thisIndex = 0ul;
+  auto rhsIndex  = 0ul;
+
+  while (rhsIndex != rhs.starts.size() && thisIndex != starts.size()) {
+
+    int thisStart = starts[thisIndex];
+    int thisEnd   = thisStart + length;
+
+    int rhsStart = rhs.starts[rhsIndex];
+    int rhsEnd   = rhsStart + rhs.length;
+
+    // this starts before rhs ends, and this ends after rhs starts
+    // this  ******.....
+    // rhs   .....****..
+    if (thisStart == rhsStart) {
       return true;
     }
 
-    if (rhs.starts[rhsStart] < starts[thisStart] + length &&
-        rhs.starts[rhsStart] + rhs.starts.size() > starts[thisStart]) {
-      return true;
-    }
-
-    if (rhs.starts[rhsStart] < starts[thisStart]) {
-      ++rhsStart;
+    if (thisStart < rhsStart) {
+      if (thisEnd > rhsStart) {
+        return true;
+      }
+      ++thisIndex;
     }
 
     else {
-      ++thisStart;
+      if (rhsEnd > thisStart) {
+        return true;
+      }
+      ++rhsIndex;
     }
   }
   return false;

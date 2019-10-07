@@ -10,8 +10,10 @@ namespace popart {
 DropoutBaseOp::DropoutBaseOp(const OperatorIdentifier &opid_,
                              float ratio_,
                              uint32_t seedModifier_,
+                             bool outputMask_,
                              const Op::Settings &settings_)
-    : Op(opid_, settings_), ratio(ratio_), seedModifier(seedModifier_) {}
+    : Op(opid_, settings_), ratio(ratio_), seedModifier(seedModifier_),
+      output_mask(outputMask_) {}
 
 uint32_t DropoutBaseOp::getSeedModifier() const { return seedModifier; }
 
@@ -29,6 +31,7 @@ DropoutOp::DropoutOp(const OperatorIdentifier &_opid,
     : DropoutBaseOp(_opid,
                     ratio_,
                     settings_.getIr().getAndIncrementDropoutSeedModifier(),
+                    false,
                     settings_) {}
 
 std::unique_ptr<Op> DropoutOp::clone() const {
@@ -37,7 +40,7 @@ std::unique_ptr<Op> DropoutOp::clone() const {
 
 void DropoutOp::setup() {
   if (output->n() > 1) {
-    output_mask                = true;
+    setOutputMask(true);
     outInfo(getOutIndex())     = inInfo(getInIndex());
     outInfo(getMaskOutIndex()) = {DataType::BOOL, inInfo(getInIndex()).shape()};
   } else {
@@ -78,6 +81,7 @@ DropoutGradOp::DropoutGradOp(const DropoutOp &fwdOp)
     : DropoutBaseOp(Onnx::GradOperators::DropoutGrad,
                     fwdOp.getRatio(),
                     fwdOp.getSeedModifier(),
+                    fwdOp.getOutputMask(),
                     fwdOp.getSettings()) {}
 
 std::unique_ptr<Op> DropoutGradOp::clone() const {

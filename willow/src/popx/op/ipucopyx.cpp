@@ -33,6 +33,56 @@ void IpuCopyOpx::grow(poplar::program::Sequence &prog) const {
   }
 }
 
+void IpuCopyOpx::createPipelinedOutput() const {
+  IpuCopyOp &op = getOp<IpuCopyOp>();
+
+  logging::devicex::trace(
+      "Creating destination tensors for {}, {}", op.str(), op.getFromToStr());
+
+  for (auto &idx_tensor : op.input->tensorMap()) {
+    auto idx = idx_tensor.first;
+
+    // When pipelining, create the copy destination, but dont add the copy
+    // program.
+    poplar::Tensor tLocalForCopy, tForCopy;
+    auto t = poputil::createIpuCopy(dv_p->graph(),
+                                    getInTensor(idx),
+                                    static_cast<int>(op.getDestIpu()),
+                                    tForCopy,
+                                    tLocalForCopy,
+                                    debugPrefix("createOutput"));
+    setOutTensor(idx, t);
+  }
+}
+
+void IpuCopyOpx::growPipelined(poplar::program::Sequence &prog) const {
+  IpuCopyOp &op = getOp<IpuCopyOp>();
+
+  for (auto &idx_tensor : op.input->tensorMap()) {
+    auto idx   = idx_tensor.first;
+    auto outId = op_p->outId(idx);
+
+    auto &source      = getInTensor(idx);
+    auto &destination = dv_p->tensors.get(outId);
+
+    // Copy(source, destination) is not a unique copy and poplar will
+    // automatically outline it.
+    //
+    // Copy(source, temp) && Copy(temp, destination) are both unique copies and
+    // will not be outlined. It is then up to poplar to remove the unecessary
+    // copies.
+    //
+    // Poplar task T11865 will hopefully allow this workaround to be removed.
+    auto temp = poputil::copyToIpu(dv_p->graph(),
+                                   source,
+                                   prog,
+                                   static_cast<int>(op.getDestIpu()),
+                                   debugPrefix("temp"));
+
+    prog.add(poplar::program::Copy(temp, destination));
+  }
+}
+
 namespace {
 OpxCreator<IpuCopyOpx> ipuCopyOpxCreator(Onnx::CustomOperators::IpuCopy);
 } // namespace

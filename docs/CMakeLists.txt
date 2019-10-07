@@ -13,7 +13,7 @@ if (BUILD_DOCS)
 
   configure_file(./gen_docs.sh.in gen_docs.sh @ONLY)
 
-  set(SUPPORTED_OPS_GEN ${CMAKE_CURRENT_BINARY_DIR}/supported_ops_gen.rst)
+  set(SUPPORTED_OPS_GEN ${CMAKE_CURRENT_SOURCE_DIR}/supported_ops_gen.rst)
 
   add_custom_command(
     OUTPUT ${SUPPORTED_OPS_GEN}
@@ -52,7 +52,8 @@ if (BUILD_DOCS)
     COMMENT "Building PDF documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
+    ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
+    ${PROJECT_BINARY_DIR}/enable.sh
     ${CMAKE_CURRENT_BINARY_DIR}/latex
     ${SUPPORTED_OPS_GEN}
     popart_examples
@@ -60,26 +61,57 @@ if (BUILD_DOCS)
   )
 
   add_custom_command(
-    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
     COMMAND ${GCDOC} -v -r ${VERSION} -b html ${CMAKE_CURRENT_SOURCE_DIR}/user_guide ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
+    COMMENT "Building html user guide documentation"
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    DEPENDS ${SUPPORTED_OPS_GEN}
+    popart_examples
+    popart_core
+  )
+
+  add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
     COMMAND ${GCDOC} -v -x ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile -r ${VERSION} -b html ${CMAKE_CURRENT_SOURCE_DIR}/api_cpp ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
-    COMMAND bash ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh ${GCDOC} -v -r ${VERSION} -b html ${CMAKE_CURRENT_SOURCE_DIR}/api_python ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
-    COMMENT "Building html documentation"
+    COMMENT "Building html C++ API documentation"
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
     ${SUPPORTED_OPS_GEN}
     popart_examples
     popart_core
   )
 
-  add_custom_target(html_zip ALL
-    COMMAND zip -r ${PROJECT_BINARY_DIR}/${USER_GUIDE_HTML_NAME} . -i popart_user_guide/*
-    COMMAND zip -r ${PROJECT_BINARY_DIR}/${PYTHON_API_HTML_NAME} . -i popart_api_python/*
-    COMMAND zip -r ${PROJECT_BINARY_DIR}/${CPP_API_HTML_NAME} . -i popart_api_cpp/*
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html
+  add_custom_command(
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
+    COMMAND bash ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh ${GCDOC} -v -r ${VERSION} -b html ${CMAKE_CURRENT_SOURCE_DIR}/api_python ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
+    COMMENT "Building html Python API documentation"
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/gen_docs.sh
+    ${PROJECT_BINARY_DIR}/enable.sh
+    ${SUPPORTED_OPS_GEN}
+    popart_examples
+    popart_core
+  )
+
+  add_custom_target(ug_zip ALL
+    COMMAND zip -r ${PROJECT_BINARY_DIR}/${USER_GUIDE_HTML_NAME} . -i *
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
     VERBATIM
-    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_user_guide
+  )
+
+  add_custom_target(python_zip ALL
+    COMMAND zip -r ${PROJECT_BINARY_DIR}/${PYTHON_API_HTML_NAME} . -i *
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
+    VERBATIM
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_python
+  )
+
+  add_custom_target(cpp_zip ALL
+    COMMAND zip -r ${PROJECT_BINARY_DIR}/${CPP_API_HTML_NAME} . -i *
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
+    VERBATIM
+    DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/popart_api_cpp
   )
 
   add_custom_target(pdf_copy ALL

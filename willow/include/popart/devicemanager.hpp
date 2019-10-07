@@ -2,6 +2,7 @@
 #define GUARD_NEURALNET_DEVICEMANAGER_HPP
 
 #include <memory>
+#include <sstream>
 #include <vector>
 #include <popart/names.hpp>
 
@@ -158,5 +159,23 @@ public:
 std::ostream &operator<<(std::ostream &os, const DeviceType &dt);
 
 } // namespace popart
+
+namespace std {
+template <> struct hash<popart::DeviceInfo> {
+  std::size_t operator()(const popart::DeviceInfo &di) const {
+    // Hash based on all the DeviceManager attributes that
+    // can affect compiled program
+
+    std::stringstream ss;
+    ss << di.getType();
+
+    return std::hash<std::string>()(ss.str()) ^
+           std::hash<std::string>()(di.getVersion()) ^
+           std::hash<int>()(di.getNumIpus()) ^
+           std::hash<int>()(di.getTilesPerIpu()) ^
+           std::hash<int>()(di.getNumWorkerContexts());
+  }
+};
+}; // namespace std
 
 #endif

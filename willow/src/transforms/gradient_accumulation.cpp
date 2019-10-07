@@ -47,11 +47,23 @@ bool GradientAccumulation::apply(Graph &graph) const {
       auto acclOutTensorId   = reservedAccumulationOutPrefix() + gradTensorId;
       auto acclResetTensorId = reservedAccumulationResetPrefix() + gradTensorId;
 
-      op->replaceInTensorWithZeros(VarUpdateOp::getUpdaterInIndex(),
-                                   acclTensorId);
+      // If the tensor is not in the list of additional restored initializers,
+      // create it.
+      if (ir.additionalModelProtoTensors.find(acclTensorId) ==
+          ir.additionalModelProtoTensors.end()) {
 
-      logging::transform::trace("Created accumulation Tensor: {}",
-                                acclTensorId);
+        op->replaceInTensorWithZeros(VarUpdateOp::getUpdaterInIndex(),
+                                     acclTensorId);
+
+        logging::transform::trace("Created accumulation Tensor: {}",
+                                  acclTensorId);
+
+        // Add this tensor to the set of tensors we want to save into the
+        // modelproto
+        ir.additionalModelProtoTensors.insert(acclTensorId);
+      }
+      // Otherwise we have the accumulation tensor restored already from the
+      // onnx modelproto with values, so we just connect it up.
 
       // Create accl op.
       std::string opName;

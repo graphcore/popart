@@ -161,6 +161,8 @@ std::vector<Match> pruneForIoSize(const std::vector<Match> &inMatches,
       }
     }
   }
+
+  // TODO : T11924 : remove if below global value threshold
   return pruned;
 }
 } // namespace outline

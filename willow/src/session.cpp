@@ -1,3 +1,4 @@
+#include <popart/builder_impl.hpp>
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
 #include <popart/graph.hpp>
@@ -106,7 +107,29 @@ void Session::run(IStepIO &stepio) {
 void Session::modelToHost(const std::string &fn) {
   logging::session::trace("Session::modelToHost");
 
-  onnx::ModelProto model = ir.getModel();
+  onnx::ModelProto model      = ir.getModel();
+  onnx::GraphProto *onnxgraph = model.mutable_graph();
+
+  for (auto tId : ir.additionalModelProtoTensors) {
+    // For additional tensors we want to save in the onnx modelproto, we copy
+    // their info into across to the proto.
+    for (int init_index = 0; init_index < model.graph().initializer_size();
+         ++init_index) {
+      if (onnxgraph->mutable_initializer(init_index)->name() == tId) {
+        throw error("Tensor id {} already in initializers, duplicate tensor "
+                    "Ids not allowed in onnx specification.",
+                    tId);
+      }
+    }
+    onnx::TensorProto *init = onnxgraph->add_initializer();
+    init->set_name(tId);
+    auto tensor = ir.getMainGraph().getTensors().get(tId);
+
+    ConstVoidData cvData;
+    cvData.data = tensor->tensorData()->data();
+    cvData.info = tensor->info;
+    BuilderImpl::populateTensorProtoFromConstVoidData(cvData, tId, init);
+  }
 
   std::map<TensorId, MutableVoidData> initMap;
   for (int init_index = 0; init_index < model.graph().initializer_size();

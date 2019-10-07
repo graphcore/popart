@@ -2,6 +2,10 @@
 # to run only these tests with ctest, consider using something like,
 # `ctest -R subgraph_test -j5 -VV'.
 
+# tests of the Match class
+add_popart_cpp_unit_test(match_class_test 
+    match_class_test.cpp)
+
 # repeated sub-string functionality (pure string matching)
 add_popart_cpp_unit_test(substring_0_subgraph_test 
    substring_0_subgraph_test.cpp)

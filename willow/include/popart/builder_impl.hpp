@@ -217,6 +217,8 @@ public:
   std::vector<int64_t> getTensorShape(const TensorId id);
 
   void setAttribute(const std::string &attribute, boost::any value);
+  boost::any getAttribute(const std::string &attribute) const;
+  bool hasAttribute(const std::string &attribute) const;
   void clearAttribute(const std::string &attribute);
 
   void pushNameScope(const std::string &name);
@@ -229,6 +231,11 @@ public:
 
   onnx::NodeProto &
   findNodeProtoByOutputNames(const std::set<TensorId> &nodeOutputNames);
+
+  static void
+  populateTensorProtoFromConstVoidData(const ConstVoidData &initData,
+                                       const std::string &id,
+                                       onnx::TensorProto *tp);
 
 private:
   void finalizeOp(onnx::NodeProto *node, const std::string &name);

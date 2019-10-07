@@ -26,15 +26,6 @@ def test_set_dotchecks():
     assert (len(opts.dotChecks) == 2)
 
 
-def test_set_enableConvolutionGraphCaching_flag():
-
-    opts = popart.SessionOptions()
-    assert (opts.enableConvolutionGraphCaching == True)
-
-    opts.enableConvolutionGraphCaching = False
-    assert (opts.enableConvolutionGraphCaching == False)
-
-
 def test_set_enabledOutlining_flag():
 
     opts = popart.SessionOptions()

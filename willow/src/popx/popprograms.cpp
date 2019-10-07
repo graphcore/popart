@@ -131,18 +131,12 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
     }
   }
 
-  // 8.1 Insert the FWD inter IPU-copies.
-  // We add these in reverse order, i->i+1 then i-1->i then i-2->i-1 etc.
-  // Note that stage_seq.first == 1 corresponds to the copy from IPU1 to IPU2
-  auto foundFwd = pipelineSeqs.find(PipelineFragmentId::IpuCopy);
-  if (foundFwd != pipelineSeqs.end()) {
-    const auto &M = foundFwd->second;
-    for (auto stage_seq = M.rbegin(); stage_seq != M.rend(); ++stage_seq) {
-      if (pInfo.doStage(pCycle, stage_seq->first)) {
-        ss << "\n  ps" << stage_seq->first << " : IpuFwdCopy";
-        sq.add(stage_seq->second);
-      }
-    }
+  // Insert the IPU-copies.
+  auto found = pipelineIpuCopySeqs.find(pCycle);
+  if (found != pipelineIpuCopySeqs.end()) {
+    ss << fmt::format("\n  Cycle_{}_IpuCopies", pCycle);
+    poplar::program::Sequence x;
+    sq.add(found->second);
   }
 }
 
@@ -203,6 +197,17 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
       auto vgStr = std::to_string(stage_desc.first);
       auto desc  = stage_desc.second;
       ss << "\n  ps" + vgStr + ":" + desc;
+    }
+  }
+
+  for (auto &pc_descs : pipelineIpuCopySeqDescs) {
+    auto pc     = pc_descs.first;
+    auto &descs = pc_descs.second;
+
+    ss << fmt::format("\nCycle_{}_IpuCopies:", pc);
+
+    for (auto &desc : descs) {
+      ss << fmt::format("\n    {}", desc);
     }
   }
   ss << "\n\n";
@@ -413,10 +418,32 @@ PopPrograms::pipelineToHostStreamFragment(PipelineStage pipelineStage,
       pipelineStage, PipelineFragmentId::ToHostStream, desc);
 }
 
-poplar::program::Sequence &
-PopPrograms::pipelineIpuCopyFragment(PipelineStage pipelineStage,
-                                     const std::string &desc) {
-  return pipelineFragment(pipelineStage, PipelineFragmentId::IpuCopy, desc);
+std::vector<poplar::program::Sequence *>
+PopPrograms::pipelineIpuCopyFragments(PipelineStage pipelineStage,
+                                      const std::string &desc) {
+  PipelineInfo pInfo = dv_p->pipelineInfo();
+
+  // Return the relevant sequences.
+  std::vector<poplar::program::Sequence *> copySeqs;
+  auto tryAddSequence = [&](PipelineCycle pc) {
+    if (pInfo.doStage(pc, pipelineStage)) {
+      auto &prog = pipelineIpuCopySeqs[pc];
+      copySeqs.push_back(&prog);
+
+      pipelineIpuCopySeqDescs[pc].push_back(desc);
+    }
+  };
+
+  // Add the programs to copySeqs in reverse order.
+  for (auto i = pInfo.flushPhase.end; i >= pInfo.flushPhase.start; i--) {
+    tryAddSequence(i);
+  }
+  tryAddSequence(pInfo.mainPhase.start);
+  for (auto i = pInfo.fillPhase.end; i >= pInfo.fillPhase.start; i--) {
+    tryAddSequence(i);
+  }
+
+  return copySeqs;
 }
 
 std::string
@@ -431,10 +458,6 @@ PopPrograms::getStrFromPipelineFragmentId(PipelineFragmentId fragId) {
   case PipelineFragmentId::ToHostStream: {
     return "ToHostStream";
   }
-  case PipelineFragmentId::IpuCopy: {
-    return "IpuCopy";
-  }
-  case PipelineFragmentId::N:
   default:
     throw error("Cannot return string for PipelineFragmentId '{}'",
                 static_cast<int>(fragId));

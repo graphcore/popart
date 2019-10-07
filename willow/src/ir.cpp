@@ -254,7 +254,7 @@ void Ir::setOptimizer(const Optimizer &o) {
 
 void Ir::setDeviceInfo(DeviceInfo &di) { deviceInfo = &di; }
 
-const DeviceInfo *Ir::getDeviceInfo() { return deviceInfo; }
+const DeviceInfo *Ir::getDeviceInfo() const { return deviceInfo; }
 
 void Ir::logIr() {
   std::stringstream ss2;
@@ -977,27 +977,36 @@ void Ir::verifyVirtualGraphIds(bool postAutoVirtualGraphTransform) const {
   }
 
   if (virtualGraphsEnabled()) {
-    // only -1s, no Op has a virtual graph annotation : problem.
+    // Check number ipus makes sense given virtual graphs have been enabled
+    if (!postAutoVirtualGraphTransform && deviceInfo->getNumIpus() == 1) {
+      logging::ir::warn("Auto virtualGraphMode is on, but only one IPU is "
+                        "specified, so no virtual graphs were created. Are you "
+                        "sure you meant to set VirtualGraphMode to auto?");
+    }
+    // Sanity check the virtual graph ids. Only -1's, no Op has a virtual graph
+    // annotation implies a problem.
     if (vgraphs.size() == 1 && vgraphs.count(-1) != 0) {
-      // manual virtual graphing, the user should have annotated ops
+      // Manual virtual graphing, the user should have annotated ops.
       if (getSessionOptions().virtualGraphMode == VirtualGraphMode::Manual) {
         throw error("SessionOptions flag virtualGraphMode is {}, but no Ops "
                     "have been annotated with virtual graph information. This "
                     "is an inconsistent combination. ",
                     getSessionOptions().virtualGraphMode);
       }
-
-      // auto virtual graphing, why has the auto-sharder not run?
+      // Auto virtual graphing, why has the auto-sharder not run?
       else if (postAutoVirtualGraphTransform) {
         throw error(
-            "SessionOptions flag virtualGraphMode is {}, but no Ops have been "
-            "annotated with virtual graph information. Moreover, the paramater "
+            "SessionOptions flag virtualGraphMode is {}, but no Ops have "
+            "been "
+            "annotated with virtual graph information. Moreover, the "
+            "paramater "
             "postAutoVirtualGraphTransoform is true, so AutoVirtualGraph "
             "should have been run. This is an inconsistent combination, "
-            "possibly an internal logic error has",
+            "possibly an internal logic error has occured",
             getSessionOptions().virtualGraphMode);
       }
     }
+
   }
 
   else {
@@ -1040,12 +1049,50 @@ void Ir::resetWeights(const onnx::ModelProto &modelProto) {
     }
     auto tensor = getTensors().get(tenId);
     if (tensor->info != TensorInfo(initializer)) {
-      throw error(
-          "trying to reset weights using tensor with non matching tensor info");
+      throw error("trying to reset weights using tensor with non matching "
+                  "tensor info. Tensor ID: {}",
+                  tensor->id);
     }
     tensor->tensorData()->resetData(initializer);
   }
 }
+
+namespace {
+
+void checkForDimParams(const TensorId &id, const onnx::TypeProto &t) {
+  auto dimString = [&]() {
+    std::stringstream ss;
+    ss << "[";
+    int element_counter = 0;
+    for (auto &v : t.tensor_type().shape().dim()) {
+      if (element_counter > 0) {
+        ss << ", ";
+      }
+
+      if (v.has_dim_param()) {
+        ss << v.dim_param();
+      } else {
+        ss << v.dim_value();
+      }
+      element_counter += 1;
+    }
+    ss << "]";
+
+    return ss.str();
+  };
+
+  for (auto &v : t.tensor_type().shape().dim()) {
+    if (v.has_dim_param()) {
+      throw error("Input tensor '{}' must be specified in InputShapeInfo, as "
+                  "it has shape {}, which uses an unknown value '{}'.",
+                  id,
+                  dimString(),
+                  v.dim_param());
+    }
+  }
+}
+
+} // namespace
 
 void Ir::registerInputTensors() {
 
@@ -1172,10 +1219,16 @@ void Ir::registerInputTensors() {
             id);
       }
       logCreationInfo("Stream", id);
-      if (valueInfo.has_type() && valueInfo.type().tensor_type().has_shape()) {
+      if (inputShapeInfo.has(id)) {
+        getTensors().addStream(id, inputShapeInfo.get(id));
+      } else if (valueInfo.has_type() &&
+                 valueInfo.type().tensor_type().has_shape()) {
+        checkForDimParams(id, valueInfo.type());
         getTensors().addStream(id, TensorInfo(valueInfo.type()));
       } else {
-        getTensors().addStream(id, inputShapeInfo.get(id));
+        throw error("Could not find tensor {} in InputShapeInfo, but no shape "
+                    "is specified in the onnx model",
+                    id);
       }
     }
   }
@@ -1386,23 +1439,31 @@ Op *Ir::growGradSumOp(Tensor *target, const std::vector<Tensor *> &toSum) {
                           getMainGraph(),
                           "GradSum");
 
-  if (virtualGraphsEnabled()) {
-    gradSum->setVirtualGraphId(getVirtualGraphIdFromTensorProducers(toSum));
-  }
   if (getSessionOptions().enablePipelining) {
     // Get all the producers pipeline stages and use the lowest one for the grad
     // sum op.
-    std::set<PipelineStage> ps;
+    std::set<std::pair<PipelineStage, VGraphId>> ps;
     for (auto t : toSum) {
       // Pipeline stage will not be set if user has not explicitly set it.
-      if (t->getProducer()->hasPipelineStage()) {
-        ps.insert(t->getProducer()->getPipelineStage());
+      auto prod = t->getProducer();
+      if (prod->hasPipelineStage()) {
+        ps.insert({prod->getPipelineStage(), prod->getVirtualGraphId()});
       }
     }
 
     if (ps.size() > 0) {
-      gradSum->setPipelineStage(*std::max_element(ps.begin(), ps.end()));
+      auto chosen =
+          std::max_element(ps.begin(),
+                           ps.end(),
+                           [](std::pair<PipelineStage, VGraphId> lhs,
+                              std::pair<PipelineStage, VGraphId> rhs) {
+                             return lhs.first < rhs.first;
+                           });
+      gradSum->setPipelineStage(chosen->first);
+      gradSum->setVirtualGraphId(chosen->second);
     }
+  } else if (virtualGraphsEnabled()) {
+    gradSum->setVirtualGraphId(getVirtualGraphIdFromTensorProducers(toSum));
   }
 
   OpId opId = getMainGraph().moveIntoGraph(std::move(gradSum));

@@ -535,8 +535,6 @@ PYBIND11_MODULE(popart_core, m) {
       .def_readwrite("exportPoplarVertexGraph",
                      &SessionOptions::exportPoplarVertexGraph)
       .def_readwrite("ignoreData", &SessionOptions::ignoreData)
-      .def_readwrite("enableConvolutionGraphCaching",
-                     &SessionOptions::enableConvolutionGraphCaching)
       .def_readwrite("enableOutlining", &SessionOptions::enableOutlining)
       .def_readwrite("enableOutliningCopyCostPruning",
                      &SessionOptions::enableOutliningCopyCostPruning)
@@ -1050,6 +1048,11 @@ PYBIND11_MODULE(popart_core, m) {
             return acm;
           },
           py::arg("value"))
+      .def("getPipelineStage", &Builder::getPipelineStage)
+      .def("hasPipelineStage",
+           [](Builder &self) -> bool {
+             return self.hasAttribute(sPipelineStageAttribute);
+           })
       .def("setPartialsType",
            &Builder::setPartialsType,
            py::arg("nodeOutputName"),

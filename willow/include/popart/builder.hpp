@@ -397,9 +397,21 @@ public:
   void setAttribute(const std::string &attribute, boost::any value);
 
   /**
+   * Get an attribute that has been set for all subsequent operations
+   */
+  boost::any getAttribute(const std::string attribute) const;
+
+  bool hasAttribute(const std::string &attribute) const;
+
+  /**
    * Unset an attribute that will be set on all subsequent operations
    */
   void clearAttribute(const std::string &attribute);
+
+  /**
+   * A convenience function for the pipeline stage attribute
+   */
+  uint64_t getPipelineStage() const;
 
   /**
    * Set the virtual graph that computes the given node.  Applies when creating

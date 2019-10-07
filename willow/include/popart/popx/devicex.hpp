@@ -379,6 +379,12 @@ private:
 
   void addOpTasks(PriTasks &);
 
+  TaskId pipelinedCopyTaskId(Op *op) const;
+
+  void addPipelinedCopyTasks(PriTasks &);
+
+  PriTask pipelinedCopyTask(Op *, TaskId prevTaskId);
+
   // The ID of the poplar::Stream host->device for poplar::Tensor
   PopStreamId h2dId(TensorId) const;
   // and for device->host
