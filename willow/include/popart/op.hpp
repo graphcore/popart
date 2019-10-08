@@ -110,6 +110,8 @@ public:
   const Settings &getSettings() const { return settings; }
   const boost::optional<int64_t> getOptionalVirtualGraphId() const;
   VGraphId getVirtualGraphId() const;
+  virtual VGraphId getIntrospectionInVirtualGraphId(InIndex) const;
+  virtual VGraphId getIntrospectionOutVirtualGraphId(OutIndex) const;
   void setVirtualGraphId(const boost::optional<VGraphId> value);
   bool hasVirtualGraphId() const;
 

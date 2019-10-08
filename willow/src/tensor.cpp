@@ -32,7 +32,12 @@ int64_t Tensor::getVirtualGraphIdUnsafe() const {
     if (ipucopy) {
       return ipucopy->getDestIpu();
     } else if (getProducer()->hasVirtualGraphId()) {
-      return getProducer()->getVirtualGraphId();
+      for (auto &indices : getProducer()->output->indicesMap()) {
+        if (indices.first == this) {
+          return getProducer()->getIntrospectionOutVirtualGraphId(
+              indices.second[0]);
+        }
+      }
     }
   }
 
@@ -40,7 +45,11 @@ int64_t Tensor::getVirtualGraphIdUnsafe() const {
   // Use the id of the first consumer with an id, if there is one
   for (Op *consumer : consumers.getOps()) {
     if (consumer->hasVirtualGraphId()) {
-      return consumer->getVirtualGraphId();
+      for (auto &indices : consumer->input->indicesMap()) {
+        if (indices.first == this) {
+          return consumer->getIntrospectionInVirtualGraphId(indices.second[0]);
+        }
+      }
     }
   }
 
