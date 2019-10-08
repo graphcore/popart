@@ -905,7 +905,8 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
           if (ipus.end() == std::find(ipus.begin(), ipus.end(), vgid)) {
 
-            auto &graph = getVirtualGraph(vgid);
+            auto &graph =
+                vgid > -1 ? getVirtualGraph(vgid) : getOpx(op->id)->graph();
 
             auto newTensor = graph.addVariable(
                 popType(tensor->info), tensor->info.shape_szt(), tensor->str());
