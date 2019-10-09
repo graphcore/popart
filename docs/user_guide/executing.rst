@@ -155,23 +155,45 @@ be loaded into the current session.
   session.weightsFromHost()
 
 
+.. _popart_profiling:
+
 Retrieving profiling reports
 ============================
 
 Poplar can provide profiling information on the compilation and execution of
-the graphs. There are three method functions of the session object for this:
+the graph. Profiling is not enabled by default.
+
+To get profiling reports in PopART, you will need to enable profiling in the
+Poplar engine. For example:
+
+.. code-block:: python
+
+  opts = popart.SessionOptionsCore()
+  opts.engineOptions = {"debug.instrument": "true"}
+
+You can also control what information is included in the profiling report:
+
+.. code-block:: python
+
+  opts.reportOptions = {"showExecutionSteps": "true"}
+
+There are three method functions of the session object to access the profiling
+information:
 
 * ``getSummaryReport`` retrieves a text summary of the compilation and execution of
-the graph.
+  the graph.
 * ``getGraphReport`` returns a JSON format report on the compilation of
-the graph
+  the graph
 * ``getExecutionReport`` returns a JSON format report on all executions
-of the graph since the last report was fetched.
+  of the graph since the last report was fetched.
+
+If profiling is not enabled, then the summary report will say 'Execution profiling not enabled'
+and the execution report will contain '{"profilerMode":"NONE"}'.
 
 Both ``getGraphReport`` and ``getExecutionReport`` can optionally return
 a Concise Binary Object Representation (CBOR) formatted report.
 
-For more information on the information returned by these functions, see the
+For more information on profiling control and the information returned by these functions, see the
 Profiling chapter of the *Poplar and Poplibs User Guide*.
 
 .. _popart_logging:
