@@ -359,6 +359,8 @@ public:
   uint32_t getAndIncrementDropoutSeedModifier();
 
 private:
+  void prepareImpl(const IrBundle &);
+
   // Accessors for the tensors
   const Tensors &getTensors() const;
   Tensors &getTensors();
