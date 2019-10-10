@@ -15,7 +15,8 @@ poplar::Tensor ArgMaxOpx::extremaOp(poplar::program::Sequence &prog,
 }
 
 namespace {
-OpxCreator<ArgMaxOpx> argMaxOpxCreator(Onnx::Operators::ArgMax_1);
+OpxCreator<ArgMaxOpx> argMaxOpxCreator({Onnx::Operators::ArgMax_1,
+                                        Onnx::Operators::ArgMax_11});
 } // namespace
 
 } // namespace popx

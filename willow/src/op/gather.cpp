@@ -103,7 +103,7 @@ void GatherGradOp::appendAttributes(OpSerialiserBase &os) const {
 
 namespace {
 static OpCreator<GatherOp> gatherOpCreator(
-    Onnx::Operators::Gather_1,
+    {Onnx::Operators::Gather_1, Onnx::Operators::Gather_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

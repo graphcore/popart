@@ -127,7 +127,8 @@ void ReduceProdGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<ReduceProdOpx> reduceProdOpxCreator(Onnx::Operators::ReduceProd_1);
+OpxCreator<ReduceProdOpx> reduceProdOpxCreator(
+    {Onnx::Operators::ReduceProd_1, Onnx::Operators::ReduceProd_11});
 OpxCreator<ReduceProdGradOpx>
     reduceProdGradGradOpxCreator(Onnx::GradOperators::ReduceProdGrad);
 } // namespace

@@ -11,6 +11,11 @@ class GradientAcclOpx : public Opx {
 public:
   GradientAcclOpx(Op *, Devicex *);
   void grow(poplar::program::Sequence &) const final;
+
+  poplar::Tensor createInput(int index, const std::string &name) const override;
+  InputCreatorType getInputCreatorType(int index) const override;
+  bool createsEquiv(int, const Opx *, int) const final;
+  std::vector<TensorId> mustExistBeforeCreate(int index) const override;
 };
 
 class ResetAcclOpx : public Opx {

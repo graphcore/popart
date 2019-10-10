@@ -47,9 +47,20 @@ how to execute the graph:
     more data.
   * The names of the tensors in the graph used to return the results to the host.
 
+In some ONNX graphs, the sizes of input tensors might not be specified.
+In this case, the ``inputShapeInfo`` parameter can be used to specify the
+input shapes.  The Poplar framework uses statically allocated memory buffers
+and so it needs to know the size of tensors before the compilation.
+
+The ``patterns`` parameter allows the user to select a set of graph transformation
+patterns which will be applied to the graph.  Without this parameter, a default
+set of optimisation transformations will be applied.
+
 Other parameters to the ``Session`` object are used when you are training the
 network instead of performing inference. They describe the types of loss to apply to
 the network and the optimiser to use.
+
+An example of creating a session object from an ONNX model is shown below.
 
 .. code-block:: python
 
@@ -88,14 +99,15 @@ be used to optimise the parameters in the network.
 Session control options
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-In some ONNX graphs, the sizes of input tensors might not be specified.
-In this case, the ``inputShapeInfo`` parameter can be used to specify the
-input shapes.  The Poplar framework uses statically allocated memory buffers
-and so it needs to know the size of tensors before the compilation.
+The ``userOptions`` parameter passes options to the session. The available options
+are listed in the PopART API documentation. As well as options to control specific features of
+the PopART session, there are also some that allow you to pass options to the underlying
+Poplar functions:
 
-The ``userOptions`` parameter can pass a set of session control options,
-as described in the API reference documentation.
+* ``engineOptions`` passes options to the Poplar ``Engine`` object created to run the graph.
+* ``convolutionOptions`` passes options to the Poplibs convolution functions.
+* ``reportOptions`` Controls the instrumentation and generation of profiling information.
 
-The ``patterns`` parameter allows the user to select a set of graph transformation
-patterns which will be applied to the graph.  Without this parameter, a default
-set of optimisation transformations will be applied.
+See :any:`popart_profiling` for examples of using some of these options.
+
+Full details of the Poplar options can be found in the *Poplar and Poplibs API Reference*.

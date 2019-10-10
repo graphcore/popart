@@ -14,7 +14,8 @@ poplar::Tensor ArgMinOpx::extremaOp(poplar::program::Sequence &prog,
 }
 
 namespace {
-OpxCreator<ArgMinOpx> argMinOpxCreator(Onnx::Operators::ArgMin_1);
+OpxCreator<ArgMinOpx> argMinOpxCreator({Onnx::Operators::ArgMin_1,
+                                        Onnx::Operators::ArgMin_11});
 } // namespace
 
 } // namespace popx

@@ -75,7 +75,8 @@ void ReduceMinGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<ReduceMinOpx> reduceMinOpxCreator(Onnx::Operators::ReduceMin_1);
+OpxCreator<ReduceMinOpx> reduceMinOpxCreator({Onnx::Operators::ReduceMin_1,
+                                              Onnx::Operators::ReduceMin_11});
 OpxCreator<ReduceMinGradOpx>
     reduceMinGradGradOpxCreator(Onnx::GradOperators::ReduceMinGrad);
 } // namespace

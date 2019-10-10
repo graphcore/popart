@@ -368,7 +368,8 @@ void NlllWithSoftmaxGradDirectOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<SoftmaxOpx> softmaxOpxCreator(Onnx::Operators::Softmax_1);
+OpxCreator<SoftmaxOpx> softmaxOpxCreator({Onnx::Operators::Softmax_1,
+                                          Onnx::Operators::Softmax_11});
 OpxCreator<SoftmaxGradOpx>
     softmaxGradOpxCreator(Onnx::GradOperators::SoftmaxGrad);
 OpxCreator<SoftmaxGradDirectOpx>

@@ -390,6 +390,14 @@ VGraphId Op::getVirtualGraphId() const {
   return *(settings.vgraphId);
 }
 
+VGraphId Op::getIntrospectionInVirtualGraphId(InIndex index) const {
+  return getVirtualGraphId();
+}
+
+VGraphId Op::getIntrospectionOutVirtualGraphId(OutIndex index) const {
+  return getVirtualGraphId();
+}
+
 bool Op::hasVirtualGraphId() const {
   if (settings.vgraphId) {
     return true;

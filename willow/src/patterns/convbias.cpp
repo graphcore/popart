@@ -11,7 +11,9 @@
 namespace popart {
 
 bool ConvBiasPattern::matches(Op *op) const {
-  return (op->opid == Onnx::Operators::Conv_1) && (op->input->n() == 3);
+  return ((op->opid == Onnx::Operators::Conv_1 ||
+           op->opid == Onnx::Operators::Conv_11) &&
+          (op->input->n() == 3));
 }
 
 std::vector<const Tensor *> ConvBiasPattern::touches(Op *) const { return {}; }

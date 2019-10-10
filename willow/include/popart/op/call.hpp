@@ -22,6 +22,9 @@ public:
 
   float getSubgraphValue() const final { return getLowSubgraphValue(); }
 
+  VGraphId getIntrospectionInVirtualGraphId(InIndex index) const override;
+  VGraphId getIntrospectionOutVirtualGraphId(OutIndex index) const override;
+
   std::vector<const Graph *> getCalledGraphs() const override;
 
   std::vector<TensorId> getInputsForGraph(const Graph &) const override;

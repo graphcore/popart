@@ -10,6 +10,9 @@ class Builder(popart.BuilderCore):
         if (opsets == None):
             # These are the default opsets, they will increment with releases
             self.opsets = {"ai.onnx": 10, "ai.onnx.ml": 1, "ai.graphcore": 1}
+
+            # T12084
+            #self.opsets = {"ai.onnx": 11, "ai.onnx.ml": 1, "ai.graphcore": 1}
         else:
             self.opsets = opsets
 
@@ -24,7 +27,9 @@ class Builder(popart.BuilderCore):
     @property
     def aiOnnx(self):
         version = self.opsets["ai.onnx"]
-        if version == 10:
+        if version == 11:
+            return self.aiOnnxOpset11
+        elif version == 10:
             return self.aiOnnxOpset10
         elif version == 9:
             return self.aiOnnxOpset9

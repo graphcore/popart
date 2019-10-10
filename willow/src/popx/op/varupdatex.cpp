@@ -16,32 +16,7 @@ namespace popx {
 
 VarUpdateOpx::VarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 
-poplar::Tensor VarUpdateOpx::createInput(int index,
-                                         const std::string &name) const {
-  if (index != VarUpdateOp::getUpdaterInIndex()) {
-    throw error("VarUpdateOpx::createInput Cannot create input {}", index);
-  }
 
-  poplar::Tensor var = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
-
-  return graph().clone(var, name);
-}
-
-InputCreatorType VarUpdateOpx::getInputCreatorType(int index1) const {
-  return index1 == VarUpdateOp::getUpdaterInIndex() &&
-                 op_p->getIr().getSessionOptions().enableGradientAccumulation
-             ? InputCreatorType::CANCREATE
-             : Opx::getInputCreatorType(index1);
-}
-
-std::vector<TensorId> VarUpdateOpx::mustExistBeforeCreate(int index1) const {
-  if (index1 != VarUpdateOp::getUpdaterInIndex()) {
-    throw error("VarUpdateOpx::mustExistBeforeCreate : Invalid index = " +
-                std::to_string(index1));
-  }
-
-  return {inId(VarUpdateOp::getVarToUpdateInIndex())};
-}
 
 SGDVarUpdateOpx::SGDVarUpdateOpx(Op *op, Devicex *devicex)
     : VarUpdateOpx(op, devicex) {

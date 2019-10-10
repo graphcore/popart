@@ -35,3 +35,7 @@ add_popart_cpp_unit_test(speed_0_subgraph_test speed_0_subgraph_test.cpp)
 
 # tests at the Op level
 add_popart_cpp_unit_test(op_0_subgraph_test op_0_subgraph_test.cpp)
+
+# tests at the Op level
+add_popart_cpp_unit_test(introspection_0_subgraph_test
+	introspection_0_subgraph_test.cpp)

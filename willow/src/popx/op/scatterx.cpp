@@ -16,7 +16,8 @@ namespace popart {
 namespace popx {
 
 ScatterOpx::ScatterOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<ScatterOp>(op, Onnx::Operators::Scatter_9);
+  verifyOp<ScatterOp>(
+      op, {Onnx::Operators::Scatter_9, Onnx::Operators::Scatter_11});
 
   axis = dynamic_cast<ScatterOp *>(op)->getAxis();
 }
@@ -160,7 +161,8 @@ void ScatterUpdateGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<ScatterOpx> scatterOpxCreator(Onnx::Operators::Scatter_9);
+OpxCreator<ScatterOpx> scatterOpxCreator({Onnx::Operators::Scatter_9,
+                                          Onnx::Operators::Scatter_11});
 OpxCreator<ScatterDataGradOpx>
     scatterDataGradOpxCreator(Onnx::GradOperators::ScatterDataGrad);
 OpxCreator<ScatterUpdateGradOpx>

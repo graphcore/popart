@@ -99,7 +99,9 @@ const std::map<int, int> &ClipGradOp::gradOutToNonGradIn() const {
 
 namespace {
 static OpCreator<ClipOp> clipOpCreator(
-    {Onnx::Operators::Clip_1, Onnx::Operators::Clip_6},
+    {Onnx::Operators::Clip_1,
+     Onnx::Operators::Clip_6,
+     Onnx::Operators::Clip_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

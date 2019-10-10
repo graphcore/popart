@@ -57,7 +57,7 @@ const std::map<int, int> &UnsqueezeGradOp::gradOutToNonGradIn() const {
 
 namespace {
 static OpCreator<UnsqueezeOp> unsqueezeOpCreator(
-    Onnx::Operators::Unsqueeze_1,
+    {Onnx::Operators::Unsqueeze_1, Onnx::Operators::Unsqueeze_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

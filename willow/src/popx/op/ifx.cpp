@@ -157,7 +157,7 @@ IfGradOpx::IfGradOpx(Op *op, Devicex *devicex) : IfOpx(op, devicex) {
 }
 
 namespace {
-OpxCreator<IfOpx> ifOpxCreator(Onnx::Operators::If_1);
+OpxCreator<IfOpx> ifOpxCreator({Onnx::Operators::If_1, Onnx::Operators::If_11});
 OpxCreator<IfGradOpx> ifGradOpxCreator(Onnx::CustomGradOperators::IfGrad);
 } // namespace
 

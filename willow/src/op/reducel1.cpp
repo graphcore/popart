@@ -41,7 +41,7 @@ const std::vector<GradInOutMapper> &ReduceL1GradOp::gradInputInfo() const {
 
 namespace {
 static OpCreator<ReduceL1Op> reduceL1OpCreator(
-    Onnx::Operators::ReduceL1_1,
+    {Onnx::Operators::ReduceL1_1, Onnx::Operators::ReduceL1_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

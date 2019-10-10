@@ -249,7 +249,7 @@ std::vector<int64_t> PadGradOp::calculateAxes(const PadOp &) {
 
 namespace {
 static OpCreator<PadOp> padCreator(
-    Onnx::Operators::Pad_2,
+    {Onnx::Operators::Pad_2, Onnx::Operators::Pad_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

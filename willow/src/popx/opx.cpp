@@ -210,13 +210,10 @@ poplar::Tensor Opx::getConst(const poplar::Type &type,
 // before creating opx's
 namespace {
 OpxCreator<Opx>
-    gemmOpxCreator_6(Onnx::Operators::Gemm_6,
-                     "GemmOp should be removed by pattern 'GemmOp'");
-OpxCreator<Opx>
-    gemmOpxCreator_7(Onnx::Operators::Gemm_7,
-                     "GemmOp should be removed by pattern 'GemmOp'");
-OpxCreator<Opx>
-    gemmOpxCreator_9(Onnx::Operators::Gemm_9,
+    gemmOpxCreator_6({Onnx::Operators::Gemm_6,
+                      Onnx::Operators::Gemm_7,
+                      Onnx::Operators::Gemm_9,
+                      Onnx::Operators::Gemm_11},
                      "GemmOp should be removed by pattern 'GemmOp'");
 
 OpxCreator<Opx> tanGradOpxCreator(Onnx::Operators::Tan_7,

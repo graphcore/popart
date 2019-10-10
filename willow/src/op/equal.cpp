@@ -19,7 +19,8 @@ std::vector<std::unique_ptr<Op>> EqualOp::getGradOps() {
 
 namespace {
 static OpCreator<EqualOp> EqualOpCreator({Onnx::Operators::Equal_1,
-                                          Onnx::Operators::Equal_7});
+                                          Onnx::Operators::Equal_7,
+                                          Onnx::Operators::Equal_11});
 } // namespace
 
 } // namespace popart

@@ -113,8 +113,8 @@ void ReduceLogSumExpGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<ReduceLogSumExpOpx>
-    reduceLogSumExpOpxCreator(Onnx::Operators::ReduceLogSumExp_1);
+OpxCreator<ReduceLogSumExpOpx> reduceLogSumExpOpxCreator(
+    {Onnx::Operators::ReduceLogSumExp_1, Onnx::Operators::ReduceLogSumExp_11});
 OpxCreator<ReduceLogSumExpGradOpx>
     reduceLogSumExpGradGradOpxCreator(Onnx::GradOperators::ReduceLogSumExpGrad);
 } // namespace

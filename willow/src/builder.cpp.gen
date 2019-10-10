@@ -3112,3 +3112,1091 @@ AiOnnxOpset10::upsample(const std::vector<TensorId>& args,
                   name)[0];
 }
 
+TensorId
+AiOnnxOpset11::argmax(const std::vector<TensorId>& args,
+                      int64_t axis,
+                      int64_t keepdims,
+                      const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != 0) {
+    attributes["axis"] = axis;
+  }
+  if (keepdims != 1) {
+    attributes["keepdims"] = keepdims;
+  }
+  return impl->op(Onnx::Operators::ArgMax_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::argmin(const std::vector<TensorId>& args,
+                      int64_t axis,
+                      int64_t keepdims,
+                      const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != 0) {
+    attributes["axis"] = axis;
+  }
+  if (keepdims != 1) {
+    attributes["keepdims"] = keepdims;
+  }
+  return impl->op(Onnx::Operators::ArgMin_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::averagepool(const std::vector<TensorId>& args,
+                           const std::vector<int64_t>& kernel_shape,
+                           int64_t ceil_mode,
+                           int64_t count_include_pad,
+                           const std::vector<int64_t>& pads,
+                           const std::vector<int64_t>& strides,
+                           const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (ceil_mode != 0) {
+    attributes["ceil_mode"] = ceil_mode;
+  }
+  if (count_include_pad != 0) {
+    attributes["count_include_pad"] = count_include_pad;
+  }
+  attributes["kernel_shape"] = kernel_shape;
+  if (!pads.empty()) {
+    attributes["pads"] = pads;
+  }
+  if (!strides.empty()) {
+    attributes["strides"] = strides;
+  }
+  return impl->op(Onnx::Operators::AveragePool_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::bitshift(const std::vector<TensorId>& args,
+                        const std::string& direction,
+                        const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  attributes["direction"] = direction;
+  return impl->op(Onnx::Operators::BitShift_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::clip(const std::vector<TensorId>& args,
+                    const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::Clip_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::compress(const std::vector<TensorId>& args,
+                        boost::optional<int64_t> axis,
+                        const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != boost::optional<int64_t>()) {
+    attributes["axis"] = *axis;
+  }
+  return impl->op(Onnx::Operators::Compress_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::concat(const std::vector<TensorId>& args,
+                      int64_t axis,
+                      const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  attributes["axis"] = axis;
+  return impl->op(Onnx::Operators::Concat_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::concatfromsequence(const std::vector<TensorId>& args,
+                                  int64_t axis,
+                                  int64_t new_axis,
+                                  const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  attributes["axis"] = axis;
+  if (new_axis != 0) {
+    attributes["new_axis"] = new_axis;
+  }
+  return impl->op(Onnx::Operators::ConcatFromSequence_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::constant(                        const ConstVoidData&  sparse_value,
+                        const ConstVoidData&  value,
+                        const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  attributes["sparse_value"] = sparse_value;
+  attributes["value"] = value;
+  return impl->op(Onnx::Operators::Constant_11,
+                  getOpsetVersion(),
+                  {},
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::conv(const std::vector<TensorId>& args,
+                    const std::vector<int64_t>& dilations,
+                    int64_t group,
+                    const std::vector<int64_t>& kernel_shape,
+                    const std::vector<int64_t>& pads,
+                    const std::vector<int64_t>& strides,
+                    const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (!dilations.empty()) {
+    attributes["dilations"] = dilations;
+  }
+  if (group != 1) {
+    attributes["group"] = group;
+  }
+  if (!kernel_shape.empty()) {
+    attributes["kernel_shape"] = kernel_shape;
+  }
+  if (!pads.empty()) {
+    attributes["pads"] = pads;
+  }
+  if (!strides.empty()) {
+    attributes["strides"] = strides;
+  }
+  return impl->op(Onnx::Operators::Conv_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::convtranspose(const std::vector<TensorId>& args,
+                             const std::vector<int64_t>& dilations,
+                             int64_t group,
+                             const std::vector<int64_t>& kernel_shape,
+                             const std::vector<int64_t>& output_padding,
+                             const std::vector<int64_t>& output_shape,
+                             const std::vector<int64_t>& pads,
+                             const std::vector<int64_t>& strides,
+                             const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (!dilations.empty()) {
+    attributes["dilations"] = dilations;
+  }
+  if (group != 1) {
+    attributes["group"] = group;
+  }
+  if (!kernel_shape.empty()) {
+    attributes["kernel_shape"] = kernel_shape;
+  }
+  if (!output_padding.empty()) {
+    attributes["output_padding"] = output_padding;
+  }
+  if (!output_shape.empty()) {
+    attributes["output_shape"] = output_shape;
+  }
+  if (!pads.empty()) {
+    attributes["pads"] = pads;
+  }
+  if (!strides.empty()) {
+    attributes["strides"] = strides;
+  }
+  return impl->op(Onnx::Operators::ConvTranspose_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::cumsum(const std::vector<TensorId>& args,
+                      int64_t exclusive,
+                      int64_t reverse,
+                      const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (exclusive != 0) {
+    attributes["exclusive"] = exclusive;
+  }
+  if (reverse != 0) {
+    attributes["reverse"] = reverse;
+  }
+  return impl->op(Onnx::Operators::CumSum_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::depthtospace(const std::vector<TensorId>& args,
+                            int64_t blocksize,
+                            const std::string& mode,
+                            const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  attributes["blocksize"] = blocksize;
+  if (mode != "DCR") {
+    attributes["mode"] = mode;
+  }
+  return impl->op(Onnx::Operators::DepthToSpace_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::det(const std::vector<TensorId>& args,
+                   const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::Det_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+std::vector<TensorId>
+AiOnnxOpset11::dynamicquantizelinear(const std::vector<TensorId>& args,
+                                     const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::DynamicQuantizeLinear_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name);
+}
+
+TensorId
+AiOnnxOpset11::equal(const std::vector<TensorId>& args,
+                     const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::Equal_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::flatten(const std::vector<TensorId>& args,
+                       int64_t axis,
+                       const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != 1) {
+    attributes["axis"] = axis;
+  }
+  return impl->op(Onnx::Operators::Flatten_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::gather(const std::vector<TensorId>& args,
+                      int64_t axis,
+                      const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != 0) {
+    attributes["axis"] = axis;
+  }
+  return impl->op(Onnx::Operators::Gather_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::gatherelements(const std::vector<TensorId>& args,
+                              int64_t axis,
+                              const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != 0) {
+    attributes["axis"] = axis;
+  }
+  return impl->op(Onnx::Operators::GatherElements_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::gathernd(const std::vector<TensorId>& args,
+                        const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::GatherND_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::gemm(const std::vector<TensorId>& args,
+                    float alpha,
+                    float beta,
+                    int64_t transA,
+                    int64_t transB,
+                    const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (std::abs(alpha - 1.0f) >  std::numeric_limits<float>::epsilon()) {
+    attributes["alpha"] = alpha;
+  }
+  if (std::abs(beta - 1.0f) >  std::numeric_limits<float>::epsilon()) {
+    attributes["beta"] = beta;
+  }
+  if (transA != 0) {
+    attributes["transA"] = transA;
+  }
+  if (transB != 0) {
+    attributes["transB"] = transB;
+  }
+  return impl->op(Onnx::Operators::Gemm_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::hardmax(const std::vector<TensorId>& args,
+                       int64_t axis,
+                       const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != 1) {
+    attributes["axis"] = axis;
+  }
+  return impl->op(Onnx::Operators::Hardmax_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+std::vector<TensorId>
+AiOnnxOpset11::logical_if(const std::vector<TensorId>& args,
+                          unsigned num_outputs,
+                          const onnx::GraphProto & else_branch,
+                          const onnx::GraphProto & then_branch,
+                          const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  attributes["else_branch"] = else_branch;
+  attributes["then_branch"] = then_branch;
+  return impl->op(Onnx::Operators::If_11,
+                  getOpsetVersion(),
+                  args,
+                  num_outputs,
+                  attributes,
+                  name);
+}
+
+TensorId
+AiOnnxOpset11::logsoftmax(const std::vector<TensorId>& args,
+                          int64_t axis,
+                          const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != 1) {
+    attributes["axis"] = axis;
+  }
+  return impl->op(Onnx::Operators::LogSoftmax_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+std::vector<TensorId>
+AiOnnxOpset11::loop(const std::vector<TensorId>& args,
+                    unsigned num_outputs,
+                    const onnx::GraphProto & body,
+                    const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  attributes["body"] = body;
+  return impl->op(Onnx::Operators::Loop_11,
+                  getOpsetVersion(),
+                  args,
+                  num_outputs,
+                  attributes,
+                  name);
+}
+
+TensorId
+AiOnnxOpset11::lppool(const std::vector<TensorId>& args,
+                      const std::vector<int64_t>& kernel_shape,
+                      int64_t p,
+                      const std::vector<int64_t>& pads,
+                      const std::vector<int64_t>& strides,
+                      const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  attributes["kernel_shape"] = kernel_shape;
+  if (p != 2) {
+    attributes["p"] = p;
+  }
+  if (!pads.empty()) {
+    attributes["pads"] = pads;
+  }
+  if (!strides.empty()) {
+    attributes["strides"] = strides;
+  }
+  return impl->op(Onnx::Operators::LpPool_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+std::vector<TensorId>
+AiOnnxOpset11::maxpool(const std::vector<TensorId>& args,
+                       unsigned num_outputs,
+                       const std::vector<int64_t>& kernel_shape,
+                       int64_t ceil_mode,
+                       const std::vector<int64_t>& dilations,
+                       const std::vector<int64_t>& pads,
+                       int64_t storage_order,
+                       const std::vector<int64_t>& strides,
+                       const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (ceil_mode != 0) {
+    attributes["ceil_mode"] = ceil_mode;
+  }
+  if (!dilations.empty()) {
+    attributes["dilations"] = dilations;
+  }
+  attributes["kernel_shape"] = kernel_shape;
+  if (!pads.empty()) {
+    attributes["pads"] = pads;
+  }
+  if (storage_order != 0) {
+    attributes["storage_order"] = storage_order;
+  }
+  if (!strides.empty()) {
+    attributes["strides"] = strides;
+  }
+  return impl->op(Onnx::Operators::MaxPool_11,
+                  getOpsetVersion(),
+                  args,
+                  num_outputs,
+                  attributes,
+                  name);
+}
+
+TensorId
+AiOnnxOpset11::maxunpool(const std::vector<TensorId>& args,
+                         const std::vector<int64_t>& kernel_shape,
+                         const std::vector<int64_t>& pads,
+                         const std::vector<int64_t>& strides,
+                         const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  attributes["kernel_shape"] = kernel_shape;
+  if (!pads.empty()) {
+    attributes["pads"] = pads;
+  }
+  if (!strides.empty()) {
+    attributes["strides"] = strides;
+  }
+  return impl->op(Onnx::Operators::MaxUnpool_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::nonmaxsuppression(const std::vector<TensorId>& args,
+                                 int64_t center_point_box,
+                                 const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (center_point_box != 0) {
+    attributes["center_point_box"] = center_point_box;
+  }
+  return impl->op(Onnx::Operators::NonMaxSuppression_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::onehot(const std::vector<TensorId>& args,
+                      int64_t axis,
+                      const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != -1) {
+    attributes["axis"] = axis;
+  }
+  return impl->op(Onnx::Operators::OneHot_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::pad(const std::vector<TensorId>& args,
+                   const std::string& mode,
+                   const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (mode != "constant") {
+    attributes["mode"] = mode;
+  }
+  return impl->op(Onnx::Operators::Pad_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::range(const std::vector<TensorId>& args,
+                     const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::Range_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::reducel1(const std::vector<TensorId>& args,
+                        const std::vector<int64_t>& axes,
+                        int64_t keepdims,
+                        const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (!axes.empty()) {
+    attributes["axes"] = axes;
+  }
+  if (keepdims != 1) {
+    attributes["keepdims"] = keepdims;
+  }
+  return impl->op(Onnx::Operators::ReduceL1_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::reducel2(const std::vector<TensorId>& args,
+                        const std::vector<int64_t>& axes,
+                        int64_t keepdims,
+                        const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (!axes.empty()) {
+    attributes["axes"] = axes;
+  }
+  if (keepdims != 1) {
+    attributes["keepdims"] = keepdims;
+  }
+  return impl->op(Onnx::Operators::ReduceL2_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::reducelogsum(const std::vector<TensorId>& args,
+                            const std::vector<int64_t>& axes,
+                            int64_t keepdims,
+                            const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (!axes.empty()) {
+    attributes["axes"] = axes;
+  }
+  if (keepdims != 1) {
+    attributes["keepdims"] = keepdims;
+  }
+  return impl->op(Onnx::Operators::ReduceLogSum_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::reducelogsumexp(const std::vector<TensorId>& args,
+                               const std::vector<int64_t>& axes,
+                               int64_t keepdims,
+                               const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (!axes.empty()) {
+    attributes["axes"] = axes;
+  }
+  if (keepdims != 1) {
+    attributes["keepdims"] = keepdims;
+  }
+  return impl->op(Onnx::Operators::ReduceLogSumExp_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::reducemax(const std::vector<TensorId>& args,
+                         const std::vector<int64_t>& axes,
+                         int64_t keepdims,
+                         const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (!axes.empty()) {
+    attributes["axes"] = axes;
+  }
+  if (keepdims != 1) {
+    attributes["keepdims"] = keepdims;
+  }
+  return impl->op(Onnx::Operators::ReduceMax_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::reducemean(const std::vector<TensorId>& args,
+                          const std::vector<int64_t>& axes,
+                          int64_t keepdims,
+                          const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (!axes.empty()) {
+    attributes["axes"] = axes;
+  }
+  if (keepdims != 1) {
+    attributes["keepdims"] = keepdims;
+  }
+  return impl->op(Onnx::Operators::ReduceMean_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::reducemin(const std::vector<TensorId>& args,
+                         const std::vector<int64_t>& axes,
+                         int64_t keepdims,
+                         const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (!axes.empty()) {
+    attributes["axes"] = axes;
+  }
+  if (keepdims != 1) {
+    attributes["keepdims"] = keepdims;
+  }
+  return impl->op(Onnx::Operators::ReduceMin_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::reduceprod(const std::vector<TensorId>& args,
+                          const std::vector<int64_t>& axes,
+                          int64_t keepdims,
+                          const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (!axes.empty()) {
+    attributes["axes"] = axes;
+  }
+  if (keepdims != 1) {
+    attributes["keepdims"] = keepdims;
+  }
+  return impl->op(Onnx::Operators::ReduceProd_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::reducesum(const std::vector<TensorId>& args,
+                         const std::vector<int64_t>& axes,
+                         int64_t keepdims,
+                         const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (!axes.empty()) {
+    attributes["axes"] = axes;
+  }
+  if (keepdims != 1) {
+    attributes["keepdims"] = keepdims;
+  }
+  return impl->op(Onnx::Operators::ReduceSum_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::reducesumsquare(const std::vector<TensorId>& args,
+                               const std::vector<int64_t>& axes,
+                               int64_t keepdims,
+                               const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (!axes.empty()) {
+    attributes["axes"] = axes;
+  }
+  if (keepdims != 1) {
+    attributes["keepdims"] = keepdims;
+  }
+  return impl->op(Onnx::Operators::ReduceSumSquare_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::resize(const std::vector<TensorId>& args,
+                      const std::string& coordinate_transformation_mode,
+                      float cubic_coeff_a,
+                      int64_t exclude_outside,
+                      float extrapolation_value,
+                      const std::string& mode,
+                      const std::string& nearest_mode,
+                      const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (coordinate_transformation_mode != "half_pixel") {
+    attributes["coordinate_transformation_mode"] = coordinate_transformation_mode;
+  }
+  if (std::abs(cubic_coeff_a - -0.75f) >  std::numeric_limits<float>::epsilon()) {
+    attributes["cubic_coeff_a"] = cubic_coeff_a;
+  }
+  if (exclude_outside != 0) {
+    attributes["exclude_outside"] = exclude_outside;
+  }
+  if (std::abs(extrapolation_value - 0.0f) >  std::numeric_limits<float>::epsilon()) {
+    attributes["extrapolation_value"] = extrapolation_value;
+  }
+  if (mode != "nearest") {
+    attributes["mode"] = mode;
+  }
+  if (nearest_mode != "round_prefer_floor") {
+    attributes["nearest_mode"] = nearest_mode;
+  }
+  return impl->op(Onnx::Operators::Resize_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::round(const std::vector<TensorId>& args,
+                     const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::Round_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+std::vector<TensorId>
+AiOnnxOpset11::scan(const std::vector<TensorId>& args,
+                    unsigned num_outputs,
+                    const onnx::GraphProto & body,
+                    int64_t num_scan_inputs,
+                    const std::vector<int64_t>& scan_input_axes,
+                    const std::vector<int64_t>& scan_input_directions,
+                    const std::vector<int64_t>& scan_output_axes,
+                    const std::vector<int64_t>& scan_output_directions,
+                    const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  attributes["body"] = body;
+  attributes["num_scan_inputs"] = num_scan_inputs;
+  if (!scan_input_axes.empty()) {
+    attributes["scan_input_axes"] = scan_input_axes;
+  }
+  if (!scan_input_directions.empty()) {
+    attributes["scan_input_directions"] = scan_input_directions;
+  }
+  if (!scan_output_axes.empty()) {
+    attributes["scan_output_axes"] = scan_output_axes;
+  }
+  if (!scan_output_directions.empty()) {
+    attributes["scan_output_directions"] = scan_output_directions;
+  }
+  return impl->op(Onnx::Operators::Scan_11,
+                  getOpsetVersion(),
+                  args,
+                  num_outputs,
+                  attributes,
+                  name);
+}
+
+TensorId
+AiOnnxOpset11::scatter(const std::vector<TensorId>& args,
+                       int64_t axis,
+                       const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != 0) {
+    attributes["axis"] = axis;
+  }
+  return impl->op(Onnx::Operators::Scatter_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::scatterelements(const std::vector<TensorId>& args,
+                               int64_t axis,
+                               const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != 0) {
+    attributes["axis"] = axis;
+  }
+  return impl->op(Onnx::Operators::ScatterElements_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::scatternd(const std::vector<TensorId>& args,
+                         const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::ScatterND_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::sequenceat(const std::vector<TensorId>& args,
+                          const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::SequenceAt_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::sequenceconstruct(const std::vector<TensorId>& args,
+                                 const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::SequenceConstruct_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::sequenceempty(                             boost::optional<int64_t> dtype,
+                             const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (dtype != boost::optional<int64_t>()) {
+    attributes["dtype"] = *dtype;
+  }
+  return impl->op(Onnx::Operators::SequenceEmpty_11,
+                  getOpsetVersion(),
+                  {},
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::sequenceerase(const std::vector<TensorId>& args,
+                             const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::SequenceErase_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::sequenceinsert(const std::vector<TensorId>& args,
+                              const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::SequenceInsert_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::sequencelength(const std::vector<TensorId>& args,
+                              const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::SequenceLength_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::slice(const std::vector<TensorId>& args,
+                     const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  return impl->op(Onnx::Operators::Slice_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::softmax(const std::vector<TensorId>& args,
+                       int64_t axis,
+                       const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != 1) {
+    attributes["axis"] = axis;
+  }
+  return impl->op(Onnx::Operators::Softmax_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+std::vector<TensorId>
+AiOnnxOpset11::split(const std::vector<TensorId>& args,
+                     unsigned num_outputs,
+                     int64_t axis,
+                     const std::vector<int64_t>& split,
+                     const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != 0) {
+    attributes["axis"] = axis;
+  }
+  if (!split.empty()) {
+    attributes["split"] = split;
+  }
+  return impl->op(Onnx::Operators::Split_11,
+                  getOpsetVersion(),
+                  args,
+                  num_outputs,
+                  attributes,
+                  name);
+}
+
+TensorId
+AiOnnxOpset11::splittosequence(const std::vector<TensorId>& args,
+                               int64_t axis,
+                               int64_t keepdims,
+                               const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != 0) {
+    attributes["axis"] = axis;
+  }
+  if (keepdims != 1) {
+    attributes["keepdims"] = keepdims;
+  }
+  return impl->op(Onnx::Operators::SplitToSequence_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+TensorId
+AiOnnxOpset11::squeeze(const std::vector<TensorId>& args,
+                       const std::vector<int64_t>& axes,
+                       const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (!axes.empty()) {
+    attributes["axes"] = axes;
+  }
+  return impl->op(Onnx::Operators::Squeeze_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+
+std::vector<TensorId>
+AiOnnxOpset11::topk(const std::vector<TensorId>& args,
+                    int64_t axis,
+                    int64_t largest,
+                    int64_t sorted,
+                    const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != -1) {
+    attributes["axis"] = axis;
+  }
+  if (largest != 1) {
+    attributes["largest"] = largest;
+  }
+  if (sorted != 1) {
+    attributes["sorted"] = sorted;
+  }
+  return impl->op(Onnx::Operators::TopK_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name);
+}
+
+std::vector<TensorId>
+AiOnnxOpset11::unique(const std::vector<TensorId>& args,
+                      unsigned num_outputs,
+                      boost::optional<int64_t> axis,
+                      int64_t sorted,
+                      const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  if (axis != boost::optional<int64_t>()) {
+    attributes["axis"] = *axis;
+  }
+  if (sorted != 1) {
+    attributes["sorted"] = sorted;
+  }
+  return impl->op(Onnx::Operators::Unique_11,
+                  getOpsetVersion(),
+                  args,
+                  num_outputs,
+                  attributes,
+                  name);
+}
+
+TensorId
+AiOnnxOpset11::unsqueeze(const std::vector<TensorId>& args,
+                         const std::vector<int64_t>& axes,
+                         const std::string& name) {
+  std::map<std::string, boost::any> attributes;
+  attributes["axes"] = axes;
+  return impl->op(Onnx::Operators::Unsqueeze_11,
+                  getOpsetVersion(),
+                  args,
+                  attributes,
+                  name)[0];
+}
+

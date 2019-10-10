@@ -374,7 +374,9 @@ const std::map<int, int> &SliceGradOp::gradOutToNonGradIn() const {
 
 namespace {
 static OpCreator<SliceOp> sliceOpCreator(
-    {Onnx::Operators::Slice_1, Onnx::Operators::Slice_10},
+    {Onnx::Operators::Slice_1,
+     Onnx::Operators::Slice_10,
+     Onnx::Operators::Slice_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

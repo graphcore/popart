@@ -131,8 +131,18 @@ bool GradientAccumulation::apply(Graph &graph) const {
         resetOp->setVirtualGraphId(op->getVirtualGraphId());
       }
       resetOp->setPipelineStage(op->getOptionalPipelineStage());
-      op.get()->connectInTensor(VarUpdateOp::getUpdaterInIndex(),
-                                acclOutTensorId);
+
+      // Connect the output of the accumlator to the var update, but first
+      // remove the old input
+      auto *prevInputTensor = op->inTensor(VarUpdateOp::getUpdaterInIndex());
+      if (prevInputTensor) {
+        op->disconnectInTensor(VarUpdateOp::getUpdaterInIndex(),
+                               prevInputTensor);
+      }
+      op->connectInTensor(VarUpdateOp::getUpdaterInIndex(), acclOutTensorId);
+
+      // Make sure the reset op is scheduled later than the accumalation op
+      graph.topoCons->insert(acclOp, resetOp);
 
       resetOp->setup();
     }

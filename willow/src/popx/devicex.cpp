@@ -686,7 +686,6 @@ std::vector<ICreatorCandidatePtr> Devicex::getCreatorEndpoints(
       // Recursively search the DAG downstream of the op until we
       // have set of creator endpoints that can create the tensor
       case InputCreatorType::CANUNWIND_MULTIPLE_CREATORS: {
-
         // This does not handle multiple output op's
         // TODO : Need to handle CANUNWIND_MULTIPLE_CREATORS with multiple
         // outputs
@@ -870,21 +869,44 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
       // Find the ipu the op that consumes with tensor is on and create the
       // tensor on that graph
+      auto consumerOps = tensor->consumers.getOps();
+
+      if (logging::shouldLog(logging::Module::devicex, logging::Level::Trace)) {
+        std::stringstream ss;
+        for (auto *op : consumerOps) {
+          auto index = op->input->indicesMap().at(tensor)[0];
+          ss << std::endl
+             << "    {" << op->debugName() << ", VGID: "
+             << (op->hasVirtualGraphId()
+                     ? op->getIntrospectionInVirtualGraphId(index)
+                     : -1)
+             << "}";
+        }
+        logging::trace(
+            "[initTensorTask] Tensor: {}, type: {}, consumed by ops: [{}]",
+            tensor->id,
+            tensor->getTensorTypeInfo()->type_s(),
+            ss.str());
+      }
+
       std::vector<VGraphId> ipus;
-      for (auto *op : tensor->consumers.getOps()) {
+      for (auto *op : consumerOps) {
+        VGraphId vgid = -1;
+        if (op->hasVirtualGraphId()) {
+          // VirtualGraphId with subgraph call introspection
+          // for the current tensor
+          auto index = op->input->indicesMap().at(tensor)[0];
+          vgid       = op->getIntrospectionInVirtualGraphId(index);
+        }
 
         // The copyToIpu op assume that the tensor will already
         // have been copied to the ipu from another op
         if (op->opid != Onnx::CustomOperators::IpuCopy) {
 
-          VGraphId index = -1;
-          if (op->hasVirtualGraphId()) {
-            index = op->getVirtualGraphId();
-          }
+          if (ipus.end() == std::find(ipus.begin(), ipus.end(), vgid)) {
 
-          if (ipus.end() == std::find(ipus.begin(), ipus.end(), index)) {
-
-            auto &graph = getOpx(op->id)->graph();
+            auto &graph =
+                vgid > -1 ? getVirtualGraph(vgid) : getOpx(op->id)->graph();
 
             auto newTensor = graph.addVariable(
                 popType(tensor->info), tensor->info.shape_szt(), tensor->str());
@@ -892,7 +914,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
 
             tensors.insert(tensor->id, newTensor);
             linearlyCreatedInputTensors.insert(tensor->id);
-            ipus.push_back(index);
+            ipus.push_back(vgid);
           }
         }
       }
@@ -1074,23 +1096,29 @@ PriTask Devicex::setInitTensorValTask(Tensor *tensor) {
 PriTask Devicex::streamFromHostTask(Tensor *tensor) {
   auto f = [this, tensor]() {
     std::vector<VGraphId> ipus;
-    for (auto *op : tensor->consumers.getOps()) {
 
+    auto consumerOps = tensor->consumers.getOps();
+
+    for (auto *op : consumerOps) {
       // Assume another op will copy the tensor for an ipucopy
       if (op->opid != Onnx::CustomOperators::IpuCopy) {
         auto &graph = getOpx(op->id)->graph();
 
-        VGraphId index = -1;
-        if (op->hasVirtualGraphId())
-          index = op->getVirtualGraphId();
+        VGraphId vgid = -1;
+        if (op->hasVirtualGraphId()) {
+          // VirtualGraphId with subgraph call introspection
+          // for the current tensor
+          auto index = op->input->indicesMap().at(tensor)[0];
+          vgid       = op->getIntrospectionInVirtualGraphId(index);
+        }
 
         // Only stream the tensor once for all op's that consume it on an ipu
-        if (std::find(ipus.begin(), ipus.end(), index) == ipus.end()) {
+        if (std::find(ipus.begin(), ipus.end(), vgid) == ipus.end()) {
 
           logging::devicex::debug(
               "Creating host-to-device FIFO {} copied to ipu:{}",
               tensor->id,
-              index);
+              vgid);
 
           poplar::ReplicatedStreamMode mode;
 
@@ -1123,7 +1151,7 @@ PriTask Devicex::streamFromHostTask(Tensor *tensor) {
                                         tensor->info.nelms(),
                                         mode));
 
-          ipus.push_back(index);
+          ipus.push_back(vgid);
         }
       }
     }

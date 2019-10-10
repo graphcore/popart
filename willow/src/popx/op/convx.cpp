@@ -309,7 +309,7 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 ConvOpx::ConvOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<ConvOp>(op, Onnx::Operators::Conv_1);
+  verifyOp<ConvOp>(op, {Onnx::Operators::Conv_1, Onnx::Operators::Conv_11});
 
   ConvOp &cOp = getOp<ConvOp>();
   if (cOp.dataIn()->info.rank() != 4 || cOp.weightsIn()->info.rank() != 4) {
@@ -466,7 +466,8 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
 }
 
 namespace {
-OpxCreator<ConvOpx> convpxCreator(Onnx::Operators::Conv_1);
+OpxCreator<ConvOpx> convpxCreator({Onnx::Operators::Conv_1,
+                                   Onnx::Operators::Conv_11});
 OpxCreator<ConvWeightsGradOpx>
     convWeightsGradOpxCreator(Onnx::GradOperators::ConvWeightsGrad);
 OpxCreator<ConvFlipWeightsGradOpx>

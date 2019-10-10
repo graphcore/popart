@@ -53,4 +53,87 @@ std::vector<TensorId> CallOp::getInputsForGraph(const Graph &) const {
   return result;
 }
 
+VGraphId CallOp::getIntrospectionInVirtualGraphId(InIndex index) const {
+  if (index > -1) {
+    auto num_ids = getCalledGraph().getInputIds().size();
+    if (index >= num_ids)
+      throw error("[getIntrospectionInVirtualGraphId] "
+                  "CallOp ({}) has {} inputs, but requested index is {}",
+                  debugName(),
+                  num_ids,
+                  index);
+
+    auto tensor_id = getCalledGraph().getInputId(index);
+    auto tensor    = getCalledGraph().getTensors().get(tensor_id);
+
+    // Callee introspection
+    for (auto consumer : tensor->consumers.getOps()) {
+      if (auto call = dynamic_cast<CallOp *>(consumer)) {
+        auto subindex = consumer->input->indicesMap().at(tensor)[0];
+        if (consumer->hasVirtualGraphId()) {
+          // Also works if the callee is another subgraph
+          auto id = consumer->getIntrospectionInVirtualGraphId(subindex);
+          if (id > -1)
+            return id;
+        }
+      }
+    }
+
+    // Fallback 1: The tensor knows it's own VGID
+    // We ask this only after callee introspection, because otherwise the
+    // CallOp's VGID will be reported, which can be wrong if it's nested
+    // consuming operator is on another virtual graph.
+    if (tensor->hasVirtualGraphId()) {
+      // Tensor has VirtualGraphID given by it's producer or consumer
+      auto id = tensor->getVirtualGraphId();
+      if (id > -1)
+        return id;
+    }
+  }
+
+  // Fallback 2: No VGID determined by introspection or tensor
+  return Op::hasVirtualGraphId() ? Op::getVirtualGraphId() : -1;
+}
+
+VGraphId CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
+  if (index > -1) {
+    auto num_ids = getCalledGraph().getOutputIds().size();
+    if (index >= num_ids)
+      throw error("[getIntrospectionOutVirtualGraphId] "
+                  "CallOp ({}) has {} inputs, but requested index is {}",
+                  debugName(),
+                  num_ids,
+                  index);
+
+    auto tensor_id = getCalledGraph().getOutputId(index);
+    auto tensor    = getCalledGraph().getTensors().get(tensor_id);
+
+    // Callee introspection
+    auto producer = tensor->getProducer();
+    if (auto call = dynamic_cast<CallOp *>(producer)) {
+      auto subindex = producer->output->indicesMap().at(tensor)[0];
+      if (producer->hasVirtualGraphId()) {
+        // Also works if the callee is another subgraph
+        auto id = producer->getIntrospectionOutVirtualGraphId(subindex);
+        if (id > -1)
+          return id;
+      }
+    }
+
+    // Fallback 1: The tensor knows it's own VGID
+    // We ask this only after callee introspection, because otherwise the
+    // CallOp's VGID will be reported, which can be wrong if it's nested
+    // consuming operator is on another virtual graph.
+    if (tensor->hasVirtualGraphId()) {
+      // Tensor has VirtualGraphID given by it's producer or consumer
+      auto id = tensor->getVirtualGraphId();
+      if (id > -1)
+        return id;
+    }
+  }
+
+  // Fallback 2: No VGID determined by introspection or tensor
+  return Op::hasVirtualGraphId() ? Op::getVirtualGraphId() : -1;
+}
+
 } // namespace popart

@@ -443,9 +443,10 @@ static void serializeVarUpdate(int sliceDim,
 
       builder.getGraph().topoCons->transfer(varUpdate, slicedVarUpdatePtr);
 
-      if (notFinal)
+      if (notFinal) {
         builder.getGraph().topoCons->insert(
             slicedVarUpdatePtr, builder.getProducer(outputTensors[i + 1]));
+      }
     }
 
     // Remove the ops on the original path
@@ -489,7 +490,7 @@ serializeFwdMatMul_InputChannels(TransformBuilder &builder,
                   name);
 
   builder.concat(outputTensors,
-                 0,
+                 1,
                  output->id,
                  virtualGraphId,
                  pipelineStage,

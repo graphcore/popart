@@ -141,7 +141,8 @@ std::unique_ptr<Op> topKFactory(const OperatorIdentifier &_opid,
 }
 
 static OpCreator<TopKOp> TopKOpCreator({Onnx::Operators::TopK_1,
-                                        Onnx::Operators::TopK_10},
+                                        Onnx::Operators::TopK_10,
+                                        Onnx::Operators::TopK_11},
                                        topKFactory,
                                        true);
 } // namespace

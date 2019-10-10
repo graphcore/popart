@@ -82,7 +82,8 @@ void ReduceMeanGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<ReduceMeanOpx> reduceMeanOpxCreator(Onnx::Operators::ReduceMean_1);
+OpxCreator<ReduceMeanOpx> reduceMeanOpxCreator(
+    {Onnx::Operators::ReduceMean_1, Onnx::Operators::ReduceMean_11});
 OpxCreator<ReduceMeanGradOpx>
     reduceMeanGradGradOpxCreator(Onnx::GradOperators::ReduceMeanGrad);
 } // namespace

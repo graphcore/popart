@@ -123,7 +123,7 @@ void ScatterUpdateGradOp::appendAttributes(OpSerialiserBase &os) const {
 
 namespace {
 static OpCreator<ScatterOp> ScatterOpCreator(
-    Onnx::Operators::Scatter_9,
+    {Onnx::Operators::Scatter_9, Onnx::Operators::Scatter_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

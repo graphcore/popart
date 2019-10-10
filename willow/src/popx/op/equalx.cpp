@@ -12,7 +12,10 @@ namespace popx {
 
 EqualOpx::EqualOpx(Op *op, Devicex *devicex)
     : BinaryComparisonOpx(op, devicex) {
-  verifyOp<EqualOp>(op, {Onnx::Operators::Equal_1, Onnx::Operators::Equal_7});
+  verifyOp<EqualOp>(op,
+                    {Onnx::Operators::Equal_1,
+                     Onnx::Operators::Equal_7,
+                     Onnx::Operators::Equal_11});
 }
 
 void EqualOpx::grow(poplar::program::Sequence &prog) const {
@@ -28,8 +31,9 @@ void EqualOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 
-OpxCreator<EqualOpx> greaterOpxCreator_7(Onnx::Operators::Equal_1);
-OpxCreator<EqualOpx> greaterOpxCreator_9(Onnx::Operators::Equal_7);
+OpxCreator<EqualOpx> equalOpxCreator({Onnx::Operators::Equal_1,
+                                      Onnx::Operators::Equal_7,
+                                      Onnx::Operators::Equal_11});
 
 } // namespace
 
