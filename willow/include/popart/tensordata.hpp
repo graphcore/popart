@@ -41,7 +41,7 @@ private:
 // A class to point to constant data
 class ConstVoidData {
 public:
-  const void *data;
+  const void *data = nullptr;
   // This is used to confirm that data is as expected
   TensorInfo info;
 };
@@ -49,7 +49,7 @@ public:
 // A class to point to non-const data
 class MutableVoidData {
 public:
-  void *data;
+  void *data = nullptr;
   // This is used to confirm that data is as expected
   TensorInfo info;
 };
@@ -60,7 +60,9 @@ class IStepIO {
 public:
   virtual ~IStepIO() = default;
   // constant input data,
-  virtual ConstVoidData in(TensorId id, int64_t numElements) = 0;
+  virtual ConstVoidData in(TensorId id, int64_t numElements, bool prefetch) = 0;
+  virtual void inComplete(TensorId id, int64_t numElements)                 = 0;
+
   // non-const anchor data,
   // which will be modified inplace.
   virtual MutableVoidData out(TensorId id, int64_t numElements) = 0;
@@ -81,7 +83,8 @@ public:
   StepIO(std::map<TensorId, IArray &> inputs_,
          std::map<TensorId, IArray &> outputs_);
 
-  ConstVoidData in(TensorId id, int64_t numElements)final;
+  ConstVoidData in(TensorId id, int64_t numElements, bool prefetch)final;
+  void inComplete(TensorId id, int64_t numElements) final;
   MutableVoidData out(TensorId id, int64_t numElements) final;
 
 private:
@@ -90,8 +93,15 @@ private:
   template <typename T>
   T get(TensorId id,
         std::map<TensorId, ArrayInfo> &M,
-        unsigned numElements,
+        int64_t numElements,
+        bool advance,
         std::string mapName);
+
+  template <typename T>
+  void advance(TensorId id,
+               std::map<TensorId, ArrayInfo> &M,
+               int64_t numElements,
+               std::string mapName);
 
   std::map<TensorId, ArrayInfo> outputsInfo;
   std::map<TensorId, ArrayInfo> inputsInfo;
@@ -100,22 +110,27 @@ private:
 class StepIOCallback : public IStepIO {
 
 public:
-  using InputCallback          = std::function<ConstVoidData(TensorId)>;
+  using InputCallback          = std::function<ConstVoidData(TensorId, bool)>;
+  using InputCompleteCallback  = std::function<void(TensorId)>;
   using OutputCallback         = std::function<MutableVoidData(TensorId)>;
   using OutputCompleteCallback = std::function<void(TensorId)>;
 
   StepIOCallback(InputCallback inputCb_,
+                 InputCompleteCallback inputCompleteCb_,
                  OutputCallback outputCb_,
                  OutputCompleteCallback outputCompleteCb_)
-      : inputCb(inputCb_), outputCb(outputCb_),
-        outputCompleteCb(outputCompleteCb_) {}
+      : inputCb(inputCb_), inputCompleteCb(inputCompleteCb_),
+        outputCb(outputCb_), outputCompleteCb(outputCompleteCb_) {}
 
-  ConstVoidData in(TensorId id, int64_t numElements)final;
+  ConstVoidData in(TensorId id, int64_t numElements, bool prefetch)final;
+  void inComplete(TensorId id, int64_t numElements) final;
+
   MutableVoidData out(TensorId id, int64_t numElements) final;
   void outComplete(TensorId id) final;
 
 private:
   InputCallback inputCb;
+  InputCompleteCallback inputCompleteCb;
   OutputCallback outputCb;
   OutputCompleteCallback outputCompleteCb;
 };

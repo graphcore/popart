@@ -450,7 +450,29 @@ private:
   class InputDatastream : public Datastream {
   public:
     InputDatastream(Tensor *t, PopStreamId s);
+
+    // Called to read data from an input stream
     void read(void *ptr);
+
+    // Called to prefetch data from an input stream
+    // return true is there is data prefetch else false
+    bool readPrefetch(void *ptr);
+
+    // Called to indicate the data has been comsumed
+    // by poplar
+    void readComplete();
+  };
+
+  class PrefetchCallback : public poplar::StreamCallback {
+  public:
+    PrefetchCallback(std::shared_ptr<InputDatastream> ds_);
+
+    poplar::StreamCallback::Result prefetch(void *dest) noexcept override;
+    void fetch(void *dest) noexcept override;
+    void complete() noexcept override;
+
+  private:
+    std::shared_ptr<InputDatastream> ds;
   };
 
   // device to host data stream

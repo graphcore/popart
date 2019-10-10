@@ -110,11 +110,28 @@ TensorId Devicex::Datastream::getTensorId() { return tensor->id; }
 Devicex::InputDatastream::InputDatastream(Tensor *t, PopStreamId s)
     : Datastream(t, s) {}
 
+Devicex::PrefetchCallback::PrefetchCallback(
+    std::shared_ptr<InputDatastream> ds_)
+    : ds(ds_) {}
+
+poplar::StreamCallback::Result
+Devicex::PrefetchCallback::prefetch(void *dest) noexcept {
+  if (ds->readPrefetch(dest)) {
+    return poplar::StreamCallback::Result::Success;
+  } else {
+    return poplar::StreamCallback::Result::NotAvailable;
+  }
+}
+
+void Devicex::PrefetchCallback::fetch(void *dest) noexcept { ds->read(dest); }
+
+void Devicex::PrefetchCallback::complete() noexcept { ds->readComplete(); }
+
 void Devicex::InputDatastream::read(void *ptr) {
 
   if (io) {
 
-    ConstVoidData data = io->in(getTensorId(), tensor->info.nelms());
+    ConstVoidData data = io->in(getTensorId(), tensor->info.nelms(), false);
 
     const void *srcAddr = data.data;
     void *dstAddr       = ptr;
@@ -158,6 +175,72 @@ void Devicex::InputDatastream::read(void *ptr) {
   } else {
     logging::devicex::warn(
         "No stepio set for tensor {} stream {}", getTensorId(), streamId);
+  }
+}
+
+bool Devicex::InputDatastream::readPrefetch(void *ptr) {
+
+  if (io) {
+
+    ConstVoidData data = io->in(getTensorId(), tensor->info.nelms(), true);
+
+    if (data.data == nullptr) {
+      logging::devicex::info("readPrefetch returning false");
+      return false;
+    } else {
+
+      const void *srcAddr = data.data;
+      void *dstAddr       = ptr;
+
+      auto srcInfo = data.info;
+      auto dstInfo = tensor->info;
+
+      // check the shape
+
+      // Not sure how best to match the shape as the shape of the input
+      // does not match the shape of the data.info. Infact that is a bit
+      // wrong now.
+
+      // check the type
+      if (srcInfo.dataType() == dstInfo.dataType()) {
+        memcpy(dstAddr, srcAddr, tensor->info.nbytes());
+      } else if (srcInfo.dataType() == DataType::INT64 &&
+                 dstInfo.dataType() == DataType::INT32) {
+
+        static bool loggingWarning = false;
+        if (loggingWarning == false) {
+          logging::devicex::warn("Copying (host) tensor {} from INT64 to "
+                                 "INT32. Will only warn once",
+                                 getTensorId());
+          loggingWarning = true;
+        }
+        int32_t *dest      = static_cast<int32_t *>(dstAddr);
+        const int64_t *src = static_cast<const int64_t *>(srcAddr);
+        for (int i = 0; i < tensor->info.nelms(); ++i) {
+          dest[i] = static_cast<int32_t>(src[i]);
+        }
+      } else {
+        std::stringstream ss;
+        ss << "Type discrepency for tensor " << getTensorId()
+           << ". User provided : " << srcInfo.data_type()
+           << " and expected : " << dstInfo.data_type()
+           << ". Consider a custom copy here (as memcpy cannot be used)";
+        throw error(ss.str());
+      }
+
+      return true;
+    }
+
+  } else {
+    logging::devicex::warn(
+        "No stepio set for tensor {} stream {}", getTensorId(), streamId);
+    return false;
+  }
+}
+
+void Devicex::InputDatastream::readComplete() {
+  if (io) {
+    io->inComplete(getTensorId(), tensor->info.nelms());
   }
 }
 
@@ -483,6 +566,15 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
   }
 
   engineOptions.set("target.workerStackSizeInBytes", "0x200");
+
+  if (ir.getSessionOptions().enablePrefetchDatastreams) {
+    logging::devicex::info("Setting engine options for prefetch data streams "
+                           "(exchange.streamBufferOverlap = hostRearrangeOnly, "
+                           "exchange.enablePrefetch = true");
+    engineOptions.set("exchange.streamBufferOverlap", "hostRearrangeOnly");
+    engineOptions.set("exchange.enablePrefetch", "true");
+  }
+
   for (auto it : ir.getSessionOptions().engineOptions) {
     logging::devicex::info(
         "Setting engine option {} = {}", it.first, it.second);
@@ -1820,21 +1912,21 @@ void Devicex::loadEngineAndConnectStreams() {
       pEngine->connectStream(h2dId(tensor->id), tensor->tensorData()->data());
     }
 
-    auto engineToInputStreamWithCallback = [&pEngine = pEngine,
-                                            this](Tensor *tensor,
-                                                  PopStreamId streamId) {
-      std::shared_ptr<InputDatastream> ds =
-          std::make_shared<InputDatastream>(tensor, streamId);
-      this->inputStreams[tensor->id] = ds;
+    auto engineToInputStreamWithCallback =
+        [&pEngine = pEngine, this](Tensor *tensor, PopStreamId streamId) {
+          std::shared_ptr<InputDatastream> ds =
+              std::make_shared<InputDatastream>(tensor, streamId);
+          this->inputStreams[tensor->id] = ds;
 
-      auto callback = [ds](void *ptr) mutable { ds->read(ptr); };
+          auto replicationFactor = getReplicationFactor();
+          for (auto replicationIndex = 0; replicationIndex < replicationFactor;
+               ++replicationIndex) {
 
-      auto replicationFactor = getReplicationFactor();
-      for (auto replicationIndex = 0; replicationIndex < replicationFactor;
-           ++replicationIndex) {
-        pEngine->connectStreamToCallback(streamId, replicationIndex, callback);
-      }
-    };
+            auto callback = std::make_unique<PrefetchCallback>(ds);
+            pEngine->connectStreamToCallback(
+                streamId, replicationIndex, std::move(callback));
+          }
+        };
 
     auto engineToOutputStreamWithCallback = [&pEngine = pEngine,
                                              this](Tensor *tensor,

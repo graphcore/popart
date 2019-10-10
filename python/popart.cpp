@@ -144,7 +144,48 @@ public:
   T get(TensorId id,
         std::map<TensorId, ArrayInfo> &M,
         int64_t numElements,
+        bool advance,
         std::string mapName) {
+
+    auto found = M.find(id);
+    if (found == M.end()) {
+      throw error("No tensor {} provided in PyStepIO's {}", id, mapName);
+    }
+
+    ArrayInfo &arrayInfo = found->second;
+    int64_t offset       = arrayInfo.offset;
+
+    T stepData;
+    stepData.info = getTensorInfo(arrayInfo.array);
+
+    int64_t arraySize = stepData.info.nbytes();
+
+    // Set the data using the offset
+    stepData.data =
+        static_cast<uint8_t *>(arrayInfo.array.request().ptr) + offset;
+
+    if (advance) {
+
+      int64_t numBytes =
+          static_cast<int64_t>(stepData.info.getDataTypeInfo()->nbytes()) *
+          numElements;
+
+      // Wrap around if we read all the data
+      if (offset + numBytes == arraySize) {
+        arrayInfo.offset = 0;
+      } else {
+        arrayInfo.offset = offset + numBytes;
+      }
+    }
+
+    return stepData;
+  }
+
+  template <typename T>
+  void advance(TensorId id,
+               std::map<TensorId, ArrayInfo> &M,
+               int64_t numElements,
+               std::string mapName) {
 
     auto found = M.find(id);
     if (found == M.end()) {
@@ -163,8 +204,6 @@ public:
     int64_t numBytes =
         static_cast<int64_t>(stepData.info.getDataTypeInfo()->nbytes()) *
         numElements;
-    stepData.data =
-        static_cast<uint8_t *>(arrayInfo.array.request().ptr) + offset;
 
     // Wrap around if we read all the data
     if (offset + numBytes == arraySize) {
@@ -172,16 +211,18 @@ public:
     } else {
       arrayInfo.offset = offset + numBytes;
     }
-
-    return stepData;
   }
 
-  ConstVoidData in(TensorId id, int64_t numElements)final {
-    return get<ConstVoidData>(id, inputsInfo, numElements, "inputs");
+  ConstVoidData in(TensorId id, int64_t numElements, bool)final {
+    return get<ConstVoidData>(id, inputsInfo, numElements, false, "inputs");
+  }
+
+  void inComplete(TensorId id, int64_t numElements) final {
+    return advance<ConstVoidData>(id, inputsInfo, numElements, "inputs");
   }
 
   MutableVoidData out(TensorId id, int64_t numElements) final {
-    return get<MutableVoidData>(id, outputsInfo, numElements, "outputs");
+    return get<MutableVoidData>(id, outputsInfo, numElements, true, "outputs");
   }
 
 private:
@@ -191,23 +232,37 @@ private:
 
 class PyStepIOCallback : public IStepIO {
 public:
+  using InputCallback          = std::function<py::array(std::string, bool)>;
+  using InputCompleteCallback  = std::function<void(std::string)>;
+  using OutputCallback         = std::function<py::array(std::string)>;
+  using OutputCompleteCallback = std::function<void(std::string)>;
+
   // inputCb The call back to get input data
+  // inputCompleteCb_ The call back to indicate that input had been consumed
   // outputCb_ The call back to get out data
   // outputCompleteCb_ The call back to indicate that output had been written
-  PyStepIOCallback(std::function<py::array(std::string)> inputCb_,
-                   std::function<py::array(std::string)> outputCb_,
-                   std::function<void(std::string)> outputCompleteCb_)
-      : inputCb(inputCb_), outputCb(outputCb_),
-        outputCompleteCb(outputCompleteCb_) {}
+  PyStepIOCallback(InputCallback inputCb_,
+                   InputCompleteCallback inputCompleteCb_,
+                   OutputCallback outputCb_,
+                   OutputCompleteCallback outputCompleteCb_)
+      : inputCb(inputCb_), inputCompleteCb(inputCompleteCb_),
+        outputCb(outputCb_), outputCompleteCb(outputCompleteCb_) {}
 
-  ConstVoidData in(TensorId id, int64_t)final {
-    py::array a = inputCb(id);
+  ConstVoidData in(TensorId id, int64_t, bool prefetch)final {
+    py::array a = inputCb(id, prefetch);
 
     ConstVoidData data;
-    data.data = a.request().ptr;
-    data.info = getTensorInfo(a);
+
+    // If a None object has been returned ndim will be 0
+    if (a.ndim() > 0) {
+      data.data = a.request().ptr;
+      data.info = getTensorInfo(a);
+    }
+
     return data;
   }
+
+  void inComplete(TensorId id, int64_t) final { inputCompleteCb(id); }
 
   MutableVoidData out(TensorId id, int64_t) final {
     py::array a = outputCb(id);
@@ -218,13 +273,14 @@ public:
     return data;
   }
 
-  virtual void outComplete(TensorId id) final { outputCompleteCb(id); }
+  void outComplete(TensorId id) final { outputCompleteCb(id); }
 
 private:
   // user land callbacks
-  std::function<py::array(std::string)> inputCb;
-  std::function<py::array(std::string)> outputCb;
-  std::function<void(std::string)> outputCompleteCb;
+  InputCallback inputCb;
+  InputCompleteCallback inputCompleteCb;
+  OutputCallback outputCb;
+  OutputCompleteCallback outputCompleteCb;
 };
 
 class PyWeightsIO : public IWeightsIO {
@@ -398,10 +454,12 @@ PYBIND11_MODULE(popart_core, m) {
            py::arg("outputs"));
 
   py::class_<PyStepIOCallback>(m, "PyStepIOCallback", stepio)
-      .def(py::init<std::function<py::array(std::string)>,
+      .def(py::init<std::function<py::array(std::string, bool)>,
+                    std::function<void(std::string)>,
                     std::function<py::array(std::string)>,
                     std::function<void(std::string)>>(),
            py::arg("input_callback"),
+           py::arg("input_complete_callback"),
            py::arg("output_callback"),
            py::arg("output_complete_callback"));
 
@@ -551,6 +609,8 @@ PYBIND11_MODULE(popart_core, m) {
                      &SessionOptions::mergeVarUpdateMemThreshold)
       .def_readwrite("rearrangeAnchorsOnHost",
                      &SessionOptions::rearrangeAnchorsOnHost)
+      .def_readwrite("enablePrefetchDatastreams",
+                     &SessionOptions::enablePrefetchDatastreams)
       .def_readwrite("enableVirtualGraphs",
                      &SessionOptions::enableVirtualGraphs)
       .def_readwrite("autoVirtualGraph", &SessionOptions::autoVirtualGraph)
