@@ -119,7 +119,7 @@ void OnehotGradOp::appendAttributes(OpSerialiserBase &os) const {
 
 namespace {
 static OpCreator<OnehotOp> onehotOpCreator(
-    {Onnx::Operators::OneHot_9},
+    {Onnx::Operators::OneHot_9, Onnx::Operators::OneHot_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

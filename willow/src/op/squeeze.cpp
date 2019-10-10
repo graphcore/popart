@@ -5,7 +5,7 @@
 
 namespace popart {
 
-SqueezeBaseOp::SqueezeBaseOp(const OperatorIdentifier &_opid, 
+SqueezeBaseOp::SqueezeBaseOp(const OperatorIdentifier &_opid,
                              const std::vector<int64_t> &axes_,
                              const Op::Settings &settings_)
     : Op(_opid, settings_), axes(axes_) {}
@@ -18,7 +18,6 @@ void SqueezeBaseOp::setup() {
   outInfo(getOutIndex()) = {inInfo(getInIndex()).dataType(),
                             squeeze(inShape(getInIndex()), axes)};
 }
-
 
 view::RegMap SqueezeBaseOp::fwdRegMap(InIndex inIndex) const {
   if (inIndex != 0) {
@@ -72,12 +71,10 @@ void SqueezeBaseOp::appendAttributes(OpSerialiserBase &os) const {
   os.appendAttribute("axes", axes);
 }
 
-
 SqueezeOp::SqueezeOp(const OperatorIdentifier &_opid,
                      const std::vector<int64_t> &axes_,
                      const Op::Settings &settings_)
     : SqueezeBaseOp(_opid, axes_, settings_) {}
-
 
 std::vector<std::unique_ptr<Op>> SqueezeOp::getGradOps() {
   std::vector<std::unique_ptr<Op>> upops;
@@ -128,16 +125,17 @@ const std::map<int, int> &SqueezeGradOp::gradOutToNonGradIn() const {
 }
 
 SqueezeInplaceOp::SqueezeInplaceOp(const SqueezeOp &op)
-    : SqueezeBaseOp(Onnx::CustomOperators::SqueezeInplace, op.getAxes(), op.settings){}
+    : SqueezeBaseOp(Onnx::CustomOperators::SqueezeInplace,
+                    op.getAxes(),
+                    op.settings) {}
 
 std::unique_ptr<Op> SqueezeInplaceOp::clone() const {
   return std::make_unique<SqueezeInplaceOp>(*this);
 }
 
-
 namespace {
 static OpCreator<SqueezeOp> squeezeOpCreator(
-    Onnx::Operators::Squeeze_1,
+    {Onnx::Operators::Squeeze_1, Onnx::Operators::Squeeze_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

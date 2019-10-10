@@ -8,7 +8,7 @@ namespace popart {
 namespace popx {
 
 SplitOpx::SplitOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<SplitOp>(op, Onnx::Operators::Split_2);
+  verifyOp<SplitOp>(op, {Onnx::Operators::Split_2, Onnx::Operators::Split_11});
 }
 
 void SplitOpx::grow(poplar::program::Sequence &prog) const {
@@ -29,7 +29,8 @@ void SplitOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<SplitOpx> splitOpxCreator(Onnx::Operators::Split_2);
+OpxCreator<SplitOpx> splitOpxCreator({Onnx::Operators::Split_2,
+                                      Onnx::Operators::Split_11});
 } // namespace
 
 } // namespace popx

@@ -155,7 +155,8 @@ flattenInplaceOpFactory(const OperatorIdentifier &_opid,
 }
 
 static OpCreator<FlattenOp> flattenOpCreator({Onnx::Operators::Flatten_1,
-                                              Onnx::Operators::Flatten_9},
+                                              Onnx::Operators::Flatten_9,
+                                              Onnx::Operators::Flatten_11},
                                              flattenOpFactory,
                                              true);
 

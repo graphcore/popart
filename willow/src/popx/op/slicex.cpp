@@ -178,7 +178,8 @@ SliceInplaceOpx::SliceInplaceOpx(Op *op_, Devicex *devicex)
 
 namespace {
 OpxCreator<SliceOpx> sliceOpxCreator({Onnx::Operators::Slice_1,
-                                      Onnx::Operators::Slice_10});
+                                      Onnx::Operators::Slice_10,
+                                      Onnx::Operators::Slice_11});
 OpxCreator<SliceInplaceOpx>
     sliceInplaceOpxCreator(Onnx::CustomOperators::SliceInplace);
 OpxCreator<SliceGradOpx> sliceGradOpxCreator(Onnx::GradOperators::SliceGrad);

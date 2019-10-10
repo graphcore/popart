@@ -20,7 +20,13 @@ def test_tile(op_tester):
         out = np.tile(d1, d2)
         return [out]
 
-    op_tester.run(init_builder, reference, 'infer')
+    op_tester.run(init_builder,
+                  reference,
+                  'infer',
+                  opsets={
+                      "ai.onnx": 10,
+                      "ai.graphcore": 1
+                  })
 
 
 def test_tile_variable_repeats(op_tester):
@@ -59,7 +65,13 @@ def test_tile_invalid_repeat_vals(op_tester):
         return [out]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
+        op_tester.run(init_builder,
+                      reference,
+                      'infer',
+                      opsets={
+                          "ai.onnx": 10,
+                          "ai.graphcore": 1
+                      })
     assert (e_info.value.args[0].find("has invalid value") != -1)
 
 
@@ -79,7 +91,13 @@ def test_tile_invalid_repeats_size(op_tester):
         return [out]
 
     with pytest.raises(popart.popart_exception) as e_info:
-        op_tester.run(init_builder, reference, 'infer')
+        op_tester.run(init_builder,
+                      reference,
+                      'infer',
+                      opsets={
+                          "ai.onnx": 10,
+                          "ai.graphcore": 1
+                      })
     assert (e_info.value.args[0].endswith(
         "should have one element for each dimension of the data tensor"))
 
@@ -107,4 +125,10 @@ def test_tile_grad(op_tester):
         return [b, a.grad, None]
 
     op_tester.passes = ['PreUniRepl']
-    op_tester.run(init_builder, reference, 'train')
+    op_tester.run(init_builder,
+                  reference,
+                  'train',
+                  opsets={
+                      "ai.onnx": 10,
+                      "ai.graphcore": 1
+                  })

@@ -44,7 +44,7 @@ namespace {
 // @SL@ the new factory method for the reduceMax op will get the attributes from
 // the model and pass them to the constructor of the OP
 static OpCreator<ReduceMaxOp> reduceMaxOpCreator(
-    Onnx::Operators::ReduceMax_1,
+    {Onnx::Operators::ReduceMax_1, Onnx::Operators::ReduceMax_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

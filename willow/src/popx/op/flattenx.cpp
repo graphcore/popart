@@ -37,7 +37,8 @@ FlattenGradOpx::FlattenGradOpx(Op *op, Devicex *devicex)
 
 namespace {
 OpxCreator<FlattenOpx> flattenOpxCreator({Onnx::Operators::Flatten_1,
-                                          Onnx::Operators::Flatten_9});
+                                          Onnx::Operators::Flatten_9,
+                                          Onnx::Operators::Flatten_11});
 OpxCreator<FlattenInplaceOpx>
     flattenInplaceOpxCreator(Onnx::CustomOperators::FlattenInplace);
 OpxCreator<FlattenGradOpx>

@@ -75,7 +75,8 @@ void ReduceMaxGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<ReduceMaxOpx> reduceMaxOpxCreator(Onnx::Operators::ReduceMax_1);
+OpxCreator<ReduceMaxOpx> reduceMaxOpxCreator({Onnx::Operators::ReduceMax_1,
+                                              Onnx::Operators::ReduceMax_11});
 OpxCreator<ReduceMaxGradOpx>
     reduceMaxGradGradOpxCreator(Onnx::GradOperators::ReduceMaxGrad);
 } // namespace

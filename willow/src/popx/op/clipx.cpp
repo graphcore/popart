@@ -150,7 +150,8 @@ void ClipGradOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<ClipOpx> clipOpxCreator({Onnx::Operators::Clip_1,
-                                    Onnx::Operators::Clip_6});
+                                    Onnx::Operators::Clip_6,
+                                    Onnx::Operators::Clip_11});
 OpxCreator<ClipInplaceOpx>
     clipxInplaceOpxCreator(Onnx::CustomOperators::ClipInplace);
 OpxCreator<ClipGradOpx> clipGradOpxCreator(Onnx::GradOperators::ClipGrad);

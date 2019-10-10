@@ -130,12 +130,13 @@ class Attribute:
             return False
 
     def isTensor(self):
-        return self.type == onnx.defs.OpSchema.AttrType.TENSOR
+        return (self.type == onnx.defs.OpSchema.AttrType.TENSOR
+                or self.type == onnx.defs.OpSchema.AttrType.SPARSE_TENSOR)
 
     def CppType(self):
         """
-    Determine the C++ type for an attribute
-    """
+        Determine the C++ type for an attribute
+        """
 
         # Special case of Cast where we replace int with DataType
         if self.op.name == "Cast":
@@ -174,6 +175,8 @@ class Attribute:
             return 'const onnx::GraphProto &'
         elif self.type == onnx.defs.OpSchema.AttrType.TENSOR:
             return 'const ConstVoidData& '
+        elif self.type == onnx.defs.OpSchema.AttrType.SPARSE_TENSOR:
+            return 'const ConstVoidData& '
         else:
             return 'unknown'
 
@@ -193,7 +196,8 @@ class Attribute:
         if len(str(self.default)) == 0:
             return False
         else:
-            if self.type == onnx.defs.OpSchema.AttrType.TENSOR:
+            if (self.type == onnx.defs.OpSchema.AttrType.TENSOR
+                    or self.type == onnx.defs.OpSchema.AttrType.SPARSE_TENSOR):
                 # Not sure how to express a tensor as a default value
                 return False
             else:
@@ -203,7 +207,8 @@ class Attribute:
         if self.required:
             return False
         if len(str(self.default)) == 0:
-            if self.type == onnx.defs.OpSchema.AttrType.TENSOR:
+            if (self.type == onnx.defs.OpSchema.AttrType.TENSOR
+                    or self.type == onnx.defs.OpSchema.AttrType.SPARSE_TENSOR):
                 # Not sure how to express a tensor as a default value
                 return False
             else:
@@ -237,6 +242,8 @@ class Attribute:
                 return 'onnx::GraphProto()'
             elif self.type == onnx.defs.OpSchema.AttrType.TENSOR:
                 return '0'
+            elif self.type == onnx.defs.OpSchema.AttrType.SPARSE_TENSOR:
+                return '0'
             elif self.type == onnx.defs.OpSchema.AttrType.STRING:
                 return 'std::string()'
             else:
@@ -260,6 +267,8 @@ class Attribute:
             elif self.type == onnx.defs.OpSchema.AttrType.GRAPH:
                 return 'onnx::GraphProto()'
             elif self.type == onnx.defs.OpSchema.AttrType.TENSOR:
+                return '0'
+            elif self.type == onnx.defs.OpSchema.AttrType.SPARSE_TENSOR:
                 return '0'
             else:
                 return '??'
@@ -289,6 +298,8 @@ class Operation:
         self.attributes = []
 
         self.inputs = 0
+        self.min_input = 1
+        self.max_input = 1
 
         self.outputs = 0
         self.min_ouput = 1
@@ -353,8 +364,19 @@ def parseDefinitions():
         for i in s.inputs:
             op.inputs = op.inputs + 1
 
+        op.min_input = s.min_input
+
+        if (s.max_input == 2147483647):
+            op.max_input = -1
+        else:
+            op.max_input = s.max_input
+
         op.min_output = s.min_output
-        op.max_output = s.max_output
+
+        if (s.max_output == 2147483647):
+            op.max_output = -1
+        else:
+            op.max_output = s.max_output
 
         for k, v in s.attributes.items():
 
@@ -371,9 +393,9 @@ def parseDefinitions():
 
     for k, v in schema.domains.items():
         for op in v.operations:
-            print("{}:{}:{} i:{} o:{}-{}".format(k, op.name, op.version,
-                                                 op.inputs, op.min_output,
-                                                 op.max_output))
+            print("{}:{}:{} i:{}-{} o:{}-{}".format(
+                k, op.name, op.version, op.min_input, op.max_input,
+                op.min_output, op.max_output))
             if op.attributes is not None:
                 for a in sorted(op.attributes, key=lambda x: x.hasDefault()):
                     print("- {} {} V:{}={} R:{} D:{}".format(
@@ -482,10 +504,11 @@ def genBuilderHpp(filename, schema):
                             "     * \\return The normalized output tensor ids\n"
                         )
                     f.write("     */\n")
-                    if op.max_output > 1:
-                        f.write("    std::vector<TensorId>\n")
-                    else:
+                    if op.max_output == 1:
                         f.write("    TensorId\n")
+                    else:
+                        f.write("    std::vector<TensorId>\n")
+
                     f.write("    {}(".format(op.CppName()))
                     if op.inputs > 0:
                         f.write("const std::vector<TensorId>& args,\n".format(
@@ -527,10 +550,10 @@ def genBuilderCpp(filename, schema):
 
                 for op in sorted(opset.operators):
 
-                    if op.max_output > 1:
-                        f.write("std::vector<TensorId>\n")
-                    else:
+                    if op.max_output == 1:
                         f.write("TensorId\n")
+                    else:
+                        f.write("std::vector<TensorId>\n")
 
                     f.write("{}::{}(".format(classname, op.CppName()))
 
@@ -672,23 +695,58 @@ def genPythonBuilderBinds(filename, schema):
 
                     # Special case of the constant operator
                     if op.name == "Constant":
-                        f.write(
-                            "       []({} &opset, py::array array, const std::string& name) {{\n"
-                            .format(classname))
-                        f.write("          ConstVoidData initData;\n")
-                        f.write(
-                            "          initData.data = array.request().ptr;\n")
-                        f.write(
-                            "          initData.info = getTensorInfo(array);\n"
-                        )
-                        f.write(
-                            "          return opset.constant(initData, name);\n"
-                        )
-                        f.write("       },\n")
+                        if (op.version == 11):
+                            '''
+                            f.write("       []({} &opset, py::array array, const std::string& name) {{\n".format(classname))
+                            f.write("          ConstVoidData initData;\n")
+                            f.write("          initData.data = array.request().ptr;\n")
+                            f.write("          initData.info = getTensorInfo(array);\n")
+                            f.write("          return opset.constant(initData, name);\n")
+                            f.write("       },\n")
+                            '''
+
+                            f.write(
+                                "       []({} &opset, py::array array, py::array sparse_array, const std::string& name) {{\n"
+                                .format(classname))
+                            f.write("          ConstVoidData initData;\n")
+                            f.write(
+                                "          initData.data = array.request().ptr;\n"
+                            )
+                            f.write(
+                                "          initData.info = getTensorInfo(array);\n"
+                            )
+                            f.write(
+                                "          ConstVoidData sparseInitData;\n")
+                            f.write(
+                                "          sparseInitData.data = sparse_array.request().ptr;\n"
+                            )
+                            f.write(
+                                "          sparseInitData.info = getTensorInfo(sparse_array);\n"
+                            )
+                            f.write(
+                                "          return opset.constant(initData, sparseInitData, name);\n"
+                            )
+                            f.write("       },\n")
+
+                        else:
+                            f.write(
+                                "       []({} &opset, py::array array, const std::string& name) {{\n"
+                                .format(classname))
+                            f.write("          ConstVoidData initData;\n")
+                            f.write(
+                                "          initData.data = array.request().ptr;\n"
+                            )
+                            f.write(
+                                "          initData.info = getTensorInfo(array);\n"
+                            )
+                            f.write(
+                                "          return opset.constant(initData, name);\n"
+                            )
+                            f.write("        },\n")
                     # Special case for the constantofshape operator
                     elif op.name == "ConstantOfShape":
                         x = "\
-                        []({classname} &opset,\
+                        []({} &opset,\
                            const std::vector<TensorId> &args,\
                            py::array array,\
                            const std::string &name) {{\
@@ -724,10 +782,10 @@ def genPythonBuilderBinds(filename, schema):
                         f.write("          const std::string &name) -> ")
 
                         # Call the builder method
-                        if op.max_output > 1:
-                            f.write("std::vector<TensorId>")
-                        else:
+                        if op.max_output == 1:
                             f.write("TensorId")
+                        else:
+                            f.write("std::vector<TensorId>")
 
                         f.write("{\n")
                         f.write("           return opset.{}(".format(
@@ -776,10 +834,81 @@ def genPythonBuilderBinds(filename, schema):
                 f.write(";\n")
 
 
-def genOpIdentifiers(filename, schema):
+def genOpIdentifiersHpp(filename, schema):
     with io.open(filename, 'w') as f:
         addHeader(f)
-        pass
+
+        f.write("namespace Onnx {\n")
+        f.write("namespace Operators {\n")
+
+        for k, v, in schema.domains.items():
+
+            ops = v.operators
+            ''' 
+            for opset_version, opset in sorted(v.opsets.items(),
+                                               key=lambda x: int(x[0])):
+
+                print("Opset {}", opset_version)
+                 # Add all ops in the this op set
+                for op in opset.operators:
+                    ops.append(op)
+            '''
+
+            for op in sorted(ops):
+                f.write("const static OperatorIdentifier " + op.name + "_" +
+                        str(op.version))
+
+                if (op.min_input == op.max_input):
+                    numInputs = str(op.min_input)
+                else:
+                    numInputs = "{{{}, {}}}".format(str(op.min_input),
+                                                    str(op.max_input))
+
+                if (op.min_output == op.max_output):
+                    numOutputs = str(op.min_output)
+                else:
+                    numOutputs = str(op.max_output)
+                    #numOutputs = "{{{}, {}}}".format(str(op.min_output), str(op.max_output))
+
+                f.write("(Domain::ai_onnx, \"{}\", {}, {}, {});".format(
+                    op.name, str(op.version), numInputs, numOutputs))
+
+                f.write("\n")
+
+        f.write("}\n")
+        f.write("\n")
+
+        f.write("namespace AiOnnx {\n")
+        for k, v, in schema.domains.items():
+
+            for opset_version, opset in sorted(v.opsets.items(),
+                                               key=lambda x: int(x[0])):
+
+                f.write("namespace OpSet{} {{\n".format(str(opset_version)))
+                # Add all ops in the this op set
+
+                seen = []
+
+                for op in v.operations:
+                    found = [
+                        x for x in v.operations if x.name == op.name
+                        and x.version <= int(opset_version)
+                    ]
+
+                    if (op.name not in seen):
+                        if (len(found) > 0):
+                            seen.append(found[-1].name)
+                            f.write(
+                                "const static OperatorIdentifier {} = Operators::{}_{};"
+                                .format(op.name, op.name,
+                                        str(found[-1].version)))
+                            f.write("\n")
+
+                f.write("}\n")
+
+        f.write("}\n")
+
+        f.write("}\n")
 
 
 def main():
@@ -789,6 +918,7 @@ def main():
     #genOpIdentifiers('gen/opidentifier_gen.hpp', schema)
     genBuilderHpp('willow/include/popart/builder.h.gen', schema)
     genBuilderCpp('willow/src/builder.cpp.gen', schema)
+    genOpIdentifiersHpp('willow/include/popart/opidentifier.hpp.gen', schema)
     genPythonBuilderBinds('python/popart.cpp.gen', schema)
 
 

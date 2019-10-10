@@ -378,7 +378,7 @@ const std::map<int, int> &IfConditionGradOp::gradOutToNonGradIn() const {
 namespace {
 
 static OpCreator<IfOp> ifOpCreator(
-    {Onnx::Operators::If_1},
+    {Onnx::Operators::If_1, Onnx::Operators::If_11},
     [](const OperatorIdentifier &opid_,
        const Op::Settings &settings_,
        const Attributes &attr) -> std::unique_ptr<Op> {

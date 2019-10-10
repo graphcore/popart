@@ -165,7 +165,8 @@ namespace {
 OpxCreator<Opx>
     maxpoolOpxCreator({Onnx::Operators::MaxPool_1,
                        Onnx::Operators::MaxPool_8,
-                       Onnx::Operators::MaxPool_10},
+                       Onnx::Operators::MaxPool_10,
+                       Onnx::Operators::MaxPool_11},
                       [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
                         return std::make_unique<TPoolOpx<MaxPoolOp>>(
                             op, devicex, popnn::PoolingType::MAX);
@@ -196,7 +197,8 @@ OpxCreator<Opx> globalMaxpoolGradOpxCreator(
 OpxCreator<Opx>
     averageOpxCreator({Onnx::Operators::AveragePool_1,
                        Onnx::Operators::AveragePool_7,
-                       Onnx::Operators::AveragePool_10},
+                       Onnx::Operators::AveragePool_10,
+                       Onnx::Operators::AveragePool_11},
                       [](Op *op, Devicex *devicex) -> std::unique_ptr<Opx> {
                         return std::make_unique<TPoolOpx<AveragePoolOp>>(
                             op, devicex, popnn::PoolingType::AVG);

@@ -18,7 +18,8 @@ namespace popart {
 namespace popx {
 
 OnehotOpx::OnehotOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<OnehotOpx>(op, Onnx::Operators::OneHot_9);
+  verifyOp<OnehotOpx>(op,
+                      {Onnx::Operators::OneHot_9, Onnx::Operators::OneHot_11});
 }
 
 void OnehotOpx::grow(poplar::program::Sequence &prog) const {
@@ -168,7 +169,8 @@ void OnehotGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<OnehotOpx> onehotOpxCreator(Onnx::Operators::OneHot_9);
+OpxCreator<OnehotOpx> onehotOpxCreator({Onnx::Operators::OneHot_9,
+                                        Onnx::Operators::OneHot_11});
 OpxCreator<OnehotGradOpx> onehotGradOpxCreator(Onnx::GradOperators::OneHotGrad);
 } // namespace
 

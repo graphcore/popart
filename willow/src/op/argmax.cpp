@@ -22,8 +22,10 @@ std::unique_ptr<Op> argMaxFactory(const OperatorIdentifier &_opid,
   return std::make_unique<ArgMaxOp>(_opid, axis, keepdims, settings);
 }
 
-static OpCreator<ArgMaxOp>
-    ArgMaxOpCreator(Onnx::Operators::ArgMax_1, argMaxFactory, true);
+static OpCreator<ArgMaxOp> ArgMaxOpCreator({Onnx::Operators::ArgMax_1,
+                                            Onnx::Operators::ArgMax_11},
+                                           argMaxFactory,
+                                           true);
 } // namespace
 
 } // namespace popart

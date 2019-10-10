@@ -45,7 +45,7 @@ namespace {
 // @SL@ the new factory method for the reduceProd op will get the attributes
 // from the model and pass them to the constructor of the OP
 static OpCreator<ReduceProdOp> ReduceProdOpCreator(
-    Onnx::Operators::ReduceProd_1,
+    {Onnx::Operators::ReduceProd_1, Onnx::Operators::ReduceProd_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

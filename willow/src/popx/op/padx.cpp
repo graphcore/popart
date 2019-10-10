@@ -82,7 +82,8 @@ PadInplaceOpx::PadInplaceOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
 }
 
 namespace {
-OpxCreator<PadOpx> padOpxCreator(Onnx::Operators::Pad_2);
+OpxCreator<PadOpx> padOpxCreator({Onnx::Operators::Pad_2,
+                                  Onnx::Operators::Pad_11});
 OpxCreator<PadGradOpx> padGradOpxCreator(Onnx::GradOperators::PadGrad);
 OpxCreator<PadInplaceOpx>
     padxInplaceOpxCreator(Onnx::CustomOperators::PadInplace);

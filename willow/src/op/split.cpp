@@ -104,7 +104,7 @@ const std::map<int, int> &SplitGradOp::gradOutToNonGradIn() const {
 namespace {
 
 static OpCreator<SplitOp> splitOpCreator(
-    {Onnx::Operators::Split_2},
+    {Onnx::Operators::Split_2, Onnx::Operators::Split_11},
     [](const OperatorIdentifier &opid_,
        const Op::Settings &settings_,
        const Attributes &attr) -> std::unique_ptr<Op> {

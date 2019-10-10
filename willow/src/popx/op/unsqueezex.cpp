@@ -15,7 +15,8 @@ void UnsqueezeOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 UnsqueezeOpx::UnsqueezeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<UnsqueezeOp>(op, {Onnx::Operators::Unsqueeze_1});
+  verifyOp<UnsqueezeOp>(
+      op, {Onnx::Operators::Unsqueeze_1, Onnx::Operators::Unsqueeze_11});
 }
 
 UnsqueezeGradOpx::UnsqueezeGradOpx(Op *op, Devicex *devicex)
@@ -31,7 +32,8 @@ void UnsqueezeGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<UnsqueezeOpx> unsqueezeOpxCreator(Onnx::Operators::Unsqueeze_1);
+OpxCreator<UnsqueezeOpx> unsqueezeOpxCreator({Onnx::Operators::Unsqueeze_1,
+                                              Onnx::Operators::Unsqueeze_11});
 OpxCreator<UnsqueezeGradOpx>
     unsqueezeGradOpxCreator(Onnx::GradOperators::UnsqueezeGrad);
 } // namespace

@@ -205,7 +205,7 @@ void NlllWithSoftmaxGradDirectOp::setup() {
 
 namespace {
 static OpCreator<SoftmaxOp> softmaxOpCreator(
-    Onnx::Operators::Softmax_1,
+    {Onnx::Operators::Softmax_1, Onnx::Operators::Softmax_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

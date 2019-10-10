@@ -38,7 +38,7 @@ namespace {
 // @SL@ the new factory method for the reduceMean op will get the attributes
 // from the model and pass them to the constructor of the OP
 static OpCreator<ReduceMeanOp> ReduceMeanOpCreator(
-    Onnx::Operators::ReduceMean_1,
+    {Onnx::Operators::ReduceMean_1, Onnx::Operators::ReduceMean_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

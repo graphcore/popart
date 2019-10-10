@@ -19,8 +19,10 @@ std::unique_ptr<Op> argMinFactory(const OperatorIdentifier &_opid,
   return std::make_unique<ArgMinOp>(_opid, axis, keepdims, settings);
 }
 
-static OpCreator<ArgMinOp>
-    argMinOpCreator(Onnx::Operators::ArgMin_1, argMinFactory, true);
+static OpCreator<ArgMinOp> argMinOpCreator({Onnx::Operators::ArgMin_1,
+                                            Onnx::Operators::ArgMax_11},
+                                           argMinFactory,
+                                           true);
 } // namespace
 
 } // namespace popart

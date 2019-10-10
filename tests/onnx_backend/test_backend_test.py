@@ -207,6 +207,18 @@ backend_test.exclude('test_reversesequence')
 backend_test.exclude('test_roialign')
 backend_test.exclude('test_split')
 
+backend_test.exclude('test_cumsum')
+backend_test.exclude('test_round')
+backend_test.exclude('test_gather_elements')
+backend_test.exclude('test_scatter_elements')
+backend_test.exclude('test_gathernd')
+backend_test.exclude('test_scatternd')
+backend_test.exclude('test_det')
+backend_test.exclude('test_dynamicquantizelinear')
+backend_test.exclude('test_range')
+backend_test.exclude('test_unique')
+backend_test.exclude('test_sequence')
+
 # high level models
 backend_test.exclude('bvlc_alexnet')
 backend_test.exclude('densenet121')
@@ -355,6 +367,47 @@ backend_test.exclude('test_maxpool_2d_same_lower')
 backend_test.exclude('test_maxpool_2d_same_upper')
 backend_test.exclude('test_maxpool_3d_default')
 backend_test.exclude('test_maxpool_with_argmax_2d_precomputed_strides')
+
+#T12065
+backend_test.exclude('test_concat_1d_axis_negative_1')
+backend_test.exclude('test_concat_2d_axis_negative_1')
+backend_test.exclude('test_concat_2d_axis_negative_2')
+backend_test.exclude('test_concat_3d_axis_negative_1')
+backend_test.exclude('test_concat_3d_axis_negative_2')
+backend_test.exclude('test_concat_3d_axis_negative_3')
+backend_test.exclude('test_flatten_negative_axis1')
+backend_test.exclude('test_flatten_negative_axis2')
+backend_test.exclude('test_flatten_negative_axis3')
+backend_test.exclude('test_flatten_negative_axis4')
+backend_test.exclude('test_reduce_l1_negative_axes')
+backend_test.exclude('test_reduce_l2_negative_axes')
+backend_test.exclude('test_reduce_max_negative_axes')
+backend_test.exclude('test_reduce_mean_negative_axes')
+backend_test.exclude('test_reduce_min_negative_axes')
+backend_test.exclude('test_reduce_prod_negative_axes')
+backend_test.exclude('test_reduce_sum_negative_axes')
+backend_test.exclude('test_reduce_sum_square_negative_axes')
+backend_test.exclude('test_squeeze_negative_axes')
+backend_test.exclude('test_unsqueeze_negative_axes')
+backend_test.exclude('test_gather_negative_indices')
+
+#T12066
+backend_test.exclude('test_reshape_negative_extended_dims')
+backend_test.exclude('test_reshape_reordered_all_dims')
+backend_test.exclude('test_reshape_reordered_last_dims')
+backend_test.exclude('test_reshape_zero_and_negative_dim')
+backend_test.exclude('test_reshape_zero_dim')
+
+backend_test.exclude('test_clip')
+#backend_test.include('test_clip_default_inbounds')
+#backend_test.include('test_clip_inbounds')
+
+#T12067
+backend_test.exclude('test_edge_pad')
+backend_test.exclude('test_reflect_pad')
+
+backend_test.exclude('test_gemm_default_no_bias')
+backend_test.exclude('test_unsqueeze_unsorted_axes')
 
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.test_cases)

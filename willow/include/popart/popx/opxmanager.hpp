@@ -53,6 +53,15 @@ public:
                             });
   }
 
+  OpxCreator(const std::vector<OperatorIdentifier> &opids, std::string errMsg) {
+    for (const auto &opid : opids) {
+      OpxManager::registerOpx(
+          opid, [errMsg](Op *, Devicex *) -> std::unique_ptr<Opx> {
+            throw error(errMsg);
+          });
+    }
+  }
+
   OpxCreator(const OperatorIdentifier &opid, OpxManager::OpxFactoryFunc func) {
     OpxManager::registerOpx(opid, func);
   }

@@ -64,7 +64,8 @@ void TopKOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<TopKOpx> TopKOpxCreator({Onnx::Operators::TopK_1,
-                                    Onnx::Operators::TopK_10});
+                                    Onnx::Operators::TopK_10,
+                                    Onnx::Operators::TopK_11});
 OpxCreator<TopKGradOpx> topkGradOpxCreator(Onnx::GradOperators::TopKGrad);
 } // namespace
 

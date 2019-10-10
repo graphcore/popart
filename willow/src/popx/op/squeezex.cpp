@@ -8,7 +8,8 @@ namespace popart {
 namespace popx {
 
 SqueezeOpx::SqueezeOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
-  verifyOp<SqueezeOp>(op, {Onnx::Operators::Squeeze_1});
+  verifyOp<SqueezeOp>(
+      op, {Onnx::Operators::Squeeze_1, Onnx::Operators::Squeeze_11});
 }
 
 void SqueezeOpx::grow(poplar::program::Sequence &prog) const {
@@ -40,7 +41,8 @@ void SqueezeGradOpx::grow(poplar::program::Sequence &prog) const {
 }
 
 namespace {
-OpxCreator<SqueezeOpx> squeezeOpxCreator(Onnx::Operators::Squeeze_1);
+OpxCreator<SqueezeOpx> squeezeOpxCreator({Onnx::Operators::Squeeze_1,
+                                          Onnx::Operators::Squeeze_11});
 OpxCreator<SqueezeInplaceOpx>
     squeezeInplaceOpxCreator(Onnx::CustomOperators::SqueezeInplace);
 OpxCreator<SqueezeGradOpx>

@@ -65,7 +65,10 @@ void GemmOp::appendAttributes(OpSerialiserBase &os) const {
 }
 namespace {
 static OpCreator<GemmOp> gemmOpCreator(
-    {Onnx::Operators::Gemm_6, Onnx::Operators::Gemm_7, Onnx::Operators::Gemm_9},
+    {Onnx::Operators::Gemm_6,
+     Onnx::Operators::Gemm_7,
+     Onnx::Operators::Gemm_9,
+     Onnx::Operators::Gemm_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {

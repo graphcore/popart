@@ -126,7 +126,8 @@ namespace {
 static OpCreator<AveragePoolOp> averagePoolOpCreator(
     {Onnx::Operators::AveragePool_1,
      Onnx::Operators::AveragePool_7,
-     Onnx::Operators::AveragePool_10},
+     Onnx::Operators::AveragePool_10,
+     Onnx::Operators::AveragePool_11},
     [](const OperatorIdentifier &_opid,
        const Op::Settings &settings,
        const Attributes &attr) -> std::unique_ptr<Op> {
