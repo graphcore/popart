@@ -87,7 +87,11 @@ static void mergeCopies(const std::vector<Tensor *> &copy_group, Graph &graph) {
     auto producer  = dynamic_cast<IpuCopyOp *>(t->getProducer());
     auto sourceIpu = producer->getSourceIpu(source->id);
 
-    producer->disconnectInTensor(source);
+    if (producer->input->n() != 1) {
+      throw error("ILE: Attempting to merge a copy with more than one input!");
+    }
+
+    producer->disconnectInTensor(0, source);
     producer->disconnectOutTensor(t);
 
     int idx = copy_op->output->n();

@@ -39,6 +39,8 @@ public:
   // A string of the form "[ sourceIpus ] --> [ destIpu ]"
   std::string getFromToStr() const;
 
+  void disconnectInTensor(InIndex, Tensor *) override;
+
 private:
   void connectInTensor(InIndex, TensorId) override {
     throw error(

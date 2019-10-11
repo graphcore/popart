@@ -122,6 +122,19 @@ void IpuCopyOp::connectInTensor(InIndex inIndex,
   defaultConnectInTensor(inIndex, tenId);
 }
 
+void IpuCopyOp::disconnectInTensor(InIndex idx, Tensor *t) {
+  auto sourceIpu = sourceIpus.at(t->id);
+  sourceIpus.erase(t->id);
+
+  auto &sourceIds = sourceTensors.at(sourceIpu);
+  std::remove(sourceIds.begin(), sourceIds.end(), t->id);
+  if (sourceIds.empty()) {
+    sourceTensors.erase(sourceIpu);
+  }
+
+  Op::disconnectInTensor(idx, t);
+}
+
 // Have intentionally not added the IpuCopyOp to the OpManager. This IpuCopyOp
 // needs to be explicitly created as part of the interipucopy transform
 

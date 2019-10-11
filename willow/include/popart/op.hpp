@@ -184,7 +184,7 @@ public:
 
   // Disconnect an input test from the op
   void disconnectInTensor(Tensor *tensor);
-  void disconnectInTensor(InIndex, Tensor *tensor);
+  virtual void disconnectInTensor(InIndex, Tensor *tensor);
 
   // Disconnect an output tensor from the op
   void disconnectOutTensor(Tensor *tensor);

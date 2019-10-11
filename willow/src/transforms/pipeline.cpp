@@ -350,6 +350,120 @@ Op *getRestoreReferenceOp(Tensor *t, Op *stashRefOp) {
   return restoreCandidates.at(0);
 }
 
+void insertOpAfterTensor(Op *op, Tensor *t) {
+  auto consumers = t->consumers.getOps();
+
+  op->connectInTensor(0, t->id);
+  op->createAndConnectOutTensor(0, t->id + "_after");
+  op->setup();
+
+  for (auto c : consumers) {
+    for (auto idx : c->input->indices(t)) {
+      c->disconnectInTensor(idx, t);
+      c->connectInTensor(idx, op->outId(0));
+    }
+  }
+}
+
+// clang-format off
+// (a) -> [copy] -> (a_copy0 on pipeline stage N)
+// (a) -> [copy] -> (a_copy1 on pipeline stage M)
+//                     ==================>
+// (a) -> [copy] -> (a_copy0 on pipeline stage N) -> [copy] -> (a_copy1 on pipeline stage M)
+// clang-format on
+void chainCopies(std::vector<IpuCopyOp *> &copies) {
+  for (auto c : copies) {
+    if (c->input->n() > 1) {
+      // Chaining copies with more than 1 input is possible, but I don't think
+      // it will ever occur.
+      throw error("ILE: Attempting to chain a copy with more than one input.");
+    }
+  }
+
+  std::sort(copies.begin(), copies.end(), [](auto &lhs, auto &rhs) {
+    auto lhsStage = *lhs->outTensor(0)->consumers.findLowestPipelineStage();
+    auto rhsStage = *rhs->outTensor(0)->consumers.findLowestPipelineStage();
+    return lhsStage < rhsStage;
+  });
+
+  auto isModifiedByConsumer = [](Tensor *t) {
+    for (auto c : t->consumers.getOps()) {
+      for (auto idx : c->input->indices(t)) {
+        if (!c->modifies(idx).isEmpty()) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  // for all but the last copy.
+  // if the copied tensor is modifed by any of its consumers, we need to insert
+  // an identity between the copied tensor and the consumer.
+  for (int i = 0; i < copies.size() - 1; i++) {
+    auto copyOp  = copies[i];
+    auto copyOut = copyOp->outTensor(0);
+    if (isModifiedByConsumer(copyOut)) {
+      logging::debug("Inserting Identity after {}", copyOp->debugName());
+      auto identityOp = [&]() {
+        auto &graph = copyOp->getGraph();
+        Op::Settings identitySettings(graph, "");
+        auto op  = std::make_unique<IdentityOp>(Onnx::Operators::Identity_1,
+                                               identitySettings);
+        auto ptr = op.get();
+        graph.moveIntoGraph(std::move(op));
+        return ptr;
+      }();
+
+      identityOp->setPipelineStage(
+          copyOut->consumers.findLowestPipelineStage());
+      identityOp->setVirtualGraphId(copyOut->getVirtualGraphId());
+
+      insertOpAfterTensor(identityOp, copyOut);
+    }
+  }
+
+  for (int i = 1; i < copies.size(); i++) {
+    auto prevCopyOp = copies[i - 1];
+    auto copyOp     = copies[i];
+    auto newPStage =
+        prevCopyOp->outTensor(0)->consumers.findLowestPipelineStage();
+
+    copyOp->disconnectInTensor(0, copyOp->inTensor(0));
+    copyOp->connectInTensor(0, prevCopyOp->outId(0), prevCopyOp->getDestIpu());
+    copyOp->setPipelineStage(newPStage);
+  }
+}
+
+// Look for and transform groups of copies that may be chained. This prevents
+// duplicate copies being created by the contiguate copies transform where:
+//   O -> N
+//   O -> M
+// would become:
+//   O -> O+1 -> O+2 -> ... -> N
+//   O -> O+1 -> O+2 -> ... -> N -> N+1 -> N+2 -> ... -> M
+void chainCopiesTransform(Graph &graph) {
+  std::map<TensorId, std::vector<IpuCopyOp *>> copyMap;
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (!op->copiesOptimizerTensors() && op->isConvertibleTo<IpuCopyOp>()) {
+      auto copyOp = dynamic_cast<IpuCopyOp *>(op);
+      for (auto tensor : op->input->tensors()) {
+        copyMap[tensor->id].push_back(copyOp);
+      }
+    }
+  }
+
+  for (auto &tenId_copies : copyMap) {
+    auto &copies = tenId_copies.second;
+
+    if (copies.size() > 1) {
+      chainCopies(copies);
+    }
+  }
+}
+
 } // namespace
 
 bool Pipeline::apply(Graph &graph) const {
@@ -427,6 +541,8 @@ bool Pipeline::apply(Graph &graph) const {
     }
     return ipuCopies;
   };
+
+  chainCopiesTransform(graph);
 
   // Other sharding assumptions to check:
 
