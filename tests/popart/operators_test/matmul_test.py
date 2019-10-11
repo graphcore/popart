@@ -398,7 +398,7 @@ def test_matmul_broadcasting(op_tester):
                 z1 = torch.tensor(zeros(2), requires_grad=True)
                 out = z1 + r
                 out__o = ref_data.getOutputTensorGrad(0)
-                r.backward(torch.tensor(out__o))
+                out.backward(torch.tensor(out__o))
 
                 return [out, r, out__o, t1.grad, t2.grad]
             else:
