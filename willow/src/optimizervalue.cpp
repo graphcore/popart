@@ -10,4 +10,10 @@ bool OptimizerValue::validReplacement(const OptimizerValue &rhs) const {
   }
   return true;
 }
+
+OptimizerValue &OptimizerValue::operator=(const OptimizerValue &rhs) {
+  val_     = rhs.val_;
+  isConst_ = rhs.isConst_;
+  return *this;
+}
 } // namespace popart

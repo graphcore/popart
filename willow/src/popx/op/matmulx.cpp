@@ -17,8 +17,9 @@
 namespace popart {
 namespace popx {
 
-static PoplarOptions getPoplarOptionsForMatMul(Devicex *device,
-                                               MatMulBaseOp::Phase phase) {
+namespace {
+PoplarOptions getPoplarOptionsForMatMul(Devicex *device,
+                                        MatMulBaseOp::Phase phase) {
   PoplarOptions options;
   if (phase == MatMulBaseOp::Phase::Fwd) {
     options = device->fwdMmOptions;
@@ -29,6 +30,7 @@ static PoplarOptions getPoplarOptionsForMatMul(Devicex *device,
   }
   return options;
 }
+} // namespace
 
 MatMulOpx::MatMulOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
   verifyOp<MatMulOp>(op,

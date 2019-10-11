@@ -568,6 +568,15 @@ private:
   // POPART_OPX_TRACE environment variable to "1"
   bool opxTrace = false;
   poplar::Tensor opxTraceTensor;
+
+  // This keeps track of whether there the varUpdateFromAccmulatorFragment and
+  // the resetWeightGradientAccumulatorFragment are empty. TODO T12001: (1)
+  // merge these 2 fragments (2) a class which encapsulates framgments which has
+  // this attribute.
+  bool outerLoopFragEmpty = true;
+
+public:
+  bool getOuterLoopFragEmpty() const { return outerLoopFragEmpty; }
 };
 
 } // namespace popx

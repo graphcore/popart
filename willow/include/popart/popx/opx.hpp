@@ -49,7 +49,7 @@ public:
   // default return DEADEND, i.e. unable to create input tensor, and
   // cannot use downstream opxs as candidates to create input
   // tensor
-  virtual InputCreatorType getInputCreatorType(int index0) const;
+  virtual InputCreatorType getInputCreatorType(InIndex index0) const;
   // When an input tensor has multiple creator candidates, we choose
   // the one with highest priority
   double inputCreatorPriority{0.0};

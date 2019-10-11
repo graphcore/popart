@@ -36,6 +36,25 @@ void PriTasks::add(const PriTask &t) {
   if (tasksMap.find(t.name) != tasksMap.end()) {
     throw error("already encountered name {} in tasks", t.name);
   }
+
+  std::ostringstream oss;
+  oss << "Adding Pritask " << t.name << " <- [ ";
+  for (auto dep : t.dependsOn) {
+    oss << dep << ' ';
+  }
+  oss << "]";
+  logging::devicex::debug(oss.str());
+
+  for (auto x : t.dependsOn) {
+    auto found = tasksMap.find(x);
+    if (found != tasksMap.end()) {
+      if (std::find(found->second.dependsOn.begin(),
+                    found->second.dependsOn.end(),
+                    t.name) != found->second.dependsOn.end()) {
+        throw error("circular PriTask dependency " + x + " <-> " + t.name);
+      }
+    }
+  }
   tasksMap[t.name] = t;
 }
 
@@ -112,15 +131,15 @@ std::vector<PriTask> PriTasks::getLinearised() const {
         }
       }
       if (present == false) {
-        ss << parent << "   ( ";
+        ss << parent << "   [ ";
         if (tasksMap.find(parent) != tasksMap.end()) {
           for (auto &dep : tasksMap.at(parent).dependsOn) {
-            ss << dep << ' ';
+            ss << "\n       " << dep << " ";
           }
         } else {
-          ss << " xxxxx ";
+          ss << "\n xxxxx ";
         }
-        ss << ')' << '\n';
+        ss << ']' << "\n\n";
       }
     }
     throw error(ss.str());

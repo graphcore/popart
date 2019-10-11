@@ -318,7 +318,7 @@ void updateTopoCons(const std::vector<OpId> &ops,
     graph.topoCons->remove(graph.getOp(opid));
   }
 
-  // Add the topocons for the replacement op
+  // Add the topoCons for the replacement Op
   for (auto before : befores) {
     graph.topoCons->insert(before, graph.getOp(replacement_op));
   }

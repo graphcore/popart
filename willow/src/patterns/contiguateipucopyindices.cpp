@@ -30,6 +30,7 @@ bool ContiguateIpuCopyIndicesPattern::matches(Op *op) const {
     if (delta == +1 || delta == -1) {
       return false;
     }
+
     return true;
   }
   // if not a IpuCopyOp, return false
@@ -71,7 +72,6 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
   auto originalIpuCopyOp = dynamic_cast<IpuCopyOp *>(op);
 
   // Creation of intermediate IpuCopyOps:
-  auto in0        = originalIpuCopyOp->inTensor(0);
   auto out0       = originalIpuCopyOp->outTensor(0);
   auto firstStage = op->getPipelineStage();
   auto lastStage  = *out0->consumers.findLowestPipelineStage();

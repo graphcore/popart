@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <array>
 #include <fstream>
-#include <iostream>
 #include <map>
 #include <sstream>
 #include <string>
@@ -36,7 +35,6 @@
 // The transformations
 #include <popart/recompute.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
-#include <popart/transforms/gradient_accumulation.hpp>
 #include <popart/transforms/groupmatmuls.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
 #include <popart/transforms/interipucopy.hpp>
@@ -49,12 +47,14 @@
 
 // The layers required to construct the backwards pass
 #include <popart/op/batchnorm.hpp>
+#include <popart/op/copyvarupdate.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/placeholder.hpp>
+#include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sum.hpp>
-#include <popart/op/varupdate.hpp>
 
 #include <popart/patterns/inplace.hpp>
+#include <popart/patterns/sgd1decompose.hpp>
 #include <popart/patterns/updateinplaceprioritiesforipu.hpp>
 
 #include <popart/dotvisualizer.hpp>
@@ -432,9 +432,12 @@ void Ir::verifyTensorProducerConnectivity() const {
 
     if (tensor->hasProducer() && tensor->tensorType() == TensorType::Variable) {
       auto op = tensor->getProducer();
-      throw error("Tensor {} is a variable tensor, but has op {} as a producer",
-                  tensor->str(),
-                  op->str());
+      if (!dynamic_cast<VarUpdateOp *>(op)) {
+        throw error(
+            "Tensor {} is a variable tensor, but has op {} as a producer",
+            tensor->str(),
+            op->str());
+      }
     }
 
     if (!tensor->hasProducer() && tensor->tensorType() == TensorType::ActGrad) {
@@ -684,6 +687,10 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   registerInputTensors();
 
+  if (!canTrain() && getSessionOptions().enableGradientAccumulation) {
+    throw error("Gradient Accumulation only available when training.");
+  }
+
   logging::ir::info("Patterns : {}", patterns);
   // todo : validate the selected patterns
 
@@ -814,8 +821,7 @@ void Ir::prepareImpl(const IrBundle &gb) {
   applyTransform(Prune::id(), getMainGraph());
   updateVertices();
 
-  // Make sure that matmuls are serialized before gradient
-  // accumalation
+  // Make sure that matmuls are serialized before gradient accumalation
   if (getSessionOptions().enableSerializedMatmuls) {
     applyTransform(SerializeMatMuls::id(), getMainGraph());
   }
@@ -824,10 +830,9 @@ void Ir::prepareImpl(const IrBundle &gb) {
     applyTransform(GroupMatMuls::id(), getMainGraph());
   }
 
-  // Apply transform after topological constraints have been added.
-  if (userOptions.enableGradientAccumulation) {
-    applyTransform(GradientAccumulation::id(), getMainGraph());
-  }
+  // Accumulator Tensor for gradient accumulation / momentum is added here
+  SGD1Decompose sgd1Decomposer;
+  applyPreAliasPattern(&sgd1Decomposer, getMainGraph());
 
   // Add internal ops to copy tensors between ipu's as needed
   applyTransform(InterIpuCopy::id(), getMainGraph());
@@ -2120,9 +2125,16 @@ void Ir::growGradientVarUpdateOp(const TensorId &varId) {
     throw error("Currently only floating point variable tensors are updatable");
   }
 
-  const Tensor &var    = *getTensors().get(varId);
-  auto inputIds        = optimizer->getInputIds(var);
-  auto optimizerInputs = optimizer->getOptimizerInputs(var);
+  const Tensor &var = *getTensors().get(varId);
+  auto inputIds =
+      optimizer->getInputIds(var,
+                             getSessionOptions().enableGradientAccumulation,
+                             getSessionOptions().accumulationFactor);
+
+  auto optimizerInputs = optimizer->getOptimizerInputs(
+      var,
+      getSessionOptions().enableGradientAccumulation,
+      getSessionOptions().accumulationFactor);
 
   // If there is no weight gradient, we assume that the gradient has been
   // forced to zero somewhere else in the backwards pass
@@ -2198,6 +2210,11 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
 
 bool Ir::addToTrainTargetOps(Op *op) {
   return trainTargetOps.insert(op).second;
+}
+
+bool Ir::removeFromTrainTargetOps(Op *op) {
+  auto nRemoved = trainTargetOps.erase(op);
+  return nRemoved == 1;
 }
 
 void Ir::growFinalLoss() {

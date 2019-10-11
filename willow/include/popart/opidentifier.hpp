@@ -307,7 +307,12 @@ const static AiGraphcoreOpIdV1 Nll("Nll");
 
 const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 
-const static AiGraphcoreOpIdV1 SgdVarUpdate("SGDVarUpdate");
+const static AiGraphcoreOpIdV1 SGD0VarUpdate("SGD0VarUpdate");
+const static AiGraphcoreOpIdV1 SGD1VarUpdateCombo("SGD1VarUpdateCombo");
+const static AiGraphcoreOpIdV1 SGD1VarUpdate("SGD1VarUpdate");
+const static AiGraphcoreOpIdV1 SGD1AcclUpdate("SGD1AcclUpdate");
+const static AiGraphcoreOpIdV1 SGD1Accumulate("SGD1Accumulate");
+
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
 const static AiGraphcoreOpIdV1 FlattenInplace("FlattenInplace");
 const static AiGraphcoreOpIdV1 ReshapeInplace("ReshapeInplace");

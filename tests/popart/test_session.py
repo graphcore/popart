@@ -29,14 +29,13 @@ class TestSession:
 
         optimizer = popart.ConstSGD(0.01)
 
-        self._session = self._get_session(
-            fnModel=proto,
-            dataFeed=dataFlow,
-            losses=losses,
-            optimizer=optimizer,
-            deviceInfo=device,
-            passes=self.passes,
-            userOptions=self.options)
+        self._session = self._get_session(fnModel=proto,
+                                          dataFeed=dataFlow,
+                                          losses=losses,
+                                          optimizer=optimizer,
+                                          deviceInfo=device,
+                                          passes=self.passes,
+                                          userOptions=self.options)
         self._device_prepared = False
 
     def run(self, ins=None):

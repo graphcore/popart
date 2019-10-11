@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(test0) {
 
   // 1. Same as ref, except different optimizer - Op schedule no longer the same
   Ir ir1;
-  auto opt1 = SGD(0.01);
+  auto opt1 = SGD({{"defaultLearningRate", {0.01, false}}});
   ir1.prepare({proto, isi, df0, losses, &opt1, *device0, {}, Patterns()});
   std::size_t irHash1 = std::hash<Ir>{}(ir1);
 

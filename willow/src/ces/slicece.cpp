@@ -59,7 +59,7 @@ std::vector<Slice> ConstExprSlice::getAllSlices() {
 
   // if there is a slice for an axis in slice_op
   // replace the default slice with the slice_op slice
-  for (auto slice : getOp<SliceOp>().getSlices()) {
+  for (auto slice : getOp<BaseSliceOp>().getSlices()) {
     slices[slice.axis] = slice;
   }
 

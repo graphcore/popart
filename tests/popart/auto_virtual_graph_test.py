@@ -202,7 +202,7 @@ def test_auto_virtual_graph_train():
                    dataFeed=dataFlow,
                    userOptions=opts,
                    losses=[loss],
-                   optimizer=popart.SGD(0.01),
+                   optimizer=popart.SGD({"defaultLearningRate": (0.01, True)}),
                    deviceInfo=device)
 
 

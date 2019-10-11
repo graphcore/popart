@@ -129,15 +129,16 @@ OpJsonSerialiser::OpJsonSerialiser(const Op *op, std::stringstream &ss_)
     }
   });
 
-  appendKeyValueFn("attributes",
-                   [&]() {
-                     attributesAppended = false;
-                     op->appendAttributes(*this);
+  appendKeyValueFn(
+      "attributes",
+      [&]() {
+        attributesAppended = false;
+        op->appendAttributes(*this);
 
-                     if (attributesAppended)
-                       ss.seekp(-1, std::ios_base::end); // remove last ','
-                   },
-                   true);
+        if (attributesAppended)
+          ss.seekp(-1, std::ios_base::end); // remove last ','
+      },
+      true);
 
   ss << "}";
 }

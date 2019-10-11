@@ -226,7 +226,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
     auto dataFlow = DataFlow(batchesPerStep, {});
 
     // The learning rate will be adjusted to the correct value at runtime
-    auto optimizer = SGD(10000.);
+    auto optimizer = SGD({{"defaultLearningRate", {10000., false}}});
 
     float lambda = 0.1;
     auto loss    = std::unique_ptr<Loss>(
@@ -289,7 +289,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
       session->weightsFromHost();
 
       // initialize learnRate, write to device
-      SGD newOptimizer(learnRate);
+      SGD newOptimizer({{"defaultLearningRate", {learnRate, false}}});
       session->updateOptimizer(&newOptimizer);
       session->optimizerFromHost();
 

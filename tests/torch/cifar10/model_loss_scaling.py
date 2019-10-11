@@ -101,7 +101,8 @@ anchors_1 = c10driver.run(
         inNames=inNames,
         outNames=outNames,
         losses=losses,
-        optimizer=popart.ConstSGD(0.001, weight_decay=0, loss_scaling=1),
+        # default loss scaling (1.0f)
+        optimizer=popart.SGD({"defaultLearningRate": (0.001, True)}),
         inputShapeInfo=inputShapeInfo,
         dataFeed=dataFeed,
         ### Torch specific:
@@ -119,7 +120,10 @@ anchors_2 = c10driver.run(
         inNames=inNames,
         outNames=outNames,
         losses=losses,
-        optimizer=popart.ConstSGD(0.001, weight_decay=0, loss_scaling=100),
+        optimizer=popart.SGD({
+            "defaultLearningRate": (0.001, True),
+            "lossScaling": (100, False)
+        }),
         inputShapeInfo=inputShapeInfo,
         dataFeed=dataFeed,
         ### Torch specific:
@@ -137,7 +141,10 @@ anchors_3 = c10driver.run(
         inNames=inNames,
         outNames=outNames,
         losses=losses,
-        optimizer=popart.SGD(0.001, weight_decay=0, loss_scaling=100),
+        optimizer=popart.SGD({
+            "defaultLearningRate": (0.001, False),
+            "lossScaling": (100, False)
+        }),
         inputShapeInfo=inputShapeInfo,
         dataFeed=dataFeed,
         ### Torch specific:
@@ -156,7 +163,10 @@ anchors_4 = c10driver.run(
         inNames=inNames,
         outNames=outNames,
         losses=losses,
-        optimizer=popart.SGD(0.001, weight_decay=0, loss_scaling=100),
+        optimizer=popart.SGD({
+            "defaultLearningRate": (0.001, False),
+            "lossScaling": (100, False)
+        }),
         inputShapeInfo=inputShapeInfo,
         dataFeed=dataFeed,
         ### Torch specific:

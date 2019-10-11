@@ -247,18 +247,18 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
   // This is the inner main cycles loop, if doing pipelining withour gradient
   // accumulation, this the batches per step loop, as batch size = micro_batch
   // size
-  inner.add(poplar::program::Repeat(static_cast<int>(mainCycles), main));
+  inner.add(poplar::program::Repeat(static_cast<uint32_t>(mainCycles), main));
   inner.add(flush);
   poplar::program::Sequence outer;
 
-  if (dv_p->ir().getSessionOptions().enableGradientAccumulation) {
+  if (!dv_p->getOuterLoopFragEmpty()) {
 
     inner.add(varUpdateFromAccumulatorFragment());
     inner.add(resetWeightGradientAccumulatorFragment());
-    // If doing gradient accumulation, the inner loop loops over mini batches,
+    // If doing gradient accumulation, the inner loop is over mini batches,
     // and this outer loop loops over multiple batches per step.
-    outer = poplar::program::Repeat(
-        static_cast<int>(dv_p->ir().getDataFlow().batchesPerStep()), inner);
+    auto bps = dv_p->ir().getDataFlow().batchesPerStep();
+    outer    = poplar::program::Repeat(bps, inner);
   } else {
     // No gradient accumulation, so just add one iteration of the inner program.
     outer.add(inner);
@@ -282,8 +282,9 @@ poplar::program::Sequence PopPrograms::program() {
 
     outer.add(initFragment());
 
-    auto accumulationFactor = static_cast<int>(dv_p->getAccumulationFactor());
-    if (dv_p->ir().getSessionOptions().enableGradientAccumulation) {
+    // auto accumulationFactor = static_cast<int>(
+    auto accumulationFactor = dv_p->getAccumulationFactor();
+    if (!dv_p->getOuterLoopFragEmpty()) {
       logging::devicex::trace(
           "Adding gradient accumulation repeat loop with {} loops",
           accumulationFactor);

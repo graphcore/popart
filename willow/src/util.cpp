@@ -1,5 +1,4 @@
 #include <iostream>
-
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
 #include <popart/util.hpp>

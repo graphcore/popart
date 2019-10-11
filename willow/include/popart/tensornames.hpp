@@ -45,18 +45,46 @@ std::vector<std::string> reservedPrefixes();
 // Create a new intermediate tensor id with a unique name
 TensorId createIntermediateTensorId(TensorId base_id);
 
-constexpr const char *reservedGlobalWeightDecayScaleFactorPrefix() {
-  return "weightDecayScaleFactor___global___";
+constexpr const char *reservedDefaultWeightDecayScaleFactor0Prefix() {
+  return "weightDecayScaleFactor0___default___";
 }
-constexpr const char *reservedSpecificWeightDecayScaleFactorPrefix() {
-  return "weightDecayScaleFactor___specific___";
+constexpr const char *reservedSpecificWeightDecayScaleFactor0Prefix() {
+  return "weightDecayScaleFactor0___specific___";
 }
 
-constexpr const char *reservedGlobalScaledLearningRatePrefix() {
-  return "scaledLearningRate___global___";
+constexpr const char *reservedDefaultScaledLearningRate0Prefix() {
+  return "scaledLearningRate0___default___";
 }
-constexpr const char *reservedSpecificScaledLearningRatePrefix() {
-  return "scaledLearningRate___specific___";
+constexpr const char *reservedSpecificScaledLearningRate0Prefix() {
+  return "scaledLearningRate0___specific___";
+}
+
+constexpr const char *reservedDefaultWeightDecayScaleFactor1Prefix() {
+  return "weightDecayScaleFactor1___default___";
+}
+constexpr const char *reservedSpecificWeightDecayScaleFactor1Prefix() {
+  return "weightDecayScaleFactor1___specific___";
+}
+
+constexpr const char *reservedDefaultScaledLearningRate1Prefix() {
+  return "scaledLearningRate1___default___";
+}
+constexpr const char *reservedSpecificScaledLearningRate1Prefix() {
+  return "scaledLearningRate1___specific___";
+}
+
+constexpr const char *reservedDefaultDampeningScaleFactor1Prefix() {
+  return "dampeningScaleFactor1___default___";
+}
+constexpr const char *reservedSpecificDampeningScaleFactor1Prefix() {
+  return "dampeningScaleFactor1___specific___";
+}
+
+constexpr const char *reservedDefaultMomentum1Prefix() {
+  return "momentum1___default___";
+}
+constexpr const char *reservedSpecificMomentum1Prefix() {
+  return "momentum1___specific___";
 }
 
 } // namespace popart

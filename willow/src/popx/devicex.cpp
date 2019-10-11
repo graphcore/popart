@@ -41,7 +41,8 @@
 #include <popart/tojson.hpp>
 #include <popart/topocons.hpp>
 
-#include <popart/op/gradientaccl.hpp>
+#include <popart/op/sgd1acclupdate.hpp>
+#include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/popx/op/ipucopyx.hpp>
 #include <popart/tensornames.hpp>
@@ -373,7 +374,14 @@ void Devicex::weightsToHost(
     for (auto id : ir().getTensorIds(TensorType::Variable)) {
       auto found = onnxModelData.find(id);
       if (found == onnxModelData.end()) {
-        throw error("No TensorId " + id + " in final host destination map");
+        std::ostringstream oss;
+        oss << "No TensorId " << id
+            << " in final host destination map. The TensorIds are [ ";
+        for (auto x : onnxModelData) {
+          oss << x.first << ' ';
+        }
+        oss << ']';
+        throw error(oss.str());
       }
       MutableVoidData mv_data = found->second;
       hostStreamToHost(mv_data, id);
@@ -1559,18 +1567,18 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
                       oss.str());
         }
 
-        // 2 special case Ops when gradient accumulation is enabled.
+        // 2 special case Ops when their is a gradient accumulator / velocity.
         // If we are doing gradient accumulation, we need to ensure the reset
         // and var update aren't run every time. Instead, these fragments sit
         // outside the "main" loop of the fowards and backwards passes.
         // special case Op 1:
-        if ((op->isConvertibleTo<VarUpdateOp>()) &&
-            (ir().getSessionOptions().enableGradientAccumulation)) {
+        if ((op->isConvertibleTo<SGD1VarUpdateOp>())) {
+          outerLoopFragEmpty = false;
           growOpx(progs.varUpdateFromAccumulatorFragment());
         }
         // special case Op 2:
-        else if ((op->isConvertibleTo<ResetAcclOp>()) &&
-                 (ir().getSessionOptions().enableGradientAccumulation)) {
+        else if ((op->isConvertibleTo<SGD1AcclUpdateOp>())) {
+          outerLoopFragEmpty = false;
           growOpx(progs.resetWeightGradientAccumulatorFragment());
         }
 
@@ -2155,9 +2163,11 @@ void Devicex::prepare() {
 
   // stream-to-device tensors : 1)  make tensor 2) make stream
   for (auto id : ir().getTensorIds(TensorType::Stream)) {
+
     Tensor *tensor = ir().getTensor(id);
     // 1
     tasks.add(initTensorTask(tensor));
+    logging::devicex::debug("Addings initTensorTask for {}", id);
 
     if (useSyntheticData() == false) {
       // 2

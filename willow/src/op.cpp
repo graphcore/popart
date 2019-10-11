@@ -163,24 +163,6 @@ void Op::disconnectAllOutputs() {
   output->clear();
 }
 
-void Op::replaceInTensorWithZeros(InIndex inIndex, TensorId tenId) {
-  Tensor *t = input->tensor(inIndex);
-
-  // Create new variable of zeros;
-  auto info = t->info;
-  auto size = info.nbytes();
-  if (t->tensorType() == TensorType::Variable) {
-    getGraph().getTensors().addVarInit(
-        tenId, info, static_cast<const void *>(new char[size]{0}));
-  } else {
-    getGraph().getTensors().addConstInit(
-        tenId, info, static_cast<const void *>(new char[size]{0}));
-  }
-
-  disconnectInTensor(inIndex, t);
-  connectInTensor(inIndex, tenId);
-}
-
 void Op::createAndConnectOutTensor(OutIndex outIndex, TensorId tenId) {
   tenId = (getScope() / tenId).str();
 

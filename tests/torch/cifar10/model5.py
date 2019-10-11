@@ -66,7 +66,10 @@ torchWriter = torchwriter.PytorchNetWriter(
     outNames=outNames,
     losses=losses,
     # large weight_decay term to test that it is definitely working
-    optimizer=popart.SGD(learning_rate=0.001, weight_decay=10),
+    optimizer=popart.SGD({
+        "defaultLearningRate": (0.001, False),
+        "defaultWeightDecay": (10.0, False)
+    }),
     inputShapeInfo=inputShapeInfo,
     dataFeed=dataFeed,
     ### Torch specific:

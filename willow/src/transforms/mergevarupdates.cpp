@@ -3,7 +3,9 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/concat.hpp>
+#include <popart/op/copyvarupdate.hpp>
 #include <popart/op/flatten.hpp>
+#include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/opidentifier.hpp>
@@ -43,22 +45,23 @@ MergeVarUpdates::PartitionId MergeVarUpdates::getPartitionId(Op *op) const {
   // same virtual graph
   ss << "vg_" << op->settings.vgraphId;
 
+  // T12001 Do this for SGD1VarUpdateOp
+  //
   // 1) SGD settings
-  if (op->isConvertibleTo<SGDVarUpdateOp>()) {
-    auto svu = dynamic_cast<SGDVarUpdateOp *>(op);
-    ss << "_SGD_";
+  if (op->isConvertibleTo<SGD0VarUpdateOp>()) {
+    auto svu = dynamic_cast<SGD0VarUpdateOp *>(op);
+    ss << "_SGD0_";
 
-    if (svu->initScaledLearningRate.isConst()) {
-      ss << "_constLr_" << svu->initScaledLearningRate.val();
+    if (svu->initSlr0.isConst()) {
+      ss << "_constLr_" << svu->initSlr0.val();
     } else {
-      ss << "_nonConstLr_" << svu->inId(svu->getScaledLearningRateInIndex());
+      ss << "_nonConstLr_" << svu->inId(svu->getSlr0InIndex());
     }
 
-    if (svu->initWeightDecayScaleFactor.isConst()) {
-      ss << "_constWd_" << svu->initWeightDecayScaleFactor.val();
+    if (svu->initWdsf0.isConst()) {
+      ss << "_constWd_" << svu->initWdsf0.val();
     } else {
-      ss << "_nonConstWd_"
-         << svu->inId(svu->getWeightDecayScaleFactorInIndex());
+      ss << "_nonConstWd_" << svu->inId(svu->getWdsf0InIndex());
     }
   }
 

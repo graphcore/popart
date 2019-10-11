@@ -14,6 +14,7 @@
 #include <popart/op/nll.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/optimizervalue.hpp>
 #include <popart/optionflags.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/session.hpp>
@@ -86,6 +87,25 @@ std::map<std::string, std::string> getDictionary(py::dict pydict) {
     dictionary.insert(std::make_pair(key.str(), value.str()));
   }
   return dictionary;
+}
+
+std::map<std::string, std::pair<float, bool>>
+getOptimizerValueDictionary(py::dict e) {
+  std::map<std::string, std::pair<float, bool>> cpm;
+  for (auto element : e) {
+    if (!py::isinstance<py::str>(element.first)) {
+      throw error("A key in the optimizer map input must be a py::str (in "
+                  "getOptimizerValueDictionary)");
+    }
+    auto key = py::str(element.first);
+    if (!py::isinstance<py::tuple>(element.second)) {
+      throw error("A value in the optimizer map must be a py::tuple (in "
+                  "getOptimizerValueDictionary)");
+    }
+    std::pair<float, bool> p = element.second.cast<std::pair<float, bool>>();
+    cpm.insert({key, p});
+  }
+  return cpm;
 }
 
 std::map<std::string, boost::any> getDictionaryVar(py::dict pydict) {
@@ -543,40 +563,36 @@ PYBIND11_MODULE(popart_core, m) {
       .def("pipelineStage", &L1Loss::pipelineStage)
       .def("virtualGraph", &L1Loss::virtualGraph);
 
+  py::class_<OptimizerValue> optimizerValue(m, "OptimizerValue");
+  optimizerValue.def(
+      py::init<float, bool>(), py::arg("val"), py::arg("isConst"));
+  optimizerValue.def(py::init<float>(), py::arg("val"));
+  optimizerValue.def(py::init<>());
+  optimizerValue.def(py::init<std::pair<float, bool>>());
+
+  optimizerValue.def("val", &OptimizerValue::val);
+  optimizerValue.def("isConst", &OptimizerValue::isConst);
+
+  py::class_<OptimizerValueMap> optimizerValueMap(m, "OptimizerValueMap");
+  optimizerValueMap.def("getDefault", &OptimizerValueMap::getDefault);
+
   py::class_<Optimizer> optimizer(m, "Optimizer");
   optimizer.def("getLossScalingVal", &Optimizer::getLossScalingVal);
 
   py::class_<SGD> sgd(m, "SGD", optimizer);
-  sgd.def(py::init<float, float, float>(),
-          py::arg("learning_rate"),
-          py::arg("weight_decay") = 0.0f,
-          py::arg("loss_scaling") = 1.0f);
+  sgd.def(py::init([](py::dict pyd) {
+    auto cppm = getOptimizerValueDictionary(pyd);
+    return SGD(cppm);
+  }));
+  sgd.def("insertSpecific", [](SGD &self, TensorId id, py::dict pyd) {
+    self.insertSpecific(id, getOptimizerValueDictionary(pyd));
+  });
 
-  sgd.def(py::init([](std::pair<float, bool> wd,
-                      std::pair<float, bool> lr,
-                      std::pair<float, bool> ls) -> popart::SGD {
-            return SGD({wd.first, wd.second},
-                       {lr.first, lr.second},
-                       {ls.first, ls.second});
-          }),
-          py::arg("learningRate"),
-          py::arg("weightDecay"),
-          py::arg("lossScaling"));
-
-  sgd.def(
-      "insertSpecific",
-      [](SGD &self,
-         std::string id,
-         std::pair<float, bool> wd,
-         std::pair<float, bool> lr) {
-        self.insertSpecific(id, {wd.first, wd.second}, {lr.first, lr.second});
-      },
-      py::arg("tensorId"),
-      py::arg("weightDecay"),
-      py::arg("learningRate"));
-
-  sgd.def("getGlobalLearningRateVal", &SGD::getGlobalLearningRateVal);
-  sgd.def("getGlobalWeightDecayVal", &SGD::getGlobalWeightDecayVal);
+  sgd.def("learningRates", &SGD::learningRates);
+  sgd.def("weightDecays", &SGD::weightDecays);
+  sgd.def("momentums", &SGD::momentums);
+  sgd.def("dampenings", &SGD::dampenings);
+  sgd.def("velocityScalings", &SGD::velocityScalings);
 
   // This class is deprecated, and SGD should be preferred
   py::class_<ConstSGD>(m, "ConstSGD", sgd)
@@ -755,12 +771,13 @@ PYBIND11_MODULE(popart_core, m) {
       .def("__repr__", &PrepareDeviceError::what)
       .def("isSuccessful", &PrepareDeviceError::isSuccessful)
       .def("getSummaryReport", &PrepareDeviceError::getSummaryReport)
-      .def("getGraphReport",
-           [](const PrepareDeviceError &error, bool use_cbor) {
-             auto report = error.getGraphReport(use_cbor);
-             return py::bytes(report);
-           },
-           py::arg("use_cbor") = false);
+      .def(
+          "getGraphReport",
+          [](const PrepareDeviceError &error, bool use_cbor) {
+            auto report = error.getGraphReport(use_cbor);
+            return py::bytes(report);
+          },
+          py::arg("use_cbor") = false);
 
   py::class_<InferenceSession>(m, "InferenceSessionCore")
       .def(py::init(&InferenceSession::createFromOnnxModel),
@@ -771,21 +788,22 @@ PYBIND11_MODULE(popart_core, m) {
            py::arg("inputShapeInfo"),
            py::arg("userOptions"),
            py::arg("passes"))
-      .def("prepareDevice",
-           [](InferenceSession &session, PrepareDeviceError *status) {
-             try {
-               session.prepareDevice();
-             } catch (const popart::memory_allocation_err &e) {
-               if (status != nullptr) {
-                 status->exception = e.clone();
-                 status->success   = false;
-               } else {
-                 // rethrow the exception
-                 throw;
-               }
-             }
-           },
-           py::arg("err").none())
+      .def(
+          "prepareDevice",
+          [](InferenceSession &session, PrepareDeviceError *status) {
+            try {
+              session.prepareDevice();
+            } catch (const popart::memory_allocation_err &e) {
+              if (status != nullptr) {
+                status->exception = e.clone();
+                status->success   = false;
+              } else {
+                // rethrow the exception
+                throw;
+              }
+            }
+          },
+          py::arg("err").none())
       .def("setRandomSeed",
            &InferenceSession::setRandomSeed,
            py::arg("seedValue"))
@@ -795,18 +813,20 @@ PYBIND11_MODULE(popart_core, m) {
       .def("modelToHost", &InferenceSession::modelToHost)
       .def("getInfo", &InferenceSession::getInfo)
       .def("getSummaryReport", &InferenceSession::getSummaryReport)
-      .def("getGraphReport",
-           [](const InferenceSession &session, bool use_cbor) {
-             auto report = session.getGraphReport(use_cbor);
-             return py::bytes(report);
-           },
-           py::arg("use_cbor") = false)
-      .def("getExecutionReport",
-           [](const InferenceSession &session, bool use_cbor) {
-             auto report = session.getExecutionReport(use_cbor);
-             return py::bytes(report);
-           },
-           py::arg("use_cbor") = false)
+      .def(
+          "getGraphReport",
+          [](const InferenceSession &session, bool use_cbor) {
+            auto report = session.getGraphReport(use_cbor);
+            return py::bytes(report);
+          },
+          py::arg("use_cbor") = false)
+      .def(
+          "getExecutionReport",
+          [](const InferenceSession &session, bool use_cbor) {
+            auto report = session.getExecutionReport(use_cbor);
+            return py::bytes(report);
+          },
+          py::arg("use_cbor") = false)
       .def("getSerializedGraph",
            [](const InferenceSession &session) {
              auto report = session.getSerializedGraph();
@@ -829,21 +849,22 @@ PYBIND11_MODULE(popart_core, m) {
            py::arg("userOptions"),
            py::arg("passes"))
       .def("updateOptimizer", &TrainingSession::updateOptimizer)
-      .def("prepareDevice",
-           [](TrainingSession &session, PrepareDeviceError *status) {
-             try {
-               session.prepareDevice();
-             } catch (const popart::memory_allocation_err &e) {
-               if (status != nullptr) {
-                 status->exception = e.clone();
-                 status->success   = false;
-               } else {
-                 // rethrow the exception
-                 throw;
-               }
-             }
-           },
-           py::arg("err").none())
+      .def(
+          "prepareDevice",
+          [](TrainingSession &session, PrepareDeviceError *status) {
+            try {
+              session.prepareDevice();
+            } catch (const popart::memory_allocation_err &e) {
+              if (status != nullptr) {
+                status->exception = e.clone();
+                status->success   = false;
+              } else {
+                // rethrow the exception
+                throw;
+              }
+            }
+          },
+          py::arg("err").none())
       .def("setRandomSeed",
            &TrainingSession::setRandomSeed,
            py::arg("seedValue"))
@@ -856,18 +877,20 @@ PYBIND11_MODULE(popart_core, m) {
       .def("modelToHost", &TrainingSession::modelToHost)
       .def("getInfo", &TrainingSession::getInfo)
       .def("getSummaryReport", &TrainingSession::getSummaryReport)
-      .def("getGraphReport",
-           [](const TrainingSession &session, bool use_cbor) {
-             auto report = session.getGraphReport(use_cbor);
-             return py::bytes(report);
-           },
-           py::arg("use_cbor") = false)
-      .def("getExecutionReport",
-           [](const TrainingSession &session, bool use_cbor) {
-             auto report = session.getExecutionReport(use_cbor);
-             return py::bytes(report);
-           },
-           py::arg("use_cbor") = false)
+      .def(
+          "getGraphReport",
+          [](const TrainingSession &session, bool use_cbor) {
+            auto report = session.getGraphReport(use_cbor);
+            return py::bytes(report);
+          },
+          py::arg("use_cbor") = false)
+      .def(
+          "getExecutionReport",
+          [](const TrainingSession &session, bool use_cbor) {
+            auto report = session.getExecutionReport(use_cbor);
+            return py::bytes(report);
+          },
+          py::arg("use_cbor") = false)
       .def("getSerializedGraph",
            [](const TrainingSession &session) {
              auto report = session.getSerializedGraph();
@@ -933,15 +956,16 @@ PYBIND11_MODULE(popart_core, m) {
       .def("addInputTensorFromParentGraph",
            &Builder::addInputTensorFromHigherScope,
            py::arg("tensorId"))
-      .def("addInitializedInputTensor",
-           [](Builder &builder, py::array array, std::string &debugPrefix) {
-             ConstVoidData initData;
-             initData.data = array.request().ptr;
-             initData.info = getTensorInfo(array);
-             return builder.addInitializedInputTensor(initData, debugPrefix);
-           },
-           py::arg("initVal"),
-           py::arg("debugPrefix") = std::string())
+      .def(
+          "addInitializedInputTensor",
+          [](Builder &builder, py::array array, std::string &debugPrefix) {
+            ConstVoidData initData;
+            initData.data = array.request().ptr;
+            initData.info = getTensorInfo(array);
+            return builder.addInitializedInputTensor(initData, debugPrefix);
+          },
+          py::arg("initVal"),
+          py::arg("debugPrefix") = std::string())
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
 
       // Accessors for the ai.onnx domain builder interface
@@ -955,37 +979,38 @@ PYBIND11_MODULE(popart_core, m) {
       // Accessors for the ai.graphcore domain builder interface
       .def_property_readonly("aiGraphcoreOpset1", &Builder::aiGraphcoreOpset1)
       // Custom Op interface for separately compiled operations used in python.
-      .def("customOp",
-           [](Builder &builder,
-              const std::string &opName,
-              const int &OpVersion,
-              const std::string &domain,
-              const py::list &inputs,
-              const py::dict &attr,
-              const unsigned &numOutputs,
-              const std::string &name) {
-             popart::OperatorIdentifier opId = {
-                 domain, opName, static_cast<popart::OpVersion>(OpVersion)};
-             std::vector<TensorId> input_vector;
-             for (auto item : inputs) {
-               std::string str = py::cast<std::string>(item);
-               TensorId t      = static_cast<TensorId>(str);
-               input_vector.push_back(t);
-             }
-             return builder.customOp(opId,
-                                     1,
-                                     input_vector,
-                                     numOutputs,
-                                     getDictionaryVar(attr),
-                                     name);
-           },
-           py::arg("opName"),
-           py::arg("opVersion"),
-           py::arg("domain"),
-           py::arg("inputs"),
-           py::arg("attributes"),
-           py::arg("numOutputs") = 1,
-           py::arg("name")       = std::string())
+      .def(
+          "customOp",
+          [](Builder &builder,
+             const std::string &opName,
+             const int &OpVersion,
+             const std::string &domain,
+             const py::list &inputs,
+             const py::dict &attr,
+             const unsigned &numOutputs,
+             const std::string &name) {
+            popart::OperatorIdentifier opId = {
+                domain, opName, static_cast<popart::OpVersion>(OpVersion)};
+            std::vector<TensorId> input_vector;
+            for (auto item : inputs) {
+              std::string str = py::cast<std::string>(item);
+              TensorId t      = static_cast<TensorId>(str);
+              input_vector.push_back(t);
+            }
+            return builder.customOp(opId,
+                                    1,
+                                    input_vector,
+                                    numOutputs,
+                                    getDictionaryVar(attr),
+                                    name);
+          },
+          py::arg("opName"),
+          py::arg("opVersion"),
+          py::arg("domain"),
+          py::arg("inputs"),
+          py::arg("attributes"),
+          py::arg("numOutputs") = 1,
+          py::arg("name")       = std::string())
       .def("addNodeAttribute",
            static_cast<void (Builder::*)(const std::string &,
                                          const int64_t &,
@@ -1081,23 +1106,25 @@ PYBIND11_MODULE(popart_core, m) {
                &Builder::virtualGraph),
            py::arg("nodeOutputNames"),
            py::arg("value") = 0)
-      .def("virtualGraph",
-           [](Builder &self, int64_t index) -> AttributeContextManager {
-             AttributeContextManager acm(self, sVirtualGraphAttribute, index);
-             return acm;
-           },
-           py::arg("value"))
+      .def(
+          "virtualGraph",
+          [](Builder &self, int64_t index) -> AttributeContextManager {
+            AttributeContextManager acm(self, sVirtualGraphAttribute, index);
+            return acm;
+          },
+          py::arg("value"))
       .def("pipelineStage",
            static_cast<void (Builder::*)(const TensorId &, int64_t value)>(
                &Builder::pipelineStage),
            py::arg("nodeOutputNames"),
            py::arg("value") = 0)
-      .def("pipelineStage",
-           [](Builder &self, int64_t index) -> AttributeContextManager {
-             AttributeContextManager acm(self, sPipelineStageAttribute, index);
-             return acm;
-           },
-           py::arg("value"))
+      .def(
+          "pipelineStage",
+          [](Builder &self, int64_t index) -> AttributeContextManager {
+            AttributeContextManager acm(self, sPipelineStageAttribute, index);
+            return acm;
+          },
+          py::arg("value"))
       .def("getPipelineStage", &Builder::getPipelineStage)
       .def("hasPipelineStage",
            [](Builder &self) -> bool {
@@ -1114,30 +1141,33 @@ PYBIND11_MODULE(popart_core, m) {
            &Builder::setAvailableMemoryProportion,
            py::arg("nodeOutputName"),
            py::arg("availableMemoryProportion"))
-      .def("setSerializeMatMul",
-           [](Builder &self,
-              const std::set<TensorId> &nodeOutputNames,
-              std::string mode,
-              int64_t factor,
-              bool keep_precision) {
-             self.setSerializeMatMul(
-                 nodeOutputNames, mode, factor, keep_precision);
-           },
-           py::arg("nodeOutputName"),
-           py::arg("mode"),
-           py::arg("factor")         = 0,
-           py::arg("keep_precision") = false)
-      .def("nameScope",
-           [](Builder &self, const std::string &name) -> NameContextManager {
-             NameContextManager ncm(self, name);
-             return ncm;
-           },
-           py::arg("name"))
-      .def("getNameScope",
-           [](Builder &self, std::string &name) {
-             return self.getNameScope(name);
-           },
-           py::arg("name") = "")
+      .def(
+          "setSerializeMatMul",
+          [](Builder &self,
+             const std::set<TensorId> &nodeOutputNames,
+             std::string mode,
+             int64_t factor,
+             bool keep_precision) {
+            self.setSerializeMatMul(
+                nodeOutputNames, mode, factor, keep_precision);
+          },
+          py::arg("nodeOutputName"),
+          py::arg("mode"),
+          py::arg("factor")         = 0,
+          py::arg("keep_precision") = false)
+      .def(
+          "nameScope",
+          [](Builder &self, const std::string &name) -> NameContextManager {
+            NameContextManager ncm(self, name);
+            return ncm;
+          },
+          py::arg("name"))
+      .def(
+          "getNameScope",
+          [](Builder &self, std::string &name) {
+            return self.getNameScope(name);
+          },
+          py::arg("name") = "")
       .def("getVirtualGraph",
            static_cast<int64_t (Builder::*)(const TensorId &)>(
                &Builder::getVirtualGraph),
@@ -1248,14 +1278,14 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("reservedStashedPrefix", &reservedStashedPrefix);
   m.def("reservedRestoredPrefix", &reservedRestoredPrefix);
   m.def("reservedLossScalingPrefix", &reservedLossScalingPrefix);
-  m.def("reservedGlobalScaledLearningRatePrefix",
-        &reservedGlobalScaledLearningRatePrefix);
-  m.def("reservedGlobalWeightDecayScaleFactorPrefix",
-        &reservedGlobalWeightDecayScaleFactorPrefix);
-  m.def("reservedSpecificScaledLearningRatePrefix",
-        &reservedSpecificScaledLearningRatePrefix);
-  m.def("reservedSpecificWeightDecayScaleFactorPrefix",
-        &reservedSpecificWeightDecayScaleFactorPrefix);
+  m.def("reservedDefaultScaledLearningRate0Prefix",
+        &reservedDefaultScaledLearningRate0Prefix);
+  m.def("reservedDefaultWeightDecayScaleFactor0Prefix",
+        &reservedDefaultWeightDecayScaleFactor0Prefix);
+  m.def("reservedSpecificScaledLearningRate0Prefix",
+        &reservedSpecificScaledLearningRate0Prefix);
+  m.def("reservedSpecificWeightDecayScaleFactor0Prefix",
+        &reservedSpecificWeightDecayScaleFactor0Prefix);
 
   // Exceptions are processed explicitly to allow the main dynamic library
   // to do the type inference.  This prevents some inter dynamic library type

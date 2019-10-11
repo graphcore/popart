@@ -6,27 +6,11 @@
 
 namespace popart {
 
-class SGDVarUpdateOp;
-class ConstSGDVarUpdateOp;
-
 namespace popx {
 
 class VarUpdateOpx : public Opx {
 public:
-  VarUpdateOpx(Op *, Devicex *);
-
-};
-
-class SGDVarUpdateOpx : public VarUpdateOpx {
-public:
-  SGDVarUpdateOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
-};
-
-class CopyVarUpdateOpx : public VarUpdateOpx {
-public:
-  CopyVarUpdateOpx(Op *, Devicex *);
-  void grow(poplar::program::Sequence &) const final;
+  VarUpdateOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {}
 };
 
 } // namespace popx

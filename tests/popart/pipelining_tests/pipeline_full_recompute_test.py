@@ -136,7 +136,7 @@ def test_full_recompute_pipelining(tmpdir):
                                          dataFeed=dataFlow,
                                          userOptions=opts,
                                          losses=[loss],
-                                         optimizer=popart.ConstSGD(0.0),
+                                         optimizer=popart.ConstSGD(1e-9),
                                          passes=pat,
                                          deviceInfo=tu.get_ipu_model(
                                              compileIPUCode=False, numIPUs=3))

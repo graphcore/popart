@@ -116,7 +116,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
     // same learning rate, weight decay, so should all be merged into a single
     // group
     if (mvu == MergeVarUpdateType::All) {
-      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SgdVarUpdate).size() ==
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size() ==
                   1);
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::FlattenInplace).size() ==
                   nConv * 2);
@@ -129,7 +129,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
                   0);
 
     } else if (mvu == MergeVarUpdateType::None) {
-      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SgdVarUpdate).size() ==
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size() ==
                   nConv);
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::FlattenInplace).size() ==
                   0);
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
     else if (mvu == MergeVarUpdateType::AutoTight) {
 
       auto nConstSgds =
-          ir.opsOfType(Onnx::CustomOperators::SgdVarUpdate).size();
+          ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size();
       std::cout << "total weight elms: " << totalWeightElms
                 << " threshold: " << opts.mergeVarUpdateMemThreshold
                 << " nConstSgds : " << nConstSgds;
@@ -151,7 +151,12 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeConstSGD0) {
     }
   };
 
+  std::cout << "Test All" << std::endl;
   test(MergeVarUpdateType::All);
+
+  std::cout << "Test None" << std::endl;
   test(MergeVarUpdateType::None);
+
+  std::cout << "Test AutoTight" << std::endl;
   test(MergeVarUpdateType::AutoTight);
 }
