@@ -625,6 +625,34 @@ void Ir::verifyConstExprFolding() {
 }
 
 void Ir::prepare(const IrBundle &gb) {
+  auto tryDumpIr = [&](auto logLevel) {
+    auto irDumpDest = getPopartEnvVar("IR_DUMP");
+    if (irDumpDest) {
+      logging::log(logging::Module::ir,
+                   logLevel,
+                   fmt::format("Writing ir to {}", irDumpDest));
+      std::ofstream ofs;
+      ofs.open(irDumpDest, std::ofstream::out);
+      if (ofs.is_open()) {
+        std::stringstream ss;
+        serialise(Ir::SerialiseFormat::JSON, ss);
+        ofs << ss.str();
+      } else {
+        logging::ir::err("Failed to open file {} to dump ir.", irDumpDest);
+      }
+    }
+  };
+
+  try {
+    prepareImpl(gb);
+  } catch (...) {
+    tryDumpIr(logging::Level::Err);
+    throw;
+  }
+  tryDumpIr(logging::Level::Debug);
+}
+
+void Ir::prepareImpl(const IrBundle &gb) {
   setDeviceInfo(gb.deviceInfo);
 
   if (isPrepared) {
@@ -703,6 +731,7 @@ void Ir::prepare(const IrBundle &gb) {
   updateVertices();
   if (canTrain()) {
     constructBackwards();
+    verifyPipelineSettings();
   }
 
   updateVertices();

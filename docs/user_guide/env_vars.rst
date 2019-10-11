@@ -95,3 +95,13 @@ For example, to save the tensor tile map to ``ttm.js`` you would set the variabl
 .. code-block:: console
 
   export POPART_TENSOR_TILE_MAP=ttm.js
+
+Inspecting the Ir
+-----------------
+
+POPART_IR_DUMP
+~~~~~~~~~~~~~~
+
+If set, this variable defines the name of a file where the serialised ir will be written.
+The ir will be written either at the end of the ir preparation phase, or when an exception
+is thrown during the ir preparation phase.

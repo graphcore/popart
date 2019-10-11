@@ -3,6 +3,7 @@ import fnmatch
 import re
 import popart
 import numpy as np
+import pytest
 
 
 def filter_dict(dict_to_filter, fun):
@@ -31,6 +32,11 @@ def get_ipu_model(compileIPUCode=True, numIPUs=1, tilesPerIPU=1216):
         "tilesPerIPU": tilesPerIPU
     }
     return popart.DeviceManager().createIpuModelDevice(options)
+
+
+def acquire_ipu(numIPUs=1, tilesPerIPU=1216):
+
+    return popart.DeviceManager().acquireAvailableDevice(numIPUs, tilesPerIPU)
 
 
 def get_compute_sets_from_report(report):
@@ -79,3 +85,11 @@ def check_all_compute_sets_and_list(cs_list, whitelist):
 def get_compute_set_regex_count(regex, cs_list):
 
     return len([cs for cs in cs_list if re.search(regex, cs)])
+
+
+def ipu_avaliable():
+    return len(popart.DeviceManager().enumerateDevices()) > 0
+
+
+requires_ipu = pytest.mark.skipif(ipu_avaliable() == False,
+                                  reason="Test requires hardware")

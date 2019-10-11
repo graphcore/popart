@@ -61,7 +61,8 @@ TensorInfo StepIO::getTensorInfo(IArray &array) const {
 template <typename T>
 T StepIO::get(TensorId id,
               std::map<TensorId, ArrayInfo> &M,
-              unsigned numElements,
+              int64_t numElements,
+              bool advance,
               std::string mapName) {
 
   auto found = M.find(id);
@@ -76,25 +77,60 @@ T StepIO::get(TensorId id,
   stepData.info = getTensorInfo(arrayInfo.array);
 
   // Set the data using the offset
-  auto numBytes = stepData.info.getDataTypeInfo()->nbytes() * numElements;
+
   stepData.data = static_cast<uint8_t *>(arrayInfo.array.data()) + offset;
 
-  // Wrap around if we read all the data
-  if (offset + numBytes == stepData.info.nbytes()) {
-    arrayInfo.offset = 0;
-  } else {
-    arrayInfo.offset = offset + numBytes;
+  if (advance) {
+
+    auto numBytes = stepData.info.getDataTypeInfo()->nbytes() * numElements;
+
+    // Wrap around if we read all the data
+    if (offset + numBytes == stepData.info.nbytes()) {
+      arrayInfo.offset = 0;
+    } else {
+      arrayInfo.offset = offset + numBytes;
+    }
   }
 
   return stepData;
 }
 
-ConstVoidData StepIO::in(TensorId id, int64_t numElements) {
-  return get<ConstVoidData>(id, inputsInfo, numElements, "inputs");
+template <typename T>
+void StepIO::advance(TensorId id,
+                     std::map<TensorId, ArrayInfo> &M,
+                     int64_t numElements,
+                     std::string mapName) {
+
+  auto found = M.find(id);
+  if (found == M.end()) {
+    throw error("No tensor {} provided in PyStepIO's {}", id, mapName);
+  }
+
+  ArrayInfo &arrayInfo = found->second;
+  auto offset          = arrayInfo.offset;
+
+  T stepData;
+  stepData.info = getTensorInfo(arrayInfo.array);
+
+  auto numBytes = stepData.info.getDataTypeInfo()->nbytes() * numElements;
+
+  if (offset + numBytes == stepData.info.nbytes()) {
+    arrayInfo.offset = 0;
+  } else {
+    arrayInfo.offset = offset + numBytes;
+  }
+}
+
+ConstVoidData StepIO::in(TensorId id, int64_t numElements, bool prefetch) {
+  return get<ConstVoidData>(id, inputsInfo, numElements, false, "inputs");
+}
+
+void StepIO::inComplete(TensorId id, int64_t numElements) {
+  return advance<ConstVoidData>(id, inputsInfo, numElements, "inputs");
 }
 
 MutableVoidData StepIO::out(TensorId id, int64_t numElements) {
-  return get<MutableVoidData>(id, outputsInfo, numElements, "outputs");
+  return get<MutableVoidData>(id, outputsInfo, numElements, true, "outputs");
 }
 
 bool WeightsIO::contains(TensorId id) const {
@@ -118,7 +154,13 @@ void WeightsIO::insert(TensorId id, MutableVoidData mvd) {
   weights.insert({id, mvd});
 }
 
-ConstVoidData StepIOCallback::in(TensorId id, int64_t) { return inputCb(id); }
+ConstVoidData StepIOCallback::in(TensorId id, int64_t, bool prefetch) {
+  return inputCb(id, prefetch);
+}
+
+void StepIOCallback::inComplete(TensorId id, int64_t) {
+  return inputCompleteCb(id);
+}
 
 MutableVoidData StepIOCallback::out(TensorId id, int64_t) {
   return outputCb(id);
