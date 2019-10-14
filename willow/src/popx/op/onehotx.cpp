@@ -32,8 +32,10 @@ void OnehotOpx::grow(poplar::program::Sequence &prog) const {
   // Create a new output tensor with the type of the values
   const auto shape = vXtoY<int64_t, std::size_t>(
       onehotOp.outInfo(OnehotOp::getOutIndex()).shape());
-  auto output =
-      graph().addVariable(values.elementType(), shape, debugPrefix("output"));
+  auto output = graph().addVariable(values.elementType(),
+                                    shape,
+                                    poplar::VariableMappingMethod::LINEAR,
+                                    debugPrefix("output"));
 
   // roll the one-hot dimension to the end, if needed
   if (onehotOp.getAxis() != -1) {
