@@ -115,8 +115,8 @@ void CallOpx::copyOutputs(poplar::program::Sequence &prog,
 void CallOpx::doCall(poplar::program::Sequence &prog) const {
   auto &callop       = getOp<CallOp>();
   auto &called_graph = callop.getCalledGraph();
-  auto &graph_prog   = dv_p->progs.scopeFragment(called_graph);
-  prog.add(graph_prog);
+  auto &graph_prog   = dv_p->getFragmentFunction(called_graph);
+  prog.add(poplar::program::Call(graph_prog));
 }
 
 void CallOpx::grow(poplar::program::Sequence &prog) const {

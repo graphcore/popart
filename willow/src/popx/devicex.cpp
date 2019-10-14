@@ -1297,6 +1297,12 @@ void Devicex::createFragment(const Graph &graph) {
   return progs.createFragment(graph);
 }
 
+poplar::Function &Devicex::getFragmentFunction(const Graph &called_graph) {
+  logging::devicex::trace("[getFragmentFunction] Getting function for graph {}",
+                          called_graph.id.str());
+  return progs.getFragmentFunction(called_graph, graph());
+}
+
 void Devicex::addPipelinedCopyTasks(PriTasks &tasks) {
   auto schedule          = ir().getMainGraph().getOpSchedule({});
   std::string prevTaskId = "";

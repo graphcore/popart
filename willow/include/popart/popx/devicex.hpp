@@ -250,6 +250,8 @@ public:
   bool containsFragment(const Graph &scope) const;
   void createFragment(const Graph &);
 
+  poplar::Function &getFragmentFunction(const Graph &called_graph);
+
   // A forward search of graph:
   //   - from inputs of the graph
   //   - to Opxs with optimised poplar calls to create the tensor,

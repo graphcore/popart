@@ -343,6 +343,18 @@ void PopPrograms::createFragment(const Graph &graph) {
   scopeSeqs.insert({graph.id.str(), {}});
 }
 
+poplar::Function &PopPrograms::getFragmentFunction(const Graph &called_graph,
+                                                   poplar::Graph &popgraph) {
+  if (funcs.find(called_graph.id.str()) == funcs.end()) {
+    auto &fragment = scopeFragment(called_graph);
+    logging::devicex::trace("[getFragmentFunction] Creating function "
+                            "for graph {}",
+                            called_graph.id.str());
+    funcs.insert({called_graph.id.str(), popgraph.addFunction(fragment)});
+  }
+  return funcs.at(called_graph.id.str());
+}
+
 bool PopPrograms::hasBeenRecomputed(OpId id) const {
   auto itHas = (beenRecomputed.find(id) != beenRecomputed.end());
   return itHas;
