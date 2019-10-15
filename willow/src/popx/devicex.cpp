@@ -1578,12 +1578,14 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
         // and var update aren't run every time. Instead, these fragments sit
         // outside the "main" loop of the fowards and backwards passes.
         // special case Op 1:
-        if ((op->isConvertibleTo<SGD1VarUpdateOp>())) {
+        if ((op->isConvertibleTo<SGD1VarUpdateOp>()) &&
+            (ir().getSessionOptions().enableGradientAccumulation)) {
           outerLoopFragEmpty = false;
           growOpx(progs.varUpdateFromAccumulatorFragment());
         }
         // special case Op 2:
-        else if ((op->isConvertibleTo<SGD1AcclUpdateOp>())) {
+        else if ((op->isConvertibleTo<SGD1AcclUpdateOp>()) &&
+                 (ir().getSessionOptions().enableGradientAccumulation)) {
           outerLoopFragEmpty = false;
           growOpx(progs.resetWeightGradientAccumulatorFragment());
         }

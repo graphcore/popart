@@ -264,7 +264,8 @@ bool SGD1Decompose::apply(Op *op) const {
     }
   }
 
-  // var update before accl update, inserted in Ir.
+  // var update before accl update
+  graph.topoCons->insert(sgd1VarUpdateOp, updateOp);
 
   return true;
 }
