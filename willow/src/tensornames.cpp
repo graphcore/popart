@@ -61,7 +61,7 @@ std::vector<std::string> reservedPrefixes() {
 
 TensorId createIntermediateTensorId(TensorId base_id) {
   static unsigned tensor_counter = 0;
-  auto temp_id = fmt::format("t{}__{}", tensor_counter++, base_id);
+  auto temp_id = logging::format("t{}__{}", tensor_counter++, base_id);
   logging::ir::trace("Generating tensor id {}", temp_id);
   return temp_id;
 }

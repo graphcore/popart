@@ -36,15 +36,16 @@ void verifyPipelineStagesAreUnset(Graph &graph) {
 void checkOrder(Op *producer, Op *consumer, Tensor *tensor) {
   if (producer->getPipelineStage() > consumer->getPipelineStage()) {
     std::stringstream ss;
-    ss << fmt::format("Tensor {} is consumed in an earlier pipeline stage than "
-                      "it is produced",
-                      tensor->str());
-    ss << fmt::format("\nProducer {} has pipeline stage {}",
-                      producer->debugName(),
-                      producer->getPipelineStage());
-    ss << fmt::format("\nConsumer {} has pipeline stage {}",
-                      consumer->debugName(),
-                      consumer->getPipelineStage());
+    ss << logging::format(
+        "Tensor {} is consumed in an earlier pipeline stage than "
+        "it is produced",
+        tensor->str());
+    ss << logging::format("\nProducer {} has pipeline stage {}",
+                          producer->debugName(),
+                          producer->getPipelineStage());
+    ss << logging::format("\nConsumer {} has pipeline stage {}",
+                          consumer->debugName(),
+                          consumer->getPipelineStage());
     throw error(ss.str());
   }
 }
@@ -73,11 +74,12 @@ bool InferPipelineStages::apply(Graph &graph) const {
   ss << "Infering op pipeline stages through virtual graph ids:";
   for (auto &id_op : graph.getOps()) {
     auto op = id_op.second.get();
-    ss << fmt::format("\n  {}: {}", op->debugName(), op->getVirtualGraphId());
+    ss << logging::format(
+        "\n  {}: {}", op->debugName(), op->getVirtualGraphId());
     op->setPipelineStage(op->getVirtualGraphId());
   }
   for (auto &loss : graph.getIr().losses) {
-    ss << fmt::format(
+    ss << logging::format(
         "\n  Loss({}): {}", loss->input(0), loss->getVirtualGraphId());
     loss->pipelineStage(loss->getVirtualGraphId());
   }

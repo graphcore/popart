@@ -315,7 +315,7 @@ void Ir::verifyPipelineSettings() const {
       auto op = id_op.second.get();
       if (!op->isConvertibleTo<IpuCopyOp>()) {
         if (getPipelineStage(op) == -1) {
-          ss << fmt::format("\n  {}", op->debugName());
+          ss << logging::format("\n  {}", op->debugName());
         }
       }
     }
@@ -633,7 +633,7 @@ void Ir::prepare(const IrBundle &gb) {
     if (irDumpDest) {
       logging::log(logging::Module::ir,
                    logLevel,
-                   fmt::format("Writing ir to {}", irDumpDest));
+                   logging::format("Writing ir to {}", irDumpDest));
       std::ofstream ofs;
       ofs.open(irDumpDest, std::ofstream::out);
       if (ofs.is_open()) {
@@ -1161,7 +1161,7 @@ void Ir::registerInputTensors() {
   std::map<TensorId, std::vector<std::string>> consumerTypes;
   auto addConsumerType = [&](const TensorId &tenId, const Node &node, int i) {
     auto found      = consumerTypes.find(tenId);
-    auto consumerId = fmt::format("{}@{}", node.op_type(), i);
+    auto consumerId = logging::format("{}@{}", node.op_type(), i);
     if (found == consumerTypes.end()) {
       consumerTypes[tenId] = {consumerId};
     } else {

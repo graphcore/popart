@@ -101,7 +101,7 @@ void LSTMOp::setup() {
 void LSTMOp::createPassThroughOutput(const TensorId &new_id,
                                      OutIndex pass_through_index,
                                      const TensorInfo &out_info) {
-  auto tensor_id = fmt::format("lstm({})_{}", id, new_id);
+  auto tensor_id = logging::format("lstm({})_{}", id, new_id);
   createAndConnectOutTensor(pass_through_index, tensor_id);
   outInfo(pass_through_index) = out_info;
 }

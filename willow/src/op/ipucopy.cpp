@@ -85,7 +85,7 @@ void IpuCopyOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
   // no appendAttribute for map<TensorId, uint64_t> so convert sourceIpus to
   // string
-  os.appendAttribute("__sourceIpus", fmt::format("{}", sourceIpus));
+  os.appendAttribute("__sourceIpus", logging::format("{}", sourceIpus));
   os.appendAttribute("__destIpu", destIpu);
 }
 

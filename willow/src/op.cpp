@@ -1,5 +1,4 @@
 #include <onnx/onnx_pb.h>
-#include <spdlog/fmt/fmt.h>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op.hpp>
@@ -372,11 +371,11 @@ VGraphId Op::getVirtualGraphId() const {
   return *(settings.vgraphId);
 }
 
-VGraphId Op::getIntrospectionInVirtualGraphId(InIndex index) const {
+VGraphId Op::getIntrospectionInVirtualGraphId(InIndex) const {
   return getVirtualGraphId();
 }
 
-VGraphId Op::getIntrospectionOutVirtualGraphId(OutIndex index) const {
+VGraphId Op::getIntrospectionOutVirtualGraphId(OutIndex) const {
   return getVirtualGraphId();
 }
 
@@ -440,9 +439,9 @@ std::string Op::debugName() const {
     out_ids.push_back(i.second);
   }
 
-  return fmt::format("Op({}, outputs=[{}])",
-                     debug_id,
-                     fmt::join(out_ids.begin(), out_ids.end(), ", "));
+  return logging::format("Op({}, outputs=[{}])",
+                         debug_id,
+                         logging::join(out_ids.begin(), out_ids.end(), ", "));
 }
 
 bool Op::isNorm() const { return false; }
@@ -546,10 +545,10 @@ void Op::getInTensorData(TensorId tensorId,
 }
 
 std::ostream &operator<<(std::ostream &ss, const GradInOutMapper &g) {
-  ss << fmt::format("GradInOutMapper(iGrad: {}, iNonGrad: {}, type: {})",
-                    g.iGrad,
-                    g.iNonGrad,
-                    g.type);
+  ss << logging::format("GradInOutMapper(iGrad: {}, iNonGrad: {}, type: {})",
+                        g.iGrad,
+                        g.iNonGrad,
+                        g.type);
   return ss;
 }
 
@@ -568,7 +567,7 @@ std::ostream &operator<<(std::ostream &ss, const GradOpInType &t) {
     break;
   }
   default:
-    ss << fmt::format("GradOpInType::UNDEFINED({})", static_cast<int>(t));
+    ss << logging::format("GradOpInType::UNDEFINED({})", static_cast<int>(t));
     break;
   }
   return ss;

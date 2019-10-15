@@ -190,26 +190,26 @@ std::string zeroCandidatesError(Tensor *t, Op *stashRefOp) {
   std::stringstream ss;
   ss << "ILE: No candidates for restore op.";
 
-  ss << fmt::format("\nTensor: {}", t->id);
+  ss << logging::format("\nTensor: {}", t->id);
   if (t->hasProducer()) {
     auto prod = t->getProducer();
-    ss << fmt::format("\n  Producer: {}, ps: {}, vg: {}",
-                      prod->debugName(),
-                      prod->getPipelineStage(),
-                      getVirtualGraphIdOrSourceIpu(prod));
+    ss << logging::format("\n  Producer: {}, ps: {}, vg: {}",
+                          prod->debugName(),
+                          prod->getPipelineStage(),
+                          getVirtualGraphIdOrSourceIpu(prod));
   }
   ss << "\n  Consumers:";
   for (auto c : t->consumers.getOps()) {
-    ss << fmt::format("\n    {}, ps: {}, vg: {}",
-                      c->debugName(),
-                      c->getPipelineStage(),
-                      getVirtualGraphIdOrSourceIpu(c));
+    ss << logging::format("\n    {}, ps: {}, vg: {}",
+                          c->debugName(),
+                          c->getPipelineStage(),
+                          getVirtualGraphIdOrSourceIpu(c));
   }
 
-  ss << fmt::format("\nStash Ref Op: {}, ps: {}, vg: {}",
-                    stashRefOp->debugName(),
-                    stashRefOp->getPipelineStage(),
-                    getVirtualGraphIdOrSourceIpu(stashRefOp));
+  ss << logging::format("\nStash Ref Op: {}, ps: {}, vg: {}",
+                        stashRefOp->debugName(),
+                        stashRefOp->getPipelineStage(),
+                        getVirtualGraphIdOrSourceIpu(stashRefOp));
 
   return ss.str();
 }
@@ -582,18 +582,20 @@ bool Pipeline::apply(Graph &graph) const {
       // only copies of optimizer may be non contiguous
       if (delta != 1 && delta != -1) {
         std::stringstream ss;
-        ss << fmt::format(
+        ss << logging::format(
             "ILE: IpuCopy {} is not contiguous. It copies from IPU {} to "
             "IPU {}. Failed to contiguate all IpuCopyOps",
             ipuCopyOp->debugName(),
             sourceIpu,
             destIpu);
-        ss << fmt::format("\nin tensor 0: {}", ipuCopyOp->inTensor(0)->str());
-        ss << fmt::format("\nin tensor 0 producer pipeline stage: {}",
-                          sourceIpu);
-        ss << fmt::format("\nout tensor 0: {}", ipuCopyOp->outTensor(0)->str());
-        ss << fmt::format("\nout tensor 0 lowest consumer pipeline stage: {}",
-                          destIpu);
+        ss << logging::format("\nin tensor 0: {}",
+                              ipuCopyOp->inTensor(0)->str());
+        ss << logging::format("\nin tensor 0 producer pipeline stage: {}",
+                              sourceIpu);
+        ss << logging::format("\nout tensor 0: {}",
+                              ipuCopyOp->outTensor(0)->str());
+        ss << logging::format(
+            "\nout tensor 0 lowest consumer pipeline stage: {}", destIpu);
         throw error(ss.str());
       }
     }

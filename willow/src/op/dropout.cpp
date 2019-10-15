@@ -48,7 +48,7 @@ void DropoutOp::setup() {
   }
 
   if (getIr().isTraining()) {
-    auto tensor_id = fmt::format("Dropout({})_seed", id);
+    auto tensor_id = logging::format("Dropout({})_seed", id);
     createAndConnectOutTensor(getSeedOutIndex(), tensor_id);
     outInfo(getSeedOutIndex()) = {DataType::UINT32, {2}};
   }

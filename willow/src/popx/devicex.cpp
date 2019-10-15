@@ -1050,7 +1050,7 @@ PriTask Devicex::initRandomSeed() {
                      randomSeedTensor,
                      0,
                      sq,
-                     fmt::format("{}/set", randomSeedId()));
+                     logging::format("{}/set", randomSeedId()));
   };
 
   return {
@@ -1326,10 +1326,10 @@ PriTask Devicex::pipelinedCopyTask(Op *op, TaskId prevTaskId) {
     logging::debug("Adding pipelined copies for op {}", copyOp->debugName());
     for (auto &prog : progs.pipelineIpuCopyFragments(
              copyOp->getPipelineStage(),
-             fmt::format("{}, {}, PipelineStage({})",
-                         copyOp->debugName(),
-                         copyOp->getFromToStr(),
-                         copyOp->getPipelineStage()))) {
+             logging::format("{}, {}, PipelineStage({})",
+                             copyOp->debugName(),
+                             copyOp->getFromToStr(),
+                             copyOp->getPipelineStage()))) {
       copyOpx->growPipelined(*prog);
     }
   };
@@ -2452,13 +2452,13 @@ void Devicex::tryLoadExecutable() {
           cachedExecutable.emplace(poplar::Executable::deserialize(poplarFs));
           usingCachedExecutable = true;
         } else {
-          warn(fmt::format("could not open file `{}'", poplarCachePath));
+          warn(logging::format("could not open file `{}'", poplarCachePath));
         }
       } else {
         warn("ir hashes differ");
       }
     } else {
-      warn(fmt::format("could not open file `{}'", popartCachePath));
+      warn(logging::format("could not open file `{}'", popartCachePath));
     }
   }
 }
@@ -2685,7 +2685,7 @@ std::map<PipelineStage, VGraphId> Devicex::getPipelineToVGraphIdMap() const {
   for (auto &ps_vgraph : pipeline_vgraph_map) {
     auto ps       = ps_vgraph.first;
     auto vgraphid = ps_vgraph.second;
-    ss << fmt::format("\n  ps {} on virtual graph {}", ps, vgraphid);
+    ss << logging::format("\n  ps {} on virtual graph {}", ps, vgraphid);
   }
   logging::devicex::debug(ss.str());
 

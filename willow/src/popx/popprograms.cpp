@@ -134,7 +134,7 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
   // Insert the IPU-copies.
   auto found = pipelineIpuCopySeqs.find(pCycle);
   if (found != pipelineIpuCopySeqs.end()) {
-    ss << fmt::format("\n  Cycle_{}_IpuCopies", pCycle);
+    ss << logging::format("\n  Cycle_{}_IpuCopies", pCycle);
     poplar::program::Sequence x;
     sq.add(found->second);
   }
@@ -204,10 +204,10 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
     auto pc     = pc_descs.first;
     auto &descs = pc_descs.second;
 
-    ss << fmt::format("\nCycle_{}_IpuCopies:", pc);
+    ss << logging::format("\nCycle_{}_IpuCopies:", pc);
 
     for (auto &desc : descs) {
-      ss << fmt::format("\n    {}", desc);
+      ss << logging::format("\n    {}", desc);
     }
   }
   ss << "\n\n";

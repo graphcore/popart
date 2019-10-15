@@ -4,13 +4,15 @@
 #define GUARD_LOGGING_HPP
 
 #include <map>
-#include <spdlog/fmt/fmt.h>
-#include <spdlog/fmt/ostr.h>
+#include <sstream>
 #include <string>
+
+#include <stdio.h>
+#include <string.h>
 
 /** \verbatim
  *
- *  This is a simple logging system for Popart based on Poplar based on spdlog.
+ * This is a simple logging system for Popart based on Poplar based on spdlog.
  * The easiest way to use it is to simply call `logging::<module>::<level>()`
  * <module> is one of the modules & <level> is one of trace, debug, info,
  * warn, err or critical. For example:
@@ -42,6 +44,57 @@
 
 namespace popart {
 namespace logging {
+
+// Popart uses spdlog for logging. Originally this was exposed by this module as
+// used in the rest of the popart. However this introduced a dependency that
+// users of popart needed to resolve. The following internal namespace provide
+// 'just enough' of the spdlog interface to allow use to hide the spdlog in the
+// .cpp file and not expose the dependency.
+
+namespace internal {
+struct Value {
+
+  Value() {}
+  Value(const Value &v) : custom_value(v.custom_value) {}
+  ~Value() {}
+
+  typedef std::ostream &(*ValueFormatFunc)(std::ostream &os, const void *t);
+
+  struct CustomValue {
+    const void *value = nullptr;
+    ValueFormatFunc format;
+  };
+
+  CustomValue custom_value;
+};
+
+template <typename T>
+std::ostream &formatValue(std::ostream &os, const void *arg) {
+  const T *t = static_cast<const T *>(arg);
+  os << (*t);
+  return os;
+}
+
+template <typename T> Value MakeValue(const T &value) {
+  Value v;
+  v.custom_value.value  = &value;
+  v.custom_value.format = &formatValue<T>;
+  return v;
+}
+
+template <std::size_t N> struct ArgArray {
+  // Zero sized arrays are not allowed
+  typedef Value Type[N + 1];
+
+  template <typename T> static Value make(T &value) { return MakeValue(value); }
+
+  template <typename T> static Value make(const T &value) {
+    return MakeValue(value);
+  }
+};
+
+std::string format(std::string ref, std::size_t numArgs, Value args[]);
+} // namespace internal
 
 enum class Level {
   Trace    = 0,
@@ -90,6 +143,35 @@ void flush(Module m);
 // instead, e.g. logging::debug("A debug message").
 void log(Module m, Level l, const std::string &&msg);
 
+// Custom exception throw if there is an error in the log string formating
+struct FormatError : public std::runtime_error {
+  FormatError(std::string reason) : std::runtime_error(reason) {}
+};
+
+// The magic happens here. The format method collect the variadic template
+// arguments are passes them to the internal format function.
+template <typename... Args>
+std::string format(std::string ref, const Args &... args) {
+  typedef internal::ArgArray<sizeof...(Args)> ArgArray;
+  typename ArgArray::Type array{ArgArray::template make(args)...};
+  return internal::format(ref, sizeof...(Args), array);
+}
+
+// Reiimplementation of spdlog join function.
+template <typename It> std::string join(It begin, It end, std::string sep) {
+  std::stringstream ss;
+
+  It it = begin;
+  if (it != end) {
+    ss << *it++;
+    while (it != end) {
+      ss << sep;
+      ss << *it++;
+    }
+  }
+  return ss.str();
+}
+
 // Log a formatted message. This uses the `fmt` C++ library for formatting.
 // See https://github.com/fmtlib/fmt for details. You should probably use
 // the MAKE_LOG_TEMPLATE macros instead, e.g.
@@ -98,7 +180,7 @@ template <typename... Args>
 void log(Module m, Level l, const char *s, const Args &... args) {
   // Avoid formatting if the logging is disabled anyway.
   if (shouldLog(m, l)) {
-    log(m, l, fmt::format(s, args...));
+    log(m, l, format(s, args...));
   }
 }
 

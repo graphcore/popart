@@ -1,3 +1,5 @@
+#include <popart/logging.hpp>
+
 void writeJSON(std::size_t value, std::ostream &ss);
 
 template <typename KeyType, typename ValueType>
@@ -41,7 +43,7 @@ void writeJSON(const std::map<KeyType, ValueType> &m, std::ostream &ss) {
     auto &key   = i.first;
     auto &value = i.second;
 
-    ss << fmt::format("\"{}\":", key);
+    ss << popart::logging::format("\"{}\":", key);
     writeJSON(value, ss);
   });
 }

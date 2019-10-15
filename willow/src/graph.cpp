@@ -93,7 +93,7 @@ void Graph::addInput(const TensorId &tensorId, const TensorInfo &tensorInfo) {
 }
 
 TensorId Graph::addInput(const TensorInfo &tinfo) {
-  auto tensorId = fmt::format("input_{}", graph_inputs.size());
+  auto tensorId = logging::format("input_{}", graph_inputs.size());
   auto scopedId = addScope(tensorId);
   addInput(scopedId, tinfo);
   return scopedId;

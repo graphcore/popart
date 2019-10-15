@@ -1,7 +1,9 @@
 #include <boost/algorithm/cxx11/any_of.hpp>
 #include <boost/range/algorithm/find.hpp>
 
+#include <cmath>
 #include <memory>
+
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
@@ -447,9 +449,9 @@ std::ostream &operator<<(std::ostream &os, const InstanceConstraints &ic) {
   for (auto &i_befores : ic.internalBefores) {
     auto i        = i_befores.first;
     auto &befores = i_befores.second;
-    os << fmt::format("\n    {}:", i);
+    os << logging::format("\n    {}:", i);
     for (auto &before : befores) {
-      os << fmt::format("\n      {}", before);
+      os << logging::format("\n      {}", before);
     }
   }
 
@@ -457,9 +459,9 @@ std::ostream &operator<<(std::ostream &os, const InstanceConstraints &ic) {
   for (auto &i_afters : ic.internalAfters) {
     auto i       = i_afters.first;
     auto &afters = i_afters.second;
-    os << fmt::format("\n    {}:", i);
+    os << logging::format("\n    {}:", i);
     for (auto &after : afters) {
-      os << fmt::format("\n      {}", after);
+      os << logging::format("\n      {}", after);
     }
   }
 
@@ -482,9 +484,9 @@ void verifyTopologicalConstraints(const Match &match, Graph &graph) {
 }
 
 Graph &createSubgraph(const Match &match, Graph &graph) {
-  auto &ir = graph.getIr();
-  auto subgraph_id =
-      fmt::format("{}_subgraph({})", graph.id, generate_subgraph_unique_id());
+  auto &ir         = graph.getIr();
+  auto subgraph_id = logging::format(
+      "{}_subgraph({})", graph.id, generate_subgraph_unique_id());
   auto &subgraph      = ir.createGraph(subgraph_id);
   auto subgraph_scope = subgraph.getScope();
   auto &instance      = match.instances[0];

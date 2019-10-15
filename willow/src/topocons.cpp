@@ -187,9 +187,9 @@ std::ostream &operator<<(std::ostream &os, const TopoCons &tc) {
     auto op        = op_opsAfter.first;
     auto &opsAfter = op_opsAfter.second;
 
-    os << fmt::format("    {}:\n", op->debugName());
+    os << logging::format("    {}:\n", op->debugName());
     for (auto o : opsAfter) {
-      os << fmt::format("      {}\n", o->debugName());
+      os << logging::format("      {}\n", o->debugName());
     }
   }
 
@@ -198,9 +198,9 @@ std::ostream &operator<<(std::ostream &os, const TopoCons &tc) {
     auto op         = op_opsBefore.first;
     auto &opsBefore = op_opsBefore.second;
 
-    os << fmt::format("    {}:\n", op->debugName());
+    os << logging::format("    {}:\n", op->debugName());
     for (auto o : opsBefore) {
-      os << fmt::format("      {}\n", o->debugName());
+      os << logging::format("      {}\n", o->debugName());
     }
   }
 

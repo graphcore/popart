@@ -3,6 +3,7 @@
 #ifndef GUARD_NEURALNET_ERROR_HPP
 #define GUARD_NEURALNET_ERROR_HPP
 
+#include <memory>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -39,8 +40,8 @@ public:
 
   template <typename... Args>
   explicit error(const char *s, const Args &... args) try : std
-    ::runtime_error(fmt::format(s, args...)) { logging::err(what()); }
-  catch (const fmt::FormatError &e) {
+    ::runtime_error(logging::format(s, args...)) { logging::err(what()); }
+  catch (const logging::FormatError &e) {
     std::string reason =
         std::string("Popart exception format error ") + std::string(e.what());
     error _e(_empty(), reason);
@@ -49,8 +50,8 @@ public:
 
   template <typename... Args>
   explicit error(const std::string &s, const Args &... args) try : std
-    ::runtime_error(fmt::format(s, args...)) { logging::err(what()); }
-  catch (const fmt::FormatError &e) {
+    ::runtime_error(logging::format(s, args...)) { logging::err(what()); }
+  catch (const logging::FormatError &e) {
     std::string reason =
         std::string("Popart exception format error:") + std::string(e.what());
     throw error(_empty(), reason);

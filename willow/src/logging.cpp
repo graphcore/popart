@@ -5,6 +5,7 @@
 #include <popart/util.hpp>
 
 #include <spdlog/fmt/fmt.h>
+#include <spdlog/fmt/ostr.h>
 #include <spdlog/sinks/ansicolor_sink.h>
 #include <spdlog/sinks/file_sinks.h>
 #include <spdlog/spdlog.h>
@@ -15,6 +16,9 @@
 
 #include <iostream>
 #include <string>
+
+#include <stdio.h>
+#include <string.h>
 
 namespace popart {
 namespace logging {
@@ -156,6 +160,7 @@ const char *defaultLoggerDestination = "stderr";
 const char *defaultLoggerLevel       = "OFF";
 
 LoggingContext::LoggingContext() {
+
   auto POPART_LOG_DEST   = getPopartEnvVar("LOG_DEST");
   auto POPART_LOG_LEVEL  = getPopartEnvVar("LOG_LEVEL");
   auto POPART_LOG_CONFIG = getPopartEnvVar("LOG_CONFIG");
@@ -285,6 +290,59 @@ Level getLogLevel(Module m) {
 }
 
 void flush(Module m) { LoggingContext::getLogger(m)->flush(); }
+
+namespace internal {
+
+static void spdlog_format_custom_arg(void *formatter,
+                                     const void *arg,
+                                     void *format_str_ptr) {
+
+  fmt::BasicFormatter<char> &f =
+      *static_cast<fmt::BasicFormatter<char> *>(formatter);
+  const char *&format_str     = *static_cast<const char **>(format_str_ptr);
+  const Value::CustomValue *v = static_cast<const Value::CustomValue *>(arg);
+
+  fmt::internal::MemoryBuffer<char, fmt::internal::INLINE_BUFFER_SIZE> buffer;
+  fmt::internal::FormatBuf<char> format_buf(buffer);
+  std::basic_ostream<char> output(&format_buf);
+
+  // Call the custom format function for the type
+  v->format(output, v->value);
+
+  fmt::BasicStringRef<char> str(&buffer[0], buffer.size());
+  typedef fmt::internal::MakeArg<fmt::BasicFormatter<char>> MakeArg;
+  format_str = f.format(format_str, MakeArg(str));
+}
+
+std::string format(std::string ref, std::size_t numArgs, Value args[]) {
+
+  fmt::internal::Value v[fmt::ArgList::MAX_PACKED_ARGS];
+
+  // We will only support the packed argument type for now, who needs
+  // more that 16 (MAX_PACKED_ARGS) arguments for log function anyway.....
+
+  if (numArgs > fmt::ArgList::MAX_PACKED_ARGS) {
+    throw FormatError("Exceeded maxium of 16 format arguments");
+  }
+
+  uint64_t types = 0;
+
+  for (int i = 0; i < numArgs; ++i) {
+    v[i].custom.value  = &(args[i].custom_value);
+    v[i].custom.format = &spdlog_format_custom_arg;
+    types              = types | (fmt::internal::Value::CUSTOM << (4 * i));
+  }
+
+  try {
+    // fmt::CStringRef formatStr = ref;
+    fmt::ArgList fmtArgs(types, v);
+
+    return fmt::format(ref, fmtArgs);
+  } catch (fmt::FormatError &e) {
+    throw FormatError(e.what());
+  }
+}
+} // namespace internal
 
 } // namespace logging
 } // namespace popart
