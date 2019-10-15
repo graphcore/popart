@@ -75,11 +75,13 @@ std::ostream &operator<<(std::ostream &os, VirtualGraphMode v) {
 std::string toString(RecomputationType r) {
   switch (r) {
   case RecomputationType::None:
-    return "VirtualGraphMode::Off";
+    return "RecomputationType::None";
   case RecomputationType::Standard:
-    return "VirtualGraphMode::Manual";
+    return "RecomputationType::Standard";
+  case RecomputationType::Pipeline:
+    return "RecomputationType::Pipeline";
   case RecomputationType::NormOnly:
-    return "VirtualGraphMode::Auto";
+    return "RecomputationType::NormOnly";
   case RecomputationType::N:
     throw error("Bad RecomputationType {}", static_cast<int>(r));
   default:
