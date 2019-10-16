@@ -1863,14 +1863,13 @@ void Ir::updateVertices() {
   }
 
   // 3.1) scheduledPreLoss for Ops.
-  // The first Op which is PathFromLoss::Yes, and all subsequent Ops, are
-  // ScheduledPreLoss::No
-  bool inFwd = true;
+  // Op which have PathFromLoss::Yes are ScheduledPreLoss::No
   for (auto op : getMainGraph().getOpSchedule({})) {
     if (op->fromLoss == PathFromLoss::Yes) {
-      inFwd = false;
+      op->scheduledPreLoss = ScheduledPreLoss::No;
+    } else {
+      op->scheduledPreLoss = ScheduledPreLoss::Yes;
     }
-    op->scheduledPreLoss = inFwd ? ScheduledPreLoss::Yes : ScheduledPreLoss::No;
   }
 
   // 3.2) scheduledPreLoss for Tensors
