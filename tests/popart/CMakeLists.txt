@@ -86,8 +86,8 @@ function(add_all_py_unit_tests exclusions)
 endfunction()
 
 # auto_virtual_graph_test is currently failing
-# exception_test needs hardware
-add_all_py_unit_tests("test_util;auto_virtual_graph_test;exception_test;graph_replication_test;test_session")
+# exception_test needs hardware: TODO resolve in T10881
+add_all_py_unit_tests("test_util;auto_virtual_graph_test;exception_test;test_session")
 
 
 add_subdirectory(operators_test)

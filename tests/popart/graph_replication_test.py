@@ -11,6 +11,7 @@ import test_util as tu
 from operators_test.op_tester import op_tester
 
 
+@tu.requires_ipu
 def test_weight_update(op_tester):
 
     A = np.ones((2, 4)).astype(np.float32)
@@ -31,8 +32,9 @@ def test_weight_update(op_tester):
 
         return [
             o,
-            popart.reservedGradientPrefix() + i2, i2, i3, "learnRate_FLOAT",
-            "weightDecay_FLOAT"
+            popart.reservedGradientPrefix() + i2, i2, i3,
+            "scaledLearningRate0___default___FLOAT",
+            "weightDecayScaleFactor0___default___FLOAT"
         ]
 
     def reference(ref_data):
@@ -90,6 +92,7 @@ def test_weight_update(op_tester):
                   optimizer=popart.SGD({"defaultLearningRate": (0.01, False)}))
 
 
+@tu.requires_ipu
 def test_weight_update_replicated(op_tester):
 
     A = np.random.rand(2, 4).astype(np.float32)
@@ -113,8 +116,9 @@ def test_weight_update_replicated(op_tester):
         return [
             o,
             popart.reservedGradientPrefix() + i2, i2,
-            popart.reservedGradientPrefix() + i3, i3, "learnRate_FLOAT",
-            "weightDecay_FLOAT"
+            popart.reservedGradientPrefix() + i3, i3,
+            "scaledLearningRate0___default___FLOAT",
+            "weightDecayScaleFactor0___default___FLOAT"
         ]
 
     def reference(ref_data):
@@ -177,7 +181,11 @@ def test_weight_update_replicated(op_tester):
     op_tester.passes = ['GemmDecomposition', 'PreUniRepl']
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor
-    op_tester.device = "ipu_model"
+    op_tester.device = tu.acquire_ipu(replicationFactor)
+    if not op_tester.device:
+        raise RuntimeError(
+            "Failed to acquire IPU device in training graph replication test")
+
     op_tester.numIPUs = replicationFactor
     op_tester.loss_reduction_type = popart.ReductionType.Mean
     op_tester.run(init_builder,
@@ -186,6 +194,7 @@ def test_weight_update_replicated(op_tester):
                   optimizer=popart.SGD({"defaultLearningRate": (0.01, False)}))
 
 
+@tu.requires_ipu
 def test_replication_infer(op_tester):
 
     # 2 samples per device
@@ -248,6 +257,10 @@ def test_replication_infer(op_tester):
     op_tester.passes = ['GemmDecomposition', 'PreUniRepl']
     op_tester.options.enableReplicatedGraphs = True
     op_tester.options.replicatedGraphCount = replicationFactor
-    op_tester.device = "ipu_model"
+    op_tester.device = tu.acquire_ipu(replicationFactor)
+    if not op_tester.device:
+        raise RuntimeError(
+            "Failed to acquire IPU device in inference graph replication test")
+
     op_tester.numIPUs = replicationFactor
     op_tester.run(init_builder, reference, 'infer')
