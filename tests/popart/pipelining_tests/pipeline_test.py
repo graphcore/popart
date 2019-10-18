@@ -688,7 +688,7 @@ def test_pipeline_stages_backwards_through_ipus():
     print(pipelineAnchor)
     print(ref())
 
-    assert np.array_equal(pipelineAnchor[0], ref())
+    assert np.allclose(pipelineAnchor[0], ref())
 
 
 def test_multiple_stages_per_virtual_graph_inference():

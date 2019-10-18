@@ -14,6 +14,7 @@
 #include <popart/tensors.hpp>
 
 #include <popops/Pad.hpp>
+#include <popops/Zero.hpp>
 
 namespace popart {
 namespace popx {
@@ -107,6 +108,10 @@ void SliceGradOpx::grow(poplar::program::Sequence &prog) const {
   if (found_preSlicedTensor.first) {
     // Padding with zeros
     outTensor = graph().clone(found_preSlicedTensor.second);
+    // Note:  If you don't set the padded region of output tensor to zero,
+    // there is potential for downstream ops to change these elements in-place,
+    // corrupting the output of the Opx on subsequent iterations.
+    popops::zero(graph(), outTensor, prog, debugPrefix("zero"));
 
     // Copy input into non-padded region of output tensor
     auto nonPaddedRegion = outTensor;
