@@ -41,7 +41,8 @@
 #include <popart/tojson.hpp>
 #include <popart/topocons.hpp>
 
-#include <popart/op/gradientaccl.hpp>
+#include <popart/op/sgd1acclupdate.hpp>
+#include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/varupdate.hpp>
 #include <popart/popx/op/ipucopyx.hpp>
 #include <popart/tensornames.hpp>
@@ -373,7 +374,14 @@ void Devicex::weightsToHost(
     for (auto id : ir().getTensorIds(TensorType::Variable)) {
       auto found = onnxModelData.find(id);
       if (found == onnxModelData.end()) {
-        throw error("No TensorId " + id + " in final host destination map");
+        std::ostringstream oss;
+        oss << "No TensorId " << id
+            << " in final host destination map. The TensorIds are [ ";
+        for (auto x : onnxModelData) {
+          oss << x.first << ' ';
+        }
+        oss << ']';
+        throw error(oss.str());
       }
       MutableVoidData mv_data = found->second;
       hostStreamToHost(mv_data, id);
@@ -1042,7 +1050,7 @@ PriTask Devicex::initRandomSeed() {
                      randomSeedTensor,
                      0,
                      sq,
-                     fmt::format("{}/set", randomSeedId()));
+                     logging::format("{}/set", randomSeedId()));
   };
 
   return {
@@ -1289,6 +1297,12 @@ void Devicex::createFragment(const Graph &graph) {
   return progs.createFragment(graph);
 }
 
+poplar::Function &Devicex::getFragmentFunction(const Graph &called_graph) {
+  logging::devicex::trace("[getFragmentFunction] Getting function for graph {}",
+                          called_graph.id.str());
+  return progs.getFragmentFunction(called_graph, graph());
+}
+
 void Devicex::addPipelinedCopyTasks(PriTasks &tasks) {
   auto schedule          = ir().getMainGraph().getOpSchedule({});
   std::string prevTaskId = "";
@@ -1312,10 +1326,10 @@ PriTask Devicex::pipelinedCopyTask(Op *op, TaskId prevTaskId) {
     logging::debug("Adding pipelined copies for op {}", copyOp->debugName());
     for (auto &prog : progs.pipelineIpuCopyFragments(
              copyOp->getPipelineStage(),
-             fmt::format("{}, {}, PipelineStage({})",
-                         copyOp->debugName(),
-                         copyOp->getFromToStr(),
-                         copyOp->getPipelineStage()))) {
+             logging::format("{}, {}, PipelineStage({})",
+                             copyOp->debugName(),
+                             copyOp->getFromToStr(),
+                             copyOp->getPipelineStage()))) {
       copyOpx->growPipelined(*prog);
     }
   };
@@ -1559,18 +1573,20 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
                       oss.str());
         }
 
-        // 2 special case Ops when gradient accumulation is enabled.
+        // 2 special case Ops when their is a gradient accumulator / velocity.
         // If we are doing gradient accumulation, we need to ensure the reset
         // and var update aren't run every time. Instead, these fragments sit
         // outside the "main" loop of the fowards and backwards passes.
         // special case Op 1:
-        if ((op->isConvertibleTo<VarUpdateOp>()) &&
+        if ((op->isConvertibleTo<SGD1VarUpdateOp>()) &&
             (ir().getSessionOptions().enableGradientAccumulation)) {
+          outerLoopFragEmpty = false;
           growOpx(progs.varUpdateFromAccumulatorFragment());
         }
         // special case Op 2:
-        else if ((op->isConvertibleTo<ResetAcclOp>()) &&
+        else if ((op->isConvertibleTo<SGD1AcclUpdateOp>()) &&
                  (ir().getSessionOptions().enableGradientAccumulation)) {
+          outerLoopFragEmpty = false;
           growOpx(progs.resetWeightGradientAccumulatorFragment());
         }
 
@@ -2155,9 +2171,11 @@ void Devicex::prepare() {
 
   // stream-to-device tensors : 1)  make tensor 2) make stream
   for (auto id : ir().getTensorIds(TensorType::Stream)) {
+
     Tensor *tensor = ir().getTensor(id);
     // 1
     tasks.add(initTensorTask(tensor));
+    logging::devicex::debug("Addings initTensorTask for {}", id);
 
     if (useSyntheticData() == false) {
       // 2
@@ -2436,13 +2454,13 @@ void Devicex::tryLoadExecutable() {
           cachedExecutable.emplace(poplar::Executable::deserialize(poplarFs));
           usingCachedExecutable = true;
         } else {
-          warn(fmt::format("could not open file `{}'", poplarCachePath));
+          warn(logging::format("could not open file `{}'", poplarCachePath));
         }
       } else {
         warn("ir hashes differ");
       }
     } else {
-      warn(fmt::format("could not open file `{}'", popartCachePath));
+      warn(logging::format("could not open file `{}'", popartCachePath));
     }
   }
 }
@@ -2669,7 +2687,7 @@ std::map<PipelineStage, VGraphId> Devicex::getPipelineToVGraphIdMap() const {
   for (auto &ps_vgraph : pipeline_vgraph_map) {
     auto ps       = ps_vgraph.first;
     auto vgraphid = ps_vgraph.second;
-    ss << fmt::format("\n  ps {} on virtual graph {}", ps, vgraphid);
+    ss << logging::format("\n  ps {} on virtual graph {}", ps, vgraphid);
   }
   logging::devicex::debug(ss.str());
 

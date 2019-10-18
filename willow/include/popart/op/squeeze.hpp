@@ -7,7 +7,7 @@ namespace popart {
 
 class SqueezeBaseOp : public Op {
 public:
-  SqueezeBaseOp(const OperatorIdentifier &_opid, 
+  SqueezeBaseOp(const OperatorIdentifier &_opid,
                 const std::vector<int64_t> &axes_,
                 const Op::Settings &settings_);
 
@@ -30,7 +30,7 @@ public:
 protected:
   std::vector<int64_t> axes;
 
-  void setAxesToDefault();  
+  void setAxesToDefault();
 };
 
 class SqueezeOp : public SqueezeBaseOp {
@@ -47,14 +47,12 @@ public:
   getInplaceVariant(const OperatorIdentifier &o) const final;
   std::vector<std::tuple<OperatorIdentifier, float>>
   inplacePriorityDefault() const final;
-
 };
 
 class SqueezeInplaceOp : public SqueezeBaseOp {
 public:
   SqueezeInplaceOp(const SqueezeOp &);
   std::unique_ptr<Op> clone() const final;
-
 };
 
 class SqueezeGradOp : public Op {

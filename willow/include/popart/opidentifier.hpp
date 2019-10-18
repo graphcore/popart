@@ -137,9 +137,9 @@ const static AiGraphcoreOpIdV1 AddArg1Grad("AddArg1Grad");
 // constexpr static char And[] = "And";
 // constexpr static char ArgMax[] = "ArgMax";
 // constexpr static char ArgMin[] = "ArgMin";
-// constexpr static char Asin[] = "Asin";
-// constexpr static char Asinh[] = "Asinh";
-// constexpr static char Atan[] = "Atan";
+const static AiGraphcoreOpIdV1 AsinGrad("AsinGrad");
+const static AiGraphcoreOpIdV1 SinhGrad("SinhGrad");
+const static AiGraphcoreOpIdV1 AtanGrad("AtanGrad");
 // constexpr static char Atanh[] = "Atanh";
 const static AiGraphcoreOpIdV1 AveragePoolGrad("AveragePoolGrad");
 const static AiGraphcoreOpIdV1 BatchNormalizationGrad("BatchNormalizationGrad");
@@ -295,6 +295,9 @@ const static AiGraphcoreOpIdV1 Square("Square");
 const static AiGraphcoreOpIdV1 GroupNormalization_1("GroupNormalization", 3, 3);
 
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");
+const static AiGraphcoreOpIdV1 SinhInplace("SinhInplace");
+const static AiGraphcoreOpIdV1 AsinInplace("AsinInplace");
+const static AiGraphcoreOpIdV1 AtanInplace("AtanInplace");
 const static AiGraphcoreOpIdV1 SoftmaxInplace("SoftmaxInplace");
 const static AiGraphcoreOpIdV1 SigmoidInplace("SigmoidInplace");
 const static AiGraphcoreOpIdV1 ScaleInplace("ScaleInplace");
@@ -307,7 +310,12 @@ const static AiGraphcoreOpIdV1 Nll("Nll");
 
 const static AiGraphcoreOpIdV1 IpuCopy("IpuCopy");
 
-const static AiGraphcoreOpIdV1 SgdVarUpdate("SGDVarUpdate");
+const static AiGraphcoreOpIdV1 SGD0VarUpdate("SGD0VarUpdate");
+const static AiGraphcoreOpIdV1 SGD1VarUpdateCombo("SGD1VarUpdateCombo");
+const static AiGraphcoreOpIdV1 SGD1VarUpdate("SGD1VarUpdate");
+const static AiGraphcoreOpIdV1 SGD1AcclUpdate("SGD1AcclUpdate");
+const static AiGraphcoreOpIdV1 SGD1Accumulate("SGD1Accumulate");
+
 const static AiGraphcoreOpIdV1 CopyVarUpdate("CopyVarUpdate");
 const static AiGraphcoreOpIdV1 FlattenInplace("FlattenInplace");
 const static AiGraphcoreOpIdV1 ReshapeInplace("ReshapeInplace");

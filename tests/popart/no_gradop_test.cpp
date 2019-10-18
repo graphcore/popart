@@ -125,8 +125,8 @@ BOOST_AUTO_TEST_CASE(Basic0) {
   });
 
   runner.checkIr([&](Ir &ir) {
-    // There should only be one SgdVarUpdateOp
-    auto varUpdates = ir.opsOfType(Onnx::CustomOperators::SgdVarUpdate);
+    // There should only be one SGD0VarUpdateOp
+    auto varUpdates = ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate);
     BOOST_CHECK_EQUAL(varUpdates.size(), 1);
     // And it should be to update conv1WeightsInput
     BOOST_CHECK_EQUAL(
@@ -198,8 +198,8 @@ BOOST_AUTO_TEST_CASE(Basic1) {
   });
 
   runner.checkIr([&](Ir &ir) {
-    // There should only be a SgdVarUpdateOp
-    auto varUpdates = ir.opsOfType(Onnx::CustomOperators::SgdVarUpdate);
+    // There should only be a SGD0VarUpdateOp
+    auto varUpdates = ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate);
     BOOST_CHECK_EQUAL(varUpdates.size(), 1);
     // And it should be to update conv1WeightsInput
     BOOST_CHECK_EQUAL(
@@ -278,7 +278,7 @@ BOOST_AUTO_TEST_CASE(Basic2) {
   runner.checkIr([&](Ir &ir) {
     // There should be no as a grad edge was not provided for every input of
     // splits grad op.
-    auto varUpdates = ir.opsOfType(Onnx::CustomOperators::SgdVarUpdate);
+    auto varUpdates = ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate);
     BOOST_CHECK_EQUAL(varUpdates.size(), 0);
   });
 

@@ -449,7 +449,11 @@ void ConvFlipWeightsGradOpx::grow(poplar::program::Sequence &seq) const {
 
     // call weightsTransposeChansFlipXY on group i of weights5D and convWeights.
     poplin::weightsTransposeChansFlipXY(
-        graph(), w, c, seq, debugPrefix(fmt::format("group{}_transposeXY", i)));
+        graph(),
+        w,
+        c,
+        seq,
+        debugPrefix(logging::format("group{}_transposeXY", i)));
   }
 
   auto newShape = convWeights.shape();

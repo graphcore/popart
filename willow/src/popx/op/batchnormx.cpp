@@ -11,6 +11,8 @@
 #include <popops/ElementWise.hpp>
 #include <popops/Expr.hpp>
 
+#include <cmath>
+
 namespace poplar {
 using Shape = std::vector<std::size_t>;
 }

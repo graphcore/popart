@@ -14,6 +14,8 @@
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>
 
+#include <math.h>
+
 using namespace popart;
 
 BOOST_AUTO_TEST_CASE(ConstExprTest_AddCastMatMul) {

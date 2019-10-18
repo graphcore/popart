@@ -99,22 +99,15 @@ public:
    */
   std::vector<std::shared_ptr<DeviceInfo>> enumerateDevices();
 
-  /** Finds the first available hardware device. This method will attach to the
-   * device.
-   * \return A device, which can be used with a session. Will return nullptr if
-   *         no device is available
-   */
-  std::shared_ptr<DeviceInfo> acquireAvailableDevice();
-
   /** Finds the first available hardware device, that a certain number of IPUs.
    * This method will attach to the device.
-   * \param numIpus The number of IPUs on the device
-   * \param tilesPerIpu The number of tiles on the IPU
+   * \param numIpus The number of IPUs on the device [=1]
+   * \param tilesPerIpu The number of tiles on the IPU [=1216]
    * \return A device, which can be used with a session. Will return nullptr if
    *         no device is available
    */
-  std::shared_ptr<DeviceInfo> acquireAvailableDevice(int numIpus,
-                                                     int tilesPerIpu);
+  std::shared_ptr<DeviceInfo> acquireAvailableDevice(int numIpus     = 1,
+                                                     int tilesPerIpu = 1216);
 
   /** Allocates the hardware device by id. This id can be found running 'gc-info
    *  -l' This method will attache to the device

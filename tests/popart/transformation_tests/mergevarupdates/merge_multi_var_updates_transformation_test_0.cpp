@@ -123,9 +123,9 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
                                           : 24; // 24 bytes = 7 floats
     opts.looseThresholdAtPeak = 10000;
 
-    float lossLambda = 0.26;
-    float learnRate  = 0.1;
-    auto optimizer   = SGD(learnRate);
+    float lossLambda   = 0.26;
+    float learningRate = 0.1;
+    auto optimizer     = SGD({{"defaultLearningRate", {learningRate, false}}});
     std::vector<Loss *> losses{
         new L1Loss(reduced, "l1LossVal", lossLambda, ReductionType::SUM)};
 
@@ -158,13 +158,14 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::ConcatInplace).size() ==
                   4);
 
-      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SgdVarUpdate).size() ==
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size() ==
                   1);
+
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::CopyVarUpdate).size() ==
                   1);
 
     } else if (mvu == MergeVarUpdateType::None) {
-      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SgdVarUpdate).size() ==
+      BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size() ==
                   3 * nConv);
       BOOST_CHECK(ir.opsOfType(Onnx::CustomOperators::CopyVarUpdate).size() ==
                   2 * nConv);
@@ -175,7 +176,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     }
 
     else if (mvu == MergeVarUpdateType::AutoTight) {
-      auto nSgd  = ir.opsOfType(Onnx::CustomOperators::SgdVarUpdate).size();
+      auto nSgd  = ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size();
       auto nCopy = ir.opsOfType(Onnx::CustomOperators::CopyVarUpdate).size();
       auto thr   = opts.mergeVarUpdateMemThreshold;
       std::cout << "copy elms : " << copyElms << std::endl;
@@ -192,7 +193,7 @@ BOOST_AUTO_TEST_CASE(Transformation_MergeMultiSGD) {
     }
 
     else if (mvu == MergeVarUpdateType::AutoLoose) {
-      auto nSgd  = ir.opsOfType(Onnx::CustomOperators::SgdVarUpdate).size();
+      auto nSgd  = ir.opsOfType(Onnx::CustomOperators::SGD0VarUpdate).size();
       auto nCopy = ir.opsOfType(Onnx::CustomOperators::CopyVarUpdate).size();
       std::cout << "nSgd : " << nSgd << std::endl;
       std::cout << "nCopy : " << nCopy << std::endl;

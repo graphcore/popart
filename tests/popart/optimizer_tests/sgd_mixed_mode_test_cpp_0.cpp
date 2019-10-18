@@ -17,8 +17,8 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/op/restore.hpp>
+#include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/stash.hpp>
-#include <popart/op/varupdate.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/session.hpp>
 #include <popart/tensorinfo.hpp>
@@ -82,6 +82,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
     WeightsIO weightsRead;
 
     std::vector<float> weight0(sampleDim, 100.0f);
+    // read-back buffer for weight0
     std::vector<float> rb0(sampleDim, -777.0f);
     ConstVoidData cvd0({weight0.data(), sampleInfo});
 
@@ -156,19 +157,20 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
     session->weightsToHost();
     session->readWeights(weightsRead);
 
+    std::cout << "Values read-back from device for weights 0,1,2:" << std::endl;
     std::cout << rb0[0] << "  " << rb1[0] << "  " << rb2[0] << "." << std::endl;
 
-    // All the SGDVarUpdateOps, in no particular order
-    std::vector<SGDVarUpdateOp *> sgdOpsOOO;
+    // All the SGD0VarUpdateOps, in no particular order
+    std::vector<SGD0VarUpdateOp *> sgdOpsOOO;
     for (auto op : session->ir.getOpSchedule({})) {
-      auto asSgd = dynamic_cast<SGDVarUpdateOp *>(op);
+      auto asSgd = dynamic_cast<SGD0VarUpdateOp *>(op);
       if (asSgd) {
         sgdOpsOOO.push_back(asSgd);
       }
     }
     BOOST_CHECK(sgdOpsOOO.size() == 3);
 
-    std::vector<SGDVarUpdateOp *> sgdOps = sgdOpsOOO;
+    std::vector<SGD0VarUpdateOp *> sgdOps = sgdOpsOOO;
     for (auto op : sgdOpsOOO) {
       auto id = op->inId(op->getVarToUpdateInIndex());
       if (id == w0name) {
@@ -182,41 +184,44 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
       }
     }
 
+    // check that expected values are the same as read-back values
     BOOST_CHECK(e0.finalValue == rb0[0]);
     BOOST_CHECK(e1.finalValue == rb1[0]);
     BOOST_CHECK(e2.finalValue == rb2[0]);
 
-    BOOST_CHECK(e0.scaledLearningRateIsConst ==
-                sgdOps[0]->initScaledLearningRate.isConst());
-    BOOST_CHECK(e1.scaledLearningRateIsConst ==
-                sgdOps[1]->initScaledLearningRate.isConst());
-    BOOST_CHECK(e2.scaledLearningRateIsConst ==
-                sgdOps[2]->initScaledLearningRate.isConst());
+    BOOST_CHECK(e0.scaledLearningRateIsConst == sgdOps[0]->initSlr0.isConst());
+    BOOST_CHECK(e1.scaledLearningRateIsConst == sgdOps[1]->initSlr0.isConst());
+    BOOST_CHECK(e2.scaledLearningRateIsConst == sgdOps[2]->initSlr0.isConst());
 
     BOOST_CHECK(e0.weightDecayScaleFactorIsConst ==
-                sgdOps[0]->initWeightDecayScaleFactor.isConst());
+                sgdOps[0]->initWdsf0.isConst());
     BOOST_CHECK(e1.weightDecayScaleFactorIsConst ==
-                sgdOps[1]->initWeightDecayScaleFactor.isConst());
+                sgdOps[1]->initWdsf0.isConst());
     BOOST_CHECK(e2.weightDecayScaleFactorIsConst ==
-                sgdOps[2]->initWeightDecayScaleFactor.isConst());
+                sgdOps[2]->initWdsf0.isConst());
   };
 
   // Test case 1
   // ------------
-  OptimizerValue globalWeightDecay{0, false};
-  OptimizerValue globalLearningRate{0.1, true};
+  std::cout << "TEST CASE 1" << std::endl;
+  OptimizerValue defaultWeightDecay{0, false};
+  OptimizerValue defaultLearningRate{0.1, true};
   OptimizerValue lossScaling{10, true};
 
-  auto opt0 = SGD(globalLearningRate, globalWeightDecay, lossScaling);
+  std::map<std::string, std::pair<float, bool>> optParams;
+  optParams.insert({"defaultWeightDecay", {0.0f, false}});
+  optParams.insert({"defaultLearningRate", {0.1f, true}});
+  optParams.insert({"lossScaling", {10.0f, true}});
 
-  opt0.insertSpecific(w1name,      // specific for weight 1
-                      {0, true},   // constant weight decay
-                      {0.2, false} // non-constant learning rate
-  );
+  auto opt0 = SGD(optParams);
+  opt0.insertSpecific(
+      w1name, {{"learningRate", {0.2, false}}, {"weightDecay", {0.0f, true}}});
 
   // same as opt1, but increased learning rate for weight 1
-  auto opt1 = SGD(globalLearningRate, globalWeightDecay, lossScaling);
-  opt1.insertSpecific(w1name, {0, true}, {0.5, false});
+  auto opt1 = SGD(optParams);
+
+  opt1.insertSpecific(
+      w1name, {{"learningRate", {0.5, false}}, {"weightDecay", {0, true}}});
 
   // weight 0 uses the global optimizer values
   Expectation e0({
@@ -235,23 +240,20 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
 
   Expectation e2({300 - 0.1 - 0.1, true, false});
 
-  std::cout << "TEST CASE 1" << std::endl;
   test(opt0, opt1, e0, e1, e2);
 
   // Test case 2
   // -----------
   // We confirm that a non-const lossScaling results in all learning rates being
   // non-const
+  std::cout << "TEST CASE 2" << std::endl;
 
-  globalWeightDecay  = {0.0, true};
-  globalLearningRate = {2.0, true};
-  lossScaling        = {20, false};
+  opt0 = SGD({{"defaultLearningRate", {2, true}},
+              {"defaultWeightDecay", {0, true}},
+              {"lossScaling", {20, false}}});
 
-  opt0 = SGD(globalLearningRate, globalWeightDecay, lossScaling);
-  opt0.insertSpecific(w1name,        // specific for weight 1
-                      {0.125, true}, // constant weight decay
-                      {4.0, true}    // constant learning rate
-  );
+  opt0.insertSpecific(
+      w1name, {{"learningRate", {4.0, true}}, {"weightDecay", {0.125, true}}});
 
   opt1 = opt0;
 
@@ -271,6 +273,5 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
 
   e2 = {300 - 2.0 - 2.0, false, true};
 
-  std::cout << "TEST CASE 2" << std::endl;
   test(opt0, opt1, e0, e1, e2);
 }

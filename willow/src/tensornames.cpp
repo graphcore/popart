@@ -27,10 +27,20 @@ TensorId getEdgeGradId(TensorId tenId, OpId opId, int index) {
 }
 
 std::vector<std::string> reservedOptimizerPrefixes() {
-  return {reservedGlobalScaledLearningRatePrefix(),
-          reservedSpecificScaledLearningRatePrefix(),
-          reservedGlobalWeightDecayScaleFactorPrefix(),
-          reservedSpecificWeightDecayScaleFactorPrefix(),
+  return {reservedDefaultScaledLearningRate0Prefix(),
+          reservedSpecificScaledLearningRate0Prefix(),
+          reservedDefaultWeightDecayScaleFactor0Prefix(),
+          reservedSpecificWeightDecayScaleFactor0Prefix(),
+
+          reservedDefaultScaledLearningRate1Prefix(),
+          reservedSpecificScaledLearningRate1Prefix(),
+          reservedDefaultWeightDecayScaleFactor1Prefix(),
+          reservedSpecificWeightDecayScaleFactor1Prefix(),
+          reservedDefaultDampeningScaleFactor1Prefix(),
+          reservedSpecificDampeningScaleFactor1Prefix(),
+          reservedDefaultMomentum1Prefix(),
+          reservedSpecificMomentum1Prefix(),
+
           reservedLossScalingPrefix()};
 }
 
@@ -51,7 +61,7 @@ std::vector<std::string> reservedPrefixes() {
 
 TensorId createIntermediateTensorId(TensorId base_id) {
   static unsigned tensor_counter = 0;
-  auto temp_id = fmt::format("t{}__{}", tensor_counter++, base_id);
+  auto temp_id = logging::format("t{}__{}", tensor_counter++, base_id);
   logging::ir::trace("Generating tensor id {}", temp_id);
   return temp_id;
 }

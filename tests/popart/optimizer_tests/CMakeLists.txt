@@ -1,4 +1,5 @@
-add_popart_cpp_unit_test(sgd_mixed_mode_test_0 sgd_mixed_mode_test_0.cpp)
+add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_0 sgd_mixed_mode_test_cpp_0.cpp)
+add_popart_cpp_unit_test(sgd_mixed_mode_test_cpp_1 sgd_mixed_mode_test_cpp_1.cpp)
 add_popart_cpp_unit_test(sgd_mixed_mode_compatibility_test_0 sgd_mixed_mode_compatibility_test_0.cpp)
 
 add_all_py_unit_tests("")

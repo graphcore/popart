@@ -259,6 +259,7 @@ public:
   const std::set<Op *> &getTrainTargetOps() { return trainTargetOps; }
 
   bool addToTrainTargetOps(Op *op);
+  bool removeFromTrainTargetOps(Op *op);
 
   // modify a Graph using a graph transformation
   // (public for unit testing only)

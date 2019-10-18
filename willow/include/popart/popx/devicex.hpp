@@ -250,6 +250,8 @@ public:
   bool containsFragment(const Graph &scope) const;
   void createFragment(const Graph &);
 
+  poplar::Function &getFragmentFunction(const Graph &called_graph);
+
   // A forward search of graph:
   //   - from inputs of the graph
   //   - to Opxs with optimised poplar calls to create the tensor,
@@ -568,6 +570,15 @@ private:
   // POPART_OPX_TRACE environment variable to "1"
   bool opxTrace = false;
   poplar::Tensor opxTraceTensor;
+
+  // This keeps track of whether there the varUpdateFromAccmulatorFragment and
+  // the resetWeightGradientAccumulatorFragment are empty. TODO T12001: (1)
+  // merge these 2 fragments (2) a class which encapsulates framgments which has
+  // this attribute.
+  bool outerLoopFragEmpty = true;
+
+public:
+  bool getOuterLoopFragEmpty() const { return outerLoopFragEmpty; }
 };
 
 } // namespace popx

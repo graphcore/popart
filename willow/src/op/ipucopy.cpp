@@ -85,7 +85,7 @@ void IpuCopyOp::appendAttributes(OpSerialiserBase &os) const {
   Op::appendAttributes(os);
   // no appendAttribute for map<TensorId, uint64_t> so convert sourceIpus to
   // string
-  os.appendAttribute("__sourceIpus", fmt::format("{}", sourceIpus));
+  os.appendAttribute("__sourceIpus", logging::format("{}", sourceIpus));
   os.appendAttribute("__destIpu", destIpu);
 }
 
@@ -120,6 +120,19 @@ void IpuCopyOp::connectInTensor(InIndex inIndex,
     tensorIds.push_back(tenId);
   }
   defaultConnectInTensor(inIndex, tenId);
+}
+
+void IpuCopyOp::disconnectInTensor(InIndex idx, Tensor *t) {
+  auto sourceIpu = sourceIpus.at(t->id);
+  sourceIpus.erase(t->id);
+
+  auto &sourceIds = sourceTensors.at(sourceIpu);
+  std::remove(sourceIds.begin(), sourceIds.end(), t->id);
+  if (sourceIds.empty()) {
+    sourceTensors.erase(sourceIpu);
+  }
+
+  Op::disconnectInTensor(idx, t);
 }
 
 // Have intentionally not added the IpuCopyOp to the OpManager. This IpuCopyOp

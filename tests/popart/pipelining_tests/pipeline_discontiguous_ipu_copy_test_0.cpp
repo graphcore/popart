@@ -163,8 +163,6 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
     if (tt == TestType::Ir) {
 
       std::vector<std::tuple<int64_t, int64_t>> pipeSrcDsts;
-      // we compute on-the-fly what the expected copies are
-      std::vector<std::tuple<int64_t, int64_t>> expectedSrcDsts;
 
       auto getIpuCopies = [](const Ir &ir) {
         std::vector<IpuCopyOp *> copies;
@@ -212,6 +210,8 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
       bool bwdDisco = false;
 
       auto copiesWithoutPipe = getIpuCopies(irWithoutPipe);
+      // we compute on-the-fly what the expected copies are
+      std::map<std::string, std::tuple<int64_t, int64_t>> expectedSrcDstsMap;
       for (auto cop : copiesWithoutPipe) {
         auto ipuDiff = static_cast<int64_t>(cop->getDestIpu()) -
                        static_cast<int64_t>(cop->getSourceIpu());
@@ -223,14 +223,24 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
         }
 
         auto delta = cop->getDestIpu() < cop->getSourceIpu() ? -1 : +1;
+        auto inId  = cop->inId(0);
         for (auto src = cop->getSourceIpu(); src != cop->getDestIpu();
              src += delta) {
-          expectedSrcDsts.push_back(std::make_tuple(src, src + delta));
+          std::string id         = inId + "__from__" + std::to_string(src);
+          expectedSrcDstsMap[id] = std::make_tuple(src, src + delta);
         }
+      }
+
+      std::vector<std::tuple<int64_t, int64_t>> expectedSrcDsts;
+      for (auto &id_srcDst : expectedSrcDstsMap) {
+        expectedSrcDsts.push_back(id_srcDst.second);
       }
 
       BOOST_CHECK(fwdDisco == true);
       BOOST_CHECK(bwdDisco == true);
+
+      std::sort(pipeSrcDsts.begin(), pipeSrcDsts.end());
+      std::sort(expectedSrcDsts.begin(), expectedSrcDsts.end());
 
       if (printStdOut) {
         std::cout << "With pipelining: " << std::endl;
@@ -242,10 +252,21 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
         for (auto ipuCopy : copiesWithoutPipe) {
           std::cout << ipuCopy->getFromToStr() << std::endl;
         }
+        std::cout << "----------------" << std::endl;
+        std::cout << "PipeSrcDsts: " << std::endl;
+        for (auto &srcDst : pipeSrcDsts) {
+          auto src = std::get<0>(srcDst);
+          auto dst = std::get<1>(srcDst);
+          std::cout << "[ " << src << " ] --> [ " << dst << " ]" << std::endl;
+        }
+        std::cout << "----------------" << std::endl;
+        std::cout << "ExpectedSrcDsts: " << std::endl;
+        for (auto &srcDst : expectedSrcDsts) {
+          auto src = std::get<0>(srcDst);
+          auto dst = std::get<1>(srcDst);
+          std::cout << "[ " << src << " ] --> [ " << dst << " ]" << std::endl;
+        }
       }
-
-      std::sort(pipeSrcDsts.begin(), pipeSrcDsts.end());
-      std::sort(expectedSrcDsts.begin(), expectedSrcDsts.end());
 
       BOOST_CHECK(pipeSrcDsts == expectedSrcDsts);
     }

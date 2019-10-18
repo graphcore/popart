@@ -58,8 +58,8 @@ def test_sgd_param_check():
     matches the value supplied to the optimizer constructor
     """
 
-    lrName = popart.reservedGlobalScaledLearningRatePrefix() + "FLOAT"
-    wdName = popart.reservedGlobalWeightDecayScaleFactorPrefix() + "FLOAT"
+    lrName = popart.reservedDefaultScaledLearningRate0Prefix() + "FLOAT"
+    wdName = popart.reservedDefaultWeightDecayScaleFactor0Prefix() + "FLOAT"
     lsName = popart.reservedLossScalingPrefix() + "FLOAT"
 
     anchorNames = {
@@ -70,10 +70,14 @@ def test_sgd_param_check():
 
     # Just a placeholder optimizer. We overwrite the hyper-parameters in this
     # test once the session is created
-    userSgd = popart.SGD(learning_rate=-1, weight_decay=-1, loss_scaling=-1)
+    userSGD = popart.SGD({
+        "defaultLearningRate": (0.5, False),
+        "defaultWeightDecay": (0.6, False),
+        "lossScaling": (10.0, False)
+    })
     stepSize = 2
 
-    session, inputsUserSgd = trainSession(anchorNames, userSgd, stepSize)
+    session, inputsUserSgd = trainSession(anchorNames, userSGD, stepSize)
     anchorsArrays = session.initAnchorArrays()
 
     # train
@@ -89,9 +93,11 @@ def test_sgd_param_check():
         stepWd = weightDecay[step]
         stepLs = lossScaling[step]
         session.updateOptimizer(
-            popart.SGD(learning_rate=stepLr,
-                       weight_decay=stepWd,
-                       loss_scaling=stepLs))
+            popart.SGD({
+                "defaultLearningRate": (stepLr, False),
+                "defaultWeightDecay": (stepWd, False),
+                "lossScaling": (stepLs, False)
+            }))
         session.optimizerFromHost()
 
         stepio = popart.PyStepIO(inputsUserSgd, anchorsArrays)
@@ -123,15 +129,23 @@ def test_constsgd_vs_sgd():
     ls = 1000
     stepSize = 2
 
-    constSgd = popart.ConstSGD(learning_rate=lr,
-                               weight_decay=wd,
-                               loss_scaling=ls)
+    constSgd = popart.SGD({
+        "defaultLearningRate": (lr, True),
+        "defaultWeightDecay": (wd, True),
+        "lossScaling": (ls, True)
+    })
+
     sessionConstSgd, inputsConstSgd = trainSession(anchorNames, constSgd,
                                                    stepSize)
     anchorsArraysConstSgd = sessionConstSgd.initAnchorArrays()
 
-    userSgd = popart.SGD(learning_rate=lr, weight_decay=wd, loss_scaling=ls)
-    sessionUserSgd, inputsUserSgd = trainSession(anchorNames, userSgd,
+    userSGD = popart.SGD({
+        "defaultLearningRate": (lr, False),
+        "defaultWeightDecay": (wd, False),
+        "lossScaling": (ls, False)
+    })
+
+    sessionUserSgd, inputsUserSgd = trainSession(anchorNames, userSGD,
                                                  stepSize)
     anchorsArraysUserSgd = sessionUserSgd.initAnchorArrays()
 
@@ -148,9 +162,11 @@ def test_constsgd_vs_sgd():
 
         if step == numSteps - 1:
             sessionUserSgd.updateOptimizer(
-                popart.SGD(learning_rate=2 * lr,
-                           weight_decay=2 * wd,
-                           loss_scaling=2 * ls))
+                popart.SGD({
+                    "defaultLearningRate": (2 * lr, False),
+                    "defaultWeightDecay": (2 * wd, False),
+                    "lossScaling": (2 * ls, False)
+                }))
             sessionUserSgd.optimizerFromHost()
 
         sessionConstSgd.run(stepioConstSgd)
@@ -195,9 +211,11 @@ def test_sgd_with_float16_model():
 
     proto = builder.getModelProto()
 
-    optimizer = popart.SGD(learning_rate=0.1,
-                           weight_decay=0.1,
-                           loss_scaling=1000)
+    optimizer = popart.SGD({
+        "defaultLearningRate": (0.1, False),
+        "defaultWeightDecay": (0.1, False),
+        "lossScaling": (1000, False)
+    })
     losses = [popart.L1Loss(out, "l1LossVal", 0.1)]
 
     anchorNames = {

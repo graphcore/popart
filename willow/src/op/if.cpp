@@ -16,7 +16,7 @@ namespace {
 
 GraphId generateSubgraphUniqueId(const std::string postfix) {
   static int uid = 0;
-  return GraphId(fmt::format("ifop_subgraph_{}_{}", uid++, postfix));
+  return GraphId(logging::format("ifop_subgraph_{}_{}", uid++, postfix));
 }
 
 } // namespace

@@ -54,7 +54,7 @@ DeviceManager::createSimDevice(std::map<std::string, std::string> &options) {
 }
 
 std::shared_ptr<DeviceInfo>
-DeviceManager::acquireAvailableDevice(int numIpus = 1, int tilesPerIpu = 0) {
+DeviceManager::acquireAvailableDevice(int numIpus, int tilesPerIpu) {
 
   auto devices = enumerateDevices();
 

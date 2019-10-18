@@ -1,3 +1,4 @@
+#include <memory>
 #include <popart/logging.hpp>
 #include <popart/transforms/transform.hpp>
 

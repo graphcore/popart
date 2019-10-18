@@ -91,20 +91,32 @@ def test_sgd_mixed_mode(tmpdir):
         assert (np.isclose(e1['initalValue'], w1R))
         assert (np.isclose(e2['initalValue'], w2R))
 
-    # Test 1
-    globalWeightDecay = (0, False)
-    globalLearningRate = (0.1, True)
+    # Test 1 (same as C++ test)
+    defaultWeightDecay = (0, False)
+    defaultLearningRate = (0.1, True)
     lossScaling = (10, True)
 
-    opt0 = popart.SGD(globalLearningRate, globalWeightDecay, lossScaling)
-    opt0.insertSpecific(w1name,
-                        weightDecay=(0, True),
-                        learningRate=(0.2, False))
+    opt0 = popart.SGD({
+        "defaultLearningRate": defaultLearningRate,
+        "defaultWeightDecay": defaultWeightDecay,
+        "lossScaling": lossScaling
+    })
 
-    opt1 = popart.SGD(globalLearningRate, globalWeightDecay, lossScaling)
-    opt1.insertSpecific(w1name,
-                        weightDecay=(0, True),
-                        learningRate=(0.5, False))
+    opt0.insertSpecific(w1name, {
+        "weightDecay": (0, True),
+        "learningRate": (0.2, False)
+    })
+
+    opt1 = popart.SGD({
+        "defaultLearningRate": defaultLearningRate,
+        "defaultWeightDecay": defaultWeightDecay,
+        "lossScaling": lossScaling
+    })
+
+    opt1.insertSpecific(w1name, {
+        "weightDecay": (0, True),
+        "learningRate": (0.5, False)
+    })
 
     e0 = {
         'initalValue': 100.0 - 0.1 - 0.1,

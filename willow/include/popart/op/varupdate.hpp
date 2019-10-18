@@ -10,22 +10,24 @@ namespace popart {
 class VarUpdateOp : public Op {
 public:
   VarUpdateOp(const OperatorIdentifier &opid,
-              TensorId,
+              const TensorId &varId,
               const Op::Settings &settings_);
+
   void setup() final;
 
-  // the Var to be updated
+  // the Var to be updated received at this index
   static InIndex getVarToUpdateInIndex() { return 0; }
 
-  // the gradient or source of copy
+  // the gradient (SGD) or source of copy (CopyVarUpdate) received at this index
   static InIndex getUpdaterInIndex() { return 1; }
 
-  // Returns a reference to the updated Var
+  // Return (a reference to) the updated Var at this index
   static OutIndex getUpdatedVarOutIndex() { return 0; }
 
   // This Op aliases and modifies the input at index getVarIndex()
   view::Region aliases(InIndex) const final;
   view::Region modifies(InIndex) const final;
+
   const TensorId &getVarId() const { return varId; }
 
   float getSubgraphValue() const final;
@@ -39,45 +41,6 @@ public:
 private:
   TensorId varId;
   TensorId varGradId;
-};
-
-class SGDVarUpdateOp : public VarUpdateOp {
-public:
-  SGDVarUpdateOp(const TensorId &, // the name of the Tensor to update
-                 OptimizerValue initialScaledLearningRate,
-                 OptimizerValue initialWeightDecayScaleFactor,
-                 const Op::Settings &);
-
-  std::unique_ptr<Op> clone() const final;
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
-
-  // If the scaled learning rate is not constant, this is the index at which it
-  // will be consumed by this Op
-  static InIndex getScaledLearningRateInIndex() { return 2; }
-
-  // If the weight decay scale factor is not constant, this is the index at
-  // which it will be consumed by this Op
-  static InIndex getWeightDecayScaleFactorInIndex() { return 3; }
-
-  // map of size 0/1/2, containing all non-const optimizer Tensors for this Op
-  std::map<InIndex, TensorId> optimizerInputs() const final;
-
-  const OptimizerValue initScaledLearningRate;
-  const OptimizerValue initWeightDecayScaleFactor;
-
-  void appendAttributes(OpSerialiserBase &) const final;
-};
-
-class CopyVarUpdateOp : public VarUpdateOp {
-public:
-  CopyVarUpdateOp(TensorId to, const Op::Settings &);
-  std::unique_ptr<Op> clone() const final;
-
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &x) const final {
-    return std::unique_ptr<Op>(new CopyVarUpdateOp(x, settings));
-  }
-
-  std::map<InIndex, TensorId> optimizerInputs() const final { return {}; }
 };
 
 } // namespace popart

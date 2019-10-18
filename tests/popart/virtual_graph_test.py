@@ -115,7 +115,7 @@ def test_virtual_graph3():
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
     #Make sure that the loss is also assigned to a virtual graph
     losses[0].virtualGraph(1)
-    optimizer = popart.ConstSGD(0.01)
+    optimizer = popart.SGD({"defaultLearningRate": (0.01, True)})
 
     opts = popart.SessionOptionsCore()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
@@ -278,7 +278,7 @@ def test_streaming_optimizer_tensors():
 
         proto = builder.getModelProto()
 
-        anchorId = popart.reservedGlobalScaledLearningRatePrefix() + "FLOAT"
+        anchorId = popart.reservedDefaultScaledLearningRate0Prefix() + "FLOAT"
 
         # Need to anchor the output of the backward pass to stop it being pruned
         dataFlow = popart.DataFlow(bps,
@@ -289,10 +289,7 @@ def test_streaming_optimizer_tensors():
         if enablePipelining:
             losses[0].virtualGraph(2)
 
-        optimizer = popart.ConstSGD(0.01)
-        optimizer = popart.SGD(learning_rate=1.0,
-                               weight_decay=0.0,
-                               loss_scaling=1.0)
+        optimizer = popart.SGD({"defaultLearningRate": (1.0, False)})
 
         opts = popart.SessionOptionsCore()
         if enablePipelining:
@@ -327,7 +324,7 @@ def test_streaming_optimizer_tensors():
         result.append(np.copy(anchors[anchorId]))
 
         session.updateOptimizer(
-            popart.SGD(learning_rate=0.5, weight_decay=0.0, loss_scaling=1.0))
+            popart.SGD({"defaultLearningRate": (0.5, False)}))
         session.optimizerFromHost()
 
         session.run(stepio)

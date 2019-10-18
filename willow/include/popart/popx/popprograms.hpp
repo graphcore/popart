@@ -76,6 +76,9 @@ public:
   bool containsFragment(const Graph &) const;
   void createFragment(const Graph &);
 
+  poplar::Function &getFragmentFunction(const Graph &called_graph,
+                                        poplar::Graph &popgraph);
+
   // Recompute program fragments, get and (implicitly) create. There is a unique
   // fragment for each recomputed Op
   poplar::program::Sequence &recomputeFragment(OpId);
@@ -123,6 +126,7 @@ private:
 
   // The sub-graph program fragments will be stored here
   std::unordered_map<std::string, poplar::program::Sequence> scopeSeqs;
+  std::unordered_map<std::string, poplar::Function> funcs;
 
   // The recompute program fragments will be stored here
   std::map<OpId, poplar::program::Sequence> recomputeSeqs;

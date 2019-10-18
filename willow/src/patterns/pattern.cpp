@@ -1,5 +1,4 @@
 #include <onnx/onnx_pb.h>
-#include <spdlog/fmt/fmt.h>
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>

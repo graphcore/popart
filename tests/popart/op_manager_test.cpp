@@ -97,7 +97,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
   // Create the IR
   // Add the last tensor, and the 3rd tensor as anchors
   auto dataFlow  = DataFlow(1, {{customOut[0], AnchorReturnType("ALL")}});
-  auto optimizer = SGD(0.01);
+  auto optimizer = SGD({{"defaultLearningRate", {0.01, false}}});
   std::vector<Loss *> losses{
       new L1Loss(customOut[0], "l1LossVal", 0.1, ReductionType::SUM)};
   auto cpuDevice = DeviceManager::createDeviceManager().createCpuDevice();

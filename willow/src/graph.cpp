@@ -20,6 +20,9 @@
 // The layers required to construct the backwards pass
 #include <popart/op/conv.hpp>
 #include <popart/op/flatten.hpp>
+#include <popart/op/sgd0varupdate.hpp>
+#include <popart/op/sgd1acclupdate.hpp>
+#include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/varupdate.hpp>
 
 namespace popart {
@@ -90,7 +93,7 @@ void Graph::addInput(const TensorId &tensorId, const TensorInfo &tensorInfo) {
 }
 
 TensorId Graph::addInput(const TensorInfo &tinfo) {
-  auto tensorId = fmt::format("input_{}", graph_inputs.size());
+  auto tensorId = logging::format("input_{}", graph_inputs.size());
   auto scopedId = addScope(tensorId);
   addInput(scopedId, tinfo);
   return scopedId;
@@ -265,41 +268,101 @@ void Graph::eraseOp(OpId opid) {
   ops.erase(opid);
 }
 
+// T12001
+// Remove AddInplace, VarUpdate should be only modifier
 void Graph::setVarUpdateConstraints() {
-  // impose the constraint that inplace consumers
-  // are the last consumers of the vars
 
-  for (auto var : getTensors().getOfType(TensorType::Variable)) {
+  // For every Op, for every input, is it input modified?
+  for (const auto &id_up : getOps()) {
+    auto proposalOp = id_up.second.get();
+    for (auto inIndex_tensor : proposalOp->input->tensorMap()) {
+      auto proposalIndex  = inIndex_tensor.first;
+      auto proposalTensor = inIndex_tensor.second;
 
-    // First, determine which consumer is the updater,
-    // or a flatten-inplace if merged var updating.
-    std::vector<Op *> varInplaceConsumers;
-    for (Op *consumer : var->consumers.getOps()) {
-      if (dynamic_cast<VarUpdateOp *>(consumer) ||
-          dynamic_cast<FlattenInplaceOp *>(consumer)) {
-        varInplaceConsumers.push_back(consumer);
-        break;
-      }
-    }
-    if (varInplaceConsumers.size() == 0) {
-      logging::debug("Failed to find any updaters of {}", var->str());
-    } else if (varInplaceConsumers.size() > 1) {
-      throw error("Found more than 1 potential updater of {}, bailing",
-                  var->str());
-    } else {
-      // Good, there is a unique consumer which is inplace
-      Op *varInplaceConsumer = varInplaceConsumers.back();
+      if (!proposalOp->modifies(proposalIndex).isEmpty()) {
 
-      // Set the constraints
-      for (Op *consumer : var->consumers.getOps()) {
-        if (consumer != varInplaceConsumer) {
-          topoCons->insert(consumer, varInplaceConsumer);
+        // the input is modified.
+        auto modifiedTensor = proposalTensor;
+        auto modifier       = proposalOp;
+
+        // collect all tensors aliased to modifiedTensor. The consumers of these
+        // aliasing Ops will need topological constraints
+
+        std::set<Tensor *> aliased{
+            modifiedTensor}; // , modifier->output->tensor(0)};
+        std::vector<Tensor *> frontier{modifiedTensor};
+
+        while (!frontier.empty()) {
+          auto t = frontier.back();
+          frontier.pop_back();
+
+          // finding new aliasing tensors going up through the producer
+          if (t->hasProducer()) {
+            auto prod = t->getProducer();
+            for (auto inIn_inTen : prod->input->tensorMap()) {
+              auto inIn  = inIn_inTen.first;
+              auto inTen = inIn_inTen.second;
+              if (!prod->aliases(inIn).isEmpty()) {
+                if (aliased.count(inTen) == 0) {
+                  frontier.push_back(inTen);
+                  aliased.emplace(inTen);
+                }
+              }
+            }
+          }
+
+          // finding new aliasing tensors going down through the consumers (but
+          // not down through modifier)
+          for (auto consumer : t->consumers.getOps()) {
+            for (InIndex conIndex : consumer->input->indices(t)) {
+              if (!consumer->aliases(conIndex).isEmpty() &&
+                  consumer != modifier) {
+                auto outTen = consumer->output->tensor(0);
+                if (aliased.count(outTen) == 0) {
+                  frontier.push_back(outTen);
+                  aliased.emplace(outTen);
+                }
+              }
+            }
+          }
+        }
+
+        // aliased.erase(modifier->output->tensor(0));
+
+        // for all consumers of aliasing tensors, add the topological constraint
+        std::set<Op *> befores;
+        for (Tensor *t : aliased) {
+          for (Op *consumer : t->consumers.getOps()) {
+
+            // Accl Updater doesn't come before anything
+            if (dynamic_cast<SGD1AcclUpdateOp *>(consumer)) {
+              continue;
+            }
+            // Don't have consumer -> modifier if consumer is VarUpdater (we
+            // need better aliasing and modifying analysis here to disable this,
+            // because of the TightVarMerge)
+            if (!dynamic_cast<SGD1AcclUpdateOp *>(modifier) &&
+                dynamic_cast<VarUpdateOp *>(consumer)) {
+              continue;
+            }
+
+            if (consumer == modifier) {
+              continue;
+            }
+
+            befores.emplace(consumer);
+          }
+        }
+
+        for (auto before : befores) {
+          topoCons->insert(before, modifier);
         }
       }
     }
   }
 }
 
+// T12001 don't use topoCons
 void Graph::setConvFlipWeightConstraints() {
   // The ConvFlipWeights op is used exclusively in the backwards pass as an
   // input to the bwd conv op. Since it acts only on an input to the graph,

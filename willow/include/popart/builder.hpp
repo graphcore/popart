@@ -419,6 +419,11 @@ public:
   uint64_t getPipelineStage() const;
 
   /**
+   * A convenience function for the virtual graph attribute
+   */
+  uint64_t getVirtualGraph() const;
+
+  /**
    * Set the virtual graph that computes the given node.  Applies when creating
    * a graph for a multi-IPU configuration.
    *

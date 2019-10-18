@@ -12,6 +12,13 @@ uint64_t Builder::getPipelineStage() const {
   return boost::any_cast<uint64_t>(getAttribute(sPipelineStageAttribute));
 }
 
+uint64_t Builder::getVirtualGraph() const {
+  if (!impl_->hasAttribute(sVirtualGraphAttribute)) {
+    throw popart::error("Virtual graph not set in current scope.");
+  }
+  return boost::any_cast<uint64_t>(getAttribute(sVirtualGraphAttribute));
+}
+
 class TensorInfo;
 
 static void verifyWindowParameters(std::unique_ptr<BuilderImpl> &impl,

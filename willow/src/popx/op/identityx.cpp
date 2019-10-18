@@ -20,7 +20,7 @@ IdentityInplaceOpx::IdentityInplaceOpx(Op *op, Devicex *devicex)
   verifyOp<IdentityInplaceOp>(op);
 }
 
-void IdentityInplaceOpx::grow(poplar::program::Sequence &prog) const {
+void IdentityInplaceOpx::grow(poplar::program::Sequence &) const {
   setOutTensor(0, getInTensor(0));
 }
 

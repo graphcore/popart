@@ -21,7 +21,10 @@ lr = 0.12
 #weight decay
 wd = 0.08
 
-optimizer = popart.SGD(learning_rate=lr, weight_decay=wd)
+optimizer = popart.SGD({
+    "defaultLearningRate": (lr, False),
+    "defaultWeightDecay": (wd, False)
+})
 
 
 def get_micro_batch_size(accl_factor):
@@ -459,19 +462,8 @@ def test_gradient_accumulation_anchors():
 
     label_array = np.random.randint(0, hidden_size, batch_size)
 
-    #TODO T11866 larger batches-per-step
+    #TODO T11866 larger batches-per-step, first without weight decay, then with weight decay
     batches_per_step = 1
-
-    no_accl_initial_proto, no_accl_proto_filename, no_accl_anchor_arrays = run_mm_graph(
-        label_array=label_array,
-        accl_factor=1,
-        enable_accl=False,
-        batches_per_step=batches_per_step,
-        number_of_steps=1,
-        final_proto_filename="noAccl5batches3stepsAnchorsTest",
-        enable_multi_ipu=False,
-        full_anchorage=True,
-        inference_mode=False)
 
     accl_initial_proto, accl_proto_filename, accl_anchor_arrays = run_mm_graph(
         label_array=label_array,
@@ -484,23 +476,36 @@ def test_gradient_accumulation_anchors():
         full_anchorage=True,
         inference_mode=False)
 
-    w0 = onnx.load_from_string(accl_initial_proto).graph.initializer[0].name
+    no_accl_initial_proto, no_accl_proto_filename, no_accl_anchor_arrays = run_mm_graph(
+        label_array=label_array,
+        accl_factor=1,
+        enable_accl=False,
+        batches_per_step=batches_per_step,
+        number_of_steps=1,
+        final_proto_filename="noAccl5batches3stepsAnchorsTest",
+        enable_multi_ipu=False,
+        full_anchorage=True,
+        inference_mode=False)
+
+    w0_tensor = onnx.load_from_string(accl_initial_proto).graph.initializer[0]
+    w0_name = w0_tensor.name
 
     full_batch_grad = no_accl_anchor_arrays[popart.reservedGradientPrefix() +
-                                            w0]
+                                            w0_name]
     accl_grad = accl_anchor_arrays[popart.reservedAccumulationOutPrefix() +
-                                   popart.reservedGradientPrefix() + w0]
+                                   popart.reservedGradientPrefix() + w0_name]
 
     print("full batch grad shape is ")
-    print(accl_anchor_arrays[popart.reservedGradientPrefix() + w0].shape)
+    print(accl_anchor_arrays[popart.reservedGradientPrefix() + w0_name].shape)
 
     print("accl grad shape is ")
     print(accl_anchor_arrays[popart.reservedAccumulationOutPrefix() +
-                             popart.reservedGradientPrefix() + w0].shape)
+                             popart.reservedGradientPrefix() + w0_name].shape)
 
     if (batches_per_step > 1):
         #TODO T11866
         raise RuntimeError("batches per step > 1 needs investigation")
+
         for i in range(batches_per_step):
             print("\nbatch %d" % (i, ))
             print("Absolute accl grad  %.3f" % (np.sum(np.abs(accl_grad[i]))))
@@ -509,21 +514,33 @@ def test_gradient_accumulation_anchors():
             print("Absolute difference %.3f" %
                   (np.sum(np.abs(full_batch_grad[i] - accl_grad[i]))))
 
+            print("Absolute difference %.3f" %
+                  (np.sum(np.abs(full_batch_grad[i] - adjusted_accl_grad[i]))))
+
     else:
         accl_grad_abs_sum = np.sum(np.abs(accl_grad))
         print("Absolute accl grad  %.3f" % (accl_grad_abs_sum))
 
+        # initialising as per equations. When velocity scaling != 1 this may need changing T12001
+        adjusted_accl_grad = accl_grad.flatten().copy()
+        for i, v in enumerate(w0_tensor.float_data):
+            adjusted_accl_grad[i] -= wd * v
+
+        adjusted_accl_grad_abs_sum = np.sum(np.abs(adjusted_accl_grad))
+        print("Absolute accl grad, adjusted for weight decay %.3f" %
+              (adjusted_accl_grad_abs_sum))
+
         full_batch_abs_sum = np.sum(np.abs(full_batch_grad))
         print("Absolute no accl g  %.3f" % (full_batch_abs_sum))
 
-        abs_diff = np.sum(np.abs(full_batch_grad - accl_grad))
+        abs_diff = np.sum(
+            np.abs(full_batch_grad.flatten() - adjusted_accl_grad))
         print("Absolute difference %.3f" % (abs_diff))
 
         assert (abs_diff / (full_batch_abs_sum + accl_grad_abs_sum) < 1e-5)
 
 
 def test_gradient_accumulation_model_proto():
-
     np.random.seed(1234)
     label_array = np.random.randint(0, hidden_size, batch_size)
     accl_initial_proto, accl_proto_filename, accl_anchor_arrays = run_mm_graph(
@@ -539,16 +556,33 @@ def test_gradient_accumulation_model_proto():
     model = onnx.load(accl_proto_filename)
     names = [t.name for t in model.graph.initializer]
 
-    # Model should have 6 weight tensors
-    assert len(names) > 1
+    grad_accl_prefix = popart.reservedAccumulationPrefix(
+    ) + popart.reservedGradientPrefix()
 
-    for w_i, weightA in enumerate(model.graph.initializer):
-        # Test the accumulation tensors were restored and are all zero.
-        if popart.reservedAccumulationPrefix() in weightA.name:
-            for d_i, dataA in enumerate(weightA.float_data):
-                assert dataA == 0.0
-        # Test each weight tensor has a corresponding accumulation tensor.
-        elif "weight" in weightA.name:
-            print("asserting that accl tensor for %s present" % (weightA.name))
-            assert (popart.reservedAccumulationPrefix() +
-                    popart.reservedGradientPrefix() + weightA.name) in names
+    grad_accl_names = []
+    weight_names = []
+    for name in names:
+        if grad_accl_prefix in name:
+            grad_accl_names.append(name)
+        elif "weight" in name:
+            weight_names.append(name)
+
+    # Model should have 6 weight tensors
+    assert len(weight_names) > 1
+    assert len(grad_accl_names) == len(weight_names)
+
+    tensor_mapping = {}
+    for tensor in model.graph.initializer:
+        tensor_mapping[tensor.name] = tensor
+
+    rev_map = {}
+    for w_name in weight_names:
+        assert grad_accl_prefix + w_name in grad_accl_names
+        rev_map[grad_accl_prefix + w_name] = w_name
+
+    for g_a_name in grad_accl_names:
+        weight_tensor = tensor_mapping[rev_map[g_a_name]]
+        g_a_tensor = tensor_mapping[g_a_name]
+        for d_i, v in enumerate(weight_tensor.float_data):
+            # initialisation as per equations. When vs != 1 this will need changing T12001
+            assert g_a_tensor.float_data[d_i] - v * wd < 1e-8

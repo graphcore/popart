@@ -1,5 +1,5 @@
 #include <memory>
-#include <spdlog/fmt/fmt.h>
+
 #include <popart/error.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/lstm.hpp>
@@ -148,9 +148,7 @@ poplar::Tensor LSTMOpx::createInput(InIndex index, const std::string &) const {
     auto init_h = getInitialState().output;
     return init_h.reshape({num_directions, batch_size, hidden_size});
   } else {
-    auto msg = fmt::format("LSTMOpx::createInput is not supported for index {}",
-                           index);
-    throw error(msg);
+    throw error("LSTMOpx::createInput is not supported for index {}", index);
   }
 }
 

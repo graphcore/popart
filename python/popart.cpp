@@ -14,6 +14,7 @@
 #include <popart/op/nll.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/optimizervalue.hpp>
 #include <popart/optionflags.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/session.hpp>
@@ -86,6 +87,25 @@ std::map<std::string, std::string> getDictionary(py::dict pydict) {
     dictionary.insert(std::make_pair(key.str(), value.str()));
   }
   return dictionary;
+}
+
+std::map<std::string, std::pair<float, bool>>
+getOptimizerValueDictionary(py::dict e) {
+  std::map<std::string, std::pair<float, bool>> cpm;
+  for (auto element : e) {
+    if (!py::isinstance<py::str>(element.first)) {
+      throw error("A key in the optimizer map input must be a py::str (in "
+                  "getOptimizerValueDictionary)");
+    }
+    auto key = py::str(element.first);
+    if (!py::isinstance<py::tuple>(element.second)) {
+      throw error("A value in the optimizer map must be a py::tuple (in "
+                  "getOptimizerValueDictionary)");
+    }
+    std::pair<float, bool> p = element.second.cast<std::pair<float, bool>>();
+    cpm.insert({key, p});
+  }
+  return cpm;
 }
 
 std::map<std::string, boost::any> getDictionaryVar(py::dict pydict) {
@@ -543,40 +563,36 @@ PYBIND11_MODULE(popart_core, m) {
       .def("pipelineStage", &L1Loss::pipelineStage)
       .def("virtualGraph", &L1Loss::virtualGraph);
 
+  py::class_<OptimizerValue> optimizerValue(m, "OptimizerValue");
+  optimizerValue.def(
+      py::init<float, bool>(), py::arg("val"), py::arg("isConst"));
+  optimizerValue.def(py::init<float>(), py::arg("val"));
+  optimizerValue.def(py::init<>());
+  optimizerValue.def(py::init<std::pair<float, bool>>());
+
+  optimizerValue.def("val", &OptimizerValue::val);
+  optimizerValue.def("isConst", &OptimizerValue::isConst);
+
+  py::class_<OptimizerValueMap> optimizerValueMap(m, "OptimizerValueMap");
+  optimizerValueMap.def("getDefault", &OptimizerValueMap::getDefault);
+
   py::class_<Optimizer> optimizer(m, "Optimizer");
   optimizer.def("getLossScalingVal", &Optimizer::getLossScalingVal);
 
   py::class_<SGD> sgd(m, "SGD", optimizer);
-  sgd.def(py::init<float, float, float>(),
-          py::arg("learning_rate"),
-          py::arg("weight_decay") = 0.0f,
-          py::arg("loss_scaling") = 1.0f);
+  sgd.def(py::init([](py::dict pyd) {
+    auto cppm = getOptimizerValueDictionary(pyd);
+    return SGD(cppm);
+  }));
+  sgd.def("insertSpecific", [](SGD &self, TensorId id, py::dict pyd) {
+    self.insertSpecific(id, getOptimizerValueDictionary(pyd));
+  });
 
-  sgd.def(py::init([](std::pair<float, bool> wd,
-                      std::pair<float, bool> lr,
-                      std::pair<float, bool> ls) -> popart::SGD {
-            return SGD({wd.first, wd.second},
-                       {lr.first, lr.second},
-                       {ls.first, ls.second});
-          }),
-          py::arg("learningRate"),
-          py::arg("weightDecay"),
-          py::arg("lossScaling"));
-
-  sgd.def(
-      "insertSpecific",
-      [](SGD &self,
-         std::string id,
-         std::pair<float, bool> wd,
-         std::pair<float, bool> lr) {
-        self.insertSpecific(id, {wd.first, wd.second}, {lr.first, lr.second});
-      },
-      py::arg("tensorId"),
-      py::arg("weightDecay"),
-      py::arg("learningRate"));
-
-  sgd.def("getGlobalLearningRateVal", &SGD::getGlobalLearningRateVal);
-  sgd.def("getGlobalWeightDecayVal", &SGD::getGlobalWeightDecayVal);
+  sgd.def("learningRates", &SGD::learningRates);
+  sgd.def("weightDecays", &SGD::weightDecays);
+  sgd.def("momentums", &SGD::momentums);
+  sgd.def("dampenings", &SGD::dampenings);
+  sgd.def("velocityScalings", &SGD::velocityScalings);
 
   // This class is deprecated, and SGD should be preferred
   py::class_<ConstSGD>(m, "ConstSGD", sgd)
@@ -1103,6 +1119,13 @@ PYBIND11_MODULE(popart_core, m) {
            [](Builder &self) -> bool {
              return self.hasAttribute(sPipelineStageAttribute);
            })
+      .def(
+          "getVirtualGraph",
+          static_cast<uint64_t (Builder::*)() const>(&Builder::getVirtualGraph))
+      .def("hasVirtualGraph",
+           [](Builder &self) -> bool {
+             return self.hasAttribute(sVirtualGraphAttribute);
+           })
       .def("setPartialsType",
            &Builder::setPartialsType,
            py::arg("nodeOutputName"),
@@ -1248,14 +1271,14 @@ PYBIND11_MODULE(popart_core, m) {
   m.def("reservedStashedPrefix", &reservedStashedPrefix);
   m.def("reservedRestoredPrefix", &reservedRestoredPrefix);
   m.def("reservedLossScalingPrefix", &reservedLossScalingPrefix);
-  m.def("reservedGlobalScaledLearningRatePrefix",
-        &reservedGlobalScaledLearningRatePrefix);
-  m.def("reservedGlobalWeightDecayScaleFactorPrefix",
-        &reservedGlobalWeightDecayScaleFactorPrefix);
-  m.def("reservedSpecificScaledLearningRatePrefix",
-        &reservedSpecificScaledLearningRatePrefix);
-  m.def("reservedSpecificWeightDecayScaleFactorPrefix",
-        &reservedSpecificWeightDecayScaleFactorPrefix);
+  m.def("reservedDefaultScaledLearningRate0Prefix",
+        &reservedDefaultScaledLearningRate0Prefix);
+  m.def("reservedDefaultWeightDecayScaleFactor0Prefix",
+        &reservedDefaultWeightDecayScaleFactor0Prefix);
+  m.def("reservedSpecificScaledLearningRate0Prefix",
+        &reservedSpecificScaledLearningRate0Prefix);
+  m.def("reservedSpecificWeightDecayScaleFactor0Prefix",
+        &reservedSpecificWeightDecayScaleFactor0Prefix);
 
   // Exceptions are processed explicitly to allow the main dynamic library
   // to do the type inference.  This prevents some inter dynamic library type

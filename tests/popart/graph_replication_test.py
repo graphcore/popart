@@ -49,7 +49,6 @@ def test_weight_update(op_tester):
                 self.matmul = torch.matmul
 
             def forward(self, inputs):
-
                 x = 1.0 * self.matmul(inputs[0], self.B) + 1.0 * self.C
                 return x
 
@@ -88,10 +87,11 @@ def test_weight_update(op_tester):
     op_tester.run(init_builder,
                   reference,
                   'train',
-                  optimizer=popart.SGD(learning_rate=0.01, weight_decay=0.0))
+                  optimizer=popart.SGD({"defaultLearningRate": (0.01, False)}))
 
 
 def test_weight_update_replicated(op_tester):
+
     A = np.random.rand(2, 4).astype(np.float32)
     B = np.ones((4, 6)).astype(np.float32)
     C = np.random.rand(2, 6).astype(np.float32)
@@ -183,7 +183,7 @@ def test_weight_update_replicated(op_tester):
     op_tester.run(init_builder,
                   reference,
                   'train',
-                  optimizer=popart.SGD(learning_rate=0.01, weight_decay=0.0))
+                  optimizer=popart.SGD({"defaultLearningRate": (0.01, False)}))
 
 
 def test_replication_infer(op_tester):
