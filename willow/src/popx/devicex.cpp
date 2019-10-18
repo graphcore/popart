@@ -934,7 +934,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   auto priMod1       = firstConsumer->input->indices(tensor).front();
   // assumes an op has max 1000 inputs
   auto priMod =
-      static_cast<double>(priMod0) + static_cast<double>(priMod1) / 1000.0f;
+      static_cast<double>(priMod0) + static_cast<double>(priMod1) / 1000.0;
 
   // 1. A unique candidate creator will create the tensor
   // 2. The tensor will be unwound (have its layout modified)
