@@ -675,7 +675,7 @@ PYBIND11_MODULE(popart_core, m) {
       .value("FINAL", DotCheck::FINAL);
 
   py::enum_<RecomputationType>(m, "RecomputationType")
-      .value("None", RecomputationType::None)
+      .value("NoRecompute", RecomputationType::None)
       .value("Standard", RecomputationType::Standard)
       .value("NormOnly", RecomputationType::NormOnly)
       .value("Pipeline", RecomputationType::Pipeline);
