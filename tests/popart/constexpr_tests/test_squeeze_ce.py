@@ -7,7 +7,7 @@ import pprint
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-from test_session import TestSession
+from test_session import PopartTestSession
 
 
 def test_basic_squeeze():
@@ -42,7 +42,7 @@ def test_basic_squeeze():
             x = np.squeeze(x, axis)
         return x
 
-    session = TestSession()
+    session = PopartTestSession()
 
     # test a pipeline stage appearing on multiple virtual graphs
     session.prepare(init_builder)

@@ -1,6 +1,6 @@
 import numpy as np
 import popart
-from test_session import TestSession
+from test_session import PopartTestSession
 
 
 def test_per_op_partials():
@@ -31,7 +31,7 @@ def test_per_op_partials():
         builder.addOutputTensor(o)
         return [o]
 
-    session = TestSession()
+    session = PopartTestSession()
     session.device = 'ipu_model'
 
     # check both convs are using half partials
@@ -85,7 +85,7 @@ def test_per_op_partials_train():
             popart.reservedGradientPrefix() + k
         ]
 
-    session = TestSession()
+    session = PopartTestSession()
     session.mode = 'train'
     session.device = 'ipu_model'
 
@@ -126,7 +126,7 @@ def test_global_partials():
         builder.addOutputTensor(o)
         return [o]
 
-    session = TestSession()
+    session = PopartTestSession()
     session.device = 'ipu_model'
 
     # check convs are using half partials

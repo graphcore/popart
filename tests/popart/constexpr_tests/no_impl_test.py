@@ -5,7 +5,7 @@ import os
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-from test_session import TestSession
+from test_session import PopartTestSession
 
 
 def test_for_warning(capfd):
@@ -23,7 +23,7 @@ def test_for_warning(capfd):
     os.environ['POPART_LOG_LEVEL'] = 'TRACE'
     os.environ['POPART_LOG_FORMAT'] = '%v'
 
-    session = TestSession()
+    session = PopartTestSession()
     session.prepare(init_builder)
 
     _, err = capfd.readouterr()

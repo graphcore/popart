@@ -7,7 +7,7 @@ import re
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent.parent))
-from test_session import TestSession
+from test_session import PopartTestSession
 
 
 def test_disabled_virtual_graphs():
@@ -595,7 +595,7 @@ def test_pipeline_stage_errors():
 
         return [e1]
 
-    session = TestSession()
+    session = PopartTestSession()
     session.options.enableVirtualGraphs = True
     session.options.enablePipelining = True
     session.device = 'ipu_model'
@@ -670,7 +670,7 @@ def test_pipeline_stages_backwards_through_ipus():
         e1 = np.exp(e0)
         return e1
 
-    session = TestSession()
+    session = PopartTestSession()
     session.options.enableVirtualGraphs = True
     session.options.enablePipelining = True
     session.device = 'ipu_model'
@@ -731,7 +731,7 @@ def test_multiple_stages_per_virtual_graph_inference():
         mm1 = np.matmul(s0, weights)
         return mm1
 
-    session = TestSession()
+    session = PopartTestSession()
     session.options.enableVirtualGraphs = True
     session.options.enablePipelining = True
     session.device = 'ipu_model'
@@ -794,7 +794,7 @@ def test_multiple_stages_per_virtual_graph_training():
 
             return [t2]
 
-        session = TestSession()
+        session = PopartTestSession()
         session.mode = 'train'
         session.options.enableVirtualGraphs = set_pipeline_stages
         session.options.enablePipelining = set_pipeline_stages
@@ -872,7 +872,7 @@ def test_recomputation():
 
             return [t2]
 
-        session = TestSession()
+        session = PopartTestSession()
         session.device = 'ipu_model'
         session.numIPUs = 2
         session.mode = 'train'
@@ -942,7 +942,7 @@ def test_bad_auto_staging():
         t2 = np.sin(t1)
         return t2
 
-    session = TestSession()
+    session = PopartTestSession()
     session.options.enableVirtualGraphs = True
     session.options.enablePipelining = True
     session.device = 'ipu_model'
