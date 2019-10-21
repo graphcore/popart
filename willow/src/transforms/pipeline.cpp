@@ -9,6 +9,7 @@
 #include <popart/op.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
+#include <popart/op/loss.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/stash.hpp>
 #include <popart/patterns/contiguateipucopyindices.hpp>
@@ -621,6 +622,17 @@ bool Pipeline::apply(Graph &graph) const {
   logging::transform::debug("First PathFromLoss::Yes in schedule is {}.",
                             (*firstFromLoss)->str());
 
+  // There is no stashing on the final pipeline stage before the start of
+  // the backwards pass, so no recomputation is required.
+  std::set<PipelineStage> lossPipelineStages;
+  for (auto &loss : ir.losses) {
+    if (loss->hasPipelineStage()) {
+      lossPipelineStages.insert(loss->getPipelineStage());
+    }
+  }
+  auto finalLossPipelineStage =
+      *std::max_element(lossPipelineStages.begin(), lossPipelineStages.end());
+
   // 1. Find all tensors in the fwd pass that are inputs to ops in the bwd pass
   std::vector<TensorId> toStashCandidateTensors;
   for (auto &tid : graph.getTensors().getAllTensorIds()) {
@@ -655,12 +667,14 @@ bool Pipeline::apply(Graph &graph) const {
     std::set<PipelineStage> tensorStages = tensor->getPipelineStages();
 
     // There is no need to stash a tensor that only appears in 1 stage.
-    // Unless using full_recompute. Then it must be:
-    //  - Consumed by PreLoss::Yes Ops only (potentially required for recomp)
-    //  - Consumed by something other than a copy (otherwise it's just "passing
+    // Unless using full_recompute. Then it must be consumed by PreLoss::Yes Ops
+    // only, meaning it is required for recomp provided it's:
+    //  1) Consumed by something other than a copy (it's not just "passing
     //  through")
+    //  2) Stage is not the finalLossPipelineStage
     if (tensorStages.size() == 1 &&
-        !(full_recompute && isStashCandidateForPreLossOnly(tensor))) {
+        !(full_recompute && isStashCandidateForPreLossOnly(tensor) &&
+          (*tensorStages.begin()) != finalLossPipelineStage)) {
       continue;
     }
 
