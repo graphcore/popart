@@ -2,7 +2,10 @@
 set -e
 
 source @POPLAR_INSTALL_DIR@/enable.sh
-source @PROJECT_BINARY_DIR@/enable.sh
+
+export PYTHONPATH=@PROJECT_BINARY_DIR@/python:$PYTHONPATH
+export LIBRARY_PATH=@PROJECT_BINARY_DIR@/python:$LIBRARY_PATH
+export LD_LIBRARY_PATH=@PROJECT_BINARY_DIR@/python:$LD_LIBRARY_PATH
 
 echo gen_docs.sh
 echo $LIBRARY_PATH
