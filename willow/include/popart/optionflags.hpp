@@ -140,7 +140,7 @@ struct SessionOptions {
   /// By default, we will use prefecting for input data streams. Poplar will
   /// speculative read data for a stream before is is required to allow the
   /// 'preparation' of the data to occur in parrallel with compute
-  bool enablePrefetchDatastreams = false;
+  bool enablePrefetchDatastreams = true;
 
   /// By default, we use the stable-softmax poplar function. This input tensor
   /// to softmax, _x_, is preprocessed by subtracting max(_x_) to each element
