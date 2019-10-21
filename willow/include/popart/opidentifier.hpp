@@ -8,9 +8,9 @@
 namespace popart {
 
 namespace Domain {
-const static char *ai_onnx      = "ai.onnx";
-const static char *ai_onnx_ml   = "ai.onnx.ml";
-const static char *ai_graphcore = "ai.graphcore";
+constexpr const char *ai_onnx      = "ai.onnx";
+constexpr const char *ai_onnx_ml   = "ai.onnx.ml";
+constexpr const char *ai_graphcore = "ai.graphcore";
 } // namespace Domain
 
 // Default opset versions for domains

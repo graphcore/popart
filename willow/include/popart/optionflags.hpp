@@ -237,34 +237,8 @@ struct SessionOptions {
 
 namespace std {
 template <> struct hash<popart::SessionOptions> {
-  std::size_t operator()(const popart::SessionOptions &so) const {
-    // Hash based on all the SessionOptions attributes that
-    // can affect compiled program
-
-    std::stringstream ss;
-    ss << so.autoRecomputation;
-
-    auto hash = std::hash<std::string>{}(ss.str());
-    hash = (hash ^ (std::hash<bool>{}(so.rearrangeAnchorsOnHost) << 1)) << 1;
-    hash = (hash ^ (std::hash<bool>{}(so.enableNonStableSoftmax) << 1)) << 1;
-    hash = (hash ^ (std::hash<int64_t>{}(so.replicatedGraphCount) << 1)) << 1;
-    hash = (hash ^ (std::hash<bool>{}(so.enablePipelining) << 1)) << 1;
-    hash = (hash ^ (std::hash<bool>{}(so.ignoreData) << 1)) << 1;
-    hash = (hash ^ (std::hash<bool>{}(so.enableFloatingPointChecks) << 1)) << 1;
-    hash = (hash ^ (std::hash<bool>{}(so.enableStochasticRounding) << 1)) << 1;
-    hash = (hash ^ (std::hash<bool>{}(so.enableFullyConnectedPass) << 1)) << 1;
-    for (auto key_val : so.engineOptions) {
-      hash = (hash ^ (std::hash<std::string>()(key_val.first) << 1)) << 1;
-      hash = (hash ^ (std::hash<std::string>()(key_val.second) << 1)) << 1;
-    }
-    for (auto key_val : so.convolutionOptions) {
-      hash = (hash ^ (std::hash<std::string>()(key_val.first) << 1)) << 1;
-      hash = (hash ^ (std::hash<std::string>()(key_val.second) << 1)) << 1;
-    }
-
-    return hash;
-  }
+  std::size_t operator()(const popart::SessionOptions &so) const;
 };
-}; // namespace std
+} // namespace std
 
 #endif
