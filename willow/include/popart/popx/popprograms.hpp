@@ -27,7 +27,7 @@ public:
   enum ProgramIndex {
     WEIGHTSFROMHOST = 0,
     OPTIMIZERFROMHOST,
-    SETRANDOMSEED,
+    SETRANDOMSEEDFROMHOST,
     PROGRAM,
     WEIGHTSTOHOST,
     N // The number of programs
@@ -37,7 +37,7 @@ public:
   enum class ProgramFragmentIndex {
     STREAMWEIGHTSFROMHOST = 0,
     STREAMOPTIMIZERFROMHOST,
-    SETRANDOMSEED,
+    SETRANDOMSEEDFROMHOST,
     INIT,
     PREFORWARD,
     FORWARD,
@@ -53,7 +53,7 @@ public:
   // a poplar engine.
   poplar::program::Sequence &streamWeightsFromHostFragment();
   poplar::program::Sequence &streamOptimizerFromHostFragment();
-  poplar::program::Sequence &setRandomSeedFragment();
+  poplar::program::Sequence &setRandomSeedFromHostFragment();
   poplar::program::Sequence &toHostFinalCopyFragment();
   poplar::program::Sequence &initFragment();
   poplar::program::Sequence &preForwardFragment();
@@ -150,7 +150,7 @@ private:
 
   poplar::program::Sequence weightsFromHost();
   poplar::program::Sequence optimizerFromHost();
-  poplar::program::Sequence setRandomSeed();
+  poplar::program::Sequence setRandomSeedFromHost();
   poplar::program::Sequence program();
   poplar::program::Sequence weightsToHost();
 };

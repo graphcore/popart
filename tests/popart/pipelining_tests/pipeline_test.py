@@ -300,10 +300,10 @@ def test_output_matches_infer():
 ## TODO T8803 : requires hardware or a sim device
 def test_pipelined_dropout():
     # The test can be run without pipelining for debugging.
-    def test(do_pipelining):
+    def test(do_pipelining, do_sharding):
         dsize = 10
         ratio = 0.5
-        if do_pipelining:
+        if do_sharding:
             ipus = 4
         else:
             ipus = 1
@@ -326,13 +326,13 @@ def test_pipelined_dropout():
             # This is to get the output of the dropout in the bwd pass.
             # D_next_layer_in also includes the gradient of the AddOp.
             identity0 = builder.aiOnnx.identity([layer_input])
-            if do_pipelining:
+            if do_sharding:
                 builder.virtualGraph(identity0, vgraph_num)
 
             [dropout0] = builder.aiOnnx.dropout([identity0],
                                                 num_outputs=1,
                                                 ratio=ratio)
-            if do_pipelining:
+            if do_sharding:
                 builder.virtualGraph(dropout0, vgraph_num)
 
             # the input to the forward pass dropout
@@ -347,7 +347,7 @@ def test_pipelined_dropout():
             # This ensures the all input elements to the dropouts, in both
             # the forward and backward passes, will be non-zero.
             add0 = builder.aiOnnx.add([layer_input, dropout0])
-            if do_pipelining:
+            if do_sharding:
                 builder.virtualGraph(add0, vgraph_num)
 
             return add0
@@ -371,11 +371,11 @@ def test_pipelined_dropout():
         dataFlow = popart.DataFlow(batches_per_step, dfAnchors)
 
         loss = popart.L1Loss(out, "l1LossVal", 0.1)
-        if do_pipelining:
+        if do_sharding:
             loss.virtualGraph(layers - 1)
 
         userOptions = popart.SessionOptions()
-        if do_pipelining:
+        if do_sharding:
             userOptions.virtualGraphMode = popart.VirtualGraphMode.Manual
         userOptions.enablePipelining = do_pipelining
 
@@ -418,10 +418,22 @@ def test_pipelined_dropout():
                    f'{fwdId} and {bwdId} did not use the same dropout mask'
             print()
 
-    # Test without pipelining for debugging purposes.
-    # test(do_pipelining=False)
+        return anchors
 
-    test(do_pipelining=True)
+    # Compare pipelined and non-pipelined models to confirm random
+    # dropout behaviour is the same
+    # Note: Because the random behaviour of ops such as dropout depend on a
+    # reference tensor layout, which is not constant between these models
+    # (since they all have a different IR), this behaviour is not always
+    # guaranteed. However, we have chosen a model where the random behaviour
+    # is the same between non-sharded, sharded, and sharded-pipelined
+    # configurations
+    singleipu_anchors = test(do_sharding=False, do_pipelining=False)
+    shard_anchors = test(do_sharding=True, do_pipelining=False)
+    pipe_anchors = test(do_sharding=True, do_pipelining=True)
+    for tId in singleipu_anchors:
+        assert np.array_equal(singleipu_anchors[tId], shard_anchors[tId])
+        assert np.array_equal(singleipu_anchors[tId], pipe_anchors[tId])
 
 
 # Model

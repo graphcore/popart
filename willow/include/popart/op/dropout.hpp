@@ -23,6 +23,8 @@ public:
   bool getOutputMask() const { return output_mask; }
 
   float getSubgraphValue() const final;
+  bool requiresRandomSeed() const override { return true; }
+  InIndex getSeedInIndex() const override { return 1; }
 
 protected:
   float ratio;
@@ -50,7 +52,6 @@ public:
   // Ouputs
   static OutIndex getOutIndex() { return 0; }
   static OutIndex getMaskOutIndex() { return 1; }
-  static OutIndex getSeedOutIndex() { return 2; }
 
   bool canBeReplacedByIdentity() override;
 };
@@ -65,7 +66,6 @@ public:
   void setup() final;
 
   static InIndex getGradInIndex() { return 0; }
-  static InIndex getSeedInIndex() { return 1; }
   static OutIndex getOutIndex() { return 0; }
 };
 

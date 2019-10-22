@@ -18,6 +18,7 @@
 #include <popart/intervals.hpp>
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
+#include <popart/op/getrandomseed.hpp>
 #include <popart/op/loss.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
@@ -79,13 +80,16 @@ GradNonGradPair::GradNonGradPair() : GradNonGradPair(nullptr, nullptr) {}
 
 const onnx::ModelProto &Ir::getModel() const { return *onnxModel; }
 
-// the rule followed : a Stream tensor which is not an
-// optimizer tensor is a streamed data tensor
+// Data stream tensors are all tensors, excluding:
+//  - optimizer tensors
+//  - the random seed tensor
 std::vector<Tensor *> Ir::dataStreamTensors() const {
   std::vector<Tensor *> dsTensors;
   for (auto tensor : getTensors().getOfType(TensorType::Stream)) {
     if (!tensor->isOptimizerTensor()) {
-      dsTensors.push_back(tensor);
+      if (!tensor->isRandomSeedTensor()) {
+        dsTensors.push_back(tensor);
+      }
     }
   }
   return dsTensors;
@@ -709,6 +713,9 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
   dotCheckpoint(DotCheck::FWD1);
 
+  if (requiresRandomSeed()) {
+    initRandomSeed();
+  }
   enableTransform(AutoVirtualGraph::id(),
                   userOptions.virtualGraphMode == VirtualGraphMode::Auto);
   applyTransform(AutoVirtualGraph::id(), getMainGraph());
@@ -836,7 +843,11 @@ void Ir::prepareImpl(const IrBundle &gb) {
 
   // Add internal ops to copy tensors between ipu's as needed
   applyTransform(InterIpuCopy::id(), getMainGraph());
-  applyTransform(MergeCopies::id(), getMainGraph());
+
+  // Pipelining optimizes copies separately, so only run if this is disabled
+  if (!getSessionOptions().enablePipelining) {
+    applyTransform(MergeCopies::id(), getMainGraph());
+  }
 
   updateVertices();
 
@@ -2473,6 +2484,79 @@ std::vector<const Graph *> Ir::getGraphSchedule() const {
   }
 
   return sorted;
+}
+
+bool Ir::hasRandomOps() const {
+  for (auto op : getOpSchedule({})) {
+    if (op->requiresRandomSeed()) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool Ir::requiresRandomSeed() const {
+  return (getSessionOptions().enableStochasticRounding || hasRandomOps());
+}
+
+void Ir::initRandomSeed() {
+  // 1. create seed tensor
+  TensorId seedId = GetRandomSeedOp::getStreamedSeedTensorId();
+  DataType dtype  = DataType::UINT32;
+  TensorInfo info(dtype, {2});
+  getTensors().addStream(seedId, {dtype, {2}});
+  Tensor &seedTensor = *getTensors().get(seedId);
+  seedTensor.setReplicatedStreamMode(Tensor::ReplicatedStreamMode::Replicate);
+
+  // 2. Set initial value (from clock)
+  uint64_t init = std::chrono::system_clock::now().time_since_epoch().count();
+  setRandomSeedValue(init);
+
+  // 3. create GetRandomSeed op and connect to seed tensor
+  Op::Settings settings(getMainGraph(), "");
+  auto getSeedOp_up = std::make_unique<GetRandomSeedOp>(
+      Onnx::CustomOperators::GetRandomSeed, settings);
+  auto getSeedOp = getSeedOp_up.get();
+
+  auto allOtherOps = getOpSchedule({});
+  bool allOtherOpsHavePipelineStage = true;
+  for (auto op : allOtherOps) {
+    if (!op->hasPipelineStage()) {
+      allOtherOpsHavePipelineStage = false;
+    }
+  }
+  getMainGraph().moveIntoGraph(std::move(getSeedOp_up));
+  if (virtualGraphsEnabled()) {
+    getSeedOp->setVirtualGraphId(0);
+    if (getSessionOptions().enablePipelining && allOtherOpsHavePipelineStage) {
+      getSeedOp->setPipelineStage(0);
+    }
+  }
+  getSeedOp->connectInTensor(getSeedOp->getSeedInIndex(), seedId);
+  TensorId updatedSeedId = GetRandomSeedOp::getUpdatedSeedTensorId();
+  getSeedOp->createAndConnectOutTensor(
+      GetRandomSeedOp::getUpdatedSeedOutIndex(), updatedSeedId);
+  getSeedOp->setup();
+
+  // 4. hook up to fwd Random ops
+  for (auto op : getOpSchedule({})) {
+    if (op->requiresRandomSeed()) {
+      op->connectInTensor(op->getSeedInIndex(), updatedSeedId);
+    }
+  }
+}
+
+void Ir::setRandomSeedValue(uint64_t seedValue) {
+  logging::ir::info("Setting the random seed to {}", seedValue);
+  TensorId seedId    = GetRandomSeedOp::getStreamedSeedTensorId();
+  Tensor *seedTensor = getTensor(seedId);
+  std::vector<char> seedData(seedTensor->info.nbytes());
+  *reinterpret_cast<uint64_t *>(seedData.data()) = seedValue;
+  if (seedTensor->hasTensorData()) {
+    seedTensor->tensorData()->resetData(seedTensor->info, seedData.data());
+  } else {
+    seedTensor->setTensorData(seedTensor->info, seedData.data());
+  }
 }
 
 std::vector<Op *> Ir::getOpSchedule(const OpsBeforeKey &gCons) const {

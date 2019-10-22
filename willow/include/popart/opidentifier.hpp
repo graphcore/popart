@@ -292,6 +292,7 @@ const static AiGraphcoreOpIdV1 ConcatGradInplace("ConcatInplace");
 const static AiGraphcoreOpIdV1 Subsample_1("Subsample", 1, 1);
 const static AiGraphcoreOpIdV1 Scale_1("Scale", 1, 1);
 const static AiGraphcoreOpIdV1 Square("Square");
+const static AiGraphcoreOpIdV1 GetRandomSeed("GetRandomSeed");
 const static AiGraphcoreOpIdV1 GroupNormalization_1("GroupNormalization", 3, 3);
 
 const static AiGraphcoreOpIdV1 ReluInplace("ReluInplace");

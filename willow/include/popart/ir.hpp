@@ -220,6 +220,8 @@ public:
   // Is the virtualGraphMode set to something other than VirtualGraphMode::Off.
   bool virtualGraphsEnabled() const;
 
+  void setRandomSeedValue(uint64_t seedVal);
+
 public:
   OpId getOpsCounter() const;
   OpId getAndIncrOpsCounter();
@@ -357,6 +359,9 @@ public:
     return userOptions.autoRecomputation != RecomputationType::None;
   }
 
+  // The model requires a user-settable random seed tensor
+  bool hasRandomOps() const;
+  bool requiresRandomSeed() const;
   uint32_t getAndIncrementDropoutSeedModifier();
 
 private:
@@ -394,6 +399,8 @@ private:
   // for each of the losses described by loss,
   // create a grad-op. Return a vector of {gradop, lossop} pairs
   std::vector<GradNonGradPair> growLossGradients();
+
+  void initRandomSeed();
 
   // Verify the connectivity of the graph
   void verifyConnectivity() const;

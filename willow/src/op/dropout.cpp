@@ -46,12 +46,6 @@ void DropoutOp::setup() {
   } else {
     outInfo(getOutIndex()) = inInfo(getInIndex());
   }
-
-  if (getIr().isTraining()) {
-    auto tensor_id = logging::format("Dropout({})_seed", id);
-    createAndConnectOutTensor(getSeedOutIndex(), tensor_id);
-    outInfo(getSeedOutIndex()) = {DataType::UINT32, {2}};
-  }
 }
 
 std::vector<std::unique_ptr<Op>> DropoutOp::getGradOps() {
@@ -95,7 +89,9 @@ void DropoutGradOp::setup() {
 const std::vector<GradInOutMapper> &DropoutGradOp::gradInputInfo() const {
   static const std::vector<GradInOutMapper> inInfo = {
       {getGradInIndex(), DropoutOp::getOutIndex(), GradOpInType::GRADOUT},
-      {getSeedInIndex(), DropoutOp::getSeedOutIndex(), GradOpInType::OUT}};
+      // Dropout and DropoutGrad inheret from the same base op, so share the
+      // same seed InIndex
+      {getSeedInIndex(), getSeedInIndex(), GradOpInType::IN}};
   return inInfo;
 }
 

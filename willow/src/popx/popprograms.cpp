@@ -22,8 +22,8 @@ poplar::program::Sequence &PopPrograms::streamOptimizerFromHostFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::STREAMOPTIMIZERFROMHOST)];
 }
 
-poplar::program::Sequence &PopPrograms::setRandomSeedFragment() {
-  return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEED)];
+poplar::program::Sequence &PopPrograms::setRandomSeedFromHostFragment() {
+  return seqs[static_cast<int>(ProgramFragmentIndex::SETRANDOMSEEDFROMHOST)];
 }
 
 poplar::program::Sequence &PopPrograms::initFragment() {
@@ -72,9 +72,9 @@ poplar::program::Sequence PopPrograms::optimizerFromHost() {
   return prog;
 }
 
-poplar::program::Sequence PopPrograms::setRandomSeed() {
+poplar::program::Sequence PopPrograms::setRandomSeedFromHost() {
   poplar::program::Sequence prog;
-  prog.add(setRandomSeedFragment());
+  prog.add(setRandomSeedFromHostFragment());
   return prog;
 }
 
@@ -309,11 +309,11 @@ poplar::program::Sequence PopPrograms::weightsToHost() {
 std::vector<poplar::program::Program> PopPrograms::progs() {
   std::vector<poplar::program::Program> ps(ProgramIndex::N);
 
-  ps[ProgramIndex::WEIGHTSFROMHOST]   = weightsFromHost();
-  ps[ProgramIndex::OPTIMIZERFROMHOST] = optimizerFromHost();
-  ps[ProgramIndex::SETRANDOMSEED]     = setRandomSeed();
-  ps[ProgramIndex::PROGRAM]           = program();
-  ps[ProgramIndex::WEIGHTSTOHOST]     = weightsToHost();
+  ps[ProgramIndex::WEIGHTSFROMHOST]       = weightsFromHost();
+  ps[ProgramIndex::OPTIMIZERFROMHOST]     = optimizerFromHost();
+  ps[ProgramIndex::SETRANDOMSEEDFROMHOST] = setRandomSeedFromHost();
+  ps[ProgramIndex::PROGRAM]               = program();
+  ps[ProgramIndex::WEIGHTSTOHOST]         = weightsToHost();
 
   return ps;
 }

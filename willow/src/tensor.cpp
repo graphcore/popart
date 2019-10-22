@@ -293,6 +293,14 @@ bool Tensor::isOptimizerTensor() const {
   return false;
 }
 
+bool Tensor::isRandomSeedTensor() const {
+  std::size_t found = id.find(reservedRandomSeedPrefix());
+  if (found != std::string::npos) {
+    return true;
+  }
+  return false;
+}
+
 void Consumers::increment(Op *op) {
   auto found = consumers_m.find(op);
   if (found == consumers_m.end()) {

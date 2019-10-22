@@ -279,6 +279,11 @@ public:
   // from one IPU to another
   virtual bool copiesOptimizerTensors() const;
 
+  // The random seed tensor used to set the IPU's RNGs is created
+  // in the IR, and connected to the Ops that require it
+  virtual bool requiresRandomSeed() const;
+  virtual InIndex getSeedInIndex() const;
+
   // helper functions, access fields of input and output
   Tensor *inTensor(InIndex index);
   const Tensor *inTensor(InIndex index) const;

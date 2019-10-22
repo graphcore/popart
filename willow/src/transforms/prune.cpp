@@ -3,6 +3,7 @@
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/getrandomseed.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensors.hpp>
 #include <popart/topocons.hpp>
@@ -58,6 +59,17 @@ bool Prune::apply(Graph &graph) const {
         tensorsVisited.insert(t);
       }
     }
+  }
+
+  // and (3), special case tensors that affect the model
+  // even though they may not have a path to the loss.
+  // This is the case for:
+  //  - the random seed tensor
+  if (ir.getSessionOptions().enableStochasticRounding) {
+    auto seedId = GetRandomSeedOp::getUpdatedSeedTensorId();
+    auto t = graph.getTensors().get(seedId);
+    tensorFront.push_back(t);
+    tensorsVisited.insert(t);
   }
 
   while (tensorFront.size() != 0) {

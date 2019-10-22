@@ -51,7 +51,8 @@ std::vector<std::string> reservedPrefixes() {
                                     reservedAccumulationOutPrefix(),
                                     reservedAccumulationResetPrefix(),
                                     reservedStashedPrefix(),
-                                    reservedRestoredPrefix()};
+                                    reservedRestoredPrefix(),
+                                    reservedRandomSeedPrefix()};
 
   std::vector<std::string> optPrefs = reservedOptimizerPrefixes();
   prefs.insert(prefs.end(), optPrefs.begin(), optPrefs.end());
