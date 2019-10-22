@@ -34,8 +34,10 @@ void SGD1AccumulateOp::appendAttributes(OpSerialiserBase &os) const {
 
 SGD1AccumulateOp::SGD1AccumulateOp(const TensorId &varToUpdate,
                                    OptimizerValue dpsf1,
-                                   const Op::Settings &settings)
-    : VarUpdateOp(Onnx::CustomOperators::SGD1Accumulate, varToUpdate, settings),
+                                   const Op::Settings &opSettings)
+    : VarUpdateOp(Onnx::CustomOperators::SGD1Accumulate,
+                  varToUpdate,
+                  opSettings),
       initDpsf1(dpsf1) {}
 
 namespace {} // namespace

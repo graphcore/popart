@@ -61,14 +61,14 @@ AddOp::inplacePriorityDefault() const {
   std::vector<std::tuple<OperatorIdentifier, float>> result;
 
   if (outSize == arg0Size) {
-    auto priority =
+    auto lhsPriority =
         defaultInplacePriorities.at(Onnx::CustomOperators::AddLhsInplace);
-    result.push_back({Onnx::CustomOperators::AddLhsInplace, priority});
+    result.push_back({Onnx::CustomOperators::AddLhsInplace, lhsPriority});
   }
   if (outSize == arg1Size) {
-    auto priority =
+    auto rhsPriority =
         defaultInplacePriorities.at(Onnx::CustomOperators::AddRhsInplace);
-    result.push_back({Onnx::CustomOperators::AddRhsInplace, priority});
+    result.push_back({Onnx::CustomOperators::AddRhsInplace, rhsPriority});
   }
 
   return result;

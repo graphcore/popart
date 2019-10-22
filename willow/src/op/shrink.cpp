@@ -14,8 +14,8 @@ namespace popart {
 ShrinkOp::ShrinkOp(const OperatorIdentifier &opid,
                    float lambd,
                    float bias,
-                   const Op::Settings &settings)
-    : ElementWiseUnaryOp(opid, settings), lambd_(lambd), bias_(bias) {}
+                   const Op::Settings &opSettings)
+    : ElementWiseUnaryOp(opid, opSettings), lambd_(lambd), bias_(bias) {}
 
 std::unique_ptr<Op> ShrinkOp::clone() const {
   return std::make_unique<ShrinkOp>(*this);

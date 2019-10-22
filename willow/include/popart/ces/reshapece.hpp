@@ -7,7 +7,7 @@ namespace popart {
 
 class ConstExprReshape : public ConstExprIdentity {
 public:
-  ConstExprReshape(Op *op) : ConstExprIdentity(op) {}
+  ConstExprReshape(Op *_op_) : ConstExprIdentity(_op_) {}
 };
 
 } // namespace popart

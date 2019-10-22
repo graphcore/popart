@@ -72,9 +72,9 @@ VGraphId CallOp::getIntrospectionInVirtualGraphId(InIndex index) const {
         auto subindex = consumer->input->indicesMap().at(tensor)[0];
         if (consumer->hasVirtualGraphId()) {
           // Also works if the callee is another subgraph
-          auto id = consumer->getIntrospectionInVirtualGraphId(subindex);
-          if (id > -1)
-            return id;
+          auto intropId = consumer->getIntrospectionInVirtualGraphId(subindex);
+          if (intropId > -1)
+            return intropId;
         }
       }
     }
@@ -85,9 +85,10 @@ VGraphId CallOp::getIntrospectionInVirtualGraphId(InIndex index) const {
     // consuming operator is on another virtual graph.
     if (tensor->hasVirtualGraphId()) {
       // Tensor has VirtualGraphID given by it's producer or consumer
-      auto id = tensor->getVirtualGraphId();
-      if (id > -1)
-        return id;
+      auto vgId = tensor->getVirtualGraphId();
+      if (vgId > -1) {
+        return vgId;
+      }
     }
   }
 
@@ -114,9 +115,10 @@ VGraphId CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
       auto subindex = producer->output->indicesMap().at(tensor)[0];
       if (producer->hasVirtualGraphId()) {
         // Also works if the callee is another subgraph
-        auto id = producer->getIntrospectionOutVirtualGraphId(subindex);
-        if (id > -1)
-          return id;
+        auto vgId = producer->getIntrospectionOutVirtualGraphId(subindex);
+        if (vgId > -1) {
+          return vgId;
+        }
       }
     }
 
@@ -126,9 +128,10 @@ VGraphId CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
     // consuming operator is on another virtual graph.
     if (tensor->hasVirtualGraphId()) {
       // Tensor has VirtualGraphID given by it's producer or consumer
-      auto id = tensor->getVirtualGraphId();
-      if (id > -1)
-        return id;
+      auto vgId = tensor->getVirtualGraphId();
+      if (vgId > -1) {
+        return vgId;
+      }
     }
   }
 
