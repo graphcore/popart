@@ -103,7 +103,6 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeNumericalTest0x) {
     TensorInfo weightInfo = sampleInfo;
     TensorInfo microBatchInfo{"FLOAT", microBatchShape};
     int64_t sampleElms{sampleHeight * sampleHeight};
-    int64_t weightsElms    = sampleElms;
     int64_t microBatchElms = sampleElms * microBatchSize;
 
     auto builder     = Builder::create();

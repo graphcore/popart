@@ -37,8 +37,7 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
 
     auto act = aiOnnx.add({input1, w1});
 
-    auto getPipe = [nlt, &aiOnnx, &builder, &aiGraphcore](TensorId act,
-                                                          VGraphId vgid) {
+    auto getPipe = [nlt, &aiOnnx, &aiGraphcore](TensorId act, VGraphId vgid) {
       //    >-------- [8,4] ---------------------------------------
       //             /     \                                       |
       //      slice left  slice right                              |
@@ -72,13 +71,14 @@ BOOST_AUTO_TEST_CASE(PipelineRecomputeIrTest2) {
       // The difference between sin and sigmoid, is that the
       // gradients require the input and output, respectively
 
-      auto postnl = [&aiOnnx, &builder, nlt](TensorId id) {
+      auto postnl = [&aiOnnx, nlt](TensorId id) {
         if (nlt == NlType::Sigmoid) {
           return aiOnnx.sigmoid({id});
         } else {
           return aiOnnx.sin({id});
         }
       };
+      (void)vgid;
 
       auto actIn = act;
       auto act0  = aiOnnx.slice({act}, {6, 4}, {0, 0}, {0, 1});

@@ -66,7 +66,6 @@ BOOST_AUTO_TEST_CASE(ContinuousEquivalentTest0) {
   TensorInfo stepDataInfo{"FLOAT", stepDataShape};
 
   int64_t sampleElms{sampleHeight * sampleHeight};
-  int64_t weightsElms  = sampleElms;
   int64_t batchElms    = sampleElms * batchSize;
   int64_t stepDataElms = batchElms * batchesPerStep;
 

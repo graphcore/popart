@@ -59,7 +59,6 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
   TensorInfo batchInfo{"FLOAT", batchShape};
   TensorInfo stepDataInfo{"FLOAT", stepDataShape};
 
-  int64_t weightsElms  = seqLen;
   int64_t batchElms    = seqLen * batchSize;
   int64_t stepDataElms = batchElms * batchesPerStep;
 
@@ -98,7 +97,6 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
   float wMag = 1000.;
 
   auto addLayer = [&aiOnnx,
-                   &aiGraphcore,
                    &builder,
                    sampleInfo,
                    &wVals,
@@ -186,8 +184,7 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
   // write initial weights to host
   session->weightsFromHost();
 
-  int nSteps    = 3;
-  auto nUpdates = samplesPerStep * nSteps;
+  int nSteps = 3;
   for (int i = 0; i < nSteps; ++i) {
     std::cout << "Iteration (call to run(...)) # " << i << std::endl;
 

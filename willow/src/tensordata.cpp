@@ -121,7 +121,7 @@ void StepIO::advance(TensorId id,
   }
 }
 
-ConstVoidData StepIO::in(TensorId id, int64_t numElements, bool prefetch) {
+ConstVoidData StepIO::in(TensorId id, int64_t numElements, bool /*prefetch*/) {
   return get<ConstVoidData>(id, inputsInfo, numElements, false, "inputs");
 }
 

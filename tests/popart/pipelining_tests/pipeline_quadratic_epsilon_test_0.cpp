@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
   bool printStdOut = true;
 
   // Return {initial weights, updated weights}
-  auto getResults = [printStdOut](bool continuous) {
+  auto getResults = [](bool continuous) {
     // input stream samples weights are generated randomly
     int seed = 1011;
     std::default_random_engine eng(seed);
@@ -112,7 +112,6 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     TensorInfo batchInfo{"FLOAT", batchShape};
     TensorInfo stepDataInfo{"FLOAT", stepDataShape};
     int64_t sampleElms{sampleHeight * sampleHeight};
-    int64_t weightsElms  = sampleElms;
     int64_t batchElms    = sampleElms * batchSize;
     int64_t stepDataElms = batchElms * batchesPerStep;
 

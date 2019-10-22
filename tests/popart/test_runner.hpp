@@ -148,23 +148,23 @@ private:
 };
 
 template <typename T>
-TensorInfo createTensorInfo(const std::vector<T> &data,
+TensorInfo createTensorInfo(const std::vector<T> /*&data*/,
                             const std::vector<int64_t> &shape);
 
 template <>
-TensorInfo createTensorInfo(const std::vector<float> &data,
+TensorInfo createTensorInfo(const std::vector<float> /*&data*/,
                             const std::vector<int64_t> &shape) {
   return TensorInfo{DataType::FLOAT, shape};
 }
 
 template <>
-TensorInfo createTensorInfo(const std::vector<int64_t> &data,
+TensorInfo createTensorInfo(const std::vector<int64_t> /*&data*/,
                             const std::vector<int64_t> &shape) {
   return TensorInfo{DataType::INT64, shape};
 }
 
 template <>
-TensorInfo createTensorInfo(const std::vector<bool> &data,
+TensorInfo createTensorInfo(const std::vector<bool> /*&data*/,
                             const std::vector<int64_t> &shape) {
   return TensorInfo{DataType::BOOL, shape};
 }
