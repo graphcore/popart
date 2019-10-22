@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_0) {
   auto absdiff0 = getAbsDiff(100 - 6 * lrTest0, std::get<0>(results));
   BOOST_CHECK(absdiff0 < 1e-5f);
   auto absdiff1 = getAbsDiff(200 - 6 * lrTest0, std::get<1>(results));
-  BOOST_CHECK(absdiff0 < 1e-5f);
+  BOOST_CHECK(absdiff1 < 1e-5f);
 }
 
 BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_1) {
@@ -262,7 +262,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_1) {
   auto absdiff0 = getAbsDiff(100 - 6 * lrTest0, std::get<0>(results));
   BOOST_CHECK(absdiff0 < 1e-5f);
   auto absdiff1 = getAbsDiff(200 - 6 * lrTest0, std::get<1>(results));
-  BOOST_CHECK(absdiff0 < 1e-5f);
+  BOOST_CHECK(absdiff1 < 1e-5f);
 }
 
 BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_2) {
@@ -281,7 +281,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_2) {
   auto absdiff0 = getAbsDiff(100 - 6 * lrTest0, std::get<0>(results));
   BOOST_CHECK(absdiff0 < 1e-5f);
   auto absdiff1 = getAbsDiff(200 - 6 * lrTest0, std::get<1>(results));
-  BOOST_CHECK(absdiff0 < 1e-5f);
+  BOOST_CHECK(absdiff1 < 1e-5f);
 }
 
 BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_3) {
@@ -377,7 +377,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_3) {
   auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
   BOOST_CHECK(absdiff0 < 1e-5f);
   auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
-  BOOST_CHECK(absdiff0 < 1e-5f);
+  BOOST_CHECK(absdiff1 < 1e-5f);
 }
 
 BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_4) {
@@ -450,7 +450,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_4) {
   auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
   BOOST_CHECK(absdiff0 < 1e-5f);
   auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
-  BOOST_CHECK(absdiff0 < 1e-5f);
+  BOOST_CHECK(absdiff1 < 1e-5f);
 }
 
 BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_5) {
@@ -527,7 +527,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_5) {
   auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
   BOOST_CHECK(absdiff0 < 1e-5f);
   auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
-  BOOST_CHECK(absdiff0 < 1e-5f);
+  BOOST_CHECK(absdiff1 < 1e-5f);
 }
 
 BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_6) {
@@ -625,7 +625,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_6) {
   auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
   BOOST_CHECK(absdiff0 < 1e-5f);
   auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
-  BOOST_CHECK(absdiff0 < 1e-5f);
+  BOOST_CHECK(absdiff1 < 1e-5f);
 }
 
 BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_7) {
@@ -645,5 +645,5 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_7) {
   auto absdiff0 = getAbsDiff(100 - 2 * 6 * lrTest0, std::get<0>(results));
   BOOST_CHECK(absdiff0 < 1e-5f);
   auto absdiff1 = getAbsDiff(200 - 2 * 6 * lrTest0, std::get<1>(results));
-  BOOST_CHECK(absdiff0 < 1e-5f);
+  BOOST_CHECK(absdiff1 < 1e-5f);
 }
