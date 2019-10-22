@@ -69,10 +69,10 @@ public:
   }
 
 private:
-  Inputs ins;
   Outputs outs;
   Type t;
   Value v;
+  Inputs ins;
 };
 
 struct Edge {

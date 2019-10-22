@@ -31,8 +31,7 @@ BOOST_AUTO_TEST_CASE(Value0_Subgraph) {
     auto matches = rinseMatcher.getRepeatedSequences();
 
     setValues(matches, sched);
-  std:
-    sort(matches.rbegin(), matches.rend());
+    std::sort(matches.rbegin(), matches.rend());
 
     std::stringstream ss;
     ss << "\nExpected matches:";
