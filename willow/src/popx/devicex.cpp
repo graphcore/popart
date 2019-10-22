@@ -1720,10 +1720,10 @@ poplar::Tensor ICreatorCandidate::unwind(poplar::Tensor input) {
 }
 
 InputCreatorCandidate::InputCreatorCandidate(
-    int index,
-    const Opx *opx,
+    int index_,
+    const Opx *opx_,
     std::vector<OpxInAndOutIndex> pathFromInput_)
-    : ICreatorCandidate(index, opx, pathFromInput_) {}
+    : ICreatorCandidate(index_, opx_, pathFromInput_) {}
 
 double InputCreatorCandidate::getMaxCreatorPriority() {
   return getOpx()->inputCreatorPriority;
@@ -1765,10 +1765,10 @@ std::string InputCreatorCandidate::str() {
 }
 
 InputMultiCreatorCandidate::InputMultiCreatorCandidate(
-    int index,
-    const Opx *opx,
+    int index_,
+    const Opx *opx_,
     std::vector<OpxInAndOutIndex> pathFromInput_)
-    : ICreatorCandidate(index, opx, pathFromInput_) {}
+    : ICreatorCandidate(index_, opx_, pathFromInput_) {}
 
 double InputMultiCreatorCandidate::getMaxCreatorPriority() {
 

@@ -68,7 +68,7 @@ VGraphId CallOp::getIntrospectionInVirtualGraphId(InIndex index) const {
 
     // Callee introspection
     for (auto consumer : tensor->consumers.getOps()) {
-      if (auto call = dynamic_cast<CallOp *>(consumer)) {
+      if (dynamic_cast<CallOp *>(consumer)) {
         auto subindex = consumer->input->indicesMap().at(tensor)[0];
         if (consumer->hasVirtualGraphId()) {
           // Also works if the callee is another subgraph
@@ -111,7 +111,7 @@ VGraphId CallOp::getIntrospectionOutVirtualGraphId(OutIndex index) const {
 
     // Callee introspection
     auto producer = tensor->getProducer();
-    if (auto call = dynamic_cast<CallOp *>(producer)) {
+    if (dynamic_cast<CallOp *>(producer)) {
       auto subindex = producer->output->indicesMap().at(tensor)[0];
       if (producer->hasVirtualGraphId()) {
         // Also works if the callee is another subgraph

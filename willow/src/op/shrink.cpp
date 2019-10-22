@@ -11,7 +11,7 @@
 
 namespace popart {
 
-ShrinkOp::ShrinkOp(const OperatorIdentifier &opid,
+ShrinkOp::ShrinkOp(const OperatorIdentifier &opid_,
                    float lambd,
                    float bias,
                    const Op::Settings &opSettings)
