@@ -127,7 +127,8 @@ void IpuCopyOp::disconnectInTensor(InIndex idx, Tensor *t) {
   sourceIpus.erase(t->id);
 
   auto &sourceIds = sourceTensors.at(sourceIpu);
-  std::remove(sourceIds.begin(), sourceIds.end(), t->id);
+  sourceIds.erase(std::remove(sourceIds.begin(), sourceIds.end(), t->id),
+                  sourceIds.end());
   if (sourceIds.empty()) {
     sourceTensors.erase(sourceIpu);
   }

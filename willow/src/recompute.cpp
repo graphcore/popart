@@ -142,7 +142,9 @@ void autoAnnotate(Graph &graph, RecomputationType rctype) {
 
   case RecomputationType::N:
   case RecomputationType::Pipeline:
-  default: { throw error("Invalid RecomputationType in autoAnnotate"); }
+  default: {
+    throw error("Invalid RecomputationType in autoAnnotate");
+  }
   }
 }
 
