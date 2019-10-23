@@ -839,11 +839,11 @@ bool Pipeline::apply(Graph &graph) const {
                               restoreRefOp->getPipelineStage());
 
     // Full Recomputation
-    // If one of the preLossOnly stash tensors is consumed by an IpuCopy
+    // If a preLoss stash tensors is consumed by an IpuCopy
     // it must not be inplace, but stashes needed for recomputation must be
     // inplace. To resolve this contradiction an IdentityOp is inserted between
     // the the stashed tensor and the IpuCopy
-    if (full_recompute && tensor->consumersAllPreLoss()) {
+    if (full_recompute) {
       insertClonesBeforeIpuCopyConsumers(
           graph,
           tensor,
