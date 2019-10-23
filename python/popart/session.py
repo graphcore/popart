@@ -20,22 +20,35 @@ def _initAnchorArrays(self):
         # There are some conditions where the output is a single sample,
         # and therefore has the same shape as the anchor tensor
         # Otherwise, samples are returned over an extra dimension in the
-        # output
+        # output.
+        # With all options enabled return anchors are of the shape:
+        # [batches_per_step, accl_factor, repl_factor, micro_batch, *data_shape]
+        # TODO: T12496 confirm this ordering is correct with a test.
         if batchesPerStep == 1 or artId == popart.AnchorReturnTypeId.FINAL:
             anchorArrayShape = anchorShape
+            # If the graph replication is enabled and greater than 1 then add
+            # an extra dimension for the replication
+            if self.replicationFactor > 1:
+                anchorArrayShape.insert(0, self.replicationFactor)
         elif artId == popart.AnchorReturnTypeId.ALL:
             anchorArrayShape = anchorShape
+            # Insert replication factor.
+            if self.replicationFactor > 1:
+                anchorArrayShape.insert(0, self.replicationFactor)
+            # Insert accumulationFactor factor.
+            if self.accumulationFactor > 1:
+                anchorArrayShape.insert(0, self.accumulationFactor)
+            # Finally insert batchesPerStep
             anchorArrayShape.insert(0, batchesPerStep)
         elif artId == popart.AnchorReturnTypeId.EVERYN:
             anchorArrayShape = anchorShape
+            # Insert replication factor.
+            if self.replicationFactor > 1:
+                anchorArrayShape.insert(0, self.replicationFactor)
             arp = self.dataFeed.art(anchor).rp()
+            # Finally insert batchesPerStep
             if arp != batchesPerStep:
                 anchorArrayShape.insert(0, batchesPerStep // arp)
-
-        # If the graph replication is enabled and greater than 1 then add
-        # an extra dimension for the replication
-        if self.replicationFactor > 1:
-            anchorArrayShape.insert(0, self.replicationFactor)
 
         anchorArrays[anchor] = np.empty(shape=anchorArrayShape,
                                         dtype=anchorInfo.data_type_lcase())
@@ -75,6 +88,7 @@ class InferenceSession(popart.InferenceSessionCore):
 
         self.dataFeed = dataFeed
         self.replicationFactor = userOptions.replicatedGraphCount if userOptions.enableReplicatedGraphs else 1
+        self.accumulationFactor = userOptions.accumulationFactor if userOptions.enableGradientAccumulation else 1
 
     def initAnchorArrays(self):
         return _initAnchorArrays(self)
@@ -84,7 +98,7 @@ class InferenceSession(popart.InferenceSessionCore):
         err = popart.PrepareDeviceError()
         super(InferenceSession, self).prepareDevice(err)
 
-        # If an error occured during the perpareDevice raise an exception
+        # If an error occurred during the perpareDevice raise an exception
         if (not err.isSuccessful()):
             raise popart.PrepareDeviceException(err)
 
@@ -109,6 +123,7 @@ class TrainingSession(popart.TrainingSessionCore):
 
         self.dataFeed = dataFeed
         self.replicationFactor = userOptions.replicatedGraphCount if userOptions.enableReplicatedGraphs else 1
+        self.accumulationFactor = userOptions.accumulationFactor if userOptions.enableGradientAccumulation else 1
 
     def initAnchorArrays(self):
         return _initAnchorArrays(self)
