@@ -202,7 +202,6 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
 
     print("Setting device to IPU, and preparing it")
     session.prepareDevice()
-    session.setRandomSeed(0)
 
     if mode == "train":
         print("Writing weights to device")

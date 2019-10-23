@@ -36,10 +36,10 @@ void MatMulBaseOp::appendMore(OpSerialiserBase &os) const {
 
 MatMulBaseGradOp::MatMulBaseGradOp(const OperatorIdentifier &_opid,
                                    const MatMulOp &fwdOp,
-                                   Phase phase)
+                                   Phase phaseArg)
     : MatMulBaseOp(_opid,
                    fwdOp.getSettings(),
-                   phase,
+                   phaseArg,
                    fwdOp.getAvailableMemoryProportion(),
                    fwdOp.getSerialiseSettings(),
                    fwdOp.getOutputType()),
@@ -54,13 +54,13 @@ MatMulOp::MatMulOp(const OperatorIdentifier &_opid,
                    const Op::Settings &settings_,
                    const boost::optional<float> availableMemoryProportion_,
                    const SerialiseSettings &serialization_,
-                   const boost::optional<DataType> outputType)
+                   const boost::optional<DataType> outputType_)
     : MatMulBaseOp(_opid,
                    settings_,
                    Phase::Fwd,
                    availableMemoryProportion_,
                    serialization_,
-                   outputType) {}
+                   outputType_) {}
 
 std::unique_ptr<Op> MatMulOp::clone() const {
   return std::make_unique<MatMulOp>(*this);

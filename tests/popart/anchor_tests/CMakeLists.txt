@@ -4,3 +4,4 @@
 
 add_popart_cpp_unit_test(
         weights_as_anchors_test_0 weights_as_anchors_test_0.cpp)
+add_all_py_unit_tests("")

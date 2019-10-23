@@ -72,7 +72,6 @@ BOOST_AUTO_TEST_CASE(Basic0) {
   auto nChans         = 1;
   auto batchSize      = 1;
   auto convHeightWith = 2;
-  auto outHeightWidth = 2;
 
   TensorInfo inputInfo{
       "FLOAT",
@@ -150,7 +149,6 @@ BOOST_AUTO_TEST_CASE(Basic1) {
   auto nChans         = 1;
   auto batchSize      = 1;
   auto convHeightWith = 2;
-  auto outHeightWidth = 2;
 
   TensorInfo inputInfo{
       "FLOAT",
@@ -224,7 +222,6 @@ BOOST_AUTO_TEST_CASE(Basic2) {
   auto nChans         = 1;
   auto batchSize      = 1;
   auto convHeightWith = 2;
-  auto outHeightWidth = 2;
 
   TensorInfo inputInfo{
       "FLOAT",

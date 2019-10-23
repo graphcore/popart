@@ -216,8 +216,8 @@ IfOp::getBwdGraphBranchInfo(const Graph &fwdGraph,
   // get a map of IfGradOp input ids to IfGradOp input indices
   std::map<TensorId, int> gradOpInIdToGradOpInIdx;
   for (int i = 0; i < gradOpInputIds.size(); i++) {
-    auto id = gradOpInputIds.at(i);
-    gradOpInIdToGradOpInIdx.insert({id, i});
+    auto inId = gradOpInputIds.at(i);
+    gradOpInIdToGradOpInIdx.insert({inId, i});
   }
 
   // get a map of IfGradOp input ids to bwdGraph input indices

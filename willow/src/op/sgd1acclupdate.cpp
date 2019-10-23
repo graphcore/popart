@@ -39,8 +39,10 @@ void SGD1AcclUpdateOp::appendAttributes(OpSerialiserBase &os) const {
 SGD1AcclUpdateOp::SGD1AcclUpdateOp(const TensorId &varToUpdate,
                                    OptimizerValue mm1,
                                    OptimizerValue wdsf1,
-                                   const Op::Settings &settings)
-    : VarUpdateOp(Onnx::CustomOperators::SGD1AcclUpdate, varToUpdate, settings),
+                                   const Op::Settings &opSettings)
+    : VarUpdateOp(Onnx::CustomOperators::SGD1AcclUpdate,
+                  varToUpdate,
+                  opSettings),
       initMm1(mm1), initWdsf1(wdsf1) {}
 
 namespace {} // namespace

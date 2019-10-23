@@ -180,10 +180,11 @@ public:
   void prepare();
   void weightsFromHost();
   void optimizerFromHost();
+  // Streams the random seed value from host, and sets the rng registers on
+  // the device
+  void setRandomSeedFromHost();
 
   void run(IStepIO &);
-
-  void setRandomSeed(uint64_t seedValue);
 
   // device -> host stream
   void weightsToHost();
@@ -277,8 +278,6 @@ public:
   bool isEngineLoaded() const;
   void setEngineIsLoaded(bool isLoaded);
 
-  std::string randomSeedId() const;
-  const poplar::Tensor &getRandomSeedTensor() const;
   // Compile-time poplar tensors used to determine sampling of random
   // numbers across tiles. Combined with the random seed and seedModifier,
   // this ensures that the same random mask is generated for fwd and bwd
@@ -301,8 +300,6 @@ private:
 
   std::shared_ptr<DeviceInfo> deviceInfo;
 
-  uint64_t randomSeed;
-
   // Non-const tensors used to keep track of batch count, modulo the return
   // period
   std::map<ReturnPeriod, poplar::Tensor> batchCountingTensors;
@@ -319,9 +316,6 @@ private:
   std::map<PipelineStage, VGraphId> getPipelineToVGraphIdMap() const;
   PipelineStage getMaxPipelineStage() const;
 
-  // Sets the random seed, does not check if prepare has been called.
-  void setRandomSeedInternal(uint64_t seedValue);
-
   // Task to create a poplar::Tensor from nothing, choosing
   // the correct create call (createWeights, addLinearly, etc)
   PriTask initTensorTask(Tensor *);
@@ -330,9 +324,7 @@ private:
 
   PriTask initRandomSeed();
   TaskId initRandomSeedTaskId() const;
-  TaskId incrementRandomSeedTaskId() const;
   void connectRandomSeedStream();
-  PriTask incrementRandomSeedTask();
 
   PriTask setInitTensorValTask(Tensor *);
   TaskId setInitTensorValTaskId(TensorId) const;
@@ -420,6 +412,8 @@ public:
   // Returns true if using synthetic data, false if using real data
   // This will return the options.ignoreData flag
   bool useSyntheticData() const;
+
+  bool prepareHasBeenCalled() const { return prepareHasBeenCalled_; }
 
 private:
   std::vector<Op *> mainGraphOpRegistery;
@@ -513,7 +507,7 @@ private:
   // Becomes true once loadEngineAndConnectStreams() is called.
   // Becomes 'false' if another engine has been loaded after
   // loadEngineAndConnectStreams() has been called. This is
-  // different to 'prepareHasBeenCalled', which, once true,
+  // different to 'prepareHasBeenCalled_', which, once true,
   // is always true
   bool engineIsLoaded = false;
 
@@ -560,7 +554,7 @@ private:
   std::set<TensorId> linearlyCreatedInputTensors;
   std::set<TensorId> efficientlyCreatedInputTensors;
 
-  bool prepareHasBeenCalled;
+  bool prepareHasBeenCalled_;
 
   optional<poplar::Executable> cachedExecutable;
   bool usingCachedExecutable = false;

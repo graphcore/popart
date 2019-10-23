@@ -84,6 +84,11 @@ bool Op::isLossOp() const { return false; }
 bool Op::isIpuCopyOp() const { return false; }
 bool Op::copiesOptimizerTensors() const { return false; }
 
+bool Op::requiresRandomSeed() const { return false; }
+InIndex Op::getSeedInIndex() const {
+  throw error("Op {} does not have random seed input tensor", str());
+}
+
 Op::~Op() = default;
 
 // return a vector of 1 or several OpAndTensorIds for
@@ -203,7 +208,6 @@ void Op::append(std::stringstream &ss) const {
   OpSerialiser os(this, ss);
 
   appendAttributes(os);
-  ss << '\n';
   appendMore(os);
 }
 

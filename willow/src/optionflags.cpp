@@ -97,3 +97,34 @@ std::ostream &operator<<(std::ostream &os, RecomputationType r) {
 // No implementation required
 
 } // namespace popart
+
+namespace std {
+std::size_t hash<popart::SessionOptions>::
+operator()(const popart::SessionOptions &so) const {
+  // Hash based on all the SessionOptions attributes that
+  // can affect compiled program
+
+  std::stringstream ss;
+  ss << so.autoRecomputation;
+
+  auto hsh = std::hash<std::string>{}(ss.str());
+  hsh      = (hsh ^ (std::hash<bool>{}(so.rearrangeAnchorsOnHost) << 1)) << 1;
+  hsh      = (hsh ^ (std::hash<bool>{}(so.enableNonStableSoftmax) << 1)) << 1;
+  hsh      = (hsh ^ (std::hash<int64_t>{}(so.replicatedGraphCount) << 1)) << 1;
+  hsh      = (hsh ^ (std::hash<bool>{}(so.enablePipelining) << 1)) << 1;
+  hsh      = (hsh ^ (std::hash<bool>{}(so.ignoreData) << 1)) << 1;
+  hsh = (hsh ^ (std::hash<bool>{}(so.enableFloatingPointChecks) << 1)) << 1;
+  hsh = (hsh ^ (std::hash<bool>{}(so.enableStochasticRounding) << 1)) << 1;
+  hsh = (hsh ^ (std::hash<bool>{}(so.enableFullyConnectedPass) << 1)) << 1;
+  for (auto key_val : so.engineOptions) {
+    hsh = (hsh ^ (std::hash<std::string>()(key_val.first) << 1)) << 1;
+    hsh = (hsh ^ (std::hash<std::string>()(key_val.second) << 1)) << 1;
+  }
+  for (auto key_val : so.convolutionOptions) {
+    hsh = (hsh ^ (std::hash<std::string>()(key_val.first) << 1)) << 1;
+    hsh = (hsh ^ (std::hash<std::string>()(key_val.second) << 1)) << 1;
+  }
+
+  return hsh;
+}
+} // namespace std

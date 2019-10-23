@@ -117,29 +117,28 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
           return tensorsOut;
         };
 
-    auto appendModule =
-        [N, &builder, &eng, &fdis, &aiOnnx, &idis, &getSubmodule](
-            std::vector<TensorId> tensorsIn) {
-          auto tensorsOut = tensorsIn;
-          for (int i = 0; i < 3; ++i) {
-            tensorsOut = getSubmodule(tensorsOut);
-          }
+    auto appendModule = [&builder, &eng, &fdis, &aiOnnx, &getSubmodule](
+                            std::vector<TensorId> tensorsIn) {
+      auto tensorsOut = tensorsIn;
+      for (int i = 0; i < 3; ++i) {
+        tensorsOut = getSubmodule(tensorsOut);
+      }
 
-          while (tensorsOut.size() != 1) {
-            tensorsIn  = tensorsOut;
-            tensorsOut = {};
-            for (int i = 0; i < tensorsIn.size() / 2; ++i) {
-              auto concat0 =
-                  aiOnnx.concat({tensorsIn[2 * i], tensorsIn[2 * i + 1]}, 0);
-              builder->setInplacePreferences(
-                  concat0, {{"ConcatInplace", 100.0f + fdis(eng)}});
-              tensorsOut.push_back(concat0);
-            }
-          }
-          auto outCon = tensorsOut[0];
+      while (tensorsOut.size() != 1) {
+        tensorsIn  = tensorsOut;
+        tensorsOut = {};
+        for (int i = 0; i < tensorsIn.size() / 2; ++i) {
+          auto concat0 =
+              aiOnnx.concat({tensorsIn[2 * i], tensorsIn[2 * i + 1]}, 0);
+          builder->setInplacePreferences(
+              concat0, {{"ConcatInplace", 100.0f + fdis(eng)}});
+          tensorsOut.push_back(concat0);
+        }
+      }
+      auto outCon = tensorsOut[0];
 
-          return outCon;
-        };
+      return outCon;
+    };
 
     auto getSliced = [N, &builder, &aiOnnx, &fdis, &eng](TensorId in) {
       std::vector<TensorId> slicedIds;

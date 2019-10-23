@@ -131,6 +131,7 @@ public:
   // Returns true for stream tensors that are optimizer tensors, as
   // well as their copies
   bool isOptimizerTensor() const;
+  bool isRandomSeedTensor() const;
   bool hasTensorData() const;
   TensorData *tensorData();
   const TensorData *tensorData() const;

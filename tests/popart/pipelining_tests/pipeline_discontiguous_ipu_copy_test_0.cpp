@@ -52,7 +52,6 @@ BOOST_AUTO_TEST_CASE(DiscontiguousIpuCopyTest0) {
     TensorInfo batchInfo{"FLOAT", batchShape};
     TensorInfo stepDataInfo{"FLOAT", stepDataShape};
     int64_t sampleElms{sampleHeight * sampleHeight};
-    int64_t weightsElms  = sampleElms;
     int64_t batchElms    = sampleElms * batchSize;
     int64_t stepDataElms = batchElms * batchesPerStep;
 

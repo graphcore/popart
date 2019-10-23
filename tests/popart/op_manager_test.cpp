@@ -36,6 +36,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test1) {
                         [](const OperatorIdentifier &_opid,
                            const Op::Settings &settings,
                            const Attributes &attr = {}) -> std::unique_ptr<Op> {
+                          (void)attr;
                           return std::unique_ptr<AddOp>(
                               new AddOp(_opid, settings));
                         });
@@ -69,6 +70,7 @@ BOOST_AUTO_TEST_CASE(OpManager_Test2) {
                         [](const OperatorIdentifier &_opid,
                            const Op::Settings &settings,
                            const Attributes &attr = {}) -> std::unique_ptr<Op> {
+                          (void)attr;
                           return std::unique_ptr<AddOp>(
                               new AddOp(_opid, settings));
                         });

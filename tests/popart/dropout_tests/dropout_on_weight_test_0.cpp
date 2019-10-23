@@ -98,7 +98,6 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     float wMag = 1000.;
     std::vector<TensorId> maskIds;
     auto addLayer = [&aiOnnx,
-                     &aiGraphcore,
                      pDrop,
                      &maskIds,
                      &builder,

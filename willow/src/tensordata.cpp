@@ -62,7 +62,7 @@ template <typename T>
 T StepIO::get(TensorId id,
               std::map<TensorId, ArrayInfo> &M,
               int64_t numElements,
-              bool advance,
+              bool advanceIn,
               std::string mapName) {
 
   auto found = M.find(id);
@@ -80,7 +80,7 @@ T StepIO::get(TensorId id,
 
   stepData.data = static_cast<uint8_t *>(arrayInfo.array.data()) + offset;
 
-  if (advance) {
+  if (advanceIn) {
 
     auto numBytes = stepData.info.getDataTypeInfo()->nbytes() * numElements;
 
@@ -121,7 +121,7 @@ void StepIO::advance(TensorId id,
   }
 }
 
-ConstVoidData StepIO::in(TensorId id, int64_t numElements, bool prefetch) {
+ConstVoidData StepIO::in(TensorId id, int64_t numElements, bool /*prefetch*/) {
   return get<ConstVoidData>(id, inputsInfo, numElements, false, "inputs");
 }
 

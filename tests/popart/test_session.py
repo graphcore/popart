@@ -3,7 +3,7 @@ import popart
 import test_util as tu
 
 
-class TestSession:
+class PopartTestSession:
     def __init__(self):
         self.options = popart.SessionOptions()
         self.device = 'cpu'

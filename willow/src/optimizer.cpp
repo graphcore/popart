@@ -220,8 +220,8 @@ SGD::SGD(OptimizerValue lr,
          OptimizerValue mm,
          OptimizerValue dp,
          OptimizerValue vs,
-         OptimizerValue ls)
-    : Optimizer(ls), lrs(lr), wds(wd), mms(mm), dps(dp), vss(vs) {
+         OptimizerValue lossScaling)
+    : Optimizer(lossScaling), lrs(lr), wds(wd), mms(mm), dps(dp), vss(vs) {
   runValueChecks(lr.val(), wd.val(), mm.val(), dp.val(), vs.val());
 }
 

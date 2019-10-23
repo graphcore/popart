@@ -233,7 +233,7 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput) {
   popart::StepIOCallback::InputCallback input_callback =
       [&](TensorId id, bool prefetch) -> ConstVoidData {
     popart::logging::info("input callback called {}", id);
-
+    (void)prefetch;
     popart::NDArrayWrapper<int> inData(rawInputData, {2, 5});
 
     ConstVoidData data;
@@ -340,7 +340,7 @@ BOOST_AUTO_TEST_CASE(StepIOTest_CallbackInput_Ipu,
   popart::StepIOCallback::InputCallback input_callback =
       [&](TensorId id, bool prefetch) -> ConstVoidData {
     popart::logging::info("input callback called {}", id);
-
+    (void)prefetch;
     popart::NDArrayWrapper<int> inData(rawInputData, {2, 5});
 
     ConstVoidData data;

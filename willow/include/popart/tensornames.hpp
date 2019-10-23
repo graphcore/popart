@@ -39,6 +39,8 @@ constexpr const char *reservedRestoredPrefix() { return "Restored___"; }
 
 constexpr const char *reservedLossScalingPrefix() { return "lossScaling_"; }
 
+constexpr const char *reservedRandomSeedPrefix() { return "randomSeed___"; }
+
 std::vector<std::string> reservedOptimizerPrefixes();
 std::vector<std::string> reservedPrefixes();
 

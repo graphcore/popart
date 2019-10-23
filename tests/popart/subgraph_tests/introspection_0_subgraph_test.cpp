@@ -17,8 +17,6 @@
 
 BOOST_AUTO_TEST_CASE(Introspection0_Subgraph) {
 
-  bool withLogging = true;
-
   using namespace popart;
 
   auto builder     = Builder::create();

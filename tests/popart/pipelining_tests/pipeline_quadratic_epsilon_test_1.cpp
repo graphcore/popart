@@ -112,7 +112,6 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
     TensorInfo weightInfo = sampleInfo;
     TensorInfo microBatchInfo{"FLOAT", microBatchShape};
     int64_t sampleElms{sampleHeight * sampleHeight};
-    int64_t weightsElms = sampleElms;
 
     // number of "pixels" in a micro-batch
     int64_t microBatchElms = sampleElms * microBatchSize;
@@ -145,7 +144,6 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilonTest1) {
                      &eng,
                      &builder,
                      &aiOnnx,
-                     &aiGraphcore,
                      &w_readbacks](TensorId actInId, int vgid) {
       // The weights which will be readback for this layer are stored here
       w_readbacks.push_back(std::vector<float>(sampleElms, -99.0f));

@@ -347,13 +347,13 @@ private:
 // removed at some point in the future.
 class ConstSGD : public SGD {
 public:
-  ConstSGD(float lr, float wd = 0, float ls = 1)
-      : SGD({lr, true},
-            {wd, true},
+  ConstSGD(float learningRate, float weightDecay = 0, float lossScaling = 1)
+      : SGD({learningRate, true},
+            {weightDecay, true},
             getUnsetMomentum(),
             getUnsetDampening(),
             getUnsetVelocityScaling(),
-            {ls, true}) {}
+            {lossScaling, true}) {}
 };
 
 } // namespace popart

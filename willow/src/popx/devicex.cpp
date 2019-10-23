@@ -24,6 +24,7 @@
 #include <popart/logging.hpp>
 #include <popart/op.hpp>
 #include <popart/op/call.hpp>
+#include <popart/op/getrandomseed.hpp>
 #include <popart/op/if.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/restore.hpp>
@@ -522,7 +523,7 @@ Devicex::~Devicex() = default;
 
 Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
     : _ir(ir), progs(PopPrograms(this)), tensors(ir), deviceInfo(deviceInfo_),
-      prepareHasBeenCalled(false) {
+      prepareHasBeenCalled_(false) {
 
   logging::devicex::info("Setting selected device: {}", *deviceInfo);
 
@@ -674,7 +675,7 @@ void Devicex::anchorsHostFromHostStreams(IStepIO &stepio) {
 }
 
 void Devicex::run(IStepIO &stepio) {
-  if (!prepareHasBeenCalled) {
+  if (!prepareHasBeenCalled()) {
     throw error("Devicex::prepare() must be called before"
                 " Devicex::run(const IStepIO &) is called.");
   }
@@ -905,8 +906,21 @@ ICreatorCandidatePtr Devicex::getTensorCreator(Tensor *tensor) const {
 PriTask Devicex::initTensorTask(Tensor *tensor) {
   auto candidate = getTensorCreator(tensor);
 
-  // InputCreatorCandidate* candidate  =
-  // (dynamic_cast<InputCreatorCandidate*>(candidate_.get()));
+  // Design decision:
+  // The order in which these initTensorTasks are run affects tensor
+  // layout. This can affect the behaviour of random operations, as well
+  // as overall memory consumption.
+  // Let's fix the order of execution of a set of initTensorTasks, based
+  // on some condition. We do this here by giving it a unique priority
+  // based on:
+  // - 0th consumer id
+  // - the index at which it is consumed by this consumer
+  auto firstConsumer = tensor->consumers.getOps().front();
+  auto priMod0       = firstConsumer->id;
+  auto priMod1       = firstConsumer->input->indices(tensor).front();
+  // assumes an op has max 1000 inputs
+  auto priMod =
+      static_cast<double>(priMod0) + static_cast<double>(priMod1) / 1000.0f;
 
   // 1. A unique candidate creator will create the tensor
   // 2. The tensor will be unwound (have its layout modified)
@@ -936,7 +950,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
     // Discussion with David Norman suggests creating tensors as
     // late as possible gives better IPU memory use, so
     // giving this low priority.
-    return {-1e6,
+    return {-1e6 + priMod,
             initTensorTaskId(tensor->id), // the task name
             deps,
             f};
@@ -1020,60 +1034,28 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
       }
     };
 
-    return {1e6, initTensorTaskId(tensor->id), {}, f};
+    return {1e6 + priMod, initTensorTaskId(tensor->id), {}, f};
   }
 }
 
 PriTask Devicex::initRandomSeed() {
-  auto initRandomSeedTask = [this]() {
+  auto seedId = GetRandomSeedOp::getUpdatedSeedTensorId();
+
+  auto initRandomSeedTask = [this, seedId]() {
     logging::devicex::debug("Initializing random seed.");
 
-    randomSeedTensor =
-        graph().addVariable(poplar::UNSIGNED_INT, {2}, randomSeedId());
-    graph().setTileMapping(randomSeedTensor, 0);
-
-    auto &sq = progs.setRandomSeedFragment();
-
-    if (!useSyntheticData()) {
-      // Right now just use the same random seed on each replica if the user set
-      // it T9638 - to corrupt the seed for each replicant
-      auto dataStream =
-          graph().addHostToDeviceFIFO(h2dId(randomSeedId()),
-                                      randomSeedTensor.elementType(),
-                                      randomSeedTensor.numElements(),
-                                      poplar::ReplicatedStreamMode::REPLICATE);
-
-      sq.add(poplar::program::Copy(dataStream, randomSeedTensor));
-    }
-
     poprand::setSeed(graph(),
-                     randomSeedTensor,
+                     tensors.get(seedId),
                      0,
-                     sq,
-                     logging::format("{}/set", randomSeedId()));
+                     progs.setRandomSeedFromHostFragment(),
+                     logging::format("{}/set", seedId));
   };
 
   return {
-      +1e6,                   // high priority
-      initRandomSeedTaskId(), // name of this task
-      {},                     // depends on
-      initRandomSeedTask      // what to run when the task is executed
-  };
-}
-
-PriTask Devicex::incrementRandomSeedTask() {
-  auto incrementRandomSeedTask = [this]() {
-    popops::addInPlace(graph(),
-                       getRandomSeedTensor(),
-                       getConst(graph(), poplar::UNSIGNED_INT, {}, 1, "one"),
-                       progs.preForwardFragment());
-  };
-
-  return {
-      +1e6,                        // high priority
-      incrementRandomSeedTaskId(), // name of this task
-      {initRandomSeedTaskId()},    // depends on
-      incrementRandomSeedTask      // what to run when the task is executed
+      +1e6,                       // high priority
+      initRandomSeedTaskId(),     // name of this task
+      {taskWhichCreates(seedId)}, // depends on
+      initRandomSeedTask          // what to run when the task is executed
   };
 }
 
@@ -1083,37 +1065,28 @@ void Devicex::connectRandomSeedStream() {
        ++replicaId) {
 
     auto callback = [this, replicaId](void *ptr) {
+      TensorId seedId    = GetRandomSeedOp::getStreamedSeedTensorId();
+      Tensor *seedTensor = ir().getTensor(seedId);
+      uint64_t *seedVal =
+          reinterpret_cast<uint64_t *>(seedTensor->tensorData()->data());
       logging::devicex::debug(
-          "     Updating random seed for replica:{} to `{} + replicaId({})'",
+          "Updating random seed for replica:{} to `{} + replicaId({})'",
           replicaId,
-          randomSeed,
+          *seedVal,
           replicaId);
       uint64_t *data = reinterpret_cast<uint64_t *>(ptr);
-      data[0]        = randomSeed + replicaId;
+      data[0]        = *seedVal + replicaId;
     };
 
     pEngine->connectStreamToCallback(
-        h2dId(randomSeedId()), replicaId, callback);
+        h2dId(GetRandomSeedOp::getStreamedSeedTensorId()), replicaId, callback);
   }
 }
 
-void Devicex::setRandomSeed(uint64_t seedValue) {
-  if (!prepareHasBeenCalled) {
-    throw error("Devicex::prepare() must be called before "
-                "Devicex::setRandomSeed(uint64_t) is called.");
-  }
-
-  setRandomSeedInternal(seedValue);
-}
-
-void Devicex::setRandomSeedInternal(uint64_t seedValue) {
-  randomSeed = seedValue;
-
+void Devicex::setRandomSeedFromHost() {
   if (useSyntheticData() == false) {
-    logging::devicex::debug("Setting the random seed to {}", seedValue);
     pEngine->disableExecutionProfiling();
-    run(PopPrograms::ProgramIndex::SETRANDOMSEED);
-    logging::devicex::debug("done.");
+    run(PopPrograms::ProgramIndex::SETRANDOMSEEDFROMHOST);
   }
 }
 
@@ -1720,10 +1693,10 @@ poplar::Tensor ICreatorCandidate::unwind(poplar::Tensor input) {
 }
 
 InputCreatorCandidate::InputCreatorCandidate(
-    int index,
-    const Opx *opx,
+    int index_,
+    const Opx *opx_,
     std::vector<OpxInAndOutIndex> pathFromInput_)
-    : ICreatorCandidate(index, opx, pathFromInput_) {}
+    : ICreatorCandidate(index_, opx_, pathFromInput_) {}
 
 double InputCreatorCandidate::getMaxCreatorPriority() {
   return getOpx()->inputCreatorPriority;
@@ -1765,10 +1738,10 @@ std::string InputCreatorCandidate::str() {
 }
 
 InputMultiCreatorCandidate::InputMultiCreatorCandidate(
-    int index,
-    const Opx *opx,
+    int index_,
+    const Opx *opx_,
     std::vector<OpxInAndOutIndex> pathFromInput_)
-    : ICreatorCandidate(index, opx, pathFromInput_) {}
+    : ICreatorCandidate(index_, opx_, pathFromInput_) {}
 
 double InputMultiCreatorCandidate::getMaxCreatorPriority() {
 
@@ -1919,7 +1892,9 @@ void Devicex::loadEngineAndConnectStreams() {
     }
 
     // Random seed
-    connectRandomSeedStream();
+    if (ir().requiresRandomSeed()) {
+      connectRandomSeedStream();
+    }
 
     logging::devicex::debug("Connecting optimizer streams");
 
@@ -2010,9 +1985,6 @@ void Devicex::loadEngineAndConnectStreams() {
       engineToStreamVariables(data0, n_bytes, streamId);
     }
   }
-
-  uint64_t seed = std::chrono::system_clock::now().time_since_epoch().count();
-  setRandomSeedInternal(seed);
 }
 
 // Floating point settings are not suported on CPU
@@ -2175,7 +2147,7 @@ void Devicex::prepare() {
     Tensor *tensor = ir().getTensor(id);
     // 1
     tasks.add(initTensorTask(tensor));
-    logging::devicex::debug("Addings initTensorTask for {}", id);
+    logging::devicex::debug("Adding initTensorTask for {}", id);
 
     if (useSyntheticData() == false) {
       // 2
@@ -2184,8 +2156,11 @@ void Devicex::prepare() {
   }
 
   // Init the random seed(s)
-  tasks.add(initRandomSeed());
-  tasks.add(incrementRandomSeedTask());
+  if (ir().requiresRandomSeed()) {
+    auto seedTen = ir().getTensor(GetRandomSeedOp::getStreamedSeedTensorId());
+    tasks.add(fromHostTask(seedTen, progs.setRandomSeedFromHostFragment()));
+    tasks.add(initRandomSeed());
+  }
 
   // Depending on anchor return types specified by the user, some
   // tensors may need to be added to the graph to keep track of
@@ -2342,10 +2317,12 @@ void Devicex::prepare() {
   logging::devicex::info("Engine compiled");
 
   loadEngineAndConnectStreams();
+  setRandomSeedFromHost(); // Stream random seed value by default (prog empty if
+                           // no randomness)
 
   trySaveTensorTileMap();
 
-  prepareHasBeenCalled = true;
+  prepareHasBeenCalled_ = true;
 }
 
 int64_t Devicex::getStashSize(VGraphId vGraphId) {
@@ -2498,10 +2475,6 @@ TaskId Devicex::updateBatchCountTaskId() const {
 }
 
 TaskId Devicex::initRandomSeedTaskId() const { return "initRandomSeedTask"; }
-
-TaskId Devicex::incrementRandomSeedTaskId() const {
-  return "incrementRandomSeed";
-}
 
 TaskId Devicex::initTensorTaskId(TensorId id) const {
   return "initTensorTaskId_" + id;
@@ -2895,12 +2868,6 @@ std::set<TensorId> Devicex::getEfficientlyCreatedInputTensors() const {
 
 bool Devicex::useSyntheticData() const {
   return (ir().getSessionOptions().ignoreData);
-}
-
-std::string Devicex::randomSeedId() const { return "randomSeed"; }
-
-const poplar::Tensor &Devicex::getRandomSeedTensor() const {
-  return randomSeedTensor;
 }
 
 } // namespace popx

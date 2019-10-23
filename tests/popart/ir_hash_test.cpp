@@ -123,5 +123,5 @@ BOOST_AUTO_TEST_CASE(test0) {
   BOOST_CHECK(irHash0_0 != irHash4);   // Different anchor id, different hash
   BOOST_CHECK(irHash0_0 != irHash5);   // Different device opts, different hash
   BOOST_CHECK(irHash0_0 != irHash6); // Different user opts, different hash (1)
-  BOOST_CHECK(irHash0_0 != irHash6); // Different user opts, different hash (2)
+  BOOST_CHECK(irHash0_0 != irHash7); // Different user opts, different hash (2)
 }

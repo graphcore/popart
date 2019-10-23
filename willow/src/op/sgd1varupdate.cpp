@@ -33,8 +33,10 @@ void SGD1VarUpdateOp::appendAttributes(OpSerialiserBase &os) const {
 
 SGD1VarUpdateOp::SGD1VarUpdateOp(const TensorId &varToUpdate,
                                  OptimizerValue slr1,
-                                 const Op::Settings &settings)
-    : VarUpdateOp(Onnx::CustomOperators::SGD1VarUpdate, varToUpdate, settings),
+                                 const Op::Settings &opSettings)
+    : VarUpdateOp(Onnx::CustomOperators::SGD1VarUpdate,
+                  varToUpdate,
+                  opSettings),
       initSlr1(slr1) {}
 
 namespace {} // namespace

@@ -67,6 +67,7 @@ std::vector<Match> getRinseMatches(const std::vector<T *> &schedule,
         acc, static_cast<int>(schedule.size()), threshold);
   }
   }
+  return std::vector<Match>{};
 }
 
 } // namespace subgraph

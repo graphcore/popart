@@ -29,7 +29,18 @@ void Session::setDevice(std::shared_ptr<DeviceInfo> deviceInfo) {
 
 void Session::setRandomSeed(uint64_t seedValue) {
   logging::session::trace("Session::setRandomSeed({})", seedValue);
-  device_->setRandomSeed(seedValue);
+  if (!ir.requiresRandomSeed()) {
+    logging::session::warn("Trying to set the random seed, but this session has no random behaviour. Doing nothing.");
+    return;
+  }
+  // Set seed value on host
+  ir.setRandomSeedValue(seedValue);
+
+  // ... Then stream to device
+  if (!device_->prepareHasBeenCalled()) {
+    throw error("Devicex::prepare() must be called before Devicex::setRandomSeedFromHost(uint64_t) is called.");
+  }
+  device_->setRandomSeedFromHost();
 }
 
 // get the TensorInfo on a Tensor

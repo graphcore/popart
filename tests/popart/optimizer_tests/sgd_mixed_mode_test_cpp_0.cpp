@@ -109,8 +109,6 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTest0) {
     auto proto    = builder->getModelProto();
     auto dataFlow = DataFlow(stepSize, {});
 
-    float learnRate0 = 0.1;
-
     float lambda = 1.0;
     auto loss    = std::unique_ptr<Loss>(
         new L1Loss(add2, "l1LossVal", lambda, ReductionType::SUM));

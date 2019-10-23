@@ -125,6 +125,8 @@ template <>
 void Attributes::setAttribute(const std::string &key, Attributes::Ints &);
 template <>
 void Attributes::setAttribute(const std::string &key, Attributes::Int &);
+template <>
+void Attributes::setAttribute(const std::string &key, Attributes::String &);
 } // namespace popart
 
 #endif

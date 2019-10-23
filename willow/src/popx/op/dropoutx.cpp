@@ -82,13 +82,10 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
       refTensor = dv_p->dropoutReferenceTensors.at(seedModifier);
     }
 
-    auto seed = cloneNcopy(prog, dv_p->getRandomSeedTensor());
-
     if (op.getOutputMask()) {
-
       auto dropout_mask = growDropout(graph(),
                                       getInTensor(DropoutOp::getInIndex()),
-                                      seed,
+                                      getInTensor(op.getSeedInIndex()),
                                       refTensor,
                                       op.getRatio(),
                                       seedModifier,
@@ -105,9 +102,8 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
     } else {
       double dropoutProbability = 1. - static_cast<double>(op.getRatio());
       double scale = 1. / (1. - static_cast<double>(op.getRatio()));
-
       auto dropout = poprand::dropout(graph(),
-                                      &seed,
+                                      &getInTensor(op.getSeedInIndex()),
                                       seedModifier,
                                       getInTensor(DropoutOp::getInIndex()),
                                       refTensor,
@@ -115,12 +111,8 @@ void DropoutOpx::grow(poplar::program::Sequence &prog) const {
                                       scale,
                                       prog,
                                       debugPrefix("dropout"));
-
       setOutTensor(op.getOutIndex(), dropout);
     }
-
-    setOutTensor(op.getSeedOutIndex(), seed);
-
   } else {
     // In inference/evaluation mode, dropout is an identity function
     setOutTensor(DropoutOp::getOutIndex(),

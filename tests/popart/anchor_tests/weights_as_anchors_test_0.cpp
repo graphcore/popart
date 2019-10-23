@@ -63,7 +63,6 @@ BOOST_AUTO_TEST_CASE(WeightAnchorTest0) {
   TensorInfo stepWeightInfo{"FLOAT", stepWeightShape};
 
   int64_t sampleElms{1};
-  int64_t weightsElms    = sampleElms;
   int64_t batchElms      = sampleElms * batchSize;
   int64_t stepWeightElms = sampleElms * batchesPerStep;
   int64_t stepDataElms   = batchElms * batchesPerStep;
