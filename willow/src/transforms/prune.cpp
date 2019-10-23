@@ -67,7 +67,7 @@ bool Prune::apply(Graph &graph) const {
   //  - the random seed tensor
   if (ir.getSessionOptions().enableStochasticRounding) {
     auto seedId = GetRandomSeedOp::getUpdatedSeedTensorId();
-    auto t = graph.getTensors().get(seedId);
+    auto t      = graph.getTensors().get(seedId);
     tensorFront.push_back(t);
     tensorsVisited.insert(t);
   }

@@ -2518,7 +2518,7 @@ void Ir::initRandomSeed() {
       Onnx::CustomOperators::GetRandomSeed, settings);
   auto getSeedOp = getSeedOp_up.get();
 
-  auto allOtherOps = getOpSchedule({});
+  auto allOtherOps                  = getOpSchedule({});
   bool allOtherOpsHavePipelineStage = true;
   for (auto op : allOtherOps) {
     if (!op->hasPipelineStage()) {

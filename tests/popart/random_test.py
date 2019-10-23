@@ -49,7 +49,8 @@ def test_stochastic_rounding():
     iB = builder.addInitializedInputTensor(b)
     iMean = builder.addInitializedInputTensor(mean)
     iVar = builder.addInitializedInputTensor(var)
-    [o_y, o_mean, o_var, o_smean, o_svar] = builder.aiOnnx.batchnormalization([i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
+    [o_y, o_mean, o_var, o_smean, o_svar] = builder.aiOnnx.batchnormalization(
+        [i1, iScale, iB, iMean, iVar], 5, epsilon, momentum)
     builder.addOutputTensor(o_y)
     proto = builder.getModelProto()
 
@@ -60,12 +61,13 @@ def test_stochastic_rounding():
     options = popart.SessionOptionsCore()
     options.enableStochasticRounding = True
 
-    sess = popart.TrainingSession(fnModel=proto,
-                                  optimizer=popart.ConstSGD(0.1),
-                                  losses=[popart.L1Loss(o_y, "l1LossVal", 0.1)],
-                                  dataFeed=dataFlow,
-                                  deviceInfo=device,
-                                  userOptions=options)
+    sess = popart.TrainingSession(
+        fnModel=proto,
+        optimizer=popart.ConstSGD(0.1),
+        losses=[popart.L1Loss(o_y, "l1LossVal", 0.1)],
+        dataFeed=dataFlow,
+        deviceInfo=device,
+        userOptions=options)
 
     anchors = sess.initAnchorArrays()
     sess.prepareDevice()
