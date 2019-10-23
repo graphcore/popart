@@ -15,7 +15,7 @@ ShrinkOp::ShrinkOp(const OperatorIdentifier &opid_,
                    float lambd,
                    float bias,
                    const Op::Settings &opSettings)
-    : ElementWiseUnaryOp(opid, opSettings), lambd_(lambd), bias_(bias) {}
+    : ElementWiseUnaryOp(opid_, opSettings), lambd_(lambd), bias_(bias) {}
 
 std::unique_ptr<Op> ShrinkOp::clone() const {
   return std::make_unique<ShrinkOp>(*this);
