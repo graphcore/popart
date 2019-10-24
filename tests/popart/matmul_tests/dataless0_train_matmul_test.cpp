@@ -1,5 +1,6 @@
 #define BOOST_TEST_MODULE Train0MatmulTest
 
+#include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
 #include <popart/builder.hpp>
 #include <popart/dataflow.hpp>
@@ -114,7 +115,10 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
       opts.firstDotOp = 0;
       opts.finalDotOp = 100;
       opts.dotChecks.insert(DotCheck::FINAL);
-      opts.logDir = ".";
+      opts.logDir = "./dotfiles";
+      if (!boost::filesystem::exists(opts.logDir)) {
+        boost::filesystem::create_directory(opts.logDir);
+      }
     }
 
     // training info
@@ -220,10 +224,14 @@ BOOST_AUTO_TEST_CASE(DatalessTrainingMatmul) {
                    << " -Tpdf "
                    << " -o "
                    << io::appendDirFn(opts.logDir, dot_string + ".pdf") << " "
-                   << io::appendDirFn(opts.logDir, dot_string + ".dot");
+                   << io::appendDirFn(opts.logDir, dot_string + "_r.dot");
         std::string command = command_ss.str();
         int ran             = std::system(command.c_str());
         std::cout << command << " returned with status " << ran << std::endl;
+        BOOST_CHECK(ran == 0);
+        auto pdfFileNames =
+            io::getMatchFns(io::getCanonicalDirName(opts.logDir), ".pdf");
+        BOOST_CHECK(pdfFileNames.size() == 1);
       }
     }
   };
