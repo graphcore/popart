@@ -37,9 +37,6 @@ namespace {
 OpxCreator<ExpOpx> expOpxCreator(Onnx::Operators::Exp_6);
 OpxCreator<ExpInplaceOpx>
     expxInplaceOpxCreator(Onnx::CustomOperators::ExpInplace);
-OpxCreator<Opx>
-    expGradOpxCreator(Onnx::GradOperators::ExpGrad,
-                      "ExpGradOp should be removed by pattern 'ExpGradOp'");
 } // namespace
 
 } // namespace popx

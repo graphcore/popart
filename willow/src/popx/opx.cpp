@@ -206,19 +206,5 @@ poplar::Tensor Opx::getConst(const poplar::Type &type,
   return dv_p->getConst(graph(), type, shape, val, name);
 }
 
-// TODO : Find a better place to put these, ops that will be optimized out
-// before creating opx's
-namespace {
-OpxCreator<Opx>
-    gemmOpxCreator_6({Onnx::Operators::Gemm_6,
-                      Onnx::Operators::Gemm_7,
-                      Onnx::Operators::Gemm_9,
-                      Onnx::Operators::Gemm_11},
-                     "GemmOp should be removed by pattern 'GemmOp'");
-
-OpxCreator<Opx> tanGradOpxCreator(Onnx::Operators::Tan_7,
-                                  "TanOp should be removed by pattern 'TanOp'");
-} // namespace
-
 } // namespace popx
 } // namespace popart

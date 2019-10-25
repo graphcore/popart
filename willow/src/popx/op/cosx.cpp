@@ -22,12 +22,6 @@ void CosOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<CosOpx> cosOpxCreator(Onnx::Operators::Cos_7);
-OpxCreator<Opx> coshOpxCreator(Onnx::Operators::Cosh_9,
-                               "Cosh should be removed by pattern \"CoshOp\"");
-OpxCreator<Opx> cosGradOpxCreator(
-    Onnx::GradOperators::CosGrad,
-    "CosGradOp should be optimised out, \"CosGradOp\" pattern is required");
-
 } // namespace
 
 } // namespace popx

@@ -29,6 +29,7 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/patterns/pattern.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
 #include <popart/popx/opx.hpp>
@@ -700,7 +701,18 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
         op->opid == Onnx::Operators::Constant_9) {
       throw error("ILE: No Opx for {}", op->opid);
     } else {
-      throw error("Could not create opx for '{}'", op->opid);
+      auto pattern = PreAliasPatternManager::opReplacementPattern(op);
+      if (pattern != "") {
+        throw error("Could not create opx for '{}'. This op should have been "
+                    "removed by pattern {}",
+                    op->opid,
+                    pattern);
+      } else {
+        throw error("Could not create opx for '{}' and there were no patterns "
+                    "intended to remove it. Please check it is defined and "
+                    "registered correctly",
+                    op->opid);
+      }
     }
   }
 
