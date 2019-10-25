@@ -211,7 +211,8 @@ static void serializeMatMul(TransformBuilder &builder,
                             pipelineStage,
                             name + "_MatMul",
                             builder.getNextId(name + "_MatMul"),
-                            attrs);
+                            attrs,
+                            matmul->opid);
 
     dynamic_cast<MatMulBaseOp *>(builder.getProducer(m))
         ->setPhase(matmul->getPhase());
