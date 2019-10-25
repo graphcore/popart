@@ -11,7 +11,7 @@
 
 namespace popart {
 
-class SessionOptions;
+struct SessionOptions;
 
 enum class OptimizerType { SGD = 0, NTYPES };
 
