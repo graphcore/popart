@@ -329,7 +329,7 @@ def test_replicated_with_multiple_batches_per_step():
         replication_factor=replication_factor,
         batches_per_step=batches_per_step)
 
-    ip_data = np.ones([replication_factor, batches_per_step, dsize],
+    ip_data = np.ones([batches_per_step, replication_factor, dsize],
                       dtype=np.float32)
     stepio = popart.PyStepIO({ip: ip_data}, anchors)
 
@@ -341,9 +341,9 @@ def test_replicated_with_multiple_batches_per_step():
 
     o = anchors[out]
     micro_batches = []
-    for replication_index in range(replication_factor):
-        for batch_index in range(batches_per_step):
-            x = o[replication_index][batch_index]
+    for batch_index in range(batches_per_step):
+        for replication_index in range(replication_factor):
+            x = o[batch_index][replication_index]
             micro_batches.append(x)
 
     # Check that none of the micro batch results are the same
