@@ -351,7 +351,9 @@ void GroupMatMuls::addGroupedMatMul(Graph &graph,
                                  virtualGraphId,
                                  pipelineStage,
                                  name,
-                                 builder.getNextId(name));
+                                 builder.getNextId(name),
+                                 {},
+                                 matmulList[0].op->opid);
 
   int groupOffset = 0;
   for (auto &info : matmulList) {

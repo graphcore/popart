@@ -93,7 +93,8 @@ public:
                   boost::optional<int64_t> pipelineStage,
                   const std::string opName,
                   const std::string outputName,
-                  std::map<std::string, boost::any> attrs = {});
+                  std::map<std::string, boost::any> attrs = {},
+                  const OperatorIdentifier _opid = Onnx::Operators::MatMul_1);
 
   void cast(TensorId input,
             TensorId out,

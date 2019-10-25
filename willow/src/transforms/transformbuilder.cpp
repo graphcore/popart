@@ -171,8 +171,8 @@ TransformBuilder::addLhsInplace(std::vector<TensorId> &inputs,
   auto op = std::make_unique<AddLhsInplaceOp>(settings);
 
   if (op == nullptr) {
-    throw error("Failed to create op : {} in the transform builder",
-                Onnx::CustomOperators::SliceInplace);
+    throw error(
+        "Failed to create op : AddLhsInplaceOp in the transform builder");
   }
 
   for (int i = 0; i < inputs.size(); ++i) {
@@ -204,8 +204,8 @@ void TransformBuilder::addLhsInplace(std::vector<TensorId> &inputs,
   auto op = std::make_unique<AddLhsInplaceOp>(settings);
 
   if (op == nullptr) {
-    throw error("Failed to create op : {} in the transform builder",
-                Onnx::CustomOperators::SliceInplace);
+    throw error(
+        "Failed to create op : AddLhsInplaceOp in the transform builder");
   }
 
   for (int i = 0; i < inputs.size(); ++i) {
@@ -231,15 +231,11 @@ TensorId TransformBuilder::matmul(TensorId lhs,
                                   boost::optional<int64_t> pipelineStage,
                                   const std::string opName,
                                   const std::string outputName,
-                                  std::map<std::string, boost::any> attrs) {
+                                  std::map<std::string, boost::any> attrs,
+                                  const OperatorIdentifier _opid) {
   std::vector<TensorId> inputs = {lhs, rhs};
-  return op(Onnx::Operators::MatMul_1,
-            inputs,
-            attrs,
-            virtualGraphId,
-            pipelineStage,
-            opName,
-            outputName);
+  return op(
+      _opid, inputs, attrs, virtualGraphId, pipelineStage, opName, outputName);
 }
 
 void TransformBuilder::cast(TensorId input,
