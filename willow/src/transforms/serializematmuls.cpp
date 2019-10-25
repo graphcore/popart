@@ -213,8 +213,10 @@ static void serializeMatMul(TransformBuilder &builder,
                             builder.getNextId(name + "_MatMul"),
                             attrs);
 
-    dynamic_cast<MatMulBaseOp *>(builder.getProducer(m))
-        ->setPhase(matmul->getPhase());
+    auto *mOp = dynamic_cast<MatMulBaseOp *>(builder.getProducer(m));
+
+    mOp->setPhase(matmul->getPhase());
+    mOp->setAvailableMemoryProportion(matmul->getAvailableMemoryProportion());
 
     outputTensors.push_back(m);
   }
