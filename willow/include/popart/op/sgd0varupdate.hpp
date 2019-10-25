@@ -8,7 +8,7 @@ namespace popart {
 // The "0" in the name signifies that there are no persistant Tensors required
 // and associated to the Variable Tensor being updated. Specifically, there is
 // no gradient accumulation and no momentum (momentum factor is 0)
-class SGD0VarUpdateOp : public VarUpdateOp {
+class SGD0VarUpdateOp : public VarUpdateWithUpdaterOp {
 public:
   SGD0VarUpdateOp(const TensorId &varToUpdate,
                   OptimizerValue initialSlr0,

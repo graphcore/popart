@@ -137,10 +137,10 @@ def run_graph(input_shape, initial_onnx_model, input_tensor_name,
         anchorNames[popart.reservedGradientPrefix() + w0] = art
 
         if enable_accl:
-            anchorNames[popart.reservedAccumulationPrefix() +
+            anchorNames[popart.reservedAcclToAccumulatorPrefix() +
                         popart.reservedGradientPrefix() + w0] = art
 
-            anchorNames[popart.reservedAccumulationOutPrefix() +
+            anchorNames[popart.reservedAcclToUpdatePrefix() +
                         popart.reservedGradientPrefix() + w0] = art
 
     opts = popart.SessionOptions()
@@ -281,7 +281,7 @@ def check_models(model_init, modelA_fn, modelB_fn):
     for w_i, weightA in enumerate(modelA.graph.initializer):
         # We need to avoid the gradient accl initializers as these won't be present
         # in the non grad accl models.
-        if (popart.reservedAccumulationPrefix() not in weightA.name):
+        if (popart.reservedAcclToAccumulatorPrefix() not in weightA.name):
             # where A, B, C are weight tensors,
             # |A - B|_1
             l1AB = 0
@@ -492,14 +492,14 @@ def test_gradient_accumulation_anchors():
 
     full_batch_grad = no_accl_anchor_arrays[popart.reservedGradientPrefix() +
                                             w0_name]
-    accl_grad = accl_anchor_arrays[popart.reservedAccumulationOutPrefix() +
+    accl_grad = accl_anchor_arrays[popart.reservedAcclToUpdatePrefix() +
                                    popart.reservedGradientPrefix() + w0_name]
 
     print("full batch grad shape is ")
     print(accl_anchor_arrays[popart.reservedGradientPrefix() + w0_name].shape)
 
     print("accl grad shape is ")
-    print(accl_anchor_arrays[popart.reservedAccumulationOutPrefix() +
+    print(accl_anchor_arrays[popart.reservedAcclToUpdatePrefix() +
                              popart.reservedGradientPrefix() + w0_name].shape)
 
     if (batches_per_step > 1):
@@ -556,7 +556,7 @@ def test_gradient_accumulation_model_proto():
     model = onnx.load(accl_proto_filename)
     names = [t.name for t in model.graph.initializer]
 
-    grad_accl_prefix = popart.reservedAccumulationPrefix(
+    grad_accl_prefix = popart.reservedAcclToAccumulatorPrefix(
     ) + popart.reservedGradientPrefix()
 
     grad_accl_names = []

@@ -6,12 +6,12 @@
 
 namespace popart {
 
-class SGD1AcclUpdateOp : public VarUpdateOp {
+class SGD1AcclUpdateOp : public VarUpdateWithUpdaterOp {
 
 public:
   SGD1AcclUpdateOp(const TensorId &varToUpdate,
-                   OptimizerValue initMm1,
-                   OptimizerValue initWdsf1,
+                   OptimizerValue initSmm1,
+                   OptimizerValue initSwd1,
                    const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
@@ -19,10 +19,10 @@ public:
   std::map<InIndex, TensorId> optimizerInputs() const final;
   void appendAttributes(OpSerialiserBase &) const final;
 
-  const OptimizerValue initMm1;
-  const OptimizerValue initWdsf1;
-  static InIndex getMm1InIndex() { return 2; }
-  static InIndex getWdsf1InIndex() { return 3; }
+  const OptimizerValue initSmm1;
+  const OptimizerValue initSwd1;
+  static InIndex getSmm1InIndex() { return 2; }
+  static InIndex getSwd1InIndex() { return 3; }
 };
 
 } // namespace popart

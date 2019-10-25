@@ -14,14 +14,15 @@ namespace popart {
 // The "Combo" in the name signfies that this Op will be decomposed into 3
 // smaller Ops : (1) SGD1AccumlateOp (2) SGD1VarUpdateOp (3) SGD1AcclUpdateOp
 
-class SGD1VarUpdateComboOp : public VarUpdateOp {
+class SGD1ComboOp : public VarUpdateWithUpdaterOp {
 public:
-  SGD1VarUpdateComboOp(const TensorId &varToUpdate,
-                       OptimizerValue initialMm1,
-                       OptimizerValue initialDpsf1,
-                       OptimizerValue initialWdsf1,
-                       OptimizerValue initialSlr1,
-                       const Op::Settings &);
+  SGD1ComboOp(const TensorId &varToUpdate,
+              OptimizerValue initialSmm1,
+              OptimizerValue initialDpsf1,
+              OptimizerValue initialSwd1,
+              OptimizerValue initialSlr1,
+              bool withAcclReduce_,
+              const Op::Settings &);
 
   std::unique_ptr<Op> clone() const final;
   std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
@@ -32,20 +33,22 @@ public:
   void appendAttributes(OpSerialiserBase &) const final;
 
   // momentum
-  const OptimizerValue initMm1;
+  const OptimizerValue initSmm1;
 
   // dampening scale factor
   const OptimizerValue initDpsf1;
 
   // weight decay scale factor
-  const OptimizerValue initWdsf1;
+  const OptimizerValue initSwd1;
 
   // scaled learning rate
   const OptimizerValue initSlr1;
 
-  static InIndex getMm1InIndex() { return 2; }
+  const bool withAcclReduce;
+
+  static InIndex getSmm1InIndex() { return 2; }
   static InIndex getDpsf1InIndex() { return 3; }
-  static InIndex getWdsf1InIndex() { return 4; }
+  static InIndex getSwd1InIndex() { return 4; }
   static InIndex getSlr1InIndex() { return 5; }
 };
 

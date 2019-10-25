@@ -34,7 +34,9 @@ SGD0VarUpdateOp::SGD0VarUpdateOp(const TensorId &varId_,
                                  OptimizerValue slr0,
                                  OptimizerValue wdsf0,
                                  const Op::Settings &settings_)
-    : VarUpdateOp(Onnx::CustomOperators::SGD0VarUpdate, varId_, settings_),
+    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::SGD0VarUpdate,
+                             varId_,
+                             settings_),
       initSlr0(slr0), initWdsf0(wdsf0) {}
 
 std::map<InIndex, TensorId> SGD0VarUpdateOp::optimizerInputs() const {

@@ -164,7 +164,7 @@ public:
   T get(TensorId id,
         std::map<TensorId, ArrayInfo> &M,
         int64_t numElements,
-        bool advance,
+        bool advance_,
         std::string mapName) {
 
     auto found = M.find(id);
@@ -184,7 +184,7 @@ public:
     stepData.data =
         static_cast<uint8_t *>(arrayInfo.array.request().ptr) + offset;
 
-    if (advance) {
+    if (advance_) {
 
       int64_t numBytes =
           static_cast<int64_t>(stepData.info.getDataTypeInfo()->nbytes()) *
@@ -1279,9 +1279,12 @@ PYBIND11_MODULE(popart_core, m) {
 
   m.def("reservedGradientPrefix", &reservedGradientPrefix);
   m.def("reservedUpdatedVarPrefix", &reservedUpdatedVarPrefix);
-  m.def("reservedAccumulationPrefix", &reservedAccumulationPrefix);
-  m.def("reservedAccumulationOutPrefix", &reservedAccumulationOutPrefix);
-  m.def("reservedAccumulationResetPrefix", &reservedAccumulationResetPrefix);
+
+  m.def("reservedAcclToAccumulatorPrefix", &reservedAcclToAccumulatorPrefix);
+  m.def("reservedAcclToReducePrefix", &reservedAcclToReducePrefix);
+  m.def("reservedAcclToUpdatePrefix", &reservedAcclToUpdatePrefix);
+  m.def("reservedAcclFinalOutPrefix", &reservedAcclFinalOutPrefix);
+
   m.def("reservedStashedPrefix", &reservedStashedPrefix);
   m.def("reservedRestoredPrefix", &reservedRestoredPrefix);
   m.def("reservedLossScalingPrefix", &reservedLossScalingPrefix);

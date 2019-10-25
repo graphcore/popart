@@ -9,22 +9,17 @@ namespace popart {
 
 class VarUpdateOp : public Op {
 public:
-  VarUpdateOp(const OperatorIdentifier &opid,
-              const TensorId &varId,
-              const Op::Settings &settings_);
-
-  void setup() final;
+  VarUpdateOp(const OperatorIdentifier &,
+              const TensorId &varId_,
+              const Op::Settings &);
 
   // the Var to be updated received at this index
   static InIndex getVarToUpdateInIndex() { return 0; }
 
-  // the gradient (SGD) or source of copy (CopyVarUpdate) received at this index
-  static InIndex getUpdaterInIndex() { return 1; }
-
   // Return (a reference to) the updated Var at this index
   static OutIndex getUpdatedVarOutIndex() { return 0; }
 
-  // This Op aliases and modifies the input at index getVarIndex()
+  // This Op aliases and modifies the input at index getVarToUpdateInIndex()
   view::Region aliases(InIndex) const final;
   view::Region modifies(InIndex) const final;
 
@@ -40,7 +35,27 @@ public:
 
 private:
   TensorId varId;
-  TensorId varGradId;
+};
+
+class VarUpdateWithUpdaterOp : public VarUpdateOp {
+public:
+  VarUpdateWithUpdaterOp(const OperatorIdentifier &opid,
+                         const TensorId &varId,
+                         const Op::Settings &settings_);
+
+  // the gradient (for SGD) or source of copy (for CopyVarUpdate) or any other
+  // tensor used to update the variable tensor is received at this index
+  static InIndex getUpdaterInIndex() { return 1; }
+  void setup() final;
+};
+
+class VarUpdateWithoutUpdaterOp : public VarUpdateOp {
+public:
+  VarUpdateWithoutUpdaterOp(const OperatorIdentifier &opid_,
+                            const TensorId &varId_,
+                            const Op::Settings &settings_)
+      : VarUpdateOp(opid_, varId_, settings_) {}
+  void setup() final;
 };
 
 } // namespace popart

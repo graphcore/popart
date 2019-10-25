@@ -64,7 +64,7 @@ void SGD0VarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
   // (2) subtract scaled gradients
   poplar::Tensor weightDeltas =
-      getInTensor(SGD0VarUpdateOp::getUpdaterInIndex());
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
   // TODO: where does this go when there is replication?
   if (dv_p->getReplicationFactor() > 1) {

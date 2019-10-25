@@ -11,7 +11,7 @@ namespace popart {
 
 std::unique_ptr<Op>
 SGD1AcclUpdateOp::cloneWithNewName(const TensorId &x) const {
-  return std::make_unique<SGD1AcclUpdateOp>(x, initMm1, initWdsf1, settings);
+  return std::make_unique<SGD1AcclUpdateOp>(x, initSmm1, initSwd1, settings);
 }
 
 std::unique_ptr<Op> SGD1AcclUpdateOp::clone() const {
@@ -27,23 +27,23 @@ void SGD1AcclUpdateOp::appendAttributes(OpSerialiserBase &os) const {
 
   Op::appendAttributes(os);
 
-  if (initMm1.isConst()) {
-    os.appendAttribute("const momentum", initMm1.val());
+  if (initSmm1.isConst()) {
+    os.appendAttribute("const momentum", initSmm1.val());
   }
 
-  if (initWdsf1.isConst()) {
-    os.appendAttribute("const weight decay scale factor", initWdsf1.val());
+  if (initSwd1.isConst()) {
+    os.appendAttribute("const weight decay scale factor", initSwd1.val());
   }
 }
 
 SGD1AcclUpdateOp::SGD1AcclUpdateOp(const TensorId &varToUpdate,
-                                   OptimizerValue mm1,
-                                   OptimizerValue wdsf1,
+                                   OptimizerValue smm1,
+                                   OptimizerValue swd1,
                                    const Op::Settings &opSettings)
-    : VarUpdateOp(Onnx::CustomOperators::SGD1AcclUpdate,
-                  varToUpdate,
-                  opSettings),
-      initMm1(mm1), initWdsf1(wdsf1) {}
+    : VarUpdateWithUpdaterOp(Onnx::CustomOperators::SGD1AcclUpdate,
+                             varToUpdate,
+                             opSettings),
+      initSmm1(smm1), initSwd1(swd1) {}
 
 namespace {} // namespace
 

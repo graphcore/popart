@@ -21,8 +21,9 @@ CopyVarUpdateOpx::CopyVarUpdateOpx(Op *op, Devicex *devicex)
 
 void CopyVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
   auto vu_op = getOp<CopyVarUpdateOp>();
-  poplar::program::Copy copy(getInTensor(VarUpdateOp::getUpdaterInIndex()),
-                             getInTensor(VarUpdateOp::getVarToUpdateInIndex()));
+  poplar::program::Copy copy(
+      getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
+      getInTensor(VarUpdateOp::getVarToUpdateInIndex()));
   prog.add(copy);
 
   // output is a reference to destination of the copy
@@ -33,7 +34,7 @@ void CopyVarUpdateOpx::grow(poplar::program::Sequence &prog) const {
 poplar::Tensor CopyVarUpdateOpx::createInput(int inIndex,
                                              const std::string &name) const {
 
-  if (inIndex != VarUpdateOp::getUpdaterInIndex()) {
+  if (inIndex != VarUpdateWithUpdaterOp::getUpdaterInIndex()) {
     throw error(
         "CopyVarUpdateOpx::createInput, cannot create input at {}, it can "
         "only create the updater input Tensor",
@@ -43,14 +44,14 @@ poplar::Tensor CopyVarUpdateOpx::createInput(int inIndex,
 }
 
 InputCreatorType CopyVarUpdateOpx::getInputCreatorType(int inIndex) const {
-  return inIndex == VarUpdateOp::getUpdaterInIndex()
+  return inIndex == VarUpdateWithUpdaterOp::getUpdaterInIndex()
              ? InputCreatorType::CANCREATE
              : Opx::getInputCreatorType(inIndex);
 }
 
 std::vector<TensorId>
 CopyVarUpdateOpx::mustExistBeforeCreate(int index1) const {
-  if (index1 != VarUpdateOp::getUpdaterInIndex()) {
+  if (index1 != VarUpdateWithUpdaterOp::getUpdaterInIndex()) {
     throw error("ILE: CopyVarUpdate::mustExistBeforeCreate : Invalid index");
   }
   return {inId(VarUpdateOp::getVarToUpdateInIndex())};

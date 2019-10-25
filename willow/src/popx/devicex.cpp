@@ -43,6 +43,7 @@
 #include <popart/tojson.hpp>
 #include <popart/topocons.hpp>
 
+#include <popart/op/sgd1acclreduce.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/varupdate.hpp>
@@ -1563,16 +1564,12 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
         // and var update aren't run every time. Instead, these fragments sit
         // outside the "main" loop of the fowards and backwards passes.
         // special case Op 1:
-        if ((op->isConvertibleTo<SGD1VarUpdateOp>()) &&
-            (ir().getSessionOptions().enableGradientAccumulation)) {
+        if (ir().getSessionOptions().enableGradientAccumulation &&
+            (dynamic_cast<SGD1AcclReduceOp *>(op) ||
+             dynamic_cast<SGD1VarUpdateOp *>(op) ||
+             dynamic_cast<SGD1AcclUpdateOp *>(op))) {
           outerLoopFragEmpty = false;
-          growOpx(progs.varUpdateFromAccumulatorFragment());
-        }
-        // special case Op 2:
-        else if ((op->isConvertibleTo<SGD1AcclUpdateOp>()) &&
-                 (ir().getSessionOptions().enableGradientAccumulation)) {
-          outerLoopFragEmpty = false;
-          growOpx(progs.resetWeightGradientAccumulatorFragment());
+          growOpx(progs.accumulateOuterFragment());
         }
 
         // post-loss, not special gradient accumulation case,
@@ -1852,6 +1849,7 @@ unsigned Devicex::getReplicationFactor() const {
   return replicationFactor;
 }
 
+// TODO consider moving the test in this function into the Ir (T12636)
 unsigned Devicex::getAccumulationFactor() const {
 
   unsigned accumulationFactor = 1;

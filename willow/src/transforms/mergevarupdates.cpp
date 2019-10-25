@@ -619,7 +619,8 @@ bool MergeVarUpdates::apply(Graph &graph) const {
 
         // create FlattenInplaceOp (and possibly SliceInplaceOp) for the
         // gradient, or source of copy
-        auto gIn = opStartEnd.vop->inTensor(VarUpdateOp::getUpdaterInIndex());
+        auto gIn = opStartEnd.vop->inTensor(
+            VarUpdateWithUpdaterOp::getUpdaterInIndex());
         auto flGrOp = makeFlattened(gIn, opStartEnd.start, opStartEnd.end);
         flattenUpdaterOps.push_back(flGrOp);
         concatUpdatersNameStream << '_' << gIn->id << "_" << opStartEnd.start
@@ -671,8 +672,8 @@ bool MergeVarUpdates::apply(Graph &graph) const {
       graph.moveIntoGraph(std::move(tempOp));
       multiUpdateOp->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(),
                                      concatedWeightsTensorId);
-      multiUpdateOp->connectInTensor(VarUpdateOp::getUpdaterInIndex(),
-                                     concatedGradsTensorId);
+      multiUpdateOp->connectInTensor(
+          VarUpdateWithUpdaterOp::getUpdaterInIndex(), concatedGradsTensorId);
 
       multiUpdateOp->createAndConnectOutTensor(
           VarUpdateOp::getUpdatedVarOutIndex(),

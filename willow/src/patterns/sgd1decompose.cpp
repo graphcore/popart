@@ -2,10 +2,11 @@
 #include <popart/ces/slicece.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/op/sgd1acclreduce.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1accumulate.hpp>
+#include <popart/op/sgd1combo.hpp>
 #include <popart/op/sgd1varupdate.hpp>
-#include <popart/op/sgd1varupdatecombo.hpp>
 #include <popart/op/slice.hpp>
 #include <popart/patterns/sgd1decompose.hpp>
 #include <popart/tensor.hpp>
@@ -15,17 +16,17 @@
 namespace popart {
 
 bool SGD1Decompose::matches(Op *op) const {
-  return op->isConvertibleTo<SGD1VarUpdateComboOp>();
+  return op->isConvertibleTo<SGD1ComboOp>();
 }
 
 std::vector<const Tensor *> SGD1Decompose::touches(Op *) const { return {}; }
 
 namespace {
 template <typename T>
-void addAcclInTensor(SGD1VarUpdateComboOp &comboOp,
+void addAcclInTensor(SGD1ComboOp &comboOp,
                      const Tensor &weight,
                      const Tensor &weightGrad,
-                     const TensorId &acclInId) {
+                     const TensorId &acclIntoAccumulatorId) {
 
   auto &graph = comboOp.getGraph();
   auto wgInfo = weightGrad.info;
@@ -69,9 +70,9 @@ void addAcclInTensor(SGD1VarUpdateComboOp &comboOp,
   for (auto i = 0; i < nelms; ++i) {
     // T12001 investigate why += doesn't work
     // Recall, this scaling factor is (1-dm)*wd*vs
-    d[i] = weightVal0[i] * static_cast<T>(comboOp.initWdsf1.val());
+    d[i] = weightVal0[i] * static_cast<T>(comboOp.initSwd1.val());
   }
-  graph.getTensors().addVarInit(acclInId, wgInfo, d.data());
+  graph.getTensors().addVarInit(acclIntoAccumulatorId, wgInfo, d.data());
 }
 } // namespace
 
@@ -81,25 +82,32 @@ bool SGD1Decompose::apply(Op *op) const {
   auto &graph = op->getGraph();
 
   // matches must have verified the correctness before this call
-  auto combo = static_cast<SGD1VarUpdateComboOp *>(op);
+  auto combo = static_cast<SGD1ComboOp *>(op);
 
-  Tensor *weightGrad = combo->inTensor(VarUpdateOp::getUpdaterInIndex());
-  Tensor *weight     = combo->inTensor(VarUpdateOp::getVarToUpdateInIndex());
-  Tensor *newWeight  = combo->outTensor(VarUpdateOp::getUpdatedVarOutIndex());
+  Tensor *weightGrad =
+      combo->inTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
+  Tensor *weight    = combo->inTensor(VarUpdateOp::getVarToUpdateInIndex());
+  Tensor *newWeight = combo->outTensor(VarUpdateOp::getUpdatedVarOutIndex());
 
   TensorId weightGradId    = weightGrad->id;
   TensorId weightId        = weight->id;
   TensorId updatedWeightId = newWeight->id;
 
-  // The Accumulator Tensor (created in this Pattern) goes through 3 stages;
+  // The Accumulator Tensor (created in this Pattern) goes through 3 ops which
+  // update it in-place. At each point it has a different name (aliases of same
+  // memory)
   //
-  // 1) Input to SGD1Accumulate, where it will be updated in-place
-  auto acclInId = reservedAccumulationPrefix() + weightGradId;
-  // 2) Output of SGD1Accumulate, an alias of the input
-  auto acclOutId = reservedAccumulationOutPrefix() + weightGradId;
-  // 3
-  // ) The output of the SGD1AcclUpdateOp, also an alias of the input
-  auto updatedAcclId = reservedAccumulationResetPrefix() + weightGradId;
+  // 1) Input to SGD1Accumulate
+  auto acclIntoAccumulatorId = reservedAcclToAccumulatorPrefix() + weightGradId;
+
+  // 2) input to AcclReduce (if reduction across across replicas required)
+  auto acclIntoReduceId = reservedAcclToReducePrefix() + weightGradId;
+
+  // 3) input to AcclUpdate and VarUpdate
+  auto acclIntoUpdateId = reservedAcclToUpdatePrefix() + weightGradId;
+
+  // 4) The output of the AcclUpdateOp
+  auto updatedAcclId = reservedAcclFinalOutPrefix() + weightGradId;
 
   // Create Accumulator Tensor, a Variable Tensor
   if (weightGrad->info.dataType() != weight->info.dataType()) {
@@ -107,17 +115,18 @@ bool SGD1Decompose::apply(Op *op) const {
                 "type in SGD1Decompose, this is outstanding work");
   }
 
-  // initialise accumulation tensor
+  // initialise accumulation tensor, which is not yet in the Ir Graph.
   if (weightGrad->info.dataType() == DataType::FLOAT) {
-    addAcclInTensor<float>(*combo, *weight, *weightGrad, acclInId);
+    addAcclInTensor<float>(*combo, *weight, *weightGrad, acclIntoAccumulatorId);
   } else if (weightGrad->info.dataType() == DataType::FLOAT16) {
-    addAcclInTensor<float16_t>(*combo, *weight, *weightGrad, acclInId);
+    addAcclInTensor<float16_t>(
+        *combo, *weight, *weightGrad, acclIntoAccumulatorId);
   } else {
     throw error("Unsupported type in gradient accumulation transformation, "
                 "currently only FLOAT16 and FLOAT are supported");
   }
   logging::pattern::trace("Created Accumulator Tensor in SGD1Decompose: {}",
-                          acclInId);
+                          acclIntoAccumulatorId);
 
   // Accumulate Op
   //
@@ -127,9 +136,9 @@ bool SGD1Decompose::apply(Op *op) const {
   // (3) dampeningScaleFactor (an input only if not Const)
   //
   // Outputs:
-  // (4) accOut (an alias of acclIn)
+  // (4) an alias of acclIn
   auto acclOpUp = std::make_unique<SGD1AccumulateOp>(
-      acclInId, // The accumulator input gets updated
+      acclIntoAccumulatorId,
       combo->initDpsf1,
       Op::Settings(graph, combo->name() + "_accumulate"));
   auto acclOp = acclOpUp.get();
@@ -137,86 +146,117 @@ bool SGD1Decompose::apply(Op *op) const {
   graph.moveIntoGraph(std::move(acclOpUp));
 
   // (1)
-  acclOp->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(), acclInId);
   logging::pattern::trace("Connecting input {} to {} at {}",
-                          acclInId,
+                          acclIntoAccumulatorId,
                           acclOp->str(),
                           VarUpdateOp::getVarToUpdateInIndex());
+  acclOp->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(),
+                          acclIntoAccumulatorId);
   // (2)
-  acclOp->connectInTensor(VarUpdateOp::getUpdaterInIndex(), weightGradId);
   logging::pattern::trace("Connecting input {} to {} at {}",
                           weightGradId,
                           acclOp->str(),
-                          VarUpdateOp::getUpdaterInIndex());
+                          VarUpdateWithUpdaterOp::getUpdaterInIndex());
+  acclOp->connectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
+                          weightGradId);
+
   // (3)
   if (!combo->initDpsf1.isConst()) {
     acclOp->connectInTensor(
         // the index at which the dampening scale factor is received,
         SGD1AccumulateOp::getDpsf1InIndex(),
         // the name of the dampeninf scale factor, use combo to find this name
-        combo->inId(SGD1VarUpdateComboOp::getDpsf1InIndex()));
+        combo->inId(SGD1ComboOp::getDpsf1InIndex()));
   }
   // (4)
+  // if there is no AcclReduce, the output goes directly into the updates.
   acclOp->createAndConnectOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
-                                    acclOutId);
+                                    combo->withAcclReduce ? acclIntoReduceId
+                                                          : acclIntoUpdateId);
 
   // T12001 better encapsulation
-  if (ir.additionalModelProtoTensors.find(acclInId) ==
+  if (ir.additionalModelProtoTensors.find(acclIntoAccumulatorId) ==
       ir.additionalModelProtoTensors.end()) {
-    ir.additionalModelProtoTensors.insert(acclInId);
+    ir.additionalModelProtoTensors.insert(acclIntoAccumulatorId);
   }
 
-  // Move constraints from varUpdate to accumulator
   // T12001 confirm that there are no topo cons here rather
   graph.topoCons->transfer(combo, acclOp);
   acclOp->setup();
 
-  const auto &sessionOptions = graph.getIr().getSessionOptions();
-  if (sessionOptions.enableReplicatedGraphs &&
-      (!acclOp->initDpsf1.isConst() || acclOp->initDpsf1.val() != 0.0f)) {
-    throw error("cannot support replication with non-zero dampening");
+  if (combo->withAcclReduce) {
+    // AcclReduceOp
+    //
+    // Inputs:
+    // (1) redIn
+    //
+    // Outputs:
+    // (2) alias of input
+    auto reduceOpUp = std::make_unique<SGD1AcclReduceOp>(
+        acclIntoReduceId, Op::Settings(graph, combo->name() + "_reduce"));
+    auto reduceOp = reduceOpUp.get();
+    transferBaseProperties(combo, reduceOp);
+    graph.moveIntoGraph(std::move(reduceOpUp));
+
+    // (1)
+    logging::pattern::trace("Connecting input {} to {} at {}",
+                            acclIntoReduceId,
+                            reduceOp->str(),
+                            VarUpdateOp::getVarToUpdateInIndex());
+    reduceOp->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(),
+                              acclIntoReduceId);
+
+    // (2)
+    reduceOp->createAndConnectOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
+                                        acclIntoUpdateId);
+
+    reduceOp->setup();
   }
 
   // AcclUpdate Op
   //
   // Inputs
-  // (1) acclOut (to be scaled by momentum, etc)
+  // (1) acclIntoUpdateId (to be scaled by momentum, etc)
   // (2) W
   // (3) momentum (only if not const)
   // (4) weightDecayScaleFactor (only if not const)
   //
   // Outputs
-  // (5) acclReset
+  // (5) acclFinal
 
-  auto updateOpUp = std::make_unique<SGD1AcclUpdateOp>(
-      acclOutId,
-      combo->initMm1,
-      combo->initWdsf1,
+  auto acclUpdateOpUp = std::make_unique<SGD1AcclUpdateOp>(
+      acclIntoUpdateId,
+      combo->initSmm1,
+      combo->initSwd1,
       Op::Settings(graph, combo->name() + "_accl_update"));
-  auto updateOp = updateOpUp.get();
-  transferBaseProperties(combo, updateOp);
-  graph.moveIntoGraph(std::move(updateOpUp));
+  auto acclUpdateOp = acclUpdateOpUp.get();
+  transferBaseProperties(combo, acclUpdateOp);
+  graph.moveIntoGraph(std::move(acclUpdateOpUp));
 
   // (1)
-  updateOp->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(), acclOutId);
+  logging::pattern::trace("Connecting input {} to {} at {}",
+                          acclIntoUpdateId,
+                          acclUpdateOp->str(),
+                          VarUpdateOp::getVarToUpdateInIndex());
+  acclUpdateOp->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(),
+                                acclIntoUpdateId);
   // (2)
-  updateOp->connectInTensor(VarUpdateOp::getUpdaterInIndex(), weightId);
+  acclUpdateOp->connectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
+                                weightId);
   // (3)
-  if (!combo->initMm1.isConst()) {
-    updateOp->connectInTensor(
-        SGD1AcclUpdateOp::getMm1InIndex(),
-        combo->inId(SGD1VarUpdateComboOp::getMm1InIndex()));
+  if (!combo->initSmm1.isConst()) {
+    acclUpdateOp->connectInTensor(SGD1AcclUpdateOp::getSmm1InIndex(),
+                                  combo->inId(SGD1ComboOp::getSmm1InIndex()));
   }
   // (4)
-  if (!combo->initWdsf1.isConst()) {
-    updateOp->connectInTensor(
-        SGD1AcclUpdateOp::getWdsf1InIndex(),
-        combo->inId(SGD1VarUpdateComboOp::getWdsf1InIndex()));
+  if (!combo->initSwd1.isConst()) {
+    acclUpdateOp->connectInTensor(SGD1AcclUpdateOp::getSwd1InIndex(),
+                                  combo->inId(SGD1ComboOp::getSwd1InIndex()));
   }
   // (5)
-  updateOp->createAndConnectOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
-                                      updatedAcclId);
-  updateOp->setup();
+  acclUpdateOp->createAndConnectOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
+                                          updatedAcclId);
+  acclUpdateOp->setup();
 
   // VarUpdate
   //
@@ -239,12 +279,13 @@ bool SGD1Decompose::apply(Op *op) const {
   sgd1VarUpdateOp->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(),
                                    weightId);
   // (2)
-  sgd1VarUpdateOp->connectInTensor(VarUpdateOp::getUpdaterInIndex(), acclOutId);
+  sgd1VarUpdateOp->connectInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex(),
+                                   acclIntoUpdateId);
   // (3)
   if (!combo->initSlr1.isConst()) {
     sgd1VarUpdateOp->connectInTensor(
         SGD1VarUpdateOp::getSlr1InIndex(),
-        combo->inId(SGD1VarUpdateComboOp::getSlr1InIndex()));
+        combo->inId(SGD1ComboOp::getSlr1InIndex()));
   }
 
   // deleting combo op now, so that its output can be re-connected
@@ -258,14 +299,14 @@ bool SGD1Decompose::apply(Op *op) const {
                                     updatedWeightId);
   sgd1VarUpdateOp->setup();
 
-  for (Op *newTarget : std::vector<Op *>{sgd1VarUpdateOp, updateOp}) {
+  for (Op *newTarget : std::vector<Op *>{sgd1VarUpdateOp, acclUpdateOp}) {
     if (!ir.addToTrainTargetOps(newTarget)) {
       throw error("Could not add {} to train target ops", newTarget->id);
     }
   }
 
   // var update before accl update
-  graph.topoCons->insert(sgd1VarUpdateOp, updateOp);
+  graph.topoCons->insert(sgd1VarUpdateOp, acclUpdateOp);
 
   return true;
 }
