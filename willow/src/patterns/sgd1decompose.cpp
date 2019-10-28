@@ -42,7 +42,9 @@ void addAcclInTensor(SGD1ComboOp &comboOp,
   // having data, as it is the slice of the original weight data. We can try and
   // back-track to find the data. TODO T12031 move the below logic to tensor
   // class and generalize.
+  std::vector<char> sliceOutTemp;
   if (!weight.hasTensorData()) {
+
     constexpr const char *infoString =
         "In addAcclInTensor, trying to get the weight's data to initialize the "
         "accumulation tensor with required weight decay term. ";
@@ -58,9 +60,11 @@ void addAcclInTensor(SGD1ComboOp &comboOp,
                     "work back through, it is a " +
                     weight.getProducer()->str());
       }
+
       ConstExprSlice ceSlice(asSlice);
-      auto out   = ceSlice.compute();
-      weightVal0 = static_cast<const T *>(static_cast<void *>(out.data()));
+      sliceOutTemp = ceSlice.compute();
+      weightVal0 =
+          static_cast<const T *>(static_cast<void *>(sliceOutTemp.data()));
     }
   } else {
     weightVal0 = static_cast<const T *>(weight.tensorData()->data());
@@ -72,6 +76,7 @@ void addAcclInTensor(SGD1ComboOp &comboOp,
     // Recall, this scaling factor is (1-dm)*wd*vs
     d[i] = weightVal0[i] * static_cast<T>(comboOp.initSwd1.val());
   }
+
   graph.getTensors().addVarInit(acclIntoAccumulatorId, wgInfo, d.data());
 }
 } // namespace
