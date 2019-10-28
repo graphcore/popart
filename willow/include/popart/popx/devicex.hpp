@@ -368,6 +368,9 @@ private:
   PriTask initAndUpdatePipelineStashIndicesTask();
 
   PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
+  void opTaskFunc(Op *);
+  void pipelinedOpTaskFunc(Op *);
+  void growOpx(Opx *, poplar::program::Sequence &);
 
   TaskId opTaskId(Op *) const;
 
