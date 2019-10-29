@@ -3,6 +3,7 @@
 
 #include <boost/optional.hpp>
 
+#include <poplar/DataStream.hpp>
 #include <poplar/DeviceManager.hpp>
 #include <poplar/Engine.hpp>
 #include <poplar/Graph.hpp>
@@ -290,6 +291,21 @@ public:
                           double val,
                           const std::string &name);
 
+  PopStreamId gradientStoreStreamId(TensorId id) const;
+  PopStreamId weightLoadStreamId(TensorId id) const;
+
+  poplar::DataStream &
+  insertGradientStoreStream(TensorId, TensorInfo, poplar::Graph &);
+  poplar::DataStream &
+  insertWeightLoadStream(TensorId, TensorInfo, poplar::Graph &);
+
+  const std::vector<std::pair<TensorId, TensorId>> &
+  getGradAndVarStreamIds() const;
+  std::vector<std::pair<TensorId, TensorId>> &getGradAndVarStreamIds();
+
+  void connectStreamToCallback(const std::string &streamHandle,
+                               std::function<void(void *)> callback);
+
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
 
@@ -494,6 +510,12 @@ private:
   // and 2) from device to host;
   std::map<TensorId, poplar::DataStream> toHostAnchorStreams;
   std::map<TensorId, poplar::DataStream> toHostWeightStreams;
+
+  // Streams for doing allreduce on host side
+  std::map<TensorId, poplar::DataStream> toHostGradientStreams;
+  std::map<TensorId, poplar::DataStream> fromHostWeightLoadStreams;
+
+  std::vector<std::pair<TensorId, TensorId>> gradAndVarStreamIds;
 
   // Q: Consider replacing the d2h weight buffer with a data stream as
   // done for inputs

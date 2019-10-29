@@ -37,6 +37,7 @@
 #include <popart/recompute.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
 #include <popart/transforms/groupmatmuls.hpp>
+#include <popart/transforms/hostreduce.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
 #include <popart/transforms/interipucopy.hpp>
 #include <popart/transforms/mergecopies.hpp>
@@ -890,6 +891,14 @@ void Ir::prepareImpl(const IrBundle &gb) {
   // for greater parallelism during compute.
   if (getSessionOptions().enablePipelining) {
     applyTransform(Pipeline::id(), getMainGraph());
+    updateVertices();
+  }
+
+  if (!canTrain() && getSessionOptions().hostAllReduce) {
+    throw error("Host AllReduce only available when training.");
+  }
+  if (getSessionOptions().hostAllReduce) {
+    applyTransform(HostReduce::id(), getMainGraph());
     updateVertices();
   }
 

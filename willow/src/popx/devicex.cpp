@@ -2890,5 +2890,70 @@ bool Devicex::useSyntheticData() const {
   return (ir().getSessionOptions().ignoreData);
 }
 
+// Gradient store stream ID
+PopStreamId Devicex::gradientStoreStreamId(TensorId id) const {
+  return "gr_" + id;
+}
+
+// Weight load stream ID
+PopStreamId Devicex::weightLoadStreamId(TensorId id) const {
+  return "wl_" + id;
+}
+
+poplar::DataStream &Devicex::insertGradientStoreStream(TensorId tensorId,
+                                                       TensorInfo tensorInfo,
+                                                       poplar::Graph &graph) {
+  auto streamMapEntry = toHostGradientStreams.find(tensorId);
+
+  if (streamMapEntry == toHostGradientStreams.end()) {
+    toHostGradientStreams.emplace(tensorId,
+                                  poplar::DataStream(graph.addDeviceToHostFIFO(
+                                      gradientStoreStreamId(tensorId),
+                                      popType(tensorInfo),
+                                      tensorInfo.nelms())));
+    streamMapEntry = toHostGradientStreams.find(tensorId);
+  } else {
+    throw error("Tensor Id " + tensorId +
+                " already exists in toHostGradientStreams");
+  }
+
+  return streamMapEntry->second;
+}
+
+poplar::DataStream &Devicex::insertWeightLoadStream(TensorId tensorId,
+                                                    TensorInfo tensorInfo,
+                                                    poplar::Graph &graph) {
+  auto streamMapEntry = fromHostWeightLoadStreams.find(tensorId);
+
+  if (streamMapEntry == fromHostWeightLoadStreams.end()) {
+    fromHostWeightLoadStreams.emplace(
+        tensorId,
+        poplar::DataStream(
+            graph.addHostToDeviceFIFO(weightLoadStreamId(tensorId),
+                                      popType(tensorInfo),
+                                      tensorInfo.nelms())));
+    streamMapEntry = fromHostWeightLoadStreams.find(tensorId);
+  } else {
+    throw error("Tensor Id " + tensorId +
+                " already exists in weightStoreStreams");
+  }
+
+  return streamMapEntry->second;
+}
+
+const std::vector<std::pair<TensorId, TensorId>> &
+Devicex::getGradAndVarStreamIds() const {
+  return gradAndVarStreamIds;
+}
+
+std::vector<std::pair<TensorId, TensorId>> &Devicex::getGradAndVarStreamIds() {
+  return gradAndVarStreamIds;
+}
+
+void Devicex::connectStreamToCallback(const std::string &streamHandle,
+                                      std::function<void(void *)> callback) {
+  pEngine->connectStreamToCallback(streamHandle, callback);
+}
+
 } // namespace popx
 } // namespace popart

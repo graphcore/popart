@@ -273,6 +273,24 @@ public:
    */
   void optimizerFromHost();
 
+  const Ir &getIr() const;
+
+  /**
+   * Access the stream IDs for the gradients and weights. Only populated if
+   * hostAllReduce is enabled in the SessionOptions
+   */
+  const std::vector<std::pair<std::string, std::string>> &
+  getGradAndVarStreamIds() const;
+
+  /**
+   * Connect Poplar stream callbacks. In conjunction with
+   * `getGradAndVarStreamIds` the streams can be used to copy gradients to the
+   * host to perform collective operations after which the variables can be
+   * streamed back after they have been updated to the device.
+   */
+  void connectStreamToCallback(const std::string &streamHandle,
+                               std::function<void(void *)> callback);
+
 private:
   void configureFromOnnx(const std::string &model,
                          const DataFlow &dataFlow,

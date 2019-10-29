@@ -94,6 +94,13 @@ constexpr const char *reservedSpecificScaledMomentum1Prefix() {
   return "scaledMomentum1___specific___";
 }
 
+constexpr const char *hostReduceGradCopyPrefix() {
+  return "hostReduceGradCopy___";
+}
+constexpr const char *hostReduceVarCopyPrefix() {
+  return "hostReduceVarCopy___";
+}
+
 } // namespace popart
 
 #endif

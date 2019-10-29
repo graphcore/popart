@@ -22,6 +22,8 @@
 #include <popart/tensornames.hpp>
 #include <popart/version.hpp>
 
+#include <popart/popx/devicex.hpp>
+
 #include <stdexcept>
 #include <poplar/exceptions.hpp>
 #include <poputil/exceptions.hpp>
@@ -900,7 +902,12 @@ PYBIND11_MODULE(popart_core, m) {
       .def("resetHostWeights", &TrainingSession::resetHostWeights)
 
       // Special test method to write serialise ir for analysis
-      .def("_serializeIr", &TrainingSession::serializeIr, py::arg("format"));
+      .def("_serializeIr", &TrainingSession::serializeIr, py::arg("format"))
+      // Accessor for internal objects
+      .def("getIr", &TrainingSession::getIr)
+      .def("getGradAndVarStreamIds", &TrainingSession::getGradAndVarStreamIds)
+      .def("connectStreamToCallback",
+           &TrainingSession::connectStreamToCallback);
 
   py::class_<GraphTransformer>(m, "GraphTransformer")
       .def(py::init<const std::string &>(), py::arg("modelProtoOrFilename"))
