@@ -237,9 +237,24 @@ def test_convolution_5(op_tester):
     filt = np.random.rand(chans_out, chans_in // groups, kernel_size,
                           kernel_size).astype(np.float32)
 
-    def init_builder(builder):
+    def init_builder0(builder):
         d = builder.addInputTensor(data)
         f = builder.addInputTensor(filt)
+        o = builder.aiOnnx.conv([d, f],
+                                dilations=[1, 1],
+                                pads=[padding] * 4,
+                                strides=[1, 1],
+                                group=groups)
+        builder.addOutputTensor(o)
+        return [
+            o,
+            popart.reservedGradientPrefix() + d,
+            popart.reservedGradientPrefix() + o
+        ]
+
+    def init_builder1(builder):
+        d = builder.addInputTensor(data)
+        f = builder.addInitializedInputTensor(filt)
         o = builder.aiOnnx.conv([d, f],
                                 dilations=[1, 1],
                                 pads=[padding] * 4,
@@ -269,7 +284,8 @@ def test_convolution_5(op_tester):
         return [o, dg, None]
 
     op_tester.passes = ['ConvDataGrad']
-    op_tester.run(init_builder, reference, step_type='train')
+    op_tester.run(init_builder0, reference, step_type='train')
+    op_tester.run(init_builder1, reference, step_type='train')
 
 
 def test_reciprocal(op_tester):

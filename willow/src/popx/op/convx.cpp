@@ -292,16 +292,17 @@ void ConvWeightsGradOpx::grow(poplar::program::Sequence &prog) const {
   // segfault
   auto fwdShape = gradOp.outInfo(ConvWeightsGradOp::getOutIndex()).shape_szt();
 
-  // If shapes disagree only on first (grouping) dimension, as in
-  //   IR shape:             [   a, b, c, d]
-  //   poplar::Tensor shape: [1, a, b, c, d]
-  // then squeeze grouping dimension from poplar::Tensor
+  // If poplar::Tensor has an extra 0th (grouping) dimension, as in
+  //   IR shape:             [   a*b, c, d, e]
+  //   poplar::Tensor shape: [a, b  , c, d, e]
+  // then reshape to combine grouping and outChannels dimensions, to
+  // match the Ir tensor shape
   if (wGrad.rank() == 5 && fwdShape.size() == 4) {
     auto wGradShape = wGrad.shape();
     if (std::equal(
-            wGradShape.begin() + 1, wGradShape.end(), fwdShape.begin()) &&
-        wGradShape[0] == 1) {
-      wGrad = wGrad.squeeze({0});
+            wGradShape.begin() + 2, wGradShape.end(), fwdShape.begin() + 1) &&
+        wGradShape[0] * wGradShape[1] == fwdShape[0]) {
+      wGrad = wGrad.reshape(fwdShape);
     }
   }
 
