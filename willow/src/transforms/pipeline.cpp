@@ -1,12 +1,14 @@
 #include <vector>
 
 #include <boost/range/algorithm.hpp>
+#include <boost/range/algorithm_ext.hpp>
 
 #include <popart/error.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/names.hpp>
 #include <popart/op.hpp>
+#include <popart/op/getrandomseed.hpp>
 #include <popart/op/identity.hpp>
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/loss.hpp>
@@ -465,6 +467,94 @@ void chainCopiesTransform(Graph &graph) {
   }
 }
 
+GetRandomSeedOp *findGetRandomSeedOp(Graph &graph) {
+  for (auto &id_op : graph.getOps()) {
+    auto op = id_op.second.get();
+    if (auto x = dynamic_cast<GetRandomSeedOp *>(op)) {
+      return x;
+    }
+  }
+  throw error("Could not find an instance of GetRandomSeedOp in graph");
+};
+
+TensorId createStashableRandomSeed(GetRandomSeedOp *randomSeedOp) {
+  auto randomSeed =
+      randomSeedOp->outTensor(GetRandomSeedOp::getUpdatedSeedOutIndex());
+
+  // Create the identity op to clone the random seed.
+  logging::transform::debug("Adding Identity Copy for random seed tensor {}",
+                            randomSeed->id);
+  Op::Settings identitySettings(randomSeedOp->getGraph(),
+                                randomSeed->id + "_pipelineCopyOp");
+  TensorId identityOutput = randomSeed->id + "_pipelineCopy";
+  // TODO: Make sure this is not pruned or inplaced. T11668
+  IdentityOp *identityOp = [&] {
+    auto x  = std::make_unique<IdentityOp>(Onnx::Operators::Identity_1,
+                                          identitySettings);
+    auto op = x.get();
+    randomSeedOp->getGraph().moveIntoGraph(std::move(x));
+    return op;
+  }();
+
+  identityOp->connectInTensor(IdentityOp::getInIndex(), randomSeed->id);
+  identityOp->createAndConnectOutTensor(IdentityOp::getOutIndex(),
+                                        identityOutput);
+  identityOp->setVirtualGraphId(randomSeedOp->getVirtualGraphId());
+  identityOp->setPipelineStage(randomSeedOp->getPipelineStage());
+  identityOp->setup();
+
+  auto randomSeedClone = identityOp->outTensor(0);
+  // Connect the consumers of random seed to the output of the identity op
+  for (auto consumer : randomSeed->consumers.getOps()) {
+    if (consumer != identityOp) {
+      // Important to copy tensorMap here, as TensorIndex::tensorMap returns a
+      // reference and we shall be modifiying it.
+      auto inputMap = consumer->input->tensorMap();
+      for (auto idx_tensor : inputMap) {
+        auto idx         = idx_tensor.first;
+        auto inputTensor = idx_tensor.second;
+        if (inputTensor == randomSeed) {
+          if (auto copyOp = dynamic_cast<IpuCopyOp *>(consumer)) {
+            auto sourceIpu = copyOp->getSourceIpu();
+            copyOp->disconnectInTensor(idx, randomSeed);
+            copyOp->connectInTensor(idx, randomSeedClone->id, sourceIpu);
+          } else {
+            consumer->disconnectInTensor(idx, randomSeed);
+            consumer->connectInTensor(idx, randomSeedClone->id);
+          }
+        }
+      }
+    }
+  }
+
+  return randomSeedClone->id;
+}
+
+bool isRecomputable(Op *op) {
+  // Only pre loss ops are recomputable
+  if (op->scheduledPreLoss != ScheduledPreLoss::Yes) {
+    return false;
+  }
+  // Copy ops are never recomputable
+  if (op->isConvertibleTo<IpuCopyOp>()) {
+    return false;
+  }
+  // Dont recompute the GetRandomSeedOp, or the identity that clones it.
+  auto clonesRandomSeed = [&] {
+    if (op->isConvertibleTo<IdentityOp>()) {
+      auto input = op->inTensor(0);
+      return input->hasProducer() &&
+             input->getProducer()->isConvertibleTo<GetRandomSeedOp>();
+    }
+    return false;
+  };
+  if (op->isConvertibleTo<GetRandomSeedOp>() || clonesRandomSeed()) {
+    return false;
+  }
+
+  return true;
+}
+
 } // namespace
 
 bool Pipeline::apply(Graph &graph) const {
@@ -682,6 +772,17 @@ bool Pipeline::apply(Graph &graph) const {
     toStashCandidateTensors.push_back(tid);
   }
 
+  if (ir.requiresRandomSeed()) {
+    // Neither the input or the output of a GetRandomSeedOp should be stashed.
+    auto getRandomSeedOp = findGetRandomSeedOp(graph);
+    boost::remove_erase(toStashCandidateTensors, getRandomSeedOp->inId(0));
+    boost::remove_erase(toStashCandidateTensors, getRandomSeedOp->outId(0));
+    // Instead, we need to clone the output of the random seed op and stash
+    // that.
+    auto stashableRandomSeed = createStashableRandomSeed(getRandomSeedOp);
+    toStashCandidateTensors.push_back(stashableRandomSeed);
+  }
+
   std::vector<TensorId> toStashTensors;
   // StashTensorId -> std::pair<StashRefOp, RestoreRefOp>
   std::map<TensorId, std::pair<Op *, Op *>> preLossOnlyRefOps;
@@ -709,8 +810,7 @@ bool Pipeline::apply(Graph &graph) const {
     // Initialise forward Ops to be Recompute, except Ops whose output enters an
     // IpuCopy.
     for (auto op : graph.getOpSchedule({})) {
-      if (!dynamic_cast<IpuCopyOp *>(op) &&
-          op->scheduledPreLoss == ScheduledPreLoss::Yes) {
+      if (isRecomputable(op)) {
         op->settings.recomputeType = RecomputeType::RECOMPUTE;
         // In full_recompute all forward ops are Recomputed
         if (!full_recompute) {
