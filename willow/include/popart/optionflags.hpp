@@ -182,6 +182,11 @@ struct SessionOptions {
   /// Set to 'true' to use synthetic data, 'false' to use real data
   bool ignoreData = false;
 
+  /// If true, the weight gradient tensors are not saved off the device
+  /// when devicex.weightsFromHost(). Note: this option is overridden if
+  /// ignoreData is true.
+  bool disableGradAccumulationTensorStreams = false;
+
   /// when false, the backend will build the Poplar graph, but do not compile it
   /// into an Engine.  When this option is set, no execution can be performed,
   /// and nothing can be transferred to the device.  Functions which retrieve

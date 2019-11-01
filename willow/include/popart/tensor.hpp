@@ -132,6 +132,7 @@ public:
   // well as their copies
   bool isOptimizerTensor() const;
   bool isRandomSeedTensor() const;
+  bool isAcclTensor() const;
   bool hasTensorData() const;
   TensorData *tensorData();
   const TensorData *tensorData() const;

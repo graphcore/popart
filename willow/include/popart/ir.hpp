@@ -183,6 +183,7 @@ public:
   onnx::ModelProto step(int n);
   // if the tensor is returned to user (passes call to DataFlow).
   bool isAnchored(const TensorId &) const;
+  bool streamingIsDisabledForTensor(const TensorId &) const;
   void append(std::stringstream &) const;
 
   // serialise the ir into the stream based on the format

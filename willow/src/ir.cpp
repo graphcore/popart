@@ -1409,6 +1409,24 @@ bool Ir::isAnchored(const TensorId &tenId) const {
   return dataFlow.isAnchored(tenId);
 }
 
+bool Ir::streamingIsDisabledForTensor(const TensorId &tensorId) const {
+  // What conditions mean that this tensor should not be streamed?
+
+  // 1. Streams have been turned off globally
+  if (getSessionOptions().ignoreData) {
+    return true;
+  }
+
+  // 2. The tensor is an Gradient Accl tensor, but the user
+  //    has turned off streaming for this kind of tensor
+  if (getTensors().get(tensorId)->isAcclTensor() &&
+      getSessionOptions().disableGradAccumulationTensorStreams) {
+    return true;
+  }
+
+  return false;
+}
+
 void Ir::constructForwards() {
   constructFromOnnxGraph(onnxModel->graph(), {});
   for (auto &id_op : getMainGraph().getOps()) {

@@ -163,7 +163,12 @@ bool SGD1Decompose::apply(Op *op) const {
   // T12001 better encapsulation
   if (ir.additionalModelProtoTensors.find(acclInId) ==
       ir.additionalModelProtoTensors.end()) {
-    ir.additionalModelProtoTensors.insert(acclInId);
+    // If we are not going to stream the accl tensors from the host,
+    // don't add them to the set of additional tensors to be saved
+    // in the onnx modelproto
+    if (!ir.streamingIsDisabledForTensor(acclInId)) {
+      ir.additionalModelProtoTensors.insert(acclInId);
+    }
   }
 
   // Move constraints from varUpdate to accumulator

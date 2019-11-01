@@ -609,6 +609,8 @@ PYBIND11_MODULE(popart_core, m) {
       .def_readwrite("exportPoplarVertexGraph",
                      &SessionOptions::exportPoplarVertexGraph)
       .def_readwrite("ignoreData", &SessionOptions::ignoreData)
+      .def_readwrite("disableGradAccumulationTensorStreams",
+                     &SessionOptions::disableGradAccumulationTensorStreams)
       .def_readwrite("enableOutlining", &SessionOptions::enableOutlining)
       .def_readwrite("enableOutliningCopyCostPruning",
                      &SessionOptions::enableOutliningCopyCostPruning)

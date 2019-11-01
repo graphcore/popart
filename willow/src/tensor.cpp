@@ -301,6 +301,20 @@ bool Tensor::isRandomSeedTensor() const {
   return false;
 }
 
+bool Tensor::isAcclTensor() const {
+  std::size_t found = id.find(reservedAcclToAccumulatorPrefix());
+  if (found != std::string::npos) {
+    // sanity check that the accl tensor is of Variable type
+    if (tensorType() != TensorType::Variable) {
+      throw error("Tensor {} has been identified as an Accl tensor, but it is "
+                  "not a Variable tensor.",
+                  id);
+    }
+    return true;
+  }
+  return false;
+}
+
 void Consumers::increment(Op *op) {
   auto found = consumers_m.find(op);
   if (found == consumers_m.end()) {
