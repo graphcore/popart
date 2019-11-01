@@ -376,19 +376,21 @@ void Devicex::weightsToHost(
     // copy from the host stream memory points to the
     // addresses on onnxModelData
     for (auto id : ir().getTensorIds(TensorType::Variable)) {
-      auto found = onnxModelData.find(id);
-      if (found == onnxModelData.end()) {
-        std::ostringstream oss;
-        oss << "No TensorId " << id
-            << " in final host destination map. The TensorIds are [ ";
-        for (auto x : onnxModelData) {
-          oss << x.first << ' ';
+      if (!ir().streamingIsDisabledForTensor(id)) {
+        auto found = onnxModelData.find(id);
+        if (found == onnxModelData.end()) {
+          std::ostringstream oss;
+          oss << "No TensorId " << id
+              << " in final host destination map. The TensorIds are [ ";
+          for (auto x : onnxModelData) {
+            oss << x.first << ' ';
+          }
+          oss << ']';
+          throw error(oss.str());
         }
-        oss << ']';
-        throw error(oss.str());
+        MutableVoidData mv_data = found->second;
+        hostStreamToHost(mv_data, id);
       }
-      MutableVoidData mv_data = found->second;
-      hostStreamToHost(mv_data, id);
     }
   }
 }
@@ -1905,10 +1907,13 @@ void Devicex::loadEngineAndConnectStreams() {
 
   if (useSyntheticData() == false) {
     logging::devicex::debug("Connecting initializer streams");
+
     for (auto id : ir().getTensorIds(TensorType::Variable)) {
-      Tensor *tensor = ir().getTensor(id);
-      logging::devicex::debug("   {}", tensor->str());
-      pEngine->connectStream(h2dId(id), tensor->tensorData()->data());
+      if (!ir().streamingIsDisabledForTensor(id)) {
+        Tensor *tensor = ir().getTensor(id);
+        logging::devicex::debug("   {}", tensor->str());
+        pEngine->connectStream(h2dId(id), tensor->tensorData()->data());
+      }
     }
 
     // Random seed
@@ -1993,16 +1998,17 @@ void Devicex::loadEngineAndConnectStreams() {
 
     logging::devicex::debug("Connected d2h weight data streams");
     for (auto initId : ir().getTensorIds(TensorType::Variable)) {
+      if (!ir().streamingIsDisabledForTensor(initId)) {
+        bool isAnchorStream      = false;
+        PopStreamId streamId     = d2hId(initId, isAnchorStream);
+        Tensor *tensor           = ir().getTensor(initId);
+        int64_t n_bytes          = tensor->info.nbytes();
+        d2hWeightBuffers[initId] = std::vector<char>(n_bytes);
+        char *data0              = d2hWeightBuffers[initId].data();
 
-      bool isAnchorStream      = false;
-      PopStreamId streamId     = d2hId(initId, isAnchorStream);
-      Tensor *tensor           = ir().getTensor(initId);
-      int64_t n_bytes          = tensor->info.nbytes();
-      d2hWeightBuffers[initId] = std::vector<char>(n_bytes);
-      char *data0              = d2hWeightBuffers[initId].data();
-
-      logging::devicex::debug(" {}", initId);
-      engineToStreamVariables(data0, n_bytes, streamId);
+        logging::devicex::debug(" {}", initId);
+        engineToStreamVariables(data0, n_bytes, streamId);
+      }
     }
   }
 }
@@ -2125,18 +2131,21 @@ void Devicex::prepare() {
 
   PriTasks tasks;
 
-  // weights (variables):
+  // weights and accl tensors (i.e. variables):
   // 1) make tensor,
+  // THEN
   // 2) make stream from host,
   // 3) create write prog,
   // 4) make stream to host,
   // 5) create read prog.
+  // OR
+  // 2) set initial value.
   for (auto id : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(id);
     // 1
     tasks.add(initTensorTask(tensor));
 
-    if (useSyntheticData() == false) {
+    if (!ir().streamingIsDisabledForTensor(id)) {
       // 2
       tasks.add(streamFromHostTask(tensor));
       // 3
@@ -2147,6 +2156,9 @@ void Devicex::prepare() {
       // 5
       tasks.add(
           toHostTask(tensor, progs.weightsToHostFragment(), isAnchorStream));
+    } else {
+      // 2
+      tasks.add(setInitTensorValTask(tensor));
     }
   }
 
