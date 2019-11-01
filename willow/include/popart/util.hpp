@@ -5,6 +5,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 namespace popart {
@@ -81,6 +82,45 @@ void erase_if(std::map<Key, T, Compare, Alloc> &c, const Pred &pred) {
       ++it;
   }
 }
+
+// Acts like a stack that remembers the values it has already seen.
+// A value can be pushed multiple times to the stack, but will only ever be
+// returned once by pop.
+template <typename T> class SearchHelper {
+public:
+  // Push a value to the stack. If the value has already been pushed to the
+  // stack, pushing it again will not add it to the stack.
+  void push(T t) {
+    if (seen.find(t) == seen.end()) {
+      toCheck.push_back(t);
+      seen.insert(t);
+    }
+  }
+
+  // Remove and return the value at top of the stack.
+  T pop() {
+    T x = toCheck.back();
+    toCheck.pop_back();
+    return x;
+  }
+
+  // Return true if there are no items on the stack.
+  bool empty() { return toCheck.empty(); }
+
+private:
+  std::vector<T> toCheck;
+  std::unordered_set<T> seen;
+};
+
+typedef SearchHelper<Tensor *> TensorSearchHelper;
+
+class OpSearchHelper : public SearchHelper<Op *> {
+public:
+  // Push all ops that consume the tensor to the stack.
+  void pushConsumers(Tensor *);
+  // Push all consumers of all the outputs to the stack.
+  void pushOutputConsumers(Op *);
+};
 
 namespace util {
 
