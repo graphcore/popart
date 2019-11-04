@@ -259,10 +259,7 @@ public:
   // Accessors for the dataFlow
   const DataFlow &getDataFlow() const { return dataFlow; }
 
-  const std::set<Op *> &getTrainTargetOps() { return trainTargetOps; }
-
-  bool addToTrainTargetOps(Op *op);
-  bool removeFromTrainTargetOps(Op *op);
+  std::set<Op *> getTrainTargetOps() const;
 
   // modify a Graph using a graph transformation
   // (public for unit testing only)
@@ -452,9 +449,6 @@ private:
 
   // Map of ops and their root inputs
   std::map<OpId, std::set<Tensor *>> opAndRootInputs;
-
-  // The update ops which must be run during a training pass
-  std::set<Op *> trainTargetOps;
 
   OpId finalLossOpId{-1000};
 

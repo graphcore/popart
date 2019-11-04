@@ -772,35 +772,24 @@ void Ir::prepareImpl(const IrBundle &gb) {
   removeIsolatedTensors();
   updateVertices();
 
-  auto updateTrainTargetOps = [this]() {
-    // reset the trainTargetOps, updated by MergeVarUpdates
-    trainTargetOps.clear();
-    for (auto &op : getMainGraph().getOps()) {
-      if (op.second->isConvertibleTo<VarUpdateOp>()) {
-        trainTargetOps.insert(op.second.get());
-      }
-    }
-    updateVertices();
-  };
-
   switch (userOptions.mergeVarUpdate) {
 
   case (MergeVarUpdateType::All): {
     enableTransform(MergeAllVarUpdates::id(), true);
     applyTransform(MergeAllVarUpdates::id(), getMainGraph());
-    updateTrainTargetOps();
+    updateVertices();
     break;
   }
   case (MergeVarUpdateType::AutoTight): {
     enableTransform(MergeTightThreshold::id(), true);
     applyTransform(MergeTightThreshold::id(), getMainGraph());
-    updateTrainTargetOps();
+    updateVertices();
     break;
   }
   case (MergeVarUpdateType::AutoLoose): {
     enableTransform(MergeLooseThreshold::id(), true);
     applyTransform(MergeLooseThreshold::id(), getMainGraph());
-    updateTrainTargetOps();
+    updateVertices();
     break;
   }
 
@@ -2239,17 +2228,16 @@ void Ir::growVarUpdateOpInternal(OpId opId) {
   std::vector<TensorId> outputs{updatedVarId};
   getMainGraph().connectOutputs(OutputVecWrapper(outputs), opId);
   op->setup();
-
-  trainTargetOps.insert(op);
 }
 
-bool Ir::addToTrainTargetOps(Op *op) {
-  return trainTargetOps.insert(op).second;
-}
-
-bool Ir::removeFromTrainTargetOps(Op *op) {
-  auto nRemoved = trainTargetOps.erase(op);
-  return nRemoved == 1;
+std::set<Op *> Ir::getTrainTargetOps() const {
+  std::set<Op *> trainTargets;
+  for (auto &op : getMainGraph().getOps()) {
+    if (op.second->isConvertibleTo<VarUpdateOp>()) {
+      trainTargets.insert(op.second.get());
+    }
+  }
+  return trainTargets;
 }
 
 void Ir::growFinalLoss() {

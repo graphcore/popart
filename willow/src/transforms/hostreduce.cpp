@@ -70,8 +70,6 @@ bool HostReduce::apply(Graph &graph) const {
 
     gradCopyOp->setup();
 
-    ir.addToTrainTargetOps(gradCopyOp);
-
     graph.topoCons->transfer(vop, gradCopyOp);
 
     gradCopyOps.push_back(gradCopyOp);
@@ -108,11 +106,6 @@ bool HostReduce::apply(Graph &graph) const {
       varCopyOp->setVirtualGraphId(op->getVirtualGraphId());
     }
 
-    // Add it to train target ops to prevent pruning.
-    if (!ir.addToTrainTargetOps(varCopyOp)) {
-      throw error("Could not add {} to train target ops", varCopyOp->id);
-    }
-
     varCopyOps.push_back(varCopyOp);
 
     for (auto &x : optimizerInputs) {
@@ -145,7 +138,6 @@ bool HostReduce::apply(Graph &graph) const {
     vop->disconnectAllInputs();
     vop->disconnectAllOutputs();
     graph.eraseOp(vop->id);
-    ir.removeFromTrainTargetOps(vop);
     graph.getTensors().remove(outTensorId);
   }
 
