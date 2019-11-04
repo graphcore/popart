@@ -1,72 +1,72 @@
 import numpy as np
 import popart
-# import onnx
 import ctypes
 import os
 
 # Load the .so file in the same directory.
-so_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                       "custom_op.so")
-custom_ops = ctypes.cdll.LoadLibrary(so_path)
+myso = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cube.so")
+myop = ctypes.cdll.LoadLibrary(myso)
 
-# Create a builder and construct a graph
+# Create a builder
 builder = popart.Builder()
 
-data_shape = popart.TensorInfo("FLOAT16", [1, 2])
-lbl_shape = popart.TensorInfo("INT32", [1])
+# Assuming a batch size of 1, the inputs are:
+x = builder.addInputTensor(popart.TensorInfo("FLOAT", [1, 4, 84, 84]))
+# Let's assume that the number of output channels for the 1st convolution is 32
+# and kernel size is 8
+weights = np.random.rand(32, 4, 8, 8).astype(np.float32)
+w = builder.addInitializedInputTensor(weights, "weights/1")
 
-a = builder.addInputTensor(data_shape)
-lb = builder.addInputTensor(lbl_shape)
-# Create some weights
-w = builder.addInitializedInputTensor(np.ones([2, 2], np.float16))
-b = builder.addInitializedInputTensor(np.ones([2], np.float16))
+# Modify the input with a custom op that produces an output with the
+# same shape as the input
+cube = builder.customOp(opName="Cube",
+                        opVersion=1,
+                        domain="ai.acme",
+                        inputs=[x],
+                        attributes={})[0]
 
-# We have an unknown number of output tensors.
-# So we have to reference the zero'th tensor in this example.
-o = builder.customOp(opName="Cube", opVersion=1, domain="ai.acme",
-                     inputs=[a])[0]
+# This shows the ONNX shape inference is working.
+print("Shape of {}: {}".format(cube, builder.getTensorShape(cube)))
 
-o = builder.aiOnnx.gemm([a, w, b], 1., 1., False, False)
-o = builder.aiOnnx.relu([o])
-o = builder.aiOnnx.softmax([o])
-builder.addOutputTensor(o)
+# Let's create a known tensor, but with an undefined shape
+y = builder.aiOnnx.conv([cube, w],
+                        dilations=[1, 1],
+                        pads=[1, 1, 1, 1],
+                        strides=[1, 1])
+
+builder.addOutputTensor(y)
 
 proto = builder.getModelProto()
 
-# Describe how to run the model
 art = popart.AnchorReturnType("ALL")
-dataFlow = popart.DataFlow(1, {o: art, w: art})
+# Describe how to run the model
+dataflow = popart.DataFlow(1, {y: art, cube: art, w: art})
 
 # Create a session to compile and execute the graph
-trainingOptions = popart.SessionOptions()
-session = popart.TrainingSession(
-    fnModel=proto,
-    dataFeed=dataFlow,
-    losses=[popart.NllLoss(o, lb, "loss")],
-    optimizer=popart.ConstSGD(0.001),
-    userOptions=trainingOptions,
-    deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
+options = popart.SessionOptions()
+device = popart.DeviceManager().createIpuModelDevice({})
+session = popart.TrainingSession(fnModel=proto,
+                                 dataFeed=dataflow,
+                                 losses=[popart.L1Loss(y, "l1LossVal", 0.1)],
+                                 optimizer=popart.ConstSGD(0.001),
+                                 userOptions=options,
+                                 deviceInfo=device)
 
 # Compile graph
 session.prepareDevice()
-
 # Create buffers to receive results from the execution
 anchors = session.initAnchorArrays()
-
-# Generate some random input data
-data_a = np.random.rand(1, 2).astype(np.float16)
-data_lb = np.random.rand(1).astype(np.int32)
-
-# Copy the weights to the device from the host
+# Copy weights onto the IPU
 session.weightsFromHost()
+# Generate some random input data. Careful, cube will create some large
+# outputs, watch for overflows!
+myinput = 10 * np.random.rand(1, 4, 84, 84).astype(np.float32)
+print("Input is : {}", myinput)
 
-stepio = popart.PyStepIO({a: data_a, lb: data_lb}, anchors)
-for _ in range(6):
-    session.run(stepio)
-
-# Copy the weights to the host from the device
-session.weightsToHost()
-
-print("Input a is " + str(data_a))
-print("Weight w is " + str(anchors[w]))
-print("Result is " + str(anchors[o]))
+stepio = popart.PyStepIO({x: myinput}, anchors)
+session.run(stepio)
+print("Weights are: {}", anchors[w])
+print("Output of cube op is: {}", anchors[cube])
+# Check the output of the cube op
+assert np.allclose(anchors[cube], (myinput**3))
+print("Result is {}" + str(anchors[y]))
