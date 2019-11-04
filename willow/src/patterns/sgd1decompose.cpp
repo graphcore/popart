@@ -255,19 +255,12 @@ bool SGD1Decompose::apply(Op *op) const {
   // deleting combo op now, so that its output can be re-connected
   combo->disconnectAllInputs();
   combo->disconnectAllOutputs();
-  ir.removeFromTrainTargetOps(combo);
   graph.eraseOp(combo->id);
 
   // (4)
   sgd1VarUpdateOp->connectOutTensor(VarUpdateOp::getUpdatedVarOutIndex(),
                                     updatedWeightId);
   sgd1VarUpdateOp->setup();
-
-  for (Op *newTarget : std::vector<Op *>{sgd1VarUpdateOp, updateOp}) {
-    if (!ir.addToTrainTargetOps(newTarget)) {
-      throw error("Could not add {} to train target ops", newTarget->id);
-    }
-  }
 
   // var update before accl update
   graph.topoCons->insert(sgd1VarUpdateOp, updateOp);
