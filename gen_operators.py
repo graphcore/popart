@@ -843,7 +843,7 @@ def genOpIdentifiersHpp(filename, schema):
 
         for k, v, in schema.domains.items():
 
-            ops = v.operators
+            ops = v.operations
             ''' 
             for opset_version, opset in sorted(v.opsets.items(),
                                                key=lambda x: int(x[0])):
