@@ -5,5 +5,5 @@ The Poplar Advanced Run Time (PopART) is part of the Poplar SDK for implementing
 networks of Graphcore IPU processors.
 
 This document describes the PopART Python API. For more information about PopART, please
-refer to the *PopART User Guide*.
+refer to the `PopART User Guide <https://documents.graphcore.ai/documents/UG8/latest>`_.
 

@@ -124,4 +124,5 @@ specific IPU:
       o = builder.aiOnnx.add([o1, o2])
 
 Alternatively, for automatic placement of nodes on available IPUs, use the
-session option ``autoVirtualGraph``.  See ``SessionOptions`` in the PopART API document.
+session option ``autoVirtualGraph``.  See ``SessionOptions`` in the
+`PopART C++ API Reference <https://documents.graphcore.ai/documents/UG11/latest>`_.
