@@ -430,8 +430,8 @@ static void serializeVarUpdate(int sliceDim,
       }
       slicedVarUpdateOp->connectInTensor(VarUpdateOp::getVarToUpdateInIndex(),
                                          slicedWeight);
-      slicedVarUpdateOp->connectInTensor(VarUpdateOp::getUpdaterInIndex(),
-                                         output);
+      slicedVarUpdateOp->connectInTensor(
+          VarUpdateWithUpdaterOp::getUpdaterInIndex(), output);
       slicedVarUpdateOp->createAndConnectOutTensor(
           VarUpdateOp::getUpdatedVarOutIndex(), "updated__" + slicedWeight);
       if (virtualGraphId)

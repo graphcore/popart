@@ -28,9 +28,6 @@ void ReciprocalOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<ReciprocalOpx> reciprocalOpxCreator(Onnx::Operators::Reciprocal_6);
-OpxCreator<Opx> reciprocalGradGradOpxCreator(
-    Onnx::GradOperators::ReciprocalGrad,
-    "ReciprocalGradOpx should be removed by pattern 'ReciprocalGradOpx'");
 } // namespace
 
 } // namespace popx

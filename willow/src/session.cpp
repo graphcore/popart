@@ -339,4 +339,18 @@ void TrainingSession::optimizerFromHost() {
 
   device_->optimizerFromHost();
 }
+
+const Ir &TrainingSession::getIr() const { return ir; }
+
+const std::vector<std::pair<std::string, std::string>> &
+TrainingSession::getGradAndVarStreamIds() const {
+  return device_->getGradAndVarStreamIds();
+}
+
+void TrainingSession::connectStreamToCallback(
+    const std::string &streamHandle,
+    std::function<void(void *)> callback) {
+  device_->connectStreamToCallback(streamHandle, callback);
+}
+
 } // namespace popart

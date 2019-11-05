@@ -11,6 +11,8 @@
 
 namespace popart {
 
+struct SessionOptions;
+
 enum class OptimizerType { SGD = 0, NTYPES };
 
 // The base Optimizer class
@@ -39,27 +41,38 @@ public:
   // and get the names of inputs to the VarUpdate Op fo a specific Tensor
   virtual std::unique_ptr<Op> createOp(const Tensor &weight, Graph &) const = 0;
 
-  virtual std::vector<TensorId> getInputIds(const Tensor &weight,
-                                            bool enableGradAccl,
-                                            int64_t acclFact) const = 0;
+  virtual std::vector<TensorId> getInputIds(const Tensor &weight) const = 0;
 
   // Unique non-const optimizers
   virtual std::vector<std::tuple<TensorId, TensorInfo>>
-  getOptimizerInputs(const Tensor &weight,
-                     bool enableGradAccl,
-                     int64_t acclFact) const = 0;
+  getOptimizerInputs(const Tensor &weight) const = 0;
 
   const OptimizerValue &lossScaling() const { return ls; }
   float getLossScalingVal() const { return ls.val(); }
 
   static TensorId getLossScalingTensorId(DataType);
 
+  void setFactorsFromOptions(const SessionOptions &);
+
+  bool replicatedGraphsEnabled() const;
+  bool gradientAccumulationEnabled() const;
+  int64_t getReplicatedGraphCount() const;
+  int64_t getAccumulationFactor() const;
+
 private:
   OptimizerValue ls;
+
+  // factors from SessionOptions (TODO adopt permanently T12588, T12589)
+  bool enableReplicatedGraphs;
+  bool enableGradientAccumulation;
+  int64_t replicatedGraphCount;
+  int64_t accumulationFactor;
+
+  bool factorsAreSetFromOptions{false};
 };
 
-// Equation derivation based on the non-Nesterov pytorch implementation
-// https://pytorch.org/docs/stable/_modules/torch/optim/sgd.html#SGD :
+// Equation derivation based on the non-Nesterov PyTorch implementation
+// https://PyTorch.org/docs/stable/_modules/torch/optim/sgd.html#SGD :
 //
 // g = gradient computed in backwards pass
 // g = g + wd * w
@@ -72,14 +85,14 @@ private:
 // v = v * mm + (1 - dm) * g + (1 - dm) * wd * w
 // w = w - lr * v
 //
-// if we include loss scaling, we factor ls out of g first:
+// if we include loss scaling, we factorise ls out of g before updating v:
 //
 // g = gradient computed in backwards pass * ls
 // v = v * mm + (1 - dm) / ls * g + (1 - dm) * wd * w
 // w = w - lr * v
 //
 // if we want to keep velocity (v) a factor vs larger throughout for numerical
-// reasons, we
+// stability reasons, we
 // (1) multiply the term added to it by scalar factor vs
 // (2) make sure it is initialised with a factor vs larger (T12001)
 // (3) divide lr by vs:
@@ -95,24 +108,29 @@ private:
 //
 // which has 2 parts, one part in the loop:
 //    v <- v + (1 - dm) * vs / ls * g_i for each micro batch i's gradient
+//    =    =                        =
 //
 // and one part out the loop:
 //    w <- w - lr / vs * v
 //    v <- v * mm + (1 - dm) * wd * vs * w.   (done once up front too,
-//                                                      see test comments)
+//    =    =                             =               see test comments)
 //
 //
-// if in addition there is data replication by factor rf, the equations become
+// if in addition there is data replication by factor rf, the equations become;
 // in the loop:
-//    v <- v + (1 - dm) * vs / ls * rf * g_i
+//    v <- v + (1 - dm) * vs * rf / ls * g_i                        (include rf)
+//    =    =                             =
 //
 // and outside the loop:
-//    v <- reduction across IPUs of vs
-//    v <- v / rf
-//    w <- w - lr / vs * v
-//    v <- v * mm + (1 - dm) * wd * vs * w.
+//    v <- sum reduce across IPUs of the v's                  (rf too large now)
 //
-// where the scalar factors corresponding to pytorch are,
+//    w <- w - lr / ( vs * rf ) * v            (rf in denominator to compensate)
+//    =    =                      =
+//
+//    v <- v * mm / rf + (1 - dm) * wd * vs * w.              (correction by rf)
+//    =    =                                  =
+//
+// where the scalar factors corresponding to PyTorch are,
 //   mm : momentum
 //   dm : dampening
 //   wd : weight decay
@@ -125,8 +143,12 @@ private:
 // and the term to accelerate training is
 //   rf : data replication factor.
 //
-// In the case where there is no gradient accumulation and no momentum (mm = 0),
-// there is no need for a persistant v Tensor, and the weight update reduces to,
+//
+// Special case a)
+// --------------
+// In the case where there IS NO gradient accumulation and there IS NO momentum
+// (mm = 0), there is no need for a persistant v Tensor, and the weight update
+// reduces to,
 //
 // w <- w * {1 -  lr * (1 - dm) * wd} -  g * { lr * (1 - dm) / ls }   (1)
 //          ^^^^^^^^^^^^^^^^^^^^^^^^^        ~~~~~~~~~~~~~~~~~~~~~~
@@ -134,21 +156,21 @@ private:
 //   weight decay scale factor 0                      |
 //                                         scaled learning rate 0
 //
-// In this simpler case, all is done in a single Op of type SGD0VarUpdateOp
-//
-// where the sum is over the accumulationFactor mini-batches which make up the
-// batch.
+// In this simple special case, everything is done in a single Op of type
+// SGD0VarUpdateOp.
 //
 //
-// Note that all compound scalar terms above are always calculated on host.
+// Note that all compound scalar terms are always calculated on host.
 //
-// To summarise, there are *atomic* scalars and *compound* scalars.
+// To summarise, there are atomic scalars and compound scalars.
+//                         ------             --------
 //
 // The atomic scalars are mm, dm, wd, lr, ls, vs, rf.
 //
 // The compound scalars for the simple case of no persistent v tensor are,
 //
-// Compound scalars for the case where there is no gradient accumulation (SGD0):
+// Compound scalars for the case where there is no gradient accumulation and no
+// momentum (SGD0):
 //
 //  - weightDecayScaleFactor0 (wdsf0) =
 //      1 - lr * (1 - dm) * wd
@@ -156,22 +178,24 @@ private:
 //  - scaledLearningRate0 (slr0) =
 //      lr *  ( 1 - dm) / ls
 //
-// Compound scalars for the case where there IS gradient accumulation (SGD1):
-//
-//  - weightDecayScaleFactor1 (wdsf1) =
+// Compound scalars for the case where there is gradient accumulation and
+// momentum (SGD1):
+//                                            mm dm wd lr ls vs rf
+//                                            ====================
+//  - scaledWeightDecay1 (swd1) =             .  x  x  .  .  x  .
 //      (1 - dm) * wd * vs
 //
-//  - dampeningScaleFactor1 (dpsf1) =
-//      (1 - dm) * vs * rf / ls
+//  - dampeningScaleFactor1 (dpsf1) =         .  x  .  .  x  x  x
+//      (1 - dm) * vs  * rf / ls
 //
-//  - scaledLearningRate1 (slr1) =
-//      lr / vs
+//  - scaledLearningRate1 (slr1) =            .  .  .  x  .  x  x
+//      lr / ( vs * rf )
 //
-//  - momentum1 (mm1) =
-//      mm
+//  - scaledMomentum1 (smm1) =                x  .  .  .  .  .  x
+//      mm / rf
 //
 //
-// Note that the user sets atomic scalars (not compound scalars)
+// Note that the user sets atomic scalars (and not compound scalars)
 //
 // Note that all atomic scalar terms except loss scaling and replication factor
 // can be Tensor specific.
@@ -189,6 +213,20 @@ private:
 // enabling this: (1) make 1 Op which updates both w and g, i.e. does everything
 // outside the loop. (2) support aliasing and modifying Ops with more than 1
 // output. T12001 (above)
+//
+//
+//          [dpfs1]
+// [v]-|       |
+//     |-(Accumulation)--[v']--(AcclReduce)--[v'']   [w]
+// [g]-|                                       |  \/  |
+//                                             |  /\  |  [swd1]
+//                                             | /  \ |    |
+//                              [slr1]--(VarUpdate)(AcclUpdate)-[smm1]
+//                                            |       |
+//                                           [w']   [v''']
+//
+// Note that ReplicationReduction will be a nop if replFactor = 1.
+//
 
 class SGD : public Optimizer {
 
@@ -218,7 +256,7 @@ public:
   }
 
 public:
-  // Does "w" have specific OptimizerValues, or will it is default?
+  // Does "w" have specific OptimizerValues, or will it use default?
   bool hasSpecific(const Tensor &w) const;
 
   // SGD constructor with all 6 parameteers
@@ -254,17 +292,14 @@ public:
 
   std::unique_ptr<Op> createOp(const Tensor &weight, Graph &) const final;
 
-  // The names of the inputs for the VarUpdateOp the Var Tensor "weight". In the
-  // returned vector,  a "" is used as a placeholder for constant inputs
-  std::vector<TensorId> getInputIds(const Tensor &weight,
-                                    bool enableGradAccl,
-                                    int64_t acclFact) const final;
+  // The names of the inputs for the VarUpdateOp for the Variable Tensor
+  // "weight". In the returned vector,  a "" is used as a placeholder for
+  // constant inputs
+  std::vector<TensorId> getInputIds(const Tensor &weight) const final;
 
   // The names and infos of the optimizer Tensors
   std::vector<std::tuple<TensorId, TensorInfo>>
-  getOptimizerInputs(const Tensor &weight,
-                     bool enableGradAccl,
-                     int64_t acclFact) const final;
+  getOptimizerInputs(const Tensor &weight) const final;
 
   bool validReplacement(const Optimizer &other) const final;
 
@@ -291,9 +326,7 @@ public:
 
   // If velocity (accumulation) is required, either because of gradient
   // accumulation or because of momentum : return true, otherwise return false.
-  bool requiresAccl(const Tensor &weight,
-                    bool gradAcclEnabled,
-                    int64_t gradAcclFactor) const;
+  bool requiresAccl(const Tensor &weight) const;
 
   const OptimizerValueMap &learningRates() const { return lrs; }
   const OptimizerValueMap &weightDecays() const { return wds; }
@@ -329,9 +362,9 @@ private:
 
   // Accumulation Tensor needed (SGD1)
   ScaledLearningRate1Helper slr1helper;
-  WeightDecayScaleFactor1Helper wdsf1helper;
+  ScaledWeightDecay1Helper swd1helper;
   DampeningScaleFactor1Helper dpsf1helper;
-  Momentum1Helper mm1helper;
+  ScaledMomentum1Helper smm1helper;
 
   OptimizerValue
   getLossScalingOrDefault(const std::map<std::string, OptimizerValue> &) const;

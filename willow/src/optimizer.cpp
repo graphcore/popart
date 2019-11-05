@@ -2,8 +2,9 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/sgd0varupdate.hpp>
-#include <popart/op/sgd1varupdatecombo.hpp>
+#include <popart/op/sgd1combo.hpp>
 #include <popart/optimizer.hpp>
+#include <popart/optionflags.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
@@ -24,6 +25,50 @@ getOptMap(const std::map<std::string, std::pair<float, bool>> &m) {
 
 SGD SGD::fromDefaultMap(const std::map<std::string, OptimizerValue> &m) {
   return SGD(getComplete(m), 1011);
+}
+
+void Optimizer::setFactorsFromOptions(const SessionOptions &opts) {
+  enableReplicatedGraphs     = opts.enableReplicatedGraphs;
+  enableGradientAccumulation = opts.enableGradientAccumulation;
+  replicatedGraphCount       = opts.replicatedGraphCount;
+  accumulationFactor         = opts.accumulationFactor;
+  factorsAreSetFromOptions   = true;
+}
+
+bool Optimizer::replicatedGraphsEnabled() const {
+  if (!factorsAreSetFromOptions) {
+    throw error("Cannot call SGD::replicatedGraphsEnabled until "
+                "SGD::setFactorsFromOptions has been called");
+  }
+  return enableReplicatedGraphs;
+}
+
+bool Optimizer::gradientAccumulationEnabled() const {
+  if (!factorsAreSetFromOptions) {
+    throw error("Cannot call SGD::gradientAccumulationEnabled until "
+                "SGD::setFactorsFromOptions has been called");
+  }
+  return enableGradientAccumulation;
+}
+
+int64_t Optimizer::getReplicatedGraphCount() const {
+  if (!factorsAreSetFromOptions) {
+    throw error("Cannot call SGD::getReplicatedGraphCount until "
+                "SGD::setFactorsFromOptions has been called");
+  }
+  if (!enableReplicatedGraphs) {
+    return 1LL;
+  }
+
+  return replicatedGraphCount;
+}
+
+int64_t Optimizer::getAccumulationFactor() const {
+  if (!factorsAreSetFromOptions) {
+    throw error("Cannot call SGD::getAccumulationFactor until "
+                "SGD::setFactorsFromOptions has been called");
+  }
+  return accumulationFactor;
 }
 
 namespace {
@@ -112,25 +157,9 @@ bool SGD::hasSpecific(const Tensor &w) const {
   return counter > 0;
 }
 
-bool SGD::requiresAccl(const Tensor &weight,
-                       bool gradAcclEnabled,
-                       int64_t gradAcclFactor) const {
-
-  // might be used in the future
-  (void)gradAcclFactor;
-
+bool SGD::requiresAccl(const Tensor &weight) const {
   OptimizerValue mm = mms.get(weight.id);
-
-  bool doesRequire = gradAcclEnabled || !mm.isConst() || mm.val() != 0.0f;
-
-  logging::ir::trace(
-      "{} does require grad accl ? {} mm.isConst ? {} mm.val ? {} ",
-      weight.id,
-      doesRequire,
-      mm.isConst(),
-      mm.val());
-
-  return doesRequire;
+  return gradientAccumulationEnabled() || !mm.isConst() || mm.val() != 0.0f;
 }
 
 void SGD::insertSpecific(const TensorId &id,
@@ -274,11 +303,7 @@ SGD::getComplete(const std::map<std::string, OptimizerValue> &m) {
 
 std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
 
-  const auto &sessionOptions = graph.getIr().getSessionOptions();
-
-  bool withAccl = requiresAccl(w,
-                               sessionOptions.enableGradientAccumulation,
-                               sessionOptions.accumulationFactor);
+  bool withAccl = requiresAccl(w);
 
   auto opSettings = Op::Settings(graph, "");
 
@@ -291,21 +316,18 @@ std::unique_ptr<Op> SGD::createOp(const Tensor &w, Graph &graph) const {
   }
 
   // velocity required
-  return std::make_unique<SGD1VarUpdateComboOp>(
-      w.id,
-      mm1helper.getFromWeightId(w.id, *this),
-      dpsf1helper.getFromWeightId(w.id, *this),
-      wdsf1helper.getFromWeightId(w.id, *this),
-      slr1helper.getFromWeightId(w.id, *this),
-      opSettings);
+  return std::make_unique<SGD1ComboOp>(w.id,
+                                       smm1helper.getFromWeightId(w.id, *this),
+                                       dpsf1helper.getFromWeightId(w.id, *this),
+                                       swd1helper.getFromWeightId(w.id, *this),
+                                       slr1helper.getFromWeightId(w.id, *this),
+                                       getReplicatedGraphCount() > 1,
+                                       opSettings);
 }
 
-std::vector<TensorId> SGD::getInputIds(const Tensor &w,
-                                       bool enableGradientAccumulation,
-                                       int64_t accumulationFactor) const {
+std::vector<TensorId> SGD::getInputIds(const Tensor &w) const {
 
-  bool withAccl =
-      requiresAccl(w, enableGradientAccumulation, accumulationFactor);
+  bool withAccl = requiresAccl(w);
 
   const TensorId &varId = w.id;
   std::vector<TensorId> inputs;
@@ -319,7 +341,7 @@ std::vector<TensorId> SGD::getInputIds(const Tensor &w,
   inputs[VarUpdateOp::getVarToUpdateInIndex()] = varId;
 
   // gradient
-  inputs[VarUpdateOp::getUpdaterInIndex()] = getGradId(varId);
+  inputs[VarUpdateWithUpdaterOp::getUpdaterInIndex()] = getGradId(varId);
 
   if (!withAccl) {
     // scaled learning rate (optional)
@@ -335,19 +357,19 @@ std::vector<TensorId> SGD::getInputIds(const Tensor &w,
   else {
 
     // momentum (optional)
-    inputs[SGD1VarUpdateComboOp::getMm1InIndex()] =
-        mm1helper.getScalarIdIfNonConst(w, *this);
+    inputs[SGD1ComboOp::getSmm1InIndex()] =
+        smm1helper.getScalarIdIfNonConst(w, *this);
 
     // dampening scale factor (optional)
-    inputs[SGD1VarUpdateComboOp::getDpsf1InIndex()] =
+    inputs[SGD1ComboOp::getDpsf1InIndex()] =
         dpsf1helper.getScalarIdIfNonConst(w, *this);
 
     // weight decay scale factor (optional)
-    inputs[SGD1VarUpdateComboOp::getWdsf1InIndex()] =
-        wdsf1helper.getScalarIdIfNonConst(w, *this);
+    inputs[SGD1ComboOp::getSwd1InIndex()] =
+        swd1helper.getScalarIdIfNonConst(w, *this);
 
     // scaled learning rate (optional)
-    inputs[SGD1VarUpdateComboOp::getSlr1InIndex()] =
+    inputs[SGD1ComboOp::getSlr1InIndex()] =
         slr1helper.getScalarIdIfNonConst(w, *this);
   }
 
@@ -355,12 +377,9 @@ std::vector<TensorId> SGD::getInputIds(const Tensor &w,
 }
 
 std::vector<std::tuple<TensorId, TensorInfo>>
-SGD::getOptimizerInputs(const Tensor &weight,
-                        bool enableGradientAccumulation,
-                        int64_t accumulationFactor) const {
+SGD::getOptimizerInputs(const Tensor &weight) const {
 
-  bool withAccl =
-      requiresAccl(weight, enableGradientAccumulation, accumulationFactor);
+  bool withAccl = requiresAccl(weight);
 
   std::vector<TensorId> ids;
   if (!withAccl) {
@@ -368,8 +387,8 @@ SGD::getOptimizerInputs(const Tensor &weight,
     ids.push_back(wdsf0helper.getScalarIdIfNonConst(weight, *this));
   } else {
     ids.push_back(slr1helper.getScalarIdIfNonConst(weight, *this));
-    ids.push_back(wdsf1helper.getScalarIdIfNonConst(weight, *this));
-    ids.push_back(mm1helper.getScalarIdIfNonConst(weight, *this));
+    ids.push_back(swd1helper.getScalarIdIfNonConst(weight, *this));
+    ids.push_back(smm1helper.getScalarIdIfNonConst(weight, *this));
     ids.push_back(dpsf1helper.getScalarIdIfNonConst(weight, *this));
   }
 
@@ -423,16 +442,16 @@ float SGD::getStoredValue(const TensorId &optId) const {
     return slr1helper.getFromScalarId(optId, *this).val();
   }
 
-  if (wdsf1helper.idMatch(optId)) {
-    return wdsf1helper.getFromScalarId(optId, *this).val();
+  if (swd1helper.idMatch(optId)) {
+    return swd1helper.getFromScalarId(optId, *this).val();
   }
 
   if (dpsf1helper.idMatch(optId)) {
     return dpsf1helper.getFromScalarId(optId, *this).val();
   }
 
-  if (mm1helper.idMatch(optId)) {
-    return mm1helper.getFromScalarId(optId, *this).val();
+  if (smm1helper.idMatch(optId)) {
+    return smm1helper.getFromScalarId(optId, *this).val();
   }
 
   throw error("In getStoredValue for {}, it doesn't match any existing "

@@ -6,7 +6,7 @@
 
 namespace popart {
 
-class SGD1AccumulateOp : public VarUpdateOp {
+class SGD1AccumulateOp : public VarUpdateWithUpdaterOp {
 
 public:
   SGD1AccumulateOp(const TensorId &varToUpdate,

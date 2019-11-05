@@ -46,14 +46,8 @@ poplar::program::Sequence &PopPrograms::toHostFinalCopyFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::TOHOSTFINALCOPY)];
 }
 
-poplar::program::Sequence &PopPrograms::varUpdateFromAccumulatorFragment() {
+poplar::program::Sequence &PopPrograms::accumulateOuterFragment() {
   return seqs[static_cast<int>(ProgramFragmentIndex::VARUPDATEFROMACCUMULATOR)];
-}
-
-poplar::program::Sequence &
-PopPrograms::resetWeightGradientAccumulatorFragment() {
-  return seqs[static_cast<int>(
-      ProgramFragmentIndex::RESETWEIGHTGRADIENTACCUMULATOR)];
 }
 
 poplar::program::Sequence &PopPrograms::weightsToHostFragment() {
@@ -253,8 +247,7 @@ poplar::program::Sequence PopPrograms::getMainProgramFromPipelineFragments() {
 
   if (!dv_p->getOuterLoopFragEmpty()) {
 
-    inner.add(varUpdateFromAccumulatorFragment());
-    inner.add(resetWeightGradientAccumulatorFragment());
+    inner.add(accumulateOuterFragment());
     // If doing gradient accumulation, the inner loop is over mini batches,
     // and this outer loop loops over multiple batches per step.
     auto bps = dv_p->ir().getDataFlow().batchesPerStep();
@@ -289,8 +282,7 @@ poplar::program::Sequence PopPrograms::program() {
           "Adding gradient accumulation repeat loop with {} loops",
           accumulationFactor);
       prog = poplar::program::Repeat(accumulationFactor, prog);
-      prog.add(varUpdateFromAccumulatorFragment());
-      prog.add(resetWeightGradientAccumulatorFragment());
+      prog.add(accumulateOuterFragment());
     }
 
     // BatchesPerStep loop

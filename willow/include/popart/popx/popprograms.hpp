@@ -43,7 +43,6 @@ public:
     FORWARD,
     BACKWARD,
     VARUPDATEFROMACCUMULATOR,
-    RESETWEIGHTGRADIENTACCUMULATOR,
     WEIGHTSTOHOST,
     TOHOSTFINALCOPY,
     N // The number of program fragments
@@ -59,8 +58,7 @@ public:
   poplar::program::Sequence &preForwardFragment();
   poplar::program::Sequence &forwardFragment();
   poplar::program::Sequence &backwardFragment();
-  poplar::program::Sequence &varUpdateFromAccumulatorFragment();
-  poplar::program::Sequence &resetWeightGradientAccumulatorFragment();
+  poplar::program::Sequence &accumulateOuterFragment();
   poplar::program::Sequence &weightsToHostFragment();
   // If ScheduledPreLoss::Yes, then return forwardFragment(), else return
   // backwardFragment()

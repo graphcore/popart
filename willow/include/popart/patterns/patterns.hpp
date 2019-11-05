@@ -68,6 +68,15 @@ public:
     return getInstance().enabledByDefault[t];
   }
 
+  static std::string opReplacementPattern(Op *op_) {
+    for (auto p : getInstance().factory) {
+      if (p.second().get()->matches(op_)) {
+        return p.second().get()->getPatternName();
+      }
+    }
+    return "";
+  }
+
   static std::string getPatternName(PreAliasPatternType type) {
     // as there is no reverse mapping, we use the O(N) linear search here
     for (auto i : getInstance().stringToPreAliasPatternTypeMapping) {

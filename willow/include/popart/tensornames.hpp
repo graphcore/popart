@@ -27,12 +27,17 @@ TensorId getUpdatedVarId(const TensorId &id);
 
 constexpr const char *reservedGradientPrefix() { return "Gradient___"; }
 constexpr const char *reservedUpdatedVarPrefix() { return "UpdatedVar___"; }
-constexpr const char *reservedAccumulationPrefix() { return "Accumulation___"; }
-constexpr const char *reservedAccumulationOutPrefix() {
-  return "AccumulationOut___";
+constexpr const char *reservedAcclToAccumulatorPrefix() {
+  return "AcclIntoAccumulator___";
 }
-constexpr const char *reservedAccumulationResetPrefix() {
-  return "AccumulationReset___";
+constexpr const char *reservedAcclToReducePrefix() {
+  return "AcclIntoReduce___";
+}
+constexpr const char *reservedAcclToUpdatePrefix() {
+  return "AcclIntoUpdate___";
+}
+constexpr const char *reservedAcclFinalOutPrefix() {
+  return "AcclOutOfAcclUpdate___";
 }
 constexpr const char *reservedStashedPrefix() { return "Stashed___"; }
 constexpr const char *reservedRestoredPrefix() { return "Restored___"; }
@@ -61,11 +66,11 @@ constexpr const char *reservedSpecificScaledLearningRate0Prefix() {
   return "scaledLearningRate0___specific___";
 }
 
-constexpr const char *reservedDefaultWeightDecayScaleFactor1Prefix() {
-  return "weightDecayScaleFactor1___default___";
+constexpr const char *reservedDefaultScaledWeightDecay1Prefix() {
+  return "scaledWeightDecay1___default___";
 }
-constexpr const char *reservedSpecificWeightDecayScaleFactor1Prefix() {
-  return "weightDecayScaleFactor1___specific___";
+constexpr const char *reservedSpecificScaledWeightDecay1Prefix() {
+  return "scaledWeightDecay1___specific___";
 }
 
 constexpr const char *reservedDefaultScaledLearningRate1Prefix() {
@@ -82,11 +87,18 @@ constexpr const char *reservedSpecificDampeningScaleFactor1Prefix() {
   return "dampeningScaleFactor1___specific___";
 }
 
-constexpr const char *reservedDefaultMomentum1Prefix() {
-  return "momentum1___default___";
+constexpr const char *reservedDefaultScaledMomentum1Prefix() {
+  return "scaledMomentum1___default___";
 }
-constexpr const char *reservedSpecificMomentum1Prefix() {
-  return "momentum1___specific___";
+constexpr const char *reservedSpecificScaledMomentum1Prefix() {
+  return "scaledMomentum1___specific___";
+}
+
+constexpr const char *hostReduceGradCopyPrefix() {
+  return "hostReduceGradCopy___";
+}
+constexpr const char *hostReduceVarCopyPrefix() {
+  return "hostReduceVarCopy___";
 }
 
 } // namespace popart

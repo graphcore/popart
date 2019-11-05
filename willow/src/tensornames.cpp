@@ -34,12 +34,12 @@ std::vector<std::string> reservedOptimizerPrefixes() {
 
           reservedDefaultScaledLearningRate1Prefix(),
           reservedSpecificScaledLearningRate1Prefix(),
-          reservedDefaultWeightDecayScaleFactor1Prefix(),
-          reservedSpecificWeightDecayScaleFactor1Prefix(),
+          reservedDefaultScaledWeightDecay1Prefix(),
+          reservedSpecificScaledWeightDecay1Prefix(),
           reservedDefaultDampeningScaleFactor1Prefix(),
           reservedSpecificDampeningScaleFactor1Prefix(),
-          reservedDefaultMomentum1Prefix(),
-          reservedSpecificMomentum1Prefix(),
+          reservedDefaultScaledMomentum1Prefix(),
+          reservedSpecificScaledMomentum1Prefix(),
 
           reservedLossScalingPrefix()};
 }
@@ -47,9 +47,10 @@ std::vector<std::string> reservedOptimizerPrefixes() {
 std::vector<std::string> reservedPrefixes() {
   std::vector<std::string> prefs = {reservedGradientPrefix(),
                                     reservedUpdatedVarPrefix(),
-                                    reservedAccumulationPrefix(),
-                                    reservedAccumulationOutPrefix(),
-                                    reservedAccumulationResetPrefix(),
+                                    reservedAcclToAccumulatorPrefix(),
+                                    reservedAcclToReducePrefix(),
+                                    reservedAcclToUpdatePrefix(),
+                                    reservedAcclFinalOutPrefix(),
                                     reservedStashedPrefix(),
                                     reservedRestoredPrefix(),
                                     reservedRandomSeedPrefix()};

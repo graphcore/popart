@@ -1,6 +1,9 @@
 #include <iostream>
 #include <popart/logging.hpp>
 #include <popart/names.hpp>
+#include <popart/op.hpp>
+#include <popart/tensor.hpp>
+#include <popart/tensorindex.hpp>
 #include <popart/util.hpp>
 
 namespace popart {
@@ -27,4 +30,17 @@ std::ostream &operator<<(std::ostream &ss, const std::vector<std::size_t> &v) {
   appendSequence(ss, v);
   return ss;
 }
+
+void OpSearchHelper::pushConsumers(Tensor *t) {
+  for (auto consumer : t->consumers.getOps()) {
+    push(consumer);
+  }
+}
+
+void OpSearchHelper::pushOutputConsumers(Op *op) {
+  for (auto output : op->output->tensors()) {
+    pushConsumers(output);
+  }
+}
+
 } // namespace popart

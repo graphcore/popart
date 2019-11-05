@@ -22,6 +22,8 @@
 #include <popart/tensornames.hpp>
 #include <popart/version.hpp>
 
+#include <popart/popx/devicex.hpp>
+
 #include <stdexcept>
 #include <poplar/exceptions.hpp>
 #include <poputil/exceptions.hpp>
@@ -164,7 +166,7 @@ public:
   T get(TensorId id,
         std::map<TensorId, ArrayInfo> &M,
         int64_t numElements,
-        bool advance,
+        bool advance_,
         std::string mapName) {
 
     auto found = M.find(id);
@@ -184,7 +186,7 @@ public:
     stepData.data =
         static_cast<uint8_t *>(arrayInfo.array.request().ptr) + offset;
 
-    if (advance) {
+    if (advance_) {
 
       int64_t numBytes =
           static_cast<int64_t>(stepData.info.getDataTypeInfo()->nbytes()) *
@@ -677,7 +679,7 @@ PYBIND11_MODULE(popart_core, m) {
       .value("FINAL", DotCheck::FINAL);
 
   py::enum_<RecomputationType>(m, "RecomputationType")
-      .value("None", RecomputationType::None)
+      .value("NoRecompute", RecomputationType::None)
       .value("Standard", RecomputationType::Standard)
       .value("NormOnly", RecomputationType::NormOnly)
       .value("Pipeline", RecomputationType::Pipeline);
@@ -902,7 +904,12 @@ PYBIND11_MODULE(popart_core, m) {
       .def("resetHostWeights", &TrainingSession::resetHostWeights)
 
       // Special test method to write serialise ir for analysis
-      .def("_serializeIr", &TrainingSession::serializeIr, py::arg("format"));
+      .def("_serializeIr", &TrainingSession::serializeIr, py::arg("format"))
+      // Accessor for internal objects
+      .def("getIr", &TrainingSession::getIr)
+      .def("getGradAndVarStreamIds", &TrainingSession::getGradAndVarStreamIds)
+      .def("connectStreamToCallback",
+           &TrainingSession::connectStreamToCallback);
 
   py::class_<GraphTransformer>(m, "GraphTransformer")
       .def(py::init<const std::string &>(), py::arg("modelProtoOrFilename"))
@@ -1281,9 +1288,12 @@ PYBIND11_MODULE(popart_core, m) {
 
   m.def("reservedGradientPrefix", &reservedGradientPrefix);
   m.def("reservedUpdatedVarPrefix", &reservedUpdatedVarPrefix);
-  m.def("reservedAccumulationPrefix", &reservedAccumulationPrefix);
-  m.def("reservedAccumulationOutPrefix", &reservedAccumulationOutPrefix);
-  m.def("reservedAccumulationResetPrefix", &reservedAccumulationResetPrefix);
+
+  m.def("reservedAcclToAccumulatorPrefix", &reservedAcclToAccumulatorPrefix);
+  m.def("reservedAcclToReducePrefix", &reservedAcclToReducePrefix);
+  m.def("reservedAcclToUpdatePrefix", &reservedAcclToUpdatePrefix);
+  m.def("reservedAcclFinalOutPrefix", &reservedAcclFinalOutPrefix);
+
   m.def("reservedStashedPrefix", &reservedStashedPrefix);
   m.def("reservedRestoredPrefix", &reservedRestoredPrefix);
   m.def("reservedLossScalingPrefix", &reservedLossScalingPrefix);

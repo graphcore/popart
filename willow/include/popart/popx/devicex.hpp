@@ -3,6 +3,7 @@
 
 #include <boost/optional.hpp>
 
+#include <poplar/DataStream.hpp>
 #include <poplar/DeviceManager.hpp>
 #include <poplar/Engine.hpp>
 #include <poplar/Graph.hpp>
@@ -290,6 +291,21 @@ public:
                           double val,
                           const std::string &name);
 
+  PopStreamId gradientStoreStreamId(TensorId id) const;
+  PopStreamId weightLoadStreamId(TensorId id) const;
+
+  poplar::DataStream &
+  insertGradientStoreStream(TensorId, TensorInfo, poplar::Graph &);
+  poplar::DataStream &
+  insertWeightLoadStream(TensorId, TensorInfo, poplar::Graph &);
+
+  const std::vector<std::pair<TensorId, TensorId>> &
+  getGradAndVarStreamIds() const;
+  std::vector<std::pair<TensorId, TensorId>> &getGradAndVarStreamIds();
+
+  void connectStreamToCallback(const std::string &streamHandle,
+                               std::function<void(void *)> callback);
+
 private:
   std::unique_ptr<poplar::Graph> pGraph{nullptr};
 
@@ -368,6 +384,9 @@ private:
   PriTask initAndUpdatePipelineStashIndicesTask();
 
   PriTask opTask(Op *, double priority, TaskId prevOpTaskId);
+  void opTaskFunc(Op *);
+  void pipelinedOpTaskFunc(Op *);
+  void growOpx(Opx *, poplar::program::Sequence &);
 
   TaskId opTaskId(Op *) const;
 
@@ -492,6 +511,12 @@ private:
   std::map<TensorId, poplar::DataStream> toHostAnchorStreams;
   std::map<TensorId, poplar::DataStream> toHostWeightStreams;
 
+  // Streams for doing allreduce on host side
+  std::map<TensorId, poplar::DataStream> toHostGradientStreams;
+  std::map<TensorId, poplar::DataStream> fromHostWeightLoadStreams;
+
+  std::vector<std::pair<TensorId, TensorId>> gradAndVarStreamIds;
+
   // Q: Consider replacing the d2h weight buffer with a data stream as
   // done for inputs
   std::map<TensorId, std::vector<char>> d2hWeightBuffers;
@@ -565,10 +590,8 @@ private:
   bool opxTrace = false;
   poplar::Tensor opxTraceTensor;
 
-  // This keeps track of whether there the varUpdateFromAccmulatorFragment and
-  // the resetWeightGradientAccumulatorFragment are empty. TODO T12001: (1)
-  // merge these 2 fragments (2) a class which encapsulates framgments which has
-  // this attribute.
+  // This keeps track of whether there the accumulateOuterFragment  is empty
+  // TODO T12001 a class which encapsulates framgments which has this attribute.
   bool outerLoopFragEmpty = true;
 
 public:

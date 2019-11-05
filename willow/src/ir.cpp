@@ -37,6 +37,7 @@
 #include <popart/recompute.hpp>
 #include <popart/transforms/auto_virtual_graph.hpp>
 #include <popart/transforms/groupmatmuls.hpp>
+#include <popart/transforms/hostreduce.hpp>
 #include <popart/transforms/inferpipelinestages.hpp>
 #include <popart/transforms/interipucopy.hpp>
 #include <popart/transforms/mergecopies.hpp>
@@ -106,12 +107,15 @@ std::vector<Tensor *> Ir::optimizerTensors() const {
 }
 
 void Ir::updateOptimizer(const Optimizer &newOptimizer) {
-  if (!optimizer->validReplacement(newOptimizer)) {
+  // TODO this will be cleaner when T12589 is done
+  auto newOptimizerClone = newOptimizer.clone();
+  newOptimizerClone->setFactorsFromOptions(getSessionOptions());
+  if (!optimizer->validReplacement(*newOptimizerClone)) {
     throw error("This Optimizer of type " + newOptimizer.type_s() +
                 " is not a valid replacement for optimizer of type " +
                 optimizer->type_s());
   }
-  optimizer = newOptimizer.clone();
+  optimizer = std::move(newOptimizerClone);
   for (auto opt : optimizerTensors()) {
     optimizer->resetTensorData(*opt);
   }
@@ -246,6 +250,7 @@ void Ir::setLosses(const std::vector<Loss *> &_losses) {
 
 void Ir::setOptimizer(const Optimizer &o) {
   optimizer = o.clone();
+  optimizer->setFactorsFromOptions(getSessionOptions());
 
   // We create scale factor Tensors now (they will be removed later if not
   // used). All other optimizer Tensors are created just-in-time during Graph
@@ -878,6 +883,14 @@ void Ir::prepareImpl(const IrBundle &gb) {
     updateVertices();
   }
 
+  if (!canTrain() && getSessionOptions().hostAllReduce) {
+    throw error("Host AllReduce only available when training.");
+  }
+  if (getSessionOptions().hostAllReduce) {
+    applyTransform(HostReduce::id(), getMainGraph());
+    updateVertices();
+  }
+
   // confirm that all the anchor names provided
   // are indeed real tensor names. This is a check
   // that the user has not provided incorrect names.
@@ -1289,7 +1302,7 @@ void Ir::validateAnchors() const {
   for (TensorId id : dataFlow.anchors()) {
     if (!getTensors().contains(id)) {
       std::stringstream ss;
-      ss << "Anchor tensor `" << id << "' not in tensors. ";
+      ss << "Anchor tensor `" << id << "' not in Ir Tensors. ";
       // add some trouble-shooting for a case I stumbled upon:
       if (id.find(reservedGradientPrefix()) != std::string::npos) {
         std::string degrad = getNonGradId(id);
@@ -2143,20 +2156,14 @@ void Ir::growGradientVarUpdateOp(const TensorId &varId) {
   }
 
   const Tensor &var = *getTensors().get(varId);
-  auto inputIds =
-      optimizer->getInputIds(var,
-                             getSessionOptions().enableGradientAccumulation,
-                             getSessionOptions().accumulationFactor);
+  auto inputIds     = optimizer->getInputIds(var);
 
-  auto optimizerInputs = optimizer->getOptimizerInputs(
-      var,
-      getSessionOptions().enableGradientAccumulation,
-      getSessionOptions().accumulationFactor);
+  auto optimizerInputs = optimizer->getOptimizerInputs(var);
 
   // If there is no weight gradient, we assume that the gradient has been
   // forced to zero somewhere else in the backwards pass
   bool updaterAvailable = getMainGraph().getTensors().contains(
-      inputIds.at(VarUpdateOp::getUpdaterInIndex()));
+      inputIds.at(VarUpdateWithUpdaterOp::getUpdaterInIndex()));
 
   if (updaterAvailable) {
 

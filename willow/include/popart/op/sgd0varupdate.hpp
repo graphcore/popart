@@ -5,18 +5,13 @@
 
 namespace popart {
 
-// The "0" in the name signifies that there are no persistant Tensors required
-// and associated to the Variable Tensor being updated. Specifically, there is
-// no gradient accumulation and no momentum (momentum factor is 0)
-class SGD0VarUpdateOp : public VarUpdateOp {
+class SGD0VarUpdateOpBase : public VarUpdateWithUpdaterOp {
 public:
-  SGD0VarUpdateOp(const TensorId &varToUpdate,
-                  OptimizerValue initialSlr0,
-                  OptimizerValue initialWdsf0,
-                  const Op::Settings &);
-
-  std::unique_ptr<Op> clone() const final;
-  std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
+  SGD0VarUpdateOpBase(const OperatorIdentifier &opid,
+                      const TensorId &varToUpdate,
+                      OptimizerValue initialSlr0,
+                      OptimizerValue initialWdsf0,
+                      const Op::Settings &settings);
 
   // If the scaled learning rate is not constant, this is the index at which it
   // will be consumed by this Op
@@ -36,6 +31,20 @@ public:
   const OptimizerValue initWdsf0;
 
   void appendAttributes(OpSerialiserBase &) const final;
+};
+
+// The "0" in the name signifies that there are no persistant Tensors required
+// and associated to the Variable Tensor being updated. Specifically, there is
+// no gradient accumulation and no momentum (momentum factor is 0)
+class SGD0VarUpdateOp : public SGD0VarUpdateOpBase {
+public:
+  SGD0VarUpdateOp(const TensorId &varToUpdate,
+                  OptimizerValue initialSlr0,
+                  OptimizerValue initialWdsf0,
+                  const Op::Settings &);
+
+  std::unique_ptr<Op> clone() const final;
+  std::unique_ptr<Op> cloneWithNewName(const TensorId &newName) const final;
 };
 
 } // namespace popart

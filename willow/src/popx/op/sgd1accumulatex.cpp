@@ -25,15 +25,14 @@ void SGD1AccumulateOpx::grow(poplar::program::Sequence &prog) const {
   auto isConst = sgd1AccumulateOp.initDpsf1.isConst();
 
   auto accl = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
-  auto grad = getInTensor(VarUpdateOp::getUpdaterInIndex());
-
-  // T12001 : replication with momentum
+  auto grad = getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex());
 
   if (isConst) {
     auto val = sgd1AccumulateOp.initDpsf1.val();
     if (val == 0.0f) {
-      throw error(
-          "ILE: dpsf1 of 0 is not allowed, should have been caught in the Ir");
+      throw error("ILE: dpsf1 of 0 is not allowed, should have been caught in "
+                  "the Ir, dpsf1 of 0 could be caused by dampening of 1, which "
+                  "means the gradient is multiplied by 0 (no learning)");
     }
     if (val - 1.0f == 0.0f) {
       // accl += grad
@@ -65,7 +64,8 @@ poplar::Tensor SGD1AccumulateOpx::createInput(int inIndex,
         "only create the var to update input Tensor",
         inIndex);
   }
-  return graph().clone(getInTensor(VarUpdateOp::getUpdaterInIndex()), name);
+  return graph().clone(getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
+                       name);
 }
 
 InputCreatorType SGD1AccumulateOpx::getInputCreatorType(int inIndex) const {
@@ -80,7 +80,7 @@ SGD1AccumulateOpx::mustExistBeforeCreate(int index1) const {
     throw error(
         "ILE: SGD1AccumulateOpx::mustExistBeforeCreate : Invalid index");
   }
-  return {inId(VarUpdateOp::getUpdaterInIndex())};
+  return {inId(VarUpdateWithUpdaterOp::getUpdaterInIndex())};
 }
 
 namespace {

@@ -7,6 +7,8 @@ add_popart_cpp_unit_test(pipeline_continuous_equivalent_test_0
                          pipeline_continuous_equivalent_test_0.cpp)
 add_popart_cpp_unit_test(pipeline_discontiguous_ipu_copy_test_0
                          pipeline_discontiguous_ipu_copy_test_0.cpp)
+add_popart_cpp_unit_test(pipeline_discontiguous_ipu_copy_test_1
+                         pipeline_discontiguous_ipu_copy_test_1.cpp)
 add_popart_cpp_unit_test(pipeline_quadratic_epsilon_test_0
                          pipeline_quadratic_epsilon_test_0.cpp)
 add_popart_cpp_unit_test(pipeline_quadratic_epsilon_test_1

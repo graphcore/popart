@@ -22,10 +22,6 @@ void SqrtOpx::grow(poplar::program::Sequence &prog) const {
 
 namespace {
 OpxCreator<SqrtOpx> sqrtOpxCreator(Onnx::Operators::Sqrt_6);
-OpxCreator<Opx> softmaxGradOpxCreator(
-    Onnx::GradOperators::SqrtGrad,
-    "SqrtGradOp should be removed by pattern 'SqrtGradOp'");
-
 } // namespace
 
 } // namespace popx

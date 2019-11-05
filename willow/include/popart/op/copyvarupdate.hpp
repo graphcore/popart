@@ -5,7 +5,7 @@
 
 namespace popart {
 
-class CopyVarUpdateOp : public VarUpdateOp {
+class CopyVarUpdateOp : public VarUpdateWithUpdaterOp {
 public:
   CopyVarUpdateOp(TensorId to, const Op::Settings &);
   std::unique_ptr<Op> clone() const final;

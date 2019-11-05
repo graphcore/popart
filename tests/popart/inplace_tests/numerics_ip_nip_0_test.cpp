@@ -195,7 +195,9 @@ BOOST_AUTO_TEST_CASE(Inplace_numericsIpNip0) {
     opts.dotOpNames      = false;
     opts.logDir          = "./dotfiles";
     opts.enableOutlining = false;
-    boost::filesystem::create_directory(opts.logDir);
+    if (!boost::filesystem::exists(opts.logDir)) {
+      boost::filesystem::create_directory(opts.logDir);
+    }
 
     auto cpuDevice =
         popart::DeviceManager::createDeviceManager().createCpuDevice();

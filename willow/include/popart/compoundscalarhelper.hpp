@@ -79,7 +79,7 @@ private:
   }
 };
 
-class WeightDecayScaleFactor1Helper : public CompoundScalarHelper {
+class ScaledWeightDecay1Helper : public CompoundScalarHelper {
 public:
   float val(const TensorId &weightId, const SGD &) const final;
   bool isConst(const TensorId &weightId, const SGD &) const final;
@@ -89,10 +89,10 @@ public:
 
 private:
   std::string defaultPrefix() const final {
-    return reservedDefaultWeightDecayScaleFactor1Prefix();
+    return reservedDefaultScaledWeightDecay1Prefix();
   }
   std::string specificPrefix() const final {
-    return reservedSpecificWeightDecayScaleFactor1Prefix();
+    return reservedSpecificScaledWeightDecay1Prefix();
   }
 };
 
@@ -100,7 +100,9 @@ class ScaledLearningRate1Helper : public CompoundScalarHelper {
 public:
   float val(const TensorId &weightId, const SGD &) const final;
   bool isConst(const TensorId &weightId, const SGD &) const final;
-  float val(float lr, float vs) const { return lr / vs; }
+  float val(float lr, float vs, int64_t rf) const {
+    return lr / (vs * static_cast<float>(rf));
+  }
 
 private:
   std::string defaultPrefix() const final {
@@ -115,8 +117,8 @@ class DampeningScaleFactor1Helper : public CompoundScalarHelper {
 public:
   float val(const TensorId &weightId, const SGD &) const final;
   bool isConst(const TensorId &weightId, const SGD &) const final;
-  float val(float dm, float vs, float ls) const {
-    return (1.0f - dm) * vs / ls;
+  float val(float dm, float vs, float ls, int64_t rf) const {
+    return (1.0f - dm) * vs * static_cast<float>(rf) / ls;
   }
 
 private:
@@ -128,18 +130,18 @@ private:
   }
 };
 
-class Momentum1Helper : public CompoundScalarHelper {
+class ScaledMomentum1Helper : public CompoundScalarHelper {
 public:
   float val(const TensorId &weightId, const SGD &) const final;
   bool isConst(const TensorId &weightId, const SGD &) const final;
-  float val(float mm) const { return mm; }
+  float val(float mm, int64_t rf) const { return mm / static_cast<float>(rf); }
 
 private:
   std::string defaultPrefix() const final {
-    return reservedDefaultMomentum1Prefix();
+    return reservedDefaultScaledMomentum1Prefix();
   }
   std::string specificPrefix() const final {
-    return reservedSpecificMomentum1Prefix();
+    return reservedSpecificScaledMomentum1Prefix();
   }
 };
 

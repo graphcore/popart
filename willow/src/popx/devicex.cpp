@@ -7,6 +7,7 @@
 #include <set>
 
 #include <boost/range/algorithm/find.hpp>
+#include <boost/range/algorithm_ext.hpp>
 
 #include <poplar/CSRFunctions.hpp>
 #include <poplin/codelets.hpp>
@@ -29,6 +30,7 @@
 #include <popart/op/ipucopy.hpp>
 #include <popart/op/restore.hpp>
 #include <popart/op/varupdate.hpp>
+#include <popart/patterns/pattern.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/popx/devicexmanager.hpp>
 #include <popart/popx/opx.hpp>
@@ -42,6 +44,7 @@
 #include <popart/tojson.hpp>
 #include <popart/topocons.hpp>
 
+#include <popart/op/sgd1acclreduce.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1varupdate.hpp>
 #include <popart/op/varupdate.hpp>
@@ -702,7 +705,18 @@ std::unique_ptr<Opx> Devicex::createOpx(Op *op) {
         op->opid == Onnx::Operators::Constant_9) {
       throw error("ILE: No Opx for {}", op->opid);
     } else {
-      throw error("Could not create opx for '{}'", op->opid);
+      auto pattern = PreAliasPatternManager::opReplacementPattern(op);
+      if (pattern != "") {
+        throw error("Could not create opx for '{}'. This op should have been "
+                    "removed by pattern {}",
+                    op->opid,
+                    pattern);
+      } else {
+        throw error("Could not create opx for '{}' and there were no patterns "
+                    "intended to remove it. Please check it is defined and "
+                    "registered correctly",
+                    op->opid);
+      }
     }
   }
 
@@ -922,7 +936,7 @@ PriTask Devicex::initTensorTask(Tensor *tensor) {
   auto priMod1       = firstConsumer->input->indices(tensor).front();
   // assumes an op has max 1000 inputs
   auto priMod =
-      static_cast<double>(priMod0) + static_cast<double>(priMod1) / 1000.0f;
+      static_cast<double>(priMod0) + static_cast<double>(priMod1) / 1000.0;
 
   // 1. A unique candidate creator will create the tensor
   // 2. The tensor will be unwound (have its layout modified)
@@ -1405,10 +1419,7 @@ Devicex::initTensorByCloningTask(Op *op, TensorId srcId, TensorId dstId) {
   return {-1e6, initTensorTaskId(dstId), deps, f};
 }
 
-// This code should be refactored
 PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
-  Opx *opx = getOpx(op->id);
-
   // although priority should guarantee that this
   // task is only run after inputs are all created,
   // we add a dependency to the input tensors, just
@@ -1426,8 +1437,8 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     }
   }
 
-  auto addGraphOpsToDeps = [&](const Graph &graph) {
-    for (auto graphOp : graph.getOpSchedule({})) {
+  auto addGraphOpsToDeps = [&](const Graph *graph) {
+    for (auto graphOp : graph->getOpSchedule({})) {
       auto taskId = opTaskId(graphOp);
       if (std::find(deps.begin(), deps.end(), taskId) == deps.end()) {
         deps.push_back(taskId);
@@ -1435,15 +1446,8 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     }
   };
 
-  // TODO This could probably be made generic in the future
-  // for (auto &graph : op->getCalledGraphs()) { ... }
-  if (op->isConvertibleTo<CallOp>()) {
-    auto callOp = dynamic_cast<CallOp *>(op);
-    addGraphOpsToDeps(callOp->getCalledGraph());
-  } else if (op->isConvertibleTo<IfOp>()) {
-    auto ifOp = dynamic_cast<IfOp *>(op);
-    addGraphOpsToDeps(ifOp->getThenGraph());
-    addGraphOpsToDeps(ifOp->getElseGraph());
+  for (auto &graph : op->getCalledGraphs()) {
+    addGraphOpsToDeps(graph);
   }
 
   // Depends on previous op task. This preserves op ordering from ir.
@@ -1455,220 +1459,235 @@ PriTask Devicex::opTask(Op *op, double priority, TaskId prevOpTaskId) {
     }
   }
 
-  auto f = [op, opx, this]() {
-    auto growOpx = [opx, this](poplar::program::Sequence &seq) {
-      if (opxTrace) {
-        seq.add(poplar::program::PrintTensor(opx->op_p->str() + "/enter",
-                                             opxTraceTensor));
-        opx->grow(seq);
-        seq.add(poplar::program::PrintTensor(opx->op_p->str() + "/exit",
-                                             opxTraceTensor));
-      } else {
-        opx->grow(seq);
-      }
-    };
-
-    const auto &containingGraph = opx->op_p->getGraph();
+  auto f = [op, this]() {
+    const auto &containingGraph = op->getGraph();
     // if this Op is not in the main scope
     if (!containingGraph.id.str().empty()) {
+      Opx *opx = getOpx(op->id);
       logging::devicex::debug("Creating output tensors for non-main " +
                               opx->op_p->debugName());
-      growOpx(progs.scopeFragment(containingGraph));
+      growOpx(opx, progs.scopeFragment(containingGraph));
+    } else if (ir().getSessionOptions().enablePipelining) {
+      pipelinedOpTaskFunc(op);
+    } else {
+      opTaskFunc(op);
     }
-
-    // else if this Op is in the main scope
-    else {
-      if (op->copiesOptimizerTensors()) {
-        growOpx(progs.streamOptimizerFromHostFragment());
-      }
-
-      // pre-loss : create vertices for all recompute types
-      else if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
-
-        // Pre-loss, not recompute
-        if (op->settings.recomputeType == RecomputeType::CHECKPOINT) {
-          logging::devicex::debug("Adding checkpoint Op {}", op->debugName());
-
-          // Pre-loss, not recompute, pipelining
-          if (ir().getSessionOptions().enablePipelining) {
-            auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
-
-            if (ipuCopyOp) {
-              // IpuCopyOps are handled as a special case in pipelining. Here,
-              // the destination tensor is created using the
-              // `createPipelinedOutput` method. Later, for each pipeline cycle
-              // the copy appears in, a new copy program is added to the cycles
-              // sequence using `IpuCopyOpx::growPipelined`.
-              dynamic_cast<IpuCopyOpx *>(opx)->createPipelinedOutput();
-            } else {
-              growOpx(progs.pipelineForwardFragment(op->getPipelineStage(),
-                                                    op->str()));
-            }
-          }
-
-          // Pre-loss, not recompute, no pipelining
-          else {
-            growOpx(progs.forwardFragment());
-          }
-        }
-
-        // Pre-loss, recompute
-        else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
-          logging::devicex::debug("Adding (first) recompute Op {}",
-                                  op->debugName());
-
-          growOpx(progs.recomputeFragment(op->id));
-
-          // Pre-loss, recompute, pipelining
-          if (ir().getSessionOptions().enablePipelining) {
-            progs.pipelineForwardFragment(op->getPipelineStage(), op->str())
-                .add(progs.recomputeFragment(op->id));
-          }
-
-          // Pre-loss, recompute, no-pipelining
-          else {
-            progs.forwardFragment().add(progs.recomputeFragment(op->id));
-          }
-        }
-
-        // Pre-loss, not recompute or checkpoint
-        else {
-          throw error("ILE: Unrecognised recompute type");
-        }
-        mainGraphOpRegistery.push_back(op);
-      }
-
-      // post-loss
-      else if (op->scheduledPreLoss == ScheduledPreLoss::No) {
-        if (op->settings.recomputeType != RecomputeType::CHECKPOINT) {
-          std::stringstream oss;
-          op->append(oss);
-          throw error("ILE: Non-checkpoint Op which is ScheduledPreLoss::No is "
-                      "not permitted: \n{}",
-                      oss.str());
-        }
-
-        // 2 special case Ops when their is a gradient accumulator / velocity.
-        // If we are doing gradient accumulation, we need to ensure the reset
-        // and var update aren't run every time. Instead, these fragments sit
-        // outside the "main" loop of the fowards and backwards passes.
-        // special case Op 1:
-        if ((op->isConvertibleTo<SGD1VarUpdateOp>()) &&
-            (ir().getSessionOptions().enableGradientAccumulation)) {
-          outerLoopFragEmpty = false;
-          growOpx(progs.varUpdateFromAccumulatorFragment());
-        }
-        // special case Op 2:
-        else if ((op->isConvertibleTo<SGD1AcclUpdateOp>()) &&
-                 (ir().getSessionOptions().enableGradientAccumulation)) {
-          outerLoopFragEmpty = false;
-          growOpx(progs.resetWeightGradientAccumulatorFragment());
-        }
-
-        // post-loss, not special gradient accumulation case,
-        else {
-
-          // decide what needs to be re-run.
-          std::set<Op *> toRerun;
-
-          auto getRequiredProducers = [&toRerun, this](Op *toBackcheck) {
-            std::vector<Op *> newOps;
-            for (auto t : toBackcheck->input->tensors()) {
-              if (t->hasProducer()) {
-                Op *inProducer = t->getProducer();
-                // recompute op, which hasn't been recomputed, and hasn't been
-                // registered as required yet
-                if (inProducer->settings.recomputeType ==
-                        RecomputeType::RECOMPUTE &&
-                    !progs.hasBeenRecomputed(inProducer->id) &&
-                    toRerun.count(inProducer) == 0) {
-                  newOps.push_back(inProducer);
-                }
-              }
-            }
-            return newOps;
-          };
-
-          std::vector<Op *> rerunFront = getRequiredProducers(op);
-
-          while (!rerunFront.empty()) {
-            Op *newRecomputeOp = rerunFront.back();
-            rerunFront.resize(rerunFront.size() - 1);
-            if (toRerun.count(newRecomputeOp) == 0) {
-              toRerun.insert(newRecomputeOp);
-              for (auto x : getRequiredProducers(newRecomputeOp)) {
-                rerunFront.push_back(x);
-              }
-            }
-          }
-
-          // put the ops to rerun in a topological order
-          auto aSchedule = op->getGraph().getOpSchedule({});
-          std::vector<Op *> toRerunVector;
-          toRerunVector.reserve(toRerun.size());
-          for (auto schedOp : aSchedule) {
-            if (toRerun.count(schedOp) > 0) {
-              toRerunVector.push_back(schedOp);
-              progs.recordRecomputed(schedOp->id);
-            }
-          }
-
-          for (auto opToRerun : toRerunVector) {
-            logging::devicex::debug("Adding (second) recompute Op {}",
-                                    opToRerun->debugName());
-
-            if (ir().getSessionOptions().enablePipelining) {
-
-              progs
-                  .pipelineForwardFragment(op->getPipelineStage(),
-                                           "recompute of " + opToRerun->str())
-                  .add(progs.recomputeFragment(opToRerun->id));
-
-            }
-
-            else {
-              progs.backwardFragment().add(
-                  progs.recomputeFragment(opToRerun->id));
-            }
-
-            mainGraphOpRegistery.push_back(opToRerun);
-          }
-
-          logging::devicex::debug("Adding post-turning check-point Op {}",
-                                  op->debugName());
-
-          // Post-loss, no pipelining.
-          if (!ir().getSessionOptions().enablePipelining) {
-            growOpx(progs.backwardFragment());
-          }
-
-          // post-loss, with pipelining.
-          else {
-            auto ipuCopyOp = dynamic_cast<IpuCopyOp *>(op);
-            if (ipuCopyOp) {
-              // IpuCopyOps are handled as a special case in pipelining. Here,
-              // the destination tensor is created using the
-              // `createPipelinedOutput` method. Later, for each pipeline cycle
-              // the copy appears in, a new copy program is added to the cycles
-              // sequence using `IpuCopyOpx::growPipelined`.
-              dynamic_cast<IpuCopyOpx *>(opx)->createPipelinedOutput();
-            } else {
-              growOpx(progs.pipelineForwardFragment(op->getPipelineStage(),
-                                                    op->str()));
-            }
-          }
-          mainGraphOpRegistery.push_back(op);
-        }
-      }
-
-      else {
-        throw error("ILE: Unknown SchedulePreLoss in prepare, should "
-                    "updateVertices have been called recently?");
-      }
-    }
-    // main scope Ops complete
   };
+
   return {priority, opTaskId(op), deps, f};
+}
+
+namespace {
+
+// Walk the producers of an ops inputs, applying function f to every producer.
+// The producers are walked in a top down fashion. If f returns false of an op,
+// then further producers below it are not traversed.
+template <typename Predicate> void walkProducers(Op *op, Predicate f) {
+  std::vector<Op *> toCheck;
+  std::set<Op *> seen;
+
+  auto addProducers = [&toCheck, &seen](Op *x) {
+    for (auto t : x->input->tensors()) {
+      if (t->hasProducer()) {
+        auto p = t->getProducer();
+        if (seen.find(p) == seen.end()) {
+          toCheck.push_back(p);
+          seen.insert(p);
+        }
+      }
+    }
+  };
+
+  addProducers(op);
+  while (!toCheck.empty()) {
+    auto x = toCheck.back();
+    toCheck.pop_back();
+    if (f(x)) {
+      addProducers(x);
+    }
+  }
+}
+
+} // namespace
+
+void Devicex::growOpx(Opx *opx, poplar::program::Sequence &seq) {
+  if (opxTrace) {
+    seq.add(poplar::program::PrintTensor(opx->op_p->str() + "/enter",
+                                         opxTraceTensor));
+    opx->grow(seq);
+    seq.add(poplar::program::PrintTensor(opx->op_p->str() + "/exit",
+                                         opxTraceTensor));
+  } else {
+    opx->grow(seq);
+  }
+};
+
+void Devicex::opTaskFunc(Op *op) {
+  Opx *opx = getOpx(op->id);
+
+  if (op->copiesOptimizerTensors()) {
+    growOpx(opx, progs.streamOptimizerFromHostFragment());
+  }
+
+  // pre-loss : create vertices for all recompute types
+  else if (op->scheduledPreLoss == ScheduledPreLoss::Yes) {
+
+    // Pre-loss, not recompute
+    if (op->settings.recomputeType == RecomputeType::CHECKPOINT) {
+      logging::devicex::debug("Adding checkpoint Op {}", op->debugName());
+      growOpx(opx, progs.forwardFragment());
+    }
+
+    // Pre-loss, recompute
+    else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+      logging::devicex::debug("Adding (first) recompute Op {}",
+                              op->debugName());
+
+      growOpx(opx, progs.recomputeFragment(op->id));
+      progs.forwardFragment().add(progs.recomputeFragment(op->id));
+    }
+
+    // Pre-loss, not recompute or checkpoint
+    else {
+      throw error("ILE: Unrecognised recompute type");
+    }
+    mainGraphOpRegistery.push_back(op);
+  }
+
+  // post-loss
+  else if (op->scheduledPreLoss == ScheduledPreLoss::No) {
+    if (op->settings.recomputeType != RecomputeType::CHECKPOINT) {
+      std::stringstream oss;
+      op->append(oss);
+      throw error("ILE: Non-checkpoint Op which is ScheduledPreLoss::No is "
+                  "not permitted: \n{}",
+                  oss.str());
+    }
+
+    // 2 special case Ops when their is a gradient accumulator / velocity.
+    // If we are doing gradient accumulation, we need to ensure the reset
+    // and var update aren't run every time. Instead, these fragments sit
+    // outside the "main" loop of the fowards and backwards passes.
+    // special case Op 1:
+    if (ir().getSessionOptions().enableGradientAccumulation &&
+        (dynamic_cast<SGD1AcclReduceOp *>(op) ||
+         dynamic_cast<SGD1VarUpdateOp *>(op) ||
+         dynamic_cast<SGD1AcclUpdateOp *>(op))) {
+      outerLoopFragEmpty = false;
+      growOpx(opx, progs.accumulateOuterFragment());
+    }
+
+    // post-loss, not special gradient accumulation case,
+    else {
+      std::set<Op *> toRerun;
+      walkProducers(op, [&toRerun, this](Op *x) {
+        if (x->settings.recomputeType == RecomputeType::RECOMPUTE &&
+            !progs.hasBeenRecomputed(x->id)) {
+          toRerun.insert(x);
+          return true;
+        } else {
+          return false;
+        }
+      });
+
+      // The ops to rerun in topological order.
+      auto rerunSchedule = op->getGraph().getOpSchedule({});
+      boost::remove_erase_if(rerunSchedule, [&toRerun](Op *x) {
+        return toRerun.find(x) == toRerun.end();
+      });
+
+      for (auto opToRerun : rerunSchedule) {
+        logging::devicex::debug("Adding (second) recompute Op {}",
+                                opToRerun->debugName());
+
+        progs.backwardFragment().add(progs.recomputeFragment(opToRerun->id));
+
+        mainGraphOpRegistery.push_back(opToRerun);
+      }
+
+      logging::devicex::debug("Adding post-turning check-point Op {}",
+                              op->debugName());
+
+      growOpx(opx, progs.backwardFragment());
+
+      mainGraphOpRegistery.push_back(op);
+    }
+  }
+
+  else {
+    throw error("ILE: Unknown SchedulePreLoss in prepare, should "
+                "updateVertices have been called recently?");
+  }
+}
+
+void Devicex::pipelinedOpTaskFunc(Op *op) {
+  Opx *opx = getOpx(op->id);
+
+  if (op->copiesOptimizerTensors()) {
+    growOpx(opx, progs.streamOptimizerFromHostFragment());
+  } else if (ir().getSessionOptions().enableGradientAccumulation &&
+             (dynamic_cast<SGD1AcclReduceOp *>(op) ||
+              dynamic_cast<SGD1VarUpdateOp *>(op) ||
+              dynamic_cast<SGD1AcclUpdateOp *>(op))) {
+    outerLoopFragEmpty = false;
+    growOpx(opx, progs.accumulateOuterFragment());
+    mainGraphOpRegistery.push_back(op);
+  } else {
+    std::set<Op *> toRerun;
+    walkProducers(op, [&toRerun, &op, this](Op *x) {
+      if (x->settings.recomputeType == RecomputeType::RECOMPUTE &&
+          !progs.hasBeenRecomputed(x->id) &&
+          x->getPipelineStage() != op->getPipelineStage()) {
+        toRerun.insert(x);
+        return true;
+      } else {
+        return false;
+      }
+    });
+
+    // The ops to rerun in topological order.
+    auto rerunSchedule = op->getGraph().getOpSchedule({});
+    boost::remove_erase_if(rerunSchedule, [&toRerun](Op *x) {
+      return toRerun.find(x) == toRerun.end();
+    });
+
+    // Add the recomputations.
+    for (auto opToRerun : rerunSchedule) {
+      logging::devicex::debug("Adding (second) recompute Op {}",
+                              opToRerun->debugName());
+
+      progs.recordRecomputed(opToRerun->id);
+      progs
+          .pipelineForwardFragment(op->getPipelineStage(),
+                                   "recompute of " + opToRerun->str())
+          .add(progs.recomputeFragment(opToRerun->id));
+
+      mainGraphOpRegistery.push_back(opToRerun);
+    }
+
+    if (op->isConvertibleTo<IpuCopyOp>()) {
+      // IpuCopyOps are handled as a special case in pipelining. Here,
+      // the destination tensor is created using the
+      // `createPipelinedOutput` method. Later, for each pipeline cycle
+      // the copy appears in, a new copy program is added to the cycles
+      // sequence using `IpuCopyOpx::growPipelined`.
+      dynamic_cast<IpuCopyOpx *>(opx)->createPipelinedOutput();
+    } else if (op->settings.recomputeType == RecomputeType::CHECKPOINT) {
+      logging::devicex::debug("Adding post-turning check-point Op {}",
+                              op->debugName());
+      growOpx(opx,
+              progs.pipelineForwardFragment(op->getPipelineStage(), op->str()));
+    } else if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+      logging::devicex::debug("Adding (first) recompute Op {}",
+                              op->debugName());
+
+      growOpx(opx, progs.recomputeFragment(op->id));
+
+      progs.pipelineForwardFragment(op->getPipelineStage(), op->str())
+          .add(progs.recomputeFragment(op->id));
+    }
+    mainGraphOpRegistery.push_back(op);
+  }
 }
 
 ICreatorCandidate::ICreatorCandidate(int index_,
@@ -1842,6 +1861,7 @@ unsigned Devicex::getReplicationFactor() const {
   return replicationFactor;
 }
 
+// TODO consider moving the test in this function into the Ir (T12636)
 unsigned Devicex::getAccumulationFactor() const {
 
   unsigned accumulationFactor = 1;
@@ -2880,6 +2900,71 @@ std::set<TensorId> Devicex::getEfficientlyCreatedInputTensors() const {
 
 bool Devicex::useSyntheticData() const {
   return (ir().getSessionOptions().ignoreData);
+}
+
+// Gradient store stream ID
+PopStreamId Devicex::gradientStoreStreamId(TensorId id) const {
+  return "gr_" + id;
+}
+
+// Weight load stream ID
+PopStreamId Devicex::weightLoadStreamId(TensorId id) const {
+  return "wl_" + id;
+}
+
+poplar::DataStream &Devicex::insertGradientStoreStream(TensorId tensorId,
+                                                       TensorInfo tensorInfo,
+                                                       poplar::Graph &graph) {
+  auto streamMapEntry = toHostGradientStreams.find(tensorId);
+
+  if (streamMapEntry == toHostGradientStreams.end()) {
+    toHostGradientStreams.emplace(tensorId,
+                                  poplar::DataStream(graph.addDeviceToHostFIFO(
+                                      gradientStoreStreamId(tensorId),
+                                      popType(tensorInfo),
+                                      tensorInfo.nelms())));
+    streamMapEntry = toHostGradientStreams.find(tensorId);
+  } else {
+    throw error("Tensor Id " + tensorId +
+                " already exists in toHostGradientStreams");
+  }
+
+  return streamMapEntry->second;
+}
+
+poplar::DataStream &Devicex::insertWeightLoadStream(TensorId tensorId,
+                                                    TensorInfo tensorInfo,
+                                                    poplar::Graph &graph) {
+  auto streamMapEntry = fromHostWeightLoadStreams.find(tensorId);
+
+  if (streamMapEntry == fromHostWeightLoadStreams.end()) {
+    fromHostWeightLoadStreams.emplace(
+        tensorId,
+        poplar::DataStream(
+            graph.addHostToDeviceFIFO(weightLoadStreamId(tensorId),
+                                      popType(tensorInfo),
+                                      tensorInfo.nelms())));
+    streamMapEntry = fromHostWeightLoadStreams.find(tensorId);
+  } else {
+    throw error("Tensor Id " + tensorId +
+                " already exists in weightStoreStreams");
+  }
+
+  return streamMapEntry->second;
+}
+
+const std::vector<std::pair<TensorId, TensorId>> &
+Devicex::getGradAndVarStreamIds() const {
+  return gradAndVarStreamIds;
+}
+
+std::vector<std::pair<TensorId, TensorId>> &Devicex::getGradAndVarStreamIds() {
+  return gradAndVarStreamIds;
+}
+
+void Devicex::connectStreamToCallback(const std::string &streamHandle,
+                                      std::function<void(void *)> callback) {
+  pEngine->connectStreamToCallback(streamHandle, callback);
 }
 
 } // namespace popx

@@ -12,13 +12,22 @@ namespace popart {
 VarUpdateOp::VarUpdateOp(const OperatorIdentifier &_opid,
                          const TensorId &varId_,
                          const Op::Settings &settings_)
-    : Op(_opid, settings_), varId(varId_), varGradId(getGradId(varId)) {
+    : Op(_opid, settings_), varId(varId_) {
 
   // very high priority, so that performed as early as possible
   priority = std::numeric_limits<double>::max();
 }
 
-void VarUpdateOp::setup() {
+VarUpdateWithUpdaterOp::VarUpdateWithUpdaterOp(const OperatorIdentifier &opid_,
+                                               const TensorId &varId_,
+                                               const Op::Settings &settings_)
+    : VarUpdateOp(opid_, varId_, settings_) {}
+
+void VarUpdateWithoutUpdaterOp::setup() {
+  outInfo(getUpdatedVarOutIndex()) = inInfo(getVarToUpdateInIndex());
+}
+
+void VarUpdateWithUpdaterOp::setup() {
   auto info0 = inInfo(getVarToUpdateInIndex());
   auto info1 = inInfo(getUpdaterInIndex());
   if (info0 != info1) {

@@ -20,50 +20,55 @@ SGD1AcclUpdateOpx::SGD1AcclUpdateOpx(Op *op, Devicex *devicex)
 
 void SGD1AcclUpdateOpx::grow(poplar::program::Sequence &prog) const {
 
+  //   See optimizer.hpp for derivation of the equations implemented here
+
   auto vu_op = getOp<SGD1AcclUpdateOp>();
 
-  auto mmConst = vu_op.initMm1.isConst();
-  auto wdConst = vu_op.initWdsf1.isConst();
-  auto wdVal   = vu_op.initWdsf1.val();
+  auto smm1Const  = vu_op.initSmm1.isConst();
+  auto swdf1Const = vu_op.initSwd1.isConst();
 
-  auto toUpdate = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
+  const auto &toUpdate = getInTensor(VarUpdateOp::getVarToUpdateInIndex());
 
-  if (mmConst) {
-    auto mmVal = vu_op.initMm1.val();
-    if (mmVal == 0.0f) {
-      popops::zero(graph(), toUpdate, prog, debugPrefix("reset"));
+  if (smm1Const) {
+    auto smm1Val = vu_op.initSmm1.val();
+    if (smm1Val == 0.0f) {
+      popops::zero(graph(), toUpdate, prog, debugPrefix("resetZeroMm"));
     } else {
-      popops::mapInPlace(graph(),
-                         pe::Mul(pe::_1, pe::Const(mmVal)),
-                         {toUpdate},
-                         prog,
-                         debugPrefix("constMomentumScaling"));
+      popops::mapInPlace(
+          graph(),
+          pe::Mul(pe::_1, pe::Const(smm1Val)),
+          {toUpdate},
+          prog,
+          debugPrefix("constMomentumScaling_" + std::to_string(smm1Val)));
     }
   } else {
     popops::mapInPlace(
         graph(),
         pe::Mul(pe::_1, pe::_2),
-        {toUpdate, getInTensor(SGD1AcclUpdateOp::getMm1InIndex())},
+        {toUpdate, getInTensor(SGD1AcclUpdateOp::getSmm1InIndex())},
         prog,
-        debugPrefix("constMomentumScaling"));
+        debugPrefix("nonConstMomentumScaling"));
   }
 
-  if (wdConst) {
-    if (wdVal != 0.0f) {
-      popops::scaledAddTo(graph(),
-                          toUpdate,
-                          getInTensor(VarUpdateOp::getUpdaterInIndex()),
-                          wdVal,
-                          prog,
-                          debugPrefix("constScaledAddWdsf1"));
+  if (swdf1Const) {
+    auto swd1Val = vu_op.initSwd1.val();
+    if (swd1Val != 0.0f) {
+      popops::scaledAddTo(
+          graph(),
+          toUpdate,
+          getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
+          swd1Val,
+          prog,
+          debugPrefix("constScaledAddSwd1_" + std::to_string(swd1Val)));
     }
   } else {
-    popops::scaledAddTo(graph(),
-                        toUpdate,
-                        getInTensor(VarUpdateOp::getUpdaterInIndex()),
-                        getInTensor(SGD1AcclUpdateOp::getWdsf1InIndex()),
-                        prog,
-                        debugPrefix("nonConstScaledAddWdsf1"));
+    popops::scaledAddTo(
+        graph(),
+        toUpdate,
+        getInTensor(VarUpdateWithUpdaterOp::getUpdaterInIndex()),
+        getInTensor(SGD1AcclUpdateOp::getSwd1InIndex()),
+        prog,
+        debugPrefix("nonConstScaledAddSwd1"));
   }
 
   // return a reference to the input

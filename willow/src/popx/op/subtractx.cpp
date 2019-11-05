@@ -33,9 +33,6 @@ OpxCreator<SubtractOpx> subtractOpxCreator({Onnx::Operators::Sub_6,
                                             Onnx::Operators::Sub_7});
 OpxCreator<SubtractArg0GradOpx>
     subtractArg0GradOpxCreator(Onnx::GradOperators::SubArg0Grad);
-OpxCreator<Opx> subtractArg1GradOpxCreator(
-    Onnx::GradOperators::SubArg1Grad,
-    "SubtractArg1GradOpx should be removed by pattern 'SubtractArg1GradOp'");
 } // namespace
 
 } // namespace popx

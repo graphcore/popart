@@ -87,12 +87,14 @@ bool ScaledLearningRate0Helper::isConst(const TensorId &weightId,
   return lr.isConst() && ls.isConst() && dp.isConst();
 }
 
-float Momentum1Helper::val(const TensorId &weightId, const SGD &sgd) const {
+float ScaledMomentum1Helper::val(const TensorId &weightId,
+                                 const SGD &sgd) const {
   auto mm = sgd.momentums().get(weightId).val();
-  return val(mm);
+  return val(mm, sgd.getReplicatedGraphCount());
 }
 
-bool Momentum1Helper::isConst(const TensorId &weightId, const SGD &sgd) const {
+bool ScaledMomentum1Helper::isConst(const TensorId &weightId,
+                                    const SGD &sgd) const {
   auto mm = sgd.momentums().get(weightId);
   return mm.isConst();
 }
@@ -101,7 +103,7 @@ float ScaledLearningRate1Helper::val(const TensorId &weightId,
                                      const SGD &sgd) const {
   auto lr = sgd.learningRates().get(weightId).val();
   auto vs = sgd.velocityScalings().get(weightId).val();
-  return val(lr, vs);
+  return val(lr, vs, sgd.getReplicatedGraphCount());
 }
 
 bool ScaledLearningRate1Helper::isConst(const TensorId &weightId,
@@ -116,7 +118,7 @@ float DampeningScaleFactor1Helper::val(const TensorId &weightId,
   auto dm = sgd.dampenings().get(weightId).val();
   auto vs = sgd.velocityScalings().get(weightId).val();
   auto ls = sgd.lossScaling().val();
-  return val(dm, vs, ls);
+  return val(dm, vs, ls, sgd.getReplicatedGraphCount());
 }
 
 bool DampeningScaleFactor1Helper::isConst(const TensorId &weightId,
@@ -127,16 +129,16 @@ bool DampeningScaleFactor1Helper::isConst(const TensorId &weightId,
   return dm.isConst() && vs.isConst() && ls.isConst();
 }
 
-float WeightDecayScaleFactor1Helper::val(const TensorId &weightId,
-                                         const SGD &sgd) const {
+float ScaledWeightDecay1Helper::val(const TensorId &weightId,
+                                    const SGD &sgd) const {
   auto dm = sgd.dampenings().get(weightId).val();
   auto wd = sgd.weightDecays().get(weightId).val();
   auto vs = sgd.velocityScalings().get(weightId).val();
   return val(dm, wd, vs);
 }
 
-bool WeightDecayScaleFactor1Helper::isConst(const TensorId &weightId,
-                                            const SGD &sgd) const {
+bool ScaledWeightDecay1Helper::isConst(const TensorId &weightId,
+                                       const SGD &sgd) const {
   auto dm = sgd.dampenings().get(weightId);
   auto wd = sgd.weightDecays().get(weightId);
   auto vs = sgd.velocityScalings().get(weightId);
