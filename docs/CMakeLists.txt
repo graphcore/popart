@@ -28,10 +28,10 @@ if (BUILD_DOCS)
   # know what the full name is, so easier to just copy the whole directory to get the
   # lib file in the expected place
   add_custom_command(
-    OUTPUT ${PROJECT_BINARY_DIR}/lib
-    COMMAND cmake -E make_directory ${PROJECT_BINARY_DIR}/lib
-    COMMAND cmake -E copy_directory ${PROJECT_BINARY_DIR}/python ${PROJECT_BINARY_DIR}/lib
-    COMMAND cmake -E echo ${POPART_CORE_LIB}
+    OUTPUT ${PROJECT_BINARY_DIR}/../lib
+    COMMAND cmake -E make_directory ${PROJECT_BINARY_DIR}/../lib
+    COMMAND cmake -E copy_directory ${PROJECT_BINARY_DIR}/python ${PROJECT_BINARY_DIR}/../lib
+    COMMAND cmake -E echo popart_core lib file: ${POPART_CORE_LIB}
     COMMENT "Copying popart_core lib"
     DEPENDS popart_core
   )
@@ -91,7 +91,7 @@ if (BUILD_DOCS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
     ${SUPPORTED_OPS_GEN}
-    ${PROJECT_BINARY_DIR}/lib
+    ${PROJECT_BINARY_DIR}/../lib
     popart_examples
     popart_core
   )
