@@ -112,10 +112,8 @@ void prepareIr1(popart::Ir &ir) {
   auto loss2 = std::unique_ptr<Loss>(
       new L1Loss(act8, "l1LossVal_2", 0.2, ReductionType::SUM));
 
-  // TODO : the inclusion of this Loss on act3 causes a Stash Tensor which is
-  // scheduled-pre-loss. This should be fixed T10375
-  //   auto loss3 = std::unique_ptr<Loss>(
-  //       new NllLoss(act3, l0, "nllLossVal_1", ReductionType::MEAN));
+  auto loss3 = std::unique_ptr<Loss>(
+      new NllLoss(act3, l0, "nllLossVal_1", ReductionType::MEAN));
 
   auto loss4 = std::unique_ptr<Loss>(
       new NllLoss(act9, l1, "nllLossVal_2", ReductionType::SUM));
@@ -126,7 +124,7 @@ void prepareIr1(popart::Ir &ir) {
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss1.get(), loss2.get(), loss4.get()},
+              {loss1.get(), loss2.get(), loss3.get(), loss4.get()},
               &optimizer,
               *device,
               userOptions,
