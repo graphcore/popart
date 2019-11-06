@@ -2631,6 +2631,16 @@ bool Ir::containsInitialisers() {
   return !(onnxModel->graph().initializer().empty());
 }
 
+bool Ir::tensorExistsInInitialisers(TensorId tId) const {
+  for (int init_index = 0; init_index < onnxModel->graph().initializer_size();
+       ++init_index) {
+    if (onnxModel->graph().initializer(init_index).name() == tId) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void Ir::applyUpdateInplacePrioritiesForIpu() {
   UpdateInplacePrioritiesForIpu pattern;
 
