@@ -291,6 +291,9 @@ public:
                           double val,
                           const std::string &name);
 
+  poplar::Tensor getScalarVariable(poplar::Graph &graph,
+                                   const poplar::Type &type,
+                                   const std::string &name);
   PopStreamId gradientStoreStreamId(TensorId id) const;
   PopStreamId weightLoadStreamId(TensorId id) const;
 

@@ -187,6 +187,9 @@ public:
                           double val,
                           const std::string &name) const;
 
+  poplar::Tensor getScalarVariable(const poplar::Type &type,
+                                   const std::string &name) const;
+
 private:
   std::string idStr() const;
 };

@@ -402,9 +402,25 @@ poplar::Tensor Devicex::getConst(poplar::Graph &graph,
                                  const std::string &name) {
   static unsigned tileCounter = 0;
 
-  auto tensor = graph.addConstant(type, shape, val, name);
-  auto tile   = tileCounter % graph.getTarget().getTilesPerIPU();
+  auto tensor     = graph.addConstant(type, shape, val, name);
+  auto tilesTotal = graph.getTarget().getTilesPerIPU();
+  auto tile       = tileCounter % tilesTotal;
   tileCounter++;
+
+  graph.setTileMapping(tensor, tile);
+  return tensor;
+}
+
+poplar::Tensor Devicex::getScalarVariable(poplar::Graph &graph,
+                                          const poplar::Type &type,
+                                          const std::string &name) {
+  static int tileCounter = -1;
+
+  auto tensor     = graph.addVariable(type, {}, name);
+  auto tilesTotal = graph.getTarget().getTilesPerIPU();
+  auto tile       = (tilesTotal + (tileCounter % tilesTotal)) % tilesTotal;
+  tileCounter--;
+
   graph.setTileMapping(tensor, tile);
   return tensor;
 }
@@ -2610,8 +2626,9 @@ PriTask Devicex::initBatchCounterTensorsTask() {
     // Id and decide when to execute the copy to the host
     for (ReturnPeriod N : ir().getDataFlow().rps()) {
       // Add to map so copy task can access
-      batchCountingTensors[N]      = graph().addVariable(poplar::INT, {});
-      batchCountCheckingTensors[N] = graph().addVariable(poplar::BOOL, {});
+      batchCountingTensors[N] = getScalarVariable(graph(), poplar::INT, "");
+      batchCountCheckingTensors[N] =
+          getScalarVariable(graph(), poplar::BOOL, "");
 
       getConst(graph(), poplar::INT, {}, N, "batchCounter");
 

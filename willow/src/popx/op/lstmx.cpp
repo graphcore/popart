@@ -394,7 +394,7 @@ poplar::Tensor LSTMGradOpx::getCellStateGrad() const {
     return getInTensor(LSTMGradOp::getCellStateOutputGradInIndex())
         .reshape({batch_size, hidden_size});
   } else {
-    auto zero = graph().addVariable(elem_type, {}, "lstm/zero_cell_state");
+    auto zero = getScalarVariable(elem_type, "lstm/zero_cell_state");
     graph().setTileMapping(zero, 0);
     graph().setInitialValue(zero, 0);
     zero = zero.expand({0, 0});
@@ -418,7 +418,7 @@ poplar::Tensor LSTMGradOpx::getHiddenStateGrad() const {
     return getInTensor(LSTMGradOp::getHiddenStateOutputGradInIndex())
         .reshape({batch_size, hidden_size});
   } else {
-    auto zero = graph().addVariable(elem_type, {}, "lstm/zero_hidden_state");
+    auto zero = getScalarVariable(elem_type, "lstm/zero_hidden_state");
     graph().setTileMapping(zero, 0);
     graph().setInitialValue(zero, 0);
     zero = zero.expand({0, 0});
