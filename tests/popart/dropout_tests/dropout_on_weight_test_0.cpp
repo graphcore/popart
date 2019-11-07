@@ -24,7 +24,11 @@
 
 BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
 
-  enum class TestType { PipelineHardware, SingleBatchSimulator };
+  enum class TestType {
+    PipelineHardware,
+    PipelineHardwareRecomputation,
+    SingleBatchSimulator
+  };
 
   auto test = [](TestType tt) {
     using namespace popart;
@@ -40,8 +44,9 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     // number of samples in a batch ( = samples per weight update)
     int64_t batchSize = 11;
     // the number of weight update steps is batchesPerStep,
-    int64_t batchesPerStep = (tt == TestType::PipelineHardware ? 13 : 1);
-    // samples in a step (samples processed with each call to run(...))
+    int64_t batchesPerStep = (tt != TestType::SingleBatchSimulator ? 13 : 1);
+    // samples in a step (samples processed with each SingleBatchSimulator to
+    // run(...))
     int64_t samplesPerStep = batchesPerStep * batchSize;
     // an input data sample will be a rank-1 tensor of size,
     int64_t seqLen = 7;
@@ -144,12 +149,27 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     float lambda    = 1;
     auto loss       = std::unique_ptr<Loss>(
         new L1Loss(actOut, "l1LossVal", lambda, ReductionType::SUM));
+
     auto device =
-        DeviceManager::createDeviceManager().createIpuModelDevice(deviceOpts);
+        (tt == TestType::SingleBatchSimulator
+             ? DeviceManager::createDeviceManager().createIpuModelDevice(
+                   deviceOpts)
+             : DeviceManager::createDeviceManager().acquireAvailableDevice(
+                   2, 1216));
+
+    if (device == nullptr) {
+      std::cout << "Skipping test, no IPUs available" << std::endl;
+      exit(0);
+    }
+
     SessionOptions userOptions;
     userOptions.virtualGraphMode = VirtualGraphMode::Auto;
     userOptions.enablePipelining =
         (tt == TestType::PipelineHardware ? true : false);
+    userOptions.autoRecomputation =
+        (tt == TestType::PipelineHardwareRecomputation
+             ? RecomputationType::Standard
+             : RecomputationType::None);
 
     auto session = popart::TrainingSession::createFromOnnxModel(
         proto,
@@ -212,8 +232,9 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
 
       popart::StepIO stepio(inputs, anchors);
 
-      // We fix the seed, so we expect all masks to be the same
-      // (as batchesPerStep is 1)
+      // We fix the seed, so we expect the set of masks to be the same step vs
+      // step. However, inside a step, batch vs batch, you will get different
+      // masks.
       session->setRandomSeed(31415);
 
       // process the 400 samples (100 batches), streaming back mask anchors each
@@ -225,13 +246,8 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
     session->weightsToHost();
     session->readWeights(weightsRead);
 
-    // Now testing that it trained correctly
-    // -------------------------------
-    //
-    // Only weights which were not masked should have been updated.
-    // Note that the mask was the same between across all runs, and there was
-    // only one batch per run.
-    //
+    // Check that the dropout masks are different on hardware.
+    auto maskZero = maskAnchorReturns.at(mNames.at(0));
     for (auto &x : weightsOut) {
       auto layer = x.first;
       auto wName = wNames.at(layer);
@@ -240,17 +256,32 @@ BOOST_AUTO_TEST_CASE(AutoVirtualGraphReluOnWeightTest0) {
       auto &returnedWeights = x.second;
       auto mask             = maskAnchorReturns.at(mName);
       auto &initialWeights  = wVals.at(layer);
+
+      std::vector<uint32_t> maskSum(seqLen, 0);
+
+      // Combine all masks into one. mask is of size stepWeightElms, but is
+      // effectively a concatenation of of all masks for this layer for all
+      // batches. On hardware these will be different, as expected.
+      for (int i = 0; i < mask.size(); i++) {
+        maskSum[i % seqLen] += static_cast<uint32_t>(mask.at(i));
+      }
       for (int i = 0; i < returnedWeights.size(); ++i) {
-        auto mval   = static_cast<uint32_t>(mask.at(i));
-        float delta = (mval == 1) * learnRate * lambda * nUpdates / (1 - pDrop);
-        float diff  = returnedWeights.at(i) - initialWeights.at(i) + delta;
-        BOOST_CHECK(std::abs(diff) < 1e-5);
+        auto mval = static_cast<uint32_t>(maskSum.at(i));
+        // Dividing by 1 - pDrop causes too many floating point rounding
+        // errors, so just multiply by 1 / (1 - 1/3) = 1.5
+        float delta = mval * learnRate * lambda * batchSize * nSteps * 1.5f;
+        // This is a percentage difference test, i.e. values within 1e-8
+        // There is a small difference due to FP rounding errors.
+        BOOST_CHECK_CLOSE(static_cast<double>(returnedWeights.at(i) + delta),
+                          static_cast<double>(initialWeights.at(i)),
+                          1e-6);
       }
     }
   };
 
-  // depends on T10227
-  // test(TestType::PipelineHardware);
+  test(TestType::PipelineHardware);
+
+  test(TestType::PipelineHardwareRecomputation);
 
   test(TestType::SingleBatchSimulator);
 }
