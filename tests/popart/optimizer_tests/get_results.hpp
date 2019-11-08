@@ -13,6 +13,7 @@
 #include <popart/devicemanager.hpp>
 #include <popart/error.hpp>
 #include <popart/filereader.hpp>
+#include <popart/half.hpp>
 #include <popart/inputshapeinfo.hpp>
 #include <popart/ndarraywrapper.hpp>
 #include <popart/op/ipucopy.hpp>
@@ -99,12 +100,24 @@ void laggedPytorchUpdateWithScaling(float &w,
   v = v * mm + vs * (1.0f - dp) * wd * w;
 }
 
+template <typename T> std::string getFloatString() {
+  throw popart::error("unrecognised type");
+}
+
+template <> std::string getFloatString<float>() { return "FLOAT"; }
+template <> std::string getFloatString<popart::float16_t>() {
+  return "FLOAT16";
+}
+
+template <typename T>
 std::array<float, 2>
 getResults(const popart::SGD &opt0, // initial Optimizer
            const popart::SGD &opt1, // Optimizer to switch to
            const popart::SGD &opt2, // Last Optimizer
            bool gradAccl,
            bool graphRepl) {
+
+  auto floatString = getFloatString<T>();
 
   using namespace popart;
   // Model
@@ -126,31 +139,31 @@ getResults(const popart::SGD &opt0, // initial Optimizer
   int64_t batchesPerStep = 1;
 
   std::vector<int64_t> microBatchShape{samplesPerMicroBatch, sampleDim};
-  TensorInfo microBatchInfo{"FLOAT", microBatchShape};
+  TensorInfo microBatchInfo{floatString, microBatchShape};
 
   std::vector<int64_t> batchShape{samplesPerBatch, sampleDim};
-  TensorInfo batchInfo{"FLOAT", microBatchShape};
+  TensorInfo batchInfo{floatString, microBatchShape};
 
   std::vector<int64_t> sampleShape{sampleDim};
-  TensorInfo sampleInfo{"FLOAT", sampleShape};
+  TensorInfo sampleInfo{floatString, sampleShape};
 
   std::vector<int64_t> stepDataShape{
       batchesPerStep, samplesPerBatch, sampleDim};
-  TensorInfo stepDataInfo{"FLOAT", stepDataShape};
+  TensorInfo stepDataInfo{floatString, stepDataShape};
 
   auto input0 = builder->addInputTensor(microBatchInfo, "0tupni");
 
   WeightsIO weightsRead;
 
-  std::vector<float> weight0(sampleDim, 100.0f);
-  std::vector<float> rb0(sampleDim, -777.0f);
+  std::vector<T> weight0(sampleDim, 100.0f);
+  std::vector<T> rb0(sampleDim, -777.0f);
   ConstVoidData cvd0({weight0.data(), sampleInfo});
   auto w0Id = builder->addInitializedInputTensor(cvd0, w0name);
   assert(w0Id == w0name);
   weightsRead.insert(w0Id, {rb0.data(), sampleInfo});
 
-  std::vector<float> weight1(sampleDim, 200.0f);
-  std::vector<float> rb1(sampleDim, -777.0f);
+  std::vector<T> weight1(sampleDim, 200.0f);
+  std::vector<T> rb1(sampleDim, -777.0f);
   ConstVoidData cvd1({weight1.data(), sampleInfo});
   auto w1Id = builder->addInitializedInputTensor(cvd1, w1name);
   assert(w1Id == w1name);
@@ -225,9 +238,9 @@ getResults(const popart::SGD &opt0, // initial Optimizer
       popart::Patterns(PatternsLevel::DEFAULT));
 
   session->prepareDevice();
-  std::vector<float> v_input_x(stepDataInfo.nelms(), 3.1415);
+  std::vector<T> v_input_x(stepDataInfo.nelms(), 3.1415);
 
-  popart::NDArrayWrapper<float> input_x_wrapper(v_input_x.data(), stepDataInfo);
+  popart::NDArrayWrapper<T> input_x_wrapper(v_input_x.data(), stepDataInfo);
 
   std::map<popart::TensorId, popart::IArray &> inputs = {
       {input0, input_x_wrapper}};
@@ -254,5 +267,6 @@ getResults(const popart::SGD &opt0, // initial Optimizer
   session->weightsToHost();
   session->readWeights(weightsRead);
 
-  return std::array<float, 2>{rb0[0], rb1[0]};
+  return std::array<float, 2>{static_cast<float>(rb0[0]),
+                              static_cast<float>(rb1[0])};
 }

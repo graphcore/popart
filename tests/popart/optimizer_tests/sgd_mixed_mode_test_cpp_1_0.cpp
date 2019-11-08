@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_0) {
   // (2) g,v,w =  -1,-3,W0-3*lr
   // (3) g,v,w =  -1,-3,W0-6*lr
 
-  auto results = getResults(opt0, opt1, opt2, false, false);
+  auto results = getResults<float>(opt0, opt1, opt2, false, false);
   // check that expected values are the same as read-back values
   auto absdiff0 = getAbsDiff(100 - 6 * lrTest0, std::get<0>(results));
   BOOST_CHECK(absdiff0 < 1e-5f);

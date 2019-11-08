@@ -7,7 +7,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_9) {
   // As in test 6, but with graph replication and gradient accumulation
 
   // const weight decay, different on the 2 weights
-  float defaultWd = 0.1f;
+  float defaultWd = 0.02f;
   float weight1Wd = 0.05f;
   // variable default momentum, different on the 2 weights
   float defaultMm0 = 0.9f;
@@ -15,19 +15,19 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_9) {
   float defaultMm2 = 0.7f;
   float weight0Mm  = 0.6f; // constant momentum for weight 0
   // constant dampening, the same on the 2 weights
-  float dp = 0.2f;
+  float dp = 0.05f;
   // variable learning rate, different on the 2 weights
   float defaultLr0 = 1.0;
-  float defaultLr1 = 0.9;
+  float defaultLr1 = 0.64;
   float defaultLr2 = 0.8;
   float weight0Lr0 = 0.7;
-  float weight0Lr1 = 0.6;
-  float weight0Lr2 = 0.4;
+  float weight0Lr1 = 0.64;
+  float weight0Lr2 = 0.32;
   // constant loss scaling
-  float ls = 100.0f;
+  float ls = 0.2f;
   // constant velocity scaling, different on the 2 weights
-  float defaultVs = 0.2;
-  float weight0Vs = 0.15;
+  float defaultVs = 0.25;
+  float weight0Vs = 0.35;
 
   popart::SGD opt0({{"defaultDampening", {dp, true}},
                     {"defaultLearningRate", {defaultLr0, false}},
@@ -139,13 +139,28 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_9) {
                       replicationFactor,
                       accumulationFactor);
 
-  auto results = getResults(opt0, opt1, opt2, true, true);
-
+  // test with float32
+  auto results = getResults<popart::float16_t>(opt0, opt1, opt2, true, true);
   if (results != acquisitionFailure) {
     auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
-    BOOST_CHECK(absdiff0 < 1e-5f);
     auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
-    BOOST_CHECK(absdiff1 < 1e-5f);
+    std::cout << "abs diffs at float16: " << absdiff0 << " and " << absdiff1
+              << std::endl;
+    BOOST_CHECK(absdiff0 < 1e-1f);
+    BOOST_CHECK(absdiff1 < 1e-1f);
+  } else {
+    std::cout << "Failed to acquire device, test not run!";
+  }
+
+  // test with float32
+  results = getResults<float>(opt0, opt1, opt2, true, true);
+  if (results != acquisitionFailure) {
+    auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
+    auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));
+    std::cout << "abs diffs at float32: " << absdiff0 << " and " << absdiff1
+              << std::endl;
+    BOOST_CHECK(absdiff0 < 1e-4f);
+    BOOST_CHECK(absdiff1 < 1e-4f);
   } else {
     std::cout << "Failed to acquire device, test not run!";
   }

@@ -14,7 +14,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_1) {
   });
   auto opt1     = opt0;
   auto opt2     = opt0;
-  auto results  = getResults(opt0, opt1, opt2, false, false);
+  auto results  = getResults<float>(opt0, opt1, opt2, false, false);
   auto absdiff0 = getAbsDiff(100 - 6 * lrTest0, std::get<0>(results));
   BOOST_CHECK(absdiff0 < 1e-5f);
   auto absdiff1 = getAbsDiff(200 - 6 * lrTest0, std::get<1>(results));
