@@ -530,6 +530,11 @@ private:
   // call to this Devicex's engine.
   void loadEngineAndConnectStreams();
 
+  // We may have prefetched data ready to be fed into the model, but we have
+  // provided a new buffer which we want to be fetched. We invalidate the
+  // prefetch by reconnecting the datastreams before each program run.
+  void reconnectInputStreams();
+
   // Is this Devicex's engine the last to have been loaded onto
   // deviceInfo's device?
   // Becomes true once loadEngineAndConnectStreams() is called.

@@ -702,6 +702,9 @@ void Devicex::run(IStepIO &stepio) {
   }
   logging::devicex::debug("Performing one step: ");
 
+  // Reconnect input streams.
+  reconnectInputStreams();
+
   // Configure the inputstreams
   anchorsHostToHostStreams(stepio);
 
@@ -2026,6 +2029,26 @@ void Devicex::loadEngineAndConnectStreams() {
         engineToStreamVariables(data0, n_bytes, streamId);
       }
     }
+  }
+}
+
+void Devicex::reconnectInputStreams() {
+  logging::devicex::debug(
+      "Reconnecting input streams, invalidating prefetches.");
+  auto engineToInputStreamWithCallback =
+      [&pEngine = pEngine, this](Tensor *tensor, PopStreamId streamId) {
+        auto replicationFactor = getReplicationFactor();
+        for (auto replicationIndex = 0; replicationIndex < replicationFactor;
+             ++replicationIndex) {
+
+          auto callback = std::make_unique<PrefetchCallback>(
+              this->inputStreams[tensor->id]);
+          pEngine->connectStreamToCallback(
+              streamId, replicationIndex, std::move(callback));
+        }
+      };
+  for (Tensor *tensor : ir().dataStreamTensors()) {
+    engineToInputStreamWithCallback(tensor, h2dId(tensor->id));
   }
 }
 
