@@ -206,5 +206,10 @@ poplar::Tensor Opx::getConst(const poplar::Type &type,
   return dv_p->getConst(graph(), type, shape, val, name);
 }
 
+poplar::Tensor Opx::getScalarVariable(const poplar::Type &type,
+                                      const std::string &name) const {
+  return dv_p->getScalarVariable(graph(), type, name);
+}
+
 } // namespace popx
 } // namespace popart

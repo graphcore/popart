@@ -291,6 +291,9 @@ public:
                           double val,
                           const std::string &name);
 
+  poplar::Tensor getScalarVariable(poplar::Graph &graph,
+                                   const poplar::Type &type,
+                                   const std::string &name);
   PopStreamId gradientStoreStreamId(TensorId id) const;
   PopStreamId weightLoadStreamId(TensorId id) const;
 
@@ -526,6 +529,11 @@ private:
   // Must be called before running a poplar program with a
   // call to this Devicex's engine.
   void loadEngineAndConnectStreams();
+
+  // We may have prefetched data ready to be fed into the model, but we have
+  // provided a new buffer which we want to be fetched. We invalidate the
+  // prefetch by reconnecting the datastreams before each program run.
+  void reconnectInputStreams();
 
   // Is this Devicex's engine the last to have been loaded onto
   // deviceInfo's device?

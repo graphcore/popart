@@ -15,11 +15,25 @@ if (BUILD_DOCS)
 
   set(SUPPORTED_OPS_GEN ${CMAKE_CURRENT_SOURCE_DIR}/supported_ops_gen.rst)
 
+  set(POPART_CORE_LIB $<TARGET_FILE:popart_core>)
+
   add_custom_command(
     OUTPUT ${SUPPORTED_OPS_GEN}
     COMMAND python3 gen_supported_ops.py "${PROJECT_BINARY_DIR}/python:${PROJECT_BINARY_DIR}/popart/python" ${SUPPORTED_OPS_GEN}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Creating supported ops"
+  )
+
+  # Only want the lib file (eg. popart_core.cpython-36m-x86_64-linux-gnu.so) but don't
+  # know what the full name is, so easier to just copy the whole directory to get the
+  # lib file in the expected place
+  add_custom_command(
+    OUTPUT ${PROJECT_BINARY_DIR}/../lib
+    COMMAND cmake -E make_directory ${PROJECT_BINARY_DIR}/../lib
+    COMMAND cmake -E copy_directory ${PROJECT_BINARY_DIR}/python ${PROJECT_BINARY_DIR}/../lib
+    COMMAND cmake -E echo popart_core lib file: ${POPART_CORE_LIB}
+    COMMENT "Copying popart_core lib"
+    DEPENDS popart_core
   )
 
   add_custom_command(
@@ -77,6 +91,7 @@ if (BUILD_DOCS)
     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
     ${SUPPORTED_OPS_GEN}
+    ${PROJECT_BINARY_DIR}/../lib
     popart_examples
     popart_core
   )

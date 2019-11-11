@@ -9,9 +9,10 @@ for neural network systems that can be created and read by several frameworks in
 This document describes the features of PopART. It assumes that you are familiar with machine learning and the
 ONNX framework.
 
-.. TODO: add link to docs
-An overview of the IPU architecture and programming model can be found in the *IPU Programmer's Manual*.
-For more information on the Poplar framework refer to the *Poplar and Poplibs User Guide*.
+An overview of the IPU architecture and programming model can be found in the
+`IPU Programmer's Manual <https://documents.graphcore.ai/documents/UG9/latest>`_.
+For more information on the Poplar framework refer to the
+`Poplar and Poplibs User Guide <https://documents.graphcore.ai/documents/UG1/latest>`_.
 
 PopART has three main features:
 

@@ -100,7 +100,8 @@ Session control options
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``userOptions`` parameter passes options to the session. The available options
-are listed in the PopART API documentation. As well as options to control specific features of
+are listed in the `PopART C++ API Reference <https://documents.graphcore.ai/documents/UG11/latest>`_.
+As well as options to control specific features of
 the PopART session, there are also some that allow you to pass options to the underlying
 Poplar functions:
 
@@ -110,4 +111,5 @@ Poplar functions:
 
 See :any:`popart_profiling` for examples of using some of these options.
 
-Full details of the Poplar options can be found in the *Poplar and Poplibs API Reference*.
+Full details of the Poplar options can be found in the
+`Poplar and Poplibs API Reference <https://documents.graphcore.ai/documents/UG2/latest>`_.

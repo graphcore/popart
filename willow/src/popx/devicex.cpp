@@ -402,9 +402,25 @@ poplar::Tensor Devicex::getConst(poplar::Graph &graph,
                                  const std::string &name) {
   static unsigned tileCounter = 0;
 
-  auto tensor = graph.addConstant(type, shape, val, name);
-  auto tile   = tileCounter % graph.getTarget().getTilesPerIPU();
+  auto tensor     = graph.addConstant(type, shape, val, name);
+  auto tilesTotal = graph.getTarget().getTilesPerIPU();
+  auto tile       = tileCounter % tilesTotal;
   tileCounter++;
+
+  graph.setTileMapping(tensor, tile);
+  return tensor;
+}
+
+poplar::Tensor Devicex::getScalarVariable(poplar::Graph &graph,
+                                          const poplar::Type &type,
+                                          const std::string &name) {
+  static int tileCounter = -1;
+
+  auto tensor     = graph.addVariable(type, {}, name);
+  auto tilesTotal = graph.getTarget().getTilesPerIPU();
+  auto tile       = (tilesTotal + (tileCounter % tilesTotal)) % tilesTotal;
+  tileCounter--;
+
   graph.setTileMapping(tensor, tile);
   return tensor;
 }
@@ -685,6 +701,9 @@ void Devicex::run(IStepIO &stepio) {
                 " Devicex::run(const IStepIO &) is called.");
   }
   logging::devicex::debug("Performing one step: ");
+
+  // Reconnect input streams.
+  reconnectInputStreams();
 
   // Configure the inputstreams
   anchorsHostToHostStreams(stepio);
@@ -2013,6 +2032,26 @@ void Devicex::loadEngineAndConnectStreams() {
   }
 }
 
+void Devicex::reconnectInputStreams() {
+  logging::devicex::debug(
+      "Reconnecting input streams, invalidating prefetches.");
+  auto engineToInputStreamWithCallback =
+      [&pEngine = pEngine, this](Tensor *tensor, PopStreamId streamId) {
+        auto replicationFactor = getReplicationFactor();
+        for (auto replicationIndex = 0; replicationIndex < replicationFactor;
+             ++replicationIndex) {
+
+          auto callback = std::make_unique<PrefetchCallback>(
+              this->inputStreams[tensor->id]);
+          pEngine->connectStreamToCallback(
+              streamId, replicationIndex, std::move(callback));
+        }
+      };
+  for (Tensor *tensor : ir().dataStreamTensors()) {
+    engineToInputStreamWithCallback(tensor, h2dId(tensor->id));
+  }
+}
+
 // Floating point settings are not suported on CPU
 void Devicex::setFloatingPointBehaviour(poplar::Graph &graph) {
 
@@ -2610,8 +2649,9 @@ PriTask Devicex::initBatchCounterTensorsTask() {
     // Id and decide when to execute the copy to the host
     for (ReturnPeriod N : ir().getDataFlow().rps()) {
       // Add to map so copy task can access
-      batchCountingTensors[N]      = graph().addVariable(poplar::INT, {});
-      batchCountCheckingTensors[N] = graph().addVariable(poplar::BOOL, {});
+      batchCountingTensors[N] = getScalarVariable(graph(), poplar::INT, "");
+      batchCountCheckingTensors[N] =
+          getScalarVariable(graph(), poplar::BOOL, "");
 
       getConst(graph(), poplar::INT, {}, N, "batchCounter");
 

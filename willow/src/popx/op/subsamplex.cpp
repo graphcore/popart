@@ -63,8 +63,7 @@ void SubsampleGradOpx::grow(poplar::program::Sequence &prog) const {
 
   // Design decision: make a scalar zero variable that we expand to create
   // a tensor of the same size as the output
-  auto zero = graph().addVariable(in.elementType(), {}, debugPrefix("zero"));
-  graph().setTileMapping(zero, 0);
+  auto zero = getScalarVariable(in.elementType(), debugPrefix("zero"));
   graph().setInitialValue(zero, 0);
 
   // Create an 0'ed tensor to be a tensor of the right size

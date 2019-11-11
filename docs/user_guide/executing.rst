@@ -107,7 +107,7 @@ command-line tool. This may be a single IPU or a group of IPUs.
 
 The method ``createIpuModelDevice`` is used to create a Poplar software emulation
 of an IPU device.  Similarly, the method ``createCpuDevice`` creates a simple Poplar CPU backend.
-See the API documentation for details.
+See `PopART C++ API Reference <https://documents.graphcore.ai/documents/UG11/latest>`_ for details.
 
 
 Executing a session
@@ -194,7 +194,8 @@ Both ``getGraphReport`` and ``getExecutionReport`` can optionally return
 a Concise Binary Object Representation (CBOR) formatted report.
 
 For more information on profiling control and the information returned by these functions, see the
-Profiling chapter of the *Poplar and Poplibs User Guide*.
+Profiling chapter of the
+`Poplar and Poplibs User Guide <https://documents.graphcore.ai/documents/UG1/latest>`_.
 
 .. _popart_logging:
 
