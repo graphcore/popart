@@ -274,14 +274,8 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
       // Stash
       auto stashOp = dynamic_cast<StashOp *>(op);
       if (stashOp) {
-        // 2)
-        BOOST_CHECK(stashOp->scheduledPreLoss == ScheduledPreLoss::Yes);
         int nRestores = 0;
-        for (auto consumer : stashOp->input->tensor(0)->consumers.getOps()) {
-          // 3)
-          if (consumer->fromLoss == PathFromLoss::Yes) {
-            BOOST_CHECK(schedIndex.at(consumer) > opIndex);
-          }
+        for (auto consumer : stashOp->output->tensor(0)->consumers.getOps()) {
           // 1)
           if (dynamic_cast<RestoreOp *>(consumer)) {
             ++nRestores;
@@ -290,6 +284,15 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
         }
         // 1)
         BOOST_CHECK(nRestores == 1);
+
+        // 2)
+        BOOST_CHECK(stashOp->scheduledPreLoss == ScheduledPreLoss::Yes);
+        for (auto consumer : stashOp->input->tensor(0)->consumers.getOps()) {
+          // 3)
+          if (consumer->fromLoss == PathFromLoss::Yes) {
+            BOOST_CHECK(schedIndex.at(consumer) > opIndex);
+          }
+        }
       }
 
       // if it's a Restore Op, we don't check any ordering conditions in the Ir,
@@ -298,8 +301,9 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
       auto restoreOp = dynamic_cast<RestoreOp *>(op);
       if (restoreOp) {
         int nStash   = 0;
-        auto inIndex = restoreOp->getActToRestoreInIndex();
-        auto act     = restoreOp->input->tensor(inIndex);
+        auto stash   = restoreOp->input->tensor(restoreOp->getStashInIndex());
+        auto stashOp = stash->getProducer();
+        auto act     = stashOp->input->tensor(StashOp::getInIndex());
         for (auto consumer : act->consumers.getOps()) {
           if (dynamic_cast<StashOp *>(consumer)) {
             ++nStash;

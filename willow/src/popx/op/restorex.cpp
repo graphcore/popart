@@ -51,7 +51,7 @@ poplar::Tensor grow_restore_inplace(const Opx &opx,
 
 void RestoreInplaceOpx::grow(poplar::program::Sequence &prog) const {
   auto &op          = getOp<RestoreInplaceOp>();
-  auto actToRestore = getInTensor(RestoreInplaceOp::getRestoredActOutIndex());
+  auto actToRestore = getInTensor(RestoreInplaceOp::getActToRestoreInIndex());
   auto stash        = getInTensor(RestoreInplaceOp::getStashInIndex());
 
   auto actFromStash =

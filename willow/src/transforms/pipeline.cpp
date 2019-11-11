@@ -932,13 +932,16 @@ bool Pipeline::apply(Graph &graph) const {
     RestoreOp *restoreOp;
     if (isInplace) {
       restoreOp = addNewRestoreInplaceOp(graph, stashSize);
+      // RestoreInplaceOp has an extra input - the act tensor it is in-place
+      // restoring.
+      restoreOp->connectInTensor(RestoreInplaceOp::getActToRestoreInIndex(),
+                                 tid);
     } else {
       restoreOp = addNewRestoreOp(graph, stashSize);
     }
 
     restoreOp->setVirtualGraphId(getVirtualGraphIdOrSourceIpu(restoreRefOp));
     restoreOp->setPipelineStage(restoreRefOp->getPipelineStage());
-    restoreOp->connectInTensor(RestoreOp::getActToRestoreInIndex(), tid);
     restoreOp->connectInTensor(RestoreOp::getStashInIndex(), stashId);
     auto restoreId = restoreOp->getRestoredTensorId();
     restoreOp->createAndConnectOutTensor(RestoreOp::getRestoredActOutIndex(),

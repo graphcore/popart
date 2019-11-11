@@ -1,6 +1,7 @@
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
 #include <popart/op/restore.hpp>
+#include <popart/op/stash.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/opserialiser.hpp>
 #include <popart/tensor.hpp>
@@ -18,11 +19,17 @@ std::unique_ptr<Op> RestoreOp::clone() const {
 }
 
 void RestoreOp::setup() {
-  outInfo(getRestoredActOutIndex()) = inInfo(getActToRestoreInIndex());
+  auto stash   = input->tensor(getStashInIndex());
+  auto stashOp = stash->getProducer();
+  auto act     = stashOp->input->tensor(StashOp::getInIndex());
+  outInfo(getRestoredActOutIndex()) = act->info;
 }
 
 TensorId RestoreOp::getRestoredTensorId() const {
-  return reservedRestoredPrefix() + inId(getActToRestoreInIndex());
+  auto stash   = input->tensor(getStashInIndex());
+  auto stashOp = stash->getProducer();
+  auto act     = stashOp->input->tensor(StashOp::getInIndex());
+  return reservedRestoredPrefix() + act->id;
 }
 
 void RestoreOp::appendAttributes(OpSerialiserBase &os) const {
