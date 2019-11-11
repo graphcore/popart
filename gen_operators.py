@@ -89,10 +89,10 @@ class Opset:
 
     def RemoveDuplicates(self):
         """ 
-    When putting ops into the opset, the opset can end up with 
-    multiple version of the same op, this function will remove duplicates with the
-    smallest version number
-    """
+        When putting ops into the opset, the opset can end up with multiple
+        versions of the same op, this function will remove duplicates with the
+        smallest version number
+        """
 
         ops = []
         for op in self.operators:
@@ -171,8 +171,10 @@ class Attribute:
                     return "boost::optional<std::string>"
         elif self.type == onnx.defs.OpSchema.AttrType.STRINGS:
             return 'const std::vector<std::string>&'
+        # Special case of Loop, If, Scan where we replace
+        # onnx::GraphProto with Builder
         elif self.type == onnx.defs.OpSchema.AttrType.GRAPH:
-            return 'const onnx::GraphProto &'
+            return 'const Builder&'
         elif self.type == onnx.defs.OpSchema.AttrType.TENSOR:
             return 'const ConstVoidData& '
         elif self.type == onnx.defs.OpSchema.AttrType.SPARSE_TENSOR:
@@ -218,12 +220,12 @@ class Attribute:
 
     def DefaultValue(self):
         """
-    Return the default value for an attribute
-    If there is a default value return that, else
-    if the attribute is not required return the default value
-    that the code can use to decide if the attribute can be 
-    left out
-    """
+        Return the default value for an attribute
+        If there is a default value return that, else
+        if the attribute is not required return the default value
+        that the code can use to decide if the attribute can be
+        left out
+        """
 
         if len(str(self.default)) == 0:
 
@@ -311,9 +313,9 @@ class Operation:
 
     def CppName(self):
         """ 
-    Return a C++ name for the operation
-    Need the replace C++ key words 
-    """
+        Return a C++ name for the operation
+        Need the replace C++ key words
+        """
 
         keywords = ["and", "or", "not", "xor", "if"]
 
@@ -340,8 +342,8 @@ class Operation:
 
 def spaces(n):
     """
-  Return a string of spaces the same length as in the input string
-  """
+    Return a string of spaces the same length as in the input string
+    """
     return ' ' * n
 
 
@@ -581,7 +583,24 @@ def genBuilderCpp(filename, schema):
                     for a in op.attributes:
                         if not a.isDeprecated():
                             if a.required:
-                                if op.name == "Cast":
+                                isLoopOrScanBody = (
+                                    op.name == "Loop"
+                                    or op.name == "Scan") and a.name == "body"
+                                isIfBranch = op.name == "If" and (
+                                    a.name == "else_branch"
+                                    or a.name == "then_branch")
+                                if isLoopOrScanBody or isIfBranch:
+                                    f.write(
+                                        "  // Special case where we convert from a Builder object to an\n"
+                                    )
+                                    f.write(
+                                        "  // onnx::GraphProto object so as not to expose the onnx class\n"
+                                    )
+                                    f.write("  // at the API level\n")
+                                    f.write(
+                                        "  attributes[\"{}\"] = io::getModelFromString({}.getModelProto()).graph();\n"
+                                        .format(a.name, a.name))
+                                elif op.name == "Cast":
                                     f.write(
                                         "  // Special case where we cast from DataType to int\n"
                                     )

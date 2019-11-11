@@ -92,6 +92,46 @@ def test_cast_grad(op_tester):
     op_tester.run(init_builder, reference, 'train')
 
 
+def test_logical_if(op_tester):
+    def test(then_branch):
+        d1 = np.asarray([0, 20, 5]).astype(np.int32)
+        d2 = np.asarray([7, 2, -1]).astype(np.int32)
+        d3 = np.asarray(then_branch)
+
+        def init_builder(builder):
+            i1 = builder.addInputTensor(d1)
+            i2 = builder.addInputTensor(d2)
+            condition = builder.addInputTensor(d3)
+
+            then_builder = builder.createSubgraphBuilder()
+            then_builder.addInputTensorFromParentGraph(i1)
+            then_builder.addInputTensorFromParentGraph(i2)
+            then_builder.addOutputTensor(
+                then_builder.aiOnnxOpset10.add([i1, i2]))
+
+            else_builder = builder.createSubgraphBuilder()
+            else_builder.addInputTensorFromParentGraph(i1)
+            else_builder.addInputTensorFromParentGraph(i2)
+            else_builder.addOutputTensor(
+                else_builder.aiOnnxOpset10.sub([i1, i2]))
+
+            o = builder.aiOnnx.logical_if([condition], 1, else_builder,
+                                          then_builder)[0]
+            builder.addOutputTensor(o)
+            return [o]
+
+        def reference(ref_data):
+            if then_branch is True:
+                return [np.asarray([7, 22, 4]).astype(np.int32)]
+            else:
+                return [np.asarray([-7, 18, 6]).astype(np.int32)]
+
+        op_tester.run(init_builder, reference, 'infer')
+
+    test(True)
+    test(False)
+
+
 def test_convolution(op_tester):
     def init_builder(builder):
         data = np.ones([1, 2, 4, 4], dtype=np.float32)

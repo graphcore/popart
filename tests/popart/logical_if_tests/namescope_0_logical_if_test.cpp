@@ -26,7 +26,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_namescope0) {
     auto in_condition = builder.addInputTensor(infoBool);
 
     // in0 + in1
-    auto then_branch = [in0, in1](Builder &parent_builder) {
+    auto &then_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
       builder.addInputTensorFromHigherScope(in0);
@@ -35,11 +35,11 @@ BOOST_AUTO_TEST_CASE(LogicalIf_namescope0) {
       // could get identical name as else_branch
       auto out0 = aiOnnx.add({in0, in1});
       builder.addOutputTensor(out0);
-      return io::getModelFromString(builder.getModelProto()).graph();
+      return builder;
     }(builder);
 
     // 2*(in0 + in1)
-    auto else_branch = [in0, in1](Builder &parent_builder) {
+    auto &else_branch = [in0, in1](Builder &parent_builder) -> Builder & {
       Builder &builder = parent_builder.createSubgraphBuilder();
       auto aiOnnx      = builder.aiOnnxOpset9();
       auto aiGraphcore = builder.aiGraphcoreOpset1();
@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(LogicalIf_namescope0) {
       auto out0 = aiOnnx.add({in0, in1});
       auto out1 = aiGraphcore.scale({out0}, 2);
       builder.addOutputTensor(out1);
-      return io::getModelFromString(builder.getModelProto()).graph();
+      return builder;
     }(builder);
 
     auto out =

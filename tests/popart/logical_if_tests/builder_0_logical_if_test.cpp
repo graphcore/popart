@@ -52,10 +52,10 @@ BOOST_AUTO_TEST_CASE(LogicalIf_builder0) {
       {C},
       // number of outputs (must be same along true and false branches)
       1,
-      // GraphProto for false branch
-      io::getModelFromString(builder10.getModelProto()).graph(),
-      // GraphProto for true branch
-      io::getModelFromString(builder11.getModelProto()).graph());
+      // Builder for false branch
+      builder10,
+      // Builder for true branch
+      builder11);
 
   auto proto      = builder0->getModelProto();
   auto modelProto = io::getModelFromString(proto);
