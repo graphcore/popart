@@ -22,10 +22,6 @@ bool PreAliasPattern::touchesAnchored(Op *op) const {
   return false;
 };
 
-void Pattern::initialise(std::string pattern_name_) {
-  pattern_name = pattern_name_;
-}
-
 void Pattern::transferBaseProperties(Op *from, Op *to) const {
   if (from->hasVirtualGraphId()) {
     to->setVirtualGraphId(from->getVirtualGraphId());
@@ -73,7 +69,9 @@ Op *PreAliasPattern::makeReplacementOpInIr(
   return newOp;
 }
 
-const std::string &Pattern::getPatternName() const { return pattern_name; }
+const std::string &Pattern::getPatternName() const {
+  return PatternNames::getName(typeid(*this));
+}
 
 std::string Pattern::getReplacementOpName(Op *op,
                                           const std::string name) const {

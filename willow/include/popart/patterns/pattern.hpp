@@ -69,15 +69,10 @@ public:
 
   const std::string &getPatternName() const;
 
-  void initialise(std::string pattern_name);
-
 protected:
   std::string getReplacementOpName(Op *op, const std::string name) const;
 
   void transferBaseProperties(Op *from, Op *to) const;
-
-private:
-  std::string pattern_name;
 };
 
 class PreAliasPattern : public Pattern {

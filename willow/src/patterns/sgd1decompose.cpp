@@ -328,6 +328,7 @@ bool SGD1Decompose::apply(Op *op) const {
 namespace {
 // Not registering this pattern, as we want it to run at a special time (after
 // matmul serialization)
-}
+static AddPatternName<SGD1Decompose> registerName("SGD1Decompose");
+} // namespace
 
 } // namespace popart

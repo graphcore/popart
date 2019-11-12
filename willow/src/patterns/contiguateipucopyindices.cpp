@@ -151,10 +151,10 @@ bool ContiguateIpuCopyIndicesPattern::apply(Op *op) const {
 }
 
 namespace {
-static PatternCreator<ContiguateIpuCopyIndicesPattern>
-    contiguateIpuCopyIndicesPattern(
-        PreAliasPatternType::CONTIGUATEIPUCOPYINDICES,
-        "ContiguateIpuCopyIndicesPattern");
-}
+// Not registering this pattern with PatternCreator, as it is run as part of the
+// Pipeline transform.
+static AddPatternName<ContiguateIpuCopyIndicesPattern>
+    registerName("ContiguateIpuCopyIndicesPattern");
+} // namespace
 
 } // namespace popart

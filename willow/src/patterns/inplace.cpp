@@ -2,6 +2,7 @@
 #include <popart/graph.hpp>
 #include <popart/op.hpp>
 #include <popart/patterns/inplace.hpp>
+#include <popart/patterns/patterns.hpp>
 #include <popart/pbwrap.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
@@ -39,7 +40,7 @@ ExternOpTensorBundle::ExternOpTensorBundle(Op *opCopy,
 
 Op *ExternOpTensorBundle::getOp() { return up_op.get(); }
 
-Inplace::Inplace() : Pattern() { initialise("InPlace"); }
+Inplace::Inplace() : Pattern() {}
 
 // what is touched? The output, and all the inputs at the target indices
 std::vector<const Tensor *> Inplace::touches(Op *op, OperatorIdentifier) const {
@@ -365,4 +366,7 @@ OpsBeforeKey Inplace::getNewTopoCons(Op *op, OperatorIdentifier inpid) const {
   return gCons;
 }
 
+namespace {
+static AddPatternName<Inplace> registerName("InPlace");
+} // namespace
 } // namespace popart

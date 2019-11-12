@@ -3,6 +3,28 @@
 
 namespace popart {
 
+void PatternNames::addName(const std::type_info &patternInfo,
+                           const std::string &name) {
+  auto &instance = getInstance();
+  auto found     = instance.names.find(std::type_index(patternInfo));
+  if (found == instance.names.end()) {
+    instance.names[std::type_index(patternInfo)] = name;
+  } else {
+    throw error("A name has already been added for pattern class {}",
+                patternInfo.name());
+  }
+}
+
+const std::string &PatternNames::getName(const std::type_info &patternInfo) {
+  auto &instance = getInstance();
+  auto found     = instance.names.find(std::type_index(patternInfo));
+  if (found != instance.names.end()) {
+    return found->second;
+  } else {
+    throw error("Could not return name for pattern {}", patternInfo.name());
+  }
+}
+
 Patterns::Patterns(PatternsLevel level) {
   switch (level) {
 
