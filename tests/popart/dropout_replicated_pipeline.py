@@ -20,7 +20,6 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
     gradient accumulation
     """
     #Has dependencies on T12562. T12976, T13098 for full support
-    #Depends on T13137 for non-recomputation case (see bottom)
 
     seed = 1015
     npr.seed(seed)
@@ -111,7 +110,7 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
                                                    ratio=ratio1)
         dropout1 = builder.aiGraphcore.scale([dropout1], 2.0)
         skipOut = builder.aiOnnx.add([mm0, dropout1])
-        # See T13137
+        # See resolved task T13137
         if forceAddOutOfPlace:
             builder.setInplacePreferences(skipOut, {"AddRhsInplace": -1.0})
 
@@ -292,11 +291,10 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
 
 @tu.requires_ipu
 def test_all_cases():
-    # with all features on, the test passes:
-    runTest(forceAddOutOfPlace=False, pipelineRecomputation=True)
+    # this unit test checks a previously failing case
+    runTest(forceAddOutOfPlace=False, pipelineRecomputation=False)
 
-    #but this particular case (with recomputation turned off) fails due to a particular op being inplaced
-    #TODO (T13137)
-    #runTest(forceAddOutOfPlace = False, pipelineRecomputation = False)
+    # with all features on,
+    runTest(forceAddOutOfPlace=False, pipelineRecomputation=True)
 
     print("test_all_cases complete")
