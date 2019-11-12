@@ -288,6 +288,10 @@ public:
   // returns true if there are initializers in the onnx model
   bool containsInitialisers();
 
+  // returns true if tensor Id matches the name of any tensor the onnx
+  // model's initialisers
+  bool tensorExistsInInitialisers(TensorId) const;
+
   // Convert the ONNX graph into the forwards pass of the IR
   void constructForwards();
 

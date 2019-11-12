@@ -607,12 +607,18 @@ AiOnnxOpset6::identity(const std::vector<TensorId>& args,
 std::vector<TensorId>
 AiOnnxOpset6::logical_if(const std::vector<TensorId>& args,
                          unsigned num_outputs,
-                         const onnx::GraphProto & else_branch,
-                         const onnx::GraphProto & then_branch,
+                         const Builder& else_branch,
+                         const Builder& then_branch,
                          const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  attributes["else_branch"] = else_branch;
-  attributes["then_branch"] = then_branch;
+  // Special case where we convert from a Builder object to an
+  // onnx::GraphProto object so as not to expose the onnx class
+  // at the API level
+  attributes["else_branch"] = io::getModelFromString(else_branch.getModelProto()).graph();
+  // Special case where we convert from a Builder object to an
+  // onnx::GraphProto object so as not to expose the onnx class
+  // at the API level
+  attributes["then_branch"] = io::getModelFromString(then_branch.getModelProto()).graph();
   return impl->op(Onnx::Operators::If_1,
                   getOpsetVersion(),
                   args,
@@ -769,10 +775,13 @@ AiOnnxOpset6::logsoftmax(const std::vector<TensorId>& args,
 std::vector<TensorId>
 AiOnnxOpset6::loop(const std::vector<TensorId>& args,
                    unsigned num_outputs,
-                   const onnx::GraphProto & body,
+                   const Builder& body,
                    const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  attributes["body"] = body;
+  // Special case where we convert from a Builder object to an
+  // onnx::GraphProto object so as not to expose the onnx class
+  // at the API level
+  attributes["body"] = io::getModelFromString(body.getModelProto()).graph();
   return impl->op(Onnx::Operators::Loop_1,
                   getOpsetVersion(),
                   args,
@@ -2236,12 +2245,15 @@ AiOnnxOpset8::min(const std::vector<TensorId>& args,
 std::vector<TensorId>
 AiOnnxOpset8::scan(const std::vector<TensorId>& args,
                    unsigned num_outputs,
-                   const onnx::GraphProto & body,
+                   const Builder& body,
                    int64_t num_scan_inputs,
                    const std::vector<int64_t>& directions,
                    const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  attributes["body"] = body;
+  // Special case where we convert from a Builder object to an
+  // onnx::GraphProto object so as not to expose the onnx class
+  // at the API level
+  attributes["body"] = io::getModelFromString(body.getModelProto()).graph();
   if (!directions.empty()) {
     attributes["directions"] = directions;
   }
@@ -2577,7 +2589,7 @@ AiOnnxOpset9::prelu(const std::vector<TensorId>& args,
 std::vector<TensorId>
 AiOnnxOpset9::scan(const std::vector<TensorId>& args,
                    unsigned num_outputs,
-                   const onnx::GraphProto & body,
+                   const Builder& body,
                    int64_t num_scan_inputs,
                    const std::vector<int64_t>& scan_input_axes,
                    const std::vector<int64_t>& scan_input_directions,
@@ -2585,7 +2597,10 @@ AiOnnxOpset9::scan(const std::vector<TensorId>& args,
                    const std::vector<int64_t>& scan_output_directions,
                    const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  attributes["body"] = body;
+  // Special case where we convert from a Builder object to an
+  // onnx::GraphProto object so as not to expose the onnx class
+  // at the API level
+  attributes["body"] = io::getModelFromString(body.getModelProto()).graph();
   attributes["num_scan_inputs"] = num_scan_inputs;
   if (!scan_input_axes.empty()) {
     attributes["scan_input_axes"] = scan_input_axes;
@@ -3502,12 +3517,18 @@ AiOnnxOpset11::hardmax(const std::vector<TensorId>& args,
 std::vector<TensorId>
 AiOnnxOpset11::logical_if(const std::vector<TensorId>& args,
                           unsigned num_outputs,
-                          const onnx::GraphProto & else_branch,
-                          const onnx::GraphProto & then_branch,
+                          const Builder& else_branch,
+                          const Builder& then_branch,
                           const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  attributes["else_branch"] = else_branch;
-  attributes["then_branch"] = then_branch;
+  // Special case where we convert from a Builder object to an
+  // onnx::GraphProto object so as not to expose the onnx class
+  // at the API level
+  attributes["else_branch"] = io::getModelFromString(else_branch.getModelProto()).graph();
+  // Special case where we convert from a Builder object to an
+  // onnx::GraphProto object so as not to expose the onnx class
+  // at the API level
+  attributes["then_branch"] = io::getModelFromString(then_branch.getModelProto()).graph();
   return impl->op(Onnx::Operators::If_11,
                   getOpsetVersion(),
                   args,
@@ -3534,10 +3555,13 @@ AiOnnxOpset11::logsoftmax(const std::vector<TensorId>& args,
 std::vector<TensorId>
 AiOnnxOpset11::loop(const std::vector<TensorId>& args,
                     unsigned num_outputs,
-                    const onnx::GraphProto & body,
+                    const Builder& body,
                     const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  attributes["body"] = body;
+  // Special case where we convert from a Builder object to an
+  // onnx::GraphProto object so as not to expose the onnx class
+  // at the API level
+  attributes["body"] = io::getModelFromString(body.getModelProto()).graph();
   return impl->op(Onnx::Operators::Loop_11,
                   getOpsetVersion(),
                   args,
@@ -3922,7 +3946,7 @@ AiOnnxOpset11::round(const std::vector<TensorId>& args,
 std::vector<TensorId>
 AiOnnxOpset11::scan(const std::vector<TensorId>& args,
                     unsigned num_outputs,
-                    const onnx::GraphProto & body,
+                    const Builder& body,
                     int64_t num_scan_inputs,
                     const std::vector<int64_t>& scan_input_axes,
                     const std::vector<int64_t>& scan_input_directions,
@@ -3930,7 +3954,10 @@ AiOnnxOpset11::scan(const std::vector<TensorId>& args,
                     const std::vector<int64_t>& scan_output_directions,
                     const std::string& name) {
   std::map<std::string, boost::any> attributes;
-  attributes["body"] = body;
+  // Special case where we convert from a Builder object to an
+  // onnx::GraphProto object so as not to expose the onnx class
+  // at the API level
+  attributes["body"] = io::getModelFromString(body.getModelProto()).graph();
   attributes["num_scan_inputs"] = num_scan_inputs;
   if (!scan_input_axes.empty()) {
     attributes["scan_input_axes"] = scan_input_axes;

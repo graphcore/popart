@@ -859,19 +859,6 @@ void Ir::prepareImpl(const IrBundle &gb) {
                             getSessionOptions().autoRecomputation);
   }
 
-  // Now, we apply the Patterns which can handle and create
-  // topological constraints. Currently, this is only one
-  // in-placing Pattern.
-  if (patterns.isInPlaceEnabled()) {
-    // Update the inplace priorities of ops before inplacing
-    if (patterns.isUpdateInplacePrioritiesForIpuEnabled()) {
-      applyUpdateInplacePrioritiesForIpu();
-    }
-    for (auto &id_graph : graphs) {
-      applyInplacePattern(*id_graph.second);
-    }
-  }
-
   updateVertices();
 
   // Each virtual graph is a pipeline stage in the pipeline.
@@ -888,6 +875,20 @@ void Ir::prepareImpl(const IrBundle &gb) {
   }
   if (getSessionOptions().hostAllReduce) {
     applyTransform(HostReduce::id(), getMainGraph());
+    updateVertices();
+  }
+
+  // Now, we apply the Patterns which can handle and create
+  // topological constraints. Currently, this is only one
+  // in-placing Pattern.
+  if (patterns.isInPlaceEnabled()) {
+    // Update the inplace priorities of ops before inplacing
+    if (patterns.isUpdateInplacePrioritiesForIpuEnabled()) {
+      applyUpdateInplacePrioritiesForIpu();
+    }
+    for (auto &id_graph : graphs) {
+      applyInplacePattern(*id_graph.second);
+    }
     updateVertices();
   }
 
@@ -2628,6 +2629,16 @@ bool Ir::canTrain() const {
 
 bool Ir::containsInitialisers() {
   return !(onnxModel->graph().initializer().empty());
+}
+
+bool Ir::tensorExistsInInitialisers(TensorId tId) const {
+  for (int init_index = 0; init_index < onnxModel->graph().initializer_size();
+       ++init_index) {
+    if (onnxModel->graph().initializer(init_index).name() == tId) {
+      return true;
+    }
+  }
+  return false;
 }
 
 void Ir::applyUpdateInplacePrioritiesForIpu() {

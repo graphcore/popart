@@ -26,6 +26,9 @@ optimizer = popart.SGD({
     "defaultWeightDecay": (wd, False)
 })
 
+grad_accl_prefix = popart.reservedAcclToAccumulatorPrefix(
+) + popart.reservedGradientPrefix()
+
 
 def get_micro_batch_size(accl_factor):
     """
@@ -556,9 +559,6 @@ def test_gradient_accumulation_model_proto():
     model = onnx.load(accl_proto_filename)
     names = [t.name for t in model.graph.initializer]
 
-    grad_accl_prefix = popart.reservedAcclToAccumulatorPrefix(
-    ) + popart.reservedGradientPrefix()
-
     grad_accl_names = []
     weight_names = []
     for name in names:
@@ -568,7 +568,7 @@ def test_gradient_accumulation_model_proto():
             weight_names.append(name)
 
     # Model should have 6 weight tensors
-    assert len(weight_names) > 1
+    assert len(weight_names) == 6
     assert len(grad_accl_names) == len(weight_names)
 
     tensor_mapping = {}
@@ -584,5 +584,88 @@ def test_gradient_accumulation_model_proto():
         weight_tensor = tensor_mapping[rev_map[g_a_name]]
         g_a_tensor = tensor_mapping[g_a_name]
         for d_i, v in enumerate(weight_tensor.float_data):
-            # initialisation as per equations. When vs != 1 this will need changing T12001
+            # initialisation as per equations. When velocity scaling != 1 this
+            # will need changing : T12001
             assert g_a_tensor.float_data[d_i] - v * wd < 1e-8
+
+
+def test_loading_saved_gradient_accumulationt_tesors():
+    """
+    1. Build a model with matmuls, no grad accumulation
+    2. Write out onnx model, verify initializers contain no accl tensors
+    3. Create session with model, verify accl tensors initialised correctly
+    4. Do session.run(), write out model, verify accl tensors have been updated
+    5. Create new session with same model. This time before run, write out model
+       and check tensors are still there, with the same value
+    """
+
+    # 1.
+    accl_factor = 4
+    [onnx_model, input_name, output_name,
+     lb_name] = get_mm_model(accl_factor=accl_factor, enable_multi_ipu=False)
+
+    # 2.
+    model = onnx.load_from_string(onnx_model)
+    names = [t.name for t in model.graph.initializer]
+    for name in names:
+        assert grad_accl_prefix not in name
+
+    def getTrainingSession(fn):
+        losses = [popart.NllLoss(output_name, lb_name, "NlllVal")]
+        opts = popart.SessionOptions()
+        opts.enableGradientAccumulation = True
+        opts.accumulationFactor = accl_factor
+        opts.disableGradAccumulationTensorStreams = False
+        sess = popart.TrainingSession(fnModel=fn,
+                                      dataFeed=popart.DataFlow(1, {}),
+                                      deviceInfo=tu.get_poplar_cpu_device(),
+                                      losses=losses,
+                                      optimizer=optimizer,
+                                      userOptions=opts)
+        sess.prepareDevice()
+        sess.optimizerFromHost()
+        sess.weightsFromHost()
+        return sess
+
+    # 3.
+    sess = getTrainingSession(onnx_model)
+    fn = "withInitZeroAcclTensors.onnx"
+    sess.modelToHost(fn)
+    model = onnx.load(fn)
+    weights = {}
+    accls = {}
+    for t in model.graph.initializer:
+        if grad_accl_prefix in t.name:
+            accls[t.name] = t.float_data
+        else:
+            weights[t.name] = t.float_data
+    for name in weights:
+        t_weight = np.asarray(weights[name])
+        t_accl = np.asarray(accls[grad_accl_prefix + name])
+
+    # 4.
+    input_shape = sess.getInfo(input_name).shape()
+    stepio = popart.PyStepIO(
+        {
+            input_name: npr.rand(*input_shape).astype(np.float32),
+            lb_name: np.ones(batch_size).astype(np.int32),
+        }, sess.initAnchorArrays())
+    sess.run(stepio)
+    fn = "withUpdatedAcclTensors.onnx"
+    sess.modelToHost(fn)
+    model = onnx.load(fn)
+    up_accls = {}
+    for t in model.graph.initializer:
+        if grad_accl_prefix in t.name:
+            up_accls[t.name] = np.asarray(t.float_data)
+            assert np.allclose(np.asarray(t.float_data),
+                               np.asarray(accls[t.name])) is False
+
+    # 5.
+    sess = getTrainingSession(fn)
+    fn = "withUpdatedAcclTensors_check.onnx"
+    sess.modelToHost(fn)
+    model = onnx.load(fn)
+    for t in model.graph.initializer:
+        if grad_accl_prefix in t.name:
+            assert np.array_equal(up_accls[t.name], np.asarray(t.float_data))

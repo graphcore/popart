@@ -24,4 +24,4 @@ add_popart_cpp_unit_test(pipeline_recompute_ir_test_1
 add_popart_cpp_unit_test(pipeline_recompute_ir_test_2
                          pipeline_recompute_ir_test_2.cpp)
 
-add_all_py_unit_tests("pipeline_multi_loss_numerical_0")
+add_all_py_unit_tests("")

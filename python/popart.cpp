@@ -976,6 +976,9 @@ PYBIND11_MODULE(popart_core, m) {
           py::arg("initVal"),
           py::arg("debugPrefix") = std::string())
       .def("addOutputTensor", &Builder::addOutputTensor, py::arg("outputName"))
+      .def("createSubgraphBuilder",
+           &Builder::createSubgraphBuilder,
+           pybind11::return_value_policy::reference)
 
       // Accessors for the ai.onnx domain builder interface
       .def_property_readonly("aiOnnxOpset6", &Builder::aiOnnxOpset6)

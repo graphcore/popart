@@ -126,22 +126,20 @@ void Session::modelToHost(const std::string &fn) {
   for (auto tId : ir.additionalModelProtoTensors) {
     // For additional tensors we want to save in the onnx modelproto, we copy
     // their info into across to the proto.
-    for (int init_index = 0; init_index < model.graph().initializer_size();
-         ++init_index) {
-      if (onnxgraph->mutable_initializer(init_index)->name() == tId) {
-        throw error("Tensor id {} already in initializers, duplicate tensor "
-                    "Ids not allowed in onnx specification.",
-                    tId);
-      }
-    }
-    onnx::TensorProto *init = onnxgraph->add_initializer();
-    init->set_name(tId);
-    auto tensor = ir.getMainGraph().getTensors().get(tId);
+    if (ir.tensorExistsInInitialisers(tId)) {
+      throw error("Tensor id {} already in initializers, duplicate tensor "
+                  "Ids not allowed in onnx specification.",
+                  tId);
+    } else {
+      onnx::TensorProto *init = onnxgraph->add_initializer();
+      init->set_name(tId);
+      auto tensor = ir.getMainGraph().getTensors().get(tId);
 
-    ConstVoidData cvData;
-    cvData.data = tensor->tensorData()->data();
-    cvData.info = tensor->info;
-    BuilderImpl::populateTensorProtoFromConstVoidData(cvData, tId, init);
+      ConstVoidData cvData;
+      cvData.data = tensor->tensorData()->data();
+      cvData.info = tensor->info;
+      BuilderImpl::populateTensorProtoFromConstVoidData(cvData, tId, init);
+    }
   }
 
   std::map<TensorId, MutableVoidData> initMap;

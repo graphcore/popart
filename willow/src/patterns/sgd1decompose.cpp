@@ -2,6 +2,7 @@
 #include <popart/ces/slicece.hpp>
 #include <popart/graph.hpp>
 #include <popart/ir.hpp>
+#include <popart/onnxutil.hpp>
 #include <popart/op/sgd1acclreduce.hpp>
 #include <popart/op/sgd1acclupdate.hpp>
 #include <popart/op/sgd1accumulate.hpp>
@@ -50,7 +51,7 @@ void addAcclInTensor(SGD1ComboOp &comboOp,
         "accumulation tensor with required weight decay term. ";
     if (!weight.hasProducer()) {
       throw error(std::string(infoString) +
-                  "But weight has not data. Moreover weight has no "
+                  "But weight has no data. Moreover weight has no "
                   "producer, so can't work back to find data.");
     } else {
       auto asSlice = dynamic_cast<BaseSliceOp *>(weight.getProducer());
@@ -120,18 +121,27 @@ bool SGD1Decompose::apply(Op *op) const {
                 "type in SGD1Decompose, this is outstanding work");
   }
 
-  // initialise accumulation tensor, which is not yet in the Ir Graph.
-  if (weightGrad->info.dataType() == DataType::FLOAT) {
-    addAcclInTensor<float>(*combo, *weight, *weightGrad, acclIntoAccumulatorId);
-  } else if (weightGrad->info.dataType() == DataType::FLOAT16) {
-    addAcclInTensor<float16_t>(
-        *combo, *weight, *weightGrad, acclIntoAccumulatorId);
+  // Initialise the accumulation tensors in the Ir...
+  if (ir.tensorExistsInInitialisers(acclIntoAccumulatorId)) {
+    // ... Either by loading from the onnx model used to create the session,
+    // if they already exist
+    auto tp = onnxutil::getTensorProto(ir.getModel(), acclIntoAccumulatorId);
+    graph.getTensors().addVarInit(acclIntoAccumulatorId, &tp);
   } else {
-    throw error("Unsupported type in gradient accumulation transformation, "
-                "currently only FLOAT16 and FLOAT are supported");
+    // ... Or by initializing directly
+    if (weightGrad->info.dataType() == DataType::FLOAT) {
+      addAcclInTensor<float>(
+          *combo, *weight, *weightGrad, acclIntoAccumulatorId);
+    } else if (weightGrad->info.dataType() == DataType::FLOAT16) {
+      addAcclInTensor<float16_t>(
+          *combo, *weight, *weightGrad, acclIntoAccumulatorId);
+    } else {
+      throw error("Unsupported type in gradient accumulation transformation, "
+                  "currently only FLOAT16 and FLOAT are supported");
+    }
+    logging::pattern::trace("Created Accumulator Tensor in SGD1Decompose: {}",
+                            acclIntoAccumulatorId);
   }
-  logging::pattern::trace("Created Accumulator Tensor in SGD1Decompose: {}",
-                          acclIntoAccumulatorId);
 
   // Accumulate Op
   //
@@ -181,7 +191,8 @@ bool SGD1Decompose::apply(Op *op) const {
 
   // T12001 better encapsulation
   if (ir.additionalModelProtoTensors.find(acclIntoAccumulatorId) ==
-      ir.additionalModelProtoTensors.end()) {
+          ir.additionalModelProtoTensors.end() &&
+      !ir.tensorExistsInInitialisers(acclIntoAccumulatorId)) {
     // If we are not going to stream the accl tensors from the host,
     // don't add them to the set of additional tensors to be saved
     // in the onnx modelproto

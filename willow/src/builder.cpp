@@ -1,4 +1,5 @@
 #include <popart/builder_impl.hpp>
+#include <popart/filereader.hpp>
 #include <popart/logging.hpp>
 #include <popart/onnxutil.hpp>
 #include <popart/opidentifier.hpp>

@@ -2036,7 +2036,7 @@ void Devicex::reconnectInputStreams() {
   logging::devicex::debug(
       "Reconnecting input streams, invalidating prefetches.");
   auto engineToInputStreamWithCallback =
-      [&pEngine = pEngine, this](Tensor *tensor, PopStreamId streamId) {
+      [&pEngine = pEngine, this](Tensor *tensor, poplar::DataStream &stream) {
         auto replicationFactor = getReplicationFactor();
         for (auto replicationIndex = 0; replicationIndex < replicationFactor;
              ++replicationIndex) {
@@ -2044,11 +2044,16 @@ void Devicex::reconnectInputStreams() {
           auto callback = std::make_unique<PrefetchCallback>(
               this->inputStreams[tensor->id]);
           pEngine->connectStreamToCallback(
-              streamId, replicationIndex, std::move(callback));
+              stream, replicationIndex, std::move(callback));
         }
       };
+
   for (Tensor *tensor : ir().dataStreamTensors()) {
-    engineToInputStreamWithCallback(tensor, h2dId(tensor->id));
+    // The data stream for a tensor won't exist if using synthetic data, so
+    // don't try and recreate them.
+    if (!useSyntheticData()) {
+      engineToInputStreamWithCallback(tensor, fromHostStreams.at(tensor->id));
+    }
   }
 }
 

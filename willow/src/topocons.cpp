@@ -25,12 +25,6 @@ OpsBeforeKey TopoCons::finalConsumerCons(const Tensor *tensor, Op *last) const {
 
 void TopoCons::insert(const OpsBeforeKey &ops) {
 
-  for (auto &entry : ops) {
-    logging::ir::debug("Inserting topological constraints from {} to {}",
-                       entry.first->str(),
-                       entry.second);
-  }
-
   for (auto &after_befores : ops) {
     Op *after                        = after_befores.first;
     const std::vector<Op *> &befores = after_befores.second;
@@ -133,7 +127,7 @@ void TopoCons::remove(Op *op) {
 // insert the topological constraint before -> after
 void TopoCons::insert(Op *before, Op *after) {
 
-  logging::ir::debug("Inserting topological constraints from {} to {}",
+  logging::ir::debug("Inserting topological constraint from {} to {}",
                      before->str(),
                      after->str());
 

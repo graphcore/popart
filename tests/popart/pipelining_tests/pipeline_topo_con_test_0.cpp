@@ -112,10 +112,8 @@ void prepareIr1(popart::Ir &ir) {
   auto loss2 = std::unique_ptr<Loss>(
       new L1Loss(act8, "l1LossVal_2", 0.2, ReductionType::SUM));
 
-  // TODO : the inclusion of this Loss on act3 causes a Stash Tensor which is
-  // scheduled-pre-loss. This should be fixed T10375
-  //   auto loss3 = std::unique_ptr<Loss>(
-  //       new NllLoss(act3, l0, "nllLossVal_1", ReductionType::MEAN));
+  auto loss3 = std::unique_ptr<Loss>(
+      new NllLoss(act3, l0, "nllLossVal_1", ReductionType::MEAN));
 
   auto loss4 = std::unique_ptr<Loss>(
       new NllLoss(act9, l1, "nllLossVal_2", ReductionType::SUM));
@@ -126,7 +124,7 @@ void prepareIr1(popart::Ir &ir) {
   ir.prepare({modelProto,
               InputShapeInfo(),
               dataFlow,
-              {loss1.get(), loss2.get(), loss4.get()},
+              {loss1.get(), loss2.get(), loss3.get(), loss4.get()},
               &optimizer,
               *device,
               userOptions,
@@ -274,14 +272,8 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
       // Stash
       auto stashOp = dynamic_cast<StashOp *>(op);
       if (stashOp) {
-        // 2)
-        BOOST_CHECK(stashOp->scheduledPreLoss == ScheduledPreLoss::Yes);
         int nRestores = 0;
-        for (auto consumer : stashOp->input->tensor(0)->consumers.getOps()) {
-          // 3)
-          if (consumer->fromLoss == PathFromLoss::Yes) {
-            BOOST_CHECK(schedIndex.at(consumer) > opIndex);
-          }
+        for (auto consumer : stashOp->output->tensor(0)->consumers.getOps()) {
           // 1)
           if (dynamic_cast<RestoreOp *>(consumer)) {
             ++nRestores;
@@ -290,6 +282,15 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
         }
         // 1)
         BOOST_CHECK(nRestores == 1);
+
+        // 2)
+        BOOST_CHECK(stashOp->scheduledPreLoss == ScheduledPreLoss::Yes);
+        for (auto consumer : stashOp->input->tensor(0)->consumers.getOps()) {
+          // 3)
+          if (consumer->fromLoss == PathFromLoss::Yes) {
+            BOOST_CHECK(schedIndex.at(consumer) > opIndex);
+          }
+        }
       }
 
       // if it's a Restore Op, we don't check any ordering conditions in the Ir,
@@ -298,8 +299,9 @@ BOOST_AUTO_TEST_CASE(PipelineTopoConTest0) {
       auto restoreOp = dynamic_cast<RestoreOp *>(op);
       if (restoreOp) {
         int nStash   = 0;
-        auto inIndex = restoreOp->getActToRestoreInIndex();
-        auto act     = restoreOp->input->tensor(inIndex);
+        auto stash   = restoreOp->input->tensor(restoreOp->getStashInIndex());
+        auto stashOp = stash->getProducer();
+        auto act     = stashOp->input->tensor(StashOp::getInIndex());
         for (auto consumer : act->consumers.getOps()) {
           if (dynamic_cast<StashOp *>(consumer)) {
             ++nStash;

@@ -240,3 +240,56 @@ def test_sgd_with_float16_model():
 
     stepio = popart.PyStepIO({inid1: input1}, anchorArrays)
     session.run(stepio)
+
+
+def test_sgd_with_zero_learning_rate():
+    """
+    In this test we check that we can run a training step zero learning rate,
+    and that it behaves as expected (i.e. no weight update)
+    """
+
+    # Let's start with an optimizer with a variable, non-zero learning rate
+    optSettings = {
+        "defaultLearningRate": (0.5, False),
+        "defaultWeightDecay": (0.6, False),
+        "lossScaling": (10.0, False)
+    }
+    stepSize = 2
+    session, inputsUserSgd = trainSession({}, popart.SGD(optSettings),
+                                          stepSize)
+    anchorsArrays = session.initAnchorArrays()
+
+    # Get the initial weights:
+    fn = "init.onnx"
+    session.modelToHost(fn)
+    builder = popart.Builder(fn)
+    wId = "init_input"
+    weights = {
+        wId: np.empty(shape=builder.getTensorShape(wId), dtype=np.float32)
+    }
+    weightsio = popart.PyWeightsIO(weights)
+    session.readWeights(weightsio)
+    init_weights = np.copy(weights[wId])
+
+    # Run for a step with non-zero lr, observe that the weights have changed
+    stepio = popart.PyStepIO(inputsUserSgd, anchorsArrays)
+    session.run(stepio)
+    session.weightsToHost()
+    session.readWeights(weightsio)
+    updated_weights = np.copy(weights[wId])
+    assert np.array_equal(init_weights, updated_weights) is False
+
+    # Update optimizer with zero lr, (only valid if variable)
+    optSettings["defaultLearningRate"] = (0.0, True)
+    with pytest.raises(popart.popart_exception) as e_info:
+        session.updateOptimizer(popart.SGD(optSettings))
+    assert e_info.value.args[0].startswith(
+        "Constant, zero learning rate in SGD")
+
+    # Run a training step, and confirm the weights haven't updated
+    optSettings["defaultLearningRate"] = (0.0, False)
+    session.updateOptimizer(popart.SGD(optSettings))
+    session.optimizerFromHost()
+    session.weightsToHost()
+    session.readWeights(weightsio)
+    assert np.array_equal(weights[wId], updated_weights)

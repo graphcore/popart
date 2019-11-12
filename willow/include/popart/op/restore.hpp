@@ -14,11 +14,8 @@ public:
   std::unique_ptr<Op> clone() const override;
   void setup() final;
 
-  // The activation tensor to restore
-  static InIndex getActToRestoreInIndex() { return 0; }
-
   // The stash tensor from which to restore the activation tensor
-  static InIndex getStashInIndex() { return 1; }
+  static InIndex getStashInIndex() { return 0; }
 
   // Returns a reference to the restored activation tensor
   static OutIndex getRestoredActOutIndex() { return 0; }
@@ -41,6 +38,9 @@ public:
                    int64_t stashSize,
                    const Op::Settings &);
   std::unique_ptr<Op> clone() const override;
+
+  // The activation tensor to restore
+  static InIndex getActToRestoreInIndex() { return 1; }
 
   // This Op aliases and modifies the input at index getVarIndex()
   view::Region aliases(InIndex) const final;

@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_4) {
   laggedPytorchUpdate(w1star, g1star, v1star, wd1, mm1, dp1, lr1);
   laggedPytorchUpdate(w1star, g1star, v1star, wd2, mm2, dp2, lr2);
 
-  auto results  = getResults(opt0, opt1, opt2, false, false);
+  auto results  = getResults<float>(opt0, opt1, opt2, false, false);
   auto absdiff0 = getAbsDiff(w0star, std::get<0>(results));
   BOOST_CHECK(absdiff0 < 1e-5f);
   auto absdiff1 = getAbsDiff(w1star, std::get<1>(results));

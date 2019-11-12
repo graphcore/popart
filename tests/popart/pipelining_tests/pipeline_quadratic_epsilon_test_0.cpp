@@ -1,6 +1,7 @@
 #define BOOST_TEST_MODULE PipelineQuadraticEpsilonTesto0
 
 #include <algorithm>
+#include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
 #include <map>
 #include <random>
@@ -78,6 +79,10 @@
 
 BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
 
+  // useful for debugging : set this to true to get the final .dot Ir
+  // description
+  bool exportFinalDotFiles = false;
+
   // Store the initial and final weights from training
   class WeightPair {
   public:
@@ -92,7 +97,7 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
   bool printStdOut = true;
 
   // Return {initial weights, updated weights}
-  auto getResults = [](bool continuous) {
+  auto getResults = [exportFinalDotFiles](bool continuous) {
     // input stream samples weights are generated randomly
     int seed = 1011;
     std::default_random_engine eng(seed);
@@ -148,7 +153,8 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
                            &builder,
                            &aiOnnx,
                            &nLayersAdded,
-                           &w_readbacks](TensorId actInId) {
+                           &w_readbacks,
+                           exportFinalDotFiles](TensorId actInId) {
       w_readbacks.push_back(std::vector<float>(sampleElms, -99.0f));
       allWeights.push_back(std::vector<float>(sampleElms, 0));
       for (auto &x : allWeights.back()) {
@@ -198,6 +204,12 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
 
     SessionOptions userOptions;
     std::map<std::string, std::string> deviceOpts{{"numIPUs", "1"}};
+
+    if (exportFinalDotFiles) {
+      userOptions.dotChecks.insert(DotCheck::FINAL);
+      userOptions.logDir = "./dotTestContinuous_" + std::to_string(continuous);
+      boost::filesystem::create_directory(userOptions.logDir);
+    }
 
     if (continuous == true) {
       userOptions.virtualGraphMode = VirtualGraphMode::Auto;
@@ -271,8 +283,8 @@ BOOST_AUTO_TEST_CASE(QuadraticEpsilolTest0) {
     return WeightPair(allWeights, w_readbacks);
   };
 
-  auto exact      = getResults(false);
   auto continuous = getResults(true);
+  auto exact      = getResults(false);
 
   auto printResults = [](const WeightPair &wp) {
     auto nws = wp.start.size();

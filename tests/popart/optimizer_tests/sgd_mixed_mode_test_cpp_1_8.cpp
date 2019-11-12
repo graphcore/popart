@@ -16,7 +16,7 @@ BOOST_AUTO_TEST_CASE(SgdMixedModeTestCpp1_8) {
   auto opt2    = opt0;
   bool wAccl   = true;
   bool wRepl   = true;
-  auto results = getResults(opt0, opt1, opt2, wAccl, wRepl);
+  auto results = getResults<float>(opt0, opt1, opt2, wAccl, wRepl);
 
   if (results != acquisitionFailure) {
     // int64_t correction = replicationFactor * accumulationFactor;

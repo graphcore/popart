@@ -42,7 +42,6 @@ public:
   std::vector<Tensor *> getOfType(TensorType) const;
   std::vector<TensorId> getAllTensorIds() const;
   std::vector<TensorId> getNoProducerIds() const;
-  const onnx::TensorProto *getOnnxInit(TensorId) const;
   void append(std::stringstream &) const;
 
   const VectorAndSet &getConstIds() const { return constIds; }

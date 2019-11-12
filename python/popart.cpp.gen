@@ -169,7 +169,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);
           return opset.constant(initData, name);
-       },
+        },
        py::arg("value"),
        py::arg("debugPrefix") = std::string())
   .def("conv",
@@ -485,8 +485,8 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & else_branch,
-          const onnx::GraphProto & then_branch,
+          const Builder& else_branch,
+          const Builder& then_branch,
           const std::string &name) -> std::vector<TensorId>{
            return opset.logical_if(args,
                                    num_outputs,
@@ -620,7 +620,7 @@ py::class_<AiOnnxOpset6>(m, "AiOnnxOpset6")
        [](AiOnnxOpset6 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & body,
+          const Builder& body,
           const std::string &name) -> std::vector<TensorId>{
            return opset.loop(args,
                              num_outputs,
@@ -1557,7 +1557,7 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);
           return opset.constant(initData, name);
-       },
+        },
        py::arg("value"),
        py::arg("debugPrefix") = std::string())
   .def("conv",
@@ -1855,8 +1855,8 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & else_branch,
-          const onnx::GraphProto & then_branch,
+          const Builder& else_branch,
+          const Builder& then_branch,
           const std::string &name) -> std::vector<TensorId>{
            return opset.logical_if(args,
                                    num_outputs,
@@ -1981,7 +1981,7 @@ py::class_<AiOnnxOpset7>(m, "AiOnnxOpset7")
        [](AiOnnxOpset7 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & body,
+          const Builder& body,
           const std::string &name) -> std::vector<TensorId>{
            return opset.loop(args,
                              num_outputs,
@@ -2918,7 +2918,7 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);
           return opset.constant(initData, name);
-       },
+        },
        py::arg("value"),
        py::arg("debugPrefix") = std::string())
   .def("conv",
@@ -3225,8 +3225,8 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & else_branch,
-          const onnx::GraphProto & then_branch,
+          const Builder& else_branch,
+          const Builder& then_branch,
           const std::string &name) -> std::vector<TensorId>{
            return opset.logical_if(args,
                                    num_outputs,
@@ -3351,7 +3351,7 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & body,
+          const Builder& body,
           const std::string &name) -> std::vector<TensorId>{
            return opset.loop(args,
                              num_outputs,
@@ -3858,7 +3858,7 @@ py::class_<AiOnnxOpset8>(m, "AiOnnxOpset8")
        [](AiOnnxOpset8 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & body,
+          const Builder& body,
           int64_t num_scan_inputs,
           const std::vector<int64_t>& directions,
           const std::string &name) -> std::vector<TensorId>{
@@ -4351,7 +4351,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);
           return opset.constant(initData, name);
-       },
+        },
        py::arg("value"),
        py::arg("debugPrefix") = std::string())
   .def("constantofshape",
@@ -4695,8 +4695,8 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & else_branch,
-          const onnx::GraphProto & then_branch,
+          const Builder& else_branch,
+          const Builder& then_branch,
           const std::string &name) -> std::vector<TensorId>{
            return opset.logical_if(args,
                                    num_outputs,
@@ -4830,7 +4830,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & body,
+          const Builder& body,
           const std::string &name) -> std::vector<TensorId>{
            return opset.loop(args,
                              num_outputs,
@@ -5388,7 +5388,7 @@ py::class_<AiOnnxOpset9>(m, "AiOnnxOpset9")
        [](AiOnnxOpset9 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & body,
+          const Builder& body,
           int64_t num_scan_inputs,
           const std::vector<int64_t>& scan_input_axes,
           const std::vector<int64_t>& scan_input_directions,
@@ -5980,7 +5980,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);
           return opset.constant(initData, name);
-       },
+        },
        py::arg("value"),
        py::arg("debugPrefix") = std::string())
   .def("constantofshape",
@@ -6357,8 +6357,8 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & else_branch,
-          const onnx::GraphProto & then_branch,
+          const Builder& else_branch,
+          const Builder& then_branch,
           const std::string &name) -> std::vector<TensorId>{
            return opset.logical_if(args,
                                    num_outputs,
@@ -6507,7 +6507,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & body,
+          const Builder& body,
           const std::string &name) -> std::vector<TensorId>{
            return opset.loop(args,
                              num_outputs,
@@ -7197,7 +7197,7 @@ py::class_<AiOnnxOpset10>(m, "AiOnnxOpset10")
        [](AiOnnxOpset10 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & body,
+          const Builder& body,
           int64_t num_scan_inputs,
           const std::vector<int64_t>& scan_input_axes,
           const std::vector<int64_t>& scan_input_directions,
@@ -7826,11 +7826,13 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        py::arg("new_axis") = 0,
        py::arg("debugPrefix") = std::string())
   .def("constant",
-       [](AiOnnxOpset11 &opset, py::array array, py::array, const std::string& name) {
-          ConstVoidData sparseInitData;
+       [](AiOnnxOpset11 &opset, py::array array, py::array sparse_array, const std::string& name) {
           ConstVoidData initData;
           initData.data = array.request().ptr;
           initData.info = getTensorInfo(array);
+          ConstVoidData sparseInitData;
+          sparseInitData.data = sparse_array.request().ptr;
+          sparseInitData.info = getTensorInfo(sparse_array);
           return opset.constant(initData, sparseInitData, name);
        },
        py::arg("sparse_value"),
@@ -8267,8 +8269,8 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & else_branch,
-          const onnx::GraphProto & then_branch,
+          const Builder& else_branch,
+          const Builder& then_branch,
           const std::string &name) -> std::vector<TensorId>{
            return opset.logical_if(args,
                                    num_outputs,
@@ -8417,7 +8419,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & body,
+          const Builder& body,
           const std::string &name) -> std::vector<TensorId>{
            return opset.loop(args,
                              num_outputs,
@@ -9134,7 +9136,7 @@ py::class_<AiOnnxOpset11>(m, "AiOnnxOpset11")
        [](AiOnnxOpset11 &opset,
           const std::vector<TensorId> &args,
           unsigned num_outputs,
-          const onnx::GraphProto & body,
+          const Builder& body,
           int64_t num_scan_inputs,
           const std::vector<int64_t>& scan_input_axes,
           const std::vector<int64_t>& scan_input_directions,

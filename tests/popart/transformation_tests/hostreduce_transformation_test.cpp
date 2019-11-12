@@ -261,6 +261,11 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   }
   TensorId D_id = bder->addInitializedInputTensor({v_D_init.data(), D_info});
 
+  std::map<TensorId, TensorInfo> idToInfo{{getGradId(A_id), A_info},
+                                          {getGradId(B_id), B_info},
+                                          {getGradId(C_id), C_info},
+                                          {getGradId(D_id), D_info}};
+
   TensorInfo E_info{"FLOAT", std::vector<int64_t>{M, N}};
   TensorId E_id = aiOnnx.matmul({A_id, B_id});
 
@@ -316,29 +321,29 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
 
   const auto &ir = session->getIr();
   auto ops       = ir.getOpSchedule({});
-  std::vector<Op *> op_schedule;
+  std::vector<Op *> partial_op_schedule;
   for (auto op : ops) {
     if (dynamic_cast<HostReduceGradCopyOp *>(op) ||
         dynamic_cast<HostSGD0VarUpdate *>(op)) {
-      op_schedule.push_back(op);
+      partial_op_schedule.push_back(op);
     }
   }
 
-  std::vector<std::vector<int64_t>> expected_shapes = {
-      {M, N}, {N, M}, {M, K}, {K, N}};
   // first 4 should be gradient copies, then followed by var copies
   for (int i = 0; i < 4; ++i) {
-    BOOST_CHECK(dynamic_cast<HostReduceGradCopyOp *>(op_schedule[i]) !=
-                nullptr);
-    const auto &inShape = op_schedule[i]->inShape(0);
-    BOOST_CHECK_EQUAL_COLLECTIONS(expected_shapes[i].begin(),
-                                  expected_shapes[i].end(),
-                                  inShape.begin(),
-                                  inShape.end());
+    auto asHostReduce =
+        dynamic_cast<HostReduceGradCopyOp *>(partial_op_schedule[i]);
+    BOOST_CHECK(asHostReduce);
+    auto tensorUpdateId = asHostReduce->inTensor(0)->id;
+    const auto &inShape = partial_op_schedule[i]->inShape(0);
+    BOOST_CHECK_EQUAL_COLLECTIONS(inShape.begin(),
+                                  inShape.end(),
+                                  idToInfo.at(tensorUpdateId).shape().begin(),
+                                  idToInfo.at(tensorUpdateId).shape().end());
   }
 
-  for (int i = 4; i < op_schedule.size(); ++i) {
-    BOOST_CHECK(dynamic_cast<HostSGD0VarUpdate *>(op_schedule[i]) != nullptr);
+  for (int i = 4; i < partial_op_schedule.size(); ++i) {
+    BOOST_CHECK(dynamic_cast<HostSGD0VarUpdate *>(partial_op_schedule[i]));
   }
 
   std::vector<std::string> callback_handles;
@@ -374,13 +379,14 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
   session->weightsFromHost();
   session->run(stepio);
 
-  // Check that the callbacks are executed in the correct order
+  // Check that the callbacks are executed in the correct order (all gradients,
+  // then all weights)
   for (int i = 0; i < 4; ++i) {
-    BOOST_CHECK(callback_handles[i].substr(0, 11) == "gr_Gradient");
+    // "gr_" from gradientStoreStreamId
+    BOOST_CHECK(callback_handles[i].substr(0, 3) == "gr_");
   }
-
-  // Note that the ordering of callback_handles[1] and [2] doesn't matter in
-  // this case
-  BOOST_CHECK(callback_handles[0] == "gr_Gradient___init_input/3");
-  BOOST_CHECK(callback_handles[1] == "gr_Gradient___init_input/2");
+  for (int i = 4; i < 8; ++i) {
+    // "wl_" from weightLoadStreamId
+    BOOST_CHECK(callback_handles[i].substr(0, 3) == "wl_");
+  }
 }

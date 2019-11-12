@@ -233,6 +233,21 @@ onnx::ModelProto getModelProto(const std::string &modelProtoOrFilename) {
   return modelProto;
 }
 
+onnx::TensorProto getTensorProto(const onnx::ModelProto &model,
+                                 const TensorId tId) {
+  onnx::GraphProto g = model.graph();
+
+  for (unsigned i = 0; i < g.initializer_size(); ++i) {
+    onnx::TensorProto &init = *g.mutable_initializer(i);
+    if (init.name() == tId) {
+      return init;
+    }
+  }
+  throw error(
+      "Could not find onnx::TensorProto with name {} in model initializer list",
+      tId);
+}
+
 void visitModelNodes(onnx::ModelProto &model,
                      std::function<void(onnx::NodeProto &)> f) {
   onnx::GraphProto &g = *model.mutable_graph();
