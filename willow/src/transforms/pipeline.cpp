@@ -87,12 +87,7 @@ VGraphId getVirtualGraphIdOrSourceIpu(Op *op) {
   }
 }
 
-void setCopyOpsPipelineStage(IpuCopyOp *op) {
-  // Copies of optimizer tensors do not run in the main program fragment and
-  // should not have their pipeline stage set.
-  if (op->copiesOptimizerTensors()) {
-    return;
-  }
+void setIPUCopyPipelineStage(IpuCopyOp *op) {
 
   auto in0 = op->inTensor(0);
   if (in0->hasProducer()) {
@@ -115,7 +110,7 @@ void setCopyOpsPipelineStage(IpuCopyOp *op) {
 
 void checkOpsPipelineStage(Graph &graph) {
   // return the pipeline stage or -1 if not set
-  // throw error if pipeline stage if negative
+  // throw error if pipeline stage is negative
   auto getPipelineStage = [](auto x) -> PipelineStage {
     if (x->hasPipelineStage()) {
       auto ps = x->getPipelineStage();
@@ -151,14 +146,26 @@ void checkOpsPipelineStage(Graph &graph) {
     }
   }
 
-  // use the pipeline stage of the source producer as the pipeline stage for the
-  // IpuCopy
-  logging::debug("Setting the pipeline stage attribute of the Ipu copy ops");
+  std::ostringstream oss;
+  oss << "For all IpuCopyOps (other than those copying optimizer tensors):\n"
+      << " (1)  set pipeline stage\n"
+      << " (2) insert topological constraint that it precedes "
+      << "all non-IpuCopyOps in each pipeline stage";
+  logging::transform::debug(oss.str());
+
   for (auto &id_op : graph.getOps()) {
-    auto op = id_op.second.get();
-    if (op->isConvertibleTo<IpuCopyOp>()) {
-      auto copyOp = dynamic_cast<IpuCopyOp *>(op);
-      setCopyOpsPipelineStage(copyOp);
+    if (auto copyOp = dynamic_cast<IpuCopyOp *>(id_op.second.get())) {
+
+      // Copies of optimizer Tensors do not run in the main program fragment
+      if (!copyOp->copiesOptimizerTensors()) {
+        // (1) set pipeline stage
+        setIPUCopyPipelineStage(copyOp);
+        // (2) insert topological constraint
+        graph.topoCons->insert({{
+            copyOp,                                       // Key
+            pipelineStages.at(copyOp->getPipelineStage()) // OpsBeforeKey
+        }});
+      }
     }
   }
 }
@@ -260,9 +267,10 @@ void insertClonesBeforeIpuCopyConsumers(Graph &graph,
     Op::Settings identitySettings(graph, tid + "_pipelineCopyOp");
     TensorId identityOutput = tensor->id + "_pipelineCopy";
 
-    // TODO: Make sure this is not pruned or inplaced. T11668
     auto op = std::make_unique<IdentityOp>(Onnx::Operators::Identity_1,
                                            identitySettings);
+    // ensure that op is not inplaced
+    op->settings.inplacePriorityVeto = {{"IdentityInplace", -1}};
 
     if (op == nullptr) {
       throw error(
@@ -325,21 +333,6 @@ Op *getRestoreReferenceOp(Tensor *t, Op *stashRefOp) {
   return restoreCandidates.at(0);
 }
 
-void insertOpAfterTensor(Op *op, Tensor *t) {
-  auto consumers = t->consumers.getOps();
-
-  op->connectInTensor(0, t->id);
-  op->createAndConnectOutTensor(0, t->id + "_after");
-  op->setup();
-
-  for (auto c : consumers) {
-    for (auto idx : c->input->indices(t)) {
-      c->disconnectInTensor(idx, t);
-      c->connectInTensor(idx, op->outId(0));
-    }
-  }
-}
-
 // clang-format off
 // (a) -> [copy] -> (a_copy0 on pipeline stage N)
 // (a) -> [copy] -> (a_copy1 on pipeline stage M)
@@ -360,44 +353,6 @@ void chainCopies(std::vector<IpuCopyOp *> &copies) {
     auto rhsStage = *rhs->outTensor(0)->consumers.findLowestPipelineStage();
     return lhsStage < rhsStage;
   });
-
-  auto isModifiedByConsumer = [](Tensor *t) {
-    for (auto c : t->consumers.getOps()) {
-      for (auto idx : c->input->indices(t)) {
-        if (!c->modifies(idx).isEmpty()) {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  };
-
-  // for all but the last copy.
-  // if the copied tensor is modifed by any of its consumers, we need to insert
-  // an identity between the copied tensor and the consumer.
-  for (int i = 0; i < copies.size() - 1; i++) {
-    auto copyOp  = copies[i];
-    auto copyOut = copyOp->outTensor(0);
-    if (isModifiedByConsumer(copyOut)) {
-      logging::debug("Inserting Identity after {}", copyOp->debugName());
-      auto identityOp = [&]() {
-        auto &graph = copyOp->getGraph();
-        Op::Settings identitySettings(graph, "");
-        auto op  = std::make_unique<IdentityOp>(Onnx::Operators::Identity_1,
-                                               identitySettings);
-        auto ptr = op.get();
-        graph.moveIntoGraph(std::move(op));
-        return ptr;
-      }();
-
-      identityOp->setPipelineStage(
-          copyOut->consumers.findLowestPipelineStage());
-      identityOp->setVirtualGraphId(copyOut->getVirtualGraphId());
-
-      insertOpAfterTensor(identityOp, copyOut);
-    }
-  }
 
   for (int i = 1; i < copies.size(); i++) {
     auto prevCopyOp = copies[i - 1];
@@ -595,11 +550,12 @@ TensorId createStashableRandomSeed(GetRandomSeedOp *randomSeedOp) {
   Op::Settings identitySettings(randomSeedOp->getGraph(),
                                 randomSeed->id + "_pipelineCopyOp");
   TensorId identityOutput = randomSeed->id + "_pipelineCopy";
-  // TODO: Make sure this is not pruned or inplaced. T11668
-  IdentityOp *identityOp = [&] {
-    auto x  = std::make_unique<IdentityOp>(Onnx::Operators::Identity_1,
+  IdentityOp *identityOp  = [&] {
+    auto x = std::make_unique<IdentityOp>(Onnx::Operators::Identity_1,
                                           identitySettings);
-    auto op = x.get();
+    // ensure that op is not inplaced
+    x->settings.inplacePriorityVeto = {{"IdentityInplace", -1}};
+    auto op                         = x.get();
     randomSeedOp->getGraph().moveIntoGraph(std::move(x));
     return op;
   }();
@@ -961,10 +917,21 @@ bool Pipeline::apply(Graph &graph) const {
     restoreOp->setup();
     restoreOps[restoreRefOp->getPipelineStage()].push_back(restoreOp);
 
-    // StashOp should be before all other consumers
+    // refresh consumers of tensor
+    tidConsumers = tensor->consumers.getOps();
+
     for (auto tidConsumer : tidConsumers) {
+
+      // StashOp should be before all other consumers
+      // (required for recompute to work)
       if (tidConsumer != stashOp) {
         graph.topoCons->insert(stashOp, tidConsumer);
+      }
+
+      // RestoreOp should be after all other consumers
+      // (required for inplacing to work)
+      if (tidConsumer != restoreOp && tidConsumer != stashOp) {
+        graph.topoCons->insert(tidConsumer, restoreOp);
       }
     }
   }
@@ -991,6 +958,7 @@ bool Pipeline::apply(Graph &graph) const {
       }
     }
   }
+
   return true;
 }
 
