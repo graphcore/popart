@@ -335,7 +335,11 @@ public:
   const OptimizerValueMap &velocityScalings() const { return vss; }
 
 private:
-  void runValueChecks(float lr, float wd, float mm, float dp, float vs) const;
+  void runValueChecks(OptimizerValue lr,
+                      OptimizerValue wd,
+                      OptimizerValue mm,
+                      OptimizerValue dp,
+                      OptimizerValue vs) const;
 
   // The atomic scalars
   // ------------------

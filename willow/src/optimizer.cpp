@@ -175,41 +175,44 @@ void SGD::insertSpecific(const TensorId &id,
   dps.insertSpecific(id, dp);
   vss.insertSpecific(id, vs);
 
-  runValueChecks(lr.val(), wd.val(), mm.val(), dp.val(), vs.val());
+  runValueChecks(lr, wd, mm, dp, vs);
 }
 
-void SGD::runValueChecks(float lr,
-                         float wd,
-                         float mm,
-                         float dp,
-                         float vs) const {
-  if (lr <= 0) {
-    throw error("Non-positive learning rate ({}) in SGD, bailing as this might "
-                "be a user error.",
-                lr);
+void SGD::runValueChecks(OptimizerValue lr,
+                         OptimizerValue wd,
+                         OptimizerValue mm,
+                         OptimizerValue dp,
+                         OptimizerValue vs) const {
+  if (lr.val() < 0) {
+    throw error("Negative learning rate ({}) in SGD, bailing as this might be "
+                "a user error.",
+                lr.val());
+  } else if (lr.val() == 0.0 && lr.isConst()) {
+    throw error("Constant, zero learning rate in SGD, bailing as this might be "
+                "a user error.");
   }
 
-  if (wd < 0) {
+  if (wd.val() < 0) {
     throw error("Negative weight decay ({}) in SGD, bailing as this might be a "
                 "user error",
-                wd);
+                wd.val());
   }
 
-  if (mm < 0) {
+  if (mm.val() < 0) {
     throw error(
         "Negative momentum ({}) in SGD, bailing as this might be a user error",
-        mm);
+        mm.val());
   }
 
-  if (dp < 0) {
+  if (dp.val() < 0) {
     throw error(
         "Negative dampening ({}) in SGD, bailing as this might be a user error",
-        dp);
+        dp.val());
   }
 
-  if (vs <= 0) {
+  if (vs.val() <= 0) {
     throw error("Non-positive velocity scaling ({}) in SGD is not supported",
-                vs);
+                vs.val());
   }
 }
 
@@ -251,7 +254,7 @@ SGD::SGD(OptimizerValue lr,
          OptimizerValue vs,
          OptimizerValue lossScaling)
     : Optimizer(lossScaling), lrs(lr), wds(wd), mms(mm), dps(dp), vss(vs) {
-  runValueChecks(lr.val(), wd.val(), mm.val(), dp.val(), vs.val());
+  runValueChecks(lr, wd, mm, dp, vs);
 }
 
 OptimizerValue SGD::getLossScalingOrDefault(
