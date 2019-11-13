@@ -59,13 +59,20 @@ DeviceManager::acquireAvailableDevice(int numIpus, int tilesPerIpu) {
   auto devices = enumerateDevices();
 
   for (auto &device : devices) {
-    if (numIpus == device->getNumIpus() &&
-        (!tilesPerIpu || tilesPerIpu == device->getTilesPerIpu())) {
+    // Check if numIPUs is positive and a power of two
+    if (numIpus > 0 && ((numIpus & (numIpus - 1)) == 0)) {
+      if (numIpus == device->getNumIpus() &&
+          (!tilesPerIpu || tilesPerIpu == device->getTilesPerIpu())) {
 
-      // Attach to the device. Will succeed if available
-      if (device->attach()) {
-        return device;
+        // Attach to the device. Will succeed if available
+        if (device->attach()) {
+          return device;
+        }
       }
+    } else {
+      throw error("You have attempted to acquire {} IPUs. The number of IPUs "
+                  "requested must be a power of two",
+                  numIpus);
     }
   }
 
