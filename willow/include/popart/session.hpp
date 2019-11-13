@@ -182,6 +182,12 @@ protected:
    * Flag to indicate if weightsFromHost has been called
    */
   bool weightsFromHostCalled = false;
+
+  /**
+   * Flag to indicate if optimizerFromHost has been called since and
+   * optimizer was last created/updated on the host
+   */
+  bool optimizerFromHostCalledSinceLastUpdate = false;
 };
 
 class InferenceSession : public Session {

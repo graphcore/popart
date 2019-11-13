@@ -598,7 +598,7 @@ private:
   bool opxTrace = false;
   poplar::Tensor opxTraceTensor;
 
-  // This keeps track of whether there the accumulateOuterFragment  is empty
+  // This keeps track of whether there the accumulateOuterFragment is empty
   // TODO T12001 a class which encapsulates framgments which has this attribute.
   bool outerLoopFragEmpty = true;
 

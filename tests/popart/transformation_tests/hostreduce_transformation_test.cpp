@@ -180,6 +180,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationSessionRun) {
 
   popart::StepIO stepio(inputs, anchors);
 
+  session->optimizerFromHost();
   session->weightsFromHost();
   session->run(stepio);
 
@@ -376,6 +377,7 @@ BOOST_AUTO_TEST_CASE(HostReduceTransformationVarUpdateExecutionOrder) {
 
   popart::StepIO stepio(inputs, anchors);
 
+  session->optimizerFromHost();
   session->weightsFromHost();
   session->run(stepio);
 

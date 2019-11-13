@@ -293,3 +293,37 @@ def test_sgd_with_zero_learning_rate():
     session.weightsToHost()
     session.readWeights(weightsio)
     assert np.array_equal(weights[wId], updated_weights)
+
+
+def test_check_optimizer_written_to_device():
+    """
+    In this test we check that the user can't mistakenly update the optimizer
+    on host without also updating on the device, before calling run
+    """
+
+    # Create the session with a variable SGD optimizer
+    optSettings = {
+        "defaultLearningRate": (0.5, False),
+        "defaultWeightDecay": (0.6, False)
+    }
+    session, inputsUserSgd = trainSession({}, popart.SGD(optSettings), 2)
+
+    # Run for a signle step. We haven't updated the optimizer between steps, so
+    # both run without error
+    stepio = popart.PyStepIO(inputsUserSgd, session.initAnchorArrays())
+    session.run(stepio)
+    session.run(stepio)
+
+    # Update optimizer on host
+    optSettings["defaultLearningRate"] = (0.4, False)
+    session.updateOptimizer(popart.SGD(optSettings))
+
+    # Try to run session, without updating optimizer on device
+    with pytest.raises(popart.popart_exception) as e_info:
+        session.run(stepio)
+    assert e_info.value.args[0].startswith(
+        "Must call optimizerFromHost before run")
+
+    # Try again after updating optimizer on device
+    session.optimizerFromHost()
+    session.run(stepio)

@@ -113,6 +113,13 @@ void Session::run(IStepIO &stepio) {
         "and the session has been created in training mode");
   }
 
+  if (!ir.optimizerTensors().empty() && ir.isTraining() &&
+      optimizerFromHostCalledSinceLastUpdate == false) {
+    throw error(
+        "Must call optimizerFromHost before run as the optimizer tensor values "
+        "have not been written to the device");
+  }
+
   device_->run(stepio);
 }
 
@@ -328,14 +335,20 @@ TrainingSession::createFromOnnxModel(const std::string &model,
 void TrainingSession::updateOptimizer(const Optimizer *optimizer) {
   logging::session::trace("TrainingSession::updateOptimizer");
   ir.updateOptimizer(*optimizer);
+
+  // There has been a change to the TensorData of the optimizer tensors
+  // on the host, but there wont be an equivalent update to the device-side
+  // tensors until optimizerFromHost() is called.
+  optimizerFromHostCalledSinceLastUpdate = false;
 }
 
 // write whatever optimizer tensors (learning rates,
-// momentum, initial momentum tensors (zero)) there are to device
+// momentum, initial momentum tensors) there are to device
 void TrainingSession::optimizerFromHost() {
   logging::session::trace("TrainingSession::optimizerFromHost");
 
   device_->optimizerFromHost();
+  optimizerFromHostCalledSinceLastUpdate = true;
 }
 
 const Ir &TrainingSession::getIr() const { return ir; }
