@@ -40,7 +40,7 @@ def test_convolution_cached_by_default():
     optimizer = popart.ConstSGD(0.01)
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = popart.TrainingSession(
@@ -117,7 +117,7 @@ def test_convolution_disable_all():
     optimizer = popart.ConstSGD(0.01)
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
     opts.enableOutlining = False
 
@@ -194,7 +194,7 @@ def test_matmul_infer_cached_by_default():
     anchor_names = [o]
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = popart.InferenceSession(
@@ -286,7 +286,7 @@ def test_matmul_train_cached_by_default():
     optimizer = popart.ConstSGD(0.01)
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = popart.TrainingSession(
@@ -379,7 +379,7 @@ def test_gemm_train_cached_by_default():
     optimizer = popart.ConstSGD(0.01)
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = popart.TrainingSession(
@@ -463,7 +463,7 @@ def test_outlining_bca1():
     anchor_names = [o]
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = popart.InferenceSession(
@@ -545,7 +545,7 @@ def test_outlining_bca2():
     anchor_names = [o]
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     session = popart.InferenceSession(
@@ -632,7 +632,7 @@ def test_outlining_bca3():
             popart.AnchorReturnType("ALL")
         })
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     optimizer = popart.ConstSGD(0.01)
@@ -724,7 +724,7 @@ def test_outlining_bca4():
             popart.AnchorReturnType("ALL")
         })
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
 
     # Disabled grouped matmuls so they are all outlined as apposed to being

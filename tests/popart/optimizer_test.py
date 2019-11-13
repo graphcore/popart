@@ -30,7 +30,7 @@ def trainSession(anchors, optimizer, stepSize):
 
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
 
     session = popart.TrainingSession(
         fnModel=proto,
@@ -223,7 +223,7 @@ def test_sgd_with_float16_model():
         popart.AnchorReturnType("ALL"),
     }
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
 
     session = popart.TrainingSession(
         fnModel=proto,

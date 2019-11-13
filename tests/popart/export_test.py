@@ -38,7 +38,7 @@ def test_constants_preserved():
 
     losses = [popart.L1Loss(o2, "l1LossVal", 0.1)]
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
 
     session = popart.TrainingSession(fnModel=proto,
                                      dataFeed=dataFlow,

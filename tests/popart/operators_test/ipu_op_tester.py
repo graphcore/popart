@@ -104,7 +104,7 @@ def ipu_op_tester(tmpdir):
             losses = [popart.L1Loss(anchorIds[0], "l1LossVal", 0.1)]
             proto = bld.getModelProto()
 
-            opts = popart.SessionOptionsCore()
+            opts = popart.SessionOptions()
             opts.logDir = self.logging_dir
             opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 

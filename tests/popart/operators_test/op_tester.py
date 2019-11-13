@@ -82,7 +82,7 @@ def op_tester(tmpdir):
         def __init__(self, logging_dir):
             np.random.seed(0)
             self.passes = []
-            self.options = popart.SessionOptionsCore()
+            self.options = popart.SessionOptions()
             self.logging_dir = logging_dir
             self.device = "cpu"
             self.numIPUs = 2

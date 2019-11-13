@@ -123,7 +123,7 @@ def test_average_pool_with_count_include_pad(op_tester):
     losses = [popart.L1Loss(o, "l1LossVal", 0.1)]
     proto = builder.getModelProto()
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.TrainingSession(fnModel=proto,

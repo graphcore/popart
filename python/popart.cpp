@@ -603,7 +603,7 @@ PYBIND11_MODULE(popart_core, m) {
            py::arg("weight_decay") = 0.0f,
            py::arg("loss_scaling") = 1.0f);
 
-  py::class_<SessionOptions>(m, "SessionOptionsCore")
+  py::class_<SessionOptions>(m, "SessionOptions")
       .def(py::init<>())
       .def_readwrite("logDir", &SessionOptions::logDir)
       .def_readwrite("exportPoplarComputationGraph",

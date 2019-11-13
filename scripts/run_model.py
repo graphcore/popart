@@ -6,7 +6,7 @@ if len(sys.argv) != 2:
 
 model_file = sys.argv[1]
 
-opts = popart.SessionOptionsCore()
+opts = popart.SessionOptions()
 opts.logging = {'all': 'TRACE'}
 options = {"compileIPUCode": True, 'numIPUs': 1, "tilesPerIPU": 1216}
 

@@ -15,5 +15,4 @@ sys.path.insert(0, lp)
 from popart_core import *
 from popart.builder import Builder
 from popart.session import InferenceSession, TrainingSession, PrepareDeviceException
-from popart.options import SessionOptions
 from popart.tensorinfo import TensorInfo

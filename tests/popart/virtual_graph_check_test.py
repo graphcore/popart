@@ -20,7 +20,7 @@ def test_no_virtual_graph():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
 
     popart.InferenceSession(fnModel=proto,
                             dataFeed=dataFlow,
@@ -49,7 +49,7 @@ def test_all_virtual_graph():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.virtualGraphMode = popart.VirtualGraphMode.Manual
 
     popart.InferenceSession(fnModel=proto,
@@ -78,7 +78,7 @@ def test_mixed_virtual_graph():
 
     dataFlow = popart.DataFlow(1, {o: popart.AnchorReturnType("ALL")})
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
 
     with pytest.raises(popart.popart_exception) as e_info:
         popart.InferenceSession(fnModel=proto,

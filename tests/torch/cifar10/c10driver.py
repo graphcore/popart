@@ -132,7 +132,7 @@ def _run_impl(torchWriter, passes, outputdir, cifarInIndices, device,
         print('{0}. {1}'.format(idx, d))
     print("")
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.ignoreData = syntheticData
     opts.logDir = outputdir
 

@@ -77,7 +77,7 @@ class InferenceSession(popart.InferenceSessionCore):
                  losses=[],
                  inputShapeInfo=popart.InputShapeInfo(),
                  passes=popart.Patterns(),
-                 userOptions=popart.SessionOptionsCore()):
+                 userOptions=popart.SessionOptions()):
 
         if passes == None:
             passes = popart.Patterns()
@@ -112,7 +112,7 @@ class TrainingSession(popart.TrainingSessionCore):
                  deviceInfo,
                  inputShapeInfo=popart.InputShapeInfo(),
                  passes=popart.Patterns(),
-                 userOptions=popart.SessionOptionsCore()):
+                 userOptions=popart.SessionOptions()):
 
         if passes == None:
             passes = popart.Patterns()

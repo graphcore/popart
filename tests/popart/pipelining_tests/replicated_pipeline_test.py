@@ -65,7 +65,7 @@ def get_model_anchors(doSharding,
             anchor_map[d0] = art
             anchor_map[popart.reservedRestoredPrefix() + d0] = art
 
-    opts = popart.SessionOptionsCore()
+    opts = popart.SessionOptions()
     opts.reportOptions = {"showExecutionSteps": "true"}
     opts.enablePipelining = doPipelining
     opts.enableGradientAccumulation = doGradientAccl
