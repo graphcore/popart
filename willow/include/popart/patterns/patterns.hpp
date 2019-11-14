@@ -30,6 +30,8 @@ public:
     return getName(typeid(PATTERN));
   }
 
+  static bool contains(const std::string &);
+
 private:
   std::unordered_map<std::type_index, std::string> names;
 

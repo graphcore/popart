@@ -1340,7 +1340,7 @@ bool Ir::applyPreAliasPattern(const PreAliasPattern *pattern, Graph &graph) {
     // If the op still exists
     if (itr != graph.getOps().end()) {
       Op *op = itr->second.get();
-      if (pattern->matches(op)) {
+      if (!op->isExcludedFromPattern(pattern) && pattern->matches(op)) {
         if (!pattern->touchesAnchored(op)) {
           logging::pattern::debug("Applying pattern {} to {}",
                                   pattern->getPatternName(),
@@ -2648,7 +2648,9 @@ void Ir::applyUpdateInplacePrioritiesForIpu() {
     auto graph = id_graph.second.get();
     for (auto &id_op : graph->getOps()) {
       Op *op = id_op.second.get();
-      pattern.apply(op);
+      if (!op->isExcludedFromPattern(&pattern)) {
+        pattern.apply(op);
+      }
     }
   }
 }
@@ -2731,32 +2733,37 @@ void Ir::applyInplacePattern(Graph &graph) {
         // the Op has already been inplaced
       } else {
         Op *op              = graph.getOps().at(id).get();
-        bool touchesAnchors = false;
-        for (auto &tensor : inplace.touches(op, identifier)) {
-          if (isAnchored(tensor->id)) {
-            touchesAnchors = true;
+        auto touchesAnchors = [&] {
+          for (auto &tensor : inplace.touches(op, identifier)) {
+            if (isAnchored(tensor->id)) {
+              return true;
+            }
           }
-        }
+          return false;
+        };
 
         // If it is recompute and uses inplace output, do not inplace.
         // This is conservative (aliasing can sometimes still be inplaced)
         // TODO T9352: use logic based on existing Inplace code
         // It can be shown that checkpoints consuming recomputable outputs
         // do not need to be inplaced
-        bool recomputeUsingCheckpoint = false;
-        if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
-          for (auto &index_tensor : op->input->tensorMap()) {
-            auto inTensor = index_tensor.second;
-            if (!inTensor->hasProducer() ||
-                (inTensor->hasProducer() &&
-                 inTensor->getProducer()->settings.recomputeType ==
-                     RecomputeType::CHECKPOINT)) {
-              recomputeUsingCheckpoint = true;
+        auto recomputeUsingCheckpoint = [&] {
+          if (op->settings.recomputeType == RecomputeType::RECOMPUTE) {
+            for (auto &index_tensor : op->input->tensorMap()) {
+              auto inTensor = index_tensor.second;
+              if (!inTensor->hasProducer() ||
+                  (inTensor->hasProducer() &&
+                   inTensor->getProducer()->settings.recomputeType ==
+                       RecomputeType::CHECKPOINT)) {
+                return true;
+              }
             }
           }
-        }
+          return false;
+        };
 
-        if (!touchesAnchors && !recomputeUsingCheckpoint) {
+        if (!op->isExcludedFromPattern(&inplace) && !touchesAnchors() &&
+            !recomputeUsingCheckpoint()) {
           auto newTopoCons = inplace.getNewTopoCons(op, identifier);
           if (isSchedulable(newTopoCons)) {
             inplacedAlready.insert(op->id);

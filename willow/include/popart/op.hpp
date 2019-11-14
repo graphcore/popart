@@ -4,6 +4,7 @@
 #include <boost/optional.hpp>
 #include <memory>
 #include <set>
+#include <unordered_set>
 #include <vector>
 #include <popart/attributes.hpp>
 #include <popart/names.hpp>
@@ -91,6 +92,9 @@ public:
     // This should really be a map with "OperatorIdentifier" keys, see T6783
     std::vector<std::tuple<std::string, float>> inplacePriorityVeto;
 
+    // A set of patterns which should not be applied to this op.
+    std::unordered_set<std::string> excludePatterns;
+
     // The virtual graph this op has been assigned to if set
     boost::optional<VGraphId> vgraphId;
 
@@ -114,6 +118,8 @@ public:
   virtual VGraphId getIntrospectionOutVirtualGraphId(OutIndex) const;
   void setVirtualGraphId(const boost::optional<VGraphId> value);
   bool hasVirtualGraphId() const;
+
+  bool isExcludedFromPattern(const Pattern *) const;
 
   void setPipelineStage(boost::optional<PipelineStage>);
   bool hasPipelineStage() const;

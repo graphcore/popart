@@ -35,6 +35,11 @@ const TensorInfo &Op::outInfo(OutIndex index) const {
   return output->tensor(index)->info;
 }
 
+bool Op::isExcludedFromPattern(const Pattern *p) const {
+  return settings.excludePatterns.find(p->getPatternName()) !=
+         settings.excludePatterns.end();
+}
+
 Ir &Op::getIr() { return getGraph().getIr(); }
 const Ir &Op::getIr() const { return getGraph().getIr(); }
 
@@ -354,6 +359,20 @@ void Op::Op::Settings::setFromAttributes(const Attributes &attributes) {
 
     for (int i = 0; i < names.size(); ++i) {
       inplacePriorityVeto.push_back({names[i], priorities[i]});
+    }
+  }
+
+  if (attributes.hasAttribute(sExcludePatternsAttribute)) {
+    std::vector<std::string> names;
+    attributes.set(names, sExcludePatternsAttribute);
+    excludePatterns.insert(names.begin(), names.end());
+
+    // Check the names in excludePatterns are valid.
+    for (const auto &patternName : excludePatterns) {
+      if (!PatternNames::contains(patternName)) {
+        throw error("Invalid pattern name '{}' in Op::excludePatterns",
+                    patternName);
+      }
     }
   }
 }

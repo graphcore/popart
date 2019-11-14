@@ -694,7 +694,8 @@ bool Pipeline::apply(Graph &graph) const {
   // 0. Contiguate the IPUCopies
   ContiguateIpuCopyIndicesPattern contiguator;
   for (auto ipuCopyOp : getIpuCopyOps()) {
-    if (contiguator.matches(ipuCopyOp)) {
+    if (!ipuCopyOp->isExcludedFromPattern(&contiguator) &&
+        contiguator.matches(ipuCopyOp)) {
       logging::transform::debug("Contiguating {}", ipuCopyOp->debugName());
       contiguator.apply(ipuCopyOp);
     }

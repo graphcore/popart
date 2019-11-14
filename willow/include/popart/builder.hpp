@@ -323,6 +323,16 @@ public:
     addNodeAttribute(sPipelineStageAttribute, value, nodeOutputNames);
   }
 
+  void excludePatterns(const TensorId &nodeOutputName,
+                       const std::vector<std::string> &patternNames) {
+    addNodeAttribute(sExcludePatternsAttribute, patternNames, {nodeOutputName});
+  }
+
+  void excludePatterns(const std::set<TensorId> &nodeOutputNames,
+                       const std::vector<std::string> &patternNames) {
+    addNodeAttribute(sExcludePatternsAttribute, patternNames, nodeOutputNames);
+  }
+
   /**
    * Set the settings for matmuls that should be serialized. This option
    * will split a matmul into seperate smaller matmuls that will be excuted in

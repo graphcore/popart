@@ -5,7 +5,7 @@ namespace popart {
 
 class AddOp;
 
-class UpdateInplacePrioritiesForIpu {
+class UpdateInplacePrioritiesForIpu : public Pattern {
 public:
   void apply(Op *) const;
 

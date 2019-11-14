@@ -25,6 +25,16 @@ const std::string &PatternNames::getName(const std::type_info &patternInfo) {
   }
 }
 
+bool PatternNames::contains(const std::string &name) {
+  auto &instance = getInstance();
+  for (auto &info_name : instance.names) {
+    if (name == info_name.second) {
+      return true;
+    }
+  }
+  return false;
+}
+
 Patterns::Patterns(PatternsLevel level) {
   switch (level) {
 

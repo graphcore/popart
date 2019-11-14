@@ -1137,6 +1137,12 @@ PYBIND11_MODULE(popart_core, m) {
             return acm;
           },
           py::arg("value"))
+      .def("excludePatterns",
+           static_cast<void (Builder::*)(
+               const TensorId &, const std::vector<std::string> &value)>(
+               &Builder::excludePatterns),
+           py::arg("nodeOutputName"),
+           py::arg("patternNames"))
       .def("getPipelineStage", &Builder::getPipelineStage)
       .def("hasPipelineStage",
            [](Builder &self) -> bool {
