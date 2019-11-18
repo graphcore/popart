@@ -28,7 +28,6 @@
 #include <popart/op/varupdate.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
-#include <popart/optionflags.hpp>
 #include <popart/patterns/pattern.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/popx/devicex.hpp>
@@ -37,6 +36,7 @@
 #include <popart/popx/opxmanager.hpp>
 #include <popart/region.hpp>
 #include <popart/session.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/subgraph/algo0.hpp>
 #include <popart/subgraph/algo1.hpp>
 #include <popart/subgraph/isomorphic.hpp>

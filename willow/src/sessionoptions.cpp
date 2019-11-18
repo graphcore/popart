@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <popart/error.hpp>
-#include <popart/optionflags.hpp>
+#include <popart/sessionoptions.hpp>
 
 namespace popart {
 

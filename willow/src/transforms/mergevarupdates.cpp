@@ -10,7 +10,7 @@
 #include <popart/op/varupdate.hpp>
 #include <popart/opidentifier.hpp>
 #include <popart/opmanager.hpp>
-#include <popart/optionflags.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensors.hpp>
 #include <popart/transforms/mergevarupdates.hpp>

@@ -5,9 +5,9 @@
 #include <popart/ir.hpp>
 #include <popart/logging.hpp>
 #include <popart/onnxutil.hpp>
-#include <popart/optionflags.hpp>
 #include <popart/popx/devicex.hpp>
 #include <popart/session.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensors.hpp>

@@ -4,7 +4,7 @@
 #include <popart/op/sgd0varupdate.hpp>
 #include <popart/op/sgd1combo.hpp>
 #include <popart/optimizer.hpp>
-#include <popart/optionflags.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>

@@ -8,7 +8,7 @@
 #include <popart/filereader.hpp>
 #include <popart/ir.hpp>
 #include <popart/onnxutil.hpp>
-#include <popart/optionflags.hpp>
+#include <popart/sessionoptions.hpp>
 
 using namespace popart;
 namespace po = boost::program_options;

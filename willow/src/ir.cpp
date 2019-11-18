@@ -22,9 +22,9 @@
 #include <popart/op/loss.hpp>
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
-#include <popart/optionflags.hpp>
 #include <popart/pbwrap.hpp>
 #include <popart/scheduler.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/tensor.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/tensorinfo.hpp>

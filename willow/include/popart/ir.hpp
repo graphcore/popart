@@ -7,8 +7,8 @@
 #include <popart/inputshapeinfo.hpp>
 #include <popart/names.hpp>
 #include <popart/opidentifier.hpp>
-#include <popart/optionflags.hpp>
 #include <popart/patterns/patterns.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/tensorindex.hpp>
 #include <popart/transforms/transform.hpp>
 

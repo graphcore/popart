@@ -15,9 +15,9 @@
 #include <popart/opmanager.hpp>
 #include <popart/optimizer.hpp>
 #include <popart/optimizervalue.hpp>
-#include <popart/optionflags.hpp>
 #include <popart/patterns/patterns.hpp>
 #include <popart/session.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/tensordata.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/version.hpp>

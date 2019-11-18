@@ -10,7 +10,7 @@
 #include <popart/names.hpp>
 #include <popart/op/l1.hpp>
 #include <popart/optimizer.hpp>
-#include <popart/optionflags.hpp>
+#include <popart/sessionoptions.hpp>
 #include <popart/tensordata.hpp>
 
 using namespace popart;
