@@ -506,7 +506,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def("anchors", &DataFlow::anchors, pybind11::return_value_policy::copy)
       .def("art", &DataFlow::art);
 
-  py::class_<TensorInfo>(m, "TensorInfoCore")
+  py::class_<TensorInfo>(m, "_TensorInfoCore")
       .def(py::init<std::string, const std::vector<int64_t> &>(),
            py::arg("dataType"),
            py::arg("shape"))
@@ -783,7 +783,7 @@ PYBIND11_MODULE(popart_core, m) {
           },
           py::arg("use_cbor") = false);
 
-  py::class_<InferenceSession>(m, "InferenceSessionCore")
+  py::class_<InferenceSession>(m, "_InferenceSessionCore")
       .def(py::init(&InferenceSession::createFromOnnxModel),
            py::arg("model"),
            py::arg("dataFlow").none(),
@@ -842,7 +842,7 @@ PYBIND11_MODULE(popart_core, m) {
       // Special test method to write serialise ir for analysis
       .def("_serializeIr", &InferenceSession::serializeIr, py::arg("format"));
 
-  py::class_<TrainingSession>(m, "TrainingSessionCore")
+  py::class_<TrainingSession>(m, "_TrainingSessionCore")
       .def(py::init(&TrainingSession::createFromOnnxModel),
            py::arg("model"),
            py::arg("dataFlow").none(),
@@ -954,7 +954,7 @@ PYBIND11_MODULE(popart_core, m) {
            py::arg("strides"),
            py::arg("debugPrefix") = std::string());
 
-  py::class_<Builder>(m, "BuilderCore")
+  py::class_<Builder>(m, "_BuilderCore")
       .def(py::init(&Builder::create))
       .def(py::init(&Builder::createFromOnnxModel),
            py::arg("modelProtoOrFilename"))
