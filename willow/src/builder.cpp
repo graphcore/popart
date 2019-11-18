@@ -188,6 +188,10 @@ TensorId Builder::addInitializedInputTensor(const ConstVoidData &initData,
 }
 
 void Builder::addOutputTensor(const TensorId &arg0) {
+  logging::builder::warn("addOutputTensor() is no longer required. "
+                         "The output tensors of a graph can be inferred as "
+                         "late as possible - they do not need to be explicitly "
+                         "defined by the user.");
   return impl_->addOutputTensor(arg0);
 }
 
