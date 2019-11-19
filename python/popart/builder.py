@@ -1,10 +1,6 @@
 import popart
 import numpy as np
-import warnings
 from popart_core import _BuilderCore
-
-# Always display deprecation warnings.
-warnings.simplefilter('always', DeprecationWarning)
 
 # A wrapper around the Builder cpp class, renamed BuilderCore in pybind,
 # to enable more pythonic use. See builder.hpp for the class definition.
@@ -69,12 +65,3 @@ class Builder(_BuilderCore):
         newShape = aiOnnx.constant(
             np.array(shape).astype(np.int64), debugPrefix + "_const")
         return aiOnnx.reshape([args[0], newShape], debugPrefix)
-
-    # Redefined function to raise deprecation warning.
-    def addOutputTensor(self, outputName):
-        warnings.warn(
-            "addOutputTensor() is no longer required. "
-            "The output tensors of a graph can be inferred as "
-            "late as possible - they do not need to be explicitly "
-            "defined by the user.", DeprecationWarning)
-        return super(Builder, self).addOutputTensor(outputName)
