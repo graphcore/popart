@@ -664,7 +664,8 @@ PYBIND11_MODULE(popart_core, m) {
       .def_readwrite("dotChecks", &SessionOptions::dotChecks)
       .def_readwrite("customCodelets", &SessionOptions::customCodelets)
       .def_readwrite("customCodeletCompileFlags",
-                     &SessionOptions::customCodeletCompileFlags);
+                     &SessionOptions::customCodeletCompileFlags)
+      .def_readwrite("hostAllReduce", &SessionOptions::hostAllReduce);
 
   py::enum_<PatternsLevel>(m, "PatternsLevel")
       .value("ALL", PatternsLevel::ALL)
@@ -1189,9 +1190,8 @@ PYBIND11_MODULE(popart_core, m) {
           py::arg("name"))
       .def(
           "getNameScope",
-          [](Builder &self, std::string &name) {
-            return self.getNameScope(name);
-          },
+          [](Builder &self,
+             std::string &name) { return self.getNameScope(name); },
           py::arg("name") = "")
       .def("getVirtualGraph",
            static_cast<int64_t (Builder::*)(const TensorId &)>(

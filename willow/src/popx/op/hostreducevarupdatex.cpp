@@ -31,6 +31,20 @@ void HostReduceGradCopyOpx::grow(poplar::program::Sequence &prog) const {
 
   poplar::program::Copy gradientsToHostProg(weightDeltas, deviceToHostStream);
   prog.add(gradientsToHostProg);
+
+  // TODO: we shouldn't need to add a sync after every gradient copy, but rather
+  // the last one before the weight copies start
+
+  // A sync is added here to enforce that gradient copies are executed
+  // before weight copies. Gradient copies are scheduled to happen before
+  // weight copies in PopART. However, if multiple stream copies are
+  // performed with a single sync id then a host read can be scheduled
+  // before a host write in the Poplar engine but the actual
+  // callback might still be executed after. This happens when Poplar
+  // merges two host syncs during compilation into one.
+  // See IPUTarget::prepareForStreamAccess() and
+  // IPUTarget::completeStreamAccess() for details
+  prog.add(poplar::program::Sync(poplar::SyncType::INTERNAL));
 }
 
 HostReduceVarCopyOpx::HostReduceVarCopyOpx(Op *op, Devicex *devicex)
