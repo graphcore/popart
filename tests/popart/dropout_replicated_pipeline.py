@@ -231,16 +231,20 @@ def runTest(forceAddOutOfPlace, pipelineRecomputation):
 
         def forward(self, x, i):
             mm0 = torch.matmul(x, self.w0)
-            dr0 = mm0 * scaleFactor * self.mask0[i] / (1 - ratio0)
+            dr0 = mm0 * scaleFactor * self.mask0[i].type(
+                torch.FloatTensor) / (1 - ratio0)
 
             mm1 = torch.matmul(dr0, self.w1)
-            dr1 = mm1 * scaleFactor * self.mask1[i] / (1 - ratio1)
+            dr1 = mm1 * scaleFactor * self.mask1[i].type(
+                torch.FloatTensor) / (1 - ratio1)
             dr1 = 2 * dr1
 
-            drSkip = (dr1 + mm0) * self.maskSkip[i] / (1 - ratioSkip)
+            drSkip = (dr1 + mm0) * self.maskSkip[i].type(
+                torch.FloatTensor) / (1 - ratioSkip)
 
             mm2 = torch.matmul(drSkip, self.w2)
-            dr2 = mm2 * scaleFactor * self.mask2[i] / (1 - ratio2)
+            dr2 = mm2 * scaleFactor * self.mask2[i].type(
+                torch.FloatTensor) / (1 - ratio2)
 
             out = dr1 + dr2
             return out
