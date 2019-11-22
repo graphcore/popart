@@ -431,10 +431,6 @@ public:
   // A summary string of the Op series, with annotation for recomputation
   std::string getMainGraphOpString() const;
 
-  // Returns true if using synthetic data, false if using real data
-  // This will return the options.ignoreData flag
-  bool useSyntheticData() const;
-
   bool prepareHasBeenCalled() const { return prepareHasBeenCalled_; }
 
 private:

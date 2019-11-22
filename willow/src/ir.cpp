@@ -2,6 +2,7 @@
 #include <array>
 #include <fstream>
 #include <map>
+#include <random>
 #include <sstream>
 #include <string>
 #include <unordered_set>
@@ -178,6 +179,14 @@ bool Ir::virtualGraphsEnabled() const {
   return userOptions.virtualGraphMode != VirtualGraphMode::Off;
 }
 
+SyntheticDataMode Ir::syntheticDataMode() const {
+  return getSessionOptions().syntheticDataMode;
+}
+
+bool Ir::useSyntheticData() const {
+  return syntheticDataMode() != SyntheticDataMode::Off;
+}
+
 void Ir::setUserOptions(const SessionOptions &flags) {
   userOptions = flags;
 
@@ -192,6 +201,13 @@ void Ir::setUserOptions(const SessionOptions &flags) {
     logging::ir::warn(
         "The options autoVirtualGraph is deprecated and will be removed in a "
         "future release. Please use virtualGraphMode instead");
+  }
+  if (userOptions.ignoreData) {
+    logging::ir::warn(
+        "The options ignoreData is deprecated and will be removed in a future "
+        "release. Please use syntheticDataMode instead. Setting "
+        "syntheticDataMode to 'Zeros'.");
+    userOptions.syntheticDataMode = SyntheticDataMode::Zeros;
   }
 
   // If the user has not set virtualGraphMode (assuming default value Off means
@@ -1281,6 +1297,39 @@ void Ir::registerInputTensors() {
                     id);
       }
     }
+
+    if (useSyntheticData()) {
+      Tensor *synStreamTensor = getTensor(id);
+      const auto &info        = synStreamTensor->info;
+      std::vector<char> data;
+      std::vector<float> vals(info.nelms(), 0.0);
+
+      switch (syntheticDataMode()) {
+      case SyntheticDataMode::Zeros: {
+        // Already initialized to zeros - do nothing
+        break;
+      }
+      case SyntheticDataMode::RandomNormal: {
+        // Radom normal number generator: mean 0, variance 1
+        std::default_random_engine generator;
+        std::normal_distribution<float> normalDistribution(0.0, 1.0);
+        for (auto &val : vals) {
+          val = normalDistribution(generator);
+        }
+        break;
+      }
+      case SyntheticDataMode::Off:
+      case SyntheticDataMode::N:
+      default:
+        throw error("Cannot set tensor data for current SyntheticDataMode");
+      }
+
+      for (float val : vals) {
+        auto convertedData = convertFloatToDataType(info.dataType(), val);
+        data.insert(data.end(), convertedData.begin(), convertedData.end());
+      }
+      synStreamTensor->setTensorData(info, data.data());
+    }
   }
 
   // other true inputs are for the loss calculation (class labels, etc)
@@ -1416,7 +1465,7 @@ bool Ir::streamingIsDisabledForTensor(const TensorId &tensorId) const {
   // What conditions mean that this tensor should not be streamed?
 
   // 1. Streams have been turned off globally
-  if (getSessionOptions().ignoreData) {
+  if (useSyntheticData()) {
     return true;
   }
 

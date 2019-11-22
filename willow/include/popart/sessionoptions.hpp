@@ -54,6 +54,13 @@ enum class IrSerializationFormat {
   JSON // JSON format
 };
 
+enum class SyntheticDataMode {
+  Off = 0,      // Use real data
+  Zeros,        // Input tensors are initialised to all zeros
+  RandomNormal, // Input tensors are initialised with distribution ~N(0,1)
+  N             // The number of SyntheticDataModes, the final enum
+};
+
 std::string toString(VirtualGraphMode);
 std::ostream &operator<<(std::ostream &, VirtualGraphMode);
 
@@ -180,11 +187,18 @@ struct SessionOptions {
 
   /// Use synthetic data i.e. disable data transfer to/from the host
   /// Set to 'true' to use synthetic data, 'false' to use real data
+  /// To be removed: T13474
   bool ignoreData = false;
+
+  /// Use synthetic data i.e. disable data transfer to/from the host
+  /// Set to 'Off' to use real data
+  /// Note: this will be overriden by the legacy option 'ignoreData' until
+  /// it is removed (T13474)
+  SyntheticDataMode syntheticDataMode = SyntheticDataMode::Off;
 
   /// If true, the weight gradient tensors are not saved off the device
   /// when devicex.weightsFromHost() is called. Note: this option is
-  /// overridden if ignoreData is true.
+  /// overridden if syntheticDataMode is not Off.
   bool disableGradAccumulationTensorStreams = false;
 
   /// when false, the backend will build the Poplar graph, but do not compile it

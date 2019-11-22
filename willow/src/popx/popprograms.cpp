@@ -99,7 +99,7 @@ void PopPrograms::addPipelineCycle(PipelineCycle pCycle,
       }
     }
   } else {
-    if (dv_p->useSyntheticData() == false) {
+    if (dv_p->ir().useSyntheticData() == false) {
       throw error(
           "There are no ToDeviceStream pipeline program fragments. Check that "
           "the stream copies have been added to the correct fragment.");

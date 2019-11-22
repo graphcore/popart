@@ -8,6 +8,7 @@
 #include <popart/tensor.hpp>
 #include <popart/tensornames.hpp>
 #include <popart/tensors.hpp>
+#include <popart/util.hpp>
 
 namespace popart {
 
@@ -214,29 +215,6 @@ void SGD::runValueChecks(OptimizerValue lr,
     throw error("Non-positive velocity scaling ({}) in SGD is not supported",
                 vs.val());
   }
-}
-
-// convert a float to type T
-template <typename T> std::vector<char> convertFloatTo(float data) {
-  std::vector<char> data_out;
-  T converted_data{data};
-  data_out.resize(sizeof(T));
-  *reinterpret_cast<T *>(data_out.data()) = converted_data;
-  return data_out;
-}
-
-// convert a float to the DataType `dtype`
-static std::vector<char> convertFloatToDataType(DataType dtype, float data) {
-  if (dtype == DataType::FLOAT) {
-    return convertFloatTo<float>(data);
-  }
-
-  else if (dtype == DataType::FLOAT16) {
-    return convertFloatTo<Half>(data);
-  }
-
-  throw error("Can't convert float to DataType {}",
-              getDataTypeInfoMap().at(dtype).name());
 }
 
 SGD::SGD(const std::map<std::string, OptimizerValue> &cmap, int)

@@ -221,6 +221,13 @@ public:
   // Is the virtualGraphMode set to something other than VirtualGraphMode::Off.
   bool virtualGraphsEnabled() const;
 
+  // Returns the options.syntheticDataMode flag
+  SyntheticDataMode syntheticDataMode() const;
+
+  // Returns false if options.useSyntheticDataMode is set to Off, otherwise
+  // returns true
+  bool useSyntheticData() const;
+
   void setRandomSeedValue(uint64_t seedVal);
 
 public:

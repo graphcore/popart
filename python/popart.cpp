@@ -611,6 +611,7 @@ PYBIND11_MODULE(popart_core, m) {
       .def_readwrite("exportPoplarVertexGraph",
                      &SessionOptions::exportPoplarVertexGraph)
       .def_readwrite("ignoreData", &SessionOptions::ignoreData)
+      .def_readwrite("syntheticDataMode", &SessionOptions::syntheticDataMode)
       .def_readwrite("disableGradAccumulationTensorStreams",
                      &SessionOptions::disableGradAccumulationTensorStreams)
       .def_readwrite("enableOutlining", &SessionOptions::enableOutlining)
@@ -695,6 +696,11 @@ PYBIND11_MODULE(popart_core, m) {
       .value("Off", VirtualGraphMode::Off)
       .value("Manual", VirtualGraphMode::Manual)
       .value("Auto", VirtualGraphMode::Auto);
+
+  py::enum_<SyntheticDataMode>(m, "SyntheticDataMode")
+      .value("Off", SyntheticDataMode::Off)
+      .value("Zeros", SyntheticDataMode::Zeros)
+      .value("RandomNormal", SyntheticDataMode::RandomNormal);
 
   py::enum_<IrSerializationFormat>(m, "IrSerializationFormat")
       .value("JSON", IrSerializationFormat::JSON);

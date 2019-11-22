@@ -43,4 +43,27 @@ void OpSearchHelper::pushOutputConsumers(Op *op) {
   }
 }
 
+// convert a float to the DataType `dtype`
+std::vector<char> convertFloatToDataType(DataType dtype, float data) {
+  if (dtype == DataType::FLOAT) {
+    return convertFloatTo<float>(data);
+  }
+
+  else if (dtype == DataType::FLOAT16) {
+    return convertFloatTo<Half>(data);
+  }
+
+  throw error("Can't convert float to DataType {}",
+              getDataTypeInfoMap().at(dtype).name());
+}
+
+// convert a float to type T
+template <typename T> std::vector<char> convertFloatTo(float data) {
+  std::vector<char> data_out;
+  T converted_data{data};
+  data_out.resize(sizeof(T));
+  *reinterpret_cast<T *>(data_out.data()) = converted_data;
+  return data_out;
+}
+
 } // namespace popart

@@ -326,7 +326,7 @@ void Devicex::run(PopPrograms::ProgramIndex ind) {
 
 void Devicex::weightsToHost() {
 
-  if (useSyntheticData() == false) {
+  if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Writing weights to host");
     pEngine->disableExecutionProfiling();
     run(PopPrograms::ProgramIndex::WEIGHTSTOHOST);
@@ -365,7 +365,7 @@ void Devicex::writeWeights(const IWeightsIO &weights) {
 void Devicex::weightsToHost(
     const std::map<TensorId, MutableVoidData> &onnxModelData) {
 
-  if (useSyntheticData() == false) {
+  if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Writing weights to host");
     // write weights from IPU to host stream memory points
 
@@ -619,7 +619,7 @@ Devicex::Devicex(const Ir &ir, std::shared_ptr<DeviceInfo> deviceInfo_)
 }
 
 void Devicex::weightsFromHost() {
-  if (useSyntheticData() == false) {
+  if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Writing weights from host, ");
     pEngine->disableExecutionProfiling();
     run(PopPrograms::ProgramIndex::WEIGHTSFROMHOST);
@@ -628,7 +628,7 @@ void Devicex::weightsFromHost() {
 }
 
 void Devicex::optimizerFromHost() {
-  if (useSyntheticData() == false) {
+  if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Writing optimizer from host, ");
     pEngine->disableExecutionProfiling();
     run(PopPrograms::ProgramIndex::OPTIMIZERFROMHOST);
@@ -675,7 +675,7 @@ void Devicex::hostStreamToHost(const MutableVoidData &mv_data, TensorId id) {
 
 void Devicex::anchorsHostToHostStreams(IStepIO &stepio) {
 
-  if (useSyntheticData() == false) {
+  if (ir().useSyntheticData() == false) {
     std::string prefix = "     ";
     logging::devicex::debug(prefix + "Copying to h2d stream address(es) ");
     for (Tensor *tensor : ir().dataStreamTensors()) {
@@ -686,7 +686,7 @@ void Devicex::anchorsHostToHostStreams(IStepIO &stepio) {
 
 void Devicex::anchorsHostFromHostStreams(IStepIO &stepio) {
 
-  if (useSyntheticData() == false) {
+  if (ir().useSyntheticData() == false) {
     std::string prefix = "     ";
     logging::devicex::debug(prefix + "Copying from d2h stream address(es) ");
     for (TensorId anchorId : ir().getDataFlow().anchors()) {
@@ -770,7 +770,8 @@ TaskId Devicex::taskWhichPopulates(TensorId id) const {
   }
 
   // if a Tensor is of type Stream, the Copy from host to device populates it
-  else if (!useSyntheticData() && tensor->tensorType() == TensorType::Stream) {
+  else if (!ir().useSyntheticData() &&
+           tensor->tensorType() == TensorType::Stream) {
     return fromHostTaskId(tensor->id);
   }
 
@@ -1119,7 +1120,7 @@ void Devicex::connectRandomSeedStream() {
 }
 
 void Devicex::setRandomSeedFromHost() {
-  if (useSyntheticData() == false) {
+  if (ir().useSyntheticData() == false) {
     pEngine->disableExecutionProfiling();
     run(PopPrograms::ProgramIndex::SETRANDOMSEEDFROMHOST);
   }
@@ -1924,7 +1925,7 @@ void Devicex::loadEngineAndConnectStreams() {
   pEngine->load(di.getDevice());
   logging::devicex::info("Engine loaded");
 
-  if (useSyntheticData() == false) {
+  if (ir().useSyntheticData() == false) {
     logging::devicex::debug("Connecting initializer streams");
 
     for (auto id : ir().getTensorIds(TensorType::Variable)) {
@@ -2051,7 +2052,7 @@ void Devicex::reconnectInputStreams() {
   for (Tensor *tensor : ir().dataStreamTensors()) {
     // The data stream for a tensor won't exist if using synthetic data, so
     // don't try and recreate them.
-    if (!useSyntheticData()) {
+    if (!ir().useSyntheticData()) {
       engineToInputStreamWithCallback(tensor, fromHostStreams.at(tensor->id));
     }
   }
@@ -2183,7 +2184,7 @@ void Devicex::prepare() {
   // 4) make stream to host,
   // 5) create read prog.
   // OR
-  // 2) set initial value.
+  // 2) set initial value (if using synthetic data).
   for (auto id : ir().getTensorIds(TensorType::Variable)) {
     Tensor *tensor = ir().getTensor(id);
     // 1
@@ -2217,16 +2218,23 @@ void Devicex::prepare() {
     tasks.add(setInitTensorValTask(tensor));
   }
 
-  // stream-to-device tensors : 1)  make tensor 2) make stream
+  // stream-to-device tensors :
+  // 1) make tensor
+  // THEN
+  // 2) make stream
+  // OR
+  // 2) set initial value (if using synthetic data).
   for (auto id : ir().getTensorIds(TensorType::Stream)) {
-
     Tensor *tensor = ir().getTensor(id);
+
     // 1
     tasks.add(initTensorTask(tensor));
     logging::devicex::debug("Adding initTensorTask for {}", id);
 
-    if (useSyntheticData() == false) {
-      // 2
+    // 2
+    if (ir().useSyntheticData()) {
+      tasks.add(setInitTensorValTask(tensor));
+    } else {
       tasks.add(streamFromHostTask(tensor));
     }
   }
@@ -2249,7 +2257,7 @@ void Devicex::prepare() {
   // stream-to-host tensors : 1) make streams 2) make copy programs
   // note that the order in which tasks are added does not matter,
   // they will be topologically sorted before running
-  if (useSyntheticData() == false) {
+  if (ir().useSyntheticData() == false) {
     for (auto anchorId : ir().getDataFlow().anchors()) {
       Tensor *tensor = ir().getTensor(anchorId);
 
@@ -2941,10 +2949,6 @@ std::set<TensorId> Devicex::getLinearlyCreatedInputTensors() const {
 }
 std::set<TensorId> Devicex::getEfficientlyCreatedInputTensors() const {
   return efficientlyCreatedInputTensors;
-}
-
-bool Devicex::useSyntheticData() const {
-  return (ir().getSessionOptions().ignoreData);
 }
 
 // Gradient store stream ID
