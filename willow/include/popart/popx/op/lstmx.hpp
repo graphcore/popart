@@ -56,6 +56,32 @@ private:
   popnn::lstm::LstmParams createLSTMParams() const;
 };
 
+class PopartLSTMOpx : public Opx {
+public:
+  PopartLSTMOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+
+  InputCreatorType getInputCreatorType(InIndex) const final;
+  poplar::Tensor createInput(InIndex index,
+                             const std::string &name) const final;
+  std::vector<TensorId> mustExistBeforeCreate(InIndex) const;
+
+private:
+  poplar::Tensor createLSTMInput() const;
+  poplar::Tensor createWeightsInput() const;
+  poplar::Tensor createBiasesInput() const;
+  poplar::Tensor createInitialStateInput() const;
+  std::unique_ptr<poplar::Tensor> getIntermediates() const;
+  popnn::lstm::LstmState getInitialState() const;
+  popnn::lstm::LstmWeights getWeights() const;
+};
+
+class PopartLSTMGradOpx : public Opx {
+public:
+  PopartLSTMGradOpx(Op *, Devicex *);
+  void grow(poplar::program::Sequence &) const final;
+};
+
 } // namespace popx
 } // namespace popart
 

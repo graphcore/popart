@@ -434,9 +434,233 @@ popnn::lstm::LstmParams LSTMGradOpx::createLSTMParams() const {
 }
 
 namespace {
+
+poplar::Tensor concatWeights(const poplar::Tensor &inputWeights,
+                             const poplar::Tensor &outputWeights) {
+  return poplar::concat(inputWeights, outputWeights, 1);
+}
+
+template <typename LSTMOP>
+popnn::lstm::LstmParams createLSTMParams(const Opx *opx) {
+  auto &lstmOp = opx->getOp<LSTMOP>();
+  auto inInfo  = lstmOp.inInfo(LSTMOP::getInputInIndex());
+
+  auto inputSize  = static_cast<unsigned>(lstmOp.getInputSize());
+  auto seqLength  = static_cast<unsigned>(lstmOp.getSeqLength());
+  auto batchSize  = static_cast<unsigned>(lstmOp.getBatchSize());
+  auto hiddenSize = static_cast<unsigned>(lstmOp.getHiddenSize());
+
+  auto params = popnn::lstm::LstmParams(
+      popType(inInfo), batchSize, seqLength, {inputSize, hiddenSize});
+  params.outputFullSequence = lstmOp.outputFullSequence;
+  return params;
+}
+
+} // namespace
+
+PopartLSTMOpx::PopartLSTMOpx(Op *op, Devicex *devicex) : Opx(op, devicex) {
+  verifyOp<PopartLSTMOp>(op, Onnx::CustomOperators::LSTM_1);
+}
+
+void PopartLSTMOpx::grow(poplar::program::Sequence &prog) const {
+  auto input = getInTensor(PopartLSTMOp::getInputInIndex());
+
+  auto lstmWeights   = getWeights();
+  auto initState     = getInitialState();
+  auto intermediates = getIntermediates();
+
+  auto params = createLSTMParams<PopartLSTMOp>(this);
+  poplar::Tensor output;
+  poplar::Tensor cellState;
+  std::tie(output, cellState) = popnn::lstm::lstmFwd(graph(),
+                                                     params,
+                                                     initState,
+                                                     input,
+                                                     lstmWeights,
+                                                     intermediates.get(),
+                                                     prog,
+                                                     debugPrefix("lstmFwd"),
+                                                     dv_p->lstmOptions,
+                                                     &dv_p->matmulCache);
+
+  setOutTensor(PopartLSTMOp::getOutputOutIndex(), output);
+  setOutTensor(PopartLSTMOp::getCellStateOutIndex(), cellState);
+
+  auto &lstmOp = getOp<PopartLSTMOp>();
+  if (lstmOp.output->hasIndex(PopartLSTMOp::getIntermediatesOutIndex())) {
+    setOutTensor(PopartLSTMOp::getIntermediatesOutIndex(), *intermediates);
+  }
+}
+
+std::unique_ptr<poplar::Tensor> PopartLSTMOpx::getIntermediates() const {
+  auto &lstmOp                                  = getOp<PopartLSTMOp>();
+  std::unique_ptr<poplar::Tensor> intermediates = nullptr;
+  if (lstmOp.output->hasIndex(PopartLSTMOp::getIntermediatesOutIndex())) {
+    intermediates = std::make_unique<poplar::Tensor>();
+  }
+  return intermediates;
+}
+
+popnn::lstm::LstmState PopartLSTMOpx::getInitialState() const {
+  auto initialState     = getInTensor(PopartLSTMOp::getInitialStateInIndex());
+  auto initialOutput    = initialState.slice(0, 1).squeeze({0});
+  auto initialCellState = initialState.slice(1, 2).squeeze({0});
+  popnn::lstm::LstmState initState = {initialOutput, initialCellState};
+  return initState;
+}
+
+popnn::lstm::LstmWeights PopartLSTMOpx::getWeights() const {
+  auto &lstmOp    = getOp<PopartLSTMOp>();
+  auto inputSize  = lstmOp.getInputSize();
+  auto hiddenSize = lstmOp.getHiddenSize();
+
+  auto weights = getInTensor(PopartLSTMOp::getWeightsInIndex());
+  auto biases  = getInTensor(PopartLSTMOp::getBiasesInIndex());
+
+  auto inputWeights  = weights.slice(0, inputSize, 1);
+  auto outputWeights = weights.slice(inputSize, inputSize + hiddenSize, 1);
+  popnn::lstm::LstmWeights lstmWeights = {inputWeights, outputWeights, biases};
+  return lstmWeights;
+}
+
+InputCreatorType PopartLSTMOpx::getInputCreatorType(InIndex index) const {
+  if (index == PopartLSTMOp::getInputInIndex() ||
+      index == PopartLSTMOp::getWeightsInIndex() ||
+      index == PopartLSTMOp::getBiasesInIndex() ||
+      index == PopartLSTMOp::getInitialStateInIndex()) {
+    return InputCreatorType::CANCREATE;
+  } else {
+    return InputCreatorType::DEADEND;
+  }
+}
+
+poplar::Tensor PopartLSTMOpx::createInput(InIndex index,
+                                          const std::string &) const {
+  if (index == PopartLSTMOp::getInputInIndex()) {
+    return createLSTMInput();
+  } else if (index == PopartLSTMOp::getWeightsInIndex()) {
+    return createWeightsInput();
+  } else if (index == PopartLSTMOp::getBiasesInIndex()) {
+    return createBiasesInput();
+  } else if (index == PopartLSTMOp::getInitialStateInIndex()) {
+    return createInitialStateInput();
+  } else {
+    throw error("PopartLSTMOpx::createInput is not supported for index {}",
+                index);
+  }
+}
+
+poplar::Tensor PopartLSTMOpx::createLSTMInput() const {
+  return popnn::lstm::createInput(graph(),
+                                  createLSTMParams<PopartLSTMOp>(this),
+                                  debugPrefix("createLSTMInput"),
+                                  dv_p->lstmOptions,
+                                  &dv_p->matmulCache);
+}
+
+poplar::Tensor PopartLSTMOpx::createWeightsInput() const {
+  poplar::Tensor inputWeights, outputWeights;
+  std::tie(inputWeights, outputWeights) =
+      popnn::lstm::createWeightsKernel(graph(),
+                                       createLSTMParams<PopartLSTMOp>(this),
+                                       debugPrefix("weights"),
+                                       dv_p->lstmOptions,
+                                       &dv_p->matmulCache);
+  return concatWeights(inputWeights, outputWeights);
+}
+
+poplar::Tensor PopartLSTMOpx::createBiasesInput() const {
+  return popnn::lstm::createWeightsBiases(graph(),
+                                          createLSTMParams<PopartLSTMOp>(this),
+                                          debugPrefix("weights"),
+                                          dv_p->lstmOptions,
+                                          &dv_p->matmulCache);
+}
+
+poplar::Tensor PopartLSTMOpx::createInitialStateInput() const {
+  auto initState = createInitialState(graph(),
+                                      createLSTMParams<PopartLSTMOp>(this),
+                                      debugPrefix("lstmCreateInitialState"),
+                                      dv_p->lstmOptions,
+                                      &dv_p->matmulCache);
+  return initState.getAsTensor();
+}
+
+std::vector<TensorId> PopartLSTMOpx::mustExistBeforeCreate(InIndex) const {
+  return {};
+}
+
+PopartLSTMGradOpx::PopartLSTMGradOpx(Op *op, Devicex *devicex)
+    : Opx(op, devicex) {
+  verifyOp<PopartLSTMGradOp>(op, Onnx::GradOperators::PopartLSTMGrad);
+}
+
+void PopartLSTMGradOpx::grow(poplar::program::Sequence &prog) const {
+  auto &op = getOp<PopartLSTMGradOp>();
+
+  auto initialState  = getInTensor(PopartLSTMGradOp::getInitialStateInIndex());
+  auto intermediates = getInTensor(PopartLSTMGradOp::getIntermediatesInIndex());
+  auto weights       = getInTensor(PopartLSTMGradOp::getWeightsInIndex());
+  auto biases        = getInTensor(PopartLSTMGradOp::getBiasesInIndex());
+  auto forwardInput  = getInTensor(PopartLSTMGradOp::getInputInIndex());
+  auto forwardOutput = getInTensor(PopartLSTMGradOp::getFwdOutputInIndex());
+  auto forwardOutputGrad =
+      getInTensor(PopartLSTMGradOp::getFwdOutputGradInIndex());
+
+  const poplar::Tensor *forwardCellStateGrad = nullptr;
+  if (op.input->hasIndex(PopartLSTMGradOp::getFwdCellStateGradInIndex())) {
+    forwardCellStateGrad =
+        &getInTensor(PopartLSTMGradOp::getFwdCellStateGradInIndex());
+  }
+
+  auto initialOutput               = initialState.slice(0, 1).squeeze({0});
+  auto initialCellState            = initialState.slice(1, 2).squeeze({0});
+  popnn::lstm::LstmState initState = {initialOutput, initialCellState};
+
+  auto inputSize     = op.getInputSize();
+  auto hiddenSize    = op.getHiddenSize();
+  auto inputWeights  = weights.slice(0, inputSize, 1);
+  auto outputWeights = weights.slice(inputSize, inputSize + hiddenSize, 1);
+  popnn::lstm::LstmWeights lstmWeights = {inputWeights, outputWeights, biases};
+
+  auto params = createLSTMParams<PopartLSTMGradOp>(this);
+
+  poplar::Tensor inputGrad;
+  popnn::lstm::LstmWeights weightsGrad;
+  auto initStateGrad = lstmBwdWithWU(graph(),
+                                     params,
+                                     prog,
+                                     initState,
+                                     intermediates,
+                                     lstmWeights,
+                                     forwardInput,
+                                     forwardOutput,
+                                     forwardOutputGrad,
+                                     forwardCellStateGrad,
+                                     &inputGrad,
+                                     weightsGrad,
+                                     debugPrefix("lstmBwdWithWU"),
+                                     dv_p->lstmOptions,
+                                     &dv_p->matmulCache);
+
+  auto weightsOut =
+      concatWeights(weightsGrad.inputWeights, weightsGrad.outputWeights);
+
+  setOutTensor(PopartLSTMGradOp::getInputOutIndex(), inputGrad);
+  setOutTensor(PopartLSTMGradOp::getWeightsOutIndex(), weightsOut);
+  setOutTensor(PopartLSTMGradOp::getBiasesOutIndex(), weightsGrad.biases);
+  setOutTensor(PopartLSTMGradOp::getInitialStateOutIndex(),
+               initStateGrad.getAsTensor());
+}
+
+namespace {
 OpxCreator<LSTMOpx> lstmOpxCreator({Onnx::Operators::LSTM_1,
                                     Onnx::Operators::LSTM_7});
 OpxCreator<LSTMGradOpx> lstmGradOpxCreator(Onnx::GradOperators::LSTMGrad);
+
+OpxCreator<PopartLSTMOpx> popartLstmOpxCreator(Onnx::CustomOperators::LSTM_1);
+OpxCreator<PopartLSTMGradOpx>
+    popartLstmGradOpxCreator(Onnx::GradOperators::PopartLSTMGrad);
 } // namespace
 
 } // namespace popx

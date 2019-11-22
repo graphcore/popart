@@ -133,10 +133,15 @@ class _Builder:
 
         return tensor_id
 
-    def addInitializedInputTensor(self, data):
+    def addInitializedInputTensor(self, data, debug_prefix=None):
         shape = popart.TensorInfo(data)
 
-        tensor_id = self._builder.addInitializedInputTensor(data)
+        if debug_prefix:
+            tensor_id = self._builder.addInitializedInputTensor(
+                data, debug_prefix)
+        else:
+            tensor_id = self._builder.addInitializedInputTensor(data)
+
         self._init_input_map[tensor_id] = data
 
         return tensor_id

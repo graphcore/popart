@@ -258,6 +258,156 @@ const std::map<int, int> &LSTMGradOp::gradOutToNonGradIn() const {
 
 const LSTMOp &LSTMGradOp::getForwardOp() const { return forward_op; }
 
+PopartLSTMOp::PopartLSTMOp(const OperatorIdentifier &opid_,
+                           bool outputFullSequence_,
+                           const Op::Settings &settings_)
+    : Op(opid_, settings_), outputFullSequence(outputFullSequence_) {}
+
+std::unique_ptr<Op> PopartLSTMOp::clone() const {
+  return std::make_unique<PopartLSTMOp>(*this);
+}
+
+std::vector<std::unique_ptr<Op>> PopartLSTMOp::getGradOps() {
+  std::vector<std::unique_ptr<Op>> upops;
+  upops.emplace_back(std::make_unique<PopartLSTMGradOp>(*this));
+  return upops;
+}
+
+void PopartLSTMOp::setup() {
+  auto verifyShape = [this](InIndex inIndex, Shape refShape, std::string id) {
+    auto inputShape = inShape(inIndex);
+    if (inputShape != refShape) {
+      throw error("Bad {} shape {}, should be {}", id, inIndex, refShape);
+    }
+  };
+
+  // Verify the input shapes.
+  verifyShape(getInputInIndex(),
+              {getSeqLength(), getBatchSize(), getInputSize()},
+              "input");
+  verifyShape(getWeightsInIndex(),
+              {4, getInputSize() + getHiddenSize(), getHiddenSize()},
+              "weights");
+  verifyShape(getBiasesInIndex(), {4, getHiddenSize()}, "bias");
+  verifyShape(getInitialStateInIndex(),
+              {2, getBatchSize(), getHiddenSize()},
+              "initialState");
+
+  auto dtype = inInfo(getInputInIndex()).dataType();
+
+  Shape outputShape;
+  if (outputFullSequence) {
+    outputShape = {getSeqLength(), getBatchSize(), getHiddenSize()};
+  } else {
+    outputShape = {getBatchSize(), getHiddenSize()};
+  }
+
+  outInfo(getOutputOutIndex())    = {dtype, outputShape};
+  outInfo(getCellStateOutIndex()) = {dtype, {getBatchSize(), getHiddenSize()}};
+
+  if (getIr().isTraining()) {
+    createAndConnectOutTensor(getIntermediatesOutIndex(),
+                              logging::format("{}_intermediates", id));
+    outInfo(getIntermediatesOutIndex()) = {dtype,
+                                           {getSeqLength(),
+                                            getNumIntermediates(),
+                                            getBatchSize(),
+                                            getHiddenSize()}};
+  }
+}
+
+int64_t PopartLSTMOp::getSeqLength() const {
+  return inShape(getInputInIndex()).at(0);
+}
+
+int64_t PopartLSTMOp::getBatchSize() const {
+  return inShape(getInputInIndex()).at(1);
+}
+
+int64_t PopartLSTMOp::getInputSize() const {
+  return inShape(getInputInIndex()).at(2);
+}
+
+int64_t PopartLSTMOp::getHiddenSize() const {
+  return inShape(getWeightsInIndex()).at(2);
+}
+
+PopartLSTMGradOp::PopartLSTMGradOp(const PopartLSTMOp &fwdOp)
+    : Op(Onnx::GradOperators::PopartLSTMGrad, fwdOp.getSettings()),
+      outputFullSequence(fwdOp.outputFullSequence),
+      forwardCellStateGradId(
+          getGradId(fwdOp.outId(PopartLSTMOp::getCellStateOutIndex()))) {}
+
+std::unique_ptr<Op> PopartLSTMGradOp::clone() const {
+  return std::make_unique<PopartLSTMGradOp>(*this);
+}
+
+void PopartLSTMGradOp::setup() {
+  if (getGraph().getTensors().contains(forwardCellStateGradId, getScope())) {
+    connectInTensor(
+        getFwdCellStateGradInIndex(),
+        getGraph().getTensors().find(forwardCellStateGradId, getScope()));
+  } else {
+    logging::warn("Could not find optional input {}", forwardCellStateGradId);
+  }
+
+  outInfo(getInputOutIndex())        = inInfo(getInputInIndex());
+  outInfo(getWeightsOutIndex())      = inInfo(getWeightsInIndex());
+  outInfo(getBiasesOutIndex())       = inInfo(getBiasesInIndex());
+  outInfo(getInitialStateOutIndex()) = inInfo(getInitialStateInIndex());
+}
+
+int64_t PopartLSTMGradOp::getInputSize() const {
+  return inShape(getInputInIndex()).at(2);
+}
+
+int64_t PopartLSTMGradOp::getSeqLength() const {
+  return inShape(getInputInIndex()).at(0);
+}
+
+int64_t PopartLSTMGradOp::getBatchSize() const {
+  return inShape(getInputInIndex()).at(1);
+}
+
+int64_t PopartLSTMGradOp::getHiddenSize() const {
+  return inShape(getWeightsInIndex()).at(2);
+}
+
+const std::vector<GradInOutMapper> &PopartLSTMGradOp::gradInputInfo() const {
+  static const std::vector<GradInOutMapper> inInfo = {
+      {getInitialStateInIndex(),
+       PopartLSTMOp::getInitialStateInIndex(),
+       GradOpInType::IN},
+      {getIntermediatesInIndex(),
+       PopartLSTMOp::getIntermediatesOutIndex(),
+       GradOpInType::OUT},
+      {getWeightsInIndex(),
+       PopartLSTMOp::getWeightsInIndex(),
+       GradOpInType::IN},
+      {getBiasesInIndex(), PopartLSTMOp::getBiasesInIndex(), GradOpInType::IN},
+      {getInputInIndex(), PopartLSTMOp::getInputInIndex(), GradOpInType::IN},
+      {getFwdOutputInIndex(),
+       PopartLSTMOp::getOutputOutIndex(),
+       GradOpInType::OUT},
+      {getFwdOutputGradInIndex(),
+       PopartLSTMOp::getOutputOutIndex(),
+       GradOpInType::GRADOUT}};
+  // fwdCellState is an optional input and needs special handling, so is not
+  // included in the grad input info.
+
+  return inInfo;
+}
+
+const std::map<int, int> &PopartLSTMGradOp::gradOutToNonGradIn() const {
+  static const std::map<int, int> outInfo = {
+      {getInputOutIndex(), PopartLSTMOp::getInputInIndex()},
+      {getWeightsOutIndex(), PopartLSTMOp::getWeightsInIndex()},
+      {getBiasesOutIndex(), PopartLSTMOp::getBiasesInIndex()},
+      {getInitialStateOutIndex(), PopartLSTMOp::getInitialStateInIndex()}};
+
+  return outInfo;
+}
+
 namespace {
 
 static OpCreator<LSTMOp> lstmOpCreator(
@@ -297,6 +447,20 @@ static OpCreator<LSTMOp> lstmOpCreator(
       return std::unique_ptr<Op>(new LSTMOp(_opid, hidden_size, settings));
     },
     true);
+
+static OpCreator<PopartLSTMOp> popartLSTMOpCreator(
+    {Onnx::CustomOperators::LSTM_1},
+    [](const OperatorIdentifier &opid,
+       const Op::Settings &settings,
+       const Attributes &attr) {
+      bool outputFullSequence =
+          attr.getAttribute<Attributes::Int>("output_full_sequence", 1) != 0;
+
+      return std::unique_ptr<Op>(
+          new PopartLSTMOp(opid, outputFullSequence, settings));
+    },
+    true);
+
 } // namespace
 
 } // namespace popart

@@ -113,6 +113,93 @@ private:
   mutable std::map<int, int> out_info;
 };
 
+// LSTM op that more closely resembles the poplar lstm.
+// Inputs:
+//   X: The input sequence of shape,
+//      [sequence_length, batch_size, input_size].
+//   weights: The input and recurrence weights, of shape,
+//            [4, input_size + hidden_size, hidden_size].
+//   biases: The bias for the input gate, of shape,
+//           [4, hidden_size].
+//
+// Outputs:
+//   Y: The output values. If outputFullSequence is true, this
+//      has the shape, [sequence_length, batch_size, hidden_size]
+//      otherwise it is [batch_size, hidden_size]
+//   cell_state: The last output value of the cell, of shape,
+//               [batch_size, hidden_size]
+//
+// Attributes:
+//   outputFullSequence: Whether to output the full sequence or
+//                       just the final output.
+class PopartLSTMOp : public Op {
+public:
+  PopartLSTMOp(const OperatorIdentifier &,
+               bool outputFullSequence_,
+               const Op::Settings &);
+
+  std::unique_ptr<Op> clone() const final;
+  std::vector<std::unique_ptr<Op>> getGradOps() final;
+  void setup() final;
+
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
+  static InIndex getInputInIndex() { return 0; }
+  static InIndex getWeightsInIndex() { return 1; }
+  static InIndex getBiasesInIndex() { return 2; }
+  static InIndex getInitialStateInIndex() { return 3; }
+
+  static OutIndex getOutputOutIndex() { return 0; }
+  static OutIndex getCellStateOutIndex() { return 1; }
+  static OutIndex getIntermediatesOutIndex() { return 2; }
+
+  int64_t getSeqLength() const;
+  int64_t getBatchSize() const;
+  int64_t getInputSize() const;
+  int64_t getHiddenSize() const;
+
+  static int64_t getNumIntermediates() { return 6; }
+
+  const bool outputFullSequence;
+};
+
+class PopartLSTMGradOp : public Op {
+public:
+  PopartLSTMGradOp(const PopartLSTMOp &);
+
+  std::unique_ptr<Op> clone() const final;
+  void setup() final;
+
+  const std::vector<GradInOutMapper> &gradInputInfo() const final;
+  const std::map<int, int> &gradOutToNonGradIn() const final;
+
+  float getSubgraphValue() const final { return getHighSubgraphValue(); }
+
+  int64_t getInputSize() const;
+  int64_t getSeqLength() const;
+  int64_t getBatchSize() const;
+  int64_t getHiddenSize() const;
+
+  static InIndex getInitialStateInIndex() { return 0; }
+  static InIndex getIntermediatesInIndex() { return 1; }
+  static InIndex getWeightsInIndex() { return 2; }
+  static InIndex getBiasesInIndex() { return 3; }
+  static InIndex getInputInIndex() { return 4; }
+  static InIndex getFwdOutputInIndex() { return 5; }
+  static InIndex getFwdOutputGradInIndex() { return 6; }
+  static InIndex getFwdCellStateGradInIndex() { return 7; }
+
+  static OutIndex getInputOutIndex() { return 0; }
+  static OutIndex getWeightsOutIndex() { return 1; }
+  static OutIndex getBiasesOutIndex() { return 2; }
+  static OutIndex getInitialStateOutIndex() { return 3; }
+
+  const bool outputFullSequence;
+
+private:
+  const TensorId forwardCellStateGradId;
+};
+
 } // namespace popart
 
 #endif

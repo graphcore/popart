@@ -17,6 +17,7 @@ void SubsampleShapeInference(InferenceContext &ctx);
 void GroupNormalizationShapeInference(InferenceContext &ctx);
 void PrintTensorShapeInference(InferenceContext &ctx);
 void ScaleShapeInference(InferenceContext &ctx);
+void LSTMShapeInference(InferenceContext &ctx);
 
 void SubsampleShapeInference(InferenceContext &ctx) {
   propagateElemTypeFromInputToOutput(ctx, 0, 0);
@@ -65,10 +66,44 @@ void ScaleShapeInference(InferenceContext &ctx) {
   propagateShapeAndTypeFromFirstInput(ctx);
 }
 
+void LSTMShapeInference(InferenceContext &ctx) {
+  propagateElemTypeFromInputToOutput(ctx, 0, 0);
+
+  // we need the first 2 input shapes for this inference.
+  if (!hasNInputShapes(ctx, 2)) {
+    return;
+  }
+
+  auto input_shape   = ctx.getInputType(0)->tensor_type().shape();
+  auto weights_shape = ctx.getInputType(0)->tensor_type().shape();
+
+  auto seq_length  = input_shape.dim(0);
+  auto batch_size  = input_shape.dim(1);
+  auto input_size  = input_shape.dim(2);
+  auto hidden_size = weights_shape.dim(2);
+
+  int64_t output_full_sequence = 1;
+  getAttribute(ctx, "output_full_sequence", output_full_sequence);
+
+  auto *output_shape =
+      ctx.getOutputType(0)->mutable_tensor_type()->mutable_shape();
+  if (output_full_sequence != 0) {
+    *output_shape->add_dim() = seq_length;
+  }
+  *output_shape->add_dim() = batch_size;
+  *output_shape->add_dim() = hidden_size;
+
+  auto *cell_state_shape =
+      ctx.getOutputType(0)->mutable_tensor_type()->mutable_shape();
+  *cell_state_shape->add_dim() = batch_size;
+  *cell_state_shape->add_dim() = hidden_size;
+}
+
 extern size_t dbg_count_check_GroupNormalization_AiGraphcore_ver1;
 extern size_t dbg_count_check_Subsample_AiGraphcore_ver1;
 extern size_t dbg_count_check_PrintTensor_AiGraphcore_ver1;
 extern size_t dbg_count_check_Scale_AiGraphcore_ver1;
+extern size_t dbg_count_check_LSTM_AiGraphcore_ver1;
 
 static const char groupnormalizationDoc[] =
     "GroupNormalization applies Group Normalization over a mini-batch of input";
@@ -168,6 +203,32 @@ ONNX_OPERATOR_SET_SCHEMA_EX(
         .Attr("scale", "The scale to apply", AttributeProto::FLOAT, true)
         .TypeAndShapeInferenceFunction(ScaleShapeInference));
 
+static const char lstmDoc[] = "";
+
+ONNX_OPERATOR_SET_SCHEMA_EX(
+    LSTM,
+    AiGraphcore,
+    popart::Domain::ai_graphcore,
+    1,
+    false,
+    OpSchema()
+        .SetDoc(lstmDoc)
+        .Input(0, "X", "The input tensor", "T")
+        .Input(1, "Weights", "The concatenated input and output weights", "T")
+        .Input(2, "Bias", "The biases", "T")
+        .Input(0, "InitState", "The initial state", "T")
+        .Output(0, "Output", "Output tensor", "T")
+        .Output(1, "CellState", "The lstm cell state", "T")
+        .TypeConstraint("T",
+                        {"tensor(float)", "tensor(float16)"},
+                        "Constrain input and output types to float tensors.")
+        .Attr("output_full_sequence",
+              "If true, the lstm returns the entire sequence of outputs, "
+              "otherwise it just returns the final output.",
+              AttributeProto::INT,
+              static_cast<int64_t>(1))
+        .TypeAndShapeInferenceFunction(LSTMShapeInference));
+
 static bool registerOps() {
   auto &d = ONNX_NAMESPACE::OpSchemaRegistry::DomainToVersionRange::Instance();
   d.AddDomainToVersion(popart::Domain::ai_graphcore, 1, 1);
@@ -187,6 +248,9 @@ static bool registerOps() {
   ONNX_NAMESPACE::RegisterSchema(
       GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(
           AiGraphcore, 1, Scale)>());
+
+  ONNX_NAMESPACE::RegisterSchema(
+      GetOpSchema<ONNX_OPERATOR_SET_SCHEMA_CLASS_NAME(AiGraphcore, 1, LSTM)>());
 
   return true;
 }

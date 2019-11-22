@@ -251,6 +251,16 @@ TensorId AiGraphcoreOpset1::scale(const std::vector<TensorId> &args,
       .at(0);
 }
 
+std::vector<TensorId> AiGraphcoreOpset1::lstm(const std::vector<TensorId> &args,
+                                              int64_t outputFullSequence,
+                                              const std::string &name) {
+  return impl->op(Onnx::AiGraphcore::OpSet1::LSTM,
+                  getOpsetVersion(),
+                  args,
+                  {{"output_full_sequence", outputFullSequence}},
+                  name);
+}
+
 std::vector<TensorId>
 Builder::customOp(const OperatorIdentifier &opid,
                   int opsetVersion,

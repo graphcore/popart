@@ -114,6 +114,10 @@ public:
   TensorId scale(const std::vector<TensorId> &args,
                  float scale,
                  const std::string &name = {});
+
+  std::vector<TensorId> lstm(const std::vector<TensorId> &args,
+                             int64_t outputFullSequence,
+                             const std::string &name = {});
 };
 
 /**

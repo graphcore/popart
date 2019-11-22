@@ -21,6 +21,8 @@ public:
   // Search for a tensor with a scope
   // Return the scoped tensorId
   TensorId find(TensorId, const Scope &) const;
+  // Search for a tensor with a scope
+  bool contains(TensorId, const Scope &) const;
 
   // create a Variable Tensor
   void addVarInit(const TensorId &, const onnx::TensorProto *);

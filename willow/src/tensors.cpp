@@ -203,6 +203,25 @@ Tensor *Tensors::get(TensorId tenId) const {
   return found->second.get();
 }
 
+bool Tensors::contains(TensorId tenId, const Scope &scope) const {
+  Scope s = scope;
+
+  while (!s.empty()) {
+    auto id = (s / tenId).str();
+    if (M.find(id) != M.end()) {
+      return true;
+    } else {
+      s.pop();
+    }
+  }
+
+  if (M.find(tenId) != M.end()) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 TensorId Tensors::find(TensorId tenId, const Scope &scope) const {
   Scope s = scope;
 
