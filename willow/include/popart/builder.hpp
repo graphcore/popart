@@ -118,6 +118,18 @@ public:
   std::vector<TensorId> lstm(const std::vector<TensorId> &args,
                              int64_t outputFullSequence,
                              const std::string &name = {});
+  /**
+   * Add a gelu operation to the model
+   *
+   * This is a poplar extension, to replace the experimental scale
+   * operator that has been removed
+   *
+   * \param args Tensor T
+   * \param name Optional identifier for operation
+   * \return The name of the result tensor
+   */
+  TensorId gelu(const std::vector<TensorId> &args,
+                const std::string &name = {});
 };
 
 /**
