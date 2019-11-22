@@ -598,8 +598,19 @@ private:
   // TODO T12001 a class which encapsulates framgments which has this attribute.
   bool outerLoopFragEmpty = true;
 
+  // When doing gradient reductions on the host this flags keeps track of
+  // whether a poplar::Program::Sync has been inserted into the graph to
+  // serve as a barrier to ensure that all gradient copy callbacks are complete
+  // before weight copy callbacks are executed.
+  bool hostReduceSyncInserted = false;
+
 public:
   bool getOuterLoopFragEmpty() const { return outerLoopFragEmpty; }
+
+  void setHostReduceSyncInserted(bool inserted) {
+    hostReduceSyncInserted = inserted;
+  }
+  bool getHostReduceSyncInserted() const { return hostReduceSyncInserted; }
 };
 
 } // namespace popx
