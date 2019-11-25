@@ -35,6 +35,7 @@ def run_pt_session(syntheticDataMode):
 def numpy_array_from_printtensor_string(string):
     stringData = string.partition('{')[2].partition('}')[0]
     data = np.fromstring(stringData, dtype=float, sep=',')
+    print(data)
     return data
 
 

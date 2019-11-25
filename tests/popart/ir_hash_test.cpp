@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(test0) {
   // 6. Same as reference, except different session (user) options, (1)
   Ir ir6;
   SessionOptions uopt0;
-  uopt0.ignoreData = true;
+  uopt0.syntheticDataMode = SyntheticDataMode::Zeros;
   ir6.prepare({proto, isi, df0, losses, &opt0, *device0, uopt0, Patterns()});
   std::size_t irHash6 = std::hash<Ir>{}(ir6);
 

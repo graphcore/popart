@@ -16,6 +16,7 @@ char *getPopartEnvVar(std::string env_var);
 
 std::vector<char> convertFloatToDataType(DataType dtype, float data);
 template <typename T> std::vector<char> convertFloatTo(float data);
+template <typename T> std::vector<char> convertIntTo(int data);
 
 // turn input into a string, and pads
 // it if necessary to some minimum length `padSize'

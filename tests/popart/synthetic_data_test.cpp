@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(SyntheticData_True) {
       new L1Loss(tensorIds.back(), "l1LossVal", 0.1, ReductionType::SUM)};
 
   SessionOptions options;
-  options.ignoreData = true;
+  options.syntheticDataMode = SyntheticDataMode::Zeros;
 
   auto cpuDevice =
       popart::DeviceManager::createDeviceManager().createCpuDevice();

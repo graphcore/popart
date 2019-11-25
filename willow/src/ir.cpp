@@ -1241,9 +1241,7 @@ void Ir::registerInputTensors() {
         "Adding {} Tensor {} to Ir {}.", tensor_type, tensorId, consumerString);
   };
 
-  std::set<TensorId> onnxInitializers;
-
-  std::set<TensorId> unusedInitializers;
+  std::set<TensorId> onnxInitializers, unusedInitializers;
 
   for (const auto &initializer : onnxGraph.initializer()) {
     TensorId tenId = initializer.name();
@@ -1296,39 +1294,42 @@ void Ir::registerInputTensors() {
                     "is specified in the onnx model",
                     id);
       }
-    }
 
-    if (useSyntheticData()) {
-      Tensor *synStreamTensor = getTensor(id);
-      const auto &info        = synStreamTensor->info;
-      std::vector<char> data;
-      std::vector<float> vals(info.nelms(), 0.0);
+      // We will not be streaming data for this tensor from the host. Instead
+      // initialise the tensor data once, here, based on the session option
+      // syntheticDataMode
+      if (useSyntheticData()) {
+        Tensor *synStreamTensor = getTensor(id);
+        const auto &info        = synStreamTensor->info;
+        std::vector<char> data;
+        std::vector<float> vals(info.nelms(), 0.0);
 
-      switch (syntheticDataMode()) {
-      case SyntheticDataMode::Zeros: {
-        // Already initialized to zeros - do nothing
-        break;
-      }
-      case SyntheticDataMode::RandomNormal: {
-        // Radom normal number generator: mean 0, variance 1
-        std::default_random_engine generator;
-        std::normal_distribution<float> normalDistribution(0.0, 1.0);
-        for (auto &val : vals) {
-          val = normalDistribution(generator);
+        switch (syntheticDataMode()) {
+        case SyntheticDataMode::Zeros: {
+          // Already initialized to zeros - do nothing
+          break;
         }
-        break;
-      }
-      case SyntheticDataMode::Off:
-      case SyntheticDataMode::N:
-      default:
-        throw error("Cannot set tensor data for current SyntheticDataMode");
-      }
+        case SyntheticDataMode::RandomNormal: {
+          // Radom normal number generator: mean 0, variance 1
+          std::default_random_engine generator;
+          std::normal_distribution<float> normalDistribution(0.0, 1.0);
+          for (auto &val : vals) {
+            val = normalDistribution(generator);
+          }
+          break;
+        }
+        case SyntheticDataMode::Off:
+        case SyntheticDataMode::N:
+        default:
+          throw error("Cannot set tensor data for current SyntheticDataMode");
+        }
 
-      for (float val : vals) {
-        auto convertedData = convertFloatToDataType(info.dataType(), val);
-        data.insert(data.end(), convertedData.begin(), convertedData.end());
+        for (float val : vals) {
+          auto convertedData = convertFloatToDataType(info.dataType(), val);
+          data.insert(data.end(), convertedData.begin(), convertedData.end());
+        }
+        synStreamTensor->setTensorData(info, data.data());
       }
-      synStreamTensor->setTensorData(info, data.data());
     }
   }
 
