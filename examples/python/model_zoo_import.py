@@ -27,8 +27,20 @@ from onnx import numpy_helper
 # Get download url and test number from args
 
 parser = argparse.ArgumentParser()
-parser.add_argument("url")
-parser.add_argument("test_number", type=int)
+parser.add_argument("url", type=str, help="URL for the tar file download")
+parser.add_argument("test_number",
+                    type=int,
+                    help="test number to run against, usually in [0,3)")
+parser.add_argument("--input_tensor",
+                    required=False,
+                    type=str,
+                    help="Specify the input tensor ID, "
+                    "sometimes required if tensors are not in order.")
+parser.add_argument("--output_tensor",
+                    required=False,
+                    type=str,
+                    help="Specify the input tensor ID, "
+                    "sometimes required if tensors are not in order.")
 args = parser.parse_args()
 
 url = args.url
@@ -50,18 +62,25 @@ if (not os.path.exists(modeldir)):
 # Download and extract
 fn = url.split('/')[-1]
 download_path = os.path.join(modeldir, fn)
+print("Download path:", download_path)
 if (not os.path.exists(download_path)):
     print("Downloading model from %s" % (url))
-    urllib.request.urlretrieve(url, os.path.join(modeldir, fn))
-    tar = tarfile.open(download_path)
-    tar.extractall(path=modeldir)
-    tar.close()
+    urllib.request.urlretrieve(url, download_path)
+    print("Download complete:", download_path)
 
-# Get onnx model from extracted tar
-# TODO: This needs to better handle the different model and tarfile combinations
-unzipped_path = os.path.join(modeldir, fn).replace(".tar.gz", "")
-test_data_dir = os.path.join(unzipped_path, test_data_dir)
-onnx_model = glob.glob(os.path.join(unzipped_path, "*.onnx"))[0]
+# # Get onnx model from extracted tar
+with tarfile.open(download_path) as tar:
+    extract_path = tar.extractall(path=modeldir)
+
+file_tar, file_tar_ext = os.path.splitext(download_path)
+file_untar, file_untar_ext = os.path.splitext(file_tar)
+
+filenames = glob.glob(os.path.join(file_tar, file_untar, "**"), recursive=True)
+onnx_model = [f for f in filenames if ".onnx" in f][-1]
+onnx_model = os.path.join(modeldir, onnx_model)
+print("ONNX model:", onnx_model)
+test_data_dir = os.path.join(modeldir, test_data_dir)
+
 try:
     os.path.exists(onnx_model)
 except ValueError:
@@ -69,9 +88,11 @@ except ValueError:
 
 # Load input tensor for given test number
 inputs = []
-inputs_num = len(glob.glob(os.path.join(test_data_dir, 'input_*.pb')))
-for i in range(inputs_num):
-    input_file = os.path.join(test_data_dir, 'input_{}.pb'.format(i))
+input_files = [
+    f for f in filenames if f"test_data_set_{test_number}/input_0.pb" in f
+]
+for i in input_files:
+    input_file = os.path.join(modeldir, i)
     tensor = onnx.TensorProto()
     with open(input_file, 'rb') as f:
         tensor.ParseFromString(f.read())
@@ -79,18 +100,29 @@ for i in range(inputs_num):
 
 # Load reference outputs for given test number
 ref_outputs = []
-ref_outputs_num = len(glob.glob(os.path.join(test_data_dir, 'output_*.pb')))
-for i in range(ref_outputs_num):
-    output_file = os.path.join(test_data_dir, 'output_{}.pb'.format(i))
+ref_output_files = [
+    f for f in filenames if f"test_data_set_{test_number}/output_0.pb" in f
+]
+for i in ref_output_files:
+    output_file = os.path.join(modeldir, i)
     tensor = onnx.TensorProto()
     with open(output_file, 'rb') as f:
         tensor.ParseFromString(f.read())
     ref_outputs.append(numpy_helper.to_array(tensor))
 
-# create graph transformer using .onnx file. Use builder to get input / output tensor ids
+# create graph transformer using .onnx file.
 builder = popart.Builder(onnx_model)
-input_ = builder.getInputTensorIds()[0]
-output = builder.getOutputTensorIds()[0]
+# Use builder to get input / output tensor ids, or user specified if provided
+if args.input_tensor:
+    input_ = args.input_tensor
+else:
+    input_ = builder.getInputTensorIds()[0]
+if args.output_tensor:
+    output = args.output_tensor
+else:
+    output = builder.getOutputTensorIds()[0]
+
+print("Input:", input_, "Output:", output)
 graph_transformer = popart.GraphTransformer(onnx_model)
 graph_transformer.convertAllFixedPointInitializersToConstants()
 
@@ -101,6 +133,7 @@ session = popart.InferenceSession(
     deviceInfo=popart.DeviceManager().createIpuModelDevice({}))
 
 # Compile graph
+print("Compiling...")
 session.prepareDevice()
 
 # Create buffers to receive results from the execution
