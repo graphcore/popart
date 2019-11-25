@@ -46,18 +46,22 @@ void LSTMOp::setup() {
   if (input->hasIndex(getSequenceLensInIndex())) {
     logging::op::warn("Lstm optional input `sequence_lens' will be ignored");
   }
-  if (hidden_size_attribute && *hidden_size_attribute != getHiddenSize()) {
+  int64_t hidden_size = 0;
+  if (!hidden_size_attribute) {
+    hidden_size = inShape(getRecurrenceInIndex())[2];
+  } else if (*hidden_size_attribute != inShape(getRecurrenceInIndex())[2]) {
     throw error("LSTMOp hidden_size attribute, {}, does not match calculated "
                 "hidden size, {}.",
                 *hidden_size_attribute,
-                getHiddenSize());
+                inShape(getRecurrenceInIndex())[2]);
+  } else {
+    hidden_size = *hidden_size_attribute;
   }
 
   auto seq_length     = getSeqLength();
   auto num_directions = getNumDirections();
   auto batch_size     = getBatchSize();
   auto data_type      = inInfo(getInputInIndex()).data_type();
-  auto hidden_size    = getHiddenSize();
   auto input_size     = getInputSize();
 
   Shape y_shape{seq_length, num_directions, batch_size, hidden_size};
