@@ -65,21 +65,9 @@ void IpuCopyOpx::growPipelined(poplar::program::Sequence &prog) const {
     auto &source      = getInTensor(idx);
     auto &destination = dv_p->tensors.get(outId);
 
-    // Copy(source, destination) is not a unique copy and poplar will
-    // automatically outline it.
-    //
-    // Copy(source, temp) && Copy(temp, destination) are both unique copies and
-    // will not be outlined. It is then up to poplar to remove the unecessary
-    // copies.
-    //
-    // Poplar task T11865 will hopefully allow this workaround to be removed.
-    auto temp = poputil::copyToIpu(dv_p->graph(),
-                                   source,
-                                   prog,
-                                   static_cast<int>(op.getDestIpu()),
-                                   debugPrefix("temp"));
-
-    prog.add(poplar::program::Copy(temp, destination));
+    // Waiting for T11865 as a possible optimisation
+    // This copy will be outlined by poplar preventing it from merging
+    prog.add(poplar::program::Copy(source, destination));
   }
 }
 
